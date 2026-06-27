@@ -1,20 +1,37 @@
 #include <juce_audio_basics/juce_audio_basics.h>
 #include <juce_audio_devices/juce_audio_devices.h>
 
-#include <atomic>
-#include <cmath>
 #include <iostream>
+
+extern "C"
+{
+struct DandrumEngine;
+
+DandrumEngine* dandrum_engine_create();
+void dandrum_engine_destroy (DandrumEngine* engine);
+void dandrum_engine_prepare (DandrumEngine* engine, float sampleRate);
+std::size_t dandrum_engine_render (DandrumEngine* engine, float* left, float* right, std::size_t numSamples);
+bool dandrum_engine_is_finished (const DandrumEngine* engine);
+}
 
 namespace
 {
 class BeepSource final : public juce::AudioSource
 {
 public:
+    BeepSource()
+        : engine (dandrum_engine_create())
+    {
+    }
+
+    ~BeepSource() override
+    {
+        dandrum_engine_destroy (engine);
+    }
+
     void prepareToPlay (int /*samplesPerBlockExpected*/, double newSampleRate) override
     {
-        sampleRate = newSampleRate;
-        phase = 0.0;
-        remainingSamples.store (static_cast<int> (sampleRate * beepSeconds));
+        dandrum_engine_prepare (engine, static_cast<float> (newSampleRate));
     }
 
     void releaseResources() override {}
@@ -24,64 +41,21 @@ public:
         auto* buffer = bufferToFill.buffer;
         buffer->clear (bufferToFill.startSample, bufferToFill.numSamples);
 
-        if (sampleRate <= 0.0)
+        if (engine == nullptr || buffer->getNumChannels() <= 0)
             return;
 
-        auto samplesLeft = remainingSamples.load();
-        if (samplesLeft <= 0)
-            return;
-
-        const auto channels = buffer->getNumChannels();
-        const auto phaseDelta = juce::MathConstants<double>::twoPi * frequencyHz / sampleRate;
-
-        for (int i = 0; i < bufferToFill.numSamples && samplesLeft > 0; ++i)
-        {
-            const auto renderedSamples = totalBeepSamples() - samplesLeft;
-            const auto envelope = amplitudeEnvelope (renderedSamples, samplesLeft);
-            const auto sample = static_cast<float> (std::sin (phase) * gain * envelope);
-
-            for (int channel = 0; channel < channels; ++channel)
-                buffer->addSample (channel, bufferToFill.startSample + i, sample);
-
-            phase += phaseDelta;
-            if (phase >= juce::MathConstants<double>::twoPi)
-                phase -= juce::MathConstants<double>::twoPi;
-
-            --samplesLeft;
-        }
-
-        remainingSamples.store (samplesLeft);
+        auto* left = buffer->getWritePointer (0, bufferToFill.startSample);
+        auto* right = buffer->getNumChannels() > 1 ? buffer->getWritePointer (1, bufferToFill.startSample) : left;
+        dandrum_engine_render (engine, left, right, static_cast<std::size_t> (bufferToFill.numSamples));
     }
 
     bool hasFinished() const
     {
-        return remainingSamples.load() <= 0;
+        return dandrum_engine_is_finished (engine);
     }
 
 private:
-    int totalBeepSamples() const
-    {
-        return static_cast<int> (sampleRate * beepSeconds);
-    }
-
-    double amplitudeEnvelope (int renderedSamples, int samplesLeft) const
-    {
-        const auto fadeSamples = static_cast<int> (sampleRate * 0.01);
-        if (fadeSamples <= 0)
-            return 1.0;
-
-        const auto fadeIn = std::min (1.0, static_cast<double> (renderedSamples) / fadeSamples);
-        const auto fadeOut = std::min (1.0, static_cast<double> (samplesLeft) / fadeSamples);
-        return std::min (fadeIn, fadeOut);
-    }
-
-    static constexpr double frequencyHz = 440.0;
-    static constexpr double beepSeconds = 0.35;
-    static constexpr double gain = 0.20;
-
-    double sampleRate = 0.0;
-    double phase = 0.0;
-    std::atomic<int> remainingSamples { 0 };
+    DandrumEngine* engine = nullptr;
 };
 } // namespace
 
@@ -101,7 +75,7 @@ int main()
     player.setSource (&beep);
     deviceManager.addAudioCallback (&player);
 
-    std::cout << "Beep.\n";
+    std::cout << "Rust engine sound.\n";
 
     while (! beep.hasFinished())
         juce::Thread::sleep (10);

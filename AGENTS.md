@@ -1,12 +1,13 @@
 # Agent Notes
 
 ## Project Shape
-- This is currently a tiny C++20 CMake/JUCE app, not yet the planned headless engine.
-- Root `CMakeLists.txt` builds one console target, `dandrum-beep`, from `src/juce-wrapper/Main.cpp`.
+- This is currently a tiny C++20 CMake/JUCE wrapper plus Rust static library, not yet the planned headless engine.
+- Root `CMakeLists.txt` builds Rust crate `src/rust-engine/` and links it into one JUCE console target, `dandrum-beep`, from `src/juce-wrapper/Main.cpp`.
 - `third_party/JUCE/` is vendored JUCE; do not edit it unless the task is explicitly about vendored JUCE changes.
 
 ## Build And Run
 - Configure/build/run with the README commands: `$HOME/.local/bin/cmake -S . -B build`, `$HOME/.local/bin/cmake --build build`, `./build/dandrum-beep_artefacts/dandrum-beep`.
+- CMake expects Cargo at `$HOME/.cargo/bin/cargo`.
 - JUCE configure needs native Linux dev packages from `README.md`; without them CMake can fail while building `juceaide` on missing headers such as `X11/Xlib.h`.
 - There are no configured lint, typecheck, unit test, or CI commands yet.
 

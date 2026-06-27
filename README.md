@@ -4,7 +4,7 @@ Headless-first OSS virtual instrument experiment.
 
 ## First Sound
 
-The first milestone is deliberately tiny: prove the JUCE audio wrapper can open the default audio device and emit a short beep.
+The first milestone is deliberately tiny: prove the JUCE wrapper can open the default audio device while Rust owns the sample generation.
 
 Native Linux dependencies for JUCE:
 
@@ -18,4 +18,4 @@ $HOME/.local/bin/cmake --build build
 ./build/dandrum-beep_artefacts/dandrum-beep
 ```
 
-This uses JUCE as the wrapper/host side. The Rust audio engine is intentionally deferred until the audio pipeline is proven.
+This uses JUCE as the wrapper/host side. The current binary links a Rust static library from `src/rust-engine/` and calls it from the JUCE audio callback.

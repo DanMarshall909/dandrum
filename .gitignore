@@ -1,2 +1,3 @@
 build/
 .tools/
+src/rust-engine/target/
