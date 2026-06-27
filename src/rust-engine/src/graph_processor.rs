@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use crate::core::{BlockScheduler, TimedInputEvent};
-use crate::graph::{Graph, ModuleNode, builtin_ports};
+use crate::graph::{Graph, ModuleNode, SignalType, builtin_ports};
 use crate::patch::RenderSettings;
 use crate::script::ScriptEvent;
 
@@ -183,14 +183,18 @@ fn sum_control_input(
 
 fn gather_event_inputs(
     module_idx: usize,
+    module: &ModuleNode,
     routing: &Routing,
     all_outputs: &HashMap<usize, ModuleOutputs>,
 ) -> Vec<ScriptEvent> {
     let mut events = Vec::new();
-    if let Some(sources) = routing.inputs[module_idx].get(builtin_ports::EVENTS) {
-        for &(src_idx, ref src_port) in sources {
-            if let Some(outputs) = all_outputs.get(&src_idx) {
-                if src_port == builtin_ports::EVENTS {
+    for input_port in module.inputs() {
+        if input_port.signal_type() != SignalType::Event {
+            continue;
+        }
+        if let Some(sources) = routing.inputs[module_idx].get(input_port.name()) {
+            for &(src_idx, _) in sources {
+                if let Some(outputs) = all_outputs.get(&src_idx) {
                     events.extend_from_slice(&outputs.events);
                 }
             }
@@ -250,17 +254,14 @@ pub fn render_offline(
             let module = &graph.modules()[module_idx];
             let module_type = module.module_type();
 
-            let events_in = match module_type {
-                "midi_input" => Vec::new(),
-                _ => gather_event_inputs(module_idx, &routing, &all_outputs),
-            };
+            // midi_input output was already pre-populated above
+            if module_type == "midi_input" {
+                continue;
+            }
+
+            let events_in = gather_event_inputs(module_idx, module, &routing, &all_outputs);
 
             let outputs = match module_type {
-                "midi_input" => ModuleOutputs {
-                    audio: HashMap::new(),
-                    control: HashMap::new(),
-                    events: Vec::new(),
-                },
                 "oscillator" => {
                     process_oscillator(
                         &mut states[module_idx],
@@ -510,6 +511,94 @@ mod tests {
     use crate::graph::*;
     use crate::patch;
     use crate::script::ScriptEvent;
+
+    #[test]
+    fn graph_processor_produces_audio_from_midi_triggered_303_chain() {
+        let patch = patch::load_patch_str(
+            r#"
+metadata:
+  name: 303-style
+render:
+  sample_rate_hz: 48000
+  block_size_frames: 64
+  duration_frames: 48000
+modules:
+  - id: midi
+    type: midi_input
+    outputs:
+      - name: events
+        signal_type: event
+  - id: osc
+    type: oscillator
+    inputs:
+      - name: gate
+        signal_type: event
+      - name: pitch
+        signal_type: control
+    outputs:
+      - name: audio
+        signal_type: audio
+  - id: env
+    type: adsr
+    inputs:
+      - name: gate
+        signal_type: event
+    outputs:
+      - name: value
+        signal_type: control
+  - id: vca
+    type: gain
+    inputs:
+      - name: audio_in
+        signal_type: audio
+      - name: gain
+        signal_type: control
+    outputs:
+      - name: audio_out
+        signal_type: audio
+  - id: out
+    type: audio_output
+    inputs:
+      - name: left
+        signal_type: audio
+      - name: right
+        signal_type: audio
+connections:
+  - from: midi.events
+    to: osc.gate
+  - from: midi.events
+    to: env.gate
+  - from: osc.audio
+    to: vca.audio_in
+  - from: env.value
+    to: vca.gain
+  - from: vca.audio_out
+    to: out.left
+  - from: vca.audio_out
+    to: out.right
+"#,
+        )
+        .expect("patch should parse");
+
+        patch::validate_patch_schema(&patch).expect("schema should be valid");
+        let graph = Graph::from_patch_declarations(&patch);
+        graph.validate().expect("graph should validate");
+
+        let (left, right) = render_offline(
+            &graph,
+            &patch.render,
+            vec![
+                TimedInputEvent::new(0, ScriptEvent::NoteOn { note: 45, velocity: 100 }),
+                TimedInputEvent::new(12000, ScriptEvent::NoteOff { note: 45 }),
+            ],
+        );
+
+        let has_signal =
+            left.iter().any(|&s| s != 0.0) || right.iter().any(|&s| s != 0.0);
+        assert!(has_signal, "303-style chain should produce audio");
+        assert_eq!(left.len(), 48000);
+        assert_eq!(right.len(), 48000);
+    }
 
     #[test]
     fn graph_processor_produces_audio_when_events_are_present() {
