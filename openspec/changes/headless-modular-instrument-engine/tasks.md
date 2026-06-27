@@ -14,11 +14,11 @@
 
 ## 3. Modular Routing Graph
 
-- [ ] 3.1 Implement core domain types for modules, ports, signal types, cables, and graphs.
-- [ ] 3.2 Implement graph construction from validated patch declarations.
-- [ ] 3.3 Implement port existence, direction, and signal compatibility validation.
-- [ ] 3.4 Implement validation for unsupported implicit many-to-one routing.
-- [ ] 3.5 Add routing graph tests for valid routes, missing ports, wrong direction, incompatible types, and many-to-one errors.
+- [x] 3.1 Implement core domain types for modules, ports, signal types, cables, and graphs.
+- [x] 3.2 Implement graph construction from validated patch declarations.
+- [x] 3.3 Implement port existence, direction, and signal compatibility validation.
+- [x] 3.4 Implement validation for unsupported implicit many-to-one routing.
+- [x] 3.5 Add routing graph tests for valid routes, missing ports, wrong direction, incompatible types, and many-to-one errors.
 
 ## 4. VCA and Control Routing
 
