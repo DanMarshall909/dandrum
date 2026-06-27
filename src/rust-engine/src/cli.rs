@@ -105,6 +105,16 @@ mod tests {
     }
 
     #[test]
+    fn validate_without_exactly_one_patch_path_returns_usage_error() {
+        let result = run(["dandrum-cli", "validate"]);
+
+        assert_eq!(result.exit_code, 2);
+        assert!(result.stdout.is_empty());
+        assert!(result.stderr.contains("validate requires exactly one patch path"));
+        assert!(result.stderr.contains("validate <patch.yaml>"));
+    }
+
+    #[test]
     fn render_accepts_patch_path_and_output_path_for_future_offline_render() {
         let result = run([
             "dandrum-cli",
@@ -128,5 +138,15 @@ mod tests {
         assert_eq!(result.exit_code, 2);
         assert!(result.stdout.is_empty());
         assert!(result.stderr.contains("render requires"));
+    }
+
+    #[test]
+    fn unknown_command_returns_usage_error() {
+        let result = run(["dandrum-cli", "inspect"]);
+
+        assert_eq!(result.exit_code, 2);
+        assert!(result.stdout.is_empty());
+        assert!(result.stderr.contains("unknown command: inspect"));
+        assert!(result.stderr.contains("Usage:"));
     }
 }
