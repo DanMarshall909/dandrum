@@ -20,6 +20,24 @@ $HOME/.local/bin/cmake --build build
 
 This uses JUCE as the wrapper/host side. The current binary links a Rust static library from `src/rust-engine/` and calls it from the JUCE audio callback.
 
+## Engine Development
+
+The headless engine core is implemented in Rust under `src/rust-engine/`. The `core` module is the frontend-independent engine boundary; JUCE, CLI, GUI, plugin, and realtime driver code should stay outside that module.
+
+Rust unit tests are the default home for core behavior:
+
+```bash
+$HOME/.cargo/bin/cargo test --manifest-path src/rust-engine/Cargo.toml
+```
+
+CMake exposes the same Rust tests through CTest for CI:
+
+```bash
+$HOME/.local/bin/cmake -S . -B build
+$HOME/.local/bin/cmake --build build
+ctest --test-dir build
+```
+
 ## MIDI Input
 
 JUCE owns MIDI device IO and forwards note events into the Rust engine.

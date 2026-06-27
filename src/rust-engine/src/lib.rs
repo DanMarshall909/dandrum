@@ -1,5 +1,7 @@
 use std::f32::consts::TAU;
 
+pub mod core;
+
 #[repr(C)]
 pub struct DandrumEngine {
     sample_rate: f32,

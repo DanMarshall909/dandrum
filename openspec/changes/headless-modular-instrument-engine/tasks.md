@@ -1,9 +1,9 @@
 ## 1. Project Foundation
 
-- [ ] 1.1 Choose the initial implementation language, package layout, and test framework for the headless engine.
-- [ ] 1.2 Create the engine core package without GUI, plugin, or CLI coupling.
+- [x] 1.1 Choose the initial implementation language, package layout, and test framework for the headless engine.
+- [x] 1.2 Create the engine core package without GUI, plugin, or CLI coupling.
 - [ ] 1.3 Add a minimal CLI entry point for loading patches, inspecting validation results, and invoking offline renders.
-- [ ] 1.4 Add CI-ready test commands for unit and acceptance tests.
+- [x] 1.4 Add CI-ready test commands for unit and acceptance tests.
 
 ## 2. YAML Patch Format
 
