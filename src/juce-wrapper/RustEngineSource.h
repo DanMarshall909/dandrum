@@ -15,6 +15,7 @@ public:
     void releaseResources() override;
     void getNextAudioBlock (const juce::AudioSourceChannelInfo& bufferToFill) override;
 
+    bool loadPatch (const juce::String& yamlPath);
     void noteOn (int note, int velocity);
     void noteOff (int note);
     bool hasFinished() const;

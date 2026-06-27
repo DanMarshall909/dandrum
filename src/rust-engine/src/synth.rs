@@ -1,8 +1,13 @@
 use std::f32::consts::TAU;
 
+use crate::graph::Graph;
+use crate::graph_processor::RealtimeGraphProcessor;
+use crate::patch;
+
 pub struct DandrumEngine {
     sample_rate: f32,
     voices: [Voice; MAX_VOICES],
+    graph_processor: Option<RealtimeGraphProcessor>,
 }
 
 #[derive(Clone, Copy)]
@@ -25,6 +30,7 @@ impl DandrumEngine {
         Self {
             sample_rate: 44_100.0,
             voices: [Voice::default(); MAX_VOICES],
+            graph_processor: None,
         }
     }
 
@@ -33,7 +39,17 @@ impl DandrumEngine {
         self.voices = [Voice::default(); MAX_VOICES];
     }
 
+    pub fn load_patch(&mut self, patch_doc: &patch::PatchDocument) {
+        let graph = Graph::from_patch_declarations(patch_doc);
+        self.graph_processor = Some(RealtimeGraphProcessor::new(graph, self.sample_rate));
+    }
+
     pub fn note_on(&mut self, note: u8, velocity: u8) {
+        if let Some(gp) = &mut self.graph_processor {
+            gp.note_on(note, velocity);
+            return;
+        }
+
         let voice_index = self
             .voices
             .iter()
@@ -50,6 +66,11 @@ impl DandrumEngine {
     }
 
     pub fn note_off(&mut self, note: u8) {
+        if let Some(gp) = &mut self.graph_processor {
+            gp.note_off(note);
+            return;
+        }
+
         for voice in &mut self.voices {
             if voice.active && voice.note == note {
                 voice.sample_index = voice.sample_index.max((self.sample_rate * 0.85) as usize);
@@ -58,6 +79,10 @@ impl DandrumEngine {
     }
 
     pub fn render(&mut self, left: &mut [f32], right: &mut [f32]) -> usize {
+        if let Some(gp) = &mut self.graph_processor {
+            return gp.render(left, right);
+        }
+
         let num_samples = left.len().min(right.len());
         let total_samples = (self.sample_rate * SECONDS) as usize;
 
@@ -105,6 +130,9 @@ impl DandrumEngine {
     }
 
     pub fn is_finished(&self) -> bool {
+        if let Some(gp) = &self.graph_processor {
+            return gp.is_finished();
+        }
         self.voices.iter().all(|voice| !voice.active)
     }
 }

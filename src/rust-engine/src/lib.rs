@@ -31,6 +31,37 @@ pub unsafe extern "C" fn dandrum_engine_destroy(engine: *mut DandrumEngine) {
 }
 
 #[unsafe(no_mangle)]
+pub unsafe extern "C" fn dandrum_engine_load_patch(
+    engine: *mut DandrumEngine,
+    path: *const std::ffi::c_char,
+) -> bool {
+    let Some(engine) = (unsafe { engine.as_mut() }) else {
+        return false;
+    };
+
+    let c_str = match unsafe { std::ffi::CStr::from_ptr(path) }.to_str() {
+        Ok(s) => s,
+        Err(_) => return false,
+    };
+
+    let patch_doc = match crate::patch::load_patch_file(std::path::Path::new(c_str)) {
+        Ok(doc) => match crate::patch::validate_patch_schema(&doc) {
+            Ok(_) => doc,
+            Err(_) => return false,
+        },
+        Err(_) => return false,
+    };
+
+    let graph = crate::graph::Graph::from_patch_declarations(&patch_doc);
+    if graph.validate().is_err() {
+        return false;
+    }
+
+    engine.load_patch(&patch_doc);
+    true
+}
+
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn dandrum_engine_prepare(engine: *mut DandrumEngine, sample_rate: f32) {
     let Some(engine) = (unsafe { engine.as_mut() }) else {
         return;

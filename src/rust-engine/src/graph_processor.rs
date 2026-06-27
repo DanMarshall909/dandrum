@@ -230,130 +230,216 @@ pub fn render_offline(
     for block in scheduler {
         let frames = block.frame_count() as usize;
 
-        // Collect external events for this block
         let external_events: Vec<ScriptEvent> = block
             .input_events()
             .iter()
             .map(|e| e.event().clone())
             .collect();
 
-        // Per-block module outputs (cleared each block)
-        let mut all_outputs: HashMap<usize, ModuleOutputs> = HashMap::new();
-
-        // Pre-populate midi_input output if present
-        if let Some(idx) = midi_idx {
-            let outputs = ModuleOutputs {
-                audio: HashMap::new(),
-                control: HashMap::new(),
-                events: external_events,
-            };
-            all_outputs.insert(idx, outputs);
-        }
-
-        for &module_idx in &topo_order {
-            let module = &graph.modules()[module_idx];
-            let module_type = module.module_type();
-
-            // midi_input output was already pre-populated above
-            if module_type == "midi_input" {
-                continue;
-            }
-
-            let events_in = gather_event_inputs(module_idx, module, &routing, &all_outputs);
-
-            let outputs = match module_type {
-                "oscillator" => {
-                    process_oscillator(
-                        &mut states[module_idx],
-                        &events_in,
-                        frames,
-                    )
-                }
-                "adsr" => {
-                    process_adsr(
-                        &mut states[module_idx],
-                        &events_in,
-                        block.start_frame(),
-                        frames,
-                    )
-                }
-                "gain" => {
-                    let audio_in = sum_audio_input(
-                        module_idx,
-                        builtin_ports::AUDIO_IN,
-                        &routing,
-                        &all_outputs,
-                        frames,
-                    );
-                    let gain_in = sum_control_input(
-                        module_idx,
-                        builtin_ports::GAIN,
-                        &routing,
-                        &all_outputs,
-                        frames,
-                    );
-                    process_vca(audio_in, gain_in)
-                }
-                "audio_output" => {
-                    let left = sum_audio_input(
-                        module_idx,
-                        builtin_ports::LEFT,
-                        &routing,
-                        &all_outputs,
-                        frames,
-                    );
-                    let right = sum_audio_input(
-                        module_idx,
-                        builtin_ports::RIGHT,
-                        &routing,
-                        &all_outputs,
-                        frames,
-                    );
-                    ModuleOutputs {
-                        audio: {
-                            let mut m = HashMap::new();
-                            m.insert(builtin_ports::LEFT.to_string(), left);
-                            m.insert(builtin_ports::RIGHT.to_string(), right);
-                            m
-                        },
-                        control: HashMap::new(),
-                        events: Vec::new(),
-                    }
-                }
-                "audio_delay" => {
-                    let audio_in = sum_audio_input(
-                        module_idx,
-                        builtin_ports::AUDIO_IN,
-                        &routing,
-                        &all_outputs,
-                        frames,
-                    );
-                    process_audio_delay(audio_in)
-                }
-                other => panic!("unknown module type: {other}"),
-            };
-
-            all_outputs.insert(module_idx, outputs);
-        }
-
-        // Accumulate audio_output module's contribution
-        if let Some(idx) = out_idx {
-            if let Some(outputs) = all_outputs.get(&idx) {
-                if let Some(left) = outputs.audio.get(builtin_ports::LEFT) {
-                    left_buf.extend_from_slice(left);
-                } else {
-                    left_buf.extend(std::iter::repeat_n(0.0, frames));
-                }
-                if let Some(right) = outputs.audio.get(builtin_ports::RIGHT) {
-                    right_buf.extend_from_slice(right);
-                } else {
-                    right_buf.extend(std::iter::repeat_n(0.0, frames));
-                }
-            }
-        }
+        process_block(
+            graph,
+            &routing,
+            &topo_order,
+            &mut states,
+            midi_idx,
+            out_idx,
+            block.start_frame(),
+            frames,
+            external_events,
+            &mut left_buf,
+            &mut right_buf,
+        );
     }
 
     (left_buf, right_buf)
+}
+
+fn process_block(
+    graph: &Graph,
+    routing: &Routing,
+    topo_order: &[usize],
+    states: &mut [PerModuleState],
+    midi_idx: Option<usize>,
+    out_idx: Option<usize>,
+    block_start_frame: u64,
+    frames: usize,
+    incoming_events: Vec<ScriptEvent>,
+    left_out: &mut Vec<f32>,
+    right_out: &mut Vec<f32>,
+) {
+    let mut all_outputs: HashMap<usize, ModuleOutputs> = HashMap::new();
+
+    if let Some(idx) = midi_idx {
+        let outputs = ModuleOutputs {
+            audio: HashMap::new(),
+            control: HashMap::new(),
+            events: incoming_events,
+        };
+        all_outputs.insert(idx, outputs);
+    }
+
+    for &module_idx in topo_order {
+        let module = &graph.modules()[module_idx];
+        let module_type = module.module_type();
+
+        if module_type == "midi_input" {
+            continue;
+        }
+
+        let events_in = gather_event_inputs(module_idx, module, routing, &all_outputs);
+
+        let outputs = match module_type {
+            "oscillator" => process_oscillator(&mut states[module_idx], &events_in, frames),
+            "adsr" => process_adsr(&mut states[module_idx], &events_in, block_start_frame, frames),
+            "gain" => {
+                let audio_in = sum_audio_input(
+                    module_idx, builtin_ports::AUDIO_IN, routing, &all_outputs, frames,
+                );
+                let gain_in = sum_control_input(
+                    module_idx, builtin_ports::GAIN, routing, &all_outputs, frames,
+                );
+                process_vca(audio_in, gain_in)
+            }
+            "audio_output" => {
+                let left = sum_audio_input(
+                    module_idx, builtin_ports::LEFT, routing, &all_outputs, frames,
+                );
+                let right = sum_audio_input(
+                    module_idx, builtin_ports::RIGHT, routing, &all_outputs, frames,
+                );
+                let mut m = HashMap::new();
+                m.insert(builtin_ports::LEFT.to_string(), left);
+                m.insert(builtin_ports::RIGHT.to_string(), right);
+                ModuleOutputs {
+                    audio: m,
+                    control: HashMap::new(),
+                    events: Vec::new(),
+                }
+            }
+            "audio_delay" => {
+                let audio_in = sum_audio_input(
+                    module_idx, builtin_ports::AUDIO_IN, routing, &all_outputs, frames,
+                );
+                process_audio_delay(audio_in)
+            }
+            other => panic!("unknown module type: {other}"),
+        };
+
+        all_outputs.insert(module_idx, outputs);
+    }
+
+    if let Some(idx) = out_idx {
+        if let Some(outputs) = all_outputs.get(&idx) {
+            if let Some(left) = outputs.audio.get(builtin_ports::LEFT) {
+                left_out.extend_from_slice(left);
+            } else {
+                left_out.extend(std::iter::repeat_n(0.0, frames));
+            }
+            if let Some(right) = outputs.audio.get(builtin_ports::RIGHT) {
+                right_out.extend_from_slice(right);
+            } else {
+                right_out.extend(std::iter::repeat_n(0.0, frames));
+            }
+        }
+    }
+}
+
+pub struct RealtimeGraphProcessor {
+    graph: Graph,
+    routing: Routing,
+    topo_order: Vec<usize>,
+    states: Vec<PerModuleState>,
+    midi_idx: Option<usize>,
+    out_idx: Option<usize>,
+    current_frame: u64,
+    pending_events: Vec<ScriptEvent>,
+}
+
+impl RealtimeGraphProcessor {
+    pub fn new(graph: Graph, sample_rate: f32) -> Self {
+        let routing = build_routing(&graph);
+        let topo_order = topological_sort(&graph);
+        let midi_idx = find_midi_input(&graph);
+        let out_idx = find_audio_output(&graph);
+        let states: Vec<PerModuleState> = graph
+            .modules()
+            .iter()
+            .map(|m| PerModuleState::new(m, sample_rate))
+            .collect();
+
+        Self {
+            graph,
+            routing,
+            topo_order,
+            states,
+            midi_idx,
+            out_idx,
+            current_frame: 0,
+            pending_events: Vec::new(),
+        }
+    }
+
+    pub fn note_on(&mut self, _note: u8, _velocity: u8) {
+        self.pending_events.push(ScriptEvent::NoteOn {
+            note: _note,
+            velocity: _velocity,
+        });
+    }
+
+    pub fn note_off(&mut self, _note: u8) {
+        self.pending_events.push(ScriptEvent::NoteOff { note: _note });
+    }
+
+    pub fn render(&mut self, left: &mut [f32], right: &mut [f32]) -> usize {
+        let frames = left.len().min(right.len());
+        let block_start = self.current_frame;
+        self.current_frame += frames as u64;
+
+        let events = std::mem::take(&mut self.pending_events);
+
+        let mut left_buf = Vec::new();
+        let mut right_buf = Vec::new();
+
+        process_block(
+            &self.graph,
+            &self.routing,
+            &self.topo_order,
+            &mut self.states,
+            self.midi_idx,
+            self.out_idx,
+            block_start,
+            frames,
+            events,
+            &mut left_buf,
+            &mut right_buf,
+        );
+
+        let actual = left_buf.len().min(right_buf.len()).min(frames);
+        for i in 0..actual {
+            left[i] = left_buf[i];
+            right[i] = right_buf[i];
+        }
+        for i in actual..frames {
+            left[i] = 0.0;
+            right[i] = 0.0;
+        }
+
+        frames
+    }
+
+    pub fn is_finished(&self) -> bool {
+        if !self.pending_events.is_empty() {
+            return false;
+        }
+        for state in &self.states {
+            if let PerModuleState::Adsr { level, gate_active, .. } = state {
+                if *gate_active || *level > 0.001 {
+                    return false;
+                }
+            }
+        }
+        true
+    }
 }
 
 fn process_oscillator(

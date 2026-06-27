@@ -19,6 +19,12 @@ void RustEngineSource::prepareToPlay (int /*samplesPerBlockExpected*/, double ne
 
 void RustEngineSource::releaseResources() {}
 
+bool RustEngineSource::loadPatch (const juce::String& yamlPath)
+{
+    const juce::ScopedLock lock (engineLock);
+    return dandrum_engine_load_patch (engine, yamlPath.toRawUTF8());
+}
+
 void RustEngineSource::getNextAudioBlock (const juce::AudioSourceChannelInfo& bufferToFill)
 {
     auto* buffer = bufferToFill.buffer;

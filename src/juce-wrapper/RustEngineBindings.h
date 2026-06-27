@@ -8,6 +8,7 @@ struct DandrumEngine;
 
 DandrumEngine* dandrum_engine_create();
 void dandrum_engine_destroy (DandrumEngine* engine);
+bool dandrum_engine_load_patch (DandrumEngine* engine, const char* path);
 void dandrum_engine_prepare (DandrumEngine* engine, float sampleRate);
 void dandrum_engine_note_on (DandrumEngine* engine, unsigned char note, unsigned char velocity);
 void dandrum_engine_note_off (DandrumEngine* engine, unsigned char note);

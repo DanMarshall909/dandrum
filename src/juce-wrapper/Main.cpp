@@ -54,6 +54,18 @@ int main (int argc, char* argv[])
     player.setSource (&engineSource);
     deviceManager.addAudioCallback (&player);
 
+    const auto patchArgIndex = args.indexOf ("--patch");
+    if (patchArgIndex >= 0 && patchArgIndex + 1 < args.size())
+    {
+        const auto patchPath = args[patchArgIndex + 1];
+        if (! engineSource.loadPatch (patchPath))
+        {
+            std::cerr << "Failed to load patch: " << patchPath << '\n';
+            return 1;
+        }
+        std::cout << "Loaded patch: " << patchPath << '\n';
+    }
+
     const auto exitCode = [&]() -> int {
         const auto testMidiNoteArgIndex = args.indexOf ("--test-midi-note");
         if (testMidiNoteArgIndex >= 0 && testMidiNoteArgIndex + 1 < args.size())
