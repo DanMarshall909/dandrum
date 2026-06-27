@@ -19,3 +19,20 @@ $HOME/.local/bin/cmake --build build
 ```
 
 This uses JUCE as the wrapper/host side. The current binary links a Rust static library from `src/rust-engine/` and calls it from the JUCE audio callback.
+
+## MIDI Input
+
+JUCE owns MIDI device IO and forwards note events into the Rust engine.
+
+```bash
+./build/dandrum-beep_artefacts/dandrum-beep --list-midi-inputs
+./build/dandrum-beep_artefacts/dandrum-beep --midi-input 0
+```
+
+The default no-argument command plays a Rust-generated test note and exits. MIDI mode stays open until Ctrl+C.
+
+For test harnesses without a physical MIDI device, inject a synthetic JUCE MIDI note through the same MIDI handler path:
+
+```bash
+./build/dandrum-beep_artefacts/dandrum-beep --test-midi-note 60
+```

@@ -31,7 +31,10 @@ juce_add_console_app(dandrum-beep
 
 target_sources(dandrum-beep
     PRIVATE
-        src/juce-wrapper/Main.cpp)
+        src/juce-wrapper/Cli.cpp
+        src/juce-wrapper/Main.cpp
+        src/juce-wrapper/MidiToRustEngine.cpp
+        src/juce-wrapper/RustEngineSource.cpp)
 
 target_compile_definitions(dandrum-beep
     PRIVATE

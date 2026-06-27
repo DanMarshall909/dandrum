@@ -3,23 +3,29 @@ use std::f32::consts::TAU;
 #[repr(C)]
 pub struct DandrumEngine {
     sample_rate: f32,
+    voices: [Voice; MAX_VOICES],
+}
+
+#[derive(Clone, Copy)]
+struct Voice {
+    active: bool,
+    note: u8,
+    velocity: f32,
     sample_index: usize,
-    total_samples: usize,
     phases: [f32; 5],
 }
 
+const MAX_VOICES: usize = 16;
 const SECONDS: f32 = 1.25;
 const GAIN: f32 = 0.16;
-const FREQUENCIES: [f32; 5] = [110.0, 220.0, 277.18, 329.63, 440.0];
+const RATIOS: [f32; 5] = [0.5, 1.0, 1.259_921, 1.498_307, 2.0];
 const PANS: [f32; 5] = [-0.65, -0.35, 0.0, 0.35, 0.65];
 
 #[unsafe(no_mangle)]
 pub extern "C" fn dandrum_engine_create() -> *mut DandrumEngine {
     Box::into_raw(Box::new(DandrumEngine {
         sample_rate: 44_100.0,
-        sample_index: 0,
-        total_samples: (44_100.0 * SECONDS) as usize,
-        phases: [0.0; 5],
+        voices: [Voice::default(); MAX_VOICES],
     }))
 }
 
@@ -37,9 +43,45 @@ pub unsafe extern "C" fn dandrum_engine_prepare(engine: *mut DandrumEngine, samp
     };
 
     engine.sample_rate = sample_rate.max(1.0);
-    engine.sample_index = 0;
-    engine.total_samples = (engine.sample_rate * SECONDS) as usize;
-    engine.phases = [0.0; 5];
+    engine.voices = [Voice::default(); MAX_VOICES];
+}
+
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn dandrum_engine_note_on(
+    engine: *mut DandrumEngine,
+    note: u8,
+    velocity: u8,
+) {
+    let Some(engine) = (unsafe { engine.as_mut() }) else {
+        return;
+    };
+
+    let voice_index = engine
+        .voices
+        .iter()
+        .position(|voice| !voice.active)
+        .unwrap_or_else(|| oldest_voice_index(&engine.voices));
+
+    engine.voices[voice_index] = Voice {
+        active: true,
+        note,
+        velocity: (velocity as f32 / 127.0).clamp(0.0, 1.0),
+        sample_index: 0,
+        phases: [0.0; 5],
+    };
+}
+
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn dandrum_engine_note_off(engine: *mut DandrumEngine, note: u8) {
+    let Some(engine) = (unsafe { engine.as_mut() }) else {
+        return;
+    };
+
+    for voice in &mut engine.voices {
+        if voice.active && voice.note == note {
+            voice.sample_index = voice.sample_index.max((engine.sample_rate * 0.85) as usize);
+        }
+    }
 }
 
 #[unsafe(no_mangle)]
@@ -59,40 +101,48 @@ pub unsafe extern "C" fn dandrum_engine_render(
 
     let left = unsafe { std::slice::from_raw_parts_mut(left, num_samples) };
     let right = unsafe { std::slice::from_raw_parts_mut(right, num_samples) };
-    let mut rendered = 0;
+    let total_samples = (engine.sample_rate * SECONDS) as usize;
 
     for sample in 0..num_samples {
-        if engine.sample_index >= engine.total_samples {
-            break;
-        }
-
-        let env = envelope(engine.sample_index as f32 / engine.sample_rate, SECONDS);
-        let vibrato = (TAU * 5.1 * engine.sample_index as f32 / engine.sample_rate).sin() * 0.004;
-
         let mut l = 0.0;
         let mut r = 0.0;
 
-        for voice in 0..FREQUENCIES.len() {
-            let phase = engine.phases[voice];
-            let saw = (phase / TAU) * 2.0 - 1.0;
-            let sine = phase.sin();
-            let tone = soft_clip(saw * 0.55 + sine * 0.45) * env * GAIN;
-            let (left_gain, right_gain) = equal_power_pan(PANS[voice]);
+        for voice in &mut engine.voices {
+            if !voice.active {
+                continue;
+            }
 
-            l += tone * left_gain;
-            r += tone * right_gain;
+            if voice.sample_index >= total_samples {
+                voice.active = false;
+                continue;
+            }
 
-            let hz = FREQUENCIES[voice] * (1.0 + vibrato);
-            engine.phases[voice] = wrap_phase(phase + TAU * hz / engine.sample_rate);
+            let env = envelope(voice.sample_index as f32 / engine.sample_rate, SECONDS);
+            let vibrato = (TAU * 5.1 * voice.sample_index as f32 / engine.sample_rate).sin() * 0.004;
+            let root_hz = midi_note_to_hz(voice.note);
+
+            for partial in 0..RATIOS.len() {
+                let phase = voice.phases[partial];
+                let saw = (phase / TAU) * 2.0 - 1.0;
+                let sine = phase.sin();
+                let tone = soft_clip(saw * 0.55 + sine * 0.45) * env * GAIN * voice.velocity;
+                let (left_gain, right_gain) = equal_power_pan(PANS[partial]);
+
+                l += tone * left_gain;
+                r += tone * right_gain;
+
+                let hz = root_hz * RATIOS[partial] * (1.0 + vibrato);
+                voice.phases[partial] = wrap_phase(phase + TAU * hz / engine.sample_rate);
+            }
+
+            voice.sample_index += 1;
         }
 
         left[sample] += soft_clip(l);
         right[sample] += soft_clip(r);
-        engine.sample_index += 1;
-        rendered += 1;
     }
 
-    rendered
+    num_samples
 }
 
 #[unsafe(no_mangle)]
@@ -101,7 +151,32 @@ pub unsafe extern "C" fn dandrum_engine_is_finished(engine: *const DandrumEngine
         return true;
     };
 
-    engine.sample_index >= engine.total_samples
+    engine.voices.iter().all(|voice| !voice.active)
+}
+
+impl Default for Voice {
+    fn default() -> Self {
+        Self {
+            active: false,
+            note: 60,
+            velocity: 0.0,
+            sample_index: 0,
+            phases: [0.0; 5],
+        }
+    }
+}
+
+fn oldest_voice_index(voices: &[Voice; MAX_VOICES]) -> usize {
+    voices
+        .iter()
+        .enumerate()
+        .max_by_key(|(_, voice)| voice.sample_index)
+        .map(|(index, _)| index)
+        .unwrap_or(0)
+}
+
+fn midi_note_to_hz(note: u8) -> f32 {
+    440.0 * 2.0_f32.powf((note as f32 - 69.0) / 12.0)
 }
 
 fn envelope(time: f32, length: f32) -> f32 {

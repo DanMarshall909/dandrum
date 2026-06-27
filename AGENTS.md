@@ -3,13 +3,19 @@
 ## Project Shape
 - This is currently a tiny C++20 CMake/JUCE wrapper plus Rust static library, not yet the planned headless engine.
 - Root `CMakeLists.txt` builds Rust crate `src/rust-engine/` and links it into one JUCE console target, `dandrum-beep`, from `src/juce-wrapper/Main.cpp`.
+- JUCE currently owns audio/MIDI device IO; Rust owns DSP/event state behind a C FFI boundary.
 - `third_party/JUCE/` is vendored JUCE; do not edit it unless the task is explicitly about vendored JUCE changes.
 
 ## Build And Run
 - Configure/build/run with the README commands: `$HOME/.local/bin/cmake -S . -B build`, `$HOME/.local/bin/cmake --build build`, `./build/dandrum-beep_artefacts/dandrum-beep`.
+- MIDI input commands: `./build/dandrum-beep_artefacts/dandrum-beep --list-midi-inputs`, `./build/dandrum-beep_artefacts/dandrum-beep --midi-input 0`.
+- Synthetic MIDI test command: `./build/dandrum-beep_artefacts/dandrum-beep --test-midi-note 60`.
 - CMake expects Cargo at `$HOME/.cargo/bin/cargo`.
 - JUCE configure needs native Linux dev packages from `README.md`; without them CMake can fail while building `juceaide` on missing headers such as `X11/Xlib.h`.
 - There are no configured lint, typecheck, unit test, or CI commands yet.
+
+## Current Technical Debt
+- MIDI callbacks and audio callbacks share the Rust engine through a simple JUCE `CriticalSection`. This is acceptable for the proof, but should become a lock-free event queue before serious realtime work.
 
 ## OpenSpec Workflow
 - Active repo-local change: `headless-modular-instrument-engine` under `openspec/changes/`; it is spec-driven and has implementation tasks still unchecked.

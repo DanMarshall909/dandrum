@@ -1,66 +1,43 @@
-#include <juce_audio_basics/juce_audio_basics.h>
 #include <juce_audio_devices/juce_audio_devices.h>
 
+#include "Cli.h"
+#include "MidiToRustEngine.h"
+#include "RustEngineSource.h"
+
+#include <atomic>
+#include <csignal>
 #include <iostream>
-
-extern "C"
-{
-struct DandrumEngine;
-
-DandrumEngine* dandrum_engine_create();
-void dandrum_engine_destroy (DandrumEngine* engine);
-void dandrum_engine_prepare (DandrumEngine* engine, float sampleRate);
-std::size_t dandrum_engine_render (DandrumEngine* engine, float* left, float* right, std::size_t numSamples);
-bool dandrum_engine_is_finished (const DandrumEngine* engine);
-}
+#include <memory>
 
 namespace
 {
-class BeepSource final : public juce::AudioSource
+std::atomic<bool> shouldQuit { false };
+
+void handleSignal (int)
 {
-public:
-    BeepSource()
-        : engine (dandrum_engine_create())
-    {
-    }
+    shouldQuit.store (true);
+}
 
-    ~BeepSource() override
-    {
-        dandrum_engine_destroy (engine);
-    }
-
-    void prepareToPlay (int /*samplesPerBlockExpected*/, double newSampleRate) override
-    {
-        dandrum_engine_prepare (engine, static_cast<float> (newSampleRate));
-    }
-
-    void releaseResources() override {}
-
-    void getNextAudioBlock (const juce::AudioSourceChannelInfo& bufferToFill) override
-    {
-        auto* buffer = bufferToFill.buffer;
-        buffer->clear (bufferToFill.startSample, bufferToFill.numSamples);
-
-        if (engine == nullptr || buffer->getNumChannels() <= 0)
-            return;
-
-        auto* left = buffer->getWritePointer (0, bufferToFill.startSample);
-        auto* right = buffer->getNumChannels() > 1 ? buffer->getWritePointer (1, bufferToFill.startSample) : left;
-        dandrum_engine_render (engine, left, right, static_cast<std::size_t> (bufferToFill.numSamples));
-    }
-
-    bool hasFinished() const
-    {
-        return dandrum_engine_is_finished (engine);
-    }
-
-private:
-    DandrumEngine* engine = nullptr;
-};
+void waitForEngineToFinish (const RustEngineSource& engineSource)
+{
+    while (! engineSource.hasFinished())
+        juce::Thread::sleep (10);
+}
 } // namespace
 
-int main()
+int main (int argc, char* argv[])
 {
+    std::signal (SIGINT, handleSignal);
+    std::signal (SIGTERM, handleSignal);
+
+    const juce::StringArray args (argv + 1, argc - 1);
+
+    if (args.contains ("--list-midi-inputs"))
+    {
+        printMidiInputs();
+        return 0;
+    }
+
     juce::AudioDeviceManager deviceManager;
     const auto error = deviceManager.initialiseWithDefaultDevices (0, 2);
 
@@ -70,18 +47,63 @@ int main()
         return 1;
     }
 
-    BeepSource beep;
+    printAudioDeviceInfo (deviceManager);
+
+    RustEngineSource engineSource;
     juce::AudioSourcePlayer player;
-    player.setSource (&beep);
+    player.setSource (&engineSource);
     deviceManager.addAudioCallback (&player);
 
-    std::cout << "Rust engine sound.\n";
+    const auto exitCode = [&]() -> int {
+        const auto testMidiNoteArgIndex = args.indexOf ("--test-midi-note");
+        if (testMidiNoteArgIndex >= 0 && testMidiNoteArgIndex + 1 < args.size())
+        {
+            const auto note = juce::jlimit (0, 127, args[testMidiNoteArgIndex + 1].getIntValue());
+            MidiToRustEngine syntheticMidi (engineSource);
 
-    while (! beep.hasFinished())
-        juce::Thread::sleep (10);
+            std::cout << "Synthetic MIDI test note: " << note << '\n';
+            syntheticMidi.handleIncomingMidiMessage (nullptr, juce::MidiMessage::noteOn (1, note, static_cast<juce::uint8> (110)));
+            juce::Thread::sleep (180);
+            syntheticMidi.handleIncomingMidiMessage (nullptr, juce::MidiMessage::noteOff (1, note));
+            waitForEngineToFinish (engineSource);
+            return 0;
+        }
+
+        const auto midiArgIndex = args.indexOf ("--midi-input");
+        if (midiArgIndex >= 0 && midiArgIndex + 1 < args.size())
+        {
+            const auto devices = juce::MidiInput::getAvailableDevices();
+            const auto requestedIndex = args[midiArgIndex + 1].getIntValue();
+
+            if (requestedIndex < 0 || requestedIndex >= devices.size())
+            {
+                std::cerr << "Invalid MIDI input index: " << requestedIndex << "\n";
+                printMidiInputs();
+                return 1;
+            }
+
+            MidiToRustEngine midiCallback (engineSource);
+            const auto midiIdentifier = devices[requestedIndex].identifier;
+            deviceManager.setMidiInputDeviceEnabled (midiIdentifier, true);
+            deviceManager.addMidiInputDeviceCallback (midiIdentifier, &midiCallback);
+
+            std::cout << "Opened MIDI input: " << devices[requestedIndex].name << '\n';
+            std::cout << "Play MIDI notes. Press Ctrl+C to quit.\n";
+
+            while (! shouldQuit.load())
+                juce::Thread::sleep (50);
+
+            deviceManager.removeMidiInputDeviceCallback (midiIdentifier, &midiCallback);
+            return 0;
+        }
+
+        std::cout << "Rust engine test note. Use --test-midi-note <note>, --list-midi-inputs, or --midi-input <index>.\n";
+        engineSource.noteOn (60, 110);
+        waitForEngineToFinish (engineSource);
+        return 0;
+    }();
 
     deviceManager.removeAudioCallback (&player);
     player.setSource (nullptr);
-
-    return 0;
+    return exitCode;
 }
