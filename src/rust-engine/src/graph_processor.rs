@@ -289,8 +289,36 @@ fn process_block(
         let events_in = gather_event_inputs(module_idx, module, routing, &all_outputs);
 
         let outputs = match module_type {
-            "oscillator" => process_oscillator(&mut states[module_idx], &events_in, frames),
-            "adsr" => process_adsr(&mut states[module_idx], &events_in, block_start_frame, frames),
+            "oscillator" => {
+                let pitch_in = sum_control_input(
+                    module_idx, builtin_ports::PITCH, routing, &all_outputs, frames,
+                );
+                process_oscillator(&mut states[module_idx], &events_in, &pitch_in, frames)
+            }
+            "adsr" => {
+                let attack_in = sum_control_input(
+                    module_idx, builtin_ports::ATTACK, routing, &all_outputs, frames,
+                );
+                let decay_in = sum_control_input(
+                    module_idx, builtin_ports::DECAY, routing, &all_outputs, frames,
+                );
+                let sustain_in = sum_control_input(
+                    module_idx, builtin_ports::SUSTAIN, routing, &all_outputs, frames,
+                );
+                let release_in = sum_control_input(
+                    module_idx, builtin_ports::RELEASE, routing, &all_outputs, frames,
+                );
+                process_adsr(
+                    &mut states[module_idx],
+                    &events_in,
+                    &attack_in,
+                    &decay_in,
+                    &sustain_in,
+                    &release_in,
+                    block_start_frame,
+                    frames,
+                )
+            }
             "gain" => {
                 let audio_in = sum_audio_input(
                     module_idx, builtin_ports::AUDIO_IN, routing, &all_outputs, frames,
@@ -445,6 +473,7 @@ impl RealtimeGraphProcessor {
 fn process_oscillator(
     state: &mut PerModuleState,
     events_in: &[ScriptEvent],
+    pitch_in: &[f32],
     frames: usize,
 ) -> ModuleOutputs {
     let (phase, current_note, sample_rate) = match state {
@@ -462,11 +491,13 @@ fn process_oscillator(
         }
     }
 
-    let freq = current_note.map(|n| midi_note_to_hz(n)).unwrap_or(220.0);
-    let phase_inc = freq / sample_rate;
+    let base_hz = current_note.map(|n| midi_note_to_hz(n)).unwrap_or(220.0);
 
     let mut audio = Vec::with_capacity(frames);
-    for _ in 0..frames {
+    for i in 0..frames {
+        let semitone_offset = pitch_in.get(i).copied().unwrap_or(0.0);
+        let freq = base_hz * (2.0f32).powf(semitone_offset / 12.0);
+        let phase_inc = freq / sample_rate;
         audio.push(*phase * 2.0 - 1.0);
         *phase += phase_inc;
         if *phase >= 1.0 {
@@ -485,9 +516,21 @@ fn process_oscillator(
     outputs
 }
 
+fn lerp(a: f32, b: f32, t: f32) -> f32 {
+    a + (b - a) * t.clamp(0.0, 1.0)
+}
+
+fn has_signal(buf: &[f32]) -> bool {
+    buf.iter().any(|&v| v != 0.0)
+}
+
 fn process_adsr(
     state: &mut PerModuleState,
     events_in: &[ScriptEvent],
+    attack_in: &[f32],
+    decay_in: &[f32],
+    sustain_in: &[f32],
+    release_in: &[f32],
     block_start_frame: u64,
     frames: usize,
 ) -> ModuleOutputs {
@@ -501,10 +544,10 @@ fn process_adsr(
         _ => unreachable!(),
     };
 
-    let attack_frames = (sample_rate * 0.005) as u64;  // 5ms
-    let decay_frames = (sample_rate * 0.03) as u64;    // 30ms
-    let sustain_level = 0.7;
-    let release_frames = (sample_rate * 0.2) as u64;    // 200ms
+    let has_attack = has_signal(attack_in);
+    let has_decay = has_signal(decay_in);
+    let has_sustain = has_signal(sustain_in);
+    let has_release = has_signal(release_in);
 
     // Process block-level events (not sample-accurate yet)
     for event in events_in {
@@ -525,6 +568,31 @@ fn process_adsr(
     for i in 0..frames {
         let absolute_frame = block_start_frame + i as u64;
 
+        let attack_ms = if has_attack {
+            lerp(2.0, 100.0, attack_in[i].clamp(0.0, 1.0))
+        } else {
+            5.0
+        };
+        let decay_ms = if has_decay {
+            lerp(10.0, 1000.0, decay_in[i].clamp(0.0, 1.0))
+        } else {
+            30.0
+        };
+        let sustain = if has_sustain {
+            sustain_in[i].clamp(0.0, 1.0)
+        } else {
+            0.7
+        };
+        let release_ms = if has_release {
+            lerp(10.0, 3000.0, release_in[i].clamp(0.0, 1.0))
+        } else {
+            200.0
+        };
+
+        let attack_frames = (sample_rate * attack_ms / 1000.0) as u64;
+        let decay_frames = (sample_rate * decay_ms / 1000.0) as u64;
+        let release_frames = (sample_rate * release_ms / 1000.0) as u64;
+
         if *gate_active {
             let lifetime = absolute_frame - *release_start_frame;
             if lifetime < attack_frames {
@@ -532,9 +600,9 @@ fn process_adsr(
             } else if lifetime < attack_frames + decay_frames {
                 let decay_progress =
                     (lifetime - attack_frames) as f32 / (decay_frames as f32);
-                adsr_value.push(1.0 - (1.0 - sustain_level) * decay_progress);
+                adsr_value.push(1.0 - (1.0 - sustain) * decay_progress);
             } else {
-                adsr_value.push(sustain_level);
+                adsr_value.push(sustain);
             }
         } else {
             let release_progress =

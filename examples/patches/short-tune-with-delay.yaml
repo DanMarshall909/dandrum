@@ -1,0 +1,116 @@
+metadata:
+  name: Short Tune with Delay
+  version: "0.1"
+  author: "Dandrum"
+render:
+  sample_rate_hz: 48000
+  block_size_frames: 128
+  duration_frames: 48000
+modules:
+  # MIDI input generates note events
+  - id: midi_input
+    type: midi_input
+    outputs:
+      - name: notes
+        signal_type: event
+
+  # Melodic oscillator that plays notes
+  - id: osc
+    type: oscillator
+    inputs:
+      - name: gate
+        signal_type: event
+      - name: pitch
+        signal_type: control
+    outputs:
+      - name: audio
+        signal_type: audio
+
+  # Envelope for note attack/decay/sustain/release
+  - id: env
+    type: adsr
+    inputs:
+      - name: gate
+        signal_type: event
+      - name: attack
+        signal_type: control
+      - name: decay
+        signal_type: control
+      - name: sustain
+        signal_type: control
+      - name: release
+        signal_type: control
+    outputs:
+      - name: value
+        signal_type: control
+
+  # LFO for subtle modulation
+  - id: lfo
+    type: lfo
+    inputs:
+      - name: rate
+        signal_type: control
+    outputs:
+      - name: value
+        signal_type: control
+
+  # Control mixer combines envelope and LFO
+  - id: control_mix
+    type: control_mixer
+    inputs:
+      - name: inputs
+        signal_type: control
+    outputs:
+      - name: sum
+        signal_type: control
+
+  # VCA controls volume based on combined control signals
+  - id: vca
+    type: gain
+    inputs:
+      - name: audio_in
+        signal_type: audio
+      - name: gain
+        signal_type: control
+    outputs:
+      - name: audio_out
+        signal_type: audio
+
+  # Delay effect creates echo-like repeats
+  - id: delay
+    type: block_delay
+    inputs:
+      - name: audio_in
+        signal_type: audio
+    outputs:
+      - name: audio_out
+        signal_type: audio
+
+  # Audio output
+  - id: out
+    type: audio_output
+    inputs:
+      - name: left
+        signal_type: audio
+connections:
+  # Route MIDI note events to osc and env gates
+  - from: midi_input.notes
+    to: osc.gate
+  - from: midi_input.notes
+    to: env.gate
+
+  # Route modulation sources to control mixer
+  - from: env.value
+    to: control_mix.inputs
+  - from: lfo.value
+    to: control_mix.inputs
+
+  # Route mixed control signal to VCA
+  - from: control_mix.sum
+    to: vca.gain
+
+  # Route audio through delay for echo effect
+  - from: vca.audio_out
+    to: delay.audio_in
+  - from: delay.audio_out
+    to: out.left

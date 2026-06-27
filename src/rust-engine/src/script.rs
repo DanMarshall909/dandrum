@@ -21,6 +21,12 @@ pub struct ScriptModuleState {
     values: BTreeMap<String, ScriptValue>,
 }
 
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
+pub struct ScriptFeedbackScheduler {
+    current_block: BTreeMap<String, Vec<ScriptEvent>>,
+    next_block: BTreeMap<String, Vec<ScriptEvent>>,
+}
+
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum ScriptValue {
     Number(f32),
@@ -33,6 +39,30 @@ impl ScriptModuleState {
 
     pub fn insert(&mut self, key: impl Into<String>, value: ScriptValue) {
         self.values.insert(key.into(), value);
+    }
+}
+
+impl ScriptFeedbackScheduler {
+    pub fn queue_for_next_block(
+        &mut self,
+        destination: impl Into<String>,
+        events: Vec<ScriptEvent>,
+    ) {
+        self.next_block
+            .entry(destination.into())
+            .or_default()
+            .extend(events);
+    }
+
+    pub fn events_for_current_block(&self, destination: &str) -> &[ScriptEvent] {
+        self.current_block
+            .get(destination)
+            .map(Vec::as_slice)
+            .unwrap_or(&[])
+    }
+
+    pub fn advance_block(&mut self) {
+        self.current_block = std::mem::take(&mut self.next_block);
     }
 }
 
@@ -272,5 +302,30 @@ mod tests {
         assert_eq!(input.events(), &[ScriptEvent::NoteOff { note: 60 }]);
         assert_eq!(input.controls()["mod"], 0.25);
         assert_eq!(input.state().get("missing"), None);
+    }
+
+    #[test]
+    fn script_feedback_events_are_queued_for_a_future_block() {
+        let mut scheduler = ScriptFeedbackScheduler::default();
+
+        scheduler.queue_for_next_block(
+            "script.notes",
+            vec![ScriptEvent::NoteOn {
+                note: 72,
+                velocity: 110,
+            }],
+        );
+
+        assert_eq!(scheduler.events_for_current_block("script.notes"), &[]);
+
+        scheduler.advance_block();
+
+        assert_eq!(
+            scheduler.events_for_current_block("script.notes"),
+            &[ScriptEvent::NoteOn {
+                note: 72,
+                velocity: 110,
+            }]
+        );
     }
 }

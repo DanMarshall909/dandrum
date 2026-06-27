@@ -1,0 +1,58 @@
+metadata:
+  name: Minimal Tune
+  version: "0.1"
+render:
+  sample_rate_hz: 48000
+  block_size_frames: 128
+  duration_frames: 48000
+modules:
+  - id: osc
+    type: oscillator
+    inputs:
+      - name: gate
+        signal_type: event
+      - name: pitch
+        signal_type: control
+    outputs:
+      - name: audio
+        signal_type: audio
+  - id: env
+    type: adsr
+    inputs:
+      - name: gate
+        signal_type: event
+    outputs:
+      - name: value
+        signal_type: control
+  - id: vca
+    type: gain
+    inputs:
+      - name: audio_in
+        signal_type: audio
+      - name: gain
+        signal_type: control
+    outputs:
+      - name: audio_out
+        signal_type: audio
+  - id: delay
+    type: block_delay
+    inputs:
+      - name: audio_in
+        signal_type: audio
+    outputs:
+      - name: audio_out
+        signal_type: audio
+  - id: out
+    type: audio_output
+    inputs:
+      - name: left
+        signal_type: audio
+connections:
+  - from: osc.audio
+    to: vca.audio_in
+  - from: env.value
+    to: vca.gain
+  - from: vca.audio_out
+    to: delay.audio_in
+  - from: delay.audio_out
+    to: out.left

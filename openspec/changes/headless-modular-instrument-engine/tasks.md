@@ -47,27 +47,27 @@
 
 - [x] 7.1 Implement graph cycle detection with diagnostics that include the cycle path.
 - [x] 7.2 Implement audio feedback validation requiring an explicit audio delay boundary.
-- [ ] 7.3 Implement control feedback validation requiring a control delay, smoothing stage, or tick/block boundary.
-- [ ] 7.4 Implement event and script feedback scheduling to a future tick or block.
-- [ ] 7.5 Add tests for valid delayed feedback and invalid instantaneous audio/control feedback.
+- [x] 7.3 Implement control feedback validation requiring a control delay, smoothing stage, or tick/block boundary.
+- [x] 7.4 Implement event and script feedback scheduling to a future tick or block.
+- [x] 7.5 Add tests for valid delayed feedback and invalid instantaneous audio/control feedback.
 
 ## 8. Offline Rendering
 
-- [ ] 8.1 Implement the block scheduler used by offline rendering.
-- [ ] 8.2 Implement input event sequencing into the graph scheduler.
-- [ ] 8.3 Implement WAV file output for rendered audio.
-- [ ] 8.4 Add deterministic render tests using the same patch, assets, settings, and events twice.
-- [ ] 8.5 Add an end-to-end CLI acceptance test that renders a simple YAML patch to WAV.
+- [x] 8.1 Implement the block scheduler used by offline rendering.
+- [x] 8.2 Implement input event sequencing into the graph scheduler.
+- [x] 8.3 Implement WAV file output for rendered audio.
+- [x] 8.4 Add deterministic render tests using the same patch, assets, settings, and events twice.
+- [x] 8.5 Add an end-to-end CLI acceptance test that renders a simple YAML patch to WAV.
 
 ## 9. Documentation and Examples
 
-- [ ] 9.1 Add a minimal valid YAML patch example for event input to oscillator or sample player to VCA to output.
-- [ ] 9.2 Add a YAML patch example showing LFO/envelope VCA routing through a control mixer.
-- [ ] 9.3 Add a YAML patch example showing valid feedback through a delay boundary.
-- [ ] 9.4 Document invalid feedback and many-to-one routing diagnostics.
+- [x] 9.1 Add a minimal valid YAML patch example for event input to oscillator or sample player to VCA to output.
+- [x] 9.2 Add a YAML patch example showing LFO/envelope VCA routing through a control mixer.
+- [x] 9.3 Add a YAML patch example showing valid feedback through a delay boundary.
+- [x] 9.4 Document invalid feedback and many-to-one routing diagnostics.
 
 ## 10. Final Verification
 
-- [ ] 10.1 Run all unit and acceptance tests.
-- [ ] 10.2 Run OpenSpec validation for the change.
-- [ ] 10.3 Confirm all acceptance criteria are represented by tests or documented implementation evidence.
+- [x] 10.1 Run all unit and acceptance tests.
+- [x] 10.2 Run OpenSpec validation for the change.
+- [x] 10.3 Confirm all acceptance criteria are represented by tests or documented implementation evidence.

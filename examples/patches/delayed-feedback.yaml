@@ -1,0 +1,36 @@
+metadata:
+  name: Delayed Feedback
+  version: "0.1"
+render:
+  sample_rate_hz: 48000
+  block_size_frames: 128
+  duration_frames: 48000
+modules:
+  - id: gain
+    type: gain
+    inputs:
+      - name: audio_in
+        signal_type: audio
+    outputs:
+      - name: audio_out
+        signal_type: audio
+  - id: delay
+    type: audio_delay_one_sample
+    inputs:
+      - name: audio_in
+        signal_type: audio
+    outputs:
+      - name: audio_out
+        signal_type: audio
+  - id: out
+    type: audio_output
+    inputs:
+      - name: left
+        signal_type: audio
+connections:
+  - from: gain.audio_out
+    to: delay.audio_in
+  - from: delay.audio_out
+    to: gain.audio_in
+  - from: gain.audio_out
+    to: out.left

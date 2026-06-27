@@ -429,13 +429,28 @@ impl Graph {
             if let Some(path) =
                 self.find_cycle_from(module.id(), &mut visiting, &mut visited, &mut stack)
             {
-                if !self.cycle_has_feedback_boundary(&path, SignalType::Audio) {
+                let Some(signal_type) = self.cycle_signal_type(&path) else {
+                    return Some(path);
+                };
+
+                if signal_type == SignalType::Event {
+                    continue;
+                }
+
+                if !self.cycle_has_feedback_boundary(&path, signal_type) {
                     return Some(path);
                 }
             }
         }
 
         None
+    }
+
+    fn cycle_signal_type(&self, path: &[Cable]) -> Option<SignalType> {
+        path.iter().find_map(|cable| {
+            self.port(cable.source(), PortDirection::Output)
+                .map(Port::signal_type)
+        })
     }
 
     fn cycle_has_feedback_boundary(&self, path: &[Cable], signal_type: SignalType) -> bool {
@@ -445,6 +460,21 @@ impl Graph {
                 .find(|module| module.id() == cable.source().module_id())
                 .is_some_and(|module| module.feedback_boundaries().contains(&signal_type))
         })
+    }
+
+    fn port(&self, reference: &PortRef, direction: PortDirection) -> Option<&Port> {
+        let module = self
+            .modules
+            .iter()
+            .find(|module| module.id() == reference.module_id())?;
+        let ports = match direction {
+            PortDirection::Input => module.inputs(),
+            PortDirection::Output => module.outputs(),
+        };
+
+        ports
+            .iter()
+            .find(|port| port.name() == reference.port_name())
     }
 
     fn find_cycle_from(
@@ -1142,6 +1172,117 @@ connections:
         graph
             .validate()
             .expect("audio feedback through explicit audio delay should validate");
+    }
+
+    #[test]
+    fn validation_rejects_instantaneous_audio_feedback_cycle() {
+        let graph = Graph::new(
+            vec![
+                ModuleNode::new(ModuleId::new("left"), "gain")
+                    .with_input("audio_in", SignalType::Audio)
+                    .with_output("audio_out", SignalType::Audio),
+                ModuleNode::new(ModuleId::new("right"), "gain")
+                    .with_input("audio_in", SignalType::Audio)
+                    .with_output("audio_out", SignalType::Audio),
+            ],
+            vec![
+                Cable::new(port_ref("left", "audio_out"), port_ref("right", "audio_in")),
+                Cable::new(port_ref("right", "audio_out"), port_ref("left", "audio_in")),
+            ],
+        );
+
+        let error = graph
+            .validate()
+            .expect_err("instantaneous audio feedback should fail");
+
+        assert!(
+            error
+                .diagnostics()
+                .contains(&GraphDiagnostic::CycleDetected {
+                    path: vec![
+                        Cable::new(port_ref("left", "audio_out"), port_ref("right", "audio_in")),
+                        Cable::new(port_ref("right", "audio_out"), port_ref("left", "audio_in")),
+                    ],
+                })
+        );
+    }
+
+    #[test]
+    fn validation_accepts_control_feedback_cycle_with_explicit_control_delay_boundary() {
+        let graph = Graph::new(
+            vec![
+                ModuleNode::new(ModuleId::new("scale"), "control_scale")
+                    .with_input("value", SignalType::Control)
+                    .with_output("value", SignalType::Control),
+                ModuleNode::new(ModuleId::new("delay"), "control_delay")
+                    .with_input("value", SignalType::Control)
+                    .with_output("value", SignalType::Control)
+                    .with_feedback_boundary(SignalType::Control),
+            ],
+            vec![
+                Cable::new(port_ref("scale", "value"), port_ref("delay", "value")),
+                Cable::new(port_ref("delay", "value"), port_ref("scale", "value")),
+            ],
+        );
+
+        graph
+            .validate()
+            .expect("control feedback through explicit control delay should validate");
+    }
+
+    #[test]
+    fn validation_rejects_instantaneous_control_feedback_cycle() {
+        let graph = Graph::new(
+            vec![
+                ModuleNode::new(ModuleId::new("left"), "control_scale")
+                    .with_input("value", SignalType::Control)
+                    .with_output("value", SignalType::Control),
+                ModuleNode::new(ModuleId::new("right"), "control_scale")
+                    .with_input("value", SignalType::Control)
+                    .with_output("value", SignalType::Control),
+            ],
+            vec![
+                Cable::new(port_ref("left", "value"), port_ref("right", "value")),
+                Cable::new(port_ref("right", "value"), port_ref("left", "value")),
+            ],
+        );
+
+        let error = graph
+            .validate()
+            .expect_err("instantaneous control feedback should fail");
+
+        assert!(
+            error
+                .diagnostics()
+                .contains(&GraphDiagnostic::CycleDetected {
+                    path: vec![
+                        Cable::new(port_ref("left", "value"), port_ref("right", "value")),
+                        Cable::new(port_ref("right", "value"), port_ref("left", "value")),
+                    ],
+                })
+        );
+    }
+
+    #[test]
+    fn validation_accepts_event_feedback_cycle_for_future_scheduling() {
+        let graph = Graph::new(
+            vec![
+                ModuleNode::new(ModuleId::new("first"), "script")
+                    .with_input("events", SignalType::Event)
+                    .with_output("events", SignalType::Event),
+                ModuleNode::new(ModuleId::new("second"), "script")
+                    .with_input("events", SignalType::Event)
+                    .with_output("events", SignalType::Event),
+            ],
+            vec![
+                Cable::new(port_ref("first", "events"), port_ref("second", "events")),
+                Cable::new(port_ref("second", "events"), port_ref("first", "events")),
+            ],
+        );
+
+        graph
+            .validate()
+            .expect("event feedback should be handled by future-block scheduling");
     }
 
     fn port_ref(module_id: &str, port_name: &str) -> PortRef {
