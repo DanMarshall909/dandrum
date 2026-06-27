@@ -16,6 +16,7 @@ pub mod module_types {
     pub const BLOCK_DELAY: &str = "block_delay";
     pub const CONTROL_DELAY: &str = "control_delay";
     pub const SCRIPT: &str = "script";
+    pub const SAMPLER: &str = "sampler";
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -89,6 +90,7 @@ impl BuiltInModuleRegistry {
             block_delay_definition(),
             control_delay_definition(),
             script_definition(),
+            sampler_definition(),
         ])
     }
 
@@ -197,6 +199,20 @@ fn control_delay_definition() -> BuiltInModuleDefinition {
 
 fn script_definition() -> BuiltInModuleDefinition {
     BuiltInModuleDefinition::new(module_types::SCRIPT)
+}
+
+fn sampler_definition() -> BuiltInModuleDefinition {
+    BuiltInModuleDefinition::new(module_types::SAMPLER)
+        .with_input(Port::input(builtin_ports::TRIGGER, SignalType::Event))
+        .with_input(Port::input(builtin_ports::RATE, SignalType::Control))
+        .with_input(Port::input(builtin_ports::START, SignalType::Control))
+        .with_input(Port::input(
+            builtin_ports::LOOP_ENABLED,
+            SignalType::Control,
+        ))
+        .with_input(Port::input(builtin_ports::LOOP_START, SignalType::Control))
+        .with_input(Port::input(builtin_ports::LOOP_END, SignalType::Control))
+        .with_output(Port::output(builtin_ports::AUDIO, SignalType::Audio))
 }
 
 #[cfg(test)]
@@ -350,6 +366,7 @@ mod tests {
             module_types::BLOCK_DELAY,
             module_types::CONTROL_DELAY,
             module_types::SCRIPT,
+            module_types::SAMPLER,
         ] {
             let definition = registry
                 .get(module_type)
@@ -391,6 +408,23 @@ mod tests {
         assert!(script.inputs().is_empty());
         assert!(script.outputs().is_empty());
         assert!(script.feedback_boundaries().is_empty());
+    }
+
+    #[test]
+    fn initialized_registry_contains_sampler_definition() {
+        let registry = BuiltInModuleRegistry::new();
+
+        let sampler = registry
+            .get(module_types::SAMPLER)
+            .expect("sampler should be built in");
+
+        assert_has_input(sampler, builtin_ports::TRIGGER, SignalType::Event);
+        assert_has_input(sampler, builtin_ports::RATE, SignalType::Control);
+        assert_has_input(sampler, builtin_ports::START, SignalType::Control);
+        assert_has_input(sampler, builtin_ports::LOOP_ENABLED, SignalType::Control);
+        assert_has_input(sampler, builtin_ports::LOOP_START, SignalType::Control);
+        assert_has_input(sampler, builtin_ports::LOOP_END, SignalType::Control);
+        assert_has_output(sampler, builtin_ports::AUDIO, SignalType::Audio);
     }
 
     fn assert_has_input(definition: &BuiltInModuleDefinition, name: &str, signal_type: SignalType) {

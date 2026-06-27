@@ -178,6 +178,10 @@ pub fn validate_patch_schema(patch: &PatchDocument) -> Result<(), PatchValidatio
                 diagnostics.push(format!("module {} port name is required", module.id));
             }
         }
+
+        if module.module_type == "sampler" {
+            validate_sampler_asset_reference(module, patch, &mut diagnostics);
+        }
     }
 
     for connection in &patch.connections {
@@ -189,6 +193,43 @@ pub fn validate_patch_schema(patch: &PatchDocument) -> Result<(), PatchValidatio
         Ok(())
     } else {
         Err(PatchValidationError { diagnostics })
+    }
+}
+
+fn validate_sampler_asset_reference(
+    module: &ModuleDeclaration,
+    patch: &PatchDocument,
+    diagnostics: &mut Vec<String>,
+) {
+    let Some(asset_parameter) = module.parameters.get("asset") else {
+        diagnostics.push(format!(
+            "sampler module {} missing required asset parameter",
+            module.id
+        ));
+        return;
+    };
+
+    let ParameterValue::Text(asset_id) = asset_parameter else {
+        diagnostics.push(format!(
+            "sampler module {} asset parameter must be a text asset ID",
+            module.id
+        ));
+        return;
+    };
+
+    let Some(asset) = patch.assets.iter().find(|asset| asset.id == *asset_id) else {
+        diagnostics.push(format!(
+            "sampler module {} references missing asset {}",
+            module.id, asset_id
+        ));
+        return;
+    };
+
+    if asset.kind != AssetKind::Sample {
+        diagnostics.push(format!(
+            "sampler module {} references asset {} with kind {:?}; expected sample",
+            module.id, asset_id, asset.kind
+        ));
     }
 }
 
@@ -534,6 +575,68 @@ render:
         ));
     }
 
+    #[test]
+    fn schema_validation_accepts_sampler_with_declared_sample_asset() {
+        let mut patch = minimal_patch(vec![sampler_module(Some(ParameterValue::Text(
+            "hit".to_string(),
+        )))]);
+        patch.assets.push(AssetDeclaration {
+            id: "hit".to_string(),
+            kind: AssetKind::Sample,
+            path: "hit.wav".to_string(),
+        });
+
+        validate_patch_schema(&patch).expect("sampler asset reference should validate");
+    }
+
+    #[test]
+    fn schema_validation_reports_sampler_missing_asset_parameter() {
+        let patch = minimal_patch(vec![sampler_module(None)]);
+
+        let error = validate_patch_schema(&patch).expect_err("missing asset should fail");
+
+        assert!(
+            error
+                .diagnostics()
+                .contains(&"sampler module sampler missing required asset parameter".to_string())
+        );
+    }
+
+    #[test]
+    fn schema_validation_reports_sampler_missing_asset_id() {
+        let patch = minimal_patch(vec![sampler_module(Some(ParameterValue::Text(
+            "missing".to_string(),
+        )))]);
+
+        let error = validate_patch_schema(&patch).expect_err("missing asset ID should fail");
+
+        assert!(
+            error
+                .diagnostics()
+                .contains(&"sampler module sampler references missing asset missing".to_string())
+        );
+    }
+
+    #[test]
+    fn schema_validation_reports_sampler_non_sample_asset_kind() {
+        let mut patch = minimal_patch(vec![sampler_module(Some(ParameterValue::Text(
+            "script".to_string(),
+        )))]);
+        patch.assets.push(AssetDeclaration {
+            id: "script".to_string(),
+            kind: AssetKind::Script,
+            path: "script.dan".to_string(),
+        });
+
+        let error = validate_patch_schema(&patch).expect_err("non-sample asset should fail");
+
+        assert!(error.diagnostics().iter().any(|diagnostic| {
+            diagnostic.contains("sampler module sampler")
+                && diagnostic.contains("asset script")
+                && diagnostic.contains("expected sample")
+        }));
+    }
+
     fn minimal_patch(modules: Vec<ModuleDeclaration>) -> PatchDocument {
         PatchDocument {
             metadata: PatchMetadata {
@@ -549,6 +652,18 @@ render:
             assets: vec![],
             modules,
             connections: vec![],
+        }
+    }
+
+    fn sampler_module(asset: Option<ParameterValue>) -> ModuleDeclaration {
+        ModuleDeclaration {
+            id: "sampler".to_string(),
+            module_type: "sampler".to_string(),
+            inputs: vec![],
+            outputs: vec![],
+            parameters: asset
+                .map(|value| BTreeMap::from([("asset".to_string(), value)]))
+                .unwrap_or_default(),
         }
     }
 }

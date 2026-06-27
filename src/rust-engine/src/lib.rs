@@ -12,6 +12,8 @@ pub mod patch;
 
 pub mod script;
 
+pub mod sample;
+
 pub mod synth;
 
 pub mod wav;

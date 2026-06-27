@@ -1,6 +1,7 @@
 use std::collections::{BTreeMap, BTreeSet};
 use std::fmt;
 
+use crate::builtins::{BuiltInModuleRegistry, module_types};
 use crate::patch;
 
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -55,8 +56,13 @@ pub mod builtin_ports {
     pub const MIX: &str = "mix";
     pub const SUM: &str = "sum";
     pub const GATE: &str = "gate";
+    pub const TRIGGER: &str = "trigger";
     pub const RATE: &str = "rate";
     pub const VALUE: &str = "value";
+    pub const START: &str = "start";
+    pub const LOOP_ENABLED: &str = "loop_enabled";
+    pub const LOOP_START: &str = "loop_start";
+    pub const LOOP_END: &str = "loop_end";
 }
 
 impl SignalType {
@@ -266,21 +272,47 @@ impl Graph {
     }
 
     pub fn from_patch_declarations(patch: &patch::PatchDocument) -> Self {
+        let registry = BuiltInModuleRegistry::new();
         let modules = patch
             .modules
             .iter()
             .map(|module| {
                 let mut node =
                     ModuleNode::new(ModuleId::new(module.id.clone()), module.module_type.clone());
+                let definition = registry.get(&module.module_type);
+
+                if let Some(definition) = definition {
+                    for input in definition.inputs() {
+                        node = if input.accepts_multiple_sources() {
+                            node.with_mixing_input(input.name().to_string(), input.signal_type())
+                        } else {
+                            node.with_input(input.name().to_string(), input.signal_type())
+                        };
+                    }
+
+                    for output in definition.outputs() {
+                        node = node.with_output(output.name().to_string(), output.signal_type());
+                    }
+
+                    for boundary in definition.feedback_boundaries() {
+                        node = node.with_feedback_boundary(*boundary);
+                    }
+                }
 
                 for input in &module.inputs {
-                    node =
-                        node.with_input(input.name.clone(), SignalType::from(&input.signal_type));
+                    if definition.is_none() || module.module_type == module_types::SCRIPT {
+                        node = node
+                            .with_input(input.name.clone(), SignalType::from(&input.signal_type));
+                    }
                 }
 
                 for output in &module.outputs {
-                    node = node
-                        .with_output(output.name.clone(), SignalType::from(&output.signal_type));
+                    if definition.is_none() || module.module_type == module_types::SCRIPT {
+                        node = node.with_output(
+                            output.name.clone(),
+                            SignalType::from(&output.signal_type),
+                        );
+                    }
                 }
 
                 node
@@ -793,6 +825,104 @@ connections:
         );
 
         graph.validate().expect("control route should validate");
+    }
+
+    #[test]
+    fn validation_accepts_event_control_and_audio_routes_for_built_in_sampler() {
+        let patch = patch::load_patch_str(
+            r#"
+metadata:
+  name: Sampler Routing
+render:
+  sample_rate_hz: 48000
+  block_size_frames: 128
+  duration_frames: 48000
+assets:
+  - id: hit
+    kind: sample
+    path: hit.wav
+modules:
+  - id: midi
+    type: midi_input
+  - id: sampler
+    type: sampler
+    parameters:
+      asset: hit
+  - id: lfo
+    type: lfo
+  - id: out
+    type: audio_output
+connections:
+  - from: midi.events
+    to: sampler.trigger
+  - from: lfo.value
+    to: sampler.rate
+  - from: lfo.value
+    to: sampler.start
+  - from: sampler.audio
+    to: out.left
+"#,
+        )
+        .expect("patch should parse");
+
+        patch::validate_patch_schema(&patch).expect("patch schema should be valid");
+        let graph = Graph::from_patch_declarations(&patch);
+
+        graph
+            .validate()
+            .expect("sampler built-in ports should validate compatible routes");
+    }
+
+    #[test]
+    fn validation_rejects_ad_hoc_event_ports_on_pure_built_in_generators() {
+        let patch = patch::load_patch_str(
+            r#"
+metadata:
+  name: Pure Generators
+render:
+  sample_rate_hz: 48000
+  block_size_frames: 128
+  duration_frames: 48000
+assets:
+  - id: hit
+    kind: sample
+    path: hit.wav
+modules:
+  - id: midi
+    type: midi_input
+  - id: osc
+    type: oscillator
+    inputs:
+      - name: gate
+        signal_type: event
+  - id: sampler
+    type: sampler
+    inputs:
+      - name: gate
+        signal_type: event
+    parameters:
+      asset: hit
+connections:
+  - from: midi.events
+    to: osc.gate
+  - from: midi.events
+    to: sampler.gate
+"#,
+        )
+        .expect("patch should parse");
+
+        patch::validate_patch_schema(&patch).expect("patch schema should be valid");
+        let graph = Graph::from_patch_declarations(&patch);
+        let error = graph
+            .validate()
+            .expect_err("built-in generators should not accept ad hoc MIDI event ports");
+
+        assert!(error.diagnostics().contains(&GraphDiagnostic::MissingPort {
+            port: port_ref("osc", "gate"),
+        }));
+        assert!(error.diagnostics().contains(&GraphDiagnostic::MissingPort {
+            port: port_ref("sampler", "gate"),
+        }));
     }
 
     #[test]

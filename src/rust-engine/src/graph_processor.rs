@@ -5,10 +5,6 @@ use crate::graph::{Graph, ModuleNode, SignalType, builtin_ports};
 use crate::patch::RenderSettings;
 use crate::script::ScriptEvent;
 
-fn midi_note_to_hz(note: u8) -> f32 {
-    440.0 * (2.0f32).powf((note as f32 - 69.0) / 12.0)
-}
-
 fn find_audio_output(graph: &Graph) -> Option<usize> {
     graph
         .modules()
@@ -93,7 +89,6 @@ fn build_routing(graph: &Graph) -> Routing {
 enum PerModuleState {
     Oscillator {
         phase: f32,
-        current_note: Option<u8>,
         sample_rate: f32,
     },
     Adsr {
@@ -113,7 +108,6 @@ impl PerModuleState {
         match module.module_type() {
             "oscillator" => PerModuleState::Oscillator {
                 phase: 0.0,
-                current_note: None,
                 sample_rate,
             },
             "adsr" => PerModuleState::Adsr {
@@ -220,9 +214,8 @@ pub fn render_offline(
     let midi_idx = find_midi_input(graph);
     let out_idx = find_audio_output(graph);
 
-    let scheduler =
-        BlockScheduler::new(settings.duration_frames, settings.block_size_frames)
-            .with_input_events(events);
+    let scheduler = BlockScheduler::new(settings.duration_frames, settings.block_size_frames)
+        .with_input_events(events);
 
     let mut left_buf: Vec<f32> = Vec::new();
     let mut right_buf: Vec<f32> = Vec::new();
@@ -291,22 +284,42 @@ fn process_block(
         let outputs = match module_type {
             "oscillator" => {
                 let pitch_in = sum_control_input(
-                    module_idx, builtin_ports::PITCH, routing, &all_outputs, frames,
+                    module_idx,
+                    builtin_ports::PITCH,
+                    routing,
+                    &all_outputs,
+                    frames,
                 );
-                process_oscillator(&mut states[module_idx], &events_in, &pitch_in, frames)
+                process_oscillator(&mut states[module_idx], &pitch_in, frames)
             }
             "adsr" => {
                 let attack_in = sum_control_input(
-                    module_idx, builtin_ports::ATTACK, routing, &all_outputs, frames,
+                    module_idx,
+                    builtin_ports::ATTACK,
+                    routing,
+                    &all_outputs,
+                    frames,
                 );
                 let decay_in = sum_control_input(
-                    module_idx, builtin_ports::DECAY, routing, &all_outputs, frames,
+                    module_idx,
+                    builtin_ports::DECAY,
+                    routing,
+                    &all_outputs,
+                    frames,
                 );
                 let sustain_in = sum_control_input(
-                    module_idx, builtin_ports::SUSTAIN, routing, &all_outputs, frames,
+                    module_idx,
+                    builtin_ports::SUSTAIN,
+                    routing,
+                    &all_outputs,
+                    frames,
                 );
                 let release_in = sum_control_input(
-                    module_idx, builtin_ports::RELEASE, routing, &all_outputs, frames,
+                    module_idx,
+                    builtin_ports::RELEASE,
+                    routing,
+                    &all_outputs,
+                    frames,
                 );
                 process_adsr(
                     &mut states[module_idx],
@@ -321,19 +334,35 @@ fn process_block(
             }
             "gain" => {
                 let audio_in = sum_audio_input(
-                    module_idx, builtin_ports::AUDIO_IN, routing, &all_outputs, frames,
+                    module_idx,
+                    builtin_ports::AUDIO_IN,
+                    routing,
+                    &all_outputs,
+                    frames,
                 );
                 let gain_in = sum_control_input(
-                    module_idx, builtin_ports::GAIN, routing, &all_outputs, frames,
+                    module_idx,
+                    builtin_ports::GAIN,
+                    routing,
+                    &all_outputs,
+                    frames,
                 );
                 process_vca(audio_in, gain_in)
             }
             "audio_output" => {
                 let left = sum_audio_input(
-                    module_idx, builtin_ports::LEFT, routing, &all_outputs, frames,
+                    module_idx,
+                    builtin_ports::LEFT,
+                    routing,
+                    &all_outputs,
+                    frames,
                 );
                 let right = sum_audio_input(
-                    module_idx, builtin_ports::RIGHT, routing, &all_outputs, frames,
+                    module_idx,
+                    builtin_ports::RIGHT,
+                    routing,
+                    &all_outputs,
+                    frames,
                 );
                 let mut m = HashMap::new();
                 m.insert(builtin_ports::LEFT.to_string(), left);
@@ -346,7 +375,11 @@ fn process_block(
             }
             "audio_delay" => {
                 let audio_in = sum_audio_input(
-                    module_idx, builtin_ports::AUDIO_IN, routing, &all_outputs, frames,
+                    module_idx,
+                    builtin_ports::AUDIO_IN,
+                    routing,
+                    &all_outputs,
+                    frames,
                 );
                 process_audio_delay(audio_in)
             }
@@ -415,7 +448,8 @@ impl RealtimeGraphProcessor {
     }
 
     pub fn note_off(&mut self, _note: u8) {
-        self.pending_events.push(ScriptEvent::NoteOff { note: _note });
+        self.pending_events
+            .push(ScriptEvent::NoteOff { note: _note });
     }
 
     pub fn render(&mut self, left: &mut [f32], right: &mut [f32]) -> usize {
@@ -460,7 +494,10 @@ impl RealtimeGraphProcessor {
             return false;
         }
         for state in &self.states {
-            if let PerModuleState::Adsr { level, gate_active, .. } = state {
+            if let PerModuleState::Adsr {
+                level, gate_active, ..
+            } = state
+            {
                 if *gate_active || *level > 0.001 {
                     return false;
                 }
@@ -472,30 +509,18 @@ impl RealtimeGraphProcessor {
 
 fn process_oscillator(
     state: &mut PerModuleState,
-    events_in: &[ScriptEvent],
     pitch_in: &[f32],
     frames: usize,
 ) -> ModuleOutputs {
-    let (phase, current_note, sample_rate) = match state {
-        PerModuleState::Oscillator {
-            phase,
-            current_note,
-            sample_rate,
-        } => (phase, current_note, *sample_rate),
+    let (phase, sample_rate) = match state {
+        PerModuleState::Oscillator { phase, sample_rate } => (phase, *sample_rate),
         _ => unreachable!(),
     };
-
-    for event in events_in {
-        if let ScriptEvent::NoteOn { note, .. } = event {
-            *current_note = Some(*note);
-        }
-    }
-
-    let base_hz = current_note.map(|n| midi_note_to_hz(n)).unwrap_or(220.0);
 
     let mut audio = Vec::with_capacity(frames);
     for i in 0..frames {
         let semitone_offset = pitch_in.get(i).copied().unwrap_or(0.0);
+        let base_hz = 220.0;
         let freq = base_hz * (2.0f32).powf(semitone_offset / 12.0);
         let phase_inc = freq / sample_rate;
         audio.push(*phase * 2.0 - 1.0);
@@ -598,8 +623,7 @@ fn process_adsr(
             if lifetime < attack_frames {
                 adsr_value.push((lifetime as f32) / (attack_frames as f32));
             } else if lifetime < attack_frames + decay_frames {
-                let decay_progress =
-                    (lifetime - attack_frames) as f32 / (decay_frames as f32);
+                let decay_progress = (lifetime - attack_frames) as f32 / (decay_frames as f32);
                 adsr_value.push(1.0 - (1.0 - sustain) * decay_progress);
             } else {
                 adsr_value.push(sustain);
@@ -685,8 +709,6 @@ modules:
   - id: osc
     type: oscillator
     inputs:
-      - name: gate
-        signal_type: event
       - name: pitch
         signal_type: control
     outputs:
@@ -719,8 +741,6 @@ modules:
         signal_type: audio
 connections:
   - from: midi.events
-    to: osc.gate
-  - from: midi.events
     to: env.gate
   - from: osc.audio
     to: vca.audio_in
@@ -742,13 +762,18 @@ connections:
             &graph,
             &patch.render,
             vec![
-                TimedInputEvent::new(0, ScriptEvent::NoteOn { note: 45, velocity: 100 }),
+                TimedInputEvent::new(
+                    0,
+                    ScriptEvent::NoteOn {
+                        note: 45,
+                        velocity: 100,
+                    },
+                ),
                 TimedInputEvent::new(12000, ScriptEvent::NoteOff { note: 45 }),
             ],
         );
 
-        let has_signal =
-            left.iter().any(|&s| s != 0.0) || right.iter().any(|&s| s != 0.0);
+        let has_signal = left.iter().any(|&s| s != 0.0) || right.iter().any(|&s| s != 0.0);
         assert!(has_signal, "303-style chain should produce audio");
         assert_eq!(left.len(), 48000);
         assert_eq!(right.len(), 48000);
@@ -803,8 +828,7 @@ connections:
             )],
         );
 
-        let has_signal =
-            left.iter().any(|&s| s != 0.0) || right.iter().any(|&s| s != 0.0);
+        let has_signal = left.iter().any(|&s| s != 0.0) || right.iter().any(|&s| s != 0.0);
         assert!(
             has_signal,
             "graph processor should produce non-silent output when events are present"
