@@ -17,8 +17,11 @@ add_custom_command(
     WORKING_DIRECTORY ${RUST_ENGINE_DIR}
     DEPENDS
         ${RUST_ENGINE_DIR}/Cargo.toml
+        ${RUST_ENGINE_DIR}/src/bin/dandrum-cli.rs
+        ${RUST_ENGINE_DIR}/src/cli.rs
         ${RUST_ENGINE_DIR}/src/core.rs
         ${RUST_ENGINE_DIR}/src/lib.rs
+        ${RUST_ENGINE_DIR}/src/patch.rs
     COMMENT "Building Rust audio engine")
 
 add_custom_target(dandrum-engine-rust DEPENDS ${RUST_ENGINE_LIB})

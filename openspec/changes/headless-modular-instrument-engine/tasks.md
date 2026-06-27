@@ -2,15 +2,15 @@
 
 - [x] 1.1 Choose the initial implementation language, package layout, and test framework for the headless engine.
 - [x] 1.2 Create the engine core package without GUI, plugin, or CLI coupling.
-- [ ] 1.3 Add a minimal CLI entry point for loading patches, inspecting validation results, and invoking offline renders.
+- [x] 1.3 Add a minimal CLI entry point for loading patches, inspecting validation results, and invoking offline renders.
 - [x] 1.4 Add CI-ready test commands for unit and acceptance tests.
 
 ## 2. YAML Patch Format
 
-- [ ] 2.1 Define the YAML patch schema for metadata, render settings, assets, modules, ports, and connections.
-- [ ] 2.2 Implement YAML patch loading with clear parse errors for invalid YAML or unsupported file formats.
-- [ ] 2.3 Implement schema validation for duplicate module IDs, missing required fields, and malformed connection references.
-- [ ] 2.4 Add patch-format tests covering valid YAML, invalid YAML, duplicate IDs, missing modules, and script custom ports.
+- [x] 2.1 Define the YAML patch schema for metadata, render settings, assets, modules, ports, and connections.
+- [x] 2.2 Implement YAML patch loading with clear parse errors for invalid YAML or unsupported file formats.
+- [x] 2.3 Implement schema validation for duplicate module IDs, missing required fields, and malformed connection references.
+- [x] 2.4 Add patch-format tests covering valid YAML, invalid YAML, duplicate IDs, missing modules, and script custom ports.
 
 ## 3. Modular Routing Graph
 

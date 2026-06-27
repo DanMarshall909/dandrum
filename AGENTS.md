@@ -19,6 +19,7 @@
 - Use TDD for implementation work: write or update a failing test that describes the behavior first, run it to confirm the failure when feasible, then add the smallest production change that makes it pass.
 - Keep tests close to the behavior under development. Prefer Rust unit tests for engine core behavior and acceptance tests only for end-to-end CLI/rendering behavior.
 - Do not mark OpenSpec implementation tasks complete until the related tests and relevant build/test commands pass, or until any unavoidable verification gap is documented.
+- Treat each verified material change as a commit boundary. Before committing, inspect `git status`, `git diff`, and recent log, stage only the intended files, and commit the focused change separately from unrelated work.
 
 ## Current Technical Debt
 - MIDI callbacks and audio callbacks share the Rust engine through a simple JUCE `CriticalSection`. This is acceptable for the proof, but should become a lock-free event queue before serious realtime work.
@@ -26,7 +27,11 @@
 ## OpenSpec Workflow
 - Active repo-local change: `headless-modular-instrument-engine` under `openspec/changes/`; it is spec-driven and has implementation tasks still unchecked.
 - Before implementing that planned engine, read the change via `openspec status --change "headless-modular-instrument-engine" --json` and `openspec instructions apply --change "headless-modular-instrument-engine" --json` rather than guessing artifact paths.
-- Repo-local OpenCode shortcuts live in `.opencode/commands/` (`/opsx-propose`, `/opsx-apply`, `/opsx-sync`, `/opsx-archive`, `/opsx-explore`).
+- For implementation work on an OpenSpec change, follow the apply workflow: read all `contextFiles` returned by `openspec instructions apply`, implement the next pending task(s), verify with relevant tests/build commands, then update the task checkbox in the change's `tasks.md`.
+- Do not skip ahead or broaden scope without checking the OpenSpec task list. If a task is unclear, pause and ask rather than inventing requirements.
+- Use the repo-local OpenCode shortcuts/skills when they match the user's intent: `/opsx-propose` for new changes, `/opsx-explore` for investigation/requirements discussion, `/opsx-apply` for implementation, `/opsx-sync` for syncing accepted delta specs, and `/opsx-archive` after a completed change is verified.
+- Repo-local OpenCode shortcuts live in `.opencode/commands/`; matching skills live in `.opencode/skills/`.
+- Run OpenSpec validation before finalizing or archiving a change, and document any unavoidable verification gaps in the response.
 
 ## Architecture Constraints From Specs
 - The planned engine core should stay independent of CLI, GUI, plugin, and realtime audio driver/front-end code.
