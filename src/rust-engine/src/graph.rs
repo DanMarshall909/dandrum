@@ -65,7 +65,30 @@ pub struct Graph {
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct GraphValidationError {
-    diagnostics: Vec<String>,
+    diagnostics: Vec<GraphDiagnostic>,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum GraphDiagnostic {
+    MissingModule {
+        module_id: ModuleId,
+    },
+    MissingPort {
+        port: PortRef,
+    },
+    IncorrectPortDirection {
+        port: PortRef,
+        expected: PortDirection,
+    },
+    IncompatibleSignalTypes {
+        source: PortRef,
+        source_type: SignalType,
+        destination: PortRef,
+        destination_type: SignalType,
+    },
+    MultipleSourcesToInput {
+        destination: PortRef,
+    },
 }
 
 impl ModuleId {
@@ -250,26 +273,21 @@ impl Graph {
                     .signal_type()
                     .is_compatible_with(destination.signal_type())
                 {
-                    diagnostics.push(format!(
-                        "incompatible signal types: {}.{} is {:?}, but {}.{} is {:?}",
-                        cable.source().module_id().as_str(),
-                        cable.source().port_name(),
-                        source.signal_type(),
-                        cable.destination().module_id().as_str(),
-                        cable.destination().port_name(),
-                        destination.signal_type()
-                    ));
+                    diagnostics.push(GraphDiagnostic::IncompatibleSignalTypes {
+                        source: cable.source().clone(),
+                        source_type: source.signal_type(),
+                        destination: cable.destination().clone(),
+                        destination_type: destination.signal_type(),
+                    });
                 }
             }
         }
 
         for (destination, count) in destination_counts {
             if count > 1 {
-                diagnostics.push(format!(
-                    "multiple sources connected to {}.{}; use an explicit mixer or summing module",
-                    destination.module_id().as_str(),
-                    destination.port_name()
-                ));
+                diagnostics.push(GraphDiagnostic::MultipleSourcesToInput {
+                    destination: destination.clone(),
+                });
             }
         }
 
@@ -284,17 +302,16 @@ impl Graph {
         &self,
         reference: &PortRef,
         expected_direction: PortDirection,
-        diagnostics: &mut Vec<String>,
+        diagnostics: &mut Vec<GraphDiagnostic>,
     ) -> Option<&Port> {
         let Some(module) = self
             .modules
             .iter()
             .find(|module| module.id() == reference.module_id())
         else {
-            diagnostics.push(format!(
-                "missing module: {}",
-                reference.module_id().as_str()
-            ));
+            diagnostics.push(GraphDiagnostic::MissingModule {
+                module_id: reference.module_id().clone(),
+            });
             return None;
         };
 
@@ -319,18 +336,14 @@ impl Graph {
             .iter()
             .any(|port| port.name() == reference.port_name())
         {
-            diagnostics.push(format!(
-                "incorrect port direction: {}.{} is not a {:?} port",
-                reference.module_id().as_str(),
-                reference.port_name(),
-                expected_direction
-            ));
+            diagnostics.push(GraphDiagnostic::IncorrectPortDirection {
+                port: reference.clone(),
+                expected: expected_direction,
+            });
         } else {
-            diagnostics.push(format!(
-                "missing port: {}.{}",
-                reference.module_id().as_str(),
-                reference.port_name()
-            ));
+            diagnostics.push(GraphDiagnostic::MissingPort {
+                port: reference.clone(),
+            });
         }
 
         None
@@ -338,8 +351,48 @@ impl Graph {
 }
 
 impl GraphValidationError {
-    pub fn diagnostics(&self) -> &[String] {
+    pub fn diagnostics(&self) -> &[GraphDiagnostic] {
         &self.diagnostics
+    }
+}
+
+impl fmt::Display for GraphDiagnostic {
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::MissingModule { module_id } => {
+                write!(formatter, "missing module: {}", module_id.as_str())
+            }
+            Self::MissingPort { port } => {
+                write!(formatter, "missing port: {}", port)
+            }
+            Self::IncorrectPortDirection { port, expected } => {
+                write!(formatter, "incorrect port direction: {port} is not a {expected:?} port")
+            }
+            Self::IncompatibleSignalTypes {
+                source,
+                source_type,
+                destination,
+                destination_type,
+            } => write!(
+                formatter,
+                "incompatible signal types: {source} is {source_type:?}, but {destination} is {destination_type:?}"
+            ),
+            Self::MultipleSourcesToInput { destination } => write!(
+                formatter,
+                "multiple sources connected to {destination}; use an explicit mixer or summing module"
+            ),
+        }
+    }
+}
+
+impl fmt::Display for PortRef {
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            formatter,
+            "{}.{}",
+            self.module_id().as_str(),
+            self.port_name()
+        )
     }
 }
 
@@ -519,16 +572,12 @@ connections:
             .validate()
             .expect_err("missing references should fail");
 
-        assert!(
-            error
-                .diagnostics()
-                .contains(&"missing module: osc".to_string())
-        );
-        assert!(
-            error
-                .diagnostics()
-                .contains(&"missing port: out.right".to_string())
-        );
+        assert!(error.diagnostics().contains(&GraphDiagnostic::MissingModule {
+            module_id: ModuleId::new("osc"),
+        }));
+        assert!(error.diagnostics().contains(&GraphDiagnostic::MissingPort {
+            port: port_ref("out", "right"),
+        }));
     }
 
     #[test]
@@ -537,16 +586,18 @@ connections:
 
         let error = graph.validate().expect_err("wrong directions should fail");
 
-        assert!(
-            error
-                .diagnostics()
-                .contains(&"incorrect port direction: out.left is not a Output port".to_string())
-        );
-        assert!(
-            error
-                .diagnostics()
-                .contains(&"incorrect port direction: osc.audio is not a Input port".to_string())
-        );
+        assert!(error
+            .diagnostics()
+            .contains(&GraphDiagnostic::IncorrectPortDirection {
+                port: port_ref("out", "left"),
+                expected: PortDirection::Output,
+            }));
+        assert!(error
+            .diagnostics()
+            .contains(&GraphDiagnostic::IncorrectPortDirection {
+                port: port_ref("osc", "audio"),
+                expected: PortDirection::Input,
+            }));
     }
 
     #[test]
@@ -568,9 +619,15 @@ connections:
             .validate()
             .expect_err("incompatible types should fail");
 
-        assert!(error.diagnostics()[0].contains("incompatible signal types"));
-        assert!(error.diagnostics()[0].contains("osc.audio is Audio"));
-        assert!(error.diagnostics()[0].contains("script.notes is Event"));
+        assert_eq!(
+            error.diagnostics()[0],
+            GraphDiagnostic::IncompatibleSignalTypes {
+                source: port_ref("osc", "audio"),
+                source_type: SignalType::Audio,
+                destination: port_ref("script", "notes"),
+                destination_type: SignalType::Event,
+            }
+        );
     }
 
     #[test]
@@ -592,9 +649,15 @@ connections:
             .validate()
             .expect_err("audio to control should fail");
 
-        assert!(error.diagnostics()[0].contains("incompatible signal types"));
-        assert!(error.diagnostics()[0].contains("osc.audio is Audio"));
-        assert!(error.diagnostics()[0].contains("vca.gain is Control"));
+        assert_eq!(
+            error.diagnostics()[0],
+            GraphDiagnostic::IncompatibleSignalTypes {
+                source: port_ref("osc", "audio"),
+                source_type: SignalType::Audio,
+                destination: port_ref("vca", "gain"),
+                destination_type: SignalType::Control,
+            }
+        );
     }
 
     #[test]
@@ -616,9 +679,15 @@ connections:
             .validate()
             .expect_err("control to audio should fail");
 
-        assert!(error.diagnostics()[0].contains("incompatible signal types"));
-        assert!(error.diagnostics()[0].contains("env.value is Control"));
-        assert!(error.diagnostics()[0].contains("out.left is Audio"));
+        assert_eq!(
+            error.diagnostics()[0],
+            GraphDiagnostic::IncompatibleSignalTypes {
+                source: port_ref("env", "value"),
+                source_type: SignalType::Control,
+                destination: port_ref("out", "left"),
+                destination_type: SignalType::Audio,
+            }
+        );
     }
 
     #[test]
@@ -640,9 +709,15 @@ connections:
             .validate()
             .expect_err("event to control should fail");
 
-        assert!(error.diagnostics()[0].contains("incompatible signal types"));
-        assert!(error.diagnostics()[0].contains("midi.notes is Event"));
-        assert!(error.diagnostics()[0].contains("vca.gain is Control"));
+        assert_eq!(
+            error.diagnostics()[0],
+            GraphDiagnostic::IncompatibleSignalTypes {
+                source: port_ref("midi", "notes"),
+                source_type: SignalType::Event,
+                destination: port_ref("vca", "gain"),
+                destination_type: SignalType::Control,
+            }
+        );
     }
 
     #[test]
@@ -671,11 +746,16 @@ connections:
         let error = graph.validate().expect_err("many-to-one route should fail");
 
         assert!(
-            error.diagnostics().contains(
-                &"multiple sources connected to vca.gain; use an explicit mixer or summing module"
-                    .to_string()
-            )
+            error
+                .diagnostics()
+                .contains(&GraphDiagnostic::MultipleSourcesToInput {
+                    destination: port_ref("vca", "gain"),
+                })
         );
+    }
+
+    fn port_ref(module_id: &str, port_name: &str) -> PortRef {
+        PortRef::new(ModuleId::new(module_id), port_name)
     }
 
     fn audio_graph(
