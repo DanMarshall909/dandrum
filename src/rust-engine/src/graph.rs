@@ -34,6 +34,17 @@ pub enum SignalType {
     Event,
 }
 
+impl SignalType {
+    pub fn is_compatible_with(self, destination: Self) -> bool {
+        matches!(
+            (self, destination),
+            (Self::Audio, Self::Audio)
+                | (Self::Control, Self::Control)
+                | (Self::Event, Self::Event)
+        )
+    }
+}
+
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct PortRef {
     module_id: ModuleId,
@@ -235,7 +246,10 @@ impl Graph {
                 self.resolve_port(cable.destination(), PortDirection::Input, &mut diagnostics);
 
             if let (Some(source), Some(destination)) = (source, destination) {
-                if source.signal_type() != destination.signal_type() {
+                if !source
+                    .signal_type()
+                    .is_compatible_with(destination.signal_type())
+                {
                     diagnostics.push(format!(
                         "incompatible signal types: {}.{} is {:?}, but {}.{} is {:?}",
                         cable.source().module_id().as_str(),
@@ -456,6 +470,39 @@ connections:
     }
 
     #[test]
+    fn signal_compatibility_accepts_only_matching_signal_families() {
+        let signal_types = [SignalType::Audio, SignalType::Control, SignalType::Event];
+
+        for source in signal_types {
+            for destination in signal_types {
+                assert_eq!(
+                    source.is_compatible_with(destination),
+                    source == destination,
+                    "{source:?} -> {destination:?} compatibility mismatch"
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn validation_accepts_compatible_control_route() {
+        let graph = Graph::new(
+            vec![
+                ModuleNode::new(ModuleId::new("env"), "adsr")
+                    .with_output("value", SignalType::Control),
+                ModuleNode::new(ModuleId::new("vca"), "gain")
+                    .with_input("gain", SignalType::Control),
+            ],
+            vec![Cable::new(
+                PortRef::new(ModuleId::new("env"), "value"),
+                PortRef::new(ModuleId::new("vca"), "gain"),
+            )],
+        );
+
+        graph.validate().expect("control route should validate");
+    }
+
+    #[test]
     fn validation_reports_missing_module_or_port_references() {
         let graph = Graph::new(
             vec![
@@ -524,6 +571,78 @@ connections:
         assert!(error.diagnostics()[0].contains("incompatible signal types"));
         assert!(error.diagnostics()[0].contains("osc.audio is Audio"));
         assert!(error.diagnostics()[0].contains("script.notes is Event"));
+    }
+
+    #[test]
+    fn validation_reports_audio_to_control_incompatibility() {
+        let graph = Graph::new(
+            vec![
+                ModuleNode::new(ModuleId::new("osc"), "oscillator")
+                    .with_output("audio", SignalType::Audio),
+                ModuleNode::new(ModuleId::new("vca"), "gain")
+                    .with_input("gain", SignalType::Control),
+            ],
+            vec![Cable::new(
+                PortRef::new(ModuleId::new("osc"), "audio"),
+                PortRef::new(ModuleId::new("vca"), "gain"),
+            )],
+        );
+
+        let error = graph
+            .validate()
+            .expect_err("audio to control should fail");
+
+        assert!(error.diagnostics()[0].contains("incompatible signal types"));
+        assert!(error.diagnostics()[0].contains("osc.audio is Audio"));
+        assert!(error.diagnostics()[0].contains("vca.gain is Control"));
+    }
+
+    #[test]
+    fn validation_reports_control_to_audio_incompatibility() {
+        let graph = Graph::new(
+            vec![
+                ModuleNode::new(ModuleId::new("env"), "adsr")
+                    .with_output("value", SignalType::Control),
+                ModuleNode::new(ModuleId::new("out"), "audio_output")
+                    .with_input("left", SignalType::Audio),
+            ],
+            vec![Cable::new(
+                PortRef::new(ModuleId::new("env"), "value"),
+                PortRef::new(ModuleId::new("out"), "left"),
+            )],
+        );
+
+        let error = graph
+            .validate()
+            .expect_err("control to audio should fail");
+
+        assert!(error.diagnostics()[0].contains("incompatible signal types"));
+        assert!(error.diagnostics()[0].contains("env.value is Control"));
+        assert!(error.diagnostics()[0].contains("out.left is Audio"));
+    }
+
+    #[test]
+    fn validation_reports_event_to_control_incompatibility() {
+        let graph = Graph::new(
+            vec![
+                ModuleNode::new(ModuleId::new("midi"), "midi_input")
+                    .with_output("notes", SignalType::Event),
+                ModuleNode::new(ModuleId::new("vca"), "gain")
+                    .with_input("gain", SignalType::Control),
+            ],
+            vec![Cable::new(
+                PortRef::new(ModuleId::new("midi"), "notes"),
+                PortRef::new(ModuleId::new("vca"), "gain"),
+            )],
+        );
+
+        let error = graph
+            .validate()
+            .expect_err("event to control should fail");
+
+        assert!(error.diagnostics()[0].contains("incompatible signal types"));
+        assert!(error.diagnostics()[0].contains("midi.notes is Event"));
+        assert!(error.diagnostics()[0].contains("vca.gain is Control"));
     }
 
     #[test]

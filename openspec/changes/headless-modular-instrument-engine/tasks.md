@@ -22,7 +22,7 @@
 
 ## 4. VCA and Control Routing
 
-- [ ] 4.1 Define VCA/control signal types and compatibility rules.
+- [x] 4.1 Define VCA/control signal types and compatibility rules.
 - [ ] 4.2 Represent modulatable destinations such as gain, pitch, cutoff, pan, and envelope parameters as ports.
 - [ ] 4.3 Implement explicit control mixer or summing module behavior.
 - [ ] 4.4 Add tests proving any compatible VCA/control output can connect to any compatible VCA/control input.
