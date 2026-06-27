@@ -23,30 +23,30 @@
 ## 4. VCA and Control Routing
 
 - [x] 4.1 Define VCA/control signal types and compatibility rules.
-- [ ] 4.2 Represent modulatable destinations such as gain, pitch, cutoff, pan, and envelope parameters as ports.
-- [ ] 4.3 Implement explicit control mixer or summing module behavior.
-- [ ] 4.4 Add tests proving any compatible VCA/control output can connect to any compatible VCA/control input.
+- [x] 4.2 Represent modulatable destinations such as gain, pitch, cutoff, pan, and envelope parameters as ports.
+- [x] 4.3 Implement explicit control mixer or summing module behavior.
+- [x] 4.4 Add tests proving any compatible VCA/control output can connect to any compatible VCA/control input.
 
 ## 5. Built-In Modules
 
-- [ ] 5.1 Implement the built-in module registry.
-- [ ] 5.2 Add MIDI/event input and audio output module definitions.
-- [ ] 5.3 Add oscillator or sample player, gain/VCA, audio mixer, control mixer, ADSR, LFO, and simple filter module definitions.
-- [ ] 5.4 Add one-sample audio delay, block delay, and control delay module definitions with feedback-boundary metadata.
-- [ ] 5.5 Add tests that inspect built-in module ports, signal types, directions, and feedback-boundary declarations.
+- [x] 5.1 Implement the built-in module registry.
+- [x] 5.2 Add MIDI/event input and audio output module definitions.
+- [x] 5.3 Add oscillator or sample player, gain/VCA, audio mixer, control mixer, ADSR, LFO, and simple filter module definitions.
+- [x] 5.4 Add one-sample audio delay, block delay, and control delay module definitions with feedback-boundary metadata.
+- [x] 5.5 Add tests that inspect built-in module ports, signal types, directions, and feedback-boundary declarations.
 
 ## 6. Script Modules
 
-- [ ] 6.1 Select and integrate the initial script runtime or define an internal script abstraction if runtime selection is deferred.
-- [ ] 6.2 Implement script module loading with declared input and output ports from the YAML patch.
-- [ ] 6.3 Implement bounded script processing for events and control values.
-- [ ] 6.4 Implement module-local script state between processing calls.
-- [ ] 6.5 Add tests for script routing, event-to-control transformation, state retention, and prevention of recursive graph execution.
+- [x] 6.1 Select and integrate the initial script runtime or define an internal script abstraction if runtime selection is deferred.
+- [x] 6.2 Implement script module loading with declared input and output ports from the YAML patch.
+- [x] 6.3 Implement bounded script processing for events and control values.
+- [x] 6.4 Implement module-local script state between processing calls.
+- [x] 6.5 Add tests for script routing, event-to-control transformation, state retention, and prevention of recursive graph execution.
 
 ## 7. Feedback Routing
 
-- [ ] 7.1 Implement graph cycle detection with diagnostics that include the cycle path.
-- [ ] 7.2 Implement audio feedback validation requiring an explicit audio delay boundary.
+- [x] 7.1 Implement graph cycle detection with diagnostics that include the cycle path.
+- [x] 7.2 Implement audio feedback validation requiring an explicit audio delay boundary.
 - [ ] 7.3 Implement control feedback validation requiring a control delay, smoothing stage, or tick/block boundary.
 - [ ] 7.4 Implement event and script feedback scheduling to a future tick or block.
 - [ ] 7.5 Add tests for valid delayed feedback and invalid instantaneous audio/control feedback.

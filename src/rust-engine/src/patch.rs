@@ -94,9 +94,17 @@ pub struct PortReference {
 
 #[derive(Debug)]
 pub enum PatchLoadError {
-    UnsupportedFormat { path: PathBuf },
-    ReadFailed { path: PathBuf, message: String },
-    ParseFailed { path: Option<PathBuf>, message: String },
+    UnsupportedFormat {
+        path: PathBuf,
+    },
+    ReadFailed {
+        path: PathBuf,
+        message: String,
+    },
+    ParseFailed {
+        path: Option<PathBuf>,
+        message: String,
+    },
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -214,10 +222,18 @@ impl fmt::Display for PatchLoadError {
                 write!(formatter, "unsupported patch format: {}", path.display())
             }
             Self::ReadFailed { path, message } => {
-                write!(formatter, "failed to read patch {}: {message}", path.display())
+                write!(
+                    formatter,
+                    "failed to read patch {}: {message}",
+                    path.display()
+                )
             }
             Self::ParseFailed { path, message } => match path {
-                Some(path) => write!(formatter, "failed to parse patch {}: {message}", path.display()),
+                Some(path) => write!(
+                    formatter,
+                    "failed to parse patch {}: {message}",
+                    path.display()
+                ),
                 None => write!(formatter, "failed to parse patch: {message}"),
             },
         }
@@ -448,7 +464,11 @@ render:
 
         let error = validate_patch_schema(&patch).expect_err("duplicate IDs must fail");
 
-        assert!(error.diagnostics().contains(&"duplicate module id: osc".to_string()));
+        assert!(
+            error
+                .diagnostics()
+                .contains(&"duplicate module id: osc".to_string())
+        );
     }
 
     #[test]
@@ -467,13 +487,21 @@ render:
 
         let error = validate_patch_schema(&patch).expect_err("missing required values must fail");
 
-        assert!(error.diagnostics().contains(&"metadata.name is required".to_string()));
-        assert!(error
-            .diagnostics()
-            .contains(&"render.sample_rate_hz must be greater than zero".to_string()));
-        assert!(error
-            .diagnostics()
-            .contains(&"modules must declare at least one module".to_string()));
+        assert!(
+            error
+                .diagnostics()
+                .contains(&"metadata.name is required".to_string())
+        );
+        assert!(
+            error
+                .diagnostics()
+                .contains(&"render.sample_rate_hz must be greater than zero".to_string())
+        );
+        assert!(
+            error
+                .diagnostics()
+                .contains(&"modules must declare at least one module".to_string())
+        );
     }
 
     #[test]
@@ -498,12 +526,12 @@ render:
 
         let error = validate_patch_schema(&patch).expect_err("malformed references must fail");
 
-        assert!(error
-            .diagnostics()
-            .contains(&"connection.from must use a non-empty module_id.port_name reference".to_string()));
-        assert!(error
-            .diagnostics()
-            .contains(&"connection.to must use a non-empty module_id.port_name reference".to_string()));
+        assert!(error.diagnostics().contains(
+            &"connection.from must use a non-empty module_id.port_name reference".to_string()
+        ));
+        assert!(error.diagnostics().contains(
+            &"connection.to must use a non-empty module_id.port_name reference".to_string()
+        ));
     }
 
     fn minimal_patch(modules: Vec<ModuleDeclaration>) -> PatchDocument {

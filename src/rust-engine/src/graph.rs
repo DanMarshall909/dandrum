@@ -1,4 +1,4 @@
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 use std::fmt;
 
 use crate::patch;
@@ -12,6 +12,7 @@ pub struct ModuleNode {
     module_type: String,
     inputs: Vec<Port>,
     outputs: Vec<Port>,
+    feedback_boundaries: Vec<SignalType>,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -19,6 +20,7 @@ pub struct Port {
     name: String,
     direction: PortDirection,
     signal_type: SignalType,
+    accepts_multiple_sources: bool,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -32,6 +34,29 @@ pub enum SignalType {
     Audio,
     Control,
     Event,
+}
+
+pub mod builtin_ports {
+    pub const AUDIO: &str = "audio";
+    pub const AUDIO_IN: &str = "audio_in";
+    pub const AUDIO_OUT: &str = "audio_out";
+    pub const EVENTS: &str = "events";
+    pub const GAIN: &str = "gain";
+    pub const PITCH: &str = "pitch";
+    pub const CUTOFF: &str = "cutoff";
+    pub const PAN: &str = "pan";
+    pub const ATTACK: &str = "attack";
+    pub const DECAY: &str = "decay";
+    pub const SUSTAIN: &str = "sustain";
+    pub const RELEASE: &str = "release";
+    pub const LEFT: &str = "left";
+    pub const RIGHT: &str = "right";
+    pub const INPUTS: &str = "inputs";
+    pub const MIX: &str = "mix";
+    pub const SUM: &str = "sum";
+    pub const GATE: &str = "gate";
+    pub const RATE: &str = "rate";
+    pub const VALUE: &str = "value";
 }
 
 impl SignalType {
@@ -89,6 +114,9 @@ pub enum GraphDiagnostic {
     MultipleSourcesToInput {
         destination: PortRef,
     },
+    CycleDetected {
+        path: Vec<Cable>,
+    },
 }
 
 impl ModuleId {
@@ -108,6 +136,7 @@ impl ModuleNode {
             module_type: module_type.into(),
             inputs: Vec::new(),
             outputs: Vec::new(),
+            feedback_boundaries: Vec::new(),
         }
     }
 
@@ -116,8 +145,18 @@ impl ModuleNode {
         self
     }
 
+    pub fn with_mixing_input(mut self, name: impl Into<String>, signal_type: SignalType) -> Self {
+        self.inputs.push(Port::mixing_input(name, signal_type));
+        self
+    }
+
     pub fn with_output(mut self, name: impl Into<String>, signal_type: SignalType) -> Self {
         self.outputs.push(Port::output(name, signal_type));
+        self
+    }
+
+    pub fn with_feedback_boundary(mut self, signal_type: SignalType) -> Self {
+        self.feedback_boundaries.push(signal_type);
         self
     }
 
@@ -136,6 +175,10 @@ impl ModuleNode {
     pub fn outputs(&self) -> &[Port] {
         &self.outputs
     }
+
+    pub fn feedback_boundaries(&self) -> &[SignalType] {
+        &self.feedback_boundaries
+    }
 }
 
 impl Port {
@@ -144,6 +187,16 @@ impl Port {
             name: name.into(),
             direction: PortDirection::Input,
             signal_type,
+            accepts_multiple_sources: false,
+        }
+    }
+
+    pub fn mixing_input(name: impl Into<String>, signal_type: SignalType) -> Self {
+        Self {
+            name: name.into(),
+            direction: PortDirection::Input,
+            signal_type,
+            accepts_multiple_sources: true,
         }
     }
 
@@ -152,6 +205,7 @@ impl Port {
             name: name.into(),
             direction: PortDirection::Output,
             signal_type,
+            accepts_multiple_sources: false,
         }
     }
 
@@ -165,6 +219,10 @@ impl Port {
 
     pub fn signal_type(&self) -> SignalType {
         self.signal_type
+    }
+
+    pub fn accepts_multiple_sources(&self) -> bool {
+        self.accepts_multiple_sources
     }
 }
 
@@ -260,6 +318,7 @@ impl Graph {
     pub fn validate(&self) -> Result<(), GraphValidationError> {
         let mut diagnostics = Vec::new();
         let mut destination_counts: BTreeMap<&PortRef, usize> = BTreeMap::new();
+        let mut destination_allows_multiple_sources: BTreeMap<&PortRef, bool> = BTreeMap::new();
 
         for cable in &self.cables {
             *destination_counts.entry(cable.destination()).or_default() += 1;
@@ -269,6 +328,9 @@ impl Graph {
                 self.resolve_port(cable.destination(), PortDirection::Input, &mut diagnostics);
 
             if let (Some(source), Some(destination)) = (source, destination) {
+                destination_allows_multiple_sources
+                    .insert(cable.destination(), destination.accepts_multiple_sources());
+
                 if !source
                     .signal_type()
                     .is_compatible_with(destination.signal_type())
@@ -284,11 +346,20 @@ impl Graph {
         }
 
         for (destination, count) in destination_counts {
-            if count > 1 {
+            let accepts_multiple_sources = destination_allows_multiple_sources
+                .get(destination)
+                .copied()
+                .unwrap_or(false);
+
+            if count > 1 && !accepts_multiple_sources {
                 diagnostics.push(GraphDiagnostic::MultipleSourcesToInput {
                     destination: destination.clone(),
                 });
             }
+        }
+
+        if let Some(path) = self.find_invalid_cycle() {
+            diagnostics.push(GraphDiagnostic::CycleDetected { path });
         }
 
         if diagnostics.is_empty() {
@@ -348,6 +419,77 @@ impl Graph {
 
         None
     }
+
+    fn find_invalid_cycle(&self) -> Option<Vec<Cable>> {
+        let mut visiting = BTreeSet::new();
+        let mut visited = BTreeSet::new();
+        let mut stack = Vec::new();
+
+        for module in &self.modules {
+            if let Some(path) =
+                self.find_cycle_from(module.id(), &mut visiting, &mut visited, &mut stack)
+            {
+                if !self.cycle_has_feedback_boundary(&path, SignalType::Audio) {
+                    return Some(path);
+                }
+            }
+        }
+
+        None
+    }
+
+    fn cycle_has_feedback_boundary(&self, path: &[Cable], signal_type: SignalType) -> bool {
+        path.iter().any(|cable| {
+            self.modules
+                .iter()
+                .find(|module| module.id() == cable.source().module_id())
+                .is_some_and(|module| module.feedback_boundaries().contains(&signal_type))
+        })
+    }
+
+    fn find_cycle_from(
+        &self,
+        module_id: &ModuleId,
+        visiting: &mut BTreeSet<ModuleId>,
+        visited: &mut BTreeSet<ModuleId>,
+        stack: &mut Vec<Cable>,
+    ) -> Option<Vec<Cable>> {
+        if visited.contains(module_id) {
+            return None;
+        }
+
+        visiting.insert(module_id.clone());
+
+        for cable in self
+            .cables
+            .iter()
+            .filter(|cable| cable.source().module_id() == module_id)
+        {
+            let next_module = cable.destination().module_id();
+
+            if visiting.contains(next_module) {
+                let mut path = stack
+                    .iter()
+                    .skip_while(|stacked| stacked.source().module_id() != next_module)
+                    .cloned()
+                    .collect::<Vec<_>>();
+                path.push(cable.clone());
+                return Some(path);
+            }
+
+            stack.push(cable.clone());
+
+            if let Some(path) = self.find_cycle_from(next_module, visiting, visited, stack) {
+                return Some(path);
+            }
+
+            stack.pop();
+        }
+
+        visiting.remove(module_id);
+        visited.insert(module_id.clone());
+        None
+    }
 }
 
 impl GraphValidationError {
@@ -366,7 +508,10 @@ impl fmt::Display for GraphDiagnostic {
                 write!(formatter, "missing port: {}", port)
             }
             Self::IncorrectPortDirection { port, expected } => {
-                write!(formatter, "incorrect port direction: {port} is not a {expected:?} port")
+                write!(
+                    formatter,
+                    "incorrect port direction: {port} is not a {expected:?} port"
+                )
             }
             Self::IncompatibleSignalTypes {
                 source,
@@ -381,6 +526,15 @@ impl fmt::Display for GraphDiagnostic {
                 formatter,
                 "multiple sources connected to {destination}; use an explicit mixer or summing module"
             ),
+            Self::CycleDetected { path } => {
+                write!(formatter, "routing cycle detected")?;
+
+                for cable in path {
+                    write!(formatter, " {}->{}", cable.source(), cable.destination())?;
+                }
+
+                Ok(())
+            }
         }
     }
 }
@@ -516,6 +670,62 @@ connections:
     }
 
     #[test]
+    fn script_module_ports_declared_in_yaml_are_loaded_into_the_graph() {
+        let patch = patch::load_patch_str(
+            r#"
+metadata:
+  name: Script Ports
+render:
+  sample_rate_hz: 48000
+  block_size_frames: 128
+  duration_frames: 48000
+modules:
+  - id: midi
+    type: midi_input
+    outputs:
+      - name: events
+        signal_type: event
+  - id: accent_script
+    type: script
+    inputs:
+      - name: notes
+        signal_type: event
+    outputs:
+      - name: accent
+        signal_type: control
+  - id: vca
+    type: gain
+    inputs:
+      - name: gain
+        signal_type: control
+connections:
+  - from: midi.events
+    to: accent_script.notes
+  - from: accent_script.accent
+    to: vca.gain
+"#,
+        )
+        .expect("patch should parse");
+
+        patch::validate_patch_schema(&patch).expect("patch schema should be valid");
+
+        let graph = Graph::from_patch_declarations(&patch);
+
+        graph
+            .validate()
+            .expect("script custom ports should validate as graph ports");
+        let script = graph
+            .modules()
+            .iter()
+            .find(|module| module.id().as_str() == "accent_script")
+            .expect("script node should be loaded");
+        assert_eq!(script.inputs()[0].name(), "notes");
+        assert_eq!(script.inputs()[0].signal_type(), SignalType::Event);
+        assert_eq!(script.outputs()[0].name(), "accent");
+        assert_eq!(script.outputs()[0].signal_type(), SignalType::Control);
+    }
+
+    #[test]
     fn validation_accepts_compatible_output_to_input_route() {
         let graph = audio_graph("osc", "audio", "out", "left");
 
@@ -556,6 +766,95 @@ connections:
     }
 
     #[test]
+    fn modulatable_destinations_are_represented_as_control_input_ports() {
+        let module = ModuleNode::new(ModuleId::new("voice"), "synth_voice")
+            .with_input(builtin_ports::GAIN, SignalType::Control)
+            .with_input(builtin_ports::PITCH, SignalType::Control)
+            .with_input(builtin_ports::CUTOFF, SignalType::Control)
+            .with_input(builtin_ports::PAN, SignalType::Control)
+            .with_input(builtin_ports::ATTACK, SignalType::Control)
+            .with_input(builtin_ports::DECAY, SignalType::Control)
+            .with_input(builtin_ports::SUSTAIN, SignalType::Control)
+            .with_input(builtin_ports::RELEASE, SignalType::Control);
+
+        let ports: Vec<(&str, SignalType)> = module
+            .inputs()
+            .iter()
+            .map(|port| (port.name(), port.signal_type()))
+            .collect();
+
+        assert_eq!(
+            ports,
+            vec![
+                ("gain", SignalType::Control),
+                ("pitch", SignalType::Control),
+                ("cutoff", SignalType::Control),
+                ("pan", SignalType::Control),
+                ("attack", SignalType::Control),
+                ("decay", SignalType::Control),
+                ("sustain", SignalType::Control),
+                ("release", SignalType::Control),
+            ]
+        );
+    }
+
+    #[test]
+    fn validation_routes_control_sources_to_modulatable_destination_ports() {
+        let graph = Graph::new(
+            vec![
+                ModuleNode::new(ModuleId::new("lfo"), "lfo")
+                    .with_output("value", SignalType::Control),
+                ModuleNode::new(ModuleId::new("filter"), "filter")
+                    .with_input(builtin_ports::CUTOFF, SignalType::Control),
+            ],
+            vec![Cable::new(
+                PortRef::new(ModuleId::new("lfo"), "value"),
+                PortRef::new(ModuleId::new("filter"), "cutoff"),
+            )],
+        );
+
+        graph
+            .validate()
+            .expect("cutoff modulation should be routed through a control port");
+    }
+
+    #[test]
+    fn validation_accepts_any_control_source_for_any_modulatable_destination() {
+        let sources = [("env", "adsr"), ("lfo", "lfo"), ("script", "script")];
+        let destinations = [
+            builtin_ports::GAIN,
+            builtin_ports::PITCH,
+            builtin_ports::CUTOFF,
+            builtin_ports::PAN,
+            builtin_ports::ATTACK,
+            builtin_ports::DECAY,
+            builtin_ports::SUSTAIN,
+            builtin_ports::RELEASE,
+        ];
+
+        for (source_id, source_type) in sources {
+            for destination in destinations {
+                let graph = Graph::new(
+                    vec![
+                        ModuleNode::new(ModuleId::new(source_id), source_type)
+                            .with_output("value", SignalType::Control),
+                        ModuleNode::new(ModuleId::new("target"), "modulatable")
+                            .with_input(destination, SignalType::Control),
+                    ],
+                    vec![Cable::new(
+                        PortRef::new(ModuleId::new(source_id), "value"),
+                        PortRef::new(ModuleId::new("target"), destination),
+                    )],
+                );
+
+                graph.validate().unwrap_or_else(|error| {
+                    panic!("{source_type} should route to {destination}: {error}")
+                });
+            }
+        }
+    }
+
+    #[test]
     fn validation_reports_missing_module_or_port_references() {
         let graph = Graph::new(
             vec![
@@ -572,9 +871,13 @@ connections:
             .validate()
             .expect_err("missing references should fail");
 
-        assert!(error.diagnostics().contains(&GraphDiagnostic::MissingModule {
-            module_id: ModuleId::new("osc"),
-        }));
+        assert!(
+            error
+                .diagnostics()
+                .contains(&GraphDiagnostic::MissingModule {
+                    module_id: ModuleId::new("osc"),
+                })
+        );
         assert!(error.diagnostics().contains(&GraphDiagnostic::MissingPort {
             port: port_ref("out", "right"),
         }));
@@ -586,18 +889,22 @@ connections:
 
         let error = graph.validate().expect_err("wrong directions should fail");
 
-        assert!(error
-            .diagnostics()
-            .contains(&GraphDiagnostic::IncorrectPortDirection {
-                port: port_ref("out", "left"),
-                expected: PortDirection::Output,
-            }));
-        assert!(error
-            .diagnostics()
-            .contains(&GraphDiagnostic::IncorrectPortDirection {
-                port: port_ref("osc", "audio"),
-                expected: PortDirection::Input,
-            }));
+        assert!(
+            error
+                .diagnostics()
+                .contains(&GraphDiagnostic::IncorrectPortDirection {
+                    port: port_ref("out", "left"),
+                    expected: PortDirection::Output,
+                })
+        );
+        assert!(
+            error
+                .diagnostics()
+                .contains(&GraphDiagnostic::IncorrectPortDirection {
+                    port: port_ref("osc", "audio"),
+                    expected: PortDirection::Input,
+                })
+        );
     }
 
     #[test]
@@ -645,9 +952,7 @@ connections:
             )],
         );
 
-        let error = graph
-            .validate()
-            .expect_err("audio to control should fail");
+        let error = graph.validate().expect_err("audio to control should fail");
 
         assert_eq!(
             error.diagnostics()[0],
@@ -675,9 +980,7 @@ connections:
             )],
         );
 
-        let error = graph
-            .validate()
-            .expect_err("control to audio should fail");
+        let error = graph.validate().expect_err("control to audio should fail");
 
         assert_eq!(
             error.diagnostics()[0],
@@ -705,9 +1008,7 @@ connections:
             )],
         );
 
-        let error = graph
-            .validate()
-            .expect_err("event to control should fail");
+        let error = graph.validate().expect_err("event to control should fail");
 
         assert_eq!(
             error.diagnostics()[0],
@@ -752,6 +1053,95 @@ connections:
                     destination: port_ref("vca", "gain"),
                 })
         );
+    }
+
+    #[test]
+    fn validation_accepts_multiple_control_sources_through_explicit_mixer() {
+        let graph = Graph::new(
+            vec![
+                ModuleNode::new(ModuleId::new("env"), "adsr")
+                    .with_output("value", SignalType::Control),
+                ModuleNode::new(ModuleId::new("lfo"), "lfo")
+                    .with_output("value", SignalType::Control),
+                ModuleNode::new(ModuleId::new("control_mix"), "control_mixer")
+                    .with_mixing_input("inputs", SignalType::Control)
+                    .with_output("sum", SignalType::Control),
+                ModuleNode::new(ModuleId::new("vca"), "gain")
+                    .with_input(builtin_ports::GAIN, SignalType::Control),
+            ],
+            vec![
+                Cable::new(
+                    PortRef::new(ModuleId::new("env"), "value"),
+                    PortRef::new(ModuleId::new("control_mix"), "inputs"),
+                ),
+                Cable::new(
+                    PortRef::new(ModuleId::new("lfo"), "value"),
+                    PortRef::new(ModuleId::new("control_mix"), "inputs"),
+                ),
+                Cable::new(
+                    PortRef::new(ModuleId::new("control_mix"), "sum"),
+                    PortRef::new(ModuleId::new("vca"), "gain"),
+                ),
+            ],
+        );
+
+        graph
+            .validate()
+            .expect("explicit mixer input should accept multiple control sources");
+    }
+
+    #[test]
+    fn validation_reports_cycle_path_with_participating_ports() {
+        let graph = Graph::new(
+            vec![
+                ModuleNode::new(ModuleId::new("left"), "gain")
+                    .with_input("audio_in", SignalType::Audio)
+                    .with_output("audio_out", SignalType::Audio),
+                ModuleNode::new(ModuleId::new("right"), "gain")
+                    .with_input("audio_in", SignalType::Audio)
+                    .with_output("audio_out", SignalType::Audio),
+            ],
+            vec![
+                Cable::new(port_ref("left", "audio_out"), port_ref("right", "audio_in")),
+                Cable::new(port_ref("right", "audio_out"), port_ref("left", "audio_in")),
+            ],
+        );
+
+        let error = graph.validate().expect_err("cycle should fail");
+
+        assert!(
+            error
+                .diagnostics()
+                .contains(&GraphDiagnostic::CycleDetected {
+                    path: vec![
+                        Cable::new(port_ref("left", "audio_out"), port_ref("right", "audio_in")),
+                        Cable::new(port_ref("right", "audio_out"), port_ref("left", "audio_in")),
+                    ],
+                })
+        );
+    }
+
+    #[test]
+    fn validation_accepts_audio_feedback_cycle_with_explicit_audio_delay_boundary() {
+        let graph = Graph::new(
+            vec![
+                ModuleNode::new(ModuleId::new("gain"), "gain")
+                    .with_input("audio_in", SignalType::Audio)
+                    .with_output("audio_out", SignalType::Audio),
+                ModuleNode::new(ModuleId::new("delay"), "audio_delay_one_sample")
+                    .with_input("audio_in", SignalType::Audio)
+                    .with_output("audio_out", SignalType::Audio)
+                    .with_feedback_boundary(SignalType::Audio),
+            ],
+            vec![
+                Cable::new(port_ref("gain", "audio_out"), port_ref("delay", "audio_in")),
+                Cable::new(port_ref("delay", "audio_out"), port_ref("gain", "audio_in")),
+            ],
+        );
+
+        graph
+            .validate()
+            .expect("audio feedback through explicit audio delay should validate");
     }
 
     fn port_ref(module_id: &str, port_name: &str) -> PortRef {

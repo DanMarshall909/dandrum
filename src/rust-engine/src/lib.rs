@@ -1,10 +1,14 @@
 pub mod core;
 
+pub mod builtins;
+
 pub mod graph;
 
 pub mod cli;
 
 pub mod patch;
+
+pub mod script;
 
 pub mod synth;
 

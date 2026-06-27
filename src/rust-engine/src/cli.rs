@@ -25,7 +25,10 @@ where
 
 fn validate(args: Vec<String>) -> CliResult {
     if args.len() != 1 {
-        return error(format!("validate requires exactly one patch path\n\n{}", usage()));
+        return error(format!(
+            "validate requires exactly one patch path\n\n{}",
+            usage()
+        ));
     }
 
     let patch = PathBuf::from(&args[0]);
@@ -90,7 +93,11 @@ mod tests {
 
         assert_eq!(result.exit_code, 0);
         assert!(result.stdout.contains("validate <patch.yaml>"));
-        assert!(result.stdout.contains("render <patch.yaml> --output <output.wav>"));
+        assert!(
+            result
+                .stdout
+                .contains("render <patch.yaml> --output <output.wav>")
+        );
         assert!(result.stderr.is_empty());
     }
 
@@ -110,7 +117,11 @@ mod tests {
 
         assert_eq!(result.exit_code, 2);
         assert!(result.stdout.is_empty());
-        assert!(result.stderr.contains("validate requires exactly one patch path"));
+        assert!(
+            result
+                .stderr
+                .contains("validate requires exactly one patch path")
+        );
         assert!(result.stderr.contains("validate <patch.yaml>"));
     }
 
