@@ -1,5 +1,7 @@
 pub mod core;
 
+pub mod graph_processor;
+
 pub mod builtins;
 
 pub mod graph;
@@ -11,6 +13,8 @@ pub mod patch;
 pub mod script;
 
 pub mod synth;
+
+pub mod wav;
 
 pub use synth::DandrumEngine;
 
