@@ -17,6 +17,8 @@ modules:
       asset: hit
   - id: note_rate
     type: note_to_rate
+  - id: mixer
+    type: audio_mixer
   - id: out
     type: audio_output
 connections:
@@ -27,6 +29,8 @@ connections:
   - from: note_rate.rate
     to: sampler.rate
   - from: sampler.audio
+    to: mixer.inputs
+  - from: mixer.mix
     to: out.left
-  - from: sampler.audio
+  - from: mixer.mix
     to: out.right

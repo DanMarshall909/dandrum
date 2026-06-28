@@ -105,6 +105,7 @@ enum PerModuleState {
     NoteToRate {
         rate: f32,
     },
+    AudioMixer,
     // Intentionally monophonic until the engine has generic per-voice bus support.
     Sampler {
         sample: Option<LoadedSample>,
@@ -131,6 +132,7 @@ impl PerModuleState {
             "midi_input" => PerModuleState::MidiInput,
             "audio_delay" => PerModuleState::AudioDelay,
             "note_to_rate" => PerModuleState::NoteToRate { rate: 1.0 },
+            "audio_mixer" => PerModuleState::AudioMixer,
             "sampler" => PerModuleState::Sampler {
                 sample: sampler_assets.get(module.id().as_str()).cloned(),
                 position: 0.0,
@@ -447,6 +449,22 @@ fn process_block(
                 )
             }
             "note_to_rate" => process_note_to_rate(&mut states[module_idx], &events_in, frames),
+            "audio_mixer" => {
+                let mix = sum_audio_input(
+                    module_idx,
+                    builtin_ports::INPUTS,
+                    routing,
+                    &all_outputs,
+                    frames,
+                );
+                let mut m = HashMap::new();
+                m.insert(builtin_ports::MIX.to_string(), mix);
+                ModuleOutputs {
+                    audio: m,
+                    control: HashMap::new(),
+                    events: Vec::new(),
+                }
+            }
             "audio_output" => {
                 let left = sum_audio_input(
                     module_idx,
@@ -1036,6 +1054,8 @@ modules:
     outputs:
       - name: audio_out
         signal_type: audio
+  - id: mixer
+    type: audio_mixer
   - id: out
     type: audio_output
     inputs:
@@ -1051,8 +1071,10 @@ connections:
   - from: env.value
     to: vca.gain
   - from: vca.audio_out
+    to: mixer.inputs
+  - from: mixer.mix
     to: out.left
-  - from: vca.audio_out
+  - from: mixer.mix
     to: out.right
 "#,
         )
@@ -1099,6 +1121,8 @@ modules:
     outputs:
       - name: audio
         signal_type: audio
+  - id: mixer
+    type: audio_mixer
   - id: out
     type: audio_output
     inputs:
@@ -1108,8 +1132,10 @@ modules:
         signal_type: audio
 connections:
   - from: osc.audio
+    to: mixer.inputs
+  - from: mixer.mix
     to: out.left
-  - from: osc.audio
+  - from: mixer.mix
     to: out.right
 "#,
         )

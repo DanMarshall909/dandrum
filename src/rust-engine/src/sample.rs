@@ -206,7 +206,7 @@ fn load_pcm_wav(path: &Path, expected_sample_rate_hz: u32) -> Result<LoadedSampl
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::patch::{AssetDeclaration, ModuleDeclaration, PatchMetadata, RenderSettings};
+    use crate::patch::{AssetDeclaration, ModuleDeclaration, PatchMetadata, RenderSettings, VoiceAllocation};
     use crate::wav::write_wav_stereo_i16;
     use std::path::PathBuf;
 
@@ -295,6 +295,7 @@ mod tests {
                 )]),
             }],
             connections: vec![],
+            voice_allocation: VoiceAllocation::default(),
         }
     }
 

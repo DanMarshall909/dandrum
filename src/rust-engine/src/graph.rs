@@ -4,6 +4,12 @@ use std::fmt;
 use crate::builtins::{BuiltInModuleRegistry, module_types};
 use crate::patch;
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum ExecutionScope {
+    Voice,
+    Global,
+}
+
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct ModuleId(String);
 
@@ -14,6 +20,7 @@ pub struct ModuleNode {
     inputs: Vec<Port>,
     outputs: Vec<Port>,
     feedback_boundaries: Vec<SignalType>,
+    execution_scope: ExecutionScope,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -123,6 +130,16 @@ pub enum GraphDiagnostic {
     CycleDetected {
         path: Vec<Cable>,
     },
+    VoiceToGlobalDirectRouting {
+        source: PortRef,
+        destination: PortRef,
+    },
+    MixedSignalRouting {
+        source: PortRef,
+        source_type: SignalType,
+        destination: PortRef,
+        destination_type: SignalType,
+    },
 }
 
 impl ModuleId {
@@ -143,7 +160,17 @@ impl ModuleNode {
             inputs: Vec::new(),
             outputs: Vec::new(),
             feedback_boundaries: Vec::new(),
+            execution_scope: ExecutionScope::Global,
         }
+    }
+
+    pub fn with_execution_scope(mut self, scope: ExecutionScope) -> Self {
+        self.execution_scope = scope;
+        self
+    }
+
+    pub fn execution_scope(&self) -> ExecutionScope {
+        self.execution_scope
     }
 
     pub fn with_input(mut self, name: impl Into<String>, signal_type: SignalType) -> Self {
@@ -282,6 +309,8 @@ impl Graph {
                 let definition = registry.get(&module.module_type);
 
                 if let Some(definition) = definition {
+                    node = node.with_execution_scope(definition.execution_scope());
+
                     for input in definition.inputs() {
                         node = if input.accepts_multiple_sources() {
                             node.with_mixing_input(input.name().to_string(), input.signal_type())
@@ -373,6 +402,27 @@ impl Graph {
                         destination: cable.destination().clone(),
                         destination_type: destination.signal_type(),
                     });
+                }
+
+                let source_module = self
+                    .modules
+                    .iter()
+                    .find(|m| m.id() == cable.source().module_id());
+                let dest_module = self
+                    .modules
+                    .iter()
+                    .find(|m| m.id() == cable.destination().module_id());
+
+                if let (Some(source_module), Some(dest_module)) = (source_module, dest_module) {
+                    if source_module.execution_scope() == ExecutionScope::Voice
+                        && dest_module.execution_scope() == ExecutionScope::Global
+                        && !destination.accepts_multiple_sources()
+                    {
+                        diagnostics.push(GraphDiagnostic::VoiceToGlobalDirectRouting {
+                            source: cable.source().clone(),
+                            destination: cable.destination().clone(),
+                        });
+                    }
                 }
             }
         }
@@ -597,6 +647,19 @@ impl fmt::Display for GraphDiagnostic {
 
                 Ok(())
             }
+            Self::VoiceToGlobalDirectRouting { source, destination } => write!(
+                formatter,
+                "voice-scoped output {source} cannot route directly to global input {destination}; use an explicit mixer or summing module"
+            ),
+            Self::MixedSignalRouting {
+                source,
+                source_type,
+                destination,
+                destination_type,
+            } => write!(
+                formatter,
+                "mixed signal routing: {source} is {source_type:?}, but {destination} is {destination_type:?}; use an explicit converter module"
+            ),
         }
     }
 }
@@ -850,6 +913,8 @@ modules:
       asset: hit
   - id: lfo
     type: lfo
+  - id: mixer
+    type: audio_mixer
   - id: out
     type: audio_output
 connections:
@@ -860,6 +925,8 @@ connections:
   - from: lfo.value
     to: sampler.start
   - from: sampler.audio
+    to: mixer.inputs
+  - from: mixer.mix
     to: out.left
 "#,
         )
@@ -1413,6 +1480,281 @@ connections:
         graph
             .validate()
             .expect("event feedback should be handled by future-block scheduling");
+    }
+
+    // --- Section 3: Voice sub-synth scope and routing validation ---
+
+    #[test]
+    fn built_in_voice_modules_are_voice_scope() {
+        let registry = crate::builtins::BuiltInModuleRegistry::new();
+
+        for module_type in [
+            "oscillator",
+            "gain",
+            "filter",
+            "adsr",
+            "sampler",
+            "script",
+        ] {
+            let definition = registry.get(module_type).unwrap_or_else(|| {
+                panic!("{module_type} should be built in");
+            });
+            assert_eq!(
+                definition.execution_scope(),
+                ExecutionScope::Voice,
+                "{module_type} should be Voice scope"
+            );
+        }
+    }
+
+    #[test]
+    fn built_in_global_modules_are_global_scope() {
+        let registry = crate::builtins::BuiltInModuleRegistry::new();
+
+        for module_type in [
+            "midi_input",
+            "audio_output",
+            "audio_mixer",
+            "control_mixer",
+            "lfo",
+            "audio_delay_one_sample",
+            "block_delay",
+            "control_delay",
+            "note_to_rate",
+        ] {
+            let definition = registry.get(module_type).unwrap_or_else(|| {
+                panic!("{module_type} should be built in");
+            });
+            assert_eq!(
+                definition.execution_scope(),
+                ExecutionScope::Global,
+                "{module_type} should be Global scope"
+            );
+        }
+    }
+
+    #[test]
+    fn voice_local_sub_synth_chain_through_mixer_validates() {
+        let patch = crate::patch::load_patch_str(
+            r#"
+metadata:
+  name: Voice Sub-Synth
+render:
+  sample_rate_hz: 48000
+  block_size_frames: 128
+  duration_frames: 48000
+modules:
+  - id: osc
+    type: oscillator
+  - id: vca
+    type: gain
+  - id: mixer
+    type: audio_mixer
+  - id: out
+    type: audio_output
+connections:
+  - from: osc.audio
+    to: vca.audio_in
+  - from: vca.audio_out
+    to: mixer.inputs
+  - from: mixer.mix
+    to: out.left
+"#,
+        )
+        .expect("patch should parse");
+
+        crate::patch::validate_patch_schema(&patch)
+            .expect("patch schema should be valid");
+        let graph = Graph::from_patch_declarations(&patch);
+
+        graph
+            .validate()
+            .expect("voice sub-synth chain through mixer should validate");
+    }
+
+    #[test]
+    fn voice_local_sub_synth_with_control_and_output_shaping_validates() {
+        let patch = crate::patch::load_patch_str(
+            r#"
+metadata:
+  name: Voice Sub-Synth With ADSR
+render:
+  sample_rate_hz: 48000
+  block_size_frames: 128
+  duration_frames: 48000
+modules:
+  - id: osc
+    type: oscillator
+  - id: adsr
+    type: adsr
+  - id: vca
+    type: gain
+  - id: mixer
+    type: audio_mixer
+  - id: out
+    type: audio_output
+connections:
+  - from: osc.audio
+    to: vca.audio_in
+  - from: adsr.value
+    to: vca.gain
+  - from: vca.audio_out
+    to: mixer.inputs
+  - from: mixer.mix
+    to: out.left
+"#,
+        )
+        .expect("patch should parse");
+
+        crate::patch::validate_patch_schema(&patch)
+            .expect("patch schema should be valid");
+        let graph = Graph::from_patch_declarations(&patch);
+
+        graph
+            .validate()
+            .expect("voice sub-synth with ADSR control routing should validate");
+    }
+
+    #[test]
+    fn voice_to_global_direct_routing_without_mixer_is_rejected() {
+        let patch = crate::patch::load_patch_str(
+            r#"
+metadata:
+  name: Direct Voice To Output
+render:
+  sample_rate_hz: 48000
+  block_size_frames: 128
+  duration_frames: 48000
+modules:
+  - id: osc
+    type: oscillator
+  - id: out
+    type: audio_output
+connections:
+  - from: osc.audio
+    to: out.left
+"#,
+        )
+        .expect("patch should parse");
+
+        crate::patch::validate_patch_schema(&patch)
+            .expect("patch schema should be valid");
+        let graph = Graph::from_patch_declarations(&patch);
+        let error = graph
+            .validate()
+            .expect_err("voice-to-global direct routing should fail");
+
+        assert!(error.diagnostics().iter().any(|d| matches!(
+            d,
+            GraphDiagnostic::VoiceToGlobalDirectRouting { .. }
+        )));
+    }
+
+    #[test]
+    fn explicit_audio_mixer_accepts_multiple_voice_sources() {
+        let patch = crate::patch::load_patch_str(
+            r#"
+metadata:
+  name: Two Voices To Mixer
+render:
+  sample_rate_hz: 48000
+  block_size_frames: 128
+  duration_frames: 48000
+modules:
+  - id: osc1
+    type: oscillator
+  - id: osc2
+    type: oscillator
+  - id: mixer
+    type: audio_mixer
+  - id: out
+    type: audio_output
+connections:
+  - from: osc1.audio
+    to: mixer.inputs
+  - from: osc2.audio
+    to: mixer.inputs
+  - from: mixer.mix
+    to: out.left
+"#,
+        )
+        .expect("patch should parse");
+
+        crate::patch::validate_patch_schema(&patch)
+            .expect("patch schema should be valid");
+        let graph = Graph::from_patch_declarations(&patch);
+
+        graph
+            .validate()
+            .expect("explicit audio mixer should accept multiple voice sources");
+    }
+
+    #[test]
+    fn explicit_note_to_rate_converter_accepts_event_input_and_control_output() {
+        let patch = crate::patch::load_patch_str(
+            r#"
+metadata:
+  name: Note To Rate Converter
+render:
+  sample_rate_hz: 48000
+  block_size_frames: 128
+  duration_frames: 48000
+modules:
+  - id: midi
+    type: midi_input
+  - id: note_rate
+    type: note_to_rate
+  - id: osc
+    type: oscillator
+  - id: mixer
+    type: audio_mixer
+  - id: out
+    type: audio_output
+connections:
+  - from: midi.events
+    to: note_rate.events
+  - from: note_rate.rate
+    to: osc.pitch
+  - from: osc.audio
+    to: mixer.inputs
+  - from: mixer.mix
+    to: out.left
+"#,
+        )
+        .expect("patch should parse");
+
+        crate::patch::validate_patch_schema(&patch)
+            .expect("patch schema should be valid");
+        let graph = Graph::from_patch_declarations(&patch);
+
+        graph
+            .validate()
+            .expect("note_to_rate converter should accept event input and emit control output");
+    }
+
+    #[test]
+    fn implicit_audio_to_control_routing_is_rejected() {
+        let graph = Graph::new(
+            vec![
+                ModuleNode::new(ModuleId::new("osc"), "oscillator")
+                    .with_output("audio", SignalType::Audio),
+                ModuleNode::new(ModuleId::new("vca"), "gain")
+                    .with_input("gain", SignalType::Control),
+            ],
+            vec![Cable::new(
+                port_ref("osc", "audio"),
+                port_ref("vca", "gain"),
+            )],
+        );
+
+        let error = graph
+            .validate()
+            .expect_err("implicit audio-to-control routing should fail");
+
+        assert!(error.diagnostics().iter().any(|d| matches!(
+            d,
+            GraphDiagnostic::IncompatibleSignalTypes { .. }
+        )));
     }
 
     fn port_ref(module_id: &str, port_name: &str) -> PortRef {

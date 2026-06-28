@@ -18,6 +18,8 @@ pub mod synth;
 
 pub mod wav;
 
+pub mod voice_allocator;
+
 pub use synth::DandrumEngine;
 
 #[unsafe(no_mangle)]

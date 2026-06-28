@@ -1,6 +1,6 @@
 use std::collections::BTreeMap;
 
-use crate::graph::{Port, SignalType, builtin_ports};
+use crate::graph::{ExecutionScope, Port, SignalType, builtin_ports};
 
 pub mod module_types {
     pub const MIDI_INPUT: &str = "midi_input";
@@ -26,6 +26,7 @@ pub struct BuiltInModuleDefinition {
     inputs: Vec<Port>,
     outputs: Vec<Port>,
     feedback_boundaries: Vec<SignalType>,
+    execution_scope: ExecutionScope,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -40,7 +41,17 @@ impl BuiltInModuleDefinition {
             inputs: Vec::new(),
             outputs: Vec::new(),
             feedback_boundaries: Vec::new(),
+            execution_scope: ExecutionScope::Global,
         }
+    }
+
+    pub fn with_execution_scope(mut self, scope: ExecutionScope) -> Self {
+        self.execution_scope = scope;
+        self
+    }
+
+    pub fn execution_scope(&self) -> ExecutionScope {
+        self.execution_scope
     }
 
     pub fn with_input(mut self, port: Port) -> Self {
@@ -129,12 +140,14 @@ fn audio_output_definition() -> BuiltInModuleDefinition {
 
 fn oscillator_definition() -> BuiltInModuleDefinition {
     BuiltInModuleDefinition::new(module_types::OSCILLATOR)
+        .with_execution_scope(ExecutionScope::Voice)
         .with_input(Port::input(builtin_ports::PITCH, SignalType::Control))
         .with_output(Port::output(builtin_ports::AUDIO, SignalType::Audio))
 }
 
 fn gain_definition() -> BuiltInModuleDefinition {
     BuiltInModuleDefinition::new(module_types::GAIN)
+        .with_execution_scope(ExecutionScope::Voice)
         .with_input(Port::input(builtin_ports::AUDIO_IN, SignalType::Audio))
         .with_input(Port::input(builtin_ports::GAIN, SignalType::Control))
         .with_output(Port::output(builtin_ports::AUDIO_OUT, SignalType::Audio))
@@ -157,6 +170,7 @@ fn control_mixer_definition() -> BuiltInModuleDefinition {
 
 fn adsr_definition() -> BuiltInModuleDefinition {
     BuiltInModuleDefinition::new(module_types::ADSR)
+        .with_execution_scope(ExecutionScope::Voice)
         .with_input(Port::input(builtin_ports::GATE, SignalType::Event))
         .with_input(Port::input(builtin_ports::ATTACK, SignalType::Control))
         .with_input(Port::input(builtin_ports::DECAY, SignalType::Control))
@@ -173,6 +187,7 @@ fn lfo_definition() -> BuiltInModuleDefinition {
 
 fn filter_definition() -> BuiltInModuleDefinition {
     BuiltInModuleDefinition::new(module_types::FILTER)
+        .with_execution_scope(ExecutionScope::Voice)
         .with_input(Port::input(builtin_ports::AUDIO_IN, SignalType::Audio))
         .with_input(Port::input(builtin_ports::CUTOFF, SignalType::Control))
         .with_output(Port::output(builtin_ports::AUDIO_OUT, SignalType::Audio))
@@ -201,10 +216,12 @@ fn control_delay_definition() -> BuiltInModuleDefinition {
 
 fn script_definition() -> BuiltInModuleDefinition {
     BuiltInModuleDefinition::new(module_types::SCRIPT)
+        .with_execution_scope(ExecutionScope::Voice)
 }
 
 fn sampler_definition() -> BuiltInModuleDefinition {
     BuiltInModuleDefinition::new(module_types::SAMPLER)
+        .with_execution_scope(ExecutionScope::Voice)
         .with_input(Port::input(builtin_ports::TRIGGER, SignalType::Event))
         .with_input(Port::input(builtin_ports::RATE, SignalType::Control))
         .with_input(Port::input(builtin_ports::START, SignalType::Control))

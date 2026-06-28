@@ -15,6 +15,8 @@ pub struct PatchDocument {
     pub modules: Vec<ModuleDeclaration>,
     #[serde(default)]
     pub connections: Vec<ConnectionDeclaration>,
+    #[serde(default)]
+    pub voice_allocation: VoiceAllocation,
 }
 
 #[derive(Clone, Debug, Default, Deserialize, PartialEq, Eq)]
@@ -90,6 +92,30 @@ pub struct ConnectionDeclaration {
 pub struct PortReference {
     pub module_id: String,
     pub port_name: String,
+}
+
+#[derive(Clone, Debug, Deserialize, PartialEq, Eq)]
+pub struct VoiceAllocation {
+    pub max_voices: u32,
+    #[serde(default)]
+    pub stealing: VoiceStealingPolicy,
+}
+
+impl Default for VoiceAllocation {
+    fn default() -> Self {
+        Self {
+            max_voices: 1,
+            stealing: VoiceStealingPolicy::Disabled,
+        }
+    }
+}
+
+#[derive(Clone, Debug, Default, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "snake_case")]
+pub enum VoiceStealingPolicy {
+    #[default]
+    Disabled,
+    OldestActive,
 }
 
 #[derive(Debug)]
@@ -182,6 +208,10 @@ pub fn validate_patch_schema(patch: &PatchDocument) -> Result<(), PatchValidatio
         if module.module_type == "sampler" {
             validate_sampler_asset_reference(module, patch, &mut diagnostics);
         }
+    }
+
+    if patch.voice_allocation.max_voices == 0 {
+        diagnostics.push("voice_allocation.max_voices must be greater than zero".to_string());
     }
 
     for connection in &patch.connections {
@@ -359,6 +389,7 @@ mod tests {
                     port_name: "left".to_string(),
                 },
             }],
+            voice_allocation: VoiceAllocation::default(),
         };
 
         assert_eq!(patch.metadata.name, "Basic Voice");
@@ -431,6 +462,120 @@ connections:
         assert_eq!(patch.modules[0].module_type, "oscillator");
         assert_eq!(patch.connections[0].from.module_id, "osc");
         assert_eq!(patch.connections[0].from.port_name, "audio");
+    }
+
+    #[test]
+    fn missing_voice_allocation_defaults_to_monophonic_without_stealing() {
+        let patch = load_patch_str(
+            r#"
+metadata:
+  name: Monophonic Default
+render:
+  sample_rate_hz: 48000
+  block_size_frames: 128
+  duration_frames: 48000
+modules:
+  - id: out
+    type: audio_output
+    inputs:
+      - name: left
+        signal_type: audio
+"#,
+        )
+        .expect("patch without voice allocation should parse");
+
+        assert_eq!(patch.voice_allocation.max_voices, 1);
+        assert_eq!(
+            patch.voice_allocation.stealing,
+            VoiceStealingPolicy::Disabled
+        );
+        validate_patch_schema(&patch).expect("default voice allocation should validate");
+    }
+
+    #[test]
+    fn loads_polyphonic_voice_allocation_from_yaml() {
+        let patch = load_patch_str(
+            r#"
+metadata:
+  name: Polyphonic
+render:
+  sample_rate_hz: 48000
+  block_size_frames: 128
+  duration_frames: 48000
+voice_allocation:
+  max_voices: 8
+  stealing: oldest_active
+modules:
+  - id: out
+    type: audio_output
+    inputs:
+      - name: left
+        signal_type: audio
+"#,
+        )
+        .expect("polyphonic voice allocation should parse");
+
+        assert_eq!(patch.voice_allocation.max_voices, 8);
+        assert_eq!(
+            patch.voice_allocation.stealing,
+            VoiceStealingPolicy::OldestActive
+        );
+        validate_patch_schema(&patch).expect("positive polyphony should validate");
+    }
+
+    #[test]
+    fn zero_max_voices_is_rejected_by_validation() {
+        let patch = load_patch_str(
+            r#"
+metadata:
+  name: Zero Voices
+render:
+  sample_rate_hz: 48000
+  block_size_frames: 128
+  duration_frames: 48000
+voice_allocation:
+  max_voices: 0
+modules:
+  - id: out
+    type: audio_output
+    inputs:
+      - name: left
+        signal_type: audio
+"#,
+        )
+        .expect("zero voice limit should parse for validation");
+
+        let error = validate_patch_schema(&patch).expect_err("zero max_voices must fail");
+
+        assert!(error.diagnostics().contains(
+            &"voice_allocation.max_voices must be greater than zero".to_string()
+        ));
+    }
+
+    #[test]
+    fn negative_max_voices_is_rejected_at_parse_time() {
+        let error = load_patch_str(
+            r#"
+metadata:
+  name: Negative Voices
+render:
+  sample_rate_hz: 48000
+  block_size_frames: 128
+  duration_frames: 48000
+voice_allocation:
+  max_voices: -1
+modules:
+  - id: out
+    type: audio_output
+    inputs:
+      - name: left
+        signal_type: audio
+"#,
+        )
+        .expect_err("negative voice limit must fail at parse time");
+
+        assert!(matches!(error, PatchLoadError::ParseFailed { .. }));
+        assert!(error.to_string().contains("voice_allocation.max_voices"));
     }
 
     #[test]
@@ -524,6 +669,7 @@ render:
             assets: vec![],
             modules: vec![],
             connections: vec![],
+            voice_allocation: VoiceAllocation::default(),
         };
 
         let error = validate_patch_schema(&patch).expect_err("missing required values must fail");
@@ -652,6 +798,7 @@ render:
             assets: vec![],
             modules,
             connections: vec![],
+            voice_allocation: VoiceAllocation::default(),
         }
     }
 
