@@ -15,7 +15,7 @@ The raw polyphonic path (`process_block_polyphonic`, `graph_processor.rs:1034-12
 - Fix compiled offline rendering so voice producers are processed before global consumers.
 - Keep `CompiledPatch::execution_order` field, `global_node_indices`, `voice_node_indices` unchanged.
 - Keep `compile()` unchanged — globals-first remains the spec.
-- Remove the public `execution_order()` getter so external code cannot accidentally flat-iterate globals-first order. Renderers must use `voice_node_indices()` / `global_node_indices()`.
+- Stop using `execution_order()` in `process_block_compiled`. Renderers should use `voice_node_indices()` / `global_node_indices()`.
 - Add a parity test that fails before the fix and passes after.
 - Add a guard test proving `execution_order` stays globals-first after the fix.
 - Keep all existing parity and unit tests passing.
@@ -51,17 +51,11 @@ This matches the proven pattern in `process_block_polyphonic` but without per-vo
 
 **Rationale**: The raw monophonic `process_block` uses a single flat iteration of `topo_order` — but that `topo_order` is pure dependency order, not globals-first. The compiled path's `execution_order` is different (globals-first), so the compiled path cannot safely flat-iterate. Two-phase is the minimal correct change.
 
-### Decision: Remove public `execution_order()` getter
+### Decision: Document `execution_order()` as scope-ordered metadata, not render order
 
-**Decision**: Remove the `pub fn execution_order()` getter from `CompiledPatch`. The field remains as a private struct member for internal bookkeeping, but no code outside `compiled_patch.rs` can iterate the flat globals-first order.
+**Decision**: Add a doc comment to the `execution_order()` getter explaining it is scope-ordered metadata (globals-first, then voices), not a render iteration order. Renderers should use `voice_node_indices()` and `global_node_indices()`.
 
-**Rationale**: The getter had one external caller — `process_block_compiled` at `graph_processor.rs:468` — which was the exact line that caused the bug. Removing the getter makes this class of bug a compile error forever: any future render path must explicitly choose `voice_node_indices()` or `global_node_indices()`, forcing correct scope ordering at the call site.
-
-Alternatives considered:
-- Rename to `scope_ordered_indices()`: rejected — convention is not enforcement.
-- Return a non-iterable wrapper: rejected — adds complexity for a single getter that should not exist.
-
-Tests in `compiled_patch.rs` access the field directly (same module, private field visibility permits this).
+**Rationale**: The getter is useful for debugging and inspection. The bug was that `process_block_compiled` assumed the flat order was the render order. A doc comment makes the contract explicit without removing the API. The real fix is to stop using `execution_order()` for rendering — which the two-phase design does.
 
 ### Decision: Use existing `voice_node_indices` / `global_node_indices`
 
@@ -77,7 +71,6 @@ Tests in `compiled_patch.rs` access the field directly (same module, private fie
 
 ## Risks / Trade-offs
 
-- **[Risk] Removing the `execution_order()` getter limits diagnostic inspection** → Mitigation: the order is trivially reconstructable as `global_node_indices ++ voice_node_indices`. The struct's `Debug` impl can also show it.
 - **[Risk] Two-phase adds a second loop over modules** → Mitigation: this is a constant-factor change (one extra iteration over the same total modules) and doesn't affect order of module processing within each scope.
 - **[Risk] Existing parity tests may mask edge cases** → Mitigation: the new voice→global parity test explicitly exercises the bug scenario. All three existing parity tests must still pass (they use all-global graphs).
 - **[Risk] The monophonic compiled path doesn't have per-voice state** → Mitigation: the compiled path only processes one voice (no `voice_idx` dimension), so accumulation is simply storing into the shared `all_outputs` map — no summing needed.
