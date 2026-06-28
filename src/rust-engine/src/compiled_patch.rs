@@ -104,6 +104,12 @@ impl CompiledPatch {
         &self.nodes
     }
 
+    /// Returns the execution order as scope-ordered metadata.
+    ///
+    /// Global-scoped indices appear before voice-scoped indices.
+    /// This is NOT a render iteration order — use [`voice_node_indices`]
+    /// and [`global_node_indices`] for rendering to ensure voice
+    /// producers execute before global consumers.
     pub fn execution_order(&self) -> &[ExecutionStep] {
         &self.execution_order
     }

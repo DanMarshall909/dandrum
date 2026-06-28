@@ -465,15 +465,19 @@ fn process_block_compiled(
         all_outputs.insert(idx, outputs);
     }
 
-    for &module_idx in compiled.execution_order() {
+    // Closure that processes one compiled node, reads inputs from all_outputs,
+    // and stores outputs. Shared by voice and global phases below.
+    let process_node = |module_idx: usize,
+                            states: &mut [PerModuleState],
+                            all_outputs: &mut HashMap<usize, ModuleOutputs>| {
         let node = &compiled.nodes()[module_idx];
         let module_type = node.module_type.as_str();
 
         if module_type == "midi_input" {
-            continue;
+            return;
         }
 
-        let events_in = compiled_gather_event_inputs(module_idx, compiled, &all_outputs);
+        let events_in = compiled_gather_event_inputs(module_idx, compiled, all_outputs);
 
         let outputs = match module_type {
             "oscillator" => {
@@ -481,7 +485,7 @@ fn process_block_compiled(
                     module_idx,
                     builtin_ports::PITCH,
                     compiled,
-                    &all_outputs,
+                    all_outputs,
                     frames,
                     1.0,
                 );
@@ -492,28 +496,28 @@ fn process_block_compiled(
                     module_idx,
                     builtin_ports::ATTACK,
                     compiled,
-                    &all_outputs,
+                    all_outputs,
                     frames,
                 );
                 let decay_in = compiled_sum_control_input(
                     module_idx,
                     builtin_ports::DECAY,
                     compiled,
-                    &all_outputs,
+                    all_outputs,
                     frames,
                 );
                 let sustain_in = compiled_sum_control_input(
                     module_idx,
                     builtin_ports::SUSTAIN,
                     compiled,
-                    &all_outputs,
+                    all_outputs,
                     frames,
                 );
                 let release_in = compiled_sum_control_input(
                     module_idx,
                     builtin_ports::RELEASE,
                     compiled,
-                    &all_outputs,
+                    all_outputs,
                     frames,
                 );
                 process_adsr(
@@ -532,14 +536,14 @@ fn process_block_compiled(
                     module_idx,
                     builtin_ports::AUDIO_IN,
                     compiled,
-                    &all_outputs,
+                    all_outputs,
                     frames,
                 );
                 let gain_in = compiled_sum_control_input(
                     module_idx,
                     builtin_ports::GAIN,
                     compiled,
-                    &all_outputs,
+                    all_outputs,
                     frames,
                 );
                 process_vca(audio_in, gain_in)
@@ -549,7 +553,7 @@ fn process_block_compiled(
                     module_idx,
                     builtin_ports::RATE,
                     compiled,
-                    &all_outputs,
+                    all_outputs,
                     frames,
                     1.0,
                 );
@@ -557,28 +561,28 @@ fn process_block_compiled(
                     module_idx,
                     builtin_ports::START,
                     compiled,
-                    &all_outputs,
+                    all_outputs,
                     frames,
                 );
                 let loop_enabled_in = compiled_sum_control_input(
                     module_idx,
                     builtin_ports::LOOP_ENABLED,
                     compiled,
-                    &all_outputs,
+                    all_outputs,
                     frames,
                 );
                 let loop_start_in = compiled_sum_control_input(
                     module_idx,
                     builtin_ports::LOOP_START,
                     compiled,
-                    &all_outputs,
+                    all_outputs,
                     frames,
                 );
                 let loop_end_in = compiled_sum_control_input(
                     module_idx,
                     builtin_ports::LOOP_END,
                     compiled,
-                    &all_outputs,
+                    all_outputs,
                     frames,
                 );
                 process_sampler(
@@ -600,7 +604,7 @@ fn process_block_compiled(
                     module_idx,
                     builtin_ports::INPUTS,
                     compiled,
-                    &all_outputs,
+                    all_outputs,
                     frames,
                 );
                 let mut m = HashMap::new();
@@ -616,14 +620,14 @@ fn process_block_compiled(
                     module_idx,
                     builtin_ports::LEFT,
                     compiled,
-                    &all_outputs,
+                    all_outputs,
                     frames,
                 );
                 let right = compiled_sum_audio_input(
                     module_idx,
                     builtin_ports::RIGHT,
                     compiled,
-                    &all_outputs,
+                    all_outputs,
                     frames,
                 );
                 let mut m = HashMap::new();
@@ -640,7 +644,7 @@ fn process_block_compiled(
                     module_idx,
                     builtin_ports::AUDIO_IN,
                     compiled,
-                    &all_outputs,
+                    all_outputs,
                     frames,
                 );
                 process_audio_delay(audio_in)
@@ -649,6 +653,16 @@ fn process_block_compiled(
         };
 
         all_outputs.insert(module_idx, outputs);
+    };
+
+    // Phase 1: process voice nodes, accumulating outputs
+    for &module_idx in compiled.voice_node_indices() {
+        process_node(module_idx, states, &mut all_outputs);
+    }
+
+    // Phase 2: process global nodes, consuming accumulated voice outputs
+    for &module_idx in compiled.global_node_indices() {
+        process_node(module_idx, states, &mut all_outputs);
     }
 
     if let Some(idx) = out_idx {
@@ -3693,5 +3707,98 @@ connections:
             )],
             &assets,
         );
+    }
+
+    #[test]
+    fn compiled_render_matches_raw_for_voice_to_global_patch() {
+        let graph = parity_graph(
+            vec![
+                ModuleNode::new(ModuleId::new("osc"), "oscillator")
+                    .with_output(builtin_ports::AUDIO, SignalType::Audio)
+                    .with_execution_scope(ExecutionScope::Voice),
+                ModuleNode::new(ModuleId::new("mixer"), "audio_mixer")
+                    .with_mixing_input(builtin_ports::INPUTS, SignalType::Audio)
+                    .with_output(builtin_ports::MIX, SignalType::Audio)
+                    .with_execution_scope(ExecutionScope::Global),
+                ModuleNode::new(ModuleId::new("out"), "audio_output")
+                    .with_input(builtin_ports::LEFT, SignalType::Audio)
+                    .with_input(builtin_ports::RIGHT, SignalType::Audio)
+                    .with_execution_scope(ExecutionScope::Global),
+            ],
+            vec![
+                Cable::new(
+                    PortRef::new(ModuleId::new("osc"), builtin_ports::AUDIO),
+                    PortRef::new(ModuleId::new("mixer"), builtin_ports::INPUTS),
+                ),
+                Cable::new(
+                    PortRef::new(ModuleId::new("mixer"), builtin_ports::MIX),
+                    PortRef::new(ModuleId::new("out"), builtin_ports::LEFT),
+                ),
+                Cable::new(
+                    PortRef::new(ModuleId::new("mixer"), builtin_ports::MIX),
+                    PortRef::new(ModuleId::new("out"), builtin_ports::RIGHT),
+                ),
+            ],
+        );
+
+        let settings = RenderSettings {
+            sample_rate_hz: 48_000,
+            block_size_frames: 64,
+            duration_frames: 512,
+        };
+
+        assert_parity(&graph, &settings, Vec::new(), &PreparedSamplerAssets::empty());
+    }
+
+    #[test]
+    fn compiled_execution_order_remains_globals_first() {
+        use crate::compiled_patch::compile;
+
+        let graph = parity_graph(
+            vec![
+                ModuleNode::new(ModuleId::new("osc"), "oscillator")
+                    .with_output(builtin_ports::AUDIO, SignalType::Audio)
+                    .with_execution_scope(ExecutionScope::Voice),
+                ModuleNode::new(ModuleId::new("mixer"), "audio_mixer")
+                    .with_mixing_input(builtin_ports::INPUTS, SignalType::Audio)
+                    .with_output(builtin_ports::MIX, SignalType::Audio)
+                    .with_execution_scope(ExecutionScope::Global),
+                ModuleNode::new(ModuleId::new("out"), "audio_output")
+                    .with_input(builtin_ports::LEFT, SignalType::Audio)
+                    .with_input(builtin_ports::RIGHT, SignalType::Audio)
+                    .with_execution_scope(ExecutionScope::Global),
+            ],
+            vec![
+                Cable::new(
+                    PortRef::new(ModuleId::new("osc"), builtin_ports::AUDIO),
+                    PortRef::new(ModuleId::new("mixer"), builtin_ports::INPUTS),
+                ),
+                Cable::new(
+                    PortRef::new(ModuleId::new("mixer"), builtin_ports::MIX),
+                    PortRef::new(ModuleId::new("out"), builtin_ports::LEFT),
+                ),
+                Cable::new(
+                    PortRef::new(ModuleId::new("mixer"), builtin_ports::MIX),
+                    PortRef::new(ModuleId::new("out"), builtin_ports::RIGHT),
+                ),
+            ],
+        );
+
+        let settings = RenderSettings {
+            sample_rate_hz: 48_000,
+            block_size_frames: 64,
+            duration_frames: 512,
+        };
+
+        let compiled = compile(&graph, &settings).expect("graph should compile");
+
+        // execution_order is globals-first: [mixer(1), out(2), osc(0)]
+        let order = compiled.execution_order();
+        let global_end = compiled.global_node_indices().len();
+        assert_eq!(&order[..global_end], &[1, 2]);
+        assert_eq!(&order[global_end..], &[0]);
+
+        assert_eq!(compiled.global_node_indices(), &[1, 2]);
+        assert_eq!(compiled.voice_node_indices(), &[0]);
     }
 }
