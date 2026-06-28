@@ -1,0 +1,11 @@
+# Coverage gate policy.
+#
+# strict <path>
+#   Requires every executable line in the file to be covered unless explicitly allowed.
+# allow <path>:<line> <reason>
+#   Documents an acceptable uncovered line. Stale allow entries fail the check.
+#
+# Before splitting a large Rust file, add each new extracted file here as strict,
+# run scripts/check-rust-coverage, then add tests until it is fully covered.
+
+strict src/rust-engine/src/voice_allocator.rs
