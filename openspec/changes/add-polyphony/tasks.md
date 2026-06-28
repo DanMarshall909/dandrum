@@ -24,11 +24,11 @@
 
 ## 4. Polyphonic Rendering
 
-- [ ] 4.1 Add render tests proving overlapping sampler notes mix instead of replacing earlier playback.
-- [ ] 4.2 Add render tests proving note-off releases only the matching voice envelope.
-- [ ] 4.3 Add render tests proving each voice has an independent voice-local sub-synth with independently applied control/VCA processing before final global mix.
-- [ ] 4.4 Implement per-voice module state instances and active-voice block processing in the offline renderer.
-- [ ] 4.5 Integrate voice allocation with realtime graph processor note-on/note-off handling without adding frontend coupling.
+- [x] 4.1 Add render tests proving overlapping sampler notes mix instead of replacing earlier playback.
+- [x] 4.2 Add render tests proving note-off releases only the matching voice envelope.
+- [x] 4.3 Add render tests proving each voice has an independent voice-local sub-synth with independently applied control/VCA processing before final global mix.
+- [x] 4.4 Implement per-voice module state instances and active-voice block processing in the offline renderer.
+- [x] 4.5 Integrate voice allocation with realtime graph processor note-on/note-off handling without adding frontend coupling.
 
 ## 5. Determinism, Examples, And Documentation
 

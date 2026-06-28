@@ -50,10 +50,11 @@ impl DandrumEngine {
         sampler_assets: &PreparedSamplerAssets,
     ) {
         let graph = Graph::from_patch_declarations(patch_doc);
-        self.graph_processor = Some(RealtimeGraphProcessor::new_with_sampler_assets(
+        self.graph_processor = Some(RealtimeGraphProcessor::polyphonic_with_sampler_assets(
             graph,
             self.sample_rate,
             sampler_assets,
+            &patch_doc.voice_allocation,
         ));
     }
 

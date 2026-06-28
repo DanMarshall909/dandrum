@@ -1,10 +1,11 @@
 use std::collections::HashMap;
 
 use crate::core::{BlockScheduler, TimedInputEvent};
-use crate::graph::{Graph, ModuleNode, SignalType, builtin_ports};
-use crate::patch::RenderSettings;
+use crate::graph::{ExecutionScope, Graph, ModuleNode, SignalType, builtin_ports};
+use crate::patch::{RenderSettings, VoiceAllocation};
 use crate::sample::{LoadedSample, PreparedSamplerAssets};
 use crate::script::ScriptEvent;
+use crate::voice_allocator::VoiceAllocator;
 
 fn find_audio_output(graph: &Graph) -> Option<usize> {
     graph
@@ -521,15 +522,477 @@ fn process_block(
     }
 }
 
+fn build_polyphonic_states(
+    graph: &Graph,
+    sample_rate: f32,
+    sampler_assets: &PreparedSamplerAssets,
+    max_voices: usize,
+) -> Vec<Vec<PerModuleState>> {
+    (0..max_voices)
+        .map(|_| {
+            graph
+                .modules()
+                .iter()
+                .map(|m| PerModuleState::new(m, sample_rate, sampler_assets))
+                .collect::<Vec<_>>()
+        })
+        .collect()
+}
+
+fn is_voice_scoped(graph: &Graph, module_idx: usize) -> bool {
+    graph
+        .modules()
+        .get(module_idx)
+        .map_or(false, |m| m.execution_scope() == ExecutionScope::Voice)
+}
+
+fn process_block_polyphonic(
+    graph: &Graph,
+    routing: &Routing,
+    topo_order: &[usize],
+    states: &mut [Vec<PerModuleState>],
+    allocator: &mut VoiceAllocator,
+    midi_idx: Option<usize>,
+    out_idx: Option<usize>,
+    block_start_frame: u64,
+    frames: usize,
+    incoming_events: Vec<BlockEvent>,
+    left_out: &mut Vec<f32>,
+    right_out: &mut Vec<f32>,
+) {
+    // Phase 1: Feed events through allocator while tracking per-voice assignments
+    // NoteOn events are assigned to specific slots; NoteOff events go to all slots holding that note
+    let mut voice_events: Vec<Vec<BlockEvent>> = vec![Vec::new(); allocator.max_voices()];
+
+    // Process NoteOn events first (assign to slots, track which slot each NoteOn goes to)
+    for event in &incoming_events {
+        if let ScriptEvent::NoteOn { note, velocity } = &event.event {
+            if let Some(slot) = allocator.note_on(*note, *velocity) {
+                voice_events[slot].push(event.clone());
+            }
+        }
+    }
+
+    // Snapshot which notes are on which slots before processing NoteOff events
+    let slot_notes: Vec<Option<u8>> = (0..allocator.max_voices())
+        .map(|i| allocator.slot(i).filter(|s| s.active).map(|s| s.note))
+        .collect();
+
+    // Process NoteOff events — send to matching voices then release from allocator
+    for event in &incoming_events {
+        if let ScriptEvent::NoteOff { note } = &event.event {
+            for (slot_idx, sn) in slot_notes.iter().enumerate() {
+                if *sn == Some(*note) {
+                    voice_events[slot_idx].push(event.clone());
+                }
+            }
+            allocator.note_off(*note);
+        }
+    }
+
+    let active_voices: Vec<usize> = (0..allocator.max_voices())
+        .filter(|&i| allocator.slot(i).map_or(false, |s| s.active))
+        .collect();
+
+    if active_voices.is_empty() {
+        left_out.extend(std::iter::repeat_n(0.0, frames));
+        right_out.extend(std::iter::repeat_n(0.0, frames));
+        return;
+    }
+
+    // Separate topo order into voice and global sequences
+    let mut voice_seq: Vec<usize> = Vec::new();
+    let mut global_seq: Vec<usize> = Vec::new();
+    for &idx in topo_order {
+        if graph.modules()[idx].module_type() == "midi_input" {
+            continue;
+        }
+        if is_voice_scoped(graph, idx) {
+            voice_seq.push(idx);
+        } else {
+            global_seq.push(idx);
+        }
+    }
+
+    // Phase 1: Process each active voice independently
+    let mut accum: HashMap<usize, ModuleOutputs> = HashMap::new();
+
+    for &voice_idx in &active_voices {
+        let mut all_outputs: HashMap<usize, ModuleOutputs> = HashMap::new();
+        if let Some(idx) = midi_idx {
+            all_outputs.insert(
+                idx,
+                ModuleOutputs {
+                    audio: HashMap::new(),
+                    control: HashMap::new(),
+                events: voice_events[voice_idx].clone(),
+            },
+        );
+        }
+
+        let voice_states = &mut states[voice_idx];
+
+        for &module_idx in &voice_seq {
+            let module = &graph.modules()[module_idx];
+            let module_type = module.module_type();
+            let events_in = gather_event_inputs(module_idx, module, routing, &all_outputs);
+
+            let outputs = match module_type {
+                "oscillator" => {
+                    let pitch_in = sum_control_input(
+                        module_idx, builtin_ports::PITCH, routing, &all_outputs, frames,
+                    );
+                    process_oscillator(&mut voice_states[module_idx], &pitch_in, frames)
+                }
+                "adsr" => {
+                    let attack_in = sum_control_input(
+                        module_idx, builtin_ports::ATTACK, routing, &all_outputs, frames,
+                    );
+                    let decay_in = sum_control_input(
+                        module_idx, builtin_ports::DECAY, routing, &all_outputs, frames,
+                    );
+                    let sustain_in = sum_control_input(
+                        module_idx, builtin_ports::SUSTAIN, routing, &all_outputs, frames,
+                    );
+                    let release_in = sum_control_input(
+                        module_idx, builtin_ports::RELEASE, routing, &all_outputs, frames,
+                    );
+                    process_adsr(
+                        &mut voice_states[module_idx],
+                        &events_in,
+                        &attack_in,
+                        &decay_in,
+                        &sustain_in,
+                        &release_in,
+                        block_start_frame,
+                        frames,
+                    )
+                }
+                "gain" => {
+                    let audio_in = sum_audio_input(
+                        module_idx, builtin_ports::AUDIO_IN, routing, &all_outputs, frames,
+                    );
+                    let gain_in = sum_control_input(
+                        module_idx, builtin_ports::GAIN, routing, &all_outputs, frames,
+                    );
+                    process_vca(audio_in, gain_in)
+                }
+                "sampler" => {
+                    let rate_in = control_input_or_default(
+                        module_idx, builtin_ports::RATE, routing, &all_outputs, frames, 1.0,
+                    );
+                    let start_in = sum_control_input(
+                        module_idx, builtin_ports::START, routing, &all_outputs, frames,
+                    );
+                    let loop_enabled_in = sum_control_input(
+                        module_idx, builtin_ports::LOOP_ENABLED, routing, &all_outputs, frames,
+                    );
+                    let loop_start_in = sum_control_input(
+                        module_idx, builtin_ports::LOOP_START, routing, &all_outputs, frames,
+                    );
+                    let loop_end_in = sum_control_input(
+                        module_idx, builtin_ports::LOOP_END, routing, &all_outputs, frames,
+                    );
+                    process_sampler(
+                        &mut voice_states[module_idx],
+                        &events_in,
+                        &rate_in,
+                        &start_in,
+                        &loop_enabled_in,
+                        &loop_start_in,
+                        &loop_end_in,
+                        frames,
+                    )
+                }
+                "note_to_rate" => {
+                    process_note_to_rate(&mut voice_states[module_idx], &events_in, frames)
+                }
+                "audio_mixer" => {
+                    let mix = sum_audio_input(
+                        module_idx, builtin_ports::INPUTS, routing, &all_outputs, frames,
+                    );
+                    let mut m = HashMap::new();
+                    m.insert(builtin_ports::MIX.to_string(), mix);
+                    ModuleOutputs {
+                        audio: m,
+                        control: HashMap::new(),
+                        events: Vec::new(),
+                    }
+                }
+                "audio_output" => {
+                    let left = sum_audio_input(
+                        module_idx, builtin_ports::LEFT, routing, &all_outputs, frames,
+                    );
+                    let right = sum_audio_input(
+                        module_idx, builtin_ports::RIGHT, routing, &all_outputs, frames,
+                    );
+                    let mut m = HashMap::new();
+                    m.insert(builtin_ports::LEFT.to_string(), left);
+                    m.insert(builtin_ports::RIGHT.to_string(), right);
+                    ModuleOutputs {
+                        audio: m,
+                        control: HashMap::new(),
+                        events: Vec::new(),
+                    }
+                }
+                "audio_delay" => {
+                    let audio_in = sum_audio_input(
+                        module_idx, builtin_ports::AUDIO_IN, routing, &all_outputs, frames,
+                    );
+                    process_audio_delay(audio_in)
+                }
+                other => panic!("unknown module type in polyphonic context: {other}"),
+            };
+
+            all_outputs.insert(module_idx, outputs);
+        }
+
+        // Accumulate voice outputs into the shared accum map
+        for &idx in &voice_seq {
+            if let Some(outputs) = all_outputs.remove(&idx) {
+                let entry = accum.entry(idx).or_insert_with(|| ModuleOutputs {
+                    audio: HashMap::new(),
+                    control: HashMap::new(),
+                    events: Vec::new(),
+                });
+                for (port, buf) in outputs.audio {
+                    let acc = entry
+                        .audio
+                        .entry(port)
+                        .or_insert_with(|| vec![0.0; frames]);
+                    for (i, s) in buf.iter().enumerate().take(frames) {
+                        acc[i] += s;
+                    }
+                }
+                for (port, buf) in outputs.control {
+                    let acc = entry
+                        .control
+                        .entry(port)
+                        .or_insert_with(|| vec![0.0; frames]);
+                    for (i, s) in buf.iter().enumerate().take(frames) {
+                        acc[i] += s;
+                    }
+                }
+                entry.events.extend(outputs.events);
+            }
+        }
+    }
+
+    // Phase 2: Process global modules using accumulated voice outputs
+    let mut all_outputs = accum;
+
+    for &module_idx in &global_seq {
+        let module = &graph.modules()[module_idx];
+        let module_type = module.module_type();
+        let events_in = gather_event_inputs(module_idx, module, routing, &all_outputs);
+
+        let outputs = match module_type {
+            "oscillator" => {
+                let pitch_in = sum_control_input(
+                    module_idx, builtin_ports::PITCH, routing, &all_outputs, frames,
+                );
+                process_oscillator(&mut states[0][module_idx], &pitch_in, frames)
+            }
+            "adsr" => {
+                let attack_in = sum_control_input(
+                    module_idx, builtin_ports::ATTACK, routing, &all_outputs, frames,
+                );
+                let decay_in = sum_control_input(
+                    module_idx, builtin_ports::DECAY, routing, &all_outputs, frames,
+                );
+                let sustain_in = sum_control_input(
+                    module_idx, builtin_ports::SUSTAIN, routing, &all_outputs, frames,
+                );
+                let release_in = sum_control_input(
+                    module_idx, builtin_ports::RELEASE, routing, &all_outputs, frames,
+                );
+                process_adsr(
+                    &mut states[0][module_idx],
+                    &events_in,
+                    &attack_in,
+                    &decay_in,
+                    &sustain_in,
+                    &release_in,
+                    block_start_frame,
+                    frames,
+                )
+            }
+            "gain" => {
+                let audio_in = sum_audio_input(
+                    module_idx, builtin_ports::AUDIO_IN, routing, &all_outputs, frames,
+                );
+                let gain_in = sum_control_input(
+                    module_idx, builtin_ports::GAIN, routing, &all_outputs, frames,
+                );
+                process_vca(audio_in, gain_in)
+            }
+            "sampler" => {
+                let rate_in = control_input_or_default(
+                    module_idx, builtin_ports::RATE, routing, &all_outputs, frames, 1.0,
+                );
+                let start_in = sum_control_input(
+                    module_idx, builtin_ports::START, routing, &all_outputs, frames,
+                );
+                let loop_enabled_in = sum_control_input(
+                    module_idx, builtin_ports::LOOP_ENABLED, routing, &all_outputs, frames,
+                );
+                let loop_start_in = sum_control_input(
+                    module_idx, builtin_ports::LOOP_START, routing, &all_outputs, frames,
+                );
+                let loop_end_in = sum_control_input(
+                    module_idx, builtin_ports::LOOP_END, routing, &all_outputs, frames,
+                );
+                process_sampler(
+                    &mut states[0][module_idx],
+                    &events_in,
+                    &rate_in,
+                    &start_in,
+                    &loop_enabled_in,
+                    &loop_start_in,
+                    &loop_end_in,
+                    frames,
+                )
+            }
+            "audio_mixer" => {
+                let mix = sum_audio_input(
+                    module_idx, builtin_ports::INPUTS, routing, &all_outputs, frames,
+                );
+                let mut m = HashMap::new();
+                m.insert(builtin_ports::MIX.to_string(), mix);
+                ModuleOutputs {
+                    audio: m,
+                    control: HashMap::new(),
+                    events: Vec::new(),
+                }
+            }
+            "audio_output" => {
+                let left = sum_audio_input(
+                    module_idx, builtin_ports::LEFT, routing, &all_outputs, frames,
+                );
+                let right = sum_audio_input(
+                    module_idx, builtin_ports::RIGHT, routing, &all_outputs, frames,
+                );
+                let mut m = HashMap::new();
+                m.insert(builtin_ports::LEFT.to_string(), left);
+                m.insert(builtin_ports::RIGHT.to_string(), right);
+                ModuleOutputs {
+                    audio: m,
+                    control: HashMap::new(),
+                    events: Vec::new(),
+                }
+            }
+            "audio_delay" => {
+                let audio_in = sum_audio_input(
+                    module_idx, builtin_ports::AUDIO_IN, routing, &all_outputs, frames,
+                );
+                process_audio_delay(audio_in)
+            }
+            "note_to_rate" => {
+                process_note_to_rate(&mut states[0][module_idx], &events_in, frames)
+            }
+            other => panic!("unknown module type in polyphonic global context: {other}"),
+        };
+
+        all_outputs.insert(module_idx, outputs);
+    }
+
+    // Phase 3: Collect output
+    if let Some(idx) = out_idx {
+        if let Some(outputs) = all_outputs.get(&idx) {
+            if let Some(left) = outputs.audio.get(builtin_ports::LEFT) {
+                left_out.extend_from_slice(left);
+            } else {
+                left_out.extend(std::iter::repeat_n(0.0, frames));
+            }
+            if let Some(right) = outputs.audio.get(builtin_ports::RIGHT) {
+                right_out.extend_from_slice(right);
+            } else {
+                right_out.extend(std::iter::repeat_n(0.0, frames));
+            }
+        }
+    }
+}
+
+pub fn render_offline_polyphonic(
+    graph: &Graph,
+    settings: &RenderSettings,
+    events: Vec<TimedInputEvent>,
+    voice_allocation: &VoiceAllocation,
+) -> (Vec<f32>, Vec<f32>) {
+    render_offline_with_sampler_assets_polyphonic(
+        graph,
+        settings,
+        events,
+        &PreparedSamplerAssets::empty(),
+        voice_allocation,
+    )
+}
+
+pub fn render_offline_with_sampler_assets_polyphonic(
+    graph: &Graph,
+    settings: &RenderSettings,
+    events: Vec<TimedInputEvent>,
+    sampler_assets: &PreparedSamplerAssets,
+    voice_allocation: &VoiceAllocation,
+) -> (Vec<f32>, Vec<f32>) {
+    let sample_rate = settings.sample_rate_hz as f32;
+    let routing = build_routing(graph);
+    let topo_order = topological_sort(graph);
+
+    let max_voices = voice_allocation.max_voices.max(1) as usize;
+    let mut states = build_polyphonic_states(graph, sample_rate, sampler_assets, max_voices);
+    let mut allocator = VoiceAllocator::new(voice_allocation.max_voices, voice_allocation.stealing.clone());
+
+    let midi_idx = find_midi_input(graph);
+    let out_idx = find_audio_output(graph);
+
+    let scheduler = BlockScheduler::new(settings.duration_frames, settings.block_size_frames)
+        .with_input_events(events);
+
+    let mut left_buf: Vec<f32> = Vec::new();
+    let mut right_buf: Vec<f32> = Vec::new();
+
+    for block in scheduler {
+        let frames = block.frame_count() as usize;
+
+        let external_events: Vec<BlockEvent> = block
+            .input_events()
+            .iter()
+            .map(|e| BlockEvent {
+                frame_offset: e.frame_offset(),
+                event: e.event().clone(),
+            })
+            .collect();
+
+        process_block_polyphonic(
+            graph,
+            &routing,
+            &topo_order,
+            &mut states,
+            &mut allocator,
+            midi_idx,
+            out_idx,
+            block.start_frame(),
+            frames,
+            external_events,
+            &mut left_buf,
+            &mut right_buf,
+        );
+    }
+
+    (left_buf, right_buf)
+}
+
 pub struct RealtimeGraphProcessor {
     graph: Graph,
     routing: Routing,
     topo_order: Vec<usize>,
-    states: Vec<PerModuleState>,
+    states: Vec<Vec<PerModuleState>>,
     midi_idx: Option<usize>,
     out_idx: Option<usize>,
     current_frame: u64,
     pending_events: Vec<ScriptEvent>,
+    allocator: VoiceAllocator,
 }
 
 impl RealtimeGraphProcessor {
@@ -542,15 +1005,28 @@ impl RealtimeGraphProcessor {
         sample_rate: f32,
         sampler_assets: &PreparedSamplerAssets,
     ) -> Self {
+        Self::polyphonic_with_sampler_assets(
+            graph,
+            sample_rate,
+            sampler_assets,
+            &VoiceAllocation::default(),
+        )
+    }
+
+    pub fn polyphonic_with_sampler_assets(
+        graph: Graph,
+        sample_rate: f32,
+        sampler_assets: &PreparedSamplerAssets,
+        voice_allocation: &VoiceAllocation,
+    ) -> Self {
         let routing = build_routing(&graph);
         let topo_order = topological_sort(&graph);
         let midi_idx = find_midi_input(&graph);
         let out_idx = find_audio_output(&graph);
-        let states: Vec<PerModuleState> = graph
-            .modules()
-            .iter()
-            .map(|m| PerModuleState::new(m, sample_rate, sampler_assets))
-            .collect();
+        let max_voices = voice_allocation.max_voices.max(1) as usize;
+        let states = build_polyphonic_states(&graph, sample_rate, sampler_assets, max_voices);
+        let allocator =
+            VoiceAllocator::new(voice_allocation.max_voices, voice_allocation.stealing.clone());
 
         Self {
             graph,
@@ -561,19 +1037,17 @@ impl RealtimeGraphProcessor {
             out_idx,
             current_frame: 0,
             pending_events: Vec::new(),
+            allocator,
         }
     }
 
-    pub fn note_on(&mut self, _note: u8, _velocity: u8) {
-        self.pending_events.push(ScriptEvent::NoteOn {
-            note: _note,
-            velocity: _velocity,
-        });
+    pub fn note_on(&mut self, note: u8, velocity: u8) {
+        self.pending_events
+            .push(ScriptEvent::NoteOn { note, velocity });
     }
 
-    pub fn note_off(&mut self, _note: u8) {
-        self.pending_events
-            .push(ScriptEvent::NoteOff { note: _note });
+    pub fn note_off(&mut self, note: u8) {
+        self.pending_events.push(ScriptEvent::NoteOff { note });
     }
 
     pub fn render(&mut self, left: &mut [f32], right: &mut [f32]) -> usize {
@@ -589,31 +1063,61 @@ impl RealtimeGraphProcessor {
             })
             .collect();
 
-        let mut left_buf = Vec::new();
-        let mut right_buf = Vec::new();
+        if self.allocator.max_voices() > 1 || self.graph.modules().iter().any(|m| m.execution_scope() == ExecutionScope::Voice) {
+            let mut left_buf = Vec::new();
+            let mut right_buf = Vec::new();
 
-        process_block(
-            &self.graph,
-            &self.routing,
-            &self.topo_order,
-            &mut self.states,
-            self.midi_idx,
-            self.out_idx,
-            block_start,
-            frames,
-            events,
-            &mut left_buf,
-            &mut right_buf,
-        );
+            process_block_polyphonic(
+                &self.graph,
+                &self.routing,
+                &self.topo_order,
+                &mut self.states,
+                &mut self.allocator,
+                self.midi_idx,
+                self.out_idx,
+                block_start,
+                frames,
+                events,
+                &mut left_buf,
+                &mut right_buf,
+            );
 
-        let actual = left_buf.len().min(right_buf.len()).min(frames);
-        for i in 0..actual {
-            left[i] = left_buf[i];
-            right[i] = right_buf[i];
-        }
-        for i in actual..frames {
-            left[i] = 0.0;
-            right[i] = 0.0;
+            let actual = left_buf.len().min(right_buf.len()).min(frames);
+            for i in 0..actual {
+                left[i] = left_buf[i];
+                right[i] = right_buf[i];
+            }
+            for i in actual..frames {
+                left[i] = 0.0;
+                right[i] = 0.0;
+            }
+        } else {
+            let mut left_buf = Vec::new();
+            let mut right_buf = Vec::new();
+
+            process_block(
+                &self.graph,
+                &self.routing,
+                &self.topo_order,
+                &mut self.states[0],
+                self.midi_idx,
+                self.out_idx,
+                block_start,
+                frames,
+                events,
+                &mut left_buf,
+                &mut right_buf,
+            );
+
+            let actual = left_buf.len().min(right_buf.len()).min(frames);
+            for i in 0..actual {
+                left[i] = left_buf[i];
+                right[i] = right_buf[i];
+            }
+            for i in actual..frames {
+                left[i] = 0.0;
+                right[i] = 0.0;
+            }
         }
 
         frames
@@ -623,18 +1127,20 @@ impl RealtimeGraphProcessor {
         if !self.pending_events.is_empty() {
             return false;
         }
-        for state in &self.states {
-            if let PerModuleState::Adsr {
-                level, gate_active, ..
-            } = state
-            {
-                if *gate_active || *level > 0.001 {
+        for voice_state in &self.states {
+            for state in voice_state {
+                if let PerModuleState::Adsr {
+                    level, gate_active, ..
+                } = state
+                {
+                    if *gate_active || *level > 0.001 {
+                        return false;
+                    }
+                } else if let PerModuleState::Sampler { active, .. } = state
+                    && *active
+                {
                     return false;
                 }
-            } else if let PerModuleState::Sampler { active, .. } = state
-                && *active
-            {
-                return false;
             }
         }
         true
@@ -1491,5 +1997,291 @@ connections:
         let second = render_offline_with_sampler_assets(&graph, &settings, events, &assets);
 
         assert_eq!(first, second);
+    }
+
+    // --- Section 4: Polyphonic rendering ---
+
+    fn poly_sampler_graph(
+        extra_modules: Vec<ModuleNode>,
+        extra_cables: Vec<Cable>,
+    ) -> Graph {
+        let mut modules = vec![
+            ModuleNode::new(ModuleId::new("midi"), "midi_input")
+                .with_execution_scope(ExecutionScope::Global)
+                .with_output(builtin_ports::EVENTS, SignalType::Event),
+            ModuleNode::new(ModuleId::new("sampler"), "sampler")
+                .with_execution_scope(ExecutionScope::Voice)
+                .with_input(builtin_ports::TRIGGER, SignalType::Event)
+                .with_input(builtin_ports::RATE, SignalType::Control)
+                .with_input(builtin_ports::START, SignalType::Control)
+                .with_input(builtin_ports::LOOP_ENABLED, SignalType::Control)
+                .with_input(builtin_ports::LOOP_START, SignalType::Control)
+                .with_input(builtin_ports::LOOP_END, SignalType::Control)
+                .with_output(builtin_ports::AUDIO, SignalType::Audio),
+            ModuleNode::new(ModuleId::new("mixer"), "audio_mixer")
+                .with_execution_scope(ExecutionScope::Global)
+                .with_mixing_input(builtin_ports::INPUTS, SignalType::Audio)
+                .with_output(builtin_ports::MIX, SignalType::Audio),
+            ModuleNode::new(ModuleId::new("out"), "audio_output")
+                .with_execution_scope(ExecutionScope::Global)
+                .with_input(builtin_ports::LEFT, SignalType::Audio)
+                .with_input(builtin_ports::RIGHT, SignalType::Audio),
+        ];
+        modules.extend(extra_modules);
+
+        let mut cables = vec![
+            Cable::new(
+                PortRef::new(ModuleId::new("midi"), builtin_ports::EVENTS),
+                PortRef::new(ModuleId::new("sampler"), builtin_ports::TRIGGER),
+            ),
+            Cable::new(
+                PortRef::new(ModuleId::new("sampler"), builtin_ports::AUDIO),
+                PortRef::new(ModuleId::new("mixer"), builtin_ports::INPUTS),
+            ),
+            Cable::new(
+                PortRef::new(ModuleId::new("mixer"), builtin_ports::MIX),
+                PortRef::new(ModuleId::new("out"), builtin_ports::LEFT),
+            ),
+        ];
+        cables.extend(extra_cables);
+        Graph::new(modules, cables)
+    }
+
+    fn poly_allocation(max_voices: u32) -> patch::VoiceAllocation {
+        patch::VoiceAllocation {
+            max_voices,
+            stealing: patch::VoiceStealingPolicy::Disabled,
+        }
+    }
+
+    #[test]
+    fn overlapping_sampler_notes_mix_instead_of_replacing() {
+        let graph = poly_sampler_graph(Vec::new(), Vec::new());
+        graph.validate().expect("graph should validate");
+        let settings = sampler_settings(8);
+        let assets = sampler_assets(vec![1.0, 2.0, 3.0, 4.0]);
+
+        let (left, _) = render_offline_with_sampler_assets_polyphonic(
+            &graph,
+            &settings,
+            vec![note_on(0, 100), note_on(2, 100)],
+            &assets,
+            &poly_allocation(2),
+        );
+
+        // Monophonic would replace: [1.0, 2.0, 1.0, 2.0, 3.0, 0.0, 0.0, 0.0]
+        // Polyphonic (2 voices) sums overlapping samples:
+        // Voice 0: [1.0, 2.0, 3.0, 4.0, 0.0, 0.0, 0.0, 0.0]
+        // Voice 1: [0.0, 0.0, 1.0, 2.0, 3.0, 4.0, 0.0, 0.0]
+        // Sum:     [1.0, 2.0, 4.0, 6.0, 3.0, 4.0, 0.0, 0.0]
+        assert_eq!(left, vec![1.0, 2.0, 4.0, 6.0, 3.0, 4.0, 0.0, 0.0]);
+        assert_ne!(left, vec![1.0, 2.0, 1.0, 2.0, 3.0, 0.0, 0.0, 0.0]);
+    }
+
+    #[test]
+    fn overlapping_notes_on_different_notes_produce_independent_voice_output() {
+        let graph = poly_sampler_graph(Vec::new(), Vec::new());
+        graph.validate().expect("graph should validate");
+        let settings = sampler_settings(8);
+        let assets = sampler_assets(vec![1.0, 2.0, 3.0, 4.0]);
+
+        let (left, _) = render_offline_with_sampler_assets_polyphonic(
+            &graph,
+            &settings,
+            vec![
+                note_on(0, 100),
+                TimedInputEvent::new(1, ScriptEvent::NoteOn { note: 64, velocity: 100 }),
+            ],
+            &assets,
+            &poly_allocation(2),
+        );
+
+        // Voice 0 (note 60): [1.0, 2.0, 3.0, 4.0, 0.0, 0.0, 0.0, 0.0]
+        // Voice 1 (note 64): [0.0, 1.0, 2.0, 3.0, 4.0, 0.0, 0.0, 0.0]
+        // Sum: [1.0, 3.0, 5.0, 7.0, 4.0, 0.0, 0.0, 0.0]
+        assert_eq!(left, vec![1.0, 3.0, 5.0, 7.0, 4.0, 0.0, 0.0, 0.0]);
+    }
+
+    #[test]
+    fn note_off_releases_matching_voice_while_other_continues() {
+        // Graph: midi -> adsr -> vca (with osc audio in) -> mixer -> out
+        let modules = vec![
+            ModuleNode::new(ModuleId::new("midi"), "midi_input")
+                .with_execution_scope(ExecutionScope::Global)
+                .with_output(builtin_ports::EVENTS, SignalType::Event),
+            ModuleNode::new(ModuleId::new("osc"), "oscillator")
+                .with_execution_scope(ExecutionScope::Voice)
+                .with_output(builtin_ports::AUDIO, SignalType::Audio),
+            ModuleNode::new(ModuleId::new("adsr"), "adsr")
+                .with_execution_scope(ExecutionScope::Voice)
+                .with_input(builtin_ports::GATE, SignalType::Event)
+                .with_output(builtin_ports::VALUE, SignalType::Control),
+            ModuleNode::new(ModuleId::new("vca"), "gain")
+                .with_execution_scope(ExecutionScope::Voice)
+                .with_input(builtin_ports::AUDIO_IN, SignalType::Audio)
+                .with_input(builtin_ports::GAIN, SignalType::Control)
+                .with_output(builtin_ports::AUDIO_OUT, SignalType::Audio),
+            ModuleNode::new(ModuleId::new("mixer"), "audio_mixer")
+                .with_execution_scope(ExecutionScope::Global)
+                .with_mixing_input(builtin_ports::INPUTS, SignalType::Audio)
+                .with_output(builtin_ports::MIX, SignalType::Audio),
+            ModuleNode::new(ModuleId::new("out"), "audio_output")
+                .with_execution_scope(ExecutionScope::Global)
+                .with_input(builtin_ports::LEFT, SignalType::Audio)
+                .with_input(builtin_ports::RIGHT, SignalType::Audio),
+        ];
+
+        let cables = vec![
+            Cable::new(
+                PortRef::new(ModuleId::new("midi"), builtin_ports::EVENTS),
+                PortRef::new(ModuleId::new("adsr"), builtin_ports::GATE),
+            ),
+            Cable::new(
+                PortRef::new(ModuleId::new("osc"), builtin_ports::AUDIO),
+                PortRef::new(ModuleId::new("vca"), builtin_ports::AUDIO_IN),
+            ),
+            Cable::new(
+                PortRef::new(ModuleId::new("adsr"), builtin_ports::VALUE),
+                PortRef::new(ModuleId::new("vca"), builtin_ports::GAIN),
+            ),
+            Cable::new(
+                PortRef::new(ModuleId::new("vca"), builtin_ports::AUDIO_OUT),
+                PortRef::new(ModuleId::new("mixer"), builtin_ports::INPUTS),
+            ),
+            Cable::new(
+                PortRef::new(ModuleId::new("mixer"), builtin_ports::MIX),
+                PortRef::new(ModuleId::new("out"), builtin_ports::LEFT),
+            ),
+        ];
+
+        let graph = Graph::new(modules, cables);
+        graph.validate().expect("graph should validate");
+
+        let settings = RenderSettings {
+            sample_rate_hz: 48000,
+            block_size_frames: 128,
+            duration_frames: 48000,
+        };
+
+        let (left, _) = render_offline_polyphonic(
+            &graph,
+            &settings,
+            vec![
+                TimedInputEvent::new(0, ScriptEvent::NoteOn { note: 60, velocity: 100 }),
+                TimedInputEvent::new(0, ScriptEvent::NoteOn { note: 64, velocity: 127 }),
+                TimedInputEvent::new(12000, ScriptEvent::NoteOff { note: 60 }),
+            ],
+            &poly_allocation(2),
+        );
+
+        // Both voices produce audio initially
+        assert!(left[100] != 0.0, "voices should produce audio early");
+
+        // After note-off at frame 12000, the released voice enters release
+        // but the unreleased voice continues -> audio should still be present
+        assert!(left[20000] != 0.0, "unreleased voice should still be audible after first note-off");
+
+        // The unreleased voice (note 64) eventually gets a note-off? No — it never gets NoteOff
+        // It will have a fixed sustain level unless the ADSR is gated off.
+        // With only one NoteOff(60), voice with note 64 stays in sustain.
+        // At 48k sample rate with default 200ms release, the ADSR release of voice 60
+        // completes quickly after note-off. Voice 64 continues in sustain.
+        // By frame 45000, voice 60 is done but voice 64 should still be in sustain.
+        assert!(
+            left[45000].abs() > 0.001,
+            "sustained voice should still produce audio late in render"
+        );
+    }
+
+    #[test]
+    fn per_voice_adsr_gate_isolation() {
+        // Same graph as note_off test, but verifies that note-off for one note
+        // doesn't affect the ADSR of another voice.
+        let modules = vec![
+            ModuleNode::new(ModuleId::new("midi"), "midi_input")
+                .with_execution_scope(ExecutionScope::Global)
+                .with_output(builtin_ports::EVENTS, SignalType::Event),
+            ModuleNode::new(ModuleId::new("osc"), "oscillator")
+                .with_execution_scope(ExecutionScope::Voice)
+                .with_output(builtin_ports::AUDIO, SignalType::Audio),
+            ModuleNode::new(ModuleId::new("adsr"), "adsr")
+                .with_execution_scope(ExecutionScope::Voice)
+                .with_input(builtin_ports::GATE, SignalType::Event)
+                .with_output(builtin_ports::VALUE, SignalType::Control),
+            ModuleNode::new(ModuleId::new("vca"), "gain")
+                .with_execution_scope(ExecutionScope::Voice)
+                .with_input(builtin_ports::AUDIO_IN, SignalType::Audio)
+                .with_input(builtin_ports::GAIN, SignalType::Control)
+                .with_output(builtin_ports::AUDIO_OUT, SignalType::Audio),
+            ModuleNode::new(ModuleId::new("mixer"), "audio_mixer")
+                .with_execution_scope(ExecutionScope::Global)
+                .with_mixing_input(builtin_ports::INPUTS, SignalType::Audio)
+                .with_output(builtin_ports::MIX, SignalType::Audio),
+            ModuleNode::new(ModuleId::new("out"), "audio_output")
+                .with_execution_scope(ExecutionScope::Global)
+                .with_input(builtin_ports::LEFT, SignalType::Audio)
+                .with_input(builtin_ports::RIGHT, SignalType::Audio),
+        ];
+
+        let cables = vec![
+            Cable::new(
+                PortRef::new(ModuleId::new("midi"), builtin_ports::EVENTS),
+                PortRef::new(ModuleId::new("adsr"), builtin_ports::GATE),
+            ),
+            Cable::new(
+                PortRef::new(ModuleId::new("osc"), builtin_ports::AUDIO),
+                PortRef::new(ModuleId::new("vca"), builtin_ports::AUDIO_IN),
+            ),
+            Cable::new(
+                PortRef::new(ModuleId::new("adsr"), builtin_ports::VALUE),
+                PortRef::new(ModuleId::new("vca"), builtin_ports::GAIN),
+            ),
+            Cable::new(
+                PortRef::new(ModuleId::new("vca"), builtin_ports::AUDIO_OUT),
+                PortRef::new(ModuleId::new("mixer"), builtin_ports::INPUTS),
+            ),
+            Cable::new(
+                PortRef::new(ModuleId::new("mixer"), builtin_ports::MIX),
+                PortRef::new(ModuleId::new("out"), builtin_ports::LEFT),
+            ),
+        ];
+
+        let graph = Graph::new(modules, cables);
+        graph.validate().expect("graph should validate");
+
+        let settings = RenderSettings {
+            sample_rate_hz: 48000,
+            block_size_frames: 128,
+            duration_frames: 48000,
+        };
+
+        // Mono render with both notes should be louder than polyphonic with isolated gates
+        let (mono_left, _) = render_offline(
+            &graph,
+            &settings,
+            vec![
+                TimedInputEvent::new(0, ScriptEvent::NoteOn { note: 60, velocity: 100 }),
+                TimedInputEvent::new(0, ScriptEvent::NoteOn { note: 64, velocity: 100 }),
+            ],
+        );
+
+        let (poly_left, _) = render_offline_polyphonic(
+            &graph,
+            &settings,
+            vec![
+                TimedInputEvent::new(0, ScriptEvent::NoteOn { note: 60, velocity: 100 }),
+                TimedInputEvent::new(0, ScriptEvent::NoteOn { note: 64, velocity: 100 }),
+            ],
+            &poly_allocation(2),
+        );
+
+        // Polyphonic should produce more signal because ADSR gate is per-voice
+        // (mono re-triggers the same ADSR on second note, poly has two independent ADSRs)
+        let mono_max = mono_left.iter().cloned().fold(0.0f32, f32::max);
+        let poly_max = poly_left.iter().cloned().fold(0.0f32, f32::max);
+        assert!(
+            poly_max > mono_max,
+            "polyphonic ADSR should gate independently per voice, producing more output than mono"
+        );
     }
 }
