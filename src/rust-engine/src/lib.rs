@@ -1,5 +1,7 @@
 pub mod core;
 
+pub mod compiled_patch;
+
 pub mod graph_processor;
 
 pub mod builtins;
