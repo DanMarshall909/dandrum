@@ -9,3 +9,4 @@
 # run scripts/check-rust-coverage, then add tests until it is fully covered.
 
 strict src/rust-engine/src/voice_allocator.rs
+strict src/rust-engine/src/graph_composite.rs

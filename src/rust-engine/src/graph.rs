@@ -4,6 +4,9 @@ use std::fmt;
 use crate::builtins::{BuiltInModuleRegistry, module_types};
 use crate::patch;
 
+#[path = "graph_composite.rs"]
+mod graph_composite;
+
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum ExecutionScope {
     Voice,
@@ -293,127 +296,6 @@ impl Cable {
     }
 }
 
-fn expand_patch_declarations(
-    patch: &patch::PatchDocument,
-) -> (Vec<patch::ModuleDeclaration>, Vec<patch::ConnectionDeclaration>) {
-    let definitions = patch
-        .module_definitions
-        .iter()
-        .map(|definition| (definition.module_type.as_str(), definition))
-        .collect::<BTreeMap<_, _>>();
-    let instances = patch
-        .modules
-        .iter()
-        .filter_map(|module| {
-            definitions
-                .get(module.module_type.as_str())
-                .map(|definition| (module.id.as_str(), *definition))
-        })
-        .collect::<BTreeMap<_, _>>();
-    if instances.is_empty() {
-        return (patch.modules.clone(), patch.connections.clone());
-    }
-
-    let mut modules = Vec::new();
-    let mut connections = Vec::new();
-
-    for module in &patch.modules {
-        let Some(definition) = definitions.get(module.module_type.as_str()) else {
-            modules.push(module.clone());
-            continue;
-        };
-
-        for internal in &definition.modules {
-            let mut expanded = internal.clone();
-            expanded.id = namespaced_id(&module.id, &internal.id);
-            modules.push(expanded);
-        }
-
-        for connection in &definition.connections {
-            connections.push(patch::ConnectionDeclaration {
-                from: patch::PortReference {
-                    module_id: namespaced_id(&module.id, &connection.from.module_id),
-                    port_name: connection.from.port_name.clone(),
-                },
-                to: patch::PortReference {
-                    module_id: namespaced_id(&module.id, &connection.to.module_id),
-                    port_name: connection.to.port_name.clone(),
-                },
-            });
-        }
-    }
-
-    for connection in &patch.connections {
-        let sources = expand_source_reference(&connection.from, &instances);
-        let destinations = expand_destination_reference(&connection.to, &instances);
-
-        for source in &sources {
-            for destination in &destinations {
-                connections.push(patch::ConnectionDeclaration {
-                    from: source.clone(),
-                    to: destination.clone(),
-                });
-            }
-        }
-    }
-
-    (modules, connections)
-}
-
-fn expand_source_reference(
-    reference: &patch::PortReference,
-    instances: &BTreeMap<&str, &patch::ModuleDefinitionDeclaration>,
-) -> Vec<patch::PortReference> {
-    let Some(definition) = instances.get(reference.module_id.as_str()) else {
-        return vec![reference.clone()];
-    };
-    let Some(output) = definition
-        .outputs
-        .iter()
-        .find(|output| output.name == reference.port_name)
-    else {
-        return vec![reference.clone()];
-    };
-
-    output
-        .maps_from
-        .iter()
-        .map(|mapped| patch::PortReference {
-            module_id: namespaced_id(&reference.module_id, &mapped.module_id),
-            port_name: mapped.port_name.clone(),
-        })
-        .collect()
-}
-
-fn expand_destination_reference(
-    reference: &patch::PortReference,
-    instances: &BTreeMap<&str, &patch::ModuleDefinitionDeclaration>,
-) -> Vec<patch::PortReference> {
-    let Some(definition) = instances.get(reference.module_id.as_str()) else {
-        return vec![reference.clone()];
-    };
-    let Some(input) = definition
-        .inputs
-        .iter()
-        .find(|input| input.name == reference.port_name)
-    else {
-        return vec![reference.clone()];
-    };
-
-    input
-        .maps_to
-        .iter()
-        .map(|mapped| patch::PortReference {
-            module_id: namespaced_id(&reference.module_id, &mapped.module_id),
-            port_name: mapped.port_name.clone(),
-        })
-        .collect()
-}
-
-fn namespaced_id(instance_id: &str, internal_id: &str) -> String {
-    format!("{instance_id}::{internal_id}")
-}
-
 impl Graph {
     pub fn new(modules: Vec<ModuleNode>, cables: Vec<Cable>) -> Self {
         Self { modules, cables }
@@ -421,7 +303,8 @@ impl Graph {
 
     pub fn from_patch_declarations(patch: &patch::PatchDocument) -> Self {
         let registry = BuiltInModuleRegistry::new();
-        let (module_declarations, connection_declarations) = expand_patch_declarations(patch);
+        let (module_declarations, connection_declarations) =
+            graph_composite::expand_patch_declarations(patch);
         let modules = module_declarations
             .iter()
             .map(|module| {
