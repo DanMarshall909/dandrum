@@ -1,7 +1,7 @@
 use std::collections::{BTreeMap, VecDeque};
 use std::fmt;
 
-use crate::graph::{ExecutionScope, Graph, ModuleId};
+use crate::graph::{ExecutionScope, Graph, ModuleId, SignalType};
 use crate::patch::RenderSettings;
 
 pub type ExecutionStep = usize;
@@ -22,6 +22,10 @@ pub struct CompiledNode {
     pub execution_scope: ExecutionScope,
     pub input_port_map: Vec<Vec<CompiledPortRef>>,
     pub output_port_map: Vec<usize>,
+    pub input_port_names: Vec<String>,
+    pub input_port_types: Vec<SignalType>,
+    pub output_port_names: Vec<String>,
+    pub output_port_types: Vec<SignalType>,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -48,17 +52,25 @@ pub fn compile(
 ) -> Result<CompiledPatch, CompileError> {
     let module_indices = module_indices_by_id(graph);
     let execution_order = topological_sort(graph, &module_indices)?;
-    let mut nodes = graph
+    let mut nodes: Vec<_> = graph
         .modules()
         .iter()
-        .map(|module| CompiledNode {
-            id: module.id().clone(),
-            module_type: module.module_type().to_string(),
-            execution_scope: module.execution_scope(),
-            input_port_map: vec![Vec::new(); module.inputs().len()],
-            output_port_map: (0..module.outputs().len()).collect(),
+        .map(|module| {
+            let input_count = module.inputs().len();
+            let output_count = module.outputs().len();
+            CompiledNode {
+                id: module.id().clone(),
+                module_type: module.module_type().to_string(),
+                execution_scope: module.execution_scope(),
+                input_port_map: vec![Vec::new(); input_count],
+                output_port_map: (0..output_count).collect(),
+                input_port_names: module.inputs().iter().map(|p| p.name().to_string()).collect(),
+                input_port_types: module.inputs().iter().map(|p| p.signal_type()).collect(),
+                output_port_names: module.outputs().iter().map(|p| p.name().to_string()).collect(),
+                output_port_types: module.outputs().iter().map(|p| p.signal_type()).collect(),
+            }
         })
-        .collect::<Vec<_>>();
+        .collect();
 
     resolve_routing(graph, &module_indices, &mut nodes)?;
 

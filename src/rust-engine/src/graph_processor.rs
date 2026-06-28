@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 
+use crate::compiled_patch::CompiledPatch;
 use crate::core::{BlockScheduler, TimedInputEvent};
 use crate::graph::{ExecutionScope, Graph, ModuleNode, SignalType, builtin_ports};
 use crate::patch::{RenderSettings, VoiceAllocation};
@@ -237,6 +238,433 @@ fn gather_event_inputs(
         }
     }
     events
+}
+
+// === Compiled-path input helpers ===
+
+fn compiled_input_port_index(compiled: &CompiledPatch, module_idx: usize, port_name: &str) -> Option<usize> {
+    compiled
+        .nodes()
+        .get(module_idx)?
+        .input_port_names
+        .iter()
+        .position(|n| n == port_name)
+}
+
+fn compiled_source_port_name<'a>(
+    compiled: &'a CompiledPatch,
+    src_idx: usize,
+    port_idx: usize,
+) -> Option<&'a str> {
+    Some(
+        compiled
+            .nodes()
+            .get(src_idx)?
+            .output_port_names
+            .get(port_idx)?
+            .as_str(),
+    )
+}
+
+fn compiled_sum_audio_input(
+    module_idx: usize,
+    port_name: &str,
+    compiled: &CompiledPatch,
+    all_outputs: &HashMap<usize, ModuleOutputs>,
+    frames: usize,
+) -> Vec<f32> {
+    let mut result = vec![0.0f32; frames];
+    let Some(port_idx) = compiled_input_port_index(compiled, module_idx, port_name) else {
+        return result;
+    };
+    for &src_ref in &compiled.nodes()[module_idx].input_port_map[port_idx] {
+        let Some(src_port_name) =
+            compiled_source_port_name(compiled, src_ref.module_index, src_ref.port_index)
+        else {
+            continue;
+        };
+        if let Some(outputs) = all_outputs.get(&src_ref.module_index) {
+            if let Some(buf) = outputs.audio.get(src_port_name) {
+                for (i, s) in buf.iter().enumerate().take(frames) {
+                    result[i] += s;
+                }
+            }
+        }
+    }
+    result
+}
+
+fn compiled_sum_control_input(
+    module_idx: usize,
+    port_name: &str,
+    compiled: &CompiledPatch,
+    all_outputs: &HashMap<usize, ModuleOutputs>,
+    frames: usize,
+) -> Vec<f32> {
+    let mut result = vec![0.0f32; frames];
+    let Some(port_idx) = compiled_input_port_index(compiled, module_idx, port_name) else {
+        return result;
+    };
+    for &src_ref in &compiled.nodes()[module_idx].input_port_map[port_idx] {
+        let Some(src_port_name) =
+            compiled_source_port_name(compiled, src_ref.module_index, src_ref.port_index)
+        else {
+            continue;
+        };
+        if let Some(outputs) = all_outputs.get(&src_ref.module_index) {
+            if let Some(buf) = outputs.control.get(src_port_name) {
+                for (i, s) in buf.iter().enumerate().take(frames) {
+                    result[i] += s;
+                }
+            }
+        }
+    }
+    result
+}
+
+fn compiled_control_input_or_default(
+    module_idx: usize,
+    port_name: &str,
+    compiled: &CompiledPatch,
+    all_outputs: &HashMap<usize, ModuleOutputs>,
+    frames: usize,
+    default: f32,
+) -> Vec<f32> {
+    let port_idx = compiled_input_port_index(compiled, module_idx, port_name);
+    if let Some(port_idx) = port_idx {
+        if !compiled.nodes()[module_idx].input_port_map[port_idx].is_empty() {
+            return compiled_sum_control_input(module_idx, port_name, compiled, all_outputs, frames);
+        }
+    }
+    vec![default; frames]
+}
+
+fn compiled_gather_event_inputs(
+    module_idx: usize,
+    compiled: &CompiledPatch,
+    all_outputs: &HashMap<usize, ModuleOutputs>,
+) -> Vec<BlockEvent> {
+    let mut events = Vec::new();
+    let node = &compiled.nodes()[module_idx];
+    for i in 0..node.input_port_names.len() {
+        if node.input_port_types[i] != SignalType::Event {
+            continue;
+        }
+        for &src_ref in &node.input_port_map[i] {
+            if let Some(outputs) = all_outputs.get(&src_ref.module_index) {
+                events.extend_from_slice(&outputs.events);
+            }
+        }
+    }
+    events
+}
+
+pub fn render_offline_compiled(
+    compiled: &CompiledPatch,
+    events: Vec<TimedInputEvent>,
+    sampler_assets: &PreparedSamplerAssets,
+) -> (Vec<f32>, Vec<f32>) {
+    let settings = compiled.render_settings();
+    let sample_rate = settings.sample_rate_hz as f32;
+
+    let midi_idx = compiled
+        .nodes()
+        .iter()
+        .position(|n| n.module_type == "midi_input");
+    let out_idx = compiled
+        .nodes()
+        .iter()
+        .position(|n| n.module_type == "audio_output");
+
+    let mut states: Vec<PerModuleState> = compiled
+        .nodes()
+        .iter()
+        .map(|node| {
+            let module_type = node.module_type.as_str();
+            match module_type {
+                "oscillator" => PerModuleState::Oscillator {
+                    phase: 0.0,
+                    sample_rate,
+                },
+                "adsr" => PerModuleState::Adsr {
+                    level: 0.0,
+                    gate_active: false,
+                    release_start_frame: 0,
+                    release_start_level: 0.0,
+                    sample_rate,
+                },
+                "gain" => PerModuleState::Vca,
+                "audio_output" => PerModuleState::AudioOutput,
+                "midi_input" => PerModuleState::MidiInput,
+                "audio_delay" => PerModuleState::AudioDelay,
+                "note_to_rate" => PerModuleState::NoteToRate { rate: 1.0 },
+                "audio_mixer" => PerModuleState::AudioMixer,
+                "sampler" => PerModuleState::Sampler {
+                    sample: sampler_assets.get(node.id.as_str()).cloned(),
+                    position: 0.0,
+                    active: false,
+                },
+                other => panic!("unknown module type in compiled render: {other}"),
+            }
+        })
+        .collect();
+
+    let scheduler = BlockScheduler::new(settings.duration_frames, settings.block_size_frames)
+        .with_input_events(events);
+
+    let mut left_buf: Vec<f32> = Vec::new();
+    let mut right_buf: Vec<f32> = Vec::new();
+
+    for block in scheduler {
+        let frames = block.frame_count() as usize;
+
+        let external_events: Vec<BlockEvent> = block
+            .input_events()
+            .iter()
+            .map(|e| BlockEvent {
+                frame_offset: e.frame_offset(),
+                event: e.event().clone(),
+            })
+            .collect();
+
+        process_block_compiled(
+            compiled,
+            &mut states,
+            midi_idx,
+            out_idx,
+            block.start_frame(),
+            frames,
+            external_events,
+            &mut left_buf,
+            &mut right_buf,
+        );
+    }
+
+    (left_buf, right_buf)
+}
+
+fn process_block_compiled(
+    compiled: &CompiledPatch,
+    states: &mut [PerModuleState],
+    midi_idx: Option<usize>,
+    out_idx: Option<usize>,
+    block_start_frame: u64,
+    frames: usize,
+    incoming_events: Vec<BlockEvent>,
+    left_out: &mut Vec<f32>,
+    right_out: &mut Vec<f32>,
+) {
+    let mut all_outputs: HashMap<usize, ModuleOutputs> = HashMap::new();
+
+    if let Some(idx) = midi_idx {
+        let outputs = ModuleOutputs {
+            audio: HashMap::new(),
+            control: HashMap::new(),
+            events: incoming_events,
+        };
+        all_outputs.insert(idx, outputs);
+    }
+
+    for &module_idx in compiled.execution_order() {
+        let node = &compiled.nodes()[module_idx];
+        let module_type = node.module_type.as_str();
+
+        if module_type == "midi_input" {
+            continue;
+        }
+
+        let events_in = compiled_gather_event_inputs(module_idx, compiled, &all_outputs);
+
+        let outputs = match module_type {
+            "oscillator" => {
+                let pitch_in = compiled_control_input_or_default(
+                    module_idx,
+                    builtin_ports::PITCH,
+                    compiled,
+                    &all_outputs,
+                    frames,
+                    1.0,
+                );
+                process_oscillator(&mut states[module_idx], &pitch_in, frames)
+            }
+            "adsr" => {
+                let attack_in = compiled_sum_control_input(
+                    module_idx,
+                    builtin_ports::ATTACK,
+                    compiled,
+                    &all_outputs,
+                    frames,
+                );
+                let decay_in = compiled_sum_control_input(
+                    module_idx,
+                    builtin_ports::DECAY,
+                    compiled,
+                    &all_outputs,
+                    frames,
+                );
+                let sustain_in = compiled_sum_control_input(
+                    module_idx,
+                    builtin_ports::SUSTAIN,
+                    compiled,
+                    &all_outputs,
+                    frames,
+                );
+                let release_in = compiled_sum_control_input(
+                    module_idx,
+                    builtin_ports::RELEASE,
+                    compiled,
+                    &all_outputs,
+                    frames,
+                );
+                process_adsr(
+                    &mut states[module_idx],
+                    &events_in,
+                    &attack_in,
+                    &decay_in,
+                    &sustain_in,
+                    &release_in,
+                    block_start_frame,
+                    frames,
+                )
+            }
+            "gain" => {
+                let audio_in = compiled_sum_audio_input(
+                    module_idx,
+                    builtin_ports::AUDIO_IN,
+                    compiled,
+                    &all_outputs,
+                    frames,
+                );
+                let gain_in = compiled_sum_control_input(
+                    module_idx,
+                    builtin_ports::GAIN,
+                    compiled,
+                    &all_outputs,
+                    frames,
+                );
+                process_vca(audio_in, gain_in)
+            }
+            "sampler" => {
+                let rate_in = compiled_control_input_or_default(
+                    module_idx,
+                    builtin_ports::RATE,
+                    compiled,
+                    &all_outputs,
+                    frames,
+                    1.0,
+                );
+                let start_in = compiled_sum_control_input(
+                    module_idx,
+                    builtin_ports::START,
+                    compiled,
+                    &all_outputs,
+                    frames,
+                );
+                let loop_enabled_in = compiled_sum_control_input(
+                    module_idx,
+                    builtin_ports::LOOP_ENABLED,
+                    compiled,
+                    &all_outputs,
+                    frames,
+                );
+                let loop_start_in = compiled_sum_control_input(
+                    module_idx,
+                    builtin_ports::LOOP_START,
+                    compiled,
+                    &all_outputs,
+                    frames,
+                );
+                let loop_end_in = compiled_sum_control_input(
+                    module_idx,
+                    builtin_ports::LOOP_END,
+                    compiled,
+                    &all_outputs,
+                    frames,
+                );
+                process_sampler(
+                    &mut states[module_idx],
+                    &events_in,
+                    &rate_in,
+                    &start_in,
+                    &loop_enabled_in,
+                    &loop_start_in,
+                    &loop_end_in,
+                    frames,
+                )
+            }
+            "note_to_rate" => {
+                process_note_to_rate(&mut states[module_idx], &events_in, frames)
+            }
+            "audio_mixer" => {
+                let mix = compiled_sum_audio_input(
+                    module_idx,
+                    builtin_ports::INPUTS,
+                    compiled,
+                    &all_outputs,
+                    frames,
+                );
+                let mut m = HashMap::new();
+                m.insert(builtin_ports::MIX.to_string(), mix);
+                ModuleOutputs {
+                    audio: m,
+                    control: HashMap::new(),
+                    events: Vec::new(),
+                }
+            }
+            "audio_output" => {
+                let left = compiled_sum_audio_input(
+                    module_idx,
+                    builtin_ports::LEFT,
+                    compiled,
+                    &all_outputs,
+                    frames,
+                );
+                let right = compiled_sum_audio_input(
+                    module_idx,
+                    builtin_ports::RIGHT,
+                    compiled,
+                    &all_outputs,
+                    frames,
+                );
+                let mut m = HashMap::new();
+                m.insert(builtin_ports::LEFT.to_string(), left);
+                m.insert(builtin_ports::RIGHT.to_string(), right);
+                ModuleOutputs {
+                    audio: m,
+                    control: HashMap::new(),
+                    events: Vec::new(),
+                }
+            }
+            "audio_delay" => {
+                let audio_in = compiled_sum_audio_input(
+                    module_idx,
+                    builtin_ports::AUDIO_IN,
+                    compiled,
+                    &all_outputs,
+                    frames,
+                );
+                process_audio_delay(audio_in)
+            }
+            other => panic!("unknown module type in compiled block: {other}"),
+        };
+
+        all_outputs.insert(module_idx, outputs);
+    }
+
+    if let Some(idx) = out_idx {
+        if let Some(outputs) = all_outputs.get(&idx) {
+            if let Some(left) = outputs.audio.get(builtin_ports::LEFT) {
+                left_out.extend_from_slice(left);
+            } else {
+                left_out.extend(std::iter::repeat_n(0.0, frames));
+            }
+            if let Some(right) = outputs.audio.get(builtin_ports::RIGHT) {
+                right_out.extend_from_slice(right);
+            } else {
+                right_out.extend(std::iter::repeat_n(0.0, frames));
+            }
+        }
+    }
 }
 
 pub fn render_offline(
@@ -3058,6 +3486,212 @@ connections:
         assert_eq!(
             right1, right2,
             "polyphonic render with stealing should be deterministic (right)"
+        );
+    }
+
+    // --- Section 5: Compiled render parity ---
+
+    use crate::compiled_patch::compile;
+
+    fn parity_graph(modules: Vec<ModuleNode>, cables: Vec<Cable>) -> Graph {
+        let graph = Graph::new(modules, cables);
+        graph.validate().expect("graph should validate");
+        graph
+    }
+
+    fn assert_parity(
+        graph: &Graph,
+        settings: &RenderSettings,
+        events: Vec<TimedInputEvent>,
+        sampler_assets: &PreparedSamplerAssets,
+    ) {
+        let compiled = compile(graph, settings).expect("graph should compile");
+        let (expected_left, expected_right) =
+            render_offline_with_sampler_assets(graph, settings, events.clone(), sampler_assets);
+        let (actual_left, actual_right) =
+            render_offline_compiled(&compiled, events, sampler_assets);
+
+        assert_eq!(
+            expected_left, actual_left,
+            "left channel parity mismatch for graph: {:?}",
+            graph
+                .modules()
+                .iter()
+                .map(|m| m.module_type())
+                .collect::<Vec<_>>()
+        );
+        assert_eq!(
+            expected_right, actual_right,
+            "right channel parity mismatch for graph: {:?}",
+            graph
+                .modules()
+                .iter()
+                .map(|m| m.module_type())
+                .collect::<Vec<_>>()
+        );
+    }
+
+    #[test]
+    fn compiled_render_matches_raw_for_oscillator_patch() {
+        let graph = parity_graph(
+            vec![
+                ModuleNode::new(ModuleId::new("osc"), "oscillator")
+                    .with_output(builtin_ports::AUDIO, SignalType::Audio),
+                ModuleNode::new(ModuleId::new("mixer"), "audio_mixer")
+                    .with_mixing_input(builtin_ports::INPUTS, SignalType::Audio)
+                    .with_output(builtin_ports::MIX, SignalType::Audio),
+                ModuleNode::new(ModuleId::new("out"), "audio_output")
+                    .with_input(builtin_ports::LEFT, SignalType::Audio)
+                    .with_input(builtin_ports::RIGHT, SignalType::Audio),
+            ],
+            vec![
+                Cable::new(
+                    PortRef::new(ModuleId::new("osc"), builtin_ports::AUDIO),
+                    PortRef::new(ModuleId::new("mixer"), builtin_ports::INPUTS),
+                ),
+                Cable::new(
+                    PortRef::new(ModuleId::new("mixer"), builtin_ports::MIX),
+                    PortRef::new(ModuleId::new("out"), builtin_ports::LEFT),
+                ),
+                Cable::new(
+                    PortRef::new(ModuleId::new("mixer"), builtin_ports::MIX),
+                    PortRef::new(ModuleId::new("out"), builtin_ports::RIGHT),
+                ),
+            ],
+        );
+
+        let settings = RenderSettings {
+            sample_rate_hz: 48_000,
+            block_size_frames: 64,
+            duration_frames: 512,
+        };
+
+        assert_parity(&graph, &settings, Vec::new(), &PreparedSamplerAssets::empty());
+    }
+
+    #[test]
+    fn compiled_render_matches_raw_for_midi_voice_patch() {
+        let graph = parity_graph(
+            vec![
+                ModuleNode::new(ModuleId::new("midi"), "midi_input")
+                    .with_output(builtin_ports::EVENTS, SignalType::Event),
+                ModuleNode::new(ModuleId::new("osc"), "oscillator")
+                    .with_output(builtin_ports::AUDIO, SignalType::Audio),
+                ModuleNode::new(ModuleId::new("env"), "adsr")
+                    .with_input(builtin_ports::GATE, SignalType::Event)
+                    .with_output(builtin_ports::VALUE, SignalType::Control),
+                ModuleNode::new(ModuleId::new("vca"), "gain")
+                    .with_input(builtin_ports::AUDIO_IN, SignalType::Audio)
+                    .with_input(builtin_ports::GAIN, SignalType::Control)
+                    .with_output(builtin_ports::AUDIO_OUT, SignalType::Audio),
+                ModuleNode::new(ModuleId::new("mixer"), "audio_mixer")
+                    .with_mixing_input(builtin_ports::INPUTS, SignalType::Audio)
+                    .with_output(builtin_ports::MIX, SignalType::Audio),
+                ModuleNode::new(ModuleId::new("out"), "audio_output")
+                    .with_input(builtin_ports::LEFT, SignalType::Audio)
+                    .with_input(builtin_ports::RIGHT, SignalType::Audio),
+            ],
+            vec![
+                Cable::new(
+                    PortRef::new(ModuleId::new("midi"), builtin_ports::EVENTS),
+                    PortRef::new(ModuleId::new("env"), builtin_ports::GATE),
+                ),
+                Cable::new(
+                    PortRef::new(ModuleId::new("osc"), builtin_ports::AUDIO),
+                    PortRef::new(ModuleId::new("vca"), builtin_ports::AUDIO_IN),
+                ),
+                Cable::new(
+                    PortRef::new(ModuleId::new("env"), builtin_ports::VALUE),
+                    PortRef::new(ModuleId::new("vca"), builtin_ports::GAIN),
+                ),
+                Cable::new(
+                    PortRef::new(ModuleId::new("vca"), builtin_ports::AUDIO_OUT),
+                    PortRef::new(ModuleId::new("mixer"), builtin_ports::INPUTS),
+                ),
+                Cable::new(
+                    PortRef::new(ModuleId::new("mixer"), builtin_ports::MIX),
+                    PortRef::new(ModuleId::new("out"), builtin_ports::LEFT),
+                ),
+                Cable::new(
+                    PortRef::new(ModuleId::new("mixer"), builtin_ports::MIX),
+                    PortRef::new(ModuleId::new("out"), builtin_ports::RIGHT),
+                ),
+            ],
+        );
+
+        let settings = RenderSettings {
+            sample_rate_hz: 48_000,
+            block_size_frames: 64,
+            duration_frames: 1024,
+        };
+
+        assert_parity(
+            &graph,
+            &settings,
+            vec![
+                TimedInputEvent::new(0, ScriptEvent::NoteOn { note: 60, velocity: 100 }),
+                TimedInputEvent::new(500, ScriptEvent::NoteOff { note: 60 }),
+            ],
+            &PreparedSamplerAssets::empty(),
+        );
+    }
+
+    #[test]
+    fn compiled_render_matches_raw_for_sampler_patch() {
+        let graph = parity_graph(
+            vec![
+                ModuleNode::new(ModuleId::new("midi"), "midi_input")
+                    .with_output(builtin_ports::EVENTS, SignalType::Event),
+                ModuleNode::new(ModuleId::new("sampler"), "sampler")
+                    .with_input(builtin_ports::TRIGGER, SignalType::Event)
+                    .with_input(builtin_ports::RATE, SignalType::Control)
+                    .with_input(builtin_ports::START, SignalType::Control)
+                    .with_input(builtin_ports::LOOP_ENABLED, SignalType::Control)
+                    .with_input(builtin_ports::LOOP_START, SignalType::Control)
+                    .with_input(builtin_ports::LOOP_END, SignalType::Control)
+                    .with_output(builtin_ports::AUDIO, SignalType::Audio),
+                ModuleNode::new(ModuleId::new("out"), "audio_output")
+                    .with_input(builtin_ports::LEFT, SignalType::Audio)
+                    .with_input(builtin_ports::RIGHT, SignalType::Audio),
+            ],
+            vec![
+                Cable::new(
+                    PortRef::new(ModuleId::new("midi"), builtin_ports::EVENTS),
+                    PortRef::new(ModuleId::new("sampler"), builtin_ports::TRIGGER),
+                ),
+                Cable::new(
+                    PortRef::new(ModuleId::new("sampler"), builtin_ports::AUDIO),
+                    PortRef::new(ModuleId::new("out"), builtin_ports::LEFT),
+                ),
+            ],
+        );
+
+        let settings = RenderSettings {
+            sample_rate_hz: 48_000,
+            block_size_frames: 4,
+            duration_frames: 8,
+        };
+
+        let assets = PreparedSamplerAssets::from_samples_by_module({
+            let mut m = std::collections::BTreeMap::new();
+            m.insert(
+                "sampler".to_string(),
+                LoadedSample::new(48_000, vec![0.25, 0.5, 0.75, 1.0]),
+            );
+            m
+        });
+
+        assert_parity(
+            &graph,
+            &settings,
+            vec![TimedInputEvent::new(
+                0,
+                ScriptEvent::NoteOn {
+                    note: 60,
+                    velocity: 100,
+                },
+            )],
+            &assets,
         );
     }
 }
