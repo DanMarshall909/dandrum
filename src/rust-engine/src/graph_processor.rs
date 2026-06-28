@@ -1550,6 +1550,14 @@ mod tests {
         TimedInputEvent::new(frame, ScriptEvent::NoteOn { note: 60, velocity })
     }
 
+    fn render_patch(yaml: &str) -> (Vec<f32>, Vec<f32>) {
+        let patch = patch::load_patch_str(yaml).expect("patch should parse");
+        patch::validate_patch_schema(&patch).expect("schema should be valid");
+        let graph = Graph::from_patch_declarations(&patch);
+        graph.validate().expect("graph should validate");
+        render_offline(&graph, &patch.render, vec![note_on(0, 100)])
+    }
+
     #[test]
     fn graph_processor_produces_audio_from_midi_triggered_303_chain() {
         let patch = patch::load_patch_str(
@@ -1641,6 +1649,215 @@ connections:
         assert!(has_signal, "303-style chain should produce audio");
         assert_eq!(left.len(), 48000);
         assert_eq!(right.len(), 48000);
+    }
+
+    #[test]
+    fn composite_oscillator_gain_voice_renders_like_equivalent_flat_graph() {
+        let flat = render_patch(
+            r#"
+metadata:
+  name: Flat Voice
+render:
+  sample_rate_hz: 48000
+  block_size_frames: 64
+  duration_frames: 512
+modules:
+  - id: midi
+    type: midi_input
+  - id: osc
+    type: oscillator
+  - id: env
+    type: adsr
+  - id: vca
+    type: gain
+  - id: mixer
+    type: audio_mixer
+  - id: out
+    type: audio_output
+connections:
+  - from: midi.events
+    to: env.gate
+  - from: osc.audio
+    to: vca.audio_in
+  - from: env.value
+    to: vca.gain
+  - from: vca.audio_out
+    to: mixer.inputs
+  - from: mixer.mix
+    to: out.left
+"#,
+        );
+        let composite = render_patch(
+            r#"
+metadata:
+  name: Composite Voice
+render:
+  sample_rate_hz: 48000
+  block_size_frames: 64
+  duration_frames: 512
+module_definitions:
+  - type: drum_voice
+    inputs:
+      - name: trigger
+        signal_type: event
+        maps_to:
+          - env.gate
+    outputs:
+      - name: audio
+        signal_type: audio
+        maps_from:
+          - vca.audio_out
+    modules:
+      - id: osc
+        type: oscillator
+      - id: env
+        type: adsr
+      - id: vca
+        type: gain
+    connections:
+      - from: osc.audio
+        to: vca.audio_in
+      - from: env.value
+        to: vca.gain
+modules:
+  - id: midi
+    type: midi_input
+  - id: voice
+    type: drum_voice
+  - id: mixer
+    type: audio_mixer
+  - id: out
+    type: audio_output
+connections:
+  - from: midi.events
+    to: voice.trigger
+  - from: voice.audio
+    to: mixer.inputs
+  - from: mixer.mix
+    to: out.left
+"#,
+        );
+
+        assert_eq!(composite, flat);
+        assert!(composite.0.iter().any(|sample| *sample != 0.0));
+    }
+
+    #[test]
+    fn composite_sampler_voice_renders_through_generic_public_ports() {
+        let patch = patch::load_patch_str(
+            r#"
+metadata:
+  name: Composite Sampler
+render:
+  sample_rate_hz: 48000
+  block_size_frames: 4
+  duration_frames: 4
+module_definitions:
+  - type: sample_voice
+    inputs:
+      - name: trigger
+        signal_type: event
+        maps_to:
+          - sampler.trigger
+      - name: rate
+        signal_type: control
+        maps_to:
+          - sampler.rate
+    outputs:
+      - name: audio
+        signal_type: audio
+        maps_from:
+          - sampler.audio
+    modules:
+      - id: sampler
+        type: sampler
+modules:
+  - id: midi
+    type: midi_input
+  - id: voice
+    type: sample_voice
+  - id: mixer
+    type: audio_mixer
+  - id: out
+    type: audio_output
+connections:
+  - from: midi.events
+    to: voice.trigger
+  - from: voice.audio
+    to: mixer.inputs
+  - from: mixer.mix
+    to: out.left
+"#,
+        )
+        .expect("patch should parse");
+        patch::validate_patch_schema(&patch).expect("schema should validate");
+        let graph = Graph::from_patch_declarations(&patch);
+        graph.validate().expect("expanded sampler composite should validate");
+        let assets = PreparedSamplerAssets::from_samples_by_module(BTreeMap::from([(
+            "voice::sampler".to_string(),
+            LoadedSample::new(48_000, vec![0.25, 0.5, 0.75]),
+        )]));
+
+        let (left, right) = render_offline_with_sampler_assets(
+            &graph,
+            &patch.render,
+            vec![note_on(0, 100)],
+            &assets,
+        );
+
+        assert_eq!(left, vec![0.25, 0.5, 0.75, 0.0]);
+        assert_eq!(right, vec![0.0; 4]);
+    }
+
+    #[test]
+    fn offline_and_realtime_processors_receive_only_expanded_composite_nodes() {
+        let patch = patch::load_patch_str(
+            r#"
+metadata:
+  name: Processor Expansion
+render:
+  sample_rate_hz: 48000
+  block_size_frames: 4
+  duration_frames: 4
+module_definitions:
+  - type: drum_voice
+    outputs:
+      - name: audio
+        signal_type: audio
+        maps_from:
+          - osc.audio
+    modules:
+      - id: osc
+        type: oscillator
+modules:
+  - id: voice
+    type: drum_voice
+  - id: mixer
+    type: audio_mixer
+  - id: out
+    type: audio_output
+connections:
+  - from: voice.audio
+    to: mixer.inputs
+  - from: mixer.mix
+    to: out.left
+"#,
+        )
+        .expect("patch should parse");
+        patch::validate_patch_schema(&patch).expect("schema should validate");
+        let graph = Graph::from_patch_declarations(&patch);
+        graph.validate().expect("expanded graph should validate");
+
+        assert!(graph.modules().iter().all(|module| module.module_type() != "drum_voice"));
+        assert!(graph.modules().iter().any(|module| module.id().as_str() == "voice::osc"));
+        let _offline = render_offline(&graph, &patch.render, Vec::new());
+        let realtime = RealtimeGraphProcessor::new(graph, 48_000.0);
+
+        assert!(realtime
+            .graph
+            .modules()
+            .iter()
+            .all(|module| module.module_type() != "drum_voice"));
     }
 
     #[test]

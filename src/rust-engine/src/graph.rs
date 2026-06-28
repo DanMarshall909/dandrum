@@ -293,6 +293,127 @@ impl Cable {
     }
 }
 
+fn expand_patch_declarations(
+    patch: &patch::PatchDocument,
+) -> (Vec<patch::ModuleDeclaration>, Vec<patch::ConnectionDeclaration>) {
+    let definitions = patch
+        .module_definitions
+        .iter()
+        .map(|definition| (definition.module_type.as_str(), definition))
+        .collect::<BTreeMap<_, _>>();
+    let instances = patch
+        .modules
+        .iter()
+        .filter_map(|module| {
+            definitions
+                .get(module.module_type.as_str())
+                .map(|definition| (module.id.as_str(), *definition))
+        })
+        .collect::<BTreeMap<_, _>>();
+    if instances.is_empty() {
+        return (patch.modules.clone(), patch.connections.clone());
+    }
+
+    let mut modules = Vec::new();
+    let mut connections = Vec::new();
+
+    for module in &patch.modules {
+        let Some(definition) = definitions.get(module.module_type.as_str()) else {
+            modules.push(module.clone());
+            continue;
+        };
+
+        for internal in &definition.modules {
+            let mut expanded = internal.clone();
+            expanded.id = namespaced_id(&module.id, &internal.id);
+            modules.push(expanded);
+        }
+
+        for connection in &definition.connections {
+            connections.push(patch::ConnectionDeclaration {
+                from: patch::PortReference {
+                    module_id: namespaced_id(&module.id, &connection.from.module_id),
+                    port_name: connection.from.port_name.clone(),
+                },
+                to: patch::PortReference {
+                    module_id: namespaced_id(&module.id, &connection.to.module_id),
+                    port_name: connection.to.port_name.clone(),
+                },
+            });
+        }
+    }
+
+    for connection in &patch.connections {
+        let sources = expand_source_reference(&connection.from, &instances);
+        let destinations = expand_destination_reference(&connection.to, &instances);
+
+        for source in &sources {
+            for destination in &destinations {
+                connections.push(patch::ConnectionDeclaration {
+                    from: source.clone(),
+                    to: destination.clone(),
+                });
+            }
+        }
+    }
+
+    (modules, connections)
+}
+
+fn expand_source_reference(
+    reference: &patch::PortReference,
+    instances: &BTreeMap<&str, &patch::ModuleDefinitionDeclaration>,
+) -> Vec<patch::PortReference> {
+    let Some(definition) = instances.get(reference.module_id.as_str()) else {
+        return vec![reference.clone()];
+    };
+    let Some(output) = definition
+        .outputs
+        .iter()
+        .find(|output| output.name == reference.port_name)
+    else {
+        return vec![reference.clone()];
+    };
+
+    output
+        .maps_from
+        .iter()
+        .map(|mapped| patch::PortReference {
+            module_id: namespaced_id(&reference.module_id, &mapped.module_id),
+            port_name: mapped.port_name.clone(),
+        })
+        .collect()
+}
+
+fn expand_destination_reference(
+    reference: &patch::PortReference,
+    instances: &BTreeMap<&str, &patch::ModuleDefinitionDeclaration>,
+) -> Vec<patch::PortReference> {
+    let Some(definition) = instances.get(reference.module_id.as_str()) else {
+        return vec![reference.clone()];
+    };
+    let Some(input) = definition
+        .inputs
+        .iter()
+        .find(|input| input.name == reference.port_name)
+    else {
+        return vec![reference.clone()];
+    };
+
+    input
+        .maps_to
+        .iter()
+        .map(|mapped| patch::PortReference {
+            module_id: namespaced_id(&reference.module_id, &mapped.module_id),
+            port_name: mapped.port_name.clone(),
+        })
+        .collect()
+}
+
+fn namespaced_id(instance_id: &str, internal_id: &str) -> String {
+    format!("{instance_id}::{internal_id}")
+}
+
 impl Graph {
     pub fn new(modules: Vec<ModuleNode>, cables: Vec<Cable>) -> Self {
         Self { modules, cables }
@@ -300,8 +421,8 @@ impl Graph {
 
     pub fn from_patch_declarations(patch: &patch::PatchDocument) -> Self {
         let registry = BuiltInModuleRegistry::new();
-        let modules = patch
-            .modules
+        let (module_declarations, connection_declarations) = expand_patch_declarations(patch);
+        let modules = module_declarations
             .iter()
             .map(|module| {
                 let mut node =
@@ -348,8 +469,7 @@ impl Graph {
             })
             .collect();
 
-        let cables = patch
-            .connections
+        let cables = connection_declarations
             .iter()
             .map(|connection| {
                 Cable::new(
@@ -792,6 +912,294 @@ connections:
         );
         assert_eq!(graph.cables()[0].source().module_id().as_str(), "osc");
         assert_eq!(graph.cables()[0].destination().port_name(), "audio_in");
+    }
+
+    #[test]
+    fn composite_instance_expands_to_namespaced_internal_modules_and_cables() {
+        let patch = patch::load_patch_str(
+            r#"
+metadata:
+  name: Composite Expansion
+render:
+  sample_rate_hz: 48000
+  block_size_frames: 128
+  duration_frames: 48000
+module_definitions:
+  - type: drum_voice
+    inputs:
+      - name: pitch
+        signal_type: control
+        maps_to:
+          - osc.pitch
+    outputs:
+      - name: audio
+        signal_type: audio
+        maps_from:
+          - vca.audio_out
+    modules:
+      - id: osc
+        type: oscillator
+      - id: vca
+        type: gain
+    connections:
+      - from: osc.audio
+        to: vca.audio_in
+modules:
+  - id: pitch
+    type: lfo
+  - id: voice
+    type: drum_voice
+  - id: out
+    type: audio_output
+connections:
+  - from: pitch.value
+    to: voice.pitch
+  - from: voice.audio
+    to: out.left
+"#,
+        )
+        .expect("patch should parse");
+        patch::validate_patch_schema(&patch).expect("patch schema should validate");
+
+        let graph = Graph::from_patch_declarations(&patch);
+
+        let module_ids = graph
+            .modules()
+            .iter()
+            .map(|module| module.id().as_str())
+            .collect::<Vec<_>>();
+        assert_eq!(module_ids, ["pitch", "voice::osc", "voice::vca", "out"]);
+        let cable_pairs = graph
+            .cables()
+            .iter()
+            .map(|cable| {
+                format!(
+                    "{}->{}",
+                    cable.source(),
+                    cable.destination()
+                )
+            })
+            .collect::<Vec<_>>();
+        assert_eq!(
+            cable_pairs,
+            [
+                "voice::osc.audio->voice::vca.audio_in",
+                "pitch.value->voice::osc.pitch",
+                "voice::vca.audio_out->out.left"
+            ]
+        );
+    }
+
+    #[test]
+    fn multiple_composite_instances_expand_without_id_collisions() {
+        let patch = patch::load_patch_str(
+            r#"
+metadata:
+  name: Composite Expansion
+render:
+  sample_rate_hz: 48000
+  block_size_frames: 128
+  duration_frames: 48000
+module_definitions:
+  - type: drum_voice
+    inputs:
+      - name: pitch
+        signal_type: control
+        maps_to:
+          - osc.pitch
+    outputs:
+      - name: audio
+        signal_type: audio
+        maps_from:
+          - osc.audio
+    modules:
+      - id: osc
+        type: oscillator
+modules:
+  - id: voice_a
+    type: drum_voice
+  - id: voice_b
+    type: drum_voice
+  - id: out
+    type: audio_output
+connections:
+  - from: voice_a.audio
+    to: out.left
+  - from: voice_b.audio
+    to: out.right
+"#,
+        )
+        .expect("patch should parse");
+        patch::validate_patch_schema(&patch).expect("patch schema should validate");
+
+        let graph = Graph::from_patch_declarations(&patch);
+
+        let module_ids = graph
+            .modules()
+            .iter()
+            .map(|module| module.id().as_str())
+            .collect::<Vec<_>>();
+        assert_eq!(module_ids, ["voice_a::osc", "voice_b::osc", "out"]);
+        let mut unique = BTreeSet::new();
+        for module_id in module_ids {
+            assert!(unique.insert(module_id), "duplicate expanded ID: {module_id}");
+        }
+        let cable_pairs = graph
+            .cables()
+            .iter()
+            .map(|cable| format!("{}->{}", cable.source(), cable.destination()))
+            .collect::<Vec<_>>();
+        assert_eq!(
+            cable_pairs,
+            [
+                "voice_a::osc.audio->out.left",
+                "voice_b::osc.audio->out.right"
+            ]
+        );
+    }
+
+    #[test]
+    fn expanded_composite_diagnostics_include_instance_and_internal_module_path() {
+        let patch = patch::load_patch_str(
+            r#"
+metadata:
+  name: Composite Diagnostics
+render:
+  sample_rate_hz: 48000
+  block_size_frames: 128
+  duration_frames: 48000
+module_definitions:
+  - type: drum_voice
+    inputs: []
+    outputs:
+      - name: audio
+        signal_type: audio
+        maps_from:
+          - vca.audio_out
+    modules:
+      - id: osc
+        type: oscillator
+      - id: vca
+        type: gain
+    connections:
+      - from: osc.audio
+        to: vca.missing
+modules:
+  - id: voice
+    type: drum_voice
+  - id: out
+    type: audio_output
+connections:
+  - from: voice.audio
+    to: out.left
+"#,
+        )
+        .expect("patch should parse");
+
+        let graph = Graph::from_patch_declarations(&patch);
+        let error = graph
+            .validate()
+            .expect_err("invalid expanded internal route should fail");
+
+        assert!(error.to_string().contains("voice::vca.missing"));
+    }
+
+    #[test]
+    fn composite_cannot_hide_implicit_many_to_one_internal_route() {
+        let patch = patch::load_patch_str(
+            r#"
+metadata:
+  name: Composite Many To One
+render:
+  sample_rate_hz: 48000
+  block_size_frames: 128
+  duration_frames: 48000
+module_definitions:
+  - type: bad_voice
+    outputs:
+      - name: audio
+        signal_type: audio
+        maps_from:
+          - vca.audio_out
+    modules:
+      - id: osc_a
+        type: oscillator
+      - id: osc_b
+        type: oscillator
+      - id: vca
+        type: gain
+    connections:
+      - from: osc_a.audio
+        to: vca.audio_in
+      - from: osc_b.audio
+        to: vca.audio_in
+modules:
+  - id: voice
+    type: bad_voice
+  - id: out
+    type: audio_output
+connections:
+  - from: voice.audio
+    to: out.left
+"#,
+        )
+        .expect("patch should parse");
+
+        let graph = Graph::from_patch_declarations(&patch);
+        let error = graph
+            .validate()
+            .expect_err("hidden many-to-one route should fail");
+
+        assert!(error.to_string().contains("voice::vca.audio_in"));
+        assert!(error.to_string().contains("explicit mixer"));
+    }
+
+    #[test]
+    fn composite_cannot_hide_instantaneous_internal_audio_feedback() {
+        let patch = patch::load_patch_str(
+            r#"
+metadata:
+  name: Composite Feedback
+render:
+  sample_rate_hz: 48000
+  block_size_frames: 128
+  duration_frames: 48000
+module_definitions:
+  - type: bad_voice
+    outputs:
+      - name: audio
+        signal_type: audio
+        maps_from:
+          - a.audio_out
+    modules:
+      - id: a
+        type: gain
+      - id: b
+        type: gain
+    connections:
+      - from: a.audio_out
+        to: b.audio_in
+      - from: b.audio_out
+        to: a.audio_in
+modules:
+  - id: voice
+    type: bad_voice
+  - id: out
+    type: audio_output
+connections:
+  - from: voice.audio
+    to: out.left
+"#,
+        )
+        .expect("patch should parse");
+
+        let graph = Graph::from_patch_declarations(&patch);
+        let error = graph
+            .validate()
+            .expect_err("hidden instantaneous feedback should fail");
+
+        assert!(error.to_string().contains("routing cycle detected"));
+        assert!(error.to_string().contains("voice::a.audio_out->voice::b.audio_in"));
     }
 
     #[test]

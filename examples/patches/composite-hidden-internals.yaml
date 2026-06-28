@@ -1,0 +1,53 @@
+metadata:
+  name: Composite Hidden Internals
+render:
+  sample_rate_hz: 48000
+  block_size_frames: 64
+  duration_frames: 4800
+module_definitions:
+  # Patch authors expose this custom public contract; env/osc/vca stay internal.
+  - type: plucked_cell
+    inputs:
+      - name: strike
+        signal_type: event
+        maps_to:
+          - env.gate
+      - name: bend
+        signal_type: control
+        maps_to:
+          - osc.pitch
+    outputs:
+      - name: signal
+        signal_type: audio
+        maps_from:
+          - vca.audio_out
+    modules:
+      - id: osc
+        type: oscillator
+      - id: env
+        type: adsr
+      - id: vca
+        type: gain
+    connections:
+      - from: osc.audio
+        to: vca.audio_in
+      - from: env.value
+        to: vca.gain
+modules:
+  - id: midi
+    type: midi_input
+  - id: voice
+    type: plucked_cell
+  - id: mixer
+    type: audio_mixer
+  - id: out
+    type: audio_output
+connections:
+  - from: midi.events
+    to: voice.strike
+  - from: voice.signal
+    to: mixer.inputs
+  - from: mixer.mix
+    to: out.left
+  - from: mixer.mix
+    to: out.right

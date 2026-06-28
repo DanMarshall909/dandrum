@@ -1,0 +1,49 @@
+metadata:
+  name: Composite Drum Voice
+render:
+  sample_rate_hz: 48000
+  block_size_frames: 64
+  duration_frames: 4800
+module_definitions:
+  # Composite modules are YAML-defined subsystems, not Rust built-ins.
+  - type: drum_voice
+    inputs:
+      - name: trigger
+        signal_type: event
+        maps_to:
+          - env.gate
+    outputs:
+      - name: audio
+        signal_type: audio
+        maps_from:
+          - vca.audio_out
+    modules:
+      - id: osc
+        type: oscillator
+      - id: env
+        type: adsr
+      - id: vca
+        type: gain
+    connections:
+      - from: osc.audio
+        to: vca.audio_in
+      - from: env.value
+        to: vca.gain
+modules:
+  - id: midi
+    type: midi_input
+  - id: voice
+    type: drum_voice
+  - id: mixer
+    type: audio_mixer
+  - id: out
+    type: audio_output
+connections:
+  - from: midi.events
+    to: voice.trigger
+  - from: voice.audio
+    to: mixer.inputs
+  - from: mixer.mix
+    to: out.left
+  - from: mixer.mix
+    to: out.right

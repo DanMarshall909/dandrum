@@ -284,6 +284,7 @@ mod tests {
                 kind: AssetKind::Sample,
                 path: path.to_string(),
             }],
+            module_definitions: vec![],
             modules: vec![ModuleDeclaration {
                 id: "sampler".to_string(),
                 module_type: "sampler".to_string(),
