@@ -2,6 +2,7 @@ use std::path::PathBuf;
 
 use crate::core::TimedInputEvent;
 use crate::graph::Graph;
+use crate::graph_processor;
 use crate::script::ScriptEvent;
 
 #[derive(Debug, PartialEq, Eq)]
@@ -22,6 +23,7 @@ where
     match args.next().as_deref() {
         Some("validate") => validate(args.collect()),
         Some("render") => render(args.collect()),
+        Some("render-chords") => render_chords(args.collect()),
         Some("--help") | Some("-h") | None => help(),
         Some(command) => error(format!("unknown command: {command}\n\n{}", usage())),
     }
@@ -116,6 +118,97 @@ fn error(message: String) -> CliResult {
     }
 }
 
+fn render_chords(args: Vec<String>) -> CliResult {
+    if args.len() != 3 || args[1] != "--output" {
+        return error(format!(
+            "render-chords requires: <patch.yaml> --output <wav>\n\n{}",
+            usage()
+        ));
+    }
+
+    let patch = PathBuf::from(&args[0]);
+    let output = PathBuf::from(&args[2]);
+    let patch_doc = match crate::patch::load_patch_file(&patch) {
+        Ok(patch_doc) => patch_doc,
+        Err(load_error) => return error(format!("failed to load patch: {load_error}")),
+    };
+    if let Err(validation_error) = crate::patch::validate_patch_schema(&patch_doc) {
+        return error(format!("patch validation failed: {validation_error}"));
+    }
+
+    let graph = Graph::from_patch_declarations(&patch_doc);
+    if let Err(validation_error) = graph.validate() {
+        return error(format!("graph validation failed: {validation_error}"));
+    }
+
+    let base_dir = patch.parent().unwrap_or_else(|| std::path::Path::new("."));
+    let sampler_assets = match crate::sample::prepare_sampler_assets(&patch_doc, base_dir) {
+        Ok(assets) => assets,
+        Err(load_error) => return error(load_error.to_string()),
+    };
+
+    let sample_rate = patch_doc.render.sample_rate_hz;
+    let chord_events = chord_sequence(sample_rate);
+
+    let (left, right) = graph_processor::render_offline_with_sampler_assets_polyphonic(
+        &graph,
+        &patch_doc.render,
+        chord_events,
+        &sampler_assets,
+        &patch_doc.voice_allocation,
+    );
+    if let Err(write_error) =
+        crate::wav::write_wav_file(&output, sample_rate, &left, &right)
+    {
+        return error(format!("failed to write wav: {write_error}"));
+    }
+
+    CliResult {
+        exit_code: 0,
+        stdout: format!(
+            "patch: {}\noutput: {}\nrender-chords: ok\n",
+            patch.display(),
+            output.display()
+        ),
+        stderr: String::new(),
+    }
+}
+
+fn chord_sequence(sample_rate: u32) -> Vec<TimedInputEvent> {
+    let sr = sample_rate as u64;
+    let mut events = Vec::new();
+
+    // Helper to add a chord with note-offs for the previous chord
+    let mut prev_notes: Vec<u8> = Vec::new();
+
+    let chords: Vec<(u64, Vec<u8>)> = vec![
+        (0,       vec![60, 64, 67]),      // C major
+        (sr,      vec![65, 69, 72]),      // F major
+        (2 * sr,  vec![67, 71, 74]),      // G major
+        (3 * sr,  vec![60, 64, 67]),      // C major
+    ];
+
+    for (frame, notes) in &chords {
+        // Note-off previous chord
+        for prev in &prev_notes {
+            events.push(TimedInputEvent::new(*frame, ScriptEvent::NoteOff { note: *prev }));
+        }
+        // Note-on current chord
+        for note in notes {
+            events.push(TimedInputEvent::new(*frame, ScriptEvent::NoteOn { note: *note, velocity: 100 }));
+        }
+        prev_notes = notes.clone();
+    }
+
+    // Note-off final chord
+    let end = 4 * sr + sr / 4;
+    for note in &prev_notes {
+        events.push(TimedInputEvent::new(end, ScriptEvent::NoteOff { note: *note }));
+    }
+
+    events
+}
+
 fn not_implemented(stdout: String) -> CliResult {
     CliResult {
         exit_code: 1,
@@ -125,7 +218,7 @@ fn not_implemented(stdout: String) -> CliResult {
 }
 
 fn usage() -> String {
-    "Usage:\n  dandrum-cli validate <patch.yaml>\n  dandrum-cli render <patch.yaml> --output <output.wav>\n".to_string()
+    "Usage:\n  dandrum-cli validate <patch.yaml>\n  dandrum-cli render <patch.yaml> --output <output.wav>\n  dandrum-cli render-chords <patch.yaml> --output <output.wav>\n".to_string()
 }
 
 #[cfg(test)]

@@ -97,6 +97,7 @@ enum PerModuleState {
         level: f32,
         gate_active: bool,
         release_start_frame: u64,
+        release_start_level: f32,
         sample_rate: f32,
     },
     Vca,
@@ -126,6 +127,7 @@ impl PerModuleState {
                 level: 0.0,
                 gate_active: false,
                 release_start_frame: 0,
+                release_start_level: 0.0,
                 sample_rate,
             },
             "gain" => PerModuleState::Vca,
@@ -335,12 +337,13 @@ fn process_block(
 
         let outputs = match module_type {
             "oscillator" => {
-                let pitch_in = sum_control_input(
+                let pitch_in = control_input_or_default(
                     module_idx,
                     builtin_ports::PITCH,
                     routing,
                     &all_outputs,
                     frames,
+                    1.0,
                 );
                 process_oscillator(&mut states[module_idx], &pitch_in, frames)
             }
@@ -561,10 +564,9 @@ fn process_block_polyphonic(
     right_out: &mut Vec<f32>,
 ) {
     // Phase 1: Feed events through allocator while tracking per-voice assignments
-    // NoteOn events are assigned to specific slots; NoteOff events go to all slots holding that note
     let mut voice_events: Vec<Vec<BlockEvent>> = vec![Vec::new(); allocator.max_voices()];
 
-    // Process NoteOn events first (assign to slots, track which slot each NoteOn goes to)
+    // Process NoteOn events first (assign to slots)
     for event in &incoming_events {
         if let ScriptEvent::NoteOn { note, velocity } = &event.event {
             if let Some(slot) = allocator.note_on(*note, *velocity) {
@@ -573,12 +575,13 @@ fn process_block_polyphonic(
         }
     }
 
-    // Snapshot which notes are on which slots before processing NoteOff events
+    // Snapshot current slot-to-note mapping
     let slot_notes: Vec<Option<u8>> = (0..allocator.max_voices())
         .map(|i| allocator.slot(i).filter(|s| s.active).map(|s| s.note))
         .collect();
 
-    // Process NoteOff events — send to matching voices then release from allocator
+    // Process NoteOff events — route to matching voices but DON'T free slots yet.
+    // Keep releasing voices alive so ADSR release plays out.
     for event in &incoming_events {
         if let ScriptEvent::NoteOff { note } = &event.event {
             for (slot_idx, sn) in slot_notes.iter().enumerate() {
@@ -586,10 +589,10 @@ fn process_block_polyphonic(
                     voice_events[slot_idx].push(event.clone());
                 }
             }
-            allocator.note_off(*note);
         }
     }
 
+    // Snapshot active voices BEFORE any slot freeing (releasing voices must still render)
     let active_voices: Vec<usize> = (0..allocator.max_voices())
         .filter(|&i| allocator.slot(i).map_or(false, |s| s.active))
         .collect();
@@ -639,8 +642,8 @@ fn process_block_polyphonic(
 
             let outputs = match module_type {
                 "oscillator" => {
-                    let pitch_in = sum_control_input(
-                        module_idx, builtin_ports::PITCH, routing, &all_outputs, frames,
+                    let pitch_in = control_input_or_default(
+                        module_idx, builtin_ports::PITCH, routing, &all_outputs, frames, 1.0,
                     );
                     process_oscillator(&mut voice_states[module_idx], &pitch_in, frames)
                 }
@@ -788,8 +791,8 @@ fn process_block_polyphonic(
 
         let outputs = match module_type {
             "oscillator" => {
-                let pitch_in = sum_control_input(
-                    module_idx, builtin_ports::PITCH, routing, &all_outputs, frames,
+                let pitch_in = control_input_or_default(
+                    module_idx, builtin_ports::PITCH, routing, &all_outputs, frames, 1.0,
                 );
                 process_oscillator(&mut states[0][module_idx], &pitch_in, frames)
             }
@@ -909,6 +912,33 @@ fn process_block_polyphonic(
             } else {
                 right_out.extend(std::iter::repeat_n(0.0, frames));
             }
+        }
+    }
+
+    // Phase 4: Free slots whose release has completed.
+    for i in 0..allocator.max_voices() {
+        if allocator.slot(i).map_or(true, |s| !s.active) {
+            continue;
+        }
+        let has_adsr = states[i].iter().any(|s| {
+            matches!(s, PerModuleState::Adsr { .. })
+        });
+        let has_sampler = states[i].iter().any(|s| {
+            matches!(s, PerModuleState::Sampler { .. })
+        });
+        if !has_adsr && !has_sampler {
+            continue;
+        }
+        let adsr_done = !has_adsr || states[i].iter().any(|s| match s {
+            PerModuleState::Adsr { level, gate_active, .. } => !gate_active && *level < 0.001,
+            _ => false,
+        });
+        let sampler_done = !has_sampler || states[i].iter().any(|s| match s {
+            PerModuleState::Sampler { active, .. } => !active,
+            _ => false,
+        });
+        if adsr_done && sampler_done {
+            allocator.set_slot_inactive(i);
         }
     }
 }
@@ -1149,7 +1179,7 @@ impl RealtimeGraphProcessor {
 
 fn process_oscillator(
     state: &mut PerModuleState,
-    pitch_in: &[f32],
+    pitch_ratio: &[f32],
     frames: usize,
 ) -> ModuleOutputs {
     let (phase, sample_rate) = match state {
@@ -1159,9 +1189,9 @@ fn process_oscillator(
 
     let mut audio = Vec::with_capacity(frames);
     for i in 0..frames {
-        let semitone_offset = pitch_in.get(i).copied().unwrap_or(0.0);
+        let ratio = pitch_ratio[i];
         let base_hz = 220.0;
-        let freq = base_hz * (2.0f32).powf(semitone_offset / 12.0);
+        let freq = base_hz * ratio;
         let phase_inc = freq / sample_rate;
         audio.push(*phase * 2.0 - 1.0);
         *phase += phase_inc;
@@ -1199,13 +1229,14 @@ fn process_adsr(
     block_start_frame: u64,
     frames: usize,
 ) -> ModuleOutputs {
-    let (level, gate_active, release_start_frame, sample_rate) = match state {
+    let (level, gate_active, release_start_frame, release_start_level, sample_rate) = match state {
         PerModuleState::Adsr {
             level,
             gate_active,
             release_start_frame,
+            release_start_level,
             sample_rate,
-        } => (level, gate_active, release_start_frame, *sample_rate),
+        } => (level, gate_active, release_start_frame, release_start_level, *sample_rate),
         _ => unreachable!(),
     };
 
@@ -1224,6 +1255,7 @@ fn process_adsr(
             ScriptEvent::NoteOff { .. } => {
                 *gate_active = false;
                 *release_start_frame = block_start_frame;
+                *release_start_level = *level;
             }
         }
     }
@@ -1274,7 +1306,7 @@ fn process_adsr(
             if release_progress >= 1.0 {
                 adsr_value.push(0.0);
             } else {
-                adsr_value.push(*level * (1.0 - release_progress));
+                adsr_value.push(*release_start_level * (1.0 - release_progress));
             }
         }
     }
@@ -2282,6 +2314,223 @@ connections:
         assert!(
             poly_max > mono_max,
             "polyphonic ADSR should gate independently per voice, producing more output than mono"
+        );
+    }
+
+    #[test]
+    fn adsr_release_duration_matches_default_release_time() {
+        // Direct unit test of process_adsr release phase duration.
+        // Default release = 200ms. At 48kHz that's 9600 frames.
+        // After a single NoteOff, the ADSR should take ~9600 frames to reach near-zero.
+        const SAMPLE_RATE: f32 = 48000.0;
+        const BLOCK_SIZE: usize = 128;
+
+        // First, let the ADSR reach sustain level
+        let mut state = PerModuleState::Adsr {
+            level: 0.0,
+            gate_active: false,
+            release_start_frame: 0,
+            release_start_level: 0.0,
+            sample_rate: SAMPLE_RATE,
+        };
+
+        // Block with NoteOn
+        process_adsr(
+            &mut state,
+            &[BlockEvent { frame_offset: 0, event: ScriptEvent::NoteOn { note: 60, velocity: 100 } }],
+            &[0.0; BLOCK_SIZE],  // attack_in (no signal = default 5ms)
+            &[0.0; BLOCK_SIZE],  // decay_in (no signal = default 30ms)
+            &[0.0; BLOCK_SIZE],  // sustain_in (no signal = default 0.7)
+            &[0.0; BLOCK_SIZE],  // release_in (no signal = default 200ms)
+            0,
+            BLOCK_SIZE,
+        );
+
+        // After many sustain blocks, level should be ~0.7
+        // Run enough blocks to be well into sustain (5ms attack + 30ms decay = 1680 frames)
+        for b in 1..20 {
+            process_adsr(
+                &mut state,
+                &[],
+                &[0.0; BLOCK_SIZE],
+                &[0.0; BLOCK_SIZE],
+                &[0.0; BLOCK_SIZE],
+                &[0.0; BLOCK_SIZE],
+                (b * BLOCK_SIZE) as u64,
+                BLOCK_SIZE,
+            );
+        }
+
+        // Verify we're in sustain at level 0.7
+        let start_level = match &state {
+            PerModuleState::Adsr { level, gate_active, .. } => {
+                assert!(*gate_active, "should be gate active in sustain");
+                *level
+            }
+            _ => unreachable!(),
+        };
+        // Level should be 0.7 at sustain
+        assert!((start_level - 0.7).abs() < 0.01, "should be at sustain level");
+
+        // Now send NoteOff — this block starts at frame 20*128 = 2560
+        process_adsr(
+            &mut state,
+            &[BlockEvent { frame_offset: 0, event: ScriptEvent::NoteOff { note: 60 } }],
+            &[0.0; BLOCK_SIZE],
+            &[0.0; BLOCK_SIZE],
+            &[0.0; BLOCK_SIZE],
+            &[0.0; BLOCK_SIZE],
+            2560,
+            BLOCK_SIZE,
+        );
+
+        // After NoteOff, gate should be inactive
+        match &state {
+            PerModuleState::Adsr { gate_active, .. } => assert!(!*gate_active),
+            _ => unreachable!(),
+        };
+
+        // Continue in release for 9600 frames / 128 = 75 blocks
+        // After 74 blocks, level should still be non-zero
+        for b in 1..74 {
+            process_adsr(
+                &mut state,
+                &[],
+                &[0.0; BLOCK_SIZE],
+                &[0.0; BLOCK_SIZE],
+                &[0.0; BLOCK_SIZE],
+                &[0.0; BLOCK_SIZE],
+                2560 + (b * BLOCK_SIZE) as u64,
+                BLOCK_SIZE,
+            );
+        }
+
+        let mid_release_level = match &state {
+            PerModuleState::Adsr { level, .. } => *level,
+            _ => unreachable!(),
+        };
+        // After 74 blocks of 128 frames = 9472 frames into release (out of 9600),
+        // the level should approach near-zero but not quite there yet
+        assert!(
+            mid_release_level > 0.001,
+            "release should still be audible at 9472 frames (98% through release): level={mid_release_level}"
+        );
+
+        // One more block should complete the release
+        process_adsr(
+            &mut state,
+            &[],
+            &[0.0; BLOCK_SIZE],
+            &[0.0; BLOCK_SIZE],
+            &[0.0; BLOCK_SIZE],
+            &[0.0; BLOCK_SIZE],
+            2560 + (75 * BLOCK_SIZE) as u64,
+            BLOCK_SIZE,
+        );
+
+        let final_level = match &state {
+            PerModuleState::Adsr { level, .. } => *level,
+            _ => unreachable!(),
+        };
+        assert!(
+            final_level < 0.001,
+            "release should complete within 9600 frames of default release: final_level={final_level}"
+        );
+    }
+
+    #[test]
+    fn note_off_produces_release_tail_in_polyphonic_render() {
+        // Single voice: oscillator -> ADSR -> VCA -> mixer -> out
+        // NoteOn at 0, NoteOff just after attack/decay (frame 10000).
+        // Voice should produce a gradual release tail, not instant cutoff.
+        let modules = vec![
+            ModuleNode::new(ModuleId::new("midi"), "midi_input")
+                .with_execution_scope(ExecutionScope::Global)
+                .with_output(builtin_ports::EVENTS, SignalType::Event),
+            ModuleNode::new(ModuleId::new("osc"), "oscillator")
+                .with_execution_scope(ExecutionScope::Voice)
+                .with_output(builtin_ports::AUDIO, SignalType::Audio),
+            ModuleNode::new(ModuleId::new("adsr"), "adsr")
+                .with_execution_scope(ExecutionScope::Voice)
+                .with_input(builtin_ports::GATE, SignalType::Event)
+                .with_output(builtin_ports::VALUE, SignalType::Control),
+            ModuleNode::new(ModuleId::new("vca"), "gain")
+                .with_execution_scope(ExecutionScope::Voice)
+                .with_input(builtin_ports::AUDIO_IN, SignalType::Audio)
+                .with_input(builtin_ports::GAIN, SignalType::Control)
+                .with_output(builtin_ports::AUDIO_OUT, SignalType::Audio),
+            ModuleNode::new(ModuleId::new("mixer"), "audio_mixer")
+                .with_execution_scope(ExecutionScope::Global)
+                .with_mixing_input(builtin_ports::INPUTS, SignalType::Audio)
+                .with_output(builtin_ports::MIX, SignalType::Audio),
+            ModuleNode::new(ModuleId::new("out"), "audio_output")
+                .with_execution_scope(ExecutionScope::Global)
+                .with_input(builtin_ports::LEFT, SignalType::Audio)
+                .with_input(builtin_ports::RIGHT, SignalType::Audio),
+        ];
+
+        let cables = vec![
+            Cable::new(
+                PortRef::new(ModuleId::new("midi"), builtin_ports::EVENTS),
+                PortRef::new(ModuleId::new("adsr"), builtin_ports::GATE),
+            ),
+            Cable::new(
+                PortRef::new(ModuleId::new("osc"), builtin_ports::AUDIO),
+                PortRef::new(ModuleId::new("vca"), builtin_ports::AUDIO_IN),
+            ),
+            Cable::new(
+                PortRef::new(ModuleId::new("adsr"), builtin_ports::VALUE),
+                PortRef::new(ModuleId::new("vca"), builtin_ports::GAIN),
+            ),
+            Cable::new(
+                PortRef::new(ModuleId::new("vca"), builtin_ports::AUDIO_OUT),
+                PortRef::new(ModuleId::new("mixer"), builtin_ports::INPUTS),
+            ),
+            Cable::new(
+                PortRef::new(ModuleId::new("mixer"), builtin_ports::MIX),
+                PortRef::new(ModuleId::new("out"), builtin_ports::LEFT),
+            ),
+        ];
+
+        let graph = Graph::new(modules, cables);
+        graph.validate().expect("graph should validate");
+
+        let note_off_frame = 10000u64;
+        let settings = RenderSettings {
+            sample_rate_hz: 48000,
+            block_size_frames: 128,
+            duration_frames: 48000,
+        };
+
+        let (left, _) = render_offline_polyphonic(
+            &graph,
+            &settings,
+            vec![
+                TimedInputEvent::new(0, ScriptEvent::NoteOn { note: 60, velocity: 100 }),
+                TimedInputEvent::new(note_off_frame, ScriptEvent::NoteOff { note: 60 }),
+            ],
+            &poly_allocation(1),
+        );
+
+        // Immediately after NoteOff audio should NOT be silent
+        // (ADSR release phase just started).
+        assert!(
+            (0..10).any(|i| left[(note_off_frame as usize) + 1 + i] != 0.0),
+            "audio should NOT go silent immediately after NoteOff"
+        );
+
+        // The release tail should last roughly the release time (200ms = 9600 frames).
+        // At mid-point (~5000 frames into release), audio should still be present.
+        let mid_release = note_off_frame as usize + 5000;
+        assert!(
+            (0..10).any(|i| left[mid_release + i].abs() > 0.001),
+            "audio should still be present mid-release (~5000 frames after NoteOff)"
+        );
+
+        // After release completes (well past 9600 frames), audio should be near-zero.
+        assert!(
+            (0..10).all(|i| left[(note_off_frame as usize) + 12000 + i].abs() < 0.01),
+            "audio should fade to near-zero well after release completes"
         );
     }
 }

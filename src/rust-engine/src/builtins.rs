@@ -236,6 +236,7 @@ fn sampler_definition() -> BuiltInModuleDefinition {
 
 fn note_to_rate_definition() -> BuiltInModuleDefinition {
     BuiltInModuleDefinition::new(module_types::NOTE_TO_RATE)
+        .with_execution_scope(ExecutionScope::Voice)
         .with_input(Port::input(builtin_ports::EVENTS, SignalType::Event))
         .with_output(Port::output(builtin_ports::RATE, SignalType::Control))
 }

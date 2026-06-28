@@ -1495,6 +1495,7 @@ connections:
             "adsr",
             "sampler",
             "script",
+            "note_to_rate",
         ] {
             let definition = registry.get(module_type).unwrap_or_else(|| {
                 panic!("{module_type} should be built in");
@@ -1520,7 +1521,6 @@ connections:
             "audio_delay_one_sample",
             "block_delay",
             "control_delay",
-            "note_to_rate",
         ] {
             let definition = registry.get(module_type).unwrap_or_else(|| {
                 panic!("{module_type} should be built in");

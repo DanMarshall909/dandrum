@@ -87,6 +87,14 @@ impl VoiceAllocator {
         self.slots.get(index)
     }
 
+    pub fn set_slot_inactive(&mut self, slot: usize) {
+        if let Some(s) = self.slots.get_mut(slot) {
+            s.active = false;
+            s.note = 0;
+            s.velocity = 0;
+        }
+    }
+
     fn free_slot(&self) -> Option<usize> {
         self.slots.iter().position(|s| !s.active)
     }
