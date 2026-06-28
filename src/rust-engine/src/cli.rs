@@ -1,5 +1,9 @@
 use std::path::PathBuf;
 
+use crate::core::TimedInputEvent;
+use crate::graph::Graph;
+use crate::script::ScriptEvent;
+
 #[derive(Debug, PartialEq, Eq)]
 pub struct CliResult {
     pub exit_code: i32,
@@ -48,11 +52,52 @@ fn render(args: Vec<String>) -> CliResult {
 
     let patch = PathBuf::from(&args[0]);
     let output = PathBuf::from(&args[2]);
-    not_implemented(format!(
-        "patch: {}\noutput: {}\nrender: not implemented yet\n",
-        patch.display(),
-        output.display()
-    ))
+    let patch_doc = match crate::patch::load_patch_file(&patch) {
+        Ok(patch_doc) => patch_doc,
+        Err(load_error) => return error(format!("failed to load patch: {load_error}")),
+    };
+    if let Err(validation_error) = crate::patch::validate_patch_schema(&patch_doc) {
+        return error(format!("patch validation failed: {validation_error}"));
+    }
+
+    let graph = Graph::from_patch_declarations(&patch_doc);
+    if let Err(validation_error) = graph.validate() {
+        return error(format!("graph validation failed: {validation_error}"));
+    }
+
+    let base_dir = patch.parent().unwrap_or_else(|| std::path::Path::new("."));
+    let sampler_assets = match crate::sample::prepare_sampler_assets(&patch_doc, base_dir) {
+        Ok(assets) => assets,
+        Err(load_error) => return error(load_error.to_string()),
+    };
+
+    let (left, right) = crate::graph_processor::render_offline_with_sampler_assets(
+        &graph,
+        &patch_doc.render,
+        vec![TimedInputEvent::new(
+            0,
+            ScriptEvent::NoteOn {
+                note: 60,
+                velocity: 100,
+            },
+        )],
+        &sampler_assets,
+    );
+    if let Err(write_error) =
+        crate::wav::write_wav_file(&output, patch_doc.render.sample_rate_hz, &left, &right)
+    {
+        return error(format!("failed to write wav: {write_error}"));
+    }
+
+    CliResult {
+        exit_code: 0,
+        stdout: format!(
+            "patch: {}\noutput: {}\nrender: ok\n",
+            patch.display(),
+            output.display()
+        ),
+        stderr: String::new(),
+    }
 }
 
 fn help() -> CliResult {
@@ -86,6 +131,8 @@ fn usage() -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::fs;
+    use std::time::{SystemTime, UNIX_EPOCH};
 
     #[test]
     fn help_lists_patch_validation_and_render_commands() {
@@ -126,20 +173,25 @@ mod tests {
     }
 
     #[test]
-    fn render_accepts_patch_path_and_output_path_for_future_offline_render() {
+    fn render_writes_sampler_example_to_non_empty_wav_file() {
+        let dir = unique_temp_dir("render_writes_sampler_example_to_non_empty_wav_file");
+        fs::create_dir_all(&dir).expect("temp dir should be created");
+        let patch = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+            .join("../../examples/patches/minimal-sampler.yaml");
+        let output = dir.join("out.wav");
         let result = run([
             "dandrum-cli",
             "render",
-            "patches/basic.yaml",
+            patch.to_str().unwrap(),
             "--output",
-            "out.wav",
+            output.to_str().unwrap(),
         ]);
 
-        assert_eq!(result.exit_code, 1);
-        assert!(result.stdout.contains("patch: patches/basic.yaml"));
-        assert!(result.stdout.contains("output: out.wav"));
-        assert!(result.stdout.contains("render: not implemented yet"));
+        assert_eq!(result.exit_code, 0, "{}", result.stderr);
+        assert!(result.stdout.contains("minimal-sampler.yaml"));
+        assert!(result.stdout.contains("render: ok"));
         assert!(result.stderr.is_empty());
+        assert!(fs::metadata(&output).unwrap().len() > 44);
     }
 
     #[test]
@@ -159,5 +211,13 @@ mod tests {
         assert!(result.stdout.is_empty());
         assert!(result.stderr.contains("unknown command: inspect"));
         assert!(result.stderr.contains("Usage:"));
+    }
+
+    fn unique_temp_dir(test_name: &str) -> PathBuf {
+        let nanos = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .expect("system clock should be after epoch")
+            .as_nanos();
+        std::env::temp_dir().join(format!("dandrum-{test_name}-{nanos}"))
     }
 }

@@ -17,6 +17,7 @@ pub mod module_types {
     pub const CONTROL_DELAY: &str = "control_delay";
     pub const SCRIPT: &str = "script";
     pub const SAMPLER: &str = "sampler";
+    pub const NOTE_TO_RATE: &str = "note_to_rate";
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -91,6 +92,7 @@ impl BuiltInModuleRegistry {
             control_delay_definition(),
             script_definition(),
             sampler_definition(),
+            note_to_rate_definition(),
         ])
     }
 
@@ -213,6 +215,12 @@ fn sampler_definition() -> BuiltInModuleDefinition {
         .with_input(Port::input(builtin_ports::LOOP_START, SignalType::Control))
         .with_input(Port::input(builtin_ports::LOOP_END, SignalType::Control))
         .with_output(Port::output(builtin_ports::AUDIO, SignalType::Audio))
+}
+
+fn note_to_rate_definition() -> BuiltInModuleDefinition {
+    BuiltInModuleDefinition::new(module_types::NOTE_TO_RATE)
+        .with_input(Port::input(builtin_ports::EVENTS, SignalType::Event))
+        .with_output(Port::output(builtin_ports::RATE, SignalType::Control))
 }
 
 #[cfg(test)]
@@ -367,6 +375,7 @@ mod tests {
             module_types::CONTROL_DELAY,
             module_types::SCRIPT,
             module_types::SAMPLER,
+            module_types::NOTE_TO_RATE,
         ] {
             let definition = registry
                 .get(module_type)
@@ -425,6 +434,18 @@ mod tests {
         assert_has_input(sampler, builtin_ports::LOOP_START, SignalType::Control);
         assert_has_input(sampler, builtin_ports::LOOP_END, SignalType::Control);
         assert_has_output(sampler, builtin_ports::AUDIO, SignalType::Audio);
+    }
+
+    #[test]
+    fn initialized_registry_contains_note_to_rate_definition() {
+        let registry = BuiltInModuleRegistry::new();
+
+        let note_to_rate = registry
+            .get(module_types::NOTE_TO_RATE)
+            .expect("note_to_rate should be built in");
+
+        assert_has_input(note_to_rate, builtin_ports::EVENTS, SignalType::Event);
+        assert_has_output(note_to_rate, builtin_ports::RATE, SignalType::Control);
     }
 
     fn assert_has_input(definition: &BuiltInModuleDefinition, name: &str, signal_type: SignalType) {

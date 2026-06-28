@@ -81,6 +81,25 @@ int main (int argc, char* argv[])
             return 0;
         }
 
+        if (args.contains ("--test-midi-scale"))
+        {
+            MidiToRustEngine syntheticMidi (engineSource);
+            const int cMajor[] { 60, 62, 64, 65, 67, 69, 71, 72 };
+
+            std::cout << "Synthetic MIDI C major scale\n";
+            for (const auto note : cMajor)
+            {
+                std::cout << "Scale note: " << note << '\n';
+                syntheticMidi.handleIncomingMidiMessage (nullptr, juce::MidiMessage::noteOn (1, note, static_cast<juce::uint8> (110)));
+                juce::Thread::sleep (180);
+                syntheticMidi.handleIncomingMidiMessage (nullptr, juce::MidiMessage::noteOff (1, note));
+                juce::Thread::sleep (40);
+            }
+
+            waitForEngineToFinish (engineSource);
+            return 0;
+        }
+
         const auto midiArgIndex = args.indexOf ("--midi-input");
         if (midiArgIndex >= 0 && midiArgIndex + 1 < args.size())
         {
@@ -109,7 +128,7 @@ int main (int argc, char* argv[])
             return 0;
         }
 
-        std::cout << "Rust engine test note. Use --test-midi-note <note>, --list-midi-inputs, or --midi-input <index>.\n";
+        std::cout << "Rust engine test note. Use --test-midi-note <note>, --test-midi-scale, --list-midi-inputs, or --midi-input <index>.\n";
         engineSource.noteOn (60, 110);
         waitForEngineToFinish (engineSource);
         return 0;

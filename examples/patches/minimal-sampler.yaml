@@ -1,0 +1,32 @@
+metadata:
+  name: Minimal Sampler
+render:
+  sample_rate_hz: 22050
+  block_size_frames: 64
+  duration_frames: 256
+assets:
+  - id: hit
+    kind: sample
+    path: ../../third_party/JUCE/examples/Assets/cello.wav
+modules:
+  - id: midi
+    type: midi_input
+  - id: sampler
+    type: sampler
+    parameters:
+      asset: hit
+  - id: note_rate
+    type: note_to_rate
+  - id: out
+    type: audio_output
+connections:
+  - from: midi.events
+    to: sampler.trigger
+  - from: midi.events
+    to: note_rate.events
+  - from: note_rate.rate
+    to: sampler.rate
+  - from: sampler.audio
+    to: out.left
+  - from: sampler.audio
+    to: out.right

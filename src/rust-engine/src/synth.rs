@@ -3,6 +3,7 @@ use std::f32::consts::TAU;
 use crate::graph::Graph;
 use crate::graph_processor::RealtimeGraphProcessor;
 use crate::patch;
+use crate::sample::PreparedSamplerAssets;
 
 pub struct DandrumEngine {
     sample_rate: f32,
@@ -40,8 +41,20 @@ impl DandrumEngine {
     }
 
     pub fn load_patch(&mut self, patch_doc: &patch::PatchDocument) {
+        self.load_patch_with_sampler_assets(patch_doc, &PreparedSamplerAssets::empty());
+    }
+
+    pub fn load_patch_with_sampler_assets(
+        &mut self,
+        patch_doc: &patch::PatchDocument,
+        sampler_assets: &PreparedSamplerAssets,
+    ) {
         let graph = Graph::from_patch_declarations(patch_doc);
-        self.graph_processor = Some(RealtimeGraphProcessor::new(graph, self.sample_rate));
+        self.graph_processor = Some(RealtimeGraphProcessor::new_with_sampler_assets(
+            graph,
+            self.sample_rate,
+            sampler_assets,
+        ));
     }
 
     pub fn note_on(&mut self, note: u8, velocity: u8) {
@@ -194,6 +207,8 @@ fn wrap_phase(phase: f32) -> f32 {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::sample::LoadedSample;
+    use std::collections::BTreeMap;
 
     #[test]
     fn new_engine_starts_finished_until_a_note_is_triggered() {
@@ -251,5 +266,56 @@ mod tests {
         let rendered = engine.render(&mut left, &mut right);
 
         assert_eq!(rendered, 32);
+    }
+
+    #[test]
+    fn loaded_sampler_patch_renders_prepared_sample_assets_realtime() {
+        let patch = patch::load_patch_str(
+            r#"
+metadata:
+  name: Realtime Sampler
+render:
+  sample_rate_hz: 48000
+  block_size_frames: 64
+  duration_frames: 128
+assets:
+  - id: hit
+    kind: sample
+    path: hit.wav
+modules:
+  - id: midi
+    type: midi_input
+  - id: sampler
+    type: sampler
+    parameters:
+      asset: hit
+  - id: out
+    type: audio_output
+connections:
+  - from: midi.events
+    to: sampler.trigger
+  - from: sampler.audio
+    to: out.left
+  - from: sampler.audio
+    to: out.right
+"#,
+        )
+        .expect("patch should parse");
+        let assets = PreparedSamplerAssets::from_samples_by_module(BTreeMap::from([(
+            "sampler".to_string(),
+            LoadedSample::new(48_000, vec![0.25, 0.5, 0.75]),
+        )]));
+        let mut engine = DandrumEngine::new();
+        engine.prepare(48_000.0);
+        engine.load_patch_with_sampler_assets(&patch, &assets);
+        engine.note_on(60, 100);
+        let mut left = vec![0.0; 4];
+        let mut right = vec![0.0; 4];
+
+        let rendered = engine.render(&mut left, &mut right);
+
+        assert_eq!(rendered, 4);
+        assert_eq!(left, vec![0.25, 0.5, 0.75, 0.0]);
+        assert_eq!(right, vec![0.25, 0.5, 0.75, 0.0]);
     }
 }

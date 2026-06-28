@@ -3,6 +3,7 @@ use std::collections::HashMap;
 use crate::core::{BlockScheduler, TimedInputEvent};
 use crate::graph::{Graph, ModuleNode, SignalType, builtin_ports};
 use crate::patch::RenderSettings;
+use crate::sample::{LoadedSample, PreparedSamplerAssets};
 use crate::script::ScriptEvent;
 
 fn find_audio_output(graph: &Graph) -> Option<usize> {
@@ -101,10 +102,19 @@ enum PerModuleState {
     AudioOutput,
     MidiInput,
     AudioDelay,
+    NoteToRate {
+        rate: f32,
+    },
+    // Intentionally monophonic until the engine has generic per-voice bus support.
+    Sampler {
+        sample: Option<LoadedSample>,
+        position: f32,
+        active: bool,
+    },
 }
 
 impl PerModuleState {
-    fn new(module: &ModuleNode, sample_rate: f32) -> Self {
+    fn new(module: &ModuleNode, sample_rate: f32, sampler_assets: &PreparedSamplerAssets) -> Self {
         match module.module_type() {
             "oscillator" => PerModuleState::Oscillator {
                 phase: 0.0,
@@ -120,15 +130,27 @@ impl PerModuleState {
             "audio_output" => PerModuleState::AudioOutput,
             "midi_input" => PerModuleState::MidiInput,
             "audio_delay" => PerModuleState::AudioDelay,
+            "note_to_rate" => PerModuleState::NoteToRate { rate: 1.0 },
+            "sampler" => PerModuleState::Sampler {
+                sample: sampler_assets.get(module.id().as_str()).cloned(),
+                position: 0.0,
+                active: false,
+            },
             other => panic!("unknown module type: {other}"),
         }
     }
 }
 
+#[derive(Clone, Debug, PartialEq, Eq)]
+struct BlockEvent {
+    frame_offset: u32,
+    event: ScriptEvent,
+}
+
 struct ModuleOutputs {
     audio: HashMap<String, Vec<f32>>,
     control: HashMap<String, Vec<f32>>,
-    events: Vec<ScriptEvent>,
+    events: Vec<BlockEvent>,
 }
 
 fn sum_audio_input(
@@ -175,12 +197,27 @@ fn sum_control_input(
     result
 }
 
+fn control_input_or_default(
+    module_idx: usize,
+    port_name: &str,
+    routing: &Routing,
+    all_outputs: &HashMap<usize, ModuleOutputs>,
+    frames: usize,
+    default: f32,
+) -> Vec<f32> {
+    if routing.inputs[module_idx].contains_key(port_name) {
+        sum_control_input(module_idx, port_name, routing, all_outputs, frames)
+    } else {
+        vec![default; frames]
+    }
+}
+
 fn gather_event_inputs(
     module_idx: usize,
     module: &ModuleNode,
     routing: &Routing,
     all_outputs: &HashMap<usize, ModuleOutputs>,
-) -> Vec<ScriptEvent> {
+) -> Vec<BlockEvent> {
     let mut events = Vec::new();
     for input_port in module.inputs() {
         if input_port.signal_type() != SignalType::Event {
@@ -202,13 +239,22 @@ pub fn render_offline(
     settings: &RenderSettings,
     events: Vec<TimedInputEvent>,
 ) -> (Vec<f32>, Vec<f32>) {
+    render_offline_with_sampler_assets(graph, settings, events, &PreparedSamplerAssets::empty())
+}
+
+pub fn render_offline_with_sampler_assets(
+    graph: &Graph,
+    settings: &RenderSettings,
+    events: Vec<TimedInputEvent>,
+    sampler_assets: &PreparedSamplerAssets,
+) -> (Vec<f32>, Vec<f32>) {
     let sample_rate = settings.sample_rate_hz as f32;
     let routing = build_routing(graph);
     let topo_order = topological_sort(graph);
     let mut states: Vec<PerModuleState> = graph
         .modules()
         .iter()
-        .map(|m| PerModuleState::new(m, sample_rate))
+        .map(|m| PerModuleState::new(m, sample_rate, sampler_assets))
         .collect();
 
     let midi_idx = find_midi_input(graph);
@@ -223,10 +269,13 @@ pub fn render_offline(
     for block in scheduler {
         let frames = block.frame_count() as usize;
 
-        let external_events: Vec<ScriptEvent> = block
+        let external_events: Vec<BlockEvent> = block
             .input_events()
             .iter()
-            .map(|e| e.event().clone())
+            .map(|e| BlockEvent {
+                frame_offset: e.frame_offset(),
+                event: e.event().clone(),
+            })
             .collect();
 
         process_block(
@@ -256,7 +305,7 @@ fn process_block(
     out_idx: Option<usize>,
     block_start_frame: u64,
     frames: usize,
-    incoming_events: Vec<ScriptEvent>,
+    incoming_events: Vec<BlockEvent>,
     left_out: &mut Vec<f32>,
     right_out: &mut Vec<f32>,
 ) {
@@ -349,6 +398,55 @@ fn process_block(
                 );
                 process_vca(audio_in, gain_in)
             }
+            "sampler" => {
+                let rate_in = control_input_or_default(
+                    module_idx,
+                    builtin_ports::RATE,
+                    routing,
+                    &all_outputs,
+                    frames,
+                    1.0,
+                );
+                let start_in = sum_control_input(
+                    module_idx,
+                    builtin_ports::START,
+                    routing,
+                    &all_outputs,
+                    frames,
+                );
+                let loop_enabled_in = sum_control_input(
+                    module_idx,
+                    builtin_ports::LOOP_ENABLED,
+                    routing,
+                    &all_outputs,
+                    frames,
+                );
+                let loop_start_in = sum_control_input(
+                    module_idx,
+                    builtin_ports::LOOP_START,
+                    routing,
+                    &all_outputs,
+                    frames,
+                );
+                let loop_end_in = sum_control_input(
+                    module_idx,
+                    builtin_ports::LOOP_END,
+                    routing,
+                    &all_outputs,
+                    frames,
+                );
+                process_sampler(
+                    &mut states[module_idx],
+                    &events_in,
+                    &rate_in,
+                    &start_in,
+                    &loop_enabled_in,
+                    &loop_start_in,
+                    &loop_end_in,
+                    frames,
+                )
+            }
+            "note_to_rate" => process_note_to_rate(&mut states[module_idx], &events_in, frames),
             "audio_output" => {
                 let left = sum_audio_input(
                     module_idx,
@@ -418,6 +516,14 @@ pub struct RealtimeGraphProcessor {
 
 impl RealtimeGraphProcessor {
     pub fn new(graph: Graph, sample_rate: f32) -> Self {
+        Self::new_with_sampler_assets(graph, sample_rate, &PreparedSamplerAssets::empty())
+    }
+
+    pub fn new_with_sampler_assets(
+        graph: Graph,
+        sample_rate: f32,
+        sampler_assets: &PreparedSamplerAssets,
+    ) -> Self {
         let routing = build_routing(&graph);
         let topo_order = topological_sort(&graph);
         let midi_idx = find_midi_input(&graph);
@@ -425,7 +531,7 @@ impl RealtimeGraphProcessor {
         let states: Vec<PerModuleState> = graph
             .modules()
             .iter()
-            .map(|m| PerModuleState::new(m, sample_rate))
+            .map(|m| PerModuleState::new(m, sample_rate, sampler_assets))
             .collect();
 
         Self {
@@ -457,7 +563,13 @@ impl RealtimeGraphProcessor {
         let block_start = self.current_frame;
         self.current_frame += frames as u64;
 
-        let events = std::mem::take(&mut self.pending_events);
+        let events: Vec<BlockEvent> = std::mem::take(&mut self.pending_events)
+            .into_iter()
+            .map(|event| BlockEvent {
+                frame_offset: 0,
+                event,
+            })
+            .collect();
 
         let mut left_buf = Vec::new();
         let mut right_buf = Vec::new();
@@ -501,6 +613,10 @@ impl RealtimeGraphProcessor {
                 if *gate_active || *level > 0.001 {
                     return false;
                 }
+            } else if let PerModuleState::Sampler { active, .. } = state
+                && *active
+            {
+                return false;
             }
         }
         true
@@ -551,7 +667,7 @@ fn has_signal(buf: &[f32]) -> bool {
 
 fn process_adsr(
     state: &mut PerModuleState,
-    events_in: &[ScriptEvent],
+    events_in: &[BlockEvent],
     attack_in: &[f32],
     decay_in: &[f32],
     sustain_in: &[f32],
@@ -576,7 +692,7 @@ fn process_adsr(
 
     // Process block-level events (not sample-accurate yet)
     for event in events_in {
-        match event {
+        match &event.event {
             ScriptEvent::NoteOn { .. } => {
                 *gate_active = true;
                 *release_start_frame = block_start_frame;
@@ -670,6 +786,141 @@ fn process_vca(audio_in: Vec<f32>, gain_in: Vec<f32>) -> ModuleOutputs {
     outputs
 }
 
+fn process_sampler(
+    state: &mut PerModuleState,
+    events_in: &[BlockEvent],
+    rate_in: &[f32],
+    start_in: &[f32],
+    loop_enabled_in: &[f32],
+    loop_start_in: &[f32],
+    loop_end_in: &[f32],
+    frames: usize,
+) -> ModuleOutputs {
+    let (sample, position, active) = match state {
+        PerModuleState::Sampler {
+            sample,
+            position,
+            active,
+        } => (sample.clone(), position, active),
+        _ => unreachable!(),
+    };
+
+    let mut audio = vec![0.0; frames];
+    let Some(sample) = sample else {
+        return audio_output(builtin_ports::AUDIO, audio);
+    };
+    let sample_frames = sample.frames();
+    if sample_frames.is_empty() {
+        return audio_output(builtin_ports::AUDIO, audio);
+    }
+
+    let mut events = events_in.to_vec();
+    events.sort_by_key(|event| event.frame_offset);
+    let mut next_event = 0usize;
+
+    for frame in 0..frames {
+        while next_event < events.len() && events[next_event].frame_offset as usize == frame {
+            if matches!(events[next_event].event, ScriptEvent::NoteOn { .. }) {
+                *position = normalized_position(
+                    start_in.get(frame).copied().unwrap_or(0.0),
+                    sample_frames.len(),
+                );
+                *active = true;
+            }
+            next_event += 1;
+        }
+
+        if !*active {
+            continue;
+        }
+
+        let idx = *position as usize;
+        if idx >= sample_frames.len() {
+            *active = false;
+            continue;
+        }
+
+        audio[frame] = sample_frames[idx];
+
+        let rate = rate_in.get(frame).copied().unwrap_or(1.0).max(0.0);
+        *position += rate;
+
+        if loop_enabled_in.get(frame).copied().unwrap_or(0.0) > 0.5 {
+            let loop_start = normalized_position(
+                loop_start_in.get(frame).copied().unwrap_or(0.0),
+                sample_frames.len(),
+            );
+            let mut loop_end = normalized_end_position(
+                loop_end_in.get(frame).copied().unwrap_or(1.0),
+                sample_frames.len(),
+            );
+            if loop_end <= loop_start {
+                loop_end = sample_frames.len() as f32;
+            }
+            while *position >= loop_end {
+                *position = loop_start + (*position - loop_end);
+            }
+        } else if *position >= sample_frames.len() as f32 {
+            *active = false;
+        }
+    }
+
+    audio_output(builtin_ports::AUDIO, audio)
+}
+
+fn process_note_to_rate(
+    state: &mut PerModuleState,
+    events_in: &[BlockEvent],
+    frames: usize,
+) -> ModuleOutputs {
+    let rate = match state {
+        PerModuleState::NoteToRate { rate } => rate,
+        _ => unreachable!(),
+    };
+    let mut events = events_in.to_vec();
+    events.sort_by_key(|event| event.frame_offset);
+    let mut next_event = 0usize;
+    let mut output = Vec::with_capacity(frames);
+
+    for frame in 0..frames {
+        while next_event < events.len() && events[next_event].frame_offset as usize == frame {
+            if let ScriptEvent::NoteOn { note, .. } = events[next_event].event {
+                *rate = 2.0f32.powf((note as f32 - 60.0) / 12.0);
+            }
+            next_event += 1;
+        }
+        output.push(*rate);
+    }
+
+    let mut outputs = ModuleOutputs {
+        audio: HashMap::new(),
+        control: HashMap::new(),
+        events: Vec::new(),
+    };
+    outputs
+        .control
+        .insert(builtin_ports::RATE.to_string(), output);
+    outputs
+}
+
+fn normalized_position(value: f32, sample_len: usize) -> f32 {
+    (value.clamp(0.0, 1.0) * sample_len as f32).min(sample_len.saturating_sub(1) as f32)
+}
+
+fn normalized_end_position(value: f32, sample_len: usize) -> f32 {
+    (value.clamp(0.0, 1.0) * sample_len as f32).clamp(0.0, sample_len as f32)
+}
+
+fn audio_output(port_name: &str, audio: Vec<f32>) -> ModuleOutputs {
+    let mut outputs = ModuleOutputs {
+        audio: HashMap::new(),
+        control: HashMap::new(),
+        events: Vec::new(),
+    };
+    outputs.audio.insert(port_name.to_string(), audio);
+    outputs
+}
+
 fn process_audio_delay(audio_in: Vec<f32>) -> ModuleOutputs {
     let mut outputs = ModuleOutputs {
         audio: HashMap::new(),
@@ -688,7 +939,60 @@ mod tests {
     use crate::core::TimedInputEvent;
     use crate::graph::*;
     use crate::patch;
+    use crate::sample::{LoadedSample, PreparedSamplerAssets};
     use crate::script::ScriptEvent;
+    use std::collections::BTreeMap;
+
+    fn sampler_assets(frames: Vec<f32>) -> PreparedSamplerAssets {
+        PreparedSamplerAssets::from_samples_by_module(BTreeMap::from([(
+            "sampler".to_string(),
+            LoadedSample::new(48_000, frames),
+        )]))
+    }
+
+    fn sampler_graph(extra_modules: Vec<ModuleNode>, extra_cables: Vec<Cable>) -> Graph {
+        let mut modules = vec![
+            ModuleNode::new(ModuleId::new("midi"), "midi_input")
+                .with_output(builtin_ports::EVENTS, SignalType::Event),
+            ModuleNode::new(ModuleId::new("sampler"), "sampler")
+                .with_input(builtin_ports::TRIGGER, SignalType::Event)
+                .with_input(builtin_ports::RATE, SignalType::Control)
+                .with_input(builtin_ports::START, SignalType::Control)
+                .with_input(builtin_ports::LOOP_ENABLED, SignalType::Control)
+                .with_input(builtin_ports::LOOP_START, SignalType::Control)
+                .with_input(builtin_ports::LOOP_END, SignalType::Control)
+                .with_output(builtin_ports::AUDIO, SignalType::Audio),
+            ModuleNode::new(ModuleId::new("out"), "audio_output")
+                .with_input(builtin_ports::LEFT, SignalType::Audio)
+                .with_input(builtin_ports::RIGHT, SignalType::Audio),
+        ];
+        modules.extend(extra_modules);
+
+        let mut cables = vec![
+            Cable::new(
+                PortRef::new(ModuleId::new("midi"), builtin_ports::EVENTS),
+                PortRef::new(ModuleId::new("sampler"), builtin_ports::TRIGGER),
+            ),
+            Cable::new(
+                PortRef::new(ModuleId::new("sampler"), builtin_ports::AUDIO),
+                PortRef::new(ModuleId::new("out"), builtin_ports::LEFT),
+            ),
+        ];
+        cables.extend(extra_cables);
+        Graph::new(modules, cables)
+    }
+
+    fn sampler_settings(duration_frames: u64) -> RenderSettings {
+        RenderSettings {
+            sample_rate_hz: 48_000,
+            block_size_frames: 4,
+            duration_frames,
+        }
+    }
+
+    fn note_on(frame: u64, velocity: u8) -> TimedInputEvent {
+        TimedInputEvent::new(frame, ScriptEvent::NoteOn { note: 60, velocity })
+    }
 
     #[test]
     fn graph_processor_produces_audio_from_midi_triggered_303_chain() {
@@ -835,5 +1139,331 @@ connections:
         );
         assert!(!left.is_empty(), "left buffer should have samples");
         assert!(!right.is_empty(), "right buffer should have samples");
+    }
+
+    #[test]
+    fn sampler_trigger_event_starts_sample_playback_at_event_frame() {
+        let graph = sampler_graph(Vec::new(), Vec::new());
+        let assets = sampler_assets(vec![0.25, 0.5, 0.75]);
+
+        let (left, right) = render_offline_with_sampler_assets(
+            &graph,
+            &sampler_settings(6),
+            vec![note_on(2, 100)],
+            &assets,
+        );
+
+        assert_eq!(left, vec![0.0, 0.0, 0.25, 0.5, 0.75, 0.0]);
+        assert_eq!(right, vec![0.0; 6]);
+    }
+
+    #[test]
+    fn sampler_ignores_trigger_velocity_payload_for_amplitude() {
+        let graph = sampler_graph(Vec::new(), Vec::new());
+        let assets = sampler_assets(vec![0.25, 0.5, 0.75]);
+
+        let low_velocity = render_offline_with_sampler_assets(
+            &graph,
+            &sampler_settings(4),
+            vec![note_on(0, 1)],
+            &assets,
+        );
+        let high_velocity = render_offline_with_sampler_assets(
+            &graph,
+            &sampler_settings(4),
+            vec![note_on(0, 127)],
+            &assets,
+        );
+
+        assert_eq!(low_velocity, high_velocity);
+        assert_eq!(low_velocity.0, vec![0.25, 0.5, 0.75, 0.0]);
+    }
+
+    #[test]
+    fn sampler_ignores_midi_note_payload_for_playback_rate() {
+        let graph = sampler_graph(Vec::new(), Vec::new());
+        let assets = sampler_assets(vec![0.25, 0.5, 0.75]);
+
+        let low_note = render_offline_with_sampler_assets(
+            &graph,
+            &sampler_settings(4),
+            vec![TimedInputEvent::new(
+                0,
+                ScriptEvent::NoteOn {
+                    note: 36,
+                    velocity: 100,
+                },
+            )],
+            &assets,
+        );
+        let high_note = render_offline_with_sampler_assets(
+            &graph,
+            &sampler_settings(4),
+            vec![TimedInputEvent::new(
+                0,
+                ScriptEvent::NoteOn {
+                    note: 84,
+                    velocity: 100,
+                },
+            )],
+            &assets,
+        );
+
+        assert_eq!(low_note, high_note);
+    }
+
+    #[test]
+    fn routed_rate_control_changes_sampler_playback_speed() {
+        let graph = sampler_graph(
+            vec![
+                ModuleNode::new(ModuleId::new("rate"), "adsr")
+                    .with_output(builtin_ports::VALUE, SignalType::Control),
+            ],
+            vec![Cable::new(
+                PortRef::new(ModuleId::new("rate"), builtin_ports::VALUE),
+                PortRef::new(ModuleId::new("sampler"), builtin_ports::RATE),
+            )],
+        );
+        let assets = sampler_assets(vec![1.0, 2.0, 3.0, 4.0]);
+
+        let (default_rate, _) = render_offline_with_sampler_assets(
+            &sampler_graph(Vec::new(), Vec::new()),
+            &sampler_settings(4),
+            vec![note_on(0, 100)],
+            &assets,
+        );
+        let (routed_rate, _) = render_offline_with_sampler_assets(
+            &graph,
+            &sampler_settings(4),
+            vec![note_on(0, 100)],
+            &assets,
+        );
+
+        assert_ne!(routed_rate, default_rate);
+        assert_eq!(default_rate, vec![1.0, 2.0, 3.0, 4.0]);
+    }
+
+    #[test]
+    fn downstream_gain_can_apply_amplitude_policy_outside_sampler() {
+        let output = process_vca(vec![0.25, 0.5, 0.75], vec![0.5, 0.5, 0.5]);
+
+        assert_eq!(
+            output.audio[builtin_ports::AUDIO_OUT],
+            vec![0.125, 0.25, 0.375]
+        );
+    }
+
+    #[test]
+    fn note_to_rate_converts_midi_notes_to_equal_tempered_playback_rates() {
+        let mut state = PerModuleState::NoteToRate { rate: 1.0 };
+
+        let output = process_note_to_rate(
+            &mut state,
+            &[
+                BlockEvent {
+                    frame_offset: 0,
+                    event: ScriptEvent::NoteOn {
+                        note: 60,
+                        velocity: 100,
+                    },
+                },
+                BlockEvent {
+                    frame_offset: 2,
+                    event: ScriptEvent::NoteOn {
+                        note: 72,
+                        velocity: 100,
+                    },
+                },
+            ],
+            4,
+        );
+
+        assert_eq!(
+            output.control[builtin_ports::RATE],
+            vec![1.0, 1.0, 2.0, 2.0]
+        );
+    }
+
+    #[test]
+    fn routed_note_to_rate_changes_sampler_pitch_from_midi_note() {
+        let graph = sampler_graph(
+            vec![
+                ModuleNode::new(ModuleId::new("note_rate"), "note_to_rate")
+                    .with_input(builtin_ports::EVENTS, SignalType::Event)
+                    .with_output(builtin_ports::RATE, SignalType::Control),
+            ],
+            vec![
+                Cable::new(
+                    PortRef::new(ModuleId::new("midi"), builtin_ports::EVENTS),
+                    PortRef::new(ModuleId::new("note_rate"), builtin_ports::EVENTS),
+                ),
+                Cable::new(
+                    PortRef::new(ModuleId::new("note_rate"), builtin_ports::RATE),
+                    PortRef::new(ModuleId::new("sampler"), builtin_ports::RATE),
+                ),
+            ],
+        );
+        graph
+            .validate()
+            .expect("note_to_rate should route event input to sampler rate");
+        let assets = sampler_assets(vec![1.0, 2.0, 3.0, 4.0]);
+
+        let (middle_c, _) = render_offline_with_sampler_assets(
+            &graph,
+            &sampler_settings(4),
+            vec![TimedInputEvent::new(
+                0,
+                ScriptEvent::NoteOn {
+                    note: 60,
+                    velocity: 100,
+                },
+            )],
+            &assets,
+        );
+        let (octave_up, _) = render_offline_with_sampler_assets(
+            &graph,
+            &sampler_settings(4),
+            vec![TimedInputEvent::new(
+                0,
+                ScriptEvent::NoteOn {
+                    note: 72,
+                    velocity: 100,
+                },
+            )],
+            &assets,
+        );
+
+        assert_eq!(middle_c, vec![1.0, 2.0, 3.0, 4.0]);
+        assert_eq!(octave_up, vec![1.0, 3.0, 0.0, 0.0]);
+    }
+
+    #[test]
+    fn later_trigger_replaces_monophonic_sampler_playback() {
+        let graph = sampler_graph(Vec::new(), Vec::new());
+        let assets = sampler_assets(vec![1.0, 2.0, 3.0, 4.0]);
+
+        let (left, _) = render_offline_with_sampler_assets(
+            &graph,
+            &sampler_settings(5),
+            vec![note_on(0, 100), note_on(2, 100)],
+            &assets,
+        );
+
+        assert_eq!(left, vec![1.0, 2.0, 1.0, 2.0, 3.0]);
+    }
+
+    #[test]
+    fn sampler_outputs_silence_after_sample_completion() {
+        let graph = sampler_graph(Vec::new(), Vec::new());
+        let assets = sampler_assets(vec![0.5, 0.25]);
+
+        let (left, _) = render_offline_with_sampler_assets(
+            &graph,
+            &sampler_settings(5),
+            vec![note_on(0, 100)],
+            &assets,
+        );
+
+        assert_eq!(left, vec![0.5, 0.25, 0.0, 0.0, 0.0]);
+    }
+
+    #[test]
+    fn start_control_changes_sampler_playback_position_before_trigger() {
+        let mut state = PerModuleState::Sampler {
+            sample: Some(LoadedSample::new(
+                48_000,
+                vec![0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0],
+            )),
+            position: 0.0,
+            active: false,
+        };
+
+        let output = process_sampler(
+            &mut state,
+            &[BlockEvent {
+                frame_offset: 0,
+                event: ScriptEvent::NoteOn {
+                    note: 60,
+                    velocity: 100,
+                },
+            }],
+            &[1.0; 4],
+            &[0.75; 4],
+            &[0.0; 4],
+            &[0.0; 4],
+            &[0.0; 4],
+            4,
+        );
+
+        assert_eq!(output.audio[builtin_ports::AUDIO], vec![6.0, 7.0, 0.0, 0.0]);
+    }
+
+    #[test]
+    fn loop_control_wraps_active_sampler_playback() {
+        let mut state = PerModuleState::Sampler {
+            sample: Some(LoadedSample::new(48_000, vec![1.0, 2.0, 3.0])),
+            position: 0.0,
+            active: false,
+        };
+
+        let output = process_sampler(
+            &mut state,
+            &[BlockEvent {
+                frame_offset: 0,
+                event: ScriptEvent::NoteOn {
+                    note: 60,
+                    velocity: 100,
+                },
+            }],
+            &[1.0; 7],
+            &[0.0; 7],
+            &[1.0; 7],
+            &[0.0; 7],
+            &[1.0; 7],
+            7,
+        );
+
+        assert_eq!(
+            output.audio[builtin_ports::AUDIO],
+            vec![1.0, 2.0, 3.0, 1.0, 2.0, 3.0, 1.0]
+        );
+    }
+
+    #[test]
+    fn offline_graph_processor_handles_sampler_modules_without_panics() {
+        let graph = sampler_graph(Vec::new(), Vec::new());
+
+        let (left, right) = render_offline(&graph, &sampler_settings(4), vec![note_on(0, 100)]);
+
+        assert_eq!(left, vec![0.0; 4]);
+        assert_eq!(right, vec![0.0; 4]);
+    }
+
+    #[test]
+    fn realtime_graph_processor_handles_sampler_modules_without_panics() {
+        let graph = sampler_graph(Vec::new(), Vec::new());
+        let mut processor = RealtimeGraphProcessor::new(graph, 48_000.0);
+        let mut left = vec![1.0; 4];
+        let mut right = vec![1.0; 4];
+
+        processor.note_on(60, 100);
+        let rendered = processor.render(&mut left, &mut right);
+
+        assert_eq!(rendered, 4);
+        assert_eq!(left, vec![0.0; 4]);
+        assert_eq!(right, vec![0.0; 4]);
+    }
+
+    #[test]
+    fn sampler_render_repeats_exactly_for_same_inputs() {
+        let graph = sampler_graph(Vec::new(), Vec::new());
+        let settings = sampler_settings(8);
+        let assets = sampler_assets(vec![0.1, 0.2, 0.3, 0.4]);
+        let events = vec![note_on(1, 64), note_on(5, 127)];
+
+        let first = render_offline_with_sampler_assets(&graph, &settings, events.clone(), &assets);
+        let second = render_offline_with_sampler_assets(&graph, &settings, events, &assets);
+
+        assert_eq!(first, second);
     }
 }

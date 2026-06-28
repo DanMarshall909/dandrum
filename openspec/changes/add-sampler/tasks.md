@@ -17,24 +17,24 @@
 
 ## 4. Sampler Processing
 
-- [ ] 4.1 Add render tests proving trigger events start sample playback, trigger payload velocity does not scale sampler output, routed rate control controls pitch/playback speed, later triggers replace monophonic playback, and output becomes silent after sample completion.
-- [ ] 4.2 Add render tests for start-position and loop playback controls.
-- [ ] 4.3 Implement sampler module state and audio generation in the graph processor.
-- [ ] 4.4 Ensure offline and realtime graph processor construction handles sampler modules without panics.
+- [x] 4.1 Add render tests proving trigger events start sample playback, trigger payload velocity does not scale sampler output, routed rate control controls pitch/playback speed, later triggers replace monophonic playback, and output becomes silent after sample completion.
+- [x] 4.2 Add render tests for start-position and loop playback controls.
+- [x] 4.3 Implement sampler module state and audio generation in the graph processor.
+- [x] 4.4 Ensure offline and realtime graph processor construction handles sampler modules without panics.
 
 ## 5. Determinism And CLI Acceptance
 
-- [ ] 5.1 Add a deterministic sampler render test that renders the same patch, sample, settings, control signals, and events twice and compares buffers.
-- [ ] 5.2 Add a minimal sampler YAML example and deterministic sample fixture for tests/examples.
-- [ ] 5.3 Add an end-to-end CLI acceptance test that renders the sampler example to a non-empty WAV file.
+- [x] 5.1 Add a deterministic sampler render test that renders the same patch, sample, settings, control signals, and events twice and compares buffers.
+- [x] 5.2 Add a minimal sampler YAML example and deterministic sample fixture for tests/examples.
+- [x] 5.3 Add an end-to-end CLI acceptance test that renders the sampler example to a non-empty WAV file.
 
 ## 6. Future Polyphony Design Guardrails
 
-- [ ] 6.1 Document in code comments or tests that sampler playback is intentionally monophonic until generic per-voice bus support exists.
-- [ ] 6.2 Add tests or examples showing MIDI note-to-rate and velocity gain remain patchable through upstream/downstream modules rather than sampler-internal policy.
+- [x] 6.1 Document in code comments or tests that sampler playback is intentionally monophonic until generic per-voice bus support exists.
+- [x] 6.2 Add tests or examples showing MIDI note-to-rate and velocity gain remain patchable through upstream/downstream modules rather than sampler-internal policy.
 
 ## 7. Verification
 
-- [ ] 7.1 Run Rust unit and acceptance tests with `$HOME/.cargo/bin/cargo test --manifest-path src/rust-engine/Cargo.toml`.
-- [ ] 7.2 Run CMake/CTest verification if build configuration is available: `$HOME/.local/bin/cmake -S . -B build`, `$HOME/.local/bin/cmake --build build`, and `ctest --test-dir build`.
-- [ ] 7.3 Run OpenSpec validation for `add-sampler` and confirm every sampler requirement has test or implementation evidence.
+- [x] 7.1 Run Rust unit and acceptance tests with `$HOME/.cargo/bin/cargo test --manifest-path src/rust-engine/Cargo.toml`.
+- [x] 7.2 Run CMake/CTest verification if build configuration is available: `$HOME/.local/bin/cmake -S . -B build`, `$HOME/.local/bin/cmake --build build`, and `ctest --test-dir build`.
+- [x] 7.3 Run OpenSpec validation for `add-sampler` and confirm every sampler requirement has test or implementation evidence.
