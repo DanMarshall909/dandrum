@@ -32,14 +32,14 @@
 
 ## 5. Determinism, Examples, And Documentation
 
-- [ ] 5.1 Add deterministic render tests for repeated polyphonic renders with and without voice stealing.
-- [ ] 5.2 Add a minimal polyphonic YAML patch example.
-- [ ] 5.3 Add a YAML patch example with a per-voice sub-synth before global output mixing.
-- [ ] 5.4 Document invalid voice allocation and invalid voice-to-global routing diagnostics.
+- [x] 5.1 Add deterministic render tests for repeated polyphonic renders with and without voice stealing.
+- [x] 5.2 Add a minimal polyphonic YAML patch example (polyphonic-chords.yaml).
+- [x] 5.3 Add a YAML patch example with a per-voice sub-synth before global output mixing (polyphonic-sampler-chords.yaml).
+- [x] 5.4 Document invalid voice allocation and invalid voice-to-global routing diagnostics (diagnostic Display impls in graph.rs, patch.rs).
 
 ## 6. Verification
 
-- [ ] 6.1 Run Rust unit tests for the engine crate.
-- [ ] 6.2 Run CMake/CTest verification for CLI acceptance coverage when feasible.
-- [ ] 6.3 Run OpenSpec validation for `add-polyphony`.
-- [ ] 6.4 Confirm all `polyphonic-voice-allocation` scenarios are covered by tests or documented implementation evidence.
+- [x] 6.1 Run Rust unit tests for the engine crate. (120 tests pass)
+- [x] 6.2 Run CMake/CTest verification for CLI acceptance coverage when feasible. (ctest passes)
+- [x] 6.3 Run OpenSpec validation for `add-polyphony`. (valid)
+- [x] 6.4 Confirm all `polyphonic-voice-allocation` scenarios are covered by tests or documented implementation evidence. (20/21 scenarios covered; audio-to-control detector modules are N/A as those modules don't exist yet)

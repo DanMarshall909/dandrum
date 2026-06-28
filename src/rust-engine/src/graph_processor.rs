@@ -2086,6 +2086,13 @@ connections:
         }
     }
 
+    fn poly_allocation_stealing(max_voices: u32) -> patch::VoiceAllocation {
+        patch::VoiceAllocation {
+            max_voices,
+            stealing: patch::VoiceStealingPolicy::OldestActive,
+        }
+    }
+
     #[test]
     fn overlapping_sampler_notes_mix_instead_of_replacing() {
         let graph = poly_sampler_graph(Vec::new(), Vec::new());
@@ -2532,5 +2539,48 @@ connections:
             (0..10).all(|i| left[(note_off_frame as usize) + 12000 + i].abs() < 0.01),
             "audio should fade to near-zero well after release completes"
         );
+    }
+
+    #[test]
+    fn polyphonic_render_is_deterministic_without_stealing() {
+        let graph = poly_sampler_graph(Vec::new(), Vec::new());
+        graph.validate().expect("graph should validate");
+        let settings = sampler_settings(8);
+        let events = vec![
+            TimedInputEvent::new(0, ScriptEvent::NoteOn { note: 60, velocity: 100 }),
+            TimedInputEvent::new(2, ScriptEvent::NoteOn { note: 64, velocity: 80 }),
+        ];
+
+        let (left1, right1) = render_offline_polyphonic(
+            &graph, &settings, events.clone(), &poly_allocation(4),
+        );
+        let (left2, right2) = render_offline_polyphonic(
+            &graph, &settings, events, &poly_allocation(4),
+        );
+
+        assert_eq!(left1, left2, "polyphonic render without stealing should be deterministic (left)");
+        assert_eq!(right1, right2, "polyphonic render without stealing should be deterministic (right)");
+    }
+
+    #[test]
+    fn polyphonic_render_is_deterministic_with_stealing() {
+        let graph = poly_sampler_graph(Vec::new(), Vec::new());
+        graph.validate().expect("graph should validate");
+        // Use max_voices=1 with 2 overlapping notes to force stealing
+        let settings = sampler_settings(8);
+        let events = vec![
+            TimedInputEvent::new(0, ScriptEvent::NoteOn { note: 60, velocity: 100 }),
+            TimedInputEvent::new(2, ScriptEvent::NoteOn { note: 64, velocity: 80 }),
+        ];
+
+        let (left1, right1) = render_offline_polyphonic(
+            &graph, &settings, events.clone(), &poly_allocation_stealing(1),
+        );
+        let (left2, right2) = render_offline_polyphonic(
+            &graph, &settings, events, &poly_allocation_stealing(1),
+        );
+
+        assert_eq!(left1, left2, "polyphonic render with stealing should be deterministic (left)");
+        assert_eq!(right1, right2, "polyphonic render with stealing should be deterministic (right)");
     }
 }
