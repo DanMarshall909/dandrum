@@ -20,6 +20,7 @@
 - Keep tests close to the behavior under development. Prefer Rust unit tests for engine core behavior and acceptance tests only for end-to-end CLI/rendering behavior.
 - Before changing system behavior, explain what behavior is changing, why it should change, and which tests specify it.
 - Every new behavior must be specified by a test before implementation. Tests should describe externally observable behavior, not implementation minutia.
+- After completing and verifying behavior work, proactively look for refactoring opportunities before moving on. Split or extract code only after the behavior at that boundary is covered by tests, and require 100% coverage for any newly extracted module before committing it.
 - Teach Rust through this project as work proceeds: briefly explain Rust syntax, ownership/borrowing, traits, macros, modules, error handling, and testing patterns when they appear in the code being changed, without turning implementation updates into long tutorials.
 - Teach modern C++ through this project when C++ code changes: the user is an experienced pre-2000 C++ developer, so briefly introduce post-2000 language/library features when they appear, without turning implementation updates into long tutorials.
 - Do not mark OpenSpec implementation tasks complete until the related tests and relevant build/test commands pass, or until any unavoidable verification gap is documented.
