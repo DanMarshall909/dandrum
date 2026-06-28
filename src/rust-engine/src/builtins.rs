@@ -215,8 +215,7 @@ fn control_delay_definition() -> BuiltInModuleDefinition {
 }
 
 fn script_definition() -> BuiltInModuleDefinition {
-    BuiltInModuleDefinition::new(module_types::SCRIPT)
-        .with_execution_scope(ExecutionScope::Voice)
+    BuiltInModuleDefinition::new(module_types::SCRIPT).with_execution_scope(ExecutionScope::Voice)
 }
 
 fn sampler_definition() -> BuiltInModuleDefinition {

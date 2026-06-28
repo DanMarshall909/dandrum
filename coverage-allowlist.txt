@@ -10,3 +10,4 @@
 
 strict src/rust-engine/src/voice_allocator.rs
 strict src/rust-engine/src/graph_composite.rs
+strict src/rust-engine/src/patch_composite.rs

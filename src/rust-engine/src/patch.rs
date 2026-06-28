@@ -4,8 +4,15 @@ use std::fmt;
 use std::fs;
 use std::path::{Path, PathBuf};
 
-use crate::builtins::{BuiltInModuleRegistry, module_types};
 use serde::Deserialize;
+
+#[path = "patch_composite.rs"]
+mod patch_composite;
+
+pub use patch_composite::{
+    CompositeBindingDeclaration, CompositeInputDeclaration, CompositeOutputDeclaration,
+    ModuleDefinitionDeclaration,
+};
 
 #[derive(Clone, Debug, Deserialize, PartialEq)]
 pub struct PatchDocument {
@@ -20,47 +27,6 @@ pub struct PatchDocument {
     pub connections: Vec<ConnectionDeclaration>,
     #[serde(default)]
     pub voice_allocation: VoiceAllocation,
-}
-
-#[derive(Clone, Debug, Deserialize, PartialEq)]
-pub struct ModuleDefinitionDeclaration {
-    #[serde(rename = "type")]
-    pub module_type: String,
-    #[serde(default)]
-    pub inputs: Vec<CompositeInputDeclaration>,
-    #[serde(default)]
-    pub outputs: Vec<CompositeOutputDeclaration>,
-    #[serde(default)]
-    pub parameters: Vec<CompositeBindingDeclaration>,
-    #[serde(default)]
-    pub asset_bindings: Vec<CompositeBindingDeclaration>,
-    #[serde(default)]
-    pub modules: Vec<ModuleDeclaration>,
-    #[serde(default)]
-    pub connections: Vec<ConnectionDeclaration>,
-}
-
-#[derive(Clone, Debug, Deserialize, PartialEq, Eq)]
-pub struct CompositeInputDeclaration {
-    pub name: String,
-    pub signal_type: SignalType,
-    #[serde(default)]
-    pub maps_to: Vec<PortReference>,
-}
-
-#[derive(Clone, Debug, Deserialize, PartialEq, Eq)]
-pub struct CompositeOutputDeclaration {
-    pub name: String,
-    pub signal_type: SignalType,
-    #[serde(default)]
-    pub maps_from: Vec<PortReference>,
-}
-
-#[derive(Clone, Debug, Deserialize, PartialEq, Eq)]
-pub struct CompositeBindingDeclaration {
-    pub name: String,
-    #[serde(default)]
-    pub maps_to: Vec<PortReference>,
 }
 
 #[derive(Clone, Debug, Default, Deserialize, PartialEq, Eq)]
@@ -231,7 +197,7 @@ pub fn validate_patch_schema(patch: &PatchDocument) -> Result<(), PatchValidatio
         diagnostics.push("modules must declare at least one module".to_string());
     }
 
-    validate_module_definitions(patch, &mut diagnostics);
+    patch_composite::validate_module_definitions(patch, &mut diagnostics);
 
     let mut module_ids = BTreeSet::new();
     for module in &patch.modules {
@@ -255,7 +221,7 @@ pub fn validate_patch_schema(patch: &PatchDocument) -> Result<(), PatchValidatio
             validate_sampler_asset_reference(module, patch, &mut diagnostics);
         }
 
-        validate_composite_instance_bindings(module, patch, &mut diagnostics);
+        patch_composite::validate_composite_instance_bindings(module, patch, &mut diagnostics);
     }
 
     if patch.voice_allocation.max_voices == 0 {
@@ -271,338 +237,6 @@ pub fn validate_patch_schema(patch: &PatchDocument) -> Result<(), PatchValidatio
         Ok(())
     } else {
         Err(PatchValidationError { diagnostics })
-    }
-}
-
-fn validate_module_definitions(patch: &PatchDocument, diagnostics: &mut Vec<String>) {
-    let mut module_types = BTreeSet::new();
-    let registry = BuiltInModuleRegistry::new();
-
-    for definition in &patch.module_definitions {
-        if definition.module_type.trim().is_empty() {
-            diagnostics.push("composite module type is required".to_string());
-        } else if !module_types.insert(definition.module_type.as_str()) {
-            diagnostics.push(format!(
-                "duplicate composite module type: {}",
-                definition.module_type
-            ));
-        }
-
-        for input in &definition.inputs {
-            let port_name = composite_port_name(&input.name);
-            if input.name.trim().is_empty() {
-                diagnostics.push(format!(
-                    "composite {} input name is required",
-                    definition.module_type
-                ));
-            }
-
-            for reference in &input.maps_to {
-                validate_port_reference(
-                    &format!(
-                        "composite {} input {port_name} maps_to",
-                        definition.module_type
-                    ),
-                    reference,
-                    diagnostics,
-                );
-                validate_composite_mapping(
-                    &definition.module_type,
-                    "input",
-                    &input.name,
-                    input.signal_type.clone(),
-                    "maps_to",
-                    reference,
-                    CompositeMappingDirection::PublicInputToInternalInput,
-                    definition,
-                    &registry,
-                    diagnostics,
-                );
-            }
-        }
-
-        for output in &definition.outputs {
-            let port_name = composite_port_name(&output.name);
-            if output.name.trim().is_empty() {
-                diagnostics.push(format!(
-                    "composite {} output name is required",
-                    definition.module_type
-                ));
-            }
-
-            for reference in &output.maps_from {
-                validate_port_reference(
-                    &format!(
-                        "composite {} output {port_name} maps_from",
-                        definition.module_type
-                    ),
-                    reference,
-                    diagnostics,
-                );
-                validate_composite_mapping(
-                    &definition.module_type,
-                    "output",
-                    &output.name,
-                    output.signal_type.clone(),
-                    "maps_from",
-                    reference,
-                    CompositeMappingDirection::PublicOutputFromInternalOutput,
-                    definition,
-                    &registry,
-                    diagnostics,
-                );
-            }
-        }
-    }
-
-    validate_recursive_composite_definitions(patch, diagnostics);
-}
-
-fn validate_recursive_composite_definitions(patch: &PatchDocument, diagnostics: &mut Vec<String>) {
-    let composite_types = patch
-        .module_definitions
-        .iter()
-        .map(|definition| definition.module_type.as_str())
-        .collect::<BTreeSet<_>>();
-    let dependencies = patch
-        .module_definitions
-        .iter()
-        .map(|definition| {
-            let nested = definition
-                .modules
-                .iter()
-                .filter(|module| composite_types.contains(module.module_type.as_str()))
-                .map(|module| module.module_type.as_str())
-                .collect::<Vec<_>>();
-            (definition.module_type.as_str(), nested)
-        })
-        .collect::<BTreeMap<_, _>>();
-    let mut reported_paths = BTreeSet::new();
-
-    for definition in &patch.module_definitions {
-        let mut stack = Vec::new();
-        collect_recursive_composite_paths(
-            definition.module_type.as_str(),
-            &dependencies,
-            &mut stack,
-            &mut reported_paths,
-        );
-    }
-
-    for path in reported_paths {
-        diagnostics.push(format!("recursive composite definition: {path}"));
-    }
-}
-
-fn collect_recursive_composite_paths<'a>(
-    current: &'a str,
-    dependencies: &BTreeMap<&'a str, Vec<&'a str>>,
-    stack: &mut Vec<&'a str>,
-    reported_paths: &mut BTreeSet<String>,
-) {
-    if let Some(position) = stack.iter().position(|module_type| *module_type == current) {
-        let mut path = stack[position..].to_vec();
-        path.push(current);
-        reported_paths.insert(path.join(" -> "));
-        return;
-    }
-
-    stack.push(current);
-    if let Some(nested) = dependencies.get(current) {
-        for dependency in nested {
-            collect_recursive_composite_paths(dependency, dependencies, stack, reported_paths);
-        }
-    }
-    stack.pop();
-}
-
-fn validate_composite_instance_bindings(
-    module: &ModuleDeclaration,
-    patch: &PatchDocument,
-    diagnostics: &mut Vec<String>,
-) {
-    let Some(definition) = patch
-        .module_definitions
-        .iter()
-        .find(|definition| definition.module_type == module.module_type)
-    else {
-        return;
-    };
-
-    let declared_bindings = definition
-        .parameters
-        .iter()
-        .chain(definition.asset_bindings.iter())
-        .map(|binding| binding.name.as_str())
-        .collect::<BTreeSet<_>>();
-
-    for key in module.parameters.keys() {
-        if !declared_bindings.contains(key.as_str()) {
-            diagnostics.push(format!(
-                "composite {} instance {} sets undeclared parameter {}",
-                definition.module_type, module.id, key
-            ));
-        }
-    }
-
-    for binding in &definition.asset_bindings {
-        let Some(value) = module.parameters.get(&binding.name) else {
-            continue;
-        };
-        let ParameterValue::Text(asset_id) = value else {
-            diagnostics.push(format!(
-                "composite {} instance {} asset binding {} must be a text asset ID",
-                definition.module_type, module.id, binding.name
-            ));
-            continue;
-        };
-        let Some(asset) = patch.assets.iter().find(|asset| asset.id == *asset_id) else {
-            diagnostics.push(format!(
-                "composite {} instance {} asset binding {} references missing asset {}",
-                definition.module_type, module.id, binding.name, asset_id
-            ));
-            continue;
-        };
-        if asset.kind != AssetKind::Sample {
-            diagnostics.push(format!(
-                "composite {} instance {} asset binding {} references asset {} with kind {:?}; expected sample",
-                definition.module_type, module.id, binding.name, asset_id, asset.kind
-            ));
-        }
-    }
-}
-
-#[derive(Clone, Copy)]
-enum CompositeMappingDirection {
-    PublicInputToInternalInput,
-    PublicOutputFromInternalOutput,
-}
-
-fn validate_composite_mapping(
-    definition_type: &str,
-    public_direction_label: &str,
-    public_name: &str,
-    public_signal_type: SignalType,
-    mapping_label: &str,
-    reference: &PortReference,
-    direction: CompositeMappingDirection,
-    definition: &ModuleDefinitionDeclaration,
-    registry: &BuiltInModuleRegistry,
-    diagnostics: &mut Vec<String>,
-) {
-    if reference.module_id.trim().is_empty() || reference.port_name.trim().is_empty() {
-        return;
-    }
-
-    let resolved = resolve_internal_port_type(definition, reference, direction, registry);
-    if resolved == InternalPortResolution::WrongDirection {
-        diagnostics.push(format!(
-            "composite {definition_type} {public_direction_label} {} {mapping_label} {reference} must reference an internal {} port",
-            composite_port_name(public_name),
-            match direction {
-                CompositeMappingDirection::PublicInputToInternalInput => "input",
-                CompositeMappingDirection::PublicOutputFromInternalOutput => "output",
-            }
-        ));
-        return;
-    }
-
-    let InternalPortResolution::Found(internal_type) = resolved else {
-        return;
-    };
-
-    if public_signal_type != internal_type {
-        diagnostics.push(format!(
-            "composite {definition_type} {public_direction_label} {} {mapping_label} {reference} has incompatible signal types: public {:?}, internal {:?}",
-            composite_port_name(public_name),
-            public_signal_type,
-            internal_type
-        ));
-    }
-}
-
-fn resolve_internal_port_type(
-    definition: &ModuleDefinitionDeclaration,
-    reference: &PortReference,
-    direction: CompositeMappingDirection,
-    registry: &BuiltInModuleRegistry,
-) -> InternalPortResolution {
-    let module = definition
-        .modules
-        .iter()
-        .find(|module| module.id == reference.module_id);
-    let Some(module) = module else {
-        return InternalPortResolution::Missing;
-    };
-
-    let built_in = registry.get(&module.module_type);
-
-    if built_in.is_none() || module.module_type == module_types::SCRIPT {
-        let expected_ports = match direction {
-            CompositeMappingDirection::PublicInputToInternalInput => &module.inputs,
-            CompositeMappingDirection::PublicOutputFromInternalOutput => &module.outputs,
-        };
-        if let Some(port) = expected_ports
-            .iter()
-            .find(|port| port.name == reference.port_name)
-        {
-            return InternalPortResolution::Found(port.signal_type.clone());
-        }
-
-        let opposite_ports = match direction {
-            CompositeMappingDirection::PublicInputToInternalInput => &module.outputs,
-            CompositeMappingDirection::PublicOutputFromInternalOutput => &module.inputs,
-        };
-        if opposite_ports
-            .iter()
-            .any(|port| port.name == reference.port_name)
-        {
-            return InternalPortResolution::WrongDirection;
-        }
-
-        return InternalPortResolution::Missing;
-    }
-
-    let Some(built_in) = built_in else {
-        return InternalPortResolution::Missing;
-    };
-    let expected_ports = match direction {
-        CompositeMappingDirection::PublicInputToInternalInput => built_in.inputs(),
-        CompositeMappingDirection::PublicOutputFromInternalOutput => built_in.outputs(),
-    };
-    if let Some(port) = expected_ports
-        .iter()
-        .find(|port| port.name() == reference.port_name)
-    {
-        return InternalPortResolution::Found(SignalType::from_graph(port.signal_type()));
-    }
-
-    let opposite_ports = match direction {
-        CompositeMappingDirection::PublicInputToInternalInput => built_in.outputs(),
-        CompositeMappingDirection::PublicOutputFromInternalOutput => built_in.inputs(),
-    };
-    if opposite_ports
-        .iter()
-        .any(|port| port.name() == reference.port_name)
-    {
-        return InternalPortResolution::WrongDirection;
-    }
-
-    InternalPortResolution::Missing
-}
-
-#[derive(PartialEq, Eq)]
-enum InternalPortResolution {
-    Found(SignalType),
-    Missing,
-    WrongDirection,
-}
-
-fn composite_port_name(name: &str) -> &str {
-    if name.trim().is_empty() {
-        "<unnamed>"
-    } else {
-        name
     }
 }
 
@@ -693,16 +327,6 @@ impl fmt::Display for PatchLoadError {
 
 impl std::error::Error for PatchLoadError {}
 
-impl SignalType {
-    fn from_graph(signal_type: crate::graph::SignalType) -> Self {
-        match signal_type {
-            crate::graph::SignalType::Audio => Self::Audio,
-            crate::graph::SignalType::Control => Self::Control,
-            crate::graph::SignalType::Event => Self::Event,
-        }
-    }
-}
-
 impl fmt::Display for PortReference {
     fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(formatter, "{}.{}", self.module_id, self.port_name)
@@ -735,7 +359,11 @@ fn is_yaml_path(path: &Path) -> bool {
         .is_some_and(|extension| matches!(extension, "yaml" | "yml"))
 }
 
-fn validate_port_reference(label: &str, reference: &PortReference, diagnostics: &mut Vec<String>) {
+pub(super) fn validate_port_reference(
+    label: &str,
+    reference: &PortReference,
+    diagnostics: &mut Vec<String>,
+) {
     if reference.module_id.trim().is_empty() || reference.port_name.trim().is_empty() {
         diagnostics.push(format!(
             "{label} must use a non-empty module_id.port_name reference"
@@ -1028,9 +656,11 @@ modules:
 
         let error = validate_patch_schema(&patch).expect_err("zero max_voices must fail");
 
-        assert!(error.diagnostics().contains(
-            &"voice_allocation.max_voices must be greater than zero".to_string()
-        ));
+        assert!(
+            error
+                .diagnostics()
+                .contains(&"voice_allocation.max_voices must be greater than zero".to_string())
+        );
     }
 
     #[test]
@@ -1154,9 +784,11 @@ render:
 
         let error = validate_patch_schema(&patch).expect_err("duplicate composite types must fail");
 
-        assert!(error.diagnostics().contains(
-            &"duplicate composite module type: drum_voice".to_string()
-        ));
+        assert!(
+            error
+                .diagnostics()
+                .contains(&"duplicate composite module type: drum_voice".to_string())
+        );
     }
 
     #[test]
@@ -1177,15 +809,19 @@ render:
 
         let error = validate_patch_schema(&patch).expect_err("malformed composite refs must fail");
 
-        assert!(error.diagnostics().contains(
-            &"composite drum_voice input name is required".to_string()
-        ));
+        assert!(
+            error
+                .diagnostics()
+                .contains(&"composite drum_voice input name is required".to_string())
+        );
         assert!(error.diagnostics().contains(
             &"composite drum_voice input <unnamed> maps_to must use a non-empty module_id.port_name reference".to_string()
         ));
-        assert!(error.diagnostics().contains(
-            &"composite drum_voice output name is required".to_string()
-        ));
+        assert!(
+            error
+                .diagnostics()
+                .contains(&"composite drum_voice output name is required".to_string())
+        );
         assert!(error.diagnostics().contains(
             &"composite drum_voice output <unnamed> maps_from must use a non-empty module_id.port_name reference".to_string()
         ));
@@ -1312,7 +948,10 @@ render:
             module_type: "drum_voice".to_string(),
             inputs: vec![],
             outputs: vec![],
-            parameters: BTreeMap::from([("sample".to_string(), ParameterValue::Text("kick".to_string()))]),
+            parameters: BTreeMap::from([(
+                "sample".to_string(),
+                ParameterValue::Text("kick".to_string()),
+            )]),
         }]);
         patch.assets.push(AssetDeclaration {
             id: "kick".to_string(),
@@ -1345,9 +984,12 @@ render:
 
         let error = validate_patch_schema(&patch).expect_err("non-text asset binding must fail");
 
-        assert!(error.diagnostics().contains(
-            &"composite drum_voice instance voice asset binding sample must be a text asset ID".to_string()
-        ));
+        assert!(
+            error.diagnostics().contains(
+                &"composite drum_voice instance voice asset binding sample must be a text asset ID"
+                    .to_string()
+            )
+        );
     }
 
     #[test]
@@ -1400,9 +1042,11 @@ render:
 
         let error = validate_patch_schema(&patch).expect_err("direct recursion must fail");
 
-        assert!(error.diagnostics().contains(
-            &"recursive composite definition: drum_voice -> drum_voice".to_string()
-        ));
+        assert!(
+            error
+                .diagnostics()
+                .contains(&"recursive composite definition: drum_voice -> drum_voice".to_string())
+        );
     }
 
     #[test]
@@ -1434,9 +1078,11 @@ render:
 
         let error = validate_patch_schema(&patch).expect_err("indirect recursion must fail");
 
-        assert!(error.diagnostics().contains(
-            &"recursive composite definition: a -> b -> a".to_string()
-        ));
+        assert!(
+            error
+                .diagnostics()
+                .contains(&"recursive composite definition: a -> b -> a".to_string())
+        );
     }
 
     #[test]

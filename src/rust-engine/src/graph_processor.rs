@@ -628,9 +628,9 @@ fn process_block_polyphonic(
                 ModuleOutputs {
                     audio: HashMap::new(),
                     control: HashMap::new(),
-                events: voice_events[voice_idx].clone(),
-            },
-        );
+                    events: voice_events[voice_idx].clone(),
+                },
+            );
         }
 
         let voice_states = &mut states[voice_idx];
@@ -643,22 +643,43 @@ fn process_block_polyphonic(
             let outputs = match module_type {
                 "oscillator" => {
                     let pitch_in = control_input_or_default(
-                        module_idx, builtin_ports::PITCH, routing, &all_outputs, frames, 1.0,
+                        module_idx,
+                        builtin_ports::PITCH,
+                        routing,
+                        &all_outputs,
+                        frames,
+                        1.0,
                     );
                     process_oscillator(&mut voice_states[module_idx], &pitch_in, frames)
                 }
                 "adsr" => {
                     let attack_in = sum_control_input(
-                        module_idx, builtin_ports::ATTACK, routing, &all_outputs, frames,
+                        module_idx,
+                        builtin_ports::ATTACK,
+                        routing,
+                        &all_outputs,
+                        frames,
                     );
                     let decay_in = sum_control_input(
-                        module_idx, builtin_ports::DECAY, routing, &all_outputs, frames,
+                        module_idx,
+                        builtin_ports::DECAY,
+                        routing,
+                        &all_outputs,
+                        frames,
                     );
                     let sustain_in = sum_control_input(
-                        module_idx, builtin_ports::SUSTAIN, routing, &all_outputs, frames,
+                        module_idx,
+                        builtin_ports::SUSTAIN,
+                        routing,
+                        &all_outputs,
+                        frames,
                     );
                     let release_in = sum_control_input(
-                        module_idx, builtin_ports::RELEASE, routing, &all_outputs, frames,
+                        module_idx,
+                        builtin_ports::RELEASE,
+                        routing,
+                        &all_outputs,
+                        frames,
                     );
                     process_adsr(
                         &mut voice_states[module_idx],
@@ -673,28 +694,57 @@ fn process_block_polyphonic(
                 }
                 "gain" => {
                     let audio_in = sum_audio_input(
-                        module_idx, builtin_ports::AUDIO_IN, routing, &all_outputs, frames,
+                        module_idx,
+                        builtin_ports::AUDIO_IN,
+                        routing,
+                        &all_outputs,
+                        frames,
                     );
                     let gain_in = sum_control_input(
-                        module_idx, builtin_ports::GAIN, routing, &all_outputs, frames,
+                        module_idx,
+                        builtin_ports::GAIN,
+                        routing,
+                        &all_outputs,
+                        frames,
                     );
                     process_vca(audio_in, gain_in)
                 }
                 "sampler" => {
                     let rate_in = control_input_or_default(
-                        module_idx, builtin_ports::RATE, routing, &all_outputs, frames, 1.0,
+                        module_idx,
+                        builtin_ports::RATE,
+                        routing,
+                        &all_outputs,
+                        frames,
+                        1.0,
                     );
                     let start_in = sum_control_input(
-                        module_idx, builtin_ports::START, routing, &all_outputs, frames,
+                        module_idx,
+                        builtin_ports::START,
+                        routing,
+                        &all_outputs,
+                        frames,
                     );
                     let loop_enabled_in = sum_control_input(
-                        module_idx, builtin_ports::LOOP_ENABLED, routing, &all_outputs, frames,
+                        module_idx,
+                        builtin_ports::LOOP_ENABLED,
+                        routing,
+                        &all_outputs,
+                        frames,
                     );
                     let loop_start_in = sum_control_input(
-                        module_idx, builtin_ports::LOOP_START, routing, &all_outputs, frames,
+                        module_idx,
+                        builtin_ports::LOOP_START,
+                        routing,
+                        &all_outputs,
+                        frames,
                     );
                     let loop_end_in = sum_control_input(
-                        module_idx, builtin_ports::LOOP_END, routing, &all_outputs, frames,
+                        module_idx,
+                        builtin_ports::LOOP_END,
+                        routing,
+                        &all_outputs,
+                        frames,
                     );
                     process_sampler(
                         &mut voice_states[module_idx],
@@ -712,7 +762,11 @@ fn process_block_polyphonic(
                 }
                 "audio_mixer" => {
                     let mix = sum_audio_input(
-                        module_idx, builtin_ports::INPUTS, routing, &all_outputs, frames,
+                        module_idx,
+                        builtin_ports::INPUTS,
+                        routing,
+                        &all_outputs,
+                        frames,
                     );
                     let mut m = HashMap::new();
                     m.insert(builtin_ports::MIX.to_string(), mix);
@@ -724,10 +778,18 @@ fn process_block_polyphonic(
                 }
                 "audio_output" => {
                     let left = sum_audio_input(
-                        module_idx, builtin_ports::LEFT, routing, &all_outputs, frames,
+                        module_idx,
+                        builtin_ports::LEFT,
+                        routing,
+                        &all_outputs,
+                        frames,
                     );
                     let right = sum_audio_input(
-                        module_idx, builtin_ports::RIGHT, routing, &all_outputs, frames,
+                        module_idx,
+                        builtin_ports::RIGHT,
+                        routing,
+                        &all_outputs,
+                        frames,
                     );
                     let mut m = HashMap::new();
                     m.insert(builtin_ports::LEFT.to_string(), left);
@@ -740,7 +802,11 @@ fn process_block_polyphonic(
                 }
                 "audio_delay" => {
                     let audio_in = sum_audio_input(
-                        module_idx, builtin_ports::AUDIO_IN, routing, &all_outputs, frames,
+                        module_idx,
+                        builtin_ports::AUDIO_IN,
+                        routing,
+                        &all_outputs,
+                        frames,
                     );
                     process_audio_delay(audio_in)
                 }
@@ -759,10 +825,7 @@ fn process_block_polyphonic(
                     events: Vec::new(),
                 });
                 for (port, buf) in outputs.audio {
-                    let acc = entry
-                        .audio
-                        .entry(port)
-                        .or_insert_with(|| vec![0.0; frames]);
+                    let acc = entry.audio.entry(port).or_insert_with(|| vec![0.0; frames]);
                     for (i, s) in buf.iter().enumerate().take(frames) {
                         acc[i] += s;
                     }
@@ -792,22 +855,43 @@ fn process_block_polyphonic(
         let outputs = match module_type {
             "oscillator" => {
                 let pitch_in = control_input_or_default(
-                    module_idx, builtin_ports::PITCH, routing, &all_outputs, frames, 1.0,
+                    module_idx,
+                    builtin_ports::PITCH,
+                    routing,
+                    &all_outputs,
+                    frames,
+                    1.0,
                 );
                 process_oscillator(&mut states[0][module_idx], &pitch_in, frames)
             }
             "adsr" => {
                 let attack_in = sum_control_input(
-                    module_idx, builtin_ports::ATTACK, routing, &all_outputs, frames,
+                    module_idx,
+                    builtin_ports::ATTACK,
+                    routing,
+                    &all_outputs,
+                    frames,
                 );
                 let decay_in = sum_control_input(
-                    module_idx, builtin_ports::DECAY, routing, &all_outputs, frames,
+                    module_idx,
+                    builtin_ports::DECAY,
+                    routing,
+                    &all_outputs,
+                    frames,
                 );
                 let sustain_in = sum_control_input(
-                    module_idx, builtin_ports::SUSTAIN, routing, &all_outputs, frames,
+                    module_idx,
+                    builtin_ports::SUSTAIN,
+                    routing,
+                    &all_outputs,
+                    frames,
                 );
                 let release_in = sum_control_input(
-                    module_idx, builtin_ports::RELEASE, routing, &all_outputs, frames,
+                    module_idx,
+                    builtin_ports::RELEASE,
+                    routing,
+                    &all_outputs,
+                    frames,
                 );
                 process_adsr(
                     &mut states[0][module_idx],
@@ -822,28 +906,57 @@ fn process_block_polyphonic(
             }
             "gain" => {
                 let audio_in = sum_audio_input(
-                    module_idx, builtin_ports::AUDIO_IN, routing, &all_outputs, frames,
+                    module_idx,
+                    builtin_ports::AUDIO_IN,
+                    routing,
+                    &all_outputs,
+                    frames,
                 );
                 let gain_in = sum_control_input(
-                    module_idx, builtin_ports::GAIN, routing, &all_outputs, frames,
+                    module_idx,
+                    builtin_ports::GAIN,
+                    routing,
+                    &all_outputs,
+                    frames,
                 );
                 process_vca(audio_in, gain_in)
             }
             "sampler" => {
                 let rate_in = control_input_or_default(
-                    module_idx, builtin_ports::RATE, routing, &all_outputs, frames, 1.0,
+                    module_idx,
+                    builtin_ports::RATE,
+                    routing,
+                    &all_outputs,
+                    frames,
+                    1.0,
                 );
                 let start_in = sum_control_input(
-                    module_idx, builtin_ports::START, routing, &all_outputs, frames,
+                    module_idx,
+                    builtin_ports::START,
+                    routing,
+                    &all_outputs,
+                    frames,
                 );
                 let loop_enabled_in = sum_control_input(
-                    module_idx, builtin_ports::LOOP_ENABLED, routing, &all_outputs, frames,
+                    module_idx,
+                    builtin_ports::LOOP_ENABLED,
+                    routing,
+                    &all_outputs,
+                    frames,
                 );
                 let loop_start_in = sum_control_input(
-                    module_idx, builtin_ports::LOOP_START, routing, &all_outputs, frames,
+                    module_idx,
+                    builtin_ports::LOOP_START,
+                    routing,
+                    &all_outputs,
+                    frames,
                 );
                 let loop_end_in = sum_control_input(
-                    module_idx, builtin_ports::LOOP_END, routing, &all_outputs, frames,
+                    module_idx,
+                    builtin_ports::LOOP_END,
+                    routing,
+                    &all_outputs,
+                    frames,
                 );
                 process_sampler(
                     &mut states[0][module_idx],
@@ -858,7 +971,11 @@ fn process_block_polyphonic(
             }
             "audio_mixer" => {
                 let mix = sum_audio_input(
-                    module_idx, builtin_ports::INPUTS, routing, &all_outputs, frames,
+                    module_idx,
+                    builtin_ports::INPUTS,
+                    routing,
+                    &all_outputs,
+                    frames,
                 );
                 let mut m = HashMap::new();
                 m.insert(builtin_ports::MIX.to_string(), mix);
@@ -870,10 +987,18 @@ fn process_block_polyphonic(
             }
             "audio_output" => {
                 let left = sum_audio_input(
-                    module_idx, builtin_ports::LEFT, routing, &all_outputs, frames,
+                    module_idx,
+                    builtin_ports::LEFT,
+                    routing,
+                    &all_outputs,
+                    frames,
                 );
                 let right = sum_audio_input(
-                    module_idx, builtin_ports::RIGHT, routing, &all_outputs, frames,
+                    module_idx,
+                    builtin_ports::RIGHT,
+                    routing,
+                    &all_outputs,
+                    frames,
                 );
                 let mut m = HashMap::new();
                 m.insert(builtin_ports::LEFT.to_string(), left);
@@ -886,13 +1011,15 @@ fn process_block_polyphonic(
             }
             "audio_delay" => {
                 let audio_in = sum_audio_input(
-                    module_idx, builtin_ports::AUDIO_IN, routing, &all_outputs, frames,
+                    module_idx,
+                    builtin_ports::AUDIO_IN,
+                    routing,
+                    &all_outputs,
+                    frames,
                 );
                 process_audio_delay(audio_in)
             }
-            "note_to_rate" => {
-                process_note_to_rate(&mut states[0][module_idx], &events_in, frames)
-            }
+            "note_to_rate" => process_note_to_rate(&mut states[0][module_idx], &events_in, frames),
             other => panic!("unknown module type in polyphonic global context: {other}"),
         };
 
@@ -920,23 +1047,27 @@ fn process_block_polyphonic(
         if allocator.slot(i).map_or(true, |s| !s.active) {
             continue;
         }
-        let has_adsr = states[i].iter().any(|s| {
-            matches!(s, PerModuleState::Adsr { .. })
-        });
-        let has_sampler = states[i].iter().any(|s| {
-            matches!(s, PerModuleState::Sampler { .. })
-        });
+        let has_adsr = states[i]
+            .iter()
+            .any(|s| matches!(s, PerModuleState::Adsr { .. }));
+        let has_sampler = states[i]
+            .iter()
+            .any(|s| matches!(s, PerModuleState::Sampler { .. }));
         if !has_adsr && !has_sampler {
             continue;
         }
-        let adsr_done = !has_adsr || states[i].iter().any(|s| match s {
-            PerModuleState::Adsr { level, gate_active, .. } => !gate_active && *level < 0.001,
-            _ => false,
-        });
-        let sampler_done = !has_sampler || states[i].iter().any(|s| match s {
-            PerModuleState::Sampler { active, .. } => !active,
-            _ => false,
-        });
+        let adsr_done = !has_adsr
+            || states[i].iter().any(|s| match s {
+                PerModuleState::Adsr {
+                    level, gate_active, ..
+                } => !gate_active && *level < 0.001,
+                _ => false,
+            });
+        let sampler_done = !has_sampler
+            || states[i].iter().any(|s| match s {
+                PerModuleState::Sampler { active, .. } => !active,
+                _ => false,
+            });
         if adsr_done && sampler_done {
             allocator.set_slot_inactive(i);
         }
@@ -971,7 +1102,10 @@ pub fn render_offline_with_sampler_assets_polyphonic(
 
     let max_voices = voice_allocation.max_voices.max(1) as usize;
     let mut states = build_polyphonic_states(graph, sample_rate, sampler_assets, max_voices);
-    let mut allocator = VoiceAllocator::new(voice_allocation.max_voices, voice_allocation.stealing.clone());
+    let mut allocator = VoiceAllocator::new(
+        voice_allocation.max_voices,
+        voice_allocation.stealing.clone(),
+    );
 
     let midi_idx = find_midi_input(graph);
     let out_idx = find_audio_output(graph);
@@ -1055,8 +1189,10 @@ impl RealtimeGraphProcessor {
         let out_idx = find_audio_output(&graph);
         let max_voices = voice_allocation.max_voices.max(1) as usize;
         let states = build_polyphonic_states(&graph, sample_rate, sampler_assets, max_voices);
-        let allocator =
-            VoiceAllocator::new(voice_allocation.max_voices, voice_allocation.stealing.clone());
+        let allocator = VoiceAllocator::new(
+            voice_allocation.max_voices,
+            voice_allocation.stealing.clone(),
+        );
 
         Self {
             graph,
@@ -1093,7 +1229,13 @@ impl RealtimeGraphProcessor {
             })
             .collect();
 
-        if self.allocator.max_voices() > 1 || self.graph.modules().iter().any(|m| m.execution_scope() == ExecutionScope::Voice) {
+        if self.allocator.max_voices() > 1
+            || self
+                .graph
+                .modules()
+                .iter()
+                .any(|m| m.execution_scope() == ExecutionScope::Voice)
+        {
             let mut left_buf = Vec::new();
             let mut right_buf = Vec::new();
 
@@ -1236,7 +1378,13 @@ fn process_adsr(
             release_start_frame,
             release_start_level,
             sample_rate,
-        } => (level, gate_active, release_start_frame, release_start_level, *sample_rate),
+        } => (
+            level,
+            gate_active,
+            release_start_frame,
+            release_start_level,
+            *sample_rate,
+        ),
         _ => unreachable!(),
     };
 
@@ -1792,7 +1940,9 @@ connections:
         .expect("patch should parse");
         patch::validate_patch_schema(&patch).expect("schema should validate");
         let graph = Graph::from_patch_declarations(&patch);
-        graph.validate().expect("expanded sampler composite should validate");
+        graph
+            .validate()
+            .expect("expanded sampler composite should validate");
         let assets = PreparedSamplerAssets::from_samples_by_module(BTreeMap::from([(
             "voice::sampler".to_string(),
             LoadedSample::new(48_000, vec![0.25, 0.5, 0.75]),
@@ -1848,16 +1998,28 @@ connections:
         let graph = Graph::from_patch_declarations(&patch);
         graph.validate().expect("expanded graph should validate");
 
-        assert!(graph.modules().iter().all(|module| module.module_type() != "drum_voice"));
-        assert!(graph.modules().iter().any(|module| module.id().as_str() == "voice::osc"));
+        assert!(
+            graph
+                .modules()
+                .iter()
+                .all(|module| module.module_type() != "drum_voice")
+        );
+        assert!(
+            graph
+                .modules()
+                .iter()
+                .any(|module| module.id().as_str() == "voice::osc")
+        );
         let _offline = render_offline(&graph, &patch.render, Vec::new());
         let realtime = RealtimeGraphProcessor::new(graph, 48_000.0);
 
-        assert!(realtime
-            .graph
-            .modules()
-            .iter()
-            .all(|module| module.module_type() != "drum_voice"));
+        assert!(
+            realtime
+                .graph
+                .modules()
+                .iter()
+                .all(|module| module.module_type() != "drum_voice")
+        );
     }
 
     #[test]
@@ -2250,10 +2412,7 @@ connections:
 
     // --- Section 4: Polyphonic rendering ---
 
-    fn poly_sampler_graph(
-        extra_modules: Vec<ModuleNode>,
-        extra_cables: Vec<Cable>,
-    ) -> Graph {
+    fn poly_sampler_graph(extra_modules: Vec<ModuleNode>, extra_cables: Vec<Cable>) -> Graph {
         let mut modules = vec![
             ModuleNode::new(ModuleId::new("midi"), "midi_input")
                 .with_execution_scope(ExecutionScope::Global)
@@ -2346,7 +2505,13 @@ connections:
             &settings,
             vec![
                 note_on(0, 100),
-                TimedInputEvent::new(1, ScriptEvent::NoteOn { note: 64, velocity: 100 }),
+                TimedInputEvent::new(
+                    1,
+                    ScriptEvent::NoteOn {
+                        note: 64,
+                        velocity: 100,
+                    },
+                ),
             ],
             &assets,
             &poly_allocation(2),
@@ -2423,8 +2588,20 @@ connections:
             &graph,
             &settings,
             vec![
-                TimedInputEvent::new(0, ScriptEvent::NoteOn { note: 60, velocity: 100 }),
-                TimedInputEvent::new(0, ScriptEvent::NoteOn { note: 64, velocity: 127 }),
+                TimedInputEvent::new(
+                    0,
+                    ScriptEvent::NoteOn {
+                        note: 60,
+                        velocity: 100,
+                    },
+                ),
+                TimedInputEvent::new(
+                    0,
+                    ScriptEvent::NoteOn {
+                        note: 64,
+                        velocity: 127,
+                    },
+                ),
                 TimedInputEvent::new(12000, ScriptEvent::NoteOff { note: 60 }),
             ],
             &poly_allocation(2),
@@ -2435,7 +2612,10 @@ connections:
 
         // After note-off at frame 12000, the released voice enters release
         // but the unreleased voice continues -> audio should still be present
-        assert!(left[20000] != 0.0, "unreleased voice should still be audible after first note-off");
+        assert!(
+            left[20000] != 0.0,
+            "unreleased voice should still be audible after first note-off"
+        );
 
         // The unreleased voice (note 64) eventually gets a note-off? No — it never gets NoteOff
         // It will have a fixed sustain level unless the ADSR is gated off.
@@ -2516,8 +2696,20 @@ connections:
             &graph,
             &settings,
             vec![
-                TimedInputEvent::new(0, ScriptEvent::NoteOn { note: 60, velocity: 100 }),
-                TimedInputEvent::new(0, ScriptEvent::NoteOn { note: 64, velocity: 100 }),
+                TimedInputEvent::new(
+                    0,
+                    ScriptEvent::NoteOn {
+                        note: 60,
+                        velocity: 100,
+                    },
+                ),
+                TimedInputEvent::new(
+                    0,
+                    ScriptEvent::NoteOn {
+                        note: 64,
+                        velocity: 100,
+                    },
+                ),
             ],
         );
 
@@ -2525,8 +2717,20 @@ connections:
             &graph,
             &settings,
             vec![
-                TimedInputEvent::new(0, ScriptEvent::NoteOn { note: 60, velocity: 100 }),
-                TimedInputEvent::new(0, ScriptEvent::NoteOn { note: 64, velocity: 100 }),
+                TimedInputEvent::new(
+                    0,
+                    ScriptEvent::NoteOn {
+                        note: 60,
+                        velocity: 100,
+                    },
+                ),
+                TimedInputEvent::new(
+                    0,
+                    ScriptEvent::NoteOn {
+                        note: 64,
+                        velocity: 100,
+                    },
+                ),
             ],
             &poly_allocation(2),
         );
@@ -2561,11 +2765,17 @@ connections:
         // Block with NoteOn
         process_adsr(
             &mut state,
-            &[BlockEvent { frame_offset: 0, event: ScriptEvent::NoteOn { note: 60, velocity: 100 } }],
-            &[0.0; BLOCK_SIZE],  // attack_in (no signal = default 5ms)
-            &[0.0; BLOCK_SIZE],  // decay_in (no signal = default 30ms)
-            &[0.0; BLOCK_SIZE],  // sustain_in (no signal = default 0.7)
-            &[0.0; BLOCK_SIZE],  // release_in (no signal = default 200ms)
+            &[BlockEvent {
+                frame_offset: 0,
+                event: ScriptEvent::NoteOn {
+                    note: 60,
+                    velocity: 100,
+                },
+            }],
+            &[0.0; BLOCK_SIZE], // attack_in (no signal = default 5ms)
+            &[0.0; BLOCK_SIZE], // decay_in (no signal = default 30ms)
+            &[0.0; BLOCK_SIZE], // sustain_in (no signal = default 0.7)
+            &[0.0; BLOCK_SIZE], // release_in (no signal = default 200ms)
             0,
             BLOCK_SIZE,
         );
@@ -2587,19 +2797,27 @@ connections:
 
         // Verify we're in sustain at level 0.7
         let start_level = match &state {
-            PerModuleState::Adsr { level, gate_active, .. } => {
+            PerModuleState::Adsr {
+                level, gate_active, ..
+            } => {
                 assert!(*gate_active, "should be gate active in sustain");
                 *level
             }
             _ => unreachable!(),
         };
         // Level should be 0.7 at sustain
-        assert!((start_level - 0.7).abs() < 0.01, "should be at sustain level");
+        assert!(
+            (start_level - 0.7).abs() < 0.01,
+            "should be at sustain level"
+        );
 
         // Now send NoteOff — this block starts at frame 20*128 = 2560
         process_adsr(
             &mut state,
-            &[BlockEvent { frame_offset: 0, event: ScriptEvent::NoteOff { note: 60 } }],
+            &[BlockEvent {
+                frame_offset: 0,
+                event: ScriptEvent::NoteOff { note: 60 },
+            }],
             &[0.0; BLOCK_SIZE],
             &[0.0; BLOCK_SIZE],
             &[0.0; BLOCK_SIZE],
@@ -2730,7 +2948,13 @@ connections:
             &graph,
             &settings,
             vec![
-                TimedInputEvent::new(0, ScriptEvent::NoteOn { note: 60, velocity: 100 }),
+                TimedInputEvent::new(
+                    0,
+                    ScriptEvent::NoteOn {
+                        note: 60,
+                        velocity: 100,
+                    },
+                ),
                 TimedInputEvent::new(note_off_frame, ScriptEvent::NoteOff { note: 60 }),
             ],
             &poly_allocation(1),
@@ -2764,19 +2988,35 @@ connections:
         graph.validate().expect("graph should validate");
         let settings = sampler_settings(8);
         let events = vec![
-            TimedInputEvent::new(0, ScriptEvent::NoteOn { note: 60, velocity: 100 }),
-            TimedInputEvent::new(2, ScriptEvent::NoteOn { note: 64, velocity: 80 }),
+            TimedInputEvent::new(
+                0,
+                ScriptEvent::NoteOn {
+                    note: 60,
+                    velocity: 100,
+                },
+            ),
+            TimedInputEvent::new(
+                2,
+                ScriptEvent::NoteOn {
+                    note: 64,
+                    velocity: 80,
+                },
+            ),
         ];
 
-        let (left1, right1) = render_offline_polyphonic(
-            &graph, &settings, events.clone(), &poly_allocation(4),
-        );
-        let (left2, right2) = render_offline_polyphonic(
-            &graph, &settings, events, &poly_allocation(4),
-        );
+        let (left1, right1) =
+            render_offline_polyphonic(&graph, &settings, events.clone(), &poly_allocation(4));
+        let (left2, right2) =
+            render_offline_polyphonic(&graph, &settings, events, &poly_allocation(4));
 
-        assert_eq!(left1, left2, "polyphonic render without stealing should be deterministic (left)");
-        assert_eq!(right1, right2, "polyphonic render without stealing should be deterministic (right)");
+        assert_eq!(
+            left1, left2,
+            "polyphonic render without stealing should be deterministic (left)"
+        );
+        assert_eq!(
+            right1, right2,
+            "polyphonic render without stealing should be deterministic (right)"
+        );
     }
 
     #[test]
@@ -2786,18 +3026,38 @@ connections:
         // Use max_voices=1 with 2 overlapping notes to force stealing
         let settings = sampler_settings(8);
         let events = vec![
-            TimedInputEvent::new(0, ScriptEvent::NoteOn { note: 60, velocity: 100 }),
-            TimedInputEvent::new(2, ScriptEvent::NoteOn { note: 64, velocity: 80 }),
+            TimedInputEvent::new(
+                0,
+                ScriptEvent::NoteOn {
+                    note: 60,
+                    velocity: 100,
+                },
+            ),
+            TimedInputEvent::new(
+                2,
+                ScriptEvent::NoteOn {
+                    note: 64,
+                    velocity: 80,
+                },
+            ),
         ];
 
         let (left1, right1) = render_offline_polyphonic(
-            &graph, &settings, events.clone(), &poly_allocation_stealing(1),
+            &graph,
+            &settings,
+            events.clone(),
+            &poly_allocation_stealing(1),
         );
-        let (left2, right2) = render_offline_polyphonic(
-            &graph, &settings, events, &poly_allocation_stealing(1),
-        );
+        let (left2, right2) =
+            render_offline_polyphonic(&graph, &settings, events, &poly_allocation_stealing(1));
 
-        assert_eq!(left1, left2, "polyphonic render with stealing should be deterministic (left)");
-        assert_eq!(right1, right2, "polyphonic render with stealing should be deterministic (right)");
+        assert_eq!(
+            left1, left2,
+            "polyphonic render with stealing should be deterministic (left)"
+        );
+        assert_eq!(
+            right1, right2,
+            "polyphonic render with stealing should be deterministic (right)"
+        );
     }
 }

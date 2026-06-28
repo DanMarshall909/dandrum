@@ -650,7 +650,10 @@ impl fmt::Display for GraphDiagnostic {
 
                 Ok(())
             }
-            Self::VoiceToGlobalDirectRouting { source, destination } => write!(
+            Self::VoiceToGlobalDirectRouting {
+                source,
+                destination,
+            } => write!(
                 formatter,
                 "voice-scoped output {source} cannot route directly to global input {destination}; use an explicit mixer or summing module"
             ),
@@ -855,13 +858,7 @@ connections:
         let cable_pairs = graph
             .cables()
             .iter()
-            .map(|cable| {
-                format!(
-                    "{}->{}",
-                    cable.source(),
-                    cable.destination()
-                )
-            })
+            .map(|cable| format!("{}->{}", cable.source(), cable.destination()))
             .collect::<Vec<_>>();
         assert_eq!(
             cable_pairs,
@@ -925,7 +922,10 @@ connections:
         assert_eq!(module_ids, ["voice_a::osc", "voice_b::osc", "out"]);
         let mut unique = BTreeSet::new();
         for module_id in module_ids {
-            assert!(unique.insert(module_id), "duplicate expanded ID: {module_id}");
+            assert!(
+                unique.insert(module_id),
+                "duplicate expanded ID: {module_id}"
+            );
         }
         let cable_pairs = graph
             .cables()
@@ -1082,7 +1082,11 @@ connections:
             .expect_err("hidden instantaneous feedback should fail");
 
         assert!(error.to_string().contains("routing cycle detected"));
-        assert!(error.to_string().contains("voice::a.audio_out->voice::b.audio_in"));
+        assert!(
+            error
+                .to_string()
+                .contains("voice::a.audio_out->voice::b.audio_in")
+        );
     }
 
     #[test]
@@ -1854,8 +1858,7 @@ connections:
         )
         .expect("patch should parse");
 
-        crate::patch::validate_patch_schema(&patch)
-            .expect("patch schema should be valid");
+        crate::patch::validate_patch_schema(&patch).expect("patch schema should be valid");
         let graph = Graph::from_patch_declarations(&patch);
 
         graph
@@ -1897,8 +1900,7 @@ connections:
         )
         .expect("patch should parse");
 
-        crate::patch::validate_patch_schema(&patch)
-            .expect("patch schema should be valid");
+        crate::patch::validate_patch_schema(&patch).expect("patch schema should be valid");
         let graph = Graph::from_patch_declarations(&patch);
 
         graph
@@ -1928,17 +1930,18 @@ connections:
         )
         .expect("patch should parse");
 
-        crate::patch::validate_patch_schema(&patch)
-            .expect("patch schema should be valid");
+        crate::patch::validate_patch_schema(&patch).expect("patch schema should be valid");
         let graph = Graph::from_patch_declarations(&patch);
         let error = graph
             .validate()
             .expect_err("voice-to-global direct routing should fail");
 
-        assert!(error.diagnostics().iter().any(|d| matches!(
-            d,
-            GraphDiagnostic::VoiceToGlobalDirectRouting { .. }
-        )));
+        assert!(
+            error
+                .diagnostics()
+                .iter()
+                .any(|d| matches!(d, GraphDiagnostic::VoiceToGlobalDirectRouting { .. }))
+        );
     }
 
     #[test]
@@ -1971,8 +1974,7 @@ connections:
         )
         .expect("patch should parse");
 
-        crate::patch::validate_patch_schema(&patch)
-            .expect("patch schema should be valid");
+        crate::patch::validate_patch_schema(&patch).expect("patch schema should be valid");
         let graph = Graph::from_patch_declarations(&patch);
 
         graph
@@ -2014,8 +2016,7 @@ connections:
         )
         .expect("patch should parse");
 
-        crate::patch::validate_patch_schema(&patch)
-            .expect("patch schema should be valid");
+        crate::patch::validate_patch_schema(&patch).expect("patch schema should be valid");
         let graph = Graph::from_patch_declarations(&patch);
 
         graph
@@ -2042,10 +2043,12 @@ connections:
             .validate()
             .expect_err("implicit audio-to-control routing should fail");
 
-        assert!(error.diagnostics().iter().any(|d| matches!(
-            d,
-            GraphDiagnostic::IncompatibleSignalTypes { .. }
-        )));
+        assert!(
+            error
+                .diagnostics()
+                .iter()
+                .any(|d| matches!(d, GraphDiagnostic::IncompatibleSignalTypes { .. }))
+        );
     }
 
     fn port_ref(module_id: &str, port_name: &str) -> PortRef {

@@ -157,9 +157,7 @@ fn render_chords(args: Vec<String>) -> CliResult {
         &sampler_assets,
         &patch_doc.voice_allocation,
     );
-    if let Err(write_error) =
-        crate::wav::write_wav_file(&output, sample_rate, &left, &right)
-    {
+    if let Err(write_error) = crate::wav::write_wav_file(&output, sample_rate, &left, &right) {
         return error(format!("failed to write wav: {write_error}"));
     }
 
@@ -182,20 +180,29 @@ fn chord_sequence(sample_rate: u32) -> Vec<TimedInputEvent> {
     let mut prev_notes: Vec<u8> = Vec::new();
 
     let chords: Vec<(u64, Vec<u8>)> = vec![
-        (0,       vec![60, 64, 67]),      // C major
-        (sr,      vec![65, 69, 72]),      // F major
-        (2 * sr,  vec![67, 71, 74]),      // G major
-        (3 * sr,  vec![60, 64, 67]),      // C major
+        (0, vec![60, 64, 67]),      // C major
+        (sr, vec![65, 69, 72]),     // F major
+        (2 * sr, vec![67, 71, 74]), // G major
+        (3 * sr, vec![60, 64, 67]), // C major
     ];
 
     for (frame, notes) in &chords {
         // Note-off previous chord
         for prev in &prev_notes {
-            events.push(TimedInputEvent::new(*frame, ScriptEvent::NoteOff { note: *prev }));
+            events.push(TimedInputEvent::new(
+                *frame,
+                ScriptEvent::NoteOff { note: *prev },
+            ));
         }
         // Note-on current chord
         for note in notes {
-            events.push(TimedInputEvent::new(*frame, ScriptEvent::NoteOn { note: *note, velocity: 100 }));
+            events.push(TimedInputEvent::new(
+                *frame,
+                ScriptEvent::NoteOn {
+                    note: *note,
+                    velocity: 100,
+                },
+            ));
         }
         prev_notes = notes.clone();
     }
@@ -203,7 +210,10 @@ fn chord_sequence(sample_rate: u32) -> Vec<TimedInputEvent> {
     // Note-off final chord
     let end = 4 * sr + sr / 4;
     for note in &prev_notes {
-        events.push(TimedInputEvent::new(end, ScriptEvent::NoteOff { note: *note }));
+        events.push(TimedInputEvent::new(
+            end,
+            ScriptEvent::NoteOff { note: *note },
+        ));
     }
 
     events

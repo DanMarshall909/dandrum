@@ -4,7 +4,10 @@ use crate::patch;
 
 pub(super) fn expand_patch_declarations(
     patch: &patch::PatchDocument,
-) -> (Vec<patch::ModuleDeclaration>, Vec<patch::ConnectionDeclaration>) {
+) -> (
+    Vec<patch::ModuleDeclaration>,
+    Vec<patch::ConnectionDeclaration>,
+) {
     let definitions = patch
         .module_definitions
         .iter()
@@ -146,7 +149,10 @@ mod tests {
     #[test]
     fn unknown_composite_public_ports_are_left_for_graph_validation() {
         let patch = patch_with(
-            vec![ordinary("voice", "drum_voice"), ordinary("out", "audio_output")],
+            vec![
+                ordinary("voice", "drum_voice"),
+                ordinary("out", "audio_output"),
+            ],
             vec![definition("drum_voice")],
         );
         let mut patch = patch;
@@ -154,13 +160,19 @@ mod tests {
 
         let (_modules, connections) = expand_patch_declarations(&patch);
 
-        assert_eq!(connections.last(), Some(&connection("voice.hidden", "out.left")));
+        assert_eq!(
+            connections.last(),
+            Some(&connection("voice.hidden", "out.left"))
+        );
     }
 
     #[test]
     fn unknown_composite_public_input_is_left_for_graph_validation() {
         let patch = patch_with(
-            vec![ordinary("midi", "midi_input"), ordinary("voice", "drum_voice")],
+            vec![
+                ordinary("midi", "midi_input"),
+                ordinary("voice", "drum_voice"),
+            ],
             vec![definition("drum_voice")],
         );
         let mut patch = patch;
@@ -168,7 +180,10 @@ mod tests {
 
         let (_modules, connections) = expand_patch_declarations(&patch);
 
-        assert_eq!(connections.last(), Some(&connection("midi.events", "voice.hidden")));
+        assert_eq!(
+            connections.last(),
+            Some(&connection("midi.events", "voice.hidden"))
+        );
     }
 
     fn patch_with(
