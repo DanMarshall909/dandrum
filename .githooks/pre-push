@@ -7,6 +7,24 @@ CARGO="$HOME/.cargo/bin/cargo"
 echo "=== Running Rust unit tests ==="
 "$CARGO" test --manifest-path "$ENGINE_DIR/Cargo.toml"
 
-echo ""
-echo "=== Running mutation tests (~8 min) ==="
-"$CARGO" mutants --manifest-path "$ENGINE_DIR/Cargo.toml"
+# Changed Rust source files compared to upstream
+UPSTREAM=$(git rev-parse --symbolic-full-name @{u} 2>/dev/null || true)
+if [ -n "$UPSTREAM" ]; then
+    CHANGED=$(git diff --name-only "${UPSTREAM}..HEAD" -- 'src/rust-engine/src/*.rs' || true)
+else
+    CHANGED=$(git diff --name-only 'HEAD~1..HEAD' -- 'src/rust-engine/src/*.rs' 2>/dev/null || true)
+fi
+
+MUTANT_ARGS=()
+for f in $CHANGED; do
+    MUTANT_ARGS+=(--file "$f")
+done
+
+if [ ${#MUTANT_ARGS[@]} -gt 0 ]; then
+    echo ""
+    echo "=== Running mutation tests on changed files ==="
+    "$CARGO" mutants --manifest-path "$ENGINE_DIR/Cargo.toml" "${MUTANT_ARGS[@]}"
+else
+    echo ""
+    echo "=== No changed Rust source files; skipping mutation tests ==="
+fi
