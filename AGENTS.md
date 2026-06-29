@@ -13,6 +13,7 @@
 - CMake expects Cargo at `$HOME/.cargo/bin/cargo`.
 - JUCE configure needs native Linux dev packages from `README.md`; without them CMake can fail while building `juceaide` on missing headers such as `X11/Xlib.h`.
 - Rust unit tests: `$HOME/.cargo/bin/cargo test --manifest-path src/rust-engine/Cargo.toml`.
+- Rust mutation tests (install once with `cargo install cargo-mutants`): `$HOME/.cargo/bin/cargo mutants --manifest-path src/rust-engine/Cargo.toml` (runs ~8 min; tests test quality by mutating source code and checking that tests catch the mutations).
 - CI-ready test path: configure/build with CMake, then run `ctest --test-dir build`.
 
 ## Development Practice
@@ -21,6 +22,8 @@
 - Before changing system behavior, explain what behavior is changing, why it should change, and which tests specify it.
 - Every new behavior must be specified by a test before implementation. Tests should describe externally observable behavior, not implementation minutia.
 - After completing and verifying behavior work, proactively look for refactoring opportunities before moving on. Split or extract code only after the behavior at that boundary is covered by tests, and require 100% coverage for any newly extracted module before committing it.
+- Run mutation tests periodically (`cargo-mutants`) to catch weak or missing test coverage, especially after implementing path-critical DSP or control-flow behavior.
+- Pre-push hook (`.githooks/pre-push`) runs `cargo test` then `cargo mutants` before every push. Skip with `git push --no-verify` when needed.
 - Teach Rust through this project as work proceeds: briefly explain Rust syntax, ownership/borrowing, traits, macros, modules, error handling, and testing patterns when they appear in the code being changed, without turning implementation updates into long tutorials.
 - Teach modern C++ through this project when C++ code changes: the user is an experienced pre-2000 C++ developer, so briefly introduce post-2000 language/library features when they appear, without turning implementation updates into long tutorials.
 - Do not mark OpenSpec implementation tasks complete until the related tests and relevant build/test commands pass, or until any unavoidable verification gap is documented.

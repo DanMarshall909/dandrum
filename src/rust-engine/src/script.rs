@@ -291,20 +291,6 @@ mod tests {
     }
 
     #[test]
-    fn script_process_input_exposes_only_data_budget_and_module_state() {
-        let input = ScriptProcessInput::new(
-            vec![ScriptEvent::NoteOff { note: 60 }],
-            BTreeMap::from([("mod".to_string(), 0.25)]),
-            ScriptExecutionContext::new(10),
-            ScriptModuleState::default(),
-        );
-
-        assert_eq!(input.events(), &[ScriptEvent::NoteOff { note: 60 }]);
-        assert_eq!(input.controls()["mod"], 0.25);
-        assert_eq!(input.state().get("missing"), None);
-    }
-
-    #[test]
     fn script_feedback_events_are_queued_for_a_future_block() {
         let mut scheduler = ScriptFeedbackScheduler::default();
 

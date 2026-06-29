@@ -137,12 +137,6 @@ pub enum GraphDiagnostic {
         source: PortRef,
         destination: PortRef,
     },
-    MixedSignalRouting {
-        source: PortRef,
-        source_type: SignalType,
-        destination: PortRef,
-        destination_type: SignalType,
-    },
 }
 
 impl ModuleId {
@@ -656,15 +650,6 @@ impl fmt::Display for GraphDiagnostic {
             } => write!(
                 formatter,
                 "voice-scoped output {source} cannot route directly to global input {destination}; use an explicit mixer or summing module"
-            ),
-            Self::MixedSignalRouting {
-                source,
-                source_type,
-                destination,
-                destination_type,
-            } => write!(
-                formatter,
-                "mixed signal routing: {source} is {source_type:?}, but {destination} is {destination_type:?}; use an explicit converter module"
             ),
         }
     }

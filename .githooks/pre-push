@@ -1,0 +1,12 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+ENGINE_DIR="$(git rev-parse --show-toplevel)/src/rust-engine"
+CARGO="$HOME/.cargo/bin/cargo"
+
+echo "=== Running Rust unit tests ==="
+"$CARGO" test --manifest-path "$ENGINE_DIR/Cargo.toml"
+
+echo ""
+echo "=== Running mutation tests (~8 min) ==="
+"$CARGO" mutants --manifest-path "$ENGINE_DIR/Cargo.toml"

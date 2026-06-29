@@ -3,7 +3,7 @@
 - [x] 1.1 Add a failing parity test that renders an oscillator-to-output patch through the raw `Graph` path and the compiled path and asserts identical left/right buffers.
 - [x] 1.2 Add a failing parity test for a supported MIDI-driven ADSR/gain voice patch, comparing raw and compiled output buffers.
 - [x] 1.3 Add a failing parity test for a supported sampler patch using the same prepared sampler assets in both render paths.
-- [ ] 1.4 Investigate whether existing polyphonic rendering can be driven by `CompiledPatch` without redesign; add a parity test only if it stays narrow, otherwise document the deferral in the test or task notes.
+- [x] 1.4 Investigate whether existing polyphonic rendering can be driven by `CompiledPatch` without redesign; add a parity test only if it stays narrow, otherwise document the deferral in the test or task notes.
 
 **Deferral note for 1.4:** Polyphonic rendering requires per-voice state arrays (`Vec<Vec<PerModuleState>>`), a `VoiceAllocator` with slot management, per-voice event routing through the allocator, and a two-phase process (per-voice accumulation then global module processing). Adapting all of this to use compiled routing would require a parallel `process_block_polyphonic_compiled` function of similar complexity to the exclusive-path polyphonic code. This is not a narrow change — it would roughly double the scope of the change for a codepath that already has full test coverage through the raw path. Deferred to a follow-up change focused specifically on polyphonic compiled rendering.
 

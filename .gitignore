@@ -1,3 +1,5 @@
 build/
 .tools/
 src/rust-engine/target/
+src/rust-engine/mutants.out/
+src/rust-engine/mutants.out.old/

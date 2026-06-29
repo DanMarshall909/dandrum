@@ -40,10 +40,6 @@ impl DandrumEngine {
         self.voices = [Voice::default(); MAX_VOICES];
     }
 
-    pub fn load_patch(&mut self, patch_doc: &patch::PatchDocument) {
-        self.load_patch_with_sampler_assets(patch_doc, &PreparedSamplerAssets::empty());
-    }
-
     pub fn load_patch_with_sampler_assets(
         &mut self,
         patch_doc: &patch::PatchDocument,

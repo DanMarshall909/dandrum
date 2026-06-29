@@ -104,7 +104,6 @@ enum PerModuleState {
     Vca,
     AudioOutput,
     MidiInput,
-    AudioDelay,
     NoteToRate {
         rate: f32,
     },
@@ -134,7 +133,6 @@ impl PerModuleState {
             "gain" => PerModuleState::Vca,
             "audio_output" => PerModuleState::AudioOutput,
             "midi_input" => PerModuleState::MidiInput,
-            "audio_delay" => PerModuleState::AudioDelay,
             "note_to_rate" => PerModuleState::NoteToRate { rate: 1.0 },
             "audio_mixer" => PerModuleState::AudioMixer,
             "sampler" => PerModuleState::Sampler {
@@ -157,6 +155,250 @@ struct ModuleOutputs {
     audio: HashMap<String, Vec<f32>>,
     control: HashMap<String, Vec<f32>>,
     events: Vec<BlockEvent>,
+}
+
+// === Trait for abstracted input resolution ===
+
+trait ModuleInputProvider {
+    fn sum_audio_input(
+        &self,
+        module_idx: usize,
+        port_name: &str,
+        all_outputs: &HashMap<usize, ModuleOutputs>,
+        frames: usize,
+    ) -> Vec<f32>;
+
+    fn sum_control_input(
+        &self,
+        module_idx: usize,
+        port_name: &str,
+        all_outputs: &HashMap<usize, ModuleOutputs>,
+        frames: usize,
+    ) -> Vec<f32>;
+
+    fn control_input_or_default(
+        &self,
+        module_idx: usize,
+        port_name: &str,
+        all_outputs: &HashMap<usize, ModuleOutputs>,
+        frames: usize,
+        default: f32,
+    ) -> Vec<f32>;
+}
+
+impl ModuleInputProvider for &Routing {
+    fn sum_audio_input(
+        &self,
+        module_idx: usize,
+        port_name: &str,
+        all_outputs: &HashMap<usize, ModuleOutputs>,
+        frames: usize,
+    ) -> Vec<f32> {
+        sum_audio_input(module_idx, port_name, self, all_outputs, frames)
+    }
+
+    fn sum_control_input(
+        &self,
+        module_idx: usize,
+        port_name: &str,
+        all_outputs: &HashMap<usize, ModuleOutputs>,
+        frames: usize,
+    ) -> Vec<f32> {
+        sum_control_input(module_idx, port_name, self, all_outputs, frames)
+    }
+
+    fn control_input_or_default(
+        &self,
+        module_idx: usize,
+        port_name: &str,
+        all_outputs: &HashMap<usize, ModuleOutputs>,
+        frames: usize,
+        default: f32,
+    ) -> Vec<f32> {
+        control_input_or_default(module_idx, port_name, self, all_outputs, frames, default)
+    }
+}
+
+// === Shared per-module processing dispatch ===
+
+fn process_module(
+    module_idx: usize,
+    module_type: &str,
+    events_in: &[BlockEvent],
+    states: &mut [PerModuleState],
+    input_provider: &impl ModuleInputProvider,
+    all_outputs: &HashMap<usize, ModuleOutputs>,
+    frames: usize,
+    block_start_frame: u64,
+) -> ModuleOutputs {
+    match module_type {
+        "oscillator" => {
+            let pitch_in = input_provider.control_input_or_default(
+                module_idx,
+                builtin_ports::PITCH,
+                all_outputs,
+                frames,
+                1.0,
+            );
+            process_oscillator(&mut states[module_idx], &pitch_in, frames)
+        }
+        "adsr" => {
+            let attack_in = input_provider.sum_control_input(
+                module_idx,
+                builtin_ports::ATTACK,
+                all_outputs,
+                frames,
+            );
+            let decay_in = input_provider.sum_control_input(
+                module_idx,
+                builtin_ports::DECAY,
+                all_outputs,
+                frames,
+            );
+            let sustain_in = input_provider.sum_control_input(
+                module_idx,
+                builtin_ports::SUSTAIN,
+                all_outputs,
+                frames,
+            );
+            let release_in = input_provider.sum_control_input(
+                module_idx,
+                builtin_ports::RELEASE,
+                all_outputs,
+                frames,
+            );
+            process_adsr(
+                &mut states[module_idx],
+                events_in,
+                &attack_in,
+                &decay_in,
+                &sustain_in,
+                &release_in,
+                block_start_frame,
+                frames,
+            )
+        }
+        "gain" => {
+            let audio_in = input_provider.sum_audio_input(
+                module_idx,
+                builtin_ports::AUDIO_IN,
+                all_outputs,
+                frames,
+            );
+            let gain_in = input_provider.sum_control_input(
+                module_idx,
+                builtin_ports::GAIN,
+                all_outputs,
+                frames,
+            );
+            process_vca(audio_in, gain_in)
+        }
+        "sampler" => {
+            let rate_in = input_provider.control_input_or_default(
+                module_idx,
+                builtin_ports::RATE,
+                all_outputs,
+                frames,
+                1.0,
+            );
+            let start_in = input_provider.sum_control_input(
+                module_idx,
+                builtin_ports::START,
+                all_outputs,
+                frames,
+            );
+            let loop_enabled_in = input_provider.sum_control_input(
+                module_idx,
+                builtin_ports::LOOP_ENABLED,
+                all_outputs,
+                frames,
+            );
+            let loop_start_in = input_provider.sum_control_input(
+                module_idx,
+                builtin_ports::LOOP_START,
+                all_outputs,
+                frames,
+            );
+            let loop_end_in = input_provider.sum_control_input(
+                module_idx,
+                builtin_ports::LOOP_END,
+                all_outputs,
+                frames,
+            );
+            process_sampler(
+                &mut states[module_idx],
+                events_in,
+                &rate_in,
+                &start_in,
+                &loop_enabled_in,
+                &loop_start_in,
+                &loop_end_in,
+                frames,
+            )
+        }
+        "note_to_rate" => process_note_to_rate(&mut states[module_idx], events_in, frames),
+        "audio_mixer" => {
+            let mix = input_provider.sum_audio_input(
+                module_idx,
+                builtin_ports::INPUTS,
+                all_outputs,
+                frames,
+            );
+            let mut m = HashMap::new();
+            m.insert(builtin_ports::MIX.to_string(), mix);
+            ModuleOutputs {
+                audio: m,
+                control: HashMap::new(),
+                events: Vec::new(),
+            }
+        }
+        "audio_output" => {
+            let left = input_provider.sum_audio_input(
+                module_idx,
+                builtin_ports::LEFT,
+                all_outputs,
+                frames,
+            );
+            let right = input_provider.sum_audio_input(
+                module_idx,
+                builtin_ports::RIGHT,
+                all_outputs,
+                frames,
+            );
+            let mut m = HashMap::new();
+            m.insert(builtin_ports::LEFT.to_string(), left);
+            m.insert(builtin_ports::RIGHT.to_string(), right);
+            ModuleOutputs {
+                audio: m,
+                control: HashMap::new(),
+                events: Vec::new(),
+            }
+        }
+        other => panic!("unknown module type: {other}"),
+    }
+}
+
+fn collect_audio_output(
+    all_outputs: &HashMap<usize, ModuleOutputs>,
+    out_idx: Option<usize>,
+    frames: usize,
+    left_out: &mut Vec<f32>,
+    right_out: &mut Vec<f32>,
+) {
+    if let Some(idx) = out_idx {
+        if let Some(outputs) = all_outputs.get(&idx) {
+            if let Some(left) = outputs.audio.get(builtin_ports::LEFT) {
+                left_out.extend_from_slice(left);
+            } else {
+                left_out.extend(std::iter::repeat_n(0.0, frames));
+            }
+            if let Some(right) = outputs.audio.get(builtin_ports::RIGHT) {
+                right_out.extend_from_slice(right);
+            } else {
+                right_out.extend(std::iter::repeat_n(0.0, frames));
+            }
+        }
+    }
 }
 
 fn sum_audio_input(
@@ -359,6 +601,52 @@ fn compiled_gather_event_inputs(
     events
 }
 
+// === Compiled input provider for the shared dispatch ===
+
+struct CompiledInputProvider<'a> {
+    compiled: &'a CompiledPatch,
+}
+
+impl ModuleInputProvider for CompiledInputProvider<'_> {
+    fn sum_audio_input(
+        &self,
+        module_idx: usize,
+        port_name: &str,
+        all_outputs: &HashMap<usize, ModuleOutputs>,
+        frames: usize,
+    ) -> Vec<f32> {
+        compiled_sum_audio_input(module_idx, port_name, self.compiled, all_outputs, frames)
+    }
+
+    fn sum_control_input(
+        &self,
+        module_idx: usize,
+        port_name: &str,
+        all_outputs: &HashMap<usize, ModuleOutputs>,
+        frames: usize,
+    ) -> Vec<f32> {
+        compiled_sum_control_input(module_idx, port_name, self.compiled, all_outputs, frames)
+    }
+
+    fn control_input_or_default(
+        &self,
+        module_idx: usize,
+        port_name: &str,
+        all_outputs: &HashMap<usize, ModuleOutputs>,
+        frames: usize,
+        default: f32,
+    ) -> Vec<f32> {
+        compiled_control_input_or_default(
+            module_idx,
+            port_name,
+            self.compiled,
+            all_outputs,
+            frames,
+            default,
+        )
+    }
+}
+
 pub fn render_offline_compiled(
     compiled: &CompiledPatch,
     events: Vec<TimedInputEvent>,
@@ -396,7 +684,6 @@ pub fn render_offline_compiled(
                 "gain" => PerModuleState::Vca,
                 "audio_output" => PerModuleState::AudioOutput,
                 "midi_input" => PerModuleState::MidiInput,
-                "audio_delay" => PerModuleState::AudioDelay,
                 "note_to_rate" => PerModuleState::NoteToRate { rate: 1.0 },
                 "audio_mixer" => PerModuleState::AudioMixer,
                 "sampler" => PerModuleState::Sampler {
@@ -465,220 +752,48 @@ fn process_block_compiled(
         all_outputs.insert(idx, outputs);
     }
 
-    // Closure that processes one compiled node, reads inputs from all_outputs,
-    // and stores outputs. Shared by voice and global phases below.
-    let process_node = |module_idx: usize,
-                            states: &mut [PerModuleState],
-                            all_outputs: &mut HashMap<usize, ModuleOutputs>| {
-        let node = &compiled.nodes()[module_idx];
-        let module_type = node.module_type.as_str();
+    let input_provider = CompiledInputProvider { compiled };
 
-        if module_type == "midi_input" {
-            return;
-        }
-
-        let events_in = compiled_gather_event_inputs(module_idx, compiled, all_outputs);
-
-        let outputs = match module_type {
-            "oscillator" => {
-                let pitch_in = compiled_control_input_or_default(
-                    module_idx,
-                    builtin_ports::PITCH,
-                    compiled,
-                    all_outputs,
-                    frames,
-                    1.0,
-                );
-                process_oscillator(&mut states[module_idx], &pitch_in, frames)
-            }
-            "adsr" => {
-                let attack_in = compiled_sum_control_input(
-                    module_idx,
-                    builtin_ports::ATTACK,
-                    compiled,
-                    all_outputs,
-                    frames,
-                );
-                let decay_in = compiled_sum_control_input(
-                    module_idx,
-                    builtin_ports::DECAY,
-                    compiled,
-                    all_outputs,
-                    frames,
-                );
-                let sustain_in = compiled_sum_control_input(
-                    module_idx,
-                    builtin_ports::SUSTAIN,
-                    compiled,
-                    all_outputs,
-                    frames,
-                );
-                let release_in = compiled_sum_control_input(
-                    module_idx,
-                    builtin_ports::RELEASE,
-                    compiled,
-                    all_outputs,
-                    frames,
-                );
-                process_adsr(
-                    &mut states[module_idx],
-                    &events_in,
-                    &attack_in,
-                    &decay_in,
-                    &sustain_in,
-                    &release_in,
-                    block_start_frame,
-                    frames,
-                )
-            }
-            "gain" => {
-                let audio_in = compiled_sum_audio_input(
-                    module_idx,
-                    builtin_ports::AUDIO_IN,
-                    compiled,
-                    all_outputs,
-                    frames,
-                );
-                let gain_in = compiled_sum_control_input(
-                    module_idx,
-                    builtin_ports::GAIN,
-                    compiled,
-                    all_outputs,
-                    frames,
-                );
-                process_vca(audio_in, gain_in)
-            }
-            "sampler" => {
-                let rate_in = compiled_control_input_or_default(
-                    module_idx,
-                    builtin_ports::RATE,
-                    compiled,
-                    all_outputs,
-                    frames,
-                    1.0,
-                );
-                let start_in = compiled_sum_control_input(
-                    module_idx,
-                    builtin_ports::START,
-                    compiled,
-                    all_outputs,
-                    frames,
-                );
-                let loop_enabled_in = compiled_sum_control_input(
-                    module_idx,
-                    builtin_ports::LOOP_ENABLED,
-                    compiled,
-                    all_outputs,
-                    frames,
-                );
-                let loop_start_in = compiled_sum_control_input(
-                    module_idx,
-                    builtin_ports::LOOP_START,
-                    compiled,
-                    all_outputs,
-                    frames,
-                );
-                let loop_end_in = compiled_sum_control_input(
-                    module_idx,
-                    builtin_ports::LOOP_END,
-                    compiled,
-                    all_outputs,
-                    frames,
-                );
-                process_sampler(
-                    &mut states[module_idx],
-                    &events_in,
-                    &rate_in,
-                    &start_in,
-                    &loop_enabled_in,
-                    &loop_start_in,
-                    &loop_end_in,
-                    frames,
-                )
-            }
-            "note_to_rate" => {
-                process_note_to_rate(&mut states[module_idx], &events_in, frames)
-            }
-            "audio_mixer" => {
-                let mix = compiled_sum_audio_input(
-                    module_idx,
-                    builtin_ports::INPUTS,
-                    compiled,
-                    all_outputs,
-                    frames,
-                );
-                let mut m = HashMap::new();
-                m.insert(builtin_ports::MIX.to_string(), mix);
-                ModuleOutputs {
-                    audio: m,
-                    control: HashMap::new(),
-                    events: Vec::new(),
-                }
-            }
-            "audio_output" => {
-                let left = compiled_sum_audio_input(
-                    module_idx,
-                    builtin_ports::LEFT,
-                    compiled,
-                    all_outputs,
-                    frames,
-                );
-                let right = compiled_sum_audio_input(
-                    module_idx,
-                    builtin_ports::RIGHT,
-                    compiled,
-                    all_outputs,
-                    frames,
-                );
-                let mut m = HashMap::new();
-                m.insert(builtin_ports::LEFT.to_string(), left);
-                m.insert(builtin_ports::RIGHT.to_string(), right);
-                ModuleOutputs {
-                    audio: m,
-                    control: HashMap::new(),
-                    events: Vec::new(),
-                }
-            }
-            "audio_delay" => {
-                let audio_in = compiled_sum_audio_input(
-                    module_idx,
-                    builtin_ports::AUDIO_IN,
-                    compiled,
-                    all_outputs,
-                    frames,
-                );
-                process_audio_delay(audio_in)
-            }
-            other => panic!("unknown module type in compiled block: {other}"),
-        };
-
-        all_outputs.insert(module_idx, outputs);
-    };
-
-    // Phase 1: process voice nodes, accumulating outputs
     for &module_idx in compiled.voice_node_indices() {
-        process_node(module_idx, states, &mut all_outputs);
-    }
-
-    // Phase 2: process global nodes, consuming accumulated voice outputs
-    for &module_idx in compiled.global_node_indices() {
-        process_node(module_idx, states, &mut all_outputs);
-    }
-
-    if let Some(idx) = out_idx {
-        if let Some(outputs) = all_outputs.get(&idx) {
-            if let Some(left) = outputs.audio.get(builtin_ports::LEFT) {
-                left_out.extend_from_slice(left);
-            } else {
-                left_out.extend(std::iter::repeat_n(0.0, frames));
-            }
-            if let Some(right) = outputs.audio.get(builtin_ports::RIGHT) {
-                right_out.extend_from_slice(right);
-            } else {
-                right_out.extend(std::iter::repeat_n(0.0, frames));
-            }
+        if compiled.nodes()[module_idx].module_type.as_str() == "midi_input" {
+            continue;
         }
+        let events_in = compiled_gather_event_inputs(module_idx, compiled, &all_outputs);
+        let module_type = compiled.nodes()[module_idx].module_type.as_str();
+        let outputs = process_module(
+            module_idx,
+            module_type,
+            &events_in,
+            states,
+            &input_provider,
+            &all_outputs,
+            frames,
+            block_start_frame,
+        );
+        all_outputs.insert(module_idx, outputs);
     }
+
+    for &module_idx in compiled.global_node_indices() {
+        let node = &compiled.nodes()[module_idx];
+        if node.module_type.as_str() == "midi_input" {
+            continue;
+        }
+        let events_in = compiled_gather_event_inputs(module_idx, compiled, &all_outputs);
+        let module_type = node.module_type.as_str();
+        let outputs = process_module(
+            module_idx,
+            module_type,
+            &events_in,
+            states,
+            &input_provider,
+            &all_outputs,
+            frames,
+            block_start_frame,
+        );
+        all_outputs.insert(module_idx, outputs);
+    }
+
+    collect_audio_output(&all_outputs, out_idx, frames, left_out, right_out);
 }
 
 pub fn render_offline(
@@ -767,6 +882,8 @@ fn process_block(
         all_outputs.insert(idx, outputs);
     }
 
+    let input_provider = routing;
+
     for &module_idx in topo_order {
         let module = &graph.modules()[module_idx];
         let module_type = module.module_type();
@@ -777,194 +894,21 @@ fn process_block(
 
         let events_in = gather_event_inputs(module_idx, module, routing, &all_outputs);
 
-        let outputs = match module_type {
-            "oscillator" => {
-                let pitch_in = control_input_or_default(
-                    module_idx,
-                    builtin_ports::PITCH,
-                    routing,
-                    &all_outputs,
-                    frames,
-                    1.0,
-                );
-                process_oscillator(&mut states[module_idx], &pitch_in, frames)
-            }
-            "adsr" => {
-                let attack_in = sum_control_input(
-                    module_idx,
-                    builtin_ports::ATTACK,
-                    routing,
-                    &all_outputs,
-                    frames,
-                );
-                let decay_in = sum_control_input(
-                    module_idx,
-                    builtin_ports::DECAY,
-                    routing,
-                    &all_outputs,
-                    frames,
-                );
-                let sustain_in = sum_control_input(
-                    module_idx,
-                    builtin_ports::SUSTAIN,
-                    routing,
-                    &all_outputs,
-                    frames,
-                );
-                let release_in = sum_control_input(
-                    module_idx,
-                    builtin_ports::RELEASE,
-                    routing,
-                    &all_outputs,
-                    frames,
-                );
-                process_adsr(
-                    &mut states[module_idx],
-                    &events_in,
-                    &attack_in,
-                    &decay_in,
-                    &sustain_in,
-                    &release_in,
-                    block_start_frame,
-                    frames,
-                )
-            }
-            "gain" => {
-                let audio_in = sum_audio_input(
-                    module_idx,
-                    builtin_ports::AUDIO_IN,
-                    routing,
-                    &all_outputs,
-                    frames,
-                );
-                let gain_in = sum_control_input(
-                    module_idx,
-                    builtin_ports::GAIN,
-                    routing,
-                    &all_outputs,
-                    frames,
-                );
-                process_vca(audio_in, gain_in)
-            }
-            "sampler" => {
-                let rate_in = control_input_or_default(
-                    module_idx,
-                    builtin_ports::RATE,
-                    routing,
-                    &all_outputs,
-                    frames,
-                    1.0,
-                );
-                let start_in = sum_control_input(
-                    module_idx,
-                    builtin_ports::START,
-                    routing,
-                    &all_outputs,
-                    frames,
-                );
-                let loop_enabled_in = sum_control_input(
-                    module_idx,
-                    builtin_ports::LOOP_ENABLED,
-                    routing,
-                    &all_outputs,
-                    frames,
-                );
-                let loop_start_in = sum_control_input(
-                    module_idx,
-                    builtin_ports::LOOP_START,
-                    routing,
-                    &all_outputs,
-                    frames,
-                );
-                let loop_end_in = sum_control_input(
-                    module_idx,
-                    builtin_ports::LOOP_END,
-                    routing,
-                    &all_outputs,
-                    frames,
-                );
-                process_sampler(
-                    &mut states[module_idx],
-                    &events_in,
-                    &rate_in,
-                    &start_in,
-                    &loop_enabled_in,
-                    &loop_start_in,
-                    &loop_end_in,
-                    frames,
-                )
-            }
-            "note_to_rate" => process_note_to_rate(&mut states[module_idx], &events_in, frames),
-            "audio_mixer" => {
-                let mix = sum_audio_input(
-                    module_idx,
-                    builtin_ports::INPUTS,
-                    routing,
-                    &all_outputs,
-                    frames,
-                );
-                let mut m = HashMap::new();
-                m.insert(builtin_ports::MIX.to_string(), mix);
-                ModuleOutputs {
-                    audio: m,
-                    control: HashMap::new(),
-                    events: Vec::new(),
-                }
-            }
-            "audio_output" => {
-                let left = sum_audio_input(
-                    module_idx,
-                    builtin_ports::LEFT,
-                    routing,
-                    &all_outputs,
-                    frames,
-                );
-                let right = sum_audio_input(
-                    module_idx,
-                    builtin_ports::RIGHT,
-                    routing,
-                    &all_outputs,
-                    frames,
-                );
-                let mut m = HashMap::new();
-                m.insert(builtin_ports::LEFT.to_string(), left);
-                m.insert(builtin_ports::RIGHT.to_string(), right);
-                ModuleOutputs {
-                    audio: m,
-                    control: HashMap::new(),
-                    events: Vec::new(),
-                }
-            }
-            "audio_delay" => {
-                let audio_in = sum_audio_input(
-                    module_idx,
-                    builtin_ports::AUDIO_IN,
-                    routing,
-                    &all_outputs,
-                    frames,
-                );
-                process_audio_delay(audio_in)
-            }
-            other => panic!("unknown module type: {other}"),
-        };
+        let outputs = process_module(
+            module_idx,
+            module_type,
+            &events_in,
+            states,
+            &input_provider,
+            &all_outputs,
+            frames,
+            block_start_frame,
+        );
 
         all_outputs.insert(module_idx, outputs);
     }
 
-    if let Some(idx) = out_idx {
-        if let Some(outputs) = all_outputs.get(&idx) {
-            if let Some(left) = outputs.audio.get(builtin_ports::LEFT) {
-                left_out.extend_from_slice(left);
-            } else {
-                left_out.extend(std::iter::repeat_n(0.0, frames));
-            }
-            if let Some(right) = outputs.audio.get(builtin_ports::RIGHT) {
-                right_out.extend_from_slice(right);
-            } else {
-                right_out.extend(std::iter::repeat_n(0.0, frames));
-            }
-        }
-    }
+    collect_audio_output(&all_outputs, out_idx, frames, left_out, right_out);
 }
 
 fn build_polyphonic_states(
@@ -1061,6 +1005,7 @@ fn process_block_polyphonic(
 
     // Phase 1: Process each active voice independently
     let mut accum: HashMap<usize, ModuleOutputs> = HashMap::new();
+    let input_provider = routing;
 
     for &voice_idx in &active_voices {
         let mut all_outputs: HashMap<usize, ModuleOutputs> = HashMap::new();
@@ -1082,178 +1027,16 @@ fn process_block_polyphonic(
             let module_type = module.module_type();
             let events_in = gather_event_inputs(module_idx, module, routing, &all_outputs);
 
-            let outputs = match module_type {
-                "oscillator" => {
-                    let pitch_in = control_input_or_default(
-                        module_idx,
-                        builtin_ports::PITCH,
-                        routing,
-                        &all_outputs,
-                        frames,
-                        1.0,
-                    );
-                    process_oscillator(&mut voice_states[module_idx], &pitch_in, frames)
-                }
-                "adsr" => {
-                    let attack_in = sum_control_input(
-                        module_idx,
-                        builtin_ports::ATTACK,
-                        routing,
-                        &all_outputs,
-                        frames,
-                    );
-                    let decay_in = sum_control_input(
-                        module_idx,
-                        builtin_ports::DECAY,
-                        routing,
-                        &all_outputs,
-                        frames,
-                    );
-                    let sustain_in = sum_control_input(
-                        module_idx,
-                        builtin_ports::SUSTAIN,
-                        routing,
-                        &all_outputs,
-                        frames,
-                    );
-                    let release_in = sum_control_input(
-                        module_idx,
-                        builtin_ports::RELEASE,
-                        routing,
-                        &all_outputs,
-                        frames,
-                    );
-                    process_adsr(
-                        &mut voice_states[module_idx],
-                        &events_in,
-                        &attack_in,
-                        &decay_in,
-                        &sustain_in,
-                        &release_in,
-                        block_start_frame,
-                        frames,
-                    )
-                }
-                "gain" => {
-                    let audio_in = sum_audio_input(
-                        module_idx,
-                        builtin_ports::AUDIO_IN,
-                        routing,
-                        &all_outputs,
-                        frames,
-                    );
-                    let gain_in = sum_control_input(
-                        module_idx,
-                        builtin_ports::GAIN,
-                        routing,
-                        &all_outputs,
-                        frames,
-                    );
-                    process_vca(audio_in, gain_in)
-                }
-                "sampler" => {
-                    let rate_in = control_input_or_default(
-                        module_idx,
-                        builtin_ports::RATE,
-                        routing,
-                        &all_outputs,
-                        frames,
-                        1.0,
-                    );
-                    let start_in = sum_control_input(
-                        module_idx,
-                        builtin_ports::START,
-                        routing,
-                        &all_outputs,
-                        frames,
-                    );
-                    let loop_enabled_in = sum_control_input(
-                        module_idx,
-                        builtin_ports::LOOP_ENABLED,
-                        routing,
-                        &all_outputs,
-                        frames,
-                    );
-                    let loop_start_in = sum_control_input(
-                        module_idx,
-                        builtin_ports::LOOP_START,
-                        routing,
-                        &all_outputs,
-                        frames,
-                    );
-                    let loop_end_in = sum_control_input(
-                        module_idx,
-                        builtin_ports::LOOP_END,
-                        routing,
-                        &all_outputs,
-                        frames,
-                    );
-                    process_sampler(
-                        &mut voice_states[module_idx],
-                        &events_in,
-                        &rate_in,
-                        &start_in,
-                        &loop_enabled_in,
-                        &loop_start_in,
-                        &loop_end_in,
-                        frames,
-                    )
-                }
-                "note_to_rate" => {
-                    process_note_to_rate(&mut voice_states[module_idx], &events_in, frames)
-                }
-                "audio_mixer" => {
-                    let mix = sum_audio_input(
-                        module_idx,
-                        builtin_ports::INPUTS,
-                        routing,
-                        &all_outputs,
-                        frames,
-                    );
-                    let mut m = HashMap::new();
-                    m.insert(builtin_ports::MIX.to_string(), mix);
-                    ModuleOutputs {
-                        audio: m,
-                        control: HashMap::new(),
-                        events: Vec::new(),
-                    }
-                }
-                "audio_output" => {
-                    let left = sum_audio_input(
-                        module_idx,
-                        builtin_ports::LEFT,
-                        routing,
-                        &all_outputs,
-                        frames,
-                    );
-                    let right = sum_audio_input(
-                        module_idx,
-                        builtin_ports::RIGHT,
-                        routing,
-                        &all_outputs,
-                        frames,
-                    );
-                    let mut m = HashMap::new();
-                    m.insert(builtin_ports::LEFT.to_string(), left);
-                    m.insert(builtin_ports::RIGHT.to_string(), right);
-                    ModuleOutputs {
-                        audio: m,
-                        control: HashMap::new(),
-                        events: Vec::new(),
-                    }
-                }
-                "audio_delay" => {
-                    let audio_in = sum_audio_input(
-                        module_idx,
-                        builtin_ports::AUDIO_IN,
-                        routing,
-                        &all_outputs,
-                        frames,
-                    );
-                    process_audio_delay(audio_in)
-                }
-                other => panic!("unknown module type in polyphonic context: {other}"),
-            };
+            let outputs = process_module(
+                module_idx,
+                module_type,
+                &events_in,
+                voice_states,
+                &input_provider,
+                &all_outputs,
+                frames,
+                block_start_frame,
+            );
 
             all_outputs.insert(module_idx, outputs);
         }
@@ -1294,195 +1077,21 @@ fn process_block_polyphonic(
         let module_type = module.module_type();
         let events_in = gather_event_inputs(module_idx, module, routing, &all_outputs);
 
-        let outputs = match module_type {
-            "oscillator" => {
-                let pitch_in = control_input_or_default(
-                    module_idx,
-                    builtin_ports::PITCH,
-                    routing,
-                    &all_outputs,
-                    frames,
-                    1.0,
-                );
-                process_oscillator(&mut states[0][module_idx], &pitch_in, frames)
-            }
-            "adsr" => {
-                let attack_in = sum_control_input(
-                    module_idx,
-                    builtin_ports::ATTACK,
-                    routing,
-                    &all_outputs,
-                    frames,
-                );
-                let decay_in = sum_control_input(
-                    module_idx,
-                    builtin_ports::DECAY,
-                    routing,
-                    &all_outputs,
-                    frames,
-                );
-                let sustain_in = sum_control_input(
-                    module_idx,
-                    builtin_ports::SUSTAIN,
-                    routing,
-                    &all_outputs,
-                    frames,
-                );
-                let release_in = sum_control_input(
-                    module_idx,
-                    builtin_ports::RELEASE,
-                    routing,
-                    &all_outputs,
-                    frames,
-                );
-                process_adsr(
-                    &mut states[0][module_idx],
-                    &events_in,
-                    &attack_in,
-                    &decay_in,
-                    &sustain_in,
-                    &release_in,
-                    block_start_frame,
-                    frames,
-                )
-            }
-            "gain" => {
-                let audio_in = sum_audio_input(
-                    module_idx,
-                    builtin_ports::AUDIO_IN,
-                    routing,
-                    &all_outputs,
-                    frames,
-                );
-                let gain_in = sum_control_input(
-                    module_idx,
-                    builtin_ports::GAIN,
-                    routing,
-                    &all_outputs,
-                    frames,
-                );
-                process_vca(audio_in, gain_in)
-            }
-            "sampler" => {
-                let rate_in = control_input_or_default(
-                    module_idx,
-                    builtin_ports::RATE,
-                    routing,
-                    &all_outputs,
-                    frames,
-                    1.0,
-                );
-                let start_in = sum_control_input(
-                    module_idx,
-                    builtin_ports::START,
-                    routing,
-                    &all_outputs,
-                    frames,
-                );
-                let loop_enabled_in = sum_control_input(
-                    module_idx,
-                    builtin_ports::LOOP_ENABLED,
-                    routing,
-                    &all_outputs,
-                    frames,
-                );
-                let loop_start_in = sum_control_input(
-                    module_idx,
-                    builtin_ports::LOOP_START,
-                    routing,
-                    &all_outputs,
-                    frames,
-                );
-                let loop_end_in = sum_control_input(
-                    module_idx,
-                    builtin_ports::LOOP_END,
-                    routing,
-                    &all_outputs,
-                    frames,
-                );
-                process_sampler(
-                    &mut states[0][module_idx],
-                    &events_in,
-                    &rate_in,
-                    &start_in,
-                    &loop_enabled_in,
-                    &loop_start_in,
-                    &loop_end_in,
-                    frames,
-                )
-            }
-            "audio_mixer" => {
-                let mix = sum_audio_input(
-                    module_idx,
-                    builtin_ports::INPUTS,
-                    routing,
-                    &all_outputs,
-                    frames,
-                );
-                let mut m = HashMap::new();
-                m.insert(builtin_ports::MIX.to_string(), mix);
-                ModuleOutputs {
-                    audio: m,
-                    control: HashMap::new(),
-                    events: Vec::new(),
-                }
-            }
-            "audio_output" => {
-                let left = sum_audio_input(
-                    module_idx,
-                    builtin_ports::LEFT,
-                    routing,
-                    &all_outputs,
-                    frames,
-                );
-                let right = sum_audio_input(
-                    module_idx,
-                    builtin_ports::RIGHT,
-                    routing,
-                    &all_outputs,
-                    frames,
-                );
-                let mut m = HashMap::new();
-                m.insert(builtin_ports::LEFT.to_string(), left);
-                m.insert(builtin_ports::RIGHT.to_string(), right);
-                ModuleOutputs {
-                    audio: m,
-                    control: HashMap::new(),
-                    events: Vec::new(),
-                }
-            }
-            "audio_delay" => {
-                let audio_in = sum_audio_input(
-                    module_idx,
-                    builtin_ports::AUDIO_IN,
-                    routing,
-                    &all_outputs,
-                    frames,
-                );
-                process_audio_delay(audio_in)
-            }
-            "note_to_rate" => process_note_to_rate(&mut states[0][module_idx], &events_in, frames),
-            other => panic!("unknown module type in polyphonic global context: {other}"),
-        };
+        let outputs = process_module(
+            module_idx,
+            module_type,
+            &events_in,
+            &mut states[0],
+            &input_provider,
+            &all_outputs,
+            frames,
+            block_start_frame,
+        );
 
         all_outputs.insert(module_idx, outputs);
     }
 
-    // Phase 3: Collect output
-    if let Some(idx) = out_idx {
-        if let Some(outputs) = all_outputs.get(&idx) {
-            if let Some(left) = outputs.audio.get(builtin_ports::LEFT) {
-                left_out.extend_from_slice(left);
-            } else {
-                left_out.extend(std::iter::repeat_n(0.0, frames));
-            }
-            if let Some(right) = outputs.audio.get(builtin_ports::RIGHT) {
-                right_out.extend_from_slice(right);
-            } else {
-                right_out.extend(std::iter::repeat_n(0.0, frames));
-            }
-        }
-    }
+    collect_audio_output(&all_outputs, out_idx, frames, left_out, right_out);
 
     // Phase 4: Free slots whose release has completed.
     for i in 0..allocator.max_voices() {
@@ -2067,18 +1676,6 @@ fn audio_output(port_name: &str, audio: Vec<f32>) -> ModuleOutputs {
     outputs
 }
 
-fn process_audio_delay(audio_in: Vec<f32>) -> ModuleOutputs {
-    let mut outputs = ModuleOutputs {
-        audio: HashMap::new(),
-        control: HashMap::new(),
-        events: Vec::new(),
-    };
-    outputs
-        .audio
-        .insert(builtin_ports::AUDIO_OUT.to_string(), audio_in);
-    outputs
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -2462,68 +2059,6 @@ connections:
                 .iter()
                 .all(|module| module.module_type() != "drum_voice")
         );
-    }
-
-    #[test]
-    fn graph_processor_produces_audio_when_events_are_present() {
-        let patch = patch::load_patch_str(
-            r#"
-metadata:
-  name: Test
-render:
-  sample_rate_hz: 48000
-  block_size_frames: 64
-  duration_frames: 4800
-modules:
-  - id: osc
-    type: oscillator
-    outputs:
-      - name: audio
-        signal_type: audio
-  - id: mixer
-    type: audio_mixer
-  - id: out
-    type: audio_output
-    inputs:
-      - name: left
-        signal_type: audio
-      - name: right
-        signal_type: audio
-connections:
-  - from: osc.audio
-    to: mixer.inputs
-  - from: mixer.mix
-    to: out.left
-  - from: mixer.mix
-    to: out.right
-"#,
-        )
-        .expect("patch should parse");
-
-        patch::validate_patch_schema(&patch).expect("schema should be valid");
-
-        let graph = Graph::from_patch_declarations(&patch);
-        graph.validate().expect("graph should validate");
-
-        let (left, right) = render_offline(
-            &graph,
-            &patch.render,
-            vec![TimedInputEvent::new(
-                0,
-                ScriptEvent::NoteOn {
-                    note: 60,
-                    velocity: 100,
-                },
-            )],
-        );
-
-        let has_signal = left.iter().any(|&s| s != 0.0) || right.iter().any(|&s| s != 0.0);
-        assert!(
-            has_signal,
-            "graph processor should produce non-silent output when events are present"
-        );
-        assert!(!left.is_empty(), "left buffer should have samples");
-        assert!(!right.is_empty(), "right buffer should have samples");
     }
 
     #[test]

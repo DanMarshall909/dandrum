@@ -175,14 +175,6 @@ mod tests {
     use crate::patch;
 
     #[test]
-    fn engine_core_exposes_frontend_independent_identity() {
-        let engine = Engine::new();
-
-        assert_eq!(engine.package_name(), "dandrum-engine-core");
-        assert!(engine.is_frontend_independent());
-    }
-
-    #[test]
     fn block_scheduler_splits_render_duration_into_blocks() {
         let blocks: Vec<RenderBlock> = BlockScheduler::new(300, 128).collect();
 

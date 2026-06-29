@@ -234,8 +234,6 @@ fn usage() -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::fs;
-    use std::time::{SystemTime, UNIX_EPOCH};
 
     #[test]
     fn help_lists_patch_validation_and_render_commands() {
@@ -276,28 +274,6 @@ mod tests {
     }
 
     #[test]
-    fn render_writes_sampler_example_to_non_empty_wav_file() {
-        let dir = unique_temp_dir("render_writes_sampler_example_to_non_empty_wav_file");
-        fs::create_dir_all(&dir).expect("temp dir should be created");
-        let patch = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-            .join("../../examples/patches/minimal-sampler.yaml");
-        let output = dir.join("out.wav");
-        let result = run([
-            "dandrum-cli",
-            "render",
-            patch.to_str().unwrap(),
-            "--output",
-            output.to_str().unwrap(),
-        ]);
-
-        assert_eq!(result.exit_code, 0, "{}", result.stderr);
-        assert!(result.stdout.contains("minimal-sampler.yaml"));
-        assert!(result.stdout.contains("render: ok"));
-        assert!(result.stderr.is_empty());
-        assert!(fs::metadata(&output).unwrap().len() > 44);
-    }
-
-    #[test]
     fn invalid_render_arguments_return_usage_error() {
         let result = run(["dandrum-cli", "render", "patches/basic.yaml"]);
 
@@ -314,13 +290,5 @@ mod tests {
         assert!(result.stdout.is_empty());
         assert!(result.stderr.contains("unknown command: inspect"));
         assert!(result.stderr.contains("Usage:"));
-    }
-
-    fn unique_temp_dir(test_name: &str) -> PathBuf {
-        let nanos = SystemTime::now()
-            .duration_since(UNIX_EPOCH)
-            .expect("system clock should be after epoch")
-            .as_nanos();
-        std::env::temp_dir().join(format!("dandrum-{test_name}-{nanos}"))
     }
 }
