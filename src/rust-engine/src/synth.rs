@@ -3,6 +3,7 @@ use std::f32::consts::TAU;
 use crate::graph::Graph;
 use crate::graph_processor::RealtimeGraphProcessor;
 use crate::patch;
+use crate::realtime::RealtimeEvent;
 use crate::sample::PreparedSamplerAssets;
 
 pub struct DandrumEngine {
@@ -85,6 +86,13 @@ impl DandrumEngine {
             if voice.active && voice.note == note {
                 voice.sample_index = voice.sample_index.max((self.sample_rate * 0.85) as usize);
             }
+        }
+    }
+
+    pub fn handle_realtime_event(&mut self, event: RealtimeEvent) {
+        match event {
+            RealtimeEvent::NoteOn { note, velocity } => self.note_on(note, velocity),
+            RealtimeEvent::NoteOff { note } => self.note_off(note),
         }
     }
 
@@ -314,5 +322,34 @@ connections:
         assert_eq!(rendered, 4);
         assert_eq!(left, vec![0.25, 0.5, 0.75, 0.0]);
         assert_eq!(right, vec![0.25, 0.5, 0.75, 0.0]);
+    }
+
+    #[test]
+    fn queued_realtime_note_event_renders_like_direct_note_call() {
+        let mut direct = DandrumEngine::new();
+        let mut queued = DandrumEngine::new();
+        let mut queue = crate::realtime::RealtimeEventQueue::with_capacity(4);
+
+        direct.note_on(60, 100);
+        assert_eq!(
+            queue.submit(crate::realtime::RealtimeEvent::NoteOn {
+                note: 60,
+                velocity: 100
+            }),
+            crate::realtime::RealtimeEventSubmitStatus::Accepted
+        );
+        for event in queue.drain() {
+            queued.handle_realtime_event(event);
+        }
+
+        let mut direct_left = vec![0.0; 64];
+        let mut direct_right = vec![0.0; 64];
+        let mut queued_left = vec![0.0; 64];
+        let mut queued_right = vec![0.0; 64];
+
+        assert_eq!(direct.render(&mut direct_left, &mut direct_right), 64);
+        assert_eq!(queued.render(&mut queued_left, &mut queued_right), 64);
+        assert_eq!(queued_left, direct_left);
+        assert_eq!(queued_right, direct_right);
     }
 }

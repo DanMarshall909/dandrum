@@ -1,7 +1,7 @@
 ## 1. Callback Safety Tests
 
 - [x] 1.1 Add a Rust test specifying bounded realtime MIDI/event submission and dropped-event status.
-- [ ] 1.2 Add a Rust test proving queued note events render the same audio behavior as direct note calls.
+- [x] 1.2 Add a Rust test proving queued note events render the same audio behavior as direct note calls.
 - [ ] 1.3 Add a C++ or CI-ready test that rejects `CriticalSection` locking in the JUCE audio callback path.
 - [ ] 1.4 Add a C++ or CI-ready test that rejects console IO in the MIDI callback path.
 
