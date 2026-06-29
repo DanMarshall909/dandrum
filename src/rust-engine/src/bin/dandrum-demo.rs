@@ -1,80 +1,155 @@
 use std::path::Path;
 
-use dandrum_engine::filter::{BiquadFilter, FilterAlgorithm};
-use dandrum_engine::spectral::{SpectralMode, SpectralProcessor};
+use dandrum_engine::graph::{Cable, Graph, ModuleId, ModuleNode, PortRef};
+use dandrum_engine::graph::builtin_ports;
+use dandrum_engine::graph::SignalType;
+use dandrum_engine::patch::RenderSettings;
+use dandrum_engine::graph_processor::render_offline;
+use dandrum_engine::core::TimedInputEvent;
+use dandrum_engine::script::ScriptEvent;
 use dandrum_engine::wav::write_wav_file;
 
-const FS: u32 = 48000;
-const TOTAL: usize = (FS as f64 * 14.0) as usize;
-
-struct Saw {
-    phase: f64,
+fn note_on(frame: u64, note: u8) -> TimedInputEvent {
+    TimedInputEvent::new(frame, ScriptEvent::NoteOn { note, velocity: 100 })
 }
-impl Saw {
-    fn new() -> Self { Self { phase: 0.0 } }
-    fn process(&mut self, freq_hz: f64) -> f32 {
-        self.phase += freq_hz / FS as f64;
-        if self.phase >= 1.0 { self.phase -= 1.0; }
-        (self.phase * 2.0 - 1.0) as f32
-    }
+
+fn note_off(frame: u64, note: u8) -> TimedInputEvent {
+    TimedInputEvent::new(frame, ScriptEvent::NoteOff { note })
 }
 
 fn main() {
-    let mut osc = Saw::new();
-    let mut lp = BiquadFilter::new_lowpass(0.5, 0.707);
-    let mut hp = BiquadFilter::new_highpass(0.001, 0.707);
-    let mut pk = BiquadFilter::new_peaking(0.5, 3.0, 0.0);
-    let mut gate = SpectralProcessor::new(256, SpectralMode::Gate);
+    let fs = 48000;
 
-    let mut left = vec![0.0f32; TOTAL];
-    let mut right = vec![0.0f32; TOTAL];
+    // 303-style acid line: saw osc -> moog filter (envelope modulated) -> vca -> saturator -> out
+    let modules = vec![
+        ModuleNode::new(ModuleId::new("midi"), "midi_input")
+            .with_output(builtin_ports::EVENTS, SignalType::Event),
+        ModuleNode::new(ModuleId::new("note_rate"), "note_to_rate")
+            .with_input(builtin_ports::EVENTS, SignalType::Event)
+            .with_output(builtin_ports::RATE, SignalType::Control),
+        ModuleNode::new(ModuleId::new("osc"), "oscillator")
+            .with_input(builtin_ports::PITCH, SignalType::Control)
+            .with_output(builtin_ports::AUDIO, SignalType::Audio),
+        ModuleNode::new(ModuleId::new("env"), "adsr")
+            .with_input(builtin_ports::GATE, SignalType::Event)
+            .with_output(builtin_ports::VALUE, SignalType::Control),
+        ModuleNode::new(ModuleId::new("filter_env"), "adsr")
+            .with_input(builtin_ports::GATE, SignalType::Event)
+            .with_output(builtin_ports::VALUE, SignalType::Control),
+        ModuleNode::new(ModuleId::new("filter"), "filter")
+            .with_input(builtin_ports::AUDIO_IN, SignalType::Audio)
+            .with_input(builtin_ports::CUTOFF, SignalType::Control)
+            .with_output(builtin_ports::AUDIO_OUT, SignalType::Audio),
+        ModuleNode::new(ModuleId::new("vca"), "gain")
+            .with_input(builtin_ports::AUDIO_IN, SignalType::Audio)
+            .with_input(builtin_ports::GAIN, SignalType::Control)
+            .with_output(builtin_ports::AUDIO_OUT, SignalType::Audio),
+        ModuleNode::new(ModuleId::new("sat"), "saturator")
+            .with_input(builtin_ports::AUDIO_IN, SignalType::Audio)
+            .with_input(builtin_ports::DRIVE, SignalType::Control)
+            .with_input(builtin_ports::BIAS, SignalType::Control)
+            .with_input(builtin_ports::CURVE_SELECT, SignalType::Control)
+            .with_output(builtin_ports::AUDIO_OUT, SignalType::Audio),
+        ModuleNode::new(ModuleId::new("mixer"), "audio_mixer")
+            .with_mixing_input(builtin_ports::INPUTS, SignalType::Audio)
+            .with_output(builtin_ports::MIX, SignalType::Audio),
+        ModuleNode::new(ModuleId::new("out"), "audio_output")
+            .with_input(builtin_ports::LEFT, SignalType::Audio)
+            .with_input(builtin_ports::RIGHT, SignalType::Audio),
+    ];
 
-    for i in 0..TOTAL {
-        let t = i as f64 / FS as f64;
-        let raw = 0.3 * osc.process(440.0); // A4 saw wave
+    let cables = vec![
+        // MIDI fans out to env, filter_env, and note_to_rate
+        Cable::new(
+            PortRef::new(ModuleId::new("midi"), builtin_ports::EVENTS),
+            PortRef::new(ModuleId::new("env"), builtin_ports::GATE),
+        ),
+        Cable::new(
+            PortRef::new(ModuleId::new("midi"), builtin_ports::EVENTS),
+            PortRef::new(ModuleId::new("filter_env"), builtin_ports::GATE),
+        ),
+        Cable::new(
+            PortRef::new(ModuleId::new("midi"), builtin_ports::EVENTS),
+            PortRef::new(ModuleId::new("note_rate"), builtin_ports::EVENTS),
+        ),
+        // Note rate drives oscillator pitch
+        Cable::new(
+            PortRef::new(ModuleId::new("note_rate"), builtin_ports::RATE),
+            PortRef::new(ModuleId::new("osc"), builtin_ports::PITCH),
+        ),
+        // Oscillator -> filter -> VCA
+        Cable::new(
+            PortRef::new(ModuleId::new("osc"), builtin_ports::AUDIO),
+            PortRef::new(ModuleId::new("filter"), builtin_ports::AUDIO_IN),
+        ),
+        Cable::new(
+            PortRef::new(ModuleId::new("filter_env"), builtin_ports::VALUE),
+            PortRef::new(ModuleId::new("filter"), builtin_ports::CUTOFF),
+        ),
+        Cable::new(
+            PortRef::new(ModuleId::new("filter"), builtin_ports::AUDIO_OUT),
+            PortRef::new(ModuleId::new("vca"), builtin_ports::AUDIO_IN),
+        ),
+        Cable::new(
+            PortRef::new(ModuleId::new("env"), builtin_ports::VALUE),
+            PortRef::new(ModuleId::new("vca"), builtin_ports::GAIN),
+        ),
+        Cable::new(
+            PortRef::new(ModuleId::new("vca"), builtin_ports::AUDIO_OUT),
+            PortRef::new(ModuleId::new("mixer"), builtin_ports::INPUTS),
+        ),
+        Cable::new(
+            PortRef::new(ModuleId::new("mixer"), builtin_ports::MIX),
+            PortRef::new(ModuleId::new("sat"), builtin_ports::AUDIO_IN),
+        ),
+        Cable::new(
+            PortRef::new(ModuleId::new("mixer"), builtin_ports::MIX),
+            PortRef::new(ModuleId::new("out"), builtin_ports::LEFT),
+        ),
+        Cable::new(
+            PortRef::new(ModuleId::new("mixer"), builtin_ports::MIX),
+            PortRef::new(ModuleId::new("out"), builtin_ports::RIGHT),
+        ),
+    ];
 
-        let out = if t < 2.0 {
-            // 0-2s: Raw saw wave (reference)
-            raw
-        } else if t < 4.5 {
-            // 2-4.5s: LP exponential sweep 20kHz → 100Hz
-            let frac = ((t - 2.0) / 2.5).min(1.0);
-            let hz = 20000.0 * (100.0_f64 / 20000.0_f64).powf(frac);
-            lp.set_coefficients_lowpass(hz / FS as f64, 0.707);
-            lp.process(raw)
-        } else if t < 5.5 {
-            // 4.5-5.5s: silence gap
-            0.0
-        } else if t < 8.0 {
-            // 5.5-8s: HP exponential sweep 20Hz → 2kHz
-            let frac = ((t - 5.5) / 2.5).min(1.0);
-            let hz = 20.0 * (2000.0_f64 / 20.0_f64).powf(frac);
-            hp.set_coefficients_highpass(hz / FS as f64, 0.707);
-            hp.process(raw)
-        } else if t < 9.0 {
-            // 8-9s: silence gap
-            0.0
-        } else if t < 11.5 {
-            // 9-11.5s: Peaking +18dB sweep 100Hz → 8kHz
-            let frac = ((t - 9.0) / 2.5).min(1.0);
-            let hz = 100.0 * (8000.0_f64 / 100.0_f64).powf(frac);
-            pk.set_coefficients_peaking(hz / FS as f64, 5.0, 18.0);
-            pk.process(raw)
-        } else if t < 12.0 {
-            // 11.5-12s: silence gap
-            0.0
-        } else {
-            // 12-14s: Spectral gate opening
-            let frac = (t - 12.0) / 2.0;
-            let db = if frac < 0.5 { -80.0 + 80.0 * frac * 2.0 } else { 0.0 };
-            gate.set_threshold(db);
-            gate.process(raw)
-        };
+    let graph = Graph::new(modules, cables);
+    graph.validate().expect("graph should validate");
 
-        left[i] = out;
-        right[i] = out;
+    // 303-style acid bass sequence (E minor blues)
+    let notes: [(u8, u64); 16] = [
+        (40, 0),    // E2
+        (40, 3000), // E2
+        (43, 6000), // G2
+        (45, 9000), // A2
+        (46, 12000), // Bb2
+        (45, 15000), // A2
+        (43, 18000), // G2
+        (40, 21000), // E2
+        (38, 24000), // D2
+        (40, 27000), // E2
+        (43, 30000), // G2
+        (45, 33000), // A2
+        (47, 36000), // B2
+        (45, 39000), // A2
+        (43, 42000), // G2
+        (40, 45000), // E2
+    ];
+
+    let mut events = Vec::new();
+    for &(note, start_frame) in &notes {
+        events.push(note_on(start_frame, note));
+        events.push(note_off(start_frame + 2400, note));
     }
 
-    write_wav_file(Path::new("/tmp/dandrum-demo.wav"), FS, &left, &right).expect("write wav");
-    println!("Wrote 14s demo to /tmp/dandrum-demo.wav");
+    let settings = RenderSettings {
+        sample_rate_hz: fs,
+        block_size_frames: 64,
+        duration_frames: 48000 * 4, // 4 seconds
+    };
+
+    let (left, right) = render_offline(&graph, &settings, events);
+
+    write_wav_file(Path::new("/tmp/dandrum-acid.wav"), fs, &left, &right)
+        .expect("write wav");
+    println!("Wrote 4s 303 acid line to /tmp/dandrum-acid.wav");
 }

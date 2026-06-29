@@ -123,84 +123,8 @@ impl fmt::Display for SampleLoadError {
 impl std::error::Error for SampleLoadError {}
 
 fn load_pcm_wav(path: &Path, expected_sample_rate_hz: u32) -> Result<LoadedSample, String> {
-    let bytes = fs::read(path).map_err(|error| format!("failed to read file: {error}"))?;
-    if bytes.len() < 44 || &bytes[0..4] != b"RIFF" || &bytes[8..12] != b"WAVE" {
-        return Err("unsupported format; expected PCM WAV".to_string());
-    }
-
-    let mut offset = 12usize;
-    let mut channels = None;
-    let mut sample_rate = None;
-    let mut bits_per_sample = None;
-    let mut data = None;
-
-    while offset + 8 <= bytes.len() {
-        let chunk_id = &bytes[offset..offset + 4];
-        let chunk_size =
-            u32::from_le_bytes(bytes[offset + 4..offset + 8].try_into().unwrap()) as usize;
-        offset += 8;
-        if offset + chunk_size > bytes.len() {
-            return Err("unsupported format; malformed WAV chunk".to_string());
-        }
-
-        if chunk_id == b"fmt " {
-            if chunk_size < 16 {
-                return Err("unsupported format; malformed fmt chunk".to_string());
-            }
-            let audio_format = u16::from_le_bytes(bytes[offset..offset + 2].try_into().unwrap());
-            if audio_format != 1 {
-                return Err("unsupported format; expected PCM WAV".to_string());
-            }
-            channels = Some(u16::from_le_bytes(
-                bytes[offset + 2..offset + 4].try_into().unwrap(),
-            ));
-            sample_rate = Some(u32::from_le_bytes(
-                bytes[offset + 4..offset + 8].try_into().unwrap(),
-            ));
-            bits_per_sample = Some(u16::from_le_bytes(
-                bytes[offset + 14..offset + 16].try_into().unwrap(),
-            ));
-        } else if chunk_id == b"data" {
-            data = Some(bytes[offset..offset + chunk_size].to_vec());
-        }
-
-        offset += chunk_size + (chunk_size % 2);
-    }
-
-    let channels = channels.ok_or_else(|| "unsupported format; missing fmt chunk".to_string())?;
-    let sample_rate =
-        sample_rate.ok_or_else(|| "unsupported format; missing fmt chunk".to_string())?;
-    let bits_per_sample =
-        bits_per_sample.ok_or_else(|| "unsupported format; missing fmt chunk".to_string())?;
-    let data = data.ok_or_else(|| "unsupported format; missing data chunk".to_string())?;
-
-    if sample_rate != expected_sample_rate_hz {
-        return Err(format!(
-            "sample-rate mismatch: asset is {sample_rate} Hz, render is {expected_sample_rate_hz} Hz"
-        ));
-    }
-    if channels == 0 || channels > 2 || bits_per_sample != 16 {
-        return Err("unsupported format; expected mono/stereo 16-bit PCM WAV".to_string());
-    }
-
-    let frame_bytes = channels as usize * 2;
-    if data.len() % frame_bytes != 0 {
-        return Err("unsupported format; incomplete PCM frame".to_string());
-    }
-
-    let mut frames = Vec::with_capacity(data.len() / frame_bytes);
-    for frame in data.chunks_exact(frame_bytes) {
-        let left = i16::from_le_bytes(frame[0..2].try_into().unwrap()) as f32 / 32768.0;
-        let sample = if channels == 2 {
-            let right = i16::from_le_bytes(frame[2..4].try_into().unwrap()) as f32 / 32768.0;
-            (left + right) * 0.5
-        } else {
-            left
-        };
-        frames.push(sample);
-    }
-
-    Ok(LoadedSample::new(sample_rate, frames))
+    let loaded = crate::audio_loading::load_pcm_wav(path, expected_sample_rate_hz)?;
+    Ok(LoadedSample::new(loaded.sample_rate_hz(), loaded.frames().to_vec()))
 }
 
 #[cfg(test)]

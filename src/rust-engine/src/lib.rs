@@ -30,6 +30,14 @@ pub mod crossover;
 
 pub mod spectral;
 
+pub mod envelope_detector;
+
+pub mod audio_loading;
+
+pub mod dynamics_processor;
+pub mod saturator;
+pub mod convolution;
+
 pub use synth::DandrumEngine;
 
 #[unsafe(no_mangle)]

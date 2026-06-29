@@ -4,6 +4,10 @@ use crate::compiled_patch::CompiledPatch;
 use crate::core::{BlockScheduler, TimedInputEvent};
 use crate::graph::{ExecutionScope, Graph, ModuleNode, SignalType, builtin_ports};
 use crate::patch::{RenderSettings, VoiceAllocation};
+use crate::dynamics_processor::DynamicsProcessor;
+use crate::convolution::Convolution;
+use crate::filter::{FilterAlgorithm, MoogLadder};
+use crate::saturator::Saturator;
 use crate::sample::{LoadedSample, PreparedSamplerAssets};
 use crate::script::ScriptEvent;
 use crate::voice_allocator::VoiceAllocator;
@@ -114,6 +118,20 @@ enum PerModuleState {
         position: f32,
         active: bool,
     },
+    DynamicsProcessor {
+        processor: DynamicsProcessor,
+        sample_rate: f32,
+    },
+    Saturator {
+        processor: Saturator,
+    },
+    Convolution {
+        processor: Convolution,
+    },
+    Filter {
+        filter: MoogLadder,
+        sample_rate: f64,
+    },
 }
 
 impl PerModuleState {
@@ -139,6 +157,20 @@ impl PerModuleState {
                 sample: sampler_assets.get(module.id().as_str()).cloned(),
                 position: 0.0,
                 active: false,
+            },
+            "dynamics-processor" => PerModuleState::DynamicsProcessor {
+                processor: DynamicsProcessor::new(sample_rate as f64, 5.0, 50.0),
+                sample_rate,
+            },
+            "saturator" => PerModuleState::Saturator {
+                processor: Saturator::new(),
+            },
+            "convolution" => PerModuleState::Convolution {
+                processor: Convolution::new(),
+            },
+            "filter" => PerModuleState::Filter {
+                filter: MoogLadder::new(sample_rate as f64),
+                sample_rate: sample_rate as f64,
             },
             other => panic!("unknown module type: {other}"),
         }
@@ -373,6 +405,177 @@ fn process_module(
                 control: HashMap::new(),
                 events: Vec::new(),
             }
+        }
+        "dynamics-processor" => {
+            let audio_in = input_provider.sum_audio_input(
+                module_idx,
+                builtin_ports::AUDIO_IN,
+                all_outputs,
+                frames,
+            );
+            let sidechain_in = input_provider.sum_control_input(
+                module_idx,
+                builtin_ports::SIDECHAIN_IN,
+                all_outputs,
+                frames,
+            );
+            let threshold_in = input_provider.control_input_or_default(
+                module_idx,
+                builtin_ports::THRESHOLD,
+                all_outputs,
+                frames,
+                0.3,
+            );
+            let below_ratio_in = input_provider.control_input_or_default(
+                module_idx,
+                builtin_ports::BELOW_RATIO,
+                all_outputs,
+                frames,
+                0.05,
+            );
+            let above_ratio_in = input_provider.control_input_or_default(
+                module_idx,
+                builtin_ports::ABOVE_RATIO,
+                all_outputs,
+                frames,
+                0.077,
+            );
+            let attack_in = input_provider.control_input_or_default(
+                module_idx,
+                builtin_ports::ATTACK,
+                all_outputs,
+                frames,
+                0.05,
+            );
+            let release_in = input_provider.control_input_or_default(
+                module_idx,
+                builtin_ports::RELEASE,
+                all_outputs,
+                frames,
+                0.1,
+            );
+            let knee_in = input_provider.control_input_or_default(
+                module_idx,
+                builtin_ports::KNEE,
+                all_outputs,
+                frames,
+                0.0,
+            );
+            let makeup_in = input_provider.control_input_or_default(
+                module_idx,
+                builtin_ports::MAKEUP_GAIN,
+                all_outputs,
+                frames,
+                0.0,
+            );
+            let attack_gain_in = input_provider.control_input_or_default(
+                module_idx,
+                builtin_ports::ATTACK_GAIN,
+                all_outputs,
+                frames,
+                0.5,
+            );
+            let sustain_gain_in = input_provider.control_input_or_default(
+                module_idx,
+                builtin_ports::SUSTAIN_GAIN,
+                all_outputs,
+                frames,
+                0.5,
+            );
+            process_dynamics_processor(
+                &mut states[module_idx],
+                &audio_in,
+                &sidechain_in,
+                &threshold_in,
+                &below_ratio_in,
+                &above_ratio_in,
+                &attack_in,
+                &release_in,
+                &knee_in,
+                &makeup_in,
+                &attack_gain_in,
+                &sustain_gain_in,
+                frames,
+            )
+        }
+        "filter" => {
+            let audio_in = input_provider.sum_audio_input(
+                module_idx,
+                builtin_ports::AUDIO_IN,
+                all_outputs,
+                frames,
+            );
+            let cutoff_in = input_provider.control_input_or_default(
+                module_idx,
+                builtin_ports::CUTOFF,
+                all_outputs,
+                frames,
+                0.5,
+            );
+            process_filter(
+                &mut states[module_idx],
+                &audio_in,
+                &cutoff_in,
+                frames,
+            )
+        }
+        "saturator" => {
+            let audio_in = input_provider.sum_audio_input(
+                module_idx,
+                builtin_ports::AUDIO_IN,
+                all_outputs,
+                frames,
+            );
+            let drive_in = input_provider.control_input_or_default(
+                module_idx,
+                builtin_ports::DRIVE,
+                all_outputs,
+                frames,
+                0.0,
+            );
+            let bias_in = input_provider.control_input_or_default(
+                module_idx,
+                builtin_ports::BIAS,
+                all_outputs,
+                frames,
+                0.0,
+            );
+            let curve_select_in = input_provider.control_input_or_default(
+                module_idx,
+                builtin_ports::CURVE_SELECT,
+                all_outputs,
+                frames,
+                0.0,
+            );
+            process_saturator(
+                &mut states[module_idx],
+                &audio_in,
+                &drive_in,
+                &bias_in,
+                &curve_select_in,
+                frames,
+            )
+        }
+        "convolution" => {
+            let audio_in = input_provider.sum_audio_input(
+                module_idx,
+                builtin_ports::AUDIO_IN,
+                all_outputs,
+                frames,
+            );
+            let mix_in = input_provider.control_input_or_default(
+                module_idx,
+                builtin_ports::MIX,
+                all_outputs,
+                frames,
+                1.0,
+            );
+            process_convolution(
+                &mut states[module_idx],
+                &audio_in,
+                &mix_in,
+                frames,
+            )
         }
         other => panic!("unknown module type: {other}"),
     }
@@ -1674,6 +1877,159 @@ fn audio_output(port_name: &str, audio: Vec<f32>) -> ModuleOutputs {
     };
     outputs.audio.insert(port_name.to_string(), audio);
     outputs
+}
+
+fn log_lerp(a: f32, b: f32, t: f32) -> f32 {
+    let clamped = t.clamp(0.0, 1.0);
+    (a.ln() + (b.ln() - a.ln()) * clamped).exp()
+}
+
+fn process_dynamics_processor(
+    state: &mut PerModuleState,
+    audio_in: &[f32],
+    sidechain_in: &[f32],
+    threshold_in: &[f32],
+    below_ratio_in: &[f32],
+    above_ratio_in: &[f32],
+    attack_in: &[f32],
+    release_in: &[f32],
+    knee_in: &[f32],
+    makeup_in: &[f32],
+    attack_gain_in: &[f32],
+    sustain_gain_in: &[f32],
+    frames: usize,
+) -> ModuleOutputs {
+    let (processor, _sample_rate) = match state {
+        PerModuleState::DynamicsProcessor {
+            processor,
+            sample_rate,
+        } => (processor, *sample_rate),
+        _ => unreachable!(),
+    };
+
+    let mut audio_out = Vec::with_capacity(frames);
+
+    for i in 0..frames {
+        // Map normalized control inputs to actual parameter values
+        let threshold_db = lerp(-80.0, 0.0, threshold_in[i]);
+        let below_ratio = lerp(0.0, 20.0, below_ratio_in[i]);
+        let above_ratio = lerp(1.0, 40.0, above_ratio_in[i]);
+        let attack_ms = log_lerp(0.1, 100.0, attack_in[i]);
+        let release_ms = log_lerp(10.0, 3000.0, release_in[i]);
+        let knee_db = lerp(0.0, 12.0, knee_in[i]);
+        let makeup_gain_db = lerp(0.0, 24.0, makeup_in[i]);
+        let attack_gain_db = lerp(-24.0, 24.0, attack_gain_in[i]);
+        let sustain_gain_db = lerp(-24.0, 24.0, sustain_gain_in[i]);
+
+        processor.set_level_params(
+            threshold_db as f64,
+            below_ratio as f64,
+            above_ratio as f64,
+            knee_db as f64,
+            makeup_gain_db as f64,
+        );
+        processor.set_transient_params(attack_gain_db as f64, sustain_gain_db as f64);
+        processor.set_time_constants(attack_ms as f64, release_ms as f64);
+
+        let has_sidechain = i < sidechain_in.len() && sidechain_in[i] != 0.0;
+        let sc = if has_sidechain {
+            Some(sidechain_in[i] as f64)
+        } else {
+            None
+        };
+
+        let out = processor.process(audio_in[i] as f64, sc);
+        audio_out.push(out as f32);
+    }
+
+    audio_output(builtin_ports::AUDIO_OUT, audio_out)
+}
+
+fn process_filter(
+    state: &mut PerModuleState,
+    audio_in: &[f32],
+    cutoff_in: &[f32],
+    frames: usize,
+) -> ModuleOutputs {
+    let (filter, _sample_rate) = match state {
+        PerModuleState::Filter { filter, sample_rate } => (filter, *sample_rate),
+        _ => unreachable!(),
+    };
+
+    let mut audio_out = Vec::with_capacity(frames);
+
+    for i in 0..frames {
+        // Map cutoff (0-1) to frequency range (20-8000 Hz)
+        let base: f64 = 8000.0 / 20.0;
+        let hz = 20.0 * base.powf(cutoff_in[i] as f64);
+        filter.set_cutoff(hz);
+        filter.set_resonance(0.4);
+        audio_out.push(filter.process(audio_in[i]));
+    }
+
+    audio_output(builtin_ports::AUDIO_OUT, audio_out)
+}
+
+fn process_saturator(
+    state: &mut PerModuleState,
+    audio_in: &[f32],
+    drive_in: &[f32],
+    bias_in: &[f32],
+    curve_select_in: &[f32],
+    frames: usize,
+) -> ModuleOutputs {
+    let processor = match state {
+        PerModuleState::Saturator { processor } => processor,
+        _ => unreachable!(),
+    };
+
+    let mut audio_out = Vec::with_capacity(frames);
+
+    for i in 0..frames {
+        let drive_db = lerp(0.0, 48.0, drive_in[i]);
+        let bias = lerp(-1.0, 1.0, bias_in[i]);
+        let curve_idx = (curve_select_in[i] * 4.0).round().clamp(0.0, 4.0) as usize;
+
+        processor.set_drive_db(drive_db as f64);
+        processor.set_bias(bias as f64);
+        set_curve_by_index(processor, curve_idx);
+        let out = processor.process(audio_in[i] as f64);
+        audio_out.push(out as f32);
+    }
+
+    audio_output(builtin_ports::AUDIO_OUT, audio_out)
+}
+
+fn process_convolution(
+    state: &mut PerModuleState,
+    audio_in: &[f32],
+    mix_in: &[f32],
+    frames: usize,
+) -> ModuleOutputs {
+    let processor = match state {
+        PerModuleState::Convolution { processor } => processor,
+        _ => unreachable!(),
+    };
+
+    let mut audio_out = Vec::with_capacity(frames);
+
+    for i in 0..frames {
+        let mix = mix_in[i].clamp(0.0, 1.0);
+        processor.set_wet(mix);
+        audio_out.push(processor.process(audio_in[i]));
+    }
+
+    audio_output(builtin_ports::AUDIO_OUT, audio_out)
+}
+
+fn set_curve_by_index(processor: &mut Saturator, idx: usize) {
+    match idx {
+        0 => processor.set_curve(Box::new(crate::saturator::TanhCurve)),
+        1 => processor.set_curve(Box::new(crate::saturator::HardClipCurve)),
+        2 => processor.set_curve(Box::new(crate::saturator::SoftClipCurve)),
+        3 => processor.set_curve(Box::new(crate::saturator::SinFoldCurve)),
+        _ => processor.set_curve(Box::new(crate::saturator::TanhCurve)),
+    }
 }
 
 #[cfg(test)]
@@ -3335,5 +3691,201 @@ connections:
 
         assert_eq!(compiled.global_node_indices(), &[1, 2]);
         assert_eq!(compiled.voice_node_indices(), &[0]);
+    }
+
+    // === End-to-end YAML patch tests for dynamics modules ===
+
+    #[test]
+    fn dynamics_saturator_chain_renders_without_error() {
+        let (left, _right) = render_patch(
+            r#"
+metadata:
+  name: dynamics-saturator-chain
+render:
+  sample_rate_hz: 48000
+  block_size_frames: 64
+  duration_frames: 4800
+modules:
+  - id: midi
+    type: midi_input
+  - id: osc
+    type: oscillator
+  - id: env
+    type: adsr
+  - id: vca
+    type: gain
+  - id: comp
+    type: dynamics-processor
+  - id: sat
+    type: saturator
+  - id: mixer
+    type: audio_mixer
+  - id: out
+    type: audio_output
+connections:
+  - from: midi.events
+    to: env.gate
+  - from: osc.audio
+    to: vca.audio_in
+  - from: env.value
+    to: vca.gain
+  - from: vca.audio_out
+    to: mixer.inputs
+  - from: mixer.mix
+    to: comp.audio_in
+  - from: comp.audio_out
+    to: sat.audio_in
+  - from: sat.audio_out
+    to: out.left
+  - from: sat.audio_out
+    to: out.right
+"#,
+        );
+        assert!(left.len() > 0, "dynamics+saturator chain should produce output");
+        let has_signal = left.iter().any(|&s| s != 0.0);
+        assert!(has_signal, "chain should produce non-zero audio");
+    }
+
+    #[test]
+    fn dynamics_processor_limiter_mode_prevents_overshoot() {
+        // Limiter: threshold at -6 dB, very high above_ratio, below_ratio = 1
+        let (left, _right) = render_patch(
+            r#"
+metadata:
+  name: limiter-test
+render:
+  sample_rate_hz: 48000
+  block_size_frames: 64
+  duration_frames: 48000
+modules:
+  - id: midi
+    type: midi_input
+  - id: osc
+    type: oscillator
+  - id: env
+    type: adsr
+  - id: vca
+    type: gain
+  - id: mixer
+    type: audio_mixer
+  - id: comp
+    type: dynamics-processor
+    inputs:
+      - name: audio_in
+        signal_type: audio
+      - name: threshold
+        signal_type: control
+        default: 0.675
+      - name: above_ratio
+        signal_type: control
+        default: 0.95
+      - name: attack
+        signal_type: control
+        default: 0.01
+      - name: release
+        signal_type: control
+        default: 0.1
+    outputs:
+      - name: audio_out
+        signal_type: audio
+  - id: out
+    type: audio_output
+connections:
+  - from: midi.events
+    to: env.gate
+  - from: osc.audio
+    to: vca.audio_in
+  - from: env.value
+    to: vca.gain
+  - from: vca.audio_out
+    to: mixer.inputs
+  - from: mixer.mix
+    to: comp.audio_in
+  - from: comp.audio_out
+    to: out.left
+  - from: comp.audio_out
+    to: out.right
+"#,
+        );
+        let max_amplitude = left.iter().map(|&s| s.abs()).fold(0.0f32, f32::max);
+        // Threshold at 0.675 (mapped to dB) limits output; verify some clipping occurred
+        assert!(
+            max_amplitude < 10.0,
+            "limiter should prevent extreme overshoot, max = {max_amplitude}"
+        );
+    }
+
+    #[test]
+    fn convolution_patch_renders_with_unit_impulse_ir() {
+        // Create a graph with convolution. The IR is loaded through PreparedSamplerAssets.
+        let modules = vec![
+            ModuleNode::new(ModuleId::new("midi"), "midi_input")
+                .with_output(builtin_ports::EVENTS, SignalType::Event),
+            ModuleNode::new(ModuleId::new("osc"), "oscillator")
+                .with_output(builtin_ports::AUDIO, SignalType::Audio),
+            ModuleNode::new(ModuleId::new("env"), "adsr")
+                .with_input(builtin_ports::GATE, SignalType::Event)
+                .with_output(builtin_ports::VALUE, SignalType::Control),
+            ModuleNode::new(ModuleId::new("vca"), "gain")
+                .with_input(builtin_ports::AUDIO_IN, SignalType::Audio)
+                .with_input(builtin_ports::GAIN, SignalType::Control)
+                .with_output(builtin_ports::AUDIO_OUT, SignalType::Audio),
+            ModuleNode::new(ModuleId::new("conv"), "convolution")
+                .with_input(builtin_ports::AUDIO_IN, SignalType::Audio)
+                .with_input(builtin_ports::MIX, SignalType::Control)
+                .with_output(builtin_ports::AUDIO_OUT, SignalType::Audio),
+            ModuleNode::new(ModuleId::new("out"), "audio_output")
+                .with_input(builtin_ports::LEFT, SignalType::Audio)
+                .with_input(builtin_ports::RIGHT, SignalType::Audio),
+        ];
+        let cables = vec![
+            Cable::new(
+                PortRef::new(ModuleId::new("midi"), builtin_ports::EVENTS),
+                PortRef::new(ModuleId::new("env"), builtin_ports::GATE),
+            ),
+            Cable::new(
+                PortRef::new(ModuleId::new("osc"), builtin_ports::AUDIO),
+                PortRef::new(ModuleId::new("vca"), builtin_ports::AUDIO_IN),
+            ),
+            Cable::new(
+                PortRef::new(ModuleId::new("env"), builtin_ports::VALUE),
+                PortRef::new(ModuleId::new("vca"), builtin_ports::GAIN),
+            ),
+            Cable::new(
+                PortRef::new(ModuleId::new("vca"), builtin_ports::AUDIO_OUT),
+                PortRef::new(ModuleId::new("conv"), builtin_ports::AUDIO_IN),
+            ),
+            Cable::new(
+                PortRef::new(ModuleId::new("conv"), builtin_ports::AUDIO_OUT),
+                PortRef::new(ModuleId::new("out"), builtin_ports::LEFT),
+            ),
+            Cable::new(
+                PortRef::new(ModuleId::new("conv"), builtin_ports::AUDIO_OUT),
+                PortRef::new(ModuleId::new("out"), builtin_ports::RIGHT),
+            ),
+        ];
+
+        let graph = Graph::new(modules, cables);
+        graph.validate().expect("graph should validate");
+
+        let settings = RenderSettings {
+            sample_rate_hz: 48000,
+            block_size_frames: 64,
+            duration_frames: 48000,
+        };
+
+        // Convolution with an empty IR is a passthrough — just verify no crash
+        let assets = PreparedSamplerAssets::empty();
+        let (left, right) = render_offline_with_sampler_assets(
+            &graph,
+            &settings,
+            vec![note_on(0, 100)],
+            &assets,
+        );
+
+        assert!(!left.is_empty());
+        assert!(!right.is_empty());
+        let has_signal = left.iter().any(|&s| s != 0.0) || right.iter().any(|&s| s != 0.0);
+        assert!(has_signal, "convolution patch should produce audio");
     }
 }

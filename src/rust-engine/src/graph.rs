@@ -73,6 +73,19 @@ pub mod builtin_ports {
     pub const LOOP_ENABLED: &str = "loop_enabled";
     pub const LOOP_START: &str = "loop_start";
     pub const LOOP_END: &str = "loop_end";
+    // Dynamics processor ports
+    pub const SIDECHAIN_IN: &str = "sidechain_in";
+    pub const THRESHOLD: &str = "threshold";
+    pub const BELOW_RATIO: &str = "below_ratio";
+    pub const ABOVE_RATIO: &str = "above_ratio";
+    pub const KNEE: &str = "knee";
+    pub const MAKEUP_GAIN: &str = "makeup_gain";
+    pub const ATTACK_GAIN: &str = "attack_gain";
+    pub const SUSTAIN_GAIN: &str = "sustain_gain";
+    // Saturator ports
+    pub const DRIVE: &str = "drive";
+    pub const BIAS: &str = "bias";
+    pub const CURVE_SELECT: &str = "curve_select";
 }
 
 impl SignalType {

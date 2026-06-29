@@ -11,6 +11,7 @@ serde = { version = "1", features = ["derive"] }
 serde_yaml = "0.9"
 rustfft = "6"
 num-complex = "0.4"
+crossterm = "0.28"
 
 [profile.release]
 codegen-units = 1

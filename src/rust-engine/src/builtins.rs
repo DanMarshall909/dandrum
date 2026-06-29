@@ -18,6 +18,9 @@ pub mod module_types {
     pub const SCRIPT: &str = "script";
     pub const SAMPLER: &str = "sampler";
     pub const NOTE_TO_RATE: &str = "note_to_rate";
+    pub const DYNAMICS_PROCESSOR: &str = "dynamics-processor";
+    pub const SATURATOR: &str = "saturator";
+    pub const CONVOLUTION: &str = "convolution";
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -104,6 +107,9 @@ impl BuiltInModuleRegistry {
             script_definition(),
             sampler_definition(),
             note_to_rate_definition(),
+            dynamics_processor_definition(),
+            saturator_definition(),
+            convolution_definition(),
         ])
     }
 
@@ -238,6 +244,38 @@ fn note_to_rate_definition() -> BuiltInModuleDefinition {
         .with_execution_scope(ExecutionScope::Voice)
         .with_input(Port::input(builtin_ports::EVENTS, SignalType::Event))
         .with_output(Port::output(builtin_ports::RATE, SignalType::Control))
+}
+
+fn dynamics_processor_definition() -> BuiltInModuleDefinition {
+    BuiltInModuleDefinition::new(module_types::DYNAMICS_PROCESSOR)
+        .with_input(Port::input(builtin_ports::AUDIO_IN, SignalType::Audio))
+        .with_input(Port::input(builtin_ports::SIDECHAIN_IN, SignalType::Control))
+        .with_input(Port::input(builtin_ports::THRESHOLD, SignalType::Control))
+        .with_input(Port::input(builtin_ports::BELOW_RATIO, SignalType::Control))
+        .with_input(Port::input(builtin_ports::ABOVE_RATIO, SignalType::Control))
+        .with_input(Port::input(builtin_ports::ATTACK, SignalType::Control))
+        .with_input(Port::input(builtin_ports::RELEASE, SignalType::Control))
+        .with_input(Port::input(builtin_ports::KNEE, SignalType::Control))
+        .with_input(Port::input(builtin_ports::MAKEUP_GAIN, SignalType::Control))
+        .with_input(Port::input(builtin_ports::ATTACK_GAIN, SignalType::Control))
+        .with_input(Port::input(builtin_ports::SUSTAIN_GAIN, SignalType::Control))
+        .with_output(Port::output(builtin_ports::AUDIO_OUT, SignalType::Audio))
+}
+
+fn saturator_definition() -> BuiltInModuleDefinition {
+    BuiltInModuleDefinition::new(module_types::SATURATOR)
+        .with_input(Port::input(builtin_ports::AUDIO_IN, SignalType::Audio))
+        .with_input(Port::input(builtin_ports::DRIVE, SignalType::Control))
+        .with_input(Port::input(builtin_ports::BIAS, SignalType::Control))
+        .with_input(Port::input(builtin_ports::CURVE_SELECT, SignalType::Control))
+        .with_output(Port::output(builtin_ports::AUDIO_OUT, SignalType::Audio))
+}
+
+fn convolution_definition() -> BuiltInModuleDefinition {
+    BuiltInModuleDefinition::new(module_types::CONVOLUTION)
+        .with_input(Port::input(builtin_ports::AUDIO_IN, SignalType::Audio))
+        .with_input(Port::input(builtin_ports::MIX, SignalType::Control))
+        .with_output(Port::output(builtin_ports::AUDIO_OUT, SignalType::Audio))
 }
 
 #[cfg(test)]
@@ -393,6 +431,9 @@ mod tests {
             module_types::SCRIPT,
             module_types::SAMPLER,
             module_types::NOTE_TO_RATE,
+            module_types::DYNAMICS_PROCESSOR,
+            module_types::SATURATOR,
+            module_types::CONVOLUTION,
         ] {
             let definition = registry
                 .get(module_type)
