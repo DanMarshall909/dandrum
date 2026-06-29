@@ -1411,6 +1411,7 @@ pub struct RealtimeGraphProcessor {
     current_frame: u64,
     pending_events: Vec<ScriptEvent>,
     allocator: VoiceAllocator,
+    prepared_max_block_size: usize,
 }
 
 impl RealtimeGraphProcessor {
@@ -1437,6 +1438,22 @@ impl RealtimeGraphProcessor {
         sampler_assets: &PreparedSamplerAssets,
         voice_allocation: &VoiceAllocation,
     ) -> Self {
+        Self::polyphonic_with_sampler_assets_and_max_block_size(
+            graph,
+            sample_rate,
+            sampler_assets,
+            voice_allocation,
+            512,
+        )
+    }
+
+    pub fn polyphonic_with_sampler_assets_and_max_block_size(
+        graph: Graph,
+        sample_rate: f32,
+        sampler_assets: &PreparedSamplerAssets,
+        voice_allocation: &VoiceAllocation,
+        prepared_max_block_size: usize,
+    ) -> Self {
         let routing = build_routing(&graph);
         let topo_order = topological_sort(&graph);
         let midi_idx = find_midi_input(&graph);
@@ -1458,7 +1475,12 @@ impl RealtimeGraphProcessor {
             current_frame: 0,
             pending_events: Vec::new(),
             allocator,
+            prepared_max_block_size: prepared_max_block_size.max(1),
         }
+    }
+
+    pub fn prepared_max_block_size(&self) -> usize {
+        self.prepared_max_block_size
     }
 
     pub fn note_on(&mut self, note: u8, velocity: u8) {
@@ -2099,6 +2121,20 @@ mod tests {
         let graph = Graph::from_patch_declarations(&patch);
         graph.validate().expect("graph should validate");
         render_offline(&graph, &patch.render, vec![note_on(0, 100)])
+    }
+
+    #[test]
+    fn realtime_graph_processor_records_prepared_maximum_block_size() {
+        let graph = sampler_graph(Vec::new(), Vec::new());
+        let processor = RealtimeGraphProcessor::polyphonic_with_sampler_assets_and_max_block_size(
+            graph,
+            48_000.0,
+            &PreparedSamplerAssets::empty(),
+            &VoiceAllocation::default(),
+            256,
+        );
+
+        assert_eq!(processor.prepared_max_block_size(), 256);
     }
 
     #[test]

@@ -11,10 +11,12 @@ RustEngineSource::~RustEngineSource()
     dandrum_engine_destroy (engine);
 }
 
-void RustEngineSource::prepareToPlay (int /*samplesPerBlockExpected*/, double newSampleRate)
+void RustEngineSource::prepareToPlay (int samplesPerBlockExpected, double newSampleRate)
 {
     const juce::ScopedLock lock (engineLock);
-    dandrum_engine_prepare (engine, static_cast<float> (newSampleRate));
+    dandrum_engine_prepare_realtime (engine,
+                                     static_cast<float> (newSampleRate),
+                                     static_cast<std::size_t> (juce::jmax (1, samplesPerBlockExpected)));
 }
 
 void RustEngineSource::releaseResources() {}

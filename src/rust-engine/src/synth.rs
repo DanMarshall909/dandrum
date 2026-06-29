@@ -8,6 +8,7 @@ use crate::sample::PreparedSamplerAssets;
 
 pub struct DandrumEngine {
     sample_rate: f32,
+    prepared_max_block_size: usize,
     voices: [Voice; MAX_VOICES],
     graph_processor: Option<RealtimeGraphProcessor>,
 }
@@ -26,18 +27,25 @@ const SECONDS: f32 = 1.25;
 const GAIN: f32 = 0.16;
 const RATIOS: [f32; 5] = [0.5, 1.0, 1.259_921, 1.498_307, 2.0];
 const PANS: [f32; 5] = [-0.65, -0.35, 0.0, 0.35, 0.65];
+const DEFAULT_PREPARED_MAX_BLOCK_SIZE: usize = 512;
 
 impl DandrumEngine {
     pub fn new() -> Self {
         Self {
             sample_rate: 44_100.0,
+            prepared_max_block_size: DEFAULT_PREPARED_MAX_BLOCK_SIZE,
             voices: [Voice::default(); MAX_VOICES],
             graph_processor: None,
         }
     }
 
     pub fn prepare(&mut self, sample_rate: f32) {
+        self.prepare_realtime(sample_rate, DEFAULT_PREPARED_MAX_BLOCK_SIZE);
+    }
+
+    pub fn prepare_realtime(&mut self, sample_rate: f32, max_block_size: usize) {
         self.sample_rate = sample_rate.max(1.0);
+        self.prepared_max_block_size = max_block_size.max(1);
         self.voices = [Voice::default(); MAX_VOICES];
     }
 
@@ -47,12 +55,15 @@ impl DandrumEngine {
         sampler_assets: &PreparedSamplerAssets,
     ) {
         let graph = Graph::from_patch_declarations(patch_doc);
-        self.graph_processor = Some(RealtimeGraphProcessor::polyphonic_with_sampler_assets(
-            graph,
-            self.sample_rate,
-            sampler_assets,
-            &patch_doc.voice_allocation,
-        ));
+        self.graph_processor = Some(
+            RealtimeGraphProcessor::polyphonic_with_sampler_assets_and_max_block_size(
+                graph,
+                self.sample_rate,
+                sampler_assets,
+                &patch_doc.voice_allocation,
+                self.prepared_max_block_size,
+            ),
+        );
     }
 
     pub fn note_on(&mut self, note: u8, velocity: u8) {

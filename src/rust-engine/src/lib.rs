@@ -110,6 +110,19 @@ pub unsafe extern "C" fn dandrum_engine_prepare(engine: *mut DandrumEngine, samp
 }
 
 #[unsafe(no_mangle)]
+pub unsafe extern "C" fn dandrum_engine_prepare_realtime(
+    engine: *mut DandrumEngine,
+    sample_rate: f32,
+    max_block_size: usize,
+) {
+    let Some(engine) = (unsafe { engine.as_mut() }) else {
+        return;
+    };
+
+    engine.prepare_realtime(sample_rate, max_block_size);
+}
+
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn dandrum_engine_note_on(
     engine: *mut DandrumEngine,
     note: u8,
