@@ -37,8 +37,8 @@ extract_function_body(
     "${rust_engine_source}"
     "void RustEngineSource::getNextAudioBlock")
 
-if (get_next_audio_block_body MATCHES "ScopedLock|CriticalSection|std::cout|std::cerr")
-    message(FATAL_ERROR "RustEngineSource::getNextAudioBlock contains callback-unsafe locking or console IO")
+if (get_next_audio_block_body MATCHES "ScopedLock|CriticalSection|std::cout|std::cerr|dandrum_engine_load_patch|dandrum_engine_prepare")
+    message(FATAL_ERROR "RustEngineSource::getNextAudioBlock contains callback-unsafe locking, console IO, or engine preparation")
 endif()
 
 extract_function_body(

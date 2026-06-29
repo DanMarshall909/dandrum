@@ -17,7 +17,7 @@
 - [x] 3.1 Update `RustEngineSource` so `getNextAudioBlock` does not acquire the shared engine lock.
 - [x] 3.2 Update MIDI note handling to enqueue events instead of mutating the engine under the shared lock.
 - [x] 3.3 Remove callback-time console logging from MIDI input handling.
-- [ ] 3.4 Keep patch loading, sample preparation, and engine replacement outside the audio callback.
+- [x] 3.4 Keep patch loading, sample preparation, and engine replacement outside the audio callback.
 
 ## 4. Prepared Realtime Scratch State
 
