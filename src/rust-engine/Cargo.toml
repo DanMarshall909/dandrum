@@ -9,6 +9,8 @@ crate-type = ["staticlib", "rlib"]
 [dependencies]
 serde = { version = "1", features = ["derive"] }
 serde_yaml = "0.9"
+rustfft = "6"
+num-complex = "0.4"
 
 [profile.release]
 codegen-units = 1

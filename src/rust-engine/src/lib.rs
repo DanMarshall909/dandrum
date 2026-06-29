@@ -22,6 +22,14 @@ pub mod wav;
 
 pub mod voice_allocator;
 
+pub mod fft;
+
+pub mod filter;
+
+pub mod crossover;
+
+pub mod spectral;
+
 pub use synth::DandrumEngine;
 
 #[unsafe(no_mangle)]
