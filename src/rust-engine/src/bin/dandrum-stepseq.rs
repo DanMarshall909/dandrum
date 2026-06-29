@@ -55,33 +55,38 @@ impl Sequencer {
     fn new() -> Self {
         let mut steps: [Step; 16] = Default::default();
         let pattern: [(u8, u8); 16] = [
-            (40, 100), (40, 100), ( 0, 0), (43, 90), (45, 95),
-            (46, 90), (45, 90), (43, 85), (40, 90), (38, 95),
-            (40, 90), (43, 95), (45, 90), (47, 90), (45, 85), (43, 90),
+            (36, 108), ( 0,   0), (36,  96), (43, 104),
+            (36, 100), ( 0,   0), (46, 106), (43, 102),
+            (36, 108), (38,  98), ( 0,   0), (43, 104),
+            (36, 100), (46, 106), (43, 102), ( 0,   0),
         ];
         for (i, &(note, vel)) in pattern.iter().enumerate() {
             steps[i].note = if note == 0 { 60 } else { note };
             steps[i].velocity = vel;
-            steps[i].gate = 0.5;
+            steps[i].gate = match i {
+                3 | 7 | 11 | 14 => 0.60,
+                _ => 0.45,
+            };
             steps[i].active = note != 0;
         }
         Self { steps, bpm: 140, cursor: 0, field: Field::Note, dirty: true }
     }
 
     fn render_grid(&self) -> String {
+        let inner_width = 5 + 16 * 5;
         let mut s = String::new();
-        s.push_str(&format!(" Dandrum Step Sequencer                    BPM: {}\n", self.bpm));
-        s.push_str(" ┌─────────────────────────────────────────────────────────────────────┐\n");
+        s.push_str(&format!(" Dandrum Step Sequencer                    BPM: {}\r\n", self.bpm));
+        s.push_str(&format!(" ┌{}┐\r\n", "─".repeat(inner_width)));
 
         // Step numbers
         s.push_str(" │Step ");
         for i in 0..16 {
             let marker = if i == self.cursor && matches!(self.field, Field::Note) { '▲' } else { ' ' };
             if i == self.cursor { s.push_str("\x1b[7m"); }
-            s.push_str(&format!("{:>2}{} ", i + 1, marker));
+            s.push_str(&format!("{:>2}{}  ", i + 1, marker));
             if i == self.cursor { s.push_str("\x1b[0m"); }
         }
-        s.push_str("│\n");
+        s.push_str("│\r\n");
 
         // Notes
         s.push_str(" │Note ");
@@ -89,48 +94,48 @@ impl Sequencer {
             let st = &self.steps[i];
             let label = if st.active { note_name(st.note) } else { String::from("--") };
             if i == self.cursor && matches!(self.field, Field::Note) {
-                s.push_str(&format!("\x1b[7m{:>4}\x1b[0m", label));
+                s.push_str(&format!("\x1b[7m{:>4}\x1b[0m ", label));
             } else {
                 s.push_str(&format!("{:>4} ", label));
             }
         }
-        s.push_str("│\n");
+        s.push_str("│\r\n");
 
         // Velocity
         s.push_str(" │Vel  ");
         for i in 0..16 {
             let st = &self.steps[i];
-            let label = if st.active { format!("{:>3}", st.velocity) } else { String::from(" --") };
+            let label = if st.active { format!("{:>3}", st.velocity) } else { String::from("--") };
             if i == self.cursor && matches!(self.field, Field::Velocity) {
-                s.push_str(&format!("\x1b[7m{:>4}\x1b[0m", label));
+                s.push_str(&format!("\x1b[7m{:>4}\x1b[0m ", label));
             } else {
                 s.push_str(&format!("{:>4} ", label));
             }
         }
-        s.push_str("│\n");
+        s.push_str("│\r\n");
 
         // Gate
         s.push_str(" │Gate ");
         for i in 0..16 {
             let st = &self.steps[i];
-            let label = if st.active { format!("{:>4.2}", st.gate) } else { String::from(" ---") };
+            let label = if st.active { format!("{:>4.2}", st.gate) } else { String::from("---") };
             if i == self.cursor && matches!(self.field, Field::Gate) {
-                s.push_str(&format!("\x1b[7m{:>5}\x1b[0m", label));
+                s.push_str(&format!("\x1b[7m{:>4}\x1b[0m ", label));
             } else {
-                s.push_str(&format!("{:>5} ", label));
+                s.push_str(&format!("{:>4} ", label));
             }
         }
-        s.push_str("│\n");
+        s.push_str("│\r\n");
 
-        s.push_str(" └─────────────────────────────────────────────────────────────────────┘\n");
-         s.push_str(" ←→ move  Tab field  ↑↓ change  Space toggle  P play  s/S save  L load  Q quit\n");
+        s.push_str(&format!(" └{}┘\r\n", "─".repeat(inner_width)));
+         s.push_str(" ←→ move  Tab field  ↑↓ change  Space toggle  P play  s/S save  L load  Q quit\r\n");
         s
     }
 }
 
 fn build_events(seq: &Sequencer) -> Vec<TimedInputEvent> {
     let bpm = seq.bpm;
-    let ticks_per_step = (60.0 / bpm as f64 * 48000.0) as u64; // 48000 Hz sample rate
+    let ticks_per_step = (60.0 / bpm as f64 * 48000.0 / 4.0) as u64; // Sixteenth notes at 48 kHz.
     let mut events = Vec::new();
     for (i, step) in seq.steps.iter().enumerate() {
         if !step.active { continue; }
@@ -146,7 +151,7 @@ fn build_events(seq: &Sequencer) -> Vec<TimedInputEvent> {
 
 fn build_patch_yaml(seq: &Sequencer) -> String {
     let bpm = seq.bpm;
-    let ticks_per_step = (60.0 / bpm as f64 * 48000.0) as u64;
+    let ticks_per_step = (60.0 / bpm as f64 * 48000.0 / 4.0) as u64;
     let total = ticks_per_step * 16 + 48000;
 
     let mut yaml = String::new();
@@ -388,6 +393,92 @@ fn save_yaml(seq: &Sequencer, path: &str) -> Result<(), String> {
     Ok(())
 }
 
+fn apply_edit_key(seq: &mut Sequencer, key: KeyEvent) -> bool {
+    match key.code {
+        KeyCode::Char(' ') => {
+            seq.steps[seq.cursor].active = !seq.steps[seq.cursor].active;
+            seq.dirty = true;
+            true
+        }
+        KeyCode::Right => {
+            seq.cursor = (seq.cursor + 1) % 16;
+            seq.dirty = true;
+            true
+        }
+        KeyCode::Left => {
+            seq.cursor = if seq.cursor == 0 { 15 } else { seq.cursor - 1 };
+            seq.dirty = true;
+            true
+        }
+        KeyCode::Up if key.modifiers.contains(KeyModifiers::SHIFT) => {
+            let st = &mut seq.steps[seq.cursor];
+            st.note = st.note.saturating_add(12).min(127);
+            seq.dirty = true;
+            true
+        }
+        KeyCode::Down if key.modifiers.contains(KeyModifiers::SHIFT) => {
+            let st = &mut seq.steps[seq.cursor];
+            st.note = st.note.saturating_sub(12);
+            seq.dirty = true;
+            true
+        }
+        KeyCode::PageUp => {
+            let st = &mut seq.steps[seq.cursor];
+            st.velocity = st.velocity.saturating_add(1).min(127);
+            seq.dirty = true;
+            true
+        }
+        KeyCode::PageDown => {
+            let st = &mut seq.steps[seq.cursor];
+            st.velocity = st.velocity.saturating_sub(1);
+            seq.dirty = true;
+            true
+        }
+        KeyCode::Up | KeyCode::Char('+') => {
+            let st = &mut seq.steps[seq.cursor];
+            match seq.field {
+                Field::Note => if st.note < 127 { st.note += 1; },
+                Field::Velocity => if st.velocity < 127 { st.velocity += 1; },
+                Field::Gate => st.gate = (st.gate + 0.05).min(1.0),
+            }
+            seq.dirty = true;
+            true
+        }
+        KeyCode::Down | KeyCode::Char('-') => {
+            let st = &mut seq.steps[seq.cursor];
+            match seq.field {
+                Field::Note => if st.note > 0 { st.note -= 1; },
+                Field::Velocity => if st.velocity > 0 { st.velocity -= 1; },
+                Field::Gate => st.gate = (st.gate - 0.05).max(0.01),
+            }
+            seq.dirty = true;
+            true
+        }
+        KeyCode::Tab => {
+            seq.field = match seq.field {
+                Field::Note => Field::Velocity,
+                Field::Velocity => Field::Gate,
+                Field::Gate => Field::Note,
+            };
+            seq.dirty = true;
+            true
+        }
+        KeyCode::Char(ch) if ch.is_ascii_digit() => {
+            if let Some(digit) = ch.to_digit(10).map(|d| d as u8) {
+                let st = &mut seq.steps[seq.cursor];
+                match seq.field {
+                    Field::Note => st.note = (st.note / 10) * 10 + digit.min(2),
+                    Field::Velocity => st.velocity = (st.velocity / 10) * 10 + digit.min(7),
+                    Field::Gate => {}
+                }
+                seq.dirty = true;
+            }
+            true
+        }
+        _ => false,
+    }
+}
+
 fn run_tui() -> io::Result<()> {
     enable_raw_mode()?;
     let mut stdout = io::stdout();
@@ -469,56 +560,7 @@ fn run_tui() -> io::Result<()> {
                 }
                 stdout.flush()?;
             }
-            KeyCode::Char(' ') => {
-                seq.steps[seq.cursor].active = !seq.steps[seq.cursor].active;
-                seq.dirty = true;
-            }
-            KeyCode::Right => {
-                seq.cursor = (seq.cursor + 1) % 16;
-                seq.dirty = true;
-            }
-            KeyCode::Left => {
-                seq.cursor = if seq.cursor == 0 { 15 } else { seq.cursor - 1 };
-                seq.dirty = true;
-            }
-            KeyCode::Up | KeyCode::Char('+') => {
-                let st = &mut seq.steps[seq.cursor];
-                match seq.field {
-                    Field::Note => if st.note < 127 { st.note += 1; },
-                    Field::Velocity => if st.velocity < 127 { st.velocity += 1; },
-                    Field::Gate => st.gate = (st.gate + 0.05).min(1.0),
-                }
-                seq.dirty = true;
-            }
-            KeyCode::Down | KeyCode::Char('-') => {
-                let st = &mut seq.steps[seq.cursor];
-                match seq.field {
-                    Field::Note => if st.note > 0 { st.note -= 1; },
-                    Field::Velocity => if st.velocity > 0 { st.velocity -= 1; },
-                    Field::Gate => st.gate = (st.gate - 0.05).max(0.01),
-                }
-                seq.dirty = true;
-            }
-            KeyCode::Tab => {
-                seq.field = match seq.field {
-                    Field::Note => Field::Velocity,
-                    Field::Velocity => Field::Gate,
-                    Field::Gate => Field::Note,
-                };
-                seq.dirty = true;
-            }
-            KeyCode::Char(ch) if ch.is_ascii_digit() => {
-                if let Some(digit) = ch.to_digit(10).map(|d| d as u8) {
-                    let st = &mut seq.steps[seq.cursor];
-                    match seq.field {
-                        Field::Note => st.note = (st.note / 10) * 10 + digit.min(2),
-                        Field::Velocity => st.velocity = (st.velocity / 10) * 10 + digit.min(7),
-                        Field::Gate => {}
-                    }
-                    seq.dirty = true;
-                }
-            }
-            _ => {}
+            _ => { let _ = apply_edit_key(&mut seq, key); }
         }
 
         let _ = render(&seq, &mut stdout);
@@ -558,4 +600,33 @@ fn main() -> io::Result<()> {
         return Ok(());
     }
     run_tui()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn shift_up_and_down_change_note_by_octaves() {
+        let mut seq = Sequencer::new();
+        seq.steps[0].note = 60;
+
+        assert!(apply_edit_key(&mut seq, KeyEvent::new(KeyCode::Up, KeyModifiers::SHIFT)));
+        assert_eq!(seq.steps[0].note, 72);
+
+        assert!(apply_edit_key(&mut seq, KeyEvent::new(KeyCode::Down, KeyModifiers::SHIFT)));
+        assert_eq!(seq.steps[0].note, 60);
+    }
+
+    #[test]
+    fn page_up_and_down_change_velocity() {
+        let mut seq = Sequencer::new();
+        seq.steps[0].velocity = 100;
+
+        assert!(apply_edit_key(&mut seq, KeyEvent::new(KeyCode::PageUp, KeyModifiers::NONE)));
+        assert_eq!(seq.steps[0].velocity, 101);
+
+        assert!(apply_edit_key(&mut seq, KeyEvent::new(KeyCode::PageDown, KeyModifiers::NONE)));
+        assert_eq!(seq.steps[0].velocity, 100);
+    }
 }

@@ -25,6 +25,8 @@ pub mod voice_allocator;
 pub mod fft;
 
 pub mod filter;
+pub mod delay_line;
+pub mod echo;
 
 pub mod crossover;
 

@@ -2,6 +2,7 @@ pub enum Algorithm {
     Biquad,
     Moog,
     Comb,
+    OnePole,
 }
 
 pub enum BiquadMode {
@@ -247,6 +248,68 @@ impl FilterAlgorithm for CombFilter {
     }
 }
 
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub enum OnePoleMode {
+    Lowpass,
+    Highpass,
+}
+
+pub struct OnePoleFilter {
+    mode: OnePoleMode,
+    g: f64,
+    prev_x: f64,
+    prev_y: f64,
+    sample_rate: f64,
+    cutoff: f64,
+}
+
+impl OnePoleFilter {
+    pub fn new(sample_rate: f64) -> Self {
+        let mut f = Self {
+            mode: OnePoleMode::Lowpass,
+            g: 0.0,
+            prev_x: 0.0,
+            prev_y: 0.0,
+            sample_rate,
+            cutoff: 1000.0,
+        };
+        f.update_coeffs();
+        f
+    }
+
+    pub fn set_mode(&mut self, mode: OnePoleMode) {
+        self.mode = mode;
+    }
+
+    pub fn set_cutoff(&mut self, hz: f64) {
+        self.cutoff = hz.clamp(20.0, self.sample_rate / 2.0);
+        self.update_coeffs();
+    }
+
+    fn update_coeffs(&mut self) {
+        let norm = self.cutoff / self.sample_rate;
+        self.g = (-2.0 * std::f64::consts::PI * norm).exp();
+    }
+}
+
+impl FilterAlgorithm for OnePoleFilter {
+    fn process(&mut self, input: f32) -> f32 {
+        let x = input as f64;
+        let y = match self.mode {
+            OnePoleMode::Lowpass => (1.0 - self.g) * x + self.g * self.prev_y,
+            OnePoleMode::Highpass => self.g * (self.prev_y + x - self.prev_x),
+        };
+        self.prev_x = x;
+        self.prev_y = y;
+        y as f32
+    }
+
+    fn reset(&mut self) {
+        self.prev_x = 0.0;
+        self.prev_y = 0.0;
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -405,5 +468,67 @@ mod tests {
             let out = filter.process(0.0);
             assert!(!out.is_nan(), "comb output should not be NaN");
         }
+    }
+
+    #[test]
+    fn one_pole_lowpass_dc_gain_is_unity() {
+        let mut filter = OnePoleFilter::new(48000.0);
+        filter.set_cutoff(1000.0);
+        filter.process(1.0);
+        // After many samples at DC, output should approach 1.0
+        let mut y = 0.0f32;
+        for _ in 0..1000 {
+            y = filter.process(1.0);
+        }
+        assert!((y - 1.0).abs() < 0.01, "DC gain should be ~1.0, got {y}");
+    }
+
+    #[test]
+    fn one_pole_lowpass_attenuates_high_frequencies() {
+        let mut filter = OnePoleFilter::new(48000.0);
+        filter.set_cutoff(1000.0);
+        let response = run_filter_response(&mut filter, 48000.0, 8192);
+        let passband_db = magnitude_at(&response, 0.02, 48000.0);
+        let stopband_db = magnitude_at(&response, 0.4, 48000.0);
+        assert!(stopband_db < passband_db - 3.0,
+            "one-pole LP: passband {passband_db:.1} dB, stopband {stopband_db:.1} dB");
+    }
+
+    #[test]
+    fn one_pole_highpass_attenuates_low_frequencies() {
+        let mut filter = OnePoleFilter::new(48000.0);
+        filter.set_mode(OnePoleMode::Highpass);
+        filter.set_cutoff(1000.0);
+        let response = run_filter_response(&mut filter, 48000.0, 8192);
+        let passband_db = magnitude_at(&response, 0.4, 48000.0);
+        let stopband_db = magnitude_at(&response, 0.01, 48000.0);
+        assert!(stopband_db < passband_db - 6.0,
+            "one-pole HP: passband {passband_db:.1} dB, stopband {stopband_db:.1} dB");
+    }
+
+    #[test]
+    fn one_pole_no_nan_at_extreme_cutoff() {
+        let mut filter = OnePoleFilter::new(48000.0);
+        filter.set_cutoff(20.0);
+        for _ in 0..100 {
+            let out = filter.process(1.0);
+            assert!(out.is_finite(), "output should be finite at 20 Hz cutoff");
+        }
+        filter.set_cutoff(20000.0);
+        for _ in 0..100 {
+            let out = filter.process(1.0);
+            assert!(out.is_finite(), "output should be finite at 20 kHz cutoff");
+        }
+    }
+
+    #[test]
+    fn one_pole_reset_clears_state() {
+        let mut filter = OnePoleFilter::new(48000.0);
+        filter.process(1.0);
+        filter.process(1.0);
+        filter.reset();
+        // After reset, processing a zero input should produce zero
+        let out = filter.process(0.0);
+        assert!(out.abs() < 1e-6, "after reset with zero input, expected 0, got {out}");
     }
 }

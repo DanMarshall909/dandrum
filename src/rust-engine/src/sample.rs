@@ -1,6 +1,5 @@
 use std::collections::BTreeMap;
 use std::fmt;
-use std::fs;
 use std::path::Path;
 
 use crate::patch::{AssetKind, ParameterValue, PatchDocument};
@@ -130,6 +129,7 @@ fn load_pcm_wav(path: &Path, expected_sample_rate_hz: u32) -> Result<LoadedSampl
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::fs;
     use crate::patch::{
         AssetDeclaration, ModuleDeclaration, PatchMetadata, RenderSettings, VoiceAllocation,
     };
