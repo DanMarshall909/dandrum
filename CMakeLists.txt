@@ -54,6 +54,12 @@ target_link_libraries(dandrum-ffi-smoke
         m)
 add_test(NAME cxx-rust-engine-ffi-smoke COMMAND dandrum-ffi-smoke)
 
+add_test(
+    NAME realtime-callback-safety
+    COMMAND ${CMAKE_COMMAND}
+        -DSOURCE_ROOT=${CMAKE_CURRENT_SOURCE_DIR}
+        -P ${CMAKE_CURRENT_SOURCE_DIR}/tests/cmake/RealtimeCallbackSafety.cmake)
+
 add_subdirectory(third_party/JUCE)
 
 juce_add_console_app(dandrum-beep

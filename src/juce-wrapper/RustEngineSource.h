@@ -1,5 +1,9 @@
 #pragma once
 
+#include <array>
+#include <atomic>
+#include <cstddef>
+
 #include <juce_audio_basics/juce_audio_basics.h>
 #include <juce_core/juce_core.h>
 
@@ -16,11 +20,33 @@ public:
     void getNextAudioBlock (const juce::AudioSourceChannelInfo& bufferToFill) override;
 
     bool loadPatch (const juce::String& yamlPath);
-    void noteOn (int note, int velocity);
-    void noteOff (int note);
+    bool noteOn (int note, int velocity);
+    bool noteOff (int note);
     bool hasFinished() const;
 
 private:
+    enum class PendingMidiEventType
+    {
+        noteOn,
+        noteOff
+    };
+
+    struct PendingMidiEvent
+    {
+        PendingMidiEventType type = PendingMidiEventType::noteOff;
+        unsigned char note = 0;
+        unsigned char velocity = 0;
+    };
+
+    bool enqueueMidiEvent (PendingMidiEvent event);
+    void drainPendingMidiEvents();
+
+    static constexpr std::size_t pendingMidiCapacity = 256;
+    std::array<PendingMidiEvent, pendingMidiCapacity> pendingMidiEvents {};
+    std::atomic<std::size_t> pendingMidiReadIndex { 0 };
+    std::atomic<std::size_t> pendingMidiWriteIndex { 0 };
+    std::atomic<std::size_t> droppedMidiEvents { 0 };
+
     mutable juce::CriticalSection engineLock;
     DandrumEngine* engine = nullptr;
 };
