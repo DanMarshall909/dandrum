@@ -141,14 +141,20 @@ impl Iterator for BlockScheduler {
     type Item = RenderBlock;
 
     fn next(&mut self) -> Option<Self::Item> {
-        if self.next_start_frame >= self.duration_frames || self.block_size_frames == 0 {
+        if self.block_size_frames == 0 {
+            return None;
+        }
+
+        if self.next_start_frame >= self.duration_frames {
             return None;
         }
 
         let remaining_frames = self.duration_frames - self.next_start_frame;
         let frame_count = remaining_frames.min(u64::from(self.block_size_frames)) as u32;
         let start_frame = self.next_start_frame;
-        let end_frame = start_frame + u64::from(frame_count);
+        let end_frame = start_frame
+            .checked_add(u64::from(frame_count))
+            .unwrap_or(self.duration_frames);
         let input_events = self
             .input_events
             .iter()
@@ -164,7 +170,7 @@ impl Iterator for BlockScheduler {
             input_events,
         };
 
-        self.next_start_frame += u64::from(frame_count);
+        self.next_start_frame = end_frame;
         Some(block)
     }
 }
@@ -218,6 +224,50 @@ mod tests {
     }
 
     #[test]
+    fn engine_metadata_identifies_frontend_independent_core() {
+        let engine = Engine::new();
+
+        assert_eq!(engine.package_name(), "dandrum-engine-core");
+        assert!(engine.is_frontend_independent());
+    }
+
+    #[test]
+    fn timed_input_event_preserves_absolute_frame() {
+        let event = TimedInputEvent::new(
+            48_123,
+            ScriptEvent::NoteOn {
+                note: 64,
+                velocity: 90,
+            },
+        );
+
+        assert_eq!(event.frame(), 48_123);
+        assert_eq!(
+            event.event(),
+            &ScriptEvent::NoteOn {
+                note: 64,
+                velocity: 90,
+            }
+        );
+    }
+
+    #[test]
+    fn block_scheduler_terminates_after_exact_duration() {
+        let mut scheduler = BlockScheduler::new(256, 128);
+
+        assert_eq!(scheduler.next().map(|block| block.start_frame()), Some(0));
+        assert_eq!(scheduler.next().map(|block| block.start_frame()), Some(128));
+        assert_eq!(scheduler.next(), None);
+    }
+
+    #[test]
+    fn block_scheduler_rejects_zero_sized_blocks() {
+        let mut scheduler = BlockScheduler::new(256, 0);
+
+        assert_eq!(scheduler.next(), None);
+    }
+
+    #[test]
     fn block_scheduler_sequences_input_events_by_block_with_relative_offsets() {
         let blocks: Vec<RenderBlock> = BlockScheduler::new(256, 128)
             .with_input_events(vec![
@@ -247,6 +297,31 @@ mod tests {
             &[ScheduledInputEvent {
                 frame_offset: 2,
                 event: ScriptEvent::NoteOff { note: 60 },
+            }]
+        );
+    }
+
+    #[test]
+    fn block_scheduler_excludes_events_on_block_end_until_next_block() {
+        let blocks: Vec<RenderBlock> = BlockScheduler::new(256, 128)
+            .with_input_events(vec![TimedInputEvent::new(
+                128,
+                ScriptEvent::NoteOn {
+                    note: 67,
+                    velocity: 80,
+                },
+            )])
+            .collect();
+
+        assert!(blocks[0].input_events().is_empty());
+        assert_eq!(
+            blocks[1].input_events(),
+            &[ScheduledInputEvent {
+                frame_offset: 0,
+                event: ScriptEvent::NoteOn {
+                    note: 67,
+                    velocity: 80,
+                },
             }]
         );
     }

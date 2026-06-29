@@ -41,6 +41,19 @@ add_library(dandrum_engine STATIC IMPORTED GLOBAL)
 set_target_properties(dandrum_engine PROPERTIES IMPORTED_LOCATION ${RUST_ENGINE_LIB})
 add_dependencies(dandrum_engine dandrum-engine-rust)
 
+add_executable(dandrum-ffi-smoke
+    tests/cpp/RustEngineFfiSmoke.cpp)
+target_include_directories(dandrum-ffi-smoke
+    PRIVATE
+        src/juce-wrapper)
+target_link_libraries(dandrum-ffi-smoke
+    PRIVATE
+        dandrum_engine
+        dl
+        pthread
+        m)
+add_test(NAME cxx-rust-engine-ffi-smoke COMMAND dandrum-ffi-smoke)
+
 add_subdirectory(third_party/JUCE)
 
 juce_add_console_app(dandrum-beep

@@ -154,3 +154,47 @@ pub unsafe extern "C" fn dandrum_engine_is_finished(engine: *const DandrumEngine
 
     engine.is_finished()
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn c_ffi_create_returns_live_engine_pointer() {
+        let engine = dandrum_engine_create();
+
+        assert!(!engine.is_null());
+
+        unsafe { dandrum_engine_destroy(engine) };
+    }
+
+    #[test]
+    fn c_ffi_render_rejects_null_engine_and_buffers() {
+        let mut left = [0.0_f32; 8];
+        let mut right = [0.0_f32; 8];
+
+        assert_eq!(
+            unsafe {
+                dandrum_engine_render(
+                    std::ptr::null_mut(),
+                    left.as_mut_ptr(),
+                    right.as_mut_ptr(),
+                    8,
+                )
+            },
+            0
+        );
+
+        let engine = dandrum_engine_create();
+        assert_eq!(
+            unsafe { dandrum_engine_render(engine, std::ptr::null_mut(), right.as_mut_ptr(), 8) },
+            0
+        );
+        assert_eq!(
+            unsafe { dandrum_engine_render(engine, left.as_mut_ptr(), std::ptr::null_mut(), 8) },
+            0
+        );
+
+        unsafe { dandrum_engine_destroy(engine) };
+    }
+}
