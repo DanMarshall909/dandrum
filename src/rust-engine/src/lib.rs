@@ -28,6 +28,8 @@ pub mod filter;
 pub mod delay_line;
 pub mod echo;
 
+pub mod realtime;
+
 pub mod crossover;
 
 pub mod spectral;
