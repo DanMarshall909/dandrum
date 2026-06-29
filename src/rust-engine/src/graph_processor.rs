@@ -1412,6 +1412,7 @@ pub struct RealtimeGraphProcessor {
     pending_events: Vec<ScriptEvent>,
     allocator: VoiceAllocator,
     prepared_max_block_size: usize,
+    last_render_chunk_count: usize,
 }
 
 impl RealtimeGraphProcessor {
@@ -1476,11 +1477,16 @@ impl RealtimeGraphProcessor {
             pending_events: Vec::new(),
             allocator,
             prepared_max_block_size: prepared_max_block_size.max(1),
+            last_render_chunk_count: 0,
         }
     }
 
     pub fn prepared_max_block_size(&self) -> usize {
         self.prepared_max_block_size
+    }
+
+    pub fn last_render_chunk_count(&self) -> usize {
+        self.last_render_chunk_count
     }
 
     pub fn note_on(&mut self, note: u8, velocity: u8) {
@@ -1493,6 +1499,35 @@ impl RealtimeGraphProcessor {
     }
 
     pub fn render(&mut self, left: &mut [f32], right: &mut [f32]) -> usize {
+        let frames = left.len().min(right.len());
+        if frames == 0 {
+            self.last_render_chunk_count = 0;
+            return 0;
+        }
+
+        if frames > self.prepared_max_block_size {
+            let mut rendered = 0;
+            let mut chunks = 0;
+
+            while rendered < frames {
+                let chunk_frames = self.prepared_max_block_size.min(frames - rendered);
+                self.render_chunk(
+                    &mut left[rendered..rendered + chunk_frames],
+                    &mut right[rendered..rendered + chunk_frames],
+                );
+                rendered += chunk_frames;
+                chunks += 1;
+            }
+
+            self.last_render_chunk_count = chunks;
+            return frames;
+        }
+
+        self.last_render_chunk_count = 1;
+        self.render_chunk(left, right)
+    }
+
+    fn render_chunk(&mut self, left: &mut [f32], right: &mut [f32]) -> usize {
         let frames = left.len().min(right.len());
         let block_start = self.current_frame;
         self.current_frame += frames as u64;
@@ -2135,6 +2170,60 @@ mod tests {
         );
 
         assert_eq!(processor.prepared_max_block_size(), 256);
+    }
+
+    #[test]
+    fn realtime_graph_processor_splits_oversized_render_blocks() {
+        let graph = sampler_graph(Vec::new(), Vec::new());
+        let mut processor =
+            RealtimeGraphProcessor::polyphonic_with_sampler_assets_and_max_block_size(
+                graph,
+                48_000.0,
+                &sampler_assets(vec![0.25; 16]),
+                &VoiceAllocation::default(),
+                4,
+            );
+        let mut left = vec![0.0; 10];
+        let mut right = vec![0.0; 10];
+
+        assert_eq!(processor.render(&mut left, &mut right), 10);
+
+        assert_eq!(processor.last_render_chunk_count(), 3);
+    }
+
+    #[test]
+    fn realtime_graph_processor_is_deterministic_for_same_events_and_block_sequence() {
+        let graph = sampler_graph(Vec::new(), Vec::new());
+        let assets = sampler_assets(vec![0.25, 0.5, 0.75, 1.0]);
+        let mut first = RealtimeGraphProcessor::polyphonic_with_sampler_assets_and_max_block_size(
+            graph.clone(),
+            48_000.0,
+            &assets,
+            &VoiceAllocation::default(),
+            8,
+        );
+        let mut second = RealtimeGraphProcessor::polyphonic_with_sampler_assets_and_max_block_size(
+            graph,
+            48_000.0,
+            &assets,
+            &VoiceAllocation::default(),
+            8,
+        );
+        let mut first_left = vec![0.0; 12];
+        let mut first_right = vec![0.0; 12];
+        let mut second_left = vec![0.0; 12];
+        let mut second_right = vec![0.0; 12];
+
+        first.note_on(60, 100);
+        second.note_on(60, 100);
+
+        assert_eq!(first.render(&mut first_left[..5], &mut first_right[..5]), 5);
+        assert_eq!(second.render(&mut second_left[..5], &mut second_right[..5]), 5);
+        assert_eq!(first.render(&mut first_left[5..], &mut first_right[5..]), 7);
+        assert_eq!(second.render(&mut second_left[5..], &mut second_right[5..]), 7);
+
+        assert_eq!(first_left, second_left);
+        assert_eq!(first_right, second_right);
     }
 
     #[test]

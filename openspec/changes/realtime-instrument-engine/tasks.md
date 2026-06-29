@@ -23,8 +23,8 @@
 
 - [x] 4.1 Add a prepared maximum block size to the realtime graph processor setup path.
 - [ ] 4.2 Replace steady-state realtime render `Vec` and `HashMap` allocation with reusable scratch storage for module outputs and event routing.
-- [ ] 4.3 Define and test oversized callback block handling by splitting or explicit fallback.
-- [ ] 4.4 Add deterministic realtime render tests across repeated engines with the same queued events and block sequence.
+- [x] 4.3 Define and test oversized callback block handling by splitting or explicit fallback.
+- [x] 4.4 Add deterministic realtime render tests across repeated engines with the same queued events and block sequence.
 
 ## 5. Verification and Documentation
 
