@@ -44,6 +44,10 @@ pub mod convolution;
 
 pub use synth::DandrumEngine;
 
+pub struct DandrumRealtimeEventQueue {
+    queue: realtime::RealtimeEventQueue,
+}
+
 #[unsafe(no_mangle)]
 pub extern "C" fn dandrum_engine_create() -> *mut DandrumEngine {
     Box::into_raw(Box::new(DandrumEngine::new()))
@@ -157,6 +161,66 @@ pub unsafe extern "C" fn dandrum_engine_is_finished(engine: *const DandrumEngine
     engine.is_finished()
 }
 
+#[unsafe(no_mangle)]
+pub extern "C" fn dandrum_realtime_event_queue_create(
+    capacity: usize,
+) -> *mut DandrumRealtimeEventQueue {
+    Box::into_raw(Box::new(DandrumRealtimeEventQueue {
+        queue: realtime::RealtimeEventQueue::with_capacity(capacity),
+    }))
+}
+
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn dandrum_realtime_event_queue_destroy(
+    queue: *mut DandrumRealtimeEventQueue,
+) {
+    if !queue.is_null() {
+        drop(unsafe { Box::from_raw(queue) });
+    }
+}
+
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn dandrum_realtime_event_queue_note_on(
+    queue: *mut DandrumRealtimeEventQueue,
+    note: u8,
+    velocity: u8,
+) -> u8 {
+    submit_realtime_queue_event(queue, realtime::RealtimeEvent::NoteOn { note, velocity })
+}
+
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn dandrum_realtime_event_queue_note_off(
+    queue: *mut DandrumRealtimeEventQueue,
+    note: u8,
+) -> u8 {
+    submit_realtime_queue_event(queue, realtime::RealtimeEvent::NoteOff { note })
+}
+
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn dandrum_realtime_event_queue_dropped_count(
+    queue: *const DandrumRealtimeEventQueue,
+) -> usize {
+    let Some(queue) = (unsafe { queue.as_ref() }) else {
+        return 0;
+    };
+
+    queue.queue.dropped_events()
+}
+
+fn submit_realtime_queue_event(
+    queue: *mut DandrumRealtimeEventQueue,
+    event: realtime::RealtimeEvent,
+) -> u8 {
+    let Some(queue) = (unsafe { queue.as_mut() }) else {
+        return 1;
+    };
+
+    match queue.queue.submit(event) {
+        realtime::RealtimeEventSubmitStatus::Accepted => 0,
+        realtime::RealtimeEventSubmitStatus::Dropped => 1,
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -198,5 +262,17 @@ mod tests {
         );
 
         unsafe { dandrum_engine_destroy(engine) };
+    }
+
+    #[test]
+    fn c_ffi_realtime_event_queue_reports_submission_status() {
+        let queue = dandrum_realtime_event_queue_create(1);
+
+        assert!(!queue.is_null());
+        assert_eq!(unsafe { dandrum_realtime_event_queue_note_on(queue, 60, 100) }, 0);
+        assert_eq!(unsafe { dandrum_realtime_event_queue_note_off(queue, 60) }, 1);
+        assert_eq!(unsafe { dandrum_realtime_event_queue_dropped_count(queue) }, 1);
+
+        unsafe { dandrum_realtime_event_queue_destroy(queue) };
     }
 }

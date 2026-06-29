@@ -10,7 +10,7 @@
 - [x] 2.1 Define a small realtime event type and bounded queue in the Rust engine layer.
 - [x] 2.2 Add non-blocking event submission APIs that return accepted or dropped status.
 - [x] 2.3 Drain queued events at the start of realtime audio rendering without blocking.
-- [ ] 2.4 Expose realtime event submission status through the C FFI.
+- [x] 2.4 Expose realtime event submission status through the C FFI.
 
 ## 3. JUCE Callback Integration
 
