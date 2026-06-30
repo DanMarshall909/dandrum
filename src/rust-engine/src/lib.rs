@@ -1,10 +1,10 @@
 pub mod core;
 
-pub mod compiled_patch;
+pub(crate) mod compiled_patch;
 
 pub mod graph_processor;
 
-pub mod builtins;
+pub(crate) mod builtins;
 
 pub mod graph;
 
@@ -14,36 +14,33 @@ pub mod patch;
 
 pub mod script;
 
-pub mod sample;
+pub(crate) mod sample;
 
-pub mod synth;
+pub(crate) mod synth;
 
 pub mod wav;
 
-pub mod voice_allocator;
+pub(crate) mod voice_allocator;
 
-pub mod fft;
+pub(crate) mod fft;
 
-pub mod delay_line;
-pub mod echo;
-pub mod filter;
-pub mod reverb;
+pub(crate) mod delay_line;
+pub(crate) mod echo;
+pub(crate) mod filter;
+pub(crate) mod reverb;
 
-pub mod realtime;
+pub(crate) mod realtime;
 
-pub mod crossover;
+pub(crate) mod crossover;
 
-pub mod spectral;
+pub(crate) mod spectral;
 
-pub mod envelope_detector;
+pub(crate) mod envelope_detector;
 
-pub mod audio_loading;
+pub(crate) mod audio_loading;
 
-pub mod convolution;
-pub mod dynamics_processor;
-pub mod saturator;
+pub(crate) mod convolution;
+pub(crate) mod dynamics_processor;
+pub(crate) mod saturator;
 
 pub mod ffi;
-
-pub use synth::DandrumEngine;
-pub use ffi::DandrumRealtimeEventQueue;
