@@ -2416,3 +2416,161 @@ fn composite_reverb_yaml_loads_and_validates() {
         .validate()
         .expect("composite-reverb.yaml graph should validate");
 }
+
+// --- Offline vs Realtime parity ---
+
+fn assert_offline_realtime_parity(
+    graph: &Graph,
+    sample_rate: f32,
+    total_frames: usize,
+    block_size: usize,
+    events: &[TimedInputEvent],
+    sampler_assets: &PreparedSamplerAssets,
+) {
+    let settings = RenderSettings {
+        sample_rate_hz: sample_rate as u32,
+        block_size_frames: block_size as u32,
+        duration_frames: total_frames as u64,
+    };
+
+    let (offline_left, offline_right) =
+        render_offline_with_sampler_assets(graph, &settings, events.to_vec(), sampler_assets);
+
+    let mut realtime = RealtimeGraphProcessor::polyphonic_with_sampler_assets_and_max_block_size(
+        graph.clone(),
+        sample_rate,
+        sampler_assets,
+        &VoiceAllocation::default(),
+        block_size,
+    );
+
+    for event in events {
+        match event.event() {
+            ScriptEvent::NoteOn { note, velocity } => realtime.note_on(*note, *velocity),
+            ScriptEvent::NoteOff { note } => realtime.note_off(*note),
+        }
+    }
+
+    let mut realtime_left = vec![0.0; total_frames];
+    let mut realtime_right = vec![0.0; total_frames];
+    let rendered = realtime.render(&mut realtime_left, &mut realtime_right);
+
+    assert_eq!(
+        rendered,
+        total_frames.min(realtime_left.len().min(realtime_right.len()))
+    );
+
+    let compare_len = offline_left.len().min(realtime_left.len());
+    assert_eq!(
+        &offline_left[..compare_len],
+        &realtime_left[..compare_len],
+        "left channel offline/realtime parity mismatch"
+    );
+    assert_eq!(
+        &offline_right[..compare_len],
+        &realtime_right[..compare_len],
+        "right channel offline/realtime parity mismatch"
+    );
+}
+
+#[test]
+fn offline_and_realtime_produce_same_output_for_oscillator_patch() {
+    let graph = Graph::new(
+        vec![
+            ModuleNode::new(ModuleId::new("osc"), "oscillator")
+                .with_output(builtin_ports::AUDIO, SignalType::Audio),
+            ModuleNode::new(ModuleId::new("mixer"), "audio_mixer")
+                .with_mixing_input(builtin_ports::INPUTS, SignalType::Audio)
+                .with_output(builtin_ports::MIX, SignalType::Audio),
+            ModuleNode::new(ModuleId::new("out"), "audio_output")
+                .with_input(builtin_ports::LEFT, SignalType::Audio)
+                .with_input(builtin_ports::RIGHT, SignalType::Audio),
+        ],
+        vec![
+            Cable::new(
+                PortRef::new(ModuleId::new("osc"), builtin_ports::AUDIO),
+                PortRef::new(ModuleId::new("mixer"), builtin_ports::INPUTS),
+            ),
+            Cable::new(
+                PortRef::new(ModuleId::new("mixer"), builtin_ports::MIX),
+                PortRef::new(ModuleId::new("out"), builtin_ports::LEFT),
+            ),
+            Cable::new(
+                PortRef::new(ModuleId::new("mixer"), builtin_ports::MIX),
+                PortRef::new(ModuleId::new("out"), builtin_ports::RIGHT),
+            ),
+        ],
+    );
+    graph.validate().expect("graph should validate");
+
+    assert_offline_realtime_parity(
+        &graph,
+        48_000.0,
+        512,
+        64,
+        &[TimedInputEvent::new(
+            0,
+            ScriptEvent::NoteOn {
+                note: 60,
+                velocity: 100,
+            },
+        )],
+        &PreparedSamplerAssets::empty(),
+    );
+}
+
+#[test]
+fn offline_and_realtime_produce_same_output_for_sampler_patch() {
+    let graph = Graph::new(
+        vec![
+            ModuleNode::new(ModuleId::new("midi"), "midi_input")
+                .with_output(builtin_ports::EVENTS, SignalType::Event),
+            ModuleNode::new(ModuleId::new("sampler"), "sampler")
+                .with_input(builtin_ports::TRIGGER, SignalType::Event)
+                .with_input(builtin_ports::RATE, SignalType::Control)
+                .with_input(builtin_ports::START, SignalType::Control)
+                .with_input(builtin_ports::LOOP_ENABLED, SignalType::Control)
+                .with_input(builtin_ports::LOOP_START, SignalType::Control)
+                .with_input(builtin_ports::LOOP_END, SignalType::Control)
+                .with_output(builtin_ports::AUDIO, SignalType::Audio),
+            ModuleNode::new(ModuleId::new("out"), "audio_output")
+                .with_input(builtin_ports::LEFT, SignalType::Audio)
+                .with_input(builtin_ports::RIGHT, SignalType::Audio),
+        ],
+        vec![
+            Cable::new(
+                PortRef::new(ModuleId::new("midi"), builtin_ports::EVENTS),
+                PortRef::new(ModuleId::new("sampler"), builtin_ports::TRIGGER),
+            ),
+            Cable::new(
+                PortRef::new(ModuleId::new("sampler"), builtin_ports::AUDIO),
+                PortRef::new(ModuleId::new("out"), builtin_ports::LEFT),
+            ),
+        ],
+    );
+    graph.validate().expect("graph should validate");
+
+    let assets = PreparedSamplerAssets::from_samples_by_module({
+        let mut m = std::collections::BTreeMap::new();
+        m.insert(
+            "sampler".to_string(),
+            LoadedSample::new(48_000, vec![0.25, 0.5, 0.75, 1.0]),
+        );
+        m
+    });
+
+    assert_offline_realtime_parity(
+        &graph,
+        48_000.0,
+        16,
+        4,
+        &[TimedInputEvent::new(
+            0,
+            ScriptEvent::NoteOn {
+                note: 60,
+                velocity: 100,
+            },
+        )],
+        &assets,
+    );
+}
