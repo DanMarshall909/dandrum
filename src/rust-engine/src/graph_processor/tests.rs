@@ -2520,6 +2520,195 @@ fn offline_and_realtime_produce_same_output_for_oscillator_patch() {
 }
 
 #[test]
+fn realtime_preparation_records_configured_max_block_size() {
+    for size in [1, 64, 256, 1024] {
+        let graph = Graph::new(
+            vec![
+                ModuleNode::new(ModuleId::new("osc"), "oscillator")
+                    .with_output(builtin_ports::AUDIO, SignalType::Audio),
+                ModuleNode::new(ModuleId::new("mixer"), "audio_mixer")
+                    .with_mixing_input(builtin_ports::INPUTS, SignalType::Audio)
+                    .with_output(builtin_ports::MIX, SignalType::Audio),
+                ModuleNode::new(ModuleId::new("out"), "audio_output")
+                    .with_input(builtin_ports::LEFT, SignalType::Audio)
+                    .with_input(builtin_ports::RIGHT, SignalType::Audio),
+            ],
+            vec![
+                Cable::new(
+                    PortRef::new(ModuleId::new("osc"), builtin_ports::AUDIO),
+                    PortRef::new(ModuleId::new("mixer"), builtin_ports::INPUTS),
+                ),
+                Cable::new(
+                    PortRef::new(ModuleId::new("mixer"), builtin_ports::MIX),
+                    PortRef::new(ModuleId::new("out"), builtin_ports::LEFT),
+                ),
+                Cable::new(
+                    PortRef::new(ModuleId::new("mixer"), builtin_ports::MIX),
+                    PortRef::new(ModuleId::new("out"), builtin_ports::RIGHT),
+                ),
+            ],
+        );
+        graph.validate().expect("graph should validate");
+
+        let processor = RealtimeGraphProcessor::polyphonic_with_sampler_assets_and_max_block_size(
+            graph,
+            48_000.0,
+            &PreparedSamplerAssets::empty(),
+            &VoiceAllocation::default(),
+            size,
+        );
+
+        assert_eq!(processor.prepared_max_block_size(), size);
+        assert_eq!(
+            processor.top_level_scratch_capacities(),
+            (size, size),
+            "scratch capacities should match prepared max block size {size}"
+        );
+    }
+}
+
+#[test]
+fn realtime_preparation_with_min_block_size_renders_without_panic() {
+    let graph = Graph::new(
+        vec![
+            ModuleNode::new(ModuleId::new("osc"), "oscillator")
+                .with_output(builtin_ports::AUDIO, SignalType::Audio),
+            ModuleNode::new(ModuleId::new("mixer"), "audio_mixer")
+                .with_mixing_input(builtin_ports::INPUTS, SignalType::Audio)
+                .with_output(builtin_ports::MIX, SignalType::Audio),
+            ModuleNode::new(ModuleId::new("out"), "audio_output")
+                .with_input(builtin_ports::LEFT, SignalType::Audio)
+                .with_input(builtin_ports::RIGHT, SignalType::Audio),
+        ],
+        vec![
+            Cable::new(
+                PortRef::new(ModuleId::new("osc"), builtin_ports::AUDIO),
+                PortRef::new(ModuleId::new("mixer"), builtin_ports::INPUTS),
+            ),
+            Cable::new(
+                PortRef::new(ModuleId::new("mixer"), builtin_ports::MIX),
+                PortRef::new(ModuleId::new("out"), builtin_ports::LEFT),
+            ),
+            Cable::new(
+                PortRef::new(ModuleId::new("mixer"), builtin_ports::MIX),
+                PortRef::new(ModuleId::new("out"), builtin_ports::RIGHT),
+            ),
+        ],
+    );
+    graph.validate().expect("graph should validate");
+
+    let mut processor = RealtimeGraphProcessor::polyphonic_with_sampler_assets_and_max_block_size(
+        graph,
+        48_000.0,
+        &PreparedSamplerAssets::empty(),
+        &VoiceAllocation::default(),
+        1,
+    );
+
+    assert_eq!(processor.prepared_max_block_size(), 1);
+
+    let mut left = [0.0f32];
+    let mut right = [0.0f32];
+    processor.note_on(60, 100);
+    let rendered = processor.render(&mut left, &mut right);
+
+    assert_eq!(rendered, 1);
+}
+
+#[test]
+fn realtime_preparation_records_module_output_scratch_capacity() {
+    let graph = Graph::new(
+        vec![
+            ModuleNode::new(ModuleId::new("osc"), "oscillator")
+                .with_output(builtin_ports::AUDIO, SignalType::Audio),
+            ModuleNode::new(ModuleId::new("mixer"), "audio_mixer")
+                .with_mixing_input(builtin_ports::INPUTS, SignalType::Audio)
+                .with_output(builtin_ports::MIX, SignalType::Audio),
+            ModuleNode::new(ModuleId::new("out"), "audio_output")
+                .with_input(builtin_ports::LEFT, SignalType::Audio)
+                .with_input(builtin_ports::RIGHT, SignalType::Audio),
+        ],
+        vec![
+            Cable::new(
+                PortRef::new(ModuleId::new("osc"), builtin_ports::AUDIO),
+                PortRef::new(ModuleId::new("mixer"), builtin_ports::INPUTS),
+            ),
+            Cable::new(
+                PortRef::new(ModuleId::new("mixer"), builtin_ports::MIX),
+                PortRef::new(ModuleId::new("out"), builtin_ports::LEFT),
+            ),
+            Cable::new(
+                PortRef::new(ModuleId::new("mixer"), builtin_ports::MIX),
+                PortRef::new(ModuleId::new("out"), builtin_ports::RIGHT),
+            ),
+        ],
+    );
+    graph.validate().expect("graph should validate");
+
+    let processor = RealtimeGraphProcessor::polyphonic_with_sampler_assets_and_max_block_size(
+        graph,
+        48_000.0,
+        &PreparedSamplerAssets::empty(),
+        &VoiceAllocation::default(),
+        64,
+    );
+
+    assert!(processor.module_output_scratch_capacity() >= 3);
+}
+
+#[test]
+fn realtime_preparation_respects_voice_allocation() {
+    let graph = Graph::new(
+        vec![
+            ModuleNode::new(ModuleId::new("midi"), "midi_input")
+                .with_output(builtin_ports::EVENTS, SignalType::Event),
+            ModuleNode::new(ModuleId::new("sampler"), "sampler")
+                .with_input(builtin_ports::TRIGGER, SignalType::Event)
+                .with_input(builtin_ports::RATE, SignalType::Control)
+                .with_input(builtin_ports::START, SignalType::Control)
+                .with_input(builtin_ports::LOOP_ENABLED, SignalType::Control)
+                .with_input(builtin_ports::LOOP_START, SignalType::Control)
+                .with_input(builtin_ports::LOOP_END, SignalType::Control)
+                .with_output(builtin_ports::AUDIO, SignalType::Audio),
+            ModuleNode::new(ModuleId::new("mixer"), "audio_mixer")
+                .with_mixing_input(builtin_ports::INPUTS, SignalType::Audio)
+                .with_output(builtin_ports::MIX, SignalType::Audio),
+            ModuleNode::new(ModuleId::new("out"), "audio_output")
+                .with_input(builtin_ports::LEFT, SignalType::Audio)
+                .with_input(builtin_ports::RIGHT, SignalType::Audio),
+        ],
+        vec![
+            Cable::new(
+                PortRef::new(ModuleId::new("midi"), builtin_ports::EVENTS),
+                PortRef::new(ModuleId::new("sampler"), builtin_ports::TRIGGER),
+            ),
+            Cable::new(
+                PortRef::new(ModuleId::new("sampler"), builtin_ports::AUDIO),
+                PortRef::new(ModuleId::new("mixer"), builtin_ports::INPUTS),
+            ),
+            Cable::new(
+                PortRef::new(ModuleId::new("mixer"), builtin_ports::MIX),
+                PortRef::new(ModuleId::new("out"), builtin_ports::LEFT),
+            ),
+        ],
+    );
+    graph.validate().expect("graph should validate");
+
+    let processor = RealtimeGraphProcessor::polyphonic_with_sampler_assets_and_max_block_size(
+        graph,
+        48_000.0,
+        &PreparedSamplerAssets::empty(),
+        &patch::VoiceAllocation {
+            max_voices: 8,
+            stealing: patch::VoiceStealingPolicy::Disabled,
+        },
+        64,
+    );
+
+    assert_eq!(processor.prepared_max_block_size(), 64);
+}
+
+#[test]
 fn offline_and_realtime_produce_same_output_for_sampler_patch() {
     let graph = Graph::new(
         vec![
