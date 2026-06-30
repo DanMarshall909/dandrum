@@ -129,6 +129,47 @@ fn moog_no_nan_at_extreme_resonance() {
 }
 
 #[test]
+fn moog_rolloff_slope_exceeds_18_db_per_octave() {
+    let mut filter = MoogLadder::new(48000.0);
+    filter.set_cutoff(500.0);
+    filter.set_resonance(0.0);
+    let response = run_filter_response(&mut filter, 48000.0, 16384);
+    let _passband_db = magnitude_at(&response, 250.0 / 48000.0, 48000.0);
+    let one_octave_up_db = magnitude_at(&response, 500.0 / 48000.0, 48000.0);
+    let two_octaves_up_db = magnitude_at(&response, 1000.0 / 48000.0, 48000.0);
+    let three_octaves_up_db = magnitude_at(&response, 2000.0 / 48000.0, 48000.0);
+    // 4-pole = 24 dB/oct; digital Moog model typically achieves 15-20 dB/oct
+    let slope_1 = (one_octave_up_db - two_octaves_up_db).abs();
+    let slope_2 = (two_octaves_up_db - three_octaves_up_db).abs();
+    assert!(
+        slope_1 > 12.0,
+        "moog rolloff first octave: expected ≥12 dB, got {slope_1:.1} dB"
+    );
+    assert!(
+        slope_2 > 12.0,
+        "moog rolloff second octave: expected ≥12 dB, got {slope_2:.1} dB"
+    );
+}
+
+#[test]
+fn moog_self_oscillates_at_high_resonance() {
+    let mut filter = MoogLadder::new(48000.0);
+    filter.set_cutoff(1000.0);
+    filter.set_resonance(0.98);
+    // seed with an impulse to kick-start self-oscillation
+    let _ = filter.process(1.0);
+    let mut max_output = 0.0f32;
+    for _ in 0..48000 {
+        let out = filter.process(0.0);
+        max_output = max_output.max(out.abs());
+    }
+    assert!(
+        max_output > 0.01,
+        "moog should self-oscillate at high resonance, max output {max_output}"
+    );
+}
+
+#[test]
 fn comb_feedforward_produces_notches() {
     let delay_samples = 96;
     let mut filter = CombFilter::new(delay_samples, 0.7, CombType::Feedforward);
@@ -245,5 +286,59 @@ fn one_pole_reset_clears_state() {
     assert!(
         out.abs() < 1e-6,
         "after reset with zero input, expected 0, got {out}"
+    );
+}
+
+#[test]
+fn fft_moog_resonance_peak_at_cutoff() {
+    let mut filter = MoogLadder::new(48000.0);
+    filter.set_cutoff(1000.0);
+    filter.set_resonance(0.8);
+    let impulse_len = 8192;
+    let mut out = vec![0.0f32; impulse_len];
+    for i in 0..impulse_len {
+        let impulse = if i == 0 { 1.0 } else { 0.0 };
+        out[i] = filter.process(impulse);
+    }
+    filter.reset();
+    let response = crate::fft::compute_magnitude_response(&out, 48000.0).bins;
+    let peak_hz = response
+        .iter()
+        .max_by(|(_, a), (_, b)| a.partial_cmp(b).unwrap())
+        .map(|&(f, _)| f)
+        .unwrap_or(0.0);
+    assert!(
+        peak_hz > 500.0 && peak_hz < 2000.0,
+        "moog resonance peak should be near cutoff (1000 Hz), got {peak_hz:.0} Hz"
+    );
+}
+
+#[test]
+fn fft_moog_rolloff_slope() {
+    let mut filter = MoogLadder::new(48000.0);
+    filter.set_cutoff(500.0);
+    filter.set_resonance(0.0);
+    let impulse_len = 16384;
+    let mut out = vec![0.0f32; impulse_len];
+    for i in 0..impulse_len {
+        let impulse = if i == 0 { 1.0 } else { 0.0 };
+        out[i] = filter.process(impulse);
+    }
+    filter.reset();
+    let response = crate::fft::compute_magnitude_response(&out, 48000.0).bins;
+    let at_500_hz = response
+        .iter()
+        .min_by(|(a, _), (b, _)| (a - 500.0).abs().partial_cmp(&(b - 500.0).abs()).unwrap())
+        .map(|&(_, db)| db)
+        .unwrap_or(-100.0);
+    let at_2000_hz = response
+        .iter()
+        .min_by(|(a, _), (b, _)| (a - 2000.0).abs().partial_cmp(&(b - 2000.0).abs()).unwrap())
+        .map(|&(_, db)| db)
+        .unwrap_or(-100.0);
+    let slope_per_octave = (at_500_hz - at_2000_hz).abs();
+    assert!(
+        slope_per_octave > 18.0,
+        "fft moog rolloff: expected ≥18 dB/oct, got {slope_per_octave:.1} dB"
     );
 }

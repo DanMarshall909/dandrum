@@ -22,16 +22,22 @@ The system SHALL include a `filter` built-in module type with a configurable `al
 - **THEN** the filter SHALL apply a feedforward comb filter
 
 ### Requirement: Biquad low-pass filter passes frequencies below cutoff
+The biquad low-pass mode SHALL preserve frequencies below the configured cutoff while attenuating frequencies above it.
+
 #### Scenario: Low-pass attenuates high frequencies
 - **WHEN** a biquad filter configured with `mode: lowpass`, `cutoff` at 0.1, `resonance` at 0.0
 - **THEN** the magnitude response at 0.1 normalized frequency SHALL be within 3 dB of unity, and at 0.5 normalized frequency SHALL be at least 12 dB below the passband
 
 ### Requirement: Biquad high-pass filter attenuates low frequencies
+The biquad high-pass mode SHALL preserve frequencies above the configured cutoff while attenuating frequencies below it.
+
 #### Scenario: High-pass attenuates low frequencies
 - **WHEN** a filter configured with `mode: highpass`, `cutoff` at 0.3, `resonance` at 0.0
 - **THEN** the magnitude at 0.5 normalized freq SHALL be within 3 dB of unity, and at 0.05 SHALL be at least 12 dB below the passband
 
 ### Requirement: Biquad parametric EQ boosts or cuts a frequency band
+The biquad peaking mode SHALL boost or cut a band centered on the configured cutoff according to the gain control.
+
 #### Scenario: PEQ boosts at center frequency
 - **WHEN** a filter configured with `mode: peaking`, `cutoff` at 0.2, `resonance` at 0.5, `gain` at 0.75 (≈ +12 dB)
 - **THEN** the magnitude at 0.2 normalized freq SHALL be at least 6 dB above unity
@@ -45,6 +51,8 @@ The system SHALL include a `filter` built-in module type with a configurable `al
 - **THEN** the narrow Q response SHALL have a narrower −3 dB bandwidth
 
 ### Requirement: Moog ladder filter produces resonant 4-pole low-pass
+The Moog ladder algorithm SHALL provide a resonant four-pole low-pass response with high-resonance self-oscillation behavior.
+
 #### Scenario: Moog resonance emphasizes cutoff
 - **WHEN** a Moog filter with `cutoff` at 0.15 has `resonance` at 0.8
 - **THEN** the magnitude at cutoff SHALL be at least 3 dB higher than with `resonance` at 0.0
@@ -58,6 +66,8 @@ The system SHALL include a `filter` built-in module type with a configurable `al
 - **THEN** the output SHALL contain a sustained oscillation at the cutoff frequency
 
 ### Requirement: Comb filter produces periodic notches or peaks
+The comb algorithm SHALL produce delay-dependent periodic notches or peaks according to the selected feedforward or feedback mode.
+
 #### Scenario: Feedforward comb produces notches
 - **WHEN** a feedforward comb filter with delay 2 ms at 48 kHz (96 samples) and gain 0.7
 - **THEN** the magnitude response SHALL show notches at 250 Hz, 500 Hz, 750 Hz, ... (multiples of 1/delay_time)
@@ -78,6 +88,8 @@ The filter module SHALL expose `audio_in` (Audio), `cutoff` (Control), `resonanc
 - **THEN** graph validation SHALL accept the route as compatible Control-to-Control
 
 ### Requirement: Filter algorithms handle edge cases
+All filter algorithms SHALL remain numerically stable and isolate state between independent instances.
+
 #### Scenario: No NaN for extreme parameters
 - **WHEN** a biquad filter with `cutoff` at 0.0 processes any input
 - **THEN** output SHALL not contain NaN values

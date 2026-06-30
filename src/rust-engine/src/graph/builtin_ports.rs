@@ -52,3 +52,5 @@ pub const PRE_DELAY: &str = "pre_delay";
 pub const DAMPING: &str = "damping";
 pub const DIFFUSION: &str = "diffusion";
 pub const STEREO_WIDTH: &str = "stereo_width";
+pub const RESONANCE: &str = "resonance";
+pub const CROSSOVER_HZ: &str = "crossover_hz";

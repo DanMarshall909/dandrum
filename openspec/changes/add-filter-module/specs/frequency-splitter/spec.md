@@ -33,6 +33,8 @@ The module SHALL expose `audio_in` (Audio) and `crossover_hz` (Control) inputs. 
 - **THEN** the graph validation SHALL accept the route as compatible Control-to-Control
 
 ### Requirement: Frequency splitter handles edge cases
+The frequency splitter SHALL remain stable and useful at crossover extremes.
+
 #### Scenario: Crossover at frequency extremes does not produce silence
 - **WHEN** a 2-band splitter has `crossover_hz` at 0 (minimum)
 - **THEN** the `high` output SHALL pass the full signal and `low` SHALL be silent

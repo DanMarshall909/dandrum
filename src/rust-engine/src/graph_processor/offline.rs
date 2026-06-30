@@ -58,6 +58,14 @@ pub fn render_offline_compiled(
                     position: 0.0,
                     active: false,
                 },
+                "echo" => PerModuleState::Echo {
+                    processor: crate::echo::Echo::new(sample_rate as f64),
+                    sample_rate: sample_rate as f64,
+                },
+                "reverb" => PerModuleState::Reverb {
+                    processor: crate::reverb::Reverb::new(sample_rate as f64),
+                    sample_rate: sample_rate as f64,
+                },
                 other => panic!("unknown module type in compiled render: {other}"),
             }
         })

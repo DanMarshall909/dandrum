@@ -1,10 +1,12 @@
 use super::*;
 use crate::core::TimedInputEvent;
+use crate::fft;
 use crate::graph::*;
 use crate::patch;
 use crate::sample::{LoadedSample, PreparedSamplerAssets};
 use crate::script::ScriptEvent;
 use std::collections::BTreeMap;
+use std::fs;
 
 fn sampler_assets(frames: Vec<f32>) -> PreparedSamplerAssets {
     PreparedSamplerAssets::from_samples_by_module(BTreeMap::from([(
@@ -63,6 +65,142 @@ fn render_patch(yaml: &str) -> (Vec<f32>, Vec<f32>) {
     let graph = Graph::from_patch_declarations(&patch);
     graph.validate().expect("graph should validate");
     render_offline(&graph, &patch.render, vec![note_on(0, 100)])
+}
+
+fn cutoff_control_for_hz(hz: f64) -> f32 {
+    let base: f64 = 8000.0 / 20.0;
+    ((hz / 20.0).ln() / base.ln()) as f32
+}
+
+fn magnitude_at(bins: &[(f64, f64)], target_hz: f64) -> f64 {
+    bins.iter()
+        .min_by(|(a, _), (b, _)| {
+            (a - target_hz)
+                .abs()
+                .partial_cmp(&(b - target_hz).abs())
+                .unwrap()
+        })
+        .map(|&(_, db)| db)
+        .unwrap_or(-100.0)
+}
+
+fn filter_impulse_response(
+    algorithm: &str,
+    mode: Option<&str>,
+    comb_type: Option<&str>,
+    sample_rate: f32,
+    cutoff: Vec<f32>,
+    resonance: Vec<f32>,
+    gain: Vec<f32>,
+) -> Vec<f32> {
+    let frames = cutoff.len();
+    let mut params = BTreeMap::from([("algorithm".to_string(), algorithm.to_string())]);
+    if let Some(mode) = mode {
+        params.insert("mode".to_string(), mode.to_string());
+    }
+    if let Some(comb_type) = comb_type {
+        params.insert("comb_type".to_string(), comb_type.to_string());
+    }
+    let module = ModuleNode::new(ModuleId::new("filter"), "filter").with_params(params);
+    let mut state = PerModuleState::new(&module, sample_rate, &PreparedSamplerAssets::empty());
+    let mut audio_in = vec![0.0; frames];
+    audio_in[0] = 1.0;
+    let outputs = process_filter(&mut state, &audio_in, &cutoff, &resonance, &gain, frames);
+    outputs
+        .audio
+        .get(builtin_ports::AUDIO_OUT)
+        .expect("filter should emit audio_out")
+        .clone()
+}
+
+#[test]
+fn graph_filter_biquad_highpass_mode_attenuates_low_frequencies() {
+    let frames = 16_384;
+    let sample_rate = 48_000.0;
+    let cutoff = vec![cutoff_control_for_hz(1_000.0); frames];
+    let resonance = vec![0.06; frames];
+    let gain = vec![0.5; frames];
+
+    let impulse = filter_impulse_response(
+        "biquad",
+        Some("highpass"),
+        None,
+        sample_rate as f32,
+        cutoff,
+        resonance,
+        gain,
+    );
+    let response = fft::compute_magnitude_response(&impulse, sample_rate).bins;
+
+    let low_db = magnitude_at(&response, 100.0);
+    let high_db = magnitude_at(&response, 8_000.0);
+    assert!(
+        high_db - low_db > 18.0,
+        "graph highpass should attenuate lows: 100 Hz {low_db:.1} dB, 8 kHz {high_db:.1} dB"
+    );
+}
+
+#[test]
+fn graph_filter_biquad_cutoff_tracks_render_sample_rate() {
+    let frames = 32_768;
+    let sample_rate = 96_000.0;
+    let cutoff = vec![cutoff_control_for_hz(8_000.0); frames];
+    let resonance = vec![0.06; frames];
+    let gain = vec![0.5; frames];
+
+    let impulse = filter_impulse_response(
+        "biquad",
+        Some("lowpass"),
+        None,
+        sample_rate as f32,
+        cutoff,
+        resonance,
+        gain,
+    );
+    let response = fft::compute_magnitude_response(&impulse, sample_rate).bins;
+
+    let passband_db = magnitude_at(&response, 1_000.0);
+    let cutoff_db = magnitude_at(&response, 8_000.0);
+    assert!(
+        (1.5..=6.0).contains(&(passband_db - cutoff_db)),
+        "96 kHz lowpass should place the cutoff near 8 kHz: 1 kHz {passband_db:.1} dB, 8 kHz {cutoff_db:.1} dB"
+    );
+}
+
+#[test]
+fn graph_filter_comb_uses_resonance_for_feedback_amount() {
+    let frames = 8_192;
+    let sample_rate: f64 = 48_000.0;
+    let delay_ms: f64 = 2.0;
+    let cutoff_control = ((delay_ms - 1.0) / 99.0) as f32;
+    let delay_samples = (sample_rate * delay_ms / 1_000.0).round() as usize;
+
+    let impulse = filter_impulse_response(
+        "comb",
+        None,
+        Some("feedback"),
+        sample_rate as f32,
+        vec![cutoff_control; frames],
+        vec![0.8; frames],
+        vec![0.0; frames],
+    );
+
+    let first_repeat = impulse[delay_samples - 2..=delay_samples + 2]
+        .iter()
+        .map(|s| s.abs())
+        .fold(0.0f32, f32::max);
+    let second_repeat = impulse[delay_samples * 2 - 2..=delay_samples * 2 + 2]
+        .iter()
+        .map(|s| s.abs())
+        .fold(0.0f32, f32::max);
+    assert!(
+        first_repeat > 0.9,
+        "feedback comb should emit the delayed impulse, got {first_repeat}"
+    );
+    assert!(
+        second_repeat > 0.6,
+        "resonance should control comb feedback gain independently of gain input, got {second_repeat}"
+    );
 }
 
 #[test]
@@ -2141,4 +2279,140 @@ connections:
         stereo_diff > 0.001,
         "reverb should produce stereo decorrelation"
     );
+}
+
+#[test]
+fn compiled_render_matches_raw_for_echo_chain() {
+    let graph = parity_graph(
+        vec![
+            ModuleNode::new(ModuleId::new("osc"), "oscillator")
+                .with_output(builtin_ports::AUDIO, SignalType::Audio),
+            ModuleNode::new(ModuleId::new("mixer"), "audio_mixer")
+                .with_mixing_input(builtin_ports::INPUTS, SignalType::Audio)
+                .with_output(builtin_ports::MIX, SignalType::Audio),
+            ModuleNode::new(ModuleId::new("echo"), "echo")
+                .with_input(builtin_ports::AUDIO_IN_L, SignalType::Audio)
+                .with_input(builtin_ports::AUDIO_IN_R, SignalType::Audio)
+                .with_output(builtin_ports::AUDIO_OUT_L, SignalType::Audio)
+                .with_output(builtin_ports::AUDIO_OUT_R, SignalType::Audio),
+            ModuleNode::new(ModuleId::new("out"), "audio_output")
+                .with_input(builtin_ports::LEFT, SignalType::Audio)
+                .with_input(builtin_ports::RIGHT, SignalType::Audio),
+        ],
+        vec![
+            Cable::new(
+                PortRef::new(ModuleId::new("osc"), builtin_ports::AUDIO),
+                PortRef::new(ModuleId::new("mixer"), builtin_ports::INPUTS),
+            ),
+            Cable::new(
+                PortRef::new(ModuleId::new("mixer"), builtin_ports::MIX),
+                PortRef::new(ModuleId::new("echo"), builtin_ports::AUDIO_IN_L),
+            ),
+            Cable::new(
+                PortRef::new(ModuleId::new("mixer"), builtin_ports::MIX),
+                PortRef::new(ModuleId::new("echo"), builtin_ports::AUDIO_IN_R),
+            ),
+            Cable::new(
+                PortRef::new(ModuleId::new("echo"), builtin_ports::AUDIO_OUT_L),
+                PortRef::new(ModuleId::new("out"), builtin_ports::LEFT),
+            ),
+            Cable::new(
+                PortRef::new(ModuleId::new("echo"), builtin_ports::AUDIO_OUT_R),
+                PortRef::new(ModuleId::new("out"), builtin_ports::RIGHT),
+            ),
+        ],
+    );
+
+    let settings = RenderSettings {
+        sample_rate_hz: 48_000,
+        block_size_frames: 64,
+        duration_frames: 2048,
+    };
+
+    assert_parity(
+        &graph,
+        &settings,
+        Vec::new(),
+        &PreparedSamplerAssets::empty(),
+    );
+}
+
+#[test]
+fn compiled_render_matches_raw_for_reverb_chain() {
+    let graph = parity_graph(
+        vec![
+            ModuleNode::new(ModuleId::new("osc"), "oscillator")
+                .with_output(builtin_ports::AUDIO, SignalType::Audio),
+            ModuleNode::new(ModuleId::new("mixer"), "audio_mixer")
+                .with_mixing_input(builtin_ports::INPUTS, SignalType::Audio)
+                .with_output(builtin_ports::MIX, SignalType::Audio),
+            ModuleNode::new(ModuleId::new("reverb"), "reverb")
+                .with_input(builtin_ports::AUDIO_IN_L, SignalType::Audio)
+                .with_input(builtin_ports::AUDIO_IN_R, SignalType::Audio)
+                .with_output(builtin_ports::AUDIO_OUT_L, SignalType::Audio)
+                .with_output(builtin_ports::AUDIO_OUT_R, SignalType::Audio),
+            ModuleNode::new(ModuleId::new("out"), "audio_output")
+                .with_input(builtin_ports::LEFT, SignalType::Audio)
+                .with_input(builtin_ports::RIGHT, SignalType::Audio),
+        ],
+        vec![
+            Cable::new(
+                PortRef::new(ModuleId::new("osc"), builtin_ports::AUDIO),
+                PortRef::new(ModuleId::new("mixer"), builtin_ports::INPUTS),
+            ),
+            Cable::new(
+                PortRef::new(ModuleId::new("mixer"), builtin_ports::MIX),
+                PortRef::new(ModuleId::new("reverb"), builtin_ports::AUDIO_IN_L),
+            ),
+            Cable::new(
+                PortRef::new(ModuleId::new("mixer"), builtin_ports::MIX),
+                PortRef::new(ModuleId::new("reverb"), builtin_ports::AUDIO_IN_R),
+            ),
+            Cable::new(
+                PortRef::new(ModuleId::new("reverb"), builtin_ports::AUDIO_OUT_L),
+                PortRef::new(ModuleId::new("out"), builtin_ports::LEFT),
+            ),
+            Cable::new(
+                PortRef::new(ModuleId::new("reverb"), builtin_ports::AUDIO_OUT_R),
+                PortRef::new(ModuleId::new("out"), builtin_ports::RIGHT),
+            ),
+        ],
+    );
+
+    let settings = RenderSettings {
+        sample_rate_hz: 48_000,
+        block_size_frames: 64,
+        duration_frames: 2048,
+    };
+
+    assert_parity(
+        &graph,
+        &settings,
+        Vec::new(),
+        &PreparedSamplerAssets::empty(),
+    );
+}
+
+#[test]
+fn composite_echo_yaml_loads_and_validates() {
+    let yaml = fs::read_to_string("../../examples/patches/composite-echo.yaml")
+        .expect("composite-echo.yaml should exist");
+    let patch = patch::load_patch_str(&yaml).expect("composite-echo.yaml should parse");
+    patch::validate_patch_schema(&patch).expect("composite-echo.yaml schema should be valid");
+    let graph = Graph::from_patch_declarations(&patch);
+    graph
+        .validate()
+        .expect("composite-echo.yaml graph should validate");
+}
+
+#[test]
+fn composite_reverb_yaml_loads_and_validates() {
+    let yaml = fs::read_to_string("../../examples/patches/composite-reverb.yaml")
+        .expect("composite-reverb.yaml should exist");
+    let patch = patch::load_patch_str(&yaml).expect("composite-reverb.yaml should parse");
+    patch::validate_patch_schema(&patch).expect("composite-reverb.yaml schema should be valid");
+    let graph = Graph::from_patch_declarations(&patch);
+    graph
+        .validate()
+        .expect("composite-reverb.yaml graph should validate");
 }

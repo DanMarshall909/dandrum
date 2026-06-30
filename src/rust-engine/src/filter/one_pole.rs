@@ -45,6 +45,10 @@ impl OnePoleFilter {
 }
 
 impl FilterAlgorithm for OnePoleFilter {
+    fn set_cutoff(&mut self, hz: f64, _sample_rate: f64) {
+        self.set_cutoff(hz);
+    }
+
     fn process(&mut self, input: f32) -> f32 {
         let x = input as f64;
         let y = match self.mode {

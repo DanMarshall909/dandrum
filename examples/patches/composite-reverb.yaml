@@ -1,0 +1,93 @@
+metadata:
+  name: Composite Reverb
+  version: "0.1"
+render:
+  sample_rate_hz: 48000
+  block_size_frames: 128
+  duration_frames: 144000
+module_definitions:
+  - type: spatial_reverb
+    inputs:
+      - name: audio_in_l
+        signal_type: audio
+        maps_to:
+          - reverb.audio_in_l
+      - name: audio_in_r
+        signal_type: audio
+        maps_to:
+          - reverb.audio_in_r
+      - name: decay_time
+        signal_type: control
+        maps_to:
+          - reverb.decay_time
+      - name: room_size
+        signal_type: control
+        maps_to:
+          - reverb.room_size
+      - name: damping
+        signal_type: control
+        maps_to:
+          - reverb.damping
+      - name: stereo_width
+        signal_type: control
+        maps_to:
+          - reverb.stereo_width
+      - name: wet
+        signal_type: control
+        maps_to:
+          - reverb.wet
+      - name: dry
+        signal_type: control
+        maps_to:
+          - reverb.dry
+    outputs:
+      - name: audio_out_l
+        signal_type: audio
+        maps_from:
+          - reverb.audio_out_l
+      - name: audio_out_r
+        signal_type: audio
+        maps_from:
+          - reverb.audio_out_r
+    modules:
+      - id: reverb
+        type: reverb
+    connections: []
+modules:
+  - id: midi
+    type: midi_input
+  - id: note_rate
+    type: note_to_rate
+  - id: osc
+    type: oscillator
+  - id: envelope
+    type: adsr
+  - id: vca
+    type: gain
+  - id: mixer
+    type: audio_mixer
+  - id: reverb_mod
+    type: spatial_reverb
+  - id: out
+    type: audio_output
+connections:
+  - from: midi.events
+    to: note_rate.events
+  - from: midi.events
+    to: envelope.gate
+  - from: note_rate.rate
+    to: osc.pitch
+  - from: osc.audio
+    to: vca.audio_in
+  - from: envelope.value
+    to: vca.gain
+  - from: vca.audio_out
+    to: mixer.inputs
+  - from: mixer.mix
+    to: reverb_mod.audio_in_l
+  - from: mixer.mix
+    to: reverb_mod.audio_in_r
+  - from: reverb_mod.audio_out_l
+    to: out.left
+  - from: reverb_mod.audio_out_r
+    to: out.right

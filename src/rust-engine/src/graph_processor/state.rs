@@ -1,11 +1,13 @@
 use crate::convolution::Convolution;
+use crate::crossover::CrossoverPair;
 use crate::dynamics_processor::DynamicsProcessor;
 use crate::echo::Echo;
-use crate::filter::MoogLadder;
+use crate::filter::{BiquadFilter, BiquadMode, CombFilter, CombType, FilterAlgorithm, MoogLadder};
 use crate::graph::ModuleNode;
 use crate::reverb::Reverb;
 use crate::sample::{LoadedSample, PreparedSamplerAssets};
 use crate::saturator::Saturator;
+use crate::spectral::SpectralProcessor;
 
 pub(super) enum PerModuleState {
     Oscillator {
@@ -43,7 +45,7 @@ pub(super) enum PerModuleState {
         processor: Convolution,
     },
     Filter {
-        filter: MoogLadder,
+        filter: Box<dyn FilterAlgorithm>,
         sample_rate: f64,
     },
     Echo {
@@ -53,6 +55,14 @@ pub(super) enum PerModuleState {
     Reverb {
         processor: Reverb,
         sample_rate: f64,
+    },
+    FrequencySplitter {
+        first: CrossoverPair,
+        second: CrossoverPair,
+        sample_rate: f64,
+    },
+    SpectralProcessor {
+        processor: SpectralProcessor,
     },
 }
 
@@ -94,10 +104,45 @@ impl PerModuleState {
             "convolution" => PerModuleState::Convolution {
                 processor: Convolution::new(),
             },
-            "filter" => PerModuleState::Filter {
-                filter: MoogLadder::new(sample_rate as f64),
-                sample_rate: sample_rate as f64,
-            },
+            "filter" => {
+                let algorithm = module.params().get("algorithm").map(|s| s.as_str());
+                let mode = module.params().get("mode").map(|s| s.as_str());
+                let comb_type = module.params().get("comb_type").map(|s| s.as_str());
+                let sample_rate_f64 = sample_rate as f64;
+
+                let filter: Box<dyn FilterAlgorithm> = match algorithm {
+                    Some("moog") => Box::new(MoogLadder::new(sample_rate_f64)),
+                    Some("biquad") => {
+                        let bq_mode = match mode {
+                            Some("highpass") => BiquadMode::Highpass,
+                            Some("peaking") => BiquadMode::Peaking,
+                            _ => BiquadMode::Lowpass,
+                        };
+                        let norm = 1000.0 / sample_rate_f64;
+                        match bq_mode {
+                            BiquadMode::Peaking => {
+                                Box::new(BiquadFilter::new_peaking(norm, 0.707, 0.0))
+                            }
+                            BiquadMode::Highpass => {
+                                Box::new(BiquadFilter::new_highpass(norm, 0.707))
+                            }
+                            BiquadMode::Lowpass => Box::new(BiquadFilter::new_lowpass(norm, 0.707)),
+                        }
+                    }
+                    Some("comb") => {
+                        let ct = match comb_type {
+                            Some("feedforward") => CombType::Feedforward,
+                            _ => CombType::Feedback,
+                        };
+                        Box::new(CombFilter::new((sample_rate_f64 / 440.0) as usize, 0.5, ct))
+                    }
+                    _ => Box::new(MoogLadder::new(sample_rate_f64)),
+                };
+                PerModuleState::Filter {
+                    filter,
+                    sample_rate: sample_rate_f64,
+                }
+            }
             "echo" => PerModuleState::Echo {
                 processor: Echo::new(sample_rate as f64),
                 sample_rate: sample_rate as f64,
@@ -105,6 +150,14 @@ impl PerModuleState {
             "reverb" => PerModuleState::Reverb {
                 processor: Reverb::new(sample_rate as f64),
                 sample_rate: sample_rate as f64,
+            },
+            "frequency_splitter" => PerModuleState::FrequencySplitter {
+                first: CrossoverPair::new(0.02, sample_rate as f64),
+                second: CrossoverPair::new(0.08, sample_rate as f64),
+                sample_rate: sample_rate as f64,
+            },
+            "spectral_processor" => PerModuleState::SpectralProcessor {
+                processor: SpectralProcessor::new(2048, crate::spectral::SpectralMode::Gate),
             },
             other => panic!("unknown module type: {other}"),
         }

@@ -18,3 +18,5 @@ pub const SATURATOR: &str = "saturator";
 pub const CONVOLUTION: &str = "convolution";
 pub const ECHO: &str = "echo";
 pub const REVERB: &str = "reverb";
+pub const FREQUENCY_SPLITTER: &str = "frequency_splitter";
+pub const SPECTRAL_PROCESSOR: &str = "spectral_processor";

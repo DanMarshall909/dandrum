@@ -16,6 +16,8 @@ The system SHALL include a `spectral_processor` built-in module type that proces
 - **THEN** it SHALL have an `audio_in` (Audio) input and an `audio_out` (Audio) output
 
 ### Requirement: Spectral processing handles real signals correctly
+The spectral processor SHALL preserve clean signals in passthrough mode and handle silence without artifacts.
+
 #### Scenario: Spectral processor does not produce artifacts in passthrough
 - **WHEN** a sinusoidal signal is processed through a `spectral_processor` in `mode: passthrough` with 2048-frame STFT and 50% overlap
 - **THEN** the output THD+N SHALL be below −60 dB relative to the input

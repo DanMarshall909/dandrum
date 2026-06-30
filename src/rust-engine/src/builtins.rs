@@ -93,6 +93,8 @@ impl BuiltInModuleRegistry {
             convolution_definition(),
             echo_definition(),
             reverb_definition(),
+            frequency_splitter_definition(),
+            spectral_processor_definition(),
         ])
     }
 
@@ -179,6 +181,8 @@ fn filter_definition() -> BuiltInModuleDefinition {
         .with_execution_scope(ExecutionScope::Voice)
         .with_input(Port::input(builtin_ports::AUDIO_IN, SignalType::Audio))
         .with_input(Port::input(builtin_ports::CUTOFF, SignalType::Control))
+        .with_input(Port::input(builtin_ports::RESONANCE, SignalType::Control))
+        .with_input(Port::input(builtin_ports::GAIN, SignalType::Control))
         .with_output(Port::output(builtin_ports::AUDIO_OUT, SignalType::Audio))
 }
 
@@ -266,6 +270,26 @@ fn saturator_definition() -> BuiltInModuleDefinition {
 fn convolution_definition() -> BuiltInModuleDefinition {
     BuiltInModuleDefinition::new(module_types::CONVOLUTION)
         .with_input(Port::input(builtin_ports::AUDIO_IN, SignalType::Audio))
+        .with_input(Port::input(builtin_ports::MIX, SignalType::Control))
+        .with_output(Port::output(builtin_ports::AUDIO_OUT, SignalType::Audio))
+}
+
+fn frequency_splitter_definition() -> BuiltInModuleDefinition {
+    BuiltInModuleDefinition::new(module_types::FREQUENCY_SPLITTER)
+        .with_input(Port::input(builtin_ports::AUDIO_IN, SignalType::Audio))
+        .with_input(Port::input(
+            builtin_ports::CROSSOVER_HZ,
+            SignalType::Control,
+        ))
+        .with_output(Port::output("low", SignalType::Audio))
+        .with_output(Port::output("mid", SignalType::Audio))
+        .with_output(Port::output("high", SignalType::Audio))
+}
+
+fn spectral_processor_definition() -> BuiltInModuleDefinition {
+    BuiltInModuleDefinition::new(module_types::SPECTRAL_PROCESSOR)
+        .with_input(Port::input(builtin_ports::AUDIO_IN, SignalType::Audio))
+        .with_input(Port::input(builtin_ports::THRESHOLD, SignalType::Control))
         .with_input(Port::input(builtin_ports::MIX, SignalType::Control))
         .with_output(Port::output(builtin_ports::AUDIO_OUT, SignalType::Audio))
 }

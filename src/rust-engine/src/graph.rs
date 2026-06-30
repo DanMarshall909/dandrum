@@ -1,4 +1,6 @@
 use std::collections::{BTreeMap, BTreeSet};
+
+use crate::patch::ParameterValue;
 use std::fmt;
 
 use crate::builtins::{BuiltInModuleRegistry, module_types};
@@ -24,6 +26,7 @@ pub struct ModuleNode {
     outputs: Vec<Port>,
     feedback_boundaries: Vec<SignalType>,
     execution_scope: ExecutionScope,
+    params: BTreeMap<String, String>,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -132,7 +135,17 @@ impl ModuleNode {
             outputs: Vec::new(),
             feedback_boundaries: Vec::new(),
             execution_scope: ExecutionScope::Global,
+            params: BTreeMap::new(),
         }
+    }
+
+    pub fn with_params(mut self, params: BTreeMap<String, String>) -> Self {
+        self.params = params;
+        self
+    }
+
+    pub fn params(&self) -> &BTreeMap<String, String> {
+        &self.params
     }
 
     pub fn with_execution_scope(mut self, scope: ExecutionScope) -> Self {
@@ -315,6 +328,14 @@ impl Graph {
                         );
                     }
                 }
+
+                node = node.with_params(
+                    module
+                        .parameters
+                        .iter()
+                        .map(|(k, v)| (k.clone(), parameter_value_to_string(v)))
+                        .collect(),
+                );
 
                 node
             })
@@ -653,6 +674,14 @@ impl fmt::Display for GraphValidationError {
 }
 
 impl std::error::Error for GraphValidationError {}
+
+pub fn parameter_value_to_string(value: &ParameterValue) -> String {
+    match value {
+        ParameterValue::Boolean(b) => b.to_string(),
+        ParameterValue::Number(n) => n.to_string(),
+        ParameterValue::Text(s) => s.clone(),
+    }
+}
 
 impl From<&patch::SignalType> for SignalType {
     fn from(signal_type: &patch::SignalType) -> Self {

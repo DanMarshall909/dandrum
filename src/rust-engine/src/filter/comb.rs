@@ -40,6 +40,16 @@ impl CombFilter {
 }
 
 impl FilterAlgorithm for CombFilter {
+    fn set_cutoff_control(&mut self, control: f32, sample_rate: f64) {
+        let delay_ms = 1.0 + control.clamp(0.0, 1.0) as f64 * 99.0;
+        let delay_samples = (sample_rate * delay_ms / 1000.0).round() as usize;
+        self.set_delay(delay_samples.max(1));
+    }
+
+    fn set_resonance_control(&mut self, control: f32) {
+        self.set_gain(control.clamp(0.0, 1.0) as f64 * 0.99);
+    }
+
     fn process(&mut self, input: f32) -> f32 {
         let read_pos = if self.write_pos >= self.delay_samples - 1 {
             0

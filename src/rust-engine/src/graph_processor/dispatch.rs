@@ -6,8 +6,8 @@ use super::ModuleInputProvider;
 use super::outputs::{BlockEvent, ModuleOutputs};
 use super::processing::{
     process_adsr, process_convolution, process_dynamics_processor, process_echo, process_filter,
-    process_note_to_rate, process_oscillator, process_reverb, process_sampler, process_saturator,
-    process_vca,
+    process_frequency_splitter, process_note_to_rate, process_oscillator, process_reverb,
+    process_sampler, process_saturator, process_spectral_processor, process_vca,
 };
 use super::state::PerModuleState;
 
@@ -264,7 +264,28 @@ pub(super) fn process_module(
                 frames,
                 0.5,
             );
-            process_filter(&mut states[module_idx], &audio_in, &cutoff_in, frames)
+            let resonance_in = input_provider.control_input_or_default(
+                module_idx,
+                builtin_ports::RESONANCE,
+                all_outputs,
+                frames,
+                0.0,
+            );
+            let gain_in = input_provider.control_input_or_default(
+                module_idx,
+                builtin_ports::GAIN,
+                all_outputs,
+                frames,
+                0.5,
+            );
+            process_filter(
+                &mut states[module_idx],
+                &audio_in,
+                &cutoff_in,
+                &resonance_in,
+                &gain_in,
+                frames,
+            )
         }
         "saturator" => {
             let audio_in = input_provider.sum_audio_input(
@@ -362,6 +383,51 @@ pub(super) fn process_module(
                 module_idx,
                 input_provider,
                 all_outputs,
+                frames,
+            )
+        }
+        "frequency_splitter" => {
+            let audio_in = input_provider.sum_audio_input(
+                module_idx,
+                builtin_ports::AUDIO_IN,
+                all_outputs,
+                frames,
+            );
+            let crossover_hz_in = input_provider.control_input_or_default(
+                module_idx,
+                builtin_ports::CROSSOVER_HZ,
+                all_outputs,
+                frames,
+                0.2,
+            );
+            process_frequency_splitter(&mut states[module_idx], &audio_in, &crossover_hz_in, frames)
+        }
+        "spectral_processor" => {
+            let audio_in = input_provider.sum_audio_input(
+                module_idx,
+                builtin_ports::AUDIO_IN,
+                all_outputs,
+                frames,
+            );
+            let threshold_in = input_provider.control_input_or_default(
+                module_idx,
+                builtin_ports::THRESHOLD,
+                all_outputs,
+                frames,
+                0.5,
+            );
+            let mix_in = input_provider.control_input_or_default(
+                module_idx,
+                builtin_ports::MIX,
+                all_outputs,
+                frames,
+                0.5,
+            );
+            process_spectral_processor(
+                &mut states[module_idx],
+                &audio_in,
+                &threshold_in,
+                &mix_in,
                 frames,
             )
         }

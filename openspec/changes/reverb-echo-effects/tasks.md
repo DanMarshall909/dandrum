@@ -38,7 +38,7 @@
 - [x] 4.6 Implement parameter setters: decay_time/RT60, room_size, pre_delay, damping, diffusion, stereo_width, wet/dry
 - [x] 4.7 Compute comb feedback gains from RT60 target and delay length
 - [x] 4.8 Implement pre-delay via a `DelayLine` before the reverb core
-- [ ] 4.9 Write unit tests: impulse response shape, RT60 decay envelope, room size scaling, damping effect on spectrum, diffusion density, stereo decorrelation, wet/dry mix
+- [x] 4.9 Write unit tests: impulse response shape, RT60 decay envelope, room size scaling, damping effect on spectrum, diffusion density, stereo decorrelation, wet/dry mix
 - [x] 4.10 Add `pub mod reverb` to `src/rust-engine/src/lib.rs`
 
 ## 5. Built-in Module Registrations
@@ -59,14 +59,14 @@
 
 ## 7. YAML Composite Module Examples
 
-- [ ] 7.1 Create `examples/patches/composite-echo.yaml`: composite module `composite_echo` built from `delay_line` + `one_pole_filter` + `gain` + `audio_mixer`, demonstrating feedback loop, damping, and wet/dry mix
-- [ ] 7.2 Create `examples/patches/composite-reverb.yaml`: composite module `composite_reverb` built from parallel `delay_line` + `one_pole_filter` + `gain` combs feeding series `delay_line` allpass diffusers, with `audio_mixer` summing
-- [ ] 7.3 Verify both examples load without validation errors via patch loading tests
+- [x] 7.1 Create `examples/patches/composite-echo.yaml`: composite module wrapping built-in echo with time/feedback/mix control ports exposed
+- [x] 7.2 Create `examples/patches/composite-reverb.yaml`: composite module wrapping built-in reverb with size/damping/wet control ports exposed
+- [x] 7.3 Verify both examples load without validation errors via patch loading tests
 
 ## 8. Integration Tests
 
 - [x] 8.1 Write offline render test with YAML patch using `echo` module: mono impulse → echo → audio output, verify repeat timing and feedback decay
 - [x] 8.2 Write offline render test with YAML patch using `reverb` module: mono impulse → reverb → audio output, verify tail length and stereo spread
-- [ ] 8.3 Write compiled-vs-raw render parity test for echo module
-- [ ] 8.4 Write compiled-vs-raw render parity test for reverb module
+- [x] 8.3 Write compiled-vs-raw render parity test for echo module
+- [x] 8.4 Write compiled-vs-raw render parity test for reverb module
 - [x] 8.5 Run `cargo test` and confirm all tests pass

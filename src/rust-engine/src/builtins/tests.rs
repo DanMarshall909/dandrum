@@ -96,6 +96,8 @@ fn initialized_registry_contains_synthesis_control_and_mixer_definitions() {
         .expect("filter should be built in");
     assert_has_input(filter, builtin_ports::AUDIO_IN, SignalType::Audio);
     assert_has_input(filter, builtin_ports::CUTOFF, SignalType::Control);
+    assert_has_input(filter, builtin_ports::RESONANCE, SignalType::Control);
+    assert_has_input(filter, builtin_ports::GAIN, SignalType::Control);
     assert_has_output(filter, builtin_ports::AUDIO_OUT, SignalType::Audio);
 }
 
@@ -154,6 +156,8 @@ fn built_in_module_tests_inspect_port_directions_and_feedback_boundaries() {
         module_types::CONVOLUTION,
         module_types::ECHO,
         module_types::REVERB,
+        module_types::FREQUENCY_SPLITTER,
+        module_types::SPECTRAL_PROCESSOR,
     ] {
         let definition = registry
             .get(module_type)

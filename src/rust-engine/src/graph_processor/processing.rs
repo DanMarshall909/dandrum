@@ -1,6 +1,5 @@
 use std::collections::HashMap;
 
-use crate::filter::FilterAlgorithm;
 use crate::graph::builtin_ports;
 use crate::script::ScriptEvent;
 
@@ -330,9 +329,11 @@ pub(super) fn process_filter(
     state: &mut PerModuleState,
     audio_in: &[f32],
     cutoff_in: &[f32],
+    resonance_in: &[f32],
+    gain_in: &[f32],
     frames: usize,
 ) -> ModuleOutputs {
-    let (filter, _sample_rate) = match state {
+    let (filter, sample_rate) = match state {
         PerModuleState::Filter {
             filter,
             sample_rate,
@@ -343,10 +344,9 @@ pub(super) fn process_filter(
     let mut audio_out = Vec::with_capacity(frames);
 
     for i in 0..frames {
-        let base: f64 = 8000.0 / 20.0;
-        let hz = 20.0 * base.powf(cutoff_in[i] as f64);
-        filter.set_cutoff(hz);
-        filter.set_resonance(0.4);
+        filter.set_cutoff_control(cutoff_in[i], sample_rate);
+        filter.set_resonance_control(resonance_in[i]);
+        filter.set_gain_db(gain_in[i] as f64 * 48.0 - 24.0);
         audio_out.push(filter.process(audio_in[i]));
     }
 
@@ -605,4 +605,68 @@ pub(super) fn process_reverb(
     }
 
     stereo_audio_output(out_l, out_r)
+}
+
+pub(super) fn process_frequency_splitter(
+    state: &mut PerModuleState,
+    audio_in: &[f32],
+    crossover_hz_in: &[f32],
+    frames: usize,
+) -> ModuleOutputs {
+    let (lp1, lp2, sample_rate) = match state {
+        PerModuleState::FrequencySplitter {
+            first,
+            second,
+            sample_rate,
+        } => (first, second, *sample_rate),
+        _ => unreachable!(),
+    };
+
+    let mut low = Vec::with_capacity(frames);
+    let mut mid = Vec::with_capacity(frames);
+    let mut high = Vec::with_capacity(frames);
+
+    for i in 0..frames {
+        let hz = (crossover_hz_in[i] as f64 * 16000.0 + 40.0).clamp(40.0, 20000.0);
+        let norm = (hz / sample_rate).clamp(0.0, 0.49);
+        lp1.set_crossover(norm);
+        lp2.set_crossover((norm * 4.0).clamp(0.0, 0.49));
+
+        let (l, rest) = lp1.process(audio_in[i]);
+        let (m, h) = lp2.process(rest);
+        low.push(l);
+        mid.push(m);
+        high.push(h);
+    }
+
+    let mut outputs = ModuleOutputs::empty();
+    outputs.audio.insert("low".to_string(), low);
+    outputs.audio.insert("mid".to_string(), mid);
+    outputs.audio.insert("high".to_string(), high);
+    outputs
+}
+
+pub(super) fn process_spectral_processor(
+    state: &mut PerModuleState,
+    audio_in: &[f32],
+    threshold_in: &[f32],
+    mix_in: &[f32],
+    frames: usize,
+) -> ModuleOutputs {
+    let processor = match state {
+        PerModuleState::SpectralProcessor { processor } => processor,
+        _ => unreachable!(),
+    };
+
+    let mut audio_out = Vec::with_capacity(frames);
+
+    for i in 0..frames {
+        let threshold_db = threshold_in[i] as f64 * 80.0 - 40.0;
+        let mix = mix_in[i];
+        processor.set_threshold(threshold_db);
+        let processed = processor.process(audio_in[i]);
+        audio_out.push(processed * mix + audio_in[i] * (1.0 - mix));
+    }
+
+    audio_output(builtin_ports::AUDIO_OUT, audio_out)
 }
