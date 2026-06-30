@@ -381,4 +381,73 @@ mod tests {
         assert!(unsafe { dandrum_engine_is_finished(engine) });
         unsafe { dandrum_engine_destroy(engine) };
     }
+
+    #[test]
+    fn c_ffi_load_patch_fails_for_non_existent_path() {
+        let engine = dandrum_engine_create();
+        let path = std::ffi::CString::new("/nonexistent/patch.yaml").unwrap();
+
+        assert!(!unsafe { dandrum_engine_load_patch(engine, path.as_ptr()) });
+
+        unsafe { dandrum_engine_destroy(engine) };
+    }
+
+    #[test]
+    fn c_ffi_load_patch_fails_and_preserves_fallback_render_after_attempt() {
+        use std::io::Write;
+
+        let engine = dandrum_engine_create();
+        unsafe { dandrum_engine_prepare(engine, 44_100.0) };
+        unsafe { dandrum_engine_note_on(engine, 60, 100) };
+
+        let mut dir = std::env::temp_dir();
+        dir.push("dandrum_test_bad_patch.yaml");
+        let mut file = std::fs::File::create(&dir).unwrap();
+        writeln!(file, "metadata:\n  name: Bad\nrender:\n  sample_rate_hz: 48000\n  block_size_frames: 64\n  duration_frames: 128\nmodules: []").unwrap();
+        drop(file);
+
+        let bad_path = std::ffi::CString::new(dir.to_str().unwrap().as_bytes()).unwrap();
+        assert!(!unsafe { dandrum_engine_load_patch(engine, bad_path.as_ptr()) },
+            "empty modules should fail graph validation");
+
+        let mut left = [0.0_f32; 64];
+        let mut right = [0.0_f32; 64];
+        let rendered = unsafe { dandrum_engine_render(engine, left.as_mut_ptr(), right.as_mut_ptr(), 64) };
+
+        assert_eq!(rendered, 64);
+        assert!(left.iter().any(|s| *s != 0.0),
+            "fallback synth should still produce audio after failed load");
+
+        std::fs::remove_file(&dir).ok();
+        unsafe { dandrum_engine_destroy(engine) };
+    }
+
+    #[test]
+    fn c_ffi_load_patch_fails_for_empty_patch_and_still_renders_fallback() {
+        use std::io::Write;
+
+        let engine = dandrum_engine_create();
+        unsafe { dandrum_engine_prepare(engine, 44_100.0) };
+        unsafe { dandrum_engine_note_on(engine, 60, 100) };
+
+        let mut dir = std::env::temp_dir();
+        dir.push("dandrum_test_empty_patch.yaml");
+        let mut file = std::fs::File::create(&dir).unwrap();
+        writeln!(file, "").unwrap();
+        drop(file);
+
+        let path = std::ffi::CString::new(dir.to_str().unwrap().as_bytes()).unwrap();
+        assert!(!unsafe { dandrum_engine_load_patch(engine, path.as_ptr()) });
+
+        let mut left = [0.0_f32; 64];
+        let mut right = [0.0_f32; 64];
+        let rendered = unsafe { dandrum_engine_render(engine, left.as_mut_ptr(), right.as_mut_ptr(), 64) };
+
+        assert_eq!(rendered, 64);
+        assert!(left.iter().any(|s| *s != 0.0),
+            "fallback synth should still produce audio after empty patch load attempt");
+
+        std::fs::remove_file(&dir).ok();
+        unsafe { dandrum_engine_destroy(engine) };
+    }
 }
