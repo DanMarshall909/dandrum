@@ -1,16 +1,16 @@
 use std::collections::HashMap;
 
 use crate::compiled_patch::CompiledPatch;
-use crate::core::{BlockScheduler, TimedInputEvent};
-use crate::graph::{ExecutionScope, Graph, ModuleNode, SignalType, builtin_ports};
-use crate::patch::{RenderSettings, VoiceAllocation};
-use crate::dynamics_processor::DynamicsProcessor;
 use crate::convolution::Convolution;
+use crate::core::{BlockScheduler, TimedInputEvent};
+use crate::dynamics_processor::DynamicsProcessor;
 use crate::echo::Echo;
 use crate::filter::{FilterAlgorithm, MoogLadder};
+use crate::graph::{ExecutionScope, Graph, ModuleNode, SignalType, builtin_ports};
+use crate::patch::{RenderSettings, VoiceAllocation};
 use crate::reverb::Reverb;
-use crate::saturator::Saturator;
 use crate::sample::{LoadedSample, PreparedSamplerAssets};
+use crate::saturator::Saturator;
 use crate::script::ScriptEvent;
 use crate::voice_allocator::VoiceAllocator;
 
@@ -530,12 +530,7 @@ fn process_module(
                 frames,
                 0.5,
             );
-            process_filter(
-                &mut states[module_idx],
-                &audio_in,
-                &cutoff_in,
-                frames,
-            )
+            process_filter(&mut states[module_idx], &audio_in, &cutoff_in, frames)
         }
         "saturator" => {
             let audio_in = input_provider.sum_audio_input(
@@ -588,12 +583,7 @@ fn process_module(
                 frames,
                 1.0,
             );
-            process_convolution(
-                &mut states[module_idx],
-                &audio_in,
-                &mix_in,
-                frames,
-            )
+            process_convolution(&mut states[module_idx], &audio_in, &mix_in, frames)
         }
         "echo" => {
             let audio_in_l = input_provider.sum_audio_input(
@@ -751,7 +741,11 @@ fn gather_event_inputs(
 
 // === Compiled-path input helpers ===
 
-fn compiled_input_port_index(compiled: &CompiledPatch, module_idx: usize, port_name: &str) -> Option<usize> {
+fn compiled_input_port_index(
+    compiled: &CompiledPatch,
+    module_idx: usize,
+    port_name: &str,
+) -> Option<usize> {
     compiled
         .nodes()
         .get(module_idx)?
@@ -842,7 +836,13 @@ fn compiled_control_input_or_default(
     let port_idx = compiled_input_port_index(compiled, module_idx, port_name);
     if let Some(port_idx) = port_idx {
         if !compiled.nodes()[module_idx].input_port_map[port_idx].is_empty() {
-            return compiled_sum_control_input(module_idx, port_name, compiled, all_outputs, frames);
+            return compiled_sum_control_input(
+                module_idx,
+                port_name,
+                compiled,
+                all_outputs,
+                frames,
+            );
         }
     }
     vec![default; frames]
@@ -1649,7 +1649,11 @@ impl RealtimeGraphProcessor {
                 &mut self.scratch_right,
             );
 
-            let actual = self.scratch_left.len().min(self.scratch_right.len()).min(frames);
+            let actual = self
+                .scratch_left
+                .len()
+                .min(self.scratch_right.len())
+                .min(frames);
             for i in 0..actual {
                 left[i] = self.scratch_left[i];
                 right[i] = self.scratch_right[i];
@@ -1677,7 +1681,11 @@ impl RealtimeGraphProcessor {
                 &mut self.scratch_right,
             );
 
-            let actual = self.scratch_left.len().min(self.scratch_right.len()).min(frames);
+            let actual = self
+                .scratch_left
+                .len()
+                .min(self.scratch_right.len())
+                .min(frames);
             for i in 0..actual {
                 left[i] = self.scratch_left[i];
                 right[i] = self.scratch_right[i];
@@ -2094,7 +2102,10 @@ fn process_filter(
     frames: usize,
 ) -> ModuleOutputs {
     let (filter, _sample_rate) = match state {
-        PerModuleState::Filter { filter, sample_rate } => (filter, *sample_rate),
+        PerModuleState::Filter {
+            filter,
+            sample_rate,
+        } => (filter, *sample_rate),
         _ => unreachable!(),
     };
 
@@ -2174,30 +2185,61 @@ fn process_echo(
     frames: usize,
 ) -> ModuleOutputs {
     let (processor, _sample_rate) = match state {
-        PerModuleState::Echo { processor, sample_rate } => (processor, *sample_rate),
+        PerModuleState::Echo {
+            processor,
+            sample_rate,
+        } => (processor, *sample_rate),
         _ => unreachable!(),
     };
 
     let feedback_in = input_provider.control_input_or_default(
-        module_idx, builtin_ports::FEEDBACK, all_outputs, frames, 0.5,
+        module_idx,
+        builtin_ports::FEEDBACK,
+        all_outputs,
+        frames,
+        0.5,
     );
     let damping_in = input_provider.control_input_or_default(
-        module_idx, builtin_ports::DAMPING_CUTOFF, all_outputs, frames, 0.5,
+        module_idx,
+        builtin_ports::DAMPING_CUTOFF,
+        all_outputs,
+        frames,
+        0.5,
     );
     let wet_in = input_provider.control_input_or_default(
-        module_idx, builtin_ports::WET, all_outputs, frames, 0.7,
+        module_idx,
+        builtin_ports::WET,
+        all_outputs,
+        frames,
+        0.7,
     );
     let dry_in = input_provider.control_input_or_default(
-        module_idx, builtin_ports::DRY, all_outputs, frames, 0.5,
+        module_idx,
+        builtin_ports::DRY,
+        all_outputs,
+        frames,
+        0.5,
     );
     let time_l_in = input_provider.control_input_or_default(
-        module_idx, builtin_ports::TIME_LEFT_MS, all_outputs, frames, 0.3,
+        module_idx,
+        builtin_ports::TIME_LEFT_MS,
+        all_outputs,
+        frames,
+        0.3,
     );
     let time_r_in = input_provider.control_input_or_default(
-        module_idx, builtin_ports::TIME_RIGHT_MS, all_outputs, frames, 0.3,
+        module_idx,
+        builtin_ports::TIME_RIGHT_MS,
+        all_outputs,
+        frames,
+        0.3,
     );
     let ping_pong_in = input_provider.control_input_or_default(
-        module_idx, builtin_ports::PING_PONG, all_outputs, frames, 0.0,
+        module_idx,
+        builtin_ports::PING_PONG,
+        all_outputs,
+        frames,
+        0.0,
     );
 
     let mut out_l = Vec::with_capacity(frames);
@@ -2231,8 +2273,12 @@ fn process_echo(
         control: HashMap::new(),
         events: Vec::new(),
     };
-    outputs.audio.insert(builtin_ports::AUDIO_OUT_L.to_string(), out_l);
-    outputs.audio.insert(builtin_ports::AUDIO_OUT_R.to_string(), out_r);
+    outputs
+        .audio
+        .insert(builtin_ports::AUDIO_OUT_L.to_string(), out_l);
+    outputs
+        .audio
+        .insert(builtin_ports::AUDIO_OUT_R.to_string(), out_r);
     outputs
 }
 
@@ -2246,33 +2292,68 @@ fn process_reverb(
     frames: usize,
 ) -> ModuleOutputs {
     let (processor, _sample_rate) = match state {
-        PerModuleState::Reverb { processor, sample_rate } => (processor, *sample_rate),
+        PerModuleState::Reverb {
+            processor,
+            sample_rate,
+        } => (processor, *sample_rate),
         _ => unreachable!(),
     };
 
     let decay_time_in = input_provider.control_input_or_default(
-        module_idx, builtin_ports::DECAY_TIME, all_outputs, frames, 0.35,
+        module_idx,
+        builtin_ports::DECAY_TIME,
+        all_outputs,
+        frames,
+        0.35,
     );
     let room_size_in = input_provider.control_input_or_default(
-        module_idx, builtin_ports::ROOM_SIZE, all_outputs, frames, 0.7,
+        module_idx,
+        builtin_ports::ROOM_SIZE,
+        all_outputs,
+        frames,
+        0.7,
     );
     let damping_in = input_provider.control_input_or_default(
-        module_idx, builtin_ports::DAMPING, all_outputs, frames, 0.3,
+        module_idx,
+        builtin_ports::DAMPING,
+        all_outputs,
+        frames,
+        0.3,
     );
     let diffusion_in = input_provider.control_input_or_default(
-        module_idx, builtin_ports::DIFFUSION, all_outputs, frames, 0.5,
+        module_idx,
+        builtin_ports::DIFFUSION,
+        all_outputs,
+        frames,
+        0.5,
     );
     let wet_in = input_provider.control_input_or_default(
-        module_idx, builtin_ports::WET, all_outputs, frames, 0.7,
+        module_idx,
+        builtin_ports::WET,
+        all_outputs,
+        frames,
+        0.7,
     );
     let dry_in = input_provider.control_input_or_default(
-        module_idx, builtin_ports::DRY, all_outputs, frames, 0.5,
+        module_idx,
+        builtin_ports::DRY,
+        all_outputs,
+        frames,
+        0.5,
     );
     let pre_delay_in = input_provider.control_input_or_default(
-        module_idx, builtin_ports::PRE_DELAY, all_outputs, frames, 0.0,
+        module_idx,
+        builtin_ports::PRE_DELAY,
+        all_outputs,
+        frames,
+        0.0,
     );
     let stereo_width_in = input_provider.control_input_or_default(
-        module_idx, builtin_ports::STEREO_WIDTH, all_outputs, frames, 0.5,
+        module_idx,
+        builtin_ports::STEREO_WIDTH,
+        all_outputs,
+        frames,
+        0.5,
     );
 
     let mut out_l = Vec::with_capacity(frames);
@@ -2309,8 +2390,12 @@ fn process_reverb(
         control: HashMap::new(),
         events: Vec::new(),
     };
-    outputs.audio.insert(builtin_ports::AUDIO_OUT_L.to_string(), out_l);
-    outputs.audio.insert(builtin_ports::AUDIO_OUT_R.to_string(), out_r);
+    outputs
+        .audio
+        .insert(builtin_ports::AUDIO_OUT_L.to_string(), out_l);
+    outputs
+        .audio
+        .insert(builtin_ports::AUDIO_OUT_R.to_string(), out_r);
     outputs
 }
 
@@ -2453,9 +2538,15 @@ mod tests {
         second.note_on(60, 100);
 
         assert_eq!(first.render(&mut first_left[..5], &mut first_right[..5]), 5);
-        assert_eq!(second.render(&mut second_left[..5], &mut second_right[..5]), 5);
+        assert_eq!(
+            second.render(&mut second_left[..5], &mut second_right[..5]),
+            5
+        );
         assert_eq!(first.render(&mut first_left[5..], &mut first_right[5..]), 7);
-        assert_eq!(second.render(&mut second_left[5..], &mut second_right[5..]), 7);
+        assert_eq!(
+            second.render(&mut second_left[5..], &mut second_right[5..]),
+            7
+        );
 
         assert_eq!(first_left, second_left);
         assert_eq!(first_right, second_right);
@@ -3805,7 +3896,8 @@ connections:
             render_offline_compiled(&compiled, events, sampler_assets);
 
         assert_eq!(
-            expected_left, actual_left,
+            expected_left,
+            actual_left,
             "left channel parity mismatch for graph: {:?}",
             graph
                 .modules()
@@ -3814,7 +3906,8 @@ connections:
                 .collect::<Vec<_>>()
         );
         assert_eq!(
-            expected_right, actual_right,
+            expected_right,
+            actual_right,
             "right channel parity mismatch for graph: {:?}",
             graph
                 .modules()
@@ -3859,7 +3952,12 @@ connections:
             duration_frames: 512,
         };
 
-        assert_parity(&graph, &settings, Vec::new(), &PreparedSamplerAssets::empty());
+        assert_parity(
+            &graph,
+            &settings,
+            Vec::new(),
+            &PreparedSamplerAssets::empty(),
+        );
     }
 
     #[test]
@@ -3922,7 +4020,13 @@ connections:
             &graph,
             &settings,
             vec![
-                TimedInputEvent::new(0, ScriptEvent::NoteOn { note: 60, velocity: 100 }),
+                TimedInputEvent::new(
+                    0,
+                    ScriptEvent::NoteOn {
+                        note: 60,
+                        velocity: 100,
+                    },
+                ),
                 TimedInputEvent::new(500, ScriptEvent::NoteOff { note: 60 }),
             ],
             &PreparedSamplerAssets::empty(),
@@ -4026,7 +4130,12 @@ connections:
             duration_frames: 512,
         };
 
-        assert_parity(&graph, &settings, Vec::new(), &PreparedSamplerAssets::empty());
+        assert_parity(
+            &graph,
+            &settings,
+            Vec::new(),
+            &PreparedSamplerAssets::empty(),
+        );
     }
 
     #[test]
@@ -4129,7 +4238,10 @@ connections:
     to: out.right
 "#,
         );
-        assert!(left.len() > 0, "dynamics+saturator chain should produce output");
+        assert!(
+            left.len() > 0,
+            "dynamics+saturator chain should produce output"
+        );
         let has_signal = left.iter().any(|&s| s != 0.0);
         assert!(has_signal, "chain should produce non-zero audio");
     }
@@ -4264,12 +4376,8 @@ connections:
 
         // Convolution with an empty IR is a passthrough — just verify no crash
         let assets = PreparedSamplerAssets::empty();
-        let (left, right) = render_offline_with_sampler_assets(
-            &graph,
-            &settings,
-            vec![note_on(0, 100)],
-            &assets,
-        );
+        let (left, right) =
+            render_offline_with_sampler_assets(&graph, &settings, vec![note_on(0, 100)], &assets);
 
         assert!(!left.is_empty());
         assert!(!right.is_empty());
@@ -4329,12 +4437,21 @@ connections:
             &graph,
             &patch.render,
             vec![
-                TimedInputEvent::new(0, ScriptEvent::NoteOn { note: 60, velocity: 100 }),
+                TimedInputEvent::new(
+                    0,
+                    ScriptEvent::NoteOn {
+                        note: 60,
+                        velocity: 100,
+                    },
+                ),
                 TimedInputEvent::new(960, ScriptEvent::NoteOff { note: 60 }),
             ],
         );
 
-        assert!(left.iter().any(|&s| s != 0.0), "echo patch should produce audio");
+        assert!(
+            left.iter().any(|&s| s != 0.0),
+            "echo patch should produce audio"
+        );
 
         let r1_peak = left[28000..30000]
             .iter()
@@ -4345,9 +4462,18 @@ connections:
             .map(|s| s.abs())
             .fold(0.0f32, f32::max);
 
-        assert!(r1_peak > 0.001, "first echo repeat should be audible at ~600ms, got {r1_peak}");
-        assert!(r2_peak > 0.001, "second echo repeat should be audible at ~1200ms, got {r2_peak}");
-        assert!(r2_peak < r1_peak * 0.99, "echo repeats should decay: {r2_peak} >= {r1_peak}");
+        assert!(
+            r1_peak > 0.001,
+            "first echo repeat should be audible at ~600ms, got {r1_peak}"
+        );
+        assert!(
+            r2_peak > 0.001,
+            "second echo repeat should be audible at ~1200ms, got {r2_peak}"
+        );
+        assert!(
+            r2_peak < r1_peak * 0.99,
+            "echo repeats should decay: {r2_peak} >= {r1_peak}"
+        );
     }
 
     #[test]
@@ -4402,19 +4528,25 @@ connections:
             &graph,
             &patch.render,
             vec![
-                TimedInputEvent::new(0, ScriptEvent::NoteOn { note: 60, velocity: 100 }),
+                TimedInputEvent::new(
+                    0,
+                    ScriptEvent::NoteOn {
+                        note: 60,
+                        velocity: 100,
+                    },
+                ),
                 TimedInputEvent::new(960, ScriptEvent::NoteOff { note: 60 }),
             ],
         );
 
-        assert!(left.iter().any(|&s| s != 0.0), "reverb patch should produce audio");
+        assert!(
+            left.iter().any(|&s| s != 0.0),
+            "reverb patch should produce audio"
+        );
 
         // The reverb tail should still be audible late in the buffer
         // Default RT60 ≈ 3.5s, check at ~2.5s (frame 120000)
-        let tail_energy: f32 = left[118000..122000]
-            .iter()
-            .map(|s| s.abs())
-            .sum();
+        let tail_energy: f32 = left[118000..122000].iter().map(|s| s.abs()).sum();
         assert!(
             tail_energy > 0.001,
             "reverb tail should still be present at ~2.5s, got {tail_energy}"

@@ -5,13 +5,17 @@ use std::thread;
 use std::time::Duration;
 
 use crossterm::cursor::{Hide, MoveTo, Show};
-use crossterm::event::{read, Event, KeyCode, KeyEvent, KeyModifiers};
+use crossterm::event::{Event, KeyCode, KeyEvent, KeyModifiers, read};
 use crossterm::style::Print;
-use crossterm::terminal::{disable_raw_mode, enable_raw_mode, Clear, ClearType, EnterAlternateScreen, LeaveAlternateScreen};
+use crossterm::terminal::{
+    Clear, ClearType, EnterAlternateScreen, LeaveAlternateScreen, disable_raw_mode, enable_raw_mode,
+};
 use crossterm::{execute, queue};
 
 use dandrum_engine::core::TimedInputEvent;
-use dandrum_engine::graph::{builtin_ports, Cable, Graph, ModuleId, ModuleNode, PortRef, SignalType};
+use dandrum_engine::graph::{
+    Cable, Graph, ModuleId, ModuleNode, PortRef, SignalType, builtin_ports,
+};
 use dandrum_engine::graph_processor::render_offline;
 use dandrum_engine::patch::RenderSettings;
 use dandrum_engine::script::ScriptEvent;
@@ -37,7 +41,12 @@ struct Step {
 
 impl Default for Step {
     fn default() -> Self {
-        Self { note: 60, velocity: 100, gate: 0.5, active: false }
+        Self {
+            note: 60,
+            velocity: 100,
+            gate: 0.5,
+            active: false,
+        }
     }
 }
 
@@ -49,16 +58,32 @@ struct Sequencer {
     dirty: bool,
 }
 
-enum Field { Note, Velocity, Gate }
+enum Field {
+    Note,
+    Velocity,
+    Gate,
+}
 
 impl Sequencer {
     fn new() -> Self {
         let mut steps: [Step; 16] = Default::default();
         let pattern: [(u8, u8); 16] = [
-            (36, 108), ( 0,   0), (36,  96), (43, 104),
-            (36, 100), ( 0,   0), (46, 106), (43, 102),
-            (36, 108), (38,  98), ( 0,   0), (43, 104),
-            (36, 100), (46, 106), (43, 102), ( 0,   0),
+            (36, 108),
+            (0, 0),
+            (36, 96),
+            (43, 104),
+            (36, 100),
+            (0, 0),
+            (46, 106),
+            (43, 102),
+            (36, 108),
+            (38, 98),
+            (0, 0),
+            (43, 104),
+            (36, 100),
+            (46, 106),
+            (43, 102),
+            (0, 0),
         ];
         for (i, &(note, vel)) in pattern.iter().enumerate() {
             steps[i].note = if note == 0 { 60 } else { note };
@@ -69,22 +94,39 @@ impl Sequencer {
             };
             steps[i].active = note != 0;
         }
-        Self { steps, bpm: 140, cursor: 0, field: Field::Note, dirty: true }
+        Self {
+            steps,
+            bpm: 140,
+            cursor: 0,
+            field: Field::Note,
+            dirty: true,
+        }
     }
 
     fn render_grid(&self) -> String {
         let inner_width = 5 + 16 * 5;
         let mut s = String::new();
-        s.push_str(&format!(" Dandrum Step Sequencer                    BPM: {}\r\n", self.bpm));
+        s.push_str(&format!(
+            " Dandrum Step Sequencer                    BPM: {}\r\n",
+            self.bpm
+        ));
         s.push_str(&format!(" ┌{}┐\r\n", "─".repeat(inner_width)));
 
         // Step numbers
         s.push_str(" │Step ");
         for i in 0..16 {
-            let marker = if i == self.cursor && matches!(self.field, Field::Note) { '▲' } else { ' ' };
-            if i == self.cursor { s.push_str("\x1b[7m"); }
+            let marker = if i == self.cursor && matches!(self.field, Field::Note) {
+                '▲'
+            } else {
+                ' '
+            };
+            if i == self.cursor {
+                s.push_str("\x1b[7m");
+            }
             s.push_str(&format!("{:>2}{}  ", i + 1, marker));
-            if i == self.cursor { s.push_str("\x1b[0m"); }
+            if i == self.cursor {
+                s.push_str("\x1b[0m");
+            }
         }
         s.push_str("│\r\n");
 
@@ -92,7 +134,11 @@ impl Sequencer {
         s.push_str(" │Note ");
         for i in 0..16 {
             let st = &self.steps[i];
-            let label = if st.active { note_name(st.note) } else { String::from("--") };
+            let label = if st.active {
+                note_name(st.note)
+            } else {
+                String::from("--")
+            };
             if i == self.cursor && matches!(self.field, Field::Note) {
                 s.push_str(&format!("\x1b[7m{:>4}\x1b[0m ", label));
             } else {
@@ -105,7 +151,11 @@ impl Sequencer {
         s.push_str(" │Vel  ");
         for i in 0..16 {
             let st = &self.steps[i];
-            let label = if st.active { format!("{:>3}", st.velocity) } else { String::from("--") };
+            let label = if st.active {
+                format!("{:>3}", st.velocity)
+            } else {
+                String::from("--")
+            };
             if i == self.cursor && matches!(self.field, Field::Velocity) {
                 s.push_str(&format!("\x1b[7m{:>4}\x1b[0m ", label));
             } else {
@@ -118,7 +168,11 @@ impl Sequencer {
         s.push_str(" │Gate ");
         for i in 0..16 {
             let st = &self.steps[i];
-            let label = if st.active { format!("{:>4.2}", st.gate) } else { String::from("---") };
+            let label = if st.active {
+                format!("{:>4.2}", st.gate)
+            } else {
+                String::from("---")
+            };
             if i == self.cursor && matches!(self.field, Field::Gate) {
                 s.push_str(&format!("\x1b[7m{:>4}\x1b[0m ", label));
             } else {
@@ -128,7 +182,9 @@ impl Sequencer {
         s.push_str("│\r\n");
 
         s.push_str(&format!(" └{}┘\r\n", "─".repeat(inner_width)));
-         s.push_str(" ←→ move  Tab field  ↑↓ change  Space toggle  P play  s/S save  L load  Q quit\r\n");
+        s.push_str(
+            " ←→ move  Tab field  ↑↓ change  Space toggle  P play  s/S save  L load  Q quit\r\n",
+        );
         s
     }
 }
@@ -138,12 +194,23 @@ fn build_events(seq: &Sequencer) -> Vec<TimedInputEvent> {
     let ticks_per_step = (60.0 / bpm as f64 * 48000.0 / 4.0) as u64; // Sixteenth notes at 48 kHz.
     let mut events = Vec::new();
     for (i, step) in seq.steps.iter().enumerate() {
-        if !step.active { continue; }
+        if !step.active {
+            continue;
+        }
         let start = i as u64 * ticks_per_step;
         let gate_frames = (ticks_per_step as f64 * step.gate as f64) as u64;
-        events.push(TimedInputEvent::new(start, ScriptEvent::NoteOn { note: step.note, velocity: step.velocity }));
+        events.push(TimedInputEvent::new(
+            start,
+            ScriptEvent::NoteOn {
+                note: step.note,
+                velocity: step.velocity,
+            },
+        ));
         if gate_frames > 0 {
-            events.push(TimedInputEvent::new(start + gate_frames, ScriptEvent::NoteOff { note: step.note }));
+            events.push(TimedInputEvent::new(
+                start + gate_frames,
+                ScriptEvent::NoteOff { note: step.note },
+            ));
         }
     }
     events
@@ -313,15 +380,42 @@ fn play_pattern(seq: &Sequencer) {
     ];
 
     let cables = vec![
-        Cable::new(PortRef::new(ModuleId::new("midi"), builtin_ports::EVENTS), PortRef::new(ModuleId::new("note_rate"), builtin_ports::EVENTS)),
-        Cable::new(PortRef::new(ModuleId::new("midi"), builtin_ports::EVENTS), PortRef::new(ModuleId::new("env"), builtin_ports::GATE)),
-        Cable::new(PortRef::new(ModuleId::new("note_rate"), builtin_ports::RATE), PortRef::new(ModuleId::new("osc"), builtin_ports::PITCH)),
-        Cable::new(PortRef::new(ModuleId::new("osc"), builtin_ports::AUDIO), PortRef::new(ModuleId::new("vca"), builtin_ports::AUDIO_IN)),
-        Cable::new(PortRef::new(ModuleId::new("env"), builtin_ports::VALUE), PortRef::new(ModuleId::new("vca"), builtin_ports::GAIN)),
-        Cable::new(PortRef::new(ModuleId::new("vca"), builtin_ports::AUDIO_OUT), PortRef::new(ModuleId::new("sat"), builtin_ports::AUDIO_IN)),
-        Cable::new(PortRef::new(ModuleId::new("sat"), builtin_ports::AUDIO_OUT), PortRef::new(ModuleId::new("mixer"), builtin_ports::INPUTS)),
-        Cable::new(PortRef::new(ModuleId::new("mixer"), builtin_ports::MIX), PortRef::new(ModuleId::new("out"), builtin_ports::LEFT)),
-        Cable::new(PortRef::new(ModuleId::new("mixer"), builtin_ports::MIX), PortRef::new(ModuleId::new("out"), builtin_ports::RIGHT)),
+        Cable::new(
+            PortRef::new(ModuleId::new("midi"), builtin_ports::EVENTS),
+            PortRef::new(ModuleId::new("note_rate"), builtin_ports::EVENTS),
+        ),
+        Cable::new(
+            PortRef::new(ModuleId::new("midi"), builtin_ports::EVENTS),
+            PortRef::new(ModuleId::new("env"), builtin_ports::GATE),
+        ),
+        Cable::new(
+            PortRef::new(ModuleId::new("note_rate"), builtin_ports::RATE),
+            PortRef::new(ModuleId::new("osc"), builtin_ports::PITCH),
+        ),
+        Cable::new(
+            PortRef::new(ModuleId::new("osc"), builtin_ports::AUDIO),
+            PortRef::new(ModuleId::new("vca"), builtin_ports::AUDIO_IN),
+        ),
+        Cable::new(
+            PortRef::new(ModuleId::new("env"), builtin_ports::VALUE),
+            PortRef::new(ModuleId::new("vca"), builtin_ports::GAIN),
+        ),
+        Cable::new(
+            PortRef::new(ModuleId::new("vca"), builtin_ports::AUDIO_OUT),
+            PortRef::new(ModuleId::new("sat"), builtin_ports::AUDIO_IN),
+        ),
+        Cable::new(
+            PortRef::new(ModuleId::new("sat"), builtin_ports::AUDIO_OUT),
+            PortRef::new(ModuleId::new("mixer"), builtin_ports::INPUTS),
+        ),
+        Cable::new(
+            PortRef::new(ModuleId::new("mixer"), builtin_ports::MIX),
+            PortRef::new(ModuleId::new("out"), builtin_ports::LEFT),
+        ),
+        Cable::new(
+            PortRef::new(ModuleId::new("mixer"), builtin_ports::MIX),
+            PortRef::new(ModuleId::new("out"), builtin_ports::RIGHT),
+        ),
     ];
 
     let graph = Graph::new(modules, cables);
@@ -346,28 +440,49 @@ fn play_pattern(seq: &Sequencer) {
     // Play via aplay (non-blocking)
     let tmp2 = tmp.clone();
     thread::spawn(move || {
-        let _ = std::process::Command::new("aplay")
-            .arg(&tmp2)
-            .status();
+        let _ = std::process::Command::new("aplay").arg(&tmp2).status();
         let _ = std::fs::remove_file(&tmp2);
     });
 }
 
 fn load_yaml(path: &str) -> Result<Sequencer, String> {
     let content = std::fs::read_to_string(path).map_err(|e| format!("read: {e}"))?;
-    let doc: serde_yaml::Value = serde_yaml::from_str(&content).map_err(|e| format!("parse: {e}"))?;
-    let steps_val = doc.get("steps").and_then(|v| v.as_sequence()).ok_or("missing steps")?;
+    let doc: serde_yaml::Value =
+        serde_yaml::from_str(&content).map_err(|e| format!("parse: {e}"))?;
+    let steps_val = doc
+        .get("steps")
+        .and_then(|v| v.as_sequence())
+        .ok_or("missing steps")?;
     let bpm = doc.get("bpm").and_then(|v| v.as_u64()).unwrap_or(140) as u32;
     let mut seq = Sequencer::new();
     seq.bpm = bpm;
     for (i, step_val) in steps_val.iter().enumerate() {
-        if i >= 16 { break; }
+        if i >= 16 {
+            break;
+        }
         let map = step_val.as_mapping().ok_or("step not a map")?;
-        let note = map.get(&serde_yaml::Value::String("note".into())).and_then(|v| v.as_u64()).unwrap_or(60) as u8;
-        let vel = map.get(&serde_yaml::Value::String("velocity".into())).and_then(|v| v.as_u64()).unwrap_or(100) as u8;
-        let gate = map.get(&serde_yaml::Value::String("gate".into())).and_then(|v| v.as_f64()).unwrap_or(0.5) as f32;
-        let active = map.get(&serde_yaml::Value::String("active".into())).and_then(|v| v.as_bool()).unwrap_or(true);
-        seq.steps[i] = Step { note, velocity: vel, gate, active };
+        let note = map
+            .get(&serde_yaml::Value::String("note".into()))
+            .and_then(|v| v.as_u64())
+            .unwrap_or(60) as u8;
+        let vel = map
+            .get(&serde_yaml::Value::String("velocity".into()))
+            .and_then(|v| v.as_u64())
+            .unwrap_or(100) as u8;
+        let gate = map
+            .get(&serde_yaml::Value::String("gate".into()))
+            .and_then(|v| v.as_f64())
+            .unwrap_or(0.5) as f32;
+        let active = map
+            .get(&serde_yaml::Value::String("active".into()))
+            .and_then(|v| v.as_bool())
+            .unwrap_or(true);
+        seq.steps[i] = Step {
+            note,
+            velocity: vel,
+            gate,
+            active,
+        };
     }
     Ok(seq)
 }
@@ -375,18 +490,30 @@ fn load_yaml(path: &str) -> Result<Sequencer, String> {
 fn save_yaml(seq: &Sequencer, path: &str) -> Result<(), String> {
     use serde::Serialize;
     #[derive(Serialize)]
-    struct StepData { note: u8, velocity: u8, gate: f32, active: bool }
+    struct StepData {
+        note: u8,
+        velocity: u8,
+        gate: f32,
+        active: bool,
+    }
     #[derive(Serialize)]
-    struct SeqData { bpm: u32, steps: Vec<StepData> }
+    struct SeqData {
+        bpm: u32,
+        steps: Vec<StepData>,
+    }
 
     let data = SeqData {
         bpm: seq.bpm,
-        steps: seq.steps.iter().map(|s| StepData {
-            note: s.note,
-            velocity: s.velocity,
-            gate: s.gate,
-            active: s.active,
-        }).collect(),
+        steps: seq
+            .steps
+            .iter()
+            .map(|s| StepData {
+                note: s.note,
+                velocity: s.velocity,
+                gate: s.gate,
+                active: s.active,
+            })
+            .collect(),
     };
     let yaml = serde_yaml::to_string(&data).map_err(|e| format!("serialize: {e}"))?;
     std::fs::write(path, &yaml).map_err(|e| format!("write: {e}"))?;
@@ -437,8 +564,16 @@ fn apply_edit_key(seq: &mut Sequencer, key: KeyEvent) -> bool {
         KeyCode::Up | KeyCode::Char('+') => {
             let st = &mut seq.steps[seq.cursor];
             match seq.field {
-                Field::Note => if st.note < 127 { st.note += 1; },
-                Field::Velocity => if st.velocity < 127 { st.velocity += 1; },
+                Field::Note => {
+                    if st.note < 127 {
+                        st.note += 1;
+                    }
+                }
+                Field::Velocity => {
+                    if st.velocity < 127 {
+                        st.velocity += 1;
+                    }
+                }
                 Field::Gate => st.gate = (st.gate + 0.05).min(1.0),
             }
             seq.dirty = true;
@@ -447,8 +582,16 @@ fn apply_edit_key(seq: &mut Sequencer, key: KeyEvent) -> bool {
         KeyCode::Down | KeyCode::Char('-') => {
             let st = &mut seq.steps[seq.cursor];
             match seq.field {
-                Field::Note => if st.note > 0 { st.note -= 1; },
-                Field::Velocity => if st.velocity > 0 { st.velocity -= 1; },
+                Field::Note => {
+                    if st.note > 0 {
+                        st.note -= 1;
+                    }
+                }
+                Field::Velocity => {
+                    if st.velocity > 0 {
+                        st.velocity -= 1;
+                    }
+                }
                 Field::Gate => st.gate = (st.gate - 0.05).max(0.01),
             }
             seq.dirty = true;
@@ -489,16 +632,20 @@ fn run_tui() -> io::Result<()> {
 
     // Spawn input thread
     let tx2 = tx.clone();
-    thread::spawn(move || loop {
-        match read() {
-            Ok(Event::Key(k)) => {
-                let _ = tx2.send(k);
-                if k.code == KeyCode::Char('q') && k.modifiers == KeyModifiers::NONE { break; }
+    thread::spawn(move || {
+        loop {
+            match read() {
+                Ok(Event::Key(k)) => {
+                    let _ = tx2.send(k);
+                    if k.code == KeyCode::Char('q') && k.modifiers == KeyModifiers::NONE {
+                        break;
+                    }
+                }
+                Ok(Event::Resize(_w, _h)) => {
+                    let _ = tx2.send(KeyEvent::new(KeyCode::F(1), KeyModifiers::NONE));
+                }
+                _ => {}
             }
-            Ok(Event::Resize(_w, _h)) => {
-                let _ = tx2.send(KeyEvent::new(KeyCode::F(1), KeyModifiers::NONE));
-            }
-            _ => {}
         }
     });
 
@@ -528,17 +675,33 @@ fn run_tui() -> io::Result<()> {
         match key.code {
             KeyCode::Char('q') => break,
             KeyCode::Char('p') => {
-                queue!(stdout, MoveTo(0, 10), Print("Rendering...                 "))?;
+                queue!(
+                    stdout,
+                    MoveTo(0, 10),
+                    Print("Rendering...                 ")
+                )?;
                 stdout.flush()?;
                 play_pattern(&seq);
-                queue!(stdout, MoveTo(0, 10), Print("Playing...                   "))?;
+                queue!(
+                    stdout,
+                    MoveTo(0, 10),
+                    Print("Playing...                   ")
+                )?;
                 stdout.flush()?;
             }
             KeyCode::Char('s') => {
-                queue!(stdout, MoveTo(0, 10), Print("Save path: /tmp/pattern.yaml   "))?;
+                queue!(
+                    stdout,
+                    MoveTo(0, 10),
+                    Print("Save path: /tmp/pattern.yaml   ")
+                )?;
                 stdout.flush()?;
                 match save_yaml(&seq, "/tmp/pattern.yaml") {
-                    Ok(_) => queue!(stdout, MoveTo(0, 10), Print("Saved steps to /tmp/pattern.yaml"))?,
+                    Ok(_) => queue!(
+                        stdout,
+                        MoveTo(0, 10),
+                        Print("Saved steps to /tmp/pattern.yaml")
+                    )?,
                     Err(e) => queue!(stdout, MoveTo(0, 10), Print(format!("Error: {e:<30}")))?,
                 }
                 stdout.flush()?;
@@ -546,21 +709,36 @@ fn run_tui() -> io::Result<()> {
             KeyCode::Char('S') => {
                 let patch_yaml = build_patch_yaml(&seq);
                 match std::fs::write("/tmp/pattern-patch.yaml", &patch_yaml) {
-                    Ok(_) => queue!(stdout, MoveTo(0, 10), Print("Saved patch to /tmp/pattern-patch.yaml"))?,
+                    Ok(_) => queue!(
+                        stdout,
+                        MoveTo(0, 10),
+                        Print("Saved patch to /tmp/pattern-patch.yaml")
+                    )?,
                     Err(e) => queue!(stdout, MoveTo(0, 10), Print(format!("Error: {e:<30}")))?,
                 }
                 stdout.flush()?;
             }
             KeyCode::Char('l') => {
-                queue!(stdout, MoveTo(0, 10), Print("Loading /tmp/pattern.yaml...   "))?;
+                queue!(
+                    stdout,
+                    MoveTo(0, 10),
+                    Print("Loading /tmp/pattern.yaml...   ")
+                )?;
                 stdout.flush()?;
                 match load_yaml("/tmp/pattern.yaml") {
-                    Ok(loaded) => { seq = loaded; seq.dirty = true; seq.cursor = 0; seq.field = Field::Note; }
+                    Ok(loaded) => {
+                        seq = loaded;
+                        seq.dirty = true;
+                        seq.cursor = 0;
+                        seq.field = Field::Note;
+                    }
                     Err(e) => queue!(stdout, MoveTo(0, 10), Print(format!("Error: {e:<30}")))?,
                 }
                 stdout.flush()?;
             }
-            _ => { let _ = apply_edit_key(&mut seq, key); }
+            _ => {
+                let _ = apply_edit_key(&mut seq, key);
+            }
         }
 
         let _ = render(&seq, &mut stdout);
@@ -574,7 +752,11 @@ fn run_tui() -> io::Result<()> {
 fn main() -> io::Result<()> {
     let args: Vec<String> = std::env::args().collect();
     if args.len() > 1 && args[1] == "--render" {
-        let path = if args.len() > 2 { &args[2] } else { "/tmp/pattern.yaml" };
+        let path = if args.len() > 2 {
+            &args[2]
+        } else {
+            "/tmp/pattern.yaml"
+        };
         match load_yaml(path) {
             Ok(seq) => {
                 play_pattern(&seq);
@@ -586,7 +768,11 @@ fn main() -> io::Result<()> {
         return Ok(());
     }
     if args.len() > 1 && args[1] == "--export" {
-        let path = if args.len() > 2 { &args[2] } else { "/tmp/pattern.yaml" };
+        let path = if args.len() > 2 {
+            &args[2]
+        } else {
+            "/tmp/pattern.yaml"
+        };
         match load_yaml(path) {
             Ok(seq) => {
                 let patch_yaml = build_patch_yaml(&seq);
@@ -611,10 +797,16 @@ mod tests {
         let mut seq = Sequencer::new();
         seq.steps[0].note = 60;
 
-        assert!(apply_edit_key(&mut seq, KeyEvent::new(KeyCode::Up, KeyModifiers::SHIFT)));
+        assert!(apply_edit_key(
+            &mut seq,
+            KeyEvent::new(KeyCode::Up, KeyModifiers::SHIFT)
+        ));
         assert_eq!(seq.steps[0].note, 72);
 
-        assert!(apply_edit_key(&mut seq, KeyEvent::new(KeyCode::Down, KeyModifiers::SHIFT)));
+        assert!(apply_edit_key(
+            &mut seq,
+            KeyEvent::new(KeyCode::Down, KeyModifiers::SHIFT)
+        ));
         assert_eq!(seq.steps[0].note, 60);
     }
 
@@ -623,10 +815,16 @@ mod tests {
         let mut seq = Sequencer::new();
         seq.steps[0].velocity = 100;
 
-        assert!(apply_edit_key(&mut seq, KeyEvent::new(KeyCode::PageUp, KeyModifiers::NONE)));
+        assert!(apply_edit_key(
+            &mut seq,
+            KeyEvent::new(KeyCode::PageUp, KeyModifiers::NONE)
+        ));
         assert_eq!(seq.steps[0].velocity, 101);
 
-        assert!(apply_edit_key(&mut seq, KeyEvent::new(KeyCode::PageDown, KeyModifiers::NONE)));
+        assert!(apply_edit_key(
+            &mut seq,
+            KeyEvent::new(KeyCode::PageDown, KeyModifiers::NONE)
+        ));
         assert_eq!(seq.steps[0].velocity, 100);
     }
 }

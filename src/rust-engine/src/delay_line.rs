@@ -105,7 +105,10 @@ mod tests {
     #[test]
     fn max_delay_samples_query() {
         let d = create_delay();
-        assert_eq!(d.max_delay_samples(), (100.0_f64 * 48000.0 / 1000.0).ceil() as usize);
+        assert_eq!(
+            d.max_delay_samples(),
+            (100.0_f64 * 48000.0 / 1000.0).ceil() as usize
+        );
     }
 
     #[test]
@@ -135,7 +138,11 @@ mod tests {
         d.write(1.0);
         d.write(0.0);
         let result = d.read(0.5);
-        assert!((result - 0.5625).abs() < 1e-4, "expected ~0.5625, got {}", result);
+        assert!(
+            (result - 0.5625).abs() < 1e-4,
+            "expected ~0.5625, got {}",
+            result
+        );
     }
 
     #[test]
@@ -147,7 +154,10 @@ mod tests {
         let base = d.read(100.0);
         let modulated = d.read(110.0);
         // 110 samples back should read a different value than 100 samples back
-        assert!((base - modulated).abs() > 1e-6, "modulation should change read position");
+        assert!(
+            (base - modulated).abs() > 1e-6,
+            "modulation should change read position"
+        );
     }
 
     #[test]
@@ -166,7 +176,11 @@ mod tests {
         d.write(2.0);
         d.reset();
         let result = d.read(1.0);
-        assert!((result).abs() < 1e-6, "expected 0.0 after reset, got {}", result);
+        assert!(
+            (result).abs() < 1e-6,
+            "expected 0.0 after reset, got {}",
+            result
+        );
     }
 
     #[test]

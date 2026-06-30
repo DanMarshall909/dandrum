@@ -1,6 +1,7 @@
 #include <juce_audio_devices/juce_audio_devices.h>
 
 #include "Cli.h"
+#include "DefaultPatch.h"
 #include "MidiToRustEngine.h"
 #include "RustEngineSource.h"
 
@@ -52,19 +53,31 @@ int main (int argc, char* argv[])
     RustEngineSource engineSource;
     juce::AudioSourcePlayer player;
     player.setSource (&engineSource);
-    deviceManager.addAudioCallback (&player);
+
+    const auto resolvedDefaultPatch = juce::File (dandrum::defaultPatchPath().string());
+    if (! resolvedDefaultPatch.existsAsFile())
+    {
+        std::cerr << "Failed to locate default patch: examples/patches/polyphonic-pad.yaml\n";
+        return 1;
+    }
 
     const auto patchArgIndex = args.indexOf ("--patch");
-    if (patchArgIndex >= 0 && patchArgIndex + 1 < args.size())
+    const auto useExplicitPatch = patchArgIndex >= 0 && patchArgIndex + 1 < args.size();
+    const auto patchPath = useExplicitPatch ? juce::File (args[patchArgIndex + 1]) : resolvedDefaultPatch;
+
+    // Patch loading stays off the audio callback; the callback only renders
+    // the already-prepared engine state.
+    if (! engineSource.loadPatch (patchPath.getFullPathName()))
     {
-        const auto patchPath = args[patchArgIndex + 1];
-        if (! engineSource.loadPatch (patchPath))
-        {
-            std::cerr << "Failed to load patch: " << patchPath << '\n';
-            return 1;
-        }
-        std::cout << "Loaded patch: " << patchPath << '\n';
+        std::cerr << (useExplicitPatch ? "Failed to load patch: " : "Failed to load default patch: ")
+                  << patchPath.getFullPathName() << '\n';
+        return 1;
     }
+
+    std::cout << (useExplicitPatch ? "Loaded patch: " : "Loaded default patch: ")
+              << patchPath.getFullPathName() << '\n';
+
+    deviceManager.addAudioCallback (&player);
 
     const auto exitCode = [&]() -> int {
         const auto testMidiNoteArgIndex = args.indexOf ("--test-midi-note");

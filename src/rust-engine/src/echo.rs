@@ -111,16 +111,14 @@ impl Echo {
         (delay_s * self.sample_rate) as f32
     }
 
-    pub fn process(
-        &mut self,
-        in_l: f32,
-        in_r: f32,
-    ) -> (f32, f32) {
-        let delay_samples_l = self.sync_division
+    pub fn process(&mut self, in_l: f32, in_r: f32) -> (f32, f32) {
+        let delay_samples_l = self
+            .sync_division
             .map(|_| self.delay_samples_from_sync())
             .unwrap_or_else(|| self.delay_samples_from_ms(self.delay_ms_l));
 
-        let delay_samples_r = self.sync_division
+        let delay_samples_r = self
+            .sync_division
             .map(|_| self.delay_samples_from_sync())
             .unwrap_or_else(|| self.delay_samples_from_ms(self.delay_ms_r));
 
@@ -197,15 +195,20 @@ mod tests {
             let (_, _) = e.process(0.0, 0.0);
         }
         let (first_l, _) = e.process(0.0, 0.0);
-        assert!(first_l.abs() > 0.01, "expected non-zero first repeat, got {first_l}");
+        assert!(
+            first_l.abs() > 0.01,
+            "expected non-zero first repeat, got {first_l}"
+        );
 
         // Advance to second repeat
         for _ in 0..delay_samples {
             let (_, _) = e.process(0.0, 0.0);
         }
         let (second_l, _) = e.process(0.0, 0.0);
-        assert!(second_l.abs() < first_l.abs() * 0.99,
-            "second repeat {second_l} should be quieter than first {first_l}");
+        assert!(
+            second_l.abs() < first_l.abs() * 0.99,
+            "second repeat {second_l} should be quieter than first {first_l}"
+        );
     }
 
     #[test]
@@ -225,13 +228,22 @@ mod tests {
         }
         // Read and discard first repeat
         let (first_l, _) = e.process(0.0, 0.0);
-        assert!(first_l.abs() > 0.01, "expected non-zero first repeat, got {first_l}");
+        assert!(
+            first_l.abs() > 0.01,
+            "expected non-zero first repeat, got {first_l}"
+        );
 
         // Second repeat should be zero (feedback=0 means only one echo)
         for _ in 0..delay_samples * 2 {
             let (l, r) = e.process(0.0, 0.0);
-            assert!((l).abs() < 1e-6, "expected silence after single repeat, got {l}");
-            assert!((r).abs() < 1e-6, "expected silence after single repeat, got {r}");
+            assert!(
+                (l).abs() < 1e-6,
+                "expected silence after single repeat, got {l}"
+            );
+            assert!(
+                (r).abs() < 1e-6,
+                "expected silence after single repeat, got {r}"
+            );
         }
     }
 
@@ -253,8 +265,14 @@ mod tests {
         }
         let (l, r) = e.process(0.0, 0.0);
         // First repeat should appear on right channel (ping-pong cross)
-        assert!((l).abs() < 1e-6, "first ping-pong repeat should be on R, got L={l}");
-        assert!(r.abs() > 0.5, "first ping-pong repeat expected on R, got {r}");
+        assert!(
+            (l).abs() < 1e-6,
+            "first ping-pong repeat should be on R, got L={l}"
+        );
+        assert!(
+            r.abs() > 0.5,
+            "first ping-pong repeat expected on R, got {r}"
+        );
     }
 
     #[test]
@@ -291,8 +309,14 @@ mod tests {
 
         for i in 0..expected_delay {
             let (l, r) = e.process(0.0, 0.0);
-            assert!((l).abs() < 1e-6, "expected silence before sync delay at sample {i}, got {l}");
-            assert!((r).abs() < 1e-6, "expected silence before sync delay at sample {i}, got {r}");
+            assert!(
+                (l).abs() < 1e-6,
+                "expected silence before sync delay at sample {i}, got {l}"
+            );
+            assert!(
+                (r).abs() < 1e-6,
+                "expected silence before sync delay at sample {i}, got {r}"
+            );
         }
 
         let (l, r) = e.process(0.0, 0.0);
@@ -309,8 +333,14 @@ mod tests {
 
         // Full dry: output should be input, no delayed signal
         let (l, r) = e.process(0.5, 0.5);
-        assert!((l - 0.5).abs() < 1e-6, "dry signal should pass through, got {l}");
-        assert!((r - 0.5).abs() < 1e-6, "dry signal should pass through, got {r}");
+        assert!(
+            (l - 0.5).abs() < 1e-6,
+            "dry signal should pass through, got {l}"
+        );
+        assert!(
+            (r - 0.5).abs() < 1e-6,
+            "dry signal should pass through, got {r}"
+        );
     }
 
     #[test]

@@ -359,7 +359,10 @@ mod tests {
             fb_out.push(fb.process(s, None));
         }
         // At least one sample should differ (feedback uses delayed detection)
-        let differs = ff_out.iter().zip(fb_out.iter()).any(|(a, b)| (a - b).abs() > 0.001);
+        let differs = ff_out
+            .iter()
+            .zip(fb_out.iter())
+            .any(|(a, b)| (a - b).abs() > 0.001);
         assert!(differs, "feed-forward and feedback should differ");
     }
 
@@ -441,10 +444,22 @@ mod tests {
         let comp_response = compute_magnitude_response(&comp_out, 48000.0);
         let ref_response = compute_magnitude_response(&ref_out, 48000.0);
 
-        let comp_bin = comp_response.bins.iter().find(|(f, _)| (*f - 440.0).abs() < 50.0);
-        let ref_bin = ref_response.bins.iter().find(|(f, _)| (*f - 440.0).abs() < 50.0);
-        assert!(comp_bin.is_some(), "compressed output should have 440 Hz energy");
-        assert!(ref_bin.is_some(), "reference output should have 440 Hz energy");
+        let comp_bin = comp_response
+            .bins
+            .iter()
+            .find(|(f, _)| (*f - 440.0).abs() < 50.0);
+        let ref_bin = ref_response
+            .bins
+            .iter()
+            .find(|(f, _)| (*f - 440.0).abs() < 50.0);
+        assert!(
+            comp_bin.is_some(),
+            "compressed output should have 440 Hz energy"
+        );
+        assert!(
+            ref_bin.is_some(),
+            "reference output should have 440 Hz energy"
+        );
 
         let (_comp_f, comp_db) = comp_bin.unwrap();
         let (_ref_f, ref_db) = ref_bin.unwrap();
@@ -473,7 +488,10 @@ mod tests {
         }
 
         let response = compute_magnitude_response(&output, 48000.0);
-        let bin_440 = response.bins.iter().find(|(f, _)| (*f - 440.0).abs() < 50.0);
+        let bin_440 = response
+            .bins
+            .iter()
+            .find(|(f, _)| (*f - 440.0).abs() < 50.0);
         let (_, db) = bin_440.unwrap();
         // Signal 30 dB below threshold with near-zero below_ratio should be heavily attenuated
         assert!(
@@ -499,7 +517,10 @@ mod tests {
 
         // The attack portion should be boosted relative to sustain
         // Find max output level in early samples vs later samples
-        let early_max = output[0..500].iter().map(|s| s.abs()).fold(0.0f32, f32::max);
+        let early_max = output[0..500]
+            .iter()
+            .map(|s| s.abs())
+            .fold(0.0f32, f32::max);
         let late_avg = output[2000..3000].iter().map(|s| s.abs()).sum::<f32>() / 1000.0;
 
         assert!(

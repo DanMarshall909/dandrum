@@ -64,9 +64,17 @@ pub fn compile(
                 execution_scope: module.execution_scope(),
                 input_port_map: vec![Vec::new(); input_count],
                 output_port_map: (0..output_count).collect(),
-                input_port_names: module.inputs().iter().map(|p| p.name().to_string()).collect(),
+                input_port_names: module
+                    .inputs()
+                    .iter()
+                    .map(|p| p.name().to_string())
+                    .collect(),
                 input_port_types: module.inputs().iter().map(|p| p.signal_type()).collect(),
-                output_port_names: module.outputs().iter().map(|p| p.name().to_string()).collect(),
+                output_port_names: module
+                    .outputs()
+                    .iter()
+                    .map(|p| p.name().to_string())
+                    .collect(),
                 output_port_types: module.outputs().iter().map(|p| p.signal_type()).collect(),
             }
         })

@@ -123,17 +123,20 @@ impl std::error::Error for SampleLoadError {}
 
 fn load_pcm_wav(path: &Path, expected_sample_rate_hz: u32) -> Result<LoadedSample, String> {
     let loaded = crate::audio_loading::load_pcm_wav(path, expected_sample_rate_hz)?;
-    Ok(LoadedSample::new(loaded.sample_rate_hz(), loaded.frames().to_vec()))
+    Ok(LoadedSample::new(
+        loaded.sample_rate_hz(),
+        loaded.frames().to_vec(),
+    ))
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::fs;
     use crate::patch::{
         AssetDeclaration, ModuleDeclaration, PatchMetadata, RenderSettings, VoiceAllocation,
     };
     use crate::wav::write_wav_stereo_i16;
+    use std::fs;
     use std::path::PathBuf;
 
     #[test]

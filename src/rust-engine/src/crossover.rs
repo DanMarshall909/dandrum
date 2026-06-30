@@ -45,7 +45,12 @@ impl LinkwitzRiley4 {
         let lp_b = BiquadFilter::new_lowpass(crossover_norm, q);
         let hp_a = BiquadFilter::new_highpass(crossover_norm, q);
         let hp_b = BiquadFilter::new_highpass(crossover_norm, q);
-        Self { lp_a, lp_b, hp_a, hp_b }
+        Self {
+            lp_a,
+            lp_b,
+            hp_a,
+            hp_b,
+        }
     }
 
     pub fn set_crossover(&mut self, crossover_norm: f64) {
@@ -89,13 +94,22 @@ mod tests {
             low_out[i] = l;
             high_out[i] = h;
         }
-        let combined: Vec<f32> = low_out.iter().zip(high_out.iter()).map(|(a, b)| a + b).collect();
+        let combined: Vec<f32> = low_out
+            .iter()
+            .zip(high_out.iter())
+            .map(|(a, b)| a + b)
+            .collect();
         fft::compute_magnitude_response(&combined, sample_rate).bins
     }
 
     fn magnitude_at(bins: &[(f64, f64)], target_hz: f64) -> f64 {
         bins.iter()
-            .min_by(|(a, _), (b, _)| (a - target_hz).abs().partial_cmp(&(b - target_hz).abs()).unwrap())
+            .min_by(|(a, _), (b, _)| {
+                (a - target_hz)
+                    .abs()
+                    .partial_cmp(&(b - target_hz).abs())
+                    .unwrap()
+            })
             .map(|&(_, db)| db)
             .unwrap_or(-100.0)
     }

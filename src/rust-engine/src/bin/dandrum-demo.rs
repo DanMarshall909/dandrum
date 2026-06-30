@@ -1,16 +1,22 @@
 use std::path::Path;
 
-use dandrum_engine::graph::{Cable, Graph, ModuleId, ModuleNode, PortRef};
-use dandrum_engine::graph::builtin_ports;
-use dandrum_engine::graph::SignalType;
-use dandrum_engine::patch::RenderSettings;
-use dandrum_engine::graph_processor::render_offline;
 use dandrum_engine::core::TimedInputEvent;
+use dandrum_engine::graph::SignalType;
+use dandrum_engine::graph::builtin_ports;
+use dandrum_engine::graph::{Cable, Graph, ModuleId, ModuleNode, PortRef};
+use dandrum_engine::graph_processor::render_offline;
+use dandrum_engine::patch::RenderSettings;
 use dandrum_engine::script::ScriptEvent;
 use dandrum_engine::wav::write_wav_file;
 
 fn note_on(frame: u64, note: u8) -> TimedInputEvent {
-    TimedInputEvent::new(frame, ScriptEvent::NoteOn { note, velocity: 100 })
+    TimedInputEvent::new(
+        frame,
+        ScriptEvent::NoteOn {
+            note,
+            velocity: 100,
+        },
+    )
 }
 
 fn note_off(frame: u64, note: u8) -> TimedInputEvent {
@@ -117,10 +123,10 @@ fn main() {
 
     // 303-style acid bass sequence (E minor blues)
     let notes: [(u8, u64); 16] = [
-        (40, 0),    // E2
-        (40, 3000), // E2
-        (43, 6000), // G2
-        (45, 9000), // A2
+        (40, 0),     // E2
+        (40, 3000),  // E2
+        (43, 6000),  // G2
+        (45, 9000),  // A2
         (46, 12000), // Bb2
         (45, 15000), // A2
         (43, 18000), // G2
@@ -149,7 +155,6 @@ fn main() {
 
     let (left, right) = render_offline(&graph, &settings, events);
 
-    write_wav_file(Path::new("/tmp/dandrum-acid.wav"), fs, &left, &right)
-        .expect("write wav");
+    write_wav_file(Path::new("/tmp/dandrum-acid.wav"), fs, &left, &right).expect("write wav");
     println!("Wrote 4s 303 acid line to /tmp/dandrum-acid.wav");
 }

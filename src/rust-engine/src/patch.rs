@@ -374,6 +374,8 @@ pub(super) fn validate_port_reference(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::fs;
+    use std::path::PathBuf;
 
     #[test]
     fn patch_schema_separates_metadata_render_assets_modules_and_connections() {
@@ -422,6 +424,29 @@ mod tests {
         assert_eq!(patch.assets[0].kind, AssetKind::Sample);
         assert_eq!(patch.modules[0].id, "out");
         assert_eq!(patch.connections[0].to.module_id, "out");
+    }
+
+    #[test]
+    fn yaml_patch_schema_file_parses_as_yaml_and_declares_core_sections() {
+        let schema_path =
+            PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../schema/patch.schema.yaml");
+        let schema_text =
+            fs::read_to_string(&schema_path).expect("patch schema should be readable");
+        let schema: serde_yaml::Value =
+            serde_yaml::from_str(&schema_text).expect("patch schema should parse as YAML");
+        let schema_map = schema
+            .as_mapping()
+            .expect("patch schema should be a mapping");
+
+        let properties_key = serde_yaml::Value::String("properties".to_string());
+        let properties = schema_map
+            .get(&properties_key)
+            .and_then(serde_yaml::Value::as_mapping)
+            .expect("patch schema should declare properties");
+
+        assert!(properties.contains_key(serde_yaml::Value::String("metadata".to_string())));
+        assert!(properties.contains_key(serde_yaml::Value::String("render".to_string())));
+        assert!(properties.contains_key(serde_yaml::Value::String("modules".to_string())));
     }
 
     #[test]

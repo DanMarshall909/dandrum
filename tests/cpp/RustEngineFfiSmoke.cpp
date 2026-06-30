@@ -1,8 +1,10 @@
 #include "RustEngineBindings.h"
+#include "DefaultPatch.h"
 
 #include <cmath>
 #include <cstddef>
 #include <iostream>
+#include <string>
 
 namespace
 {
@@ -22,6 +24,13 @@ int main()
     if (engine == nullptr)
     {
         std::cerr << "dandrum_engine_create returned null\n";
+        return 1;
+    }
+
+    const auto patchPath = dandrum::defaultPatchPath().string();
+    if (! dandrum_engine_load_patch (engine, patchPath.c_str()))
+    {
+        std::cerr << "failed to load default patch: " << patchPath << '\n';
         return 1;
     }
 

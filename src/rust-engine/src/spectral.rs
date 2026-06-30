@@ -52,7 +52,8 @@ impl SpectralProcessor {
         self.input_buf[idx] = input as f64;
         self.write_pos += 1;
 
-        if self.write_pos >= self.frame_size && (self.write_pos - self.frame_size) % self.hop_size == 0
+        if self.write_pos >= self.frame_size
+            && (self.write_pos - self.frame_size) % self.hop_size == 0
         {
             self.process_frame();
             self.frames_processed += 1;
@@ -120,7 +121,11 @@ mod tests {
     use super::*;
 
     fn rms_error(a: &[f32], b: &[f32]) -> f64 {
-        let sum_sq: f64 = a.iter().zip(b.iter()).map(|(x, y)| ((x - y) as f64).powi(2)).sum();
+        let sum_sq: f64 = a
+            .iter()
+            .zip(b.iter())
+            .map(|(x, y)| ((x - y) as f64).powi(2))
+            .sum();
         (sum_sq / a.len() as f64).sqrt()
     }
 
@@ -146,7 +151,10 @@ mod tests {
         let error = rms_error(aligned_input, aligned_output);
         let input_rms = rms_error(aligned_input, &vec![0.0f32; aligned_input.len()]);
         let db = 20.0 * (error / input_rms.max(1e-12)).log10();
-        assert!(db < -60.0, "passthrough error {db:.1} dB (expected < -60 dB)");
+        assert!(
+            db < -60.0,
+            "passthrough error {db:.1} dB (expected < -60 dB)"
+        );
     }
 
     #[test]

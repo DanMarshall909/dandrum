@@ -115,10 +115,7 @@ mod tests {
             det.process(0.0);
         }
         let env = det.envelope_value();
-        assert!(
-            env < 0.5,
-            "slow release should decay slowly, got {env}"
-        );
+        assert!(env < 0.5, "slow release should decay slowly, got {env}");
     }
 
     #[test]

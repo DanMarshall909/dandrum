@@ -238,7 +238,11 @@ impl Reverb {
         }
     }
 
-    fn process_channel(combs: &mut [CombStage], diffusers: &mut [AllpassDiffuser], input: f32) -> f32 {
+    fn process_channel(
+        combs: &mut [CombStage],
+        diffusers: &mut [AllpassDiffuser],
+        input: f32,
+    ) -> f32 {
         let mut sum = 0.0;
         for comb in combs.iter_mut() {
             sum += comb.process(input);
@@ -251,11 +255,7 @@ impl Reverb {
         out
     }
 
-    pub fn process(
-        &mut self,
-        in_l: f32,
-        in_r: f32,
-    ) -> (f32, f32) {
+    pub fn process(&mut self, in_l: f32, in_r: f32) -> (f32, f32) {
         let pre_delay_samples = (self.pre_delay_ms * self.sample_rate / 1000.0) as f32;
 
         let delayed_in_l = if pre_delay_samples > 0.0 {
@@ -319,7 +319,10 @@ mod tests {
                 non_zero_count += 1;
             }
         }
-        assert!(non_zero_count > 1000, "tail should have >1000 non-zero samples, got {non_zero_count}");
+        assert!(
+            non_zero_count > 1000,
+            "tail should have >1000 non-zero samples, got {non_zero_count}"
+        );
     }
 
     #[test]
@@ -452,14 +455,8 @@ mod tests {
 
         let low_energy: f32 = low_samples.iter().map(|s| s * s).sum();
         let high_energy: f32 = high_samples.iter().map(|s| s * s).sum();
-        assert!(
-            high_energy > 0.0,
-            "high diffusion should produce energy"
-        );
-        assert!(
-            low_energy > 0.0,
-            "low diffusion should produce energy"
-        );
+        assert!(high_energy > 0.0, "high diffusion should produce energy");
+        assert!(low_energy > 0.0, "low diffusion should produce energy");
     }
 
     #[test]
@@ -517,10 +514,7 @@ mod tests {
                 found_mid = true;
             }
         }
-        assert!(
-            found_mid,
-            "long decay should sustain past 0.5 seconds"
-        );
+        assert!(found_mid, "long decay should sustain past 0.5 seconds");
     }
 
     #[test]
@@ -532,10 +526,7 @@ mod tests {
         r.reset();
         for _ in 0..100 {
             let (l, r_val) = r.process(0.0, 0.0);
-            assert!(
-                l.abs() < 1e-6,
-                "after reset should be silent, got l={l}"
-            );
+            assert!(l.abs() < 1e-6, "after reset should be silent, got l={l}");
             assert!(
                 r_val.abs() < 1e-6,
                 "after reset should be silent, got r={r_val}"

@@ -111,7 +111,10 @@ mod tests {
         let curve = TanhCurve;
         let out_pos = curve.process(2.0);
         let out_neg = curve.process(-2.0);
-        assert!(approx_eq(out_pos, -out_neg, 1e-10), "tanh should be symmetric");
+        assert!(
+            approx_eq(out_pos, -out_neg, 1e-10),
+            "tanh should be symmetric"
+        );
     }
 
     #[test]
@@ -119,7 +122,10 @@ mod tests {
         let curve = TanhCurve;
         for input in [-10.0, -5.0, -1.0, 0.0, 1.0, 5.0, 10.0] {
             let out = curve.process(input);
-            assert!(out.abs() < 1.01, "tanh should stay within [-1, 1], got {out} for {input}");
+            assert!(
+                out.abs() < 1.01,
+                "tanh should stay within [-1, 1], got {out} for {input}"
+            );
         }
     }
 
@@ -165,7 +171,10 @@ mod tests {
         };
         // 6 dB drive ≈ 2x amplification; 0.6 * 2 ≈ 1.2 → clipped to 1.0
         let out = sat.process(0.6);
-        assert!(approx_eq(out, 1.0, 1e-6), "6 dB drive clips 0.6 to 1.0, got {out}");
+        assert!(
+            approx_eq(out, 1.0, 1e-6),
+            "6 dB drive clips 0.6 to 1.0, got {out}"
+        );
     }
 
     #[test]
@@ -177,7 +186,11 @@ mod tests {
         // With positive bias, a symmetric input produces asymmetric output
         let out_pos = sat.process(0.5);
         let out_neg = sat.process(-0.5);
-        assert!(out_pos != -out_neg, "bias should create asymmetry: {out_pos} vs {}", -out_neg);
+        assert!(
+            out_pos != -out_neg,
+            "bias should create asymmetry: {out_pos} vs {}",
+            -out_neg
+        );
     }
 
     #[test]
@@ -191,15 +204,22 @@ mod tests {
         };
         let out = sat.process(0.1);
         // At very low levels, tanh(x) ≈ x
-        assert!(approx_eq(out, 0.1, 0.01), "unity drive should pass signal, got {out}");
+        assert!(
+            approx_eq(out, 0.1, 0.01),
+            "unity drive should pass signal, got {out}"
+        );
     }
 
     #[test]
     fn custom_curve_trait_integration() {
         struct Doubler;
         impl WaveshaperCurve for Doubler {
-            fn process(&self, sample: f64) -> f64 { sample * 2.0 }
-            fn name(&self) -> &'static str { "doubler" }
+            fn process(&self, sample: f64) -> f64 {
+                sample * 2.0
+            }
+            fn name(&self) -> &'static str {
+                "doubler"
+            }
         }
 
         let mut sat = Saturator::new();
@@ -241,8 +261,14 @@ mod tests {
 
         let response = compute_magnitude_response(&output, 48000.0);
         // Find bins at harmonic frequencies: 3rd (1320 Hz), 5th (2200 Hz)
-        let h3 = response.bins.iter().find(|(f, _)| (*f - 1320.0).abs() < 100.0);
-        let h5 = response.bins.iter().find(|(f, _)| (*f - 2200.0).abs() < 100.0);
+        let h3 = response
+            .bins
+            .iter()
+            .find(|(f, _)| (*f - 1320.0).abs() < 100.0);
+        let h5 = response
+            .bins
+            .iter()
+            .find(|(f, _)| (*f - 2200.0).abs() < 100.0);
 
         assert!(h3.is_some(), "tanh should produce 3rd harmonic");
         assert!(h5.is_some(), "tanh should produce 5th harmonic");
@@ -274,9 +300,18 @@ mod tests {
 
         let response = compute_magnitude_response(&output, 48000.0);
         // Hard clip produces many odd harmonics
-        let h3 = response.bins.iter().find(|(f, _)| (*f - 1320.0).abs() < 100.0);
-        let h7 = response.bins.iter().find(|(f, _)| (*f - 3080.0).abs() < 100.0);
-        let h9 = response.bins.iter().find(|(f, _)| (*f - 3960.0).abs() < 100.0);
+        let h3 = response
+            .bins
+            .iter()
+            .find(|(f, _)| (*f - 1320.0).abs() < 100.0);
+        let h7 = response
+            .bins
+            .iter()
+            .find(|(f, _)| (*f - 3080.0).abs() < 100.0);
+        let h9 = response
+            .bins
+            .iter()
+            .find(|(f, _)| (*f - 3960.0).abs() < 100.0);
 
         assert!(h3.is_some(), "hard clip should produce 3rd harmonic");
         assert!(h7.is_some(), "hard clip should produce 7th harmonic");

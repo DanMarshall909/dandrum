@@ -24,9 +24,9 @@ pub mod voice_allocator;
 
 pub mod fft;
 
-pub mod filter;
 pub mod delay_line;
 pub mod echo;
+pub mod filter;
 pub mod reverb;
 
 pub mod realtime;
@@ -39,9 +39,9 @@ pub mod envelope_detector;
 
 pub mod audio_loading;
 
+pub mod convolution;
 pub mod dynamics_processor;
 pub mod saturator;
-pub mod convolution;
 
 pub use synth::DandrumEngine;
 
@@ -283,9 +283,18 @@ mod tests {
         let queue = dandrum_realtime_event_queue_create(1);
 
         assert!(!queue.is_null());
-        assert_eq!(unsafe { dandrum_realtime_event_queue_note_on(queue, 60, 100) }, 0);
-        assert_eq!(unsafe { dandrum_realtime_event_queue_note_off(queue, 60) }, 1);
-        assert_eq!(unsafe { dandrum_realtime_event_queue_dropped_count(queue) }, 1);
+        assert_eq!(
+            unsafe { dandrum_realtime_event_queue_note_on(queue, 60, 100) },
+            0
+        );
+        assert_eq!(
+            unsafe { dandrum_realtime_event_queue_note_off(queue, 60) },
+            1
+        );
+        assert_eq!(
+            unsafe { dandrum_realtime_event_queue_dropped_count(queue) },
+            1
+        );
 
         unsafe { dandrum_realtime_event_queue_destroy(queue) };
     }

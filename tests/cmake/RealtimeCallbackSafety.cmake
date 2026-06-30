@@ -68,3 +68,20 @@ extract_function_body(
 if (handle_incoming_midi_body MATCHES "std::cout|std::cerr")
     message(FATAL_ERROR "MidiToRustEngine::handleIncomingMidiMessage contains callback-unsafe console IO")
 endif()
+
+read_source_relative(main_source "src/juce-wrapper/Main.cpp")
+string(FIND "${main_source}" "defaultPatchPath(" default_patch_pos)
+if (default_patch_pos EQUAL -1)
+    message(FATAL_ERROR "Main.cpp must load the bundled default patch when no explicit patch is provided")
+endif()
+
+string(FIND "${main_source}" "engineSource.loadPatch" load_patch_pos)
+string(FIND "${main_source}" "deviceManager.addAudioCallback" add_audio_callback_pos)
+
+if (load_patch_pos EQUAL -1 OR add_audio_callback_pos EQUAL -1)
+    message(FATAL_ERROR "Main.cpp must load a patch and attach the audio callback")
+endif()
+
+if (add_audio_callback_pos LESS load_patch_pos)
+    message(FATAL_ERROR "Main.cpp must load the patch before attaching the audio callback")
+endif()

@@ -149,9 +149,9 @@ impl Default for Convolution {
 
 #[cfg(test)]
 mod tests {
-use super::*;
+    use super::*;
 
-fn approx_eq(a: f32, b: f32, eps: f32) -> bool {
+    fn approx_eq(a: f32, b: f32, eps: f32) -> bool {
         (a - b).abs() < eps
     }
 

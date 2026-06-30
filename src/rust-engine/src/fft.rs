@@ -5,10 +5,7 @@ pub struct MagnitudeResponse {
     pub bins: Vec<(f64, f64)>,
 }
 
-pub fn compute_magnitude_response(
-    signal: &[f32],
-    sample_rate: f64,
-) -> MagnitudeResponse {
+pub fn compute_magnitude_response(signal: &[f32], sample_rate: f64) -> MagnitudeResponse {
     let fft_size = signal.len().next_power_of_two().max(2);
     let mut buffer: Vec<Complex<f32>> = signal
         .iter()
@@ -46,10 +43,7 @@ mod tests {
         signal[len / 2] = 1.0;
         let response = compute_magnitude_response(&signal, 48000.0);
         for &(_freq, db) in &response.bins {
-            assert!(
-                (db - 0.0).abs() < 1.0,
-                "expected near 0 dB, got {db} dB"
-            );
+            assert!((db - 0.0).abs() < 1.0, "expected near 0 dB, got {db} dB");
         }
     }
 

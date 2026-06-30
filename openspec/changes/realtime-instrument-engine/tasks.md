@@ -28,7 +28,7 @@
 
 ## 5. Verification and Documentation
 
-- [ ] 5.1 Document the realtime callback contract in the relevant README or engine notes.
-- [ ] 5.2 Run Rust unit tests for the engine crate.
-- [ ] 5.3 Run CMake/CTest for the JUCE wrapper and FFI smoke coverage.
-- [ ] 5.4 Run `openspec validate realtime-instrument-engine --strict`.
+- [x] 5.1 Document the realtime callback contract in the relevant README or engine notes.
+- [x] 5.2 Run Rust unit tests for the engine crate.
+- [x] 5.3 Run CMake/CTest for the JUCE wrapper and FFI smoke coverage.
+- [x] 5.4 Run `openspec validate realtime-instrument-engine --strict`.

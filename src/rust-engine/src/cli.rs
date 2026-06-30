@@ -85,10 +85,7 @@ fn render(args: Vec<String>) -> CliResult {
                     velocity: 100,
                 },
             ),
-            TimedInputEvent::new(
-                note_off_frame,
-                ScriptEvent::NoteOff { note: 60 },
-            ),
+            TimedInputEvent::new(note_off_frame, ScriptEvent::NoteOff { note: 60 }),
         ],
         &sampler_assets,
     );

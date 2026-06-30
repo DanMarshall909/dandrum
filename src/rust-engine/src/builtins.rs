@@ -253,7 +253,10 @@ fn note_to_rate_definition() -> BuiltInModuleDefinition {
 fn dynamics_processor_definition() -> BuiltInModuleDefinition {
     BuiltInModuleDefinition::new(module_types::DYNAMICS_PROCESSOR)
         .with_input(Port::input(builtin_ports::AUDIO_IN, SignalType::Audio))
-        .with_input(Port::input(builtin_ports::SIDECHAIN_IN, SignalType::Control))
+        .with_input(Port::input(
+            builtin_ports::SIDECHAIN_IN,
+            SignalType::Control,
+        ))
         .with_input(Port::input(builtin_ports::THRESHOLD, SignalType::Control))
         .with_input(Port::input(builtin_ports::BELOW_RATIO, SignalType::Control))
         .with_input(Port::input(builtin_ports::ABOVE_RATIO, SignalType::Control))
@@ -262,7 +265,10 @@ fn dynamics_processor_definition() -> BuiltInModuleDefinition {
         .with_input(Port::input(builtin_ports::KNEE, SignalType::Control))
         .with_input(Port::input(builtin_ports::MAKEUP_GAIN, SignalType::Control))
         .with_input(Port::input(builtin_ports::ATTACK_GAIN, SignalType::Control))
-        .with_input(Port::input(builtin_ports::SUSTAIN_GAIN, SignalType::Control))
+        .with_input(Port::input(
+            builtin_ports::SUSTAIN_GAIN,
+            SignalType::Control,
+        ))
         .with_output(Port::output(builtin_ports::AUDIO_OUT, SignalType::Audio))
 }
 
@@ -271,7 +277,10 @@ fn saturator_definition() -> BuiltInModuleDefinition {
         .with_input(Port::input(builtin_ports::AUDIO_IN, SignalType::Audio))
         .with_input(Port::input(builtin_ports::DRIVE, SignalType::Control))
         .with_input(Port::input(builtin_ports::BIAS, SignalType::Control))
-        .with_input(Port::input(builtin_ports::CURVE_SELECT, SignalType::Control))
+        .with_input(Port::input(
+            builtin_ports::CURVE_SELECT,
+            SignalType::Control,
+        ))
         .with_output(Port::output(builtin_ports::AUDIO_OUT, SignalType::Audio))
 }
 
@@ -288,13 +297,25 @@ fn echo_definition() -> BuiltInModuleDefinition {
         .with_input(Port::input(builtin_ports::AUDIO_IN_R, SignalType::Audio))
         .with_output(Port::output(builtin_ports::AUDIO_OUT_L, SignalType::Audio))
         .with_output(Port::output(builtin_ports::AUDIO_OUT_R, SignalType::Audio))
-        .with_input(Port::input(builtin_ports::TIME_LEFT_MS, SignalType::Control))
-        .with_input(Port::input(builtin_ports::TIME_RIGHT_MS, SignalType::Control))
+        .with_input(Port::input(
+            builtin_ports::TIME_LEFT_MS,
+            SignalType::Control,
+        ))
+        .with_input(Port::input(
+            builtin_ports::TIME_RIGHT_MS,
+            SignalType::Control,
+        ))
         .with_input(Port::input(builtin_ports::FEEDBACK, SignalType::Control))
-        .with_input(Port::input(builtin_ports::DAMPING_CUTOFF, SignalType::Control))
+        .with_input(Port::input(
+            builtin_ports::DAMPING_CUTOFF,
+            SignalType::Control,
+        ))
         .with_input(Port::input(builtin_ports::WET, SignalType::Control))
         .with_input(Port::input(builtin_ports::DRY, SignalType::Control))
-        .with_input(Port::input(builtin_ports::SYNC_DIVISION, SignalType::Control))
+        .with_input(Port::input(
+            builtin_ports::SYNC_DIVISION,
+            SignalType::Control,
+        ))
         .with_input(Port::input(builtin_ports::PING_PONG, SignalType::Control))
 }
 
@@ -309,7 +330,10 @@ fn reverb_definition() -> BuiltInModuleDefinition {
         .with_input(Port::input(builtin_ports::PRE_DELAY, SignalType::Control))
         .with_input(Port::input(builtin_ports::DAMPING, SignalType::Control))
         .with_input(Port::input(builtin_ports::DIFFUSION, SignalType::Control))
-        .with_input(Port::input(builtin_ports::STEREO_WIDTH, SignalType::Control))
+        .with_input(Port::input(
+            builtin_ports::STEREO_WIDTH,
+            SignalType::Control,
+        ))
         .with_input(Port::input(builtin_ports::WET, SignalType::Control))
         .with_input(Port::input(builtin_ports::DRY, SignalType::Control))
 }
