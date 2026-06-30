@@ -46,6 +46,21 @@ The drum-machine module SHALL expose a standard event input for selector routing
 - **WHEN** a patch connects to a drum-machine pad port for a pad ID not declared by the module
 - **THEN** validation SHALL fail with a diagnostic identifying the missing public pad port
 
+### Requirement: Event-transformer behavior
+The drum-machine module SHALL behave as an event transformer: it consumes event inputs, produces event outputs, preserves deterministic frame timing, and performs no audio, control, or signal-chain processing.
+
+#### Scenario: Event transformer accepts event stream
+- **WHEN** a compatible event stream is connected to a drum-machine event input
+- **THEN** graph validation SHALL treat the drum-machine module as an event-to-event transformer
+
+#### Scenario: Event transformer emits only events
+- **WHEN** a drum-machine module emits pad output during rendering
+- **THEN** every emitted output SHALL be an event and SHALL NOT include audio, control, or hidden module output
+
+#### Scenario: Event transformer is deterministic
+- **WHEN** the same drum-machine patch receives the same input events at the same render frame offsets
+- **THEN** it SHALL emit the same output events at the same render frame offsets
+
 ### Requirement: Trigger selector routing
 The drum-machine module SHALL route incoming events on its standard `events` input to the pad whose trigger selector matches the incoming event.
 

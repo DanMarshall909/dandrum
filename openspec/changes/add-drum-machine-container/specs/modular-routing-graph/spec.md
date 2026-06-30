@@ -19,6 +19,17 @@ The graph validator SHALL treat drum-machine public ports as named typed event p
 - **WHEN** a patch connects an audio output directly to a drum-machine event input
 - **THEN** validation SHALL fail and report the incompatible source and destination port types
 
+### Requirement: Event-transformer graph contract
+The graph validator SHALL support event-only transformer modules whose public inputs and outputs are event typed and whose downstream behavior is represented by ordinary explicit routes.
+
+#### Scenario: Event transformer output connects to event input
+- **WHEN** a patch connects a drum-machine pad event output to a compatible event input on another module
+- **THEN** graph validation SHALL accept the connection as an event-transformer route
+
+#### Scenario: Event transformer does not imply downstream behavior
+- **WHEN** a patch declares a drum-machine module without explicitly connected downstream modules
+- **THEN** graph validation SHALL NOT infer audio, control, sampler, mixer, or signal-chain routes from the event transformer
+
 ### Requirement: Drum-machine expansion preserves graph safety
 Expanded drum-machine event routes SHALL obey the same graph validation rules as ordinary patch routes and SHALL NOT introduce implicit audio, control, sequencing, signal-chain, or mixing behavior.
 

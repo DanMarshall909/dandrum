@@ -1,8 +1,10 @@
 ## Context
 
-The engine already has a modular graph model with named typed ports, explicit connection validation, sampler modules, composite module expansion, and compiled render work in progress. Drum-style patches still need a small primitive for grouping named trigger pads such as kick, snare, and hat without embedding sequencing, audio-generation, or signal-chain policy in that primitive.
+The engine already has a modular graph model with named typed ports, explicit connection validation, sampler modules, composite module expansion, and compiled render work in progress. The next layer needs event-transformer modules: modules that receive events, emit transformed events, and leave sound generation to explicit downstream signal chains. Drum-style patches need one such primitive for grouping named trigger pads such as kick, snare, and hat without embedding sequencing, audio-generation, or signal-chain policy in that primitive.
 
 Bitwig's Drum Machine is useful inspiration here because its pad-oriented workflow maps incoming note signals to named drum pads. Dandrum should take the pad-trigger mapping idea while keeping the module event-only: pads emit configured events, and all sound generation, synthesis, sample playback, effects, and mixing remain ordinary graph modules connected by named typed ports.
+
+This change should also set the implementation pattern for later event transformers such as event delay lines, transposers, arpeggiators, and related modules. Those future modules are out of scope here, but the drum machine should use the same basic contract: event inputs, event outputs, deterministic event transformation, ordinary graph validation, and no hidden audio behavior.
 
 ## Goals / Non-Goals
 
@@ -12,12 +14,14 @@ Bitwig's Drum Machine is useful inspiration here because its pad-oriented workfl
 - Expand each valid drum-machine module into deterministic internal event-routing modules before graph processing/compilation.
 - Expose typed public event ports for each declared pad.
 - Allow patches to connect pad outputs to explicitly declared samplers, synth voices, envelopes, script modules, or other downstream event consumers.
+- Keep the implementation compatible with a broader event-transformer family that can later include delay, transpose, arpeggio, and other event-only modules.
 - Keep diagnostics stable and specific for invalid pads, duplicate selectors, missing ports, and incompatible routes.
 - Cover behavior with Rust unit tests close to YAML parsing, validation, expansion, and event routing.
 
 **Non-Goals:**
 - Building a GUI drum-machine editor.
 - Implementing step patterns, sequencing, tempo, clocking, transport, swing, probability, ratchets, or humanization.
+- Implementing the future event delay, transpose, arpeggio, or other event-transformer modules in this change.
 - Adding sampler-specific velocity, choke-group, sample binding, fixed audio output, or polyphony policy.
 - Hosting signal chains, generating audio, mixing audio, or owning downstream module behavior.
 - Bypassing the existing event, sampler, mixer, or graph-validation model.
@@ -33,7 +37,15 @@ Bitwig's Drum Machine is useful inspiration here because its pad-oriented workfl
 
 **Alternative considered:** Implement `drum_machine` as a monolithic audio or sequencing module. This is broader than the intended primitive and would hide important graph behavior.
 
-### 2. Pads are named event mappings
+### 2. Use the event-transformer module shape
+
+**Decision:** The drum machine uses the same shape intended for future event transformers: compatible event inputs, compatible event outputs, deterministic transformation, graph-visible routing, and no hidden audio/control side effects.
+
+**Rationale:** Drum-machine pad mapping, event delay, transposition, arpeggiation, and similar tools are all transformations of event streams. Aligning their contracts now should make future modules feel consistent instead of each inventing a bespoke event API.
+
+**Alternative considered:** Treat drum machine as a special-purpose container with its own semantics. That might be quicker for this module, but it would make the upcoming event-transformer series harder to compose and test consistently.
+
+### 3. Pads are named event mappings
 
 **Decision:** Each pad has a stable `id`, a trigger selector, and an emitted-event declaration. Pad IDs derive public event port names and appear in diagnostics. Trigger selectors decide which incoming events trigger each pad; the emitted-event declaration decides what event the pad outputs.
 
@@ -41,7 +53,7 @@ Bitwig's Drum Machine is useful inspiration here because its pad-oriented workfl
 
 **Alternative considered:** Use array position only. This is compact, but error messages and external routing become brittle after pad reorderings.
 
-### 3. Pitch/event selector routing, no internal scheduler
+### 4. Pitch/event selector routing, no internal scheduler
 
 **Decision:** The first version accepts trigger selectors and emitted-event declarations but does not accept pattern data, tempo, transport, or clock configuration. It routes incoming events to matching pad event outputs.
 
@@ -49,7 +61,7 @@ Bitwig's Drum Machine is useful inspiration here because its pad-oriented workfl
 
 **Alternative considered:** Add minimal boolean patterns. That was rejected because the container is intended as a primitive trigger surface, not a sequencer.
 
-### 4. No built-in signal chains, audio, samples, or implicit mix output
+### 5. No built-in signal chains, audio, samples, or implicit mix output
 
 **Decision:** The module owns event mapping only, and it does not host signal chains or create sound by itself. Patch authors connect pad outputs to sampler, synth, envelope, script, or other modules when they want sound.
 
@@ -61,5 +73,6 @@ Bitwig's Drum Machine is useful inspiration here because its pad-oriented workfl
 
 - **[Risk] The primitive may feel small compared with a full drum machine** -> Keep the name but define the contract tightly: it is a named event mapper that composes with external sequencers and sound generators.
 - **[Risk] Users may expect built-in patterns or device chains** -> Diagnostics and examples should show external event sources driving pad inputs and explicit downstream signal chains producing audio.
+- **[Risk] The first event transformer overfits to drum-machine needs** -> Keep the transformer contract generic at the port and event-routing level, while keeping pad selection as the drum-machine-specific behavior.
 - **[Risk] Expanded graphs add indirection** -> Use deterministic namespacing and build expansion once during patch preparation/compilation, not per audio block.
 - **[Risk] Port naming can become awkward** -> Derive stable public port names from pad IDs and validate pad ID syntax up front.

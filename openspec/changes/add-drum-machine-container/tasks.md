@@ -13,6 +13,7 @@
 - [ ] 2.3 Implement drum-machine public event port derivation from the standard input and declared pad IDs.
 - [ ] 2.4 Add failing routing tests proving compatible event routes are accepted and incompatible audio/control routes are rejected with existing type diagnostics.
 - [ ] 2.5 Add tests proving references to missing pad ports, `mix`, or undeclared pad audio outputs are rejected.
+- [ ] 2.6 Add tests documenting the shared event-transformer contract: event inputs, event outputs, deterministic timing, and no implicit audio/control routes.
 
 ## 3. Selector Routing And Direct Pad Triggering
 
@@ -43,6 +44,7 @@
 - [ ] 6.2 Add a minimal drum-machine YAML example patch showing emitted pad events connected to an explicit downstream signal chain.
 - [ ] 6.3 Add an end-to-end CLI acceptance test that renders a drum-machine example to a non-empty WAV file produced by downstream modules.
 - [ ] 6.4 Document through tests or comments that the drum-machine is a Bitwig-inspired event mapper, not a sequencer, sampler, mixer, signal-chain host, or separate audio engine.
+- [ ] 6.5 Document that this module is the first in a broader event-transformer family that can later include event delay, transpose, arpeggio, and related modules.
 
 ## 7. Verification
 
