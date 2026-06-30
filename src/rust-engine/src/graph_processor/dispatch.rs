@@ -2,7 +2,6 @@ use std::collections::HashMap;
 
 use crate::graph::builtin_ports;
 
-use super::ModuleInputProvider;
 use super::outputs::{BlockEvent, ModuleOutputs};
 use super::processing::{
     process_adsr, process_convolution, process_dynamics_processor, process_echo, process_filter,
@@ -10,6 +9,7 @@ use super::processing::{
     process_sampler, process_saturator, process_spectral_processor, process_vca,
 };
 use super::state::PerModuleState;
+use super::ModuleInputProvider;
 
 pub(super) fn process_module(
     module_idx: usize,

@@ -1,13 +1,13 @@
 use std::collections::HashMap;
 
 use crate::compiled_patch::CompiledPatch;
-use crate::graph::{ExecutionScope, Graph, builtin_ports};
+3use crate::graph::{builtin_ports, ExecutionScope, Graph};
 use crate::script::ScriptEvent;
 use crate::voice_allocator::VoiceAllocator;
 
 use super::dispatch::process_module;
 use super::input_provider::{
-    CompiledInputProvider, compiled_gather_event_inputs, gather_event_inputs,
+    compiled_gather_event_inputs, gather_event_inputs, CompiledInputProvider,
 };
 use super::outputs::{BlockEvent, ModuleOutputs};
 use super::routing::Routing;

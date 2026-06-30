@@ -3,7 +3,7 @@ use std::collections::{BTreeMap, BTreeSet};
 use crate::patch::ParameterValue;
 use std::fmt;
 
-use crate::builtins::{BuiltInModuleRegistry, module_types};
+use crate::builtins::{module_types, BuiltInModuleRegistry};
 use crate::patch;
 
 #[path = "graph_composite.rs"]

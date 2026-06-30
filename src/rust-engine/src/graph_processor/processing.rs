@@ -3,13 +3,13 @@ use std::collections::HashMap;
 use crate::graph::builtin_ports;
 use crate::script::ScriptEvent;
 
-use super::ModuleInputProvider;
 use super::helpers::{
     audio_output, has_signal, lerp, log_lerp, normalized_end_position, normalized_position,
     set_curve_by_index, stereo_audio_output,
 };
 use super::outputs::{BlockEvent, ModuleOutputs};
 use super::state::PerModuleState;
+use super::ModuleInputProvider;
 
 pub(super) fn process_oscillator(
     state: &mut PerModuleState,

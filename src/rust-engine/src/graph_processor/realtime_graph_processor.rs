@@ -9,7 +9,7 @@ use crate::voice_allocator::VoiceAllocator;
 use super::block::{process_block, process_block_polyphonic};
 use super::outputs::{BlockEvent, ModuleOutputs};
 use super::polyphony::build_polyphonic_states;
-use super::routing::{Routing, build_routing};
+use super::routing::{build_routing, Routing};
 use super::state::PerModuleState;
 use super::traversal::{find_audio_output, find_midi_input, topological_sort};
 

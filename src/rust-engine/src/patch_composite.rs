@@ -1,9 +1,9 @@
 use std::collections::{BTreeMap, BTreeSet};
 
-use crate::builtins::{BuiltInModuleRegistry, module_types};
+use crate::builtins::{module_types, BuiltInModuleRegistry};
 use crate::patch::{
-    AssetKind, ConnectionDeclaration, ModuleDeclaration, ParameterValue, PatchDocument,
-    PortReference, SignalType, validate_port_reference,
+    validate_port_reference, AssetKind, ConnectionDeclaration, ModuleDeclaration, ParameterValue,
+    PatchDocument, PortReference, SignalType,
 };
 use serde::Deserialize;
 

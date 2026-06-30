@@ -1,6 +1,6 @@
 use std::collections::BTreeMap;
 
-use crate::graph::{ExecutionScope, Port, SignalType, builtin_ports};
+use crate::graph::{builtin_ports, ExecutionScope, Port, SignalType};
 
 pub mod module_types;
 
