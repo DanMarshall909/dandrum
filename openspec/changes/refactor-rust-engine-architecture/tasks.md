@@ -1,9 +1,9 @@
 ## 1. Characterization And Safety Net
 
-- [ ] 1.1 Add or update Rust tests that characterize the current public engine facade, FFI create/destroy/load/render behavior, invalid FFI inputs, and existing fallback synth behavior.
-- [ ] 1.2 Add or update tests that verify valid patches prepare successfully and invalid schema, graph, asset, or compile failures do not replace live runtime state.
-- [ ] 1.3 Add or update offline/realtime parity tests for representative graph patches so later compilation/runtime refactors can preserve routing and execution behavior.
-- [ ] 1.4 Add or update realtime preparation tests that verify configured maximum block size, voice count, event capacity, and scratch capacities are established before rendering.
+- [x] 1.1 Add or update Rust tests that characterize the current public engine facade, FFI create/destroy/load/render behavior, invalid FFI inputs, and existing fallback synth behavior.
+- [x] 1.2 Add or update tests that verify valid patches prepare successfully and invalid schema, graph, asset, or compile failures do not replace live runtime state.
+- [x] 1.3 Add or update offline/realtime parity tests for representative graph patches so later compilation/runtime refactors can preserve routing and execution behavior.
+- [x] 1.4 Add or update realtime preparation tests that verify configured maximum block size, voice count, event capacity, and scratch capacities are established before rendering.
 
 ## 2. Public Facade And FFI Boundary
 
