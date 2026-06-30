@@ -336,6 +336,78 @@ connections:
     }
 
     #[test]
+    fn fallback_render_is_deterministic_for_same_input() {
+        let mut first = DandrumEngine::new();
+        let mut second = DandrumEngine::new();
+        first.note_on(60, 100);
+        second.note_on(60, 100);
+        let mut first_left = vec![0.0; 128];
+        let mut first_right = vec![0.0; 128];
+        let mut second_left = vec![0.0; 128];
+        let mut second_right = vec![0.0; 128];
+
+        assert_eq!(first.render(&mut first_left, &mut first_right), 128);
+        assert_eq!(second.render(&mut second_left, &mut second_right), 128);
+
+        assert_eq!(first_left, second_left);
+        assert_eq!(first_right, second_right);
+    }
+
+    #[test]
+    fn higher_velocity_produces_louder_fallback_output() {
+        let mut soft = DandrumEngine::new();
+        let mut loud = DandrumEngine::new();
+        soft.note_on(60, 1);
+        loud.note_on(60, 127);
+        let mut soft_left = vec![0.0; 128];
+        let mut soft_right = vec![0.0; 128];
+        let mut loud_left = vec![0.0; 128];
+        let mut loud_right = vec![0.0; 128];
+
+        soft.render(&mut soft_left, &mut soft_right);
+        loud.render(&mut loud_left, &mut loud_right);
+
+        let soft_peak = soft_left.iter().cloned().fold(0.0f32, f32::max);
+        let loud_peak = loud_left.iter().cloned().fold(0.0f32, f32::max);
+        assert!(
+            loud_peak > soft_peak,
+            "higher velocity should produce louder output: soft={soft_peak}, loud={loud_peak}"
+        );
+    }
+
+    #[test]
+    fn fallback_render_without_notes_produces_silence() {
+        let mut engine = DandrumEngine::new();
+        let mut left = vec![0.0; 128];
+        let mut right = vec![0.0; 128];
+
+        engine.render(&mut left, &mut right);
+
+        assert!(left.iter().all(|s| *s == 0.0));
+        assert!(right.iter().all(|s| *s == 0.0));
+    }
+
+    #[test]
+    fn note_off_eventually_causes_fallback_silence() {
+        let mut engine = DandrumEngine::new();
+        engine.note_on(60, 100);
+        engine.note_off(60);
+
+        let mut left = vec![0.0; 128];
+        let mut right = vec![0.0; 128];
+        engine.render(&mut left, &mut right);
+
+        assert!(!engine.is_finished(), "note_off starts release tail");
+
+        loop {
+            engine.render(&mut left, &mut right);
+            if engine.is_finished() {
+                break;
+            }
+        }
+    }
+
+    #[test]
     fn queued_realtime_note_event_renders_like_direct_note_call() {
         let mut direct = DandrumEngine::new();
         let mut queued = DandrumEngine::new();

@@ -298,4 +298,87 @@ mod tests {
 
         unsafe { dandrum_realtime_event_queue_destroy(queue) };
     }
+
+    #[test]
+    fn c_ffi_destroy_null_engine_does_not_crash() {
+        unsafe { dandrum_engine_destroy(std::ptr::null_mut()) };
+    }
+
+    #[test]
+    fn c_ffi_load_patch_rejects_null_engine() {
+        assert!(!unsafe { dandrum_engine_load_patch(std::ptr::null_mut(), std::ptr::null()) });
+    }
+
+    #[test]
+    fn c_ffi_prepare_null_engine_does_not_crash() {
+        unsafe { dandrum_engine_prepare(std::ptr::null_mut(), 48_000.0) };
+    }
+
+    #[test]
+    fn c_ffi_prepare_realtime_null_engine_does_not_crash() {
+        unsafe { dandrum_engine_prepare_realtime(std::ptr::null_mut(), 48_000.0, 64) };
+    }
+
+    #[test]
+    fn c_ffi_note_on_null_engine_does_not_crash() {
+        unsafe { dandrum_engine_note_on(std::ptr::null_mut(), 60, 100) };
+    }
+
+    #[test]
+    fn c_ffi_note_off_null_engine_does_not_crash() {
+        unsafe { dandrum_engine_note_off(std::ptr::null_mut(), 60) };
+    }
+
+    #[test]
+    fn c_ffi_is_finished_returns_true_for_null_engine() {
+        assert!(unsafe { dandrum_engine_is_finished(std::ptr::null()) });
+    }
+
+    #[test]
+    fn c_ffi_realtime_event_queue_destroy_null_does_not_crash() {
+        unsafe { dandrum_realtime_event_queue_destroy(std::ptr::null_mut()) };
+    }
+
+    #[test]
+    fn c_ffi_realtime_event_queue_note_on_rejects_null_queue() {
+        assert_eq!(unsafe { dandrum_realtime_event_queue_note_on(std::ptr::null_mut(), 60, 100) }, 1);
+    }
+
+    #[test]
+    fn c_ffi_realtime_event_queue_note_off_rejects_null_queue() {
+        assert_eq!(unsafe { dandrum_realtime_event_queue_note_off(std::ptr::null_mut(), 60) }, 1);
+    }
+
+    #[test]
+    fn c_ffi_realtime_event_queue_dropped_count_returns_zero_for_null_queue() {
+        assert_eq!(unsafe { dandrum_realtime_event_queue_dropped_count(std::ptr::null()) }, 0);
+    }
+
+    #[test]
+    fn c_ffi_engine_lifecycle_create_prepare_note_on_render_is_finished() {
+        let engine = dandrum_engine_create();
+        assert!(!engine.is_null());
+
+        unsafe { dandrum_engine_prepare(engine, 44_100.0) };
+        unsafe { dandrum_engine_note_on(engine, 60, 100) };
+
+        assert!(!unsafe { dandrum_engine_is_finished(engine) });
+
+        let mut left = [0.0_f32; 64];
+        let mut right = [0.0_f32; 64];
+        let rendered = unsafe { dandrum_engine_render(engine, left.as_mut_ptr(), right.as_mut_ptr(), 64) };
+
+        assert_eq!(rendered, 64);
+        assert!(left.iter().any(|s| *s != 0.0));
+        assert!(right.iter().any(|s| *s != 0.0));
+
+        unsafe { dandrum_engine_destroy(engine) };
+    }
+
+    #[test]
+    fn c_ffi_engine_starts_finished() {
+        let engine = dandrum_engine_create();
+        assert!(unsafe { dandrum_engine_is_finished(engine) });
+        unsafe { dandrum_engine_destroy(engine) };
+    }
 }
