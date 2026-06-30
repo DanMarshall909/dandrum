@@ -9,8 +9,8 @@
 
 - [x] 2.1 Move C ABI functions from `lib.rs` into a dedicated FFI module while preserving exported symbol names and existing C++ binding behavior.
 - [x] 2.2 Introduce a small safe Rust facade for loading/preparing instruments, rendering audio, submitting events, and querying completion.
-- [ ] 2.3 Narrow crate root exports so graph processor, runtime helper, and DSP implementation modules are `pub(crate)` unless intentionally exposed.
-- [ ] 2.4 Update Rust tests, Rust binaries, and JUCE wrapper-facing code to use the facade or FFI boundary rather than private implementation modules.
+- [x] 2.3 Narrow crate root exports so graph processor, runtime helper, and DSP implementation modules are `pub(crate)` unless intentionally exposed.
+- [x] 2.4 Update Rust tests, Rust binaries, and JUCE wrapper-facing code to use the facade or FFI boundary rather than private implementation modules.
 
 ## 3. Engine Responsibility Split
 

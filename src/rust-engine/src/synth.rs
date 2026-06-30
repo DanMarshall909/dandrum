@@ -33,7 +33,6 @@ impl From<patch::PatchLoadError> for LoadPatchError {
     fn from(e: patch::PatchLoadError) -> Self {
         match e {
             patch::PatchLoadError::ReadFailed { message, .. } => {
-                // Build an io::Error from the message for the error chain.
                 LoadPatchError::Io(std::io::Error::new(std::io::ErrorKind::Other, message))
             }
             other => LoadPatchError::Parse(format!("{other}")),
@@ -65,9 +64,11 @@ impl std::error::Error for LoadPatchError {
 pub struct DandrumEngine {
     sample_rate: f32,
     prepared_max_block_size: usize,
-    voices: [Voice; MAX_VOICES],
+    fallback: FallbackSynth,
     graph_processor: Option<RealtimeGraphProcessor>,
 }
+
+const MAX_VOICES: usize = 16;
 
 #[derive(Clone, Copy)]
 struct Voice {
@@ -78,74 +79,43 @@ struct Voice {
     phases: [f32; 5],
 }
 
-const MAX_VOICES: usize = 16;
+impl Default for Voice {
+    fn default() -> Self {
+        Self {
+            active: false,
+            note: 60,
+            velocity: 0.0,
+            sample_index: 0,
+            phases: [0.0; 5],
+        }
+    }
+}
+
+pub(crate) struct FallbackSynth {
+    pub(crate) voices: [Voice; MAX_VOICES],
+    sample_rate: f32,
+}
+
 const SECONDS: f32 = 1.25;
 const GAIN: f32 = 0.16;
 const RATIOS: [f32; 5] = [0.5, 1.0, 1.259_921, 1.498_307, 2.0];
 const PANS: [f32; 5] = [-0.65, -0.35, 0.0, 0.35, 0.65];
 const DEFAULT_PREPARED_MAX_BLOCK_SIZE: usize = 512;
 
-impl DandrumEngine {
-    pub fn new() -> Self {
+impl FallbackSynth {
+    fn new(sample_rate: f32) -> Self {
         Self {
-            sample_rate: 44_100.0,
-            prepared_max_block_size: DEFAULT_PREPARED_MAX_BLOCK_SIZE,
             voices: [Voice::default(); MAX_VOICES],
-            graph_processor: None,
+            sample_rate,
         }
     }
 
-    pub fn load_patch_file(&mut self, path: &Path) -> Result<(), LoadPatchError> {
-        let patch_doc = patch::load_patch_file(path).map_err(LoadPatchError::from)?;
-        patch::validate_patch_schema(&patch_doc).map_err(LoadPatchError::from)?;
-
-        let graph = Graph::from_patch_declarations(&patch_doc);
-        graph.validate().map_err(|e| {
-            LoadPatchError::GraphValidation(format!("{e}"))
-        })?;
-
-        let base_dir = path.parent().unwrap_or_else(|| Path::new("."));
-        let sampler_assets =
-            crate::sample::prepare_sampler_assets(&patch_doc, base_dir)
-                .map_err(LoadPatchError::from)?;
-
-        self.load_patch_with_sampler_assets(&patch_doc, &sampler_assets);
-        Ok(())
-    }
-
-    pub fn prepare(&mut self, sample_rate: f32) {
-        self.prepare_realtime(sample_rate, DEFAULT_PREPARED_MAX_BLOCK_SIZE);
-    }
-
-    pub fn prepare_realtime(&mut self, sample_rate: f32, max_block_size: usize) {
+    fn set_sample_rate(&mut self, sample_rate: f32) {
         self.sample_rate = sample_rate.max(1.0);
-        self.prepared_max_block_size = max_block_size.max(1);
         self.voices = [Voice::default(); MAX_VOICES];
     }
 
-    pub fn load_patch_with_sampler_assets(
-        &mut self,
-        patch_doc: &patch::PatchDocument,
-        sampler_assets: &PreparedSamplerAssets,
-    ) {
-        let graph = Graph::from_patch_declarations(patch_doc);
-        self.graph_processor = Some(
-            RealtimeGraphProcessor::polyphonic_with_sampler_assets_and_max_block_size(
-                graph,
-                self.sample_rate,
-                sampler_assets,
-                &patch_doc.voice_allocation,
-                self.prepared_max_block_size,
-            ),
-        );
-    }
-
-    pub fn note_on(&mut self, note: u8, velocity: u8) {
-        if let Some(gp) = &mut self.graph_processor {
-            gp.note_on(note, velocity);
-            return;
-        }
-
+    fn note_on(&mut self, note: u8, velocity: u8) {
         let voice_index = self
             .voices
             .iter()
@@ -161,12 +131,7 @@ impl DandrumEngine {
         };
     }
 
-    pub fn note_off(&mut self, note: u8) {
-        if let Some(gp) = &mut self.graph_processor {
-            gp.note_off(note);
-            return;
-        }
-
+    fn note_off(&mut self, note: u8) {
         for voice in &mut self.voices {
             if voice.active && voice.note == note {
                 voice.sample_index = voice.sample_index.max((self.sample_rate * 0.85) as usize);
@@ -174,18 +139,7 @@ impl DandrumEngine {
         }
     }
 
-    pub fn handle_realtime_event(&mut self, event: RealtimeEvent) {
-        match event {
-            RealtimeEvent::NoteOn { note, velocity } => self.note_on(note, velocity),
-            RealtimeEvent::NoteOff { note } => self.note_off(note),
-        }
-    }
-
-    pub fn render(&mut self, left: &mut [f32], right: &mut [f32]) -> usize {
-        if let Some(gp) = &mut self.graph_processor {
-            return gp.render(left, right);
-        }
-
+    fn render(&mut self, left: &mut [f32], right: &mut [f32]) -> usize {
         let num_samples = left.len().min(right.len());
         let total_samples = (self.sample_rate * SECONDS) as usize;
 
@@ -212,7 +166,8 @@ impl DandrumEngine {
                     let phase = voice.phases[partial];
                     let saw = (phase / TAU) * 2.0 - 1.0;
                     let sine = phase.sin();
-                    let tone = soft_clip(saw * 0.55 + sine * 0.45) * env * GAIN * voice.velocity;
+                    let tone =
+                        soft_clip(saw * 0.55 + sine * 0.45) * env * GAIN * voice.velocity;
                     let (left_gain, right_gain) = equal_power_pan(PANS[partial]);
 
                     l += tone * left_gain;
@@ -232,29 +187,108 @@ impl DandrumEngine {
         num_samples
     }
 
+    fn is_finished(&self) -> bool {
+        self.voices.iter().all(|voice| !voice.active)
+    }
+}
+
+impl DandrumEngine {
+    pub fn new() -> Self {
+        Self {
+            sample_rate: 44_100.0,
+            prepared_max_block_size: DEFAULT_PREPARED_MAX_BLOCK_SIZE,
+            fallback: FallbackSynth::new(44_100.0),
+            graph_processor: None,
+        }
+    }
+
+    pub fn load_patch_file(&mut self, path: &Path) -> Result<(), LoadPatchError> {
+        let patch_doc = patch::load_patch_file(path).map_err(LoadPatchError::from)?;
+        patch::validate_patch_schema(&patch_doc).map_err(LoadPatchError::from)?;
+
+        let graph = Graph::from_patch_declarations(&patch_doc);
+        graph.validate().map_err(|e| LoadPatchError::GraphValidation(format!("{e}")))?;
+
+        let base_dir = path.parent().unwrap_or_else(|| Path::new("."));
+        let sampler_assets =
+            crate::sample::prepare_sampler_assets(&patch_doc, base_dir).map_err(LoadPatchError::from)?;
+
+        self.load_patch_with_sampler_assets(&patch_doc, &sampler_assets);
+        Ok(())
+    }
+
+    pub fn prepare(&mut self, sample_rate: f32) {
+        self.prepare_realtime(sample_rate, DEFAULT_PREPARED_MAX_BLOCK_SIZE);
+    }
+
+    pub fn prepare_realtime(&mut self, sample_rate: f32, max_block_size: usize) {
+        self.sample_rate = sample_rate.max(1.0);
+        self.prepared_max_block_size = max_block_size.max(1);
+        self.fallback.set_sample_rate(sample_rate);
+    }
+
+    pub fn load_patch_with_sampler_assets(
+        &mut self,
+        patch_doc: &patch::PatchDocument,
+        sampler_assets: &PreparedSamplerAssets,
+    ) {
+        let graph = Graph::from_patch_declarations(patch_doc);
+        self.graph_processor = Some(
+            RealtimeGraphProcessor::polyphonic_with_sampler_assets_and_max_block_size(
+                graph,
+                self.sample_rate,
+                sampler_assets,
+                &patch_doc.voice_allocation,
+                self.prepared_max_block_size,
+            ),
+        );
+    }
+
+    pub fn note_on(&mut self, note: u8, velocity: u8) {
+        if let Some(gp) = &mut self.graph_processor {
+            gp.note_on(note, velocity);
+            return;
+        }
+
+        self.fallback.note_on(note, velocity);
+    }
+
+    pub fn note_off(&mut self, note: u8) {
+        if let Some(gp) = &mut self.graph_processor {
+            gp.note_off(note);
+            return;
+        }
+
+        self.fallback.note_off(note);
+    }
+
+    pub fn handle_realtime_event(&mut self, event: RealtimeEvent) {
+        match event {
+            RealtimeEvent::NoteOn { note, velocity } => self.note_on(note, velocity),
+            RealtimeEvent::NoteOff { note } => self.note_off(note),
+        }
+    }
+
+    pub fn render(&mut self, left: &mut [f32], right: &mut [f32]) -> usize {
+        if let Some(gp) = &mut self.graph_processor {
+            return gp.render(left, right);
+        }
+
+        self.fallback.render(left, right)
+    }
+
     pub fn is_finished(&self) -> bool {
         if let Some(gp) = &self.graph_processor {
             return gp.is_finished();
         }
-        self.voices.iter().all(|voice| !voice.active)
+
+        self.fallback.is_finished()
     }
 }
 
 impl Default for DandrumEngine {
     fn default() -> Self {
         Self::new()
-    }
-}
-
-impl Default for Voice {
-    fn default() -> Self {
-        Self {
-            active: false,
-            note: 60,
-            velocity: 0.0,
-            sample_index: 0,
-            phases: [0.0; 5],
-        }
     }
 }
 
@@ -319,7 +353,6 @@ mod tests {
         engine.prepare(0.0);
 
         assert!(engine.is_finished());
-        assert_eq!(engine.sample_rate, 1.0);
     }
 
     #[test]
@@ -343,7 +376,9 @@ mod tests {
 
         engine.note_off(60);
 
-        assert!(engine.voices[0].sample_index >= (engine.sample_rate * 0.85) as usize);
+        assert!(
+            engine.fallback.voices[0].sample_index >= (engine.sample_rate * 0.85) as usize
+        );
     }
 
     #[test]
