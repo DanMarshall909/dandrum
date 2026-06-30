@@ -1,10 +1,66 @@
 use std::f32::consts::TAU;
 
+use std::path::Path;
+
 use crate::graph::Graph;
 use crate::graph_processor::RealtimeGraphProcessor;
 use crate::patch;
 use crate::realtime::RealtimeEvent;
 use crate::sample::PreparedSamplerAssets;
+
+#[derive(Debug)]
+pub enum LoadPatchError {
+    Io(std::io::Error),
+    Parse(String),
+    Validation(String),
+    GraphValidation(String),
+    SamplePreparation(String),
+}
+
+impl std::fmt::Display for LoadPatchError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            LoadPatchError::Io(e) => write!(f, "I/O error: {e}"),
+            LoadPatchError::Parse(e) => write!(f, "parse error: {e}"),
+            LoadPatchError::Validation(e) => write!(f, "validation error: {e}"),
+            LoadPatchError::GraphValidation(e) => write!(f, "graph validation error: {e}"),
+            LoadPatchError::SamplePreparation(e) => write!(f, "sample preparation error: {e}"),
+        }
+    }
+}
+
+impl From<patch::PatchLoadError> for LoadPatchError {
+    fn from(e: patch::PatchLoadError) -> Self {
+        match e {
+            patch::PatchLoadError::ReadFailed { message, .. } => {
+                // Build an io::Error from the message for the error chain.
+                LoadPatchError::Io(std::io::Error::new(std::io::ErrorKind::Other, message))
+            }
+            other => LoadPatchError::Parse(format!("{other}")),
+        }
+    }
+}
+
+impl From<patch::PatchValidationError> for LoadPatchError {
+    fn from(e: patch::PatchValidationError) -> Self {
+        LoadPatchError::Validation(format!("{e}"))
+    }
+}
+
+impl From<crate::sample::SampleLoadError> for LoadPatchError {
+    fn from(e: crate::sample::SampleLoadError) -> Self {
+        LoadPatchError::SamplePreparation(format!("{e}"))
+    }
+}
+
+impl std::error::Error for LoadPatchError {
+    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
+        match self {
+            LoadPatchError::Io(e) => Some(e),
+            _ => None,
+        }
+    }
+}
 
 pub struct DandrumEngine {
     sample_rate: f32,
@@ -37,6 +93,24 @@ impl DandrumEngine {
             voices: [Voice::default(); MAX_VOICES],
             graph_processor: None,
         }
+    }
+
+    pub fn load_patch_file(&mut self, path: &Path) -> Result<(), LoadPatchError> {
+        let patch_doc = patch::load_patch_file(path).map_err(LoadPatchError::from)?;
+        patch::validate_patch_schema(&patch_doc).map_err(LoadPatchError::from)?;
+
+        let graph = Graph::from_patch_declarations(&patch_doc);
+        graph.validate().map_err(|e| {
+            LoadPatchError::GraphValidation(format!("{e}"))
+        })?;
+
+        let base_dir = path.parent().unwrap_or_else(|| Path::new("."));
+        let sampler_assets =
+            crate::sample::prepare_sampler_assets(&patch_doc, base_dir)
+                .map_err(LoadPatchError::from)?;
+
+        self.load_patch_with_sampler_assets(&patch_doc, &sampler_assets);
+        Ok(())
     }
 
     pub fn prepare(&mut self, sample_rate: f32) {

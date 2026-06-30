@@ -1,3 +1,5 @@
+use std::path::Path;
+
 use crate::realtime;
 
 pub struct DandrumRealtimeEventQueue {
@@ -30,30 +32,7 @@ pub unsafe extern "C" fn dandrum_engine_load_patch(
         Err(_) => return false,
     };
 
-    let patch_path = std::path::Path::new(c_str);
-    let patch_doc = match crate::patch::load_patch_file(patch_path) {
-        Ok(doc) => match crate::patch::validate_patch_schema(&doc) {
-            Ok(_) => doc,
-            Err(_) => return false,
-        },
-        Err(_) => return false,
-    };
-
-    let graph = crate::graph::Graph::from_patch_declarations(&patch_doc);
-    if graph.validate().is_err() {
-        return false;
-    }
-
-    let base_dir = patch_path
-        .parent()
-        .unwrap_or_else(|| std::path::Path::new("."));
-    let sampler_assets = match crate::sample::prepare_sampler_assets(&patch_doc, base_dir) {
-        Ok(assets) => assets,
-        Err(_) => return false,
-    };
-
-    engine.load_patch_with_sampler_assets(&patch_doc, &sampler_assets);
-    true
+    engine.load_patch_file(Path::new(c_str)).is_ok()
 }
 
 #[unsafe(no_mangle)]
