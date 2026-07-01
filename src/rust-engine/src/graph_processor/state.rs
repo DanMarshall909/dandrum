@@ -1,5 +1,6 @@
 use std::collections::BTreeMap;
 
+use crate::builtins::module_kind::ModuleKind;
 use crate::compiled_patch::CompiledNode;
 use crate::convolution::Convolution;
 use crate::crossover::CrossoverPair;
@@ -75,8 +76,10 @@ impl PerModuleState {
         sample_rate: f32,
         sampler_assets: &PreparedSamplerAssets,
     ) -> Self {
-        Self::from_module_metadata(
-            module.module_type(),
+        let kind = ModuleKind::from_str(module.module_type())
+            .unwrap_or_else(|| panic!("unknown module type: {}", module.module_type()));
+        Self::from_kind(
+            kind,
             module.id().as_str(),
             module.params(),
             sample_rate,
@@ -89,8 +92,8 @@ impl PerModuleState {
         sample_rate: f32,
         sampler_assets: &PreparedSamplerAssets,
     ) -> Self {
-        Self::from_module_metadata(
-            node.module_type.as_str(),
+        Self::from_kind(
+            node.module_kind,
             node.id.as_str(),
             &node.parameters,
             sample_rate,
@@ -98,46 +101,46 @@ impl PerModuleState {
         )
     }
 
-    fn from_module_metadata(
-        module_type: &str,
+    fn from_kind(
+        kind: ModuleKind,
         module_id: &str,
         params: &BTreeMap<String, String>,
         sample_rate: f32,
         sampler_assets: &PreparedSamplerAssets,
     ) -> Self {
-        match module_type {
-            "oscillator" => PerModuleState::Oscillator {
+        match kind {
+            ModuleKind::Oscillator => PerModuleState::Oscillator {
                 phase: 0.0,
                 sample_rate,
             },
-            "adsr" => PerModuleState::Adsr {
+            ModuleKind::Adsr => PerModuleState::Adsr {
                 level: 0.0,
                 gate_active: false,
                 release_start_frame: 0,
                 release_start_level: 0.0,
                 sample_rate,
             },
-            "gain" => PerModuleState::Vca,
-            "audio_output" => PerModuleState::AudioOutput,
-            "midi_input" => PerModuleState::MidiInput,
-            "note_to_rate" => PerModuleState::NoteToRate { rate: 1.0 },
-            "audio_mixer" => PerModuleState::AudioMixer,
-            "sampler" => PerModuleState::Sampler {
+            ModuleKind::Gain => PerModuleState::Vca,
+            ModuleKind::AudioOutput => PerModuleState::AudioOutput,
+            ModuleKind::MidiInput => PerModuleState::MidiInput,
+            ModuleKind::NoteToRate => PerModuleState::NoteToRate { rate: 1.0 },
+            ModuleKind::AudioMixer => PerModuleState::AudioMixer,
+            ModuleKind::Sampler => PerModuleState::Sampler {
                 sample: sampler_assets.get(module_id).cloned(),
                 position: 0.0,
                 active: false,
             },
-            "dynamics-processor" => PerModuleState::DynamicsProcessor {
+            ModuleKind::DynamicsProcessor => PerModuleState::DynamicsProcessor {
                 processor: DynamicsProcessor::new(sample_rate as f64, 5.0, 50.0),
                 sample_rate,
             },
-            "saturator" => PerModuleState::Saturator {
+            ModuleKind::Saturator => PerModuleState::Saturator {
                 processor: Saturator::new(),
             },
-            "convolution" => PerModuleState::Convolution {
+            ModuleKind::Convolution => PerModuleState::Convolution {
                 processor: Convolution::new(),
             },
-            "filter" => {
+            ModuleKind::Filter => {
                 let algorithm = params.get("algorithm").map(|s| s.as_str());
                 let mode = params.get("mode").map(|s| s.as_str());
                 let comb_type = params.get("comb_type").map(|s| s.as_str());
@@ -176,23 +179,32 @@ impl PerModuleState {
                     sample_rate: sample_rate_f64,
                 }
             }
-            "echo" => PerModuleState::Echo {
+            ModuleKind::Echo => PerModuleState::Echo {
                 processor: Echo::new(sample_rate as f64),
                 sample_rate: sample_rate as f64,
             },
-            "reverb" => PerModuleState::Reverb {
+            ModuleKind::Reverb => PerModuleState::Reverb {
                 processor: Reverb::new(sample_rate as f64),
                 sample_rate: sample_rate as f64,
             },
-            "frequency_splitter" => PerModuleState::FrequencySplitter {
+            ModuleKind::FrequencySplitter => PerModuleState::FrequencySplitter {
                 first: CrossoverPair::new(0.02, sample_rate as f64),
                 second: CrossoverPair::new(0.08, sample_rate as f64),
                 sample_rate: sample_rate as f64,
             },
-            "spectral_processor" => PerModuleState::SpectralProcessor {
+            ModuleKind::SpectralProcessor => PerModuleState::SpectralProcessor {
                 processor: SpectralProcessor::new(2048, crate::spectral::SpectralMode::Gate),
             },
-            other => panic!("unknown module type: {other}"),
+            ModuleKind::Lfo
+            | ModuleKind::ControlMixer
+            | ModuleKind::AudioDelayOneSample
+            | ModuleKind::BlockDelay
+            | ModuleKind::ControlDelay
+            | ModuleKind::Script => {
+                panic!(
+                    "module kind {kind:?} does not have a per-module state variant"
+                )
+            }
         }
     }
 }

@@ -34,10 +34,10 @@
 
 ## 6. Typed Module Dispatch
 
-- [ ] 6.1 Introduce typed module kind/config structures resolved from built-in registry data and patch parameters before rendering.
-- [ ] 6.2 Migrate module state creation from raw module type string matching to typed module kind/config dispatch.
-- [ ] 6.3 Migrate render-time module dispatch from raw module type string matching to typed module kind dispatch.
-- [ ] 6.4 Add tests that unsupported module types fail during preparation or compilation before rendering starts.
+- [x] 6.1 Introduce typed module kind/config structures resolved from built-in registry data and patch parameters before rendering.
+- [x] 6.2 Migrate module state creation from raw module type string matching to typed module kind/config dispatch.
+- [x] 6.3 Migrate render-time module dispatch from raw module type string matching to typed module kind dispatch.
+- [x] 6.4 Add tests that unsupported module types fail during preparation or compilation before rendering starts.
 
 ## 7. DSP And Module Adapter Boundary
 

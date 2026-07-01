@@ -1,6 +1,7 @@
 use std::collections::{BTreeMap, VecDeque};
 use std::fmt;
 
+use crate::builtins::module_kind::ModuleKind;
 use crate::graph::{ExecutionScope, Graph, ModuleId, SignalType};
 use crate::patch::RenderSettings;
 
@@ -24,6 +25,7 @@ pub struct CompiledPatch {
 pub struct CompiledNode {
     pub id: ModuleId,
     pub module_type: String,
+    pub module_kind: ModuleKind,
     pub execution_scope: ExecutionScope,
     pub input_port_map: Vec<Vec<CompiledPortRef>>,
     pub output_port_map: Vec<usize>,
@@ -66,10 +68,16 @@ pub fn compile(
     let topological_order = topological_sort(graph, &module_indices)?;
     let mut next_output_buffer = 0;
     let mut module_output_buffer_layout = Vec::with_capacity(graph.modules().len());
-    let mut nodes: Vec<_> = graph
+    let nodes: Vec<_> = graph
         .modules()
         .iter()
         .map(|module| {
+            let module_type_str = module.module_type();
+            let kind = ModuleKind::from_str(module_type_str).ok_or_else(|| {
+                CompileError::UnknownModuleType {
+                    module_type: module_type_str.to_string(),
+                }
+            })?;
             let input_count = module.inputs().len();
             let output_count = module.outputs().len();
             let output_buffer_start = next_output_buffer;
@@ -78,9 +86,10 @@ pub fn compile(
                 output_buffer_start,
                 output_buffer_count: output_count,
             });
-            CompiledNode {
+            Ok(CompiledNode {
                 id: module.id().clone(),
-                module_type: module.module_type().to_string(),
+                module_type: module_type_str.to_string(),
+                module_kind: kind,
                 execution_scope: module.execution_scope(),
                 input_port_map: vec![Vec::new(); input_count],
                 output_port_map: (output_buffer_start..next_output_buffer).collect(),
@@ -97,9 +106,10 @@ pub fn compile(
                     .collect(),
                 output_port_types: module.outputs().iter().map(|p| p.signal_type()).collect(),
                 parameters: module.params().clone(),
-            }
+            })
         })
-        .collect();
+        .collect::<Result<Vec<_>, _>>()?;
+    let mut nodes = nodes;
 
     resolve_routing(graph, &module_indices, &mut nodes)?;
 
@@ -325,17 +335,17 @@ mod tests {
     }
 
     fn audio_source(id: &str) -> ModuleNode {
-        ModuleNode::new(ModuleId::new(id), "source").with_output("audio", SignalType::Audio)
+        ModuleNode::new(ModuleId::new(id), "oscillator").with_output("audio", SignalType::Audio)
     }
 
     fn audio_processor(id: &str) -> ModuleNode {
-        ModuleNode::new(ModuleId::new(id), "processor")
+        ModuleNode::new(ModuleId::new(id), "gain")
             .with_input("audio_in", SignalType::Audio)
             .with_output("audio_out", SignalType::Audio)
     }
 
     fn audio_sink(id: &str) -> ModuleNode {
-        ModuleNode::new(ModuleId::new(id), "sink").with_input("audio_in", SignalType::Audio)
+        ModuleNode::new(ModuleId::new(id), "audio_output").with_input("left", SignalType::Audio)
     }
 
     fn connect(from_id: &str, from_port: &str, to_id: &str, to_port: &str) -> Cable {
@@ -355,7 +365,7 @@ mod tests {
             vec![audio_source("a"), audio_processor("b"), audio_sink("c")],
             vec![
                 connect("a", "audio", "b", "audio_in"),
-                connect("b", "audio_out", "c", "audio_in"),
+                connect("b", "audio_out", "c", "left"),
             ],
         );
 
@@ -400,7 +410,7 @@ mod tests {
     fn unknown_source_port_returns_missing_port() {
         let graph = Graph::new(
             vec![audio_source("a"), audio_sink("b")],
-            vec![connect("a", "missing", "b", "audio_in")],
+            vec![connect("a", "missing", "b", "left")],
         );
 
         let error = compile(&graph, &render_settings()).expect_err("missing source must fail");
@@ -436,7 +446,7 @@ mod tests {
     fn valid_ports_compile_with_correct_compiled_port_refs() {
         let graph = Graph::new(
             vec![audio_source("a"), audio_sink("b")],
-            vec![connect("a", "audio", "b", "audio_in")],
+            vec![connect("a", "audio", "b", "left")],
         );
 
         let compiled = compile_graph(&graph);
@@ -542,10 +552,10 @@ mod tests {
     fn compiled_routing_uses_vec_based_collections() {
         let graph = Graph::new(
             vec![
-                ModuleNode::new(ModuleId::new("a"), "source")
+                ModuleNode::new(ModuleId::new("a"), "oscillator")
                     .with_output("left", SignalType::Audio)
                     .with_output("right", SignalType::Audio),
-                ModuleNode::new(ModuleId::new("b"), "sink")
+                ModuleNode::new(ModuleId::new("b"), "audio_output")
                     .with_input("left_in", SignalType::Audio)
                     .with_input("right_in", SignalType::Audio),
             ],
@@ -599,7 +609,7 @@ mod tests {
         let graph = Graph::new(
             vec![
                 audio_source("source"),
-                ModuleNode::new(ModuleId::new("stereo"), "processor")
+                ModuleNode::new(ModuleId::new("stereo"), "gain")
                     .with_output("left", SignalType::Audio)
                     .with_output("right", SignalType::Audio),
                 audio_sink("sink"),
@@ -628,5 +638,22 @@ mod tests {
         );
         assert_eq!(compiled.nodes()[1].output_port_map, vec![1, 2]);
         assert_eq!(compiled.total_output_buffer_count(), 3);
+    }
+
+    #[test]
+    fn unknown_module_type_fails_compilation() {
+        let graph = Graph::new(
+            vec![ModuleNode::new(ModuleId::new("x"), "nonexistent_module")],
+            vec![],
+        );
+
+        let error = compile(&graph, &render_settings()).expect_err("unknown module type must fail");
+
+        assert_eq!(
+            error,
+            CompileError::UnknownModuleType {
+                module_type: "nonexistent_module".to_string(),
+            }
+        );
     }
 }

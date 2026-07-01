@@ -3,6 +3,7 @@ use std::collections::BTreeMap;
 use crate::graph::{builtin_ports, ExecutionScope, Port, SignalType};
 
 pub mod module_types;
+pub mod module_kind;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct BuiltInModuleDefinition {

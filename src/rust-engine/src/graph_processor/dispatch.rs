@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 
+use crate::builtins::module_kind::ModuleKind;
 use crate::graph::builtin_ports;
 
 use super::outputs::{BlockEvent, ModuleOutputs};
@@ -13,7 +14,7 @@ use super::ModuleInputProvider;
 
 pub(super) fn process_module(
     module_idx: usize,
-    module_type: &str,
+    module_kind: ModuleKind,
     events_in: &[BlockEvent],
     states: &mut [PerModuleState],
     input_provider: &impl ModuleInputProvider,
@@ -21,8 +22,8 @@ pub(super) fn process_module(
     frames: usize,
     block_start_frame: u64,
 ) -> ModuleOutputs {
-    match module_type {
-        "oscillator" => {
+    match module_kind {
+        ModuleKind::Oscillator => {
             let pitch_in = input_provider.control_input_or_default(
                 module_idx,
                 builtin_ports::PITCH,
@@ -32,7 +33,7 @@ pub(super) fn process_module(
             );
             process_oscillator(&mut states[module_idx], &pitch_in, frames)
         }
-        "adsr" => {
+        ModuleKind::Adsr => {
             let attack_in = input_provider.sum_control_input(
                 module_idx,
                 builtin_ports::ATTACK,
@@ -68,7 +69,7 @@ pub(super) fn process_module(
                 frames,
             )
         }
-        "gain" => {
+        ModuleKind::Gain => {
             let audio_in = input_provider.sum_audio_input(
                 module_idx,
                 builtin_ports::AUDIO_IN,
@@ -83,7 +84,7 @@ pub(super) fn process_module(
             );
             process_vca(audio_in, gain_in)
         }
-        "sampler" => {
+        ModuleKind::Sampler => {
             let rate_in = input_provider.control_input_or_default(
                 module_idx,
                 builtin_ports::RATE,
@@ -126,8 +127,8 @@ pub(super) fn process_module(
                 frames,
             )
         }
-        "note_to_rate" => process_note_to_rate(&mut states[module_idx], events_in, frames),
-        "audio_mixer" => {
+        ModuleKind::NoteToRate => process_note_to_rate(&mut states[module_idx], events_in, frames),
+        ModuleKind::AudioMixer => {
             let mix = input_provider.sum_audio_input(
                 module_idx,
                 builtin_ports::INPUTS,
@@ -138,7 +139,7 @@ pub(super) fn process_module(
             outputs.audio.insert(builtin_ports::MIX.to_string(), mix);
             outputs
         }
-        "audio_output" => {
+        ModuleKind::AudioOutput => {
             let left = input_provider.sum_audio_input(
                 module_idx,
                 builtin_ports::LEFT,
@@ -158,7 +159,7 @@ pub(super) fn process_module(
                 .insert(builtin_ports::RIGHT.to_string(), right);
             outputs
         }
-        "dynamics-processor" => {
+        ModuleKind::DynamicsProcessor => {
             let audio_in = input_provider.sum_audio_input(
                 module_idx,
                 builtin_ports::AUDIO_IN,
@@ -250,7 +251,7 @@ pub(super) fn process_module(
                 frames,
             )
         }
-        "filter" => {
+        ModuleKind::Filter => {
             let audio_in = input_provider.sum_audio_input(
                 module_idx,
                 builtin_ports::AUDIO_IN,
@@ -287,7 +288,7 @@ pub(super) fn process_module(
                 frames,
             )
         }
-        "saturator" => {
+        ModuleKind::Saturator => {
             let audio_in = input_provider.sum_audio_input(
                 module_idx,
                 builtin_ports::AUDIO_IN,
@@ -324,7 +325,7 @@ pub(super) fn process_module(
                 frames,
             )
         }
-        "convolution" => {
+        ModuleKind::Convolution => {
             let audio_in = input_provider.sum_audio_input(
                 module_idx,
                 builtin_ports::AUDIO_IN,
@@ -340,7 +341,7 @@ pub(super) fn process_module(
             );
             process_convolution(&mut states[module_idx], &audio_in, &mix_in, frames)
         }
-        "echo" => {
+        ModuleKind::Echo => {
             let audio_in_l = input_provider.sum_audio_input(
                 module_idx,
                 builtin_ports::AUDIO_IN_L,
@@ -363,7 +364,7 @@ pub(super) fn process_module(
                 frames,
             )
         }
-        "reverb" => {
+        ModuleKind::Reverb => {
             let audio_in_l = input_provider.sum_audio_input(
                 module_idx,
                 builtin_ports::AUDIO_IN_L,
@@ -386,7 +387,7 @@ pub(super) fn process_module(
                 frames,
             )
         }
-        "frequency_splitter" => {
+        ModuleKind::FrequencySplitter => {
             let audio_in = input_provider.sum_audio_input(
                 module_idx,
                 builtin_ports::AUDIO_IN,
@@ -402,7 +403,7 @@ pub(super) fn process_module(
             );
             process_frequency_splitter(&mut states[module_idx], &audio_in, &crossover_hz_in, frames)
         }
-        "spectral_processor" => {
+        ModuleKind::SpectralProcessor => {
             let audio_in = input_provider.sum_audio_input(
                 module_idx,
                 builtin_ports::AUDIO_IN,
@@ -431,6 +432,6 @@ pub(super) fn process_module(
                 frames,
             )
         }
-        other => panic!("unknown module type: {other}"),
+        _ => panic!("process_module called for unsupported module kind; dispatch is only for render-time module types"),
     }
 }

@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 
+use crate::builtins::module_kind::ModuleKind;
 use crate::compiled_patch::CompiledPatch;
 use crate::graph::{builtin_ports, ExecutionScope, Graph};
 use crate::script::ScriptEvent;
@@ -61,14 +62,14 @@ pub(super) fn process_block_compiled(
     let input_provider = CompiledInputProvider { compiled };
 
     for &module_idx in compiled.voice_node_indices() {
-        if compiled.nodes()[module_idx].module_type.as_str() == "midi_input" {
+        let node = &compiled.nodes()[module_idx];
+        if node.module_kind == ModuleKind::MidiInput {
             continue;
         }
         let events_in = compiled_gather_event_inputs(module_idx, compiled, &all_outputs);
-        let module_type = compiled.nodes()[module_idx].module_type.as_str();
         let outputs = process_module(
             module_idx,
-            module_type,
+            node.module_kind,
             &events_in,
             states,
             &input_provider,
@@ -81,14 +82,13 @@ pub(super) fn process_block_compiled(
 
     for &module_idx in compiled.global_node_indices() {
         let node = &compiled.nodes()[module_idx];
-        if node.module_type.as_str() == "midi_input" {
+        if node.module_kind == ModuleKind::MidiInput {
             continue;
         }
         let events_in = compiled_gather_event_inputs(module_idx, compiled, &all_outputs);
-        let module_type = node.module_type.as_str();
         let outputs = process_module(
             module_idx,
-            module_type,
+            node.module_kind,
             &events_in,
             states,
             &input_provider,
@@ -133,7 +133,10 @@ pub(super) fn process_block(
         let module = &graph.modules()[module_idx];
         let module_type = module.module_type();
 
-        if module_type == "midi_input" {
+        let kind = ModuleKind::from_str(module_type)
+            .unwrap_or_else(|| panic!("unknown module type during block processing: {module_type}"));
+
+        if kind == ModuleKind::MidiInput {
             continue;
         }
 
@@ -141,7 +144,7 @@ pub(super) fn process_block(
 
         let outputs = process_module(
             module_idx,
-            module_type,
+            kind,
             &events_in,
             states,
             &input_provider,
@@ -207,7 +210,10 @@ pub(super) fn process_block_polyphonic(
     let mut voice_seq = Vec::new();
     let mut global_seq = Vec::new();
     for &idx in topo_order {
-        if graph.modules()[idx].module_type() == "midi_input" {
+        let module_type_str = graph.modules()[idx].module_type();
+        let kind = ModuleKind::from_str(module_type_str)
+            .unwrap_or_else(|| panic!("unknown module type during polyphonic processing: {module_type_str}"));
+        if kind == ModuleKind::MidiInput {
             continue;
         }
         if graph.modules()[idx].execution_scope() == ExecutionScope::Voice {
@@ -238,10 +244,12 @@ pub(super) fn process_block_polyphonic(
         for &module_idx in &voice_seq {
             let module = &graph.modules()[module_idx];
             let events_in = gather_event_inputs(module_idx, module, routing, &all_outputs);
+            let kind = ModuleKind::from_str(module.module_type())
+                .unwrap_or_else(|| panic!("unknown module type in voice path: {}", module.module_type()));
 
             let outputs = process_module(
                 module_idx,
-                module.module_type(),
+                kind,
                 &events_in,
                 voice_states,
                 &input_provider,
@@ -281,10 +289,12 @@ pub(super) fn process_block_polyphonic(
     for &module_idx in &global_seq {
         let module = &graph.modules()[module_idx];
         let events_in = gather_event_inputs(module_idx, module, routing, &all_outputs);
+        let kind = ModuleKind::from_str(module.module_type())
+            .unwrap_or_else(|| panic!("unknown module type in global path: {}", module.module_type()));
 
         let outputs = process_module(
             module_idx,
-            module.module_type(),
+            kind,
             &events_in,
             &mut states[0],
             &input_provider,
