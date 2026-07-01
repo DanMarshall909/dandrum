@@ -1,9 +1,8 @@
 use std::path::PathBuf;
 
 use crate::core::TimedInputEvent;
-use crate::graph::Graph;
-use crate::graph_processor;
 use crate::script::ScriptEvent;
+use crate::synth::DandrumEngine;
 
 #[derive(Debug, PartialEq, Eq)]
 pub struct CliResult {
@@ -54,43 +53,15 @@ fn render(args: Vec<String>) -> CliResult {
 
     let patch = PathBuf::from(&args[0]);
     let output = PathBuf::from(&args[2]);
-    let patch_doc = match crate::patch::load_patch_file(&patch) {
-        Ok(patch_doc) => patch_doc,
-        Err(load_error) => return error(format!("failed to load patch: {load_error}")),
+    let mut engine = DandrumEngine::new();
+    let render = match engine
+        .render_patch_file_offline_with_events(&patch, |settings| single_note_sequence(settings.sample_rate_hz))
+    {
+        Ok(render) => render,
+        Err(load_error) => return error(format!("failed to render patch: {load_error}")),
     };
-    if let Err(validation_error) = crate::patch::validate_patch_schema(&patch_doc) {
-        return error(format!("patch validation failed: {validation_error}"));
-    }
-
-    let graph = Graph::from_patch_declarations(&patch_doc);
-    if let Err(validation_error) = graph.validate() {
-        return error(format!("graph validation failed: {validation_error}"));
-    }
-
-    let base_dir = patch.parent().unwrap_or_else(|| std::path::Path::new("."));
-    let sampler_assets = match crate::sample::prepare_sampler_assets(&patch_doc, base_dir) {
-        Ok(assets) => assets,
-        Err(load_error) => return error(load_error.to_string()),
-    };
-
-    let note_off_frame = (patch_doc.render.sample_rate_hz as u64 / 50).max(1);
-    let (left, right) = crate::graph_processor::render_offline_with_sampler_assets(
-        &graph,
-        &patch_doc.render,
-        vec![
-            TimedInputEvent::new(
-                0,
-                ScriptEvent::NoteOn {
-                    note: 60,
-                    velocity: 100,
-                },
-            ),
-            TimedInputEvent::new(note_off_frame, ScriptEvent::NoteOff { note: 60 }),
-        ],
-        &sampler_assets,
-    );
     if let Err(write_error) =
-        crate::wav::write_wav_file(&output, patch_doc.render.sample_rate_hz, &left, &right)
+        crate::wav::write_wav_file(&output, render.sample_rate_hz, &render.left, &render.right)
     {
         return error(format!("failed to write wav: {write_error}"));
     }
@@ -132,36 +103,16 @@ fn render_chords(args: Vec<String>) -> CliResult {
 
     let patch = PathBuf::from(&args[0]);
     let output = PathBuf::from(&args[2]);
-    let patch_doc = match crate::patch::load_patch_file(&patch) {
-        Ok(patch_doc) => patch_doc,
-        Err(load_error) => return error(format!("failed to load patch: {load_error}")),
+    let mut engine = DandrumEngine::new();
+    let render = match engine
+        .render_patch_file_offline_with_events(&patch, |settings| chord_sequence(settings.sample_rate_hz))
+    {
+        Ok(render) => render,
+        Err(load_error) => return error(format!("failed to render patch: {load_error}")),
     };
-    if let Err(validation_error) = crate::patch::validate_patch_schema(&patch_doc) {
-        return error(format!("patch validation failed: {validation_error}"));
-    }
-
-    let graph = Graph::from_patch_declarations(&patch_doc);
-    if let Err(validation_error) = graph.validate() {
-        return error(format!("graph validation failed: {validation_error}"));
-    }
-
-    let base_dir = patch.parent().unwrap_or_else(|| std::path::Path::new("."));
-    let sampler_assets = match crate::sample::prepare_sampler_assets(&patch_doc, base_dir) {
-        Ok(assets) => assets,
-        Err(load_error) => return error(load_error.to_string()),
-    };
-
-    let sample_rate = patch_doc.render.sample_rate_hz;
-    let chord_events = chord_sequence(sample_rate);
-
-    let (left, right) = graph_processor::render_offline_with_sampler_assets_polyphonic(
-        &graph,
-        &patch_doc.render,
-        chord_events,
-        &sampler_assets,
-        &patch_doc.voice_allocation,
-    );
-    if let Err(write_error) = crate::wav::write_wav_file(&output, sample_rate, &left, &right) {
+    if let Err(write_error) =
+        crate::wav::write_wav_file(&output, render.sample_rate_hz, &render.left, &render.right)
+    {
         return error(format!("failed to write wav: {write_error}"));
     }
 
@@ -176,8 +127,22 @@ fn render_chords(args: Vec<String>) -> CliResult {
     }
 }
 
+fn single_note_sequence(sample_rate: u32) -> Vec<TimedInputEvent> {
+    let note_off_frame = (sample_rate as u64 / 50).max(1);
+    vec![
+        TimedInputEvent::new(
+            0,
+            ScriptEvent::NoteOn {
+                note: 60,
+                velocity: 100,
+            },
+        ),
+        TimedInputEvent::new(note_off_frame, ScriptEvent::NoteOff { note: 60 }),
+    ]
+}
+
 fn chord_sequence(sample_rate: u32) -> Vec<TimedInputEvent> {
-    let sr = sample_rate as u64;
+    let sample_rate_hz = sample_rate as u64;
     let mut events = Vec::new();
 
     // Helper to add a chord with note-offs for the previous chord
@@ -185,9 +150,9 @@ fn chord_sequence(sample_rate: u32) -> Vec<TimedInputEvent> {
 
     let chords: Vec<(u64, Vec<u8>)> = vec![
         (0, vec![60, 64, 67]),      // C major
-        (sr, vec![65, 69, 72]),     // F major
-        (2 * sr, vec![67, 71, 74]), // G major
-        (3 * sr, vec![60, 64, 67]), // C major
+        (sample_rate_hz, vec![65, 69, 72]),     // F major
+        (2 * sample_rate_hz, vec![67, 71, 74]), // G major
+        (3 * sample_rate_hz, vec![60, 64, 67]), // C major
     ];
 
     for (frame, notes) in &chords {
@@ -212,7 +177,7 @@ fn chord_sequence(sample_rate: u32) -> Vec<TimedInputEvent> {
     }
 
     // Note-off final chord
-    let end = 4 * sr + sr / 4;
+    let end = 4 * sample_rate_hz + sample_rate_hz / 4;
     for note in &prev_notes {
         events.push(TimedInputEvent::new(
             end,

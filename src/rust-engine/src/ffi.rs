@@ -27,6 +27,10 @@ pub unsafe extern "C" fn dandrum_engine_load_patch(
         return false;
     };
 
+    if path.is_null() {
+        return false;
+    }
+
     let c_str = match unsafe { std::ffi::CStr::from_ptr(path) }.to_str() {
         Ok(s) => s,
         Err(_) => return false,
@@ -249,6 +253,15 @@ mod tests {
     #[test]
     fn c_ffi_load_patch_rejects_null_engine() {
         assert!(!unsafe { dandrum_engine_load_patch(std::ptr::null_mut(), std::ptr::null()) });
+    }
+
+    #[test]
+    fn c_ffi_load_patch_rejects_null_path() {
+        let engine = dandrum_engine_create();
+
+        assert!(!unsafe { dandrum_engine_load_patch(engine, std::ptr::null()) });
+
+        unsafe { dandrum_engine_destroy(engine) };
     }
 
     #[test]

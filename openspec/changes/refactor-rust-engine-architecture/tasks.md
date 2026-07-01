@@ -14,9 +14,9 @@
 
 ## 3. Engine Responsibility Split
 
-- [ ] 3.1 Split the current `core::Engine` and `synth::DandrumEngine` responsibilities into clearly named headless core/facade, prepared instrument runtime, and fallback/default synth components.
-- [ ] 3.2 Preserve existing default/fallback audio behavior with tests while removing graph-runtime responsibilities from the fallback synth component.
-- [ ] 3.3 Ensure CLI and FFI entry points construct the same headless runtime path instead of duplicating preparation logic.
+- [x] 3.1 Split the current `core::Engine` and `synth::DandrumEngine` responsibilities into clearly named headless core/facade, prepared instrument runtime, and fallback/default synth components.
+- [x] 3.2 Preserve existing default/fallback audio behavior with tests while removing graph-runtime responsibilities from the fallback synth component.
+- [x] 3.3 Ensure CLI and FFI entry points construct the same headless runtime path instead of duplicating preparation logic.
 
 ## 4. Prepared Patch Pipeline
 

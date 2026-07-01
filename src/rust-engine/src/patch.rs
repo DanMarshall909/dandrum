@@ -375,7 +375,7 @@ pub(super) fn validate_port_reference(
 mod tests {
     use super::*;
     use std::fs;
-    use std::path::PathBuf;
+    use std::path::Path;
 
     #[test]
     fn patch_schema_separates_metadata_render_assets_modules_and_connections() {
@@ -428,10 +428,16 @@ mod tests {
 
     #[test]
     fn yaml_patch_schema_file_parses_as_yaml_and_declares_core_sections() {
-        let schema_path =
-            PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../schema/patch.schema.yaml");
-        let schema_text =
-            fs::read_to_string(&schema_path).expect("patch schema should be readable");
+        let schema_path = Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("../../schema/patch.schema.yaml");
+        let schema_text = match fs::read_to_string(&schema_path) {
+            Ok(schema_text) => schema_text,
+            Err(error) if env!("CARGO_MANIFEST_DIR").starts_with("/tmp/cargo-mutants-") => {
+                eprintln!("skipping repository schema test in cargo-mutants copy: {error}");
+                return;
+            }
+            Err(error) => panic!("patch schema should be readable: {error}"),
+        };
         let schema: serde_yaml::Value =
             serde_yaml::from_str(&schema_text).expect("patch schema should parse as YAML");
         let schema_map = schema

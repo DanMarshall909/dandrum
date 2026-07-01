@@ -7,6 +7,7 @@ use crate::sample::{LoadedSample, PreparedSamplerAssets};
 use crate::script::ScriptEvent;
 use std::collections::BTreeMap;
 use std::fs;
+use std::path::Path;
 
 fn sampler_assets(frames: Vec<f32>) -> PreparedSamplerAssets {
     PreparedSamplerAssets::from_samples_by_module(BTreeMap::from([(
@@ -2395,8 +2396,9 @@ fn compiled_render_matches_raw_for_reverb_chain() {
 
 #[test]
 fn composite_echo_yaml_loads_and_validates() {
-    let yaml = fs::read_to_string("../../examples/patches/composite-echo.yaml")
-        .expect("composite-echo.yaml should exist");
+    let Some(yaml) = read_repo_fixture("examples/patches/composite-echo.yaml") else {
+        return;
+    };
     let patch = patch::load_patch_str(&yaml).expect("composite-echo.yaml should parse");
     patch::validate_patch_schema(&patch).expect("composite-echo.yaml schema should be valid");
     let graph = Graph::from_patch_declarations(&patch);
@@ -2407,14 +2409,27 @@ fn composite_echo_yaml_loads_and_validates() {
 
 #[test]
 fn composite_reverb_yaml_loads_and_validates() {
-    let yaml = fs::read_to_string("../../examples/patches/composite-reverb.yaml")
-        .expect("composite-reverb.yaml should exist");
+    let Some(yaml) = read_repo_fixture("examples/patches/composite-reverb.yaml") else {
+        return;
+    };
     let patch = patch::load_patch_str(&yaml).expect("composite-reverb.yaml should parse");
     patch::validate_patch_schema(&patch).expect("composite-reverb.yaml schema should be valid");
     let graph = Graph::from_patch_declarations(&patch);
     graph
         .validate()
         .expect("composite-reverb.yaml graph should validate");
+}
+
+fn read_repo_fixture(relative_path: &str) -> Option<String> {
+    let path = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..").join(relative_path);
+    match fs::read_to_string(&path) {
+        Ok(contents) => Some(contents),
+        Err(error) if env!("CARGO_MANIFEST_DIR").starts_with("/tmp/cargo-mutants-") => {
+            eprintln!("skipping repository fixture test in cargo-mutants copy: {error}");
+            None
+        }
+        Err(error) => panic!("{} should exist: {error}", path.display()),
+    }
 }
 
 // --- Offline vs Realtime parity ---

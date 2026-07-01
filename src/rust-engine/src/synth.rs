@@ -2,6 +2,7 @@ use std::f32::consts::TAU;
 
 use std::path::Path;
 
+use crate::core::TimedInputEvent;
 use crate::graph::Graph;
 use crate::graph_processor::RealtimeGraphProcessor;
 use crate::patch;
@@ -10,6 +11,7 @@ use crate::sample::PreparedSamplerAssets;
 
 #[derive(Debug)]
 pub enum LoadPatchError {
+    UnsupportedFormat(String),
     Io(std::io::Error),
     Parse(String),
     Validation(String),
@@ -17,9 +19,22 @@ pub enum LoadPatchError {
     SamplePreparation(String),
 }
 
+pub struct OfflineRender {
+    pub sample_rate_hz: u32,
+    pub left: Vec<f32>,
+    pub right: Vec<f32>,
+}
+
+struct PreparedPatchFile {
+    patch_doc: patch::PatchDocument,
+    graph: Graph,
+    sampler_assets: PreparedSamplerAssets,
+}
+
 impl std::fmt::Display for LoadPatchError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
+            LoadPatchError::UnsupportedFormat(e) => write!(f, "unsupported patch format: {e}"),
             LoadPatchError::Io(e) => write!(f, "I/O error: {e}"),
             LoadPatchError::Parse(e) => write!(f, "parse error: {e}"),
             LoadPatchError::Validation(e) => write!(f, "validation error: {e}"),
@@ -32,10 +47,13 @@ impl std::fmt::Display for LoadPatchError {
 impl From<patch::PatchLoadError> for LoadPatchError {
     fn from(e: patch::PatchLoadError) -> Self {
         match e {
+            patch::PatchLoadError::UnsupportedFormat { path } => {
+                LoadPatchError::UnsupportedFormat(path.display().to_string())
+            }
             patch::PatchLoadError::ReadFailed { message, .. } => {
                 LoadPatchError::Io(std::io::Error::new(std::io::ErrorKind::Other, message))
             }
-            other => LoadPatchError::Parse(format!("{other}")),
+            patch::PatchLoadError::ParseFailed { message, .. } => LoadPatchError::Parse(message),
         }
     }
 }
@@ -92,7 +110,7 @@ impl Default for Voice {
 }
 
 pub(crate) struct FallbackSynth {
-    pub(crate) voices: [Voice; MAX_VOICES],
+    voices: [Voice; MAX_VOICES],
     sample_rate: f32,
 }
 
@@ -190,6 +208,11 @@ impl FallbackSynth {
     fn is_finished(&self) -> bool {
         self.voices.iter().all(|voice| !voice.active)
     }
+
+    #[cfg(test)]
+    fn voice_sample_index(&self, index: usize) -> usize {
+        self.voices[index].sample_index
+    }
 }
 
 impl DandrumEngine {
@@ -203,18 +226,41 @@ impl DandrumEngine {
     }
 
     pub fn load_patch_file(&mut self, path: &Path) -> Result<(), LoadPatchError> {
-        let patch_doc = patch::load_patch_file(path).map_err(LoadPatchError::from)?;
-        patch::validate_patch_schema(&patch_doc).map_err(LoadPatchError::from)?;
-
-        let graph = Graph::from_patch_declarations(&patch_doc);
-        graph.validate().map_err(|e| LoadPatchError::GraphValidation(format!("{e}")))?;
-
-        let base_dir = path.parent().unwrap_or_else(|| Path::new("."));
-        let sampler_assets =
-            crate::sample::prepare_sampler_assets(&patch_doc, base_dir).map_err(LoadPatchError::from)?;
-
-        self.load_patch_with_sampler_assets(&patch_doc, &sampler_assets);
+        let prepared = prepare_patch_file(path)?;
+        self.load_patch_with_sampler_assets(&prepared.patch_doc, &prepared.sampler_assets);
         Ok(())
+    }
+
+    pub fn render_patch_file_offline(
+        &mut self,
+        path: &Path,
+        events: Vec<TimedInputEvent>,
+    ) -> Result<OfflineRender, LoadPatchError> {
+        self.render_patch_file_offline_with_events(path, |_| events)
+    }
+
+    pub fn render_patch_file_offline_with_events(
+        &mut self,
+        path: &Path,
+        events: impl FnOnce(&patch::RenderSettings) -> Vec<TimedInputEvent>,
+    ) -> Result<OfflineRender, LoadPatchError> {
+        let prepared = prepare_patch_file(path)?;
+        self.load_patch_with_sampler_assets(&prepared.patch_doc, &prepared.sampler_assets);
+        let events = events(&prepared.patch_doc.render);
+
+        let (left, right) = crate::graph_processor::render_offline_with_sampler_assets_polyphonic(
+            &prepared.graph,
+            &prepared.patch_doc.render,
+            events,
+            &prepared.sampler_assets,
+            &prepared.patch_doc.voice_allocation,
+        );
+
+        Ok(OfflineRender {
+            sample_rate_hz: prepared.patch_doc.render.sample_rate_hz,
+            left,
+            right,
+        })
     }
 
     pub fn prepare(&mut self, sample_rate: f32) {
@@ -286,6 +332,26 @@ impl DandrumEngine {
     }
 }
 
+fn prepare_patch_file(path: &Path) -> Result<PreparedPatchFile, LoadPatchError> {
+    let patch_doc = patch::load_patch_file(path).map_err(LoadPatchError::from)?;
+    patch::validate_patch_schema(&patch_doc).map_err(LoadPatchError::from)?;
+
+    let graph = Graph::from_patch_declarations(&patch_doc);
+    graph
+        .validate()
+        .map_err(|e| LoadPatchError::GraphValidation(format!("{e}")))?;
+
+    let base_dir = path.parent().unwrap_or_else(|| Path::new("."));
+    let sampler_assets =
+        crate::sample::prepare_sampler_assets(&patch_doc, base_dir).map_err(LoadPatchError::from)?;
+
+    Ok(PreparedPatchFile {
+        patch_doc,
+        graph,
+        sampler_assets,
+    })
+}
+
 impl Default for DandrumEngine {
     fn default() -> Self {
         Self::new()
@@ -333,6 +399,7 @@ mod tests {
     use super::*;
     use crate::sample::LoadedSample;
     use std::collections::BTreeMap;
+    use std::error::Error;
 
     #[test]
     fn new_engine_starts_finished_until_a_note_is_triggered() {
@@ -370,15 +437,144 @@ mod tests {
     }
 
     #[test]
+    fn fallback_render_returns_rendered_sample_count() {
+        let mut engine = DandrumEngine::new();
+        let mut left = vec![0.0; 16];
+        let mut right = vec![0.0; 16];
+
+        assert_eq!(engine.render(&mut left, &mut right), 16);
+    }
+
+    #[test]
+    fn fallback_first_samples_match_characterized_sound() {
+        let mut engine = DandrumEngine::new();
+        engine.note_on(60, 127);
+        let mut left = vec![0.0; 16];
+        let mut right = vec![0.0; 16];
+
+        engine.render(&mut left, &mut right);
+
+        assert_samples_close(
+            &left,
+            &[
+                0.0,
+                -0.0002307975,
+                -0.0004429967,
+                -0.0006359607,
+                -0.0008091679,
+                -0.0009622268,
+                -0.0010948868,
+                -0.0012070457,
+                -0.0012987542,
+                -0.0013702152,
+                -0.0014217774,
+                -0.0014539299,
+                -0.0014672908,
+                -0.0014625945,
+                -0.0014406773,
+                -0.0014024646,
+            ],
+        );
+        assert_samples_close(
+            &right,
+            &[
+                0.0,
+                -0.00022759906,
+                -0.00042988738,
+                -0.00060583773,
+                -0.00075466523,
+                -0.0008758594,
+                -0.0009692067,
+                -0.001034804,
+                -0.0010730614,
+                -0.0010846917,
+                -0.001070695,
+                -0.0010323299,
+                -0.00097108335,
+                -0.00088863453,
+                -0.00078681804,
+                -0.00066758815,
+            ],
+        );
+    }
+
+    #[test]
+    fn fallback_later_samples_match_characterized_vibrato() {
+        let mut engine = DandrumEngine::new();
+        engine.note_on(60, 127);
+        let mut scratch_left = vec![0.0; 2048];
+        let mut scratch_right = vec![0.0; 2048];
+        engine.render(&mut scratch_left, &mut scratch_right);
+        let mut left = vec![0.0; 8];
+        let mut right = vec![0.0; 8];
+
+        engine.render(&mut left, &mut right);
+
+        assert_samples_close(
+            &left,
+            &[
+                0.01752685,
+                0.020387465,
+                0.022927118,
+                0.025151936,
+                0.027069096,
+                0.028686723,
+                0.030013913,
+                0.031060744,
+            ],
+        );
+        assert_samples_close(
+            &right,
+            &[
+                0.06240611,
+                0.0631915,
+                0.0634456,
+                0.063187405,
+                0.062438093,
+                0.06122078,
+                0.05956074,
+                0.057485342,
+            ],
+        );
+    }
+
+    #[test]
     fn note_off_moves_matching_voice_toward_release() {
         let mut engine = DandrumEngine::new();
         engine.note_on(60, 127);
 
         engine.note_off(60);
 
-        assert!(
-            engine.fallback.voices[0].sample_index >= (engine.sample_rate * 0.85) as usize
+        assert_eq!(
+            engine.fallback.voice_sample_index(0),
+            (engine.sample_rate * 0.85) as usize
         );
+    }
+
+    #[test]
+    fn note_off_ignores_non_matching_fallback_voice() {
+        let mut engine = DandrumEngine::new();
+        engine.note_on(60, 127);
+
+        engine.note_off(61);
+
+        assert_eq!(engine.fallback.voice_sample_index(0), 0);
+    }
+
+    #[test]
+    fn oldest_fallback_voice_is_stolen_when_all_slots_are_active() {
+        let mut engine = DandrumEngine::new();
+        let mut left = vec![0.0; 8];
+        let mut right = vec![0.0; 8];
+        for note in 0..MAX_VOICES {
+            engine.note_on(40 + note as u8, 127);
+        }
+        engine.render(&mut left, &mut right);
+
+        engine.note_on(80, 127);
+
+        assert_eq!(engine.fallback.voices[MAX_VOICES - 1].note, 80);
+        assert_eq!(engine.fallback.voice_sample_index(MAX_VOICES - 1), 0);
     }
 
     #[test]
@@ -463,6 +659,36 @@ connections:
     }
 
     #[test]
+    fn different_notes_produce_different_fallback_audio() {
+        let mut low = DandrumEngine::new();
+        let mut high = DandrumEngine::new();
+        low.note_on(48, 127);
+        high.note_on(72, 127);
+        let mut low_left = vec![0.0; 256];
+        let mut low_right = vec![0.0; 256];
+        let mut high_left = vec![0.0; 256];
+        let mut high_right = vec![0.0; 256];
+
+        low.render(&mut low_left, &mut low_right);
+        high.render(&mut high_left, &mut high_right);
+
+        assert_ne!(low_left, high_left);
+        assert_ne!(low_right, high_right);
+    }
+
+    #[test]
+    fn fallback_output_is_stereo_panned() {
+        let mut engine = DandrumEngine::new();
+        engine.note_on(60, 127);
+        let mut left = vec![0.0; 256];
+        let mut right = vec![0.0; 256];
+
+        engine.render(&mut left, &mut right);
+
+        assert_ne!(left, right);
+    }
+
+    #[test]
     fn higher_velocity_produces_louder_fallback_output() {
         let mut soft = DandrumEngine::new();
         let mut loud = DandrumEngine::new();
@@ -497,6 +723,18 @@ connections:
     }
 
     #[test]
+    fn sustained_fallback_voice_uses_configured_duration() {
+        let mut engine = DandrumEngine::new();
+        engine.note_on(60, 100);
+        let mut left = vec![0.0; 48_000];
+        let mut right = vec![0.0; 48_000];
+
+        engine.render(&mut left, &mut right);
+
+        assert!(!engine.is_finished());
+    }
+
+    #[test]
     fn note_off_eventually_causes_fallback_silence() {
         let mut engine = DandrumEngine::new();
         engine.note_on(60, 100);
@@ -508,12 +746,53 @@ connections:
 
         assert!(!engine.is_finished(), "note_off starts release tail");
 
-        loop {
+        for _ in 0..1_000 {
             engine.render(&mut left, &mut right);
             if engine.is_finished() {
-                break;
+                return;
             }
         }
+
+        panic!("fallback synth should finish after release tail");
+    }
+
+    #[test]
+    fn fallback_helpers_preserve_expected_math() {
+        assert!((midi_note_to_hz(69) - 440.0).abs() < 0.001);
+        assert!((midi_note_to_hz(81) - 880.0).abs() < 0.001);
+        assert!(envelope(0.0, SECONDS) == 0.0);
+        assert!((envelope(0.025, SECONDS) - (-2.8_f32 * 0.025).exp()).abs() < 0.001);
+        assert_eq!(envelope(SECONDS, SECONDS), 0.0);
+        assert!(envelope(0.05, SECONDS) > envelope(0.9, SECONDS));
+        assert_eq!(wrap_phase(TAU + 0.25), 0.25);
+
+        let (hard_left, hard_right) = equal_power_pan(-1.0);
+        let (center_left, center_right) = equal_power_pan(0.0);
+        let (far_left, far_right) = equal_power_pan(1.0);
+        assert!(hard_left > hard_right);
+        assert!((center_left - center_right).abs() < 0.001);
+        assert!(far_right > far_left);
+    }
+
+    #[test]
+    fn load_patch_error_display_and_source_are_specific() {
+        let unsupported = LoadPatchError::UnsupportedFormat("patch.json".to_string());
+        assert_eq!(
+            unsupported.to_string(),
+            "unsupported patch format: patch.json"
+        );
+        assert!(unsupported.source().is_none());
+
+        let io_error = LoadPatchError::Io(std::io::Error::new(
+            std::io::ErrorKind::NotFound,
+            "missing patch",
+        ));
+        assert_eq!(io_error.to_string(), "I/O error: missing patch");
+        assert!(io_error.source().is_some());
+
+        let parse = LoadPatchError::Parse("bad yaml".to_string());
+        assert_eq!(parse.to_string(), "parse error: bad yaml");
+        assert!(parse.source().is_none());
     }
 
     #[test]
@@ -544,4 +823,12 @@ connections:
         assert_eq!(queued_left, direct_left);
         assert_eq!(queued_right, direct_right);
     }
+
+    fn assert_samples_close(actual: &[f32], expected: &[f32]) {
+        assert_eq!(actual.len(), expected.len());
+        for (actual, expected) in actual.iter().zip(expected) {
+            assert!((actual - expected).abs() < 0.000_000_1);
+        }
+    }
+
 }
