@@ -5,12 +5,10 @@ use crate::patch::{RenderSettings, VoiceAllocation};
 use crate::sample::PreparedSamplerAssets;
 use crate::voice_allocator::VoiceAllocator;
 
-use super::block::{process_block_compiled, process_block_polyphonic};
+use super::block::{process_block_compiled, process_block_compiled_polyphonic};
 use super::outputs::BlockEvent;
-use super::polyphony::build_polyphonic_states;
-use super::routing::build_routing;
+use super::polyphony::build_polyphonic_states_from_compiled;
 use super::state::PerModuleState;
-use super::traversal::{find_audio_output, find_midi_input, topological_sort};
 
 pub fn render_offline_compiled(
     compiled: &CompiledPatch,
@@ -20,14 +18,8 @@ pub fn render_offline_compiled(
     let settings = compiled.render_settings();
     let sample_rate = settings.sample_rate_hz as f32;
 
-    let midi_idx = compiled
-        .nodes()
-        .iter()
-        .position(|n| n.module_type == "midi_input");
-    let out_idx = compiled
-        .nodes()
-        .iter()
-        .position(|n| n.module_type == "audio_output");
+    let midi_idx = compiled.midi_input_index();
+    let out_idx = compiled.audio_output_index();
 
     let mut states: Vec<PerModuleState> = compiled
         .nodes()
@@ -112,18 +104,19 @@ pub fn render_offline_with_sampler_assets_polyphonic(
     voice_allocation: &VoiceAllocation,
 ) -> (Vec<f32>, Vec<f32>) {
     let sample_rate = settings.sample_rate_hz as f32;
-    let routing = build_routing(graph);
-    let topo_order = topological_sort(graph);
+    let compiled = crate::compiled_patch::compile(graph, settings)
+        .expect("validated graph should compile for offline rendering");
 
     let max_voices = voice_allocation.max_voices.max(1) as usize;
-    let mut states = build_polyphonic_states(graph, sample_rate, sampler_assets, max_voices);
+    let mut states =
+        build_polyphonic_states_from_compiled(&compiled, sample_rate, sampler_assets, max_voices);
     let mut allocator = VoiceAllocator::new(
         voice_allocation.max_voices,
         voice_allocation.stealing.clone(),
     );
 
-    let midi_idx = find_midi_input(graph);
-    let out_idx = find_audio_output(graph);
+    let midi_idx = compiled.midi_input_index();
+    let out_idx = compiled.audio_output_index();
 
     let scheduler = BlockScheduler::new(settings.duration_frames, settings.block_size_frames)
         .with_input_events(events);
@@ -143,10 +136,8 @@ pub fn render_offline_with_sampler_assets_polyphonic(
             })
             .collect();
 
-        process_block_polyphonic(
-            graph,
-            &routing,
-            &topo_order,
+        process_block_compiled_polyphonic(
+            &compiled,
             &mut states,
             &mut allocator,
             midi_idx,

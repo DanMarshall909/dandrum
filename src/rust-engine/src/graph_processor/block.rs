@@ -2,16 +2,13 @@ use std::collections::HashMap;
 
 use crate::builtins::module_kind::ModuleKind;
 use crate::compiled_patch::CompiledPatch;
-use crate::graph::{builtin_ports, ExecutionScope, Graph};
+use crate::graph::builtin_ports;
 use crate::script::ScriptEvent;
 use crate::voice_allocator::VoiceAllocator;
 
 use super::dispatch::process_module;
-use super::input_provider::{
-    compiled_gather_event_inputs, gather_event_inputs, CompiledInputProvider,
-};
+use super::input_provider::{CompiledInputProvider, compiled_gather_event_inputs};
 use super::outputs::{BlockEvent, ModuleOutputs};
-use super::routing::Routing;
 use super::state::PerModuleState;
 
 pub(super) fn collect_audio_output(
@@ -102,67 +99,8 @@ pub(super) fn process_block_compiled(
     collect_audio_output(&all_outputs, out_idx, frames, left_out, right_out);
 }
 
-pub(super) fn process_block(
-    graph: &Graph,
-    routing: &Routing,
-    topo_order: &[usize],
-    states: &mut [PerModuleState],
-    midi_idx: Option<usize>,
-    out_idx: Option<usize>,
-    block_start_frame: u64,
-    frames: usize,
-    incoming_events: Vec<BlockEvent>,
-    all_outputs: &mut HashMap<usize, ModuleOutputs>,
-    left_out: &mut Vec<f32>,
-    right_out: &mut Vec<f32>,
-) {
-    all_outputs.clear();
-
-    if let Some(idx) = midi_idx {
-        let outputs = ModuleOutputs {
-            audio: HashMap::new(),
-            control: HashMap::new(),
-            events: incoming_events,
-        };
-        all_outputs.insert(idx, outputs);
-    }
-
-    let input_provider = routing;
-
-    for &module_idx in topo_order {
-        let module = &graph.modules()[module_idx];
-        let module_type = module.module_type();
-
-        let kind = ModuleKind::from_str(module_type)
-            .unwrap_or_else(|| panic!("unknown module type during block processing: {module_type}"));
-
-        if kind == ModuleKind::MidiInput {
-            continue;
-        }
-
-        let events_in = gather_event_inputs(module_idx, module, routing, all_outputs);
-
-        let outputs = process_module(
-            module_idx,
-            kind,
-            &events_in,
-            states,
-            &input_provider,
-            all_outputs,
-            frames,
-            block_start_frame,
-        );
-
-        all_outputs.insert(module_idx, outputs);
-    }
-
-    collect_audio_output(all_outputs, out_idx, frames, left_out, right_out);
-}
-
-pub(super) fn process_block_polyphonic(
-    graph: &Graph,
-    routing: &Routing,
-    topo_order: &[usize],
+pub(super) fn process_block_compiled_polyphonic(
+    compiled: &CompiledPatch,
     states: &mut [Vec<PerModuleState>],
     allocator: &mut VoiceAllocator,
     midi_idx: Option<usize>,
@@ -207,24 +145,8 @@ pub(super) fn process_block_polyphonic(
         return;
     }
 
-    let mut voice_seq = Vec::new();
-    let mut global_seq = Vec::new();
-    for &idx in topo_order {
-        let module_type_str = graph.modules()[idx].module_type();
-        let kind = ModuleKind::from_str(module_type_str)
-            .unwrap_or_else(|| panic!("unknown module type during polyphonic processing: {module_type_str}"));
-        if kind == ModuleKind::MidiInput {
-            continue;
-        }
-        if graph.modules()[idx].execution_scope() == ExecutionScope::Voice {
-            voice_seq.push(idx);
-        } else {
-            global_seq.push(idx);
-        }
-    }
-
     let mut accum: HashMap<usize, ModuleOutputs> = HashMap::new();
-    let input_provider = routing;
+    let input_provider = CompiledInputProvider { compiled };
 
     for &voice_idx in &active_voices {
         let mut all_outputs: HashMap<usize, ModuleOutputs> = HashMap::new();
@@ -241,15 +163,16 @@ pub(super) fn process_block_polyphonic(
 
         let voice_states = &mut states[voice_idx];
 
-        for &module_idx in &voice_seq {
-            let module = &graph.modules()[module_idx];
-            let events_in = gather_event_inputs(module_idx, module, routing, &all_outputs);
-            let kind = ModuleKind::from_str(module.module_type())
-                .unwrap_or_else(|| panic!("unknown module type in voice path: {}", module.module_type()));
+        for &module_idx in compiled.voice_node_indices() {
+            let node = &compiled.nodes()[module_idx];
+            if node.module_kind == ModuleKind::MidiInput {
+                continue;
+            }
 
+            let events_in = compiled_gather_event_inputs(module_idx, compiled, &all_outputs);
             let outputs = process_module(
                 module_idx,
-                kind,
+                node.module_kind,
                 &events_in,
                 voice_states,
                 &input_provider,
@@ -261,7 +184,7 @@ pub(super) fn process_block_polyphonic(
             all_outputs.insert(module_idx, outputs);
         }
 
-        for &idx in &voice_seq {
+        for &idx in compiled.voice_node_indices() {
             if let Some(outputs) = all_outputs.remove(&idx) {
                 let entry = accum.entry(idx).or_insert_with(ModuleOutputs::empty);
                 for (port, buf) in outputs.audio {
@@ -286,15 +209,16 @@ pub(super) fn process_block_polyphonic(
 
     let mut all_outputs = accum;
 
-    for &module_idx in &global_seq {
-        let module = &graph.modules()[module_idx];
-        let events_in = gather_event_inputs(module_idx, module, routing, &all_outputs);
-        let kind = ModuleKind::from_str(module.module_type())
-            .unwrap_or_else(|| panic!("unknown module type in global path: {}", module.module_type()));
+    for &module_idx in compiled.global_node_indices() {
+        let node = &compiled.nodes()[module_idx];
+        if node.module_kind == ModuleKind::MidiInput {
+            continue;
+        }
 
+        let events_in = compiled_gather_event_inputs(module_idx, compiled, &all_outputs);
         let outputs = process_module(
             module_idx,
-            kind,
+            node.module_kind,
             &events_in,
             &mut states[0],
             &input_provider,

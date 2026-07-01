@@ -1,23 +1,19 @@
 use std::collections::HashMap;
 
 use crate::compiled_patch::{self, CompiledPatch};
-use crate::graph::{ExecutionScope, Graph};
+use crate::graph::Graph;
 use crate::patch::VoiceAllocation;
 use crate::sample::PreparedSamplerAssets;
 use crate::script::ScriptEvent;
 use crate::voice_allocator::VoiceAllocator;
 
-use super::block::{process_block, process_block_polyphonic};
+use super::block::{process_block_compiled, process_block_compiled_polyphonic};
 use super::outputs::{BlockEvent, ModuleOutputs};
-use super::polyphony::build_polyphonic_states;
-use super::routing::{build_routing_from_compiled, Routing};
+use super::polyphony::build_polyphonic_states_from_compiled;
 use super::state::PerModuleState;
 
 pub struct RealtimeGraphProcessor {
-    pub(super) graph: Graph,
     compiled: CompiledPatch,
-    routing: Routing,
-    topo_order: Vec<usize>,
     states: Vec<Vec<PerModuleState>>,
     midi_idx: Option<usize>,
     out_idx: Option<usize>,
@@ -96,12 +92,15 @@ impl RealtimeGraphProcessor {
         voice_allocation: &VoiceAllocation,
         prepared_max_block_size: usize,
     ) -> Self {
-        let routing = build_routing_from_compiled(&compiled);
-        let topo_order = compiled.topological_order().to_vec();
         let midi_idx = compiled.midi_input_index();
         let out_idx = compiled.audio_output_index();
         let max_voices = voice_allocation.max_voices.max(1) as usize;
-        let states = build_polyphonic_states(&graph, sample_rate, sampler_assets, max_voices);
+        let states = build_polyphonic_states_from_compiled(
+            &compiled,
+            sample_rate,
+            sampler_assets,
+            max_voices,
+        );
         let allocator = VoiceAllocator::new(
             voice_allocation.max_voices,
             voice_allocation.stealing.clone(),
@@ -111,10 +110,7 @@ impl RealtimeGraphProcessor {
         let module_count = graph.modules().len();
 
         Self {
-            graph,
             compiled,
-            routing,
-            topo_order,
             states,
             midi_idx,
             out_idx,
@@ -196,20 +192,12 @@ impl RealtimeGraphProcessor {
             })
             .collect();
 
-        if self.allocator.max_voices() > 1
-            || self
-                .graph
-                .modules()
-                .iter()
-                .any(|m| m.execution_scope() == ExecutionScope::Voice)
-        {
+        if self.allocator.max_voices() > 1 || !self.compiled.voice_node_indices().is_empty() {
             self.scratch_left.clear();
             self.scratch_right.clear();
 
-            process_block_polyphonic(
-                &self.graph,
-                &self.routing,
-                &self.topo_order,
+            process_block_compiled_polyphonic(
+                &self.compiled,
                 &mut self.states,
                 &mut self.allocator,
                 self.midi_idx,
@@ -238,17 +226,14 @@ impl RealtimeGraphProcessor {
             self.scratch_left.clear();
             self.scratch_right.clear();
 
-            process_block(
-                &self.graph,
-                &self.routing,
-                &self.topo_order,
+            process_block_compiled(
+                &self.compiled,
                 &mut self.states[0],
                 self.midi_idx,
                 self.out_idx,
                 block_start,
                 frames,
                 events,
-                &mut self.scratch_outputs,
                 &mut self.scratch_left,
                 &mut self.scratch_right,
             );

@@ -7,9 +7,7 @@ mod outputs;
 mod polyphony;
 mod processing;
 mod realtime_graph_processor;
-mod routing;
 mod state;
-mod traversal;
 
 use self::input_provider::ModuleInputProvider;
 pub use self::offline::{

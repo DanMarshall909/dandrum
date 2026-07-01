@@ -605,15 +605,11 @@ connections:
             .any(|module| module.id().as_str() == "voice::osc")
     );
     let _offline = render_offline(&graph, &patch.render, Vec::new());
-    let realtime = RealtimeGraphProcessor::new(graph, 48_000.0);
+    let mut realtime = RealtimeGraphProcessor::new(graph, 48_000.0);
+    let mut left = [0.0; 4];
+    let mut right = [0.0; 4];
 
-    assert!(
-        realtime
-            .graph
-            .modules()
-            .iter()
-            .all(|module| module.module_type() != "drum_voice")
-    );
+    assert_eq!(realtime.render(&mut left, &mut right), 4);
 }
 
 #[test]
@@ -2421,7 +2417,9 @@ fn composite_reverb_yaml_loads_and_validates() {
 }
 
 fn read_repo_fixture(relative_path: &str) -> Option<String> {
-    let path = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..").join(relative_path);
+    let path = Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("../..")
+        .join(relative_path);
     match fs::read_to_string(&path) {
         Ok(contents) => Some(contents),
         Err(error) if env!("CARGO_MANIFEST_DIR").starts_with("/tmp/cargo-mutants-") => {

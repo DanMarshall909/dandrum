@@ -7,6 +7,7 @@ use crate::crossover::CrossoverPair;
 use crate::dynamics_processor::DynamicsProcessor;
 use crate::echo::Echo;
 use crate::filter::{BiquadFilter, BiquadMode, CombFilter, CombType, FilterAlgorithm, MoogLadder};
+#[cfg(test)]
 use crate::graph::ModuleNode;
 use crate::reverb::Reverb;
 use crate::sample::{LoadedSample, PreparedSamplerAssets};
@@ -71,6 +72,7 @@ pub(super) enum PerModuleState {
 }
 
 impl PerModuleState {
+    #[cfg(test)]
     pub(super) fn new(
         module: &ModuleNode,
         sample_rate: f32,
@@ -201,9 +203,7 @@ impl PerModuleState {
             | ModuleKind::BlockDelay
             | ModuleKind::ControlDelay
             | ModuleKind::Script => {
-                panic!(
-                    "module kind {kind:?} does not have a per-module state variant"
-                )
+                panic!("module kind {kind:?} does not have a per-module state variant")
             }
         }
     }

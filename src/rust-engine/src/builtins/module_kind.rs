@@ -54,4 +54,26 @@ impl ModuleKind {
             _ => None,
         }
     }
+
+    pub fn is_render_supported(self) -> bool {
+        matches!(
+            self,
+            Self::MidiInput
+                | Self::AudioOutput
+                | Self::Oscillator
+                | Self::Gain
+                | Self::AudioMixer
+                | Self::Adsr
+                | Self::Filter
+                | Self::Sampler
+                | Self::NoteToRate
+                | Self::DynamicsProcessor
+                | Self::Saturator
+                | Self::Convolution
+                | Self::Echo
+                | Self::Reverb
+                | Self::FrequencySplitter
+                | Self::SpectralProcessor
+        )
+    }
 }

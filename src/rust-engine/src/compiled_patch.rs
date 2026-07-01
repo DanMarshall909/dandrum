@@ -58,6 +58,9 @@ pub enum CompileError {
     UnknownModuleType {
         module_type: String,
     },
+    UnsupportedModuleType {
+        module_type: String,
+    },
 }
 
 pub fn compile(
@@ -78,6 +81,11 @@ pub fn compile(
                     module_type: module_type_str.to_string(),
                 }
             })?;
+            if !kind.is_render_supported() {
+                return Err(CompileError::UnsupportedModuleType {
+                    module_type: module_type_str.to_string(),
+                });
+            }
             let input_count = module.inputs().len();
             let output_count = module.outputs().len();
             let output_buffer_start = next_output_buffer;
@@ -207,6 +215,9 @@ impl fmt::Display for CompileError {
             Self::CycleDetected => write!(formatter, "routing cycle detected"),
             Self::UnknownModuleType { module_type } => {
                 write!(formatter, "unknown module type: {module_type}")
+            }
+            Self::UnsupportedModuleType { module_type } => {
+                write!(formatter, "unsupported module type: {module_type}")
             }
         }
     }
@@ -593,9 +604,10 @@ mod tests {
     #[test]
     fn compiled_patch_preserves_module_configuration_metadata() {
         let graph = Graph::new(
-            vec![ModuleNode::new(ModuleId::new("sampler"), "sampler").with_params(
-                BTreeMap::from([("asset".to_string(), "hit".to_string())]),
-            )],
+            vec![
+                ModuleNode::new(ModuleId::new("sampler"), "sampler")
+                    .with_params(BTreeMap::from([("asset".to_string(), "hit".to_string())])),
+            ],
             vec![],
         );
 
@@ -653,6 +665,28 @@ mod tests {
             error,
             CompileError::UnknownModuleType {
                 module_type: "nonexistent_module".to_string(),
+            }
+        );
+    }
+
+    #[test]
+    fn render_unsupported_module_type_fails_compilation() {
+        let graph = Graph::new(
+            vec![
+                ModuleNode::new(ModuleId::new("delay"), "block_delay")
+                    .with_input("audio_in", SignalType::Audio)
+                    .with_output("audio_out", SignalType::Audio),
+            ],
+            vec![],
+        );
+
+        let error = compile(&graph, &render_settings())
+            .expect_err("known but render-unsupported module type must fail");
+
+        assert_eq!(
+            error,
+            CompileError::UnsupportedModuleType {
+                module_type: "block_delay".to_string(),
             }
         );
     }
