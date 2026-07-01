@@ -6,6 +6,7 @@ use crate::core::TimedInputEvent;
 use crate::graph::Graph;
 use crate::graph_processor::RealtimeGraphProcessor;
 use crate::patch;
+use crate::preparation::{self, PreparationError};
 use crate::realtime::RealtimeEvent;
 use crate::sample::PreparedSamplerAssets;
 
@@ -16,6 +17,7 @@ pub enum LoadPatchError {
     Parse(String),
     Validation(String),
     GraphValidation(String),
+    Compile(String),
     SamplePreparation(String),
 }
 
@@ -23,12 +25,6 @@ pub struct OfflineRender {
     pub sample_rate_hz: u32,
     pub left: Vec<f32>,
     pub right: Vec<f32>,
-}
-
-struct PreparedPatchFile {
-    patch_doc: patch::PatchDocument,
-    graph: Graph,
-    sampler_assets: PreparedSamplerAssets,
 }
 
 impl std::fmt::Display for LoadPatchError {
@@ -39,6 +35,7 @@ impl std::fmt::Display for LoadPatchError {
             LoadPatchError::Parse(e) => write!(f, "parse error: {e}"),
             LoadPatchError::Validation(e) => write!(f, "validation error: {e}"),
             LoadPatchError::GraphValidation(e) => write!(f, "graph validation error: {e}"),
+            LoadPatchError::Compile(e) => write!(f, "compile error: {e}"),
             LoadPatchError::SamplePreparation(e) => write!(f, "sample preparation error: {e}"),
         }
     }
@@ -67,6 +64,18 @@ impl From<patch::PatchValidationError> for LoadPatchError {
 impl From<crate::sample::SampleLoadError> for LoadPatchError {
     fn from(e: crate::sample::SampleLoadError) -> Self {
         LoadPatchError::SamplePreparation(format!("{e}"))
+    }
+}
+
+impl From<PreparationError> for LoadPatchError {
+    fn from(error: PreparationError) -> Self {
+        match error {
+            PreparationError::Load(error) => error.into(),
+            PreparationError::Schema(error) => error.into(),
+            PreparationError::Graph(error) => Self::GraphValidation(format!("{error}")),
+            PreparationError::Assets(error) => error.into(),
+            PreparationError::Compile(error) => Self::Compile(format!("{error}")),
+        }
     }
 }
 
@@ -227,7 +236,7 @@ impl DandrumEngine {
 
     pub fn load_patch_file(&mut self, path: &Path) -> Result<(), LoadPatchError> {
         let prepared = prepare_patch_file(path)?;
-        self.load_patch_with_sampler_assets(&prepared.patch_doc, &prepared.sampler_assets);
+        self.load_prepared_instrument(&prepared);
         Ok(())
     }
 
@@ -245,22 +254,31 @@ impl DandrumEngine {
         events: impl FnOnce(&patch::RenderSettings) -> Vec<TimedInputEvent>,
     ) -> Result<OfflineRender, LoadPatchError> {
         let prepared = prepare_patch_file(path)?;
-        self.load_patch_with_sampler_assets(&prepared.patch_doc, &prepared.sampler_assets);
-        let events = events(&prepared.patch_doc.render);
+        let events = events(&prepared.patch_doc().render);
+
+        Ok(self.render_prepared_offline(&prepared, events))
+    }
+
+    fn render_prepared_offline(
+        &mut self,
+        prepared: &preparation::PreparedInstrument,
+        events: Vec<TimedInputEvent>,
+    ) -> OfflineRender {
+        self.load_prepared_instrument(prepared);
 
         let (left, right) = crate::graph_processor::render_offline_with_sampler_assets_polyphonic(
-            &prepared.graph,
-            &prepared.patch_doc.render,
+            prepared.graph(),
+            &prepared.patch_doc().render,
             events,
-            &prepared.sampler_assets,
-            &prepared.patch_doc.voice_allocation,
+            prepared.sampler_assets(),
+            &prepared.patch_doc().voice_allocation,
         );
 
-        Ok(OfflineRender {
-            sample_rate_hz: prepared.patch_doc.render.sample_rate_hz,
+        OfflineRender {
+            sample_rate_hz: prepared.patch_doc().render.sample_rate_hz,
             left,
             right,
-        })
+        }
     }
 
     pub fn prepare(&mut self, sample_rate: f32) {
@@ -285,6 +303,19 @@ impl DandrumEngine {
                 self.sample_rate,
                 sampler_assets,
                 &patch_doc.voice_allocation,
+                self.prepared_max_block_size,
+            ),
+        );
+    }
+
+    fn load_prepared_instrument(&mut self, prepared: &preparation::PreparedInstrument) {
+        self.graph_processor = Some(
+            RealtimeGraphProcessor::polyphonic_with_compiled_patch_and_sampler_assets_and_max_block_size(
+                prepared.graph().clone(),
+                prepared.compiled_patch().clone(),
+                self.sample_rate,
+                prepared.sampler_assets(),
+                &prepared.patch_doc().voice_allocation,
                 self.prepared_max_block_size,
             ),
         );
@@ -332,24 +363,8 @@ impl DandrumEngine {
     }
 }
 
-fn prepare_patch_file(path: &Path) -> Result<PreparedPatchFile, LoadPatchError> {
-    let patch_doc = patch::load_patch_file(path).map_err(LoadPatchError::from)?;
-    patch::validate_patch_schema(&patch_doc).map_err(LoadPatchError::from)?;
-
-    let graph = Graph::from_patch_declarations(&patch_doc);
-    graph
-        .validate()
-        .map_err(|e| LoadPatchError::GraphValidation(format!("{e}")))?;
-
-    let base_dir = path.parent().unwrap_or_else(|| Path::new("."));
-    let sampler_assets =
-        crate::sample::prepare_sampler_assets(&patch_doc, base_dir).map_err(LoadPatchError::from)?;
-
-    Ok(PreparedPatchFile {
-        patch_doc,
-        graph,
-        sampler_assets,
-    })
+fn prepare_patch_file(path: &Path) -> Result<preparation::PreparedInstrument, LoadPatchError> {
+    preparation::prepare_instrument_file(path).map_err(LoadPatchError::from)
 }
 
 impl Default for DandrumEngine {
@@ -638,6 +653,72 @@ connections:
         assert_eq!(rendered, 4);
         assert_eq!(left, vec![0.25, 0.5, 0.75, 0.0]);
         assert_eq!(right, vec![0.25, 0.5, 0.75, 0.0]);
+    }
+
+    #[test]
+    fn failed_patch_file_load_preserves_existing_graph_runtime() {
+        const BAD_PATCH_FILE_NAME: &str = "dandrum_test_bad_safe_rust_patch.yaml";
+        const BAD_PATCH_YAML: &str =
+            "metadata:\n  name: Bad\nrender:\n  sample_rate_hz: 48000\n  block_size_frames: 64\n  duration_frames: 128\nmodules: []";
+
+        let patch = patch::load_patch_str(
+            r#"
+metadata:
+  name: Existing Sampler Runtime
+render:
+  sample_rate_hz: 48000
+  block_size_frames: 64
+  duration_frames: 128
+assets:
+  - id: hit
+    kind: sample
+    path: hit.wav
+modules:
+  - id: midi
+    type: midi_input
+  - id: sampler
+    type: sampler
+    parameters:
+      asset: hit
+  - id: out
+    type: audio_output
+connections:
+  - from: midi.events
+    to: sampler.trigger
+  - from: sampler.audio
+    to: out.left
+  - from: sampler.audio
+    to: out.right
+"#,
+        )
+        .expect("patch should parse");
+        let assets = PreparedSamplerAssets::from_samples_by_module(BTreeMap::from([(
+            "sampler".to_string(),
+            LoadedSample::new(48_000, vec![0.25, 0.5, 0.75]),
+        )]));
+        let mut engine = DandrumEngine::new();
+        engine.prepare(48_000.0);
+        engine.load_patch_with_sampler_assets(&patch, &assets);
+
+        let bad_patch_path = std::env::temp_dir().join(BAD_PATCH_FILE_NAME);
+        std::fs::write(&bad_patch_path, BAD_PATCH_YAML).expect("bad patch should be written");
+
+        let error = engine
+            .load_patch_file(&bad_patch_path)
+            .expect_err("invalid patch should fail to load");
+
+        assert!(matches!(error, LoadPatchError::Validation(_)));
+
+        engine.note_on(60, 100);
+        let mut left = vec![0.0; 4];
+        let mut right = vec![0.0; 4];
+        let rendered = engine.render(&mut left, &mut right);
+
+        assert_eq!(rendered, 4);
+        assert_eq!(left, vec![0.25, 0.5, 0.75, 0.0]);
+        assert_eq!(right, vec![0.25, 0.5, 0.75, 0.0]);
+
+        std::fs::remove_file(bad_patch_path).ok();
     }
 
     #[test]

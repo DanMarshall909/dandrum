@@ -20,17 +20,17 @@
 
 ## 4. Prepared Patch Pipeline
 
-- [ ] 4.1 Introduce a prepared patch or prepared instrument type that owns validated patch metadata, graph, compiled patch metadata, prepared assets, and preparation diagnostics.
-- [ ] 4.2 Move patch file loading, schema validation, graph validation, asset preparation, and compilation into explicit pipeline functions with typed error results.
-- [ ] 4.3 Ensure failed preparation leaves the previous runtime state untouched and reports failure through safe Rust and FFI paths.
-- [ ] 4.4 Update offline rendering to start from prepared patch data where possible, while preserving existing CLI behavior.
+- [x] 4.1 Introduce a prepared patch or prepared instrument type that owns validated patch metadata, graph, compiled patch metadata, prepared assets, and preparation diagnostics.
+- [x] 4.2 Move patch file loading, schema validation, graph validation, asset preparation, and compilation into explicit pipeline functions with typed error results.
+- [x] 4.3 Ensure failed preparation leaves the previous runtime state untouched and reports failure through safe Rust and FFI paths.
+- [x] 4.4 Update offline rendering to start from prepared patch data where possible, while preserving existing CLI behavior.
 
 ## 5. Compiled Patch As Shared Runtime Contract
 
-- [ ] 5.1 Extend `CompiledPatch` to include routing, traversal, scope grouping, MIDI/audio output indices, module kind/config metadata, and port/buffer layout needed by renderers.
-- [ ] 5.2 Migrate realtime graph processor construction to consume `CompiledPatch` instead of rebuilding routing and traversal from raw `Graph`.
-- [ ] 5.3 Migrate offline rendering to consume `CompiledPatch` for routing and execution order.
-- [ ] 5.4 Remove or make private obsolete duplicate routing/traversal helpers after compiled-patch render paths are covered by tests.
+- [x] 5.1 Extend `CompiledPatch` to include routing, traversal, scope grouping, MIDI/audio output indices, module kind/config metadata, and port/buffer layout needed by renderers.
+- [x] 5.2 Migrate realtime graph processor construction to consume `CompiledPatch` instead of rebuilding routing and traversal from raw `Graph`.
+- [x] 5.3 Migrate offline rendering to consume `CompiledPatch` for routing and execution order.
+- [x] 5.4 Remove or make private obsolete duplicate routing/traversal helpers after compiled-patch render paths are covered by tests.
 
 ## 6. Typed Module Dispatch
 

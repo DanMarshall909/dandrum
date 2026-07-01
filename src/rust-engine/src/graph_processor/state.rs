@@ -1,3 +1,6 @@
+use std::collections::BTreeMap;
+
+use crate::compiled_patch::CompiledNode;
 use crate::convolution::Convolution;
 use crate::crossover::CrossoverPair;
 use crate::dynamics_processor::DynamicsProcessor;
@@ -72,7 +75,37 @@ impl PerModuleState {
         sample_rate: f32,
         sampler_assets: &PreparedSamplerAssets,
     ) -> Self {
-        match module.module_type() {
+        Self::from_module_metadata(
+            module.module_type(),
+            module.id().as_str(),
+            module.params(),
+            sample_rate,
+            sampler_assets,
+        )
+    }
+
+    pub(super) fn new_compiled(
+        node: &CompiledNode,
+        sample_rate: f32,
+        sampler_assets: &PreparedSamplerAssets,
+    ) -> Self {
+        Self::from_module_metadata(
+            node.module_type.as_str(),
+            node.id.as_str(),
+            &node.parameters,
+            sample_rate,
+            sampler_assets,
+        )
+    }
+
+    fn from_module_metadata(
+        module_type: &str,
+        module_id: &str,
+        params: &BTreeMap<String, String>,
+        sample_rate: f32,
+        sampler_assets: &PreparedSamplerAssets,
+    ) -> Self {
+        match module_type {
             "oscillator" => PerModuleState::Oscillator {
                 phase: 0.0,
                 sample_rate,
@@ -90,7 +123,7 @@ impl PerModuleState {
             "note_to_rate" => PerModuleState::NoteToRate { rate: 1.0 },
             "audio_mixer" => PerModuleState::AudioMixer,
             "sampler" => PerModuleState::Sampler {
-                sample: sampler_assets.get(module.id().as_str()).cloned(),
+                sample: sampler_assets.get(module_id).cloned(),
                 position: 0.0,
                 active: false,
             },
@@ -105,9 +138,9 @@ impl PerModuleState {
                 processor: Convolution::new(),
             },
             "filter" => {
-                let algorithm = module.params().get("algorithm").map(|s| s.as_str());
-                let mode = module.params().get("mode").map(|s| s.as_str());
-                let comb_type = module.params().get("comb_type").map(|s| s.as_str());
+                let algorithm = params.get("algorithm").map(|s| s.as_str());
+                let mode = params.get("mode").map(|s| s.as_str());
+                let comb_type = params.get("comb_type").map(|s| s.as_str());
                 let sample_rate_f64 = sample_rate as f64;
 
                 let filter: Box<dyn FilterAlgorithm> = match algorithm {

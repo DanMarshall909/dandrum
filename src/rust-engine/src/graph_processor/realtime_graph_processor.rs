@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 
+use crate::compiled_patch::{self, CompiledPatch};
 use crate::graph::{ExecutionScope, Graph};
 use crate::patch::VoiceAllocation;
 use crate::sample::PreparedSamplerAssets;
@@ -9,12 +10,12 @@ use crate::voice_allocator::VoiceAllocator;
 use super::block::{process_block, process_block_polyphonic};
 use super::outputs::{BlockEvent, ModuleOutputs};
 use super::polyphony::build_polyphonic_states;
-use super::routing::{build_routing, Routing};
+use super::routing::{build_routing_from_compiled, Routing};
 use super::state::PerModuleState;
-use super::traversal::{find_audio_output, find_midi_input, topological_sort};
 
 pub struct RealtimeGraphProcessor {
     pub(super) graph: Graph,
+    compiled: CompiledPatch,
     routing: Routing,
     topo_order: Vec<usize>,
     states: Vec<Vec<PerModuleState>>,
@@ -70,10 +71,35 @@ impl RealtimeGraphProcessor {
         voice_allocation: &VoiceAllocation,
         prepared_max_block_size: usize,
     ) -> Self {
-        let routing = build_routing(&graph);
-        let topo_order = topological_sort(&graph);
-        let midi_idx = find_midi_input(&graph);
-        let out_idx = find_audio_output(&graph);
+        let render_settings = crate::patch::RenderSettings {
+            sample_rate_hz: sample_rate.max(1.0).round() as u32,
+            block_size_frames: prepared_max_block_size.max(1) as u32,
+            duration_frames: 0,
+        };
+        let compiled = compiled_patch::compile(&graph, &render_settings)
+            .expect("validated graph should compile for realtime rendering");
+        Self::polyphonic_with_compiled_patch_and_sampler_assets_and_max_block_size(
+            graph,
+            compiled,
+            sample_rate,
+            sampler_assets,
+            voice_allocation,
+            prepared_max_block_size,
+        )
+    }
+
+    pub fn polyphonic_with_compiled_patch_and_sampler_assets_and_max_block_size(
+        graph: Graph,
+        compiled: CompiledPatch,
+        sample_rate: f32,
+        sampler_assets: &PreparedSamplerAssets,
+        voice_allocation: &VoiceAllocation,
+        prepared_max_block_size: usize,
+    ) -> Self {
+        let routing = build_routing_from_compiled(&compiled);
+        let topo_order = compiled.topological_order().to_vec();
+        let midi_idx = compiled.midi_input_index();
+        let out_idx = compiled.audio_output_index();
         let max_voices = voice_allocation.max_voices.max(1) as usize;
         let states = build_polyphonic_states(&graph, sample_rate, sampler_assets, max_voices);
         let allocator = VoiceAllocator::new(
@@ -86,6 +112,7 @@ impl RealtimeGraphProcessor {
 
         Self {
             graph,
+            compiled,
             routing,
             topo_order,
             states,

@@ -9,9 +9,14 @@ pub type ExecutionStep = usize;
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct CompiledPatch {
     nodes: Vec<CompiledNode>,
+    topological_order: Vec<ExecutionStep>,
     execution_order: Vec<ExecutionStep>,
     voice_node_indices: Vec<usize>,
     global_node_indices: Vec<usize>,
+    midi_input_index: Option<usize>,
+    audio_output_index: Option<usize>,
+    module_output_buffer_layout: Vec<CompiledModuleBufferLayout>,
+    total_output_buffer_count: usize,
     render_settings: RenderSettings,
 }
 
@@ -26,12 +31,19 @@ pub struct CompiledNode {
     pub input_port_types: Vec<SignalType>,
     pub output_port_names: Vec<String>,
     pub output_port_types: Vec<SignalType>,
+    pub parameters: BTreeMap<String, String>,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct CompiledPortRef {
     pub module_index: usize,
     pub port_index: usize,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct CompiledModuleBufferLayout {
+    pub output_buffer_start: usize,
+    pub output_buffer_count: usize,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -51,19 +63,27 @@ pub fn compile(
     render_settings: &RenderSettings,
 ) -> Result<CompiledPatch, CompileError> {
     let module_indices = module_indices_by_id(graph);
-    let execution_order = topological_sort(graph, &module_indices)?;
+    let topological_order = topological_sort(graph, &module_indices)?;
+    let mut next_output_buffer = 0;
+    let mut module_output_buffer_layout = Vec::with_capacity(graph.modules().len());
     let mut nodes: Vec<_> = graph
         .modules()
         .iter()
         .map(|module| {
             let input_count = module.inputs().len();
             let output_count = module.outputs().len();
+            let output_buffer_start = next_output_buffer;
+            next_output_buffer += output_count;
+            module_output_buffer_layout.push(CompiledModuleBufferLayout {
+                output_buffer_start,
+                output_buffer_count: output_count,
+            });
             CompiledNode {
                 id: module.id().clone(),
                 module_type: module.module_type().to_string(),
                 execution_scope: module.execution_scope(),
                 input_port_map: vec![Vec::new(); input_count],
-                output_port_map: (0..output_count).collect(),
+                output_port_map: (output_buffer_start..next_output_buffer).collect(),
                 input_port_names: module
                     .inputs()
                     .iter()
@@ -76,18 +96,19 @@ pub fn compile(
                     .map(|p| p.name().to_string())
                     .collect(),
                 output_port_types: module.outputs().iter().map(|p| p.signal_type()).collect(),
+                parameters: module.params().clone(),
             }
         })
         .collect();
 
     resolve_routing(graph, &module_indices, &mut nodes)?;
 
-    let global_node_indices = execution_order
+    let global_node_indices = topological_order
         .iter()
         .copied()
         .filter(|index| nodes[*index].execution_scope == ExecutionScope::Global)
         .collect::<Vec<_>>();
-    let voice_node_indices = execution_order
+    let voice_node_indices = topological_order
         .iter()
         .copied()
         .filter(|index| nodes[*index].execution_scope == ExecutionScope::Voice)
@@ -100,9 +121,20 @@ pub fn compile(
 
     Ok(CompiledPatch {
         nodes,
+        topological_order,
         execution_order,
         voice_node_indices,
         global_node_indices,
+        midi_input_index: graph
+            .modules()
+            .iter()
+            .position(|module| module.module_type() == "midi_input"),
+        audio_output_index: graph
+            .modules()
+            .iter()
+            .position(|module| module.module_type() == "audio_output"),
+        module_output_buffer_layout,
+        total_output_buffer_count: next_output_buffer,
         render_settings: render_settings.clone(),
     })
 }
@@ -110,6 +142,10 @@ pub fn compile(
 impl CompiledPatch {
     pub fn nodes(&self) -> &[CompiledNode] {
         &self.nodes
+    }
+
+    pub fn topological_order(&self) -> &[ExecutionStep] {
+        &self.topological_order
     }
 
     /// Returns the execution order as scope-ordered metadata.
@@ -128,6 +164,22 @@ impl CompiledPatch {
 
     pub fn global_node_indices(&self) -> &[usize] {
         &self.global_node_indices
+    }
+
+    pub fn midi_input_index(&self) -> Option<usize> {
+        self.midi_input_index
+    }
+
+    pub fn audio_output_index(&self) -> Option<usize> {
+        self.audio_output_index
+    }
+
+    pub fn module_output_buffer_layout(&self) -> &[CompiledModuleBufferLayout] {
+        &self.module_output_buffer_layout
+    }
+
+    pub fn total_output_buffer_count(&self) -> usize {
+        self.total_output_buffer_count
     }
 
     pub fn render_settings(&self) -> &RenderSettings {
@@ -310,6 +362,7 @@ mod tests {
         let compiled = compile_graph(&graph);
 
         assert_eq!(compiled.execution_order(), &[0, 1, 2]);
+        assert_eq!(compiled.topological_order(), &[0, 1, 2]);
     }
 
     #[test]
@@ -325,6 +378,7 @@ mod tests {
 
         assert_eq!(sorted_order, vec![0, 1, 2]);
         assert_eq!(compiled.execution_order().len(), 3);
+        assert_eq!(compiled.topological_order().len(), 3);
     }
 
     #[test]
@@ -446,6 +500,7 @@ mod tests {
         assert_eq!(compiled.global_node_indices(), &[0, 2]);
         assert_eq!(compiled.voice_node_indices(), &[1, 3]);
         assert_eq!(compiled.execution_order(), &[0, 2, 1, 3]);
+        assert_eq!(compiled.topological_order(), &[0, 1, 2, 3]);
     }
 
     #[test]
@@ -506,5 +561,72 @@ mod tests {
         assert_eq!(compiled.nodes()[1].input_port_map[0][0].port_index, 0);
         assert_eq!(compiled.nodes()[1].input_port_map[1][0].port_index, 1);
         assert_eq!(compiled.nodes()[0].output_port_map, vec![0, 1]);
+    }
+
+    #[test]
+    fn compiled_patch_records_midi_and_audio_output_indices() {
+        let graph = Graph::new(
+            vec![
+                ModuleNode::new(ModuleId::new("midi"), "midi_input"),
+                audio_source("source"),
+                ModuleNode::new(ModuleId::new("out"), "audio_output"),
+            ],
+            vec![],
+        );
+
+        let compiled = compile_graph(&graph);
+
+        assert_eq!(compiled.midi_input_index(), Some(0));
+        assert_eq!(compiled.audio_output_index(), Some(2));
+    }
+
+    #[test]
+    fn compiled_patch_preserves_module_configuration_metadata() {
+        let graph = Graph::new(
+            vec![ModuleNode::new(ModuleId::new("sampler"), "sampler").with_params(
+                BTreeMap::from([("asset".to_string(), "hit".to_string())]),
+            )],
+            vec![],
+        );
+
+        let compiled = compile_graph(&graph);
+
+        assert_eq!(compiled.nodes()[0].parameters["asset"], "hit");
+    }
+
+    #[test]
+    fn compiled_patch_records_output_buffer_layout() {
+        let graph = Graph::new(
+            vec![
+                audio_source("source"),
+                ModuleNode::new(ModuleId::new("stereo"), "processor")
+                    .with_output("left", SignalType::Audio)
+                    .with_output("right", SignalType::Audio),
+                audio_sink("sink"),
+            ],
+            vec![],
+        );
+
+        let compiled = compile_graph(&graph);
+
+        assert_eq!(
+            compiled.module_output_buffer_layout(),
+            &[
+                CompiledModuleBufferLayout {
+                    output_buffer_start: 0,
+                    output_buffer_count: 1,
+                },
+                CompiledModuleBufferLayout {
+                    output_buffer_start: 1,
+                    output_buffer_count: 2,
+                },
+                CompiledModuleBufferLayout {
+                    output_buffer_start: 3,
+                    output_buffer_count: 0,
+                },
+            ]
+        );
+        assert_eq!(compiled.nodes()[1].output_port_map, vec![1, 2]);
+        assert_eq!(compiled.total_output_buffer_count(), 3);
     }
 }

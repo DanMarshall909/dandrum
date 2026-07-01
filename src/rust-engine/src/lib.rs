@@ -2,6 +2,8 @@ pub mod core;
 
 pub(crate) mod compiled_patch;
 
+pub(crate) mod preparation;
+
 pub mod graph_processor;
 
 pub(crate) mod builtins;

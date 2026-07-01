@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 
+use crate::compiled_patch::CompiledPatch;
 use crate::graph::Graph;
 
 pub(super) struct Routing {
@@ -28,6 +29,41 @@ pub(super) fn build_routing(graph: &Graph) -> Routing {
             .entry(dst_port)
             .or_default()
             .push((src_idx, src_port));
+    }
+
+    Routing { inputs }
+}
+
+pub(super) fn build_routing_from_compiled(compiled: &CompiledPatch) -> Routing {
+    let mut inputs: Vec<HashMap<String, Vec<(usize, String)>>> = compiled
+        .nodes()
+        .iter()
+        .map(|node| {
+            node.input_port_names
+                .iter()
+                .enumerate()
+                .filter_map(|(input_index, input_name)| {
+                    let sources = node.input_port_map[input_index]
+                        .iter()
+                        .filter_map(|source| {
+                            let source_name = compiled
+                                .nodes()
+                                .get(source.module_index)?
+                                .output_port_names
+                                .get(source.port_index)?
+                                .clone();
+                            Some((source.module_index, source_name))
+                        })
+                        .collect::<Vec<_>>();
+
+                    (!sources.is_empty()).then(|| (input_name.clone(), sources))
+                })
+                .collect()
+        })
+        .collect();
+
+    if inputs.len() < compiled.nodes().len() {
+        inputs.resize_with(compiled.nodes().len(), HashMap::new);
     }
 
     Routing { inputs }
