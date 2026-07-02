@@ -26,6 +26,12 @@
 - Pre-push hook (`.githooks/pre-push`) runs `cargo test` then `cargo mutants` before every push. Skip with `git push --no-verify` when needed.
 - Teach Rust through this project as work proceeds: the user is an experienced C# programmer new to Rust, so briefly explain Rust syntax, ownership/borrowing, traits, macros, modules, error handling, and testing patterns when they appear, without turning implementation updates into long tutorials.
 - Teach modern C++ through this project when C++ code changes: the user used C++ ~30 years ago and is now primarily a C# developer, so briefly introduce post-2000 language/library features when they appear (drawing C# analogies where helpful), without turning implementation updates into long tutorials.
+- Add a new built-in primitive only when:
+  1. it is performance-critical,
+  2. it is reusable across many instruments,
+  3. it needs realtime-safe internal state,
+  4. it is awkward or unsafe to express as YAML composition,
+  5. it has clear testable DSP behaviour.
 - Do not mark OpenSpec implementation tasks complete until the related tests and relevant build/test commands pass, or until any unavoidable verification gap is documented.
 - Treat each verified material change as a commit boundary. Before committing, inspect `git status`, `git diff`, and recent log, stage only the intended files, and commit the focused change separately from unrelated work.
 
