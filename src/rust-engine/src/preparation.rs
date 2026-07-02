@@ -93,13 +93,13 @@ pub(crate) fn prepare_instrument_file(
     ))
 }
 
-pub(crate) fn load_patch_document(path: impl AsRef<Path>) -> Result<PatchDocument, PreparationError> {
+pub(crate) fn load_patch_document(
+    path: impl AsRef<Path>,
+) -> Result<PatchDocument, PreparationError> {
     patch::load_patch_file(path).map_err(PreparationError::Load)
 }
 
-pub(crate) fn validate_patch_document(
-    patch_doc: &PatchDocument,
-) -> Result<(), PreparationError> {
+pub(crate) fn validate_patch_document(patch_doc: &PatchDocument) -> Result<(), PreparationError> {
     patch::validate_patch_schema(patch_doc).map_err(PreparationError::Schema)
 }
 
@@ -184,7 +184,9 @@ modules:
             graph,
             compiled_patch,
             PreparedSamplerAssets::empty(),
-            PreparationDiagnostics::default(),
+            PreparationDiagnostics {
+                messages: vec!["prepared".to_string()],
+            },
         );
 
         assert_eq!(prepared.patch_doc().metadata.name, "Prepared Instrument");
@@ -195,15 +197,13 @@ modules:
             48_000
         );
         assert_eq!(prepared.sampler_assets(), &PreparedSamplerAssets::empty());
-        assert!(prepared.diagnostics().messages().is_empty());
+        assert_eq!(prepared.diagnostics().messages(), &["prepared".to_string()]);
     }
 
     #[test]
     fn prepare_instrument_file_runs_explicit_pipeline_and_returns_prepared_instrument() {
-        let temp_dir = std::env::temp_dir().join(format!(
-            "dandrum-preparation-test-{}",
-            std::process::id()
-        ));
+        let temp_dir =
+            std::env::temp_dir().join(format!("dandrum-preparation-test-{}", std::process::id()));
         fs::create_dir_all(&temp_dir).expect("temp directory should be created");
         let patch_path = temp_dir.join("patch.yaml");
         fs::write(&patch_path, MINIMAL_PATCH).expect("patch file should be written");
@@ -233,6 +233,12 @@ modules: []
         let error = validate_patch_document(&patch_doc).expect_err("schema should fail");
 
         assert!(matches!(error, PreparationError::Schema(_)));
+        assert!(
+            error
+                .to_string()
+                .starts_with("patch schema validation failed: patch validation failed")
+        );
+        assert!(std::error::Error::source(&error).is_some());
     }
 
     #[test]
@@ -264,5 +270,11 @@ connections:
         let error = build_validated_graph(&patch_doc).expect_err("graph should fail");
 
         assert!(matches!(error, PreparationError::Graph(_)));
+        assert!(
+            error
+                .to_string()
+                .starts_with("graph validation failed: graph validation failed")
+        );
+        assert!(std::error::Error::source(&error).is_some());
     }
 }

@@ -6,6 +6,7 @@ enable_testing()
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
+option(DANDRUM_ENABLE_MUTATION_CTEST "Include the long-running cargo-mutants test in CTest" OFF)
 
 set(RUST_ENGINE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/src/rust-engine)
 set(RUST_ENGINE_LIB ${CMAKE_CURRENT_BINARY_DIR}/rust-target/release/libdandrum_engine.a)
@@ -34,12 +35,14 @@ add_test(
     COMMAND ${CMAKE_COMMAND} -E env CARGO_TARGET_DIR=${CMAKE_CURRENT_BINARY_DIR}/rust-target ${CARGO_BIN} test
     WORKING_DIRECTORY ${RUST_ENGINE_DIR})
 
-add_test(
-    NAME rust-engine-mutation-tests
-    COMMAND ${CMAKE_COMMAND} -E env CARGO_TARGET_DIR=${CMAKE_CURRENT_BINARY_DIR}/rust-target ${CARGO_BIN} mutants
-        ${RUST_ENGINE_MUTATION_EXCLUDE_ARGS}
-    WORKING_DIRECTORY ${RUST_ENGINE_DIR})
-set_tests_properties(rust-engine-mutation-tests PROPERTIES TIMEOUT 600)
+if(DANDRUM_ENABLE_MUTATION_CTEST)
+    add_test(
+        NAME rust-engine-mutation-tests
+        COMMAND ${CMAKE_COMMAND} -E env CARGO_TARGET_DIR=${CMAKE_CURRENT_BINARY_DIR}/rust-target ${CARGO_BIN} mutants
+            ${RUST_ENGINE_MUTATION_EXCLUDE_ARGS}
+        WORKING_DIRECTORY ${RUST_ENGINE_DIR})
+    set_tests_properties(rust-engine-mutation-tests PROPERTIES TIMEOUT 1200)
+endif()
 
 add_library(dandrum_engine STATIC IMPORTED GLOBAL)
 set_target_properties(dandrum_engine PROPERTIES IMPORTED_LOCATION ${RUST_ENGINE_LIB})

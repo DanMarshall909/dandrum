@@ -3,6 +3,7 @@ use std::collections::HashMap;
 use crate::builtins::module_kind::ModuleKind;
 use crate::graph::builtin_ports;
 
+use super::ModuleInputProvider;
 use super::outputs::{BlockEvent, ModuleOutputs};
 use super::processing::{
     EchoControls, ReverbControls, process_adsr, process_convolution, process_dynamics_processor,
@@ -11,7 +12,6 @@ use super::processing::{
     process_spectral_processor, process_vca,
 };
 use super::state::PerModuleState;
-use super::ModuleInputProvider;
 
 pub(super) fn process_module(
     module_idx: usize,
@@ -551,6 +551,8 @@ pub(super) fn process_module(
                 frames,
             )
         }
-        _ => panic!("process_module called for unsupported module kind; dispatch is only for render-time module types"),
+        _ => panic!(
+            "process_module called for unsupported module kind; dispatch is only for render-time module types"
+        ),
     }
 }

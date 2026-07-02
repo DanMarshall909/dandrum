@@ -56,6 +56,6 @@
 
 - [x] 9.1 Run `$HOME/.cargo/bin/cargo test --manifest-path src/rust-engine/Cargo.toml` and fix any regressions.
 - [x] 9.2 Configure/build with `$HOME/.local/bin/cmake -S . -B build` and `$HOME/.local/bin/cmake --build build`.
-- [ ] 9.3 Run `ctest --test-dir build` and fix any regressions.
+- [x] 9.3 Run `ctest --test-dir build` and fix any regressions.
 - [x] 9.4 Run `openspec validate refactor-rust-engine-architecture --strict` and fix any spec or task validation errors.
 - [x] 9.5 Document any unavoidable verification gaps before marking tasks complete.

@@ -164,6 +164,11 @@ mod tests {
         assert!(error.diagnostics()[0].contains("sample asset hit"));
         assert!(error.diagnostics()[0].contains("missing.wav"));
         assert!(error.diagnostics()[0].contains("failed to read"));
+        assert!(
+            error
+                .to_string()
+                .starts_with("sample asset loading failed\n- sample asset hit")
+        );
     }
 
     #[test]

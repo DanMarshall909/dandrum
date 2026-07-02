@@ -40,6 +40,129 @@ fn graph_contains_modules_and_explicit_cables_between_ports() {
 }
 
 #[test]
+fn parameter_values_convert_to_exact_patch_strings() {
+    assert_eq!(
+        parameter_value_to_string(&ParameterValue::Boolean(true)),
+        "true"
+    );
+    assert_eq!(
+        parameter_value_to_string(&ParameterValue::Number(0.25)),
+        "0.25"
+    );
+    assert_eq!(
+        parameter_value_to_string(&ParameterValue::Text("sample".to_string())),
+        "sample"
+    );
+}
+
+#[test]
+fn feedback_boundary_must_be_on_cycle_source_module() {
+    let graph = Graph::new(
+        vec![
+            ModuleNode::new(ModuleId::new("delay"), "delay")
+                .with_input("in", SignalType::Audio)
+                .with_output("out", SignalType::Audio)
+                .with_feedback_boundary(SignalType::Audio),
+            ModuleNode::new(ModuleId::new("gain"), "gain")
+                .with_input("in", SignalType::Audio)
+                .with_output("out", SignalType::Audio),
+        ],
+        vec![
+            Cable::new(
+                PortRef::new(ModuleId::new("delay"), "out"),
+                PortRef::new(ModuleId::new("gain"), "in"),
+            ),
+            Cable::new(
+                PortRef::new(ModuleId::new("gain"), "out"),
+                PortRef::new(ModuleId::new("delay"), "in"),
+            ),
+        ],
+    );
+
+    graph
+        .validate()
+        .expect("delay source boundary should make feedback explicit");
+
+    let graph_without_boundary = Graph::new(
+        vec![
+            ModuleNode::new(ModuleId::new("delay"), "delay")
+                .with_input("in", SignalType::Audio)
+                .with_output("out", SignalType::Audio),
+            ModuleNode::new(ModuleId::new("gain"), "gain")
+                .with_input("in", SignalType::Audio)
+                .with_output("out", SignalType::Audio),
+        ],
+        graph.cables().to_vec(),
+    );
+
+    assert!(matches!(
+        graph_without_boundary
+            .validate()
+            .expect_err("cycle should fail")
+            .diagnostics()[0],
+        GraphDiagnostic::CycleDetected { .. }
+    ));
+}
+
+#[test]
+fn unrelated_feedback_boundary_does_not_validate_separate_cycle() {
+    let graph = Graph::new(
+        vec![
+            ModuleNode::new(ModuleId::new("unrelated_delay"), "delay")
+                .with_input("in", SignalType::Audio)
+                .with_output("out", SignalType::Audio)
+                .with_feedback_boundary(SignalType::Audio),
+            ModuleNode::new(ModuleId::new("a"), "gain")
+                .with_input("in", SignalType::Audio)
+                .with_output("out", SignalType::Audio),
+            ModuleNode::new(ModuleId::new("b"), "gain")
+                .with_input("in", SignalType::Audio)
+                .with_output("out", SignalType::Audio),
+        ],
+        vec![
+            Cable::new(
+                PortRef::new(ModuleId::new("a"), "out"),
+                PortRef::new(ModuleId::new("b"), "in"),
+            ),
+            Cable::new(
+                PortRef::new(ModuleId::new("b"), "out"),
+                PortRef::new(ModuleId::new("a"), "in"),
+            ),
+        ],
+    );
+
+    assert!(matches!(
+        graph
+            .validate()
+            .expect_err("unrelated boundary must not validate cycle")
+            .diagnostics()[0],
+        GraphDiagnostic::CycleDetected { .. }
+    ));
+}
+
+#[test]
+fn port_lookup_uses_referenced_module_id_not_first_matching_port_name() {
+    let graph = Graph::new(
+        vec![
+            ModuleNode::new(ModuleId::new("wrong"), "control_source")
+                .with_output("audio", SignalType::Control),
+            ModuleNode::new(ModuleId::new("source"), "oscillator")
+                .with_output("audio", SignalType::Audio),
+            ModuleNode::new(ModuleId::new("out"), "audio_output")
+                .with_input("left", SignalType::Audio),
+        ],
+        vec![Cable::new(
+            PortRef::new(ModuleId::new("source"), "audio"),
+            PortRef::new(ModuleId::new("out"), "left"),
+        )],
+    );
+
+    graph
+        .validate()
+        .expect("source.audio, not wrong.audio, should determine signal type");
+}
+
+#[test]
 fn graph_is_constructed_from_validated_patch_declarations() {
     let patch = patch::load_patch_str(
         r#"

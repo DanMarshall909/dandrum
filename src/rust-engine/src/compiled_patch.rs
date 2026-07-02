@@ -415,6 +415,7 @@ mod tests {
         let error = compile(&graph, &render_settings()).expect_err("cycle must fail");
 
         assert_eq!(error, CompileError::CycleDetected);
+        assert_eq!(error.to_string(), "routing cycle detected");
     }
 
     #[test]
@@ -433,6 +434,7 @@ mod tests {
                 port_name: "missing".to_string(),
             }
         );
+        assert_eq!(error.to_string(), "missing port: a.missing");
     }
 
     #[test]
@@ -599,6 +601,11 @@ mod tests {
 
         assert_eq!(compiled.midi_input_index(), Some(0));
         assert_eq!(compiled.audio_output_index(), Some(2));
+
+        let graph_without_midi =
+            Graph::new(vec![audio_source("source"), audio_sink("out")], vec![]);
+        let compiled_without_midi = compile_graph(&graph_without_midi);
+        assert_eq!(compiled_without_midi.midi_input_index(), None);
     }
 
     #[test]

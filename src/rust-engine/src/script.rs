@@ -211,6 +211,19 @@ mod tests {
     }
 
     #[test]
+    fn script_process_input_exposes_original_control_map() {
+        let input = ScriptProcessInput::new(
+            Vec::new(),
+            BTreeMap::from([("cutoff".to_string(), 0.75)]),
+            ScriptExecutionContext::new(1_000),
+            ScriptModuleState::default(),
+        );
+
+        assert_eq!(input.controls().get("cutoff"), Some(&0.75));
+        assert_eq!(input.controls().len(), 1);
+    }
+
+    #[test]
     fn script_execution_context_rejects_work_after_budget_is_exhausted() {
         let mut context = ScriptExecutionContext::new(2);
 
@@ -227,6 +240,10 @@ mod tests {
                 budget: 2,
                 requested: 3,
             }
+        );
+        assert_eq!(
+            error.to_string(),
+            "script operation budget exceeded: budget 2, requested 3"
         );
     }
 

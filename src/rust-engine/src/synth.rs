@@ -193,8 +193,7 @@ impl FallbackSynth {
                     let phase = voice.phases[partial];
                     let saw = (phase / TAU) * 2.0 - 1.0;
                     let sine = phase.sin();
-                    let tone =
-                        soft_clip(saw * 0.55 + sine * 0.45) * env * GAIN * voice.velocity;
+                    let tone = soft_clip(saw * 0.55 + sine * 0.45) * env * GAIN * voice.velocity;
                     let (left_gain, right_gain) = equal_power_pan(PANS[partial]);
 
                     l += tone * left_gain;
@@ -658,8 +657,7 @@ connections:
     #[test]
     fn failed_patch_file_load_preserves_existing_graph_runtime() {
         const BAD_PATCH_FILE_NAME: &str = "dandrum_test_bad_safe_rust_patch.yaml";
-        const BAD_PATCH_YAML: &str =
-            "metadata:\n  name: Bad\nrender:\n  sample_rate_hz: 48000\n  block_size_frames: 64\n  duration_frames: 128\nmodules: []";
+        const BAD_PATCH_YAML: &str = "metadata:\n  name: Bad\nrender:\n  sample_rate_hz: 48000\n  block_size_frames: 64\n  duration_frames: 128\nmodules: []";
 
         let patch = patch::load_patch_str(
             r#"
@@ -911,5 +909,4 @@ connections:
             assert!((actual - expected).abs() < 0.000_000_1);
         }
     }
-
 }

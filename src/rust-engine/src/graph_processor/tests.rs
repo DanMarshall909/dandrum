@@ -304,7 +304,10 @@ fn realtime_graph_processor_reuses_top_level_render_scratch_between_blocks() {
         processor.module_output_scratch_capacity(),
         output_capacity_after_first
     );
-    assert_eq!(processor.pending_event_capacity(), event_capacity_after_first);
+    assert_eq!(
+        processor.pending_event_capacity(),
+        event_capacity_after_first
+    );
     assert_eq!(processor.prepared_voice_count(), voice_count_after_first);
 }
 

@@ -486,14 +486,22 @@ pub(super) fn process_reverb(
     let mut out_r = Vec::with_capacity(frames);
 
     for i in 0..frames {
-        let decay_sec = lerp(0.1, 10.0, controls.decay_time.get(i).copied().unwrap_or(0.5));
+        let decay_sec = lerp(
+            0.1,
+            10.0,
+            controls.decay_time.get(i).copied().unwrap_or(0.5),
+        );
         let room_size = controls.room_size.get(i).copied().unwrap_or(0.5);
         let damping_norm = controls.damping.get(i).copied().unwrap_or(0.5);
         let damping_hz = 20.0 * 1000.0_f32.powf(damping_norm);
         let diffusion = controls.diffusion.get(i).copied().unwrap_or(0.5);
         let wet = controls.wet.get(i).copied().unwrap_or(0.7);
         let dry = controls.dry.get(i).copied().unwrap_or(0.5);
-        let pre_delay_ms = lerp(0.0, 250.0, controls.pre_delay.get(i).copied().unwrap_or(0.0));
+        let pre_delay_ms = lerp(
+            0.0,
+            250.0,
+            controls.pre_delay.get(i).copied().unwrap_or(0.0),
+        );
         let stereo_width = controls.stereo_width.get(i).copied().unwrap_or(0.5);
 
         processor.set_decay_time(decay_sec as f64);

@@ -54,9 +54,9 @@ fn render(args: Vec<String>) -> CliResult {
     let patch = PathBuf::from(&args[0]);
     let output = PathBuf::from(&args[2]);
     let mut engine = DandrumEngine::new();
-    let render = match engine
-        .render_patch_file_offline_with_events(&patch, |settings| single_note_sequence(settings.sample_rate_hz))
-    {
+    let render = match engine.render_patch_file_offline_with_events(&patch, |settings| {
+        single_note_sequence(settings.sample_rate_hz)
+    }) {
         Ok(render) => render,
         Err(load_error) => return error(format!("failed to render patch: {load_error}")),
     };
@@ -104,9 +104,9 @@ fn render_chords(args: Vec<String>) -> CliResult {
     let patch = PathBuf::from(&args[0]);
     let output = PathBuf::from(&args[2]);
     let mut engine = DandrumEngine::new();
-    let render = match engine
-        .render_patch_file_offline_with_events(&patch, |settings| chord_sequence(settings.sample_rate_hz))
-    {
+    let render = match engine.render_patch_file_offline_with_events(&patch, |settings| {
+        chord_sequence(settings.sample_rate_hz)
+    }) {
         Ok(render) => render,
         Err(load_error) => return error(format!("failed to render patch: {load_error}")),
     };
@@ -149,7 +149,7 @@ fn chord_sequence(sample_rate: u32) -> Vec<TimedInputEvent> {
     let mut prev_notes: Vec<u8> = Vec::new();
 
     let chords: Vec<(u64, Vec<u8>)> = vec![
-        (0, vec![60, 64, 67]),      // C major
+        (0, vec![60, 64, 67]),                  // C major
         (sample_rate_hz, vec![65, 69, 72]),     // F major
         (2 * sample_rate_hz, vec![67, 71, 74]), // G major
         (3 * sample_rate_hz, vec![60, 64, 67]), // C major

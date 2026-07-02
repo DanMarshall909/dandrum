@@ -330,9 +330,8 @@ mod tests {
 
         let mut left = [0.0_f32; 64];
         let mut right = [0.0_f32; 64];
-        let rendered = unsafe {
-            dandrum_engine_render(engine, left.as_mut_ptr(), right.as_mut_ptr(), 64)
-        };
+        let rendered =
+            unsafe { dandrum_engine_render(engine, left.as_mut_ptr(), right.as_mut_ptr(), 64) };
 
         assert_eq!(rendered, 64);
         assert!(left.iter().any(|s| *s != 0.0));
@@ -384,9 +383,8 @@ mod tests {
 
         let mut left = [0.0_f32; 64];
         let mut right = [0.0_f32; 64];
-        let rendered = unsafe {
-            dandrum_engine_render(engine, left.as_mut_ptr(), right.as_mut_ptr(), 64)
-        };
+        let rendered =
+            unsafe { dandrum_engine_render(engine, left.as_mut_ptr(), right.as_mut_ptr(), 64) };
 
         assert_eq!(rendered, 64);
         assert!(
@@ -417,9 +415,8 @@ mod tests {
 
         let mut left = [0.0_f32; 64];
         let mut right = [0.0_f32; 64];
-        let rendered = unsafe {
-            dandrum_engine_render(engine, left.as_mut_ptr(), right.as_mut_ptr(), 64)
-        };
+        let rendered =
+            unsafe { dandrum_engine_render(engine, left.as_mut_ptr(), right.as_mut_ptr(), 64) };
 
         assert_eq!(rendered, 64);
         assert!(

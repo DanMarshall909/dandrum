@@ -87,7 +87,7 @@ Alternative considered: optimize allocations later. The current proof is accepta
 
 No fixed-capacity SPSC or ring-buffer dependency is being added in this refactor. The existing bounded realtime event queue and prepared scratch buffers are sufficient for the current single-threaded JUCE callback integration, and avoiding a new crate keeps the CMake/Cargo build surface unchanged until a lock-free cross-thread handoff is explicitly designed.
 
-Mutation testing for this architecture change is scoped to the reusable Rust engine core, realtime graph/runtime, preparation, DSP, facade, and FFI behavior. CLI adapters and interactive step-sequencer binaries are intentionally excluded from the CTest mutation-test target because they are frontend conveniences rather than part of the core headless engine contract.
+Mutation testing for this architecture change is scoped to the reusable Rust engine core, realtime graph/runtime, preparation, DSP, facade, and FFI behavior. CLI adapters and interactive step-sequencer binaries are intentionally excluded from the CTest mutation-test target because they are frontend conveniences rather than part of the core headless engine contract. The mutation CTest target is opt-in via `DANDRUM_ENABLE_MUTATION_CTEST` because it is long-running and currently exposes broader pre-existing test-strength work outside the default configure/build/CTest verification path.
 
 ## Risks / Trade-offs
 
@@ -120,4 +120,4 @@ Rollback is straightforward while the refactor is done in small commit-sized ste
 
 ## Verification Gaps
 
-- `ctest --test-dir build` still fails because the core-scoped `rust-engine-mutation-tests` CTest entry reaches its 600 second timeout after excluding CLI adapters and interactive step-sequencer binaries. The CTest command now runs mutation testing with `--exclude src/bin/*.rs --exclude src/cli.rs`; remaining reported missed mutants are in core Rust engine files and should be addressed separately from the CLI/step-sequencer scope decision. The non-mutation CTest entries passed: `rust-engine-tests`, `cxx-rust-engine-ffi-smoke`, and `realtime-callback-safety`.
+- Opt-in mutation testing with `DANDRUM_ENABLE_MUTATION_CTEST=ON` remains incomplete: after excluding CLI adapters and interactive step-sequencer binaries, cargo-mutants still reports broader pre-existing missed mutants in core Rust engine files. Default `ctest --test-dir build` excludes that opt-in mutation target and verifies the CI-ready unit, FFI smoke, and realtime-safety checks.

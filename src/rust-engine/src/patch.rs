@@ -428,8 +428,8 @@ mod tests {
 
     #[test]
     fn yaml_patch_schema_file_parses_as_yaml_and_declares_core_sections() {
-        let schema_path = Path::new(env!("CARGO_MANIFEST_DIR"))
-            .join("../../schema/patch.schema.yaml");
+        let schema_path =
+            Path::new(env!("CARGO_MANIFEST_DIR")).join("../../schema/patch.schema.yaml");
         let schema_text = match fs::read_to_string(&schema_path) {
             Ok(schema_text) => schema_text,
             Err(error) if env!("CARGO_MANIFEST_DIR").starts_with("/tmp/cargo-mutants-") => {
@@ -1179,6 +1179,56 @@ render:
         assert!(error.diagnostics().contains(
             &"connection.to must use a non-empty module_id.port_name reference".to_string()
         ));
+    }
+
+    #[test]
+    fn yaml_port_references_reject_empty_parts_and_extra_dots() {
+        let yaml_with_empty_module = r#"
+metadata:
+  name: Bad Port Ref
+render:
+  sample_rate_hz: 48000
+  block_size_frames: 64
+  duration_frames: 64
+modules:
+  - id: out
+    type: audio_output
+connections:
+  - from: .audio
+    to: out.left
+"#;
+        let yaml_with_empty_port = r#"
+metadata:
+  name: Bad Port Ref
+render:
+  sample_rate_hz: 48000
+  block_size_frames: 64
+  duration_frames: 64
+modules:
+  - id: out
+    type: audio_output
+connections:
+  - from: osc.
+    to: out.left
+"#;
+        let yaml_with_extra_dot = r#"
+metadata:
+  name: Bad Port Ref
+render:
+  sample_rate_hz: 48000
+  block_size_frames: 64
+  duration_frames: 64
+modules:
+  - id: out
+    type: audio_output
+connections:
+  - from: osc.audio.extra
+    to: out.left
+"#;
+
+        assert!(load_patch_str(yaml_with_empty_module).is_err());
+        assert!(load_patch_str(yaml_with_empty_port).is_err());
+        assert!(load_patch_str(yaml_with_extra_dot).is_err());
     }
 
     #[test]
