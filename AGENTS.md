@@ -24,8 +24,8 @@
 - After completing and verifying behavior work, proactively look for refactoring opportunities before moving on. Split or extract code only after the behavior at that boundary is covered by tests, and require 100% coverage for any newly extracted module before committing it.
 - Run mutation tests periodically (`cargo-mutants`) to catch weak or missing test coverage, especially after implementing path-critical DSP or control-flow behavior.
 - Pre-push hook (`.githooks/pre-push`) runs `cargo test` then `cargo mutants` before every push. Skip with `git push --no-verify` when needed.
-- Teach Rust through this project as work proceeds: briefly explain Rust syntax, ownership/borrowing, traits, macros, modules, error handling, and testing patterns when they appear in the code being changed, without turning implementation updates into long tutorials.
-- Teach modern C++ through this project when C++ code changes: the user is an experienced pre-2000 C++ developer, so briefly introduce post-2000 language/library features when they appear, without turning implementation updates into long tutorials.
+- Teach Rust through this project as work proceeds: the user is an experienced C# programmer new to Rust, so briefly explain Rust syntax, ownership/borrowing, traits, macros, modules, error handling, and testing patterns when they appear, without turning implementation updates into long tutorials.
+- Teach modern C++ through this project when C++ code changes: the user used C++ ~30 years ago and is now primarily a C# developer, so briefly introduce post-2000 language/library features when they appear (drawing C# analogies where helpful), without turning implementation updates into long tutorials.
 - Do not mark OpenSpec implementation tasks complete until the related tests and relevant build/test commands pass, or until any unavoidable verification gap is documented.
 - Treat each verified material change as a commit boundary. Before committing, inspect `git status`, `git diff`, and recent log, stage only the intended files, and commit the focused change separately from unrelated work.
 
@@ -40,6 +40,14 @@
 - Use the repo-local OpenCode shortcuts/skills when they match the user's intent: `/opsx-propose` for new changes, `/opsx-explore` for investigation/requirements discussion, `/opsx-apply` for implementation, `/opsx-sync` for syncing accepted delta specs, and `/opsx-archive` after a completed change is verified.
 - Repo-local OpenCode shortcuts live in `.opencode/commands/`; matching skills live in `.opencode/skills/`.
 - Run OpenSpec validation before finalizing or archiving a change, and document any unavoidable verification gaps in the response.
+
+## Implementation Order For In-Progress Changes
+
+Three in-progress changes touch overlapping YAML patch format areas. When implementing, follow this order:
+
+1. **`add-drum-machine-container`** — adds the `drum_machine` module type to the YAML schema and event-routing expansion
+2. **`example-drum-kit`** — adds new built-in modules (noise, note_to_control, multiply, delay_line, envelope_follower) and composite definitions; independent of #1
+3. **`add-instrument-presets`** — wraps everything in the preset system (depends on stable YAML schema from #1)
 
 ## Architecture Constraints From Specs
 - The planned engine core should stay independent of CLI, GUI, plugin, and realtime audio driver/front-end code.

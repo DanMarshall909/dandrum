@@ -67,6 +67,13 @@ Preset documents SHALL NOT be able to add, remove, or modify modules, connection
 - **WHEN** a preset is applied to a patch
 - **THEN** the resulting graph SHALL still pass the same routing, port compatibility, many-to-one, and feedback-boundary validation required for the base patch
 
+### Requirement: Example preset YAML
+The project SHALL include at least one example preset YAML document demonstrating valid instrument ID, schema version, preset targets, and metadata.
+
+#### Scenario: Example preset YAML is loadable
+- **WHEN** the engine loads the example preset YAML file against its matching patch
+- **THEN** loading SHALL succeed and the preset values SHALL be applied
+
 ### Requirement: Preset metadata
 Preset documents SHALL support optional metadata for display and organization without affecting audio rendering.
 

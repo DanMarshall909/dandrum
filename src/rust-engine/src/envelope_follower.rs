@@ -6,7 +6,7 @@ pub enum DetectionMode {
     Rms,
 }
 
-pub struct EnvelopeDetector {
+pub struct EnvelopeFollower {
     envelope: f64,
     attack_coeff: f64,
     release_coeff: f64,
@@ -14,7 +14,7 @@ pub struct EnvelopeDetector {
     sample_rate: f64,
 }
 
-impl EnvelopeDetector {
+impl EnvelopeFollower {
     pub fn new(sample_rate: f64, attack_ms: f64, release_ms: f64, mode: DetectionMode) -> Self {
         let attack_coeff = time_constant_coeff(attack_ms, sample_rate);
         let release_coeff = time_constant_coeff(release_ms, sample_rate);
@@ -86,7 +86,7 @@ mod tests {
 
     #[test]
     fn peak_detector_tracks_amplitude() {
-        let mut det = EnvelopeDetector::new(48000.0, 1.0, 100.0, DetectionMode::Peak);
+        let mut det = EnvelopeFollower::new(48000.0, 1.0, 100.0, DetectionMode::Peak);
         // Steady input at 0.5 amplitude
         for _ in 0..48000 {
             det.process(0.5);
@@ -100,7 +100,7 @@ mod tests {
 
     #[test]
     fn peak_detector_fast_attack_slow_release() {
-        let mut det = EnvelopeDetector::new(48000.0, 0.1, 1000.0, DetectionMode::Peak);
+        let mut det = EnvelopeFollower::new(48000.0, 0.1, 1000.0, DetectionMode::Peak);
         // Fast attack should reach near-instantaneous level quickly
         for _ in 0..480 {
             det.process(1.0);
@@ -120,7 +120,7 @@ mod tests {
 
     #[test]
     fn rms_detector_averages_energy() {
-        let mut det = EnvelopeDetector::new(48000.0, 10.0, 10.0, DetectionMode::Rms);
+        let mut det = EnvelopeFollower::new(48000.0, 10.0, 10.0, DetectionMode::Rms);
         // Sine wave at amplitude 1.0 (RMS = 1/sqrt(2) ≈ 0.707)
         // Use high frequency so the 2nd-harmonic ripple is well attenuated
         let mut phase = 0.0;
@@ -138,7 +138,7 @@ mod tests {
 
     #[test]
     fn reset_clears_state() {
-        let mut det = EnvelopeDetector::new(48000.0, 1.0, 1.0, DetectionMode::Peak);
+        let mut det = EnvelopeFollower::new(48000.0, 1.0, 1.0, DetectionMode::Peak);
         det.process(1.0);
         assert!(det.envelope_value() > 0.0);
         det.reset();
@@ -147,8 +147,8 @@ mod tests {
 
     #[test]
     fn peak_vs_rms_shape_differs() {
-        let mut peak_det = EnvelopeDetector::new(48000.0, 1.0, 1.0, DetectionMode::Peak);
-        let mut rms_det = EnvelopeDetector::new(48000.0, 1.0, 1.0, DetectionMode::Rms);
+        let mut peak_det = EnvelopeFollower::new(48000.0, 1.0, 1.0, DetectionMode::Peak);
+        let mut rms_det = EnvelopeFollower::new(48000.0, 1.0, 1.0, DetectionMode::Rms);
         // Steady burst at 0 dB amplitude
         for _ in 0..4800 {
             peak_det.process(1.0);
@@ -167,7 +167,7 @@ mod tests {
 
     #[test]
     fn attack_time_accuracy() {
-        let mut det = EnvelopeDetector::new(48000.0, 10.0, 1000.0, DetectionMode::Peak);
+        let mut det = EnvelopeFollower::new(48000.0, 10.0, 1000.0, DetectionMode::Peak);
         // After 10 ms (480 samples at 48 kHz), envelope should reach ~63% of target
         // with the one-pole filter: envelope = 1 - e^(-1) ≈ 0.632
         for _ in 0..480 {
@@ -182,7 +182,7 @@ mod tests {
 
     #[test]
     fn release_time_tracking() {
-        let mut det = EnvelopeDetector::new(48000.0, 0.1, 10.0, DetectionMode::Peak);
+        let mut det = EnvelopeFollower::new(48000.0, 0.1, 10.0, DetectionMode::Peak);
         // Charge up
         for _ in 0..4800 {
             det.process(1.0);

@@ -1,4 +1,4 @@
-use crate::envelope_detector::{DetectionMode, EnvelopeDetector};
+use crate::envelope_follower::{DetectionMode, EnvelopeFollower};
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum ProcessorMode {
@@ -13,7 +13,7 @@ pub enum Topology {
 }
 
 pub struct DynamicsProcessor {
-    envelope_detector: EnvelopeDetector,
+    envelope_detector: EnvelopeFollower,
     mode: ProcessorMode,
     topology: Topology,
     // Level mode parameters
@@ -35,7 +35,7 @@ pub struct DynamicsProcessor {
 impl DynamicsProcessor {
     pub fn new(sample_rate: f64, attack_ms: f64, release_ms: f64) -> Self {
         Self {
-            envelope_detector: EnvelopeDetector::new(
+            envelope_detector: EnvelopeFollower::new(
                 sample_rate,
                 attack_ms,
                 release_ms,
@@ -65,7 +65,7 @@ impl DynamicsProcessor {
     }
 
     pub fn set_detection(&mut self, mode: DetectionMode) {
-        self.envelope_detector = EnvelopeDetector::new(
+        self.envelope_detector = EnvelopeFollower::new(
             self.envelope_detector.sample_rate(),
             self.attack_ms(),
             self.release_ms(),

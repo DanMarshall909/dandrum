@@ -62,7 +62,11 @@ The drum-machine module SHALL behave as an event transformer: it consumes event 
 - **THEN** it SHALL emit the same output events at the same render frame offsets
 
 ### Requirement: Trigger selector routing
-The drum-machine module SHALL route incoming events on its standard `events` input to the pad whose trigger selector matches the incoming event.
+The drum-machine module SHALL route incoming events on its standard `events` input to the pad whose trigger selector matches the incoming event. Selectors match against the `note` field of incoming events; the first version supports numeric selectors (0–127) corresponding to MIDI note numbers.
+
+#### Scenario: Selector matches event note number
+- **WHEN** a pad declares trigger selector `36` and an incoming event with note number `36` arrives on `events`
+- **THEN** the pad output SHALL emit the configured event
 
 #### Scenario: Matching selector emits configured pad event
 - **WHEN** a compatible incoming event on `events` matches the trigger selector for the `kick` pad during rendering

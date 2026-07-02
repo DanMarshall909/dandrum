@@ -26,10 +26,15 @@
 - [ ] 4.3 Add deterministic render tests for rendering the same patch, preset, assets, render settings, and input events twice.
 - [ ] 4.4 Ensure preset application does not bypass routing, port compatibility, many-to-one, or feedback-boundary validation.
 
-## 5. Frontend And Verification
+## 5. Examples And Documentation
 
-- [ ] 5.1 Add a CLI or engine entry-point test for loading a patch with an external preset file.
-- [ ] 5.2 Document the patch preset-surface YAML and external preset YAML examples.
-- [ ] 5.3 Run `$HOME/.cargo/bin/cargo test --manifest-path src/rust-engine/Cargo.toml`.
-- [ ] 5.4 Run `ctest --test-dir build` after CMake configure/build is available.
-- [ ] 5.5 Run `openspec validate add-instrument-presets --strict`.
+- [ ] 5.1 Create `examples/presets/` directory with at least one example preset YAML file demonstrating valid instrument ID, schema version, preset targets, and metadata.
+- [ ] 5.2 Add an engine loading test that loads the example preset against its matching patch and asserts values are applied.
+- [ ] 5.3 Document the patch preset-surface YAML schema and external preset YAML schema with the example files.
+
+## 6. Verification
+
+- [ ] 6.1 Add a CLI or engine entry-point test for loading a patch with an external preset file.
+- [ ] 6.2 Run `$HOME/.cargo/bin/cargo test --manifest-path src/rust-engine/Cargo.toml`.
+- [ ] 6.3 Run `ctest --test-dir build` after CMake configure/build is available.
+- [ ] 6.4 Run `openspec validate add-instrument-presets --strict`.

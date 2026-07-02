@@ -61,6 +61,14 @@ This change should also set the implementation pattern for later event transform
 
 **Alternative considered:** Add minimal boolean patterns. That was rejected because the container is intended as a primitive trigger surface, not a sequencer.
 
+### 5a. Trigger selector matching against event note number
+
+**Decision:** Trigger selectors match against the `note` field of incoming events. The first version supports numeric selectors (0–127) corresponding to MIDI note numbers. Future event types may extend matching to string labels.
+
+**Rationale:** MIDI note numbers are the universal drum-mapping convention. Numeric matching is deterministic, efficient, and unambiguous. String label support can be added later without breaking existing patches.
+
+**Alternative considered:** Generic payload-key matching or regex — overly flexible for the first version and would complicate the expansion logic.
+
 ### 5. No built-in signal chains, audio, samples, or implicit mix output
 
 **Decision:** The module owns event mapping only, and it does not host signal chains or create sound by itself. Patch authors connect pad outputs to sampler, synth, envelope, script, or other modules when they want sound.

@@ -37,7 +37,7 @@ pub(crate) mod crossover;
 
 pub(crate) mod spectral;
 
-pub(crate) mod envelope_detector;
+pub(crate) mod envelope_follower;
 
 pub(crate) mod audio_loading;
 
