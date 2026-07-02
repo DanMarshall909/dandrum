@@ -309,6 +309,17 @@ mod tests {
     }
 
     #[test]
+    fn reverb_dsp_processes_without_graph_setup() {
+        let mut reverb = Reverb::new(48_000.0);
+        reverb.set_wet_dry(0.0, 1.0);
+
+        let (left, right) = reverb.process(0.25, -0.25);
+
+        assert_eq!(left, 0.25);
+        assert_eq!(right, -0.25);
+    }
+
+    #[test]
     fn impulse_response_has_dense_tail() {
         let mut r = create_reverb();
         let mut non_zero_count = 0;

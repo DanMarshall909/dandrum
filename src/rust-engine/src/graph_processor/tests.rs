@@ -294,6 +294,8 @@ fn realtime_graph_processor_reuses_top_level_render_scratch_between_blocks() {
     processor.render(&mut left, &mut right);
     let after_first = processor.top_level_scratch_capacities();
     let output_capacity_after_first = processor.module_output_scratch_capacity();
+    let event_capacity_after_first = processor.pending_event_capacity();
+    let voice_count_after_first = processor.prepared_voice_count();
 
     processor.render(&mut left, &mut right);
 
@@ -302,6 +304,8 @@ fn realtime_graph_processor_reuses_top_level_render_scratch_between_blocks() {
         processor.module_output_scratch_capacity(),
         output_capacity_after_first
     );
+    assert_eq!(processor.pending_event_capacity(), event_capacity_after_first);
+    assert_eq!(processor.prepared_voice_count(), voice_count_after_first);
 }
 
 #[test]
@@ -2667,6 +2671,7 @@ fn realtime_preparation_records_module_output_scratch_capacity() {
     );
 
     assert!(processor.module_output_scratch_capacity() >= 3);
+    assert!(processor.pending_event_capacity() >= 64);
 }
 
 #[test]
@@ -2719,6 +2724,7 @@ fn realtime_preparation_respects_voice_allocation() {
     );
 
     assert_eq!(processor.prepared_max_block_size(), 64);
+    assert_eq!(processor.prepared_voice_count(), 8);
 }
 
 #[test]

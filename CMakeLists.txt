@@ -10,6 +10,9 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(RUST_ENGINE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/src/rust-engine)
 set(RUST_ENGINE_LIB ${CMAKE_CURRENT_BINARY_DIR}/rust-target/release/libdandrum_engine.a)
 set(CARGO_BIN $ENV{HOME}/.cargo/bin/cargo)
+set(RUST_ENGINE_MUTATION_EXCLUDE_ARGS
+    --exclude src/bin/*.rs
+    --exclude src/cli.rs)
 
 add_custom_command(
     OUTPUT ${RUST_ENGINE_LIB}
@@ -34,6 +37,7 @@ add_test(
 add_test(
     NAME rust-engine-mutation-tests
     COMMAND ${CMAKE_COMMAND} -E env CARGO_TARGET_DIR=${CMAKE_CURRENT_BINARY_DIR}/rust-target ${CARGO_BIN} mutants
+        ${RUST_ENGINE_MUTATION_EXCLUDE_ARGS}
     WORKING_DIRECTORY ${RUST_ENGINE_DIR})
 set_tests_properties(rust-engine-mutation-tests PROPERTIES TIMEOUT 600)
 

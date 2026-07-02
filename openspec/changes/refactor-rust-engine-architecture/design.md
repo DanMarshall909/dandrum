@@ -85,6 +85,10 @@ Realtime render calls should reuse event buffers, scratch audio/control/event st
 
 Alternative considered: optimize allocations later. The current proof is acceptable, but establishing the boundary now prevents new render-path allocations from spreading.
 
+No fixed-capacity SPSC or ring-buffer dependency is being added in this refactor. The existing bounded realtime event queue and prepared scratch buffers are sufficient for the current single-threaded JUCE callback integration, and avoiding a new crate keeps the CMake/Cargo build surface unchanged until a lock-free cross-thread handoff is explicitly designed.
+
+Mutation testing for this architecture change is scoped to the reusable Rust engine core, realtime graph/runtime, preparation, DSP, facade, and FFI behavior. CLI adapters and interactive step-sequencer binaries are intentionally excluded from the CTest mutation-test target because they are frontend conveniences rather than part of the core headless engine contract.
+
 ## Risks / Trade-offs
 
 - Broad refactor can hide behavior regressions -> Preserve behavior with focused tests before each move, plus offline/realtime parity and FFI smoke tests.
@@ -113,3 +117,7 @@ Rollback is straightforward while the refactor is done in small commit-sized ste
 - Should the temporary hardcoded fallback synth remain as a named test/default instrument, or should it be converted into a normal patch once graph loading is mature enough?
 - Should typed module dispatch use one central `ModuleKind` enum, per-family enums, or a registry-owned factory API?
 - Should realtime event queue implementation remain homegrown initially or adopt a small well-tested SPSC/ring-buffer crate?
+
+## Verification Gaps
+
+- `ctest --test-dir build` still fails because the core-scoped `rust-engine-mutation-tests` CTest entry reaches its 600 second timeout after excluding CLI adapters and interactive step-sequencer binaries. The CTest command now runs mutation testing with `--exclude src/bin/*.rs --exclude src/cli.rs`; remaining reported missed mutants are in core Rust engine files and should be addressed separately from the CLI/step-sequencer scope decision. The non-mutation CTest entries passed: `rust-engine-tests`, `cxx-rust-engine-ffi-smoke`, and `realtime-callback-safety`.

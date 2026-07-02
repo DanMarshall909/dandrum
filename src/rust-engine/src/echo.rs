@@ -155,6 +155,18 @@ mod tests {
     use super::*;
 
     #[test]
+    fn echo_dsp_processes_without_graph_setup() {
+        let mut echo = Echo::new(48_000.0);
+        echo.set_delay_ms(1.0, 1.0);
+        echo.set_wet_dry(0.0, 1.0);
+
+        let (left, right) = echo.process(0.25, -0.25);
+
+        assert_eq!(left, 0.25);
+        assert_eq!(right, -0.25);
+    }
+
+    #[test]
     fn impulse_produces_repeat_at_delay_time() {
         let mut e = Echo::new(48000.0);
         e.set_delay_ms(10.0, 10.0);

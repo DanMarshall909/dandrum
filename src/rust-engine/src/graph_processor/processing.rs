@@ -1,5 +1,3 @@
-use std::collections::HashMap;
-
 use crate::graph::builtin_ports;
 use crate::script::ScriptEvent;
 
@@ -9,7 +7,27 @@ use super::helpers::{
 };
 use super::outputs::{BlockEvent, ModuleOutputs};
 use super::state::PerModuleState;
-use super::ModuleInputProvider;
+
+pub(super) struct EchoControls<'a> {
+    pub(super) feedback: &'a [f32],
+    pub(super) damping: &'a [f32],
+    pub(super) wet: &'a [f32],
+    pub(super) dry: &'a [f32],
+    pub(super) time_l: &'a [f32],
+    pub(super) time_r: &'a [f32],
+    pub(super) ping_pong: &'a [f32],
+}
+
+pub(super) struct ReverbControls<'a> {
+    pub(super) decay_time: &'a [f32],
+    pub(super) room_size: &'a [f32],
+    pub(super) damping: &'a [f32],
+    pub(super) diffusion: &'a [f32],
+    pub(super) wet: &'a [f32],
+    pub(super) dry: &'a [f32],
+    pub(super) pre_delay: &'a [f32],
+    pub(super) stereo_width: &'a [f32],
+}
 
 pub(super) fn process_oscillator(
     state: &mut PerModuleState,
@@ -409,9 +427,7 @@ pub(super) fn process_echo(
     state: &mut PerModuleState,
     audio_in_l: &[f32],
     audio_in_r: &[f32],
-    module_idx: usize,
-    input_provider: &impl ModuleInputProvider,
-    all_outputs: &HashMap<usize, ModuleOutputs>,
+    controls: EchoControls<'_>,
     frames: usize,
 ) -> ModuleOutputs {
     let (processor, _sample_rate) = match state {
@@ -422,68 +438,18 @@ pub(super) fn process_echo(
         _ => unreachable!(),
     };
 
-    let feedback_in = input_provider.control_input_or_default(
-        module_idx,
-        builtin_ports::FEEDBACK,
-        all_outputs,
-        frames,
-        0.5,
-    );
-    let damping_in = input_provider.control_input_or_default(
-        module_idx,
-        builtin_ports::DAMPING_CUTOFF,
-        all_outputs,
-        frames,
-        0.5,
-    );
-    let wet_in = input_provider.control_input_or_default(
-        module_idx,
-        builtin_ports::WET,
-        all_outputs,
-        frames,
-        0.7,
-    );
-    let dry_in = input_provider.control_input_or_default(
-        module_idx,
-        builtin_ports::DRY,
-        all_outputs,
-        frames,
-        0.5,
-    );
-    let time_l_in = input_provider.control_input_or_default(
-        module_idx,
-        builtin_ports::TIME_LEFT_MS,
-        all_outputs,
-        frames,
-        0.3,
-    );
-    let time_r_in = input_provider.control_input_or_default(
-        module_idx,
-        builtin_ports::TIME_RIGHT_MS,
-        all_outputs,
-        frames,
-        0.3,
-    );
-    let ping_pong_in = input_provider.control_input_or_default(
-        module_idx,
-        builtin_ports::PING_PONG,
-        all_outputs,
-        frames,
-        0.0,
-    );
-
     let mut out_l = Vec::with_capacity(frames);
     let mut out_r = Vec::with_capacity(frames);
 
     for i in 0..frames {
-        let feedback = feedback_in.get(i).copied().unwrap_or(0.5);
-        let damping_norm = damping_in.get(i).copied().unwrap_or(0.5);
+        let feedback = controls.feedback.get(i).copied().unwrap_or(0.5);
+        let damping_norm = controls.damping.get(i).copied().unwrap_or(0.5);
         let damping_hz = 20.0 * 1000.0_f32.powf(damping_norm);
-        let wet = wet_in.get(i).copied().unwrap_or(0.7);
-        let dry = dry_in.get(i).copied().unwrap_or(0.5);
-        let time_l = lerp(1.0, 2000.0, time_l_in.get(i).copied().unwrap_or(0.5));
-        let time_r = lerp(1.0, 2000.0, time_r_in.get(i).copied().unwrap_or(0.5));
-        let ping_pong = ping_pong_in.get(i).copied().unwrap_or(0.0) > 0.5;
+        let wet = controls.wet.get(i).copied().unwrap_or(0.7);
+        let dry = controls.dry.get(i).copied().unwrap_or(0.5);
+        let time_l = lerp(1.0, 2000.0, controls.time_l.get(i).copied().unwrap_or(0.5));
+        let time_r = lerp(1.0, 2000.0, controls.time_r.get(i).copied().unwrap_or(0.5));
+        let ping_pong = controls.ping_pong.get(i).copied().unwrap_or(0.0) > 0.5;
 
         processor.set_feedback(feedback);
         processor.set_damping_cutoff(damping_hz as f64);
@@ -505,9 +471,7 @@ pub(super) fn process_reverb(
     state: &mut PerModuleState,
     audio_in_l: &[f32],
     audio_in_r: &[f32],
-    module_idx: usize,
-    input_provider: &impl ModuleInputProvider,
-    all_outputs: &HashMap<usize, ModuleOutputs>,
+    controls: ReverbControls<'_>,
     frames: usize,
 ) -> ModuleOutputs {
     let (processor, _sample_rate) = match state {
@@ -518,76 +482,19 @@ pub(super) fn process_reverb(
         _ => unreachable!(),
     };
 
-    let decay_time_in = input_provider.control_input_or_default(
-        module_idx,
-        builtin_ports::DECAY_TIME,
-        all_outputs,
-        frames,
-        0.35,
-    );
-    let room_size_in = input_provider.control_input_or_default(
-        module_idx,
-        builtin_ports::ROOM_SIZE,
-        all_outputs,
-        frames,
-        0.7,
-    );
-    let damping_in = input_provider.control_input_or_default(
-        module_idx,
-        builtin_ports::DAMPING,
-        all_outputs,
-        frames,
-        0.3,
-    );
-    let diffusion_in = input_provider.control_input_or_default(
-        module_idx,
-        builtin_ports::DIFFUSION,
-        all_outputs,
-        frames,
-        0.5,
-    );
-    let wet_in = input_provider.control_input_or_default(
-        module_idx,
-        builtin_ports::WET,
-        all_outputs,
-        frames,
-        0.7,
-    );
-    let dry_in = input_provider.control_input_or_default(
-        module_idx,
-        builtin_ports::DRY,
-        all_outputs,
-        frames,
-        0.5,
-    );
-    let pre_delay_in = input_provider.control_input_or_default(
-        module_idx,
-        builtin_ports::PRE_DELAY,
-        all_outputs,
-        frames,
-        0.0,
-    );
-    let stereo_width_in = input_provider.control_input_or_default(
-        module_idx,
-        builtin_ports::STEREO_WIDTH,
-        all_outputs,
-        frames,
-        0.5,
-    );
-
     let mut out_l = Vec::with_capacity(frames);
     let mut out_r = Vec::with_capacity(frames);
 
     for i in 0..frames {
-        let decay_sec = lerp(0.1, 10.0, decay_time_in.get(i).copied().unwrap_or(0.5));
-        let room_size = room_size_in.get(i).copied().unwrap_or(0.5);
-        let damping_norm = damping_in.get(i).copied().unwrap_or(0.5);
+        let decay_sec = lerp(0.1, 10.0, controls.decay_time.get(i).copied().unwrap_or(0.5));
+        let room_size = controls.room_size.get(i).copied().unwrap_or(0.5);
+        let damping_norm = controls.damping.get(i).copied().unwrap_or(0.5);
         let damping_hz = 20.0 * 1000.0_f32.powf(damping_norm);
-        let diffusion = diffusion_in.get(i).copied().unwrap_or(0.5);
-        let wet = wet_in.get(i).copied().unwrap_or(0.7);
-        let dry = dry_in.get(i).copied().unwrap_or(0.5);
-        let pre_delay_ms = lerp(0.0, 250.0, pre_delay_in.get(i).copied().unwrap_or(0.0));
-        let stereo_width = stereo_width_in.get(i).copied().unwrap_or(0.5);
+        let diffusion = controls.diffusion.get(i).copied().unwrap_or(0.5);
+        let wet = controls.wet.get(i).copied().unwrap_or(0.7);
+        let dry = controls.dry.get(i).copied().unwrap_or(0.5);
+        let pre_delay_ms = lerp(0.0, 250.0, controls.pre_delay.get(i).copied().unwrap_or(0.0));
+        let stereo_width = controls.stereo_width.get(i).copied().unwrap_or(0.5);
 
         processor.set_decay_time(decay_sec as f64);
         processor.set_room_size(room_size);

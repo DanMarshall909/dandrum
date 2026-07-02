@@ -5,9 +5,10 @@ use crate::graph::builtin_ports;
 
 use super::outputs::{BlockEvent, ModuleOutputs};
 use super::processing::{
-    process_adsr, process_convolution, process_dynamics_processor, process_echo, process_filter,
-    process_frequency_splitter, process_note_to_rate, process_oscillator, process_reverb,
-    process_sampler, process_saturator, process_spectral_processor, process_vca,
+    EchoControls, ReverbControls, process_adsr, process_convolution, process_dynamics_processor,
+    process_echo, process_filter, process_frequency_splitter, process_note_to_rate,
+    process_oscillator, process_reverb, process_sampler, process_saturator,
+    process_spectral_processor, process_vca,
 };
 use super::state::PerModuleState;
 use super::ModuleInputProvider;
@@ -354,13 +355,68 @@ pub(super) fn process_module(
                 all_outputs,
                 frames,
             );
+            let feedback = input_provider.control_input_or_default(
+                module_idx,
+                builtin_ports::FEEDBACK,
+                all_outputs,
+                frames,
+                0.5,
+            );
+            let damping = input_provider.control_input_or_default(
+                module_idx,
+                builtin_ports::DAMPING_CUTOFF,
+                all_outputs,
+                frames,
+                0.5,
+            );
+            let wet = input_provider.control_input_or_default(
+                module_idx,
+                builtin_ports::WET,
+                all_outputs,
+                frames,
+                0.7,
+            );
+            let dry = input_provider.control_input_or_default(
+                module_idx,
+                builtin_ports::DRY,
+                all_outputs,
+                frames,
+                0.5,
+            );
+            let time_l = input_provider.control_input_or_default(
+                module_idx,
+                builtin_ports::TIME_LEFT_MS,
+                all_outputs,
+                frames,
+                0.3,
+            );
+            let time_r = input_provider.control_input_or_default(
+                module_idx,
+                builtin_ports::TIME_RIGHT_MS,
+                all_outputs,
+                frames,
+                0.3,
+            );
+            let ping_pong = input_provider.control_input_or_default(
+                module_idx,
+                builtin_ports::PING_PONG,
+                all_outputs,
+                frames,
+                0.0,
+            );
             process_echo(
                 &mut states[module_idx],
                 &audio_in_l,
                 &audio_in_r,
-                module_idx,
-                input_provider,
-                all_outputs,
+                EchoControls {
+                    feedback: &feedback,
+                    damping: &damping,
+                    wet: &wet,
+                    dry: &dry,
+                    time_l: &time_l,
+                    time_r: &time_r,
+                    ping_pong: &ping_pong,
+                },
                 frames,
             )
         }
@@ -377,13 +433,76 @@ pub(super) fn process_module(
                 all_outputs,
                 frames,
             );
+            let decay_time = input_provider.control_input_or_default(
+                module_idx,
+                builtin_ports::DECAY_TIME,
+                all_outputs,
+                frames,
+                0.35,
+            );
+            let room_size = input_provider.control_input_or_default(
+                module_idx,
+                builtin_ports::ROOM_SIZE,
+                all_outputs,
+                frames,
+                0.7,
+            );
+            let damping = input_provider.control_input_or_default(
+                module_idx,
+                builtin_ports::DAMPING,
+                all_outputs,
+                frames,
+                0.3,
+            );
+            let diffusion = input_provider.control_input_or_default(
+                module_idx,
+                builtin_ports::DIFFUSION,
+                all_outputs,
+                frames,
+                0.5,
+            );
+            let wet = input_provider.control_input_or_default(
+                module_idx,
+                builtin_ports::WET,
+                all_outputs,
+                frames,
+                0.7,
+            );
+            let dry = input_provider.control_input_or_default(
+                module_idx,
+                builtin_ports::DRY,
+                all_outputs,
+                frames,
+                0.5,
+            );
+            let pre_delay = input_provider.control_input_or_default(
+                module_idx,
+                builtin_ports::PRE_DELAY,
+                all_outputs,
+                frames,
+                0.0,
+            );
+            let stereo_width = input_provider.control_input_or_default(
+                module_idx,
+                builtin_ports::STEREO_WIDTH,
+                all_outputs,
+                frames,
+                0.5,
+            );
             process_reverb(
                 &mut states[module_idx],
                 &audio_in_l,
                 &audio_in_r,
-                module_idx,
-                input_provider,
-                all_outputs,
+                ReverbControls {
+                    decay_time: &decay_time,
+                    room_size: &room_size,
+                    damping: &damping,
+                    diffusion: &diffusion,
+                    wet: &wet,
+                    dry: &dry,
+                    pre_delay: &pre_delay,
+                    stereo_width: &stereo_width,
+                },
                 frames,
             )
         }

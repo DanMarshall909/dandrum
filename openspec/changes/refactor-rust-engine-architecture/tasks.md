@@ -41,21 +41,21 @@
 
 ## 7. DSP And Module Adapter Boundary
 
-- [ ] 7.1 Identify DSP modules that are currently coupled to graph/runtime concerns and add focused tests proving they can be instantiated without patch or graph setup.
-- [ ] 7.2 Move graph input/port translation into module adapter code while keeping DSP algorithms independent from YAML, graph IDs, cables, FFI, CLI, and frontend APIs.
-- [ ] 7.3 Reorganize modules only after behavior is covered, preserving existing DSP test coverage and adding coverage for newly extracted modules.
+- [x] 7.1 Identify DSP modules that are currently coupled to graph/runtime concerns and add focused tests proving they can be instantiated without patch or graph setup.
+- [x] 7.2 Move graph input/port translation into module adapter code while keeping DSP algorithms independent from YAML, graph IDs, cables, FFI, CLI, and frontend APIs.
+- [x] 7.3 Reorganize modules only after behavior is covered, preserving existing DSP test coverage and adding coverage for newly extracted modules.
 
 ## 8. Realtime Allocation Discipline
 
-- [ ] 8.1 Preallocate realtime event, scratch audio/control/event, module output, and per-voice state capacity during preparation based on maximum block size and voice allocation.
-- [ ] 8.2 Update render paths to reuse prepared buffers for repeated blocks no larger than the prepared maximum block size.
-- [ ] 8.3 Add tests or checks that repeated realtime renders do not grow scratch capacity or replace runtime state for prepared-size blocks.
-- [ ] 8.4 Evaluate whether a small fixed-capacity SPSC/ring-buffer dependency is warranted; document the decision in the design if one is added.
+- [x] 8.1 Preallocate realtime event, scratch audio/control/event, module output, and per-voice state capacity during preparation based on maximum block size and voice allocation.
+- [x] 8.2 Update render paths to reuse prepared buffers for repeated blocks no larger than the prepared maximum block size.
+- [x] 8.3 Add tests or checks that repeated realtime renders do not grow scratch capacity or replace runtime state for prepared-size blocks.
+- [x] 8.4 Evaluate whether a small fixed-capacity SPSC/ring-buffer dependency is warranted; document the decision in the design if one is added.
 
 ## 9. Verification And Documentation
 
-- [ ] 9.1 Run `$HOME/.cargo/bin/cargo test --manifest-path src/rust-engine/Cargo.toml` and fix any regressions.
-- [ ] 9.2 Configure/build with `$HOME/.local/bin/cmake -S . -B build` and `$HOME/.local/bin/cmake --build build`.
+- [x] 9.1 Run `$HOME/.cargo/bin/cargo test --manifest-path src/rust-engine/Cargo.toml` and fix any regressions.
+- [x] 9.2 Configure/build with `$HOME/.local/bin/cmake -S . -B build` and `$HOME/.local/bin/cmake --build build`.
 - [ ] 9.3 Run `ctest --test-dir build` and fix any regressions.
-- [ ] 9.4 Run `openspec validate refactor-rust-engine-architecture --strict` and fix any spec or task validation errors.
-- [ ] 9.5 Document any unavoidable verification gaps before marking tasks complete.
+- [x] 9.4 Run `openspec validate refactor-rust-engine-architecture --strict` and fix any spec or task validation errors.
+- [x] 9.5 Document any unavoidable verification gaps before marking tasks complete.

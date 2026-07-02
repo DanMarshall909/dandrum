@@ -115,7 +115,7 @@ impl RealtimeGraphProcessor {
             midi_idx,
             out_idx,
             current_frame: 0,
-            pending_events: Vec::new(),
+            pending_events: Vec::with_capacity(prepared_max_block_size),
             allocator,
             prepared_max_block_size,
             last_render_chunk_count: 0,
@@ -139,6 +139,14 @@ impl RealtimeGraphProcessor {
 
     pub fn module_output_scratch_capacity(&self) -> usize {
         self.scratch_outputs.capacity()
+    }
+
+    pub fn pending_event_capacity(&self) -> usize {
+        self.pending_events.capacity()
+    }
+
+    pub fn prepared_voice_count(&self) -> usize {
+        self.states.len()
     }
 
     pub fn note_on(&mut self, note: u8, velocity: u8) {
@@ -184,8 +192,9 @@ impl RealtimeGraphProcessor {
         let block_start = self.current_frame;
         self.current_frame += frames as u64;
 
-        let events: Vec<BlockEvent> = std::mem::take(&mut self.pending_events)
-            .into_iter()
+        let events: Vec<BlockEvent> = self
+            .pending_events
+            .drain(..)
             .map(|event| BlockEvent {
                 frame_offset: 0,
                 event,
@@ -236,6 +245,7 @@ impl RealtimeGraphProcessor {
                 events,
                 &mut self.scratch_left,
                 &mut self.scratch_right,
+                &mut self.scratch_outputs,
             );
 
             let actual = self

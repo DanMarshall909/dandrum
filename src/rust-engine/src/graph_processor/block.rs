@@ -44,8 +44,9 @@ pub(super) fn process_block_compiled(
     incoming_events: Vec<BlockEvent>,
     left_out: &mut Vec<f32>,
     right_out: &mut Vec<f32>,
+    all_outputs: &mut HashMap<usize, ModuleOutputs>,
 ) {
-    let mut all_outputs: HashMap<usize, ModuleOutputs> = HashMap::new();
+    all_outputs.clear();
 
     if let Some(idx) = midi_idx {
         let outputs = ModuleOutputs {
@@ -63,14 +64,14 @@ pub(super) fn process_block_compiled(
         if node.module_kind == ModuleKind::MidiInput {
             continue;
         }
-        let events_in = compiled_gather_event_inputs(module_idx, compiled, &all_outputs);
+        let events_in = compiled_gather_event_inputs(module_idx, compiled, all_outputs);
         let outputs = process_module(
             module_idx,
             node.module_kind,
             &events_in,
             states,
             &input_provider,
-            &all_outputs,
+            all_outputs,
             frames,
             block_start_frame,
         );
@@ -82,21 +83,21 @@ pub(super) fn process_block_compiled(
         if node.module_kind == ModuleKind::MidiInput {
             continue;
         }
-        let events_in = compiled_gather_event_inputs(module_idx, compiled, &all_outputs);
+        let events_in = compiled_gather_event_inputs(module_idx, compiled, all_outputs);
         let outputs = process_module(
             module_idx,
             node.module_kind,
             &events_in,
             states,
             &input_provider,
-            &all_outputs,
+            all_outputs,
             frames,
             block_start_frame,
         );
         all_outputs.insert(module_idx, outputs);
     }
 
-    collect_audio_output(&all_outputs, out_idx, frames, left_out, right_out);
+    collect_audio_output(all_outputs, out_idx, frames, left_out, right_out);
 }
 
 pub(super) fn process_block_compiled_polyphonic(

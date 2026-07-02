@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use crate::compiled_patch::CompiledPatch;
 use crate::core::{BlockScheduler, TimedInputEvent};
 use crate::graph::Graph;
@@ -6,7 +8,7 @@ use crate::sample::PreparedSamplerAssets;
 use crate::voice_allocator::VoiceAllocator;
 
 use super::block::{process_block_compiled, process_block_compiled_polyphonic};
-use super::outputs::BlockEvent;
+use super::outputs::{BlockEvent, ModuleOutputs};
 use super::polyphony::build_polyphonic_states_from_compiled;
 use super::state::PerModuleState;
 
@@ -32,6 +34,8 @@ pub fn render_offline_compiled(
 
     let mut left_buf = Vec::new();
     let mut right_buf = Vec::new();
+    let mut all_outputs: HashMap<usize, ModuleOutputs> =
+        HashMap::with_capacity(compiled.nodes().len());
 
     for block in scheduler {
         let frames = block.frame_count() as usize;
@@ -55,6 +59,7 @@ pub fn render_offline_compiled(
             external_events,
             &mut left_buf,
             &mut right_buf,
+            &mut all_outputs,
         );
     }
 
