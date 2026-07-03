@@ -9,10 +9,12 @@ platform primitives closes the gap between toy examples and playable instrument 
 
 **Goals:**
 
-- Consume `noise`, `impulse`, `note_to_control`, and `multiply` as platform-provided primitives
+- Consume `noise`, `impulse`, `note_to_control`, `multiply`, and generic event-routing primitives as platform-provided
+  capabilities
 - Create composite module definitions for reusable building blocks (`velocity_vca`, `impulse_tone`, `impulse_noise`,
   `impulse_layer`)
-- Create an example drum kit YAML patch wiring all voices through a shared output bus
+- Create an example drum kit YAML patch wiring MIDI input through generic event routing into all voices and then through
+  a shared output bus
 - Each composite works as a standalone voice and within the kit patch
 - All new code has unit tests; example patches are renderable by the CLI
 
@@ -82,7 +84,8 @@ and filters by assigned note.
 
 **Rationale:**
 
-- The engine's MIDI input module emits events on all note numbers; each voice subscribes to its assigned note
+- The engine's MIDI input module emits events on all note numbers; generic event-routing modules route assigned notes to
+  explicit voice composites
 - Drum voices route through summing audio mixers into the master output
 - This mirrors how hardware and software drum synths organise their voice architecture
 
@@ -90,9 +93,8 @@ and filters by assigned note.
 
 - **[Primitive contract drift]** Drum-kit examples may accidentally assume ports or behaviour that the platform primitives
   do not provide -> Keep examples aligned with the accepted platform primitive metadata and tests.
-- **[MIDI note routing]** The engine has no built-in note-to-trigger demux module, so each drum voice receives all MIDI
-  events — voices must filter by note number internally; if script modules support note filtering this can be addressed
-  in the patch
+- **[MIDI note routing]** Drum-kit readability depends on generic event-routing primitives; if those primitives are not
+  ready, this example should wait rather than hiding note filtering inside drum voices
 - **[Composite depth]** Nested composites (velocity_vca inside impulse_tone inside drum kit) increase preparation
   complexity — but the existing composite implementation already handles arbitrary nesting, so this is not new risk
 - **[Future effect examples]** Custom flanger, chorus, ducking, or sidechain examples may need `delay_line` or

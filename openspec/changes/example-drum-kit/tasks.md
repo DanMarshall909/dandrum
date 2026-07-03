@@ -2,7 +2,9 @@
 
 - [ ] 1.1 Confirm `declarative-instrument-platform` supplies registered `noise`, `impulse`, `note_to_control`, and
   `multiply` primitives with compatible metadata and render support before implementing drum-kit examples.
-- [ ] 1.2 Add failing example-level tests that document the exact primitive ports consumed by the drum-kit composites.
+- [ ] 1.2 Confirm `add-event-routing-primitives` supplies generic event routing with compatible metadata and render
+  support before implementing drum-kit routing.
+- [ ] 1.3 Add failing example-level tests that document the exact primitive ports consumed by the drum-kit composites.
 
 ## 2. Composite Module Definitions
 
@@ -13,7 +15,8 @@
 
 ## 3. Drum Kit Example Patch
 
-- [ ] 3.1 Create `drum-kit.yaml` example patch wiring impulse_* composites with MIDI input and master output
+- [ ] 3.1 Create `drum-kit.yaml` example patch wiring MIDI input through generic event routing into impulse_* composites
+  and master output
 - [ ] 3.2 Configure voice allocation in drum kit patch
 
 ## 4. Verification

@@ -9,7 +9,7 @@ but do not yet form one explicit pipeline.
 Accepted specs already require a frontend-independent headless engine, named typed routing ports, explicit feedback
 boundaries, script modules, built-in modules, VCA control routing, and YAML patch format behavior. This change keeps
 those external capabilities intact and makes the Rust architecture easier to extend for filters, echo/reverb,
-drum-machine containers, and future realtime work.
+event-routing primitives, and future realtime work.
 
 ## Goals / Non-Goals
 

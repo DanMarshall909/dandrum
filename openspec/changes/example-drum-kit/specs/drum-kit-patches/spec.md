@@ -52,13 +52,20 @@ event, via the internal `velocity_vca` composite.
 
 ### Requirement: Complete drum kit patch
 
-A `drum-kit` example patch SHALL exist that instantiates multiple `impulse_*` composites routed to different MIDI notes,
-with shared `midi_input` and `audio_output` modules.
+A `drum-kit` example patch SHALL exist that instantiates multiple `impulse_*` composites routed to different MIDI notes
+through generic event-routing modules, with shared `midi_input` and `audio_output` modules.
+
+The patch SHALL NOT require a `drum_machine`, `drum_pad`, or drum-specific Rust primitive.
 
 #### Scenario: Drum kit patch loads and renders
 
 - **WHEN** the drum-kit patch is loaded, prepared, and rendered with MIDI events
 - **THEN** rendering SHALL complete without error and produce audio on the master output
+
+#### Scenario: Drum kit uses generic event routing
+
+- **WHEN** the drum-kit patch is inspected
+- **THEN** note-to-voice routing SHALL be expressed through generic event-routing modules and explicit connections
 
 #### Scenario: Drum kit patch has voice allocation
 
