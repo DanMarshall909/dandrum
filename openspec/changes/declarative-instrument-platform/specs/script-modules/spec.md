@@ -2,12 +2,15 @@
 
 ### Requirement: Script execution is bounded
 
-Script execution SHALL be bounded in time, memory, and graph recursion. Scripts SHALL NOT recursively execute the graph, create unbounded same-tick event loops, allocate heap memory during execution, access the filesystem, access the network, or perform blocking calls.
+Script execution SHALL be bounded in time, memory, and graph recursion. Scripts SHALL NOT recursively execute the graph,
+create unbounded same-tick event loops, allocate heap memory during execution, access the filesystem, access the
+network, or perform blocking calls.
 
 #### Scenario: Script output feedback is queued
 
 - **WHEN** a script output is routed back to an upstream script or event input
-- **THEN** the engine SHALL queue that feedback to a future tick or block rather than executing recursively in the same processing step
+- **THEN** the engine SHALL queue that feedback to a future tick or block rather than executing recursively in the same
+  processing step
 
 #### Scenario: Script cannot access filesystem during render
 
@@ -42,7 +45,8 @@ Script modules SHALL be parsed, validated, and compiled or interpreted off the a
 
 ### Requirement: Script deterministic execution
 
-Script module execution SHALL be deterministic: the same script, same inputs, and same internal state SHALL produce identical outputs.
+Script module execution SHALL be deterministic: the same script, same inputs, and same internal state SHALL produce
+identical outputs.
 
 #### Scenario: Script produces identical output
 
@@ -51,7 +55,8 @@ Script module execution SHALL be deterministic: the same script, same inputs, an
 
 ### Requirement: Script stable error reporting
 
-Script runtime errors SHALL be reported through the structured diagnostics system with stable error codes and source location information.
+Script runtime errors SHALL be reported through the structured diagnostics system with stable error codes and source
+location information.
 
 #### Scenario: Script error has stable error code
 
@@ -60,9 +65,11 @@ Script runtime errors SHALL be reported through the structured diagnostics syste
 
 ### Requirement: Script scope excludes audio-rate DSP
 
-Script modules SHALL NOT be used for sample-rate audio signal processing in the initial implementation. Their scope is limited to event transformation, control-value mapping, conditional routing, and modulation logic.
+Script modules SHALL NOT be used for sample-rate audio signal processing in the initial implementation. Their scope is
+limited to event transformation, control-value mapping, conditional routing, and modulation logic.
 
 #### Scenario: Audio-rate output from script is prevented
 
 - **WHEN** a script module is configured with an audio-rate output port
-- **THEN** engine validation SHALL reject the configuration with a diagnostic indicating that audio-rate script outputs are not supported
+- **THEN** engine validation SHALL reject the configuration with a diagnostic indicating that audio-rate script outputs
+  are not supported

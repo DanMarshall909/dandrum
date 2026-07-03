@@ -2,22 +2,27 @@
 
 ### Requirement: Module behaviour classification
 
-Every proposed engine behaviour SHALL be classified before implementation as one of: Rust primitive, YAML composite, script, preset, future tooling, or out-of-scope.
+Every proposed engine behaviour SHALL be classified before implementation as one of: Rust primitive, YAML composite,
+script, preset, future tooling, or out-of-scope.
 
 #### Scenario: New behaviour request
 
 - **WHEN** a contributor proposes a new module type, instrument feature, effect, control behaviour, or authoring feature
 - **THEN** the proposal SHALL classify the behaviour before implementation begins
-- **AND** the proposal SHALL explain why lower-level engine support is necessary if the behaviour is not expressed as YAML, script, preset, or tooling
+- **AND** the proposal SHALL explain why lower-level engine support is necessary if the behaviour is not expressed as
+  YAML, script, preset, or tooling
 
 ### Requirement: Primitive gate criteria
 
 A built-in Rust primitive SHOULD satisfy all five criteria:
 
-1. **Performance-critical**: The operation requires audio-rate or near-audio-rate processing that cannot achieve acceptable performance as YAML composition or script.
+1. **Performance-critical**: The operation requires audio-rate or near-audio-rate processing that cannot achieve
+   acceptable performance as YAML composition or script.
 2. **Reusable**: The behaviour is useful across multiple instruments, effects, or routing patterns.
-3. **Realtime-sensitive state**: The behaviour owns mutable state that must be updated in the realtime path without allocation, locking, or blocking.
-4. **Awkward or unsafe as YAML composition**: Expressing the behaviour with existing modules would be substantially fragile, unclear, inefficient, or unsafe.
+3. **Realtime-sensitive state**: The behaviour owns mutable state that must be updated in the realtime path without
+   allocation, locking, or blocking.
+4. **Awkward or unsafe as YAML composition**: Expressing the behaviour with existing modules would be substantially
+   fragile, unclear, inefficient, or unsafe.
 5. **Testable DSP/control behaviour**: The input/output behaviour can be specified and tested deterministically.
 
 #### Scenario: Primitive passes gate
@@ -28,16 +33,19 @@ A built-in Rust primitive SHOULD satisfy all five criteria:
 #### Scenario: Primitive requires exception
 
 - **WHEN** a proposed primitive fails one or more criteria but is still considered necessary
-- **THEN** the spec SHALL document the failed criteria, rejected alternatives, and concrete acceptance example that requires the primitive
+- **THEN** the spec SHALL document the failed criteria, rejected alternatives, and concrete acceptance example that
+  requires the primitive
 
 #### Scenario: Primitive fails gate without exception
 
 - **WHEN** a proposed primitive fails one or more criteria and has no documented exception
-- **THEN** the proposal SHALL recommend an alternative category: YAML composite, script, preset, future tooling, or out-of-scope
+- **THEN** the proposal SHALL recommend an alternative category: YAML composite, script, preset, future tooling, or
+  out-of-scope
 
 ### Requirement: Composite eligibility
 
-A behaviour SHOULD be implemented as a YAML composite when it can be expressed as a deterministic graph of existing primitives, scripts, and other composites without compromising performance, validation, or realtime safety.
+A behaviour SHOULD be implemented as a YAML composite when it can be expressed as a deterministic graph of existing
+primitives, scripts, and other composites without compromising performance, validation, or realtime safety.
 
 #### Scenario: Instrument voice expressible as composite
 
@@ -46,7 +54,9 @@ A behaviour SHOULD be implemented as a YAML composite when it can be expressed a
 
 ### Requirement: Script eligibility
 
-A behaviour SHOULD be implemented as a script module when it involves event transformation, control-value mapping, conditional routing, note remapping, or simple deterministic modulation logic that is awkward to express as fixed connections but does not require audio-rate DSP.
+A behaviour SHOULD be implemented as a script module when it involves event transformation, control-value mapping,
+conditional routing, note remapping, or simple deterministic modulation logic that is awkward to express as fixed
+connections but does not require audio-rate DSP.
 
 #### Scenario: Event/control behaviour suitable for script
 
@@ -55,7 +65,8 @@ A behaviour SHOULD be implemented as a script module when it involves event tran
 
 ### Requirement: Preset eligibility
 
-A behaviour SHOULD be expressed as a preset when it is a named configuration of existing patches, composites, modules, and parameter values.
+A behaviour SHOULD be expressed as a preset when it is a named configuration of existing patches, composites, modules,
+and parameter values.
 
 #### Scenario: Specific sound configuration
 
@@ -64,25 +75,30 @@ A behaviour SHOULD be expressed as a preset when it is a named configuration of 
 
 ### Requirement: Future tooling eligibility
 
-A behaviour SHOULD be classified as future tooling when it helps humans, GUIs, LLMs, or repair workflows author patches but is not required for rendering audio.
+A behaviour SHOULD be classified as future tooling when it helps humans, GUIs, LLMs, or repair workflows author patches
+but is not required for rendering audio.
 
 #### Scenario: LLM authoring support
 
 - **WHEN** a proposed behaviour helps generate, repair, summarize, or explain YAML patches
-- **THEN** it SHALL be implemented outside the realtime engine unless it is also needed by loading, validation, or rendering
+- **THEN** it SHALL be implemented outside the realtime engine unless it is also needed by loading, validation, or
+  rendering
 
 ### Requirement: Minimal primitive roadmap
 
-This change SHALL implement or immediately plan only the primitives needed to prove the declarative platform with the first acceptance examples.
+This change SHALL implement or immediately plan only the primitives needed to prove the declarative platform with the
+first acceptance examples.
 
 #### Scenario: Required primitive set reviewed
 
 - **WHEN** the primitive roadmap is evaluated for this change
-- **THEN** `noise`, `impulse`, `multiply`, and `note_to_control` SHALL be classified as the minimal new primitive candidates
+- **THEN** `noise`, `impulse`, `multiply`, and `note_to_control` SHALL be classified as the minimal new primitive
+  candidates
 
 ### Requirement: Noise generator
 
-A noise generator SHALL be added as a Rust primitive. It is reusable across drum synthesis, subtractive synthesis, modulation, and effects, and it requires deterministic realtime sample generation.
+A noise generator SHALL be added as a Rust primitive. It is reusable across drum synthesis, subtractive synthesis,
+modulation, and effects, and it requires deterministic realtime sample generation.
 
 #### Scenario: Noise module produces deterministic seeded white noise
 
@@ -96,7 +112,8 @@ A noise generator SHALL be added as a Rust primitive. It is reusable across drum
 
 ### Requirement: Impulse generator
 
-An impulse/click generator SHALL be added as a Rust primitive. It provides sample-accurate transient generation for percussion and deterministic trigger timing tests.
+An impulse/click generator SHALL be added as a Rust primitive. It provides sample-accurate transient generation for
+percussion and deterministic trigger timing tests.
 
 #### Scenario: Impulse triggered by event
 
@@ -105,7 +122,8 @@ An impulse/click generator SHALL be added as a Rust primitive. It provides sampl
 
 ### Requirement: Multiply module
 
-A multiply module SHALL be added as a Rust primitive. It provides reusable audio/control multiplication for VCA-style gain control, modulation scaling, tremolo, and ring-mod-style composites.
+A multiply module SHALL be added as a Rust primitive. It provides reusable audio/control multiplication for VCA-style
+gain control, modulation scaling, tremolo, and ring-mod-style composites.
 
 #### Scenario: Multiply two audio signals
 
@@ -115,11 +133,13 @@ A multiply module SHALL be added as a Rust primitive. It provides reusable audio
 #### Scenario: Multiply audio by control
 
 - **WHEN** the multiply module receives an audio input and a control input
-- **THEN** its output SHALL be the audio input scaled by the control signal according to the documented control-rate behaviour
+- **THEN** its output SHALL be the audio input scaled by the control signal according to the documented control-rate
+  behaviour
 
 ### Requirement: Note-to-control mapper
 
-A note-to-control mapper SHALL be added as a Rust primitive. It converts note events into reusable control signals for pitch, frequency, velocity, and gate/trigger behaviour.
+A note-to-control mapper SHALL be added as a Rust primitive. It converts note events into reusable control signals for
+pitch, frequency, velocity, and gate/trigger behaviour.
 
 #### Scenario: Note maps to frequency
 
@@ -138,11 +158,13 @@ Acceptance examples SHALL NOT assume oscillator waveforms that the engine does n
 #### Scenario: Acceptance example requires sine oscillator
 
 - **WHEN** an acceptance example requires sine, saw, pulse, or triangle oscillator output
-- **THEN** the implementation SHALL either add minimal waveform support with tests or rewrite the example to use supported oscillator behaviour
+- **THEN** the implementation SHALL either add minimal waveform support with tests or rewrite the example to use
+  supported oscillator behaviour
 
 ### Requirement: Deferred candidates
 
-The following candidates SHALL NOT be added as Rust primitives in this change unless a later spec documents a concrete acceptance example and failed alternatives:
+The following candidates SHALL NOT be added as Rust primitives in this change unless a later spec documents a concrete
+acceptance example and failed alternatives:
 
 - envelope follower
 - general delay line

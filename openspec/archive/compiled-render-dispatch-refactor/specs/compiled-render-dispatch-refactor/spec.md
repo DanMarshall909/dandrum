@@ -2,7 +2,9 @@
 
 ### Requirement: Shared module processing dispatch
 
-The three block-processing functions SHALL use a single shared per-module dispatch function. Module-specific input resolution SHALL be abstracted behind a trait so each render path provides its own input provider without duplicating the match arm logic.
+The three block-processing functions SHALL use a single shared per-module dispatch function. Module-specific input
+resolution SHALL be abstracted behind a trait so each render path provides its own input provider without duplicating
+the match arm logic.
 
 #### Scenario: Raw graph rendering uses routing-based input resolution
 

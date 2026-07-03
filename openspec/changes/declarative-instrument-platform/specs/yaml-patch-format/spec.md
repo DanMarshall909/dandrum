@@ -2,7 +2,8 @@
 
 ### Requirement: Existing patch sections remain canonical
 
-The YAML patch format SHALL preserve the existing top-level patch shape unless a separate migration spec explicitly changes it.
+The YAML patch format SHALL preserve the existing top-level patch shape unless a separate migration spec explicitly
+changes it.
 
 The canonical patch sections are:
 
@@ -21,7 +22,8 @@ The canonical patch sections are:
 
 ### Requirement: Metadata extension is compatible
 
-The existing `metadata` section MAY be extended with optional authoring or validation metadata, but the change SHALL NOT introduce a second metadata concept.
+The existing `metadata` section MAY be extended with optional authoring or validation metadata, but the change SHALL NOT
+introduce a second metadata concept.
 
 #### Scenario: Existing metadata parsed
 
@@ -35,7 +37,9 @@ The existing `metadata` section MAY be extended with optional authoring or valid
 
 ### Requirement: Asset validation extension
 
-The existing `assets` section SHALL remain the canonical way to declare external resources. This change MAY add validation metadata such as expected kind, fallback path, checksum, or authoring hint if those fields are explicitly specified.
+The existing `assets` section SHALL remain the canonical way to declare external resources. This change MAY add
+validation metadata such as expected kind, fallback path, checksum, or authoring hint if those fields are explicitly
+specified.
 
 #### Scenario: Asset declared in patch
 
@@ -49,7 +53,8 @@ The existing `assets` section SHALL remain the canonical way to declare external
 
 ### Requirement: Patch-level parameter bindings are compatible
 
-The YAML patch format MAY add a patch-level `parameters` section for externally controlled named parameters, but it SHALL NOT conflict with existing module-level parameters or composite parameter bindings.
+The YAML patch format MAY add a patch-level `parameters` section for externally controlled named parameters, but it
+SHALL NOT conflict with existing module-level parameters or composite parameter bindings.
 
 #### Scenario: Patch parameter binds to module parameter
 
@@ -63,7 +68,8 @@ The YAML patch format MAY add a patch-level `parameters` section for externally 
 
 ### Requirement: Presets are parameter sets, not new graph semantics
 
-The YAML patch format MAY support presets as named parameter sets applied to an existing patch or composite. Presets SHALL NOT add hidden modules, hidden connections, hidden assets, or hidden realtime behaviour.
+The YAML patch format MAY support presets as named parameter sets applied to an existing patch or composite. Presets
+SHALL NOT add hidden modules, hidden connections, hidden assets, or hidden realtime behaviour.
 
 #### Scenario: Preset applies parameter values
 
@@ -77,7 +83,8 @@ The YAML patch format MAY support presets as named parameter sets applied to an 
 
 ### Requirement: Composite references use existing module definition semantics
 
-Composite instances SHALL use the existing `module_definitions` mechanism for this change. A module instance references a composite by setting its `type` to the composite definition's `type`.
+Composite instances SHALL use the existing `module_definitions` mechanism for this change. A module instance references
+a composite by setting its `type` to the composite definition's `type`.
 
 #### Scenario: Composite module declaration
 
@@ -86,12 +93,14 @@ Composite instances SHALL use the existing `module_definitions` mechanism for th
 
 #### Scenario: Unsupported composite_id syntax
 
-- **WHEN** a patch uses `type: composite` with `composite_id` before such syntax is explicitly introduced by a migration spec
+- **WHEN** a patch uses `type: composite` with `composite_id` before such syntax is explicitly introduced by a migration
+  spec
 - **THEN** validation SHALL reject or ignore it according to the current schema rather than treating it as canonical
 
 ### Requirement: Drum machine pad mapping is event-only
 
-The YAML patch format MAY support drum-machine pad mapping as part of the existing drum-machine container change, but the mapping SHALL describe event routing only.
+The YAML patch format MAY support drum-machine pad mapping as part of the existing drum-machine container change, but
+the mapping SHALL describe event routing only.
 
 #### Scenario: Drum machine pad map declared
 
@@ -100,5 +109,6 @@ The YAML patch format MAY support drum-machine pad mapping as part of the existi
 
 #### Scenario: Drum machine rejects hidden audio fields
 
-- **WHEN** a drum machine declaration contains embedded sample chains, audio outputs, mix outputs, patterns, transport, or sequencing fields
+- **WHEN** a drum machine declaration contains embedded sample chains, audio outputs, mix outputs, patterns, transport,
+  or sequencing fields
 - **THEN** validation SHALL reject those fields with structured diagnostics

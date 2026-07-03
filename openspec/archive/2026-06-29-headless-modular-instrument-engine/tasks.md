@@ -2,15 +2,18 @@
 
 - [x] 1.1 Choose the initial implementation language, package layout, and test framework for the headless engine.
 - [x] 1.2 Create the engine core package without GUI, plugin, or CLI coupling.
-- [x] 1.3 Add a minimal CLI entry point for loading patches, inspecting validation results, and invoking offline renders.
+- [x] 1.3 Add a minimal CLI entry point for loading patches, inspecting validation results, and invoking offline
+  renders.
 - [x] 1.4 Add CI-ready test commands for unit and acceptance tests.
 
 ## 2. YAML Patch Format
 
 - [x] 2.1 Define the YAML patch schema for metadata, render settings, assets, modules, ports, and connections.
 - [x] 2.2 Implement YAML patch loading with clear parse errors for invalid YAML or unsupported file formats.
-- [x] 2.3 Implement schema validation for duplicate module IDs, missing required fields, and malformed connection references.
-- [x] 2.4 Add patch-format tests covering valid YAML, invalid YAML, duplicate IDs, missing modules, and script custom ports.
+- [x] 2.3 Implement schema validation for duplicate module IDs, missing required fields, and malformed connection
+  references.
+- [x] 2.4 Add patch-format tests covering valid YAML, invalid YAML, duplicate IDs, missing modules, and script custom
+  ports.
 
 ## 3. Modular Routing Graph
 
@@ -18,7 +21,8 @@
 - [x] 3.2 Implement graph construction from validated patch declarations.
 - [x] 3.3 Implement port existence, direction, and signal compatibility validation.
 - [x] 3.4 Implement validation for unsupported implicit many-to-one routing.
-- [x] 3.5 Add routing graph tests for valid routes, missing ports, wrong direction, incompatible types, and many-to-one errors.
+- [x] 3.5 Add routing graph tests for valid routes, missing ports, wrong direction, incompatible types, and many-to-one
+  errors.
 
 ## 4. VCA and Control Routing
 
@@ -31,17 +35,20 @@
 
 - [x] 5.1 Implement the built-in module registry.
 - [x] 5.2 Add MIDI/event input and audio output module definitions.
-- [x] 5.3 Add oscillator or sample player, gain/VCA, audio mixer, control mixer, ADSR, LFO, and simple filter module definitions.
+- [x] 5.3 Add oscillator or sample player, gain/VCA, audio mixer, control mixer, ADSR, LFO, and simple filter module
+  definitions.
 - [x] 5.4 Add one-sample audio delay, block delay, and control delay module definitions with feedback-boundary metadata.
 - [x] 5.5 Add tests that inspect built-in module ports, signal types, directions, and feedback-boundary declarations.
 
 ## 6. Script Modules
 
-- [x] 6.1 Select and integrate the initial script runtime or define an internal script abstraction if runtime selection is deferred.
+- [x] 6.1 Select and integrate the initial script runtime or define an internal script abstraction if runtime selection
+  is deferred.
 - [x] 6.2 Implement script module loading with declared input and output ports from the YAML patch.
 - [x] 6.3 Implement bounded script processing for events and control values.
 - [x] 6.4 Implement module-local script state between processing calls.
-- [x] 6.5 Add tests for script routing, event-to-control transformation, state retention, and prevention of recursive graph execution.
+- [x] 6.5 Add tests for script routing, event-to-control transformation, state retention, and prevention of recursive
+  graph execution.
 
 ## 7. Feedback Routing
 

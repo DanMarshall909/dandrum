@@ -52,7 +52,7 @@ module_definitions:
     modules:
       - id: echo
         type: echo
-    connections: []
+    connections: [ ]
 modules:
   - id: midi
     type: midi_input

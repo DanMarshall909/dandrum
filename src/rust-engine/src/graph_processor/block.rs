@@ -7,7 +7,7 @@ use crate::script::ScriptEvent;
 use crate::voice_allocator::VoiceAllocator;
 
 use super::dispatch::process_module;
-use super::input_provider::{CompiledInputProvider, compiled_gather_event_inputs};
+use super::input_provider::{compiled_gather_event_inputs, CompiledInputProvider};
 use super::outputs::{BlockEvent, ModuleOutputs};
 use super::state::PerModuleState;
 
@@ -248,16 +248,16 @@ pub(super) fn process_block_compiled_polyphonic(
         }
         let adsr_done = !has_adsr
             || states[i].iter().any(|s| match s {
-                PerModuleState::Adsr {
-                    level, gate_active, ..
-                } => !gate_active && *level < 0.001,
-                _ => false,
-            });
+            PerModuleState::Adsr {
+                level, gate_active, ..
+            } => !gate_active && *level < 0.001,
+            _ => false,
+        });
         let sampler_done = !has_sampler
             || states[i].iter().any(|s| match s {
-                PerModuleState::Sampler { active, .. } => !active,
-                _ => false,
-            });
+            PerModuleState::Sampler { active, .. } => !active,
+            _ => false,
+        });
         if adsr_done && sampler_done {
             allocator.set_slot_inactive(i);
         }

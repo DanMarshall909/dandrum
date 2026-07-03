@@ -40,7 +40,8 @@ package.
 
 Directory:
 
-- `lib` The source for the libraries, a BSD-license implementation of the public domain Ogg Vorbis audio encoding format.
+- `lib` The source for the libraries, a BSD-license implementation of the public domain Ogg Vorbis audio encoding
+  format.
 
 - `include` Library API headers
 
@@ -105,8 +106,10 @@ after normal configuring:
 
 ## Building with CMake ##
 
-Ogg supports building using [CMake](https://cmake.org/). CMake is a meta build system that generates native projects for each platform.
-To generate projects just run cmake replacing `YOUR-PROJECT-GENERATOR` with a proper generator from a list [here](https://cmake.org/cmake/help/latest/manual/cmake-generators.7.html):
+Ogg supports building using [CMake](https://cmake.org/). CMake is a meta build system that generates native projects for
+each platform.
+To generate projects just run cmake replacing `YOUR-PROJECT-GENERATOR` with a proper generator from a
+list [here](https://cmake.org/cmake/help/latest/manual/cmake-generators.7.html):
 
     cmake -G YOUR-PROJECT-GENERATOR .
 

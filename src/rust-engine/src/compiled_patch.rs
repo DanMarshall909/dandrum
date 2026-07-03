@@ -72,8 +72,8 @@ impl CompileError {
                 Severity::Error,
                 format!("missing port: {module_id}.{port_name}"),
             )
-            .with_module_id(module_id.clone())
-            .with_port_name(port_name.clone()),
+                .with_module_id(module_id.clone())
+                .with_port_name(port_name.clone()),
             Self::CycleDetected => Diagnostic::new(
                 error_codes::GRAPH_CYCLE_DETECTED,
                 Severity::Error,

@@ -372,7 +372,7 @@ mod tests {
             file,
             "metadata:\n  name: Bad\nrender:\n  sample_rate_hz: 48000\n  block_size_frames: 64\n  duration_frames: 128\nmodules: []"
         )
-        .unwrap();
+            .unwrap();
         drop(file);
 
         let bad_path = std::ffi::CString::new(dir.to_str().unwrap().as_bytes()).unwrap();

@@ -1,4 +1,3 @@
-
 # ModuleInfoLib
 
 This is a c++17 library to parse and create the Steinberg moduleinfo.json files.
@@ -27,13 +26,15 @@ Afterwards if parsing succeeded the moduleInfo optional has a value containing t
 
 The VST3 SDK contains the moduleinfotool utility that can create moduleinfo.json files from VST3 modules.
 
-To add this capability to your own project you need to link to the sdk_hosting library from the SDK and include the following files to your project:
+To add this capability to your own project you need to link to the sdk_hosting library from the SDK and include the
+following files to your project:
 
 * moduleinfocreator.cpp
 * moduleinfocreator.h
 * moduleinfo.h
 
-Additionally you need to add the module platform implementation from the hosting directory (module_win32.cpp, module_mac.mm or module_linux.cpp).
+Additionally you need to add the module platform implementation from the hosting directory (module_win32.cpp,
+module_mac.mm or module_linux.cpp).
 
 Now you can use the two methods in moduleinfocreator.h to create a moduleinfo.json file:
 

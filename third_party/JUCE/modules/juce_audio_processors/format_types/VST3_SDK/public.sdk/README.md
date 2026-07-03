@@ -11,7 +11,8 @@ Here are located:
 
 ## License & Usage guidelines
 
-More details are found at [VST 3 SDK public_sdk License](https://forums.steinberg.net/t/vst-3-sdk-public-sdk-license/695592)
+More details are found
+at [VST 3 SDK public_sdk License](https://forums.steinberg.net/t/vst-3-sdk-public-sdk-license/695592)
 
 ----
 Return to [VST 3 SDK](https://github.com/steinbergmedia/vst3sdk)

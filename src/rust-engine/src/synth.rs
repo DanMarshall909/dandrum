@@ -635,7 +635,7 @@ connections:
     to: out.right
 "#,
         )
-        .expect("patch should parse");
+            .expect("patch should parse");
         let assets = PreparedSamplerAssets::from_samples_by_module(BTreeMap::from([(
             "sampler".to_string(),
             LoadedSample::new(48_000, vec![0.25, 0.5, 0.75]),
@@ -689,7 +689,7 @@ connections:
     to: out.right
 "#,
         )
-        .expect("patch should parse");
+            .expect("patch should parse");
         let assets = PreparedSamplerAssets::from_samples_by_module(BTreeMap::from([(
             "sampler".to_string(),
             LoadedSample::new(48_000, vec![0.25, 0.5, 0.75]),

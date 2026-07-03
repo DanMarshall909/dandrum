@@ -2,16 +2,19 @@
 
 ### Requirement: Structured diagnostic records
 
-All validation and runtime errors in the engine SHALL produce structured diagnostic records rather than unstructured strings.
+All validation and runtime errors in the engine SHALL produce structured diagnostic records rather than unstructured
+strings.
 
 #### Scenario: Validation error returns structured diagnostic
 
 - **WHEN** graph validation fails due to incompatible port types
-- **THEN** the validator SHALL return a structured diagnostic record containing error code, severity, YAML path, module ID, port name, expected type, actual type, and message
+- **THEN** the validator SHALL return a structured diagnostic record containing error code, severity, YAML path, module
+  ID, port name, expected type, actual type, and message
 
 ### Requirement: Stable error codes
 
-Every diagnostic SHALL include a stable, unique error code in dot-separated namespace format (e.g., `validation.type_mismatch`, `graph.cycle_detected`). Error codes SHALL NOT change between releases.
+Every diagnostic SHALL include a stable, unique error code in dot-separated namespace format (e.g.,
+`validation.type_mismatch`, `graph.cycle_detected`). Error codes SHALL NOT change between releases.
 
 #### Scenario: Error code is stable
 
@@ -20,7 +23,8 @@ Every diagnostic SHALL include a stable, unique error code in dot-separated name
 
 ### Requirement: Diagnostic severity levels
 
-Diagnostics SHALL support three severity levels: error (prevents rendering), warning (render proceeds but behaviour may be unexpected), and info (advisory).
+Diagnostics SHALL support three severity levels: error (prevents rendering), warning (render proceeds but behaviour may
+be unexpected), and info (advisory).
 
 #### Scenario: Error severity prevents render
 
@@ -34,7 +38,8 @@ Diagnostics SHALL support three severity levels: error (prevents rendering), war
 
 ### Requirement: YAML source location
 
-Every diagnostic originating from YAML parsing or patch validation SHALL include the file path, line number, and column range of the relevant source location.
+Every diagnostic originating from YAML parsing or patch validation SHALL include the file path, line number, and column
+range of the relevant source location.
 
 #### Scenario: Error reports YAML location
 
@@ -70,7 +75,8 @@ Where safe to compute automatically, diagnostics SHOULD include a suggested fix.
 
 ### Requirement: Diagnostics collection interface
 
-The engine SHALL expose a collection interface to retrieve all diagnostics from loading, validation, and graph construction.
+The engine SHALL expose a collection interface to retrieve all diagnostics from loading, validation, and graph
+construction.
 
 #### Scenario: Diagnostics collected after load
 

@@ -1,8 +1,10 @@
 ## 1. Noise Generator Module
 
 - [ ] 1.1 Add `NOISE` constant to `builtins/module_types.rs`
-- [ ] 1.2 Add `Noise` variant to `ModuleKind` enum with `from_str` and `is_render_supported` in `builtins/module_kind.rs`
-- [ ] 1.3 Add `noise_definition()` to `builtins.rs` registering the noise module with audio output and colour/amplitude control inputs
+- [ ] 1.2 Add `Noise` variant to `ModuleKind` enum with `from_str` and `is_render_supported` in
+  `builtins/module_kind.rs`
+- [ ] 1.3 Add `noise_definition()` to `builtins.rs` registering the noise module with audio output and colour/amplitude
+  control inputs
 - [ ] 1.4 Create `src/rust-engine/src/noise.rs` with `NoiseGenerator` struct supporting white, pink, and brownian noise
 - [ ] 1.5 Add `process_noise()` to `graph_processor/processing.rs`
 - [ ] 1.6 Add `ModuleKind::Noise` dispatch arm to `graph_processor/dispatch.rs`

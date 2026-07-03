@@ -52,7 +52,7 @@ module_definitions:
     modules:
       - id: reverb
         type: reverb
-    connections: []
+    connections: [ ]
 modules:
   - id: midi
     type: midi_input

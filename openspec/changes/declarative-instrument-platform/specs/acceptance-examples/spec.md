@@ -2,9 +2,11 @@
 
 ### Requirement: Acceptance examples validate platform capability incrementally
 
-The engine SHALL provide YAML acceptance examples that demonstrate useful instruments and effects built from primitives, composites, scripts, presets, and explicit graph routing.
+The engine SHALL provide YAML acceptance examples that demonstrate useful instruments and effects built from primitives,
+composites, scripts, presets, and explicit graph routing.
 
-Acceptance examples SHALL avoid special-purpose Rust instrument modules. An 808-style kick, for example, should be a YAML composite or patch built from reusable primitives, not a `kick_808` primitive.
+Acceptance examples SHALL avoid special-purpose Rust instrument modules. An 808-style kick, for example, should be a
+YAML composite or patch built from reusable primitives, not a `kick_808` primitive.
 
 #### Scenario: Each completed example loads and renders
 
@@ -14,7 +16,8 @@ Acceptance examples SHALL avoid special-purpose Rust instrument modules. An 808-
 
 ### Requirement: First proof is synthetic 808-style kick
 
-The first acceptance example SHALL demonstrate a synthetic 808-style kick using only reusable primitives and/or composites.
+The first acceptance example SHALL demonstrate a synthetic 808-style kick using only reusable primitives and/or
+composites.
 
 The example may require:
 
@@ -37,7 +40,8 @@ The example may require:
 
 ### Requirement: Synthetic snare follows after kick primitives are proven
 
-A later acceptance example SHALL demonstrate a synthetic snare using a tone/body source, noise component, explicit envelope/control routing, VCA-style gain control, and mixer.
+A later acceptance example SHALL demonstrate a synthetic snare using a tone/body source, noise component, explicit
+envelope/control routing, VCA-style gain control, and mixer.
 
 #### Scenario: Snare composite renders
 
@@ -46,7 +50,8 @@ A later acceptance example SHALL demonstrate a synthetic snare using a tone/body
 
 ### Requirement: Closed/open hi-hat pair follows after noise/filter/envelope routing is proven
 
-A later acceptance example SHALL demonstrate closed and open hi-hat variants using noise or other supported metallic/noisy sources, explicit filtering, and short/long amplitude contours.
+A later acceptance example SHALL demonstrate closed and open hi-hat variants using noise or other supported
+metallic/noisy sources, explicit filtering, and short/long amplitude contours.
 
 #### Scenario: Closed hi-hat renders shorter than open hi-hat
 
@@ -69,7 +74,8 @@ A subtractive synth voice example SHALL only use oscillator waveforms that the e
 
 ### Requirement: Sampler voice remains explicit and optional
 
-A sampler voice acceptance example SHALL demonstrate sample playback as an explicit graph feature, not as hidden behaviour inside drum, synth, or preset containers.
+A sampler voice acceptance example SHALL demonstrate sample playback as an explicit graph feature, not as hidden
+behaviour inside drum, synth, or preset containers.
 
 #### Scenario: Sampler voice plays sample
 
@@ -83,7 +89,8 @@ A sampler voice acceptance example SHALL demonstrate sample playback as an expli
 
 ### Requirement: Effects rack uses existing effect modules
 
-An effects rack example SHALL demonstrate routing through existing effect modules such as filter, echo, reverb, saturation, dynamics, convolution, splitter, mixer, and gain where supported.
+An effects rack example SHALL demonstrate routing through existing effect modules such as filter, echo, reverb,
+saturation, dynamics, convolution, splitter, mixer, and gain where supported.
 
 #### Scenario: Effects rack processes audio
 
@@ -106,7 +113,8 @@ A script acceptance example SHALL demonstrate event/control transformation witho
 
 ### Requirement: Drum machine event mapper drives explicit voices
 
-A drum-machine acceptance example SHALL demonstrate named pad event outputs triggering explicitly declared downstream voice composites.
+A drum-machine acceptance example SHALL demonstrate named pad event outputs triggering explicitly declared downstream
+voice composites.
 
 #### Scenario: Drum machine triggers connected voice
 
@@ -125,4 +133,5 @@ Acceptance examples SHALL be added in an order that proves the platform incremen
 #### Scenario: First example completed before broad library
 
 - **WHEN** the first acceptance example is implemented
-- **THEN** it SHALL focus on one synthetic 808-style kick before adding broader drum, synth, sampler, or effects libraries
+- **THEN** it SHALL focus on one synthetic 808-style kick before adding broader drum, synth, sampler, or effects
+  libraries

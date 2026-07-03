@@ -3,7 +3,7 @@ use std::collections::{BTreeMap, BTreeSet};
 use crate::patch::ParameterValue;
 use std::fmt;
 
-use crate::builtins::{BuiltInModuleRegistry, module_types};
+use crate::builtins::{module_types, BuiltInModuleRegistry};
 use crate::patch;
 
 #[path = "graph_composite.rs"]
@@ -686,21 +686,21 @@ impl GraphDiagnostic {
                 Severity::Error,
                 format!("missing module: {}", module_id.as_str()),
             )
-            .with_module_id(module_id.as_str()),
+                .with_module_id(module_id.as_str()),
             Self::MissingPort { port } => Diagnostic::new(
                 error_codes::GRAPH_MISSING_PORT,
                 Severity::Error,
                 format!("missing port: {port}"),
             )
-            .with_module_id(port.module_id().as_str())
-            .with_port_name(port.port_name()),
+                .with_module_id(port.module_id().as_str())
+                .with_port_name(port.port_name()),
             Self::IncorrectPortDirection { port, expected } => Diagnostic::new(
                 error_codes::GRAPH_INCORRECT_PORT_DIRECTION,
                 Severity::Error,
                 format!("incorrect port direction: {port} is not a {expected:?} port"),
             )
-            .with_module_id(port.module_id().as_str())
-            .with_port_name(port.port_name()),
+                .with_module_id(port.module_id().as_str())
+                .with_port_name(port.port_name()),
             Self::IncompatibleSignalTypes {
                 source,
                 source_type,
@@ -711,10 +711,10 @@ impl GraphDiagnostic {
                 Severity::Error,
                 format!("incompatible signal types: {source} is {source_type:?}, but {destination} is {destination_type:?}"),
             )
-            .with_module_id(destination.module_id().as_str())
-            .with_port_name(destination.port_name())
-            .with_expected(format!("{source_type:?}"))
-            .with_actual(format!("{destination_type:?}")),
+                .with_module_id(destination.module_id().as_str())
+                .with_port_name(destination.port_name())
+                .with_expected(format!("{source_type:?}"))
+                .with_actual(format!("{destination_type:?}")),
             Self::MultipleSourcesToInput { destination } => Diagnostic::new(
                 error_codes::GRAPH_MULTIPLE_SOURCES,
                 Severity::Error,
@@ -722,8 +722,8 @@ impl GraphDiagnostic {
                     "multiple sources connected to {destination}; use an explicit mixer or summing module"
                 ),
             )
-            .with_module_id(destination.module_id().as_str())
-            .with_port_name(destination.port_name()),
+                .with_module_id(destination.module_id().as_str())
+                .with_port_name(destination.port_name()),
             Self::CycleDetected { .. } => Diagnostic::new(
                 error_codes::GRAPH_CYCLE_DETECTED,
                 Severity::Error,
@@ -739,8 +739,8 @@ impl GraphDiagnostic {
                     "voice-scoped output {source} cannot route directly to global input {destination}; use an explicit mixer or summing module"
                 ),
             )
-            .with_module_id(destination.module_id().as_str())
-            .with_port_name(destination.port_name()),
+                .with_module_id(destination.module_id().as_str())
+                .with_port_name(destination.port_name()),
         }
     }
 }

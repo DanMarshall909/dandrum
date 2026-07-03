@@ -1,8 +1,8 @@
 use std::path::Path;
 
 use dandrum_engine::core::TimedInputEvent;
-use dandrum_engine::graph::SignalType;
 use dandrum_engine::graph::builtin_ports;
+use dandrum_engine::graph::SignalType;
 use dandrum_engine::graph::{Cable, Graph, ModuleId, ModuleNode, PortRef};
 use dandrum_engine::graph_processor::render_offline;
 use dandrum_engine::patch::RenderSettings;

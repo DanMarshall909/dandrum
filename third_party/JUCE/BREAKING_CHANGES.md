@@ -26,7 +26,6 @@ The previous approach did not allow users to customize the applied modifiers
 through the LookAndFeel class. Moving this logic to LookAndFeel methods ensures
 consistent and flexible customization.
 
-
 ## Change
 
 The behavior of AudioTransportSource::hasStreamFinished has been updated to
@@ -47,7 +46,6 @@ ChangeListeners that respond to stream completion.
 The previous behavior, where hasStreamFinished never returned true, was
 incorrect. This update ensures the method works as intended.
 
-
 ## Change
 
 AudioProcessor::TrackProperties now uses std::optional.
@@ -66,7 +64,6 @@ property value safely using std::optional::value() or operator*.
 Previously, it was not possible to distinguish whether a TrackProperty was
 explicitly set or if the default value was being used.
 
-
 ## Change
 
 Support for Arm32 in Projucer has been removed for Windows targets.
@@ -84,7 +81,6 @@ Select Arm64 or Arm64EC instead of Arm32, and port any 32-bit specific code to
 **Rationale**
 
 32-bit Arm support has been deprecated in current versions of Windows 11.
-
 
 # Version 8.0.4
 
@@ -106,7 +102,6 @@ Add the new juce_javascript module to the project.
 The Javascript implementation increases compilation times while being required
 by only a select number of projects.
 
-
 ## Change
 
 The return type for VST3ClientExtensions::getCompatibleClasses() has changed
@@ -126,7 +121,6 @@ VST3ClientExtensions::toInterfaceId() to convert a string to a 16-byte array.
 As part of adding functionality to support migrating parameter IDs from
 compatible plugins it was useful to switch to a safer type for representing
 VST3 interface IDs that closer matches the VST3 SDK types.
-
 
 ## Change
 
@@ -149,7 +143,6 @@ functions are meant to be called only by the ComponentPeer and Component objects
 that the VBlankAttachment instance registers itself with. External code calling
 these functions undermines the correct behaviour of the VBlankAttachment class.
 
-
 ## Change
 
 The signature of VBlankListener::onVBlank() was changed to
@@ -170,7 +163,6 @@ The behaviour will be unchanged if this new parameter is then ignored.
 A timestamp parameter has been missing from the VBlank callback since its
 addition. The new parameter allows all VBlankListeners to synchronise the
 content of their draw calls to the same frame timestamp.
-
 
 # Version 8.0.2
 
@@ -203,7 +195,6 @@ notdef/tofu glyph instead of using a fallback font.
 Using GlyphArrangement or TextLayout will use a sophisticated text shaping
 algorithm to lay out the string, with support for font fallback.
 
-
 ## Change
 
 The constructors of the WebSliderRelay, WebToggleButtonRelay and
@@ -229,7 +220,6 @@ about its creation and destruction.
 This avoids the anti-pattern where the relay class required a reference to a
 yet uninitialised WebBrowserComponent object.
 
-
 ## Change
 
 The coefficients of LadderFilter::Mode::BPF12 have been changed, causing a
@@ -251,7 +241,6 @@ into your own project/module and use it that way.
 The LadderFilter implementation follows the paper Valimaki (2006): Oscillator
 and Filter Algorithms for Virtual Analog Synthesis. The BPF12 mode coefficients
 however contained a typo compared to the paper, making the BPF12 mode incorrect.
-
 
 # Version 8.0.1
 
@@ -288,7 +277,6 @@ open-ended invokeMethod() API taking an arbitrary method name. Making
 invokeMethod() non-virtual forces users to add methods with setMethod() instead
 of overriding invokeMethod(), which is more compatible with QuickJS.
 
-
 ## Change
 
 The default JSON encoding has changed from ASCII escape sequences to UTF-8.
@@ -314,16 +302,15 @@ Use the `JSON::writeToStream()` or `JSON::toString()` functions that take a
 RFC 8259 states
 
 > JSON text exchanged between systems that are not part of a closed ecosystem
-MUST be encoded using UTF-8 [RFC3629].
+> MUST be encoded using UTF-8 [RFC3629].
 >
 > Previous specifications of JSON have not required the use of UTF-8 when
-transmitting JSON text.  However, the vast majority of JSON-based software
-implementations have chosen to use the UTF-8 encoding, to the extent that it is
-the only encoding that achieves interoperability.
+> transmitting JSON text. However, the vast majority of JSON-based software
+> implementations have chosen to use the UTF-8 encoding, to the extent that it is
+> the only encoding that achieves interoperability.
 
 For this reason UTF-8 encoding has better interoperability than ASCII escape
 sequences.
-
 
 ## Change
 
@@ -347,7 +334,6 @@ The JSON specification does not state that the BEL character can be escaped
 using "\a". Therefore other JSON parsers incorrectly read this character when
 they encounter it.
 
-
 ## Change
 
 The LowLevelGraphicsPostscriptRenderer has been removed.
@@ -367,7 +353,6 @@ into your own project/module and use them that way.
 We are not aware of any projects using this functionality. This renderer was
 not as fully-featured as any of the other renderers, so it's likely that users
 would have filed issue reports if they were using this feature.
-
 
 ## Change
 
@@ -391,7 +376,6 @@ missing features. The high maintenance cost, both in terms of developer time,
 and continuous integration bandwidth (both of which could provide more value
 elsewhere), means that continued support for MinGW is difficult to justify.
 
-
 ## Change
 
 The GUI Editor has been removed from the Projucer.
@@ -408,7 +392,6 @@ There is no workaround.
 
 This feature has been deprecated, without receiving bugfixes or maintenance,
 for a long time.
-
 
 ## Change
 
@@ -428,7 +411,6 @@ Use a different exporter, such as the exporter for Visual Studio 2019 or 2022.
 Since JUCE 8, the minimum build requirement has been Visual Studio 2019. This
 minimum requirement allows JUCE to use modern C++ features, along with modern
 Windows platform features.
-
 
 ## Change
 
@@ -453,7 +435,6 @@ especially for new users on Windows, as it defaulted to using the MinGW
 toolchain. This toolchain tends to be slow to build and link, and is not fully
 supported by JUCE, missing support for some audio and video backends, and
 plugin formats.
-
 
 ## Change
 
@@ -482,7 +463,6 @@ JUCE 7 behaviour of using the tofu glyph's width was not a conscious decision,
 but rather a side effect of ignoring unresolved glyphs, using a default width
 of one space is more reasonable.
 
-
 # Version 8.0.0
 
 ## Change
@@ -505,12 +485,12 @@ the ResizableWindow, which would be unexpected behaviour for getter functions.
 It also means that the functions cannot be called from const member functions,
 which limits their usefulness.
 
-
 ## Change
 
 As part of the Unicode upgrades TextLayout codepaths have been unified across
 all platforms. As a consequence the behaviour of TextLayout on Apple platforms
 will now be different in two regards:
+
 - With certain fonts, line spacing will now be different.
 - The AttributedString option WordWrap::byChar will no longer have an effect,
   just like it didn't have an effect on non-Apple platforms previously. Wrapping
@@ -536,7 +516,6 @@ font fallback mechanism, which previously was only available using the removed
 codepaths is now an integral part of the new approach. By removing the
 alternative codepaths, text layout and line spacing has become more consistent
 across the platforms.
-
 
 ## Change
 
@@ -569,7 +548,6 @@ alignment, was also present when using centred, it just wasn't as apparent.
 Not having the baselines aligned between different fonts resulted in generally
 displeasing visuals.
 
-
 ## Change
 
 The virtual functions LowLevelGraphicsContext::drawGlyph() and drawTextLayout()
@@ -589,7 +567,6 @@ Remove implementations of drawTextLayout().
 On Windows and macOS, drawing several glyphs at once is faster than drawing
 glyphs one-at-a-time. The new API is more general, and allows for more
 performant text rendering.
-
 
 ## Change
 
@@ -615,7 +592,6 @@ Using portable font metrics streamlines the development experience when working
 on applications that must run on multiple platforms. Using portable metrics by
 default means that new projects will benefit from this improved cross-platform
 behaviour from the outset.
-
 
 ## Change
 
@@ -656,7 +632,6 @@ old (deprecated) constructors. Portable metrics can be enabled by switching to
 the new Font constructor that takes a FontOptions argument. See the
 documentation for TypefaceMetricsKind for more details.
 
-
 ## Change
 
 Typeface::getOutlineForGlyph now returns void instead of bool.
@@ -673,7 +648,6 @@ Omit any checks against the result of this function.
 
 This function can no longer fail. It may still output an empty path if the
 requested glyph isn't present in the typeface.
-
 
 ## Change
 
@@ -696,7 +670,6 @@ The CustomTypeface class is difficult/impossible to support with the new
 HarfBuzz Typeface implementation. New support for automatic font fallback
 will be introduced in JUCE 8, and this will obviate much of the need for
 CustomTypeface.
-
 
 ## Change
 
@@ -726,7 +699,6 @@ text-shaping machinery in JUCE. Ensuring that all platforms have consistent
 behaviour before and after the unicode upgrade will make it easier to implement
 and verify those changes.
 
-
 ## Change
 
 The JavascriptEngine::callFunctionObject() function has been removed.
@@ -747,7 +719,6 @@ DynamicObject type is no longer used for the internal implementation of the
 engine. The JSObjectCursor class provides a way to navigate the Javascript
 object graph without depending on the type of the engine's internal
 implementation.
-
 
 ## Change
 
@@ -770,7 +741,6 @@ The JavascriptEngine's underlying implementation has been changed, and the
 NamedValueSet type is no longer used in its internal representation. Hence a new
 NamedValueSet object is created during the getRootObjectProperties() function
 call.
-
 
 ## Change
 
@@ -797,7 +767,6 @@ When a Javascript expression successfully evaluates to void, and when it fails
 evaluation due to timeout or syntax errors are distinctly different situations
 and this should be reflected on the value returned.
 
-
 ## Change
 
 The old JavascriptEngine internals have been entirely replaced by a new
@@ -823,7 +792,6 @@ e.g. ({ a: 'foo', b: 42, c: {} }).
 
 The new implementation uses a fully featured, performant, standards compliant
 Javascript engine, which is a significant upgrade.
-
 
 ## Change
 
@@ -857,7 +825,6 @@ any visible effect, like there was on the other platforms. The fine grained per
 resource control was not possible on other platforms. This change makes the
 Android implementation more consistent with the other platforms.
 
-
 ## Change
 
 The minimum supported compilers and deployment targets have been updated, with
@@ -884,7 +851,6 @@ New features of JUCE require both more modern compilers and deployment targets.
 
 The amount of investment MinGW support requires is unsustainable.
 
-
 ## Change
 
 The [JUCE End User Licence Agreement](https://juce.com/legal/juce-8-licence/)
@@ -908,7 +874,6 @@ The new JUCE End User Licence Agreement is much easier to understand, and has a
 much more generous personal tier. The move from ISC to AGPLv3/JUCE simplifies
 the licensing situation and encourages the creation of more open source software
 without impacting personal use of the JUCE framework.
-
 
 # Version 7.0.12
 
@@ -951,12 +916,12 @@ represented. The change in JUCE surfaces this distinction to the user, allowing
 them to determine e.g. whether the host has requested an ITU or an Atmos
 layout, and to handle these cases separately if necessary.
 
-
 # Version 7.0.10
 
 ## Change
 
 The signatures of some member functions of ci::Device have been changed:
+
 - sendPropertyGetInquiry
 - sendPropertySetInquiry
 
@@ -964,6 +929,7 @@ The signature of ci::PropertyHost::sendSubscriptionUpdate has also changed.
 
 The following member functions of ci::Device have been replaced with new
 alternatives:
+
 - sendPropertySubscriptionStart
 - sendPropertySubscriptionEnd
 - getOngoingSubscriptionsForMuid
@@ -1024,7 +990,6 @@ It's no longer necessary to store or manually release scope guards for requests
 that don't need to be cancelled. The new Key types are also a bit more
 typesafe, and allow for simple queries of the transaction that created the key.
 
-
 ## Change
 
 The ListenerList::Iterator class has been removed.
@@ -1043,7 +1008,6 @@ raw array of listeners to iterate through them by calling getListeners().
 
 Iterating through the listeners using the ListenerList::Iterator could in a
 number of cases lead to surprising results and undefined behavior.
-
 
 ## Change
 
@@ -1065,7 +1029,6 @@ Toolbar::customisationDialogBackgroundColourId.
 Previously there was no way to customise the dialog's background colour and the
 fixed white colour was inappropriate for most user interfaces.
 
-
 ## Change
 
 ProfileHost::enableProfile and ProfileHost::disableProfile have been combined
@@ -1084,7 +1047,6 @@ channels. To disable a profile, call setProfileEnablement with zero channels.
 
 The new API is simpler, more compact, and more consistent, as it now mirrors
 the signature of Device::sendProfileEnablement.
-
 
 ## Change
 
@@ -1109,7 +1071,6 @@ to help determine the number of physical pixels covered by the context
 component. Since plugin windows will often use AffineTransforms to set up the
 correct rendering scale, it makes sense to include these in the result of
 getRenderingScale().
-
 
 ## Change
 
@@ -1141,7 +1102,6 @@ The previous behaviour could result in surprising focus changes when a child
 component was clicked. This manifested in the focus seemingly disappearing when
 a PopupMenu item added to a component was clicked.
 
-
 ## Change
 
 The NodeID argument to AudioProcessorGraph::addNode() has been changed to take
@@ -1164,7 +1124,6 @@ pass a std::nullopt instead.
 
 The previous version prevented users from specifying a NodeID of 0 and resulted
 in unexpected behavior.
-
 
 ## Change
 
@@ -1198,7 +1157,6 @@ The previous signature made it impossible to add new formatting options. Now,
 if we need to add further options in the future, these can be added to the
 FormatOptions type, which will not be a breaking change.
 
-
 # Version 7.0.9
 
 ## Change
@@ -1226,7 +1184,6 @@ the ambiguity in code-bases regarding these types. However, when such a value
 is wrapped in a CachedValue the corresponding warning was suppressed until now,
 making such efforts incomplete.
 
-
 # Version 7.0.8
 
 ## Change
@@ -1252,7 +1209,6 @@ However, it's not so easy to convert safely in the opposite direction.
 Generally, returning unique_ptrs rather than refcounted pointers leads to more
 flexible APIs.
 
-
 # Version 7.0.7
 
 ## Change
@@ -1276,7 +1232,6 @@ which already requires CMake 3.22. It also allows us to make use of the
 XCODE_EMBED_APP_EXTENSIONS property (introduced in CMake 3.21), fixing an
 issue when archiving AUv3 plugins.
 
-
 # Version 7.0.6
 
 ## Change
@@ -1296,7 +1251,6 @@ Explicitly cast the value to double.
 
 Changing to double allows sub-millisecond waits which was important for
 supporting changes to the HighResolutionTimer.
-
 
 ## Change
 
@@ -1320,7 +1274,6 @@ The new approach improves the flexibility for users to specify realtime thread
 options on macOS/iOS and improves the flexibility for the API to evolve without
 introducing further breaking changes.
 
-
 ## Change
 
 JUCE module compilation files with a platform suffix are now checked case
@@ -1341,7 +1294,6 @@ the platform suffix.
 **Rationale**
 
 This change improves consistency between the Projucer and CMake integrations.
-
 
 ## Change
 
@@ -1367,7 +1319,6 @@ This change improves consistency between the Projucer and CMake integrations.
 Given the functionality was undocumented, the ease of a workaround, and the
 added complexity required for CMake support, the functionality was removed.
 
-
 ## Change
 
 Unique device IDs on iOS now use the OS provided 'identifierForVendor'.
@@ -1390,7 +1341,6 @@ that can be queried for additional information on failure.
 
 Apple have introduced restrictions on device identification rendering our
 previous methods unsuitable.
-
 
 ## Change
 
@@ -1416,7 +1366,6 @@ greater expansion for those that need it without burdening those that don't.
 Moving this function into this class improves consistency both with the new
 functionality and with similar functionality for the VST2 and VST3 formats.
 
-
 ## Change
 
 Unique device IDs on Windows have been updated to use a more reliable SMBIOS
@@ -1440,7 +1389,6 @@ to switch to using SystemStats::getMachineIdentifiers() instead.
 This update ensures the generation of more stable and reliable unique device
 IDs, while also maintaining backward compatibility with the previous ID
 generation methods.
-
 
 ## Change
 
@@ -1469,7 +1417,6 @@ this new behaviour is also in line with CSS behaviour in browsers. The new
 approach makes necessary corrections easier as adding 1px to the size of an
 item with absolute dimensions is guaranteed to translate into an observable 1px
 increase in the layout size.
-
 
 ## Change
 
@@ -1502,7 +1449,6 @@ AudioChannelSet::create9point1point4() and create9point0point4() layouts would
 only be used in CoreAudio and AAX, but a different AudioChannelSet would be used
 in VST3 even though they were functionally equivalent.
 
-
 ## Change
 
 The signatures of the ContentSharer member functions have been updated. The
@@ -1515,9 +1461,9 @@ Projects that use the old signatures will not build until they are updated.
 **Workaround**
 
 Instead of calling content sharer functions through a singleton instance, e.g.
-    ContentSharer::getInstance()->shareText (...);
+ContentSharer::getInstance()->shareText (...);
 call the static member functions directly:
-    ScopedMessageBox messageBox = ContentSharer::shareTextScoped (...);
+ScopedMessageBox messageBox = ContentSharer::shareTextScoped (...);
 The new functions return a ScopedMessageBox instance. On iOS, the content
 sharer will only remain open for as long as the ScopedMessageBox remains alive.
 On Android, this functionality will be added as/when the native APIs allow.
@@ -1527,7 +1473,6 @@ On Android, this functionality will be added as/when the native APIs allow.
 The new signatures are safer and easier to use. The ScopedMessageBox also
 allows content sharers to be dismissed programmatically, which wasn't
 previously possible.
-
 
 ## Change
 
@@ -1554,7 +1499,6 @@ The JUCE framework now requires features only present in version 2.4.0 of the
 AAX library. The build change removes steps from the build process, and ensures
 that the same compiler flags are used across the entire project.
 
-
 ## Change
 
 The implementation of ColourGradient::createLookupTable has been updated to use
@@ -1579,7 +1523,6 @@ to the same gradients drawn using OpenGL or the software renderer. This change
 updates the OpenGL and software renderers, so that they produce the same
 results as CoreGraphics.
 
-
 ## Change
 
 Projucer-generated MSVC projects now build VST3s as bundles, rather than as
@@ -1602,7 +1545,6 @@ Distributing VST3s as single files was deprecated in VST3 v3.6.10. JUCE's CMake
 scripts already produce VST3s as bundles, so this change increases consistency
 between the two build systems.
 
-
 # Version 7.0.3
 
 ## Change
@@ -1623,8 +1565,8 @@ Projucer's Xcode build configuration settings.
 **Rationale**
 
 Xcode 14 no longer supports deployment targets lower than macOS 10.13 and iOS
-11.
 
+11.
 
 ## Change
 
@@ -1641,7 +1583,6 @@ The ARA SDK configured in JUCE must be updated to version 2.2.0.
 **Rationale**
 
 # Version 2.2.0 is the latest official release of the ARA SDK.
-
 
 ## Change
 
@@ -1670,7 +1611,6 @@ options, but also changes how we can work with threads. The two most
 significant changes are that we cannot mix operations using the new and old
 interfaces, and that changing a priority using the new interface can only be
 done on the currently running thread.
-
 
 ## Change
 
@@ -1708,7 +1648,6 @@ browser backend is more intuitive then requiring the user to derive from a
 special class, especially if additional browser backends are added in the
 future.
 
-
 ## Change
 
 The function AudioIODeviceCallback::audioDeviceIOCallback() was removed.
@@ -1727,7 +1666,6 @@ instead.
 The audioDeviceIOCallbackWithContext() function fulfills the same role as
 audioDeviceIOCallback(), it just has an extra parameter. Hence the
 audioDeviceIOCallback() function was superfluous.
-
 
 ## Change
 
@@ -1757,7 +1695,6 @@ however prevented passing T** values to parameters with type const T**. In some
 places this necessitated the usage of const_cast. The new signature can bind to
 T** values and the awkward casting can be avoided.
 
-
 ## Change
 
 The minimum supported C++ standard is now C++17 and the oldest supported
@@ -1774,7 +1711,6 @@ No workaround is available.
 **Rationale**
 
 This compiler upgrade will allow the use of C++17 within the framework.
-
 
 ## Change
 
@@ -1796,7 +1732,6 @@ hosts have now implemented support for the new plist-based discovery mechanism.
 The new AudioUnitSDK (https://github.com/apple/AudioUnitSDK) provided by Apple
 to replace the old Core Audio Utility Classes no longer includes the files
 required to generate resource forks.
-
 
 ## Change
 
@@ -1826,7 +1761,6 @@ processBlockBypassed() on AudioProcessors with bypass parameters is likely to
 result in incorrect or unexpected output if this function is not overridden.
 The new behaviour obeys the contract set out in the AudioProcessor
 documentation.
-
 
 # Version 7.0.2
 
@@ -1858,7 +1792,6 @@ everything much more explicit and there is no confusion about dimensionality.
 The current multiplication routine also included a bug where A * B resulted in
 BA rather than AB, which needed to be addressed.
 
-
 # Version 7.0.0
 
 ## Change
@@ -1881,7 +1814,6 @@ AudioPlayHead::PositionInfo::setHostTimeNs().
 This change consolidates callback-related timing information into the
 PositionInfo type, improving the consistency of the AudioProcessor and
 AudioPlayHead APIs.
-
 
 ## Change
 
@@ -1912,7 +1844,6 @@ been explicitly set, so clients can implement their own fallback behaviour.
 The new PositionInfo type also includes a new "barCount" member, which is
 currently only used by the LV2 host and client.
 
-
 ## Change
 
 The optional JUCE_COREGRAPHICS_RENDER_WITH_MULTIPLE_PAINT_CALLS preprocessor
@@ -1941,7 +1872,6 @@ on the regions that Core Graphcis is redrawing. Whether
 JUCE_COREGRAPHICS_RENDER_WITH_MULTIPLE_PAINT_CALLS improves or degrades
 performance is specific to an application.
 
-
 ## Change
 
 The optional JUCE_COREGRAPHICS_DRAW_ASYNC preprocessor flag has been removed
@@ -1967,7 +1897,6 @@ benefit. Asynchronous rendering is a property of a Peer, rather than a
 Component, so a Peer style flag to conditionally opt out of asynchronous
 rendering is more appropriate.
 
-
 ## Change
 
 Constructors of AudioParameterBool, AudioParameterChoice, AudioParameterFloat,
@@ -1991,7 +1920,6 @@ Parameter types have many different properties. Setting a non-default property
 using the old constructors required explicitly setting other normally-defaulted
 properties, which was redundant. The new Attributes types allow non-default
 properties to be set in isolation.
-
 
 # Version 6.1.6
 
@@ -2018,7 +1946,6 @@ but only if the parent was enabled. This meant that scrolling on a component
 nested inside a disabled component would have no effect by default. This
 behaviour was not intuitive.
 
-
 ## Change
 
 The invalidPressure, invalidOrientation, invalidRotation, invalidTiltX and
@@ -2041,7 +1968,6 @@ functions return true when using them. This could be a source of confusion and
 may be inviting programming errors. The new names are in line with the ongoing
 practice of using these values to provide a neutral default in the absence of
 actual OS provided values.
-
 
 ## Change
 
@@ -2067,11 +1993,10 @@ overall latency does not change when enabling/disabling bypass.
 
 The documentation for AudioProcessor::getBypassParameter() says
 > if this method returns a non-null value, you should never call
-  processBlockBypassed but use the returned parameter to control the bypass
-  state instead.
-Some plugin wrappers were not following this rule. After this change, the
-behaviour of all plugin wrappers is consistent with the documented behaviour.
-
+> processBlockBypassed but use the returned parameter to control the bypass
+> state instead.
+> Some plugin wrappers were not following this rule. After this change, the
+> behaviour of all plugin wrappers is consistent with the documented behaviour.
 
 ## Change
 
@@ -2096,7 +2021,6 @@ BorderSize<int> instance in such cases that corresponds to a frame size of
 zero. That however can be a valid value, and needs to be treated differently
 from the situation when the frame size is not yet available.
 
-
 ## Change
 
 The return type of XWindowSystem::getBorderSize() was changed to
@@ -2118,7 +2042,6 @@ window creation. The underlying X11 calls will signal whether querying the
 border size was successful, but there was no way to forward this information
 through XWindowSystem::getBorderSize() until this change.
 
-
 # Version 6.1.5
 
 ## Change
@@ -2138,7 +2061,6 @@ Use the XSettings::createXSettings() factory function.
 The XSETTINGS facility is not available on all Linux distributions and the old
 constructor would fail on such systems, potentially crashing the application.
 The factory function will return nullptr in such situations instead.
-
 
 # Version 6.1.3
 
@@ -2164,7 +2086,6 @@ declaration must come before the inclusion.
 Using the forward declared types eliminates the need for error prone casting
 at the site where the ExtensionsVisitor facility is used.
 
-
 ## Change
 
 ListBox::createSnapshotOfRows now returns ScaledImage instead of Image.
@@ -2184,7 +2105,6 @@ Returning a ScaledImage allows the overriding function to specify the scale
 at which the image should be drawn. Returning an oversampled image will provide
 smoother-looking results on high resolution displays.
 
-
 ## Change
 
 AudioFrameRate::frameRate is now a class type instead of an enum.
@@ -2203,7 +2123,6 @@ new functions provide a more accurate description of the host's frame rate.
 
 The old enum-based interface was not flexible enough to describe all the frame
 rates that might be reported by a plugin host.
-
 
 ## Change
 
@@ -2226,7 +2145,6 @@ on all FlexItems that would otherwise use the default value for alignSelf.
 The new behaviour more closely matches the behaviour of CSS FlexBox
 implementations. In CSS, "align-self" has an initial value of "auto", which
 computes to the parent's "align-items" value.
-
 
 ## Change
 
@@ -2254,7 +2172,6 @@ which is now possible using the HostedParameter class. However, we also needed
 to enforce that all AudioPluginInstances can only have parameters which are of
 the type HostedParameter, which required hiding the old functions.
 
-
 # Version 6.1.0
 
 ## Change
@@ -2277,7 +2194,6 @@ be slow to load (i.e. a second or so). Projects that do not require these
 extension functions should not have to pay for this unnecessary overhead. Now,
 only core functions will be loaded by default, and extensions can be loaded
 explicitly in projects that require such functionality.
-
 
 ## Change
 
@@ -2305,7 +2221,6 @@ realtime scheduling. Setting a realtime policy on all newly-created threads may
 degrade performance, as multiple realtime threads will end up fighting for
 limited resources.
 
-
 ## Change
 
 The JUCE_GLSL_VERSION preprocessor definition has been removed.
@@ -2324,7 +2239,6 @@ consistent with the capabilities of the current OpenGL context.
 A compile-time version string is not very useful, as OpenGL versions and
 capabilities can change at runtime. Replacing this macro with a function allows
 querying the capabilities of the current context at runtime.
-
 
 ## Change
 
@@ -2346,7 +2260,6 @@ target_link_options, which were introduced in 3.13, which in turn allows us to
 provide support for bundled precompiled libraries in modules. Plugins already
 required CMake 3.15, so this change just brings other target types in line with
 the requirements for plugins.
-
 
 ## Change
 
@@ -2372,7 +2285,6 @@ Android often have an unwelcome surprise when then have to rewrite what they
 assumed to be platform independent code. Changing the default addresses these
 problems.
 
-
 ## Change
 
 The minimum supported C++ standard is now C++14 and the oldest supported
@@ -2391,7 +2303,6 @@ No workaround is available.
 **Rationale**
 
 This compiler upgrade will allow the use of C++14 within the framework.
-
 
 ## Change
 
@@ -2425,7 +2336,6 @@ the headers safer than the platform-defined headers. Platform headers are
 generally written in C, and export a significant portion of their symbols as
 preprocessor definitions.
 
-
 ## Change
 
 The functions `getComponentAsyncLayerBackedViewDisabled`
@@ -2445,7 +2355,6 @@ Move declarations of these functions into the juce namespace.
 Although the names of these functions are unlikely to collide with functions
 from other libraries, we can make such collisions much more unlikely by keeping
 JUCE code in the juce namespace.
-
 
 ## Change
 
@@ -2468,7 +2377,6 @@ ROLI is no longer involved with the development of JUCE. Therefore, development
 on the BLOCKS API has been moved out of the JUCE repository, and to a new
 repository managed by ROLI.
 
-
 ## Change
 
 The live build functionality of the Projucer has been removed.
@@ -2487,7 +2395,6 @@ Keeping the live build compatible with the latest compilers on all our
 supported platforms is a very substantial maintenance burden, but very few
 people are using this feature of the Projucer. Removing the live build will
 simplify the code and our release process.
-
 
 ## Change
 
@@ -2514,7 +2421,6 @@ caller deleting the object. The name has changed to accommodate the new
 determining basic focus traversal, of which keyboard focus is generally a
 subset.
 
-
 ## Change
 
 PluginDescription::uid has been deprecated and replaced with a new 'uniqueId'
@@ -2539,7 +2445,6 @@ should allow clients to implement logic such as checking a saved uid against
 the new uniqueId, and falling back to the deprecatedUid. This should allow
 hosts to gracefully upgrade from the old uid values to the new values.
 
-
 # Version 6.0.8
 
 ## Change
@@ -2563,7 +2468,6 @@ set to true to enable the corner resizer.
 The previous behaviour was undocumented and potentially confusing. There is now
 a single method to control the behaviour of the editor's corner resizer to
 avoid any ambiguity.
-
 
 ## Change
 
@@ -2592,7 +2496,6 @@ value. If this function returns an out-of-range value (including Inf and NaN)
 this is likely to break assumptions made by the host, leading to crashes,
 corrupted project data, or other defects.
 
-
 ## Change
 
 AudioProcessorListener::audioProcessorChanged gained a new parameter describing
@@ -2616,7 +2519,6 @@ In particular, plugin wrappers can now distinguish between changes to latency,
 parameter attributes, and the current program. This means that hosts will no
 longer assume parameters have changed when `setLatencySamples` is called.
 
-
 ## Change
 
 CharacterFunctions::readDoubleValue now returns values consistent with other
@@ -2638,7 +2540,6 @@ instead use std::isfinite.
 
 The new behaviour is consistent with other string parsing libraries.
 
-
 # Version 6.0.6
 
 ## Change
@@ -2658,7 +2559,6 @@ Update code using the old name to use the new name instead.
 
 Newer versions of macOS have dropped the "X" naming. Minor version updates are
 also less significant now than they were for the X-series.
-
 
 ## Change
 
@@ -2681,7 +2581,6 @@ previous behaviour.
 
 The legacy build system has issues building arm64 binaries for Apple silicon
 and will eventually be removed altogether.
-
 
 # Version 6.0.5
 
@@ -2710,7 +2609,6 @@ Allowing the LookAndFeelMethods to access the popup menu's options allows for
 more flexible styling. For example, a theme may wish to query the menu's target
 component or parent for colours to use.
 
-
 ## Change
 
 A typo in the JUCEUtils CMake script that caused the wrong manufacturer code to
@@ -2737,7 +2635,6 @@ behaviour.
 This change ensures that the manufacturer codes used by CMake projects match
 the codes that would be generated by the Projucer, improving compatibility
 when transitioning from the Projucer to CMake.
-
 
 # Version 6.0.2
 
@@ -2767,7 +2664,6 @@ interface and instead of adding an additional compile time config flag to
 enable this functionality, which adds complexity to the build process when not
 using the Projucer, JUCE makes all WASAPI device modes available by default.
 
-
 ## Change
 
 The fields representing Mac OS X 10.4 to 10.6 inclusive have been removed from
@@ -2788,7 +2684,6 @@ that `getOperatingSystemType` will always return an OS version greater than or
 equal to 10.7. Code that changes behaviours depending on the OS version can
 assume that this version is at least 10.7.
 
-
 ## Change
 
 The JUCE_DISABLE_COREGRAPHICS_FONT_SMOOTHING flag in juce_graphics is no
@@ -2807,7 +2702,6 @@ There is no workaround.
 When using a cached image to render Components with `setBufferedToImage (true)`
 the result now matches the default behaviour on iOS where fonts are not
 smoothed.
-
 
 ## Change
 
@@ -2831,12 +2725,12 @@ passed to the application and doing so interferes with the accessibility of
 JUCE apps. Only passing these events to the native macOS menu means that JUCE
 apps behave as expected for users.
 
-
 # Version 6.0.0
 
 ## Change
 
 The Convolution class interface was changed:
+
 - `loadImpulseResponse` member functions now take `enum class` parameters
   instead of `bool`.
 - `copyAndLoadImpulseResponseFromBlock` and
@@ -2867,7 +2761,6 @@ the ownership semantics of the buffer also makes it easier for users to avoid
 copies/allocations on the audio thread, and gives more flexibility to the
 implementation to run initialisation tasks on a background thread.
 
-
 ## Change
 
 All references to ROLI Ltd. (ROLI) have been changed to Raw Material Software
@@ -2886,7 +2779,6 @@ should be changed to the form "com.rmsl.*".
 **Rationale**
 
 This change reflects the change in ownership from ROLI to RMSL.
-
 
 ## Change
 
@@ -2913,7 +2805,6 @@ The old code had some bugs when using OpenGL and when moving between monitors
 with different scale factors. The new code should fix these and DPI-aware
 plug-ins will scale correctly.
 
-
 ## Change
 
 Relative Xcode subproject paths specified in the Projucer are now relative to
@@ -2933,7 +2824,6 @@ Update the subproject path in the Projucer.
 Most other Xcode specific paths are specified relative to the build directory.
 This change brings the Xcode subproject path in line with the rest of the
 configuration.
-
 
 # Version 5.4.6
 
@@ -2958,7 +2848,6 @@ Update your code to deal with a std::atomic<float>* instead of a float*.
 Returning a std::atomic<float>* allows the JUCE framework to have much stronger
 guarantees about thread safety.
 
-
 ## Change
 
 Removed a workaround from the ASIOAudioIODevice::getOutputLatencyInSamples()
@@ -2980,7 +2869,6 @@ directly.
 JUCE will now return the latency values as reported by the drivers without
 adding anything to them. The workaround was for old drivers and the current
 drivers should report the correct values without the need for the workaround.
-
 
 ## Change
 
@@ -3007,7 +2895,6 @@ When using overridden get/setProgramStateInformation methods the previous
 behaviour of the AU and AUv3 wrappers does not correctly save and restore
 state.
 
-
 # Version 5.4.5
 
 ## Change
@@ -3031,7 +2918,6 @@ This was an unintentional change resulting from moving away from a deprecated
 macOS text API. The new alignment is consistent with other rendering engines
 (web browsers and text editors) and the software renderer.
 
-
 ## Change
 
 The JUCEApplicationBase::backButtonPressed() method now returns a bool to
@@ -3053,7 +2939,6 @@ anything. The new code will correctly call finish() on the Activity when the
 back button is pressed but this method now allows the user to override this to
 implement their own custom navigation behaviour by returning true to indicate
 that it has been handled.
-
 
 ## Change
 
@@ -3079,7 +2964,6 @@ particularly when chaining methods involving references to other blocks. The
 interaction between the `const`-ness of the AudioBlock and the `const`-ness of
 the referenced data was also ambiguous and has now been standardised to the
 same behaviour as other non-owning data views like `std::span`.
-
 
 # Version 5.4.4
 
@@ -3107,7 +2991,6 @@ modern versions of Visual Studio. Until recently the AAX SDK was distributed as
 a Visual Studio 2013 project, but this is now provided as a Visual Studio 2017
 project.
 
-
 ## Change
 
 JUCE is moving towards using C++11 pointer container types instead of passing
@@ -3127,7 +3010,6 @@ None
 Indicating ownership through the transfer of smart pointer types has been part
 of mainstream C++ for a long time and this change enforces memory safety by
 default in most situations.
-
 
 ## Change
 
@@ -3155,7 +3037,6 @@ appearance as the native Apple icons. Doing this correctly without delegating
 the behaviour to the operating system is extremely cumbersome, and the APIs we
 were previously using to interact with menu bar items have been deprecated.
 
-
 ## Change
 
 The AudioBlock class now differentiates between const and non-const data.
@@ -3176,7 +3057,6 @@ block is very likely an error.
 
 This change makes the intent of the code much clearer and means that we can
 remove some const_cast operations.
-
 
 ## Change
 
@@ -3202,7 +3082,6 @@ The new format retains full precision, provides a human friendly representation
 of values near 1, and uses scientific notation for small and large numbers.
 This prevents needless file size bloat from numbers like 0.00000000000000001.
 
-
 # Version 5.4.3
 
 ## Change
@@ -3224,7 +3103,6 @@ Replace the multiple paths with a single global user module path.
 Using multiple global user module paths did not work when saving a project
 which exported to different OSes. Only allowing a single path will prevent this
 from silently causing issues.
-
 
 # Version 5.4.2
 
@@ -3248,7 +3126,6 @@ getBlockAreaWithinLayout to handle a BlockArea instead of a Rectangle.
 The juce_blocks_basics is ISC licensed and therefore cannot depend on the
 GPL/Commercial licensed juce_graphics module that contains Rectangle.
 
-
 ## Change
 
 Renaming and deletion of open file handles on Windows is now possible using the
@@ -3266,7 +3143,6 @@ No workaround.
 **Rationale**
 
 This unifies the behaviour across OSes as POSIX systems already allow this.
-
 
 ## Change
 
@@ -3286,7 +3162,6 @@ See the forum for further details.
 
 See the forum for further details.
 
-
 ## Change
 
 The minimum Android version for a JUCE app is now Android 4.1
@@ -3305,7 +3180,6 @@ There is no workaround.
 Less than 0.5% of all devices in the world run versions of Android older than
 Android 4.1. In the interest of keeping JUCE code clean and lean, we must
 deprecate support for very old Android versions from time to time.
-
 
 # Version 5.4.0
 
@@ -3330,7 +3204,6 @@ older versions of Windows.
 Until now JUCE's support for the Windows 10 WinRT MIDI API was experimental,
 due to longstanding issues within the API itself. These issues have been
 addressed in the Windows 10 1809 (October 2018 Update) release.
-
 
 ## Change
 
@@ -3362,7 +3235,6 @@ The VST2 SDK embedded within JUCE has been removed.
 Distributing VST2 plug-ins requires a VST2 license from Steinberg. Following
 Steinberg's removal of the VST2 SDK from their public SDKs we are also removing
 the VST2 SDK from the JUCE codebase.
-
 
 ## Change
 
@@ -3396,7 +3268,6 @@ The new createAndAddParameter method is much more flexible and enables any
 parameter types derived from RangedAudioParameter to be managed by the
 AudioProcessorValueTreeState.
 
-
 ## Change
 
 The Projucer's per-exporter Android SDK/NDK path options have been removed.
@@ -3415,7 +3286,6 @@ by opening the "Projucer/File->Global Paths..." menu item or using the
 
 Having multiple places where the paths could be set was confusing and could
 cause unexpected mismatches.
-
 
 ## Change
 
@@ -3439,7 +3309,6 @@ SystemStats::getDeviceDescription().contains ("iPhone");.
 The exact device model can now be deduced from this information instead of just
 the device family.
 
-
 ## Change
 
 DragAndDropContainer::performExternalDragDropOfFiles() and
@@ -3461,7 +3330,6 @@ lambda that will be called when the operation has been completed.
 The behaviour of these methods is now consistent across all platforms and the
 method no longer blocks the message thread on Windows.
 
-
 ## Change
 
 AudioProcessor::getTailLengthSeconds can now return infinity for
@@ -3482,7 +3350,6 @@ allocate a buffer.
 
 Before this change there was no way for a JUCE plug-in to report an infinite
 tail time.
-
 
 # Version 5.3.2
 
@@ -3506,7 +3373,6 @@ Use an external UndoManager to reproduce the old behaviour manually.
 This change fixes a few bugs in the behaviour of an UndoManager used by an
 AudioProcessorValueTreeState.
 
-
 ## Change
 
 JUCE no longer supports OS X deployment targets earlier than 10.7.
@@ -3526,7 +3392,6 @@ features, but there will be no official support for this.
 Increasing the minimum supported OS X version allows the JUCE codebase to make
 use of the more modern C++ features found in the 10.7 standard library, which
 in turn will increase thread and memory safety.
-
 
 # Version 5.3.0
 
@@ -3562,7 +3427,6 @@ build products took up a large amount of space in the repository. Replacing
 them with PIPs reduces the file size and allows us to categorise the examples
 better, as well as cleaning up the code.
 
-
 ## Change
 
 When hosting plug-ins all AudioProcessor methods of managing parameters that
@@ -3588,7 +3452,6 @@ using only compile-time messages. Therefore a single assertion, which can be
 safely ignored, serves to indicate that these functions should no longer be
 used. The move away from the AudioProcessor methods both improves the interface
 to that class and makes ongoing development work much easier.
-
 
 ## Change
 
@@ -3619,7 +3482,6 @@ InAppPurchases::getInstance()->purchaseProduct (...);
 
 This change was required to fix an issue on Android where on failed transaction
 a listener would not get called.
-
 
 ## Change
 
@@ -3654,7 +3516,6 @@ also be updated to reflect the specification changes.
 The MPE classes in JUCE are out of date and should be updated to reflect the
 new, official MPE standard.
 
-
 # Version 5.2.1
 
 ## Change
@@ -3680,7 +3541,6 @@ The old behaviour JUCEApplicationBase::quit() was confusing JUCE code, as a new
 instance of JUCE app was attempted to be created, while the older instance was
 still running in background. This would result in assertions when starting a
 second instance.
-
 
 ## Change
 
@@ -3721,7 +3581,6 @@ There is no workaround for DAW vendors and the only solution is to push plug-in
 vendors to use the dynamic runtime. To help with this, JUCE has decided to make
 dynamic runtime linkage the default in JUCE.
 
-
 ## Change
 
 AudioProcessorGraph interface has changed in a number of ways - Node objects
@@ -3742,7 +3601,6 @@ Just find equivalent new methods to replace existing code.
 The graph class was extremely old and creaky, and these changes is the start of
 an improvement process that should eventually result in it being broken down
 into fundamental graph building block classes for use in other contexts.
-
 
 # Version 5.2.0
 
@@ -3765,13 +3623,12 @@ It is expected on mobile devices to be able to scroll a list by just a drag,
 rather than using a dedicated scrollbar. The scrollbar is still available
 though if needed.
 
-
 ## Change
 
 The previous setting of Android exporter "Custom manifest xml elements"
 creating child nodes of <application> element has been replaced by "Custom
 manifest XML content" setting that allows to specify the content of the entire
-manifest instead.  Any previously values of the old setting will be used in the
+manifest instead. Any previously values of the old setting will be used in the
 new setting by default, and they will need changing as mentioned in Workaround.
 The custom content will be merged with the content auto-generated by Projucer.
 Any custom elements or custom attributes will override the ones set by
@@ -3817,7 +3674,6 @@ satisfactory because you want a support for x-large screens only, simply set
 <supports-screens android:xlargeScreens="true"/>
 </manifest>
 
-
 # Version 5.1.2
 
 ## Change
@@ -3854,7 +3710,6 @@ v3 parameters are not marked as high precision then hosts like Logic Pro only
 offer a limited number of parameter values, which again produces different
 behaviour for different plug-in types.
 
-
 ## Change
 
 A new FrameRateType fps23976 has been added to AudioPlayHead,
@@ -3873,7 +3728,6 @@ Add fps23976 to your switch statement and handle it appropriately.
 
 JUCE should be able to handle all popular frame rate codes but was missing
 support for 23.976.
-
 
 ## Change
 
@@ -3896,7 +3750,6 @@ all kinds of nasty type conversion edge cases. Furthermore, before this change,
 MacOS would automatically convert bools to ints but this wouldn't occur on
 different platform. Now the behaviour is consistent across all operating
 systems supported by JUCE.
-
 
 ## Change
 
@@ -3921,7 +3774,6 @@ point numbers can result in numbers with 17 significant figures where only a
 few are required. This change to DynamicObject is required to support
 truncating those numbers.
 
-
 # Version 5.1.0
 
 ## Change
@@ -3941,7 +3793,6 @@ Remove the usage of JUCE_COMPILER_SUPPORTS_LAMBDAS from your code.
 **Rationale**
 
 Lambda functions are now available on all platforms that JUCE supports.
-
 
 ## Change
 
@@ -3966,7 +3817,6 @@ Having a different C++ language standard option for each build configuration
 was unnecessary and was not fully implemented for all exporters. Changing it to
 a per-project settings means that the preference will propagate to all
 exporters and only needs to be set in one place.
-
 
 ## Change
 
@@ -3997,7 +3847,6 @@ any of its parents) were scaled. The only way to scale PopupMenus was via the
 global scaling factor. This had several drawbacks as the global scaling factor
 would scale everything. This was especially problematic in plug-in editors.
 
-
 ## Change
 
 Removed the setSecurityFlags() method from the Windows implementation of
@@ -4019,7 +3868,6 @@ The previous behaviour resulted in network connections on Windows having all
 the HTTPS security features disabled, exposing users to network attacks. HTTPS
 connections on Windows are now secure and will fail when connecting to an
 insecure web address.
-
 
 ## Change
 
@@ -4052,7 +3900,6 @@ true for operator+=/operator-= and operator--. The difference in behaviour is
 confusing and unintuitive. Furthermore, this aligns JUCE's Atomic type with
 std::atomic.
 
-
 # Version 4.3.1
 
 ## Change
@@ -4081,7 +3928,6 @@ VST3/AudioUnit hosts (specifically Studio One) have a bug that ignore any
 parameters that have a negative parameter id. Therefore, the hash function for
 VST3/AudioUnits needed to be changed to only return positive-valued hashes.
 
-
 # Version 4.3.0
 
 ## Change
@@ -4107,7 +3953,6 @@ A flawed multi-bus API was introduced with JUCE versions 4.0.0 up until version
 4.3.0 releases a revised multi-bus API which restores pre JUCE 4 API
 compatibility. However, the new multi-bus API is not compatible with the flawed
 multi-bus API (JUCE version 4.0.0 - 4.2.4).
-
 
 ## Change
 
@@ -4143,7 +3988,6 @@ transparently convert the legacy "Channel layout configuration" field to the
 new callback based multi-bus API, but this does not take the order into account
 in which the channel configurations appear in the legacy "Channel layout
 configuration" field.
-
 
 # Version 4.2.1
 

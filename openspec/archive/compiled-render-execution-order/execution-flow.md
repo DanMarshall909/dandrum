@@ -78,8 +78,8 @@ flowchart LR
 
 ## Summary
 
-| Diagram | Content |
-|---------|---------|
-| 1 — Current Bug | `execution_order` iterates globals first → `audio_mixer` reads voice oscillator's not-yet-computed output → silence |
-| 2 — Fixed | `process_block_compiled` uses two phases: voice phase first (produce + store), then global phase (read stored + consume). `execution_order` stays unchanged |
-| 3 — Comparison | The fixed compiled path matches the same two-phase pattern already proven in `process_block_polyphonic` |
+| Diagram         | Content                                                                                                                                                     |
+|-----------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| 1 — Current Bug | `execution_order` iterates globals first → `audio_mixer` reads voice oscillator's not-yet-computed output → silence                                         |
+| 2 — Fixed       | `process_block_compiled` uses two phases: voice phase first (produce + store), then global phase (read stored + consume). `execution_order` stays unchanged |
+| 3 — Comparison  | The fixed compiled path matches the same two-phase pattern already proven in `process_block_polyphonic`                                                     |

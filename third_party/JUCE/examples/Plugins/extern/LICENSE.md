@@ -3,7 +3,7 @@ repository](https://github.com/justinfrankel/reaper-sdk) on Github. At the time
 of writing, these files were distributed under the following license:
 
 This software is provided 'as-is', without any express or implied
-warranty.  In no event will the authors be held liable for any damages
+warranty. In no event will the authors be held liable for any damages
 arising from the use of this software.
 
 Permission is granted to anyone to use this software for any purpose,

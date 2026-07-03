@@ -377,7 +377,7 @@ connections:
     to: out.right
 "#,
     )
-    .expect("patch should parse");
+        .expect("patch should parse");
 
     patch::validate_patch_schema(&patch).expect("schema should be valid");
     let graph = Graph::from_patch_declarations(&patch);
@@ -542,7 +542,7 @@ connections:
     to: out.left
 "#,
     )
-    .expect("patch should parse");
+        .expect("patch should parse");
     patch::validate_patch_schema(&patch).expect("schema should validate");
     let graph = Graph::from_patch_declarations(&patch);
     graph
@@ -594,7 +594,7 @@ connections:
     to: out.left
 "#,
     )
-    .expect("patch should parse");
+        .expect("patch should parse");
     patch::validate_patch_schema(&patch).expect("schema should validate");
     let graph = Graph::from_patch_declarations(&patch);
     graph.validate().expect("expanded graph should validate");
@@ -2681,7 +2681,7 @@ connections:
     to: out.left
 "#,
     )
-    .expect("patch should parse");
+        .expect("patch should parse");
     patch::validate_patch_schema(&patch).expect("schema should be valid");
     let graph = Graph::from_patch_declarations(&patch);
     graph.validate().expect("graph should validate");
@@ -2747,7 +2747,7 @@ connections:
     to: out.left
 "#,
     )
-    .expect("patch should parse");
+        .expect("patch should parse");
     patch::validate_patch_schema(&patch).expect("schema should be valid");
     let graph = Graph::from_patch_declarations(&patch);
     graph.validate().expect("graph should validate");
@@ -2851,7 +2851,7 @@ connections:
     to: out.left
 "#,
     )
-    .expect("patch should parse");
+        .expect("patch should parse");
     crate::patch::validate_patch_schema(&patch).expect("schema should be valid");
     let graph = Graph::from_patch_declarations(&patch);
     graph.validate().expect("graph should validate");

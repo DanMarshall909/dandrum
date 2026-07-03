@@ -23,7 +23,6 @@ Inside the root of this folder, there must be a set of public header and source 
 the user's' project will include. The module may have as many other internal source files as
 it needs, but these must all be inside sub-folders!
 
-
 ### Master header file
 
 In this root folder there must be ONE master header file, which includes all the necessary
@@ -41,7 +40,6 @@ it must still correctly find all of its internally included sub-files.
 
 This master header file must also contain a comment with a BEGIN_JUCE_MODULE_DECLARATION
 block which defines the module's requirements - the syntax for this is described later on..
-
 
 ### Module CPP files
 
@@ -89,7 +87,6 @@ To simplify the use of obj-C++ there's also a special-case rule: If the folder c
 both a .mm and a .cpp file whose names are otherwise identical, then on macOS/iOS the .mm
 will be used and the cpp ignored. (And vice-versa for other platforms, of course).
 
-
 ### Precompiled libraries
 
 Precompiled libraries can be included in a module by placing them in a libs/ subdirectory.
@@ -98,32 +95,32 @@ placed in these directories can be linked with projects via the OSXLibs, iOSLibs
 windowsLibs, and linuxLibs keywords in the module declaration (see the following section).
 
 - OS X
-  - libs/MacOSX - to support multiple architectures, you may place libraries built as universal
-    binaries at this location. For backwards compatibility, the Projucer will also include the
-    directories libs/MacOSX/{arch}, where {arch} is the architecture you are targeting in Xcode
-    ("x86_64" or "i386", for example). When building with CMake, only libraries built as universal
-    binaries are supported and the arch subfolders are ignored.
+    - libs/MacOSX - to support multiple architectures, you may place libraries built as universal
+      binaries at this location. For backwards compatibility, the Projucer will also include the
+      directories libs/MacOSX/{arch}, where {arch} is the architecture you are targeting in Xcode
+      ("x86_64" or "i386", for example). When building with CMake, only libraries built as universal
+      binaries are supported and the arch subfolders are ignored.
 
 - Visual Studio
-  - libs/VisualStudio{year}/{arch}/{run-time}, where {year} is the four digit year of the Visual Studio
-    release, arch is the target architecture in Visual Studio ("x64" or "Win32", for example), and
-    {runtime} is the type of the run-time library indicated by the corresponding compiler flag
-    ("MD", "MDd", "MT", "MTd").
+    - libs/VisualStudio{year}/{arch}/{run-time}, where {year} is the four digit year of the Visual Studio
+      release, arch is the target architecture in Visual Studio ("x64" or "Win32", for example), and
+      {runtime} is the type of the run-time library indicated by the corresponding compiler flag
+      ("MD", "MDd", "MT", "MTd").
 
 - Linux
-  - libs/Linux/{arch}, where {arch} is the architecture you are targeting with the compiler. Some
-    common examples of {arch} are "x86_64", "i386" and "armv6".
+    - libs/Linux/{arch}, where {arch} is the architecture you are targeting with the compiler. Some
+      common examples of {arch} are "x86_64", "i386" and "armv6".
 
 - iOS
-  - libs/iOS - to support multiple architectures, you may place libraries built as universal
-    binaries at this location. For backwards compatibility, the Projucer will also include the
-    directories libs/iOS/{arch}, where {arch} is the architecture you are targeting in Xcode
-    ("arm64" or "x86_64", for example). When building with CMake, only libraries built as universal
-    binaries are supported and the arch subfolders are ignored.
+    - libs/iOS - to support multiple architectures, you may place libraries built as universal
+      binaries at this location. For backwards compatibility, the Projucer will also include the
+      directories libs/iOS/{arch}, where {arch} is the architecture you are targeting in Xcode
+      ("arm64" or "x86_64", for example). When building with CMake, only libraries built as universal
+      binaries are supported and the arch subfolders are ignored.
 
 - Android
-  - libs/Android/{arch}, where {arch} is the architecture provided by the Android Studio variable
-    "${ANDROID_ABI}" ("x86", "armeabi-v7a", "mips", for example).
+    - libs/Android/{arch}, where {arch} is the architecture provided by the Android Studio variable
+      "${ANDROID_ABI}" ("x86", "armeabi-v7a", "mips", for example).
 
 ## The BEGIN_JUCE_MODULE_DECLARATION block
 
@@ -146,73 +143,73 @@ The order in which they're declared doesn't matter.
 Possible values:
 
 - ID
-  - (Compulsory) This ID must match the name of the file and folder, e.g. juce_core.
-    The main reason for also including it here is as a sanity-check
+    - (Compulsory) This ID must match the name of the file and folder, e.g. juce_core.
+      The main reason for also including it here is as a sanity-check
 
 - vendor
-  - (Compulsory) A unique ID for the vendor, e.g. "juce". This should be short
-     and shouldn't contain any spaces
+    - (Compulsory) A unique ID for the vendor, e.g. "juce". This should be short
+      and shouldn't contain any spaces
 
 - version
-  - (Compulsory) A version number for the module
+    - (Compulsory) A version number for the module
 
 - name
-  - (Compulsory) A short description of the module
+    - (Compulsory) A short description of the module
 
 - description
-  - (Compulsory) A longer description (but still only one line of text, please!)
+    - (Compulsory) A longer description (but still only one line of text, please!)
 
 - dependencies
-  - (Optional) A list (space or comma-separated) of other modules that are required by
-    this one. The Introjucer can use this to auto-resolve dependencies.
+    - (Optional) A list (space or comma-separated) of other modules that are required by
+      this one. The Introjucer can use this to auto-resolve dependencies.
 
 - website
-  - (Optional) A URL linking to useful info about the module]
+    - (Optional) A URL linking to useful info about the module]
 
 - license
-  - (Optional) A description of the type of software license that applies
+    - (Optional) A description of the type of software license that applies
 
 - minimumCppStandard
-  - (Optional) A number indicating the minimum C++ language standard that is required for this module.
-    This must be just the standard number with no prefix e.g. 14 for C++14
+    - (Optional) A number indicating the minimum C++ language standard that is required for this module.
+      This must be just the standard number with no prefix e.g. 14 for C++14
 
 - searchpaths
-  - (Optional) A space-separated list of internal include paths, relative to the module's
-    parent folder, which need to be added to a project's header search path
+    - (Optional) A space-separated list of internal include paths, relative to the module's
+      parent folder, which need to be added to a project's header search path
 
 - OSXFrameworks
-  - (Optional) A list (space or comma-separated) of OSX frameworks that are needed by this module
+    - (Optional) A list (space or comma-separated) of OSX frameworks that are needed by this module
 
 - WeakOSXFrameworks
-  - (Optional) A list (space or comma-separated) of weak linked OSX frameworks that are needed
-    by this module
+    - (Optional) A list (space or comma-separated) of weak linked OSX frameworks that are needed
+      by this module
 
 - iOSFrameworks
-  - (Optional) A list (space or comma-separated) of iOS frameworks that are needed by this module
+    - (Optional) A list (space or comma-separated) of iOS frameworks that are needed by this module
 
 - WeakiOSFrameworks
-  - (Optional) A list (space or comma-separated) of weak linked iOS frameworks that are needed
-    by this module
+    - (Optional) A list (space or comma-separated) of weak linked iOS frameworks that are needed
+      by this module
 
 - linuxPackages
-  - (Optional) A list (space or comma-separated) pkg-config packages that should be used to pass
-    compiler (CFLAGS) and linker (LDFLAGS) flags
+    - (Optional) A list (space or comma-separated) pkg-config packages that should be used to pass
+      compiler (CFLAGS) and linker (LDFLAGS) flags
 
 - linuxLibs
-  - (Optional) A list (space or comma-separated) of static or dynamic libs that should be linked in a
-    linux build (these are passed to the linker via the -l flag)
+    - (Optional) A list (space or comma-separated) of static or dynamic libs that should be linked in a
+      linux build (these are passed to the linker via the -l flag)
 
 - OSXLibs
-  - (Optional) A list (space or comma-separated) of static or dynamic libs that should be linked in an
-    OS X build (these are passed to the linker via the -l flag)
+    - (Optional) A list (space or comma-separated) of static or dynamic libs that should be linked in an
+      OS X build (these are passed to the linker via the -l flag)
 
 - iOSLibs
-  - (Optional) A list (space or comma-separated) of static or dynamic libs that should be linked in an
-    iOS build (these are passed to the linker via the -l flag)
+    - (Optional) A list (space or comma-separated) of static or dynamic libs that should be linked in an
+      iOS build (these are passed to the linker via the -l flag)
 
 - windowsLibs
-  - (Optional) A list (space or comma-separated) of static or dynamic libs that should be linked in a
-    Visual Studio build (without the .lib suffixes)
+    - (Optional) A list (space or comma-separated) of static or dynamic libs that should be linked in a
+      Visual Studio build (without the .lib suffixes)
 
 Here's an example block:
 

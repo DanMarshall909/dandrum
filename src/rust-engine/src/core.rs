@@ -346,7 +346,7 @@ modules:
         signal_type: audio
 "#,
         )
-        .expect("patch should parse");
+            .expect("patch should parse");
         let engine = Engine::new();
         let events = vec![TimedInputEvent::new(
             0,

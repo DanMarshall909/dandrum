@@ -135,7 +135,7 @@ impl PreparationError {
                 Severity::Error,
                 error.to_string(),
             )
-            .into(),
+                .into(),
             Self::Compile(error) => error.to_diagnostic().into(),
         }
     }
@@ -246,7 +246,7 @@ render:
 modules: []
 "#,
         )
-        .expect("patch should parse");
+            .expect("patch should parse");
 
         let error = validate_patch_document(&patch_doc).expect_err("schema should fail");
 
@@ -282,7 +282,7 @@ connections:
     to: out.left
 "#,
         )
-        .expect("patch should parse");
+            .expect("patch should parse");
         validate_patch_document(&patch_doc).expect("schema should validate");
 
         let error = build_validated_graph(&patch_doc).expect_err("graph should fail");

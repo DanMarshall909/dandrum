@@ -16,30 +16,38 @@
 ## 3. Voice Sub-Synth Scope And Routing Validation
 
 - [x] 3.1 Add tests for built-in module execution scope metadata for voice-scoped and global modules.
-- [x] 3.2 Add tests for a voice-local sub-synth using voice-scoped mixer, VCA/control, and output-shaping modules before global mixing.
+- [x] 3.2 Add tests for a voice-local sub-synth using voice-scoped mixer, VCA/control, and output-shaping modules before
+  global mixing.
 - [x] 3.3 Add tests rejecting unsupported voice-to-global routing into non-mixing single-source inputs.
 - [x] 3.4 Add tests accepting explicit same-type mixing and explicit event/control/audio conversion modules.
-- [x] 3.5 Add tests rejecting implicit mixed-type signal routing into modules that do not declare conversion, merge, or polymorphic behavior.
-- [x] 3.6 Implement graph preparation metadata for voice/global module scope, voice-to-global boundary validation, and explicit mixed-signal interaction validation.
+- [x] 3.5 Add tests rejecting implicit mixed-type signal routing into modules that do not declare conversion, merge, or
+  polymorphic behavior.
+- [x] 3.6 Implement graph preparation metadata for voice/global module scope, voice-to-global boundary validation, and
+  explicit mixed-signal interaction validation.
 
 ## 4. Polyphonic Rendering
 
 - [x] 4.1 Add render tests proving overlapping sampler notes mix instead of replacing earlier playback.
 - [x] 4.2 Add render tests proving note-off releases only the matching voice envelope.
-- [x] 4.3 Add render tests proving each voice has an independent voice-local sub-synth with independently applied control/VCA processing before final global mix.
+- [x] 4.3 Add render tests proving each voice has an independent voice-local sub-synth with independently applied
+  control/VCA processing before final global mix.
 - [x] 4.4 Implement per-voice module state instances and active-voice block processing in the offline renderer.
-- [x] 4.5 Integrate voice allocation with realtime graph processor note-on/note-off handling without adding frontend coupling.
+- [x] 4.5 Integrate voice allocation with realtime graph processor note-on/note-off handling without adding frontend
+  coupling.
 
 ## 5. Determinism, Examples, And Documentation
 
 - [x] 5.1 Add deterministic render tests for repeated polyphonic renders with and without voice stealing.
 - [x] 5.2 Add a minimal polyphonic YAML patch example (polyphonic-chords.yaml).
-- [x] 5.3 Add a YAML patch example with a per-voice sub-synth before global output mixing (polyphonic-sampler-chords.yaml).
-- [x] 5.4 Document invalid voice allocation and invalid voice-to-global routing diagnostics (diagnostic Display impls in graph.rs, patch.rs).
+- [x] 5.3 Add a YAML patch example with a per-voice sub-synth before global output mixing (
+  polyphonic-sampler-chords.yaml).
+- [x] 5.4 Document invalid voice allocation and invalid voice-to-global routing diagnostics (diagnostic Display impls in
+  graph.rs, patch.rs).
 
 ## 6. Verification
 
 - [x] 6.1 Run Rust unit tests for the engine crate. (120 tests pass)
 - [x] 6.2 Run CMake/CTest verification for CLI acceptance coverage when feasible. (ctest passes)
 - [x] 6.3 Run OpenSpec validation for `add-polyphony`. (valid)
-- [x] 6.4 Confirm all `polyphonic-voice-allocation` scenarios are covered by tests or documented implementation evidence. (20/21 scenarios covered; audio-to-control detector modules are N/A as those modules don't exist yet)
+- [x] 6.4 Confirm all `polyphonic-voice-allocation` scenarios are covered by tests or documented implementation
+  evidence. (20/21 scenarios covered; audio-to-control detector modules are N/A as those modules don't exist yet)

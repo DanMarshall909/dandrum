@@ -3,15 +3,15 @@ use std::collections::HashMap;
 use crate::builtins::module_kind::ModuleKind;
 use crate::graph::builtin_ports;
 
-use super::ModuleInputProvider;
 use super::outputs::{BlockEvent, ModuleOutputs};
 use super::processing::{
-    EchoControls, ReverbControls, process_adsr, process_convolution, process_dynamics_processor,
-    process_echo, process_filter, process_frequency_splitter, process_impulse, process_multiply,
-    process_noise, process_note_to_control, process_note_to_rate, process_oscillator,
-    process_reverb, process_sampler, process_saturator, process_spectral_processor, process_vca,
+    process_adsr, process_convolution, process_dynamics_processor, process_echo, process_filter,
+    process_frequency_splitter, process_impulse, process_multiply, process_noise, process_note_to_control,
+    process_note_to_rate, process_oscillator, process_reverb, process_sampler,
+    process_saturator, process_spectral_processor, process_vca, EchoControls, ReverbControls,
 };
 use super::state::PerModuleState;
+use super::ModuleInputProvider;
 
 pub(super) fn process_module(
     module_idx: usize,

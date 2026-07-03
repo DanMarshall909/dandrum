@@ -2,17 +2,23 @@
 
 ### Requirement: Minimum routing and synthesis modules
 
-The engine SHALL provide built-in modules sufficient to prove event input, pitch/control mapping, sound generation, control routing, audio/control multiplication, mixing, explicit delay boundaries, effects, scripting, sampling, and audio output.
+The engine SHALL provide built-in modules sufficient to prove event input, pitch/control mapping, sound generation,
+control routing, audio/control multiplication, mixing, explicit delay boundaries, effects, scripting, sampling, and
+audio output.
 
 #### Scenario: Core module registry contains existing MVP modules
 
 - **WHEN** the built-in module registry is initialized
-- **THEN** it SHALL continue to include the existing supported modules for MIDI/event input, audio output, oscillator, gain/VCA, audio mixer, control mixer, ADSR envelope, LFO, filter, sampler, note-to-rate, dynamics, saturation, convolution, echo, reverb, frequency splitter, spectral processor, explicit delay boundary modules, and script modules where supported
+- **THEN** it SHALL continue to include the existing supported modules for MIDI/event input, audio output, oscillator,
+  gain/VCA, audio mixer, control mixer, ADSR envelope, LFO, filter, sampler, note-to-rate, dynamics, saturation,
+  convolution, echo, reverb, frequency splitter, spectral processor, explicit delay boundary modules, and script modules
+  where supported
 
 #### Scenario: Core module registry contains new minimal primitives
 
 - **WHEN** the built-in module registry is initialized after this change is implemented
-- **THEN** it SHALL include `noise`, `impulse`, `multiply`, and `note_to_control` module types with typed ports and parameter metadata
+- **THEN** it SHALL include `noise`, `impulse`, `multiply`, and `note_to_control` module types with typed ports and
+  parameter metadata
 
 ## ADDED Requirements
 
@@ -60,12 +66,14 @@ The engine SHALL provide a `multiply` module for multiplying audio and/or contro
 
 ### Requirement: Note-to-control module
 
-The engine SHALL provide a `note_to_control` module that converts note events into frequency, pitch ratio/CV, gate/trigger, and velocity control outputs.
+The engine SHALL provide a `note_to_control` module that converts note events into frequency, pitch ratio/CV,
+gate/trigger, and velocity control outputs.
 
 #### Scenario: Note-to-control module in registry
 
 - **WHEN** the built-in module registry is queried for `note_to_control`
-- **THEN** it SHALL report an event input port and documented control output ports for frequency, pitch ratio/CV, gate/trigger, and normalized velocity
+- **THEN** it SHALL report an event input port and documented control output ports for frequency, pitch ratio/CV,
+  gate/trigger, and normalized velocity
 
 ### Requirement: Oscillator waveform support is explicit
 
@@ -83,9 +91,11 @@ The oscillator module SHALL document its supported waveform behaviour through pa
 
 ### Requirement: Deferred modules are not part of this built-in milestone
 
-Envelope follower, general delay line, FM operator, resonator, state-variable filter, wavefolder, sample-and-hold, and specialist drum voice modules SHALL NOT be required built-ins for this change.
+Envelope follower, general delay line, FM operator, resonator, state-variable filter, wavefolder, sample-and-hold, and
+specialist drum voice modules SHALL NOT be required built-ins for this change.
 
 #### Scenario: Deferred module appears in a patch
 
 - **WHEN** a patch references a deferred module type that has not been implemented
-- **THEN** validation SHALL report an unknown module type or unsupported module diagnostic rather than silently accepting it
+- **THEN** validation SHALL report an unknown module type or unsupported module diagnostic rather than silently
+  accepting it

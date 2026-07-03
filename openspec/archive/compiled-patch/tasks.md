@@ -1,23 +1,31 @@
 ## 1. Module and Type Definitions
 
 - [x] 1.1 Create `compiled_patch.rs` with public type scaffolding: `CompiledPatch`, `CompiledNode`, `CompiledPortRef`
-- [x] 1.2 Add `ExecutionStep` type alias and `CompileError` enum (variants: `MissingPort`, `CycleDetected`, `UnknownModuleType`)
-- [x] 1.3 Define `CompiledNode::input_port_map` as `Vec<Vec<CompiledPortRef>>` and avoid storing string-keyed routing maps in `CompiledPatch`
+- [x] 1.2 Add `ExecutionStep` type alias and `CompileError` enum (variants: `MissingPort`, `CycleDetected`,
+  `UnknownModuleType`)
+- [x] 1.3 Define `CompiledNode::input_port_map` as `Vec<Vec<CompiledPortRef>>` and avoid storing string-keyed routing
+  maps in `CompiledPatch`
 - [x] 1.4 Register `compiled_patch` module in `lib.rs`
-- [x] 1.5 Add getter methods for `CompiledPatch` fields (nodes, execution_order, voice_node_indices, global_node_indices, render_settings)
+- [x] 1.5 Add getter methods for `CompiledPatch` fields (nodes, execution_order, voice_node_indices,
+  global_node_indices, render_settings)
 
 ## 2. Compile Function
 
-- [x] 2.1 Implement `compile(graph: &Graph, render_settings: &RenderSettings) -> Result<CompiledPatch, CompileError>` as a free function
-- [x] 2.2 Implement compile-local topological sort (Kahn's algorithm) in `compiled_patch.rs` without moving `graph_processor.rs` internals
+- [x] 2.1 Implement `compile(graph: &Graph, render_settings: &RenderSettings) -> Result<CompiledPatch, CompileError>` as
+  a free function
+- [x] 2.2 Implement compile-local topological sort (Kahn's algorithm) in `compiled_patch.rs` without moving
+  `graph_processor.rs` internals
 - [x] 2.3 Build `execution_order` from topological sort; detect cycles and return `CompileError::CycleDetected`
-- [x] 2.4 Separate sorted nodes into `global_node_indices` and `voice_node_indices`; set final `execution_order` to globals first, voices at the end
+- [x] 2.4 Separate sorted nodes into `global_node_indices` and `voice_node_indices`; set final `execution_order` to
+  globals first, voices at the end
 - [x] 2.5 Copy `RenderSettings` into `CompiledPatch`
 
 ## 3. Port Resolution
 
-- [x] 3.1 Build per-node `input_port_map: Vec<Vec<CompiledPortRef>>` by walking cables and resolving port names to indices
-- [x] 3.2 Validate that every cable source/destination port name exists on its module; return `CompileError::MissingPort` on mismatch
+- [x] 3.1 Build per-node `input_port_map: Vec<Vec<CompiledPortRef>>` by walking cables and resolving port names to
+  indices
+- [x] 3.2 Validate that every cable source/destination port name exists on its module; return
+  `CompileError::MissingPort` on mismatch
 - [x] 3.3 Store `output_port_map: Vec<usize>` per compiled node (maps output port index to local position)
 - [x] 3.4 Preserve `ModuleId` and `module_type` from source `ModuleNode` in each `CompiledNode`
 - [x] 3.5 Pre-size compile-time vectors from graph module, port, and cable counts where straightforward

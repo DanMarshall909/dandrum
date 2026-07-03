@@ -2,12 +2,15 @@
 
 ### Requirement: Inline composite module definitions
 
-The YAML patch format SHALL continue to support reusable composite definitions through the existing top-level `module_definitions` section.
+The YAML patch format SHALL continue to support reusable composite definitions through the existing top-level
+`module_definitions` section.
 
 #### Scenario: Composite definition declared inline
 
-- **WHEN** a YAML patch declares a `module_definitions` entry with a `type`, public inputs, public outputs, internal modules, and internal connections
-- **THEN** patches SHALL be able to instantiate that composite by declaring a module whose `type` matches the composite definition type
+- **WHEN** a YAML patch declares a `module_definitions` entry with a `type`, public inputs, public outputs, internal
+  modules, and internal connections
+- **THEN** patches SHALL be able to instantiate that composite by declaring a module whose `type` matches the composite
+  definition type
 
 #### Scenario: Existing composite patches remain valid
 
@@ -16,7 +19,8 @@ The YAML patch format SHALL continue to support reusable composite definitions t
 
 ### Requirement: Composite expansion remains deterministic
 
-Composite expansion SHALL produce an identical flat graph for the same patch, composite definitions, parameter values, and asset bindings.
+Composite expansion SHALL produce an identical flat graph for the same patch, composite definitions, parameter values,
+and asset bindings.
 
 #### Scenario: Repeated expansion identical
 
@@ -25,7 +29,8 @@ Composite expansion SHALL produce an identical flat graph for the same patch, co
 
 ### Requirement: Composite module ID prefixing
 
-When a composite instance is expanded, its internal module IDs SHALL be deterministically prefixed or namespaced by the composite instance ID.
+When a composite instance is expanded, its internal module IDs SHALL be deterministically prefixed or namespaced by the
+composite instance ID.
 
 #### Scenario: Expanded module IDs are unique
 
@@ -34,7 +39,8 @@ When a composite instance is expanded, its internal module IDs SHALL be determin
 
 ### Requirement: Composite port mapping
 
-Composite definitions SHALL map public inputs and outputs to internal module ports using the existing `maps_to` and `maps_from` declarations.
+Composite definitions SHALL map public inputs and outputs to internal module ports using the existing `maps_to` and
+`maps_from` declarations.
 
 #### Scenario: Public input maps to internal input
 
@@ -76,16 +82,19 @@ Composite definitions MAY expose asset bindings through the existing `asset_bind
 
 ### Requirement: Composite diagnostics map to source context
 
-Diagnostics produced from an expanded composite graph SHOULD include both the expanded internal module reference and the source composite instance/internal path where available.
+Diagnostics produced from an expanded composite graph SHOULD include both the expanded internal module reference and the
+source composite instance/internal path where available.
 
 #### Scenario: Expanded internal port fails validation
 
 - **WHEN** graph validation fails on an expanded internal module port
-- **THEN** the diagnostic SHOULD identify the composite instance and internal module path that produced the expanded module
+- **THEN** the diagnostic SHOULD identify the composite instance and internal module path that produced the expanded
+  module
 
 ### Requirement: External composite libraries are optional future extension
 
-Composite definitions MAY later be loaded from configured external composite directories, but inline `module_definitions` remain the canonical model for this change.
+Composite definitions MAY later be loaded from configured external composite directories, but inline
+`module_definitions` remain the canonical model for this change.
 
 #### Scenario: External composite support absent
 

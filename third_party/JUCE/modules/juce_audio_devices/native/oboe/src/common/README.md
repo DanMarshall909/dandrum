@@ -6,17 +6,17 @@ There are two components of the latency. The resampler itself, and a buffer that
 is used to adapt the block sizes.
 
 1) The resampler is an FIR running at the target sample rate. So its latency is the number of taps.
-From MultiChannelResampler.cpp, numTaps is
+   From MultiChannelResampler.cpp, numTaps is
 
-    Fastest: 2
-    Low: 4
-    Medium: 8
-    High: 16
-    Best: 32
+   Fastest: 2
+   Low: 4
+   Medium: 8
+   High: 16
+   Best: 32
 
 For output, the device sampling rate is used, which is typically 48000.For input, the app sampling rate is used.
 
-2) There is a block size adapter that collects odd sized blocks into larger blocks of the correct size.
+2) There is a block size adapter that collects odd sized blocks into larger blocks of the correct size.
 
 The adapter contains one burst of frames, from getFramesPerBurst(). But if the app specifies a
 particular size using setFramesPerCallback() then that size will be used.

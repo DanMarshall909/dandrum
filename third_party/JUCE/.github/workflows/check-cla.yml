@@ -1,5 +1,5 @@
 name: check-CLA
-on: [pull_request_target]
+on: [ pull_request_target ]
 jobs:
   check-cla:
     runs-on: ubuntu-latest

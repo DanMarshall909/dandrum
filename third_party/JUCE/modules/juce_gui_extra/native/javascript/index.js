@@ -35,28 +35,28 @@
 import "./check_native_interop.js";
 
 class PromiseHandler {
-  constructor() {
-    this.lastPromiseId = 0;
-    this.promises = new Map();
+    constructor() {
+        this.lastPromiseId = 0;
+        this.promises = new Map();
 
-    window.__JUCE__.backend.addEventListener(
-      "__juce__complete",
-      ({ promiseId, result }) => {
-        if (this.promises.has(promiseId)) {
-          this.promises.get(promiseId).resolve(result);
-          this.promises.delete(promiseId);
-        }
-      }
-    );
-  }
+        window.__JUCE__.backend.addEventListener(
+            "__juce__complete",
+            ({promiseId, result}) => {
+                if (this.promises.has(promiseId)) {
+                    this.promises.get(promiseId).resolve(result);
+                    this.promises.delete(promiseId);
+                }
+            }
+        );
+    }
 
-  createPromise() {
-    const promiseId = this.lastPromiseId++;
-    const result = new Promise((resolve, reject) => {
-      this.promises.set(promiseId, { resolve: resolve, reject: reject });
-    });
-    return [promiseId, result];
-  }
+    createPromise() {
+        const promiseId = this.lastPromiseId++;
+        const result = new Promise((resolve, reject) => {
+            this.promises.set(promiseId, {resolve: resolve, reject: reject});
+        });
+        return [promiseId, result];
+    }
 }
 
 const promiseHandler = new PromiseHandler();
@@ -71,51 +71,51 @@ const promiseHandler = new PromiseHandler();
  * @param {String} name
  */
 function getNativeFunction(name) {
-  if (!window.__JUCE__.initialisationData.__juce__functions.includes(name))
-    console.warn(
-      `Creating native function binding for '${name}', which is unknown to the backend`
-    );
+    if (!window.__JUCE__.initialisationData.__juce__functions.includes(name))
+        console.warn(
+            `Creating native function binding for '${name}', which is unknown to the backend`
+        );
 
-  const f = function () {
-    const [promiseId, result] = promiseHandler.createPromise();
+    const f = function () {
+        const [promiseId, result] = promiseHandler.createPromise();
 
-    window.__JUCE__.backend.emitEvent("__juce__invoke", {
-      name: name,
-      params: Array.prototype.slice.call(arguments),
-      resultId: promiseId,
-    });
+        window.__JUCE__.backend.emitEvent("__juce__invoke", {
+            name: name,
+            params: Array.prototype.slice.call(arguments),
+            resultId: promiseId,
+        });
 
-    return result;
-  };
+        return result;
+    };
 
-  return f;
+    return f;
 }
 
 //==============================================================================
 
 class ListenerList {
-  constructor() {
-    this.listeners = new Map();
-    this.listenerId = 0;
-  }
-
-  addListener(fn) {
-    const newListenerId = this.listenerId++;
-    this.listeners.set(newListenerId, fn);
-    return newListenerId;
-  }
-
-  removeListener(id) {
-    if (this.listeners.has(id)) {
-      this.listeners.delete(id);
+    constructor() {
+        this.listeners = new Map();
+        this.listenerId = 0;
     }
-  }
 
-  callListeners(payload) {
-    for (const [, value] of this.listeners) {
-      value(payload);
+    addListener(fn) {
+        const newListenerId = this.listenerId++;
+        this.listeners.set(newListenerId, fn);
+        return newListenerId;
     }
-  }
+
+    removeListener(id) {
+        if (this.listeners.has(id)) {
+            this.listeners.delete(id);
+        }
+    }
+
+    callListeners(payload) {
+        for (const [, value] of this.listeners) {
+            value(payload);
+        }
+    }
 }
 
 const BasicControl_valueChangedEventId = "valueChanged";
@@ -133,147 +133,147 @@ const SliderControl_sliderDragEndedEventId = "sliderDragEnded";
  * @param {String} name
  */
 class SliderState {
-  constructor(name) {
-    if (!window.__JUCE__.initialisationData.__juce__sliders.includes(name))
-      console.warn(
-        "Creating SliderState for '" +
-          name +
-          "', which is unknown to the backend"
-      );
+    constructor(name) {
+        if (!window.__JUCE__.initialisationData.__juce__sliders.includes(name))
+            console.warn(
+                "Creating SliderState for '" +
+                name +
+                "', which is unknown to the backend"
+            );
 
-    this.name = name;
-    this.identifier = "__juce__slider" + this.name;
-    this.scaledValue = 0;
-    this.properties = {
-      start: 0,
-      end: 1,
-      skew: 1,
-      name: "",
-      label: "",
-      numSteps: 100,
-      interval: 0,
-      parameterIndex: -1,
-    };
-    this.valueChangedEvent = new ListenerList();
-    this.propertiesChangedEvent = new ListenerList();
+        this.name = name;
+        this.identifier = "__juce__slider" + this.name;
+        this.scaledValue = 0;
+        this.properties = {
+            start: 0,
+            end: 1,
+            skew: 1,
+            name: "",
+            label: "",
+            numSteps: 100,
+            interval: 0,
+            parameterIndex: -1,
+        };
+        this.valueChangedEvent = new ListenerList();
+        this.propertiesChangedEvent = new ListenerList();
 
-    window.__JUCE__.backend.addEventListener(this.identifier, (event) =>
-      this.handleEvent(event)
-    );
+        window.__JUCE__.backend.addEventListener(this.identifier, (event) =>
+            this.handleEvent(event)
+        );
 
-    window.__JUCE__.backend.emitEvent(this.identifier, {
-      eventType: "requestInitialUpdate",
-    });
-  }
-
-  /**
-   * Sets the normalised value of the corresponding backend parameter. This value is always in the
-   * [0, 1] range (inclusive).
-   *
-   * The meaning of this range is the same as in the case of
-   * AudioProcessorParameter::getValue() (C++).
-   *
-   * @param {String} name
-   */
-  setNormalisedValue(newValue) {
-    this.scaledValue = this.snapToLegalValue(
-      this.normalisedToScaledValue(newValue)
-    );
-
-    window.__JUCE__.backend.emitEvent(this.identifier, {
-      eventType: BasicControl_valueChangedEventId,
-      value: this.scaledValue,
-    });
-  }
-
-  /**
-   * This function should be called first thing when the user starts interacting with the slider.
-   */
-  sliderDragStarted() {
-    window.__JUCE__.backend.emitEvent(this.identifier, {
-      eventType: SliderControl_sliderDragStartedEventId,
-    });
-  }
-
-  /**
-   * This function should be called when the user finished the interaction with the slider.
-   */
-  sliderDragEnded() {
-    window.__JUCE__.backend.emitEvent(this.identifier, {
-      eventType: SliderControl_sliderDragEndedEventId,
-    });
-  }
-
-  /** Internal. */
-  handleEvent(event) {
-    if (event.eventType == BasicControl_valueChangedEventId) {
-      this.scaledValue = event.value;
-      this.valueChangedEvent.callListeners();
+        window.__JUCE__.backend.emitEvent(this.identifier, {
+            eventType: "requestInitialUpdate",
+        });
     }
-    if (event.eventType == BasicControl_propertiesChangedId) {
-      // eslint-disable-next-line no-unused-vars
-      let { eventType: _, ...rest } = event;
-      this.properties = rest;
-      this.propertiesChangedEvent.callListeners();
+
+    /**
+     * Sets the normalised value of the corresponding backend parameter. This value is always in the
+     * [0, 1] range (inclusive).
+     *
+     * The meaning of this range is the same as in the case of
+     * AudioProcessorParameter::getValue() (C++).
+     *
+     * @param {String} name
+     */
+    setNormalisedValue(newValue) {
+        this.scaledValue = this.snapToLegalValue(
+            this.normalisedToScaledValue(newValue)
+        );
+
+        window.__JUCE__.backend.emitEvent(this.identifier, {
+            eventType: BasicControl_valueChangedEventId,
+            value: this.scaledValue,
+        });
     }
-  }
 
-  /**
-   * Returns the scaled value of the parameter. This corresponds to the return value of
-   * NormalisableRange::convertFrom0to1() (C++). This value will differ from a linear
-   * [0, 1] range if a non-default NormalisableRange was set for the parameter.
-   */
-  getScaledValue() {
-    return this.scaledValue;
-  }
+    /**
+     * This function should be called first thing when the user starts interacting with the slider.
+     */
+    sliderDragStarted() {
+        window.__JUCE__.backend.emitEvent(this.identifier, {
+            eventType: SliderControl_sliderDragStartedEventId,
+        });
+    }
 
-  /**
-   * Returns the normalised value of the corresponding backend parameter. This value is always in the
-   * [0, 1] range (inclusive).
-   *
-   * The meaning of this range is the same as in the case of
-   * AudioProcessorParameter::getValue() (C++).
-   *
-   * @param {String} name
-   */
-  getNormalisedValue() {
-    return Math.pow(
-      (this.scaledValue - this.properties.start) /
-        (this.properties.end - this.properties.start),
-      this.properties.skew
-    );
-  }
+    /**
+     * This function should be called when the user finished the interaction with the slider.
+     */
+    sliderDragEnded() {
+        window.__JUCE__.backend.emitEvent(this.identifier, {
+            eventType: SliderControl_sliderDragEndedEventId,
+        });
+    }
 
-  /** Internal. */
-  normalisedToScaledValue(normalisedValue) {
-    return (
-      Math.pow(normalisedValue, 1 / this.properties.skew) *
-        (this.properties.end - this.properties.start) +
-      this.properties.start
-    );
-  }
+    /** Internal. */
+    handleEvent(event) {
+        if (event.eventType == BasicControl_valueChangedEventId) {
+            this.scaledValue = event.value;
+            this.valueChangedEvent.callListeners();
+        }
+        if (event.eventType == BasicControl_propertiesChangedId) {
+            // eslint-disable-next-line no-unused-vars
+            let {eventType: _, ...rest} = event;
+            this.properties = rest;
+            this.propertiesChangedEvent.callListeners();
+        }
+    }
 
-  /** Internal. */
-  snapToLegalValue(value) {
-    const interval = this.properties.interval;
+    /**
+     * Returns the scaled value of the parameter. This corresponds to the return value of
+     * NormalisableRange::convertFrom0to1() (C++). This value will differ from a linear
+     * [0, 1] range if a non-default NormalisableRange was set for the parameter.
+     */
+    getScaledValue() {
+        return this.scaledValue;
+    }
 
-    if (interval == 0) return value;
+    /**
+     * Returns the normalised value of the corresponding backend parameter. This value is always in the
+     * [0, 1] range (inclusive).
+     *
+     * The meaning of this range is the same as in the case of
+     * AudioProcessorParameter::getValue() (C++).
+     *
+     * @param {String} name
+     */
+    getNormalisedValue() {
+        return Math.pow(
+            (this.scaledValue - this.properties.start) /
+            (this.properties.end - this.properties.start),
+            this.properties.skew
+        );
+    }
 
-    const start = this.properties.start;
-    const clamp = (val, min = 0, max = 1) => Math.max(min, Math.min(max, val));
+    /** Internal. */
+    normalisedToScaledValue(normalisedValue) {
+        return (
+            Math.pow(normalisedValue, 1 / this.properties.skew) *
+            (this.properties.end - this.properties.start) +
+            this.properties.start
+        );
+    }
 
-    return clamp(
-      start + interval * Math.floor((value - start) / interval + 0.5),
-      this.properties.start,
-      this.properties.end
-    );
-  }
+    /** Internal. */
+    snapToLegalValue(value) {
+        const interval = this.properties.interval;
+
+        if (interval == 0) return value;
+
+        const start = this.properties.start;
+        const clamp = (val, min = 0, max = 1) => Math.max(min, Math.min(max, val));
+
+        return clamp(
+            start + interval * Math.floor((value - start) / interval + 0.5),
+            this.properties.start,
+            this.properties.end
+        );
+    }
 }
 
 const sliderStates = new Map();
 
 for (const sliderName of window.__JUCE__.initialisationData.__juce__sliders)
-  sliderStates.set(sliderName, new SliderState(sliderName));
+    sliderStates.set(sliderName, new SliderState(sliderName));
 
 /**
  * Returns a SliderState object that is connected to the backend WebSliderRelay object that was
@@ -285,9 +285,9 @@ for (const sliderName of window.__JUCE__.initialisationData.__juce__sliders)
  * @param {String} name
  */
 function getSliderState(name) {
-  if (!sliderStates.has(name)) sliderStates.set(name, new SliderState(name));
+    if (!sliderStates.has(name)) sliderStates.set(name, new SliderState(name));
 
-  return sliderStates.get(name);
+    return sliderStates.get(name);
 }
 
 /**
@@ -300,67 +300,67 @@ function getSliderState(name) {
  * @param {String} name
  */
 class ToggleState {
-  constructor(name) {
-    if (!window.__JUCE__.initialisationData.__juce__toggles.includes(name))
-      console.warn(
-        "Creating ToggleState for '" +
-          name +
-          "', which is unknown to the backend"
-      );
+    constructor(name) {
+        if (!window.__JUCE__.initialisationData.__juce__toggles.includes(name))
+            console.warn(
+                "Creating ToggleState for '" +
+                name +
+                "', which is unknown to the backend"
+            );
 
-    this.name = name;
-    this.identifier = "__juce__toggle" + this.name;
-    this.value = false;
-    this.properties = {
-      name: "",
-      parameterIndex: -1,
-    };
-    this.valueChangedEvent = new ListenerList();
-    this.propertiesChangedEvent = new ListenerList();
+        this.name = name;
+        this.identifier = "__juce__toggle" + this.name;
+        this.value = false;
+        this.properties = {
+            name: "",
+            parameterIndex: -1,
+        };
+        this.valueChangedEvent = new ListenerList();
+        this.propertiesChangedEvent = new ListenerList();
 
-    window.__JUCE__.backend.addEventListener(this.identifier, (event) =>
-      this.handleEvent(event)
-    );
+        window.__JUCE__.backend.addEventListener(this.identifier, (event) =>
+            this.handleEvent(event)
+        );
 
-    window.__JUCE__.backend.emitEvent(this.identifier, {
-      eventType: "requestInitialUpdate",
-    });
-  }
-
-  /** Returns the value corresponding to the associated WebToggleRelay's (C++) state. */
-  getValue() {
-    return this.value;
-  }
-
-  /** Informs the backend to change the associated WebToggleRelay's (C++) state. */
-  setValue(newValue) {
-    this.value = newValue;
-
-    window.__JUCE__.backend.emitEvent(this.identifier, {
-      eventType: BasicControl_valueChangedEventId,
-      value: this.value,
-    });
-  }
-
-  /** Internal. */
-  handleEvent(event) {
-    if (event.eventType == BasicControl_valueChangedEventId) {
-      this.value = event.value;
-      this.valueChangedEvent.callListeners();
+        window.__JUCE__.backend.emitEvent(this.identifier, {
+            eventType: "requestInitialUpdate",
+        });
     }
-    if (event.eventType == BasicControl_propertiesChangedId) {
-      // eslint-disable-next-line no-unused-vars
-      let { eventType: _, ...rest } = event;
-      this.properties = rest;
-      this.propertiesChangedEvent.callListeners();
+
+    /** Returns the value corresponding to the associated WebToggleRelay's (C++) state. */
+    getValue() {
+        return this.value;
     }
-  }
+
+    /** Informs the backend to change the associated WebToggleRelay's (C++) state. */
+    setValue(newValue) {
+        this.value = newValue;
+
+        window.__JUCE__.backend.emitEvent(this.identifier, {
+            eventType: BasicControl_valueChangedEventId,
+            value: this.value,
+        });
+    }
+
+    /** Internal. */
+    handleEvent(event) {
+        if (event.eventType == BasicControl_valueChangedEventId) {
+            this.value = event.value;
+            this.valueChangedEvent.callListeners();
+        }
+        if (event.eventType == BasicControl_propertiesChangedId) {
+            // eslint-disable-next-line no-unused-vars
+            let {eventType: _, ...rest} = event;
+            this.properties = rest;
+            this.propertiesChangedEvent.callListeners();
+        }
+    }
 }
 
 const toggleStates = new Map();
 
 for (const name of window.__JUCE__.initialisationData.__juce__toggles)
-  toggleStates.set(name, new ToggleState(name));
+    toggleStates.set(name, new ToggleState(name));
 
 /**
  * Returns a ToggleState object that is connected to the backend WebToggleButtonRelay object that was
@@ -372,9 +372,9 @@ for (const name of window.__JUCE__.initialisationData.__juce__toggles)
  * @param {String} name
  */
 function getToggleState(name) {
-  if (!toggleStates.has(name)) toggleStates.set(name, new ToggleState(name));
+    if (!toggleStates.has(name)) toggleStates.set(name, new ToggleState(name));
 
-  return toggleStates.get(name);
+    return toggleStates.get(name);
 }
 
 /**
@@ -387,79 +387,79 @@ function getToggleState(name) {
  * @param {String} name
  */
 class ComboBoxState {
-  constructor(name) {
-    if (!window.__JUCE__.initialisationData.__juce__comboBoxes.includes(name))
-      console.warn(
-        "Creating ComboBoxState for '" +
-          name +
-          "', which is unknown to the backend"
-      );
+    constructor(name) {
+        if (!window.__JUCE__.initialisationData.__juce__comboBoxes.includes(name))
+            console.warn(
+                "Creating ComboBoxState for '" +
+                name +
+                "', which is unknown to the backend"
+            );
 
-    this.name = name;
-    this.identifier = "__juce__comboBox" + this.name;
-    this.value = 0.0;
-    this.properties = {
-      name: "",
-      parameterIndex: -1,
-      choices: [],
-    };
-    this.valueChangedEvent = new ListenerList();
-    this.propertiesChangedEvent = new ListenerList();
+        this.name = name;
+        this.identifier = "__juce__comboBox" + this.name;
+        this.value = 0.0;
+        this.properties = {
+            name: "",
+            parameterIndex: -1,
+            choices: [],
+        };
+        this.valueChangedEvent = new ListenerList();
+        this.propertiesChangedEvent = new ListenerList();
 
-    window.__JUCE__.backend.addEventListener(this.identifier, (event) =>
-      this.handleEvent(event)
-    );
+        window.__JUCE__.backend.addEventListener(this.identifier, (event) =>
+            this.handleEvent(event)
+        );
 
-    window.__JUCE__.backend.emitEvent(this.identifier, {
-      eventType: "requestInitialUpdate",
-    });
-  }
-
-  /**
-   * Returns the value corresponding to the associated WebComboBoxRelay's (C++) state.
-   *
-   * This is an index identifying which element of the properties.choices array is currently
-   * selected.
-   */
-  getChoiceIndex() {
-    return Math.round(this.value * (this.properties.choices.length - 1));
-  }
-
-  /**
-   * Informs the backend to change the associated WebComboBoxRelay's (C++) state.
-   *
-   * This should be called with the index identifying the selected element from the
-   * properties.choices array.
-   */
-  setChoiceIndex(index) {
-    const numItems = this.properties.choices.length;
-    this.value = numItems > 1 ? index / (numItems - 1) : 0.0;
-
-    window.__JUCE__.backend.emitEvent(this.identifier, {
-      eventType: BasicControl_valueChangedEventId,
-      value: this.value,
-    });
-  }
-
-  /** Internal. */
-  handleEvent(event) {
-    if (event.eventType == BasicControl_valueChangedEventId) {
-      this.value = event.value;
-      this.valueChangedEvent.callListeners();
+        window.__JUCE__.backend.emitEvent(this.identifier, {
+            eventType: "requestInitialUpdate",
+        });
     }
-    if (event.eventType == BasicControl_propertiesChangedId) {
-      // eslint-disable-next-line no-unused-vars
-      let { eventType: _, ...rest } = event;
-      this.properties = rest;
-      this.propertiesChangedEvent.callListeners();
+
+    /**
+     * Returns the value corresponding to the associated WebComboBoxRelay's (C++) state.
+     *
+     * This is an index identifying which element of the properties.choices array is currently
+     * selected.
+     */
+    getChoiceIndex() {
+        return Math.round(this.value * (this.properties.choices.length - 1));
     }
-  }
+
+    /**
+     * Informs the backend to change the associated WebComboBoxRelay's (C++) state.
+     *
+     * This should be called with the index identifying the selected element from the
+     * properties.choices array.
+     */
+    setChoiceIndex(index) {
+        const numItems = this.properties.choices.length;
+        this.value = numItems > 1 ? index / (numItems - 1) : 0.0;
+
+        window.__JUCE__.backend.emitEvent(this.identifier, {
+            eventType: BasicControl_valueChangedEventId,
+            value: this.value,
+        });
+    }
+
+    /** Internal. */
+    handleEvent(event) {
+        if (event.eventType == BasicControl_valueChangedEventId) {
+            this.value = event.value;
+            this.valueChangedEvent.callListeners();
+        }
+        if (event.eventType == BasicControl_propertiesChangedId) {
+            // eslint-disable-next-line no-unused-vars
+            let {eventType: _, ...rest} = event;
+            this.properties = rest;
+            this.propertiesChangedEvent.callListeners();
+        }
+    }
 }
 
 const comboBoxStates = new Map();
 
 for (const name of window.__JUCE__.initialisationData.__juce__comboBoxes)
-  comboBoxStates.set(name, new ComboBoxState(name));
+    comboBoxStates.set(name, new ComboBoxState(name));
 
 /**
  * Returns a ComboBoxState object that is connected to the backend WebComboBoxRelay object that was
@@ -471,10 +471,10 @@ for (const name of window.__JUCE__.initialisationData.__juce__comboBoxes)
  * @param {String} name
  */
 function getComboBoxState(name) {
-  if (!comboBoxStates.has(name))
-    comboBoxStates.set(name, new ComboBoxState(name));
+    if (!comboBoxStates.has(name))
+        comboBoxStates.set(name, new ComboBoxState(name));
 
-  return comboBoxStates.get(name);
+    return comboBoxStates.get(name);
 }
 
 /**
@@ -483,21 +483,21 @@ function getComboBoxState(name) {
  * @param {String} path
  */
 function getBackendResourceAddress(path) {
-  const platform =
-    window.__JUCE__.initialisationData.__juce__platform.length > 0
-      ? window.__JUCE__.initialisationData.__juce__platform[0]
-      : "";
+    const platform =
+        window.__JUCE__.initialisationData.__juce__platform.length > 0
+            ? window.__JUCE__.initialisationData.__juce__platform[0]
+            : "";
 
-  if (platform == "windows" || platform == "android")
-    return "https://juce.backend/" + path;
+    if (platform == "windows" || platform == "android")
+        return "https://juce.backend/" + path;
 
-  if (platform == "macos" || platform == "ios" || platform == "linux")
-    return "juce://juce.backend/" + path;
+    if (platform == "macos" || platform == "ios" || platform == "linux")
+        return "juce://juce.backend/" + path;
 
-  console.warn(
-    "getBackendResourceAddress() called, but no JUCE native backend is detected."
-  );
-  return path;
+    console.warn(
+        "getBackendResourceAddress() called, but no JUCE native backend is detected."
+    );
+    return path;
 }
 
 /**
@@ -520,58 +520,58 @@ function getBackendResourceAddress(path) {
  * @param {String} controlParameterIndexAnnotation
  */
 class ControlParameterIndexUpdater {
-  constructor(controlParameterIndexAnnotation) {
-    this.controlParameterIndexAnnotation = controlParameterIndexAnnotation;
-    this.lastElement = null;
-    this.lastControlParameterIndex = null;
-  }
-
-  handleMouseMove(event) {
-    const currentElement = document.elementFromPoint(
-      event.clientX,
-      event.clientY
-    );
-
-    if (currentElement === this.lastElement) return;
-    this.lastElement = currentElement;
-
-    let controlParameterIndex = -1;
-
-    if (currentElement !== null)
-      controlParameterIndex = this.#getControlParameterIndex(currentElement);
-
-    if (controlParameterIndex === this.lastControlParameterIndex) return;
-    this.lastControlParameterIndex = controlParameterIndex;
-
-    window.__JUCE__.backend.emitEvent(
-      "__juce__controlParameterIndexChanged",
-      controlParameterIndex
-    );
-  }
-
-  //==============================================================================
-  #getControlParameterIndex(element) {
-    const isValidNonRootElement = (e) => {
-      return e !== null && e !== document.documentElement;
-    };
-
-    while (isValidNonRootElement(element)) {
-      if (element.hasAttribute(this.controlParameterIndexAnnotation)) {
-        return element.getAttribute(this.controlParameterIndexAnnotation);
-      }
-
-      element = element.parentElement;
+    constructor(controlParameterIndexAnnotation) {
+        this.controlParameterIndexAnnotation = controlParameterIndexAnnotation;
+        this.lastElement = null;
+        this.lastControlParameterIndex = null;
     }
 
-    return -1;
-  }
+    handleMouseMove(event) {
+        const currentElement = document.elementFromPoint(
+            event.clientX,
+            event.clientY
+        );
+
+        if (currentElement === this.lastElement) return;
+        this.lastElement = currentElement;
+
+        let controlParameterIndex = -1;
+
+        if (currentElement !== null)
+            controlParameterIndex = this.#getControlParameterIndex(currentElement);
+
+        if (controlParameterIndex === this.lastControlParameterIndex) return;
+        this.lastControlParameterIndex = controlParameterIndex;
+
+        window.__JUCE__.backend.emitEvent(
+            "__juce__controlParameterIndexChanged",
+            controlParameterIndex
+        );
+    }
+
+    //==============================================================================
+    #getControlParameterIndex(element) {
+        const isValidNonRootElement = (e) => {
+            return e !== null && e !== document.documentElement;
+        };
+
+        while (isValidNonRootElement(element)) {
+            if (element.hasAttribute(this.controlParameterIndexAnnotation)) {
+                return element.getAttribute(this.controlParameterIndexAnnotation);
+            }
+
+            element = element.parentElement;
+        }
+
+        return -1;
+    }
 }
 
 export {
-  getNativeFunction,
-  getSliderState,
-  getToggleState,
-  getComboBoxState,
-  getBackendResourceAddress,
-  ControlParameterIndexUpdater,
+    getNativeFunction,
+    getSliderState,
+    getToggleState,
+    getComboBoxState,
+    getBackendResourceAddress,
+    ControlParameterIndexUpdater,
 };

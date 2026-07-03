@@ -6,11 +6,11 @@ Currently JUCE supports Narrator on Windows, VoiceOver on macOS and iOS, and
 TalkBack on Android. The JUCE accessibility API exposes the following to these
 clients:
 
-  - Title, description, and help text for UI elements
-  - Programmatic access to UI elements and text
-  - Interaction with UI elements
-  - Full UI keyboard navigation
-  - Posting notifications to listening clients
+- Title, description, and help text for UI elements
+- Programmatic access to UI elements and text
+- Interaction with UI elements
+- Full UI keyboard navigation
+- Posting notifications to listening clients
 
 ## Customising Behaviour
 
@@ -42,8 +42,8 @@ To implement the desired behaviours for a custom component, subclass
 
 ## Further Reading
 
-  - [NSAccessibility protocol](https://developer.apple.com/documentation/appkit/nsaccessibility?language=objc)
-  - [UI Automation for Win32 applications](https://docs.microsoft.com/en-us/windows/win32/winauto/entry-uiauto-win32)
-  - A talk giving an overview of this feature from ADC 2020 can be found on
-    YouTube at https://youtu.be/BqrEv4ApH3U
+- [NSAccessibility protocol](https://developer.apple.com/documentation/appkit/nsaccessibility?language=objc)
+- [UI Automation for Win32 applications](https://docs.microsoft.com/en-us/windows/win32/winauto/entry-uiauto-win32)
+- A talk giving an overview of this feature from ADC 2020 can be found on
+  YouTube at https://youtu.be/BqrEv4ApH3U
 
