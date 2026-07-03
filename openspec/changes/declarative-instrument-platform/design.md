@@ -1,96 +1,176 @@
 ## Context
 
-Dandrum currently has a working Rust DSP engine with YAML patch loading, graph routing, built-in modules (osc, gain, mixer, ADSR, filter, sampler, saturation, dynamics, delay/reverb), a headless renderer, and a JUCE wrapper for realtime audio. The existing architecture was built feature-by-feature without an overarching decision framework for what belongs in the Rust engine vs. what should be expressed in YAML.
+Dandrum already supports much of the declarative engine direction:
 
-The project needs a coherent platform architecture that:
-- Keeps the Rust engine small and justified
-- Enables rich instruments through YAML composition
-- Provides clear rules for future contributors
-- Supports LLM-assisted authoring eventually without being driven by it now
+- Rust DSP engine and headless renderer
+- JUCE wrapper for realtime audio/MIDI IO
+- YAML patch loading
+- typed modules and ports
+- inline `module_definitions` for reusable composites
+- deterministic composite expansion into namespaced internal modules
+- graph validation for missing modules, missing ports, incompatible signal types, multiple-source inputs, invalid cycles, and voice/global routing boundaries
+- built-in primitives including oscillator, gain, mixer, ADSR, filter, sampler, saturation, dynamics, convolution, echo, reverb, splitter, and spectral processor
+
+This change should not redesign those foundations. It should define how to extend them carefully.
+
+The platform goal is:
+
+```text
+Intentional YAML definition -> validated graph -> deterministic Rust DSP render
+```
+
+Future LLM tooling should be able to target this model, but only after the platform is stable.
 
 ## Goals / Non-Goals
 
 **Goals:**
-- Define the four-layer architecture: Rust primitives → YAML composites → Script glue → Presets
-- Specify the decision framework that gates all future primitive additions
-- Add the minimum set of new primitives justified by the decision framework
-- Define sandboxed script execution with hard realtime constraints
-- Specify structured validation/diagnostics with stable error codes
-- Define composite expansion as a deterministic compile-time step
-- Specify acceptance examples that validate the platform without new primitives
-- Design a capability discovery API for future tooling
+
+- Define the layer model: Rust primitives -> YAML composites -> Script glue -> Presets -> Future tooling.
+- Preserve the existing inline composite mechanism based on `module_definitions`.
+- Add only the minimum new primitives needed for the first useful synthetic instrument examples.
+- Define when a proposed behaviour becomes a primitive, composite, script, preset, future tooling, or out-of-scope.
+- Define script constraints for deterministic event/control transformation.
+- Define structured validation/diagnostics suitable for humans now and repair tooling later.
+- Define staged acceptance examples that prove platform capability without hardcoded Rust instrument modules.
+- Define capability discovery as a non-realtime query surface built on module/parameter metadata.
 
 **Non-Goals:**
-- Implementing a GUI editor
-- Building an LLM generation layer
-- Adding every possible synth primitive
-- Hardcoding 808/909 as special Rust modules
-- Making drum machine a sampler/mixer/sequencer
-- Unrestricted scripting in the audio thread
-- Hiding signal chains inside opaque containers
+
+- Building an LLM generation layer.
+- Building a GUI editor.
+- Replacing existing `module_definitions` with a parallel `type: composite` system.
+- Adding every plausible synth primitive.
+- Hardcoding 808/909 voices as Rust modules.
+- Making the drum machine a sampler, mixer, sequencer, or hidden signal-chain host.
+- Allowing unrestricted scripting in the audio callback.
+- Hiding sound-generation policy inside opaque containers.
 
 ## Decisions
 
-### D1: Four-layer architecture
+### D1: Four implementation layers plus future tooling
 
-Primitives → Composites → Scripts → Presets, with clear gates between layers.
+Dandrum uses these layers:
 
-- **Rust primitives**: own audio-rate DSP, realtime-safe state, performance-critical paths. Each must pass the five-question gate (performance-critical, reusable, realtime-safe state, awkward as YAML, testable DSP).
-- **YAML composites**: own reusable instrument/voice/effect definitions. Composed entirely from existing primitives and other composites. Expanded at load time into flat primitive graphs.
-- **Scripts**: own event/control transformation. Bounded, sandboxed, pre-validated. No audio-rate DSP. No FS/network. No unbounded allocation during render.
-- **Presets**: own named usable configurations of modules/composites with parameter values. Examples demonstrate platform capability, not engine features.
+1. **Rust primitives** own audio-rate DSP, realtime-safe mutable state, and performance-critical operations.
+2. **YAML composites** own reusable voices, instruments, effects, and higher-level building blocks assembled from primitives and other composites.
+3. **Scripts** own bounded event/control transformation and small amounts of deterministic stateful glue.
+4. **Presets** own named usable configurations of patches, composites, and parameters.
+5. **Future tooling** owns LLM authoring, GUI editing, documentation generation, and patch repair workflows.
 
-**Rationale**: Clear layer boundaries prevent scope creep. Each layer has different performance, safety, and authoring requirements. An LLM can later target the YAML layer without touching Rust.
+Rust primitives should remain small and general. Composites should carry musical structure. Scripts should fill control/event gaps without becoming an audio DSP sandbox. Presets should demonstrate useful sounds without changing runtime semantics.
 
-### D2: Composite expansion is a compile-time graph transformation
+### D2: Primitive gate is strict by default, explicit by exception
 
-Composites SHALL be expanded into their constituent primitive graphs during patch loading, before rendering begins. The expanded graph is flat (primitives only), and all validation (type checking, cycle detection, port resolution) runs on the expanded graph.
+A new Rust primitive SHOULD satisfy all five criteria:
 
-**Rationale**: Simplifies the renderer — it only needs to know about primitives. Simplifies validation — all tools work on the same flat representation. Keeps the realtime path simple and deterministic.
+1. Performance-critical.
+2. Reusable across multiple instruments/effects.
+3. Needs realtime-safe internal state or audio-rate processing.
+4. Awkward, fragile, or unsafe as YAML composition.
+5. Has clear testable DSP behaviour.
 
-**Alternatives considered**: Dynamic composite dispatch (runtime module call stack). Rejected because it complicates validation, cycle detection, and realtime scheduling.
+If a proposed primitive does not satisfy all five, it MAY still be accepted only when the spec documents the failed criteria, the rejected alternatives, and the concrete acceptance example that requires it.
 
-### D3: Script sandboxing through pre-validation and constrained runtime
+### D3: Preserve existing inline composites
 
-Scripts SHALL be parsed, validated, and compiled off the audio thread. The runtime SHALL enforce:
-- No filesystem or network APIs available in script scope
-- No heap allocation during execution (pre-allocated scratch buffers)
-- Bounded instruction count per block
-- No recursive graph calls
-- Deterministic execution (same input → same output)
-- Stable error reporting through the diagnostics system
+Composites continue to use the existing `module_definitions` model. A patch can define reusable module types inline, then instantiate them by using the definition's type as a normal module type.
 
-**Rationale**: Pre-validation catches errors before rendering starts. Constrained runtime prevents realtime violations. Determinism enables offline rendering to match realtime.
+This change may harden the existing model by adding:
 
-### D4: Drum machine is an event mapper, not an audio engine
+- parameter metadata
+- better source-mapped diagnostics after expansion
+- optional external composite library loading
+- deterministic expansion tests
+- improved documentation and examples
 
-The drum machine module SHALL be a stateless event transformer: it maps incoming MIDI events to named pad event outputs. It SHALL NOT contain samples, synthesis chains, sequencers, or mixers. Pad events flow to explicitly connected downstream voice modules.
+It must not introduce a conflicting second composite model unless a separate migration spec explicitly deprecates the current one.
 
-**Rationale**: Keeps the drum machine small and reusable. Voices can be any module or composite (synthetic, sampler, effect). Explicit connections keep signal flow visible in the YAML.
+### D4: Composite expansion remains a load/compile-time graph transformation
 
-### D5: Structured diagnostics with stable error codes
+Composite expansion occurs before rendering. The renderer should see a flat graph of renderable primitive/script modules with deterministic, namespaced IDs.
 
-All validation and runtime errors SHALL produce structured diagnostic records containing:
-- Stable error code (string, namespaced by subsystem)
-- Severity (error, warning, info)
-- YAML file path and line/column range
-- Module ID and port name where applicable
-- Expected type/value and actual type/value
-- Human-readable message
-- Suggested fix where safe to compute
+Validation should be able to report errors against both the expanded internal node and the original YAML/composite source where possible.
 
-**Rationale**: Structured diagnostics support both human debugging and future LLM repair loops. Stable error codes let tools reference known issues without string matching.
+### D5: Scripts are event/control glue, not audio-rate DSP
 
-### D6: Capability discovery as a separate query interface
+Scripts are parsed, validated, and prepared off the audio thread. The runtime must enforce:
 
-Capability discovery SHALL be a query API (not a file scan) that returns module type metadata: ports, signal types, parameter names/ranges/defaults, realtime notes, and category (primitive/composite/script). It SHALL be implemented as a separate concern from the renderer.
+- no filesystem APIs
+- no network APIs
+- no blocking calls
+- bounded execution cost
+- deterministic execution
+- no recursive same-tick graph execution
+- no heap allocation during render-time execution
+- no audio-rate output ports in the initial implementation
 
-**Rationale**: Keeps the renderer lean. The discovery API can be used by CLI tools, future GUIs, and LLM tool-calling without affecting realtime paths.
+Scripts are appropriate for velocity mapping, note remapping, conditional event routing, event-to-control conversion, and simple control modulation logic.
+
+### D6: Drum machine remains an event mapper
+
+The drum machine module is an event transformer. It maps incoming note/event triggers to named pad event outputs. It does not contain samples, synthesis chains, sequencers, clocks, mixers, effects, or hidden audio behaviour.
+
+Pad outputs should trigger explicitly connected downstream voice composites or modules.
+
+### D7: Diagnostics become structured before repair loops
+
+Validation and runtime errors should use structured records containing:
+
+- stable error code
+- severity
+- YAML file path and source range when available
+- module ID and port name where applicable
+- expected type/value
+- actual type/value
+- message
+- suggested fix when safe
+
+This is valuable for humans immediately and enables future LLM repair loops later without string matching.
+
+### D8: Capability discovery depends on metadata, not renderer logic
+
+Capability discovery is a query interface over module/composite/script metadata. It must stay separate from realtime rendering.
+
+The first useful surface is:
+
+- module type list
+- category
+- ports
+- parameter names/types/defaults/ranges/units/enums
+- realtime notes
+- short YAML examples where available
+
+Do not implement discovery by scanning renderer internals during audio processing.
+
+## Primitive Roadmap
+
+### Implement in this change or immediate follow-up
+
+- `noise`: required for synthetic percussion, hats, snares, and modulation sources.
+- `impulse`: required for click/transient generation and sample-accurate trigger testing.
+- `multiply`: required for VCA-like modulation, pitch/control scaling, tremolo, and ring-mod-style composites.
+- `note_to_control`: required for normal instrument voices; should expose frequency, pitch ratio/CV, gate/trigger, and velocity control values.
+
+### Clarify before implementing
+
+- minimal oscillator waveform support: required if acceptance examples use sine/saw/pulse/triangle. Either implement the minimum waveform parameter now or restrict examples to current oscillator behaviour.
+
+### Defer
+
+- envelope follower
+- general delay line
+- FM operator
+- resonator
+- state-variable filter
+- wavefolder
+- sample-and-hold
+- specialist 808/909 voice modules
 
 ## Risks / Trade-offs
 
-- **Composite expansion hides intermediate state**: Expanded graphs can be large. Debugging a composite means understanding its expansion. **Mitigation**: Diagnostics map errors back to original composite module IDs and YAML paths. Provide a `--show-expanded-graph` CLI flag for debugging.
-- **Script sandboxing limits expressiveness**: Users may want general scripting. **Mitigation**: Start constrained; relax only with specific justified extensions. General-purpose scripting belongs in a separate tooling layer, not the audio engine.
-- **Primitive gate may be too strict**: Legitimate primitives could be blocked. **Mitigation**: The gate is a review tool, not a hard reject. If a candidate passes 3/5 criteria with strong rationale, it can still be added. Document the exception.
-- **Capability discovery scope creep**: Could grow into a full introspection system. **Mitigation**: Define the MVP surface in the spec; defer advanced queries (e.g., dynamic port enumeration) to future changes.
-- **Offline/realtime determinism gap**: Realtime scheduling may introduce subtle differences from offline rendering. **Mitigation**: Define determinism requirements in the spec; test with byte-exact comparisons for fixed-block renders.
+- **Existing composite support may be accidentally bypassed** -> specs and tasks must reference `module_definitions` and expansion hardening, not a parallel composite syntax.
+- **Primitive creep** -> start with the minimum primitives required by the first acceptance example; defer attractive but unproven modules.
+- **Examples may assume unavailable oscillator behaviour** -> add minimal waveform support or simplify examples.
+- **Diagnostics may become too large a first step** -> implement structured diagnostic foundations first, then source locations and suggested fixes incrementally.
+- **Capability discovery may arrive before metadata exists** -> implement parameter metadata before broad discovery endpoints.
+- **LLM concerns may distort the engine** -> keep LLM support as a future tooling consumer of stable schema, diagnostics, examples, and capability metadata.
