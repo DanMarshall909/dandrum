@@ -1,66 +1,91 @@
 ## MODIFIED Requirements
 
-### Requirement: Minimum routing modules
+### Requirement: Minimum routing and synthesis modules
 
-The initial engine SHALL provide built-in modules sufficient to prove event input, sound generation, VCA/control routing, mixing, effects, scripting, delay boundaries, and audio output.
+The engine SHALL provide built-in modules sufficient to prove event input, pitch/control mapping, sound generation, control routing, audio/control multiplication, mixing, explicit delay boundaries, effects, scripting, sampling, and audio output.
 
-#### Scenario: Core module registry contains MVP modules
+#### Scenario: Core module registry contains existing MVP modules
 
 - **WHEN** the built-in module registry is initialized
-- **THEN** it SHALL include MIDI/event input, audio output, oscillator, noise generator, impulse/click generator, gain/VCA, math/multiply, audio mixer, control mixer, ADSR envelope, LFO, envelope follower, simple filter, note-to-control mapper, one-sample audio delay, block delay, control delay, delay line, and script module types
+- **THEN** it SHALL continue to include the existing supported modules for MIDI/event input, audio output, oscillator, gain/VCA, audio mixer, control mixer, ADSR envelope, LFO, filter, sampler, note-to-rate, dynamics, saturation, convolution, echo, reverb, frequency splitter, spectral processor, explicit delay boundary modules, and script modules where supported
+
+#### Scenario: Core module registry contains new minimal primitives
+
+- **WHEN** the built-in module registry is initialized after this change is implemented
+- **THEN** it SHALL include `noise`, `impulse`, `multiply`, and `note_to_control` module types with typed ports and parameter metadata
 
 ## ADDED Requirements
 
 ### Requirement: Noise generator module
 
-The engine SHALL provide a noise generator module that outputs white noise with configurable seed for reproducible output.
+The engine SHALL provide a `noise` module that outputs deterministic seeded noise for synthesis and modulation.
 
 #### Scenario: Noise module in registry
 
-- **WHEN** the built-in module registry is queried for the noise generator
-- **THEN** it SHALL be registered as `noise` with audio output port and seed parameter
+- **WHEN** the built-in module registry is queried for `noise`
+- **THEN** it SHALL report an audio output port and parameter metadata for seed and noise mode where supported
 
-### Requirement: Impulse/click generator module
+#### Scenario: Noise module render is reproducible
 
-The engine SHALL provide an impulse/click generator module triggered by event inputs.
+- **WHEN** two renders use the same seed and render settings
+- **THEN** the noise output SHALL be identical
+
+### Requirement: Impulse generator module
+
+The engine SHALL provide an `impulse` module that converts trigger events into a documented transient signal.
 
 #### Scenario: Impulse module in registry
 
-- **WHEN** the built-in module registry is queried for the impulse generator
-- **THEN** it SHALL be registered as `impulse` with event input and audio output ports
+- **WHEN** the built-in module registry is queried for `impulse`
+- **THEN** it SHALL report an event input port and audio output port
 
-### Requirement: Math/multiply module
+#### Scenario: Impulse timing follows incoming event frame
 
-The engine SHALL provide a math/multiply module that performs sample-wise multiplication of two input signals.
+- **WHEN** an impulse receives a trigger at a block-relative frame
+- **THEN** the impulse output SHALL occur at that frame according to the documented impulse shape
+
+### Requirement: Multiply module
+
+The engine SHALL provide a `multiply` module for multiplying audio and/or control signals.
 
 #### Scenario: Multiply module in registry
 
-- **WHEN** the built-in module registry is queried for the multiply module
-- **THEN** it SHALL be registered as `multiply` with two input ports and one output port
+- **WHEN** the built-in module registry is queried for `multiply`
+- **THEN** it SHALL report two input ports and one output port with documented signal compatibility rules
 
-### Requirement: Note-to-control mapper module
+#### Scenario: Multiply performs deterministic product
 
-The engine SHALL provide a note-to-control mapper that converts MIDI note events to frequency, pitch CV, and normalized velocity control outputs.
+- **WHEN** the multiply module receives two compatible signals
+- **THEN** its output SHALL be the deterministic product of those signals
+
+### Requirement: Note-to-control module
+
+The engine SHALL provide a `note_to_control` module that converts note events into frequency, pitch ratio/CV, gate/trigger, and velocity control outputs.
 
 #### Scenario: Note-to-control module in registry
 
-- **WHEN** the built-in module registry is queried for the note-to-control mapper
-- **THEN** it SHALL be registered as `note_to_control` with event input and control output ports
+- **WHEN** the built-in module registry is queried for `note_to_control`
+- **THEN** it SHALL report an event input port and documented control output ports for frequency, pitch ratio/CV, gate/trigger, and normalized velocity
 
-### Requirement: Envelope follower module
+### Requirement: Oscillator waveform support is explicit
 
-The engine SHALL provide an envelope follower module that tracks the amplitude envelope of an audio input signal and outputs a control signal.
+The oscillator module SHALL document its supported waveform behaviour through parameter metadata.
 
-#### Scenario: Envelope follower in registry
+#### Scenario: Oscillator waveform queried
 
-- **WHEN** the built-in module registry is queried for the envelope follower
-- **THEN** it SHALL be registered as `envelope_follower` with audio input and control output ports, plus attack and release time parameters
+- **WHEN** the oscillator module metadata is queried
+- **THEN** it SHALL report supported waveform values if waveform selection is implemented
 
-### Requirement: Delay line module
+#### Scenario: Unsupported waveform rejected
 
-The engine SHALL provide a delay line module with configurable delay time and feedback.
+- **WHEN** a patch requests an unsupported oscillator waveform
+- **THEN** validation SHALL reject the patch with a structured diagnostic
 
-#### Scenario: Delay line in registry
+### Requirement: Deferred modules are not part of this built-in milestone
 
-- **WHEN** the built-in module registry is queried for the delay line
-- **THEN** it SHALL be registered as `delay_line` with audio input, audio output, delay time parameter, and feedback parameter
+Envelope follower, general delay line, FM operator, resonator, state-variable filter, wavefolder, sample-and-hold, and specialist drum voice modules SHALL NOT be required built-ins for this change.
+
+#### Scenario: Deferred module appears in a patch
+
+- **WHEN** a patch references a deferred module type that has not been implemented
+- **THEN** validation SHALL report an unknown module type or unsupported module diagnostic rather than silently accepting it
