@@ -30,7 +30,7 @@
 - [x] 3.2 Implement deterministic default resolution that produces complete resolved parameter maps for prepared module
   instances.
 - [x] 3.3 Add failing Rust tests proving equivalent patches resolve to identical parameter maps across repeated loads.
-- [ ] 3.4 Integrate resolved parameter maps into graph preparation so DSP state construction consumes validated values
+- [x] 3.4 Integrate resolved parameter maps into graph preparation so DSP state construction consumes validated values
   instead of raw YAML values.
 
 ## 4. YAML Module Parameters
