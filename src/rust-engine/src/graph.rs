@@ -50,7 +50,11 @@ pub enum SignalType {
 pub mod builtin_ports {
     pub const AUDIO: &str = "audio";
     pub const AUDIO_IN: &str = "audio_in";
+    pub const AUDIO_IN_L: &str = "audio_in_l";
+    pub const AUDIO_IN_R: &str = "audio_in_r";
     pub const AUDIO_OUT: &str = "audio_out";
+    pub const AUDIO_OUT_L: &str = "audio_out_l";
+    pub const AUDIO_OUT_R: &str = "audio_out_r";
     pub const EVENTS: &str = "events";
     pub const GAIN: &str = "gain";
     pub const PITCH: &str = "pitch";
@@ -86,6 +90,22 @@ pub mod builtin_ports {
     pub const DRIVE: &str = "drive";
     pub const BIAS: &str = "bias";
     pub const CURVE_SELECT: &str = "curve_select";
+    // Echo ports
+    pub const TIME_LEFT_MS: &str = "time_left_ms";
+    pub const TIME_RIGHT_MS: &str = "time_right_ms";
+    pub const FEEDBACK: &str = "feedback";
+    pub const DAMPING_CUTOFF: &str = "damping_cutoff";
+    pub const WET: &str = "wet";
+    pub const DRY: &str = "dry";
+    pub const SYNC_DIVISION: &str = "sync_division";
+    pub const PING_PONG: &str = "ping_pong";
+    // Reverb ports
+    pub const DECAY_TIME: &str = "decay_time";
+    pub const ROOM_SIZE: &str = "room_size";
+    pub const PRE_DELAY: &str = "pre_delay";
+    pub const DAMPING: &str = "damping";
+    pub const DIFFUSION: &str = "diffusion";
+    pub const STEREO_WIDTH: &str = "stereo_width";
 }
 
 impl SignalType {

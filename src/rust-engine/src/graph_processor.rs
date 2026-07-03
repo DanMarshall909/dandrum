@@ -6,7 +6,9 @@ use crate::graph::{ExecutionScope, Graph, ModuleNode, SignalType, builtin_ports}
 use crate::patch::{RenderSettings, VoiceAllocation};
 use crate::dynamics_processor::DynamicsProcessor;
 use crate::convolution::Convolution;
+use crate::echo::Echo;
 use crate::filter::{FilterAlgorithm, MoogLadder};
+use crate::reverb::Reverb;
 use crate::saturator::Saturator;
 use crate::sample::{LoadedSample, PreparedSamplerAssets};
 use crate::script::ScriptEvent;
@@ -132,6 +134,14 @@ enum PerModuleState {
         filter: MoogLadder,
         sample_rate: f64,
     },
+    Echo {
+        processor: Echo,
+        sample_rate: f64,
+    },
+    Reverb {
+        processor: Reverb,
+        sample_rate: f64,
+    },
 }
 
 impl PerModuleState {
@@ -170,6 +180,14 @@ impl PerModuleState {
             },
             "filter" => PerModuleState::Filter {
                 filter: MoogLadder::new(sample_rate as f64),
+                sample_rate: sample_rate as f64,
+            },
+            "echo" => PerModuleState::Echo {
+                processor: Echo::new(sample_rate as f64),
+                sample_rate: sample_rate as f64,
+            },
+            "reverb" => PerModuleState::Reverb {
+                processor: Reverb::new(sample_rate as f64),
                 sample_rate: sample_rate as f64,
             },
             other => panic!("unknown module type: {other}"),
@@ -2077,6 +2095,156 @@ fn process_convolution(
     }
 
     audio_output(builtin_ports::AUDIO_OUT, audio_out)
+}
+
+fn process_echo(
+    state: &mut PerModuleState,
+    audio_in_l: &[f32],
+    audio_in_r: &[f32],
+    module_idx: usize,
+    input_provider: &impl ModuleInputProvider,
+    all_outputs: &HashMap<usize, ModuleOutputs>,
+    frames: usize,
+) -> ModuleOutputs {
+    let (processor, _sample_rate) = match state {
+        PerModuleState::Echo { processor, sample_rate } => (processor, *sample_rate),
+        _ => unreachable!(),
+    };
+
+    let feedback_in = input_provider.control_input_or_default(
+        module_idx, builtin_ports::FEEDBACK, all_outputs, frames, 0.5,
+    );
+    let damping_in = input_provider.control_input_or_default(
+        module_idx, builtin_ports::DAMPING_CUTOFF, all_outputs, frames, 0.5,
+    );
+    let wet_in = input_provider.control_input_or_default(
+        module_idx, builtin_ports::WET, all_outputs, frames, 0.7,
+    );
+    let dry_in = input_provider.control_input_or_default(
+        module_idx, builtin_ports::DRY, all_outputs, frames, 0.5,
+    );
+    let time_l_in = input_provider.control_input_or_default(
+        module_idx, builtin_ports::TIME_LEFT_MS, all_outputs, frames, 0.3,
+    );
+    let time_r_in = input_provider.control_input_or_default(
+        module_idx, builtin_ports::TIME_RIGHT_MS, all_outputs, frames, 0.3,
+    );
+    let ping_pong_in = input_provider.control_input_or_default(
+        module_idx, builtin_ports::PING_PONG, all_outputs, frames, 0.0,
+    );
+
+    let mut out_l = Vec::with_capacity(frames);
+    let mut out_r = Vec::with_capacity(frames);
+
+    for i in 0..frames {
+        let feedback = feedback_in.get(i).copied().unwrap_or(0.5);
+        let damping_norm = damping_in.get(i).copied().unwrap_or(0.5);
+        let damping_hz = 20.0 * 1000.0_f32.powf(damping_norm);
+        let wet = wet_in.get(i).copied().unwrap_or(0.7);
+        let dry = dry_in.get(i).copied().unwrap_or(0.5);
+        let time_l = lerp(1.0, 2000.0, time_l_in.get(i).copied().unwrap_or(0.5));
+        let time_r = lerp(1.0, 2000.0, time_r_in.get(i).copied().unwrap_or(0.5));
+        let ping_pong = ping_pong_in.get(i).copied().unwrap_or(0.0) > 0.5;
+
+        processor.set_feedback(feedback);
+        processor.set_damping_cutoff(damping_hz as f64);
+        processor.set_wet_dry(wet, dry);
+        processor.set_delay_ms(time_l as f64, time_r as f64);
+        processor.set_ping_pong(ping_pong);
+
+        let in_l = audio_in_l.get(i).copied().unwrap_or(0.0);
+        let in_r = audio_in_r.get(i).copied().unwrap_or(0.0);
+        let (l, r) = processor.process(in_l, in_r);
+        out_l.push(l);
+        out_r.push(r);
+    }
+
+    let mut outputs = ModuleOutputs {
+        audio: HashMap::new(),
+        control: HashMap::new(),
+        events: Vec::new(),
+    };
+    outputs.audio.insert(builtin_ports::AUDIO_OUT_L.to_string(), out_l);
+    outputs.audio.insert(builtin_ports::AUDIO_OUT_R.to_string(), out_r);
+    outputs
+}
+
+fn process_reverb(
+    state: &mut PerModuleState,
+    audio_in_l: &[f32],
+    audio_in_r: &[f32],
+    module_idx: usize,
+    input_provider: &impl ModuleInputProvider,
+    all_outputs: &HashMap<usize, ModuleOutputs>,
+    frames: usize,
+) -> ModuleOutputs {
+    let (processor, _sample_rate) = match state {
+        PerModuleState::Reverb { processor, sample_rate } => (processor, *sample_rate),
+        _ => unreachable!(),
+    };
+
+    let decay_time_in = input_provider.control_input_or_default(
+        module_idx, builtin_ports::DECAY_TIME, all_outputs, frames, 0.35,
+    );
+    let room_size_in = input_provider.control_input_or_default(
+        module_idx, builtin_ports::ROOM_SIZE, all_outputs, frames, 0.7,
+    );
+    let damping_in = input_provider.control_input_or_default(
+        module_idx, builtin_ports::DAMPING, all_outputs, frames, 0.3,
+    );
+    let diffusion_in = input_provider.control_input_or_default(
+        module_idx, builtin_ports::DIFFUSION, all_outputs, frames, 0.5,
+    );
+    let wet_in = input_provider.control_input_or_default(
+        module_idx, builtin_ports::WET, all_outputs, frames, 0.7,
+    );
+    let dry_in = input_provider.control_input_or_default(
+        module_idx, builtin_ports::DRY, all_outputs, frames, 0.5,
+    );
+    let pre_delay_in = input_provider.control_input_or_default(
+        module_idx, builtin_ports::PRE_DELAY, all_outputs, frames, 0.0,
+    );
+    let stereo_width_in = input_provider.control_input_or_default(
+        module_idx, builtin_ports::STEREO_WIDTH, all_outputs, frames, 0.5,
+    );
+
+    let mut out_l = Vec::with_capacity(frames);
+    let mut out_r = Vec::with_capacity(frames);
+
+    for i in 0..frames {
+        let decay_sec = lerp(0.1, 10.0, decay_time_in.get(i).copied().unwrap_or(0.5));
+        let room_size = room_size_in.get(i).copied().unwrap_or(0.5);
+        let damping_norm = damping_in.get(i).copied().unwrap_or(0.5);
+        let damping_hz = 20.0 * 1000.0_f32.powf(damping_norm);
+        let diffusion = diffusion_in.get(i).copied().unwrap_or(0.5);
+        let wet = wet_in.get(i).copied().unwrap_or(0.7);
+        let dry = dry_in.get(i).copied().unwrap_or(0.5);
+        let pre_delay_ms = lerp(0.0, 250.0, pre_delay_in.get(i).copied().unwrap_or(0.0));
+        let stereo_width = stereo_width_in.get(i).copied().unwrap_or(0.5);
+
+        processor.set_decay_time(decay_sec as f64);
+        processor.set_room_size(room_size);
+        processor.set_damping(damping_hz as f64);
+        processor.set_diffusion(diffusion);
+        processor.set_wet_dry(wet, dry);
+        processor.set_pre_delay(pre_delay_ms as f64);
+        processor.set_stereo_width(stereo_width);
+
+        let in_l = audio_in_l.get(i).copied().unwrap_or(0.0);
+        let in_r = audio_in_r.get(i).copied().unwrap_or(0.0);
+        let (l, r) = processor.process(in_l, in_r);
+        out_l.push(l);
+        out_r.push(r);
+    }
+
+    let mut outputs = ModuleOutputs {
+        audio: HashMap::new(),
+        control: HashMap::new(),
+        events: Vec::new(),
+    };
+    outputs.audio.insert(builtin_ports::AUDIO_OUT_L.to_string(), out_l);
+    outputs.audio.insert(builtin_ports::AUDIO_OUT_R.to_string(), out_r);
+    outputs
 }
 
 fn set_curve_by_index(processor: &mut Saturator, idx: usize) {
@@ -4012,5 +4180,160 @@ connections:
         assert!(!right.is_empty());
         let has_signal = left.iter().any(|&s| s != 0.0) || right.iter().any(|&s| s != 0.0);
         assert!(has_signal, "convolution patch should produce audio");
+    }
+
+    #[test]
+    fn echo_yaml_patch_produces_repeating_delays_with_feedback_decay() {
+        let yaml = r#"
+metadata:
+  name: Echo Integration Test
+  version: "0.1"
+render:
+  sample_rate_hz: 48000
+  block_size_frames: 128
+  duration_frames: 144000
+modules:
+  - id: midi
+    type: midi_input
+  - id: osc
+    type: oscillator
+  - id: env
+    type: adsr
+  - id: vca
+    type: gain
+  - id: mixer
+    type: audio_mixer
+  - id: echo
+    type: echo
+  - id: out
+    type: audio_output
+connections:
+  - from: midi.events
+    to: env.gate
+  - from: osc.audio
+    to: vca.audio_in
+  - from: env.value
+    to: vca.gain
+  - from: vca.audio_out
+    to: mixer.inputs
+  - from: mixer.mix
+    to: echo.audio_in_l
+  - from: mixer.mix
+    to: echo.audio_in_r
+  - from: echo.audio_out_l
+    to: out.left
+  - from: echo.audio_out_r
+    to: out.right
+"#;
+        let patch = patch::load_patch_str(yaml).expect("patch should parse");
+        patch::validate_patch_schema(&patch).expect("schema should be valid");
+        let graph = Graph::from_patch_declarations(&patch);
+        graph.validate().expect("graph should validate");
+
+        let (left, _right) = render_offline(
+            &graph,
+            &patch.render,
+            vec![
+                TimedInputEvent::new(0, ScriptEvent::NoteOn { note: 60, velocity: 100 }),
+                TimedInputEvent::new(960, ScriptEvent::NoteOff { note: 60 }),
+            ],
+        );
+
+        assert!(left.iter().any(|&s| s != 0.0), "echo patch should produce audio");
+
+        let r1_peak = left[28000..30000]
+            .iter()
+            .map(|s| s.abs())
+            .fold(0.0f32, f32::max);
+        let r2_peak = left[56500..58500]
+            .iter()
+            .map(|s| s.abs())
+            .fold(0.0f32, f32::max);
+
+        assert!(r1_peak > 0.001, "first echo repeat should be audible at ~600ms, got {r1_peak}");
+        assert!(r2_peak > 0.001, "second echo repeat should be audible at ~1200ms, got {r2_peak}");
+        assert!(r2_peak < r1_peak * 0.99, "echo repeats should decay: {r2_peak} >= {r1_peak}");
+    }
+
+    #[test]
+    fn reverb_yaml_patch_produces_tail_with_stereo_spread() {
+        let yaml = r#"
+metadata:
+  name: Reverb Integration Test
+  version: "0.1"
+render:
+  sample_rate_hz: 48000
+  block_size_frames: 128
+  duration_frames: 144000
+modules:
+  - id: midi
+    type: midi_input
+  - id: osc
+    type: oscillator
+  - id: env
+    type: adsr
+  - id: vca
+    type: gain
+  - id: mixer
+    type: audio_mixer
+  - id: reverb
+    type: reverb
+  - id: out
+    type: audio_output
+connections:
+  - from: midi.events
+    to: env.gate
+  - from: osc.audio
+    to: vca.audio_in
+  - from: env.value
+    to: vca.gain
+  - from: vca.audio_out
+    to: mixer.inputs
+  - from: mixer.mix
+    to: reverb.audio_in_l
+  - from: mixer.mix
+    to: reverb.audio_in_r
+  - from: reverb.audio_out_l
+    to: out.left
+  - from: reverb.audio_out_r
+    to: out.right
+"#;
+        let patch = patch::load_patch_str(yaml).expect("patch should parse");
+        patch::validate_patch_schema(&patch).expect("schema should be valid");
+        let graph = Graph::from_patch_declarations(&patch);
+        graph.validate().expect("graph should validate");
+
+        let (left, right) = render_offline(
+            &graph,
+            &patch.render,
+            vec![
+                TimedInputEvent::new(0, ScriptEvent::NoteOn { note: 60, velocity: 100 }),
+                TimedInputEvent::new(960, ScriptEvent::NoteOff { note: 60 }),
+            ],
+        );
+
+        assert!(left.iter().any(|&s| s != 0.0), "reverb patch should produce audio");
+
+        // The reverb tail should still be audible late in the buffer
+        // Default RT60 ≈ 3.5s, check at ~2.5s (frame 120000)
+        let tail_energy: f32 = left[118000..122000]
+            .iter()
+            .map(|s| s.abs())
+            .sum();
+        assert!(
+            tail_energy > 0.001,
+            "reverb tail should still be present at ~2.5s, got {tail_energy}"
+        );
+
+        // Left and right should differ (stereo spread from stereo_width default)
+        let stereo_diff: f32 = left[80000..120000]
+            .iter()
+            .zip(right[80000..120000].iter())
+            .map(|(l, r)| (l - r).abs())
+            .sum();
+        assert!(
+            stereo_diff > 0.001,
+            "reverb should produce stereo decorrelation"
+        );
     }
 }

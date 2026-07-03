@@ -30,32 +30,32 @@
 
 ## 4. Reverb Module (Pipeline Composition)
 
-- [ ] 4.1 Create `src/rust-engine/src/reverb.rs` with `Reverb` struct containing mono comb filter bank, allpass diffuser chain, and pre-delay `DelayLine`
-- [ ] 4.2 Implement comb stage as a pipeline: `DelayLine` delay → `OnePoleFilter` damping → feedback gain, with mutually prime delay lengths
-- [ ] 4.3 Implement allpass diffuser sub-struct using a `DelayLine` with configurable delay and coefficient
-- [ ] 4.4 Combine into Schroeder topology: parallel comb bank → series allpass chain
-- [ ] 4.5 Implement stereo expansion: duplicate diffuser chain with slightly offset parameters, controlled by `stereo_width`
-- [ ] 4.6 Implement parameter setters: decay_time/RT60, room_size, pre_delay, damping, diffusion, stereo_width, wet/dry
-- [ ] 4.7 Compute comb feedback gains from RT60 target and delay length
-- [ ] 4.8 Implement pre-delay via a `DelayLine` before the reverb core
+- [x] 4.1 Create `src/rust-engine/src/reverb.rs` with `Reverb` struct containing mono comb filter bank, allpass diffuser chain, and pre-delay `DelayLine`
+- [x] 4.2 Implement comb stage as a pipeline: `DelayLine` delay → `OnePoleFilter` damping → feedback gain, with mutually prime delay lengths
+- [x] 4.3 Implement allpass diffuser sub-struct using a `DelayLine` with configurable delay and coefficient
+- [x] 4.4 Combine into Schroeder topology: parallel comb bank → series allpass chain
+- [x] 4.5 Implement stereo expansion: duplicate diffuser chain with slightly offset parameters, controlled by `stereo_width`
+- [x] 4.6 Implement parameter setters: decay_time/RT60, room_size, pre_delay, damping, diffusion, stereo_width, wet/dry
+- [x] 4.7 Compute comb feedback gains from RT60 target and delay length
+- [x] 4.8 Implement pre-delay via a `DelayLine` before the reverb core
 - [ ] 4.9 Write unit tests: impulse response shape, RT60 decay envelope, room size scaling, damping effect on spectrum, diffusion density, stereo decorrelation, wet/dry mix
-- [ ] 4.10 Add `pub mod reverb` to `src/rust-engine/src/lib.rs`
+- [x] 4.10 Add `pub mod reverb` to `src/rust-engine/src/lib.rs`
 
 ## 5. Built-in Module Registrations
 
-- [ ] 5.1 Add `echo_definition()` to `builtins.rs` with audio L/R input, audio L/R output, control inputs (time_left_ms, time_right_ms, feedback, damping_cutoff, wet, dry, sync division), declared as global scope
-- [ ] 5.2 Add `reverb_definition()` to `builtins.rs` with audio L/R input, audio L/R output, control inputs (decay_time, room_size, pre_delay, damping, diffusion, stereo_width, wet, dry), declared as global scope
-- [ ] 5.3 Register both in `BuiltInModuleRegistry::new()` and `module_types` constants
-- [ ] 5.4 Write port assertion tests for both definitions
+- [x] 5.1 Add `echo_definition()` to `builtins.rs` with audio L/R input, audio L/R output, control inputs (time_left_ms, time_right_ms, feedback, damping_cutoff, wet, dry, sync division), declared as global scope
+- [x] 5.2 Add `reverb_definition()` to `builtins.rs` with audio L/R input, audio L/R output, control inputs (decay_time, room_size, pre_delay, damping, diffusion, stereo_width, wet, dry), declared as global scope
+- [x] 5.3 Register both in `BuiltInModuleRegistry::new()` and `module_types` constants
+- [x] 5.4 Write port assertion tests for both definitions
 
 ## 6. Graph Processor Integration
 
-- [ ] 6.1 Add `PerModuleState::Echo(Echo)` and `PerModuleState::Reverb(Reverb)` variants in `graph_processor.rs`
-- [ ] 6.2 Add `"echo"` and `"reverb"` arms in `PerModuleState::new()` to initialize from `ModuleNode` parameters
-- [ ] 6.3 Add `process_echo()` function: read inputs via `input_provider`, call `Echo::process()`, write audio outputs
-- [ ] 6.4 Add `process_reverb()` function: same pattern for reverb
-- [ ] 6.5 Add `"echo"` and `"reverb"` arms in `process_module()` match dispatch
-- [ ] 6.6 Build and verify no compile errors
+- [x] 6.1 Add `PerModuleState::Echo(Echo)` and `PerModuleState::Reverb(Reverb)` variants in `graph_processor.rs`
+- [x] 6.2 Add `"echo"` and `"reverb"` arms in `PerModuleState::new()` to initialize from `ModuleNode` parameters
+- [x] 6.3 Add `process_echo()` function: read inputs via `input_provider`, call `Echo::process()`, write audio outputs
+- [x] 6.4 Add `process_reverb()` function: same pattern for reverb
+- [x] 6.5 Add `"echo"` and `"reverb"` arms in `process_module()` match dispatch
+- [x] 6.6 Build and verify no compile errors
 
 ## 7. YAML Composite Module Examples
 
@@ -65,8 +65,8 @@
 
 ## 8. Integration Tests
 
-- [ ] 8.1 Write offline render test with YAML patch using `echo` module: mono impulse → echo → audio output, verify repeat timing and feedback decay
-- [ ] 8.2 Write offline render test with YAML patch using `reverb` module: mono impulse → reverb → audio output, verify tail length and stereo spread
+- [x] 8.1 Write offline render test with YAML patch using `echo` module: mono impulse → echo → audio output, verify repeat timing and feedback decay
+- [x] 8.2 Write offline render test with YAML patch using `reverb` module: mono impulse → reverb → audio output, verify tail length and stereo spread
 - [ ] 8.3 Write compiled-vs-raw render parity test for echo module
 - [ ] 8.4 Write compiled-vs-raw render parity test for reverb module
-- [ ] 8.5 Run `cargo test` and confirm all tests pass
+- [x] 8.5 Run `cargo test` and confirm all tests pass

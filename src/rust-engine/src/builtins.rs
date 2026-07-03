@@ -21,6 +21,8 @@ pub mod module_types {
     pub const DYNAMICS_PROCESSOR: &str = "dynamics-processor";
     pub const SATURATOR: &str = "saturator";
     pub const CONVOLUTION: &str = "convolution";
+    pub const ECHO: &str = "echo";
+    pub const REVERB: &str = "reverb";
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -110,6 +112,8 @@ impl BuiltInModuleRegistry {
             dynamics_processor_definition(),
             saturator_definition(),
             convolution_definition(),
+            echo_definition(),
+            reverb_definition(),
         ])
     }
 
@@ -278,6 +282,38 @@ fn convolution_definition() -> BuiltInModuleDefinition {
         .with_output(Port::output(builtin_ports::AUDIO_OUT, SignalType::Audio))
 }
 
+fn echo_definition() -> BuiltInModuleDefinition {
+    BuiltInModuleDefinition::new(module_types::ECHO)
+        .with_input(Port::input(builtin_ports::AUDIO_IN_L, SignalType::Audio))
+        .with_input(Port::input(builtin_ports::AUDIO_IN_R, SignalType::Audio))
+        .with_output(Port::output(builtin_ports::AUDIO_OUT_L, SignalType::Audio))
+        .with_output(Port::output(builtin_ports::AUDIO_OUT_R, SignalType::Audio))
+        .with_input(Port::input(builtin_ports::TIME_LEFT_MS, SignalType::Control))
+        .with_input(Port::input(builtin_ports::TIME_RIGHT_MS, SignalType::Control))
+        .with_input(Port::input(builtin_ports::FEEDBACK, SignalType::Control))
+        .with_input(Port::input(builtin_ports::DAMPING_CUTOFF, SignalType::Control))
+        .with_input(Port::input(builtin_ports::WET, SignalType::Control))
+        .with_input(Port::input(builtin_ports::DRY, SignalType::Control))
+        .with_input(Port::input(builtin_ports::SYNC_DIVISION, SignalType::Control))
+        .with_input(Port::input(builtin_ports::PING_PONG, SignalType::Control))
+}
+
+fn reverb_definition() -> BuiltInModuleDefinition {
+    BuiltInModuleDefinition::new(module_types::REVERB)
+        .with_input(Port::input(builtin_ports::AUDIO_IN_L, SignalType::Audio))
+        .with_input(Port::input(builtin_ports::AUDIO_IN_R, SignalType::Audio))
+        .with_output(Port::output(builtin_ports::AUDIO_OUT_L, SignalType::Audio))
+        .with_output(Port::output(builtin_ports::AUDIO_OUT_R, SignalType::Audio))
+        .with_input(Port::input(builtin_ports::DECAY_TIME, SignalType::Control))
+        .with_input(Port::input(builtin_ports::ROOM_SIZE, SignalType::Control))
+        .with_input(Port::input(builtin_ports::PRE_DELAY, SignalType::Control))
+        .with_input(Port::input(builtin_ports::DAMPING, SignalType::Control))
+        .with_input(Port::input(builtin_ports::DIFFUSION, SignalType::Control))
+        .with_input(Port::input(builtin_ports::STEREO_WIDTH, SignalType::Control))
+        .with_input(Port::input(builtin_ports::WET, SignalType::Control))
+        .with_input(Port::input(builtin_ports::DRY, SignalType::Control))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -434,6 +470,8 @@ mod tests {
             module_types::DYNAMICS_PROCESSOR,
             module_types::SATURATOR,
             module_types::CONVOLUTION,
+            module_types::ECHO,
+            module_types::REVERB,
         ] {
             let definition = registry
                 .get(module_type)
@@ -525,6 +563,50 @@ mod tests {
                 && port.signal_type() == signal_type
                 && port.accepts_multiple_sources()
         }));
+    }
+
+    #[test]
+    fn echo_definition_has_correct_ports() {
+        let registry = BuiltInModuleRegistry::new();
+
+        let echo = registry
+            .get(module_types::ECHO)
+            .expect("echo should be built in");
+
+        assert_has_input(echo, builtin_ports::AUDIO_IN_L, SignalType::Audio);
+        assert_has_input(echo, builtin_ports::AUDIO_IN_R, SignalType::Audio);
+        assert_has_output(echo, builtin_ports::AUDIO_OUT_L, SignalType::Audio);
+        assert_has_output(echo, builtin_ports::AUDIO_OUT_R, SignalType::Audio);
+        assert_has_input(echo, builtin_ports::TIME_LEFT_MS, SignalType::Control);
+        assert_has_input(echo, builtin_ports::TIME_RIGHT_MS, SignalType::Control);
+        assert_has_input(echo, builtin_ports::FEEDBACK, SignalType::Control);
+        assert_has_input(echo, builtin_ports::DAMPING_CUTOFF, SignalType::Control);
+        assert_has_input(echo, builtin_ports::WET, SignalType::Control);
+        assert_has_input(echo, builtin_ports::DRY, SignalType::Control);
+        assert_has_input(echo, builtin_ports::SYNC_DIVISION, SignalType::Control);
+        assert_has_input(echo, builtin_ports::PING_PONG, SignalType::Control);
+    }
+
+    #[test]
+    fn reverb_definition_has_correct_ports() {
+        let registry = BuiltInModuleRegistry::new();
+
+        let reverb = registry
+            .get(module_types::REVERB)
+            .expect("reverb should be built in");
+
+        assert_has_input(reverb, builtin_ports::AUDIO_IN_L, SignalType::Audio);
+        assert_has_input(reverb, builtin_ports::AUDIO_IN_R, SignalType::Audio);
+        assert_has_output(reverb, builtin_ports::AUDIO_OUT_L, SignalType::Audio);
+        assert_has_output(reverb, builtin_ports::AUDIO_OUT_R, SignalType::Audio);
+        assert_has_input(reverb, builtin_ports::DECAY_TIME, SignalType::Control);
+        assert_has_input(reverb, builtin_ports::ROOM_SIZE, SignalType::Control);
+        assert_has_input(reverb, builtin_ports::PRE_DELAY, SignalType::Control);
+        assert_has_input(reverb, builtin_ports::DAMPING, SignalType::Control);
+        assert_has_input(reverb, builtin_ports::DIFFUSION, SignalType::Control);
+        assert_has_input(reverb, builtin_ports::STEREO_WIDTH, SignalType::Control);
+        assert_has_input(reverb, builtin_ports::WET, SignalType::Control);
+        assert_has_input(reverb, builtin_ports::DRY, SignalType::Control);
     }
 
     fn assert_has_output(

@@ -73,16 +73,23 @@ fn render(args: Vec<String>) -> CliResult {
         Err(load_error) => return error(load_error.to_string()),
     };
 
+    let note_off_frame = (patch_doc.render.sample_rate_hz as u64 / 50).max(1);
     let (left, right) = crate::graph_processor::render_offline_with_sampler_assets(
         &graph,
         &patch_doc.render,
-        vec![TimedInputEvent::new(
-            0,
-            ScriptEvent::NoteOn {
-                note: 60,
-                velocity: 100,
-            },
-        )],
+        vec![
+            TimedInputEvent::new(
+                0,
+                ScriptEvent::NoteOn {
+                    note: 60,
+                    velocity: 100,
+                },
+            ),
+            TimedInputEvent::new(
+                note_off_frame,
+                ScriptEvent::NoteOff { note: 60 },
+            ),
+        ],
         &sampler_assets,
     );
     if let Err(write_error) =
