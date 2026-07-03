@@ -1,5 +1,7 @@
 use dandrum_engine::diagnostics::{error_codes, Diagnostic};
-use dandrum_engine::patch::{load_patch_str, validate_patch_schema};
+use dandrum_engine::patch::{
+    load_patch_str, resolve_module_parameters, validate_patch_schema, ParameterValue,
+};
 
 fn validation_diagnostics(yaml: &str) -> Vec<Diagnostic> {
     let patch = load_patch_str(yaml).expect("test patch YAML should parse");
@@ -178,4 +180,107 @@ modules:
     );
 
     assert_has_diagnostic_for_parameter(&diagnostics, "filt", "not_declared");
+}
+
+#[test]
+fn omitted_optional_module_parameters_resolve_to_declared_defaults() {
+    let patch = load_patch_str(
+        r#"
+metadata:
+  name: Defaults Resolve
+render:
+  sample_rate_hz: 48000
+  block_size_frames: 128
+  duration_frames: 128
+modules:
+  - id: filt
+    type: filter
+"#,
+    )
+    .expect("patch should parse");
+
+    let resolved = resolve_module_parameters(&patch).expect("parameters should resolve");
+    let filt = resolved.get("filt").expect("filter parameters should resolve");
+
+    assert_eq!(filt.get("algorithm"), Some(&ParameterValue::Text("moog".into())));
+    assert_eq!(filt.get("mode"), Some(&ParameterValue::Text("lowpass".into())));
+    assert_eq!(filt.get("comb_type"), Some(&ParameterValue::Text("feedback".into())));
+}
+
+#[test]
+fn module_and_patch_values_override_declared_defaults_before_graph_preparation() {
+    let patch = load_patch_str(
+        r#"
+metadata:
+  name: Overrides Resolve
+render:
+  sample_rate_hz: 48000
+  block_size_frames: 128
+  duration_frames: 128
+parameters:
+  filt:
+    mode: highpass
+modules:
+  - id: filt
+    type: filter
+    parameters:
+      algorithm: biquad
+"#,
+    )
+    .expect("patch should parse");
+
+    let resolved = resolve_module_parameters(&patch).expect("parameters should resolve");
+    let filt = resolved.get("filt").expect("filter parameters should resolve");
+
+    assert_eq!(filt.get("algorithm"), Some(&ParameterValue::Text("biquad".into())));
+    assert_eq!(filt.get("mode"), Some(&ParameterValue::Text("highpass".into())));
+    assert_eq!(filt.get("comb_type"), Some(&ParameterValue::Text("feedback".into())));
+}
+
+#[test]
+fn required_parameter_without_default_fails_before_default_resolution() {
+    let patch = load_patch_str(
+        r#"
+metadata:
+  name: Missing Required Parameter
+render:
+  sample_rate_hz: 48000
+  block_size_frames: 128
+  duration_frames: 128
+modules:
+  - id: sampler
+    type: sampler
+"#,
+    )
+    .expect("patch should parse");
+
+    let diagnostics = resolve_module_parameters(&patch)
+        .expect_err("sampler asset is required")
+        .to_diagnostics()
+        .all()
+        .to_vec();
+
+    assert_has_diagnostic_for_parameter(&diagnostics, "sampler", "asset");
+}
+
+#[test]
+fn equivalent_patches_resolve_to_identical_parameter_maps_across_repeated_loads() {
+    let yaml = r#"
+metadata:
+  name: Repeatable Defaults
+render:
+  sample_rate_hz: 48000
+  block_size_frames: 128
+  duration_frames: 128
+modules:
+  - id: spectral
+    type: spectral_processor
+"#;
+
+    let first = resolve_module_parameters(&load_patch_str(yaml).expect("first patch should parse"))
+        .expect("first patch should resolve");
+    let second = resolve_module_parameters(&load_patch_str(yaml).expect("second patch should parse"))
+        .expect("second patch should resolve");
+
+    assert_eq!(first, second);
 }
