@@ -34,13 +34,14 @@ pub struct PatchDocument {
     #[serde(default)]
     pub voice_allocation: VoiceAllocation,
     /// Top-level parameter overrides keyed by module_id.
-    /// These are merged with (and may not conflict with) module-level parameters.
     #[serde(default)]
     pub parameters: BTreeMap<String, BTreeMap<String, ParameterValue>>,
-    /// Named preset parameter sets.
-    /// Each preset maps module_id -> { param_name: value }.
+    /// Named preset parameter sets. Each preset maps module_id -> { param_name: value }.
     #[serde(default)]
     pub presets: BTreeMap<String, BTreeMap<String, BTreeMap<String, ParameterValue>>>,
+    /// Optional active preset name. Declared presets are inert unless selected here.
+    #[serde(default)]
+    pub selected_preset: Option<String>,
 }
 
 #[derive(Clone, Debug, Default, Deserialize, PartialEq, Eq)]
@@ -214,6 +215,10 @@ pub fn resolve_module_parameters(
     validate_patch_schema(patch)?;
 
     let registry = BuiltInModuleRegistry::new();
+    let selected_preset = patch
+        .selected_preset
+        .as_deref()
+        .and_then(|name| patch.presets.get(name));
     let mut resolved = BTreeMap::new();
 
     for module in &patch.modules {
@@ -231,17 +236,17 @@ pub fn resolve_module_parameters(
             values.insert(name.clone(), value.clone());
         }
 
-        if let Some(overrides) = patch.parameters.get(&module.id) {
-            for (name, value) in overrides {
-                values.insert(name.clone(), value.clone());
-            }
-        }
-
-        for preset_modules in patch.presets.values() {
+        if let Some(preset_modules) = selected_preset {
             if let Some(overrides) = preset_modules.get(&module.id) {
                 for (name, value) in overrides {
                     values.insert(name.clone(), value.clone());
                 }
+            }
+        }
+
+        if let Some(overrides) = patch.parameters.get(&module.id) {
+            for (name, value) in overrides {
+                values.insert(name.clone(), value.clone());
             }
         }
 
@@ -371,6 +376,7 @@ pub fn validate_patch_schema(patch: &PatchDocument) -> Result<(), PatchValidatio
         ));
     }
 
+    validate_selected_preset(patch, &mut result);
     validate_asset_usage(patch, &mut result);
     validate_patch_level_parameters(patch, &registry, &mut result);
     validate_presets(patch, &registry, &mut result);
@@ -654,6 +660,29 @@ fn validate_asset_usage(patch: &PatchDocument, diagnostics: &mut PatchValidation
                 ),
             ));
         }
+    }
+}
+
+fn validate_selected_preset(patch: &PatchDocument, diagnostics: &mut PatchValidationError) {
+    let Some(name) = patch.selected_preset.as_deref() else {
+        return;
+    };
+
+    if name.trim().is_empty() {
+        diagnostics.push(Diagnostic::new(
+            error_codes::VALIDATION_MISSING_FIELD,
+            Severity::Error,
+            "selected_preset must not be empty",
+        ));
+        return;
+    }
+
+    if !patch.presets.contains_key(name) {
+        diagnostics.push(Diagnostic::new(
+            error_codes::VALIDATION_INVALID_VALUE,
+            Severity::Error,
+            format!("selected_preset {name} is not declared"),
+        ));
     }
 }
 
