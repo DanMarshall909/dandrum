@@ -25,11 +25,11 @@
 
 ## 3. Default Resolution And Resolved Parameters
 
-- [ ] 3.1 Add failing Rust tests proving omitted optional parameters resolve to declared defaults and required
+- [x] 3.1 Add failing Rust tests proving omitted optional parameters resolve to declared defaults and required
   parameters without defaults fail validation.
-- [ ] 3.2 Implement deterministic default resolution that produces complete resolved parameter maps for prepared module
+- [x] 3.2 Implement deterministic default resolution that produces complete resolved parameter maps for prepared module
   instances.
-- [ ] 3.3 Add failing Rust tests proving equivalent patches resolve to identical parameter maps across repeated loads.
+- [x] 3.3 Add failing Rust tests proving equivalent patches resolve to identical parameter maps across repeated loads.
 - [ ] 3.4 Integrate resolved parameter maps into graph preparation so DSP state construction consumes validated values
   instead of raw YAML values.
 
