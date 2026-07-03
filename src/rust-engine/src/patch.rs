@@ -387,10 +387,6 @@ fn validate_declared_parameters_for_module(
         return;
     };
 
-    if definition.parameters().is_empty() {
-        return;
-    }
-
     for (name, value) in parameters {
         let Some(metadata) = definition.parameters().iter().find(|p| p.name() == name) else {
             diagnostics.push(
