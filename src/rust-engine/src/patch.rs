@@ -846,6 +846,64 @@ connections:
     }
 
     #[test]
+    fn loads_drum_machine_module_with_named_pads_and_public_event_ports() {
+        let patch = load_patch_str(
+            r#"
+metadata:
+  name: Drum Machine
+render:
+  sample_rate_hz: 48000
+  block_size_frames: 128
+  duration_frames: 48000
+modules:
+  - id: drums
+    type: drum_machine
+    pads:
+      - id: kick
+        trigger_selector: 36
+        metadata:
+          color: orange
+        emitted_event:
+          type: preserve_incoming
+      - id: snare
+        trigger_selector: 38
+        emitted_event:
+          type: event
+          note: 40
+          velocity: 0.75
+  - id: output
+    type: script
+    inputs:
+      - name: trigger
+        signal_type: event
+connections:
+  - from: drums.events
+    to: output.trigger
+  - from: drums.kick
+    to: output.trigger
+  - from: drums.snare
+    to: output.trigger
+"#,
+        )
+        .expect("drum-machine YAML should parse");
+
+        assert_eq!(patch.modules[0].module_type, "drum_machine");
+        assert_eq!(patch.modules[0].id, "drums");
+        assert_eq!(patch.modules[0].inputs.len(), 1);
+        assert_eq!(patch.modules[0].inputs[0].name, "events");
+        assert_eq!(patch.modules[0].inputs[0].signal_type, SignalType::Event);
+        assert_eq!(patch.modules[0].outputs.len(), 2);
+        assert_eq!(patch.modules[0].outputs[0].name, "kick");
+        assert_eq!(patch.modules[0].outputs[0].signal_type, SignalType::Event);
+        assert_eq!(patch.modules[0].outputs[1].name, "snare");
+        assert_eq!(patch.modules[0].outputs[1].signal_type, SignalType::Event);
+        assert_eq!(patch.connections[0].from.module_id, "drums");
+        assert_eq!(patch.connections[0].from.port_name, "events");
+        assert_eq!(patch.connections[1].from.port_name, "kick");
+        assert_eq!(patch.connections[2].from.port_name, "snare");
+    }
+
+    #[test]
     fn missing_voice_allocation_defaults_to_monophonic_without_stealing() {
         let patch = load_patch_str(
             r#"
