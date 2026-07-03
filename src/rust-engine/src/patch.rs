@@ -208,6 +208,53 @@ pub fn load_patch_str(yaml: &str) -> Result<PatchDocument, PatchLoadError> {
     })
 }
 
+pub fn resolve_module_parameters(
+    patch: &PatchDocument,
+) -> Result<BTreeMap<String, BTreeMap<String, ParameterValue>>, PatchValidationError> {
+    validate_patch_schema(patch)?;
+
+    let registry = BuiltInModuleRegistry::new();
+    let mut resolved = BTreeMap::new();
+
+    for module in &patch.modules {
+        let mut values = BTreeMap::new();
+
+        if let Some(definition) = registry.get(&module.module_type) {
+            for parameter in definition.parameters() {
+                if let Some(default) = default_parameter_value(parameter) {
+                    values.insert(parameter.name().to_string(), default);
+                }
+            }
+        }
+
+        for (name, value) in &module.parameters {
+            values.insert(name.clone(), value.clone());
+        }
+
+        if let Some(overrides) = patch.parameters.get(&module.id) {
+            for (name, value) in overrides {
+                values.insert(name.clone(), value.clone());
+            }
+        }
+
+        resolved.insert(module.id.clone(), values);
+    }
+
+    Ok(resolved)
+}
+
+fn default_parameter_value(metadata: &ParameterMetadata) -> Option<ParameterValue> {
+    let default = metadata.default()?;
+
+    match metadata.value_type() {
+        ParameterValueType::Boolean => default.parse::<bool>().ok().map(ParameterValue::Boolean),
+        ParameterValueType::Integer | ParameterValueType::Number => {
+            default.parse::<f64>().ok().map(ParameterValue::Number)
+        }
+        ParameterValueType::Text => Some(ParameterValue::Text(default.to_string())),
+    }
+}
+
 pub fn validate_patch_schema(patch: &PatchDocument) -> Result<(), PatchValidationError> {
     let mut result = PatchValidationError::new();
     let registry = BuiltInModuleRegistry::new();
