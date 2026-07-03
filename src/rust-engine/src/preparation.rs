@@ -1,10 +1,11 @@
+use std::collections::BTreeMap;
 use std::fmt;
 use std::path::Path;
 
 use crate::compiled_patch::{self, CompileError, CompiledPatch};
 use crate::diagnostics::{self, Diagnostic, Severity};
 use crate::graph::Graph;
-use crate::patch::{self, PatchDocument};
+use crate::patch::{self, ParameterValue, PatchDocument};
 use crate::sample::{self, PreparedSamplerAssets, SampleLoadError};
 
 #[derive(Debug)]
@@ -24,6 +25,7 @@ pub(crate) struct PreparationDiagnostics {
 #[derive(Clone, Debug, PartialEq)]
 pub(crate) struct PreparedInstrument {
     patch_doc: PatchDocument,
+    resolved_parameters: BTreeMap<String, BTreeMap<String, ParameterValue>>,
     graph: Graph,
     compiled_patch: CompiledPatch,
     sampler_assets: PreparedSamplerAssets,
@@ -33,6 +35,7 @@ pub(crate) struct PreparedInstrument {
 impl PreparedInstrument {
     pub(crate) fn new(
         patch_doc: PatchDocument,
+        resolved_parameters: BTreeMap<String, BTreeMap<String, ParameterValue>>,
         graph: Graph,
         compiled_patch: CompiledPatch,
         sampler_assets: PreparedSamplerAssets,
@@ -40,6 +43,7 @@ impl PreparedInstrument {
     ) -> Self {
         Self {
             patch_doc,
+            resolved_parameters,
             graph,
             compiled_patch,
             sampler_assets,
@@ -49,6 +53,10 @@ impl PreparedInstrument {
 
     pub(crate) fn patch_doc(&self) -> &PatchDocument {
         &self.patch_doc
+    }
+
+    pub(crate) fn resolved_parameters(&self) -> &BTreeMap<String, BTreeMap<String, ParameterValue>> {
+        &self.resolved_parameters
     }
 
     pub(crate) fn graph(&self) -> &Graph {
@@ -80,6 +88,7 @@ pub(crate) fn prepare_instrument_file(
     let path = path.as_ref();
     let patch_doc = load_patch_document(path)?;
     validate_patch_document(&patch_doc)?;
+    let resolved_parameters = resolve_patch_parameters(&patch_doc)?;
     let graph = build_validated_graph(&patch_doc)?;
     let base_dir = path.parent().unwrap_or_else(|| Path::new("."));
     let sampler_assets = prepare_assets(&patch_doc, base_dir)?;
@@ -87,6 +96,7 @@ pub(crate) fn prepare_instrument_file(
 
     Ok(PreparedInstrument::new(
         patch_doc,
+        resolved_parameters,
         graph,
         compiled_patch,
         sampler_assets,
@@ -102,6 +112,12 @@ pub(crate) fn load_patch_document(
 
 pub(crate) fn validate_patch_document(patch_doc: &PatchDocument) -> Result<(), PreparationError> {
     patch::validate_patch_schema(patch_doc).map_err(PreparationError::Schema)
+}
+
+pub(crate) fn resolve_patch_parameters(
+    patch_doc: &PatchDocument,
+) -> Result<BTreeMap<String, BTreeMap<String, ParameterValue>>, PreparationError> {
+    patch::resolve_module_parameters(patch_doc).map_err(PreparationError::Schema)
 }
 
 pub(crate) fn build_validated_graph(patch_doc: &PatchDocument) -> Result<Graph, PreparationError> {
@@ -192,6 +208,8 @@ modules:
     fn prepared_instrument_owns_validated_patch_graph_compiled_patch_assets_and_diagnostics() {
         let patch_doc = patch::load_patch_str(MINIMAL_PATCH).expect("patch should parse");
         patch::validate_patch_schema(&patch_doc).expect("patch schema should validate");
+        let resolved_parameters =
+            patch::resolve_module_parameters(&patch_doc).expect("parameters should resolve");
         let graph = Graph::from_patch_declarations(&patch_doc);
         graph.validate().expect("graph should validate");
         let compiled_patch =
@@ -199,6 +217,7 @@ modules:
 
         let prepared = PreparedInstrument::new(
             patch_doc,
+            resolved_parameters,
             graph,
             compiled_patch,
             PreparedSamplerAssets::empty(),
@@ -208,6 +227,7 @@ modules:
         );
 
         assert_eq!(prepared.patch_doc().metadata.name, "Prepared Instrument");
+        assert_eq!(prepared.resolved_parameters().len(), 1);
         assert_eq!(prepared.graph().modules().len(), 1);
         assert_eq!(prepared.compiled_patch().nodes().len(), 1);
         assert_eq!(
@@ -231,6 +251,37 @@ modules:
         assert_eq!(prepared.patch_doc().metadata.name, "Prepared Instrument");
         assert_eq!(prepared.graph().modules().len(), 1);
         assert_eq!(prepared.compiled_patch().nodes().len(), 1);
+        assert_eq!(prepared.resolved_parameters().len(), 1);
+    }
+
+    #[test]
+    fn preparation_pipeline_resolves_declared_parameter_defaults_before_graph_preparation() {
+        let patch_doc = patch::load_patch_str(
+            r#"
+metadata:
+  name: Prepared Defaults
+render:
+  sample_rate_hz: 48000
+  block_size_frames: 64
+  duration_frames: 128
+modules:
+  - id: filt
+    type: filter
+"#,
+        )
+        .expect("patch should parse");
+
+        validate_patch_document(&patch_doc).expect("schema should validate");
+        let resolved = resolve_patch_parameters(&patch_doc).expect("parameters should resolve");
+        let graph = build_validated_graph(&patch_doc).expect("graph should still build");
+
+        assert_eq!(
+            resolved
+                .get("filt")
+                .and_then(|params| params.get("algorithm")),
+            Some(&ParameterValue::Text("moog".to_string()))
+        );
+        assert_eq!(graph.modules().len(), 1);
     }
 
     #[test]
