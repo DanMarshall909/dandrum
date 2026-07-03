@@ -265,7 +265,7 @@ modules:
     let filt = resolved.get("filt").expect("filter params should resolve");
 
     assert_eq!(filt.get("algorithm"), Some(&ParameterValue::Text("moog".into())));
-    assert_eq!(filt.get("mode"), None);
+    assert_eq!(filt.get("mode"), Some(&ParameterValue::Text("lowpass".into())));
 }
 
 #[test]
