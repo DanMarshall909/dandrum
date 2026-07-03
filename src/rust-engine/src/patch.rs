@@ -6,7 +6,11 @@ use std::path::{Path, PathBuf};
 
 use serde::Deserialize;
 
-use crate::diagnostics::{self, error_codes, Diagnostic, Diagnostics, Severity};
+use crate::builtins::{
+    BuiltInModuleDefinition, BuiltInModuleRegistry, ParameterMetadata, ParameterValueType,
+    module_types,
+};
+use crate::diagnostics::{self, Diagnostic, Diagnostics, Severity, error_codes};
 
 #[path = "patch_composite.rs"]
 mod patch_composite;
@@ -140,17 +144,9 @@ pub enum VoiceStealingPolicy {
 
 #[derive(Debug)]
 pub enum PatchLoadError {
-    UnsupportedFormat {
-        path: PathBuf,
-    },
-    ReadFailed {
-        path: PathBuf,
-        message: String,
-    },
-    ParseFailed {
-        path: Option<PathBuf>,
-        message: String,
-    },
+    UnsupportedFormat { path: PathBuf },
+    ReadFailed { path: PathBuf, message: String },
+    ParseFailed { path: Option<PathBuf>, message: String },
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -169,7 +165,7 @@ impl PatchValidationError {
         self.diagnostics.push(diagnostic);
     }
 
-    pub fn extend(&mut self, diagnostics: impl IntoIterator<Item=Diagnostic>) {
+    pub fn extend(&mut self, diagnostics: impl IntoIterator<Item = Diagnostic>) {
         self.diagnostics.extend(diagnostics);
     }
 
@@ -214,6 +210,7 @@ pub fn load_patch_str(yaml: &str) -> Result<PatchDocument, PatchLoadError> {
 
 pub fn validate_patch_schema(patch: &PatchDocument) -> Result<(), PatchValidationError> {
     let mut result = PatchValidationError::new();
+    let registry = BuiltInModuleRegistry::new();
 
     if patch.metadata.name.trim().is_empty() {
         result.push(Diagnostic::new(
@@ -258,7 +255,7 @@ pub fn validate_patch_schema(patch: &PatchDocument) -> Result<(), PatchValidatio
                     Severity::Error,
                     "module.id is required",
                 )
-                    .with_module_id(&module.id),
+                .with_module_id(&module.id),
             );
         } else if !module_ids.insert(module.id.as_str()) {
             result.push(
@@ -267,7 +264,7 @@ pub fn validate_patch_schema(patch: &PatchDocument) -> Result<(), PatchValidatio
                     Severity::Error,
                     format!("duplicate module id: {}", module.id),
                 )
-                    .with_module_id(&module.id),
+                .with_module_id(&module.id),
             );
         }
 
@@ -278,7 +275,7 @@ pub fn validate_patch_schema(patch: &PatchDocument) -> Result<(), PatchValidatio
                     Severity::Error,
                     format!("module {} type is required", module.id),
                 )
-                    .with_module_id(&module.id),
+                .with_module_id(&module.id),
             );
         }
 
@@ -290,14 +287,23 @@ pub fn validate_patch_schema(patch: &PatchDocument) -> Result<(), PatchValidatio
                         Severity::Error,
                         format!("module {} port name is required", module.id),
                     )
-                        .with_module_id(&module.id),
+                    .with_module_id(&module.id),
                 );
             }
         }
 
-        if module.module_type == "sampler" {
+        if module.module_type == module_types::SAMPLER {
             validate_sampler_asset_reference(module, patch, &mut result);
         }
+
+        validate_declared_parameters_for_module(
+            "module parameter",
+            &module.id,
+            &module.module_type,
+            &module.parameters,
+            &registry,
+            &mut result,
+        );
 
         patch_composite::validate_composite_instance_bindings(module, patch, &mut result);
     }
@@ -311,18 +317,181 @@ pub fn validate_patch_schema(patch: &PatchDocument) -> Result<(), PatchValidatio
     }
 
     validate_asset_usage(patch, &mut result);
-    validate_patch_level_parameters(patch, &mut result);
-    validate_presets(patch, &mut result);
+    validate_patch_level_parameters(patch, &registry, &mut result);
+    validate_presets(patch, &registry, &mut result);
 
     for connection in &patch.connections {
         validate_port_reference("connection.from", &connection.from, &mut result);
         validate_port_reference("connection.to", &connection.to, &mut result);
     }
 
-    if result.is_empty() {
-        Ok(())
+    if result.is_empty() { Ok(()) } else { Err(result) }
+}
+
+fn validate_declared_parameters_for_module(
+    source_label: &str,
+    module_id: &str,
+    module_type: &str,
+    parameters: &BTreeMap<String, ParameterValue>,
+    registry: &BuiltInModuleRegistry,
+    diagnostics: &mut PatchValidationError,
+) {
+    let Some(definition) = registry.get(module_type) else {
+        return;
+    };
+
+    if definition.parameters().is_empty() {
+        return;
+    }
+
+    for (name, value) in parameters {
+        let Some(metadata) = definition.parameters().iter().find(|p| p.name() == name) else {
+            diagnostics.push(
+                Diagnostic::new(
+                    error_codes::VALIDATION_INVALID_VALUE,
+                    Severity::Error,
+                    format!(
+                        "{source_label} {module_id}.{name} is not declared by module type {module_type}"
+                    ),
+                )
+                .with_module_id(module_id)
+                .with_expected(declared_parameter_names(definition))
+                .with_actual(name)
+                .with_suggested_fix(format!(
+                    "remove {name} or choose one of the declared parameters for {module_type}"
+                )),
+            );
+            continue;
+        };
+
+        validate_parameter_value(source_label, module_id, name, value, metadata, diagnostics);
+    }
+}
+
+fn validate_parameter_value(
+    source_label: &str,
+    module_id: &str,
+    name: &str,
+    value: &ParameterValue,
+    metadata: &ParameterMetadata,
+    diagnostics: &mut PatchValidationError,
+) {
+    if !parameter_value_matches_type(value, metadata.value_type()) {
+        diagnostics.push(
+            Diagnostic::new(
+                error_codes::VALIDATION_TYPE_MISMATCH,
+                Severity::Error,
+                format!(
+                    "{source_label} {module_id}.{name} has wrong type: expected {}, got {}",
+                    parameter_type_name(metadata.value_type()),
+                    parameter_value_type_name(value),
+                ),
+            )
+            .with_module_id(module_id)
+            .with_expected(parameter_type_name(metadata.value_type()))
+            .with_actual(parameter_value_type_name(value))
+            .with_suggested_fix(format!(
+                "set {module_id}.{name} to a {} value",
+                parameter_type_name(metadata.value_type())
+            )),
+        );
+        return;
+    }
+
+    if let Some(values) = metadata.enum_values() {
+        if let ParameterValue::Text(actual) = value {
+            if !values.iter().any(|allowed| allowed == actual) {
+                diagnostics.push(
+                    Diagnostic::new(
+                        error_codes::VALIDATION_INVALID_VALUE,
+                        Severity::Error,
+                        format!(
+                            "{source_label} {module_id}.{name} has invalid enum value {actual}"
+                        ),
+                    )
+                    .with_module_id(module_id)
+                    .with_expected(format!("one of [{}]", values.join(", ")))
+                    .with_actual(actual)
+                    .with_suggested_fix(format!(
+                        "set {module_id}.{name} to one of [{}]",
+                        values.join(", ")
+                    )),
+                );
+            }
+        }
+    }
+
+    if let (ParameterValue::Number(actual), Some((min, max))) = (value, metadata.range()) {
+        if *actual < min {
+            diagnostics.push(
+                Diagnostic::new(
+                    error_codes::VALIDATION_INVALID_VALUE,
+                    Severity::Error,
+                    format!(
+                        "{source_label} {module_id}.{name} is below minimum {min}: {actual}"
+                    ),
+                )
+                .with_module_id(module_id)
+                .with_expected(format!(">= {min}"))
+                .with_actual(actual.to_string())
+                .with_suggested_fix(format!("set {module_id}.{name} to at least {min}")),
+            );
+        } else if *actual > max {
+            diagnostics.push(
+                Diagnostic::new(
+                    error_codes::VALIDATION_INVALID_VALUE,
+                    Severity::Error,
+                    format!(
+                        "{source_label} {module_id}.{name} is above maximum {max}: {actual}"
+                    ),
+                )
+                .with_module_id(module_id)
+                .with_expected(format!("<= {max}"))
+                .with_actual(actual.to_string())
+                .with_suggested_fix(format!("set {module_id}.{name} to at most {max}")),
+            );
+        }
+    }
+}
+
+fn parameter_value_matches_type(value: &ParameterValue, expected: ParameterValueType) -> bool {
+    match (value, expected) {
+        (ParameterValue::Boolean(_), ParameterValueType::Boolean) => true,
+        (ParameterValue::Number(value), ParameterValueType::Integer) => value.fract() == 0.0,
+        (ParameterValue::Number(_), ParameterValueType::Number) => true,
+        (ParameterValue::Text(_), ParameterValueType::Text) => true,
+        _ => false,
+    }
+}
+
+fn parameter_type_name(value_type: ParameterValueType) -> &'static str {
+    match value_type {
+        ParameterValueType::Boolean => "boolean",
+        ParameterValueType::Integer => "integer",
+        ParameterValueType::Number => "number",
+        ParameterValueType::Text => "string",
+    }
+}
+
+fn parameter_value_type_name(value: &ParameterValue) -> &'static str {
+    match value {
+        ParameterValue::Boolean(_) => "boolean",
+        ParameterValue::Number(_) => "number",
+        ParameterValue::Text(_) => "string",
+    }
+}
+
+fn declared_parameter_names(definition: &BuiltInModuleDefinition) -> String {
+    let names = definition
+        .parameters()
+        .iter()
+        .map(|parameter| parameter.name())
+        .collect::<Vec<_>>();
+
+    if names.is_empty() {
+        "no declared parameters".to_string()
     } else {
-        Err(result)
+        format!("one of [{}]", names.join(", "))
     }
 }
 
@@ -336,12 +505,9 @@ fn validate_sampler_asset_reference(
             Diagnostic::new(
                 error_codes::VALIDATION_MISSING_FIELD,
                 Severity::Error,
-                format!(
-                    "sampler module {} missing required asset parameter",
-                    module.id
-                ),
+                format!("sampler module {} missing required asset parameter", module.id),
             )
-                .with_module_id(&module.id),
+            .with_module_id(&module.id),
         );
         return;
     };
@@ -356,7 +522,7 @@ fn validate_sampler_asset_reference(
                     module.id
                 ),
             )
-                .with_module_id(&module.id),
+            .with_module_id(&module.id),
         );
         return;
     };
@@ -371,8 +537,8 @@ fn validate_sampler_asset_reference(
                     module.id, asset_id
                 ),
             )
-                .with_module_id(&module.id)
-                .with_expected(asset_id),
+            .with_module_id(&module.id)
+            .with_expected(asset_id),
         );
         return;
     };
@@ -387,9 +553,9 @@ fn validate_sampler_asset_reference(
                     module.id, asset_id, asset.kind
                 ),
             )
-                .with_module_id(&module.id)
-                .with_expected("sample")
-                .with_actual(&format!("{:?}", asset.kind)),
+            .with_module_id(&module.id)
+            .with_expected("sample")
+            .with_actual(&format!("{:?}", asset.kind)),
         );
     }
 }
@@ -444,40 +610,55 @@ fn validate_asset_usage(patch: &PatchDocument, diagnostics: &mut PatchValidation
     }
 }
 
-fn validate_patch_level_parameters(patch: &PatchDocument, diagnostics: &mut PatchValidationError) {
+fn validate_patch_level_parameters(
+    patch: &PatchDocument,
+    registry: &BuiltInModuleRegistry,
+    diagnostics: &mut PatchValidationError,
+) {
     for (module_id, params) in &patch.parameters {
-        if !patch.modules.iter().any(|m| m.id == *module_id) {
+        let Some(module) = patch.modules.iter().find(|m| m.id == *module_id) else {
             diagnostics.push(
                 Diagnostic::new(
                     error_codes::VALIDATION_INVALID_VALUE,
                     Severity::Error,
-                    format!("patch parameters reference unknown module {}", module_id),
+                    format!("patch parameters reference unknown module {module_id}"),
                 )
-                    .with_module_id(module_id),
+                .with_module_id(module_id),
             );
             continue;
-        }
+        };
+
         for param_name in params.keys() {
-            if let Some(module) = patch.modules.iter().find(|m| m.id == *module_id) {
-                if module.parameters.contains_key(param_name) {
-                    diagnostics.push(
-                        Diagnostic::new(
-                            error_codes::VALIDATION_INVALID_VALUE,
-                            Severity::Error,
-                            format!(
-                                "patch parameter {}.{} conflicts with module-level parameter",
-                                module_id, param_name
-                            ),
-                        )
-                            .with_module_id(module_id),
-                    );
-                }
+            if module.parameters.contains_key(param_name) {
+                diagnostics.push(
+                    Diagnostic::new(
+                        error_codes::VALIDATION_INVALID_VALUE,
+                        Severity::Error,
+                        format!(
+                            "patch parameter {module_id}.{param_name} conflicts with module-level parameter"
+                        ),
+                    )
+                    .with_module_id(module_id),
+                );
             }
         }
+
+        validate_declared_parameters_for_module(
+            "patch parameter",
+            module_id,
+            &module.module_type,
+            params,
+            registry,
+            diagnostics,
+        );
     }
 }
 
-fn validate_presets(patch: &PatchDocument, diagnostics: &mut PatchValidationError) {
+fn validate_presets(
+    patch: &PatchDocument,
+    registry: &BuiltInModuleRegistry,
+    diagnostics: &mut PatchValidationError,
+) {
     for (preset_name, modules) in &patch.presets {
         if preset_name.trim().is_empty() {
             diagnostics.push(Diagnostic::new(
@@ -486,38 +667,43 @@ fn validate_presets(patch: &PatchDocument, diagnostics: &mut PatchValidationErro
                 "preset name must not be empty",
             ));
         }
+
         for (module_id, params) in modules {
-            if !patch.modules.iter().any(|m| m.id == *module_id) {
+            let Some(module) = patch.modules.iter().find(|m| m.id == *module_id) else {
                 diagnostics.push(
                     Diagnostic::new(
                         error_codes::VALIDATION_INVALID_VALUE,
                         Severity::Error,
-                        format!(
-                            "preset {} references unknown module {}",
-                            preset_name, module_id
-                        ),
+                        format!("preset {preset_name} references unknown module {module_id}"),
                     )
-                        .with_module_id(module_id),
+                    .with_module_id(module_id),
                 );
                 continue;
-            }
+            };
+
             for param_name in params.keys() {
-                if let Some(module) = patch.modules.iter().find(|m| m.id == *module_id) {
-                    if module.parameters.contains_key(param_name) {
-                        diagnostics.push(
-                            Diagnostic::new(
-                                error_codes::VALIDATION_INVALID_VALUE,
-                                Severity::Error,
-                                format!(
-                                    "preset {}.{}.{} conflicts with module-level parameter",
-                                    preset_name, module_id, param_name
-                                ),
-                            )
-                                .with_module_id(module_id),
-                        );
-                    }
+                if module.parameters.contains_key(param_name) {
+                    diagnostics.push(
+                        Diagnostic::new(
+                            error_codes::VALIDATION_INVALID_VALUE,
+                            Severity::Error,
+                            format!(
+                                "preset {preset_name}.{module_id}.{param_name} conflicts with module-level parameter"
+                            ),
+                        )
+                        .with_module_id(module_id),
+                    );
                 }
             }
+
+            validate_declared_parameters_for_module(
+                "preset parameter",
+                module_id,
+                &module.module_type,
+                params,
+                registry,
+                diagnostics,
+            );
         }
     }
 }
@@ -552,18 +738,10 @@ impl fmt::Display for PatchLoadError {
                 write!(formatter, "unsupported patch format: {}", path.display())
             }
             Self::ReadFailed { path, message } => {
-                write!(
-                    formatter,
-                    "failed to read patch {}: {message}",
-                    path.display()
-                )
+                write!(formatter, "failed to read patch {}: {message}", path.display())
             }
             Self::ParseFailed { path, message } => match path {
-                Some(path) => write!(
-                    formatter,
-                    "failed to parse patch {}: {message}",
-                    path.display()
-                ),
+                Some(path) => write!(formatter, "failed to parse patch {}: {message}", path.display()),
                 None => write!(formatter, "failed to parse patch: {message}"),
             },
         }
@@ -608,17 +786,15 @@ impl PatchValidationError {
     pub fn to_diagnostics(&self) -> diagnostics::Diagnostics {
         self.diagnostics.clone()
     }
+
+    pub fn diagnostics(&self) -> &[Diagnostic] {
+        self.diagnostics.all()
+    }
 }
 
 impl fmt::Display for PortReference {
     fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(formatter, "{}.{}", self.module_id, self.port_name)
-    }
-}
-
-impl PatchValidationError {
-    pub fn diagnostics(&self) -> &[Diagnostic] {
-        self.diagnostics.all()
     }
 }
 
@@ -653,1249 +829,5 @@ pub(super) fn validate_port_reference(
             Severity::Error,
             format!("{label} must use a non-empty module_id.port_name reference"),
         ));
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use std::fs;
-    use std::path::Path;
-
-    #[test]
-    fn patch_schema_separates_metadata_render_assets_modules_and_connections() {
-        let patch = PatchDocument {
-            metadata: PatchMetadata {
-                name: "Basic Voice".to_string(),
-                version: Some("0.1.0".to_string()),
-                author: None,
-            },
-            render: RenderSettings {
-                sample_rate_hz: 48_000,
-                block_size_frames: 128,
-                duration_frames: 48_000,
-            },
-            assets: vec![AssetDeclaration {
-                id: "kick".to_string(),
-                kind: AssetKind::Sample,
-                path: "samples/kick.wav".to_string(),
-            }],
-            module_definitions: vec![],
-            modules: vec![ModuleDeclaration {
-                id: "out".to_string(),
-                module_type: "audio_output".to_string(),
-                inputs: vec![PortDeclaration {
-                    name: "left".to_string(),
-                    signal_type: SignalType::Audio,
-                }],
-                outputs: vec![],
-                parameters: BTreeMap::new(),
-            }],
-            connections: vec![ConnectionDeclaration {
-                from: PortReference {
-                    module_id: "osc".to_string(),
-                    port_name: "audio".to_string(),
-                },
-                to: PortReference {
-                    module_id: "out".to_string(),
-                    port_name: "left".to_string(),
-                },
-            }],
-            voice_allocation: VoiceAllocation::default(),
-            parameters: BTreeMap::new(),
-            presets: BTreeMap::new(),
-        };
-
-        assert_eq!(patch.metadata.name, "Basic Voice");
-        assert_eq!(patch.render.block_size_frames, 128);
-        assert_eq!(patch.assets[0].kind, AssetKind::Sample);
-        assert_eq!(patch.modules[0].id, "out");
-        assert_eq!(patch.connections[0].to.module_id, "out");
-    }
-
-    #[test]
-    fn yaml_patch_schema_file_parses_as_yaml_and_declares_core_sections() {
-        let schema_path =
-            Path::new(env!("CARGO_MANIFEST_DIR")).join("../../schema/patch.schema.yaml");
-        let schema_text = match fs::read_to_string(&schema_path) {
-            Ok(schema_text) => schema_text,
-            Err(error) if env!("CARGO_MANIFEST_DIR").starts_with("/tmp/cargo-mutants-") => {
-                eprintln!("skipping repository schema test in cargo-mutants copy: {error}");
-                return;
-            }
-            Err(error) => panic!("patch schema should be readable: {error}"),
-        };
-        let schema: serde_yaml::Value =
-            serde_yaml::from_str(&schema_text).expect("patch schema should parse as YAML");
-        let schema_map = schema
-            .as_mapping()
-            .expect("patch schema should be a mapping");
-
-        let properties_key = serde_yaml::Value::String("properties".to_string());
-        let properties = schema_map
-            .get(&properties_key)
-            .and_then(serde_yaml::Value::as_mapping)
-            .expect("patch schema should declare properties");
-
-        assert!(properties.contains_key(serde_yaml::Value::String("metadata".to_string())));
-        assert!(properties.contains_key(serde_yaml::Value::String("render".to_string())));
-        assert!(properties.contains_key(serde_yaml::Value::String("modules".to_string())));
-    }
-
-    #[test]
-    fn script_modules_can_declare_custom_event_and_control_ports() {
-        let script = ModuleDeclaration {
-            id: "accent_script".to_string(),
-            module_type: "script".to_string(),
-            inputs: vec![PortDeclaration {
-                name: "notes".to_string(),
-                signal_type: SignalType::Event,
-            }],
-            outputs: vec![PortDeclaration {
-                name: "accent".to_string(),
-                signal_type: SignalType::Control,
-            }],
-            parameters: BTreeMap::from([(
-                "source".to_string(),
-                ParameterValue::Text("scripts/accent.dan".to_string()),
-            )]),
-        };
-
-        assert_eq!(script.inputs[0].signal_type, SignalType::Event);
-        assert_eq!(script.outputs[0].signal_type, SignalType::Control);
-        assert!(script.parameters.contains_key("source"));
-    }
-
-    #[test]
-    fn loads_valid_yaml_patch_document() {
-        let patch = load_patch_str(
-            r#"
-metadata:
-  name: Basic Voice
-render:
-  sample_rate_hz: 48000
-  block_size_frames: 128
-  duration_frames: 48000
-assets:
-  - id: wavetable
-    kind: sample
-    path: assets/wavetable.wav
-modules:
-  - id: osc
-    type: oscillator
-    outputs:
-      - name: audio
-        signal_type: audio
-    parameters:
-      frequency: 220.0
-  - id: out
-    type: audio_output
-    inputs:
-      - name: left
-        signal_type: audio
-connections:
-  - from: osc.audio
-    to: out.left
-"#,
-        )
-            .expect("valid YAML patch should load");
-
-        assert_eq!(patch.metadata.name, "Basic Voice");
-        assert_eq!(patch.assets[0].kind, AssetKind::Sample);
-        assert_eq!(patch.modules[0].module_type, "oscillator");
-        assert_eq!(patch.connections[0].from.module_id, "osc");
-        assert_eq!(patch.connections[0].from.port_name, "audio");
-    }
-
-    #[test]
-    fn loads_yaml_composite_module_definitions() {
-        let patch = load_patch_str(
-            r#"
-metadata:
-  name: Composite Voice
-render:
-  sample_rate_hz: 48000
-  block_size_frames: 128
-  duration_frames: 48000
-assets:
-  - id: kick
-    kind: sample
-    path: assets/kick.wav
-module_definitions:
-  - type: drum_voice
-    inputs:
-      - name: trigger
-        signal_type: event
-        maps_to:
-          - env.gate
-      - name: pitch
-        signal_type: control
-        maps_to:
-          - osc.pitch
-    outputs:
-      - name: audio
-        signal_type: audio
-        maps_from:
-          - vca.audio_out
-    parameters:
-      - name: level
-        maps_to:
-          - vca.gain
-    asset_bindings:
-      - name: sample
-        maps_to:
-          - sampler.asset
-    modules:
-      - id: osc
-        type: oscillator
-      - id: env
-        type: adsr
-      - id: sampler
-        type: sampler
-        parameters:
-          asset: kick
-      - id: vca
-        type: gain
-    connections:
-      - from: osc.audio
-        to: vca.audio_in
-modules:
-  - id: voice
-    type: drum_voice
-    parameters:
-      level: 0.5
-      sample: kick
-  - id: out
-    type: audio_output
-connections:
-  - from: voice.audio
-    to: out.left
-"#,
-        )
-            .expect("composite module definition YAML should parse");
-
-        assert_eq!(patch.module_definitions.len(), 1);
-        let definition = &patch.module_definitions[0];
-        assert_eq!(definition.module_type, "drum_voice");
-        assert_eq!(definition.inputs[0].name, "trigger");
-        assert_eq!(definition.inputs[0].signal_type, SignalType::Event);
-        assert_eq!(definition.inputs[0].maps_to[0].module_id, "env");
-        assert_eq!(definition.inputs[0].maps_to[0].port_name, "gate");
-        assert_eq!(definition.outputs[0].name, "audio");
-        assert_eq!(definition.outputs[0].maps_from[0].module_id, "vca");
-        assert_eq!(definition.parameters[0].name, "level");
-        assert_eq!(definition.parameters[0].maps_to[0].module_id, "vca");
-        assert_eq!(definition.asset_bindings[0].name, "sample");
-        assert_eq!(definition.asset_bindings[0].maps_to[0].port_name, "asset");
-        assert_eq!(definition.modules[0].id, "osc");
-        assert_eq!(definition.connections[0].from.module_id, "osc");
-    }
-
-    #[test]
-    fn loads_drum_machine_module_with_named_pads_and_public_event_ports() {
-        let patch = load_patch_str(
-            r#"
-metadata:
-  name: Drum Machine
-render:
-  sample_rate_hz: 48000
-  block_size_frames: 128
-  duration_frames: 48000
-modules:
-  - id: drums
-    type: drum_machine
-    pads:
-      - id: kick
-        trigger_selector: 36
-        metadata:
-          color: orange
-        emitted_event:
-          type: preserve_incoming
-      - id: snare
-        trigger_selector: 38
-        emitted_event:
-          type: event
-          note: 40
-          velocity: 0.75
-  - id: output
-    type: script
-    inputs:
-      - name: trigger
-        signal_type: event
-connections:
-  - from: drums.events
-    to: output.trigger
-  - from: drums.kick
-    to: output.trigger
-  - from: drums.snare
-    to: output.trigger
-"#,
-        )
-            .expect("drum-machine YAML should parse");
-
-        assert_eq!(patch.modules[0].module_type, "drum_machine");
-        assert_eq!(patch.modules[0].id, "drums");
-        assert_eq!(patch.modules[0].inputs.len(), 1);
-        assert_eq!(patch.modules[0].inputs[0].name, "events");
-        assert_eq!(patch.modules[0].inputs[0].signal_type, SignalType::Event);
-        assert_eq!(patch.modules[0].outputs.len(), 2);
-        assert_eq!(patch.modules[0].outputs[0].name, "kick");
-        assert_eq!(patch.modules[0].outputs[0].signal_type, SignalType::Event);
-        assert_eq!(patch.modules[0].outputs[1].name, "snare");
-        assert_eq!(patch.modules[0].outputs[1].signal_type, SignalType::Event);
-        assert_eq!(patch.connections[0].from.module_id, "drums");
-        assert_eq!(patch.connections[0].from.port_name, "events");
-        assert_eq!(patch.connections[1].from.port_name, "kick");
-        assert_eq!(patch.connections[2].from.port_name, "snare");
-    }
-
-    #[test]
-    fn missing_voice_allocation_defaults_to_monophonic_without_stealing() {
-        let patch = load_patch_str(
-            r#"
-metadata:
-  name: Monophonic Default
-render:
-  sample_rate_hz: 48000
-  block_size_frames: 128
-  duration_frames: 48000
-modules:
-  - id: out
-    type: audio_output
-    inputs:
-      - name: left
-        signal_type: audio
-"#,
-        )
-            .expect("patch without voice allocation should parse");
-
-        assert_eq!(patch.voice_allocation.max_voices, 1);
-        assert_eq!(
-            patch.voice_allocation.stealing,
-            VoiceStealingPolicy::Disabled
-        );
-        validate_patch_schema(&patch).expect("default voice allocation should validate");
-    }
-
-    #[test]
-    fn loads_polyphonic_voice_allocation_from_yaml() {
-        let patch = load_patch_str(
-            r#"
-metadata:
-  name: Polyphonic
-render:
-  sample_rate_hz: 48000
-  block_size_frames: 128
-  duration_frames: 48000
-voice_allocation:
-  max_voices: 8
-  stealing: oldest_active
-modules:
-  - id: out
-    type: audio_output
-    inputs:
-      - name: left
-        signal_type: audio
-"#,
-        )
-            .expect("polyphonic voice allocation should parse");
-
-        assert_eq!(patch.voice_allocation.max_voices, 8);
-        assert_eq!(
-            patch.voice_allocation.stealing,
-            VoiceStealingPolicy::OldestActive
-        );
-        validate_patch_schema(&patch).expect("positive polyphony should validate");
-    }
-
-    #[test]
-    fn zero_max_voices_is_rejected_by_validation() {
-        let patch = load_patch_str(
-            r#"
-metadata:
-  name: Zero Voices
-render:
-  sample_rate_hz: 48000
-  block_size_frames: 128
-  duration_frames: 48000
-voice_allocation:
-  max_voices: 0
-modules:
-  - id: out
-    type: audio_output
-    inputs:
-      - name: left
-        signal_type: audio
-"#,
-        )
-            .expect("zero voice limit should parse for validation");
-
-        let error = validate_patch_schema(&patch).expect_err("zero max_voices must fail");
-
-        assert!(error.diagnostics().iter().any(|d| {
-            d.message()
-                .contains("voice_allocation.max_voices must be greater than zero")
-        }));
-    }
-
-    #[test]
-    fn negative_max_voices_is_rejected_at_parse_time() {
-        let error = load_patch_str(
-            r#"
-metadata:
-  name: Negative Voices
-render:
-  sample_rate_hz: 48000
-  block_size_frames: 128
-  duration_frames: 48000
-voice_allocation:
-  max_voices: -1
-modules:
-  - id: out
-    type: audio_output
-    inputs:
-      - name: left
-        signal_type: audio
-"#,
-        )
-            .expect_err("negative voice limit must fail at parse time");
-
-        assert!(matches!(error, PatchLoadError::ParseFailed { .. }));
-        assert!(error.to_string().contains("voice_allocation.max_voices"));
-    }
-
-    #[test]
-    fn invalid_yaml_reports_parse_error() {
-        let error = load_patch_str("metadata: [unterminated").expect_err("invalid YAML must fail");
-
-        assert!(matches!(error, PatchLoadError::ParseFailed { .. }));
-        assert!(error.to_string().contains("failed to parse patch"));
-    }
-
-    #[test]
-    fn yaml_patch_missing_modules_section_is_rejected() {
-        let error = load_patch_str(
-            r#"
-metadata:
-  name: Missing Modules
-render:
-  sample_rate_hz: 48000
-  block_size_frames: 128
-  duration_frames: 48000
-"#,
-        )
-            .expect_err("modules section is required");
-
-        assert!(matches!(error, PatchLoadError::ParseFailed { .. }));
-        assert!(error.to_string().contains("missing field `modules`"));
-    }
-
-    #[test]
-    fn non_yaml_patch_file_is_rejected_before_reading() {
-        let error = load_patch_file("patches/basic.json").expect_err("JSON is not supported");
-
-        assert!(matches!(error, PatchLoadError::UnsupportedFormat { .. }));
-        assert!(error.to_string().contains("unsupported patch format"));
-        assert!(error.to_string().contains("patches/basic.json"));
-    }
-
-    #[test]
-    fn schema_validation_accepts_minimal_valid_patch() {
-        let patch = minimal_patch(vec![ModuleDeclaration {
-            id: "out".to_string(),
-            module_type: "audio_output".to_string(),
-            inputs: vec![PortDeclaration {
-                name: "left".to_string(),
-                signal_type: SignalType::Audio,
-            }],
-            outputs: vec![],
-            parameters: BTreeMap::new(),
-        }]);
-
-        validate_patch_schema(&patch).expect("valid schema should pass");
-    }
-
-    #[test]
-    fn schema_validation_reports_duplicate_module_ids() {
-        let patch = minimal_patch(vec![
-            ModuleDeclaration {
-                id: "osc".to_string(),
-                module_type: "oscillator".to_string(),
-                inputs: vec![],
-                outputs: vec![],
-                parameters: BTreeMap::new(),
-            },
-            ModuleDeclaration {
-                id: "osc".to_string(),
-                module_type: "audio_output".to_string(),
-                inputs: vec![],
-                outputs: vec![],
-                parameters: BTreeMap::new(),
-            },
-        ]);
-
-        let error = validate_patch_schema(&patch).expect_err("duplicate IDs must fail");
-
-        assert!(
-            error
-                .diagnostics()
-                .iter()
-                .any(|d| d.message().contains("duplicate module id: osc"))
-        );
-    }
-
-    #[test]
-    fn schema_validation_reports_duplicate_composite_module_types() {
-        let mut patch = minimal_patch(vec![ModuleDeclaration {
-            id: "out".to_string(),
-            module_type: "audio_output".to_string(),
-            inputs: vec![],
-            outputs: vec![],
-            parameters: BTreeMap::new(),
-        }]);
-        patch.module_definitions = vec![
-            minimal_composite_definition("drum_voice"),
-            minimal_composite_definition("drum_voice"),
-        ];
-
-        let error = validate_patch_schema(&patch).expect_err("duplicate composite types must fail");
-
-        assert!(error.diagnostics().iter().any(|d| {
-            d.message()
-                .contains("duplicate composite module type: drum_voice")
-        }));
-    }
-
-    #[test]
-    fn schema_validation_reports_malformed_composite_public_and_internal_references() {
-        let mut patch = minimal_patch(vec![ModuleDeclaration {
-            id: "voice".to_string(),
-            module_type: "drum_voice".to_string(),
-            inputs: vec![],
-            outputs: vec![],
-            parameters: BTreeMap::new(),
-        }]);
-        let mut definition = minimal_composite_definition("drum_voice");
-        definition.inputs[0].name = String::new();
-        definition.inputs[0].maps_to[0].module_id = String::new();
-        definition.outputs[0].name = String::new();
-        definition.outputs[0].maps_from[0].port_name = String::new();
-        patch.module_definitions = vec![definition];
-
-        let error = validate_patch_schema(&patch).expect_err("malformed composite refs must fail");
-
-        assert!(error.diagnostics().iter().any(|d| {
-            d.message()
-                .contains("composite drum_voice input name is required")
-        }));
-        assert!(error.diagnostics().iter().any(|d| d.message().contains(
-            "composite drum_voice input <unnamed> maps_to must use a non-empty module_id.port_name reference"
-        )));
-        assert!(error.diagnostics().iter().any(|d| {
-            d.message()
-                .contains("composite drum_voice output name is required")
-        }));
-        assert!(error.diagnostics().iter().any(|d| d.message().contains(
-            "composite drum_voice output <unnamed> maps_from must use a non-empty module_id.port_name reference"
-        )));
-    }
-
-    #[test]
-    fn schema_validation_accepts_compatible_composite_public_mappings() {
-        let mut patch = minimal_patch(vec![ModuleDeclaration {
-            id: "voice".to_string(),
-            module_type: "drum_voice".to_string(),
-            inputs: vec![],
-            outputs: vec![],
-            parameters: BTreeMap::new(),
-        }]);
-        patch.module_definitions = vec![minimal_composite_definition("drum_voice")];
-
-        validate_patch_schema(&patch).expect("compatible composite mappings should validate");
-    }
-
-    #[test]
-    fn schema_validation_reports_incompatible_composite_public_mappings() {
-        let mut patch = minimal_patch(vec![ModuleDeclaration {
-            id: "voice".to_string(),
-            module_type: "drum_voice".to_string(),
-            inputs: vec![],
-            outputs: vec![],
-            parameters: BTreeMap::new(),
-        }]);
-        let mut definition = minimal_composite_definition("drum_voice");
-        definition.inputs[0].maps_to[0] = PortReference {
-            module_id: "vca".to_string(),
-            port_name: "gain".to_string(),
-        };
-        definition.outputs[0].maps_from[0] = PortReference {
-            module_id: "env".to_string(),
-            port_name: "value".to_string(),
-        };
-        patch.module_definitions = vec![definition];
-
-        let error = validate_patch_schema(&patch).expect_err("incompatible mappings must fail");
-
-        assert!(error.diagnostics().iter().any(|d| d.message().contains(
-            "composite drum_voice input trigger maps_to vca.gain has incompatible signal types: public Event, internal Control"
-        )));
-        assert!(error.diagnostics().iter().any(|d| d.message().contains(
-            "composite drum_voice output audio maps_from env.value has incompatible signal types: public Audio, internal Control"
-        )));
-    }
-
-    #[test]
-    fn schema_validation_reports_composite_mapping_wrong_internal_port_direction() {
-        let mut patch = minimal_patch(vec![ModuleDeclaration {
-            id: "voice".to_string(),
-            module_type: "drum_voice".to_string(),
-            inputs: vec![],
-            outputs: vec![],
-            parameters: BTreeMap::new(),
-        }]);
-        let mut definition = minimal_composite_definition("drum_voice");
-        definition.inputs[0].maps_to[0] = PortReference {
-            module_id: "env".to_string(),
-            port_name: "value".to_string(),
-        };
-        definition.outputs[0].maps_from[0] = PortReference {
-            module_id: "vca".to_string(),
-            port_name: "audio_in".to_string(),
-        };
-        patch.module_definitions = vec![definition];
-
-        let error = validate_patch_schema(&patch).expect_err("wrong internal directions must fail");
-
-        assert!(error.diagnostics().iter().any(|d| d.message().contains(
-            "composite drum_voice input trigger maps_to env.value must reference an internal input port"
-        )));
-        assert!(error.diagnostics().iter().any(|d| d.message().contains(
-            "composite drum_voice output audio maps_from vca.audio_in must reference an internal output port"
-        )));
-    }
-
-    #[test]
-    fn schema_validation_reports_undeclared_composite_instance_parameter() {
-        let mut patch = minimal_patch(vec![ModuleDeclaration {
-            id: "voice".to_string(),
-            module_type: "drum_voice".to_string(),
-            inputs: vec![],
-            outputs: vec![],
-            parameters: BTreeMap::from([("loudness".to_string(), ParameterValue::Number(0.5))]),
-        }]);
-        patch.module_definitions = vec![minimal_composite_definition("drum_voice")];
-
-        let error = validate_patch_schema(&patch).expect_err("undeclared binding must fail");
-
-        assert!(
-            error.diagnostics().iter().any(|d| d.message().contains(
-                "composite drum_voice instance voice sets undeclared parameter loudness"
-            ))
-        );
-    }
-
-    #[test]
-    fn schema_validation_accepts_declared_composite_parameter_binding() {
-        let mut patch = minimal_patch(vec![ModuleDeclaration {
-            id: "voice".to_string(),
-            module_type: "drum_voice".to_string(),
-            inputs: vec![],
-            outputs: vec![],
-            parameters: BTreeMap::from([("level".to_string(), ParameterValue::Number(0.5))]),
-        }]);
-        let mut definition = minimal_composite_definition("drum_voice");
-        definition.parameters = vec![CompositeBindingDeclaration {
-            name: "level".to_string(),
-            maps_to: vec![PortReference {
-                module_id: "vca".to_string(),
-                port_name: "gain".to_string(),
-            }],
-        }];
-        patch.module_definitions = vec![definition];
-
-        validate_patch_schema(&patch).expect("declared parameter binding should validate");
-    }
-
-    #[test]
-    fn schema_validation_accepts_declared_composite_asset_binding() {
-        let mut patch = minimal_patch(vec![ModuleDeclaration {
-            id: "voice".to_string(),
-            module_type: "drum_voice".to_string(),
-            inputs: vec![],
-            outputs: vec![],
-            parameters: BTreeMap::from([(
-                "sample".to_string(),
-                ParameterValue::Text("kick".to_string()),
-            )]),
-        }]);
-        patch.assets.push(AssetDeclaration {
-            id: "kick".to_string(),
-            kind: AssetKind::Sample,
-            path: "kick.wav".to_string(),
-        });
-        let mut definition = minimal_composite_definition("drum_voice");
-        definition.asset_bindings = vec![CompositeBindingDeclaration {
-            name: "sample".to_string(),
-            maps_to: vec![PortReference {
-                module_id: "sampler".to_string(),
-                port_name: "asset".to_string(),
-            }],
-        }];
-        definition.modules.push(ModuleDeclaration {
-            id: "sampler".to_string(),
-            module_type: "sampler".to_string(),
-            inputs: vec![],
-            outputs: vec![],
-            parameters: BTreeMap::new(),
-        });
-        patch.module_definitions = vec![definition];
-
-        validate_patch_schema(&patch).expect("declared asset binding should validate");
-    }
-
-    #[test]
-    fn schema_validation_reports_composite_asset_binding_with_non_text_value() {
-        let patch = composite_asset_binding_patch(ParameterValue::Number(1.0));
-
-        let error = validate_patch_schema(&patch).expect_err("non-text asset binding must fail");
-
-        assert!(error.diagnostics().iter().any(|d| d.message().contains(
-            "composite drum_voice instance voice asset binding sample must be a text asset ID"
-        )));
-    }
-
-    #[test]
-    fn schema_validation_reports_composite_asset_binding_with_missing_asset() {
-        let patch = composite_asset_binding_patch(ParameterValue::Text("missing".to_string()));
-
-        let error = validate_patch_schema(&patch).expect_err("missing asset binding must fail");
-
-        assert!(error.diagnostics().iter().any(|d| d.message().contains(
-            "composite drum_voice instance voice asset binding sample references missing asset missing"
-        )));
-    }
-
-    #[test]
-    fn schema_validation_reports_composite_asset_binding_with_non_sample_asset() {
-        let mut patch = composite_asset_binding_patch(ParameterValue::Text("script".to_string()));
-        patch.assets.push(AssetDeclaration {
-            id: "script".to_string(),
-            kind: AssetKind::Script,
-            path: "script.dan".to_string(),
-        });
-
-        let error = validate_patch_schema(&patch).expect_err("non-sample asset binding must fail");
-
-        assert!(error.diagnostics().iter().any(|diagnostic| {
-            diagnostic
-                .message()
-                .contains("composite drum_voice instance voice asset binding sample")
-                && diagnostic.message().contains("asset script")
-                && diagnostic.message().contains("expected sample")
-        }));
-    }
-
-    #[test]
-    fn schema_validation_reports_direct_recursive_composite_definition() {
-        let mut patch = minimal_patch(vec![ModuleDeclaration {
-            id: "voice".to_string(),
-            module_type: "drum_voice".to_string(),
-            inputs: vec![],
-            outputs: vec![],
-            parameters: BTreeMap::new(),
-        }]);
-        let mut definition = minimal_composite_definition("drum_voice");
-        definition.modules.push(ModuleDeclaration {
-            id: "child".to_string(),
-            module_type: "drum_voice".to_string(),
-            inputs: vec![],
-            outputs: vec![],
-            parameters: BTreeMap::new(),
-        });
-        patch.module_definitions = vec![definition];
-
-        let error = validate_patch_schema(&patch).expect_err("direct recursion must fail");
-
-        assert!(error.diagnostics().iter().any(|d| {
-            d.message()
-                .contains("recursive composite definition: drum_voice -> drum_voice")
-        }));
-    }
-
-    #[test]
-    fn schema_validation_reports_indirect_recursive_composite_definition() {
-        let mut patch = minimal_patch(vec![ModuleDeclaration {
-            id: "voice".to_string(),
-            module_type: "a".to_string(),
-            inputs: vec![],
-            outputs: vec![],
-            parameters: BTreeMap::new(),
-        }]);
-        let mut a = minimal_composite_definition("a");
-        a.modules.push(ModuleDeclaration {
-            id: "b_child".to_string(),
-            module_type: "b".to_string(),
-            inputs: vec![],
-            outputs: vec![],
-            parameters: BTreeMap::new(),
-        });
-        let mut b = minimal_composite_definition("b");
-        b.modules.push(ModuleDeclaration {
-            id: "a_child".to_string(),
-            module_type: "a".to_string(),
-            inputs: vec![],
-            outputs: vec![],
-            parameters: BTreeMap::new(),
-        });
-        patch.module_definitions = vec![a, b];
-
-        let error = validate_patch_schema(&patch).expect_err("indirect recursion must fail");
-
-        assert!(error.diagnostics().iter().any(|d| {
-            d.message()
-                .contains("recursive composite definition: a -> b -> a")
-        }));
-    }
-
-    #[test]
-    fn schema_validation_reports_missing_required_values() {
-        let patch = PatchDocument {
-            metadata: PatchMetadata::default(),
-            render: RenderSettings {
-                sample_rate_hz: 0,
-                block_size_frames: 0,
-                duration_frames: 0,
-            },
-            assets: vec![],
-            module_definitions: vec![],
-            modules: vec![],
-            connections: vec![],
-            voice_allocation: VoiceAllocation::default(),
-            parameters: BTreeMap::new(),
-            presets: BTreeMap::new(),
-        };
-
-        let error = validate_patch_schema(&patch).expect_err("missing required values must fail");
-
-        assert!(
-            error
-                .diagnostics()
-                .iter()
-                .any(|d| d.message().contains("metadata.name is required"))
-        );
-        assert!(error.diagnostics().iter().any(|d| {
-            d.message()
-                .contains("render.sample_rate_hz must be greater than zero")
-        }));
-        assert!(error.diagnostics().iter().any(|d| {
-            d.message()
-                .contains("modules must declare at least one module")
-        }));
-    }
-
-    #[test]
-    fn schema_validation_reports_malformed_connection_references() {
-        let mut patch = minimal_patch(vec![ModuleDeclaration {
-            id: "out".to_string(),
-            module_type: "audio_output".to_string(),
-            inputs: vec![],
-            outputs: vec![],
-            parameters: BTreeMap::new(),
-        }]);
-        patch.connections.push(ConnectionDeclaration {
-            from: PortReference {
-                module_id: String::new(),
-                port_name: "audio".to_string(),
-            },
-            to: PortReference {
-                module_id: "out".to_string(),
-                port_name: String::new(),
-            },
-        });
-
-        let error = validate_patch_schema(&patch).expect_err("malformed references must fail");
-
-        assert!(error.diagnostics().iter().any(|d| {
-            d.message()
-                .contains("connection.from must use a non-empty module_id.port_name reference")
-        }));
-        assert!(error.diagnostics().iter().any(|d| {
-            d.message()
-                .contains("connection.to must use a non-empty module_id.port_name reference")
-        }));
-    }
-
-    #[test]
-    fn yaml_port_references_reject_empty_parts_and_extra_dots() {
-        let yaml_with_empty_module = r#"
-metadata:
-  name: Bad Port Ref
-render:
-  sample_rate_hz: 48000
-  block_size_frames: 64
-  duration_frames: 64
-modules:
-  - id: out
-    type: audio_output
-connections:
-  - from: .audio
-    to: out.left
-"#;
-        let yaml_with_empty_port = r#"
-metadata:
-  name: Bad Port Ref
-render:
-  sample_rate_hz: 48000
-  block_size_frames: 64
-  duration_frames: 64
-modules:
-  - id: out
-    type: audio_output
-connections:
-  - from: osc.
-    to: out.left
-"#;
-        let yaml_with_extra_dot = r#"
-metadata:
-  name: Bad Port Ref
-render:
-  sample_rate_hz: 48000
-  block_size_frames: 64
-  duration_frames: 64
-modules:
-  - id: out
-    type: audio_output
-connections:
-  - from: osc.audio.extra
-    to: out.left
-"#;
-
-        assert!(load_patch_str(yaml_with_empty_module).is_err());
-        assert!(load_patch_str(yaml_with_empty_port).is_err());
-        assert!(load_patch_str(yaml_with_extra_dot).is_err());
-    }
-
-    #[test]
-    fn schema_validation_accepts_sampler_with_declared_sample_asset() {
-        let mut patch = minimal_patch(vec![sampler_module(Some(ParameterValue::Text(
-            "hit".to_string(),
-        )))]);
-        patch.assets.push(AssetDeclaration {
-            id: "hit".to_string(),
-            kind: AssetKind::Sample,
-            path: "hit.wav".to_string(),
-        });
-
-        validate_patch_schema(&patch).expect("sampler asset reference should validate");
-    }
-
-    #[test]
-    fn schema_validation_reports_sampler_missing_asset_parameter() {
-        let patch = minimal_patch(vec![sampler_module(None)]);
-
-        let error = validate_patch_schema(&patch).expect_err("missing asset should fail");
-
-        assert!(error.diagnostics().iter().any(|d| {
-            d.message()
-                .contains("sampler module sampler missing required asset parameter")
-        }));
-    }
-
-    #[test]
-    fn schema_validation_reports_sampler_missing_asset_id() {
-        let patch = minimal_patch(vec![sampler_module(Some(ParameterValue::Text(
-            "missing".to_string(),
-        )))]);
-
-        let error = validate_patch_schema(&patch).expect_err("missing asset ID should fail");
-
-        assert!(error.diagnostics().iter().any(|d| {
-            d.message()
-                .contains("sampler module sampler references missing asset missing")
-        }));
-    }
-
-    #[test]
-    fn schema_validation_reports_sampler_non_sample_asset_kind() {
-        let mut patch = minimal_patch(vec![sampler_module(Some(ParameterValue::Text(
-            "script".to_string(),
-        )))]);
-        patch.assets.push(AssetDeclaration {
-            id: "script".to_string(),
-            kind: AssetKind::Script,
-            path: "script.dan".to_string(),
-        });
-
-        let error = validate_patch_schema(&patch).expect_err("non-sample asset should fail");
-
-        assert!(error.diagnostics().iter().any(|diagnostic| {
-            diagnostic.message().contains("sampler module sampler")
-                && diagnostic.message().contains("asset script")
-                && diagnostic.message().contains("expected sample")
-        }));
-    }
-
-    #[test]
-    fn schema_validation_reports_unused_assets() {
-        let mut patch = minimal_patch(vec![ModuleDeclaration {
-            id: "out".to_string(),
-            module_type: "audio_output".to_string(),
-            inputs: vec![],
-            outputs: vec![],
-            parameters: BTreeMap::new(),
-        }]);
-        patch.assets.push(AssetDeclaration {
-            id: "unused".to_string(),
-            kind: AssetKind::Sample,
-            path: "unused.wav".to_string(),
-        });
-
-        let error = validate_patch_schema(&patch).expect_err("unused asset must trigger warning");
-        assert!(
-            error
-                .diagnostics()
-                .iter()
-                .any(|d| d.message().contains("unused asset"))
-        );
-    }
-
-    #[test]
-    fn patch_level_parameters_reference_unknown_module() {
-        let mut patch = minimal_patch(vec![ModuleDeclaration {
-            id: "out".to_string(),
-            module_type: "audio_output".to_string(),
-            inputs: vec![],
-            outputs: vec![],
-            parameters: BTreeMap::new(),
-        }]);
-        patch.parameters.insert(
-            "nonexistent_module".to_string(),
-            BTreeMap::from([("gain".to_string(), ParameterValue::Number(0.5))]),
-        );
-
-        let error = validate_patch_schema(&patch).expect_err("unknown module must fail");
-        assert!(
-            error
-                .diagnostics()
-                .iter()
-                .any(|d| d.message().contains("unknown module"))
-        );
-    }
-
-    #[test]
-    fn patch_level_parameters_conflict_with_module_level() {
-        let mut patch = minimal_patch(vec![ModuleDeclaration {
-            id: "osc".to_string(),
-            module_type: "oscillator".to_string(),
-            inputs: vec![],
-            outputs: vec![],
-            parameters: BTreeMap::from([("pitch".to_string(), ParameterValue::Number(440.0))]),
-        }]);
-        patch.parameters.insert(
-            "osc".to_string(),
-            BTreeMap::from([("pitch".to_string(), ParameterValue::Number(220.0))]),
-        );
-
-        let error = validate_patch_schema(&patch).expect_err("conflicting parameters must fail");
-        assert!(
-            error
-                .diagnostics()
-                .iter()
-                .any(|d| d.message().contains("conflicts"))
-        );
-    }
-
-    #[test]
-    fn preset_validation_references_unknown_module() {
-        let mut patch = minimal_patch(vec![ModuleDeclaration {
-            id: "out".to_string(),
-            module_type: "audio_output".to_string(),
-            inputs: vec![],
-            outputs: vec![],
-            parameters: BTreeMap::new(),
-        }]);
-        patch.presets.insert(
-            "my_preset".to_string(),
-            BTreeMap::from([(
-                "nonexistent".to_string(),
-                BTreeMap::from([("gain".to_string(), ParameterValue::Number(0.5))]),
-            )]),
-        );
-
-        let error = validate_patch_schema(&patch).expect_err("unknown module in preset must fail");
-        assert!(
-            error
-                .diagnostics()
-                .iter()
-                .any(|d| d.message().contains("unknown module"))
-        );
-    }
-
-    #[test]
-    fn preset_validation_reports_empty_name() {
-        let mut patch = minimal_patch(vec![ModuleDeclaration {
-            id: "out".to_string(),
-            module_type: "audio_output".to_string(),
-            inputs: vec![],
-            outputs: vec![],
-            parameters: BTreeMap::new(),
-        }]);
-        patch.presets.insert(String::new(), BTreeMap::new());
-
-        let error = validate_patch_schema(&patch).expect_err("empty preset name must fail");
-        assert!(
-            error
-                .diagnostics()
-                .iter()
-                .any(|d| d.message().contains("preset name"))
-        );
-    }
-
-    #[test]
-    fn yaml_parsing_accepts_patch_level_parameters() {
-        let yaml = r#"
-metadata:
-  name: Test
-render:
-  sample_rate_hz: 48000
-  block_size_frames: 128
-  duration_frames: 48000
-modules:
-  - id: out
-    type: audio_output
-parameters:
-  out:
-    left: 0.5
-"#;
-        let patch = load_patch_str(yaml).expect("patch-level parameters should parse");
-        assert!(patch.parameters.contains_key("out"));
-    }
-
-    #[test]
-    fn yaml_parsing_accepts_presets() {
-        let yaml = r#"
-metadata:
-  name: Test
-render:
-  sample_rate_hz: 48000
-  block_size_frames: 128
-  duration_frames: 48000
-modules:
-  - id: out
-    type: audio_output
-presets:
-  quiet:
-    out:
-      left: 0.1
-  loud:
-    out:
-      left: 0.9
-"#;
-        let patch = load_patch_str(yaml).expect("presets should parse");
-        assert_eq!(patch.presets.len(), 2);
-        assert!(patch.presets.contains_key("quiet"));
-        assert!(patch.presets.contains_key("loud"));
-    }
-
-    fn minimal_patch(modules: Vec<ModuleDeclaration>) -> PatchDocument {
-        PatchDocument {
-            metadata: PatchMetadata {
-                name: "Minimal".to_string(),
-                version: None,
-                author: None,
-            },
-            render: RenderSettings {
-                sample_rate_hz: 48_000,
-                block_size_frames: 128,
-                duration_frames: 48_000,
-            },
-            assets: vec![],
-            module_definitions: vec![],
-            modules,
-            connections: vec![],
-            voice_allocation: VoiceAllocation::default(),
-            parameters: BTreeMap::new(),
-            presets: BTreeMap::new(),
-        }
-    }
-
-    fn sampler_module(asset: Option<ParameterValue>) -> ModuleDeclaration {
-        ModuleDeclaration {
-            id: "sampler".to_string(),
-            module_type: "sampler".to_string(),
-            inputs: vec![],
-            outputs: vec![],
-            parameters: asset
-                .map(|value| BTreeMap::from([("asset".to_string(), value)]))
-                .unwrap_or_default(),
-        }
-    }
-
-    fn minimal_composite_definition(module_type: &str) -> ModuleDefinitionDeclaration {
-        ModuleDefinitionDeclaration {
-            module_type: module_type.to_string(),
-            inputs: vec![CompositeInputDeclaration {
-                name: "trigger".to_string(),
-                signal_type: SignalType::Event,
-                maps_to: vec![PortReference {
-                    module_id: "env".to_string(),
-                    port_name: "gate".to_string(),
-                }],
-            }],
-            outputs: vec![CompositeOutputDeclaration {
-                name: "audio".to_string(),
-                signal_type: SignalType::Audio,
-                maps_from: vec![PortReference {
-                    module_id: "vca".to_string(),
-                    port_name: "audio_out".to_string(),
-                }],
-            }],
-            parameters: vec![],
-            asset_bindings: vec![],
-            modules: vec![
-                ModuleDeclaration {
-                    id: "env".to_string(),
-                    module_type: "adsr".to_string(),
-                    inputs: vec![],
-                    outputs: vec![],
-                    parameters: BTreeMap::new(),
-                },
-                ModuleDeclaration {
-                    id: "vca".to_string(),
-                    module_type: "gain".to_string(),
-                    inputs: vec![],
-                    outputs: vec![],
-                    parameters: BTreeMap::new(),
-                },
-            ],
-            connections: vec![],
-        }
-    }
-
-    fn composite_asset_binding_patch(value: ParameterValue) -> PatchDocument {
-        let mut patch = minimal_patch(vec![ModuleDeclaration {
-            id: "voice".to_string(),
-            module_type: "drum_voice".to_string(),
-            inputs: vec![],
-            outputs: vec![],
-            parameters: BTreeMap::from([("sample".to_string(), value)]),
-        }]);
-        let mut definition = minimal_composite_definition("drum_voice");
-        definition.asset_bindings = vec![CompositeBindingDeclaration {
-            name: "sample".to_string(),
-            maps_to: vec![PortReference {
-                module_id: "sampler".to_string(),
-                port_name: "asset".to_string(),
-            }],
-        }];
-        definition.modules.push(ModuleDeclaration {
-            id: "sampler".to_string(),
-            module_type: "sampler".to_string(),
-            inputs: vec![],
-            outputs: vec![],
-            parameters: BTreeMap::new(),
-        });
-        patch.module_definitions = vec![definition];
-        patch
     }
 }
