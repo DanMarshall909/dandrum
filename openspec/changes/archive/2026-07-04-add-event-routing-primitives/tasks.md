@@ -29,5 +29,5 @@
 ## 5. Verification
 
 - [x] 5.1 Run Rust unit and acceptance tests with `$HOME/.cargo/bin/cargo test --manifest-path src/rust-engine/Cargo.toml`.
-- [ ] 5.2 Run CMake/CTest verification if build configuration is available: `$HOME/.local/bin/cmake -S . -B build`, `$HOME/.local/bin/cmake --build build`, and `ctest --test-dir build`.
+- [x] 5.2 Run CMake/CTest verification if build configuration is available: `$HOME/.local/bin/cmake -S . -B build`, `$HOME/.local/bin/cmake --build build`, and `ctest --test-dir build`.
 - [x] 5.3 Run OpenSpec validation for `add-event-routing-primitives` and confirm every event-routing requirement has planned test or implementation evidence.
