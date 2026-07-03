@@ -237,11 +237,11 @@ modules:
 }
 
 #[test]
-fn preset_values_apply_after_module_values_and_before_resolution() {
+fn unselected_presets_do_not_affect_resolved_parameters() {
     let patch = load_patch_str(
         r#"
 metadata:
-  name: Preset Resolution
+  name: Unselected Preset Resolution
 render:
   sample_rate_hz: 48000
   block_size_frames: 128
@@ -264,8 +264,69 @@ modules:
     let resolved = resolve_module_parameters(&patch).expect("parameters should resolve");
     let filt = resolved.get("filt").expect("filter params should resolve");
 
+    assert_eq!(filt.get("algorithm"), Some(&ParameterValue::Text("moog".into())));
+    assert_eq!(filt.get("mode"), None);
+}
+
+#[test]
+fn selected_preset_values_apply_after_module_values_and_before_patch_parameters() {
+    let patch = load_patch_str(
+        r#"
+metadata:
+  name: Selected Preset Resolution
+render:
+  sample_rate_hz: 48000
+  block_size_frames: 128
+  duration_frames: 128
+selected_preset: bright
+presets:
+  bright:
+    filt:
+      algorithm: biquad
+      mode: highpass
+parameters:
+  filt:
+    mode: lowpass
+modules:
+  - id: filt
+    type: filter
+    parameters:
+      algorithm: moog
+"#,
+    )
+    .expect("patch should parse");
+
+    validate_patch_schema(&patch).expect("selected preset should validate");
+    let resolved = resolve_module_parameters(&patch).expect("parameters should resolve");
+    let filt = resolved.get("filt").expect("filter params should resolve");
+
     assert_eq!(filt.get("algorithm"), Some(&ParameterValue::Text("biquad".into())));
-    assert_eq!(filt.get("mode"), Some(&ParameterValue::Text("highpass".into())));
+    assert_eq!(filt.get("mode"), Some(&ParameterValue::Text("lowpass".into())));
+}
+
+#[test]
+fn unknown_selected_preset_is_rejected() {
+    let messages = validation_messages(
+        r#"
+metadata:
+  name: Unknown Selected Preset
+render:
+  sample_rate_hz: 48000
+  block_size_frames: 128
+  duration_frames: 128
+selected_preset: missing
+presets:
+  bright:
+    filt:
+      algorithm: biquad
+modules:
+  - id: filt
+    type: filter
+"#,
+    );
+
+    assert_any_message_contains(&messages, "selected_preset");
+    assert_any_message_contains(&messages, "missing");
 }
 
 #[test]
