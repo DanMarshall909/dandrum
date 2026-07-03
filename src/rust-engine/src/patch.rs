@@ -6,7 +6,7 @@ use std::path::{Path, PathBuf};
 
 use serde::Deserialize;
 
-use crate::diagnostics::{self, error_codes, Diagnostic, Severity};
+use crate::diagnostics::{self, error_codes, Diagnostic, Diagnostics, Severity};
 
 #[path = "patch_composite.rs"]
 mod patch_composite;
@@ -153,9 +153,33 @@ pub enum PatchLoadError {
     },
 }
 
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct PatchValidationError {
-    diagnostics: Vec<String>,
+    diagnostics: Diagnostics,
+}
+
+impl PatchValidationError {
+    pub fn new() -> Self {
+        Self {
+            diagnostics: Diagnostics::new(),
+        }
+    }
+
+    pub fn push(&mut self, diagnostic: Diagnostic) {
+        self.diagnostics.push(diagnostic);
+    }
+
+    pub fn extend(&mut self, diagnostics: impl IntoIterator<Item = Diagnostic>) {
+        self.diagnostics.extend(diagnostics);
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.diagnostics.is_empty()
+    }
+
+    pub fn len(&self) -> usize {
+        self.diagnostics.len()
+    }
 }
 
 pub fn load_patch_file(path: impl AsRef<Path>) -> Result<PatchDocument, PatchLoadError> {
@@ -189,105 +213,152 @@ pub fn load_patch_str(yaml: &str) -> Result<PatchDocument, PatchLoadError> {
 }
 
 pub fn validate_patch_schema(patch: &PatchDocument) -> Result<(), PatchValidationError> {
-    let mut diagnostics = Vec::new();
+    let mut result = PatchValidationError::new();
 
     if patch.metadata.name.trim().is_empty() {
-        diagnostics.push("metadata.name is required".to_string());
+        result.push(Diagnostic::new(
+            error_codes::VALIDATION_MISSING_FIELD,
+            Severity::Error,
+            "metadata.name is required",
+        ));
     }
 
     if patch.render.sample_rate_hz == 0 {
-        diagnostics.push("render.sample_rate_hz must be greater than zero".to_string());
+        result.push(Diagnostic::new(
+            error_codes::VALIDATION_INVALID_VALUE,
+            Severity::Error,
+            "render.sample_rate_hz must be greater than zero",
+        ));
     }
 
     if patch.render.block_size_frames == 0 {
-        diagnostics.push("render.block_size_frames must be greater than zero".to_string());
+        result.push(Diagnostic::new(
+            error_codes::VALIDATION_INVALID_VALUE,
+            Severity::Error,
+            "render.block_size_frames must be greater than zero",
+        ));
     }
 
     if patch.modules.is_empty() {
-        diagnostics.push("modules must declare at least one module".to_string());
+        result.push(Diagnostic::new(
+            error_codes::VALIDATION_MISSING_FIELD,
+            Severity::Error,
+            "modules must declare at least one module",
+        ));
     }
 
-    patch_composite::validate_module_definitions(patch, &mut diagnostics);
+    patch_composite::validate_module_definitions(patch, &mut result);
 
     let mut module_ids = BTreeSet::new();
     for module in &patch.modules {
         if module.id.trim().is_empty() {
-            diagnostics.push("module.id is required".to_string());
+            result.push(
+                Diagnostic::new(error_codes::VALIDATION_MISSING_FIELD, Severity::Error, "module.id is required")
+                    .with_module_id(&module.id),
+            );
         } else if !module_ids.insert(module.id.as_str()) {
-            diagnostics.push(format!("duplicate module id: {}", module.id));
+            result.push(
+                Diagnostic::new(error_codes::VALIDATION_INVALID_VALUE, Severity::Error, format!("duplicate module id: {}", module.id))
+                    .with_module_id(&module.id),
+            );
         }
 
         if module.module_type.trim().is_empty() {
-            diagnostics.push(format!("module {} type is required", module.id));
+            result.push(
+                Diagnostic::new(error_codes::VALIDATION_MISSING_FIELD, Severity::Error, format!("module {} type is required", module.id))
+                    .with_module_id(&module.id),
+            );
         }
 
         for port in module.inputs.iter().chain(module.outputs.iter()) {
             if port.name.trim().is_empty() {
-                diagnostics.push(format!("module {} port name is required", module.id));
+                result.push(
+                    Diagnostic::new(error_codes::VALIDATION_MISSING_FIELD, Severity::Error, format!("module {} port name is required", module.id))
+                        .with_module_id(&module.id),
+                );
             }
         }
 
         if module.module_type == "sampler" {
-            validate_sampler_asset_reference(module, patch, &mut diagnostics);
+            validate_sampler_asset_reference(module, patch, &mut result);
         }
 
-        patch_composite::validate_composite_instance_bindings(module, patch, &mut diagnostics);
+        patch_composite::validate_composite_instance_bindings(module, patch, &mut result);
     }
 
     if patch.voice_allocation.max_voices == 0 {
-        diagnostics.push("voice_allocation.max_voices must be greater than zero".to_string());
+        result.push(Diagnostic::new(
+            error_codes::VALIDATION_INVALID_VALUE,
+            Severity::Error,
+            "voice_allocation.max_voices must be greater than zero",
+        ));
     }
 
-    validate_asset_usage(patch, &mut diagnostics);
-    validate_patch_level_parameters(patch, &mut diagnostics);
-    validate_presets(patch, &mut diagnostics);
+    validate_asset_usage(patch, &mut result);
+    validate_patch_level_parameters(patch, &mut result);
+    validate_presets(patch, &mut result);
 
     for connection in &patch.connections {
-        validate_port_reference("connection.from", &connection.from, &mut diagnostics);
-        validate_port_reference("connection.to", &connection.to, &mut diagnostics);
+        validate_port_reference("connection.from", &connection.from, &mut result);
+        validate_port_reference("connection.to", &connection.to, &mut result);
     }
 
-    if diagnostics.is_empty() {
+    if result.is_empty() {
         Ok(())
     } else {
-        Err(PatchValidationError { diagnostics })
+        Err(result)
     }
 }
 
 fn validate_sampler_asset_reference(
     module: &ModuleDeclaration,
     patch: &PatchDocument,
-    diagnostics: &mut Vec<String>,
+    diagnostics: &mut PatchValidationError,
 ) {
     let Some(asset_parameter) = module.parameters.get("asset") else {
-        diagnostics.push(format!(
-            "sampler module {} missing required asset parameter",
-            module.id
-        ));
+        diagnostics.push(
+            Diagnostic::new(error_codes::VALIDATION_MISSING_FIELD, Severity::Error, format!(
+                "sampler module {} missing required asset parameter",
+                module.id
+            ))
+            .with_module_id(&module.id),
+        );
         return;
     };
 
     let ParameterValue::Text(asset_id) = asset_parameter else {
-        diagnostics.push(format!(
-            "sampler module {} asset parameter must be a text asset ID",
-            module.id
-        ));
+        diagnostics.push(
+            Diagnostic::new(error_codes::VALIDATION_TYPE_MISMATCH, Severity::Error, format!(
+                "sampler module {} asset parameter must be a text asset ID",
+                module.id
+            ))
+            .with_module_id(&module.id),
+        );
         return;
     };
 
     let Some(asset) = patch.assets.iter().find(|asset| asset.id == *asset_id) else {
-        diagnostics.push(format!(
-            "sampler module {} references missing asset {}",
-            module.id, asset_id
-        ));
+        diagnostics.push(
+            Diagnostic::new(error_codes::VALIDATION_INVALID_VALUE, Severity::Error, format!(
+                "sampler module {} references missing asset {}",
+                module.id, asset_id
+            ))
+            .with_module_id(&module.id)
+            .with_expected(asset_id),
+        );
         return;
     };
 
     if asset.kind != AssetKind::Sample {
-        diagnostics.push(format!(
-            "sampler module {} references asset {} with kind {:?}; expected sample",
-            module.id, asset_id, asset.kind
-        ));
+        diagnostics.push(
+            Diagnostic::new(error_codes::VALIDATION_TYPE_MISMATCH, Severity::Error, format!(
+                "sampler module {} references asset {} with kind {:?}; expected sample",
+                module.id, asset_id, asset.kind
+            ))
+            .with_module_id(&module.id)
+            .with_expected("sample")
+            .with_actual(&format!("{:?}", asset.kind)),
+        );
     }
 }
 
@@ -325,61 +396,79 @@ fn collect_referenced_asset_ids<'a>(
     ids
 }
 
-fn validate_asset_usage(patch: &PatchDocument, diagnostics: &mut Vec<String>) {
+fn validate_asset_usage(patch: &PatchDocument, diagnostics: &mut PatchValidationError) {
     let referenced = collect_referenced_asset_ids(patch);
 
     for asset in &patch.assets {
         if !referenced.contains(asset.id.as_str()) {
-            diagnostics.push(format!(
-                "unused asset {} with kind {:?} declared but not referenced by any module",
-                asset.id, asset.kind
-            ));
+            diagnostics.push(
+                Diagnostic::new(error_codes::VALIDATION_INVALID_VALUE, Severity::Warning, format!(
+                    "unused asset {} with kind {:?} declared but not referenced by any module",
+                    asset.id, asset.kind
+                )),
+            );
         }
     }
 }
 
-fn validate_patch_level_parameters(patch: &PatchDocument, diagnostics: &mut Vec<String>) {
+fn validate_patch_level_parameters(patch: &PatchDocument, diagnostics: &mut PatchValidationError) {
     for (module_id, params) in &patch.parameters {
         if !patch.modules.iter().any(|m| m.id == *module_id) {
-            diagnostics.push(format!(
-                "patch parameters reference unknown module {}",
-                module_id
-            ));
+            diagnostics.push(
+                Diagnostic::new(error_codes::VALIDATION_INVALID_VALUE, Severity::Error, format!(
+                    "patch parameters reference unknown module {}",
+                    module_id
+                ))
+                .with_module_id(module_id),
+            );
             continue;
         }
         for param_name in params.keys() {
             if let Some(module) = patch.modules.iter().find(|m| m.id == *module_id) {
                 if module.parameters.contains_key(param_name) {
-                    diagnostics.push(format!(
-                        "patch parameter {}.{} conflicts with module-level parameter",
-                        module_id, param_name
-                    ));
+                    diagnostics.push(
+                        Diagnostic::new(error_codes::VALIDATION_INVALID_VALUE, Severity::Error, format!(
+                            "patch parameter {}.{} conflicts with module-level parameter",
+                            module_id, param_name
+                        ))
+                        .with_module_id(module_id),
+                    );
                 }
             }
         }
     }
 }
 
-fn validate_presets(patch: &PatchDocument, diagnostics: &mut Vec<String>) {
+fn validate_presets(patch: &PatchDocument, diagnostics: &mut PatchValidationError) {
     for (preset_name, modules) in &patch.presets {
         if preset_name.trim().is_empty() {
-            diagnostics.push("preset name must not be empty".to_string());
+            diagnostics.push(Diagnostic::new(
+                error_codes::VALIDATION_MISSING_FIELD,
+                Severity::Error,
+                "preset name must not be empty",
+            ));
         }
         for (module_id, params) in modules {
             if !patch.modules.iter().any(|m| m.id == *module_id) {
-                diagnostics.push(format!(
-                    "preset {} references unknown module {}",
-                    preset_name, module_id
-                ));
+                diagnostics.push(
+                    Diagnostic::new(error_codes::VALIDATION_INVALID_VALUE, Severity::Error, format!(
+                        "preset {} references unknown module {}",
+                        preset_name, module_id
+                    ))
+                    .with_module_id(module_id),
+                );
                 continue;
             }
             for param_name in params.keys() {
                 if let Some(module) = patch.modules.iter().find(|m| m.id == *module_id) {
                     if module.parameters.contains_key(param_name) {
-                        diagnostics.push(format!(
-                            "preset {}.{}.{} conflicts with module-level parameter",
-                            preset_name, module_id, param_name
-                        ));
+                        diagnostics.push(
+                            Diagnostic::new(error_codes::VALIDATION_INVALID_VALUE, Severity::Error, format!(
+                                "preset {}.{}.{} conflicts with module-level parameter",
+                                preset_name, module_id, param_name
+                            ))
+                            .with_module_id(module_id),
+                        );
                     }
                 }
             }
@@ -471,15 +560,7 @@ impl PatchLoadError {
 
 impl PatchValidationError {
     pub fn to_diagnostics(&self) -> diagnostics::Diagnostics {
-        let mut result = diagnostics::Diagnostics::new();
-        for message in &self.diagnostics {
-            result.push(Diagnostic::new(
-                error_codes::VALIDATION,
-                Severity::Error,
-                message.clone(),
-            ));
-        }
-        result
+        self.diagnostics.clone()
     }
 }
 
@@ -490,8 +571,8 @@ impl fmt::Display for PortReference {
 }
 
 impl PatchValidationError {
-    pub fn diagnostics(&self) -> &[String] {
-        &self.diagnostics
+    pub fn diagnostics(&self) -> &[Diagnostic] {
+        self.diagnostics.all()
     }
 }
 
@@ -499,7 +580,7 @@ impl fmt::Display for PatchValidationError {
     fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(formatter, "patch validation failed")?;
 
-        for diagnostic in &self.diagnostics {
+        for diagnostic in self.diagnostics.all() {
             write!(formatter, "\n- {diagnostic}")?;
         }
 
@@ -518,12 +599,14 @@ fn is_yaml_path(path: &Path) -> bool {
 pub(super) fn validate_port_reference(
     label: &str,
     reference: &PortReference,
-    diagnostics: &mut Vec<String>,
+    diagnostics: &mut PatchValidationError,
 ) {
     if reference.module_id.trim().is_empty() || reference.port_name.trim().is_empty() {
-        diagnostics.push(format!(
-            "{label} must use a non-empty module_id.port_name reference"
-        ));
+        diagnostics.push(
+            Diagnostic::new(error_codes::VALIDATION_INVALID_VALUE, Severity::Error, format!(
+                "{label} must use a non-empty module_id.port_name reference"
+            )),
+        );
     }
 }
 
@@ -848,7 +931,8 @@ modules:
         assert!(
             error
                 .diagnostics()
-                .contains(&"voice_allocation.max_voices must be greater than zero".to_string())
+                .iter()
+                .any(|d| d.message().contains("voice_allocation.max_voices must be greater than zero"))
         );
     }
 
@@ -953,7 +1037,8 @@ render:
         assert!(
             error
                 .diagnostics()
-                .contains(&"duplicate module id: osc".to_string())
+                .iter()
+                .any(|d| d.message().contains("duplicate module id: osc"))
         );
     }
 
@@ -976,7 +1061,8 @@ render:
         assert!(
             error
                 .diagnostics()
-                .contains(&"duplicate composite module type: drum_voice".to_string())
+                .iter()
+                .any(|d| d.message().contains("duplicate composite module type: drum_voice"))
         );
     }
 
@@ -1001,19 +1087,21 @@ render:
         assert!(
             error
                 .diagnostics()
-                .contains(&"composite drum_voice input name is required".to_string())
+                .iter()
+                .any(|d| d.message().contains("composite drum_voice input name is required"))
         );
-        assert!(error.diagnostics().contains(
-            &"composite drum_voice input <unnamed> maps_to must use a non-empty module_id.port_name reference".to_string()
-        ));
+        assert!(error.diagnostics().iter().any(|d| d.message().contains(
+            "composite drum_voice input <unnamed> maps_to must use a non-empty module_id.port_name reference"
+        )));
         assert!(
             error
                 .diagnostics()
-                .contains(&"composite drum_voice output name is required".to_string())
+                .iter()
+                .any(|d| d.message().contains("composite drum_voice output name is required"))
         );
-        assert!(error.diagnostics().contains(
-            &"composite drum_voice output <unnamed> maps_from must use a non-empty module_id.port_name reference".to_string()
-        ));
+        assert!(error.diagnostics().iter().any(|d| d.message().contains(
+            "composite drum_voice output <unnamed> maps_from must use a non-empty module_id.port_name reference"
+        )));
     }
 
     #[test]
@@ -1052,12 +1140,12 @@ render:
 
         let error = validate_patch_schema(&patch).expect_err("incompatible mappings must fail");
 
-        assert!(error.diagnostics().contains(
-            &"composite drum_voice input trigger maps_to vca.gain has incompatible signal types: public Event, internal Control".to_string()
-        ));
-        assert!(error.diagnostics().contains(
-            &"composite drum_voice output audio maps_from env.value has incompatible signal types: public Audio, internal Control".to_string()
-        ));
+        assert!(error.diagnostics().iter().any(|d| d.message().contains(
+            "composite drum_voice input trigger maps_to vca.gain has incompatible signal types: public Event, internal Control"
+        )));
+        assert!(error.diagnostics().iter().any(|d| d.message().contains(
+            "composite drum_voice output audio maps_from env.value has incompatible signal types: public Audio, internal Control"
+        )));
     }
 
     #[test]
@@ -1082,12 +1170,12 @@ render:
 
         let error = validate_patch_schema(&patch).expect_err("wrong internal directions must fail");
 
-        assert!(error.diagnostics().contains(
-            &"composite drum_voice input trigger maps_to env.value must reference an internal input port".to_string()
-        ));
-        assert!(error.diagnostics().contains(
-            &"composite drum_voice output audio maps_from vca.audio_in must reference an internal output port".to_string()
-        ));
+        assert!(error.diagnostics().iter().any(|d| d.message().contains(
+            "composite drum_voice input trigger maps_to env.value must reference an internal input port"
+        )));
+        assert!(error.diagnostics().iter().any(|d| d.message().contains(
+            "composite drum_voice output audio maps_from vca.audio_in must reference an internal output port"
+        )));
     }
 
     #[test]
@@ -1103,9 +1191,9 @@ render:
 
         let error = validate_patch_schema(&patch).expect_err("undeclared binding must fail");
 
-        assert!(error.diagnostics().contains(
-            &"composite drum_voice instance voice sets undeclared parameter loudness".to_string()
-        ));
+        assert!(error.diagnostics().iter().any(|d| d.message().contains(
+            "composite drum_voice instance voice sets undeclared parameter loudness"
+        )));
     }
 
     #[test]
@@ -1174,10 +1262,9 @@ render:
         let error = validate_patch_schema(&patch).expect_err("non-text asset binding must fail");
 
         assert!(
-            error.diagnostics().contains(
-                &"composite drum_voice instance voice asset binding sample must be a text asset ID"
-                    .to_string()
-            )
+            error.diagnostics().iter().any(|d| d.message().contains(
+                "composite drum_voice instance voice asset binding sample must be a text asset ID"
+            ))
         );
     }
 
@@ -1187,9 +1274,9 @@ render:
 
         let error = validate_patch_schema(&patch).expect_err("missing asset binding must fail");
 
-        assert!(error.diagnostics().contains(
-            &"composite drum_voice instance voice asset binding sample references missing asset missing".to_string()
-        ));
+        assert!(error.diagnostics().iter().any(|d| d.message().contains(
+            "composite drum_voice instance voice asset binding sample references missing asset missing"
+        )));
     }
 
     #[test]
@@ -1204,9 +1291,9 @@ render:
         let error = validate_patch_schema(&patch).expect_err("non-sample asset binding must fail");
 
         assert!(error.diagnostics().iter().any(|diagnostic| {
-            diagnostic.contains("composite drum_voice instance voice asset binding sample")
-                && diagnostic.contains("asset script")
-                && diagnostic.contains("expected sample")
+            diagnostic.message().contains("composite drum_voice instance voice asset binding sample")
+                && diagnostic.message().contains("asset script")
+                && diagnostic.message().contains("expected sample")
         }));
     }
 
@@ -1234,7 +1321,8 @@ render:
         assert!(
             error
                 .diagnostics()
-                .contains(&"recursive composite definition: drum_voice -> drum_voice".to_string())
+                .iter()
+                .any(|d| d.message().contains("recursive composite definition: drum_voice -> drum_voice"))
         );
     }
 
@@ -1270,7 +1358,8 @@ render:
         assert!(
             error
                 .diagnostics()
-                .contains(&"recursive composite definition: a -> b -> a".to_string())
+                .iter()
+                .any(|d| d.message().contains("recursive composite definition: a -> b -> a"))
         );
     }
 
@@ -1297,17 +1386,20 @@ render:
         assert!(
             error
                 .diagnostics()
-                .contains(&"metadata.name is required".to_string())
+                .iter()
+                .any(|d| d.message().contains("metadata.name is required"))
         );
         assert!(
             error
                 .diagnostics()
-                .contains(&"render.sample_rate_hz must be greater than zero".to_string())
+                .iter()
+                .any(|d| d.message().contains("render.sample_rate_hz must be greater than zero"))
         );
         assert!(
             error
                 .diagnostics()
-                .contains(&"modules must declare at least one module".to_string())
+                .iter()
+                .any(|d| d.message().contains("modules must declare at least one module"))
         );
     }
 
@@ -1333,12 +1425,12 @@ render:
 
         let error = validate_patch_schema(&patch).expect_err("malformed references must fail");
 
-        assert!(error.diagnostics().contains(
-            &"connection.from must use a non-empty module_id.port_name reference".to_string()
-        ));
-        assert!(error.diagnostics().contains(
-            &"connection.to must use a non-empty module_id.port_name reference".to_string()
-        ));
+        assert!(error.diagnostics().iter().any(|d| d.message().contains(
+            "connection.from must use a non-empty module_id.port_name reference"
+        )));
+        assert!(error.diagnostics().iter().any(|d| d.message().contains(
+            "connection.to must use a non-empty module_id.port_name reference"
+        )));
     }
 
     #[test]
@@ -1414,7 +1506,8 @@ connections:
         assert!(
             error
                 .diagnostics()
-                .contains(&"sampler module sampler missing required asset parameter".to_string())
+                .iter()
+                .any(|d| d.message().contains("sampler module sampler missing required asset parameter"))
         );
     }
 
@@ -1429,7 +1522,8 @@ connections:
         assert!(
             error
                 .diagnostics()
-                .contains(&"sampler module sampler references missing asset missing".to_string())
+                .iter()
+                .any(|d| d.message().contains("sampler module sampler references missing asset missing"))
         );
     }
 
@@ -1447,9 +1541,9 @@ connections:
         let error = validate_patch_schema(&patch).expect_err("non-sample asset should fail");
 
         assert!(error.diagnostics().iter().any(|diagnostic| {
-            diagnostic.contains("sampler module sampler")
-                && diagnostic.contains("asset script")
-                && diagnostic.contains("expected sample")
+            diagnostic.message().contains("sampler module sampler")
+                && diagnostic.message().contains("asset script")
+                && diagnostic.message().contains("expected sample")
         }));
     }
 
@@ -1469,7 +1563,7 @@ connections:
         });
 
         let error = validate_patch_schema(&patch).expect_err("unused asset must trigger warning");
-        assert!(error.diagnostics().iter().any(|d| d.contains("unused asset")));
+        assert!(error.diagnostics().iter().any(|d| d.message().contains("unused asset")));
     }
 
     #[test]
@@ -1490,7 +1584,7 @@ connections:
         assert!(error
             .diagnostics()
             .iter()
-            .any(|d| d.contains("unknown module")));
+            .any(|d| d.message().contains("unknown module")));
     }
 
     #[test]
@@ -1508,7 +1602,7 @@ connections:
         );
 
         let error = validate_patch_schema(&patch).expect_err("conflicting parameters must fail");
-        assert!(error.diagnostics().iter().any(|d| d.contains("conflicts")));
+        assert!(error.diagnostics().iter().any(|d| d.message().contains("conflicts")));
     }
 
     #[test]
@@ -1529,7 +1623,7 @@ connections:
         );
 
         let error = validate_patch_schema(&patch).expect_err("unknown module in preset must fail");
-        assert!(error.diagnostics().iter().any(|d| d.contains("unknown module")));
+        assert!(error.diagnostics().iter().any(|d| d.message().contains("unknown module")));
     }
 
     #[test]
@@ -1547,7 +1641,7 @@ connections:
         );
 
         let error = validate_patch_schema(&patch).expect_err("empty preset name must fail");
-        assert!(error.diagnostics().iter().any(|d| d.contains("preset name")));
+        assert!(error.diagnostics().iter().any(|d| d.message().contains("preset name")));
     }
 
     #[test]

@@ -645,17 +645,22 @@ pub(super) fn process_note_to_control(
     events: &[BlockEvent],
     frames: usize,
 ) -> ModuleOutputs {
-    let gate_active = match state {
-        PerModuleState::NoteToControl { gate_active } => gate_active,
-        _ => unreachable!(),
-    };
+    let (gate_active, current_note, current_velocity, current_frequency, current_pitch_ratio) =
+        match state {
+            PerModuleState::NoteToControl {
+                gate_active,
+                current_note,
+                current_velocity,
+                current_frequency,
+                current_pitch_ratio,
+            } => (gate_active, current_note, current_velocity, current_frequency, current_pitch_ratio),
+            _ => unreachable!(),
+        };
 
     let mut frequency_out = vec![0.0_f32; frames];
     let mut pitch_ratio_out = vec![0.0_f32; frames];
     let mut velocity_out = vec![0.0_f32; frames];
     let mut gate_events = Vec::new();
-
-    let mut current_note: Option<(u8, u8)> = None;
 
     for event in events {
         let f = event.frame_offset as usize;
@@ -664,12 +669,15 @@ pub(super) fn process_note_to_control(
                 let freq = midi_note_to_freq(*note);
                 let ratio = freq / 220.0;
                 let norm_vel = (*velocity as f32) / 127.0;
+                *current_note = Some(*note);
+                *current_velocity = norm_vel;
+                *current_frequency = freq;
+                *current_pitch_ratio = ratio;
                 if f < frames {
                     frequency_out[f] = freq;
                     pitch_ratio_out[f] = ratio;
                     velocity_out[f] = norm_vel;
                 }
-                current_note = Some((*note, *velocity));
                 *gate_active = true;
                 gate_events.push(BlockEvent {
                     frame_offset: event.frame_offset,
@@ -680,9 +688,12 @@ pub(super) fn process_note_to_control(
                 });
             }
             crate::script::ScriptEvent::NoteOff { note } => {
-                if current_note.map(|(n, _)| n) == Some(*note) {
+                if current_note.map(|n| n == *note).unwrap_or(false) {
                     *gate_active = false;
-                    current_note = None;
+                    *current_note = None;
+                    *current_velocity = 0.0;
+                    *current_frequency = 0.0;
+                    *current_pitch_ratio = 0.0;
                 }
                 gate_events.push(BlockEvent {
                     frame_offset: event.frame_offset,
@@ -696,15 +707,10 @@ pub(super) fn process_note_to_control(
     }
 
     if *gate_active {
-        if let Some((note, vel)) = current_note {
-            let freq = midi_note_to_freq(note);
-            let ratio = freq / 220.0;
-            let norm_vel = (vel as f32) / 127.0;
-            for frame in 0..frames {
-                frequency_out[frame] = freq;
-                pitch_ratio_out[frame] = ratio;
-                velocity_out[frame] = norm_vel;
-            }
+        for frame in 0..frames {
+            frequency_out[frame] = *current_frequency;
+            pitch_ratio_out[frame] = *current_pitch_ratio;
+            velocity_out[frame] = *current_velocity;
         }
     }
 

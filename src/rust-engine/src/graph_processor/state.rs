@@ -77,6 +77,10 @@ pub(super) enum PerModuleState {
     Multiply,
     NoteToControl {
         gate_active: bool,
+        current_note: Option<u8>,
+        current_velocity: f32,
+        current_frequency: f32,
+        current_pitch_ratio: f32,
     },
 }
 
@@ -217,6 +221,10 @@ impl PerModuleState {
             ModuleKind::Multiply => PerModuleState::Multiply,
             ModuleKind::NoteToControl => PerModuleState::NoteToControl {
                 gate_active: false,
+                current_note: None,
+                current_velocity: 0.0,
+                current_frequency: 0.0,
+                current_pitch_ratio: 0.0,
             },
             ModuleKind::Lfo
             | ModuleKind::ControlMixer

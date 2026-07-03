@@ -453,6 +453,31 @@ fn spectral_processor_definition() -> BuiltInModuleDefinition {
         .with_input(Port::input(builtin_ports::THRESHOLD, SignalType::Control))
         .with_input(Port::input(builtin_ports::MIX, SignalType::Control))
         .with_output(Port::output(builtin_ports::AUDIO_OUT, SignalType::Audio))
+        .with_parameter(
+            ParameterMetadata::new("mode", ParameterValueType::Text)
+                .with_default("gate")
+                .with_enum_values(vec!["gate", "passthrough"])
+                .with_description("spectral processing mode"),
+        )
+        .with_parameter(
+            ParameterMetadata::new("fft_size", ParameterValueType::Number)
+                .with_default("2048")
+                .with_range(256.0, 8192.0)
+                .with_description("FFT frame size in samples"),
+        )
+        .with_parameter(
+            ParameterMetadata::new("threshold", ParameterValueType::Number)
+                .with_default("-40")
+                .with_range(-100.0, 0.0)
+                .with_unit("dB")
+                .with_description("gate threshold in dBFS"),
+        )
+        .with_parameter(
+            ParameterMetadata::new("mix", ParameterValueType::Number)
+                .with_default("1.0")
+                .with_range(0.0, 1.0)
+                .with_description("wet/dry mix (0 = dry, 1 = wet)"),
+        )
 }
 
 fn echo_definition() -> BuiltInModuleDefinition {
@@ -502,17 +527,14 @@ fn impulse_definition() -> BuiltInModuleDefinition {
 }
 
 fn multiply_definition() -> BuiltInModuleDefinition {
+    // Multiply is audio-only. Both inputs accept audio signals and produce
+    // an audio-rate product. Control-rate multiplication is deferred until
+    // polymorphic port support or a dedicated control_multiply primitive.
     BuiltInModuleDefinition::new(module_types::MULTIPLY)
         .with_execution_scope(ExecutionScope::Global)
         .with_input(Port::input(builtin_ports::AUDIO_IN, SignalType::Audio))
         .with_input(Port::input(builtin_ports::GAIN, SignalType::Audio))
         .with_output(Port::output(builtin_ports::AUDIO_OUT, SignalType::Audio))
-        .with_parameter(
-            ParameterMetadata::new("signal_type", ParameterValueType::Text)
-                .with_default("audio")
-                .with_enum_values(vec!["audio", "control"])
-                .with_description("signal type compatibility for both inputs"),
-        )
 }
 
 fn note_to_control_definition() -> BuiltInModuleDefinition {

@@ -87,7 +87,7 @@
 
 ## 11. Verification
 
-- [ ] 11.1 Run Rust tests: `$HOME/.cargo/bin/cargo test --manifest-path src/rust-engine/Cargo.toml`.
-- [ ] 11.2 Run CMake/CTest verification if local build dependencies are available.
-- [ ] 11.3 Run OpenSpec validation for `declarative-instrument-platform`.
-- [ ] 11.4 Update task checkboxes only after related tests and validation pass, or document any verification gap.
+- [x] 11.1 Run Rust tests: `$HOME/.cargo/bin/cargo test --manifest-path src/rust-engine/Cargo.toml`.
+- [x] 11.2 Run CMake/CTest verification: `cmake --build build && ctest --test-dir build` — all 3 tests pass (rust-engine-tests, cxx-rust-engine-ffi-smoke, realtime-callback-safety).
+- [ ] 11.3 Run OpenSpec validation for `declarative-instrument-platform` (openspec validate command not available; skipped for now).
+- [x] 11.4 Task checkboxes updated.

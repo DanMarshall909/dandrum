@@ -37,6 +37,22 @@ properties:
     type: array
     items:
       $ref: "#/$defs/connectionDeclaration"
+  # Top-level parameter overrides let callers override default parameters per module without editing the file.
+  parameters:
+    type: object
+    additionalProperties:
+      type: object
+      additionalProperties:
+        $ref: "#/$defs/parameterValue"
+  # Named presets encapsulate per-module parameter overrides for quick recall.
+  presets:
+    type: object
+    additionalProperties:
+      type: object
+      additionalProperties:
+        type: object
+        additionalProperties:
+          $ref: "#/$defs/parameterValue"
   # Voice allocation controls polyphony and stealing policy. Omitted fields fall back to the engine default.
   voice_allocation:
     $ref: "#/$defs/voiceAllocation"
