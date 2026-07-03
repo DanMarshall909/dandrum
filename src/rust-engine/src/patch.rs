@@ -6,6 +6,8 @@ use std::path::{Path, PathBuf};
 
 use serde::Deserialize;
 
+use crate::diagnostics::{self, error_codes, Diagnostic, Severity};
+
 #[path = "patch_composite.rs"]
 mod patch_composite;
 
@@ -27,6 +29,14 @@ pub struct PatchDocument {
     pub connections: Vec<ConnectionDeclaration>,
     #[serde(default)]
     pub voice_allocation: VoiceAllocation,
+    /// Top-level parameter overrides keyed by module_id.
+    /// These are merged with (and may not conflict with) module-level parameters.
+    #[serde(default)]
+    pub parameters: BTreeMap<String, BTreeMap<String, ParameterValue>>,
+    /// Named preset parameter sets.
+    /// Each preset maps module_id -> { param_name: value }.
+    #[serde(default)]
+    pub presets: BTreeMap<String, BTreeMap<String, BTreeMap<String, ParameterValue>>>,
 }
 
 #[derive(Clone, Debug, Default, Deserialize, PartialEq, Eq)]
@@ -228,6 +238,10 @@ pub fn validate_patch_schema(patch: &PatchDocument) -> Result<(), PatchValidatio
         diagnostics.push("voice_allocation.max_voices must be greater than zero".to_string());
     }
 
+    validate_asset_usage(patch, &mut diagnostics);
+    validate_patch_level_parameters(patch, &mut diagnostics);
+    validate_presets(patch, &mut diagnostics);
+
     for connection in &patch.connections {
         validate_port_reference("connection.from", &connection.from, &mut diagnostics);
         validate_port_reference("connection.to", &connection.to, &mut diagnostics);
@@ -274,6 +288,102 @@ fn validate_sampler_asset_reference(
             "sampler module {} references asset {} with kind {:?}; expected sample",
             module.id, asset_id, asset.kind
         ));
+    }
+}
+
+fn collect_referenced_asset_ids<'a>(
+    patch: &'a PatchDocument,
+) -> BTreeSet<&'a str> {
+    let mut ids: BTreeSet<&'a str> = BTreeSet::new();
+
+    for module in &patch.modules {
+        if let Some(ParameterValue::Text(asset_id)) = module.parameters.get("asset") {
+            ids.insert(asset_id.as_str());
+        }
+        if let Some(definition) = patch
+            .module_definitions
+            .iter()
+            .find(|d| d.module_type == module.module_type)
+        {
+            for binding in &definition.asset_bindings {
+                    if let Some(ParameterValue::Text(asset_id)) = module.parameters.get(binding.name.as_str())
+                {
+                    ids.insert(asset_id.as_str());
+                }
+            }
+        }
+    }
+
+    for definition in &patch.module_definitions {
+        for module in &definition.modules {
+            if let Some(ParameterValue::Text(asset_id)) = module.parameters.get("asset") {
+                ids.insert(asset_id.as_str());
+            }
+        }
+    }
+
+    ids
+}
+
+fn validate_asset_usage(patch: &PatchDocument, diagnostics: &mut Vec<String>) {
+    let referenced = collect_referenced_asset_ids(patch);
+
+    for asset in &patch.assets {
+        if !referenced.contains(asset.id.as_str()) {
+            diagnostics.push(format!(
+                "unused asset {} with kind {:?} declared but not referenced by any module",
+                asset.id, asset.kind
+            ));
+        }
+    }
+}
+
+fn validate_patch_level_parameters(patch: &PatchDocument, diagnostics: &mut Vec<String>) {
+    for (module_id, params) in &patch.parameters {
+        if !patch.modules.iter().any(|m| m.id == *module_id) {
+            diagnostics.push(format!(
+                "patch parameters reference unknown module {}",
+                module_id
+            ));
+            continue;
+        }
+        for param_name in params.keys() {
+            if let Some(module) = patch.modules.iter().find(|m| m.id == *module_id) {
+                if module.parameters.contains_key(param_name) {
+                    diagnostics.push(format!(
+                        "patch parameter {}.{} conflicts with module-level parameter",
+                        module_id, param_name
+                    ));
+                }
+            }
+        }
+    }
+}
+
+fn validate_presets(patch: &PatchDocument, diagnostics: &mut Vec<String>) {
+    for (preset_name, modules) in &patch.presets {
+        if preset_name.trim().is_empty() {
+            diagnostics.push("preset name must not be empty".to_string());
+        }
+        for (module_id, params) in modules {
+            if !patch.modules.iter().any(|m| m.id == *module_id) {
+                diagnostics.push(format!(
+                    "preset {} references unknown module {}",
+                    preset_name, module_id
+                ));
+                continue;
+            }
+            for param_name in params.keys() {
+                if let Some(module) = patch.modules.iter().find(|m| m.id == *module_id) {
+                    if module.parameters.contains_key(param_name) {
+                        diagnostics.push(format!(
+                            "preset {}.{}.{} conflicts with module-level parameter",
+                            preset_name, module_id, param_name
+                        ));
+                    }
+                }
+            }
+        }
     }
 }
 
@@ -326,6 +436,52 @@ impl fmt::Display for PatchLoadError {
 }
 
 impl std::error::Error for PatchLoadError {}
+
+impl PatchLoadError {
+    pub fn to_diagnostic(&self) -> Diagnostic {
+        match self {
+            Self::UnsupportedFormat { path } => Diagnostic::new(
+                error_codes::LOADING,
+                Severity::Error,
+                format!("unsupported patch format: {}", path.display()),
+            ),
+            Self::ReadFailed { path, message } => Diagnostic::new(
+                error_codes::LOADING,
+                Severity::Error,
+                format!("failed to read patch {}: {message}", path.display()),
+            ),
+            Self::ParseFailed { path, message } => {
+                let mut d = Diagnostic::new(
+                    error_codes::LOADING,
+                    Severity::Error,
+                    format!("failed to parse patch: {message}"),
+                );
+                if let Some(path) = path {
+                    d = d.with_source_location(diagnostics::SourceLocation::new(
+                        Some(path.to_string_lossy().to_string()),
+                        None,
+                        None,
+                    ));
+                }
+                d
+            }
+        }
+    }
+}
+
+impl PatchValidationError {
+    pub fn to_diagnostics(&self) -> diagnostics::Diagnostics {
+        let mut result = diagnostics::Diagnostics::new();
+        for message in &self.diagnostics {
+            result.push(Diagnostic::new(
+                error_codes::VALIDATION,
+                Severity::Error,
+                message.clone(),
+            ));
+        }
+        result
+    }
+}
 
 impl fmt::Display for PortReference {
     fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -417,6 +573,8 @@ mod tests {
                 },
             }],
             voice_allocation: VoiceAllocation::default(),
+            parameters: BTreeMap::new(),
+            presets: BTreeMap::new(),
         };
 
         assert_eq!(patch.metadata.name, "Basic Voice");
@@ -1130,6 +1288,8 @@ render:
             modules: vec![],
             connections: vec![],
             voice_allocation: VoiceAllocation::default(),
+            parameters: BTreeMap::new(),
+            presets: BTreeMap::new(),
         };
 
         let error = validate_patch_schema(&patch).expect_err("missing required values must fail");
@@ -1293,6 +1453,149 @@ connections:
         }));
     }
 
+    #[test]
+    fn schema_validation_reports_unused_assets() {
+        let mut patch = minimal_patch(vec![ModuleDeclaration {
+            id: "out".to_string(),
+            module_type: "audio_output".to_string(),
+            inputs: vec![],
+            outputs: vec![],
+            parameters: BTreeMap::new(),
+        }]);
+        patch.assets.push(AssetDeclaration {
+            id: "unused".to_string(),
+            kind: AssetKind::Sample,
+            path: "unused.wav".to_string(),
+        });
+
+        let error = validate_patch_schema(&patch).expect_err("unused asset must trigger warning");
+        assert!(error.diagnostics().iter().any(|d| d.contains("unused asset")));
+    }
+
+    #[test]
+    fn patch_level_parameters_reference_unknown_module() {
+        let mut patch = minimal_patch(vec![ModuleDeclaration {
+            id: "out".to_string(),
+            module_type: "audio_output".to_string(),
+            inputs: vec![],
+            outputs: vec![],
+            parameters: BTreeMap::new(),
+        }]);
+        patch.parameters.insert(
+            "nonexistent_module".to_string(),
+            BTreeMap::from([("gain".to_string(), ParameterValue::Number(0.5))]),
+        );
+
+        let error = validate_patch_schema(&patch).expect_err("unknown module must fail");
+        assert!(error
+            .diagnostics()
+            .iter()
+            .any(|d| d.contains("unknown module")));
+    }
+
+    #[test]
+    fn patch_level_parameters_conflict_with_module_level() {
+        let mut patch = minimal_patch(vec![ModuleDeclaration {
+            id: "osc".to_string(),
+            module_type: "oscillator".to_string(),
+            inputs: vec![],
+            outputs: vec![],
+            parameters: BTreeMap::from([("pitch".to_string(), ParameterValue::Number(440.0))]),
+        }]);
+        patch.parameters.insert(
+            "osc".to_string(),
+            BTreeMap::from([("pitch".to_string(), ParameterValue::Number(220.0))]),
+        );
+
+        let error = validate_patch_schema(&patch).expect_err("conflicting parameters must fail");
+        assert!(error.diagnostics().iter().any(|d| d.contains("conflicts")));
+    }
+
+    #[test]
+    fn preset_validation_references_unknown_module() {
+        let mut patch = minimal_patch(vec![ModuleDeclaration {
+            id: "out".to_string(),
+            module_type: "audio_output".to_string(),
+            inputs: vec![],
+            outputs: vec![],
+            parameters: BTreeMap::new(),
+        }]);
+        patch.presets.insert(
+            "my_preset".to_string(),
+            BTreeMap::from([(
+                "nonexistent".to_string(),
+                BTreeMap::from([("gain".to_string(), ParameterValue::Number(0.5))]),
+            )]),
+        );
+
+        let error = validate_patch_schema(&patch).expect_err("unknown module in preset must fail");
+        assert!(error.diagnostics().iter().any(|d| d.contains("unknown module")));
+    }
+
+    #[test]
+    fn preset_validation_reports_empty_name() {
+        let mut patch = minimal_patch(vec![ModuleDeclaration {
+            id: "out".to_string(),
+            module_type: "audio_output".to_string(),
+            inputs: vec![],
+            outputs: vec![],
+            parameters: BTreeMap::new(),
+        }]);
+        patch.presets.insert(
+            String::new(),
+            BTreeMap::new(),
+        );
+
+        let error = validate_patch_schema(&patch).expect_err("empty preset name must fail");
+        assert!(error.diagnostics().iter().any(|d| d.contains("preset name")));
+    }
+
+    #[test]
+    fn yaml_parsing_accepts_patch_level_parameters() {
+        let yaml = r#"
+metadata:
+  name: Test
+render:
+  sample_rate_hz: 48000
+  block_size_frames: 128
+  duration_frames: 48000
+modules:
+  - id: out
+    type: audio_output
+parameters:
+  out:
+    left: 0.5
+"#;
+        let patch = load_patch_str(yaml).expect("patch-level parameters should parse");
+        assert!(patch.parameters.contains_key("out"));
+    }
+
+    #[test]
+    fn yaml_parsing_accepts_presets() {
+        let yaml = r#"
+metadata:
+  name: Test
+render:
+  sample_rate_hz: 48000
+  block_size_frames: 128
+  duration_frames: 48000
+modules:
+  - id: out
+    type: audio_output
+presets:
+  quiet:
+    out:
+      left: 0.1
+  loud:
+    out:
+      left: 0.9
+"#;
+        let patch = load_patch_str(yaml).expect("presets should parse");
+        assert_eq!(patch.presets.len(), 2);
+        assert!(patch.presets.contains_key("quiet"));
+        assert!(patch.presets.contains_key("loud"));
+    }
+
     fn minimal_patch(modules: Vec<ModuleDeclaration>) -> PatchDocument {
         PatchDocument {
             metadata: PatchMetadata {
@@ -1310,6 +1613,8 @@ connections:
             modules,
             connections: vec![],
             voice_allocation: VoiceAllocation::default(),
+            parameters: BTreeMap::new(),
+            presets: BTreeMap::new(),
         }
     }
 

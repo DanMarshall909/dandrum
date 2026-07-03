@@ -24,6 +24,10 @@ pub enum ModuleKind {
     Reverb,
     FrequencySplitter,
     SpectralProcessor,
+    Noise,
+    Impulse,
+    Multiply,
+    NoteToControl,
 }
 
 impl ModuleKind {
@@ -51,6 +55,10 @@ impl ModuleKind {
             module_types::REVERB => Some(Self::Reverb),
             module_types::FREQUENCY_SPLITTER => Some(Self::FrequencySplitter),
             module_types::SPECTRAL_PROCESSOR => Some(Self::SpectralProcessor),
+            module_types::NOISE => Some(Self::Noise),
+            module_types::IMPULSE => Some(Self::Impulse),
+            module_types::MULTIPLY => Some(Self::Multiply),
+            module_types::NOTE_TO_CONTROL => Some(Self::NoteToControl),
             _ => None,
         }
     }
@@ -74,6 +82,10 @@ impl ModuleKind {
                 | Self::Reverb
                 | Self::FrequencySplitter
                 | Self::SpectralProcessor
+                | Self::Noise
+                | Self::Impulse
+                | Self::Multiply
+                | Self::NoteToControl
         )
     }
 }

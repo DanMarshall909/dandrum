@@ -46,3 +46,5 @@ pub(crate) mod dynamics_processor;
 pub(crate) mod saturator;
 
 pub mod ffi;
+
+pub mod diagnostics;

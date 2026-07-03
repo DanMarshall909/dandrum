@@ -1453,6 +1453,81 @@ fn implicit_audio_to_control_routing_is_rejected() {
     );
 }
 
+#[test]
+fn graph_diagnostics_convert_to_structured_diagnostics() {
+    let graph = Graph::new(
+        vec![
+            ModuleNode::new(ModuleId::new("osc"), "oscillator")
+                .with_output("audio", SignalType::Audio),
+            ModuleNode::new(ModuleId::new("out"), "audio_output")
+                .with_input("left", SignalType::Control),
+        ],
+        vec![Cable::new(
+            PortRef::new(ModuleId::new("osc"), "audio"),
+            PortRef::new(ModuleId::new("out"), "left"),
+        )],
+    );
+
+    let error = graph.validate().expect_err("type mismatch should fail");
+    let structured = error.to_diagnostics();
+
+    assert_eq!(structured.len(), 1);
+    let diagnostic = &structured.all()[0];
+    assert_eq!(diagnostic.error_code(), "graph.incompatible_signal_types");
+    assert_eq!(diagnostic.severity(), crate::diagnostics::Severity::Error);
+    assert!(diagnostic.message().contains("incompatible"));
+    assert_eq!(diagnostic.module_id(), Some("out"));
+    assert_eq!(diagnostic.port_name(), Some("left"));
+    assert_eq!(diagnostic.expected(), Some("Audio"));
+    assert_eq!(diagnostic.actual(), Some("Control"));
+}
+
+#[test]
+fn multiple_graph_diagnostics_are_collected() {
+    let graph = Graph::new(
+        vec![
+            ModuleNode::new(ModuleId::new("osc"), "oscillator")
+                .with_output("audio", SignalType::Audio),
+            ModuleNode::new(ModuleId::new("vca"), "gain")
+                .with_input("audio_in", SignalType::Audio)
+                .with_output("audio_out", SignalType::Audio),
+            ModuleNode::new(ModuleId::new("out"), "audio_output")
+                .with_input("left", SignalType::Audio)
+                .with_input("right", SignalType::Audio),
+        ],
+        vec![
+            Cable::new(
+                PortRef::new(ModuleId::new("osc"), "audio"),
+                PortRef::new(ModuleId::new("vca"), "audio_in"),
+            ),
+            Cable::new(
+                PortRef::new(ModuleId::new("vca"), "audio_out"),
+                PortRef::new(ModuleId::new("out"), "left"),
+            ),
+            Cable::new(
+                PortRef::new(ModuleId::new("vca"), "audio_out"),
+                PortRef::new(ModuleId::new("out"), "right"),
+            ),
+            Cable::new(
+                PortRef::new(ModuleId::new("missing"), "out"),
+                PortRef::new(ModuleId::new("vca"), "audio_in"),
+            ),
+        ],
+    );
+
+    let error = graph.validate().expect_err("validation should fail");
+    assert!(error.diagnostics().len() >= 2, "expected at least 2 diagnostics, got {}", error.diagnostics().len());
+
+    let structured = error.to_diagnostics();
+    assert!(structured.len() >= 2);
+    assert!(structured.has_errors());
+    let error_codes: Vec<&str> = structured.all().iter().map(|d| d.error_code()).collect();
+    assert!(
+        error_codes.contains(&"graph.missing_module"),
+        "expected missing_module, got {error_codes:?}"
+    );
+}
+
 fn port_ref(module_id: &str, port_name: &str) -> PortRef {
     PortRef::new(ModuleId::new(module_id), port_name)
 }

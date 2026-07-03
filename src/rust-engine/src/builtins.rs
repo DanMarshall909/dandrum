@@ -5,16 +5,123 @@ use crate::graph::{ExecutionScope, Port, SignalType, builtin_ports};
 pub mod module_kind;
 pub mod module_types;
 
-#[derive(Clone, Debug, PartialEq, Eq)]
+/// The type of value a parameter accepts.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum ParameterValueType {
+    Boolean,
+    Integer,
+    Number,
+    Text,
+}
+
+/// Metadata describing a single configurable parameter of a built-in module.
+#[derive(Clone, Debug, PartialEq)]
+pub struct ParameterMetadata {
+    name: String,
+    value_type: ParameterValueType,
+    default: Option<String>,
+    range: Option<(f64, f64)>,
+    unit: Option<String>,
+    enum_values: Option<Vec<String>>,
+    description: Option<String>,
+    realtime_note: Option<String>,
+}
+
+impl ParameterMetadata {
+    pub fn new(name: impl Into<String>, value_type: ParameterValueType) -> Self {
+        Self {
+            name: name.into(),
+            value_type,
+            default: None,
+            range: None,
+            unit: None,
+            enum_values: None,
+            description: None,
+            realtime_note: None,
+        }
+    }
+
+    pub fn with_default(mut self, default: impl Into<String>) -> Self {
+        self.default = Some(default.into());
+        self
+    }
+
+    pub fn with_range(mut self, min: f64, max: f64) -> Self {
+        self.range = Some((min, max));
+        self
+    }
+
+    pub fn with_unit(mut self, unit: impl Into<String>) -> Self {
+        self.unit = Some(unit.into());
+        self
+    }
+
+    pub fn with_enum_values(mut self, values: Vec<impl Into<String>>) -> Self {
+        self.enum_values = Some(values.into_iter().map(|v| v.into()).collect());
+        self
+    }
+
+    pub fn with_description(mut self, description: impl Into<String>) -> Self {
+        self.description = Some(description.into());
+        self
+    }
+
+    pub fn with_realtime_note(mut self, note: impl Into<String>) -> Self {
+        self.realtime_note = Some(note.into());
+        self
+    }
+
+    pub fn name(&self) -> &str {
+        &self.name
+    }
+
+    pub fn value_type(&self) -> ParameterValueType {
+        self.value_type
+    }
+
+    pub fn default(&self) -> Option<&str> {
+        self.default.as_deref()
+    }
+
+    pub fn range(&self) -> Option<(f64, f64)> {
+        self.range
+    }
+
+    pub fn unit(&self) -> Option<&str> {
+        self.unit.as_deref()
+    }
+
+    pub fn enum_values(&self) -> Option<&[String]> {
+        self.enum_values.as_deref()
+    }
+
+    pub fn description(&self) -> Option<&str> {
+        self.description.as_deref()
+    }
+
+    pub fn realtime_note(&self) -> Option<&str> {
+        self.realtime_note.as_deref()
+    }
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum ModuleCategory {
+    Primitive,
+    Script,
+}
+
+#[derive(Clone, Debug, PartialEq)]
 pub struct BuiltInModuleDefinition {
     module_type: String,
     inputs: Vec<Port>,
     outputs: Vec<Port>,
     feedback_boundaries: Vec<SignalType>,
     execution_scope: ExecutionScope,
+    parameters: Vec<ParameterMetadata>,
+    category: ModuleCategory,
 }
 
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct BuiltInModuleRegistry {
     definitions: BTreeMap<String, BuiltInModuleDefinition>,
 }
@@ -27,7 +134,18 @@ impl BuiltInModuleDefinition {
             outputs: Vec::new(),
             feedback_boundaries: Vec::new(),
             execution_scope: ExecutionScope::Global,
+            parameters: Vec::new(),
+            category: ModuleCategory::Primitive,
         }
+    }
+
+    pub fn with_parameter(mut self, param: ParameterMetadata) -> Self {
+        self.parameters.push(param);
+        self
+    }
+
+    pub fn parameters(&self) -> &[ParameterMetadata] {
+        &self.parameters
     }
 
     pub fn with_execution_scope(mut self, scope: ExecutionScope) -> Self {
@@ -69,6 +187,15 @@ impl BuiltInModuleDefinition {
     pub fn feedback_boundaries(&self) -> &[SignalType] {
         &self.feedback_boundaries
     }
+
+    pub fn with_module_category(mut self, category: ModuleCategory) -> Self {
+        self.category = category;
+        self
+    }
+
+    pub fn module_category(&self) -> ModuleCategory {
+        self.category
+    }
 }
 
 impl BuiltInModuleRegistry {
@@ -96,6 +223,10 @@ impl BuiltInModuleRegistry {
             reverb_definition(),
             frequency_splitter_definition(),
             spectral_processor_definition(),
+            noise_definition(),
+            impulse_definition(),
+            multiply_definition(),
+            note_to_control_definition(),
         ])
     }
 
@@ -110,6 +241,10 @@ impl BuiltInModuleRegistry {
 
     pub fn get(&self, module_type: &str) -> Option<&BuiltInModuleDefinition> {
         self.definitions.get(module_type)
+    }
+
+    pub fn module_types(&self) -> impl Iterator<Item = &str> + '_ {
+        self.definitions.keys().map(|s| s.as_str())
     }
 }
 
@@ -185,6 +320,24 @@ fn filter_definition() -> BuiltInModuleDefinition {
         .with_input(Port::input(builtin_ports::RESONANCE, SignalType::Control))
         .with_input(Port::input(builtin_ports::GAIN, SignalType::Control))
         .with_output(Port::output(builtin_ports::AUDIO_OUT, SignalType::Audio))
+        .with_parameter(
+            ParameterMetadata::new("algorithm", ParameterValueType::Text)
+                .with_default("moog")
+                .with_enum_values(vec!["moog", "biquad", "comb"])
+                .with_description("filter topology"),
+        )
+        .with_parameter(
+            ParameterMetadata::new("mode", ParameterValueType::Text)
+                .with_default("lowpass")
+                .with_enum_values(vec!["lowpass", "highpass", "peaking"])
+                .with_description("biquad filter mode"),
+        )
+        .with_parameter(
+            ParameterMetadata::new("comb_type", ParameterValueType::Text)
+                .with_default("feedback")
+                .with_enum_values(vec!["feedback", "feedforward"])
+                .with_description("comb filter type"),
+        )
 }
 
 fn audio_delay_one_sample_definition() -> BuiltInModuleDefinition {
@@ -209,7 +362,9 @@ fn control_delay_definition() -> BuiltInModuleDefinition {
 }
 
 fn script_definition() -> BuiltInModuleDefinition {
-    BuiltInModuleDefinition::new(module_types::SCRIPT).with_execution_scope(ExecutionScope::Voice)
+    BuiltInModuleDefinition::new(module_types::SCRIPT)
+        .with_execution_scope(ExecutionScope::Voice)
+        .with_module_category(ModuleCategory::Script)
 }
 
 fn sampler_definition() -> BuiltInModuleDefinition {
@@ -225,6 +380,11 @@ fn sampler_definition() -> BuiltInModuleDefinition {
         .with_input(Port::input(builtin_ports::LOOP_START, SignalType::Control))
         .with_input(Port::input(builtin_ports::LOOP_END, SignalType::Control))
         .with_output(Port::output(builtin_ports::AUDIO, SignalType::Audio))
+        .with_parameter(
+            ParameterMetadata::new("asset", ParameterValueType::Text)
+                .with_description("asset ID of the sample to play")
+                .with_realtime_note("must reference an asset declared in the patch assets section"),
+        )
 }
 
 fn note_to_rate_definition() -> BuiltInModuleDefinition {
@@ -321,6 +481,48 @@ fn echo_definition() -> BuiltInModuleDefinition {
             SignalType::Control,
         ))
         .with_input(Port::input(builtin_ports::PING_PONG, SignalType::Control))
+}
+
+fn noise_definition() -> BuiltInModuleDefinition {
+    BuiltInModuleDefinition::new(module_types::NOISE)
+        .with_execution_scope(ExecutionScope::Global)
+        .with_output(Port::output(builtin_ports::AUDIO, SignalType::Audio))
+        .with_parameter(
+            ParameterMetadata::new("seed", ParameterValueType::Number)
+                .with_default("0")
+                .with_description("random seed for deterministic noise output"),
+        )
+}
+
+fn impulse_definition() -> BuiltInModuleDefinition {
+    BuiltInModuleDefinition::new(module_types::IMPULSE)
+        .with_execution_scope(ExecutionScope::Global)
+        .with_input(Port::input(builtin_ports::TRIGGER, SignalType::Event))
+        .with_output(Port::output(builtin_ports::AUDIO, SignalType::Audio))
+}
+
+fn multiply_definition() -> BuiltInModuleDefinition {
+    BuiltInModuleDefinition::new(module_types::MULTIPLY)
+        .with_execution_scope(ExecutionScope::Global)
+        .with_input(Port::input(builtin_ports::AUDIO_IN, SignalType::Audio))
+        .with_input(Port::input(builtin_ports::GAIN, SignalType::Audio))
+        .with_output(Port::output(builtin_ports::AUDIO_OUT, SignalType::Audio))
+        .with_parameter(
+            ParameterMetadata::new("signal_type", ParameterValueType::Text)
+                .with_default("audio")
+                .with_enum_values(vec!["audio", "control"])
+                .with_description("signal type compatibility for both inputs"),
+        )
+}
+
+fn note_to_control_definition() -> BuiltInModuleDefinition {
+    BuiltInModuleDefinition::new(module_types::NOTE_TO_CONTROL)
+        .with_execution_scope(ExecutionScope::Global)
+        .with_input(Port::input(builtin_ports::EVENTS, SignalType::Event))
+        .with_output(Port::output("frequency", SignalType::Control))
+        .with_output(Port::output("pitch_ratio", SignalType::Control))
+        .with_output(Port::output("gate", SignalType::Event))
+        .with_output(Port::output("velocity", SignalType::Control))
 }
 
 fn reverb_definition() -> BuiltInModuleDefinition {

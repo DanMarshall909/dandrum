@@ -534,6 +534,8 @@ mod tests {
             modules: vec![module("voice", "voice")],
             connections: vec![],
             voice_allocation: VoiceAllocation::default(),
+            parameters: BTreeMap::new(),
+            presets: BTreeMap::new(),
         }
     }
 

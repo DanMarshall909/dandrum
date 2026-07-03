@@ -293,6 +293,90 @@ fn reverb_definition_has_correct_ports() {
     assert_has_input(reverb, builtin_ports::DRY, SignalType::Control);
 }
 
+#[test]
+fn filter_definition_has_parameter_metadata() {
+    let registry = BuiltInModuleRegistry::new();
+    let filter = registry
+        .get(module_types::FILTER)
+        .expect("filter should be built in");
+
+    let params = filter.parameters();
+    assert!(!params.is_empty(), "filter should have parameter metadata");
+
+    let algorithm = params
+        .iter()
+        .find(|p| p.name() == "algorithm")
+        .expect("filter should have algorithm parameter");
+    assert_eq!(algorithm.value_type(), ParameterValueType::Text);
+    assert_eq!(algorithm.default(), Some("moog"));
+    let enum_vals = algorithm.enum_values().expect("algorithm should have enum values");
+    assert!(enum_vals.contains(&"moog".to_string()));
+    assert!(enum_vals.contains(&"biquad".to_string()));
+    assert!(enum_vals.contains(&"comb".to_string()));
+
+    let mode = params
+        .iter()
+        .find(|p| p.name() == "mode")
+        .expect("filter should have mode parameter");
+    assert_eq!(mode.default(), Some("lowpass"));
+
+    let comb_type = params
+        .iter()
+        .find(|p| p.name() == "comb_type")
+        .expect("filter should have comb_type parameter");
+    assert_eq!(comb_type.default(), Some("feedback"));
+}
+
+#[test]
+fn sampler_definition_has_asset_parameter_metadata() {
+    let registry = BuiltInModuleRegistry::new();
+    let sampler = registry
+        .get(module_types::SAMPLER)
+        .expect("sampler should be built in");
+
+    let params = sampler.parameters();
+    let asset = params
+        .iter()
+        .find(|p| p.name() == "asset")
+        .expect("sampler should have asset parameter");
+    assert_eq!(asset.value_type(), ParameterValueType::Text);
+    assert!(asset.description().is_some());
+    assert!(asset.realtime_note().is_some());
+}
+
+#[test]
+fn unknown_parameter_not_in_metadata_detected() {
+    let registry = BuiltInModuleRegistry::new();
+    let filter = registry
+        .get(module_types::FILTER)
+        .expect("filter should be built in");
+
+    let known_params: Vec<&str> = filter.parameters().iter().map(|p| p.name()).collect();
+    assert!(known_params.contains(&"algorithm"));
+    assert!(known_params.contains(&"mode"));
+    assert!(known_params.contains(&"comb_type"));
+    assert!(!known_params.contains(&"nonexistent"));
+}
+
+#[test]
+fn parameter_metadata_queryable_without_renderer() {
+    let registry = BuiltInModuleRegistry::new();
+
+    let filter = registry
+        .get(module_types::FILTER)
+        .expect("filter should be built in");
+    let sampler = registry
+        .get(module_types::SAMPLER)
+        .expect("sampler should be built in");
+    let oscillator = registry
+        .get(module_types::OSCILLATOR)
+        .expect("oscillator should be built in");
+
+    assert!(!filter.parameters().is_empty());
+    assert!(!sampler.parameters().is_empty());
+    assert!(oscillator.parameters().is_empty());
+}
+
 fn assert_has_output(definition: &BuiltInModuleDefinition, name: &str, signal_type: SignalType) {
     assert!(
         definition
@@ -300,4 +384,80 @@ fn assert_has_output(definition: &BuiltInModuleDefinition, name: &str, signal_ty
             .iter()
             .any(|port| port.name() == name && port.signal_type() == signal_type)
     );
+}
+
+#[test]
+fn discovery_can_enumerate_all_module_types_without_constructing_renderer() {
+    let registry = BuiltInModuleRegistry::new();
+    let types: Vec<&str> = registry.module_types().collect();
+
+    assert!(types.contains(&module_types::OSCILLATOR));
+    assert!(types.contains(&module_types::GAIN));
+    assert!(types.contains(&module_types::NOISE));
+    assert!(types.contains(&module_types::MULTIPLY));
+    assert!(types.contains(&module_types::SCRIPT));
+    assert!(types.contains(&module_types::ADSR));
+    assert!(!types.contains(&"nonexistent_module"));
+}
+
+#[test]
+fn discovery_can_query_port_and_parameter_metadata_without_constructing_renderer() {
+    let registry = BuiltInModuleRegistry::new();
+
+    let osc = registry.get(module_types::OSCILLATOR).unwrap();
+    assert_eq!(osc.module_type(), module_types::OSCILLATOR);
+    assert_eq!(osc.inputs().len(), 1);
+    assert_eq!(osc.inputs()[0].name(), builtin_ports::PITCH);
+    assert_eq!(osc.inputs()[0].signal_type(), SignalType::Control);
+    assert_eq!(osc.inputs()[0].direction(), PortDirection::Input);
+    assert_eq!(osc.outputs().len(), 1);
+    assert_eq!(osc.outputs()[0].name(), builtin_ports::AUDIO);
+    assert_eq!(osc.outputs()[0].signal_type(), SignalType::Audio);
+    assert_eq!(osc.outputs()[0].direction(), PortDirection::Output);
+    assert!(osc.parameters().is_empty());
+
+    let filter = registry.get(module_types::FILTER).unwrap();
+    let params: Vec<&str> = filter.parameters().iter().map(|p| p.name()).collect();
+    assert_eq!(params.len(), 3);
+    assert!(params.contains(&"algorithm"));
+    assert!(params.contains(&"mode"));
+    assert!(params.contains(&"comb_type"));
+
+    let algorithm_param = filter
+        .parameters()
+        .iter()
+        .find(|p| p.name() == "algorithm")
+        .unwrap();
+    assert_eq!(algorithm_param.value_type(), ParameterValueType::Text);
+    assert!(algorithm_param.enum_values().is_some());
+}
+
+#[test]
+fn discovery_reports_module_category() {
+    let registry = BuiltInModuleRegistry::new();
+
+    let osc = registry.get(module_types::OSCILLATOR).unwrap();
+    assert_eq!(osc.module_category(), ModuleCategory::Primitive);
+
+    let script = registry.get(module_types::SCRIPT).unwrap();
+    assert_eq!(script.module_category(), ModuleCategory::Script);
+
+    let filter = registry.get(module_types::FILTER).unwrap();
+    assert_eq!(filter.module_category(), ModuleCategory::Primitive);
+}
+
+#[test]
+fn discovery_does_not_require_render_path_or_audio_construction() {
+    let registry = BuiltInModuleRegistry::new();
+
+    for module_type in registry.module_types() {
+        let definition = registry.get(module_type).unwrap();
+        assert_eq!(definition.module_type(), module_type);
+        for port in definition.inputs() {
+            assert!(!port.name().is_empty());
+        }
+        for port in definition.outputs() {
+            assert!(!port.name().is_empty());
+        }
+    }
 }

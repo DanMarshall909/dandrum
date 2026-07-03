@@ -585,3 +585,137 @@ pub(super) fn process_spectral_processor(
 
     audio_output(builtin_ports::AUDIO_OUT, audio_out)
 }
+
+pub(super) fn process_noise(
+    state: &mut PerModuleState,
+    frames: usize,
+) -> ModuleOutputs {
+    let (rng_state, seed) = match state {
+        PerModuleState::Noise { state, seed } => (state, *seed),
+        _ => unreachable!(),
+    };
+
+    let mut audio = Vec::with_capacity(frames);
+    for _ in 0..frames {
+        // Simple xorshift32 PRNG seeded deterministically.
+        let mut x = *rng_state;
+        x ^= x << 13;
+        x ^= x >> 17;
+        x ^= x << 5;
+        // Normalize to [-1.0, 1.0]
+        let sample = (x as f32) / (u32::MAX as f32) * 2.0 - 1.0;
+        audio.push(sample);
+        *rng_state = x;
+    }
+
+    audio_output(builtin_ports::AUDIO, audio)
+}
+
+pub(super) fn process_impulse(
+    state: &mut PerModuleState,
+    events: &[BlockEvent],
+    frames: usize,
+) -> ModuleOutputs {
+    let mut audio = vec![0.0_f32; frames];
+    for event in events {
+        let f = event.frame_offset as usize;
+        if f < frames {
+            audio[f] = 1.0;
+        }
+    }
+    audio_output(builtin_ports::AUDIO, audio)
+}
+
+pub(super) fn process_multiply(
+    a: Vec<f32>,
+    b: Vec<f32>,
+) -> ModuleOutputs {
+    let max = a.len().max(b.len());
+    let mut audio = Vec::with_capacity(max);
+    for i in 0..max {
+        let av = a.get(i).copied().unwrap_or(0.0);
+        let bv = b.get(i).copied().unwrap_or(0.0);
+        audio.push(av * bv);
+    }
+    audio_output(builtin_ports::AUDIO_OUT, audio)
+}
+
+pub(super) fn process_note_to_control(
+    state: &mut PerModuleState,
+    events: &[BlockEvent],
+    frames: usize,
+) -> ModuleOutputs {
+    let gate_active = match state {
+        PerModuleState::NoteToControl { gate_active } => gate_active,
+        _ => unreachable!(),
+    };
+
+    let mut frequency_out = vec![0.0_f32; frames];
+    let mut pitch_ratio_out = vec![0.0_f32; frames];
+    let mut velocity_out = vec![0.0_f32; frames];
+    let mut gate_events = Vec::new();
+
+    let mut current_note: Option<(u8, u8)> = None;
+
+    for event in events {
+        let f = event.frame_offset as usize;
+        match &event.event {
+            crate::script::ScriptEvent::NoteOn { note, velocity } => {
+                let freq = midi_note_to_freq(*note);
+                let ratio = freq / 220.0;
+                let norm_vel = (*velocity as f32) / 127.0;
+                if f < frames {
+                    frequency_out[f] = freq;
+                    pitch_ratio_out[f] = ratio;
+                    velocity_out[f] = norm_vel;
+                }
+                current_note = Some((*note, *velocity));
+                *gate_active = true;
+                gate_events.push(BlockEvent {
+                    frame_offset: event.frame_offset,
+                    event: crate::script::ScriptEvent::NoteOn {
+                        note: *note,
+                        velocity: *velocity,
+                    },
+                });
+            }
+            crate::script::ScriptEvent::NoteOff { note } => {
+                if current_note.map(|(n, _)| n) == Some(*note) {
+                    *gate_active = false;
+                    current_note = None;
+                }
+                gate_events.push(BlockEvent {
+                    frame_offset: event.frame_offset,
+                    event: crate::script::ScriptEvent::NoteOff {
+                        note: *note,
+                    },
+                });
+            }
+            _ => {}
+        }
+    }
+
+    if *gate_active {
+        if let Some((note, vel)) = current_note {
+            let freq = midi_note_to_freq(note);
+            let ratio = freq / 220.0;
+            let norm_vel = (vel as f32) / 127.0;
+            for frame in 0..frames {
+                frequency_out[frame] = freq;
+                pitch_ratio_out[frame] = ratio;
+                velocity_out[frame] = norm_vel;
+            }
+        }
+    }
+
+    let mut outputs = ModuleOutputs::empty();
+    outputs.control.insert("frequency".to_string(), frequency_out);
+    outputs.control.insert("pitch_ratio".to_string(), pitch_ratio_out);
+    outputs.control.insert("velocity".to_string(), velocity_out);
+    outputs.events = gate_events;
+    outputs
+}
+
+fn midi_note_to_freq(note: u8) -> f32 {
+    440.0 * 2.0_f32.powf((note as f32 - 69.0) / 12.0)
+}

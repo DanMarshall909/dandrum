@@ -2,6 +2,7 @@ use std::fmt;
 use std::path::Path;
 
 use crate::compiled_patch::{self, CompileError, CompiledPatch};
+use crate::diagnostics::{self, Diagnostic, Severity};
 use crate::graph::Graph;
 use crate::patch::{self, PatchDocument};
 use crate::sample::{self, PreparedSamplerAssets, SampleLoadError};
@@ -121,6 +122,23 @@ pub(crate) fn compile_patch(
     patch_doc: &PatchDocument,
 ) -> Result<CompiledPatch, PreparationError> {
     compiled_patch::compile(graph, &patch_doc.render).map_err(PreparationError::Compile)
+}
+
+impl PreparationError {
+    pub fn to_diagnostics(&self) -> diagnostics::Diagnostics {
+        match self {
+            Self::Load(error) => error.to_diagnostic().into(),
+            Self::Schema(error) => error.to_diagnostics(),
+            Self::Graph(error) => error.to_diagnostics(),
+            Self::Assets(error) => Diagnostic::new(
+                diagnostics::error_codes::LOADING,
+                Severity::Error,
+                error.to_string(),
+            )
+            .into(),
+            Self::Compile(error) => error.to_diagnostic().into(),
+        }
+    }
 }
 
 impl fmt::Display for PreparationError {

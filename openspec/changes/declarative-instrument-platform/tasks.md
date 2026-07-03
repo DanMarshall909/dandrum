@@ -1,36 +1,36 @@
 ## 1. Reconcile Spec With Existing Engine
 
-- [ ] 1.1 Document the current YAML patch shape, including `metadata`, `render`, `assets`, `module_definitions`, `modules`, `connections`, and `voice_allocation`.
-- [ ] 1.2 Confirm this change preserves existing inline `module_definitions` semantics and does not introduce a conflicting `type: composite` / `composite_id` model.
-- [ ] 1.3 Add tests proving existing composite expansion still works after this change.
-- [ ] 1.4 Add tests proving expanded composite module IDs remain deterministic and namespaced by instance ID.
-- [ ] 1.5 Add tests proving graph validation still runs against the expanded graph.
+- [x] 1.1 Document the current YAML patch shape, including `metadata`, `render`, `assets`, `module_definitions`, `modules`, `connections`, and `voice_allocation`.
+- [x] 1.2 Confirm this change preserves existing inline `module_definitions` semantics and does not introduce a conflicting `type: composite` / `composite_id` model.
+- [x] 1.3 Add tests proving existing composite expansion still works after this change.
+- [x] 1.4 Add tests proving expanded composite module IDs remain deterministic and namespaced by instance ID.
+- [x] 1.5 Add tests proving graph validation still runs against the expanded graph.
 
 ## 2. Structured Diagnostics Foundation
 
-- [ ] 2.1 Define a structured diagnostic record with stable error code, severity, message, optional YAML source range, optional module ID, optional port name, expected value/type, actual value/type, and suggested fix.
-- [ ] 2.2 Add error code namespaces: `loading.*`, `validation.*`, `graph.*`, `script.*`, `render.*`.
-- [ ] 2.3 Convert graph validation diagnostics to structured diagnostics without losing the existing human-readable display text.
-- [ ] 2.4 Add diagnostics collection API for loading, patch validation, graph construction, and render preparation.
-- [ ] 2.5 Add tests proving multiple diagnostics are collected instead of failing on only the first error.
-- [ ] 2.6 Add source-location tracking for YAML diagnostics if the YAML parser exposes usable locations; otherwise document the limitation and keep file/path-level diagnostics.
+- [x] 2.1 Define a structured diagnostic record with stable error code, severity, message, optional YAML source range, optional module ID, optional port name, expected value/type, actual value/type, and suggested fix.
+- [x] 2.2 Add error code namespaces: `loading.*`, `validation.*`, `graph.*`, `script.*`, `render.*`.
+- [x] 2.3 Convert graph validation diagnostics to structured diagnostics without losing the existing human-readable display text.
+- [x] 2.4 Add diagnostics collection API for loading, patch validation, graph construction, and render preparation.
+- [x] 2.5 Add tests proving multiple diagnostics are collected instead of failing on only the first error.
+- [x] 2.6 Source-location tracking: `serde_yaml` does not expose structured line/column locations during deserialization. The `Diagnostic` and `SourceLocation` types are defined to accept locations when available, and `PatchLoadError::to_diagnostic()` carries file path info. Full YAML field-level source mapping would require a custom YAML visitor or switching to a YAML parser that exposes locations; this is documented for future tooling work.
 
 ## 3. Module Parameter Metadata
 
-- [ ] 3.1 Define parameter metadata model: name, value type, default, optional range, optional unit, optional enum values, and realtime note.
-- [ ] 3.2 Add parameter metadata for existing oscillator, gain, ADSR, filter, sampler, saturator, dynamics, echo, reverb, splitter, and spectral processor modules.
-- [ ] 3.3 Add tests proving metadata can be queried without constructing an audio renderer.
-- [ ] 3.4 Add validation tests proving unknown or invalid parameter values produce structured diagnostics where metadata exists.
+- [x] 3.1 Define parameter metadata model: name, value type, default, optional range, optional unit, optional enum values, and realtime note.
+- [x] 3.2 Add parameter metadata for existing oscillator, gain, ADSR, filter, sampler, saturator, dynamics, echo, reverb, splitter, and spectral processor modules.
+- [x] 3.3 Add tests proving metadata can be queried without constructing an audio renderer.
+- [x] 3.4 Add validation tests proving unknown or invalid parameter values produce structured diagnostics where metadata exists.
 
 ## 4. Minimal New Primitives
 
-- [ ] 4.1 Implement `noise` primitive with deterministic seeded white noise output.
-- [ ] 4.2 Implement `impulse` primitive with event trigger input and sample-accurate one-sample click output.
-- [ ] 4.3 Implement `multiply` primitive for audio/control multiplication needed by modulation and VCA-style composites.
-- [ ] 4.4 Implement `note_to_control` primitive that converts note events to frequency, pitch ratio/CV, gate/trigger, and normalized velocity control outputs.
-- [ ] 4.5 Register the new primitives in the built-in module registry with typed ports and parameter metadata.
-- [ ] 4.6 Add deterministic render tests for each new primitive.
-- [ ] 4.7 Decide whether minimal oscillator waveform support is required now; either implement sine/saw/pulse support with tests or reduce acceptance examples to current oscillator behaviour.
+- [x] 4.1 Implement `noise` primitive with deterministic seeded white noise output.
+- [x] 4.2 Implement `impulse` primitive with event trigger input and sample-accurate one-sample click output.
+- [x] 4.3 Implement `multiply` primitive for audio/control multiplication needed by modulation and VCA-style composites.
+- [x] 4.4 Implement `note_to_control` primitive that converts note events to frequency, pitch ratio/CV, gate/trigger, and normalized velocity control outputs.
+- [x] 4.5 Register the new primitives in the built-in module registry with typed ports and parameter metadata.
+- [x] 4.6 Add deterministic render tests for each new primitive.
+- [x] 4.7 Decision: Reduce acceptance examples to current oscillator behaviour (saw wave only) rather than adding waveform support now. The saw oscillator can be used for the 808 kick body with pitch envelope, and filter/noise can shape it further. Waveform selection is a candidate for a future parameter metadata extension once a clear acceptance example requires it.
 
 ## 5. Script Module Constraints
 
@@ -44,18 +44,18 @@
 
 ## 6. Composite Hardening
 
-- [ ] 6.1 Add tests for composite parameter exposure using existing `module_definitions.parameters` bindings.
-- [ ] 6.2 Add tests for composite asset bindings using existing `module_definitions.asset_bindings`.
-- [ ] 6.3 Add diagnostics that map expanded graph failures back to the composite instance and internal module path where possible.
-- [ ] 6.4 Add optional external composite library loading only after inline composite behaviour is fully covered.
-- [ ] 6.5 Add maximum composite nesting-depth validation if external or recursive composite loading is introduced.
+- [x] 6.1 Add tests for composite parameter exposure using existing `module_definitions.parameters` bindings.
+- [x] 6.2 Add tests for composite asset bindings using existing `module_definitions.asset_bindings`.
+- [x] 6.3 Add diagnostics that map expanded graph failures back to the composite instance and internal module path where possible.
+- [x] 6.4 Add optional external composite library loading only after inline composite behaviour is fully covered.
+- [x] 6.5 Add maximum composite nesting-depth validation if external or recursive composite loading is introduced.
 
 ## 7. YAML Format Extensions
 
-- [ ] 7.1 Extend existing `assets` validation with missing-asset diagnostics and supported asset kind checks.
-- [ ] 7.2 Add patch-level parameter bindings only if they do not conflict with existing module-level parameters or composite bindings.
-- [ ] 7.3 Add preset support as named parameter sets applied to an existing patch/composite without changing graph semantics.
-- [ ] 7.4 Ensure existing patches remain valid unless a separate migration spec explicitly changes the schema.
+- [x] 7.1 Extend existing `assets` validation with missing-asset diagnostics and supported asset kind checks.
+- [x] 7.2 Add patch-level parameter bindings only if they do not conflict with existing module-level parameters or composite bindings.
+- [x] 7.3 Add preset support as named parameter sets applied to an existing patch/composite without changing graph semantics.
+- [x] 7.4 Ensure existing patches remain valid unless a separate migration spec explicitly changes the schema.
 
 ## 8. Drum Machine Event Mapper Alignment
 
@@ -78,12 +78,12 @@
 
 ## 10. Capability Discovery
 
-- [ ] 10.1 Implement module type enumeration API after module metadata exists.
-- [ ] 10.2 Implement port metadata query using the built-in registry and composite metadata.
-- [ ] 10.3 Implement parameter metadata query using the metadata model from section 3.
-- [ ] 10.4 Include module category: primitive, composite, script, preset, or future tooling.
-- [ ] 10.5 Include realtime notes where relevant.
-- [ ] 10.6 Keep discovery separate from audio rendering and add tests proving discovery does not construct or block the render path.
+- [x] 10.1 Implement module type enumeration API after module metadata exists.
+- [x] 10.2 Implement port metadata query using the built-in registry and composite metadata.
+- [x] 10.3 Implement parameter metadata query using the metadata model from section 3.
+- [x] 10.4 Include module category: primitive, composite, script, preset, or future tooling.
+- [x] 10.5 Include realtime notes where relevant.
+- [x] 10.6 Keep discovery separate from audio rendering and add tests proving discovery does not construct or block the render path.
 
 ## 11. Verification
 

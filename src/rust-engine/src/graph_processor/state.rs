@@ -69,6 +69,15 @@ pub(super) enum PerModuleState {
     SpectralProcessor {
         processor: SpectralProcessor,
     },
+    Noise {
+        state: u32,
+        seed: u32,
+    },
+    Impulse,
+    Multiply,
+    NoteToControl {
+        gate_active: bool,
+    },
 }
 
 impl PerModuleState {
@@ -196,6 +205,18 @@ impl PerModuleState {
             },
             ModuleKind::SpectralProcessor => PerModuleState::SpectralProcessor {
                 processor: SpectralProcessor::new(2048, crate::spectral::SpectralMode::Gate),
+            },
+            ModuleKind::Noise => {
+                let seed = params
+                    .get("seed")
+                    .and_then(|s| s.parse::<u32>().ok())
+                    .unwrap_or(0);
+                PerModuleState::Noise { state: seed, seed }
+            }
+            ModuleKind::Impulse => PerModuleState::Impulse,
+            ModuleKind::Multiply => PerModuleState::Multiply,
+            ModuleKind::NoteToControl => PerModuleState::NoteToControl {
+                gate_active: false,
             },
             ModuleKind::Lfo
             | ModuleKind::ControlMixer

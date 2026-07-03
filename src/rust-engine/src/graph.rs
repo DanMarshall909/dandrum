@@ -675,6 +675,87 @@ impl fmt::Display for GraphValidationError {
 
 impl std::error::Error for GraphValidationError {}
 
+impl GraphDiagnostic {
+    /// Convert to a structured [`crate::diagnostics::Diagnostic`] with
+    /// error code, severity, and module/port references.
+    pub fn to_diagnostic(&self) -> crate::diagnostics::Diagnostic {
+        use crate::diagnostics::{error_codes, Diagnostic, Severity};
+        match self {
+            Self::MissingModule { module_id } => Diagnostic::new(
+                error_codes::GRAPH_MISSING_MODULE,
+                Severity::Error,
+                format!("missing module: {}", module_id.as_str()),
+            )
+            .with_module_id(module_id.as_str()),
+            Self::MissingPort { port } => Diagnostic::new(
+                error_codes::GRAPH_MISSING_PORT,
+                Severity::Error,
+                format!("missing port: {port}"),
+            )
+            .with_module_id(port.module_id().as_str())
+            .with_port_name(port.port_name()),
+            Self::IncorrectPortDirection { port, expected } => Diagnostic::new(
+                error_codes::GRAPH_INCORRECT_PORT_DIRECTION,
+                Severity::Error,
+                format!("incorrect port direction: {port} is not a {expected:?} port"),
+            )
+            .with_module_id(port.module_id().as_str())
+            .with_port_name(port.port_name()),
+            Self::IncompatibleSignalTypes {
+                source,
+                source_type,
+                destination,
+                destination_type,
+            } => Diagnostic::new(
+                error_codes::GRAPH_INCOMPATIBLE_SIGNAL_TYPES,
+                Severity::Error,
+                format!("incompatible signal types: {source} is {source_type:?}, but {destination} is {destination_type:?}"),
+            )
+            .with_module_id(destination.module_id().as_str())
+            .with_port_name(destination.port_name())
+            .with_expected(format!("{source_type:?}"))
+            .with_actual(format!("{destination_type:?}")),
+            Self::MultipleSourcesToInput { destination } => Diagnostic::new(
+                error_codes::GRAPH_MULTIPLE_SOURCES,
+                Severity::Error,
+                format!(
+                    "multiple sources connected to {destination}; use an explicit mixer or summing module"
+                ),
+            )
+            .with_module_id(destination.module_id().as_str())
+            .with_port_name(destination.port_name()),
+            Self::CycleDetected { .. } => Diagnostic::new(
+                error_codes::GRAPH_CYCLE_DETECTED,
+                Severity::Error,
+                "routing cycle detected",
+            ),
+            Self::VoiceToGlobalDirectRouting {
+                source,
+                destination,
+            } => Diagnostic::new(
+                error_codes::GRAPH_VOICE_TO_GLOBAL,
+                Severity::Error,
+                format!(
+                    "voice-scoped output {source} cannot route directly to global input {destination}; use an explicit mixer or summing module"
+                ),
+            )
+            .with_module_id(destination.module_id().as_str())
+            .with_port_name(destination.port_name()),
+        }
+    }
+}
+
+impl GraphValidationError {
+    /// Returns structured diagnostics with stable error codes.
+    pub fn to_diagnostics(&self) -> crate::diagnostics::Diagnostics {
+        let mut result = crate::diagnostics::Diagnostics::new();
+        for d in &self.diagnostics {
+            result.push(d.to_diagnostic());
+        }
+        result
+    }
+}
+
 pub fn parameter_value_to_string(value: &ParameterValue) -> String {
     match value {
         ParameterValue::Boolean(b) => b.to_string(),

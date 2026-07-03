@@ -7,9 +7,9 @@ use super::ModuleInputProvider;
 use super::outputs::{BlockEvent, ModuleOutputs};
 use super::processing::{
     EchoControls, ReverbControls, process_adsr, process_convolution, process_dynamics_processor,
-    process_echo, process_filter, process_frequency_splitter, process_note_to_rate,
-    process_oscillator, process_reverb, process_sampler, process_saturator,
-    process_spectral_processor, process_vca,
+    process_echo, process_filter, process_frequency_splitter, process_impulse, process_multiply,
+    process_noise, process_note_to_control, process_note_to_rate, process_oscillator,
+    process_reverb, process_sampler, process_saturator, process_spectral_processor, process_vca,
 };
 use super::state::PerModuleState;
 
@@ -550,6 +550,28 @@ pub(super) fn process_module(
                 &mix_in,
                 frames,
             )
+        }
+        ModuleKind::Noise => process_noise(&mut states[module_idx], frames),
+        ModuleKind::Impulse => {
+            process_impulse(&mut states[module_idx], events_in, frames)
+        }
+        ModuleKind::Multiply => {
+            let a = input_provider.sum_audio_input(
+                module_idx,
+                builtin_ports::AUDIO_IN,
+                all_outputs,
+                frames,
+            );
+            let b = input_provider.sum_audio_input(
+                module_idx,
+                builtin_ports::GAIN,
+                all_outputs,
+                frames,
+            );
+            process_multiply(a, b)
+        }
+        ModuleKind::NoteToControl => {
+            process_note_to_control(&mut states[module_idx], events_in, frames)
         }
         _ => panic!(
             "process_module called for unsupported module kind; dispatch is only for render-time module types"

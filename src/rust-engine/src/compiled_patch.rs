@@ -2,6 +2,7 @@ use std::collections::{BTreeMap, VecDeque};
 use std::fmt;
 
 use crate::builtins::module_kind::ModuleKind;
+use crate::diagnostics::{error_codes, Diagnostic, Severity};
 use crate::graph::{ExecutionScope, Graph, ModuleId, SignalType};
 use crate::patch::RenderSettings;
 
@@ -61,6 +62,35 @@ pub enum CompileError {
     UnsupportedModuleType {
         module_type: String,
     },
+}
+
+impl CompileError {
+    pub fn to_diagnostic(&self) -> Diagnostic {
+        match self {
+            Self::MissingPort { module_id, port_name } => Diagnostic::new(
+                error_codes::GRAPH_MISSING_PORT,
+                Severity::Error,
+                format!("missing port: {module_id}.{port_name}"),
+            )
+            .with_module_id(module_id.clone())
+            .with_port_name(port_name.clone()),
+            Self::CycleDetected => Diagnostic::new(
+                error_codes::GRAPH_CYCLE_DETECTED,
+                Severity::Error,
+                "routing cycle detected during compilation",
+            ),
+            Self::UnknownModuleType { module_type } => Diagnostic::new(
+                error_codes::GRAPH_UNKNOWN_MODULE_TYPE,
+                Severity::Error,
+                format!("unknown module type: {module_type}"),
+            ),
+            Self::UnsupportedModuleType { module_type } => Diagnostic::new(
+                error_codes::GRAPH_UNSUPPORTED_MODULE_TYPE,
+                Severity::Error,
+                format!("unsupported module type for rendering: {module_type}"),
+            ),
+        }
+    }
 }
 
 pub fn compile(

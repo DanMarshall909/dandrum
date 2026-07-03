@@ -2523,6 +2523,7 @@ fn offline_and_realtime_produce_same_output_for_oscillator_patch() {
     );
     graph.validate().expect("graph should validate");
 
+    let assets = PreparedSamplerAssets::empty();
     assert_offline_realtime_parity(
         &graph,
         48_000.0,
@@ -2535,8 +2536,232 @@ fn offline_and_realtime_produce_same_output_for_oscillator_patch() {
                 velocity: 100,
             },
         )],
-        &PreparedSamplerAssets::empty(),
+        &assets,
     );
+}
+
+#[test]
+fn noise_module_renders_deterministic_output() {
+    let (left, _) = render_patch(
+        r#"
+metadata:
+  name: Noise
+render:
+  sample_rate_hz: 48000
+  block_size_frames: 128
+  duration_frames: 256
+modules:
+  - id: noise
+    type: noise
+    parameters:
+      seed: 42
+  - id: out
+    type: audio_output
+    inputs:
+      - name: left
+        signal_type: audio
+      - name: right
+        signal_type: audio
+connections:
+  - from: noise.audio
+    to: out.left
+"#,
+    );
+    assert_eq!(left.len(), 256);
+    // Noise should have non-zero samples
+    assert!(left.iter().any(|&s| s.abs() > 0.001));
+    // Verify determinism with same seed
+    let (left2, _) = render_patch(
+        r#"
+metadata:
+  name: Noise
+render:
+  sample_rate_hz: 48000
+  block_size_frames: 128
+  duration_frames: 256
+modules:
+  - id: noise
+    type: noise
+    parameters:
+      seed: 42
+  - id: out
+    type: audio_output
+    inputs:
+      - name: left
+        signal_type: audio
+      - name: right
+        signal_type: audio
+connections:
+  - from: noise.audio
+    to: out.left
+"#,
+    );
+    assert_eq!(left, left2, "same seed should produce identical output");
+}
+
+#[test]
+fn impulse_module_produces_click_on_trigger() {
+    let (left, _) = render_patch(
+        r#"
+metadata:
+  name: Impulse
+render:
+  sample_rate_hz: 48000
+  block_size_frames: 128
+  duration_frames: 256
+modules:
+  - id: midi
+    type: midi_input
+  - id: imp
+    type: impulse
+    inputs:
+      - name: trigger
+        signal_type: event
+  - id: out
+    type: audio_output
+    inputs:
+      - name: left
+        signal_type: audio
+      - name: right
+        signal_type: audio
+connections:
+  - from: midi.events
+    to: imp.trigger
+  - from: imp.audio
+    to: out.left
+"#,
+    );
+    assert_eq!(left.len(), 256);
+    // Impulse should have non-zero sample at trigger position
+    assert!(left.iter().any(|&s| s.abs() > 0.0));
+}
+
+#[test]
+fn multiply_module_deterministically_combines_two_signals() {
+    // Use mixer to bridge voice-scoped oscillator and gain to global scope
+    let (left, _) = render_patch(
+        r#"
+metadata:
+  name: Multiply
+render:
+  sample_rate_hz: 48000
+  block_size_frames: 128
+  duration_frames: 128
+modules:
+  - id: osc
+    type: oscillator
+  - id: gain
+    type: gain
+  - id: mix_a
+    type: audio_mixer
+  - id: mix_b
+    type: audio_mixer
+  - id: mult
+    type: multiply
+    inputs:
+      - name: audio_in
+        signal_type: audio
+      - name: gain
+        signal_type: audio
+  - id: out
+    type: audio_output
+    inputs:
+      - name: left
+        signal_type: audio
+      - name: right
+        signal_type: audio
+connections:
+  - from: osc.audio
+    to: mix_a.inputs
+  - from: mix_a.mix
+    to: mult.audio_in
+  - from: gain.audio_out
+    to: mix_b.inputs
+  - from: mix_b.mix
+    to: mult.gain
+  - from: mult.audio_out
+    to: out.left
+"#,
+    );
+    assert_eq!(left.len(), 128);
+    let (left2, _) = render_patch(
+        r#"
+metadata:
+  name: Multiply
+render:
+  sample_rate_hz: 48000
+  block_size_frames: 128
+  duration_frames: 128
+modules:
+  - id: osc
+    type: oscillator
+  - id: gain
+    type: gain
+  - id: mix_a
+    type: audio_mixer
+  - id: mix_b
+    type: audio_mixer
+  - id: mult
+    type: multiply
+    inputs:
+      - name: audio_in
+        signal_type: audio
+      - name: gain
+        signal_type: audio
+  - id: out
+    type: audio_output
+    inputs:
+      - name: left
+        signal_type: audio
+      - name: right
+        signal_type: audio
+connections:
+  - from: osc.audio
+    to: mix_a.inputs
+  - from: mix_a.mix
+    to: mult.audio_in
+  - from: gain.audio_out
+    to: mix_b.inputs
+  - from: mix_b.mix
+    to: mult.gain
+  - from: mult.audio_out
+    to: out.left
+"#,
+    );
+    assert_eq!(left, left2, "multiply should be deterministic");
+}
+
+#[test]
+fn note_to_control_converts_midi_note_to_frequency() {
+    let (left, _) = render_patch(
+        r#"
+metadata:
+  name: NoteToControl
+render:
+  sample_rate_hz: 48000
+  block_size_frames: 128
+  duration_frames: 256
+modules:
+  - id: midi
+    type: midi_input
+  - id: ntc
+    type: note_to_control
+    inputs:
+      - name: events
+        signal_type: event
+  - id: out
+    type: audio_output
+    inputs:
+      - name: left
+        signal_type: audio
+      - name: right
+        signal_type: audio
+connections:
+  - from: midi.events
+    to: ntc.events
+"#,
+    );
+    assert_eq!(left.len(), 256);
 }
 
 #[test]
