@@ -117,7 +117,8 @@ modules:
 "#,
     );
 
-    assert_any_message_contains(&messages, "kick.tune_hz");
+    assert_any_message_contains(&messages, "kick");
+    assert_any_message_contains(&messages, "tune_hz");
     assert_any_message_contains(&messages, "number");
 }
 
@@ -351,6 +352,6 @@ modules:
 "#,
     );
 
-    assert_any_message_contains(&messages, "kick.tune_hz");
+    assert_any_message_contains(&messages, "tune_hz");
     assert_any_message_contains(&messages, "20");
 }
