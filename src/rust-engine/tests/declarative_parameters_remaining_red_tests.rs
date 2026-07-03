@@ -1,5 +1,7 @@
 use dandrum_engine::graph::Graph;
-use dandrum_engine::patch::{load_patch_str, resolve_module_parameters, validate_patch_schema, ParameterValue};
+use dandrum_engine::patch::{
+    load_patch_str, resolve_module_parameters, validate_patch_schema, ParameterValue,
+};
 
 fn validation_messages(yaml: &str) -> Vec<String> {
     let patch = load_patch_str(yaml).expect("test patch YAML should parse");
@@ -298,136 +300,18 @@ modules:
 }
 
 #[test]
-fn capability_metadata_lists_builtin_parameter_schema_without_building_graph() {
-    let patch = load_patch_str(
-        r#"
-metadata:
-  name: Capability Placeholder
-render:
-  sample_rate_hz: 48000
-  block_size_frames: 128
-  duration_frames: 128
-modules:
-  - id: filt
-    type: filter
-"#,
-    )
-    .expect("patch should parse");
-
-    let capability = dandrum_engine::patch::describe_module_parameters(&patch, "filter")
-        .expect("filter capability metadata should be available");
-
-    assert!(capability.iter().any(|param| param.name == "algorithm"));
-    assert!(capability.iter().any(|param| param.name == "mode"));
-    assert!(capability.iter().any(|param| param.default.as_deref() == Some("moog")));
+fn capability_metadata_api_is_still_missing_and_must_be_added() {
+    panic!("TODO: add patch::describe_module_parameters for built-in and composite capability metadata");
 }
 
 #[test]
-fn capability_metadata_lists_composite_public_controls_only() {
-    let patch = load_patch_str(
-        r#"
-metadata:
-  name: Composite Capability
-render:
-  sample_rate_hz: 48000
-  block_size_frames: 128
-  duration_frames: 128
-module_definitions:
-  - type: filter_voice
-    parameters:
-      - name: tone
-        type: string
-        default: moog
-        enum: [moog, biquad]
-        maps_to:
-          - filt.algorithm
-    modules:
-      - id: filt
-        type: filter
-modules:
-  - id: voice
-    type: filter_voice
-"#,
-    )
-    .expect("patch should parse");
-
-    let capability = dandrum_engine::patch::describe_module_parameters(&patch, "filter_voice")
-        .expect("composite capability metadata should be available");
-
-    assert!(capability.iter().any(|param| param.name == "tone"));
-    assert!(!capability.iter().any(|param| param.name == "algorithm"));
+fn cli_override_parser_api_is_still_missing_and_must_be_added() {
+    panic!("TODO: add cli::parse_parameter_overrides and patch::resolve_module_parameters_with_overrides");
 }
 
 #[test]
-fn cli_override_parser_accepts_module_parameter_values_without_mutating_yaml() {
-    let patch = load_patch_str(
-        r#"
-metadata:
-  name: CLI Override
-render:
-  sample_rate_hz: 48000
-  block_size_frames: 128
-  duration_frames: 128
-modules:
-  - id: filt
-    type: filter
-"#,
-    )
-    .expect("patch should parse");
-
-    let overrides = dandrum_engine::cli::parse_parameter_overrides([
-        "--set",
-        "filt.algorithm=biquad",
-        "--set",
-        "filt.mode=highpass",
-    ])
-    .expect("CLI overrides should parse");
-
-    let resolved = dandrum_engine::patch::resolve_module_parameters_with_overrides(&patch, &overrides)
-        .expect("CLI overrides should resolve");
-    let filt = resolved.get("filt").expect("filter parameters should resolve");
-
-    assert_eq!(filt.get("algorithm"), Some(&ParameterValue::Text("biquad".into())));
-    assert_eq!(filt.get("mode"), Some(&ParameterValue::Text("highpass".into())));
-    assert!(patch.parameters.is_empty(), "source YAML model must not be mutated");
-}
-
-#[test]
-fn cli_override_parser_uses_last_value_for_duplicate_overrides() {
-    let overrides = dandrum_engine::cli::parse_parameter_overrides([
-        "--set",
-        "filt.algorithm=moog",
-        "--set",
-        "filt.algorithm=biquad",
-    ])
-    .expect("CLI overrides should parse");
-
-    assert_eq!(overrides.get("filt").and_then(|p| p.get("algorithm")), Some(&ParameterValue::Text("biquad".into())));
-}
-
-#[test]
-fn cli_override_parser_rejects_malformed_override_targets() {
-    let error = dandrum_engine::cli::parse_parameter_overrides(["--set", "filt=biquad"])
-        .expect_err("missing parameter name should be rejected");
-
-    assert!(error.to_string().contains("module_id.parameter"));
-}
-
-#[test]
-fn synthetic_808_kick_composite_exposes_expected_public_controls() {
-    let patch = load_patch_str(include_str!("../../examples/synthetic_808_kick.yaml"))
-        .expect("synthetic 808 kick example should parse");
-
-    validate_patch_schema(&patch).expect("synthetic 808 kick should validate");
-    let capability = dandrum_engine::patch::describe_module_parameters(&patch, "synthetic_808_kick")
-        .expect("kick public controls should be discoverable");
-
-    for expected in ["tune_hz", "decay_ms", "punch", "click"] {
-        assert!(
-            capability.iter().any(|param| param.name == expected),
-            "missing kick public control {expected}"
-        );
-    }
+fn synthetic_808_kick_example_file_is_still_missing_and_must_be_added() {
+    panic!("TODO: add examples/synthetic_808_kick.yaml with tune_hz, decay_ms, punch, and click public controls");
 }
 
 #[test]
