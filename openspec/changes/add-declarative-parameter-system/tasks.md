@@ -35,30 +35,30 @@
 
 ## 4. YAML Module Parameters
 
-- [ ] 4.1 Add failing YAML parsing tests for module instance `parameters` values on built-in module instances.
-- [ ] 4.2 Extend patch YAML parsing to preserve module instance parameter values with source paths for diagnostics.
-- [ ] 4.3 Add failing validation tests proving unsupported fields and values that cannot be parsed deterministically are
+- [x] 4.1 Add failing YAML parsing tests for module instance `parameters` values on built-in module instances.
+- [x] 4.2 Extend patch YAML parsing to preserve module instance parameter values with source paths for diagnostics.
+- [x] 4.3 Add failing validation tests proving unsupported fields and values that cannot be parsed deterministically are
   rejected before graph preparation.
-- [ ] 4.4 Connect parsed module instance parameters to declaration-driven validation and default resolution.
+- [x] 4.4 Connect parsed module instance parameters to declaration-driven validation and default resolution.
 
 ## 5. Composite Public Parameters
 
-- [ ] 5.1 Add failing YAML parsing tests for composite public parameter declarations with scalar types, defaults,
+- [x] 5.1 Add failing YAML parsing tests for composite public parameter declarations with scalar types, defaults,
   constraints, units, descriptions, and required flags.
-- [ ] 5.2 Extend composite definition parsing to preserve public parameter declarations and instance-provided composite
+- [x] 5.2 Extend composite definition parsing to preserve public parameter declarations and instance-provided composite
   parameter values.
-- [ ] 5.3 Add failing validation tests for invalid composite parameter declarations, duplicate parameter names, invalid
+- [x] 5.3 Add failing validation tests for invalid composite parameter declarations, duplicate parameter names, invalid
   defaults, and inconsistent constraints.
-- [ ] 5.4 Implement composite parameter declaration validation using the shared parameter declaration model.
+- [x] 5.4 Implement composite parameter declaration validation using the shared parameter declaration model.
 - [ ] 5.5 Add failing tests proving composite parameters expose musical controls without automatically exposing every
   internal module parameter.
 
 ## 6. Composite Binding Resolution
 
-- [ ] 6.1 Add failing Rust tests for resolving direct `${parameter}` references from composite instance values to
+- [x] 6.1 Add failing Rust tests for resolving direct `${parameter}` references from composite instance values to
   internal module parameters.
 - [ ] 6.2 Add failing Rust tests for resolving literal number, string, and boolean internal module parameter bindings.
-- [ ] 6.3 Implement minimal binding parsing for literals and direct `${parameter}` references only.
+- [x] 6.3 Implement minimal binding parsing for literals and direct `${parameter}` references only.
 - [ ] 6.4 Add failing validation tests for unknown composite references, destination parameter type mismatches, and
   unsupported expression syntax.
 - [ ] 6.5 Implement deterministic composite binding resolution before graph preparation and ensure nested composite
@@ -66,13 +66,13 @@
 
 ## 7. Preset-Applied Parameter Values
 
-- [ ] 7.1 Add failing tests proving preset-applied or patch-instance parameter values override composite defaults before
+- [x] 7.1 Add failing tests proving preset-applied or patch-instance parameter values override composite defaults before
   graph preparation.
-- [ ] 7.2 Implement preset-applied parameter value handling as an input layer over declared module or composite
+- [x] 7.2 Implement preset-applied parameter value handling as an input layer over declared module or composite
   parameters.
-- [ ] 7.3 Add failing tests proving preset-applied values cannot target undeclared parameters or bypass module/composite
+- [x] 7.3 Add failing tests proving preset-applied values cannot target undeclared parameters or bypass module/composite
   parameter validation.
-- [ ] 7.4 Verify compatibility with the `add-instrument-presets` public preset-surface model without making internal
+- [x] 7.4 Verify compatibility with the `add-instrument-presets` public preset-surface model without making internal
   module parameters automatically presettable.
 
 ## 8. Capability Discovery And Authoring Metadata
@@ -116,8 +116,8 @@
   parameters using only literals and direct `${parameter}` references.
 - [ ] 11.3 Add an example YAML patch or preset that tunes the kick through declarative parameter values.
 - [ ] 11.4 Add an end-to-end render test proving valid YAML tuning renders without Rust DSP code changes.
-- [ ] 11.5 Add validation tests proving invalid kick values produce structured diagnostics before rendering.
-- [ ] 11.6 Add a deterministic render test proving valid kick parameter changes affect output deterministically.
+- [x] 11.5 Add validation tests proving invalid kick values produce structured diagnostics before rendering.
+- [x] 11.6 Add a deterministic render test proving valid kick parameter changes affect output deterministically.
 - [ ] 11.7 Add a capability metadata test proving the kick composite's public controls are discoverable for future
   LLM-assisted authoring.
 

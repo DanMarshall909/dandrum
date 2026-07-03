@@ -177,8 +177,8 @@ where applicable, message, and suggested fix where safe.
 
 ### Requirement: Deterministic resolved graph preparation
 
-Parameter declaration, validation, default resolution, composite binding, CLI override application, and graph
-preparation SHALL be deterministic for equivalent inputs.
+The engine SHALL perform parameter declaration, validation, default resolution, composite binding, CLI override
+application, and graph preparation deterministically for equivalent inputs.
 
 #### Scenario: Same resolved patch renders the same output
 
