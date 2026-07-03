@@ -89,7 +89,7 @@ pub(crate) fn prepare_instrument_file(
     let patch_doc = load_patch_document(path)?;
     validate_patch_document(&patch_doc)?;
     let resolved_parameters = resolve_patch_parameters(&patch_doc)?;
-    let graph = build_validated_graph(&patch_doc)?;
+    let graph = build_validated_graph_with_resolved_parameters(&patch_doc, &resolved_parameters)?;
     let base_dir = path.parent().unwrap_or_else(|| Path::new("."));
     let sampler_assets = prepare_assets(&patch_doc, base_dir)?;
     let compiled_patch = compile_patch(&graph, &patch_doc)?;
@@ -121,9 +121,34 @@ pub(crate) fn resolve_patch_parameters(
 }
 
 pub(crate) fn build_validated_graph(patch_doc: &PatchDocument) -> Result<Graph, PreparationError> {
-    let graph = Graph::from_patch_declarations(patch_doc);
+    let resolved_parameters = resolve_patch_parameters(patch_doc)?;
+    build_validated_graph_with_resolved_parameters(patch_doc, &resolved_parameters)
+}
+
+fn build_validated_graph_with_resolved_parameters(
+    patch_doc: &PatchDocument,
+    resolved_parameters: &BTreeMap<String, BTreeMap<String, ParameterValue>>,
+) -> Result<Graph, PreparationError> {
+    let resolved_patch = patch_document_with_resolved_parameters(patch_doc, resolved_parameters);
+    let graph = Graph::from_patch_declarations(&resolved_patch);
     graph.validate().map_err(PreparationError::Graph)?;
     Ok(graph)
+}
+
+fn patch_document_with_resolved_parameters(
+    patch_doc: &PatchDocument,
+    resolved_parameters: &BTreeMap<String, BTreeMap<String, ParameterValue>>,
+) -> PatchDocument {
+    let mut resolved_patch = patch_doc.clone();
+
+    for module in &mut resolved_patch.modules {
+        if let Some(parameters) = resolved_parameters.get(&module.id) {
+            module.parameters = parameters.clone();
+        }
+    }
+
+    resolved_patch.parameters.clear();
+    resolved_patch
 }
 
 pub(crate) fn prepare_assets(
@@ -210,8 +235,8 @@ modules:
         patch::validate_patch_schema(&patch_doc).expect("patch schema should validate");
         let resolved_parameters =
             patch::resolve_module_parameters(&patch_doc).expect("parameters should resolve");
-        let graph = Graph::from_patch_declarations(&patch_doc);
-        graph.validate().expect("graph should validate");
+        let graph = build_validated_graph_with_resolved_parameters(&patch_doc, &resolved_parameters)
+            .expect("graph should validate");
         let compiled_patch =
             compiled_patch::compile(&graph, &patch_doc.render).expect("graph should compile");
 
@@ -281,7 +306,52 @@ modules:
                 .and_then(|params| params.get("algorithm")),
             Some(&ParameterValue::Text("moog".to_string()))
         );
-        assert_eq!(graph.modules().len(), 1);
+        assert_eq!(
+            graph
+                .modules()
+                .iter()
+                .find(|module| module.id().as_str() == "filt")
+                .and_then(|module| module.params().get("algorithm")),
+            Some(&"moog".to_string())
+        );
+    }
+
+    #[test]
+    fn preparation_pipeline_passes_resolved_parameters_into_compiled_nodes() {
+        let patch_doc = patch::load_patch_str(
+            r#"
+metadata:
+  name: Prepared Compiled Params
+render:
+  sample_rate_hz: 48000
+  block_size_frames: 64
+  duration_frames: 128
+parameters:
+  filt:
+    mode: highpass
+modules:
+  - id: filt
+    type: filter
+    parameters:
+      algorithm: biquad
+"#,
+        )
+        .expect("patch should parse");
+
+        validate_patch_document(&patch_doc).expect("schema should validate");
+        let resolved = resolve_patch_parameters(&patch_doc).expect("parameters should resolve");
+        let graph = build_validated_graph_with_resolved_parameters(&patch_doc, &resolved)
+            .expect("graph should validate");
+        let compiled = compile_patch(&graph, &patch_doc).expect("graph should compile");
+        let filt = compiled
+            .nodes()
+            .iter()
+            .find(|node| node.id.as_str() == "filt")
+            .expect("filter node should compile");
+
+        assert_eq!(filt.parameters.get("algorithm"), Some(&"biquad".to_string()));
+        assert_eq!(filt.parameters.get("mode"), Some(&"highpass".to_string()));
+        assert_eq!(filt.parameters.get("comb_type"), Some(&"feedback".to_string()));
     }
 
     #[test]
