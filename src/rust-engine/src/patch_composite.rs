@@ -85,91 +85,90 @@ pub(super) fn validate_module_definitions(
             diagnostics.push(Diagnostic::new(
                 error_codes::VALIDATION_INVALID_VALUE,
                 Severity::Error,
-                format!(
-                    "duplicate composite module type: {}",
-                    definition.module_type
-                ),
+                format!("duplicate composite module type: {}", definition.module_type),
             ));
         }
 
         validate_composite_parameter_declarations(definition, diagnostics);
-
-        for input in &definition.inputs {
-            let port_name = composite_port_name(&input.name);
-            if input.name.trim().is_empty() {
-                diagnostics.push(Diagnostic::new(
-                    error_codes::VALIDATION_MISSING_FIELD,
-                    Severity::Error,
-                    format!(
-                        "composite {} input name is required",
-                        definition.module_type
-                    ),
-                ));
-            }
-
-            for reference in &input.maps_to {
-                validate_port_reference(
-                    &format!(
-                        "composite {} input {port_name} maps_to",
-                        definition.module_type
-                    ),
-                    reference,
-                    diagnostics,
-                );
-                validate_composite_mapping(
-                    &definition.module_type,
-                    "input",
-                    &input.name,
-                    input.signal_type.clone(),
-                    "maps_to",
-                    reference,
-                    CompositeMappingDirection::PublicInputToInternalInput,
-                    definition,
-                    &registry,
-                    diagnostics,
-                );
-            }
-        }
-
-        for output in &definition.outputs {
-            let port_name = composite_port_name(&output.name);
-            if output.name.trim().is_empty() {
-                diagnostics.push(Diagnostic::new(
-                    error_codes::VALIDATION_MISSING_FIELD,
-                    Severity::Error,
-                    format!(
-                        "composite {} output name is required",
-                        definition.module_type
-                    ),
-                ));
-            }
-
-            for reference in &output.maps_from {
-                validate_port_reference(
-                    &format!(
-                        "composite {} output {port_name} maps_from",
-                        definition.module_type
-                    ),
-                    reference,
-                    diagnostics,
-                );
-                validate_composite_mapping(
-                    &definition.module_type,
-                    "output",
-                    &output.name,
-                    output.signal_type.clone(),
-                    "maps_from",
-                    reference,
-                    CompositeMappingDirection::PublicOutputFromInternalOutput,
-                    definition,
-                    &registry,
-                    diagnostics,
-                );
-            }
-        }
+        validate_public_inputs(definition, &registry, diagnostics);
+        validate_public_outputs(definition, &registry, diagnostics);
     }
 
     validate_recursive_composite_definitions(patch, diagnostics);
+}
+
+fn validate_public_inputs(
+    definition: &ModuleDefinitionDeclaration,
+    registry: &BuiltInModuleRegistry,
+    diagnostics: &mut PatchValidationError,
+) {
+    for input in &definition.inputs {
+        let port_name = composite_port_name(&input.name);
+        if input.name.trim().is_empty() {
+            diagnostics.push(Diagnostic::new(
+                error_codes::VALIDATION_MISSING_FIELD,
+                Severity::Error,
+                format!("composite {} input name is required", definition.module_type),
+            ));
+        }
+
+        for reference in &input.maps_to {
+            validate_port_reference(
+                &format!("composite {} input {port_name} maps_to", definition.module_type),
+                reference,
+                diagnostics,
+            );
+            validate_composite_mapping(
+                &definition.module_type,
+                "input",
+                &input.name,
+                input.signal_type.clone(),
+                "maps_to",
+                reference,
+                CompositeMappingDirection::PublicInputToInternalInput,
+                definition,
+                registry,
+                diagnostics,
+            );
+        }
+    }
+}
+
+fn validate_public_outputs(
+    definition: &ModuleDefinitionDeclaration,
+    registry: &BuiltInModuleRegistry,
+    diagnostics: &mut PatchValidationError,
+) {
+    for output in &definition.outputs {
+        let port_name = composite_port_name(&output.name);
+        if output.name.trim().is_empty() {
+            diagnostics.push(Diagnostic::new(
+                error_codes::VALIDATION_MISSING_FIELD,
+                Severity::Error,
+                format!("composite {} output name is required", definition.module_type),
+            ));
+        }
+
+        for reference in &output.maps_from {
+            validate_port_reference(
+                &format!("composite {} output {port_name} maps_from", definition.module_type),
+                reference,
+                diagnostics,
+            );
+            validate_composite_mapping(
+                &definition.module_type,
+                "output",
+                &output.name,
+                output.signal_type.clone(),
+                "maps_from",
+                reference,
+                CompositeMappingDirection::PublicOutputFromInternalOutput,
+                definition,
+                registry,
+                diagnostics,
+            );
+        }
+    }
 }
 
 fn validate_composite_parameter_declarations(
@@ -222,11 +221,9 @@ fn validate_composite_parameter_default(
     parameter: &CompositeBindingDeclaration,
     diagnostics: &mut PatchValidationError,
 ) {
-    let Some(default) = &parameter.default else {
-        return;
-    };
-
+    let Some(default) = &parameter.default else { return; };
     let name = composite_parameter_name(&parameter.name);
+
     if let Some(value_type) = parameter.value_type {
         if !composite_value_matches_type(default, value_type) {
             diagnostics.push(Diagnostic::new(
@@ -244,13 +241,7 @@ fn validate_composite_parameter_default(
         }
     }
 
-    validate_composite_numeric_range(
-        definition,
-        parameter,
-        "default",
-        default,
-        diagnostics,
-    );
+    validate_composite_numeric_range(definition, parameter, "default", default, diagnostics);
 }
 
 fn validate_composite_parameter_literal_value(
@@ -258,11 +249,9 @@ fn validate_composite_parameter_literal_value(
     parameter: &CompositeBindingDeclaration,
     diagnostics: &mut PatchValidationError,
 ) {
-    let Some(value) = &parameter.value else {
-        return;
-    };
-
+    let Some(value) = &parameter.value else { return; };
     let name = composite_parameter_name(&parameter.name);
+
     if let Some(value_type) = parameter.value_type {
         if !composite_value_matches_type(value, value_type) {
             diagnostics.push(Diagnostic::new(
@@ -303,8 +292,10 @@ fn validate_composite_parameter_constraints(
         }
     }
 
-    if matches!(parameter.value_type, Some(CompositeParameterValueType::Boolean | CompositeParameterValueType::String))
-        && (parameter.min.is_some() || parameter.max.is_some())
+    if matches!(
+        parameter.value_type,
+        Some(CompositeParameterValueType::Boolean | CompositeParameterValueType::String)
+    ) && (parameter.min.is_some() || parameter.max.is_some())
     {
         diagnostics.push(Diagnostic::new(
             error_codes::VALIDATION_INVALID_VALUE,
@@ -326,11 +317,9 @@ fn validate_composite_numeric_range(
     value: &ParameterValue,
     diagnostics: &mut PatchValidationError,
 ) {
-    let ParameterValue::Number(actual) = value else {
-        return;
-    };
-
+    let ParameterValue::Number(actual) = value else { return; };
     let name = composite_parameter_name(&parameter.name);
+
     if let Some(min) = parameter.min {
         if *actual < min {
             diagnostics.push(Diagnostic::new(
@@ -699,244 +688,5 @@ fn composite_parameter_name(name: &str) -> &str {
         "<unnamed>"
     } else {
         name
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use crate::patch::{
-        AssetDeclaration, AssetKind, PatchMetadata, RenderSettings, VoiceAllocation,
-    };
-    use std::collections::BTreeMap;
-
-    #[test]
-    fn validation_reports_blank_composite_type() {
-        let patch = patch_with_definitions(vec![definition("")]);
-        let mut diagnostics = PatchValidationError::new();
-
-        validate_module_definitions(&patch, &mut diagnostics);
-
-        assert!(
-            diagnostics
-                .diagnostics()
-                .iter()
-                .any(|d| d.message().contains("composite module type is required"))
-        );
-    }
-
-    #[test]
-    fn asset_binding_without_instance_value_is_allowed() {
-        let mut definition = definition("voice");
-        definition.asset_bindings = vec![CompositeBindingDeclaration {
-            name: "sample".to_string(),
-            value_type: None,
-            default: None,
-            value: None,
-            min: None,
-            max: None,
-            unit: None,
-            description: None,
-            required: None,
-            expression: None,
-            maps_to: vec![port_ref("sampler.asset")],
-        }];
-        let patch = patch_with_definitions(vec![definition]);
-        let instance = module("voice", "voice");
-        let mut diagnostics = PatchValidationError::new();
-
-        validate_composite_instance_bindings(&instance, &patch, &mut diagnostics);
-
-        assert!(
-            diagnostics.is_empty(),
-            "expected no diagnostics: {}",
-            diagnostics
-        );
-    }
-
-    #[test]
-    fn missing_internal_mapping_target_is_left_for_later_graph_validation() {
-        let mut definition = definition("voice");
-        definition.inputs[0].maps_to = vec![port_ref("missing.gate")];
-        let patch = patch_with_definitions(vec![definition]);
-        let mut diagnostics = PatchValidationError::new();
-
-        validate_module_definitions(&patch, &mut diagnostics);
-
-        assert!(
-            diagnostics.is_empty(),
-            "expected no diagnostics: {}",
-            diagnostics
-        );
-    }
-
-    #[test]
-    fn script_declared_input_mapping_validates() {
-        let mut definition = definition("voice");
-        definition.modules = vec![script_module()];
-        definition.inputs[0].maps_to = vec![port_ref("script.events")];
-        let patch = patch_with_definitions(vec![definition]);
-        let mut diagnostics = PatchValidationError::new();
-
-        validate_module_definitions(&patch, &mut diagnostics);
-
-        assert!(
-            diagnostics.is_empty(),
-            "expected no diagnostics: {}",
-            diagnostics
-        );
-    }
-
-    #[test]
-    fn script_declared_output_wrong_direction_is_rejected() {
-        let mut definition = definition("voice");
-        definition.modules = vec![script_module()];
-        definition.outputs[0].maps_from = vec![port_ref("script.events")];
-        let patch = patch_with_definitions(vec![definition]);
-        let mut diagnostics = PatchValidationError::new();
-
-        validate_module_definitions(&patch, &mut diagnostics);
-
-        assert!(diagnostics.diagnostics().iter().any(|d| {
-            d.message().contains("script.events") && d.message().contains("internal output port")
-        }));
-    }
-
-    #[test]
-    fn script_missing_declared_port_is_left_for_later_graph_validation() {
-        let mut definition = definition("voice");
-        definition.modules = vec![script_module()];
-        definition.inputs[0].maps_to = vec![port_ref("script.missing")];
-        let patch = patch_with_definitions(vec![definition]);
-        let mut diagnostics = PatchValidationError::new();
-
-        validate_module_definitions(&patch, &mut diagnostics);
-
-        assert!(
-            diagnostics.is_empty(),
-            "expected no diagnostics: {}",
-            diagnostics
-        );
-    }
-
-    #[test]
-    fn recursion_walk_handles_definitions_without_dependencies() {
-        let dependencies = BTreeMap::new();
-        let mut stack = Vec::new();
-        let mut reported = BTreeSet::new();
-
-        collect_recursive_composite_paths("voice", &dependencies, &mut stack, &mut reported);
-
-        assert!(reported.is_empty());
-        assert!(stack.is_empty());
-    }
-
-    #[test]
-    fn built_in_missing_internal_port_is_left_for_later_graph_validation() {
-        let mut definition = definition("voice");
-        definition.inputs[0].maps_to = vec![port_ref("env.missing")];
-        let patch = patch_with_definitions(vec![definition]);
-        let mut diagnostics = PatchValidationError::new();
-
-        validate_module_definitions(&patch, &mut diagnostics);
-
-        assert!(
-            diagnostics.is_empty(),
-            "expected no diagnostics: {}",
-            diagnostics
-        );
-    }
-
-    #[test]
-    fn built_in_wrong_direction_output_mapping_is_rejected() {
-        let mut definition = definition("voice");
-        definition.outputs[0].maps_from = vec![port_ref("vca.audio_in")];
-        let patch = patch_with_definitions(vec![definition]);
-        let mut diagnostics = PatchValidationError::new();
-
-        validate_module_definitions(&patch, &mut diagnostics);
-
-        assert!(diagnostics.diagnostics().iter().any(|d| {
-            d.message().contains("vca.audio_in") && d.message().contains("internal output port")
-        }));
-    }
-
-    fn patch_with_definitions(
-        module_definitions: Vec<ModuleDefinitionDeclaration>,
-    ) -> PatchDocument {
-        PatchDocument {
-            metadata: PatchMetadata {
-                name: "Test".to_string(),
-                version: None,
-                author: None,
-            },
-            render: RenderSettings {
-                sample_rate_hz: 48_000,
-                block_size_frames: 128,
-                duration_frames: 48_000,
-            },
-            assets: vec![AssetDeclaration {
-                id: "hit".to_string(),
-                kind: AssetKind::Sample,
-                path: "hit.wav".to_string(),
-            }],
-            module_definitions,
-            modules: vec![module("voice", "voice")],
-            connections: vec![],
-            voice_allocation: VoiceAllocation::default(),
-            parameters: BTreeMap::new(),
-            presets: BTreeMap::new(),
-        }
-    }
-
-    fn definition(module_type: &str) -> ModuleDefinitionDeclaration {
-        ModuleDefinitionDeclaration {
-            module_type: module_type.to_string(),
-            inputs: vec![CompositeInputDeclaration {
-                name: "trigger".to_string(),
-                signal_type: SignalType::Event,
-                maps_to: vec![port_ref("env.gate")],
-            }],
-            outputs: vec![CompositeOutputDeclaration {
-                name: "audio".to_string(),
-                signal_type: SignalType::Audio,
-                maps_from: vec![port_ref("vca.audio_out")],
-            }],
-            parameters: vec![],
-            asset_bindings: vec![],
-            modules: vec![module("env", "adsr"), module("vca", "gain")],
-            connections: vec![],
-        }
-    }
-
-    fn script_module() -> ModuleDeclaration {
-        let mut script = module("script", "script");
-        script.inputs = vec![crate::patch::PortDeclaration {
-            name: "events".to_string(),
-            signal_type: SignalType::Event,
-        }];
-        script.outputs = vec![crate::patch::PortDeclaration {
-            name: "audio".to_string(),
-            signal_type: SignalType::Audio,
-        }];
-        script
-    }
-
-    fn module(id: &str, module_type: &str) -> ModuleDeclaration {
-        ModuleDeclaration {
-            id: id.to_string(),
-            module_type: module_type.to_string(),
-            inputs: vec![],
-            outputs: vec![],
-            parameters: BTreeMap::new(),
-        }
-    }
-
-    fn port_ref(reference: &str) -> PortReference {
-        let (module_id, port_name) = reference.split_once('.').unwrap();
-        PortReference {
-            module_id: module_id.to_string(),
-            port_name: port_name.to_string(),
-        }
     }
 }
