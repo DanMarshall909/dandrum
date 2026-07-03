@@ -233,6 +233,7 @@ mod tests {
             voice_allocation: VoiceAllocation::default(),
             parameters: BTreeMap::new(),
             presets: BTreeMap::new(),
+            selected_preset: None,
         }
     }
 
