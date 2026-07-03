@@ -42,11 +42,29 @@ pub struct CompositeOutputDeclaration {
     pub maps_from: Vec<PortReference>,
 }
 
-#[derive(Clone, Debug, Deserialize, PartialEq, Eq)]
+#[derive(Clone, Debug, Deserialize, PartialEq)]
 pub struct CompositeBindingDeclaration {
     pub name: String,
+    #[serde(rename = "type")]
+    pub value_type: Option<CompositeParameterValueType>,
+    pub default: Option<ParameterValue>,
+    pub value: Option<ParameterValue>,
+    pub min: Option<f64>,
+    pub max: Option<f64>,
+    pub unit: Option<String>,
+    pub description: Option<String>,
+    pub required: Option<bool>,
+    pub expression: Option<String>,
     #[serde(default)]
     pub maps_to: Vec<PortReference>,
+}
+
+#[derive(Clone, Copy, Debug, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "snake_case")]
+pub enum CompositeParameterValueType {
+    Boolean,
+    Number,
+    String,
 }
 
 pub(super) fn validate_module_definitions(
@@ -73,6 +91,8 @@ pub(super) fn validate_module_definitions(
                 ),
             ));
         }
+
+        validate_composite_parameter_declarations(definition, diagnostics);
 
         for input in &definition.inputs {
             let port_name = composite_port_name(&input.name);
@@ -150,6 +170,217 @@ pub(super) fn validate_module_definitions(
     }
 
     validate_recursive_composite_definitions(patch, diagnostics);
+}
+
+fn validate_composite_parameter_declarations(
+    definition: &ModuleDefinitionDeclaration,
+    diagnostics: &mut PatchValidationError,
+) {
+    let mut names = BTreeSet::new();
+
+    for parameter in &definition.parameters {
+        let name = composite_parameter_name(&parameter.name);
+        if parameter.name.trim().is_empty() {
+            diagnostics.push(Diagnostic::new(
+                error_codes::VALIDATION_MISSING_FIELD,
+                Severity::Error,
+                format!("composite {} parameter name is required", definition.module_type),
+            ));
+            continue;
+        }
+
+        if !names.insert(parameter.name.as_str()) {
+            diagnostics.push(Diagnostic::new(
+                error_codes::VALIDATION_INVALID_VALUE,
+                Severity::Error,
+                format!(
+                    "composite {} duplicate parameter name {}",
+                    definition.module_type, name
+                ),
+            ));
+        }
+
+        if parameter.expression.is_some() {
+            diagnostics.push(Diagnostic::new(
+                error_codes::VALIDATION_INVALID_VALUE,
+                Severity::Error,
+                format!(
+                    "composite {} parameter {} uses unsupported expression syntax",
+                    definition.module_type, name
+                ),
+            ));
+        }
+
+        validate_composite_parameter_default(definition, parameter, diagnostics);
+        validate_composite_parameter_literal_value(definition, parameter, diagnostics);
+        validate_composite_parameter_constraints(definition, parameter, diagnostics);
+    }
+}
+
+fn validate_composite_parameter_default(
+    definition: &ModuleDefinitionDeclaration,
+    parameter: &CompositeBindingDeclaration,
+    diagnostics: &mut PatchValidationError,
+) {
+    let Some(default) = &parameter.default else {
+        return;
+    };
+
+    let name = composite_parameter_name(&parameter.name);
+    if let Some(value_type) = parameter.value_type {
+        if !composite_value_matches_type(default, value_type) {
+            diagnostics.push(Diagnostic::new(
+                error_codes::VALIDATION_TYPE_MISMATCH,
+                Severity::Error,
+                format!(
+                    "composite {} parameter {} default has wrong type: expected {}, got {}",
+                    definition.module_type,
+                    name,
+                    composite_type_name(value_type),
+                    parameter_value_type_name(default)
+                ),
+            ));
+            return;
+        }
+    }
+
+    validate_composite_numeric_range(
+        definition,
+        parameter,
+        "default",
+        default,
+        diagnostics,
+    );
+}
+
+fn validate_composite_parameter_literal_value(
+    definition: &ModuleDefinitionDeclaration,
+    parameter: &CompositeBindingDeclaration,
+    diagnostics: &mut PatchValidationError,
+) {
+    let Some(value) = &parameter.value else {
+        return;
+    };
+
+    let name = composite_parameter_name(&parameter.name);
+    if let Some(value_type) = parameter.value_type {
+        if !composite_value_matches_type(value, value_type) {
+            diagnostics.push(Diagnostic::new(
+                error_codes::VALIDATION_TYPE_MISMATCH,
+                Severity::Error,
+                format!(
+                    "composite {} parameter {} literal value has wrong type: expected {}, got {}",
+                    definition.module_type,
+                    name,
+                    composite_type_name(value_type),
+                    parameter_value_type_name(value)
+                ),
+            ));
+            return;
+        }
+    }
+
+    validate_composite_numeric_range(definition, parameter, "value", value, diagnostics);
+}
+
+fn validate_composite_parameter_constraints(
+    definition: &ModuleDefinitionDeclaration,
+    parameter: &CompositeBindingDeclaration,
+    diagnostics: &mut PatchValidationError,
+) {
+    let name = composite_parameter_name(&parameter.name);
+
+    if let (Some(min), Some(max)) = (parameter.min, parameter.max) {
+        if min > max {
+            diagnostics.push(Diagnostic::new(
+                error_codes::VALIDATION_INVALID_VALUE,
+                Severity::Error,
+                format!(
+                    "composite {} parameter {} has invalid range: min {} is greater than max {}",
+                    definition.module_type, name, min, max
+                ),
+            ));
+        }
+    }
+
+    if matches!(parameter.value_type, Some(CompositeParameterValueType::Boolean | CompositeParameterValueType::String))
+        && (parameter.min.is_some() || parameter.max.is_some())
+    {
+        diagnostics.push(Diagnostic::new(
+            error_codes::VALIDATION_INVALID_VALUE,
+            Severity::Error,
+            format!(
+                "composite {} parameter {} has numeric constraints on a {} parameter",
+                definition.module_type,
+                name,
+                composite_type_name(parameter.value_type.expect("checked above"))
+            ),
+        ));
+    }
+}
+
+fn validate_composite_numeric_range(
+    definition: &ModuleDefinitionDeclaration,
+    parameter: &CompositeBindingDeclaration,
+    value_label: &str,
+    value: &ParameterValue,
+    diagnostics: &mut PatchValidationError,
+) {
+    let ParameterValue::Number(actual) = value else {
+        return;
+    };
+
+    let name = composite_parameter_name(&parameter.name);
+    if let Some(min) = parameter.min {
+        if *actual < min {
+            diagnostics.push(Diagnostic::new(
+                error_codes::VALIDATION_INVALID_VALUE,
+                Severity::Error,
+                format!(
+                    "composite {} parameter {} {value_label} is below minimum {}: {}",
+                    definition.module_type, name, min, actual
+                ),
+            ));
+        }
+    }
+
+    if let Some(max) = parameter.max {
+        if *actual > max {
+            diagnostics.push(Diagnostic::new(
+                error_codes::VALIDATION_INVALID_VALUE,
+                Severity::Error,
+                format!(
+                    "composite {} parameter {} {value_label} is above maximum {}: {}",
+                    definition.module_type, name, max, actual
+                ),
+            ));
+        }
+    }
+}
+
+fn composite_value_matches_type(value: &ParameterValue, value_type: CompositeParameterValueType) -> bool {
+    matches!(
+        (value, value_type),
+        (ParameterValue::Boolean(_), CompositeParameterValueType::Boolean)
+            | (ParameterValue::Number(_), CompositeParameterValueType::Number)
+            | (ParameterValue::Text(_), CompositeParameterValueType::String)
+    )
+}
+
+fn composite_type_name(value_type: CompositeParameterValueType) -> &'static str {
+    match value_type {
+        CompositeParameterValueType::Boolean => "boolean",
+        CompositeParameterValueType::Number => "number",
+        CompositeParameterValueType::String => "string",
+    }
+}
+
+fn parameter_value_type_name(value: &ParameterValue) -> &'static str {
+    match value {
+        ParameterValue::Boolean(_) => "boolean",
+        ParameterValue::Number(_) => "number",
+        ParameterValue::Text(_) => "string",
+    }
 }
 
 fn validate_recursive_composite_definitions(
@@ -248,6 +479,32 @@ pub(super) fn validate_composite_instance_bindings(
                 ),
             ));
         }
+    }
+
+    for parameter in &definition.parameters {
+        let Some(value) = module.parameters.get(&parameter.name) else {
+            continue;
+        };
+
+        if let Some(value_type) = parameter.value_type {
+            if !composite_value_matches_type(value, value_type) {
+                diagnostics.push(Diagnostic::new(
+                    error_codes::VALIDATION_TYPE_MISMATCH,
+                    Severity::Error,
+                    format!(
+                        "composite {} instance {} parameter {} has wrong type: expected {}, got {}",
+                        definition.module_type,
+                        module.id,
+                        parameter.name,
+                        composite_type_name(value_type),
+                        parameter_value_type_name(value)
+                    ),
+                ));
+                continue;
+            }
+        }
+
+        validate_composite_numeric_range(definition, parameter, "value", value, diagnostics);
     }
 
     for binding in &definition.asset_bindings {
@@ -437,6 +694,14 @@ fn composite_port_name(name: &str) -> &str {
     }
 }
 
+fn composite_parameter_name(name: &str) -> &str {
+    if name.trim().is_empty() {
+        "<unnamed>"
+    } else {
+        name
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -465,6 +730,15 @@ mod tests {
         let mut definition = definition("voice");
         definition.asset_bindings = vec![CompositeBindingDeclaration {
             name: "sample".to_string(),
+            value_type: None,
+            default: None,
+            value: None,
+            min: None,
+            max: None,
+            unit: None,
+            description: None,
+            required: None,
+            expression: None,
             maps_to: vec![port_ref("sampler.asset")],
         }];
         let patch = patch_with_definitions(vec![definition]);
