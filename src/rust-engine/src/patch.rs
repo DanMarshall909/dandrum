@@ -144,9 +144,17 @@ pub enum VoiceStealingPolicy {
 
 #[derive(Debug)]
 pub enum PatchLoadError {
-    UnsupportedFormat { path: PathBuf },
-    ReadFailed { path: PathBuf, message: String },
-    ParseFailed { path: Option<PathBuf>, message: String },
+    UnsupportedFormat {
+        path: PathBuf,
+    },
+    ReadFailed {
+        path: PathBuf,
+        message: String,
+    },
+    ParseFailed {
+        path: Option<PathBuf>,
+        message: String,
+    },
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -372,7 +380,11 @@ pub fn validate_patch_schema(patch: &PatchDocument) -> Result<(), PatchValidatio
         validate_port_reference("connection.to", &connection.to, &mut result);
     }
 
-    if result.is_empty() { Ok(()) } else { Err(result) }
+    if result.is_empty() {
+        Ok(())
+    } else {
+        Err(result)
+    }
 }
 
 fn validate_declared_parameters_for_module(
@@ -470,9 +482,7 @@ fn validate_parameter_value(
                 Diagnostic::new(
                     error_codes::VALIDATION_INVALID_VALUE,
                     Severity::Error,
-                    format!(
-                        "{source_label} {module_id}.{name} is below minimum {min}: {actual}"
-                    ),
+                    format!("{source_label} {module_id}.{name} is below minimum {min}: {actual}"),
                 )
                 .with_module_id(module_id)
                 .with_expected(format!(">= {min}"))
@@ -484,9 +494,7 @@ fn validate_parameter_value(
                 Diagnostic::new(
                     error_codes::VALIDATION_INVALID_VALUE,
                     Severity::Error,
-                    format!(
-                        "{source_label} {module_id}.{name} is above maximum {max}: {actual}"
-                    ),
+                    format!("{source_label} {module_id}.{name} is above maximum {max}: {actual}"),
                 )
                 .with_module_id(module_id)
                 .with_expected(format!("<= {max}"))
@@ -548,7 +556,10 @@ fn validate_sampler_asset_reference(
             Diagnostic::new(
                 error_codes::VALIDATION_MISSING_FIELD,
                 Severity::Error,
-                format!("sampler module {} missing required asset parameter", module.id),
+                format!(
+                    "sampler module {} missing required asset parameter",
+                    module.id
+                ),
             )
             .with_module_id(&module.id),
         );
@@ -781,10 +792,18 @@ impl fmt::Display for PatchLoadError {
                 write!(formatter, "unsupported patch format: {}", path.display())
             }
             Self::ReadFailed { path, message } => {
-                write!(formatter, "failed to read patch {}: {message}", path.display())
+                write!(
+                    formatter,
+                    "failed to read patch {}: {message}",
+                    path.display()
+                )
             }
             Self::ParseFailed { path, message } => match path {
-                Some(path) => write!(formatter, "failed to parse patch {}: {message}", path.display()),
+                Some(path) => write!(
+                    formatter,
+                    "failed to parse patch {}: {message}",
+                    path.display()
+                ),
                 None => write!(formatter, "failed to parse patch: {message}"),
             },
         }

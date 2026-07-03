@@ -586,10 +586,7 @@ pub(super) fn process_spectral_processor(
     audio_output(builtin_ports::AUDIO_OUT, audio_out)
 }
 
-pub(super) fn process_noise(
-    state: &mut PerModuleState,
-    frames: usize,
-) -> ModuleOutputs {
+pub(super) fn process_noise(state: &mut PerModuleState, frames: usize) -> ModuleOutputs {
     let rng_state = match state {
         PerModuleState::Noise { state, .. } => state,
         _ => unreachable!(),
@@ -612,7 +609,7 @@ pub(super) fn process_noise(
 }
 
 pub(super) fn process_impulse(
-    state: &mut PerModuleState,
+    _state: &mut PerModuleState,
     events: &[BlockEvent],
     frames: usize,
 ) -> ModuleOutputs {
@@ -626,10 +623,7 @@ pub(super) fn process_impulse(
     audio_output(builtin_ports::AUDIO, audio)
 }
 
-pub(super) fn process_multiply(
-    a: Vec<f32>,
-    b: Vec<f32>,
-) -> ModuleOutputs {
+pub(super) fn process_multiply(a: Vec<f32>, b: Vec<f32>) -> ModuleOutputs {
     let max = a.len().max(b.len());
     let mut audio = Vec::with_capacity(max);
     for i in 0..max {
@@ -653,7 +647,13 @@ pub(super) fn process_note_to_control(
                 current_velocity,
                 current_frequency,
                 current_pitch_ratio,
-            } => (gate_active, current_note, current_velocity, current_frequency, current_pitch_ratio),
+            } => (
+                gate_active,
+                current_note,
+                current_velocity,
+                current_frequency,
+                current_pitch_ratio,
+            ),
             _ => unreachable!(),
         };
 
@@ -697,9 +697,7 @@ pub(super) fn process_note_to_control(
                 }
                 gate_events.push(BlockEvent {
                     frame_offset: event.frame_offset,
-                    event: crate::script::ScriptEvent::NoteOff {
-                        note: *note,
-                    },
+                    event: crate::script::ScriptEvent::NoteOff { note: *note },
                 });
             }
             _ => {}
@@ -715,8 +713,12 @@ pub(super) fn process_note_to_control(
     }
 
     let mut outputs = ModuleOutputs::empty();
-    outputs.control.insert("frequency".to_string(), frequency_out);
-    outputs.control.insert("pitch_ratio".to_string(), pitch_ratio_out);
+    outputs
+        .control
+        .insert("frequency".to_string(), frequency_out);
+    outputs
+        .control
+        .insert("pitch_ratio".to_string(), pitch_ratio_out);
     outputs.control.insert("velocity".to_string(), velocity_out);
     outputs.events = gate_events;
     outputs

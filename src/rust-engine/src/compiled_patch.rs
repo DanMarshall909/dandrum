@@ -2,7 +2,7 @@ use std::collections::{BTreeMap, VecDeque};
 use std::fmt;
 
 use crate::builtins::module_kind::ModuleKind;
-use crate::diagnostics::{error_codes, Diagnostic, Severity};
+use crate::diagnostics::{Diagnostic, Severity, error_codes};
 use crate::graph::{ExecutionScope, Graph, ModuleId, SignalType};
 use crate::patch::RenderSettings;
 
@@ -67,13 +67,16 @@ pub enum CompileError {
 impl CompileError {
     pub fn to_diagnostic(&self) -> Diagnostic {
         match self {
-            Self::MissingPort { module_id, port_name } => Diagnostic::new(
+            Self::MissingPort {
+                module_id,
+                port_name,
+            } => Diagnostic::new(
                 error_codes::GRAPH_MISSING_PORT,
                 Severity::Error,
                 format!("missing port: {module_id}.{port_name}"),
             )
-                .with_module_id(module_id.clone())
-                .with_port_name(port_name.clone()),
+            .with_module_id(module_id.clone())
+            .with_port_name(port_name.clone()),
             Self::CycleDetected => Diagnostic::new(
                 error_codes::GRAPH_CYCLE_DETECTED,
                 Severity::Error,

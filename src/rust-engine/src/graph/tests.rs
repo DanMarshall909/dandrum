@@ -193,7 +193,7 @@ connections:
     to: vca.audio_in
 "#,
     )
-        .expect("patch should parse");
+    .expect("patch should parse");
 
     patch::validate_patch_schema(&patch).expect("patch schema should be valid");
 
@@ -258,7 +258,7 @@ connections:
     to: out.left
 "#,
     )
-        .expect("patch should parse");
+    .expect("patch should parse");
     patch::validate_patch_schema(&patch).expect("patch schema should validate");
 
     let graph = Graph::from_patch_declarations(&patch);
@@ -323,7 +323,7 @@ connections:
     to: out.right
 "#,
     )
-        .expect("patch should parse");
+    .expect("patch should parse");
     patch::validate_patch_schema(&patch).expect("patch schema should validate");
 
     let graph = Graph::from_patch_declarations(&patch);
@@ -391,7 +391,7 @@ connections:
     to: out.left
 "#,
     )
-        .expect("patch should parse");
+    .expect("patch should parse");
 
     let graph = Graph::from_patch_declarations(&patch);
     let error = graph
@@ -440,7 +440,7 @@ connections:
     to: out.left
 "#,
     )
-        .expect("patch should parse");
+    .expect("patch should parse");
 
     let graph = Graph::from_patch_declarations(&patch);
     let error = graph
@@ -488,7 +488,7 @@ connections:
     to: out.left
 "#,
     )
-        .expect("patch should parse");
+    .expect("patch should parse");
 
     let graph = Graph::from_patch_declarations(&patch);
     let error = graph
@@ -539,7 +539,7 @@ connections:
     to: vca.gain
 "#,
     )
-        .expect("patch should parse");
+    .expect("patch should parse");
 
     patch::validate_patch_schema(&patch).expect("patch schema should be valid");
 
@@ -637,7 +637,7 @@ connections:
     to: out.left
 "#,
     )
-        .expect("patch should parse");
+    .expect("patch should parse");
 
     patch::validate_patch_schema(&patch).expect("patch schema should be valid");
     let graph = Graph::from_patch_declarations(&patch);
@@ -683,7 +683,7 @@ connections:
     to: sampler.gate
 "#,
     )
-        .expect("patch should parse");
+    .expect("patch should parse");
 
     patch::validate_patch_schema(&patch).expect("patch schema should be valid");
     let graph = Graph::from_patch_declarations(&patch);
@@ -1259,7 +1259,7 @@ connections:
     to: out.left
 "#,
     )
-        .expect("patch should parse");
+    .expect("patch should parse");
 
     crate::patch::validate_patch_schema(&patch).expect("patch schema should be valid");
     let graph = Graph::from_patch_declarations(&patch);
@@ -1301,7 +1301,7 @@ connections:
     to: out.left
 "#,
     )
-        .expect("patch should parse");
+    .expect("patch should parse");
 
     crate::patch::validate_patch_schema(&patch).expect("patch schema should be valid");
     let graph = Graph::from_patch_declarations(&patch);
@@ -1331,7 +1331,7 @@ connections:
     to: out.left
 "#,
     )
-        .expect("patch should parse");
+    .expect("patch should parse");
 
     crate::patch::validate_patch_schema(&patch).expect("patch schema should be valid");
     let graph = Graph::from_patch_declarations(&patch);
@@ -1375,7 +1375,7 @@ connections:
     to: out.left
 "#,
     )
-        .expect("patch should parse");
+    .expect("patch should parse");
 
     crate::patch::validate_patch_schema(&patch).expect("patch schema should be valid");
     let graph = Graph::from_patch_declarations(&patch);
@@ -1417,7 +1417,7 @@ connections:
     to: out.left
 "#,
     )
-        .expect("patch should parse");
+    .expect("patch should parse");
 
     crate::patch::validate_patch_schema(&patch).expect("patch schema should be valid");
     let graph = Graph::from_patch_declarations(&patch);
@@ -1516,7 +1516,11 @@ fn multiple_graph_diagnostics_are_collected() {
     );
 
     let error = graph.validate().expect_err("validation should fail");
-    assert!(error.diagnostics().len() >= 2, "expected at least 2 diagnostics, got {}", error.diagnostics().len());
+    assert!(
+        error.diagnostics().len() >= 2,
+        "expected at least 2 diagnostics, got {}",
+        error.diagnostics().len()
+    );
 
     let structured = error.to_diagnostics();
     assert!(structured.len() >= 2);

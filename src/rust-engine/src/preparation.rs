@@ -55,7 +55,9 @@ impl PreparedInstrument {
         &self.patch_doc
     }
 
-    pub(crate) fn resolved_parameters(&self) -> &BTreeMap<String, BTreeMap<String, ParameterValue>> {
+    pub(crate) fn resolved_parameters(
+        &self,
+    ) -> &BTreeMap<String, BTreeMap<String, ParameterValue>> {
         &self.resolved_parameters
     }
 
@@ -176,7 +178,7 @@ impl PreparationError {
                 Severity::Error,
                 error.to_string(),
             )
-                .into(),
+            .into(),
             Self::Compile(error) => error.to_diagnostic().into(),
         }
     }
@@ -235,8 +237,9 @@ modules:
         patch::validate_patch_schema(&patch_doc).expect("patch schema should validate");
         let resolved_parameters =
             patch::resolve_module_parameters(&patch_doc).expect("parameters should resolve");
-        let graph = build_validated_graph_with_resolved_parameters(&patch_doc, &resolved_parameters)
-            .expect("graph should validate");
+        let graph =
+            build_validated_graph_with_resolved_parameters(&patch_doc, &resolved_parameters)
+                .expect("graph should validate");
         let compiled_patch =
             compiled_patch::compile(&graph, &patch_doc.render).expect("graph should compile");
 
@@ -349,9 +352,15 @@ modules:
             .find(|node| node.id.as_str() == "filt")
             .expect("filter node should compile");
 
-        assert_eq!(filt.parameters.get("algorithm"), Some(&"biquad".to_string()));
+        assert_eq!(
+            filt.parameters.get("algorithm"),
+            Some(&"biquad".to_string())
+        );
         assert_eq!(filt.parameters.get("mode"), Some(&"highpass".to_string()));
-        assert_eq!(filt.parameters.get("comb_type"), Some(&"feedback".to_string()));
+        assert_eq!(
+            filt.parameters.get("comb_type"),
+            Some(&"feedback".to_string())
+        );
     }
 
     #[test]
@@ -367,7 +376,7 @@ render:
 modules: []
 "#,
         )
-            .expect("patch should parse");
+        .expect("patch should parse");
 
         let error = validate_patch_document(&patch_doc).expect_err("schema should fail");
 
@@ -403,7 +412,7 @@ connections:
     to: out.left
 "#,
         )
-            .expect("patch should parse");
+        .expect("patch should parse");
         validate_patch_document(&patch_doc).expect("schema should validate");
 
         let error = build_validated_graph(&patch_doc).expect_err("graph should fail");

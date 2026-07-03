@@ -1,6 +1,5 @@
-use super::{
-    BiquadFilter, CombFilter, CombType, FilterAlgorithm, MoogLadder, OnePoleFilter, OnePoleMode,
-};
+use super::{BiquadFilter, CombFilter, CombType, FilterAlgorithm, MoogLadder, OnePoleFilter};
+use crate::filter::one_pole::OnePoleMode;
 
 fn run_filter_response<F>(filter: &mut F, sample_rate: f64, impulse_len: usize) -> Vec<(f64, f64)>
 where

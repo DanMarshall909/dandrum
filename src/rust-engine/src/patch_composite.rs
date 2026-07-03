@@ -1,10 +1,10 @@
 use std::collections::{BTreeMap, BTreeSet};
 
-use crate::builtins::{module_types, BuiltInModuleRegistry};
-use crate::diagnostics::{error_codes, Diagnostic, Severity};
+use crate::builtins::{BuiltInModuleRegistry, module_types};
+use crate::diagnostics::{Diagnostic, Severity, error_codes};
 use crate::patch::{
-    validate_port_reference, AssetKind, ConnectionDeclaration, ModuleDeclaration, ParameterValue,
-    PatchDocument, PatchValidationError, PortReference, SignalType,
+    AssetKind, ConnectionDeclaration, ModuleDeclaration, ParameterValue, PatchDocument,
+    PatchValidationError, PortReference, SignalType, validate_port_reference,
 };
 use serde::Deserialize;
 
@@ -49,7 +49,10 @@ pub struct CompositeBindingDeclaration {
     pub maps_to: Vec<PortReference>,
 }
 
-pub(super) fn validate_module_definitions(patch: &PatchDocument, diagnostics: &mut PatchValidationError) {
+pub(super) fn validate_module_definitions(
+    patch: &PatchDocument,
+    diagnostics: &mut PatchValidationError,
+) {
     let mut module_types = BTreeSet::new();
     let registry = BuiltInModuleRegistry::new();
 
@@ -149,7 +152,10 @@ pub(super) fn validate_module_definitions(patch: &PatchDocument, diagnostics: &m
     validate_recursive_composite_definitions(patch, diagnostics);
 }
 
-fn validate_recursive_composite_definitions(patch: &PatchDocument, diagnostics: &mut PatchValidationError) {
+fn validate_recursive_composite_definitions(
+    patch: &PatchDocument,
+    diagnostics: &mut PatchValidationError,
+) {
     let composite_types = patch
         .module_definitions
         .iter()
@@ -446,7 +452,12 @@ mod tests {
 
         validate_module_definitions(&patch, &mut diagnostics);
 
-        assert!(diagnostics.diagnostics().iter().any(|d| d.message().contains("composite module type is required")));
+        assert!(
+            diagnostics
+                .diagnostics()
+                .iter()
+                .any(|d| d.message().contains("composite module type is required"))
+        );
     }
 
     #[test]
@@ -462,7 +473,11 @@ mod tests {
 
         validate_composite_instance_bindings(&instance, &patch, &mut diagnostics);
 
-        assert!(diagnostics.is_empty(), "expected no diagnostics: {}", diagnostics);
+        assert!(
+            diagnostics.is_empty(),
+            "expected no diagnostics: {}",
+            diagnostics
+        );
     }
 
     #[test]
@@ -474,7 +489,11 @@ mod tests {
 
         validate_module_definitions(&patch, &mut diagnostics);
 
-        assert!(diagnostics.is_empty(), "expected no diagnostics: {}", diagnostics);
+        assert!(
+            diagnostics.is_empty(),
+            "expected no diagnostics: {}",
+            diagnostics
+        );
     }
 
     #[test]
@@ -487,7 +506,11 @@ mod tests {
 
         validate_module_definitions(&patch, &mut diagnostics);
 
-        assert!(diagnostics.is_empty(), "expected no diagnostics: {}", diagnostics);
+        assert!(
+            diagnostics.is_empty(),
+            "expected no diagnostics: {}",
+            diagnostics
+        );
     }
 
     #[test]
@@ -515,7 +538,11 @@ mod tests {
 
         validate_module_definitions(&patch, &mut diagnostics);
 
-        assert!(diagnostics.is_empty(), "expected no diagnostics: {}", diagnostics);
+        assert!(
+            diagnostics.is_empty(),
+            "expected no diagnostics: {}",
+            diagnostics
+        );
     }
 
     #[test]
@@ -539,7 +566,11 @@ mod tests {
 
         validate_module_definitions(&patch, &mut diagnostics);
 
-        assert!(diagnostics.is_empty(), "expected no diagnostics: {}", diagnostics);
+        assert!(
+            diagnostics.is_empty(),
+            "expected no diagnostics: {}",
+            diagnostics
+        );
     }
 
     #[test]

@@ -1,6 +1,6 @@
-use dandrum_engine::diagnostics::{error_codes, Diagnostic};
+use dandrum_engine::diagnostics::{Diagnostic, error_codes};
 use dandrum_engine::patch::{
-    load_patch_str, resolve_module_parameters, validate_patch_schema, ParameterValue,
+    ParameterValue, load_patch_str, resolve_module_parameters, validate_patch_schema,
 };
 
 fn validation_diagnostics(yaml: &str) -> Vec<Diagnostic> {
@@ -140,8 +140,12 @@ modules:
     assert_has_diagnostic_for_parameter(&diagnostics, "filt", "algorithm");
     assert!(
         diagnostics.iter().any(|diagnostic| {
-            diagnostic.actual().is_some_and(|actual| actual.contains("banana"))
-                && diagnostic.expected().is_some_and(|expected| expected.contains("moog"))
+            diagnostic
+                .actual()
+                .is_some_and(|actual| actual.contains("banana"))
+                && diagnostic
+                    .expected()
+                    .is_some_and(|expected| expected.contains("moog"))
         }),
         "expected enum diagnostic with actual value and allowed values, got: {diagnostics:#?}"
     );
@@ -168,8 +172,12 @@ modules:
     assert_has_diagnostic_for_parameter(&diagnostics, "spectral", "fft_size");
     assert!(
         diagnostics.iter().any(|diagnostic| {
-            diagnostic.expected().is_some_and(|expected| expected.contains("256"))
-                && diagnostic.actual().is_some_and(|actual| actual.contains("64"))
+            diagnostic
+                .expected()
+                .is_some_and(|expected| expected.contains("256"))
+                && diagnostic
+                    .actual()
+                    .is_some_and(|actual| actual.contains("64"))
         }),
         "expected range diagnostic with minimum and actual value, got: {diagnostics:#?}"
     );
@@ -196,8 +204,12 @@ modules:
     assert_has_diagnostic_for_parameter(&diagnostics, "spectral", "fft_size");
     assert!(
         diagnostics.iter().any(|diagnostic| {
-            diagnostic.expected().is_some_and(|expected| expected.contains("number"))
-                && diagnostic.actual().is_some_and(|actual| actual.contains("string"))
+            diagnostic
+                .expected()
+                .is_some_and(|expected| expected.contains("number"))
+                && diagnostic
+                    .actual()
+                    .is_some_and(|actual| actual.contains("string"))
         }),
         "expected type diagnostic with expected and actual scalar types, got: {diagnostics:#?}"
     );
@@ -266,11 +278,22 @@ modules:
     .expect("patch should parse");
 
     let resolved = resolve_module_parameters(&patch).expect("parameters should resolve");
-    let filt = resolved.get("filt").expect("filter parameters should resolve");
+    let filt = resolved
+        .get("filt")
+        .expect("filter parameters should resolve");
 
-    assert_eq!(filt.get("algorithm"), Some(&ParameterValue::Text("moog".into())));
-    assert_eq!(filt.get("mode"), Some(&ParameterValue::Text("lowpass".into())));
-    assert_eq!(filt.get("comb_type"), Some(&ParameterValue::Text("feedback".into())));
+    assert_eq!(
+        filt.get("algorithm"),
+        Some(&ParameterValue::Text("moog".into()))
+    );
+    assert_eq!(
+        filt.get("mode"),
+        Some(&ParameterValue::Text("lowpass".into()))
+    );
+    assert_eq!(
+        filt.get("comb_type"),
+        Some(&ParameterValue::Text("feedback".into()))
+    );
 }
 
 #[test]
@@ -296,11 +319,22 @@ modules:
     .expect("patch should parse");
 
     let resolved = resolve_module_parameters(&patch).expect("parameters should resolve");
-    let filt = resolved.get("filt").expect("filter parameters should resolve");
+    let filt = resolved
+        .get("filt")
+        .expect("filter parameters should resolve");
 
-    assert_eq!(filt.get("algorithm"), Some(&ParameterValue::Text("biquad".into())));
-    assert_eq!(filt.get("mode"), Some(&ParameterValue::Text("highpass".into())));
-    assert_eq!(filt.get("comb_type"), Some(&ParameterValue::Text("feedback".into())));
+    assert_eq!(
+        filt.get("algorithm"),
+        Some(&ParameterValue::Text("biquad".into()))
+    );
+    assert_eq!(
+        filt.get("mode"),
+        Some(&ParameterValue::Text("highpass".into()))
+    );
+    assert_eq!(
+        filt.get("comb_type"),
+        Some(&ParameterValue::Text("feedback".into()))
+    );
 }
 
 #[test]
@@ -345,8 +379,9 @@ modules:
 
     let first = resolve_module_parameters(&load_patch_str(yaml).expect("first patch should parse"))
         .expect("first patch should resolve");
-    let second = resolve_module_parameters(&load_patch_str(yaml).expect("second patch should parse"))
-        .expect("second patch should resolve");
+    let second =
+        resolve_module_parameters(&load_patch_str(yaml).expect("second patch should parse"))
+            .expect("second patch should resolve");
 
     assert_eq!(first, second);
 }

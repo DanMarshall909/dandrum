@@ -377,7 +377,7 @@ connections:
     to: out.right
 "#,
     )
-        .expect("patch should parse");
+    .expect("patch should parse");
 
     patch::validate_patch_schema(&patch).expect("schema should be valid");
     let graph = Graph::from_patch_declarations(&patch);
@@ -542,7 +542,7 @@ connections:
     to: out.left
 "#,
     )
-        .expect("patch should parse");
+    .expect("patch should parse");
     patch::validate_patch_schema(&patch).expect("schema should validate");
     let graph = Graph::from_patch_declarations(&patch);
     graph
@@ -594,7 +594,7 @@ connections:
     to: out.left
 "#,
     )
-        .expect("patch should parse");
+    .expect("patch should parse");
     patch::validate_patch_schema(&patch).expect("schema should validate");
     let graph = Graph::from_patch_declarations(&patch);
     graph.validate().expect("expanded graph should validate");
@@ -2681,12 +2681,18 @@ connections:
     to: out.left
 "#,
     )
-        .expect("patch should parse");
+    .expect("patch should parse");
     patch::validate_patch_schema(&patch).expect("schema should be valid");
     let graph = Graph::from_patch_declarations(&patch);
     graph.validate().expect("graph should validate");
     let events = vec![
-        TimedInputEvent::new(0, ScriptEvent::NoteOn { note: 60, velocity: 100 }),
+        TimedInputEvent::new(
+            0,
+            ScriptEvent::NoteOn {
+                note: 60,
+                velocity: 100,
+            },
+        ),
         TimedInputEvent::new(1, ScriptEvent::NoteOff { note: 60 }),
     ];
     let (left, _) = crate::graph_processor::offline::render_offline(
@@ -2747,12 +2753,18 @@ connections:
     to: out.left
 "#,
     )
-        .expect("patch should parse");
+    .expect("patch should parse");
     patch::validate_patch_schema(&patch).expect("schema should be valid");
     let graph = Graph::from_patch_declarations(&patch);
     graph.validate().expect("graph should validate");
     let events = vec![
-        TimedInputEvent::new(0, ScriptEvent::NoteOn { note: 60, velocity: 100 }),
+        TimedInputEvent::new(
+            0,
+            ScriptEvent::NoteOn {
+                note: 60,
+                velocity: 100,
+            },
+        ),
         TimedInputEvent::new(64, ScriptEvent::NoteOff { note: 61 }),
     ];
     let (left, _) = crate::graph_processor::offline::render_offline(
@@ -2851,13 +2863,19 @@ connections:
     to: out.left
 "#,
     )
-        .expect("patch should parse");
+    .expect("patch should parse");
     crate::patch::validate_patch_schema(&patch).expect("schema should be valid");
     let graph = Graph::from_patch_declarations(&patch);
     graph.validate().expect("graph should validate");
 
     let events = vec![
-        TimedInputEvent::new(0, ScriptEvent::NoteOn { note: 36, velocity: 100 }),
+        TimedInputEvent::new(
+            0,
+            ScriptEvent::NoteOn {
+                note: 36,
+                velocity: 100,
+            },
+        ),
         TimedInputEvent::new(2000, ScriptEvent::NoteOff { note: 36 }),
     ];
     let (left, _right) = crate::graph_processor::offline::render_offline(
@@ -2873,7 +2891,13 @@ connections:
 
     // Determinism: re-render and compare
     let events2 = vec![
-        TimedInputEvent::new(0, ScriptEvent::NoteOn { note: 36, velocity: 100 }),
+        TimedInputEvent::new(
+            0,
+            ScriptEvent::NoteOn {
+                note: 36,
+                velocity: 100,
+            },
+        ),
         TimedInputEvent::new(2000, ScriptEvent::NoteOff { note: 36 }),
     ];
     let (left2, _) = crate::graph_processor::offline::render_offline(
@@ -2885,10 +2909,7 @@ connections:
         },
         events2,
     );
-    assert_eq!(
-        left, left2,
-        "808 kick render must be deterministic"
-    );
+    assert_eq!(left, left2, "808 kick render must be deterministic");
 
     // Decay: the peak energy should be in the first quarter
     let quarter = left.len() / 4;

@@ -309,7 +309,9 @@ fn filter_definition_has_parameter_metadata() {
         .expect("filter should have algorithm parameter");
     assert_eq!(algorithm.value_type(), ParameterValueType::Text);
     assert_eq!(algorithm.default(), Some("moog"));
-    let enum_vals = algorithm.enum_values().expect("algorithm should have enum values");
+    let enum_vals = algorithm
+        .enum_values()
+        .expect("algorithm should have enum values");
     assert!(enum_vals.contains(&"moog".to_string()));
     assert!(enum_vals.contains(&"biquad".to_string()));
     assert!(enum_vals.contains(&"comb".to_string()));

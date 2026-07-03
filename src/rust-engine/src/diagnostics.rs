@@ -176,7 +176,11 @@ impl fmt::Display for Severity {
 
 impl fmt::Display for Diagnostic {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "[{}] {}: {}", self.severity, self.error_code, self.message)?;
+        write!(
+            f,
+            "[{}] {}: {}",
+            self.severity, self.error_code, self.message
+        )?;
 
         if let Some(loc) = &self.source_location {
             write!(f, " at ")?;
@@ -227,7 +231,7 @@ impl Diagnostics {
         self.items.push(diagnostic);
     }
 
-    pub fn extend(&mut self, diagnostics: impl IntoIterator<Item=Diagnostic>) {
+    pub fn extend(&mut self, diagnostics: impl IntoIterator<Item = Diagnostic>) {
         self.items.extend(diagnostics);
     }
 
@@ -235,17 +239,17 @@ impl Diagnostics {
         &self.items
     }
 
-    pub fn errors(&self) -> impl Iterator<Item=&Diagnostic> {
+    pub fn errors(&self) -> impl Iterator<Item = &Diagnostic> {
         self.items.iter().filter(|d| d.severity == Severity::Error)
     }
 
-    pub fn warnings(&self) -> impl Iterator<Item=&Diagnostic> {
+    pub fn warnings(&self) -> impl Iterator<Item = &Diagnostic> {
         self.items
             .iter()
             .filter(|d| d.severity == Severity::Warning)
     }
 
-    pub fn infos(&self) -> impl Iterator<Item=&Diagnostic> {
+    pub fn infos(&self) -> impl Iterator<Item = &Diagnostic> {
         self.items.iter().filter(|d| d.severity == Severity::Info)
     }
 

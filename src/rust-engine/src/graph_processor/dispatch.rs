@@ -3,15 +3,15 @@ use std::collections::HashMap;
 use crate::builtins::module_kind::ModuleKind;
 use crate::graph::builtin_ports;
 
+use super::ModuleInputProvider;
 use super::outputs::{BlockEvent, ModuleOutputs};
 use super::processing::{
-    process_adsr, process_convolution, process_dynamics_processor, process_echo, process_filter,
-    process_frequency_splitter, process_impulse, process_multiply, process_noise, process_note_to_control,
-    process_note_to_rate, process_oscillator, process_reverb, process_sampler,
-    process_saturator, process_spectral_processor, process_vca, EchoControls, ReverbControls,
+    EchoControls, ReverbControls, process_adsr, process_convolution, process_dynamics_processor,
+    process_echo, process_filter, process_frequency_splitter, process_impulse, process_multiply,
+    process_noise, process_note_to_control, process_note_to_rate, process_oscillator,
+    process_reverb, process_sampler, process_saturator, process_spectral_processor, process_vca,
 };
 use super::state::PerModuleState;
-use super::ModuleInputProvider;
 
 pub(super) fn process_module(
     module_idx: usize,
@@ -552,9 +552,7 @@ pub(super) fn process_module(
             )
         }
         ModuleKind::Noise => process_noise(&mut states[module_idx], frames),
-        ModuleKind::Impulse => {
-            process_impulse(&mut states[module_idx], events_in, frames)
-        }
+        ModuleKind::Impulse => process_impulse(&mut states[module_idx], events_in, frames),
         ModuleKind::Multiply => {
             let a = input_provider.sum_audio_input(
                 module_idx,

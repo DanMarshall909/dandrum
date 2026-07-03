@@ -1,6 +1,6 @@
 use std::collections::BTreeMap;
 
-use crate::graph::{builtin_ports, ExecutionScope, Port, SignalType};
+use crate::graph::{ExecutionScope, Port, SignalType, builtin_ports};
 
 pub mod module_kind;
 pub mod module_types;
@@ -243,7 +243,7 @@ impl BuiltInModuleRegistry {
         self.definitions.get(module_type)
     }
 
-    pub fn module_types(&self) -> impl Iterator<Item=&str> + '_ {
+    pub fn module_types(&self) -> impl Iterator<Item = &str> + '_ {
         self.definitions.keys().map(|s| s.as_str())
     }
 }

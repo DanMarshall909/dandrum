@@ -13,7 +13,7 @@ pub struct CliResult {
 
 pub fn run<I, S>(args: I) -> CliResult
 where
-    I: IntoIterator<Item=S>,
+    I: IntoIterator<Item = S>,
     S: Into<String>,
 {
     let mut args = args.into_iter().map(Into::into);
