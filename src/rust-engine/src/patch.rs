@@ -144,17 +144,9 @@ pub enum VoiceStealingPolicy {
 
 #[derive(Debug)]
 pub enum PatchLoadError {
-    UnsupportedFormat {
-        path: PathBuf,
-    },
-    ReadFailed {
-        path: PathBuf,
-        message: String,
-    },
-    ParseFailed {
-        path: Option<PathBuf>,
-        message: String,
-    },
+    UnsupportedFormat { path: PathBuf },
+    ReadFailed { path: PathBuf, message: String },
+    ParseFailed { path: Option<PathBuf>, message: String },
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -242,6 +234,14 @@ pub fn resolve_module_parameters(
         if let Some(overrides) = patch.parameters.get(&module.id) {
             for (name, value) in overrides {
                 values.insert(name.clone(), value.clone());
+            }
+        }
+
+        for preset_modules in patch.presets.values() {
+            if let Some(overrides) = preset_modules.get(&module.id) {
+                for (name, value) in overrides {
+                    values.insert(name.clone(), value.clone());
+                }
             }
         }
 
@@ -380,11 +380,7 @@ pub fn validate_patch_schema(patch: &PatchDocument) -> Result<(), PatchValidatio
         validate_port_reference("connection.to", &connection.to, &mut result);
     }
 
-    if result.is_empty() {
-        Ok(())
-    } else {
-        Err(result)
-    }
+    if result.is_empty() { Ok(()) } else { Err(result) }
 }
 
 fn validate_declared_parameters_for_module(
@@ -556,10 +552,7 @@ fn validate_sampler_asset_reference(
             Diagnostic::new(
                 error_codes::VALIDATION_MISSING_FIELD,
                 Severity::Error,
-                format!(
-                    "sampler module {} missing required asset parameter",
-                    module.id
-                ),
+                format!("sampler module {} missing required asset parameter", module.id),
             )
             .with_module_id(&module.id),
         );
@@ -735,21 +728,6 @@ fn validate_presets(
                 continue;
             };
 
-            for param_name in params.keys() {
-                if module.parameters.contains_key(param_name) {
-                    diagnostics.push(
-                        Diagnostic::new(
-                            error_codes::VALIDATION_INVALID_VALUE,
-                            Severity::Error,
-                            format!(
-                                "preset {preset_name}.{module_id}.{param_name} conflicts with module-level parameter"
-                            ),
-                        )
-                        .with_module_id(module_id),
-                    );
-                }
-            }
-
             validate_declared_parameters_for_module(
                 "preset parameter",
                 module_id,
@@ -792,18 +770,10 @@ impl fmt::Display for PatchLoadError {
                 write!(formatter, "unsupported patch format: {}", path.display())
             }
             Self::ReadFailed { path, message } => {
-                write!(
-                    formatter,
-                    "failed to read patch {}: {message}",
-                    path.display()
-                )
+                write!(formatter, "failed to read patch {}: {message}", path.display())
             }
             Self::ParseFailed { path, message } => match path {
-                Some(path) => write!(
-                    formatter,
-                    "failed to parse patch {}: {message}",
-                    path.display()
-                ),
+                Some(path) => write!(formatter, "failed to parse patch {}: {message}", path.display()),
                 None => write!(formatter, "failed to parse patch: {message}"),
             },
         }
