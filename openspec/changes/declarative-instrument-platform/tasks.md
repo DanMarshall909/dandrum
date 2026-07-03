@@ -26,7 +26,7 @@
 
 - [x] 4.1 Implement `noise` primitive with deterministic seeded white noise output.
 - [x] 4.2 Implement `impulse` primitive with event trigger input and sample-accurate one-sample click output.
-- [x] 4.3 Implement `multiply` primitive for audio/control multiplication needed by modulation and VCA-style composites.
+- [x] 4.3 Implement `multiply` primitive for audio-rate multiplication needed by modulation and VCA-style composites (control-rate multiplication deferred; use dedicated control_multiply or polymorphic port support when needed).
 - [x] 4.4 Implement `note_to_control` primitive that converts note events to frequency, pitch ratio/CV, gate/trigger, and normalized velocity control outputs.
 - [x] 4.5 Register the new primitives in the built-in module registry with typed ports and parameter metadata.
 - [x] 4.6 Add deterministic render tests for each new primitive.

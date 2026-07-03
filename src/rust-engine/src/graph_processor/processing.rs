@@ -590,8 +590,8 @@ pub(super) fn process_noise(
     state: &mut PerModuleState,
     frames: usize,
 ) -> ModuleOutputs {
-    let (rng_state, seed) = match state {
-        PerModuleState::Noise { state, seed } => (state, *seed),
+    let rng_state = match state {
+        PerModuleState::Noise { state, .. } => state,
         _ => unreachable!(),
     };
 

@@ -463,7 +463,19 @@ fn spectral_processor_definition() -> BuiltInModuleDefinition {
             ParameterMetadata::new("fft_size", ParameterValueType::Number)
                 .with_default("2048")
                 .with_range(256.0, 8192.0)
-                .with_description("FFT frame size in samples"),
+                .with_description("FFT frame size in samples")
+                .with_realtime_note(
+                    "latency = fft_size - 1 samples; hop_size = fft_size / 2; \
+                     block_size should be >= hop_size to avoid stuttering; \
+                     allocates input_buf(fft_size) + output_buf(fft_size*2) + \
+                     window(fft_size) + FFT scratch on first frame",
+                ),
+        )
+        .with_parameter(
+            ParameterMetadata::new("window", ParameterValueType::Text)
+                .with_default("hann")
+                .with_enum_values(vec!["hann"])
+                .with_description("analysis/synthesis window function"),
         )
         .with_parameter(
             ParameterMetadata::new("threshold", ParameterValueType::Number)
