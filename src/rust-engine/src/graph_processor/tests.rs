@@ -2773,6 +2773,134 @@ connections:
 }
 
 #[test]
+fn synthetic_808_kick_renders_deterministic_decaying_output() {
+    // 808-style kick built from primitives only.
+    // Uses note_to_rate (Voice scope) for pitch, ADSR for amplitude envelope,
+    // filter for body shaping (saw → lowpass → more sine-like).
+    //
+    // Kick body: note_to_rate(N=36, C2 ≈ 55 Hz) → osc(220*ratio)
+    //   → filter(lowpass) → vca(gain by adsr) → mix → out
+    // Envelope: midi.events → adsr.gate, adsr.value → vca.gain
+    //
+    // Events: NoteOn at frame 0, NoteOff at frame 2000 (~42ms) so release
+    // produces the decaying tail.
+    let patch = crate::patch::load_patch_str(
+        r#"
+metadata:
+  name: 808Kick
+render:
+  sample_rate_hz: 48000
+  block_size_frames: 64
+  duration_frames: 48000
+modules:
+  - id: midi
+    type: midi_input
+  - id: ntr
+    type: note_to_rate
+    inputs:
+      - name: events
+        signal_type: event
+  - id: osc
+    type: oscillator
+    inputs:
+      - name: pitch
+        signal_type: control
+  - id: adsr
+    type: adsr
+    inputs:
+      - name: gate
+        signal_type: event
+  - id: vca
+    type: gain
+    inputs:
+      - name: audio_in
+        signal_type: audio
+      - name: gain
+        signal_type: control
+  - id: filt
+    type: filter
+    parameters:
+      algorithm: moog
+      mode: lowpass
+    inputs:
+      - name: audio_in
+        signal_type: audio
+  - id: mix
+    type: audio_mixer
+  - id: out
+    type: audio_output
+    inputs:
+      - name: left
+        signal_type: audio
+connections:
+  - from: midi.events
+    to: ntr.events
+  - from: midi.events
+    to: adsr.gate
+  - from: ntr.rate
+    to: osc.pitch
+  - from: osc.audio
+    to: filt.audio_in
+  - from: filt.audio_out
+    to: vca.audio_in
+  - from: adsr.value
+    to: vca.gain
+  - from: vca.audio_out
+    to: mix.inputs
+  - from: mix.mix
+    to: out.left
+"#,
+    )
+    .expect("patch should parse");
+    crate::patch::validate_patch_schema(&patch).expect("schema should be valid");
+    let graph = Graph::from_patch_declarations(&patch);
+    graph.validate().expect("graph should validate");
+
+    let events = vec![
+        TimedInputEvent::new(0, ScriptEvent::NoteOn { note: 36, velocity: 100 }),
+        TimedInputEvent::new(2000, ScriptEvent::NoteOff { note: 36 }),
+    ];
+    let (left, _right) = crate::graph_processor::offline::render_offline(
+        &graph,
+        &crate::patch::RenderSettings {
+            sample_rate_hz: 48000,
+            block_size_frames: 64,
+            duration_frames: 48000,
+        },
+        events,
+    );
+    assert_eq!(left.len(), 48000, "should produce one second of audio");
+
+    // Determinism: re-render and compare
+    let events2 = vec![
+        TimedInputEvent::new(0, ScriptEvent::NoteOn { note: 36, velocity: 100 }),
+        TimedInputEvent::new(2000, ScriptEvent::NoteOff { note: 36 }),
+    ];
+    let (left2, _) = crate::graph_processor::offline::render_offline(
+        &graph,
+        &crate::patch::RenderSettings {
+            sample_rate_hz: 48000,
+            block_size_frames: 64,
+            duration_frames: 48000,
+        },
+        events2,
+    );
+    assert_eq!(
+        left, left2,
+        "808 kick render must be deterministic"
+    );
+
+    // Decay: the peak energy should be in the first quarter
+    let quarter = left.len() / 4;
+    let first_quarter_energy: f32 = left[..quarter].iter().map(|s| s * s).sum();
+    let rest_energy: f32 = left[quarter..].iter().map(|s| s * s).sum();
+    assert!(
+        first_quarter_energy > rest_energy,
+        "expected kick energy to decay (first quarter {first_quarter_energy} > rest {rest_energy})"
+    );
+}
+
+#[test]
 fn noise_module_renders_deterministic_output() {
     let (left, _) = render_patch(
         r#"

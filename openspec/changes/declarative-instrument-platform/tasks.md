@@ -66,7 +66,7 @@
 
 ## 9. Acceptance Examples
 
-- [ ] 9.1 Build the first acceptance example: synthetic 808-style kick from primitives/composites, not a dedicated Rust kick module.
+- [x] 9.1 Build the first acceptance example: synthetic 808-style kick from primitives/composites, not a dedicated Rust kick module. Patch uses note_to_rate (Voice-scoped, for same-block pitch), saw oscillator filtered by moog lowpass, ADSR amplitude envelope, and gain VCA. Deterministic render test verifies non-zero output, decay (first quarter energy > rest), and bit-exact repeatability.
 - [ ] 9.2 Verify the 808 kick loads and renders deterministically.
 - [ ] 9.3 Add synthetic snare example after `noise`, `multiply`, and envelope/control routing are proven.
 - [ ] 9.4 Add closed/open hi-hat examples after filter/noise/envelope routing is proven.
