@@ -2,6 +2,8 @@ use std::collections::BTreeMap;
 
 use crate::patch;
 
+pub(super) const NAMESPACED_ID_SEPARATOR: &str = "::";
+
 pub(super) fn expand_patch_declarations(
     patch: &patch::PatchDocument,
 ) -> (
@@ -150,7 +152,7 @@ fn expand_destination_reference(
 }
 
 fn namespaced_id(instance_id: &str, internal_id: &str) -> String {
-    format!("{instance_id}::{internal_id}")
+    format!("{instance_id}{NAMESPACED_ID_SEPARATOR}{internal_id}")
 }
 
 #[cfg(test)]

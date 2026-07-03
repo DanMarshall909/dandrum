@@ -1,0 +1,42 @@
+metadata:
+  name: Synthetic Hats
+render:
+  sample_rate_hz: 48000
+  block_size_frames: 128
+  duration_frames: 2048
+modules:
+  - id: midi
+    type: midi_input
+  - id: closed_noise
+    type: noise
+    parameters:
+      seed: 42
+  - id: open_noise
+    type: noise
+    parameters:
+      seed: 46
+  - id: closed_env
+    type: adsr
+  - id: open_env
+    type: adsr
+  - id: closed_vca
+    type: gain
+  - id: open_vca
+    type: gain
+  - id: mix
+    type: audio_mixer
+  - id: out
+    type: audio_output
+connections:
+  - from: midi.events
+    to: closed_env.gate
+  - from: midi.events
+    to: open_env.gate
+  - from: closed_noise.audio
+    to: mix.inputs
+  - from: open_noise.audio
+    to: mix.inputs
+  - from: mix.mix
+    to: out.left
+  - from: mix.mix
+    to: out.right

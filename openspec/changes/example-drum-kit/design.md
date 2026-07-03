@@ -9,8 +9,8 @@ platform primitives closes the gap between toy examples and playable instrument 
 
 **Goals:**
 
-- Consume `noise`, `impulse`, `note_to_control`, `multiply`, and generic event-routing primitives as platform-provided
-  capabilities
+- Consume `noise`, `impulse`, `note_to_control`, `gain`, `multiply`, and generic event-routing primitives as
+  platform-provided capabilities
 - Create composite module definitions for reusable building blocks (`velocity_vca`, `impulse_tone`, `impulse_noise`,
   `impulse_layer`)
 - Create an example drum kit YAML patch wiring MIDI input through generic event routing into all voices and then through
@@ -20,7 +20,7 @@ platform primitives closes the gap between toy examples and playable instrument 
 
 **Non-Goals:**
 
-- Not changing existing module behaviour or port contracts (ADSR, VCA, echo, dynamics_processor, etc. remain pure)
+- Not changing existing module port contracts (ADSR, VCA, echo, dynamics_processor, etc. remain pure)
 - Not adding, removing, or deprecating built-in module types
 - Not adding a step sequencer, pattern sequencer, or groove box UI
 - Not adding sample loading for drum hits (existing sampler module already supports this)
@@ -32,8 +32,8 @@ Modules are small, single-responsibility, and composable — like UNIX pipes. No
 note numbers, or drum semantics. Higher-level behaviour emerges from wiring:
 
 - `note_to_control` extracts velocity from events → control signal
-- `multiply` multiplies two control signals (e.g., envelope × velocity)
-- `gain` scales audio by a control signal
+- `gain` scales audio by a control signal, so two gain stages can apply envelope and velocity
+- `multiply` remains an audio-rate product primitive
 - Composite modules bundle these primitives into reusable voice architectures
 
 This means the same building blocks can be rearranged for synthesisers, effects, or other instruments without any module
@@ -44,13 +44,13 @@ knowing about drum-specific concepts.
 ### Platform Primitive Dependency
 
 **Decision:** This change does not define or implement built-in primitives. It uses the primitive contracts owned by
-`declarative-instrument-platform`, including deterministic noise, impulse triggering, note-to-control conversion, and
-audio/control multiplication.
+`declarative-instrument-platform`, including deterministic noise, impulse triggering, note-to-control conversion, gain,
+and audio-rate multiplication.
 
 **Rationale:** Keeping primitive contracts in one platform change avoids conflicting port, parameter, determinism, and
 dispatch requirements. Drum-kit work can then focus on proving those primitives through musical composites and examples.
 
-### Velocity Composition via note_to_control + multiply
+### Velocity Composition via note_to_control + gain
 
 **Decision:** Velocity scaling is handled entirely in composites, not in any built-in module.
 
@@ -59,17 +59,16 @@ dispatch requirements. Drum-kit work can then focus on proving those primitives 
 - ADSR stays a pure envelope generator (no velocity distraction)
 - VCA/gain stays a pure audio scaler (no envelope-or-velocity awareness)
 - `note_to_control` is the single point where events become control signals — trivial to test, trivial to understand
-- `multiply` is a pure math function — no state, no side effects
-- Together they compose into `velocity_vca`: events + envelope + audio → velocity-scaled audio
+- Two `gain` stages compose into `velocity_vca`: events + envelope + audio → velocity-scaled audio
 
 ### Drum Voice Composites
 
 **Decision:** Define reusable composite modules that compose sound sources with `velocity_vca`:
 
 - `velocity_vca`: events + envelope + audio → velocity-scaled audio output
-- `impulse_tone`: oscillator + ADSR + `velocity_vca` (for tuned percussion: kick, tom)
-- `impulse_noise`: noise + filter + ADSR + `velocity_vca` (for noise percussion: hi-hat, rim click)
-- `impulse_layer`: oscillator + noise + filter + ADSR + `velocity_vca` (for layered percussion: snare)
+- `impulse_tone`: oscillator + ADSR + velocity VCA pattern (for tuned percussion: kick, tom)
+- `impulse_noise`: noise + filter + ADSR + velocity VCA pattern (for noise percussion: hi-hat, rim click)
+- `impulse_layer`: oscillator + noise + filter + ADSR + velocity VCA pattern (for layered percussion: snare)
 
 **Rationale:**
 
@@ -96,7 +95,7 @@ and filters by assigned note.
 - **[MIDI note routing]** Drum-kit readability depends on generic event-routing primitives; if those primitives are not
   ready, this example should wait rather than hiding note filtering inside drum voices
 - **[Composite depth]** Nested composites (velocity_vca inside impulse_tone inside drum kit) increase preparation
-  complexity — but the existing composite implementation already handles arbitrary nesting, so this is not new risk
+  complexity, so these examples inline the velocity VCA pattern inside each impulse composite.
 - **[Future effect examples]** Custom flanger, chorus, ducking, or sidechain examples may need `delay_line` or
   `envelope_follower` as public built-ins -> Propose those separately with primitive-gate justification instead of
   adding them through this drum-kit example change.

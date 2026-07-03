@@ -48,6 +48,11 @@ pub mod error_codes {
     pub const VALIDATION_INVALID_VALUE: &str = "validation.invalid_value";
     pub const VALIDATION_UNKNOWN_MODULE: &str = "validation.unknown_module";
 
+    // Script sub-codes
+    pub const SCRIPT_UNSUPPORTED_API: &str = "script.unsupported_api";
+    pub const SCRIPT_UNSUPPORTED_PORT: &str = "script.unsupported_port";
+    pub const SCRIPT_BUDGET_EXCEEDED: &str = "script.budget_exceeded";
+
     // Graph sub-codes
     pub const GRAPH_MISSING_MODULE: &str = "graph.missing_module";
     pub const GRAPH_MISSING_PORT: &str = "graph.missing_port";

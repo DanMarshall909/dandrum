@@ -14,7 +14,7 @@ script, preset, future tooling, or out-of-scope.
 
 ### Requirement: Primitive gate criteria
 
-A built-in Rust primitive SHOULD satisfy all five criteria:
+A built-in Rust primitive SHALL be evaluated against all five criteria before implementation:
 
 1. **Performance-critical**: The operation requires audio-rate or near-audio-rate processing that cannot achieve
    acceptable performance as YAML composition or script.
@@ -44,7 +44,7 @@ A built-in Rust primitive SHOULD satisfy all five criteria:
 
 ### Requirement: Composite eligibility
 
-A behaviour SHOULD be implemented as a YAML composite when it can be expressed as a deterministic graph of existing
+A behaviour SHALL be implemented as a YAML composite when it can be expressed as a deterministic graph of existing
 primitives, scripts, and other composites without compromising performance, validation, or realtime safety.
 
 #### Scenario: Instrument voice expressible as composite
@@ -54,7 +54,7 @@ primitives, scripts, and other composites without compromising performance, vali
 
 ### Requirement: Script eligibility
 
-A behaviour SHOULD be implemented as a script module when it involves event transformation, control-value mapping,
+A behaviour SHALL be eligible for a script module when it involves event transformation, control-value mapping,
 conditional routing, note remapping, or simple deterministic modulation logic that is awkward to express as fixed
 connections but does not require audio-rate DSP.
 
@@ -65,7 +65,7 @@ connections but does not require audio-rate DSP.
 
 ### Requirement: Preset eligibility
 
-A behaviour SHOULD be expressed as a preset when it is a named configuration of existing patches, composites, modules,
+A behaviour SHALL be expressed as a preset when it is a named configuration of existing patches, composites, modules,
 and parameter values.
 
 #### Scenario: Specific sound configuration
@@ -75,7 +75,7 @@ and parameter values.
 
 ### Requirement: Future tooling eligibility
 
-A behaviour SHOULD be classified as future tooling when it helps humans, GUIs, LLMs, or repair workflows author patches
+A behaviour SHALL be classified as future tooling when it helps humans, GUIs, LLMs, or repair workflows author patches
 but is not required for rendering audio.
 
 #### Scenario: LLM authoring support

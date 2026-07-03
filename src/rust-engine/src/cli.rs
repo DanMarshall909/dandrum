@@ -1,8 +1,15 @@
 use std::path::PathBuf;
 
 use crate::core::TimedInputEvent;
+use crate::patch::{self, ParameterValue};
 use crate::script::ScriptEvent;
 use crate::synth::DandrumEngine;
+
+const OUTPUT_FLAG: &str = "--output";
+const SET_FLAG: &str = "--set";
+const RENDER_COMMAND: &str = "render";
+const RENDER_CHORDS_COMMAND: &str = "render-chords";
+const VALIDATE_COMMAND: &str = "validate";
 
 #[derive(Debug, PartialEq, Eq)]
 pub struct CliResult {
@@ -20,9 +27,9 @@ where
     let _program = args.next();
 
     match args.next().as_deref() {
-        Some("validate") => validate(args.collect()),
-        Some("render") => render(args.collect()),
-        Some("render-chords") => render_chords(args.collect()),
+        Some(VALIDATE_COMMAND) => validate(args.collect()),
+        Some(RENDER_COMMAND) => render(args.collect()),
+        Some(RENDER_CHORDS_COMMAND) => render_chords(args.collect()),
         Some("--help") | Some("-h") | None => help(),
         Some(command) => error(format!("unknown command: {command}\n\n{}", usage())),
     }
@@ -44,25 +51,42 @@ fn validate(args: Vec<String>) -> CliResult {
 }
 
 fn render(args: Vec<String>) -> CliResult {
-    if args.len() != 3 || args[1] != "--output" {
-        return error(format!(
-            "render requires: <patch> --output <wav>\n\n{}",
-            usage()
-        ));
-    }
+    let render_args = match parse_render_args(args) {
+        Ok(args) => args,
+        Err(message) => return error(format!("{message}\n\n{}", usage())),
+    };
 
-    let patch = PathBuf::from(&args[0]);
-    let output = PathBuf::from(&args[2]);
-    let mut engine = DandrumEngine::new();
-    let render = match engine.render_patch_file_offline_with_events(&patch, |settings| {
+    render_with_events(render_args, |settings| {
         single_note_sequence(settings.sample_rate_hz)
-    }) {
-        Ok(render) => render,
+    })
+}
+
+fn render_with_events(
+    render_args: RenderArgs,
+    events: impl FnOnce(&patch::RenderSettings) -> Vec<TimedInputEvent>,
+) -> CliResult {
+    let mut patch_doc = match patch::load_patch_file(&render_args.patch) {
+        Ok(patch_doc) => patch_doc,
         Err(load_error) => return error(format!("failed to render patch: {load_error}")),
     };
-    if let Err(write_error) =
-        crate::wav::write_wav_file(&output, render.sample_rate_hz, &render.left, &render.right)
-    {
+    apply_cli_overrides(&mut patch_doc, &render_args.overrides);
+    let base_dir = render_args
+        .patch
+        .parent()
+        .unwrap_or_else(|| std::path::Path::new("."));
+    let prepared = match crate::preparation::prepare_instrument_document(patch_doc, base_dir) {
+        Ok(prepared) => prepared,
+        Err(prepare_error) => return error(format!("failed to render patch: {prepare_error}")),
+    };
+    let events = events(&prepared.patch_doc().render);
+    let mut engine = DandrumEngine::new();
+    let render = engine.render_prepared_instrument_offline(&prepared, events);
+    if let Err(write_error) = crate::wav::write_wav_file(
+        &render_args.output,
+        render.sample_rate_hz,
+        &render.left,
+        &render.right,
+    ) {
         return error(format!("failed to write wav: {write_error}"));
     }
 
@@ -70,11 +94,38 @@ fn render(args: Vec<String>) -> CliResult {
         exit_code: 0,
         stdout: format!(
             "patch: {}\noutput: {}\nrender: ok\n",
-            patch.display(),
-            output.display()
+            render_args.patch.display(),
+            render_args.output.display()
         ),
         stderr: String::new(),
     }
+}
+
+fn parse_render_args(args: Vec<String>) -> Result<RenderArgs, String> {
+    if args.len() < 3 || args[1] != OUTPUT_FLAG {
+        return Err(format!(
+            "render requires: <patch> --output <wav> [--set module.parameter=value]"
+        ));
+    }
+
+    let mut overrides = Vec::new();
+    let mut index = 3;
+    while index < args.len() {
+        if args[index] != SET_FLAG {
+            return Err(format!("unexpected render argument: {}", args[index]));
+        }
+        let Some(value) = args.get(index + 1) else {
+            return Err(format!("{SET_FLAG} requires module.parameter=value"));
+        };
+        overrides.push(parse_cli_override(value)?);
+        index += 2;
+    }
+
+    Ok(RenderArgs {
+        patch: PathBuf::from(&args[0]),
+        output: PathBuf::from(&args[2]),
+        overrides,
+    })
 }
 
 fn help() -> CliResult {
@@ -94,36 +145,82 @@ fn error(message: String) -> CliResult {
 }
 
 fn render_chords(args: Vec<String>) -> CliResult {
-    if args.len() != 3 || args[1] != "--output" {
-        return error(format!(
-            "render-chords requires: <patch.yaml> --output <wav>\n\n{}",
-            usage()
-        ));
-    }
-
-    let patch = PathBuf::from(&args[0]);
-    let output = PathBuf::from(&args[2]);
-    let mut engine = DandrumEngine::new();
-    let render = match engine.render_patch_file_offline_with_events(&patch, |settings| {
-        chord_sequence(settings.sample_rate_hz)
-    }) {
-        Ok(render) => render,
-        Err(load_error) => return error(format!("failed to render patch: {load_error}")),
+    let render_args = match parse_render_args(args) {
+        Ok(args) => args,
+        Err(message) => return error(format!("{message}\n\n{}", usage())),
     };
-    if let Err(write_error) =
-        crate::wav::write_wav_file(&output, render.sample_rate_hz, &render.left, &render.right)
-    {
-        return error(format!("failed to write wav: {write_error}"));
+
+    let mut result = render_with_events(render_args, |settings| {
+        chord_sequence(settings.sample_rate_hz)
+    });
+    result.stdout = result.stdout.replace("render: ok", "render-chords: ok");
+    result
+}
+
+#[derive(Debug, PartialEq)]
+struct RenderArgs {
+    patch: PathBuf,
+    output: PathBuf,
+    overrides: Vec<CliParameterOverride>,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+struct CliParameterOverride {
+    module_id: String,
+    parameter_name: String,
+    value: ParameterValue,
+}
+
+fn parse_cli_override(input: &str) -> Result<CliParameterOverride, String> {
+    let Some((target, raw_value)) = input.split_once('=') else {
+        return Err(format!("{SET_FLAG} requires module.parameter=value"));
+    };
+    let Some((module_id, parameter_name)) = target.split_once('.') else {
+        return Err(format!("{SET_FLAG} target must use module.parameter"));
+    };
+    if module_id.is_empty() || parameter_name.is_empty() || parameter_name.contains('.') {
+        return Err(format!("{SET_FLAG} target must use module.parameter"));
     }
 
-    CliResult {
-        exit_code: 0,
-        stdout: format!(
-            "patch: {}\noutput: {}\nrender-chords: ok\n",
-            patch.display(),
-            output.display()
-        ),
-        stderr: String::new(),
+    Ok(CliParameterOverride {
+        module_id: module_id.to_string(),
+        parameter_name: parameter_name.to_string(),
+        value: parse_cli_parameter_value(raw_value),
+    })
+}
+
+fn parse_cli_parameter_value(raw_value: &str) -> ParameterValue {
+    match raw_value {
+        "true" => ParameterValue::Boolean(true),
+        "false" => ParameterValue::Boolean(false),
+        _ => raw_value
+            .parse::<f64>()
+            .map(ParameterValue::Number)
+            .unwrap_or_else(|_| ParameterValue::Text(raw_value.to_string())),
+    }
+}
+
+fn apply_cli_overrides(patch_doc: &mut patch::PatchDocument, overrides: &[CliParameterOverride]) {
+    for parameter_override in overrides {
+        if let Some(module) = patch_doc
+            .modules
+            .iter_mut()
+            .find(|module| module.id == parameter_override.module_id)
+        {
+            module.parameters.insert(
+                parameter_override.parameter_name.clone(),
+                parameter_override.value.clone(),
+            );
+        } else {
+            patch_doc
+                .parameters
+                .entry(parameter_override.module_id.clone())
+                .or_default()
+                .insert(
+                    parameter_override.parameter_name.clone(),
+                    parameter_override.value.clone(),
+                );
+        }
     }
 }
 
@@ -197,7 +294,7 @@ fn not_implemented(stdout: String) -> CliResult {
 }
 
 fn usage() -> String {
-    "Usage:\n  dandrum-cli validate <patch.yaml>\n  dandrum-cli render <patch.yaml> --output <output.wav>\n  dandrum-cli render-chords <patch.yaml> --output <output.wav>\n".to_string()
+    "Usage:\n  dandrum-cli validate <patch.yaml>\n  dandrum-cli render <patch.yaml> --output <output.wav> [--set module.parameter=value]\n  dandrum-cli render-chords <patch.yaml> --output <output.wav> [--set module.parameter=value]\n".to_string()
 }
 
 #[cfg(test)]
@@ -252,6 +349,162 @@ mod tests {
         assert_eq!(result.exit_code, 2);
         assert!(result.stdout.is_empty());
         assert!(result.stderr.contains("render requires"));
+    }
+
+    #[test]
+    fn cli_set_parser_accepts_module_parameter_value_syntax() {
+        let parsed = parse_cli_override("kick.tune_hz=48").expect("override should parse");
+
+        assert_eq!(parsed.module_id, "kick");
+        assert_eq!(parsed.parameter_name, "tune_hz");
+        assert_eq!(parsed.value, ParameterValue::Number(48.0));
+    }
+
+    #[test]
+    fn cli_set_parser_preserves_boolean_and_string_values() {
+        let boolean = parse_cli_override("kick.click=true").expect("bool override should parse");
+        let text = parse_cli_override("filt.algorithm=biquad").expect("text override should parse");
+
+        assert_eq!(boolean.value, ParameterValue::Boolean(true));
+        assert_eq!(text.value, ParameterValue::Text("biquad".to_string()));
+    }
+
+    #[test]
+    fn cli_set_parser_rejects_targets_without_module_and_parameter() {
+        assert!(parse_cli_override("kick=48").is_err());
+        assert!(parse_cli_override("kick.=48").is_err());
+        assert!(parse_cli_override("kick.tune.hz=48").is_err());
+        assert!(parse_cli_override("kick.tune_hz").is_err());
+    }
+
+    #[test]
+    fn parse_render_args_accepts_repeated_set_overrides_in_order() {
+        let args = parse_render_args(vec![
+            "patch.yaml".to_string(),
+            OUTPUT_FLAG.to_string(),
+            "out.wav".to_string(),
+            SET_FLAG.to_string(),
+            "kick.tune_hz=48".to_string(),
+            SET_FLAG.to_string(),
+            "kick.tune_hz=52".to_string(),
+        ])
+        .expect("render args should parse");
+
+        assert_eq!(args.overrides.len(), 2);
+        assert_eq!(args.overrides[0].value, ParameterValue::Number(48.0));
+        assert_eq!(args.overrides[1].value, ParameterValue::Number(52.0));
+    }
+
+    #[test]
+    fn cli_overrides_apply_after_yaml_values_and_last_repeated_value_wins() {
+        let mut patch = patch::load_patch_str(
+            r#"
+metadata:
+  name: CLI Override Apply
+render:
+  sample_rate_hz: 48000
+  block_size_frames: 128
+  duration_frames: 128
+modules:
+  - id: filt
+    type: filter
+    parameters:
+      algorithm: moog
+"#,
+        )
+        .expect("patch should parse");
+        let overrides = vec![
+            parse_cli_override("filt.algorithm=biquad").expect("override should parse"),
+            parse_cli_override("filt.algorithm=comb").expect("override should parse"),
+        ];
+
+        apply_cli_overrides(&mut patch, &overrides);
+
+        assert_eq!(
+            patch.modules[0].parameters.get("algorithm"),
+            Some(&ParameterValue::Text("comb".to_string()))
+        );
+    }
+
+    #[test]
+    fn cli_override_validation_rejects_unknown_module() {
+        let mut patch = patch::load_patch_str(
+            r#"
+metadata:
+  name: CLI Unknown Module
+render:
+  sample_rate_hz: 48000
+  block_size_frames: 128
+  duration_frames: 128
+modules:
+  - id: filt
+    type: filter
+"#,
+        )
+        .expect("patch should parse");
+        let overrides =
+            vec![parse_cli_override("missing.algorithm=moog").expect("override parses")];
+
+        apply_cli_overrides(&mut patch, &overrides);
+        let diagnostics = patch::validate_patch_schema(&patch)
+            .expect_err("unknown module override should fail")
+            .to_diagnostics();
+
+        assert!(
+            diagnostics
+                .all()
+                .iter()
+                .any(|diagnostic| diagnostic.module_id() == Some("missing"))
+        );
+    }
+
+    #[test]
+    fn cli_override_validation_uses_declaration_type_range_and_enum_checks() {
+        let mut patch = patch::load_patch_str(
+            r#"
+metadata:
+  name: CLI Invalid Values
+render:
+  sample_rate_hz: 48000
+  block_size_frames: 128
+  duration_frames: 128
+modules:
+  - id: filt
+    type: filter
+  - id: spectral
+    type: spectral_processor
+"#,
+        )
+        .expect("patch should parse");
+        let overrides = vec![
+            parse_cli_override("filt.algorithm=banana").expect("enum override parses"),
+            parse_cli_override("spectral.fft_size=64").expect("range override parses"),
+            parse_cli_override("spectral.mix=wide").expect("type override parses"),
+        ];
+
+        apply_cli_overrides(&mut patch, &overrides);
+        let diagnostics = patch::validate_patch_schema(&patch)
+            .expect_err("invalid overrides should fail")
+            .to_diagnostics();
+
+        assert!(
+            diagnostics
+                .all()
+                .iter()
+                .any(|diagnostic| diagnostic.message().contains("algorithm"))
+        );
+        assert!(
+            diagnostics
+                .all()
+                .iter()
+                .any(|diagnostic| diagnostic.message().contains("fft_size"))
+        );
+        assert!(
+            diagnostics
+                .all()
+                .iter()
+                .any(|diagnostic| diagnostic.message().contains("mix"))
+        );
     }
 
     #[test]

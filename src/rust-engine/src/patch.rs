@@ -103,6 +103,19 @@ const EVENT_ROUTING_SEQUENCING_FIELDS: &[&str] = &[
     "transport",
     "clock",
 ];
+const SCRIPT_SOURCE_FIELD: &str = "source";
+const SCRIPT_DISALLOWED_API_TOKENS: &[&str] = &[
+    "std::fs",
+    "fs::",
+    "read_file",
+    "write_file",
+    "network",
+    "socket",
+    "sleep",
+    "thread::",
+    "random",
+    "alloc",
+];
 
 #[derive(Clone, Debug, Deserialize, PartialEq, Eq)]
 pub struct PortDeclaration {
@@ -387,6 +400,10 @@ pub fn validate_patch_schema(patch: &PatchDocument) -> Result<(), PatchValidatio
             validate_event_routing_module(module, &mut result);
         }
 
+        if module.module_type == module_types::SCRIPT {
+            validate_script_module(module, &mut result);
+        }
+
         validate_declared_parameters_for_module(
             "module parameter",
             &module.id,
@@ -421,6 +438,64 @@ pub fn validate_patch_schema(patch: &PatchDocument) -> Result<(), PatchValidatio
         Ok(())
     } else {
         Err(result)
+    }
+}
+
+fn validate_script_module(module: &ModuleDeclaration, diagnostics: &mut PatchValidationError) {
+    for output in &module.outputs {
+        if output.signal_type == SignalType::Audio {
+            diagnostics.push(
+                Diagnostic::new(
+                    error_codes::SCRIPT_UNSUPPORTED_PORT,
+                    Severity::Error,
+                    format!(
+                        "script module {} output {} cannot be audio-rate in the initial implementation",
+                        module.id, output.name
+                    ),
+                )
+                .with_module_id(&module.id)
+                .with_port_name(&output.name)
+                .with_expected("event or control output")
+                .with_actual("audio output")
+                .with_suggested_fix("move audio-rate DSP into a Rust primitive or YAML composite"),
+            );
+        }
+    }
+
+    let Some(source) = module.extra_fields.get(SCRIPT_SOURCE_FIELD) else {
+        return;
+    };
+    let Some(source) = source.as_str() else {
+        diagnostics.push(
+            Diagnostic::new(
+                error_codes::VALIDATION_TYPE_MISMATCH,
+                Severity::Error,
+                format!("script module {} source must be a string", module.id),
+            )
+            .with_module_id(&module.id)
+            .with_expected("string")
+            .with_actual(format!("{:?}", source)),
+        );
+        return;
+    };
+
+    for token in SCRIPT_DISALLOWED_API_TOKENS {
+        if source.contains(token) {
+            diagnostics.push(
+                Diagnostic::new(
+                    error_codes::SCRIPT_UNSUPPORTED_API,
+                    Severity::Error,
+                    format!(
+                        "script module {} uses unsupported API token {token}",
+                        module.id
+                    ),
+                )
+                .with_module_id(&module.id)
+                .with_expected("deterministic event/control script without filesystem, network, blocking, random, or allocation APIs")
+                .with_actual(*token)
+                .with_suggested_fix("remove the unsupported API call or implement the behaviour as a Rust primitive"),
+            );
+        }
     }
 }
 
@@ -1086,5 +1161,108 @@ modules:
 
         assert!(error.to_string().contains("sequencing field pattern"));
         assert!(error.to_string().contains("explicit external modules"));
+    }
+
+    #[test]
+    fn script_module_rejects_audio_rate_output_ports_before_graph_preparation() {
+        let patch = load_patch_str(
+            r#"
+metadata:
+  name: Script Audio Output
+render:
+  sample_rate_hz: 48000
+  block_size_frames: 64
+  duration_frames: 64
+modules:
+  - id: mapper
+    type: script
+    outputs:
+      - name: audio
+        signal_type: audio
+"#,
+        )
+        .expect("patch should parse");
+
+        let diagnostics = validate_patch_schema(&patch)
+            .expect_err("audio-rate script output should fail")
+            .to_diagnostics();
+
+        assert!(diagnostics.all().iter().any(|diagnostic| {
+            diagnostic.error_code() == error_codes::SCRIPT_UNSUPPORTED_PORT
+                && diagnostic.module_id() == Some("mapper")
+                && diagnostic.port_name() == Some("audio")
+        }));
+    }
+
+    #[test]
+    fn script_module_rejects_filesystem_network_blocking_random_and_allocation_tokens() {
+        let patch = load_patch_str(
+            r#"
+metadata:
+  name: Script Unsupported API
+render:
+  sample_rate_hz: 48000
+  block_size_frames: 64
+  duration_frames: 64
+modules:
+  - id: mapper
+    type: script
+    source: |
+      let data = std::fs::read_file("secret");
+      network::send(data);
+      thread::sleep(1);
+      random();
+      alloc(128);
+    inputs:
+      - name: notes
+        signal_type: event
+    outputs:
+      - name: velocity
+        signal_type: control
+"#,
+        )
+        .expect("patch should parse");
+
+        let diagnostics = validate_patch_schema(&patch)
+            .expect_err("unsupported script APIs should fail")
+            .to_diagnostics();
+
+        for token in ["std::fs", "network", "thread::", "random", "alloc"] {
+            assert!(diagnostics.all().iter().any(|diagnostic| {
+                diagnostic.error_code() == error_codes::SCRIPT_UNSUPPORTED_API
+                    && diagnostic.module_id() == Some("mapper")
+                    && diagnostic.actual() == Some(token)
+            }));
+        }
+    }
+
+    #[test]
+    fn script_module_accepts_event_and_control_ports_with_deterministic_source() {
+        let patch = load_patch_str(
+            r#"
+metadata:
+  name: Script Control Mapper
+render:
+  sample_rate_hz: 48000
+  block_size_frames: 64
+  duration_frames: 64
+modules:
+  - id: mapper
+    type: script
+    source: |
+      velocity = note.velocity / 127.0
+    inputs:
+      - name: notes
+        signal_type: event
+    outputs:
+      - name: velocity
+        signal_type: control
+      - name: routed_notes
+        signal_type: event
+"#,
+        )
+        .expect("patch should parse");
+
+        validate_patch_schema(&patch).expect("event/control script should validate");
     }
 }

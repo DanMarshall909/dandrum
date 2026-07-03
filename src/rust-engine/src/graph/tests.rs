@@ -1349,6 +1349,7 @@ fn built_in_voice_modules_are_voice_scope() {
         "gain",
         "filter",
         "adsr",
+        "noise",
         "sampler",
         "script",
         "note_to_rate",

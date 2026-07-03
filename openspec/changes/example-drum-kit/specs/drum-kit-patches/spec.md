@@ -2,7 +2,7 @@
 
 ### Requirement: velocity_vca composite module
 
-A `velocity_vca` composite module definition SHALL exist that combines `note_to_control`, `multiply`, and `gain` to
+A `velocity_vca` composite module definition SHALL exist that combines `note_to_control` and two `gain` stages to
 produce velocity-scaled audio from events, envelope, and audio inputs.
 
 #### Scenario: velocity_vca routes events through note_to_control
@@ -13,7 +13,7 @@ produce velocity-scaled audio from events, envelope, and audio inputs.
 ### Requirement: impulse_tone composite module
 
 An `impulse_tone` composite module definition SHALL exist that produces a pitched percussive sound using oscillator +
-ADSR + velocity_vca. The composite SHALL expose an `events` event input and an `audio` audio output.
+ADSR + the velocity VCA pattern. The composite SHALL expose an `events` event input and an `audio` audio output.
 
 #### Scenario: impulse_tone triggers and produces audio
 
@@ -23,7 +23,7 @@ ADSR + velocity_vca. The composite SHALL expose an `events` event input and an `
 ### Requirement: impulse_noise composite module
 
 An `impulse_noise` composite module definition SHALL exist that produces a noise-based percussive sound using noise +
-filter + ADSR + velocity_vca. The composite SHALL expose an `events` event input and an `audio` audio output.
+filter + ADSR + the velocity VCA pattern. The composite SHALL expose an `events` event input and an `audio` output.
 
 #### Scenario: impulse_noise produces noise-based output
 
@@ -33,7 +33,8 @@ filter + ADSR + velocity_vca. The composite SHALL expose an `events` event input
 ### Requirement: impulse_layer composite module
 
 An `impulse_layer` composite module definition SHALL exist that produces a layered percussive sound using oscillator +
-noise + filter + ADSR + velocity_vca. The composite SHALL expose an `events` event input and an `audio` audio output.
+noise + filter + ADSR + the velocity VCA pattern. The composite SHALL expose an `events` event input and an `audio`
+output.
 
 #### Scenario: impulse_layer produces mixed tone and noise
 
@@ -43,7 +44,7 @@ noise + filter + ADSR + velocity_vca. The composite SHALL expose an `events` eve
 ### Requirement: Each impulse composite responds to MIDI velocity
 
 All `impulse_*` composites SHALL scale their output amplitude proportionally to the velocity of the triggering NoteOn
-event, via the internal `velocity_vca` composite.
+event, via the internal velocity VCA pattern.
 
 #### Scenario: Low velocity produces quieter output
 

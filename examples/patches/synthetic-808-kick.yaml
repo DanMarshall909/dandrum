@@ -1,0 +1,78 @@
+metadata:
+  name: Synthetic 808 Kick
+render:
+  sample_rate_hz: 48000
+  block_size_frames: 128
+  duration_frames: 2048
+module_definitions:
+  - type: synthetic_808_kick
+    parameters:
+      - name: tune_hz
+        type: number
+        default: 55
+        min: 20
+        max: 120
+        unit: Hz
+        description: Fundamental tuning control exposed by the kick composite.
+        maps_to:
+          - body.seed
+      - name: decay_ms
+        type: number
+        default: 500
+        min: 50
+        max: 2000
+        unit: ms
+        description: Decay control exposed by the kick composite.
+        maps_to:
+          - shaper.fft_size
+      - name: punch
+        type: number
+        default: 0.8
+        min: 0
+        max: 1
+        description: Body punch control exposed by the kick composite.
+        maps_to:
+          - shaper.mix
+      - name: click
+        type: number
+        default: -24
+        min: -100
+        max: 0
+        unit: dB
+        description: Click brightness control exposed by the kick composite.
+        maps_to:
+          - shaper.threshold
+    outputs:
+      - name: audio
+        signal_type: audio
+        maps_from:
+          - body.audio
+    modules:
+      - id: body
+        type: noise
+      - id: shaper
+        type: spectral_processor
+modules:
+  - id: kick
+    type: synthetic_808_kick
+    parameters:
+      tune_hz: 48
+      decay_ms: 1024
+      punch: 0.7
+      click: -18
+  - id: out
+    type: audio_output
+    inputs:
+      - name: left
+        signal_type: audio
+      - name: right
+        signal_type: audio
+  - id: mixer
+    type: audio_mixer
+connections:
+  - from: kick.audio
+    to: mixer.inputs
+  - from: mixer.mix
+    to: out.left
+  - from: mixer.mix
+    to: out.right

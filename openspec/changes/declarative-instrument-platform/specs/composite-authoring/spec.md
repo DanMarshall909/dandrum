@@ -54,7 +54,8 @@ Composite definitions SHALL map public inputs and outputs to internal module por
 
 ### Requirement: Composite parameter exposure
 
-Composite definitions MAY expose internal module parameters through the existing `parameters` binding declarations.
+Composite definitions SHALL expose internal module parameters only through declared `parameters` binding declarations when
+such bindings are present.
 
 #### Scenario: Composite parameter maps to internal parameter
 
@@ -68,7 +69,8 @@ Composite definitions MAY expose internal module parameters through the existing
 
 ### Requirement: Composite asset bindings
 
-Composite definitions MAY expose asset bindings through the existing `asset_bindings` declarations.
+Composite definitions SHALL expose asset bindings only through declared `asset_bindings` declarations when such bindings
+are present.
 
 #### Scenario: Composite asset binding maps to internal module
 
@@ -82,8 +84,8 @@ Composite definitions MAY expose asset bindings through the existing `asset_bind
 
 ### Requirement: Composite diagnostics map to source context
 
-Diagnostics produced from an expanded composite graph SHOULD include both the expanded internal module reference and the
-source composite instance/internal path where available.
+Diagnostics produced from an expanded composite graph SHALL include the expanded internal module reference, and SHALL
+include the source composite instance/internal path where available.
 
 #### Scenario: Expanded internal port fails validation
 
@@ -93,8 +95,8 @@ source composite instance/internal path where available.
 
 ### Requirement: External composite libraries are optional future extension
 
-Composite definitions MAY later be loaded from configured external composite directories, but inline
-`module_definitions` remain the canonical model for this change.
+Composite definitions SHALL continue to support inline `module_definitions` as the canonical model for this change;
+external composite directory loading MAY be added later only as a compatible extension.
 
 #### Scenario: External composite support absent
 

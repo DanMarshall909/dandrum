@@ -280,6 +280,14 @@ impl DandrumEngine {
         }
     }
 
+    pub(crate) fn render_prepared_instrument_offline(
+        &mut self,
+        prepared: &preparation::PreparedInstrument,
+        events: Vec<TimedInputEvent>,
+    ) -> OfflineRender {
+        self.render_prepared_offline(prepared, events)
+    }
+
     pub fn prepare(&mut self, sample_rate: f32) {
         self.prepare_realtime(sample_rate, DEFAULT_PREPARED_MAX_BLOCK_SIZE);
     }

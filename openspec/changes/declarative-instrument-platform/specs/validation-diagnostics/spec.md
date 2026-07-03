@@ -66,7 +66,7 @@ Diagnostics involving type or value mismatches SHALL report the expected type/va
 
 ### Requirement: Suggested fix
 
-Where safe to compute automatically, diagnostics SHOULD include a suggested fix.
+Where safe to compute automatically, diagnostics SHALL include a suggested fix.
 
 #### Scenario: Missing connection suggests add
 

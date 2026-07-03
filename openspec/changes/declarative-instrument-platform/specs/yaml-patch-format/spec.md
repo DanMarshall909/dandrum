@@ -53,8 +53,8 @@ specified.
 
 ### Requirement: Patch-level parameter bindings are compatible
 
-The YAML patch format MAY add a patch-level `parameters` section for externally controlled named parameters, but it
-SHALL NOT conflict with existing module-level parameters or composite parameter bindings.
+The YAML patch format SHALL allow compatible patch-level `parameters` where implemented, and those parameters SHALL NOT
+conflict with existing module-level parameters or composite parameter bindings.
 
 #### Scenario: Patch parameter binds to module parameter
 
@@ -68,8 +68,8 @@ SHALL NOT conflict with existing module-level parameters or composite parameter 
 
 ### Requirement: Presets are parameter sets, not new graph semantics
 
-The YAML patch format MAY support presets as named parameter sets applied to an existing patch or composite. Presets
-SHALL NOT add hidden modules, hidden connections, hidden assets, or hidden realtime behaviour.
+The YAML patch format SHALL support presets as named parameter sets when presets are implemented. Presets SHALL NOT add
+hidden modules, hidden connections, hidden assets, or hidden realtime behaviour.
 
 #### Scenario: Preset applies parameter values
 

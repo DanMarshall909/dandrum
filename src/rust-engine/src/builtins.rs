@@ -561,7 +561,7 @@ fn echo_definition() -> BuiltInModuleDefinition {
 
 fn noise_definition() -> BuiltInModuleDefinition {
     BuiltInModuleDefinition::new(module_types::NOISE)
-        .with_execution_scope(ExecutionScope::Global)
+        .with_execution_scope(ExecutionScope::Voice)
         .with_output(Port::output(builtin_ports::AUDIO, SignalType::Audio))
         .with_parameter(
             ParameterMetadata::new("seed", ParameterValueType::Number)

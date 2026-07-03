@@ -89,10 +89,18 @@ pub(crate) fn prepare_instrument_file(
 ) -> Result<PreparedInstrument, PreparationError> {
     let path = path.as_ref();
     let patch_doc = load_patch_document(path)?;
+    let base_dir = path.parent().unwrap_or_else(|| Path::new("."));
+
+    prepare_instrument_document(patch_doc, base_dir)
+}
+
+pub(crate) fn prepare_instrument_document(
+    patch_doc: PatchDocument,
+    base_dir: impl AsRef<Path>,
+) -> Result<PreparedInstrument, PreparationError> {
     validate_patch_document(&patch_doc)?;
     let resolved_parameters = resolve_patch_parameters(&patch_doc)?;
     let graph = build_validated_graph_with_resolved_parameters(&patch_doc, &resolved_parameters)?;
-    let base_dir = path.parent().unwrap_or_else(|| Path::new("."));
     let sampler_assets = prepare_assets(&patch_doc, base_dir)?;
     let compiled_patch = compile_patch(&graph, &patch_doc)?;
 

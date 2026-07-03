@@ -1,0 +1,24 @@
+metadata:
+  name: Script Velocity Map
+render:
+  sample_rate_hz: 48000
+  block_size_frames: 128
+  duration_frames: 128
+modules:
+  - id: midi
+    type: midi_input
+  - id: velocity_map
+    type: script
+    source: |
+      velocity = note.velocity / 127.0
+    inputs:
+      - name: notes
+        signal_type: event
+    outputs:
+      - name: velocity
+        signal_type: control
+      - name: routed_notes
+        signal_type: event
+connections:
+  - from: midi.events
+    to: velocity_map.notes

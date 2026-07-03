@@ -49,13 +49,13 @@
 
 ## 5. Script Module Constraints
 
-- [ ] 5.1 Define the supported script language/runtime surface for the first implementation.
-- [ ] 5.2 Parse and validate scripts off the audio thread before graph render preparation.
-- [ ] 5.3 Reject filesystem, network, blocking, and nondeterministic APIs at validation time where possible.
-- [ ] 5.4 Enforce bounded execution cost during render-time script execution.
-- [ ] 5.5 Prevent audio-rate output ports on script modules in the initial implementation.
-- [ ] 5.6 Report script validation/runtime failures through structured diagnostics.
-- [ ] 5.7 Add deterministic tests for event/control script behaviour.
+- [x] 5.1 Define the supported script language/runtime surface for the first implementation.
+- [x] 5.2 Parse and validate scripts off the audio thread before graph render preparation.
+- [x] 5.3 Reject filesystem, network, blocking, and nondeterministic APIs at validation time where possible.
+- [x] 5.4 Enforce bounded execution cost during render-time script execution.
+- [x] 5.5 Prevent audio-rate output ports on script modules in the initial implementation.
+- [x] 5.6 Report script validation/runtime failures through structured diagnostics.
+- [x] 5.7 Add deterministic tests for event/control script behaviour.
 
 ## 6. Composite Hardening
 
@@ -77,12 +77,12 @@
 
 ## 8. Generic Event Routing Alignment
 
-- [ ] 8.1 Keep generic event-routing primitives event-only: no samples, synthesis chains, audio outputs, mixer, sequencer,
+- [x] 8.1 Keep generic event-routing primitives event-only: no samples, synthesis chains, audio outputs, mixer, sequencer,
   tempo, clock, probability, or transport.
-- [ ] 8.2 Align event-routing behavior with the `add-event-routing-primitives` change and treat drum-machine behavior as a
+- [x] 8.2 Align event-routing behavior with the `add-event-routing-primitives` change and treat drum-machine behavior as a
   dogfood example, not a Rust primitive.
-- [ ] 8.3 Add tests proving routed event outputs trigger explicitly declared downstream voice composites.
-- [ ] 8.4 Add tests proving event-routing modules without downstream audio modules produce no audio by themselves.
+- [x] 8.3 Add tests proving routed event outputs trigger explicitly declared downstream voice composites.
+- [x] 8.4 Add tests proving event-routing modules without downstream audio modules produce no audio by themselves.
 
 ## 9. Acceptance Examples
 
@@ -90,16 +90,16 @@
   kick module. Patch uses note_to_rate (Voice-scoped, for same-block pitch), saw oscillator filtered by moog lowpass,
   ADSR amplitude envelope, and gain VCA. Deterministic render test verifies non-zero output, decay (first quarter
   energy > rest), and bit-exact repeatability.
-- [ ] 9.2 Verify the 808 kick loads and renders deterministically.
-- [ ] 9.3 Add synthetic snare example after `noise`, `multiply`, and envelope/control routing are proven.
-- [ ] 9.4 Add closed/open hi-hat examples after filter/noise/envelope routing is proven.
-- [ ] 9.5 Add subtractive synth voice example only after oscillator waveform support is explicitly implemented or the
+- [x] 9.2 Verify the 808 kick loads and renders deterministically.
+- [x] 9.3 Add synthetic snare example after `noise`, `multiply`, and envelope/control routing are proven.
+- [x] 9.4 Add closed/open hi-hat examples after filter/noise/envelope routing is proven.
+- [x] 9.5 Add subtractive synth voice example only after oscillator waveform support is explicitly implemented or the
   example is adjusted to current oscillator capability.
-- [ ] 9.6 Add sampler voice example using the existing sampler module and explicit pitch/amp control routing.
-- [ ] 9.7 Add effects rack example using existing effect modules.
-- [ ] 9.8 Add script event/control mapping example after script constraints are implemented.
-- [ ] 9.9 Add drum-machine-style dogfood example after generic event-routing behaviour is implemented.
-- [ ] 9.10 Add simple polyphonic synth dogfood example using generic primitives/composites rather than a dedicated Rust
+- [x] 9.6 Add sampler voice example using the existing sampler module and explicit pitch/amp control routing.
+- [x] 9.7 Add effects rack example using existing effect modules.
+- [x] 9.8 Add script event/control mapping example after script constraints are implemented.
+- [x] 9.9 Add drum-machine-style dogfood example after generic event-routing behaviour is implemented.
+- [x] 9.10 Add simple polyphonic synth dogfood example using generic primitives/composites rather than a dedicated Rust
   instrument module.
 
 ## 10. Capability Discovery
@@ -117,6 +117,5 @@
 - [x] 11.1 Run Rust tests: `$HOME/.cargo/bin/cargo test --manifest-path src/rust-engine/Cargo.toml`.
 - [x] 11.2 Run CMake/CTest verification: `cmake --build build && ctest --test-dir build` — all 3 tests pass (
   rust-engine-tests, cxx-rust-engine-ffi-smoke, realtime-callback-safety).
-- [ ] 11.3 Run OpenSpec validation for `declarative-instrument-platform` (openspec validate command not available;
-  skipped for now).
+- [x] 11.3 Run OpenSpec validation for `declarative-instrument-platform`.
 - [x] 11.4 Task checkboxes updated.

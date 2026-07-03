@@ -1,0 +1,48 @@
+metadata:
+  name: Synthetic Snare
+render:
+  sample_rate_hz: 48000
+  block_size_frames: 128
+  duration_frames: 2048
+modules:
+  - id: midi
+    type: midi_input
+  - id: tone
+    type: oscillator
+  - id: noise
+    type: noise
+    parameters:
+      seed: 1979
+  - id: tone_env
+    type: adsr
+  - id: noise_env
+    type: adsr
+  - id: tone_vca
+    type: gain
+  - id: noise_vca
+    type: gain
+  - id: mix
+    type: audio_mixer
+  - id: out
+    type: audio_output
+connections:
+  - from: midi.events
+    to: tone_env.gate
+  - from: midi.events
+    to: noise_env.gate
+  - from: tone.audio
+    to: tone_vca.audio_in
+  - from: tone_env.value
+    to: tone_vca.gain
+  - from: noise.audio
+    to: noise_vca.audio_in
+  - from: noise_env.value
+    to: noise_vca.gain
+  - from: tone_vca.audio_out
+    to: mix.inputs
+  - from: noise_vca.audio_out
+    to: mix.inputs
+  - from: mix.mix
+    to: out.left
+  - from: mix.mix
+    to: out.right

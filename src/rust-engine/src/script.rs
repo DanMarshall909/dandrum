@@ -1,6 +1,8 @@
 use std::collections::BTreeMap;
 use std::fmt;
 
+use crate::diagnostics::{Diagnostic, Severity, error_codes};
+
 #[derive(Clone, Debug, PartialEq)]
 pub struct ScriptProcessInput {
     events: Vec<ScriptEvent>,
@@ -159,6 +161,22 @@ impl fmt::Display for ScriptExecutionError {
 
 impl std::error::Error for ScriptExecutionError {}
 
+impl ScriptExecutionError {
+    pub fn to_diagnostic(&self, module_id: impl Into<String>) -> Diagnostic {
+        match self {
+            Self::OperationBudgetExceeded { budget, requested } => Diagnostic::new(
+                error_codes::SCRIPT_BUDGET_EXCEEDED,
+                Severity::Error,
+                self.to_string(),
+            )
+            .with_module_id(module_id)
+            .with_expected(format!("<= {budget} operations"))
+            .with_actual(format!("{requested} operations"))
+            .with_suggested_fix("reduce script work or increase the prepared script budget"),
+        }
+    }
+}
+
 pub trait ScriptRuntime {
     fn process(
         &mut self,
@@ -245,6 +263,13 @@ mod tests {
             error.to_string(),
             "script operation budget exceeded: budget 2, requested 3"
         );
+
+        let diagnostic = error.to_diagnostic("mapper");
+        assert_eq!(diagnostic.error_code(), error_codes::SCRIPT_BUDGET_EXCEEDED);
+        assert_eq!(diagnostic.severity(), Severity::Error);
+        assert_eq!(diagnostic.module_id(), Some("mapper"));
+        assert_eq!(diagnostic.expected(), Some("<= 2 operations"));
+        assert_eq!(diagnostic.actual(), Some("3 operations"));
     }
 
     struct LastNoteRuntime;

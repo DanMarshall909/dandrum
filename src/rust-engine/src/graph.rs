@@ -294,7 +294,15 @@ impl Graph {
                 let definition = registry.get(&module.module_type);
 
                 if let Some(definition) = definition {
-                    node = node.with_execution_scope(definition.execution_scope());
+                    let execution_scope = if module.id.contains(graph_composite::NAMESPACED_ID_SEPARATOR)
+                        && (module.module_type == module_types::AUDIO_MIXER
+                            || module.module_type == module_types::CONTROL_MIXER)
+                    {
+                        ExecutionScope::Voice
+                    } else {
+                        definition.execution_scope()
+                    };
+                    node = node.with_execution_scope(execution_scope);
 
                     for input in definition.inputs() {
                         node = if input.accepts_multiple_sources() {

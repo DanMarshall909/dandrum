@@ -91,8 +91,10 @@ The oscillator module SHALL document its supported waveform behaviour through pa
 
 ### Requirement: Deferred modules are not part of this built-in milestone
 
-Envelope follower, general delay line, FM operator, resonator, state-variable filter, wavefolder, sample-and-hold, and
-specialist drum voice modules SHALL NOT be required built-ins for this change.
+The engine SHALL fail validation for unavailable deferred module types rather than accepting them silently. Envelope
+follower, general delay line, FM operator, resonator, state-variable filter, wavefolder, sample-and-hold, and specialist
+drum voice modules are deferred built-ins for this change. The engine MUST report an unknown or unsupported module
+diagnostic for unavailable deferred module types.
 
 #### Scenario: Deferred module appears in a patch
 

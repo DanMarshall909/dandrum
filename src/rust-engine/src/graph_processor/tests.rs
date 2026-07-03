@@ -2654,6 +2654,104 @@ fn simple_poly_synth_dogfood_consumes_note_events_through_generic_routing() {
     assert_eq!(blocked.1, vec![0.0; patch.render.duration_frames as usize]);
 }
 
+#[test]
+fn additional_acceptance_examples_load_validate_and_render_where_supported() {
+    for (fixture, note) in [
+        ("examples/patches/synthetic-snare.yaml", 38),
+        ("examples/patches/synthetic-hats.yaml", 42),
+        ("examples/patches/synthetic-808-kick.yaml", 60),
+    ] {
+        let Some(yaml) = read_repo_fixture(fixture) else {
+            return;
+        };
+        let patch = patch::load_patch_str(&yaml).expect("acceptance example should parse");
+        patch::validate_patch_schema(&patch).expect("acceptance example should validate");
+        let graph = Graph::from_patch_declarations(&patch);
+        graph.validate().expect("acceptance graph should validate");
+
+        let (left, right) =
+            render_offline(&graph, &patch.render, vec![note_on_value(0, note, 100)]);
+        let (left_again, right_again) =
+            render_offline(&graph, &patch.render, vec![note_on_value(0, note, 100)]);
+
+        assert_eq!(
+            left, left_again,
+            "{fixture} left channel should be deterministic"
+        );
+        assert_eq!(
+            right, right_again,
+            "{fixture} right channel should be deterministic"
+        );
+        let peak = left
+            .iter()
+            .chain(right.iter())
+            .map(|sample| sample.abs())
+            .fold(0.0_f32, f32::max);
+        assert!(
+            peak > 0.0,
+            "{fixture} should render non-empty audio; peak was {peak}"
+        );
+    }
+}
+
+#[test]
+fn drum_kit_composite_examples_load_validate_and_render_with_documented_primitive_ports() {
+    for (fixture, note, should_render) in [
+        ("examples/patches/composite-velocity-vca.yaml", 60, true),
+        ("examples/patches/composite-impulse-tone.yaml", 60, true),
+        ("examples/patches/composite-impulse-noise.yaml", 60, true),
+        ("examples/patches/composite-impulse-layer.yaml", 60, true),
+        ("examples/patches/drum-kit.yaml", 60, true),
+    ] {
+        let Some(yaml) = read_repo_fixture(fixture) else {
+            return;
+        };
+        let patch = patch::load_patch_str(&yaml).expect("drum kit example should parse");
+
+        patch::validate_patch_schema(&patch).expect("drum kit example schema should validate");
+        let graph = Graph::from_patch_declarations(&patch);
+        graph.validate().expect("drum kit example graph should validate");
+
+        if !should_render {
+            continue;
+        }
+
+        let (left, right) = render_offline(&graph, &patch.render, vec![note_on_value(0, note, 100)]);
+
+        let peak = left
+            .iter()
+            .chain(right.iter())
+            .map(|sample| sample.abs())
+            .fold(0.0_f32, f32::max);
+        assert!(
+            peak > 0.0,
+            "{fixture} should render non-empty audio; peak was {peak}"
+        );
+    }
+}
+
+#[test]
+fn script_mapping_example_is_event_control_only_and_validates() {
+    let Some(yaml) = read_repo_fixture("examples/patches/script-velocity-map.yaml") else {
+        return;
+    };
+    let patch = patch::load_patch_str(&yaml).expect("script example should parse");
+
+    patch::validate_patch_schema(&patch).expect("script example should validate");
+    let script = patch
+        .modules
+        .iter()
+        .find(|module| module.id == "velocity_map")
+        .expect("script module should exist");
+
+    assert!(
+        script
+            .outputs
+            .iter()
+            .all(|output| output.signal_type != patch::SignalType::Audio)
+    );
+}
+
 fn read_repo_fixture(relative_path: &str) -> Option<String> {
     let path = Path::new(env!("CARGO_MANIFEST_DIR"))
         .join("../..")
@@ -3174,8 +3272,12 @@ modules:
         signal_type: audio
       - name: right
         signal_type: audio
+  - id: mixer
+    type: audio_mixer
 connections:
   - from: noise.audio
+    to: mixer.inputs
+  - from: mixer.mix
     to: out.left
 "#,
     );
@@ -3203,8 +3305,12 @@ modules:
         signal_type: audio
       - name: right
         signal_type: audio
+  - id: mixer
+    type: audio_mixer
 connections:
   - from: noise.audio
+    to: mixer.inputs
+  - from: mixer.mix
     to: out.left
 "#,
     );
