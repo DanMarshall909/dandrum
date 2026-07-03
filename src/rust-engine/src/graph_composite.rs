@@ -37,6 +37,7 @@ pub(super) fn expand_patch_declarations(
 
         for internal in &definition.modules {
             let mut expanded = internal.clone();
+            apply_composite_parameter_bindings(&mut expanded, module, definition);
             expanded.id = namespaced_id(&module.id, &internal.id);
             modules.push(expanded);
         }
@@ -70,6 +71,32 @@ pub(super) fn expand_patch_declarations(
     }
 
     (modules, connections)
+}
+
+fn apply_composite_parameter_bindings(
+    internal: &mut patch::ModuleDeclaration,
+    instance: &patch::ModuleDeclaration,
+    definition: &patch::ModuleDefinitionDeclaration,
+) {
+    for binding in &definition.parameters {
+        let value = instance
+            .parameters
+            .get(&binding.name)
+            .or(binding.value.as_ref())
+            .or(binding.default.as_ref());
+
+        let Some(value) = value else {
+            continue;
+        };
+
+        for target in &binding.maps_to {
+            if target.module_id == internal.id {
+                internal
+                    .parameters
+                    .insert(target.port_name.clone(), value.clone());
+            }
+        }
+    }
 }
 
 fn expand_source_reference(
