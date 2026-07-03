@@ -215,6 +215,160 @@ connections:
 }
 
 #[test]
+fn event_filter_ports_are_named_typed_event_ports_from_patch_declarations() {
+    let patch = patch::load_patch_str(
+        r#"
+metadata:
+  name: Event Filter Graph
+render:
+  sample_rate_hz: 48000
+  block_size_frames: 64
+  duration_frames: 64
+modules:
+  - id: midi
+    type: midi_input
+  - id: kick_filter
+    type: event_filter
+    parameters:
+      selector: note
+      note: 36
+connections:
+  - from: midi.events
+    to: kick_filter.events_in
+"#,
+    )
+    .expect("patch should parse");
+    patch::validate_patch_schema(&patch).expect("event filter patch should validate");
+
+    let graph = Graph::from_patch_declarations(&patch);
+    let filter = graph
+        .modules()
+        .iter()
+        .find(|module| module.id().as_str() == "kick_filter")
+        .expect("event_filter should be present in graph");
+
+    assert_eq!(filter.inputs()[0].name(), builtin_ports::EVENTS_IN);
+    assert_eq!(filter.inputs()[0].signal_type(), SignalType::Event);
+    assert_eq!(filter.outputs()[0].name(), builtin_ports::EVENTS_OUT);
+    assert_eq!(filter.outputs()[0].signal_type(), SignalType::Event);
+    graph
+        .validate()
+        .expect("compatible event route should validate");
+}
+
+#[test]
+fn event_filter_output_connects_to_compatible_downstream_event_input() {
+    let graph = Graph::new(
+        vec![
+            ModuleNode::new(ModuleId::new("midi"), "midi_input")
+                .with_output(builtin_ports::EVENTS, SignalType::Event),
+            ModuleNode::new(ModuleId::new("filter"), "event_filter")
+                .with_input(builtin_ports::EVENTS_IN, SignalType::Event)
+                .with_output(builtin_ports::EVENTS_OUT, SignalType::Event),
+            ModuleNode::new(ModuleId::new("env"), "adsr")
+                .with_input(builtin_ports::GATE, SignalType::Event),
+        ],
+        vec![
+            Cable::new(
+                PortRef::new(ModuleId::new("midi"), builtin_ports::EVENTS),
+                PortRef::new(ModuleId::new("filter"), builtin_ports::EVENTS_IN),
+            ),
+            Cable::new(
+                PortRef::new(ModuleId::new("filter"), builtin_ports::EVENTS_OUT),
+                PortRef::new(ModuleId::new("env"), builtin_ports::GATE),
+            ),
+        ],
+    );
+
+    graph
+        .validate()
+        .expect("event routing output should connect downstream");
+}
+
+#[test]
+fn audio_or_control_routes_to_event_filter_are_rejected_with_type_diagnostics() {
+    let audio_graph = Graph::new(
+        vec![
+            ModuleNode::new(ModuleId::new("osc"), "oscillator")
+                .with_output(builtin_ports::AUDIO, SignalType::Audio),
+            ModuleNode::new(ModuleId::new("filter"), "event_filter")
+                .with_input(builtin_ports::EVENTS_IN, SignalType::Event),
+        ],
+        vec![Cable::new(
+            PortRef::new(ModuleId::new("osc"), builtin_ports::AUDIO),
+            PortRef::new(ModuleId::new("filter"), builtin_ports::EVENTS_IN),
+        )],
+    );
+    let control_graph = Graph::new(
+        vec![
+            ModuleNode::new(ModuleId::new("lfo"), "lfo")
+                .with_output(builtin_ports::VALUE, SignalType::Control),
+            ModuleNode::new(ModuleId::new("filter"), "event_filter")
+                .with_input(builtin_ports::EVENTS_IN, SignalType::Event),
+        ],
+        vec![Cable::new(
+            PortRef::new(ModuleId::new("lfo"), builtin_ports::VALUE),
+            PortRef::new(ModuleId::new("filter"), builtin_ports::EVENTS_IN),
+        )],
+    );
+
+    assert!(matches!(
+        audio_graph
+            .validate()
+            .expect_err("audio to event should fail")
+            .diagnostics()[0],
+        GraphDiagnostic::IncompatibleSignalTypes {
+            source_type: SignalType::Audio,
+            destination_type: SignalType::Event,
+            ..
+        }
+    ));
+    assert!(matches!(
+        control_graph
+            .validate()
+            .expect_err("control to event should fail")
+            .diagnostics()[0],
+        GraphDiagnostic::IncompatibleSignalTypes {
+            source_type: SignalType::Control,
+            destination_type: SignalType::Event,
+            ..
+        }
+    ));
+}
+
+#[test]
+fn event_filter_does_not_hide_invalid_feedback_cycles() {
+    let graph = Graph::new(
+        vec![
+            ModuleNode::new(ModuleId::new("a"), "event_filter")
+                .with_input(builtin_ports::EVENTS_IN, SignalType::Event)
+                .with_output(builtin_ports::EVENTS_OUT, SignalType::Event),
+            ModuleNode::new(ModuleId::new("b"), "event_filter")
+                .with_input(builtin_ports::EVENTS_IN, SignalType::Event)
+                .with_output(builtin_ports::EVENTS_OUT, SignalType::Event),
+        ],
+        vec![
+            Cable::new(
+                PortRef::new(ModuleId::new("a"), builtin_ports::EVENTS_OUT),
+                PortRef::new(ModuleId::new("b"), builtin_ports::EVENTS_IN),
+            ),
+            Cable::new(
+                PortRef::new(ModuleId::new("b"), builtin_ports::EVENTS_OUT),
+                PortRef::new(ModuleId::new("a"), builtin_ports::EVENTS_IN),
+            ),
+        ],
+    );
+
+    assert!(matches!(
+        graph
+            .validate()
+            .expect_err("event feedback without a boundary should fail")
+            .diagnostics()[0],
+        GraphDiagnostic::CycleDetected { .. }
+    ));
+}
+
+#[test]
 fn composite_instance_expands_to_namespaced_internal_modules_and_cables() {
     let patch = patch::load_patch_str(
         r#"
@@ -1159,7 +1313,7 @@ fn validation_rejects_instantaneous_control_feedback_cycle() {
 }
 
 #[test]
-fn validation_accepts_event_feedback_cycle_for_future_scheduling() {
+fn validation_rejects_event_feedback_cycle_without_future_scheduling_boundary() {
     let graph = Graph::new(
         vec![
             ModuleNode::new(ModuleId::new("first"), "script")
@@ -1175,9 +1329,13 @@ fn validation_accepts_event_feedback_cycle_for_future_scheduling() {
         ],
     );
 
-    graph
-        .validate()
-        .expect("event feedback should be handled by future-block scheduling");
+    assert!(matches!(
+        graph
+            .validate()
+            .expect_err("event feedback without an explicit boundary should fail")
+            .diagnostics()[0],
+        GraphDiagnostic::CycleDetected { .. }
+    ));
 }
 
 // --- Section 3: Voice sub-synth scope and routing validation ---

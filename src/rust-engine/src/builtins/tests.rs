@@ -158,6 +158,7 @@ fn built_in_module_tests_inspect_port_directions_and_feedback_boundaries() {
         module_types::REVERB,
         module_types::FREQUENCY_SPLITTER,
         module_types::SPECTRAL_PROCESSOR,
+        module_types::EVENT_FILTER,
     ] {
         let definition = registry
             .get(module_type)
@@ -186,6 +187,57 @@ fn built_in_module_tests_inspect_port_directions_and_feedback_boundaries() {
             .feedback_boundaries(),
         &[SignalType::Control]
     );
+}
+
+#[test]
+fn event_filter_definition_exposes_event_ports_selector_metadata_defaults_and_example() {
+    let registry = BuiltInModuleRegistry::new();
+
+    let event_filter = registry
+        .get(module_types::EVENT_FILTER)
+        .expect("event_filter should be built in");
+
+    assert_has_input(event_filter, builtin_ports::EVENTS_IN, SignalType::Event);
+    assert_has_output(event_filter, builtin_ports::EVENTS_OUT, SignalType::Event);
+    assert!(
+        event_filter
+            .inputs()
+            .iter()
+            .all(|port| port.signal_type() == SignalType::Event)
+    );
+    assert!(
+        event_filter
+            .outputs()
+            .iter()
+            .all(|port| port.signal_type() == SignalType::Event)
+    );
+    assert!(event_filter.feedback_boundaries().is_empty());
+    assert!(event_filter.examples().iter().any(|example| {
+        example.contains(module_types::EVENT_FILTER)
+            && example.contains(EVENT_FILTER_SELECTOR_PARAMETER)
+            && example.contains(EVENT_FILTER_NOTE_PARAMETER)
+    }));
+
+    let selector = event_filter
+        .parameters()
+        .iter()
+        .find(|parameter| parameter.name() == EVENT_FILTER_SELECTOR_PARAMETER)
+        .expect("event_filter should declare selector metadata");
+    assert_eq!(selector.value_type(), ParameterValueType::Text);
+    assert_eq!(selector.default(), Some(EVENT_FILTER_SELECTOR_DEFAULT));
+    assert_eq!(
+        selector.enum_values(),
+        Some(&[EVENT_FILTER_NOTE_SELECTOR.to_string()][..])
+    );
+
+    let note = event_filter
+        .parameters()
+        .iter()
+        .find(|parameter| parameter.name() == EVENT_FILTER_NOTE_PARAMETER)
+        .expect("event_filter should declare note metadata");
+    assert_eq!(note.value_type(), ParameterValueType::Integer);
+    assert_eq!(note.range(), Some((0.0, 127.0)));
+    assert!(note.realtime_note().is_some());
 }
 
 #[test]

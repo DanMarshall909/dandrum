@@ -283,6 +283,35 @@ pub(super) fn process_note_to_rate(
     outputs
 }
 
+pub(super) fn process_event_filter(
+    state: &mut PerModuleState,
+    events_in: &[BlockEvent],
+) -> ModuleOutputs {
+    let note = match state {
+        PerModuleState::EventFilter { note } => *note,
+        _ => unreachable!(),
+    };
+
+    let mut outputs = ModuleOutputs::empty();
+    outputs.events.reserve(events_in.len());
+    for event in events_in {
+        if event_matches_note(event, note) {
+            outputs.events.push(event.clone());
+        }
+    }
+    outputs
+}
+
+fn event_matches_note(event: &BlockEvent, expected_note: Option<u8>) -> bool {
+    let Some(expected_note) = expected_note else {
+        return true;
+    };
+
+    match event.event {
+        ScriptEvent::NoteOn { note, .. } | ScriptEvent::NoteOff { note } => note == expected_note,
+    }
+}
+
 pub(super) fn process_dynamics_processor(
     state: &mut PerModuleState,
     audio_in: &[f32],

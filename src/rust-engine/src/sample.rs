@@ -228,6 +228,7 @@ mod tests {
                     "asset".to_string(),
                     ParameterValue::Text("hit".to_string()),
                 )]),
+                extra_fields: BTreeMap::new(),
             }],
             connections: vec![],
             voice_allocation: VoiceAllocation::default(),

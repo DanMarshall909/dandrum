@@ -266,6 +266,7 @@ mod tests {
             inputs: vec![],
             outputs: vec![],
             parameters: BTreeMap::new(),
+            extra_fields: BTreeMap::new(),
         }
     }
 

@@ -27,6 +27,11 @@ pub struct ParameterMetadata {
     realtime_note: Option<String>,
 }
 
+pub const EVENT_FILTER_SELECTOR_PARAMETER: &str = "selector";
+pub const EVENT_FILTER_NOTE_PARAMETER: &str = "note";
+pub const EVENT_FILTER_NOTE_SELECTOR: &str = "note";
+pub const EVENT_FILTER_SELECTOR_DEFAULT: &str = EVENT_FILTER_NOTE_SELECTOR;
+
 impl ParameterMetadata {
     pub fn new(name: impl Into<String>, value_type: ParameterValueType) -> Self {
         Self {
@@ -118,6 +123,7 @@ pub struct BuiltInModuleDefinition {
     feedback_boundaries: Vec<SignalType>,
     execution_scope: ExecutionScope,
     parameters: Vec<ParameterMetadata>,
+    examples: Vec<String>,
     category: ModuleCategory,
 }
 
@@ -135,8 +141,18 @@ impl BuiltInModuleDefinition {
             feedback_boundaries: Vec::new(),
             execution_scope: ExecutionScope::Global,
             parameters: Vec::new(),
+            examples: Vec::new(),
             category: ModuleCategory::Primitive,
         }
+    }
+
+    pub fn with_example(mut self, example: impl Into<String>) -> Self {
+        self.examples.push(example.into());
+        self
+    }
+
+    pub fn examples(&self) -> &[String] {
+        &self.examples
     }
 
     pub fn with_parameter(mut self, param: ParameterMetadata) -> Self {
@@ -227,6 +243,7 @@ impl BuiltInModuleRegistry {
             impulse_definition(),
             multiply_definition(),
             note_to_control_definition(),
+            event_filter_definition(),
         ])
     }
 
@@ -394,6 +411,28 @@ fn note_to_rate_definition() -> BuiltInModuleDefinition {
         .with_output(Port::output(builtin_ports::RATE, SignalType::Control))
 }
 
+fn event_filter_definition() -> BuiltInModuleDefinition {
+    BuiltInModuleDefinition::new(module_types::EVENT_FILTER)
+        .with_execution_scope(ExecutionScope::Voice)
+        .with_input(Port::input(builtin_ports::EVENTS_IN, SignalType::Event))
+        .with_output(Port::output(builtin_ports::EVENTS_OUT, SignalType::Event))
+        .with_parameter(
+            ParameterMetadata::new(EVENT_FILTER_SELECTOR_PARAMETER, ParameterValueType::Text)
+                .with_default(EVENT_FILTER_SELECTOR_DEFAULT)
+                .with_enum_values(vec![EVENT_FILTER_NOTE_SELECTOR])
+                .with_description("Selects which event field the filter matches."),
+        )
+        .with_parameter(
+            ParameterMetadata::new(EVENT_FILTER_NOTE_PARAMETER, ParameterValueType::Integer)
+                .with_range(0.0, 127.0)
+                .with_description("MIDI note number passed by the note selector.")
+                .with_realtime_note("Filtering compares incoming event metadata without generating audio or control output."),
+        )
+        .with_example(
+            "- id: kick_filter\n  type: event_filter\n  parameters:\n    selector: note\n    note: 36",
+        )
+}
+
 fn dynamics_processor_definition() -> BuiltInModuleDefinition {
     BuiltInModuleDefinition::new(module_types::DYNAMICS_PROCESSOR)
         .with_input(Port::input(builtin_ports::AUDIO_IN, SignalType::Audio))
@@ -533,7 +572,7 @@ fn noise_definition() -> BuiltInModuleDefinition {
 
 fn impulse_definition() -> BuiltInModuleDefinition {
     BuiltInModuleDefinition::new(module_types::IMPULSE)
-        .with_execution_scope(ExecutionScope::Global)
+        .with_execution_scope(ExecutionScope::Voice)
         .with_input(Port::input(builtin_ports::TRIGGER, SignalType::Event))
         .with_output(Port::output(builtin_ports::AUDIO, SignalType::Audio))
 }
@@ -551,7 +590,7 @@ fn multiply_definition() -> BuiltInModuleDefinition {
 
 fn note_to_control_definition() -> BuiltInModuleDefinition {
     BuiltInModuleDefinition::new(module_types::NOTE_TO_CONTROL)
-        .with_execution_scope(ExecutionScope::Global)
+        .with_execution_scope(ExecutionScope::Voice)
         .with_input(Port::input(builtin_ports::EVENTS, SignalType::Event))
         .with_output(Port::output("frequency", SignalType::Control))
         .with_output(Port::output("pitch_ratio", SignalType::Control))

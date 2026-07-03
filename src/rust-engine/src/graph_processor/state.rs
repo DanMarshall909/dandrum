@@ -1,6 +1,9 @@
 use std::collections::BTreeMap;
 
 use crate::builtins::module_kind::ModuleKind;
+use crate::builtins::{
+    EVENT_FILTER_NOTE_PARAMETER, EVENT_FILTER_NOTE_SELECTOR, EVENT_FILTER_SELECTOR_PARAMETER,
+};
 use crate::compiled_patch::CompiledNode;
 use crate::convolution::Convolution;
 use crate::crossover::CrossoverPair;
@@ -81,6 +84,9 @@ pub(super) enum PerModuleState {
         current_velocity: f32,
         current_frequency: f32,
         current_pitch_ratio: f32,
+    },
+    EventFilter {
+        note: Option<u8>,
     },
 }
 
@@ -226,6 +232,20 @@ impl PerModuleState {
                 current_frequency: 0.0,
                 current_pitch_ratio: 0.0,
             },
+            ModuleKind::EventFilter => {
+                let selector = params
+                    .get(EVENT_FILTER_SELECTOR_PARAMETER)
+                    .map(String::as_str)
+                    .unwrap_or(EVENT_FILTER_NOTE_SELECTOR);
+                let note = if selector == EVENT_FILTER_NOTE_SELECTOR {
+                    params
+                        .get(EVENT_FILTER_NOTE_PARAMETER)
+                        .and_then(|value| value.parse::<u8>().ok())
+                } else {
+                    None
+                };
+                PerModuleState::EventFilter { note }
+            }
             ModuleKind::Lfo
             | ModuleKind::ControlMixer
             | ModuleKind::AudioDelayOneSample

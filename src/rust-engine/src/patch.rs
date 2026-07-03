@@ -83,7 +83,26 @@ pub struct ModuleDeclaration {
     pub outputs: Vec<PortDeclaration>,
     #[serde(default)]
     pub parameters: BTreeMap<String, ParameterValue>,
+    #[serde(flatten)]
+    pub extra_fields: BTreeMap<String, serde_yaml::Value>,
 }
+
+const EVENT_ROUTING_SIGNAL_CHAIN_FIELDS: &[&str] = &[
+    "module_definitions",
+    "modules",
+    "connections",
+    "assets",
+    "audio_outputs",
+    "mix_outputs",
+];
+const EVENT_ROUTING_SEQUENCING_FIELDS: &[&str] = &[
+    "pattern",
+    "patterns",
+    "steps",
+    "tempo",
+    "transport",
+    "clock",
+];
 
 #[derive(Clone, Debug, Deserialize, PartialEq, Eq)]
 pub struct PortDeclaration {
@@ -145,9 +164,17 @@ pub enum VoiceStealingPolicy {
 
 #[derive(Debug)]
 pub enum PatchLoadError {
-    UnsupportedFormat { path: PathBuf },
-    ReadFailed { path: PathBuf, message: String },
-    ParseFailed { path: Option<PathBuf>, message: String },
+    UnsupportedFormat {
+        path: PathBuf,
+    },
+    ReadFailed {
+        path: PathBuf,
+        message: String,
+    },
+    ParseFailed {
+        path: Option<PathBuf>,
+        message: String,
+    },
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -356,6 +383,10 @@ pub fn validate_patch_schema(patch: &PatchDocument) -> Result<(), PatchValidatio
             validate_sampler_asset_reference(module, patch, &mut result);
         }
 
+        if module.module_type == module_types::EVENT_FILTER {
+            validate_event_routing_module(module, &mut result);
+        }
+
         validate_declared_parameters_for_module(
             "module parameter",
             &module.id,
@@ -386,7 +417,58 @@ pub fn validate_patch_schema(patch: &PatchDocument) -> Result<(), PatchValidatio
         validate_port_reference("connection.to", &connection.to, &mut result);
     }
 
-    if result.is_empty() { Ok(()) } else { Err(result) }
+    if result.is_empty() {
+        Ok(())
+    } else {
+        Err(result)
+    }
+}
+
+fn validate_event_routing_module(
+    module: &ModuleDeclaration,
+    diagnostics: &mut PatchValidationError,
+) {
+    for field in module.extra_fields.keys() {
+        if EVENT_ROUTING_SIGNAL_CHAIN_FIELDS.contains(&field.as_str()) {
+            diagnostics.push(
+                Diagnostic::new(
+                    error_codes::VALIDATION_INVALID_VALUE,
+                    Severity::Error,
+                    format!(
+                        "event-routing module {} cannot declare hidden signal-chain field {field}; model signal chains as external patch modules",
+                        module.id
+                    ),
+                )
+                .with_module_id(&module.id)
+                .with_suggested_fix("move signal-chain behavior into explicit external modules"),
+            );
+        } else if EVENT_ROUTING_SEQUENCING_FIELDS.contains(&field.as_str()) {
+            diagnostics.push(
+                Diagnostic::new(
+                    error_codes::VALIDATION_INVALID_VALUE,
+                    Severity::Error,
+                    format!(
+                        "event-routing module {} cannot declare sequencing field {field}; model sequencing as explicit external modules",
+                        module.id
+                    ),
+                )
+                .with_module_id(&module.id)
+                .with_suggested_fix("move sequencing behavior into explicit external modules"),
+            );
+        } else {
+            diagnostics.push(
+                Diagnostic::new(
+                    error_codes::VALIDATION_INVALID_VALUE,
+                    Severity::Error,
+                    format!(
+                        "event-routing module {} has unsupported field {field}",
+                        module.id
+                    ),
+                )
+                .with_module_id(&module.id),
+            );
+        }
+    }
 }
 
 fn validate_declared_parameters_for_module(
@@ -558,7 +640,10 @@ fn validate_sampler_asset_reference(
             Diagnostic::new(
                 error_codes::VALIDATION_MISSING_FIELD,
                 Severity::Error,
-                format!("sampler module {} missing required asset parameter", module.id),
+                format!(
+                    "sampler module {} missing required asset parameter",
+                    module.id
+                ),
             )
             .with_module_id(&module.id),
         );
@@ -799,10 +884,18 @@ impl fmt::Display for PatchLoadError {
                 write!(formatter, "unsupported patch format: {}", path.display())
             }
             Self::ReadFailed { path, message } => {
-                write!(formatter, "failed to read patch {}: {message}", path.display())
+                write!(
+                    formatter,
+                    "failed to read patch {}: {message}",
+                    path.display()
+                )
             }
             Self::ParseFailed { path, message } => match path {
-                Some(path) => write!(formatter, "failed to parse patch {}: {message}", path.display()),
+                Some(path) => write!(
+                    formatter,
+                    "failed to parse patch {}: {message}",
+                    path.display()
+                ),
                 None => write!(formatter, "failed to parse patch: {message}"),
             },
         }
@@ -890,5 +983,108 @@ pub(super) fn validate_port_reference(
             Severity::Error,
             format!("{label} must use a non-empty module_id.port_name reference"),
         ));
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::builtins::{
+        EVENT_FILTER_NOTE_PARAMETER, EVENT_FILTER_NOTE_SELECTOR, EVENT_FILTER_SELECTOR_PARAMETER,
+    };
+
+    #[test]
+    fn event_filter_yaml_preserves_readable_note_selector_configuration() {
+        let patch = load_patch_str(
+            r#"
+metadata:
+  name: Event Filter
+render:
+  sample_rate_hz: 48000
+  block_size_frames: 64
+  duration_frames: 64
+modules:
+  - id: kick_filter
+    type: event_filter
+    parameters:
+      selector: note
+      note: 36
+"#,
+        )
+        .expect("event_filter patch should parse");
+
+        validate_patch_schema(&patch).expect("event_filter selector should validate");
+
+        assert_eq!(patch.modules[0].module_type, module_types::EVENT_FILTER);
+        assert_eq!(
+            patch.modules[0]
+                .parameters
+                .get(EVENT_FILTER_SELECTOR_PARAMETER),
+            Some(&ParameterValue::Text(
+                EVENT_FILTER_NOTE_SELECTOR.to_string()
+            ))
+        );
+        assert_eq!(
+            patch.modules[0].parameters.get(EVENT_FILTER_NOTE_PARAMETER),
+            Some(&ParameterValue::Number(36.0))
+        );
+    }
+
+    #[test]
+    fn event_filter_yaml_rejects_hidden_signal_chain_fields() {
+        let patch = load_patch_str(
+            r#"
+metadata:
+  name: Hidden Chain
+render:
+  sample_rate_hz: 48000
+  block_size_frames: 64
+  duration_frames: 64
+modules:
+  - id: bad_filter
+    type: event_filter
+    parameters:
+      selector: note
+      note: 36
+    modules: []
+"#,
+        )
+        .expect("patch should parse");
+
+        let error = validate_patch_schema(&patch).expect_err("hidden chain should fail");
+
+        assert!(
+            error
+                .to_string()
+                .contains("hidden signal-chain field modules")
+        );
+        assert!(error.to_string().contains("external patch modules"));
+    }
+
+    #[test]
+    fn event_filter_yaml_rejects_sequencing_fields() {
+        let patch = load_patch_str(
+            r#"
+metadata:
+  name: Hidden Sequencer
+render:
+  sample_rate_hz: 48000
+  block_size_frames: 64
+  duration_frames: 64
+modules:
+  - id: bad_filter
+    type: event_filter
+    parameters:
+      selector: note
+      note: 36
+    pattern: x---
+"#,
+        )
+        .expect("patch should parse");
+
+        let error = validate_patch_schema(&patch).expect_err("hidden sequencing should fail");
+
+        assert!(error.to_string().contains("sequencing field pattern"));
+        assert!(error.to_string().contains("explicit external modules"));
     }
 }

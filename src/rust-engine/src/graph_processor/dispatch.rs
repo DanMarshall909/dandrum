@@ -7,9 +7,10 @@ use super::ModuleInputProvider;
 use super::outputs::{BlockEvent, ModuleOutputs};
 use super::processing::{
     EchoControls, ReverbControls, process_adsr, process_convolution, process_dynamics_processor,
-    process_echo, process_filter, process_frequency_splitter, process_impulse, process_multiply,
-    process_noise, process_note_to_control, process_note_to_rate, process_oscillator,
-    process_reverb, process_sampler, process_saturator, process_spectral_processor, process_vca,
+    process_echo, process_event_filter, process_filter, process_frequency_splitter,
+    process_impulse, process_multiply, process_noise, process_note_to_control,
+    process_note_to_rate, process_oscillator, process_reverb, process_sampler, process_saturator,
+    process_spectral_processor, process_vca,
 };
 use super::state::PerModuleState;
 
@@ -129,6 +130,7 @@ pub(super) fn process_module(
             )
         }
         ModuleKind::NoteToRate => process_note_to_rate(&mut states[module_idx], events_in, frames),
+        ModuleKind::EventFilter => process_event_filter(&mut states[module_idx], events_in),
         ModuleKind::AudioMixer => {
             let mix = input_provider.sum_audio_input(
                 module_idx,

@@ -507,10 +507,6 @@ impl Graph {
                     return Some(path);
                 };
 
-                if signal_type == SignalType::Event {
-                    continue;
-                }
-
                 if !self.cycle_has_feedback_boundary(&path, signal_type) {
                     return Some(path);
                 }

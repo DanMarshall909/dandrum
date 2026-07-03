@@ -28,6 +28,7 @@ pub enum ModuleKind {
     Impulse,
     Multiply,
     NoteToControl,
+    EventFilter,
 }
 
 impl ModuleKind {
@@ -59,6 +60,7 @@ impl ModuleKind {
             module_types::IMPULSE => Some(Self::Impulse),
             module_types::MULTIPLY => Some(Self::Multiply),
             module_types::NOTE_TO_CONTROL => Some(Self::NoteToControl),
+            module_types::EVENT_FILTER => Some(Self::EventFilter),
             _ => None,
         }
     }
@@ -86,6 +88,7 @@ impl ModuleKind {
                 | Self::Impulse
                 | Self::Multiply
                 | Self::NoteToControl
+                | Self::EventFilter
         )
     }
 }

@@ -203,6 +203,9 @@ fn usage() -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::fs;
+
+    const WAV_HEADER_BYTES: usize = 44;
 
     #[test]
     fn help_lists_patch_validation_and_render_commands() {
@@ -259,5 +262,60 @@ mod tests {
         assert!(result.stdout.is_empty());
         assert!(result.stderr.contains("unknown command: inspect"));
         assert!(result.stderr.contains("Usage:"));
+    }
+
+    #[test]
+    fn render_command_writes_deterministic_non_empty_wav_for_event_routing_dogfood_examples() {
+        for patch_name in [
+            "event-routing-drum-machine.yaml",
+            "event-routing-simple-poly-synth.yaml",
+        ] {
+            let patch_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+                .join("../..")
+                .join("examples")
+                .join("patches")
+                .join(patch_name);
+            let first_output = temp_wav_path(patch_name, "first");
+            let second_output = temp_wav_path(patch_name, "second");
+
+            let first = run([
+                "dandrum-cli".to_string(),
+                "render".to_string(),
+                patch_path.to_string_lossy().to_string(),
+                "--output".to_string(),
+                first_output.to_string_lossy().to_string(),
+            ]);
+            let second = run([
+                "dandrum-cli".to_string(),
+                "render".to_string(),
+                patch_path.to_string_lossy().to_string(),
+                "--output".to_string(),
+                second_output.to_string_lossy().to_string(),
+            ]);
+
+            assert_eq!(first.exit_code, 0, "{}", first.stderr);
+            assert_eq!(second.exit_code, 0, "{}", second.stderr);
+
+            let first_bytes = fs::read(&first_output).expect("first WAV should be readable");
+            let second_bytes = fs::read(&second_output).expect("second WAV should be readable");
+            assert_eq!(first_bytes, second_bytes);
+            assert!(first_bytes.len() > WAV_HEADER_BYTES);
+            assert!(
+                first_bytes[WAV_HEADER_BYTES..]
+                    .iter()
+                    .any(|byte| *byte != 0),
+                "{patch_name} should render non-empty WAV audio"
+            );
+
+            let _ = fs::remove_file(first_output);
+            let _ = fs::remove_file(second_output);
+        }
+    }
+
+    fn temp_wav_path(patch_name: &str, label: &str) -> PathBuf {
+        std::env::temp_dir().join(format!(
+            "dandrum-{patch_name}-{label}-{}.wav",
+            std::process::id()
+        ))
     }
 }

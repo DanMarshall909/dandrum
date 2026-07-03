@@ -25,3 +25,4 @@ pub const NOISE: &str = "noise";
 pub const IMPULSE: &str = "impulse";
 pub const MULTIPLY: &str = "multiply";
 pub const NOTE_TO_CONTROL: &str = "note_to_control";
+pub const EVENT_FILTER: &str = "event_filter";

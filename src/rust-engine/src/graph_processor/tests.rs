@@ -1,4 +1,8 @@
 use super::*;
+use crate::builtins::{
+    EVENT_FILTER_NOTE_PARAMETER, EVENT_FILTER_NOTE_SELECTOR, EVENT_FILTER_SELECTOR_PARAMETER,
+    module_types,
+};
 use crate::core::TimedInputEvent;
 use crate::fft;
 use crate::graph::*;
@@ -58,6 +62,57 @@ fn sampler_settings(duration_frames: u64) -> RenderSettings {
 
 fn note_on(frame: u64, velocity: u8) -> TimedInputEvent {
     TimedInputEvent::new(frame, ScriptEvent::NoteOn { note: 60, velocity })
+}
+
+fn note_on_value(frame: u64, note: u8, velocity: u8) -> TimedInputEvent {
+    TimedInputEvent::new(frame, ScriptEvent::NoteOn { note, velocity })
+}
+
+fn event_filter_sampler_graph(filter_note: u8) -> Graph {
+    Graph::new(
+        vec![
+            ModuleNode::new(ModuleId::new("midi"), module_types::MIDI_INPUT)
+                .with_output(builtin_ports::EVENTS, SignalType::Event),
+            ModuleNode::new(ModuleId::new("filter"), module_types::EVENT_FILTER)
+                .with_input(builtin_ports::EVENTS_IN, SignalType::Event)
+                .with_output(builtin_ports::EVENTS_OUT, SignalType::Event)
+                .with_params(BTreeMap::from([
+                    (
+                        EVENT_FILTER_SELECTOR_PARAMETER.to_string(),
+                        EVENT_FILTER_NOTE_SELECTOR.to_string(),
+                    ),
+                    (
+                        EVENT_FILTER_NOTE_PARAMETER.to_string(),
+                        filter_note.to_string(),
+                    ),
+                ])),
+            ModuleNode::new(ModuleId::new("sampler"), module_types::SAMPLER)
+                .with_input(builtin_ports::TRIGGER, SignalType::Event)
+                .with_input(builtin_ports::RATE, SignalType::Control)
+                .with_input(builtin_ports::START, SignalType::Control)
+                .with_input(builtin_ports::LOOP_ENABLED, SignalType::Control)
+                .with_input(builtin_ports::LOOP_START, SignalType::Control)
+                .with_input(builtin_ports::LOOP_END, SignalType::Control)
+                .with_output(builtin_ports::AUDIO, SignalType::Audio),
+            ModuleNode::new(ModuleId::new("out"), module_types::AUDIO_OUTPUT)
+                .with_input(builtin_ports::LEFT, SignalType::Audio)
+                .with_input(builtin_ports::RIGHT, SignalType::Audio),
+        ],
+        vec![
+            Cable::new(
+                PortRef::new(ModuleId::new("midi"), builtin_ports::EVENTS),
+                PortRef::new(ModuleId::new("filter"), builtin_ports::EVENTS_IN),
+            ),
+            Cable::new(
+                PortRef::new(ModuleId::new("filter"), builtin_ports::EVENTS_OUT),
+                PortRef::new(ModuleId::new("sampler"), builtin_ports::TRIGGER),
+            ),
+            Cable::new(
+                PortRef::new(ModuleId::new("sampler"), builtin_ports::AUDIO),
+                PortRef::new(ModuleId::new("out"), builtin_ports::LEFT),
+            ),
+        ],
+    )
 }
 
 fn render_patch(yaml: &str) -> (Vec<f32>, Vec<f32>) {
@@ -309,6 +364,97 @@ fn realtime_graph_processor_reuses_top_level_render_scratch_between_blocks() {
         event_capacity_after_first
     );
     assert_eq!(processor.prepared_voice_count(), voice_count_after_first);
+}
+
+#[test]
+fn event_filter_passes_matching_note_events_without_timing_changes() {
+    let graph = event_filter_sampler_graph(36);
+    graph
+        .validate()
+        .expect("event filter graph should validate");
+    let settings = sampler_settings(6);
+    let assets = sampler_assets(vec![0.25, 0.5]);
+
+    let (left, right) = render_offline_with_sampler_assets(
+        &graph,
+        &settings,
+        vec![note_on_value(2, 36, 100)],
+        &assets,
+    );
+
+    assert_eq!(left, vec![0.0, 0.0, 0.25, 0.5, 0.0, 0.0]);
+    assert_eq!(right, vec![0.0; 6]);
+}
+
+#[test]
+fn event_filter_blocks_non_matching_note_events() {
+    let graph = event_filter_sampler_graph(36);
+    graph
+        .validate()
+        .expect("event filter graph should validate");
+
+    let (left, right) = render_offline_with_sampler_assets(
+        &graph,
+        &sampler_settings(6),
+        vec![note_on_value(2, 38, 100)],
+        &sampler_assets(vec![0.25, 0.5]),
+    );
+
+    assert_eq!(left, vec![0.0; 6]);
+    assert_eq!(right, vec![0.0; 6]);
+}
+
+#[test]
+fn event_filter_render_is_deterministic_for_identical_inputs() {
+    let graph = event_filter_sampler_graph(36);
+    graph
+        .validate()
+        .expect("event filter graph should validate");
+    let settings = sampler_settings(6);
+    let assets = sampler_assets(vec![0.25, 0.5]);
+    let events = vec![note_on_value(2, 36, 100), note_on_value(3, 38, 100)];
+
+    let first = render_offline_with_sampler_assets(&graph, &settings, events.clone(), &assets);
+    let second = render_offline_with_sampler_assets(&graph, &settings, events, &assets);
+
+    assert_eq!(first, second);
+}
+
+#[test]
+fn event_filter_alone_does_not_generate_audio_or_hidden_signal_chain_behavior() {
+    let graph = Graph::new(
+        vec![
+            ModuleNode::new(ModuleId::new("midi"), module_types::MIDI_INPUT)
+                .with_output(builtin_ports::EVENTS, SignalType::Event),
+            ModuleNode::new(ModuleId::new("filter"), module_types::EVENT_FILTER)
+                .with_input(builtin_ports::EVENTS_IN, SignalType::Event)
+                .with_output(builtin_ports::EVENTS_OUT, SignalType::Event)
+                .with_params(BTreeMap::from([
+                    (
+                        EVENT_FILTER_SELECTOR_PARAMETER.to_string(),
+                        EVENT_FILTER_NOTE_SELECTOR.to_string(),
+                    ),
+                    (EVENT_FILTER_NOTE_PARAMETER.to_string(), "36".to_string()),
+                ])),
+            ModuleNode::new(ModuleId::new("out"), module_types::AUDIO_OUTPUT)
+                .with_input(builtin_ports::LEFT, SignalType::Audio)
+                .with_input(builtin_ports::RIGHT, SignalType::Audio),
+        ],
+        vec![Cable::new(
+            PortRef::new(ModuleId::new("midi"), builtin_ports::EVENTS),
+            PortRef::new(ModuleId::new("filter"), builtin_ports::EVENTS_IN),
+        )],
+    );
+    graph.validate().expect("event-only graph should validate");
+
+    let (left, right) = render_offline(
+        &graph,
+        &sampler_settings(6),
+        vec![note_on_value(0, 36, 100)],
+    );
+
+    assert_eq!(left, vec![0.0; 6]);
+    assert_eq!(right, vec![0.0; 6]);
 }
 
 #[test]
@@ -2423,6 +2569,91 @@ fn composite_reverb_yaml_loads_and_validates() {
         .expect("composite-reverb.yaml graph should validate");
 }
 
+#[test]
+fn drum_machine_dogfood_routes_notes_to_explicit_voice_composites_without_primitive() {
+    let Some(yaml) = read_repo_fixture("examples/patches/event-routing-drum-machine.yaml") else {
+        return;
+    };
+    let patch = patch::load_patch_str(&yaml).expect("drum machine example should parse");
+    patch::validate_patch_schema(&patch).expect("drum machine example should validate");
+
+    assert!(
+        patch
+            .modules
+            .iter()
+            .all(|module| module.module_type != "drum_machine")
+    );
+
+    let graph = Graph::from_patch_declarations(&patch);
+    graph
+        .validate()
+        .expect("drum machine graph should validate");
+    let cable_pairs = graph
+        .cables()
+        .iter()
+        .map(|cable| format!("{}->{}", cable.source(), cable.destination()))
+        .collect::<Vec<_>>();
+
+    assert!(cable_pairs.contains(&"kick_route.events_out->kick_voice::env.gate".to_string()));
+    assert!(cable_pairs.contains(&"snare_route.events_out->snare_voice::env.gate".to_string()));
+    assert!(cable_pairs.contains(&"hat_route.events_out->hat_voice::env.gate".to_string()));
+    assert!(cable_pairs.contains(&"kick_voice::vca.audio_out->mixer.inputs".to_string()));
+    assert!(cable_pairs.contains(&"snare_voice::vca.audio_out->mixer.inputs".to_string()));
+    assert!(cable_pairs.contains(&"hat_voice::vca.audio_out->mixer.inputs".to_string()));
+
+    for note in [60, 38, 42] {
+        let (left, right) =
+            render_offline(&graph, &patch.render, vec![note_on_value(0, note, 100)]);
+        assert!(
+            left.iter().chain(right.iter()).any(|sample| *sample != 0.0),
+            "note {note} should render through its explicit downstream voice"
+        );
+    }
+}
+
+#[test]
+fn simple_poly_synth_dogfood_consumes_note_events_through_generic_routing() {
+    let Some(yaml) = read_repo_fixture("examples/patches/event-routing-simple-poly-synth.yaml")
+    else {
+        return;
+    };
+    let patch = patch::load_patch_str(&yaml).expect("poly synth example should parse");
+    patch::validate_patch_schema(&patch).expect("poly synth example should validate");
+
+    assert!(
+        patch
+            .modules
+            .iter()
+            .all(|module| module.module_type != "poly_synth")
+    );
+
+    let graph = Graph::from_patch_declarations(&patch);
+    graph.validate().expect("poly synth graph should validate");
+    let matching = render_offline_polyphonic(
+        &graph,
+        &patch.render,
+        vec![note_on_value(0, 60, 100)],
+        &patch.voice_allocation,
+    );
+    let blocked = render_offline_polyphonic(
+        &graph,
+        &patch.render,
+        vec![note_on_value(0, 62, 100)],
+        &patch.voice_allocation,
+    );
+
+    assert!(
+        matching
+            .0
+            .iter()
+            .chain(matching.1.iter())
+            .any(|sample| *sample != 0.0),
+        "matching note should render deterministic pitched audio"
+    );
+    assert_eq!(blocked.0, vec![0.0; patch.render.duration_frames as usize]);
+    assert_eq!(blocked.1, vec![0.0; patch.render.duration_frames as usize]);
+}
+
 fn read_repo_fixture(relative_path: &str) -> Option<String> {
     let path = Path::new(env!("CARGO_MANIFEST_DIR"))
         .join("../..")
@@ -2998,6 +3229,8 @@ modules:
     inputs:
       - name: trigger
         signal_type: event
+  - id: mix
+    type: audio_mixer
   - id: out
     type: audio_output
     inputs:
@@ -3009,6 +3242,8 @@ connections:
   - from: midi.events
     to: imp.trigger
   - from: imp.audio
+    to: mix.inputs
+  - from: mix.mix
     to: out.left
 "#,
     );
