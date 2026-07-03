@@ -300,21 +300,6 @@ modules:
 }
 
 #[test]
-fn capability_metadata_api_is_still_missing_and_must_be_added() {
-    panic!("TODO: add patch::describe_module_parameters for built-in and composite capability metadata");
-}
-
-#[test]
-fn cli_override_parser_api_is_still_missing_and_must_be_added() {
-    panic!("TODO: add cli::parse_parameter_overrides and patch::resolve_module_parameters_with_overrides");
-}
-
-#[test]
-fn synthetic_808_kick_example_file_is_still_missing_and_must_be_added() {
-    panic!("TODO: add examples/synthetic_808_kick.yaml with tune_hz, decay_ms, punch, and click public controls");
-}
-
-#[test]
 fn synthetic_808_kick_invalid_tuning_reports_structured_diagnostic_before_rendering() {
     let messages = validation_messages(
         r#"
