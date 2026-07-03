@@ -111,20 +111,36 @@ A script acceptance example SHALL demonstrate event/control transformation witho
 - **WHEN** the script module in the example is inspected
 - **THEN** it SHALL expose event/control outputs only, not audio-rate outputs
 
-### Requirement: Drum machine event mapper drives explicit voices
+### Requirement: Drum-machine dogfood uses generic routing
 
-A drum-machine acceptance example SHALL demonstrate named pad event outputs triggering explicitly declared downstream
-voice composites.
+A drum-machine acceptance example SHALL demonstrate generic event-routing primitives triggering explicitly declared
+downstream voice composites. It SHALL NOT require a `drum_machine` or `drum_pad` Rust primitive.
 
-#### Scenario: Drum machine triggers connected voice
+#### Scenario: Generic routing triggers connected drum voice
 
-- **WHEN** a configured incoming note/event reaches the drum machine
-- **THEN** the matching pad output SHALL emit an event that triggers the connected voice composite
+- **WHEN** a configured incoming note/event reaches the drum-machine dogfood patch
+- **THEN** generic event routing SHALL deliver the event to the connected voice composite
 
-#### Scenario: Drum machine alone produces no audio
+#### Scenario: Event routing alone produces no audio
 
-- **WHEN** a drum machine module has no downstream audio-generating modules connected
-- **THEN** rendering SHALL produce no audio solely because the drum machine received events
+- **WHEN** event-routing modules have no downstream audio-generating modules connected
+- **THEN** rendering SHALL produce no audio solely because the routing modules received events
+
+### Requirement: Simple polyphonic synth dogfood uses generic primitives
+
+A simple polyphonic synth acceptance example SHALL demonstrate note event input, voice allocation, note-to-control,
+oscillator/filter/envelope/VCA composition, modulation where supported, and explicit output routing. It SHALL NOT require
+a `poly_synth` Rust primitive.
+
+#### Scenario: Polyphonic synth example renders note events
+
+- **WHEN** the simple polyphonic synth example receives note-on events
+- **THEN** it SHALL render deterministic pitched audio through explicit YAML modules and composites
+
+#### Scenario: Polyphonic synth example is readable
+
+- **WHEN** the simple polyphonic synth example is inspected
+- **THEN** its modules, ports, parameters, presets, and connections SHALL be readable from YAML and discoverable metadata
 
 ### Requirement: Acceptance examples are staged
 

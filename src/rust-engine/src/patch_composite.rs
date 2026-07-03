@@ -85,7 +85,10 @@ pub(super) fn validate_module_definitions(
             diagnostics.push(Diagnostic::new(
                 error_codes::VALIDATION_INVALID_VALUE,
                 Severity::Error,
-                format!("duplicate composite module type: {}", definition.module_type),
+                format!(
+                    "duplicate composite module type: {}",
+                    definition.module_type
+                ),
             ));
         }
 
@@ -108,13 +111,19 @@ fn validate_public_inputs(
             diagnostics.push(Diagnostic::new(
                 error_codes::VALIDATION_MISSING_FIELD,
                 Severity::Error,
-                format!("composite {} input name is required", definition.module_type),
+                format!(
+                    "composite {} input name is required",
+                    definition.module_type
+                ),
             ));
         }
 
         for reference in &input.maps_to {
             validate_port_reference(
-                &format!("composite {} input {port_name} maps_to", definition.module_type),
+                &format!(
+                    "composite {} input {port_name} maps_to",
+                    definition.module_type
+                ),
                 reference,
                 diagnostics,
             );
@@ -145,13 +154,19 @@ fn validate_public_outputs(
             diagnostics.push(Diagnostic::new(
                 error_codes::VALIDATION_MISSING_FIELD,
                 Severity::Error,
-                format!("composite {} output name is required", definition.module_type),
+                format!(
+                    "composite {} output name is required",
+                    definition.module_type
+                ),
             ));
         }
 
         for reference in &output.maps_from {
             validate_port_reference(
-                &format!("composite {} output {port_name} maps_from", definition.module_type),
+                &format!(
+                    "composite {} output {port_name} maps_from",
+                    definition.module_type
+                ),
                 reference,
                 diagnostics,
             );
@@ -183,7 +198,10 @@ fn validate_composite_parameter_declarations(
             diagnostics.push(Diagnostic::new(
                 error_codes::VALIDATION_MISSING_FIELD,
                 Severity::Error,
-                format!("composite {} parameter name is required", definition.module_type),
+                format!(
+                    "composite {} parameter name is required",
+                    definition.module_type
+                ),
             ));
             continue;
         }
@@ -221,7 +239,9 @@ fn validate_composite_parameter_default(
     parameter: &CompositeBindingDeclaration,
     diagnostics: &mut PatchValidationError,
 ) {
-    let Some(default) = &parameter.default else { return; };
+    let Some(default) = &parameter.default else {
+        return;
+    };
     let name = composite_parameter_name(&parameter.name);
 
     if let Some(value_type) = parameter.value_type {
@@ -249,7 +269,9 @@ fn validate_composite_parameter_literal_value(
     parameter: &CompositeBindingDeclaration,
     diagnostics: &mut PatchValidationError,
 ) {
-    let Some(value) = &parameter.value else { return; };
+    let Some(value) = &parameter.value else {
+        return;
+    };
     let name = composite_parameter_name(&parameter.name);
 
     if let Some(value_type) = parameter.value_type {
@@ -317,7 +339,9 @@ fn validate_composite_numeric_range(
     value: &ParameterValue,
     diagnostics: &mut PatchValidationError,
 ) {
-    let ParameterValue::Number(actual) = value else { return; };
+    let ParameterValue::Number(actual) = value else {
+        return;
+    };
     let name = composite_parameter_name(&parameter.name);
 
     if let Some(min) = parameter.min {
@@ -347,12 +371,19 @@ fn validate_composite_numeric_range(
     }
 }
 
-fn composite_value_matches_type(value: &ParameterValue, value_type: CompositeParameterValueType) -> bool {
+fn composite_value_matches_type(
+    value: &ParameterValue,
+    value_type: CompositeParameterValueType,
+) -> bool {
     matches!(
         (value, value_type),
-        (ParameterValue::Boolean(_), CompositeParameterValueType::Boolean)
-            | (ParameterValue::Number(_), CompositeParameterValueType::Number)
-            | (ParameterValue::Text(_), CompositeParameterValueType::String)
+        (
+            ParameterValue::Boolean(_),
+            CompositeParameterValueType::Boolean
+        ) | (
+            ParameterValue::Number(_),
+            CompositeParameterValueType::Number
+        ) | (ParameterValue::Text(_), CompositeParameterValueType::String)
     )
 }
 

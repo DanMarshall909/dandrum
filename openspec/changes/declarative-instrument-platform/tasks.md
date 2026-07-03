@@ -75,14 +75,14 @@
   semantics.
 - [x] 7.4 Ensure existing patches remain valid unless a separate migration spec explicitly changes the schema.
 
-## 8. Drum Machine Event Mapper Alignment
+## 8. Generic Event Routing Alignment
 
-- [ ] 8.1 Keep the drum machine event-only: no samples, synthesis chains, audio outputs, mixer, sequencer, tempo, clock,
-  probability, or transport.
-- [ ] 8.2 Align any pad configuration with the existing `add-drum-machine-container` change or explicitly supersede that
-  change.
-- [ ] 8.3 Add tests proving pad event outputs trigger explicitly declared downstream voice composites.
-- [ ] 8.4 Add tests proving a drum machine without downstream audio modules produces no audio by itself.
+- [ ] 8.1 Keep generic event-routing primitives event-only: no samples, synthesis chains, audio outputs, mixer, sequencer,
+  tempo, clock, probability, or transport.
+- [ ] 8.2 Align event-routing behavior with the `add-event-routing-primitives` change and treat drum-machine behavior as a
+  dogfood example, not a Rust primitive.
+- [ ] 8.3 Add tests proving routed event outputs trigger explicitly declared downstream voice composites.
+- [ ] 8.4 Add tests proving event-routing modules without downstream audio modules produce no audio by themselves.
 
 ## 9. Acceptance Examples
 
@@ -98,7 +98,9 @@
 - [ ] 9.6 Add sampler voice example using the existing sampler module and explicit pitch/amp control routing.
 - [ ] 9.7 Add effects rack example using existing effect modules.
 - [ ] 9.8 Add script event/control mapping example after script constraints are implemented.
-- [ ] 9.9 Add drum-machine-to-voice-composite example after event mapper behaviour is implemented.
+- [ ] 9.9 Add drum-machine-style dogfood example after generic event-routing behaviour is implemented.
+- [ ] 9.10 Add simple polyphonic synth dogfood example using generic primitives/composites rather than a dedicated Rust
+  instrument module.
 
 ## 10. Capability Discovery
 

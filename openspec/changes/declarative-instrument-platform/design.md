@@ -43,7 +43,7 @@ Future LLM tooling should be able to target this model, but only after the platf
 - Replacing existing `module_definitions` with a parallel `type: composite` system.
 - Adding every plausible synth primitive.
 - Hardcoding 808/909 voices as Rust modules.
-- Making the drum machine a sampler, mixer, sequencer, or hidden signal-chain host.
+- Making drum-machine or poly-synth behavior a special-purpose Rust primitive instead of a YAML dogfood target.
 - Allowing unrestricted scripting in the audio callback.
 - Hiding sound-generation policy inside opaque containers.
 
@@ -117,12 +117,14 @@ Scripts are parsed, validated, and prepared off the audio thread. The runtime mu
 Scripts are appropriate for velocity mapping, note remapping, conditional event routing, event-to-control conversion,
 and simple control modulation logic.
 
-### D6: Drum machine remains an event mapper
+### D6: Drum machine and poly synth remain dogfood targets
 
-The drum machine module is an event transformer. It maps incoming note/event triggers to named pad event outputs. It
-does not contain samples, synthesis chains, sequencers, clocks, mixers, effects, or hidden audio behaviour.
+Drum-machine and simple polyphonic synth behavior should be expressible as readable YAML graphs/composites built from
+generic primitives. They are acceptance targets for the platform, not special-purpose built-in instrument modules.
 
-Pad outputs should trigger explicitly connected downstream voice composites or modules.
+Drum-machine-style patches should use generic event routing to trigger explicitly connected downstream voice composites
+or modules. Simple poly-synth patches should use explicit voice allocation, note-to-control, oscillator/filter/envelope,
+VCA, modulation, and output routing.
 
 ### D7: Diagnostics become structured before repair loops
 

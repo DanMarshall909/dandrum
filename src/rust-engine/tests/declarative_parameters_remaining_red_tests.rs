@@ -1,6 +1,6 @@
 use dandrum_engine::graph::Graph;
 use dandrum_engine::patch::{
-    load_patch_str, resolve_module_parameters, validate_patch_schema, ParameterValue,
+    ParameterValue, load_patch_str, resolve_module_parameters, validate_patch_schema,
 };
 
 fn validation_messages(yaml: &str) -> Vec<String> {
@@ -264,8 +264,14 @@ modules:
     let resolved = resolve_module_parameters(&patch).expect("parameters should resolve");
     let filt = resolved.get("filt").expect("filter params should resolve");
 
-    assert_eq!(filt.get("algorithm"), Some(&ParameterValue::Text("moog".into())));
-    assert_eq!(filt.get("mode"), Some(&ParameterValue::Text("lowpass".into())));
+    assert_eq!(
+        filt.get("algorithm"),
+        Some(&ParameterValue::Text("moog".into()))
+    );
+    assert_eq!(
+        filt.get("mode"),
+        Some(&ParameterValue::Text("lowpass".into()))
+    );
 }
 
 #[test]
@@ -300,8 +306,14 @@ modules:
     let resolved = resolve_module_parameters(&patch).expect("parameters should resolve");
     let filt = resolved.get("filt").expect("filter params should resolve");
 
-    assert_eq!(filt.get("algorithm"), Some(&ParameterValue::Text("biquad".into())));
-    assert_eq!(filt.get("mode"), Some(&ParameterValue::Text("lowpass".into())));
+    assert_eq!(
+        filt.get("algorithm"),
+        Some(&ParameterValue::Text("biquad".into()))
+    );
+    assert_eq!(
+        filt.get("mode"),
+        Some(&ParameterValue::Text("lowpass".into()))
+    );
 }
 
 #[test]

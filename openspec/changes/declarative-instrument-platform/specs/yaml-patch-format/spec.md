@@ -97,18 +97,18 @@ a composite by setting its `type` to the composite definition's `type`.
   spec
 - **THEN** validation SHALL reject or ignore it according to the current schema rather than treating it as canonical
 
-### Requirement: Drum machine pad mapping is event-only
+### Requirement: Event routing remains event-only
 
-The YAML patch format MAY support drum-machine pad mapping as part of the existing drum-machine container change, but
-the mapping SHALL describe event routing only.
+Generic event-routing module declarations SHALL describe event routing only when used for drum-machine-style,
+poly-synth, keyboard-split, articulation, and velocity-layer use cases.
 
-#### Scenario: Drum machine pad map declared
+#### Scenario: Event routing declared
 
-- **WHEN** a drum machine module declares a pad mapping from an incoming note/event selector to a named pad output
-- **THEN** the drum machine SHALL emit an event on the named pad output when the selector matches
+- **WHEN** a routing module declares a selector for incoming note/event data
+- **THEN** the router SHALL emit matching events on explicit event outputs without changing graph topology
 
-#### Scenario: Drum machine rejects hidden audio fields
+#### Scenario: Event routing rejects hidden audio fields
 
-- **WHEN** a drum machine declaration contains embedded sample chains, audio outputs, mix outputs, patterns, transport,
+- **WHEN** an event-routing declaration contains embedded sample chains, audio outputs, mix outputs, patterns, transport,
   or sequencing fields
 - **THEN** validation SHALL reject those fields with structured diagnostics
