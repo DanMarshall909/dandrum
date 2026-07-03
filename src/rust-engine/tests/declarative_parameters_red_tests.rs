@@ -54,6 +54,72 @@ modules:
 }
 
 #[test]
+fn module_instance_parameter_is_rejected_when_builtin_declares_no_static_parameters() {
+    let diagnostics = validation_diagnostics(
+        r#"
+metadata:
+  name: No Static Parameters
+render:
+  sample_rate_hz: 48000
+  block_size_frames: 128
+  duration_frames: 128
+modules:
+  - id: osc
+    type: oscillator
+    parameters:
+      frequency_hz: 55
+"#,
+    );
+
+    assert_has_diagnostic_for_parameter(&diagnostics, "osc", "frequency_hz");
+}
+
+#[test]
+fn patch_level_parameter_is_rejected_when_builtin_declares_no_static_parameters() {
+    let diagnostics = validation_diagnostics(
+        r#"
+metadata:
+  name: Patch No Static Parameters
+render:
+  sample_rate_hz: 48000
+  block_size_frames: 128
+  duration_frames: 128
+parameters:
+  osc:
+    frequency_hz: 55
+modules:
+  - id: osc
+    type: oscillator
+"#,
+    );
+
+    assert_has_diagnostic_for_parameter(&diagnostics, "osc", "frequency_hz");
+}
+
+#[test]
+fn preset_parameter_is_rejected_when_builtin_declares_no_static_parameters() {
+    let diagnostics = validation_diagnostics(
+        r#"
+metadata:
+  name: Preset No Static Parameters
+render:
+  sample_rate_hz: 48000
+  block_size_frames: 128
+  duration_frames: 128
+presets:
+  tuned:
+    osc:
+      frequency_hz: 55
+modules:
+  - id: osc
+    type: oscillator
+"#,
+    );
+
+    assert_has_diagnostic_for_parameter(&diagnostics, "osc", "frequency_hz");
+}
+
+#[test]
 fn module_instance_invalid_enum_parameter_is_rejected_before_graph_preparation() {
     let diagnostics = validation_diagnostics(
         r#"
@@ -238,7 +304,7 @@ modules:
 }
 
 #[test]
-fn required_parameter_without_default_fails_before_default_resolution() {
+fn missing_required_module_parameter_without_default_fails_resolution() {
     let patch = load_patch_str(
         r#"
 metadata:
