@@ -28,4 +28,6 @@ use self::state::PerModuleState;
 use crate::patch::{RenderSettings, VoiceAllocation};
 
 #[cfg(test)]
+mod realtime_allocation_tests;
+#[cfg(test)]
 mod tests;
