@@ -8,7 +8,6 @@ pub mod module_types;
 /// The type of value a parameter accepts.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum ParameterValueType {
-    Boolean,
     Integer,
     Number,
     Text,
@@ -21,7 +20,6 @@ pub struct ParameterMetadata {
     value_type: ParameterValueType,
     default: Option<String>,
     range: Option<(f64, f64)>,
-    unit: Option<String>,
     enum_values: Option<Vec<String>>,
     description: Option<String>,
     realtime_note: Option<String>,
@@ -54,7 +52,6 @@ impl ParameterMetadata {
             value_type,
             default: None,
             range: None,
-            unit: None,
             enum_values: None,
             description: None,
             realtime_note: None,
@@ -68,11 +65,6 @@ impl ParameterMetadata {
 
     pub fn with_range(mut self, min: f64, max: f64) -> Self {
         self.range = Some((min, max));
-        self
-    }
-
-    pub fn with_unit(mut self, unit: impl Into<String>) -> Self {
-        self.unit = Some(unit.into());
         self
     }
 
@@ -105,10 +97,6 @@ impl ParameterMetadata {
 
     pub fn range(&self) -> Option<(f64, f64)> {
         self.range
-    }
-
-    pub fn unit(&self) -> Option<&str> {
-        self.unit.as_deref()
     }
 
     pub fn enum_values(&self) -> Option<&[String]> {
@@ -577,7 +565,6 @@ fn spectral_processor_definition() -> BuiltInModuleDefinition {
             ParameterMetadata::new("threshold", ParameterValueType::Number)
                 .with_default("-40")
                 .with_range(-100.0, 0.0)
-                .with_unit("dB")
                 .with_description("gate threshold in dBFS"),
         )
         .with_parameter(

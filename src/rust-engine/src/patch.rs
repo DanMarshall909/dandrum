@@ -686,7 +686,6 @@ fn default_parameter_value(metadata: &ParameterMetadata) -> Option<ParameterValu
     let default = metadata.default()?;
 
     match metadata.value_type() {
-        ParameterValueType::Boolean => default.parse::<bool>().ok().map(ParameterValue::Boolean),
         ParameterValueType::Integer | ParameterValueType::Number => {
             default.parse::<f64>().ok().map(ParameterValue::Number)
         }
@@ -1169,7 +1168,6 @@ fn validate_parameter_value(
 
 fn parameter_value_matches_type(value: &ParameterValue, expected: ParameterValueType) -> bool {
     match (value, expected) {
-        (ParameterValue::Boolean(_), ParameterValueType::Boolean) => true,
         (ParameterValue::Number(value), ParameterValueType::Integer) => value.fract() == 0.0,
         (ParameterValue::Number(_), ParameterValueType::Number) => true,
         (ParameterValue::Text(_), ParameterValueType::Text) => true,
@@ -1179,7 +1177,6 @@ fn parameter_value_matches_type(value: &ParameterValue, expected: ParameterValue
 
 fn parameter_type_name(value_type: ParameterValueType) -> &'static str {
     match value_type {
-        ParameterValueType::Boolean => "boolean",
         ParameterValueType::Integer => "integer",
         ParameterValueType::Number => "number",
         ParameterValueType::Text => "string",

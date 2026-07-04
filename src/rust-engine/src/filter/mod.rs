@@ -8,13 +8,6 @@ pub use comb::{CombFilter, CombType};
 pub use moog::MoogLadder;
 pub use one_pole::OnePoleFilter;
 
-pub enum Algorithm {
-    Biquad,
-    Moog,
-    Comb,
-    OnePole,
-}
-
 pub trait FilterAlgorithm {
     fn process(&mut self, input: f32) -> f32;
     #[allow(dead_code)]
