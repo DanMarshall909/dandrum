@@ -8,7 +8,7 @@
 ## 2. Render Plan And Compiled Buffer Metadata
 
 - [x] 2.1 Introduce typed `BufferId`, `EventQueueId`, `CompiledEdge`, `RenderStep`, and `RenderPlan` structures.
-- [ ] 2.2 Derive a render plan from `CompiledPatch` during realtime preparation, including voice steps, global steps, input edges, output buffers, event queues, MIDI input binding, and audio output binding.
+- [x] 2.2 Derive a render plan from `CompiledPatch` during realtime preparation, including voice steps, global steps, input edges, output buffers, event queues, MIDI input binding, and audio output binding.
 - [ ] 2.3 Move default control values into compiled/render-plan metadata where module declarations define defaults.
 - [ ] 2.4 Replace callback-time port-name/source-port lookup with pre-resolved buffer IDs and event queue IDs.
 
