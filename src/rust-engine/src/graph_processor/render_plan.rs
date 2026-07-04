@@ -226,7 +226,7 @@ impl RenderPlanBuilder<'_> {
         node.output_port_types
             .iter()
             .position(|signal_type| *signal_type == SignalType::Event)
-            .map(|port_index| EventQueueId(self.event_queue_starts[module_index] + output_offset + port_index))
+            .and_then(|port_index| self.event_queue(module_index, output_offset + port_index))
     }
 
     fn audio_output_binding(&self, module_index: usize) -> Option<AudioOutputBinding> {
@@ -255,12 +255,31 @@ impl RenderPlanBuilder<'_> {
         port_types
             .iter()
             .enumerate()
-            .filter(|(_, signal_type)| **signal_type == SignalType::Event)
-            .map(|(port_index, _)| {
-                EventQueueId(self.event_queue_starts[module_index] + local_offset + port_index)
+            .filter_map(|(port_index, signal_type)| {
+                if *signal_type == SignalType::Event {
+                    self.event_queue(module_index, local_offset + port_index)
+                } else {
+                    None
+                }
             })
             .collect::<Vec<_>>()
             .into_boxed_slice()
+    }
+
+    fn event_queue(&self, module_index: usize, combined_port_index: usize) -> Option<EventQueueId> {
+        let node = &self.compiled.nodes()[module_index];
+        let event_ordinal = node
+            .input_port_types
+            .iter()
+            .chain(node.output_port_types.iter())
+            .take(combined_port_index + 1)
+            .filter(|signal_type| **signal_type == SignalType::Event)
+            .count()
+            .checked_sub(1)?;
+
+        Some(EventQueueId(
+            self.event_queue_starts[module_index] + event_ordinal,
+        ))
     }
 }
 
@@ -287,7 +306,7 @@ mod tests {
         let graph = Graph::new(
             vec![
                 ModuleNode::new(ModuleId::new("osc"), "oscillator")
-                    .with_scope(ExecutionScope::Voice)
+                    .with_execution_scope(ExecutionScope::Voice)
                     .with_output(builtin_ports::AUDIO, SignalType::Audio),
                 ModuleNode::new(ModuleId::new("out"), "audio_output")
                     .with_input(builtin_ports::LEFT, SignalType::Audio)
