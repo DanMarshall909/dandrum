@@ -35,6 +35,7 @@ impl RealtimeEventQueue {
         RealtimeEventSubmitStatus::Accepted
     }
 
+    #[allow(dead_code)]
     pub fn drain(&mut self) -> Vec<RealtimeEvent> {
         self.events.drain(..).collect()
     }

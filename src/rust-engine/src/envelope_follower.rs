@@ -36,14 +36,17 @@ impl EnvelopeFollower {
         self.mode = mode;
     }
 
+    #[allow(dead_code)]
     pub fn reset(&mut self) {
         self.envelope = 0.0;
     }
 
+    #[allow(dead_code)]
     pub fn envelope_value(&self) -> f64 {
         self.envelope
     }
 
+    #[allow(dead_code)]
     pub fn sample_rate(&self) -> f64 {
         self.sample_rate
     }

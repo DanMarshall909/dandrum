@@ -18,6 +18,7 @@ pub struct Echo {
 }
 
 #[derive(Clone, Copy, Debug, PartialEq)]
+#[allow(dead_code)]
 pub enum SyncDivision {
     Whole,
     Half,
@@ -89,10 +90,12 @@ impl Echo {
         self.ping_pong = enabled;
     }
 
+    #[allow(dead_code)]
     pub fn set_sync(&mut self, division: Option<SyncDivision>) {
         self.sync_division = division;
     }
 
+    #[allow(dead_code)]
     pub fn set_bpm(&mut self, bpm: f64) {
         self.bpm = bpm.max(1.0);
     }
@@ -142,6 +145,7 @@ impl Echo {
         (out_l, out_r)
     }
 
+    #[allow(dead_code)]
     pub fn reset(&mut self) {
         self.delay_l.reset();
         self.delay_r.reset();

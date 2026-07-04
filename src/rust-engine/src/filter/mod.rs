@@ -17,6 +17,7 @@ pub enum Algorithm {
 
 pub trait FilterAlgorithm {
     fn process(&mut self, input: f32) -> f32;
+    #[allow(dead_code)]
     fn reset(&mut self);
     fn set_cutoff(&mut self, _hz: f64, _sample_rate: f64) {}
     fn set_cutoff_control(&mut self, control: f32, sample_rate: f64) {

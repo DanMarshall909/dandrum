@@ -55,6 +55,7 @@ impl PreparedInstrument {
         &self.patch_doc
     }
 
+    #[allow(dead_code)]
     pub(crate) fn resolved_parameters(
         &self,
     ) -> &BTreeMap<String, BTreeMap<String, ParameterValue>> {
@@ -73,12 +74,14 @@ impl PreparedInstrument {
         &self.sampler_assets
     }
 
+    #[allow(dead_code)]
     pub(crate) fn diagnostics(&self) -> &PreparationDiagnostics {
         &self.diagnostics
     }
 }
 
 impl PreparationDiagnostics {
+    #[allow(dead_code)]
     pub(crate) fn messages(&self) -> &[String] {
         &self.messages
     }
@@ -114,6 +117,7 @@ pub(crate) fn prepare_instrument_document(
     ))
 }
 
+#[allow(dead_code)]
 pub(crate) fn prepare_instrument_document_with_preset(
     patch_doc: PatchDocument,
     preset_doc: &PresetDocument,
@@ -140,6 +144,7 @@ pub(crate) fn resolve_patch_parameters(
     patch::resolve_module_parameters(patch_doc).map_err(PreparationError::Schema)
 }
 
+#[allow(dead_code)]
 pub(crate) fn build_validated_graph(patch_doc: &PatchDocument) -> Result<Graph, PreparationError> {
     let resolved_parameters = resolve_patch_parameters(patch_doc)?;
     build_validated_graph_with_resolved_parameters(patch_doc, &resolved_parameters)
@@ -186,6 +191,7 @@ pub(crate) fn compile_patch(
 }
 
 impl PreparationError {
+    #[allow(dead_code)]
     pub fn to_diagnostics(&self) -> diagnostics::Diagnostics {
         match self {
             Self::Load(error) => error.to_diagnostic().into(),

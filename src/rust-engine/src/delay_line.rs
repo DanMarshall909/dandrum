@@ -1,4 +1,5 @@
 #[derive(Clone, Copy, Debug, PartialEq)]
+#[allow(dead_code)]
 pub enum InterpolationMode {
     Linear,
     Cubic,
@@ -29,6 +30,7 @@ impl DelayLine {
         self.max_delay_samples
     }
 
+    #[allow(dead_code)]
     pub fn set_interpolation_mode(&mut self, mode: InterpolationMode) {
         self.interpolation = mode;
     }
@@ -75,11 +77,13 @@ impl DelayLine {
         0.5 * (a * f3 + b * f2 + c * f + 2.0 * d)
     }
 
+    #[allow(dead_code)]
     pub fn set_modulation(&mut self, _offset: f32) {
         // modulation is applied at read time via the `read` parameter;
         // this method is a future hook for stateful modulation
     }
 
+    #[allow(dead_code)]
     pub fn reset(&mut self) {
         self.buffer.fill(0.0);
         self.write_head = 0;

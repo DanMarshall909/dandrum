@@ -1,5 +1,6 @@
 use crate::filter::{BiquadFilter, FilterAlgorithm};
 
+#[allow(dead_code)]
 pub struct CrossoverPair {
     lp: BiquadFilter,
     hp: BiquadFilter,
@@ -25,12 +26,14 @@ impl CrossoverPair {
         (low, high)
     }
 
+    #[allow(dead_code)]
     pub fn reset(&mut self) {
         self.lp.reset();
         self.hp.reset();
     }
 }
 
+#[allow(dead_code)]
 pub struct LinkwitzRiley4 {
     lp_a: BiquadFilter,
     lp_b: BiquadFilter,
@@ -38,7 +41,9 @@ pub struct LinkwitzRiley4 {
     hp_b: BiquadFilter,
 }
 
+#[allow(dead_code)]
 impl LinkwitzRiley4 {
+    #[allow(dead_code)]
     pub fn new(crossover_norm: f64) -> Self {
         let q = std::f64::consts::FRAC_1_SQRT_2;
         let lp_a = BiquadFilter::new_lowpass(crossover_norm, q);
@@ -53,6 +58,7 @@ impl LinkwitzRiley4 {
         }
     }
 
+    #[allow(dead_code)]
     pub fn set_crossover(&mut self, crossover_norm: f64) {
         let q = std::f64::consts::FRAC_1_SQRT_2;
         self.lp_a.set_coefficients_lowpass(crossover_norm, q);
@@ -61,12 +67,14 @@ impl LinkwitzRiley4 {
         self.hp_b.set_coefficients_highpass(crossover_norm, q);
     }
 
+    #[allow(dead_code)]
     pub fn process(&mut self, input: f32) -> (f32, f32) {
         let low = self.lp_b.process(self.lp_a.process(input));
         let high = self.hp_b.process(self.hp_a.process(input));
         (low, high)
     }
 
+    #[allow(dead_code)]
     pub fn reset(&mut self) {
         self.lp_a.reset();
         self.lp_b.reset();

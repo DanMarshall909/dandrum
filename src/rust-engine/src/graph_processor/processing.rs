@@ -806,7 +806,6 @@ pub(super) fn process_note_to_control(
                     event: crate::script::ScriptEvent::NoteOff { note: *note },
                 });
             }
-            _ => {}
         }
     }
 

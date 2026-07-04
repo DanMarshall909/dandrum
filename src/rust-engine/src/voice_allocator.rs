@@ -67,6 +67,7 @@ impl VoiceAllocator {
         None
     }
 
+    #[allow(dead_code)]
     pub fn note_off(&mut self, note: u8) {
         for slot in &mut self.slots {
             if slot.active && slot.note == note {
@@ -75,10 +76,12 @@ impl VoiceAllocator {
         }
     }
 
+    #[allow(dead_code)]
     pub fn active_count(&self) -> usize {
         self.slots.iter().filter(|s| s.active).count()
     }
 
+    #[allow(dead_code)]
     pub fn is_full(&self) -> bool {
         self.slots.iter().all(|s| s.active)
     }

@@ -1,12 +1,14 @@
 use crate::envelope_follower::{DetectionMode, EnvelopeFollower};
 
 #[derive(Clone, Copy, Debug, PartialEq)]
+#[allow(dead_code)]
 pub enum ProcessorMode {
     Level,
     Transient,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq)]
+#[allow(dead_code)]
 pub enum Topology {
     Feedforward,
     Feedback,
@@ -56,14 +58,17 @@ impl DynamicsProcessor {
         }
     }
 
+    #[allow(dead_code)]
     pub fn set_mode(&mut self, mode: ProcessorMode) {
         self.mode = mode;
     }
 
+    #[allow(dead_code)]
     pub fn set_topology(&mut self, topology: Topology) {
         self.topology = topology;
     }
 
+    #[allow(dead_code)]
     pub fn set_detection(&mut self, mode: DetectionMode) {
         self.envelope_detector = EnvelopeFollower::new(
             self.envelope_detector.sample_rate(),
@@ -73,11 +78,13 @@ impl DynamicsProcessor {
         );
     }
 
+    #[allow(dead_code)]
     pub fn attack_ms(&self) -> f64 {
         // Approximate from envelope detector coefficients
         5.0
     }
 
+    #[allow(dead_code)]
     pub fn release_ms(&self) -> f64 {
         50.0
     }
@@ -106,6 +113,7 @@ impl DynamicsProcessor {
         self.envelope_detector.set_params(attack_ms, release_ms);
     }
 
+    #[allow(dead_code)]
     pub fn reset(&mut self) {
         self.envelope_detector.reset();
         self.phase_is_attack = true;

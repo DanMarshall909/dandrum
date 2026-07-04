@@ -1,6 +1,7 @@
 use super::FilterAlgorithm;
 
 #[derive(Clone, Copy, Debug, PartialEq)]
+#[allow(dead_code)]
 pub enum OnePoleMode {
     Lowpass,
     Highpass,
@@ -29,6 +30,7 @@ impl OnePoleFilter {
         filter
     }
 
+    #[allow(dead_code)]
     pub fn set_mode(&mut self, mode: OnePoleMode) {
         self.mode = mode;
     }

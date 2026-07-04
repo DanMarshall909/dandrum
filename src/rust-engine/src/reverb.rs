@@ -33,6 +33,7 @@ impl AllpassDiffuser {
         output
     }
 
+    #[allow(dead_code)]
     pub fn reset(&mut self) {
         self.delay.reset();
     }
@@ -70,6 +71,7 @@ impl CombStage {
         self.gain = gain.clamp(0.0, 0.99);
     }
 
+    #[allow(dead_code)]
     fn reset(&mut self) {
         self.delay.reset();
         self.damping.reset();
@@ -286,6 +288,7 @@ impl Reverb {
         )
     }
 
+    #[allow(dead_code)]
     pub fn reset(&mut self) {
         self.pre_delay_l.reset();
         self.pre_delay_r.reset();

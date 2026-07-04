@@ -2,6 +2,7 @@ use num_complex::Complex;
 use rustfft::FftPlanner;
 
 pub struct Convolution {
+    #[allow(dead_code)]
     ir: Vec<f32>,
     block_size: usize,
     partitions: Vec<Vec<Complex<f32>>>,
@@ -28,6 +29,7 @@ impl Convolution {
         }
     }
 
+    #[allow(dead_code)]
     pub fn load_ir(&mut self, ir: Vec<f32>) {
         self.ir = ir;
         self.partition_ir();
@@ -38,6 +40,7 @@ impl Convolution {
         self.wet = wet.clamp(0.0, 1.0);
     }
 
+    #[allow(dead_code)]
     pub fn reset(&mut self) {
         self.input_buffer.fill(0.0);
         self.input_pos = 0;
@@ -45,6 +48,7 @@ impl Convolution {
         self.output_pos = 0;
     }
 
+    #[allow(dead_code)]
     fn partition_ir(&mut self) {
         self.partitions.clear();
         if self.ir.is_empty() {

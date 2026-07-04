@@ -115,10 +115,12 @@ impl ParameterMetadata {
         self.enum_values.as_deref()
     }
 
+    #[allow(dead_code)]
     pub fn description(&self) -> Option<&str> {
         self.description.as_deref()
     }
 
+    #[allow(dead_code)]
     pub fn realtime_note(&self) -> Option<&str> {
         self.realtime_note.as_deref()
     }
@@ -166,6 +168,7 @@ impl BuiltInModuleDefinition {
         self
     }
 
+    #[allow(dead_code)]
     pub fn examples(&self) -> &[String] {
         &self.examples
     }
@@ -227,6 +230,7 @@ impl BuiltInModuleDefinition {
         self
     }
 
+    #[allow(dead_code)]
     pub fn module_type(&self) -> &str {
         &self.module_type
     }
@@ -248,6 +252,7 @@ impl BuiltInModuleDefinition {
         self
     }
 
+    #[allow(dead_code)]
     pub fn module_category(&self) -> ModuleCategory {
         self.category
     }
@@ -301,6 +306,7 @@ impl BuiltInModuleRegistry {
         self.definitions.get(module_type)
     }
 
+    #[allow(dead_code)]
     pub fn module_types(&self) -> impl Iterator<Item = &str> + '_ {
         self.definitions.keys().map(|s| s.as_str())
     }

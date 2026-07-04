@@ -65,6 +65,7 @@ pub enum CompileError {
 }
 
 impl CompileError {
+    #[allow(dead_code)]
     pub fn to_diagnostic(&self) -> Diagnostic {
         match self {
             Self::MissingPort {

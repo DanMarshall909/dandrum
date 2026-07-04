@@ -1,10 +1,12 @@
 use num_complex::Complex;
 use rustfft::FftPlanner;
 
+#[allow(dead_code)]
 pub struct MagnitudeResponse {
     pub bins: Vec<(f64, f64)>,
 }
 
+#[allow(dead_code)]
 pub fn compute_magnitude_response(signal: &[f32], sample_rate: f64) -> MagnitudeResponse {
     let fft_size = signal.len().next_power_of_two().max(2);
     let mut buffer: Vec<Complex<f32>> = signal

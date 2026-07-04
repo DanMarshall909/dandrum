@@ -80,7 +80,6 @@ pub(super) enum PerModuleState {
     },
     Noise {
         state: u32,
-        seed: u32,
     },
     Impulse,
     Multiply,
@@ -257,7 +256,7 @@ impl PerModuleState {
                     .get("seed")
                     .and_then(|s| s.parse::<u32>().ok())
                     .unwrap_or(0);
-                PerModuleState::Noise { state: seed, seed }
+                PerModuleState::Noise { state: seed }
             }
             ModuleKind::Impulse => PerModuleState::Impulse,
             ModuleKind::Multiply => PerModuleState::Multiply,

@@ -1,5 +1,6 @@
 pub trait WaveshaperCurve: Send {
     fn process(&self, sample: f64) -> f64;
+    #[allow(dead_code)]
     fn name(&self) -> &'static str;
 }
 
@@ -85,6 +86,7 @@ impl Saturator {
         self.curve.process(biased)
     }
 
+    #[allow(dead_code)]
     pub fn curve_name(&self) -> &'static str {
         self.curve.name()
     }

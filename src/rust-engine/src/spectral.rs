@@ -14,6 +14,7 @@ pub struct SpectralProcessor {
     threshold_db: f64,
 }
 
+#[allow(dead_code)]
 pub enum SpectralMode {
     Passthrough,
     Gate,
@@ -107,6 +108,7 @@ impl SpectralProcessor {
         }
     }
 
+    #[allow(dead_code)]
     pub fn reset(&mut self) {
         self.input_buf.fill(0.0);
         self.output_buf.fill(0.0);
