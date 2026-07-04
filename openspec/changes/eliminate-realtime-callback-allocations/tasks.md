@@ -1,6 +1,6 @@
 ## 1. Characterization And Guardrails
 
-- [ ] 1.1 Add realtime render capacity-regression tests proving repeated prepared-size renders do not grow pending-event, scratch-output, audio-output, or per-voice scratch capacity.
+- [x] 1.1 Add realtime render capacity-regression tests proving repeated prepared-size renders do not grow pending-event, scratch-output, audio-output, or per-voice scratch capacity.
 - [ ] 1.2 Add allocation-count or test-allocator coverage around `RealtimeGraphProcessor::render` for at least one simple mono compiled patch.
 - [ ] 1.3 Add parity coverage for a representative mono patch, event-driven patch, sampler patch, voice-to-global patch, and polyphonic patch before changing render storage semantics.
 - [ ] 1.4 Add tests for disconnected inputs and inactive voices so stale arena data cannot leak into output.
