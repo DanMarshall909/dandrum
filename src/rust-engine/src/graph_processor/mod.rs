@@ -7,6 +7,7 @@ mod outputs;
 mod polyphony;
 mod processing;
 mod realtime_graph_processor;
+mod render_plan;
 mod state;
 
 use self::input_provider::ModuleInputProvider;
