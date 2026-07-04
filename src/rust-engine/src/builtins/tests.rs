@@ -282,6 +282,80 @@ fn initialized_registry_contains_note_to_rate_definition() {
     assert_has_output(note_to_rate, builtin_ports::RATE, SignalType::Control);
 }
 
+#[test]
+fn initialized_registry_contains_envelope_follower_and_curve_mapper_definitions() {
+    let registry = BuiltInModuleRegistry::new();
+
+    let follower = registry
+        .get(module_types::ENVELOPE_FOLLOWER)
+        .expect("envelope_follower should be built in");
+    assert_has_input(follower, builtin_ports::AUDIO_IN, SignalType::Audio);
+    assert_has_input(follower, builtin_ports::ATTACK, SignalType::Control);
+    assert_has_input(follower, builtin_ports::RELEASE, SignalType::Control);
+    assert_has_input(follower, builtin_ports::AMOUNT, SignalType::Control);
+    assert_has_input(follower, builtin_ports::OFFSET, SignalType::Control);
+    assert_has_input(follower, builtin_ports::INVERT, SignalType::Control);
+    assert_has_output(follower, builtin_ports::VALUE, SignalType::Control);
+
+    let mode = follower
+        .parameters()
+        .iter()
+        .find(|parameter| parameter.name() == DETECTION_MODE_PARAMETER)
+        .expect("envelope_follower should expose detection mode metadata");
+    assert_eq!(mode.value_type(), ParameterValueType::Text);
+    assert_eq!(mode.default(), Some(DETECTION_MODE_PEAK));
+    assert_eq!(
+        mode.enum_values(),
+        Some(
+            &[
+                DETECTION_MODE_PEAK.to_string(),
+                DETECTION_MODE_RMS.to_string()
+            ][..]
+        )
+    );
+
+    let mapper = registry
+        .get(module_types::CURVE_MAPPER)
+        .expect("curve_mapper should be built in");
+    assert_has_input(mapper, builtin_ports::VALUE, SignalType::Control);
+    assert_has_input(mapper, builtin_ports::AMOUNT, SignalType::Control);
+    assert_has_input(mapper, builtin_ports::BIAS, SignalType::Control);
+    assert_has_input(mapper, builtin_ports::SCALE, SignalType::Control);
+    assert_has_input(mapper, builtin_ports::OFFSET, SignalType::Control);
+    assert_has_output(mapper, builtin_ports::VALUE, SignalType::Control);
+
+    let curve = mapper
+        .parameters()
+        .iter()
+        .find(|parameter| parameter.name() == CURVE_PARAMETER)
+        .expect("curve_mapper should expose curve metadata");
+    assert_eq!(curve.value_type(), ParameterValueType::Text);
+    assert_eq!(curve.default(), Some(CURVE_LINEAR));
+    assert_eq!(
+        curve.enum_values(),
+        Some(
+            &[
+                CURVE_LINEAR.to_string(),
+                CURVE_EXPONENTIAL.to_string(),
+                CURVE_LOGARITHMIC.to_string(),
+                CURVE_S_CURVE.to_string(),
+                CURVE_SOFT_CLIP.to_string(),
+                CURVE_HARD_CLIP.to_string(),
+                CURVE_STEP.to_string(),
+            ][..]
+        )
+    );
+
+    let steps = mapper
+        .parameters()
+        .iter()
+        .find(|parameter| parameter.name() == STEPS_PARAMETER)
+        .expect("curve_mapper should expose steps metadata");
+    assert_eq!(steps.value_type(), ParameterValueType::Integer);
+    assert_eq!(steps.default(), Some("4"));
+    assert_eq!(steps.range(), Some((2.0, 128.0)));
+}
+
 fn assert_has_input(definition: &BuiltInModuleDefinition, name: &str, signal_type: SignalType) {
     assert!(
         definition

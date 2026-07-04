@@ -32,6 +32,10 @@ impl EnvelopeFollower {
         self.release_coeff = time_constant_coeff(release_ms, self.sample_rate);
     }
 
+    pub fn set_mode(&mut self, mode: DetectionMode) {
+        self.mode = mode;
+    }
+
     pub fn reset(&mut self) {
         self.envelope = 0.0;
     }
@@ -45,6 +49,7 @@ impl EnvelopeFollower {
     }
 
     pub fn process(&mut self, sample: f64) -> f64 {
+        let sample = if sample.is_finite() { sample } else { 0.0 };
         let input_level = match self.mode {
             DetectionMode::Peak => sample.abs(),
             DetectionMode::Rms => sample * sample,
@@ -66,7 +71,7 @@ impl EnvelopeFollower {
 }
 
 fn time_constant_coeff(ms: f64, sample_rate: f64) -> f64 {
-    if ms <= 0.0 {
+    if !ms.is_finite() || !sample_rate.is_finite() || sample_rate <= 0.0 || ms <= 0.0 {
         return 1.0;
     }
     let tau_samples = ms * sample_rate / 1000.0;

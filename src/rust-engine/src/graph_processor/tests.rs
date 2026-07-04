@@ -1,8 +1,8 @@
 use super::*;
 use crate::builtins::{
-    EVENT_FILTER_NOTE_PARAMETER, EVENT_FILTER_NOTE_SELECTOR, EVENT_FILTER_SELECTOR_PARAMETER,
-    SCRIPT_LANGUAGE_PARAMETER, SCRIPT_LANGUAGE_RHAI, SCRIPT_SOURCE_PARAMETER,
-    module_types,
+    CURVE_EXPONENTIAL, CURVE_PARAMETER, EVENT_FILTER_NOTE_PARAMETER, EVENT_FILTER_NOTE_SELECTOR,
+    EVENT_FILTER_SELECTOR_PARAMETER, SCRIPT_LANGUAGE_PARAMETER, SCRIPT_LANGUAGE_RHAI,
+    SCRIPT_SOURCE_PARAMETER, module_types,
 };
 use crate::core::TimedInputEvent;
 use crate::fft;
@@ -168,6 +168,250 @@ fn filter_impulse_response(
         .get(builtin_ports::AUDIO_OUT)
         .expect("filter should emit audio_out")
         .clone()
+}
+
+fn envelope_follower_values(
+    audio_in: Vec<f32>,
+    attack_ms: f32,
+    release_ms: f32,
+    amount: f32,
+    offset: f32,
+    invert: f32,
+) -> Vec<f32> {
+    let frames = audio_in.len();
+    let module = ModuleNode::new(ModuleId::new("follower"), module_types::ENVELOPE_FOLLOWER);
+    let mut state = PerModuleState::new(&module, 48_000.0, &PreparedSamplerAssets::empty());
+    let outputs = process_envelope_follower(
+        &mut state,
+        &audio_in,
+        &vec![attack_ms; frames],
+        &vec![release_ms; frames],
+        &vec![amount; frames],
+        &vec![offset; frames],
+        &vec![invert; frames],
+        frames,
+    );
+
+    outputs
+        .control
+        .get(builtin_ports::VALUE)
+        .expect("envelope_follower should emit value")
+        .clone()
+}
+
+#[test]
+fn envelope_follower_detects_positive_and_negative_audio_levels() {
+    let positive = envelope_follower_values(vec![0.5; 8], 0.0, 10.0, 1.0, 0.0, 0.0);
+    let negative = envelope_follower_values(vec![-0.5; 8], 0.0, 10.0, 1.0, 0.0, 0.0);
+
+    assert_eq!(positive, negative);
+    assert!(positive.iter().all(|value| (*value - 0.5).abs() < 0.0001));
+}
+
+#[test]
+fn envelope_follower_attack_smooths_rising_input_level() {
+    let values = envelope_follower_values(vec![1.0; 480], 10.0, 100.0, 1.0, 0.0, 0.0);
+
+    assert!(values[0] > 0.0);
+    assert!(values[0] < values[479]);
+    assert!(values[479] > 0.5 && values[479] < 0.8);
+}
+
+#[test]
+fn envelope_follower_release_smooths_falling_input_level() {
+    let mut audio = vec![1.0; 16];
+    audio.extend(vec![0.0; 480]);
+    let values = envelope_follower_values(audio, 0.0, 10.0, 1.0, 0.0, 0.0);
+
+    assert!(values[15] > 0.99);
+    assert!(values[16] < values[15]);
+    assert!(values[495] > 0.2 && values[495] < 0.5);
+}
+
+#[test]
+fn envelope_follower_applies_amount_offset_and_invert() {
+    let normal = envelope_follower_values(vec![0.25; 4], 0.0, 10.0, 0.5, 0.25, 0.0);
+    let inverted = envelope_follower_values(vec![0.25; 4], 0.0, 10.0, 0.5, 0.25, 1.0);
+
+    assert!(normal.iter().all(|value| (*value - 0.375).abs() < 0.0001));
+    assert!(inverted.iter().all(|value| (*value - 0.625).abs() < 0.0001));
+}
+
+#[test]
+fn envelope_follower_extreme_inputs_and_parameters_remain_finite() {
+    let values = envelope_follower_values(
+        vec![f32::NAN, f32::INFINITY, f32::NEG_INFINITY, f32::MAX],
+        f32::INFINITY,
+        f32::NAN,
+        f32::MAX,
+        f32::NEG_INFINITY,
+        1.0,
+    );
+
+    assert!(values.iter().all(|value| value.is_finite()));
+}
+
+#[test]
+fn curve_mapper_processing_applies_configured_curve() {
+    let module = ModuleNode::new(ModuleId::new("mapper"), module_types::CURVE_MAPPER).with_params(
+        BTreeMap::from([(CURVE_PARAMETER.to_string(), CURVE_EXPONENTIAL.to_string())]),
+    );
+    let mut state = PerModuleState::new(&module, 48_000.0, &PreparedSamplerAssets::empty());
+    let outputs = process_curve_mapper(&mut state, &[0.5], &[1.0], &[0.0], &[1.0], &[0.0], 1);
+    let value = outputs
+        .control
+        .get(builtin_ports::VALUE)
+        .expect("curve_mapper should emit value")[0];
+
+    assert!((value - 0.25).abs() < 0.0001);
+}
+
+#[test]
+fn envelope_follower_curve_mapper_route_deterministically_controls_gain() {
+    let graph = parity_graph(
+        vec![
+            ModuleNode::new(ModuleId::new("osc"), module_types::OSCILLATOR)
+                .with_output(builtin_ports::AUDIO, SignalType::Audio),
+            ModuleNode::new(ModuleId::new("follower"), module_types::ENVELOPE_FOLLOWER)
+                .with_input(builtin_ports::AUDIO_IN, SignalType::Audio)
+                .with_output(builtin_ports::VALUE, SignalType::Control),
+            ModuleNode::new(ModuleId::new("mapper"), module_types::CURVE_MAPPER)
+                .with_input(builtin_ports::VALUE, SignalType::Control)
+                .with_output(builtin_ports::VALUE, SignalType::Control)
+                .with_params(BTreeMap::from([(
+                    CURVE_PARAMETER.to_string(),
+                    CURVE_EXPONENTIAL.to_string(),
+                )])),
+            ModuleNode::new(ModuleId::new("vca"), module_types::GAIN)
+                .with_input(builtin_ports::AUDIO_IN, SignalType::Audio)
+                .with_input(builtin_ports::GAIN, SignalType::Control)
+                .with_output(builtin_ports::AUDIO_OUT, SignalType::Audio),
+            ModuleNode::new(ModuleId::new("mixer"), module_types::AUDIO_MIXER)
+                .with_mixing_input(builtin_ports::INPUTS, SignalType::Audio)
+                .with_output(builtin_ports::MIX, SignalType::Audio),
+            ModuleNode::new(ModuleId::new("out"), module_types::AUDIO_OUTPUT)
+                .with_input(builtin_ports::LEFT, SignalType::Audio)
+                .with_input(builtin_ports::RIGHT, SignalType::Audio),
+        ],
+        vec![
+            Cable::new(
+                PortRef::new(ModuleId::new("osc"), builtin_ports::AUDIO),
+                PortRef::new(ModuleId::new("follower"), builtin_ports::AUDIO_IN),
+            ),
+            Cable::new(
+                PortRef::new(ModuleId::new("follower"), builtin_ports::VALUE),
+                PortRef::new(ModuleId::new("mapper"), builtin_ports::VALUE),
+            ),
+            Cable::new(
+                PortRef::new(ModuleId::new("mapper"), builtin_ports::VALUE),
+                PortRef::new(ModuleId::new("vca"), builtin_ports::GAIN),
+            ),
+            Cable::new(
+                PortRef::new(ModuleId::new("osc"), builtin_ports::AUDIO),
+                PortRef::new(ModuleId::new("vca"), builtin_ports::AUDIO_IN),
+            ),
+            Cable::new(
+                PortRef::new(ModuleId::new("vca"), builtin_ports::AUDIO_OUT),
+                PortRef::new(ModuleId::new("mixer"), builtin_ports::INPUTS),
+            ),
+            Cable::new(
+                PortRef::new(ModuleId::new("mixer"), builtin_ports::MIX),
+                PortRef::new(ModuleId::new("out"), builtin_ports::LEFT),
+            ),
+            Cable::new(
+                PortRef::new(ModuleId::new("mixer"), builtin_ports::MIX),
+                PortRef::new(ModuleId::new("out"), builtin_ports::RIGHT),
+            ),
+        ],
+    );
+    let settings = RenderSettings {
+        sample_rate_hz: 48_000,
+        block_size_frames: 64,
+        duration_frames: 512,
+    };
+
+    assert_parity(
+        &graph,
+        &settings,
+        Vec::new(),
+        &PreparedSamplerAssets::empty(),
+    );
+    let (left, right) = render_offline(&graph, &settings, Vec::new());
+
+    assert!(
+        left.iter()
+            .chain(right.iter())
+            .all(|sample| sample.is_finite())
+    );
+    assert!(left.iter().any(|sample| sample.abs() > 0.0));
+}
+
+#[test]
+fn envelope_follower_curve_mapper_route_deterministically_controls_filter_cutoff() {
+    let graph = parity_graph(
+        vec![
+            ModuleNode::new(ModuleId::new("osc"), module_types::OSCILLATOR)
+                .with_output(builtin_ports::AUDIO, SignalType::Audio),
+            ModuleNode::new(ModuleId::new("follower"), module_types::ENVELOPE_FOLLOWER)
+                .with_input(builtin_ports::AUDIO_IN, SignalType::Audio)
+                .with_output(builtin_ports::VALUE, SignalType::Control),
+            ModuleNode::new(ModuleId::new("mapper"), module_types::CURVE_MAPPER)
+                .with_input(builtin_ports::VALUE, SignalType::Control)
+                .with_output(builtin_ports::VALUE, SignalType::Control),
+            ModuleNode::new(ModuleId::new("filter"), module_types::FILTER)
+                .with_input(builtin_ports::AUDIO_IN, SignalType::Audio)
+                .with_input(builtin_ports::CUTOFF, SignalType::Control)
+                .with_output(builtin_ports::AUDIO_OUT, SignalType::Audio),
+            ModuleNode::new(ModuleId::new("mixer"), module_types::AUDIO_MIXER)
+                .with_mixing_input(builtin_ports::INPUTS, SignalType::Audio)
+                .with_output(builtin_ports::MIX, SignalType::Audio),
+            ModuleNode::new(ModuleId::new("out"), module_types::AUDIO_OUTPUT)
+                .with_input(builtin_ports::LEFT, SignalType::Audio)
+                .with_input(builtin_ports::RIGHT, SignalType::Audio),
+        ],
+        vec![
+            Cable::new(
+                PortRef::new(ModuleId::new("osc"), builtin_ports::AUDIO),
+                PortRef::new(ModuleId::new("follower"), builtin_ports::AUDIO_IN),
+            ),
+            Cable::new(
+                PortRef::new(ModuleId::new("follower"), builtin_ports::VALUE),
+                PortRef::new(ModuleId::new("mapper"), builtin_ports::VALUE),
+            ),
+            Cable::new(
+                PortRef::new(ModuleId::new("mapper"), builtin_ports::VALUE),
+                PortRef::new(ModuleId::new("filter"), builtin_ports::CUTOFF),
+            ),
+            Cable::new(
+                PortRef::new(ModuleId::new("osc"), builtin_ports::AUDIO),
+                PortRef::new(ModuleId::new("filter"), builtin_ports::AUDIO_IN),
+            ),
+            Cable::new(
+                PortRef::new(ModuleId::new("filter"), builtin_ports::AUDIO_OUT),
+                PortRef::new(ModuleId::new("mixer"), builtin_ports::INPUTS),
+            ),
+            Cable::new(
+                PortRef::new(ModuleId::new("mixer"), builtin_ports::MIX),
+                PortRef::new(ModuleId::new("out"), builtin_ports::LEFT),
+            ),
+            Cable::new(
+                PortRef::new(ModuleId::new("mixer"), builtin_ports::MIX),
+                PortRef::new(ModuleId::new("out"), builtin_ports::RIGHT),
+            ),
+        ],
+    );
+    let settings = RenderSettings {
+        sample_rate_hz: 48_000,
+        block_size_frames: 64,
+        duration_frames: 512,
+    };
+
+    assert_parity(
+        &graph,
+        &settings,
+        Vec::new(),
+        &PreparedSamplerAssets::empty(),
+    );
 }
 
 #[test]
@@ -2831,7 +3075,9 @@ fn script_event_router_sampler_graph() -> Graph {
 #[test]
 fn offline_render_routes_script_events_deterministically() {
     let graph = script_event_router_sampler_graph();
-    graph.validate().expect("script router graph should validate");
+    graph
+        .validate()
+        .expect("script router graph should validate");
     let settings = sampler_settings(4);
     let assets = sampler_assets(vec![1.0, 0.0, 0.0, 0.0]);
 

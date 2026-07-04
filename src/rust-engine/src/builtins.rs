@@ -34,6 +34,18 @@ pub const EVENT_FILTER_SELECTOR_DEFAULT: &str = EVENT_FILTER_NOTE_SELECTOR;
 pub const SCRIPT_LANGUAGE_PARAMETER: &str = "language";
 pub const SCRIPT_SOURCE_PARAMETER: &str = "source";
 pub const SCRIPT_LANGUAGE_RHAI: &str = "rhai";
+pub const DETECTION_MODE_PARAMETER: &str = "mode";
+pub const DETECTION_MODE_PEAK: &str = "peak";
+pub const DETECTION_MODE_RMS: &str = "rms";
+pub const CURVE_PARAMETER: &str = "curve";
+pub const CURVE_LINEAR: &str = "linear";
+pub const CURVE_EXPONENTIAL: &str = "exponential";
+pub const CURVE_LOGARITHMIC: &str = "logarithmic";
+pub const CURVE_S_CURVE: &str = "s_curve";
+pub const CURVE_SOFT_CLIP: &str = "soft_clip";
+pub const CURVE_HARD_CLIP: &str = "hard_clip";
+pub const CURVE_STEP: &str = "step";
+pub const STEPS_PARAMETER: &str = "steps";
 
 impl ParameterMetadata {
     pub fn new(name: impl Into<String>, value_type: ParameterValueType) -> Self {
@@ -181,8 +193,32 @@ impl BuiltInModuleDefinition {
         self
     }
 
+    pub fn with_input_ports<'a>(
+        mut self,
+        ports: impl IntoIterator<Item = (&'a str, SignalType)>,
+    ) -> Self {
+        self.inputs.extend(
+            ports
+                .into_iter()
+                .map(|(name, signal_type)| Port::input(name, signal_type)),
+        );
+        self
+    }
+
     pub fn with_output(mut self, port: Port) -> Self {
         self.outputs.push(port);
+        self
+    }
+
+    pub fn with_output_ports<'a>(
+        mut self,
+        ports: impl IntoIterator<Item = (&'a str, SignalType)>,
+    ) -> Self {
+        self.outputs.extend(
+            ports
+                .into_iter()
+                .map(|(name, signal_type)| Port::output(name, signal_type)),
+        );
         self
     }
 
@@ -247,6 +283,8 @@ impl BuiltInModuleRegistry {
             multiply_definition(),
             note_to_control_definition(),
             event_filter_definition(),
+            envelope_follower_definition(),
+            curve_mapper_definition(),
         ])
     }
 
@@ -609,6 +647,63 @@ fn note_to_control_definition() -> BuiltInModuleDefinition {
         .with_output(Port::output("pitch_ratio", SignalType::Control))
         .with_output(Port::output("gate", SignalType::Event))
         .with_output(Port::output("velocity", SignalType::Control))
+}
+
+fn envelope_follower_definition() -> BuiltInModuleDefinition {
+    BuiltInModuleDefinition::new(module_types::ENVELOPE_FOLLOWER)
+        .with_execution_scope(ExecutionScope::Voice)
+        .with_input_ports([
+            (builtin_ports::AUDIO_IN, SignalType::Audio),
+            (builtin_ports::ATTACK, SignalType::Control),
+            (builtin_ports::RELEASE, SignalType::Control),
+            (builtin_ports::AMOUNT, SignalType::Control),
+            (builtin_ports::OFFSET, SignalType::Control),
+            (builtin_ports::INVERT, SignalType::Control),
+        ])
+        .with_output_ports([(builtin_ports::VALUE, SignalType::Control)])
+        .with_parameter(
+            ParameterMetadata::new(DETECTION_MODE_PARAMETER, ParameterValueType::Text)
+                .with_default(DETECTION_MODE_PEAK)
+                .with_enum_values(vec![DETECTION_MODE_PEAK, DETECTION_MODE_RMS])
+                .with_description("level detection mode"),
+        )
+        .with_example("- id: follower\n  type: envelope_follower\n  parameters:\n    mode: peak")
+}
+
+fn curve_mapper_definition() -> BuiltInModuleDefinition {
+    BuiltInModuleDefinition::new(module_types::CURVE_MAPPER)
+        .with_execution_scope(ExecutionScope::Voice)
+        .with_input_ports([
+            (builtin_ports::VALUE, SignalType::Control),
+            (builtin_ports::AMOUNT, SignalType::Control),
+            (builtin_ports::BIAS, SignalType::Control),
+            (builtin_ports::SCALE, SignalType::Control),
+            (builtin_ports::OFFSET, SignalType::Control),
+        ])
+        .with_output_ports([(builtin_ports::VALUE, SignalType::Control)])
+        .with_parameter(
+            ParameterMetadata::new(CURVE_PARAMETER, ParameterValueType::Text)
+                .with_default(CURVE_LINEAR)
+                .with_enum_values(vec![
+                    CURVE_LINEAR,
+                    CURVE_EXPONENTIAL,
+                    CURVE_LOGARITHMIC,
+                    CURVE_S_CURVE,
+                    CURVE_SOFT_CLIP,
+                    CURVE_HARD_CLIP,
+                    CURVE_STEP,
+                ])
+                .with_description("control mapping curve"),
+        )
+        .with_parameter(
+            ParameterMetadata::new(STEPS_PARAMETER, ParameterValueType::Integer)
+                .with_default("4")
+                .with_range(2.0, 128.0)
+                .with_description("quantisation levels used by the step curve"),
+        )
+        .with_example(
+            "- id: mapper\n  type: curve_mapper\n  parameters:\n    curve: s_curve\n    steps: 4",
+        )
 }
 
 fn reverb_definition() -> BuiltInModuleDefinition {

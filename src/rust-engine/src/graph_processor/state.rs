@@ -2,14 +2,17 @@ use std::collections::BTreeMap;
 
 use crate::builtins::module_kind::ModuleKind;
 use crate::builtins::{
+    CURVE_LINEAR, CURVE_PARAMETER, DETECTION_MODE_PARAMETER, DETECTION_MODE_RMS,
     EVENT_FILTER_NOTE_PARAMETER, EVENT_FILTER_NOTE_SELECTOR, EVENT_FILTER_SELECTOR_PARAMETER,
-    SCRIPT_SOURCE_PARAMETER,
+    SCRIPT_SOURCE_PARAMETER, STEPS_PARAMETER,
 };
 use crate::compiled_patch::CompiledNode;
 use crate::convolution::Convolution;
 use crate::crossover::CrossoverPair;
+use crate::curve_mapper::{CurveKind, CurveMapper};
 use crate::dynamics_processor::DynamicsProcessor;
 use crate::echo::Echo;
+use crate::envelope_follower::{DetectionMode, EnvelopeFollower};
 use crate::filter::{BiquadFilter, BiquadMode, CombFilter, CombType, FilterAlgorithm, MoogLadder};
 #[cfg(test)]
 use crate::graph::ModuleNode;
@@ -91,6 +94,13 @@ pub(super) enum PerModuleState {
     EventFilter {
         note: Option<u8>,
     },
+    EnvelopeFollower {
+        detector: EnvelopeFollower,
+        mode: DetectionMode,
+    },
+    CurveMapper {
+        mapper: CurveMapper,
+    },
     Script {
         runtime: RhaiScriptRuntime,
         state: ScriptModuleState,
@@ -147,7 +157,9 @@ impl PerModuleState {
                     .get(SCRIPT_SOURCE_PARAMETER)
                     .unwrap_or_else(|| panic!("script module {module_id} source is required"));
                 let runtime = RhaiScriptRuntime::compile(source, ScriptRuntimeLimits::default())
-                    .unwrap_or_else(|error| panic!("script module {module_id} failed to prepare: {error}"));
+                    .unwrap_or_else(|error| {
+                        panic!("script module {module_id} failed to prepare: {error}")
+                    });
                 PerModuleState::Script {
                     runtime,
                     state: ScriptModuleState::default(),
@@ -270,6 +282,30 @@ impl PerModuleState {
                 };
                 PerModuleState::EventFilter { note }
             }
+            ModuleKind::EnvelopeFollower => {
+                let mode = match params.get(DETECTION_MODE_PARAMETER).map(String::as_str) {
+                    Some(DETECTION_MODE_RMS) => DetectionMode::Rms,
+                    _ => DetectionMode::Peak,
+                };
+                PerModuleState::EnvelopeFollower {
+                    detector: EnvelopeFollower::new(sample_rate as f64, 5.0, 50.0, mode),
+                    mode,
+                }
+            }
+            ModuleKind::CurveMapper => {
+                let curve = params
+                    .get(CURVE_PARAMETER)
+                    .map(String::as_str)
+                    .and_then(CurveKind::from_str)
+                    .unwrap_or_else(|| CurveKind::from_str(CURVE_LINEAR).unwrap());
+                let steps = params
+                    .get(STEPS_PARAMETER)
+                    .and_then(|value| value.parse::<u32>().ok())
+                    .unwrap_or(CurveMapper::DEFAULT_STEPS);
+                PerModuleState::CurveMapper {
+                    mapper: CurveMapper::new(curve, steps),
+                }
+            }
             ModuleKind::Lfo
             | ModuleKind::ControlMixer
             | ModuleKind::AudioDelayOneSample
@@ -313,7 +349,12 @@ impl PerModuleState {
             event_outputs,
             control_outputs,
         )
-        .unwrap_or_else(|error| panic!("script module {} failed to prepare: {error}", node.id.as_str()));
+        .unwrap_or_else(|error| {
+            panic!(
+                "script module {} failed to prepare: {error}",
+                node.id.as_str()
+            )
+        });
 
         PerModuleState::Script {
             runtime,

@@ -29,6 +29,8 @@ pub enum ModuleKind {
     Multiply,
     NoteToControl,
     EventFilter,
+    EnvelopeFollower,
+    CurveMapper,
 }
 
 impl ModuleKind {
@@ -61,6 +63,8 @@ impl ModuleKind {
             module_types::MULTIPLY => Some(Self::Multiply),
             module_types::NOTE_TO_CONTROL => Some(Self::NoteToControl),
             module_types::EVENT_FILTER => Some(Self::EventFilter),
+            module_types::ENVELOPE_FOLLOWER => Some(Self::EnvelopeFollower),
+            module_types::CURVE_MAPPER => Some(Self::CurveMapper),
             _ => None,
         }
     }
@@ -89,6 +93,8 @@ impl ModuleKind {
                 | Self::Multiply
                 | Self::NoteToControl
                 | Self::EventFilter
+                | Self::EnvelopeFollower
+                | Self::CurveMapper
                 | Self::Script
         )
     }

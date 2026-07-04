@@ -6,11 +6,11 @@ use crate::graph::builtin_ports;
 use super::ModuleInputProvider;
 use super::outputs::{BlockEvent, ModuleOutputs};
 use super::processing::{
-    EchoControls, ReverbControls, process_adsr, process_convolution, process_dynamics_processor,
-    process_echo, process_event_filter, process_filter, process_frequency_splitter,
-    process_impulse, process_multiply, process_noise, process_note_to_control,
-    process_note_to_rate, process_oscillator, process_reverb, process_sampler, process_saturator,
-    process_script, process_spectral_processor, process_vca,
+    EchoControls, ReverbControls, process_adsr, process_convolution, process_curve_mapper,
+    process_dynamics_processor, process_echo, process_envelope_follower, process_event_filter,
+    process_filter, process_frequency_splitter, process_impulse, process_multiply, process_noise,
+    process_note_to_control, process_note_to_rate, process_oscillator, process_reverb,
+    process_sampler, process_saturator, process_script, process_spectral_processor, process_vca,
 };
 use super::state::PerModuleState;
 
@@ -131,6 +131,104 @@ pub(super) fn process_module(
         }
         ModuleKind::NoteToRate => process_note_to_rate(&mut states[module_idx], events_in, frames),
         ModuleKind::EventFilter => process_event_filter(&mut states[module_idx], events_in),
+        ModuleKind::EnvelopeFollower => {
+            let audio_in = input_provider.sum_audio_input(
+                module_idx,
+                builtin_ports::AUDIO_IN,
+                all_outputs,
+                frames,
+            );
+            let attack_in = input_provider.control_input_or_default(
+                module_idx,
+                builtin_ports::ATTACK,
+                all_outputs,
+                frames,
+                5.0,
+            );
+            let release_in = input_provider.control_input_or_default(
+                module_idx,
+                builtin_ports::RELEASE,
+                all_outputs,
+                frames,
+                50.0,
+            );
+            let amount_in = input_provider.control_input_or_default(
+                module_idx,
+                builtin_ports::AMOUNT,
+                all_outputs,
+                frames,
+                1.0,
+            );
+            let offset_in = input_provider.control_input_or_default(
+                module_idx,
+                builtin_ports::OFFSET,
+                all_outputs,
+                frames,
+                0.0,
+            );
+            let invert_in = input_provider.control_input_or_default(
+                module_idx,
+                builtin_ports::INVERT,
+                all_outputs,
+                frames,
+                0.0,
+            );
+            process_envelope_follower(
+                &mut states[module_idx],
+                &audio_in,
+                &attack_in,
+                &release_in,
+                &amount_in,
+                &offset_in,
+                &invert_in,
+                frames,
+            )
+        }
+        ModuleKind::CurveMapper => {
+            let value_in = input_provider.sum_control_input(
+                module_idx,
+                builtin_ports::VALUE,
+                all_outputs,
+                frames,
+            );
+            let amount_in = input_provider.control_input_or_default(
+                module_idx,
+                builtin_ports::AMOUNT,
+                all_outputs,
+                frames,
+                1.0,
+            );
+            let bias_in = input_provider.control_input_or_default(
+                module_idx,
+                builtin_ports::BIAS,
+                all_outputs,
+                frames,
+                0.0,
+            );
+            let scale_in = input_provider.control_input_or_default(
+                module_idx,
+                builtin_ports::SCALE,
+                all_outputs,
+                frames,
+                1.0,
+            );
+            let offset_in = input_provider.control_input_or_default(
+                module_idx,
+                builtin_ports::OFFSET,
+                all_outputs,
+                frames,
+                0.0,
+            );
+            process_curve_mapper(
+                &mut states[module_idx],
+                &value_in,
+                &amount_in,
+                &bias_in,
+                &scale_in,
+                &offset_in,
+                frames,
+            )
+        }
         ModuleKind::AudioMixer => {
             let mix = input_provider.sum_audio_input(
                 module_idx,

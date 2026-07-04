@@ -18,7 +18,8 @@ use self::outputs::BlockEvent;
 use self::outputs::ModuleOutputs;
 #[cfg(test)]
 use self::processing::{
-    process_adsr, process_filter, process_note_to_rate, process_sampler, process_vca,
+    process_adsr, process_curve_mapper, process_envelope_follower, process_filter,
+    process_note_to_rate, process_sampler, process_vca,
 };
 pub use self::realtime_graph_processor::RealtimeGraphProcessor;
 #[cfg(test)]

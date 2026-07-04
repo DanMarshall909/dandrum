@@ -1,0 +1,69 @@
+metadata:
+  name: Envelope Filter Modulation
+render:
+  sample_rate_hz: 48000
+  block_size_frames: 128
+  duration_frames: 2048
+modules:
+  - id: source
+    type: oscillator
+    outputs:
+      - name: audio
+        signal_type: audio
+  - id: follower
+    type: envelope_follower
+    parameters:
+      mode: peak
+    inputs:
+      - name: audio_in
+        signal_type: audio
+    outputs:
+      - name: value
+        signal_type: control
+  - id: mapper
+    type: curve_mapper
+    parameters:
+      curve: s_curve
+      steps: 4
+    inputs:
+      - name: value
+        signal_type: control
+    outputs:
+      - name: value
+        signal_type: control
+  - id: filter
+    type: filter
+    parameters:
+      algorithm: moog
+    inputs:
+      - name: audio_in
+        signal_type: audio
+      - name: cutoff
+        signal_type: control
+    outputs:
+      - name: audio_out
+        signal_type: audio
+  - id: mixer
+    type: audio_mixer
+  - id: out
+    type: audio_output
+    inputs:
+      - name: left
+        signal_type: audio
+      - name: right
+        signal_type: audio
+connections:
+  - from: source.audio
+    to: follower.audio_in
+  - from: follower.value
+    to: mapper.value
+  - from: mapper.value
+    to: filter.cutoff
+  - from: source.audio
+    to: filter.audio_in
+  - from: filter.audio_out
+    to: mixer.inputs
+  - from: mixer.mix
+    to: out.left
+  - from: mixer.mix
+    to: out.right

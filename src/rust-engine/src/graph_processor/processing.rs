@@ -303,6 +303,82 @@ pub(super) fn process_event_filter(
     outputs
 }
 
+pub(super) fn process_envelope_follower(
+    state: &mut PerModuleState,
+    audio_in: &[f32],
+    attack_in: &[f32],
+    release_in: &[f32],
+    amount_in: &[f32],
+    offset_in: &[f32],
+    invert_in: &[f32],
+    frames: usize,
+) -> ModuleOutputs {
+    let (detector, mode) = match state {
+        PerModuleState::EnvelopeFollower { detector, mode } => (detector, *mode),
+        _ => unreachable!(),
+    };
+
+    detector.set_mode(mode);
+    let mut output = Vec::with_capacity(frames);
+    for i in 0..frames {
+        let attack_ms = attack_in.get(i).copied().unwrap_or(5.0).max(0.0) as f64;
+        let release_ms = release_in.get(i).copied().unwrap_or(50.0).max(0.0) as f64;
+        detector.set_params(attack_ms, release_ms);
+
+        let envelope = detector.process(audio_in.get(i).copied().unwrap_or(0.0) as f64) as f32;
+        let shaped = if invert_in.get(i).copied().unwrap_or(0.0) > 0.5 {
+            1.0 - envelope
+        } else {
+            envelope
+        };
+        let amount = amount_in.get(i).copied().unwrap_or(1.0);
+        let offset = offset_in.get(i).copied().unwrap_or(0.0);
+        output.push(finite_or_zero(shaped * amount + offset).clamp(0.0, 1.0));
+    }
+
+    let mut outputs = ModuleOutputs::empty();
+    outputs
+        .control
+        .insert(builtin_ports::VALUE.to_string(), output);
+    outputs
+}
+
+pub(super) fn process_curve_mapper(
+    state: &mut PerModuleState,
+    value_in: &[f32],
+    amount_in: &[f32],
+    bias_in: &[f32],
+    scale_in: &[f32],
+    offset_in: &[f32],
+    frames: usize,
+) -> ModuleOutputs {
+    let mapper = match state {
+        PerModuleState::CurveMapper { mapper } => mapper,
+        _ => unreachable!(),
+    };
+
+    let mut output = Vec::with_capacity(frames);
+    for i in 0..frames {
+        output.push(mapper.process(
+            value_in.get(i).copied().unwrap_or(0.0),
+            amount_in.get(i).copied().unwrap_or(1.0),
+            bias_in.get(i).copied().unwrap_or(0.0),
+            scale_in.get(i).copied().unwrap_or(1.0),
+            offset_in.get(i).copied().unwrap_or(0.0),
+        ));
+    }
+
+    let mut outputs = ModuleOutputs::empty();
+    outputs
+        .control
+        .insert(builtin_ports::VALUE.to_string(), output);
+    outputs
+}
+
+fn finite_or_zero(value: f32) -> f32 {
+    if value.is_finite() { value } else { 0.0 }
+}
+
 fn event_matches_note(event: &BlockEvent, expected_note: Option<u8>) -> bool {
     let Some(expected_note) = expected_note else {
         return true;
