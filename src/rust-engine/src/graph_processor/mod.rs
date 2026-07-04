@@ -1,3 +1,4 @@
+mod audio_arena;
 mod block;
 mod dispatch;
 mod helpers;
