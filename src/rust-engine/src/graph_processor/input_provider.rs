@@ -160,7 +160,17 @@ pub(super) fn compiled_gather_event_inputs(
         }
         for &src_ref in &node.input_port_map[input_idx] {
             if let Some(outputs) = all_outputs.get(&src_ref.module_index) {
-                events.extend_from_slice(&outputs.events);
+                let Some(src_port_name) =
+                    compiled_source_port_name(compiled, src_ref.module_index, src_ref.port_index)
+                else {
+                    continue;
+                };
+
+                if let Some(port_events) = outputs.event_ports.get(src_port_name) {
+                    events.extend_from_slice(port_events);
+                } else {
+                    events.extend_from_slice(&outputs.events);
+                }
             }
         }
     }

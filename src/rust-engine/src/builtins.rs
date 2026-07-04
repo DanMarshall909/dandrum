@@ -31,6 +31,9 @@ pub const EVENT_FILTER_SELECTOR_PARAMETER: &str = "selector";
 pub const EVENT_FILTER_NOTE_PARAMETER: &str = "note";
 pub const EVENT_FILTER_NOTE_SELECTOR: &str = "note";
 pub const EVENT_FILTER_SELECTOR_DEFAULT: &str = EVENT_FILTER_NOTE_SELECTOR;
+pub const SCRIPT_LANGUAGE_PARAMETER: &str = "language";
+pub const SCRIPT_SOURCE_PARAMETER: &str = "source";
+pub const SCRIPT_LANGUAGE_RHAI: &str = "rhai";
 
 impl ParameterMetadata {
     pub fn new(name: impl Into<String>, value_type: ParameterValueType) -> Self {
@@ -382,6 +385,16 @@ fn script_definition() -> BuiltInModuleDefinition {
     BuiltInModuleDefinition::new(module_types::SCRIPT)
         .with_execution_scope(ExecutionScope::Voice)
         .with_module_category(ModuleCategory::Script)
+        .with_parameter(
+            ParameterMetadata::new(SCRIPT_LANGUAGE_PARAMETER, ParameterValueType::Text)
+                .with_default(SCRIPT_LANGUAGE_RHAI)
+                .with_enum_values(vec![SCRIPT_LANGUAGE_RHAI])
+                .with_description("script language"),
+        )
+        .with_parameter(
+            ParameterMetadata::new(SCRIPT_SOURCE_PARAMETER, ParameterValueType::Text)
+                .with_description("inline script source"),
+        )
 }
 
 fn sampler_definition() -> BuiltInModuleDefinition {

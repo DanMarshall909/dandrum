@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::{BTreeMap, HashMap};
 
 use crate::builtins::module_kind::ModuleKind;
 use crate::graph::builtin_ports;
@@ -10,7 +10,7 @@ use super::processing::{
     process_echo, process_event_filter, process_filter, process_frequency_splitter,
     process_impulse, process_multiply, process_noise, process_note_to_control,
     process_note_to_rate, process_oscillator, process_reverb, process_sampler, process_saturator,
-    process_spectral_processor, process_vca,
+    process_script, process_spectral_processor, process_vca,
 };
 use super::state::PerModuleState;
 
@@ -572,6 +572,26 @@ pub(super) fn process_module(
         }
         ModuleKind::NoteToControl => {
             process_note_to_control(&mut states[module_idx], events_in, frames)
+        }
+        ModuleKind::Script => {
+            let control_input_names = match &states[module_idx] {
+                PerModuleState::Script { control_inputs, .. } => control_inputs.clone(),
+                _ => unreachable!(),
+            };
+            let control_inputs: BTreeMap<String, f32> = control_input_names
+                .into_iter()
+                .map(|port_name| {
+                    let values = input_provider.sum_control_input(
+                        module_idx,
+                        &port_name,
+                        all_outputs,
+                        frames,
+                    );
+                    let value = values.first().copied().unwrap_or(0.0);
+                    (port_name, value)
+                })
+                .collect();
+            process_script(&mut states[module_idx], events_in, control_inputs, frames)
         }
         _ => panic!(
             "process_module called for unsupported module kind; dispatch is only for render-time module types"

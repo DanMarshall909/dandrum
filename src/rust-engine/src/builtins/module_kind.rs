@@ -89,6 +89,7 @@ impl ModuleKind {
                 | Self::Multiply
                 | Self::NoteToControl
                 | Self::EventFilter
+                | Self::Script
         )
     }
 }

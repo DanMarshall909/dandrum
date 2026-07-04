@@ -8,9 +8,10 @@ use serde::Deserialize;
 
 use crate::builtins::{
     BuiltInModuleDefinition, BuiltInModuleRegistry, ParameterMetadata, ParameterValueType,
-    module_types,
+    SCRIPT_LANGUAGE_PARAMETER, SCRIPT_LANGUAGE_RHAI, SCRIPT_SOURCE_PARAMETER, module_types,
 };
 use crate::diagnostics::{self, Diagnostic, Diagnostics, Severity, error_codes};
+use crate::script::{RhaiScriptRuntime, ScriptPrepareError, ScriptRuntimeLimits};
 
 #[path = "patch_composite.rs"]
 mod patch_composite;
@@ -442,6 +443,26 @@ pub fn validate_patch_schema(patch: &PatchDocument) -> Result<(), PatchValidatio
 }
 
 fn validate_script_module(module: &ModuleDeclaration, diagnostics: &mut PatchValidationError) {
+    for input in &module.inputs {
+        if input.signal_type == SignalType::Audio {
+            diagnostics.push(
+                Diagnostic::new(
+                    error_codes::SCRIPT_UNSUPPORTED_PORT,
+                    Severity::Error,
+                    format!(
+                        "script module {} input {} cannot be audio-rate in the initial implementation",
+                        module.id, input.name
+                    ),
+                )
+                .with_module_id(&module.id)
+                .with_port_name(&input.name)
+                .with_expected("event or control input")
+                .with_actual("audio input")
+                .with_suggested_fix("move audio-rate DSP into a Rust primitive or YAML composite"),
+            );
+        }
+    }
+
     for output in &module.outputs {
         if output.signal_type == SignalType::Audio {
             diagnostics.push(
@@ -462,22 +483,83 @@ fn validate_script_module(module: &ModuleDeclaration, diagnostics: &mut PatchVal
         }
     }
 
-    let Some(source) = module.extra_fields.get(SCRIPT_SOURCE_FIELD) else {
-        return;
+    if let Some(language) = module.parameters.get(SCRIPT_LANGUAGE_PARAMETER) {
+        match language {
+            ParameterValue::Text(value) if value == SCRIPT_LANGUAGE_RHAI => {}
+            ParameterValue::Text(value) => {
+                diagnostics.push(
+                    Diagnostic::new(
+                        error_codes::SCRIPT_VALIDATION,
+                        Severity::Error,
+                        format!("script module {} language {value} is not supported", module.id),
+                    )
+                    .with_module_id(&module.id)
+                    .with_expected(SCRIPT_LANGUAGE_RHAI)
+                    .with_actual(value)
+                    .with_suggested_fix("use language: rhai"),
+                );
+                return;
+            }
+            other => {
+                diagnostics.push(
+                    Diagnostic::new(
+                        error_codes::VALIDATION_TYPE_MISMATCH,
+                        Severity::Error,
+                        format!("script module {} language must be a string", module.id),
+                    )
+                    .with_module_id(&module.id)
+                    .with_expected("string")
+                    .with_actual(format!("{other:?}")),
+                );
+                return;
+            }
+        }
+    }
+
+    let source = match script_source(module) {
+        Some(Ok(source)) => source,
+        Some(Err(diagnostic)) => {
+            diagnostics.push(diagnostic);
+            return;
+        }
+        None => {
+            if module.parameters.contains_key(SCRIPT_LANGUAGE_PARAMETER) {
+                diagnostics.push(
+                    Diagnostic::new(
+                        error_codes::VALIDATION_MISSING_FIELD,
+                        Severity::Error,
+                        format!("script module {} source is required", module.id),
+                    )
+                    .with_module_id(&module.id)
+                    .with_expected("inline source string"),
+                );
+            }
+            return;
+        }
     };
-    let Some(source) = source.as_str() else {
-        diagnostics.push(
+
+    match RhaiScriptRuntime::compile(source, ScriptRuntimeLimits::default()) {
+        Ok(_) => {}
+        Err(ScriptPrepareError::Parse { message }) => diagnostics.push(
             Diagnostic::new(
-                error_codes::VALIDATION_TYPE_MISMATCH,
+                error_codes::SCRIPT_PARSE,
                 Severity::Error,
-                format!("script module {} source must be a string", module.id),
+                format!("script module {} Rhai source failed to parse", module.id),
             )
             .with_module_id(&module.id)
-            .with_expected("string")
-            .with_actual(format!("{:?}", source)),
-        );
-        return;
-    };
+            .with_expected("valid Rhai source")
+            .with_actual(message),
+        ),
+        Err(ScriptPrepareError::MissingEntryPoint) => diagnostics.push(
+            Diagnostic::new(
+                error_codes::SCRIPT_VALIDATION,
+                Severity::Error,
+                format!("script module {} must define process(ctx)", module.id),
+            )
+            .with_module_id(&module.id)
+            .with_expected("fn process(ctx)"),
+        ),
+    }
 
     for token in SCRIPT_DISALLOWED_API_TOKENS {
         if source.contains(token) {
@@ -497,6 +579,41 @@ fn validate_script_module(module: &ModuleDeclaration, diagnostics: &mut PatchVal
             );
         }
     }
+}
+
+fn script_source(module: &ModuleDeclaration) -> Option<Result<&str, Diagnostic>> {
+    if let Some(source) = module.parameters.get(SCRIPT_SOURCE_PARAMETER) {
+        return Some(match source {
+            ParameterValue::Text(value) => Ok(value.as_str()),
+            other => Err(
+                Diagnostic::new(
+                    error_codes::VALIDATION_TYPE_MISMATCH,
+                    Severity::Error,
+                    format!("script module {} source must be a string", module.id),
+                )
+                .with_module_id(&module.id)
+                .with_expected("string")
+                .with_actual(format!("{other:?}")),
+            ),
+        });
+    }
+
+    let Some(source) = module.extra_fields.get(SCRIPT_SOURCE_FIELD) else {
+        return None;
+    };
+    Some(match source.as_str() {
+        Some(source) => Ok(source),
+        None => Err(
+            Diagnostic::new(
+                error_codes::VALIDATION_TYPE_MISMATCH,
+                Severity::Error,
+                format!("script module {} source must be a string", module.id),
+            )
+            .with_module_id(&module.id)
+            .with_expected("string")
+            .with_actual(format!("{:?}", source)),
+        ),
+    })
 }
 
 fn validate_event_routing_module(
@@ -1195,6 +1312,41 @@ modules:
     }
 
     #[test]
+    fn script_module_rejects_audio_rate_input_ports_before_graph_preparation() {
+        let patch = load_patch_str(
+            r#"
+metadata:
+  name: Script Audio Input
+render:
+  sample_rate_hz: 48000
+  block_size_frames: 64
+  duration_frames: 64
+modules:
+  - id: mapper
+    type: script
+    parameters:
+      language: rhai
+      source: |
+        fn process(ctx) {}
+    inputs:
+      - name: audio
+        signal_type: audio
+"#,
+        )
+        .expect("patch should parse");
+
+        let diagnostics = validate_patch_schema(&patch)
+            .expect_err("audio-rate script input should fail")
+            .to_diagnostics();
+
+        assert!(diagnostics.all().iter().any(|diagnostic| {
+            diagnostic.error_code() == error_codes::SCRIPT_UNSUPPORTED_PORT
+                && diagnostic.module_id() == Some("mapper")
+                && diagnostic.port_name() == Some("audio")
+        }));
+    }
+
+    #[test]
     fn script_module_rejects_filesystem_network_blocking_random_and_allocation_tokens() {
         let patch = load_patch_str(
             r#"
@@ -1207,12 +1359,16 @@ render:
 modules:
   - id: mapper
     type: script
-    source: |
-      let data = std::fs::read_file("secret");
-      network::send(data);
-      thread::sleep(1);
-      random();
-      alloc(128);
+    parameters:
+      language: rhai
+      source: |
+        fn process(ctx) {
+          let data = std::fs::read_file("secret");
+          network::send(data);
+          thread::sleep(1);
+          random();
+          alloc(128);
+        }
     inputs:
       - name: notes
         signal_type: event
@@ -1249,8 +1405,10 @@ render:
 modules:
   - id: mapper
     type: script
-    source: |
-      velocity = note.velocity / 127.0
+    parameters:
+      language: rhai
+      source: |
+        fn process(ctx) {}
     inputs:
       - name: notes
         signal_type: event
@@ -1264,5 +1422,167 @@ modules:
         .expect("patch should parse");
 
         validate_patch_schema(&patch).expect("event/control script should validate");
+    }
+
+    #[test]
+    fn script_module_accepts_rhai_language_and_inline_source_parameters() {
+        let patch = load_patch_str(
+            r#"
+metadata:
+  name: Parameter Script
+render:
+  sample_rate_hz: 48000
+  block_size_frames: 64
+  duration_frames: 64
+modules:
+  - id: mapper
+    type: script
+    parameters:
+      language: rhai
+      source: |
+        fn process(ctx) {}
+    inputs:
+      - name: notes
+        signal_type: event
+    outputs:
+      - name: accent
+        signal_type: control
+"#,
+        )
+        .expect("patch should parse");
+
+        validate_patch_schema(&patch).expect("rhai parameter script should validate");
+
+        assert_eq!(
+            patch.modules[0].parameters.get(SCRIPT_LANGUAGE_PARAMETER),
+            Some(&ParameterValue::Text(SCRIPT_LANGUAGE_RHAI.to_string()))
+        );
+        assert!(matches!(
+            patch.modules[0].parameters.get(SCRIPT_SOURCE_PARAMETER),
+            Some(ParameterValue::Text(source)) if source.contains("fn process(ctx)")
+        ));
+    }
+
+    #[test]
+    fn script_module_rejects_missing_source_for_rhai_language() {
+        let patch = load_patch_str(
+            r#"
+metadata:
+  name: Missing Source
+render:
+  sample_rate_hz: 48000
+  block_size_frames: 64
+  duration_frames: 64
+modules:
+  - id: mapper
+    type: script
+    parameters:
+      language: rhai
+"#,
+        )
+        .expect("patch should parse");
+
+        let diagnostics = validate_patch_schema(&patch)
+            .expect_err("missing source should fail")
+            .to_diagnostics();
+
+        assert!(diagnostics.all().iter().any(|diagnostic| {
+            diagnostic.error_code() == error_codes::VALIDATION_MISSING_FIELD
+                && diagnostic.module_id() == Some("mapper")
+        }));
+    }
+
+    #[test]
+    fn script_module_rejects_unsupported_language() {
+        let patch = load_patch_str(
+            r#"
+metadata:
+  name: Unsupported Language
+render:
+  sample_rate_hz: 48000
+  block_size_frames: 64
+  duration_frames: 64
+modules:
+  - id: mapper
+    type: script
+    parameters:
+      language: lua
+      source: |
+        function process(ctx) end
+"#,
+        )
+        .expect("patch should parse");
+
+        let diagnostics = validate_patch_schema(&patch)
+            .expect_err("unsupported language should fail")
+            .to_diagnostics();
+
+        assert!(diagnostics.all().iter().any(|diagnostic| {
+            diagnostic.error_code() == error_codes::SCRIPT_VALIDATION
+                && diagnostic.expected() == Some(SCRIPT_LANGUAGE_RHAI)
+                && diagnostic.actual() == Some("lua")
+        }));
+    }
+
+    #[test]
+    fn script_module_rejects_malformed_rhai_source() {
+        let patch = load_patch_str(
+            r#"
+metadata:
+  name: Malformed Rhai
+render:
+  sample_rate_hz: 48000
+  block_size_frames: 64
+  duration_frames: 64
+modules:
+  - id: mapper
+    type: script
+    parameters:
+      language: rhai
+      source: |
+        fn process(ctx) {
+"#,
+        )
+        .expect("patch should parse");
+
+        let diagnostics = validate_patch_schema(&patch)
+            .expect_err("malformed Rhai should fail")
+            .to_diagnostics();
+
+        assert!(diagnostics.all().iter().any(|diagnostic| {
+            diagnostic.error_code() == error_codes::SCRIPT_PARSE
+                && diagnostic.module_id() == Some("mapper")
+        }));
+    }
+
+    #[test]
+    fn script_module_rejects_missing_process_entry_point() {
+        let patch = load_patch_str(
+            r#"
+metadata:
+  name: Missing Process
+render:
+  sample_rate_hz: 48000
+  block_size_frames: 64
+  duration_frames: 64
+modules:
+  - id: mapper
+    type: script
+    parameters:
+      language: rhai
+      source: |
+        fn route(ctx) {}
+"#,
+        )
+        .expect("patch should parse");
+
+        let diagnostics = validate_patch_schema(&patch)
+            .expect_err("missing process should fail")
+            .to_diagnostics();
+
+        assert!(diagnostics.all().iter().any(|diagnostic| {
+            diagnostic.error_code() == error_codes::SCRIPT_VALIDATION
+                && diagnostic.expected() == Some("fn process(ctx)")
+        }));
     }
 }

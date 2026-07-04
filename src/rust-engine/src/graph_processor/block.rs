@@ -53,6 +53,7 @@ pub(super) fn process_block_compiled(
             audio: HashMap::new(),
             control: HashMap::new(),
             events: incoming_events,
+            event_ports: HashMap::new(),
         };
         all_outputs.insert(idx, outputs);
     }
@@ -158,6 +159,7 @@ pub(super) fn process_block_compiled_polyphonic(
                     audio: HashMap::new(),
                     control: HashMap::new(),
                     events: voice_events[voice_idx].clone(),
+                    event_ports: HashMap::new(),
                 },
             );
         }
@@ -204,6 +206,9 @@ pub(super) fn process_block_compiled_polyphonic(
                     }
                 }
                 entry.events.extend(outputs.events);
+                for (port, events) in outputs.event_ports {
+                    entry.event_ports.entry(port).or_default().extend(events);
+                }
             }
         }
     }

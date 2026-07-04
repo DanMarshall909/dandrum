@@ -1,6 +1,7 @@
 use super::*;
 use crate::builtins::{
     EVENT_FILTER_NOTE_PARAMETER, EVENT_FILTER_NOTE_SELECTOR, EVENT_FILTER_SELECTOR_PARAMETER,
+    SCRIPT_LANGUAGE_PARAMETER, SCRIPT_LANGUAGE_RHAI, SCRIPT_SOURCE_PARAMETER,
     module_types,
 };
 use crate::core::TimedInputEvent;
@@ -2750,6 +2751,117 @@ fn script_mapping_example_is_event_control_only_and_validates() {
             .iter()
             .all(|output| output.signal_type != patch::SignalType::Audio)
     );
+}
+
+#[test]
+fn script_examples_parse_and_validate() {
+    for fixture in [
+        "examples/patches/script-drum-event-router.yaml",
+        "examples/patches/script-velocity-accent.yaml",
+        "examples/patches/script-state-counter.yaml",
+    ] {
+        let Some(yaml) = read_repo_fixture(fixture) else {
+            continue;
+        };
+        let patch = patch::load_patch_str(&yaml).expect("script example should parse");
+
+        patch::validate_patch_schema(&patch).expect("script example should validate");
+    }
+}
+
+fn script_event_router_sampler_graph() -> Graph {
+    Graph::new(
+        vec![
+            ModuleNode::new(ModuleId::new("midi"), module_types::MIDI_INPUT)
+                .with_output(builtin_ports::EVENTS, SignalType::Event),
+            ModuleNode::new(ModuleId::new("router"), module_types::SCRIPT)
+                .with_input("events", SignalType::Event)
+                .with_output("kick", SignalType::Event)
+                .with_params(BTreeMap::from([
+                    (
+                        SCRIPT_LANGUAGE_PARAMETER.to_string(),
+                        SCRIPT_LANGUAGE_RHAI.to_string(),
+                    ),
+                    (
+                        SCRIPT_SOURCE_PARAMETER.to_string(),
+                        r#"
+                        fn process(ctx) {
+                            for event in ctx.events {
+                                if event.type == "note_on" && event.note == 36 {
+                                    ctx.emit("kick", event);
+                                }
+                            }
+                        }
+                        "#
+                        .to_string(),
+                    ),
+                ])),
+            ModuleNode::new(ModuleId::new("sampler"), module_types::SAMPLER)
+                .with_input(builtin_ports::TRIGGER, SignalType::Event)
+                .with_input(builtin_ports::RATE, SignalType::Control)
+                .with_input(builtin_ports::START, SignalType::Control)
+                .with_input(builtin_ports::LOOP_ENABLED, SignalType::Control)
+                .with_input(builtin_ports::LOOP_START, SignalType::Control)
+                .with_input(builtin_ports::LOOP_END, SignalType::Control)
+                .with_output(builtin_ports::AUDIO, SignalType::Audio),
+            ModuleNode::new(ModuleId::new("out"), module_types::AUDIO_OUTPUT)
+                .with_input(builtin_ports::LEFT, SignalType::Audio)
+                .with_input(builtin_ports::RIGHT, SignalType::Audio),
+        ],
+        vec![
+            Cable::new(
+                PortRef::new(ModuleId::new("midi"), builtin_ports::EVENTS),
+                PortRef::new(ModuleId::new("router"), "events"),
+            ),
+            Cable::new(
+                PortRef::new(ModuleId::new("router"), "kick"),
+                PortRef::new(ModuleId::new("sampler"), builtin_ports::TRIGGER),
+            ),
+            Cable::new(
+                PortRef::new(ModuleId::new("sampler"), builtin_ports::AUDIO),
+                PortRef::new(ModuleId::new("out"), builtin_ports::LEFT),
+            ),
+        ],
+    )
+}
+
+#[test]
+fn offline_render_routes_script_events_deterministically() {
+    let graph = script_event_router_sampler_graph();
+    graph.validate().expect("script router graph should validate");
+    let settings = sampler_settings(4);
+    let assets = sampler_assets(vec![1.0, 0.0, 0.0, 0.0]);
+
+    let kick = render_offline_with_sampler_assets(
+        &graph,
+        &settings,
+        vec![note_on_value(0, 36, 100)],
+        &assets,
+    );
+    let snare = render_offline_with_sampler_assets(
+        &graph,
+        &settings,
+        vec![note_on_value(0, 38, 100)],
+        &assets,
+    );
+
+    assert_eq!(kick.0[0], 1.0);
+    assert_eq!(snare.0, vec![0.0; 4]);
+}
+
+#[test]
+fn realtime_graph_processor_renders_prepared_script_modules_without_parsing_source() {
+    let graph = script_event_router_sampler_graph();
+    let assets = sampler_assets(vec![1.0, 0.0, 0.0, 0.0]);
+    let mut processor = RealtimeGraphProcessor::new_with_sampler_assets(graph, 48_000.0, &assets);
+    let mut left = vec![0.0; 4];
+    let mut right = vec![0.0; 4];
+
+    processor.note_on(36, 100);
+    let rendered = processor.render(&mut left, &mut right);
+
+    assert_eq!(rendered, 4);
+    assert_eq!(left[0], 1.0);
 }
 
 fn read_repo_fixture(relative_path: &str) -> Option<String> {

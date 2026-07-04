@@ -3,6 +3,7 @@ use std::collections::BTreeMap;
 use crate::builtins::module_kind::ModuleKind;
 use crate::builtins::{
     EVENT_FILTER_NOTE_PARAMETER, EVENT_FILTER_NOTE_SELECTOR, EVENT_FILTER_SELECTOR_PARAMETER,
+    SCRIPT_SOURCE_PARAMETER,
 };
 use crate::compiled_patch::CompiledNode;
 use crate::convolution::Convolution;
@@ -12,9 +13,11 @@ use crate::echo::Echo;
 use crate::filter::{BiquadFilter, BiquadMode, CombFilter, CombType, FilterAlgorithm, MoogLadder};
 #[cfg(test)]
 use crate::graph::ModuleNode;
+use crate::graph::SignalType;
 use crate::reverb::Reverb;
 use crate::sample::{LoadedSample, PreparedSamplerAssets};
 use crate::saturator::Saturator;
+use crate::script::{RhaiScriptRuntime, ScriptModuleState, ScriptRuntimeLimits};
 use crate::spectral::SpectralProcessor;
 
 pub(super) enum PerModuleState {
@@ -88,6 +91,11 @@ pub(super) enum PerModuleState {
     EventFilter {
         note: Option<u8>,
     },
+    Script {
+        runtime: RhaiScriptRuntime,
+        state: ScriptModuleState,
+        control_inputs: Vec<String>,
+    },
 }
 
 impl PerModuleState {
@@ -113,6 +121,10 @@ impl PerModuleState {
         sample_rate: f32,
         sampler_assets: &PreparedSamplerAssets,
     ) -> Self {
+        if node.module_kind == ModuleKind::Script {
+            return Self::new_script_compiled(node);
+        }
+
         Self::from_kind(
             node.module_kind,
             node.id.as_str(),
@@ -130,6 +142,18 @@ impl PerModuleState {
         sampler_assets: &PreparedSamplerAssets,
     ) -> Self {
         match kind {
+            ModuleKind::Script => {
+                let source = params
+                    .get(SCRIPT_SOURCE_PARAMETER)
+                    .unwrap_or_else(|| panic!("script module {module_id} source is required"));
+                let runtime = RhaiScriptRuntime::compile(source, ScriptRuntimeLimits::default())
+                    .unwrap_or_else(|error| panic!("script module {module_id} failed to prepare: {error}"));
+                PerModuleState::Script {
+                    runtime,
+                    state: ScriptModuleState::default(),
+                    control_inputs: Vec::new(),
+                }
+            }
             ModuleKind::Oscillator => PerModuleState::Oscillator {
                 phase: 0.0,
                 sample_rate,
@@ -250,10 +274,51 @@ impl PerModuleState {
             | ModuleKind::ControlMixer
             | ModuleKind::AudioDelayOneSample
             | ModuleKind::BlockDelay
-            | ModuleKind::ControlDelay
-            | ModuleKind::Script => {
+            | ModuleKind::ControlDelay => {
                 panic!("module kind {kind:?} does not have a per-module state variant")
             }
+        }
+    }
+
+    pub(super) fn new_script_compiled(node: &CompiledNode) -> Self {
+        let source = node
+            .parameters
+            .get(SCRIPT_SOURCE_PARAMETER)
+            .unwrap_or_else(|| panic!("script module {} source is required", node.id.as_str()));
+        let event_outputs: Vec<String> = node
+            .output_port_names
+            .iter()
+            .zip(node.output_port_types.iter())
+            .filter(|(_, signal_type)| **signal_type == SignalType::Event)
+            .map(|(name, _)| name.clone())
+            .collect();
+        let control_outputs: Vec<String> = node
+            .output_port_names
+            .iter()
+            .zip(node.output_port_types.iter())
+            .filter(|(_, signal_type)| **signal_type == SignalType::Control)
+            .map(|(name, _)| name.clone())
+            .collect();
+        let control_inputs: Vec<String> = node
+            .input_port_names
+            .iter()
+            .zip(node.input_port_types.iter())
+            .filter(|(_, signal_type)| **signal_type == SignalType::Control)
+            .map(|(name, _)| name.clone())
+            .collect();
+
+        let runtime = RhaiScriptRuntime::compile_with_output_ports(
+            source,
+            ScriptRuntimeLimits::default(),
+            event_outputs,
+            control_outputs,
+        )
+        .unwrap_or_else(|error| panic!("script module {} failed to prepare: {error}", node.id.as_str()));
+
+        PerModuleState::Script {
+            runtime,
+            state: ScriptModuleState::default(),
+            control_inputs,
         }
     }
 }

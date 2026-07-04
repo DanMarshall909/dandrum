@@ -1,0 +1,38 @@
+metadata:
+  name: Script State Counter
+render:
+  sample_rate_hz: 48000
+  block_size_frames: 128
+  duration_frames: 256
+modules:
+  - id: midi
+    type: midi_input
+  - id: note_counter
+    type: script
+    parameters:
+      language: rhai
+      source: |
+        fn process(ctx) {
+          let count = ctx.state_get("count");
+          for event in ctx.events {
+            if event.type == "note_on" {
+              let next = ctx.state_get("count") + 1.0;
+              ctx.state_set("count", next);
+              ctx.control("count", next);
+            }
+          }
+          if count > 0.0 {
+            ctx.control("previous_count", count);
+          }
+        }
+    inputs:
+      - name: events
+        signal_type: event
+    outputs:
+      - name: count
+        signal_type: control
+      - name: previous_count
+        signal_type: control
+connections:
+  - from: midi.events
+    to: note_counter.events

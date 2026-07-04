@@ -12,6 +12,7 @@ pub(super) struct ModuleOutputs {
     pub(super) audio: HashMap<String, Vec<f32>>,
     pub(super) control: HashMap<String, Vec<f32>>,
     pub(super) events: Vec<BlockEvent>,
+    pub(super) event_ports: HashMap<String, Vec<BlockEvent>>,
 }
 
 impl ModuleOutputs {
@@ -20,6 +21,7 @@ impl ModuleOutputs {
             audio: HashMap::new(),
             control: HashMap::new(),
             events: Vec::new(),
+            event_ports: HashMap::new(),
         }
     }
 }

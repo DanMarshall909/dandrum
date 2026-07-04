@@ -1,0 +1,42 @@
+metadata:
+  name: Script Drum Event Router
+render:
+  sample_rate_hz: 48000
+  block_size_frames: 128
+  duration_frames: 128
+modules:
+  - id: midi
+    type: midi_input
+  - id: drum_router
+    type: script
+    parameters:
+      language: rhai
+      source: |
+        fn process(ctx) {
+          for event in ctx.events {
+            if event.type == "note_on" {
+              if event.note == 36 {
+                ctx.emit("kick", event);
+              }
+              if event.note == 38 {
+                ctx.emit("snare", event);
+              }
+              if event.note == 42 {
+                ctx.emit("hat", event);
+              }
+            }
+          }
+        }
+    inputs:
+      - name: events
+        signal_type: event
+    outputs:
+      - name: kick
+        signal_type: event
+      - name: snare
+        signal_type: event
+      - name: hat
+        signal_type: event
+connections:
+  - from: midi.events
+    to: drum_router.events

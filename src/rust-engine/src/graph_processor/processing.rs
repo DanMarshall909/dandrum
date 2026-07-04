@@ -1,5 +1,6 @@
 use crate::graph::builtin_ports;
-use crate::script::ScriptEvent;
+use crate::script::{ScriptEvent, ScriptExecutionContext, ScriptProcessInput, ScriptRuntime};
+use std::collections::BTreeMap;
 
 use super::helpers::{
     audio_output, has_signal, lerp, log_lerp, normalized_end_position, normalized_position,
@@ -750,6 +751,54 @@ pub(super) fn process_note_to_control(
         .insert("pitch_ratio".to_string(), pitch_ratio_out);
     outputs.control.insert("velocity".to_string(), velocity_out);
     outputs.events = gate_events;
+    outputs
+}
+
+pub(super) fn process_script(
+    state: &mut PerModuleState,
+    events_in: &[BlockEvent],
+    control_inputs: BTreeMap<String, f32>,
+    frames: usize,
+) -> ModuleOutputs {
+    let PerModuleState::Script {
+        runtime,
+        state: script_state,
+        ..
+    } = state
+    else {
+        unreachable!();
+    };
+
+    let input = ScriptProcessInput::new(
+        events_in.iter().map(|event| event.event.clone()).collect(),
+        control_inputs,
+        ScriptExecutionContext::new(1_000),
+        script_state.clone(),
+    );
+
+    let Ok(script_output) = runtime.process(input) else {
+        return ModuleOutputs::empty();
+    };
+
+    *script_state = script_output.state;
+
+    let mut outputs = ModuleOutputs::empty();
+    for (port, events) in script_output.events {
+        let block_events: Vec<BlockEvent> = events
+            .into_iter()
+            .map(|event| BlockEvent {
+                frame_offset: 0,
+                event,
+            })
+            .collect();
+        outputs.events.extend(block_events.clone());
+        outputs.event_ports.insert(port, block_events);
+    }
+
+    for (port, value) in script_output.controls {
+        outputs.control.insert(port, vec![value; frames]);
+    }
+
     outputs
 }
 
