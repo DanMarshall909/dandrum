@@ -1,6 +1,6 @@
 use super::*;
-use crate::builtins::{builtin_ports, module_types};
-use crate::graph::{Cable, Graph, ModuleId, ModuleNode, PortRef, SignalType};
+use crate::builtins::module_types;
+use crate::graph::{builtin_ports, Cable, Graph, ModuleId, ModuleNode, PortRef, SignalType};
 use crate::sample::{LoadedSample, PreparedSamplerAssets};
 use std::collections::BTreeMap;
 
