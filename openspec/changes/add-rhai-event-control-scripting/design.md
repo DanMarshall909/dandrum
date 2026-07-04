@@ -114,7 +114,7 @@ Rhai is not a DSP language in Dandrum. Scripts may influence downstream DSP thro
 
 Bespoke DSP belongs in Rust primitives. Reusable instrument structures belong in YAML composites. Scripts decide event/control policy.
 
-A peak-controller primitive, similar in spirit to FL Studio's Peak Controller, is explicitly outside this scripting change. It should be modelled as a Rust audio/control primitive that converts an audio envelope into bounded control outputs for dynamics, ducking, modulation, or sidechain-style routing.
+Audio-derived control primitives such as `envelope_follower` and control mapping primitives such as `curve_mapper` are explicitly outside this scripting change. They should be modelled as Rust primitives that emit bounded control signals for dynamics, ducking, modulation, or sidechain-style routing.
 
 ## Failure Behaviour
 
