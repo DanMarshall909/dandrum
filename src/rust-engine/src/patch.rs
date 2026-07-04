@@ -24,6 +24,10 @@ pub use patch_composite::{
 #[derive(Clone, Debug, Deserialize, PartialEq)]
 pub struct PatchDocument {
     pub metadata: PatchMetadata,
+    #[serde(default)]
+    pub instrument: Option<InstrumentIdentity>,
+    #[serde(default)]
+    pub preset_surface: PresetSurfaceDeclaration,
     pub render: RenderSettings,
     #[serde(default)]
     pub assets: Vec<AssetDeclaration>,
@@ -43,6 +47,73 @@ pub struct PatchDocument {
     /// Optional active preset name. Declared presets are inert unless selected here.
     #[serde(default)]
     pub selected_preset: Option<String>,
+}
+
+#[derive(Clone, Debug, Deserialize, PartialEq, Eq)]
+pub struct InstrumentIdentity {
+    pub id: String,
+    pub preset_schema_version: u32,
+}
+
+#[derive(Clone, Debug, Default, Deserialize, PartialEq)]
+pub struct PresetSurfaceDeclaration {
+    #[serde(default)]
+    pub parameters: Vec<PresetParameterTargetDeclaration>,
+    #[serde(default)]
+    pub assets: Vec<PresetAssetTargetDeclaration>,
+}
+
+#[derive(Clone, Debug, Deserialize, PartialEq)]
+pub struct PresetDocument {
+    pub name: String,
+    pub instrument: InstrumentIdentity,
+    #[serde(default)]
+    pub values: BTreeMap<String, ParameterValue>,
+    #[serde(default)]
+    pub assets: BTreeMap<String, String>,
+    #[serde(default)]
+    pub metadata: Option<PresetMetadata>,
+    #[serde(flatten)]
+    pub extra_fields: BTreeMap<String, serde_yaml::Value>,
+}
+
+#[derive(Clone, Debug, Default, Deserialize, PartialEq, Eq)]
+pub struct PresetMetadata {
+    pub author: Option<String>,
+    pub category: Option<String>,
+    #[serde(default)]
+    pub tags: Vec<String>,
+    pub description: Option<String>,
+}
+
+#[derive(Clone, Debug, Deserialize, PartialEq)]
+pub struct PresetParameterTargetDeclaration {
+    pub name: String,
+    #[serde(rename = "type")]
+    pub value_type: PresetTargetType,
+    pub default: ParameterValue,
+    #[serde(default)]
+    pub min: Option<f64>,
+    #[serde(default)]
+    pub max: Option<f64>,
+    pub maps_to: PortReference,
+}
+
+#[derive(Clone, Debug, Deserialize, PartialEq, Eq)]
+pub struct PresetAssetTargetDeclaration {
+    pub name: String,
+    pub kind: AssetKind,
+    pub default: String,
+    pub maps_to: PortReference,
+}
+
+#[derive(Clone, Copy, Debug, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "snake_case")]
+pub enum PresetTargetType {
+    Boolean,
+    Number,
+    Integer,
+    Text,
 }
 
 #[derive(Clone, Debug, Default, Deserialize, PartialEq, Eq)]
@@ -116,6 +187,18 @@ const SCRIPT_DISALLOWED_API_TOKENS: &[&str] = &[
     "thread::",
     "random",
     "alloc",
+];
+const PRESET_STRUCTURAL_FIELDS: &[&str] = &[
+    "module_definitions",
+    "modules",
+    "connections",
+    "render",
+    "events",
+    "event_sequence",
+    "scripts",
+    "scheduling",
+    "schedule",
+    "feedback",
 ];
 
 #[derive(Clone, Debug, Deserialize, PartialEq, Eq)]
@@ -191,6 +274,21 @@ pub enum PatchLoadError {
     },
 }
 
+#[derive(Debug)]
+pub enum PresetLoadError {
+    UnsupportedFormat {
+        path: PathBuf,
+    },
+    ReadFailed {
+        path: PathBuf,
+        message: String,
+    },
+    ParseFailed {
+        path: Option<PathBuf>,
+        message: String,
+    },
+}
+
 #[derive(Clone, Debug, PartialEq)]
 pub struct PatchValidationError {
     diagnostics: Diagnostics,
@@ -248,6 +346,293 @@ pub fn load_patch_str(yaml: &str) -> Result<PatchDocument, PatchLoadError> {
         path: None,
         message: error.to_string(),
     })
+}
+
+pub fn load_preset_file(path: impl AsRef<Path>) -> Result<PresetDocument, PresetLoadError> {
+    let path = path.as_ref();
+
+    if !is_yaml_path(path) {
+        return Err(PresetLoadError::UnsupportedFormat {
+            path: path.to_path_buf(),
+        });
+    }
+
+    let yaml = fs::read_to_string(path).map_err(|error| PresetLoadError::ReadFailed {
+        path: path.to_path_buf(),
+        message: error.to_string(),
+    })?;
+
+    load_preset_str(&yaml).map_err(|error| match error {
+        PresetLoadError::ParseFailed { message, .. } => PresetLoadError::ParseFailed {
+            path: Some(path.to_path_buf()),
+            message,
+        },
+        error => error,
+    })
+}
+
+pub fn load_preset_str(yaml: &str) -> Result<PresetDocument, PresetLoadError> {
+    serde_yaml::from_str(yaml).map_err(|error| PresetLoadError::ParseFailed {
+        path: None,
+        message: error.to_string(),
+    })
+}
+
+pub fn validate_preset_compatibility(
+    patch: &PatchDocument,
+    preset: &PresetDocument,
+) -> Result<(), PatchValidationError> {
+    let mut result = PatchValidationError::new();
+
+    let Some(instrument) = patch.instrument.as_ref() else {
+        result.push(Diagnostic::new(
+            error_codes::VALIDATION_MISSING_FIELD,
+            Severity::Error,
+            "patch does not declare instrument preset identity",
+        ));
+        return Err(result);
+    };
+
+    if instrument.id != preset.instrument.id {
+        result.push(
+            Diagnostic::new(
+                error_codes::VALIDATION_INVALID_VALUE,
+                Severity::Error,
+                format!(
+                    "preset targets instrument {}, but patch instrument is {}",
+                    preset.instrument.id, instrument.id
+                ),
+            )
+            .with_expected(&instrument.id)
+            .with_actual(&preset.instrument.id),
+        );
+    }
+
+    if instrument.preset_schema_version != preset.instrument.preset_schema_version {
+        result.push(
+            Diagnostic::new(
+                error_codes::VALIDATION_INVALID_VALUE,
+                Severity::Error,
+                format!(
+                    "preset schema version {} does not match patch preset schema version {}",
+                    preset.instrument.preset_schema_version, instrument.preset_schema_version
+                ),
+            )
+            .with_expected(instrument.preset_schema_version.to_string())
+            .with_actual(preset.instrument.preset_schema_version.to_string()),
+        );
+    }
+
+    if result.is_empty() {
+        Ok(())
+    } else {
+        Err(result)
+    }
+}
+
+pub fn validate_preset(
+    patch: &PatchDocument,
+    preset: &PresetDocument,
+) -> Result<(), PatchValidationError> {
+    let mut result = PatchValidationError::new();
+
+    if let Err(error) = validate_preset_compatibility(patch, preset) {
+        result.extend(error.diagnostics().iter().cloned());
+    }
+
+    validate_preset_structural_fields(preset, &mut result);
+    validate_preset_values(patch, preset, &mut result);
+    validate_preset_asset_values(patch, preset, &mut result);
+
+    if result.is_empty() {
+        Ok(())
+    } else {
+        Err(result)
+    }
+}
+
+pub fn apply_preset(
+    patch: &PatchDocument,
+    preset: &PresetDocument,
+) -> Result<PatchDocument, PatchValidationError> {
+    validate_preset(patch, preset)?;
+
+    let mut patched = patch.clone();
+
+    for target in &patch.preset_surface.parameters {
+        apply_preset_parameter_value(&mut patched, &target.maps_to, target.default.clone());
+    }
+    for (name, value) in &preset.values {
+        let target = patch
+            .preset_surface
+            .parameters
+            .iter()
+            .find(|target| target.name == *name)
+            .expect("preset validation should reject unknown parameter targets");
+        apply_preset_parameter_value(&mut patched, &target.maps_to, value.clone());
+    }
+
+    for target in &patch.preset_surface.assets {
+        apply_preset_parameter_value(
+            &mut patched,
+            &target.maps_to,
+            ParameterValue::Text(target.default.clone()),
+        );
+    }
+    for (name, asset_id) in &preset.assets {
+        let target = patch
+            .preset_surface
+            .assets
+            .iter()
+            .find(|target| target.name == *name)
+            .expect("preset validation should reject unknown asset targets");
+        apply_preset_parameter_value(
+            &mut patched,
+            &target.maps_to,
+            ParameterValue::Text(asset_id.clone()),
+        );
+    }
+
+    Ok(patched)
+}
+
+fn apply_preset_parameter_value(
+    patch: &mut PatchDocument,
+    destination: &PortReference,
+    value: ParameterValue,
+) {
+    let Some(module) = patch
+        .modules
+        .iter_mut()
+        .find(|module| module.id == destination.module_id)
+    else {
+        return;
+    };
+
+    module
+        .parameters
+        .insert(destination.port_name.clone(), value);
+}
+
+fn validate_preset_structural_fields(
+    preset: &PresetDocument,
+    diagnostics: &mut PatchValidationError,
+) {
+    for field in preset.extra_fields.keys() {
+        if PRESET_STRUCTURAL_FIELDS.contains(&field.as_str()) {
+            diagnostics.push(Diagnostic::new(
+                error_codes::VALIDATION_INVALID_VALUE,
+                Severity::Error,
+                format!(
+                    "preset document cannot declare structural field {field}; graph structure belongs in the patch"
+                ),
+            ));
+        }
+    }
+}
+
+fn validate_preset_values(
+    patch: &PatchDocument,
+    preset: &PresetDocument,
+    diagnostics: &mut PatchValidationError,
+) {
+    for (name, value) in &preset.values {
+        let Some(target) = patch
+            .preset_surface
+            .parameters
+            .iter()
+            .find(|target| target.name == *name)
+        else {
+            diagnostics.push(Diagnostic::new(
+                error_codes::VALIDATION_INVALID_VALUE,
+                Severity::Error,
+                format!("unknown preset target {name}"),
+            ));
+            continue;
+        };
+
+        if !preset_value_matches_type(value, target.value_type) {
+            diagnostics.push(
+                Diagnostic::new(
+                    error_codes::VALIDATION_TYPE_MISMATCH,
+                    Severity::Error,
+                    format!(
+                        "preset target {name} has incompatible value type: expected {}, got {}",
+                        preset_target_type_name(target.value_type),
+                        parameter_value_type_name(value)
+                    ),
+                )
+                .with_expected(preset_target_type_name(target.value_type))
+                .with_actual(parameter_value_type_name(value)),
+            );
+            continue;
+        }
+
+        if let (ParameterValue::Number(actual), Some(min)) = (value, target.min) {
+            if *actual < min {
+                diagnostics.push(Diagnostic::new(
+                    error_codes::VALIDATION_INVALID_VALUE,
+                    Severity::Error,
+                    format!("preset target {name} is below minimum {min}: {actual}"),
+                ));
+            }
+        }
+        if let (ParameterValue::Number(actual), Some(max)) = (value, target.max) {
+            if *actual > max {
+                diagnostics.push(Diagnostic::new(
+                    error_codes::VALIDATION_INVALID_VALUE,
+                    Severity::Error,
+                    format!("preset target {name} is above maximum {max}: {actual}"),
+                ));
+            }
+        }
+    }
+}
+
+fn validate_preset_asset_values(
+    patch: &PatchDocument,
+    preset: &PresetDocument,
+    diagnostics: &mut PatchValidationError,
+) {
+    for (name, asset_id) in &preset.assets {
+        let Some(target) = patch
+            .preset_surface
+            .assets
+            .iter()
+            .find(|target| target.name == *name)
+        else {
+            diagnostics.push(Diagnostic::new(
+                error_codes::VALIDATION_INVALID_VALUE,
+                Severity::Error,
+                format!("unknown preset target {name}"),
+            ));
+            continue;
+        };
+
+        let Some(asset) = patch.assets.iter().find(|asset| asset.id == *asset_id) else {
+            diagnostics.push(Diagnostic::new(
+                error_codes::VALIDATION_INVALID_VALUE,
+                Severity::Error,
+                format!("preset target {name} references missing asset {asset_id}"),
+            ));
+            continue;
+        };
+
+        if asset.kind != target.kind {
+            diagnostics.push(
+                Diagnostic::new(
+                    error_codes::VALIDATION_TYPE_MISMATCH,
+                    Severity::Error,
+                    format!(
+                        "preset target {name} expected {:?} asset, got {:?}",
+                        target.kind, asset.kind
+                    ),
+                )
+                .with_expected(format!("{:?}", target.kind).to_lowercase())
+                .with_actual(format!("{:?}", asset.kind).to_lowercase()),
+            );
+        }
+    }
 }
 
 pub fn resolve_module_parameters(
@@ -429,6 +814,7 @@ pub fn validate_patch_schema(patch: &PatchDocument) -> Result<(), PatchValidatio
     validate_asset_usage(patch, &mut result);
     validate_patch_level_parameters(patch, &registry, &mut result);
     validate_presets(patch, &registry, &mut result);
+    validate_preset_surface(patch, &registry, &mut result);
 
     for connection in &patch.connections {
         validate_port_reference("connection.from", &connection.from, &mut result);
@@ -1046,6 +1432,235 @@ fn validate_presets(
     }
 }
 
+fn validate_preset_surface(
+    patch: &PatchDocument,
+    registry: &BuiltInModuleRegistry,
+    diagnostics: &mut PatchValidationError,
+) {
+    let mut target_names = BTreeSet::new();
+
+    for target in &patch.preset_surface.parameters {
+        validate_preset_target_name(&target.name, &mut target_names, diagnostics);
+
+        if !preset_value_matches_type(&target.default, target.value_type) {
+            diagnostics.push(
+                Diagnostic::new(
+                    error_codes::VALIDATION_TYPE_MISMATCH,
+                    Severity::Error,
+                    format!(
+                        "preset target {} default has incompatible type",
+                        target.name
+                    ),
+                )
+                .with_expected(preset_target_type_name(target.value_type))
+                .with_actual(parameter_value_type_name(&target.default)),
+            );
+        }
+
+        if let (ParameterValue::Number(default), Some(min)) = (&target.default, target.min) {
+            if *default < min {
+                diagnostics.push(Diagnostic::new(
+                    error_codes::VALIDATION_INVALID_VALUE,
+                    Severity::Error,
+                    format!(
+                        "preset target {} default {} is below minimum {}",
+                        target.name, default, min
+                    ),
+                ));
+            }
+        }
+        if let (ParameterValue::Number(default), Some(max)) = (&target.default, target.max) {
+            if *default > max {
+                diagnostics.push(Diagnostic::new(
+                    error_codes::VALIDATION_INVALID_VALUE,
+                    Severity::Error,
+                    format!(
+                        "preset target {} default {} is above maximum {}",
+                        target.name, default, max
+                    ),
+                ));
+            }
+        }
+
+        validate_preset_parameter_destination(patch, registry, target, diagnostics);
+    }
+
+    for target in &patch.preset_surface.assets {
+        validate_preset_target_name(&target.name, &mut target_names, diagnostics);
+        validate_preset_asset_destination(patch, registry, target, diagnostics);
+    }
+}
+
+fn validate_preset_target_name(
+    name: &str,
+    target_names: &mut BTreeSet<String>,
+    diagnostics: &mut PatchValidationError,
+) {
+    if name.trim().is_empty() {
+        diagnostics.push(Diagnostic::new(
+            error_codes::VALIDATION_MISSING_FIELD,
+            Severity::Error,
+            "preset target name is required",
+        ));
+    } else if !target_names.insert(name.to_string()) {
+        diagnostics.push(Diagnostic::new(
+            error_codes::VALIDATION_INVALID_VALUE,
+            Severity::Error,
+            format!("duplicate preset target {name}"),
+        ));
+    }
+}
+
+fn validate_preset_parameter_destination(
+    patch: &PatchDocument,
+    registry: &BuiltInModuleRegistry,
+    target: &PresetParameterTargetDeclaration,
+    diagnostics: &mut PatchValidationError,
+) {
+    let Some(module) = patch
+        .modules
+        .iter()
+        .find(|module| module.id == target.maps_to.module_id)
+    else {
+        diagnostics.push(Diagnostic::new(
+            error_codes::VALIDATION_INVALID_VALUE,
+            Severity::Error,
+            format!(
+                "preset target {} maps to unresolved destination {}.{}",
+                target.name, target.maps_to.module_id, target.maps_to.port_name
+            ),
+        ));
+        return;
+    };
+
+    if let Some(definition) = registry.get(&module.module_type) {
+        if !definition
+            .parameters()
+            .iter()
+            .any(|parameter| parameter.name() == target.maps_to.port_name)
+        {
+            diagnostics.push(Diagnostic::new(
+                error_codes::VALIDATION_INVALID_VALUE,
+                Severity::Error,
+                format!(
+                    "preset target {} maps to unresolved destination {}.{}",
+                    target.name, target.maps_to.module_id, target.maps_to.port_name
+                ),
+            ));
+        }
+        return;
+    }
+
+    let Some(definition) = patch
+        .module_definitions
+        .iter()
+        .find(|definition| definition.module_type == module.module_type)
+    else {
+        return;
+    };
+
+    if !definition
+        .parameters
+        .iter()
+        .any(|parameter| parameter.name == target.maps_to.port_name)
+    {
+        diagnostics.push(Diagnostic::new(
+            error_codes::VALIDATION_INVALID_VALUE,
+            Severity::Error,
+            format!(
+                "preset target {} maps to unresolved destination {}.{}",
+                target.name, target.maps_to.module_id, target.maps_to.port_name
+            ),
+        ));
+    }
+}
+
+fn validate_preset_asset_destination(
+    patch: &PatchDocument,
+    registry: &BuiltInModuleRegistry,
+    target: &PresetAssetTargetDeclaration,
+    diagnostics: &mut PatchValidationError,
+) {
+    let Some(default_asset) = patch.assets.iter().find(|asset| asset.id == target.default) else {
+        diagnostics.push(Diagnostic::new(
+            error_codes::VALIDATION_INVALID_VALUE,
+            Severity::Error,
+            format!(
+                "preset target {} references missing default asset {}",
+                target.name, target.default
+            ),
+        ));
+        return;
+    };
+
+    if default_asset.kind != target.kind {
+        diagnostics.push(Diagnostic::new(
+            error_codes::VALIDATION_TYPE_MISMATCH,
+            Severity::Error,
+            format!(
+                "preset target {} default asset {} has kind {:?}; expected {:?}",
+                target.name, target.default, default_asset.kind, target.kind
+            ),
+        ));
+    }
+
+    let Some(module) = patch
+        .modules
+        .iter()
+        .find(|module| module.id == target.maps_to.module_id)
+    else {
+        diagnostics.push(Diagnostic::new(
+            error_codes::VALIDATION_INVALID_VALUE,
+            Severity::Error,
+            format!(
+                "preset target {} maps to unresolved destination {}.{}",
+                target.name, target.maps_to.module_id, target.maps_to.port_name
+            ),
+        ));
+        return;
+    };
+
+    let destination_is_declared = registry
+        .get(&module.module_type)
+        .map(|definition| {
+            definition
+                .parameters()
+                .iter()
+                .any(|parameter| parameter.name() == target.maps_to.port_name)
+        })
+        .unwrap_or(false);
+
+    if !destination_is_declared {
+        diagnostics.push(Diagnostic::new(
+            error_codes::VALIDATION_INVALID_VALUE,
+            Severity::Error,
+            format!(
+                "preset target {} maps to unresolved destination {}.{}",
+                target.name, target.maps_to.module_id, target.maps_to.port_name
+            ),
+        ));
+    }
+}
+
+fn preset_value_matches_type(value: &ParameterValue, expected: PresetTargetType) -> bool {
+    match (value, expected) {
+        (ParameterValue::Boolean(_), PresetTargetType::Boolean) => true,
+        (ParameterValue::Number(value), PresetTargetType::Integer) => value.fract() == 0.0,
+        (ParameterValue::Number(_), PresetTargetType::Number) => true,
+        (ParameterValue::Text(_), PresetTargetType::Text) => true,
+        _ => false,
+    }
+}
+
+fn preset_target_type_name(value_type: PresetTargetType) -> &'static str {
+    match value_type {
+        PresetTargetType::Boolean => "boolean",
+        PresetTargetType::Integer => "integer",
+        PresetTargetType::Number => "number",
+        PresetTargetType::Text => "string",
+    }
+}
+
 impl<'de> Deserialize<'de> for PortReference {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
@@ -1093,6 +1708,36 @@ impl fmt::Display for PatchLoadError {
         }
     }
 }
+
+impl fmt::Display for PresetLoadError {
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::UnsupportedFormat { path } => {
+                write!(formatter, "unsupported preset format: {}", path.display())
+            }
+            Self::ReadFailed { path, message } => {
+                write!(
+                    formatter,
+                    "failed to read preset {}: {message}",
+                    path.display()
+                )
+            }
+            Self::ParseFailed { path, message } => {
+                if let Some(path) = path {
+                    write!(
+                        formatter,
+                        "failed to parse preset {}: {message}",
+                        path.display()
+                    )
+                } else {
+                    write!(formatter, "failed to parse preset: {message}")
+                }
+            }
+        }
+    }
+}
+
+impl std::error::Error for PresetLoadError {}
 
 impl std::error::Error for PatchLoadError {}
 

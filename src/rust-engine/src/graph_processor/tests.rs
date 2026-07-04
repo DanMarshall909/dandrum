@@ -2711,13 +2711,16 @@ fn drum_kit_composite_examples_load_validate_and_render_with_documented_primitiv
 
         patch::validate_patch_schema(&patch).expect("drum kit example schema should validate");
         let graph = Graph::from_patch_declarations(&patch);
-        graph.validate().expect("drum kit example graph should validate");
+        graph
+            .validate()
+            .expect("drum kit example graph should validate");
 
         if !should_render {
             continue;
         }
 
-        let (left, right) = render_offline(&graph, &patch.render, vec![note_on_value(0, note, 100)]);
+        let (left, right) =
+            render_offline(&graph, &patch.render, vec![note_on_value(0, note, 100)]);
 
         let peak = left
             .iter()

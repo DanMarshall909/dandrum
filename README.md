@@ -30,6 +30,17 @@ engine boundary; JUCE, CLI, GUI, plugin, and realtime driver code should stay ou
 A machine-readable patch schema lives at `schema/patch.schema.yaml`. It is for editor and external validation; Rust
 still performs semantic validation when loading patches.
 
+Patch YAML can declare an external preset contract with `instrument` and `preset_surface`. `instrument.id` identifies
+the compatible instrument, and `instrument.preset_schema_version` lets future incompatible public-surface changes reject
+old preset files. `preset_surface.parameters` exposes named preset targets with a `type`, `default`, optional `min` /
+`max`, and `maps_to` destination such as `kick.tune_hz`. `preset_surface.assets` exposes asset choices with `kind`,
+`default`, and `maps_to`.
+
+External preset YAML files live independently from patches. A preset declares `name`, matching `instrument`, optional
+`metadata`, `values` for public parameter targets, and `assets` for public asset targets. Presets cannot declare graph,
+routing, render, event, script, scheduling, or feedback fields; those remain patch structure. See
+`examples/patches/synthetic-808-kick.yaml` and `examples/presets/tight-808-kick.yaml`.
+
 Rust unit tests are the default home for core behavior:
 
 ```bash

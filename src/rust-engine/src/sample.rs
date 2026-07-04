@@ -208,6 +208,8 @@ mod tests {
                 version: None,
                 author: None,
             },
+            instrument: None,
+            preset_surface: Default::default(),
             render: RenderSettings {
                 sample_rate_hz,
                 block_size_frames: 1,

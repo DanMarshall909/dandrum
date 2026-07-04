@@ -5,7 +5,7 @@ use std::path::Path;
 use crate::compiled_patch::{self, CompileError, CompiledPatch};
 use crate::diagnostics::{self, Diagnostic, Severity};
 use crate::graph::Graph;
-use crate::patch::{self, ParameterValue, PatchDocument};
+use crate::patch::{self, ParameterValue, PatchDocument, PresetDocument};
 use crate::sample::{self, PreparedSamplerAssets, SampleLoadError};
 
 #[derive(Debug)]
@@ -112,6 +112,16 @@ pub(crate) fn prepare_instrument_document(
         sampler_assets,
         PreparationDiagnostics::default(),
     ))
+}
+
+pub(crate) fn prepare_instrument_document_with_preset(
+    patch_doc: PatchDocument,
+    preset_doc: &PresetDocument,
+    base_dir: impl AsRef<Path>,
+) -> Result<PreparedInstrument, PreparationError> {
+    let patched_doc =
+        patch::apply_preset(&patch_doc, preset_doc).map_err(PreparationError::Schema)?;
+    prepare_instrument_document(patched_doc, base_dir)
 }
 
 pub(crate) fn load_patch_document(
@@ -237,6 +247,40 @@ modules:
         signal_type: audio
       - name: right
         signal_type: audio
+"#;
+
+    const PRESETTABLE_FILTER_PATCH: &str = r#"
+metadata:
+  name: Presettable Filter
+instrument:
+  id: dandrum.filter
+  preset_schema_version: 1
+preset_surface:
+  parameters:
+    - name: tone.algorithm
+      type: text
+      default: moog
+      maps_to: filt.algorithm
+    - name: tone.mode
+      type: text
+      default: lowpass
+      maps_to: filt.mode
+render:
+  sample_rate_hz: 48000
+  block_size_frames: 64
+  duration_frames: 128
+modules:
+  - id: filt
+    type: filter
+"#;
+
+    const BRIGHT_FILTER_PRESET: &str = r#"
+name: Bright Filter
+instrument:
+  id: dandrum.filter
+  preset_schema_version: 1
+values:
+  tone.algorithm: biquad
 "#;
 
     #[test]
@@ -432,5 +476,156 @@ connections:
                 .starts_with("graph validation failed: graph validation failed")
         );
         assert!(std::error::Error::source(&error).is_some());
+    }
+
+    #[test]
+    fn external_preset_values_override_surface_defaults_before_graph_construction() {
+        let patch_doc = patch::load_patch_str(PRESETTABLE_FILTER_PATCH).expect("patch parses");
+        let preset_doc = patch::load_preset_str(BRIGHT_FILTER_PRESET).expect("preset parses");
+
+        let prepared = prepare_instrument_document_with_preset(patch_doc, &preset_doc, ".")
+            .expect("patch plus preset should prepare");
+        let filt = prepared
+            .resolved_parameters()
+            .get("filt")
+            .expect("filter params should resolve");
+
+        assert_eq!(
+            filt.get("algorithm"),
+            Some(&ParameterValue::Text("biquad".to_string()))
+        );
+        assert_eq!(
+            filt.get("mode"),
+            Some(&ParameterValue::Text("lowpass".to_string()))
+        );
+        assert_eq!(
+            prepared
+                .graph()
+                .modules()
+                .iter()
+                .find(|module| module.id().as_str() == "filt")
+                .and_then(|module| module.params().get("algorithm")),
+            Some(&"biquad".to_string())
+        );
+    }
+
+    #[test]
+    fn external_preset_rendering_is_deterministic_for_same_patch_preset_and_inputs() {
+        let patch_doc = patch::load_patch_str(
+            r#"
+metadata:
+  name: Presettable Noise
+instrument:
+  id: dandrum.noise
+  preset_schema_version: 1
+preset_surface:
+  parameters:
+    - name: noise.seed
+      type: number
+      default: 1
+      min: 0
+      max: 4294967295
+      maps_to: noise.seed
+render:
+  sample_rate_hz: 48000
+  block_size_frames: 64
+  duration_frames: 128
+modules:
+  - id: noise
+    type: noise
+  - id: mixer
+    type: audio_mixer
+  - id: out
+    type: audio_output
+    inputs:
+      - name: left
+        signal_type: audio
+      - name: right
+        signal_type: audio
+connections:
+  - from: noise.audio
+    to: mixer.inputs
+  - from: mixer.mix
+    to: out.left
+  - from: mixer.mix
+    to: out.right
+"#,
+        )
+        .expect("patch parses");
+        let preset_doc = patch::load_preset_str(
+            r#"
+name: A Noise
+instrument:
+  id: dandrum.noise
+  preset_schema_version: 1
+values:
+  noise.seed: 330
+"#,
+        )
+        .expect("preset parses");
+
+        let first = prepare_instrument_document_with_preset(patch_doc.clone(), &preset_doc, ".")
+            .expect("first render should prepare");
+        let second = prepare_instrument_document_with_preset(patch_doc, &preset_doc, ".")
+            .expect("second render should prepare");
+        let (first_left, first_right) = crate::graph_processor::render_offline(
+            first.graph(),
+            &first.patch_doc().render,
+            Vec::new(),
+        );
+        let (second_left, second_right) = crate::graph_processor::render_offline(
+            second.graph(),
+            &second.patch_doc().render,
+            Vec::new(),
+        );
+
+        assert_eq!(first_left, second_left);
+        assert_eq!(first_right, second_right);
+    }
+
+    #[test]
+    fn external_preset_application_does_not_bypass_graph_validation() {
+        let patch_doc = patch::load_patch_str(
+            r#"
+metadata:
+  name: Presettable Invalid Routing
+instrument:
+  id: dandrum.invalid-routing
+  preset_schema_version: 1
+preset_surface:
+  parameters:
+    - name: tone.algorithm
+      type: text
+      default: moog
+      maps_to: tone.algorithm
+render:
+  sample_rate_hz: 48000
+  block_size_frames: 64
+  duration_frames: 128
+modules:
+  - id: tone
+    type: filter
+connections:
+  - from: tone.audio_out
+    to: missing.left
+"#,
+        )
+        .expect("patch parses");
+        let preset_doc = patch::load_preset_str(
+            r#"
+name: Invalid Routing Tone
+instrument:
+  id: dandrum.invalid-routing
+  preset_schema_version: 1
+values:
+  tone.algorithm: biquad
+"#,
+        )
+        .expect("preset parses");
+
+        let error = prepare_instrument_document_with_preset(patch_doc, &preset_doc, ".")
+            .expect_err("graph validation should still run");
+
+        assert!(matches!(error, PreparationError::Graph(_)));
     }
 }

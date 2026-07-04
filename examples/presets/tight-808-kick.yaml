@@ -1,0 +1,14 @@
+name: Tight 808 Kick
+instrument:
+  id: dandrum.synthetic-808-kick
+  preset_schema_version: 1
+values:
+  kick.tune_hz: 52
+  kick.decay_ms: 420
+  kick.punch: 0.9
+  kick.click: -12
+metadata:
+  author: Dandrum
+  category: kick
+  tags: [tight, electronic, 808]
+  description: Shorter, punchier 808-style kick preset for the synthetic kick example.

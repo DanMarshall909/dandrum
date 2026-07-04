@@ -6,6 +6,7 @@ use crate::script::ScriptEvent;
 use crate::synth::DandrumEngine;
 
 const OUTPUT_FLAG: &str = "--output";
+const PRESET_FLAG: &str = "--preset";
 const SET_FLAG: &str = "--set";
 const RENDER_COMMAND: &str = "render";
 const RENDER_CHORDS_COMMAND: &str = "render-chords";
@@ -69,6 +70,18 @@ fn render_with_events(
         Ok(patch_doc) => patch_doc,
         Err(load_error) => return error(format!("failed to render patch: {load_error}")),
     };
+    if let Some(preset_path) = &render_args.preset {
+        let preset_doc = match patch::load_preset_file(preset_path) {
+            Ok(preset_doc) => preset_doc,
+            Err(load_error) => return error(format!("failed to render patch: {load_error}")),
+        };
+        patch_doc = match patch::apply_preset(&patch_doc, &preset_doc) {
+            Ok(patch_doc) => patch_doc,
+            Err(validation_error) => {
+                return error(format!("failed to render patch: {validation_error}"));
+            }
+        };
+    }
     apply_cli_overrides(&mut patch_doc, &render_args.overrides);
     let base_dir = render_args
         .patch
@@ -104,26 +117,37 @@ fn render_with_events(
 fn parse_render_args(args: Vec<String>) -> Result<RenderArgs, String> {
     if args.len() < 3 || args[1] != OUTPUT_FLAG {
         return Err(format!(
-            "render requires: <patch> --output <wav> [--set module.parameter=value]"
+            "render requires: <patch> --output <wav> [--preset <preset.yaml>] [--set module.parameter=value]"
         ));
     }
 
     let mut overrides = Vec::new();
+    let mut preset = None;
     let mut index = 3;
     while index < args.len() {
-        if args[index] != SET_FLAG {
-            return Err(format!("unexpected render argument: {}", args[index]));
+        match args[index].as_str() {
+            PRESET_FLAG => {
+                let Some(value) = args.get(index + 1) else {
+                    return Err(format!("{PRESET_FLAG} requires preset path"));
+                };
+                preset = Some(PathBuf::from(value));
+                index += 2;
+            }
+            SET_FLAG => {
+                let Some(value) = args.get(index + 1) else {
+                    return Err(format!("{SET_FLAG} requires module.parameter=value"));
+                };
+                overrides.push(parse_cli_override(value)?);
+                index += 2;
+            }
+            _ => return Err(format!("unexpected render argument: {}", args[index])),
         }
-        let Some(value) = args.get(index + 1) else {
-            return Err(format!("{SET_FLAG} requires module.parameter=value"));
-        };
-        overrides.push(parse_cli_override(value)?);
-        index += 2;
     }
 
     Ok(RenderArgs {
         patch: PathBuf::from(&args[0]),
         output: PathBuf::from(&args[2]),
+        preset,
         overrides,
     })
 }
@@ -161,6 +185,7 @@ fn render_chords(args: Vec<String>) -> CliResult {
 struct RenderArgs {
     patch: PathBuf,
     output: PathBuf,
+    preset: Option<PathBuf>,
     overrides: Vec<CliParameterOverride>,
 }
 
@@ -294,7 +319,7 @@ fn not_implemented(stdout: String) -> CliResult {
 }
 
 fn usage() -> String {
-    "Usage:\n  dandrum-cli validate <patch.yaml>\n  dandrum-cli render <patch.yaml> --output <output.wav> [--set module.parameter=value]\n  dandrum-cli render-chords <patch.yaml> --output <output.wav> [--set module.parameter=value]\n".to_string()
+    "Usage:\n  dandrum-cli validate <patch.yaml>\n  dandrum-cli render <patch.yaml> --output <output.wav> [--preset <preset.yaml>] [--set module.parameter=value]\n  dandrum-cli render-chords <patch.yaml> --output <output.wav> [--preset <preset.yaml>] [--set module.parameter=value]\n".to_string()
 }
 
 #[cfg(test)]
@@ -391,8 +416,24 @@ mod tests {
         .expect("render args should parse");
 
         assert_eq!(args.overrides.len(), 2);
+        assert_eq!(args.preset, None);
         assert_eq!(args.overrides[0].value, ParameterValue::Number(48.0));
         assert_eq!(args.overrides[1].value, ParameterValue::Number(52.0));
+    }
+
+    #[test]
+    fn parse_render_args_accepts_external_preset_path() {
+        let args = parse_render_args(vec![
+            "patch.yaml".to_string(),
+            OUTPUT_FLAG.to_string(),
+            "out.wav".to_string(),
+            PRESET_FLAG.to_string(),
+            "tight.yaml".to_string(),
+        ])
+        .expect("render args should parse");
+
+        assert_eq!(args.preset, Some(PathBuf::from("tight.yaml")));
+        assert!(args.overrides.is_empty());
     }
 
     #[test]
@@ -563,6 +604,37 @@ modules:
             let _ = fs::remove_file(first_output);
             let _ = fs::remove_file(second_output);
         }
+    }
+
+    #[test]
+    fn render_command_loads_patch_with_external_preset_file() {
+        let patch_path = example_path("patches", "synthetic-808-kick.yaml");
+        let preset_path = example_path("presets", "tight-808-kick.yaml");
+        let output = temp_wav_path("tight-808-kick", "preset");
+
+        let result = run([
+            "dandrum-cli".to_string(),
+            "render".to_string(),
+            patch_path.to_string_lossy().to_string(),
+            OUTPUT_FLAG.to_string(),
+            output.to_string_lossy().to_string(),
+            PRESET_FLAG.to_string(),
+            preset_path.to_string_lossy().to_string(),
+        ]);
+
+        assert_eq!(result.exit_code, 0, "{}", result.stderr);
+        assert!(result.stdout.contains("render: ok"));
+        assert!(fs::metadata(&output).expect("WAV should exist").len() > WAV_HEADER_BYTES as u64);
+
+        let _ = fs::remove_file(output);
+    }
+
+    fn example_path(kind: &str, name: &str) -> PathBuf {
+        PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+            .join("../..")
+            .join("examples")
+            .join(kind)
+            .join(name)
     }
 
     fn temp_wav_path(patch_name: &str, label: &str) -> PathBuf {

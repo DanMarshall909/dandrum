@@ -12,6 +12,10 @@ additionalProperties: false
 properties:
   metadata:
     $ref: "#/$defs/metadata"
+  instrument:
+    $ref: "#/$defs/instrumentIdentity"
+  preset_surface:
+    $ref: "#/$defs/presetSurfaceDeclaration"
   render:
     $ref: "#/$defs/renderSettings"
   assets:
@@ -67,6 +71,80 @@ $defs:
       author:
         type: string
         minLength: 1
+  instrumentIdentity:
+    type: object
+    required:
+      - id
+      - preset_schema_version
+    additionalProperties: false
+    properties:
+      id:
+        type: string
+        minLength: 1
+      preset_schema_version:
+        type: integer
+        minimum: 1
+  presetSurfaceDeclaration:
+    type: object
+    additionalProperties: false
+    properties:
+      parameters:
+        type: array
+        items:
+          $ref: "#/$defs/presetParameterTargetDeclaration"
+      assets:
+        type: array
+        items:
+          $ref: "#/$defs/presetAssetTargetDeclaration"
+  presetParameterTargetDeclaration:
+    type: object
+    required:
+      - name
+      - type
+      - default
+      - maps_to
+    additionalProperties: false
+    properties:
+      name:
+        type: string
+        minLength: 1
+      type:
+        type: string
+        enum:
+          - boolean
+          - number
+          - integer
+          - text
+      default:
+        $ref: "#/$defs/parameterValue"
+      min:
+        type: number
+      max:
+        type: number
+      maps_to:
+        $ref: "#/$defs/portReference"
+  presetAssetTargetDeclaration:
+    type: object
+    required:
+      - name
+      - kind
+      - default
+      - maps_to
+    additionalProperties: false
+    properties:
+      name:
+        type: string
+        minLength: 1
+      kind:
+        type: string
+        enum:
+          - sample
+          - script
+      default:
+        type: string
+        minLength: 1
+      maps_to:
+        $ref: "#/$defs/portReference"
   renderSettings:
     type: object
     required:
