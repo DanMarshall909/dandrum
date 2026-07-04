@@ -40,11 +40,26 @@ impl AudioArena {
     }
 
     pub(super) fn add_edge(&mut self, edge: CompiledEdge, frames: usize) {
-        let source = self.slice(edge.source, frames).to_vec();
-        let destination = self.slice_mut(edge.destination, frames);
+        assert_ne!(
+            edge.source, edge.destination,
+            "compiled render edge cannot sum a buffer into itself"
+        );
+        self.assert_valid(edge.source, frames);
+        self.assert_valid(edge.destination, frames);
 
-        for (dst, src) in destination.iter_mut().zip(source.iter()) {
-            *dst += src * edge.gain;
+        let source_start = edge.source.0 * self.frames;
+        let destination_start = edge.destination.0 * self.frames;
+
+        if source_start < destination_start {
+            let (before_destination, destination_and_after) = self.buffers.split_at_mut(destination_start);
+            let source = &before_destination[source_start..source_start + frames];
+            let destination = &mut destination_and_after[..frames];
+            Self::add_slices(source, destination, edge.gain);
+        } else {
+            let (before_source, source_and_after) = self.buffers.split_at_mut(source_start);
+            let destination = &mut before_source[destination_start..destination_start + frames];
+            let source = &source_and_after[..frames];
+            Self::add_slices(source, destination, edge.gain);
         }
     }
 
@@ -58,7 +73,19 @@ impl AudioArena {
         &mut self.buffers[range]
     }
 
+    fn add_slices(source: &[f32], destination: &mut [f32], gain: f32) {
+        for (dst, src) in destination.iter_mut().zip(source.iter()) {
+            *dst += src * gain;
+        }
+    }
+
     fn range(&self, buffer: BufferId, frames: usize) -> std::ops::Range<usize> {
+        self.assert_valid(buffer, frames);
+        let start = buffer.0 * self.frames;
+        start..start + frames
+    }
+
+    fn assert_valid(&self, buffer: BufferId, frames: usize) {
         assert!(
             buffer.0 < self.buffer_count,
             "buffer id {} exceeds prepared buffer count {}",
@@ -71,8 +98,6 @@ impl AudioArena {
             frames,
             self.frames
         );
-        let start = buffer.0 * self.frames;
-        start..start + frames
     }
 }
 
