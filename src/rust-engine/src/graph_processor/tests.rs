@@ -1336,6 +1336,41 @@ fn sampler_render_repeats_exactly_for_same_inputs() {
     assert_eq!(first, second);
 }
 
+#[test]
+fn sampler_state_persists_across_sequential_process_calls() {
+    let mut state = PerModuleState::Sampler {
+        sample: Some(LoadedSample::new(48_000, vec![0.1, 0.2, 0.3, 0.4, 0.5])),
+        position: 0.0,
+        active: true,
+    };
+
+    let first = process_sampler(
+        &mut state,
+        &[],
+        &[1.0; 3],
+        &[0.0; 3],
+        &[0.0; 3],
+        &[0.0; 3],
+        &[0.0; 3],
+        3,
+    );
+
+    assert_eq!(first.audio[builtin_ports::AUDIO], vec![0.1, 0.2, 0.3]);
+
+    let second = process_sampler(
+        &mut state,
+        &[],
+        &[1.0; 3],
+        &[0.0; 3],
+        &[0.0; 3],
+        &[0.0; 3],
+        &[0.0; 3],
+        3,
+    );
+
+    assert_eq!(second.audio[builtin_ports::AUDIO], vec![0.4, 0.5, 0.0]);
+}
+
 // --- Section 4: Polyphonic rendering ---
 
 fn poly_sampler_graph(extra_modules: Vec<ModuleNode>, extra_cables: Vec<Cable>) -> Graph {

@@ -27,6 +27,9 @@
 
 ## Development Practice
 
+- Ensure full coverage of changed code before making changes. Check existing test coverage first; if gaps exist, add
+  tests that characterize the current behavior before modifying it. Only then make the change and verify everything
+  passes.
 - Use TDD for implementation work: write or update a failing test that describes the behavior first, run it to confirm
   the failure when feasible, then add the smallest production change that makes it pass.
 - Keep tests close to the behavior under development. Prefer Rust unit tests for engine core behavior and acceptance

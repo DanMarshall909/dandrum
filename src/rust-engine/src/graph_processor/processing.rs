@@ -181,20 +181,20 @@ pub(super) fn process_sampler(
     loop_end_in: &[f32],
     frames: usize,
 ) -> ModuleOutputs {
-    let (sample, position, active) = match state {
-        PerModuleState::Sampler {
-            sample,
-            position,
-            active,
-        } => (sample.clone(), position, active),
-        _ => unreachable!(),
+    let PerModuleState::Sampler {
+        sample,
+        position,
+        active,
+    } = state
+    else {
+        unreachable!()
     };
 
     let mut audio = vec![0.0; frames];
-    let Some(sample) = sample else {
+    let Some(sample_ref) = sample.as_ref() else {
         return audio_output(builtin_ports::AUDIO, audio);
     };
-    let sample_frames = sample.frames();
+    let sample_frames = sample_ref.frames();
     if sample_frames.is_empty() {
         return audio_output(builtin_ports::AUDIO, audio);
     }
