@@ -47,6 +47,8 @@
 - Teach modern C++ through this project when C++ code changes: the user used C++ ~30 years ago and is now primarily a C#
   developer, so briefly introduce post-2000 language/library features when they appear (drawing C# analogies where
   helpful), without turning implementation updates into long tutorials.
+- Follow `docs/nomenclature.md` for user-facing names in specs, examples, docs, and comments. Internal Rust types may
+  keep established implementation names where changing them would create churn without improving the public model.
 - Add a new built-in primitive only when:
     1. it is performance-critical,
     2. it is reusable across many instruments,
