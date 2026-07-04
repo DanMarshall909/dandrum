@@ -1,3 +1,5 @@
+#![deny(dead_code)]
+
 pub mod core;
 
 pub(crate) mod compiled_patch;
