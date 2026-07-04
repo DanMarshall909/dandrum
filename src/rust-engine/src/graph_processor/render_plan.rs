@@ -1,8 +1,8 @@
 #![allow(dead_code)]
 
-use crate::builtins::builtin_ports;
 use crate::builtins::module_kind::ModuleKind;
 use crate::compiled_patch::CompiledPatch;
+use crate::graph::builtin_ports;
 use crate::graph::SignalType;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
