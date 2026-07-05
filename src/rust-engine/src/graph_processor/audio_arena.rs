@@ -51,7 +51,8 @@ impl AudioArena {
         let destination_start = edge.destination.0 * self.frames;
 
         if source_start < destination_start {
-            let (before_destination, destination_and_after) = self.buffers.split_at_mut(destination_start);
+            let (before_destination, destination_and_after) =
+                self.buffers.split_at_mut(destination_start);
             let source = &before_destination[source_start..source_start + frames];
             let destination = &mut destination_and_after[..frames];
             Self::add_slices(source, destination, edge.gain);
@@ -71,6 +72,16 @@ impl AudioArena {
     pub(super) fn slice_mut(&mut self, buffer: BufferId, frames: usize) -> &mut [f32] {
         let range = self.range(buffer, frames);
         &mut self.buffers[range]
+    }
+
+    pub(super) fn sample(&self, buffer: BufferId, frame: usize) -> f32 {
+        self.assert_valid(buffer, frame + 1);
+        self.buffers[buffer.0 * self.frames + frame]
+    }
+
+    pub(super) fn set_sample(&mut self, buffer: BufferId, frame: usize, value: f32) {
+        self.assert_valid(buffer, frame + 1);
+        self.buffers[buffer.0 * self.frames + frame] = value;
     }
 
     pub(super) fn write_from_input(

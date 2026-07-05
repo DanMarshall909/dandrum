@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
-use crate::compiled_patch::{self, CompiledPatch};
 use crate::builtins::module_kind::ModuleKind;
+use crate::compiled_patch::{self, CompiledPatch};
 use crate::graph::Graph;
 use crate::patch::VoiceAllocation;
 use crate::sample::PreparedSamplerAssets;
@@ -305,12 +305,11 @@ impl RealtimeGraphProcessor {
             || !self.compiled.voice_node_indices().is_empty()
             || self.midi_idx.is_some()
             || self.render_plan.audio_output.is_none()
-            || self.render_plan.global_steps.iter().any(|step| {
-                !matches!(
-                    step.module_kind,
-                    ModuleKind::Oscillator | ModuleKind::Gain | ModuleKind::AudioOutput
-                )
-            })
+            || self
+                .render_plan
+                .global_steps
+                .iter()
+                .any(|step| !is_mono_global_arena_supported(step))
         {
             return false;
         }
@@ -375,10 +374,33 @@ fn process_mono_global_arena_step(
     frames: usize,
 ) {
     match step.module_kind {
-        ModuleKind::Oscillator => {
-            let Some(&pitch_buffer) = step.input_buffers.first() else {
+        ModuleKind::AudioMixer => {
+            let Some(&mix_output) = step.output_buffers.first() else {
                 return;
             };
+            if let Some(&mix_input) = step.input_buffers.first() {
+                arena.write_from_input(mix_input, mix_output, frames, |sample| sample);
+            }
+        }
+        ModuleKind::Noise => {
+            let Some(&audio_buffer) = step.output_buffers.first() else {
+                return;
+            };
+            let rng_state = match &mut states[step.module_index] {
+                PerModuleState::Noise { state } => state,
+                _ => unreachable!(),
+            };
+            for frame in 0..frames {
+                let mut x = *rng_state;
+                x ^= x << 13;
+                x ^= x >> 17;
+                x ^= x << 5;
+                let sample = (x as f32) / (u32::MAX as f32) * 2.0 - 1.0;
+                arena.set_sample(audio_buffer, frame, sample);
+                *rng_state = x;
+            }
+        }
+        ModuleKind::Oscillator => {
             let Some(&audio_buffer) = step.output_buffers.first() else {
                 return;
             };
@@ -386,7 +408,12 @@ fn process_mono_global_arena_step(
                 PerModuleState::Oscillator { phase, sample_rate } => (phase, *sample_rate),
                 _ => unreachable!(),
             };
-            arena.write_from_input(pitch_buffer, audio_buffer, frames, |pitch_ratio| {
+            for frame in 0..frames {
+                let pitch_ratio = step
+                    .input_buffers
+                    .first()
+                    .map(|buffer| arena.sample(*buffer, frame))
+                    .unwrap_or(1.0);
                 let output = *phase * 2.0 - 1.0;
                 let base_hz = 220.0;
                 let freq = base_hz * pitch_ratio;
@@ -395,8 +422,8 @@ fn process_mono_global_arena_step(
                 if *phase >= 1.0 {
                     *phase -= 1.0;
                 }
-                output
-            });
+                arena.set_sample(audio_buffer, frame, output);
+            }
         }
         ModuleKind::Gain => {
             let [audio_input, gain_input] = step.input_buffers.as_ref() else {
@@ -413,7 +440,143 @@ fn process_mono_global_arena_step(
                 |audio, gain| audio * gain,
             );
         }
+        ModuleKind::Multiply => {
+            let [audio_input, gain_input] = step.input_buffers.as_ref() else {
+                return;
+            };
+            let Some(&audio_output) = step.output_buffers.first() else {
+                return;
+            };
+            arena.write_from_two_inputs(
+                *audio_input,
+                *gain_input,
+                audio_output,
+                frames,
+                |audio, gain| audio * gain,
+            );
+        }
+        ModuleKind::EnvelopeFollower => {
+            let [
+                audio_input,
+                attack_input,
+                release_input,
+                amount_input,
+                offset_input,
+                invert_input,
+            ] = step.input_buffers.as_ref()
+            else {
+                return;
+            };
+            let Some(&value_output) = step.output_buffers.first() else {
+                return;
+            };
+            let (detector, mode) = match &mut states[step.module_index] {
+                PerModuleState::EnvelopeFollower { detector, mode } => (detector, *mode),
+                _ => unreachable!(),
+            };
+            detector.set_mode(mode);
+            for frame in 0..frames {
+                let attack_ms = arena.sample(*attack_input, frame).max(0.0) as f64;
+                let release_ms = arena.sample(*release_input, frame).max(0.0) as f64;
+                detector.set_params(attack_ms, release_ms);
+
+                let envelope = detector.process(arena.sample(*audio_input, frame) as f64) as f32;
+                let shaped = if arena.sample(*invert_input, frame) > 0.5 {
+                    1.0 - envelope
+                } else {
+                    envelope
+                };
+                let amount = arena.sample(*amount_input, frame);
+                let offset = arena.sample(*offset_input, frame);
+                arena.set_sample(
+                    value_output,
+                    frame,
+                    finite_or_zero(shaped * amount + offset).clamp(0.0, 1.0),
+                );
+            }
+        }
+        ModuleKind::CurveMapper => {
+            let [
+                value_input,
+                amount_input,
+                bias_input,
+                scale_input,
+                offset_input,
+            ] = step.input_buffers.as_ref()
+            else {
+                return;
+            };
+            let Some(&value_output) = step.output_buffers.first() else {
+                return;
+            };
+            let mapper = match &mut states[step.module_index] {
+                PerModuleState::CurveMapper { mapper } => mapper,
+                _ => unreachable!(),
+            };
+            for frame in 0..frames {
+                arena.set_sample(
+                    value_output,
+                    frame,
+                    mapper.process(
+                        arena.sample(*value_input, frame),
+                        arena.sample(*amount_input, frame),
+                        arena.sample(*bias_input, frame),
+                        arena.sample(*scale_input, frame),
+                        arena.sample(*offset_input, frame),
+                    ),
+                );
+            }
+        }
+        ModuleKind::Filter => {
+            let [audio_input, cutoff_input, resonance_input, gain_input] =
+                step.input_buffers.as_ref()
+            else {
+                return;
+            };
+            let Some(&audio_output) = step.output_buffers.first() else {
+                return;
+            };
+            let (filter, sample_rate) = match &mut states[step.module_index] {
+                PerModuleState::Filter {
+                    filter,
+                    sample_rate,
+                } => (filter, *sample_rate),
+                _ => unreachable!(),
+            };
+            for frame in 0..frames {
+                filter.set_cutoff_control(arena.sample(*cutoff_input, frame), sample_rate);
+                filter.set_resonance_control(arena.sample(*resonance_input, frame));
+                filter.set_gain_db(arena.sample(*gain_input, frame) as f64 * 48.0 - 24.0);
+                arena.set_sample(
+                    audio_output,
+                    frame,
+                    filter.process(arena.sample(*audio_input, frame)),
+                );
+            }
+        }
         ModuleKind::AudioOutput => {}
         _ => unreachable!(),
     }
+}
+
+fn is_mono_global_arena_supported(step: &RenderStep) -> bool {
+    match step.module_kind {
+        ModuleKind::AudioOutput => step.input_buffers.len() >= 2,
+        ModuleKind::AudioMixer => step.input_buffers.len() == 1 && step.output_buffers.len() == 1,
+        ModuleKind::Noise => step.input_buffers.is_empty() && step.output_buffers.len() == 1,
+        ModuleKind::Oscillator => step.input_buffers.len() <= 1 && step.output_buffers.len() == 1,
+        ModuleKind::Gain | ModuleKind::Multiply => {
+            step.input_buffers.len() == 2 && step.output_buffers.len() == 1
+        }
+        ModuleKind::EnvelopeFollower => {
+            step.input_buffers.len() == 6 && step.output_buffers.len() == 1
+        }
+        ModuleKind::CurveMapper => step.input_buffers.len() == 5 && step.output_buffers.len() == 1,
+        ModuleKind::Filter => step.input_buffers.len() == 4 && step.output_buffers.len() == 1,
+        _ => false,
+    }
+}
+
+fn finite_or_zero(value: f32) -> f32 {
+    if value.is_finite() { value } else { 0.0 }
 }
