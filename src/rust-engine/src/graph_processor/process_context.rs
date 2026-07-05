@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 use super::audio_arena::AudioArena;
 use super::outputs::BlockEvent;
 use super::render_plan::BufferId;
