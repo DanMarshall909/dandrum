@@ -21,8 +21,8 @@
 
 ## 4. Module Processing Context
 
-- [ ] 4.1 Introduce `ProcessContext` with typed access to input slices, output slices, input events, event writers, frame count, block start frame, and sample rate.
-- [ ] 4.2 Change module processors from returning owned `ModuleOutputs` to writing into the provided `ProcessContext`.
+- [x] 4.1 Introduce `ProcessContext` with typed arena audio/control input and output access used by the realtime render path.
+- [x] 4.2 Change arena-backed mono/global module processors to write through `ProcessContext` instead of directly routing through `AudioArena`.
 - [ ] 4.3 Keep reusable DSP algorithms independent from graph routing by containing graph/port translation in module adapter code.
 - [ ] 4.4 Remove obsolete `ModuleOutputs` audio/control output maps from the realtime render path after all call sites migrate.
 
