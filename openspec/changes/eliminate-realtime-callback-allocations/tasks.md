@@ -42,7 +42,7 @@
 
 ## 7. Verification And Cleanup
 
-- [ ] 7.1 Remove realtime callback dependence on `HashMap<String, Vec<f32>>`, callback-time input `Vec` allocation, and callback-time event `Vec` growth.
+- [x] 7.1 Remove realtime callback dependence on `HashMap<String, Vec<f32>>`, callback-time input `Vec` allocation, and callback-time event `Vec` growth.
 - [ ] 7.2 Run `$HOME/.cargo/bin/cargo test --manifest-path src/rust-engine/Cargo.toml` and fix regressions.
 - [ ] 7.3 Configure/build with `$HOME/.local/bin/cmake -S . -B build` and `$HOME/.local/bin/cmake --build build` if the local environment supports it.
 - [ ] 7.4 Run `ctest --test-dir build` if the CMake build is available.

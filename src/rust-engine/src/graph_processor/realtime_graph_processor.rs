@@ -37,8 +37,12 @@ pub struct RealtimeGraphProcessor {
     last_render_used_arena: bool,
     scratch_left: Vec<f32>,
     scratch_right: Vec<f32>,
+    module_outputs: HashMap<usize, ModuleOutputs>,
     scratch_outputs: Option<HashMap<usize, ModuleOutputs>>,
     events_scratch: Vec<BlockEvent>,
+    voice_event_queues: Vec<Vec<ScriptEvent>>,
+    voice_queues: Vec<PreparedEventQueues>,
+    accum: Vec<Option<ModuleOutputs>>,
 }
 
 impl RealtimeGraphProcessor {
@@ -129,6 +133,9 @@ impl RealtimeGraphProcessor {
         );
         let uses_legacy_module_outputs =
             uses_legacy_module_outputs(&compiled, midi_idx, max_voices, &render_plan);
+        let queue_count = render_plan.event_queues.queue_count;
+        let queue_capacity = render_plan.event_queues.queue_capacity;
+        let accum_len = compiled.nodes().len();
         let audio_arena = AudioArena::new(render_plan.audio_buffers);
         let prepared_event_queues = PreparedEventQueues::new(
             render_plan.event_queues.queue_count,
@@ -164,9 +171,19 @@ impl RealtimeGraphProcessor {
             last_render_used_arena: false,
             scratch_left: Vec::with_capacity(prepared_max_block_size),
             scratch_right: Vec::with_capacity(prepared_max_block_size),
+            module_outputs: HashMap::with_capacity(graph.modules().len()),
             scratch_outputs: uses_legacy_module_outputs
                 .then(|| HashMap::with_capacity(graph.modules().len())),
             events_scratch: Vec::with_capacity(prepared_max_block_size),
+            voice_event_queues: Vec::with_capacity(max_voices),
+            voice_queues: (0..max_voices)
+                .map(|_| PreparedEventQueues::new(queue_count, queue_capacity))
+                .collect(),
+            accum: {
+                let mut accum = Vec::with_capacity(accum_len);
+                accum.resize_with(accum_len, || None);
+                accum
+            },
         }
     }
 
@@ -288,6 +305,10 @@ impl RealtimeGraphProcessor {
                 &mut self.scratch_right,
                 &self.render_plan,
                 &mut self.prepared_event_queues,
+                &mut self.module_outputs,
+                &mut self.voice_event_queues,
+                &mut self.voice_queues,
+                &mut self.accum,
                 &mut self.events_scratch,
             );
 
@@ -393,10 +414,14 @@ impl RealtimeGraphProcessor {
         right_out: &mut Vec<f32>,
         render_plan: &RenderPlan,
         global_event_queues: &mut PreparedEventQueues,
+        mut all_outputs: &mut HashMap<usize, ModuleOutputs>,
+        voice_event_queues: &mut Vec<Vec<ScriptEvent>>,
+        voice_queues: &mut Vec<PreparedEventQueues>,
+        mut accum: &mut Vec<Option<ModuleOutputs>>,
         events_scratch: &mut Vec<BlockEvent>,
     ) {
         global_event_queues.clear_all();
-        let mut voice_event_queues = prepare_voice_event_queues(allocator.max_voices(), events, allocator);
+        prepare_voice_event_queues(voice_event_queues, events, allocator);
         let active_voices = active_voice_indices(allocator);
 
         if active_voices.is_empty() {
@@ -405,14 +430,15 @@ impl RealtimeGraphProcessor {
             return;
         }
 
-        let mut accum: Vec<Option<ModuleOutputs>> = Vec::with_capacity(compiled.nodes().len());
+        all_outputs.clear();
+        accum.clear();
         accum.resize_with(compiled.nodes().len(), || None);
         let input_provider = CompiledInputProvider { compiled };
         let queue_capacity = render_plan.event_queues.queue_capacity;
         let queue_count = render_plan.event_queues.queue_count;
-        let mut voice_queues: Vec<PreparedEventQueues> = (0..allocator.max_voices())
-            .map(|_| PreparedEventQueues::new(queue_count, queue_capacity))
-            .collect();
+        for queues in voice_queues.iter_mut() {
+            *queues = PreparedEventQueues::new(queue_count, queue_capacity);
+        }
 
         for &voice_idx in &active_voices {
             let voice_events = &mut voice_event_queues[voice_idx];
@@ -420,7 +446,6 @@ impl RealtimeGraphProcessor {
             route_voice_input_events(render_plan.midi_input, voice_events, voice_queues);
 
             let voice_states = &mut states[voice_idx];
-            let mut all_outputs: HashMap<usize, ModuleOutputs> = HashMap::new();
 
             for step in render_plan.voice_steps.iter() {
                 if step.module_kind == ModuleKind::MidiInput {
@@ -448,7 +473,7 @@ impl RealtimeGraphProcessor {
             accumulate_voice_outputs(&mut accum, &mut all_outputs, compiled, frames);
         }
 
-        let mut all_outputs = collect_accumulated_outputs(accum);
+        collect_accumulated_outputs(accum, all_outputs);
 
         for step in render_plan.global_steps.iter() {
             if step.module_kind == ModuleKind::MidiInput {
@@ -538,11 +563,13 @@ impl RealtimeGraphProcessor {
 }
 
 fn prepare_voice_event_queues(
-    max_voices: usize,
+    voice_events: &mut Vec<Vec<ScriptEvent>>,
     events: &[BlockEvent],
     allocator: &mut VoiceAllocator,
-) -> Vec<Vec<ScriptEvent>> {
-    let mut voice_events: Vec<Vec<ScriptEvent>> = vec![Vec::new(); max_voices];
+) {
+    let max_voices = allocator.max_voices();
+    voice_events.clear();
+    voice_events.resize_with(max_voices, Vec::new);
 
     for event in events {
         if let ScriptEvent::NoteOn { note, velocity } = &event.event
@@ -565,8 +592,6 @@ fn prepare_voice_event_queues(
             }
         }
     }
-
-    voice_events
 }
 
 fn active_voice_indices(allocator: &VoiceAllocator) -> Vec<usize> {
@@ -656,12 +681,16 @@ fn accumulate_voice_outputs(
     }
 }
 
-fn collect_accumulated_outputs(accum: Vec<Option<ModuleOutputs>>) -> HashMap<usize, ModuleOutputs> {
-    accum
-        .into_iter()
-        .enumerate()
-        .filter_map(|(idx, output)| output.map(|output| (idx, output)))
-        .collect()
+fn collect_accumulated_outputs(
+    accum: &mut Vec<Option<ModuleOutputs>>,
+    all_outputs: &mut HashMap<usize, ModuleOutputs>,
+) {
+    all_outputs.clear();
+    for (idx, output) in accum.iter_mut().enumerate() {
+        if let Some(output) = output.take() {
+            all_outputs.insert(idx, output);
+        }
+    }
 }
 
 fn route_step_outputs_to_global_event_queues(
