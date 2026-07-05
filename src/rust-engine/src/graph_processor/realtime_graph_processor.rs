@@ -11,7 +11,7 @@ use crate::voice_allocator::VoiceAllocator;
 use super::arena_processing;
 use super::audio_arena::AudioArena;
 use super::block::{process_block_compiled, process_block_compiled_polyphonic};
-use super::event_queue::BoundedEventQueue;
+use super::event_queue::{BoundedEventQueue, PreparedEventQueues};
 use super::outputs::ModuleOutputs;
 use super::polyphony::build_polyphonic_states_from_compiled;
 use super::process_context::ProcessContext;
@@ -25,6 +25,7 @@ pub struct RealtimeGraphProcessor {
     out_idx: Option<usize>,
     current_frame: u64,
     pending_events: BoundedEventQueue,
+    prepared_event_queues: PreparedEventQueues,
     events_buffer: Box<[super::outputs::BlockEvent]>,
     allocator: VoiceAllocator,
     render_plan: RenderPlan,
@@ -34,7 +35,7 @@ pub struct RealtimeGraphProcessor {
     last_render_used_arena: bool,
     scratch_left: Vec<f32>,
     scratch_right: Vec<f32>,
-    scratch_outputs: HashMap<usize, ModuleOutputs>,
+    scratch_outputs: Option<HashMap<usize, ModuleOutputs>>,
 }
 
 impl RealtimeGraphProcessor {
@@ -117,14 +118,19 @@ impl RealtimeGraphProcessor {
         );
 
         let prepared_max_block_size = prepared_max_block_size.max(1);
-        let module_count = graph.modules().len();
         let render_plan = RenderPlan::from_compiled_patch(
             &compiled,
             prepared_max_block_size,
             max_voices,
             prepared_max_block_size,
         );
+        let uses_legacy_module_outputs =
+            uses_legacy_module_outputs(&compiled, midi_idx, max_voices, &render_plan);
         let audio_arena = AudioArena::new(render_plan.audio_buffers);
+        let prepared_event_queues = PreparedEventQueues::new(
+            render_plan.event_queues.queue_count,
+            render_plan.event_queues.queue_capacity,
+        );
 
         let events_buffer = vec![
             super::outputs::BlockEvent {
@@ -145,6 +151,7 @@ impl RealtimeGraphProcessor {
             out_idx,
             current_frame: 0,
             pending_events: BoundedEventQueue::with_capacity(prepared_max_block_size),
+            prepared_event_queues,
             events_buffer,
             allocator,
             render_plan,
@@ -154,7 +161,8 @@ impl RealtimeGraphProcessor {
             last_render_used_arena: false,
             scratch_left: Vec::with_capacity(prepared_max_block_size),
             scratch_right: Vec::with_capacity(prepared_max_block_size),
-            scratch_outputs: HashMap::with_capacity(module_count),
+            scratch_outputs: uses_legacy_module_outputs
+                .then(|| HashMap::with_capacity(graph.modules().len())),
         }
     }
 
@@ -171,7 +179,7 @@ impl RealtimeGraphProcessor {
     }
 
     pub fn module_output_scratch_capacity(&self) -> usize {
-        self.scratch_outputs.capacity()
+        self.scratch_outputs.as_ref().map_or(0, HashMap::capacity)
     }
 
     pub fn pending_event_capacity(&self) -> usize {
@@ -246,6 +254,13 @@ impl RealtimeGraphProcessor {
             return frames;
         }
 
+        if self.midi_idx.is_none() && self.render_mono_global_arena(left, right, frames) {
+            self.pending_events
+                .drain_into_buffer(&mut *self.events_buffer);
+            self.last_render_used_arena = true;
+            return frames;
+        }
+
         self.last_render_used_arena = false;
 
         let event_count = self
@@ -287,6 +302,11 @@ impl RealtimeGraphProcessor {
             self.scratch_left.clear();
             self.scratch_right.clear();
 
+            let scratch_outputs = self
+                .scratch_outputs
+                .as_mut()
+                .expect("legacy realtime module output scratch should be prepared");
+
             process_block_compiled(
                 &self.compiled,
                 &mut self.states[0],
@@ -297,7 +317,7 @@ impl RealtimeGraphProcessor {
                 events,
                 &mut self.scratch_left,
                 &mut self.scratch_right,
-                &mut self.scratch_outputs,
+                scratch_outputs,
             );
 
             let actual = self
@@ -343,6 +363,7 @@ impl RealtimeGraphProcessor {
         for step in steps {
             clear_and_route_arena_inputs(arena, step, frames);
             process_mono_global_arena_step(arena, states, step, frames);
+            route_prepared_event_edges(&mut self.prepared_event_queues, step);
         }
 
         let output = self
@@ -422,6 +443,12 @@ fn process_mono_global_arena_step(
     }
 }
 
+fn route_prepared_event_edges(queues: &mut PreparedEventQueues, step: &RenderStep) {
+    for edge in step.incoming_event_edges.iter().copied() {
+        let _ = queues.route_event_edge(edge);
+    }
+}
+
 fn is_mono_global_arena_supported(step: &RenderStep) -> bool {
     match step.module_kind {
         ModuleKind::AudioOutput => step.input_buffers.len() >= 2,
@@ -438,4 +465,20 @@ fn is_mono_global_arena_supported(step: &RenderStep) -> bool {
         ModuleKind::Filter => step.input_buffers.len() == 4 && step.output_buffers.len() == 1,
         _ => false,
     }
+}
+
+fn uses_legacy_module_outputs(
+    compiled: &CompiledPatch,
+    midi_idx: Option<usize>,
+    max_voices: usize,
+    render_plan: &RenderPlan,
+) -> bool {
+    max_voices <= 1
+        && compiled.voice_node_indices().is_empty()
+        && (midi_idx.is_some()
+            || render_plan.audio_output.is_none()
+            || render_plan
+                .global_steps
+                .iter()
+                .any(|step| !is_mono_global_arena_supported(step)))
 }

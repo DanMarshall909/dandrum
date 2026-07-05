@@ -1,6 +1,7 @@
 use crate::script::ScriptEvent;
 
 use super::outputs::BlockEvent;
+use super::render_plan::{CompiledEventEdge, EventQueueId};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(super) struct EventQueueOverflow {
@@ -101,12 +102,10 @@ impl<'a> EventWriter<'a> {
     }
 }
 
-#[cfg(test)]
 pub(super) struct PreparedEventQueues {
     queues: Box<[BoundedEventQueue]>,
 }
 
-#[cfg(test)]
 impl PreparedEventQueues {
     pub(super) fn new(queue_count: usize, queue_capacity: usize) -> Self {
         let mut queues = Vec::with_capacity(queue_count);
@@ -118,22 +117,40 @@ impl PreparedEventQueues {
         }
     }
 
+    #[cfg(test)]
     pub(super) fn queue(&mut self, id: usize) -> Option<&mut BoundedEventQueue> {
         self.queues.get_mut(id)
     }
 
+    #[cfg(test)]
     pub(super) fn writer(&mut self, id: usize) -> Option<EventWriter<'_>> {
         self.queues.get_mut(id).map(EventWriter::new)
     }
 
+    pub(super) fn route_event_edge(&mut self, edge: CompiledEventEdge) -> EventQueueResult<()> {
+        if edge.source == edge.destination {
+            return Ok(());
+        }
+
+        let (source, destination) = self.queue_pair(edge.source, edge.destination)?;
+        for event in source.events.iter().cloned() {
+            destination.push(event)?;
+        }
+
+        Ok(())
+    }
+
+    #[cfg(test)]
     pub(super) fn queue_count(&self) -> usize {
         self.queues.len()
     }
 
+    #[cfg(test)]
     pub(super) fn capacity_per_queue(&self) -> usize {
         self.queues.first().map_or(0, |q| q.capacity())
     }
 
+    #[cfg(test)]
     pub(super) fn revert(&mut self, events: std::collections::HashMap<usize, Vec<ScriptEvent>>) {
         for (id, events) in events {
             if let Some(queue) = self.queues.get_mut(id) {
@@ -142,6 +159,24 @@ impl PreparedEventQueues {
                 }
             }
         }
+    }
+
+    fn queue_pair(
+        &mut self,
+        source_id: EventQueueId,
+        destination_id: EventQueueId,
+    ) -> EventQueueResult<(&BoundedEventQueue, &mut BoundedEventQueue)> {
+        let source_index = source_id.0;
+        let destination_index = destination_id.0;
+
+        if source_index < destination_index {
+            let (before_destination, from_destination) =
+                self.queues.split_at_mut(destination_index);
+            return Ok((&before_destination[source_index], &mut from_destination[0]));
+        }
+
+        let (before_source, from_source) = self.queues.split_at_mut(source_index);
+        Ok((&from_source[0], &mut before_source[destination_index]))
     }
 }
 
@@ -303,6 +338,30 @@ mod tests {
         }
         assert!(!queues.queue(1).unwrap().is_empty());
         assert!(queues.queue(0).unwrap().is_empty());
+    }
+
+    #[test]
+    fn prepared_event_queues_route_compiled_event_edge_by_queue_id() {
+        let mut queues = PreparedEventQueues::new(2, 4);
+        {
+            let mut writer = queues.writer(0).unwrap();
+            writer
+                .write(ScriptEvent::NoteOn {
+                    note: 60,
+                    velocity: 100,
+                })
+                .unwrap();
+        }
+
+        queues
+            .route_event_edge(CompiledEventEdge {
+                source: EventQueueId(0),
+                destination: EventQueueId(1),
+            })
+            .unwrap();
+
+        assert!(!queues.queue(0).unwrap().is_empty());
+        assert!(!queues.queue(1).unwrap().is_empty());
     }
 
     #[test]

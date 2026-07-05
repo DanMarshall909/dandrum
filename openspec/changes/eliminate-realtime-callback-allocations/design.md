@@ -33,7 +33,7 @@ That is fine for a headless prototype, but it is not suitable for a JUCE AU/VST3
 
 ### Compile a render plan, not just graph metadata
 
-`CompiledPatch` will remain the validated patch contract, but realtime preparation will derive a render plan containing execution steps, pre-resolved input edges, buffer IDs, event queue IDs, output bindings, and default control metadata.
+`CompiledPatch` will remain the validated patch contract, but realtime preparation will derive a render plan containing execution steps, pre-resolved audio/control input edges, pre-resolved event input edges, buffer IDs, event queue IDs, output bindings, and default control metadata.
 
 ```rust
 pub struct RenderPlan {
@@ -51,6 +51,7 @@ pub struct RenderStep {
     pub input_buffers: Box<[BufferId]>,
     pub output_buffers: Box<[BufferId]>,
     pub incoming_edges: Box<[CompiledEdge]>,
+    pub incoming_event_edges: Box<[CompiledEventEdge]>,
     pub event_inputs: Box<[EventQueueId]>,
     pub event_outputs: Box<[EventQueueId]>,
 }
@@ -61,9 +62,14 @@ pub struct CompiledEdge {
     pub signal_type: SignalType,
     pub gain: f32,
 }
+
+pub struct CompiledEventEdge {
+    pub source: EventQueueId,
+    pub destination: EventQueueId,
+}
 ```
 
-Rationale: the callback should execute a prepared schedule. It should not rediscover source port names, scan input port names, or look up output maps during rendering.
+Rationale: the callback should execute a prepared schedule. It should not rediscover source port names, scan input port names, or look up output maps during rendering. Event routes use a separate edge type because event queue routing has different semantics from audio/control buffer routing: it copies bounded event payloads, can overflow, and never applies sample-rate gain or summing.
 
 ### Use audio/control arenas addressed by buffer IDs
 
@@ -108,7 +114,7 @@ Rationale: returning owned output maps encourages allocation and ownership churn
 
 ### Bound event storage and report overflow
 
-Realtime events will use prepared fixed-capacity queues. Event writers will be fallible and will set overflow flags instead of allocating.
+Realtime events will use prepared fixed-capacity queues. Event writers will be fallible and will set overflow flags instead of allocating. Event routing between modules will use prepared `CompiledEventEdge` entries that copy from source `EventQueueId`s into destination `EventQueueId`s, rather than looking up event port names in `HashMap<String, Vec<BlockEvent>>` containers during the callback.
 
 ```rust
 pub struct EventQueue {

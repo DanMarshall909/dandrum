@@ -24,12 +24,12 @@
 - [x] 4.1 Introduce `ProcessContext` with typed arena audio/control input and output access used by the realtime render path.
 - [x] 4.2 Change arena-backed mono/global module processors to write through `ProcessContext` instead of directly routing through `AudioArena`.
 - [x] 4.3 Keep reusable DSP algorithms independent from graph routing by containing graph/port translation in module adapter code.
-- [ ] 4.4 Remove obsolete `ModuleOutputs` audio/control output maps from the realtime render path after all call sites migrate.
+- [x] 4.4 Remove obsolete `ModuleOutputs` audio/control output maps from the realtime render path after all call sites migrate.
 
 ## 5. Bounded Realtime Events
 
 - [x] 5.1 Introduce prepared fixed-capacity event queues and event writers with explicit overflow reporting.
-- [ ] 5.2 Replace callback-time `Vec<BlockEvent>` collection of pending events with bounded prepared queues.
+- [x] 5.2 Replace callback-time `Vec<BlockEvent>` collection of pending events with bounded prepared queues.
 - [ ] 5.3 Replace event-port `HashMap<String, Vec<BlockEvent>>` routing with compiled event queue IDs.
 - [ ] 5.4 Define and test overflow behaviour for note-on, note-off, automation/control, script-generated, and diagnostic events.
 

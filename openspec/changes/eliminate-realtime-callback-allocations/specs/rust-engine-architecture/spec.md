@@ -26,7 +26,7 @@ Realtime rendering SHALL allocate required module state, scratch buffers, audio/
 
 ### Requirement: Compiled patch drives offline and realtime rendering
 
-Offline and realtime rendering SHALL consume the same compiled patch representation for routing, execution order, scope grouping, module kind resolution, and port mapping. Realtime rendering SHALL derive an explicit render plan from the compiled patch before rendering so the callback uses pre-resolved buffer IDs, event queue IDs, and edge lists rather than name-based routing lookup.
+Offline and realtime rendering SHALL consume the same compiled patch representation for routing, execution order, scope grouping, module kind resolution, and port mapping. Realtime rendering SHALL derive an explicit render plan from the compiled patch before rendering so the callback uses pre-resolved buffer IDs, event queue IDs, audio/control edge lists, and event edge lists rather than name-based routing lookup.
 
 #### Scenario: Offline render uses compiled patch
 
@@ -36,12 +36,17 @@ Offline and realtime rendering SHALL consume the same compiled patch representat
 #### Scenario: Realtime render uses compiled render plan
 
 - **WHEN** a realtime runtime is prepared from a patch
-- **THEN** realtime preparation SHALL derive a render plan containing execution steps, input edges, output buffer IDs, event queue IDs, MIDI input binding, and audio output binding
+- **THEN** realtime preparation SHALL derive a render plan containing execution steps, audio/control input edges, event input edges, output buffer IDs, event queue IDs, MIDI input binding, and audio output binding
 
 #### Scenario: Realtime render avoids port-name lookup
 
 - **WHEN** a realtime block is rendered from a prepared render plan
 - **THEN** the render path SHALL route audio, control, and event signals through compiled indices and IDs rather than comparing port names or looking up string-keyed output maps in the callback
+
+#### Scenario: Event routing uses typed event edges
+
+- **WHEN** realtime preparation derives event routes from a compiled patch
+- **THEN** the render plan SHALL represent those routes as typed event edges between source and destination event queue IDs rather than as audio/control buffer edges or string-keyed event-port maps
 
 #### Scenario: Shared compilation preserves parity
 
@@ -75,6 +80,11 @@ Realtime event delivery SHALL use prepared fixed-capacity storage. Callback-time
 
 - **WHEN** note or control events are submitted before a render block
 - **THEN** realtime rendering SHALL transfer them into prepared event queues without allocating in the render callback
+
+#### Scenario: Module events route through prepared event edges
+
+- **WHEN** a module emits events to a declared event output during realtime rendering
+- **THEN** realtime rendering SHALL deliver those events to downstream event input queues through compiled event queue IDs without consulting event port names or growing string-keyed event maps in the callback
 
 #### Scenario: Event-producing module uses bounded writer
 

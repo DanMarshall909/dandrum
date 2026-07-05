@@ -19,6 +19,12 @@ pub(super) struct CompiledEdge {
     pub(super) gain: f32,
 }
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(super) struct CompiledEventEdge {
+    pub(super) source: EventQueueId,
+    pub(super) destination: EventQueueId,
+}
+
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub(super) struct ControlDefault {
     pub(super) buffer: BufferId,
@@ -32,6 +38,7 @@ pub(super) struct RenderStep {
     pub(super) input_buffers: Box<[BufferId]>,
     pub(super) output_buffers: Box<[BufferId]>,
     pub(super) incoming_edges: Box<[CompiledEdge]>,
+    pub(super) incoming_event_edges: Box<[CompiledEventEdge]>,
     pub(super) control_defaults: Box<[ControlDefault]>,
     pub(super) event_inputs: Box<[EventQueueId]>,
     pub(super) event_outputs: Box<[EventQueueId]>,
@@ -180,6 +187,7 @@ impl RenderPlanBuilder<'_> {
             .collect::<Vec<_>>()
             .into_boxed_slice();
         let incoming_edges = self.incoming_edges(module_index).into_boxed_slice();
+        let incoming_event_edges = self.incoming_event_edges(module_index).into_boxed_slice();
         let control_defaults = self.control_defaults(module_index).into_boxed_slice();
         let event_inputs = self.event_queues_for_ports(module_index, &node.input_port_types, 0);
         let event_outputs = self.event_queues_for_ports(
@@ -194,6 +202,7 @@ impl RenderPlanBuilder<'_> {
             input_buffers,
             output_buffers,
             incoming_edges,
+            incoming_event_edges,
             control_defaults,
             event_inputs,
             event_outputs,
@@ -219,6 +228,34 @@ impl RenderPlanBuilder<'_> {
                     signal_type,
                     gain: 1.0,
                 });
+            }
+        }
+
+        edges
+    }
+
+    fn incoming_event_edges(&self, module_index: usize) -> Vec<CompiledEventEdge> {
+        let node = &self.compiled.nodes()[module_index];
+        let mut edges = Vec::new();
+
+        for (destination_port_index, sources) in node.input_port_map.iter().enumerate() {
+            if node.input_port_types[destination_port_index] != SignalType::Event {
+                continue;
+            }
+
+            for source in sources {
+                let source_node = &self.compiled.nodes()[source.module_index];
+                let source_combined_port_index =
+                    source_node.input_port_types.len() + source.port_index;
+                if let (Some(source_queue), Some(destination_queue)) = (
+                    self.event_queue(source.module_index, source_combined_port_index),
+                    self.event_queue(module_index, destination_port_index),
+                ) {
+                    edges.push(CompiledEventEdge {
+                        source: source_queue,
+                        destination: destination_queue,
+                    });
+                }
             }
         }
 
@@ -415,6 +452,53 @@ mod tests {
         assert_eq!(plan.audio_buffers.max_block_frames, 64);
         assert_eq!(plan.audio_buffers.max_voices, 4);
         assert!(plan.audio_output.is_some());
+    }
+
+    #[test]
+    fn render_plan_resolves_event_edges_to_event_queue_ids() {
+        let graph = Graph::new(
+            vec![
+                ModuleNode::new(ModuleId::new("midi"), "midi_input")
+                    .with_output(builtin_ports::EVENTS, SignalType::Event),
+                ModuleNode::new(ModuleId::new("sampler"), "sampler")
+                    .with_input(builtin_ports::TRIGGER, SignalType::Event)
+                    .with_input(builtin_ports::RATE, SignalType::Control)
+                    .with_input(builtin_ports::START, SignalType::Control)
+                    .with_input(builtin_ports::LOOP_ENABLED, SignalType::Control)
+                    .with_input(builtin_ports::LOOP_START, SignalType::Control)
+                    .with_input(builtin_ports::LOOP_END, SignalType::Control)
+                    .with_output(builtin_ports::AUDIO, SignalType::Audio),
+            ],
+            vec![Cable::new(
+                PortRef::new(ModuleId::new("midi"), builtin_ports::EVENTS),
+                PortRef::new(ModuleId::new("sampler"), builtin_ports::TRIGGER),
+            )],
+        );
+        let settings = RenderSettings {
+            sample_rate_hz: 48_000,
+            block_size_frames: 64,
+            duration_frames: 64,
+        };
+        let compiled =
+            crate::compiled_patch::compile(&graph, &settings).expect("graph should compile");
+        let plan = RenderPlan::from_compiled_patch(&compiled, 64, 1, 32);
+
+        let sampler_step = plan
+            .global_steps
+            .iter()
+            .find(|step| step.module_kind == ModuleKind::Sampler)
+            .expect("sampler step should be planned");
+
+        assert_eq!(plan.midi_input, Some(EventQueueId(0)));
+        assert_eq!(sampler_step.event_inputs.as_ref(), &[EventQueueId(1)]);
+        assert_eq!(sampler_step.incoming_event_edges.len(), 1);
+        assert_eq!(
+            sampler_step.incoming_event_edges[0],
+            CompiledEventEdge {
+                source: EventQueueId(0),
+                destination: EventQueueId(1),
+            }
+        );
     }
 
     #[test]

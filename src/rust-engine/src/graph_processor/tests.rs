@@ -4310,7 +4310,7 @@ fn realtime_preparation_with_min_block_size_renders_without_panic() {
 }
 
 #[test]
-fn realtime_preparation_records_module_output_scratch_capacity() {
+fn realtime_preparation_skips_module_output_scratch_for_arena_supported_graph() {
     let graph = Graph::new(
         vec![
             ModuleNode::new(ModuleId::new("osc"), "oscillator")
@@ -4347,7 +4347,7 @@ fn realtime_preparation_records_module_output_scratch_capacity() {
         64,
     );
 
-    assert!(processor.module_output_scratch_capacity() >= 3);
+    assert_eq!(processor.module_output_scratch_capacity(), 0);
     assert!(processor.pending_event_capacity() >= 64);
 }
 
