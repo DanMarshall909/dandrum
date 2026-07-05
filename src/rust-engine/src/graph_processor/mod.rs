@@ -1,4 +1,3 @@
-mod arena_processing;
 mod audio_arena;
 mod block;
 mod dispatch;
