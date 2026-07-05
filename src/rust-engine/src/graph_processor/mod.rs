@@ -6,6 +6,7 @@ mod input_provider;
 mod offline;
 mod outputs;
 mod polyphony;
+mod process_context;
 mod processing;
 mod realtime_graph_processor;
 mod render_plan;
