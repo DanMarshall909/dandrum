@@ -21,7 +21,7 @@
 
 ## 4. Module Processing Context
 
-- [x] 4.1 Introduce `ProcessContext` with typed access to input slices, output slices, input events, event writers, frame count, block start frame, and sample rate.
+- [ ] 4.1 Introduce `ProcessContext` with typed access to input slices, output slices, input events, event writers, frame count, block start frame, and sample rate.
 - [ ] 4.2 Change module processors from returning owned `ModuleOutputs` to writing into the provided `ProcessContext`.
 - [ ] 4.3 Keep reusable DSP algorithms independent from graph routing by containing graph/port translation in module adapter code.
 - [ ] 4.4 Remove obsolete `ModuleOutputs` audio/control output maps from the realtime render path after all call sites migrate.
