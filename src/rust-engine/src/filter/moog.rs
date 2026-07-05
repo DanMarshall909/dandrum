@@ -17,20 +17,20 @@ impl MoogLadder {
             sample_rate,
             g_pole: 0.0,
         };
-        filter.update_coeffs();
+        filter.update_coefficients();
         filter
     }
 
     pub fn set_cutoff(&mut self, hz: f64) {
         self.cutoff = hz.clamp(20.0, self.sample_rate / 2.0);
-        self.update_coeffs();
+        self.update_coefficients();
     }
 
     pub fn set_resonance(&mut self, resonance: f64) {
         self.resonance = resonance.clamp(0.0, 0.99);
     }
 
-    fn update_coeffs(&mut self) {
+    fn update_coefficients(&mut self) {
         let normalized_frequency = self.cutoff / self.sample_rate;
         self.g_pole = 2.0 * (std::f64::consts::PI * normalized_frequency).sin();
     }
