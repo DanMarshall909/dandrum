@@ -1,3 +1,10 @@
+## 0. Reference Review
+
+- [ ] 0.1 Review `https://github.com/nberr/juce-template` before implementation.
+- [ ] 0.2 Identify reusable JUCE plugin structure, CMake, parameter, preset, state, and UI component patterns.
+- [ ] 0.3 Explicitly exclude template features that conflict with Dandrum v1 scope, including embedded React UI, website preset sharing, registration/licensing flows, and unrelated DSP architecture.
+- [ ] 0.4 Capture any adopted patterns in the implementation notes or relevant code comments before applying them.
+
 ## 1. Plugin Target
 
 - [ ] 1.1 Add a `dandrum-plugin` JUCE target with VST3, AU, and Standalone formats.
