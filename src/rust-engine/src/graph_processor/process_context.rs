@@ -100,9 +100,8 @@ impl<'a> ProcessContext<'a> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::graph::SignalType;
     use crate::script::ScriptEvent;
-    use super::super::render_plan::{AudioBufferPlan, BufferId};
+    use super::super::render_plan::AudioBufferPlan;
 
     #[test]
     fn process_context_exposes_typed_audio_slices_and_render_metadata() {
@@ -200,9 +199,12 @@ mod tests {
 
         assert_eq!(context.input_events(0).unwrap(), &[source_event.clone()]);
         context.write_event(0, source_event.clone()).unwrap();
+        assert_eq!(
+            context.input_events(1),
+            Err(ProcessContextError::MissingEventInput { index: 1 })
+        );
+        drop(context);
 
-        assert_eq!(context.input_events(1), Err(ProcessContextError::MissingEventInput { index: 1 }));
         assert_eq!(output_events[0], vec![source_event]);
-        let _ = SignalType::Event;
     }
 }
