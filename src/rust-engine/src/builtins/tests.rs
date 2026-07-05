@@ -74,9 +74,7 @@ fn initialized_registry_contains_synthesis_control_and_mixer_definitions() {
     assert_has_control_input(oscillator, PITCH);
     assert_has_audio_output(oscillator, AUDIO);
 
-    let gain = registry
-        .get(module_types::GAIN)
-        .expect("gain should be built in");
+    let gain = registry.get(module_types::GAIN).expect("gain should be built in");
     assert_has_audio_input(gain, AUDIO_IN);
     assert_has_control_input(gain, builtin_ports::GAIN);
     assert_has_audio_output(gain, AUDIO_OUT);
@@ -97,10 +95,10 @@ fn initialized_registry_contains_synthesis_control_and_mixer_definitions() {
     assert_has_event_input(adsr, GATE);
     assert_control_inputs!(
         adsr,
-        builtin_ports::ATTACK,
-        builtin_ports::DECAY,
-        builtin_ports::SUSTAIN,
-        builtin_ports::RELEASE,
+        ATTACK,
+        DECAY,
+        SUSTAIN,
+        RELEASE,
     );
     assert_has_control_output(adsr, VALUE);
 
@@ -112,8 +110,8 @@ fn initialized_registry_contains_synthesis_control_and_mixer_definitions() {
     assert_has_audio_input(filter, AUDIO_IN);
     assert_control_inputs!(
         filter,
-        builtin_ports::CUTOFF,
-        builtin_ports::RESONANCE,
+        CUTOFF,
+        RESONANCE,
         builtin_ports::GAIN,
     );
     assert_has_audio_output(filter, AUDIO_OUT);
@@ -306,11 +304,11 @@ fn initialized_registry_contains_sampler_definition() {
     assert_has_event_input(sampler, TRIGGER);
     assert_control_inputs!(
         sampler,
-        builtin_ports::RATE,
-        builtin_ports::START,
-        builtin_ports::LOOP_ENABLED,
-        builtin_ports::LOOP_START,
-        builtin_ports::LOOP_END,
+        RATE,
+        START,
+        LOOP_ENABLED,
+        LOOP_START,
+        LOOP_END,
     );
     assert_has_audio_output(sampler, AUDIO);
 }
@@ -337,11 +335,11 @@ fn initialized_registry_contains_envelope_follower_and_curve_mapper_definitions(
     assert_has_audio_input(follower, AUDIO_IN);
     assert_control_inputs!(
         follower,
-        builtin_ports::ATTACK,
-        builtin_ports::RELEASE,
-        builtin_ports::AMOUNT,
-        builtin_ports::OFFSET,
-        builtin_ports::INVERT,
+        ATTACK,
+        RELEASE,
+        AMOUNT,
+        OFFSET,
+        INVERT,
     );
     assert_has_control_output(follower, VALUE);
 
@@ -367,11 +365,11 @@ fn initialized_registry_contains_envelope_follower_and_curve_mapper_definitions(
         .expect("curve_mapper should be built in");
     assert_control_inputs!(
         mapper,
-        builtin_ports::VALUE,
-        builtin_ports::AMOUNT,
-        builtin_ports::BIAS,
-        builtin_ports::SCALE,
-        builtin_ports::OFFSET,
+        VALUE,
+        AMOUNT,
+        BIAS,
+        SCALE,
+        OFFSET,
     );
     assert_has_control_output(mapper, VALUE);
 
@@ -432,18 +430,18 @@ fn echo_definition_has_correct_ports() {
 
     let echo = registry.get(ECHO).expect("echo should be built in");
 
-    assert_audio_inputs!(echo, builtin_ports::AUDIO_IN_L, builtin_ports::AUDIO_IN_R,);
-    assert_audio_outputs!(echo, builtin_ports::AUDIO_OUT_L, builtin_ports::AUDIO_OUT_R,);
+    assert_audio_inputs!(echo, AUDIO_IN_L, AUDIO_IN_R,);
+    assert_audio_outputs!(echo, AUDIO_OUT_L, AUDIO_OUT_R,);
     assert_control_inputs!(
         echo,
-        builtin_ports::TIME_LEFT_MS,
-        builtin_ports::TIME_RIGHT_MS,
-        builtin_ports::FEEDBACK,
-        builtin_ports::DAMPING_CUTOFF,
-        builtin_ports::WET,
-        builtin_ports::DRY,
-        builtin_ports::SYNC_DIVISION,
-        builtin_ports::PING_PONG,
+        TIME_LEFT_MS,
+        TIME_RIGHT_MS,
+        FEEDBACK,
+        DAMPING_CUTOFF,
+        WET,
+        DRY,
+        SYNC_DIVISION,
+        PING_PONG,
     );
 }
 
@@ -453,22 +451,22 @@ fn reverb_definition_has_correct_ports() {
 
     let reverb = registry.get(REVERB).expect("reverb should be built in");
 
-    assert_audio_inputs!(reverb, builtin_ports::AUDIO_IN_L, builtin_ports::AUDIO_IN_R,);
+    assert_audio_inputs!(reverb, AUDIO_IN_L, AUDIO_IN_R,);
     assert_audio_outputs!(
         reverb,
-        builtin_ports::AUDIO_OUT_L,
-        builtin_ports::AUDIO_OUT_R,
+        AUDIO_OUT_L,
+        AUDIO_OUT_R,
     );
     assert_control_inputs!(
         reverb,
-        builtin_ports::DECAY_TIME,
-        builtin_ports::ROOM_SIZE,
-        builtin_ports::PRE_DELAY,
-        builtin_ports::DAMPING,
-        builtin_ports::DIFFUSION,
-        builtin_ports::STEREO_WIDTH,
-        builtin_ports::WET,
-        builtin_ports::DRY,
+        DECAY_TIME,
+        ROOM_SIZE,
+        PRE_DELAY,
+        DAMPING,
+        DIFFUSION,
+        STEREO_WIDTH,
+        WET,
+        DRY,
     );
 }
 
