@@ -38,6 +38,7 @@ pub struct RealtimeGraphProcessor {
     scratch_left: Vec<f32>,
     scratch_right: Vec<f32>,
     scratch_outputs: Option<HashMap<usize, ModuleOutputs>>,
+    events_scratch: Vec<BlockEvent>,
 }
 
 impl RealtimeGraphProcessor {
@@ -165,6 +166,7 @@ impl RealtimeGraphProcessor {
             scratch_right: Vec::with_capacity(prepared_max_block_size),
             scratch_outputs: uses_legacy_module_outputs
                 .then(|| HashMap::with_capacity(graph.modules().len())),
+            events_scratch: Vec::with_capacity(prepared_max_block_size),
         }
     }
 
@@ -286,6 +288,7 @@ impl RealtimeGraphProcessor {
                 &mut self.scratch_right,
                 &self.render_plan,
                 &mut self.prepared_event_queues,
+                &mut self.events_scratch,
             );
 
             let actual = self
@@ -390,6 +393,7 @@ impl RealtimeGraphProcessor {
         right_out: &mut Vec<f32>,
         render_plan: &RenderPlan,
         global_event_queues: &mut PreparedEventQueues,
+        events_scratch: &mut Vec<BlockEvent>,
     ) {
         global_event_queues.clear_all();
         let mut voice_event_queues = prepare_voice_event_queues(allocator.max_voices(), events, allocator);
@@ -406,7 +410,6 @@ impl RealtimeGraphProcessor {
         let input_provider = CompiledInputProvider { compiled };
         let queue_capacity = render_plan.event_queues.queue_capacity;
         let queue_count = render_plan.event_queues.queue_count;
-        let mut events_scratch: Vec<BlockEvent> = Vec::with_capacity(queue_capacity);
         let mut voice_queues: Vec<PreparedEventQueues> = (0..allocator.max_voices())
             .map(|_| PreparedEventQueues::new(queue_count, queue_capacity))
             .collect();
@@ -425,7 +428,7 @@ impl RealtimeGraphProcessor {
                 }
 
                 route_voice_event_edges(voice_queues, step);
-                gather_step_events(voice_queues, step, &mut events_scratch);
+                gather_step_events(voice_queues, step, events_scratch);
 
                 let outputs = process_module(
                     step.module_index,
@@ -457,7 +460,7 @@ impl RealtimeGraphProcessor {
             events_scratch.clear();
             for &qid in step.event_inputs.iter() {
                 if let Some(q) = global_event_queues.queue_mut(qid.0) {
-                    q.drain_into_vec(&mut events_scratch);
+                    q.drain_into_vec(events_scratch);
                 }
             }
 
@@ -592,11 +595,7 @@ fn route_voice_event_edges(voice_queues: &mut PreparedEventQueues, step: &Render
     }
 }
 
-fn gather_step_events(
-    voice_queues: &mut PreparedEventQueues,
-    step: &RenderStep,
-    events_scratch: &mut Vec<BlockEvent>,
-) {
+fn gather_step_events(voice_queues: &mut PreparedEventQueues, step: &RenderStep, events_scratch: &mut Vec<BlockEvent>) {
     events_scratch.clear();
     for &qid in step.event_inputs.iter() {
         if let Some(q) = voice_queues.queue_mut(qid.0) {

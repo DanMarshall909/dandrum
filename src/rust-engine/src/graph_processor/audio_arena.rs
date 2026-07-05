@@ -1,5 +1,3 @@
-#![allow(dead_code)]
-
 use super::render_plan::{AudioBufferPlan, BufferId, CompiledEdge};
 
 pub(super) struct AudioArena {
@@ -19,14 +17,17 @@ impl AudioArena {
         }
     }
 
+    #[cfg(test)]
     pub(super) fn buffer_count(&self) -> usize {
         self.buffer_count
     }
 
+    #[cfg(test)]
     pub(super) fn frames(&self) -> usize {
         self.frames
     }
 
+    #[cfg(test)]
     pub(super) fn capacity_samples(&self) -> usize {
         self.buffers.len()
     }

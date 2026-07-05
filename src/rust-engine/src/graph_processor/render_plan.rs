@@ -1,5 +1,3 @@
-#![allow(dead_code)]
-
 use crate::builtins::module_kind::ModuleKind;
 use crate::compiled_patch::CompiledPatch;
 use crate::graph::SignalType;
@@ -82,6 +80,7 @@ struct RenderPlanBuilder<'a> {
 }
 
 impl RenderPlan {
+    #[cfg(test)]
     pub(super) fn empty(max_block_frames: usize, max_voices: usize) -> Self {
         Self {
             voice_steps: Box::new([]),
