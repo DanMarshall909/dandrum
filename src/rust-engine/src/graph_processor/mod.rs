@@ -1,3 +1,4 @@
+mod audio_arena;
 mod block;
 mod dispatch;
 mod helpers;
@@ -7,6 +8,7 @@ mod outputs;
 mod polyphony;
 mod processing;
 mod realtime_graph_processor;
+mod render_plan;
 mod state;
 
 use self::input_provider::ModuleInputProvider;
@@ -27,5 +29,7 @@ use self::state::PerModuleState;
 #[cfg(test)]
 use crate::patch::{RenderSettings, VoiceAllocation};
 
+#[cfg(test)]
+mod realtime_allocation_tests;
 #[cfg(test)]
 mod tests;
