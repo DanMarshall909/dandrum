@@ -175,7 +175,9 @@ impl RealtimeGraphProcessor {
             scratch_outputs: uses_legacy_module_outputs
                 .then(|| HashMap::with_capacity(graph.modules().len())),
             events_scratch: Vec::with_capacity(prepared_max_block_size),
-            voice_event_queues: Vec::with_capacity(max_voices),
+            voice_event_queues: (0..max_voices)
+                .map(|_| Vec::with_capacity(prepared_max_block_size))
+                .collect(),
             voice_queues: (0..max_voices)
                 .map(|_| PreparedEventQueues::new(queue_count, queue_capacity))
                 .collect(),
@@ -414,17 +416,16 @@ impl RealtimeGraphProcessor {
         right_out: &mut Vec<f32>,
         render_plan: &RenderPlan,
         global_event_queues: &mut PreparedEventQueues,
-        mut all_outputs: &mut HashMap<usize, ModuleOutputs>,
+        all_outputs: &mut HashMap<usize, ModuleOutputs>,
         voice_event_queues: &mut Vec<Vec<ScriptEvent>>,
         voice_queues: &mut Vec<PreparedEventQueues>,
-        mut accum: &mut Vec<Option<ModuleOutputs>>,
+        accum: &mut Vec<Option<ModuleOutputs>>,
         events_scratch: &mut Vec<BlockEvent>,
     ) {
         global_event_queues.clear_all();
         prepare_voice_event_queues(voice_event_queues, events, allocator);
-        let active_voices = active_voice_indices(allocator);
 
-        if active_voices.is_empty() {
+        if !has_active_voice(allocator) {
             left_out.extend(std::iter::repeat_n(0.0, frames));
             right_out.extend(std::iter::repeat_n(0.0, frames));
             return;
@@ -434,13 +435,15 @@ impl RealtimeGraphProcessor {
         accum.clear();
         accum.resize_with(compiled.nodes().len(), || None);
         let input_provider = CompiledInputProvider { compiled };
-        let queue_capacity = render_plan.event_queues.queue_capacity;
-        let queue_count = render_plan.event_queues.queue_count;
         for queues in voice_queues.iter_mut() {
-            *queues = PreparedEventQueues::new(queue_count, queue_capacity);
+            queues.clear_all();
         }
 
-        for &voice_idx in &active_voices {
+        for voice_idx in 0..allocator.max_voices() {
+            if allocator.slot(voice_idx).is_none_or(|slot| !slot.active) {
+                continue;
+            }
+
             let voice_events = &mut voice_event_queues[voice_idx];
             let voice_queues = &mut voice_queues[voice_idx];
             route_voice_input_events(render_plan.midi_input, voice_events, voice_queues);
@@ -470,7 +473,7 @@ impl RealtimeGraphProcessor {
                 all_outputs.insert(step.module_index, outputs);
             }
 
-            accumulate_voice_outputs(&mut accum, &mut all_outputs, compiled, frames);
+            accumulate_voice_outputs(accum, all_outputs, compiled, frames);
         }
 
         collect_accumulated_outputs(accum, all_outputs);
@@ -568,8 +571,12 @@ fn prepare_voice_event_queues(
     allocator: &mut VoiceAllocator,
 ) {
     let max_voices = allocator.max_voices();
-    voice_events.clear();
-    voice_events.resize_with(max_voices, Vec::new);
+    while voice_events.len() < max_voices {
+        voice_events.push(Vec::with_capacity(events.len()));
+    }
+    for events in voice_events.iter_mut().take(max_voices) {
+        events.clear();
+    }
 
     for event in events {
         if let ScriptEvent::NoteOn { note, velocity } = &event.event
@@ -579,14 +586,15 @@ fn prepare_voice_event_queues(
         }
     }
 
-    let slot_notes: Vec<Option<u8>> = (0..max_voices)
-        .map(|i| allocator.slot(i).filter(|s| s.active).map(|s| s.note))
-        .collect();
-
     for event in events {
         if let ScriptEvent::NoteOff { note } = &event.event {
-            for (slot_idx, sn) in slot_notes.iter().enumerate() {
-                if *sn == Some(*note) {
+            for slot_idx in 0..max_voices {
+                if allocator
+                    .slot(slot_idx)
+                    .filter(|slot| slot.active)
+                    .map(|slot| slot.note)
+                    == Some(*note)
+                {
                     voice_events[slot_idx].push(event.event.clone());
                 }
             }
@@ -594,10 +602,8 @@ fn prepare_voice_event_queues(
     }
 }
 
-fn active_voice_indices(allocator: &VoiceAllocator) -> Vec<usize> {
-    (0..allocator.max_voices())
-        .filter(|&i| allocator.slot(i).is_some_and(|s| s.active))
-        .collect()
+fn has_active_voice(allocator: &VoiceAllocator) -> bool {
+    (0..allocator.max_voices()).any(|i| allocator.slot(i).is_some_and(|slot| slot.active))
 }
 
 fn route_voice_input_events(
