@@ -1342,7 +1342,7 @@ fn validation_rejects_event_feedback_cycle_without_future_scheduling_boundary() 
 
 #[test]
 fn built_in_voice_modules_are_voice_scope() {
-    let registry = crate::builtins::BuiltInModuleRegistry::new();
+    let registry = BuiltInModuleRegistry::new();
 
     for module_type in [
         "oscillator",
@@ -1367,7 +1367,7 @@ fn built_in_voice_modules_are_voice_scope() {
 
 #[test]
 fn built_in_global_modules_are_global_scope() {
-    let registry = crate::builtins::BuiltInModuleRegistry::new();
+    let registry = BuiltInModuleRegistry::new();
 
     for module_type in [
         "midi_input",
@@ -1392,7 +1392,7 @@ fn built_in_global_modules_are_global_scope() {
 
 #[test]
 fn voice_local_sub_synth_chain_through_mixer_validates() {
-    let patch = crate::patch::load_patch_str(
+    let patch = patch::load_patch_str(
         r#"
 metadata:
   name: Voice Sub-Synth
@@ -1420,7 +1420,7 @@ connections:
     )
     .expect("patch should parse");
 
-    crate::patch::validate_patch_schema(&patch).expect("patch schema should be valid");
+    patch::validate_patch_schema(&patch).expect("patch schema should be valid");
     let graph = Graph::from_patch_declarations(&patch);
 
     graph
@@ -1430,7 +1430,7 @@ connections:
 
 #[test]
 fn voice_local_sub_synth_with_control_and_output_shaping_validates() {
-    let patch = crate::patch::load_patch_str(
+    let patch = patch::load_patch_str(
         r#"
 metadata:
   name: Voice Sub-Synth With ADSR
@@ -1462,7 +1462,7 @@ connections:
     )
     .expect("patch should parse");
 
-    crate::patch::validate_patch_schema(&patch).expect("patch schema should be valid");
+    patch::validate_patch_schema(&patch).expect("patch schema should be valid");
     let graph = Graph::from_patch_declarations(&patch);
 
     graph
@@ -1472,7 +1472,7 @@ connections:
 
 #[test]
 fn voice_to_global_direct_routing_without_mixer_is_rejected() {
-    let patch = crate::patch::load_patch_str(
+    let patch = patch::load_patch_str(
         r#"
 metadata:
   name: Direct Voice To Output
@@ -1492,7 +1492,7 @@ connections:
     )
     .expect("patch should parse");
 
-    crate::patch::validate_patch_schema(&patch).expect("patch schema should be valid");
+    patch::validate_patch_schema(&patch).expect("patch schema should be valid");
     let graph = Graph::from_patch_declarations(&patch);
     let error = graph
         .validate()
@@ -1508,7 +1508,7 @@ connections:
 
 #[test]
 fn explicit_audio_mixer_accepts_multiple_voice_sources() {
-    let patch = crate::patch::load_patch_str(
+    let patch = patch::load_patch_str(
         r#"
 metadata:
   name: Two Voices To Mixer
@@ -1536,7 +1536,7 @@ connections:
     )
     .expect("patch should parse");
 
-    crate::patch::validate_patch_schema(&patch).expect("patch schema should be valid");
+    patch::validate_patch_schema(&patch).expect("patch schema should be valid");
     let graph = Graph::from_patch_declarations(&patch);
 
     graph
@@ -1546,7 +1546,7 @@ connections:
 
 #[test]
 fn explicit_note_to_rate_converter_accepts_event_input_and_control_output() {
-    let patch = crate::patch::load_patch_str(
+    let patch = patch::load_patch_str(
         r#"
 metadata:
   name: Note To Rate Converter
@@ -1578,7 +1578,7 @@ connections:
     )
     .expect("patch should parse");
 
-    crate::patch::validate_patch_schema(&patch).expect("patch schema should be valid");
+    patch::validate_patch_schema(&patch).expect("patch schema should be valid");
     let graph = Graph::from_patch_declarations(&patch);
 
     graph

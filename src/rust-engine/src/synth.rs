@@ -890,7 +890,7 @@ connections:
 
         direct.note_on(60, 100);
         assert_eq!(
-            queue.submit(crate::realtime::RealtimeEvent::NoteOn {
+            queue.submit(RealtimeEvent::NoteOn {
                 note: 60,
                 velocity: 100
             }),

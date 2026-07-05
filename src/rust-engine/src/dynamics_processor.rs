@@ -512,7 +512,7 @@ mod tests {
     fn transient_mode_attack_sustain_envelope_response() {
         // Transient mode with high attack gain on a percussive input
         let mut proc = DynamicsProcessor::new(48000.0, 1.0, 50.0);
-        proc.set_mode(crate::dynamics_processor::ProcessorMode::Transient);
+        proc.set_mode(ProcessorMode::Transient);
         proc.set_transient_params(12.0, 0.0); // +12 dB boost on attacks, unity sustain
 
         // Create a percussive signal: burst then decay

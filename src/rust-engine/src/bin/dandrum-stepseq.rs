@@ -427,7 +427,7 @@ fn play_pattern(seq: &Sequencer) {
     let settings = RenderSettings {
         sample_rate_hz: 48000,
         block_size_frames: 64,
-        duration_frames: total as u64,
+        duration_frames: total,
     };
 
     let (left, right) = render_offline(&graph, &settings, events);

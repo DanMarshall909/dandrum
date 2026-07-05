@@ -771,7 +771,7 @@ pub(super) fn process_note_to_control(
     for event in events {
         let f = event.frame_offset as usize;
         match &event.event {
-            crate::script::ScriptEvent::NoteOn { note, velocity } => {
+            ScriptEvent::NoteOn { note, velocity } => {
                 let freq = midi_note_to_freq(*note);
                 let ratio = freq / 220.0;
                 let norm_vel = (*velocity as f32) / 127.0;
@@ -787,13 +787,13 @@ pub(super) fn process_note_to_control(
                 *gate_active = true;
                 gate_events.push(BlockEvent {
                     frame_offset: event.frame_offset,
-                    event: crate::script::ScriptEvent::NoteOn {
+                    event: ScriptEvent::NoteOn {
                         note: *note,
                         velocity: *velocity,
                     },
                 });
             }
-            crate::script::ScriptEvent::NoteOff { note } => {
+            ScriptEvent::NoteOff { note } => {
                 if current_note.map(|n| n == *note).unwrap_or(false) {
                     *gate_active = false;
                     *current_note = None;
@@ -803,7 +803,7 @@ pub(super) fn process_note_to_control(
                 }
                 gate_events.push(BlockEvent {
                     frame_offset: event.frame_offset,
-                    event: crate::script::ScriptEvent::NoteOff { note: *note },
+                    event: ScriptEvent::NoteOff { note: *note },
                 });
             }
         }

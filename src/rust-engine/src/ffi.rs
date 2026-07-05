@@ -183,18 +183,30 @@ fn submit_realtime_queue_event(
 mod tests {
     use super::*;
 
-    macro_rules! null_safety_test {
-        ($name:ident, $call:expr) => {
-            #[test]
-            fn $name() {
-                unsafe { $call };
-            }
+    fn assert_no_panic(name: &str, f: impl FnOnce()) {
+        let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(f));
+        assert!(result.is_ok(), "{name}");
+    }
+
+    macro_rules! null_safety_no_panic_tests {
+        ($( $name:ident => $call:expr; )*) => {
+            $(
+                #[test]
+                fn $name() {
+                    assert_no_panic(stringify!($name), || unsafe { $call });
+                }
+            )*
         };
-        ($name:ident, $call:expr => $expected:expr) => {
-            #[test]
-            fn $name() {
-                assert_eq!(unsafe { $call }, $expected);
-            }
+    }
+
+    macro_rules! null_safety_returning_tests {
+        ($( $name:ident => $call:expr => $expected:expr; )*) => {
+            $(
+                #[test]
+                fn $name() {
+                    assert_eq!(unsafe { $call }, $expected);
+                }
+            )*
         };
     }
 
@@ -258,45 +270,50 @@ mod tests {
         unsafe { dandrum_realtime_event_queue_destroy(queue) };
     }
 
-    null_safety_test!(c_ffi_destroy_null_engine_does_not_crash, {
-        dandrum_engine_destroy(std::ptr::null_mut())
-    });
-    null_safety_test!(c_ffi_load_patch_rejects_null_engine, {
-        dandrum_engine_load_patch(std::ptr::null_mut(), std::ptr::null())
-    } => false);
-    null_safety_test!(c_ffi_load_patch_rejects_null_path, {
-        let engine = dandrum_engine_create();
-        let result = dandrum_engine_load_patch(engine, std::ptr::null());
-        dandrum_engine_destroy(engine);
-        result
-    } => false);
-    null_safety_test!(c_ffi_prepare_null_engine_does_not_crash, {
-        dandrum_engine_prepare(std::ptr::null_mut(), 48_000.0)
-    });
-    null_safety_test!(c_ffi_prepare_realtime_null_engine_does_not_crash, {
-        dandrum_engine_prepare_realtime(std::ptr::null_mut(), 48_000.0, 64)
-    });
-    null_safety_test!(c_ffi_note_on_null_engine_does_not_crash, {
-        dandrum_engine_note_on(std::ptr::null_mut(), 60, 100)
-    });
-    null_safety_test!(c_ffi_note_off_null_engine_does_not_crash, {
-        dandrum_engine_note_off(std::ptr::null_mut(), 60)
-    });
-    null_safety_test!(c_ffi_is_finished_returns_true_for_null_engine, {
-        dandrum_engine_is_finished(std::ptr::null())
-    } => true);
-    null_safety_test!(c_ffi_realtime_event_queue_destroy_null_does_not_crash, {
-        dandrum_realtime_event_queue_destroy(std::ptr::null_mut())
-    });
-    null_safety_test!(c_ffi_realtime_event_queue_note_on_rejects_null_queue, {
-        dandrum_realtime_event_queue_note_on(std::ptr::null_mut(), 60, 100)
-    } => 1);
-    null_safety_test!(c_ffi_realtime_event_queue_note_off_rejects_null_queue, {
-        dandrum_realtime_event_queue_note_off(std::ptr::null_mut(), 60)
-    } => 1);
-    null_safety_test!(c_ffi_realtime_event_queue_dropped_count_returns_zero_for_null_queue, {
-        dandrum_realtime_event_queue_dropped_count(std::ptr::null())
-    } => 0);
+    null_safety_no_panic_tests! {
+        c_ffi_destroy_null_engine_does_not_crash => {
+            dandrum_engine_destroy(std::ptr::null_mut())
+        };
+        c_ffi_prepare_null_engine_does_not_crash => {
+            dandrum_engine_prepare(std::ptr::null_mut(), 48_000.0)
+        };
+        c_ffi_prepare_realtime_null_engine_does_not_crash => {
+            dandrum_engine_prepare_realtime(std::ptr::null_mut(), 48_000.0, 64)
+        };
+        c_ffi_note_on_null_engine_does_not_crash => {
+            dandrum_engine_note_on(std::ptr::null_mut(), 60, 100)
+        };
+        c_ffi_note_off_null_engine_does_not_crash => {
+            dandrum_engine_note_off(std::ptr::null_mut(), 60)
+        };
+        c_ffi_realtime_event_queue_destroy_null_does_not_crash => {
+            dandrum_realtime_event_queue_destroy(std::ptr::null_mut())
+        };
+    }
+
+    null_safety_returning_tests! {
+        c_ffi_load_patch_rejects_null_engine => {
+            dandrum_engine_load_patch(std::ptr::null_mut(), std::ptr::null())
+        } => false;
+        c_ffi_load_patch_rejects_null_path => {
+            let engine = dandrum_engine_create();
+            let result = dandrum_engine_load_patch(engine, std::ptr::null());
+            dandrum_engine_destroy(engine);
+            result
+        } => false;
+        c_ffi_is_finished_returns_true_for_null_engine => {
+            dandrum_engine_is_finished(std::ptr::null())
+        } => true;
+        c_ffi_realtime_event_queue_note_on_rejects_null_queue => {
+            dandrum_realtime_event_queue_note_on(std::ptr::null_mut(), 60, 100)
+        } => 1;
+        c_ffi_realtime_event_queue_note_off_rejects_null_queue => {
+            dandrum_realtime_event_queue_note_off(std::ptr::null_mut(), 60)
+        } => 1;
+        c_ffi_realtime_event_queue_dropped_count_returns_zero_for_null_queue => {
+            dandrum_realtime_event_queue_dropped_count(std::ptr::null())
+        } => 0;
+    }
 
     #[test]
     fn c_ffi_engine_lifecycle_create_prepare_note_on_render_is_finished() {

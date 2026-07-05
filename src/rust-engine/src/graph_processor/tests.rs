@@ -1416,15 +1416,15 @@ fn poly_sampler_graph(extra_modules: Vec<ModuleNode>, extra_cables: Vec<Cable>) 
     Graph::new(modules, cables)
 }
 
-fn poly_allocation(max_voices: u32) -> patch::VoiceAllocation {
-    patch::VoiceAllocation {
+fn poly_allocation(max_voices: u32) -> VoiceAllocation {
+    VoiceAllocation {
         max_voices,
         stealing: patch::VoiceStealingPolicy::Disabled,
     }
 }
 
-fn poly_allocation_stealing(max_voices: u32) -> patch::VoiceAllocation {
-    patch::VoiceAllocation {
+fn poly_allocation_stealing(max_voices: u32) -> VoiceAllocation {
+    VoiceAllocation {
         max_voices,
         stealing: patch::VoiceStealingPolicy::OldestActive,
     }
@@ -2217,7 +2217,7 @@ fn compiled_render_matches_raw_for_sampler_patch() {
     };
 
     let assets = PreparedSamplerAssets::from_samples_by_module({
-        let mut m = std::collections::BTreeMap::new();
+        let mut m = BTreeMap::new();
         m.insert(
             "sampler".to_string(),
             LoadedSample::new(48_000, vec![0.25, 0.5, 0.75, 1.0]),
@@ -3654,9 +3654,9 @@ connections:
         ),
         TimedInputEvent::new(1, ScriptEvent::NoteOff { note: 60 }),
     ];
-    let (left, _) = crate::graph_processor::offline::render_offline(
+    let (left, _) = render_offline(
         &graph,
-        &crate::patch::RenderSettings {
+        &RenderSettings {
             sample_rate_hz: 48000,
             block_size_frames: 64,
             duration_frames: 192,
@@ -3726,9 +3726,9 @@ connections:
         ),
         TimedInputEvent::new(64, ScriptEvent::NoteOff { note: 61 }),
     ];
-    let (left, _) = crate::graph_processor::offline::render_offline(
+    let (left, _) = render_offline(
         &graph,
-        &crate::patch::RenderSettings {
+        &RenderSettings {
             sample_rate_hz: 48000,
             block_size_frames: 64,
             duration_frames: 130,
@@ -3755,7 +3755,7 @@ fn synthetic_808_kick_renders_deterministic_decaying_output() {
     //
     // Events: NoteOn at frame 0, NoteOff at frame 2000 (~42ms) so release
     // produces the decaying tail.
-    let patch = crate::patch::load_patch_str(
+    let patch = patch::load_patch_str(
         r#"
 metadata:
   name: 808Kick
@@ -3823,7 +3823,7 @@ connections:
 "#,
     )
     .expect("patch should parse");
-    crate::patch::validate_patch_schema(&patch).expect("schema should be valid");
+    patch::validate_patch_schema(&patch).expect("schema should be valid");
     let graph = Graph::from_patch_declarations(&patch);
     graph.validate().expect("graph should validate");
 
@@ -3837,9 +3837,9 @@ connections:
         ),
         TimedInputEvent::new(2000, ScriptEvent::NoteOff { note: 36 }),
     ];
-    let (left, _right) = crate::graph_processor::offline::render_offline(
+    let (left, _right) = render_offline(
         &graph,
-        &crate::patch::RenderSettings {
+        &RenderSettings {
             sample_rate_hz: 48000,
             block_size_frames: 64,
             duration_frames: 48000,
@@ -3859,9 +3859,9 @@ connections:
         ),
         TimedInputEvent::new(2000, ScriptEvent::NoteOff { note: 36 }),
     ];
-    let (left2, _) = crate::graph_processor::offline::render_offline(
+    let (left2, _) = render_offline(
         &graph,
-        &crate::patch::RenderSettings {
+        &RenderSettings {
             sample_rate_hz: 48000,
             block_size_frames: 64,
             duration_frames: 48000,
@@ -4393,7 +4393,7 @@ fn realtime_preparation_respects_voice_allocation() {
         graph,
         48_000.0,
         &PreparedSamplerAssets::empty(),
-        &patch::VoiceAllocation {
+        &VoiceAllocation {
             max_voices: 8,
             stealing: patch::VoiceStealingPolicy::Disabled,
         },
@@ -4456,7 +4456,7 @@ fn offline_and_realtime_produce_same_output_for_sampler_patch() {
     graph.validate().expect("graph should validate");
 
     let assets = PreparedSamplerAssets::from_samples_by_module({
-        let mut m = std::collections::BTreeMap::new();
+        let mut m = BTreeMap::new();
         m.insert(
             "sampler".to_string(),
             LoadedSample::new(48_000, vec![0.25, 0.5, 0.75, 1.0]),

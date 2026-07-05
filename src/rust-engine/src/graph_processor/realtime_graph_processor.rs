@@ -28,7 +28,7 @@ pub struct RealtimeGraphProcessor {
     current_frame: u64,
     pending_events: BoundedEventQueue,
     prepared_event_queues: PreparedEventQueues,
-    events_buffer: Box<[super::outputs::BlockEvent]>,
+    events_buffer: Box<[BlockEvent]>,
     allocator: VoiceAllocator,
     render_plan: RenderPlan,
     audio_arena: AudioArena,
@@ -135,9 +135,9 @@ impl RealtimeGraphProcessor {
         );
 
         let events_buffer = vec![
-            super::outputs::BlockEvent {
+            BlockEvent {
                 frame_offset: 0,
-                event: crate::script::ScriptEvent::NoteOn {
+                event: ScriptEvent::NoteOn {
                     note: 0,
                     velocity: 0,
                 },

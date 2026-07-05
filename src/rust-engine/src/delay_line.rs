@@ -181,7 +181,7 @@ mod tests {
         d.reset();
         let result = d.read(1.0);
         assert!(
-            (result).abs() < 1e-6,
+            result.abs() < 1e-6,
             "expected 0.0 after reset, got {}",
             result
         );

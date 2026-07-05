@@ -185,8 +185,8 @@ mod tests {
         // Read before delay — should be silent
         for _ in 0..delay_samples {
             let (l, r) = e.process(0.0, 0.0);
-            assert!((l).abs() < 1e-6, "expected silence before delay, got {l}");
-            assert!((r).abs() < 1e-6, "expected silence before delay, got {r}");
+            assert!(l.abs() < 1e-6, "expected silence before delay, got {l}");
+            assert!(r.abs() < 1e-6, "expected silence before delay, got {r}");
         }
 
         // Read at delay — should get the impulse (attenuated by one-pole damping filter)
@@ -253,11 +253,11 @@ mod tests {
         for _ in 0..delay_samples * 2 {
             let (l, r) = e.process(0.0, 0.0);
             assert!(
-                (l).abs() < 1e-6,
+                l.abs() < 1e-6,
                 "expected silence after single repeat, got {l}"
             );
             assert!(
-                (r).abs() < 1e-6,
+                r.abs() < 1e-6,
                 "expected silence after single repeat, got {r}"
             );
         }
@@ -282,7 +282,7 @@ mod tests {
         let (l, r) = e.process(0.0, 0.0);
         // First repeat should appear on right channel (ping-pong cross)
         assert!(
-            (l).abs() < 1e-6,
+            l.abs() < 1e-6,
             "first ping-pong repeat should be on R, got L={l}"
         );
         assert!(
@@ -326,11 +326,11 @@ mod tests {
         for i in 0..expected_delay {
             let (l, r) = e.process(0.0, 0.0);
             assert!(
-                (l).abs() < 1e-6,
+                l.abs() < 1e-6,
                 "expected silence before sync delay at sample {i}, got {l}"
             );
             assert!(
-                (r).abs() < 1e-6,
+                r.abs() < 1e-6,
                 "expected silence before sync delay at sample {i}, got {r}"
             );
         }
@@ -395,8 +395,8 @@ mod tests {
         // After reset, should be silent regardless of feedback
         for _ in 0..100 {
             let (l, r) = e.process(0.0, 0.0);
-            assert!((l).abs() < 1e-6, "after reset expected silence, got {l}");
-            assert!((r).abs() < 1e-6, "after reset expected silence, got {r}");
+            assert!(l.abs() < 1e-6, "after reset expected silence, got {l}");
+            assert!(r.abs() < 1e-6, "after reset expected silence, got {r}");
         }
     }
 
