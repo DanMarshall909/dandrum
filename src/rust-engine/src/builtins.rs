@@ -719,4 +719,9 @@ fn reverb_definition() -> BuiltInModuleDefinition {
 }
 
 #[cfg(test)]
+pub(crate) fn build_definition() -> BuiltInModuleDefinition {
+    gain_definition()
+}
+
+#[cfg(test)]
 mod tests;

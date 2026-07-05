@@ -1,13 +1,30 @@
-use builtin_ports as bp;
 use module_types::*;
 use super::*;
 use crate::graph::{PortDirection, SignalType};
 use SignalType::{Audio, Control, Event};
 use ParameterValueType::{Integer, Text};
 
+macro_rules! assert_control_inputs {
+    ($definition:expr, $($name:expr),+ $(,)?) => {
+        $(assert_has_control_input($definition, $name);)+
+    };
+}
+
+macro_rules! assert_audio_inputs {
+    ($definition:expr, $($name:expr),+ $(,)?) => {
+        $(assert_has_audio_input($definition, $name);)+
+    };
+}
+
+macro_rules! assert_audio_outputs {
+    ($definition:expr, $($name:expr),+ $(,)?) => {
+        $(assert_has_audio_output($definition, $name);)+
+    };
+}
+
 #[test]
 fn registry_stores_and_finds_module_definitions_by_type() {
-    let definition = BuildDefinition();
+    let definition = build_definition();
     let registry = BuiltInModuleRegistry::from_definitions(vec![definition]);
 
     let gain = registry
@@ -15,16 +32,9 @@ fn registry_stores_and_finds_module_definitions_by_type() {
         .expect("gain definition should be registered");
 
     assert_eq!(gain.module_type(), GAIN);
-    assert_eq!(gain.inputs()[0].name(), bp::AUDIO_IN);
+    assert_eq!(gain.inputs()[0].name(), builtin_ports::AUDIO_IN);
     assert_eq!(gain.inputs()[1].signal_type(), Control);
-    assert_eq!(gain.outputs()[0].name(), bp::AUDIO_OUT);
-}
-
-fn BuildDefinition() -> BuiltInModuleDefinition {
-    BuiltInModuleDefinition::new(GAIN)
-        .with_input(Port::input(bp::AUDIO_IN, Audio))
-        .with_input(Port::input(bp::GAIN, Control))
-        .with_output(Port::output(bp::AUDIO_OUT, Audio))
+    assert_eq!(gain.outputs()[0].name(), builtin_ports::AUDIO_OUT);
 }
 
 #[test]
@@ -41,16 +51,17 @@ fn initialized_registry_contains_midi_input_and_audio_output_definitions() {
     let midi_input = registry
         .get(MIDI_INPUT)
         .expect("midi input should be built in");
-    assert_eq!(midi_input.outputs()[0].name(), bp::EVENTS);
+    assert_eq!(midi_input.outputs()[0].name(), builtin_ports::EVENTS);
     assert_eq!(midi_input.outputs()[0].signal_type(), Event);
 
     let audio_output = registry
         .get(AUDIO_OUTPUT)
         .expect("audio output should be built in");
-    assert_eq!(audio_output.inputs()[0].name(), bp::LEFT);
-    assert_eq!(audio_output.inputs()[0].signal_type(), Audio);
-    assert_eq!(audio_output.inputs()[1].name(), bp::RIGHT);
-    assert_eq!(audio_output.inputs()[1].signal_type(), Audio);
+    let output_inputs = audio_output.inputs();
+    assert_eq!(output_inputs[0].name(), builtin_ports::LEFT);
+    assert_eq!(output_inputs[0].signal_type(), Audio);
+    assert_eq!(output_inputs[1].name(), builtin_ports::RIGHT);
+    assert_eq!(output_inputs[1].signal_type(), Audio);
     assert!(audio_output.outputs().is_empty());
 }
 
@@ -61,52 +72,56 @@ fn initialized_registry_contains_synthesis_control_and_mixer_definitions() {
     let oscillator = registry
         .get(OSCILLATOR)
         .expect("oscillator should be built in");
-    assert_has_input(oscillator, bp::PITCH, Control);
-    assert_has_output(oscillator, bp::AUDIO, Audio);
+    assert_has_control_input(oscillator, builtin_ports::PITCH);
+    assert_has_audio_output(oscillator, builtin_ports::AUDIO);
 
     let gain = registry
         .get(GAIN)
         .expect("gain should be built in");
-    assert_has_input(gain, bp::AUDIO_IN, Audio);
-    assert_has_input(gain, bp::GAIN, Control);
-    assert_has_output(gain, bp::AUDIO_OUT, Audio);
+    assert_has_audio_input(gain, builtin_ports::AUDIO_IN);
+    assert_has_control_input(gain, builtin_ports::GAIN);
+    assert_has_audio_output(gain, builtin_ports::AUDIO_OUT);
 
     let audio_mixer = registry
         .get(AUDIO_MIXER)
         .expect("audio mixer should be built in");
-    assert_has_mixing_input(audio_mixer, bp::INPUTS, Audio);
-    assert_has_output(audio_mixer, bp::MIX, Audio);
+    assert_has_audio_mixing_input(audio_mixer, builtin_ports::INPUTS);
+    assert_has_audio_output(audio_mixer, builtin_ports::MIX);
 
     let control_mixer = registry
         .get(CONTROL_MIXER)
         .expect("control mixer should be built in");
-    assert_has_mixing_input(control_mixer, bp::INPUTS, Control);
-    assert_has_output(control_mixer, bp::SUM, Control);
+    assert_has_control_mixing_input(control_mixer, builtin_ports::INPUTS);
+    assert_has_control_output(control_mixer, builtin_ports::SUM);
 
     let adsr = registry
         .get(ADSR)
         .expect("ADSR should be built in");
-    assert_has_input(adsr, bp::GATE, Event);
-    assert_has_input(adsr, bp::ATTACK, Control);
-    assert_has_input(adsr, bp::DECAY, Control);
-    assert_has_input(adsr, bp::SUSTAIN, Control);
-    assert_has_input(adsr, bp::RELEASE, Control);
-    assert_has_output(adsr, bp::VALUE, Control);
+    assert_has_event_input(adsr, builtin_ports::GATE);
+    assert_control_inputs!(adsr,
+        builtin_ports::ATTACK,
+        builtin_ports::DECAY,
+        builtin_ports::SUSTAIN,
+        builtin_ports::RELEASE,
+    );
+    assert_has_control_output(adsr, builtin_ports::VALUE);
 
     let lfo = registry
         .get(LFO)
         .expect("LFO should be built in");
-    assert_has_input(lfo, bp::RATE, Control);
-    assert_has_output(lfo, bp::VALUE, Control);
+    assert_has_control_input(lfo, builtin_ports::RATE);
+    assert_has_control_output(lfo, builtin_ports::VALUE);
 
     let filter = registry
         .get(FILTER)
         .expect("filter should be built in");
-    assert_has_input(filter, bp::AUDIO_IN, Audio);
-    assert_has_input(filter, bp::CUTOFF, Control);
-    assert_has_input(filter, bp::RESONANCE, Control);
-    assert_has_input(filter, bp::GAIN, Control);
-    assert_has_output(filter, bp::AUDIO_OUT, Audio);
+    assert_has_audio_input(filter, builtin_ports::AUDIO_IN);
+    assert_control_inputs!(filter,
+        builtin_ports::CUTOFF,
+        builtin_ports::RESONANCE,
+        builtin_ports::GAIN,
+    );
+    assert_has_audio_output(filter, builtin_ports::AUDIO_OUT);
 }
 
 #[test]
@@ -116,27 +131,55 @@ fn initialized_registry_contains_delay_definitions_with_feedback_boundaries() {
     let one_sample_delay = registry
         .get(AUDIO_DELAY_ONE_SAMPLE)
         .expect("one-sample audio delay should be built in");
-    assert_has_input(one_sample_delay, bp::AUDIO_IN, Audio);
-    assert_has_output(
-        one_sample_delay,
-        bp::AUDIO_OUT,
-        Audio,
-    );
+    assert_has_audio_input(one_sample_delay, builtin_ports::AUDIO_IN);
+    assert_has_audio_output(one_sample_delay, builtin_ports::AUDIO_OUT);
     assert_eq!(one_sample_delay.feedback_boundaries(), &[Audio]);
 
     let block_delay = registry
         .get(BLOCK_DELAY)
         .expect("block delay should be built in");
-    assert_has_input(block_delay, bp::AUDIO_IN, Audio);
-    assert_has_output(block_delay, bp::AUDIO_OUT, Audio);
+    assert_has_audio_input(block_delay, builtin_ports::AUDIO_IN);
+    assert_has_audio_output(block_delay, builtin_ports::AUDIO_OUT);
     assert_eq!(block_delay.feedback_boundaries(), &[Audio]);
 
     let control_delay = registry
         .get(CONTROL_DELAY)
         .expect("control delay should be built in");
-    assert_has_input(control_delay, bp::VALUE, Control);
-    assert_has_output(control_delay, bp::VALUE, Control);
+    assert_has_control_input(control_delay, builtin_ports::VALUE);
+    assert_has_control_output(control_delay, builtin_ports::VALUE);
     assert_eq!(control_delay.feedback_boundaries(), &[Control]);
+}
+
+fn assert_has_control_output(definition: &BuiltInModuleDefinition, port_name: &str) {
+    assert_has_output(Control, definition, port_name);
+}
+
+fn assert_has_control_input(definition: &BuiltInModuleDefinition, port_name: &str) {
+    assert_has_input(Control, definition, port_name);
+}
+
+fn assert_has_audio_input(definition: &BuiltInModuleDefinition, port_name: &str) {
+    assert_has_input(Audio, definition, port_name);
+}
+
+fn assert_has_event_input(definition: &BuiltInModuleDefinition, port_name: &str) {
+    assert_has_input(Event, definition, port_name);
+}
+
+fn assert_has_audio_output(definition: &BuiltInModuleDefinition, port_name: &str) {
+    assert_has_output(Audio, definition, port_name);
+}
+
+fn assert_has_event_output(definition: &BuiltInModuleDefinition, port_name: &str) {
+    assert_has_output(Event, definition, port_name);
+}
+
+fn assert_has_audio_mixing_input(definition: &BuiltInModuleDefinition, port_name: &str) {
+    assert_has_mixing_input(definition, port_name, Audio);
+}
+
+fn assert_has_control_mixing_input(definition: &BuiltInModuleDefinition, port_name: &str) {
+    assert_has_mixing_input(definition, port_name, Control);
 }
 
 #[test]
@@ -205,8 +248,8 @@ fn event_filter_definition_exposes_event_ports_selector_metadata_defaults_and_ex
         .get(EVENT_FILTER)
         .expect("event_filter should be built in");
 
-    assert_has_input(event_filter, bp::EVENTS_IN, Event);
-    assert_has_output(event_filter, bp::EVENTS_OUT, Event);
+    assert_has_event_input(event_filter, builtin_ports::EVENTS_IN);
+    assert_has_event_output(event_filter, builtin_ports::EVENTS_OUT);
     assert!(
         event_filter
             .inputs()
@@ -269,13 +312,15 @@ fn initialized_registry_contains_sampler_definition() {
         .get(SAMPLER)
         .expect("sampler should be built in");
 
-    assert_has_input(sampler, bp::TRIGGER, Event);
-    assert_has_input(sampler, bp::RATE, Control);
-    assert_has_input(sampler, bp::START, Control);
-    assert_has_input(sampler, bp::LOOP_ENABLED, Control);
-    assert_has_input(sampler, bp::LOOP_START, Control);
-    assert_has_input(sampler, bp::LOOP_END, Control);
-    assert_has_output(sampler, bp::AUDIO, Audio);
+    assert_has_event_input(sampler, builtin_ports::TRIGGER);
+    assert_control_inputs!(sampler,
+        builtin_ports::RATE,
+        builtin_ports::START,
+        builtin_ports::LOOP_ENABLED,
+        builtin_ports::LOOP_START,
+        builtin_ports::LOOP_END,
+    );
+    assert_has_audio_output(sampler, builtin_ports::AUDIO);
 }
 
 #[test]
@@ -286,8 +331,8 @@ fn initialized_registry_contains_note_to_rate_definition() {
         .get(NOTE_TO_RATE)
         .expect("note_to_rate should be built in");
 
-    assert_has_input(note_to_rate, bp::EVENTS, Event);
-    assert_has_output(note_to_rate, bp::RATE, Control);
+    assert_has_event_input(note_to_rate, builtin_ports::EVENTS);
+    assert_has_control_output(note_to_rate, builtin_ports::RATE);
 }
 
 #[test]
@@ -297,13 +342,15 @@ fn initialized_registry_contains_envelope_follower_and_curve_mapper_definitions(
     let follower = registry
         .get(ENVELOPE_FOLLOWER)
         .expect("envelope_follower should be built in");
-    assert_has_input(follower, bp::AUDIO_IN, Audio);
-    assert_has_input(follower, bp::ATTACK, Control);
-    assert_has_input(follower, bp::RELEASE, Control);
-    assert_has_input(follower, bp::AMOUNT, Control);
-    assert_has_input(follower, bp::OFFSET, Control);
-    assert_has_input(follower, bp::INVERT, Control);
-    assert_has_output(follower, bp::VALUE, Control);
+    assert_has_audio_input(follower, builtin_ports::AUDIO_IN);
+    assert_control_inputs!(follower,
+        builtin_ports::ATTACK,
+        builtin_ports::RELEASE,
+        builtin_ports::AMOUNT,
+        builtin_ports::OFFSET,
+        builtin_ports::INVERT,
+    );
+    assert_has_control_output(follower, builtin_ports::VALUE);
 
     let mode = follower
         .parameters()
@@ -325,12 +372,14 @@ fn initialized_registry_contains_envelope_follower_and_curve_mapper_definitions(
     let mapper = registry
         .get(CURVE_MAPPER)
         .expect("curve_mapper should be built in");
-    assert_has_input(mapper, bp::VALUE, Control);
-    assert_has_input(mapper, bp::AMOUNT, Control);
-    assert_has_input(mapper, bp::BIAS, Control);
-    assert_has_input(mapper, bp::SCALE, Control);
-    assert_has_input(mapper, bp::OFFSET, Control);
-    assert_has_output(mapper, bp::VALUE, Control);
+    assert_control_inputs!(mapper,
+        builtin_ports::VALUE,
+        builtin_ports::AMOUNT,
+        builtin_ports::BIAS,
+        builtin_ports::SCALE,
+        builtin_ports::OFFSET,
+    );
+    assert_has_control_output(mapper, builtin_ports::VALUE);
 
     let curve = mapper
         .parameters()
@@ -364,7 +413,7 @@ fn initialized_registry_contains_envelope_follower_and_curve_mapper_definitions(
     assert_eq!(steps.range(), Some((2.0, 128.0)));
 }
 
-fn assert_has_input(definition: &BuiltInModuleDefinition, name: &str, signal_type: SignalType) {
+fn assert_has_input(signal_type: SignalType, definition: &BuiltInModuleDefinition, name: &str) {
     assert!(
         definition
             .inputs()
@@ -391,18 +440,24 @@ fn echo_definition_has_correct_ports() {
         .get(ECHO)
         .expect("echo should be built in");
 
-    assert_has_input(echo, bp::AUDIO_IN_L, Audio);
-    assert_has_input(echo, bp::AUDIO_IN_R, Audio);
-    assert_has_output(echo, bp::AUDIO_OUT_L, Audio);
-    assert_has_output(echo, bp::AUDIO_OUT_R, Audio);
-    assert_has_input(echo, bp::TIME_LEFT_MS, Control);
-    assert_has_input(echo, bp::TIME_RIGHT_MS, Control);
-    assert_has_input(echo, bp::FEEDBACK, Control);
-    assert_has_input(echo, bp::DAMPING_CUTOFF, Control);
-    assert_has_input(echo, bp::WET, Control);
-    assert_has_input(echo, bp::DRY, Control);
-    assert_has_input(echo, bp::SYNC_DIVISION, Control);
-    assert_has_input(echo, bp::PING_PONG, Control);
+    assert_audio_inputs!(echo,
+        builtin_ports::AUDIO_IN_L,
+        builtin_ports::AUDIO_IN_R,
+    );
+    assert_audio_outputs!(echo,
+        builtin_ports::AUDIO_OUT_L,
+        builtin_ports::AUDIO_OUT_R,
+    );
+    assert_control_inputs!(echo,
+        builtin_ports::TIME_LEFT_MS,
+        builtin_ports::TIME_RIGHT_MS,
+        builtin_ports::FEEDBACK,
+        builtin_ports::DAMPING_CUTOFF,
+        builtin_ports::WET,
+        builtin_ports::DRY,
+        builtin_ports::SYNC_DIVISION,
+        builtin_ports::PING_PONG,
+    );
 }
 
 #[test]
@@ -413,18 +468,24 @@ fn reverb_definition_has_correct_ports() {
         .get(REVERB)
         .expect("reverb should be built in");
 
-    assert_has_input(reverb, bp::AUDIO_IN_L, Audio);
-    assert_has_input(reverb, bp::AUDIO_IN_R, Audio);
-    assert_has_output(reverb, bp::AUDIO_OUT_L, Audio);
-    assert_has_output(reverb, bp::AUDIO_OUT_R, Audio);
-    assert_has_input(reverb, bp::DECAY_TIME, Control);
-    assert_has_input(reverb, bp::ROOM_SIZE, Control);
-    assert_has_input(reverb, bp::PRE_DELAY, Control);
-    assert_has_input(reverb, bp::DAMPING, Control);
-    assert_has_input(reverb, bp::DIFFUSION, Control);
-    assert_has_input(reverb, bp::STEREO_WIDTH, Control);
-    assert_has_input(reverb, bp::WET, Control);
-    assert_has_input(reverb, bp::DRY, Control);
+    assert_audio_inputs!(reverb,
+        builtin_ports::AUDIO_IN_L,
+        builtin_ports::AUDIO_IN_R,
+    );
+    assert_audio_outputs!(reverb,
+        builtin_ports::AUDIO_OUT_L,
+        builtin_ports::AUDIO_OUT_R,
+    );
+    assert_control_inputs!(reverb,
+        builtin_ports::DECAY_TIME,
+        builtin_ports::ROOM_SIZE,
+        builtin_ports::PRE_DELAY,
+        builtin_ports::DAMPING,
+        builtin_ports::DIFFUSION,
+        builtin_ports::STEREO_WIDTH,
+        builtin_ports::WET,
+        builtin_ports::DRY,
+    );
 }
 
 #[test]
@@ -513,7 +574,7 @@ fn parameter_metadata_queryable_without_renderer() {
     assert!(oscillator.parameters().is_empty());
 }
 
-fn assert_has_output(definition: &BuiltInModuleDefinition, name: &str, signal_type: SignalType) {
+fn assert_has_output(signal_type: SignalType, definition: &BuiltInModuleDefinition, name: &str) {
     assert!(
         definition
             .outputs()
@@ -542,14 +603,16 @@ fn discovery_can_query_port_and_parameter_metadata_without_constructing_renderer
 
     let osc = registry.get(OSCILLATOR).unwrap();
     assert_eq!(osc.module_type(), OSCILLATOR);
-    assert_eq!(osc.inputs().len(), 1);
-    assert_eq!(osc.inputs()[0].name(), bp::PITCH);
-    assert_eq!(osc.inputs()[0].signal_type(), Control);
-    assert_eq!(osc.inputs()[0].direction(), PortDirection::Input);
-    assert_eq!(osc.outputs().len(), 1);
-    assert_eq!(osc.outputs()[0].name(), bp::AUDIO);
-    assert_eq!(osc.outputs()[0].signal_type(), Audio);
-    assert_eq!(osc.outputs()[0].direction(), PortDirection::Output);
+    let osc_inputs = osc.inputs();
+    let osc_outputs = osc.outputs();
+    assert_eq!(osc_inputs.len(), 1);
+    assert_eq!(osc_inputs[0].name(), builtin_ports::PITCH);
+    assert_eq!(osc_inputs[0].signal_type(), Control);
+    assert_eq!(osc_inputs[0].direction(), PortDirection::Input);
+    assert_eq!(osc_outputs.len(), 1);
+    assert_eq!(osc_outputs[0].name(), builtin_ports::AUDIO);
+    assert_eq!(osc_outputs[0].signal_type(), Audio);
+    assert_eq!(osc_outputs[0].direction(), PortDirection::Output);
     assert!(osc.parameters().is_empty());
 
     let filter = registry.get(FILTER).unwrap();

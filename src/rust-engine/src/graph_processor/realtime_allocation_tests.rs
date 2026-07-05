@@ -1,4 +1,5 @@
 use super::*;
+use crate::builtins::build_definition;
 use crate::builtins::module_types;
 use crate::graph::{builtin_ports, Cable, Graph, ModuleId, ModuleNode, PortRef, SignalType};
 use crate::sample::{LoadedSample, PreparedSamplerAssets};
@@ -27,15 +28,24 @@ fn oscillator_output_graph() -> Graph {
     )
 }
 
+fn gain_module_node(id: &str) -> ModuleNode {
+    let def = build_definition();
+    let mut node = ModuleNode::new(ModuleId::new(id), def.module_type());
+    for port in def.inputs() {
+        node = node.with_input(port.name(), port.signal_type());
+    }
+    for port in def.outputs() {
+        node = node.with_output(port.name(), port.signal_type());
+    }
+    node
+}
+
 fn oscillator_gain_output_graph() -> Graph {
     Graph::new(
         vec![
             ModuleNode::new(ModuleId::new("osc"), module_types::OSCILLATOR)
                 .with_output(builtin_ports::AUDIO, SignalType::Audio),
-            ModuleNode::new(ModuleId::new("gain"), module_types::GAIN)
-                .with_input(builtin_ports::AUDIO_IN, SignalType::Audio)
-                .with_input(builtin_ports::GAIN, SignalType::Control)
-                .with_output(builtin_ports::AUDIO_OUT, SignalType::Audio),
+            gain_module_node("gain"),
             ModuleNode::new(ModuleId::new("out"), module_types::AUDIO_OUTPUT)
                 .with_input(builtin_ports::LEFT, SignalType::Audio)
                 .with_input(builtin_ports::RIGHT, SignalType::Audio),
