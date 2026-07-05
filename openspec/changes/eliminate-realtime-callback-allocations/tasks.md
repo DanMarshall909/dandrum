@@ -16,7 +16,7 @@
 
 - [x] 3.1 Add a prepared audio/control arena sized by maximum block size, compiled buffer count, and maximum voice count.
 - [x] 3.2 Add APIs for clearing accumulation buffers, summing compiled edges, filling default control buffers, and borrowing short-lived input/output slices.
-- [ ] 3.3 Update realtime mono/global rendering to use arena-backed input and output buffers for a minimal oscillator/gain/output patch.
+- [x] 3.3 Update realtime mono/global rendering to use arena-backed input and output buffers for a minimal oscillator/gain/output patch.
 - [ ] 3.4 Expand arena-backed rendering across non-event modules while preserving existing audio behaviour.
 
 ## 4. Module Processing Context

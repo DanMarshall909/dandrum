@@ -27,6 +27,36 @@ fn oscillator_output_graph() -> Graph {
     )
 }
 
+fn oscillator_gain_output_graph() -> Graph {
+    Graph::new(
+        vec![
+            ModuleNode::new(ModuleId::new("osc"), module_types::OSCILLATOR)
+                .with_output(builtin_ports::AUDIO, SignalType::Audio),
+            ModuleNode::new(ModuleId::new("gain"), module_types::GAIN)
+                .with_input(builtin_ports::AUDIO_IN, SignalType::Audio)
+                .with_input(builtin_ports::GAIN, SignalType::Control)
+                .with_output(builtin_ports::AUDIO_OUT, SignalType::Audio),
+            ModuleNode::new(ModuleId::new("out"), module_types::AUDIO_OUTPUT)
+                .with_input(builtin_ports::LEFT, SignalType::Audio)
+                .with_input(builtin_ports::RIGHT, SignalType::Audio),
+        ],
+        vec![
+            Cable::new(
+                PortRef::new(ModuleId::new("osc"), builtin_ports::AUDIO),
+                PortRef::new(ModuleId::new("gain"), builtin_ports::AUDIO_IN),
+            ),
+            Cable::new(
+                PortRef::new(ModuleId::new("gain"), builtin_ports::AUDIO_OUT),
+                PortRef::new(ModuleId::new("out"), builtin_ports::LEFT),
+            ),
+            Cable::new(
+                PortRef::new(ModuleId::new("gain"), builtin_ports::AUDIO_OUT),
+                PortRef::new(ModuleId::new("out"), builtin_ports::RIGHT),
+            ),
+        ],
+    )
+}
+
 fn sampler_output_graph() -> Graph {
     Graph::new(
         vec![
@@ -100,7 +130,7 @@ fn mono_realtime_render_reuses_prepared_capacity_for_repeated_prepared_size_bloc
 }
 
 #[test]
-fn mono_realtime_render_allocation_count_is_observable_before_arena_migration() {
+fn mono_realtime_render_allocation_count_is_zero_for_minimal_arena_path() {
     let graph = oscillator_output_graph();
     let voice_allocation = VoiceAllocation {
         max_voices: 1,
@@ -122,10 +152,35 @@ fn mono_realtime_render_allocation_count_is_observable_before_arena_migration() 
         assert_eq!(processor.render(&mut left, &mut right), 64);
     });
 
-    assert!(
-        allocation_count > 0,
-        "current mono render path should expose callback-time allocations before arena migration"
+    assert!(processor.last_render_used_arena());
+    assert_eq!(allocation_count, 0);
+}
+
+#[test]
+fn oscillator_gain_output_realtime_render_uses_arena_path() {
+    let graph = oscillator_gain_output_graph();
+    let voice_allocation = VoiceAllocation {
+        max_voices: 1,
+        ..VoiceAllocation::default()
+    };
+    let mut processor = RealtimeGraphProcessor::polyphonic_with_sampler_assets_and_max_block_size(
+        graph,
+        48_000.0,
+        &PreparedSamplerAssets::empty(),
+        &voice_allocation,
+        64,
     );
+    let mut left = vec![1.0; 64];
+    let mut right = vec![-1.0; 64];
+
+    let allocation_count = count_current_thread_allocations(|| {
+        assert_eq!(processor.render(&mut left, &mut right), 64);
+    });
+
+    assert!(processor.last_render_used_arena());
+    assert_eq!(allocation_count, 0);
+    assert_eq!(left, vec![0.0; 64]);
+    assert_eq!(right, vec![0.0; 64]);
 }
 
 #[test]

@@ -73,6 +73,59 @@ impl AudioArena {
         &mut self.buffers[range]
     }
 
+    pub(super) fn write_from_input(
+        &mut self,
+        input: BufferId,
+        output: BufferId,
+        frames: usize,
+        mut write_sample: impl FnMut(f32) -> f32,
+    ) {
+        self.assert_valid(input, frames);
+        self.assert_valid(output, frames);
+        let input_start = input.0 * self.frames;
+        let output_start = output.0 * self.frames;
+        for frame in 0..frames {
+            let input_sample = self.buffers[input_start + frame];
+            self.buffers[output_start + frame] = write_sample(input_sample);
+        }
+    }
+
+    pub(super) fn write_from_two_inputs(
+        &mut self,
+        first_input: BufferId,
+        second_input: BufferId,
+        output: BufferId,
+        frames: usize,
+        mut write_sample: impl FnMut(f32, f32) -> f32,
+    ) {
+        self.assert_valid(first_input, frames);
+        self.assert_valid(second_input, frames);
+        self.assert_valid(output, frames);
+        let first_input_start = first_input.0 * self.frames;
+        let second_input_start = second_input.0 * self.frames;
+        let output_start = output.0 * self.frames;
+        for frame in 0..frames {
+            let first = self.buffers[first_input_start + frame];
+            let second = self.buffers[second_input_start + frame];
+            self.buffers[output_start + frame] = write_sample(first, second);
+        }
+    }
+
+    pub(super) fn copy_to_slices(
+        &self,
+        left: BufferId,
+        right: BufferId,
+        frames: usize,
+        left_out: &mut [f32],
+        right_out: &mut [f32],
+    ) {
+        let actual = frames.min(left_out.len()).min(right_out.len());
+        left_out[..actual].copy_from_slice(self.slice(left, actual));
+        right_out[..actual].copy_from_slice(self.slice(right, actual));
+        left_out[actual..frames].fill(0.0);
+        right_out[actual..frames].fill(0.0);
+    }
+
     fn add_slices(source: &[f32], destination: &mut [f32], gain: f32) {
         for (dst, src) in destination.iter_mut().zip(source.iter()) {
             *dst += src * gain;
@@ -156,5 +209,22 @@ mod tests {
         );
 
         assert_eq!(arena.slice(BufferId(1), 4), &[1.0, 1.0, 1.0, 1.0]);
+    }
+
+    #[test]
+    fn prepared_audio_arena_writes_output_from_input_buffers() {
+        let mut arena = AudioArena::new(AudioBufferPlan {
+            buffer_count: 3,
+            max_block_frames: 4,
+            max_voices: 1,
+        });
+        arena.fill(BufferId(0), 4, 0.25);
+        arena.fill(BufferId(1), 4, 2.0);
+
+        arena.write_from_two_inputs(BufferId(0), BufferId(1), BufferId(2), 4, |audio, gain| {
+            audio * gain
+        });
+
+        assert_eq!(arena.slice(BufferId(2), 4), &[0.5, 0.5, 0.5, 0.5]);
     }
 }

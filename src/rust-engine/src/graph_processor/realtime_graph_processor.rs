@@ -1,15 +1,18 @@
 use std::collections::HashMap;
 
 use crate::compiled_patch::{self, CompiledPatch};
+use crate::builtins::module_kind::ModuleKind;
 use crate::graph::Graph;
 use crate::patch::VoiceAllocation;
 use crate::sample::PreparedSamplerAssets;
 use crate::script::ScriptEvent;
 use crate::voice_allocator::VoiceAllocator;
 
+use super::audio_arena::AudioArena;
 use super::block::{process_block_compiled, process_block_compiled_polyphonic};
 use super::outputs::{BlockEvent, ModuleOutputs};
 use super::polyphony::build_polyphonic_states_from_compiled;
+use super::render_plan::{RenderPlan, RenderStep};
 use super::state::PerModuleState;
 
 pub struct RealtimeGraphProcessor {
@@ -20,8 +23,11 @@ pub struct RealtimeGraphProcessor {
     current_frame: u64,
     pending_events: Vec<ScriptEvent>,
     allocator: VoiceAllocator,
+    render_plan: RenderPlan,
+    audio_arena: AudioArena,
     prepared_max_block_size: usize,
     last_render_chunk_count: usize,
+    last_render_used_arena: bool,
     scratch_left: Vec<f32>,
     scratch_right: Vec<f32>,
     scratch_outputs: HashMap<usize, ModuleOutputs>,
@@ -108,6 +114,13 @@ impl RealtimeGraphProcessor {
 
         let prepared_max_block_size = prepared_max_block_size.max(1);
         let module_count = graph.modules().len();
+        let render_plan = RenderPlan::from_compiled_patch(
+            &compiled,
+            prepared_max_block_size,
+            max_voices,
+            prepared_max_block_size,
+        );
+        let audio_arena = AudioArena::new(render_plan.audio_buffers);
 
         Self {
             compiled,
@@ -117,8 +130,11 @@ impl RealtimeGraphProcessor {
             current_frame: 0,
             pending_events: Vec::with_capacity(prepared_max_block_size),
             allocator,
+            render_plan,
+            audio_arena,
             prepared_max_block_size,
             last_render_chunk_count: 0,
+            last_render_used_arena: false,
             scratch_left: Vec::with_capacity(prepared_max_block_size),
             scratch_right: Vec::with_capacity(prepared_max_block_size),
             scratch_outputs: HashMap::with_capacity(module_count),
@@ -149,6 +165,11 @@ impl RealtimeGraphProcessor {
         self.states.len()
     }
 
+    #[cfg(test)]
+    pub fn last_render_used_arena(&self) -> bool {
+        self.last_render_used_arena
+    }
+
     pub fn note_on(&mut self, note: u8, velocity: u8) {
         self.pending_events
             .push(ScriptEvent::NoteOn { note, velocity });
@@ -162,6 +183,7 @@ impl RealtimeGraphProcessor {
         let frames = left.len().min(right.len());
         if frames == 0 {
             self.last_render_chunk_count = 0;
+            self.last_render_used_arena = false;
             return 0;
         }
 
@@ -191,6 +213,13 @@ impl RealtimeGraphProcessor {
         let frames = left.len().min(right.len());
         let block_start = self.current_frame;
         self.current_frame += frames as u64;
+
+        if self.pending_events.is_empty() && self.render_mono_global_arena(left, right, frames) {
+            self.last_render_used_arena = true;
+            return frames;
+        }
+
+        self.last_render_used_arena = false;
 
         let events: Vec<BlockEvent> = self
             .pending_events
@@ -266,6 +295,43 @@ impl RealtimeGraphProcessor {
         frames
     }
 
+    fn render_mono_global_arena(
+        &mut self,
+        left: &mut [f32],
+        right: &mut [f32],
+        frames: usize,
+    ) -> bool {
+        if self.allocator.max_voices() > 1
+            || !self.compiled.voice_node_indices().is_empty()
+            || self.midi_idx.is_some()
+            || self.render_plan.audio_output.is_none()
+            || self.render_plan.global_steps.iter().any(|step| {
+                !matches!(
+                    step.module_kind,
+                    ModuleKind::Oscillator | ModuleKind::Gain | ModuleKind::AudioOutput
+                )
+            })
+        {
+            return false;
+        }
+
+        let steps = self.render_plan.global_steps.as_ref();
+        let arena = &mut self.audio_arena;
+        let states = &mut self.states[0];
+        for step in steps {
+            clear_and_route_arena_inputs(arena, step, frames);
+            process_mono_global_arena_step(arena, states, step, frames);
+        }
+
+        let output = self
+            .render_plan
+            .audio_output
+            .expect("audio output was checked before arena render");
+        self.audio_arena
+            .copy_to_slices(output.left, output.right, frames, left, right);
+        true
+    }
+
     pub fn is_finished(&self) -> bool {
         if !self.pending_events.is_empty() {
             return false;
@@ -287,5 +353,67 @@ impl RealtimeGraphProcessor {
             }
         }
         true
+    }
+}
+
+fn clear_and_route_arena_inputs(arena: &mut AudioArena, step: &RenderStep, frames: usize) {
+    for &buffer in step.input_buffers.iter() {
+        arena.clear(buffer, frames);
+    }
+    for default in step.control_defaults.iter() {
+        arena.fill(default.buffer, frames, default.value);
+    }
+    for &edge in step.incoming_edges.iter() {
+        arena.add_edge(edge, frames);
+    }
+}
+
+fn process_mono_global_arena_step(
+    arena: &mut AudioArena,
+    states: &mut [PerModuleState],
+    step: &RenderStep,
+    frames: usize,
+) {
+    match step.module_kind {
+        ModuleKind::Oscillator => {
+            let Some(&pitch_buffer) = step.input_buffers.first() else {
+                return;
+            };
+            let Some(&audio_buffer) = step.output_buffers.first() else {
+                return;
+            };
+            let (phase, sample_rate) = match &mut states[step.module_index] {
+                PerModuleState::Oscillator { phase, sample_rate } => (phase, *sample_rate),
+                _ => unreachable!(),
+            };
+            arena.write_from_input(pitch_buffer, audio_buffer, frames, |pitch_ratio| {
+                let output = *phase * 2.0 - 1.0;
+                let base_hz = 220.0;
+                let freq = base_hz * pitch_ratio;
+                let phase_inc = freq / sample_rate;
+                *phase += phase_inc;
+                if *phase >= 1.0 {
+                    *phase -= 1.0;
+                }
+                output
+            });
+        }
+        ModuleKind::Gain => {
+            let [audio_input, gain_input] = step.input_buffers.as_ref() else {
+                return;
+            };
+            let Some(&audio_output) = step.output_buffers.first() else {
+                return;
+            };
+            arena.write_from_two_inputs(
+                *audio_input,
+                *gain_input,
+                audio_output,
+                frames,
+                |audio, gain| audio * gain,
+            );
+        }
+        ModuleKind::AudioOutput => {}
+        _ => unreachable!(),
     }
 }
