@@ -56,7 +56,7 @@ pub fn render_offline_compiled(
             out_idx,
             block.start_frame(),
             frames,
-            external_events,
+            &external_events,
             &mut left_buf,
             &mut right_buf,
             &mut all_outputs,
@@ -149,7 +149,7 @@ pub fn render_offline_with_sampler_assets_polyphonic(
             out_idx,
             block.start_frame(),
             frames,
-            external_events,
+            &external_events,
             &mut left_buf,
             &mut right_buf,
         );

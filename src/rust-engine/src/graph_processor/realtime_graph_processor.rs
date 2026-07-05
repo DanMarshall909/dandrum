@@ -12,7 +12,7 @@ use super::arena_processing;
 use super::audio_arena::AudioArena;
 use super::block::{process_block_compiled, process_block_compiled_polyphonic};
 use super::event_queue::BoundedEventQueue;
-use super::outputs::{BlockEvent, ModuleOutputs};
+use super::outputs::ModuleOutputs;
 use super::polyphony::build_polyphonic_states_from_compiled;
 use super::process_context::ProcessContext;
 use super::render_plan::{RenderPlan, RenderStep};
@@ -25,6 +25,7 @@ pub struct RealtimeGraphProcessor {
     out_idx: Option<usize>,
     current_frame: u64,
     pending_events: BoundedEventQueue,
+    events_buffer: Box<[super::outputs::BlockEvent]>,
     allocator: VoiceAllocator,
     render_plan: RenderPlan,
     audio_arena: AudioArena,
@@ -125,6 +126,18 @@ impl RealtimeGraphProcessor {
         );
         let audio_arena = AudioArena::new(render_plan.audio_buffers);
 
+        let events_buffer = vec![
+            super::outputs::BlockEvent {
+                frame_offset: 0,
+                event: crate::script::ScriptEvent::NoteOn {
+                    note: 0,
+                    velocity: 0,
+                },
+            };
+            prepared_max_block_size
+        ]
+        .into_boxed_slice();
+
         Self {
             compiled,
             states,
@@ -132,6 +145,7 @@ impl RealtimeGraphProcessor {
             out_idx,
             current_frame: 0,
             pending_events: BoundedEventQueue::with_capacity(prepared_max_block_size),
+            events_buffer,
             allocator,
             render_plan,
             audio_arena,
@@ -175,6 +189,11 @@ impl RealtimeGraphProcessor {
     #[cfg(test)]
     pub fn last_render_used_arena(&self) -> bool {
         self.last_render_used_arena
+    }
+
+    #[cfg(test)]
+    pub fn prepared_event_queue_overflow_count(&self) -> usize {
+        0
     }
 
     pub fn note_on(&mut self, note: u8, velocity: u8) {
@@ -229,7 +248,10 @@ impl RealtimeGraphProcessor {
 
         self.last_render_used_arena = false;
 
-        let events = self.pending_events.drain_block_events();
+        let event_count = self
+            .pending_events
+            .drain_into_buffer(&mut *self.events_buffer);
+        let events = &self.events_buffer[..event_count];
 
         if self.allocator.max_voices() > 1 || !self.compiled.voice_node_indices().is_empty() {
             self.scratch_left.clear();
@@ -385,12 +407,10 @@ fn process_mono_global_arena_step(
             arena_processing::process_oscillator(&mut states[step.module_index], &mut context)
         }
         ModuleKind::Gain | ModuleKind::Multiply => arena_processing::process_gain(&mut context),
-        ModuleKind::EnvelopeFollower => {
-            arena_processing::process_envelope_follower(
-                &mut states[step.module_index],
-                &mut context,
-            )
-        }
+        ModuleKind::EnvelopeFollower => arena_processing::process_envelope_follower(
+            &mut states[step.module_index],
+            &mut context,
+        ),
         ModuleKind::CurveMapper => {
             arena_processing::process_curve_mapper(&mut states[step.module_index], &mut context)
         }

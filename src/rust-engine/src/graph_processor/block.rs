@@ -7,7 +7,7 @@ use crate::script::ScriptEvent;
 use crate::voice_allocator::VoiceAllocator;
 
 use super::dispatch::process_module;
-use super::input_provider::{compiled_gather_event_inputs, CompiledInputProvider};
+use super::input_provider::{CompiledInputProvider, compiled_gather_event_inputs};
 use super::outputs::{BlockEvent, ModuleOutputs};
 use super::state::PerModuleState;
 
@@ -41,7 +41,7 @@ pub(super) fn process_block_compiled(
     out_idx: Option<usize>,
     block_start_frame: u64,
     frames: usize,
-    incoming_events: Vec<BlockEvent>,
+    incoming_events: &[BlockEvent],
     left_out: &mut Vec<f32>,
     right_out: &mut Vec<f32>,
     all_outputs: &mut HashMap<usize, ModuleOutputs>,
@@ -52,7 +52,7 @@ pub(super) fn process_block_compiled(
         let outputs = ModuleOutputs {
             audio: HashMap::new(),
             control: HashMap::new(),
-            events: incoming_events,
+            events: incoming_events.to_vec(),
             event_ports: HashMap::new(),
         };
         all_outputs.insert(idx, outputs);
@@ -109,13 +109,13 @@ pub(super) fn process_block_compiled_polyphonic(
     out_idx: Option<usize>,
     block_start_frame: u64,
     frames: usize,
-    incoming_events: Vec<BlockEvent>,
+    incoming_events: &[BlockEvent],
     left_out: &mut Vec<f32>,
     right_out: &mut Vec<f32>,
 ) {
     let mut voice_events: Vec<Vec<BlockEvent>> = vec![Vec::new(); allocator.max_voices()];
 
-    for event in &incoming_events {
+    for event in incoming_events {
         if let ScriptEvent::NoteOn { note, velocity } = &event.event {
             if let Some(slot) = allocator.note_on(*note, *velocity) {
                 voice_events[slot].push(event.clone());
@@ -127,7 +127,7 @@ pub(super) fn process_block_compiled_polyphonic(
         .map(|i| allocator.slot(i).filter(|s| s.active).map(|s| s.note))
         .collect();
 
-    for event in &incoming_events {
+    for event in incoming_events {
         if let ScriptEvent::NoteOff { note } = &event.event {
             for (slot_idx, sn) in slot_notes.iter().enumerate() {
                 if *sn == Some(*note) {

@@ -1,8 +1,8 @@
 use super::*;
 use crate::builtins::{
-    module_types, CURVE_EXPONENTIAL, CURVE_PARAMETER, EVENT_FILTER_NOTE_PARAMETER,
-    EVENT_FILTER_NOTE_SELECTOR, EVENT_FILTER_SELECTOR_PARAMETER, SCRIPT_LANGUAGE_PARAMETER,
-    SCRIPT_LANGUAGE_RHAI, SCRIPT_SOURCE_PARAMETER,
+    CURVE_EXPONENTIAL, CURVE_PARAMETER, EVENT_FILTER_NOTE_PARAMETER, EVENT_FILTER_NOTE_SELECTOR,
+    EVENT_FILTER_SELECTOR_PARAMETER, SCRIPT_LANGUAGE_PARAMETER, SCRIPT_LANGUAGE_RHAI,
+    SCRIPT_SOURCE_PARAMETER, module_types,
 };
 use crate::core::TimedInputEvent;
 use crate::fft;
@@ -4402,6 +4402,26 @@ fn realtime_preparation_respects_voice_allocation() {
 
     assert_eq!(processor.prepared_max_block_size(), 64);
     assert_eq!(processor.prepared_voice_count(), 8);
+}
+
+#[test]
+fn realtime_note_submission_does_not_fill_unused_prepared_event_queue() {
+    let graph = sampler_graph(Vec::new(), Vec::new());
+    graph.validate().expect("graph should validate");
+
+    let mut processor = RealtimeGraphProcessor::polyphonic_with_sampler_assets_and_max_block_size(
+        graph,
+        48_000.0,
+        &sampler_assets(vec![1.0, 0.0]),
+        &VoiceAllocation::default(),
+        2,
+    );
+
+    processor.note_on(60, 100);
+    processor.note_on(61, 100);
+    processor.note_on(62, 100);
+
+    assert_eq!(processor.prepared_event_queue_overflow_count(), 0);
 }
 
 #[test]

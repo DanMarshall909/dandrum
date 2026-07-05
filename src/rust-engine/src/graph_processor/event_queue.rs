@@ -46,6 +46,23 @@ impl BoundedEventQueue {
         Ok(())
     }
 
+    pub(super) fn drain_into_buffer(&mut self, dest: &mut [BlockEvent]) -> usize {
+        let count = self.events.len().min(dest.len());
+        for (i, event) in self.events.drain(..count).enumerate() {
+            dest[i] = BlockEvent {
+                frame_offset: 0,
+                event,
+            };
+        }
+        let remaining = self.events.len();
+        self.dropped_events += remaining;
+        self.events.clear();
+        count
+    }
+}
+
+#[cfg(test)]
+impl BoundedEventQueue {
     pub(super) fn drain_block_events(&mut self) -> Vec<BlockEvent> {
         self.events
             .drain(..)
@@ -57,9 +74,81 @@ impl BoundedEventQueue {
     }
 }
 
+impl Default for BoundedEventQueue {
+    fn default() -> Self {
+        Self::with_capacity(64)
+    }
+}
+
+#[cfg(test)]
+pub(super) struct EventWriter<'a> {
+    queue: &'a mut BoundedEventQueue,
+}
+
+#[cfg(test)]
+impl<'a> EventWriter<'a> {
+    pub(super) fn new(queue: &'a mut BoundedEventQueue) -> Self {
+        Self { queue }
+    }
+
+    pub(super) fn write(&mut self, event: ScriptEvent) -> EventQueueResult<()> {
+        self.queue.push(event)
+    }
+
+    #[cfg(test)]
+    pub(super) fn dropped_events(&self) -> usize {
+        self.queue.dropped_events()
+    }
+}
+
+#[cfg(test)]
+pub(super) struct PreparedEventQueues {
+    queues: Box<[BoundedEventQueue]>,
+}
+
+#[cfg(test)]
+impl PreparedEventQueues {
+    pub(super) fn new(queue_count: usize, queue_capacity: usize) -> Self {
+        let mut queues = Vec::with_capacity(queue_count);
+        for _ in 0..queue_count {
+            queues.push(BoundedEventQueue::with_capacity(queue_capacity));
+        }
+        Self {
+            queues: queues.into_boxed_slice(),
+        }
+    }
+
+    pub(super) fn queue(&mut self, id: usize) -> Option<&mut BoundedEventQueue> {
+        self.queues.get_mut(id)
+    }
+
+    pub(super) fn writer(&mut self, id: usize) -> Option<EventWriter<'_>> {
+        self.queues.get_mut(id).map(EventWriter::new)
+    }
+
+    pub(super) fn queue_count(&self) -> usize {
+        self.queues.len()
+    }
+
+    pub(super) fn capacity_per_queue(&self) -> usize {
+        self.queues.first().map_or(0, |q| q.capacity())
+    }
+
+    pub(super) fn revert(&mut self, events: std::collections::HashMap<usize, Vec<ScriptEvent>>) {
+        for (id, events) in events {
+            if let Some(queue) = self.queues.get_mut(id) {
+                for event in events {
+                    let _ = queue.push(event);
+                }
+            }
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::collections::HashMap;
 
     #[test]
     fn bounded_event_queue_reports_overflow_without_growing_capacity() {
@@ -95,5 +184,153 @@ mod tests {
         assert_eq!(events.len(), 2);
         assert_eq!(events[0].frame_offset, 0);
         assert_eq!(events[1].frame_offset, 0);
+    }
+
+    #[test]
+    fn drain_into_buffer_writes_up_to_buffer_capacity_and_reports_overflow() {
+        let mut queue = BoundedEventQueue::with_capacity(4);
+        queue
+            .push(ScriptEvent::NoteOn {
+                note: 60,
+                velocity: 100,
+            })
+            .unwrap();
+        queue
+            .push(ScriptEvent::NoteOn {
+                note: 61,
+                velocity: 90,
+            })
+            .unwrap();
+        queue
+            .push(ScriptEvent::NoteOn {
+                note: 62,
+                velocity: 80,
+            })
+            .unwrap();
+
+        let default = BlockEvent {
+            frame_offset: 0,
+            event: ScriptEvent::NoteOn {
+                note: 0,
+                velocity: 0,
+            },
+        };
+        let mut buf = vec![default; 2];
+        let count = queue.drain_into_buffer(&mut buf);
+
+        assert_eq!(count, 2);
+        assert_eq!(
+            buf[0].event,
+            ScriptEvent::NoteOn {
+                note: 60,
+                velocity: 100
+            }
+        );
+        assert_eq!(
+            buf[1].event,
+            ScriptEvent::NoteOn {
+                note: 61,
+                velocity: 90
+            }
+        );
+        assert!(queue.is_empty());
+        assert_eq!(queue.dropped_events(), 1);
+    }
+
+    #[test]
+    fn drain_into_buffer_handles_empty_queue() {
+        let mut queue = BoundedEventQueue::with_capacity(4);
+        let default = BlockEvent {
+            frame_offset: 0,
+            event: ScriptEvent::NoteOn {
+                note: 0,
+                velocity: 0,
+            },
+        };
+        let mut buf = vec![default; 2];
+        let count = queue.drain_into_buffer(&mut buf);
+
+        assert_eq!(count, 0);
+        assert_eq!(queue.dropped_events(), 0);
+    }
+
+    #[test]
+    fn event_writer_writes_to_underlying_queue_and_tracks_dropped() {
+        let mut queue = BoundedEventQueue::with_capacity(2);
+        let mut writer = EventWriter::new(&mut queue);
+
+        assert_eq!(
+            writer.write(ScriptEvent::NoteOn {
+                note: 60,
+                velocity: 100
+            }),
+            Ok(())
+        );
+        assert_eq!(writer.write(ScriptEvent::NoteOff { note: 60 }), Ok(()));
+        assert_eq!(
+            writer.write(ScriptEvent::NoteOn {
+                note: 62,
+                velocity: 90
+            }),
+            Err(EventQueueOverflow { dropped_events: 1 })
+        );
+        assert_eq!(writer.dropped_events(), 1);
+    }
+
+    #[test]
+    fn prepared_event_queues_allocates_requested_queues() {
+        let mut queues = PreparedEventQueues::new(3, 8);
+
+        assert_eq!(queues.queue_count(), 3);
+        assert_eq!(queues.capacity_per_queue(), 8);
+        assert!(queues.queue(0).is_some());
+        assert!(queues.queue(1).is_some());
+        assert!(queues.queue(2).is_some());
+        assert!(queues.queue(3).is_none());
+    }
+
+    #[test]
+    fn prepared_event_queues_writer_routes_to_correct_queue() {
+        let mut queues = PreparedEventQueues::new(2, 4);
+        {
+            let mut writer = queues.writer(1).expect("queue 1 should exist");
+            writer
+                .write(ScriptEvent::NoteOn {
+                    note: 60,
+                    velocity: 100,
+                })
+                .unwrap();
+        }
+        assert!(!queues.queue(1).unwrap().is_empty());
+        assert!(queues.queue(0).unwrap().is_empty());
+    }
+
+    #[test]
+    fn prepared_event_queues_revert_restores_events() {
+        let mut queues = PreparedEventQueues::new(2, 8);
+        {
+            let mut writer = queues.writer(0).unwrap();
+            writer
+                .write(ScriptEvent::NoteOn {
+                    note: 60,
+                    velocity: 100,
+                })
+                .unwrap();
+        }
+
+        let mut events = HashMap::new();
+        events.insert(0, vec![ScriptEvent::NoteOff { note: 60 }]);
+        queues.revert(events);
+
+        let default = BlockEvent {
+            frame_offset: 0,
+            event: ScriptEvent::NoteOn {
+                note: 0,
+                velocity: 0,
+            },
+        };
+        let mut buf = vec![default; 4];
+        let count = queues.queue(0).unwrap().drain_into_buffer(&mut buf);
+        assert_eq!(count, 2);
     }
 }
