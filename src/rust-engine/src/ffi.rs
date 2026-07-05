@@ -2,6 +2,22 @@ use std::path::Path;
 
 use crate::realtime;
 
+macro_rules! mut_or {
+    ($ptr:expr, $binding:ident, $ret:expr) => {
+        let Some($binding) = (unsafe { $ptr.as_mut() }) else {
+            return $ret;
+        };
+    };
+}
+
+macro_rules! ref_or {
+    ($ptr:expr, $binding:ident, $ret:expr) => {
+        let Some($binding) = (unsafe { $ptr.as_ref() }) else {
+            return $ret;
+        };
+    };
+}
+
 pub struct DandrumRealtimeEventQueue {
     queue: realtime::RealtimeEventQueue,
 }
@@ -23,9 +39,7 @@ pub unsafe extern "C" fn dandrum_engine_load_patch(
     engine: *mut crate::synth::DandrumEngine,
     path: *const std::ffi::c_char,
 ) -> bool {
-    let Some(engine) = (unsafe { engine.as_mut() }) else {
-        return false;
-    };
+    mut_or!(engine, engine, false);
 
     if path.is_null() {
         return false;
@@ -44,9 +58,7 @@ pub unsafe extern "C" fn dandrum_engine_prepare(
     engine: *mut crate::synth::DandrumEngine,
     sample_rate: f32,
 ) {
-    let Some(engine) = (unsafe { engine.as_mut() }) else {
-        return;
-    };
+    mut_or!(engine, engine, ());
 
     engine.prepare(sample_rate);
 }
@@ -57,9 +69,7 @@ pub unsafe extern "C" fn dandrum_engine_prepare_realtime(
     sample_rate: f32,
     max_block_size: usize,
 ) {
-    let Some(engine) = (unsafe { engine.as_mut() }) else {
-        return;
-    };
+    mut_or!(engine, engine, ());
 
     engine.prepare_realtime(sample_rate, max_block_size);
 }
@@ -70,9 +80,7 @@ pub unsafe extern "C" fn dandrum_engine_note_on(
     note: u8,
     velocity: u8,
 ) {
-    let Some(engine) = (unsafe { engine.as_mut() }) else {
-        return;
-    };
+    mut_or!(engine, engine, ());
 
     engine.note_on(note, velocity);
 }
@@ -82,9 +90,7 @@ pub unsafe extern "C" fn dandrum_engine_note_off(
     engine: *mut crate::synth::DandrumEngine,
     note: u8,
 ) {
-    let Some(engine) = (unsafe { engine.as_mut() }) else {
-        return;
-    };
+    mut_or!(engine, engine, ());
 
     engine.note_off(note);
 }
@@ -96,9 +102,7 @@ pub unsafe extern "C" fn dandrum_engine_render(
     right: *mut f32,
     num_samples: usize,
 ) -> usize {
-    let Some(engine) = (unsafe { engine.as_mut() }) else {
-        return 0;
-    };
+    mut_or!(engine, engine, 0);
 
     if left.is_null() || right.is_null() {
         return 0;
@@ -114,9 +118,7 @@ pub unsafe extern "C" fn dandrum_engine_render(
 pub unsafe extern "C" fn dandrum_engine_is_finished(
     engine: *const crate::synth::DandrumEngine,
 ) -> bool {
-    let Some(engine) = (unsafe { engine.as_ref() }) else {
-        return true;
-    };
+    ref_or!(engine, engine, true);
 
     engine.is_finished()
 }
@@ -160,9 +162,7 @@ pub unsafe extern "C" fn dandrum_realtime_event_queue_note_off(
 pub unsafe extern "C" fn dandrum_realtime_event_queue_dropped_count(
     queue: *const DandrumRealtimeEventQueue,
 ) -> usize {
-    let Some(queue) = (unsafe { queue.as_ref() }) else {
-        return 0;
-    };
+    ref_or!(queue, queue, 0);
 
     queue.queue.dropped_events()
 }
@@ -171,9 +171,7 @@ fn submit_realtime_queue_event(
     queue: *mut DandrumRealtimeEventQueue,
     event: realtime::RealtimeEvent,
 ) -> u8 {
-    let Some(queue) = (unsafe { queue.as_mut() }) else {
-        return 1;
-    };
+    mut_or!(queue, queue, 1);
 
     match queue.queue.submit(event) {
         realtime::RealtimeEventSubmitStatus::Accepted => 0,

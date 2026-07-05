@@ -1,7 +1,7 @@
 use std::collections::{BTreeMap, HashMap};
-
+use crate::graph:: builtin_ports::*;
+use ModuleKind::*;
 use crate::builtins::module_kind::ModuleKind;
-use crate::graph::builtin_ports;
 
 use super::ModuleInputProvider;
 use super::outputs::{BlockEvent, ModuleOutputs};
@@ -30,486 +30,141 @@ pub(super) fn process_module(
     frames: usize,
     block_start_frame: u64,
 ) -> ModuleOutputs {
+    let audio = |port| input_provider.sum_audio_input(module_idx, port, all_outputs, frames);
+    let mod_ctrl = |port| input_provider.sum_control_input(module_idx, port, all_outputs, frames);
+    let ctrl = |port| {
+        input_provider.control_input_or_default(
+            module_idx,
+            port,
+            all_outputs,
+            frames,
+            default_control(module_kind, port),
+        )
+    };
+
     match module_kind {
-        ModuleKind::Oscillator => {
-            let pitch_in = input_provider.control_input_or_default(
-                module_idx,
-                builtin_ports::PITCH,
-                all_outputs,
-                frames,
-                default_control(ModuleKind::Oscillator, builtin_ports::PITCH),
-            );
-            process_oscillator(&mut states[module_idx], &pitch_in, frames)
+        Oscillator => {
+            process_oscillator(&mut states[module_idx], &ctrl(PITCH), frames)
         }
-        ModuleKind::Adsr => {
-            let attack_in = input_provider.sum_control_input(
-                module_idx,
-                builtin_ports::ATTACK,
-                all_outputs,
-                frames,
-            );
-            let decay_in = input_provider.sum_control_input(
-                module_idx,
-                builtin_ports::DECAY,
-                all_outputs,
-                frames,
-            );
-            let sustain_in = input_provider.sum_control_input(
-                module_idx,
-                builtin_ports::SUSTAIN,
-                all_outputs,
-                frames,
-            );
-            let release_in = input_provider.sum_control_input(
-                module_idx,
-                builtin_ports::RELEASE,
-                all_outputs,
-                frames,
-            );
+        Adsr => {
             process_adsr(
                 &mut states[module_idx],
                 events_in,
-                &attack_in,
-                &decay_in,
-                &sustain_in,
-                &release_in,
+                &mod_ctrl(ATTACK),
+                &mod_ctrl(DECAY),
+                &mod_ctrl(SUSTAIN),
+                &mod_ctrl(RELEASE),
                 block_start_frame,
                 frames,
             )
         }
-        ModuleKind::Gain => {
-            let audio_in = input_provider.sum_audio_input(
-                module_idx,
-                builtin_ports::AUDIO_IN,
-                all_outputs,
-                frames,
-            );
-            let gain_in = input_provider.sum_control_input(
-                module_idx,
-                builtin_ports::GAIN,
-                all_outputs,
-                frames,
-            );
-            process_vca(audio_in, gain_in)
+        Gain => {
+            process_vca(audio(AUDIO_IN), mod_ctrl(GAIN))
         }
-        ModuleKind::Sampler => {
-            let rate_in = input_provider.control_input_or_default(
-                module_idx,
-                builtin_ports::RATE,
-                all_outputs,
-                frames,
-                default_control(ModuleKind::Sampler, builtin_ports::RATE),
-            );
-            let start_in = input_provider.sum_control_input(
-                module_idx,
-                builtin_ports::START,
-                all_outputs,
-                frames,
-            );
-            let loop_enabled_in = input_provider.sum_control_input(
-                module_idx,
-                builtin_ports::LOOP_ENABLED,
-                all_outputs,
-                frames,
-            );
-            let loop_start_in = input_provider.sum_control_input(
-                module_idx,
-                builtin_ports::LOOP_START,
-                all_outputs,
-                frames,
-            );
-            let loop_end_in = input_provider.sum_control_input(
-                module_idx,
-                builtin_ports::LOOP_END,
-                all_outputs,
-                frames,
-            );
+        Sampler => {
             process_sampler(
                 &mut states[module_idx],
                 events_in,
-                &rate_in,
-                &start_in,
-                &loop_enabled_in,
-                &loop_start_in,
-                &loop_end_in,
+                &ctrl(RATE),
+                &mod_ctrl(START),
+                &mod_ctrl(LOOP_ENABLED),
+                &mod_ctrl(LOOP_START),
+                &mod_ctrl(LOOP_END),
                 frames,
             )
         }
-        ModuleKind::NoteToRate => process_note_to_rate(&mut states[module_idx], events_in, frames),
-        ModuleKind::EventFilter => process_event_filter(&mut states[module_idx], events_in),
-        ModuleKind::EnvelopeFollower => {
-            let audio_in = input_provider.sum_audio_input(
-                module_idx,
-                builtin_ports::AUDIO_IN,
-                all_outputs,
-                frames,
-            );
-            let attack_in = input_provider.control_input_or_default(
-                module_idx,
-                builtin_ports::ATTACK,
-                all_outputs,
-                frames,
-                default_control(ModuleKind::EnvelopeFollower, builtin_ports::ATTACK),
-            );
-            let release_in = input_provider.control_input_or_default(
-                module_idx,
-                builtin_ports::RELEASE,
-                all_outputs,
-                frames,
-                default_control(ModuleKind::EnvelopeFollower, builtin_ports::RELEASE),
-            );
-            let amount_in = input_provider.control_input_or_default(
-                module_idx,
-                builtin_ports::AMOUNT,
-                all_outputs,
-                frames,
-                default_control(ModuleKind::EnvelopeFollower, builtin_ports::AMOUNT),
-            );
-            let offset_in = input_provider.control_input_or_default(
-                module_idx,
-                builtin_ports::OFFSET,
-                all_outputs,
-                frames,
-                default_control(ModuleKind::EnvelopeFollower, builtin_ports::OFFSET),
-            );
-            let invert_in = input_provider.control_input_or_default(
-                module_idx,
-                builtin_ports::INVERT,
-                all_outputs,
-                frames,
-                default_control(ModuleKind::EnvelopeFollower, builtin_ports::INVERT),
-            );
+        NoteToRate => process_note_to_rate(&mut states[module_idx], events_in, frames),
+        EventFilter => process_event_filter(&mut states[module_idx], events_in),
+        EnvelopeFollower => {
             process_envelope_follower(
                 &mut states[module_idx],
-                &audio_in,
-                &attack_in,
-                &release_in,
-                &amount_in,
-                &offset_in,
-                &invert_in,
+                &audio(AUDIO_IN),
+                &ctrl(ATTACK),
+                &ctrl(RELEASE),
+                &ctrl(AMOUNT),
+                &ctrl(OFFSET),
+                &ctrl(INVERT),
                 frames,
             )
         }
-        ModuleKind::CurveMapper => {
-            let value_in = input_provider.sum_control_input(
-                module_idx,
-                builtin_ports::VALUE,
-                all_outputs,
-                frames,
-            );
-            let amount_in = input_provider.control_input_or_default(
-                module_idx,
-                builtin_ports::AMOUNT,
-                all_outputs,
-                frames,
-                default_control(ModuleKind::CurveMapper, builtin_ports::AMOUNT),
-            );
-            let bias_in = input_provider.control_input_or_default(
-                module_idx,
-                builtin_ports::BIAS,
-                all_outputs,
-                frames,
-                default_control(ModuleKind::CurveMapper, builtin_ports::BIAS),
-            );
-            let scale_in = input_provider.control_input_or_default(
-                module_idx,
-                builtin_ports::SCALE,
-                all_outputs,
-                frames,
-                default_control(ModuleKind::CurveMapper, builtin_ports::SCALE),
-            );
-            let offset_in = input_provider.control_input_or_default(
-                module_idx,
-                builtin_ports::OFFSET,
-                all_outputs,
-                frames,
-                default_control(ModuleKind::CurveMapper, builtin_ports::OFFSET),
-            );
+        CurveMapper => {
             process_curve_mapper(
                 &mut states[module_idx],
-                &value_in,
-                &amount_in,
-                &bias_in,
-                &scale_in,
-                &offset_in,
+                &mod_ctrl(VALUE),
+                &ctrl(AMOUNT),
+                &ctrl(BIAS),
+                &ctrl(SCALE),
+                &ctrl(OFFSET),
                 frames,
             )
         }
-        ModuleKind::AudioMixer => {
-            let mix = input_provider.sum_audio_input(
-                module_idx,
-                builtin_ports::INPUTS,
-                all_outputs,
-                frames,
-            );
+        AudioMixer => {
+            let mix = audio(INPUTS);
             let mut outputs = ModuleOutputs::empty();
-            outputs.audio.insert(builtin_ports::MIX.to_string(), mix);
+            outputs.audio.insert(MIX.to_string(), mix);
             outputs
         }
-        ModuleKind::AudioOutput => {
-            let left = input_provider.sum_audio_input(
-                module_idx,
-                builtin_ports::LEFT,
-                all_outputs,
-                frames,
-            );
-            let right = input_provider.sum_audio_input(
-                module_idx,
-                builtin_ports::RIGHT,
-                all_outputs,
-                frames,
-            );
+        AudioOutput => {
+            let left = audio(LEFT);
+            let right = audio(RIGHT);
             let mut outputs = ModuleOutputs::empty();
-            outputs.audio.insert(builtin_ports::LEFT.to_string(), left);
+            outputs.audio.insert(LEFT.to_string(), left);
             outputs
                 .audio
-                .insert(builtin_ports::RIGHT.to_string(), right);
+                .insert(RIGHT.to_string(), right);
             outputs
         }
-        ModuleKind::DynamicsProcessor => {
-            let audio_in = input_provider.sum_audio_input(
-                module_idx,
-                builtin_ports::AUDIO_IN,
-                all_outputs,
-                frames,
-            );
-            let sidechain_in = input_provider.sum_control_input(
-                module_idx,
-                builtin_ports::SIDECHAIN_IN,
-                all_outputs,
-                frames,
-            );
-            let threshold_in = input_provider.control_input_or_default(
-                module_idx,
-                builtin_ports::THRESHOLD,
-                all_outputs,
-                frames,
-                default_control(ModuleKind::DynamicsProcessor, builtin_ports::THRESHOLD),
-            );
-            let below_ratio_in = input_provider.control_input_or_default(
-                module_idx,
-                builtin_ports::BELOW_RATIO,
-                all_outputs,
-                frames,
-                default_control(ModuleKind::DynamicsProcessor, builtin_ports::BELOW_RATIO),
-            );
-            let above_ratio_in = input_provider.control_input_or_default(
-                module_idx,
-                builtin_ports::ABOVE_RATIO,
-                all_outputs,
-                frames,
-                default_control(ModuleKind::DynamicsProcessor, builtin_ports::ABOVE_RATIO),
-            );
-            let attack_in = input_provider.control_input_or_default(
-                module_idx,
-                builtin_ports::ATTACK,
-                all_outputs,
-                frames,
-                default_control(ModuleKind::DynamicsProcessor, builtin_ports::ATTACK),
-            );
-            let release_in = input_provider.control_input_or_default(
-                module_idx,
-                builtin_ports::RELEASE,
-                all_outputs,
-                frames,
-                default_control(ModuleKind::DynamicsProcessor, builtin_ports::RELEASE),
-            );
-            let knee_in = input_provider.control_input_or_default(
-                module_idx,
-                builtin_ports::KNEE,
-                all_outputs,
-                frames,
-                default_control(ModuleKind::DynamicsProcessor, builtin_ports::KNEE),
-            );
-            let makeup_in = input_provider.control_input_or_default(
-                module_idx,
-                builtin_ports::MAKEUP_GAIN,
-                all_outputs,
-                frames,
-                default_control(ModuleKind::DynamicsProcessor, builtin_ports::MAKEUP_GAIN),
-            );
-            let attack_gain_in = input_provider.control_input_or_default(
-                module_idx,
-                builtin_ports::ATTACK_GAIN,
-                all_outputs,
-                frames,
-                default_control(ModuleKind::DynamicsProcessor, builtin_ports::ATTACK_GAIN),
-            );
-            let sustain_gain_in = input_provider.control_input_or_default(
-                module_idx,
-                builtin_ports::SUSTAIN_GAIN,
-                all_outputs,
-                frames,
-                default_control(ModuleKind::DynamicsProcessor, builtin_ports::SUSTAIN_GAIN),
-            );
+        DynamicsProcessor => {
+            let audio_in = audio(AUDIO_IN);
             process_dynamics_processor(
                 &mut states[module_idx],
                 &audio_in,
-                &sidechain_in,
-                &threshold_in,
-                &below_ratio_in,
-                &above_ratio_in,
-                &attack_in,
-                &release_in,
-                &knee_in,
-                &makeup_in,
-                &attack_gain_in,
-                &sustain_gain_in,
+                &mod_ctrl(SIDECHAIN_IN),
+                &ctrl(THRESHOLD),
+                &ctrl(BELOW_RATIO),
+                &ctrl(ABOVE_RATIO),
+                &ctrl(ATTACK),
+                &ctrl(RELEASE),
+                &ctrl(KNEE),
+                &ctrl(MAKEUP_GAIN),
+                &ctrl(ATTACK_GAIN),
+                &ctrl(SUSTAIN_GAIN),
                 frames,
             )
         }
-        ModuleKind::Filter => {
-            let audio_in = input_provider.sum_audio_input(
-                module_idx,
-                builtin_ports::AUDIO_IN,
-                all_outputs,
-                frames,
-            );
-            let cutoff_in = input_provider.control_input_or_default(
-                module_idx,
-                builtin_ports::CUTOFF,
-                all_outputs,
-                frames,
-                default_control(ModuleKind::Filter, builtin_ports::CUTOFF),
-            );
-            let resonance_in = input_provider.control_input_or_default(
-                module_idx,
-                builtin_ports::RESONANCE,
-                all_outputs,
-                frames,
-                default_control(ModuleKind::Filter, builtin_ports::RESONANCE),
-            );
-            let gain_in = input_provider.control_input_or_default(
-                module_idx,
-                builtin_ports::GAIN,
-                all_outputs,
-                frames,
-                default_control(ModuleKind::Filter, builtin_ports::GAIN),
-            );
+        Filter => {
+            let audio_in = audio(AUDIO_IN);
             process_filter(
                 &mut states[module_idx],
                 &audio_in,
-                &cutoff_in,
-                &resonance_in,
-                &gain_in,
+                &ctrl(CUTOFF),
+                &ctrl(RESONANCE),
+                &ctrl(GAIN),
                 frames,
             )
         }
-        ModuleKind::Saturator => {
-            let audio_in = input_provider.sum_audio_input(
-                module_idx,
-                builtin_ports::AUDIO_IN,
-                all_outputs,
-                frames,
-            );
-            let drive_in = input_provider.control_input_or_default(
-                module_idx,
-                builtin_ports::DRIVE,
-                all_outputs,
-                frames,
-                default_control(ModuleKind::Saturator, builtin_ports::DRIVE),
-            );
-            let bias_in = input_provider.control_input_or_default(
-                module_idx,
-                builtin_ports::BIAS,
-                all_outputs,
-                frames,
-                default_control(ModuleKind::Saturator, builtin_ports::BIAS),
-            );
-            let curve_select_in = input_provider.control_input_or_default(
-                module_idx,
-                builtin_ports::CURVE_SELECT,
-                all_outputs,
-                frames,
-                default_control(ModuleKind::Saturator, builtin_ports::CURVE_SELECT),
-            );
+        Saturator => {
+            let audio_in = audio(AUDIO_IN);
             process_saturator(
                 &mut states[module_idx],
                 &audio_in,
-                &drive_in,
-                &bias_in,
-                &curve_select_in,
+                &ctrl(DRIVE),
+                &ctrl(BIAS),
+                &ctrl(CURVE_SELECT),
                 frames,
             )
         }
-        ModuleKind::Convolution => {
-            let audio_in = input_provider.sum_audio_input(
-                module_idx,
-                builtin_ports::AUDIO_IN,
-                all_outputs,
-                frames,
-            );
-            let mix_in = input_provider.control_input_or_default(
-                module_idx,
-                builtin_ports::MIX,
-                all_outputs,
-                frames,
-                default_control(ModuleKind::Convolution, builtin_ports::MIX),
-            );
-            process_convolution(&mut states[module_idx], &audio_in, &mix_in, frames)
+        Convolution => {
+            let audio_in = audio(AUDIO_IN);
+            process_convolution(&mut states[module_idx], &audio_in, &ctrl(MIX), frames)
         }
-        ModuleKind::Echo => {
-            let audio_in_l = input_provider.sum_audio_input(
-                module_idx,
-                builtin_ports::AUDIO_IN_L,
-                all_outputs,
-                frames,
-            );
-            let audio_in_r = input_provider.sum_audio_input(
-                module_idx,
-                builtin_ports::AUDIO_IN_R,
-                all_outputs,
-                frames,
-            );
-            let feedback = input_provider.control_input_or_default(
-                module_idx,
-                builtin_ports::FEEDBACK,
-                all_outputs,
-                frames,
-                default_control(ModuleKind::Echo, builtin_ports::FEEDBACK),
-            );
-            let damping = input_provider.control_input_or_default(
-                module_idx,
-                builtin_ports::DAMPING_CUTOFF,
-                all_outputs,
-                frames,
-                default_control(ModuleKind::Echo, builtin_ports::DAMPING_CUTOFF),
-            );
-            let wet = input_provider.control_input_or_default(
-                module_idx,
-                builtin_ports::WET,
-                all_outputs,
-                frames,
-                default_control(ModuleKind::Echo, builtin_ports::WET),
-            );
-            let dry = input_provider.control_input_or_default(
-                module_idx,
-                builtin_ports::DRY,
-                all_outputs,
-                frames,
-                default_control(ModuleKind::Echo, builtin_ports::DRY),
-            );
-            let time_l = input_provider.control_input_or_default(
-                module_idx,
-                builtin_ports::TIME_LEFT_MS,
-                all_outputs,
-                frames,
-                default_control(ModuleKind::Echo, builtin_ports::TIME_LEFT_MS),
-            );
-            let time_r = input_provider.control_input_or_default(
-                module_idx,
-                builtin_ports::TIME_RIGHT_MS,
-                all_outputs,
-                frames,
-                default_control(ModuleKind::Echo, builtin_ports::TIME_RIGHT_MS),
-            );
-            let ping_pong = input_provider.control_input_or_default(
-                module_idx,
-                builtin_ports::PING_PONG,
-                all_outputs,
-                frames,
-                default_control(ModuleKind::Echo, builtin_ports::PING_PONG),
-            );
+        Echo => {
+            let audio_in_l = audio(AUDIO_IN_L);
+            let audio_in_r = audio(AUDIO_IN_R);
+            let feedback = ctrl(FEEDBACK);
+            let damping = ctrl(DAMPING_CUTOFF);
+            let wet = ctrl(WET);
+            let dry = ctrl(DRY);
             process_echo(
                 &mut states[module_idx],
                 &audio_in_l,
@@ -519,82 +174,23 @@ pub(super) fn process_module(
                     damping: &damping,
                     wet: &wet,
                     dry: &dry,
-                    time_l: &time_l,
-                    time_r: &time_r,
-                    ping_pong: &ping_pong,
+                    time_l: &ctrl(TIME_LEFT_MS),
+                    time_r: &ctrl(TIME_RIGHT_MS),
+                    ping_pong: &ctrl(PING_PONG),
                 },
                 frames,
             )
         }
-        ModuleKind::Reverb => {
-            let audio_in_l = input_provider.sum_audio_input(
-                module_idx,
-                builtin_ports::AUDIO_IN_L,
-                all_outputs,
-                frames,
-            );
-            let audio_in_r = input_provider.sum_audio_input(
-                module_idx,
-                builtin_ports::AUDIO_IN_R,
-                all_outputs,
-                frames,
-            );
-            let decay_time = input_provider.control_input_or_default(
-                module_idx,
-                builtin_ports::DECAY_TIME,
-                all_outputs,
-                frames,
-                default_control(ModuleKind::Reverb, builtin_ports::DECAY_TIME),
-            );
-            let room_size = input_provider.control_input_or_default(
-                module_idx,
-                builtin_ports::ROOM_SIZE,
-                all_outputs,
-                frames,
-                default_control(ModuleKind::Reverb, builtin_ports::ROOM_SIZE),
-            );
-            let damping = input_provider.control_input_or_default(
-                module_idx,
-                builtin_ports::DAMPING,
-                all_outputs,
-                frames,
-                default_control(ModuleKind::Reverb, builtin_ports::DAMPING),
-            );
-            let diffusion = input_provider.control_input_or_default(
-                module_idx,
-                builtin_ports::DIFFUSION,
-                all_outputs,
-                frames,
-                default_control(ModuleKind::Reverb, builtin_ports::DIFFUSION),
-            );
-            let wet = input_provider.control_input_or_default(
-                module_idx,
-                builtin_ports::WET,
-                all_outputs,
-                frames,
-                default_control(ModuleKind::Reverb, builtin_ports::WET),
-            );
-            let dry = input_provider.control_input_or_default(
-                module_idx,
-                builtin_ports::DRY,
-                all_outputs,
-                frames,
-                default_control(ModuleKind::Reverb, builtin_ports::DRY),
-            );
-            let pre_delay = input_provider.control_input_or_default(
-                module_idx,
-                builtin_ports::PRE_DELAY,
-                all_outputs,
-                frames,
-                default_control(ModuleKind::Reverb, builtin_ports::PRE_DELAY),
-            );
-            let stereo_width = input_provider.control_input_or_default(
-                module_idx,
-                builtin_ports::STEREO_WIDTH,
-                all_outputs,
-                frames,
-                default_control(ModuleKind::Reverb, builtin_ports::STEREO_WIDTH),
-            );
+        Reverb => {
+            let audio_in_l = audio(AUDIO_IN_L);
+            let audio_in_r = audio(AUDIO_IN_R);
+            let decay_time = ctrl(DECAY_TIME);
+            let room_size = ctrl(ROOM_SIZE);
+            let damping = ctrl(DAMPING);
+            let diffusion = ctrl(DIFFUSION);
+            let wet = ctrl(WET);
+            let dry = ctrl(DRY);
+            let stereo_width = ctrl(STEREO_WIDTH);
             process_reverb(
                 &mut states[module_idx],
                 &audio_in_l,
@@ -606,78 +202,37 @@ pub(super) fn process_module(
                     diffusion: &diffusion,
                     wet: &wet,
                     dry: &dry,
-                    pre_delay: &pre_delay,
+                    pre_delay: &ctrl(PRE_DELAY),
                     stereo_width: &stereo_width,
                 },
                 frames,
             )
         }
-        ModuleKind::FrequencySplitter => {
-            let audio_in = input_provider.sum_audio_input(
-                module_idx,
-                builtin_ports::AUDIO_IN,
-                all_outputs,
-                frames,
-            );
-            let crossover_hz_in = input_provider.control_input_or_default(
-                module_idx,
-                builtin_ports::CROSSOVER_HZ,
-                all_outputs,
-                frames,
-                default_control(ModuleKind::FrequencySplitter, builtin_ports::CROSSOVER_HZ),
-            );
-            process_frequency_splitter(&mut states[module_idx], &audio_in, &crossover_hz_in, frames)
+        FrequencySplitter => {
+            let audio_in = audio(AUDIO_IN);
+            process_frequency_splitter(&mut states[module_idx], &audio_in, &ctrl(CROSSOVER_HZ), frames)
         }
-        ModuleKind::SpectralProcessor => {
-            let audio_in = input_provider.sum_audio_input(
-                module_idx,
-                builtin_ports::AUDIO_IN,
-                all_outputs,
-                frames,
-            );
-            let threshold_in = input_provider.control_input_or_default(
-                module_idx,
-                builtin_ports::THRESHOLD,
-                all_outputs,
-                frames,
-                default_control(ModuleKind::SpectralProcessor, builtin_ports::THRESHOLD),
-            );
-            let mix_in = input_provider.control_input_or_default(
-                module_idx,
-                builtin_ports::MIX,
-                all_outputs,
-                frames,
-                default_control(ModuleKind::SpectralProcessor, builtin_ports::MIX),
-            );
+        SpectralProcessor => {
+            let audio_in = audio(AUDIO_IN);
             process_spectral_processor(
                 &mut states[module_idx],
                 &audio_in,
-                &threshold_in,
-                &mix_in,
+                &ctrl(THRESHOLD),
+                &ctrl(MIX),
                 frames,
             )
         }
-        ModuleKind::Noise => process_noise(&mut states[module_idx], frames),
-        ModuleKind::Impulse => process_impulse(&mut states[module_idx], events_in, frames),
-        ModuleKind::Multiply => {
-            let a = input_provider.sum_audio_input(
-                module_idx,
-                builtin_ports::AUDIO_IN,
-                all_outputs,
-                frames,
-            );
-            let b = input_provider.sum_audio_input(
-                module_idx,
-                builtin_ports::GAIN,
-                all_outputs,
-                frames,
-            );
+        Noise => process_noise(&mut states[module_idx], frames),
+        Impulse => process_impulse(&mut states[module_idx], events_in, frames),
+        Multiply => {
+            let a = audio(AUDIO_IN);
+            let b = audio(GAIN);
             process_multiply(a, b)
         }
-        ModuleKind::NoteToControl => {
+        NoteToControl => {
             process_note_to_control(&mut states[module_idx], events_in, frames)
         }
-        ModuleKind::Script => {
+        Script => {
             let control_input_names = match &states[module_idx] {
                 PerModuleState::Script { control_inputs, .. } => control_inputs.clone(),
                 _ => unreachable!(),
