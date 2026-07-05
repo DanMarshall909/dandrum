@@ -125,25 +125,6 @@ impl Default for BiquadFilter {
 }
 
 impl FilterAlgorithm for BiquadFilter {
-    fn set_cutoff(&mut self, hz: f64, sample_rate: f64) {
-        self.cutoff_norm = (hz / sample_rate).clamp(0.0, 0.49);
-        self.update_coefficients();
-    }
-
-    fn set_resonance_control(&mut self, control: f32) {
-        self.set_resonance(0.1 + control as f64 * 9.9);
-    }
-
-    fn set_resonance(&mut self, q: f64) {
-        self.q = q.clamp(0.1, 20.0);
-        self.update_coefficients();
-    }
-
-    fn set_gain_db(&mut self, db: f64) {
-        self.gain_db = db;
-        self.update_coefficients();
-    }
-
     fn process(&mut self, input: f32) -> f32 {
         let x = input as f64;
         let y = self.b0 * x + self.b1 * self.x1 + self.b2 * self.x2
@@ -161,5 +142,24 @@ impl FilterAlgorithm for BiquadFilter {
         self.x2 = 0.0;
         self.y1 = 0.0;
         self.y2 = 0.0;
+    }
+
+    fn set_cutoff(&mut self, hz: f64, sample_rate: f64) {
+        self.cutoff_norm = (hz / sample_rate).clamp(0.0, 0.49);
+        self.update_coefficients();
+    }
+
+    fn set_resonance_control(&mut self, control: f32) {
+        self.set_resonance(0.1 + control as f64 * 9.9);
+    }
+
+    fn set_resonance(&mut self, q: f64) {
+        self.q = q.clamp(0.1, 20.0);
+        self.update_coefficients();
+    }
+
+    fn set_gain_db(&mut self, db: f64) {
+        self.gain_db = db;
+        self.update_coefficients();
     }
 }

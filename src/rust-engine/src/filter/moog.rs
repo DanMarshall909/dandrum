@@ -37,18 +37,6 @@ impl MoogLadder {
 }
 
 impl FilterAlgorithm for MoogLadder {
-    fn set_cutoff(&mut self, hz: f64, _sample_rate: f64) {
-        self.set_cutoff(hz);
-    }
-
-    fn set_resonance_control(&mut self, control: f32) {
-        self.set_resonance(control as f64 * 0.99);
-    }
-
-    fn set_resonance(&mut self, q: f64) {
-        self.set_resonance(q);
-    }
-
     fn process(&mut self, input: f32) -> f32 {
         let g = self.g_pole;
         let feedback = self.resonance * 4.0 * (1.0 - g / (1.0 + g));
@@ -66,5 +54,17 @@ impl FilterAlgorithm for MoogLadder {
 
     fn reset(&mut self) {
         self.stage = [0.0; 4];
+    }
+
+    fn set_cutoff(&mut self, hz: f64, _sample_rate: f64) {
+        self.set_cutoff(hz);
+    }
+
+    fn set_resonance_control(&mut self, control: f32) {
+        self.set_resonance(control as f64 * 0.99);
+    }
+
+    fn set_resonance(&mut self, q: f64) {
+        self.set_resonance(q);
     }
 }
