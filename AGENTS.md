@@ -44,6 +44,11 @@
   implementing path-critical DSP or control-flow behavior.
 - Pre-push hook (`.githooks/pre-push`) runs `cargo test` then `cargo mutants` before every push. Skip with
   `git push --no-verify` when needed.
+- When asserting multiple ports of the same type on the same module definition, use the macros already established in
+  `src/rust-engine/src/builtins/tests.rs`: `assert_control_inputs!`, `assert_audio_inputs!`, `assert_audio_outputs!`.
+  These accept an unbounded list of port names after the definition, avoiding repetitive single-port calls. Define new
+  macros in the same file (before the `#[test]` functions) following the same `macro_rules!` repetition pattern if
+  additional port types are needed.
 - Teach Rust through this project as work proceeds: the user is an experienced C# programmer new to Rust, so briefly
   explain Rust syntax, ownership/borrowing, traits, macros, modules, error handling, and testing patterns when they
   appear, without turning implementation updates into long tutorials.
