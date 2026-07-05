@@ -2,7 +2,7 @@ use std::collections::{BTreeMap, BTreeSet};
 use std::fmt;
 use std::sync::{Arc, Mutex};
 
-use crate::diagnostics::{Diagnostic, Severity, error_codes};
+use crate::diagnostics::{error_codes, Diagnostic, Severity};
 
 pub const DEFAULT_SCRIPT_MAX_OPERATIONS: u64 = 10_000;
 pub const DEFAULT_SCRIPT_MAX_CALL_DEPTH: usize = 16;

@@ -2,7 +2,7 @@ use std::collections::{BTreeMap, VecDeque};
 use std::fmt;
 
 use crate::builtins::module_kind::ModuleKind;
-use crate::diagnostics::{Diagnostic, Severity, error_codes};
+use crate::diagnostics::{error_codes, Diagnostic, Severity};
 use crate::graph::{ExecutionScope, Graph, ModuleId, SignalType};
 use crate::patch::RenderSettings;
 

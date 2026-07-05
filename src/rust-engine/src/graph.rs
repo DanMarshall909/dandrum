@@ -3,7 +3,7 @@ use std::collections::{BTreeMap, BTreeSet};
 use crate::patch::ParameterValue;
 use std::fmt;
 
-use crate::builtins::{BuiltInModuleRegistry, module_types};
+use crate::builtins::{module_types, BuiltInModuleRegistry};
 use crate::patch;
 
 #[path = "graph_composite.rs"]
@@ -684,7 +684,7 @@ impl GraphDiagnostic {
     /// Convert to a structured [`crate::diagnostics::Diagnostic`] with
     /// error code, severity, and module/port references.
     pub fn to_diagnostic(&self) -> crate::diagnostics::Diagnostic {
-        use crate::diagnostics::{Diagnostic, Severity, error_codes};
+        use crate::diagnostics::{error_codes, Diagnostic, Severity};
         match self {
             Self::MissingModule { module_id } => Diagnostic::new(
                 error_codes::GRAPH_MISSING_MODULE,

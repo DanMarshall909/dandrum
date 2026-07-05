@@ -2,8 +2,8 @@
 
 use crate::builtins::module_kind::ModuleKind;
 use crate::compiled_patch::CompiledPatch;
-use crate::graph::SignalType;
 use crate::graph::builtin_ports;
+use crate::graph::SignalType;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub(super) struct BufferId(pub(super) usize);

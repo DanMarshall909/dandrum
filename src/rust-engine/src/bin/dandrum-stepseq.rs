@@ -5,16 +5,16 @@ use std::thread;
 use std::time::Duration;
 
 use crossterm::cursor::{Hide, MoveTo, Show};
-use crossterm::event::{Event, KeyCode, KeyEvent, KeyModifiers, read};
+use crossterm::event::{read, Event, KeyCode, KeyEvent, KeyModifiers};
 use crossterm::style::Print;
 use crossterm::terminal::{
-    Clear, ClearType, EnterAlternateScreen, LeaveAlternateScreen, disable_raw_mode, enable_raw_mode,
+    disable_raw_mode, enable_raw_mode, Clear, ClearType, EnterAlternateScreen, LeaveAlternateScreen,
 };
 use crossterm::{execute, queue};
 
 use dandrum_engine::core::TimedInputEvent;
 use dandrum_engine::graph::{
-    Cable, Graph, ModuleId, ModuleNode, PortRef, SignalType, builtin_ports,
+    builtin_ports, Cable, Graph, ModuleId, ModuleNode, PortRef, SignalType,
 };
 use dandrum_engine::graph_processor::render_offline;
 use dandrum_engine::patch::RenderSettings;

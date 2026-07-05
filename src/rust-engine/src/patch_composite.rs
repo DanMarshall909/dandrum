@@ -1,10 +1,10 @@
 use std::collections::{BTreeMap, BTreeSet};
 
-use crate::builtins::{BuiltInModuleRegistry, module_types};
-use crate::diagnostics::{Diagnostic, Severity, error_codes};
+use crate::builtins::{module_types, BuiltInModuleRegistry};
+use crate::diagnostics::{error_codes, Diagnostic, Severity};
 use crate::patch::{
-    AssetKind, ConnectionDeclaration, ModuleDeclaration, ParameterValue, PatchDocument,
-    PatchValidationError, PortReference, SignalType, validate_port_reference,
+    validate_port_reference, AssetKind, ConnectionDeclaration, ModuleDeclaration, ParameterValue,
+    PatchDocument, PatchValidationError, PortReference, SignalType,
 };
 use serde::Deserialize;
 

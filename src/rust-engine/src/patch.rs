@@ -7,10 +7,10 @@ use std::path::{Path, PathBuf};
 use serde::Deserialize;
 
 use crate::builtins::{
-    BuiltInModuleDefinition, BuiltInModuleRegistry, ParameterMetadata, ParameterValueType,
-    SCRIPT_LANGUAGE_PARAMETER, SCRIPT_LANGUAGE_RHAI, SCRIPT_SOURCE_PARAMETER, module_types,
+    module_types, BuiltInModuleDefinition, BuiltInModuleRegistry, ParameterMetadata,
+    ParameterValueType, SCRIPT_LANGUAGE_PARAMETER, SCRIPT_LANGUAGE_RHAI, SCRIPT_SOURCE_PARAMETER,
 };
-use crate::diagnostics::{self, Diagnostic, Diagnostics, Severity, error_codes};
+use crate::diagnostics::{self, error_codes, Diagnostic, Diagnostics, Severity};
 use crate::script::{RhaiScriptRuntime, ScriptPrepareError, ScriptRuntimeLimits};
 
 #[path = "patch_composite.rs"]

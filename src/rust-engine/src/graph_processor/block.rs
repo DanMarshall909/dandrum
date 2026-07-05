@@ -7,7 +7,7 @@ use crate::script::ScriptEvent;
 use crate::voice_allocator::VoiceAllocator;
 
 use super::dispatch::process_module;
-use super::input_provider::{CompiledInputProvider, compiled_gather_event_inputs};
+use super::input_provider::{compiled_gather_event_inputs, CompiledInputProvider};
 use super::outputs::{BlockEvent, ModuleOutputs};
 use super::state::PerModuleState;
 

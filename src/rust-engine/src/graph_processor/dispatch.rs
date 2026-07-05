@@ -1,19 +1,19 @@
-use std::collections::{BTreeMap, HashMap};
-use crate::graph:: builtin_ports::*;
-use ModuleKind::*;
 use crate::builtins::module_kind::ModuleKind;
+use crate::graph::builtin_ports::*;
+use std::collections::{BTreeMap, HashMap};
+use ModuleKind::*;
 
-use super::ModuleInputProvider;
 use super::outputs::{BlockEvent, ModuleOutputs};
 use super::processing::{
-    EchoControls, ReverbControls, process_adsr, process_convolution, process_curve_mapper,
-    process_dynamics_processor, process_echo, process_envelope_follower, process_event_filter,
-    process_filter, process_frequency_splitter, process_impulse, process_multiply, process_noise,
-    process_note_to_control, process_note_to_rate, process_oscillator, process_reverb,
-    process_sampler, process_saturator, process_script, process_spectral_processor, process_vca,
+    process_adsr, process_convolution, process_curve_mapper, process_dynamics_processor, process_echo,
+    process_envelope_follower, process_event_filter, process_filter, process_frequency_splitter,
+    process_impulse, process_multiply, process_noise, process_note_to_control, process_note_to_rate,
+    process_oscillator, process_reverb, process_sampler, process_saturator,
+    process_script, process_spectral_processor, process_vca, EchoControls, ReverbControls,
 };
 use super::render_plan::default_control_value;
 use super::state::PerModuleState;
+use super::ModuleInputProvider;
 
 fn default_control(module_kind: ModuleKind, port_name: &str) -> f32 {
     default_control_value(module_kind, port_name)
