@@ -1,5 +1,8 @@
 #![deny(dead_code)]
 
+#[cfg(test)]
+mod test_allocator;
+
 pub mod core;
 
 pub(crate) mod compiled_patch;

@@ -12,7 +12,13 @@ use super::processing::{
     process_note_to_control, process_note_to_rate, process_oscillator, process_reverb,
     process_sampler, process_saturator, process_script, process_spectral_processor, process_vca,
 };
+use super::render_plan::default_control_value;
 use super::state::PerModuleState;
+
+fn default_control(module_kind: ModuleKind, port_name: &str) -> f32 {
+    default_control_value(module_kind, port_name)
+        .unwrap_or_else(|| panic!("missing default control value for {module_kind:?}.{port_name}"))
+}
 
 pub(super) fn process_module(
     module_idx: usize,
@@ -31,7 +37,7 @@ pub(super) fn process_module(
                 builtin_ports::PITCH,
                 all_outputs,
                 frames,
-                1.0,
+                default_control(ModuleKind::Oscillator, builtin_ports::PITCH),
             );
             process_oscillator(&mut states[module_idx], &pitch_in, frames)
         }
@@ -92,7 +98,7 @@ pub(super) fn process_module(
                 builtin_ports::RATE,
                 all_outputs,
                 frames,
-                1.0,
+                default_control(ModuleKind::Sampler, builtin_ports::RATE),
             );
             let start_in = input_provider.sum_control_input(
                 module_idx,
@@ -143,35 +149,35 @@ pub(super) fn process_module(
                 builtin_ports::ATTACK,
                 all_outputs,
                 frames,
-                5.0,
+                default_control(ModuleKind::EnvelopeFollower, builtin_ports::ATTACK),
             );
             let release_in = input_provider.control_input_or_default(
                 module_idx,
                 builtin_ports::RELEASE,
                 all_outputs,
                 frames,
-                50.0,
+                default_control(ModuleKind::EnvelopeFollower, builtin_ports::RELEASE),
             );
             let amount_in = input_provider.control_input_or_default(
                 module_idx,
                 builtin_ports::AMOUNT,
                 all_outputs,
                 frames,
-                1.0,
+                default_control(ModuleKind::EnvelopeFollower, builtin_ports::AMOUNT),
             );
             let offset_in = input_provider.control_input_or_default(
                 module_idx,
                 builtin_ports::OFFSET,
                 all_outputs,
                 frames,
-                0.0,
+                default_control(ModuleKind::EnvelopeFollower, builtin_ports::OFFSET),
             );
             let invert_in = input_provider.control_input_or_default(
                 module_idx,
                 builtin_ports::INVERT,
                 all_outputs,
                 frames,
-                0.0,
+                default_control(ModuleKind::EnvelopeFollower, builtin_ports::INVERT),
             );
             process_envelope_follower(
                 &mut states[module_idx],
@@ -196,28 +202,28 @@ pub(super) fn process_module(
                 builtin_ports::AMOUNT,
                 all_outputs,
                 frames,
-                1.0,
+                default_control(ModuleKind::CurveMapper, builtin_ports::AMOUNT),
             );
             let bias_in = input_provider.control_input_or_default(
                 module_idx,
                 builtin_ports::BIAS,
                 all_outputs,
                 frames,
-                0.0,
+                default_control(ModuleKind::CurveMapper, builtin_ports::BIAS),
             );
             let scale_in = input_provider.control_input_or_default(
                 module_idx,
                 builtin_ports::SCALE,
                 all_outputs,
                 frames,
-                1.0,
+                default_control(ModuleKind::CurveMapper, builtin_ports::SCALE),
             );
             let offset_in = input_provider.control_input_or_default(
                 module_idx,
                 builtin_ports::OFFSET,
                 all_outputs,
                 frames,
-                0.0,
+                default_control(ModuleKind::CurveMapper, builtin_ports::OFFSET),
             );
             process_curve_mapper(
                 &mut states[module_idx],
@@ -278,63 +284,63 @@ pub(super) fn process_module(
                 builtin_ports::THRESHOLD,
                 all_outputs,
                 frames,
-                0.3,
+                default_control(ModuleKind::DynamicsProcessor, builtin_ports::THRESHOLD),
             );
             let below_ratio_in = input_provider.control_input_or_default(
                 module_idx,
                 builtin_ports::BELOW_RATIO,
                 all_outputs,
                 frames,
-                0.05,
+                default_control(ModuleKind::DynamicsProcessor, builtin_ports::BELOW_RATIO),
             );
             let above_ratio_in = input_provider.control_input_or_default(
                 module_idx,
                 builtin_ports::ABOVE_RATIO,
                 all_outputs,
                 frames,
-                0.077,
+                default_control(ModuleKind::DynamicsProcessor, builtin_ports::ABOVE_RATIO),
             );
             let attack_in = input_provider.control_input_or_default(
                 module_idx,
                 builtin_ports::ATTACK,
                 all_outputs,
                 frames,
-                0.05,
+                default_control(ModuleKind::DynamicsProcessor, builtin_ports::ATTACK),
             );
             let release_in = input_provider.control_input_or_default(
                 module_idx,
                 builtin_ports::RELEASE,
                 all_outputs,
                 frames,
-                0.1,
+                default_control(ModuleKind::DynamicsProcessor, builtin_ports::RELEASE),
             );
             let knee_in = input_provider.control_input_or_default(
                 module_idx,
                 builtin_ports::KNEE,
                 all_outputs,
                 frames,
-                0.0,
+                default_control(ModuleKind::DynamicsProcessor, builtin_ports::KNEE),
             );
             let makeup_in = input_provider.control_input_or_default(
                 module_idx,
                 builtin_ports::MAKEUP_GAIN,
                 all_outputs,
                 frames,
-                0.0,
+                default_control(ModuleKind::DynamicsProcessor, builtin_ports::MAKEUP_GAIN),
             );
             let attack_gain_in = input_provider.control_input_or_default(
                 module_idx,
                 builtin_ports::ATTACK_GAIN,
                 all_outputs,
                 frames,
-                0.5,
+                default_control(ModuleKind::DynamicsProcessor, builtin_ports::ATTACK_GAIN),
             );
             let sustain_gain_in = input_provider.control_input_or_default(
                 module_idx,
                 builtin_ports::SUSTAIN_GAIN,
                 all_outputs,
                 frames,
-                0.5,
+                default_control(ModuleKind::DynamicsProcessor, builtin_ports::SUSTAIN_GAIN),
             );
             process_dynamics_processor(
                 &mut states[module_idx],
@@ -364,21 +370,21 @@ pub(super) fn process_module(
                 builtin_ports::CUTOFF,
                 all_outputs,
                 frames,
-                0.5,
+                default_control(ModuleKind::Filter, builtin_ports::CUTOFF),
             );
             let resonance_in = input_provider.control_input_or_default(
                 module_idx,
                 builtin_ports::RESONANCE,
                 all_outputs,
                 frames,
-                0.0,
+                default_control(ModuleKind::Filter, builtin_ports::RESONANCE),
             );
             let gain_in = input_provider.control_input_or_default(
                 module_idx,
                 builtin_ports::GAIN,
                 all_outputs,
                 frames,
-                0.5,
+                default_control(ModuleKind::Filter, builtin_ports::GAIN),
             );
             process_filter(
                 &mut states[module_idx],
@@ -401,21 +407,21 @@ pub(super) fn process_module(
                 builtin_ports::DRIVE,
                 all_outputs,
                 frames,
-                0.0,
+                default_control(ModuleKind::Saturator, builtin_ports::DRIVE),
             );
             let bias_in = input_provider.control_input_or_default(
                 module_idx,
                 builtin_ports::BIAS,
                 all_outputs,
                 frames,
-                0.0,
+                default_control(ModuleKind::Saturator, builtin_ports::BIAS),
             );
             let curve_select_in = input_provider.control_input_or_default(
                 module_idx,
                 builtin_ports::CURVE_SELECT,
                 all_outputs,
                 frames,
-                0.0,
+                default_control(ModuleKind::Saturator, builtin_ports::CURVE_SELECT),
             );
             process_saturator(
                 &mut states[module_idx],
@@ -438,7 +444,7 @@ pub(super) fn process_module(
                 builtin_ports::MIX,
                 all_outputs,
                 frames,
-                1.0,
+                default_control(ModuleKind::Convolution, builtin_ports::MIX),
             );
             process_convolution(&mut states[module_idx], &audio_in, &mix_in, frames)
         }
@@ -460,49 +466,49 @@ pub(super) fn process_module(
                 builtin_ports::FEEDBACK,
                 all_outputs,
                 frames,
-                0.5,
+                default_control(ModuleKind::Echo, builtin_ports::FEEDBACK),
             );
             let damping = input_provider.control_input_or_default(
                 module_idx,
                 builtin_ports::DAMPING_CUTOFF,
                 all_outputs,
                 frames,
-                0.5,
+                default_control(ModuleKind::Echo, builtin_ports::DAMPING_CUTOFF),
             );
             let wet = input_provider.control_input_or_default(
                 module_idx,
                 builtin_ports::WET,
                 all_outputs,
                 frames,
-                0.7,
+                default_control(ModuleKind::Echo, builtin_ports::WET),
             );
             let dry = input_provider.control_input_or_default(
                 module_idx,
                 builtin_ports::DRY,
                 all_outputs,
                 frames,
-                0.5,
+                default_control(ModuleKind::Echo, builtin_ports::DRY),
             );
             let time_l = input_provider.control_input_or_default(
                 module_idx,
                 builtin_ports::TIME_LEFT_MS,
                 all_outputs,
                 frames,
-                0.3,
+                default_control(ModuleKind::Echo, builtin_ports::TIME_LEFT_MS),
             );
             let time_r = input_provider.control_input_or_default(
                 module_idx,
                 builtin_ports::TIME_RIGHT_MS,
                 all_outputs,
                 frames,
-                0.3,
+                default_control(ModuleKind::Echo, builtin_ports::TIME_RIGHT_MS),
             );
             let ping_pong = input_provider.control_input_or_default(
                 module_idx,
                 builtin_ports::PING_PONG,
                 all_outputs,
                 frames,
-                0.0,
+                default_control(ModuleKind::Echo, builtin_ports::PING_PONG),
             );
             process_echo(
                 &mut states[module_idx],
@@ -538,56 +544,56 @@ pub(super) fn process_module(
                 builtin_ports::DECAY_TIME,
                 all_outputs,
                 frames,
-                0.35,
+                default_control(ModuleKind::Reverb, builtin_ports::DECAY_TIME),
             );
             let room_size = input_provider.control_input_or_default(
                 module_idx,
                 builtin_ports::ROOM_SIZE,
                 all_outputs,
                 frames,
-                0.7,
+                default_control(ModuleKind::Reverb, builtin_ports::ROOM_SIZE),
             );
             let damping = input_provider.control_input_or_default(
                 module_idx,
                 builtin_ports::DAMPING,
                 all_outputs,
                 frames,
-                0.3,
+                default_control(ModuleKind::Reverb, builtin_ports::DAMPING),
             );
             let diffusion = input_provider.control_input_or_default(
                 module_idx,
                 builtin_ports::DIFFUSION,
                 all_outputs,
                 frames,
-                0.5,
+                default_control(ModuleKind::Reverb, builtin_ports::DIFFUSION),
             );
             let wet = input_provider.control_input_or_default(
                 module_idx,
                 builtin_ports::WET,
                 all_outputs,
                 frames,
-                0.7,
+                default_control(ModuleKind::Reverb, builtin_ports::WET),
             );
             let dry = input_provider.control_input_or_default(
                 module_idx,
                 builtin_ports::DRY,
                 all_outputs,
                 frames,
-                0.5,
+                default_control(ModuleKind::Reverb, builtin_ports::DRY),
             );
             let pre_delay = input_provider.control_input_or_default(
                 module_idx,
                 builtin_ports::PRE_DELAY,
                 all_outputs,
                 frames,
-                0.0,
+                default_control(ModuleKind::Reverb, builtin_ports::PRE_DELAY),
             );
             let stereo_width = input_provider.control_input_or_default(
                 module_idx,
                 builtin_ports::STEREO_WIDTH,
                 all_outputs,
                 frames,
-                0.5,
+                default_control(ModuleKind::Reverb, builtin_ports::STEREO_WIDTH),
             );
             process_reverb(
                 &mut states[module_idx],
@@ -618,7 +624,7 @@ pub(super) fn process_module(
                 builtin_ports::CROSSOVER_HZ,
                 all_outputs,
                 frames,
-                0.2,
+                default_control(ModuleKind::FrequencySplitter, builtin_ports::CROSSOVER_HZ),
             );
             process_frequency_splitter(&mut states[module_idx], &audio_in, &crossover_hz_in, frames)
         }
@@ -634,14 +640,14 @@ pub(super) fn process_module(
                 builtin_ports::THRESHOLD,
                 all_outputs,
                 frames,
-                0.5,
+                default_control(ModuleKind::SpectralProcessor, builtin_ports::THRESHOLD),
             );
             let mix_in = input_provider.control_input_or_default(
                 module_idx,
                 builtin_ports::MIX,
                 all_outputs,
                 frames,
-                0.5,
+                default_control(ModuleKind::SpectralProcessor, builtin_ports::MIX),
             );
             process_spectral_processor(
                 &mut states[module_idx],

@@ -1,15 +1,15 @@
 ## 1. Characterization And Guardrails
 
 - [x] 1.1 Add realtime render capacity-regression tests proving repeated prepared-size renders do not grow pending-event, scratch-output, audio-output, or per-voice scratch capacity.
-- [ ] 1.2 Add allocation-count or test-allocator coverage around `RealtimeGraphProcessor::render` for at least one simple mono compiled patch.
-- [ ] 1.3 Add parity coverage for a representative mono patch, event-driven patch, sampler patch, voice-to-global patch, and polyphonic patch before changing render storage semantics.
-- [ ] 1.4 Add tests for disconnected inputs and inactive voices so stale arena data cannot leak into output.
+- [x] 1.2 Add allocation-count or test-allocator coverage around `RealtimeGraphProcessor::render` for at least one simple mono compiled patch.
+- [x] 1.3 Add parity coverage for a representative mono patch, event-driven patch, sampler patch, voice-to-global patch, and polyphonic patch before changing render storage semantics.
+- [x] 1.4 Add tests for disconnected inputs and inactive voices so stale arena data cannot leak into output.
 
 ## 2. Render Plan And Compiled Buffer Metadata
 
 - [x] 2.1 Introduce typed `BufferId`, `EventQueueId`, `CompiledEdge`, `RenderStep`, and `RenderPlan` structures.
 - [x] 2.2 Derive a render plan from `CompiledPatch` during realtime preparation, including voice steps, global steps, input edges, output buffers, event queues, MIDI input binding, and audio output binding.
-- [ ] 2.3 Move default control values into compiled/render-plan metadata where module declarations define defaults.
+- [x] 2.3 Move default control values into compiled/render-plan metadata where module declarations define defaults.
 - [ ] 2.4 Replace callback-time port-name/source-port lookup with pre-resolved buffer IDs and event queue IDs.
 
 ## 3. Audio And Control Arena

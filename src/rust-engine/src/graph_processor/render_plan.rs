@@ -2,8 +2,8 @@
 
 use crate::builtins::module_kind::ModuleKind;
 use crate::compiled_patch::CompiledPatch;
-use crate::graph::builtin_ports;
 use crate::graph::SignalType;
+use crate::graph::builtin_ports;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub(super) struct BufferId(pub(super) usize);
@@ -19,6 +19,12 @@ pub(super) struct CompiledEdge {
     pub(super) gain: f32,
 }
 
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub(super) struct ControlDefault {
+    pub(super) buffer: BufferId,
+    pub(super) value: f32,
+}
+
 #[derive(Clone, Debug, PartialEq)]
 pub(super) struct RenderStep {
     pub(super) module_index: usize,
@@ -26,6 +32,7 @@ pub(super) struct RenderStep {
     pub(super) input_buffers: Box<[BufferId]>,
     pub(super) output_buffers: Box<[BufferId]>,
     pub(super) incoming_edges: Box<[CompiledEdge]>,
+    pub(super) control_defaults: Box<[ControlDefault]>,
     pub(super) event_inputs: Box<[EventQueueId]>,
     pub(super) event_outputs: Box<[EventQueueId]>,
 }
@@ -173,6 +180,7 @@ impl RenderPlanBuilder<'_> {
             .collect::<Vec<_>>()
             .into_boxed_slice();
         let incoming_edges = self.incoming_edges(module_index).into_boxed_slice();
+        let control_defaults = self.control_defaults(module_index).into_boxed_slice();
         let event_inputs = self.event_queues_for_ports(module_index, &node.input_port_types, 0);
         let event_outputs = self.event_queues_for_ports(
             module_index,
@@ -186,6 +194,7 @@ impl RenderPlanBuilder<'_> {
             input_buffers,
             output_buffers,
             incoming_edges,
+            control_defaults,
             event_inputs,
             event_outputs,
         }
@@ -202,8 +211,8 @@ impl RenderPlanBuilder<'_> {
             }
 
             for source in sources {
-                let source_buffer = self.compiled.nodes()[source.module_index].output_port_map
-                    [source.port_index];
+                let source_buffer =
+                    self.compiled.nodes()[source.module_index].output_port_map[source.port_index];
                 edges.push(CompiledEdge {
                     source: BufferId(source_buffer),
                     destination: self.input_buffer(module_index, destination_port_index),
@@ -214,6 +223,28 @@ impl RenderPlanBuilder<'_> {
         }
 
         edges
+    }
+
+    fn control_defaults(&self, module_index: usize) -> Vec<ControlDefault> {
+        let node = &self.compiled.nodes()[module_index];
+        node.input_port_types
+            .iter()
+            .enumerate()
+            .filter_map(|(port_index, signal_type)| {
+                if *signal_type != SignalType::Control
+                    || !node.input_port_map[port_index].is_empty()
+                {
+                    return None;
+                }
+
+                default_control_value(node.module_kind, &node.input_port_names[port_index]).map(
+                    |value| ControlDefault {
+                        buffer: self.input_buffer(module_index, port_index),
+                        value,
+                    },
+                )
+            })
+            .collect()
     }
 
     fn input_buffer(&self, module_index: usize, port_index: usize) -> BufferId {
@@ -283,6 +314,57 @@ impl RenderPlanBuilder<'_> {
     }
 }
 
+pub(super) fn default_control_value(module_kind: ModuleKind, port_name: &str) -> Option<f32> {
+    match (module_kind, port_name) {
+        (ModuleKind::Oscillator, builtin_ports::PITCH) => Some(1.0),
+        (ModuleKind::Sampler, builtin_ports::RATE) => Some(1.0),
+        (ModuleKind::EnvelopeFollower, builtin_ports::ATTACK) => Some(5.0),
+        (ModuleKind::EnvelopeFollower, builtin_ports::RELEASE) => Some(50.0),
+        (ModuleKind::EnvelopeFollower, builtin_ports::AMOUNT) => Some(1.0),
+        (ModuleKind::EnvelopeFollower, builtin_ports::OFFSET) => Some(0.0),
+        (ModuleKind::EnvelopeFollower, builtin_ports::INVERT) => Some(0.0),
+        (ModuleKind::CurveMapper, builtin_ports::AMOUNT) => Some(1.0),
+        (ModuleKind::CurveMapper, builtin_ports::BIAS) => Some(0.0),
+        (ModuleKind::CurveMapper, builtin_ports::SCALE) => Some(1.0),
+        (ModuleKind::CurveMapper, builtin_ports::OFFSET) => Some(0.0),
+        (ModuleKind::DynamicsProcessor, builtin_ports::THRESHOLD) => Some(0.3),
+        (ModuleKind::DynamicsProcessor, builtin_ports::BELOW_RATIO) => Some(0.05),
+        (ModuleKind::DynamicsProcessor, builtin_ports::ABOVE_RATIO) => Some(0.077),
+        (ModuleKind::DynamicsProcessor, builtin_ports::ATTACK) => Some(0.05),
+        (ModuleKind::DynamicsProcessor, builtin_ports::RELEASE) => Some(0.1),
+        (ModuleKind::DynamicsProcessor, builtin_ports::KNEE) => Some(0.0),
+        (ModuleKind::DynamicsProcessor, builtin_ports::MAKEUP_GAIN) => Some(0.0),
+        (ModuleKind::DynamicsProcessor, builtin_ports::ATTACK_GAIN) => Some(0.5),
+        (ModuleKind::DynamicsProcessor, builtin_ports::SUSTAIN_GAIN) => Some(0.5),
+        (ModuleKind::Filter, builtin_ports::CUTOFF) => Some(0.5),
+        (ModuleKind::Filter, builtin_ports::RESONANCE) => Some(0.0),
+        (ModuleKind::Filter, builtin_ports::GAIN) => Some(0.5),
+        (ModuleKind::Saturator, builtin_ports::DRIVE) => Some(0.0),
+        (ModuleKind::Saturator, builtin_ports::BIAS) => Some(0.0),
+        (ModuleKind::Saturator, builtin_ports::CURVE_SELECT) => Some(0.0),
+        (ModuleKind::Convolution, builtin_ports::MIX) => Some(1.0),
+        (ModuleKind::Echo, builtin_ports::FEEDBACK) => Some(0.5),
+        (ModuleKind::Echo, builtin_ports::DAMPING_CUTOFF) => Some(0.5),
+        (ModuleKind::Echo, builtin_ports::WET) => Some(0.7),
+        (ModuleKind::Echo, builtin_ports::DRY) => Some(0.5),
+        (ModuleKind::Echo, builtin_ports::TIME_LEFT_MS) => Some(0.3),
+        (ModuleKind::Echo, builtin_ports::TIME_RIGHT_MS) => Some(0.3),
+        (ModuleKind::Echo, builtin_ports::PING_PONG) => Some(0.0),
+        (ModuleKind::Reverb, builtin_ports::DECAY_TIME) => Some(0.35),
+        (ModuleKind::Reverb, builtin_ports::ROOM_SIZE) => Some(0.7),
+        (ModuleKind::Reverb, builtin_ports::DAMPING) => Some(0.3),
+        (ModuleKind::Reverb, builtin_ports::DIFFUSION) => Some(0.5),
+        (ModuleKind::Reverb, builtin_ports::WET) => Some(0.7),
+        (ModuleKind::Reverb, builtin_ports::DRY) => Some(0.5),
+        (ModuleKind::Reverb, builtin_ports::PRE_DELAY) => Some(0.0),
+        (ModuleKind::Reverb, builtin_ports::STEREO_WIDTH) => Some(0.5),
+        (ModuleKind::FrequencySplitter, builtin_ports::CROSSOVER_HZ) => Some(0.2),
+        (ModuleKind::SpectralProcessor, builtin_ports::THRESHOLD) => Some(0.5),
+        (ModuleKind::SpectralProcessor, builtin_ports::MIX) => Some(0.5),
+        _ => None,
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -322,7 +404,8 @@ mod tests {
             block_size_frames: 64,
             duration_frames: 64,
         };
-        let compiled = crate::compiled_patch::compile(&graph, &settings).expect("graph should compile");
+        let compiled =
+            crate::compiled_patch::compile(&graph, &settings).expect("graph should compile");
         let plan = RenderPlan::from_compiled_patch(&compiled, 64, 4, 32);
 
         assert_eq!(plan.voice_steps.len(), 1);
@@ -332,5 +415,66 @@ mod tests {
         assert_eq!(plan.audio_buffers.max_block_frames, 64);
         assert_eq!(plan.audio_buffers.max_voices, 4);
         assert!(plan.audio_output.is_some());
+    }
+
+    #[test]
+    fn render_plan_records_default_control_values_for_unconnected_inputs() {
+        let graph = Graph::new(
+            vec![
+                ModuleNode::new(ModuleId::new("osc"), "oscillator")
+                    .with_input(builtin_ports::PITCH, SignalType::Control)
+                    .with_output(builtin_ports::AUDIO, SignalType::Audio),
+            ],
+            Vec::new(),
+        );
+        let settings = RenderSettings {
+            sample_rate_hz: 48_000,
+            block_size_frames: 64,
+            duration_frames: 64,
+        };
+        let compiled =
+            crate::compiled_patch::compile(&graph, &settings).expect("graph should compile");
+        let plan = RenderPlan::from_compiled_patch(&compiled, 64, 1, 32);
+
+        assert_eq!(plan.global_steps.len(), 1);
+        assert_eq!(
+            plan.global_steps[0].control_defaults.as_ref(),
+            &[ControlDefault {
+                buffer: BufferId(1),
+                value: 1.0,
+            }]
+        );
+    }
+
+    #[test]
+    fn render_plan_omits_default_control_values_for_connected_inputs() {
+        let graph = Graph::new(
+            vec![
+                ModuleNode::new(ModuleId::new("rate"), "note_to_rate")
+                    .with_output(builtin_ports::RATE, SignalType::Control),
+                ModuleNode::new(ModuleId::new("osc"), "oscillator")
+                    .with_input(builtin_ports::PITCH, SignalType::Control)
+                    .with_output(builtin_ports::AUDIO, SignalType::Audio),
+            ],
+            vec![Cable::new(
+                PortRef::new(ModuleId::new("rate"), builtin_ports::RATE),
+                PortRef::new(ModuleId::new("osc"), builtin_ports::PITCH),
+            )],
+        );
+        let settings = RenderSettings {
+            sample_rate_hz: 48_000,
+            block_size_frames: 64,
+            duration_frames: 64,
+        };
+        let compiled =
+            crate::compiled_patch::compile(&graph, &settings).expect("graph should compile");
+        let plan = RenderPlan::from_compiled_patch(&compiled, 64, 1, 32);
+
+        let oscillator_step = plan
+            .global_steps
+            .iter()
+            .find(|step| step.module_kind == ModuleKind::Oscillator)
+            .expect("oscillator step should be planned");
+        assert!(oscillator_step.control_defaults.is_empty());
     }
 }

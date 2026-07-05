@@ -1,7 +1,8 @@
 use super::*;
 use crate::builtins::module_types;
-use crate::graph::{builtin_ports, Cable, Graph, ModuleId, ModuleNode, PortRef, SignalType};
+use crate::graph::{Cable, Graph, ModuleId, ModuleNode, PortRef, SignalType, builtin_ports};
 use crate::sample::{LoadedSample, PreparedSamplerAssets};
+use crate::test_allocator::count_current_thread_allocations;
 use std::collections::BTreeMap;
 
 fn oscillator_output_graph() -> Graph {
@@ -89,10 +90,42 @@ fn mono_realtime_render_reuses_prepared_capacity_for_repeated_prepared_size_bloc
     for _ in 0..8 {
         assert_eq!(processor.render(&mut left, &mut right), 64);
         assert_eq!(processor.top_level_scratch_capacities(), top_level_capacity);
-        assert_eq!(processor.module_output_scratch_capacity(), module_output_capacity);
+        assert_eq!(
+            processor.module_output_scratch_capacity(),
+            module_output_capacity
+        );
         assert_eq!(processor.pending_event_capacity(), pending_event_capacity);
         assert_eq!(processor.prepared_voice_count(), voice_count);
     }
+}
+
+#[test]
+fn mono_realtime_render_allocation_count_is_observable_before_arena_migration() {
+    let graph = oscillator_output_graph();
+    let voice_allocation = VoiceAllocation {
+        max_voices: 1,
+        ..VoiceAllocation::default()
+    };
+    let mut processor = RealtimeGraphProcessor::polyphonic_with_sampler_assets_and_max_block_size(
+        graph,
+        48_000.0,
+        &PreparedSamplerAssets::empty(),
+        &voice_allocation,
+        64,
+    );
+    let mut left = vec![0.0; 64];
+    let mut right = vec![0.0; 64];
+
+    assert_eq!(processor.render(&mut left, &mut right), 64);
+
+    let allocation_count = count_current_thread_allocations(|| {
+        assert_eq!(processor.render(&mut left, &mut right), 64);
+    });
+
+    assert!(
+        allocation_count > 0,
+        "current mono render path should expose callback-time allocations before arena migration"
+    );
 }
 
 #[test]
@@ -124,7 +157,10 @@ fn event_driven_realtime_render_reuses_prepared_capacity_for_repeated_prepared_s
     assert_eq!(processor.render(&mut left, &mut right), 16);
 
     assert_eq!(processor.top_level_scratch_capacities(), top_level_capacity);
-    assert_eq!(processor.module_output_scratch_capacity(), module_output_capacity);
+    assert_eq!(
+        processor.module_output_scratch_capacity(),
+        module_output_capacity
+    );
     assert_eq!(processor.pending_event_capacity(), pending_event_capacity);
     assert_eq!(processor.prepared_voice_count(), voice_count);
 }

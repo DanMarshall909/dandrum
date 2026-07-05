@@ -3218,6 +3218,66 @@ fn assert_offline_realtime_parity(
     );
 }
 
+fn assert_offline_realtime_polyphonic_parity(
+    graph: &Graph,
+    sample_rate: f32,
+    total_frames: usize,
+    block_size: usize,
+    events: &[TimedInputEvent],
+    sampler_assets: &PreparedSamplerAssets,
+    voice_allocation: &VoiceAllocation,
+) {
+    let settings = RenderSettings {
+        sample_rate_hz: sample_rate as u32,
+        block_size_frames: block_size as u32,
+        duration_frames: total_frames as u64,
+    };
+
+    let (offline_left, offline_right) = render_offline_with_sampler_assets_polyphonic(
+        graph,
+        &settings,
+        events.to_vec(),
+        sampler_assets,
+        voice_allocation,
+    );
+
+    let mut realtime = RealtimeGraphProcessor::polyphonic_with_sampler_assets_and_max_block_size(
+        graph.clone(),
+        sample_rate,
+        sampler_assets,
+        voice_allocation,
+        block_size,
+    );
+
+    for event in events {
+        match event.event() {
+            ScriptEvent::NoteOn { note, velocity } => realtime.note_on(*note, *velocity),
+            ScriptEvent::NoteOff { note } => realtime.note_off(*note),
+        }
+    }
+
+    let mut realtime_left = vec![0.0; total_frames];
+    let mut realtime_right = vec![0.0; total_frames];
+    let rendered = realtime.render(&mut realtime_left, &mut realtime_right);
+
+    assert_eq!(
+        rendered,
+        total_frames.min(realtime_left.len().min(realtime_right.len()))
+    );
+
+    let compare_len = offline_left.len().min(realtime_left.len());
+    assert_eq!(
+        &offline_left[..compare_len],
+        &realtime_left[..compare_len],
+        "left channel offline/realtime polyphonic parity mismatch"
+    );
+    assert_eq!(
+        &offline_right[..compare_len],
+        &realtime_right[..compare_len],
+        "right channel offline/realtime polyphonic parity mismatch"
+    );
+}
+
 #[test]
 fn offline_and_realtime_produce_same_output_for_oscillator_patch() {
     let graph = Graph::new(
@@ -3263,6 +3323,180 @@ fn offline_and_realtime_produce_same_output_for_oscillator_patch() {
         )],
         &assets,
     );
+}
+
+#[test]
+fn offline_and_realtime_produce_same_output_for_event_driven_patch() {
+    let graph = event_filter_sampler_graph(60);
+    graph.validate().expect("graph should validate");
+    let assets = sampler_assets(vec![0.25, 0.5, 0.75, 1.0]);
+
+    assert_offline_realtime_parity(
+        &graph,
+        48_000.0,
+        16,
+        4,
+        &[TimedInputEvent::new(
+            0,
+            ScriptEvent::NoteOn {
+                note: 60,
+                velocity: 100,
+            },
+        )],
+        &assets,
+    );
+}
+
+#[test]
+fn offline_and_realtime_produce_same_output_for_voice_to_global_patch() {
+    let graph = Graph::new(
+        vec![
+            ModuleNode::new(ModuleId::new("midi"), module_types::MIDI_INPUT)
+                .with_execution_scope(ExecutionScope::Global)
+                .with_output(builtin_ports::EVENTS, SignalType::Event),
+            ModuleNode::new(ModuleId::new("osc"), module_types::OSCILLATOR)
+                .with_execution_scope(ExecutionScope::Voice)
+                .with_output(builtin_ports::AUDIO, SignalType::Audio),
+            ModuleNode::new(ModuleId::new("mixer"), module_types::AUDIO_MIXER)
+                .with_execution_scope(ExecutionScope::Global)
+                .with_mixing_input(builtin_ports::INPUTS, SignalType::Audio)
+                .with_output(builtin_ports::MIX, SignalType::Audio),
+            ModuleNode::new(ModuleId::new("out"), module_types::AUDIO_OUTPUT)
+                .with_execution_scope(ExecutionScope::Global)
+                .with_input(builtin_ports::LEFT, SignalType::Audio)
+                .with_input(builtin_ports::RIGHT, SignalType::Audio),
+        ],
+        vec![
+            Cable::new(
+                PortRef::new(ModuleId::new("osc"), builtin_ports::AUDIO),
+                PortRef::new(ModuleId::new("mixer"), builtin_ports::INPUTS),
+            ),
+            Cable::new(
+                PortRef::new(ModuleId::new("mixer"), builtin_ports::MIX),
+                PortRef::new(ModuleId::new("out"), builtin_ports::LEFT),
+            ),
+            Cable::new(
+                PortRef::new(ModuleId::new("mixer"), builtin_ports::MIX),
+                PortRef::new(ModuleId::new("out"), builtin_ports::RIGHT),
+            ),
+        ],
+    );
+    graph.validate().expect("graph should validate");
+
+    assert_offline_realtime_polyphonic_parity(
+        &graph,
+        48_000.0,
+        64,
+        16,
+        &[TimedInputEvent::new(
+            0,
+            ScriptEvent::NoteOn {
+                note: 60,
+                velocity: 100,
+            },
+        )],
+        &PreparedSamplerAssets::empty(),
+        &poly_allocation(1),
+    );
+}
+
+#[test]
+fn offline_and_realtime_produce_same_output_for_polyphonic_patch() {
+    let graph = poly_sampler_graph(Vec::new(), Vec::new());
+    graph.validate().expect("graph should validate");
+    let assets = sampler_assets(vec![0.25, 0.5, 0.75, 1.0]);
+
+    assert_offline_realtime_polyphonic_parity(
+        &graph,
+        48_000.0,
+        16,
+        4,
+        &[
+            TimedInputEvent::new(
+                0,
+                ScriptEvent::NoteOn {
+                    note: 60,
+                    velocity: 100,
+                },
+            ),
+            TimedInputEvent::new(
+                0,
+                ScriptEvent::NoteOn {
+                    note: 64,
+                    velocity: 100,
+                },
+            ),
+        ],
+        &assets,
+        &poly_allocation(2),
+    );
+}
+
+#[test]
+fn realtime_disconnected_audio_input_does_not_leak_stale_output() {
+    let graph = Graph::new(
+        vec![
+            ModuleNode::new(ModuleId::new("gain"), module_types::GAIN)
+                .with_input(builtin_ports::AUDIO_IN, SignalType::Audio)
+                .with_input(builtin_ports::GAIN, SignalType::Control)
+                .with_output(builtin_ports::AUDIO_OUT, SignalType::Audio),
+            ModuleNode::new(ModuleId::new("out"), module_types::AUDIO_OUTPUT)
+                .with_input(builtin_ports::LEFT, SignalType::Audio)
+                .with_input(builtin_ports::RIGHT, SignalType::Audio),
+        ],
+        vec![
+            Cable::new(
+                PortRef::new(ModuleId::new("gain"), builtin_ports::AUDIO_OUT),
+                PortRef::new(ModuleId::new("out"), builtin_ports::LEFT),
+            ),
+            Cable::new(
+                PortRef::new(ModuleId::new("gain"), builtin_ports::AUDIO_OUT),
+                PortRef::new(ModuleId::new("out"), builtin_ports::RIGHT),
+            ),
+        ],
+    );
+    graph.validate().expect("graph should validate");
+    let mut realtime = RealtimeGraphProcessor::polyphonic_with_sampler_assets_and_max_block_size(
+        graph,
+        48_000.0,
+        &PreparedSamplerAssets::empty(),
+        &poly_allocation(1),
+        16,
+    );
+    let mut left = vec![1.0; 16];
+    let mut right = vec![-1.0; 16];
+
+    assert_eq!(realtime.render(&mut left, &mut right), 16);
+
+    assert_eq!(left, vec![0.0; 16]);
+    assert_eq!(right, vec![0.0; 16]);
+}
+
+#[test]
+fn realtime_inactive_voice_does_not_leak_previous_voice_output() {
+    let graph = poly_sampler_graph(Vec::new(), Vec::new());
+    graph.validate().expect("graph should validate");
+    let assets = sampler_assets(vec![0.5, 0.25]);
+    let mut realtime = RealtimeGraphProcessor::polyphonic_with_sampler_assets_and_max_block_size(
+        graph,
+        48_000.0,
+        &assets,
+        &poly_allocation(1),
+        2,
+    );
+    let mut left = vec![0.0; 2];
+    let mut right = vec![0.0; 2];
+
+    realtime.note_on(60, 100);
+    assert_eq!(realtime.render(&mut left, &mut right), 2);
+    assert_eq!(left, vec![0.5, 0.25]);
+
+    left.fill(1.0);
+    right.fill(-1.0);
+    assert_eq!(realtime.render(&mut left, &mut right), 2);
+
+    assert_eq!(left, vec![0.0; 2]);
+    assert_eq!(right, vec![0.0; 2]);
 }
 
 #[test]
