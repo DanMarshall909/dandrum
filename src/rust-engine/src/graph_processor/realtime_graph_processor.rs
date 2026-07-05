@@ -8,11 +8,12 @@ use crate::sample::PreparedSamplerAssets;
 use crate::script::ScriptEvent;
 use crate::voice_allocator::VoiceAllocator;
 
+use super::arena_processing;
 use super::audio_arena::AudioArena;
 use super::block::{process_block_compiled, process_block_compiled_polyphonic};
+use super::event_queue::BoundedEventQueue;
 use super::outputs::{BlockEvent, ModuleOutputs};
 use super::polyphony::build_polyphonic_states_from_compiled;
-use super::arena_processing;
 use super::process_context::ProcessContext;
 use super::render_plan::{RenderPlan, RenderStep};
 use super::state::PerModuleState;
@@ -23,7 +24,7 @@ pub struct RealtimeGraphProcessor {
     midi_idx: Option<usize>,
     out_idx: Option<usize>,
     current_frame: u64,
-    pending_events: Vec<ScriptEvent>,
+    pending_events: BoundedEventQueue,
     allocator: VoiceAllocator,
     render_plan: RenderPlan,
     audio_arena: AudioArena,
@@ -130,7 +131,7 @@ impl RealtimeGraphProcessor {
             midi_idx,
             out_idx,
             current_frame: 0,
-            pending_events: Vec::with_capacity(prepared_max_block_size),
+            pending_events: BoundedEventQueue::with_capacity(prepared_max_block_size),
             allocator,
             render_plan,
             audio_arena,
@@ -163,6 +164,10 @@ impl RealtimeGraphProcessor {
         self.pending_events.capacity()
     }
 
+    pub fn pending_event_overflow_count(&self) -> usize {
+        self.pending_events.dropped_events()
+    }
+
     pub fn prepared_voice_count(&self) -> usize {
         self.states.len()
     }
@@ -173,12 +178,13 @@ impl RealtimeGraphProcessor {
     }
 
     pub fn note_on(&mut self, note: u8, velocity: u8) {
-        self.pending_events
+        let _ = self
+            .pending_events
             .push(ScriptEvent::NoteOn { note, velocity });
     }
 
     pub fn note_off(&mut self, note: u8) {
-        self.pending_events.push(ScriptEvent::NoteOff { note });
+        let _ = self.pending_events.push(ScriptEvent::NoteOff { note });
     }
 
     pub fn render(&mut self, left: &mut [f32], right: &mut [f32]) -> usize {
@@ -223,14 +229,7 @@ impl RealtimeGraphProcessor {
 
         self.last_render_used_arena = false;
 
-        let events: Vec<BlockEvent> = self
-            .pending_events
-            .drain(..)
-            .map(|event| BlockEvent {
-                frame_offset: 0,
-                event,
-            })
-            .collect();
+        let events = self.pending_events.drain_block_events();
 
         if self.allocator.max_voices() > 1 || !self.compiled.voice_node_indices().is_empty() {
             self.scratch_left.clear();
@@ -420,5 +419,3 @@ fn is_mono_global_arena_supported(step: &RenderStep) -> bool {
         _ => false,
     }
 }
-
-
