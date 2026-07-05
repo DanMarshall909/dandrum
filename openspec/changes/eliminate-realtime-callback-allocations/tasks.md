@@ -28,7 +28,7 @@
 
 ## 5. Bounded Realtime Events
 
-- [ ] 5.1 Introduce prepared fixed-capacity event queues and event writers with explicit overflow reporting.
+- [x] 5.1 Introduce prepared fixed-capacity event queues and event writers with explicit overflow reporting.
 - [ ] 5.2 Replace callback-time `Vec<BlockEvent>` collection of pending events with bounded prepared queues.
 - [ ] 5.3 Replace event-port `HashMap<String, Vec<BlockEvent>>` routing with compiled event queue IDs.
 - [ ] 5.4 Define and test overflow behaviour for note-on, note-off, automation/control, script-generated, and diagnostic events.
