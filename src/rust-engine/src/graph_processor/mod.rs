@@ -6,7 +6,6 @@ mod input_provider;
 mod offline;
 mod outputs;
 mod polyphony;
-mod process_context;
 mod processing;
 mod realtime_graph_processor;
 mod render_plan;
@@ -29,28 +28,6 @@ pub use self::realtime_graph_processor::RealtimeGraphProcessor;
 use self::state::PerModuleState;
 #[cfg(test)]
 use crate::patch::{RenderSettings, VoiceAllocation};
-
-#[doc(hidden)]
-pub fn exercise_active_process_context_surface_for_compilation() {
-    let plan = render_plan::AudioBufferPlan {
-        buffer_count: 2,
-        max_block_frames: 1,
-        max_voices: 1,
-    };
-    let mut arena = audio_arena::AudioArena::new(plan);
-    let input_buffers = [render_plan::BufferId(0)];
-    let output_buffers = [render_plan::BufferId(1)];
-    let mut context = process_context::ProcessContext::new(
-        &mut arena,
-        &input_buffers,
-        &output_buffers,
-        1,
-    );
-
-    let _ = context.frames();
-    let _ = context.input(0);
-    let _ = context.output(0);
-}
 
 #[cfg(test)]
 mod realtime_allocation_tests;
