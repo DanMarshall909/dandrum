@@ -29,7 +29,9 @@ pub struct CompiledNode {
     pub module_kind: ModuleKind,
     pub execution_scope: ExecutionScope,
     pub input_port_map: Vec<Vec<CompiledPortRef>>,
+    pub input_routes: Vec<Vec<CompiledInputSource>>,
     pub output_port_map: Vec<usize>,
+    pub input_port_indices: BTreeMap<String, usize>,
     pub input_port_names: Vec<String>,
     pub input_port_types: Vec<SignalType>,
     pub output_port_names: Vec<String>,
@@ -41,6 +43,14 @@ pub struct CompiledNode {
 pub struct CompiledPortRef {
     pub module_index: usize,
     pub port_index: usize,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct CompiledInputSource {
+    pub module_index: usize,
+    pub port_index: usize,
+    pub output_buffer_id: usize,
+    pub output_port_name: String,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -128,24 +138,34 @@ pub fn compile(
                 output_buffer_start,
                 output_buffer_count: output_count,
             });
+            let input_port_names: Vec<String> = module
+                .inputs()
+                .iter()
+                .map(|p| p.name().to_string())
+                .collect();
+            let output_port_names: Vec<String> = module
+                .outputs()
+                .iter()
+                .map(|p| p.name().to_string())
+                .collect();
+            let input_port_indices = input_port_names
+                .iter()
+                .enumerate()
+                .map(|(index, name)| (name.clone(), index))
+                .collect();
+
             Ok(CompiledNode {
                 id: module.id().clone(),
                 module_type: module_type_str.to_string(),
                 module_kind: kind,
                 execution_scope: module.execution_scope(),
                 input_port_map: vec![Vec::new(); input_count],
+                input_routes: vec![Vec::new(); input_count],
                 output_port_map: (output_buffer_start..next_output_buffer).collect(),
-                input_port_names: module
-                    .inputs()
-                    .iter()
-                    .map(|p| p.name().to_string())
-                    .collect(),
+                input_port_indices,
+                input_port_names,
                 input_port_types: module.inputs().iter().map(|p| p.signal_type()).collect(),
-                output_port_names: module
-                    .outputs()
-                    .iter()
-                    .map(|p| p.name().to_string())
-                    .collect(),
+                output_port_names,
                 output_port_types: module.outputs().iter().map(|p| p.signal_type()).collect(),
                 parameters: module.params().clone(),
             })
@@ -347,6 +367,15 @@ fn resolve_routing(
                 port_index: source_port_index,
             },
         );
+        nodes[destination_module_index].input_routes[destination_port_index].push(
+            CompiledInputSource {
+                module_index: source_module_index,
+                port_index: source_port_index,
+                output_buffer_id: nodes[source_module_index].output_port_map[source_port_index],
+                output_port_name: nodes[source_module_index].output_port_names[source_port_index]
+                    .clone(),
+            },
+        );
     }
 
     Ok(())
@@ -506,6 +535,16 @@ mod tests {
                 port_index: 0,
             }
         );
+        assert_eq!(compiled.nodes()[1].input_port_indices.get("left"), Some(&0));
+        assert_eq!(
+            compiled.nodes()[1].input_routes[0][0],
+            CompiledInputSource {
+                module_index: 0,
+                port_index: 0,
+                output_buffer_id: 0,
+                output_port_name: "audio".to_string(),
+            }
+        );
     }
 
     #[test]
@@ -617,6 +656,8 @@ mod tests {
         assert_eq!(compiled.nodes()[1].input_port_map.len(), 2);
         assert_eq!(compiled.nodes()[1].input_port_map[0][0].port_index, 0);
         assert_eq!(compiled.nodes()[1].input_port_map[1][0].port_index, 1);
+        assert_eq!(compiled.nodes()[1].input_routes[0][0].output_buffer_id, 0);
+        assert_eq!(compiled.nodes()[1].input_routes[1][0].output_buffer_id, 1);
         assert_eq!(compiled.nodes()[0].output_port_map, vec![0, 1]);
     }
 

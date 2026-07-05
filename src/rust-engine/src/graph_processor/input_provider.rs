@@ -40,24 +40,9 @@ fn compiled_input_port_index(
     compiled
         .nodes()
         .get(module_idx)?
-        .input_port_names
-        .iter()
-        .position(|name| name == port_name)
-}
-
-fn compiled_source_port_name(
-    compiled: &CompiledPatch,
-    src_idx: usize,
-    port_idx: usize,
-) -> Option<&str> {
-    Some(
-        compiled
-            .nodes()
-            .get(src_idx)?
-            .output_port_names
-            .get(port_idx)?
-            .as_str(),
-    )
+        .input_port_indices
+        .get(port_name)
+        .copied()
 }
 
 pub(super) fn compiled_sum_audio_input(
@@ -72,15 +57,9 @@ pub(super) fn compiled_sum_audio_input(
         return result;
     };
 
-    for &src_ref in &compiled.nodes()[module_idx].input_port_map[port_idx] {
-        let Some(src_port_name) =
-            compiled_source_port_name(compiled, src_ref.module_index, src_ref.port_index)
-        else {
-            continue;
-        };
-
-        if let Some(outputs) = all_outputs.get(&src_ref.module_index) {
-            if let Some(buffer) = outputs.audio.get(src_port_name) {
+    for source in &compiled.nodes()[module_idx].input_routes[port_idx] {
+        if let Some(outputs) = all_outputs.get(&source.module_index) {
+            if let Some(buffer) = outputs.audio.get(&source.output_port_name) {
                 for (frame_idx, sample) in buffer.iter().enumerate().take(frames) {
                     result[frame_idx] += sample;
                 }
@@ -103,15 +82,9 @@ pub(super) fn compiled_sum_control_input(
         return result;
     };
 
-    for &src_ref in &compiled.nodes()[module_idx].input_port_map[port_idx] {
-        let Some(src_port_name) =
-            compiled_source_port_name(compiled, src_ref.module_index, src_ref.port_index)
-        else {
-            continue;
-        };
-
-        if let Some(outputs) = all_outputs.get(&src_ref.module_index) {
-            if let Some(buffer) = outputs.control.get(src_port_name) {
+    for source in &compiled.nodes()[module_idx].input_routes[port_idx] {
+        if let Some(outputs) = all_outputs.get(&source.module_index) {
+            if let Some(buffer) = outputs.control.get(&source.output_port_name) {
                 for (frame_idx, sample) in buffer.iter().enumerate().take(frames) {
                     result[frame_idx] += sample;
                 }
@@ -158,15 +131,9 @@ pub(super) fn compiled_gather_event_inputs(
         if node.input_port_types[input_idx] != SignalType::Event {
             continue;
         }
-        for &src_ref in &node.input_port_map[input_idx] {
-            if let Some(outputs) = all_outputs.get(&src_ref.module_index) {
-                let Some(src_port_name) =
-                    compiled_source_port_name(compiled, src_ref.module_index, src_ref.port_index)
-                else {
-                    continue;
-                };
-
-                if let Some(port_events) = outputs.event_ports.get(src_port_name) {
+        for source in &node.input_routes[input_idx] {
+            if let Some(outputs) = all_outputs.get(&source.module_index) {
+                if let Some(port_events) = outputs.event_ports.get(&source.output_port_name) {
                     events.extend_from_slice(port_events);
                 } else {
                     events.extend_from_slice(&outputs.events);
