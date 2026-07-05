@@ -847,7 +847,7 @@ connections:
     fn fallback_helpers_preserve_expected_math() {
         assert!((midi_note_to_hz(69) - 440.0).abs() < 0.001);
         assert!((midi_note_to_hz(81) - 880.0).abs() < 0.001);
-        assert!(envelope(0.0, SECONDS) == 0.0);
+        assert_eq!(envelope(0.0, SECONDS), 0.0);
         assert!((envelope(0.025, SECONDS) - (-2.8_f32 * 0.025).exp()).abs() < 0.001);
         assert_eq!(envelope(SECONDS, SECONDS), 0.0);
         assert!(envelope(0.05, SECONDS) > envelope(0.9, SECONDS));

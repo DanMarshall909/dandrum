@@ -116,9 +116,7 @@ fn render_with_events(
 
 fn parse_render_args(args: Vec<String>) -> Result<RenderArgs, String> {
     if args.len() < 3 || args[1] != OUTPUT_FLAG {
-        return Err(format!(
-            "render requires: <patch> --output <wav> [--preset <preset.yaml>] [--set module.parameter=value]"
-        ));
+        return Err("render requires: <patch> --output <wav> [--preset <preset.yaml>] [--set module.parameter=value]".to_string());
     }
 
     let mut overrides = Vec::new();

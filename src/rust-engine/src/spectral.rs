@@ -192,7 +192,7 @@ mod tests {
         let mut proc = SpectralProcessor::new(256, SpectralMode::Passthrough);
         for _ in 0..2048 {
             let out = proc.process(0.0);
-            assert!(out == 0.0, "zero in should give zero out");
+            assert_eq!(out, 0.0, "zero in should give zero out");
         }
     }
 }

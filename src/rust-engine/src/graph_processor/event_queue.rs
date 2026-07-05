@@ -411,4 +411,36 @@ mod tests {
         let count = queues.queue(0).unwrap().drain_into_buffer(&mut buf);
         assert_eq!(count, 2);
     }
+
+    #[test]
+    fn prepared_event_queues_route_compiled_event_edge_reports_overflow_when_destination_is_full() {
+        let mut queues = PreparedEventQueues::new(2, 1);
+        {
+            let mut writer = queues.writer(0).unwrap();
+            writer
+                .write(ScriptEvent::NoteOn {
+                    note: 60,
+                    velocity: 100,
+                })
+                .unwrap();
+        }
+        {
+            let mut writer = queues.writer(1).unwrap();
+            writer
+                .write(ScriptEvent::NoteOn {
+                    note: 61,
+                    velocity: 100,
+                })
+                .unwrap();
+        }
+
+        assert_eq!(
+            queues.route_event_edge(CompiledEventEdge {
+                source: EventQueueId(0),
+                destination: EventQueueId(1),
+            }),
+            Err(EventQueueOverflow { dropped_events: 1 })
+        );
+        assert_eq!(queues.queue(1).unwrap().dropped_events(), 1);
+    }
 }

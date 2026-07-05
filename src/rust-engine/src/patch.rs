@@ -1770,7 +1770,7 @@ impl PatchLoadError {
 }
 
 impl PatchValidationError {
-    pub fn to_diagnostics(&self) -> diagnostics::Diagnostics {
+    pub fn to_diagnostics(&self) -> Diagnostics {
         self.diagnostics.clone()
     }
 

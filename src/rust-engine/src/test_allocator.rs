@@ -42,9 +42,9 @@ unsafe impl GlobalAlloc for CountingAllocator {
 }
 
 pub fn count_current_thread_allocations(work: impl FnOnce()) -> usize {
-    ALLOCATION_COUNT.with(|allocation_count| allocation_count.set(0));
-    IS_TRACKING.with(|is_tracking| is_tracking.set(true));
+    ALLOCATION_COUNT.set(0);
+    IS_TRACKING.set(true);
     work();
-    IS_TRACKING.with(|is_tracking| is_tracking.set(false));
+    IS_TRACKING.set(false);
     ALLOCATION_COUNT.with(Cell::get)
 }

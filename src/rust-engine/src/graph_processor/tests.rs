@@ -1569,14 +1569,11 @@ fn note_off_releases_matching_voice_while_other_continues() {
     );
 
     // Both voices produce audio initially
-    assert!(left[100] != 0.0, "voices should produce audio early");
+    assert_ne!(left[100], 0.0, "voices should produce audio early");
 
     // After note-off at frame 12000, the released voice enters release
     // but the unreleased voice continues -> audio should still be present
-    assert!(
-        left[20000] != 0.0,
-        "unreleased voice should still be audible after first note-off"
-    );
+    assert_ne!(left[20000], 0.0, "unreleased voice should still be audible after first note-off");
 
     // The unreleased voice (note 64) eventually gets a note-off? No — it never gets NoteOff
     // It will have a fixed sustain level unless the ADSR is gated off.
