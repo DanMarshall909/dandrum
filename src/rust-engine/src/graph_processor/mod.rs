@@ -2,6 +2,7 @@ mod arena_processing;
 mod audio_arena;
 mod block;
 mod dispatch;
+mod event_queue;
 mod helpers;
 mod input_provider;
 mod offline;
