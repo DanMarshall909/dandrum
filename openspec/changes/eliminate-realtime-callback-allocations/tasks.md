@@ -35,10 +35,10 @@
 
 ## 6. Polyphonic Arena Path
 
-- [ ] 6.1 Split polyphonic rendering into event-to-voice routing, active voice processing, voice output accumulation, global processing, output binding, and voice retirement.
-- [ ] 6.2 Replace per-block `Vec<Vec<BlockEvent>>`, per-voice `HashMap<usize, ModuleOutputs>`, and accumulation `HashMap` storage with prepared per-voice queues and arena buffers.
-- [ ] 6.3 Ensure inactive voices do not leak stale arena buffers into accumulated output.
-- [ ] 6.4 Preserve existing voice allocation and voice retirement semantics.
+- [x] 6.1 Split polyphonic rendering into event-to-voice routing, active voice processing, voice output accumulation, global processing, output binding, and voice retirement.
+- [x] 6.2 Replace per-block `Vec<Vec<BlockEvent>>`, per-voice `HashMap<usize, ModuleOutputs>`, and accumulation `HashMap` storage with prepared per-voice queues and arena buffers.
+- [x] 6.3 Ensure inactive voices do not leak stale arena buffers into accumulated output.
+- [x] 6.4 Preserve existing voice allocation and voice retirement semantics.
 
 ## 7. Verification And Cleanup
 

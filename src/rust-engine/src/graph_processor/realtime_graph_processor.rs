@@ -278,7 +278,6 @@ impl RealtimeGraphProcessor {
                 &self.compiled,
                 &mut self.states,
                 &mut self.allocator,
-                self.midi_idx,
                 self.out_idx,
                 events,
                 frames,
@@ -383,7 +382,6 @@ impl RealtimeGraphProcessor {
         compiled: &CompiledPatch,
         states: &mut [Vec<PerModuleState>],
         allocator: &mut VoiceAllocator,
-        midi_idx: Option<usize>,
         out_idx: Option<usize>,
         events: &[BlockEvent],
         frames: usize,
@@ -394,34 +392,8 @@ impl RealtimeGraphProcessor {
         global_event_queues: &mut PreparedEventQueues,
     ) {
         global_event_queues.clear_all();
-
-        let mut voice_events: Vec<Vec<ScriptEvent>> = vec![Vec::new(); allocator.max_voices()];
-
-        for event in events {
-            if let ScriptEvent::NoteOn { note, velocity } = &event.event {
-                if let Some(slot) = allocator.note_on(*note, *velocity) {
-                    voice_events[slot].push(event.event.clone());
-                }
-            }
-        }
-
-        let slot_notes: Vec<Option<u8>> = (0..allocator.max_voices())
-            .map(|i| allocator.slot(i).filter(|s| s.active).map(|s| s.note))
-            .collect();
-
-        for event in events {
-            if let ScriptEvent::NoteOff { note } = &event.event {
-                for (slot_idx, sn) in slot_notes.iter().enumerate() {
-                    if *sn == Some(*note) {
-                        voice_events[slot_idx].push(event.event.clone());
-                    }
-                }
-            }
-        }
-
-        let active_voices: Vec<usize> = (0..allocator.max_voices())
-            .filter(|&i| allocator.slot(i).is_some_and(|s| s.active))
-            .collect();
+        let mut voice_event_queues = prepare_voice_event_queues(allocator.max_voices(), events, allocator);
+        let active_voices = active_voice_indices(allocator);
 
         if active_voices.is_empty() {
             left_out.extend(std::iter::repeat_n(0.0, frames));
@@ -429,65 +401,31 @@ impl RealtimeGraphProcessor {
             return;
         }
 
-        let mut accum: HashMap<usize, ModuleOutputs> = HashMap::new();
+        let mut accum: Vec<Option<ModuleOutputs>> = Vec::with_capacity(compiled.nodes().len());
+        accum.resize_with(compiled.nodes().len(), || None);
         let input_provider = CompiledInputProvider { compiled };
         let queue_capacity = render_plan.event_queues.queue_capacity;
         let queue_count = render_plan.event_queues.queue_count;
         let mut events_scratch: Vec<BlockEvent> = Vec::with_capacity(queue_capacity);
-        let mut voice_queues: Vec<Vec<ScriptEvent>> =
-            (0..queue_count).map(|_| Vec::new()).collect();
+        let mut voice_queues: Vec<PreparedEventQueues> = (0..allocator.max_voices())
+            .map(|_| PreparedEventQueues::new(queue_count, queue_capacity))
+            .collect();
 
         for &voice_idx in &active_voices {
-            for q in &mut voice_queues {
-                q.clear();
-            }
-
-            if let Some(midi_queue) = render_plan.midi_input {
-                for e in voice_events[voice_idx].drain(..) {
-                    voice_queues[midi_queue.0].push(e);
-                }
-            }
+            let voice_events = &mut voice_event_queues[voice_idx];
+            let voice_queues = &mut voice_queues[voice_idx];
+            route_voice_input_events(render_plan.midi_input, voice_events, voice_queues);
 
             let voice_states = &mut states[voice_idx];
             let mut all_outputs: HashMap<usize, ModuleOutputs> = HashMap::new();
-
-            if let Some(idx) = midi_idx {
-                all_outputs.insert(
-                    idx,
-                    ModuleOutputs {
-                        audio: HashMap::new(),
-                        control: HashMap::new(),
-                        events: Vec::new(),
-                        event_ports: HashMap::new(),
-                    },
-                );
-            }
 
             for step in render_plan.voice_steps.iter() {
                 if step.module_kind == ModuleKind::MidiInput {
                     continue;
                 }
 
-                for &edge in step.incoming_event_edges.iter() {
-                    if edge.source == edge.destination {
-                        continue;
-                    }
-                    let src: Vec<ScriptEvent> =
-                        voice_queues[edge.source.0].iter().cloned().collect();
-                    if !src.is_empty() {
-                        voice_queues[edge.destination.0].extend(src);
-                    }
-                }
-
-                events_scratch.clear();
-                for &qid in step.event_inputs.iter() {
-                    for event in voice_queues[qid.0].drain(..) {
-                        events_scratch.push(BlockEvent {
-                            frame_offset: 0,
-                            event,
-                        });
-                    }
-                }
+                route_voice_event_edges(voice_queues, step);
+                gather_step_events(voice_queues, step, &mut events_scratch);
 
                 let outputs = process_module(
                     step.module_index,
@@ -500,50 +438,21 @@ impl RealtimeGraphProcessor {
                     block_start_frame,
                 );
 
-                for be in &outputs.events {
-                    for &eq_id in step.event_outputs.iter() {
-                        voice_queues[eq_id.0].push(be.event.clone());
-                        let _ = global_event_queues
-                            .queue_mut(eq_id.0)
-                            .map(|q| q.push(be.event.clone()));
-                    }
-                }
-
+                route_step_outputs_to_event_queues(step, &outputs, voice_queues, global_event_queues);
                 all_outputs.insert(step.module_index, outputs);
             }
 
-            for &idx in compiled.voice_node_indices() {
-                if let Some(outputs) = all_outputs.remove(&idx) {
-                    let entry = accum.entry(idx).or_insert_with(ModuleOutputs::empty);
-                    for (port, buf) in outputs.audio {
-                        let acc = entry.audio.entry(port).or_insert_with(|| vec![0.0; frames]);
-                        for (i, s) in buf.iter().enumerate().take(frames) {
-                            acc[i] += s;
-                        }
-                    }
-                    for (port, buf) in outputs.control {
-                        let acc = entry
-                            .control
-                            .entry(port)
-                            .or_insert_with(|| vec![0.0; frames]);
-                        for (i, s) in buf.iter().enumerate().take(frames) {
-                            acc[i] += s;
-                        }
-                    }
-                }
-            }
+            accumulate_voice_outputs(&mut accum, &mut all_outputs, compiled, frames);
         }
 
-        let mut all_outputs = accum;
+        let mut all_outputs = collect_accumulated_outputs(accum);
 
         for step in render_plan.global_steps.iter() {
             if step.module_kind == ModuleKind::MidiInput {
                 continue;
             }
 
-            for &edge in step.incoming_event_edges.iter() {
-                let _ = global_event_queues.route_event_edge(edge);
-            }
+            route_global_event_edges(global_event_queues, step);
 
             events_scratch.clear();
             for &qid in step.event_inputs.iter() {
@@ -563,13 +472,7 @@ impl RealtimeGraphProcessor {
                 block_start_frame,
             );
 
-            for be in &outputs.events {
-                for &eq_id in step.event_outputs.iter() {
-                    let _ = global_event_queues
-                        .queue_mut(eq_id.0)
-                        .map(|q| q.push(be.event.clone()));
-                }
-            }
+            route_step_outputs_to_global_event_queues(step, &outputs, global_event_queues);
 
             all_outputs.insert(step.module_index, outputs);
         }
@@ -628,6 +531,151 @@ impl RealtimeGraphProcessor {
             }
         }
         true
+    }
+}
+
+fn prepare_voice_event_queues(
+    max_voices: usize,
+    events: &[BlockEvent],
+    allocator: &mut VoiceAllocator,
+) -> Vec<Vec<ScriptEvent>> {
+    let mut voice_events: Vec<Vec<ScriptEvent>> = vec![Vec::new(); max_voices];
+
+    for event in events {
+        if let ScriptEvent::NoteOn { note, velocity } = &event.event
+            && let Some(slot) = allocator.note_on(*note, *velocity)
+        {
+            voice_events[slot].push(event.event.clone());
+        }
+    }
+
+    let slot_notes: Vec<Option<u8>> = (0..max_voices)
+        .map(|i| allocator.slot(i).filter(|s| s.active).map(|s| s.note))
+        .collect();
+
+    for event in events {
+        if let ScriptEvent::NoteOff { note } = &event.event {
+            for (slot_idx, sn) in slot_notes.iter().enumerate() {
+                if *sn == Some(*note) {
+                    voice_events[slot_idx].push(event.event.clone());
+                }
+            }
+        }
+    }
+
+    voice_events
+}
+
+fn active_voice_indices(allocator: &VoiceAllocator) -> Vec<usize> {
+    (0..allocator.max_voices())
+        .filter(|&i| allocator.slot(i).is_some_and(|s| s.active))
+        .collect()
+}
+
+fn route_voice_input_events(
+    midi_input: Option<super::render_plan::EventQueueId>,
+    voice_events: &mut Vec<ScriptEvent>,
+    voice_queues: &mut PreparedEventQueues,
+) {
+    if let Some(midi_queue) = midi_input {
+        if let Some(queue) = voice_queues.queue_mut(midi_queue.0) {
+            for event in voice_events.drain(..) {
+                let _ = queue.push(event);
+            }
+        }
+    }
+}
+
+fn route_voice_event_edges(voice_queues: &mut PreparedEventQueues, step: &RenderStep) {
+    for &edge in step.incoming_event_edges.iter() {
+        let _ = voice_queues.route_event_edge(edge);
+    }
+}
+
+fn gather_step_events(
+    voice_queues: &mut PreparedEventQueues,
+    step: &RenderStep,
+    events_scratch: &mut Vec<BlockEvent>,
+) {
+    events_scratch.clear();
+    for &qid in step.event_inputs.iter() {
+        if let Some(q) = voice_queues.queue_mut(qid.0) {
+            q.drain_into_vec(events_scratch);
+        }
+    }
+}
+
+fn route_global_event_edges(global_event_queues: &mut PreparedEventQueues, step: &RenderStep) {
+    for &edge in step.incoming_event_edges.iter() {
+        let _ = global_event_queues.route_event_edge(edge);
+    }
+}
+
+fn route_step_outputs_to_event_queues(
+    step: &RenderStep,
+    outputs: &ModuleOutputs,
+    voice_queues: &mut PreparedEventQueues,
+    global_event_queues: &mut PreparedEventQueues,
+) {
+    for be in &outputs.events {
+        for &eq_id in step.event_outputs.iter() {
+            let _ = voice_queues
+                .queue_mut(eq_id.0)
+                .map(|q| q.push(be.event.clone()));
+            let _ = global_event_queues
+                .queue_mut(eq_id.0)
+                .map(|q| q.push(be.event.clone()));
+        }
+    }
+}
+
+fn accumulate_voice_outputs(
+    accum: &mut [Option<ModuleOutputs>],
+    all_outputs: &mut HashMap<usize, ModuleOutputs>,
+    compiled: &CompiledPatch,
+    frames: usize,
+) {
+    for &idx in compiled.voice_node_indices() {
+        if let Some(outputs) = all_outputs.remove(&idx) {
+            let entry = accum[idx].get_or_insert_with(ModuleOutputs::empty);
+            for (port, buf) in outputs.audio {
+                let acc = entry.audio.entry(port).or_insert_with(|| vec![0.0; frames]);
+                for (i, s) in buf.iter().enumerate().take(frames) {
+                    acc[i] += s;
+                }
+            }
+            for (port, buf) in outputs.control {
+                let acc = entry
+                    .control
+                    .entry(port)
+                    .or_insert_with(|| vec![0.0; frames]);
+                for (i, s) in buf.iter().enumerate().take(frames) {
+                    acc[i] += s;
+                }
+            }
+        }
+    }
+}
+
+fn collect_accumulated_outputs(accum: Vec<Option<ModuleOutputs>>) -> HashMap<usize, ModuleOutputs> {
+    accum
+        .into_iter()
+        .enumerate()
+        .filter_map(|(idx, output)| output.map(|output| (idx, output)))
+        .collect()
+}
+
+fn route_step_outputs_to_global_event_queues(
+    step: &RenderStep,
+    outputs: &ModuleOutputs,
+    global_event_queues: &mut PreparedEventQueues,
+) {
+    for be in &outputs.events {
+        for &eq_id in step.event_outputs.iter() {
+            let _ = global_event_queues
+                .queue_mut(eq_id.0)
+                .map(|q| q.push(be.event.clone()));
+        }
     }
 }
 
