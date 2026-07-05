@@ -1,19 +1,19 @@
 use crate::builtins::module_kind::ModuleKind;
 use crate::graph::builtin_ports::*;
-use std::collections::{BTreeMap, HashMap};
 use ModuleKind::*;
+use std::collections::{BTreeMap, HashMap};
 
+use super::ModuleInputProvider;
 use super::outputs::{BlockEvent, ModuleOutputs};
 use super::processing::{
-    process_adsr, process_convolution, process_curve_mapper, process_dynamics_processor, process_echo,
-    process_envelope_follower, process_event_filter, process_filter, process_frequency_splitter,
-    process_impulse, process_multiply, process_noise, process_note_to_control, process_note_to_rate,
-    process_oscillator, process_reverb, process_sampler, process_saturator,
-    process_script, process_spectral_processor, process_vca, EchoControls, ReverbControls,
+    EchoControls, ReverbControls, process_adsr, process_convolution, process_curve_mapper,
+    process_dynamics_processor, process_echo, process_envelope_follower, process_event_filter,
+    process_filter, process_frequency_splitter, process_impulse, process_multiply, process_noise,
+    process_note_to_control, process_note_to_rate, process_oscillator, process_reverb,
+    process_sampler, process_saturator, process_script, process_spectral_processor, process_vca,
 };
 use super::render_plan::default_control_value;
 use super::state::PerModuleState;
-use super::ModuleInputProvider;
 
 fn default_control(module_kind: ModuleKind, port_name: &str) -> f32 {
     default_control_value(module_kind, port_name)
@@ -43,61 +43,49 @@ pub(super) fn process_module(
     };
 
     match module_kind {
-        Oscillator => {
-            process_oscillator(&mut states[module_idx], &ctrl(PITCH), frames)
-        }
-        Adsr => {
-            process_adsr(
-                &mut states[module_idx],
-                events_in,
-                &mod_ctrl(ATTACK),
-                &mod_ctrl(DECAY),
-                &mod_ctrl(SUSTAIN),
-                &mod_ctrl(RELEASE),
-                block_start_frame,
-                frames,
-            )
-        }
-        Gain => {
-            process_vca(audio(AUDIO_IN), mod_ctrl(GAIN))
-        }
-        Sampler => {
-            process_sampler(
-                &mut states[module_idx],
-                events_in,
-                &ctrl(RATE),
-                &mod_ctrl(START),
-                &mod_ctrl(LOOP_ENABLED),
-                &mod_ctrl(LOOP_START),
-                &mod_ctrl(LOOP_END),
-                frames,
-            )
-        }
+        Oscillator => process_oscillator(&mut states[module_idx], &ctrl(PITCH), frames),
+        Adsr => process_adsr(
+            &mut states[module_idx],
+            events_in,
+            &mod_ctrl(ATTACK),
+            &mod_ctrl(DECAY),
+            &mod_ctrl(SUSTAIN),
+            &mod_ctrl(RELEASE),
+            block_start_frame,
+            frames,
+        ),
+        Gain => process_vca(audio(AUDIO_IN), mod_ctrl(GAIN)),
+        Sampler => process_sampler(
+            &mut states[module_idx],
+            events_in,
+            &ctrl(RATE),
+            &mod_ctrl(START),
+            &mod_ctrl(LOOP_ENABLED),
+            &mod_ctrl(LOOP_START),
+            &mod_ctrl(LOOP_END),
+            frames,
+        ),
         NoteToRate => process_note_to_rate(&mut states[module_idx], events_in, frames),
         EventFilter => process_event_filter(&mut states[module_idx], events_in),
-        EnvelopeFollower => {
-            process_envelope_follower(
-                &mut states[module_idx],
-                &audio(AUDIO_IN),
-                &ctrl(ATTACK),
-                &ctrl(RELEASE),
-                &ctrl(AMOUNT),
-                &ctrl(OFFSET),
-                &ctrl(INVERT),
-                frames,
-            )
-        }
-        CurveMapper => {
-            process_curve_mapper(
-                &mut states[module_idx],
-                &mod_ctrl(VALUE),
-                &ctrl(AMOUNT),
-                &ctrl(BIAS),
-                &ctrl(SCALE),
-                &ctrl(OFFSET),
-                frames,
-            )
-        }
+        EnvelopeFollower => process_envelope_follower(
+            &mut states[module_idx],
+            &audio(AUDIO_IN),
+            &ctrl(ATTACK),
+            &ctrl(RELEASE),
+            &ctrl(AMOUNT),
+            &ctrl(OFFSET),
+            &ctrl(INVERT),
+            frames,
+        ),
+        CurveMapper => process_curve_mapper(
+            &mut states[module_idx],
+            &mod_ctrl(VALUE),
+            &ctrl(AMOUNT),
+            &ctrl(BIAS),
+            &ctrl(SCALE),
+            &ctrl(OFFSET),
+            frames,
+        ),
         AudioMixer => {
             let mix = audio(INPUTS);
             let mut outputs = ModuleOutputs::empty();
@@ -109,9 +97,7 @@ pub(super) fn process_module(
             let right = audio(RIGHT);
             let mut outputs = ModuleOutputs::empty();
             outputs.audio.insert(LEFT.to_string(), left);
-            outputs
-                .audio
-                .insert(RIGHT.to_string(), right);
+            outputs.audio.insert(RIGHT.to_string(), right);
             outputs
         }
         DynamicsProcessor => {
@@ -210,7 +196,12 @@ pub(super) fn process_module(
         }
         FrequencySplitter => {
             let audio_in = audio(AUDIO_IN);
-            process_frequency_splitter(&mut states[module_idx], &audio_in, &ctrl(CROSSOVER_HZ), frames)
+            process_frequency_splitter(
+                &mut states[module_idx],
+                &audio_in,
+                &ctrl(CROSSOVER_HZ),
+                frames,
+            )
         }
         SpectralProcessor => {
             let audio_in = audio(AUDIO_IN);
@@ -229,9 +220,7 @@ pub(super) fn process_module(
             let b = audio(GAIN);
             process_multiply(a, b)
         }
-        NoteToControl => {
-            process_note_to_control(&mut states[module_idx], events_in, frames)
-        }
+        NoteToControl => process_note_to_control(&mut states[module_idx], events_in, frames),
         Script => {
             let control_input_names = match &states[module_idx] {
                 PerModuleState::Script { control_inputs, .. } => control_inputs.clone(),

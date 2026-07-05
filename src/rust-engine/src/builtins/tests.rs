@@ -1,8 +1,8 @@
-use module_types::*;
 use super::*;
 use crate::graph::{PortDirection, SignalType};
-use SignalType::{Audio, Control, Event};
 use ParameterValueType::{Integer, Text};
+use SignalType::{Audio, Control, Event};
+use module_types::*;
 
 macro_rules! assert_control_inputs {
     ($definition:expr, $($name:expr),+ $(,)?) => {
@@ -75,9 +75,7 @@ fn initialized_registry_contains_synthesis_control_and_mixer_definitions() {
     assert_has_control_input(oscillator, builtin_ports::PITCH);
     assert_has_audio_output(oscillator, builtin_ports::AUDIO);
 
-    let gain = registry
-        .get(GAIN)
-        .expect("gain should be built in");
+    let gain = registry.get(GAIN).expect("gain should be built in");
     assert_has_audio_input(gain, builtin_ports::AUDIO_IN);
     assert_has_control_input(gain, builtin_ports::GAIN);
     assert_has_audio_output(gain, builtin_ports::AUDIO_OUT);
@@ -94,11 +92,10 @@ fn initialized_registry_contains_synthesis_control_and_mixer_definitions() {
     assert_has_control_mixing_input(control_mixer, builtin_ports::INPUTS);
     assert_has_control_output(control_mixer, builtin_ports::SUM);
 
-    let adsr = registry
-        .get(ADSR)
-        .expect("ADSR should be built in");
+    let adsr = registry.get(ADSR).expect("ADSR should be built in");
     assert_has_event_input(adsr, builtin_ports::GATE);
-    assert_control_inputs!(adsr,
+    assert_control_inputs!(
+        adsr,
         builtin_ports::ATTACK,
         builtin_ports::DECAY,
         builtin_ports::SUSTAIN,
@@ -106,17 +103,14 @@ fn initialized_registry_contains_synthesis_control_and_mixer_definitions() {
     );
     assert_has_control_output(adsr, builtin_ports::VALUE);
 
-    let lfo = registry
-        .get(LFO)
-        .expect("LFO should be built in");
+    let lfo = registry.get(LFO).expect("LFO should be built in");
     assert_has_control_input(lfo, builtin_ports::RATE);
     assert_has_control_output(lfo, builtin_ports::VALUE);
 
-    let filter = registry
-        .get(FILTER)
-        .expect("filter should be built in");
+    let filter = registry.get(FILTER).expect("filter should be built in");
     assert_has_audio_input(filter, builtin_ports::AUDIO_IN);
-    assert_control_inputs!(filter,
+    assert_control_inputs!(
+        filter,
         builtin_ports::CUTOFF,
         builtin_ports::RESONANCE,
         builtin_ports::GAIN,
@@ -295,9 +289,7 @@ fn event_filter_definition_exposes_event_ports_selector_metadata_defaults_and_ex
 fn initialized_registry_contains_script_definition_with_yaml_declared_ports() {
     let registry = BuiltInModuleRegistry::new();
 
-    let script = registry
-        .get(SCRIPT)
-        .expect("script should be built in");
+    let script = registry.get(SCRIPT).expect("script should be built in");
 
     assert!(script.inputs().is_empty());
     assert!(script.outputs().is_empty());
@@ -308,12 +300,11 @@ fn initialized_registry_contains_script_definition_with_yaml_declared_ports() {
 fn initialized_registry_contains_sampler_definition() {
     let registry = BuiltInModuleRegistry::new();
 
-    let sampler = registry
-        .get(SAMPLER)
-        .expect("sampler should be built in");
+    let sampler = registry.get(SAMPLER).expect("sampler should be built in");
 
     assert_has_event_input(sampler, builtin_ports::TRIGGER);
-    assert_control_inputs!(sampler,
+    assert_control_inputs!(
+        sampler,
         builtin_ports::RATE,
         builtin_ports::START,
         builtin_ports::LOOP_ENABLED,
@@ -343,7 +334,8 @@ fn initialized_registry_contains_envelope_follower_and_curve_mapper_definitions(
         .get(ENVELOPE_FOLLOWER)
         .expect("envelope_follower should be built in");
     assert_has_audio_input(follower, builtin_ports::AUDIO_IN);
-    assert_control_inputs!(follower,
+    assert_control_inputs!(
+        follower,
         builtin_ports::ATTACK,
         builtin_ports::RELEASE,
         builtin_ports::AMOUNT,
@@ -372,7 +364,8 @@ fn initialized_registry_contains_envelope_follower_and_curve_mapper_definitions(
     let mapper = registry
         .get(CURVE_MAPPER)
         .expect("curve_mapper should be built in");
-    assert_control_inputs!(mapper,
+    assert_control_inputs!(
+        mapper,
         builtin_ports::VALUE,
         builtin_ports::AMOUNT,
         builtin_ports::BIAS,
@@ -436,19 +429,12 @@ fn assert_has_mixing_input(
 fn echo_definition_has_correct_ports() {
     let registry = BuiltInModuleRegistry::new();
 
-    let echo = registry
-        .get(ECHO)
-        .expect("echo should be built in");
+    let echo = registry.get(ECHO).expect("echo should be built in");
 
-    assert_audio_inputs!(echo,
-        builtin_ports::AUDIO_IN_L,
-        builtin_ports::AUDIO_IN_R,
-    );
-    assert_audio_outputs!(echo,
-        builtin_ports::AUDIO_OUT_L,
-        builtin_ports::AUDIO_OUT_R,
-    );
-    assert_control_inputs!(echo,
+    assert_audio_inputs!(echo, builtin_ports::AUDIO_IN_L, builtin_ports::AUDIO_IN_R,);
+    assert_audio_outputs!(echo, builtin_ports::AUDIO_OUT_L, builtin_ports::AUDIO_OUT_R,);
+    assert_control_inputs!(
+        echo,
         builtin_ports::TIME_LEFT_MS,
         builtin_ports::TIME_RIGHT_MS,
         builtin_ports::FEEDBACK,
@@ -464,19 +450,16 @@ fn echo_definition_has_correct_ports() {
 fn reverb_definition_has_correct_ports() {
     let registry = BuiltInModuleRegistry::new();
 
-    let reverb = registry
-        .get(REVERB)
-        .expect("reverb should be built in");
+    let reverb = registry.get(REVERB).expect("reverb should be built in");
 
-    assert_audio_inputs!(reverb,
-        builtin_ports::AUDIO_IN_L,
-        builtin_ports::AUDIO_IN_R,
-    );
-    assert_audio_outputs!(reverb,
+    assert_audio_inputs!(reverb, builtin_ports::AUDIO_IN_L, builtin_ports::AUDIO_IN_R,);
+    assert_audio_outputs!(
+        reverb,
         builtin_ports::AUDIO_OUT_L,
         builtin_ports::AUDIO_OUT_R,
     );
-    assert_control_inputs!(reverb,
+    assert_control_inputs!(
+        reverb,
         builtin_ports::DECAY_TIME,
         builtin_ports::ROOM_SIZE,
         builtin_ports::PRE_DELAY,
@@ -491,9 +474,7 @@ fn reverb_definition_has_correct_ports() {
 #[test]
 fn filter_definition_has_parameter_metadata() {
     let registry = BuiltInModuleRegistry::new();
-    let filter = registry
-        .get(FILTER)
-        .expect("filter should be built in");
+    let filter = registry.get(FILTER).expect("filter should be built in");
 
     let params = filter.parameters();
     assert!(!params.is_empty(), "filter should have parameter metadata");
@@ -527,9 +508,7 @@ fn filter_definition_has_parameter_metadata() {
 #[test]
 fn sampler_definition_has_asset_parameter_metadata() {
     let registry = BuiltInModuleRegistry::new();
-    let sampler = registry
-        .get(SAMPLER)
-        .expect("sampler should be built in");
+    let sampler = registry.get(SAMPLER).expect("sampler should be built in");
 
     let params = sampler.parameters();
     let asset = params
@@ -544,9 +523,7 @@ fn sampler_definition_has_asset_parameter_metadata() {
 #[test]
 fn unknown_parameter_not_in_metadata_detected() {
     let registry = BuiltInModuleRegistry::new();
-    let filter = registry
-        .get(FILTER)
-        .expect("filter should be built in");
+    let filter = registry.get(FILTER).expect("filter should be built in");
 
     let known_params: Vec<&str> = filter.parameters().iter().map(|p| p.name()).collect();
     assert!(known_params.contains(&"algorithm"));
@@ -559,12 +536,8 @@ fn unknown_parameter_not_in_metadata_detected() {
 fn parameter_metadata_queryable_without_renderer() {
     let registry = BuiltInModuleRegistry::new();
 
-    let filter = registry
-        .get(FILTER)
-        .expect("filter should be built in");
-    let sampler = registry
-        .get(SAMPLER)
-        .expect("sampler should be built in");
+    let filter = registry.get(FILTER).expect("filter should be built in");
+    let sampler = registry.get(SAMPLER).expect("sampler should be built in");
     let oscillator = registry
         .get(OSCILLATOR)
         .expect("oscillator should be built in");

@@ -2,7 +2,7 @@ use std::collections::{BTreeMap, BTreeSet};
 use std::fmt;
 use std::sync::{Arc, Mutex};
 
-use crate::diagnostics::{error_codes, Diagnostic, Severity};
+use crate::diagnostics::{Diagnostic, Severity, error_codes};
 
 pub const DEFAULT_SCRIPT_MAX_OPERATIONS: u64 = 10_000;
 pub const DEFAULT_SCRIPT_MAX_CALL_DEPTH: usize = 16;
@@ -129,9 +129,11 @@ impl RhaiScriptRuntime {
         engine.set_max_call_levels(limits.max_call_depth);
         register_script_context_api(&mut engine);
 
-        let ast = engine.compile(source).map_err(|error| ScriptPrepareError::Parse {
-            message: error.to_string(),
-        })?;
+        let ast = engine
+            .compile(source)
+            .map_err(|error| ScriptPrepareError::Parse {
+                message: error.to_string(),
+            })?;
 
         if !ast
             .iter_functions()
@@ -169,15 +171,15 @@ impl DandrumScriptContext {
 
         Self {
             data: Arc::new(Mutex::new(DandrumScriptContextData {
-            input_events,
-            input_controls: input.controls,
-            output_events: BTreeMap::new(),
-            output_controls: BTreeMap::new(),
-            state: input.state,
-            event_outputs,
-            control_outputs,
-            limits,
-            error: None,
+                input_events,
+                input_controls: input.controls,
+                output_events: BTreeMap::new(),
+                output_controls: BTreeMap::new(),
+                state: input.state,
+                event_outputs,
+                control_outputs,
+                limits,
+                error: None,
             })),
         }
     }
@@ -471,7 +473,9 @@ impl fmt::Display for ScriptExecutionError {
             Self::CallDepthExceeded { limit } => {
                 write!(formatter, "script call depth limit {limit} exceeded")
             }
-            Self::RuntimeFailed { message } => write!(formatter, "script runtime failed: {message}"),
+            Self::RuntimeFailed { message } => {
+                write!(formatter, "script runtime failed: {message}")
+            }
             Self::UndeclaredOutputPort { port } => {
                 write!(formatter, "script output port {port} is not declared")
             }
@@ -591,7 +595,10 @@ impl ScriptRuntime for RhaiScriptRuntime {
     }
 }
 
-fn rhai_error_to_script_error(message: String, limits: ScriptRuntimeLimits) -> ScriptExecutionError {
+fn rhai_error_to_script_error(
+    message: String,
+    limits: ScriptRuntimeLimits,
+) -> ScriptExecutionError {
     if message.contains("Too many operations") || message.contains("maximum operations") {
         return ScriptExecutionError::OperationBudgetExceeded {
             budget: limits.max_operations as u32,
@@ -678,10 +685,8 @@ mod tests {
 
     #[test]
     fn rhai_runtime_rejects_malformed_source_before_render_processing() {
-        let result = RhaiScriptRuntime::compile(
-            "fn process(ctx) {",
-            ScriptRuntimeLimits::default(),
-        );
+        let result =
+            RhaiScriptRuntime::compile("fn process(ctx) {", ScriptRuntimeLimits::default());
 
         let Err(error) = result else {
             panic!("malformed Rhai should fail during preparation");
@@ -701,7 +706,10 @@ mod tests {
             limits.max_emitted_events_per_port,
             DEFAULT_SCRIPT_MAX_EMITTED_EVENTS_PER_PORT
         );
-        assert_eq!(limits.max_control_outputs, DEFAULT_SCRIPT_MAX_CONTROL_OUTPUTS);
+        assert_eq!(
+            limits.max_control_outputs,
+            DEFAULT_SCRIPT_MAX_CONTROL_OUTPUTS
+        );
         assert_eq!(limits.max_state_entries, DEFAULT_SCRIPT_MAX_STATE_ENTRIES);
         assert_eq!(limits.max_key_length, DEFAULT_SCRIPT_MAX_KEY_LENGTH);
         assert_eq!(
@@ -1050,7 +1058,10 @@ mod tests {
             ScriptModuleState::default(),
         ));
 
-        assert!(matches!(result, Err(ScriptExecutionError::RuntimeFailed { .. })));
+        assert!(matches!(
+            result,
+            Err(ScriptExecutionError::RuntimeFailed { .. })
+        ));
     }
 
     #[test]

@@ -68,11 +68,11 @@ impl<'a> ProcessContext<'a> {
             .get(input_index)
             .copied()
             .ok_or(ProcessContextError::MissingInput { index: input_index })?;
-        let output = self
-            .output_buffers
-            .get(output_index)
-            .copied()
-            .ok_or(ProcessContextError::MissingOutput { index: output_index })?;
+        let output = self.output_buffers.get(output_index).copied().ok_or(
+            ProcessContextError::MissingOutput {
+                index: output_index,
+            },
+        )?;
         self.arena
             .write_from_input(input, output, self.frames, write_sample);
         Ok(())
@@ -95,11 +95,11 @@ impl<'a> ProcessContext<'a> {
                 index: second_input_index,
             },
         )?;
-        let output = self
-            .output_buffers
-            .get(output_index)
-            .copied()
-            .ok_or(ProcessContextError::MissingOutput { index: output_index })?;
+        let output = self.output_buffers.get(output_index).copied().ok_or(
+            ProcessContextError::MissingOutput {
+                index: output_index,
+            },
+        )?;
         self.arena.write_from_two_inputs(
             first_input,
             second_input,
@@ -113,8 +113,8 @@ impl<'a> ProcessContext<'a> {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use super::super::render_plan::AudioBufferPlan;
+    use super::*;
 
     #[test]
     fn process_context_reads_input_samples_and_writes_output_samples() {

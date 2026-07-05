@@ -1,7 +1,7 @@
 use super::*;
 use crate::builtins::build_definition;
 use crate::builtins::module_types;
-use crate::graph::{builtin_ports, Cable, Graph, ModuleId, ModuleNode, PortRef, SignalType};
+use crate::graph::{Cable, Graph, ModuleId, ModuleNode, PortRef, SignalType, builtin_ports};
 use crate::sample::{LoadedSample, PreparedSamplerAssets};
 use crate::test_allocator::count_current_thread_allocations;
 use std::collections::BTreeMap;

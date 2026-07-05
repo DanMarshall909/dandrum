@@ -7,10 +7,10 @@ use std::path::{Path, PathBuf};
 use serde::Deserialize;
 
 use crate::builtins::{
-    module_types, BuiltInModuleDefinition, BuiltInModuleRegistry, ParameterMetadata,
-    ParameterValueType, SCRIPT_LANGUAGE_PARAMETER, SCRIPT_LANGUAGE_RHAI, SCRIPT_SOURCE_PARAMETER,
+    BuiltInModuleDefinition, BuiltInModuleRegistry, ParameterMetadata, ParameterValueType,
+    SCRIPT_LANGUAGE_PARAMETER, SCRIPT_LANGUAGE_RHAI, SCRIPT_SOURCE_PARAMETER, module_types,
 };
-use crate::diagnostics::{self, error_codes, Diagnostic, Diagnostics, Severity};
+use crate::diagnostics::{self, Diagnostic, Diagnostics, Severity, error_codes};
 use crate::script::{RhaiScriptRuntime, ScriptPrepareError, ScriptRuntimeLimits};
 
 #[path = "patch_composite.rs"]
@@ -876,7 +876,10 @@ fn validate_script_module(module: &ModuleDeclaration, diagnostics: &mut PatchVal
                     Diagnostic::new(
                         error_codes::SCRIPT_VALIDATION,
                         Severity::Error,
-                        format!("script module {} language {value} is not supported", module.id),
+                        format!(
+                            "script module {} language {value} is not supported",
+                            module.id
+                        ),
                     )
                     .with_module_id(&module.id)
                     .with_expected(SCRIPT_LANGUAGE_RHAI)
@@ -970,16 +973,14 @@ fn script_source(module: &ModuleDeclaration) -> Option<Result<&str, Diagnostic>>
     if let Some(source) = module.parameters.get(SCRIPT_SOURCE_PARAMETER) {
         return Some(match source {
             ParameterValue::Text(value) => Ok(value.as_str()),
-            other => Err(
-                Diagnostic::new(
-                    error_codes::VALIDATION_TYPE_MISMATCH,
-                    Severity::Error,
-                    format!("script module {} source must be a string", module.id),
-                )
-                .with_module_id(&module.id)
-                .with_expected("string")
-                .with_actual(format!("{other:?}")),
-            ),
+            other => Err(Diagnostic::new(
+                error_codes::VALIDATION_TYPE_MISMATCH,
+                Severity::Error,
+                format!("script module {} source must be a string", module.id),
+            )
+            .with_module_id(&module.id)
+            .with_expected("string")
+            .with_actual(format!("{other:?}"))),
         });
     }
 
@@ -988,16 +989,14 @@ fn script_source(module: &ModuleDeclaration) -> Option<Result<&str, Diagnostic>>
     };
     Some(match source.as_str() {
         Some(source) => Ok(source),
-        None => Err(
-            Diagnostic::new(
-                error_codes::VALIDATION_TYPE_MISMATCH,
-                Severity::Error,
-                format!("script module {} source must be a string", module.id),
-            )
-            .with_module_id(&module.id)
-            .with_expected("string")
-            .with_actual(format!("{:?}", source)),
-        ),
+        None => Err(Diagnostic::new(
+            error_codes::VALIDATION_TYPE_MISMATCH,
+            Severity::Error,
+            format!("script module {} source must be a string", module.id),
+        )
+        .with_module_id(&module.id)
+        .with_expected("string")
+        .with_actual(format!("{:?}", source))),
     })
 }
 
