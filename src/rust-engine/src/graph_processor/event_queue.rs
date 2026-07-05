@@ -61,14 +61,13 @@ impl BoundedEventQueue {
         count
     }
 
-    pub(super) fn drain_all_into_block_events(&mut self) -> Vec<BlockEvent> {
-        self.events
-            .drain(..)
-            .map(|event| BlockEvent {
+    pub(super) fn drain_into_vec(&mut self, dest: &mut Vec<BlockEvent>) {
+        for event in self.events.drain(..) {
+            dest.push(BlockEvent {
                 frame_offset: 0,
                 event,
-            })
-            .collect()
+            });
+        }
     }
 }
 
@@ -124,6 +123,12 @@ impl PreparedEventQueues {
         }
         Self {
             queues: queues.into_boxed_slice(),
+        }
+    }
+
+    pub(super) fn clear_all(&mut self) {
+        for q in self.queues.iter_mut() {
+            let _ = q.events.drain(..);
         }
     }
 

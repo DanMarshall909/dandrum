@@ -1,6 +1,8 @@
-use std::collections::BTreeMap;
-
 use crate::graph::{ExecutionScope, Port, SignalType, builtin_ports};
+use SignalType::*;
+use builtin_ports::*;
+use module_types::*;
+use std::collections::BTreeMap;
 
 pub mod module_kind;
 pub mod module_types;
@@ -184,7 +186,7 @@ impl BuiltInModuleDefinition {
         self
     }
 
-    pub fn with_input_ports<'a>(
+    pub fn with_inputs<'a>(
         mut self,
         ports: impl IntoIterator<Item = (&'a str, SignalType)>,
     ) -> Self {
@@ -307,71 +309,69 @@ impl Default for BuiltInModuleRegistry {
 }
 
 fn midi_input_definition() -> BuiltInModuleDefinition {
-    BuiltInModuleDefinition::new(module_types::MIDI_INPUT)
-        .with_output(Port::output(builtin_ports::EVENTS, SignalType::Event))
+    BuiltInModuleDefinition::new(MIDI_INPUT).with_output(Port::output(EVENTS, Event))
 }
 
 fn audio_output_definition() -> BuiltInModuleDefinition {
-    BuiltInModuleDefinition::new(module_types::AUDIO_OUTPUT)
-        .with_input(Port::input(builtin_ports::LEFT, SignalType::Audio))
-        .with_input(Port::input(builtin_ports::RIGHT, SignalType::Audio))
+    BuiltInModuleDefinition::new(AUDIO_OUTPUT)
+        .with_inputs([(LEFT, Audio), (RIGHT, Audio)])
 }
 
 fn oscillator_definition() -> BuiltInModuleDefinition {
-    BuiltInModuleDefinition::new(module_types::OSCILLATOR)
+    BuiltInModuleDefinition::new(OSCILLATOR)
         .with_execution_scope(ExecutionScope::Voice)
-        .with_input(Port::input(builtin_ports::PITCH, SignalType::Control))
-        .with_output(Port::output(builtin_ports::AUDIO, SignalType::Audio))
+        .with_inputs([(PITCH, Control)])
+        .with_output(Port::output(AUDIO, Audio))
 }
 
 fn gain_definition() -> BuiltInModuleDefinition {
     BuiltInModuleDefinition::new(module_types::GAIN)
         .with_execution_scope(ExecutionScope::Voice)
-        .with_input(Port::input(builtin_ports::AUDIO_IN, SignalType::Audio))
-        .with_input(Port::input(builtin_ports::GAIN, SignalType::Control))
-        .with_output(Port::output(builtin_ports::AUDIO_OUT, SignalType::Audio))
+        .with_inputs([(AUDIO_IN, Audio), (builtin_ports::GAIN, Control)])
+        .with_output(Port::output(AUDIO_OUT, Audio))
 }
 
 fn audio_mixer_definition() -> BuiltInModuleDefinition {
-    BuiltInModuleDefinition::new(module_types::AUDIO_MIXER)
-        .with_input(Port::mixing_input(builtin_ports::INPUTS, SignalType::Audio))
-        .with_output(Port::output(builtin_ports::MIX, SignalType::Audio))
+    BuiltInModuleDefinition::new(AUDIO_MIXER)
+        .with_input(Port::mixing_input(INPUTS, Audio))
+        .with_output(Port::output(MIX, Audio))
 }
 
 fn control_mixer_definition() -> BuiltInModuleDefinition {
-    BuiltInModuleDefinition::new(module_types::CONTROL_MIXER)
-        .with_input(Port::mixing_input(
-            builtin_ports::INPUTS,
-            SignalType::Control,
-        ))
-        .with_output(Port::output(builtin_ports::SUM, SignalType::Control))
+    BuiltInModuleDefinition::new(CONTROL_MIXER)
+        .with_input(Port::mixing_input(INPUTS, Control))
+        .with_output(Port::output(SUM, Control))
 }
 
 fn adsr_definition() -> BuiltInModuleDefinition {
-    BuiltInModuleDefinition::new(module_types::ADSR)
+    BuiltInModuleDefinition::new(ADSR)
         .with_execution_scope(ExecutionScope::Voice)
-        .with_input(Port::input(builtin_ports::GATE, SignalType::Event))
-        .with_input(Port::input(builtin_ports::ATTACK, SignalType::Control))
-        .with_input(Port::input(builtin_ports::DECAY, SignalType::Control))
-        .with_input(Port::input(builtin_ports::SUSTAIN, SignalType::Control))
-        .with_input(Port::input(builtin_ports::RELEASE, SignalType::Control))
-        .with_output(Port::output(builtin_ports::VALUE, SignalType::Control))
+        .with_inputs([
+            (GATE, Event),
+            (ATTACK, Control),
+            (DECAY, Control),
+            (SUSTAIN, Control),
+            (RELEASE, Control),
+        ])
+        .with_output(Port::output(VALUE, Control))
 }
 
 fn lfo_definition() -> BuiltInModuleDefinition {
-    BuiltInModuleDefinition::new(module_types::LFO)
-        .with_input(Port::input(builtin_ports::RATE, SignalType::Control))
-        .with_output(Port::output(builtin_ports::VALUE, SignalType::Control))
+    BuiltInModuleDefinition::new(LFO)
+        .with_inputs([(RATE, Control)])
+        .with_output(Port::output(VALUE, Control))
 }
 
 fn filter_definition() -> BuiltInModuleDefinition {
-    BuiltInModuleDefinition::new(module_types::FILTER)
+    BuiltInModuleDefinition::new(FILTER)
         .with_execution_scope(ExecutionScope::Voice)
-        .with_input(Port::input(builtin_ports::AUDIO_IN, SignalType::Audio))
-        .with_input(Port::input(builtin_ports::CUTOFF, SignalType::Control))
-        .with_input(Port::input(builtin_ports::RESONANCE, SignalType::Control))
-        .with_input(Port::input(builtin_ports::GAIN, SignalType::Control))
-        .with_output(Port::output(builtin_ports::AUDIO_OUT, SignalType::Audio))
+        .with_inputs([
+            (AUDIO_IN, Audio),
+            (CUTOFF, Control),
+            (RESONANCE, Control),
+            (builtin_ports::GAIN, Control),
+        ])
+        .with_output(Port::output(AUDIO_OUT, Audio))
         .with_parameter(
             ParameterMetadata::new("algorithm", ParameterValueType::Text)
                 .with_default("moog")
@@ -393,28 +393,28 @@ fn filter_definition() -> BuiltInModuleDefinition {
 }
 
 fn audio_delay_one_sample_definition() -> BuiltInModuleDefinition {
-    BuiltInModuleDefinition::new(module_types::AUDIO_DELAY_ONE_SAMPLE)
-        .with_input(Port::input(builtin_ports::AUDIO_IN, SignalType::Audio))
-        .with_output(Port::output(builtin_ports::AUDIO_OUT, SignalType::Audio))
-        .with_feedback_boundary(SignalType::Audio)
+    BuiltInModuleDefinition::new(AUDIO_DELAY_ONE_SAMPLE)
+        .with_inputs([(AUDIO_IN, Audio)])
+        .with_output(Port::output(AUDIO_OUT, Audio))
+        .with_feedback_boundary(Audio)
 }
 
 fn block_delay_definition() -> BuiltInModuleDefinition {
-    BuiltInModuleDefinition::new(module_types::BLOCK_DELAY)
-        .with_input(Port::input(builtin_ports::AUDIO_IN, SignalType::Audio))
-        .with_output(Port::output(builtin_ports::AUDIO_OUT, SignalType::Audio))
-        .with_feedback_boundary(SignalType::Audio)
+    BuiltInModuleDefinition::new(BLOCK_DELAY)
+        .with_inputs([(AUDIO_IN, Audio)])
+        .with_output(Port::output(AUDIO_OUT, Audio))
+        .with_feedback_boundary(Audio)
 }
 
 fn control_delay_definition() -> BuiltInModuleDefinition {
-    BuiltInModuleDefinition::new(module_types::CONTROL_DELAY)
-        .with_input(Port::input(builtin_ports::VALUE, SignalType::Control))
-        .with_output(Port::output(builtin_ports::VALUE, SignalType::Control))
-        .with_feedback_boundary(SignalType::Control)
+    BuiltInModuleDefinition::new(CONTROL_DELAY)
+        .with_inputs([(VALUE, Control)])
+        .with_output(Port::output(VALUE, Control))
+        .with_feedback_boundary(Control)
 }
 
 fn script_definition() -> BuiltInModuleDefinition {
-    BuiltInModuleDefinition::new(module_types::SCRIPT)
+    BuiltInModuleDefinition::new(SCRIPT)
         .with_execution_scope(ExecutionScope::Voice)
         .with_module_category(ModuleCategory::Script)
         .with_parameter(
@@ -430,18 +430,17 @@ fn script_definition() -> BuiltInModuleDefinition {
 }
 
 fn sampler_definition() -> BuiltInModuleDefinition {
-    BuiltInModuleDefinition::new(module_types::SAMPLER)
+    BuiltInModuleDefinition::new(SAMPLER)
         .with_execution_scope(ExecutionScope::Voice)
-        .with_input(Port::input(builtin_ports::TRIGGER, SignalType::Event))
-        .with_input(Port::input(builtin_ports::RATE, SignalType::Control))
-        .with_input(Port::input(builtin_ports::START, SignalType::Control))
-        .with_input(Port::input(
-            builtin_ports::LOOP_ENABLED,
-            SignalType::Control,
-        ))
-        .with_input(Port::input(builtin_ports::LOOP_START, SignalType::Control))
-        .with_input(Port::input(builtin_ports::LOOP_END, SignalType::Control))
-        .with_output(Port::output(builtin_ports::AUDIO, SignalType::Audio))
+        .with_inputs([
+            (TRIGGER, Event),
+            (RATE, Control),
+            (START, Control),
+            (LOOP_ENABLED, Control),
+            (LOOP_START, Control),
+            (LOOP_END, Control),
+        ])
+        .with_output(Port::output(AUDIO, Audio))
         .with_parameter(
             ParameterMetadata::new("asset", ParameterValueType::Text)
                 .with_description("asset ID of the sample to play")
@@ -450,17 +449,17 @@ fn sampler_definition() -> BuiltInModuleDefinition {
 }
 
 fn note_to_rate_definition() -> BuiltInModuleDefinition {
-    BuiltInModuleDefinition::new(module_types::NOTE_TO_RATE)
+    BuiltInModuleDefinition::new(NOTE_TO_RATE)
         .with_execution_scope(ExecutionScope::Voice)
-        .with_input(Port::input(builtin_ports::EVENTS, SignalType::Event))
-        .with_output(Port::output(builtin_ports::RATE, SignalType::Control))
+        .with_inputs([(EVENTS, Event)])
+        .with_output(Port::output(RATE, Control))
 }
 
 fn event_filter_definition() -> BuiltInModuleDefinition {
-    BuiltInModuleDefinition::new(module_types::EVENT_FILTER)
+    BuiltInModuleDefinition::new(EVENT_FILTER)
         .with_execution_scope(ExecutionScope::Voice)
-        .with_input(Port::input(builtin_ports::EVENTS_IN, SignalType::Event))
-        .with_output(Port::output(builtin_ports::EVENTS_OUT, SignalType::Event))
+        .with_inputs([(EVENTS_IN, Event)])
+        .with_output(Port::output(EVENTS_OUT, Event))
         .with_parameter(
             ParameterMetadata::new(EVENT_FILTER_SELECTOR_PARAMETER, ParameterValueType::Text)
                 .with_default(EVENT_FILTER_SELECTOR_DEFAULT)
@@ -479,64 +478,52 @@ fn event_filter_definition() -> BuiltInModuleDefinition {
 }
 
 fn dynamics_processor_definition() -> BuiltInModuleDefinition {
-    BuiltInModuleDefinition::new(module_types::DYNAMICS_PROCESSOR)
-        .with_input(Port::input(builtin_ports::AUDIO_IN, SignalType::Audio))
-        .with_input(Port::input(
-            builtin_ports::SIDECHAIN_IN,
-            SignalType::Control,
-        ))
-        .with_input(Port::input(builtin_ports::THRESHOLD, SignalType::Control))
-        .with_input(Port::input(builtin_ports::BELOW_RATIO, SignalType::Control))
-        .with_input(Port::input(builtin_ports::ABOVE_RATIO, SignalType::Control))
-        .with_input(Port::input(builtin_ports::ATTACK, SignalType::Control))
-        .with_input(Port::input(builtin_ports::RELEASE, SignalType::Control))
-        .with_input(Port::input(builtin_ports::KNEE, SignalType::Control))
-        .with_input(Port::input(builtin_ports::MAKEUP_GAIN, SignalType::Control))
-        .with_input(Port::input(builtin_ports::ATTACK_GAIN, SignalType::Control))
-        .with_input(Port::input(
-            builtin_ports::SUSTAIN_GAIN,
-            SignalType::Control,
-        ))
-        .with_output(Port::output(builtin_ports::AUDIO_OUT, SignalType::Audio))
+    BuiltInModuleDefinition::new(DYNAMICS_PROCESSOR)
+        .with_inputs([
+            (AUDIO_IN, Audio),
+            (SIDECHAIN_IN, Control),
+            (THRESHOLD, Control),
+            (BELOW_RATIO, Control),
+            (ABOVE_RATIO, Control),
+            (ATTACK, Control),
+            (RELEASE, Control),
+            (KNEE, Control),
+            (MAKEUP_GAIN, Control),
+            (ATTACK_GAIN, Control),
+            (SUSTAIN_GAIN, Control),
+        ])
+        .with_output(Port::output(AUDIO_OUT, Audio))
 }
 
 fn saturator_definition() -> BuiltInModuleDefinition {
-    BuiltInModuleDefinition::new(module_types::SATURATOR)
-        .with_input(Port::input(builtin_ports::AUDIO_IN, SignalType::Audio))
-        .with_input(Port::input(builtin_ports::DRIVE, SignalType::Control))
-        .with_input(Port::input(builtin_ports::BIAS, SignalType::Control))
-        .with_input(Port::input(
-            builtin_ports::CURVE_SELECT,
-            SignalType::Control,
-        ))
-        .with_output(Port::output(builtin_ports::AUDIO_OUT, SignalType::Audio))
+    BuiltInModuleDefinition::new(SATURATOR)
+        .with_inputs([
+            (AUDIO_IN, Audio),
+            (DRIVE, Control),
+            (BIAS, Control),
+            (CURVE_SELECT, Control),
+        ])
+        .with_output(Port::output(AUDIO_OUT, Audio))
 }
 
 fn convolution_definition() -> BuiltInModuleDefinition {
-    BuiltInModuleDefinition::new(module_types::CONVOLUTION)
-        .with_input(Port::input(builtin_ports::AUDIO_IN, SignalType::Audio))
-        .with_input(Port::input(builtin_ports::MIX, SignalType::Control))
-        .with_output(Port::output(builtin_ports::AUDIO_OUT, SignalType::Audio))
+    BuiltInModuleDefinition::new(CONVOLUTION)
+        .with_inputs([(AUDIO_IN, Audio), (MIX, Control)])
+        .with_output(Port::output(AUDIO_OUT, Audio))
 }
 
 fn frequency_splitter_definition() -> BuiltInModuleDefinition {
-    BuiltInModuleDefinition::new(module_types::FREQUENCY_SPLITTER)
-        .with_input(Port::input(builtin_ports::AUDIO_IN, SignalType::Audio))
-        .with_input(Port::input(
-            builtin_ports::CROSSOVER_HZ,
-            SignalType::Control,
-        ))
-        .with_output(Port::output("low", SignalType::Audio))
-        .with_output(Port::output("mid", SignalType::Audio))
-        .with_output(Port::output("high", SignalType::Audio))
+    BuiltInModuleDefinition::new(FREQUENCY_SPLITTER)
+        .with_inputs([(AUDIO_IN, Audio), (CROSSOVER_HZ, Control)])
+        .with_output(Port::output("low", Audio))
+        .with_output(Port::output("mid", Audio))
+        .with_output(Port::output("high", Audio))
 }
 
 fn spectral_processor_definition() -> BuiltInModuleDefinition {
-    BuiltInModuleDefinition::new(module_types::SPECTRAL_PROCESSOR)
-        .with_input(Port::input(builtin_ports::AUDIO_IN, SignalType::Audio))
-        .with_input(Port::input(builtin_ports::THRESHOLD, SignalType::Control))
-        .with_input(Port::input(builtin_ports::MIX, SignalType::Control))
-        .with_output(Port::output(builtin_ports::AUDIO_OUT, SignalType::Audio))
+    BuiltInModuleDefinition::new(SPECTRAL_PROCESSOR)
+        .with_inputs([(AUDIO_IN, Audio), (THRESHOLD, Control), (MIX, Control)])
+        .with_output(Port::output(AUDIO_OUT, Audio))
         .with_parameter(
             ParameterMetadata::new("mode", ParameterValueType::Text)
                 .with_default("gate")
@@ -576,37 +563,26 @@ fn spectral_processor_definition() -> BuiltInModuleDefinition {
 }
 
 fn echo_definition() -> BuiltInModuleDefinition {
-    BuiltInModuleDefinition::new(module_types::ECHO)
-        .with_input(Port::input(builtin_ports::AUDIO_IN_L, SignalType::Audio))
-        .with_input(Port::input(builtin_ports::AUDIO_IN_R, SignalType::Audio))
-        .with_output(Port::output(builtin_ports::AUDIO_OUT_L, SignalType::Audio))
-        .with_output(Port::output(builtin_ports::AUDIO_OUT_R, SignalType::Audio))
-        .with_input(Port::input(
-            builtin_ports::TIME_LEFT_MS,
-            SignalType::Control,
-        ))
-        .with_input(Port::input(
-            builtin_ports::TIME_RIGHT_MS,
-            SignalType::Control,
-        ))
-        .with_input(Port::input(builtin_ports::FEEDBACK, SignalType::Control))
-        .with_input(Port::input(
-            builtin_ports::DAMPING_CUTOFF,
-            SignalType::Control,
-        ))
-        .with_input(Port::input(builtin_ports::WET, SignalType::Control))
-        .with_input(Port::input(builtin_ports::DRY, SignalType::Control))
-        .with_input(Port::input(
-            builtin_ports::SYNC_DIVISION,
-            SignalType::Control,
-        ))
-        .with_input(Port::input(builtin_ports::PING_PONG, SignalType::Control))
+    BuiltInModuleDefinition::new(ECHO)
+        .with_inputs([(AUDIO_IN_L, Audio), (AUDIO_IN_R, Audio)])
+        .with_output(Port::output(AUDIO_OUT_L, Audio))
+        .with_output(Port::output(AUDIO_OUT_R, Audio))
+        .with_inputs([
+            (TIME_LEFT_MS, Control),
+            (TIME_RIGHT_MS, Control),
+            (FEEDBACK, Control),
+            (DAMPING_CUTOFF, Control),
+            (WET, Control),
+            (DRY, Control),
+            (SYNC_DIVISION, Control),
+            (PING_PONG, Control),
+        ])
 }
 
 fn noise_definition() -> BuiltInModuleDefinition {
-    BuiltInModuleDefinition::new(module_types::NOISE)
+    BuiltInModuleDefinition::new(NOISE)
         .with_execution_scope(ExecutionScope::Voice)
-        .with_output(Port::output(builtin_ports::AUDIO, SignalType::Audio))
+        .with_output(Port::output(AUDIO, Audio))
         .with_parameter(
             ParameterMetadata::new("seed", ParameterValueType::Number)
                 .with_default("0")
@@ -615,45 +591,44 @@ fn noise_definition() -> BuiltInModuleDefinition {
 }
 
 fn impulse_definition() -> BuiltInModuleDefinition {
-    BuiltInModuleDefinition::new(module_types::IMPULSE)
+    BuiltInModuleDefinition::new(IMPULSE)
         .with_execution_scope(ExecutionScope::Voice)
-        .with_input(Port::input(builtin_ports::TRIGGER, SignalType::Event))
-        .with_output(Port::output(builtin_ports::AUDIO, SignalType::Audio))
+        .with_inputs([(TRIGGER, Event)])
+        .with_output(Port::output(AUDIO, Audio))
 }
 
 fn multiply_definition() -> BuiltInModuleDefinition {
     // Multiply is audio-only. Both inputs accept audio signals and produce
     // an audio-rate product. Control-rate multiplication is deferred until
     // polymorphic port support or a dedicated control_multiply primitive.
-    BuiltInModuleDefinition::new(module_types::MULTIPLY)
+    BuiltInModuleDefinition::new(MULTIPLY)
         .with_execution_scope(ExecutionScope::Global)
-        .with_input(Port::input(builtin_ports::AUDIO_IN, SignalType::Audio))
-        .with_input(Port::input(builtin_ports::GAIN, SignalType::Audio))
-        .with_output(Port::output(builtin_ports::AUDIO_OUT, SignalType::Audio))
+        .with_inputs([(AUDIO_IN, Audio), (builtin_ports::GAIN, Audio)])
+        .with_output(Port::output(AUDIO_OUT, Audio))
 }
 
 fn note_to_control_definition() -> BuiltInModuleDefinition {
-    BuiltInModuleDefinition::new(module_types::NOTE_TO_CONTROL)
+    BuiltInModuleDefinition::new(NOTE_TO_CONTROL)
         .with_execution_scope(ExecutionScope::Voice)
-        .with_input(Port::input(builtin_ports::EVENTS, SignalType::Event))
-        .with_output(Port::output("frequency", SignalType::Control))
-        .with_output(Port::output("pitch_ratio", SignalType::Control))
-        .with_output(Port::output("gate", SignalType::Event))
-        .with_output(Port::output("velocity", SignalType::Control))
+        .with_inputs([(EVENTS, Event)])
+        .with_output(Port::output("frequency", Control))
+        .with_output(Port::output("pitch_ratio", Control))
+        .with_output(Port::output("gate", Event))
+        .with_output(Port::output("velocity", Control))
 }
 
 fn envelope_follower_definition() -> BuiltInModuleDefinition {
-    BuiltInModuleDefinition::new(module_types::ENVELOPE_FOLLOWER)
+    BuiltInModuleDefinition::new(ENVELOPE_FOLLOWER)
         .with_execution_scope(ExecutionScope::Voice)
-        .with_input_ports([
-            (builtin_ports::AUDIO_IN, SignalType::Audio),
-            (builtin_ports::ATTACK, SignalType::Control),
-            (builtin_ports::RELEASE, SignalType::Control),
-            (builtin_ports::AMOUNT, SignalType::Control),
-            (builtin_ports::OFFSET, SignalType::Control),
-            (builtin_ports::INVERT, SignalType::Control),
+        .with_inputs([
+            (AUDIO_IN, Audio),
+            (ATTACK, Control),
+            (RELEASE, Control),
+            (AMOUNT, Control),
+            (OFFSET, Control),
+            (INVERT, Control),
         ])
-        .with_output_ports([(builtin_ports::VALUE, SignalType::Control)])
+        .with_output_ports([(VALUE, Control)])
         .with_parameter(
             ParameterMetadata::new(DETECTION_MODE_PARAMETER, ParameterValueType::Text)
                 .with_default(DETECTION_MODE_PEAK)
@@ -664,16 +639,16 @@ fn envelope_follower_definition() -> BuiltInModuleDefinition {
 }
 
 fn curve_mapper_definition() -> BuiltInModuleDefinition {
-    BuiltInModuleDefinition::new(module_types::CURVE_MAPPER)
+    BuiltInModuleDefinition::new(CURVE_MAPPER)
         .with_execution_scope(ExecutionScope::Voice)
-        .with_input_ports([
-            (builtin_ports::VALUE, SignalType::Control),
-            (builtin_ports::AMOUNT, SignalType::Control),
-            (builtin_ports::BIAS, SignalType::Control),
-            (builtin_ports::SCALE, SignalType::Control),
-            (builtin_ports::OFFSET, SignalType::Control),
+        .with_inputs([
+            (VALUE, Control),
+            (AMOUNT, Control),
+            (BIAS, Control),
+            (SCALE, Control),
+            (OFFSET, Control),
         ])
-        .with_output_ports([(builtin_ports::VALUE, SignalType::Control)])
+        .with_output_ports([(VALUE, Control)])
         .with_parameter(
             ParameterMetadata::new(CURVE_PARAMETER, ParameterValueType::Text)
                 .with_default(CURVE_LINEAR)
@@ -700,22 +675,21 @@ fn curve_mapper_definition() -> BuiltInModuleDefinition {
 }
 
 fn reverb_definition() -> BuiltInModuleDefinition {
-    BuiltInModuleDefinition::new(module_types::REVERB)
-        .with_input(Port::input(builtin_ports::AUDIO_IN_L, SignalType::Audio))
-        .with_input(Port::input(builtin_ports::AUDIO_IN_R, SignalType::Audio))
-        .with_output(Port::output(builtin_ports::AUDIO_OUT_L, SignalType::Audio))
-        .with_output(Port::output(builtin_ports::AUDIO_OUT_R, SignalType::Audio))
-        .with_input(Port::input(builtin_ports::DECAY_TIME, SignalType::Control))
-        .with_input(Port::input(builtin_ports::ROOM_SIZE, SignalType::Control))
-        .with_input(Port::input(builtin_ports::PRE_DELAY, SignalType::Control))
-        .with_input(Port::input(builtin_ports::DAMPING, SignalType::Control))
-        .with_input(Port::input(builtin_ports::DIFFUSION, SignalType::Control))
-        .with_input(Port::input(
-            builtin_ports::STEREO_WIDTH,
-            SignalType::Control,
-        ))
-        .with_input(Port::input(builtin_ports::WET, SignalType::Control))
-        .with_input(Port::input(builtin_ports::DRY, SignalType::Control))
+    BuiltInModuleDefinition::new(REVERB)
+        .with_inputs([
+            (AUDIO_IN_L, Audio),
+            (AUDIO_IN_R, Audio),
+            (DECAY_TIME, Control),
+            (ROOM_SIZE, Control),
+            (PRE_DELAY, Control),
+            (DAMPING, Control),
+            (DIFFUSION, Control),
+            (STEREO_WIDTH, Control),
+            (WET, Control),
+            (DRY, Control),
+        ])
+        .with_output(Port::output(AUDIO_OUT_L, Audio))
+        .with_output(Port::output(AUDIO_OUT_R, Audio))
 }
 
 #[cfg(test)]

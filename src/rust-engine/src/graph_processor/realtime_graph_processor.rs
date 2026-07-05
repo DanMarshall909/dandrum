@@ -393,6 +393,8 @@ impl RealtimeGraphProcessor {
         render_plan: &RenderPlan,
         global_event_queues: &mut PreparedEventQueues,
     ) {
+        global_event_queues.clear_all();
+
         let mut voice_events: Vec<Vec<ScriptEvent>> = vec![Vec::new(); allocator.max_voices()];
 
         for event in events {
@@ -429,7 +431,9 @@ impl RealtimeGraphProcessor {
 
         let mut accum: HashMap<usize, ModuleOutputs> = HashMap::new();
         let input_provider = CompiledInputProvider { compiled };
+        let queue_capacity = render_plan.event_queues.queue_capacity;
         let queue_count = render_plan.event_queues.queue_count;
+        let mut events_scratch: Vec<BlockEvent> = Vec::with_capacity(queue_capacity);
         let mut voice_queues: Vec<Vec<ScriptEvent>> =
             (0..queue_count).map(|_| Vec::new()).collect();
 
@@ -475,10 +479,10 @@ impl RealtimeGraphProcessor {
                     }
                 }
 
-                let mut events_in: Vec<BlockEvent> = Vec::new();
+                events_scratch.clear();
                 for &qid in step.event_inputs.iter() {
                     for event in voice_queues[qid.0].drain(..) {
-                        events_in.push(BlockEvent {
+                        events_scratch.push(BlockEvent {
                             frame_offset: 0,
                             event,
                         });
@@ -488,7 +492,7 @@ impl RealtimeGraphProcessor {
                 let outputs = process_module(
                     step.module_index,
                     step.module_kind,
-                    &events_in,
+                    &events_scratch,
                     voice_states,
                     &input_provider,
                     &all_outputs,
@@ -541,17 +545,17 @@ impl RealtimeGraphProcessor {
                 let _ = global_event_queues.route_event_edge(edge);
             }
 
-            let mut events_in: Vec<BlockEvent> = Vec::new();
+            events_scratch.clear();
             for &qid in step.event_inputs.iter() {
                 if let Some(q) = global_event_queues.queue_mut(qid.0) {
-                    events_in.extend(q.drain_all_into_block_events());
+                    q.drain_into_vec(&mut events_scratch);
                 }
             }
 
             let outputs = process_module(
                 step.module_index,
                 step.module_kind,
-                &events_in,
+                &events_scratch,
                 &mut states[0],
                 &input_provider,
                 &all_outputs,
