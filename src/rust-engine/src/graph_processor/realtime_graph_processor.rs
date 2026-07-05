@@ -13,7 +13,7 @@ use super::audio_arena::AudioArena;
 use super::block::{collect_audio_output, process_block_compiled};
 use super::dispatch::process_module;
 use super::event_queue::{BoundedEventQueue, PreparedEventQueues};
-use super::input_provider::{CompiledInputProvider, compiled_gather_event_inputs};
+use super::input_provider::CompiledInputProvider;
 use super::outputs::{BlockEvent, ModuleOutputs};
 use super::polyphony::build_polyphonic_states_from_compiled;
 use super::process_context::ProcessContext;
@@ -286,6 +286,7 @@ impl RealtimeGraphProcessor {
                 &mut self.scratch_left,
                 &mut self.scratch_right,
                 &self.render_plan,
+                &mut self.prepared_event_queues,
             );
 
             let actual = self
@@ -390,15 +391,14 @@ impl RealtimeGraphProcessor {
         left_out: &mut Vec<f32>,
         right_out: &mut Vec<f32>,
         render_plan: &RenderPlan,
+        global_event_queues: &mut PreparedEventQueues,
     ) {
-
-        let mut voice_events: Vec<Vec<super::outputs::BlockEvent>> =
-            vec![Vec::new(); allocator.max_voices()];
+        let mut voice_events: Vec<Vec<ScriptEvent>> = vec![Vec::new(); allocator.max_voices()];
 
         for event in events {
             if let ScriptEvent::NoteOn { note, velocity } = &event.event {
                 if let Some(slot) = allocator.note_on(*note, *velocity) {
-                    voice_events[slot].push(event.clone());
+                    voice_events[slot].push(event.event.clone());
                 }
             }
         }
@@ -411,7 +411,7 @@ impl RealtimeGraphProcessor {
             if let ScriptEvent::NoteOff { note } = &event.event {
                 for (slot_idx, sn) in slot_notes.iter().enumerate() {
                     if *sn == Some(*note) {
-                        voice_events[slot_idx].push(event.clone());
+                        voice_events[slot_idx].push(event.event.clone());
                     }
                 }
             }
@@ -427,13 +427,25 @@ impl RealtimeGraphProcessor {
             return;
         }
 
-        let mut accum: HashMap<usize, ModuleOutputs> =
-            HashMap::new();
+        let mut accum: HashMap<usize, ModuleOutputs> = HashMap::new();
         let input_provider = CompiledInputProvider { compiled };
+        let queue_count = render_plan.event_queues.queue_count;
+        let mut voice_queues: Vec<Vec<ScriptEvent>> =
+            (0..queue_count).map(|_| Vec::new()).collect();
 
         for &voice_idx in &active_voices {
-            let mut all_outputs: HashMap<usize, ModuleOutputs> =
-                HashMap::new();
+            for q in &mut voice_queues {
+                q.clear();
+            }
+
+            if let Some(midi_queue) = render_plan.midi_input {
+                for e in voice_events[voice_idx].drain(..) {
+                    voice_queues[midi_queue.0].push(e);
+                }
+            }
+
+            let voice_states = &mut states[voice_idx];
+            let mut all_outputs: HashMap<usize, ModuleOutputs> = HashMap::new();
 
             if let Some(idx) = midi_idx {
                 all_outputs.insert(
@@ -441,22 +453,38 @@ impl RealtimeGraphProcessor {
                     ModuleOutputs {
                         audio: HashMap::new(),
                         control: HashMap::new(),
-                        events: voice_events[voice_idx].clone(),
+                        events: Vec::new(),
                         event_ports: HashMap::new(),
                     },
                 );
             }
 
-            let voice_states = &mut states[voice_idx];
-
             for step in render_plan.voice_steps.iter() {
-                let node = &compiled.nodes()[step.module_index];
-                if node.module_kind == ModuleKind::MidiInput {
+                if step.module_kind == ModuleKind::MidiInput {
                     continue;
                 }
 
-                let events_in =
-                    compiled_gather_event_inputs(step.module_index, compiled, &all_outputs);
+                for &edge in step.incoming_event_edges.iter() {
+                    if edge.source == edge.destination {
+                        continue;
+                    }
+                    let src: Vec<ScriptEvent> =
+                        voice_queues[edge.source.0].iter().cloned().collect();
+                    if !src.is_empty() {
+                        voice_queues[edge.destination.0].extend(src);
+                    }
+                }
+
+                let mut events_in: Vec<BlockEvent> = Vec::new();
+                for &qid in step.event_inputs.iter() {
+                    for event in voice_queues[qid.0].drain(..) {
+                        events_in.push(BlockEvent {
+                            frame_offset: 0,
+                            event,
+                        });
+                    }
+                }
+
                 let outputs = process_module(
                     step.module_index,
                     step.module_kind,
@@ -468,6 +496,15 @@ impl RealtimeGraphProcessor {
                     block_start_frame,
                 );
 
+                for be in &outputs.events {
+                    for &eq_id in step.event_outputs.iter() {
+                        voice_queues[eq_id.0].push(be.event.clone());
+                        let _ = global_event_queues
+                            .queue_mut(eq_id.0)
+                            .map(|q| q.push(be.event.clone()));
+                    }
+                }
+
                 all_outputs.insert(step.module_index, outputs);
             }
 
@@ -475,10 +512,7 @@ impl RealtimeGraphProcessor {
                 if let Some(outputs) = all_outputs.remove(&idx) {
                     let entry = accum.entry(idx).or_insert_with(ModuleOutputs::empty);
                     for (port, buf) in outputs.audio {
-                        let acc = entry
-                            .audio
-                            .entry(port)
-                            .or_insert_with(|| vec![0.0; frames]);
+                        let acc = entry.audio.entry(port).or_insert_with(|| vec![0.0; frames]);
                         for (i, s) in buf.iter().enumerate().take(frames) {
                             acc[i] += s;
                         }
@@ -492,7 +526,6 @@ impl RealtimeGraphProcessor {
                             acc[i] += s;
                         }
                     }
-                    entry.events.extend(outputs.events);
                 }
             }
         }
@@ -500,12 +533,21 @@ impl RealtimeGraphProcessor {
         let mut all_outputs = accum;
 
         for step in render_plan.global_steps.iter() {
-            let node = &compiled.nodes()[step.module_index];
-            if node.module_kind == ModuleKind::MidiInput {
+            if step.module_kind == ModuleKind::MidiInput {
                 continue;
             }
 
-            let events_in = compiled_gather_event_inputs(step.module_index, compiled, &all_outputs);
+            for &edge in step.incoming_event_edges.iter() {
+                let _ = global_event_queues.route_event_edge(edge);
+            }
+
+            let mut events_in: Vec<BlockEvent> = Vec::new();
+            for &qid in step.event_inputs.iter() {
+                if let Some(q) = global_event_queues.queue_mut(qid.0) {
+                    events_in.extend(q.drain_all_into_block_events());
+                }
+            }
+
             let outputs = process_module(
                 step.module_index,
                 step.module_kind,
@@ -516,6 +558,14 @@ impl RealtimeGraphProcessor {
                 frames,
                 block_start_frame,
             );
+
+            for be in &outputs.events {
+                for &eq_id in step.event_outputs.iter() {
+                    let _ = global_event_queues
+                        .queue_mut(eq_id.0)
+                        .map(|q| q.push(be.event.clone()));
+                }
+            }
 
             all_outputs.insert(step.module_index, outputs);
         }
