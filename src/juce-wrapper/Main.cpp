@@ -2,6 +2,7 @@
 
 #include "Cli.h"
 #include "DefaultPatch.h"
+#include "DrumLoop.h"
 #include "MidiToRustEngine.h"
 #include "RustEngineSource.h"
 
@@ -24,6 +25,32 @@ void waitForEngineToFinish (const RustEngineSource& engineSource)
     while (! engineSource.hasFinished())
         juce::Thread::sleep (10);
 }
+
+int runDrumLoopDemo (RustEngineSource& engineSource, const juce::File& patchPath)
+{
+    if (! engineSource.loadPatch (patchPath.getFullPathName()))
+    {
+        std::cerr << "Failed to load drum container patch: " << patchPath.getFullPathName() << '\n';
+        return 1;
+    }
+
+    std::cout << "Loaded drum container patch: " << patchPath.getFullPathName() << '\n';
+
+    MidiToRustEngine syntheticMidi (engineSource);
+    std::cout << "Playing simple drum loop. Press Ctrl+C to quit.\n";
+
+    auto noteOn = [&](int note, int velocity) { syntheticMidi.handleIncomingMidiMessage (nullptr, juce::MidiMessage::noteOn (1, note, static_cast<juce::uint8> (velocity))); };
+    auto noteOff = [&](int note) { syntheticMidi.handleIncomingMidiMessage (nullptr, juce::MidiMessage::noteOff (1, note)); };
+
+    while (! shouldQuit.load())
+    {
+        dandrum::playSimpleDrumLoopOnce (shouldQuit, noteOn, noteOff);
+        if (shouldQuit.load())
+            break;
+    }
+
+    return 0;
+}
 } // namespace
 
 int main (int argc, char* argv[])
@@ -38,6 +65,8 @@ int main (int argc, char* argv[])
         printMidiInputs();
         return 0;
     }
+
+    const auto drumLoopMode = args.contains ("--drum-loop");
 
     juce::AudioDeviceManager deviceManager;
     const auto error = deviceManager.initialiseWithDefaultDevices (0, 2);
@@ -54,16 +83,26 @@ int main (int argc, char* argv[])
     juce::AudioSourcePlayer player;
     player.setSource (&engineSource);
 
-    const auto resolvedDefaultPatch = juce::File (dandrum::defaultPatchPath().string());
+    const auto resolvedDefaultPatch = juce::File (drumLoopMode ? dandrum::defaultDrumContainerPath().string()
+                                                               : dandrum::defaultPatchPath().string());
     if (! resolvedDefaultPatch.existsAsFile())
     {
-        std::cerr << "Failed to locate default patch: examples/patches/polyphonic-pad.yaml\n";
+        std::cerr << (drumLoopMode ? "Failed to locate default drum container patch: examples/patches/drum-kit.yaml\n"
+                                   : "Failed to locate default patch: examples/patches/polyphonic-pad.yaml\n");
         return 1;
     }
 
     const auto patchArgIndex = args.indexOf ("--patch");
     const auto useExplicitPatch = patchArgIndex >= 0 && patchArgIndex + 1 < args.size();
     const auto patchPath = useExplicitPatch ? juce::File (args[patchArgIndex + 1]) : resolvedDefaultPatch;
+
+    if (drumLoopMode)
+    {
+        const auto exitCode = runDrumLoopDemo (engineSource, patchPath);
+        deviceManager.removeAudioCallback (&player);
+        player.setSource (nullptr);
+        return exitCode;
+    }
 
     // Patch loading stays off the audio callback; the callback only renders
     // the already-prepared engine state.

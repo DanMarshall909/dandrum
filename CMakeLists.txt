@@ -75,6 +75,7 @@ juce_add_console_app(dandrum-beep
 target_sources(dandrum-beep
     PRIVATE
         src/juce-wrapper/Cli.cpp
+        src/juce-wrapper/DrumLoop.h
         src/juce-wrapper/Main.cpp
         src/juce-wrapper/MidiToRustEngine.cpp
         src/juce-wrapper/RustEngineSource.cpp)
@@ -94,3 +95,12 @@ target_link_libraries(dandrum-beep
         juce::juce_recommended_config_flags
         juce::juce_recommended_lto_flags
         juce::juce_recommended_warning_flags)
+
+add_executable(dandrum-drum-loop-pattern-test
+    tests/cpp/DrumLoopPatternTest.cpp)
+target_include_directories(dandrum-drum-loop-pattern-test
+    PRIVATE
+        src/juce-wrapper)
+target_link_libraries(dandrum-drum-loop-pattern-test
+    PRIVATE)
+add_test(NAME drum-loop-pattern-test COMMAND dandrum-drum-loop-pattern-test)

@@ -2889,6 +2889,38 @@ fn drum_machine_dogfood_routes_notes_to_explicit_voice_composites_without_primit
 }
 
 #[test]
+fn drum_machine_loop_schedule_loads_routes_and_renders_audio() {
+    let Some(yaml) = read_repo_fixture("examples/patches/event-routing-drum-machine.yaml") else {
+        return;
+    };
+    let patch = patch::load_patch_str(&yaml).expect("drum machine example should parse");
+    patch::validate_patch_schema(&patch).expect("drum machine example should validate");
+
+    let graph = Graph::from_patch_declarations(&patch);
+    graph
+        .validate()
+        .expect("drum machine graph should validate");
+
+    let events = vec![
+        note_on_value(0, 60, 100),
+        note_on_value(125, 42, 88),
+        note_on_value(250, 38, 100),
+        note_on_value(375, 42, 88),
+        note_on_value(500, 60, 100),
+        note_on_value(625, 42, 88),
+        note_on_value(750, 38, 100),
+        note_on_value(875, 42, 88),
+    ];
+
+    let (left, right) = render_offline(&graph, &patch.render, events);
+
+    assert!(
+        left.iter().chain(right.iter()).any(|sample| *sample != 0.0),
+        "drum loop schedule should render non-zero audio"
+    );
+}
+
+#[test]
 fn simple_poly_synth_dogfood_consumes_note_events_through_generic_routing() {
     let Some(yaml) = read_repo_fixture("examples/patches/event-routing-simple-poly-synth.yaml")
     else {
