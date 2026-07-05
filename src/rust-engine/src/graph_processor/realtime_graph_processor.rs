@@ -12,6 +12,7 @@ use super::audio_arena::AudioArena;
 use super::block::{process_block_compiled, process_block_compiled_polyphonic};
 use super::outputs::{BlockEvent, ModuleOutputs};
 use super::polyphony::build_polyphonic_states_from_compiled;
+use super::process_context::ProcessContext;
 use super::render_plan::{RenderPlan, RenderStep};
 use super::state::PerModuleState;
 
@@ -373,47 +374,36 @@ fn process_mono_global_arena_step(
     step: &RenderStep,
     frames: usize,
 ) {
+    let mut context = ProcessContext::new(arena, &step.input_buffers, &step.output_buffers, frames);
+
     match step.module_kind {
         ModuleKind::AudioMixer => {
-            let Some(&mix_output) = step.output_buffers.first() else {
-                return;
-            };
-            if let Some(&mix_input) = step.input_buffers.first() {
-                arena.write_from_input(mix_input, mix_output, frames, |sample| sample);
-            }
+            let _ = context.write_output_from_input(0, 0, |sample| sample);
         }
         ModuleKind::Noise => {
-            let Some(&audio_buffer) = step.output_buffers.first() else {
-                return;
-            };
             let rng_state = match &mut states[step.module_index] {
                 PerModuleState::Noise { state } => state,
                 _ => unreachable!(),
             };
-            for frame in 0..frames {
+            for frame in 0..context.frames() {
                 let mut x = *rng_state;
                 x ^= x << 13;
                 x ^= x >> 17;
                 x ^= x << 5;
                 let sample = (x as f32) / (u32::MAX as f32) * 2.0 - 1.0;
-                arena.set_sample(audio_buffer, frame, sample);
+                context
+                    .set_output_sample(0, frame, sample)
+                    .expect("noise output buffer should be available in supported arena step");
                 *rng_state = x;
             }
         }
         ModuleKind::Oscillator => {
-            let Some(&audio_buffer) = step.output_buffers.first() else {
-                return;
-            };
             let (phase, sample_rate) = match &mut states[step.module_index] {
                 PerModuleState::Oscillator { phase, sample_rate } => (phase, *sample_rate),
                 _ => unreachable!(),
             };
-            for frame in 0..frames {
-                let pitch_ratio = step
-                    .input_buffers
-                    .first()
-                    .map(|buffer| arena.sample(*buffer, frame))
-                    .unwrap_or(1.0);
+            for frame in 0..context.frames() {
+                let pitch_ratio = context.input_sample(0, frame, 1.0);
                 let output = *phase * 2.0 - 1.0;
                 let base_hz = 220.0;
                 let freq = base_hz * pitch_ratio;
@@ -422,120 +412,61 @@ fn process_mono_global_arena_step(
                 if *phase >= 1.0 {
                     *phase -= 1.0;
                 }
-                arena.set_sample(audio_buffer, frame, output);
+                context
+                    .set_output_sample(0, frame, output)
+                    .expect("oscillator output buffer should be available in supported arena step");
             }
         }
-        ModuleKind::Gain => {
-            let [audio_input, gain_input] = step.input_buffers.as_ref() else {
-                return;
-            };
-            let Some(&audio_output) = step.output_buffers.first() else {
-                return;
-            };
-            arena.write_from_two_inputs(
-                *audio_input,
-                *gain_input,
-                audio_output,
-                frames,
-                |audio, gain| audio * gain,
-            );
-        }
-        ModuleKind::Multiply => {
-            let [audio_input, gain_input] = step.input_buffers.as_ref() else {
-                return;
-            };
-            let Some(&audio_output) = step.output_buffers.first() else {
-                return;
-            };
-            arena.write_from_two_inputs(
-                *audio_input,
-                *gain_input,
-                audio_output,
-                frames,
-                |audio, gain| audio * gain,
-            );
+        ModuleKind::Gain | ModuleKind::Multiply => {
+            let _ = context.write_output_from_two_inputs(0, 0, 1, |audio, gain| audio * gain);
         }
         ModuleKind::EnvelopeFollower => {
-            let [
-                audio_input,
-                attack_input,
-                release_input,
-                amount_input,
-                offset_input,
-                invert_input,
-            ] = step.input_buffers.as_ref()
-            else {
-                return;
-            };
-            let Some(&value_output) = step.output_buffers.first() else {
-                return;
-            };
             let (detector, mode) = match &mut states[step.module_index] {
                 PerModuleState::EnvelopeFollower { detector, mode } => (detector, *mode),
                 _ => unreachable!(),
             };
             detector.set_mode(mode);
-            for frame in 0..frames {
-                let attack_ms = arena.sample(*attack_input, frame).max(0.0) as f64;
-                let release_ms = arena.sample(*release_input, frame).max(0.0) as f64;
+            for frame in 0..context.frames() {
+                let attack_ms = context.input_sample(1, frame, 5.0).max(0.0) as f64;
+                let release_ms = context.input_sample(2, frame, 50.0).max(0.0) as f64;
                 detector.set_params(attack_ms, release_ms);
 
-                let envelope = detector.process(arena.sample(*audio_input, frame) as f64) as f32;
-                let shaped = if arena.sample(*invert_input, frame) > 0.5 {
+                let envelope = detector.process(context.input_sample(0, frame, 0.0) as f64) as f32;
+                let shaped = if context.input_sample(5, frame, 0.0) > 0.5 {
                     1.0 - envelope
                 } else {
                     envelope
                 };
-                let amount = arena.sample(*amount_input, frame);
-                let offset = arena.sample(*offset_input, frame);
-                arena.set_sample(
-                    value_output,
-                    frame,
-                    finite_or_zero(shaped * amount + offset).clamp(0.0, 1.0),
-                );
+                let amount = context.input_sample(3, frame, 1.0);
+                let offset = context.input_sample(4, frame, 0.0);
+                context
+                    .set_output_sample(
+                        0,
+                        frame,
+                        finite_or_zero(shaped * amount + offset).clamp(0.0, 1.0),
+                    )
+                    .expect("envelope follower output buffer should be available in supported arena step");
             }
         }
         ModuleKind::CurveMapper => {
-            let [
-                value_input,
-                amount_input,
-                bias_input,
-                scale_input,
-                offset_input,
-            ] = step.input_buffers.as_ref()
-            else {
-                return;
-            };
-            let Some(&value_output) = step.output_buffers.first() else {
-                return;
-            };
             let mapper = match &mut states[step.module_index] {
                 PerModuleState::CurveMapper { mapper } => mapper,
                 _ => unreachable!(),
             };
-            for frame in 0..frames {
-                arena.set_sample(
-                    value_output,
-                    frame,
-                    mapper.process(
-                        arena.sample(*value_input, frame),
-                        arena.sample(*amount_input, frame),
-                        arena.sample(*bias_input, frame),
-                        arena.sample(*scale_input, frame),
-                        arena.sample(*offset_input, frame),
-                    ),
+            for frame in 0..context.frames() {
+                let output = mapper.process(
+                    context.input_sample(0, frame, 0.0),
+                    context.input_sample(1, frame, 1.0),
+                    context.input_sample(2, frame, 0.0),
+                    context.input_sample(3, frame, 1.0),
+                    context.input_sample(4, frame, 0.0),
                 );
+                context
+                    .set_output_sample(0, frame, output)
+                    .expect("curve mapper output buffer should be available in supported arena step");
             }
         }
         ModuleKind::Filter => {
-            let [audio_input, cutoff_input, resonance_input, gain_input] =
-                step.input_buffers.as_ref()
-            else {
-                return;
-            };
-            let Some(&audio_output) = step.output_buffers.first() else {
-                return;
-            };
             let (filter, sample_rate) = match &mut states[step.module_index] {
                 PerModuleState::Filter {
                     filter,
@@ -543,15 +474,14 @@ fn process_mono_global_arena_step(
                 } => (filter, *sample_rate),
                 _ => unreachable!(),
             };
-            for frame in 0..frames {
-                filter.set_cutoff_control(arena.sample(*cutoff_input, frame), sample_rate);
-                filter.set_resonance_control(arena.sample(*resonance_input, frame));
-                filter.set_gain_db(arena.sample(*gain_input, frame) as f64 * 48.0 - 24.0);
-                arena.set_sample(
-                    audio_output,
-                    frame,
-                    filter.process(arena.sample(*audio_input, frame)),
-                );
+            for frame in 0..context.frames() {
+                filter.set_cutoff_control(context.input_sample(1, frame, 0.5), sample_rate);
+                filter.set_resonance_control(context.input_sample(2, frame, 0.0));
+                filter.set_gain_db(context.input_sample(3, frame, 0.5) as f64 * 48.0 - 24.0);
+                let output = filter.process(context.input_sample(0, frame, 0.0));
+                context
+                    .set_output_sample(0, frame, output)
+                    .expect("filter output buffer should be available in supported arena step");
             }
         }
         ModuleKind::AudioOutput => {}
