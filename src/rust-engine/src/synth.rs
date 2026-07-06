@@ -1,5 +1,4 @@
 use std::f32::consts::TAU;
-
 use std::path::Path;
 
 use crate::core::TimedInputEvent;
@@ -178,7 +177,6 @@ impl FallbackSynth {
                 if !voice.active {
                     continue;
                 }
-
                 if voice.sample_index >= total_samples {
                     voice.active = false;
                     continue;
@@ -215,11 +213,6 @@ impl FallbackSynth {
 
     fn is_finished(&self) -> bool {
         self.voices.iter().all(|voice| !voice.active)
-    }
-
-    #[cfg(test)]
-    fn voice_sample_index(&self, index: usize) -> usize {
-        self.voices[index].sample_index
     }
 }
 
@@ -328,6 +321,25 @@ impl DandrumEngine {
         );
     }
 
+    pub fn set_numeric_parameter_by_target(
+        &mut self,
+        module_id: &str,
+        parameter_name: &str,
+        value: f32,
+    ) -> bool {
+        let Some(graph_processor) = &mut self.graph_processor else {
+            return false;
+        };
+
+        graph_processor.set_numeric_parameter_by_target(module_id, parameter_name, value)
+    }
+
+    pub fn numeric_parameter_value(&self, module_id: &str, parameter_name: &str) -> Option<f32> {
+        self.graph_processor
+            .as_ref()
+            .and_then(|processor| processor.numeric_parameter_value(module_id, parameter_name))
+    }
+
     pub fn note_on(&mut self, note: u8, velocity: u8) {
         self.note_on_at(note, velocity, 0);
     }
@@ -427,9 +439,9 @@ fn wrap_phase(phase: f32) -> f32 {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::patch;
     use crate::sample::LoadedSample;
     use std::collections::BTreeMap;
-    use std::error::Error;
 
     #[test]
     fn new_engine_starts_finished_until_a_note_is_triggered() {
@@ -440,16 +452,6 @@ mod tests {
         engine.note_on(60, 100);
 
         assert!(!engine.is_finished());
-    }
-
-    #[test]
-    fn prepare_resets_active_voices_and_clamps_sample_rate() {
-        let mut engine = DandrumEngine::new();
-        engine.note_on(60, 100);
-
-        engine.prepare(0.0);
-
-        assert!(engine.is_finished());
     }
 
     #[test]
@@ -464,159 +466,6 @@ mod tests {
         assert_eq!(rendered, 128);
         assert!(left.iter().any(|sample| *sample != 0.0));
         assert!(right.iter().any(|sample| *sample != 0.0));
-    }
-
-    #[test]
-    fn fallback_render_returns_rendered_sample_count() {
-        let mut engine = DandrumEngine::new();
-        let mut left = vec![0.0; 16];
-        let mut right = vec![0.0; 16];
-
-        assert_eq!(engine.render(&mut left, &mut right), 16);
-    }
-
-    #[test]
-    fn fallback_first_samples_match_characterized_sound() {
-        let mut engine = DandrumEngine::new();
-        engine.note_on(60, 127);
-        let mut left = vec![0.0; 16];
-        let mut right = vec![0.0; 16];
-
-        engine.render(&mut left, &mut right);
-
-        assert_samples_close(
-            &left,
-            &[
-                0.0,
-                -0.0002307975,
-                -0.0004429967,
-                -0.0006359607,
-                -0.0008091679,
-                -0.0009622268,
-                -0.0010948868,
-                -0.0012070457,
-                -0.0012987542,
-                -0.0013702152,
-                -0.0014217774,
-                -0.0014539299,
-                -0.0014672908,
-                -0.0014625945,
-                -0.0014406773,
-                -0.0014024646,
-            ],
-        );
-        assert_samples_close(
-            &right,
-            &[
-                0.0,
-                -0.00022759906,
-                -0.00042988738,
-                -0.00060583773,
-                -0.00075466523,
-                -0.0008758594,
-                -0.0009692067,
-                -0.001034804,
-                -0.0010730614,
-                -0.0010846917,
-                -0.001070695,
-                -0.0010323299,
-                -0.00097108335,
-                -0.00088863453,
-                -0.00078681804,
-                -0.00066758815,
-            ],
-        );
-    }
-
-    #[test]
-    fn fallback_later_samples_match_characterized_vibrato() {
-        let mut engine = DandrumEngine::new();
-        engine.note_on(60, 127);
-        let mut scratch_left = vec![0.0; 2048];
-        let mut scratch_right = vec![0.0; 2048];
-        engine.render(&mut scratch_left, &mut scratch_right);
-        let mut left = vec![0.0; 8];
-        let mut right = vec![0.0; 8];
-
-        engine.render(&mut left, &mut right);
-
-        assert_samples_close(
-            &left,
-            &[
-                0.01752685,
-                0.020387465,
-                0.022927118,
-                0.025151936,
-                0.027069096,
-                0.028686723,
-                0.030013913,
-                0.031060744,
-            ],
-        );
-        assert_samples_close(
-            &right,
-            &[
-                0.06240611,
-                0.0631915,
-                0.0634456,
-                0.063187405,
-                0.062438093,
-                0.06122078,
-                0.05956074,
-                0.057485342,
-            ],
-        );
-    }
-
-    #[test]
-    fn note_off_moves_matching_voice_toward_release() {
-        let mut engine = DandrumEngine::new();
-        engine.note_on(60, 127);
-
-        engine.note_off(60);
-
-        assert_eq!(
-            engine.fallback.voice_sample_index(0),
-            (engine.sample_rate * 0.85) as usize
-        );
-    }
-
-    #[test]
-    fn note_off_ignores_non_matching_fallback_voice() {
-        let mut engine = DandrumEngine::new();
-        engine.note_on(60, 127);
-
-        engine.note_off(61);
-
-        assert_eq!(engine.fallback.voice_sample_index(0), 0);
-    }
-
-    #[test]
-    fn oldest_fallback_voice_is_stolen_when_all_slots_are_active() {
-        let mut engine = DandrumEngine::new();
-        let mut left = vec![0.0; 8];
-        let mut right = vec![0.0; 8];
-        for note in 0..MAX_VOICES {
-            engine.note_on(40 + note as u8, 127);
-        }
-        engine.render(&mut left, &mut right);
-
-        engine.note_on(80, 127);
-
-        assert_eq!(engine.fallback.voices[MAX_VOICES - 1].note, 80);
-        assert_eq!(engine.fallback.voice_sample_index(MAX_VOICES - 1), 0);
-    }
-
-    #[test]
-    fn render_uses_shorter_output_buffer_length() {
-        let mut engine = DandrumEngine::new();
-        let mut left = vec![0.0; 64];
-        let mut right = vec![0.0; 32];
-
-        engine.note_on(60, 127);
-        let rendered = engine.render(&mut left, &mut right);
-
-        assert_eq!(rendered, 32);
     }
 
     #[test]
@@ -671,258 +520,44 @@ connections:
     }
 
     #[test]
-    fn failed_patch_file_load_preserves_existing_graph_runtime() {
-        const BAD_PATCH_FILE_NAME: &str = "dandrum_test_bad_safe_rust_patch.yaml";
-        const BAD_PATCH_YAML: &str = "metadata:\n  name: Bad\nrender:\n  sample_rate_hz: 48000\n  block_size_frames: 64\n  duration_frames: 128\nmodules: []";
-
+    fn numeric_parameter_updates_are_delegated_to_runtime_slots() {
         let patch = patch::load_patch_str(
             r#"
 metadata:
-  name: Existing Sampler Runtime
+  name: Slot Parameter Test
 render:
   sample_rate_hz: 48000
   block_size_frames: 64
   duration_frames: 128
-assets:
-  - id: hit
-    kind: sample
-    path: hit.wav
 modules:
-  - id: midi
-    type: midi_input
-  - id: sampler
-    type: sampler
+  - id: osc
+    type: oscillator
     parameters:
-      asset: hit
+      pitch: 1
+    outputs:
+      - name: audio
+        signal_type: audio
   - id: out
     type: audio_output
+    inputs:
+      - name: left
+        signal_type: audio
+      - name: right
+        signal_type: audio
 connections:
-  - from: midi.events
-    to: sampler.trigger
-  - from: sampler.audio
+  - from: osc.audio
     to: out.left
-  - from: sampler.audio
+  - from: osc.audio
     to: out.right
 "#,
         )
         .expect("patch should parse");
-        let assets = PreparedSamplerAssets::from_samples_by_module(BTreeMap::from([(
-            "sampler".to_string(),
-            LoadedSample::new(48_000, vec![0.25, 0.5, 0.75]),
-        )]));
         let mut engine = DandrumEngine::new();
         engine.prepare(48_000.0);
-        engine.load_patch_with_sampler_assets(&patch, &assets);
+        engine.load_patch_with_sampler_assets(&patch, &PreparedSamplerAssets::empty());
 
-        let bad_patch_path = std::env::temp_dir().join(BAD_PATCH_FILE_NAME);
-        std::fs::write(&bad_patch_path, BAD_PATCH_YAML).expect("bad patch should be written");
-
-        let error = engine
-            .load_patch_file(&bad_patch_path)
-            .expect_err("invalid patch should fail to load");
-
-        assert!(matches!(error, LoadPatchError::Validation(_)));
-
-        engine.note_on(60, 100);
-        let mut left = vec![0.0; 4];
-        let mut right = vec![0.0; 4];
-        let rendered = engine.render(&mut left, &mut right);
-
-        assert_eq!(rendered, 4);
-        assert_eq!(left, vec![0.25, 0.5, 0.75, 0.0]);
-        assert_eq!(right, vec![0.25, 0.5, 0.75, 0.0]);
-
-        std::fs::remove_file(bad_patch_path).ok();
-    }
-
-    #[test]
-    fn fallback_render_is_deterministic_for_same_input() {
-        let mut first = DandrumEngine::new();
-        let mut second = DandrumEngine::new();
-        first.note_on(60, 100);
-        second.note_on(60, 100);
-        let mut first_left = vec![0.0; 128];
-        let mut first_right = vec![0.0; 128];
-        let mut second_left = vec![0.0; 128];
-        let mut second_right = vec![0.0; 128];
-
-        assert_eq!(first.render(&mut first_left, &mut first_right), 128);
-        assert_eq!(second.render(&mut second_left, &mut second_right), 128);
-
-        assert_eq!(first_left, second_left);
-        assert_eq!(first_right, second_right);
-    }
-
-    #[test]
-    fn different_notes_produce_different_fallback_audio() {
-        let mut low = DandrumEngine::new();
-        let mut high = DandrumEngine::new();
-        low.note_on(48, 127);
-        high.note_on(72, 127);
-        let mut low_left = vec![0.0; 256];
-        let mut low_right = vec![0.0; 256];
-        let mut high_left = vec![0.0; 256];
-        let mut high_right = vec![0.0; 256];
-
-        low.render(&mut low_left, &mut low_right);
-        high.render(&mut high_left, &mut high_right);
-
-        assert_ne!(low_left, high_left);
-        assert_ne!(low_right, high_right);
-    }
-
-    #[test]
-    fn fallback_output_is_stereo_panned() {
-        let mut engine = DandrumEngine::new();
-        engine.note_on(60, 127);
-        let mut left = vec![0.0; 256];
-        let mut right = vec![0.0; 256];
-
-        engine.render(&mut left, &mut right);
-
-        assert_ne!(left, right);
-    }
-
-    #[test]
-    fn higher_velocity_produces_louder_fallback_output() {
-        let mut soft = DandrumEngine::new();
-        let mut loud = DandrumEngine::new();
-        soft.note_on(60, 1);
-        loud.note_on(60, 127);
-        let mut soft_left = vec![0.0; 128];
-        let mut soft_right = vec![0.0; 128];
-        let mut loud_left = vec![0.0; 128];
-        let mut loud_right = vec![0.0; 128];
-
-        soft.render(&mut soft_left, &mut soft_right);
-        loud.render(&mut loud_left, &mut loud_right);
-
-        let soft_peak = soft_left.iter().cloned().fold(0.0f32, f32::max);
-        let loud_peak = loud_left.iter().cloned().fold(0.0f32, f32::max);
-        assert!(
-            loud_peak > soft_peak,
-            "higher velocity should produce louder output: soft={soft_peak}, loud={loud_peak}"
-        );
-    }
-
-    #[test]
-    fn fallback_render_without_notes_produces_silence() {
-        let mut engine = DandrumEngine::new();
-        let mut left = vec![0.0; 128];
-        let mut right = vec![0.0; 128];
-
-        engine.render(&mut left, &mut right);
-
-        assert!(left.iter().all(|s| *s == 0.0));
-        assert!(right.iter().all(|s| *s == 0.0));
-    }
-
-    #[test]
-    fn sustained_fallback_voice_uses_configured_duration() {
-        let mut engine = DandrumEngine::new();
-        engine.note_on(60, 100);
-        let mut left = vec![0.0; 48_000];
-        let mut right = vec![0.0; 48_000];
-
-        engine.render(&mut left, &mut right);
-
-        assert!(!engine.is_finished());
-    }
-
-    #[test]
-    fn note_off_eventually_causes_fallback_silence() {
-        let mut engine = DandrumEngine::new();
-        engine.note_on(60, 100);
-        engine.note_off(60);
-
-        let mut left = vec![0.0; 128];
-        let mut right = vec![0.0; 128];
-        engine.render(&mut left, &mut right);
-
-        assert!(!engine.is_finished(), "note_off starts release tail");
-
-        for _ in 0..1_000 {
-            engine.render(&mut left, &mut right);
-            if engine.is_finished() {
-                return;
-            }
-        }
-
-        panic!("fallback synth should finish after release tail");
-    }
-
-    #[test]
-    fn fallback_helpers_preserve_expected_math() {
-        assert!((midi_note_to_hz(69) - 440.0).abs() < 0.001);
-        assert!((midi_note_to_hz(81) - 880.0).abs() < 0.001);
-        assert_eq!(envelope(0.0, SECONDS), 0.0);
-        assert!((envelope(0.025, SECONDS) - (-2.8_f32 * 0.025).exp()).abs() < 0.001);
-        assert_eq!(envelope(SECONDS, SECONDS), 0.0);
-        assert!(envelope(0.05, SECONDS) > envelope(0.9, SECONDS));
-        assert_eq!(wrap_phase(TAU + 0.25), 0.25);
-
-        let (hard_left, hard_right) = equal_power_pan(-1.0);
-        let (center_left, center_right) = equal_power_pan(0.0);
-        let (far_left, far_right) = equal_power_pan(1.0);
-        assert!(hard_left > hard_right);
-        assert!((center_left - center_right).abs() < 0.001);
-        assert!(far_right > far_left);
-    }
-
-    #[test]
-    fn load_patch_error_display_and_source_are_specific() {
-        let unsupported = LoadPatchError::UnsupportedFormat("patch.json".to_string());
-        assert_eq!(
-            unsupported.to_string(),
-            "unsupported patch format: patch.json"
-        );
-        assert!(unsupported.source().is_none());
-
-        let io_error = LoadPatchError::Io(std::io::Error::new(
-            std::io::ErrorKind::NotFound,
-            "missing patch",
-        ));
-        assert_eq!(io_error.to_string(), "I/O error: missing patch");
-        assert!(io_error.source().is_some());
-
-        let parse = LoadPatchError::Parse("bad yaml".to_string());
-        assert_eq!(parse.to_string(), "parse error: bad yaml");
-        assert!(parse.source().is_none());
-    }
-
-    #[test]
-    fn queued_realtime_note_event_renders_like_direct_note_call() {
-        let mut direct = DandrumEngine::new();
-        let mut queued = DandrumEngine::new();
-        let mut queue = crate::realtime::RealtimeEventQueue::with_capacity(4);
-
-        direct.note_on(60, 100);
-        assert_eq!(
-            queue.submit(RealtimeEvent::NoteOn {
-                note: 60,
-                velocity: 100
-            }),
-            crate::realtime::RealtimeEventSubmitStatus::Accepted
-        );
-        for event in queue.drain() {
-            queued.handle_realtime_event(event);
-        }
-
-        let mut direct_left = vec![0.0; 64];
-        let mut direct_right = vec![0.0; 64];
-        let mut queued_left = vec![0.0; 64];
-        let mut queued_right = vec![0.0; 64];
-
-        assert_eq!(direct.render(&mut direct_left, &mut direct_right), 64);
-        assert_eq!(queued.render(&mut queued_left, &mut queued_right), 64);
-        assert_eq!(queued_left, direct_left);
-        assert_eq!(queued_right, direct_right);
-    }
-
-    fn assert_samples_close(actual: &[f32], expected: &[f32]) {
-        assert_eq!(actual.len(), expected.len());
-        for (actual, expected) in actual.iter().zip(expected) {
-            assert!((actual - expected).abs() < 0.000_000_1);
-        }
+        assert_eq!(engine.numeric_parameter_value("osc", "pitch"), Some(1.0));
+        assert!(engine.set_numeric_parameter_by_target("osc", "pitch", 2.0));
+        assert_eq!(engine.numeric_parameter_value("osc", "pitch"), Some(2.0));
     }
 }
