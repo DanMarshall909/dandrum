@@ -11,7 +11,6 @@ mod polyphony;
 mod process_context;
 mod processing;
 mod realtime_graph_processor;
-mod realtime_graph_processor_status;
 mod render_plan;
 mod state;
 

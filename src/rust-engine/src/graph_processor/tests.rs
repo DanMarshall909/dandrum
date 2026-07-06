@@ -4601,6 +4601,34 @@ fn realtime_note_submission_does_not_fill_unused_prepared_event_queue() {
 }
 
 #[test]
+fn decay_module_stays_silent_until_its_trigger_frame_offset() {
+    let mut state = PerModuleState::Decay {
+        level: 0.0,
+        triggered: false,
+        elapsed_frames: 0,
+        decay_frames: 100.0,
+        curve: crate::decay::DecayCurve::Exponential,
+    };
+
+    let events = [super::outputs::BlockEvent {
+        frame_offset: 20,
+        event: ScriptEvent::NoteOn {
+            note: 60,
+            velocity: 100,
+        },
+    }];
+
+    let outputs = super::processing::process_decay(&mut state, &events, 30);
+    let values = &outputs.control[builtin_ports::VALUE];
+
+    for (i, value) in values.iter().enumerate().take(20) {
+        assert_eq!(*value, 0.0, "expected silence before trigger at frame {i}");
+    }
+    assert_eq!(values[20], 1.0, "decay should jump to peak on its trigger frame");
+    assert!(values[21] < 1.0, "decay should begin falling after the trigger frame");
+}
+
+#[test]
 fn offline_and_realtime_produce_same_output_for_sampler_patch() {
     let graph = Graph::new(
         vec![

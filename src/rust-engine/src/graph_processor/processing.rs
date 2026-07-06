@@ -83,24 +83,26 @@ pub(super) fn process_adsr(
         _ => unreachable!(),
     };
 
-    for event in events_in {
-        match &event.event {
-            ScriptEvent::NoteOn { .. } => {
-                *gate_active = true;
-                *release_start_frame = block_start_frame;
-            }
-            ScriptEvent::NoteOff { .. } => {
-                *gate_active = false;
-                *release_start_frame = block_start_frame;
-                *release_start_level = *level;
-            }
-        }
-    }
-
     let mut adsr_value = Vec::with_capacity(frames);
 
     for i in 0..frames {
         let absolute_frame = block_start_frame + i as u64;
+
+        for event in events_in {
+            if event.frame_offset as usize == i {
+                match &event.event {
+                    ScriptEvent::NoteOn { .. } => {
+                        *gate_active = true;
+                        *release_start_frame = absolute_frame;
+                    }
+                    ScriptEvent::NoteOff { .. } => {
+                        *gate_active = false;
+                        *release_start_frame = absolute_frame;
+                        *release_start_level = *level;
+                    }
+                }
+            }
+        }
 
         let attack_ms = adsr_time_ms(attack_in[i], 2.0, 100.0);
         let decay_ms = adsr_time_ms(decay_in[i], 10.0, 1000.0);
@@ -718,16 +720,17 @@ pub(super) fn process_decay(
         _ => unreachable!(),
     };
 
-    for event in events {
-        if matches!(event.event, ScriptEvent::NoteOn { .. }) {
-            *level = 1.0;
-            *triggered = true;
-            *elapsed_frames = 0;
-        }
-    }
-
     let mut values = Vec::with_capacity(frames);
-    for _ in 0..frames {
+    for frame in 0..frames {
+        for event in events {
+            if event.frame_offset as usize == frame && matches!(event.event, ScriptEvent::NoteOn { .. })
+            {
+                *level = 1.0;
+                *triggered = true;
+                *elapsed_frames = 0;
+            }
+        }
+
         if *triggered {
             let t = *elapsed_frames as f32 / decay_frames;
             *level = match curve {

@@ -507,7 +507,7 @@ mod tests {
 
     #[test]
     fn c_ffi_renders_public_numeric_parameter_descriptors_from_patch_path() {
-        let path = write_parameterised_oscillator_patch("dandrum_test_public_parameters.yaml");
+        let path = write_parameterised_adsr_patch("dandrum_test_public_parameters.yaml");
         let c_path = std::ffi::CString::new(path.to_str().unwrap()).unwrap();
         assert_eq!(unsafe { dandrum_patch_public_numeric_parameter_count(c_path.as_ptr()) }, 1);
 
@@ -531,27 +531,27 @@ mod tests {
         };
 
         assert!(result);
-        assert_eq!(unsafe { CStr::from_ptr(id.as_ptr()) }.to_str().unwrap(), "osc.pitch");
-        assert_eq!(default_value, 1.0);
-        assert_eq!(min_value, 0.25);
-        assert_eq!(max_value, 4.0);
+        assert_eq!(unsafe { CStr::from_ptr(id.as_ptr()) }.to_str().unwrap(), "env.attack");
+        assert_eq!(default_value, 5.0);
+        assert_eq!(min_value, 0.0);
+        assert_eq!(max_value, 500.0);
 
         std::fs::remove_file(path).ok();
     }
 
     #[test]
     fn c_ffi_public_numeric_parameter_update_writes_runtime_slot() {
-        let path = write_parameterised_oscillator_patch("dandrum_test_runtime_parameter_patch.yaml");
+        let path = write_parameterised_adsr_patch("dandrum_test_runtime_parameter_patch.yaml");
         let c_path = std::ffi::CString::new(path.to_str().unwrap()).unwrap();
-        let parameter_id = std::ffi::CString::new("osc.pitch").unwrap();
+        let parameter_id = std::ffi::CString::new("env.attack").unwrap();
         let engine = dandrum_engine_create();
 
         assert!(unsafe { dandrum_engine_load_patch(engine, c_path.as_ptr()) });
-        assert_eq!(unsafe { (*engine).numeric_parameter_value("osc", "pitch") }, Some(1.0));
+        assert_eq!(unsafe { (*engine).numeric_parameter_value("env", "attack") }, Some(5.0));
         assert!(unsafe {
-            dandrum_engine_set_public_numeric_parameter(engine, parameter_id.as_ptr(), 2.0)
+            dandrum_engine_set_public_numeric_parameter(engine, parameter_id.as_ptr(), 42.0)
         });
-        assert_eq!(unsafe { (*engine).numeric_parameter_value("osc", "pitch") }, Some(2.0));
+        assert_eq!(unsafe { (*engine).numeric_parameter_value("env", "attack") }, Some(42.0));
 
         unsafe { dandrum_engine_destroy(engine) };
         std::fs::remove_file(path).ok();
@@ -559,7 +559,7 @@ mod tests {
 
     #[test]
     fn c_ffi_public_numeric_parameter_update_rejects_unknown_parameter() {
-        let path = write_parameterised_oscillator_patch("dandrum_test_unknown_parameter_patch.yaml");
+        let path = write_parameterised_adsr_patch("dandrum_test_unknown_parameter_patch.yaml");
         let c_path = std::ffi::CString::new(path.to_str().unwrap()).unwrap();
         let parameter_id = std::ffi::CString::new("missing.parameter").unwrap();
         let engine = dandrum_engine_create();
@@ -573,7 +573,7 @@ mod tests {
         std::fs::remove_file(path).ok();
     }
 
-    fn write_parameterised_oscillator_patch(file_name: &str) -> PathBuf {
+    fn write_parameterised_adsr_patch(file_name: &str) -> PathBuf {
         use std::io::Write;
 
         let mut path = std::env::temp_dir();
@@ -581,7 +581,7 @@ mod tests {
         let mut file = std::fs::File::create(&path).unwrap();
         writeln!(
             file,
-            "metadata:\n  name: Runtime Parameter Test\ninstrument:\n  id: dandrum.runtime-parameter-test\n  preset_schema_version: 1\npreset_surface:\n  parameters:\n    - name: osc.pitch\n      type: number\n      default: 1\n      min: 0.25\n      max: 4\n      maps_to: osc.pitch\nrender:\n  sample_rate_hz: 48000\n  block_size_frames: 64\n  duration_frames: 128\nmodules:\n  - id: osc\n    type: oscillator\n    parameters:\n      pitch: 1\n    outputs:\n      - name: audio\n        signal_type: audio\n  - id: out\n    type: audio_output\n    inputs:\n      - name: left\n        signal_type: audio\n      - name: right\n        signal_type: audio\nconnections:\n  - from: osc.audio\n    to: out.left\n  - from: osc.audio\n    to: out.right"
+            "metadata:\n  name: Runtime Parameter Test\ninstrument:\n  id: dandrum.runtime-parameter-test\n  preset_schema_version: 1\npreset_surface:\n  parameters:\n    - name: env.attack\n      type: number\n      default: 5\n      min: 0\n      max: 500\n      maps_to: env.attack\nrender:\n  sample_rate_hz: 48000\n  block_size_frames: 64\n  duration_frames: 128\nmodules:\n  - id: osc\n    type: oscillator\n  - id: env\n    type: adsr\n    parameters:\n      attack: 5\n  - id: mixer\n    type: audio_mixer\n  - id: out\n    type: audio_output\n    inputs:\n      - name: left\n        signal_type: audio\n      - name: right\n        signal_type: audio\nconnections:\n  - from: osc.audio\n    to: mixer.inputs\n  - from: mixer.mix\n    to: out.left\n  - from: mixer.mix\n    to: out.right"
         )
         .unwrap();
         drop(file);

@@ -15,17 +15,15 @@ set(RUST_ENGINE_MUTATION_EXCLUDE_ARGS
     --exclude src/bin/*.rs
     --exclude src/cli.rs)
 
+file(GLOB_RECURSE RUST_ENGINE_SOURCES CONFIGURE_DEPENDS ${RUST_ENGINE_DIR}/src/*.rs)
+
 add_custom_command(
     OUTPUT ${RUST_ENGINE_LIB}
     COMMAND ${CMAKE_COMMAND} -E env CARGO_TARGET_DIR=${CMAKE_CURRENT_BINARY_DIR}/rust-target ${CARGO_BIN} build --release
     WORKING_DIRECTORY ${RUST_ENGINE_DIR}
     DEPENDS
         ${RUST_ENGINE_DIR}/Cargo.toml
-        ${RUST_ENGINE_DIR}/src/bin/dandrum-cli.rs
-        ${RUST_ENGINE_DIR}/src/cli.rs
-        ${RUST_ENGINE_DIR}/src/core.rs
-        ${RUST_ENGINE_DIR}/src/lib.rs
-        ${RUST_ENGINE_DIR}/src/patch.rs
+        ${RUST_ENGINE_SOURCES}
     COMMENT "Building Rust audio engine")
 
 add_custom_target(dandrum-engine-rust DEPENDS ${RUST_ENGINE_LIB})
