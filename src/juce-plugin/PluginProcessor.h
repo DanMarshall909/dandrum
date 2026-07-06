@@ -34,8 +34,16 @@ public:
     void getStateInformation (juce::MemoryBlock& destData) override;
     void setStateInformation (const void* data, int sizeInBytes) override;
 
+    bool isInstrumentLoaded() const noexcept;
+    const juce::String& getLastLoadError() const noexcept;
+
 private:
+    bool loadDefaultInstrument();
+    void renderSilence (juce::AudioBuffer<float>& buffer) const;
+
     DandrumEngine* engine = nullptr;
+    bool instrumentLoaded = false;
+    juce::String lastLoadError;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (DandrumAudioProcessor)
 };
