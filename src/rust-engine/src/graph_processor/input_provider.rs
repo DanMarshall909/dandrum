@@ -136,6 +136,15 @@ fn compiled_control_parameter_input(
     compiled: &CompiledPatch,
     frames: usize,
 ) -> Option<Vec<f32>> {
+    if let Some(slot_index) = compiled.nodes()[module_idx]
+        .parameter_slot_indices
+        .get(port_name)
+    {
+        return compiled
+            .parameter_slot_value(*slot_index)
+            .map(|value| vec![value; frames]);
+    }
+
     let value = compiled.nodes()[module_idx]
         .parameters
         .get(port_name)?
