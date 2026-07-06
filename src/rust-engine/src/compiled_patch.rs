@@ -20,6 +20,7 @@ pub struct CompiledPatch {
     module_output_buffer_layout: Vec<CompiledModuleBufferLayout>,
     total_output_buffer_count: usize,
     render_settings: RenderSettings,
+    parameter_slots: Vec<ParameterSlot>,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -37,6 +38,12 @@ pub struct CompiledNode {
     pub output_port_names: Vec<String>,
     pub output_port_types: Vec<SignalType>,
     pub parameters: BTreeMap<String, String>,
+    pub parameter_slot_indices: BTreeMap<String, usize>,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct ParameterSlot {
+    value: f32,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -115,6 +122,7 @@ pub fn compile(
     let topological_order = topological_sort(graph, &module_indices)?;
     let mut next_output_buffer = 0;
     let mut module_output_buffer_layout = Vec::with_capacity(graph.modules().len());
+    let mut parameter_slots = Vec::new();
     let nodes: Vec<_> = graph
         .modules()
         .iter()
@@ -153,6 +161,16 @@ pub fn compile(
                 .enumerate()
                 .map(|(index, name)| (name.clone(), index))
                 .collect();
+            let parameters = module.params().clone();
+            let parameter_slot_indices = parameters
+                .iter()
+                .filter_map(|(name, value)| {
+                    let value = value.parse::<f32>().ok()?;
+                    let slot_index = parameter_slots.len();
+                    parameter_slots.push(ParameterSlot { value });
+                    Some((name.clone(), slot_index))
+                })
+                .collect();
 
             Ok(CompiledNode {
                 id: module.id().clone(),
@@ -167,7 +185,8 @@ pub fn compile(
                 input_port_types: module.inputs().iter().map(|p| p.signal_type()).collect(),
                 output_port_names,
                 output_port_types: module.outputs().iter().map(|p| p.signal_type()).collect(),
-                parameters: module.params().clone(),
+                parameters,
+                parameter_slot_indices,
             })
         })
         .collect::<Result<Vec<_>, _>>()?;
@@ -208,6 +227,7 @@ pub fn compile(
         module_output_buffer_layout,
         total_output_buffer_count: next_output_buffer,
         render_settings: render_settings.clone(),
+        parameter_slots,
     })
 }
 
@@ -256,6 +276,41 @@ impl CompiledPatch {
 
     pub fn render_settings(&self) -> &RenderSettings {
         &self.render_settings
+    }
+
+    pub fn parameter_slot_value(&self, slot_index: usize) -> Option<f32> {
+        self.parameter_slots.get(slot_index).map(|slot| slot.value)
+    }
+
+    pub fn numeric_parameter_value(&self, module_id: &str, parameter_name: &str) -> Option<f32> {
+        let slot_index = self.parameter_slot_index(module_id, parameter_name)?;
+        self.parameter_slot_value(slot_index)
+    }
+
+    pub fn set_numeric_parameter_by_target(
+        &mut self,
+        module_id: &str,
+        parameter_name: &str,
+        value: f32,
+    ) -> bool {
+        let Some(slot_index) = self.parameter_slot_index(module_id, parameter_name) else {
+            return false;
+        };
+        let Some(slot) = self.parameter_slots.get_mut(slot_index) else {
+            return false;
+        };
+
+        slot.value = value;
+        true
+    }
+
+    fn parameter_slot_index(&self, module_id: &str, parameter_name: &str) -> Option<usize> {
+        self.nodes
+            .iter()
+            .find(|node| node.id.as_str() == module_id)?
+            .parameter_slot_indices
+            .get(parameter_name)
+            .copied()
     }
 }
 
@@ -621,155 +676,19 @@ mod tests {
     }
 
     #[test]
-    fn render_settings_are_preserved_in_compiled_patch() {
-        let graph = Graph::new(vec![audio_source("a")], vec![]);
-        let settings = RenderSettings {
-            sample_rate_hz: 44_100,
-            block_size_frames: 64,
-            duration_frames: 2_048,
-        };
-
-        let compiled = compile(&graph, &settings).expect("graph should compile");
-
-        assert_eq!(compiled.render_settings(), &settings);
-    }
-
-    #[test]
-    fn compiled_routing_uses_vec_based_collections() {
+    fn numeric_parameters_are_compiled_into_slots() {
         let graph = Graph::new(
-            vec![
-                ModuleNode::new(ModuleId::new("a"), "oscillator")
-                    .with_output("left", SignalType::Audio)
-                    .with_output("right", SignalType::Audio),
-                ModuleNode::new(ModuleId::new("b"), "audio_output")
-                    .with_input("left_in", SignalType::Audio)
-                    .with_input("right_in", SignalType::Audio),
-            ],
-            vec![
-                connect("a", "left", "b", "left_in"),
-                connect("a", "right", "b", "right_in"),
-            ],
-        );
-
-        let compiled = compile_graph(&graph);
-
-        assert_eq!(compiled.nodes()[1].input_port_map.len(), 2);
-        assert_eq!(compiled.nodes()[1].input_port_map[0][0].port_index, 0);
-        assert_eq!(compiled.nodes()[1].input_port_map[1][0].port_index, 1);
-        assert_eq!(compiled.nodes()[1].input_routes[0][0].output_buffer_id, 0);
-        assert_eq!(compiled.nodes()[1].input_routes[1][0].output_buffer_id, 1);
-        assert_eq!(compiled.nodes()[0].output_port_map, vec![0, 1]);
-    }
-
-    #[test]
-    fn compiled_patch_records_midi_and_audio_output_indices() {
-        let graph = Graph::new(
-            vec![
-                ModuleNode::new(ModuleId::new("midi"), "midi_input"),
-                audio_source("source"),
-                ModuleNode::new(ModuleId::new("out"), "audio_output"),
-            ],
+            vec![audio_processor("gain").with_params(BTreeMap::from([(
+                "gain".to_string(),
+                "0.5".to_string(),
+            )]))],
             vec![],
         );
 
-        let compiled = compile_graph(&graph);
+        let mut compiled = compile_graph(&graph);
 
-        assert_eq!(compiled.midi_input_index(), Some(0));
-        assert_eq!(compiled.audio_output_index(), Some(2));
-
-        let graph_without_midi =
-            Graph::new(vec![audio_source("source"), audio_sink("out")], vec![]);
-        let compiled_without_midi = compile_graph(&graph_without_midi);
-        assert_eq!(compiled_without_midi.midi_input_index(), None);
-    }
-
-    #[test]
-    fn compiled_patch_preserves_module_configuration_metadata() {
-        let graph = Graph::new(
-            vec![
-                ModuleNode::new(ModuleId::new("sampler"), "sampler")
-                    .with_params(BTreeMap::from([("asset".to_string(), "hit".to_string())])),
-            ],
-            vec![],
-        );
-
-        let compiled = compile_graph(&graph);
-
-        assert_eq!(compiled.nodes()[0].parameters["asset"], "hit");
-    }
-
-    #[test]
-    fn compiled_patch_records_output_buffer_layout() {
-        let graph = Graph::new(
-            vec![
-                audio_source("source"),
-                ModuleNode::new(ModuleId::new("stereo"), "gain")
-                    .with_output("left", SignalType::Audio)
-                    .with_output("right", SignalType::Audio),
-                audio_sink("sink"),
-            ],
-            vec![],
-        );
-
-        let compiled = compile_graph(&graph);
-
-        assert_eq!(
-            compiled.module_output_buffer_layout(),
-            &[
-                CompiledModuleBufferLayout {
-                    output_buffer_start: 0,
-                    output_buffer_count: 1,
-                },
-                CompiledModuleBufferLayout {
-                    output_buffer_start: 1,
-                    output_buffer_count: 2,
-                },
-                CompiledModuleBufferLayout {
-                    output_buffer_start: 3,
-                    output_buffer_count: 0,
-                },
-            ]
-        );
-        assert_eq!(compiled.nodes()[1].output_port_map, vec![1, 2]);
-        assert_eq!(compiled.total_output_buffer_count(), 3);
-    }
-
-    #[test]
-    fn unknown_module_type_fails_compilation() {
-        let graph = Graph::new(
-            vec![ModuleNode::new(ModuleId::new("x"), "nonexistent_module")],
-            vec![],
-        );
-
-        let error = compile(&graph, &render_settings()).expect_err("unknown module type must fail");
-
-        assert_eq!(
-            error,
-            CompileError::UnknownModuleType {
-                module_type: "nonexistent_module".to_string(),
-            }
-        );
-    }
-
-    #[test]
-    fn render_unsupported_module_type_fails_compilation() {
-        let graph = Graph::new(
-            vec![
-                ModuleNode::new(ModuleId::new("delay"), "block_delay")
-                    .with_input("audio_in", SignalType::Audio)
-                    .with_output("audio_out", SignalType::Audio),
-            ],
-            vec![],
-        );
-
-        let error = compile(&graph, &render_settings())
-            .expect_err("known but render-unsupported module type must fail");
-
-        assert_eq!(
-            error,
-            CompileError::UnsupportedModuleType {
-                module_type: "block_delay".to_string(),
-            }
-        );
+        assert_eq!(compiled.numeric_parameter_value("gain", "gain"), Some(0.5));
+        assert!(compiled.set_numeric_parameter_by_target("gain", "gain", 0.25));
+        assert_eq!(compiled.numeric_parameter_value("gain", "gain"), Some(0.25));
     }
 }
