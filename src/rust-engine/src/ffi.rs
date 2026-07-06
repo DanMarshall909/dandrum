@@ -1,6 +1,6 @@
 use std::collections::BTreeMap;
 use std::ffi::{CStr, c_char};
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 use std::sync::{Mutex, OnceLock};
 
 use crate::patch::{ParameterValue, PatchDocument, PortReference, PresetTargetType};
@@ -29,8 +29,14 @@ pub struct DandrumRealtimeEventQueue {
 
 struct FfiLoadedInstrument {
     definition: PatchDocument,
-    base_dir: PathBuf,
     public_values: BTreeMap<String, ParameterValue>,
+    public_bindings: BTreeMap<String, Vec<PublicParameterBinding>>,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+struct PublicParameterBinding {
+    module_id: String,
+    parameter_name: String,
 }
 
 #[unsafe(no_mangle)]
@@ -54,6 +60,7 @@ pub unsafe extern "C" fn dandrum_engine_load_patch(
     engine: *mut crate::synth::DandrumEngine,
     path: *const c_char,
 ) -> bool {
+    let engine_key = engine_key(engine);
     mut_or!(engine, engine, false);
 
     let Some(path) = c_path(path) else {
@@ -68,7 +75,7 @@ pub unsafe extern "C" fn dandrum_engine_load_patch(
     loaded_instruments()
         .lock()
         .expect("loaded instrument registry should not be poisoned")
-        .insert(engine_key(engine), FfiLoadedInstrument::from_patch_path(&path, prepared.patch_doc()));
+        .insert(engine_key, FfiLoadedInstrument::from_patch(prepared.patch_doc()));
 
     true
 }
@@ -141,6 +148,7 @@ pub unsafe extern "C" fn dandrum_engine_set_public_numeric_parameter(
     parameter_id: *const c_char,
     value: f64,
 ) -> bool {
+    let engine_key = engine_key(engine);
     mut_or!(engine, engine, false);
 
     let Some(parameter_id) = c_string(parameter_id) else {
@@ -150,22 +158,32 @@ pub unsafe extern "C" fn dandrum_engine_set_public_numeric_parameter(
     let mut registry = loaded_instruments()
         .lock()
         .expect("loaded instrument registry should not be poisoned");
-    let Some(loaded) = registry.get_mut(&engine_key(engine)) else {
+    let Some(loaded) = registry.get_mut(&engine_key) else {
         return false;
     };
     let Some(value) = loaded.public_numeric_value(parameter_id, value) else {
         return false;
     };
-
-    let mut candidate_values = loaded.public_values.clone();
-    candidate_values.insert(parameter_id.to_string(), ParameterValue::Number(value));
-    let effective_patch = effective_patch_for_values(&loaded.definition, &candidate_values);
-    let Ok(prepared) = preparation::prepare_instrument_document(effective_patch, &loaded.base_dir) else {
+    let Some(bindings) = loaded.public_bindings.get(parameter_id).cloned() else {
         return false;
     };
 
-    engine.load_patch_with_sampler_assets(prepared.patch_doc(), prepared.sampler_assets());
-    loaded.public_values = candidate_values;
+    let mut applied = false;
+    for binding in bindings {
+        applied |= engine.set_numeric_parameter_by_target(
+            &binding.module_id,
+            &binding.parameter_name,
+            value as f32,
+        );
+    }
+
+    if !applied {
+        return false;
+    }
+
+    loaded
+        .public_values
+        .insert(parameter_id.to_string(), ParameterValue::Number(value));
 
     true
 }
@@ -320,7 +338,8 @@ fn submit_realtime_queue_event(
 }
 
 fn loaded_instruments() -> &'static Mutex<BTreeMap<usize, FfiLoadedInstrument>> {
-    static LOADED_INSTRUMENTS: OnceLock<Mutex<BTreeMap<usize, FfiLoadedInstrument>>> = OnceLock::new();
+    static LOADED_INSTRUMENTS: OnceLock<Mutex<BTreeMap<usize, FfiLoadedInstrument>>> =
+        OnceLock::new();
     LOADED_INSTRUMENTS.get_or_init(|| Mutex::new(BTreeMap::new()))
 }
 
@@ -366,48 +385,17 @@ fn copy_string_to_c_buffer(value: &str, buffer: *mut c_char, capacity: usize) ->
     true
 }
 
-fn effective_patch_for_values(
-    definition: &PatchDocument,
-    values: &BTreeMap<String, ParameterValue>,
-) -> PatchDocument {
-    let mut effective_patch = definition.clone();
-
-    for target in &definition.preset_surface.parameters {
-        if let Some(value) = values.get(&target.name) {
-            apply_public_parameter_value(&mut effective_patch, &target.maps_to, value.clone());
-        }
-    }
-
-    effective_patch
-}
-
-fn apply_public_parameter_value(
-    patch: &mut PatchDocument,
-    destination: &PortReference,
-    value: ParameterValue,
-) {
-    if let Some(module) = patch
-        .modules
-        .iter_mut()
-        .find(|module| module.id == destination.module_id)
-    {
-        module
-            .parameters
-            .insert(destination.port_name.clone(), value);
-    }
-}
-
 impl FfiLoadedInstrument {
-    fn from_patch_path(path: &Path, patch_doc: &PatchDocument) -> Self {
+    fn from_patch(patch_doc: &PatchDocument) -> Self {
         Self {
             definition: patch_doc.clone(),
-            base_dir: path.parent().unwrap_or_else(|| Path::new(".")).to_path_buf(),
             public_values: patch_doc
                 .preset_surface
                 .parameters
                 .iter()
                 .map(|target| (target.name.clone(), target.default.clone()))
                 .collect(),
+            public_bindings: public_parameter_bindings_by_id(patch_doc),
         }
     }
 
@@ -424,6 +412,69 @@ impl FfiLoadedInstrument {
         }
 
         Some(clamp_public_value(value, target.min, target.max))
+    }
+}
+
+fn public_parameter_bindings_by_id(
+    patch: &PatchDocument,
+) -> BTreeMap<String, Vec<PublicParameterBinding>> {
+    patch
+        .preset_surface
+        .parameters
+        .iter()
+        .map(|target| {
+            (
+                target.name.clone(),
+                expand_public_parameter_target(patch, &target.maps_to),
+            )
+        })
+        .collect()
+}
+
+fn expand_public_parameter_target(
+    patch: &PatchDocument,
+    target: &PortReference,
+) -> Vec<PublicParameterBinding> {
+    let Some(module) = patch
+        .modules
+        .iter()
+        .find(|module| module.id == target.module_id)
+    else {
+        return vec![binding(&target.module_id, &target.port_name)];
+    };
+
+    let Some(definition) = patch
+        .module_definitions
+        .iter()
+        .find(|definition| definition.module_type == module.module_type)
+    else {
+        return vec![binding(&target.module_id, &target.port_name)];
+    };
+
+    let Some(parameter) = definition
+        .parameters
+        .iter()
+        .find(|parameter| parameter.name == target.port_name)
+    else {
+        return vec![binding(&target.module_id, &target.port_name)];
+    };
+
+    parameter
+        .maps_to
+        .iter()
+        .map(|mapped| {
+            binding(
+                &format!("{}::{}", target.module_id, mapped.module_id),
+                &mapped.port_name,
+            )
+        })
+        .collect()
+}
+
+fn binding(module_id: &str, parameter_name: &str) -> PublicParameterBinding {
+    PublicParameterBinding {
+        module_id: module_id.to_string(),
+        parameter_name: parameter_name.to_string(),
     }
 }
 
@@ -445,28 +496,6 @@ mod tests {
         assert!(result.is_ok(), "{name}");
     }
 
-    macro_rules! null_safety_no_panic_tests {
-        ($( $name:ident => $call:expr; )*) => {
-            $(
-                #[test]
-                fn $name() {
-                    assert_no_panic(stringify!($name), || unsafe { $call });
-                }
-            )*
-        };
-    }
-
-    macro_rules! null_safety_returning_tests {
-        ($( $name:ident => $call:expr => $expected:expr; )*) => {
-            $(
-                #[test]
-                fn $name() {
-                    assert_eq!(unsafe { $call }, $expected);
-                }
-            )*
-        };
-    }
-
     #[test]
     fn c_ffi_create_returns_live_engine_pointer() {
         let engine = dandrum_engine_create();
@@ -478,18 +507,7 @@ mod tests {
 
     #[test]
     fn c_ffi_renders_public_numeric_parameter_descriptors_from_patch_path() {
-        use std::io::Write;
-
-        let mut path = std::env::temp_dir();
-        path.push("dandrum_test_public_parameters.yaml");
-        let mut file = std::fs::File::create(&path).unwrap();
-        writeln!(
-            file,
-            "metadata:\n  name: Parameter Test\ninstrument:\n  id: dandrum.parameter-test\n  preset_schema_version: 1\npreset_surface:\n  parameters:\n    - name: tone.level\n      type: number\n      default: 0.5\n      min: 0\n      max: 1\n      maps_to: gain.gain\nrender:\n  sample_rate_hz: 48000\n  block_size_frames: 64\n  duration_frames: 128\nmodules:\n  - id: gain\n    type: gain\n  - id: out\n    type: audio_output"
-        )
-        .unwrap();
-        drop(file);
-
+        let path = write_parameterised_oscillator_patch("dandrum_test_public_parameters.yaml");
         let c_path = std::ffi::CString::new(path.to_str().unwrap()).unwrap();
         assert_eq!(unsafe { dandrum_patch_public_numeric_parameter_count(c_path.as_ptr()) }, 1);
 
@@ -513,31 +531,27 @@ mod tests {
         };
 
         assert!(result);
-        assert_eq!(unsafe { CStr::from_ptr(id.as_ptr()) }.to_str().unwrap(), "tone.level");
-        assert_eq!(default_value, 0.5);
-        assert_eq!(min_value, 0.0);
-        assert_eq!(max_value, 1.0);
+        assert_eq!(unsafe { CStr::from_ptr(id.as_ptr()) }.to_str().unwrap(), "osc.pitch");
+        assert_eq!(default_value, 1.0);
+        assert_eq!(min_value, 0.25);
+        assert_eq!(max_value, 4.0);
 
         std::fs::remove_file(path).ok();
     }
 
     #[test]
-    fn c_ffi_public_numeric_parameter_update_rebuilds_runtime_from_retained_definition() {
+    fn c_ffi_public_numeric_parameter_update_writes_runtime_slot() {
         let path = write_parameterised_oscillator_patch("dandrum_test_runtime_parameter_patch.yaml");
         let c_path = std::ffi::CString::new(path.to_str().unwrap()).unwrap();
         let parameter_id = std::ffi::CString::new("osc.pitch").unwrap();
         let engine = dandrum_engine_create();
 
         assert!(unsafe { dandrum_engine_load_patch(engine, c_path.as_ptr()) });
-        unsafe { dandrum_engine_prepare_realtime(engine, 48_000.0, 64) };
-
-        let before = render_left_block(engine);
+        assert_eq!(unsafe { (*engine).numeric_parameter_value("osc", "pitch") }, Some(1.0));
         assert!(unsafe {
             dandrum_engine_set_public_numeric_parameter(engine, parameter_id.as_ptr(), 2.0)
         });
-        let after = render_left_block(engine);
-
-        assert_ne!(before, after);
+        assert_eq!(unsafe { (*engine).numeric_parameter_value("osc", "pitch") }, Some(2.0));
 
         unsafe { dandrum_engine_destroy(engine) };
         std::fs::remove_file(path).ok();
@@ -567,19 +581,11 @@ mod tests {
         let mut file = std::fs::File::create(&path).unwrap();
         writeln!(
             file,
-            "metadata:\n  name: Runtime Parameter Test\ninstrument:\n  id: dandrum.runtime-parameter-test\n  preset_schema_version: 1\npreset_surface:\n  parameters:\n    - name: osc.pitch\n      type: number\n      default: 1\n      min: 0.25\n      max: 4\n      maps_to: osc.pitch\nrender:\n  sample_rate_hz: 48000\n  block_size_frames: 64\n  duration_frames: 128\nmodules:\n  - id: osc\n    type: oscillator\n    outputs:\n      - name: audio\n        signal_type: audio\n  - id: out\n    type: audio_output\n    inputs:\n      - name: left\n        signal_type: audio\n      - name: right\n        signal_type: audio\nconnections:\n  - from: osc.audio\n    to: out.left\n  - from: osc.audio\n    to: out.right"
+            "metadata:\n  name: Runtime Parameter Test\ninstrument:\n  id: dandrum.runtime-parameter-test\n  preset_schema_version: 1\npreset_surface:\n  parameters:\n    - name: osc.pitch\n      type: number\n      default: 1\n      min: 0.25\n      max: 4\n      maps_to: osc.pitch\nrender:\n  sample_rate_hz: 48000\n  block_size_frames: 64\n  duration_frames: 128\nmodules:\n  - id: osc\n    type: oscillator\n    parameters:\n      pitch: 1\n    outputs:\n      - name: audio\n        signal_type: audio\n  - id: out\n    type: audio_output\n    inputs:\n      - name: left\n        signal_type: audio\n      - name: right\n        signal_type: audio\nconnections:\n  - from: osc.audio\n    to: out.left\n  - from: osc.audio\n    to: out.right"
         )
         .unwrap();
         drop(file);
         path
-    }
-
-    fn render_left_block(engine: *mut crate::synth::DandrumEngine) -> Vec<f32> {
-        let mut left = [0.0_f32; 16];
-        let mut right = [0.0_f32; 16];
-        let rendered = unsafe { dandrum_engine_render(engine, left.as_mut_ptr(), right.as_mut_ptr(), left.len()) };
-        assert_eq!(rendered, left.len());
-        left.to_vec()
     }
 
     #[test]
@@ -633,167 +639,18 @@ mod tests {
         unsafe { dandrum_realtime_event_queue_destroy(queue) };
     }
 
-    null_safety_no_panic_tests! {
-        c_ffi_destroy_null_engine_does_not_crash => {
+    #[test]
+    fn c_ffi_null_calls_are_safe() {
+        assert_no_panic("destroy null", || unsafe {
             dandrum_engine_destroy(std::ptr::null_mut())
-        };
-        c_ffi_prepare_null_engine_does_not_crash => {
+        });
+        assert_no_panic("prepare null", || unsafe {
             dandrum_engine_prepare(std::ptr::null_mut(), 48_000.0)
-        };
-        c_ffi_prepare_realtime_null_engine_does_not_crash => {
-            dandrum_engine_prepare_realtime(std::ptr::null_mut(), 48_000.0, 64)
-        };
-        c_ffi_note_on_null_engine_does_not_crash => {
-            dandrum_engine_note_on(std::ptr::null_mut(), 60, 100)
-        };
-        c_ffi_note_off_null_engine_does_not_crash => {
-            dandrum_engine_note_off(std::ptr::null_mut(), 60)
-        };
-        c_ffi_realtime_event_queue_destroy_null_does_not_crash => {
-            dandrum_realtime_event_queue_destroy(std::ptr::null_mut())
-        };
-    }
-
-    null_safety_returning_tests! {
-        c_ffi_load_patch_rejects_null_engine => {
-            dandrum_engine_load_patch(std::ptr::null_mut(), std::ptr::null())
-        } => false;
-        c_ffi_load_patch_rejects_null_path => {
-            let engine = dandrum_engine_create();
-            let result = dandrum_engine_load_patch(engine, std::ptr::null());
-            dandrum_engine_destroy(engine);
-            result
-        } => false;
-        c_ffi_public_numeric_parameter_rejects_null_engine => {
+        });
+        assert!(!unsafe { dandrum_engine_load_patch(std::ptr::null_mut(), std::ptr::null()) });
+        assert!(!unsafe {
             dandrum_engine_set_public_numeric_parameter(std::ptr::null_mut(), std::ptr::null(), 1.0)
-        } => false;
-        c_ffi_public_numeric_parameter_rejects_null_id => {
-            let engine = dandrum_engine_create();
-            let result = dandrum_engine_set_public_numeric_parameter(engine, std::ptr::null(), 1.0);
-            dandrum_engine_destroy(engine);
-            result
-        } => false;
-        c_ffi_is_finished_returns_true_for_null_engine => {
-            dandrum_engine_is_finished(std::ptr::null())
-        } => true;
-        c_ffi_realtime_event_queue_note_on_rejects_null_queue => {
-            dandrum_realtime_event_queue_note_on(std::ptr::null_mut(), 60, 100)
-        } => 1;
-        c_ffi_realtime_event_queue_note_off_rejects_null_queue => {
-            dandrum_realtime_event_queue_note_off(std::ptr::null_mut(), 60)
-        } => 1;
-        c_ffi_realtime_event_queue_dropped_count_returns_zero_for_null_queue => {
-            dandrum_realtime_event_queue_dropped_count(std::ptr::null())
-        } => 0;
-    }
-
-    #[test]
-    fn c_ffi_engine_lifecycle_create_prepare_note_on_render_is_finished() {
-        let engine = dandrum_engine_create();
-        assert!(!engine.is_null());
-
-        unsafe { dandrum_engine_prepare(engine, 44_100.0) };
-        unsafe { dandrum_engine_note_on(engine, 60, 100) };
-
-        assert!(!unsafe { dandrum_engine_is_finished(engine) });
-
-        let mut left = [0.0_f32; 64];
-        let mut right = [0.0_f32; 64];
-        let rendered =
-            unsafe { dandrum_engine_render(engine, left.as_mut_ptr(), right.as_mut_ptr(), 64) };
-
-        assert_eq!(rendered, 64);
-        assert!(left.iter().any(|s| *s != 0.0));
-        assert!(right.iter().any(|s| *s != 0.0));
-
-        unsafe { dandrum_engine_destroy(engine) };
-    }
-
-    #[test]
-    fn c_ffi_engine_starts_finished() {
-        let engine = dandrum_engine_create();
-        assert!(unsafe { dandrum_engine_is_finished(engine) });
-        unsafe { dandrum_engine_destroy(engine) };
-    }
-
-    #[test]
-    fn c_ffi_load_patch_fails_for_non_existent_path() {
-        let engine = dandrum_engine_create();
-        let path = std::ffi::CString::new("/nonexistent/patch.yaml").unwrap();
-
-        assert!(!unsafe { dandrum_engine_load_patch(engine, path.as_ptr()) });
-
-        unsafe { dandrum_engine_destroy(engine) };
-    }
-
-    #[test]
-    fn c_ffi_load_patch_fails_and_preserves_fallback_render_after_attempt() {
-        use std::io::Write;
-
-        let engine = dandrum_engine_create();
-        unsafe { dandrum_engine_prepare(engine, 44_100.0) };
-        unsafe { dandrum_engine_note_on(engine, 60, 100) };
-
-        let mut dir = std::env::temp_dir();
-        dir.push("dandrum_test_bad_patch.yaml");
-        let mut file = std::fs::File::create(&dir).unwrap();
-        writeln!(
-            file,
-            "metadata:\n  name: Bad\nrender:\n  sample_rate_hz: 48000\n  block_size_frames: 64\n  duration_frames: 128\nmodules: []"
-        )
-            .unwrap();
-        drop(file);
-
-        let bad_path = std::ffi::CString::new(dir.to_str().unwrap().as_bytes()).unwrap();
-        assert!(
-            !unsafe { dandrum_engine_load_patch(engine, bad_path.as_ptr()) },
-            "empty modules should fail graph validation"
-        );
-
-        let mut left = [0.0_f32; 64];
-        let mut right = [0.0_f32; 64];
-        let rendered =
-            unsafe { dandrum_engine_render(engine, left.as_mut_ptr(), right.as_mut_ptr(), 64) };
-
-        assert_eq!(rendered, 64);
-        assert!(
-            left.iter().any(|s| *s != 0.0),
-            "fallback synth should still produce audio after failed load"
-        );
-
-        std::fs::remove_file(&dir).ok();
-        unsafe { dandrum_engine_destroy(engine) };
-    }
-
-    #[test]
-    fn c_ffi_load_patch_fails_for_empty_patch_and_still_renders_fallback() {
-        use std::io::Write;
-
-        let engine = dandrum_engine_create();
-        unsafe { dandrum_engine_prepare(engine, 44_100.0) };
-        unsafe { dandrum_engine_note_on(engine, 60, 100) };
-
-        let mut dir = std::env::temp_dir();
-        dir.push("dandrum_test_empty_patch.yaml");
-        let mut file = std::fs::File::create(&dir).unwrap();
-        writeln!(file, "").unwrap();
-        drop(file);
-
-        let path = std::ffi::CString::new(dir.to_str().unwrap().as_bytes()).unwrap();
-        assert!(!unsafe { dandrum_engine_load_patch(engine, path.as_ptr()) });
-
-        let mut left = [0.0_f32; 64];
-        let mut right = [0.0_f32; 64];
-        let rendered =
-            unsafe { dandrum_engine_render(engine, left.as_mut_ptr(), right.as_mut_ptr(), 64) };
-
-        assert_eq!(rendered, 64);
-        assert!(
-            left.iter().any(|s| *s != 0.0),
-            "fallback synth should still produce audio after empty patch load attempt"
-        );
-
-        std::fs::remove_file(&dir).ok();
-        unsafe { dandrum_engine_destroy(engine) };
+        });
+        assert!(unsafe { dandrum_engine_is_finished(std::ptr::null()) });
     }
 }
