@@ -231,7 +231,8 @@ pub fn compile(
         render_settings: render_settings.clone(),
         parameter_slots,
     })
-}\n
+}
+
 impl CompiledPatch {
     pub fn nodes(&self) -> &[CompiledNode] {
         &self.nodes
