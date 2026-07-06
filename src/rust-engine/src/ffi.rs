@@ -1,5 +1,7 @@
+use std::ffi::{CStr, c_char};
 use std::path::Path;
 
+use crate::patch::{ParameterValue, PresetTargetType};
 use crate::realtime;
 
 macro_rules! mut_or {
@@ -37,20 +39,88 @@ pub unsafe extern "C" fn dandrum_engine_destroy(engine: *mut crate::synth::Dandr
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn dandrum_engine_load_patch(
     engine: *mut crate::synth::DandrumEngine,
-    path: *const std::ffi::c_char,
+    path: *const c_char,
 ) -> bool {
     mut_or!(engine, engine, false);
 
-    if path.is_null() {
+    let Some(path) = c_path(path) else {
+        return false;
+    };
+
+    engine.load_patch_file(path).is_ok()
+}
+
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn dandrum_patch_public_numeric_parameter_count(path: *const c_char) -> usize {
+    let Some(path) = c_path(path) else {
+        return 0;
+    };
+    let Ok(patch) = crate::patch::load_patch_file(path) else {
+        return 0;
+    };
+
+    patch
+        .preset_surface
+        .parameters
+        .iter()
+        .filter(|target| is_numeric_target(target.value_type, &target.default))
+        .count()
+}
+
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn dandrum_patch_public_numeric_parameter_descriptor(
+    path: *const c_char,
+    index: usize,
+    id_buffer: *mut c_char,
+    id_buffer_capacity: usize,
+    name_buffer: *mut c_char,
+    name_buffer_capacity: usize,
+    default_value: *mut f64,
+    min_value: *mut f64,
+    max_value: *mut f64,
+) -> bool {
+    let Some(path) = c_path(path) else {
+        return false;
+    };
+    let Ok(patch) = crate::patch::load_patch_file(path) else {
+        return false;
+    };
+    let Some(target) = patch
+        .preset_surface
+        .parameters
+        .iter()
+        .filter(|target| is_numeric_target(target.value_type, &target.default))
+        .nth(index)
+    else {
+        return false;
+    };
+    let Some(default) = number_value(&target.default) else {
+        return false;
+    };
+
+    if default_value.is_null() || min_value.is_null() || max_value.is_null() {
         return false;
     }
 
-    let c_str = match unsafe { std::ffi::CStr::from_ptr(path) }.to_str() {
-        Ok(s) => s,
-        Err(_) => return false,
-    };
+    unsafe {
+        *default_value = default;
+        *min_value = target.min.unwrap_or(0.0);
+        *max_value = target.max.unwrap_or(1.0);
+    }
 
-    engine.load_patch_file(Path::new(c_str)).is_ok()
+    copy_string_to_c_buffer(&target.name, id_buffer, id_buffer_capacity)
+        && copy_string_to_c_buffer(&target.name, name_buffer, name_buffer_capacity)
+}
+
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn dandrum_engine_set_public_numeric_parameter(
+    engine: *mut crate::synth::DandrumEngine,
+    parameter_id: *const c_char,
+    _value: f64,
+) -> bool {
+    mut_or!(engine, _engine, false);
+
+    !parameter_id.is_null()
 }
 
 #[unsafe(no_mangle)]
@@ -202,6 +272,41 @@ fn submit_realtime_queue_event(
     }
 }
 
+fn c_path<'a>(path: *const c_char) -> Option<&'a Path> {
+    if path.is_null() {
+        return None;
+    }
+
+    let path = unsafe { CStr::from_ptr(path) }.to_str().ok()?;
+    Some(Path::new(path))
+}
+
+fn is_numeric_target(value_type: PresetTargetType, default: &ParameterValue) -> bool {
+    matches!(value_type, PresetTargetType::Number | PresetTargetType::Integer)
+        && number_value(default).is_some()
+}
+
+fn number_value(value: &ParameterValue) -> Option<f64> {
+    match value {
+        ParameterValue::Number(value) => Some(*value),
+        _ => None,
+    }
+}
+
+fn copy_string_to_c_buffer(value: &str, buffer: *mut c_char, capacity: usize) -> bool {
+    if buffer.is_null() || capacity == 0 {
+        return false;
+    }
+
+    let bytes = value.as_bytes();
+    let copied = bytes.len().min(capacity - 1);
+    unsafe {
+        std::ptr::copy_nonoverlapping(bytes.as_ptr(), buffer.cast::<u8>(), copied);
+        *buffer.add(copied) = 0;
+    }
+    true
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -240,6 +345,51 @@ mod tests {
         assert!(!engine.is_null());
 
         unsafe { dandrum_engine_destroy(engine) };
+    }
+
+    #[test]
+    fn c_ffi_renders_public_numeric_parameter_descriptors_from_patch_path() {
+        use std::io::Write;
+
+        let mut path = std::env::temp_dir();
+        path.push("dandrum_test_public_parameters.yaml");
+        let mut file = std::fs::File::create(&path).unwrap();
+        writeln!(
+            file,
+            "metadata:\n  name: Parameter Test\ninstrument:\n  id: dandrum.parameter-test\n  preset_schema_version: 1\npreset_surface:\n  parameters:\n    - name: tone.level\n      type: number\n      default: 0.5\n      min: 0\n      max: 1\n      maps_to: gain.gain\nrender:\n  sample_rate_hz: 48000\n  block_size_frames: 64\n  duration_frames: 128\nmodules:\n  - id: gain\n    type: gain\n  - id: out\n    type: audio_output"
+        )
+        .unwrap();
+        drop(file);
+
+        let c_path = std::ffi::CString::new(path.to_str().unwrap()).unwrap();
+        assert_eq!(unsafe { dandrum_patch_public_numeric_parameter_count(c_path.as_ptr()) }, 1);
+
+        let mut id = [0_i8; 64];
+        let mut name = [0_i8; 64];
+        let mut default_value = 0.0;
+        let mut min_value = 0.0;
+        let mut max_value = 0.0;
+        let result = unsafe {
+            dandrum_patch_public_numeric_parameter_descriptor(
+                c_path.as_ptr(),
+                0,
+                id.as_mut_ptr(),
+                id.len(),
+                name.as_mut_ptr(),
+                name.len(),
+                &mut default_value,
+                &mut min_value,
+                &mut max_value,
+            )
+        };
+
+        assert!(result);
+        assert_eq!(unsafe { CStr::from_ptr(id.as_ptr()) }.to_str().unwrap(), "tone.level");
+        assert_eq!(default_value, 0.5);
+        assert_eq!(min_value, 0.0);
+        assert_eq!(max_value, 1.0);
+
+        std::fs::remove_file(path).ok();
     }
 
     #[test]
