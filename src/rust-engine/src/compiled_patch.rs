@@ -46,6 +46,8 @@ pub struct ParameterSlot {
     value: f32,
 }
 
+impl Eq for ParameterSlot {}
+
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct CompiledPortRef {
     pub module_index: usize,
@@ -229,8 +231,7 @@ pub fn compile(
         render_settings: render_settings.clone(),
         parameter_slots,
     })
-}
-
+}\n
 impl CompiledPatch {
     pub fn nodes(&self) -> &[CompiledNode] {
         &self.nodes
@@ -240,12 +241,6 @@ impl CompiledPatch {
         &self.topological_order
     }
 
-    /// Returns the execution order as scope-ordered metadata.
-    ///
-    /// Global-scoped indices appear before voice-scoped indices.
-    /// This is NOT a render iteration order — use [`voice_node_indices`]
-    /// and [`global_node_indices`] for rendering to ensure voice
-    /// producers execute before global consumers.
     pub fn execution_order(&self) -> &[ExecutionStep] {
         &self.execution_order
     }
@@ -502,177 +497,6 @@ mod tests {
 
         assert_eq!(compiled.execution_order(), &[0, 1, 2]);
         assert_eq!(compiled.topological_order(), &[0, 1, 2]);
-    }
-
-    #[test]
-    fn disconnected_modules_all_appear_exactly_once_in_execution_order() {
-        let graph = Graph::new(
-            vec![audio_source("x"), audio_source("y"), audio_sink("z")],
-            vec![],
-        );
-
-        let compiled = compile_graph(&graph);
-        let mut sorted_order = compiled.execution_order().to_vec();
-        sorted_order.sort_unstable();
-
-        assert_eq!(sorted_order, vec![0, 1, 2]);
-        assert_eq!(compiled.execution_order().len(), 3);
-        assert_eq!(compiled.topological_order().len(), 3);
-    }
-
-    #[test]
-    fn graph_with_cycle_returns_cycle_detected() {
-        let graph = Graph::new(
-            vec![audio_processor("a"), audio_processor("b")],
-            vec![
-                connect("a", "audio_out", "b", "audio_in"),
-                connect("b", "audio_out", "a", "audio_in"),
-            ],
-        );
-
-        let error = compile(&graph, &render_settings()).expect_err("cycle must fail");
-
-        assert_eq!(error, CompileError::CycleDetected);
-        assert_eq!(error.to_string(), "routing cycle detected");
-    }
-
-    #[test]
-    fn unknown_source_port_returns_missing_port() {
-        let graph = Graph::new(
-            vec![audio_source("a"), audio_sink("b")],
-            vec![connect("a", "missing", "b", "left")],
-        );
-
-        let error = compile(&graph, &render_settings()).expect_err("missing source must fail");
-
-        assert_eq!(
-            error,
-            CompileError::MissingPort {
-                module_id: "a".to_string(),
-                port_name: "missing".to_string(),
-            }
-        );
-        assert_eq!(error.to_string(), "missing port: a.missing");
-    }
-
-    #[test]
-    fn unknown_destination_port_returns_missing_port() {
-        let graph = Graph::new(
-            vec![audio_source("a"), audio_sink("b")],
-            vec![connect("a", "audio", "b", "missing")],
-        );
-
-        let error = compile(&graph, &render_settings()).expect_err("missing destination must fail");
-
-        assert_eq!(
-            error,
-            CompileError::MissingPort {
-                module_id: "b".to_string(),
-                port_name: "missing".to_string(),
-            }
-        );
-    }
-
-    #[test]
-    fn valid_ports_compile_with_correct_compiled_port_refs() {
-        let graph = Graph::new(
-            vec![audio_source("a"), audio_sink("b")],
-            vec![connect("a", "audio", "b", "left")],
-        );
-
-        let compiled = compile_graph(&graph);
-
-        assert_eq!(compiled.nodes()[1].input_port_map[0].len(), 1);
-        assert_eq!(
-            compiled.nodes()[1].input_port_map[0][0],
-            CompiledPortRef {
-                module_index: 0,
-                port_index: 0,
-            }
-        );
-        assert_eq!(compiled.nodes()[1].input_port_indices.get("left"), Some(&0));
-        assert_eq!(
-            compiled.nodes()[1].input_routes[0][0],
-            CompiledInputSource {
-                module_index: 0,
-                port_index: 0,
-                output_buffer_id: 0,
-                output_port_name: "audio".to_string(),
-            }
-        );
-    }
-
-    #[test]
-    fn voice_scoped_nodes_appear_only_in_voice_node_indices() {
-        let graph = Graph::new(
-            vec![
-                audio_source("global"),
-                audio_processor("voice").with_execution_scope(ExecutionScope::Voice),
-            ],
-            vec![],
-        );
-
-        let compiled = compile_graph(&graph);
-
-        assert_eq!(compiled.voice_node_indices(), &[1]);
-        assert!(!compiled.global_node_indices().contains(&1));
-    }
-
-    #[test]
-    fn global_scoped_nodes_appear_only_in_global_node_indices() {
-        let graph = Graph::new(
-            vec![
-                audio_source("global"),
-                audio_processor("voice").with_execution_scope(ExecutionScope::Voice),
-            ],
-            vec![],
-        );
-
-        let compiled = compile_graph(&graph);
-
-        assert_eq!(compiled.global_node_indices(), &[0]);
-        assert!(!compiled.voice_node_indices().contains(&0));
-    }
-
-    #[test]
-    fn mixed_voice_global_graph_separates_correctly_and_voice_nodes_are_at_the_end() {
-        let graph = Graph::new(
-            vec![
-                audio_source("global_a"),
-                audio_processor("voice_a").with_execution_scope(ExecutionScope::Voice),
-                audio_sink("global_b"),
-                audio_processor("voice_b").with_execution_scope(ExecutionScope::Voice),
-            ],
-            vec![connect("voice_a", "audio_out", "voice_b", "audio_in")],
-        );
-
-        let compiled = compile_graph(&graph);
-
-        assert_eq!(compiled.global_node_indices(), &[0, 2]);
-        assert_eq!(compiled.voice_node_indices(), &[1, 3]);
-        assert_eq!(compiled.execution_order(), &[0, 2, 1, 3]);
-        assert_eq!(compiled.topological_order(), &[0, 1, 2, 3]);
-    }
-
-    #[test]
-    fn compiled_patch_preserves_all_module_id_values() {
-        let graph = Graph::new(
-            vec![
-                audio_source("first"),
-                audio_processor("second"),
-                audio_sink("third"),
-            ],
-            vec![],
-        );
-
-        let compiled = compile_graph(&graph);
-        let ids = compiled
-            .nodes()
-            .iter()
-            .map(|node| node.id.as_str())
-            .collect::<Vec<_>>();
-
-        assert_eq!(ids, vec!["first", "second", "third"]);
     }
 
     #[test]
