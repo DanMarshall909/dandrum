@@ -30,6 +30,8 @@ Dandrum Plugin Instance
     |     - status/error display
     |
     +-- Rust Engine via C FFI
+          - immutable loaded instrument definition
+          - mutable public parameter state
           - prepared instrument runtime
           - realtime graph processor
           - bounded event queues
@@ -50,6 +52,42 @@ Changing the YAML instrument definition requires one of these explicit flows:
 The audio callback must never parse YAML, compile graphs, load samples, or mutate the active graph.
 
 Rationale: DAW hosts expect automation targets and saved state to remain stable. Dynamic graph and parameter-layout mutation would create host-compatibility, project-recall, and realtime-safety problems.
+
+### Public parameter values are mutable runtime state
+
+The YAML instrument definition declares the public parameter surface, but it does not own the current runtime values after the instrument is loaded. Each declared public parameter has a stable identity, type, default, range, and `maps_to` binding. The loaded plugin instance owns the current value for each declared public parameter.
+
+Parameter changes from JUCE controls, DAW automation, plugin state restore, or compatible presets may update these runtime values without changing the loaded YAML document and without changing the parameter layout.
+
+The Rust engine should represent this split explicitly:
+
+```rust
+pub struct DandrumEngine {
+    sample_rate: f32,
+    prepared_max_block_size: usize,
+    fallback: FallbackSynth,
+    loaded_instrument: Option<LoadedInstrument>,
+    runtime: Option<RealtimeGraphProcessor>,
+}
+
+pub struct LoadedInstrument {
+    definition: InstrumentDefinition,
+    parameters: InstrumentParameterState,
+}
+
+pub struct InstrumentDefinition {
+    patch_doc: PatchDocument,
+    public_parameters: Vec<PublicParameterDescriptor>,
+    public_parameter_bindings: Vec<PublicParameterBinding>,
+    sampler_assets: PreparedSamplerAssets,
+}
+
+pub struct InstrumentParameterState {
+    values_by_id: BTreeMap<String, ParameterValue>,
+}
+```
+
+Rationale: this keeps instrument structure immutable while allowing the plugin to behave like a normal synth with tweakable knobs.
 
 ### Instrument authoring stays outside the plugin
 
@@ -88,33 +126,50 @@ Example:
 ```yaml
 preset_surface:
   parameters:
-    tune:
-      type: float
-      label: Tune
+    - name: tune
+      type: number
       default: 0.5
       min: 0.0
       max: 1.0
       maps_to: osc.frequency
-    decay:
-      type: float
-      label: Decay
+    - name: decay
+      type: number
       default: 0.35
       min: 0.0
       max: 1.0
       maps_to: amp_env.decay
 ```
 
-The plugin may display these as knobs labelled `Tune` and `Decay`, but the underlying parameter identity is the declared stable key (`tune`, `decay`).
+The plugin may display these as knobs labelled `Tune` and `Decay`, but the underlying parameter identity is the declared stable `name` (`tune`, `decay`).
 
 Rationale: fixed macro counts are unnecessarily limiting. The author should decide how many public controls the instrument requires, while the loaded plugin instance keeps that surface stable.
 
 ### Parameter layout is stable per loaded instrument instance
 
-The plugin parameter layout is created from the loaded instrument surface and remains stable while that instrument is loaded. Live presets and automation may change values, but not the existence, ID, type, or order of parameters.
+The plugin parameter layout is created from the loaded instrument surface and remains stable while that instrument is loaded. Live presets and automation may change values, but not the existence, ID, type, order, range, default, label, or mapping of parameters.
 
 If a different instrument definition has a different parameter surface, it requires plugin recreation or explicit replacement. Replacement must be treated as a full instrument load, not an in-place graph edit.
 
 Rationale: this keeps automation and state recall coherent for the lifetime of a plugin instance.
+
+### Public parameter changes update values, not YAML
+
+When a public parameter changes, the engine must not modify, serialize, or rewrite the loaded YAML document. It updates only `InstrumentParameterState` and the prepared runtime parameter target associated with the immutable `maps_to` binding.
+
+The first implementation may apply changes at block boundaries. Sample-accurate public parameter automation is a later extension that can use timestamped parameter events.
+
+A public parameter binding should resolve once during instrument preparation:
+
+```rust
+pub struct PublicParameterBinding {
+    public_id: String,
+    target_module_id: String,
+    target_parameter_name: String,
+    prepared_index: Option<usize>,
+}
+```
+
+Then runtime updates should use the prepared binding/index rather than reparsing YAML or doing expensive string lookup in `processBlock`.
 
 ### Presets change values, not structure
 
@@ -131,7 +186,7 @@ When loading/reloading an instrument from the plugin UI or project state:
 1. create a new Rust engine instance;
 2. prepare it with the current sample rate and max block size;
 3. load/validate/compile the instrument and assets off the audio thread;
-4. initialise parameters and preset values;
+4. initialise immutable definition metadata and mutable parameter values;
 5. atomically publish the prepared replacement to the audio thread;
 6. safely retire the previous engine after it can no longer be used by the callback.
 
@@ -172,6 +227,8 @@ Plugin state should preserve:
 
 Absolute file paths alone are not sufficient for project recall.
 
+On restore, the immutable instrument definition is restored/reloaded first, then saved public parameter values are applied to mutable runtime parameter state.
+
 ### Realtime callback contract remains strict
 
 `processBlock` may:
@@ -201,12 +258,13 @@ The plugin integration should extend the C FFI with explicit host-facing operati
 - load prepared instrument from path or memory off the audio thread;
 - render stereo block;
 - submit sample-accurate MIDI events;
-- set public parameter value by stable parameter index or ID;
+- set public parameter value by stable prepared index or ID;
 - query declared parameter metadata after load;
+- query current public parameter values where needed for state/debugging;
 - query last error/status off the audio thread;
 - query diagnostics such as dropped event counts.
 
-String-heavy operations and metadata queries are editor/background-thread operations only.
+String-heavy operations and metadata queries are editor/background-thread operations only. The audio callback should use prepared parameter handles, indices, or lock-free event queues rather than reparsing string IDs.
 
 ## Reference Review Notes
 
@@ -227,4 +285,5 @@ Explicitly not adopted (out of Dandrum v1 scope per proposal "Out of Scope"):
 - Should the initial plugin require selecting an instrument before the `AudioProcessorValueTreeState` layout is created, or should v1 ship with a bundled default instrument to establish an initial surface?
 - Should parameter IDs be YAML keys directly, or normalized to a host-safe form with a stable hash/alias?
 - Should reloading an instrument with the exact same parameter surface preserve existing automation/value state automatically?
+- Should block-boundary public parameter changes be sufficient for v1, or should sample-accurate parameter automation be part of the first release?
 - Should asset references be embedded in plugin state, copied to a project-local cache, or resolved through bundled instrument packages?
