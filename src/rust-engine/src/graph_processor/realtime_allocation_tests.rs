@@ -2,6 +2,7 @@ use super::*;
 use crate::builtins::build_definition;
 use crate::builtins::module_types;
 use crate::graph::{Cable, Graph, ModuleId, ModuleNode, PortRef, SignalType, builtin_ports};
+use crate::patch::RenderSettings;
 use crate::sample::{LoadedSample, PreparedSamplerAssets};
 use crate::test_allocator::count_current_thread_allocations;
 use std::collections::BTreeMap;
@@ -256,6 +257,12 @@ fn mono_realtime_render_allocation_count_is_zero_for_minimal_arena_path() {
 #[test]
 fn oscillator_gain_output_realtime_render_uses_arena_path() {
     let graph = oscillator_gain_output_graph();
+    let settings = RenderSettings {
+        sample_rate_hz: 48_000,
+        block_size_frames: 64,
+        duration_frames: 128,
+    };
+    let (expected_left, expected_right) = render_offline(&graph, &settings, Vec::new());
     let voice_allocation = VoiceAllocation {
         max_voices: 1,
         ..VoiceAllocation::default()
@@ -267,17 +274,20 @@ fn oscillator_gain_output_realtime_render_uses_arena_path() {
         &voice_allocation,
         64,
     );
-    let mut left = vec![1.0; 64];
-    let mut right = vec![-1.0; 64];
+    let mut left = vec![0.0; 64];
+    let mut right = vec![0.0; 64];
+
+    assert_eq!(processor.render(&mut left, &mut right), 64);
+    assert!(processor.last_render_used_arena());
+    assert_eq!(left, expected_left[..64]);
+    assert_eq!(right, expected_right[..64]);
 
     let allocation_count = count_current_thread_allocations(|| {
         assert_eq!(processor.render(&mut left, &mut right), 64);
     });
-
-    assert!(processor.last_render_used_arena());
     assert_eq!(allocation_count, 0);
-    assert_eq!(left, vec![0.0; 64]);
-    assert_eq!(right, vec![0.0; 64]);
+    assert_eq!(left, expected_left[64..]);
+    assert_eq!(right, expected_right[64..]);
 }
 
 #[test]

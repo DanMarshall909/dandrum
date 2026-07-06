@@ -55,7 +55,7 @@ pub(super) fn process_module(
             block_start_frame,
             frames,
         ),
-        Gain => process_vca(audio(AUDIO_IN), mod_ctrl(GAIN)),
+        Gain => process_vca(audio(AUDIO_IN), ctrl(GAIN)),
         Sampler => process_sampler(
             &mut states[module_idx],
             events_in,

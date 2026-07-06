@@ -359,6 +359,7 @@ pub(super) fn default_control_value(module_kind: ModuleKind, port_name: &str) ->
         (ModuleKind::EnvelopeFollower, builtin_ports::AMOUNT) => Some(1.0),
         (ModuleKind::EnvelopeFollower, builtin_ports::OFFSET) => Some(0.0),
         (ModuleKind::EnvelopeFollower, builtin_ports::INVERT) => Some(0.0),
+        (ModuleKind::Gain, builtin_ports::GAIN) => Some(1.0),
         (ModuleKind::CurveMapper, builtin_ports::AMOUNT) => Some(1.0),
         (ModuleKind::CurveMapper, builtin_ports::BIAS) => Some(0.0),
         (ModuleKind::CurveMapper, builtin_ports::SCALE) => Some(1.0),
