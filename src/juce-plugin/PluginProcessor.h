@@ -1,10 +1,23 @@
 #pragma once
 
+#include <atomic>
+#include <vector>
+
 #include <juce_audio_processors/juce_audio_processors.h>
 
 #include "RustEngineBindings.h"
 
-class DandrumAudioProcessor final : public juce::AudioProcessor
+struct DandrumPublicParameterDescriptor
+{
+    juce::String id;
+    juce::String name;
+    float defaultValue = 0.0f;
+    float minValue = 0.0f;
+    float maxValue = 1.0f;
+};
+
+class DandrumAudioProcessor final : public juce::AudioProcessor,
+                                    private juce::AudioProcessorValueTreeState::Listener
 {
 public:
     DandrumAudioProcessor();
@@ -37,16 +50,25 @@ public:
     bool isInstrumentLoaded() const noexcept;
     const juce::String& getLastLoadError() const noexcept;
     bool hasPublicParameter (juce::StringRef parameterId) const;
+    const std::vector<DandrumPublicParameterDescriptor>& getPublicParameterDescriptors() const noexcept;
+    juce::AudioProcessorValueTreeState& getParameterState() noexcept;
+    bool setPublicNumericParameter (juce::StringRef parameterId, float value);
+    bool reloadDefaultInstrumentWithMute();
 
 private:
-    static juce::AudioProcessorValueTreeState::ParameterLayout createParameterLayout();
+    static juce::AudioProcessorValueTreeState::ParameterLayout createParameterLayout (
+        const std::vector<DandrumPublicParameterDescriptor>& descriptors);
 
     bool loadDefaultInstrument();
     void renderSilence (juce::AudioBuffer<float>& buffer) const;
+    void parameterChanged (const juce::String& parameterID, float newValue) override;
+    void applyStoredParameterValuesToEngine();
 
+    std::vector<DandrumPublicParameterDescriptor> publicParameterDescriptors;
     juce::AudioProcessorValueTreeState parameters;
     DandrumEngine* engine = nullptr;
     bool instrumentLoaded = false;
+    std::atomic<bool> mutedForReplacement { false };
     juce::String lastLoadError;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (DandrumAudioProcessor)
