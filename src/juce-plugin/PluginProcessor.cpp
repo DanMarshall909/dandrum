@@ -1,5 +1,6 @@
 #include "PluginProcessor.h"
 #include "PluginEditor.h"
+#include "DefaultPatch.h"
 
 DandrumAudioProcessor::DandrumAudioProcessor()
     : juce::AudioProcessor (BusesProperties()
@@ -7,6 +8,7 @@ DandrumAudioProcessor::DandrumAudioProcessor()
                                  .withOutput ("Output", juce::AudioChannelSet::stereo(), true)),
       engine (dandrum_engine_create())
 {
+    instrumentLoaded = loadDefaultInstrument();
 }
 
 DandrumAudioProcessor::~DandrumAudioProcessor()
@@ -14,8 +16,30 @@ DandrumAudioProcessor::~DandrumAudioProcessor()
     dandrum_engine_destroy (engine);
 }
 
+bool DandrumAudioProcessor::loadDefaultInstrument()
+{
+    if (engine == nullptr)
+    {
+        lastLoadError = "Rust engine was not created";
+        return false;
+    }
+
+    const auto patchPath = dandrum::defaultPatchPath();
+    if (! dandrum_engine_load_patch (engine, patchPath.string().c_str()))
+    {
+        lastLoadError = "Failed to load default patch: " + patchPath.string();
+        return false;
+    }
+
+    lastLoadError = {};
+    return true;
+}
+
 void DandrumAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
 {
+    if (engine == nullptr || ! instrumentLoaded)
+        return;
+
     dandrum_engine_prepare_realtime (engine,
                                      static_cast<float> (sampleRate),
                                      static_cast<std::size_t> (juce::jmax (1, samplesPerBlock)));
@@ -32,6 +56,11 @@ bool DandrumAudioProcessor::isBusesLayoutSupported (const BusesLayout& layouts) 
     return input == juce::AudioChannelSet::disabled() || input == juce::AudioChannelSet::stereo();
 }
 
+void DandrumAudioProcessor::renderSilence (juce::AudioBuffer<float>& buffer) const
+{
+    buffer.clear();
+}
+
 void DandrumAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::MidiBuffer& midiMessages)
 {
     juce::ScopedNoDenormals noDenormals;
@@ -41,8 +70,11 @@ void DandrumAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce
     for (auto channel = 2; channel < buffer.getNumChannels(); ++channel)
         buffer.clear (channel, 0, numSamples);
 
-    if (engine == nullptr || numSamples <= 0 || buffer.getNumChannels() <= 0)
+    if (engine == nullptr || ! instrumentLoaded || numSamples <= 0 || buffer.getNumChannels() <= 0)
+    {
+        renderSilence (buffer);
         return;
+    }
 
     for (const auto metadata : midiMessages)
     {
@@ -122,6 +154,16 @@ void DandrumAudioProcessor::changeProgramName (int, const juce::String&) {}
 void DandrumAudioProcessor::getStateInformation (juce::MemoryBlock&) {}
 
 void DandrumAudioProcessor::setStateInformation (const void*, int) {}
+
+bool DandrumAudioProcessor::isInstrumentLoaded() const noexcept
+{
+    return instrumentLoaded;
+}
+
+const juce::String& DandrumAudioProcessor::getLastLoadError() const noexcept
+{
+    return lastLoadError;
+}
 
 juce::AudioProcessor* JUCE_CALLTYPE createPluginFilter()
 {
