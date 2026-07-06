@@ -446,10 +446,6 @@ impl RealtimeGraphProcessor {
         accum: &mut [Option<ModuleOutputs>],
         events_scratch: &mut Vec<BlockEvent>,
     ) {
-        block_start: {
-            let _ = block_start;
-        }
-
         if let Some(midi_idx) = compiled.midi_input_index() {
             module_outputs.insert(midi_idx, ModuleOutputs::from_events(events.to_vec()));
         }
