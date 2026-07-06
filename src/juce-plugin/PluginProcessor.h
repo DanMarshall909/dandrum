@@ -36,11 +36,15 @@ public:
 
     bool isInstrumentLoaded() const noexcept;
     const juce::String& getLastLoadError() const noexcept;
+    bool hasPublicParameter (juce::StringRef parameterId) const;
 
 private:
+    static juce::AudioProcessorValueTreeState::ParameterLayout createParameterLayout();
+
     bool loadDefaultInstrument();
     void renderSilence (juce::AudioBuffer<float>& buffer) const;
 
+    juce::AudioProcessorValueTreeState parameters;
     DandrumEngine* engine = nullptr;
     bool instrumentLoaded = false;
     juce::String lastLoadError;
