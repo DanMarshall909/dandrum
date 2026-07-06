@@ -217,6 +217,20 @@ impl RealtimeGraphProcessor {
         self.states.len()
     }
 
+    pub fn set_numeric_parameter_by_target(
+        &mut self,
+        module_id: &str,
+        parameter_name: &str,
+        value: f32,
+    ) -> bool {
+        self.compiled
+            .set_numeric_parameter_by_target(module_id, parameter_name, value)
+    }
+
+    pub fn numeric_parameter_value(&self, module_id: &str, parameter_name: &str) -> Option<f32> {
+        self.compiled.numeric_parameter_value(module_id, parameter_name)
+    }
+
     #[cfg(test)]
     pub fn last_render_used_arena(&self) -> bool {
         self.last_render_used_arena
@@ -421,327 +435,140 @@ impl RealtimeGraphProcessor {
         out_idx: Option<usize>,
         events: &[BlockEvent],
         frames: usize,
-        block_start_frame: u64,
-        left_out: &mut Vec<f32>,
-        right_out: &mut Vec<f32>,
+        block_start: u64,
+        scratch_left: &mut Vec<f32>,
+        scratch_right: &mut Vec<f32>,
         render_plan: &RenderPlan,
-        global_event_queues: &mut PreparedEventQueues,
-        all_outputs: &mut HashMap<usize, ModuleOutputs>,
-        voice_event_queues: &mut Vec<Vec<ScriptEvent>>,
-        voice_queues: &mut Vec<PreparedEventQueues>,
-        accum: &mut Vec<Option<ModuleOutputs>>,
+        prepared_event_queues: &mut PreparedEventQueues,
+        module_outputs: &mut HashMap<usize, ModuleOutputs>,
+        voice_event_queues: &mut [Vec<ScriptEvent>],
+        voice_queues: &mut [PreparedEventQueues],
+        accum: &mut [Option<ModuleOutputs>],
         events_scratch: &mut Vec<BlockEvent>,
     ) {
-        global_event_queues.clear_all();
-        prepare_voice_event_queues(voice_event_queues, events, allocator);
-
-        if !has_active_voice(allocator) {
-            left_out.extend(std::iter::repeat_n(0.0, frames));
-            right_out.extend(std::iter::repeat_n(0.0, frames));
-            return;
+        block_start: {
+            let _ = block_start;
         }
 
-        all_outputs.clear();
-        accum.clear();
-        accum.resize_with(compiled.nodes().len(), || None);
-        let input_provider = CompiledInputProvider { compiled };
-        for queues in voice_queues.iter_mut() {
-            queues.clear_all();
+        if let Some(midi_idx) = compiled.midi_input_index() {
+            module_outputs.insert(midi_idx, ModuleOutputs::from_events(events.to_vec()));
         }
 
-        for voice_idx in 0..allocator.max_voices() {
-            if allocator.slot(voice_idx).is_none_or(|slot| !slot.active) {
-                continue;
-            }
+        Self::render_global_steps_from_plan(
+            compiled,
+            &mut states[0],
+            render_plan,
+            prepared_event_queues,
+            module_outputs,
+            frames,
+        );
 
-            let voice_events = &mut voice_event_queues[voice_idx];
-            let voice_queues = &mut voice_queues[voice_idx];
-            route_voice_input_events(render_plan.midi_input, voice_events, voice_queues);
+        render_voice_steps_from_plan(
+            compiled,
+            states,
+            allocator,
+            events,
+            frames,
+            block_start,
+            render_plan,
+            module_outputs,
+            voice_event_queues,
+            voice_queues,
+            accum,
+            events_scratch,
+        );
 
-            let voice_states = &mut states[voice_idx];
+        collect_audio_output(out_idx, module_outputs, scratch_left, scratch_right);
+    }
 
-            for step in render_plan.voice_steps.iter() {
-                if step.module_kind == ModuleKind::MidiInput {
-                    continue;
-                }
-
-                route_voice_event_edges(voice_queues, step);
-                gather_step_events(voice_queues, step, events_scratch);
-
-                let outputs = process_module(
-                    step.module_index,
-                    step.module_kind,
-                    &events_scratch,
-                    voice_states,
-                    &input_provider,
-                    &all_outputs,
-                    frames,
-                    block_start_frame,
-                );
-
-                route_step_outputs_to_event_queues(
-                    step,
-                    &outputs,
-                    voice_queues,
-                    global_event_queues,
-                );
-                all_outputs.insert(step.module_index, outputs);
-            }
-
-            accumulate_voice_outputs(accum, all_outputs, compiled, frames);
-        }
-
-        collect_accumulated_outputs(accum, all_outputs);
-
-        for step in render_plan.global_steps.iter() {
-            if step.module_kind == ModuleKind::MidiInput {
-                continue;
-            }
-
-            route_global_event_edges(global_event_queues, step);
-
-            events_scratch.clear();
-            for &qid in step.event_inputs.iter() {
-                if let Some(q) = global_event_queues.queue_mut(qid.0) {
-                    q.drain_into_vec(events_scratch);
-                }
-            }
-
-            let outputs = process_module(
+    fn render_global_steps_from_plan(
+        compiled: &CompiledPatch,
+        state: &mut [PerModuleState],
+        render_plan: &RenderPlan,
+        prepared_event_queues: &mut PreparedEventQueues,
+        module_outputs: &mut HashMap<usize, ModuleOutputs>,
+        frames: usize,
+    ) {
+        let provider = CompiledInputProvider { compiled };
+        let context = ProcessContext::new(0, 0);
+        for step in &render_plan.global_steps {
+            process_module(
                 step.module_index,
-                step.module_kind,
-                &events_scratch,
-                &mut states[0],
-                &input_provider,
-                &all_outputs,
+                &mut state[step.module_index],
+                &provider,
+                module_outputs,
                 frames,
-                block_start_frame,
+                &context,
+                &mut module_outputs.entry(step.module_index).or_default().event_ports,
             );
-
-            route_step_outputs_to_global_event_queues(step, &outputs, global_event_queues);
-
-            all_outputs.insert(step.module_index, outputs);
+            route_prepared_event_edges(prepared_event_queues, step);
         }
-
-        collect_audio_output(&all_outputs, out_idx, frames, left_out, right_out);
-
-        for i in 0..allocator.max_voices() {
-            if allocator.slot(i).is_none_or(|s| !s.active) {
-                continue;
-            }
-            let has_adsr = states[i]
-                .iter()
-                .any(|s| matches!(s, PerModuleState::Adsr { .. }));
-            let has_sampler = states[i]
-                .iter()
-                .any(|s| matches!(s, PerModuleState::Sampler { .. }));
-            if !has_adsr && !has_sampler {
-                continue;
-            }
-            let adsr_done = !has_adsr
-                || states[i].iter().any(|s| match s {
-                    PerModuleState::Adsr {
-                        level, gate_active, ..
-                    } => !gate_active && *level < 0.001,
-                    _ => false,
-                });
-            let sampler_done = !has_sampler
-                || states[i].iter().any(|s| match s {
-                    PerModuleState::Sampler { active, .. } => !active,
-                    _ => false,
-                });
-            if adsr_done && sampler_done {
-                allocator.set_slot_inactive(i);
-            }
-        }
-    }
-
-    pub fn is_finished(&self) -> bool {
-        if !self.pending_events.is_empty() {
-            return false;
-        }
-        for voice_state in &self.states {
-            for state in voice_state {
-                if let PerModuleState::Adsr {
-                    level, gate_active, ..
-                } = state
-                {
-                    if *gate_active || *level > 0.001 {
-                        return false;
-                    }
-                } else if let PerModuleState::Sampler { active, .. } = state
-                    && *active
-                {
-                    return false;
-                }
-            }
-        }
-        true
     }
 }
 
-fn prepare_voice_event_queues(
-    voice_events: &mut Vec<Vec<ScriptEvent>>,
-    events: &[BlockEvent],
+fn render_voice_steps_from_plan(
+    compiled: &CompiledPatch,
+    states: &mut [Vec<PerModuleState>],
     allocator: &mut VoiceAllocator,
-) {
-    let max_voices = allocator.max_voices();
-    while voice_events.len() < max_voices {
-        voice_events.push(Vec::with_capacity(events.len()));
-    }
-    for events in voice_events.iter_mut().take(max_voices) {
-        events.clear();
-    }
-
-    for event in events {
-        if let ScriptEvent::NoteOn { note, velocity } = &event.event
-            && let Some(slot) = allocator.note_on(*note, *velocity)
-        {
-            voice_events[slot].push(event.event.clone());
-        }
-    }
-
-    for event in events {
-        if let ScriptEvent::NoteOff { note } = &event.event {
-            for slot_idx in 0..max_voices {
-                if allocator
-                    .slot(slot_idx)
-                    .filter(|slot| slot.active)
-                    .map(|slot| slot.note)
-                    == Some(*note)
-                {
-                    voice_events[slot_idx].push(event.event.clone());
-                }
-            }
-        }
-    }
-}
-
-fn has_active_voice(allocator: &VoiceAllocator) -> bool {
-    (0..allocator.max_voices()).any(|i| allocator.slot(i).is_some_and(|slot| slot.active))
-}
-
-fn route_voice_input_events(
-    midi_input: Option<super::render_plan::EventQueueId>,
-    voice_events: &mut Vec<ScriptEvent>,
-    voice_queues: &mut PreparedEventQueues,
-) {
-    if let Some(midi_queue) = midi_input {
-        if let Some(queue) = voice_queues.queue_mut(midi_queue.0) {
-            for event in voice_events.drain(..) {
-                let _ = queue.push(event);
-            }
-        }
-    }
-}
-
-fn route_voice_event_edges(voice_queues: &mut PreparedEventQueues, step: &RenderStep) {
-    for &edge in step.incoming_event_edges.iter() {
-        let _ = voice_queues.route_event_edge(edge);
-    }
-}
-
-fn gather_step_events(
-    voice_queues: &mut PreparedEventQueues,
-    step: &RenderStep,
+    events: &[BlockEvent],
+    frames: usize,
+    block_start: u64,
+    render_plan: &RenderPlan,
+    module_outputs: &mut HashMap<usize, ModuleOutputs>,
+    voice_event_queues: &mut [Vec<ScriptEvent>],
+    voice_queues: &mut [PreparedEventQueues],
+    accum: &mut [Option<ModuleOutputs>],
     events_scratch: &mut Vec<BlockEvent>,
 ) {
-    events_scratch.clear();
-    for &qid in step.event_inputs.iter() {
-        if let Some(q) = voice_queues.queue_mut(qid.0) {
-            q.drain_into_vec(events_scratch);
-        }
+    if events.is_empty() && allocator.active_voice_indices().is_empty() {
+        return;
     }
-}
 
-fn route_global_event_edges(global_event_queues: &mut PreparedEventQueues, step: &RenderStep) {
-    for &edge in step.incoming_event_edges.iter() {
-        let _ = global_event_queues.route_event_edge(edge);
-    }
-}
-
-fn route_step_outputs_to_event_queues(
-    step: &RenderStep,
-    outputs: &ModuleOutputs,
-    voice_queues: &mut PreparedEventQueues,
-    global_event_queues: &mut PreparedEventQueues,
-) {
-    for be in &outputs.events {
-        for &eq_id in step.event_outputs.iter() {
-            let _ = voice_queues
-                .queue_mut(eq_id.0)
-                .map(|q| q.push(be.event.clone()));
-            let _ = global_event_queues
-                .queue_mut(eq_id.0)
-                .map(|q| q.push(be.event.clone()));
-        }
-    }
-}
-
-fn accumulate_voice_outputs(
-    accum: &mut [Option<ModuleOutputs>],
-    all_outputs: &mut HashMap<usize, ModuleOutputs>,
-    compiled: &CompiledPatch,
-    frames: usize,
-) {
-    for &idx in compiled.voice_node_indices() {
-        if let Some(outputs) = all_outputs.remove(&idx) {
-            let entry = accum[idx].get_or_insert_with(ModuleOutputs::empty);
-            for (port, buf) in outputs.audio {
-                let acc = entry.audio.entry(port).or_insert_with(|| vec![0.0; frames]);
-                for (i, s) in buf.iter().enumerate().take(frames) {
-                    acc[i] += s;
-                }
+    for event in events {
+        match event.event {
+            ScriptEvent::NoteOn { note, velocity } => {
+                allocator.note_on(note, velocity, block_start + event.frame_offset as u64);
             }
-            for (port, buf) in outputs.control {
-                let acc = entry
-                    .control
-                    .entry(port)
-                    .or_insert_with(|| vec![0.0; frames]);
-                for (i, s) in buf.iter().enumerate().take(frames) {
-                    acc[i] += s;
-                }
+            ScriptEvent::NoteOff { note } => {
+                allocator.note_off(note);
+            }
+        }
+    }
+
+    for voice_index in allocator.active_voice_indices().to_vec() {
+        let voice_context = ProcessContext::new(voice_index, block_start);
+        let voice_outputs = arena_processing::render_voice_plan_to_accum(
+            compiled,
+            &mut states[voice_index],
+            frames,
+            &voice_context,
+            render_plan,
+            module_outputs,
+            &mut voice_event_queues[voice_index],
+            &mut voice_queues[voice_index],
+            accum,
+            events_scratch,
+        );
+        for (module_index, output) in voice_outputs.into_iter().enumerate() {
+            if let Some(output) = output {
+                module_outputs.insert(module_index, output);
             }
         }
     }
 }
 
-fn collect_accumulated_outputs(
-    accum: &mut Vec<Option<ModuleOutputs>>,
-    all_outputs: &mut HashMap<usize, ModuleOutputs>,
-) {
-    all_outputs.clear();
-    for (idx, output) in accum.iter_mut().enumerate() {
-        if let Some(output) = output.take() {
-            all_outputs.insert(idx, output);
-        }
-    }
-}
-
-fn route_step_outputs_to_global_event_queues(
-    step: &RenderStep,
-    outputs: &ModuleOutputs,
-    global_event_queues: &mut PreparedEventQueues,
-) {
-    for be in &outputs.events {
-        for &eq_id in step.event_outputs.iter() {
-            let _ = global_event_queues
-                .queue_mut(eq_id.0)
-                .map(|q| q.push(be.event.clone()));
-        }
+fn route_prepared_event_edges(queues: &mut PreparedEventQueues, step: &RenderStep) {
+    for route in &step.event_routes {
+        let Some(output) = queues.queue_output(route.source_queue) else {
+            continue;
+        };
+        queues.route_event_edge(output, route.destination_queue);
     }
 }
 
 fn clear_and_route_arena_inputs(arena: &mut AudioArena, step: &RenderStep, frames: usize) {
-    for &buffer in step.input_buffers.iter() {
-        arena.clear(buffer, frames);
-    }
-    for default in step.control_defaults.iter() {
-        arena.fill(default.buffer, frames, default.value);
-    }
-    for &edge in step.incoming_edges.iter() {
-        arena.add_edge(edge, frames);
-    }
+    arena.clear_inputs(step, frames);
+    arena.route_inputs(step, frames);
 }
 
 fn process_mono_global_arena_step(
@@ -750,68 +577,12 @@ fn process_mono_global_arena_step(
     step: &RenderStep,
     frames: usize,
 ) {
-    let mut context = ProcessContext::new(arena, &step.input_buffers, &step.output_buffers, frames);
-
-    match step.module_kind {
-        ModuleKind::AudioMixer => arena_processing::process_audio_mixer(&mut context),
-        ModuleKind::Noise => {
-            arena_processing::process_noise(&mut states[step.module_index], &mut context)
-        }
-        ModuleKind::Oscillator => {
-            arena_processing::process_oscillator(&mut states[step.module_index], &mut context)
-        }
-        ModuleKind::Gain | ModuleKind::Multiply => arena_processing::process_gain(&mut context),
-        ModuleKind::EnvelopeFollower => arena_processing::process_envelope_follower(
-            &mut states[step.module_index],
-            &mut context,
-        ),
-        ModuleKind::CurveMapper => {
-            arena_processing::process_curve_mapper(&mut states[step.module_index], &mut context)
-        }
-        ModuleKind::Filter => {
-            arena_processing::process_filter(&mut states[step.module_index], &mut context)
-        }
-        ModuleKind::AudioOutput => {}
-        _ => unreachable!(),
-    }
-}
-
-fn route_prepared_event_edges(queues: &mut PreparedEventQueues, step: &RenderStep) {
-    for edge in step.incoming_event_edges.iter().copied() {
-        let _ = queues.route_event_edge(edge);
-    }
+    arena_processing::process_mono_global_step(arena, states, step, frames);
 }
 
 fn is_mono_global_arena_supported(step: &RenderStep) -> bool {
-    match step.module_kind {
-        ModuleKind::AudioOutput => step.input_buffers.len() >= 2,
-        ModuleKind::AudioMixer => step.input_buffers.len() == 1 && step.output_buffers.len() == 1,
-        ModuleKind::Noise => step.input_buffers.is_empty() && step.output_buffers.len() == 1,
-        ModuleKind::Oscillator => step.input_buffers.len() <= 1 && step.output_buffers.len() == 1,
-        ModuleKind::Gain | ModuleKind::Multiply => {
-            step.input_buffers.len() == 2 && step.output_buffers.len() == 1
-        }
-        ModuleKind::EnvelopeFollower => {
-            step.input_buffers.len() == 6 && step.output_buffers.len() == 1
-        }
-        ModuleKind::CurveMapper => step.input_buffers.len() == 5 && step.output_buffers.len() == 1,
-        ModuleKind::Filter => step.input_buffers.len() == 4 && step.output_buffers.len() == 1,
-        _ => false,
-    }
-}
-
-fn uses_legacy_module_outputs(
-    compiled: &CompiledPatch,
-    midi_idx: Option<usize>,
-    max_voices: usize,
-    render_plan: &RenderPlan,
-) -> bool {
-    max_voices <= 1
-        && compiled.voice_node_indices().is_empty()
-        && (midi_idx.is_some()
-            || render_plan.audio_output.is_none()
-            || render_plan
-                .global_steps
-                .iter()
-                .any(|step| !is_mono_global_arena_supported(step)))
+    matches!(
+        step.module_kind,
+        ModuleKind::Oscillator | ModuleKind::Gain | ModuleKind::AudioMixer | ModuleKind::AudioOutput
+    )
 }
