@@ -37,7 +37,7 @@
 ## 4. Generic JUCE Controls
 
 - [x] 4.1 Read public control metadata from `preset_surface.parameters` after instrument load.
-- [ ] 4.2 Create generic JUCE knobs/sliders for every declared public parameter.
+- [x] 4.2 Create generic JUCE knobs/sliders for every declared public parameter.
 - [x] 4.3 Use declared labels, defaults, ranges, and display metadata where available.
 - [x] 4.4 Keep parameter IDs stable for the lifetime of the loaded instrument instance.
 - [x] 4.5 Do not expose graph editing or YAML editing in the normal runtime controls.
