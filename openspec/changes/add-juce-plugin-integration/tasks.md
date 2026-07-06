@@ -28,6 +28,8 @@
 - [ ] 3.3 Implement safe prepared-engine replacement for explicit load/reload actions.
 - [ ] 3.4 Ensure changing the instrument definition is a full reload/replacement, not an in-place graph mutation.
 - [ ] 3.5 Preserve current sample rate and max block size when preparing replacement engines.
+- [ ] 3.6 Retain the loaded YAML definition as immutable engine state after successful load.
+- [ ] 3.7 Ensure plugin parameter changes never rewrite, mutate, or reload the YAML definition.
 
 ## 4. Generic JUCE Controls
 
@@ -45,6 +47,11 @@
 - [ ] 5.3 Avoid string lookup on the audio thread where practical by preparing parameter handles/indices.
 - [ ] 5.4 Apply parameter values to the active graph without reallocating in the callback.
 - [ ] 5.5 Add tests proving parameter values update the mapped instrument targets.
+- [ ] 5.6 Add `LoadedInstrument`, `InstrumentDefinition`, and `InstrumentParameterState` so immutable definition state and mutable value state are explicit.
+- [ ] 5.7 Resolve `preset_surface.parameters[*].maps_to` into prepared public parameter bindings at instrument load time.
+- [ ] 5.8 Initialise mutable parameter state from YAML defaults when the instrument is loaded.
+- [ ] 5.9 Apply live public parameter changes to mutable runtime state without editing or reparsing YAML.
+- [ ] 5.10 Use block-boundary parameter application for v1; defer sample-accurate public parameter automation unless separately specified.
 
 ## 6. Presets
 
@@ -52,6 +59,7 @@
 - [ ] 6.2 Reject presets that do not match the loaded instrument identity/schema version.
 - [ ] 6.3 Ensure presets cannot mutate graph, routing, render, scheduling, script, feedback, or undeclared module structure.
 - [ ] 6.4 Add plugin/editor support for selecting/loading compatible presets.
+- [ ] 6.5 Apply compatible presets to mutable runtime parameter state, not the immutable YAML definition.
 
 ## 7. Sample-Accurate MIDI
 
@@ -69,6 +77,7 @@
 - [ ] 8.4 Store compatible preset identity/content where applicable.
 - [ ] 8.5 Restore plugin state by preparing a replacement engine off the audio thread.
 - [ ] 8.6 Report restore failures clearly in the editor/status surface.
+- [ ] 8.7 Restore immutable instrument definition first, then apply saved mutable public parameter values.
 
 ## 9. Error and Status Reporting
 
@@ -85,6 +94,9 @@
 - [x] 10.4 Add plugin processor tests where JUCE test infrastructure allows.
 - [x] 10.5 Extend realtime callback safety checks to include plugin `processBlock` sources.
 - [x] 10.6 Verify existing Rust and CMake/CTest suites still pass.
+- [ ] 10.7 Add tests proving public parameter changes do not mutate/reload YAML.
+- [ ] 10.8 Add tests proving unknown public parameters are rejected.
+- [ ] 10.9 Add tests proving block-boundary public parameter updates affect mapped runtime targets.
 
 ## 11. Documentation
 
@@ -93,3 +105,4 @@
 - [ ] 11.3 Document generic controls generated from `preset_surface.parameters`.
 - [ ] 11.4 Document reload/recreate behaviour for changing instruments.
 - [ ] 11.5 Document plugin state persistence expectations.
+- [ ] 11.6 Document that public parameter values are mutable runtime state owned by the loaded plugin instance.
