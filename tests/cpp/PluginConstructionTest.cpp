@@ -18,6 +18,19 @@ bool bufferIsFinite (const juce::AudioBuffer<float>& buffer)
 
     return true;
 }
+
+bool bufferHasSignal (const juce::AudioBuffer<float>& buffer)
+{
+    for (int channel = 0; channel < buffer.getNumChannels(); ++channel)
+    {
+        const auto* samples = buffer.getReadPointer (channel);
+        for (int i = 0; i < buffer.getNumSamples(); ++i)
+            if (std::abs (samples[i]) > 0.000001f)
+                return true;
+    }
+
+    return false;
+}
 } // namespace
 
 int main()
@@ -25,6 +38,12 @@ int main()
     constexpr int blockSize = 64;
 
     auto processor = std::make_unique<DandrumAudioProcessor>();
+    if (! processor->isInstrumentLoaded())
+    {
+        std::cerr << processor->getLastLoadError() << '\n';
+        return 1;
+    }
+
     processor->setPlayConfigDetails (0, 2, 48000.0, blockSize);
     processor->prepareToPlay (48000.0, blockSize);
 
@@ -33,13 +52,18 @@ int main()
 
     juce::MidiBuffer midi;
     midi.addEvent (juce::MidiMessage::noteOn (1, 60, (juce::uint8) 100), 10);
-    midi.addEvent (juce::MidiMessage::noteOff (1, 60), 50);
 
     processor->processBlock (buffer, midi);
 
     if (! bufferIsFinite (buffer))
     {
         std::cerr << "plugin processBlock produced non-finite samples\n";
+        return 1;
+    }
+
+    if (! bufferHasSignal (buffer))
+    {
+        std::cerr << "plugin processBlock rendered silence after default instrument note-on\n";
         return 1;
     }
 
