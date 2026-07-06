@@ -5,7 +5,7 @@
 
 namespace dandrum
 {
-inline constexpr auto defaultPatchRelativePath = "examples/patches/polyphonic-pad.yaml";
+inline constexpr auto defaultPatchRelativePath = "examples/patches/synthetic-808-kick.yaml";
 inline constexpr auto defaultDrumContainerRelativePath = "examples/patches/drum-kit.yaml";
 
 // Search upward from the current working directory so the binary works from
