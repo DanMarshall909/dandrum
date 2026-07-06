@@ -16,7 +16,7 @@ sudo apt install -y libasound2-dev libx11-dev libxext-dev libxinerama-dev libxra
 ```bash
 $HOME/.local/bin/cmake -S . -B build
 $HOME/.local/bin/cmake --build build
-./build/dandrum-beep_artefacts/dandrum-beep
+./build/dandrum-drum-machine-demo_artefacts/dandrum-drum-machine-demo
 ```
 
 This uses JUCE as the wrapper/host side. The current binary links a Rust static library from `src/rust-engine/` and
@@ -105,8 +105,8 @@ into prepared-size chunks. This avoids unbounded per-callback allocation while s
 JUCE owns MIDI device IO and forwards note events into the Rust engine.
 
 ```bash
-./build/dandrum-beep_artefacts/dandrum-beep --list-midi-inputs
-./build/dandrum-beep_artefacts/dandrum-beep --midi-input 0
+./build/dandrum-drum-machine-demo_artefacts/dandrum-drum-machine-demo --list-midi-inputs
+./build/dandrum-drum-machine-demo_artefacts/dandrum-drum-machine-demo --midi-input 0
 ```
 
 The default no-argument command plays a Rust-generated test note and exits. MIDI mode stays open until Ctrl+C.
@@ -114,5 +114,5 @@ The default no-argument command plays a Rust-generated test note and exits. MIDI
 For test harnesses without a physical MIDI device, inject a synthetic JUCE MIDI note through the same MIDI handler path:
 
 ```bash
-./build/dandrum-beep_artefacts/dandrum-beep --test-midi-note 60
+./build/dandrum-drum-machine-demo_artefacts/dandrum-drum-machine-demo --test-midi-note 60
 ```

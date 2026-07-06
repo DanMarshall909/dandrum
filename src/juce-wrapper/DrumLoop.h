@@ -15,7 +15,7 @@ struct DrumLoopHit
     std::chrono::milliseconds duration { 0 };
 };
 
-inline constexpr int drumLoopKickNote = 60;
+inline constexpr int drumLoopKickNote = 36;
 inline constexpr int drumLoopSnareNote = 38;
 inline constexpr int drumLoopHatNote = 42;
 inline constexpr int drumLoopVelocity = 110;

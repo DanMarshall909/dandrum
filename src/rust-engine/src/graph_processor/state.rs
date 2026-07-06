@@ -10,6 +10,7 @@ use crate::compiled_patch::CompiledNode;
 use crate::convolution::Convolution;
 use crate::crossover::CrossoverPair;
 use crate::curve_mapper::{CurveKind, CurveMapper};
+use crate::decay::DecayCurve;
 use crate::dynamics_processor::DynamicsProcessor;
 use crate::echo::Echo;
 use crate::envelope_follower::{DetectionMode, EnvelopeFollower};
@@ -99,6 +100,13 @@ pub(super) enum PerModuleState {
     },
     CurveMapper {
         mapper: CurveMapper,
+    },
+    Decay {
+        level: f32,
+        triggered: bool,
+        elapsed_frames: u64,
+        decay_frames: f32,
+        curve: DecayCurve,
     },
     Script {
         runtime: RhaiScriptRuntime,
@@ -303,6 +311,24 @@ impl PerModuleState {
                     .unwrap_or(CurveMapper::DEFAULT_STEPS);
                 PerModuleState::CurveMapper {
                     mapper: CurveMapper::new(curve, steps),
+                }
+            }
+            ModuleKind::Decay => {
+                let curve_str = params.get("curve").map(String::as_str);
+                let curve = curve_str
+                    .and_then(DecayCurve::from_str)
+                    .unwrap_or(DecayCurve::Exponential);
+                let time_ms = params
+                    .get("time_ms")
+                    .and_then(|s| s.parse::<f32>().ok())
+                    .unwrap_or(100.0);
+                let decay_frames = (sample_rate * time_ms / 1000.0).max(1.0);
+                PerModuleState::Decay {
+                    level: 0.0,
+                    triggered: false,
+                    elapsed_frames: 0,
+                    decay_frames,
+                    curve,
                 }
             }
             ModuleKind::Lfo

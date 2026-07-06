@@ -6,9 +6,11 @@ values:
   kick.tune_hz: 52
   kick.decay_ms: 420
   kick.punch: 0.9
-  kick.click: -12
+  kick.click: 0.8
+  kick.sub_decay_ms: 600
+  kick.sub_level: 0.9
 metadata:
   author: Dandrum
   category: kick
-  tags: [tight, electronic, 808]
+  tags: [ tight, electronic, "808" ]
   description: Shorter, punchier 808-style kick preset for the synthetic kick example.

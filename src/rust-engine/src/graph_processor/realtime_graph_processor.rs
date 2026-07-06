@@ -469,7 +469,12 @@ impl RealtimeGraphProcessor {
                     block_start_frame,
                 );
 
-                route_step_outputs_to_event_queues(step, &outputs, voice_queues, global_event_queues);
+                route_step_outputs_to_event_queues(
+                    step,
+                    &outputs,
+                    voice_queues,
+                    global_event_queues,
+                );
                 all_outputs.insert(step.module_index, outputs);
             }
 
@@ -626,7 +631,11 @@ fn route_voice_event_edges(voice_queues: &mut PreparedEventQueues, step: &Render
     }
 }
 
-fn gather_step_events(voice_queues: &mut PreparedEventQueues, step: &RenderStep, events_scratch: &mut Vec<BlockEvent>) {
+fn gather_step_events(
+    voice_queues: &mut PreparedEventQueues,
+    step: &RenderStep,
+    events_scratch: &mut Vec<BlockEvent>,
+) {
     events_scratch.clear();
     for &qid in step.event_inputs.iter() {
         if let Some(q) = voice_queues.queue_mut(qid.0) {

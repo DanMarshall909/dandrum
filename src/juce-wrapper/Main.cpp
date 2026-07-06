@@ -98,6 +98,14 @@ int main (int argc, char* argv[])
 
     if (drumLoopMode)
     {
+        if (! patchPath.existsAsFile())
+        {
+            std::cerr << "Patch path is not a file: " << patchPath.getFullPathName() << '\n';
+            player.setSource (nullptr);
+            return 1;
+        }
+
+        deviceManager.addAudioCallback (&player);
         const auto exitCode = runDrumLoopDemo (engineSource, patchPath);
         deviceManager.removeAudioCallback (&player);
         player.setSource (nullptr);
@@ -106,10 +114,18 @@ int main (int argc, char* argv[])
 
     // Patch loading stays off the audio callback; the callback only renders
     // the already-prepared engine state.
+    if (! patchPath.existsAsFile())
+    {
+        std::cerr << "Patch path is not a file: " << patchPath.getFullPathName() << '\n';
+        player.setSource (nullptr);
+        return 1;
+    }
+
     if (! engineSource.loadPatch (patchPath.getFullPathName()))
     {
         std::cerr << (useExplicitPatch ? "Failed to load patch: " : "Failed to load default patch: ")
                   << patchPath.getFullPathName() << '\n';
+        player.setSource (nullptr);
         return 1;
     }
 

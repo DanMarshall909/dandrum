@@ -1573,7 +1573,10 @@ fn note_off_releases_matching_voice_while_other_continues() {
 
     // After note-off at frame 12000, the released voice enters release
     // but the unreleased voice continues -> audio should still be present
-    assert_ne!(left[20000], 0.0, "unreleased voice should still be audible after first note-off");
+    assert_ne!(
+        left[20000], 0.0,
+        "unreleased voice should still be audible after first note-off"
+    );
 
     // The unreleased voice (note 64) eventually gets a note-off? No — it never gets NoteOff
     // It will have a fixed sustain level unless the ADSR is gated off.
@@ -1730,10 +1733,10 @@ fn adsr_release_duration_matches_default_release_time() {
                 velocity: 100,
             },
         }],
-        &[0.0; BLOCK_SIZE], // attack_in (no signal = default 5ms)
-        &[0.0; BLOCK_SIZE], // decay_in (no signal = default 30ms)
-        &[0.0; BLOCK_SIZE], // sustain_in (no signal = default 0.7)
-        &[0.0; BLOCK_SIZE], // release_in (no signal = default 200ms)
+        &[5.0; BLOCK_SIZE], // attack_in (5ms default)
+        &[30.0; BLOCK_SIZE], // decay_in (30ms default)
+        &[0.7; BLOCK_SIZE], // sustain_in (0.7 default)
+        &[200.0; BLOCK_SIZE], // release_in (200ms default)
         0,
         BLOCK_SIZE,
     );
@@ -1744,10 +1747,10 @@ fn adsr_release_duration_matches_default_release_time() {
         process_adsr(
             &mut state,
             &[],
-            &[0.0; BLOCK_SIZE],
-            &[0.0; BLOCK_SIZE],
-            &[0.0; BLOCK_SIZE],
-            &[0.0; BLOCK_SIZE],
+            &[5.0; BLOCK_SIZE],
+            &[30.0; BLOCK_SIZE],
+            &[0.7; BLOCK_SIZE],
+            &[200.0; BLOCK_SIZE],
             (b * BLOCK_SIZE) as u64,
             BLOCK_SIZE,
         );
@@ -1776,10 +1779,10 @@ fn adsr_release_duration_matches_default_release_time() {
             frame_offset: 0,
             event: ScriptEvent::NoteOff { note: 60 },
         }],
-        &[0.0; BLOCK_SIZE],
-        &[0.0; BLOCK_SIZE],
-        &[0.0; BLOCK_SIZE],
-        &[0.0; BLOCK_SIZE],
+        &[5.0; BLOCK_SIZE],
+        &[30.0; BLOCK_SIZE],
+        &[0.7; BLOCK_SIZE],
+        &[200.0; BLOCK_SIZE],
         2560,
         BLOCK_SIZE,
     );
@@ -1796,10 +1799,10 @@ fn adsr_release_duration_matches_default_release_time() {
         process_adsr(
             &mut state,
             &[],
-            &[0.0; BLOCK_SIZE],
-            &[0.0; BLOCK_SIZE],
-            &[0.0; BLOCK_SIZE],
-            &[0.0; BLOCK_SIZE],
+            &[5.0; BLOCK_SIZE],
+            &[30.0; BLOCK_SIZE],
+            &[0.7; BLOCK_SIZE],
+            &[200.0; BLOCK_SIZE],
             2560 + (b * BLOCK_SIZE) as u64,
             BLOCK_SIZE,
         );
@@ -1820,10 +1823,10 @@ fn adsr_release_duration_matches_default_release_time() {
     process_adsr(
         &mut state,
         &[],
-        &[0.0; BLOCK_SIZE],
-        &[0.0; BLOCK_SIZE],
-        &[0.0; BLOCK_SIZE],
-        &[0.0; BLOCK_SIZE],
+        &[5.0; BLOCK_SIZE],
+        &[30.0; BLOCK_SIZE],
+        &[0.7; BLOCK_SIZE],
+        &[200.0; BLOCK_SIZE],
         2560 + (75 * BLOCK_SIZE) as u64,
         BLOCK_SIZE,
     );
@@ -2968,7 +2971,7 @@ fn additional_acceptance_examples_load_validate_and_render_where_supported() {
     for (fixture, note) in [
         ("examples/patches/synthetic-snare.yaml", 38),
         ("examples/patches/synthetic-hats.yaml", 42),
-        ("examples/patches/synthetic-808-kick.yaml", 60),
+        ("examples/patches/synthetic-808-kick.yaml", 36),
     ] {
         let Some(yaml) = read_repo_fixture(fixture) else {
             return;
@@ -3004,13 +3007,89 @@ fn additional_acceptance_examples_load_validate_and_render_where_supported() {
 }
 
 #[test]
+fn synthetic_808_kick_example_has_808_like_spectral_shape() {
+    let Some(yaml) = read_repo_fixture("examples/patches/synthetic-808-kick.yaml") else {
+        return;
+    };
+    let patch = patch::load_patch_str(&yaml).expect("808 kick example should parse");
+    patch::validate_patch_schema(&patch).expect("808 kick example should validate");
+    let graph = Graph::from_patch_declarations(&patch);
+    graph
+        .validate()
+        .expect("808 kick example graph should validate");
+    // No NoteOff — the ADSR (sustain=0) and sub gain envelope decay naturally.
+    let events = vec![note_on_value(0, 36, 110)];
+    let (left, _) = render_offline(&graph, &patch.render, events);
+    let spectrum = fft::compute_magnitude_response(&left, patch.render.sample_rate_hz as f64).bins;
+    let sub_band = average_band_db(&spectrum, 35.0, 90.0);
+    let low_mid_band = average_band_db(&spectrum, 120.0, 400.0);
+    let click_band = average_band_db(&spectrum, 1_500.0, 6_000.0);
+    let peak = peak_abs(&left);
+    let attack_rms = rms(&left[..480.min(left.len())]);
+    let tail_start = 12_000.min(left.len());
+    let tail_rms = rms(&left[tail_start..]);
+
+    println!(
+        "synthetic_808_kick metrics: peak={peak:.3}, attack_rms={attack_rms:.3}, tail_rms={tail_rms:.3}, sub={sub_band:.1}dB, low_mid={low_mid_band:.1}dB, click={click_band:.1}dB"
+    );
+
+    assert!(peak > 0.2, "kick peak should be audible, got {peak}");
+    assert!(
+        sub_band > low_mid_band,
+        "808 kick should emphasize sub over low mids: sub {sub_band:.1}dB, low_mid {low_mid_band:.1}dB"
+    );
+    assert!(
+        click_band > sub_band - 45.0,
+        "kick should retain an audible transient: click {click_band:.1}dB, sub {sub_band:.1}dB"
+    );
+    assert!(
+        peak > attack_rms * 4.0,
+        "kick peak should be spiky relative to attack RMS: peak {peak}, attack_rms {attack_rms}"
+    );
+    // Sub gain envelope lets the sub ring out, so the tail may have sustained sub content.
+    assert!(
+        tail_rms > 0.001,
+        "sub should sustain in the tail: tail_rms {tail_rms}"
+    );
+}
+
+fn average_band_db(spectrum: &[(f64, f64)], min_hz: f64, max_hz: f64) -> f64 {
+    let mut total = 0.0;
+    let mut count = 0usize;
+    for (_, magnitude_db) in spectrum
+        .iter()
+        .filter(|(frequency_hz, _)| *frequency_hz >= min_hz && *frequency_hz <= max_hz)
+    {
+        total += magnitude_db;
+        count += 1;
+    }
+
+    total / 1f64.max(count as f64)
+}
+
+fn peak_abs(samples: &[f32]) -> f32 {
+    samples
+        .iter()
+        .map(|sample| sample.abs())
+        .fold(0.0, f32::max)
+}
+
+fn rms(samples: &[f32]) -> f32 {
+    if samples.is_empty() {
+        return 0.0;
+    }
+
+    (samples.iter().map(|sample| sample * sample).sum::<f32>() / samples.len() as f32).sqrt()
+}
+
+#[test]
 fn drum_kit_composite_examples_load_validate_and_render_with_documented_primitive_ports() {
     for (fixture, note, should_render) in [
         ("examples/patches/composite-velocity-vca.yaml", 60, true),
         ("examples/patches/composite-impulse-tone.yaml", 60, true),
         ("examples/patches/composite-impulse-noise.yaml", 60, true),
         ("examples/patches/composite-impulse-layer.yaml", 60, true),
-        ("examples/patches/drum-kit.yaml", 60, true),
+        ("examples/patches/drum-kit.yaml", 36, true),
     ] {
         let Some(yaml) = read_repo_fixture(fixture) else {
             return;
@@ -3876,6 +3955,34 @@ connections:
         events,
     );
     assert_eq!(left.len(), 48000, "should produce one second of audio");
+
+    let spectrum = fft::compute_magnitude_response(&left, 48000.0).bins;
+    let low_band = spectrum
+        .iter()
+        .filter(|(frequency_hz, _)| *frequency_hz >= 40.0 && *frequency_hz <= 120.0)
+        .map(|(_, magnitude_db)| *magnitude_db)
+        .sum::<f64>()
+        / 1f64.max(
+            spectrum
+                .iter()
+                .filter(|(frequency_hz, _)| *frequency_hz >= 40.0 && *frequency_hz <= 120.0)
+                .count() as f64,
+        );
+    let high_band = spectrum
+        .iter()
+        .filter(|(frequency_hz, _)| *frequency_hz >= 500.0 && *frequency_hz <= 4000.0)
+        .map(|(_, magnitude_db)| *magnitude_db)
+        .sum::<f64>()
+        / 1f64.max(
+            spectrum
+                .iter()
+                .filter(|(frequency_hz, _)| *frequency_hz >= 500.0 && *frequency_hz <= 4000.0)
+                .count() as f64,
+        );
+    assert!(
+        low_band > high_band,
+        "expected kick spectrum to favor low frequencies (low {low_band:.1} dB > high {high_band:.1} dB)"
+    );
 
     // Determinism: re-render and compare
     let events2 = vec![

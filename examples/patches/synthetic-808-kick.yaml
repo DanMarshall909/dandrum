@@ -13,7 +13,7 @@ preset_surface:
       maps_to: kick.tune_hz
     - name: kick.decay_ms
       type: number
-      default: 1024
+      default: 650
       min: 50
       max: 2000
       maps_to: kick.decay_ms
@@ -25,35 +25,56 @@ preset_surface:
       maps_to: kick.punch
     - name: kick.click
       type: number
-      default: -18
-      min: -100
-      max: 0
+      default: 1
+      min: 0
+      max: 1
       maps_to: kick.click
+    - name: kick.sub_decay_ms
+      type: number
+      default: 800
+      min: 50
+      max: 2000
+      maps_to: kick.sub_decay_ms
+    - name: kick.sub_level
+      type: number
+      default: 1
+      min: 0
+      max: 1
+      maps_to: kick.sub_level
 render:
   sample_rate_hz: 48000
   block_size_frames: 128
-  duration_frames: 2048
+  duration_frames: 48000
 module_definitions:
   - type: synthetic_808_kick
+    inputs:
+      - name: events
+        signal_type: event
+        maps_to:
+          - ntr.events
+          - adsr.gate
+          - click_impulse.trigger
+          - pitch_decay.trigger
+          - sub_gain_env.trigger
     parameters:
       - name: tune_hz
         type: number
-        default: 55
+        default: 72
         min: 20
         max: 120
         unit: Hz
         description: Fundamental tuning control exposed by the kick composite.
         maps_to:
-          - body.seed
+          - ntr.pitch_ratio
       - name: decay_ms
         type: number
-        default: 500
+        default: 650
         min: 50
         max: 2000
         unit: ms
         description: Decay control exposed by the kick composite.
         maps_to:
-          - shaper.fft_size
+          - adsr.decay
       - name: punch
         type: number
         default: 0.8
@@ -61,34 +82,124 @@ module_definitions:
         max: 1
         description: Body punch control exposed by the kick composite.
         maps_to:
-          - shaper.mix
+          - vca.gain
       - name: click
         type: number
-        default: -24
-        min: -100
-        max: 0
-        unit: dB
+        default: 1
+        min: 0
+        max: 1
         description: Click brightness control exposed by the kick composite.
         maps_to:
-          - shaper.threshold
+          - click_gain.gain
+      - name: sub_decay_ms
+        type: number
+        default: 800
+        min: 50
+        max: 2000
+        unit: ms
+        description: Sub-bass decay time.
+        maps_to:
+          - sub_gain_env.time_ms
+      - name: sub_level
+        type: number
+        default: 1
+        min: 0
+        max: 1
+        description: Sub-bass level.
+        maps_to:
+          - sub_level_map.scale
     outputs:
       - name: audio
         signal_type: audio
         maps_from:
-          - body.audio
+          - voice_mix.mix
     modules:
-      - id: body
-        type: noise
-      - id: shaper
-        type: spectral_processor
+      - id: ntr
+        type: note_to_control
+      - id: body_osc
+        type: oscillator
+      - id: filt
+        type: filter
+        parameters:
+          algorithm: moog
+          mode: lowpass
+      - id: adsr
+        type: adsr
+        parameters:
+          sustain: 0
+          attack: 0
+      - id: vca
+        type: gain
+      - id: click_impulse
+        type: impulse
+      - id: click_gain
+        type: gain
+      - id: pitch_decay
+        type: decay
+        parameters:
+          time_ms: 80
+          curve: exponential
+      - id: pitch_map
+        type: curve_mapper
+        parameters:
+          scale: 4.7
+      - id: voice_mix
+        type: audio_mixer
+      - id: sub_lpf
+        type: filter
+        parameters:
+          algorithm: biquad
+          mode: lowpass
+          cutoff: 0.3
+      - id: sub_gain_env
+        type: decay
+        parameters:
+          curve: exponential
+      - id: sub_level_map
+        type: curve_mapper
+      - id: sub_vca
+        type: gain
+    connections:
+      - from: pitch_decay.value
+        to: pitch_map.value
+      - from: ntr.pitch_ratio
+        to: pitch_map.offset
+      - from: pitch_map.value
+        to: body_osc.pitch
+      - from: body_osc.audio
+        to: filt.audio_in
+      - from: filt.audio_out
+        to: vca.audio_in
+      - from: adsr.value
+        to: vca.gain
+      - from: vca.audio_out
+        to: voice_mix.inputs
+      - from: click_impulse.audio
+        to: click_gain.audio_in
+      - from: click_gain.audio_out
+        to: voice_mix.inputs
+      - from: body_osc.audio
+        to: sub_lpf.audio_in
+      - from: sub_lpf.audio_out
+        to: sub_vca.audio_in
+      - from: sub_gain_env.value
+        to: sub_level_map.value
+      - from: sub_level_map.value
+        to: sub_vca.gain
+      - from: sub_vca.audio_out
+        to: voice_mix.inputs
 modules:
+  - id: midi
+    type: midi_input
   - id: kick
     type: synthetic_808_kick
     parameters:
-      tune_hz: 48
-      decay_ms: 1024
-      punch: 0.7
-      click: -18
+      tune_hz: 72
+      decay_ms: 650
+      punch: 0.9
+      click: 1
+      sub_decay_ms: 800
+      sub_level: 1
   - id: out
     type: audio_output
     inputs:
@@ -99,6 +210,8 @@ modules:
   - id: mixer
     type: audio_mixer
 connections:
+  - from: midi.events
+    to: kick.events
   - from: kick.audio
     to: mixer.inputs
   - from: mixer.mix

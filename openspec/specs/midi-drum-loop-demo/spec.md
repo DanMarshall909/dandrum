@@ -1,4 +1,8 @@
-## ADDED Requirements
+## Purpose
+
+Specify the MIDI drum loop demo that loads a drum-machine asset and exercises the existing engine playback path.
+
+## Requirements
 
 ### Requirement: MIDI drum loop integration command
 

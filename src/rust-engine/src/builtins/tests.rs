@@ -74,7 +74,9 @@ fn initialized_registry_contains_synthesis_control_and_mixer_definitions() {
     assert_has_control_input(oscillator, PITCH);
     assert_has_audio_output(oscillator, AUDIO);
 
-    let gain = registry.get(module_types::GAIN).expect("gain should be built in");
+    let gain = registry
+        .get(module_types::GAIN)
+        .expect("gain should be built in");
     assert_has_audio_input(gain, AUDIO_IN);
     assert_has_control_input(gain, builtin_ports::GAIN);
     assert_has_audio_output(gain, AUDIO_OUT);
@@ -93,13 +95,7 @@ fn initialized_registry_contains_synthesis_control_and_mixer_definitions() {
 
     let adsr = registry.get(ADSR).expect("ADSR should be built in");
     assert_has_event_input(adsr, GATE);
-    assert_control_inputs!(
-        adsr,
-        ATTACK,
-        DECAY,
-        SUSTAIN,
-        RELEASE,
-    );
+    assert_control_inputs!(adsr, ATTACK, DECAY, SUSTAIN, RELEASE,);
     assert_has_control_output(adsr, VALUE);
 
     let lfo = registry.get(LFO).expect("LFO should be built in");
@@ -108,12 +104,7 @@ fn initialized_registry_contains_synthesis_control_and_mixer_definitions() {
 
     let filter = registry.get(FILTER).expect("filter should be built in");
     assert_has_audio_input(filter, AUDIO_IN);
-    assert_control_inputs!(
-        filter,
-        CUTOFF,
-        RESONANCE,
-        builtin_ports::GAIN,
-    );
+    assert_control_inputs!(filter, CUTOFF, RESONANCE, builtin_ports::GAIN,);
     assert_has_audio_output(filter, AUDIO_OUT);
 }
 
@@ -302,14 +293,7 @@ fn initialized_registry_contains_sampler_definition() {
     let sampler = registry.get(SAMPLER).expect("sampler should be built in");
 
     assert_has_event_input(sampler, TRIGGER);
-    assert_control_inputs!(
-        sampler,
-        RATE,
-        START,
-        LOOP_ENABLED,
-        LOOP_START,
-        LOOP_END,
-    );
+    assert_control_inputs!(sampler, RATE, START, LOOP_ENABLED, LOOP_START, LOOP_END,);
     assert_has_audio_output(sampler, AUDIO);
 }
 
@@ -333,14 +317,7 @@ fn initialized_registry_contains_envelope_follower_and_curve_mapper_definitions(
         .get(ENVELOPE_FOLLOWER)
         .expect("envelope_follower should be built in");
     assert_has_audio_input(follower, AUDIO_IN);
-    assert_control_inputs!(
-        follower,
-        ATTACK,
-        RELEASE,
-        AMOUNT,
-        OFFSET,
-        INVERT,
-    );
+    assert_control_inputs!(follower, ATTACK, RELEASE, AMOUNT, OFFSET, INVERT,);
     assert_has_control_output(follower, VALUE);
 
     let mode = follower
@@ -363,14 +340,7 @@ fn initialized_registry_contains_envelope_follower_and_curve_mapper_definitions(
     let mapper = registry
         .get(CURVE_MAPPER)
         .expect("curve_mapper should be built in");
-    assert_control_inputs!(
-        mapper,
-        VALUE,
-        AMOUNT,
-        BIAS,
-        SCALE,
-        OFFSET,
-    );
+    assert_control_inputs!(mapper, VALUE, AMOUNT, BIAS, SCALE, OFFSET,);
     assert_has_control_output(mapper, VALUE);
 
     let curve = mapper
@@ -452,11 +422,7 @@ fn reverb_definition_has_correct_ports() {
     let reverb = registry.get(REVERB).expect("reverb should be built in");
 
     assert_audio_inputs!(reverb, AUDIO_IN_L, AUDIO_IN_R,);
-    assert_audio_outputs!(
-        reverb,
-        AUDIO_OUT_L,
-        AUDIO_OUT_R,
-    );
+    assert_audio_outputs!(reverb, AUDIO_OUT_L, AUDIO_OUT_R,);
     assert_control_inputs!(
         reverb,
         DECAY_TIME,

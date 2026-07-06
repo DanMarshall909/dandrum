@@ -82,6 +82,11 @@ pub(super) fn compiled_sum_control_input(
         return result;
     };
 
+    if compiled.nodes()[module_idx].input_routes[port_idx].is_empty() {
+        return compiled_control_parameter_input(module_idx, port_name, compiled, frames)
+            .unwrap_or(result);
+    }
+
     for source in &compiled.nodes()[module_idx].input_routes[port_idx] {
         if let Some(outputs) = all_outputs.get(&source.module_index) {
             if let Some(buffer) = outputs.control.get(&source.output_port_name) {
@@ -116,7 +121,28 @@ fn compiled_control_input_or_default(
         }
     }
 
+    if let Some(parameter_input) =
+        compiled_control_parameter_input(module_idx, port_name, compiled, frames)
+    {
+        return parameter_input;
+    }
+
     vec![default; frames]
+}
+
+fn compiled_control_parameter_input(
+    module_idx: usize,
+    port_name: &str,
+    compiled: &CompiledPatch,
+    frames: usize,
+) -> Option<Vec<f32>> {
+    let value = compiled.nodes()[module_idx]
+        .parameters
+        .get(port_name)?
+        .parse::<f32>()
+        .ok()?;
+
+    Some(vec![value; frames])
 }
 
 pub(super) fn compiled_gather_event_inputs(

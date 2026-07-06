@@ -397,6 +397,10 @@ pub(super) fn default_control_value(module_kind: ModuleKind, port_name: &str) ->
         (ModuleKind::FrequencySplitter, builtin_ports::CROSSOVER_HZ) => Some(0.2),
         (ModuleKind::SpectralProcessor, builtin_ports::THRESHOLD) => Some(0.5),
         (ModuleKind::SpectralProcessor, builtin_ports::MIX) => Some(0.5),
+        (ModuleKind::Adsr, builtin_ports::ATTACK) => Some(5.0),
+        (ModuleKind::Adsr, builtin_ports::DECAY) => Some(30.0),
+        (ModuleKind::Adsr, builtin_ports::SUSTAIN) => Some(0.7),
+        (ModuleKind::Adsr, builtin_ports::RELEASE) => Some(200.0),
         _ => None,
     }
 }

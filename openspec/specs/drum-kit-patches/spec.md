@@ -76,3 +76,17 @@ The patch SHALL NOT require a `drum_machine`, `drum_pad`, or drum-specific Rust 
 
 - **WHEN** the drum-kit patch metadata is inspected
 - **THEN** `voice_allocation` SHALL be present and `max_voices` SHALL be at least the number of voice instances
+
+### Requirement: Drum kit supports multiple stereo outputs
+
+The `drum-kit` example patch SHALL support multiple stereo output pairs so individual drum voices or voice groups can be routed to separate stereo outs in addition to the main mix.
+
+#### Scenario: Drum kit exposes stereo output pairs
+
+- **WHEN** the drum-kit patch is inspected
+- **THEN** it SHALL expose a main stereo output pair plus at least one additional named stereo output pair
+
+#### Scenario: Voices can route to separate stereo outs
+
+- **WHEN** the drum-kit patch is wired for multi-output routing
+- **THEN** selected voice instances or groups SHALL be connectable to distinct stereo output pairs without requiring a drum-specific primitive

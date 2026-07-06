@@ -69,10 +69,10 @@ add_test(
 
 add_subdirectory(third_party/JUCE)
 
-juce_add_console_app(dandrum-beep
-    PRODUCT_NAME "Dandrum Beep")
+juce_add_console_app(dandrum-drum-machine-demo
+    PRODUCT_NAME "Dandrum Drum Machine Demo")
 
-target_sources(dandrum-beep
+target_sources(dandrum-drum-machine-demo
     PRIVATE
         src/juce-wrapper/Cli.cpp
         src/juce-wrapper/DrumLoop.h
@@ -80,12 +80,12 @@ target_sources(dandrum-beep
         src/juce-wrapper/MidiToRustEngine.cpp
         src/juce-wrapper/RustEngineSource.cpp)
 
-target_compile_definitions(dandrum-beep
+target_compile_definitions(dandrum-drum-machine-demo
     PRIVATE
         JUCE_USE_CURL=0
         JUCE_WEB_BROWSER=0)
 
-target_link_libraries(dandrum-beep
+target_link_libraries(dandrum-drum-machine-demo
     PRIVATE
         dandrum_engine
         juce::juce_audio_basics

@@ -280,6 +280,7 @@ impl BuiltInModuleRegistry {
             event_filter_definition(),
             envelope_follower_definition(),
             curve_mapper_definition(),
+            decay_definition(),
         ])
     }
 
@@ -313,8 +314,7 @@ fn midi_input_definition() -> BuiltInModuleDefinition {
 }
 
 fn audio_output_definition() -> BuiltInModuleDefinition {
-    BuiltInModuleDefinition::new(AUDIO_OUTPUT)
-        .with_inputs([(LEFT, Audio), (RIGHT, Audio)])
+    BuiltInModuleDefinition::new(AUDIO_OUTPUT).with_inputs([(LEFT, Audio), (RIGHT, Audio)])
 }
 
 fn oscillator_definition() -> BuiltInModuleDefinition {
@@ -354,6 +354,30 @@ fn adsr_definition() -> BuiltInModuleDefinition {
             (RELEASE, Control),
         ])
         .with_output(Port::output(VALUE, Control))
+        .with_parameter(
+            ParameterMetadata::new(ATTACK, ParameterValueType::Number)
+                .with_default("5")
+                .with_range(0.0, 500.0)
+                .with_description("attack time in milliseconds (direct value) or 0-1 normalized"),
+        )
+        .with_parameter(
+            ParameterMetadata::new(DECAY, ParameterValueType::Number)
+                .with_default("30")
+                .with_range(1.0, 5000.0)
+                .with_description("decay time in milliseconds (direct value) or 0-1 normalized"),
+        )
+        .with_parameter(
+            ParameterMetadata::new(SUSTAIN, ParameterValueType::Number)
+                .with_default("0.7")
+                .with_range(0.0, 1.0)
+                .with_description("sustain level"),
+        )
+        .with_parameter(
+            ParameterMetadata::new(RELEASE, ParameterValueType::Number)
+                .with_default("200")
+                .with_range(0.0, 10000.0)
+                .with_description("release time in milliseconds (direct value) or 0-1 normalized"),
+        )
 }
 
 fn lfo_definition() -> BuiltInModuleDefinition {
@@ -671,6 +695,28 @@ fn curve_mapper_definition() -> BuiltInModuleDefinition {
         )
         .with_example(
             "- id: mapper\n  type: curve_mapper\n  parameters:\n    curve: s_curve\n    steps: 4",
+        )
+}
+
+fn decay_definition() -> BuiltInModuleDefinition {
+    BuiltInModuleDefinition::new("decay")
+        .with_execution_scope(ExecutionScope::Voice)
+        .with_inputs([(TRIGGER, Event)])
+        .with_output(Port::output(VALUE, Control))
+        .with_parameter(
+            ParameterMetadata::new("time_ms", ParameterValueType::Number)
+                .with_default("100")
+                .with_range(1.0, 5000.0)
+                .with_description("decay time in milliseconds"),
+        )
+        .with_parameter(
+            ParameterMetadata::new("curve", ParameterValueType::Text)
+                .with_default("exponential")
+                .with_enum_values(vec![
+                    "linear".to_string(),
+                    "exponential".to_string(),
+                ])
+                .with_description("decay curve shape"),
         )
 }
 

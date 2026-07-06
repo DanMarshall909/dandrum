@@ -188,7 +188,11 @@ mod tests {
         // With positive bias, a symmetric input produces asymmetric output
         let out_pos = sat.process(0.5);
         let out_neg = sat.process(-0.5);
-        assert_ne!(out_pos, -out_neg, "bias should create asymmetry: {out_pos} vs {}", -out_neg);
+        assert_ne!(
+            out_pos, -out_neg,
+            "bias should create asymmetry: {out_pos} vs {}",
+            -out_neg
+        );
     }
 
     #[test]

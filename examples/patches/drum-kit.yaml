@@ -26,6 +26,11 @@ module_definitions:
         type: note_to_control
       - id: tone
         type: oscillator
+      - id: tone_filter
+        type: filter
+        parameters:
+          algorithm: biquad
+          mode: lowpass
       - id: envelope
         type: adsr
       - id: envelope_gain
@@ -36,6 +41,8 @@ module_definitions:
       - from: note_controls.pitch_ratio
         to: tone.pitch
       - from: tone.audio
+        to: tone_filter.audio_in
+      - from: tone_filter.audio_out
         to: envelope_gain.audio_in
       - from: envelope.value
         to: envelope_gain.gain
@@ -142,7 +149,7 @@ modules:
     type: event_filter
     parameters:
       selector: note
-      note: 60
+      note: 36
   - id: snare_route
     type: event_filter
     parameters:

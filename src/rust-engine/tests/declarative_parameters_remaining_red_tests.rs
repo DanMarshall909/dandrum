@@ -1,9 +1,11 @@
+use dandrum_engine::core::TimedInputEvent;
 use dandrum_engine::graph::Graph;
 use dandrum_engine::patch::{
     AssetKind, ParameterValue, PresetTargetType, apply_preset, load_patch_str, load_preset_file,
     load_preset_str, resolve_module_parameters, validate_patch_schema, validate_preset,
     validate_preset_compatibility,
 };
+use dandrum_engine::script::ScriptEvent;
 use std::path::PathBuf;
 
 fn validation_messages(yaml: &str) -> Vec<String> {
@@ -830,8 +832,15 @@ fn synthetic_808_kick_example_declares_public_controls_and_renders() {
     validate_patch_schema(&patch).expect("kick example should validate");
     let graph = Graph::from_patch_declarations(&patch);
     graph.validate().expect("kick example graph validates");
+    let events = vec![TimedInputEvent::new(
+        0,
+        ScriptEvent::NoteOn {
+            note: 36,
+            velocity: 110,
+        },
+    )];
     let (left, _right) =
-        dandrum_engine::graph_processor::render_offline(&graph, &patch.render, Vec::new());
+        dandrum_engine::graph_processor::render_offline(&graph, &patch.render, events);
 
     assert!(left.iter().any(|sample| sample.abs() > 0.0));
 }
@@ -851,7 +860,7 @@ fn synthetic_808_kick_public_controls_are_discoverable_without_internal_leakage(
         .map(|parameter| parameter.name.as_str())
         .collect::<Vec<_>>();
 
-    assert_eq!(public_names, ["tune_hz", "decay_ms", "punch", "click"]);
+    assert_eq!(public_names, ["tune_hz", "decay_ms", "punch", "click", "sub_decay_ms", "sub_level"]);
     assert!(!public_names.contains(&"seed"));
     assert!(!public_names.contains(&"fft_size"));
     assert!(
@@ -862,34 +871,65 @@ fn synthetic_808_kick_public_controls_are_discoverable_without_internal_leakage(
 }
 
 #[test]
-fn synthetic_808_kick_yaml_tuning_changes_output_deterministically() {
+fn synthetic_808_kick_yaml_decay_control_changes_render_deterministically() {
     let patch_path = example_patch_path("synthetic-808-kick.yaml");
-    let first_patch =
-        dandrum_engine::patch::load_patch_file(&patch_path).expect("kick example parses");
-    let mut second_patch = first_patch.clone();
-    second_patch.modules[0]
-        .parameters
-        .insert("tune_hz".to_string(), ParameterValue::Number(72.0));
-
+    let patch = dandrum_engine::patch::load_patch_file(&patch_path).expect("kick example parses");
+    validate_patch_schema(&patch).expect("kick example should validate");
+    let first_preset = load_preset_str(
+        r#"
+name: Kick Long
+instrument:
+  id: dandrum.synthetic-808-kick
+  preset_schema_version: 1
+values:
+  kick.decay_ms: 1400
+"#,
+    )
+    .expect("first preset should parse");
+    let second_preset = load_preset_str(
+        r#"
+name: Kick Short
+instrument:
+  id: dandrum.synthetic-808-kick
+  preset_schema_version: 1
+values:
+  kick.decay_ms: 250
+"#,
+    )
+    .expect("second preset should parse");
+    validate_preset(&patch, &first_preset).expect("first preset should validate");
+    validate_preset(&patch, &second_preset).expect("second preset should validate");
+    let first_patch = apply_preset(&patch, &first_preset).expect("first preset should apply");
+    let second_patch = apply_preset(&patch, &second_preset).expect("second preset should apply");
     let first_graph = Graph::from_patch_declarations(&first_patch);
     let second_graph = Graph::from_patch_declarations(&second_patch);
     first_graph.validate().expect("first graph validates");
     second_graph.validate().expect("second graph validates");
+    let events = vec![
+        TimedInputEvent::new(
+            0,
+            ScriptEvent::NoteOn {
+                note: 36,
+                velocity: 110,
+            },
+        ),
+        TimedInputEvent::new(96_000, ScriptEvent::NoteOff { note: 36 }),
+    ];
 
     let (first_left, _) = dandrum_engine::graph_processor::render_offline(
         &first_graph,
         &first_patch.render,
-        Vec::new(),
+        events.clone(),
     );
     let (first_left_again, _) = dandrum_engine::graph_processor::render_offline(
         &first_graph,
         &first_patch.render,
-        Vec::new(),
+        events.clone(),
     );
     let (second_left, _) = dandrum_engine::graph_processor::render_offline(
         &second_graph,
         &second_patch.render,
-        Vec::new(),
+        events,
     );
 
     assert_eq!(first_left, first_left_again);
@@ -927,7 +967,7 @@ fn example_preset_loads_against_matching_patch_and_applies_public_values() {
     );
     assert_eq!(
         kick.parameters.get("click"),
-        Some(&ParameterValue::Number(-12.0))
+        Some(&ParameterValue::Number(0.8))
     );
 }
 

@@ -4,7 +4,7 @@
 
 - This is currently a C++20 CMake/JUCE wrapper plus Rust engine crate; the planned headless engine core is starting
   under `src/rust-engine/src/core.rs`.
-- Root `CMakeLists.txt` builds Rust crate `src/rust-engine/`, links it into one JUCE console target, `dandrum-beep`,
+- Root `CMakeLists.txt` builds Rust crate `src/rust-engine/`, links it into one JUCE console target, `dandrum-drum-machine-demo`,
   from `src/juce-wrapper/Main.cpp`, and exposes Rust tests through CTest.
 - JUCE currently owns audio/MIDI device IO; Rust owns DSP/event state behind a C FFI boundary.
 - `third_party/JUCE/` is vendored JUCE; do not edit it unless the task is explicitly about vendored JUCE changes.
@@ -12,10 +12,10 @@
 ## Build And Run
 
 - Configure/build/run with the README commands: `$HOME/.local/bin/cmake -S . -B build`,
-  `$HOME/.local/bin/cmake --build build`, `./build/dandrum-beep_artefacts/dandrum-beep`.
-- MIDI input commands: `./build/dandrum-beep_artefacts/dandrum-beep --list-midi-inputs`,
-  `./build/dandrum-beep_artefacts/dandrum-beep --midi-input 0`.
-- Synthetic MIDI test command: `./build/dandrum-beep_artefacts/dandrum-beep --test-midi-note 60`.
+  `$HOME/.local/bin/cmake --build build`, `./build/dandrum-drum-machine-demo_artefacts/dandrum-drum-machine-demo`.
+- MIDI input commands: `./build/dandrum-drum-machine-demo_artefacts/dandrum-drum-machine-demo --list-midi-inputs`,
+  `./build/dandrum-drum-machine-demo_artefacts/dandrum-drum-machine-demo --midi-input 0`.
+- Synthetic MIDI test command: `./build/dandrum-drum-machine-demo_artefacts/dandrum-drum-machine-demo --test-midi-note 60`.
 - CMake expects Cargo at `$HOME/.cargo/bin/cargo`.
 - JUCE configure needs native Linux dev packages from `README.md`; without them CMake can fail while building `juceaide`
   on missing headers such as `X11/Xlib.h`.

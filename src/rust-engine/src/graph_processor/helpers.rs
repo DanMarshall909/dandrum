@@ -12,10 +12,6 @@ pub(super) fn log_lerp(a: f32, b: f32, t: f32) -> f32 {
     (a.ln() + (b.ln() - a.ln()) * clamped).exp()
 }
 
-pub(super) fn has_signal(buf: &[f32]) -> bool {
-    buf.iter().any(|&v| v != 0.0)
-}
-
 pub(super) fn normalized_position(value: f32, sample_len: usize) -> f32 {
     (value.clamp(0.0, 1.0) * sample_len as f32).min(sample_len.saturating_sub(1) as f32)
 }

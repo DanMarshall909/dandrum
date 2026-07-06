@@ -130,6 +130,22 @@ downstream voice composites. It SHALL NOT require a `drum_machine` or `drum_pad`
 - **WHEN** event-routing modules have no downstream audio-generating modules connected
 - **THEN** rendering SHALL produce no audio solely because the routing modules received events
 
+### Requirement: Drum-machine acceptance example exposes multiple stereo outs
+
+A drum-machine acceptance example SHALL demonstrate a drum kit patch or composite with a main stereo mix plus additional
+named stereo output pairs for selected voices or voice groups, routed through explicit YAML connections.
+
+#### Scenario: Drum-machine example exposes separate stereo outs
+
+- **WHEN** the drum-machine acceptance example is inspected
+- **THEN** it SHALL expose a main stereo output pair and at least one additional named stereo output pair
+
+#### Scenario: Drum-machine example routes voices to separate outputs
+
+- **WHEN** the drum-machine acceptance example is rendered with MIDI note events
+- **THEN** selected voices or voice groups SHALL be routable to distinct stereo outputs without requiring a drum-specific
+  Rust primitive
+
 ### Requirement: Simple polyphonic synth dogfood uses generic primitives
 
 A simple polyphonic synth acceptance example SHALL demonstrate note event input, voice allocation, note-to-control,

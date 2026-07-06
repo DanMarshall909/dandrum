@@ -3,11 +3,12 @@ use crate::script::{ScriptEvent, ScriptExecutionContext, ScriptProcessInput, Scr
 use std::collections::BTreeMap;
 
 use super::helpers::{
-    audio_output, has_signal, lerp, log_lerp, normalized_end_position, normalized_position,
+    audio_output, lerp, log_lerp, normalized_end_position, normalized_position,
     set_curve_by_index, stereo_audio_output,
 };
 use super::outputs::{BlockEvent, ModuleOutputs};
 use super::state::PerModuleState;
+use crate::decay::DecayCurve;
 
 pub(super) struct EchoControls<'a> {
     pub(super) feedback: &'a [f32],
@@ -82,11 +83,6 @@ pub(super) fn process_adsr(
         _ => unreachable!(),
     };
 
-    let has_attack = has_signal(attack_in);
-    let has_decay = has_signal(decay_in);
-    let has_sustain = has_signal(sustain_in);
-    let has_release = has_signal(release_in);
-
     for event in events_in {
         match &event.event {
             ScriptEvent::NoteOn { .. } => {
@@ -106,26 +102,10 @@ pub(super) fn process_adsr(
     for i in 0..frames {
         let absolute_frame = block_start_frame + i as u64;
 
-        let attack_ms = if has_attack {
-            lerp(2.0, 100.0, attack_in[i].clamp(0.0, 1.0))
-        } else {
-            5.0
-        };
-        let decay_ms = if has_decay {
-            lerp(10.0, 1000.0, decay_in[i].clamp(0.0, 1.0))
-        } else {
-            30.0
-        };
-        let sustain = if has_sustain {
-            sustain_in[i].clamp(0.0, 1.0)
-        } else {
-            0.7
-        };
-        let release_ms = if has_release {
-            lerp(10.0, 3000.0, release_in[i].clamp(0.0, 1.0))
-        } else {
-            200.0
-        };
+        let attack_ms = adsr_time_ms(attack_in[i], 2.0, 100.0);
+        let decay_ms = adsr_time_ms(decay_in[i], 10.0, 1000.0);
+        let sustain = sustain_in[i].clamp(0.0, 1.0);
+        let release_ms = adsr_time_ms(release_in[i], 10.0, 3000.0);
 
         let attack_frames = (sample_rate * attack_ms / 1000.0) as u64;
         let decay_frames = (sample_rate * decay_ms / 1000.0) as u64;
@@ -159,6 +139,14 @@ pub(super) fn process_adsr(
         .control
         .insert(builtin_ports::VALUE.to_string(), adsr_value);
     outputs
+}
+
+fn adsr_time_ms(value: f32, min_ms: f32, max_ms: f32) -> f32 {
+    if value > 1.0 {
+        value.clamp(min_ms, max_ms)
+    } else {
+        lerp(min_ms, max_ms, value.clamp(0.0, 1.0))
+    }
 }
 
 pub(super) fn process_vca(audio_in: Vec<f32>, gain_in: Vec<f32>) -> ModuleOutputs {
@@ -712,6 +700,54 @@ pub(super) fn process_noise(state: &mut PerModuleState, frames: usize) -> Module
     }
 
     audio_output(builtin_ports::AUDIO, audio)
+}
+
+pub(super) fn process_decay(
+    state: &mut PerModuleState,
+    events: &[BlockEvent],
+    frames: usize,
+) -> ModuleOutputs {
+    let (level, triggered, elapsed_frames, decay_frames, curve) = match state {
+        PerModuleState::Decay {
+            level,
+            triggered,
+            elapsed_frames,
+            decay_frames,
+            curve,
+        } => (level, triggered, elapsed_frames, *decay_frames, *curve),
+        _ => unreachable!(),
+    };
+
+    for event in events {
+        if matches!(event.event, ScriptEvent::NoteOn { .. }) {
+            *level = 1.0;
+            *triggered = true;
+            *elapsed_frames = 0;
+        }
+    }
+
+    let mut values = Vec::with_capacity(frames);
+    for _ in 0..frames {
+        if *triggered {
+            let t = *elapsed_frames as f32 / decay_frames;
+            *level = match curve {
+                DecayCurve::Linear => (1.0 - t).max(0.0),
+                DecayCurve::Exponential => (-4.0 * t).exp(),
+            };
+            *elapsed_frames += 1;
+            if *level <= 0.0 {
+                *level = 0.0;
+                *triggered = false;
+            }
+        }
+        values.push(*level);
+    }
+
+    let mut outputs = ModuleOutputs::empty();
+    outputs
+        .control
+        .insert(builtin_ports::VALUE.to_string(), values);
+    outputs
 }
 
 pub(super) fn process_impulse(
