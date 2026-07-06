@@ -44,6 +44,28 @@ int main()
         return 1;
     }
 
+    if (! processor->hasPublicParameter ("kick.tune_hz"))
+    {
+        std::cerr << "default plugin instrument did not expose kick.tune_hz\n";
+        return 1;
+    }
+
+    juce::MemoryBlock state;
+    processor->getStateInformation (state);
+    if (state.getSize() == 0)
+    {
+        std::cerr << "plugin state serialization produced an empty state block\n";
+        return 1;
+    }
+
+    auto restored = std::make_unique<DandrumAudioProcessor>();
+    restored->setStateInformation (state.getData(), static_cast<int> (state.getSize()));
+    if (! restored->hasPublicParameter ("kick.tune_hz"))
+    {
+        std::cerr << "restored plugin did not keep the public parameter layout\n";
+        return 1;
+    }
+
     processor->setPlayConfigDetails (0, 2, 48000.0, blockSize);
     processor->prepareToPlay (48000.0, blockSize);
 
