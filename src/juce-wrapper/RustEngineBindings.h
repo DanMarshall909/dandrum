@@ -10,6 +10,17 @@ struct DandrumRealtimeEventQueue;
 DandrumEngine* dandrum_engine_create();
 void dandrum_engine_destroy (DandrumEngine* engine);
 bool dandrum_engine_load_patch (DandrumEngine* engine, const char* path);
+std::size_t dandrum_patch_public_numeric_parameter_count (const char* path);
+bool dandrum_patch_public_numeric_parameter_descriptor (const char* path,
+                                                       std::size_t index,
+                                                       char* idBuffer,
+                                                       std::size_t idBufferCapacity,
+                                                       char* nameBuffer,
+                                                       std::size_t nameBufferCapacity,
+                                                       double* defaultValue,
+                                                       double* minValue,
+                                                       double* maxValue);
+bool dandrum_engine_set_public_numeric_parameter (DandrumEngine* engine, const char* parameterId, double value);
 void dandrum_engine_prepare (DandrumEngine* engine, float sampleRate);
 void dandrum_engine_prepare_realtime (DandrumEngine* engine, float sampleRate, std::size_t maxBlockSize);
 void dandrum_engine_note_on (DandrumEngine* engine, unsigned char note, unsigned char velocity);
