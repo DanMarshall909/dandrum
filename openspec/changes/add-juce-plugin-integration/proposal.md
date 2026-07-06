@@ -8,6 +8,8 @@ DAW hosts also expect plugin parameters to remain stable for automation, project
 
 The important runtime split is: YAML describes the immutable instrument definition currently running in the plugin, while declared public parameter values remain mutable for live tweaking, presets, automation, and state recall. Changing parameter values must not edit or reload YAML. Changing YAML requires an explicit save/reload operation that mutes audio, stops the current DSP, compiles the replacement DSP, starts it, and reconciles presets/parameter values against the new instrument surface.
 
+Dandrum's initial drum library should also prove that convincing 808/909-style voices can be built from the existing primitive graph model. Existing free/open synths and public references can provide useful seed values for public parameters, but those values should be treated as initial tuning hints. Later offline spectral and envelope analysis against reference samples can tune the synthesized voices more systematically.
+
 ## What Changes
 
 - Add a JUCE AU/VST3 plugin target beside the existing JUCE console app.
@@ -25,6 +27,9 @@ The important runtime split is: YAML describes the immutable instrument definiti
 - Keep realtime callback constraints strict: no locks, no allocation, no file I/O, no YAML parsing, no sample loading, and no logging in the audio callback.
 - Add plugin state persistence for the loaded instrument identity/content and current parameter values.
 - Add sample-accurate MIDI handoff from JUCE `MidiBuffer` into the Rust engine.
+- Author initial 808/909-style drum voices as normal Dandrum graphs composed from reusable primitives before adding any machine-specific DSP modules.
+- Seed drum voice public parameter defaults from documented, free, or open reference instruments where licensing and provenance are acceptable.
+- Defer final drum-voice tuning to an offline spectral/envelope comparison workflow against reference samples.
 
 ## Out of Scope
 
@@ -36,6 +41,8 @@ The important runtime split is: YAML describes the immutable instrument definiti
 - No sample-accurate public parameter automation in the first mutable-parameter slice unless explicitly added later.
 - No multichannel output beyond stereo unless required by a later change.
 - No new DSP module types as part of the plugin shell work.
+- No copying proprietary drum-machine samples, plugin source, or preset banks into the repository.
+- No realtime spectral fitting or reference-sample analysis inside the plugin audio callback.
 
 ## Impact
 
@@ -47,4 +54,6 @@ The important runtime split is: YAML describes the immutable instrument definiti
 - Requires a retained immutable loaded-instrument definition plus mutable public parameter state in the Rust engine.
 - Requires preset reconciliation when a new instrument version changes the public parameter surface.
 - Requires CMake/JUCE target changes and C++ plugin processor/editor implementation.
-- Requires tests for plugin construction, realtime-safe processing, state round-tripping, parameter mapping, MIDI timing, editor-save reloads, and preset reconciliation.
+- Requires seeded 808/909-style instrument definitions to exercise the primitive graph model and public parameter surface.
+- Requires later offline analysis tooling to compare rendered drum voices against reference samples and tune public parameter values.
+- Requires tests for plugin construction, realtime-safe processing, state round-tripping, parameter mapping, MIDI timing, editor-save reloads, preset reconciliation, drum voice authoring from primitives, and seeded parameter defaults.
