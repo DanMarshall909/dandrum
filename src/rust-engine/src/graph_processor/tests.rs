@@ -1747,6 +1747,104 @@ fn per_voice_adsr_gate_isolation() {
 }
 
 #[test]
+fn realtime_processor_is_finished_tracks_full_voice_lifecycle() {
+    // Regression test for the graph_processor::RealtimeGraphProcessor::is_finished
+    // implementation, which a prior broken commit had reduced to an always-false
+    // stub. Drives a full note-on -> note-off -> envelope-released cycle through
+    // the polyphonic realtime pipeline and checks is_finished() at each stage.
+    let modules = vec![
+        ModuleNode::new(ModuleId::new("midi"), "midi_input")
+            .with_execution_scope(ExecutionScope::Global)
+            .with_output(builtin_ports::EVENTS, SignalType::Event),
+        ModuleNode::new(ModuleId::new("osc"), "oscillator")
+            .with_execution_scope(ExecutionScope::Voice)
+            .with_output(builtin_ports::AUDIO, SignalType::Audio),
+        ModuleNode::new(ModuleId::new("adsr"), "adsr")
+            .with_execution_scope(ExecutionScope::Voice)
+            .with_input(builtin_ports::GATE, SignalType::Event)
+            .with_output(builtin_ports::VALUE, SignalType::Control)
+            .with_params(BTreeMap::from([
+                ("attack".to_string(), "0".to_string()),
+                ("decay".to_string(), "0".to_string()),
+                ("sustain".to_string(), "0".to_string()),
+                ("release".to_string(), "5".to_string()),
+            ])),
+        ModuleNode::new(ModuleId::new("vca"), "gain")
+            .with_execution_scope(ExecutionScope::Voice)
+            .with_input(builtin_ports::AUDIO_IN, SignalType::Audio)
+            .with_input(builtin_ports::GAIN, SignalType::Control)
+            .with_output(builtin_ports::AUDIO_OUT, SignalType::Audio),
+        ModuleNode::new(ModuleId::new("mixer"), "audio_mixer")
+            .with_execution_scope(ExecutionScope::Global)
+            .with_mixing_input(builtin_ports::INPUTS, SignalType::Audio)
+            .with_output(builtin_ports::MIX, SignalType::Audio),
+        ModuleNode::new(ModuleId::new("out"), "audio_output")
+            .with_execution_scope(ExecutionScope::Global)
+            .with_input(builtin_ports::LEFT, SignalType::Audio)
+            .with_input(builtin_ports::RIGHT, SignalType::Audio),
+    ];
+
+    let cables = vec![
+        Cable::new(
+            PortRef::new(ModuleId::new("midi"), builtin_ports::EVENTS),
+            PortRef::new(ModuleId::new("adsr"), builtin_ports::GATE),
+        ),
+        Cable::new(
+            PortRef::new(ModuleId::new("osc"), builtin_ports::AUDIO),
+            PortRef::new(ModuleId::new("vca"), builtin_ports::AUDIO_IN),
+        ),
+        Cable::new(
+            PortRef::new(ModuleId::new("adsr"), builtin_ports::VALUE),
+            PortRef::new(ModuleId::new("vca"), builtin_ports::GAIN),
+        ),
+        Cable::new(
+            PortRef::new(ModuleId::new("vca"), builtin_ports::AUDIO_OUT),
+            PortRef::new(ModuleId::new("mixer"), builtin_ports::INPUTS),
+        ),
+        Cable::new(
+            PortRef::new(ModuleId::new("mixer"), builtin_ports::MIX),
+            PortRef::new(ModuleId::new("out"), builtin_ports::LEFT),
+        ),
+    ];
+
+    let graph = Graph::new(modules, cables);
+    graph.validate().expect("graph should validate");
+
+    const SAMPLE_RATE: f32 = 1000.0;
+    const BLOCK_SIZE: usize = 16;
+
+    let mut processor = RealtimeGraphProcessor::polyphonic_with_sampler_assets_and_max_block_size(
+        graph,
+        SAMPLE_RATE,
+        &PreparedSamplerAssets::empty(),
+        &poly_allocation(1),
+        BLOCK_SIZE,
+    );
+
+    let mut left = [0.0; BLOCK_SIZE];
+    let mut right = [0.0; BLOCK_SIZE];
+
+    assert!(
+        processor.is_finished(),
+        "a freshly constructed processor with no active notes should report finished"
+    );
+
+    processor.note_on_at(60, 100, 0);
+    processor.render(&mut left, &mut right);
+    assert!(
+        !processor.is_finished(),
+        "a held gate should report unfinished even once the envelope has decayed to sustain"
+    );
+
+    processor.note_off_at(60, 0);
+    processor.render(&mut left, &mut right);
+    assert!(
+        processor.is_finished(),
+        "releasing the only active voice should report finished once the release phase completes"
+    );
+}
+
+#[test]
 fn adsr_release_duration_matches_default_release_time() {
     // Direct unit test of process_adsr release phase duration.
     // Default release = 200ms. At 48kHz that's 9600 frames.
@@ -4626,6 +4724,72 @@ fn decay_module_stays_silent_until_its_trigger_frame_offset() {
     }
     assert_eq!(values[20], 1.0, "decay should jump to peak on its trigger frame");
     assert!(values[21] < 1.0, "decay should begin falling after the trigger frame");
+}
+
+#[test]
+fn decay_module_linear_curve_ramps_down_and_resets_when_fully_decayed() {
+    let mut state = PerModuleState::Decay {
+        level: 0.0,
+        triggered: false,
+        elapsed_frames: 0,
+        decay_frames: 10.0,
+        curve: crate::decay::DecayCurve::Linear,
+    };
+
+    let events = [super::outputs::BlockEvent {
+        frame_offset: 0,
+        event: ScriptEvent::NoteOn {
+            note: 60,
+            velocity: 100,
+        },
+    }];
+
+    let outputs = super::processing::process_decay(&mut state, &events, 15);
+    let values = &outputs.control[builtin_ports::VALUE];
+
+    assert_eq!(values[0], 1.0, "decay should start at peak on its trigger frame");
+    for window in values[..11].windows(2) {
+        assert!(
+            window[1] <= window[0],
+            "linear decay should be monotonically non-increasing: {:?}",
+            &values[..11]
+        );
+    }
+    for (i, value) in values[10..].iter().enumerate() {
+        assert_eq!(
+            *value,
+            0.0,
+            "decay should reach and hold exact zero once fully elapsed (frame {})",
+            10 + i
+        );
+    }
+
+    match state {
+        PerModuleState::Decay {
+            level, triggered, ..
+        } => {
+            assert_eq!(level, 0.0, "state should retain zero level after full decay");
+            assert!(
+                !triggered,
+                "triggered flag should reset once the decay fully completes"
+            );
+        }
+        _ => unreachable!(),
+    }
+
+    // A fully-decayed module should be retriggerable, not stuck.
+    let retrigger_events = [super::outputs::BlockEvent {
+        frame_offset: 0,
+        event: ScriptEvent::NoteOn {
+            note: 60,
+            velocity: 100,
+        },
+    }];
+    let retrigger_outputs = super::processing::process_decay(&mut state, &retrigger_events, 1);
+    assert_eq!(
+        retrigger_outputs.control[builtin_ports::VALUE][0], 1.0,
+        "a fully-decayed module should jump back to peak when retriggered"
+    );
 }
 
 #[test]
