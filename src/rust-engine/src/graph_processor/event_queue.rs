@@ -11,7 +11,7 @@ pub(super) struct EventQueueOverflow {
 pub(super) type EventQueueResult<T> = Result<T, EventQueueOverflow>;
 
 pub(super) struct BoundedEventQueue {
-    events: Vec<ScriptEvent>,
+    events: Vec<BlockEvent>,
     dropped_events: usize,
 }
 
@@ -36,6 +36,17 @@ impl BoundedEventQueue {
     }
 
     pub(super) fn push(&mut self, event: ScriptEvent) -> EventQueueResult<()> {
+        self.push_at(event, 0)
+    }
+
+    pub(super) fn push_at(&mut self, event: ScriptEvent, frame_offset: u32) -> EventQueueResult<()> {
+        self.push_block_event(BlockEvent {
+            frame_offset,
+            event,
+        })
+    }
+
+    fn push_block_event(&mut self, event: BlockEvent) -> EventQueueResult<()> {
         if self.events.len() == self.events.capacity() {
             self.dropped_events += 1;
             return Err(EventQueueOverflow {
@@ -50,10 +61,7 @@ impl BoundedEventQueue {
     pub(super) fn drain_into_buffer(&mut self, dest: &mut [BlockEvent]) -> usize {
         let count = self.events.len().min(dest.len());
         for (i, event) in self.events.drain(..count).enumerate() {
-            dest[i] = BlockEvent {
-                frame_offset: 0,
-                event,
-            };
+            dest[i] = event;
         }
         let remaining = self.events.len();
         self.dropped_events += remaining;
@@ -62,25 +70,14 @@ impl BoundedEventQueue {
     }
 
     pub(super) fn drain_into_vec(&mut self, dest: &mut Vec<BlockEvent>) {
-        for event in self.events.drain(..) {
-            dest.push(BlockEvent {
-                frame_offset: 0,
-                event,
-            });
-        }
+        dest.extend(self.events.drain(..));
     }
 }
 
 #[cfg(test)]
 impl BoundedEventQueue {
     pub(super) fn drain_block_events(&mut self) -> Vec<BlockEvent> {
-        self.events
-            .drain(..)
-            .map(|event| BlockEvent {
-                frame_offset: 0,
-                event,
-            })
-            .collect()
+        self.events.drain(..).collect()
     }
 }
 
@@ -153,7 +150,7 @@ impl PreparedEventQueues {
 
         let (source, destination) = self.queue_pair(edge.source, edge.destination)?;
         for event in source.events.iter().cloned() {
-            destination.push(event)?;
+            destination.push_at(event.event, event.frame_offset)?;
         }
 
         Ok(())
@@ -238,6 +235,40 @@ mod tests {
         assert_eq!(events.len(), 2);
         assert_eq!(events[0].frame_offset, 0);
         assert_eq!(events[1].frame_offset, 0);
+    }
+
+    #[test]
+    fn push_at_preserves_non_zero_frame_offset_through_drain() {
+        let mut queue = BoundedEventQueue::with_capacity(2);
+        queue
+            .push_at(ScriptEvent::NoteOn { note: 60, velocity: 100 }, 37)
+            .unwrap();
+        queue.push_at(ScriptEvent::NoteOff { note: 60 }, 41).unwrap();
+
+        let events = queue.drain_block_events();
+
+        assert_eq!(events[0].frame_offset, 37);
+        assert_eq!(events[1].frame_offset, 41);
+    }
+
+    #[test]
+    fn route_event_edge_preserves_frame_offset_across_queues() {
+        let mut queues = PreparedEventQueues::new(2, 4);
+        queues
+            .queue_mut(0)
+            .unwrap()
+            .push_at(ScriptEvent::NoteOn { note: 60, velocity: 100 }, 9)
+            .unwrap();
+
+        queues
+            .route_event_edge(CompiledEventEdge {
+                source: EventQueueId(0),
+                destination: EventQueueId(1),
+            })
+            .unwrap();
+
+        let routed = queues.queue(1).unwrap().drain_block_events();
+        assert_eq!(routed[0].frame_offset, 9);
     }
 
     #[test]

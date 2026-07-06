@@ -69,6 +69,16 @@ if (handle_incoming_midi_body MATCHES "std::cout|std::cerr")
     message(FATAL_ERROR "MidiToRustEngine::handleIncomingMidiMessage contains callback-unsafe console IO")
 endif()
 
+read_source_relative(plugin_processor_source "src/juce-plugin/PluginProcessor.cpp")
+extract_function_body(
+    plugin_process_block_body
+    "${plugin_processor_source}"
+    "void DandrumAudioProcessor::processBlock")
+
+if (plugin_process_block_body MATCHES "ScopedLock|CriticalSection|std::cout|std::cerr|new |malloc|dandrum_engine_load_patch|dandrum_engine_prepare|dandrum_engine_create|dandrum_engine_destroy")
+    message(FATAL_ERROR "DandrumAudioProcessor::processBlock contains callback-unsafe locking, allocation, console IO, or engine lifecycle/loading calls")
+endif()
+
 read_source_relative(main_source "src/juce-wrapper/Main.cpp")
 string(FIND "${main_source}" "defaultPatchPath(" default_patch_pos)
 if (default_patch_pos EQUAL -1)

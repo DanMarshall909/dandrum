@@ -1,25 +1,25 @@
 ## 0. Reference Review
 
-- [ ] 0.1 Review `https://github.com/nberr/juce-template` before implementation.
-- [ ] 0.2 Identify reusable JUCE plugin structure, CMake, parameter, preset, state, and UI component patterns.
-- [ ] 0.3 Explicitly exclude template features that conflict with Dandrum v1 scope, including embedded React UI, website preset sharing, registration/licensing flows, and unrelated DSP architecture.
-- [ ] 0.4 Capture any adopted patterns in the implementation notes or relevant code comments before applying them.
+- [x] 0.1 Review `https://github.com/nberr/juce-template` before implementation.
+- [x] 0.2 Identify reusable JUCE plugin structure, CMake, parameter, preset, state, and UI component patterns.
+- [x] 0.3 Explicitly exclude template features that conflict with Dandrum v1 scope, including embedded React UI, website preset sharing, registration/licensing flows, and unrelated DSP architecture.
+- [x] 0.4 Capture any adopted patterns in the implementation notes or relevant code comments before applying them.
 
 ## 1. Plugin Target
 
-- [ ] 1.1 Add a `dandrum-plugin` JUCE target with VST3, AU, and Standalone formats.
-- [ ] 1.2 Keep the existing `dandrum-beep` console app as the smoke-test/debug harness.
-- [ ] 1.3 Add `src/juce-plugin/PluginProcessor.*` and `src/juce-plugin/PluginEditor.*`.
-- [ ] 1.4 Link the plugin target to the existing Rust static library import.
-- [ ] 1.5 Add a minimal plugin construction test or host-smoke test where practical.
+- [x] 1.1 Add a `dandrum-plugin` JUCE target with VST3, AU, and Standalone formats.
+- [x] 1.2 Keep the existing console app (`dandrum-drum-machine-demo`) as the smoke-test/debug harness.
+- [x] 1.3 Add `src/juce-plugin/PluginProcessor.*` and `src/juce-plugin/PluginEditor.*`.
+- [x] 1.4 Link the plugin target to the existing Rust static library import.
+- [x] 1.5 Add a minimal plugin construction test or host-smoke test where practical.
 
 ## 2. Plugin Processor
 
-- [ ] 2.1 Implement a `DandrumAudioProcessor` that owns the plugin lifecycle.
-- [ ] 2.2 Implement `prepareToPlay` to prepare the Rust engine with sample rate and max block size.
-- [ ] 2.3 Implement `processBlock` with no locks, allocation, file I/O, YAML parsing, sample loading, graph compilation, or logging.
-- [ ] 2.4 Clear unused output channels deterministically.
-- [ ] 2.5 Keep stereo rendering as the v1 output model.
+- [x] 2.1 Implement a `DandrumAudioProcessor` that owns the plugin lifecycle.
+- [x] 2.2 Implement `prepareToPlay` to prepare the Rust engine with sample rate and max block size.
+- [x] 2.3 Implement `processBlock` with no locks, allocation, file I/O, YAML parsing, sample loading, graph compilation, or logging.
+- [x] 2.4 Clear unused output channels deterministically.
+- [x] 2.5 Keep stereo rendering as the v1 output model.
 
 ## 3. Immutable Instrument Loading
 
@@ -55,11 +55,11 @@
 
 ## 7. Sample-Accurate MIDI
 
-- [ ] 7.1 Add FFI methods for `note_on_at` and `note_off_at` with frame offsets.
-- [ ] 7.2 Store incoming MIDI as bounded pending `BlockEvent` values in Rust.
-- [ ] 7.3 Decode JUCE `MidiBuffer` sample offsets in `processBlock`.
-- [ ] 7.4 Forward note on/off events to Rust with their block-local frame offsets.
-- [ ] 7.5 Add tests proving non-zero MIDI frame offsets are preserved.
+- [x] 7.1 Add FFI methods for `note_on_at` and `note_off_at` with frame offsets.
+- [x] 7.2 Store incoming MIDI as bounded pending `BlockEvent` values in Rust.
+- [x] 7.3 Decode JUCE `MidiBuffer` sample offsets in `processBlock`.
+- [x] 7.4 Forward note on/off events to Rust with their block-local frame offsets.
+- [x] 7.5 Add tests proving non-zero MIDI frame offsets are preserved.
 
 ## 8. State Persistence
 
@@ -79,12 +79,12 @@
 
 ## 10. Tests and Safety Checks
 
-- [ ] 10.1 Add Rust tests for sample-accurate event submission.
+- [x] 10.1 Add Rust tests for sample-accurate event submission.
 - [ ] 10.2 Add Rust tests for public parameter mapping.
-- [ ] 10.3 Add C++/CTest coverage for FFI plugin-facing operations.
-- [ ] 10.4 Add plugin processor tests where JUCE test infrastructure allows.
-- [ ] 10.5 Extend realtime callback safety checks to include plugin `processBlock` sources.
-- [ ] 10.6 Verify existing Rust and CMake/CTest suites still pass.
+- [x] 10.3 Add C++/CTest coverage for FFI plugin-facing operations.
+- [x] 10.4 Add plugin processor tests where JUCE test infrastructure allows.
+- [x] 10.5 Extend realtime callback safety checks to include plugin `processBlock` sources.
+- [x] 10.6 Verify existing Rust and CMake/CTest suites still pass.
 
 ## 11. Documentation
 

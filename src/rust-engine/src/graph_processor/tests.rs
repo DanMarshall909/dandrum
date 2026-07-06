@@ -1027,6 +1027,46 @@ fn sampler_trigger_event_starts_sample_playback_at_event_frame() {
 }
 
 #[test]
+fn realtime_note_on_at_triggers_sample_playback_at_frame_offset() {
+    let graph = sampler_graph(Vec::new(), Vec::new());
+    let assets = sampler_assets(vec![0.25, 0.5, 0.75]);
+    let mut processor = RealtimeGraphProcessor::polyphonic_with_sampler_assets_and_max_block_size(
+        graph,
+        48_000.0,
+        &assets,
+        &VoiceAllocation::default(),
+        6,
+    );
+    let mut left = vec![0.0; 6];
+    let mut right = vec![0.0; 6];
+
+    processor.note_on_at(60, 100, 2);
+    processor.render(&mut left, &mut right);
+
+    assert_eq!(left, vec![0.0, 0.0, 0.25, 0.5, 0.75, 0.0]);
+    assert_eq!(right, vec![0.0; 6]);
+}
+
+#[test]
+fn realtime_note_off_at_accepts_a_frame_offset_without_panicking() {
+    let graph = sampler_graph(Vec::new(), Vec::new());
+    let assets = sampler_assets(vec![0.25, 0.5, 0.75]);
+    let mut processor = RealtimeGraphProcessor::polyphonic_with_sampler_assets_and_max_block_size(
+        graph,
+        48_000.0,
+        &assets,
+        &VoiceAllocation::default(),
+        6,
+    );
+    let mut left = vec![0.0; 6];
+    let mut right = vec![0.0; 6];
+
+    processor.note_on_at(60, 100, 0);
+    processor.note_off_at(60, 4);
+    processor.render(&mut left, &mut right);
+}
+
+#[test]
 fn sampler_ignores_trigger_velocity_payload_for_amplitude() {
     let graph = sampler_graph(Vec::new(), Vec::new());
     let assets = sampler_assets(vec![0.25, 0.5, 0.75]);

@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.22)
 
-project(Dandrum VERSION 0.1.0 LANGUAGES CXX)
+project(Dandrum VERSION 0.1.0 LANGUAGES C CXX)
 
 enable_testing()
 
@@ -61,6 +61,19 @@ target_link_libraries(dandrum-ffi-smoke
         m)
 add_test(NAME cxx-rust-engine-ffi-smoke COMMAND dandrum-ffi-smoke)
 
+add_executable(dandrum-sample-accurate-midi-smoke
+    tests/cpp/RustEngineSampleAccurateMidiSmoke.cpp)
+target_include_directories(dandrum-sample-accurate-midi-smoke
+    PRIVATE
+        src/juce-wrapper)
+target_link_libraries(dandrum-sample-accurate-midi-smoke
+    PRIVATE
+        dandrum_engine
+        dl
+        pthread
+        m)
+add_test(NAME cxx-rust-engine-sample-accurate-midi-smoke COMMAND dandrum-sample-accurate-midi-smoke)
+
 add_test(
     NAME realtime-callback-safety
     COMMAND ${CMAKE_COMMAND}
@@ -95,6 +108,63 @@ target_link_libraries(dandrum-drum-machine-demo
         juce::juce_recommended_config_flags
         juce::juce_recommended_lto_flags
         juce::juce_recommended_warning_flags)
+
+juce_add_plugin(dandrum-plugin
+    PLUGIN_MANUFACTURER_CODE Dndr
+    PLUGIN_CODE Dndm
+    FORMATS AU VST3 Standalone
+    IS_SYNTH TRUE
+    NEEDS_MIDI_INPUT TRUE
+    NEEDS_MIDI_OUTPUT FALSE
+    PRODUCT_NAME "Dandrum")
+
+target_sources(dandrum-plugin
+    PRIVATE
+        src/juce-plugin/PluginEditor.cpp
+        src/juce-plugin/PluginProcessor.cpp)
+
+target_include_directories(dandrum-plugin
+    PRIVATE
+        src/juce-wrapper)
+
+target_compile_definitions(dandrum-plugin
+    PRIVATE
+        JUCE_USE_CURL=0
+        JUCE_WEB_BROWSER=0)
+
+target_link_libraries(dandrum-plugin
+    PRIVATE
+        dandrum_engine
+        juce::juce_audio_basics
+        juce::juce_audio_processors
+        juce::juce_audio_utils
+    PUBLIC
+        juce::juce_recommended_config_flags
+        juce::juce_recommended_lto_flags
+        juce::juce_recommended_warning_flags)
+
+add_executable(dandrum-plugin-construction-test
+    tests/cpp/PluginConstructionTest.cpp)
+target_include_directories(dandrum-plugin-construction-test
+    PRIVATE
+        src/juce-wrapper
+        src/juce-plugin)
+target_compile_definitions(dandrum-plugin-construction-test
+    PRIVATE
+        JUCE_USE_CURL=0
+        JUCE_WEB_BROWSER=0)
+target_link_libraries(dandrum-plugin-construction-test
+    PRIVATE
+        dandrum-plugin
+        dandrum_engine
+        juce::juce_audio_basics
+        juce::juce_audio_processors
+        juce::juce_audio_utils
+    PUBLIC
+        juce::juce_recommended_config_flags
+        juce::juce_recommended_lto_flags
+        juce::juce_recommended_warning_flags)
+add_test(NAME cxx-plugin-construction COMMAND dandrum-plugin-construction-test)
 
 add_executable(dandrum-drum-loop-pattern-test
     tests/cpp/DrumLoopPatternTest.cpp)

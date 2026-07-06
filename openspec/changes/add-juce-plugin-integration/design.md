@@ -208,6 +208,20 @@ The plugin integration should extend the C FFI with explicit host-facing operati
 
 String-heavy operations and metadata queries are editor/background-thread operations only.
 
+## Reference Review Notes
+
+Reviewed `https://github.com/nberr/juce-template` (task 0). It is a Projucer-based template, not CMake-based, so its build structure is not reused directly — Dandrum keeps its existing CMake + `add_subdirectory(third_party/JUCE)` approach, consistent with the `dandrum-drum-machine-demo` console app target.
+
+Adopted pattern:
+- A generic `Parameter*` control wrapper (e.g. `ParameterSlider`) that binds one JUCE control to one stable `AudioProcessorValueTreeState` parameter ID. This matches the plan to generate one control per declared `preset_surface.parameters` entry (section 4).
+
+Explicitly not adopted (out of Dandrum v1 scope per proposal "Out of Scope"):
+- `react-juce` embedded web UI.
+- `Assets/Registration` / license-server / key-generator flows.
+- Preset "overlay" screens tied to a hosted preset-sharing service.
+- Installer packaging scripts and Max/Python prototype tooling.
+- The template's own bundled Rust DSP crate layout — Dandrum already has its own `src/rust-engine` crate and C FFI (`RustEngineBindings.h`), which stays as the integration boundary.
+
 ## Open Questions
 
 - Should the initial plugin require selecting an instrument before the `AudioProcessorValueTreeState` layout is created, or should v1 ship with a bundled default instrument to establish an initial surface?

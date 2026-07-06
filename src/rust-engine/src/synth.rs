@@ -329,17 +329,25 @@ impl DandrumEngine {
     }
 
     pub fn note_on(&mut self, note: u8, velocity: u8) {
+        self.note_on_at(note, velocity, 0);
+    }
+
+    pub fn note_off(&mut self, note: u8) {
+        self.note_off_at(note, 0);
+    }
+
+    pub fn note_on_at(&mut self, note: u8, velocity: u8, frame_offset: u32) {
         if let Some(gp) = &mut self.graph_processor {
-            gp.note_on(note, velocity);
+            gp.note_on_at(note, velocity, frame_offset);
             return;
         }
 
         self.fallback.note_on(note, velocity);
     }
 
-    pub fn note_off(&mut self, note: u8) {
+    pub fn note_off_at(&mut self, note: u8, frame_offset: u32) {
         if let Some(gp) = &mut self.graph_processor {
-            gp.note_off(note);
+            gp.note_off_at(note, frame_offset);
             return;
         }
 

@@ -86,6 +86,29 @@ pub unsafe extern "C" fn dandrum_engine_note_on(
 }
 
 #[unsafe(no_mangle)]
+pub unsafe extern "C" fn dandrum_engine_note_on_at(
+    engine: *mut crate::synth::DandrumEngine,
+    note: u8,
+    velocity: u8,
+    frame_offset: usize,
+) {
+    mut_or!(engine, engine, ());
+
+    engine.note_on_at(note, velocity, frame_offset as u32);
+}
+
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn dandrum_engine_note_off_at(
+    engine: *mut crate::synth::DandrumEngine,
+    note: u8,
+    frame_offset: usize,
+) {
+    mut_or!(engine, engine, ());
+
+    engine.note_off_at(note, frame_offset as u32);
+}
+
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn dandrum_engine_note_off(
     engine: *mut crate::synth::DandrumEngine,
     note: u8,
