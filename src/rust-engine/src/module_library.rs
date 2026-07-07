@@ -24,6 +24,9 @@ pub const BUNDLED_STANDARD_LIBRARY_VERSION: &str = "1.0.0";
 const BUNDLED_DRUM_VOICE_PATH: &str = "drum_voice/drum_voice.yaml";
 const BUNDLED_DRUM_VOICE_YAML: &[u8] =
     include_bytes!("../module-library/1.0.0/drum_voice/drum_voice.yaml");
+const BUNDLED_DRUM_MACHINE_PATH: &str = "drum_machine/drum_machine.yaml";
+const BUNDLED_DRUM_MACHINE_YAML: &[u8] =
+    include_bytes!("../module-library/1.0.0/drum_machine/drum_machine.yaml");
 
 /// One file bundled into a seeded module-library version.
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -102,10 +105,16 @@ pub fn default_standard_library_root() -> Result<PathBuf, ModuleLibrarySeedError
 pub fn bundled_standard_library() -> SeededLibrary {
     SeededLibrary {
         version: BUNDLED_STANDARD_LIBRARY_VERSION.to_string(),
-        files: vec![SeededLibraryFile {
-            path: BUNDLED_DRUM_VOICE_PATH.to_string(),
-            contents: BUNDLED_DRUM_VOICE_YAML.to_vec(),
-        }],
+        files: vec![
+            SeededLibraryFile {
+                path: BUNDLED_DRUM_VOICE_PATH.to_string(),
+                contents: BUNDLED_DRUM_VOICE_YAML.to_vec(),
+            },
+            SeededLibraryFile {
+                path: BUNDLED_DRUM_MACHINE_PATH.to_string(),
+                contents: BUNDLED_DRUM_MACHINE_YAML.to_vec(),
+            },
+        ],
     }
 }
 
@@ -279,7 +288,9 @@ fn io_error(path: &Path, error: io::Error) -> ModuleLibrarySeedError {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::module_package::load_package;
     use crate::module_reference::{self, LIB_MACRO, MacroRoots};
+    use std::collections::BTreeSet;
 
     fn file(path: &str, contents: &[u8]) -> SeededLibraryFile {
         SeededLibraryFile {
@@ -296,16 +307,22 @@ mod tests {
     }
 
     #[test]
-    fn bundled_standard_library_contains_the_drum_voice_package() {
+    fn bundled_standard_library_contains_the_drum_voice_and_drum_machine_packages() {
         let bundled = bundled_standard_library();
+        let paths = bundled
+            .files
+            .iter()
+            .map(|file| file.path.as_str())
+            .collect::<BTreeSet<_>>();
 
         assert_eq!(bundled.version, BUNDLED_STANDARD_LIBRARY_VERSION);
         assert!(
-            bundled
-                .files
-                .iter()
-                .any(|file| file.path == BUNDLED_DRUM_VOICE_PATH && file.contents.starts_with(b"inputs:")),
+            paths.contains(BUNDLED_DRUM_VOICE_PATH),
             "the bundled standard library should carry the drum_voice package entry YAML"
+        );
+        assert!(
+            paths.contains(BUNDLED_DRUM_MACHINE_PATH),
+            "the bundled standard library should carry the drum_machine package entry YAML"
         );
     }
 
@@ -321,6 +338,74 @@ mod tests {
                 .exists(),
             "the bundled drum_voice package should be extracted under the version-first layout"
         );
+        assert!(
+            root.join(BUNDLED_STANDARD_LIBRARY_VERSION)
+                .join(BUNDLED_DRUM_MACHINE_PATH)
+                .exists(),
+            "the bundled drum_machine package should be extracted under the version-first layout"
+        );
+    }
+
+    #[test]
+    fn bundled_drum_machine_exposes_main_and_additional_stereo_outputs() {
+        let root = temp_root("drum-machine");
+        seed_bundled_standard_library(&root).expect("bundled library should seed");
+        let package = load_package(
+            &root
+                .join(BUNDLED_STANDARD_LIBRARY_VERSION)
+                .join(BUNDLED_DRUM_MACHINE_PATH),
+        )
+        .expect("bundled drum_machine package should load");
+        let outputs = package
+            .document()
+            .outputs
+            .iter()
+            .map(|output| output.name.as_str())
+            .collect::<BTreeSet<_>>();
+
+        for expected in [
+            "main_left",
+            "main_right",
+            "kick_left",
+            "kick_right",
+            "snare_left",
+            "snare_right",
+            "hat_left",
+            "hat_right",
+        ] {
+            assert!(
+                outputs.contains(expected),
+                "the bundled drum_machine should expose the {expected} output"
+            );
+        }
+    }
+
+    #[test]
+    fn bundled_drum_machine_routes_voices_to_distinct_output_pairs() {
+        let root = temp_root("drum-machine-routes");
+        seed_bundled_standard_library(&root).expect("bundled library should seed");
+        let package = load_package(
+            &root
+                .join(BUNDLED_STANDARD_LIBRARY_VERSION)
+                .join(BUNDLED_DRUM_MACHINE_PATH),
+        )
+        .expect("bundled drum_machine package should load");
+
+        let routed_sources = package
+            .document()
+            .outputs
+            .iter()
+            .filter_map(|output| {
+                output
+                    .maps_from
+                    .first()
+                    .map(|source| (output.name.as_str(), source.module.as_str()))
+            })
+            .collect::<BTreeSet<_>>();
+
+        assert!(routed_sources.contains(&("kick_left", "kick_vca")));
+        assert!(routed_sources.contains(&("snare_left", "snare_vca")));
+        assert!(routed_sources.contains(&("hat_left", "hat_vca")));
     }
 
     #[test]
@@ -426,9 +511,13 @@ mod tests {
     }
 
     fn temp_root(tag: &str) -> PathBuf {
-        std::env::temp_dir().join(format!(
+        let root = std::env::temp_dir().join(format!(
             "dandrum-module-library-{tag}-{}",
             std::process::id()
-        ))
+        ));
+        if root.exists() {
+            fs::remove_dir_all(&root).expect("stale test root should be removable");
+        }
+        root
     }
 }
