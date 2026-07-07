@@ -9,6 +9,7 @@ Wavetable synthesis is a good fit for that model because the expensive/unsafe wo
 **Goals:**
 
 - Provide a product-neutral `wavetable_oscillator` primitive suitable for bright digital and virtual-analogue synth sounds.
+- Add the small set of missing reusable primitives needed to build wide, moving, aggressive, or glassy synth patches.
 - Support smooth wavetable position morphing, pitch modulation, and audio-rate rendering.
 - Support prepared, validated wavetable assets referenced from YAML patches.
 - Make unison and wide stacked sounds easy to express through reusable composites or patch patterns.
@@ -43,6 +44,23 @@ The oscillator should avoid obvious aliasing by selecting prepared bandlimited t
 
 Alternative considered: read one high-resolution table at every pitch. That is simpler but produces poor results in high notes and makes the synth sound obviously unfinished.
 
+### Add primitives only where composition would otherwise be awkward
+
+The supporting primitive set should stay narrow and behaviour-driven. Add a primitive when it is reusable, realtime-stateful, and awkward to express as YAML composition without either excessive graph size or hidden state.
+
+The first supporting set should be:
+
+- `unison_voice` — renders or fans out a small stack of detuned/spread oscillator voices where doing so as explicit repeated modules would be noisy and CPU-sensitive.
+- `stereo_pan` — equal-power mono-to-stereo placement for width and unison spread.
+- `chorus` — short modulated delay for wide synth ensemble tone.
+- `phase_distortion` — phase-domain waveshaping useful for digital edge, pulse-like motion, and aggressive timbres.
+- `oscillator_sync` — phase-reset/sync utility where direct sync is not built into a specific oscillator.
+- `ring_modulator` — audio-rate multiplication for metallic and bell-like sidebands.
+- `sample_and_hold` — stepped random or sampled modulation.
+- `slew_limiter` — control-signal smoothing for click-free modulation and classic glide-style movement.
+
+If existing primitives already cover one of these behaviours, the implementation task should reuse/extend the existing primitive instead of adding a duplicate module type.
+
 ### Separate oscillator, unison, filter, and effects
 
 The Virus/Nord-like character should come from patch composition:
@@ -50,11 +68,11 @@ The Virus/Nord-like character should come from patch composition:
 ```text
 note events
    -> note_to_control
-   -> wavetable_oscillator x N / unison composite
+   -> wavetable_oscillator x N / unison_voice composite
    -> mixer
    -> filter
    -> VCA controlled by envelope
-   -> chorus / delay / reverb
+   -> stereo_pan / chorus / delay / reverb
    -> audio_output
 ```
 
@@ -90,6 +108,132 @@ Static parameters:
 - `phase_reset_mode` — `free`, `note`, or `trigger` where supported.
 - `anti_aliasing` — `off`, `octave_banks`, or future modes.
 
+### Supporting Primitive Surfaces
+
+#### `unison_voice`
+
+Inputs:
+
+- `frequency` (`control`)
+- `pitch_ratio` (`control`, optional)
+- `position` (`control`, optional, passed to the oscillator source where supported)
+- `gate` or `phase_reset` (`event`, optional)
+
+Outputs:
+
+- `audio_left` (`audio`)
+- `audio_right` (`audio`)
+
+Static parameters:
+
+- `voice_count`
+- `detune_cents`
+- `spread`
+- `level_compensation`
+- `phase_mode`
+- source oscillator reference or nested/composite source strategy, depending on the final graph model
+
+#### `stereo_pan`
+
+Inputs:
+
+- `audio_in` (`audio`)
+- `pan` (`control`)
+- `width` (`control`, optional)
+
+Outputs:
+
+- `audio_left` (`audio`)
+- `audio_right` (`audio`)
+
+#### `chorus`
+
+Inputs:
+
+- `audio_in` (`audio`)
+- `rate_hz` (`control`)
+- `depth_ms` (`control`)
+- `mix` (`control`)
+
+Outputs:
+
+- `audio_left` (`audio`)
+- `audio_right` (`audio`)
+
+Static parameters:
+
+- `base_delay_ms`
+- `feedback`
+- `phase_offset`
+- `max_delay_ms`
+
+#### `phase_distortion`
+
+Inputs:
+
+- `phase` (`control`) or `audio_in` (`audio`), depending on selected mode
+- `amount` (`control`)
+- `symmetry` (`control`, optional)
+
+Outputs:
+
+- `phase_out` (`control`) or `audio_out` (`audio`)
+
+#### `oscillator_sync`
+
+Inputs:
+
+- `master_phase` (`control`) or `master_trigger` (`event`)
+- `slave_phase` (`control`) or `frequency` (`control`)
+
+Outputs:
+
+- `reset` (`event`) or `phase_out` (`control`)
+
+#### `ring_modulator`
+
+Inputs:
+
+- `carrier` (`audio`)
+- `modulator` (`audio`)
+- `mix` (`control`, optional)
+
+Outputs:
+
+- `audio_out` (`audio`)
+
+#### `sample_and_hold`
+
+Inputs:
+
+- `signal_in` (`control`)
+- `trigger` (`event`)
+
+Outputs:
+
+- `control_out` (`control`)
+
+Static parameters:
+
+- `hold_mode`
+- `seed` where random mode is supported
+
+#### `slew_limiter`
+
+Inputs:
+
+- `control_in` (`control`)
+
+Outputs:
+
+- `control_out` (`control`)
+
+Static parameters:
+
+- `rise_ms`
+- `fall_ms`
+- `curve`
+
 ## Wavetable Asset Model
 
 A wavetable asset should resolve to a prepared model with:
@@ -112,12 +256,16 @@ Example patches should expose musically useful public controls rather than inter
 - `osc.position_mod_depth`
 - `osc.detune`
 - `osc.spread`
+- `osc.sync_amount`
+- `osc.phase_distortion_amount`
 - `filter.cutoff_hz`
 - `filter.resonance`
 - `amp.attack_ms`
 - `amp.decay_ms`
 - `amp.sustain`
 - `amp.release_ms`
+- `mod.sample_hold_depth`
+- `mod.slew_ms`
 - `fx.chorus_mix`
 - `fx.delay_mix`
 - `fx.reverb_mix`
@@ -127,15 +275,17 @@ Example patches should expose musically useful public controls rather than inter
 - Wavetable aliasing is easy to get wrong → Start with tested octave-bank bandlimiting or clearly mark naive mode as low-quality/debug only.
 - Asset formats can sprawl → Keep v1 narrow and validation-heavy.
 - Smooth modulation can hide state bugs → Test position sweeps and phase continuity directly.
-- Unison can become CPU-heavy → Express unison as a composite first, then introduce a primitive only if profiling shows it is needed.
+- Unison can become CPU-heavy → Express unison as a composite first where possible, then introduce/optimize a primitive only if profiling shows it is needed.
+- Supporting primitives can duplicate existing modules → Reuse existing modules where the behaviour already exists and only add missing primitives.
 - Branded references can create false expectations → Use product names only as inspiration in design notes, never as compatibility claims.
 
 ## Migration Plan
 
-1. Add OpenSpec coverage for wavetable assets and `wavetable_oscillator` behaviour.
-2. Add module registry metadata for `wavetable_oscillator` with typed ports and parameter declarations.
+1. Add OpenSpec coverage for wavetable assets, `wavetable_oscillator`, and supporting primitives.
+2. Add module registry metadata for each new primitive with typed ports and parameter declarations.
 3. Add validation for wavetable asset references and unsupported/invalid asset formats.
 4. Implement deterministic wavetable preparation off the audio thread.
 5. Implement realtime-safe oscillator rendering with no steady-state allocation.
-6. Add example patches/presets for wide lead, evolving pad, pluck, and bass sounds.
-7. Add spectral/aliasing comparison tests or fixtures once the basic render behaviour is stable.
+6. Implement supporting primitives in priority order: `stereo_pan`, `slew_limiter`, `sample_and_hold`, `ring_modulator`, `phase_distortion`, `chorus`, `oscillator_sync`, `unison_voice`.
+7. Add example patches/presets for wide lead, evolving pad, pluck, and bass sounds.
+8. Add spectral/aliasing comparison tests or fixtures once the basic render behaviour is stable.
