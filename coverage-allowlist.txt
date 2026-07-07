@@ -11,3 +11,7 @@
 strict src/rust-engine/src/voice_allocator.rs
 strict src/rust-engine/src/graph_composite.rs
 strict src/rust-engine/src/patch_composite.rs
+
+allow src/rust-engine/src/patch_composite.rs:262 closing brace of an if-let block whose matched-and-valid default path is exercised by composite_definition_accepts_public_ports_and_instance_bindings; llvm-cov region artifact
+allow src/rust-engine/src/patch_composite.rs:467 closing brace of the recursion for-loop exercised by composite_definitions_reject_recursive_definitions; llvm-cov region artifact
+allow src/rust-engine/src/patch_composite.rs:588 defensive empty-reference guard; validate_port_reference already rejects empty module_id/port_name upstream so the validated YAML surface cannot reach it

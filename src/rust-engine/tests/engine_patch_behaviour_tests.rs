@@ -415,3 +415,408 @@ modules: []
         "preset document cannot declare structural field modules",
     );
 }
+
+#[test]
+fn composite_definitions_reject_missing_and_duplicate_module_types() {
+    let diagnostics = diagnostics_for_invalid_patch(
+        r#"
+metadata:
+  name: Bad Composite Types
+render:
+  sample_rate_hz: 48000
+  block_size_frames: 64
+  duration_frames: 64
+module_definitions:
+  - type: ""
+    modules:
+      - id: body
+        type: gain
+  - type: dup.macro
+    modules:
+      - id: body
+        type: gain
+  - type: dup.macro
+    modules:
+      - id: body
+        type: gain
+modules:
+  - id: macro
+    type: dup.macro
+"#,
+    );
+
+    assert_diagnostic_contains(
+        &diagnostics,
+        error_codes::VALIDATION_MISSING_FIELD,
+        "composite module type is required",
+    );
+    assert_diagnostic_contains(
+        &diagnostics,
+        error_codes::VALIDATION_INVALID_VALUE,
+        "duplicate composite module type: dup.macro",
+    );
+}
+
+#[test]
+fn composite_definitions_reject_missing_port_names() {
+    let diagnostics = diagnostics_for_invalid_patch(
+        r#"
+metadata:
+  name: Composite Missing Port Names
+render:
+  sample_rate_hz: 48000
+  block_size_frames: 64
+  duration_frames: 64
+module_definitions:
+  - type: test.unnamed_ports
+    inputs:
+      - name: ""
+        signal_type: audio
+        maps_to: []
+    outputs:
+      - name: ""
+        signal_type: audio
+        maps_from: []
+    modules:
+      - id: body
+        type: gain
+modules:
+  - id: macro
+    type: test.unnamed_ports
+"#,
+    );
+
+    assert_diagnostic_contains(
+        &diagnostics,
+        error_codes::VALIDATION_MISSING_FIELD,
+        "input name is required",
+    );
+    assert_diagnostic_contains(
+        &diagnostics,
+        error_codes::VALIDATION_MISSING_FIELD,
+        "output name is required",
+    );
+}
+
+#[test]
+fn composite_definitions_reject_recursive_definitions() {
+    let diagnostics = diagnostics_for_invalid_patch(
+        r#"
+metadata:
+  name: Recursive Composites
+render:
+  sample_rate_hz: 48000
+  block_size_frames: 64
+  duration_frames: 64
+module_definitions:
+  - type: macro.a
+    modules:
+      - id: inner
+        type: macro.b
+  - type: macro.b
+    modules:
+      - id: inner
+        type: macro.a
+modules:
+  - id: root
+    type: macro.a
+"#,
+    );
+
+    assert_diagnostic_contains(
+        &diagnostics,
+        error_codes::VALIDATION_INVALID_VALUE,
+        "recursive composite definition",
+    );
+}
+
+#[test]
+fn composite_parameter_type_names_appear_in_diagnostics() {
+    let diagnostics = diagnostics_for_invalid_patch(
+        r#"
+metadata:
+  name: Composite Type Names
+render:
+  sample_rate_hz: 48000
+  block_size_frames: 64
+  duration_frames: 64
+module_definitions:
+  - type: test.type_names
+    parameters:
+      - name: wants_string
+        type: string
+        default: 5
+      - name: wants_number
+        type: number
+        default: true
+      - name: bool_ranged
+        type: boolean
+        min: 0
+        max: 1
+      - name: ok_num
+        type: number
+        default: 0.5
+        value: 0.6
+        min: 0
+        max: 1
+    modules: []
+modules:
+  - id: macro
+    type: test.type_names
+"#,
+    );
+
+    assert_diagnostic_contains(
+        &diagnostics,
+        error_codes::VALIDATION_TYPE_MISMATCH,
+        "parameter wants_string default has wrong type: expected string, got number",
+    );
+    assert_diagnostic_contains(
+        &diagnostics,
+        error_codes::VALIDATION_TYPE_MISMATCH,
+        "parameter wants_number default has wrong type: expected number, got boolean",
+    );
+    assert_diagnostic_contains(
+        &diagnostics,
+        error_codes::VALIDATION_INVALID_VALUE,
+        "parameter bool_ranged has numeric constraints on a boolean parameter",
+    );
+}
+
+#[test]
+fn composite_mapping_resolves_built_in_internal_ports() {
+    let diagnostics = diagnostics_for_invalid_patch(
+        r#"
+metadata:
+  name: Composite Built-in Ports
+render:
+  sample_rate_hz: 48000
+  block_size_frames: 64
+  duration_frames: 64
+module_definitions:
+  - type: macro.gain
+    inputs:
+      - name: in
+        signal_type: audio
+        maps_to:
+          - body.audio_in
+      - name: bad_dir
+        signal_type: audio
+        maps_to:
+          - body.audio_out
+      - name: mismatch
+        signal_type: audio
+        maps_to:
+          - body.gain
+      - name: missing
+        signal_type: audio
+        maps_to:
+          - body.ghost_port
+    outputs:
+      - name: out
+        signal_type: audio
+        maps_from:
+          - body.audio_out
+    modules:
+      - id: body
+        type: gain
+modules:
+  - id: macro
+    type: macro.gain
+"#,
+    );
+
+    assert_diagnostic_contains(
+        &diagnostics,
+        error_codes::VALIDATION_INVALID_VALUE,
+        "input bad_dir maps_to body.audio_out must reference an internal input port",
+    );
+    assert_diagnostic_contains(
+        &diagnostics,
+        error_codes::VALIDATION_TYPE_MISMATCH,
+        "input mismatch maps_to body.gain has incompatible signal types",
+    );
+}
+
+#[test]
+fn composite_mapping_reports_wrong_direction_for_custom_and_built_in_internals() {
+    let diagnostics = diagnostics_for_invalid_patch(
+        r#"
+metadata:
+  name: Composite Mixed Internals
+render:
+  sample_rate_hz: 48000
+  block_size_frames: 64
+  duration_frames: 64
+module_definitions:
+  - type: macro.mixed
+    inputs:
+      - name: a
+        signal_type: audio
+        maps_to:
+          - custom.unknown_in
+      - name: b
+        signal_type: audio
+        maps_to:
+          - custom.audio_out
+    outputs:
+      - name: y
+        signal_type: audio
+        maps_from:
+          - gainmod.audio_in
+    modules:
+      - id: custom
+        type: test.custom
+        inputs:
+          - name: audio_in
+            signal_type: audio
+        outputs:
+          - name: audio_out
+            signal_type: audio
+      - id: gainmod
+        type: gain
+modules:
+  - id: macro
+    type: macro.mixed
+"#,
+    );
+
+    assert_diagnostic_contains(
+        &diagnostics,
+        error_codes::VALIDATION_INVALID_VALUE,
+        "input b maps_to custom.audio_out must reference an internal input port",
+    );
+    assert_diagnostic_contains(
+        &diagnostics,
+        error_codes::VALIDATION_INVALID_VALUE,
+        "output y maps_from gainmod.audio_in must reference an internal output port",
+    );
+}
+
+#[test]
+fn composite_mapping_tolerates_unknown_internal_module_and_port() {
+    // Mappings to a missing internal module or an unknown internal port are
+    // silently ignored at schema validation (they surface later at graph build),
+    // so the composite public surface still validates.
+    let patch = load_patch_str(
+        r#"
+metadata:
+  name: Composite Unknown Internals
+render:
+  sample_rate_hz: 48000
+  block_size_frames: 64
+  duration_frames: 64
+module_definitions:
+  - type: macro.tolerant
+    inputs:
+      - name: to_missing_module
+        signal_type: audio
+        maps_to:
+          - ghost.audio_in
+      - name: to_missing_port
+        signal_type: audio
+        maps_to:
+          - body.no_such_port
+    modules:
+      - id: body
+        type: gain
+modules:
+  - id: macro
+    type: macro.tolerant
+"#,
+    )
+    .expect("patch should parse");
+
+    validate_patch_schema(&patch)
+        .expect("mappings to unknown internal module/port are tolerated at schema validation");
+}
+
+#[test]
+fn composite_asset_binding_unset_on_instance_is_skipped() {
+    let patch = load_patch_str(
+        r#"
+metadata:
+  name: Composite Optional Asset
+render:
+  sample_rate_hz: 48000
+  block_size_frames: 64
+  duration_frames: 64
+module_definitions:
+  - type: test.optional_asset
+    asset_bindings:
+      - name: hit
+    modules:
+      - id: body
+        type: gain
+modules:
+  - id: without_asset
+    type: test.optional_asset
+"#,
+    )
+    .expect("patch should parse");
+
+    validate_patch_schema(&patch)
+        .expect("an instance that omits an optional asset binding should validate");
+}
+
+#[test]
+fn composite_optional_parameter_without_value_is_skipped_during_expansion() {
+    // A composite parameter with no literal value and no default that the
+    // instance also leaves unset must be skipped during graph expansion rather
+    // than injecting an empty value.
+    let patch = load_patch_str(
+        r#"
+metadata:
+  name: Composite Optional Parameter
+render:
+  sample_rate_hz: 48000
+  block_size_frames: 128
+  duration_frames: 256
+module_definitions:
+  - type: macro.voice
+    inputs:
+      - name: audio
+        signal_type: audio
+        maps_to:
+          - body.audio_in
+    outputs:
+      - name: audio
+        signal_type: audio
+        maps_from:
+          - body.audio_out
+    parameters:
+      - name: drive
+        type: number
+        maps_to:
+          - body.gain
+    modules:
+      - id: body
+        type: gain
+modules:
+  - id: source
+    type: oscillator
+  - id: voice
+    type: macro.voice
+  - id: mixer
+    type: audio_mixer
+  - id: out
+    type: audio_output
+connections:
+  - from: source.audio
+    to: voice.audio
+  - from: voice.audio
+    to: mixer.inputs
+  - from: mixer.mix
+    to: out.left
+  - from: mixer.mix
+    to: out.right
+"#,
+    )
+    .expect("patch should parse");
+
+    // The instance `voice` never sets `drive`, and the binding has no default.
+    let graph = dandrum_engine::graph::Graph::from_patch_declarations(&patch);
+    graph
+        .validate()
+        .expect("expanded graph should validate with the unset composite parameter skipped");
+}
