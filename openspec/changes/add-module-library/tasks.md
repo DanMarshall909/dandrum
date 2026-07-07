@@ -10,9 +10,11 @@
 
 ## 1. Macro roots and reference resolution
 
-- [ ] 1.1 Introduce configurable macro roots (`$LIB`, `$USER_LIB`) with engine/host defaults, exposed as constants (no hardcoded literals), and a resolver that expands a `$MACRO/...` path to an absolute path.
-- [ ] 1.2 Make an unknown macro a hard error during preparation, with a clear diagnostic; add path-escape (`..`) rejection so references stay within their macro root and package root.
-- [ ] 1.3 Detect a `type` beginning with `$` as an external module reference (vs built-in type name / inline defined-module type) during patch parsing/preparation.
+- [x] 1.1 Introduce configurable macro roots (`$LIB`, `$USER_LIB`) with engine/host defaults, exposed as constants (no hardcoded literals), and a resolver that expands a `$MACRO/...` path to an absolute path. Implemented in `module_reference.rs` (`MacroRoots`, `resolve`, `LIB_MACRO`/`USER_LIB_MACRO` constants).
+- [x] 1.2 Make an unknown macro a hard error during preparation, with a clear diagnostic; add path-escape (`..`) rejection so references stay within their macro root and package root. `ModuleReferenceError::{UnknownMacro,PathEscape}` with `library.unknown_macro`/`library.path_escape` diagnostics.
+- [x] 1.3 Detect a `type` beginning with `$` as an external module reference (vs built-in type name / inline defined-module type) during patch parsing/preparation. `module_reference::is_external_reference`.
+
+> Note: Section 1 delivers the pure resolution/detection layer and its diagnostics, unit-tested. Wiring these calls into the preparation pipeline lands with §2 (package loader) and §3 (plumbed macro roots), since a resolved reference is only actionable once loading and configured roots exist.
 
 ## 2. Module package format and loading
 

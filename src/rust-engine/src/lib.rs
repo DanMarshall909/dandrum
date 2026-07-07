@@ -27,6 +27,8 @@ pub mod instrument_state;
 
 pub mod patch;
 
+pub mod module_reference;
+
 pub mod script;
 
 pub(crate) mod sample;

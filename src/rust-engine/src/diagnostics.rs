@@ -65,6 +65,11 @@ pub mod error_codes {
     pub const GRAPH_VOICE_TO_GLOBAL: &str = "graph.voice_to_global_direct_routing";
     pub const GRAPH_UNKNOWN_MODULE_TYPE: &str = "graph.unknown_module_type";
     pub const GRAPH_UNSUPPORTED_MODULE_TYPE: &str = "graph.unsupported_module_type";
+
+    // Module-library sub-codes
+    pub const LIBRARY_UNKNOWN_MACRO: &str = "library.unknown_macro";
+    pub const LIBRARY_PATH_ESCAPE: &str = "library.path_escape";
+    pub const LIBRARY_MALFORMED_REFERENCE: &str = "library.malformed_reference";
 }
 
 impl Diagnostic {
