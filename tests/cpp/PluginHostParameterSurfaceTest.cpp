@@ -96,7 +96,7 @@ int main()
         std::cerr << "createEditor returned null even though the plugin reports hasEditor()\n";
         return 1;
     }
-    if (editor->getAudioProcessor() != processor.get())
+    if (&editor->getAudioProcessor() != processor.get())
     {
         std::cerr << "created editor is not attached to the processor under test\n";
         return 1;
