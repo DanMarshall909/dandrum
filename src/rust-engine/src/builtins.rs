@@ -385,7 +385,7 @@ fn adsr_definition() -> BuiltInModuleDefinition {
         .with_inputs([
             (GATE, Event),
             (ATTACK, Control),
-            (DECAY, Control),
+            (builtin_ports::DECAY, Control),
             (SUSTAIN, Control),
             (RELEASE, Control),
         ])
@@ -397,7 +397,7 @@ fn adsr_definition() -> BuiltInModuleDefinition {
                 .with_description("attack time in milliseconds (direct value) or 0-1 normalized"),
         )
         .with_parameter(
-            ParameterMetadata::new(DECAY, ParameterValueType::Number)
+            ParameterMetadata::new(builtin_ports::DECAY, ParameterValueType::Number)
                 .with_default("30")
                 .with_range(1.0, 5000.0)
                 .with_description("decay time in milliseconds (direct value) or 0-1 normalized"),
@@ -759,7 +759,7 @@ fn curve_mapper_definition() -> BuiltInModuleDefinition {
 }
 
 fn decay_definition() -> BuiltInModuleDefinition {
-    BuiltInModuleDefinition::new("decay")
+    BuiltInModuleDefinition::new(module_types::DECAY)
         .with_execution_scope(ExecutionScope::Voice)
         .with_inputs([(TRIGGER, Event), (TIME_MS, Control)])
         .with_output(Port::output(VALUE, Control))

@@ -66,7 +66,7 @@ impl ModuleKind {
             module_types::EVENT_FILTER => Some(Self::EventFilter),
             module_types::ENVELOPE_FOLLOWER => Some(Self::EnvelopeFollower),
             module_types::CURVE_MAPPER => Some(Self::CurveMapper),
-            "decay" => Some(Self::Decay),
+            module_types::DECAY => Some(Self::Decay),
             _ => None,
         }
     }

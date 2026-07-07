@@ -95,7 +95,7 @@ fn initialized_registry_contains_synthesis_control_and_mixer_definitions() {
 
     let adsr = registry.get(ADSR).expect("ADSR should be built in");
     assert_has_event_input(adsr, GATE);
-    assert_control_inputs!(adsr, ATTACK, DECAY, SUSTAIN, RELEASE,);
+    assert_control_inputs!(adsr, ATTACK, builtin_ports::DECAY, SUSTAIN, RELEASE,);
     assert_has_control_output(adsr, VALUE);
 
     let lfo = registry.get(LFO).expect("LFO should be built in");
