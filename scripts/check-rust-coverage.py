@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Check strict Rust line coverage against an explicit uncovered-line allowlist."""
+"""Check strict Rust engine line coverage against an explicit uncovered-line allowlist."""
 
 from __future__ import annotations
 
@@ -25,6 +25,8 @@ def main() -> int:
             "llvm-cov",
             "--manifest-path",
             str(MANIFEST),
+            "--lib",
+            "--tests",
             "--show-missing-lines",
             "--summary-only",
         ],
@@ -63,7 +65,7 @@ def main() -> int:
                 print(f"- {entry}")
         return 1
 
-    print("Coverage check passed for strict files.")
+    print("Coverage check passed for strict engine files.")
     return 0
 
 
