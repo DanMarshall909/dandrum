@@ -4,3 +4,5 @@ build/
 src/rust-engine/target/
 src/rust-engine/mutants.out/
 src/rust-engine/mutants.out.old/
+.claude/settings.local.json
+.claude/scheduled_tasks.lock

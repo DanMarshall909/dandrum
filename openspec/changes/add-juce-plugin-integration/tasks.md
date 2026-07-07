@@ -20,19 +20,18 @@
 - [x] 2.3 Implement `processBlock` with no locks, allocation, file I/O, YAML parsing, sample loading, graph compilation, or logging.
 - [x] 2.4 Clear unused output channels deterministically.
 - [x] 2.5 Keep stereo rendering as the v1 output model.
-- [ ] 2.6 Add a mute/silence state used during explicit instrument replacement transactions.
+- [x] 2.6 Add a mute/silence state used during explicit instrument replacement transactions.
 
 ## 3. Immutable Instrument Loading
 
-- [ ] 3.1 Introduce an explicit plugin concept of a loaded immutable instrument definition.
+- [x] 3.1 Introduce an explicit plugin concept of a loaded immutable instrument definition.
 - [x] 3.2 Ensure YAML graph/instrument definition loading happens only off the audio thread.
-- [ ] 3.3 Implement safe prepared-engine replacement for explicit load/reload actions.
-- [ ] 3.4 Ensure changing the instrument definition is a full reload/replacement, not an in-place graph mutation.
-- [ ] 3.5 Preserve current sample rate and max block size when preparing replacement engines.
+- [x] 3.3 Implement safe prepared-engine replacement for explicit load/reload actions.
+- [x] 3.4 Ensure changing the instrument definition is a full reload/replacement, not an in-place graph mutation.
+- [x] 3.5 Preserve current sample rate and max block size when preparing replacement engines.
 - [x] 3.6 Retain the loaded YAML definition as immutable engine state after successful load.
 - [x] 3.7 Ensure plugin parameter changes never rewrite, mutate, or reload the YAML definition.
-- [ ] 3.8 Support replacement from edited YAML text supplied by the plugin-launched editor.
-- [ ] 3.9 Keep the previous DSP available or restorable when edited YAML validation/compilation fails.
+- [x] 3.8 Keep the previous DSP available or restorable when a replacement instrument fails validation/compilation.
 
 ## 4. Generic JUCE Controls
 
@@ -42,13 +41,13 @@
 - [x] 4.4 Keep parameter IDs stable for the lifetime of the loaded instrument instance.
 - [x] 4.5 Do not expose graph editing or YAML editing in the normal runtime controls.
 - [x] 4.6 Do not embed a web UI in the main v1 plugin runtime surface.
-- [ ] 4.7 Refresh/rebuild controls after an explicit instrument replacement if the public parameter surface changed.
+- [ ] 4.7 Refresh/rebuild controls after an explicit instrument replacement if the public parameter surface changed. **Blocked**: JUCE's `AudioProcessorValueTreeState` parameter layout is fixed at construction time and cannot be safely resized at runtime (see design.md's open question on dynamic parameter layouts). Slots for parameters no longer present in a replacement instrument are dropped (5.13); slots for genuinely new parameters cannot be exposed as controls without solving this first.
 
 ## 5. Parameter Bridge
 
 - [x] 5.1 Add Rust engine APIs for setting public parameter values by stable ID or prepared index.
 - [x] 5.2 Add C FFI for plugin parameter updates.
-- [ ] 5.3 Avoid string lookup on the audio thread where practical by preparing parameter handles/indices.
+- [x] 5.3 Avoid string lookup on the audio thread where practical by preparing parameter handles/indices.
 - [x] 5.4 Apply parameter values to the active graph without reallocating in the callback.
 - [x] 5.5 Add tests proving parameter values update the mapped instrument targets.
 - [ ] 5.6 Add `LoadedInstrument`, `InstrumentDefinition`, and `InstrumentParameterState` so immutable definition state and mutable value state are explicit.
@@ -56,9 +55,9 @@
 - [x] 5.8 Initialise mutable parameter state from YAML defaults when the instrument is loaded.
 - [x] 5.9 Apply live public parameter changes to mutable runtime state without editing or reparsing YAML.
 - [x] 5.10 Use block-boundary parameter application for v1; defer sample-accurate public parameter automation unless separately specified.
-- [ ] 5.11 On instrument replacement, carry over compatible current parameter values by stable public ID.
-- [ ] 5.12 On instrument replacement, initialise newly added public parameters from YAML defaults.
-- [ ] 5.13 On instrument replacement, drop removed public parameters from mutable runtime state.
+- [x] 5.11 On instrument replacement, carry over compatible current parameter values by stable public ID.
+- [ ] 5.12 On instrument replacement, initialise newly added public parameters from YAML defaults. **Blocked**: same APVTS static-layout limitation as 4.7 — there is no control to initialise until dynamic layout support exists.
+- [x] 5.13 On instrument replacement, drop removed public parameters from mutable runtime state.
 
 ## 6. Presets
 
@@ -89,7 +88,6 @@
 - [ ] 8.5 Restore plugin state by preparing a replacement engine off the audio thread.
 - [ ] 8.6 Report restore failures clearly in the editor/status surface.
 - [ ] 8.7 Restore immutable instrument definition first, then apply saved mutable public parameter values.
-- [ ] 8.8 Store edited instrument YAML content after a successful plugin-launched YAML editor save.
 
 ## 9. Error and Status Reporting
 
@@ -97,8 +95,7 @@
 - [ ] 9.2 Preserve structured Rust load/validation/compile/sample-preparation errors for display.
 - [x] 9.3 Display current instrument status and error messages in the JUCE editor.
 - [ ] 9.4 Expose diagnostic counters such as dropped MIDI events where useful.
-- [ ] 9.5 Show YAML editor validation/compile errors without destroying the previous working DSP.
-- [ ] 9.6 Show replacement transaction state: editing, validating, muted, compiling, failed, running.
+- [ ] 9.5 Show replacement transaction state: editing, validating, muted, compiling, failed, running.
 
 ## 10. Tests and Safety Checks
 
@@ -108,12 +105,11 @@
 - [x] 10.4 Add plugin processor tests where JUCE test infrastructure allows.
 - [x] 10.5 Extend realtime callback safety checks to include plugin `processBlock` sources.
 - [x] 10.6 Verify existing Rust and CMake/CTest suites still pass.
-- [ ] 10.7 Add tests proving public parameter changes do not mutate/reload YAML.
+- [x] 10.7 Add tests proving public parameter changes do not mutate/reload YAML.
 - [x] 10.8 Add tests proving unknown public parameters are rejected.
 - [x] 10.9 Add tests proving block-boundary public parameter updates affect mapped runtime targets.
-- [ ] 10.10 Add tests proving edited YAML save mutes/replaces DSP only through the explicit replacement path.
-- [ ] 10.11 Add tests proving failed edited YAML compile leaves/restores the previous DSP.
-- [ ] 10.12 Add tests proving preset/current values are reconciled across instrument replacement, with new parameters defaulted.
+- [x] 10.10 Add tests proving current parameter values are carried over by public ID across instrument replacement.
+- [ ] 10.11 Add tests proving new parameters introduced by a replacement instrument are initialised from YAML defaults. **Blocked**: same APVTS static-layout limitation as 4.7/5.12.
 
 ## 11. Documentation
 
@@ -123,30 +119,11 @@
 - [x] 11.4 Document reload/recreate behaviour for changing instruments.
 - [x] 11.5 Document plugin state persistence expectations.
 - [x] 11.6 Document that public parameter values are mutable runtime state owned by the loaded plugin instance.
-- [x] 11.7 Document the plugin-launched YAML editor save/apply lifecycle.
-- [x] 11.8 Document preset reconciliation rules after instrument YAML changes.
+- [x] 11.7 Document preset reconciliation rules after instrument YAML changes.
 
-## 12. Plugin-Launched YAML Editor
-
-- [ ] 12.1 Add a plugin editor action to launch/open the YAML editor for the current instrument definition.
-- [ ] 12.2 Implement a simple YAML text editor surface.
-- [ ] 12.3 Add schema/validation feedback for YAML edits.
-- [ ] 12.4 Generate a DSP graph preview from YAML using Mermaid or a better graph renderer if selected.
-- [ ] 12.5 Add save/apply and cancel/close actions.
-- [ ] 12.6 Ensure save/apply runs validation, asset preparation, graph compile, and runtime preparation off the audio thread.
-- [ ] 12.7 Ensure save/apply mutes audio, stops/retires the old DSP safely, publishes the new DSP, and unmutes on success.
-- [ ] 12.8 Ensure save/apply failure leaves/restores the previous working DSP and displays diagnostics.
-
-## 13. Drum Voice Authoring and Reference Parameter Seeding
-
-- [ ] 13.1 Inventory existing primitives usable for 808/909-style drum voices and document which voices can be built without new DSP modules.
-- [ ] 13.2 Add or refine reusable primitive support needed for drum voices, prioritising oscillator waveform selection and frequency-oriented tuning before bespoke drum modules.
-- [ ] 13.3 Ensure decay/envelope parameters exposed through `preset_surface.parameters` can update mapped runtime targets without rewriting YAML.
-- [ ] 13.4 Author initial 808-style kick, snare, tom/conga, clap, and cowbell instrument graphs from primitives where practical.
-- [ ] 13.5 Author initial 909-style kick, snare, tom, and clap instrument graphs from primitives where practical.
-- [ ] 13.6 Use sampler-backed assets for 909-style hats, crash, and ride only where primitive synthesis is not accurate or practical.
-- [ ] 13.7 Research documented, free, or open 808/909-style synths and public references for seed values such as tune, decay, sweep, click, snappy/noise, tone, and drive.
-- [ ] 13.8 Convert accepted reference values into Dandrum parameter ranges and defaults, preserving source/provenance notes in implementation documentation.
-- [ ] 13.9 Explicitly avoid copying proprietary samples, source code, or preset banks into the repository.
-- [ ] 13.10 Add tests proving seeded drum instruments load, expose their declared public parameters, and render non-silent output from MIDI trigger events.
-- [ ] 13.11 Add an offline spectral/envelope comparison plan for tuning synthesized drum voices against reference samples outside the realtime callback.
+<!--
+Section 12 (Plugin-Launched YAML Editor) and section 13 (Drum Voice Authoring
+and Reference Parameter Seeding) were split out into their own changes:
+`add-yaml-editor` and `add-drum-voice-authoring`. See those changes for the
+corresponding tasks and specs.
+-->

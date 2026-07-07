@@ -1,13 +1,13 @@
 ## Context
 
-Dandrum already separates the Rust engine from host/frontend concerns. The existing JUCE console wrapper links the Rust static library and calls the C FFI from a JUCE audio callback. The plugin integration should reuse that direction but introduce a DAW-appropriate `AudioProcessor` boundary, stable state handling, sample-accurate MIDI, a generic JUCE editor, and an explicit companion YAML authoring/reload flow.
+Dandrum already separates the Rust engine from host/frontend concerns. The existing JUCE console wrapper links the Rust static library and calls the C FFI from a JUCE audio callback. The plugin integration should reuse that direction but introduce a DAW-appropriate `AudioProcessor` boundary, stable state handling, sample-accurate MIDI, and a generic JUCE editor.
 
-The key product decision is that the DAW plugin is a performance/runtime surface during normal use. Instrument definitions are authored as YAML and loaded into the plugin as immutable compiled instruments. The plugin may launch a simple YAML text editor for authoring the current instrument definition, but saving from that editor is a deliberate instrument replacement operation, not live mutation of the running graph.
+The key product decision is that the DAW plugin is a performance/runtime surface during normal use. Instrument definitions are authored as YAML (externally, or via the file-watch auto-reload flow in `add-yaml-editor`) and loaded into the plugin as immutable compiled instruments. Any change to the instrument definition is a deliberate instrument replacement operation, never live mutation of the running graph.
 
 ## Architecture
 
 ```text
-Authoring CLI / plugin-launched YAML editor / future standalone editor
+Authoring CLI / external YAML editor / add-yaml-editor watch-and-reload
     |
     | YAML instrument + samples + preset surface
     v
@@ -22,20 +22,13 @@ Dandrum Plugin Instance
     |     - MIDI buffer decoding
     |     - parameter bridge
     |     - state save/load
-    |     - mute/stop/replace orchestration for editor saves
+    |     - mute/stop/replace orchestration for instrument reloads
     |
     +-- JUCE Editor
     |     - generic knobs/sliders from preset surface
     |     - preset selection
     |     - load/reload action
-    |     - launch YAML editor action
     |     - status/error display
-    |
-    +-- YAML Editor Surface
-    |     - plain YAML text editing
-    |     - schema/validation feedback
-    |     - DSP graph preview from YAML using Mermaid or better graph renderer
-    |     - save/apply action
     |
     +-- Rust Engine via C FFI
           - immutable loaded instrument definition
@@ -56,7 +49,7 @@ Changing the YAML instrument definition requires one of these explicit flows:
 
 1. remove/recreate the plugin instance;
 2. use a deliberate load/reload action; or
-3. launch the YAML editor, edit the definition, and save/apply it.
+3. edit the instrument file externally and let a file-watch reload pick it up (`add-yaml-editor`).
 
 All definition-changing flows prepare a complete replacement runtime off the audio thread. The audio callback must never parse YAML, compile graphs, load samples, or mutate the active graph.
 
@@ -98,30 +91,14 @@ pub struct InstrumentParameterState {
 
 Rationale: this keeps instrument structure immutable while allowing the plugin to behave like a normal synth with tweakable knobs.
 
-### The plugin can launch a simple YAML editor
+### Instrument definition changes are always a replacement transaction
 
-The plugin editor should include an action to open a simple YAML editor for the current instrument definition. The editor is intentionally minimal:
+Any change to the loaded instrument definition — an explicit reload from the plugin UI, restoring saved plugin state, or a future editor/watcher-triggered reload (see `add-yaml-editor`) — goes through the same explicit instrument replacement transaction:
 
-- plain YAML text area;
-- validation/schema diagnostics;
-- DSP graph visualisation generated from the YAML;
-- save/apply action;
-- cancel/close action.
-
-The graph visualisation may use Mermaid initially if it is the fastest practical option. If another renderer is better suited to interactive DSP graphs, it can replace Mermaid without changing the authoring contract.
-
-The YAML editor is allowed to change graph structure, module routing, assets, public parameter declarations, and mappings. Those changes do not affect the running DSP until the user saves/applies and the replacement compile succeeds.
-
-Rationale: this gives fast authoring from the plugin workflow while preserving realtime safety and host parameter stability during normal playback.
-
-### YAML editor save is a mute/stop/compile/start operation
-
-Saving from the YAML editor is an explicit instrument replacement transaction:
-
-1. keep the current DSP running while the draft YAML is edited;
-2. on save/apply, request plugin mute/suspend for the current instance;
+1. keep the current DSP running while the replacement is prepared;
+2. request plugin mute/suspend for the current instance;
 3. stop accepting new MIDI/render work for the old DSP instance;
-4. validate and compile the new YAML off the audio thread;
+4. validate and compile the new instrument off the audio thread;
 5. prepare assets and realtime buffers off the audio thread;
 6. reconcile existing preset/current parameter values against the new `preset_surface.parameters`;
 7. publish the replacement DSP/runtime;
@@ -131,7 +108,7 @@ Saving from the YAML editor is an explicit instrument replacement transaction:
 
 The old DSP must not be destroyed while `processBlock` can still access it. Replacement must use a safe handoff strategy such as an atomic/shared ownership swap or a host-thread-coordinated suspension boundary.
 
-Rationale: a failed YAML edit must not leave the plugin silent or corrupted, and the audio thread must not wait on YAML compilation.
+Rationale: a failed reload must not leave the plugin silent or corrupted, and the audio thread must not wait on compilation. This is also the mechanism `add-yaml-editor` builds on for its file-watch-triggered reloads — that change adds a new trigger for this transaction, not a separate code path.
 
 ### Preset reconciliation after instrument reload
 
@@ -147,7 +124,7 @@ This allows existing presets to remain useful as the instrument evolves while en
 
 ### Instrument authoring stays out of `processBlock`
 
-The plugin may launch an authoring editor, but the audio callback is never an authoring surface. YAML editing, graph visualisation, validation, compilation, asset loading, and replacement preparation must happen on editor/background/plugin-management threads, never in `processBlock`.
+The audio callback is never an authoring surface. YAML parsing, validation, compilation, asset loading, and replacement preparation must happen on editor/background/plugin-management threads, never in `processBlock`.
 
 ### The plugin UI uses JUCE native controls
 
@@ -160,11 +137,8 @@ The editor displays:
 - one generic control per declared public parameter;
 - output/gain control if exposed by the instrument surface;
 - load/reload instrument action;
-- launch YAML editor action;
 - status/error text;
 - optional diagnostic counters such as dropped MIDI events.
-
-The YAML editor surface may be implemented with JUCE text controls and a rendered graph preview. A web view should only be introduced if it is justified by the graph rendering choice.
 
 ### Controls are generated from `preset_surface.parameters`
 
@@ -199,7 +173,7 @@ Rationale: fixed macro counts are unnecessarily limiting. The author should deci
 
 The plugin parameter layout is created from the loaded instrument surface and remains stable while that instrument is loaded. Live presets and automation may change values, but not the existence, ID, type, order, range, default, label, or mapping of parameters.
 
-If a YAML editor save or explicit reload changes the parameter surface, that is treated as a full instrument replacement. The plugin must refresh the APVTS/control layout as allowed by the host format, or require plugin recreation where the host cannot safely accept layout changes.
+If any instrument reload changes the parameter surface, that is treated as a full instrument replacement. The plugin must refresh the APVTS/control layout as allowed by the host format, or require plugin recreation where the host cannot safely accept layout changes.
 
 Rationale: this keeps automation and state recall coherent during normal playback while still allowing explicit instrument development workflows.
 
@@ -232,7 +206,7 @@ Rationale: presets are safe live performance state; instruments are structural s
 
 ### Engine replacement is prepared off the audio thread
 
-When loading/reloading an instrument from the plugin UI, YAML editor save, or project state:
+When loading/reloading an instrument from the plugin UI, a reload triggered by an external edit (`add-yaml-editor`), or project state:
 
 1. create a new Rust engine/runtime candidate;
 2. prepare it with the current sample rate and max block size;
@@ -311,17 +285,16 @@ The plugin integration should extend the C FFI with explicit host-facing operati
 - create/destroy engine;
 - prepare realtime with sample rate and maximum block size;
 - load prepared instrument from path or memory off the audio thread;
-- validate/compile instrument YAML from memory for editor-save flows;
+- validate/compile instrument YAML from memory for reload flows;
 - render stereo block;
 - submit sample-accurate MIDI events;
 - set public parameter value by stable prepared index or ID;
 - query declared parameter metadata after load;
 - query current public parameter values where needed for state/debugging;
-- query graph visualisation metadata or generated graph text for editor previews where practical;
 - query last error/status off the audio thread;
 - query diagnostics such as dropped event counts.
 
-String-heavy operations, YAML text transfer, graph preview generation, and metadata queries are editor/background-thread operations only. The audio callback should use prepared parameter handles, indices, or lock-free event queues rather than reparsing string IDs.
+String-heavy operations, YAML text transfer, and metadata queries are editor/background-thread operations only. The audio callback should use prepared parameter handles, indices, or lock-free event queues rather than reparsing string IDs.
 
 ## Reference Review Notes
 
@@ -343,7 +316,5 @@ Explicitly not adopted (out of Dandrum v1 scope per proposal "Out of Scope"):
 - Should parameter IDs be YAML keys directly, or normalized to a host-safe form with a stable hash/alias?
 - Should reloading an instrument with the exact same parameter surface preserve existing automation/value state automatically?
 - Should block-boundary public parameter changes be sufficient for v1, or should sample-accurate parameter automation be part of the first release?
-- Should Mermaid be good enough for the first DSP graph preview, or should the editor use a graph renderer better suited to ports, signal types, and grouped modules?
-- Should the YAML editor be embedded in the plugin window, a separate JUCE document window, or an external companion app launched by the plugin?
-- How should hosts that do not tolerate dynamic parameter-layout changes handle YAML editor saves that add/remove public parameters?
+- How should hosts that do not tolerate dynamic parameter-layout changes handle a reload that adds/removes public parameters?
 - Should asset references be embedded in plugin state, copied to a project-local cache, or resolved through bundled instrument packages?
