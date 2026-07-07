@@ -164,6 +164,29 @@ target_link_libraries(dandrum-plugin-construction-test
         juce::juce_recommended_warning_flags)
 add_test(NAME cxx-plugin-construction COMMAND dandrum-plugin-construction-test)
 
+add_executable(dandrum-plugin-host-parameter-surface-test
+    tests/cpp/PluginHostParameterSurfaceTest.cpp)
+target_include_directories(dandrum-plugin-host-parameter-surface-test
+    PRIVATE
+        src/juce-wrapper
+        src/juce-plugin)
+target_compile_definitions(dandrum-plugin-host-parameter-surface-test
+    PRIVATE
+        JUCE_USE_CURL=0
+        JUCE_WEB_BROWSER=0)
+target_link_libraries(dandrum-plugin-host-parameter-surface-test
+    PRIVATE
+        dandrum-plugin
+        dandrum_engine
+        juce::juce_audio_basics
+        juce::juce_audio_processors
+        juce::juce_audio_utils
+    PUBLIC
+        juce::juce_recommended_config_flags
+        juce::juce_recommended_lto_flags
+        juce::juce_recommended_warning_flags)
+add_test(NAME cxx-plugin-host-parameter-surface COMMAND dandrum-plugin-host-parameter-surface-test)
+
 add_executable(dandrum-drum-loop-pattern-test
     tests/cpp/DrumLoopPatternTest.cpp)
 target_include_directories(dandrum-drum-loop-pattern-test
