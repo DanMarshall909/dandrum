@@ -108,7 +108,7 @@ Three in-progress changes touch overlapping YAML patch format areas. When implem
 
 1. **`add-drum-machine-container`** — adds the `drum_machine` module type to the YAML schema and event-routing expansion
 2. **`example-drum-kit`** — adds new built-in modules (noise, note_to_control, multiply, delay_line, envelope_follower)
-   and composite definitions; independent of #1
+   and module definitions; independent of #1
 3. **`add-instrument-presets`** — wraps everything in the preset system (depends on stable YAML schema from #1)
 
 ## Architecture Constraints From Specs

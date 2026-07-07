@@ -8,7 +8,7 @@ Use this vocabulary consistently in code comments, examples, user-facing documen
 |---|---|---|
 | Graph building block | Module | node, unit, processor |
 | Built-in Rust implementation | Primitive | native module, DSP module |
-| Reusable YAML graph | Composite | macro, subpatch unless referring to external systems |
+| Reusable YAML graph | Defined module | composite, macro, subpatch unless referring to external systems |
 | Complete instrument/effect definition | Patch | preset, graph |
 | Saved parameter variation | Preset | patch |
 | Runtime behaviour module | Script module | script node |
@@ -32,10 +32,10 @@ Use **control signal** in documentation. Avoid **CV** unless explicitly comparin
 Use these responsibility boundaries:
 
 - **Primitive**: tested Rust module for realtime-safe DSP/control behaviour.
-- **Composite**: reusable YAML graph built from primitives and other composites.
+- **Defined module**: reusable YAML graph built from primitives and other defined modules.
 - **Script module**: event/control-rate policy logic only.
 - **Patch**: complete instrument/effect graph that can be validated and rendered.
-- **Preset**: named parameter values applied to a compatible patch or composite surface.
+- **Preset**: named parameter values applied to a compatible patch or module surface.
 
 ## Naming style
 

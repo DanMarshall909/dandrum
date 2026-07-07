@@ -1,12 +1,12 @@
 ## 0. Module terminology rename
 
-- [ ] 0.1 Confirm target names (`Composite*` → `Module*`) do not collide with existing types (`ModuleNode`, `ModuleId`, `BuiltInModule*`); record any disambiguated names.
-- [ ] 0.2 `git mv src/rust-engine/src/patch_composite.rs src/rust-engine/src/patch_module.rs` and update `mod`/`use` references.
-- [ ] 0.3 `git mv src/rust-engine/src/graph_composite.rs src/rust-engine/src/graph_module.rs` and update `mod`/`use` references.
-- [ ] 0.4 Rename Rust identifiers and functions from composite terminology to module terminology (`Composite*` → `Module*`, `validate_composite_*` → `validate_module_*`, `apply_composite_parameter_bindings` → `apply_module_parameter_bindings`, etc.), keeping `BuiltInModule*` for primitives.
-- [ ] 0.5 Verify exported FFI/ABI symbols remain unchanged; rename Rust-internal names only.
-- [ ] 0.6 Rename `composite_*` test functions and update matching `spec-tests.map` ids; keep behavior assertions unchanged.
-- [ ] 0.7 Update comments and docs to say module / defined module rather than composite, except when referring to legacy filenames or migration history.
+- [x] 0.1 Confirm target names (`Composite*` → `Module*`) do not collide with existing types (`ModuleNode`, `ModuleId`, `BuiltInModule*`); record any disambiguated names. Disambiguated: local `composite_types` → `defined_module_types` (avoids clash with the `module_types` module) and `composite_type_name` → `module_parameter_type_name` (avoids confusion with the `module_type` field).
+- [x] 0.2 `git mv src/rust-engine/src/patch_composite.rs src/rust-engine/src/patch_module.rs` and update `mod`/`use` references.
+- [x] 0.3 `git mv src/rust-engine/src/graph_composite.rs src/rust-engine/src/graph_module.rs` and update `mod`/`use` references.
+- [x] 0.4 Rename Rust identifiers and functions from composite terminology to module terminology (`Composite*` → `Module*`, `validate_composite_*` → `validate_module_*`, `apply_composite_parameter_bindings` → `apply_module_parameter_bindings`, etc.), keeping `BuiltInModule*` for primitives.
+- [x] 0.5 Verify exported FFI/ABI symbols remain unchanged; rename Rust-internal names only. Confirmed: all `#[no_mangle]` exports remain `dandrum_engine_*`/`dandrum_patch_*`.
+- [x] 0.6 Rename `composite_*` test functions and update matching `spec-tests.map` ids; keep behavior assertions unchanged. `spec-tests.map` references no Rust test-fn names (entries are keyed on spec scenario titles + fingerprints), so no map ids required changes.
+- [x] 0.7 Update comments and docs to say module / defined module rather than composite, except when referring to legacy filenames or migration history. Also renamed the `composite-*.yaml` example patches to `module-*.yaml` (no public consumers yet).
 
 ## 1. Macro roots and reference resolution
 
