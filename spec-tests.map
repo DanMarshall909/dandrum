@@ -1,0 +1,1477 @@
+# Spec acceptance-criteria -> test coverage map.
+#
+# One block per scenario (acceptance criterion) in openspec/specs/**/spec.md.
+# Policy: every AC must have at least one `test`, or a `todo` explaining why not.
+#
+#   AC <capability> :: <Requirement> :: <Scenario>
+#     fp   <fingerprint>   recorded hash of the scenario text
+#     test <id>            rust:<fn_name> or cpp:<path> (repeatable)
+#     todo <reason>        ratchet backlog until a real test is mapped
+#
+# When a scenario is edited its fingerprint drifts and the check fails: review
+# whether the mapped tests still prove the AC, then re-bless with
+# scripts/check-spec-coverage --update-fingerprints.
+
+AC acceptance-examples :: Acceptance examples are staged :: First example completed before broad library
+  fp 132400f99d12
+  todo not yet mapped to a test
+
+AC acceptance-examples :: Acceptance examples validate platform capability incrementally :: Each completed example loads and renders
+  fp 3e7bc556637a
+  todo not yet mapped to a test
+
+AC acceptance-examples :: Closed/open hi-hat pair follows after noise/filter/envelope routing is proven :: Closed hi-hat renders shorter than open hi-hat
+  fp c0f2231cfaa3
+  todo not yet mapped to a test
+
+AC acceptance-examples :: Drum-machine acceptance example exposes multiple stereo outs :: Drum-machine example exposes separate stereo outs
+  fp a78778fcbaaa
+  todo not yet mapped to a test
+
+AC acceptance-examples :: Drum-machine acceptance example exposes multiple stereo outs :: Drum-machine example routes voices to separate outputs
+  fp 629b87d20c3b
+  todo not yet mapped to a test
+
+AC acceptance-examples :: Drum-machine dogfood uses generic routing :: Event routing alone produces no audio
+  fp 6343823a66c6
+  todo not yet mapped to a test
+
+AC acceptance-examples :: Drum-machine dogfood uses generic routing :: Generic routing triggers connected drum voice
+  fp cbd717922f52
+  todo not yet mapped to a test
+
+AC acceptance-examples :: Effects rack uses existing effect modules :: Effects rack processes audio
+  fp 88b58bc81813
+  todo not yet mapped to a test
+
+AC acceptance-examples :: First proof is synthetic 808-style kick :: 808 kick composite renders
+  fp 528b9ce8c583
+  todo not yet mapped to a test
+
+AC acceptance-examples :: First proof is synthetic 808-style kick :: 808 kick does not require samples
+  fp b20bac578e1f
+  todo not yet mapped to a test
+
+AC acceptance-examples :: Sampler voice remains explicit and optional :: Sampler asset is declared
+  fp 74057603347c
+  todo not yet mapped to a test
+
+AC acceptance-examples :: Sampler voice remains explicit and optional :: Sampler voice plays sample
+  fp 94cf3a1472bd
+  todo not yet mapped to a test
+
+AC acceptance-examples :: Script event/control mapping example :: Script example has no audio output port
+  fp 5f7dcd365b72
+  todo not yet mapped to a test
+
+AC acceptance-examples :: Script event/control mapping example :: Script maps velocity to control
+  fp 4b4e9ef3b310
+  todo not yet mapped to a test
+
+AC acceptance-examples :: Simple polyphonic synth dogfood uses generic primitives :: Polyphonic synth example is readable
+  fp fccaf968cc09
+  todo not yet mapped to a test
+
+AC acceptance-examples :: Simple polyphonic synth dogfood uses generic primitives :: Polyphonic synth example renders note events
+  fp 9f8cb9fe7f19
+  todo not yet mapped to a test
+
+AC acceptance-examples :: Subtractive synth voice depends on oscillator capability :: Subtractive synth voice produces note
+  fp 873bb84818bb
+  todo not yet mapped to a test
+
+AC acceptance-examples :: Subtractive synth voice depends on oscillator capability :: Unsupported waveform is not assumed
+  fp e6da044f9ee6
+  todo not yet mapped to a test
+
+AC acceptance-examples :: Synthetic snare follows after kick primitives are proven :: Snare composite renders
+  fp 1d0ab91386e4
+  todo not yet mapped to a test
+
+AC built-in-modules :: Built-in module state uses resolved parameters :: DSP state is prepared from resolved parameters
+  fp 420cdb6d4113
+  todo not yet mapped to a test
+
+AC built-in-modules :: Built-in modules declare ports :: VCA module exposes audio and control ports
+  fp 65f4f9a0d565
+  todo not yet mapped to a test
+
+AC built-in-modules :: Built-in modules declare static parameters :: Built-in declaration supports authoring tools
+  fp 086cdf9c149a
+  todo not yet mapped to a test
+
+AC built-in-modules :: Built-in modules declare static parameters :: Built-in parameter declarations are registered
+  fp 365791d5a845
+  todo not yet mapped to a test
+
+AC built-in-modules :: Built-in parameter declarations are authoritative :: Unknown built-in parameter is rejected
+  fp 7ff9577e3dfe
+  todo not yet mapped to a test
+
+AC built-in-modules :: Deferred modules are not part of this built-in milestone :: Deferred module appears in a patch
+  fp a39b0b951807
+  todo not yet mapped to a test
+
+AC built-in-modules :: Delay modules are cycle breakers :: Control delay breaks control cycle
+  fp c6636ecb194e
+  todo not yet mapped to a test
+
+AC built-in-modules :: Delay modules are cycle breakers :: One-sample delay breaks audio cycle
+  fp 9f6e23f1e7ac
+  todo not yet mapped to a test
+
+AC built-in-modules :: Impulse generator module :: Impulse module in registry
+  fp 4ad2685c4d0d
+  todo not yet mapped to a test
+
+AC built-in-modules :: Impulse generator module :: Impulse timing follows incoming event frame
+  fp e2e28a9d1137
+  todo not yet mapped to a test
+
+AC built-in-modules :: Minimum routing and synthesis modules :: Core module registry contains existing MVP modules
+  fp 5b4b5df52e94
+  todo not yet mapped to a test
+
+AC built-in-modules :: Minimum routing and synthesis modules :: Core module registry contains new minimal primitives
+  fp 278fc53b98d9
+  todo not yet mapped to a test
+
+AC built-in-modules :: Multiply module :: Multiply module in registry
+  fp 264fc2337a45
+  todo not yet mapped to a test
+
+AC built-in-modules :: Multiply module :: Multiply performs deterministic product
+  fp 21a6afd4fb2e
+  todo not yet mapped to a test
+
+AC built-in-modules :: Noise generator module :: Noise module in registry
+  fp 85adb8752a46
+  todo not yet mapped to a test
+
+AC built-in-modules :: Noise generator module :: Noise module render is reproducible
+  fp f7a03debdd58
+  todo not yet mapped to a test
+
+AC built-in-modules :: Note-to-control module :: Note-to-control module in registry
+  fp 4df6a5a55526
+  todo not yet mapped to a test
+
+AC built-in-modules :: Oscillator waveform support is explicit :: Oscillator waveform queried
+  fp 2c6b3c19072e
+  todo not yet mapped to a test
+
+AC built-in-modules :: Oscillator waveform support is explicit :: Unsupported waveform rejected
+  fp 22401351d471
+  todo not yet mapped to a test
+
+AC capability-discovery :: Capability discovery is metadata-driven :: Discovery uses metadata
+  fp 83ed837f66a6
+  todo not yet mapped to a test
+
+AC capability-discovery :: Capability discovery is separate from rendering :: Discovery does not affect render
+  fp c5cb9659aa2c
+  todo not yet mapped to a test
+
+AC capability-discovery :: Composite discovery preserves source model :: Inline composite discovered
+  fp efd78c89c61d
+  todo not yet mapped to a test
+
+AC capability-discovery :: Discovery supports future tooling but does not implement it :: Discovery returns tool-friendly metadata
+  fp cfda2c252901
+  todo not yet mapped to a test
+
+AC capability-discovery :: Module category classification :: Query module category
+  fp b4f544238ef9
+  todo not yet mapped to a test
+
+AC capability-discovery :: Module parameter metadata :: Query module parameters
+  fp a7be7dff560c
+  todo not yet mapped to a test
+
+AC capability-discovery :: Module port metadata :: Query module ports
+  fp a7762244efbb
+  todo not yet mapped to a test
+
+AC capability-discovery :: Module type enumeration :: Enumerate module types
+  fp 2afaeae32d59
+  todo not yet mapped to a test
+
+AC composite-authoring :: Composite asset bindings :: Composite asset binding maps to internal module
+  fp 4a0beeefb04c
+  todo not yet mapped to a test
+
+AC composite-authoring :: Composite asset bindings :: Missing composite asset rejected
+  fp a3211d6026d7
+  todo not yet mapped to a test
+
+AC composite-authoring :: Composite diagnostics map to source context :: Expanded internal port fails validation
+  fp 80fd8d605d11
+  todo not yet mapped to a test
+
+AC composite-authoring :: Composite expansion remains deterministic :: Repeated expansion identical
+  fp eddffd037187
+  todo not yet mapped to a test
+
+AC composite-authoring :: Composite module ID prefixing :: Expanded module IDs are unique
+  fp 09eb79e41853
+  todo not yet mapped to a test
+
+AC composite-authoring :: Composite parameter exposure :: Composite parameter maps to internal parameter
+  fp 069b91651b01
+  todo not yet mapped to a test
+
+AC composite-authoring :: Composite parameter exposure :: Undeclared composite parameter rejected
+  fp 373adfde9f9b
+  todo not yet mapped to a test
+
+AC composite-authoring :: Composite port mapping :: Public input maps to internal input
+  fp 223acba865f7
+  todo not yet mapped to a test
+
+AC composite-authoring :: Composite port mapping :: Public output maps from internal output
+  fp e2423aad9394
+  todo not yet mapped to a test
+
+AC composite-authoring :: External composite libraries are optional future extension :: External composite loaded later
+  fp 901c8f5c6747
+  todo not yet mapped to a test
+
+AC composite-authoring :: External composite libraries are optional future extension :: External composite support absent
+  fp 7b7f0674731a
+  todo not yet mapped to a test
+
+AC composite-authoring :: Inline composite module definitions :: Composite definition declared inline
+  fp f09100add35e
+  todo not yet mapped to a test
+
+AC composite-authoring :: Inline composite module definitions :: Existing composite patches remain valid
+  fp 5e79804a9521
+  todo not yet mapped to a test
+
+AC composite-authoring :: Recursive composites are rejected or depth-limited :: Maximum nesting depth exceeded
+  fp ab14f9066f00
+  todo not yet mapped to a test
+
+AC composite-authoring :: Recursive composites are rejected or depth-limited :: Recursive composite detected
+  fp b8570aa7d8b5
+  todo not yet mapped to a test
+
+AC control-primitives :: Audio-derived control belongs in Rust primitives :: Envelope follower is usable for modulation routing
+  fp 6da0b2c7983f
+  todo not yet mapped to a test
+
+AC control-primitives :: Curve mapper applies nonlinear curves to control signals :: Exponential curve bends control response
+  fp e8662a5541e2
+  todo not yet mapped to a test
+
+AC control-primitives :: Curve mapper applies nonlinear curves to control signals :: Step curve quantises control response
+  fp ea0264a58609
+  todo not yet mapped to a test
+
+AC control-primitives :: Envelope follower converts audio level into smoothed control :: Falling input follows release time
+  fp 53c3e502fd90
+  todo not yet mapped to a test
+
+AC control-primitives :: Envelope follower converts audio level into smoothed control :: Inverted output supports ducking
+  fp cb9ade3111a6
+  todo not yet mapped to a test
+
+AC control-primitives :: Envelope follower converts audio level into smoothed control :: Rising input follows attack time
+  fp c69ae1bb31b8
+  todo not yet mapped to a test
+
+AC declarative-parameters :: CLI parameter overrides :: CLI override replaces YAML value
+  fp f86e8d412530
+  todo not yet mapped to a test
+
+AC declarative-parameters :: CLI parameter overrides :: Repeated CLI override is deterministic
+  fp 20a647cfe0bf
+  todo not yet mapped to a test
+
+AC declarative-parameters :: CLI parameter overrides :: Unknown CLI module is rejected
+  fp e358ab20bb38
+  todo not yet mapped to a test
+
+AC declarative-parameters :: CLI parameter overrides :: Unknown CLI parameter is rejected
+  fp 39a3843fb56e
+  todo not yet mapped to a test
+
+AC declarative-parameters :: Composite public parameters :: Composite parameter declaration is validated
+  fp bfaecda6b37e
+  todo not yet mapped to a test
+
+AC declarative-parameters :: Deterministic default resolution :: Defaults are stable across loads
+  fp 8dc9a197376c
+  todo not yet mapped to a test
+
+AC declarative-parameters :: Deterministic default resolution :: Omitted optional value uses default
+  fp 91223d35d657
+  todo not yet mapped to a test
+
+AC declarative-parameters :: Deterministic resolved graph preparation :: Same resolved patch renders the same output
+  fp 8f9466738183
+  todo not yet mapped to a test
+
+AC declarative-parameters :: LLM-repairable parameter diagnostics :: Diagnostic supports repair loop
+  fp ded0f82877ec
+  todo not yet mapped to a test
+
+AC declarative-parameters :: Minimal composite parameter binding :: Binding type mismatch is rejected
+  fp d563b1693a6e
+  todo not yet mapped to a test
+
+AC declarative-parameters :: Minimal composite parameter binding :: Direct composite reference resolves
+  fp 3cdcd34e41af
+  todo not yet mapped to a test
+
+AC declarative-parameters :: Minimal composite parameter binding :: Expressions are rejected
+  fp 6b2e72c40a02
+  todo not yet mapped to a test
+
+AC declarative-parameters :: Minimal composite parameter binding :: Invalid reference is rejected
+  fp 92b2c7b502e4
+  todo not yet mapped to a test
+
+AC declarative-parameters :: Minimal composite parameter binding :: Literal binding resolves
+  fp d64f636822b5
+  todo not yet mapped to a test
+
+AC declarative-parameters :: Parameter capability discovery foundation :: Declaration exposes discovery metadata
+  fp 8ee35e6c06c5
+  todo not yet mapped to a test
+
+AC declarative-parameters :: Parameter capability discovery foundation :: Declaration supports safe authoring guidance
+  fp 4c7fd999735d
+  todo not yet mapped to a test
+
+AC declarative-parameters :: Parameter categories are distinct :: Parameter category is identified
+  fp ccf09e6224fa
+  todo not yet mapped to a test
+
+AC declarative-parameters :: Parameter value validation :: Invalid enum value is rejected
+  fp faae69208b8f
+  todo not yet mapped to a test
+
+AC declarative-parameters :: Parameter value validation :: Missing required parameter is rejected
+  fp efc698fc3023
+  todo not yet mapped to a test
+
+AC declarative-parameters :: Parameter value validation :: Number above maximum is rejected
+  fp 3100d01481d2
+  todo not yet mapped to a test
+
+AC declarative-parameters :: Parameter value validation :: Number below minimum is rejected
+  fp b7763af10530
+  todo not yet mapped to a test
+
+AC declarative-parameters :: Parameter value validation :: Unknown parameter is rejected
+  fp 4e310c077621
+  todo not yet mapped to a test
+
+AC declarative-parameters :: Parameter value validation :: Wrong parameter type is rejected
+  fp 250becc8033a
+  todo not yet mapped to a test
+
+AC declarative-parameters :: Preset-applied parameter values :: Preset-applied value overrides default
+  fp 39fcd9c80676
+  todo not yet mapped to a test
+
+AC declarative-parameters :: Realtime safety boundary :: Audio callback receives prepared state
+  fp fc0b7f3dc68d
+  todo not yet mapped to a test
+
+AC declarative-parameters :: Static scalar parameter declarations :: Parameter declaration is registered
+  fp 6ab179224d62
+  todo not yet mapped to a test
+
+AC declarative-parameters :: Structured parameter diagnostics :: Diagnostic contains stable fields
+  fp d0519fa7d8bd
+  todo not yet mapped to a test
+
+AC declarative-parameters :: Supported parameter value types :: Enum value is validated as string
+  fp bfee9ae29577
+  todo not yet mapped to a test
+
+AC declarative-parameters :: Synthetic 808 kick acceptance example :: Invalid kick value is diagnosed
+  fp f0710a626818
+  todo not yet mapped to a test
+
+AC declarative-parameters :: Synthetic 808 kick acceptance example :: Kick is tuned from CLI override
+  fp d00aed44d396
+  todo not yet mapped to a test
+
+AC declarative-parameters :: Synthetic 808 kick acceptance example :: Kick is tuned from YAML
+  fp 33a75c770a84
+  todo not yet mapped to a test
+
+AC declarative-parameters :: Synthetic 808 kick acceptance example :: Kick parameter changes affect output deterministically
+  fp 7b59d7126f6f
+  todo not yet mapped to a test
+
+AC delay-line :: DelayLine SHALL reset to zero :: Reset clears buffer
+  fp ab094119c059
+  todo not yet mapped to a test
+
+AC delay-line :: DelayLine SHALL support configurable maximum delay time :: Initialize with max delay time
+  fp 1de0e665ab3a
+  todo not yet mapped to a test
+
+AC delay-line :: DelayLine SHALL support configurable maximum delay time :: Query max delay samples
+  fp 750c05cdc830
+  todo not yet mapped to a test
+
+AC delay-line :: DelayLine SHALL support interpolation mode switching :: Cubic interpolation at fractional delay
+  fp 0ed7fe75ed08
+  todo not yet mapped to a test
+
+AC delay-line :: DelayLine SHALL support modulation input :: Modulation clamped
+  fp 42b40c804a8b
+  todo not yet mapped to a test
+
+AC delay-line :: DelayLine SHALL support modulation input :: Modulation shifts read position
+  fp 919bf50bcf47
+  todo not yet mapped to a test
+
+AC delay-line :: DelayLine SHALL support write and fractional read :: Read at fractional delay with linear interpolation
+  fp 7f9a14a150a4
+  todo not yet mapped to a test
+
+AC delay-line :: DelayLine SHALL support write and fractional read :: Write then read at integer delay
+  fp 10af1fa440af
+  todo not yet mapped to a test
+
+AC drum-kit-patches :: Complete drum kit patch :: Drum kit patch has voice allocation
+  fp aa1e56a3b717
+  todo not yet mapped to a test
+
+AC drum-kit-patches :: Complete drum kit patch :: Drum kit patch loads and renders
+  fp 00248fc519d0
+  todo not yet mapped to a test
+
+AC drum-kit-patches :: Complete drum kit patch :: Drum kit uses generic event routing
+  fp 979197412de3
+  todo not yet mapped to a test
+
+AC drum-kit-patches :: Drum kit supports multiple stereo outputs :: Drum kit exposes stereo output pairs
+  fp f880e986a9e0
+  todo not yet mapped to a test
+
+AC drum-kit-patches :: Drum kit supports multiple stereo outputs :: Voices can route to separate stereo outs
+  fp 1eee4d215118
+  todo not yet mapped to a test
+
+AC drum-kit-patches :: Each impulse composite responds to MIDI velocity :: Low velocity produces quieter output
+  fp 4c177013d1da
+  todo not yet mapped to a test
+
+AC drum-kit-patches :: impulse_layer composite module :: impulse_layer produces mixed tone and noise
+  fp 44b6ee693c8d
+  todo not yet mapped to a test
+
+AC drum-kit-patches :: impulse_noise composite module :: impulse_noise produces noise-based output
+  fp b6dfc5a19ad2
+  todo not yet mapped to a test
+
+AC drum-kit-patches :: impulse_tone composite module :: impulse_tone triggers and produces audio
+  fp d0abc8018567
+  todo not yet mapped to a test
+
+AC drum-kit-patches :: velocity_vca composite module :: velocity_vca routes events through note_to_control
+  fp 334254a79aa3
+  todo not yet mapped to a test
+
+AC drum-machine :: Drum machine supports multiple stereo outputs :: Drum machine exposes stereo output pairs
+  fp 4c73c821090f
+  todo not yet mapped to a test
+
+AC drum-machine :: Drum machine supports multiple stereo outputs :: Voices can route to separate stereo outs
+  fp 04660f7232cd
+  todo not yet mapped to a test
+
+AC echo :: Echo SHALL be a stereo effect with independent left/right delay times :: Stereo echo with different delay times
+  fp 94d84298b1e7
+  todo not yet mapped to a test
+
+AC echo :: Echo SHALL expose built-in module ports :: Module registration has correct ports
+  fp 81e56f6a9bd0
+  todo not yet mapped to a test
+
+AC echo :: Echo SHALL have a YAML composite module definition example :: Composite echo example loads without error
+  fp 084ae899525e
+  todo not yet mapped to a test
+
+AC echo :: Echo SHALL process in global (non-voice) scope :: Echo is global scope
+  fp 54740311f9aa
+  todo not yet mapped to a test
+
+AC echo :: Echo SHALL support damping via OnePoleFilter in the feedback pipeline :: Damping filter darkens repeats
+  fp 7ef2244bb486
+  todo not yet mapped to a test
+
+AC echo :: Echo SHALL support feedback with configurable gain :: Feedback of 0% produces single repeat
+  fp 83a8e2f38903
+  todo not yet mapped to a test
+
+AC echo :: Echo SHALL support feedback with configurable gain :: Feedback produces decaying repeats
+  fp 4947675f8deb
+  todo not yet mapped to a test
+
+AC echo :: Echo SHALL support ping-pong mode :: Ping-pong alternates channels
+  fp 36d7dc8bf376
+  todo not yet mapped to a test
+
+AC echo :: Echo SHALL support tempo sync via note division :: Eighth note triplet sync at 120 BPM
+  fp 9eaf2d5357a2
+  todo not yet mapped to a test
+
+AC echo :: Echo SHALL support tempo sync via note division :: Quarter note sync at 120 BPM
+  fp 8c079d36aa62
+  todo not yet mapped to a test
+
+AC echo :: Echo SHALL support wet/dry mix :: Full wet, no dry
+  fp d804fab2c6f8
+  todo not yet mapped to a test
+
+AC event-routing-primitives :: Drum-machine dogfood uses generic routing :: Drum-machine example has explicit signal chain
+  fp 3070a5b76bdb
+  todo not yet mapped to a test
+
+AC event-routing-primitives :: Drum-machine dogfood uses generic routing :: Drum-machine example routes kick note
+  fp 8db09f9b99e9
+  todo not yet mapped to a test
+
+AC event-routing-primitives :: Event routing is metadata-discoverable :: Capability discovery describes event filter
+  fp 5e285543372d
+  todo not yet mapped to a test
+
+AC event-routing-primitives :: Event-routing primitives are event-only :: Audio route to event router is rejected
+  fp bc99e20bf5b1
+  todo not yet mapped to a test
+
+AC event-routing-primitives :: Event-routing primitives are event-only :: Event router alone produces no audio
+  fp 4d3371f223eb
+  todo not yet mapped to a test
+
+AC event-routing-primitives :: Generic event-filter primitive :: Event filter is deterministic
+  fp 4bfcc94218eb
+  todo not yet mapped to a test
+
+AC event-routing-primitives :: Generic event-filter primitive :: Note selector blocks non-matching event
+  fp a581536fb882
+  todo not yet mapped to a test
+
+AC event-routing-primitives :: Generic event-filter primitive :: Note selector passes matching event
+  fp 1ad45ee4a52e
+  todo not yet mapped to a test
+
+AC event-routing-primitives :: Simple poly-synth dogfood uses generic routing :: Poly-synth example is not a hardcoded instrument
+  fp fe10c70eec33
+  todo not yet mapped to a test
+
+AC event-routing-primitives :: Simple poly-synth dogfood uses generic routing :: Poly-synth example renders note event
+  fp e12fea3939a3
+  todo not yet mapped to a test
+
+AC feedback-routing :: Audio feedback requires delay boundary :: Audio feedback through one-sample delay is valid
+  fp 5e12b434e7b3
+  todo not yet mapped to a test
+
+AC feedback-routing :: Audio feedback requires delay boundary :: Instantaneous audio feedback is rejected
+  fp d3fc6bde26f3
+  todo not yet mapped to a test
+
+AC feedback-routing :: Control feedback requires scheduling boundary :: Control feedback through control delay is valid
+  fp 860fa652ccf0
+  todo not yet mapped to a test
+
+AC feedback-routing :: Control feedback requires scheduling boundary :: Instantaneous control feedback is rejected
+  fp 8f5291be67fc
+  todo not yet mapped to a test
+
+AC feedback-routing :: Event and script feedback is future scheduled :: Event feedback is queued
+  fp 7d0adfcc0c1c
+  todo not yet mapped to a test
+
+AC feedback-routing :: Graph cycles are detected :: Cycle path is reported
+  fp e6af4c5f93dd
+  todo not yet mapped to a test
+
+AC fft-analysis :: Crossover frequency response can be verified via FFT :: 2-band crossover low and high passband sum is flat
+  fp d22c149a5fb6
+  todo not yet mapped to a test
+
+AC fft-analysis :: FFT analysis computes magnitude response from impulse response :: FFT handles arbitrary-length impulse responses
+  fp 0364616b4025
+  todo not yet mapped to a test
+
+AC fft-analysis :: FFT analysis computes magnitude response from impulse response :: Impulse response produces flat magnitude spectrum
+  fp ec6d4ab3c821
+  todo not yet mapped to a test
+
+AC fft-analysis :: FFT analysis computes magnitude response from impulse response :: Magnitude response returns frequency and magnitude pairs
+  fp 36ac58f1a5ee
+  todo not yet mapped to a test
+
+AC fft-analysis :: FFT analysis uses windowing :: Windowed FFT reduces sidelobe amplitude
+  fp 75b49d1ee3c6
+  todo not yet mapped to a test
+
+AC fft-analysis :: Filter frequency response can be verified via FFT :: High-pass filter FFT response
+  fp d3b3622d5eaa
+  todo not yet mapped to a test
+
+AC fft-analysis :: Filter frequency response can be verified via FFT :: Low-pass filter FFT response matches specification
+  fp 22e5eef4d169
+  todo not yet mapped to a test
+
+AC fft-analysis :: Filter frequency response can be verified via FFT :: Parametric EQ FFT response shows boost
+  fp 9180aa742b53
+  todo not yet mapped to a test
+
+AC fft-analysis :: Spectral processor round-trip can be verified via FFT :: Spectral passthrough FFT difference is below threshold
+  fp 7dfdb0683ab1
+  todo not yet mapped to a test
+
+AC filter-module :: Biquad high-pass filter attenuates low frequencies :: High-pass attenuates low frequencies
+  fp 9e2e9f6e26a3
+  todo not yet mapped to a test
+
+AC filter-module :: Biquad low-pass filter passes frequencies below cutoff :: Low-pass attenuates high frequencies
+  fp 61fa07b18e0e
+  todo not yet mapped to a test
+
+AC filter-module :: Biquad parametric EQ boosts or cuts a frequency band :: PEQ boosts at center frequency
+  fp 9d9f7ccb9b3e
+  todo not yet mapped to a test
+
+AC filter-module :: Biquad parametric EQ boosts or cuts a frequency band :: PEQ cuts at center frequency
+  fp c478a5355464
+  todo not yet mapped to a test
+
+AC filter-module :: Biquad parametric EQ boosts or cuts a frequency band :: Q controls PEQ bandwidth
+  fp 757be9f23f3e
+  todo not yet mapped to a test
+
+AC filter-module :: Comb filter produces periodic notches or peaks :: Feedback comb produces peaks
+  fp 64fe065e298d
+  todo not yet mapped to a test
+
+AC filter-module :: Comb filter produces periodic notches or peaks :: Feedforward comb produces notches
+  fp 45f5f182fc30
+  todo not yet mapped to a test
+
+AC filter-module :: Filter algorithms handle edge cases :: Filter state is isolated per voice
+  fp 95505e0911d3
+  todo not yet mapped to a test
+
+AC filter-module :: Filter algorithms handle edge cases :: No NaN for extreme parameters
+  fp b6fbe8b4d303
+  todo not yet mapped to a test
+
+AC filter-module :: Filter has algorithm-adaptive control ports :: Cutoff modulation routes through the cutoff port
+  fp 99fc7ab0eff3
+  todo not yet mapped to a test
+
+AC filter-module :: Filter has algorithm-adaptive control ports :: Filter ports are registered in the built-in registry
+  fp d696b79844b2
+  todo not yet mapped to a test
+
+AC filter-module :: Filter module supports multiple algorithms :: Comb algorithm provides delay-based filtering
+  fp 36e34448561a
+  todo not yet mapped to a test
+
+AC filter-module :: Filter module supports multiple algorithms :: Filter module with biquad algorithm provides LP/HP/PEQ modes
+  fp 2cb307633c20
+  todo not yet mapped to a test
+
+AC filter-module :: Filter module supports multiple algorithms :: Moog ladder algorithm provides 4-pole resonant low-pass
+  fp 898056aca210
+  todo not yet mapped to a test
+
+AC filter-module :: Moog ladder filter produces resonant 4-pole low-pass :: Moog filter has 24 dB/oct rolloff
+  fp 3ced5b3ee841
+  todo not yet mapped to a test
+
+AC filter-module :: Moog ladder filter produces resonant 4-pole low-pass :: Moog resonance emphasizes cutoff
+  fp 985f9cd1a99b
+  todo not yet mapped to a test
+
+AC filter-module :: Moog ladder filter produces resonant 4-pole low-pass :: Moog self-oscillates at high resonance
+  fp 51e97bbf36f5
+  todo not yet mapped to a test
+
+AC frequency-splitter :: Frequency splitter handles edge cases :: Crossover at frequency extremes does not produce silence
+  fp 6778670132fc
+  todo not yet mapped to a test
+
+AC frequency-splitter :: Frequency splitter handles edge cases :: Splitter does not produce NaN
+  fp 329a175a8a81
+  todo not yet mapped to a test
+
+AC frequency-splitter :: Frequency splitter has audio_in and crossover frequency control inputs :: Crossover modulation routes through control port
+  fp 3cd8477e46bc
+  todo not yet mapped to a test
+
+AC frequency-splitter :: Frequency splitter splits audio into configurable bands :: 2-band splitter produces low and high outputs
+  fp 215aee7e8827
+  todo not yet mapped to a test
+
+AC frequency-splitter :: Frequency splitter splits audio into configurable bands :: 3-band splitter produces low, mid, and high outputs
+  fp 212002afaeb7
+  todo not yet mapped to a test
+
+AC frequency-splitter :: Frequency splitter splits audio into configurable bands :: Crossover transition region has constant power
+  fp 53ff954bfff9
+  todo not yet mapped to a test
+
+AC frequency-splitter :: Frequency splitter splits audio into configurable bands :: Split-and-reconstruct preserves waveform shape
+  fp d878b4ed6100
+  todo not yet mapped to a test
+
+AC frequency-splitter :: Frequency splitter splits audio into configurable bands :: Summed splitter bands reconstruct the original signal
+  fp 20a24c66abb7
+  todo not yet mapped to a test
+
+AC headless-engine :: Block processing model :: Render uses block scheduler
+  fp 504c3c36db02
+  todo not yet mapped to a test
+
+AC headless-engine :: Engine runs without a GUI :: Engine core is frontend independent
+  fp 2e98fb655481
+  todo not yet mapped to a test
+
+AC headless-engine :: Engine runs without a GUI :: Load patch in headless process
+  fp aacf3c81de2f
+  todo not yet mapped to a test
+
+AC headless-engine :: Offline rendering entry point :: Render patch to WAV
+  fp 506500583a8a
+  todo not yet mapped to a test
+
+AC headless-engine :: Offline rendering entry point :: Rendering is deterministic
+  fp 747cd9938709
+  todo not yet mapped to a test
+
+AC instrument-presets :: Example preset YAML :: Example preset YAML is loadable
+  fp b4ecf2051cab
+  todo not yet mapped to a test
+
+AC instrument-presets :: Preset YAML document :: Non-YAML preset is rejected
+  fp 2b6ded2ece02
+  todo not yet mapped to a test
+
+AC instrument-presets :: Preset YAML document :: Preset document is loaded
+  fp 0d94a47b5cd1
+  todo not yet mapped to a test
+
+AC instrument-presets :: Preset application :: Missing preset value uses default
+  fp b2066241dc1d
+  todo not yet mapped to a test
+
+AC instrument-presets :: Preset application :: Preset value reaches graph construction
+  fp 7bd1b7cce7bc
+  todo not yet mapped to a test
+
+AC instrument-presets :: Preset application :: Render with preset is deterministic
+  fp 4d84fa78ccfa
+  todo not yet mapped to a test
+
+AC instrument-presets :: Preset compatibility :: Compatible preset is accepted
+  fp fdd9cf33cb3d
+  todo not yet mapped to a test
+
+AC instrument-presets :: Preset compatibility :: Wrong instrument preset is rejected
+  fp 8891c9dae1f9
+  todo not yet mapped to a test
+
+AC instrument-presets :: Preset compatibility :: Wrong preset schema version is rejected
+  fp 2cc990597651
+  todo not yet mapped to a test
+
+AC instrument-presets :: Preset metadata :: Metadata changes do not affect render
+  fp e95fd40d20e2
+  todo not yet mapped to a test
+
+AC instrument-presets :: Preset metadata :: Preset declares metadata
+  fp 9df3333950bd
+  todo not yet mapped to a test
+
+AC instrument-presets :: Preset target validation :: Preset sets declared target
+  fp e284b42bc85e
+  todo not yet mapped to a test
+
+AC instrument-presets :: Preset target validation :: Preset sets incompatible value
+  fp 74cc25032aeb
+  todo not yet mapped to a test
+
+AC instrument-presets :: Preset target validation :: Preset sets unknown target
+  fp dace37ec8a86
+  todo not yet mapped to a test
+
+AC instrument-presets :: Presets cannot change graph structure :: Preset cannot bypass routing validation
+  fp a541f8c35f31
+  todo not yet mapped to a test
+
+AC instrument-presets :: Presets cannot change graph structure :: Preset declares graph data
+  fp 5f3222ba8be0
+  todo not yet mapped to a test
+
+AC midi-drum-loop-demo :: Broad drum loop integration verification :: Integration verification covers load schedule and render
+  fp 731048817dcc
+  test rust:drum_machine_loop_schedule_loads_routes_and_renders_audio
+
+AC midi-drum-loop-demo :: Broad drum loop integration verification :: Scheduled loop renders audio
+  fp 48e0201426d2
+  test rust:drum_machine_loop_schedule_loads_routes_and_renders_audio
+
+AC midi-drum-loop-demo :: Built-in simple drum pattern :: Pattern can be stopped by the user
+  fp 51af9c030323
+  todo not yet mapped to a test
+
+AC midi-drum-loop-demo :: Built-in simple drum pattern :: Pattern contains basic kit voices
+  fp aefaac661a68
+  test cpp:tests/cpp/DrumLoopPatternTest.cpp
+
+AC midi-drum-loop-demo :: Drum container is the default demo asset :: Default asset is a drum-machine
+  fp f14785450927
+  todo not yet mapped to a test
+
+AC midi-drum-loop-demo :: MIDI drum loop integration command :: Demo exercises integration path
+  fp fe2f89799892
+  todo not yet mapped to a test
+
+AC midi-drum-loop-demo :: MIDI drum loop integration command :: Demo loads drum asset and starts playback
+  fp 7a260f7fe6cf
+  todo not yet mapped to a test
+
+AC midi-drum-loop-demo :: MIDI drum loop integration command :: Demo uses MIDI note events
+  fp f78158169868
+  todo not yet mapped to a test
+
+AC modular-routing-graph :: Event routing does not imply downstream behavior :: Downstream signal chains use ordinary validation
+  fp 4e90fb1226ad
+  todo not yet mapped to a test
+
+AC modular-routing-graph :: Event routing does not imply downstream behavior :: Event routing does not hide invalid feedback
+  fp cca327242761
+  todo not yet mapped to a test
+
+AC modular-routing-graph :: Event-routing graph validation :: Audio route is rejected
+  fp bb96422aa130
+  todo not yet mapped to a test
+
+AC modular-routing-graph :: Event-routing graph validation :: Event output connects downstream
+  fp bb1080e1dd9b
+  todo not yet mapped to a test
+
+AC modular-routing-graph :: Event-routing graph validation :: Event route is accepted
+  fp c7d185f28e24
+  todo not yet mapped to a test
+
+AC modular-routing-graph :: Explicit many-to-one routing :: Multiple sources require a mixer
+  fp 01c47d76833b
+  todo not yet mapped to a test
+
+AC modular-routing-graph :: Instrument graph model :: Graph is constructed from patch declarations
+  fp 18f898cb8019
+  todo not yet mapped to a test
+
+AC modular-routing-graph :: Named typed ports :: Port direction is validated
+  fp 006a3a316e90
+  todo not yet mapped to a test
+
+AC modular-routing-graph :: Named typed ports :: Port existence is validated
+  fp 16553926eb8b
+  todo not yet mapped to a test
+
+AC modular-routing-graph :: Signal compatibility validation :: Compatible audio output connects to compatible audio input
+  fp 139b39b33727
+  todo not yet mapped to a test
+
+AC modular-routing-graph :: Signal compatibility validation :: Incompatible signal types are rejected
+  fp 3b0cd91dc5c3
+  todo not yet mapped to a test
+
+AC plugin-integration :: Audio processing remains realtime safe :: Host calls processBlock
+  fp 87ab7d33cbc7
+  todo not yet mapped to a test
+
+AC plugin-integration :: Instrument authoring is external to the plugin :: User wants to change the instrument graph
+  fp 1acd47fefe20
+  todo not yet mapped to a test
+
+AC plugin-integration :: Instrument loading is prepared off the audio thread :: Instrument load fails
+  fp 9651b4126e9f
+  todo not yet mapped to a test
+
+AC plugin-integration :: Instrument loading is prepared off the audio thread :: User reloads an instrument
+  fp ca2f54a6fd07
+  todo not yet mapped to a test
+
+AC plugin-integration :: MIDI handoff is sample accurate :: Host sends note event with non-zero sample offset
+  fp eee46a3135b7
+  todo not yet mapped to a test
+
+AC plugin-integration :: Parameter surface is stable for a loaded instrument :: Host has automation bound to loaded parameters
+  fp d2de5033c575
+  todo not yet mapped to a test
+
+AC plugin-integration :: Parameter surface is stable for a loaded instrument :: New instrument has a different public surface
+  fp 6e5d73df1ca4
+  todo not yet mapped to a test
+
+AC plugin-integration :: Plugin editor uses native JUCE generic controls :: Loaded instrument declares public parameters
+  fp 631e53f08e32
+  todo not yet mapped to a test
+
+AC plugin-integration :: Plugin editor uses native JUCE generic controls :: Plugin editor displays runtime information
+  fp bddf665c051b
+  todo not yet mapped to a test
+
+AC plugin-integration :: Plugin runtime loads immutable instrument definitions :: Audio callback does not mutate instrument structure
+  fp 3ea74c0895ce
+  todo not yet mapped to a test
+
+AC plugin-integration :: Plugin runtime loads immutable instrument definitions :: Loaded instrument establishes structure
+  fp 0c9d63050948
+  todo not yet mapped to a test
+
+AC plugin-integration :: Plugin state restores loaded instruments and values :: Host restores plugin state
+  fp 4df3db8f5c79
+  todo not yet mapped to a test
+
+AC plugin-integration :: Plugin state restores loaded instruments and values :: Host saves plugin state
+  fp 6f2a69e19e17
+  todo not yet mapped to a test
+
+AC plugin-integration :: Presets modify values only :: Compatible preset is loaded
+  fp 4410135da952
+  todo not yet mapped to a test
+
+AC plugin-integration :: Presets modify values only :: Incompatible preset is rejected
+  fp 0e43222c9c92
+  todo not yet mapped to a test
+
+AC primitive-decision-framework :: Composite eligibility :: Instrument voice expressible as composite
+  fp bef5f5926071
+  todo not yet mapped to a test
+
+AC primitive-decision-framework :: Deferred candidates :: Deferred primitive revisited
+  fp d45d29954a54
+  todo not yet mapped to a test
+
+AC primitive-decision-framework :: Future tooling eligibility :: LLM authoring support
+  fp 0462216a6241
+  todo not yet mapped to a test
+
+AC primitive-decision-framework :: Impulse generator :: Impulse triggered by event
+  fp 8bd7da2c3188
+  todo not yet mapped to a test
+
+AC primitive-decision-framework :: Minimal primitive roadmap :: Required primitive set reviewed
+  fp 207ce7676ba1
+  todo not yet mapped to a test
+
+AC primitive-decision-framework :: Module behaviour classification :: New behaviour request
+  fp ed9119e786e9
+  todo not yet mapped to a test
+
+AC primitive-decision-framework :: Multiply module :: Multiply audio by control
+  fp ae62a83060da
+  todo not yet mapped to a test
+
+AC primitive-decision-framework :: Multiply module :: Multiply two audio signals
+  fp 0c41c975ea0e
+  todo not yet mapped to a test
+
+AC primitive-decision-framework :: Noise generator :: Noise module output range
+  fp 3aa302460e18
+  todo not yet mapped to a test
+
+AC primitive-decision-framework :: Noise generator :: Noise module produces deterministic seeded white noise
+  fp 1efeba758e29
+  todo not yet mapped to a test
+
+AC primitive-decision-framework :: Note-to-control mapper :: Note maps to frequency
+  fp c6936930f4ce
+  todo not yet mapped to a test
+
+AC primitive-decision-framework :: Note-to-control mapper :: Note maps to normalized velocity
+  fp cd1bd19d1293
+  todo not yet mapped to a test
+
+AC primitive-decision-framework :: Oscillator waveform gap is explicit :: Acceptance example requires sine oscillator
+  fp 45abe27edff5
+  todo not yet mapped to a test
+
+AC primitive-decision-framework :: Preset eligibility :: Specific sound configuration
+  fp a9e65c3694f7
+  todo not yet mapped to a test
+
+AC primitive-decision-framework :: Primitive gate criteria :: Primitive fails gate without exception
+  fp 949c2dd2894e
+  todo not yet mapped to a test
+
+AC primitive-decision-framework :: Primitive gate criteria :: Primitive passes gate
+  fp aa830dc4a7af
+  todo not yet mapped to a test
+
+AC primitive-decision-framework :: Primitive gate criteria :: Primitive requires exception
+  fp ddc13ad26f2d
+  todo not yet mapped to a test
+
+AC primitive-decision-framework :: Script eligibility :: Event/control behaviour suitable for script
+  fp 4334a1bf1886
+  todo not yet mapped to a test
+
+AC reverb :: Reverb SHALL expose built-in module ports :: Module registration has correct ports
+  fp d37a8b7026d6
+  todo not yet mapped to a test
+
+AC reverb :: Reverb SHALL have a YAML composite module definition example :: Composite reverb example loads without error
+  fp 36f6158d9bea
+  todo not yet mapped to a test
+
+AC reverb :: Reverb SHALL process in global (non-voice) scope :: Reverb is global scope
+  fp bdfb2033aac7
+  todo not yet mapped to a test
+
+AC reverb :: Reverb SHALL support configurable decay time (RT60) :: Long decay produces sustained tail
+  fp 192c2a1d0419
+  todo not yet mapped to a test
+
+AC reverb :: Reverb SHALL support configurable decay time (RT60) :: Short decay produces brief tail
+  fp a7f8b4b90d74
+  todo not yet mapped to a test
+
+AC reverb :: Reverb SHALL support configurable room size :: Room size affects initial delay spread
+  fp 954e0c3a69fb
+  todo not yet mapped to a test
+
+AC reverb :: Reverb SHALL support damping frequency via OnePoleFilter pipeline stage :: Damping controls brightness of tail
+  fp b10da923a9cd
+  todo not yet mapped to a test
+
+AC reverb :: Reverb SHALL support diffusion density :: High diffusion smooths response
+  fp 2e524da75062
+  todo not yet mapped to a test
+
+AC reverb :: Reverb SHALL support pre-delay :: Pre-delay separates dry from reverb
+  fp 38e250d988d0
+  todo not yet mapped to a test
+
+AC reverb :: Reverb SHALL support stereo width :: Full stereo width decorrelates channels
+  fp e50862456fa5
+  todo not yet mapped to a test
+
+AC reverb :: Reverb SHALL support stereo width :: Mono reverb produces identical channels
+  fp 8f1aa37319cf
+  todo not yet mapped to a test
+
+AC reverb :: Reverb SHALL support wet/dry mix :: Full wet produces only reverberated signal
+  fp e76158984ad3
+  todo not yet mapped to a test
+
+AC reverb :: Reverb SHALL use Schroeder/Moorer topology :: Impulse response has dense tail
+  fp a8206270524a
+  todo not yet mapped to a test
+
+AC rust-engine-architecture :: Compiled patch drives offline and realtime rendering :: Event routing uses typed event edges
+  fp 70a53ab145f9
+  todo not yet mapped to a test
+
+AC rust-engine-architecture :: Compiled patch drives offline and realtime rendering :: Offline render uses compiled patch
+  fp 341ee2b01c77
+  todo not yet mapped to a test
+
+AC rust-engine-architecture :: Compiled patch drives offline and realtime rendering :: Realtime render avoids port-name lookup
+  fp b0aff7c7ff54
+  todo not yet mapped to a test
+
+AC rust-engine-architecture :: Compiled patch drives offline and realtime rendering :: Realtime render uses compiled render plan
+  fp 518e6f5f9ce4
+  todo not yet mapped to a test
+
+AC rust-engine-architecture :: Compiled patch drives offline and realtime rendering :: Shared compilation preserves parity
+  fp 408c58a09a9e
+  todo not yet mapped to a test
+
+AC rust-engine-architecture :: DSP algorithms are independent from graph concerns :: DSP can be tested without graph setup
+  fp 040c4a1eb13f
+  todo not yet mapped to a test
+
+AC rust-engine-architecture :: DSP algorithms are independent from graph concerns :: Module adapter owns graph translation
+  fp 9fc9b146856f
+  todo not yet mapped to a test
+
+AC rust-engine-architecture :: FFI boundary delegates to safe Rust APIs :: C ABI symbol names remain stable
+  fp 50de89289a5e
+  todo not yet mapped to a test
+
+AC rust-engine-architecture :: FFI boundary delegates to safe Rust APIs :: Invalid FFI inputs are contained
+  fp 88d98e0a997a
+  todo not yet mapped to a test
+
+AC rust-engine-architecture :: Patch preparation pipeline :: Invalid patch fails before runtime creation
+  fp 602d77c96dcb
+  todo not yet mapped to a test
+
+AC rust-engine-architecture :: Patch preparation pipeline :: Valid patch produces prepared runtime
+  fp 099dd428ce32
+  todo not yet mapped to a test
+
+AC rust-engine-architecture :: Polyphonic realtime rendering uses prepared storage :: Inactive voices do not leak stale output
+  fp 513da6044e60
+  todo not yet mapped to a test
+
+AC rust-engine-architecture :: Polyphonic realtime rendering uses prepared storage :: Voice event routing uses prepared queues
+  fp 74aee0e24f3d
+  todo not yet mapped to a test
+
+AC rust-engine-architecture :: Polyphonic realtime rendering uses prepared storage :: Voice outputs accumulate into prepared buffers
+  fp 598da39f1cac
+  todo not yet mapped to a test
+
+AC rust-engine-architecture :: Public API boundary :: Crate root exposes facade APIs
+  fp 02d4009ccbb0
+  todo not yet mapped to a test
+
+AC rust-engine-architecture :: Public API boundary :: Implementation modules remain crate-private
+  fp a1a08cca9bf6
+  todo not yet mapped to a test
+
+AC rust-engine-architecture :: Realtime event delivery is bounded :: Event overflow is deterministic
+  fp 7e9a4fc907e5
+  todo not yet mapped to a test
+
+AC rust-engine-architecture :: Realtime event delivery is bounded :: Event-producing module uses bounded writer
+  fp 59adaa0ed779
+  todo not yet mapped to a test
+
+AC rust-engine-architecture :: Realtime event delivery is bounded :: Module events route through prepared event edges
+  fp 0eb18a06ac32
+  todo not yet mapped to a test
+
+AC rust-engine-architecture :: Realtime event delivery is bounded :: Pending events enter prepared queues
+  fp 22708365715b
+  todo not yet mapped to a test
+
+AC rust-engine-architecture :: Realtime render path preallocates required resources :: Oversized render is chunked through prepared storage
+  fp afcb606eab2e
+  todo not yet mapped to a test
+
+AC rust-engine-architecture :: Realtime render path preallocates required resources :: Prepared runtime records capacity
+  fp fe845923ff89
+  todo not yet mapped to a test
+
+AC rust-engine-architecture :: Realtime render path preallocates required resources :: Prepared-size realtime render does not allocate
+  fp 7ce147fdaca8
+  todo not yet mapped to a test
+
+AC rust-engine-architecture :: Realtime render path preallocates required resources :: Render reuses prepared resources
+  fp 6186b123b557
+  todo not yet mapped to a test
+
+AC rust-engine-architecture :: Runtime dispatch uses typed module kinds :: Module kind is resolved during preparation
+  fp 039c987a62ea
+  todo not yet mapped to a test
+
+AC rust-engine-architecture :: Runtime dispatch uses typed module kinds :: Module writes into prepared outputs
+  fp ab5c631db31b
+  todo not yet mapped to a test
+
+AC rust-engine-architecture :: Runtime dispatch uses typed module kinds :: Unknown module type fails before rendering
+  fp 719b4e8638a3
+  todo not yet mapped to a test
+
+AC script-modules :: Rhai script modules execute only event/control logic :: Audio ports are rejected
+  fp 0f9a31335ce4
+  todo not yet mapped to a test
+
+AC script-modules :: Rhai script modules execute only event/control logic :: Event routing script emits events to declared ports
+  fp bf3253389108
+  todo not yet mapped to a test
+
+AC script-modules :: Rhai scripts expose only the Dandrum host context :: Unsupported host capabilities are unavailable
+  fp 5998304aa745
+  todo not yet mapped to a test
+
+AC script-modules :: Rhai scripts run under deterministic limits :: Excess emitted events are bounded
+  fp 52b0ffd4ada6
+  todo not yet mapped to a test
+
+AC script-modules :: Rhai scripts run under deterministic limits :: Infinite loop exceeds operation budget
+  fp c61a406330c9
+  todo not yet mapped to a test
+
+AC script-modules :: Rhai source is prepared off the render path :: Invalid Rhai source fails preparation
+  fp 42f05ea79953
+  todo not yet mapped to a test
+
+AC script-modules :: Rhai source is prepared off the render path :: Valid Rhai source compiles during preparation
+  fp d07f36a5d2e0
+  todo not yet mapped to a test
+
+AC script-modules :: Script deterministic execution :: Script produces identical output
+  fp 359c7d713df6
+  todo not yet mapped to a test
+
+AC script-modules :: Script execution is bounded :: Script cannot access filesystem during render
+  fp af21b0a38a9d
+  todo not yet mapped to a test
+
+AC script-modules :: Script execution is bounded :: Script cannot allocate heap during execution
+  fp 487e38ceb794
+  todo not yet mapped to a test
+
+AC script-modules :: Script execution is bounded :: Script cannot perform blocking calls
+  fp e62a8abe77d6
+  todo not yet mapped to a test
+
+AC script-modules :: Script execution is bounded :: Script output feedback is queued
+  fp 5d7303a67121
+  todo not yet mapped to a test
+
+AC script-modules :: Script failures are deterministic and non-fatal :: Runtime script failure produces safe output
+  fp 2fd7f858a0dc
+  todo not yet mapped to a test
+
+AC script-modules :: Script modules are graph modules :: Script module participates in routing
+  fp b13cddd55112
+  todo not yet mapped to a test
+
+AC script-modules :: Script modules process events and control signals :: Script transforms MIDI event to control output
+  fp 0bf2f52b63aa
+  todo not yet mapped to a test
+
+AC script-modules :: Script pre-validation :: Invalid script is rejected at load time
+  fp 27001242bba2
+  todo not yet mapped to a test
+
+AC script-modules :: Script pre-validation :: Script validated before render
+  fp aa71ea1cf135
+  todo not yet mapped to a test
+
+AC script-modules :: Script scope excludes audio-rate DSP :: Audio-rate output from script is prevented
+  fp b698544daf36
+  todo not yet mapped to a test
+
+AC script-modules :: Script stable error reporting :: Script error has stable error code
+  fp c1089373b8ff
+  todo not yet mapped to a test
+
+AC script-modules :: Script state is retained safely :: Script remembers previous note
+  fp e7bce780e09b
+  todo not yet mapped to a test
+
+AC spectral-processing :: Implementation approach :: STFT uses 50% overlap
+  fp c49baf296d6a
+  todo not yet mapped to a test
+
+AC spectral-processing :: Spectral processing handles real signals correctly :: Spectral processor does not produce artifacts in passthrough
+  fp 792cbd2ba63c
+  todo not yet mapped to a test
+
+AC spectral-processing :: Spectral processing handles real signals correctly :: Spectral processor handles edge case inputs
+  fp 7eff53e6fbbd
+  todo not yet mapped to a test
+
+AC spectral-processing :: Spectral processor applies FFT-based effects :: Spectral gate suppresses bins below threshold
+  fp d0067939b74c
+  todo not yet mapped to a test
+
+AC spectral-processing :: Spectral processor applies FFT-based effects :: Spectral processor exposes control inputs for parameters
+  fp df57cc1a0857
+  todo not yet mapped to a test
+
+AC spectral-processing :: Spectral processor applies FFT-based effects :: Spectral processor passes audio through with no modification
+  fp 12befcf7a253
+  todo not yet mapped to a test
+
+AC validation-diagnostics :: Diagnostic severity levels :: Error severity prevents render
+  fp 9073e5cebd3a
+  todo not yet mapped to a test
+
+AC validation-diagnostics :: Diagnostic severity levels :: Warning allows render
+  fp 10c6fda13489
+  todo not yet mapped to a test
+
+AC validation-diagnostics :: Diagnostics collection interface :: Diagnostics collected after load
+  fp a05e5da67533
+  todo not yet mapped to a test
+
+AC validation-diagnostics :: Port-level diagnostics :: Connection error references port
+  fp 761ce30b04f0
+  todo not yet mapped to a test
+
+AC validation-diagnostics :: Stable error codes :: Error code is stable
+  fp c1ed4542cc59
+  todo not yet mapped to a test
+
+AC validation-diagnostics :: Structured diagnostic records :: Validation error returns structured diagnostic
+  fp c8ae49050818
+  todo not yet mapped to a test
+
+AC validation-diagnostics :: Suggested fix :: Missing connection suggests add
+  fp 2b1391a59151
+  todo not yet mapped to a test
+
+AC validation-diagnostics :: Type and value reporting :: Type mismatch reports expected and actual
+  fp 07ba47ce2c73
+  todo not yet mapped to a test
+
+AC validation-diagnostics :: YAML source location :: Error reports YAML location
+  fp a36351e71495
+  todo not yet mapped to a test
+
+AC vca-control-routing :: Explicit control summing :: Two modulators feed a mixer before a destination
+  fp 3e0cc3c4353c
+  todo not yet mapped to a test
+
+AC vca-control-routing :: Modulation destinations are ports :: Filter cutoff is routed through a control port
+  fp 269c6ac5bd22
+  todo not yet mapped to a test
+
+AC vca-control-routing :: VCA/control signal compatibility :: Any compatible VCA source can modulate any compatible destination
+  fp 25f9542ab15b
+  todo not yet mapped to a test
+
+AC vca-control-routing :: VCA/control signal compatibility :: Compatible VCA output connects to compatible VCA input
+  fp d05de223aa0e
+  todo not yet mapped to a test
+
+AC yaml-patch-format :: Asset validation extension :: Asset declared in patch
+  fp 9f348cf1b633
+  todo not yet mapped to a test
+
+AC yaml-patch-format :: Asset validation extension :: Missing asset produces diagnostic
+  fp 4b54521ae986
+  todo not yet mapped to a test
+
+AC yaml-patch-format :: Composite parameter bindings in YAML :: Composite binds public parameter to internal module
+  fp 8dbe0cb7c1cf
+  todo not yet mapped to a test
+
+AC yaml-patch-format :: Composite parameter bindings in YAML :: Unsupported binding expression is rejected
+  fp 4bd9c5fe669e
+  todo not yet mapped to a test
+
+AC yaml-patch-format :: Composite parameter declarations in YAML :: Composite declares public parameters
+  fp 941bb6227450
+  todo not yet mapped to a test
+
+AC yaml-patch-format :: Composite references use existing module definition semantics :: Composite module declaration
+  fp cff8e74ad959
+  todo not yet mapped to a test
+
+AC yaml-patch-format :: Composite references use existing module definition semantics :: Unsupported composite_id syntax
+  fp cee5b369fd74
+  todo not yet mapped to a test
+
+AC yaml-patch-format :: Event-routing YAML rejects hidden signal-chain fields :: YAML rejects hidden audio fields
+  fp d3f46065d0a0
+  todo not yet mapped to a test
+
+AC yaml-patch-format :: Event-routing YAML rejects hidden signal-chain fields :: YAML rejects sequencing fields
+  fp deec712edf1c
+  todo not yet mapped to a test
+
+AC yaml-patch-format :: Event-routing module YAML :: YAML avoids instrument-specific routing containers
+  fp d8e3625ac457
+  todo not yet mapped to a test
+
+AC yaml-patch-format :: Event-routing module YAML :: YAML declares event filter
+  fp aca0590474f0
+  todo not yet mapped to a test
+
+AC yaml-patch-format :: Existing patch sections remain canonical :: Existing patch remains valid
+  fp 936558b46d15
+  todo not yet mapped to a test
+
+AC yaml-patch-format :: Instrument preset identity :: Patch declares preset-compatible identity
+  fp de76d082aca6
+  todo not yet mapped to a test
+
+AC yaml-patch-format :: Instrument preset identity :: Patch without preset identity rejects external preset
+  fp 9d0634981564
+  todo not yet mapped to a test
+
+AC yaml-patch-format :: Metadata extension is compatible :: Existing metadata parsed
+  fp e8e7b0d84865
+  todo not yet mapped to a test
+
+AC yaml-patch-format :: Metadata extension is compatible :: Optional metadata extension parsed
+  fp 3e6dd336f140
+  todo not yet mapped to a test
+
+AC yaml-patch-format :: Module instance parameters :: Module instance declares parameters
+  fp 64043cdd0d8e
+  todo not yet mapped to a test
+
+AC yaml-patch-format :: Modules and connections are separate declarations :: Patch declares modules and connections
+  fp 2e5c2dc79ce8
+  todo not yet mapped to a test
+
+AC yaml-patch-format :: Parameter values are parsed deterministically :: Unparseable value is rejected
+  fp 692b1607d146
+  todo not yet mapped to a test
+
+AC yaml-patch-format :: Patch-level parameter bindings are compatible :: Patch parameter binding target missing
+  fp 14c725b4aa8c
+  todo not yet mapped to a test
+
+AC yaml-patch-format :: Patch-level parameter bindings are compatible :: Patch parameter binds to module parameter
+  fp 68ccbb21102f
+  todo not yet mapped to a test
+
+AC yaml-patch-format :: Preset surface is explicit :: Internal parameter is not automatically presettable
+  fp cc05d7a7a18c
+  todo not yet mapped to a test
+
+AC yaml-patch-format :: Preset surface is explicit :: Public target hides internal path
+  fp a1ac3435ba89
+  todo not yet mapped to a test
+
+AC yaml-patch-format :: Presets are parameter sets, not new graph semantics :: Preset applies parameter values
+  fp 4ef6eaeb6a6e
+  todo not yet mapped to a test
+
+AC yaml-patch-format :: Presets are parameter sets, not new graph semantics :: Preset cannot hide graph changes
+  fp a779c8ca255e
+  todo not yet mapped to a test
+
+AC yaml-patch-format :: Public preset surface :: Duplicate preset targets are rejected
+  fp 9bf583fa46a6
+  todo not yet mapped to a test
+
+AC yaml-patch-format :: Public preset surface :: Patch declares preset asset target
+  fp 5b67c31db7fa
+  todo not yet mapped to a test
+
+AC yaml-patch-format :: Public preset surface :: Patch declares preset parameter target
+  fp 3e07e66539e6
+  todo not yet mapped to a test
+
+AC yaml-patch-format :: Public preset surface :: Preset target maps to missing destination
+  fp 3a5c8260c2dd
+  todo not yet mapped to a test
+
+AC yaml-patch-format :: Resolved YAML patch preparation :: Resolved patch contains concrete parameters
+  fp 0f52c085ce8d
+  todo not yet mapped to a test
+
+AC yaml-patch-format :: Script and custom port declarations :: Script ports are declared in YAML
+  fp bf218f2f5d4f
+  todo not yet mapped to a test
+
+AC yaml-patch-format :: Stable module identifiers :: Duplicate module identifiers are rejected
+  fp 64fdfb814765
+  todo not yet mapped to a test
+
+AC yaml-patch-format :: YAML patch document :: Non-YAML patch is rejected
+  fp 28b8a5dfa0fb
+  todo not yet mapped to a test
+
+AC yaml-patch-format :: YAML patch document :: YAML patch is loaded
+  fp 77f32c949040
+  todo not yet mapped to a test

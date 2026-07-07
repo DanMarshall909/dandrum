@@ -65,6 +65,13 @@
     5. it has clear testable DSP behaviour.
 - Do not mark OpenSpec implementation tasks complete until the related tests and relevant build/test commands pass, or
   until any unavoidable verification gap is documented.
+- Every spec acceptance criterion (each `#### Scenario:` in `openspec/specs/**/spec.md`) must be proven by at least one
+  test, tracked in `spec-tests.map` and enforced by `scripts/check-spec-coverage`. Completing a ticket includes: for
+  each AC the change adds or touches, add or confirm a `test` line that genuinely proves the AC (not just exercises the
+  code), and remove the `todo` ratchet entry. If a scenario's text changes, its fingerprint drifts and the check fails;
+  re-review whether the mapped tests still prove the AC, then re-affirm with `scripts/check-spec-coverage
+  --update-fingerprints`. Updating the fingerprint is the recorded act of "I reviewed that these tests prove this AC" —
+  do not run it blindly to silence the gate.
 - Treat each verified material change as a commit boundary. Before committing, inspect `git status`, `git diff`, and
   recent log, stage only the intended files, and commit the focused change separately from unrelated work.
 
@@ -92,6 +99,8 @@
 - Repo-local OpenCode shortcuts live in `.opencode/commands/`; matching skills live in `.opencode/skills/`.
 - Run OpenSpec validation before finalizing or archiving a change, and document any unavoidable verification gaps in the
   response.
+- Before archiving a change, run `scripts/check-spec-coverage`: every AC synced into the main specs by that change must
+  be mapped to a real test in `spec-tests.map` (no lingering `todo` for the change's own scenarios).
 
 ## Implementation Order For In-Progress Changes
 
