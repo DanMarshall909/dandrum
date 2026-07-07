@@ -17,6 +17,8 @@ pub mod graph;
 
 pub mod cli;
 
+pub mod instrument_state;
+
 pub mod patch;
 
 pub mod script;
