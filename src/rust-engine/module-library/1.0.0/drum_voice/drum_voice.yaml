@@ -1,0 +1,22 @@
+inputs:
+  - name: trigger
+    signal_type: event
+    maps_to:
+      - env.gate
+outputs:
+  - name: audio
+    signal_type: audio
+    maps_from:
+      - vca.audio_out
+modules:
+  - id: osc
+    type: oscillator
+  - id: env
+    type: adsr
+  - id: vca
+    type: gain
+connections:
+  - from: osc.audio
+    to: vca.audio_in
+  - from: env.value
+    to: vca.gain
