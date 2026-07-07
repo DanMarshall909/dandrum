@@ -412,6 +412,36 @@ mod tests {
         );
     }
 
+    #[test]
+    fn absolute_segment_is_rejected_as_a_path_escape() {
+        let error = resolve("$LIB//etc/passwd", &roots())
+            .expect_err("an absolute path after the macro should be rejected");
+        assert!(
+            matches!(error, ModuleReferenceError::PathEscape { .. }),
+            "an absolute segment must be treated as a path escape, got {error:?}"
+        );
+    }
+
+    #[test]
+    fn macro_without_a_package_path_is_malformed() {
+        let error = resolve(LIB_MACRO, &roots())
+            .expect_err("a bare macro with no package path should be rejected");
+        assert!(
+            matches!(error, ModuleReferenceError::Malformed { .. }),
+            "a reference with no path after the macro should be malformed, got {error:?}"
+        );
+    }
+
+    #[test]
+    fn non_reference_type_reports_not_a_reference() {
+        let error = resolve("oscillator", &roots())
+            .expect_err("a non-$ type should not resolve as a reference");
+        assert!(
+            matches!(error, ModuleReferenceError::NotAReference { .. }),
+            "a built-in type name should report NotAReference, got {error:?}"
+        );
+    }
+
     fn temp_library_root(tag: &str) -> PathBuf {
         std::env::temp_dir().join(format!(
             "dandrum-module-reference-{tag}-{}",
