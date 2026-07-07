@@ -9,6 +9,7 @@
 
 #include <juce_audio_processors/juce_audio_processors.h>
 
+#include "InstrumentFileWatcher.h"
 #include "RustEngineBindings.h"
 
 class DandrumAudioProcessor final : public juce::AudioProcessor
@@ -66,6 +67,23 @@ public:
     /// are serialized so one reload's engine can never be destroyed while
     /// another is still building on it. Must not be called from processBlock.
     bool reloadInstrumentFromFile (const juce::File& yamlFile);
+
+    /// Enables/disables watching the loaded instrument file for external
+    /// edits. While disabled, external edits do not trigger a reload and the
+    /// running instrument is left unchanged until watching is re-enabled or a
+    /// manual reload is requested. Safe to call from the message thread.
+    void setFileWatchEnabled (bool shouldWatch);
+    bool isFileWatchEnabled() const noexcept;
+
+    /// The instrument file currently being watched for external edits, if any.
+    const juce::File& watchedInstrumentFile() const noexcept;
+
+    /// Polls the watched instrument file once for a stable external change,
+    /// reloading through the standard replacement transaction if one is found.
+    /// The plugin drives this from a low-frequency background timer; it is
+    /// exposed so tests can drive polling deterministically. Never called from
+    /// processBlock.
+    void pollInstrumentFileForChanges();
 
     /// Applies a compatible preset as mutable public-parameter state for the
     /// currently loaded immutable instrument. This never reparses, rewrites, or
@@ -203,6 +221,10 @@ private:
     // the other's just-published engine as their own "previous" and destroy it
     // while it is still in use.
     std::mutex reloadMutex;
+    // Watches the loaded instrument file for external edits and reloads it
+    // through the standard replacement transaction. Declared last so it is
+    // destroyed (and its timer stopped) before the members its callback uses.
+    InstrumentFileWatcher instrumentFileWatcher;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (DandrumAudioProcessor)
 };

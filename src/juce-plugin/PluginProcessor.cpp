@@ -299,6 +299,10 @@ DandrumAudioProcessor::DandrumAudioProcessor()
     instrumentLoaded = loadDefaultInstrument();
     if (instrumentLoaded)
         preparePublicParameterSlots (loadPublicParameterDescriptors (dandrum::defaultPatchPath().string()), nullptr, false);
+
+    instrumentFileWatcher.onReload ([this] (const juce::File& changedFile) { reloadInstrumentFromFile (changedFile); });
+    if (instrumentLoaded && loadedInstrument.sourceFile.existsAsFile())
+        instrumentFileWatcher.watchFile (loadedInstrument.sourceFile);
 }
 
 DandrumAudioProcessor::~DandrumAudioProcessor()
@@ -789,6 +793,14 @@ void DandrumAudioProcessor::setStateInformation (const void* data, int sizeInByt
     loadedPreset.name = state.getProperty ("preset_name").toString();
     loadedPreset.yamlContent = state.getProperty ("preset_yaml").toString();
     lastLoadError.clear();
+
+    // Watch the restored instrument's original file only if it still exists on
+    // this machine; the embedded YAML is the source of truth for restore, and a
+    // stale path from another machine must not become a phantom watch target.
+    if (loadedInstrument.sourceFile.existsAsFile())
+        instrumentFileWatcher.watchFile (loadedInstrument.sourceFile);
+    else
+        instrumentFileWatcher.stopWatching();
 }
 
 bool DandrumAudioProcessor::isInstrumentLoaded() const noexcept
@@ -895,7 +907,31 @@ bool DandrumAudioProcessor::reloadInstrumentFromFile (const juce::File& yamlFile
     const std::lock_guard<std::mutex> reloadLock (reloadMutex);
     const auto yamlText = yamlFile.loadFileAsString();
     loadedPreset = {};
-    return replaceActiveEngineFromFile (yamlFile, yamlFile, yamlText, true, false, &lastReloadWarning);
+    const auto reloaded = replaceActiveEngineFromFile (yamlFile, yamlFile, yamlText, true, false, &lastReloadWarning);
+    if (reloaded)
+        instrumentFileWatcher.watchFile (yamlFile);
+
+    return reloaded;
+}
+
+void DandrumAudioProcessor::setFileWatchEnabled (bool shouldWatch)
+{
+    instrumentFileWatcher.setEnabled (shouldWatch);
+}
+
+bool DandrumAudioProcessor::isFileWatchEnabled() const noexcept
+{
+    return instrumentFileWatcher.isEnabled();
+}
+
+const juce::File& DandrumAudioProcessor::watchedInstrumentFile() const noexcept
+{
+    return instrumentFileWatcher.watchedFile();
+}
+
+void DandrumAudioProcessor::pollInstrumentFileForChanges()
+{
+    instrumentFileWatcher.poll();
 }
 
 bool DandrumAudioProcessor::loadPresetFromFile (const juce::File& presetFile)

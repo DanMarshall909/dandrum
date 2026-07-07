@@ -7,6 +7,14 @@ DandrumAudioProcessorEditor::DandrumAudioProcessorEditor (DandrumAudioProcessor&
     statusLabel.setJustificationType (juce::Justification::centredLeft);
     addAndMakeVisible (statusLabel);
 
+    fileWatchToggle.setToggleState (processor.isFileWatchEnabled(), juce::dontSendNotification);
+    fileWatchToggle.onClick = [this]
+    {
+        processor.setFileWatchEnabled (fileWatchToggle.getToggleState());
+        updateStatusLabel();
+    };
+    addAndMakeVisible (fileWatchToggle);
+
     loadPresetButton.onClick = [this]
     {
         presetChooser = std::make_unique<juce::FileChooser> (
@@ -45,8 +53,10 @@ void DandrumAudioProcessorEditor::resized()
 {
     auto area = getLocalBounds().reduced (12);
     auto top = area.removeFromTop (30);
-    statusLabel.setBounds (top.removeFromLeft (juce::jmax (120, top.getWidth() - 150)));
     loadPresetButton.setBounds (top.removeFromRight (140));
+    top.removeFromRight (8);
+    fileWatchToggle.setBounds (top.removeFromRight (110));
+    statusLabel.setBounds (top.removeFromLeft (juce::jmax (120, top.getWidth())));
     area.removeFromTop (12);
 
     const auto controlWidth = 120;

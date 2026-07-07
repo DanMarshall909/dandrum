@@ -382,10 +382,17 @@ int main()
     }
 
     const auto carriedOverTailRms = renderTailRms (*reloadProcessor, reloadBlockSize, reloadNumBlocks, 36);
-    if (! (carriedOverTailRms < shortBeforeReloadTailRms * 2.0f))
+    // The carried-over 50ms decay is fully silent this far into the tail, so its
+    // tail RMS is ~0 and can't support a multiplicative bound. A broken carry-over
+    // would instead apply the replacement file's 1900ms default and leave a
+    // clearly audible tail here, comparable to the long-decay render measured
+    // above. Bound against a small fraction of that known-audible level.
+    const auto carriedOverTailCeiling = juce::jmax (shortBeforeReloadTailRms * 2.0f, longDecayTailRms * 0.1f);
+    if (! (carriedOverTailRms < carriedOverTailCeiling))
     {
         std::cerr << "explicit kick.decay_ms value was not carried over across reload: before="
-                   << shortBeforeReloadTailRms << " afterReload=" << carriedOverTailRms << '\n';
+                   << shortBeforeReloadTailRms << " afterReload=" << carriedOverTailRms
+                   << " ceiling=" << carriedOverTailCeiling << '\n';
         return 1;
     }
 

@@ -34,6 +34,7 @@ private:
 
     DandrumAudioProcessor& processor;
     juce::Label statusLabel;
+    juce::ToggleButton fileWatchToggle { "Watch File" };
     juce::TextButton loadPresetButton { "Load Preset..." };
     std::unique_ptr<juce::FileChooser> presetChooser;
     std::vector<ParameterControl> parameterControls;
