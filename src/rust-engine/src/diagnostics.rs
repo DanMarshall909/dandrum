@@ -71,6 +71,7 @@ pub mod error_codes {
     pub const LIBRARY_PATH_ESCAPE: &str = "library.path_escape";
     pub const LIBRARY_MALFORMED_REFERENCE: &str = "library.malformed_reference";
     pub const LIBRARY_LATEST_UNAVAILABLE: &str = "library.latest_unavailable";
+    pub const LIBRARY_SEED_FAILED: &str = "library.seed_failed";
     pub const LIBRARY_PACKAGE_READ_FAILED: &str = "library.package_read_failed";
     pub const LIBRARY_PACKAGE_PARSE_FAILED: &str = "library.package_parse_failed";
     pub const LIBRARY_PACKAGE_NAME_MISMATCH: &str = "library.package_name_mismatch";
