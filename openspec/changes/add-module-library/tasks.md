@@ -26,7 +26,7 @@
 
 ## 3. Version-first layout and `$LIB` seeding
 
-- [ ] 3.1 Implement version-first resolution `<root>/<version>/<module>/<module>.yaml` with coexisting versions and a `latest` alias.
+- [x] 3.1 Implement version-first resolution `<root>/<version>/<module>/<module>.yaml` with coexisting versions and a `latest` alias. Implemented by resolving `$LIB/latest/...` to the highest numeric version directory while leaving pinned `$LIB/<version>/...` references stable.
 - [ ] 3.2 Implement the seeded standard library: canonical storage location, CRC recording, and CRC-compare-then-extract into `$LIB/<version>/` off the render path (preparation/load only), with atomic per-version extraction.
 - [ ] 3.3 Make re-seeding additive (add version dirs, repoint `latest`, keep old versions resolvable); skip extraction when the CRC is unchanged.
 
