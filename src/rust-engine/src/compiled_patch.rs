@@ -292,6 +292,12 @@ impl CompiledPatch {
         let Some(slot_index) = self.parameter_slot_index(module_id, parameter_name) else {
             return false;
         };
+        self.set_parameter_slot(slot_index, value)
+    }
+
+    /// O(1) parameter update by a previously-resolved slot index, with no string
+    /// comparisons or module search. Safe to call from a realtime audio callback.
+    pub fn set_parameter_slot(&mut self, slot_index: usize, value: f32) -> bool {
         let Some(slot) = self.parameter_slots.get_mut(slot_index) else {
             return false;
         };
@@ -300,7 +306,7 @@ impl CompiledPatch {
         true
     }
 
-    fn parameter_slot_index(&self, module_id: &str, parameter_name: &str) -> Option<usize> {
+    pub fn parameter_slot_index(&self, module_id: &str, parameter_name: &str) -> Option<usize> {
         self.nodes
             .iter()
             .find(|node| node.id.as_str() == module_id)?
@@ -515,5 +521,41 @@ mod tests {
         assert_eq!(compiled.numeric_parameter_value("gain", "gain"), Some(0.5));
         assert!(compiled.set_numeric_parameter_by_target("gain", "gain", 0.25));
         assert_eq!(compiled.numeric_parameter_value("gain", "gain"), Some(0.25));
+    }
+
+    #[test]
+    fn parameter_slot_index_resolves_once_and_can_be_reused_for_o1_updates() {
+        let graph = Graph::new(
+            vec![audio_processor("gain").with_params(BTreeMap::from([(
+                "gain".to_string(),
+                "0.5".to_string(),
+            )]))],
+            vec![],
+        );
+
+        let mut compiled = compile_graph(&graph);
+
+        let slot_index = compiled
+            .parameter_slot_index("gain", "gain")
+            .expect("gain parameter should resolve to a slot");
+
+        assert!(compiled.set_parameter_slot(slot_index, 0.75));
+        assert_eq!(compiled.numeric_parameter_value("gain", "gain"), Some(0.75));
+    }
+
+    #[test]
+    fn parameter_slot_index_returns_none_for_unknown_target() {
+        let graph = Graph::new(
+            vec![audio_processor("gain").with_params(BTreeMap::from([(
+                "gain".to_string(),
+                "0.5".to_string(),
+            )]))],
+            vec![],
+        );
+
+        let compiled = compile_graph(&graph);
+
+        assert_eq!(compiled.parameter_slot_index("gain", "missing"), None);
+        assert_eq!(compiled.parameter_slot_index("missing", "gain"), None);
     }
 }

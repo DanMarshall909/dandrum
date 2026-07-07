@@ -340,6 +340,25 @@ impl DandrumEngine {
             .and_then(|processor| processor.numeric_parameter_value(module_id, parameter_name))
     }
 
+    /// Resolve a (module_id, parameter_name) target to a slot index once, off the
+    /// audio thread. The returned index can then be applied every block via
+    /// `set_parameter_slot` without any string lookup.
+    pub fn parameter_slot_index(&self, module_id: &str, parameter_name: &str) -> Option<usize> {
+        self.graph_processor
+            .as_ref()
+            .and_then(|processor| processor.parameter_slot_index(module_id, parameter_name))
+    }
+
+    /// O(1) parameter update by a previously-resolved slot index. Safe to call
+    /// from a realtime audio callback.
+    pub fn set_parameter_slot(&mut self, slot_index: usize, value: f32) -> bool {
+        let Some(gp) = &mut self.graph_processor else {
+            return false;
+        };
+
+        gp.set_parameter_slot(slot_index, value)
+    }
+
     pub fn note_on(&mut self, note: u8, velocity: u8) {
         self.note_on_at(note, velocity, 0);
     }

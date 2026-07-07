@@ -188,6 +188,93 @@ pub unsafe extern "C" fn dandrum_engine_set_public_numeric_parameter(
     true
 }
 
+/// Number of internal targets a public parameter fans out to, off the audio
+/// thread. A plain (non-composite) binding has exactly one target; a
+/// composite module's `maps_to` can bind one public parameter to several
+/// internal parameters at once. Returns 0 if the parameter is unknown.
+///
+/// Callers resolve a slot for each target via
+/// `dandrum_engine_prepare_public_numeric_parameter_slot_at` and apply all of
+/// them on every change so multi-target parameters stay fully live.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn dandrum_engine_public_numeric_parameter_target_count(
+    engine: *const crate::synth::DandrumEngine,
+    parameter_id: *const c_char,
+) -> usize {
+    let engine_key = engine_key(engine);
+    ref_or!(engine, _engine, 0);
+
+    let Some(parameter_id) = c_string(parameter_id) else {
+        return 0;
+    };
+
+    let registry = loaded_instruments()
+        .lock()
+        .expect("loaded instrument registry should not be poisoned");
+    let Some(loaded) = registry.get(&engine_key) else {
+        return 0;
+    };
+    loaded
+        .public_bindings
+        .get(parameter_id)
+        .map_or(0, |bindings| bindings.len())
+}
+
+/// Resolve the `target_index`-th internal target of a public parameter to a
+/// slot index once, off the audio thread. The returned index can then be
+/// applied every block via `dandrum_engine_set_public_numeric_parameter_by_slot`
+/// without taking the loaded-instrument registry lock or doing any string
+/// comparison. Callers should resolve a slot for every index up to
+/// `dandrum_engine_public_numeric_parameter_target_count` and apply all of
+/// them together so composite fan-out parameters stay fully live.
+///
+/// Returns -1 if the parameter is unknown, not numeric, `target_index` is out
+/// of range, or that target cannot be resolved to a compiled slot.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn dandrum_engine_prepare_public_numeric_parameter_slot_at(
+    engine: *mut crate::synth::DandrumEngine,
+    parameter_id: *const c_char,
+    target_index: usize,
+) -> isize {
+    let engine_key = engine_key(engine);
+    ref_or!(engine, engine, -1);
+
+    let Some(parameter_id) = c_string(parameter_id) else {
+        return -1;
+    };
+
+    let registry = loaded_instruments()
+        .lock()
+        .expect("loaded instrument registry should not be poisoned");
+    let Some(loaded) = registry.get(&engine_key) else {
+        return -1;
+    };
+    let Some(bindings) = loaded.public_bindings.get(parameter_id) else {
+        return -1;
+    };
+    let Some(binding) = bindings.get(target_index) else {
+        return -1;
+    };
+
+    match engine.parameter_slot_index(&binding.module_id, &binding.parameter_name) {
+        Some(slot_index) => slot_index as isize,
+        None => -1,
+    }
+}
+
+/// O(1) parameter update by a previously-resolved slot index. Takes no locks,
+/// does no string comparison, and does not allocate — safe to call from a
+/// realtime audio callback.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn dandrum_engine_set_public_numeric_parameter_by_slot(
+    engine: *mut crate::synth::DandrumEngine,
+    slot_index: usize,
+    value: f32,
+) -> bool {
+    mut_or!(engine, engine, false);
+    engine.set_parameter_slot(slot_index, value)
+}
+
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn dandrum_engine_prepare(
     engine: *mut crate::synth::DandrumEngine,
@@ -571,6 +658,146 @@ mod tests {
 
         unsafe { dandrum_engine_destroy(engine) };
         std::fs::remove_file(path).ok();
+    }
+
+    #[test]
+    fn c_ffi_prepared_parameter_slot_applies_updates_without_string_lookup() {
+        let path = write_parameterised_adsr_patch("dandrum_test_prepared_slot_patch.yaml");
+        let c_path = std::ffi::CString::new(path.to_str().unwrap()).unwrap();
+        let parameter_id = std::ffi::CString::new("env.attack").unwrap();
+        let engine = dandrum_engine_create();
+
+        assert!(unsafe { dandrum_engine_load_patch(engine, c_path.as_ptr()) });
+
+        assert_eq!(
+            unsafe {
+                dandrum_engine_public_numeric_parameter_target_count(
+                    engine,
+                    parameter_id.as_ptr(),
+                )
+            },
+            1
+        );
+        let slot_index = unsafe {
+            dandrum_engine_prepare_public_numeric_parameter_slot_at(
+                engine,
+                parameter_id.as_ptr(),
+                0,
+            )
+        };
+        assert!(slot_index >= 0, "expected a resolvable slot index");
+
+        assert!(unsafe {
+            dandrum_engine_set_public_numeric_parameter_by_slot(
+                engine,
+                slot_index as usize,
+                99.0,
+            )
+        });
+        assert_eq!(unsafe { (*engine).numeric_parameter_value("env", "attack") }, Some(99.0));
+
+        unsafe { dandrum_engine_destroy(engine) };
+        std::fs::remove_file(path).ok();
+    }
+
+    #[test]
+    fn c_ffi_prepared_parameter_slot_rejects_unknown_parameter() {
+        let path = write_parameterised_adsr_patch("dandrum_test_prepared_slot_unknown_patch.yaml");
+        let c_path = std::ffi::CString::new(path.to_str().unwrap()).unwrap();
+        let parameter_id = std::ffi::CString::new("missing.parameter").unwrap();
+        let engine = dandrum_engine_create();
+
+        assert!(unsafe { dandrum_engine_load_patch(engine, c_path.as_ptr()) });
+
+        assert_eq!(
+            unsafe {
+                dandrum_engine_public_numeric_parameter_target_count(
+                    engine,
+                    parameter_id.as_ptr(),
+                )
+            },
+            0
+        );
+
+        unsafe { dandrum_engine_destroy(engine) };
+        std::fs::remove_file(path).ok();
+    }
+
+    /// Reproduces the regression where a public parameter bound to a composite
+    /// module's fan-out (`maps_to` targeting more than one internal parameter)
+    /// stopped updating at runtime: the single-slot fast path bailed out with
+    /// -1 for any such parameter and nothing else in the C API took over.
+    #[test]
+    fn c_ffi_multi_target_public_parameter_resolves_and_applies_a_slot_per_target() {
+        let path =
+            write_multi_target_gain_patch("dandrum_test_multi_target_gain_patch.yaml");
+        let c_path = std::ffi::CString::new(path.to_str().unwrap()).unwrap();
+        let parameter_id = std::ffi::CString::new("voice.level").unwrap();
+        let engine = dandrum_engine_create();
+
+        assert!(unsafe { dandrum_engine_load_patch(engine, c_path.as_ptr()) });
+        assert_eq!(
+            unsafe { (*engine).numeric_parameter_value("voice::left", "gain") },
+            Some(0.5)
+        );
+        assert_eq!(
+            unsafe { (*engine).numeric_parameter_value("voice::right", "gain") },
+            Some(0.5)
+        );
+
+        let target_count = unsafe {
+            dandrum_engine_public_numeric_parameter_target_count(engine, parameter_id.as_ptr())
+        };
+        assert_eq!(target_count, 2, "composite fan-out should expose both targets");
+
+        let mut slots = Vec::new();
+        for target_index in 0..target_count {
+            let slot = unsafe {
+                dandrum_engine_prepare_public_numeric_parameter_slot_at(
+                    engine,
+                    parameter_id.as_ptr(),
+                    target_index,
+                )
+            };
+            assert!(slot >= 0, "expected target {target_index} to resolve to a slot");
+            slots.push(slot as usize);
+        }
+        assert_ne!(slots[0], slots[1], "each target should resolve to its own slot");
+
+        for &slot in &slots {
+            assert!(unsafe {
+                dandrum_engine_set_public_numeric_parameter_by_slot(engine, slot, 0.9)
+            });
+        }
+
+        assert_eq!(
+            unsafe { (*engine).numeric_parameter_value("voice::left", "gain") },
+            Some(0.9),
+            "left target should have been updated via its resolved slot"
+        );
+        assert_eq!(
+            unsafe { (*engine).numeric_parameter_value("voice::right", "gain") },
+            Some(0.9),
+            "right target should have been updated via its resolved slot"
+        );
+
+        unsafe { dandrum_engine_destroy(engine) };
+        std::fs::remove_file(path).ok();
+    }
+
+    fn write_multi_target_gain_patch(file_name: &str) -> PathBuf {
+        use std::io::Write;
+
+        let mut path = std::env::temp_dir();
+        path.push(file_name);
+        let mut file = std::fs::File::create(&path).unwrap();
+        writeln!(
+            file,
+            "metadata:\n  name: Multi Target Test\npreset_surface:\n  parameters:\n    - name: voice.level\n      type: number\n      default: 0.5\n      min: 0\n      max: 1\n      maps_to: voice.level\nmodule_definitions:\n  - type: dual_gain\n    parameters:\n      - name: level\n        type: number\n        default: 0.5\n        maps_to:\n          - left.gain\n          - right.gain\n    modules:\n      - id: left\n        type: gain\n      - id: right\n        type: gain\nrender:\n  sample_rate_hz: 48000\n  block_size_frames: 64\n  duration_frames: 128\nmodules:\n  - id: osc\n    type: oscillator\n  - id: voice\n    type: dual_gain\n  - id: mixer\n    type: audio_mixer\n  - id: out\n    type: audio_output\n    inputs:\n      - name: left\n        signal_type: audio\n      - name: right\n        signal_type: audio\nconnections:\n  - from: osc.audio\n    to: mixer.inputs\n  - from: mixer.mix\n    to: out.left\n  - from: mixer.mix\n    to: out.right"
+        )
+        .unwrap();
+        drop(file);
+        path
     }
 
     fn write_parameterised_adsr_patch(file_name: &str) -> PathBuf {

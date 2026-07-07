@@ -231,6 +231,16 @@ impl RealtimeGraphProcessor {
         self.compiled.numeric_parameter_value(module_id, parameter_name)
     }
 
+    pub fn parameter_slot_index(&self, module_id: &str, parameter_name: &str) -> Option<usize> {
+        self.compiled.parameter_slot_index(module_id, parameter_name)
+    }
+
+    /// O(1) parameter update by a previously-resolved slot index. Safe to call
+    /// from a realtime audio callback: no string comparisons, no allocation.
+    pub fn set_parameter_slot(&mut self, slot_index: usize, value: f32) -> bool {
+        self.compiled.set_parameter_slot(slot_index, value)
+    }
+
     #[cfg(test)]
     pub fn last_render_used_arena(&self) -> bool {
         self.last_render_used_arena
