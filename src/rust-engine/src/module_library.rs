@@ -399,7 +399,7 @@ mod tests {
                 output
                     .maps_from
                     .first()
-                    .map(|source| (output.name.as_str(), source.module.as_str()))
+                    .map(|source| (output.name.as_str(), source.module_id.as_str()))
             })
             .collect::<BTreeSet<_>>();
 
