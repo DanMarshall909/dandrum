@@ -32,15 +32,15 @@
 
 ## 4. Bundled content
 
-- [ ] 4.1 Author the `drum_voice` module package (extracted from the existing inline definition) with any resources co-located.
-- [ ] 4.2 Author a reusable multi-stereo-output `drum_machine` module package that satisfies the `drum-machine` spec's multiple-stereo-output requirement, carrying its own resources.
-- [ ] 4.3 Build the seeded library archive containing the versioned default module set and wire it into the engine's canonical storage location.
+- [x] 4.1 Author the `drum_voice` module package (extracted from the existing inline definition) with any resources co-located. Added `src/rust-engine/module-library/1.0.0/drum_voice/drum_voice.yaml`.
+- [x] 4.2 Author a reusable multi-stereo-output `drum_machine` module package that satisfies the `drum-machine` spec's multiple-stereo-output requirement, carrying its own resources. Added `src/rust-engine/module-library/1.0.0/drum_machine/drum_machine.yaml` with main and per-voice stereo pairs.
+- [x] 4.3 Build the seeded library archive containing the versioned default module set and wire it into the engine's canonical storage location. Implemented as an embedded versioned bundle via `include_bytes!` and `seed_bundled_standard_library`, using `DANDRUM_MODULE_LIBRARY_ROOT` or `<home>/.dandrum/lib` as the canonical extraction root.
 
 ## 5. Tests and docs
 
 - [ ] 5.1 Add tests: an external `$LIB` module reference loads and expands identically to the same definition inline (byte-identical rendered output); `$USER_LIB` reference works; unknown macro and path-escape are rejected.
 - [x] 5.2 Add tests: CRC-unchanged skips extraction, CRC-change re-seeds additively, pinned older versions still resolve, and `latest` follows the newest version. Added module-library seeding tests for unchanged CRC skip, changed CRC replacement, additive newer-version seeding, pinned older version presence, and resolver-driven `latest` selection.
-- [ ] 5.3 Add tests proving the bundled `drum_machine` module exposes a main plus at least one additional stereo output pair and routes voices to distinct outs (closing the drum-machine multi-output acceptance criteria).
+- [x] 5.3 Add tests proving the bundled `drum_machine` module exposes a main plus at least one additional stereo output pair and routes voices to distinct outs (closing the drum-machine multi-output acceptance criteria). Added package-load assertions for main/kick/snare/hat stereo outputs and distinct voice source routing.
 - [ ] 5.4 Update example patches to reference the shared `$LIB` modules instead of duplicating them inline (keeping at least one inline example to prove inline still works); document module packaging, versioning, macro roots, and defined-module terminology.
 
 ## 6. Verify
