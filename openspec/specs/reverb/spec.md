@@ -123,7 +123,7 @@ The reverb effect SHALL be a global-scope module — it processes summed mix, no
 
 ### Requirement: Reverb SHALL have a YAML composite module definition example
 
-A YAML example patch SHALL be created at `examples/patches/composite-reverb.yaml` that defines a reverb effect as a
+A YAML example patch SHALL be created at `examples/patches/module-reverb.yaml` that defines a reverb effect as a
 composite module built from primitive modules (delay_line, one_pole_filter, gain, audio_mixer). The composite SHALL
 demonstrate the comb+allpass signal flow: parallel combs → allpass chain → mix output.
 

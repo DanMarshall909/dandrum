@@ -2963,28 +2963,28 @@ fn compiled_render_matches_raw_for_reverb_chain() {
 
 #[test]
 fn module_echo_yaml_loads_and_validates() {
-    let Some(yaml) = read_repo_fixture("examples/patches/composite-echo.yaml") else {
+    let Some(yaml) = read_repo_fixture("examples/patches/module-echo.yaml") else {
         return;
     };
-    let patch = patch::load_patch_str(&yaml).expect("composite-echo.yaml should parse");
-    patch::validate_patch_schema(&patch).expect("composite-echo.yaml schema should be valid");
+    let patch = patch::load_patch_str(&yaml).expect("module-echo.yaml should parse");
+    patch::validate_patch_schema(&patch).expect("module-echo.yaml schema should be valid");
     let graph = Graph::from_patch_declarations(&patch);
     graph
         .validate()
-        .expect("composite-echo.yaml graph should validate");
+        .expect("module-echo.yaml graph should validate");
 }
 
 #[test]
 fn module_reverb_yaml_loads_and_validates() {
-    let Some(yaml) = read_repo_fixture("examples/patches/composite-reverb.yaml") else {
+    let Some(yaml) = read_repo_fixture("examples/patches/module-reverb.yaml") else {
         return;
     };
-    let patch = patch::load_patch_str(&yaml).expect("composite-reverb.yaml should parse");
-    patch::validate_patch_schema(&patch).expect("composite-reverb.yaml schema should be valid");
+    let patch = patch::load_patch_str(&yaml).expect("module-reverb.yaml should parse");
+    patch::validate_patch_schema(&patch).expect("module-reverb.yaml schema should be valid");
     let graph = Graph::from_patch_declarations(&patch);
     graph
         .validate()
-        .expect("composite-reverb.yaml graph should validate");
+        .expect("module-reverb.yaml graph should validate");
 }
 
 #[test]
@@ -3223,10 +3223,10 @@ fn rms(samples: &[f32]) -> f32 {
 #[test]
 fn drum_kit_module_examples_load_validate_and_render_with_documented_primitive_ports() {
     for (fixture, note, should_render) in [
-        ("examples/patches/composite-velocity-vca.yaml", 60, true),
-        ("examples/patches/composite-impulse-tone.yaml", 60, true),
-        ("examples/patches/composite-impulse-noise.yaml", 60, true),
-        ("examples/patches/composite-impulse-layer.yaml", 60, true),
+        ("examples/patches/module-velocity-vca.yaml", 60, true),
+        ("examples/patches/module-impulse-tone.yaml", 60, true),
+        ("examples/patches/module-impulse-noise.yaml", 60, true),
+        ("examples/patches/module-impulse-layer.yaml", 60, true),
         ("examples/patches/drum-kit.yaml", 36, true),
     ] {
         let Some(yaml) = read_repo_fixture(fixture) else {

@@ -100,7 +100,7 @@ SHALL NOT be supported in this change.
 
 ### Requirement: Echo SHALL have a YAML composite module definition example
 
-A YAML example patch SHALL be created at `examples/patches/composite-echo.yaml` that defines an echo effect as a
+A YAML example patch SHALL be created at `examples/patches/module-echo.yaml` that defines an echo effect as a
 composite module built from primitive modules (delay_line, one_pole_filter, gain, audio_mixer). The composite SHALL
 demonstrate the same signal flow as the built-in echo: delay line → damping filter → feedback → wet/dry mix.
 
