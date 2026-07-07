@@ -27,8 +27,8 @@
 ## 3. Version-first layout and `$LIB` seeding
 
 - [x] 3.1 Implement version-first resolution `<root>/<version>/<module>/<module>.yaml` with coexisting versions and a `latest` alias. Implemented by resolving `$LIB/latest/...` to the highest numeric version directory while leaving pinned `$LIB/<version>/...` references stable.
-- [ ] 3.2 Implement the seeded standard library: canonical storage location, CRC recording, and CRC-compare-then-extract into `$LIB/<version>/` off the render path (preparation/load only), with atomic per-version extraction.
-- [ ] 3.3 Make re-seeding additive (add version dirs, repoint `latest`, keep old versions resolvable); skip extraction when the CRC is unchanged.
+- [x] 3.2 Implement the seeded standard library: canonical storage location, CRC recording, and CRC-compare-then-extract into `$LIB/<version>/` off the render path (preparation/load only), with atomic per-version extraction. Implemented in `module_library.rs`; hosts seed via `seed_standard_library`, CRC is recorded in each version directory, and extraction publishes only after a staging directory has been fully written.
+- [x] 3.3 Make re-seeding additive (add version dirs, repoint `latest`, keep old versions resolvable); skip extraction when the CRC is unchanged. Implemented by seeding one version directory at a time, preserving other version directories, and using resolver-driven `latest` selection over the highest seeded numeric version.
 
 ## 4. Bundled content
 
@@ -39,7 +39,7 @@
 ## 5. Tests and docs
 
 - [ ] 5.1 Add tests: an external `$LIB` module reference loads and expands identically to the same definition inline (byte-identical rendered output); `$USER_LIB` reference works; unknown macro and path-escape are rejected.
-- [ ] 5.2 Add tests: CRC-unchanged skips extraction, CRC-change re-seeds additively, pinned older versions still resolve, and `latest` follows the newest version.
+- [x] 5.2 Add tests: CRC-unchanged skips extraction, CRC-change re-seeds additively, pinned older versions still resolve, and `latest` follows the newest version. Added module-library seeding tests for unchanged CRC skip, changed CRC replacement, additive newer-version seeding, pinned older version presence, and resolver-driven `latest` selection.
 - [ ] 5.3 Add tests proving the bundled `drum_machine` module exposes a main plus at least one additional stereo output pair and routes voices to distinct outs (closing the drum-machine multi-output acceptance criteria).
 - [ ] 5.4 Update example patches to reference the shared `$LIB` modules instead of duplicating them inline (keeping at least one inline example to prove inline still works); document module packaging, versioning, macro roots, and defined-module terminology.
 
