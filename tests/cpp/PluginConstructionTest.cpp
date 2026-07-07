@@ -53,16 +53,9 @@ float tailRms (const juce::AudioBuffer<float>& buffer, int fromSample)
     return count == 0 ? 0.0f : static_cast<float> (std::sqrt (sumSquares / count));
 }
 
-juce::RangedAudioParameter* findParameter (DandrumAudioProcessor& processor, const juce::String& parameterId)
+juce::RangedAudioParameter* findParameter (DandrumAudioProcessor& processor, const juce::String& publicParameterId)
 {
-    for (auto* parameter : processor.getParameters())
-    {
-        auto* hosted = dynamic_cast<juce::HostedAudioProcessorParameter*> (parameter);
-        if (hosted != nullptr && hosted->getParameterID() == parameterId)
-            return dynamic_cast<juce::RangedAudioParameter*> (parameter);
-    }
-
-    return nullptr;
+    return processor.getParameterForPublicId (publicParameterId);
 }
 
 float renderTailRms (DandrumAudioProcessor& processor, int blockSize, int numBlocks, int noteNumber)
@@ -102,6 +95,17 @@ float renderKickTailRms (float normalizedDecayValue, int blockSize, int numBlock
     return result;
 }
 
+juce::File defaultPatchFile()
+{
+    return juce::File (juce::String (dandrum::defaultPatchPath().string()));
+}
+
+juce::File examplePresetFile (const juce::String& name)
+{
+    const auto path = dandrum::defaultPatchPath().parent_path().parent_path() / "presets" / name.toStdString();
+    return juce::File (juce::String (path.string()));
+}
+
 // Writes a copy of the bundled default instrument with a target line replaced,
 // so reload tests can prove a genuinely different instrument was loaded (not
 // just the same file re-read). Returns an invalid (default-constructed) File
@@ -110,7 +114,7 @@ float renderKickTailRms (float normalizedDecayValue, int blockSize, int numBlock
 // "modified".
 juce::File writeModifiedKickPatch (const juce::String& targetLine, const juce::String& newLine)
 {
-    const juce::File original (juce::String (dandrum::defaultPatchPath().string()));
+    const auto original = defaultPatchFile();
     auto content = original.loadFileAsString();
     if (! content.contains (targetLine))
         return {};
@@ -123,10 +127,34 @@ juce::File writeModifiedKickPatch (const juce::String& targetLine, const juce::S
     return modified;
 }
 
+juce::File writePatchWithAdditionalPublicParameter()
+{
+    const auto original = defaultPatchFile();
+    auto content = original.loadFileAsString();
+    const juce::String oldText = "      maps_to: kick.click\n    - name: kick.sub_decay_ms";
+    const juce::String newText =
+        "      maps_to: kick.click\n"
+        "    - name: kick.extra_click\n"
+        "      type: number\n"
+        "      default: 0.25\n"
+        "      min: 0\n"
+        "      max: 1\n"
+        "      maps_to: kick.click\n"
+        "    - name: kick.sub_decay_ms";
+
+    if (! content.contains (oldText))
+        return {};
+
+    content = content.replace (oldText, newText);
+    auto modified = juce::File::getSpecialLocation (juce::File::tempDirectory)
+                         .getChildFile ("dandrum_added_public_parameter_" + juce::String (juce::Random::getSystemRandom().nextInt()) + ".yaml");
+    modified.replaceWithText (content);
+    return modified;
+}
+
 // A minimal but valid instrument with no preset_surface parameters at all, so
 // reloading to it drops every public parameter the default instrument exposed
-// (design.md requires that surface-changing reload be visibly reconciled,
-// not silently absorbed).
+// from the dynamic editor/public-id surface.
 juce::File writePatchWithNoPublicParameters()
 {
     auto file = juce::File::getSpecialLocation (juce::File::tempDirectory)
@@ -134,6 +162,9 @@ juce::File writePatchWithNoPublicParameters()
     file.replaceWithText (
         "metadata:\n"
         "  name: No Public Parameters\n"
+        "instrument:\n"
+        "  id: dandrum.no-public-parameters\n"
+        "  preset_schema_version: 1\n"
         "render:\n"
         "  sample_rate_hz: 48000\n"
         "  block_size_frames: 64\n"
@@ -158,6 +189,19 @@ juce::File writePatchWithNoPublicParameters()
         "  - from: mixer.mix\n"
         "    to: out.right\n");
     return file;
+}
+
+juce::File writePresetFile (const juce::String& filePrefix, const juce::String& yaml)
+{
+    auto file = juce::File::getSpecialLocation (juce::File::tempDirectory)
+                    .getChildFile (filePrefix + juce::String (juce::Random::getSystemRandom().nextInt()) + ".yaml");
+    file.replaceWithText (yaml);
+    return file;
+}
+
+bool nearlyEqual (float actual, float expected, float tolerance)
+{
+    return std::abs (actual - expected) <= tolerance;
 }
 } // namespace
 
@@ -190,7 +234,7 @@ int main()
     restored->setStateInformation (state.getData(), static_cast<int> (state.getSize()));
     if (! restored->hasPublicParameter ("kick.tune_hz"))
     {
-        std::cerr << "restored plugin did not keep the public parameter layout\n";
+        std::cerr << "restored plugin did not keep the public parameter mapping\n";
         return 1;
     }
 
@@ -347,6 +391,12 @@ int main()
 
     // The parameter bridge should still be live on the freshly-reloaded
     // engine: a further explicit change should audibly take effect.
+    decayParam = findParameter (*reloadProcessor, "kick.decay_ms");
+    if (decayParam == nullptr)
+    {
+        std::cerr << "kick.decay_ms parameter disappeared after reload\n";
+        return 1;
+    }
     decayParam->setValueNotifyingHost (1.0f); // normalized maximum: longest decay
     const auto longAfterReloadTailRms = renderTailRms (*reloadProcessor, reloadBlockSize, reloadNumBlocks, 36);
     if (! (longAfterReloadTailRms > carriedOverTailRms * 1.3f))
@@ -357,7 +407,43 @@ int main()
     }
 
     reloadProcessor->releaseResources();
-    longDefaultFile.deleteFile();
+
+    // A replacement instrument that introduces a new public parameter should
+    // expose it through an unused fixed host slot and initialise it from the
+    // YAML-declared default value.
+    {
+        auto addProcessor = std::make_unique<DandrumAudioProcessor>();
+        addProcessor->setPlayConfigDetails (0, 2, 48000.0, blockSize);
+        addProcessor->prepareToPlay (48000.0, blockSize);
+
+        const auto addedParameterFile = writePatchWithAdditionalPublicParameter();
+        if (addedParameterFile == juce::File())
+        {
+            std::cerr << "writePatchWithAdditionalPublicParameter could not patch the default instrument\n";
+            return 1;
+        }
+        if (! addProcessor->reloadInstrumentFromFile (addedParameterFile))
+        {
+            std::cerr << "reloadInstrumentFromFile failed for added-parameter patch: "
+                      << addProcessor->getLastLoadError() << '\n';
+            return 1;
+        }
+
+        auto* extraClick = findParameter (*addProcessor, "kick.extra_click");
+        if (extraClick == nullptr)
+        {
+            std::cerr << "replacement instrument did not expose newly-added public parameter kick.extra_click\n";
+            return 1;
+        }
+        if (! nearlyEqual (extraClick->getValue(), 0.25f, 0.002f))
+        {
+            std::cerr << "kick.extra_click was not initialised from YAML default: " << extraClick->getValue() << '\n';
+            return 1;
+        }
+
+        addProcessor->releaseResources();
+        addedParameterFile.deleteFile();
+    }
 
     // Reload failure: the previous instrument keeps running unchanged.
     auto failedReloadProcessor = std::make_unique<DandrumAudioProcessor>();
@@ -406,7 +492,7 @@ int main()
     // called prepareToPlay.
     {
         auto unpreparedProcessor = std::make_unique<DandrumAudioProcessor>();
-        if (unpreparedProcessor->reloadInstrumentFromFile (juce::File (juce::String (dandrum::defaultPatchPath().string()))))
+        if (unpreparedProcessor->reloadInstrumentFromFile (defaultPatchFile()))
         {
             std::cerr << "reloadInstrumentFromFile succeeded before prepareToPlay was ever called\n";
             return 1;
@@ -426,7 +512,7 @@ int main()
         racingProcessor->setPlayConfigDetails (0, 2, 48000.0, blockSize);
         racingProcessor->prepareToPlay (48000.0, blockSize);
 
-        const juce::File defaultFile (juce::String (dandrum::defaultPatchPath().string()));
+        const auto defaultFile = defaultPatchFile();
         const auto alternateFile = writeModifiedKickPatch ("decay_ms: 650", "decay_ms: 700");
 
         constexpr int threadCount = 4;
@@ -469,9 +555,7 @@ int main()
     }
 
     // Reloading to an instrument that drops previously-live public parameters
-    // must be visibly reconciled (design.md), not silently absorbed: the host
-    // parameter surface stays fixed, but a warning should say what no longer
-    // has a live engine target.
+    // must be visibly reconciled (design.md), not silently absorbed.
     {
         auto dropProcessor = std::make_unique<DandrumAudioProcessor>();
         dropProcessor->setPlayConfigDetails (0, 2, 48000.0, blockSize);
@@ -485,9 +569,9 @@ int main()
             return 1;
         }
 
-        if (! dropProcessor->hasPublicParameter ("kick.tune_hz"))
+        if (dropProcessor->hasPublicParameter ("kick.tune_hz"))
         {
-            std::cerr << "reload changed the fixed APVTS parameter surface (kick.tune_hz disappeared)\n";
+            std::cerr << "reload kept kick.tune_hz visible after the replacement instrument removed it\n";
             return 1;
         }
 
@@ -501,5 +585,141 @@ int main()
         noPublicParametersFile.deleteFile();
     }
 
+    // Compatible presets should apply as public value changes for the loaded
+    // instrument. They must not replace or mutate the immutable instrument YAML.
+    {
+        auto presetProcessor = std::make_unique<DandrumAudioProcessor>();
+        presetProcessor->setPlayConfigDetails (0, 2, 48000.0, blockSize);
+        presetProcessor->prepareToPlay (48000.0, blockSize);
+        const auto yamlBefore = presetProcessor->currentInstrumentYaml();
+        const auto presetFile = examplePresetFile ("tight-808-kick.yaml");
+
+        if (! presetProcessor->loadPresetFromFile (presetFile))
+        {
+            std::cerr << "compatible preset failed to load: " << presetProcessor->getLastPresetError() << '\n';
+            return 1;
+        }
+
+        if (presetProcessor->currentPresetName() != "Tight 808 Kick" || presetProcessor->currentPresetYaml().isEmpty())
+        {
+            std::cerr << "loaded preset identity/content was not retained\n";
+            return 1;
+        }
+
+        auto* decay = findParameter (*presetProcessor, "kick.decay_ms");
+        if (decay == nullptr || ! nearlyEqual (decay->getValue(), (420.0f - 50.0f) / (2000.0f - 50.0f), 0.01f))
+        {
+            std::cerr << "preset value for kick.decay_ms was not applied to mutable parameter state\n";
+            return 1;
+        }
+
+        if (presetProcessor->currentInstrumentYaml() != yamlBefore)
+        {
+            std::cerr << "loading a preset mutated the loaded instrument YAML\n";
+            return 1;
+        }
+
+        presetProcessor->releaseResources();
+    }
+
+    // Incompatible or structural presets should be reported, not applied.
+    {
+        auto rejectProcessor = std::make_unique<DandrumAudioProcessor>();
+        rejectProcessor->setPlayConfigDetails (0, 2, 48000.0, blockSize);
+        rejectProcessor->prepareToPlay (48000.0, blockSize);
+
+        const auto wrongInstrumentPreset = writePresetFile (
+            "dandrum_wrong_instrument_preset_",
+            "name: Wrong\n"
+            "instrument:\n"
+            "  id: dandrum.other\n"
+            "  preset_schema_version: 1\n"
+            "values:\n"
+            "  kick.decay_ms: 420\n");
+        if (rejectProcessor->loadPresetFromFile (wrongInstrumentPreset))
+        {
+            std::cerr << "preset targeting another instrument was applied\n";
+            return 1;
+        }
+        if (rejectProcessor->getLastPresetError().isEmpty())
+        {
+            std::cerr << "wrong-instrument preset did not report an error\n";
+            return 1;
+        }
+
+        const auto structuralPreset = writePresetFile (
+            "dandrum_structural_preset_",
+            "name: Structural\n"
+            "instrument:\n"
+            "  id: dandrum.synthetic-808-kick\n"
+            "  preset_schema_version: 1\n"
+            "modules: []\n");
+        if (rejectProcessor->loadPresetFromFile (structuralPreset))
+        {
+            std::cerr << "structural preset was applied\n";
+            return 1;
+        }
+        if (! rejectProcessor->getLastPresetError().contains ("structural"))
+        {
+            std::cerr << "structural preset rejection did not explain the structural field: "
+                      << rejectProcessor->getLastPresetError() << '\n';
+            return 1;
+        }
+
+        rejectProcessor->releaseResources();
+        wrongInstrumentPreset.deleteFile();
+        structuralPreset.deleteFile();
+    }
+
+    // State persistence should embed enough instrument and preset information
+    // to restore without depending only on the original absolute file paths.
+    {
+        auto stateProcessor = std::make_unique<DandrumAudioProcessor>();
+        stateProcessor->setPlayConfigDetails (0, 2, 48000.0, blockSize);
+        stateProcessor->prepareToPlay (48000.0, blockSize);
+
+        const auto restoredLongDefaultFile = writeModifiedKickPatch ("decay_ms: 650", "decay_ms: 1750");
+        if (! stateProcessor->reloadInstrumentFromFile (restoredLongDefaultFile))
+        {
+            std::cerr << "state restore setup failed to reload modified instrument: "
+                      << stateProcessor->getLastLoadError() << '\n';
+            return 1;
+        }
+        if (! stateProcessor->loadPresetFromFile (examplePresetFile ("tight-808-kick.yaml")))
+        {
+            std::cerr << "state restore setup failed to load preset: "
+                      << stateProcessor->getLastPresetError() << '\n';
+            return 1;
+        }
+
+        juce::MemoryBlock savedState;
+        stateProcessor->getStateInformation (savedState);
+
+        auto restoredStateProcessor = std::make_unique<DandrumAudioProcessor>();
+        restoredStateProcessor->setStateInformation (savedState.getData(), static_cast<int> (savedState.getSize()));
+
+        if (! restoredStateProcessor->currentInstrumentYaml().contains ("decay_ms: 1750"))
+        {
+            std::cerr << "state restore did not restore embedded instrument YAML\n";
+            return 1;
+        }
+        if (restoredStateProcessor->currentPresetName() != "Tight 808 Kick"
+            || restoredStateProcessor->currentPresetYaml().isEmpty())
+        {
+            std::cerr << "state restore did not restore preset identity/content\n";
+            return 1;
+        }
+        if (! restoredStateProcessor->hasPublicParameter ("kick.decay_ms"))
+        {
+            std::cerr << "state restore did not rebuild the public parameter surface\n";
+            return 1;
+        }
+
+        stateProcessor->releaseResources();
+        restoredStateProcessor->releaseResources();
+        restoredLongDefaultFile.deleteFile();
+    }
+
+    longDefaultFile.deleteFile();
     return 0;
 }
