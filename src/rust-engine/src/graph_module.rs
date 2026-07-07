@@ -39,7 +39,7 @@ pub(super) fn expand_patch_declarations(
 
         for internal in &definition.modules {
             let mut expanded = internal.clone();
-            apply_composite_parameter_bindings(&mut expanded, module, definition);
+            apply_module_parameter_bindings(&mut expanded, module, definition);
             expanded.id = namespaced_id(&module.id, &internal.id);
             modules.push(expanded);
         }
@@ -75,7 +75,7 @@ pub(super) fn expand_patch_declarations(
     (modules, connections)
 }
 
-fn apply_composite_parameter_bindings(
+fn apply_module_parameter_bindings(
     internal: &mut patch::ModuleDeclaration,
     instance: &patch::ModuleDeclaration,
     definition: &patch::ModuleDefinitionDeclaration,
@@ -159,14 +159,14 @@ fn namespaced_id(instance_id: &str, internal_id: &str) -> String {
 mod tests {
     use super::*;
     use crate::patch::{
-        CompositeInputDeclaration, CompositeOutputDeclaration, ModuleDeclaration,
+        ModuleInputDeclaration, ModuleOutputDeclaration, ModuleDeclaration,
         ModuleDefinitionDeclaration, PatchDocument, PatchMetadata, PortReference, RenderSettings,
         SignalType, VoiceAllocation,
     };
     use std::collections::BTreeMap;
 
     #[test]
-    fn patch_without_composite_instances_is_returned_unchanged() {
+    fn patch_without_module_instances_is_returned_unchanged() {
         let patch = patch_with(vec![ordinary("osc", "oscillator")], vec![]);
 
         let (modules, connections) = expand_patch_declarations(&patch);
@@ -176,7 +176,7 @@ mod tests {
     }
 
     #[test]
-    fn unknown_composite_public_ports_are_left_for_graph_validation() {
+    fn unknown_module_public_ports_are_left_for_graph_validation() {
         let patch = patch_with(
             vec![
                 ordinary("voice", "drum_voice"),
@@ -196,7 +196,7 @@ mod tests {
     }
 
     #[test]
-    fn unknown_composite_public_input_is_left_for_graph_validation() {
+    fn unknown_module_public_input_is_left_for_graph_validation() {
         let patch = patch_with(
             vec![
                 ordinary("midi", "midi_input"),
@@ -246,12 +246,12 @@ mod tests {
     fn definition(module_type: &str) -> ModuleDefinitionDeclaration {
         ModuleDefinitionDeclaration {
             module_type: module_type.to_string(),
-            inputs: vec![CompositeInputDeclaration {
+            inputs: vec![ModuleInputDeclaration {
                 name: "trigger".to_string(),
                 signal_type: SignalType::Event,
                 maps_to: vec![port_ref("env.gate")],
             }],
-            outputs: vec![CompositeOutputDeclaration {
+            outputs: vec![ModuleOutputDeclaration {
                 name: "audio".to_string(),
                 signal_type: SignalType::Audio,
                 maps_from: vec![port_ref("osc.audio")],

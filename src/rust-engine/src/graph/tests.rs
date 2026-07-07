@@ -369,11 +369,11 @@ fn event_filter_does_not_hide_invalid_feedback_cycles() {
 }
 
 #[test]
-fn composite_instance_expands_to_namespaced_internal_modules_and_cables() {
+fn module_instance_expands_to_namespaced_internal_modules_and_cables() {
     let patch = patch::load_patch_str(
         r#"
 metadata:
-  name: Composite Expansion
+  name: Module Expansion
 render:
   sample_rate_hz: 48000
   block_size_frames: 128
@@ -439,11 +439,11 @@ connections:
 }
 
 #[test]
-fn multiple_composite_instances_expand_without_id_collisions() {
+fn multiple_module_instances_expand_without_id_collisions() {
     let patch = patch::load_patch_str(
         r#"
 metadata:
-  name: Composite Expansion
+  name: Module Expansion
 render:
   sample_rate_hz: 48000
   block_size_frames: 128
@@ -510,11 +510,11 @@ connections:
 }
 
 #[test]
-fn expanded_composite_diagnostics_include_instance_and_internal_module_path() {
+fn expanded_module_diagnostics_include_instance_and_internal_module_path() {
     let patch = patch::load_patch_str(
         r#"
 metadata:
-  name: Composite Diagnostics
+  name: Module Diagnostics
 render:
   sample_rate_hz: 48000
   block_size_frames: 128
@@ -556,11 +556,11 @@ connections:
 }
 
 #[test]
-fn composite_cannot_hide_implicit_many_to_one_internal_route() {
+fn module_cannot_hide_implicit_many_to_one_internal_route() {
     let patch = patch::load_patch_str(
         r#"
 metadata:
-  name: Composite Many To One
+  name: Module Many To One
 render:
   sample_rate_hz: 48000
   block_size_frames: 128
@@ -606,11 +606,11 @@ connections:
 }
 
 #[test]
-fn composite_cannot_hide_instantaneous_internal_audio_feedback() {
+fn module_cannot_hide_instantaneous_internal_audio_feedback() {
     let patch = patch::load_patch_str(
         r#"
 metadata:
-  name: Composite Feedback
+  name: Module Feedback
 render:
   sample_rate_hz: 48000
   block_size_frames: 128

@@ -13,13 +13,13 @@ pub struct ModuleDefinitionDeclaration {
     #[serde(rename = "type")]
     pub module_type: String,
     #[serde(default)]
-    pub inputs: Vec<CompositeInputDeclaration>,
+    pub inputs: Vec<ModuleInputDeclaration>,
     #[serde(default)]
-    pub outputs: Vec<CompositeOutputDeclaration>,
+    pub outputs: Vec<ModuleOutputDeclaration>,
     #[serde(default)]
-    pub parameters: Vec<CompositeBindingDeclaration>,
+    pub parameters: Vec<ModuleBindingDeclaration>,
     #[serde(default)]
-    pub asset_bindings: Vec<CompositeBindingDeclaration>,
+    pub asset_bindings: Vec<ModuleBindingDeclaration>,
     #[serde(default)]
     pub modules: Vec<ModuleDeclaration>,
     #[serde(default)]
@@ -27,7 +27,7 @@ pub struct ModuleDefinitionDeclaration {
 }
 
 #[derive(Clone, Debug, Deserialize, PartialEq, Eq)]
-pub struct CompositeInputDeclaration {
+pub struct ModuleInputDeclaration {
     pub name: String,
     pub signal_type: SignalType,
     #[serde(default)]
@@ -35,7 +35,7 @@ pub struct CompositeInputDeclaration {
 }
 
 #[derive(Clone, Debug, Deserialize, PartialEq, Eq)]
-pub struct CompositeOutputDeclaration {
+pub struct ModuleOutputDeclaration {
     pub name: String,
     pub signal_type: SignalType,
     #[serde(default)]
@@ -43,10 +43,10 @@ pub struct CompositeOutputDeclaration {
 }
 
 #[derive(Clone, Debug, Deserialize, PartialEq)]
-pub struct CompositeBindingDeclaration {
+pub struct ModuleBindingDeclaration {
     pub name: String,
     #[serde(rename = "type")]
-    pub value_type: Option<CompositeParameterValueType>,
+    pub value_type: Option<ModuleParameterValueType>,
     pub default: Option<ParameterValue>,
     pub value: Option<ParameterValue>,
     pub min: Option<f64>,
@@ -61,7 +61,7 @@ pub struct CompositeBindingDeclaration {
 
 #[derive(Clone, Copy, Debug, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "snake_case")]
-pub enum CompositeParameterValueType {
+pub enum ModuleParameterValueType {
     Boolean,
     Number,
     String,
@@ -79,25 +79,25 @@ pub(super) fn validate_module_definitions(
             diagnostics.push(Diagnostic::new(
                 error_codes::VALIDATION_MISSING_FIELD,
                 Severity::Error,
-                "composite module type is required",
+                "module definition type is required",
             ));
         } else if !module_types.insert(definition.module_type.as_str()) {
             diagnostics.push(Diagnostic::new(
                 error_codes::VALIDATION_INVALID_VALUE,
                 Severity::Error,
                 format!(
-                    "duplicate composite module type: {}",
+                    "duplicate module definition type: {}",
                     definition.module_type
                 ),
             ));
         }
 
-        validate_composite_parameter_declarations(definition, diagnostics);
+        validate_module_parameter_declarations(definition, diagnostics);
         validate_public_inputs(definition, &registry, diagnostics);
         validate_public_outputs(definition, &registry, diagnostics);
     }
 
-    validate_recursive_composite_definitions(patch, diagnostics);
+    validate_recursive_module_definitions(patch, diagnostics);
 }
 
 fn validate_public_inputs(
@@ -106,13 +106,13 @@ fn validate_public_inputs(
     diagnostics: &mut PatchValidationError,
 ) {
     for input in &definition.inputs {
-        let port_name = composite_port_name(&input.name);
+        let port_name = module_port_name(&input.name);
         if input.name.trim().is_empty() {
             diagnostics.push(Diagnostic::new(
                 error_codes::VALIDATION_MISSING_FIELD,
                 Severity::Error,
                 format!(
-                    "composite {} input name is required",
+                    "module {} input name is required",
                     definition.module_type
                 ),
             ));
@@ -121,20 +121,20 @@ fn validate_public_inputs(
         for reference in &input.maps_to {
             validate_port_reference(
                 &format!(
-                    "composite {} input {port_name} maps_to",
+                    "module {} input {port_name} maps_to",
                     definition.module_type
                 ),
                 reference,
                 diagnostics,
             );
-            validate_composite_mapping(
+            validate_module_mapping(
                 &definition.module_type,
                 "input",
                 &input.name,
                 input.signal_type.clone(),
                 "maps_to",
                 reference,
-                CompositeMappingDirection::PublicInputToInternalInput,
+                ModuleMappingDirection::PublicInputToInternalInput,
                 definition,
                 registry,
                 diagnostics,
@@ -149,13 +149,13 @@ fn validate_public_outputs(
     diagnostics: &mut PatchValidationError,
 ) {
     for output in &definition.outputs {
-        let port_name = composite_port_name(&output.name);
+        let port_name = module_port_name(&output.name);
         if output.name.trim().is_empty() {
             diagnostics.push(Diagnostic::new(
                 error_codes::VALIDATION_MISSING_FIELD,
                 Severity::Error,
                 format!(
-                    "composite {} output name is required",
+                    "module {} output name is required",
                     definition.module_type
                 ),
             ));
@@ -164,20 +164,20 @@ fn validate_public_outputs(
         for reference in &output.maps_from {
             validate_port_reference(
                 &format!(
-                    "composite {} output {port_name} maps_from",
+                    "module {} output {port_name} maps_from",
                     definition.module_type
                 ),
                 reference,
                 diagnostics,
             );
-            validate_composite_mapping(
+            validate_module_mapping(
                 &definition.module_type,
                 "output",
                 &output.name,
                 output.signal_type.clone(),
                 "maps_from",
                 reference,
-                CompositeMappingDirection::PublicOutputFromInternalOutput,
+                ModuleMappingDirection::PublicOutputFromInternalOutput,
                 definition,
                 registry,
                 diagnostics,
@@ -186,20 +186,20 @@ fn validate_public_outputs(
     }
 }
 
-fn validate_composite_parameter_declarations(
+fn validate_module_parameter_declarations(
     definition: &ModuleDefinitionDeclaration,
     diagnostics: &mut PatchValidationError,
 ) {
     let mut names = BTreeSet::new();
 
     for parameter in &definition.parameters {
-        let name = composite_parameter_name(&parameter.name);
+        let name = module_parameter_name(&parameter.name);
         if parameter.name.trim().is_empty() {
             diagnostics.push(Diagnostic::new(
                 error_codes::VALIDATION_MISSING_FIELD,
                 Severity::Error,
                 format!(
-                    "composite {} parameter name is required",
+                    "module {} parameter name is required",
                     definition.module_type
                 ),
             ));
@@ -211,7 +211,7 @@ fn validate_composite_parameter_declarations(
                 error_codes::VALIDATION_INVALID_VALUE,
                 Severity::Error,
                 format!(
-                    "composite {} duplicate parameter name {}",
+                    "module {} duplicate parameter name {}",
                     definition.module_type, name
                 ),
             ));
@@ -222,38 +222,38 @@ fn validate_composite_parameter_declarations(
                 error_codes::VALIDATION_INVALID_VALUE,
                 Severity::Error,
                 format!(
-                    "composite {} parameter {} uses unsupported expression syntax",
+                    "module {} parameter {} uses unsupported expression syntax",
                     definition.module_type, name
                 ),
             ));
         }
 
-        validate_composite_parameter_default(definition, parameter, diagnostics);
-        validate_composite_parameter_literal_value(definition, parameter, diagnostics);
-        validate_composite_parameter_constraints(definition, parameter, diagnostics);
+        validate_module_parameter_default(definition, parameter, diagnostics);
+        validate_module_parameter_literal_value(definition, parameter, diagnostics);
+        validate_module_parameter_constraints(definition, parameter, diagnostics);
     }
 }
 
-fn validate_composite_parameter_default(
+fn validate_module_parameter_default(
     definition: &ModuleDefinitionDeclaration,
-    parameter: &CompositeBindingDeclaration,
+    parameter: &ModuleBindingDeclaration,
     diagnostics: &mut PatchValidationError,
 ) {
     let Some(default) = &parameter.default else {
         return;
     };
-    let name = composite_parameter_name(&parameter.name);
+    let name = module_parameter_name(&parameter.name);
 
     if let Some(value_type) = parameter.value_type {
-        if !composite_value_matches_type(default, value_type) {
+        if !module_value_matches_type(default, value_type) {
             diagnostics.push(Diagnostic::new(
                 error_codes::VALIDATION_TYPE_MISMATCH,
                 Severity::Error,
                 format!(
-                    "composite {} parameter {} default has wrong type: expected {}, got {}",
+                    "module {} parameter {} default has wrong type: expected {}, got {}",
                     definition.module_type,
                     name,
-                    composite_type_name(value_type),
+                    module_parameter_type_name(value_type),
                     parameter_value_type_name(default)
                 ),
             ));
@@ -261,29 +261,29 @@ fn validate_composite_parameter_default(
         }
     }
 
-    validate_composite_numeric_range(definition, parameter, "default", default, diagnostics);
+    validate_module_numeric_range(definition, parameter, "default", default, diagnostics);
 }
 
-fn validate_composite_parameter_literal_value(
+fn validate_module_parameter_literal_value(
     definition: &ModuleDefinitionDeclaration,
-    parameter: &CompositeBindingDeclaration,
+    parameter: &ModuleBindingDeclaration,
     diagnostics: &mut PatchValidationError,
 ) {
     let Some(value) = &parameter.value else {
         return;
     };
-    let name = composite_parameter_name(&parameter.name);
+    let name = module_parameter_name(&parameter.name);
 
     if let Some(value_type) = parameter.value_type {
-        if !composite_value_matches_type(value, value_type) {
+        if !module_value_matches_type(value, value_type) {
             diagnostics.push(Diagnostic::new(
                 error_codes::VALIDATION_TYPE_MISMATCH,
                 Severity::Error,
                 format!(
-                    "composite {} parameter {} literal value has wrong type: expected {}, got {}",
+                    "module {} parameter {} literal value has wrong type: expected {}, got {}",
                     definition.module_type,
                     name,
-                    composite_type_name(value_type),
+                    module_parameter_type_name(value_type),
                     parameter_value_type_name(value)
                 ),
             ));
@@ -291,15 +291,15 @@ fn validate_composite_parameter_literal_value(
         }
     }
 
-    validate_composite_numeric_range(definition, parameter, "value", value, diagnostics);
+    validate_module_numeric_range(definition, parameter, "value", value, diagnostics);
 }
 
-fn validate_composite_parameter_constraints(
+fn validate_module_parameter_constraints(
     definition: &ModuleDefinitionDeclaration,
-    parameter: &CompositeBindingDeclaration,
+    parameter: &ModuleBindingDeclaration,
     diagnostics: &mut PatchValidationError,
 ) {
-    let name = composite_parameter_name(&parameter.name);
+    let name = module_parameter_name(&parameter.name);
 
     if let (Some(min), Some(max)) = (parameter.min, parameter.max) {
         if min > max {
@@ -307,7 +307,7 @@ fn validate_composite_parameter_constraints(
                 error_codes::VALIDATION_INVALID_VALUE,
                 Severity::Error,
                 format!(
-                    "composite {} parameter {} has invalid range: min {} is greater than max {}",
+                    "module {} parameter {} has invalid range: min {} is greater than max {}",
                     definition.module_type, name, min, max
                 ),
             ));
@@ -316,25 +316,25 @@ fn validate_composite_parameter_constraints(
 
     if matches!(
         parameter.value_type,
-        Some(CompositeParameterValueType::Boolean | CompositeParameterValueType::String)
+        Some(ModuleParameterValueType::Boolean | ModuleParameterValueType::String)
     ) && (parameter.min.is_some() || parameter.max.is_some())
     {
         diagnostics.push(Diagnostic::new(
             error_codes::VALIDATION_INVALID_VALUE,
             Severity::Error,
             format!(
-                "composite {} parameter {} has numeric constraints on a {} parameter",
+                "module {} parameter {} has numeric constraints on a {} parameter",
                 definition.module_type,
                 name,
-                composite_type_name(parameter.value_type.expect("checked above"))
+                module_parameter_type_name(parameter.value_type.expect("checked above"))
             ),
         ));
     }
 }
 
-fn validate_composite_numeric_range(
+fn validate_module_numeric_range(
     definition: &ModuleDefinitionDeclaration,
-    parameter: &CompositeBindingDeclaration,
+    parameter: &ModuleBindingDeclaration,
     value_label: &str,
     value: &ParameterValue,
     diagnostics: &mut PatchValidationError,
@@ -342,7 +342,7 @@ fn validate_composite_numeric_range(
     let ParameterValue::Number(actual) = value else {
         return;
     };
-    let name = composite_parameter_name(&parameter.name);
+    let name = module_parameter_name(&parameter.name);
 
     if let Some(min) = parameter.min {
         if *actual < min {
@@ -350,7 +350,7 @@ fn validate_composite_numeric_range(
                 error_codes::VALIDATION_INVALID_VALUE,
                 Severity::Error,
                 format!(
-                    "composite {} parameter {} {value_label} is below minimum {}: {}",
+                    "module {} parameter {} {value_label} is below minimum {}: {}",
                     definition.module_type, name, min, actual
                 ),
             ));
@@ -363,7 +363,7 @@ fn validate_composite_numeric_range(
                 error_codes::VALIDATION_INVALID_VALUE,
                 Severity::Error,
                 format!(
-                    "composite {} parameter {} {value_label} is above maximum {}: {}",
+                    "module {} parameter {} {value_label} is above maximum {}: {}",
                     definition.module_type, name, max, actual
                 ),
             ));
@@ -371,27 +371,27 @@ fn validate_composite_numeric_range(
     }
 }
 
-fn composite_value_matches_type(
+fn module_value_matches_type(
     value: &ParameterValue,
-    value_type: CompositeParameterValueType,
+    value_type: ModuleParameterValueType,
 ) -> bool {
     matches!(
         (value, value_type),
         (
             ParameterValue::Boolean(_),
-            CompositeParameterValueType::Boolean
+            ModuleParameterValueType::Boolean
         ) | (
             ParameterValue::Number(_),
-            CompositeParameterValueType::Number
-        ) | (ParameterValue::Text(_), CompositeParameterValueType::String)
+            ModuleParameterValueType::Number
+        ) | (ParameterValue::Text(_), ModuleParameterValueType::String)
     )
 }
 
-fn composite_type_name(value_type: CompositeParameterValueType) -> &'static str {
+fn module_parameter_type_name(value_type: ModuleParameterValueType) -> &'static str {
     match value_type {
-        CompositeParameterValueType::Boolean => "boolean",
-        CompositeParameterValueType::Number => "number",
-        CompositeParameterValueType::String => "string",
+        ModuleParameterValueType::Boolean => "boolean",
+        ModuleParameterValueType::Number => "number",
+        ModuleParameterValueType::String => "string",
     }
 }
 
@@ -403,11 +403,11 @@ fn parameter_value_type_name(value: &ParameterValue) -> &'static str {
     }
 }
 
-fn validate_recursive_composite_definitions(
+fn validate_recursive_module_definitions(
     patch: &PatchDocument,
     diagnostics: &mut PatchValidationError,
 ) {
-    let composite_types = patch
+    let defined_module_types = patch
         .module_definitions
         .iter()
         .map(|definition| definition.module_type.as_str())
@@ -419,7 +419,7 @@ fn validate_recursive_composite_definitions(
             let nested = definition
                 .modules
                 .iter()
-                .filter(|module| composite_types.contains(module.module_type.as_str()))
+                .filter(|module| defined_module_types.contains(module.module_type.as_str()))
                 .map(|module| module.module_type.as_str())
                 .collect::<Vec<_>>();
             (definition.module_type.as_str(), nested)
@@ -429,7 +429,7 @@ fn validate_recursive_composite_definitions(
 
     for definition in &patch.module_definitions {
         let mut stack = Vec::new();
-        collect_recursive_composite_paths(
+        collect_recursive_module_paths(
             definition.module_type.as_str(),
             &dependencies,
             &mut stack,
@@ -441,12 +441,12 @@ fn validate_recursive_composite_definitions(
         diagnostics.push(Diagnostic::new(
             error_codes::VALIDATION_INVALID_VALUE,
             Severity::Error,
-            format!("recursive composite definition: {path}"),
+            format!("recursive module definition: {path}"),
         ));
     }
 }
 
-fn collect_recursive_composite_paths<'a>(
+fn collect_recursive_module_paths<'a>(
     current: &'a str,
     dependencies: &BTreeMap<&'a str, Vec<&'a str>>,
     stack: &mut Vec<&'a str>,
@@ -462,13 +462,13 @@ fn collect_recursive_composite_paths<'a>(
     stack.push(current);
     if let Some(nested) = dependencies.get(current) {
         for dependency in nested {
-            collect_recursive_composite_paths(dependency, dependencies, stack, reported_paths);
+            collect_recursive_module_paths(dependency, dependencies, stack, reported_paths);
         }
     }
     stack.pop();
 }
 
-pub(super) fn validate_composite_instance_bindings(
+pub(super) fn validate_module_instance_bindings(
     module: &ModuleDeclaration,
     patch: &PatchDocument,
     diagnostics: &mut PatchValidationError,
@@ -494,7 +494,7 @@ pub(super) fn validate_composite_instance_bindings(
                 error_codes::VALIDATION_INVALID_VALUE,
                 Severity::Error,
                 format!(
-                    "composite {} instance {} sets undeclared parameter {}",
+                    "module {} instance {} sets undeclared parameter {}",
                     definition.module_type, module.id, key
                 ),
             ));
@@ -507,16 +507,16 @@ pub(super) fn validate_composite_instance_bindings(
         };
 
         if let Some(value_type) = parameter.value_type {
-            if !composite_value_matches_type(value, value_type) {
+            if !module_value_matches_type(value, value_type) {
                 diagnostics.push(Diagnostic::new(
                     error_codes::VALIDATION_TYPE_MISMATCH,
                     Severity::Error,
                     format!(
-                        "composite {} instance {} parameter {} has wrong type: expected {}, got {}",
+                        "module {} instance {} parameter {} has wrong type: expected {}, got {}",
                         definition.module_type,
                         module.id,
                         parameter.name,
-                        composite_type_name(value_type),
+                        module_parameter_type_name(value_type),
                         parameter_value_type_name(value)
                     ),
                 ));
@@ -524,7 +524,7 @@ pub(super) fn validate_composite_instance_bindings(
             }
         }
 
-        validate_composite_numeric_range(definition, parameter, "value", value, diagnostics);
+        validate_module_numeric_range(definition, parameter, "value", value, diagnostics);
     }
 
     for binding in &definition.asset_bindings {
@@ -536,7 +536,7 @@ pub(super) fn validate_composite_instance_bindings(
                 error_codes::VALIDATION_TYPE_MISMATCH,
                 Severity::Error,
                 format!(
-                    "composite {} instance {} asset binding {} must be a text asset ID",
+                    "module {} instance {} asset binding {} must be a text asset ID",
                     definition.module_type, module.id, binding.name
                 ),
             ));
@@ -547,7 +547,7 @@ pub(super) fn validate_composite_instance_bindings(
                 error_codes::VALIDATION_UNKNOWN_MODULE,
                 Severity::Error,
                 format!(
-                    "composite {} instance {} asset binding {} references missing asset {}",
+                    "module {} instance {} asset binding {} references missing asset {}",
                     definition.module_type, module.id, binding.name, asset_id
                 ),
             ));
@@ -558,7 +558,7 @@ pub(super) fn validate_composite_instance_bindings(
                 error_codes::VALIDATION_TYPE_MISMATCH,
                 Severity::Error,
                 format!(
-                    "composite {} instance {} asset binding {} references asset {} with kind {:?}; expected sample",
+                    "module {} instance {} asset binding {} references asset {} with kind {:?}; expected sample",
                     definition.module_type, module.id, binding.name, asset_id, asset.kind
                 ),
             ));
@@ -567,19 +567,19 @@ pub(super) fn validate_composite_instance_bindings(
 }
 
 #[derive(Clone, Copy)]
-enum CompositeMappingDirection {
+enum ModuleMappingDirection {
     PublicInputToInternalInput,
     PublicOutputFromInternalOutput,
 }
 
-fn validate_composite_mapping(
+fn validate_module_mapping(
     definition_type: &str,
     public_direction_label: &str,
     public_name: &str,
     public_signal_type: SignalType,
     mapping_label: &str,
     reference: &PortReference,
-    direction: CompositeMappingDirection,
+    direction: ModuleMappingDirection,
     definition: &ModuleDefinitionDeclaration,
     registry: &BuiltInModuleRegistry,
     diagnostics: &mut PatchValidationError,
@@ -594,11 +594,11 @@ fn validate_composite_mapping(
             error_codes::VALIDATION_INVALID_VALUE,
             Severity::Error,
             format!(
-                "composite {definition_type} {public_direction_label} {} {mapping_label} {reference} must reference an internal {} port",
-                composite_port_name(public_name),
+                "module {definition_type} {public_direction_label} {} {mapping_label} {reference} must reference an internal {} port",
+                module_port_name(public_name),
                 match direction {
-                    CompositeMappingDirection::PublicInputToInternalInput => "input",
-                    CompositeMappingDirection::PublicOutputFromInternalOutput => "output",
+                    ModuleMappingDirection::PublicInputToInternalInput => "input",
+                    ModuleMappingDirection::PublicOutputFromInternalOutput => "output",
                 }
             ),
         ));
@@ -614,8 +614,8 @@ fn validate_composite_mapping(
             error_codes::VALIDATION_TYPE_MISMATCH,
             Severity::Error,
             format!(
-                "composite {definition_type} {public_direction_label} {} {mapping_label} {reference} has incompatible signal types: public {:?}, internal {:?}",
-                composite_port_name(public_name),
+                "module {definition_type} {public_direction_label} {} {mapping_label} {reference} has incompatible signal types: public {:?}, internal {:?}",
+                module_port_name(public_name),
                 public_signal_type,
                 internal_type
             ),
@@ -626,7 +626,7 @@ fn validate_composite_mapping(
 fn resolve_internal_port_type(
     definition: &ModuleDefinitionDeclaration,
     reference: &PortReference,
-    direction: CompositeMappingDirection,
+    direction: ModuleMappingDirection,
     registry: &BuiltInModuleRegistry,
 ) -> InternalPortResolution {
     let module = definition
@@ -641,8 +641,8 @@ fn resolve_internal_port_type(
 
     if built_in.is_none() || module.module_type == module_types::SCRIPT {
         let expected_ports = match direction {
-            CompositeMappingDirection::PublicInputToInternalInput => &module.inputs,
-            CompositeMappingDirection::PublicOutputFromInternalOutput => &module.outputs,
+            ModuleMappingDirection::PublicInputToInternalInput => &module.inputs,
+            ModuleMappingDirection::PublicOutputFromInternalOutput => &module.outputs,
         };
         if let Some(port) = expected_ports
             .iter()
@@ -652,8 +652,8 @@ fn resolve_internal_port_type(
         }
 
         let opposite_ports = match direction {
-            CompositeMappingDirection::PublicInputToInternalInput => &module.outputs,
-            CompositeMappingDirection::PublicOutputFromInternalOutput => &module.inputs,
+            ModuleMappingDirection::PublicInputToInternalInput => &module.outputs,
+            ModuleMappingDirection::PublicOutputFromInternalOutput => &module.inputs,
         };
         if opposite_ports
             .iter()
@@ -667,8 +667,8 @@ fn resolve_internal_port_type(
 
     let built_in = built_in.expect("built-in module definition checked above");
     let expected_ports = match direction {
-        CompositeMappingDirection::PublicInputToInternalInput => built_in.inputs(),
-        CompositeMappingDirection::PublicOutputFromInternalOutput => built_in.outputs(),
+        ModuleMappingDirection::PublicInputToInternalInput => built_in.inputs(),
+        ModuleMappingDirection::PublicOutputFromInternalOutput => built_in.outputs(),
     };
     if let Some(port) = expected_ports
         .iter()
@@ -678,8 +678,8 @@ fn resolve_internal_port_type(
     }
 
     let opposite_ports = match direction {
-        CompositeMappingDirection::PublicInputToInternalInput => built_in.outputs(),
-        CompositeMappingDirection::PublicOutputFromInternalOutput => built_in.inputs(),
+        ModuleMappingDirection::PublicInputToInternalInput => built_in.outputs(),
+        ModuleMappingDirection::PublicOutputFromInternalOutput => built_in.inputs(),
     };
     if opposite_ports
         .iter()
@@ -706,7 +706,7 @@ fn signal_type_from_graph(signal_type: crate::graph::SignalType) -> SignalType {
     }
 }
 
-fn composite_port_name(name: &str) -> &str {
+fn module_port_name(name: &str) -> &str {
     if name.trim().is_empty() {
         "<unnamed>"
     } else {
@@ -714,7 +714,7 @@ fn composite_port_name(name: &str) -> &str {
     }
 }
 
-fn composite_parameter_name(name: &str) -> &str {
+fn module_parameter_name(name: &str) -> &str {
     if name.trim().is_empty() {
         "<unnamed>"
     } else {

@@ -22,11 +22,11 @@ fn assert_diagnostic_contains(diagnostics: &[Diagnostic], code: &str, text: &str
     );
 }
 
-fn composite_patch_with_instance(parameter_value: &str) -> String {
+fn module_patch_with_instance(parameter_value: &str) -> String {
     format!(
         r#"
 metadata:
-  name: Composite Instance
+  name: Module Instance
 render:
   sample_rate_hz: 48000
   block_size_frames: 64
@@ -72,19 +72,19 @@ modules:
 }
 
 #[test]
-fn composite_definition_accepts_public_ports_and_instance_bindings() {
-    let patch = load_patch_str(&composite_patch_with_instance("0.75"))
+fn module_definition_accepts_public_ports_and_instance_bindings() {
+    let patch = load_patch_str(&module_patch_with_instance("0.75"))
         .expect("patch YAML should parse");
 
-    validate_patch_schema(&patch).expect("composite public surface should validate");
+    validate_patch_schema(&patch).expect("module public surface should validate");
 }
 
 #[test]
-fn composite_public_port_contract_rejects_wrong_direction_and_signal_mismatches() {
+fn module_public_port_contract_rejects_wrong_direction_and_signal_mismatches() {
     let diagnostics = diagnostics_for_invalid_patch(
         r#"
 metadata:
-  name: Bad Composite Ports
+  name: Bad Module Ports
 render:
   sample_rate_hz: 48000
   block_size_frames: 64
@@ -151,11 +151,11 @@ modules:
 }
 
 #[test]
-fn composite_parameter_contract_rejects_bad_definitions_and_instance_values() {
+fn module_parameter_contract_rejects_bad_definitions_and_instance_values() {
     let diagnostics = diagnostics_for_invalid_patch(
         r#"
 metadata:
-  name: Bad Composite Parameters
+  name: Bad Module Parameters
 render:
   sample_rate_hz: 48000
   block_size_frames: 64
@@ -256,11 +256,11 @@ modules:
 }
 
 #[test]
-fn composite_asset_bindings_accept_only_existing_sample_assets() {
+fn module_asset_bindings_accept_only_existing_sample_assets() {
     let diagnostics = diagnostics_for_invalid_patch(
         r#"
 metadata:
-  name: Composite Asset Bindings
+  name: Module Asset Bindings
 render:
   sample_rate_hz: 48000
   block_size_frames: 64
@@ -316,7 +316,7 @@ modules:
 
 #[test]
 fn external_preset_application_preserves_graph_structure_and_replaces_surface_values() {
-    let patch = load_patch_str(&composite_patch_with_instance("0.1"))
+    let patch = load_patch_str(&module_patch_with_instance("0.1"))
         .expect("patch YAML should parse");
     let mut patch = patch.clone();
     patch.instrument = Some(dandrum_engine::patch::InstrumentIdentity {
@@ -368,7 +368,7 @@ values:
 
 #[test]
 fn external_preset_validation_rejects_identity_schema_unknown_targets_and_structure() {
-    let patch = load_patch_str(&composite_patch_with_instance("0.1"))
+    let patch = load_patch_str(&module_patch_with_instance("0.1"))
         .expect("patch YAML should parse");
     let mut patch = patch.clone();
     patch.instrument = Some(dandrum_engine::patch::InstrumentIdentity {
@@ -417,11 +417,11 @@ modules: []
 }
 
 #[test]
-fn composite_definitions_reject_missing_and_duplicate_module_types() {
+fn module_definitions_reject_missing_and_duplicate_module_types() {
     let diagnostics = diagnostics_for_invalid_patch(
         r#"
 metadata:
-  name: Bad Composite Types
+  name: Bad Module Types
 render:
   sample_rate_hz: 48000
   block_size_frames: 64
@@ -448,21 +448,21 @@ modules:
     assert_diagnostic_contains(
         &diagnostics,
         error_codes::VALIDATION_MISSING_FIELD,
-        "composite module type is required",
+        "module definition type is required",
     );
     assert_diagnostic_contains(
         &diagnostics,
         error_codes::VALIDATION_INVALID_VALUE,
-        "duplicate composite module type: dup.macro",
+        "duplicate module definition type: dup.macro",
     );
 }
 
 #[test]
-fn composite_definitions_reject_missing_port_names() {
+fn module_definitions_reject_missing_port_names() {
     let diagnostics = diagnostics_for_invalid_patch(
         r#"
 metadata:
-  name: Composite Missing Port Names
+  name: Module Missing Port Names
 render:
   sample_rate_hz: 48000
   block_size_frames: 64
@@ -499,11 +499,11 @@ modules:
 }
 
 #[test]
-fn composite_definitions_reject_recursive_definitions() {
+fn module_definitions_reject_recursive_definitions() {
     let diagnostics = diagnostics_for_invalid_patch(
         r#"
 metadata:
-  name: Recursive Composites
+  name: Recursive Modules
 render:
   sample_rate_hz: 48000
   block_size_frames: 64
@@ -526,16 +526,16 @@ modules:
     assert_diagnostic_contains(
         &diagnostics,
         error_codes::VALIDATION_INVALID_VALUE,
-        "recursive composite definition",
+        "recursive module definition",
     );
 }
 
 #[test]
-fn composite_parameter_type_names_appear_in_diagnostics() {
+fn module_parameter_type_names_appear_in_diagnostics() {
     let diagnostics = diagnostics_for_invalid_patch(
         r#"
 metadata:
-  name: Composite Type Names
+  name: Module Type Names
 render:
   sample_rate_hz: 48000
   block_size_frames: 64
@@ -584,11 +584,11 @@ modules:
 }
 
 #[test]
-fn composite_mapping_resolves_built_in_internal_ports() {
+fn module_mapping_resolves_built_in_internal_ports() {
     let diagnostics = diagnostics_for_invalid_patch(
         r#"
 metadata:
-  name: Composite Built-in Ports
+  name: Module Built-in Ports
 render:
   sample_rate_hz: 48000
   block_size_frames: 64
@@ -639,11 +639,11 @@ modules:
 }
 
 #[test]
-fn composite_mapping_reports_wrong_direction_for_custom_and_built_in_internals() {
+fn module_mapping_reports_wrong_direction_for_custom_and_built_in_internals() {
     let diagnostics = diagnostics_for_invalid_patch(
         r#"
 metadata:
-  name: Composite Mixed Internals
+  name: Module Mixed Internals
 render:
   sample_rate_hz: 48000
   block_size_frames: 64
@@ -694,14 +694,14 @@ modules:
 }
 
 #[test]
-fn composite_mapping_tolerates_unknown_internal_module_and_port() {
+fn module_mapping_tolerates_unknown_internal_module_and_port() {
     // Mappings to a missing internal module or an unknown internal port are
     // silently ignored at schema validation (they surface later at graph build),
-    // so the composite public surface still validates.
+    // so the module public surface still validates.
     let patch = load_patch_str(
         r#"
 metadata:
-  name: Composite Unknown Internals
+  name: Module Unknown Internals
 render:
   sample_rate_hz: 48000
   block_size_frames: 64
@@ -732,11 +732,11 @@ modules:
 }
 
 #[test]
-fn composite_asset_binding_unset_on_instance_is_skipped() {
+fn module_asset_binding_unset_on_instance_is_skipped() {
     let patch = load_patch_str(
         r#"
 metadata:
-  name: Composite Optional Asset
+  name: Module Optional Asset
 render:
   sample_rate_hz: 48000
   block_size_frames: 64
@@ -760,14 +760,14 @@ modules:
 }
 
 #[test]
-fn composite_optional_parameter_without_value_is_skipped_during_expansion() {
-    // A composite parameter with no literal value and no default that the
+fn module_optional_parameter_without_value_is_skipped_during_expansion() {
+    // A module parameter with no literal value and no default that the
     // instance also leaves unset must be skipped during graph expansion rather
     // than injecting an empty value.
     let patch = load_patch_str(
         r#"
 metadata:
-  name: Composite Optional Parameter
+  name: Module Optional Parameter
 render:
   sample_rate_hz: 48000
   block_size_frames: 128
@@ -818,5 +818,5 @@ connections:
     let graph = dandrum_engine::graph::Graph::from_patch_declarations(&patch);
     graph
         .validate()
-        .expect("expanded graph should validate with the unset composite parameter skipped");
+        .expect("expanded graph should validate with the unset module parameter skipped");
 }

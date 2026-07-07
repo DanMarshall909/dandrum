@@ -417,11 +417,11 @@ scheduling:
 }
 
 #[test]
-fn composite_public_parameter_declarations_reject_duplicate_names() {
+fn module_public_parameter_declarations_reject_duplicate_names() {
     let messages = validation_messages(
         r#"
 metadata:
-  name: Duplicate Composite Parameters
+  name: Duplicate Module Parameters
 render:
   sample_rate_hz: 48000
   block_size_frames: 128
@@ -447,11 +447,11 @@ modules:
 }
 
 #[test]
-fn composite_public_parameter_declarations_validate_constraints_and_defaults() {
+fn module_public_parameter_declarations_validate_constraints_and_defaults() {
     let messages = validation_messages(
         r#"
 metadata:
-  name: Invalid Composite Parameter Constraint
+  name: Invalid Module Parameter Constraint
 render:
   sample_rate_hz: 48000
   block_size_frames: 128
@@ -482,11 +482,11 @@ modules:
 }
 
 #[test]
-fn composite_instance_parameter_type_is_validated_against_public_declaration() {
+fn module_instance_parameter_type_is_validated_against_public_declaration() {
     let messages = validation_messages(
         r#"
 metadata:
-  name: Composite Instance Wrong Type
+  name: Module Instance Wrong Type
 render:
   sample_rate_hz: 48000
   block_size_frames: 128
@@ -518,11 +518,11 @@ modules:
 }
 
 #[test]
-fn composite_parameter_direct_reference_resolves_to_internal_module_parameter_before_graph_build() {
+fn module_parameter_direct_reference_resolves_to_internal_module_parameter_before_graph_build() {
     let patch = load_patch_str(
         r#"
 metadata:
-  name: Composite Binding Resolution
+  name: Module Binding Resolution
 render:
   sample_rate_hz: 48000
   block_size_frames: 128
@@ -545,7 +545,7 @@ modules:
     )
     .expect("patch should parse");
 
-    validate_patch_schema(&patch).expect("composite parameter binding should validate");
+    validate_patch_schema(&patch).expect("module parameter binding should validate");
     let graph = Graph::from_patch_declarations(&patch);
     let filt = graph
         .modules()
@@ -557,11 +557,11 @@ modules:
 }
 
 #[test]
-fn composite_parameter_literal_bindings_resolve_to_internal_module_parameters() {
+fn module_parameter_literal_bindings_resolve_to_internal_module_parameters() {
     let patch = load_patch_str(
         r#"
 metadata:
-  name: Composite Literal Binding Resolution
+  name: Module Literal Binding Resolution
 render:
   sample_rate_hz: 48000
   block_size_frames: 128
@@ -600,7 +600,7 @@ modules:
 }
 
 #[test]
-fn composite_parameter_binding_rejects_unsupported_expression_syntax() {
+fn module_parameter_binding_rejects_unsupported_expression_syntax() {
     let messages = validation_messages(
         r#"
 metadata:
@@ -853,7 +853,7 @@ fn synthetic_808_kick_public_controls_are_discoverable_without_internal_leakage(
         .module_definitions
         .iter()
         .find(|definition| definition.module_type == "synthetic_808_kick")
-        .expect("kick composite should be declared");
+        .expect("kick module should be declared");
     let public_names = kick
         .parameters
         .iter()

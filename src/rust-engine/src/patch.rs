@@ -13,11 +13,11 @@ use crate::builtins::{
 use crate::diagnostics::{self, Diagnostic, Diagnostics, Severity, error_codes};
 use crate::script::{RhaiScriptRuntime, ScriptPrepareError, ScriptRuntimeLimits};
 
-#[path = "patch_composite.rs"]
-mod patch_composite;
+#[path = "patch_module.rs"]
+mod patch_module;
 
-pub use patch_composite::{
-    CompositeBindingDeclaration, CompositeInputDeclaration, CompositeOutputDeclaration,
+pub use patch_module::{
+    ModuleBindingDeclaration, ModuleInputDeclaration, ModuleOutputDeclaration,
     ModuleDefinitionDeclaration,
 };
 
@@ -729,7 +729,7 @@ pub fn validate_patch_schema(patch: &PatchDocument) -> Result<(), PatchValidatio
         ));
     }
 
-    patch_composite::validate_module_definitions(patch, &mut result);
+    patch_module::validate_module_definitions(patch, &mut result);
 
     let mut module_ids = BTreeSet::new();
     for module in &patch.modules {
@@ -798,7 +798,7 @@ pub fn validate_patch_schema(patch: &PatchDocument) -> Result<(), PatchValidatio
             &mut result,
         );
 
-        patch_composite::validate_composite_instance_bindings(module, patch, &mut result);
+        patch_module::validate_module_instance_bindings(module, patch, &mut result);
     }
 
     if patch.voice_allocation.max_voices == 0 {
@@ -843,7 +843,7 @@ fn validate_script_module(module: &ModuleDeclaration, diagnostics: &mut PatchVal
                 .with_port_name(&input.name)
                 .with_expected("event or control input")
                 .with_actual("audio input")
-                .with_suggested_fix("move audio-rate DSP into a Rust primitive or YAML composite"),
+                .with_suggested_fix("move audio-rate DSP into a Rust primitive or YAML module"),
             );
         }
     }
@@ -863,7 +863,7 @@ fn validate_script_module(module: &ModuleDeclaration, diagnostics: &mut PatchVal
                 .with_port_name(&output.name)
                 .with_expected("event or control output")
                 .with_actual("audio output")
-                .with_suggested_fix("move audio-rate DSP into a Rust primitive or YAML composite"),
+                .with_suggested_fix("move audio-rate DSP into a Rust primitive or YAML module"),
             );
         }
     }

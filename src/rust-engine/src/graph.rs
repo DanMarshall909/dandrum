@@ -6,8 +6,8 @@ use std::fmt;
 use crate::builtins::{BuiltInModuleRegistry, module_types};
 use crate::patch;
 
-#[path = "graph_composite.rs"]
-mod graph_composite;
+#[path = "graph_module.rs"]
+mod graph_module;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum ExecutionScope {
@@ -285,7 +285,7 @@ impl Graph {
     pub fn from_patch_declarations(patch: &patch::PatchDocument) -> Self {
         let registry = BuiltInModuleRegistry::new();
         let (module_declarations, connection_declarations) =
-            graph_composite::expand_patch_declarations(patch);
+            graph_module::expand_patch_declarations(patch);
         let modules = module_declarations
             .iter()
             .map(|module| {
@@ -295,7 +295,7 @@ impl Graph {
 
                 if let Some(definition) = definition {
                     let execution_scope =
-                        if module.id.contains(graph_composite::NAMESPACED_ID_SEPARATOR)
+                        if module.id.contains(graph_module::NAMESPACED_ID_SEPARATOR)
                             && (module.module_type == module_types::AUDIO_MIXER
                                 || module.module_type == module_types::CONTROL_MIXER)
                         {

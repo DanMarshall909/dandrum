@@ -796,7 +796,7 @@ connections:
 }
 
 #[test]
-fn composite_oscillator_gain_voice_renders_like_equivalent_flat_graph() {
+fn module_oscillator_gain_voice_renders_like_equivalent_flat_graph() {
     let flat = render_patch(
         r#"
 metadata:
@@ -831,10 +831,10 @@ connections:
     to: out.left
 "#,
     );
-    let composite = render_patch(
+    let defined_module = render_patch(
         r#"
 metadata:
-  name: Composite Voice
+  name: Module Voice
 render:
   sample_rate_hz: 48000
   block_size_frames: 64
@@ -882,16 +882,16 @@ connections:
 "#,
     );
 
-    assert_eq!(composite, flat);
-    assert!(composite.0.iter().any(|sample| *sample != 0.0));
+    assert_eq!(defined_module, flat);
+    assert!(defined_module.0.iter().any(|sample| *sample != 0.0));
 }
 
 #[test]
-fn composite_sampler_voice_renders_through_generic_public_ports() {
+fn module_sampler_voice_renders_through_generic_public_ports() {
     let patch = patch::load_patch_str(
         r#"
 metadata:
-  name: Composite Sampler
+  name: Module Sampler
 render:
   sample_rate_hz: 48000
   block_size_frames: 4
@@ -938,7 +938,7 @@ connections:
     let graph = Graph::from_patch_declarations(&patch);
     graph
         .validate()
-        .expect("expanded sampler composite should validate");
+        .expect("expanded sampler module should validate");
     let assets = PreparedSamplerAssets::from_samples_by_module(BTreeMap::from([(
         "voice::sampler".to_string(),
         LoadedSample::new(48_000, vec![0.25, 0.5, 0.75]),
@@ -952,7 +952,7 @@ connections:
 }
 
 #[test]
-fn offline_and_realtime_processors_receive_only_expanded_composite_nodes() {
+fn offline_and_realtime_processors_receive_only_expanded_module_nodes() {
     let patch = patch::load_patch_str(
         r#"
 metadata:
@@ -2962,7 +2962,7 @@ fn compiled_render_matches_raw_for_reverb_chain() {
 }
 
 #[test]
-fn composite_echo_yaml_loads_and_validates() {
+fn module_echo_yaml_loads_and_validates() {
     let Some(yaml) = read_repo_fixture("examples/patches/composite-echo.yaml") else {
         return;
     };
@@ -2975,7 +2975,7 @@ fn composite_echo_yaml_loads_and_validates() {
 }
 
 #[test]
-fn composite_reverb_yaml_loads_and_validates() {
+fn module_reverb_yaml_loads_and_validates() {
     let Some(yaml) = read_repo_fixture("examples/patches/composite-reverb.yaml") else {
         return;
     };
@@ -2988,7 +2988,7 @@ fn composite_reverb_yaml_loads_and_validates() {
 }
 
 #[test]
-fn drum_machine_dogfood_routes_notes_to_explicit_voice_composites_without_primitive() {
+fn drum_machine_dogfood_routes_notes_to_explicit_voice_modules_without_primitive() {
     let Some(yaml) = read_repo_fixture("examples/patches/event-routing-drum-machine.yaml") else {
         return;
     };
@@ -3221,7 +3221,7 @@ fn rms(samples: &[f32]) -> f32 {
 }
 
 #[test]
-fn drum_kit_composite_examples_load_validate_and_render_with_documented_primitive_ports() {
+fn drum_kit_module_examples_load_validate_and_render_with_documented_primitive_ports() {
     for (fixture, note, should_render) in [
         ("examples/patches/composite-velocity-vca.yaml", 60, true),
         ("examples/patches/composite-impulse-tone.yaml", 60, true),

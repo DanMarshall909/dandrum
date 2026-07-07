@@ -189,8 +189,8 @@ pub unsafe extern "C" fn dandrum_engine_set_public_numeric_parameter(
 }
 
 /// Number of internal targets a public parameter fans out to, off the audio
-/// thread. A plain (non-composite) binding has exactly one target; a
-/// composite module's `maps_to` can bind one public parameter to several
+/// thread. A plain (single-target) binding has exactly one target; a
+/// defined module's `maps_to` can bind one public parameter to several
 /// internal parameters at once. Returns 0 if the parameter is unknown.
 ///
 /// Callers resolve a slot for each target via
@@ -226,7 +226,7 @@ pub unsafe extern "C" fn dandrum_engine_public_numeric_parameter_target_count(
 /// without taking the loaded-instrument registry lock or doing any string
 /// comparison. Callers should resolve a slot for every index up to
 /// `dandrum_engine_public_numeric_parameter_target_count` and apply all of
-/// them together so composite fan-out parameters stay fully live.
+/// them together so module fan-out parameters stay fully live.
 ///
 /// Returns -1 if the parameter is unknown, not numeric, `target_index` is out
 /// of range, or that target cannot be resolved to a compiled slot.
@@ -723,7 +723,7 @@ mod tests {
         std::fs::remove_file(path).ok();
     }
 
-    /// Reproduces the regression where a public parameter bound to a composite
+    /// Reproduces the regression where a public parameter bound to a defined module
     /// module's fan-out (`maps_to` targeting more than one internal parameter)
     /// stopped updating at runtime: the single-slot fast path bailed out with
     /// -1 for any such parameter and nothing else in the C API took over.
@@ -748,7 +748,7 @@ mod tests {
         let target_count = unsafe {
             dandrum_engine_public_numeric_parameter_target_count(engine, parameter_id.as_ptr())
         };
-        assert_eq!(target_count, 2, "composite fan-out should expose both targets");
+        assert_eq!(target_count, 2, "module fan-out should expose both targets");
 
         let mut slots = Vec::new();
         for target_index in 0..target_count {
