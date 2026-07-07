@@ -18,9 +18,11 @@
 
 ## 2. Module package format and loading
 
-- [ ] 2.1 Define the module package format (folder with entry YAML mirroring the folder name; co-located resources resolved relative to the package root) and a loader that reads a package's entry YAML.
-- [ ] 2.2 Resolve module-internal resource paths relative to the package root so packages are portable.
-- [ ] 2.3 Inject a loaded external package as an inline `module_definitions`-equivalent entry and expand it through the same defined-module expansion path (no second expansion implementation).
+- [x] 2.1 Define the module package format (folder with entry YAML mirroring the folder name; co-located resources resolved relative to the package root) and a loader that reads a package's entry YAML. Implemented in `module_package.rs` (`ModulePackageDocument`, `load_package` enforcing the folder/entry name-mirror invariant via `ModulePackageError::NameMismatch`).
+- [x] 2.2 Resolve module-internal resource paths relative to the package root so packages are portable. Package-declared `assets` paths are rebased onto the package root on injection; `..`/absolute resource paths are rejected as `ResourcePathEscape` (`library.path_escape`).
+- [x] 2.3 Inject a loaded external package as an inline `module_definitions`-equivalent entry and expand it through the same defined-module expansion path (no second expansion implementation). `expand_external_references` appends each distinct reference as a `module_definitions` entry keyed by the reference string; proven graph-identical to the inline definition by `external_reference_expands_identically_to_inline_definition`.
+
+> Note: Section 2 delivers the loader and the pure `expand_external_references(patch, roots)` injection, unit-tested end-to-end (load real package → inject → validate → build graph, asserting graph-identity with the inline definition). Calling it from the preparation pipeline is deferred to §3, which plumbs the concrete `$LIB`/`$USER_LIB` roots that the injection needs.
 
 ## 3. Version-first layout and `$LIB` seeding
 

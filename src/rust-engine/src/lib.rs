@@ -29,6 +29,8 @@ pub mod patch;
 
 pub mod module_reference;
 
+pub mod module_package;
+
 pub mod script;
 
 pub(crate) mod sample;
