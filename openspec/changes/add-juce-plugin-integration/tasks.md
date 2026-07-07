@@ -41,7 +41,7 @@
 - [x] 4.4 Keep parameter IDs stable for the lifetime of the loaded instrument instance.
 - [x] 4.5 Do not expose graph editing or YAML editing in the normal runtime controls.
 - [x] 4.6 Do not embed a web UI in the main v1 plugin runtime surface.
-- [ ] 4.7 Refresh/rebuild controls after an explicit instrument replacement if the public parameter surface changed. **Blocked**: JUCE's `AudioProcessorValueTreeState` parameter layout is fixed at construction time and cannot be safely resized at runtime (see design.md's open question on dynamic parameter layouts). Slots for parameters no longer present in a replacement instrument are dropped (5.13); slots for genuinely new parameters cannot be exposed as controls without solving this first.
+- [x] 4.7 Refresh/rebuild controls after an explicit instrument replacement if the public parameter surface changed. Implemented with fixed host parameter slots plus dynamic public-ID mapping so the editor surface can rebuild without resizing the host APVTS layout.
 
 ## 5. Parameter Bridge
 
@@ -50,26 +50,26 @@
 - [x] 5.3 Avoid string lookup on the audio thread where practical by preparing parameter handles/indices.
 - [x] 5.4 Apply parameter values to the active graph without reallocating in the callback.
 - [x] 5.5 Add tests proving parameter values update the mapped instrument targets.
-- [ ] 5.6 Add `LoadedInstrument`, `InstrumentDefinition`, and `InstrumentParameterState` so immutable definition state and mutable value state are explicit.
+- [x] 5.6 Add `LoadedInstrument`, `InstrumentDefinition`, and `InstrumentParameterState` so immutable definition state and mutable value state are explicit.
 - [x] 5.7 Resolve `preset_surface.parameters[*].maps_to` into prepared public parameter bindings at instrument load time.
 - [x] 5.8 Initialise mutable parameter state from YAML defaults when the instrument is loaded.
 - [x] 5.9 Apply live public parameter changes to mutable runtime state without editing or reparsing YAML.
 - [x] 5.10 Use block-boundary parameter application for v1; defer sample-accurate public parameter automation unless separately specified.
 - [x] 5.11 On instrument replacement, carry over compatible current parameter values by stable public ID.
-- [ ] 5.12 On instrument replacement, initialise newly added public parameters from YAML defaults. **Blocked**: same APVTS static-layout limitation as 4.7 — there is no control to initialise until dynamic layout support exists.
+- [x] 5.12 On instrument replacement, initialise newly added public parameters from YAML defaults.
 - [x] 5.13 On instrument replacement, drop removed public parameters from mutable runtime state.
 
 ## 6. Presets
 
-- [ ] 6.1 Treat presets as value changes for the currently loaded instrument surface.
-- [ ] 6.2 Reject presets that do not match the loaded instrument identity/schema version.
-- [ ] 6.3 Ensure presets cannot mutate graph, routing, render, scheduling, script, feedback, or undeclared module structure.
-- [ ] 6.4 Add plugin/editor support for selecting/loading compatible presets.
-- [ ] 6.5 Apply compatible presets to mutable runtime parameter state, not the immutable YAML definition.
-- [ ] 6.6 After instrument replacement, reconcile saved/current preset values by public parameter ID.
-- [ ] 6.7 Clamp carried-over preset values to new ranges where the parameter still exists.
-- [ ] 6.8 Record newly introduced public parameters in presets/state with YAML-declared default values.
-- [ ] 6.9 Report incompatible presets clearly instead of applying them silently.
+- [x] 6.1 Treat presets as value changes for the currently loaded instrument surface.
+- [x] 6.2 Reject presets that do not match the loaded instrument identity/schema version.
+- [x] 6.3 Ensure presets cannot mutate graph, routing, render, scheduling, script, feedback, or undeclared module structure.
+- [x] 6.4 Add plugin/editor support for selecting/loading compatible presets.
+- [x] 6.5 Apply compatible presets to mutable runtime parameter state, not the immutable YAML definition.
+- [x] 6.6 After instrument replacement, reconcile saved/current preset values by public parameter ID.
+- [x] 6.7 Clamp carried-over preset values to new ranges where the parameter still exists.
+- [x] 6.8 Record newly introduced public parameters in presets/state with YAML-declared default values.
+- [x] 6.9 Report incompatible presets clearly instead of applying them silently.
 
 ## 7. Sample-Accurate MIDI
 
@@ -81,21 +81,21 @@
 
 ## 8. State Persistence
 
-- [ ] 8.1 Implement plugin state schema versioning.
-- [ ] 8.2 Store enough instrument information to restore projects without relying only on absolute file paths.
+- [x] 8.1 Implement plugin state schema versioning.
+- [x] 8.2 Store enough instrument information to restore projects without relying only on absolute file paths.
 - [x] 8.3 Store current public parameter values.
-- [ ] 8.4 Store compatible preset identity/content where applicable.
-- [ ] 8.5 Restore plugin state by preparing a replacement engine off the audio thread.
-- [ ] 8.6 Report restore failures clearly in the editor/status surface.
-- [ ] 8.7 Restore immutable instrument definition first, then apply saved mutable public parameter values.
+- [x] 8.4 Store compatible preset identity/content where applicable.
+- [x] 8.5 Restore plugin state by preparing a replacement engine off the audio thread.
+- [x] 8.6 Report restore failures clearly in the editor/status surface.
+- [x] 8.7 Restore immutable instrument definition first, then apply saved mutable public parameter values.
 
 ## 9. Error and Status Reporting
 
-- [ ] 9.1 Add FFI for querying last load/prepare error off the audio thread.
-- [ ] 9.2 Preserve structured Rust load/validation/compile/sample-preparation errors for display.
+- [x] 9.1 Add FFI for querying last load/prepare error off the audio thread.
+- [x] 9.2 Preserve structured Rust load/validation/compile/sample-preparation errors for display.
 - [x] 9.3 Display current instrument status and error messages in the JUCE editor.
-- [ ] 9.4 Expose diagnostic counters such as dropped MIDI events where useful.
-- [ ] 9.5 Show replacement transaction state: editing, validating, muted, compiling, failed, running.
+- [x] 9.4 Expose diagnostic counters such as dropped MIDI events where useful.
+- [x] 9.5 Show replacement transaction state: editing, validating, muted, compiling, failed, running.
 
 ## 10. Tests and Safety Checks
 
@@ -109,7 +109,7 @@
 - [x] 10.8 Add tests proving unknown public parameters are rejected.
 - [x] 10.9 Add tests proving block-boundary public parameter updates affect mapped runtime targets.
 - [x] 10.10 Add tests proving current parameter values are carried over by public ID across instrument replacement.
-- [ ] 10.11 Add tests proving new parameters introduced by a replacement instrument are initialised from YAML defaults. **Blocked**: same APVTS static-layout limitation as 4.7/5.12.
+- [x] 10.11 Add tests proving new parameters introduced by a replacement instrument are initialised from YAML defaults.
 
 ## 11. Documentation
 
