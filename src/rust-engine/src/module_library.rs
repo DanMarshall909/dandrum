@@ -19,17 +19,17 @@ pub const STANDARD_LIBRARY_ROOT_ENV_VAR: &str = "DANDRUM_MODULE_LIBRARY_ROOT";
 pub const STANDARD_LIBRARY_CRC_FILENAME: &str = ".dandrum-library.crc";
 
 /// One file bundled into a seeded module-library version.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub struct SeededLibraryFile<'a> {
-    pub path: &'a str,
-    pub contents: &'a [u8],
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct SeededLibraryFile {
+    pub path: String,
+    pub contents: Vec<u8>,
 }
 
 /// A complete seeded module-library version.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub struct SeededLibrary<'a> {
-    pub version: &'a str,
-    pub files: &'a [SeededLibraryFile<'a>],
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct SeededLibrary {
+    pub version: String,
+    pub files: Vec<SeededLibraryFile>,
 }
 
 /// Outcome of a seed attempt.
@@ -95,21 +95,21 @@ pub fn default_standard_library_root() -> Result<PathBuf, ModuleLibrarySeedError
 /// CRC already matches and replacing only that version directory when it differs.
 pub fn seed_standard_library(
     root: impl AsRef<Path>,
-    library: &SeededLibrary<'_>,
+    library: &SeededLibrary,
 ) -> Result<SeedResult, ModuleLibrarySeedError> {
-    validate_version(library.version)?;
-    for file in library.files {
-        reject_file_path_escape(file.path)?;
+    validate_version(&library.version)?;
+    for file in &library.files {
+        reject_file_path_escape(&file.path)?;
     }
 
     let root = root.as_ref();
     let crc = seeded_library_crc(library);
-    let version_root = root.join(library.version);
+    let version_root = root.join(&library.version);
     let manifest_path = version_root.join(STANDARD_LIBRARY_CRC_FILENAME);
 
     if recorded_crc(&manifest_path)? == Some(crc) {
         return Ok(SeedResult::SkippedUnchanged {
-            version: library.version.to_string(),
+            version: library.version.clone(),
             crc,
         });
     }
@@ -126,12 +126,12 @@ pub fn seed_standard_library(
     }
     fs::create_dir_all(&staging_root).map_err(|error| io_error(&staging_root, error))?;
 
-    for file in library.files {
-        let target = staging_root.join(file.path);
+    for file in &library.files {
+        let target = staging_root.join(&file.path);
         if let Some(parent) = target.parent() {
             fs::create_dir_all(parent).map_err(|error| io_error(parent, error))?;
         }
-        fs::write(&target, file.contents).map_err(|error| io_error(&target, error))?;
+        fs::write(&target, &file.contents).map_err(|error| io_error(&target, error))?;
     }
 
     let staging_manifest = staging_root.join(STANDARD_LIBRARY_CRC_FILENAME);
@@ -141,7 +141,7 @@ pub fn seed_standard_library(
     publish_version_directory(&version_root, &staging_root)?;
 
     Ok(SeedResult::Extracted {
-        version: library.version.to_string(),
+        version: library.version.clone(),
         crc,
     })
 }
@@ -209,16 +209,16 @@ fn reject_file_path_escape(path: &str) -> Result<(), ModuleLibrarySeedError> {
     }
 }
 
-fn seeded_library_crc(library: &SeededLibrary<'_>) -> u32 {
-    let mut files = library.files.to_vec();
-    files.sort_by_key(|file| file.path);
+fn seeded_library_crc(library: &SeededLibrary) -> u32 {
+    let mut files = library.files.clone();
+    files.sort_by(|left, right| left.path.cmp(&right.path));
 
     let mut crc = crc32_update(0xffff_ffff, library.version.as_bytes());
     for file in files {
         crc = crc32_update(crc, b"\0");
         crc = crc32_update(crc, file.path.as_bytes());
         crc = crc32_update(crc, b"\0");
-        crc = crc32_update(crc, file.contents);
+        crc = crc32_update(crc, &file.contents);
     }
     !crc
 }
@@ -256,18 +256,17 @@ mod tests {
     use super::*;
     use crate::module_reference::{self, LIB_MACRO, MacroRoots};
 
-    const DRUM_VOICE: SeededLibraryFile<'_> = SeededLibraryFile {
-        path: "drum_voice/drum_voice.yaml",
-        contents: b"modules: []\n",
-    };
+    fn file(path: &str, contents: &[u8]) -> SeededLibraryFile {
+        SeededLibraryFile {
+            path: path.to_string(),
+            contents: contents.to_vec(),
+        }
+    }
 
-    fn library(version: &str, contents: &'static [u8]) -> SeededLibrary<'_> {
+    fn library(version: &str, contents: &[u8]) -> SeededLibrary {
         SeededLibrary {
-            version,
-            files: &[SeededLibraryFile {
-                path: "drum_voice/drum_voice.yaml",
-                contents,
-            }],
+            version: version.to_string(),
+            files: vec![file("drum_voice/drum_voice.yaml", contents)],
         }
     }
 
@@ -327,14 +326,8 @@ mod tests {
     #[test]
     fn reseeding_newer_versions_is_additive_and_latest_follows_newest_version() {
         let root = temp_root("additive");
-        seed_standard_library(
-            &root,
-            &SeededLibrary {
-                version: "1.0.0",
-                files: &[DRUM_VOICE],
-            },
-        )
-        .expect("older version should seed");
+        seed_standard_library(&root, &library("1.0.0", b"modules: []\n"))
+            .expect("older version should seed");
         seed_standard_library(&root, &library("1.1.0", b"newer\n"))
             .expect("newer version should seed");
 
@@ -362,11 +355,8 @@ mod tests {
     fn seeded_file_path_escape_is_rejected() {
         let root = temp_root("escape");
         let seeded = SeededLibrary {
-            version: "1.0.0",
-            files: &[SeededLibraryFile {
-                path: "../outside.yaml",
-                contents: b"bad",
-            }],
+            version: "1.0.0".to_string(),
+            files: vec![file("../outside.yaml", b"bad")],
         };
 
         let error = seed_standard_library(&root, &seeded)
