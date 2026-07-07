@@ -4,7 +4,7 @@ use crate::builtins::module_kind::ModuleKind;
 use crate::builtins::{
     CURVE_LINEAR, CURVE_PARAMETER, DETECTION_MODE_PARAMETER, DETECTION_MODE_RMS,
     EVENT_FILTER_NOTE_PARAMETER, EVENT_FILTER_NOTE_SELECTOR, EVENT_FILTER_SELECTOR_PARAMETER,
-    SCRIPT_SOURCE_PARAMETER, STEPS_PARAMETER,
+    SCRIPT_SOURCE_PARAMETER, STEPS_PARAMETER, WAVEFORM_PARAMETER,
 };
 use crate::compiled_patch::CompiledNode;
 use crate::convolution::Convolution;
@@ -18,6 +18,7 @@ use crate::filter::{BiquadFilter, BiquadMode, CombFilter, CombType, FilterAlgori
 #[cfg(test)]
 use crate::graph::ModuleNode;
 use crate::graph::SignalType;
+use crate::oscillator::Waveform;
 use crate::reverb::Reverb;
 use crate::sample::{LoadedSample, PreparedSamplerAssets};
 use crate::saturator::Saturator;
@@ -28,6 +29,7 @@ pub(super) enum PerModuleState {
     Oscillator {
         phase: f32,
         sample_rate: f32,
+        waveform: Waveform,
     },
     Adsr {
         level: f32,
@@ -105,7 +107,7 @@ pub(super) enum PerModuleState {
         level: f32,
         triggered: bool,
         elapsed_frames: u64,
-        decay_frames: f32,
+        sample_rate: f32,
         curve: DecayCurve,
     },
     Script {
@@ -173,10 +175,18 @@ impl PerModuleState {
                     control_inputs: Vec::new(),
                 }
             }
-            ModuleKind::Oscillator => PerModuleState::Oscillator {
-                phase: 0.0,
-                sample_rate,
-            },
+            ModuleKind::Oscillator => {
+                let waveform = params
+                    .get(WAVEFORM_PARAMETER)
+                    .map(String::as_str)
+                    .and_then(Waveform::from_str)
+                    .unwrap_or(Waveform::DEFAULT);
+                PerModuleState::Oscillator {
+                    phase: 0.0,
+                    sample_rate,
+                    waveform,
+                }
+            }
             ModuleKind::Adsr => PerModuleState::Adsr {
                 level: 0.0,
                 gate_active: false,
@@ -314,20 +324,15 @@ impl PerModuleState {
                 }
             }
             ModuleKind::Decay => {
-                let curve_str = params.get("curve").map(String::as_str);
+                let curve_str = params.get(CURVE_PARAMETER).map(String::as_str);
                 let curve = curve_str
                     .and_then(DecayCurve::from_str)
                     .unwrap_or(DecayCurve::Exponential);
-                let time_ms = params
-                    .get("time_ms")
-                    .and_then(|s| s.parse::<f32>().ok())
-                    .unwrap_or(100.0);
-                let decay_frames = (sample_rate * time_ms / 1000.0).max(1.0);
                 PerModuleState::Decay {
                     level: 0.0,
                     triggered: false,
                     elapsed_frames: 0,
-                    decay_frames,
+                    sample_rate,
                     curve,
                 }
             }

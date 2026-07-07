@@ -1871,9 +1871,9 @@ fn adsr_release_duration_matches_default_release_time() {
                 velocity: 100,
             },
         }],
-        &[5.0; BLOCK_SIZE], // attack_in (5ms default)
-        &[30.0; BLOCK_SIZE], // decay_in (30ms default)
-        &[0.7; BLOCK_SIZE], // sustain_in (0.7 default)
+        &[5.0; BLOCK_SIZE],   // attack_in (5ms default)
+        &[30.0; BLOCK_SIZE],  // decay_in (30ms default)
+        &[0.7; BLOCK_SIZE],   // sustain_in (0.7 default)
         &[200.0; BLOCK_SIZE], // release_in (200ms default)
         0,
         BLOCK_SIZE,
@@ -4700,11 +4700,13 @@ fn realtime_note_submission_does_not_fill_unused_prepared_event_queue() {
 
 #[test]
 fn decay_module_stays_silent_until_its_trigger_frame_offset() {
+    // sample_rate 1000 Hz makes decay_frames equal to time_ms, so a 100 ms
+    // control value reproduces the previous fixed 100-frame decay length.
     let mut state = PerModuleState::Decay {
         level: 0.0,
         triggered: false,
         elapsed_frames: 0,
-        decay_frames: 100.0,
+        sample_rate: 1000.0,
         curve: crate::decay::DecayCurve::Exponential,
     };
 
@@ -4716,23 +4718,32 @@ fn decay_module_stays_silent_until_its_trigger_frame_offset() {
         },
     }];
 
-    let outputs = super::processing::process_decay(&mut state, &events, 30);
+    let time_ms = vec![100.0; 30];
+    let outputs = super::processing::process_decay(&mut state, &events, &time_ms, 30);
     let values = &outputs.control[builtin_ports::VALUE];
 
     for (i, value) in values.iter().enumerate().take(20) {
         assert_eq!(*value, 0.0, "expected silence before trigger at frame {i}");
     }
-    assert_eq!(values[20], 1.0, "decay should jump to peak on its trigger frame");
-    assert!(values[21] < 1.0, "decay should begin falling after the trigger frame");
+    assert_eq!(
+        values[20], 1.0,
+        "decay should jump to peak on its trigger frame"
+    );
+    assert!(
+        values[21] < 1.0,
+        "decay should begin falling after the trigger frame"
+    );
 }
 
 #[test]
 fn decay_module_linear_curve_ramps_down_and_resets_when_fully_decayed() {
+    // sample_rate 1000 Hz makes decay_frames equal to time_ms, so a 10 ms
+    // control value reproduces the previous fixed 10-frame decay length.
     let mut state = PerModuleState::Decay {
         level: 0.0,
         triggered: false,
         elapsed_frames: 0,
-        decay_frames: 10.0,
+        sample_rate: 1000.0,
         curve: crate::decay::DecayCurve::Linear,
     };
 
@@ -4744,10 +4755,14 @@ fn decay_module_linear_curve_ramps_down_and_resets_when_fully_decayed() {
         },
     }];
 
-    let outputs = super::processing::process_decay(&mut state, &events, 15);
+    let time_ms = vec![10.0; 15];
+    let outputs = super::processing::process_decay(&mut state, &events, &time_ms, 15);
     let values = &outputs.control[builtin_ports::VALUE];
 
-    assert_eq!(values[0], 1.0, "decay should start at peak on its trigger frame");
+    assert_eq!(
+        values[0], 1.0,
+        "decay should start at peak on its trigger frame"
+    );
     for window in values[..11].windows(2) {
         assert!(
             window[1] <= window[0],
@@ -4768,7 +4783,10 @@ fn decay_module_linear_curve_ramps_down_and_resets_when_fully_decayed() {
         PerModuleState::Decay {
             level, triggered, ..
         } => {
-            assert_eq!(level, 0.0, "state should retain zero level after full decay");
+            assert_eq!(
+                level, 0.0,
+                "state should retain zero level after full decay"
+            );
             assert!(
                 !triggered,
                 "triggered flag should reset once the decay fully completes"
@@ -4785,9 +4803,11 @@ fn decay_module_linear_curve_ramps_down_and_resets_when_fully_decayed() {
             velocity: 100,
         },
     }];
-    let retrigger_outputs = super::processing::process_decay(&mut state, &retrigger_events, 1);
+    let retrigger_outputs =
+        super::processing::process_decay(&mut state, &retrigger_events, &[10.0], 1);
     assert_eq!(
-        retrigger_outputs.control[builtin_ports::VALUE][0], 1.0,
+        retrigger_outputs.control[builtin_ports::VALUE][0],
+        1.0,
         "a fully-decayed module should jump back to peak when retriggered"
     );
 }

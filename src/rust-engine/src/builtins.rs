@@ -46,6 +46,11 @@ pub const CURVE_SOFT_CLIP: &str = "soft_clip";
 pub const CURVE_HARD_CLIP: &str = "hard_clip";
 pub const CURVE_STEP: &str = "step";
 pub const STEPS_PARAMETER: &str = "steps";
+pub const WAVEFORM_PARAMETER: &str = "waveform";
+pub const WAVEFORM_SAW: &str = "saw";
+pub const WAVEFORM_SINE: &str = "sine";
+pub const WAVEFORM_TRIANGLE: &str = "triangle";
+pub const WAVEFORM_SQUARE: &str = "square";
 
 impl ParameterMetadata {
     pub fn new(name: impl Into<String>, value_type: ParameterValueType) -> Self {
@@ -322,6 +327,30 @@ fn oscillator_definition() -> BuiltInModuleDefinition {
         .with_execution_scope(ExecutionScope::Voice)
         .with_inputs([(PITCH, Control)])
         .with_output(Port::output(AUDIO, Audio))
+        .with_parameter(
+            ParameterMetadata::new(PITCH, ParameterValueType::Number)
+                .with_default("1")
+                .with_range(0.0, 64.0)
+                .with_description(
+                    "fixed pitch ratio of the 220 Hz base used when the pitch input is not \
+                     connected (e.g. 2.45 ≈ 539 Hz)",
+                )
+                .with_realtime_note("updates the runtime pitch without rebuilding the graph"),
+        )
+        .with_parameter(
+            ParameterMetadata::new(WAVEFORM_PARAMETER, ParameterValueType::Text)
+                .with_default(WAVEFORM_SAW)
+                .with_enum_values(vec![
+                    WAVEFORM_SAW,
+                    WAVEFORM_SINE,
+                    WAVEFORM_TRIANGLE,
+                    WAVEFORM_SQUARE,
+                ])
+                .with_description(
+                    "output waveform shape; the pitch input carries a ratio of the 220 Hz base",
+                ),
+        )
+        .with_example("- id: osc\n  type: oscillator\n  parameters:\n    waveform: sine")
 }
 
 fn gain_definition() -> BuiltInModuleDefinition {
@@ -329,6 +358,13 @@ fn gain_definition() -> BuiltInModuleDefinition {
         .with_execution_scope(ExecutionScope::Voice)
         .with_inputs([(AUDIO_IN, Audio), (builtin_ports::GAIN, Control)])
         .with_output(Port::output(AUDIO_OUT, Audio))
+        .with_parameter(
+            ParameterMetadata::new(builtin_ports::GAIN, ParameterValueType::Number)
+                .with_default("1")
+                .with_range(0.0, 4.0)
+                .with_description("static gain applied when the gain input is not connected")
+                .with_realtime_note("updates the runtime gain without rebuilding the graph"),
+        )
 }
 
 fn audio_mixer_definition() -> BuiltInModuleDefinition {
@@ -693,6 +729,30 @@ fn curve_mapper_definition() -> BuiltInModuleDefinition {
                 .with_range(2.0, 128.0)
                 .with_description("quantisation levels used by the step curve"),
         )
+        .with_parameter(
+            ParameterMetadata::new(AMOUNT, ParameterValueType::Number)
+                .with_default("1")
+                .with_range(0.0, 1.0)
+                .with_description("blend between the dry input and the shaped curve"),
+        )
+        .with_parameter(
+            ParameterMetadata::new(BIAS, ParameterValueType::Number)
+                .with_default("0")
+                .with_range(-1.0, 1.0)
+                .with_description("offset added to the input before the curve is applied"),
+        )
+        .with_parameter(
+            ParameterMetadata::new(SCALE, ParameterValueType::Number)
+                .with_default("1")
+                .with_range(-64.0, 64.0)
+                .with_description("multiplier applied to the mapped output"),
+        )
+        .with_parameter(
+            ParameterMetadata::new(OFFSET, ParameterValueType::Number)
+                .with_default("0")
+                .with_range(-64.0, 64.0)
+                .with_description("value added to the scaled output"),
+        )
         .with_example(
             "- id: mapper\n  type: curve_mapper\n  parameters:\n    curve: s_curve\n    steps: 4",
         )
@@ -701,21 +761,21 @@ fn curve_mapper_definition() -> BuiltInModuleDefinition {
 fn decay_definition() -> BuiltInModuleDefinition {
     BuiltInModuleDefinition::new("decay")
         .with_execution_scope(ExecutionScope::Voice)
-        .with_inputs([(TRIGGER, Event)])
+        .with_inputs([(TRIGGER, Event), (TIME_MS, Control)])
         .with_output(Port::output(VALUE, Control))
         .with_parameter(
-            ParameterMetadata::new("time_ms", ParameterValueType::Number)
+            ParameterMetadata::new(TIME_MS, ParameterValueType::Number)
                 .with_default("100")
                 .with_range(1.0, 5000.0)
-                .with_description("decay time in milliseconds"),
+                .with_description("decay time in milliseconds")
+                .with_realtime_note(
+                    "updates the runtime decay length without rebuilding the graph",
+                ),
         )
         .with_parameter(
             ParameterMetadata::new("curve", ParameterValueType::Text)
                 .with_default("exponential")
-                .with_enum_values(vec![
-                    "linear".to_string(),
-                    "exponential".to_string(),
-                ])
+                .with_enum_values(vec!["linear".to_string(), "exponential".to_string()])
                 .with_description("decay curve shape"),
         )
 }

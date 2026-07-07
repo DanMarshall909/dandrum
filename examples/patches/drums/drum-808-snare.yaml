@@ -1,0 +1,116 @@
+metadata:
+  name: Drum 808 Snare
+# 808-style snare: a tuned body tone plus a highpass-filtered noise "snap".
+# Built entirely from reusable primitives (oscillator, decay, noise, filter,
+# gain, mixer). The body and noise are processed on parallel voice-scoped paths
+# and only summed at the global output mixer, because a global audio_mixer must
+# not feed back into a voice-scoped gain. Public controls map to live runtime
+# targets (decay time_ms and gain trim stages) so they update without rewriting
+# YAML. Seed values are tuning hints from public 808 references, refined offline.
+instrument:
+  id: dandrum.drum-808-snare
+  preset_schema_version: 1
+preset_surface:
+  parameters:
+    - name: snare.tune
+      type: number
+      default: 0.85
+      min: 0.25
+      max: 3
+      maps_to: body.pitch
+    - name: snare.tone_level
+      type: number
+      default: 0.7
+      min: 0
+      max: 2
+      maps_to: body_trim.gain
+    - name: snare.tone_decay_ms
+      type: number
+      default: 180
+      min: 20
+      max: 600
+      maps_to: body_env.time_ms
+    - name: snare.snappy
+      type: number
+      default: 0.8
+      min: 0
+      max: 2
+      maps_to: noise_trim.gain
+    - name: snare.noise_decay_ms
+      type: number
+      default: 220
+      min: 20
+      max: 800
+      maps_to: noise_env.time_ms
+render:
+  sample_rate_hz: 48000
+  block_size_frames: 128
+  duration_frames: 48000
+modules:
+  - id: midi
+    type: midi_input
+  - id: body
+    type: oscillator
+    parameters:
+      waveform: triangle
+      pitch: 0.85
+  - id: body_env
+    type: decay
+    parameters:
+      curve: exponential
+  - id: body_vca
+    type: gain
+  - id: body_trim
+    type: gain
+    parameters:
+      gain: 0.7
+  - id: noise
+    type: noise
+    parameters:
+      seed: 2081
+  - id: noise_hp
+    type: filter
+    parameters:
+      algorithm: biquad
+      mode: highpass
+  - id: noise_env
+    type: decay
+    parameters:
+      curve: exponential
+  - id: noise_vca
+    type: gain
+  - id: noise_trim
+    type: gain
+    parameters:
+      gain: 0.8
+  - id: mixer
+    type: audio_mixer
+  - id: out
+    type: audio_output
+connections:
+  - from: midi.events
+    to: body_env.trigger
+  - from: midi.events
+    to: noise_env.trigger
+  - from: body.audio
+    to: body_vca.audio_in
+  - from: body_env.value
+    to: body_vca.gain
+  - from: body_vca.audio_out
+    to: body_trim.audio_in
+  - from: body_trim.audio_out
+    to: mixer.inputs
+  - from: noise.audio
+    to: noise_hp.audio_in
+  - from: noise_hp.audio_out
+    to: noise_vca.audio_in
+  - from: noise_env.value
+    to: noise_vca.gain
+  - from: noise_vca.audio_out
+    to: noise_trim.audio_in
+  - from: noise_trim.audio_out
+    to: mixer.inputs
+  - from: mixer.mix
+    to: out.left
+  - from: mixer.mix
+    to: out.right

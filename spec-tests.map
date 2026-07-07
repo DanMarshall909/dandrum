@@ -488,6 +488,46 @@ AC drum-machine :: Drum machine supports multiple stereo outputs :: Voices can r
   fp 04660f7232cd
   todo not yet mapped to a test
 
+AC drum-voice-authoring :: Core drum synthesis gaps are explicit and primitive-oriented :: A synthesized drum voice requires stable oscillator tuning
+  fp 4cc1058dc7dc
+  test rust:oscillator_waveform_selection_changes_rendered_output
+  test rust:every_drum_voice_renders_non_silent_audio_from_a_midi_trigger
+
+AC drum-voice-authoring :: Core drum synthesis gaps are explicit and primitive-oriented :: A synthesized drum voice requires transient excitation
+  fp e9d30d67cf87
+  test rust:every_drum_voice_renders_non_silent_audio_from_a_midi_trigger
+
+AC drum-voice-authoring :: Core drum synthesis gaps are explicit and primitive-oriented :: A synthesized drum voice requires tweakable decay
+  fp be885faf632d
+  test rust:decay_public_parameter_updates_mapped_target_at_runtime_without_reloading_yaml
+
+AC drum-voice-authoring :: Drum parameter defaults may be seeded from free/open reference instruments :: Author seeds an 808-style kick control surface
+  fp f236bdb696fb
+  test rust:every_drum_voice_loads_validates_and_declares_public_parameters
+
+AC drum-voice-authoring :: Drum parameter defaults may be seeded from free/open reference instruments :: Reference values come from multiple sources
+  fp 05818f2d7915
+  todo provenance/rationale is documented in docs/drum-voice-authoring.md; not an automatable behaviour
+
+AC drum-voice-authoring :: Drum presets are tuned later through offline spectral comparison :: A candidate drum preset is rendered for analysis
+  fp c5ee24de828a
+  todo offline spectral tuning workflow is planned (docs/drum-voice-authoring.md §5), not yet implemented
+
+AC drum-voice-authoring :: Drum presets are tuned later through offline spectral comparison :: Spectral fitting updates a preset
+  fp 22ada626e1ba
+  todo offline spectral tuning workflow is planned (docs/drum-voice-authoring.md §5), not yet implemented
+
+AC drum-voice-authoring :: Drum voices are authored from reusable synthesis primitives first :: Author creates a 909-style instrument set
+  fp 44bf96b75711
+  test rust:every_drum_voice_loads_validates_and_declares_public_parameters
+  test rust:every_drum_voice_renders_non_silent_audio_from_a_midi_trigger
+  test rust:sampler_backed_909_metallic_voices_reference_placeholder_assets
+
+AC drum-voice-authoring :: Drum voices are authored from reusable synthesis primitives first :: Author creates an 808-style kick instrument
+  fp 41d6841a6802
+  test rust:every_drum_voice_loads_validates_and_declares_public_parameters
+  test rust:synthetic_808_kick_example_declares_public_controls_and_renders
+
 AC echo :: Echo SHALL be a stereo effect with independent left/right delay times :: Stereo echo with different delay times
   fp 94d84298b1e7
   todo not yet mapped to a test

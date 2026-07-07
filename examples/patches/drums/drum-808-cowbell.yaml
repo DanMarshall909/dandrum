@@ -1,0 +1,114 @@
+metadata:
+  name: Drum 808 Cowbell
+# 808-style cowbell: two fixed-pitch square-wave oscillators at an inharmonic
+# ratio, each highpassed and gated by a shared exponential decay, then summed at
+# the final mixer. The classic 808 cowbell is fixed-pitch, so each oscillator
+# uses the oscillator's fixed `pitch` parameter (a ratio of the 220 Hz base).
+# The two partials are processed on parallel voice-scoped paths and only summed
+# at the global output mixer, because a global audio_mixer must not feed back
+# into a voice-scoped gain. Uses the oscillator waveform selection primitive
+# (square). Public controls map to live runtime targets. Seed values are tuning
+# hints from public 808 references, refined offline.
+instrument:
+  id: dandrum.drum-808-cowbell
+  preset_schema_version: 1
+preset_surface:
+  parameters:
+    - name: cowbell.tune
+      type: number
+      default: 2.45
+      min: 1
+      max: 6
+      maps_to: body_low.pitch
+    - name: cowbell.tune_high
+      type: number
+      default: 3.63
+      min: 1
+      max: 8
+      maps_to: body_high.pitch
+    - name: cowbell.decay_ms
+      type: number
+      default: 180
+      min: 20
+      max: 600
+      maps_to: amp_env.time_ms
+    - name: cowbell.level
+      type: number
+      default: 0.7
+      min: 0
+      max: 2
+      maps_to: low_trim.gain
+render:
+  sample_rate_hz: 48000
+  block_size_frames: 128
+  duration_frames: 48000
+modules:
+  - id: midi
+    type: midi_input
+  - id: amp_env
+    type: decay
+    parameters:
+      curve: exponential
+  - id: body_low
+    type: oscillator
+    parameters:
+      waveform: square
+      pitch: 2.45
+  - id: low_band
+    type: filter
+    parameters:
+      algorithm: biquad
+      mode: highpass
+  - id: low_vca
+    type: gain
+  - id: low_trim
+    type: gain
+    parameters:
+      gain: 0.7
+  - id: body_high
+    type: oscillator
+    parameters:
+      waveform: square
+      pitch: 3.63
+  - id: high_band
+    type: filter
+    parameters:
+      algorithm: biquad
+      mode: highpass
+  - id: high_vca
+    type: gain
+  - id: high_trim
+    type: gain
+    parameters:
+      gain: 0.5
+  - id: mixer
+    type: audio_mixer
+  - id: out
+    type: audio_output
+connections:
+  - from: midi.events
+    to: amp_env.trigger
+  - from: body_low.audio
+    to: low_band.audio_in
+  - from: low_band.audio_out
+    to: low_vca.audio_in
+  - from: amp_env.value
+    to: low_vca.gain
+  - from: low_vca.audio_out
+    to: low_trim.audio_in
+  - from: low_trim.audio_out
+    to: mixer.inputs
+  - from: body_high.audio
+    to: high_band.audio_in
+  - from: high_band.audio_out
+    to: high_vca.audio_in
+  - from: amp_env.value
+    to: high_vca.gain
+  - from: high_vca.audio_out
+    to: high_trim.audio_in
+  - from: high_trim.audio_out
+    to: mixer.inputs
+  - from: mixer.mix
+    to: out.left
+  - from: mixer.mix
+    to: out.right

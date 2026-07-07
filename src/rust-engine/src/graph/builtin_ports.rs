@@ -44,6 +44,7 @@ pub const INVERT: &str = "invert";
 pub const OFFSET: &str = "offset";
 pub const SCALE: &str = "scale";
 pub const CURVE_SELECT: &str = "curve_select";
+pub const TIME_MS: &str = "time_ms";
 pub const TIME_LEFT_MS: &str = "time_left_ms";
 pub const TIME_RIGHT_MS: &str = "time_right_ms";
 pub const FEEDBACK: &str = "feedback";

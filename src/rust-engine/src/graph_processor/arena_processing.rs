@@ -1,5 +1,6 @@
 use super::process_context::ProcessContext;
 use super::state::PerModuleState;
+use crate::oscillator::OSCILLATOR_BASE_HZ;
 
 pub(super) fn process_audio_mixer(context: &mut ProcessContext<'_>) {
     context
@@ -27,16 +28,19 @@ pub(super) fn process_noise(state: &mut PerModuleState, context: &mut ProcessCon
 }
 
 pub(super) fn process_oscillator(state: &mut PerModuleState, context: &mut ProcessContext<'_>) {
-    let (phase, sample_rate) = match state {
-        PerModuleState::Oscillator { phase, sample_rate } => (phase, *sample_rate),
+    let (phase, sample_rate, waveform) = match state {
+        PerModuleState::Oscillator {
+            phase,
+            sample_rate,
+            waveform,
+        } => (phase, *sample_rate, *waveform),
         _ => unreachable!(),
     };
 
     for frame in 0..context.frames() {
         let pitch_ratio = context.input_sample(0, frame, 1.0);
-        let output = *phase * 2.0 - 1.0;
-        let base_hz = 220.0;
-        let freq = base_hz * pitch_ratio;
+        let output = waveform.sample(*phase);
+        let freq = OSCILLATOR_BASE_HZ * pitch_ratio;
         let phase_inc = freq / sample_rate;
         *phase += phase_inc;
         if *phase >= 1.0 {

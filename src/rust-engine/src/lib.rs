@@ -1,7 +1,13 @@
 #![deny(dead_code)]
 
+#[macro_use]
+mod test_support;
+
 #[cfg(test)]
 mod test_allocator;
+
+#[cfg(test)]
+mod drum_voice_authoring_tests;
 
 pub mod core;
 
@@ -47,6 +53,7 @@ pub(crate) mod spectral;
 pub(crate) mod curve_mapper;
 pub(crate) mod decay;
 pub(crate) mod envelope_follower;
+pub(crate) mod oscillator;
 
 pub(crate) mod audio_loading;
 

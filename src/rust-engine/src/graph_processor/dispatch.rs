@@ -216,7 +216,7 @@ pub(super) fn process_module(
         }
         Noise => process_noise(&mut states[module_idx], frames),
         Impulse => process_impulse(&mut states[module_idx], events_in, frames),
-        Decay => process_decay(&mut states[module_idx], events_in, frames),
+        Decay => process_decay(&mut states[module_idx], events_in, &ctrl(TIME_MS), frames),
         Multiply => {
             let a = audio(AUDIO_IN);
             let b = audio(GAIN);

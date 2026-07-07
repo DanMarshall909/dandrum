@@ -353,6 +353,7 @@ impl RenderPlanBuilder<'_> {
 pub(super) fn default_control_value(module_kind: ModuleKind, port_name: &str) -> Option<f32> {
     match (module_kind, port_name) {
         (ModuleKind::Oscillator, builtin_ports::PITCH) => Some(1.0),
+        (ModuleKind::Decay, builtin_ports::TIME_MS) => Some(100.0),
         (ModuleKind::Sampler, builtin_ports::RATE) => Some(1.0),
         (ModuleKind::EnvelopeFollower, builtin_ports::ATTACK) => Some(5.0),
         (ModuleKind::EnvelopeFollower, builtin_ports::RELEASE) => Some(50.0),

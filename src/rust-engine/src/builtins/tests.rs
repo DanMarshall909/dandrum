@@ -509,7 +509,12 @@ fn parameter_metadata_queryable_without_renderer() {
 
     assert!(!filter.parameters().is_empty());
     assert!(!sampler.parameters().is_empty());
-    assert!(oscillator.parameters().is_empty());
+    let oscillator_params: Vec<&str> = oscillator.parameters().iter().map(|p| p.name()).collect();
+    assert_eq!(
+        oscillator_params,
+        [PITCH, WAVEFORM_PARAMETER],
+        "oscillator should expose fixed pitch and waveform selection parameters"
+    );
 }
 
 fn assert_has_output(signal_type: SignalType, definition: &BuiltInModuleDefinition, name: &str) {
@@ -551,7 +556,12 @@ fn discovery_can_query_port_and_parameter_metadata_without_constructing_renderer
     assert_eq!(osc_outputs[0].name(), AUDIO);
     assert_eq!(osc_outputs[0].signal_type(), Audio);
     assert_eq!(osc_outputs[0].direction(), PortDirection::Output);
-    assert!(osc.parameters().is_empty());
+    let osc_params: Vec<&str> = osc.parameters().iter().map(|p| p.name()).collect();
+    assert_eq!(
+        osc_params,
+        [PITCH, WAVEFORM_PARAMETER],
+        "oscillator should expose fixed pitch and waveform selection parameters"
+    );
 
     let filter = registry.get(FILTER).unwrap();
     let params: Vec<&str> = filter.parameters().iter().map(|p| p.name()).collect();

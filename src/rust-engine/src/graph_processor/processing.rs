@@ -3,12 +3,13 @@ use crate::script::{ScriptEvent, ScriptExecutionContext, ScriptProcessInput, Scr
 use std::collections::BTreeMap;
 
 use super::helpers::{
-    audio_output, lerp, log_lerp, normalized_end_position, normalized_position,
-    set_curve_by_index, stereo_audio_output,
+    audio_output, lerp, log_lerp, normalized_end_position, normalized_position, set_curve_by_index,
+    stereo_audio_output,
 };
 use super::outputs::{BlockEvent, ModuleOutputs};
 use super::state::PerModuleState;
 use crate::decay::DecayCurve;
+use crate::oscillator::OSCILLATOR_BASE_HZ;
 
 pub(super) struct EchoControls<'a> {
     pub(super) feedback: &'a [f32],
@@ -36,17 +37,20 @@ pub(super) fn process_oscillator(
     pitch_ratio: &[f32],
     frames: usize,
 ) -> ModuleOutputs {
-    let (phase, sample_rate) = match state {
-        PerModuleState::Oscillator { phase, sample_rate } => (phase, *sample_rate),
+    let (phase, sample_rate, waveform) = match state {
+        PerModuleState::Oscillator {
+            phase,
+            sample_rate,
+            waveform,
+        } => (phase, *sample_rate, *waveform),
         _ => unreachable!(),
     };
 
     let mut audio = Vec::with_capacity(frames);
     for &ratio in pitch_ratio.iter().take(frames) {
-        let base_hz = 220.0;
-        let freq = base_hz * ratio;
+        let freq = OSCILLATOR_BASE_HZ * ratio;
         let phase_inc = freq / sample_rate;
-        audio.push(*phase * 2.0 - 1.0);
+        audio.push(waveform.sample(*phase));
         *phase += phase_inc;
         if *phase >= 1.0 {
             *phase -= 1.0;
@@ -707,23 +711,25 @@ pub(super) fn process_noise(state: &mut PerModuleState, frames: usize) -> Module
 pub(super) fn process_decay(
     state: &mut PerModuleState,
     events: &[BlockEvent],
+    time_ms_in: &[f32],
     frames: usize,
 ) -> ModuleOutputs {
-    let (level, triggered, elapsed_frames, decay_frames, curve) = match state {
+    let (level, triggered, elapsed_frames, sample_rate, curve) = match state {
         PerModuleState::Decay {
             level,
             triggered,
             elapsed_frames,
-            decay_frames,
+            sample_rate,
             curve,
-        } => (level, triggered, elapsed_frames, *decay_frames, *curve),
+        } => (level, triggered, elapsed_frames, *sample_rate, *curve),
         _ => unreachable!(),
     };
 
     let mut values = Vec::with_capacity(frames);
     for frame in 0..frames {
         for event in events {
-            if event.frame_offset as usize == frame && matches!(event.event, ScriptEvent::NoteOn { .. })
+            if event.frame_offset as usize == frame
+                && matches!(event.event, ScriptEvent::NoteOn { .. })
             {
                 *level = 1.0;
                 *triggered = true;
@@ -732,6 +738,11 @@ pub(super) fn process_decay(
         }
 
         if *triggered {
+            // Recompute the decay length from the live time control every frame so
+            // decay knobs exposed through preset_surface.parameters update at
+            // runtime without rebuilding the graph.
+            let time_ms = time_ms_in.get(frame).copied().unwrap_or(100.0);
+            let decay_frames = (sample_rate * time_ms / 1000.0).max(1.0);
             let t = *elapsed_frames as f32 / decay_frames;
             *level = match curve {
                 DecayCurve::Linear => (1.0 - t).max(0.0),
@@ -812,7 +823,7 @@ pub(super) fn process_note_to_control(
         match &event.event {
             ScriptEvent::NoteOn { note, velocity } => {
                 let freq = midi_note_to_freq(*note);
-                let ratio = freq / 220.0;
+                let ratio = freq / OSCILLATOR_BASE_HZ;
                 let norm_vel = (*velocity as f32) / 127.0;
                 *current_note = Some(*note);
                 *current_velocity = norm_vel;
