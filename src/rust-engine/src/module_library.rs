@@ -18,6 +18,13 @@ pub const STANDARD_LIBRARY_ROOT_ENV_VAR: &str = "DANDRUM_MODULE_LIBRARY_ROOT";
 /// Manifest file written inside each seeded version directory.
 pub const STANDARD_LIBRARY_CRC_FILENAME: &str = ".dandrum-library.crc";
 
+/// Current bundled standard-library version.
+pub const BUNDLED_STANDARD_LIBRARY_VERSION: &str = "1.0.0";
+
+const BUNDLED_DRUM_VOICE_PATH: &str = "drum_voice/drum_voice.yaml";
+const BUNDLED_DRUM_VOICE_YAML: &[u8] =
+    include_bytes!("../module-library/1.0.0/drum_voice/drum_voice.yaml");
+
 /// One file bundled into a seeded module-library version.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct SeededLibraryFile {
@@ -89,6 +96,24 @@ pub fn default_standard_library_root() -> Result<PathBuf, ModuleLibrarySeedError
     home_directory()
         .map(|home| home.join(".dandrum").join("lib"))
         .ok_or(ModuleLibrarySeedError::MissingHomeDirectory)
+}
+
+/// Returns the immutable standard module-library bundle shipped with the engine.
+pub fn bundled_standard_library() -> SeededLibrary {
+    SeededLibrary {
+        version: BUNDLED_STANDARD_LIBRARY_VERSION.to_string(),
+        files: vec![SeededLibraryFile {
+            path: BUNDLED_DRUM_VOICE_PATH.to_string(),
+            contents: BUNDLED_DRUM_VOICE_YAML.to_vec(),
+        }],
+    }
+}
+
+/// Seeds the bundled standard module-library version under `root`.
+pub fn seed_bundled_standard_library(
+    root: impl AsRef<Path>,
+) -> Result<SeedResult, ModuleLibrarySeedError> {
+    seed_standard_library(root, &bundled_standard_library())
 }
 
 /// Seeds `library.version` under `root`, skipping extraction when the recorded
@@ -268,6 +293,34 @@ mod tests {
             version: version.to_string(),
             files: vec![file("drum_voice/drum_voice.yaml", contents)],
         }
+    }
+
+    #[test]
+    fn bundled_standard_library_contains_the_drum_voice_package() {
+        let bundled = bundled_standard_library();
+
+        assert_eq!(bundled.version, BUNDLED_STANDARD_LIBRARY_VERSION);
+        assert!(
+            bundled
+                .files
+                .iter()
+                .any(|file| file.path == BUNDLED_DRUM_VOICE_PATH && file.contents.starts_with(b"inputs:")),
+            "the bundled standard library should carry the drum_voice package entry YAML"
+        );
+    }
+
+    #[test]
+    fn bundled_standard_library_seeds_under_the_requested_root() {
+        let root = temp_root("bundled");
+
+        seed_bundled_standard_library(&root).expect("bundled library should seed");
+
+        assert!(
+            root.join(BUNDLED_STANDARD_LIBRARY_VERSION)
+                .join(BUNDLED_DRUM_VOICE_PATH)
+                .exists(),
+            "the bundled drum_voice package should be extracted under the version-first layout"
+        );
     }
 
     #[test]
