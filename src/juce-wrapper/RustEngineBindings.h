@@ -11,6 +11,8 @@ struct DandrumRealtimeEventQueue;
 DandrumEngine* dandrum_engine_create();
 void dandrum_engine_destroy (DandrumEngine* engine);
 bool dandrum_engine_load_patch (DandrumEngine* engine, const char* path);
+bool dandrum_engine_load_patch_with_error (DandrumEngine* engine, const char* path);
+bool dandrum_engine_last_error_message (char* buffer, std::size_t bufferCapacity);
 std::size_t dandrum_patch_public_numeric_parameter_count (const char* path);
 bool dandrum_patch_public_numeric_parameter_descriptor (const char* path,
                                                        std::size_t index,
@@ -39,3 +41,8 @@ unsigned char dandrum_realtime_event_queue_note_on (DandrumRealtimeEventQueue* q
 unsigned char dandrum_realtime_event_queue_note_off (DandrumRealtimeEventQueue* queue, unsigned char note);
 std::size_t dandrum_realtime_event_queue_dropped_count (const DandrumRealtimeEventQueue* queue);
 }
+
+// JUCE plugin-facing callers should use the status-preserving load path. The
+// legacy symbol remains declared above for older smoke tests and external
+// callers that intentionally do not need diagnostic retention.
+#define dandrum_engine_load_patch dandrum_engine_load_patch_with_error
