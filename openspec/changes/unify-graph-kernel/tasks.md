@@ -10,7 +10,7 @@
 
 - [ ] 2.1 Implement recursive flattening of composite nodes to atomic nodes with deterministic namespaced identities and recursion/depth diagnostics (replaces current single-level `module_definitions` expansion path)
 - [ ] 2.2 Implement expansion caching keyed by (definition identity, resolved static args) with per-instance disjoint runtime state
-- [ ] 2.3 Add `feedback_delay` primitive; rewrite cycle validation so cycles are legal only through `feedback_delay` (audio and control), remove `feedback_boundaries` attributes and per-module cycle-breaker metadata; scheduler cuts at feedback nodes
+- [x] 2.3 Add `feedback_delay` primitive; rewrite cycle validation so cycles are legal only through `feedback_delay` (audio and control), remove `feedback_boundaries` attributes and per-module cycle-breaker metadata; scheduler cuts at feedback nodes
 - [ ] 2.4 Add per-node latency metadata to the atomic node contract and declare true latencies in the registry: spectral processor (`fft_size - 1`), overlap-add convolution (one partition block); audit remaining builtins and declare zero explicitly
 - [ ] 2.4b Implement latency balancing in compilation: accumulate declared latency along paths, insert preallocated compensation delays where unequal paths converge, report insertions in diagnostics, compute total root latency; reject feedback cycles containing nonzero-latency nodes with a structured diagnostic
 - [ ] 2.4c Behaviour test: impulse through a dry path mixed with a unit-impulse-IR convolution path arrives time-aligned at the mix; spectral dry/wet topology aligns per resolved FFT size

@@ -8,10 +8,14 @@
 //! same public interface (ports and static parameters) and are validated
 //! through one path.
 
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 
 use crate::diagnostics::{Diagnostic, Diagnostics, Severity, error_codes};
 use crate::graph::{PortDirection, SignalType};
+
+/// Definition name of the feedback-delay primitive: the only node through which
+/// a routing cycle (audio or control) is legal.
+pub const FEEDBACK_DELAY_DEFINITION: &str = "feedback_delay";
 
 /// The static (compile-time) type of a graph-definition static parameter.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -812,10 +816,110 @@ impl GraphDefinition {
             }
         }
 
+        if let Some(path) = self.find_illegal_cycle(registry) {
+            let printable = path
+                .iter()
+                .map(|id| id.as_str())
+                .collect::<Vec<_>>()
+                .join(" -> ");
+            diagnostics.push(
+                Diagnostic::new(
+                    error_codes::KERNEL_CYCLE_WITHOUT_FEEDBACK_DELAY,
+                    Severity::Error,
+                    format!(
+                        "routing cycle {printable} has no '{FEEDBACK_DELAY_DEFINITION}' node; every feedback cycle must pass through a '{FEEDBACK_DELAY_DEFINITION}' primitive"
+                    ),
+                )
+                .with_suggested_fix(format!(
+                    "insert a '{FEEDBACK_DELAY_DEFINITION}' node into the cycle"
+                )),
+            );
+        }
+
         KernelValidation {
             diagnostics,
             promotions,
         }
+    }
+
+    /// Find a routing cycle that does not pass through any `feedback_delay`
+    /// node, returning the cycle's node path. Cycles through a `feedback_delay`
+    /// node are legal (the scheduler cuts them there) and are not reported.
+    fn find_illegal_cycle(&self, registry: &DefinitionRegistry) -> Option<Vec<NodeId>> {
+        let mut visiting = BTreeSet::new();
+        let mut visited = BTreeSet::new();
+        let mut stack: Vec<NodeId> = Vec::new();
+
+        for node in &self.nodes {
+            if let Some(path) =
+                self.walk_for_cycle(node.id(), registry, &mut visiting, &mut visited, &mut stack)
+            {
+                return Some(path);
+            }
+        }
+        None
+    }
+
+    fn walk_for_cycle(
+        &self,
+        node_id: &NodeId,
+        registry: &DefinitionRegistry,
+        visiting: &mut BTreeSet<NodeId>,
+        visited: &mut BTreeSet<NodeId>,
+        stack: &mut Vec<NodeId>,
+    ) -> Option<Vec<NodeId>> {
+        if visited.contains(node_id) {
+            return None;
+        }
+        visiting.insert(node_id.clone());
+        stack.push(node_id.clone());
+
+        for successor in self.successors(node_id) {
+            if visiting.contains(&successor) {
+                let cycle: Vec<NodeId> = stack
+                    .iter()
+                    .skip_while(|id| **id != successor)
+                    .cloned()
+                    .collect();
+                if !cycle
+                    .iter()
+                    .any(|id| self.is_feedback_delay(id, registry))
+                {
+                    return Some(cycle);
+                }
+            } else if let Some(path) =
+                self.walk_for_cycle(&successor, registry, visiting, visited, stack)
+            {
+                return Some(path);
+            }
+        }
+
+        stack.pop();
+        visiting.remove(node_id);
+        visited.insert(node_id.clone());
+        None
+    }
+
+    /// The distinct destination nodes reachable by one cable from `node_id`.
+    fn successors(&self, node_id: &NodeId) -> Vec<NodeId> {
+        let mut seen = BTreeSet::new();
+        self.connections
+            .iter()
+            .filter(|connection| connection.source().node() == node_id)
+            .filter_map(|connection| {
+                let destination = connection.destination().node().clone();
+                seen.insert(destination.clone()).then_some(destination)
+            })
+            .collect()
+    }
+
+    fn is_feedback_delay(&self, node_id: &NodeId, registry: &DefinitionRegistry) -> bool {
+        self.node(node_id).is_some_and(|node| {
+            node.definition_ref() == FEEDBACK_DELAY_DEFINITION
+                || registry
+                    .get(node.definition_ref())
+                    .is_some_and(|definition| definition.name() == FEEDBACK_DELAY_DEFINITION)
+        })
     }
 
     /// Returns `true` when source and destination resolved channel counts match.

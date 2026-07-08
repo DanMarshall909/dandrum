@@ -486,6 +486,110 @@ fn connection_from_input_port_reports_incorrect_direction() {
     );
 }
 
+// --- 2.3 Feedback cycles require a feedback_delay node -------------------
+
+/// A `feedback_delay` primitive carrying ports of the given signal type.
+fn feedback_delay(signal_type: SignalType) -> GraphDefinition {
+    GraphDefinition::new(FEEDBACK_DELAY_DEFINITION)
+        .with_port(Port::input("in", signal_type, 1))
+        .with_port(Port::output("out", signal_type, 1))
+}
+
+/// An ordinary in/out primitive of the given signal type that does NOT
+/// legalize a cycle.
+fn passthrough(name: &str, signal_type: SignalType) -> GraphDefinition {
+    GraphDefinition::new(name)
+        .with_port(Port::input("in", signal_type, 1))
+        .with_port(Port::output("out", signal_type, 1))
+}
+
+fn two_node_cycle(root: &str, first: &str, second: &str) -> GraphDefinition {
+    GraphDefinition::new(root)
+        .with_node(Node::new(NodeId::new("a"), first))
+        .with_node(Node::new(NodeId::new("b"), second))
+        .with_connection(Connection::new(
+            PortRef::new(NodeId::new("a"), "out"),
+            PortRef::new(NodeId::new("b"), "in"),
+        ))
+        .with_connection(Connection::new(
+            PortRef::new(NodeId::new("b"), "out"),
+            PortRef::new(NodeId::new("a"), "in"),
+        ))
+}
+
+#[test]
+fn audio_feedback_through_feedback_delay_is_valid() {
+    let registry = DefinitionRegistry::new()
+        .with_definition(passthrough("gain", SignalType::Audio))
+        .with_definition(feedback_delay(SignalType::Audio));
+    let definition = two_node_cycle("root", "gain", FEEDBACK_DELAY_DEFINITION);
+
+    let validation = definition.validate(&registry);
+
+    assert!(
+        validation.is_ok(),
+        "cycle through feedback_delay is legal: {:?}",
+        validation.diagnostics()
+    );
+}
+
+#[test]
+fn instantaneous_audio_feedback_is_rejected_naming_the_required_primitive() {
+    let registry = DefinitionRegistry::new().with_definition(passthrough("gain", SignalType::Audio));
+    let definition = two_node_cycle("root", "gain", "gain");
+
+    let validation = definition.validate(&registry);
+
+    let errors: Vec<_> = validation.diagnostics().errors().collect();
+    assert_eq!(errors.len(), 1);
+    assert_eq!(
+        errors[0].error_code(),
+        error_codes::KERNEL_CYCLE_WITHOUT_FEEDBACK_DELAY
+    );
+    assert!(
+        errors[0].message().contains(FEEDBACK_DELAY_DEFINITION),
+        "diagnostic names the required primitive"
+    );
+}
+
+#[test]
+fn ordinary_delay_module_does_not_legalize_a_cycle() {
+    let registry = DefinitionRegistry::new()
+        .with_definition(passthrough("gain", SignalType::Audio))
+        .with_definition(passthrough("delay", SignalType::Audio));
+    let definition = two_node_cycle("root", "gain", "delay");
+
+    let validation = definition.validate(&registry);
+
+    assert_eq!(
+        only_error_code(&validation),
+        error_codes::KERNEL_CYCLE_WITHOUT_FEEDBACK_DELAY
+    );
+}
+
+#[test]
+fn control_feedback_through_feedback_delay_is_valid() {
+    let registry = DefinitionRegistry::new()
+        .with_definition(passthrough("mod", SignalType::Control))
+        .with_definition(feedback_delay(SignalType::Control));
+    let definition = two_node_cycle("root", "mod", FEEDBACK_DELAY_DEFINITION);
+
+    assert!(definition.validate(&registry).is_ok());
+}
+
+#[test]
+fn instantaneous_control_feedback_is_rejected() {
+    let registry = DefinitionRegistry::new().with_definition(passthrough("mod", SignalType::Control));
+    let definition = two_node_cycle("root", "mod", "mod");
+
+    let validation = definition.validate(&registry);
+
+    assert_eq!(
+        only_error_code(&validation),
+        error_codes::KERNEL_CYCLE_WITHOUT_FEEDBACK_DELAY
+    );
+}
+
 #[test]
 fn node_referencing_unknown_definition_is_rejected() {
     let registry = DefinitionRegistry::new();

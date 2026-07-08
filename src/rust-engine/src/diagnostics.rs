@@ -81,6 +81,8 @@ pub mod error_codes {
     pub const KERNEL_CHANNEL_COUNT_MISMATCH: &str = "kernel.channel_count_mismatch";
     pub const KERNEL_INCOMPATIBLE_SIGNAL_TYPES: &str = "kernel.incompatible_signal_types";
     pub const KERNEL_OVERRIDE_UNKNOWN_PORT: &str = "kernel.override_unknown_port";
+    pub const KERNEL_CYCLE_WITHOUT_FEEDBACK_DELAY: &str =
+        "kernel.cycle_without_feedback_delay";
 
     // Module-library sub-codes
     pub const LIBRARY_UNKNOWN_MACRO: &str = "library.unknown_macro";
