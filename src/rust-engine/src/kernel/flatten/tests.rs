@@ -265,6 +265,136 @@ fn dangling_latency_reference_fails_compilation_instead_of_reporting_zero() {
     );
 }
 
+// --- Resolved static-reference value validation --------------------------
+
+#[test]
+fn negative_channel_count_static_argument_fails_compilation_instead_of_reporting_one() {
+    let registry = DefinitionRegistry::new().with_definition(echo());
+    let root = GraphDefinition::new("root").with_node(
+        Node::new(NodeId::new("e"), "echo")
+            .with_static_arg("channels", StaticArg::Literal(StaticValue::Int(-1))),
+    );
+
+    let diagnostics = root
+        .flatten(&registry)
+        .expect_err("negative channel count must fail compilation, not fall back to one channel");
+
+    assert!(
+        diagnostics
+            .errors()
+            .any(|d| d.error_code() == error_codes::KERNEL_INVALID_STATIC_REFERENCE_VALUE),
+        "expected invalid-static-reference-value diagnostic, got: {diagnostics:?}"
+    );
+}
+
+#[test]
+fn zero_channel_count_static_argument_fails_compilation() {
+    let registry = DefinitionRegistry::new().with_definition(echo());
+    let root = GraphDefinition::new("root").with_node(
+        Node::new(NodeId::new("e"), "echo")
+            .with_static_arg("channels", StaticArg::Literal(StaticValue::Int(0))),
+    );
+
+    let diagnostics = root
+        .flatten(&registry)
+        .expect_err("zero channel count must fail compilation");
+
+    assert!(
+        diagnostics
+            .errors()
+            .any(|d| d.error_code() == error_codes::KERNEL_INVALID_STATIC_REFERENCE_VALUE),
+        "expected invalid-static-reference-value diagnostic, got: {diagnostics:?}"
+    );
+}
+
+#[test]
+fn negative_latency_static_argument_fails_compilation_instead_of_reporting_zero() {
+    let registry = DefinitionRegistry::new().with_definition(spectral());
+    let root = GraphDefinition::new("root").with_node(
+        Node::new(NodeId::new("fft"), "spectral")
+            .with_static_arg("fft_size", StaticArg::Literal(StaticValue::Int(-1))),
+    );
+
+    let diagnostics = root
+        .flatten(&registry)
+        .expect_err("negative latency must fail compilation, not fall back to zero");
+
+    assert!(
+        diagnostics
+            .errors()
+            .any(|d| d.error_code() == error_codes::KERNEL_INVALID_STATIC_REFERENCE_VALUE),
+        "expected invalid-static-reference-value diagnostic, got: {diagnostics:?}"
+    );
+}
+
+#[test]
+fn latency_static_argument_smaller_than_minus_fails_compilation() {
+    // `spectral` latency is `fft_size - 1`; an `fft_size` of zero would saturate
+    // to zero latency, silently under-reporting a latency-bearing node.
+    let registry = DefinitionRegistry::new().with_definition(spectral());
+    let root = GraphDefinition::new("root").with_node(
+        Node::new(NodeId::new("fft"), "spectral")
+            .with_static_arg("fft_size", StaticArg::Literal(StaticValue::Int(0))),
+    );
+
+    let diagnostics = root
+        .flatten(&registry)
+        .expect_err("latency smaller than the subtracted constant must fail compilation");
+
+    assert!(
+        diagnostics
+            .errors()
+            .any(|d| d.error_code() == error_codes::KERNEL_INVALID_STATIC_REFERENCE_VALUE),
+        "expected invalid-static-reference-value diagnostic, got: {diagnostics:?}"
+    );
+}
+
+#[test]
+fn valid_resolved_channel_count_and_latency_still_flatten() {
+    let registry = DefinitionRegistry::new()
+        .with_definition(echo())
+        .with_definition(spectral());
+    let root = GraphDefinition::new("root")
+        .with_node(
+            Node::new(NodeId::new("e"), "echo")
+                .with_static_arg("channels", StaticArg::Literal(StaticValue::Int(2))),
+        )
+        .with_node(
+            Node::new(NodeId::new("fft"), "spectral")
+                .with_static_arg("fft_size", StaticArg::Literal(StaticValue::Int(512))),
+        );
+
+    let flat = root
+        .flatten(&registry)
+        .expect("valid resolved static values flatten successfully");
+
+    assert_eq!(
+        flat.node(&NodeId::new("e")).unwrap().ports()[0].channels(),
+        2,
+        "echo keeps its resolved channel count"
+    );
+    assert_eq!(
+        flat.node(&NodeId::new("fft")).unwrap().latency(),
+        511,
+        "spectral keeps its resolved latency"
+    );
+}
+
+#[test]
+fn resolved_node_ports_returns_none_for_invalid_resolved_channel_count() {
+    let registry = DefinitionRegistry::new().with_definition(echo());
+    let root = GraphDefinition::new("root").with_node(
+        Node::new(NodeId::new("e"), "echo")
+            .with_static_arg("channels", StaticArg::Literal(StaticValue::Int(0))),
+    );
+
+    assert_eq!(
+        root.resolved_node_ports(&registry, &NodeId::new("e")),
+        None,
+        "an out-of-range resolved channel count yields no invented fallback ports"
+    );
+}
+
 #[test]
 fn recursive_definition_is_rejected() {
     let recursive = GraphDefinition::new("loop").with_node(Node::new(NodeId::new("inner"), "loop"));

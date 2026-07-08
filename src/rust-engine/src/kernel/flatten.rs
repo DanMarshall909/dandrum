@@ -186,6 +186,14 @@ impl Compiler<'_> {
             definition.validate_static_references(&mut self.diagnostics);
         }
 
+        // Reject out-of-range resolved values for this instance's static
+        // arguments before port/latency resolution can observe a fallback.
+        // Runs per distinct (definition, static args) key, unlike the
+        // declaration check above.
+        if !definition.validate_resolved_static_references(static_context, &mut self.diagnostics) {
+            return None;
+        }
+
         // A definition with no internal nodes is an atomic primitive.
         if definition.nodes().is_empty() {
             self.expansions += 1;

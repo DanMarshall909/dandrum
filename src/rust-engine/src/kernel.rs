@@ -77,8 +77,10 @@ impl LatencySpec {
                 Some(StaticValue::Int(value)) if *value >= 0 => (*value as u32).saturating_sub(*minus),
                 // Unreachable in a compiled graph: `validate_static_references`
                 // rejects any latency reference that is not a declared integer
-                // static parameter, so this never silently reports zero latency
-                // for a latency-bearing node — compilation fails loudly instead.
+                // static parameter, and `validate_resolved_static_references`
+                // rejects negative values and values smaller than `minus`, so this
+                // never silently reports (or saturates to) zero latency for a
+                // latency-bearing node — compilation fails loudly instead.
                 _ => 0,
             },
         }
@@ -142,6 +144,11 @@ pub enum ChannelCount {
 }
 
 impl ChannelCount {
+    /// The minimum legal resolved channel count. A resolved static argument of
+    /// zero or a negative value is rejected at compile time rather than falling
+    /// back to a plausible mono default.
+    pub const MIN: i64 = 1;
+
     pub fn param(name: impl Into<String>) -> Self {
         Self::Param(name.into())
     }
@@ -763,13 +770,17 @@ impl GraphDefinition {
                 let channels = match port.channels() {
                     ChannelCount::Literal(count) => *count,
                     ChannelCount::Param(name) => match static_args.get(name) {
-                        Some(StaticValue::Int(value)) if *value >= 0 => *value as u32,
+                        Some(StaticValue::Int(value)) if *value >= ChannelCount::MIN => {
+                            *value as u32
+                        }
                         // Unreachable in a compiled graph: `validate_static_references`
                         // rejects any channel reference that is not a declared integer
-                        // static parameter, so a successfully-resolved arg is always a
-                        // non-negative integer here. Kept only for totality; the value
-                        // is never observed because compilation has already failed.
-                        _ => 1,
+                        // static parameter, and `validate_resolved_static_references`
+                        // rejects any resolved value below `ChannelCount::MIN`, so a
+                        // successfully-compiled arg is always in range here. Kept only
+                        // for totality; the value is never observed because compilation
+                        // has already failed.
+                        _ => ChannelCount::MIN as u32,
                     },
                 };
                 ResolvedPort {
@@ -834,6 +845,87 @@ impl GraphDefinition {
         );
     }
 
+    /// Reject, loudly, any resolved channel-count or latency static value that is
+    /// out of range for a specific node instance: a channel count below
+    /// [`ChannelCount::MIN`], a negative latency, or a latency that would
+    /// saturate to zero because the resolved value is smaller than the subtracted
+    /// constant. [`Self::validate_static_references`] already guarantees the
+    /// referenced parameter is a declared integer; this guards the concrete value
+    /// so a bad static argument cannot fall back to one channel or zero latency
+    /// (which would phase-smear parallel dry/wet paths). Returns `true` when every
+    /// resolved reference is in range.
+    fn validate_resolved_static_references(
+        &self,
+        static_args: &BTreeMap<String, StaticValue>,
+        diagnostics: &mut Diagnostics,
+    ) -> bool {
+        let mut ok = true;
+
+        for port in &self.ports {
+            if let ChannelCount::Param(name) = port.channels() {
+                if let Some(StaticValue::Int(value)) = static_args.get(name) {
+                    if *value < ChannelCount::MIN {
+                        diagnostics.push(
+                            Diagnostic::new(
+                                error_codes::KERNEL_INVALID_STATIC_REFERENCE_VALUE,
+                                Severity::Error,
+                                format!(
+                                    "definition '{}' resolves the channel count of port '{}' from static parameter '{name}' to {value}, but a channel count must be at least {}",
+                                    self.name(),
+                                    port.name(),
+                                    ChannelCount::MIN
+                                ),
+                            )
+                            .with_module_id(self.name())
+                            .with_port_name(port.name())
+                            .with_expected(format!("channel count >= {}", ChannelCount::MIN))
+                            .with_actual(value.to_string()),
+                        );
+                        ok = false;
+                    }
+                }
+            }
+        }
+
+        if let LatencySpec::StaticParam { name, minus } = &self.latency {
+            if let Some(StaticValue::Int(value)) = static_args.get(name) {
+                if *value < 0 {
+                    diagnostics.push(
+                        Diagnostic::new(
+                            error_codes::KERNEL_INVALID_STATIC_REFERENCE_VALUE,
+                            Severity::Error,
+                            format!(
+                                "definition '{}' resolves its processing latency from static parameter '{name}' to {value}, but latency cannot be negative",
+                                self.name()
+                            ),
+                        )
+                        .with_module_id(self.name())
+                        .with_expected("latency >= 0")
+                        .with_actual(value.to_string()),
+                    );
+                    ok = false;
+                } else if (*value as u32) < *minus {
+                    diagnostics.push(
+                        Diagnostic::new(
+                            error_codes::KERNEL_INVALID_STATIC_REFERENCE_VALUE,
+                            Severity::Error,
+                            format!(
+                                "definition '{}' resolves its processing latency from static parameter '{name}' to {value}, which is smaller than the subtracted constant {minus}; latency would silently saturate to zero",
+                                self.name()
+                            ),
+                        )
+                        .with_module_id(self.name())
+                        .with_expected(format!("latency static value >= {minus}"))
+                        .with_actual(value.to_string()),
+                    );
+                    ok = false;
+                }
+            }
+        }
+
+        ok
+    }
+
     /// Validate this definition against the referenced definitions in
     /// `registry`, resolving static arguments and channel counts, checking
     /// connections for signal-type and channel-count compatibility, and
@@ -877,6 +969,12 @@ impl GraphDefinition {
             else {
                 continue;
             };
+
+            // Guard the resolved values before ports are built so an out-of-range
+            // channel count cannot fall back to one channel here.
+            if !referenced.validate_resolved_static_references(&static_args, &mut diagnostics) {
+                continue;
+            }
 
             let ports = Self::resolve_ports(referenced, &static_args);
 
@@ -1202,6 +1300,10 @@ impl GraphDefinition {
         }
         let enclosing = self.enclosing_context();
         let static_args = self.resolve_static_args(node, referenced, &enclosing, &mut sink)?;
+        // Don't hand back ports built from an out-of-range resolved channel count.
+        if !referenced.validate_resolved_static_references(&static_args, &mut sink) {
+            return None;
+        }
         Some(Self::resolve_ports(referenced, &static_args))
     }
 

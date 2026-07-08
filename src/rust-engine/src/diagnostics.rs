@@ -87,6 +87,8 @@ pub mod error_codes {
     pub const KERNEL_MAX_DEPTH_EXCEEDED: &str = "kernel.max_depth_exceeded";
     pub const KERNEL_UNRESOLVED_STATIC_REFERENCE: &str =
         "kernel.unresolved_static_reference";
+    pub const KERNEL_INVALID_STATIC_REFERENCE_VALUE: &str =
+        "kernel.invalid_static_reference_value";
 
     // Module-library sub-codes
     pub const LIBRARY_UNKNOWN_MACRO: &str = "library.unknown_macro";
