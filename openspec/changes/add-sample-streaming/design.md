@@ -24,6 +24,7 @@ A preloaded source and a streaming source have different memory and IO contracts
 - Make underrun behaviour explicit and testable.
 - Expose useful source and transport metadata to the graph/plugin.
 - Support explicit beat-grid metadata and future preparation-time beat detection.
+- Support independent user intent for target BPM and pitch shift even when v1 only implements pitch-linked rate playback.
 - Keep streaming aligned with `sample_source`, `sample_metadata`, regions, slices, and cue points from the advanced sampling model.
 
 **Non-Goals:**
@@ -32,6 +33,7 @@ A preloaded source and a streaming source have different memory and IO contracts
 - Implement full DJ software in the first slice.
 - Perform blocking file IO, decoding, allocation, beat detection, or filesystem discovery in the audio callback.
 - Introduce a second, incompatible sample metadata model.
+- Implement pitch-preserved time-stretch in v1. The API should reserve the control shape, but unsupported independent tempo/pitch rendering must fail validation or degrade explicitly.
 
 ## Decisions
 
@@ -82,6 +84,53 @@ Transport controls should not be mixed into file decoding or beat analysis. A `s
 
 Separating these makes it easier to reuse metadata and analysis for slicers, sample players, and future creative sampling.
 
+### Tempo intent and pitch intent are separate controls
+
+Dandrum should allow users/modules to set target BPM and pitch independently, even before pitch-preserved rendering exists. The control model should distinguish:
+
+- source tempo metadata, usually `source_bpm`,
+- target tempo, usually `target_bpm` from host/deck/manual control,
+- tempo ratio, usually `target_bpm / source_bpm`,
+- pitch shift, in semitones or pitch ratio,
+- manual deck rate/pitch-fader adjustment,
+- temporary nudge/bend adjustment.
+
+For v1 rate playback, tempo and pitch are physically linked by resampling. The engine may still accept separate intent values, but the selected tempo mode determines whether they can both be honoured.
+
+Supported/expected modes:
+
+- `free` — source plays at original speed and pitch unless manual pitch/rate is applied.
+- `rate` — playback-rate ratio changes tempo and pitch together.
+- `beat_locked_rate` — derives playback-rate ratio from `target_bpm / source_bpm`; pitch changes with tempo like a turntable/CDJ pitch fader.
+- `stretch` — future mode where target BPM and pitch shift can be honoured independently by a time-stretch/pitch-shift primitive.
+
+Until `stretch` is implemented, independent BPM+pitch requests must not silently pretend to preserve both. They should either:
+
+1. fail validation when `tempo_mode: stretch` is requested but unsupported,
+2. run in `beat_locked_rate` with an explicit diagnostic that pitch follows rate,
+3. run in `rate` plus an additional pitch-shift primitive only if a supported pitch-shift path exists.
+
+### Effective v1 rate calculation
+
+For pitch-linked tempo matching:
+
+```text
+tempo_ratio = target_bpm / source_bpm
+pitch_ratio_from_semitones = 2^(pitch_shift_semitones / 12)
+effective_rate = manual_rate * tempo_ratio * nudge_ratio
+```
+
+In `rate` and `beat_locked_rate` v1 modes, `pitch_shift_semitones` is either rejected, ignored with diagnostics, or applied only if an explicit downstream pitch-shift primitive exists. The raw streaming cursor rate should not claim to preserve pitch independently.
+
+For future `stretch` mode:
+
+```text
+tempo_ratio = target_bpm / source_bpm
+pitch_ratio = 2^(pitch_shift_semitones / 12)
+```
+
+The streaming/creative sampling path will use tempo ratio and pitch ratio as separate DSP controls.
+
 ## Candidate Primitive Surfaces
 
 ### `sample_stream_source`
@@ -92,7 +141,10 @@ Inputs:
 - `stop` (`event` or control) — stops playback.
 - `cue` (`event`, optional) — moves to configured cue position and optionally stops.
 - `seek` (`event` or control) — moves playback position.
-- `rate` (`control`) — playback-rate ratio.
+- `rate` (`control`) — final playback cursor rate used by v1 pitch-linked rendering.
+- `tempo_ratio` (`control`, optional) — target tempo ratio before conversion to cursor rate.
+- `pitch_ratio` (`control`, optional future extension) — independent pitch ratio for future stretch/pitch-shift mode.
+- `pitch_shift_semitones` (`control`, optional future extension) — independent pitch shift intent.
 - `level` (`control`) — linear gain.
 - `loop_enable` (`control`, optional).
 - `loop_start` / `loop_end` (`control` or prepared cue references, optional).
@@ -108,12 +160,17 @@ Outputs:
 - `underrun` (`control`, optional).
 - `beat_phase` (`control`, optional when beat grid is known).
 - `tempo_bpm` (`control`, optional when known).
+- `effective_rate` (`control`, optional).
+- `effective_pitch_ratio` (`control`, optional, reports pitch-linked result in v1 modes).
+- `pitch_preserved` (`control`, optional boolean/status output).
 - `next_beat_frames` (`control`, optional when beat grid is known).
 - `next_downbeat_frames` (`control`, optional when beat grid is known).
 
 Static parameters:
 
 - `source` or `stream_asset` — prepared stream-capable sample source ID.
+- `tempo_mode` — `free`, `rate`, `beat_locked_rate`, or future `stretch`.
+- `source_bpm_policy` — `metadata`, `manual`, or `required` where supported.
 - `buffer_size_ms` — bounded read-ahead buffer size.
 - `underrun_mode` — `silence`, `hold`, or `stop` where supported.
 - `metadata_policy` — whether unavailable metadata emits missing values, diagnostics, or configured defaults.
@@ -145,24 +202,41 @@ Outputs/metadata:
 
 ### `stream_transport`
 
-A separate transport primitive may be useful if multiple streaming modules need to share play/cue/seek state.
+A separate transport primitive may be useful if multiple streaming modules need to share play/cue/seek state and convert musical tempo intent into cursor rate.
 
 Inputs:
 
-- `play`, `stop`, `cue`, `seek`, `rate`, `loop_enable`.
+- `play`, `stop`, `cue`, `seek`, `loop_enable`.
+- `source_bpm`.
+- `target_bpm`.
+- `manual_rate`.
+- `nudge_ratio`.
+- `pitch_shift_semitones`.
+- `pitch_ratio`.
 
 Outputs:
 
 - transport state,
 - playhead position,
 - normalized position,
+- `tempo_ratio`,
+- `effective_rate`,
+- `pitch_ratio`,
+- `pitch_preserved`,
 - beat phase where a beat grid is attached.
+
+Static parameters:
+
+- `tempo_mode` — `free`, `rate`, `beat_locked_rate`, or future `stretch`.
+- `unsupported_pitch_mode` — `error`, `diagnostic_and_rate`, or equivalent explicit fallback policy.
 
 ## Realtime Contract
 
-The audio callback may read from prepared ring buffers and update bounded transport state. It must not perform blocking IO, allocate, decode arbitrary packets, wait on locks, run beat detection, or log.
+The audio callback may read from prepared ring buffers and update bounded transport state. It must not perform blocking IO, allocate, decode arbitrary packets, wait on locks, run beat detection, run unbounded time-stretch analysis, or log.
 
 Background workers may decode and fill buffers according to a bounded policy. Failure/underrun state must be visible to the engine/plugin off the audio thread. Publishing newly available analysis metadata must use a safe handoff that does not mutate graph structure during rendering.
+
+Pitch-preserved `stretch` mode requires a separate bounded DSP contract before implementation. The streaming API may reserve tempo/pitch controls before that mode is supported.
 
 ## Validation Rules
 
@@ -172,6 +246,9 @@ Background workers may decode and fill buffers according to a bounded policy. Fa
 - Beat detection metadata must include confidence and provenance.
 - Runtime transport state must not be persisted as immutable source metadata unless explicitly saved as plugin/session state.
 - Missing or low-confidence beat analysis must be represented explicitly.
+- `beat_locked_rate` requires source BPM from metadata or manual override.
+- `stretch` requires a supported pitch-preserving stretch implementation; otherwise it must fail validation or use an explicitly configured fallback policy.
+- Independent `target_bpm` and `pitch_shift` controls must not silently imply pitch preservation in `rate` or `beat_locked_rate` mode.
 
 ## Open Questions
 
@@ -179,3 +256,4 @@ Background workers may decode and fill buffers according to a bounded policy. Fa
 - Whether tempo sync and beat grids belong here or need a later DJ-deck spec. Current leaning: beat-grid metadata belongs here; full DJ deck sync can be later.
 - How much cue/loop metadata should be YAML-authored versus runtime/plugin state.
 - Whether `sample_stream_source` should output beat metadata directly or whether all metadata should go through `sample_metadata`.
+- Whether future pitch preservation is implemented as `sample_stream_source tempo_mode: stretch`, a separate `time_stretch_stream` primitive, or a creative-sampling primitive inserted after streaming decode.
