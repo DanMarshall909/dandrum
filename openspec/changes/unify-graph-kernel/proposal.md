@@ -10,7 +10,7 @@ The engine has accreted parallel concepts — patches vs modules, params vs cont
 - **BREAKING** Remove stereo assumptions: the `audio_output` primitive with hardcoded `left`/`right` is replaced by root graph output ports; the host binds named buses with arbitrary channel counts to root ports. Ports carry a channel count so one connection can be an N-channel bundle.
 - Add static (compile-time) parameters on graph definitions — channel counts, voice counts, replication counts, max delay lengths — resolved during compilation; the compiler caches expansions keyed by (definition, static-args).
 - Feedback cycles become legal only through an explicit feedback-delay primitive with a declared delay amount; implicit `feedback_boundaries` are removed and the scheduler remains a plain topological sort.
-- Add per-node latency reporting to the port/node model with compiler-inserted compensation delays (initial implementation may assert all latencies are zero, but the contract exists from day one).
+- Add per-node latency reporting with compiler-inserted compensation delays at converging paths and total-latency reporting to hosts. This fixes an existing defect: spectral (`fft_size - 1` samples) and overlap-add convolution (one block) already carry real latency, so parallel dry/wet paths around them are currently misaligned. Feedback cycles containing latency-bearing nodes are rejected.
 - Signal rate becomes explicit alongside signal type; control→audio promotion rules are defined (implicit upsampling); audio↔event conversion stays illegal. Runtime stays statically typed — no runtime variant switching.
 - Compilation recursively flattens composite definitions until only atomic Rust nodes remain, then schedules and plans buffers as today.
 

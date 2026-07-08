@@ -28,11 +28,35 @@ When parallel paths converge with unequal accumulated latency, the compiler SHAL
 - **WHEN** a host queries a prepared instrument
 - **THEN** it SHALL receive the root graph's total latency in samples for plugin latency reporting
 
-### Requirement: Unsupported nonzero latency fails compilation
+#### Scenario: Composite latency accumulates through flattening
 
-Until compensation insertion is implemented, compilation SHALL fail with a structured diagnostic when any node reports nonzero latency. The contract SHALL NOT be silently ignored.
+- **WHEN** a composite or `poly` node contains latency-inducing nodes
+- **THEN** the flattened paths through it SHALL carry the accumulated internal latency for balancing at downstream convergences
 
-#### Scenario: Nonzero latency without balancer is rejected
+#### Scenario: Inserted compensation is inspectable
 
-- **WHEN** a graph contains a node reporting nonzero latency and the compiler build does not implement compensation
-- **THEN** compilation SHALL fail with a diagnostic naming the node and its latency rather than rendering misaligned audio
+- **WHEN** the compiler inserts a compensation delay
+- **THEN** compilation diagnostics or discovery output SHALL report where it was inserted and by how many samples
+
+### Requirement: Existing latency-inducing builtins declare true latency
+
+Builtins with inherent processing latency — including the spectral processor (`fft_size - 1` samples) and overlap-add convolution (one partition block) — SHALL declare their actual latency in the module registry, and dry/wet topologies around them SHALL render time-aligned.
+
+#### Scenario: Convolution dry/wet paths align
+
+- **WHEN** an impulse is rendered through a graph mixing a dry path with a unit-impulse-IR convolution path
+- **THEN** the two contributions SHALL arrive at the mix on the same sample
+
+#### Scenario: Spectral processor declares fft-dependent latency
+
+- **WHEN** a spectral processor node is compiled with a resolved FFT size
+- **THEN** its declared latency SHALL reflect that FFT size and participate in path balancing
+
+### Requirement: Latency inside feedback cycles is rejected
+
+Compensation cannot be inserted inside a feedback loop, so compilation SHALL fail with a structured diagnostic when a feedback cycle contains any node reporting nonzero latency.
+
+#### Scenario: Latency-bearing node in a cycle is rejected
+
+- **WHEN** a feedback cycle through a `feedback_delay` node also contains a nonzero-latency node such as a convolution
+- **THEN** compilation SHALL fail with a diagnostic naming the cycle, the node, and its latency rather than rendering a time-smeared loop

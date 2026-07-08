@@ -11,7 +11,9 @@
 - [ ] 2.1 Implement recursive flattening of composite nodes to atomic nodes with deterministic namespaced identities and recursion/depth diagnostics (replaces current single-level `module_definitions` expansion path)
 - [ ] 2.2 Implement expansion caching keyed by (definition identity, resolved static args) with per-instance disjoint runtime state
 - [ ] 2.3 Add `feedback_delay` primitive; rewrite cycle validation so cycles are legal only through `feedback_delay` (audio and control), remove `feedback_boundaries` attributes and per-module cycle-breaker metadata; scheduler cuts at feedback nodes
-- [ ] 2.4 Add per-node latency metadata to the atomic node contract; compilation fails with a structured diagnostic on any nonzero latency (compensation insertion deferred); expose total root latency = 0 to hosts
+- [ ] 2.4 Add per-node latency metadata to the atomic node contract and declare true latencies in the registry: spectral processor (`fft_size - 1`), overlap-add convolution (one partition block); audit remaining builtins and declare zero explicitly
+- [ ] 2.4b Implement latency balancing in compilation: accumulate declared latency along paths, insert preallocated compensation delays where unequal paths converge, report insertions in diagnostics, compute total root latency; reject feedback cycles containing nonzero-latency nodes with a structured diagnostic
+- [ ] 2.4c Behaviour test: impulse through a dry path mixed with a unit-impulse-IR convolution path arrives time-aligned at the mix; spectral dry/wet topology aligns per resolved FFT size
 - [ ] 2.5 Insert compiler-generated control→audio promotion steps into the flattened graph, visible in diagnostics/discovery output
 - [ ] 2.6 Rewire `preparation.rs`/`compiled_patch.rs`/`graph_processor/render_plan.rs` to consume the flattened kernel graph (statically dispatched flat node array over existing arenas), keeping offline/realtime parity tests green
 
@@ -34,7 +36,7 @@
 ## 5. Host buses and FFI
 
 - [ ] 5.1 Implement root-port ↔ named-bus binding at preparation: name matching, channel-count validation, unbound-output failure, unbound-input silence
-- [ ] 5.2 Extend FFI with root-port enumeration (name, direction, signal type, channels) and per-bus buffer binding; keep invalid-pointer containment tests
+- [ ] 5.2 Extend FFI with root-port enumeration (name, direction, signal type, channels), per-bus buffer binding, and total-latency query for plugin latency reporting; keep invalid-pointer containment tests
 - [ ] 5.3 Move render settings (sample rate, block size, duration) out of patch documents to host/render invocation; add rejection diagnostic for `render:` in patches; CLI gains render flags (sample rate default 48000, block size default 128, required `--duration-frames`) with per-example settings encoded in the Rust test harness
 - [ ] 5.4 Update JUCE demo and CLI/offline renderer to declare and bind buses (stereo host binds one 2-channel `master` bus); verify demo produces sound
 

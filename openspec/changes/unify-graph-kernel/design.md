@@ -22,7 +22,7 @@ Constraints: realtime callback stays lock-free, allocation-free, IO-free (README
 - Named host buses with arbitrary channel counts; no stereo assumptions anywhere in the kernel.
 - Static parameters on graph definitions (channel counts, voice counts, replication, max delay).
 - Explicit feedback-delay primitive as the only legal cycle boundary.
-- Latency metadata in the node contract from day one (implementation may start at zero-everywhere).
+- Latency metadata in the node contract from day one, with compensation implemented in this change: the zero-latency assumption is already false today (`spectral_processor` documents `fft_size - 1` samples; overlap-add convolution carries one block of latency), so parallel dry/wet paths around those modules are currently misaligned.
 - Compilation = recursive flatten → typecheck → schedule → buffer-plan, keeping incremental recompiles fast for live editing.
 
 **Non-Goals:**
@@ -73,7 +73,7 @@ The host boundary is: root graph input/output ports ↔ named buses declared by 
 
 ### D8: Compilation pipeline
 
-`parse → resolve definitions (library + inline) → resolve static args → recursively flatten to atomic nodes → typecheck ports/rates/channels → cycle-check (feedback_delay cuts) → latency balance (insert compensation delays; initial impl asserts zero) → topological schedule → buffer-reuse coloring into arenas → CompiledPatch`. Flattening reuses the expansion cache; the whole pipeline stays linear-ish in flattened node count so live edits recompile fast. Execution remains the existing flat statically-dispatched node array over `audio_arena`. Per-voice instances share read-only data (wavetables, samples, coefficients) and get disjoint state slices.
+`parse → resolve definitions (library + inline) → resolve static args → recursively flatten to atomic nodes → typecheck ports/rates/channels → cycle-check (feedback_delay cuts) → latency balance → topological schedule → buffer-reuse coloring into arenas → CompiledPatch`. Latency balancing accumulates per-node declared latency along paths, inserts compensation delays where paths of unequal latency converge, reports total root latency to the host, and rejects any feedback cycle containing a nonzero-latency node (compensation inside a loop is impossible). Composite and `poly` latency is the accumulated latency of the flattened contents; voices are identical instances, so poly latency is uniform. Flattening reuses the expansion cache; the whole pipeline stays linear-ish in flattened node count so live edits recompile fast. Execution remains the existing flat statically-dispatched node array over `audio_arena`. Per-voice instances share read-only data (wavetables, samples, coefficients) and get disjoint state slices.
 
 ### D9: Migration is one atomic in-repo cut, staged by layer
 
@@ -85,7 +85,8 @@ Trunk-based, no compatibility shims: (1) kernel types + validation land alongsid
 - [`poly` voice-done detection is heuristic when no `done` port exists] → silence-tracking threshold + release timeout are explicit, documented constants; authors of sustained instruments must expose `done`; diagnostics flag wrapped definitions with no gate/done path.
 - [Implicit control→audio promotion hides cost] → promotion inserts a visible node in diagnostics/discovery output so the cost is inspectable; per-connection opt-out is possible later.
 - [Big-bang YAML break with many examples/specs touching the old shape] → migration is mechanical (params→defaults, `_l`/`_r`→2ch ports, `audio_output`→root ports); each example re-renders and is compared against reference output where reference WAVs exist.
-- [Latency compensation contract without implementation invites drift] → the zero-latency assertion is a real validation error, not a TODO: any primitive declaring nonzero latency fails compilation until the balancer lands, so the contract can't silently rot.
+- [Compensation delays cost memory proportional to latency × channel count at every unbalanced convergence] → compensation buffers are preallocated at preparation like all other state; the compiler reports inserted compensation in diagnostics so authors can see and restructure expensive topologies; worst offenders (spectral, convolution) already impose this cost implicitly today as misalignment instead of memory.
+- [Undeclared latency in a primitive silently misaligns output, defeating the balancer] → declared latency becomes part of each primitive's registry declaration next to its ports, and behaviour tests assert impulse alignment through dry/wet topologies for every latency-bearing builtin.
 - [Static params without an expression language may prove too weak (e.g. "channels = parent channels − 1")] → accepted; name-passing covers the known cases (echo, mixer, poly); revisit with evidence before adding expressions.
 - [FFI/host churn across JUCE, CLI, offline render] → bus API is the single new boundary; stereo hosts bind one 2ch `main` bus, so host-side diffs are small.
 
