@@ -1826,6 +1826,214 @@ mod tests {
         EVENT_FILTER_NOTE_PARAMETER, EVENT_FILTER_NOTE_SELECTOR, EVENT_FILTER_SELECTOR_PARAMETER,
     };
 
+    fn schema_error(yaml: &str, case: &str) -> PatchValidationError {
+        let patch = load_patch_str(yaml).unwrap_or_else(|e| panic!("{case}: patch should parse: {e}"));
+        validate_patch_schema(&patch)
+            .expect_err(&format!("{case}: patch should fail schema validation"))
+    }
+
+    fn assert_has_code(error: &PatchValidationError, code: &str, case: &str) {
+        assert!(
+            error.diagnostics().iter().any(|d| d.error_code() == code),
+            "{case}: expected diagnostic {code}, got {:?}",
+            error
+                .diagnostics()
+                .iter()
+                .map(|d| (d.error_code(), d.message()))
+                .collect::<Vec<_>>()
+        );
+    }
+
+    #[test]
+    fn validate_patch_schema_reports_structural_rule_violations() {
+        use error_codes::{VALIDATION_INVALID_VALUE, VALIDATION_MISSING_FIELD};
+
+        let cases: &[(&str, &str, &str)] = &[
+            (
+                "empty metadata.name",
+                r#"
+metadata:
+  name: ""
+render:
+  sample_rate_hz: 48000
+  block_size_frames: 64
+  duration_frames: 64
+modules:
+  - id: osc
+    type: oscillator
+"#,
+                VALIDATION_MISSING_FIELD,
+            ),
+            (
+                "zero sample rate",
+                r#"
+metadata:
+  name: Zero Rate
+render:
+  sample_rate_hz: 0
+  block_size_frames: 64
+  duration_frames: 64
+modules:
+  - id: osc
+    type: oscillator
+"#,
+                VALIDATION_INVALID_VALUE,
+            ),
+            (
+                "zero block size",
+                r#"
+metadata:
+  name: Zero Block
+render:
+  sample_rate_hz: 48000
+  block_size_frames: 0
+  duration_frames: 64
+modules:
+  - id: osc
+    type: oscillator
+"#,
+                VALIDATION_INVALID_VALUE,
+            ),
+            (
+                "no modules declared",
+                r#"
+metadata:
+  name: Empty
+render:
+  sample_rate_hz: 48000
+  block_size_frames: 64
+  duration_frames: 64
+modules: []
+"#,
+                VALIDATION_MISSING_FIELD,
+            ),
+            (
+                "duplicate module id",
+                r#"
+metadata:
+  name: Dupes
+render:
+  sample_rate_hz: 48000
+  block_size_frames: 64
+  duration_frames: 64
+modules:
+  - id: osc
+    type: oscillator
+  - id: osc
+    type: oscillator
+"#,
+                VALIDATION_INVALID_VALUE,
+            ),
+            (
+                "empty module type",
+                r#"
+metadata:
+  name: No Type
+render:
+  sample_rate_hz: 48000
+  block_size_frames: 64
+  duration_frames: 64
+modules:
+  - id: osc
+    type: ""
+"#,
+                VALIDATION_MISSING_FIELD,
+            ),
+        ];
+
+        for (case, yaml, expected_code) in cases {
+            let error = schema_error(yaml, case);
+            assert_has_code(&error, expected_code, case);
+        }
+    }
+
+    #[test]
+    fn patch_load_error_formats_and_maps_to_loading_diagnostic() {
+        let variants = [
+            PatchLoadError::UnsupportedFormat {
+                path: PathBuf::from("song.txt"),
+            },
+            PatchLoadError::ReadFailed {
+                path: PathBuf::from("song.yaml"),
+                message: "denied".to_string(),
+            },
+            PatchLoadError::ParseFailed {
+                path: Some(PathBuf::from("song.yaml")),
+                message: "bad yaml".to_string(),
+            },
+            PatchLoadError::ParseFailed {
+                path: None,
+                message: "bad yaml".to_string(),
+            },
+        ];
+
+        for variant in &variants {
+            assert!(
+                !variant.to_string().is_empty(),
+                "every load error should render a message"
+            );
+            assert_eq!(
+                variant.to_diagnostic().error_code(),
+                error_codes::LOADING,
+                "load errors map to the loading diagnostic code"
+            );
+        }
+
+        assert!(
+            PatchLoadError::UnsupportedFormat {
+                path: PathBuf::from("song.txt"),
+            }
+            .to_string()
+            .contains("unsupported patch format"),
+            "unsupported format message should name the problem"
+        );
+    }
+
+    #[test]
+    fn preset_load_error_renders_each_variant() {
+        let variants = [
+            PresetLoadError::UnsupportedFormat {
+                path: PathBuf::from("preset.txt"),
+            },
+            PresetLoadError::ReadFailed {
+                path: PathBuf::from("preset.yaml"),
+                message: "denied".to_string(),
+            },
+            PresetLoadError::ParseFailed {
+                path: Some(PathBuf::from("preset.yaml")),
+                message: "bad".to_string(),
+            },
+            PresetLoadError::ParseFailed {
+                path: None,
+                message: "bad".to_string(),
+            },
+        ];
+
+        for variant in &variants {
+            assert!(
+                variant.to_string().contains("preset"),
+                "preset load errors should mention the preset"
+            );
+        }
+    }
+
+    #[test]
+    fn port_reference_deserialize_rejects_malformed_references() {
+        let malformed = ["nodot", "mod.", ".port", "a.b.c"];
+        for reference in malformed {
+            let yaml = format!("\"{reference}\"");
+            let parsed: Result<PortReference, _> = serde_yaml::from_str(&yaml);
+            assert!(
+                parsed.is_err(),
+                "malformed reference {reference} should be rejected"
+            );
+        }
+
+        let parsed: PortReference =
+            serde_yaml::from_str("\"osc.out\"").expect("valid module_id.port_name should parse");
+        assert_eq!(parsed.to_string(), "osc.out", "round-trips to its text form");
+    }
+
     #[test]
     fn event_filter_yaml_preserves_readable_note_selector_configuration() {
         let patch = load_patch_str(
