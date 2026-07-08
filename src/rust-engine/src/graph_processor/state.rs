@@ -5,14 +5,15 @@ use crate::builtins::{
     CURVE_LINEAR, CURVE_PARAMETER, DETECTION_MODE_PARAMETER, DETECTION_MODE_RMS,
     DYNAMICS_DETECTION_PARAMETER, DYNAMICS_MODE_PARAMETER, DYNAMICS_MODE_TRANSIENT,
     DYNAMICS_TOPOLOGY_FEEDBACK, DYNAMICS_TOPOLOGY_PARAMETER, EVENT_FILTER_NOTE_PARAMETER,
-    EVENT_FILTER_NOTE_SELECTOR, EVENT_FILTER_SELECTOR_PARAMETER, SCRIPT_SOURCE_PARAMETER,
-    STEPS_PARAMETER, WAVEFORM_PARAMETER,
+    EVENT_FILTER_NOTE_SELECTOR, EVENT_FILTER_SELECTOR_PARAMETER, INTERPOLATION_CUBIC,
+    INTERPOLATION_PARAMETER, SCRIPT_SOURCE_PARAMETER, STEPS_PARAMETER, WAVEFORM_PARAMETER,
 };
 use crate::compiled_patch::CompiledNode;
 use crate::convolution::Convolution;
 use crate::crossover::LinkwitzRiley4;
 use crate::curve_mapper::{CurveKind, CurveMapper};
 use crate::decay::DecayCurve;
+use crate::delay_line::InterpolationMode;
 use crate::dynamics_processor::{DynamicsProcessor, ProcessorMode, Topology};
 use crate::echo::Echo;
 use crate::envelope_follower::{DetectionMode, EnvelopeFollower};
@@ -26,6 +27,13 @@ use crate::sample::{LoadedSample, PreparedSamplerAssets};
 use crate::saturator::Saturator;
 use crate::script::{RhaiScriptRuntime, ScriptModuleState, ScriptRuntimeLimits};
 use crate::spectral::SpectralProcessor;
+
+fn interpolation_mode(params: &BTreeMap<String, String>) -> InterpolationMode {
+    match params.get(INTERPOLATION_PARAMETER).map(String::as_str) {
+        Some(INTERPOLATION_CUBIC) => InterpolationMode::Cubic,
+        _ => InterpolationMode::Linear,
+    }
+}
 
 pub(super) enum PerModuleState {
     Oscillator {
@@ -276,14 +284,22 @@ impl PerModuleState {
                     sample_rate: sample_rate_f64,
                 }
             }
-            ModuleKind::Echo => PerModuleState::Echo {
-                processor: Echo::new(sample_rate as f64),
-                sample_rate: sample_rate as f64,
-            },
-            ModuleKind::Reverb => PerModuleState::Reverb {
-                processor: Reverb::new(sample_rate as f64),
-                sample_rate: sample_rate as f64,
-            },
+            ModuleKind::Echo => {
+                let mut processor = Echo::new(sample_rate as f64);
+                processor.set_interpolation(interpolation_mode(params));
+                PerModuleState::Echo {
+                    processor,
+                    sample_rate: sample_rate as f64,
+                }
+            }
+            ModuleKind::Reverb => {
+                let mut processor = Reverb::new(sample_rate as f64);
+                processor.set_interpolation(interpolation_mode(params));
+                PerModuleState::Reverb {
+                    processor,
+                    sample_rate: sample_rate as f64,
+                }
+            }
             ModuleKind::FrequencySplitter => PerModuleState::FrequencySplitter {
                 first: LinkwitzRiley4::new(0.02),
                 second: LinkwitzRiley4::new(0.08),

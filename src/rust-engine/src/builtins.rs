@@ -44,6 +44,9 @@ pub const DYNAMICS_DETECTION_PARAMETER: &str = "detection";
 pub const DYNAMICS_TOPOLOGY_PARAMETER: &str = "topology";
 pub const DYNAMICS_TOPOLOGY_FEEDFORWARD: &str = "feedforward";
 pub const DYNAMICS_TOPOLOGY_FEEDBACK: &str = "feedback";
+pub const INTERPOLATION_PARAMETER: &str = "interpolation";
+pub const INTERPOLATION_LINEAR: &str = "linear";
+pub const INTERPOLATION_CUBIC: &str = "cubic";
 pub const CURVE_PARAMETER: &str = "curve";
 pub const CURVE_LINEAR: &str = "linear";
 pub const CURVE_EXPONENTIAL: &str = "exponential";
@@ -662,6 +665,14 @@ fn echo_definition() -> BuiltInModuleDefinition {
             (SYNC_DIVISION, Control),
             (PING_PONG, Control),
         ])
+        .with_parameter(interpolation_parameter())
+}
+
+fn interpolation_parameter() -> ParameterMetadata {
+    ParameterMetadata::new(INTERPOLATION_PARAMETER, ParameterValueType::Text)
+        .with_default(INTERPOLATION_LINEAR)
+        .with_enum_values(vec![INTERPOLATION_LINEAR, INTERPOLATION_CUBIC])
+        .with_description("fractional-delay interpolation quality")
 }
 
 fn noise_definition() -> BuiltInModuleDefinition {
@@ -821,6 +832,7 @@ fn reverb_definition() -> BuiltInModuleDefinition {
         ])
         .with_output(Port::output(AUDIO_OUT_L, Audio))
         .with_output(Port::output(AUDIO_OUT_R, Audio))
+        .with_parameter(interpolation_parameter())
 }
 
 #[cfg(test)]

@@ -1,4 +1,4 @@
-use crate::delay_line::DelayLine;
+use crate::delay_line::{DelayLine, InterpolationMode};
 use crate::filter::{FilterAlgorithm, OnePoleFilter};
 
 pub struct AllpassDiffuser {
@@ -24,6 +24,10 @@ impl AllpassDiffuser {
 
     pub fn set_coefficient(&mut self, coeff: f32) {
         self.coefficient = coeff.clamp(0.0, 0.99);
+    }
+
+    fn set_interpolation(&mut self, mode: InterpolationMode) {
+        self.delay.set_interpolation_mode(mode);
     }
 
     pub fn process(&mut self, input: f32) -> f32 {
@@ -69,6 +73,10 @@ impl CombStage {
 
     fn set_gain(&mut self, gain: f32) {
         self.gain = gain.clamp(0.0, 0.99);
+    }
+
+    fn set_interpolation(&mut self, mode: InterpolationMode) {
+        self.delay.set_interpolation_mode(mode);
     }
 
     #[allow(dead_code)]
@@ -192,6 +200,17 @@ impl Reverb {
     pub fn set_wet_dry(&mut self, wet: f32, dry: f32) {
         self.wet = wet.clamp(0.0, 1.0);
         self.dry = dry.clamp(0.0, 1.0);
+    }
+
+    pub fn set_interpolation(&mut self, mode: InterpolationMode) {
+        self.pre_delay_l.set_interpolation_mode(mode);
+        self.pre_delay_r.set_interpolation_mode(mode);
+        for comb in self.combs_l.iter_mut().chain(self.combs_r.iter_mut()) {
+            comb.set_interpolation(mode);
+        }
+        for diffuser in self.diffusers_l.iter_mut().chain(self.diffusers_r.iter_mut()) {
+            diffuser.set_interpolation(mode);
+        }
     }
 
     fn update_delays_and_gains(&mut self) {

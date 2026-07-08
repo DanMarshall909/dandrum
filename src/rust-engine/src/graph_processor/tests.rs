@@ -1,9 +1,13 @@
 use super::*;
-use super::processing::{process_dynamics_processor, process_frequency_splitter};
+use super::processing::{
+    EchoControls, ReverbControls, process_dynamics_processor, process_echo,
+    process_frequency_splitter, process_reverb,
+};
 use crate::builtins::{
     DETECTION_MODE_PEAK, DETECTION_MODE_RMS, DYNAMICS_DETECTION_PARAMETER, DYNAMICS_MODE_LEVEL,
     DYNAMICS_MODE_PARAMETER, DYNAMICS_MODE_TRANSIENT, DYNAMICS_TOPOLOGY_FEEDBACK,
-    DYNAMICS_TOPOLOGY_FEEDFORWARD, DYNAMICS_TOPOLOGY_PARAMETER,
+    DYNAMICS_TOPOLOGY_FEEDFORWARD, DYNAMICS_TOPOLOGY_PARAMETER, INTERPOLATION_CUBIC,
+    INTERPOLATION_LINEAR, INTERPOLATION_PARAMETER,
 };
 use crate::builtins::{
     CURVE_EXPONENTIAL, CURVE_PARAMETER, EVENT_FILTER_NOTE_PARAMETER, EVENT_FILTER_NOTE_SELECTOR,
@@ -700,6 +704,89 @@ fn dynamics_topology_parameter_makes_feedback_compress_more_gently() {
     assert!(
         feedback > feedforward * 1.05,
         "feedback topology should compress more gently than feedforward (feedback {feedback}, feedforward {feedforward})"
+    );
+}
+
+fn echo_impulse_output(interpolation: &str) -> Vec<f32> {
+    let frames = 1_024;
+    let module = ModuleNode::new(ModuleId::new("echo"), module_types::ECHO).with_params(
+        BTreeMap::from([(INTERPOLATION_PARAMETER.to_string(), interpolation.to_string())]),
+    );
+    let mut state = PerModuleState::new(&module, 48_000.0, &PreparedSamplerAssets::empty());
+    let mut audio_in = vec![0.0f32; frames];
+    audio_in[0] = 1.0;
+    let c = |v: f32| vec![v; frames];
+    let controls = EchoControls {
+        feedback: &c(0.6),
+        damping: &c(1.0),
+        wet: &c(1.0),
+        dry: &c(0.0),
+        time_l: &c(0.002), // ~4.998 ms -> ~239.9 samples, a fractional delay
+        time_r: &c(0.002),
+        ping_pong: &c(0.0),
+    };
+    let outputs = process_echo(&mut state, &audio_in, &audio_in.clone(), controls, frames);
+    outputs
+        .audio
+        .get(builtin_ports::AUDIO_OUT_L)
+        .expect("echo emits audio_out_l")
+        .clone()
+}
+
+#[test]
+fn echo_interpolation_parameter_changes_fractional_delay_taps() {
+    let linear = echo_impulse_output(INTERPOLATION_LINEAR);
+    let cubic = echo_impulse_output(INTERPOLATION_CUBIC);
+    let diff: f32 = linear
+        .iter()
+        .zip(&cubic)
+        .map(|(a, b)| (a - b).abs())
+        .sum();
+    assert!(
+        diff > 1e-3,
+        "cubic interpolation should change the fractional-delay echo taps (sum abs diff {diff})"
+    );
+}
+
+fn reverb_impulse_output(interpolation: &str) -> Vec<f32> {
+    let frames = 2_048;
+    let module = ModuleNode::new(ModuleId::new("verb"), module_types::REVERB).with_params(
+        BTreeMap::from([(INTERPOLATION_PARAMETER.to_string(), interpolation.to_string())]),
+    );
+    let mut state = PerModuleState::new(&module, 48_000.0, &PreparedSamplerAssets::empty());
+    let mut audio_in = vec![0.0f32; frames];
+    audio_in[0] = 1.0;
+    let c = |v: f32| vec![v; frames];
+    let controls = ReverbControls {
+        decay_time: &c(0.5),
+        room_size: &c(0.5),
+        damping: &c(1.0),
+        diffusion: &c(0.5),
+        wet: &c(1.0),
+        dry: &c(0.0),
+        pre_delay: &c(0.0),
+        stereo_width: &c(0.5),
+    };
+    let outputs = process_reverb(&mut state, &audio_in, &audio_in.clone(), controls, frames);
+    outputs
+        .audio
+        .get(builtin_ports::AUDIO_OUT_L)
+        .expect("reverb emits audio_out_l")
+        .clone()
+}
+
+#[test]
+fn reverb_interpolation_parameter_changes_fractional_delay_network() {
+    let linear = reverb_impulse_output(INTERPOLATION_LINEAR);
+    let cubic = reverb_impulse_output(INTERPOLATION_CUBIC);
+    let diff: f32 = linear
+        .iter()
+        .zip(&cubic)
+        .map(|(a, b)| (a - b).abs())
+        .sum();
+    assert!(
+        diff > 1e-3,
+        "cubic interpolation should change the reverb's fractional delay network (sum abs diff {diff})"
     );
 }
 

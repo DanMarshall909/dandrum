@@ -1,4 +1,4 @@
-use crate::delay_line::DelayLine;
+use crate::delay_line::{DelayLine, InterpolationMode};
 use crate::filter::{FilterAlgorithm, OnePoleFilter};
 
 pub struct Echo {
@@ -84,6 +84,11 @@ impl Echo {
     pub fn set_wet_dry(&mut self, wet: f32, dry: f32) {
         self.wet = wet.clamp(0.0, 1.0);
         self.dry = dry.clamp(0.0, 1.0);
+    }
+
+    pub fn set_interpolation(&mut self, mode: InterpolationMode) {
+        self.delay_l.set_interpolation_mode(mode);
+        self.delay_r.set_interpolation_mode(mode);
     }
 
     pub fn set_ping_pong(&mut self, enabled: bool) {
