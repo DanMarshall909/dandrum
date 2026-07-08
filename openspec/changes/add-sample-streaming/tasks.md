@@ -4,6 +4,7 @@
 - [ ] 1.2 Decide which behaviour belongs in Rust engine versus plugin/host integration.
 - [ ] 1.3 Keep streaming-specific buffering out of the first advanced sampling implementation while preserving shared source metadata compatibility.
 - [ ] 1.4 Define how preloaded sources and streaming sources expose common metadata.
+- [ ] 1.5 Define tempo/pitch control intent separately from the v1 rendering modes that can actually honour it.
 
 ## 2. Buffering And Transport Design
 
@@ -13,6 +14,9 @@
 - [ ] 2.4 Design play/stop/cue/seek/rate control events.
 - [ ] 2.5 Define source/transport metadata outputs: position, remaining time, buffer fill, loaded range, underrun state, transport state, tempo, beat phase, next beat, and next downbeat.
 - [ ] 2.6 Decide whether transport state is a separate primitive, internal component, or both.
+- [ ] 2.7 Define `free`, `rate`, `beat_locked_rate`, and future `stretch` tempo modes.
+- [ ] 2.8 Define `source_bpm`, `target_bpm`, `tempo_ratio`, `manual_rate`, `nudge_ratio`, `pitch_shift_semitones`, and `pitch_ratio` controls.
+- [ ] 2.9 Define explicit fallback/diagnostic behaviour when independent BPM and pitch controls are requested without a supported pitch-preserving stretch path.
 
 ## 3. Beat And Cue Metadata
 
@@ -25,10 +29,12 @@
 
 ## 4. Verification
 
-- [ ] 4.1 Add tests proving the audio callback does not perform blocking IO, beat detection, or allocation.
+- [ ] 4.1 Add tests proving the audio callback does not perform blocking IO, beat detection, time-stretch analysis, or allocation.
 - [ ] 4.2 Add tests proving deterministic transport state transitions.
 - [ ] 4.3 Add tests proving explicit underrun behaviour.
 - [ ] 4.4 Add tests proving streaming metadata outputs are accurate and stable where expected.
 - [ ] 4.5 Add tests proving explicit beat-grid metadata is parsed, validated, and exposed.
 - [ ] 4.6 Add tests for missing/low-confidence beat analysis diagnostics when automatic detection is implemented.
-- [ ] 4.7 Run `openspec validate add-sample-streaming --strict` when requirements are added.
+- [ ] 4.7 Add tests proving `beat_locked_rate` derives effective rate from target/source BPM.
+- [ ] 4.8 Add tests proving unsupported `stretch` mode and unsupported independent tempo/pitch requests produce explicit validation errors or configured diagnostics.
+- [ ] 4.9 Run `openspec validate add-sample-streaming --strict` when requirements are added.
