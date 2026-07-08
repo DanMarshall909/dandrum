@@ -1,4 +1,5 @@
 use super::*;
+use super::processing::process_frequency_splitter;
 use crate::builtins::{
     CURVE_EXPONENTIAL, CURVE_PARAMETER, EVENT_FILTER_NOTE_PARAMETER, EVENT_FILTER_NOTE_SELECTOR,
     EVENT_FILTER_SELECTOR_PARAMETER, SCRIPT_LANGUAGE_PARAMETER, SCRIPT_LANGUAGE_RHAI,
@@ -501,6 +502,59 @@ fn graph_filter_comb_uses_resonance_for_feedback_amount() {
     assert!(
         second_repeat > 0.6,
         "resonance should control comb feedback gain independently of gain input, got {second_repeat}"
+    );
+}
+
+fn frequency_splitter_bands(
+    audio_in: Vec<f32>,
+    crossover_control: f32,
+    sample_rate: f32,
+) -> (Vec<f32>, Vec<f32>, Vec<f32>) {
+    let frames = audio_in.len();
+    let module = ModuleNode::new(ModuleId::new("splitter"), module_types::FREQUENCY_SPLITTER);
+    let mut state = PerModuleState::new(&module, sample_rate, &PreparedSamplerAssets::empty());
+    let crossover = vec![crossover_control; frames];
+    let outputs = process_frequency_splitter(&mut state, &audio_in, &crossover, frames);
+    let low = outputs.audio.get("low").expect("splitter emits low band").clone();
+    let mid = outputs.audio.get("mid").expect("splitter emits mid band").clone();
+    let high = outputs
+        .audio
+        .get("high")
+        .expect("splitter emits high band")
+        .clone();
+    (low, mid, high)
+}
+
+#[test]
+fn frequency_splitter_routes_band_energy_and_reconstructs_flat() {
+    let sample_rate = 48_000.0f32;
+    let frames = 8_192;
+    let mut impulse = vec![0.0f32; frames];
+    impulse[0] = 1.0;
+
+    // control 0.05 -> low split ~840 Hz, high split ~3.4 kHz, so 100 Hz sits in
+    // the low band and 8 kHz in the high band, both well clear of the crossovers.
+    let (low, mid, high) = frequency_splitter_bands(impulse, 0.05, sample_rate);
+
+    let low_resp = fft::compute_magnitude_response(&low, sample_rate as f64).bins;
+    let high_resp = fft::compute_magnitude_response(&high, sample_rate as f64).bins;
+
+    assert!(
+        magnitude_at(&low_resp, 100.0) > magnitude_at(&low_resp, 8000.0) + 24.0,
+        "low band should favour low frequencies over high ones"
+    );
+    assert!(
+        magnitude_at(&high_resp, 8000.0) > magnitude_at(&high_resp, 100.0) + 24.0,
+        "high band should favour high frequencies over low ones"
+    );
+
+    // Linkwitz-Riley bands sum flat, so low + mid + high reconstructs the input.
+    let combined: Vec<f32> = (0..frames).map(|i| low[i] + mid[i] + high[i]).collect();
+    let sum_resp = fft::compute_magnitude_response(&combined, sample_rate as f64).bins;
+    assert!(
+        magnitude_at(&sum_resp, 1000.0) > -3.0,
+        "three bands should reconstruct near-flat, got {:.1} dB",
+        magnitude_at(&sum_resp, 1000.0)
     );
 }
 

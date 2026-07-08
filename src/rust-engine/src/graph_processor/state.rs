@@ -8,7 +8,7 @@ use crate::builtins::{
 };
 use crate::compiled_patch::CompiledNode;
 use crate::convolution::Convolution;
-use crate::crossover::CrossoverPair;
+use crate::crossover::LinkwitzRiley4;
 use crate::curve_mapper::{CurveKind, CurveMapper};
 use crate::decay::DecayCurve;
 use crate::dynamics_processor::DynamicsProcessor;
@@ -74,8 +74,8 @@ pub(super) enum PerModuleState {
         sample_rate: f64,
     },
     FrequencySplitter {
-        first: CrossoverPair,
-        second: CrossoverPair,
+        first: LinkwitzRiley4,
+        second: LinkwitzRiley4,
         sample_rate: f64,
     },
     SpectralProcessor {
@@ -262,8 +262,8 @@ impl PerModuleState {
                 sample_rate: sample_rate as f64,
             },
             ModuleKind::FrequencySplitter => PerModuleState::FrequencySplitter {
-                first: CrossoverPair::new(0.02, sample_rate as f64),
-                second: CrossoverPair::new(0.08, sample_rate as f64),
+                first: LinkwitzRiley4::new(0.02),
+                second: LinkwitzRiley4::new(0.08),
                 sample_rate: sample_rate as f64,
             },
             ModuleKind::SpectralProcessor => PerModuleState::SpectralProcessor {
