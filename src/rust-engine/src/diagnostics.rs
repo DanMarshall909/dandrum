@@ -85,6 +85,8 @@ pub mod error_codes {
         "kernel.cycle_without_feedback_delay";
     pub const KERNEL_RECURSIVE_DEFINITION: &str = "kernel.recursive_definition";
     pub const KERNEL_MAX_DEPTH_EXCEEDED: &str = "kernel.max_depth_exceeded";
+    pub const KERNEL_LATENCY_IN_FEEDBACK_CYCLE: &str = "kernel.latency_in_feedback_cycle";
+    pub const KERNEL_COMPENSATION_INSERTED: &str = "kernel.compensation_inserted";
 
     // Module-library sub-codes
     pub const LIBRARY_UNKNOWN_MACRO: &str = "library.unknown_macro";

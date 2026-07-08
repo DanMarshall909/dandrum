@@ -17,11 +17,17 @@ use crate::graph::{PortDirection, SignalType};
 /// a routing cycle (audio or control) is legal.
 pub const FEEDBACK_DELAY_DEFINITION: &str = "feedback_delay";
 
+/// Definition name of the compiler-synthesised delay the latency balancer
+/// inserts on shorter paths at a convergence so parallel signals arrive aligned
+/// (see `kernel::latency`).
+pub const COMPENSATION_DELAY_DEFINITION: &str = "compensation_delay";
+
 /// Separator between a composite instance identity and an internal node
 /// identity when flattening produces namespaced atomic node ids.
 pub const NAMESPACE_SEPARATOR: &str = "::";
 
 pub mod flatten;
+pub mod latency;
 
 /// The static (compile-time) type of a graph-definition static parameter.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -496,6 +502,24 @@ pub struct ResolvedPort {
 }
 
 impl ResolvedPort {
+    /// Construct a resolved port directly. Used by the latency balancer to build
+    /// the ports of synthesised compensation-delay nodes, whose channel counts
+    /// are already known from the connection being compensated.
+    pub(crate) fn new(
+        name: impl Into<String>,
+        direction: PortDirection,
+        signal_type: SignalType,
+        channels: u32,
+    ) -> Self {
+        Self {
+            name: name.into(),
+            direction,
+            signal_type,
+            channels,
+            control_default: None,
+        }
+    }
+
     pub fn name(&self) -> &str {
         &self.name
     }

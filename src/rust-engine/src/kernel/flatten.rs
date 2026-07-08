@@ -67,6 +67,49 @@ impl AtomicNode {
     pub fn latency(&self) -> u32 {
         self.latency
     }
+
+    /// Build a compiler-synthesised compensation-delay node: an audio delay of
+    /// `samples` samples over `channels` channels, whose declared latency equals
+    /// its delay so downstream accumulation stays self-consistent.
+    pub(crate) fn compensation(id: NodeId, channels: u32, samples: u32) -> Self {
+        use super::{COMPENSATION_DELAY_DEFINITION, StaticValue};
+        use crate::kernel::latency::{
+            COMPENSATION_CHANNELS_PARAM, COMPENSATION_DELAY_SAMPLES_PARAM, COMPENSATION_INPUT_PORT,
+            COMPENSATION_OUTPUT_PORT,
+        };
+
+        let mut static_args = BTreeMap::new();
+        static_args.insert(
+            COMPENSATION_CHANNELS_PARAM.to_string(),
+            StaticValue::Int(i64::from(channels)),
+        );
+        static_args.insert(
+            COMPENSATION_DELAY_SAMPLES_PARAM.to_string(),
+            StaticValue::Int(i64::from(samples)),
+        );
+
+        Self {
+            id,
+            definition: COMPENSATION_DELAY_DEFINITION.to_string(),
+            static_args,
+            port_defaults: BTreeMap::new(),
+            ports: vec![
+                ResolvedPort::new(
+                    COMPENSATION_INPUT_PORT,
+                    PortDirection::Input,
+                    SignalType::Audio,
+                    channels,
+                ),
+                ResolvedPort::new(
+                    COMPENSATION_OUTPUT_PORT,
+                    PortDirection::Output,
+                    SignalType::Audio,
+                    channels,
+                ),
+            ],
+            latency: samples,
+        }
+    }
 }
 
 /// The result of flattening: a flat list of atomic nodes, the connections
@@ -76,6 +119,11 @@ pub struct FlattenedGraph {
     nodes: Vec<AtomicNode>,
     connections: Vec<Connection>,
     root_ports: Vec<ResolvedPort>,
+    /// Each root input port name mapped to the atomic input ports it forwards to.
+    root_input_targets: BTreeMap<String, Vec<PortRef>>,
+    /// Each root output port name mapped to the atomic output ports it gathers
+    /// from. The latency balancer reads this to compute total root latency.
+    root_output_sources: BTreeMap<String, Vec<PortRef>>,
     expansion_count: usize,
 }
 
@@ -90,6 +138,16 @@ impl FlattenedGraph {
 
     pub fn root_ports(&self) -> &[ResolvedPort] {
         &self.root_ports
+    }
+
+    /// The atomic input ports each root input port forwards inbound signal to.
+    pub fn root_input_targets(&self) -> &BTreeMap<String, Vec<PortRef>> {
+        &self.root_input_targets
+    }
+
+    /// The atomic output ports each root output port gathers its signal from.
+    pub fn root_output_sources(&self) -> &BTreeMap<String, Vec<PortRef>> {
+        &self.root_output_sources
     }
 
     pub fn node(&self, id: &NodeId) -> Option<&AtomicNode> {
@@ -152,12 +210,14 @@ impl GraphDefinition {
         }
 
         let template = template.expect("no errors implies a template");
-        let (nodes, connections, _interface) = instantiate(&template, "");
+        let (nodes, connections, interface) = instantiate(&template, "");
         let root_ports = GraphDefinition::resolve_ports(self, &context);
         Ok(FlattenedGraph {
             nodes,
             connections,
             root_ports,
+            root_input_targets: interface.inputs,
+            root_output_sources: interface.outputs,
             expansion_count: compiler.expansions,
         })
     }
