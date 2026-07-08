@@ -83,6 +83,8 @@ pub mod error_codes {
     pub const KERNEL_OVERRIDE_UNKNOWN_PORT: &str = "kernel.override_unknown_port";
     pub const KERNEL_CYCLE_WITHOUT_FEEDBACK_DELAY: &str =
         "kernel.cycle_without_feedback_delay";
+    pub const KERNEL_RECURSIVE_DEFINITION: &str = "kernel.recursive_definition";
+    pub const KERNEL_MAX_DEPTH_EXCEEDED: &str = "kernel.max_depth_exceeded";
 
     // Module-library sub-codes
     pub const LIBRARY_UNKNOWN_MACRO: &str = "library.unknown_macro";

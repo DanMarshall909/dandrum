@@ -17,6 +17,12 @@ use crate::graph::{PortDirection, SignalType};
 /// a routing cycle (audio or control) is legal.
 pub const FEEDBACK_DELAY_DEFINITION: &str = "feedback_delay";
 
+/// Separator between a composite instance identity and an internal node
+/// identity when flattening produces namespaced atomic node ids.
+pub const NAMESPACE_SEPARATOR: &str = "::";
+
+pub mod flatten;
+
 /// The static (compile-time) type of a graph-definition static parameter.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum StaticType {
@@ -167,6 +173,11 @@ impl ControlDefault {
 }
 
 /// A named, typed, channel-counted port on a graph definition.
+///
+/// On a composite definition, a public input port forwards inbound signal to
+/// the internal ports named in `maps_to`, and a public output port gathers from
+/// the internal ports named in `maps_from`. Primitive (atomic) ports leave both
+/// empty.
 #[derive(Clone, Debug, PartialEq)]
 pub struct Port {
     name: String,
@@ -174,6 +185,8 @@ pub struct Port {
     signal_type: SignalType,
     channels: ChannelCount,
     control_default: Option<ControlDefault>,
+    maps_to: Vec<PortRef>,
+    maps_from: Vec<PortRef>,
 }
 
 impl Port {
@@ -188,6 +201,8 @@ impl Port {
             signal_type,
             channels: channels.into(),
             control_default: None,
+            maps_to: Vec::new(),
+            maps_from: Vec::new(),
         }
     }
 
@@ -202,12 +217,34 @@ impl Port {
             signal_type,
             channels: channels.into(),
             control_default: None,
+            maps_to: Vec::new(),
+            maps_from: Vec::new(),
         }
     }
 
     pub fn with_control_default(mut self, control_default: ControlDefault) -> Self {
         self.control_default = Some(control_default);
         self
+    }
+
+    /// Forward this public input port to an internal node's input port.
+    pub fn maps_to(mut self, internal: PortRef) -> Self {
+        self.maps_to.push(internal);
+        self
+    }
+
+    /// Gather this public output port from an internal node's output port.
+    pub fn maps_from(mut self, internal: PortRef) -> Self {
+        self.maps_from.push(internal);
+        self
+    }
+
+    pub fn internal_targets(&self) -> &[PortRef] {
+        &self.maps_to
+    }
+
+    pub fn internal_sources(&self) -> &[PortRef] {
+        &self.maps_from
     }
 
     pub fn name(&self) -> &str {
