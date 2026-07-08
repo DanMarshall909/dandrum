@@ -1,10 +1,10 @@
 ## 1. Kernel types and validation (additive, lands beside old model)
 
-- [ ] 1.1 Add kernel types in `graph.rs`/new module: `GraphDefinition` (name, static params, ports, nodes, connections), `Node` (id, definition ref, static args, default overrides), extended `Port` (signal type, channel count, control default/min/max/unit), `Connection` — with behaviour tests for construction and equality
-- [ ] 1.2 Implement static parameter declarations and resolution: typed params (int, enum, resource), name pass-through only, structured diagnostics for missing/unknown/mismatched/expression arguments (tests per `static-parameters` scenarios)
-- [ ] 1.3 Implement channel-count resolution (literal or static-param reference) and connection validation for signal type + channel count match, with diagnostics reporting both counts
-- [ ] 1.4 Implement control→audio promotion validation (legal, records promotion step), audio→control rejection, event conversion rejection
-- [ ] 1.5 Implement unconnected-input default resolution: declared default → instance override → incoming cable precedence; reject overrides of unknown ports
+- [x] 1.1 Add kernel types in `graph.rs`/new module: `GraphDefinition` (name, static params, ports, nodes, connections), `Node` (id, definition ref, static args, default overrides), extended `Port` (signal type, channel count, control default/min/max/unit), `Connection` — with behaviour tests for construction and equality
+- [x] 1.2 Implement static parameter declarations and resolution: typed params (int, enum, resource), name pass-through only, structured diagnostics for missing/unknown/mismatched/expression arguments (tests per `static-parameters` scenarios)
+- [x] 1.3 Implement channel-count resolution (literal or static-param reference) and connection validation for signal type + channel count match, with diagnostics reporting both counts
+- [x] 1.4 Implement control→audio promotion validation (legal, records promotion step), audio→control rejection, event conversion rejection
+- [x] 1.5 Implement unconnected-input default resolution: declared default → instance override → incoming cable precedence; reject overrides of unknown ports
 
 ## 2. Recursive flattening and compilation pipeline
 

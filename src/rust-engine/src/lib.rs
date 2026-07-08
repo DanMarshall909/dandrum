@@ -20,6 +20,7 @@ pub mod graph_processor;
 pub(crate) mod builtins;
 
 pub mod graph;
+pub mod kernel;
 pub mod cli;
 pub mod instrument_state;
 pub mod patch;

@@ -66,6 +66,22 @@ pub mod error_codes {
     pub const GRAPH_UNKNOWN_MODULE_TYPE: &str = "graph.unknown_module_type";
     pub const GRAPH_UNSUPPORTED_MODULE_TYPE: &str = "graph.unsupported_module_type";
 
+    // Kernel sub-codes (unified graph kernel)
+    pub const KERNEL_UNKNOWN_DEFINITION: &str = "kernel.unknown_definition";
+    pub const KERNEL_MISSING_NODE: &str = "kernel.missing_node";
+    pub const KERNEL_MISSING_PORT: &str = "kernel.missing_port";
+    pub const KERNEL_INCORRECT_PORT_DIRECTION: &str = "kernel.incorrect_port_direction";
+    pub const KERNEL_STATIC_PARAM_NOT_A_PORT: &str = "kernel.static_param_not_a_port";
+    pub const KERNEL_MISSING_STATIC_ARGUMENT: &str = "kernel.missing_static_argument";
+    pub const KERNEL_UNKNOWN_STATIC_ARGUMENT: &str = "kernel.unknown_static_argument";
+    pub const KERNEL_STATIC_ARGUMENT_TYPE_MISMATCH: &str = "kernel.static_argument_type_mismatch";
+    pub const KERNEL_STATIC_ARGUMENT_EXPRESSION: &str = "kernel.static_argument_expression";
+    pub const KERNEL_UNKNOWN_STATIC_PARAM_REFERENCE: &str =
+        "kernel.unknown_static_param_reference";
+    pub const KERNEL_CHANNEL_COUNT_MISMATCH: &str = "kernel.channel_count_mismatch";
+    pub const KERNEL_INCOMPATIBLE_SIGNAL_TYPES: &str = "kernel.incompatible_signal_types";
+    pub const KERNEL_OVERRIDE_UNKNOWN_PORT: &str = "kernel.override_unknown_port";
+
     // Module-library sub-codes
     pub const LIBRARY_UNKNOWN_MACRO: &str = "library.unknown_macro";
     pub const LIBRARY_PATH_ESCAPE: &str = "library.path_escape";
