@@ -239,6 +239,33 @@ fn latency_reflects_resolved_static_argument() {
 }
 
 #[test]
+fn dangling_latency_reference_fails_compilation_instead_of_reporting_zero() {
+    // A spectral processor whose latency references `fft_size`, but the static
+    // parameter is never declared. Silently reporting zero latency here would
+    // phase-smear any parallel dry/wet path; compilation must fail loudly.
+    let broken = GraphDefinition::new("spectral")
+        .with_latency(LatencySpec::StaticParam {
+            name: "fft_size".to_string(),
+            minus: 1,
+        })
+        .with_port(Port::input("audio_in", SignalType::Audio, 1))
+        .with_port(Port::output("audio_out", SignalType::Audio, 1));
+    let registry = DefinitionRegistry::new().with_definition(broken);
+    let root = GraphDefinition::new("root").with_node(Node::new(NodeId::new("fft"), "spectral"));
+
+    let diagnostics = root
+        .flatten(&registry)
+        .expect_err("dangling latency reference must fail compilation");
+
+    assert!(
+        diagnostics
+            .errors()
+            .any(|d| d.error_code() == error_codes::KERNEL_UNRESOLVED_STATIC_REFERENCE),
+        "expected unresolved-static-reference diagnostic, got: {diagnostics:?}"
+    );
+}
+
+#[test]
 fn recursive_definition_is_rejected() {
     let recursive = GraphDefinition::new("loop").with_node(Node::new(NodeId::new("inner"), "loop"));
     let registry = DefinitionRegistry::new().with_definition(recursive);

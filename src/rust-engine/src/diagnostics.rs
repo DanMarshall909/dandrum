@@ -85,6 +85,8 @@ pub mod error_codes {
         "kernel.cycle_without_feedback_delay";
     pub const KERNEL_RECURSIVE_DEFINITION: &str = "kernel.recursive_definition";
     pub const KERNEL_MAX_DEPTH_EXCEEDED: &str = "kernel.max_depth_exceeded";
+    pub const KERNEL_UNRESOLVED_STATIC_REFERENCE: &str =
+        "kernel.unresolved_static_reference";
 
     // Module-library sub-codes
     pub const LIBRARY_UNKNOWN_MACRO: &str = "library.unknown_macro";

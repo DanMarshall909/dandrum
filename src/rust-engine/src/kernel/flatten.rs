@@ -16,7 +16,7 @@
 //! through the resolved boundary interface, so they never contaminate the
 //! cached structure.
 
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 
 use crate::diagnostics::{Diagnostic, Diagnostics, Severity, error_codes};
 use crate::graph::{PortDirection, SignalType};
@@ -130,6 +130,8 @@ struct Compiler<'a> {
     expansions: usize,
     /// Definition names currently on the expansion stack, for recursion checks.
     path: Vec<String>,
+    /// Definition names whose static references have been checked already.
+    checked: BTreeSet<String>,
 }
 
 impl GraphDefinition {
@@ -143,6 +145,7 @@ impl GraphDefinition {
             cache: BTreeMap::new(),
             expansions: 0,
             path: Vec::new(),
+            checked: BTreeSet::new(),
         };
 
         let template = compiler.resolve_expansion(self, &context, 0);
@@ -175,6 +178,12 @@ impl Compiler<'_> {
         let key = cache_key(definition.name(), static_context);
         if let Some(template) = self.cache.get(&key) {
             return Some(template.clone());
+        }
+
+        // Reject dangling channel/latency static references loudly, before any
+        // resolution can silently fall back to a default value.
+        if self.checked.insert(definition.name().to_string()) {
+            definition.validate_static_references(&mut self.diagnostics);
         }
 
         // A definition with no internal nodes is an atomic primitive.

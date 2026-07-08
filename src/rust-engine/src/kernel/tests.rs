@@ -486,6 +486,71 @@ fn connection_from_input_port_reports_incorrect_direction() {
     );
 }
 
+// --- Static references must resolve (no silent channel/latency fallback) --
+
+#[test]
+fn dangling_channel_reference_fails_compilation_loudly() {
+    // `echo` references a `channels` static parameter it never declares.
+    let broken = GraphDefinition::new("echo").with_port(Port::input(
+        "audio_in",
+        SignalType::Audio,
+        ChannelCount::param("channels"),
+    ));
+    let registry = DefinitionRegistry::new().with_definition(broken);
+    let definition = GraphDefinition::new("root").with_node(Node::new(NodeId::new("e"), "echo"));
+
+    let validation = definition.validate(&registry);
+
+    assert_eq!(
+        only_error_code(&validation),
+        error_codes::KERNEL_UNRESOLVED_STATIC_REFERENCE
+    );
+}
+
+#[test]
+fn channel_reference_to_non_integer_static_param_fails_compilation() {
+    let broken = GraphDefinition::new("echo")
+        .with_static_param(StaticParam::new("channels", StaticType::Enum))
+        .with_port(Port::input(
+            "audio_in",
+            SignalType::Audio,
+            ChannelCount::param("channels"),
+        ));
+    let registry = DefinitionRegistry::new().with_definition(broken);
+    let definition = GraphDefinition::new("root").with_node(
+        Node::new(NodeId::new("e"), "echo")
+            .with_static_arg("channels", StaticArg::Literal(StaticValue::Enum("wide".into()))),
+    );
+
+    let validation = definition.validate(&registry);
+
+    assert!(
+        validation
+            .diagnostics()
+            .errors()
+            .any(|d| d.error_code() == error_codes::KERNEL_UNRESOLVED_STATIC_REFERENCE),
+        "non-integer channel reference must fail loudly: {:?}",
+        validation.diagnostics()
+    );
+}
+
+#[test]
+fn dangling_channel_reference_makes_resolved_ports_unavailable() {
+    let broken = GraphDefinition::new("echo").with_port(Port::input(
+        "audio_in",
+        SignalType::Audio,
+        ChannelCount::param("channels"),
+    ));
+    let registry = DefinitionRegistry::new().with_definition(broken);
+    let definition = GraphDefinition::new("root").with_node(Node::new(NodeId::new("e"), "echo"));
+
+    assert_eq!(
+        definition.resolved_node_ports(&registry, &NodeId::new("e")),
+        None,
+        "query must refuse to invent a channel count for a dangling reference"
+    );
+}
+
 // --- 2.3 Feedback cycles require a feedback_delay node -------------------
 
 /// A `feedback_delay` primitive carrying ports of the given signal type.

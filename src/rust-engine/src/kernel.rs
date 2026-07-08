@@ -75,6 +75,10 @@ impl LatencySpec {
             Self::Samples(samples) => *samples,
             Self::StaticParam { name, minus } => match static_args.get(name) {
                 Some(StaticValue::Int(value)) if *value >= 0 => (*value as u32).saturating_sub(*minus),
+                // Unreachable in a compiled graph: `validate_static_references`
+                // rejects any latency reference that is not a declared integer
+                // static parameter, so this never silently reports zero latency
+                // for a latency-bearing node — compilation fails loudly instead.
                 _ => 0,
             },
         }
@@ -760,9 +764,11 @@ impl GraphDefinition {
                     ChannelCount::Literal(count) => *count,
                     ChannelCount::Param(name) => match static_args.get(name) {
                         Some(StaticValue::Int(value)) if *value >= 0 => *value as u32,
-                        // A non-int or unresolved channel reference cannot occur
-                        // once static-arg resolution has succeeded; treat as one
-                        // channel so downstream mismatch reporting stays sane.
+                        // Unreachable in a compiled graph: `validate_static_references`
+                        // rejects any channel reference that is not a declared integer
+                        // static parameter, so a successfully-resolved arg is always a
+                        // non-negative integer here. Kept only for totality; the value
+                        // is never observed because compilation has already failed.
                         _ => 1,
                     },
                 };
@@ -777,6 +783,57 @@ impl GraphDefinition {
             .collect()
     }
 
+    /// Reject, loudly, any port channel count or latency spec on this definition
+    /// that references a static parameter which is not a declared integer static
+    /// parameter. Without this gate a dangling or mistyped reference would
+    /// silently resolve to a plausible default (one channel, zero latency),
+    /// producing e.g. a latency-bearing node that reports zero and phase-smears
+    /// parallel dry/wet paths.
+    fn validate_static_references(&self, diagnostics: &mut Diagnostics) {
+        for port in &self.ports {
+            if let ChannelCount::Param(name) = port.channels() {
+                self.require_integer_static_param(
+                    name,
+                    &format!("channel count of port '{}'", port.name()),
+                    diagnostics,
+                );
+            }
+        }
+
+        if let LatencySpec::StaticParam { name, .. } = &self.latency {
+            self.require_integer_static_param(name, "processing latency", diagnostics);
+        }
+    }
+
+    fn require_integer_static_param(
+        &self,
+        name: &str,
+        context: &str,
+        diagnostics: &mut Diagnostics,
+    ) {
+        let message = match self.static_param(name) {
+            Some(param) if param.static_type() == StaticType::Int => return,
+            Some(param) => format!(
+                "definition '{}' resolves its {context} from static parameter '{name}', which is declared {:?}, not an integer",
+                self.name(),
+                param.static_type()
+            ),
+            None => format!(
+                "definition '{}' resolves its {context} from undeclared static parameter '{name}'",
+                self.name()
+            ),
+        };
+        diagnostics.push(
+            Diagnostic::new(
+                error_codes::KERNEL_UNRESOLVED_STATIC_REFERENCE,
+                Severity::Error,
+                message,
+            )
+            .with_module_id(self.name())
+            .with_expected("integer static parameter"),
+        );
+    }
+
     /// Validate this definition against the referenced definitions in
     /// `registry`, resolving static arguments and channel counts, checking
     /// connections for signal-type and channel-count compatibility, and
@@ -785,6 +842,12 @@ impl GraphDefinition {
         let mut diagnostics = Diagnostics::new();
         let mut promotions = Vec::new();
         let enclosing = self.enclosing_context();
+
+        // Reject dangling channel/latency static references before anything can
+        // silently fall back to a default value.
+        let mut checked: BTreeSet<String> = BTreeSet::new();
+        self.validate_static_references(&mut diagnostics);
+        checked.insert(self.name().to_string());
 
         // Resolve every node's ports up front so connection checks share them.
         let mut resolved_nodes: BTreeMap<&NodeId, Vec<ResolvedPort>> = BTreeMap::new();
@@ -804,6 +867,10 @@ impl GraphDefinition {
                 );
                 continue;
             };
+
+            if checked.insert(referenced.name().to_string()) {
+                referenced.validate_static_references(&mut diagnostics);
+            }
 
             let Some(static_args) =
                 self.resolve_static_args(node, referenced, &enclosing, &mut diagnostics)
@@ -1127,8 +1194,13 @@ impl GraphDefinition {
     ) -> Option<Vec<ResolvedPort>> {
         let node = self.node(node_id)?;
         let referenced = registry.get(node.definition_ref())?;
-        let enclosing = self.enclosing_context();
         let mut sink = Diagnostics::new();
+        // Don't hand back ports built from a dangling channel reference.
+        referenced.validate_static_references(&mut sink);
+        if sink.has_errors() {
+            return None;
+        }
+        let enclosing = self.enclosing_context();
         let static_args = self.resolve_static_args(node, referenced, &enclosing, &mut sink)?;
         Some(Self::resolve_ports(referenced, &static_args))
     }
