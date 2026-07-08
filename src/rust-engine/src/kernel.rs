@@ -53,6 +53,34 @@ impl StaticValue {
     }
 }
 
+/// How an atomic node's processing latency (in samples) is determined after
+/// static-argument resolution. Most primitives are [`LatencySpec::Zero`];
+/// lookahead, FFT, spectral, and convolution processing declare real latency.
+#[derive(Clone, Debug, PartialEq, Eq, Default)]
+pub enum LatencySpec {
+    #[default]
+    Zero,
+    /// A fixed number of samples independent of static arguments.
+    Samples(u32),
+    /// Latency derived from an integer static parameter minus a constant,
+    /// e.g. a spectral processor's `fft_size - 1`.
+    StaticParam { name: String, minus: u32 },
+}
+
+impl LatencySpec {
+    /// Resolve the latency in samples against a node's resolved static arguments.
+    pub fn resolve(&self, static_args: &BTreeMap<String, StaticValue>) -> u32 {
+        match self {
+            Self::Zero => 0,
+            Self::Samples(samples) => *samples,
+            Self::StaticParam { name, minus } => match static_args.get(name) {
+                Some(StaticValue::Int(value)) if *value >= 0 => (*value as u32).saturating_sub(*minus),
+                _ => 0,
+            },
+        }
+    }
+}
+
 /// A static parameter declared on a graph definition.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct StaticParam {
@@ -386,6 +414,7 @@ pub struct GraphDefinition {
     ports: Vec<Port>,
     nodes: Vec<Node>,
     connections: Vec<Connection>,
+    latency: LatencySpec,
 }
 
 impl GraphDefinition {
@@ -416,8 +445,18 @@ impl GraphDefinition {
         self
     }
 
+    /// Declare this (atomic) definition's processing latency.
+    pub fn with_latency(mut self, latency: LatencySpec) -> Self {
+        self.latency = latency;
+        self
+    }
+
     pub fn name(&self) -> &str {
         &self.name
+    }
+
+    pub fn latency(&self) -> &LatencySpec {
+        &self.latency
     }
 
     pub fn static_params(&self) -> &[StaticParam] {

@@ -403,7 +403,7 @@ impl GraphDefinition {
                 static_args: static_args.clone(),
                 port_defaults: declared_control_defaults(&ports),
                 ports,
-                latency: 0,
+                latency: self.latency().resolve(static_args),
             }],
             connections: Vec::new(),
             interface,

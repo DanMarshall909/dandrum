@@ -1,6 +1,8 @@
 use super::*;
 use crate::diagnostics::error_codes;
-use crate::kernel::{ChannelCount, ControlDefault, Port, StaticArg, StaticParam, StaticType};
+use crate::kernel::{
+    ChannelCount, ControlDefault, LatencySpec, Port, StaticArg, StaticParam, StaticType,
+};
 
 fn oscillator() -> GraphDefinition {
     GraphDefinition::new("oscillator").with_port(Port::output("audio", SignalType::Audio, 1))
@@ -189,6 +191,50 @@ fn distinct_static_arguments_expand_separately() {
     assert_eq!(
         flat.node(&NodeId::new("stereo")).unwrap().ports()[0].channels(),
         2
+    );
+}
+
+// --- 2.4 Per-node latency metadata --------------------------------------
+
+/// A spectral processor whose latency is `fft_size - 1`, driven by a static
+/// parameter.
+fn spectral() -> GraphDefinition {
+    GraphDefinition::new("spectral")
+        .with_static_param(
+            StaticParam::new("fft_size", StaticType::Int).with_default(StaticValue::Int(1024)),
+        )
+        .with_latency(LatencySpec::StaticParam {
+            name: "fft_size".to_string(),
+            minus: 1,
+        })
+        .with_port(Port::input("audio_in", SignalType::Audio, 1))
+        .with_port(Port::output("audio_out", SignalType::Audio, 1))
+}
+
+#[test]
+fn primitive_reports_zero_latency() {
+    let registry = DefinitionRegistry::new().with_definition(gain());
+    let root = GraphDefinition::new("root").with_node(Node::new(NodeId::new("amp"), "gain"));
+
+    let flat = root.flatten(&registry).expect("flattens");
+
+    assert_eq!(flat.nodes()[0].latency(), 0);
+}
+
+#[test]
+fn latency_reflects_resolved_static_argument() {
+    let registry = DefinitionRegistry::new().with_definition(spectral());
+    let root = GraphDefinition::new("root").with_node(
+        Node::new(NodeId::new("fft"), "spectral")
+            .with_static_arg("fft_size", StaticArg::Literal(StaticValue::Int(512))),
+    );
+
+    let flat = root.flatten(&registry).expect("flattens");
+
+    assert_eq!(
+        flat.nodes()[0].latency(),
+        511,
+        "spectral latency is fft_size - 1"
     );
 }
 
