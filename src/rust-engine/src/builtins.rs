@@ -37,6 +37,13 @@ pub const SCRIPT_LANGUAGE_RHAI: &str = "rhai";
 pub const DETECTION_MODE_PARAMETER: &str = "mode";
 pub const DETECTION_MODE_PEAK: &str = "peak";
 pub const DETECTION_MODE_RMS: &str = "rms";
+pub const DYNAMICS_MODE_PARAMETER: &str = "mode";
+pub const DYNAMICS_MODE_LEVEL: &str = "level";
+pub const DYNAMICS_MODE_TRANSIENT: &str = "transient";
+pub const DYNAMICS_DETECTION_PARAMETER: &str = "detection";
+pub const DYNAMICS_TOPOLOGY_PARAMETER: &str = "topology";
+pub const DYNAMICS_TOPOLOGY_FEEDFORWARD: &str = "feedforward";
+pub const DYNAMICS_TOPOLOGY_FEEDBACK: &str = "feedback";
 pub const CURVE_PARAMETER: &str = "curve";
 pub const CURVE_LINEAR: &str = "linear";
 pub const CURVE_EXPONENTIAL: &str = "exponential";
@@ -553,6 +560,24 @@ fn dynamics_processor_definition() -> BuiltInModuleDefinition {
             (SUSTAIN_GAIN, Control),
         ])
         .with_output(Port::output(AUDIO_OUT, Audio))
+        .with_parameter(
+            ParameterMetadata::new(DYNAMICS_MODE_PARAMETER, ParameterValueType::Text)
+                .with_default(DYNAMICS_MODE_LEVEL)
+                .with_enum_values(vec![DYNAMICS_MODE_LEVEL, DYNAMICS_MODE_TRANSIENT])
+                .with_description("gain computation mode: level compression or transient shaping"),
+        )
+        .with_parameter(
+            ParameterMetadata::new(DYNAMICS_DETECTION_PARAMETER, ParameterValueType::Text)
+                .with_default(DETECTION_MODE_PEAK)
+                .with_enum_values(vec![DETECTION_MODE_PEAK, DETECTION_MODE_RMS])
+                .with_description("envelope detection mode"),
+        )
+        .with_parameter(
+            ParameterMetadata::new(DYNAMICS_TOPOLOGY_PARAMETER, ParameterValueType::Text)
+                .with_default(DYNAMICS_TOPOLOGY_FEEDFORWARD)
+                .with_enum_values(vec![DYNAMICS_TOPOLOGY_FEEDFORWARD, DYNAMICS_TOPOLOGY_FEEDBACK])
+                .with_description("detector topology: feedforward or feedback"),
+        )
 }
 
 fn saturator_definition() -> BuiltInModuleDefinition {

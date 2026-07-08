@@ -1,14 +1,12 @@
 use crate::envelope_follower::{DetectionMode, EnvelopeFollower};
 
 #[derive(Clone, Copy, Debug, PartialEq)]
-#[allow(dead_code)]
 pub enum ProcessorMode {
     Level,
     Transient,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq)]
-#[allow(dead_code)]
 pub enum Topology {
     Feedforward,
     Feedback,
@@ -30,8 +28,8 @@ pub struct DynamicsProcessor {
     // Transient mode state
     phase_is_attack: bool,
     hysteresis_level: f64,
-    // Feedback topology state
-    last_input: f64,
+    // Feedback topology state: previous processed output, fed back into detection
+    last_output: f64,
 }
 
 impl DynamicsProcessor {
@@ -54,21 +52,18 @@ impl DynamicsProcessor {
             sustain_gain_db: 0.0,
             phase_is_attack: true,
             hysteresis_level: 0.0,
-            last_input: 0.0,
+            last_output: 0.0,
         }
     }
 
-    #[allow(dead_code)]
     pub fn set_mode(&mut self, mode: ProcessorMode) {
         self.mode = mode;
     }
 
-    #[allow(dead_code)]
     pub fn set_topology(&mut self, topology: Topology) {
         self.topology = topology;
     }
 
-    #[allow(dead_code)]
     pub fn set_detection(&mut self, mode: DetectionMode) {
         self.envelope_detector = EnvelopeFollower::new(
             self.envelope_detector.sample_rate(),
@@ -78,13 +73,11 @@ impl DynamicsProcessor {
         );
     }
 
-    #[allow(dead_code)]
     pub fn attack_ms(&self) -> f64 {
         // Approximate from envelope detector coefficients
         5.0
     }
 
-    #[allow(dead_code)]
     pub fn release_ms(&self) -> f64 {
         50.0
     }
@@ -118,7 +111,7 @@ impl DynamicsProcessor {
         self.envelope_detector.reset();
         self.phase_is_attack = true;
         self.hysteresis_level = 0.0;
-        self.last_input = 0.0;
+        self.last_output = 0.0;
     }
 
     fn compute_gain_db(&mut self, sidechain_db: f64) -> f64 {
@@ -171,7 +164,7 @@ impl DynamicsProcessor {
     pub fn process(&mut self, input: f64, sidechain: Option<f64>) -> f64 {
         let detect_input = match self.topology {
             Topology::Feedforward => sidechain.unwrap_or(input),
-            Topology::Feedback => self.last_input,
+            Topology::Feedback => self.last_output,
         };
 
         let envelope_linear = self.envelope_detector.process(detect_input);
@@ -184,9 +177,9 @@ impl DynamicsProcessor {
         let gain_db = self.compute_gain_db(envelope_db);
         let gain_linear = 10.0_f64.powf(gain_db / 20.0);
 
-        self.last_input = input;
-
-        input * gain_linear
+        let output = input * gain_linear;
+        self.last_output = output;
+        output
     }
 }
 

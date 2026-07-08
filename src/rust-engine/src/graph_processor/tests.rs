@@ -1,5 +1,10 @@
 use super::*;
-use super::processing::process_frequency_splitter;
+use super::processing::{process_dynamics_processor, process_frequency_splitter};
+use crate::builtins::{
+    DETECTION_MODE_PEAK, DETECTION_MODE_RMS, DYNAMICS_DETECTION_PARAMETER, DYNAMICS_MODE_LEVEL,
+    DYNAMICS_MODE_PARAMETER, DYNAMICS_MODE_TRANSIENT, DYNAMICS_TOPOLOGY_FEEDBACK,
+    DYNAMICS_TOPOLOGY_FEEDFORWARD, DYNAMICS_TOPOLOGY_PARAMETER,
+};
 use crate::builtins::{
     CURVE_EXPONENTIAL, CURVE_PARAMETER, EVENT_FILTER_NOTE_PARAMETER, EVENT_FILTER_NOTE_SELECTOR,
     EVENT_FILTER_SELECTOR_PARAMETER, SCRIPT_LANGUAGE_PARAMETER, SCRIPT_LANGUAGE_RHAI,
@@ -555,6 +560,146 @@ fn frequency_splitter_routes_band_energy_and_reconstructs_flat() {
         magnitude_at(&sum_resp, 1000.0) > -3.0,
         "three bands should reconstruct near-flat, got {:.1} dB",
         magnitude_at(&sum_resp, 1000.0)
+    );
+}
+
+// Renders `audio_in` through a dynamics module built from `params` and returns
+// the steady-state output amplitude (max abs over the final quarter). Control
+// inputs are normalized 0-1; attack/sustain gain 0.5 == 0 dB.
+fn dynamics_steady_amplitude(
+    params: BTreeMap<String, String>,
+    audio_in: &[f32],
+    attack_gain: f32,
+    sustain_gain: f32,
+) -> f32 {
+    let frames = audio_in.len();
+    let module = ModuleNode::new(ModuleId::new("dyn"), module_types::DYNAMICS_PROCESSOR)
+        .with_params(params);
+    let mut state = PerModuleState::new(&module, 48_000.0, &PreparedSamplerAssets::empty());
+    let level = |v: f32| vec![v; frames];
+    let outputs = process_dynamics_processor(
+        &mut state,
+        audio_in,
+        &vec![0.0; frames],   // sidechain (unused)
+        &level(0.5),          // threshold -> -40 dB
+        &level(0.05),         // below ratio -> ~1:1
+        &level(0.1),          // above ratio -> ~5:1
+        &level(0.5),          // attack
+        &level(0.3),          // release
+        &level(0.0),          // knee
+        &level(0.0),          // makeup
+        &level(attack_gain),
+        &level(sustain_gain),
+        frames,
+    );
+    outputs
+        .audio
+        .get(builtin_ports::AUDIO_OUT)
+        .expect("dynamics emits audio_out")
+        .iter()
+        .skip(frames * 3 / 4)
+        .map(|s| s.abs())
+        .fold(0.0f32, f32::max)
+}
+
+fn steady_sine(amplitude: f32) -> Vec<f32> {
+    (0..4_800).map(|i| amplitude * (i as f32 * 0.2).sin()).collect()
+}
+
+#[test]
+fn dynamics_detection_parameter_selects_peak_or_rms_envelope() {
+    // A high-crest pulse train: peak detection latches onto the 0.8 spikes while
+    // RMS averages them down to ~0.2, so peak compresses the crests far harder.
+    let pulses: Vec<f32> = (0..4_800)
+        .map(|i| if i % 16 == 0 { 0.8 } else { 0.0 })
+        .collect();
+
+    let peak = dynamics_steady_amplitude(
+        BTreeMap::from([(
+            DYNAMICS_DETECTION_PARAMETER.to_string(),
+            DETECTION_MODE_PEAK.to_string(),
+        )]),
+        &pulses,
+        0.5,
+        0.5,
+    );
+    let rms = dynamics_steady_amplitude(
+        BTreeMap::from([(
+            DYNAMICS_DETECTION_PARAMETER.to_string(),
+            DETECTION_MODE_RMS.to_string(),
+        )]),
+        &pulses,
+        0.5,
+        0.5,
+    );
+
+    // The peak-vs-RMS envelope shape is unit-tested in envelope_follower; here we
+    // only need the wiring to prove the parameter reaches the detector and
+    // measurably changes the gain reduction.
+    let relative_difference = (peak - rms).abs() / peak.max(rms);
+    assert!(
+        relative_difference > 0.15,
+        "detection parameter should measurably change compression (peak {peak}, rms {rms})"
+    );
+}
+
+#[test]
+fn dynamics_mode_parameter_switches_between_compression_and_transient_shaping() {
+    // Level mode compresses the steady tone below unity; transient mode at 0 dB
+    // attack/sustain gain leaves it at unity, so the two must differ audibly.
+    let sine = steady_sine(0.5);
+    let level = dynamics_steady_amplitude(
+        BTreeMap::from([(
+            DYNAMICS_MODE_PARAMETER.to_string(),
+            DYNAMICS_MODE_LEVEL.to_string(),
+        )]),
+        &sine,
+        0.5,
+        0.5,
+    );
+    let transient = dynamics_steady_amplitude(
+        BTreeMap::from([(
+            DYNAMICS_MODE_PARAMETER.to_string(),
+            DYNAMICS_MODE_TRANSIENT.to_string(),
+        )]),
+        &sine,
+        0.5,
+        0.5,
+    );
+
+    assert!(
+        transient > level * 1.2,
+        "transient mode at unity gain should leave the tone louder than level-mode compression (transient {transient}, level {level})"
+    );
+}
+
+#[test]
+fn dynamics_topology_parameter_makes_feedback_compress_more_gently() {
+    // Feedback detection reads the already-reduced output, so it settles at less
+    // gain reduction (louder) than feedforward for the same settings.
+    let sine = steady_sine(0.5);
+    let feedforward = dynamics_steady_amplitude(
+        BTreeMap::from([(
+            DYNAMICS_TOPOLOGY_PARAMETER.to_string(),
+            DYNAMICS_TOPOLOGY_FEEDFORWARD.to_string(),
+        )]),
+        &sine,
+        0.5,
+        0.5,
+    );
+    let feedback = dynamics_steady_amplitude(
+        BTreeMap::from([(
+            DYNAMICS_TOPOLOGY_PARAMETER.to_string(),
+            DYNAMICS_TOPOLOGY_FEEDBACK.to_string(),
+        )]),
+        &sine,
+        0.5,
+        0.5,
+    );
+
+    assert!(
+        feedback > feedforward * 1.05,
+        "feedback topology should compress more gently than feedforward (feedback {feedback}, feedforward {feedforward})"
     );
 }
 

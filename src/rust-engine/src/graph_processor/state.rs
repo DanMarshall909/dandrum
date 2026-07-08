@@ -3,15 +3,17 @@ use std::collections::BTreeMap;
 use crate::builtins::module_kind::ModuleKind;
 use crate::builtins::{
     CURVE_LINEAR, CURVE_PARAMETER, DETECTION_MODE_PARAMETER, DETECTION_MODE_RMS,
-    EVENT_FILTER_NOTE_PARAMETER, EVENT_FILTER_NOTE_SELECTOR, EVENT_FILTER_SELECTOR_PARAMETER,
-    SCRIPT_SOURCE_PARAMETER, STEPS_PARAMETER, WAVEFORM_PARAMETER,
+    DYNAMICS_DETECTION_PARAMETER, DYNAMICS_MODE_PARAMETER, DYNAMICS_MODE_TRANSIENT,
+    DYNAMICS_TOPOLOGY_FEEDBACK, DYNAMICS_TOPOLOGY_PARAMETER, EVENT_FILTER_NOTE_PARAMETER,
+    EVENT_FILTER_NOTE_SELECTOR, EVENT_FILTER_SELECTOR_PARAMETER, SCRIPT_SOURCE_PARAMETER,
+    STEPS_PARAMETER, WAVEFORM_PARAMETER,
 };
 use crate::compiled_patch::CompiledNode;
 use crate::convolution::Convolution;
 use crate::crossover::LinkwitzRiley4;
 use crate::curve_mapper::{CurveKind, CurveMapper};
 use crate::decay::DecayCurve;
-use crate::dynamics_processor::DynamicsProcessor;
+use crate::dynamics_processor::{DynamicsProcessor, ProcessorMode, Topology};
 use crate::echo::Echo;
 use crate::envelope_follower::{DetectionMode, EnvelopeFollower};
 use crate::filter::{BiquadFilter, BiquadMode, CombFilter, CombType, FilterAlgorithm, MoogLadder};
@@ -204,10 +206,31 @@ impl PerModuleState {
                 position: 0.0,
                 active: false,
             },
-            ModuleKind::DynamicsProcessor => PerModuleState::DynamicsProcessor {
-                processor: DynamicsProcessor::new(sample_rate as f64, 5.0, 50.0),
-                sample_rate,
-            },
+            ModuleKind::DynamicsProcessor => {
+                let mut processor = DynamicsProcessor::new(sample_rate as f64, 5.0, 50.0);
+                processor.set_mode(
+                    match params.get(DYNAMICS_MODE_PARAMETER).map(String::as_str) {
+                        Some(DYNAMICS_MODE_TRANSIENT) => ProcessorMode::Transient,
+                        _ => ProcessorMode::Level,
+                    },
+                );
+                processor.set_detection(
+                    match params.get(DYNAMICS_DETECTION_PARAMETER).map(String::as_str) {
+                        Some(DETECTION_MODE_RMS) => DetectionMode::Rms,
+                        _ => DetectionMode::Peak,
+                    },
+                );
+                processor.set_topology(
+                    match params.get(DYNAMICS_TOPOLOGY_PARAMETER).map(String::as_str) {
+                        Some(DYNAMICS_TOPOLOGY_FEEDBACK) => Topology::Feedback,
+                        _ => Topology::Feedforward,
+                    },
+                );
+                PerModuleState::DynamicsProcessor {
+                    processor,
+                    sample_rate,
+                }
+            }
             ModuleKind::Saturator => PerModuleState::Saturator {
                 processor: Saturator::new(),
             },
