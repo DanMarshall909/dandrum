@@ -6,12 +6,14 @@ This change is a separate future capability for realtime-safe streaming from sam
 
 A streaming source is most useful when it returns metadata as well as audio: duration, position, sample rate, channel count, decoded/loaded range, detected tempo, beat grid, cue points, analysis confidence, buffering state, and underrun status.
 
+The primitive should be named generically as `stream_source`, with sample-file streaming as the first source kind. That leaves room for future stream sources such as live inputs, network streams, generated streams, stem streams, or inter-plugin streams without adding parallel primitive families.
+
 ## What Changes
 
 - Add a future `sample-streaming` capability for long-file playback using the same sample source/metadata concepts as preloaded sample playback, plus bounded read-ahead buffers.
 - Treat preloaded and streaming samples as different `sample_source` implementations with different preparation/buffering contracts, not different sampler families.
 - Define streaming primitives around source, metadata, transport, and buffered playback:
-  - `sample_stream_source` for buffered file-backed source playback compatible with common sample metadata.
+  - `stream_source` for bounded realtime streaming from a prepared source, with `kind: sample_file` as the first concrete stream kind.
   - `sample_metadata` reuse/extension for duration, position, tempo, beat grid, cue points, channel layout, buffer state, and analysis status.
   - `stream_transport` or equivalent play/cue/seek control behaviour.
   - optional `stream_loop`/cue-point primitives where justified.
@@ -28,8 +30,9 @@ A streaming source is most useful when it returns metadata as well as audio: dur
 ### Modified Capabilities
 
 - `advanced-sampling-options`: Provides the shared sample source, region, metadata, slice, and beat-grid concepts that streaming extends.
+- `built-in-modules`: May later include a generic `stream_source` primitive with sample-file streaming as the first supported kind.
 - `plugin-integration`: May later need long-file state persistence, deck status display, waveform/metadata display, and safe background preparation.
-- `yaml-patch-format`: May later support stream asset declarations, cue points, deck routing, buffer policy, and beat-grid metadata.
+- `yaml-patch-format`: May later support stream asset declarations, cue points, deck routing, buffer policy, stream kind, and beat-grid metadata.
 
 ## Impact
 
