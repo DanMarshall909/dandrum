@@ -7,11 +7,13 @@ Streaming should therefore extend the unified sample source model:
 ```text
 sample_source
    -> source metadata / analysis metadata
-   -> playback or streaming primitive
+   -> stream_source or playback primitive
    -> transport / selection / slicing / effects
 ```
 
 A preloaded source and a streaming source have different memory and IO contracts, but they should expose compatible metadata wherever possible.
+
+The realtime primitive should be named `stream_source`, not `sample_stream_source`. Sample-file streaming is the first stream kind, but the primitive should be general enough to later support other bounded realtime streams without duplicating transport, buffering, metadata, or status concepts.
 
 ## Goals / Non-Goals
 
@@ -26,6 +28,7 @@ A preloaded source and a streaming source have different memory and IO contracts
 - Support explicit beat-grid metadata and future preparation-time beat detection.
 - Support independent user intent for target BPM and pitch shift even when v1 only implements pitch-linked rate playback.
 - Keep streaming aligned with `sample_source`, `sample_metadata`, regions, slices, and cue points from the advanced sampling model.
+- Keep the streaming primitive generic enough for future stream kinds such as live input, network input, generated streams, stem streams, or inter-plugin streams where the realtime contract matches.
 
 **Non-Goals:**
 
@@ -34,14 +37,29 @@ A preloaded source and a streaming source have different memory and IO contracts
 - Perform blocking file IO, decoding, allocation, beat detection, or filesystem discovery in the audio callback.
 - Introduce a second, incompatible sample metadata model.
 - Implement pitch-preserved time-stretch in v1. The API should reserve the control shape, but unsupported independent tempo/pitch rendering must fail validation or degrade explicitly.
+- Support arbitrary non-audio streaming protocols in the first implementation.
 
 ## Decisions
 
 ### Streaming is a source implementation, not a new sampler type
 
-`sample_stream_source` should represent a file-backed sample source with bounded buffering. It should expose the same general metadata shape as preloaded sources plus streaming-specific state such as buffered range, current decode position, underrun status, and background worker state.
+`stream_source` should represent a bounded realtime stream from a prepared source. The first concrete stream kind should be sample-file backed streaming. It should expose the same general metadata shape as preloaded sources plus streaming-specific state such as buffered range, current decode position, underrun status, and background worker state.
 
-A future `sample_player` may consume source windows from preloaded sources, while `sample_stream_source` renders continuous transport playback. They share source identity, metadata, cue points, beat-grid data, and analysis state.
+A future `sample_player` may consume source windows from preloaded sources, while `stream_source` renders continuous transport playback. They share source identity, metadata, cue points, beat-grid data, and analysis state where the source kind supports those concepts.
+
+### `stream_source` is generic, but source kinds are explicit
+
+The primitive name should stay generic, while source-specific behaviour is selected through prepared source kind/type metadata. For sample-file streaming, the source kind might be:
+
+```yaml
+assets:
+  sample_sources:
+    - id: track_01
+      kind: sample_file
+      path: tracks/track_01.wav
+```
+
+Future stream kinds may be added only when they can honour the realtime contract and expose a coherent metadata surface. The implementation should not add protocol-specific stream primitives unless their behaviour cannot share the common transport/buffer/status model.
 
 ### Streaming source metadata is part of the feature
 
@@ -133,7 +151,7 @@ The streaming/creative sampling path will use tempo ratio and pitch ratio as sep
 
 ## Candidate Primitive Surfaces
 
-### `sample_stream_source`
+### `stream_source`
 
 Inputs:
 
@@ -168,7 +186,8 @@ Outputs:
 
 Static parameters:
 
-- `source` or `stream_asset` — prepared stream-capable sample source ID.
+- `source` or `stream_asset` — prepared stream-capable source ID.
+- `kind` — concrete source kind such as `sample_file`.
 - `tempo_mode` — `free`, `rate`, `beat_locked_rate`, or future `stretch`.
 - `source_bpm_policy` — `metadata`, `manual`, or `required` where supported.
 - `buffer_size_ms` — bounded read-ahead buffer size.
@@ -186,7 +205,8 @@ Additional streaming outputs may include:
 - `buffer_fill`,
 - `analysis_status`,
 - `analysis_confidence`,
-- `transport_state`.
+- `transport_state`,
+- `stream_kind` where useful.
 
 ### `beat_analyzer`
 
@@ -240,9 +260,10 @@ Pitch-preserved `stretch` mode requires a separate bounded DSP contract before i
 
 ## Validation Rules
 
-- Streaming sources must resolve to supported long-file formats or fail preparation.
+- Stream sources must resolve to supported stream-capable source kinds or fail preparation.
+- `kind: sample_file` sources must resolve to supported long-file formats or fail preparation.
 - Buffer size and read-ahead policy must be bounded.
-- Cue points, loop points, and beat-grid markers must be inside source duration.
+- Cue points, loop points, and beat-grid markers must be inside source duration where the source has finite duration.
 - Beat detection metadata must include confidence and provenance.
 - Runtime transport state must not be persisted as immutable source metadata unless explicitly saved as plugin/session state.
 - Missing or low-confidence beat analysis must be represented explicitly.
@@ -255,5 +276,6 @@ Pitch-preserved `stretch` mode requires a separate bounded DSP contract before i
 - Whether streaming belongs fully in the Rust engine, fully in the plugin/host layer, or a split model.
 - Whether tempo sync and beat grids belong here or need a later DJ-deck spec. Current leaning: beat-grid metadata belongs here; full DJ deck sync can be later.
 - How much cue/loop metadata should be YAML-authored versus runtime/plugin state.
-- Whether `sample_stream_source` should output beat metadata directly or whether all metadata should go through `sample_metadata`.
-- Whether future pitch preservation is implemented as `sample_stream_source tempo_mode: stretch`, a separate `time_stretch_stream` primitive, or a creative-sampling primitive inserted after streaming decode.
+- Whether `stream_source` should output beat metadata directly or whether all metadata should go through `sample_metadata`.
+- Whether future pitch preservation is implemented as `stream_source tempo_mode: stretch`, a separate `time_stretch_stream` primitive, or a creative-sampling primitive inserted after streaming decode.
+- Which future source kinds are valid for `stream_source` versus needing their own specialised primitive.
