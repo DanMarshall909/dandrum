@@ -600,13 +600,8 @@ impl DefinitionRegistry {
         self.definitions.get(name)
     }
 
-    /// The names of every registered definition, in sorted order. Capability
-    /// discovery and latency audits enumerate the registry through this.
-    pub fn definition_names(&self) -> impl Iterator<Item = &str> {
-        self.definitions.keys().map(String::as_str)
-    }
-
-    /// Every registered definition, in name order.
+    /// Every registered definition, in name order. Capability discovery and
+    /// latency audits enumerate the registry through this.
     pub fn definitions(&self) -> impl Iterator<Item = &GraphDefinition> {
         self.definitions.values()
     }
