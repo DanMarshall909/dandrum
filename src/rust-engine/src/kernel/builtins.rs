@@ -19,7 +19,7 @@ use crate::convolution::Convolution;
 use super::{DefinitionRegistry, GraphDefinition, LatencySpec, StaticParam, StaticType, StaticValue};
 
 /// Static parameter that drives the spectral processor's FFT frame size.
-const SPECTRAL_FFT_SIZE_PARAM: &str = "fft_size";
+pub const SPECTRAL_FFT_SIZE_PARAM: &str = "fft_size";
 /// Default FFT frame size, matching the legacy spectral builtin.
 const SPECTRAL_DEFAULT_FFT_SIZE: i64 = 2048;
 /// Spectral processing latency is `fft_size - SPECTRAL_LATENCY_OFFSET` samples.

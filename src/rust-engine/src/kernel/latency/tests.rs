@@ -1,8 +1,11 @@
+use crate::builtins::module_types as names;
+use crate::convolution::Convolution;
 use crate::diagnostics::error_codes;
 use crate::graph::SignalType;
+use crate::kernel::builtins::{SPECTRAL_FFT_SIZE_PARAM, builtin_registry};
 use crate::kernel::{
     Connection, DefinitionRegistry, FEEDBACK_DELAY_DEFINITION, GraphDefinition, LatencySpec, Node,
-    NodeId, Port, PortRef,
+    NodeId, Port, PortRef, StaticArg, StaticValue,
 };
 
 fn source() -> GraphDefinition {
@@ -289,4 +292,115 @@ fn zero_latency_feedback_cycle_is_allowed() {
 
     assert!(plan.compensations().is_empty());
     assert_eq!(plan.root_latency(), 0);
+}
+
+// --- 2.4c (compile-time half) Dry/wet alignment with real builtin latencies --
+//
+// These prove that the latencies declared in the kernel builtin registry (§2.4),
+// placed in the canonical dry-plus-processed topology, drive the balancer to
+// compensate the dry path so both arrive aligned. The sample-accurate render
+// assertion ("arrives time-aligned at the mix") lands with the pipeline (§2.6).
+
+/// Take a builtin's real declared definition and give it the audio in/out ports
+/// a dry/wet topology needs (ports themselves are declared for real in §3.1).
+fn builtin_with_audio_ports(name: &str) -> GraphDefinition {
+    builtin_registry()
+        .get(name)
+        .unwrap_or_else(|| panic!("builtin '{name}' is registered"))
+        .clone()
+        .with_port(Port::input("audio_in", SignalType::Audio, 1))
+        .with_port(Port::output("audio_out", SignalType::Audio, 1))
+}
+
+#[test]
+fn convolution_dry_and_wet_paths_are_compensated_to_alignment() {
+    let registry = DefinitionRegistry::new()
+        .with_definition(source())
+        .with_definition(builtin_with_audio_ports(names::CONVOLUTION))
+        .with_definition(adder());
+    let root = GraphDefinition::new("root")
+        .with_port(root_output("mix", "out"))
+        .with_node(Node::new(NodeId::new("imp"), "source"))
+        .with_node(Node::new(NodeId::new("wet"), names::CONVOLUTION))
+        .with_node(Node::new(NodeId::new("mix"), "adder"))
+        // dry path straight to the mix; wet path through the convolution
+        .with_connection(cable("imp", "audio", "mix", "a"))
+        .with_connection(cable("imp", "audio", "wet", "audio_in"))
+        .with_connection(cable("wet", "audio_out", "mix", "b"));
+
+    let plan = root
+        .flatten(&registry)
+        .expect("flattens")
+        .balance_latency()
+        .expect("balances");
+
+    let block = Convolution::BLOCK_SIZE as u32;
+    assert_eq!(
+        plan.compensations().len(),
+        1,
+        "only the dry path needs compensation"
+    );
+    let compensation = &plan.compensations()[0];
+    assert_eq!(
+        compensation.connection().destination().port(),
+        "a",
+        "the dry input is the one delayed"
+    );
+    assert_eq!(
+        compensation.samples(),
+        block,
+        "the dry path is delayed by exactly the convolution's one-block latency"
+    );
+    assert_eq!(
+        plan.root_latency(),
+        block,
+        "the aligned mix presents one block of latency to the host"
+    );
+}
+
+#[test]
+fn spectral_dry_and_wet_paths_align_per_resolved_fft_size() {
+    let registry = DefinitionRegistry::new()
+        .with_definition(source())
+        .with_definition(builtin_with_audio_ports(names::SPECTRAL_PROCESSOR))
+        .with_definition(adder());
+
+    for (fft_size, expected_latency) in [(512_i64, 511_u32), (1024, 1023)] {
+        let root = GraphDefinition::new("root")
+            .with_port(root_output("mix", "out"))
+            .with_node(Node::new(NodeId::new("imp"), "source"))
+            .with_node(
+                Node::new(NodeId::new("wet"), names::SPECTRAL_PROCESSOR).with_static_arg(
+                    SPECTRAL_FFT_SIZE_PARAM,
+                    StaticArg::Literal(StaticValue::Int(fft_size)),
+                ),
+            )
+            .with_node(Node::new(NodeId::new("mix"), "adder"))
+            .with_connection(cable("imp", "audio", "mix", "a"))
+            .with_connection(cable("imp", "audio", "wet", "audio_in"))
+            .with_connection(cable("wet", "audio_out", "mix", "b"));
+
+        let plan = root
+            .flatten(&registry)
+            .expect("flattens")
+            .balance_latency()
+            .expect("balances");
+
+        let compensation = &plan.compensations()[0];
+        assert_eq!(
+            compensation.connection().destination().port(),
+            "a",
+            "the dry input is delayed for fft_size {fft_size}"
+        );
+        assert_eq!(
+            compensation.samples(),
+            expected_latency,
+            "dry path compensation is fft_size - 1 for fft_size {fft_size}"
+        );
+        assert_eq!(
+            plan.root_latency(),
+            expected_latency,
+            "aligned mix latency tracks the resolved fft_size {fft_size}"
+        );
+    }
 }
