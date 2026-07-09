@@ -21,6 +21,21 @@ pub const FEEDBACK_DELAY_DEFINITION: &str = "feedback_delay";
 /// identity when flattening produces namespaced atomic node ids.
 pub const NAMESPACE_SEPARATOR: &str = "::";
 
+/// Definition name of the compiler-generated node that promotes a `control`
+/// signal to `audio` where a control output feeds an audio input. Flattening
+/// inserts one so the promotion is a visible, inspectable node rather than an
+/// implicit conversion.
+pub const CONTROL_TO_AUDIO_DEFINITION: &str = "control_to_audio";
+
+/// Identity prefix for compiler-generated control→audio promotion nodes.
+pub const PROMOTION_NODE_PREFIX: &str = "promote";
+
+/// Input (control) port name on a control→audio promotion node.
+pub const PROMOTION_INPUT_PORT: &str = "in";
+
+/// Output (audio) port name on a control→audio promotion node.
+pub const PROMOTION_OUTPUT_PORT: &str = "out";
+
 pub mod flatten;
 pub mod latency;
 

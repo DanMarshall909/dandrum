@@ -15,7 +15,7 @@
 - [x] 2.4b Implement the standalone latency-balancing compile pass over the flattened graph: accumulate declared latency along paths, produce a compensation-delay preallocation plan where unequal paths converge, compute total root latency from the root output sources; reject cycles without `feedback_delay` and feedback cycles containing nonzero-latency nodes with structured diagnostics. Inserted compensations and root latency are reported via the returned `LatencyPlan` (the compilation/preparation surface), not as compiler diagnostics
 - [ ] 2.4b-wire Consume `LatencyPlan` in the compilation/preparation path: preallocate the compensation-delay buffers and expose total latency to the host; lands with the 2.6 pipeline rewire (until then 2.4b is a standalone, independently tested pass)
 - [ ] 2.4c Behaviour test: impulse through a dry path mixed with a unit-impulse-IR convolution path arrives time-aligned at the mix; spectral dry/wet topology aligns per resolved FFT size
-- [ ] 2.5 Insert compiler-generated control→audio promotion steps into the flattened graph, visible in diagnostics/discovery output
+- [x] 2.5 Insert compiler-generated control→audio promotion steps into the flattened graph, visible in diagnostics/discovery output (flattening inserts a visible `control_to_audio` node per promoted edge and records each as a `PromotionStep` on `FlattenedGraph`; discovery-FFI exposure of these nodes lands with 6.5)
 - [ ] 2.6 Rewire `preparation.rs`/`compiled_patch.rs`/`graph_processor/render_plan.rs` to consume the flattened kernel graph (statically dispatched flat node array over existing arenas), keeping offline/realtime parity tests green
 
 ## 3. Builtins on the kernel model

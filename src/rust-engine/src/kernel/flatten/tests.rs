@@ -1,7 +1,8 @@
 use super::*;
 use crate::diagnostics::error_codes;
 use crate::kernel::{
-    ChannelCount, ControlDefault, LatencySpec, Port, StaticArg, StaticParam, StaticType,
+    CONTROL_TO_AUDIO_DEFINITION, ChannelCount, ControlDefault, LatencySpec, Port, StaticArg,
+    StaticParam, StaticType,
 };
 
 fn oscillator() -> GraphDefinition {
@@ -392,6 +393,92 @@ fn resolved_node_ports_returns_none_for_invalid_resolved_channel_count() {
         root.resolved_node_ports(&registry, &NodeId::new("e")),
         None,
         "an out-of-range resolved channel count yields no invented fallback ports"
+    );
+}
+
+// --- 2.5 Control→audio promotion insertion ------------------------------
+
+fn control_source() -> GraphDefinition {
+    GraphDefinition::new("control_source").with_port(Port::output("cv", SignalType::Control, 1))
+}
+
+/// A sink with a two-channel audio input, so a promotion adopts its width.
+fn audio_sink() -> GraphDefinition {
+    GraphDefinition::new("audio_sink").with_port(Port::input("audio_in", SignalType::Audio, 2))
+}
+
+#[test]
+fn control_to_audio_connection_inserts_a_visible_promotion_node() {
+    let registry = DefinitionRegistry::new()
+        .with_definition(control_source())
+        .with_definition(audio_sink());
+    let root = GraphDefinition::new("root")
+        .with_node(Node::new(NodeId::new("lfo"), "control_source"))
+        .with_node(Node::new(NodeId::new("amp"), "audio_sink"))
+        .with_connection(Connection::new(
+            PortRef::new(NodeId::new("lfo"), "cv"),
+            PortRef::new(NodeId::new("amp"), "audio_in"),
+        ));
+
+    let flat = root.flatten(&registry).expect("flattens");
+
+    assert_eq!(flat.promotions().len(), 1, "one control→audio edge is promoted");
+    assert_eq!(
+        flat.promotions()[0].channels(),
+        2,
+        "promotion adopts the audio destination's channel count"
+    );
+
+    let promotion = flat
+        .nodes()
+        .iter()
+        .find(|node| node.definition() == CONTROL_TO_AUDIO_DEFINITION)
+        .expect("a visible promotion node is inserted");
+    assert_eq!(promotion.latency(), 0);
+
+    assert!(
+        flat.connections().iter().any(|c| c.source().port() == "cv"
+            && c.destination().node() == promotion.id()),
+        "control source now feeds the promotion node"
+    );
+    assert!(
+        flat.connections().iter().any(|c| c.source().node() == promotion.id()
+            && c.destination().port() == "audio_in"),
+        "promotion node now feeds the audio destination"
+    );
+    assert!(
+        !flat
+            .connections()
+            .iter()
+            .any(|c| c.source().port() == "cv" && c.destination().port() == "audio_in"),
+        "the direct control→audio edge is replaced, not left alongside"
+    );
+}
+
+#[test]
+fn matching_signal_connection_inserts_no_promotion() {
+    let registry = DefinitionRegistry::new()
+        .with_definition(oscillator())
+        .with_definition(gain());
+    let root = GraphDefinition::new("root")
+        .with_node(Node::new(NodeId::new("osc"), "oscillator"))
+        .with_node(Node::new(NodeId::new("amp"), "gain"))
+        .with_connection(Connection::new(
+            PortRef::new(NodeId::new("osc"), "audio"),
+            PortRef::new(NodeId::new("amp"), "audio_in"),
+        ));
+
+    let flat = root.flatten(&registry).expect("flattens");
+
+    assert!(
+        flat.promotions().is_empty(),
+        "an audio→audio connection needs no promotion"
+    );
+    assert!(
+        flat.nodes()
+            .iter()
+            .all(|node| node.definition() != CONTROL_TO_AUDIO_DEFINITION),
+        "no promotion node is inserted for matching signals"
     );
 }
 

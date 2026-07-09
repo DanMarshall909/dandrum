@@ -22,8 +22,9 @@ use crate::diagnostics::{Diagnostic, Diagnostics, Severity, error_codes};
 use crate::graph::{PortDirection, SignalType};
 
 use super::{
-    Connection, DefinitionRegistry, GraphDefinition, NAMESPACE_SEPARATOR, Node, NodeId, PortRef,
-    ResolvedPort, StaticValue,
+    CONTROL_TO_AUDIO_DEFINITION, Connection, DefinitionRegistry, GraphDefinition,
+    NAMESPACE_SEPARATOR, Node, NodeId, PROMOTION_INPUT_PORT, PROMOTION_NODE_PREFIX,
+    PROMOTION_OUTPUT_PORT, PortRef, PromotionStep, ResolvedPort, StaticValue,
 };
 
 /// Maximum composite nesting depth before flattening bails out. Guards against
@@ -81,6 +82,8 @@ pub struct FlattenedGraph {
     /// computable from the graph's actual outputs rather than from terminal
     /// nodes, so a dead latency-bearing branch cannot inflate reported latency.
     root_output_sources: BTreeMap<String, Vec<PortRef>>,
+    /// The control→audio promotions the compiler inserted, in insertion order.
+    promotions: Vec<PromotionStep>,
     expansion_count: usize,
 }
 
@@ -101,6 +104,11 @@ impl FlattenedGraph {
     /// from. Empty for a root that declares no output ports.
     pub fn root_output_sources(&self) -> &BTreeMap<String, Vec<PortRef>> {
         &self.root_output_sources
+    }
+
+    /// The control→audio promotions the compiler inserted as visible nodes.
+    pub fn promotions(&self) -> &[PromotionStep] {
+        &self.promotions
     }
 
     pub fn node(&self, id: &NodeId) -> Option<&AtomicNode> {
@@ -167,12 +175,14 @@ impl GraphDefinition {
 
         let template = template.expect("no errors implies a template");
         let (nodes, connections, interface) = instantiate(&template, "");
+        let (nodes, connections, promotions) = insert_promotions(nodes, connections);
         let root_ports = GraphDefinition::resolve_ports(self, &context);
         Ok(FlattenedGraph {
             nodes,
             connections,
             root_ports,
             root_output_sources: interface.outputs,
+            promotions,
             expansion_count: compiler.expansions,
         })
     }
@@ -324,6 +334,95 @@ impl Compiler<'_> {
             connections,
             interface,
         })
+    }
+}
+
+/// Insert a visible control→audio promotion node on every connection whose
+/// source is a `control` port and whose destination is an `audio` port,
+/// rewiring the connection through it. The promotion becomes an inspectable
+/// atomic node (definition [`CONTROL_TO_AUDIO_DEFINITION`]) in the flattened
+/// graph rather than an implicit conversion, and each is recorded as a
+/// [`PromotionStep`] for discovery.
+fn insert_promotions(
+    mut nodes: Vec<AtomicNode>,
+    connections: Vec<Connection>,
+) -> (Vec<AtomicNode>, Vec<Connection>, Vec<PromotionStep>) {
+    let mut port_signal: BTreeMap<(NodeId, String), (SignalType, u32)> = BTreeMap::new();
+    for node in &nodes {
+        for port in node.ports() {
+            port_signal.insert(
+                (node.id().clone(), port.name().to_string()),
+                (port.signal_type(), port.channels()),
+            );
+        }
+    }
+    let signal_of = |reference: &PortRef| {
+        port_signal
+            .get(&(reference.node().clone(), reference.port().to_string()))
+            .copied()
+    };
+
+    let mut rewired = Vec::with_capacity(connections.len());
+    let mut promotion_nodes = Vec::new();
+    let mut promotions = Vec::new();
+    for connection in connections {
+        match (signal_of(connection.source()), signal_of(connection.destination())) {
+            (
+                Some((SignalType::Control, source_channels)),
+                Some((SignalType::Audio, destination_channels)),
+            ) => {
+                let id = NodeId::new(format!(
+                    "{PROMOTION_NODE_PREFIX}{NAMESPACE_SEPARATOR}{}",
+                    promotions.len()
+                ));
+                promotion_nodes.push(promotion_node(&id, source_channels, destination_channels));
+                rewired.push(Connection::new(
+                    connection.source().clone(),
+                    PortRef::new(id.clone(), PROMOTION_INPUT_PORT),
+                ));
+                rewired.push(Connection::new(
+                    PortRef::new(id.clone(), PROMOTION_OUTPUT_PORT),
+                    connection.destination().clone(),
+                ));
+                promotions.push(PromotionStep {
+                    source: connection.source().clone(),
+                    destination: connection.destination().clone(),
+                    channels: destination_channels,
+                });
+            }
+            _ => rewired.push(connection),
+        }
+    }
+
+    nodes.extend(promotion_nodes);
+    (nodes, rewired, promotions)
+}
+
+/// Build the atomic node for a control→audio promotion: a control input of the
+/// source width and an audio output of the destination width, zero latency.
+fn promotion_node(id: &NodeId, input_channels: u32, output_channels: u32) -> AtomicNode {
+    AtomicNode {
+        id: id.clone(),
+        definition: CONTROL_TO_AUDIO_DEFINITION.to_string(),
+        static_args: BTreeMap::new(),
+        port_defaults: BTreeMap::new(),
+        ports: vec![
+            ResolvedPort {
+                name: PROMOTION_INPUT_PORT.to_string(),
+                direction: PortDirection::Input,
+                signal_type: SignalType::Control,
+                channels: input_channels,
+                control_default: None,
+            },
+            ResolvedPort {
+                name: PROMOTION_OUTPUT_PORT.to_string(),
+                direction: PortDirection::Output,
+                signal_type: SignalType::Audio,
+                channels: output_channels,
+                control_default: None,
+            },
+        ],
+        latency: 0,
     }
 }
 
