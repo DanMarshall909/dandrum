@@ -338,7 +338,18 @@ fn control_output_promotes_to_audio_input_and_records_a_promotion_step() {
 
     assert!(validation.is_ok(), "control→audio is legal");
     assert_eq!(validation.promotions().len(), 1);
-    assert_eq!(validation.promotions()[0].destination().port(), "audio_in");
+    let promotion = &validation.promotions()[0];
+    assert_eq!(
+        promotion.source(),
+        &PortRef::new(NodeId::new("lfo"), "out"),
+        "the promotion records the control port it converts from"
+    );
+    assert_eq!(promotion.destination().port(), "audio_in");
+    assert_eq!(
+        promotion.channels(),
+        1,
+        "the promotion adopts the audio destination's width"
+    );
 }
 
 #[test]
@@ -463,6 +474,52 @@ fn connection_to_missing_node_is_rejected() {
     assert_eq!(
         only_error_code(&validation),
         error_codes::KERNEL_MISSING_NODE
+    );
+}
+
+#[test]
+fn connection_to_a_port_the_definition_does_not_declare_reports_a_missing_port() {
+    let registry = DefinitionRegistry::new().with_definition(gain_primitive());
+    let definition = GraphDefinition::new("root")
+        .with_node(Node::new(NodeId::new("a"), "gain"))
+        .with_node(Node::new(NodeId::new("b"), "gain"))
+        .with_connection(Connection::new(
+            PortRef::new(NodeId::new("a"), "audio_out"),
+            PortRef::new(NodeId::new("b"), "sidechain_in"),
+        ));
+
+    let validation = definition.validate(&registry);
+
+    assert_eq!(
+        only_error_code(&validation),
+        error_codes::KERNEL_MISSING_PORT
+    );
+}
+
+#[test]
+fn validation_rejects_an_out_of_range_resolved_channel_count_without_resolving_ports() {
+    // `echo` resolves its port widths from `channels`; a zero channel count must
+    // be reported rather than silently falling back to a one-channel port.
+    let registry = DefinitionRegistry::new().with_definition(echo_primitive());
+    let definition = GraphDefinition::new("root").with_node(
+        Node::new(NodeId::new("e"), "echo")
+            .with_static_arg("channels", StaticArg::Literal(StaticValue::Int(0))),
+    );
+
+    let validation = definition.validate(&registry);
+
+    let errors: Vec<_> = validation.diagnostics().errors().collect();
+    assert!(
+        errors
+            .iter()
+            .all(|d| d.error_code() == error_codes::KERNEL_INVALID_STATIC_REFERENCE_VALUE),
+        "expected only invalid-static-reference-value errors, got: {errors:?}"
+    );
+    let ports: Vec<_> = errors.iter().filter_map(|d| d.port_name()).collect();
+    assert_eq!(
+        ports,
+        ["audio_in", "audio_out"],
+        "every port whose width resolves from the bad parameter is named"
     );
 }
 

@@ -1269,7 +1269,10 @@ impl GraphDefinition {
         }
 
         // A connection that targets a static parameter name gets a dedicated
-        // diagnostic rather than a generic missing-port error.
+        // diagnostic rather than a generic missing-port error. The lookup always
+        // succeeds here: an unknown definition leaves no entry in
+        // `resolved_nodes`, so the `?` above already returned. The `else` is
+        // therefore unreachable and untestable.
         if let Some(referenced) = registry.get(node.definition_ref()) {
             if referenced.static_param(reference.port()).is_some() {
                 diagnostics.push(

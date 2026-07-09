@@ -265,6 +265,51 @@ fn latency_bearing_node_in_feedback_cycle_is_rejected() {
             .any(|d| d.error_code() == error_codes::KERNEL_LATENCY_IN_FEEDBACK_CYCLE),
         "expected latency-in-feedback-cycle diagnostic, got: {diagnostics:?}"
     );
+    assert_eq!(
+        diagnostics.errors().count(),
+        1,
+        "one cycle yields exactly one diagnostic, not one per back edge walked"
+    );
+}
+
+#[test]
+fn each_distinct_feedback_cycle_through_a_latency_node_is_reported_once() {
+    // `p` sits in two distinct cycles: the outer m -> p -> fb -> m, and the
+    // inner p -> fb -> p (fb's output also feeds p directly). Each cycle is a
+    // separate uncompensatable path, so each is reported — but neither twice.
+    let registry = DefinitionRegistry::new()
+        .with_definition(source())
+        .with_definition(delayed("proc", 64))
+        .with_definition(adder())
+        .with_definition(feedback_delay());
+    let root = GraphDefinition::new("root")
+        .with_node(Node::new(NodeId::new("osc"), "source"))
+        .with_node(Node::new(NodeId::new("m"), "adder"))
+        .with_node(Node::new(NodeId::new("p"), "proc"))
+        .with_node(Node::new(NodeId::new("fb"), FEEDBACK_DELAY_DEFINITION))
+        .with_connection(cable("osc", "audio", "m", "a"))
+        .with_connection(cable("m", "out", "p", "audio_in"))
+        .with_connection(cable("p", "audio_out", "fb", "audio_in"))
+        .with_connection(cable("fb", "audio_out", "m", "b"))
+        .with_connection(cable("fb", "audio_out", "p", "audio_in"));
+
+    let diagnostics = root
+        .flatten(&registry)
+        .expect("flattens")
+        .balance_latency()
+        .expect_err("latency inside a feedback cycle cannot be compensated");
+
+    assert_eq!(
+        diagnostics.errors().count(),
+        2,
+        "one diagnostic per distinct cycle carrying the latency-bearing node"
+    );
+    assert!(
+        diagnostics
+            .errors()
+            .all(|d| d.error_code() == error_codes::KERNEL_LATENCY_IN_FEEDBACK_CYCLE),
+        "both diagnostics name the uncompensatable cycle, got: {diagnostics:?}"
+    );
 }
 
 #[test]

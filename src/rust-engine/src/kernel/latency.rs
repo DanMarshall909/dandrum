@@ -180,27 +180,22 @@ impl FlattenedGraph {
         let mut visiting = BTreeSet::new();
         let mut visited = BTreeSet::new();
         let mut stack: Vec<NodeId> = Vec::new();
-        let mut reported: BTreeSet<Vec<NodeId>> = BTreeSet::new();
         let ids: Vec<NodeId> = self.nodes().iter().map(|node| node.id().clone()).collect();
         for id in &ids {
-            self.walk_for_latency_cycle(
-                id,
-                &mut visiting,
-                &mut visited,
-                &mut stack,
-                &mut reported,
-                diagnostics,
-            );
+            self.walk_for_latency_cycle(id, &mut visiting, &mut visited, &mut stack, diagnostics);
         }
     }
 
+    /// Depth-first walk reporting each back edge that closes a cycle. Every
+    /// cycle is discovered exactly once: a back edge is reported when its
+    /// target is still on the stack, and once a node leaves the stack it is
+    /// `visited` and never re-walked, so no cycle is reachable twice.
     fn walk_for_latency_cycle(
         &self,
         node_id: &NodeId,
         visiting: &mut BTreeSet<NodeId>,
         visited: &mut BTreeSet<NodeId>,
         stack: &mut Vec<NodeId>,
-        reported: &mut BTreeSet<Vec<NodeId>>,
         diagnostics: &mut Diagnostics,
     ) {
         if visited.contains(node_id) {
@@ -216,16 +211,9 @@ impl FlattenedGraph {
                     .skip_while(|id| **id != successor)
                     .cloned()
                     .collect();
-                self.report_latency_cycle(&cycle, reported, diagnostics);
+                self.report_latency_cycle(&cycle, diagnostics);
             } else if !visited.contains(&successor) {
-                self.walk_for_latency_cycle(
-                    &successor,
-                    visiting,
-                    visited,
-                    stack,
-                    reported,
-                    diagnostics,
-                );
+                self.walk_for_latency_cycle(&successor, visiting, visited, stack, diagnostics);
             }
         }
 
@@ -234,24 +222,13 @@ impl FlattenedGraph {
         visited.insert(node_id.clone());
     }
 
-    fn report_latency_cycle(
-        &self,
-        cycle: &[NodeId],
-        reported: &mut BTreeSet<Vec<NodeId>>,
-        diagnostics: &mut Diagnostics,
-    ) {
+    fn report_latency_cycle(&self, cycle: &[NodeId], diagnostics: &mut Diagnostics) {
         let Some(offender) = cycle
             .iter()
             .find(|id| !self.is_feedback_delay(id) && self.latency_of(id) > 0)
         else {
             return; // a legal cycle: only zero-latency nodes plus feedback_delay
         };
-
-        let mut key = cycle.to_vec();
-        key.sort();
-        if !reported.insert(key) {
-            return; // already reported this cycle
-        }
 
         let printable = cycle
             .iter()
@@ -353,6 +330,10 @@ impl FlattenedGraph {
                 if connection.source().node() != &id {
                     continue;
                 }
+                // `indegree` is seeded from every node, and flattening drops
+                // connections whose endpoints are not nodes, so the lookup
+                // always succeeds; the `else` is unreachable and untestable
+                // (FlattenedGraph cannot be constructed with a dangling edge).
                 if let Some(degree) = indegree.get_mut(connection.destination().node()) {
                     *degree -= 1;
                     if *degree == 0 {

@@ -319,12 +319,6 @@ impl BuiltInModuleRegistry {
     }
 }
 
-impl Default for BuiltInModuleRegistry {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
 fn midi_input_definition() -> BuiltInModuleDefinition {
     BuiltInModuleDefinition::new(MIDI_INPUT).with_output(Port::output(EVENTS, Event))
 }
