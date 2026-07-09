@@ -36,6 +36,7 @@ pub const PROMOTION_INPUT_PORT: &str = "in";
 /// Output (audio) port name on a control→audio promotion node.
 pub const PROMOTION_OUTPUT_PORT: &str = "out";
 
+pub mod builtins;
 pub mod flatten;
 pub mod latency;
 
@@ -597,6 +598,17 @@ impl DefinitionRegistry {
 
     pub fn get(&self, name: &str) -> Option<&GraphDefinition> {
         self.definitions.get(name)
+    }
+
+    /// The names of every registered definition, in sorted order. Capability
+    /// discovery and latency audits enumerate the registry through this.
+    pub fn definition_names(&self) -> impl Iterator<Item = &str> {
+        self.definitions.keys().map(String::as_str)
+    }
+
+    /// Every registered definition, in name order.
+    pub fn definitions(&self) -> impl Iterator<Item = &GraphDefinition> {
+        self.definitions.values()
     }
 }
 

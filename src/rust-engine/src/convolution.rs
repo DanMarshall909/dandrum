@@ -15,14 +15,19 @@ pub struct Convolution {
 }
 
 impl Convolution {
+    /// Partition/block size of the uniformly-partitioned overlap-add scheme.
+    /// A full input block is accumulated before the first output block is
+    /// produced, so this is exactly the processing latency in samples.
+    pub const BLOCK_SIZE: usize = 512;
+
     pub fn new() -> Self {
         Self {
             ir: Vec::new(),
-            block_size: 512,
+            block_size: Self::BLOCK_SIZE,
             partitions: Vec::new(),
-            input_buffer: vec![0.0; 512],
+            input_buffer: vec![0.0; Self::BLOCK_SIZE],
             input_pos: 0,
-            output_buffer: vec![0.0; 1024],
+            output_buffer: vec![0.0; Self::BLOCK_SIZE * 2],
             output_pos: 0,
             wet: 1.0,
             fft_planner: FftPlanner::new(),
