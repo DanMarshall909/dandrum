@@ -94,6 +94,34 @@ Trunk-based, no compatibility shims: (1) kernel types + validation land alongsid
 
 Stages match D9 and land as ordinary commits to main (trunk-based). Rollback = revert the stage's commits; stages 1–2 are additive and independently revertable, stage 3+ are the cut. Verification per stage: full `cargo test`, example render comparisons, and the JUCE demo binary producing sound through the `main` bus.
 
+### Minimal-touch execution
+
+The migration inventory shows cost concentrated in a few production files plus a large but **mechanically uniform** test/example surface. Rewrite as little as possible; bridge and codemod the rest.
+
+- **Bridge, don't rewrite the runtime.** The compilation cut (2.6) lowers `FlattenedGraph → the existing ModuleNode array`; the kernel becomes the front end and the legacy `graph_processor` back end (render loop, arenas, `processing.rs`) stays unchanged.
+- **Keep the L/R DSP internals.** `echo.rs`/`reverb.rs` `process(in_l, in_r)` are left intact; channel-polymorphism is adapted at the dispatch boundary (`graph_processor/dispatch.rs`), splitting a 2-channel buffer into l/r.
+- **`audio_output` → deprecated alias, not deletion.** It lowers to a stereo `main` root bus so the ~100 test refs + 40 example files keep compiling; the shim is removed in 7.3 once callers migrate, turning a big-bang into a one-line deletion.
+- **Codemod the examples.** `render:` is always 3 keys, `parameters:` blocks are uniform, and there are **zero** `asset_bindings`/`${}` uses in examples — so scripted transforms cover all 31 patches; hand-editing is wasted effort.
+
+### Refactoring tooling
+
+Pick the tool by surface — the biggest surfaces are *strings*, not symbols.
+
+RustRover (IDE):
+- **Structural Search & Replace (SSR)** for repetitive Rust patterns, e.g. `ModuleNode::new(ModuleId::new($id$), "audio_output")` and `audio(AUDIO_IN_L)`/`audio(AUDIO_IN_R)` dispatch pairs. Save as reusable templates.
+- **Introduce Constant then Rename** in that order: SSR-replace bare `"audio_output"` literals with the existing `AUDIO_OUTPUT` const, then Rename the single symbol with full Find-Usages safety (also serves the no-hardcoded-strings rule).
+- **Change Signature** for the L/R dispatch adapters; **Rename** for the `AUDIO_IN_L`/`_R` port constants in `graph/builtin_ports.rs`.
+
+Command-line codemod tools:
+- **`rust-analyzer ssr`** — the CLI equivalent of SSR: `rust-analyzer ssr 'ModuleNode::new(ModuleId::new($id), "audio_output") ==>> …'`. Scriptable/CI-able, uses the same engine as the IDE.
+- **`ast-grep` (`sg`)** — AST-structural search/replace with rules for **both Rust and YAML**; single tool for cross-language codemods, good for the uniform patch transforms.
+- **`comby`** — language-aware, multiline structural rewrite; strong for the repetitive YAML blocks SSR can't reach.
+- **`yq`** (mikefarah) — structure-aware YAML edits (delete `render:`, rename `parameters`→`defaults`) across the 31 patches — correct choice over regex for structured keys.
+- **`sd`** — simple textual replace for the inline-YAML-in-Rust-string-literals (`type: audio_output`) that SSR/`sg` won't match because they're inside string literals.
+- **`cargo clippy --fix` / `cargo fix`** — mop-up pass after bulk edits.
+
+Discipline: run every bulk edit in small, committed batches gated by `cargo test`; with `#![deny(dead_code)]` and 500+ tests a bad rewrite surfaces immediately, but only bisectably if batched.
+
 ## Resolved Questions
 
 - `voice.gate` is an **event port** (note-on/off edges). Matches `adsr`'s existing event consumption; a `gate_to_control` primitive can be added later if a level-style consumer needs it. (Decided 2026-07-08.)
