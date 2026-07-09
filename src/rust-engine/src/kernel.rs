@@ -22,6 +22,7 @@ pub const FEEDBACK_DELAY_DEFINITION: &str = "feedback_delay";
 pub const NAMESPACE_SEPARATOR: &str = "::";
 
 pub mod flatten;
+pub mod latency;
 
 /// The static (compile-time) type of a graph-definition static parameter.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]

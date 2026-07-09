@@ -89,6 +89,7 @@ pub mod error_codes {
         "kernel.unresolved_static_reference";
     pub const KERNEL_INVALID_STATIC_REFERENCE_VALUE: &str =
         "kernel.invalid_static_reference_value";
+    pub const KERNEL_LATENCY_IN_FEEDBACK_CYCLE: &str = "kernel.latency_in_feedback_cycle";
 
     // Module-library sub-codes
     pub const LIBRARY_UNKNOWN_MACRO: &str = "library.unknown_macro";
