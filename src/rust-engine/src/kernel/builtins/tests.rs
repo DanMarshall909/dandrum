@@ -5,7 +5,7 @@ use crate::convolution::Convolution;
 use crate::kernel::{GraphDefinition, StaticValue};
 
 /// Every builtin the kernel registry must declare.
-const EXPECTED: [&str; 30] = [
+const EXPECTED: [&str; 31] = [
     names::MIDI_INPUT,
     names::AUDIO_OUTPUT,
     names::OSCILLATOR,
@@ -36,6 +36,7 @@ const EXPECTED: [&str; 30] = [
     names::ENVELOPE_FOLLOWER,
     names::CURVE_MAPPER,
     names::DECAY,
+    names::CONTROL_TO_AUDIO,
 ];
 
 /// Resolve a definition's latency against its declared static-parameter

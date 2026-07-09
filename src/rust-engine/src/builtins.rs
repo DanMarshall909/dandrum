@@ -296,6 +296,7 @@ impl BuiltInModuleRegistry {
             envelope_follower_definition(),
             curve_mapper_definition(),
             decay_definition(),
+            control_to_audio_definition(),
         ])
     }
 
@@ -516,6 +517,16 @@ fn sampler_definition() -> BuiltInModuleDefinition {
                 .with_description("asset ID of the sample to play")
                 .with_realtime_note("must reference an asset declared in the patch assets section"),
         )
+}
+
+/// Compiler-generated promotion node: a `control` input copied to an `audio`
+/// output. Control and audio share the same per-sample buffer representation,
+/// so the promotion is a buffer copy; the node exists so the conversion is a
+/// visible, inspectable graph node rather than an implicit coercion.
+fn control_to_audio_definition() -> BuiltInModuleDefinition {
+    BuiltInModuleDefinition::new(CONTROL_TO_AUDIO)
+        .with_inputs([(IN, Control)])
+        .with_output(Port::output(OUT, Audio))
 }
 
 fn note_to_rate_definition() -> BuiltInModuleDefinition {

@@ -49,6 +49,8 @@ pub(super) enum PerModuleState {
         sample_rate: f32,
     },
     Vca,
+    /// Stateless control→audio promotion (see `unify-graph-kernel` §2.5).
+    ControlToAudio,
     AudioOutput,
     MidiInput,
     NoteToRate {
@@ -205,6 +207,7 @@ impl PerModuleState {
                 sample_rate,
             },
             ModuleKind::Gain => PerModuleState::Vca,
+            ModuleKind::ControlToAudio => PerModuleState::ControlToAudio,
             ModuleKind::AudioOutput => PerModuleState::AudioOutput,
             ModuleKind::MidiInput => PerModuleState::MidiInput,
             ModuleKind::NoteToRate => PerModuleState::NoteToRate { rate: 1.0 },

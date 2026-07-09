@@ -6,7 +6,8 @@ use std::collections::{BTreeMap, HashMap};
 use super::ModuleInputProvider;
 use super::outputs::{BlockEvent, ModuleOutputs};
 use super::processing::{
-    EchoControls, ReverbControls, process_adsr, process_convolution, process_curve_mapper,
+    EchoControls, ReverbControls, process_adsr, process_control_to_audio, process_convolution,
+    process_curve_mapper,
     process_decay, process_dynamics_processor, process_echo, process_envelope_follower,
     process_event_filter, process_filter, process_frequency_splitter, process_impulse,
     process_multiply, process_noise, process_note_to_control, process_note_to_rate,
@@ -56,6 +57,7 @@ pub(super) fn process_module(
             frames,
         ),
         Gain => process_vca(audio(AUDIO_IN), ctrl(GAIN)),
+        ControlToAudio => process_control_to_audio(ctrl(IN)),
         Sampler => process_sampler(
             &mut states[module_idx],
             events_in,

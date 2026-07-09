@@ -5153,3 +5153,46 @@ fn offline_and_realtime_produce_same_output_for_sampler_patch() {
         &assets,
     );
 }
+
+#[test]
+fn control_to_audio_promotion_carries_the_control_signal_into_the_audio_path() {
+    // `note_to_rate` emits a steady control rate of 1.0 with no note events.
+    // Promoted to audio it must appear sample-for-sample on the audio bus,
+    // proving the promotion node renders rather than silently dropping signal.
+    let graph = Graph::new(
+        vec![
+            ModuleNode::new(ModuleId::new("rate"), "note_to_rate")
+                .with_input(builtin_ports::EVENTS, SignalType::Event)
+                .with_output(builtin_ports::RATE, SignalType::Control),
+            ModuleNode::new(ModuleId::new("promote"), "control_to_audio")
+                .with_input(builtin_ports::IN, SignalType::Control)
+                .with_output(builtin_ports::OUT, SignalType::Audio),
+            ModuleNode::new(ModuleId::new("out"), "audio_output")
+                .with_input(builtin_ports::LEFT, SignalType::Audio)
+                .with_input(builtin_ports::RIGHT, SignalType::Audio),
+        ],
+        vec![
+            Cable::new(
+                PortRef::new(ModuleId::new("rate"), builtin_ports::RATE),
+                PortRef::new(ModuleId::new("promote"), builtin_ports::IN),
+            ),
+            Cable::new(
+                PortRef::new(ModuleId::new("promote"), builtin_ports::OUT),
+                PortRef::new(ModuleId::new("out"), builtin_ports::LEFT),
+            ),
+        ],
+    );
+    let settings = RenderSettings {
+        sample_rate_hz: 48_000,
+        block_size_frames: 4,
+        duration_frames: 8,
+    };
+
+    let (left, _right) = render_offline(&graph, &settings, Vec::new());
+
+    assert_eq!(left.len(), 8);
+    assert!(
+        left.iter().all(|sample| (sample - 1.0).abs() < 1e-6),
+        "the promoted control value 1.0 appears as audio, got {left:?}"
+    );
+}

@@ -32,6 +32,8 @@ pub enum ModuleKind {
     EnvelopeFollower,
     CurveMapper,
     Decay,
+    /// Compiler-generated control→audio promotion (see `unify-graph-kernel` §2.5).
+    ControlToAudio,
 }
 
 impl ModuleKind {
@@ -67,6 +69,7 @@ impl ModuleKind {
             module_types::ENVELOPE_FOLLOWER => Some(Self::EnvelopeFollower),
             module_types::CURVE_MAPPER => Some(Self::CurveMapper),
             module_types::DECAY => Some(Self::Decay),
+            module_types::CONTROL_TO_AUDIO => Some(Self::ControlToAudio),
             _ => None,
         }
     }
@@ -99,6 +102,7 @@ impl ModuleKind {
                 | Self::CurveMapper
                 | Self::Script
                 | Self::Decay
+                | Self::ControlToAudio
         )
     }
 }

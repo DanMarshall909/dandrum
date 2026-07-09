@@ -155,6 +155,13 @@ fn adsr_time_ms(value: f32, min_ms: f32, max_ms: f32) -> f32 {
     }
 }
 
+/// Promote a `control` signal to `audio`. Both are per-sample `f32` buffers, so
+/// the promotion is a copy; the node exists to make the conversion visible in
+/// the graph rather than an implicit coercion.
+pub(super) fn process_control_to_audio(control_in: Vec<f32>) -> ModuleOutputs {
+    audio_output(builtin_ports::OUT, control_in)
+}
+
 pub(super) fn process_vca(audio_in: Vec<f32>, gain_in: Vec<f32>) -> ModuleOutputs {
     let frames = audio_in.len().min(gain_in.len());
     let mut audio = Vec::with_capacity(frames);
