@@ -76,6 +76,11 @@ pub struct FlattenedGraph {
     nodes: Vec<AtomicNode>,
     connections: Vec<Connection>,
     root_ports: Vec<ResolvedPort>,
+    /// Each root output port name mapped to the atomic port(s) it gathers from.
+    /// This is what makes root latency (and any output-driven analysis)
+    /// computable from the graph's actual outputs rather than from terminal
+    /// nodes, so a dead latency-bearing branch cannot inflate reported latency.
+    root_output_sources: BTreeMap<String, Vec<PortRef>>,
     expansion_count: usize,
 }
 
@@ -90,6 +95,12 @@ impl FlattenedGraph {
 
     pub fn root_ports(&self) -> &[ResolvedPort] {
         &self.root_ports
+    }
+
+    /// Each root output port name mapped to the atomic port refs it gathers
+    /// from. Empty for a root that declares no output ports.
+    pub fn root_output_sources(&self) -> &BTreeMap<String, Vec<PortRef>> {
+        &self.root_output_sources
     }
 
     pub fn node(&self, id: &NodeId) -> Option<&AtomicNode> {
@@ -155,12 +166,13 @@ impl GraphDefinition {
         }
 
         let template = template.expect("no errors implies a template");
-        let (nodes, connections, _interface) = instantiate(&template, "");
+        let (nodes, connections, interface) = instantiate(&template, "");
         let root_ports = GraphDefinition::resolve_ports(self, &context);
         Ok(FlattenedGraph {
             nodes,
             connections,
             root_ports,
+            root_output_sources: interface.outputs,
             expansion_count: compiler.expansions,
         })
     }

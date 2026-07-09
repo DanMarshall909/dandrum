@@ -74,18 +74,40 @@ impl FlattenedGraph {
     /// diagnostics when a feedback cycle contains an uncompensatable
     /// latency-bearing node.
     pub fn balance_latency(&self) -> Result<LatencyPlan, Diagnostics> {
+        // A remaining forward cycle means a routing cycle that no feedback_delay
+        // breaks. `validate()` also catches this, but `balance_latency` is public
+        // and may run without it, so fail loudly rather than returning a plan
+        // computed from an incomplete ordering.
+        let order = match self.topological_order() {
+            Ok(order) => order,
+            Err(unordered) => {
+                let mut diagnostics = Diagnostics::new();
+                let printable = unordered
+                    .iter()
+                    .map(|id| id.as_str())
+                    .collect::<Vec<_>>()
+                    .join(", ");
+                diagnostics.push(
+                    Diagnostic::new(
+                        error_codes::KERNEL_CYCLE_WITHOUT_FEEDBACK_DELAY,
+                        Severity::Error,
+                        format!(
+                            "latency balancing found a routing cycle with no '{FEEDBACK_DELAY_DEFINITION}' node among nodes: {printable}; every feedback cycle must pass through a '{FEEDBACK_DELAY_DEFINITION}' primitive"
+                        ),
+                    )
+                    .with_suggested_fix(format!(
+                        "insert a '{FEEDBACK_DELAY_DEFINITION}' node into the cycle"
+                    )),
+                );
+                return Err(diagnostics);
+            }
+        };
+
         let mut diagnostics = Diagnostics::new();
         self.reject_latency_in_feedback_cycles(&mut diagnostics);
         if diagnostics.has_errors() {
             return Err(diagnostics);
         }
-
-        let Some(order) = self.topological_order() else {
-            // Unreachable in a compiled graph: the only legal cycles pass
-            // through a feedback_delay node, whose feedback edges are cut,
-            // leaving a DAG. Kept for totality.
-            return Ok(LatencyPlan::default());
-        };
 
         // Accumulate: a node's inputs arrive at the max output-latency of its
         // sources; its own output latency is that arrival plus its declared
@@ -139,19 +161,15 @@ impl FlattenedGraph {
         })
     }
 
-    /// Total latency at the graph's outputs: the max output latency across
-    /// terminal nodes (those with no forward successor).
+    /// Total latency the host must report: the max output latency across the
+    /// atomic nodes that actually feed the root output ports. Computed from the
+    /// root-output interface, not terminal nodes, so a dead or unconnected
+    /// latency-bearing branch never inflates it.
     fn root_latency(&self, output_latency: &BTreeMap<NodeId, u32>) -> u32 {
-        let has_forward_successor: BTreeSet<&NodeId> = self
-            .connections()
-            .iter()
-            .filter(|connection| !self.is_feedback_delay(connection.destination().node()))
-            .map(|connection| connection.source().node())
-            .collect();
-        self.nodes()
-            .iter()
-            .filter(|node| !has_forward_successor.contains(node.id()))
-            .filter_map(|node| output_latency.get(node.id()).copied())
+        self.root_output_sources()
+            .values()
+            .flatten()
+            .filter_map(|source| output_latency.get(source.node()).copied())
             .max()
             .unwrap_or(0)
     }
@@ -301,9 +319,9 @@ impl FlattenedGraph {
     }
 
     /// A deterministic topological order over forward edges (edges into a
-    /// `feedback_delay` node are cut). Returns `None` if a non-feedback cycle
-    /// remains, which a compiled graph never contains.
-    fn topological_order(&self) -> Option<Vec<NodeId>> {
+    /// `feedback_delay` node are cut). Returns `Err` with the nodes that could
+    /// not be ordered when a non-feedback cycle remains.
+    fn topological_order(&self) -> Result<Vec<NodeId>, Vec<NodeId>> {
         let mut indegree: BTreeMap<NodeId, usize> =
             self.nodes().iter().map(|node| (node.id().clone(), 0)).collect();
         for connection in self.connections() {
@@ -344,7 +362,17 @@ impl FlattenedGraph {
             }
         }
 
-        (order.len() == indegree.len()).then_some(order)
+        if order.len() == indegree.len() {
+            return Ok(order);
+        }
+        let ordered: BTreeSet<&NodeId> = order.iter().collect();
+        let unordered = self
+            .nodes()
+            .iter()
+            .map(|node| node.id().clone())
+            .filter(|id| !ordered.contains(id))
+            .collect();
+        Err(unordered)
     }
 }
 
