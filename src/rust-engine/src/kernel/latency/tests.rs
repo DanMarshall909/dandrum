@@ -301,22 +301,19 @@ fn zero_latency_feedback_cycle_is_allowed() {
 // compensate the dry path so both arrive aligned. The sample-accurate render
 // assertion ("arrives time-aligned at the mix") lands with the pipeline (§2.6).
 
-/// Take a builtin's real declared definition and give it the audio in/out ports
-/// a dry/wet topology needs (ports themselves are declared for real in §3.1).
-fn builtin_with_audio_ports(name: &str) -> GraphDefinition {
+/// The builtin's real declared definition, ports and latency as registered.
+fn builtin(name: &str) -> GraphDefinition {
     builtin_registry()
         .get(name)
         .unwrap_or_else(|| panic!("builtin '{name}' is registered"))
         .clone()
-        .with_port(Port::input("audio_in", SignalType::Audio, 1))
-        .with_port(Port::output("audio_out", SignalType::Audio, 1))
 }
 
 #[test]
 fn convolution_dry_and_wet_paths_are_compensated_to_alignment() {
     let registry = DefinitionRegistry::new()
         .with_definition(source())
-        .with_definition(builtin_with_audio_ports(names::CONVOLUTION))
+        .with_definition(builtin(names::CONVOLUTION))
         .with_definition(adder());
     let root = GraphDefinition::new("root")
         .with_port(root_output("mix", "out"))
@@ -362,7 +359,7 @@ fn convolution_dry_and_wet_paths_are_compensated_to_alignment() {
 fn spectral_dry_and_wet_paths_align_per_resolved_fft_size() {
     let registry = DefinitionRegistry::new()
         .with_definition(source())
-        .with_definition(builtin_with_audio_ports(names::SPECTRAL_PROCESSOR))
+        .with_definition(builtin(names::SPECTRAL_PROCESSOR))
         .with_definition(adder());
 
     for (fft_size, expected_latency) in [(512_i64, 511_u32), (1024, 1023)] {
