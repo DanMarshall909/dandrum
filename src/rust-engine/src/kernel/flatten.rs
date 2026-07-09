@@ -253,20 +253,20 @@ impl Compiler<'_> {
         let template = self.expand_body(definition, static_context, depth);
         self.path.pop();
 
-        if let Some(template) = &template {
-            self.cache.insert(key, template.clone());
-        }
-        template
+        self.cache.insert(key, template.clone());
+        Some(template)
     }
 
     /// Expand a definition's internal nodes and connections into a relative-frame
-    /// template.
+    /// template. A node that fails to expand is reported and skipped, so this
+    /// always yields a template; `flatten` discards it once diagnostics carry an
+    /// error.
     fn expand_body(
         &mut self,
         definition: &GraphDefinition,
         static_context: &BTreeMap<String, StaticValue>,
         depth: usize,
-    ) -> Option<Template> {
+    ) -> Template {
         let mut nodes = Vec::new();
         let mut connections = Vec::new();
         let mut child_interfaces: BTreeMap<NodeId, Interface> = BTreeMap::new();
@@ -329,11 +329,11 @@ impl Compiler<'_> {
         }
 
         let interface = compose_interface(definition, &child_interfaces);
-        Some(Template {
+        Template {
             nodes,
             connections,
             interface,
-        })
+        }
     }
 }
 
@@ -473,11 +473,13 @@ fn apply_overrides(node: &Node, interface: &Interface, nodes: &mut [AtomicNode])
             continue;
         };
         for target in targets {
-            if let Some(atomic) = nodes.iter_mut().find(|atomic| atomic.id == *target.node()) {
-                atomic
-                    .port_defaults
-                    .insert(target.port().to_string(), *value);
-            }
+            let atomic = nodes
+                .iter_mut()
+                .find(|atomic| atomic.id == *target.node())
+                .expect("a boundary interface reference names a node of the same instance");
+            atomic
+                .port_defaults
+                .insert(target.port().to_string(), *value);
         }
     }
 }

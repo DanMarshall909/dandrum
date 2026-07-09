@@ -295,58 +295,61 @@ impl FlattenedGraph {
             .unwrap_or(0)
     }
 
+    /// Forward edges only: connections whose destination is not a
+    /// `feedback_delay` node. Edges into a feedback delay are the cut taps.
+    fn forward_connections(&self) -> impl Iterator<Item = &Connection> {
+        self.connections()
+            .iter()
+            .filter(|connection| !self.is_feedback_delay(connection.destination().node()))
+    }
+
     /// A deterministic topological order over forward edges (edges into a
     /// `feedback_delay` node are cut). Returns `Err` with the nodes that could
     /// not be ordered when a non-feedback cycle remains.
     fn topological_order(&self) -> Result<Vec<NodeId>, Vec<NodeId>> {
-        let mut indegree: BTreeMap<NodeId, usize> =
-            self.nodes().iter().map(|node| (node.id().clone(), 0)).collect();
-        for connection in self.connections() {
-            if self.is_feedback_delay(connection.destination().node()) {
-                continue;
-            }
-            if let Some(degree) = indegree.get_mut(connection.destination().node()) {
-                *degree += 1;
-            }
-        }
+        let mut indegree: BTreeMap<&NodeId, usize> = self
+            .nodes()
+            .iter()
+            .map(|node| {
+                let id = node.id();
+                let incoming = self
+                    .forward_connections()
+                    .filter(|connection| connection.destination().node() == id)
+                    .count();
+                (id, incoming)
+            })
+            .collect();
 
         // BTreeMap iteration is sorted, so the seed order (and thus the whole
         // traversal) is deterministic.
-        let mut queue: Vec<NodeId> = indegree
+        let mut order: Vec<&NodeId> = indegree
             .iter()
             .filter(|(_, degree)| **degree == 0)
-            .map(|(id, _)| id.clone())
+            .map(|(id, _)| *id)
             .collect();
-        let mut order = Vec::new();
         let mut index = 0;
-        while index < queue.len() {
-            let id = queue[index].clone();
+        while index < order.len() {
+            let id = order[index];
             index += 1;
-            order.push(id.clone());
-            for connection in self.connections() {
-                if self.is_feedback_delay(connection.destination().node()) {
-                    continue;
-                }
-                if connection.source().node() != &id {
-                    continue;
-                }
-                // `indegree` is seeded from every node, and flattening drops
-                // connections whose endpoints are not nodes, so the lookup
-                // always succeeds; the `else` is unreachable and untestable
-                // (FlattenedGraph cannot be constructed with a dangling edge).
-                if let Some(degree) = indegree.get_mut(connection.destination().node()) {
-                    *degree -= 1;
-                    if *degree == 0 {
-                        queue.push(connection.destination().node().clone());
-                    }
+            for connection in self
+                .forward_connections()
+                .filter(|connection| connection.source().node() == id)
+            {
+                let destination = connection.destination().node();
+                let degree = indegree
+                    .get_mut(destination)
+                    .expect("every connection destination is a node of the flattened graph");
+                *degree -= 1;
+                if *degree == 0 {
+                    order.push(destination);
                 }
             }
         }
 
         if order.len() == indegree.len() {
-            return Ok(order);
+            return Ok(order.into_iter().cloned().collect());
         }
-        let ordered: BTreeSet<&NodeId> = order.iter().collect();
+        let ordered: BTreeSet<&NodeId> = order.into_iter().collect();
         let unordered = self
             .nodes()
             .iter()

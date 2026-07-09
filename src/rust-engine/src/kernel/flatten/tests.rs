@@ -555,6 +555,55 @@ fn composite_input_mapped_to_an_unknown_internal_node_forwards_nothing() {
 }
 
 #[test]
+fn composite_input_mapped_to_an_unknown_port_of_a_known_node_forwards_nothing() {
+    // `g` exists, but declares no `sidechain_in`. The boundary must forward to
+    // nothing rather than guess a port.
+    let dangling = GraphDefinition::new("dangling")
+        .with_port(
+            Port::input("audio_in", SignalType::Audio, 1)
+                .maps_to(PortRef::new(NodeId::new("g"), "sidechain_in")),
+        )
+        .with_node(Node::new(NodeId::new("g"), "gain"));
+    let registry = DefinitionRegistry::new()
+        .with_definition(oscillator())
+        .with_definition(gain())
+        .with_definition(dangling);
+    let root = GraphDefinition::new("root")
+        .with_node(Node::new(NodeId::new("osc"), "oscillator"))
+        .with_node(Node::new(NodeId::new("d"), "dangling"))
+        .with_connection(Connection::new(
+            PortRef::new(NodeId::new("osc"), "audio"),
+            PortRef::new(NodeId::new("d"), "audio_in"),
+        ));
+
+    let flat = root.flatten(&registry).expect("flattens");
+
+    assert!(
+        flat.connections().is_empty(),
+        "a public input mapping to a port the internal node lacks forwards to nothing"
+    );
+}
+
+#[test]
+fn root_output_gathering_from_an_unknown_port_of_a_known_node_has_no_sources() {
+    let root = GraphDefinition::new("root")
+        .with_port(
+            Port::output("out", SignalType::Audio, 1)
+                .maps_from(PortRef::new(NodeId::new("g"), "sidechain_out")),
+        )
+        .with_node(Node::new(NodeId::new("g"), "gain"));
+    let registry = DefinitionRegistry::new().with_definition(gain());
+
+    let flat = root.flatten(&registry).expect("flattens");
+
+    assert_eq!(
+        flat.root_output_sources().get("out"),
+        Some(&Vec::new()),
+        "a root output gathering from a port the node lacks has no sources"
+    );
+}
+
+#[test]
 fn root_ports_expose_the_resolved_public_interface() {
     let registry = DefinitionRegistry::new().with_definition(gain());
     let root = GraphDefinition::new("root")

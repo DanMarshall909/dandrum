@@ -567,6 +567,15 @@ impl PromotionStep {
     }
 }
 
+/// A node whose definition and static arguments both resolved during
+/// validation. Holding the definition alongside its resolved ports means later
+/// checks never have to look the definition up again — a lookup that could only
+/// fail in a state this value's existence already rules out.
+struct ResolvedNode<'a> {
+    definition: &'a GraphDefinition,
+    ports: Vec<ResolvedPort>,
+}
+
 /// The effective source of a control input port after default/override/cable
 /// resolution.
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -965,7 +974,7 @@ impl GraphDefinition {
         checked.insert(self.name().to_string());
 
         // Resolve every node's ports up front so connection checks share them.
-        let mut resolved_nodes: BTreeMap<&NodeId, Vec<ResolvedPort>> = BTreeMap::new();
+        let mut resolved_nodes: BTreeMap<&NodeId, ResolvedNode<'_>> = BTreeMap::new();
         for node in &self.nodes {
             let Some(referenced) = registry.get(node.definition_ref()) else {
                 diagnostics.push(
@@ -1020,21 +1029,25 @@ impl GraphDefinition {
                 }
             }
 
-            resolved_nodes.insert(node.id(), ports);
+            resolved_nodes.insert(
+                node.id(),
+                ResolvedNode {
+                    definition: referenced,
+                    ports,
+                },
+            );
         }
 
         for connection in &self.connections {
             let source = self.resolve_endpoint(
                 connection.source(),
                 PortDirection::Output,
-                registry,
                 &resolved_nodes,
                 &mut diagnostics,
             );
             let destination = self.resolve_endpoint(
                 connection.destination(),
                 PortDirection::Input,
-                registry,
                 &resolved_nodes,
                 &mut diagnostics,
             );
@@ -1224,11 +1237,10 @@ impl GraphDefinition {
         &self,
         reference: &PortRef,
         expected: PortDirection,
-        registry: &DefinitionRegistry,
-        resolved_nodes: &BTreeMap<&NodeId, Vec<ResolvedPort>>,
+        resolved_nodes: &BTreeMap<&NodeId, ResolvedNode<'_>>,
         diagnostics: &mut Diagnostics,
     ) -> Option<ResolvedPort> {
-        let Some(node) = self.node(reference.node()) else {
+        if self.node(reference.node()).is_none() {
             diagnostics.push(
                 Diagnostic::new(
                     error_codes::KERNEL_MISSING_NODE,
@@ -1238,11 +1250,12 @@ impl GraphDefinition {
                 .with_module_id(reference.node().as_str()),
             );
             return None;
-        };
+        }
 
-        // If the node's definition or static args failed to resolve, the port
-        // set is absent; the earlier diagnostic already explains why.
-        let ports = resolved_nodes.get(reference.node())?;
+        // If the node's definition or static args failed to resolve, the entry
+        // is absent; the earlier diagnostic already explains why.
+        let resolved = resolved_nodes.get(reference.node())?;
+        let ports = &resolved.ports;
 
         if let Some(port) = ports
             .iter()
@@ -1269,27 +1282,22 @@ impl GraphDefinition {
         }
 
         // A connection that targets a static parameter name gets a dedicated
-        // diagnostic rather than a generic missing-port error. The lookup always
-        // succeeds here: an unknown definition leaves no entry in
-        // `resolved_nodes`, so the `?` above already returned. The `else` is
-        // therefore unreachable and untestable.
-        if let Some(referenced) = registry.get(node.definition_ref()) {
-            if referenced.static_param(reference.port()).is_some() {
-                diagnostics.push(
-                    Diagnostic::new(
-                        error_codes::KERNEL_STATIC_PARAM_NOT_A_PORT,
-                        Severity::Error,
-                        format!(
-                            "'{}' is a compile-time static parameter of '{}', not a port; static parameters cannot be connected",
-                            reference.port(),
-                            referenced.name()
-                        ),
-                    )
-                    .with_module_id(reference.node().as_str())
-                    .with_port_name(reference.port()),
-                );
-                return None;
-            }
+        // diagnostic rather than a generic missing-port error.
+        if resolved.definition.static_param(reference.port()).is_some() {
+            diagnostics.push(
+                Diagnostic::new(
+                    error_codes::KERNEL_STATIC_PARAM_NOT_A_PORT,
+                    Severity::Error,
+                    format!(
+                        "'{}' is a compile-time static parameter of '{}', not a port; static parameters cannot be connected",
+                        reference.port(),
+                        resolved.definition.name()
+                    ),
+                )
+                .with_module_id(reference.node().as_str())
+                .with_port_name(reference.port()),
+            );
+            return None;
         }
 
         diagnostics.push(

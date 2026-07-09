@@ -524,6 +524,165 @@ fn validation_rejects_an_out_of_range_resolved_channel_count_without_resolving_p
 }
 
 #[test]
+fn connection_from_a_node_whose_ports_failed_to_resolve_adds_no_second_diagnostic() {
+    // `e`'s ports never resolve (channel count of zero). The connection out of
+    // it must not also be reported as a missing port: the root cause is enough.
+    let registry = DefinitionRegistry::new()
+        .with_definition(echo_primitive())
+        .with_definition(gain_primitive());
+    let definition = GraphDefinition::new("root")
+        .with_node(
+            Node::new(NodeId::new("e"), "echo")
+                .with_static_arg("channels", StaticArg::Literal(StaticValue::Int(0))),
+        )
+        .with_node(Node::new(NodeId::new("amp"), "gain"))
+        .with_connection(Connection::new(
+            PortRef::new(NodeId::new("e"), "audio_out"),
+            PortRef::new(NodeId::new("amp"), "audio_in"),
+        ));
+
+    let validation = definition.validate(&registry);
+
+    assert!(
+        validation
+            .diagnostics()
+            .errors()
+            .all(|d| d.error_code() == error_codes::KERNEL_INVALID_STATIC_REFERENCE_VALUE),
+        "only the unresolved channel count is reported, got: {:?}",
+        validation.diagnostics()
+    );
+}
+
+#[test]
+fn validation_accepts_an_override_of_a_port_the_definition_declares() {
+    let registry = DefinitionRegistry::new().with_definition(gain_primitive());
+    let definition = GraphDefinition::new("root")
+        .with_node(Node::new(NodeId::new("amp"), "gain").with_default_override("level", 0.5));
+
+    let validation = definition.validate(&registry);
+
+    assert!(
+        validation.is_ok(),
+        "overriding a declared control port is legal, got: {:?}",
+        validation.diagnostics()
+    );
+}
+
+#[test]
+fn control_to_audio_promotion_with_mismatched_channel_counts_records_no_promotion() {
+    // Promotion is only legal once the widths agree: a mono control output
+    // cannot silently fan out into a stereo audio input.
+    let control_source =
+        GraphDefinition::new("lfo").with_port(Port::output("out", SignalType::Control, 1));
+    let registry = DefinitionRegistry::new()
+        .with_definition(control_source)
+        .with_definition(echo_primitive());
+    let definition = GraphDefinition::new("root")
+        .with_node(Node::new(NodeId::new("lfo"), "lfo"))
+        .with_node(Node::new(NodeId::new("e"), "echo"))
+        .with_connection(Connection::new(
+            PortRef::new(NodeId::new("lfo"), "out"),
+            PortRef::new(NodeId::new("e"), "audio_in"),
+        ));
+
+    let validation = definition.validate(&registry);
+
+    assert_eq!(
+        only_error_code(&validation),
+        error_codes::KERNEL_CHANNEL_COUNT_MISMATCH
+    );
+    assert!(
+        validation.promotions().is_empty(),
+        "a rejected connection records no promotion step"
+    );
+}
+
+// --- Unresolved lookups on the discovery surface -------------------------
+
+#[test]
+fn resolved_node_ports_returns_none_for_an_unknown_node() {
+    let registry = DefinitionRegistry::new().with_definition(gain_primitive());
+    let definition = GraphDefinition::new("root").with_node(Node::new(NodeId::new("amp"), "gain"));
+
+    assert_eq!(
+        definition.resolved_node_ports(&registry, &NodeId::new("ghost")),
+        None,
+        "a node the definition does not declare has no resolved ports"
+    );
+}
+
+#[test]
+fn resolved_node_ports_returns_none_when_the_definition_is_unknown() {
+    let registry = DefinitionRegistry::new();
+    let definition = GraphDefinition::new("root").with_node(Node::new(NodeId::new("amp"), "gain"));
+
+    assert_eq!(
+        definition.resolved_node_ports(&registry, &NodeId::new("amp")),
+        None,
+        "an unregistered definition yields no invented ports"
+    );
+}
+
+#[test]
+fn resolved_node_ports_returns_none_when_a_required_static_argument_is_missing() {
+    // `channels` has no default here, so the node cannot resolve its port widths.
+    let echo = GraphDefinition::new("echo")
+        .with_static_param(StaticParam::new("channels", StaticType::Int))
+        .with_port(Port::input(
+            "audio_in",
+            SignalType::Audio,
+            ChannelCount::param("channels"),
+        ));
+    let registry = DefinitionRegistry::new().with_definition(echo);
+    let definition = GraphDefinition::new("root").with_node(Node::new(NodeId::new("e"), "echo"));
+
+    assert_eq!(
+        definition.resolved_node_ports(&registry, &NodeId::new("e")),
+        None,
+        "an unsupplied static argument leaves the port widths unresolved"
+    );
+}
+
+#[test]
+fn effective_control_input_returns_none_for_an_unknown_node() {
+    let registry = DefinitionRegistry::new().with_definition(gain_primitive());
+    let definition = GraphDefinition::new("root").with_node(Node::new(NodeId::new("amp"), "gain"));
+
+    assert_eq!(
+        definition.effective_control_input(&registry, &NodeId::new("ghost"), "level"),
+        None
+    );
+}
+
+#[test]
+fn effective_control_input_returns_none_when_the_definition_is_unknown() {
+    let registry = DefinitionRegistry::new();
+    let definition = GraphDefinition::new("root").with_node(Node::new(NodeId::new("amp"), "gain"));
+
+    assert_eq!(
+        definition.effective_control_input(&registry, &NodeId::new("amp"), "level"),
+        None
+    );
+}
+
+#[test]
+fn effective_control_input_returns_none_for_a_port_that_is_not_a_control_input() {
+    let registry = DefinitionRegistry::new().with_definition(gain_primitive());
+    let definition = GraphDefinition::new("root").with_node(Node::new(NodeId::new("amp"), "gain"));
+
+    assert_eq!(
+        definition.effective_control_input(&registry, &NodeId::new("amp"), "audio_in"),
+        None,
+        "an audio input is not a control input"
+    );
+    assert_eq!(
+        definition.effective_control_input(&registry, &NodeId::new("amp"), "missing"),
+        None,
+        "a port the definition does not declare has no effective input"
+    );
+}
+
+#[test]
 fn connection_from_input_port_reports_incorrect_direction() {
     let registry = DefinitionRegistry::new().with_definition(gain_primitive());
     let definition = GraphDefinition::new("root")
