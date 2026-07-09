@@ -482,6 +482,243 @@ fn matching_signal_connection_inserts_no_promotion() {
     );
 }
 
+// --- Composite input boundary -------------------------------------------
+
+/// A composite that forwards a public audio input to an internal gain and
+/// gathers its output back out, exercising both boundary directions.
+fn amplifier() -> GraphDefinition {
+    GraphDefinition::new("amplifier")
+        .with_port(
+            Port::input("audio_in", SignalType::Audio, 1)
+                .maps_to(PortRef::new(NodeId::new("g"), "audio_in")),
+        )
+        .with_port(
+            Port::output("audio_out", SignalType::Audio, 1)
+                .maps_from(PortRef::new(NodeId::new("g"), "audio_out")),
+        )
+        .with_node(Node::new(NodeId::new("g"), "gain"))
+}
+
+#[test]
+fn composite_input_port_forwards_incoming_connections_to_internal_ports() {
+    let registry = DefinitionRegistry::new()
+        .with_definition(oscillator())
+        .with_definition(gain())
+        .with_definition(amplifier());
+    let root = GraphDefinition::new("root")
+        .with_node(Node::new(NodeId::new("osc"), "oscillator"))
+        .with_node(Node::new(NodeId::new("amp"), "amplifier"))
+        .with_connection(Connection::new(
+            PortRef::new(NodeId::new("osc"), "audio"),
+            PortRef::new(NodeId::new("amp"), "audio_in"),
+        ));
+
+    let flat = root.flatten(&registry).expect("flattens");
+
+    assert_eq!(flat.connections().len(), 1);
+    let connection = &flat.connections()[0];
+    assert_eq!(connection.source().node().as_str(), "osc");
+    assert_eq!(
+        connection.destination().node().as_str(),
+        "amp::g",
+        "the composite's public input forwards to the internal node it maps to"
+    );
+    assert_eq!(connection.destination().port(), "audio_in");
+}
+
+#[test]
+fn composite_input_mapped_to_an_unknown_internal_node_forwards_nothing() {
+    // Validation reports the dangling `maps_to` separately; flattening must not
+    // wire the incoming connection to an internal node that was never expanded.
+    let dangling = GraphDefinition::new("dangling").with_port(
+        Port::input("audio_in", SignalType::Audio, 1)
+            .maps_to(PortRef::new(NodeId::new("ghost"), "audio_in")),
+    );
+    let registry = DefinitionRegistry::new()
+        .with_definition(oscillator())
+        .with_definition(gain())
+        .with_definition(dangling.with_node(Node::new(NodeId::new("g"), "gain")));
+    let root = GraphDefinition::new("root")
+        .with_node(Node::new(NodeId::new("osc"), "oscillator"))
+        .with_node(Node::new(NodeId::new("d"), "dangling"))
+        .with_connection(Connection::new(
+            PortRef::new(NodeId::new("osc"), "audio"),
+            PortRef::new(NodeId::new("d"), "audio_in"),
+        ));
+
+    let flat = root.flatten(&registry).expect("flattens");
+
+    assert!(
+        flat.connections().is_empty(),
+        "a public input mapping to a nonexistent internal node forwards to nothing"
+    );
+}
+
+#[test]
+fn root_ports_expose_the_resolved_public_interface() {
+    let registry = DefinitionRegistry::new().with_definition(gain());
+    let root = GraphDefinition::new("root")
+        .with_port(
+            Port::input("in", SignalType::Audio, 1)
+                .maps_to(PortRef::new(NodeId::new("g"), "audio_in")),
+        )
+        .with_port(
+            Port::output("out", SignalType::Audio, 2)
+                .maps_from(PortRef::new(NodeId::new("g"), "audio_out")),
+        )
+        .with_node(Node::new(NodeId::new("g"), "gain"));
+
+    let flat = root.flatten(&registry).expect("flattens");
+
+    let names: Vec<&str> = flat.root_ports().iter().map(|port| port.name()).collect();
+    assert_eq!(names, ["in", "out"], "both root ports are resolved");
+    let output = flat
+        .root_ports()
+        .iter()
+        .find(|port| port.direction() == PortDirection::Output)
+        .expect("root declares an output port");
+    assert_eq!(
+        output.channels(),
+        2,
+        "the root output keeps its declared channel count for host bus binding"
+    );
+}
+
+// --- Static arguments on atomic nodes ------------------------------------
+
+#[test]
+fn atomic_nodes_record_their_resolved_static_arguments() {
+    let registry = DefinitionRegistry::new().with_definition(echo());
+    let root = GraphDefinition::new("root").with_node(
+        Node::new(NodeId::new("e"), "echo")
+            .with_static_arg("channels", StaticArg::Literal(StaticValue::Int(2))),
+    );
+
+    let flat = root.flatten(&registry).expect("flattens");
+
+    assert_eq!(
+        flat.nodes()[0].static_args().get("channels"),
+        Some(&StaticValue::Int(2)),
+        "the resolved static arguments travel with the atomic node"
+    );
+}
+
+/// A primitive keyed by a non-integer static parameter of each remaining type.
+fn sampler() -> GraphDefinition {
+    GraphDefinition::new("sampler")
+        .with_static_param(StaticParam::new("mode", StaticType::Enum))
+        .with_static_param(StaticParam::new("sample", StaticType::Resource))
+        .with_port(Port::output("audio", SignalType::Audio, 1))
+}
+
+fn sampler_node(id: &str, mode: &str, sample: &str) -> Node {
+    Node::new(NodeId::new(id), "sampler")
+        .with_static_arg("mode", StaticArg::Literal(StaticValue::Enum(mode.into())))
+        .with_static_arg(
+            "sample",
+            StaticArg::Literal(StaticValue::Resource(sample.into())),
+        )
+}
+
+#[test]
+fn enum_and_resource_static_arguments_key_the_expansion_cache() {
+    let registry = DefinitionRegistry::new().with_definition(sampler());
+    let root = GraphDefinition::new("root")
+        .with_node(sampler_node("a", "loop", "kick"))
+        .with_node(sampler_node("b", "loop", "kick"))
+        .with_node(sampler_node("c", "loop", "snare"))
+        .with_node(sampler_node("d", "one_shot", "kick"));
+
+    let flat = root.flatten(&registry).expect("flattens");
+
+    assert_eq!(
+        flat.expansion_count(),
+        4,
+        "root plus one expansion per distinct (mode, sample) pair: 'a' and 'b' share one"
+    );
+}
+
+// --- Flattening in the presence of invalid structure ---------------------
+
+#[test]
+fn unknown_definition_reference_inside_a_composite_is_rejected() {
+    let broken =
+        GraphDefinition::new("broken").with_node(Node::new(NodeId::new("x"), "ghost"));
+    let registry = DefinitionRegistry::new().with_definition(broken);
+    let root = GraphDefinition::new("root").with_node(Node::new(NodeId::new("b"), "broken"));
+
+    let diagnostics = root
+        .flatten(&registry)
+        .expect_err("a node referencing an undeclared definition must fail compilation");
+
+    assert!(
+        diagnostics
+            .errors()
+            .any(|d| d.error_code() == error_codes::KERNEL_UNKNOWN_DEFINITION),
+        "expected unknown-definition diagnostic, got: {diagnostics:?}"
+    );
+}
+
+#[test]
+fn unresolvable_static_arguments_fail_compilation_without_expanding_the_node() {
+    let registry = DefinitionRegistry::new().with_definition(gain());
+    let root = GraphDefinition::new("root").with_node(
+        Node::new(NodeId::new("amp"), "gain")
+            .with_static_arg("channels", StaticArg::Literal(StaticValue::Int(2))),
+    );
+
+    let diagnostics = root
+        .flatten(&registry)
+        .expect_err("an unknown static argument must fail compilation");
+
+    assert!(
+        diagnostics
+            .errors()
+            .any(|d| d.error_code() == error_codes::KERNEL_UNKNOWN_STATIC_ARGUMENT),
+        "expected unknown-static-argument diagnostic, got: {diagnostics:?}"
+    );
+}
+
+#[test]
+fn connection_referencing_an_unknown_node_is_dropped_rather_than_wired() {
+    // Validation reports dangling connections separately; flattening must not
+    // invent an edge to a node that does not exist.
+    let registry = DefinitionRegistry::new().with_definition(gain());
+    let root = GraphDefinition::new("root")
+        .with_node(Node::new(NodeId::new("amp"), "gain"))
+        .with_connection(Connection::new(
+            PortRef::new(NodeId::new("ghost"), "audio_out"),
+            PortRef::new(NodeId::new("amp"), "audio_in"),
+        ));
+
+    let flat = root.flatten(&registry).expect("flattens");
+
+    assert!(
+        flat.connections().is_empty(),
+        "no edge is wired for a connection whose source node does not exist"
+    );
+}
+
+#[test]
+fn override_of_an_unknown_port_leaves_declared_defaults_intact() {
+    // Validation rejects unknown-port overrides; flattening must ignore them
+    // rather than fabricate a default for a port the node does not have.
+    let registry = DefinitionRegistry::new().with_definition(gain());
+    let root = GraphDefinition::new("root").with_node(
+        Node::new(NodeId::new("amp"), "gain").with_default_override("bogus", 0.3),
+    );
+
+    let flat = root.flatten(&registry).expect("flattens");
+
+    let defaults = flat.nodes()[0].port_defaults();
+    assert_eq!(defaults.get("bogus"), None, "the unknown port gains no default");
+    assert_eq!(
+        defaults.get("level"),
+        Some(&1.0),
+        "the declared default of the real control port is untouched"
+    );
+}
+
 #[test]
 fn recursive_definition_is_rejected() {
     let recursive = GraphDefinition::new("loop").with_node(Node::new(NodeId::new("inner"), "loop"));
