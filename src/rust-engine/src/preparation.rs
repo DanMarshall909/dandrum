@@ -407,9 +407,9 @@ fn lower_kernel_graph(
             ModuleId::new(KERNEL_OUTPUT_NODE_ID),
             module_types::AUDIO_OUTPUT,
         )
-            .with_execution_scope(ExecutionScope::Global)
-            .with_input(builtin_ports::LEFT, SignalType::Audio)
-            .with_input(builtin_ports::RIGHT, SignalType::Audio),
+        .with_execution_scope(ExecutionScope::Global)
+        .with_input(builtin_ports::LEFT, SignalType::Audio)
+        .with_input(builtin_ports::RIGHT, SignalType::Audio),
     );
     Ok(Graph::new(modules, cables))
 }
@@ -597,7 +597,11 @@ impl std::error::Error for PreparationError {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::builtins::{DELAY_SAMPLES_PARAMETER, module_types};
+    use crate::builtins::{
+        DELAY_SAMPLES_PARAMETER, SPECTRAL_FFT_SIZE_PARAMETER, SPECTRAL_MODE_PARAMETER,
+        SPECTRAL_MODE_PASSTHROUGH, module_types,
+    };
+    use crate::convolution::Convolution;
     use crate::core::TimedInputEvent;
     use crate::graph::{SignalType, builtin_ports};
     use crate::graph_processor::{RealtimeGraphProcessor, render_offline_compiled};
@@ -608,8 +612,13 @@ mod tests {
         PortRef as KernelPortRef, StaticArg, StaticValue,
     };
     use crate::patch;
+    use crate::sample::LoadedSample;
     use crate::script::ScriptEvent;
+    use std::collections::BTreeMap;
     use std::fs;
+
+    const WET_NODE_ID: &str = "wet";
+    const IMPULSE_TOLERANCE: f32 = 1.0e-5;
 
     const MINIMAL_PATCH: &str = r#"
 metadata:
@@ -1100,10 +1109,7 @@ connections: []
             diagnostic.error_code(),
             crate::diagnostics::error_codes::KERNEL_PREPARATION_UNSUPPORTED_ROOT
         );
-        assert_eq!(
-            diagnostic.expected(),
-            Some(TRANSITIONAL_ROOT_EXPECTATION)
-        );
+        assert_eq!(diagnostic.expected(), Some(TRANSITIONAL_ROOT_EXPECTATION));
     }
 
     #[test]
@@ -1183,6 +1189,120 @@ connections: []
 
         assert_eq!(realtime_left, offline_left);
         assert_eq!(realtime_right, offline_right);
+    }
+
+    #[test]
+    fn kernel_convolution_dry_and_wet_paths_render_time_aligned() {
+        let (root, registry) = latency_builtin_render_graph(Node::new(
+            NodeId::new(WET_NODE_ID),
+            module_types::CONVOLUTION,
+        ));
+        let expected_frame = Convolution::BLOCK_SIZE;
+        let settings = latency_render_settings(expected_frame + 2);
+        let prepared = prepare_kernel_graph(&root, &registry, &settings)
+            .expect("convolution latency graph should prepare");
+        let assets = PreparedSamplerAssets::from_samples_by_module(BTreeMap::from([(
+            WET_NODE_ID.to_string(),
+            LoadedSample::new(settings.sample_rate_hz, vec![1.0]),
+        )]));
+
+        let (left, right) =
+            render_offline_compiled(prepared.compiled_patch(), vec![note_on_at(0)], &assets);
+
+        assert_aligned_impulse(&left, expected_frame);
+        assert_aligned_impulse(&right, expected_frame);
+    }
+
+    #[test]
+    fn kernel_spectral_dry_and_wet_paths_render_time_aligned_per_fft_size() {
+        for fft_size in [512_usize, 1024] {
+            let wet = Node::new(NodeId::new(WET_NODE_ID), module_types::SPECTRAL_PROCESSOR)
+                .with_static_arg(
+                    SPECTRAL_FFT_SIZE_PARAMETER,
+                    StaticArg::Literal(StaticValue::Int(fft_size as i64)),
+                )
+                .with_static_arg(
+                    SPECTRAL_MODE_PARAMETER,
+                    StaticArg::Literal(StaticValue::Enum(SPECTRAL_MODE_PASSTHROUGH.to_string())),
+                );
+            let (root, registry) = latency_builtin_render_graph(wet);
+            let trigger_frame = fft_size / 2;
+            let expected_frame = trigger_frame + fft_size - 1;
+            let settings = latency_render_settings(expected_frame + 2);
+            let prepared = prepare_kernel_graph(&root, &registry, &settings)
+                .expect("spectral latency graph should prepare");
+
+            let (left, right) = render_offline_compiled(
+                prepared.compiled_patch(),
+                vec![note_on_at(trigger_frame as u64)],
+                &PreparedSamplerAssets::empty(),
+            );
+
+            assert_aligned_impulse(&left, expected_frame);
+            assert_aligned_impulse(&right, expected_frame);
+        }
+    }
+
+    fn latency_builtin_render_graph(wet: Node) -> (GraphDefinition, DefinitionRegistry) {
+        let registry = builtin_registry();
+        let root = GraphDefinition::new("builtin-latency-render-test")
+            .with_port(
+                KernelPort::output(builtin_ports::LEFT, SignalType::Audio, 1)
+                    .maps_from(kernel_ref("mix", builtin_ports::MIX)),
+            )
+            .with_port(
+                KernelPort::output(builtin_ports::RIGHT, SignalType::Audio, 1)
+                    .maps_from(kernel_ref("mix", builtin_ports::MIX)),
+            )
+            .with_node(Node::new(NodeId::new("midi"), module_types::MIDI_INPUT))
+            .with_node(Node::new(NodeId::new("impulse"), module_types::IMPULSE))
+            .with_node(wet)
+            .with_node(Node::new(NodeId::new("mix"), module_types::AUDIO_MIXER))
+            .with_connection(Connection::new(
+                kernel_ref("midi", builtin_ports::EVENTS),
+                kernel_ref("impulse", builtin_ports::TRIGGER),
+            ))
+            .with_connection(Connection::new(
+                kernel_ref("impulse", builtin_ports::AUDIO),
+                kernel_ref(WET_NODE_ID, builtin_ports::AUDIO_IN),
+            ))
+            .with_connection(Connection::new(
+                kernel_ref("impulse", builtin_ports::AUDIO),
+                kernel_ref("mix", builtin_ports::INPUTS),
+            ))
+            .with_connection(Connection::new(
+                kernel_ref(WET_NODE_ID, builtin_ports::AUDIO_OUT),
+                kernel_ref("mix", builtin_ports::INPUTS),
+            ));
+        (root, registry)
+    }
+
+    fn latency_render_settings(duration_frames: usize) -> patch::RenderSettings {
+        patch::RenderSettings {
+            sample_rate_hz: KERNEL_RENDER_SETTINGS.sample_rate_hz,
+            block_size_frames: 64,
+            duration_frames: duration_frames as u64,
+        }
+    }
+
+    fn note_on_at(frame: u64) -> TimedInputEvent {
+        TimedInputEvent::new(
+            frame,
+            ScriptEvent::NoteOn {
+                note: 60,
+                velocity: 100,
+            },
+        )
+    }
+
+    fn assert_aligned_impulse(samples: &[f32], expected_frame: usize) {
+        for (frame, sample) in samples.iter().copied().enumerate() {
+            let expected = if frame == expected_frame { 2.0 } else { 0.0 };
+            assert!(
+                (sample - expected).abs() <= IMPULSE_TOLERANCE,
+                "frame {frame} was {sample}, expected {expected} within {IMPULSE_TOLERANCE}"
+            );
+        }
     }
 
     fn latency_test_graph() -> (GraphDefinition, DefinitionRegistry) {

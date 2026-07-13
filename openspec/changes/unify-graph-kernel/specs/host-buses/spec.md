@@ -16,7 +16,7 @@ The host boundary SHALL be expressed as named input and output buses, each with 
 
 ### Requirement: Root ports bind to buses by name
 
-Preparation SHALL bind root graph input/output ports to host buses by name and SHALL validate that each bound pair has matching channel counts. Root output ports with no matching bus SHALL fail preparation; unbound host inputs deliver silence.
+Preparation SHALL bind root graph input/output ports to host buses by name and SHALL validate that each bound pair has matching channel counts. Root output ports with no matching bus SHALL fail preparation; a root input port with no matching host bus SHALL read silence; an extra host input bus with no matching root port SHALL be ignored.
 
 #### Scenario: Matching bus binds
 
@@ -33,14 +33,19 @@ Preparation SHALL bind root graph input/output ports to host buses by name and S
 - **WHEN** the root graph declares an output port for which the host declares no bus
 - **THEN** preparation SHALL fail with a structured diagnostic naming the unbound port
 
-#### Scenario: Unbound host input is silent
+#### Scenario: Unbound root input is silent
 
-- **WHEN** the host declares an input bus the root graph does not consume
-- **THEN** preparation SHALL succeed and the unused bus SHALL not affect rendering
+- **WHEN** the root graph declares an input port for which the host provides no bus
+- **THEN** preparation SHALL succeed and rendering SHALL read silence from that root input
+
+#### Scenario: Extra host input is ignored
+
+- **WHEN** the host declares an input bus the root graph does not expose
+- **THEN** preparation SHALL succeed and the unused host bus SHALL not affect rendering
 
 ### Requirement: Bus enumeration over FFI
 
-The FFI SHALL expose enumeration of a prepared instrument's root ports (name, direction, signal type, channel count) and buffer binding per named bus, so JUCE, plugin, CLI, and offline hosts map buses to devices, plugin ports, or files without engine changes.
+The FFI SHALL expose enumeration of a prepared instrument's root ports (name, direction, signal type, channel count) and SHALL accept validated planar channel-buffer views for named buses on each render call, so JUCE, plugin, CLI, and offline hosts map buses to devices, plugin ports, or files without engine changes. The engine SHALL NOT retain host-owned audio buffer pointers after the render call returns.
 
 #### Scenario: Host enumerates ports before binding
 
@@ -52,9 +57,14 @@ The FFI SHALL expose enumeration of a prepared instrument's root ports (name, di
 - **WHEN** a plain stereo host binds a single 2-channel `master` bus to its output buffers
 - **THEN** rendering SHALL fill those buffers with the root `master` port's two channels
 
+#### Scenario: Render rejects insufficient channel buffers
+
+- **WHEN** a render call supplies fewer planar channel buffers than a bound bus declares
+- **THEN** the FFI SHALL reject the call without dereferencing missing or invalid buffers
+
 ### Requirement: Render settings are host concerns
 
-Sample rate, block size, and render duration SHALL be supplied by the host or render invocation, not declared inside graph definitions.
+Sample rate and maximum block size SHALL be supplied as preparation settings, and offline duration SHALL be supplied by the render invocation. None SHALL be declared inside graph definitions.
 
 #### Scenario: Same patch renders at two sample rates
 

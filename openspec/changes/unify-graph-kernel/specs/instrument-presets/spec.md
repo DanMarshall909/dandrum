@@ -28,6 +28,11 @@ The engine SHALL apply validated preset values before compilation: value targets
 - **WHEN** a compatible preset sets a declared value target
 - **THEN** compilation SHALL use the preset value as the aliased port's effective default instead of the declared default
 
+#### Scenario: Root preset default reaches mapped internal ports
+
+- **WHEN** a preset replaces a root control input's default and that root port maps to one or more internal control inputs
+- **THEN** flattening SHALL propagate the preset value to every mapped destination unless an incoming connection takes precedence
+
 #### Scenario: Missing preset value uses default
 
 - **WHEN** a compatible preset omits a declared preset target

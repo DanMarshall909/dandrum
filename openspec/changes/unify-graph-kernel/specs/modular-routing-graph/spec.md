@@ -16,7 +16,7 @@ An instrument SHALL be represented as a root graph definition whose graph contai
 
 ### Requirement: Named typed ports
 
-Every routable module endpoint SHALL be represented as a named input or output port with a declared signal type and channel count. Control input ports SHALL support declared default values with optional range metadata.
+Every routable module endpoint SHALL be represented as a named input or output port with a declared signal type, channel count, and input multiplicity. Control input ports SHALL support declared default values with optional range metadata.
 
 #### Scenario: Port direction is validated
 
@@ -32,6 +32,11 @@ Every routable module endpoint SHALL be represented as a named input or output p
 
 - **WHEN** a connection joins ports whose resolved channel counts differ
 - **THEN** validation SHALL fail and report both channel counts
+
+#### Scenario: Multiple sources require summing multiplicity
+
+- **WHEN** more than one connection targets a single-source input
+- **THEN** validation SHALL fail and direct the author to a summing input or explicit mixer
 
 ### Requirement: Signal compatibility validation
 

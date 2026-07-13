@@ -28,6 +28,25 @@ Every built-in module SHALL declare its named input and output ports with signal
 - **WHEN** any built-in module's tunable value (e.g. filter cutoff, echo feedback) is inspected
 - **THEN** it SHALL be declared as a control input port with a default rather than as a non-connectable parameter
 
+#### Scenario: Generic builtin resolves arbitrary channel count
+
+- **WHEN** a channel-independent builtin such as gain or mixer is instantiated with six channels
+- **THEN** preparation SHALL allocate and process six channel buffers through the same logical ports
+
+#### Scenario: Intrinsically stereo builtin rejects unsupported width
+
+- **WHEN** echo or reverb is instantiated with a channel count greater than two
+- **THEN** static resolution SHALL fail with a diagnostic listing the supported mono and stereo channel counts
+
+### Requirement: Script-backed definitions declare their interface
+
+An author-defined script processor SHALL be declared as a named graph definition with explicit ports and construction-time language/source static arguments. Script node instances SHALL obtain their interface from that definition and SHALL NOT add ad-hoc instance ports.
+
+#### Scenario: Script definition has connectable declared ports
+
+- **WHEN** YAML declares a script-backed definition with event/control ports and inline source
+- **THEN** ordinary nodes referencing that definition SHALL validate and connect through those declared ports
+
 ### Requirement: Built-in modules declare static parameters
 
 Every built-in module type that requires compile-time configuration (channel counts, maximum delay length, FFT size, resource references) SHALL declare typed static parameters in the Rust module registry, distinct from its ports.

@@ -273,12 +273,15 @@ impl RenderPlanBuilder<'_> {
                     return None;
                 }
 
-                default_control_value(node.module_kind, &node.input_port_names[port_index]).map(
-                    |value| ControlDefault {
+                let port_name = &node.input_port_names[port_index];
+                node.parameters
+                    .get(port_name)
+                    .and_then(|value| value.parse::<f32>().ok())
+                    .or_else(|| default_control_value(node.module_kind, port_name))
+                    .map(|value| ControlDefault {
                         buffer: self.input_buffer(module_index, port_index),
                         value,
-                    },
-                )
+                    })
             })
             .collect()
     }

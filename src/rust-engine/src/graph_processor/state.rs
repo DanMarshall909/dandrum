@@ -10,7 +10,8 @@ use crate::builtins::{
     FILTER_ALGORITHM_MOOG, FILTER_ALGORITHM_PARAMETER, FILTER_COMB_TYPE_PARAMETER,
     FILTER_MODE_HIGHPASS, FILTER_MODE_PARAMETER, FILTER_MODE_PEAKING, INTERPOLATION_CUBIC,
     INTERPOLATION_PARAMETER, NOISE_DEFAULT_SEED, NOISE_SEED_PARAMETER, SCRIPT_SOURCE_PARAMETER,
-    SPECTRAL_DEFAULT_FFT_SIZE, STEPS_PARAMETER, WAVEFORM_PARAMETER,
+    SPECTRAL_DEFAULT_FFT_SIZE, SPECTRAL_FFT_SIZE_PARAMETER, SPECTRAL_MODE_PARAMETER,
+    SPECTRAL_MODE_PASSTHROUGH, STEPS_PARAMETER, WAVEFORM_PARAMETER,
 };
 use crate::compiled_patch::CompiledNode;
 use crate::convolution::Convolution;
@@ -276,9 +277,13 @@ impl PerModuleState {
             ModuleKind::Saturator => PerModuleState::Saturator {
                 processor: Saturator::new(),
             },
-            ModuleKind::Convolution => PerModuleState::Convolution {
-                processor: Convolution::new(),
-            },
+            ModuleKind::Convolution => {
+                let mut processor = Convolution::new();
+                if let Some(ir) = sampler_assets.get(module_id) {
+                    processor.load_ir(ir.frames().to_vec());
+                }
+                PerModuleState::Convolution { processor }
+            }
             ModuleKind::Filter => {
                 let algorithm = params.get(FILTER_ALGORITHM_PARAMETER).map(|s| s.as_str());
                 let mode = params.get(FILTER_MODE_PARAMETER).map(|s| s.as_str());
@@ -339,12 +344,19 @@ impl PerModuleState {
                 second: LinkwitzRiley4::new(0.08),
                 sample_rate: sample_rate as f64,
             },
-            ModuleKind::SpectralProcessor => PerModuleState::SpectralProcessor {
-                processor: SpectralProcessor::new(
-                    SPECTRAL_DEFAULT_FFT_SIZE,
-                    crate::spectral::SpectralMode::Gate,
-                ),
-            },
+            ModuleKind::SpectralProcessor => {
+                let fft_size = params
+                    .get(SPECTRAL_FFT_SIZE_PARAMETER)
+                    .and_then(|value| value.parse::<usize>().ok())
+                    .unwrap_or(SPECTRAL_DEFAULT_FFT_SIZE);
+                let mode = match params.get(SPECTRAL_MODE_PARAMETER).map(String::as_str) {
+                    Some(SPECTRAL_MODE_PASSTHROUGH) => crate::spectral::SpectralMode::Passthrough,
+                    _ => crate::spectral::SpectralMode::Gate,
+                };
+                PerModuleState::SpectralProcessor {
+                    processor: SpectralProcessor::new(fft_size, mode),
+                }
+            }
             ModuleKind::Noise => {
                 let seed = params
                     .get(NOISE_SEED_PARAMETER)

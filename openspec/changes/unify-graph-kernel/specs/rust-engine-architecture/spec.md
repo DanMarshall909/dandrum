@@ -2,12 +2,17 @@
 
 ### Requirement: Patch preparation pipeline
 
-The engine SHALL prepare instruments through an explicit pipeline: parse document → resolve definitions → resolve static arguments → recursively flatten composites to atomic nodes → validate ports, rates, channel counts, and cycles → balance latency → schedule and plan buffers → compiled patch → runtime state. Expansion SHALL be cached keyed by definition identity plus resolved static arguments.
+The engine SHALL prepare instruments through an explicit pipeline: parse document → resolve definitions → resolve static arguments and resources → recursively flatten composites to atomic nodes and explicit poly regions → validate ports, rates, channel counts, multiplicity, and cycles → balance latency → schedule and plan channel-span buffers → compiled patch → runtime state. Expansion SHALL be cached keyed by definition identity plus resolved static arguments.
 
 #### Scenario: Valid patch produces prepared runtime
 
 - **WHEN** a valid patch document and its assets are prepared
 - **THEN** the engine SHALL produce a runtime-ready representation containing a fully flattened graph, validated routing, compiled execution metadata, module state, and required scratch capacity
+
+#### Scenario: Multichannel ports compile to channel spans
+
+- **WHEN** a resolved graph contains an N-channel port
+- **THEN** the compiled patch SHALL contain a contiguous N-buffer span and pre-resolved channel-wise routes for that port
 
 #### Scenario: Invalid patch fails before runtime creation
 
@@ -50,7 +55,7 @@ Offline and realtime rendering SHALL consume the same compiled flattened patch r
 
 ### Requirement: Polyphonic realtime rendering uses prepared storage
 
-Polyphonic realtime rendering SHALL execute `poly` nodes entirely through storage prepared for `max_voices` instances: routing note events to voice instances, processing active voices, summing voice outputs, and retiring voices. It SHALL NOT create per-block voice event vectors, per-voice output maps, or accumulation maps in the audio callback.
+Polyphonic realtime rendering SHALL execute each `poly` node through its own runtime region and storage prepared for `max_voices` instances: routing note events to voice instances, processing active voices, summing voice outputs, and retiring voices. It SHALL NOT create per-block voice event vectors, per-voice output maps, or accumulation maps in the audio callback.
 
 #### Scenario: Voice event routing uses prepared queues
 

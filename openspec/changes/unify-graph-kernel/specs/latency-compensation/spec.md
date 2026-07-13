@@ -33,6 +33,11 @@ When parallel audio paths converge with unequal accumulated latency, the compile
 - **WHEN** separate root audio outputs are fed by paths with unequal accumulated latency
 - **THEN** the compiler SHALL delay the earlier outputs so every root audio output matches the single latency reported to the host
 
+#### Scenario: Multichannel compensation preserves channel layout
+
+- **WHEN** an N-channel dry path converges with an N-channel latency-bearing path
+- **THEN** the compiler SHALL insert equal compensation on all N dry channels and preserve channel correspondence at the convergence
+
 #### Scenario: Control and event edges are not audio-compensated
 
 - **WHEN** control or event edges enter a node that also receives a latency-bearing audio path

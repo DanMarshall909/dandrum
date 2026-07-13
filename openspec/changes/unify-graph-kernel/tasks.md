@@ -8,7 +8,7 @@
 
 ## 2. Recursive flattening and compilation pipeline
 
-Implementation ordering note: after the 2.6 prerequisite primitives, complete 3.2, then the graph-producing document work in 6.1 and 6.2, before returning to 2.6. Preparation cannot be rewired honestly until documents produce kernel definitions with all construction-time static arguments.
+Historical ordering note: the completed 2.6 bridge depended on 3.1, 3.2, and the graph-producing portions of 6.1/6.2. It remains mono migration scaffolding; pending work follows the topological order in sections 3-7 and does not delete a transitional path before its callers migrate.
 
 - [x] 2.1 Implement recursive flattening of composite nodes to atomic nodes with deterministic namespaced identities and recursion/depth diagnostics (replaces current single-level `module_definitions` expansion path)
 - [x] 2.2 Implement expansion caching keyed by (definition identity, resolved static args) with per-instance disjoint runtime state
@@ -18,48 +18,58 @@ Implementation ordering note: after the 2.6 prerequisite primitives, complete 3.
 - [x] 2.4b-root Extend `LatencyPlan` to align every root audio output to the reported maximum root latency; control and event edges are not latency-compensated
 - [x] 2.4b-wire Consume `LatencyPlan` in the compilation/preparation path: preallocate the compensation-delay buffers and expose total latency to the host; lands with the 2.6 pipeline rewire (until then 2.4b is a standalone, independently tested pass)
 - [x] 2.4c-plan Compile-time proof: the latencies declared in `builtin_registry()` (§2.4), placed in the dry-plus-processed topology, drive the balancer to compensate the dry path to alignment — convolution one block, spectral `fft_size - 1` per resolved FFT size (pulls the real `LatencySpec`s from the registry)
-- [ ] 2.4c Behaviour (render) test: impulse through a dry path mixed with a unit-impulse-IR convolution path arrives time-aligned at the mix; spectral dry/wet topology aligns per resolved FFT size (sample-accurate render assertion; needs the 2.6 pipeline + 2.4b-wire compensation buffers)
-- [x] 2.5 Insert compiler-generated control→audio promotion steps into the flattened graph, visible in diagnostics/discovery output (flattening inserts a visible `control_to_audio` node per promoted edge and records each as a `PromotionStep` on `FlattenedGraph`; discovery-FFI exposure of these nodes lands with 6.5)
+- [x] 2.4c Behaviour (render) test: impulse through a dry path mixed with a unit-impulse-IR convolution path arrives time-aligned at the mix; spectral dry/wet topology aligns per resolved FFT size (sample-accurate render assertion; needs the 2.6 pipeline + 2.4b-wire compensation buffers)
+- [x] 2.5 Insert compiler-generated control→audio promotion steps into the flattened graph, visible in diagnostics/discovery output (flattening inserts a visible `control_to_audio` node per promoted edge and records each as a `PromotionStep` on `FlattenedGraph`; discovery exposure of these nodes lands with 5.3)
 - [x] 2.6-pre-promotion Add the `control_to_audio` primitive: legacy definition, `ModuleKind`, per-module state, dispatch arm, and DSP (control and audio share the per-sample `f32` buffer representation, so the promotion is a copy); declared in `kernel::builtins` and rendered end-to-end by a behaviour test
 - [x] 2.6-pre-delay Add the N-sample compensation delay line primitive (§2.4b inserts these; legacy has only `audio_delay_one_sample`/`block_delay`, no settable-length delay): preallocated ring buffer state, `ModuleKind`, dispatch arm, DSP, and kernel declaration with latency = its delay length
-- [x] 2.6 Rewire `preparation.rs` to lower the flattened kernel graph into the legacy `Graph` that `compiled_patch::compile` already consumes, keeping `compiled_patch.rs`/`render_plan.rs`/`graph_processor` untouched and offline/realtime parity tests green. **Depends on 2.4b-root, 2.6-pre, 3.1, 3.2, and the graph-producing portions of 6.1/6.2.** Bridge also maps resolved static arguments and `port_defaults: f64` into `CompiledNode.parameters: String`, sets all nodes `ExecutionScope::Global` until `poly` (§4), and temporarily synthesizes the legacy stereo `audio_output` sink from mono `left`/`right` root ports. This transitional sink is removed by 3.3/3.4 and named-bus binding; unsupported root shapes fail explicitly rather than being collapsed
+- [x] 2.6 Add a transitional preparation bridge that lowers the flattened mono kernel graph into the legacy `Graph` consumed by `compiled_patch::compile`, preserving offline/realtime parity while later channel-span and poly-region work proceeds. **Depends on 2.4b-root, 2.6-pre, 3.1, 3.2, and the graph-producing portions of 6.1/6.2.** The bridge maps resolved static arguments and `port_defaults: f64` into `CompiledNode.parameters: String`, sets nodes `ExecutionScope::Global`, and synthesizes a private stereo `audio_output` sink only for mono root ports named `left`/`right`; unsupported root shapes fail explicitly. This bridge is migration scaffolding, not the representation for multichannel buses or structural polyphony
 
-## 3. Builtins on the kernel model
+## 3. Kernel metadata and channel-aware compiled runtime
 
-- [x] 3.1 Re-declare all builtin ports with channel counts and control defaults/ranges in `kernel::builtins`; every numeric tunable param becomes a control input port carrying its default/range. Ports are declared at current shapes (all mono; `echo`/`reverb`/`audio_output` keep `_l`/`_r` pairs) because the legacy `Graph` the §2.6 bridge lowers onto has no multichannel representation — collapsing happens in §3.3. Text/enum/integer construction-time params become static params in §3.2
-- [ ] 3.1-legacy Delete `ModuleNode::params` consumption per builtin, once §2.6 makes the kernel declarations authoritative for the render path
-- [x] 3.2 Declare non-asset builtin static parameters (channel counts, max delay length, FFT size, enum modes, inline script source strings) distinct from ports; make declarations authoritative for `static`/`defaults` validation. Resource-typed sampler/convolution declarations land with asset migration in 3.5
-- [ ] 3.3 Convert stereo builtins to channel-polymorphic via `channels` static param (echo, reverb, mixer, gain, frequency splitter, etc.), collapsing `_l`/`_r` port pairs to multichannel ports
-- [ ] 3.4 Delete `audio_output` builtin; add rejection diagnostic directing to root ports
-- [ ] 3.5 Convert assets to resource-typed static parameters on sampler/convolution builtins; remove `asset_bindings` mechanism
+- [x] 3.1 Re-declare all builtin ports with channel counts and control defaults/ranges in `kernel::builtins`; every numeric tunable param becomes a control input port carrying its default/range. Ports are declared at their transitional mono/L/R shapes because the §2.6 bridge has no multichannel representation; channel-span collapsing lands in 3.6/3.7. Text/enum/integer construction-time params become static params in 3.2
+- [x] 3.2 Declare non-asset builtin static parameters (channel counts, max delay length, FFT size, enum modes, inline script source strings) distinct from ports; make declarations authoritative for `static`/`defaults` validation. Resource-typed sampler/convolution declarations land with asset migration in 3.8
+- [ ] 3.3 Add input multiplicity to kernel `Port`, YAML declarations, flattening, validation, and discovery; declare mixer/summing inputs explicitly and remove the §2.6 bridge's lookup of multiplicity in the legacy builtin registry
+- [ ] 3.4 Introduce typed compiled construction data, typed effective control-default slots, and typed resource handles as distinct fields. Lower kernel `AtomicNode.static_args` and `port_defaults` without conflating them in `CompiledNode.parameters`; stop kernel-path per-builtin state constructors from parsing the undifferentiated legacy map; do not create runtime slots for numeric static arguments. Retain a legacy adapter until task 7.8
+- [ ] 3.5 Make the compiled IR channel-aware: each resolved port owns a contiguous `(first_buffer, channel_count)` span, logical connections expand to channel-wise edges, arena coloring and compensation delays allocate per physical channel, and mono/stereo/six-channel behavior tests prove routing and latency alignment
+- [ ] 3.6 Convert channel-independent builtins (gain, mixers, filters, splitter, delays, promotion, convolution, sampler, and similar processors) to channel-polymorphic ports and per-channel state where required; test mono, stereo, and six-channel instances
+- [ ] 3.7 Collapse echo/reverb `_l`/`_r` pairs to one multichannel port while retaining their L/R DSP internals; support and test `channels: 1` and `channels: 2`, and reject wider instances with a structured static-argument diagnostic
+- [ ] 3.8 Implement resource static-argument resolution through a preparation context (document/package root, sample rate): typed sample/IR kind validation, immutable-data deduplication, package-relative path containment, and mapping to flattened/poly node state. Migrate `$LIB`/`$USER_LIB` package entries to graph definitions and remove `asset_bindings` only after package parity tests pass
+- [ ] 3.9 Implement script-backed graph definitions with author-declared event/control ports and language/source static arguments; prohibit instance-level ad-hoc ports and migrate script state construction to typed compiled data
 
-## 4. Poly combinator
+## 4. Explicit poly runtime regions
 
-- [ ] 4.1 Implement `poly` structural node: wraps a definition, static `max_voices` + allocation-policy enum, preallocates flattened voice instances/state/queues at preparation
-- [ ] 4.2 Implement note-event routing with oldest-steal policy and per-voice intrinsic ports (note, velocity control; gate event) injected into the wrapped definition scope
-- [ ] 4.3 Implement voice completion: `done` output convention plus gate-release + silence-threshold/timeout fallback (documented constants); retired voices contribute no stale output
-- [ ] 4.4 Implement per-output summing across active voices into prepared accumulation buffers; allocation-free full-polyphony render test (reuse `realtime_allocation_tests.rs` harness)
-- [ ] 4.5 Support nested `poly` expansion; remove `ExecutionScope`, `VoiceToGlobalDirectRouting`, `voice_allocator.rs`, and `voice_allocation` handling once all callers migrate
+- [ ] 4.1 Implement `poly` definition/interface validation: wrapped definition reference, static `max_voices`, allocation-policy enum (`oldest-steal`, `reject-new`), note-event input, forwarded inputs, and wrapped output shape
+- [ ] 4.2 Compile one non-nested `poly` into an explicit runtime region with preallocated flattened voice instances, disjoint state ranges, event queues, child schedule, and output accumulators; inspect preparation to prove exactly `max_voices` storage exists
+- [ ] 4.3 Implement note-event routing, both allocation policies, and per-voice intrinsic ports (`voice.note`, `voice.velocity`, `voice.gate`) without per-block allocation
+- [ ] 4.4 Implement channel-aware per-output summing across active voices and prove two simultaneous voices sum sample-wise; add sibling-poly tests proving independent allocators, state, queues, and mixes
+- [ ] 4.5 Implement explicit `done` retirement, then gate-release plus documented silence-threshold/timeout fallback; prove retired voices contribute no stale output
+- [ ] 4.6 Add allocation-free full-capacity render coverage for activation, stealing/rejection, processing, mixing, and retirement using `realtime_allocation_tests.rs`
+- [ ] 4.7 Support nested poly regions with independent child allocators and accumulation buffers; retain the legacy graph-wide scope machinery only for unmigrated callers until task 7.8
 
-## 5. Host buses and FFI
+## 5. Host settings, buses, discovery, and FFI
 
-- [ ] 5.1 Implement root-port ↔ named-bus binding at preparation: name matching, channel-count validation, unbound-output failure, unbound-input silence
-- [ ] 5.2 Extend FFI with root-port enumeration (name, direction, signal type, channels), per-bus buffer binding, and total-latency query for plugin latency reporting; keep invalid-pointer containment tests
-- [ ] 5.3 Move render settings (sample rate, block size, duration) out of patch documents to host/render invocation; add rejection diagnostic for `render:` in patches; CLI gains render flags (sample rate default 48000, block size default 128, required `--duration-frames`) with per-example settings encoded in the Rust test harness
-- [ ] 5.4 Update JUCE demo and CLI/offline renderer to declare and bind buses (stereo host binds one 2-channel `master` bus); verify demo produces sound
+- [ ] 5.1 Split host preparation settings (sample rate, maximum block size/capacities) from offline invocation settings (required duration and output destinations). Add CLI flags with defaults `48000` Hz and `128` frames and required `--duration-frames`; use synthetic kernel fixtures before migrating example-owned settings in section 7
+- [ ] 5.2 Implement Rust root-port ↔ named-bus planning over channel spans: name matching, channel-count validation, missing root-output failure, missing host input for a root input produces silence, and extra host inputs are ignored. Test mono, stereo, six-channel, multiple-output, and root-input cases
+- [ ] 5.3 Unify capability discovery over kernel definitions: port metadata includes channels, multiplicity, defaults/ranges/units; static metadata includes types/defaults/enums/resource kinds; primitive, composite, script-backed, package, and root definitions use one representation. Prepared root enumeration reuses that representation and includes compiler-generated promotion nodes where applicable
+- [ ] 5.4 Extend FFI with prepared root-port enumeration, total-latency query, and per-render planar named-bus channel views. Validate direction, channel count, frame capacity, null pointers, and lifetimes; never retain host-owned audio pointers after a call
+- [ ] 5.5 Update JUCE, plugin integration, CLI, and offline renderer to declare and bind named buses; a stereo host binds one 2-channel `master` output, while offline rendering preserves all named outputs. Verify the JUCE demo produces nonzero audio through `master`
 
-## 6. YAML schema and document shape
+## 6. YAML document, presets, and schema
 
 - [x] 6.1 Implement the kernel patch document shape: `metadata`, `static_params`, `ports` (root inputs/outputs), `module_definitions`, `modules` (with `static` and `defaults` mappings), `connections`; reject legacy `render`, `voice_allocation`, instance `parameters`, `${name}` bindings, `asset_bindings`
 - [x] 6.2 Make composite `module_definitions` full graph definitions: static params, public control ports with defaults/range replacing composite `parameters`; patch document loadable as a composite definition (patch/module symmetry test)
-- [ ] 6.3 Re-point preset surface to aliases on root ports and resource static params; update preset validation/application (`instrument-presets` scenarios) and preserve determinism tests
-- [ ] 6.4 Rewrite `schema/patch.schema.yaml` for the kernel document shape
-- [ ] 6.5 Update capability discovery to the unified schema: port metadata with channels/defaults/range for all definition kinds, static-parameter metadata, delete separate parameter metadata
+- [ ] 6.3 Add kernel instrument identity and preset aliases to the document model. Resolve value aliases onto root control defaults and resource aliases onto resource static arguments before flattening; propagate root defaults through `maps_to`, preserve precedence and compatibility checks, and retain deterministic render tests
+- [ ] 6.4 Rewrite `schema/patch.schema.yaml` for the complete kernel shape (multiplicity, script-backed definitions, preset aliases, resources, poly declarations; no render/voice-allocation/legacy parameters). Make runtime loading validate against the external schema before graph construction and add schema/Serde parity fixtures
 
-## 7. Migration, examples, and cleanup
+## 7. Capability-cohort migration and cleanup
 
-- [ ] 7.1 Migrate all `examples/patches/*.yaml` and `examples/presets/*.yaml`: params→`defaults`, `_l`/`_r`→2-channel ports, `audio_output`→root ports, `voice_allocation`→`poly`, render settings→CLI flags in the test harness; compare renders against reference output where reference WAVs exist
-- [ ] 7.2 Migrate drum-kit example to per-pad `poly` nodes and multiple named 2-channel root output ports
-- [ ] 7.3 Delete remaining legacy code paths (old expansion, params plumbing, preset-surface mapping, stereo output binding) and their tests; confirm no unreferenced code remains
-- [ ] 7.4 Update `docs/nomenclature.md` and other docs for kernel vocabulary (graph definition, static parameter, poly, feedback_delay, root ports, buses)
-- [ ] 7.5 Full verification: `cargo test`, ctest, coverage against target per repo policy, JUCE demo end-to-end, `openspec validate` clean
+- [ ] 7.1 Migrate simple mono non-script/non-resource/non-poly examples and presets to kernel documents and root buses; move each example's render settings into the Rust test harness and compare renders with existing references
+- [ ] 7.2 Migrate multichannel effect examples: collapse `_l`/`_r` declarations to channel spans, replace `audio_output` authoring with named root ports, and compare every named output rendered by the offline host
+- [ ] 7.3 Migrate sampler/convolution examples and packaged standard-library definitions to resource static arguments; verify package-relative and pinned-version resources render identically
+- [ ] 7.4 Migrate script examples to named script-backed definitions with declared event/control ports and prepared source
+- [ ] 7.5 Migrate non-drum polyphonic examples from `voice_allocation` to `poly`, mapping legacy stealing-disabled behavior to `reject-new`; preserve note-allocation and render behavior
+- [ ] 7.6 Migrate the drum-kit example separately to independent per-pad poly regions and multiple named 2-channel root outputs; prove `master` plus at least one group bus render nonzero audio
+- [ ] 7.7 Delete the authorable `audio_output` builtin and transitional synthesized sink only after all Rust and host callers bind root buses; retain a structured rejection diagnostic directing authors to root output ports
+- [ ] 7.8 Remove the legacy adapter and remaining old expansion/parameter/preset/voice paths: `ModuleNode::params`, `CompiledNode.parameters`, string parsing in builtin state, graph-wide `ExecutionScope`, `VoiceToGlobalDirectRouting`, standalone `voice_allocator.rs`, `voice_allocation`, legacy `asset_bindings`, old preset-target expansion, and fixed stereo output binding. Add forbidden-symbol/field checks and confirm package loading has no legacy dependency
+- [ ] 7.9 Update `docs/nomenclature.md`, README authoring/render examples, FFI/JUCE documentation, and module-package documentation for graph definitions, static parameters/resources, multiplicity, poly regions, feedback_delay, root ports, and named buses
+- [ ] 7.10 Full verification: `cargo test`, CTest, spec coverage, coverage target per repo policy, allocation tests, all example reference comparisons, package tests, JUCE demo end-to-end through `master`, `openspec validate unify-graph-kernel --type change --strict`, and zero forbidden legacy symbols

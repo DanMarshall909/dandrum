@@ -30,7 +30,7 @@ A patch SHALL be a graph definition like any other: its public input and output 
 
 ### Requirement: Port model
 
-Every port SHALL declare a name, direction, signal type (`audio`, `control`, or `event`), and channel count. Input ports of `control` type SHALL support a default value with optional minimum, maximum, and unit metadata. Signal rate SHALL be determined by signal type: audio ports carry per-sample streams, control ports carry per-block values, event ports carry timestamped event queues.
+Every port SHALL declare a name, direction, signal type (`audio`, `control`, or `event`), channel count, and input multiplicity (single-source or summing). Input ports of `control` type SHALL support a default value with optional minimum, maximum, and unit metadata. Signal rate SHALL be determined by signal type: audio ports carry per-sample streams, control ports carry one value held for a processing block, event ports carry timestamped event queues.
 
 #### Scenario: Port declares channel count
 
@@ -41,6 +41,11 @@ Every port SHALL declare a name, direction, signal type (`audio`, `control`, or 
 
 - **WHEN** a primitive declares a control input port with a default value and range metadata
 - **THEN** validation and discovery SHALL expose that default and range without a separate parameter declaration
+
+#### Scenario: Summing input accepts multiple sources
+
+- **WHEN** two compatible outputs connect to an input declared with summing multiplicity
+- **THEN** validation SHALL accept both connections and compilation SHALL sum them without consulting legacy module metadata
 
 ### Requirement: Unconnected inputs read defaults
 
@@ -77,12 +82,21 @@ A connection SHALL be valid only when source and destination ports have the same
 
 ### Requirement: Control-to-audio promotion
 
-A `control` output MAY connect to an `audio` input; the compiler SHALL insert an explicit promotion step that upsamples the control signal to audio rate with interpolation. Audio-to-control and any implicit conversion involving `event` ports SHALL be rejected.
+A `control` output MAY connect to an `audio` input; the compiler SHALL insert an explicit sample-and-hold promotion step that fills each audio block with the block's control value. Audio-to-control and any implicit conversion involving `event` ports SHALL be rejected.
 
 #### Scenario: Control output feeds audio input
 
 - **WHEN** a control output port is connected to an audio input port
-- **THEN** compilation SHALL succeed and the flattened graph SHALL contain an inspectable promotion step for that connection
+- **THEN** compilation SHALL succeed and the flattened graph SHALL contain an inspectable sample-and-hold promotion step for that connection
+
+### Requirement: Compiled ports use channel-aware buffer spans
+
+Each resolved audio or control port SHALL compile to a contiguous physical buffer span containing one buffer per resolved channel. Logical connections SHALL expand to channel-wise compiled edges without name lookup in the render callback.
+
+#### Scenario: Six-channel connection compiles to six physical routes
+
+- **WHEN** a compatible six-channel output connects to a six-channel input
+- **THEN** compilation SHALL assign six source buffers and six destination buffers and route corresponding channels by pre-resolved indices
 
 #### Scenario: Audio output cannot feed control input implicitly
 

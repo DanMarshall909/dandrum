@@ -2,7 +2,7 @@
 
 ### Requirement: Poly node instantiates a wrapped definition per voice
 
-The engine SHALL provide a `poly` structural node that references a graph definition and a static `max_voices` count. It SHALL expose an event input for note events, forward its remaining inputs to every voice instance, and expose the wrapped definition's audio and control outputs as summed outputs. Polyphony SHALL be expressed only through `poly`; there SHALL be no graph-wide voice execution scope.
+The engine SHALL provide a `poly` structural node that references a graph definition and a static `max_voices` count. It SHALL expose an event input for note events, forward its remaining inputs to every voice instance, and expose the wrapped definition's audio and control outputs as summed outputs. Each compiled poly node SHALL own an independent runtime region containing its allocator, voice state, queues, schedule, and accumulators. Polyphony SHALL be expressed only through `poly`; there SHALL be no graph-wide voice execution scope after migration completes.
 
 #### Scenario: Poly node wraps a voice definition
 
@@ -30,7 +30,7 @@ Preparation SHALL preallocate flattened state, buffers, and event capacity for a
 
 ### Requirement: Voice allocation and stealing policy
 
-The poly node SHALL route incoming note-on events to voice instances using a declared allocation policy. The initial policy SHALL be oldest-steal: a note-on beyond capacity steals the longest-active voice. The policy SHALL be declared as an enumerated static parameter so alternatives can be added.
+The poly node SHALL route incoming note-on events to voice instances using a declared allocation policy. The supported policies SHALL include `oldest-steal`, where a note-on beyond capacity steals the longest-active voice, and `reject-new`, where a note-on beyond capacity is ignored. The policy SHALL be declared as an enumerated static parameter.
 
 #### Scenario: Note events route to free voices
 
@@ -41,6 +41,16 @@ The poly node SHALL route incoming note-on events to voice instances using a dec
 
 - **WHEN** a note-on arrives while all `max_voices` voices are active
 - **THEN** the oldest active voice SHALL be retired and reused for the new note
+
+#### Scenario: New note is rejected when stealing is disabled
+
+- **WHEN** a note-on arrives at capacity under the `reject-new` policy
+- **THEN** existing voices SHALL continue unchanged and no new voice SHALL activate
+
+#### Scenario: Sibling poly nodes allocate independently
+
+- **WHEN** two poly nodes receive different note streams in one graph
+- **THEN** each SHALL allocate, steal, retire, and mix voices through its own runtime region without affecting the other
 
 ### Requirement: Per-voice intrinsic ports
 

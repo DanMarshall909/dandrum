@@ -56,6 +56,20 @@ The compiler SHALL cache expanded definitions keyed by definition identity plus 
 - **WHEN** the same definition is instantiated with `channels: 1` and `channels: 2`
 - **THEN** the compiler SHALL produce two distinct expansions with correctly resolved ports
 
+### Requirement: Resource static parameters resolve in preparation context
+
+A resource-reference static parameter SHALL resolve relative to the declaring patch or package root through an explicit preparation context. Resolution SHALL validate the resource kind, deduplicate immutable loaded data, and produce a typed handle before runtime state is created.
+
+#### Scenario: Package-relative resource resolves
+
+- **WHEN** a packaged graph definition supplies a relative sample resource argument
+- **THEN** preparation SHALL resolve it beneath that package's root and share the loaded immutable sample across identical resolved references
+
+#### Scenario: Wrong resource kind is rejected
+
+- **WHEN** a convolution definition receives a resource that is not a supported impulse response
+- **THEN** preparation SHALL fail with a structured diagnostic before runtime state creation
+
 ### Requirement: No static expression language
 
 Static arguments SHALL flow by literal value or by name from an enclosing definition's static parameters. Arithmetic, conditionals, functions, and any other expression forms SHALL be rejected.

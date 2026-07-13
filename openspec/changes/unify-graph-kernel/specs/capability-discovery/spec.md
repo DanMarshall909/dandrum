@@ -25,6 +25,15 @@ The discovery API SHALL return static parameter metadata for each definition: na
 - **WHEN** a definition with static parameters is queried
 - **THEN** the API SHALL return each static parameter's name, type, default, and allowed values without instantiating the definition
 
+### Requirement: Prepared root enumeration reuses definition metadata
+
+Prepared-host root-port enumeration SHALL use the same port metadata representation as capability discovery rather than maintaining a separate FFI-only schema.
+
+#### Scenario: Discovered root matches prepared enumeration
+
+- **WHEN** a root definition is discovered and then prepared
+- **THEN** its prepared FFI enumeration SHALL report matching names, directions, signal types, and resolved channel counts
+
 ## REMOVED Requirements
 
 ### Requirement: Module parameter metadata

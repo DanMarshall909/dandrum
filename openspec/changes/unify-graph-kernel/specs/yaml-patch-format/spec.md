@@ -2,7 +2,7 @@
 
 ### Requirement: YAML patch document
 
-Patch files SHALL be human-readable YAML documents that declare a root graph definition: metadata, static parameters, public input/output ports, module definitions, module instances, and connections. Render settings SHALL NOT appear in patch documents.
+Patch files SHALL be human-readable YAML documents that declare a root graph definition: metadata and instrument identity, static parameters, public input/output ports, preset aliases, module definitions, module instances, and connections. Render settings SHALL NOT appear in patch documents.
 
 #### Scenario: YAML patch is loaded
 
@@ -70,6 +70,15 @@ Patch YAML SHALL declare the public preset surface as stable named aliases onto 
 
 - **WHEN** a YAML patch declares a preset target whose aliased port or static parameter does not exist
 - **THEN** validation SHALL fail with a diagnostic identifying the unresolved preset target destination
+
+### Requirement: Script-backed module definitions
+
+Patch YAML SHALL allow a named module definition to select the Rust script implementation while declaring explicit public ports and string static arguments for language and source. Script instances SHALL use the ordinary `type`, `static`, and `defaults` node shape.
+
+#### Scenario: Script definition preserves the unified node shape
+
+- **WHEN** a patch declares a script-backed definition and instantiates it more than once
+- **THEN** each instance SHALL use the definition's declared ports with no instance-level `inputs` or `outputs` fields
 
 ## ADDED Requirements
 
