@@ -366,7 +366,10 @@ fn insert_promotions(
     let mut promotion_nodes = Vec::new();
     let mut promotions = Vec::new();
     for connection in connections {
-        match (signal_of(connection.source()), signal_of(connection.destination())) {
+        match (
+            signal_of(connection.source()),
+            signal_of(connection.destination()),
+        ) {
             (
                 Some((SignalType::Control, source_channels)),
                 Some((SignalType::Audio, destination_channels)),
@@ -428,10 +431,7 @@ fn promotion_node(id: &NodeId, input_channels: u32, output_channels: u32) -> Ato
 
 /// Re-namespace a template under an instance `prefix`, yielding the concrete
 /// atomic nodes, connections, and boundary interface for that instance.
-fn instantiate(
-    template: &Template,
-    prefix: &str,
-) -> (Vec<AtomicNode>, Vec<Connection>, Interface) {
+fn instantiate(template: &Template, prefix: &str) -> (Vec<AtomicNode>, Vec<Connection>, Interface) {
     let nodes = template
         .nodes
         .iter()
@@ -609,6 +609,10 @@ fn cache_key(name: &str, static_args: &BTreeMap<String, StaticValue>) -> String 
             StaticValue::Int(number) => key.push_str(&number.to_string()),
             StaticValue::Enum(text) => {
                 key.push_str("enum:");
+                key.push_str(text);
+            }
+            StaticValue::String(text) => {
+                key.push_str("string:");
                 key.push_str(text);
             }
             StaticValue::Resource(text) => {

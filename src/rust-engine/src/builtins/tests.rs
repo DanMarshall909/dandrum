@@ -134,6 +134,26 @@ fn initialized_registry_contains_delay_definitions_with_feedback_boundaries() {
     assert_eq!(control_delay.feedback_boundaries(), &[Control]);
 }
 
+#[test]
+fn compensation_delay_declares_audio_ports_and_required_delay_length() {
+    let registry = BuiltInModuleRegistry::new();
+    let delay = registry
+        .get(COMPENSATION_DELAY)
+        .expect("compensation delay should be built in");
+
+    assert_has_audio_input(delay, AUDIO_IN);
+    assert_has_audio_output(delay, AUDIO_OUT);
+    assert!(delay.feedback_boundaries().is_empty());
+
+    let delay_samples = delay
+        .parameters()
+        .iter()
+        .find(|parameter| parameter.name() == DELAY_SAMPLES_PARAMETER)
+        .expect("compensation delay should declare its length");
+    assert_eq!(delay_samples.value_type(), Integer);
+    assert_eq!(delay_samples.default(), None);
+}
+
 fn assert_has_control_output(definition: &BuiltInModuleDefinition, port_name: &str) {
     assert_has_output(Control, definition, port_name);
 }

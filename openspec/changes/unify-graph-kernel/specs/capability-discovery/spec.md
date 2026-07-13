@@ -18,7 +18,7 @@ The discovery API SHALL return port metadata for each graph definition — primi
 
 ### Requirement: Static parameter metadata
 
-The discovery API SHALL return static parameter metadata for each definition: name, type (integer, enumeration, resource reference), default where declared, and enumeration values where applicable.
+The discovery API SHALL return static parameter metadata for each definition: name, type (integer, enumeration, string, resource reference), default where declared, and enumeration values where applicable.
 
 #### Scenario: Query static parameters
 

@@ -37,6 +37,7 @@ pub const PROMOTION_INPUT_PORT: &str = crate::graph::builtin_ports::IN;
 pub const PROMOTION_OUTPUT_PORT: &str = crate::graph::builtin_ports::OUT;
 
 pub mod builtins;
+pub mod document;
 pub mod flatten;
 pub mod latency;
 
@@ -47,6 +48,8 @@ pub enum StaticType {
     Int,
     /// Named enumeration value.
     Enum,
+    /// Arbitrary construction-time text, such as inline script source.
+    String,
     /// Reference to an external resource (e.g. a sample or impulse response).
     Resource,
 }
@@ -56,6 +59,7 @@ pub enum StaticType {
 pub enum StaticValue {
     Int(i64),
     Enum(String),
+    String(String),
     Resource(String),
 }
 
@@ -65,6 +69,7 @@ impl StaticValue {
         match self {
             Self::Int(_) => StaticType::Int,
             Self::Enum(_) => StaticType::Enum,
+            Self::String(_) => StaticType::String,
             Self::Resource(_) => StaticType::Resource,
         }
     }
@@ -91,7 +96,9 @@ impl LatencySpec {
             Self::Zero => 0,
             Self::Samples(samples) => *samples,
             Self::StaticParam { name, minus } => match static_args.get(name) {
-                Some(StaticValue::Int(value)) if *value >= 0 => (*value as u32).saturating_sub(*minus),
+                Some(StaticValue::Int(value)) if *value >= 0 => {
+                    (*value as u32).saturating_sub(*minus)
+                }
                 // Unreachable in a compiled graph: `validate_static_references`
                 // rejects any latency reference that is not a declared integer
                 // static parameter, and `validate_resolved_static_references`
@@ -110,6 +117,7 @@ pub struct StaticParam {
     name: String,
     static_type: StaticType,
     default: Option<StaticValue>,
+    allowed_values: Vec<String>,
 }
 
 impl StaticParam {
@@ -118,11 +126,21 @@ impl StaticParam {
             name: name.into(),
             static_type,
             default: None,
+            allowed_values: Vec::new(),
         }
     }
 
     pub fn with_default(mut self, default: StaticValue) -> Self {
         self.default = Some(default);
+        self
+    }
+
+    pub fn with_allowed_values<T, I>(mut self, values: I) -> Self
+    where
+        T: Into<String>,
+        I: IntoIterator<Item = T>,
+    {
+        self.allowed_values = values.into_iter().map(Into::into).collect();
         self
     }
 
@@ -136,6 +154,10 @@ impl StaticParam {
 
     pub fn default(&self) -> Option<&StaticValue> {
         self.default.as_ref()
+    }
+
+    pub fn allowed_values(&self) -> &[String] {
+        &self.allowed_values
     }
 }
 
@@ -663,7 +685,11 @@ impl GraphDefinition {
     fn enclosing_context(&self) -> BTreeMap<String, StaticValue> {
         self.static_params
             .iter()
-            .filter_map(|param| param.default().map(|v| (param.name().to_string(), v.clone())))
+            .filter_map(|param| {
+                param
+                    .default()
+                    .map(|v| (param.name().to_string(), v.clone()))
+            })
             .collect()
     }
 
@@ -778,6 +804,28 @@ impl GraphDefinition {
                         .with_module_id(node.id().as_str())
                         .with_expected(format!("{:?}", param.static_type()))
                         .with_actual(format!("{:?}", value.static_type())),
+                    );
+                    ok = false;
+                } else if let StaticValue::Enum(enum_value) = &value
+                    && !param.allowed_values().is_empty()
+                    && !param
+                        .allowed_values()
+                        .iter()
+                        .any(|allowed| allowed == enum_value)
+                {
+                    diagnostics.push(
+                        Diagnostic::new(
+                            error_codes::KERNEL_STATIC_ARGUMENT_INVALID_ENUM_VALUE,
+                            Severity::Error,
+                            format!(
+                                "node '{}' supplies invalid value '{enum_value}' for enum static parameter '{}'",
+                                node.id().as_str(),
+                                param.name()
+                            ),
+                        )
+                        .with_module_id(node.id().as_str())
+                        .with_expected(param.allowed_values().join(", "))
+                        .with_actual(enum_value),
                     );
                     ok = false;
                 } else {
@@ -1061,9 +1109,12 @@ impl GraphDefinition {
                     self.check_channel_counts(connection, &source, &destination, &mut diagnostics);
                 }
                 SignalCompatibility::PromoteControlToAudio => {
-                    if self
-                        .check_channel_counts(connection, &source, &destination, &mut diagnostics)
-                    {
+                    if self.check_channel_counts(
+                        connection,
+                        &source,
+                        &destination,
+                        &mut diagnostics,
+                    ) {
                         promotions.push(PromotionStep {
                             source: connection.source().clone(),
                             destination: connection.destination().clone(),
@@ -1158,10 +1209,7 @@ impl GraphDefinition {
                     .skip_while(|id| **id != successor)
                     .cloned()
                     .collect();
-                if !cycle
-                    .iter()
-                    .any(|id| self.is_feedback_delay(id, registry))
-                {
+                if !cycle.iter().any(|id| self.is_feedback_delay(id, registry)) {
                     return Some(cycle);
                 }
             } else if let Some(path) =
@@ -1360,7 +1408,8 @@ impl GraphDefinition {
         })?;
 
         let is_connected = self.connections.iter().any(|connection| {
-            connection.destination().node() == node_id && connection.destination().port() == port_name
+            connection.destination().node() == node_id
+                && connection.destination().port() == port_name
         });
         if is_connected {
             return Some(EffectiveInput::Connected);

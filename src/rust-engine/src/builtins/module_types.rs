@@ -33,3 +33,6 @@ pub const DECAY: &str = "decay";
 /// Compiler-generated node promoting a `control` signal to `audio` where a
 /// control output feeds an audio input (see `unify-graph-kernel` §2.5).
 pub const CONTROL_TO_AUDIO: &str = "control_to_audio";
+
+/// Compiler-generated fixed delay used to align converging signal paths.
+pub const COMPENSATION_DELAY: &str = "compensation_delay";

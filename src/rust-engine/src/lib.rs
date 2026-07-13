@@ -11,9 +11,9 @@ mod drum_voice_authoring_tests;
 
 pub mod core;
 
-pub(crate) mod compiled_patch;
+pub mod compiled_patch;
 
-pub(crate) mod preparation;
+pub mod preparation;
 
 pub mod graph_processor;
 
@@ -23,10 +23,10 @@ pub mod graph;
 pub mod kernel;
 pub mod cli;
 pub mod instrument_state;
-pub mod patch;
 pub mod module_reference;
 pub mod module_package;
 pub mod module_library;
+pub mod patch;
 pub mod script;
 pub(crate) mod sample;
 

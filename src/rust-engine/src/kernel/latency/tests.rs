@@ -49,7 +49,13 @@ fn cable(from: &str, from_port: &str, to: &str, to_port: &str) -> Connection {
 
 /// A root output port that gathers from an internal node's output port.
 fn root_output(from_node: &str, from_port: &str) -> Port {
-    Port::output("out", SignalType::Audio, 1).maps_from(PortRef::new(NodeId::new(from_node), from_port))
+    Port::output("out", SignalType::Audio, 1)
+        .maps_from(PortRef::new(NodeId::new(from_node), from_port))
+}
+
+fn named_root_output(name: &str, from_node: &str, from_port: &str) -> Port {
+    Port::output(name, SignalType::Audio, 1)
+        .maps_from(PortRef::new(NodeId::new(from_node), from_port))
 }
 
 #[test]
@@ -84,7 +90,11 @@ fn unequal_parallel_paths_receive_a_compensating_delay() {
         64,
         "the direct path is delayed to match the 64-sample processing path"
     );
-    assert_eq!(compensation.channels(), 1, "delay buffer width matches the port");
+    assert_eq!(
+        compensation.channels(),
+        1,
+        "delay buffer width matches the port"
+    );
     assert_eq!(
         compensation.connection().destination().port(),
         "a",
@@ -208,6 +218,73 @@ fn root_latency_uses_root_output_sources_not_terminal_nodes() {
         64,
         "root latency follows the root output source, not the deeper terminal node"
     );
+}
+
+#[test]
+fn root_audio_outputs_are_compensated_to_the_reported_latency() {
+    let registry = DefinitionRegistry::new()
+        .with_definition(source())
+        .with_definition(delayed("proc", 64));
+    let root = GraphDefinition::new("root")
+        .with_port(named_root_output("dry", "osc", "audio"))
+        .with_port(named_root_output("wet", "wet", "audio_out"))
+        .with_node(Node::new(NodeId::new("osc"), "source"))
+        .with_node(Node::new(NodeId::new("wet"), "proc"))
+        .with_connection(cable("osc", "audio", "wet", "audio_in"));
+
+    let plan = root
+        .flatten(&registry)
+        .expect("flattens")
+        .balance_latency()
+        .expect("balances");
+
+    assert_eq!(plan.root_latency(), 64);
+    assert_eq!(plan.root_compensations().len(), 1);
+    let compensation = &plan.root_compensations()[0];
+    assert_eq!(compensation.root_port(), "dry");
+    assert_eq!(compensation.source().node().as_str(), "osc");
+    assert_eq!(compensation.source().port(), "audio");
+    assert_eq!(compensation.samples(), 64);
+    assert_eq!(compensation.channels(), 1);
+}
+
+#[test]
+fn control_edge_is_not_given_an_audio_compensation_delay() {
+    let control_source = GraphDefinition::new("control_source").with_port(Port::output(
+        "value",
+        SignalType::Control,
+        1,
+    ));
+    let controlled = GraphDefinition::new("controlled")
+        .with_port(Port::input("audio_in", SignalType::Audio, 1))
+        .with_port(Port::input("amount", SignalType::Control, 1))
+        .with_port(Port::output("audio_out", SignalType::Audio, 1));
+    let registry = DefinitionRegistry::new()
+        .with_definition(source())
+        .with_definition(control_source)
+        .with_definition(delayed("proc", 64))
+        .with_definition(controlled);
+    let root = GraphDefinition::new("root")
+        .with_port(root_output("target", "audio_out"))
+        .with_node(Node::new(NodeId::new("osc"), "source"))
+        .with_node(Node::new(NodeId::new("wet"), "proc"))
+        .with_node(Node::new(NodeId::new("control"), "control_source"))
+        .with_node(Node::new(NodeId::new("target"), "controlled"))
+        .with_connection(cable("osc", "audio", "wet", "audio_in"))
+        .with_connection(cable("wet", "audio_out", "target", "audio_in"))
+        .with_connection(cable("control", "value", "target", "amount"));
+
+    let plan = root
+        .flatten(&registry)
+        .expect("flattens")
+        .balance_latency()
+        .expect("balances");
+
+    assert!(
+        plan.compensations().is_empty(),
+        "a block-rate control edge is not delayed to match an audio input"
+    );
+    assert_eq!(plan.root_latency(), 64);
 }
 
 #[test]

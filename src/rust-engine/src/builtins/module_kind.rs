@@ -34,6 +34,7 @@ pub enum ModuleKind {
     Decay,
     /// Compiler-generated control→audio promotion (see `unify-graph-kernel` §2.5).
     ControlToAudio,
+    CompensationDelay,
 }
 
 impl ModuleKind {
@@ -70,6 +71,7 @@ impl ModuleKind {
             module_types::CURVE_MAPPER => Some(Self::CurveMapper),
             module_types::DECAY => Some(Self::Decay),
             module_types::CONTROL_TO_AUDIO => Some(Self::ControlToAudio),
+            module_types::COMPENSATION_DELAY => Some(Self::CompensationDelay),
             _ => None,
         }
     }
@@ -103,6 +105,7 @@ impl ModuleKind {
                 | Self::Script
                 | Self::Decay
                 | Self::ControlToAudio
+                | Self::CompensationDelay
         )
     }
 }

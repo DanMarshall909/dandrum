@@ -53,8 +53,7 @@ fn nested_composites_flatten_to_atomic_nodes_with_namespaced_ids() {
         .with_definition(oscillator())
         .with_definition(wrapping_composite("inner", "oscillator", "osc"))
         .with_definition(wrapping_composite("outer", "inner", "in"));
-    let root =
-        GraphDefinition::new("root").with_node(Node::new(NodeId::new("o"), "outer"));
+    let root = GraphDefinition::new("root").with_node(Node::new(NodeId::new("o"), "outer"));
 
     let flat = root.flatten(&registry).expect("flattens");
 
@@ -125,9 +124,8 @@ fn resolved_channel_count_flows_into_atomic_ports() {
 #[test]
 fn instance_override_becomes_effective_atomic_default() {
     let registry = DefinitionRegistry::new().with_definition(gain());
-    let root = GraphDefinition::new("root").with_node(
-        Node::new(NodeId::new("amp"), "gain").with_default_override("level", 0.3),
-    );
+    let root = GraphDefinition::new("root")
+        .with_node(Node::new(NodeId::new("amp"), "gain").with_default_override("level", 0.3));
 
     let flat = root.flatten(&registry).expect("flattens");
 
@@ -422,7 +420,11 @@ fn control_to_audio_connection_inserts_a_visible_promotion_node() {
 
     let flat = root.flatten(&registry).expect("flattens");
 
-    assert_eq!(flat.promotions().len(), 1, "one control→audio edge is promoted");
+    assert_eq!(
+        flat.promotions().len(),
+        1,
+        "one control→audio edge is promoted"
+    );
     assert_eq!(
         flat.promotions()[0].channels(),
         2,
@@ -437,13 +439,15 @@ fn control_to_audio_connection_inserts_a_visible_promotion_node() {
     assert_eq!(promotion.latency(), 0);
 
     assert!(
-        flat.connections().iter().any(|c| c.source().port() == "cv"
-            && c.destination().node() == promotion.id()),
+        flat.connections()
+            .iter()
+            .any(|c| c.source().port() == "cv" && c.destination().node() == promotion.id()),
         "control source now feeds the promotion node"
     );
     assert!(
-        flat.connections().iter().any(|c| c.source().node() == promotion.id()
-            && c.destination().port() == "audio_in"),
+        flat.connections()
+            .iter()
+            .any(|c| c.source().node() == promotion.id() && c.destination().port() == "audio_in"),
         "promotion node now feeds the audio destination"
     );
     assert!(
@@ -687,12 +691,35 @@ fn enum_and_resource_static_arguments_key_the_expansion_cache() {
     );
 }
 
+#[test]
+fn distinct_string_static_arguments_expand_separately() {
+    let script = GraphDefinition::new("script")
+        .with_static_param(StaticParam::new("source", StaticType::String));
+    let registry = DefinitionRegistry::new().with_definition(script);
+    let root = GraphDefinition::new("root")
+        .with_node(Node::new(NodeId::new("a"), "script").with_static_arg(
+            "source",
+            StaticArg::Literal(StaticValue::String("first".to_string())),
+        ))
+        .with_node(Node::new(NodeId::new("b"), "script").with_static_arg(
+            "source",
+            StaticArg::Literal(StaticValue::String("second".to_string())),
+        ));
+
+    let flat = root.flatten(&registry).expect("flattens");
+
+    assert_eq!(
+        flat.expansion_count(),
+        3,
+        "root plus one expansion for each distinct script source"
+    );
+}
+
 // --- Flattening in the presence of invalid structure ---------------------
 
 #[test]
 fn unknown_definition_reference_inside_a_composite_is_rejected() {
-    let broken =
-        GraphDefinition::new("broken").with_node(Node::new(NodeId::new("x"), "ghost"));
+    let broken = GraphDefinition::new("broken").with_node(Node::new(NodeId::new("x"), "ghost"));
     let registry = DefinitionRegistry::new().with_definition(broken);
     let root = GraphDefinition::new("root").with_node(Node::new(NodeId::new("b"), "broken"));
 
@@ -753,14 +780,17 @@ fn override_of_an_unknown_port_leaves_declared_defaults_intact() {
     // Validation rejects unknown-port overrides; flattening must ignore them
     // rather than fabricate a default for a port the node does not have.
     let registry = DefinitionRegistry::new().with_definition(gain());
-    let root = GraphDefinition::new("root").with_node(
-        Node::new(NodeId::new("amp"), "gain").with_default_override("bogus", 0.3),
-    );
+    let root = GraphDefinition::new("root")
+        .with_node(Node::new(NodeId::new("amp"), "gain").with_default_override("bogus", 0.3));
 
     let flat = root.flatten(&registry).expect("flattens");
 
     let defaults = flat.nodes()[0].port_defaults();
-    assert_eq!(defaults.get("bogus"), None, "the unknown port gains no default");
+    assert_eq!(
+        defaults.get("bogus"),
+        None,
+        "the unknown port gains no default"
+    );
     assert_eq!(
         defaults.get("level"),
         Some(&1.0),
@@ -796,11 +826,8 @@ fn excessive_nesting_depth_is_rejected() {
         } else {
             format!("c{}", index + 1)
         };
-        registry = registry.with_definition(wrapping_composite(
-            &format!("c{index}"),
-            &child,
-            "next",
-        ));
+        registry =
+            registry.with_definition(wrapping_composite(&format!("c{index}"), &child, "next"));
     }
     let root = GraphDefinition::new("root").with_node(Node::new(NodeId::new("c"), "c0"));
 

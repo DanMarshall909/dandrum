@@ -2,7 +2,7 @@
 
 ### Requirement: Static parameter declarations
 
-A graph definition SHALL be able to declare typed static parameters (integer, enumeration, or resource reference) with optional defaults. Static parameters are resolved at compile time and SHALL NOT be modulatable or connectable at runtime.
+A graph definition SHALL be able to declare typed static parameters (integer, enumeration, string, or resource reference) with optional defaults. Static parameters are resolved at compile time and SHALL NOT be modulatable or connectable at runtime. String static parameters SHALL support construction-time inline text such as script source without making that text a runtime signal.
 
 #### Scenario: Definition declares static parameter
 
@@ -13,6 +13,11 @@ A graph definition SHALL be able to declare typed static parameters (integer, en
 
 - **WHEN** a connection targets a static parameter name
 - **THEN** validation SHALL fail with a diagnostic explaining that static parameters are compile-time values, not ports
+
+#### Scenario: Inline script source is a static string
+
+- **WHEN** a script definition declares its inline source as a string static parameter
+- **THEN** loading SHALL preserve the source for compile-time construction without exposing it as a connectable port
 
 ### Requirement: Static argument resolution
 

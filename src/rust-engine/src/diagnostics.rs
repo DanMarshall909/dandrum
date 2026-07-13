@@ -75,6 +75,8 @@ pub mod error_codes {
     pub const KERNEL_MISSING_STATIC_ARGUMENT: &str = "kernel.missing_static_argument";
     pub const KERNEL_UNKNOWN_STATIC_ARGUMENT: &str = "kernel.unknown_static_argument";
     pub const KERNEL_STATIC_ARGUMENT_TYPE_MISMATCH: &str = "kernel.static_argument_type_mismatch";
+    pub const KERNEL_STATIC_ARGUMENT_INVALID_ENUM_VALUE: &str =
+        "kernel.static_argument_invalid_enum_value";
     pub const KERNEL_STATIC_ARGUMENT_EXPRESSION: &str = "kernel.static_argument_expression";
     pub const KERNEL_UNKNOWN_STATIC_PARAM_REFERENCE: &str =
         "kernel.unknown_static_param_reference";
@@ -90,6 +92,24 @@ pub mod error_codes {
     pub const KERNEL_INVALID_STATIC_REFERENCE_VALUE: &str =
         "kernel.invalid_static_reference_value";
     pub const KERNEL_LATENCY_IN_FEEDBACK_CYCLE: &str = "kernel.latency_in_feedback_cycle";
+    pub const KERNEL_DOCUMENT_UNSUPPORTED_FORMAT: &str =
+        "kernel.document.unsupported_format";
+    pub const KERNEL_DOCUMENT_READ_FAILED: &str = "kernel.document.read_failed";
+    pub const KERNEL_DOCUMENT_PARSE_FAILED: &str = "kernel.document.parse_failed";
+    pub const KERNEL_DOCUMENT_NO_OUTPUT: &str = "kernel.document.no_output";
+    pub const KERNEL_DOCUMENT_LEGACY_RENDER: &str = "kernel.document.legacy_render";
+    pub const KERNEL_DOCUMENT_LEGACY_VOICE_ALLOCATION: &str =
+        "kernel.document.legacy_voice_allocation";
+    pub const KERNEL_DOCUMENT_LEGACY_PARAMETERS: &str = "kernel.document.legacy_parameters";
+    pub const KERNEL_DOCUMENT_LEGACY_BINDING: &str = "kernel.document.legacy_binding";
+    pub const KERNEL_DOCUMENT_LEGACY_ASSET_BINDINGS: &str =
+        "kernel.document.legacy_asset_bindings";
+    pub const KERNEL_PREPARATION_UNSUPPORTED_ROOT: &str =
+        "kernel.preparation.unsupported_root";
+    pub const KERNEL_PREPARATION_UNSUPPORTED_ATOMIC_PORT: &str =
+        "kernel.preparation.unsupported_atomic_port";
+    pub const KERNEL_PREPARATION_GENERATED_ID_COLLISION: &str =
+        "kernel.preparation.generated_id_collision";
 
     // Module-library sub-codes
     pub const LIBRARY_UNKNOWN_MACRO: &str = "library.unknown_macro";

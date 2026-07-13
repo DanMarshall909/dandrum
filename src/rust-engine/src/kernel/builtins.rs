@@ -4,7 +4,8 @@
 //! Each builtin is a [`GraphDefinition`] with an empty body — a primitive
 //! implemented in Rust rather than authored in YAML — declaring its **ports**
 //! (name, direction, signal type, channel count), the **control defaults** of
-//! its tunable inputs, and its true processing **latency**.
+//! its tunable inputs, its construction-time **static parameters**, and its true
+//! processing **latency**.
 //!
 //! Latencies are the actual per-node values, verified against the DSP: spectral
 //! analysis/synthesis has `fft_size - 1` samples (see `crate::spectral`), and
@@ -20,18 +21,34 @@
 //! channel-polymorphic ports happens in §3.3 together with the dispatch adapter.
 //!
 //! Numeric tunable parameters are declared here as control input ports carrying
-//! their default and range. Text/enum/integer construction-time parameters
-//! (waveform, mode, fft_size, asset, …) are static parameters and land in §3.2;
-//! only `fft_size` is declared here because latency resolves from it.
+//! their default and range. Non-resource text/enum/integer construction-time
+//! parameters are static parameters. Resource conversion remains in §3.5.
 
 use crate::builtins::module_types as names;
+use crate::builtins::{
+    CURVE_EXPONENTIAL, CURVE_HARD_CLIP, CURVE_LINEAR, CURVE_LOGARITHMIC, CURVE_PARAMETER,
+    CURVE_S_CURVE, CURVE_SOFT_CLIP, CURVE_STEP, DELAY_SAMPLES_PARAMETER, DETECTION_MODE_PARAMETER,
+    DETECTION_MODE_PEAK, DETECTION_MODE_RMS, DYNAMICS_DETECTION_PARAMETER, DYNAMICS_MODE_LEVEL,
+    DYNAMICS_MODE_PARAMETER, DYNAMICS_MODE_TRANSIENT, DYNAMICS_TOPOLOGY_FEEDBACK,
+    DYNAMICS_TOPOLOGY_FEEDFORWARD, DYNAMICS_TOPOLOGY_PARAMETER, EVENT_FILTER_NOTE_PARAMETER,
+    EVENT_FILTER_NOTE_SELECTOR, EVENT_FILTER_SELECTOR_DEFAULT, EVENT_FILTER_SELECTOR_PARAMETER,
+    FILTER_ALGORITHM_BIQUAD, FILTER_ALGORITHM_COMB, FILTER_ALGORITHM_MOOG,
+    FILTER_ALGORITHM_PARAMETER, FILTER_COMB_TYPE_PARAMETER, FILTER_MODE_HIGHPASS,
+    FILTER_MODE_LOWPASS, FILTER_MODE_PARAMETER, FILTER_MODE_PEAKING, INTERPOLATION_CUBIC,
+    INTERPOLATION_LINEAR, INTERPOLATION_PARAMETER, NOISE_DEFAULT_SEED, NOISE_SEED_PARAMETER,
+    SCRIPT_LANGUAGE_PARAMETER, SCRIPT_LANGUAGE_RHAI, SCRIPT_SOURCE_PARAMETER,
+    SPECTRAL_DEFAULT_FFT_SIZE, SPECTRAL_FFT_SIZE_PARAMETER, SPECTRAL_MODE_GATE,
+    SPECTRAL_MODE_PARAMETER, SPECTRAL_MODE_PASSTHROUGH, SPECTRAL_WINDOW_HANN,
+    SPECTRAL_WINDOW_PARAMETER, STEPS_PARAMETER, WAVEFORM_PARAMETER, WAVEFORM_SAW, WAVEFORM_SINE,
+    WAVEFORM_SQUARE, WAVEFORM_TRIANGLE,
+};
 use crate::convolution::Convolution;
 use crate::graph::SignalType;
 use crate::graph::builtin_ports as ports;
 
 use super::{
-    ControlDefault, DefinitionRegistry, GraphDefinition, LatencySpec, Port, StaticParam, StaticType,
-    StaticValue,
+    ControlDefault, DefinitionRegistry, GraphDefinition, LatencySpec, Port, StaticParam,
+    StaticType, StaticValue,
 };
 
 /// Every builtin port is single-channel until §3.3 makes the stereo builtins
@@ -39,9 +56,9 @@ use super::{
 const MONO: u32 = 1;
 
 /// Static parameter that drives the spectral processor's FFT frame size.
-pub const SPECTRAL_FFT_SIZE_PARAM: &str = "fft_size";
+pub const SPECTRAL_FFT_SIZE_PARAM: &str = SPECTRAL_FFT_SIZE_PARAMETER;
+pub const DELAY_SAMPLES_PARAM: &str = DELAY_SAMPLES_PARAMETER;
 /// Default FFT frame size, matching the legacy spectral builtin.
-const SPECTRAL_DEFAULT_FFT_SIZE: i64 = 2048;
 /// Spectral processing latency is `fft_size - SPECTRAL_LATENCY_OFFSET` samples.
 const SPECTRAL_LATENCY_OFFSET: u32 = 1;
 
@@ -81,6 +98,12 @@ fn primitive(name: &str) -> GraphDefinition {
     GraphDefinition::new(name).with_latency(LatencySpec::Zero)
 }
 
+fn enum_param(name: &str, default: &str, allowed_values: &[&str]) -> StaticParam {
+    StaticParam::new(name, StaticType::Enum)
+        .with_default(StaticValue::Enum(default.to_string()))
+        .with_allowed_values(allowed_values.iter().copied())
+}
+
 /// The kernel registry of all builtins with their ports, control defaults, and
 /// declared latency.
 pub fn builtin_registry() -> DefinitionRegistry {
@@ -100,6 +123,16 @@ fn builtin_definitions() -> Vec<GraphDefinition> {
             .with_port(audio_in(ports::LEFT))
             .with_port(audio_in(ports::RIGHT)),
         primitive(names::OSCILLATOR)
+            .with_static_param(enum_param(
+                WAVEFORM_PARAMETER,
+                WAVEFORM_SAW,
+                &[
+                    WAVEFORM_SAW,
+                    WAVEFORM_SINE,
+                    WAVEFORM_TRIANGLE,
+                    WAVEFORM_SQUARE,
+                ],
+            ))
             .with_port(tunable(ports::PITCH, 1.0, 0.0, 64.0))
             .with_port(audio_out(ports::AUDIO)),
         primitive(names::GAIN)
@@ -123,6 +156,29 @@ fn builtin_definitions() -> Vec<GraphDefinition> {
             .with_port(control_in(ports::RATE))
             .with_port(control_out(ports::VALUE)),
         primitive(names::FILTER)
+            .with_static_param(enum_param(
+                FILTER_ALGORITHM_PARAMETER,
+                FILTER_ALGORITHM_MOOG,
+                &[
+                    FILTER_ALGORITHM_MOOG,
+                    FILTER_ALGORITHM_BIQUAD,
+                    FILTER_ALGORITHM_COMB,
+                ],
+            ))
+            .with_static_param(enum_param(
+                FILTER_MODE_PARAMETER,
+                FILTER_MODE_LOWPASS,
+                &[
+                    FILTER_MODE_LOWPASS,
+                    FILTER_MODE_HIGHPASS,
+                    FILTER_MODE_PEAKING,
+                ],
+            ))
+            .with_static_param(enum_param(
+                FILTER_COMB_TYPE_PARAMETER,
+                DYNAMICS_TOPOLOGY_FEEDBACK,
+                &[DYNAMICS_TOPOLOGY_FEEDBACK, DYNAMICS_TOPOLOGY_FEEDFORWARD],
+            ))
             .with_port(audio_in(ports::AUDIO_IN))
             .with_port(control_in(ports::CUTOFF))
             .with_port(control_in(ports::RESONANCE))
@@ -138,7 +194,16 @@ fn builtin_definitions() -> Vec<GraphDefinition> {
             .with_port(control_in(ports::VALUE))
             .with_port(control_out(ports::VALUE)),
         // `script` declares its ports in YAML; the primitive itself has none.
-        primitive(names::SCRIPT),
+        primitive(names::SCRIPT)
+            .with_static_param(enum_param(
+                SCRIPT_LANGUAGE_PARAMETER,
+                SCRIPT_LANGUAGE_RHAI,
+                &[SCRIPT_LANGUAGE_RHAI],
+            ))
+            .with_static_param(StaticParam::new(
+                SCRIPT_SOURCE_PARAMETER,
+                StaticType::String,
+            )),
         primitive(names::SAMPLER)
             .with_port(event_in(ports::TRIGGER))
             .with_port(control_in(ports::RATE))
@@ -151,9 +216,33 @@ fn builtin_definitions() -> Vec<GraphDefinition> {
             .with_port(event_in(ports::EVENTS))
             .with_port(control_out(ports::RATE)),
         primitive(names::EVENT_FILTER)
+            .with_static_param(enum_param(
+                EVENT_FILTER_SELECTOR_PARAMETER,
+                EVENT_FILTER_SELECTOR_DEFAULT,
+                &[EVENT_FILTER_NOTE_SELECTOR],
+            ))
+            .with_static_param(StaticParam::new(
+                EVENT_FILTER_NOTE_PARAMETER,
+                StaticType::Int,
+            ))
             .with_port(event_in(ports::EVENTS_IN))
             .with_port(event_out(ports::EVENTS_OUT)),
         primitive(names::DYNAMICS_PROCESSOR)
+            .with_static_param(enum_param(
+                DYNAMICS_MODE_PARAMETER,
+                DYNAMICS_MODE_LEVEL,
+                &[DYNAMICS_MODE_LEVEL, DYNAMICS_MODE_TRANSIENT],
+            ))
+            .with_static_param(enum_param(
+                DYNAMICS_DETECTION_PARAMETER,
+                DETECTION_MODE_PEAK,
+                &[DETECTION_MODE_PEAK, DETECTION_MODE_RMS],
+            ))
+            .with_static_param(enum_param(
+                DYNAMICS_TOPOLOGY_PARAMETER,
+                DYNAMICS_TOPOLOGY_FEEDFORWARD,
+                &[DYNAMICS_TOPOLOGY_FEEDFORWARD, DYNAMICS_TOPOLOGY_FEEDBACK],
+            ))
             .with_port(audio_in(ports::AUDIO_IN))
             .with_port(control_in(ports::SIDECHAIN_IN))
             .with_port(control_in(ports::THRESHOLD))
@@ -181,6 +270,11 @@ fn builtin_definitions() -> Vec<GraphDefinition> {
             .with_port(audio_out(ports::HIGH)),
         spectral_processor(),
         primitive(names::ECHO)
+            .with_static_param(enum_param(
+                INTERPOLATION_PARAMETER,
+                INTERPOLATION_LINEAR,
+                &[INTERPOLATION_LINEAR, INTERPOLATION_CUBIC],
+            ))
             .with_port(audio_in(ports::AUDIO_IN_L))
             .with_port(audio_in(ports::AUDIO_IN_R))
             .with_port(control_in(ports::TIME_LEFT_MS))
@@ -194,6 +288,11 @@ fn builtin_definitions() -> Vec<GraphDefinition> {
             .with_port(audio_out(ports::AUDIO_OUT_L))
             .with_port(audio_out(ports::AUDIO_OUT_R)),
         primitive(names::REVERB)
+            .with_static_param(enum_param(
+                INTERPOLATION_PARAMETER,
+                INTERPOLATION_LINEAR,
+                &[INTERPOLATION_LINEAR, INTERPOLATION_CUBIC],
+            ))
             .with_port(audio_in(ports::AUDIO_IN_L))
             .with_port(audio_in(ports::AUDIO_IN_R))
             .with_port(control_in(ports::DECAY_TIME))
@@ -206,7 +305,12 @@ fn builtin_definitions() -> Vec<GraphDefinition> {
             .with_port(control_in(ports::DRY))
             .with_port(audio_out(ports::AUDIO_OUT_L))
             .with_port(audio_out(ports::AUDIO_OUT_R)),
-        primitive(names::NOISE).with_port(audio_out(ports::AUDIO)),
+        primitive(names::NOISE)
+            .with_static_param(
+                StaticParam::new(NOISE_SEED_PARAMETER, StaticType::Int)
+                    .with_default(StaticValue::Int(NOISE_DEFAULT_SEED as i64)),
+            )
+            .with_port(audio_out(ports::AUDIO)),
         primitive(names::IMPULSE)
             .with_port(event_in(ports::TRIGGER))
             .with_port(audio_out(ports::AUDIO)),
@@ -222,6 +326,11 @@ fn builtin_definitions() -> Vec<GraphDefinition> {
             .with_port(event_out(ports::GATE))
             .with_port(control_out(ports::VELOCITY)),
         primitive(names::ENVELOPE_FOLLOWER)
+            .with_static_param(enum_param(
+                DETECTION_MODE_PARAMETER,
+                DETECTION_MODE_PEAK,
+                &[DETECTION_MODE_PEAK, DETECTION_MODE_RMS],
+            ))
             .with_port(audio_in(ports::AUDIO_IN))
             .with_port(control_in(ports::ATTACK))
             .with_port(control_in(ports::RELEASE))
@@ -230,6 +339,24 @@ fn builtin_definitions() -> Vec<GraphDefinition> {
             .with_port(control_in(ports::INVERT))
             .with_port(control_out(ports::VALUE)),
         primitive(names::CURVE_MAPPER)
+            .with_static_param(enum_param(
+                CURVE_PARAMETER,
+                CURVE_LINEAR,
+                &[
+                    CURVE_LINEAR,
+                    CURVE_EXPONENTIAL,
+                    CURVE_LOGARITHMIC,
+                    CURVE_S_CURVE,
+                    CURVE_SOFT_CLIP,
+                    CURVE_HARD_CLIP,
+                    CURVE_STEP,
+                ],
+            ))
+            .with_static_param(
+                StaticParam::new(STEPS_PARAMETER, StaticType::Int).with_default(StaticValue::Int(
+                    crate::curve_mapper::CurveMapper::DEFAULT_STEPS as i64,
+                )),
+            )
             .with_port(control_in(ports::VALUE))
             .with_port(tunable(ports::AMOUNT, 1.0, 0.0, 1.0))
             .with_port(tunable(ports::BIAS, 0.0, -1.0, 1.0))
@@ -237,6 +364,11 @@ fn builtin_definitions() -> Vec<GraphDefinition> {
             .with_port(tunable(ports::OFFSET, 0.0, -64.0, 64.0))
             .with_port(control_out(ports::VALUE)),
         primitive(names::DECAY)
+            .with_static_param(enum_param(
+                CURVE_PARAMETER,
+                CURVE_EXPONENTIAL,
+                &[CURVE_LINEAR, CURVE_EXPONENTIAL],
+            ))
             .with_port(event_in(ports::TRIGGER))
             .with_port(tunable(ports::TIME_MS, 100.0, 1.0, 5000.0))
             .with_port(control_out(ports::VALUE)),
@@ -245,6 +377,7 @@ fn builtin_definitions() -> Vec<GraphDefinition> {
         primitive(names::CONTROL_TO_AUDIO)
             .with_port(control_in(ports::IN))
             .with_port(audio_out(ports::OUT)),
+        compensation_delay(),
     ]
 }
 
@@ -254,8 +387,18 @@ fn spectral_processor() -> GraphDefinition {
     GraphDefinition::new(names::SPECTRAL_PROCESSOR)
         .with_static_param(
             StaticParam::new(SPECTRAL_FFT_SIZE_PARAM, StaticType::Int)
-                .with_default(StaticValue::Int(SPECTRAL_DEFAULT_FFT_SIZE)),
+                .with_default(StaticValue::Int(SPECTRAL_DEFAULT_FFT_SIZE as i64)),
         )
+        .with_static_param(enum_param(
+            SPECTRAL_MODE_PARAMETER,
+            SPECTRAL_MODE_GATE,
+            &[SPECTRAL_MODE_GATE, SPECTRAL_MODE_PASSTHROUGH],
+        ))
+        .with_static_param(enum_param(
+            SPECTRAL_WINDOW_PARAMETER,
+            SPECTRAL_WINDOW_HANN,
+            &[SPECTRAL_WINDOW_HANN],
+        ))
         .with_latency(LatencySpec::StaticParam {
             name: SPECTRAL_FFT_SIZE_PARAM.to_string(),
             minus: SPECTRAL_LATENCY_OFFSET,
@@ -273,6 +416,17 @@ fn convolution() -> GraphDefinition {
         .with_latency(LatencySpec::Samples(Convolution::BLOCK_SIZE as u32))
         .with_port(audio_in(ports::AUDIO_IN))
         .with_port(control_in(ports::MIX))
+        .with_port(audio_out(ports::AUDIO_OUT))
+}
+
+fn compensation_delay() -> GraphDefinition {
+    GraphDefinition::new(names::COMPENSATION_DELAY)
+        .with_static_param(StaticParam::new(DELAY_SAMPLES_PARAM, StaticType::Int))
+        .with_latency(LatencySpec::StaticParam {
+            name: DELAY_SAMPLES_PARAM.to_string(),
+            minus: 0,
+        })
+        .with_port(audio_in(ports::AUDIO_IN))
         .with_port(audio_out(ports::AUDIO_OUT))
 }
 

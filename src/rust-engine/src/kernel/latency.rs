@@ -18,6 +18,7 @@
 use std::collections::{BTreeMap, BTreeSet};
 
 use crate::diagnostics::{Diagnostic, Diagnostics, Severity, error_codes};
+use crate::graph::SignalType;
 
 use super::flatten::FlattenedGraph;
 use super::{Connection, FEEDBACK_DELAY_DEFINITION, NodeId};
@@ -29,6 +30,34 @@ pub struct Compensation {
     connection: Connection,
     samples: u32,
     channels: u32,
+}
+
+/// A compensation delay inserted between an atomic source and a root audio
+/// output so every host-visible output shares the reported latency.
+#[derive(Clone, Debug, PartialEq)]
+pub struct RootCompensation {
+    root_port: String,
+    source: super::PortRef,
+    samples: u32,
+    channels: u32,
+}
+
+impl RootCompensation {
+    pub fn root_port(&self) -> &str {
+        &self.root_port
+    }
+
+    pub fn source(&self) -> &super::PortRef {
+        &self.source
+    }
+
+    pub fn samples(&self) -> u32 {
+        self.samples
+    }
+
+    pub fn channels(&self) -> u32 {
+        self.channels
+    }
 }
 
 impl Compensation {
@@ -53,12 +82,17 @@ impl Compensation {
 #[derive(Clone, Debug, Default, PartialEq)]
 pub struct LatencyPlan {
     compensations: Vec<Compensation>,
+    root_compensations: Vec<RootCompensation>,
     root_latency: u32,
 }
 
 impl LatencyPlan {
     pub fn compensations(&self) -> &[Compensation] {
         &self.compensations
+    }
+
+    pub fn root_compensations(&self) -> &[RootCompensation] {
+        &self.root_compensations
     }
 
     /// The latency in samples the host must report (the longest path to any
@@ -122,6 +156,7 @@ impl FlattenedGraph {
             }
             let arr = self
                 .incoming(node_id)
+                .filter(|connection| self.is_audio_connection(connection))
                 .filter_map(|connection| output_latency.get(connection.source().node()).copied())
                 .max()
                 .unwrap_or(0);
@@ -136,6 +171,9 @@ impl FlattenedGraph {
         for connection in self.connections() {
             if self.is_feedback_delay(connection.destination().node()) {
                 continue; // feedback tap: not part of forward accumulation
+            }
+            if !self.is_audio_connection(connection) {
+                continue;
             }
             let dest_arrival = arrival
                 .get(connection.destination().node())
@@ -155,9 +193,13 @@ impl FlattenedGraph {
             }
         }
 
+        let root_latency = self.root_latency(&output_latency);
+        let root_compensations = self.root_compensations(&output_latency, root_latency);
+
         Ok(LatencyPlan {
             compensations,
-            root_latency: self.root_latency(&output_latency),
+            root_compensations,
+            root_latency,
         })
     }
 
@@ -167,11 +209,35 @@ impl FlattenedGraph {
     /// latency-bearing branch never inflates it.
     fn root_latency(&self, output_latency: &BTreeMap<NodeId, u32>) -> u32 {
         self.root_output_sources()
-            .values()
-            .flatten()
+            .iter()
+            .filter(|(name, _)| self.is_audio_root_port(name))
+            .flat_map(|(_, sources)| sources)
             .filter_map(|source| output_latency.get(source.node()).copied())
             .max()
             .unwrap_or(0)
+    }
+
+    fn root_compensations(
+        &self,
+        output_latency: &BTreeMap<NodeId, u32>,
+        root_latency: u32,
+    ) -> Vec<RootCompensation> {
+        self.root_output_sources()
+            .iter()
+            .filter(|(name, _)| self.is_audio_root_port(name))
+            .flat_map(|(root_port, sources)| {
+                sources.iter().filter_map(|source| {
+                    let source_latency = output_latency.get(source.node()).copied().unwrap_or(0);
+                    let samples = root_latency.saturating_sub(source_latency);
+                    (samples > 0).then(|| RootCompensation {
+                        root_port: root_port.clone(),
+                        source: source.clone(),
+                        samples,
+                        channels: self.source_channels(source),
+                    })
+                })
+            })
+            .collect()
     }
 
     /// Reject cycles that carry uncompensatable latency: any cycle containing a
@@ -285,14 +351,35 @@ impl FlattenedGraph {
     /// Channel count of a connection's source port (the compensation buffer
     /// width), or zero when the port is unresolved.
     fn edge_channels(&self, connection: &Connection) -> u32 {
+        self.source_channels(connection.source())
+    }
+
+    fn source_channels(&self, source: &super::PortRef) -> u32 {
+        self.node(source.node())
+            .and_then(|node| {
+                node.ports()
+                    .iter()
+                    .find(|port| port.name() == source.port())
+            })
+            .map(|port| port.channels())
+            .unwrap_or(0)
+    }
+
+    fn is_audio_connection(&self, connection: &Connection) -> bool {
         self.node(connection.source().node())
             .and_then(|node| {
                 node.ports()
                     .iter()
                     .find(|port| port.name() == connection.source().port())
             })
-            .map(|port| port.channels())
-            .unwrap_or(0)
+            .is_some_and(|port| port.signal_type() == SignalType::Audio)
+    }
+
+    fn is_audio_root_port(&self, name: &str) -> bool {
+        self.root_ports()
+            .iter()
+            .find(|port| port.name() == name)
+            .is_some_and(|port| port.signal_type() == SignalType::Audio)
     }
 
     /// Forward edges only: connections whose destination is not a

@@ -79,8 +79,12 @@ fn node_records_definition_reference_static_args_and_overrides() {
 
 #[test]
 fn port_carries_channel_count_and_control_default_metadata() {
-    let port = Port::input("cutoff", SignalType::Control, 1)
-        .with_control_default(ControlDefault::new(440.0).with_min(20.0).with_max(20_000.0).with_unit("hz"));
+    let port = Port::input("cutoff", SignalType::Control, 1).with_control_default(
+        ControlDefault::new(440.0)
+            .with_min(20.0)
+            .with_max(20_000.0)
+            .with_unit("hz"),
+    );
 
     assert_eq!(port.channels(), &ChannelCount::Literal(1));
     let control = port.control_default().expect("control port has default");
@@ -116,6 +120,25 @@ fn static_parameter_declaration_is_preserved_for_resolution_and_discovery() {
 }
 
 #[test]
+fn string_static_parameter_preserves_inline_script_source() {
+    let source = "fn process(input) { input }";
+    let script = GraphDefinition::new("script").with_static_param(
+        StaticParam::new("source", StaticType::String)
+            .with_default(StaticValue::String(source.to_string())),
+    );
+    let registry = DefinitionRegistry::new().with_definition(script);
+    let root = GraphDefinition::new("root").with_node(Node::new(NodeId::new("script"), "script"));
+
+    let flat = root.flatten(&registry).expect("script source resolves");
+    let resolved = flat.nodes()[0].static_args();
+
+    assert_eq!(
+        resolved.get("source"),
+        Some(&StaticValue::String(source.to_string()))
+    );
+}
+
+#[test]
 fn connection_targeting_a_static_parameter_is_rejected_as_not_a_port() {
     let registry = DefinitionRegistry::new()
         .with_definition(echo_primitive())
@@ -141,8 +164,7 @@ fn missing_required_static_argument_is_rejected() {
     let synth = GraphDefinition::new("synth")
         .with_static_param(StaticParam::new("voices", StaticType::Int));
     let registry = DefinitionRegistry::new().with_definition(synth);
-    let definition =
-        GraphDefinition::new("root").with_node(Node::new(NodeId::new("s"), "synth"));
+    let definition = GraphDefinition::new("root").with_node(Node::new(NodeId::new("s"), "synth"));
 
     let validation = definition.validate(&registry);
 
@@ -190,8 +212,10 @@ fn unknown_static_argument_name_is_rejected() {
 fn static_argument_expression_is_rejected() {
     let registry = DefinitionRegistry::new().with_definition(echo_primitive());
     let definition = GraphDefinition::new("root").with_node(
-        Node::new(NodeId::new("e"), "echo")
-            .with_static_arg("channels", StaticArg::Expression("$channels + 1".to_string())),
+        Node::new(NodeId::new("e"), "echo").with_static_arg(
+            "channels",
+            StaticArg::Expression("$channels + 1".to_string()),
+        ),
     );
 
     let validation = definition.validate(&registry);
@@ -312,7 +336,10 @@ fn mismatched_channel_counts_are_rejected_reporting_both_counts() {
     let validation = definition.validate(&registry);
     let errors: Vec<_> = validation.diagnostics().errors().collect();
     assert_eq!(errors.len(), 1);
-    assert_eq!(errors[0].error_code(), error_codes::KERNEL_CHANNEL_COUNT_MISMATCH);
+    assert_eq!(
+        errors[0].error_code(),
+        error_codes::KERNEL_CHANNEL_COUNT_MISMATCH
+    );
     assert_eq!(errors[0].expected(), Some("2"));
     assert_eq!(errors[0].actual(), Some("1"));
 }
@@ -321,8 +348,8 @@ fn mismatched_channel_counts_are_rejected_reporting_both_counts() {
 
 #[test]
 fn control_output_promotes_to_audio_input_and_records_a_promotion_step() {
-    let control_source = GraphDefinition::new("lfo")
-        .with_port(Port::output("out", SignalType::Control, 1));
+    let control_source =
+        GraphDefinition::new("lfo").with_port(Port::output("out", SignalType::Control, 1));
     let registry = DefinitionRegistry::new()
         .with_definition(control_source)
         .with_definition(gain_primitive());
@@ -373,8 +400,8 @@ fn audio_output_cannot_feed_control_input() {
 
 #[test]
 fn event_ports_never_convert_to_audio() {
-    let gate = GraphDefinition::new("gate")
-        .with_port(Port::output("trigger", SignalType::Event, 1));
+    let gate =
+        GraphDefinition::new("gate").with_port(Port::output("trigger", SignalType::Event, 1));
     let registry = DefinitionRegistry::new()
         .with_definition(gate)
         .with_definition(gain_primitive());
@@ -399,11 +426,9 @@ fn event_ports_never_convert_to_audio() {
 #[test]
 fn unconnected_control_input_uses_declared_default() {
     let registry = DefinitionRegistry::new().with_definition(gain_primitive());
-    let definition =
-        GraphDefinition::new("root").with_node(Node::new(NodeId::new("amp"), "gain"));
+    let definition = GraphDefinition::new("root").with_node(Node::new(NodeId::new("amp"), "gain"));
 
-    let effective =
-        definition.effective_control_input(&registry, &NodeId::new("amp"), "level");
+    let effective = definition.effective_control_input(&registry, &NodeId::new("amp"), "level");
 
     assert_eq!(effective, Some(EffectiveInput::Value(1.0)));
 }
@@ -411,20 +436,18 @@ fn unconnected_control_input_uses_declared_default() {
 #[test]
 fn instance_override_replaces_declared_default() {
     let registry = DefinitionRegistry::new().with_definition(gain_primitive());
-    let definition = GraphDefinition::new("root").with_node(
-        Node::new(NodeId::new("amp"), "gain").with_default_override("level", 0.25),
-    );
+    let definition = GraphDefinition::new("root")
+        .with_node(Node::new(NodeId::new("amp"), "gain").with_default_override("level", 0.25));
 
-    let effective =
-        definition.effective_control_input(&registry, &NodeId::new("amp"), "level");
+    let effective = definition.effective_control_input(&registry, &NodeId::new("amp"), "level");
 
     assert_eq!(effective, Some(EffectiveInput::Value(0.25)));
 }
 
 #[test]
 fn incoming_connection_takes_precedence_over_default_and_override() {
-    let control_source = GraphDefinition::new("lfo")
-        .with_port(Port::output("out", SignalType::Control, 1));
+    let control_source =
+        GraphDefinition::new("lfo").with_port(Port::output("out", SignalType::Control, 1));
     let registry = DefinitionRegistry::new()
         .with_definition(gain_primitive())
         .with_definition(control_source);
@@ -436,8 +459,7 @@ fn incoming_connection_takes_precedence_over_default_and_override() {
             PortRef::new(NodeId::new("amp"), "level"),
         ));
 
-    let effective =
-        definition.effective_control_input(&registry, &NodeId::new("amp"), "level");
+    let effective = definition.effective_control_input(&registry, &NodeId::new("amp"), "level");
 
     assert_eq!(effective, Some(EffectiveInput::Connected));
 }
@@ -445,9 +467,8 @@ fn incoming_connection_takes_precedence_over_default_and_override() {
 #[test]
 fn override_of_unknown_port_is_rejected() {
     let registry = DefinitionRegistry::new().with_definition(gain_primitive());
-    let definition = GraphDefinition::new("root").with_node(
-        Node::new(NodeId::new("amp"), "gain").with_default_override("resonance", 0.5),
-    );
+    let definition = GraphDefinition::new("root")
+        .with_node(Node::new(NodeId::new("amp"), "gain").with_default_override("resonance", 0.5));
 
     let validation = definition.validate(&registry);
 
@@ -734,8 +755,10 @@ fn channel_reference_to_non_integer_static_param_fails_compilation() {
         ));
     let registry = DefinitionRegistry::new().with_definition(broken);
     let definition = GraphDefinition::new("root").with_node(
-        Node::new(NodeId::new("e"), "echo")
-            .with_static_arg("channels", StaticArg::Literal(StaticValue::Enum("wide".into()))),
+        Node::new(NodeId::new("e"), "echo").with_static_arg(
+            "channels",
+            StaticArg::Literal(StaticValue::Enum("wide".into())),
+        ),
     );
 
     let validation = definition.validate(&registry);
@@ -816,7 +839,8 @@ fn audio_feedback_through_feedback_delay_is_valid() {
 
 #[test]
 fn instantaneous_audio_feedback_is_rejected_naming_the_required_primitive() {
-    let registry = DefinitionRegistry::new().with_definition(passthrough("gain", SignalType::Audio));
+    let registry =
+        DefinitionRegistry::new().with_definition(passthrough("gain", SignalType::Audio));
     let definition = two_node_cycle("root", "gain", "gain");
 
     let validation = definition.validate(&registry);
@@ -860,7 +884,8 @@ fn control_feedback_through_feedback_delay_is_valid() {
 
 #[test]
 fn instantaneous_control_feedback_is_rejected() {
-    let registry = DefinitionRegistry::new().with_definition(passthrough("mod", SignalType::Control));
+    let registry =
+        DefinitionRegistry::new().with_definition(passthrough("mod", SignalType::Control));
     let definition = two_node_cycle("root", "mod", "mod");
 
     let validation = definition.validate(&registry);

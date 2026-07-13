@@ -61,6 +61,25 @@ pub const WAVEFORM_SAW: &str = "saw";
 pub const WAVEFORM_SINE: &str = "sine";
 pub const WAVEFORM_TRIANGLE: &str = "triangle";
 pub const WAVEFORM_SQUARE: &str = "square";
+pub const DELAY_SAMPLES_PARAMETER: &str = "delay_samples";
+pub const FILTER_ALGORITHM_PARAMETER: &str = "algorithm";
+pub const FILTER_ALGORITHM_MOOG: &str = "moog";
+pub const FILTER_ALGORITHM_BIQUAD: &str = "biquad";
+pub const FILTER_ALGORITHM_COMB: &str = "comb";
+pub const FILTER_MODE_PARAMETER: &str = "mode";
+pub const FILTER_MODE_LOWPASS: &str = "lowpass";
+pub const FILTER_MODE_HIGHPASS: &str = "highpass";
+pub const FILTER_MODE_PEAKING: &str = "peaking";
+pub const FILTER_COMB_TYPE_PARAMETER: &str = "comb_type";
+pub const SPECTRAL_MODE_PARAMETER: &str = "mode";
+pub const SPECTRAL_MODE_GATE: &str = "gate";
+pub const SPECTRAL_MODE_PASSTHROUGH: &str = "passthrough";
+pub const SPECTRAL_FFT_SIZE_PARAMETER: &str = "fft_size";
+pub const SPECTRAL_DEFAULT_FFT_SIZE: usize = 2048;
+pub const SPECTRAL_WINDOW_PARAMETER: &str = "window";
+pub const SPECTRAL_WINDOW_HANN: &str = "hann";
+pub const NOISE_SEED_PARAMETER: &str = "seed";
+pub const NOISE_DEFAULT_SEED: u32 = 0;
 
 impl ParameterMetadata {
     pub fn new(name: impl Into<String>, value_type: ParameterValueType) -> Self {
@@ -297,6 +316,7 @@ impl BuiltInModuleRegistry {
             curve_mapper_definition(),
             decay_definition(),
             control_to_audio_definition(),
+            compensation_delay_definition(),
         ])
     }
 
@@ -438,21 +458,32 @@ fn filter_definition() -> BuiltInModuleDefinition {
         ])
         .with_output(Port::output(AUDIO_OUT, Audio))
         .with_parameter(
-            ParameterMetadata::new("algorithm", ParameterValueType::Text)
-                .with_default("moog")
-                .with_enum_values(vec!["moog", "biquad", "comb"])
+            ParameterMetadata::new(FILTER_ALGORITHM_PARAMETER, ParameterValueType::Text)
+                .with_default(FILTER_ALGORITHM_MOOG)
+                .with_enum_values(vec![
+                    FILTER_ALGORITHM_MOOG,
+                    FILTER_ALGORITHM_BIQUAD,
+                    FILTER_ALGORITHM_COMB,
+                ])
                 .with_description("filter topology"),
         )
         .with_parameter(
-            ParameterMetadata::new("mode", ParameterValueType::Text)
-                .with_default("lowpass")
-                .with_enum_values(vec!["lowpass", "highpass", "peaking"])
+            ParameterMetadata::new(FILTER_MODE_PARAMETER, ParameterValueType::Text)
+                .with_default(FILTER_MODE_LOWPASS)
+                .with_enum_values(vec![
+                    FILTER_MODE_LOWPASS,
+                    FILTER_MODE_HIGHPASS,
+                    FILTER_MODE_PEAKING,
+                ])
                 .with_description("biquad filter mode"),
         )
         .with_parameter(
-            ParameterMetadata::new("comb_type", ParameterValueType::Text)
-                .with_default("feedback")
-                .with_enum_values(vec!["feedback", "feedforward"])
+            ParameterMetadata::new(FILTER_COMB_TYPE_PARAMETER, ParameterValueType::Text)
+                .with_default(DYNAMICS_TOPOLOGY_FEEDBACK)
+                .with_enum_values(vec![
+                    DYNAMICS_TOPOLOGY_FEEDBACK,
+                    DYNAMICS_TOPOLOGY_FEEDFORWARD,
+                ])
                 .with_description("comb filter type"),
         )
 }
@@ -523,6 +554,16 @@ fn control_to_audio_definition() -> BuiltInModuleDefinition {
         .with_output(Port::output(OUT, Audio))
 }
 
+fn compensation_delay_definition() -> BuiltInModuleDefinition {
+    BuiltInModuleDefinition::new(COMPENSATION_DELAY)
+        .with_inputs([(AUDIO_IN, Audio)])
+        .with_output(Port::output(AUDIO_OUT, Audio))
+        .with_parameter(ParameterMetadata::new(
+            DELAY_SAMPLES_PARAMETER,
+            ParameterValueType::Integer,
+        ))
+}
+
 fn note_to_rate_definition() -> BuiltInModuleDefinition {
     BuiltInModuleDefinition::new(NOTE_TO_RATE)
         .with_execution_scope(ExecutionScope::Voice)
@@ -583,7 +624,10 @@ fn dynamics_processor_definition() -> BuiltInModuleDefinition {
         .with_parameter(
             ParameterMetadata::new(DYNAMICS_TOPOLOGY_PARAMETER, ParameterValueType::Text)
                 .with_default(DYNAMICS_TOPOLOGY_FEEDFORWARD)
-                .with_enum_values(vec![DYNAMICS_TOPOLOGY_FEEDFORWARD, DYNAMICS_TOPOLOGY_FEEDBACK])
+                .with_enum_values(vec![
+                    DYNAMICS_TOPOLOGY_FEEDFORWARD,
+                    DYNAMICS_TOPOLOGY_FEEDBACK,
+                ])
                 .with_description("detector topology: feedforward or feedback"),
         )
 }
@@ -618,14 +662,14 @@ fn spectral_processor_definition() -> BuiltInModuleDefinition {
         .with_inputs([(AUDIO_IN, Audio), (THRESHOLD, Control), (MIX, Control)])
         .with_output(Port::output(AUDIO_OUT, Audio))
         .with_parameter(
-            ParameterMetadata::new("mode", ParameterValueType::Text)
-                .with_default("gate")
-                .with_enum_values(vec!["gate", "passthrough"])
+            ParameterMetadata::new(SPECTRAL_MODE_PARAMETER, ParameterValueType::Text)
+                .with_default(SPECTRAL_MODE_GATE)
+                .with_enum_values(vec![SPECTRAL_MODE_GATE, SPECTRAL_MODE_PASSTHROUGH])
                 .with_description("spectral processing mode"),
         )
         .with_parameter(
-            ParameterMetadata::new("fft_size", ParameterValueType::Number)
-                .with_default("2048")
+            ParameterMetadata::new(SPECTRAL_FFT_SIZE_PARAMETER, ParameterValueType::Number)
+                .with_default(SPECTRAL_DEFAULT_FFT_SIZE.to_string())
                 .with_range(256.0, 8192.0)
                 .with_description("FFT frame size in samples")
                 .with_realtime_note(
@@ -636,9 +680,9 @@ fn spectral_processor_definition() -> BuiltInModuleDefinition {
                 ),
         )
         .with_parameter(
-            ParameterMetadata::new("window", ParameterValueType::Text)
-                .with_default("hann")
-                .with_enum_values(vec!["hann"])
+            ParameterMetadata::new(SPECTRAL_WINDOW_PARAMETER, ParameterValueType::Text)
+                .with_default(SPECTRAL_WINDOW_HANN)
+                .with_enum_values(vec![SPECTRAL_WINDOW_HANN])
                 .with_description("analysis/synthesis window function"),
         )
         .with_parameter(
@@ -685,8 +729,8 @@ fn noise_definition() -> BuiltInModuleDefinition {
         .with_execution_scope(ExecutionScope::Voice)
         .with_output(Port::output(AUDIO, Audio))
         .with_parameter(
-            ParameterMetadata::new("seed", ParameterValueType::Number)
-                .with_default("0")
+            ParameterMetadata::new(NOISE_SEED_PARAMETER, ParameterValueType::Number)
+                .with_default(NOISE_DEFAULT_SEED.to_string())
                 .with_description("random seed for deterministic noise output"),
         )
 }
@@ -814,9 +858,9 @@ fn decay_definition() -> BuiltInModuleDefinition {
                 ),
         )
         .with_parameter(
-            ParameterMetadata::new("curve", ParameterValueType::Text)
-                .with_default("exponential")
-                .with_enum_values(vec!["linear".to_string(), "exponential".to_string()])
+            ParameterMetadata::new(CURVE_PARAMETER, ParameterValueType::Text)
+                .with_default(CURVE_EXPONENTIAL)
+                .with_enum_values(vec![CURVE_LINEAR, CURVE_EXPONENTIAL])
                 .with_description("decay curve shape"),
         )
 }

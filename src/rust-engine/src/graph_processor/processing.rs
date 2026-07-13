@@ -162,6 +162,23 @@ pub(super) fn process_control_to_audio(control_in: Vec<f32>) -> ModuleOutputs {
     audio_output(builtin_ports::OUT, control_in)
 }
 
+pub(super) fn process_compensation_delay(
+    state: &mut PerModuleState,
+    audio_in: Vec<f32>,
+) -> ModuleOutputs {
+    let PerModuleState::CompensationDelay { samples, position } = state else {
+        unreachable!()
+    };
+    let mut audio = Vec::with_capacity(audio_in.len());
+    for input in audio_in {
+        let output = samples[*position];
+        samples[*position] = input;
+        *position = (*position + 1) % samples.len();
+        audio.push(output);
+    }
+    audio_output(builtin_ports::AUDIO_OUT, audio)
+}
+
 pub(super) fn process_vca(audio_in: Vec<f32>, gain_in: Vec<f32>) -> ModuleOutputs {
     let frames = audio_in.len().min(gain_in.len());
     let mut audio = Vec::with_capacity(frames);

@@ -2,11 +2,15 @@ use std::collections::BTreeMap;
 
 use crate::builtins::module_kind::ModuleKind;
 use crate::builtins::{
-    CURVE_LINEAR, CURVE_PARAMETER, DETECTION_MODE_PARAMETER, DETECTION_MODE_RMS,
-    DYNAMICS_DETECTION_PARAMETER, DYNAMICS_MODE_PARAMETER, DYNAMICS_MODE_TRANSIENT,
-    DYNAMICS_TOPOLOGY_FEEDBACK, DYNAMICS_TOPOLOGY_PARAMETER, EVENT_FILTER_NOTE_PARAMETER,
-    EVENT_FILTER_NOTE_SELECTOR, EVENT_FILTER_SELECTOR_PARAMETER, INTERPOLATION_CUBIC,
-    INTERPOLATION_PARAMETER, SCRIPT_SOURCE_PARAMETER, STEPS_PARAMETER, WAVEFORM_PARAMETER,
+    CURVE_LINEAR, CURVE_PARAMETER, DELAY_SAMPLES_PARAMETER, DETECTION_MODE_PARAMETER,
+    DETECTION_MODE_RMS, DYNAMICS_DETECTION_PARAMETER, DYNAMICS_MODE_PARAMETER,
+    DYNAMICS_MODE_TRANSIENT, DYNAMICS_TOPOLOGY_FEEDBACK, DYNAMICS_TOPOLOGY_FEEDFORWARD,
+    DYNAMICS_TOPOLOGY_PARAMETER, EVENT_FILTER_NOTE_PARAMETER, EVENT_FILTER_NOTE_SELECTOR,
+    EVENT_FILTER_SELECTOR_PARAMETER, FILTER_ALGORITHM_BIQUAD, FILTER_ALGORITHM_COMB,
+    FILTER_ALGORITHM_MOOG, FILTER_ALGORITHM_PARAMETER, FILTER_COMB_TYPE_PARAMETER,
+    FILTER_MODE_HIGHPASS, FILTER_MODE_PARAMETER, FILTER_MODE_PEAKING, INTERPOLATION_CUBIC,
+    INTERPOLATION_PARAMETER, NOISE_DEFAULT_SEED, NOISE_SEED_PARAMETER, SCRIPT_SOURCE_PARAMETER,
+    SPECTRAL_DEFAULT_FFT_SIZE, STEPS_PARAMETER, WAVEFORM_PARAMETER,
 };
 use crate::compiled_patch::CompiledNode;
 use crate::convolution::Convolution;
@@ -51,6 +55,10 @@ pub(super) enum PerModuleState {
     Vca,
     /// Stateless control→audio promotion (see `unify-graph-kernel` §2.5).
     ControlToAudio,
+    CompensationDelay {
+        samples: Box<[f32]>,
+        position: usize,
+    },
     AudioOutput,
     MidiInput,
     NoteToRate {
@@ -208,6 +216,29 @@ impl PerModuleState {
             },
             ModuleKind::Gain => PerModuleState::Vca,
             ModuleKind::ControlToAudio => PerModuleState::ControlToAudio,
+            ModuleKind::CompensationDelay => {
+                let delay_samples = params
+                    .get(DELAY_SAMPLES_PARAMETER)
+                    .unwrap_or_else(|| {
+                        panic!(
+                            "compensation delay module {module_id} requires {DELAY_SAMPLES_PARAMETER}"
+                        )
+                    })
+                    .parse::<usize>()
+                    .unwrap_or_else(|_| {
+                        panic!(
+                            "compensation delay module {module_id} has invalid {DELAY_SAMPLES_PARAMETER}"
+                        )
+                    });
+                assert!(
+                    delay_samples > 0,
+                    "compensation delay module {module_id} requires a positive {DELAY_SAMPLES_PARAMETER}"
+                );
+                PerModuleState::CompensationDelay {
+                    samples: vec![0.0; delay_samples].into_boxed_slice(),
+                    position: 0,
+                }
+            }
             ModuleKind::AudioOutput => PerModuleState::AudioOutput,
             ModuleKind::MidiInput => PerModuleState::MidiInput,
             ModuleKind::NoteToRate => PerModuleState::NoteToRate { rate: 1.0 },
@@ -249,17 +280,17 @@ impl PerModuleState {
                 processor: Convolution::new(),
             },
             ModuleKind::Filter => {
-                let algorithm = params.get("algorithm").map(|s| s.as_str());
-                let mode = params.get("mode").map(|s| s.as_str());
-                let comb_type = params.get("comb_type").map(|s| s.as_str());
+                let algorithm = params.get(FILTER_ALGORITHM_PARAMETER).map(|s| s.as_str());
+                let mode = params.get(FILTER_MODE_PARAMETER).map(|s| s.as_str());
+                let comb_type = params.get(FILTER_COMB_TYPE_PARAMETER).map(|s| s.as_str());
                 let sample_rate_f64 = sample_rate as f64;
 
                 let filter: Box<dyn FilterAlgorithm> = match algorithm {
-                    Some("moog") => Box::new(MoogLadder::new(sample_rate_f64)),
-                    Some("biquad") => {
+                    Some(FILTER_ALGORITHM_MOOG) => Box::new(MoogLadder::new(sample_rate_f64)),
+                    Some(FILTER_ALGORITHM_BIQUAD) => {
                         let bq_mode = match mode {
-                            Some("highpass") => BiquadMode::Highpass,
-                            Some("peaking") => BiquadMode::Peaking,
+                            Some(FILTER_MODE_HIGHPASS) => BiquadMode::Highpass,
+                            Some(FILTER_MODE_PEAKING) => BiquadMode::Peaking,
                             _ => BiquadMode::Lowpass,
                         };
                         let norm = 1000.0 / sample_rate_f64;
@@ -273,9 +304,9 @@ impl PerModuleState {
                             BiquadMode::Lowpass => Box::new(BiquadFilter::new_lowpass(norm, 0.707)),
                         }
                     }
-                    Some("comb") => {
+                    Some(FILTER_ALGORITHM_COMB) => {
                         let ct = match comb_type {
-                            Some("feedforward") => CombType::Feedforward,
+                            Some(DYNAMICS_TOPOLOGY_FEEDFORWARD) => CombType::Feedforward,
                             _ => CombType::Feedback,
                         };
                         Box::new(CombFilter::new((sample_rate_f64 / 440.0) as usize, 0.5, ct))
@@ -309,13 +340,16 @@ impl PerModuleState {
                 sample_rate: sample_rate as f64,
             },
             ModuleKind::SpectralProcessor => PerModuleState::SpectralProcessor {
-                processor: SpectralProcessor::new(2048, crate::spectral::SpectralMode::Gate),
+                processor: SpectralProcessor::new(
+                    SPECTRAL_DEFAULT_FFT_SIZE,
+                    crate::spectral::SpectralMode::Gate,
+                ),
             },
             ModuleKind::Noise => {
                 let seed = params
-                    .get("seed")
+                    .get(NOISE_SEED_PARAMETER)
                     .and_then(|s| s.parse::<u32>().ok())
-                    .unwrap_or(0);
+                    .unwrap_or(NOISE_DEFAULT_SEED);
                 PerModuleState::Noise { state: seed }
             }
             ModuleKind::Impulse => PerModuleState::Impulse,

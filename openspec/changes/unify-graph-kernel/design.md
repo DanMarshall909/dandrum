@@ -61,7 +61,7 @@ A structural primitive `poly { definition_ref, static max_voices, allocation pol
 
 ### D5: Static parameters and expansion caching
 
-Graph definitions declare `static_params` (typed: int, enum, resource-ref) usable in port channel counts, `poly` voice counts, replication counts, and primitive configuration. Nodes supply `static_args`. The compiler resolves all static args before flattening and caches expanded definitions keyed by `(definition_id, static_args)`. Channel-count polymorphism rides on this: a port's `channels` may reference a static param, so one `echo` definition serves mono/stereo/N-channel (collapsing today's `_l`/`_r` duplication). No general expression language — static args flow through by name and simple arithmetic is deferred. Rationale: this is the minimum genericity that makes "no stereo assumptions" real; a full metaprogramming layer (Faust's algebra) is explicitly deferred.
+Graph definitions declare `static_params` (typed: int, enum, string, resource-ref) usable in port channel counts, `poly` voice counts, replication counts, and primitive configuration. String static parameters preserve construction-time inline text such as Rhai script source; they remain compile-time values and are not ports. Nodes supply `static_args`. The compiler resolves all static args before flattening and caches expanded definitions keyed by `(definition_id, static_args)`. Channel-count polymorphism rides on this: a port's `channels` may reference a static param, so one `echo` definition serves mono/stereo/N-channel (collapsing today's `_l`/`_r` duplication). No general expression language — static args flow through by name and simple arithmetic is deferred. Rationale: this is the minimum genericity that makes "no stereo assumptions" real; a full metaprogramming layer (Faust's algebra) is explicitly deferred.
 
 ### D6: Feedback-delay primitive
 
@@ -74,6 +74,8 @@ The host boundary is: root graph input/output ports ↔ named buses declared by 
 ### D8: Compilation pipeline
 
 `parse → resolve definitions (library + inline) → resolve static args → recursively flatten to atomic nodes → typecheck ports/rates/channels → cycle-check (feedback_delay cuts) → latency balance → topological schedule → buffer-reuse coloring into arenas → CompiledPatch`. Latency balancing accumulates per-node declared latency along paths, inserts compensation delays where paths of unequal latency converge, reports total root latency to the host, and rejects any feedback cycle containing a nonzero-latency node (compensation inside a loop is impossible). Composite and `poly` latency is the accumulated latency of the flattened contents; voices are identical instances, so poly latency is uniform. Flattening reuses the expansion cache; the whole pipeline stays linear-ish in flattened node count so live edits recompile fast. Execution remains the existing flat statically-dispatched node array over `audio_arena`. Per-voice instances share read-only data (wavetables, samples, coefficients) and get disjoint state slices.
+
+Latency compensation applies only to audio connections. Control values are block-rate state and events retain explicit timestamps, so neither is routed through an audio compensation primitive. Every root audio output is delayed to the maximum accumulated root latency before host binding, giving the host one truthful total-latency value and keeping separately named output buses sample-aligned.
 
 ### D9: Migration is one atomic in-repo cut, staged by layer
 
@@ -99,8 +101,9 @@ Stages match D9 and land as ordinary commits to main (trunk-based). Rollback = r
 The migration inventory shows cost concentrated in a few production files plus a large but **mechanically uniform** test/example surface. Rewrite as little as possible; bridge and codemod the rest.
 
 - **Bridge, don't rewrite the runtime.** The compilation cut (2.6) lowers `FlattenedGraph → the existing ModuleNode array`; the kernel becomes the front end and the legacy `graph_processor` back end (render loop, arenas, `processing.rs`) stays unchanged.
+- **Build the kernel document front end before switching preparation.** Task 3.2 supplies authoritative construction-time declarations; the graph-producing portions of 6.1/6.2 then parse patches and composites directly into `GraphDefinition`. Task 2.6 consumes that model and MUST NOT adapt through `Graph::from_patch_declarations`, because doing so would retain the single-level expansion path the kernel replaces.
 - **Keep the L/R DSP internals.** `echo.rs`/`reverb.rs` `process(in_l, in_r)` are left intact; channel-polymorphism is adapted at the dispatch boundary (`graph_processor/dispatch.rs`), splitting a 2-channel buffer into l/r.
-- **`audio_output` → deprecated alias, not deletion.** It lowers to a stereo `main` root bus so the ~100 test refs + 40 example files keep compiling; the shim is removed in 7.3 once callers migrate, turning a big-bang into a one-line deletion.
+- **Use a transitional output sink only behind the bridge.** Until multichannel ports and named buses land, the bridge may synthesize the legacy stereo `audio_output` runtime node from mono root ports named `left` and `right`. It is not authorable kernel syntax. Other root shapes fail explicitly; 3.3/3.4 and 5.1 replace this sink with first-class multichannel bus binding.
 - **Codemod the examples.** `render:` is always 3 keys, `parameters:` blocks are uniform, and there are **zero** `asset_bindings`/`${}` uses in examples — so scripted transforms cover all 31 patches; hand-editing is wasted effort.
 
 ### Refactoring tooling
@@ -128,3 +131,6 @@ Discipline: run every bulk edit in small, committed batches gated by `cargo test
 - `poly` has **no built-in velocity scaling** — per-voice level shaping is composed inside the voice definition (e.g. a `gain` fed by the velocity intrinsic). (Decided 2026-07-08.)
 - Module library packaging (`module_package.rs`, $LIB/$USER_LIB) migrates in a **follow-up change** after the kernel lands; this change keeps the package manifest untouched except where compilation requires it. (Decided 2026-07-08.)
 - CLI/offline render settings are **flags only**: defaults for sample rate (48000) and block size (128), explicit `--duration-frames` required for offline render. Per-example settings live in the Rust test harness; no sidecar render-config schema (can be added later with zero migration cost if LLM authoring workflows need shippable render specs). (Decided 2026-07-08.)
+- Latency compensation is **audio-only**; control and event edges are never passed through the audio compensation primitive. All root audio outputs are aligned to the maximum root latency before host binding. (Decided 2026-07-13.)
+- Preparation switches to the kernel only after 3.2 and the graph-producing portions of 6.1/6.2. No temporary `PatchDocument → legacy Graph → kernel` adapter is permitted. (Decided 2026-07-13.)
+- Inline Rhai source remains supported as a typed string static parameter, analogous to a string constructor argument; it is resolved before flattening and never becomes a connectable runtime port. (Decided 2026-07-13.)

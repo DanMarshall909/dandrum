@@ -16,7 +16,7 @@ Every atomic node kind SHALL report its processing latency in samples (zero for 
 
 ### Requirement: Compiler balances parallel path latency
 
-When parallel paths converge with unequal accumulated latency, the compiler SHALL insert compensation delays so converging signals are time-aligned, and SHALL report the root graph's total latency to the host.
+When parallel audio paths converge with unequal accumulated latency, the compiler SHALL insert compensation delays so converging signals are time-aligned. The compiler SHALL also align every root audio output to the maximum accumulated root latency and report that latency to the host. Control and event edges SHALL NOT receive audio compensation delays.
 
 #### Scenario: Unequal parallel paths are aligned
 
@@ -27,6 +27,16 @@ When parallel paths converge with unequal accumulated latency, the compiler SHAL
 
 - **WHEN** a host queries a prepared instrument
 - **THEN** it SHALL receive the root graph's total latency in samples for plugin latency reporting
+
+#### Scenario: Root audio outputs share reported latency
+
+- **WHEN** separate root audio outputs are fed by paths with unequal accumulated latency
+- **THEN** the compiler SHALL delay the earlier outputs so every root audio output matches the single latency reported to the host
+
+#### Scenario: Control and event edges are not audio-compensated
+
+- **WHEN** control or event edges enter a node that also receives a latency-bearing audio path
+- **THEN** latency balancing SHALL NOT insert an audio compensation-delay node on those control or event edges
 
 #### Scenario: Composite latency accumulates through flattening
 

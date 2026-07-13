@@ -1,18 +1,18 @@
-use super::*;
 use super::processing::{
     EchoControls, ReverbControls, process_dynamics_processor, process_echo,
     process_frequency_splitter, process_reverb,
+};
+use super::*;
+use crate::builtins::{
+    CURVE_EXPONENTIAL, CURVE_PARAMETER, DELAY_SAMPLES_PARAMETER, EVENT_FILTER_NOTE_PARAMETER,
+    EVENT_FILTER_NOTE_SELECTOR, EVENT_FILTER_SELECTOR_PARAMETER, SCRIPT_LANGUAGE_PARAMETER,
+    SCRIPT_LANGUAGE_RHAI, SCRIPT_SOURCE_PARAMETER, module_types,
 };
 use crate::builtins::{
     DETECTION_MODE_PEAK, DETECTION_MODE_RMS, DYNAMICS_DETECTION_PARAMETER, DYNAMICS_MODE_LEVEL,
     DYNAMICS_MODE_PARAMETER, DYNAMICS_MODE_TRANSIENT, DYNAMICS_TOPOLOGY_FEEDBACK,
     DYNAMICS_TOPOLOGY_FEEDFORWARD, DYNAMICS_TOPOLOGY_PARAMETER, INTERPOLATION_CUBIC,
     INTERPOLATION_LINEAR, INTERPOLATION_PARAMETER,
-};
-use crate::builtins::{
-    CURVE_EXPONENTIAL, CURVE_PARAMETER, EVENT_FILTER_NOTE_PARAMETER, EVENT_FILTER_NOTE_SELECTOR,
-    EVENT_FILTER_SELECTOR_PARAMETER, SCRIPT_LANGUAGE_PARAMETER, SCRIPT_LANGUAGE_RHAI,
-    SCRIPT_SOURCE_PARAMETER, module_types,
 };
 use crate::core::TimedInputEvent;
 use crate::fft;
@@ -524,8 +524,16 @@ fn frequency_splitter_bands(
     let mut state = PerModuleState::new(&module, sample_rate, &PreparedSamplerAssets::empty());
     let crossover = vec![crossover_control; frames];
     let outputs = process_frequency_splitter(&mut state, &audio_in, &crossover, frames);
-    let low = outputs.audio.get("low").expect("splitter emits low band").clone();
-    let mid = outputs.audio.get("mid").expect("splitter emits mid band").clone();
+    let low = outputs
+        .audio
+        .get("low")
+        .expect("splitter emits low band")
+        .clone();
+    let mid = outputs
+        .audio
+        .get("mid")
+        .expect("splitter emits mid band")
+        .clone();
     let high = outputs
         .audio
         .get("high")
@@ -577,21 +585,21 @@ fn dynamics_steady_amplitude(
     sustain_gain: f32,
 ) -> f32 {
     let frames = audio_in.len();
-    let module = ModuleNode::new(ModuleId::new("dyn"), module_types::DYNAMICS_PROCESSOR)
-        .with_params(params);
+    let module =
+        ModuleNode::new(ModuleId::new("dyn"), module_types::DYNAMICS_PROCESSOR).with_params(params);
     let mut state = PerModuleState::new(&module, 48_000.0, &PreparedSamplerAssets::empty());
     let level = |v: f32| vec![v; frames];
     let outputs = process_dynamics_processor(
         &mut state,
         audio_in,
-        &vec![0.0; frames],   // sidechain (unused)
-        &level(0.5),          // threshold -> -40 dB
-        &level(0.05),         // below ratio -> ~1:1
-        &level(0.1),          // above ratio -> ~5:1
-        &level(0.5),          // attack
-        &level(0.3),          // release
-        &level(0.0),          // knee
-        &level(0.0),          // makeup
+        &vec![0.0; frames], // sidechain (unused)
+        &level(0.5),        // threshold -> -40 dB
+        &level(0.05),       // below ratio -> ~1:1
+        &level(0.1),        // above ratio -> ~5:1
+        &level(0.5),        // attack
+        &level(0.3),        // release
+        &level(0.0),        // knee
+        &level(0.0),        // makeup
         &level(attack_gain),
         &level(sustain_gain),
         frames,
@@ -607,7 +615,9 @@ fn dynamics_steady_amplitude(
 }
 
 fn steady_sine(amplitude: f32) -> Vec<f32> {
-    (0..4_800).map(|i| amplitude * (i as f32 * 0.2).sin()).collect()
+    (0..4_800)
+        .map(|i| amplitude * (i as f32 * 0.2).sin())
+        .collect()
 }
 
 #[test]
@@ -709,9 +719,11 @@ fn dynamics_topology_parameter_makes_feedback_compress_more_gently() {
 
 fn echo_impulse_output(interpolation: &str) -> Vec<f32> {
     let frames = 1_024;
-    let module = ModuleNode::new(ModuleId::new("echo"), module_types::ECHO).with_params(
-        BTreeMap::from([(INTERPOLATION_PARAMETER.to_string(), interpolation.to_string())]),
-    );
+    let module =
+        ModuleNode::new(ModuleId::new("echo"), module_types::ECHO).with_params(BTreeMap::from([(
+            INTERPOLATION_PARAMETER.to_string(),
+            interpolation.to_string(),
+        )]));
     let mut state = PerModuleState::new(&module, 48_000.0, &PreparedSamplerAssets::empty());
     let mut audio_in = vec![0.0f32; frames];
     audio_in[0] = 1.0;
@@ -737,11 +749,7 @@ fn echo_impulse_output(interpolation: &str) -> Vec<f32> {
 fn echo_interpolation_parameter_changes_fractional_delay_taps() {
     let linear = echo_impulse_output(INTERPOLATION_LINEAR);
     let cubic = echo_impulse_output(INTERPOLATION_CUBIC);
-    let diff: f32 = linear
-        .iter()
-        .zip(&cubic)
-        .map(|(a, b)| (a - b).abs())
-        .sum();
+    let diff: f32 = linear.iter().zip(&cubic).map(|(a, b)| (a - b).abs()).sum();
     assert!(
         diff > 1e-3,
         "cubic interpolation should change the fractional-delay echo taps (sum abs diff {diff})"
@@ -750,9 +758,13 @@ fn echo_interpolation_parameter_changes_fractional_delay_taps() {
 
 fn reverb_impulse_output(interpolation: &str) -> Vec<f32> {
     let frames = 2_048;
-    let module = ModuleNode::new(ModuleId::new("verb"), module_types::REVERB).with_params(
-        BTreeMap::from([(INTERPOLATION_PARAMETER.to_string(), interpolation.to_string())]),
-    );
+    let module =
+        ModuleNode::new(ModuleId::new("verb"), module_types::REVERB).with_params(BTreeMap::from([
+            (
+                INTERPOLATION_PARAMETER.to_string(),
+                interpolation.to_string(),
+            ),
+        ]));
     let mut state = PerModuleState::new(&module, 48_000.0, &PreparedSamplerAssets::empty());
     let mut audio_in = vec![0.0f32; frames];
     audio_in[0] = 1.0;
@@ -779,11 +791,7 @@ fn reverb_impulse_output(interpolation: &str) -> Vec<f32> {
 fn reverb_interpolation_parameter_changes_fractional_delay_network() {
     let linear = reverb_impulse_output(INTERPOLATION_LINEAR);
     let cubic = reverb_impulse_output(INTERPOLATION_CUBIC);
-    let diff: f32 = linear
-        .iter()
-        .zip(&cubic)
-        .map(|(a, b)| (a - b).abs())
-        .sum();
+    let diff: f32 = linear.iter().zip(&cubic).map(|(a, b)| (a - b).abs()).sum();
     assert!(
         diff > 1e-3,
         "cubic interpolation should change the reverb's fractional delay network (sum abs diff {diff})"
@@ -5195,4 +5203,53 @@ fn control_to_audio_promotion_carries_the_control_signal_into_the_audio_path() {
         left.iter().all(|sample| (sample - 1.0).abs() < 1e-6),
         "the promoted control value 1.0 appears as audio, got {left:?}"
     );
+}
+
+#[test]
+fn compensation_delay_delays_an_impulse_exactly_across_block_boundaries() {
+    const DELAY_SAMPLES: usize = 6;
+    let graph = Graph::new(
+        vec![
+            ModuleNode::new(ModuleId::new("midi"), module_types::MIDI_INPUT)
+                .with_output(builtin_ports::EVENTS, SignalType::Event),
+            ModuleNode::new(ModuleId::new("impulse"), module_types::IMPULSE)
+                .with_input(builtin_ports::TRIGGER, SignalType::Event)
+                .with_output(builtin_ports::AUDIO, SignalType::Audio),
+            ModuleNode::new(ModuleId::new("delay"), module_types::COMPENSATION_DELAY)
+                .with_input(builtin_ports::AUDIO_IN, SignalType::Audio)
+                .with_output(builtin_ports::AUDIO_OUT, SignalType::Audio)
+                .with_params(BTreeMap::from([(
+                    DELAY_SAMPLES_PARAMETER.to_string(),
+                    DELAY_SAMPLES.to_string(),
+                )])),
+            ModuleNode::new(ModuleId::new("out"), module_types::AUDIO_OUTPUT)
+                .with_input(builtin_ports::LEFT, SignalType::Audio)
+                .with_input(builtin_ports::RIGHT, SignalType::Audio),
+        ],
+        vec![
+            Cable::new(
+                PortRef::new(ModuleId::new("midi"), builtin_ports::EVENTS),
+                PortRef::new(ModuleId::new("impulse"), builtin_ports::TRIGGER),
+            ),
+            Cable::new(
+                PortRef::new(ModuleId::new("impulse"), builtin_ports::AUDIO),
+                PortRef::new(ModuleId::new("delay"), builtin_ports::AUDIO_IN),
+            ),
+            Cable::new(
+                PortRef::new(ModuleId::new("delay"), builtin_ports::AUDIO_OUT),
+                PortRef::new(ModuleId::new("out"), builtin_ports::LEFT),
+            ),
+        ],
+    );
+    let settings = RenderSettings {
+        sample_rate_hz: 48_000,
+        block_size_frames: 4,
+        duration_frames: 12,
+    };
+
+    let (left, _right) = render_offline(&graph, &settings, vec![note_on(0, 100)]);
+
+    let mut expected = vec![0.0; settings.duration_frames as usize];
+    expected[DELAY_SAMPLES] = 1.0;
+    assert_eq!(left, expected);
 }
