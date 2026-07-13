@@ -81,7 +81,10 @@ impl ModuleLibrarySeedError {
             Self::Io { path, message } => Diagnostic::new(
                 error_codes::LIBRARY_SEED_FAILED,
                 Severity::Error,
-                format!("failed to seed module library at {}: {message}", path.display()),
+                format!(
+                    "failed to seed module library at {}: {message}",
+                    path.display()
+                ),
             ),
         }
     }
@@ -185,7 +188,8 @@ fn publish_version_directory(
     staging_root: &Path,
 ) -> Result<(), ModuleLibrarySeedError> {
     if !version_root.exists() {
-        return fs::rename(staging_root, version_root).map_err(|error| io_error(version_root, error));
+        return fs::rename(staging_root, version_root)
+            .map_err(|error| io_error(version_root, error));
     }
 
     let backup_root = version_root.with_extension(format!("replacing.{}", std::process::id()));
@@ -414,7 +418,10 @@ mod tests {
         let seeded = library("1.0.0", b"first\n");
 
         let first = seed_standard_library(&root, &seeded).expect("initial seed should extract");
-        let file_path = root.join("1.0.0").join("drum_voice").join("drum_voice.yaml");
+        let file_path = root
+            .join("1.0.0")
+            .join("drum_voice")
+            .join("drum_voice.yaml");
         fs::write(&file_path, b"user-visible existing bytes\n")
             .expect("test should be able to mutate the seeded file");
 
@@ -451,8 +458,12 @@ mod tests {
             "a changed CRC should extract a replacement version"
         );
         assert_eq!(
-            fs::read(root.join("1.0.0").join("drum_voice").join("drum_voice.yaml"))
-                .expect("updated module file should exist"),
+            fs::read(
+                root.join("1.0.0")
+                    .join("drum_voice")
+                    .join("drum_voice.yaml")
+            )
+            .expect("updated module file should exist"),
             b"new\n"
         );
         assert!(
@@ -470,11 +481,17 @@ mod tests {
             .expect("newer version should seed");
 
         assert!(
-            root.join("1.0.0").join("drum_voice").join("drum_voice.yaml").exists(),
+            root.join("1.0.0")
+                .join("drum_voice")
+                .join("drum_voice.yaml")
+                .exists(),
             "old pinned versions should remain resolvable"
         );
         assert!(
-            root.join("1.1.0").join("drum_voice").join("drum_voice.yaml").exists(),
+            root.join("1.1.0")
+                .join("drum_voice")
+                .join("drum_voice.yaml")
+                .exists(),
             "new versions should be added beside old versions"
         );
 
@@ -484,7 +501,9 @@ mod tests {
 
         assert_eq!(
             latest,
-            root.join("1.1.0").join("drum_voice").join("drum_voice.yaml"),
+            root.join("1.1.0")
+                .join("drum_voice")
+                .join("drum_voice.yaml"),
             "latest should follow the newest seeded version"
         );
     }

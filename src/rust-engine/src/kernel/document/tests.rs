@@ -340,3 +340,113 @@ connections: []
     assert!(codes.contains(&error_codes::KERNEL_UNKNOWN_STATIC_ARGUMENT));
     assert!(codes.contains(&error_codes::KERNEL_OVERRIDE_UNKNOWN_PORT));
 }
+
+// --- 3.3 Input multiplicity YAML parsing ----------------------------------
+
+#[test]
+fn summing_multiplicity_parses_from_yaml() {
+    let yaml = r#"
+metadata:
+  name: summing_test
+ports:
+  - { name: master, direction: output, signal: audio, channels: 1 }
+module_definitions:
+  - type: mixer
+    ports:
+      - { name: inputs, direction: input, signal: audio, channels: 1, multiplicity: summing }
+      - { name: mix, direction: output, signal: audio, channels: 1 }
+    modules: []
+    connections: []
+modules:
+  - id: m
+    type: mixer
+connections: []
+"#;
+    let patch = load_kernel_patch_str(yaml).expect("document should parse");
+    let mixer = patch
+        .registry()
+        .get("mixer")
+        .expect("mixer definition registered");
+    let inputs = mixer
+        .ports()
+        .iter()
+        .find(|p| p.name() == "inputs")
+        .expect("inputs port exists");
+    assert_eq!(
+        inputs.multiplicity(),
+        crate::kernel::Multiplicity::Summing,
+        "YAML multiplicity: summing should parse"
+    );
+}
+
+#[test]
+fn omitted_multiplicity_defaults_to_single_source() {
+    let yaml = r#"
+metadata:
+  name: single_test
+ports:
+  - { name: master, direction: output, signal: audio, channels: 1 }
+module_definitions:
+  - type: gain_like
+    ports:
+      - { name: audio_in, direction: input, signal: audio, channels: 1 }
+      - { name: audio_out, direction: output, signal: audio, channels: 1 }
+    modules: []
+    connections: []
+modules:
+  - id: g
+    type: gain_like
+connections: []
+"#;
+    let patch = load_kernel_patch_str(yaml).expect("document should parse");
+    let gain_like = patch
+        .registry()
+        .get("gain_like")
+        .expect("gain_like definition registered");
+    let audio_in = gain_like
+        .ports()
+        .iter()
+        .find(|p| p.name() == "audio_in")
+        .expect("audio_in port exists");
+    assert_eq!(
+        audio_in.multiplicity(),
+        crate::kernel::Multiplicity::SingleSource,
+        "omitted multiplicity should default to single_source"
+    );
+}
+
+#[test]
+fn single_source_multiplicity_parses_explicitly() {
+    let yaml = r#"
+metadata:
+  name: explicit_single
+ports:
+  - { name: master, direction: output, signal: audio, channels: 1 }
+module_definitions:
+  - type: single_input
+    ports:
+      - { name: audio_in, direction: input, signal: audio, channels: 1, multiplicity: single_source }
+      - { name: audio_out, direction: output, signal: audio, channels: 1 }
+    modules: []
+    connections: []
+modules:
+  - id: s
+    type: single_input
+connections: []
+"#;
+    let patch = load_kernel_patch_str(yaml).expect("document should parse");
+    let single_input = patch
+        .registry()
+        .get("single_input")
+        .expect("single_input definition registered");
+    let audio_in = single_input
+        .ports()
+        .iter()
+        .find(|p| p.name() == "audio_in")
+        .expect("audio_in port exists");
+    assert_eq!(
+        audio_in.multiplicity(),
+        crate::kernel::Multiplicity::SingleSource,
+        "explicit single_source should parse"
+    );
+}

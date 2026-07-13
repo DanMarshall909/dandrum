@@ -860,7 +860,17 @@ fn synthetic_808_kick_public_controls_are_discoverable_without_internal_leakage(
         .map(|parameter| parameter.name.as_str())
         .collect::<Vec<_>>();
 
-    assert_eq!(public_names, ["tune_hz", "decay_ms", "punch", "click", "sub_decay_ms", "sub_level"]);
+    assert_eq!(
+        public_names,
+        [
+            "tune_hz",
+            "decay_ms",
+            "punch",
+            "click",
+            "sub_decay_ms",
+            "sub_level"
+        ]
+    );
     assert!(!public_names.contains(&"seed"));
     assert!(!public_names.contains(&"fft_size"));
     assert!(

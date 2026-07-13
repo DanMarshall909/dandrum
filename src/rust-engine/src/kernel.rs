@@ -36,6 +36,17 @@ pub const PROMOTION_INPUT_PORT: &str = crate::graph::builtin_ports::IN;
 /// Output (audio) port name on a control→audio promotion node.
 pub const PROMOTION_OUTPUT_PORT: &str = crate::graph::builtin_ports::OUT;
 
+/// Input multiplicity: whether an input port accepts a single source or
+/// arbitrarily many sources that the runtime sums.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub enum Multiplicity {
+    /// At most one incoming connection. The default for all inputs.
+    #[default]
+    SingleSource,
+    /// Any number of incoming connections; the runtime sums them.
+    Summing,
+}
+
 pub mod builtins;
 pub mod document;
 pub mod flatten;
@@ -262,6 +273,7 @@ pub struct Port {
     direction: PortDirection,
     signal_type: SignalType,
     channels: ChannelCount,
+    multiplicity: Multiplicity,
     control_default: Option<ControlDefault>,
     maps_to: Vec<PortRef>,
     maps_from: Vec<PortRef>,
@@ -278,6 +290,7 @@ impl Port {
             direction: PortDirection::Input,
             signal_type,
             channels: channels.into(),
+            multiplicity: Multiplicity::default(),
             control_default: None,
             maps_to: Vec::new(),
             maps_from: Vec::new(),
@@ -294,6 +307,7 @@ impl Port {
             direction: PortDirection::Output,
             signal_type,
             channels: channels.into(),
+            multiplicity: Multiplicity::default(),
             control_default: None,
             maps_to: Vec::new(),
             maps_from: Vec::new(),
@@ -302,6 +316,11 @@ impl Port {
 
     pub fn with_control_default(mut self, control_default: ControlDefault) -> Self {
         self.control_default = Some(control_default);
+        self
+    }
+
+    pub fn with_multiplicity(mut self, multiplicity: Multiplicity) -> Self {
+        self.multiplicity = multiplicity;
         self
     }
 
@@ -343,6 +362,10 @@ impl Port {
 
     pub fn control_default(&self) -> Option<&ControlDefault> {
         self.control_default.as_ref()
+    }
+
+    pub fn multiplicity(&self) -> Multiplicity {
+        self.multiplicity
     }
 }
 
@@ -542,6 +565,7 @@ pub struct ResolvedPort {
     direction: PortDirection,
     signal_type: SignalType,
     channels: u32,
+    multiplicity: Multiplicity,
     control_default: Option<ControlDefault>,
 }
 
@@ -564,6 +588,10 @@ impl ResolvedPort {
 
     pub fn control_default(&self) -> Option<&ControlDefault> {
         self.control_default.as_ref()
+    }
+
+    pub fn multiplicity(&self) -> Multiplicity {
+        self.multiplicity
     }
 }
 
@@ -868,6 +896,7 @@ impl GraphDefinition {
                     direction: port.direction(),
                     signal_type: port.signal_type(),
                     channels,
+                    multiplicity: port.multiplicity(),
                     control_default: port.control_default().cloned(),
                 }
             })
@@ -1140,6 +1169,40 @@ impl GraphDefinition {
                         .with_expected(format!("{:?}", source.signal_type()))
                         .with_actual(format!("{:?}", destination.signal_type())),
                     );
+                }
+            }
+        }
+
+        // Check input multiplicity: single-source inputs may receive at most
+        // one connection; summing inputs accept any number.
+        let mut destination_counts: BTreeMap<PortRef, usize> = BTreeMap::new();
+        for connection in &self.connections {
+            *destination_counts
+                .entry(connection.destination().clone())
+                .or_insert(0) += 1;
+        }
+        for (destination, count) in &destination_counts {
+            if *count > 1 {
+                if let Some(node) = resolved_nodes.get(destination.node()) {
+                    if let Some(port) = node.ports.iter().find(|p| {
+                        p.name() == destination.port() && p.direction() == PortDirection::Input
+                    }) {
+                        if port.multiplicity() == Multiplicity::SingleSource {
+                            diagnostics.push(
+                                Diagnostic::new(
+                                    error_codes::KERNEL_MULTIPLE_SOURCES,
+                                    Severity::Error,
+                                    format!(
+                                        "input port '{}' on node '{}' receives {count} connections, but is declared single-source; use a summing input or explicit mixer",
+                                        destination.port(),
+                                        destination.node().as_str()
+                                    ),
+                                )
+                                .with_module_id(destination.node().as_str())
+                                .with_port_name(destination.port()),
+                            );
+                        }
+                    }
                 }
             }
         }

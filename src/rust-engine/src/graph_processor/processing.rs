@@ -166,9 +166,11 @@ pub(super) fn process_compensation_delay(
     state: &mut PerModuleState,
     audio_in: Vec<f32>,
 ) -> ModuleOutputs {
-    let PerModuleState::CompensationDelay { samples, position } = state else {
+    let PerModuleState::CompensationDelay { samples, positions } = state else {
         unreachable!()
     };
+    let samples = &mut samples[0];
+    let position = &mut positions[0];
     let mut audio = Vec::with_capacity(audio_in.len());
     for input in audio_in {
         let output = samples[*position];
@@ -477,9 +479,9 @@ pub(super) fn process_filter(
 ) -> ModuleOutputs {
     let (filter, sample_rate) = match state {
         PerModuleState::Filter {
-            filter,
+            filters,
             sample_rate,
-        } => (filter, *sample_rate),
+        } => (&mut filters[0], *sample_rate),
         _ => unreachable!(),
     };
 
@@ -532,7 +534,7 @@ pub(super) fn process_convolution(
     frames: usize,
 ) -> ModuleOutputs {
     let processor = match state {
-        PerModuleState::Convolution { processor } => processor,
+        PerModuleState::Convolution { processors } => &mut processors[0],
         _ => unreachable!(),
     };
 
@@ -654,10 +656,12 @@ pub(super) fn process_frequency_splitter(
 ) -> ModuleOutputs {
     let (lp1, lp2, sample_rate) = match state {
         PerModuleState::FrequencySplitter {
-            first,
-            second,
+            filters,
             sample_rate,
-        } => (first, second, *sample_rate),
+        } => {
+            let (first, second) = &mut filters[0];
+            (first, second, *sample_rate)
+        }
         _ => unreachable!(),
     };
 
@@ -712,7 +716,7 @@ pub(super) fn process_spectral_processor(
 
 pub(super) fn process_noise(state: &mut PerModuleState, frames: usize) -> ModuleOutputs {
     let rng_state = match state {
-        PerModuleState::Noise { state, .. } => state,
+        PerModuleState::Noise { states, .. } => &mut states[0],
         _ => unreachable!(),
     };
 

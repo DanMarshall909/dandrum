@@ -159,8 +159,8 @@ fn namespaced_id(instance_id: &str, internal_id: &str) -> String {
 mod tests {
     use super::*;
     use crate::patch::{
-        ModuleInputDeclaration, ModuleOutputDeclaration, ModuleDeclaration,
-        ModuleDefinitionDeclaration, PatchDocument, PatchMetadata, PortReference, RenderSettings,
+        ModuleDeclaration, ModuleDefinitionDeclaration, ModuleInputDeclaration,
+        ModuleOutputDeclaration, PatchDocument, PatchMetadata, PortReference, RenderSettings,
         SignalType, VoiceAllocation,
     };
     use std::collections::BTreeMap;

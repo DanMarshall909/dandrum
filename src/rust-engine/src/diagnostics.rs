@@ -78,22 +78,18 @@ pub mod error_codes {
     pub const KERNEL_STATIC_ARGUMENT_INVALID_ENUM_VALUE: &str =
         "kernel.static_argument_invalid_enum_value";
     pub const KERNEL_STATIC_ARGUMENT_EXPRESSION: &str = "kernel.static_argument_expression";
-    pub const KERNEL_UNKNOWN_STATIC_PARAM_REFERENCE: &str =
-        "kernel.unknown_static_param_reference";
+    pub const KERNEL_UNKNOWN_STATIC_PARAM_REFERENCE: &str = "kernel.unknown_static_param_reference";
     pub const KERNEL_CHANNEL_COUNT_MISMATCH: &str = "kernel.channel_count_mismatch";
+    pub const KERNEL_MULTIPLE_SOURCES: &str = "kernel.multiple_sources";
     pub const KERNEL_INCOMPATIBLE_SIGNAL_TYPES: &str = "kernel.incompatible_signal_types";
     pub const KERNEL_OVERRIDE_UNKNOWN_PORT: &str = "kernel.override_unknown_port";
-    pub const KERNEL_CYCLE_WITHOUT_FEEDBACK_DELAY: &str =
-        "kernel.cycle_without_feedback_delay";
+    pub const KERNEL_CYCLE_WITHOUT_FEEDBACK_DELAY: &str = "kernel.cycle_without_feedback_delay";
     pub const KERNEL_RECURSIVE_DEFINITION: &str = "kernel.recursive_definition";
     pub const KERNEL_MAX_DEPTH_EXCEEDED: &str = "kernel.max_depth_exceeded";
-    pub const KERNEL_UNRESOLVED_STATIC_REFERENCE: &str =
-        "kernel.unresolved_static_reference";
-    pub const KERNEL_INVALID_STATIC_REFERENCE_VALUE: &str =
-        "kernel.invalid_static_reference_value";
+    pub const KERNEL_UNRESOLVED_STATIC_REFERENCE: &str = "kernel.unresolved_static_reference";
+    pub const KERNEL_INVALID_STATIC_REFERENCE_VALUE: &str = "kernel.invalid_static_reference_value";
     pub const KERNEL_LATENCY_IN_FEEDBACK_CYCLE: &str = "kernel.latency_in_feedback_cycle";
-    pub const KERNEL_DOCUMENT_UNSUPPORTED_FORMAT: &str =
-        "kernel.document.unsupported_format";
+    pub const KERNEL_DOCUMENT_UNSUPPORTED_FORMAT: &str = "kernel.document.unsupported_format";
     pub const KERNEL_DOCUMENT_READ_FAILED: &str = "kernel.document.read_failed";
     pub const KERNEL_DOCUMENT_PARSE_FAILED: &str = "kernel.document.parse_failed";
     pub const KERNEL_DOCUMENT_NO_OUTPUT: &str = "kernel.document.no_output";
@@ -102,14 +98,14 @@ pub mod error_codes {
         "kernel.document.legacy_voice_allocation";
     pub const KERNEL_DOCUMENT_LEGACY_PARAMETERS: &str = "kernel.document.legacy_parameters";
     pub const KERNEL_DOCUMENT_LEGACY_BINDING: &str = "kernel.document.legacy_binding";
-    pub const KERNEL_DOCUMENT_LEGACY_ASSET_BINDINGS: &str =
-        "kernel.document.legacy_asset_bindings";
-    pub const KERNEL_PREPARATION_UNSUPPORTED_ROOT: &str =
-        "kernel.preparation.unsupported_root";
+    pub const KERNEL_DOCUMENT_LEGACY_ASSET_BINDINGS: &str = "kernel.document.legacy_asset_bindings";
+    pub const KERNEL_PREPARATION_UNSUPPORTED_ROOT: &str = "kernel.preparation.unsupported_root";
     pub const KERNEL_PREPARATION_UNSUPPORTED_ATOMIC_PORT: &str =
         "kernel.preparation.unsupported_atomic_port";
     pub const KERNEL_PREPARATION_GENERATED_ID_COLLISION: &str =
         "kernel.preparation.generated_id_collision";
+    pub const KERNEL_HOST_BUS_MISSING_OUTPUT: &str = "kernel.host_bus.missing_output";
+    pub const KERNEL_HOST_BUS_CHANNEL_MISMATCH: &str = "kernel.host_bus.channel_mismatch";
 
     // Module-library sub-codes
     pub const LIBRARY_UNKNOWN_MACRO: &str = "library.unknown_macro";

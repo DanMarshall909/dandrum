@@ -75,13 +75,18 @@ pub unsafe extern "C" fn dandrum_engine_load_patch(
     loaded_instruments()
         .lock()
         .expect("loaded instrument registry should not be poisoned")
-        .insert(engine_key, FfiLoadedInstrument::from_patch(prepared.patch_doc()));
+        .insert(
+            engine_key,
+            FfiLoadedInstrument::from_patch(prepared.patch_doc()),
+        );
 
     true
 }
 
 #[unsafe(no_mangle)]
-pub unsafe extern "C" fn dandrum_patch_public_numeric_parameter_count(path: *const c_char) -> usize {
+pub unsafe extern "C" fn dandrum_patch_public_numeric_parameter_count(
+    path: *const c_char,
+) -> usize {
     let Some(path) = c_path(path) else {
         return 0;
     };
@@ -447,8 +452,10 @@ fn c_string<'a>(value: *const c_char) -> Option<&'a str> {
 }
 
 fn is_numeric_target(value_type: PresetTargetType, default: &ParameterValue) -> bool {
-    matches!(value_type, PresetTargetType::Number | PresetTargetType::Integer)
-        && number_value(default).is_some()
+    matches!(
+        value_type,
+        PresetTargetType::Number | PresetTargetType::Integer
+    ) && number_value(default).is_some()
 }
 
 fn number_value(value: &ParameterValue) -> Option<f64> {
@@ -596,7 +603,10 @@ mod tests {
     fn c_ffi_renders_public_numeric_parameter_descriptors_from_patch_path() {
         let path = write_parameterised_adsr_patch("dandrum_test_public_parameters.yaml");
         let c_path = std::ffi::CString::new(path.to_str().unwrap()).unwrap();
-        assert_eq!(unsafe { dandrum_patch_public_numeric_parameter_count(c_path.as_ptr()) }, 1);
+        assert_eq!(
+            unsafe { dandrum_patch_public_numeric_parameter_count(c_path.as_ptr()) },
+            1
+        );
 
         let mut id = [0_i8; 64];
         let mut name = [0_i8; 64];
@@ -618,7 +628,10 @@ mod tests {
         };
 
         assert!(result);
-        assert_eq!(unsafe { CStr::from_ptr(id.as_ptr()) }.to_str().unwrap(), "env.attack");
+        assert_eq!(
+            unsafe { CStr::from_ptr(id.as_ptr()) }.to_str().unwrap(),
+            "env.attack"
+        );
         assert_eq!(default_value, 5.0);
         assert_eq!(min_value, 0.0);
         assert_eq!(max_value, 500.0);
@@ -634,11 +647,17 @@ mod tests {
         let engine = dandrum_engine_create();
 
         assert!(unsafe { dandrum_engine_load_patch(engine, c_path.as_ptr()) });
-        assert_eq!(unsafe { (*engine).numeric_parameter_value("env", "attack") }, Some(5.0));
+        assert_eq!(
+            unsafe { (*engine).numeric_parameter_value("env", "attack") },
+            Some(5.0)
+        );
         assert!(unsafe {
             dandrum_engine_set_public_numeric_parameter(engine, parameter_id.as_ptr(), 42.0)
         });
-        assert_eq!(unsafe { (*engine).numeric_parameter_value("env", "attack") }, Some(42.0));
+        assert_eq!(
+            unsafe { (*engine).numeric_parameter_value("env", "attack") },
+            Some(42.0)
+        );
 
         unsafe { dandrum_engine_destroy(engine) };
         std::fs::remove_file(path).ok();
@@ -671,10 +690,7 @@ mod tests {
 
         assert_eq!(
             unsafe {
-                dandrum_engine_public_numeric_parameter_target_count(
-                    engine,
-                    parameter_id.as_ptr(),
-                )
+                dandrum_engine_public_numeric_parameter_target_count(engine, parameter_id.as_ptr())
             },
             1
         );
@@ -688,13 +704,12 @@ mod tests {
         assert!(slot_index >= 0, "expected a resolvable slot index");
 
         assert!(unsafe {
-            dandrum_engine_set_public_numeric_parameter_by_slot(
-                engine,
-                slot_index as usize,
-                99.0,
-            )
+            dandrum_engine_set_public_numeric_parameter_by_slot(engine, slot_index as usize, 99.0)
         });
-        assert_eq!(unsafe { (*engine).numeric_parameter_value("env", "attack") }, Some(99.0));
+        assert_eq!(
+            unsafe { (*engine).numeric_parameter_value("env", "attack") },
+            Some(99.0)
+        );
 
         unsafe { dandrum_engine_destroy(engine) };
         std::fs::remove_file(path).ok();
@@ -711,10 +726,7 @@ mod tests {
 
         assert_eq!(
             unsafe {
-                dandrum_engine_public_numeric_parameter_target_count(
-                    engine,
-                    parameter_id.as_ptr(),
-                )
+                dandrum_engine_public_numeric_parameter_target_count(engine, parameter_id.as_ptr())
             },
             0
         );
@@ -729,8 +741,7 @@ mod tests {
     /// -1 for any such parameter and nothing else in the C API took over.
     #[test]
     fn c_ffi_multi_target_public_parameter_resolves_and_applies_a_slot_per_target() {
-        let path =
-            write_multi_target_gain_patch("dandrum_test_multi_target_gain_patch.yaml");
+        let path = write_multi_target_gain_patch("dandrum_test_multi_target_gain_patch.yaml");
         let c_path = std::ffi::CString::new(path.to_str().unwrap()).unwrap();
         let parameter_id = std::ffi::CString::new("voice.level").unwrap();
         let engine = dandrum_engine_create();
@@ -759,10 +770,16 @@ mod tests {
                     target_index,
                 )
             };
-            assert!(slot >= 0, "expected target {target_index} to resolve to a slot");
+            assert!(
+                slot >= 0,
+                "expected target {target_index} to resolve to a slot"
+            );
             slots.push(slot as usize);
         }
-        assert_ne!(slots[0], slots[1], "each target should resolve to its own slot");
+        assert_ne!(
+            slots[0], slots[1],
+            "each target should resolve to its own slot"
+        );
 
         for &slot in &slots {
             assert!(unsafe {

@@ -13,11 +13,11 @@ use super::processing::{
     process_note_to_control, process_note_to_rate, process_oscillator, process_reverb,
     process_sampler, process_saturator, process_script, process_spectral_processor, process_vca,
 };
-use super::render_plan::default_control_value;
 use super::state::PerModuleState;
+use crate::compiled_patch::effective_legacy_control_default;
 
 fn default_control(module_kind: ModuleKind, port_name: &str) -> f32 {
-    default_control_value(module_kind, port_name)
+    effective_legacy_control_default(module_kind, port_name)
         .unwrap_or_else(|| panic!("missing default control value for {module_kind:?}.{port_name}"))
 }
 

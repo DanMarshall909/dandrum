@@ -909,3 +909,118 @@ fn node_referencing_unknown_definition_is_rejected() {
         error_codes::KERNEL_UNKNOWN_DEFINITION
     );
 }
+
+// --- 3.3 Input multiplicity ----------------------------------------------
+
+fn summing_mixer_primitive() -> GraphDefinition {
+    GraphDefinition::new("mixer")
+        .with_port(
+            Port::input("inputs", SignalType::Audio, 1).with_multiplicity(Multiplicity::Summing),
+        )
+        .with_port(Port::output("mix", SignalType::Audio, 1))
+}
+
+#[test]
+fn single_source_input_rejects_multiple_connections() {
+    let registry = DefinitionRegistry::new().with_definition(gain_primitive());
+    let definition = GraphDefinition::new("root")
+        .with_node(Node::new(NodeId::new("a"), "gain"))
+        .with_node(Node::new(NodeId::new("b"), "gain"))
+        .with_node(Node::new(NodeId::new("c"), "gain"))
+        .with_connection(Connection::new(
+            PortRef::new(NodeId::new("a"), "audio_out"),
+            PortRef::new(NodeId::new("c"), "audio_in"),
+        ))
+        .with_connection(Connection::new(
+            PortRef::new(NodeId::new("b"), "audio_out"),
+            PortRef::new(NodeId::new("c"), "audio_in"),
+        ));
+
+    let validation = definition.validate(&registry);
+    assert_eq!(
+        only_error_code(&validation),
+        error_codes::KERNEL_MULTIPLE_SOURCES
+    );
+}
+
+#[test]
+fn summing_input_accepts_multiple_connections() {
+    let registry = DefinitionRegistry::new()
+        .with_definition(gain_primitive())
+        .with_definition(summing_mixer_primitive());
+    let definition = GraphDefinition::new("root")
+        .with_node(Node::new(NodeId::new("a"), "gain"))
+        .with_node(Node::new(NodeId::new("b"), "gain"))
+        .with_node(Node::new(NodeId::new("mix"), "mixer"))
+        .with_connection(Connection::new(
+            PortRef::new(NodeId::new("a"), "audio_out"),
+            PortRef::new(NodeId::new("mix"), "inputs"),
+        ))
+        .with_connection(Connection::new(
+            PortRef::new(NodeId::new("b"), "audio_out"),
+            PortRef::new(NodeId::new("mix"), "inputs"),
+        ));
+
+    let validation = definition.validate(&registry);
+    assert!(
+        validation.is_ok(),
+        "summing input should accept multiple connections: {:?}",
+        validation.diagnostics()
+    );
+}
+
+#[test]
+fn summing_input_accepts_single_connection() {
+    let registry = DefinitionRegistry::new()
+        .with_definition(gain_primitive())
+        .with_definition(summing_mixer_primitive());
+    let definition = GraphDefinition::new("root")
+        .with_node(Node::new(NodeId::new("a"), "gain"))
+        .with_node(Node::new(NodeId::new("mix"), "mixer"))
+        .with_connection(Connection::new(
+            PortRef::new(NodeId::new("a"), "audio_out"),
+            PortRef::new(NodeId::new("mix"), "inputs"),
+        ));
+
+    let validation = definition.validate(&registry);
+    assert!(
+        validation.is_ok(),
+        "summing input with single connection should be valid: {:?}",
+        validation.diagnostics()
+    );
+}
+
+#[test]
+fn port_defaults_to_single_source_multiplicity() {
+    let port = Port::input("test", SignalType::Audio, 1);
+    assert_eq!(port.multiplicity(), Multiplicity::SingleSource);
+}
+
+#[test]
+fn port_with_summing_multiplicity_reports_summing() {
+    let port = Port::input("test", SignalType::Audio, 1).with_multiplicity(Multiplicity::Summing);
+    assert_eq!(port.multiplicity(), Multiplicity::Summing);
+}
+
+#[test]
+fn single_source_error_diagnostic_names_the_port_and_node() {
+    let registry = DefinitionRegistry::new().with_definition(gain_primitive());
+    let definition = GraphDefinition::new("root")
+        .with_node(Node::new(NodeId::new("a"), "gain"))
+        .with_node(Node::new(NodeId::new("b"), "gain"))
+        .with_node(Node::new(NodeId::new("c"), "gain"))
+        .with_connection(Connection::new(
+            PortRef::new(NodeId::new("a"), "audio_out"),
+            PortRef::new(NodeId::new("c"), "audio_in"),
+        ))
+        .with_connection(Connection::new(
+            PortRef::new(NodeId::new("b"), "audio_out"),
+            PortRef::new(NodeId::new("c"), "audio_in"),
+        ));
+
+    let validation = definition.validate(&registry);
+    let errors: Vec<_> = validation.diagnostics().errors().collect();
+    assert_eq!(errors.len(), 1);
+    assert_eq!(errors[0].module_id(), Some("c"));
+    assert_eq!(errors[0].port_name(), Some("audio_in"));
+}

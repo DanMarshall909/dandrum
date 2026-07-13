@@ -208,7 +208,11 @@ impl Reverb {
         for comb in self.combs_l.iter_mut().chain(self.combs_r.iter_mut()) {
             comb.set_interpolation(mode);
         }
-        for diffuser in self.diffusers_l.iter_mut().chain(self.diffusers_r.iter_mut()) {
+        for diffuser in self
+            .diffusers_l
+            .iter_mut()
+            .chain(self.diffusers_r.iter_mut())
+        {
             diffuser.set_interpolation(mode);
         }
     }

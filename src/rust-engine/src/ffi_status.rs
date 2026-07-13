@@ -69,7 +69,9 @@ pub unsafe extern "C" fn dandrum_engine_load_patch_with_error(
             if loaded {
                 clear_last_error();
             } else {
-                set_last_error("prepared instrument could not be published through the legacy FFI load path");
+                set_last_error(
+                    "prepared instrument could not be published through the legacy FFI load path",
+                );
             }
             loaded
         }
@@ -111,7 +113,11 @@ mod tests {
             .to_str()
             .expect("error message should be UTF-8");
 
-        assert!(message.contains("LOADING") || message.contains("failed") || message.contains("No such file"));
+        assert!(
+            message.contains("LOADING")
+                || message.contains("failed")
+                || message.contains("No such file")
+        );
 
         unsafe { crate::ffi::dandrum_engine_destroy(engine) };
     }

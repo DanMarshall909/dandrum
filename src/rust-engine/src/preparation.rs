@@ -2,7 +2,11 @@ use std::collections::{BTreeMap, BTreeSet};
 use std::fmt;
 use std::path::Path;
 
-use crate::compiled_patch::{self, CompileError, CompiledPatch};
+use crate::builtins::module_kind::ModuleKind;
+use crate::compiled_patch::{
+    self, CompileError, CompiledNodeData, CompiledPatch, CompiledPortSpan, CompiledRootPort,
+    RootBusPlan,
+};
 use crate::diagnostics::{self, Diagnostic, Severity};
 use crate::graph::{
     Cable, ExecutionScope, Graph, ModuleId, ModuleNode, PortDirection, PortRef, SignalType,
@@ -17,7 +21,28 @@ use crate::sample::{self, PreparedSamplerAssets, SampleLoadError};
 const KERNEL_COMPENSATION_EDGE_PREFIX: &str = "compensation::edge::";
 const KERNEL_COMPENSATION_ROOT_PREFIX: &str = "compensation::root::";
 const KERNEL_OUTPUT_NODE_ID: &str = "kernel::audio_output";
-const TRANSITIONAL_ROOT_EXPECTATION: &str = "mono audio outputs named left and right";
+
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
+pub struct HostBuses {
+    inputs: BTreeMap<String, usize>,
+    outputs: BTreeMap<String, usize>,
+}
+
+impl HostBuses {
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    pub fn with_input(mut self, name: impl Into<String>, channel_count: usize) -> Self {
+        self.inputs.insert(name.into(), channel_count);
+        self
+    }
+
+    pub fn with_output(mut self, name: impl Into<String>, channel_count: usize) -> Self {
+        self.outputs.insert(name.into(), channel_count);
+        self
+    }
+}
 
 #[derive(Debug)]
 pub(crate) enum PreparationError {
@@ -73,8 +98,8 @@ pub(crate) struct PreparedInstrument {
 }
 
 /// Prepared result for the unified kernel front end. It retains the flattened
-/// graph and latency plan for inspection while executing through the unchanged
-/// legacy compiled-patch back end during migration.
+/// graph and latency plan for inspection and executes through channel-aware
+/// compiled spans while legacy callers continue to use the adapter.
 #[derive(Clone, Debug, PartialEq)]
 pub struct PreparedKernelInstrument {
     flattened_graph: FlattenedGraph,
@@ -187,6 +212,29 @@ pub fn prepare_kernel_graph(
     registry: &DefinitionRegistry,
     render_settings: &RenderSettings,
 ) -> Result<PreparedKernelInstrument, KernelPreparationError> {
+    let default_buses = HostBuses {
+        inputs: BTreeMap::new(),
+        outputs: root
+            .ports()
+            .iter()
+            .filter(|port| port.direction() == PortDirection::Output)
+            .filter_map(|port| match port.channels() {
+                crate::kernel::ChannelCount::Literal(channels) => {
+                    Some((port.name().to_string(), *channels as usize))
+                }
+                crate::kernel::ChannelCount::Param(_) => None,
+            })
+            .collect(),
+    };
+    prepare_kernel_graph_with_buses(root, registry, render_settings, &default_buses)
+}
+
+pub fn prepare_kernel_graph_with_buses(
+    root: &GraphDefinition,
+    registry: &DefinitionRegistry,
+    render_settings: &RenderSettings,
+    host_buses: &HostBuses,
+) -> Result<PreparedKernelInstrument, KernelPreparationError> {
     let validation = root.validate(registry);
     if !validation.is_ok() {
         return Err(validation.diagnostics().clone().into());
@@ -195,102 +243,94 @@ pub fn prepare_kernel_graph(
     let flattened_graph = root
         .flatten(registry)
         .map_err(KernelPreparationError::from)?;
-    validate_transitional_root(&flattened_graph)?;
-    validate_atomic_ports(&flattened_graph)?;
+    validate_host_buses(&flattened_graph, host_buses)?;
     let latency_plan = flattened_graph
         .balance_latency()
         .map_err(KernelPreparationError::from)?;
-    let graph = lower_kernel_graph(&flattened_graph, &latency_plan)?;
-    graph
+    let lowered = lower_kernel_graph(&flattened_graph, &latency_plan)?;
+    lowered
+        .graph
         .validate()
         .map_err(|error| KernelPreparationError::from(error.to_diagnostics()))?;
-    let compiled_patch = compiled_patch::compile(&graph, render_settings).map_err(|error| {
-        KernelPreparationError::from(diagnostics::Diagnostics::from(error.to_diagnostic()))
-    })?;
+    let mut compiled_patch =
+        compiled_patch::compile_with_node_data(&lowered.graph, render_settings, &lowered.node_data)
+            .map_err(|error| {
+                KernelPreparationError::from(diagnostics::Diagnostics::from(error.to_diagnostic()))
+            })?;
+    let root_input_spans = flattened_graph
+        .root_ports()
+        .iter()
+        .filter(|port| port.direction() == PortDirection::Input)
+        .map(|port| {
+            let span = compiled_patch.reserve_root_input_span(
+                port.channels() as usize,
+                flattened_graph
+                    .root_input_destinations()
+                    .get(port.name())
+                    .map(Vec::as_slice)
+                    .unwrap_or_default(),
+            );
+            (port.name().to_string(), span)
+        })
+        .collect::<BTreeMap<_, _>>();
+    compiled_patch.set_root_bus_plan(root_bus_plan(
+        &flattened_graph,
+        host_buses,
+        &root_input_spans,
+        &lowered.root_outputs,
+        &compiled_patch,
+    ));
 
     Ok(PreparedKernelInstrument {
         flattened_graph,
         latency_plan,
-        graph,
+        graph: lowered.graph,
         compiled_patch,
     })
 }
 
-fn validate_transitional_root(flattened: &FlattenedGraph) -> Result<(), KernelPreparationError> {
-    let mut ports = flattened.root_ports().iter().collect::<Vec<_>>();
-    ports.sort_by_key(|port| port.name());
-    let supported = ports.len() == 2
-        && ports.iter().all(|port| {
-            port.direction() == PortDirection::Output
-                && port.signal_type() == SignalType::Audio
-                && port.channels() == 1
-                && matches!(
-                    port.name(),
-                    crate::graph::builtin_ports::LEFT | crate::graph::builtin_ports::RIGHT
-                )
-                && flattened
-                    .root_output_sources()
-                    .get(port.name())
-                    .is_some_and(|sources| sources.len() == 1)
-        })
-        && ports[0].name() != ports[1].name();
-    if supported {
-        return Ok(());
-    }
-
-    let actual = if ports.is_empty() {
-        "no root ports".to_string()
-    } else {
-        ports
-            .iter()
-            .map(|port| {
-                format!(
-                    "{} {:?} {:?} {}ch ({} sources)",
-                    port.name(),
-                    port.direction(),
-                    port.signal_type(),
-                    port.channels(),
-                    flattened
-                        .root_output_sources()
-                        .get(port.name())
-                        .map_or(0, Vec::len)
-                )
-            })
-            .collect::<Vec<_>>()
-            .join(", ")
-    };
-    Err(KernelPreparationError::from(diagnostics::Diagnostics::from(
-        Diagnostic::new(
-            diagnostics::error_codes::KERNEL_PREPARATION_UNSUPPORTED_ROOT,
-            Severity::Error,
-            "the transitional legacy output bridge supports exactly mono root outputs named 'left' and 'right'",
-        )
-        .with_expected(TRANSITIONAL_ROOT_EXPECTATION)
-        .with_actual(actual)
-        .with_suggested_fix("declare mono left/right root outputs until named host buses replace the transitional sink"),
-    )))
-}
-
-fn validate_atomic_ports(flattened: &FlattenedGraph) -> Result<(), KernelPreparationError> {
+fn validate_host_buses(
+    flattened: &FlattenedGraph,
+    host_buses: &HostBuses,
+) -> Result<(), KernelPreparationError> {
     let mut diagnostics = diagnostics::Diagnostics::new();
-    for node in flattened.nodes() {
-        for port in node.ports().iter().filter(|port| port.channels() != 1) {
+    for port in flattened.root_ports() {
+        let host_channels = match port.direction() {
+            PortDirection::Input => host_buses.inputs.get(port.name()),
+            PortDirection::Output => host_buses.outputs.get(port.name()),
+        };
+        if port.direction() == PortDirection::Output && host_channels.is_none() {
             diagnostics.push(
                 Diagnostic::new(
-                    diagnostics::error_codes::KERNEL_PREPARATION_UNSUPPORTED_ATOMIC_PORT,
+                    diagnostics::error_codes::KERNEL_HOST_BUS_MISSING_OUTPUT,
                     Severity::Error,
                     format!(
-                        "atomic port '{}.{}' has {} channels, but the transitional legacy graph represents only mono ports",
-                        node.id().as_str(),
-                        port.name(),
-                        port.channels()
+                        "root output '{}' has no matching host output bus",
+                        port.name()
                     ),
                 )
-                .with_module_id(node.id().as_str())
                 .with_port_name(port.name())
-                .with_expected("1 channel")
-                .with_actual(format!("{} channels", port.channels())),
+                .with_suggested_fix(
+                    "declare a same-named host output bus with the root port's channel count",
+                ),
             );
+        } else if let Some(host_channels) = host_channels {
+            if *host_channels != port.channels() as usize {
+                diagnostics.push(
+                    Diagnostic::new(
+                        diagnostics::error_codes::KERNEL_HOST_BUS_CHANNEL_MISMATCH,
+                        Severity::Error,
+                        format!(
+                            "root port '{}' has {} channels but its host bus has {host_channels}",
+                            port.name(),
+                            port.channels()
+                        ),
+                    )
+                    .with_port_name(port.name())
+                    .with_expected(format!("{} channels", port.channels()))
+                    .with_actual(format!("{host_channels} channels")),
+                );
+            }
         }
     }
     if diagnostics.has_errors() {
@@ -300,33 +340,33 @@ fn validate_atomic_ports(flattened: &FlattenedGraph) -> Result<(), KernelPrepara
     }
 }
 
+struct LoweredKernelGraph {
+    graph: Graph,
+    node_data: BTreeMap<String, CompiledNodeData>,
+    root_outputs: BTreeMap<String, crate::kernel::PortRef>,
+}
+
 fn lower_kernel_graph(
     flattened: &FlattenedGraph,
     latency_plan: &LatencyPlan,
-) -> Result<Graph, KernelPreparationError> {
-    use crate::builtins::{BuiltInModuleRegistry, module_types};
+) -> Result<LoweredKernelGraph, KernelPreparationError> {
+    use crate::builtins::module_types;
     use crate::graph::builtin_ports;
 
-    let legacy_registry = BuiltInModuleRegistry::new();
     let mut ids = flattened
         .nodes()
         .iter()
         .map(|node| node.id().as_str().to_string())
         .collect::<BTreeSet<_>>();
     let mut modules = Vec::new();
+    let mut node_data = BTreeMap::new();
     for node in flattened.nodes() {
-        let legacy_definition = legacy_registry.get(node.definition());
         let mut lowered = ModuleNode::new(ModuleId::new(node.id().as_str()), node.definition())
             .with_execution_scope(ExecutionScope::Global);
         for port in node.ports() {
             lowered = match port.direction() {
                 PortDirection::Input => {
-                    let mixes = legacy_definition.is_some_and(|definition| {
-                        definition.inputs().iter().any(|input| {
-                            input.name() == port.name() && input.accepts_multiple_sources()
-                        })
-                    });
-                    if mixes {
+                    if port.multiplicity() == super::kernel::Multiplicity::Summing {
                         lowered.with_mixing_input(port.name(), port.signal_type())
                     } else {
                         lowered.with_input(port.name(), port.signal_type())
@@ -335,17 +375,50 @@ fn lower_kernel_graph(
                 PortDirection::Output => lowered.with_output(port.name(), port.signal_type()),
             };
         }
-        let mut parameters = node
+        let kind = ModuleKind::from_str(node.definition()).ok_or_else(|| {
+            KernelPreparationError::from(diagnostics::Diagnostics::from(
+                CompileError::UnknownModuleType {
+                    module_type: node.definition().to_string(),
+                }
+                .to_diagnostic(),
+            ))
+        })?;
+        let mut data = CompiledNodeData::from_kernel(
+            node.id().as_str(),
+            kind,
+            node.static_args(),
+            node.port_defaults(),
+        )
+        .map_err(|error| {
+            KernelPreparationError::from(diagnostics::Diagnostics::from(error.to_diagnostic()))
+        })?;
+        data.port_channels.extend(
+            node.ports()
+                .iter()
+                .map(|port| (port.name().to_string(), port.channels() as usize)),
+        );
+        for port in node.ports().iter().filter(|port| {
+            port.direction() == PortDirection::Input && port.signal_type() == SignalType::Control
+        }) {
+            data.control_defaults
+                .entry(port.name().to_string())
+                .or_insert_with(|| {
+                    compiled_patch::effective_legacy_control_default(kind, port.name())
+                        .unwrap_or(0.0)
+                });
+        }
+        node_data.insert(node.id().as_str().to_string(), data);
+        let mut legacy_parameters = node
             .static_args()
             .iter()
             .map(|(name, value)| (name.clone(), static_value_to_string(value)))
             .collect::<BTreeMap<_, _>>();
-        parameters.extend(
+        legacy_parameters.extend(
             node.port_defaults()
                 .iter()
                 .map(|(name, value)| (name.clone(), value.to_string())),
         );
-        modules.push(lowered.with_params(parameters));
+        modules.push(lowered.with_params(legacy_parameters));
     }
 
     let mut cables = Vec::new();
@@ -359,6 +432,16 @@ fn lower_kernel_graph(
             let id = format!("{KERNEL_COMPENSATION_EDGE_PREFIX}{index}");
             reserve_generated_id(&mut ids, &id)?;
             modules.push(compensation_delay_node(&id, compensation.samples()));
+            let mut data = CompiledNodeData::compensation_delay(compensation.samples());
+            data.port_channels.insert(
+                builtin_ports::AUDIO_IN.to_string(),
+                compensation.channels() as usize,
+            );
+            data.port_channels.insert(
+                builtin_ports::AUDIO_OUT.to_string(),
+                compensation.channels() as usize,
+            );
+            node_data.insert(id.clone(), data);
             cables.push(Cable::new(
                 legacy_ref(connection.source()),
                 PortRef::new(ModuleId::new(&id), builtin_ports::AUDIO_IN),
@@ -375,8 +458,11 @@ fn lower_kernel_graph(
         }
     }
 
-    for root_name in [builtin_ports::LEFT, builtin_ports::RIGHT] {
-        let source = &flattened.root_output_sources()[root_name][0];
+    let mut root_outputs = BTreeMap::new();
+    for (root_name, sources) in flattened.root_output_sources() {
+        let Some(source) = sources.first() else {
+            continue;
+        };
         let source = if let Some((index, compensation)) = latency_plan
             .root_compensations()
             .iter()
@@ -387,6 +473,16 @@ fn lower_kernel_graph(
             let id = format!("{KERNEL_COMPENSATION_ROOT_PREFIX}{root_name}::{index}");
             reserve_generated_id(&mut ids, &id)?;
             modules.push(compensation_delay_node(&id, compensation.samples()));
+            let mut data = CompiledNodeData::compensation_delay(compensation.samples());
+            data.port_channels.insert(
+                builtin_ports::AUDIO_IN.to_string(),
+                compensation.channels() as usize,
+            );
+            data.port_channels.insert(
+                builtin_ports::AUDIO_OUT.to_string(),
+                compensation.channels() as usize,
+            );
+            node_data.insert(id.clone(), data);
             cables.push(Cable::new(
                 legacy_ref(source),
                 PortRef::new(ModuleId::new(&id), builtin_ports::AUDIO_IN),
@@ -395,23 +491,91 @@ fn lower_kernel_graph(
         } else {
             legacy_ref(source)
         };
-        cables.push(Cable::new(
-            source,
-            PortRef::new(ModuleId::new(KERNEL_OUTPUT_NODE_ID), root_name),
-        ));
+        root_outputs.insert(root_name.clone(), kernel_ref_from_legacy(&source));
     }
 
-    reserve_generated_id(&mut ids, KERNEL_OUTPUT_NODE_ID)?;
-    modules.push(
-        ModuleNode::new(
-            ModuleId::new(KERNEL_OUTPUT_NODE_ID),
-            module_types::AUDIO_OUTPUT,
-        )
-        .with_execution_scope(ExecutionScope::Global)
-        .with_input(builtin_ports::LEFT, SignalType::Audio)
-        .with_input(builtin_ports::RIGHT, SignalType::Audio),
-    );
-    Ok(Graph::new(modules, cables))
+    let legacy_stereo = root_outputs.len() == 2
+        && [builtin_ports::LEFT, builtin_ports::RIGHT]
+            .iter()
+            .all(|name| {
+                flattened
+                    .root_ports()
+                    .iter()
+                    .any(|port| port.name() == *name && port.channels() == 1)
+            });
+    if legacy_stereo {
+        reserve_generated_id(&mut ids, KERNEL_OUTPUT_NODE_ID)?;
+        modules.push(
+            ModuleNode::new(
+                ModuleId::new(KERNEL_OUTPUT_NODE_ID),
+                module_types::AUDIO_OUTPUT,
+            )
+            .with_execution_scope(ExecutionScope::Global)
+            .with_input(builtin_ports::LEFT, SignalType::Audio)
+            .with_input(builtin_ports::RIGHT, SignalType::Audio),
+        );
+        for root_name in [builtin_ports::LEFT, builtin_ports::RIGHT] {
+            cables.push(Cable::new(
+                legacy_ref(&root_outputs[root_name]),
+                PortRef::new(ModuleId::new(KERNEL_OUTPUT_NODE_ID), root_name),
+            ));
+        }
+        node_data.insert(KERNEL_OUTPUT_NODE_ID.to_string(), CompiledNodeData::none());
+    }
+    Ok(LoweredKernelGraph {
+        graph: Graph::new(modules, cables),
+        node_data,
+        root_outputs,
+    })
+}
+
+fn kernel_ref_from_legacy(reference: &PortRef) -> crate::kernel::PortRef {
+    crate::kernel::PortRef::new(
+        crate::kernel::NodeId::new(reference.module_id().as_str()),
+        reference.port_name(),
+    )
+}
+
+fn root_bus_plan(
+    flattened: &FlattenedGraph,
+    host_buses: &HostBuses,
+    root_input_spans: &BTreeMap<String, CompiledPortSpan>,
+    root_outputs: &BTreeMap<String, crate::kernel::PortRef>,
+    compiled: &CompiledPatch,
+) -> RootBusPlan {
+    let ports = flattened.root_ports();
+    let inputs = ports
+        .iter()
+        .filter(|port| port.direction() == PortDirection::Input)
+        .map(|port| {
+            CompiledRootPort::new(
+                port.name(),
+                port.channels() as usize,
+                root_input_spans.get(port.name()).copied(),
+                host_buses.inputs.contains_key(port.name()),
+            )
+        })
+        .collect();
+    let outputs = ports
+        .iter()
+        .filter(|port| port.direction() == PortDirection::Output)
+        .map(|port| {
+            let span = root_outputs.get(port.name()).and_then(|source| {
+                compiled
+                    .nodes()
+                    .iter()
+                    .find(|node| node.id.as_str() == source.node().as_str())
+                    .and_then(|node| {
+                        node.output_port_names
+                            .iter()
+                            .position(|name| name == source.port())
+                            .map(|index| node.output_port_spans[index])
+                    })
+            });
+            CompiledRootPort::new(port.name(), port.channels() as usize, span, true)
+        })
+        .collect();
+    RootBusPlan::new(inputs, outputs)
 }
 
 fn compensation_delay_node(id: &str, samples: u32) -> ModuleNode {
@@ -467,7 +631,8 @@ pub(crate) fn prepare_instrument_document(
     let resolved_parameters = resolve_patch_parameters(&patch_doc)?;
     let graph = build_validated_graph_with_resolved_parameters(&patch_doc, &resolved_parameters)?;
     let sampler_assets = prepare_assets(&patch_doc, base_dir)?;
-    let compiled_patch = compile_patch(&graph, &patch_doc)?;
+    let mut compiled_patch = compile_patch(&graph, &patch_doc)?;
+    compiled_patch.attach_legacy_resources(&sampler_assets);
 
     Ok(PreparedInstrument::new(
         patch_doc,
@@ -1024,7 +1189,7 @@ values:
     };
 
     #[test]
-    fn kernel_preparation_flattens_nested_composites_and_lowers_defaults_and_static_args() {
+    fn kernel_preparation_keeps_static_construction_and_control_defaults_distinct() {
         let patch = load_kernel_patch_str(
             r#"
 metadata: { name: nested }
@@ -1070,46 +1235,314 @@ connections: []
             .expect("oscillator should compile");
         assert_eq!(osc.execution_scope, crate::graph::ExecutionScope::Global);
         assert_eq!(
-            osc.parameters.get("waveform").map(String::as_str),
-            Some("sine")
+            osc.construction,
+            crate::compiled_patch::CompiledConstruction::Oscillator {
+                waveform: crate::oscillator::Waveform::Sine,
+            }
         );
-        assert_eq!(osc.parameters.get("pitch").map(String::as_str), Some("2"));
-        let amp = prepared
+        assert!(
+            osc.parameters.is_empty(),
+            "kernel construction/default data does not pass through the legacy parameter map"
+        );
+        assert_eq!(
+            prepared
+                .compiled_patch()
+                .numeric_parameter_value("layer::voice::osc", "pitch"),
+            Some(2.0)
+        );
+        assert_eq!(
+            prepared
+                .compiled_patch()
+                .parameter_slot_index("layer::voice::osc", "waveform"),
+            None,
+            "a static argument is immutable and has no runtime slot"
+        );
+        prepared
             .compiled_patch()
             .nodes()
             .iter()
             .find(|node| node.id.as_str() == "layer::voice::amp")
             .expect("gain should compile");
-        assert_eq!(amp.parameters.get("gain").map(String::as_str), Some("0.25"));
+        assert_eq!(
+            prepared
+                .compiled_patch()
+                .numeric_parameter_value("layer::voice::amp", "gain"),
+            Some(0.25)
+        );
         assert_eq!(prepared.compiled_patch().audio_output_index(), Some(2));
         assert_eq!(prepared.total_latency_samples(), 0);
+
+        let mut realtime = RealtimeGraphProcessor::polyphonic_with_compiled_patch_and_sampler_assets_and_max_block_size(
+            prepared.graph().clone(),
+            prepared.compiled_patch().clone(),
+            KERNEL_RENDER_SETTINGS.sample_rate_hz as f32,
+            &PreparedSamplerAssets::empty(),
+            &crate::patch::VoiceAllocation::default(),
+            KERNEL_RENDER_SETTINGS.block_size_frames as usize,
+        );
+        let mut left = [0.0; KERNEL_RENDER_SETTINGS.block_size_frames as usize];
+        let mut right = [0.0; KERNEL_RENDER_SETTINGS.block_size_frames as usize];
+        realtime.render(&mut left, &mut right);
+        assert!(
+            left.iter().any(|sample| sample.abs() > f32::EPSILON),
+            "the typed gain default reaches the realtime arena path"
+        );
+        assert!(realtime.set_numeric_parameter_by_target("layer::voice::amp", "gain", 0.0));
+        realtime.render(&mut left, &mut right);
+        assert!(
+            left.iter().all(|sample| sample.abs() <= f32::EPSILON),
+            "the arena reads the current typed control slot each block"
+        );
     }
 
     #[test]
-    fn kernel_preparation_rejects_unsupported_root_shape_with_structured_diagnostic() {
+    fn kernel_preparation_compiles_six_channel_ports_to_contiguous_spans_and_routes() {
         let patch = load_kernel_patch_str(
             r#"
-metadata: { name: unsupported }
+metadata: { name: surround }
 ports:
-  - { name: master, direction: output, signal: audio, channels: 2, maps_from: noise.audio }
+  - { name: master, direction: output, signal: audio, channels: 6, maps_from: gain.audio_out }
 modules:
-  - { id: noise, type: noise }
-connections: []
+  - { id: source, type: noise, static: { channels: 6 } }
+  - { id: gain, type: gain, static: { channels: 6 }, defaults: { gain: 0.5 } }
+connections:
+  - { from: source.audio, to: gain.audio_in }
 "#,
         )
         .expect("kernel document should load");
 
-        let error = prepare_kernel_patch(&patch, &KERNEL_RENDER_SETTINGS)
-            .expect_err("transitional bridge should reject a multichannel master output");
-        let diagnostics = error.to_diagnostics();
+        let prepared = prepare_kernel_patch(&patch, &KERNEL_RENDER_SETTINGS)
+            .expect("six-channel kernel patch should prepare");
+        let source = prepared
+            .compiled_patch()
+            .nodes()
+            .iter()
+            .find(|node| node.id.as_str() == "source")
+            .expect("source should compile");
+        let gain = prepared
+            .compiled_patch()
+            .nodes()
+            .iter()
+            .find(|node| node.id.as_str() == "gain")
+            .expect("gain should compile");
 
-        assert_eq!(diagnostics.errors().count(), 1);
-        let diagnostic = diagnostics.errors().next().expect("one diagnostic");
+        assert_eq!(source.output_port_spans[0].channel_count, 6);
+        assert_eq!(gain.input_port_spans[0].channel_count, 6);
+        assert_eq!(gain.input_routes[0].len(), 6);
+        assert_eq!(
+            gain.input_routes[0]
+                .iter()
+                .map(|route| route.output_buffer_id)
+                .collect::<Vec<_>>(),
+            (source.output_port_spans[0].first_buffer
+                ..source.output_port_spans[0].first_buffer + 6)
+                .collect::<Vec<_>>()
+        );
+        assert_eq!(
+            prepared.compiled_patch().root_bus_plan().outputs()[0].channel_count(),
+            6
+        );
+
+        let mut realtime = RealtimeGraphProcessor::polyphonic_with_compiled_patch_and_sampler_assets_and_max_block_size(
+            prepared.graph().clone(),
+            prepared.compiled_patch().clone(),
+            KERNEL_RENDER_SETTINGS.sample_rate_hz as f32,
+            &PreparedSamplerAssets::empty(),
+            &crate::patch::VoiceAllocation::default(),
+            KERNEL_RENDER_SETTINGS.block_size_frames as usize,
+        );
+        let mut outputs = vec![vec![vec![0.0; 8]; 6]];
+        assert_eq!(realtime.render_root_outputs(&mut outputs), 8);
+        assert!(outputs[0].iter().all(|channel| {
+            channel.iter().any(|sample| sample.abs() > f32::EPSILON)
+                && channel.iter().all(|sample| sample.abs() <= 0.5)
+        }));
+    }
+
+    #[test]
+    fn named_bus_planning_validates_outputs_and_tolerates_missing_or_extra_inputs() {
+        let root = GraphDefinition::new("bus-test")
+            .with_port(
+                KernelPort::input("sidechain", SignalType::Audio, 2)
+                    .maps_to(kernel_ref("gain", builtin_ports::AUDIO_IN)),
+            )
+            .with_port(
+                KernelPort::output("master", SignalType::Audio, 2)
+                    .maps_from(kernel_ref("gain", builtin_ports::AUDIO_OUT)),
+            )
+            .with_node(
+                Node::new(NodeId::new("gain"), module_types::GAIN)
+                    .with_static_arg("channels", StaticArg::Literal(StaticValue::Int(2))),
+            );
+        let registry = builtin_registry();
+        let buses = HostBuses::new()
+            .with_input("unused", 6)
+            .with_output("master", 2);
+
+        let prepared =
+            prepare_kernel_graph_with_buses(&root, &registry, &KERNEL_RENDER_SETTINGS, &buses)
+                .expect(
+                    "missing sidechain should bind to silence and extra input should be ignored",
+                );
+
+        assert_eq!(prepared.compiled_patch().root_bus_plan().inputs().len(), 1);
+        assert!(!prepared.compiled_patch().root_bus_plan().inputs()[0].is_bound());
+        let mut silent_runtime = RealtimeGraphProcessor::polyphonic_with_compiled_patch_and_sampler_assets_and_max_block_size(
+            prepared.graph().clone(),
+            prepared.compiled_patch().clone(),
+            KERNEL_RENDER_SETTINGS.sample_rate_hz as f32,
+            &PreparedSamplerAssets::empty(),
+            &crate::patch::VoiceAllocation::default(),
+            8,
+        );
+        let mut silent_outputs = vec![vec![vec![1.0; 8]; 2]];
+        assert_eq!(silent_runtime.render_root_outputs(&mut silent_outputs), 8);
+        assert!(
+            silent_outputs[0]
+                .iter()
+                .flatten()
+                .all(|sample| *sample == 0.0)
+        );
+
+        let bound = prepare_kernel_graph_with_buses(
+            &root,
+            &registry,
+            &KERNEL_RENDER_SETTINGS,
+            &HostBuses::new()
+                .with_input("sidechain", 2)
+                .with_input("unused", 6)
+                .with_output("master", 2),
+        )
+        .expect("matching root input should bind");
+        let mut bound_runtime = RealtimeGraphProcessor::polyphonic_with_compiled_patch_and_sampler_assets_and_max_block_size(
+            bound.graph().clone(),
+            bound.compiled_patch().clone(),
+            KERNEL_RENDER_SETTINGS.sample_rate_hz as f32,
+            &PreparedSamplerAssets::empty(),
+            &crate::patch::VoiceAllocation::default(),
+            8,
+        );
+        let inputs = vec![vec![vec![0.25; 8], vec![-0.5; 8]]];
+        let mut outputs = vec![vec![vec![0.0; 8]; 2]];
+        assert_eq!(bound_runtime.render_root_buses(&inputs, &mut outputs), 8);
+        assert_eq!(outputs[0][0], vec![0.25; 8]);
+        assert_eq!(outputs[0][1], vec![-0.5; 8]);
+
+        let missing = prepare_kernel_graph_with_buses(
+            &root,
+            &registry,
+            &KERNEL_RENDER_SETTINGS,
+            &HostBuses::new(),
+        )
+        .expect_err("a missing root output bus must fail");
+        assert_eq!(
+            missing.diagnostics().errors().next().unwrap().error_code(),
+            crate::diagnostics::error_codes::KERNEL_HOST_BUS_MISSING_OUTPUT
+        );
+
+        let mismatch = prepare_kernel_graph_with_buses(
+            &root,
+            &registry,
+            &KERNEL_RENDER_SETTINGS,
+            &HostBuses::new().with_output("master", 1),
+        )
+        .expect_err("a channel mismatch must fail");
+        let diagnostic = mismatch.diagnostics().errors().next().unwrap();
         assert_eq!(
             diagnostic.error_code(),
-            crate::diagnostics::error_codes::KERNEL_PREPARATION_UNSUPPORTED_ROOT
+            crate::diagnostics::error_codes::KERNEL_HOST_BUS_CHANNEL_MISMATCH
         );
-        assert_eq!(diagnostic.expected(), Some(TRANSITIONAL_ROOT_EXPECTATION));
+        assert_eq!(diagnostic.expected(), Some("2 channels"));
+        assert_eq!(diagnostic.actual(), Some("1 channels"));
+    }
+
+    #[test]
+    fn six_channel_compensation_delay_allocates_and_preserves_each_channel() {
+        let patch = load_kernel_patch_str(
+            r#"
+metadata: { name: surround-delay }
+ports:
+  - { name: master, direction: output, signal: audio, channels: 6, maps_from: delay.audio_out }
+modules:
+  - { id: source, type: noise, static: { channels: 6 } }
+  - { id: delay, type: compensation_delay, static: { channels: 6, delay_samples: 1 } }
+connections:
+  - { from: source.audio, to: delay.audio_in }
+"#,
+        )
+        .expect("six-channel delay patch should load");
+        let prepared = prepare_kernel_patch(&patch, &KERNEL_RENDER_SETTINGS)
+            .expect("six-channel delay patch should prepare");
+        let delay = prepared
+            .compiled_patch()
+            .nodes()
+            .iter()
+            .find(|node| node.id.as_str() == "delay")
+            .expect("delay should compile");
+        assert_eq!(delay.input_port_spans[0].channel_count, 6);
+        assert_eq!(delay.output_port_spans[0].channel_count, 6);
+
+        let mut runtime = RealtimeGraphProcessor::polyphonic_with_compiled_patch_and_sampler_assets_and_max_block_size(
+            prepared.graph().clone(),
+            prepared.compiled_patch().clone(),
+            KERNEL_RENDER_SETTINGS.sample_rate_hz as f32,
+            &PreparedSamplerAssets::empty(),
+            &crate::patch::VoiceAllocation::default(),
+            8,
+        );
+        let mut outputs = vec![vec![vec![0.0; 8]; 6]];
+        assert_eq!(runtime.render_root_outputs(&mut outputs), 8);
+        assert!(outputs[0].iter().all(|channel| {
+            channel[0] == 0.0
+                && channel[1..]
+                    .iter()
+                    .any(|sample| sample.abs() > f32::EPSILON)
+        }));
+    }
+
+    #[test]
+    fn six_channel_convolution_processes_each_channel_with_disjoint_state() {
+        let root = GraphDefinition::new("surround-convolution")
+            .with_port(
+                KernelPort::input("input", SignalType::Audio, 6)
+                    .maps_to(kernel_ref("convolution", builtin_ports::AUDIO_IN)),
+            )
+            .with_port(
+                KernelPort::output("master", SignalType::Audio, 6)
+                    .maps_from(kernel_ref("convolution", builtin_ports::AUDIO_OUT)),
+            )
+            .with_node(
+                Node::new(NodeId::new("convolution"), module_types::CONVOLUTION).with_static_arg(
+                    crate::kernel::builtins::CHANNELS_PARAM,
+                    StaticArg::Literal(StaticValue::Int(6)),
+                ),
+            );
+        let prepared = prepare_kernel_graph_with_buses(
+            &root,
+            &builtin_registry(),
+            &KERNEL_RENDER_SETTINGS,
+            &HostBuses::new()
+                .with_input("input", 6)
+                .with_output("master", 6),
+        )
+        .expect("six-channel convolution should prepare");
+        let mut runtime = RealtimeGraphProcessor::polyphonic_with_compiled_patch_and_sampler_assets_and_max_block_size(
+            prepared.graph().clone(),
+            prepared.compiled_patch().clone(),
+            KERNEL_RENDER_SETTINGS.sample_rate_hz as f32,
+            &PreparedSamplerAssets::empty(),
+            &crate::patch::VoiceAllocation::default(),
+            8,
+        );
+        let inputs = vec![
+            (1..=6)
+                .map(|channel| vec![channel as f32 / 10.0; 8])
+                .collect::<Vec<_>>(),
+        ];
+        let mut outputs = vec![vec![vec![0.0; 8]; 6]];
+
+        assert_eq!(runtime.render_root_buses(&inputs, &mut outputs), 8);
+        assert_eq!(outputs[0], inputs[0]);
     }
 
     #[test]
@@ -1149,10 +1582,12 @@ connections: []
             )
         );
         assert!(delays.iter().all(|node| {
-            node.parameters
-                .get(DELAY_SAMPLES_PARAMETER)
-                .map(String::as_str)
-                == Some("1")
+            node.construction
+                == crate::compiled_patch::CompiledConstruction::CompensationDelay { samples: 1 }
+                && prepared
+                    .compiled_patch()
+                    .parameter_slot_index(node.id.as_str(), DELAY_SAMPLES_PARAMETER)
+                    .is_none()
         }));
         assert_eq!(prepared.compiled_patch().audio_output_index(), Some(6));
     }
@@ -1231,6 +1666,38 @@ connections: []
             let settings = latency_render_settings(expected_frame + 2);
             let prepared = prepare_kernel_graph(&root, &registry, &settings)
                 .expect("spectral latency graph should prepare");
+            let compiled_wet = prepared
+                .compiled_patch()
+                .nodes()
+                .iter()
+                .find(|node| node.id.as_str() == WET_NODE_ID)
+                .expect("spectral node should compile");
+            assert_eq!(
+                compiled_wet.construction,
+                crate::compiled_patch::CompiledConstruction::SpectralProcessor {
+                    fft_size,
+                    mode: crate::spectral::SpectralMode::Passthrough,
+                }
+            );
+            assert_eq!(
+                prepared
+                    .compiled_patch()
+                    .parameter_slot_index(WET_NODE_ID, SPECTRAL_FFT_SIZE_PARAMETER),
+                None,
+                "numeric static arguments must not become runtime slots"
+            );
+            assert_eq!(
+                prepared
+                    .compiled_patch()
+                    .numeric_parameter_value(WET_NODE_ID, builtin_ports::THRESHOLD),
+                Some(-40.0)
+            );
+            assert_eq!(
+                prepared
+                    .compiled_patch()
+                    .numeric_parameter_value(WET_NODE_ID, builtin_ports::MIX),
+                Some(1.0)
+            );
 
             let (left, right) = render_offline_compiled(
                 prepared.compiled_patch(),

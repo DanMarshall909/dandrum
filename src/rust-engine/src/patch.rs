@@ -17,8 +17,8 @@ use crate::script::{RhaiScriptRuntime, ScriptPrepareError, ScriptRuntimeLimits};
 mod patch_module;
 
 pub use patch_module::{
-    ModuleBindingDeclaration, ModuleInputDeclaration, ModuleOutputDeclaration,
-    ModuleDefinitionDeclaration,
+    ModuleBindingDeclaration, ModuleDefinitionDeclaration, ModuleInputDeclaration,
+    ModuleOutputDeclaration,
 };
 
 #[derive(Clone, Debug, Deserialize, PartialEq)]
@@ -1827,7 +1827,8 @@ mod tests {
     };
 
     fn schema_error(yaml: &str, case: &str) -> PatchValidationError {
-        let patch = load_patch_str(yaml).unwrap_or_else(|e| panic!("{case}: patch should parse: {e}"));
+        let patch =
+            load_patch_str(yaml).unwrap_or_else(|e| panic!("{case}: patch should parse: {e}"));
         validate_patch_schema(&patch)
             .expect_err(&format!("{case}: patch should fail schema validation"))
     }
@@ -2031,7 +2032,11 @@ modules:
 
         let parsed: PortReference =
             serde_yaml::from_str("\"osc.out\"").expect("valid module_id.port_name should parse");
-        assert_eq!(parsed.to_string(), "osc.out", "round-trips to its text form");
+        assert_eq!(
+            parsed.to_string(),
+            "osc.out",
+            "round-trips to its text form"
+        );
     }
 
     #[test]

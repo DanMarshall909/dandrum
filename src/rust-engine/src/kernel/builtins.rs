@@ -14,11 +14,9 @@
 //! [`LatencySpec::Zero`] explicitly, so the audit is exhaustive rather than
 //! implicit.
 //!
-//! Ports are declared at their **current** shapes: every port is mono, and the
-//! stereo builtins (`echo`, `reverb`, `audio_output`) still expose `_l`/`_r`
-//! pairs. This is deliberate — the legacy `Graph` the compilation bridge (§2.6)
-//! lowers onto has no multichannel port representation, so collapsing these into
-//! channel-polymorphic ports happens in §3.3 together with the dispatch adapter.
+//! Channel-independent processors declare a `channels` static parameter and use
+//! it for their signal-path ports. Intrinsically stereo echo/reverb retain their
+//! L/R interfaces until their dedicated migration.
 //!
 //! Numeric tunable parameters are declared here as control input ports carrying
 //! their default and range. Non-resource text/enum/integer construction-time
@@ -47,17 +45,16 @@ use crate::graph::SignalType;
 use crate::graph::builtin_ports as ports;
 
 use super::{
-    ControlDefault, DefinitionRegistry, GraphDefinition, LatencySpec, Port, StaticParam,
-    StaticType, StaticValue,
+    ChannelCount, ControlDefault, DefinitionRegistry, GraphDefinition, LatencySpec, Multiplicity,
+    Port, StaticParam, StaticType, StaticValue,
 };
 
-/// Every builtin port is single-channel until §3.3 makes the stereo builtins
-/// channel-polymorphic.
 const MONO: u32 = 1;
 
 /// Static parameter that drives the spectral processor's FFT frame size.
 pub const SPECTRAL_FFT_SIZE_PARAM: &str = SPECTRAL_FFT_SIZE_PARAMETER;
 pub const DELAY_SAMPLES_PARAM: &str = DELAY_SAMPLES_PARAMETER;
+pub const CHANNELS_PARAM: &str = "channels";
 /// Default FFT frame size, matching the legacy spectral builtin.
 /// Spectral processing latency is `fft_size - SPECTRAL_LATENCY_OFFSET` samples.
 const SPECTRAL_LATENCY_OFFSET: u32 = 1;
@@ -70,12 +67,36 @@ fn audio_out(name: &str) -> Port {
     Port::output(name, SignalType::Audio, MONO)
 }
 
+fn poly_audio_in(name: &str) -> Port {
+    Port::input(name, SignalType::Audio, ChannelCount::param(CHANNELS_PARAM))
+}
+
+fn poly_audio_out(name: &str) -> Port {
+    Port::output(name, SignalType::Audio, ChannelCount::param(CHANNELS_PARAM))
+}
+
 fn control_in(name: &str) -> Port {
     Port::input(name, SignalType::Control, MONO)
 }
 
 fn control_out(name: &str) -> Port {
     Port::output(name, SignalType::Control, MONO)
+}
+
+fn poly_control_in(name: &str) -> Port {
+    Port::input(
+        name,
+        SignalType::Control,
+        ChannelCount::param(CHANNELS_PARAM),
+    )
+}
+
+fn poly_control_out(name: &str) -> Port {
+    Port::output(
+        name,
+        SignalType::Control,
+        ChannelCount::param(CHANNELS_PARAM),
+    )
 }
 
 fn event_in(name: &str) -> Port {
@@ -96,6 +117,12 @@ fn tunable(name: &str, default: f64, min: f64, max: f64) -> Port {
 /// ever implicitly zero.
 fn primitive(name: &str) -> GraphDefinition {
     GraphDefinition::new(name).with_latency(LatencySpec::Zero)
+}
+
+fn channel_primitive(name: &str) -> GraphDefinition {
+    primitive(name).with_static_param(
+        StaticParam::new(CHANNELS_PARAM, StaticType::Int).with_default(StaticValue::Int(1)),
+    )
 }
 
 fn enum_param(name: &str, default: &str, allowed_values: &[&str]) -> StaticParam {
@@ -135,16 +162,16 @@ fn builtin_definitions() -> Vec<GraphDefinition> {
             ))
             .with_port(tunable(ports::PITCH, 1.0, 0.0, 64.0))
             .with_port(audio_out(ports::AUDIO)),
-        primitive(names::GAIN)
-            .with_port(audio_in(ports::AUDIO_IN))
+        channel_primitive(names::GAIN)
+            .with_port(poly_audio_in(ports::AUDIO_IN))
             .with_port(tunable(ports::GAIN, 1.0, 0.0, 4.0))
-            .with_port(audio_out(ports::AUDIO_OUT)),
-        primitive(names::AUDIO_MIXER)
-            .with_port(audio_in(ports::INPUTS))
-            .with_port(audio_out(ports::MIX)),
-        primitive(names::CONTROL_MIXER)
-            .with_port(control_in(ports::INPUTS))
-            .with_port(control_out(ports::SUM)),
+            .with_port(poly_audio_out(ports::AUDIO_OUT)),
+        channel_primitive(names::AUDIO_MIXER)
+            .with_port(poly_audio_in(ports::INPUTS).with_multiplicity(Multiplicity::Summing))
+            .with_port(poly_audio_out(ports::MIX)),
+        channel_primitive(names::CONTROL_MIXER)
+            .with_port(poly_control_in(ports::INPUTS).with_multiplicity(Multiplicity::Summing))
+            .with_port(poly_control_out(ports::SUM)),
         primitive(names::ADSR)
             .with_port(event_in(ports::GATE))
             .with_port(tunable(ports::ATTACK, 5.0, 0.0, 500.0))
@@ -155,7 +182,7 @@ fn builtin_definitions() -> Vec<GraphDefinition> {
         primitive(names::LFO)
             .with_port(control_in(ports::RATE))
             .with_port(control_out(ports::VALUE)),
-        primitive(names::FILTER)
+        channel_primitive(names::FILTER)
             .with_static_param(enum_param(
                 FILTER_ALGORITHM_PARAMETER,
                 FILTER_ALGORITHM_MOOG,
@@ -179,17 +206,17 @@ fn builtin_definitions() -> Vec<GraphDefinition> {
                 DYNAMICS_TOPOLOGY_FEEDBACK,
                 &[DYNAMICS_TOPOLOGY_FEEDBACK, DYNAMICS_TOPOLOGY_FEEDFORWARD],
             ))
-            .with_port(audio_in(ports::AUDIO_IN))
+            .with_port(poly_audio_in(ports::AUDIO_IN))
             .with_port(control_in(ports::CUTOFF))
             .with_port(control_in(ports::RESONANCE))
             .with_port(control_in(ports::GAIN))
-            .with_port(audio_out(ports::AUDIO_OUT)),
-        primitive(names::AUDIO_DELAY_ONE_SAMPLE)
-            .with_port(audio_in(ports::AUDIO_IN))
-            .with_port(audio_out(ports::AUDIO_OUT)),
-        primitive(names::BLOCK_DELAY)
-            .with_port(audio_in(ports::AUDIO_IN))
-            .with_port(audio_out(ports::AUDIO_OUT)),
+            .with_port(poly_audio_out(ports::AUDIO_OUT)),
+        channel_primitive(names::AUDIO_DELAY_ONE_SAMPLE)
+            .with_port(poly_audio_in(ports::AUDIO_IN))
+            .with_port(poly_audio_out(ports::AUDIO_OUT)),
+        channel_primitive(names::BLOCK_DELAY)
+            .with_port(poly_audio_in(ports::AUDIO_IN))
+            .with_port(poly_audio_out(ports::AUDIO_OUT)),
         primitive(names::CONTROL_DELAY)
             .with_port(control_in(ports::VALUE))
             .with_port(control_out(ports::VALUE)),
@@ -204,14 +231,14 @@ fn builtin_definitions() -> Vec<GraphDefinition> {
                 SCRIPT_SOURCE_PARAMETER,
                 StaticType::String,
             )),
-        primitive(names::SAMPLER)
+        channel_primitive(names::SAMPLER)
             .with_port(event_in(ports::TRIGGER))
             .with_port(control_in(ports::RATE))
             .with_port(control_in(ports::START))
             .with_port(control_in(ports::LOOP_ENABLED))
             .with_port(control_in(ports::LOOP_START))
             .with_port(control_in(ports::LOOP_END))
-            .with_port(audio_out(ports::AUDIO)),
+            .with_port(poly_audio_out(ports::AUDIO)),
         primitive(names::NOTE_TO_RATE)
             .with_port(event_in(ports::EVENTS))
             .with_port(control_out(ports::RATE)),
@@ -227,7 +254,7 @@ fn builtin_definitions() -> Vec<GraphDefinition> {
             ))
             .with_port(event_in(ports::EVENTS_IN))
             .with_port(event_out(ports::EVENTS_OUT)),
-        primitive(names::DYNAMICS_PROCESSOR)
+        channel_primitive(names::DYNAMICS_PROCESSOR)
             .with_static_param(enum_param(
                 DYNAMICS_MODE_PARAMETER,
                 DYNAMICS_MODE_LEVEL,
@@ -243,7 +270,7 @@ fn builtin_definitions() -> Vec<GraphDefinition> {
                 DYNAMICS_TOPOLOGY_FEEDFORWARD,
                 &[DYNAMICS_TOPOLOGY_FEEDFORWARD, DYNAMICS_TOPOLOGY_FEEDBACK],
             ))
-            .with_port(audio_in(ports::AUDIO_IN))
+            .with_port(poly_audio_in(ports::AUDIO_IN))
             .with_port(control_in(ports::SIDECHAIN_IN))
             .with_port(control_in(ports::THRESHOLD))
             .with_port(control_in(ports::BELOW_RATIO))
@@ -254,20 +281,20 @@ fn builtin_definitions() -> Vec<GraphDefinition> {
             .with_port(control_in(ports::MAKEUP_GAIN))
             .with_port(control_in(ports::ATTACK_GAIN))
             .with_port(control_in(ports::SUSTAIN_GAIN))
-            .with_port(audio_out(ports::AUDIO_OUT)),
-        primitive(names::SATURATOR)
-            .with_port(audio_in(ports::AUDIO_IN))
+            .with_port(poly_audio_out(ports::AUDIO_OUT)),
+        channel_primitive(names::SATURATOR)
+            .with_port(poly_audio_in(ports::AUDIO_IN))
             .with_port(control_in(ports::DRIVE))
             .with_port(control_in(ports::BIAS))
             .with_port(control_in(ports::CURVE_SELECT))
-            .with_port(audio_out(ports::AUDIO_OUT)),
+            .with_port(poly_audio_out(ports::AUDIO_OUT)),
         convolution(),
-        primitive(names::FREQUENCY_SPLITTER)
-            .with_port(audio_in(ports::AUDIO_IN))
+        channel_primitive(names::FREQUENCY_SPLITTER)
+            .with_port(poly_audio_in(ports::AUDIO_IN))
             .with_port(control_in(ports::CROSSOVER_HZ))
-            .with_port(audio_out(ports::LOW))
-            .with_port(audio_out(ports::MID))
-            .with_port(audio_out(ports::HIGH)),
+            .with_port(poly_audio_out(ports::LOW))
+            .with_port(poly_audio_out(ports::MID))
+            .with_port(poly_audio_out(ports::HIGH)),
         spectral_processor(),
         primitive(names::ECHO)
             .with_static_param(enum_param(
@@ -305,39 +332,43 @@ fn builtin_definitions() -> Vec<GraphDefinition> {
             .with_port(control_in(ports::DRY))
             .with_port(audio_out(ports::AUDIO_OUT_L))
             .with_port(audio_out(ports::AUDIO_OUT_R)),
-        primitive(names::NOISE)
+        channel_primitive(names::NOISE)
             .with_static_param(
                 StaticParam::new(NOISE_SEED_PARAMETER, StaticType::Int)
                     .with_default(StaticValue::Int(NOISE_DEFAULT_SEED as i64)),
             )
-            .with_port(audio_out(ports::AUDIO)),
-        primitive(names::IMPULSE)
+            .with_port(poly_audio_out(ports::AUDIO)),
+        channel_primitive(names::IMPULSE)
             .with_port(event_in(ports::TRIGGER))
-            .with_port(audio_out(ports::AUDIO)),
+            .with_port(poly_audio_out(ports::AUDIO)),
         // `multiply`'s second input is an audio-rate gain, not a control port.
-        primitive(names::MULTIPLY)
-            .with_port(audio_in(ports::AUDIO_IN))
-            .with_port(audio_in(ports::GAIN))
-            .with_port(audio_out(ports::AUDIO_OUT)),
+        channel_primitive(names::MULTIPLY)
+            .with_port(poly_audio_in(ports::AUDIO_IN))
+            .with_port(poly_audio_in(ports::GAIN))
+            .with_port(poly_audio_out(ports::AUDIO_OUT)),
         primitive(names::NOTE_TO_CONTROL)
             .with_port(event_in(ports::EVENTS))
             .with_port(control_out(ports::FREQUENCY))
             .with_port(control_out(ports::PITCH_RATIO))
             .with_port(event_out(ports::GATE))
             .with_port(control_out(ports::VELOCITY)),
-        primitive(names::ENVELOPE_FOLLOWER)
+        channel_primitive(names::ENVELOPE_FOLLOWER)
             .with_static_param(enum_param(
                 DETECTION_MODE_PARAMETER,
                 DETECTION_MODE_PEAK,
                 &[DETECTION_MODE_PEAK, DETECTION_MODE_RMS],
             ))
-            .with_port(audio_in(ports::AUDIO_IN))
+            .with_port(poly_audio_in(ports::AUDIO_IN))
             .with_port(control_in(ports::ATTACK))
             .with_port(control_in(ports::RELEASE))
             .with_port(control_in(ports::AMOUNT))
             .with_port(control_in(ports::OFFSET))
             .with_port(control_in(ports::INVERT))
-            .with_port(control_out(ports::VALUE)),
+            .with_port(Port::output(
+                ports::VALUE,
+                SignalType::Control,
+                ChannelCount::param(CHANNELS_PARAM),
+            )),
         primitive(names::CURVE_MAPPER)
             .with_static_param(enum_param(
                 CURVE_PARAMETER,
@@ -374,9 +405,9 @@ fn builtin_definitions() -> Vec<GraphDefinition> {
             .with_port(control_out(ports::VALUE)),
         // Compiler-generated by flattening (§2.5); declared here so the bridge
         // can lower it and so an authored instance validates like any other.
-        primitive(names::CONTROL_TO_AUDIO)
-            .with_port(control_in(ports::IN))
-            .with_port(audio_out(ports::OUT)),
+        channel_primitive(names::CONTROL_TO_AUDIO)
+            .with_port(poly_control_in(ports::IN))
+            .with_port(poly_audio_out(ports::OUT)),
         compensation_delay(),
     ]
 }
@@ -385,6 +416,9 @@ fn builtin_definitions() -> Vec<GraphDefinition> {
 /// `fft_size` static parameter.
 fn spectral_processor() -> GraphDefinition {
     GraphDefinition::new(names::SPECTRAL_PROCESSOR)
+        .with_static_param(
+            StaticParam::new(CHANNELS_PARAM, StaticType::Int).with_default(StaticValue::Int(1)),
+        )
         .with_static_param(
             StaticParam::new(SPECTRAL_FFT_SIZE_PARAM, StaticType::Int)
                 .with_default(StaticValue::Int(SPECTRAL_DEFAULT_FFT_SIZE as i64)),
@@ -403,31 +437,37 @@ fn spectral_processor() -> GraphDefinition {
             name: SPECTRAL_FFT_SIZE_PARAM.to_string(),
             minus: SPECTRAL_LATENCY_OFFSET,
         })
-        .with_port(audio_in(ports::AUDIO_IN))
+        .with_port(poly_audio_in(ports::AUDIO_IN))
         .with_port(tunable(ports::THRESHOLD, -40.0, -100.0, 0.0))
         .with_port(tunable(ports::MIX, 1.0, 0.0, 1.0))
-        .with_port(audio_out(ports::AUDIO_OUT))
+        .with_port(poly_audio_out(ports::AUDIO_OUT))
 }
 
 /// Uniformly-partitioned overlap-add convolution: latency is one partition
 /// block, sourced from the DSP's own block size so the two never drift.
 fn convolution() -> GraphDefinition {
     GraphDefinition::new(names::CONVOLUTION)
+        .with_static_param(
+            StaticParam::new(CHANNELS_PARAM, StaticType::Int).with_default(StaticValue::Int(1)),
+        )
         .with_latency(LatencySpec::Samples(Convolution::BLOCK_SIZE as u32))
-        .with_port(audio_in(ports::AUDIO_IN))
+        .with_port(poly_audio_in(ports::AUDIO_IN))
         .with_port(control_in(ports::MIX))
-        .with_port(audio_out(ports::AUDIO_OUT))
+        .with_port(poly_audio_out(ports::AUDIO_OUT))
 }
 
 fn compensation_delay() -> GraphDefinition {
     GraphDefinition::new(names::COMPENSATION_DELAY)
+        .with_static_param(
+            StaticParam::new(CHANNELS_PARAM, StaticType::Int).with_default(StaticValue::Int(1)),
+        )
         .with_static_param(StaticParam::new(DELAY_SAMPLES_PARAM, StaticType::Int))
         .with_latency(LatencySpec::StaticParam {
             name: DELAY_SAMPLES_PARAM.to_string(),
             minus: 0,
         })
-        .with_port(audio_in(ports::AUDIO_IN))
-        .with_port(audio_out(ports::AUDIO_OUT))
+        .with_port(poly_audio_in(ports::AUDIO_IN))
+        .with_port(poly_audio_out(ports::AUDIO_OUT))
 }
 
 #[cfg(test)]

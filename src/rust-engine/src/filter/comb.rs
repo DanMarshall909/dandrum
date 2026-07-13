@@ -1,5 +1,6 @@
 use super::FilterAlgorithm;
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum CombType {
     Feedback,
     Feedforward,

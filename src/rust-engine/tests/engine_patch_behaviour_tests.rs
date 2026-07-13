@@ -15,9 +15,9 @@ fn diagnostics_for_invalid_patch(yaml: &str) -> Vec<Diagnostic> {
 
 fn assert_diagnostic_contains(diagnostics: &[Diagnostic], code: &str, text: &str) {
     assert!(
-        diagnostics
-            .iter()
-            .any(|diagnostic| diagnostic.error_code() == code && diagnostic.message().contains(text)),
+        diagnostics.iter().any(
+            |diagnostic| diagnostic.error_code() == code && diagnostic.message().contains(text)
+        ),
         "expected diagnostic {code} containing {text:?}; actual diagnostics: {diagnostics:#?}"
     );
 }
@@ -73,8 +73,8 @@ modules:
 
 #[test]
 fn module_definition_accepts_public_ports_and_instance_bindings() {
-    let patch = load_patch_str(&module_patch_with_instance("0.75"))
-        .expect("patch YAML should parse");
+    let patch =
+        load_patch_str(&module_patch_with_instance("0.75")).expect("patch YAML should parse");
 
     validate_patch_schema(&patch).expect("module public surface should validate");
 }
@@ -316,15 +316,17 @@ modules:
 
 #[test]
 fn external_preset_application_preserves_graph_structure_and_replaces_surface_values() {
-    let patch = load_patch_str(&module_patch_with_instance("0.1"))
-        .expect("patch YAML should parse");
+    let patch =
+        load_patch_str(&module_patch_with_instance("0.1")).expect("patch YAML should parse");
     let mut patch = patch.clone();
     patch.instrument = Some(dandrum_engine::patch::InstrumentIdentity {
         id: "test.instrument".to_string(),
         preset_schema_version: 1,
     });
-    patch.preset_surface.parameters.push(
-        dandrum_engine::patch::PresetParameterTargetDeclaration {
+    patch
+        .preset_surface
+        .parameters
+        .push(dandrum_engine::patch::PresetParameterTargetDeclaration {
             name: "amount".to_string(),
             value_type: dandrum_engine::patch::PresetTargetType::Number,
             default: ParameterValue::Number(0.5),
@@ -334,8 +336,7 @@ fn external_preset_application_preserves_graph_structure_and_replaces_surface_va
                 module_id: "macro".to_string(),
                 port_name: "amount".to_string(),
             },
-        },
-    );
+        });
     validate_patch_schema(&patch).expect("patch should be preset-capable");
 
     let preset = load_preset_str(
@@ -368,8 +369,8 @@ values:
 
 #[test]
 fn external_preset_validation_rejects_identity_schema_unknown_targets_and_structure() {
-    let patch = load_patch_str(&module_patch_with_instance("0.1"))
-        .expect("patch YAML should parse");
+    let patch =
+        load_patch_str(&module_patch_with_instance("0.1")).expect("patch YAML should parse");
     let mut patch = patch.clone();
     patch.instrument = Some(dandrum_engine::patch::InstrumentIdentity {
         id: "test.instrument".to_string(),

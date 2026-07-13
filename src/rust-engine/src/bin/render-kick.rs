@@ -22,16 +22,18 @@ fn main() {
     let note = 36u8;
     let duration = render_settings.duration_frames;
     let events = vec![
-        TimedInputEvent::new(0, ScriptEvent::NoteOn { note, velocity: 100 }),
+        TimedInputEvent::new(
+            0,
+            ScriptEvent::NoteOn {
+                note,
+                velocity: 100,
+            },
+        ),
         TimedInputEvent::new(duration.saturating_sub(1), ScriptEvent::NoteOff { note }),
     ];
 
-    let (left, right) = render_offline_polyphonic(
-        &graph,
-        render_settings,
-        events,
-        voice_allocation,
-    );
+    let (left, right) =
+        render_offline_polyphonic(&graph, render_settings, events, voice_allocation);
 
     write_wav_file(
         Path::new("/tmp/dandrum-synth-kick.wav"),

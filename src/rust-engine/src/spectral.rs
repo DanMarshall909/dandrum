@@ -15,6 +15,7 @@ pub struct SpectralProcessor {
 }
 
 #[allow(dead_code)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum SpectralMode {
     Passthrough,
     Gate,

@@ -76,6 +76,10 @@ or ambiguous you MUST prompt for available changes.
 6. **Implement tasks (loop until done or blocked)**
 
    For each pending task:
+    - If the task description begins with `[frontier]`, `[standard]`, or `[mechanical]`, load
+      `openspec-route-task` and follow its routing decision before editing
+    - Re-run routing for every next task because adjacent tasks may require different model tiers
+    - If routing requires another model, emit the handoff packet and STOP without changing the checkbox
     - Show which task is being worked on
     - Make the code changes required
     - Keep changes minimal and focused
@@ -154,6 +158,7 @@ What would you like to do?
 - If task is ambiguous, pause and ask before implementing
 - If implementation reveals issues, pause and suggest artifact updates
 - Keep code changes minimal and scoped to each task
+- Respect model-tier tags and D11 escalation triggers; task ordering does not imply one model should execute every task
 - Update task checkbox immediately after completing each task
 - Pause on errors, blockers, or unclear requirements - don't guess
 - Use contextFiles from CLI output, don't assume specific file names

@@ -1,44 +1,27 @@
-use std::collections::BTreeMap;
-
 use crate::builtins::module_kind::ModuleKind;
-use crate::builtins::{
-    CURVE_LINEAR, CURVE_PARAMETER, DELAY_SAMPLES_PARAMETER, DETECTION_MODE_PARAMETER,
-    DETECTION_MODE_RMS, DYNAMICS_DETECTION_PARAMETER, DYNAMICS_MODE_PARAMETER,
-    DYNAMICS_MODE_TRANSIENT, DYNAMICS_TOPOLOGY_FEEDBACK, DYNAMICS_TOPOLOGY_FEEDFORWARD,
-    DYNAMICS_TOPOLOGY_PARAMETER, EVENT_FILTER_NOTE_PARAMETER, EVENT_FILTER_NOTE_SELECTOR,
-    EVENT_FILTER_SELECTOR_PARAMETER, FILTER_ALGORITHM_BIQUAD, FILTER_ALGORITHM_COMB,
-    FILTER_ALGORITHM_MOOG, FILTER_ALGORITHM_PARAMETER, FILTER_COMB_TYPE_PARAMETER,
-    FILTER_MODE_HIGHPASS, FILTER_MODE_PARAMETER, FILTER_MODE_PEAKING, INTERPOLATION_CUBIC,
-    INTERPOLATION_PARAMETER, NOISE_DEFAULT_SEED, NOISE_SEED_PARAMETER, SCRIPT_SOURCE_PARAMETER,
-    SPECTRAL_DEFAULT_FFT_SIZE, SPECTRAL_FFT_SIZE_PARAMETER, SPECTRAL_MODE_PARAMETER,
-    SPECTRAL_MODE_PASSTHROUGH, STEPS_PARAMETER, WAVEFORM_PARAMETER,
+#[cfg(test)]
+use crate::compiled_patch::CompiledNodeData;
+use crate::compiled_patch::{
+    CompiledConstruction, CompiledFilterAlgorithm, CompiledNode, CompiledResourceHandles,
+    SampleResourceHandle,
 };
-use crate::compiled_patch::CompiledNode;
 use crate::convolution::Convolution;
 use crate::crossover::LinkwitzRiley4;
-use crate::curve_mapper::{CurveKind, CurveMapper};
+use crate::curve_mapper::CurveMapper;
 use crate::decay::DecayCurve;
-use crate::delay_line::InterpolationMode;
-use crate::dynamics_processor::{DynamicsProcessor, ProcessorMode, Topology};
+use crate::dynamics_processor::DynamicsProcessor;
 use crate::echo::Echo;
 use crate::envelope_follower::{DetectionMode, EnvelopeFollower};
-use crate::filter::{BiquadFilter, BiquadMode, CombFilter, CombType, FilterAlgorithm, MoogLadder};
+use crate::filter::{BiquadFilter, BiquadMode, CombFilter, FilterAlgorithm, MoogLadder};
 #[cfg(test)]
 use crate::graph::ModuleNode;
 use crate::graph::SignalType;
 use crate::oscillator::Waveform;
 use crate::reverb::Reverb;
-use crate::sample::{LoadedSample, PreparedSamplerAssets};
+use crate::sample::PreparedSamplerAssets;
 use crate::saturator::Saturator;
 use crate::script::{RhaiScriptRuntime, ScriptModuleState, ScriptRuntimeLimits};
 use crate::spectral::SpectralProcessor;
-
-fn interpolation_mode(params: &BTreeMap<String, String>) -> InterpolationMode {
-    match params.get(INTERPOLATION_PARAMETER).map(String::as_str) {
-        Some(INTERPOLATION_CUBIC) => InterpolationMode::Cubic,
-        _ => InterpolationMode::Linear,
-    }
-}
 
 pub(super) enum PerModuleState {
     Oscillator {
@@ -57,8 +40,8 @@ pub(super) enum PerModuleState {
     /// Stateless control→audio promotion (see `unify-graph-kernel` §2.5).
     ControlToAudio,
     CompensationDelay {
-        samples: Box<[f32]>,
-        position: usize,
+        samples: Box<[Box<[f32]>]>,
+        positions: Box<[usize]>,
     },
     AudioOutput,
     MidiInput,
@@ -68,7 +51,7 @@ pub(super) enum PerModuleState {
     AudioMixer,
     // Intentionally monophonic until the engine has generic per-voice bus support.
     Sampler {
-        sample: Option<LoadedSample>,
+        sample: Option<SampleResourceHandle>,
         position: f32,
         active: bool,
     },
@@ -80,10 +63,10 @@ pub(super) enum PerModuleState {
         processor: Saturator,
     },
     Convolution {
-        processor: Convolution,
+        processors: Box<[Convolution]>,
     },
     Filter {
-        filter: Box<dyn FilterAlgorithm>,
+        filters: Box<[Box<dyn FilterAlgorithm>]>,
         sample_rate: f64,
     },
     Echo {
@@ -95,15 +78,14 @@ pub(super) enum PerModuleState {
         sample_rate: f64,
     },
     FrequencySplitter {
-        first: LinkwitzRiley4,
-        second: LinkwitzRiley4,
+        filters: Box<[(LinkwitzRiley4, LinkwitzRiley4)]>,
         sample_rate: f64,
     },
     SpectralProcessor {
         processor: SpectralProcessor,
     },
     Noise {
-        state: u32,
+        states: Box<[u32]>,
     },
     Impulse,
     Multiply,
@@ -147,12 +129,17 @@ impl PerModuleState {
     ) -> Self {
         let kind = ModuleKind::from_str(module.module_type())
             .unwrap_or_else(|| panic!("unknown module type: {}", module.module_type()));
+        let data = CompiledNodeData::from_legacy(module).unwrap_or_else(|error| {
+            panic!("module {} failed to prepare: {error}", module.id().as_str())
+        });
         Self::from_kind(
             kind,
             module.id().as_str(),
-            module.params(),
+            &data.construction,
+            &data.resources,
             sample_rate,
             sampler_assets,
+            1,
         )
     }
 
@@ -168,24 +155,32 @@ impl PerModuleState {
         Self::from_kind(
             node.module_kind,
             node.id.as_str(),
-            &node.parameters,
+            &node.construction,
+            &node.resources,
             sample_rate,
             sampler_assets,
+            node.output_port_spans
+                .iter()
+                .map(|span| span.channel_count)
+                .max()
+                .unwrap_or(1),
         )
     }
 
     fn from_kind(
         kind: ModuleKind,
         module_id: &str,
-        params: &BTreeMap<String, String>,
+        construction: &CompiledConstruction,
+        resources: &CompiledResourceHandles,
         sample_rate: f32,
         sampler_assets: &PreparedSamplerAssets,
+        channels: usize,
     ) -> Self {
         match kind {
             ModuleKind::Script => {
-                let source = params
-                    .get(SCRIPT_SOURCE_PARAMETER)
-                    .unwrap_or_else(|| panic!("script module {module_id} source is required"));
+                let CompiledConstruction::Script { source } = construction else {
+                    panic!("script module {module_id} has mismatched construction data")
+                };
                 let runtime = RhaiScriptRuntime::compile(source, ScriptRuntimeLimits::default())
                     .unwrap_or_else(|error| {
                         panic!("script module {module_id} failed to prepare: {error}")
@@ -197,15 +192,13 @@ impl PerModuleState {
                 }
             }
             ModuleKind::Oscillator => {
-                let waveform = params
-                    .get(WAVEFORM_PARAMETER)
-                    .map(String::as_str)
-                    .and_then(Waveform::from_str)
-                    .unwrap_or(Waveform::DEFAULT);
+                let CompiledConstruction::Oscillator { waveform } = construction else {
+                    panic!("oscillator module {module_id} has mismatched construction data")
+                };
                 PerModuleState::Oscillator {
                     phase: 0.0,
                     sample_rate,
-                    waveform,
+                    waveform: *waveform,
                 }
             }
             ModuleKind::Adsr => PerModuleState::Adsr {
@@ -218,26 +211,15 @@ impl PerModuleState {
             ModuleKind::Gain => PerModuleState::Vca,
             ModuleKind::ControlToAudio => PerModuleState::ControlToAudio,
             ModuleKind::CompensationDelay => {
-                let delay_samples = params
-                    .get(DELAY_SAMPLES_PARAMETER)
-                    .unwrap_or_else(|| {
-                        panic!(
-                            "compensation delay module {module_id} requires {DELAY_SAMPLES_PARAMETER}"
-                        )
-                    })
-                    .parse::<usize>()
-                    .unwrap_or_else(|_| {
-                        panic!(
-                            "compensation delay module {module_id} has invalid {DELAY_SAMPLES_PARAMETER}"
-                        )
-                    });
-                assert!(
-                    delay_samples > 0,
-                    "compensation delay module {module_id} requires a positive {DELAY_SAMPLES_PARAMETER}"
-                );
+                let CompiledConstruction::CompensationDelay { samples } = construction else {
+                    panic!("compensation delay module {module_id} has mismatched construction data")
+                };
                 PerModuleState::CompensationDelay {
-                    samples: vec![0.0; delay_samples].into_boxed_slice(),
-                    position: 0,
+                    samples: (0..channels)
+                        .map(|_| vec![0.0; *samples].into_boxed_slice())
+                        .collect::<Vec<_>>()
+                        .into_boxed_slice(),
+                    positions: vec![0; channels].into_boxed_slice(),
                 }
             }
             ModuleKind::AudioOutput => PerModuleState::AudioOutput,
@@ -245,30 +227,28 @@ impl PerModuleState {
             ModuleKind::NoteToRate => PerModuleState::NoteToRate { rate: 1.0 },
             ModuleKind::AudioMixer => PerModuleState::AudioMixer,
             ModuleKind::Sampler => PerModuleState::Sampler {
-                sample: sampler_assets.get(module_id).cloned(),
+                sample: resources.sample.clone().or_else(|| {
+                    sampler_assets
+                        .get(module_id)
+                        .cloned()
+                        .map(SampleResourceHandle::new)
+                }),
                 position: 0.0,
                 active: false,
             },
             ModuleKind::DynamicsProcessor => {
+                let CompiledConstruction::Dynamics {
+                    mode,
+                    detection,
+                    topology,
+                } = construction
+                else {
+                    panic!("dynamics module {module_id} has mismatched construction data")
+                };
                 let mut processor = DynamicsProcessor::new(sample_rate as f64, 5.0, 50.0);
-                processor.set_mode(
-                    match params.get(DYNAMICS_MODE_PARAMETER).map(String::as_str) {
-                        Some(DYNAMICS_MODE_TRANSIENT) => ProcessorMode::Transient,
-                        _ => ProcessorMode::Level,
-                    },
-                );
-                processor.set_detection(
-                    match params.get(DYNAMICS_DETECTION_PARAMETER).map(String::as_str) {
-                        Some(DETECTION_MODE_RMS) => DetectionMode::Rms,
-                        _ => DetectionMode::Peak,
-                    },
-                );
-                processor.set_topology(
-                    match params.get(DYNAMICS_TOPOLOGY_PARAMETER).map(String::as_str) {
-                        Some(DYNAMICS_TOPOLOGY_FEEDBACK) => Topology::Feedback,
-                        _ => Topology::Feedforward,
-                    },
-                );
+                processor.set_mode(*mode);
+                processor.set_detection(*detection);
+                processor.set_topology(*topology);
                 PerModuleState::DynamicsProcessor {
                     processor,
                     sample_rate,
@@ -278,91 +258,109 @@ impl PerModuleState {
                 processor: Saturator::new(),
             },
             ModuleKind::Convolution => {
-                let mut processor = Convolution::new();
-                if let Some(ir) = sampler_assets.get(module_id) {
-                    processor.load_ir(ir.frames().to_vec());
-                }
-                PerModuleState::Convolution { processor }
+                let ir = resources
+                    .impulse_response
+                    .as_ref()
+                    .map(|handle| handle.sample().frames())
+                    .or_else(|| sampler_assets.get(module_id).map(|sample| sample.frames()));
+                let processors = (0..channels)
+                    .map(|_| {
+                        let mut processor = Convolution::new();
+                        if let Some(ir) = ir {
+                            processor.load_ir(ir.to_vec());
+                        }
+                        processor
+                    })
+                    .collect::<Vec<_>>()
+                    .into_boxed_slice();
+                PerModuleState::Convolution { processors }
             }
             ModuleKind::Filter => {
-                let algorithm = params.get(FILTER_ALGORITHM_PARAMETER).map(|s| s.as_str());
-                let mode = params.get(FILTER_MODE_PARAMETER).map(|s| s.as_str());
-                let comb_type = params.get(FILTER_COMB_TYPE_PARAMETER).map(|s| s.as_str());
+                let CompiledConstruction::Filter { algorithm } = construction else {
+                    panic!("filter module {module_id} has mismatched construction data")
+                };
                 let sample_rate_f64 = sample_rate as f64;
 
-                let filter: Box<dyn FilterAlgorithm> = match algorithm {
-                    Some(FILTER_ALGORITHM_MOOG) => Box::new(MoogLadder::new(sample_rate_f64)),
-                    Some(FILTER_ALGORITHM_BIQUAD) => {
-                        let bq_mode = match mode {
-                            Some(FILTER_MODE_HIGHPASS) => BiquadMode::Highpass,
-                            Some(FILTER_MODE_PEAKING) => BiquadMode::Peaking,
-                            _ => BiquadMode::Lowpass,
-                        };
-                        let norm = 1000.0 / sample_rate_f64;
-                        match bq_mode {
-                            BiquadMode::Peaking => {
-                                Box::new(BiquadFilter::new_peaking(norm, 0.707, 0.0))
+                let make_filter = || -> Box<dyn FilterAlgorithm> {
+                    match algorithm {
+                        CompiledFilterAlgorithm::Moog => Box::new(MoogLadder::new(sample_rate_f64)),
+                        CompiledFilterAlgorithm::Biquad(bq_mode) => {
+                            let norm = 1000.0 / sample_rate_f64;
+                            match bq_mode {
+                                BiquadMode::Peaking => {
+                                    Box::new(BiquadFilter::new_peaking(norm, 0.707, 0.0))
+                                }
+                                BiquadMode::Highpass => {
+                                    Box::new(BiquadFilter::new_highpass(norm, 0.707))
+                                }
+                                BiquadMode::Lowpass => {
+                                    Box::new(BiquadFilter::new_lowpass(norm, 0.707))
+                                }
                             }
-                            BiquadMode::Highpass => {
-                                Box::new(BiquadFilter::new_highpass(norm, 0.707))
-                            }
-                            BiquadMode::Lowpass => Box::new(BiquadFilter::new_lowpass(norm, 0.707)),
                         }
+                        CompiledFilterAlgorithm::Comb(comb_type) => Box::new(CombFilter::new(
+                            (sample_rate_f64 / 440.0) as usize,
+                            0.5,
+                            *comb_type,
+                        )),
                     }
-                    Some(FILTER_ALGORITHM_COMB) => {
-                        let ct = match comb_type {
-                            Some(DYNAMICS_TOPOLOGY_FEEDFORWARD) => CombType::Feedforward,
-                            _ => CombType::Feedback,
-                        };
-                        Box::new(CombFilter::new((sample_rate_f64 / 440.0) as usize, 0.5, ct))
-                    }
-                    _ => Box::new(MoogLadder::new(sample_rate_f64)),
                 };
                 PerModuleState::Filter {
-                    filter,
+                    filters: (0..channels)
+                        .map(|_| make_filter())
+                        .collect::<Vec<_>>()
+                        .into_boxed_slice(),
                     sample_rate: sample_rate_f64,
                 }
             }
             ModuleKind::Echo => {
+                let CompiledConstruction::Echo { interpolation } = construction else {
+                    panic!("echo module {module_id} has mismatched construction data")
+                };
                 let mut processor = Echo::new(sample_rate as f64);
-                processor.set_interpolation(interpolation_mode(params));
+                processor.set_interpolation(*interpolation);
                 PerModuleState::Echo {
                     processor,
                     sample_rate: sample_rate as f64,
                 }
             }
             ModuleKind::Reverb => {
+                let CompiledConstruction::Reverb { interpolation } = construction else {
+                    panic!("reverb module {module_id} has mismatched construction data")
+                };
                 let mut processor = Reverb::new(sample_rate as f64);
-                processor.set_interpolation(interpolation_mode(params));
+                processor.set_interpolation(*interpolation);
                 PerModuleState::Reverb {
                     processor,
                     sample_rate: sample_rate as f64,
                 }
             }
             ModuleKind::FrequencySplitter => PerModuleState::FrequencySplitter {
-                first: LinkwitzRiley4::new(0.02),
-                second: LinkwitzRiley4::new(0.08),
+                filters: (0..channels)
+                    .map(|_| (LinkwitzRiley4::new(0.02), LinkwitzRiley4::new(0.08)))
+                    .collect::<Vec<_>>()
+                    .into_boxed_slice(),
                 sample_rate: sample_rate as f64,
             },
             ModuleKind::SpectralProcessor => {
-                let fft_size = params
-                    .get(SPECTRAL_FFT_SIZE_PARAMETER)
-                    .and_then(|value| value.parse::<usize>().ok())
-                    .unwrap_or(SPECTRAL_DEFAULT_FFT_SIZE);
-                let mode = match params.get(SPECTRAL_MODE_PARAMETER).map(String::as_str) {
-                    Some(SPECTRAL_MODE_PASSTHROUGH) => crate::spectral::SpectralMode::Passthrough,
-                    _ => crate::spectral::SpectralMode::Gate,
+                let CompiledConstruction::SpectralProcessor { fft_size, mode } = construction
+                else {
+                    panic!("spectral module {module_id} has mismatched construction data")
                 };
                 PerModuleState::SpectralProcessor {
-                    processor: SpectralProcessor::new(fft_size, mode),
+                    processor: SpectralProcessor::new(*fft_size, *mode),
                 }
             }
             ModuleKind::Noise => {
-                let seed = params
-                    .get(NOISE_SEED_PARAMETER)
-                    .and_then(|s| s.parse::<u32>().ok())
-                    .unwrap_or(NOISE_DEFAULT_SEED);
-                PerModuleState::Noise { state: seed }
+                let CompiledConstruction::Noise { seed } = construction else {
+                    panic!("noise module {module_id} has mismatched construction data")
+                };
+                PerModuleState::Noise {
+                    states: (0..channels)
+                        .map(|channel| seed.wrapping_add(channel as u32))
+                        .collect::<Vec<_>>()
+                        .into_boxed_slice(),
+                }
             }
             ModuleKind::Impulse => PerModuleState::Impulse,
             ModuleKind::Multiply => PerModuleState::Multiply,
@@ -374,54 +372,38 @@ impl PerModuleState {
                 current_pitch_ratio: 0.0,
             },
             ModuleKind::EventFilter => {
-                let selector = params
-                    .get(EVENT_FILTER_SELECTOR_PARAMETER)
-                    .map(String::as_str)
-                    .unwrap_or(EVENT_FILTER_NOTE_SELECTOR);
-                let note = if selector == EVENT_FILTER_NOTE_SELECTOR {
-                    params
-                        .get(EVENT_FILTER_NOTE_PARAMETER)
-                        .and_then(|value| value.parse::<u8>().ok())
-                } else {
-                    None
+                let CompiledConstruction::EventFilter { note } = construction else {
+                    panic!("event filter module {module_id} has mismatched construction data")
                 };
-                PerModuleState::EventFilter { note }
+                PerModuleState::EventFilter { note: *note }
             }
             ModuleKind::EnvelopeFollower => {
-                let mode = match params.get(DETECTION_MODE_PARAMETER).map(String::as_str) {
-                    Some(DETECTION_MODE_RMS) => DetectionMode::Rms,
-                    _ => DetectionMode::Peak,
+                let CompiledConstruction::EnvelopeFollower { mode } = construction else {
+                    panic!("envelope follower module {module_id} has mismatched construction data")
                 };
                 PerModuleState::EnvelopeFollower {
-                    detector: EnvelopeFollower::new(sample_rate as f64, 5.0, 50.0, mode),
-                    mode,
+                    detector: EnvelopeFollower::new(sample_rate as f64, 5.0, 50.0, *mode),
+                    mode: *mode,
                 }
             }
             ModuleKind::CurveMapper => {
-                let curve = params
-                    .get(CURVE_PARAMETER)
-                    .map(String::as_str)
-                    .and_then(CurveKind::from_str)
-                    .unwrap_or_else(|| CurveKind::from_str(CURVE_LINEAR).unwrap());
-                let steps = params
-                    .get(STEPS_PARAMETER)
-                    .and_then(|value| value.parse::<u32>().ok())
-                    .unwrap_or(CurveMapper::DEFAULT_STEPS);
+                let CompiledConstruction::CurveMapper { curve, steps } = construction else {
+                    panic!("curve mapper module {module_id} has mismatched construction data")
+                };
                 PerModuleState::CurveMapper {
-                    mapper: CurveMapper::new(curve, steps),
+                    mapper: CurveMapper::new(*curve, *steps),
                 }
             }
             ModuleKind::Decay => {
-                let curve_str = params.get(CURVE_PARAMETER).map(String::as_str);
-                let curve = curve_str
-                    .and_then(DecayCurve::from_str)
-                    .unwrap_or(DecayCurve::Exponential);
+                let CompiledConstruction::Decay { curve } = construction else {
+                    panic!("decay module {module_id} has mismatched construction data")
+                };
                 PerModuleState::Decay {
                     level: 0.0,
                     triggered: false,
                     elapsed_frames: 0,
                     sample_rate,
-                    curve,
+                    curve: *curve,
                 }
             }
             ModuleKind::Lfo
@@ -435,10 +417,12 @@ impl PerModuleState {
     }
 
     pub(super) fn new_script_compiled(node: &CompiledNode) -> Self {
-        let source = node
-            .parameters
-            .get(SCRIPT_SOURCE_PARAMETER)
-            .unwrap_or_else(|| panic!("script module {} source is required", node.id.as_str()));
+        let CompiledConstruction::Script { source } = &node.construction else {
+            panic!(
+                "script module {} has mismatched construction data",
+                node.id.as_str()
+            )
+        };
         let event_outputs: Vec<String> = node
             .output_port_names
             .iter()

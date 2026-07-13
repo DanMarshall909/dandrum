@@ -130,9 +130,12 @@ fn compensation_delay_latency_equals_its_resolved_length() {
         .get(names::COMPENSATION_DELAY)
         .expect("compensation delay declared");
 
-    assert_eq!(delay.static_params().len(), 1);
-    assert_eq!(delay.static_params()[0].name(), DELAY_SAMPLES_PARAM);
-    assert_eq!(delay.static_params()[0].default(), None);
+    let delay_samples = delay
+        .static_params()
+        .iter()
+        .find(|parameter| parameter.name() == DELAY_SAMPLES_PARAM)
+        .expect("delay length static parameter should be declared");
+    assert_eq!(delay_samples.default(), None);
 
     for samples in [1, 6, 257] {
         let args = BTreeMap::from([(DELAY_SAMPLES_PARAM.to_string(), StaticValue::Int(samples))]);
@@ -231,17 +234,19 @@ fn stereo_builtins_still_expose_left_right_port_pairs() {
 }
 
 #[test]
-fn every_builtin_port_is_mono_until_channel_polymorphism() {
+fn non_polymorphic_builtin_ports_remain_mono() {
     let registry = builtin_registry();
     for definition in registry.definitions() {
         for port in definition.ports() {
-            assert_eq!(
-                port.channels(),
-                &crate::kernel::ChannelCount::Literal(1),
-                "port '{}' of '{}' is mono at current shapes",
-                port.name(),
-                definition.name()
-            );
+            if port.channels() != &crate::kernel::ChannelCount::Param(CHANNELS_PARAM.to_string()) {
+                assert_eq!(
+                    port.channels(),
+                    &crate::kernel::ChannelCount::Literal(1),
+                    "non-polymorphic port '{}' of '{}' remains mono",
+                    port.name(),
+                    definition.name()
+                );
+            }
         }
     }
 }
@@ -535,5 +540,115 @@ fn builtin_static_arguments_validate_through_graph_definition() {
             validation.diagnostics().all()[0].error_code(),
             expected_code
         );
+    }
+}
+
+// --- 3.3 Input multiplicity declarations ----------------------------------
+
+#[test]
+fn audio_mixer_inputs_port_is_summing() {
+    let registry = builtin_registry();
+    let mixer = registry
+        .get(names::AUDIO_MIXER)
+        .expect("audio_mixer declared");
+    let inputs = port_of(mixer, ports::INPUTS, PortDirection::Input);
+    assert_eq!(
+        inputs.multiplicity(),
+        crate::kernel::Multiplicity::Summing,
+        "audio_mixer inputs must be summing"
+    );
+}
+
+#[test]
+fn control_mixer_inputs_port_is_summing() {
+    let registry = builtin_registry();
+    let mixer = registry
+        .get(names::CONTROL_MIXER)
+        .expect("control_mixer declared");
+    let inputs = port_of(mixer, ports::INPUTS, PortDirection::Input);
+    assert_eq!(
+        inputs.multiplicity(),
+        crate::kernel::Multiplicity::Summing,
+        "control_mixer inputs must be summing"
+    );
+}
+
+#[test]
+fn non_mixer_builtin_inputs_are_single_source() {
+    let registry = builtin_registry();
+    for name in [names::GAIN, names::FILTER, names::OSCILLATOR] {
+        let definition = registry
+            .get(name)
+            .unwrap_or_else(|| panic!("{name} declared"));
+        for port in definition.ports() {
+            if port.direction() == PortDirection::Input {
+                assert_eq!(
+                    port.multiplicity(),
+                    crate::kernel::Multiplicity::SingleSource,
+                    "port '{}' of '{}' defaults to single-source",
+                    port.name(),
+                    name
+                );
+            }
+        }
+    }
+}
+
+#[test]
+fn generic_builtins_resolve_mono_stereo_and_six_channel_signal_ports() {
+    let registry = builtin_registry();
+    let cases = [
+        (names::GAIN, ports::AUDIO_IN, ports::AUDIO_OUT),
+        (names::AUDIO_MIXER, ports::INPUTS, ports::MIX),
+        (names::FILTER, ports::AUDIO_IN, ports::AUDIO_OUT),
+        (
+            names::AUDIO_DELAY_ONE_SAMPLE,
+            ports::AUDIO_IN,
+            ports::AUDIO_OUT,
+        ),
+        (names::BLOCK_DELAY, ports::AUDIO_IN, ports::AUDIO_OUT),
+        (names::COMPENSATION_DELAY, ports::AUDIO_IN, ports::AUDIO_OUT),
+        (names::CONVOLUTION, ports::AUDIO_IN, ports::AUDIO_OUT),
+        (names::FREQUENCY_SPLITTER, ports::AUDIO_IN, ports::LOW),
+        (names::MULTIPLY, ports::AUDIO_IN, ports::AUDIO_OUT),
+        (names::CONTROL_TO_AUDIO, ports::IN, ports::OUT),
+    ];
+
+    for channels in [1_i64, 2, 6] {
+        for (definition, input, output) in cases {
+            let mut node = Node::new(NodeId::new("processor"), definition).with_static_arg(
+                CHANNELS_PARAM,
+                StaticArg::Literal(StaticValue::Int(channels)),
+            );
+            if definition == names::COMPENSATION_DELAY {
+                node = node
+                    .with_static_arg(DELAY_SAMPLES_PARAM, StaticArg::Literal(StaticValue::Int(1)));
+            }
+            let flattened = GraphDefinition::new("root")
+                .with_node(node)
+                .flatten(&registry)
+                .unwrap_or_else(|diagnostics| panic!("{definition} {channels}ch: {diagnostics}"));
+            let processor = &flattened.nodes()[0];
+            assert_eq!(
+                processor
+                    .ports()
+                    .iter()
+                    .find(|port| port.name() == input)
+                    .unwrap()
+                    .channels(),
+                channels as u32,
+                "{definition}.{input}"
+            );
+            assert_eq!(
+                processor
+                    .ports()
+                    .iter()
+                    .find(|port| port.name() == output)
+                    .unwrap()
+                    .channels(),
+                channels as u32,
+                "{definition}.{output}"
+            );
+        }
     }
 }

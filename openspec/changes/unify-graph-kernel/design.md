@@ -91,6 +91,18 @@ Primitives whose interface is author-defined, notably scripts, are represented a
 
 Generic channel-independent builtins (gain, mixers, filters, delays, promotion, and similar processors) support arbitrary resolved channel counts by allocating state per channel where needed. Intrinsically stereo algorithms may constrain `channels` to supported values: echo and reverb support mono and stereo in this change and reject larger counts with a structured static-argument diagnostic. Arbitrary host bus widths remain valid because graphs can compose or split processors explicitly; not every primitive must accept every width.
 
+### D11: Allocate model capability by reasoning risk
+
+Implementation tasks carry a model-tier tag that describes the minimum reasoning capability expected for primary ownership. Tiers describe capabilities rather than vendor or model names so the plan remains useful as models change:
+
+- **`[frontier]`** — use a frontier reasoning/coding model for architecture, ownership boundaries, realtime state machines, unsafe FFI, cross-cutting migrations, and destructive cleanup. These tasks require reconciling multiple invariants and are expensive to repair after a locally plausible mistake.
+- **`[standard]`** — use a capable smaller coding model for bounded implementation whose architecture and acceptance behavior are already explicit. The model must still follow TDD, inspect adjacent code, and run the focused and full relevant test suites.
+- **`[mechanical]`** — use a fast smaller model for repetitive schema/example/document transforms or command execution after the transformation and expected output are fully specified. Work must be performed in small batches with deterministic validation.
+
+Model tier is a floor, not a prohibition on using a stronger model. A task escalates to `[frontier]` immediately if implementation exposes an unspecified ownership boundary, changes the compiled representation or public ABI, requires unsafe-code reasoning, affects realtime allocation/lifetime guarantees, produces conflicting acceptance criteria, or cannot preserve behavior with the planned mechanical transform. Smaller models SHALL stop and report the ambiguity rather than inventing architecture or compatibility behavior.
+
+Frontier work should leave behind typed boundaries, tests, diagnostics, and migration helpers that deliberately make downstream work suitable for standard or mechanical models. Mechanical migrations must not begin until their prerequisite capability tasks pass and one representative fixture has been migrated and reviewed. Task 7.10 is mechanical only while all checks pass; diagnosis and remediation of non-obvious failures escalate according to the subsystem involved.
+
 ## Risks / Trade-offs
 
 - [Flattening blow-up: composites × voices × channels multiply node count and compile time] → expansion caching keyed by (definition, static-args); shared read-only data; measure compile time on the largest example and keep the pipeline allocation-light; incremental recompile is a fast-follow if needed.

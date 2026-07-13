@@ -328,7 +328,8 @@ mod tests {
         let root = temp_library_root("latest");
         fs::create_dir_all(root.join("1.3.9")).expect("older version directory should be created");
         fs::create_dir_all(root.join("1.10.0")).expect("newer version directory should be created");
-        fs::create_dir_all(root.join("latest")).expect("literal latest directory should be ignored");
+        fs::create_dir_all(root.join("latest"))
+            .expect("literal latest directory should be ignored");
         fs::write(root.join("not-a-version"), "ignored").expect("file should be created");
         let roots = MacroRoots::new().with_root(LIB_MACRO, &root);
 
@@ -337,7 +338,9 @@ mod tests {
 
         assert_eq!(
             resolved,
-            root.join("1.10.0").join("drum_voice").join("drum_voice.yaml"),
+            root.join("1.10.0")
+                .join("drum_voice")
+                .join("drum_voice.yaml"),
             "latest should follow the highest numeric version directory"
         );
     }
@@ -354,7 +357,9 @@ mod tests {
 
         assert_eq!(
             resolved,
-            root.join("1.3.9").join("drum_voice").join("drum_voice.yaml"),
+            root.join("1.3.9")
+                .join("drum_voice")
+                .join("drum_voice.yaml"),
             "pinned references should stay on their explicit version"
         );
     }

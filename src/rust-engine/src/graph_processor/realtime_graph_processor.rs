@@ -228,11 +228,13 @@ impl RealtimeGraphProcessor {
     }
 
     pub fn numeric_parameter_value(&self, module_id: &str, parameter_name: &str) -> Option<f32> {
-        self.compiled.numeric_parameter_value(module_id, parameter_name)
+        self.compiled
+            .numeric_parameter_value(module_id, parameter_name)
     }
 
     pub fn parameter_slot_index(&self, module_id: &str, parameter_name: &str) -> Option<usize> {
-        self.compiled.parameter_slot_index(module_id, parameter_name)
+        self.compiled
+            .parameter_slot_index(module_id, parameter_name)
     }
 
     /// O(1) parameter update by a previously-resolved slot index. Safe to call
@@ -299,6 +301,77 @@ impl RealtimeGraphProcessor {
 
         self.last_render_chunk_count = 1;
         self.render_chunk(left, right)
+    }
+
+    /// Render prepared root outputs in root-port order. Each outer entry is one
+    /// named root output and contains one planar vector per channel.
+    pub fn render_root_outputs(&mut self, outputs: &mut [Vec<Vec<f32>>]) -> usize {
+        self.render_root_buses(&[], outputs)
+    }
+
+    /// Render planar root input and output buffers in their prepared root-port
+    /// order. Omitted input entries are treated as silence.
+    pub fn render_root_buses(
+        &mut self,
+        inputs: &[Vec<Vec<f32>>],
+        outputs: &mut [Vec<Vec<f32>>],
+    ) -> usize {
+        let Some(frames) = outputs
+            .iter()
+            .flat_map(|bus| bus.iter().map(Vec::len))
+            .min()
+        else {
+            return 0;
+        };
+        if frames > self.prepared_max_block_size
+            || self.midi_idx.is_some()
+            || self.allocator.max_voices() > 1
+            || self
+                .render_plan
+                .global_steps
+                .iter()
+                .any(|step| !is_channel_arena_supported(step))
+        {
+            return 0;
+        }
+
+        for (input_index, planned) in self.compiled.root_bus_plan().inputs().iter().enumerate() {
+            let Some(span) = planned.span() else { continue };
+            for channel in 0..span.channel_count {
+                let buffer = super::render_plan::BufferId(span.first_buffer + channel);
+                self.audio_arena.clear(buffer, frames);
+                if planned.is_bound() {
+                    if let Some(source) = inputs.get(input_index).and_then(|bus| bus.get(channel)) {
+                        let actual = frames.min(source.len());
+                        self.audio_arena
+                            .slice_mut(buffer, actual)
+                            .copy_from_slice(&source[..actual]);
+                    }
+                }
+            }
+        }
+
+        for step in self.render_plan.global_steps.iter() {
+            clear_and_route_arena_inputs(&mut self.audio_arena, step, frames, &self.compiled);
+            process_channel_arena_step(&mut self.audio_arena, &mut self.states[0], step, frames);
+        }
+        for (planned, bus) in self
+            .compiled
+            .root_bus_plan()
+            .outputs()
+            .iter()
+            .zip(outputs.iter_mut())
+        {
+            let Some(span) = planned.span() else { continue };
+            for (channel, destination) in bus.iter_mut().enumerate().take(span.channel_count) {
+                destination[..frames].copy_from_slice(self.audio_arena.slice(
+                    super::render_plan::BufferId(span.first_buffer + channel),
+                    frames,
+                ));
+            }
+        }
+        self.current_frame += frames as u64;
+        frames
     }
 
     fn render_chunk(&mut self, left: &mut [f32], right: &mut [f32]) -> usize {
@@ -423,9 +496,10 @@ impl RealtimeGraphProcessor {
         let steps = self.render_plan.global_steps.as_ref();
         let arena = &mut self.audio_arena;
         let states = &mut self.states[0];
+        let compiled = &self.compiled;
         for step in steps {
-            clear_and_route_arena_inputs(arena, step, frames);
-            process_mono_global_arena_step(arena, states, step, frames);
+            clear_and_route_arena_inputs(arena, step, frames, compiled);
+            process_channel_arena_step(arena, states, step, frames);
             route_prepared_event_edges(&mut self.prepared_event_queues, step);
         }
 
@@ -756,19 +830,27 @@ fn route_step_outputs_to_global_event_queues(
     }
 }
 
-fn clear_and_route_arena_inputs(arena: &mut AudioArena, step: &RenderStep, frames: usize) {
+fn clear_and_route_arena_inputs(
+    arena: &mut AudioArena,
+    step: &RenderStep,
+    frames: usize,
+    compiled: &CompiledPatch,
+) {
     for &buffer in step.input_buffers.iter() {
         arena.clear(buffer, frames);
     }
     for default in step.control_defaults.iter() {
-        arena.fill(default.buffer, frames, default.value);
+        let value = compiled
+            .parameter_slot_value(default.slot.index())
+            .expect("render-plan control slot was compiled");
+        arena.fill(default.buffer, frames, value);
     }
     for &edge in step.incoming_edges.iter() {
         arena.add_edge(edge, frames);
     }
 }
 
-fn process_mono_global_arena_step(
+fn process_channel_arena_step(
     arena: &mut AudioArena,
     states: &mut [PerModuleState],
     step: &RenderStep,
@@ -785,6 +867,18 @@ fn process_mono_global_arena_step(
             arena_processing::process_oscillator(&mut states[step.module_index], &mut context)
         }
         ModuleKind::Gain | ModuleKind::Multiply => arena_processing::process_gain(&mut context),
+        ModuleKind::ControlToAudio => arena_processing::process_control_to_audio(&mut context),
+        ModuleKind::CompensationDelay => arena_processing::process_compensation_delay(
+            &mut states[step.module_index],
+            &mut context,
+        ),
+        ModuleKind::Convolution => {
+            arena_processing::process_convolution(&mut states[step.module_index], &mut context)
+        }
+        ModuleKind::FrequencySplitter => arena_processing::process_frequency_splitter(
+            &mut states[step.module_index],
+            &mut context,
+        ),
         ModuleKind::EnvelopeFollower => arena_processing::process_envelope_follower(
             &mut states[step.module_index],
             &mut context,
@@ -807,19 +901,30 @@ fn route_prepared_event_edges(queues: &mut PreparedEventQueues, step: &RenderSte
 }
 
 fn is_mono_global_arena_supported(step: &RenderStep) -> bool {
+    is_channel_arena_supported(step)
+}
+
+fn is_channel_arena_supported(step: &RenderStep) -> bool {
     match step.module_kind {
         ModuleKind::AudioOutput => step.input_buffers.len() >= 2,
-        ModuleKind::AudioMixer => step.input_buffers.len() == 1 && step.output_buffers.len() == 1,
-        ModuleKind::Noise => step.input_buffers.is_empty() && step.output_buffers.len() == 1,
+        ModuleKind::AudioMixer => step.input_buffers.len() == step.output_buffers.len(),
+        ModuleKind::Noise => step.input_buffers.is_empty() && !step.output_buffers.is_empty(),
         ModuleKind::Oscillator => step.input_buffers.len() <= 1 && step.output_buffers.len() == 1,
-        ModuleKind::Gain | ModuleKind::Multiply => {
-            step.input_buffers.len() == 2 && step.output_buffers.len() == 1
-        }
+        ModuleKind::Gain => step.input_buffers.len() == step.output_buffers.len() + 1,
+        ModuleKind::Multiply => step.input_buffers.len() == step.output_buffers.len() * 2,
         ModuleKind::EnvelopeFollower => {
             step.input_buffers.len() == 6 && step.output_buffers.len() == 1
         }
         ModuleKind::CurveMapper => step.input_buffers.len() == 5 && step.output_buffers.len() == 1,
-        ModuleKind::Filter => step.input_buffers.len() == 4 && step.output_buffers.len() == 1,
+        ModuleKind::Filter => step.input_buffers.len() == step.output_buffers.len() + 3,
+        ModuleKind::ControlToAudio | ModuleKind::CompensationDelay => {
+            step.input_buffers.len() == step.output_buffers.len()
+        }
+        ModuleKind::Convolution => step.input_buffers.len() == step.output_buffers.len() + 1,
+        ModuleKind::FrequencySplitter => {
+            step.output_buffers.len() % 3 == 0
+                && step.input_buffers.len() == step.output_buffers.len() / 3 + 1
+        }
         _ => false,
     }
 }

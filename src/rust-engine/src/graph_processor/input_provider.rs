@@ -145,13 +145,7 @@ fn compiled_control_parameter_input(
             .map(|value| vec![value; frames]);
     }
 
-    let value = compiled.nodes()[module_idx]
-        .parameters
-        .get(port_name)?
-        .parse::<f32>()
-        .ok()?;
-
-    Some(vec![value; frames])
+    None
 }
 
 pub(super) fn compiled_gather_event_inputs(

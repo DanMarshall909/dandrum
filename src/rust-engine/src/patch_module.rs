@@ -111,10 +111,7 @@ fn validate_public_inputs(
             diagnostics.push(Diagnostic::new(
                 error_codes::VALIDATION_MISSING_FIELD,
                 Severity::Error,
-                format!(
-                    "module {} input name is required",
-                    definition.module_type
-                ),
+                format!("module {} input name is required", definition.module_type),
             ));
         }
 
@@ -154,10 +151,7 @@ fn validate_public_outputs(
             diagnostics.push(Diagnostic::new(
                 error_codes::VALIDATION_MISSING_FIELD,
                 Severity::Error,
-                format!(
-                    "module {} output name is required",
-                    definition.module_type
-                ),
+                format!("module {} output name is required", definition.module_type),
             ));
         }
 
@@ -371,19 +365,14 @@ fn validate_module_numeric_range(
     }
 }
 
-fn module_value_matches_type(
-    value: &ParameterValue,
-    value_type: ModuleParameterValueType,
-) -> bool {
+fn module_value_matches_type(value: &ParameterValue, value_type: ModuleParameterValueType) -> bool {
     matches!(
         (value, value_type),
         (
             ParameterValue::Boolean(_),
             ModuleParameterValueType::Boolean
-        ) | (
-            ParameterValue::Number(_),
-            ModuleParameterValueType::Number
-        ) | (ParameterValue::Text(_), ModuleParameterValueType::String)
+        ) | (ParameterValue::Number(_), ModuleParameterValueType::Number)
+            | (ParameterValue::Text(_), ModuleParameterValueType::String)
     )
 }
 

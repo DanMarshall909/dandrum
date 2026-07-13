@@ -19,16 +19,16 @@ pub mod graph_processor;
 
 pub(crate) mod builtins;
 
-pub mod graph;
-pub mod kernel;
 pub mod cli;
+pub mod graph;
 pub mod instrument_state;
-pub mod module_reference;
-pub mod module_package;
+pub mod kernel;
 pub mod module_library;
+pub mod module_package;
+pub mod module_reference;
 pub mod patch;
-pub mod script;
 pub(crate) mod sample;
+pub mod script;
 
 pub(crate) mod synth;
 

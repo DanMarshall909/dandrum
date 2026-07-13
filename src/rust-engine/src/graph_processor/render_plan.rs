@@ -1,5 +1,5 @@
 use crate::builtins::module_kind::ModuleKind;
-use crate::compiled_patch::CompiledPatch;
+use crate::compiled_patch::{CompiledPatch, ControlSlotId};
 use crate::graph::SignalType;
 use crate::graph::builtin_ports;
 
@@ -26,7 +26,7 @@ pub(super) struct CompiledEventEdge {
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub(super) struct ControlDefault {
     pub(super) buffer: BufferId,
-    pub(super) value: f32,
+    pub(super) slot: ControlSlotId,
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -152,7 +152,12 @@ impl RenderPlanBuilder<'_> {
 
         for node in compiled.nodes() {
             input_buffer_starts.push(next_input_buffer);
-            next_input_buffer += node.input_port_types.len();
+            next_input_buffer += node
+                .input_port_spans
+                .iter()
+                .filter(|span| span.channel_count > 0)
+                .map(|span| span.channel_count)
+                .sum::<usize>();
 
             event_queue_starts.push(next_event_queue);
             next_event_queue += node
@@ -174,8 +179,13 @@ impl RenderPlanBuilder<'_> {
 
     fn step(&self, module_index: usize) -> RenderStep {
         let node = &self.compiled.nodes()[module_index];
-        let input_buffers = (0..node.input_port_types.len())
-            .map(|port_index| self.input_buffer(module_index, port_index))
+        let input_buffer_count = node
+            .input_port_spans
+            .iter()
+            .map(|span| span.channel_count)
+            .sum::<usize>();
+        let input_buffers = (0..input_buffer_count)
+            .map(|channel| BufferId(self.input_buffer_starts[module_index] + channel))
             .collect::<Vec<_>>()
             .into_boxed_slice();
         let output_buffers = node
@@ -212,18 +222,21 @@ impl RenderPlanBuilder<'_> {
         let node = &self.compiled.nodes()[module_index];
         let mut edges = Vec::new();
 
-        for (destination_port_index, sources) in node.input_port_map.iter().enumerate() {
+        for (destination_port_index, sources) in node.input_routes.iter().enumerate() {
             let signal_type = node.input_port_types[destination_port_index];
             if signal_type == SignalType::Event {
                 continue;
             }
 
-            for source in sources {
-                let source_buffer =
-                    self.compiled.nodes()[source.module_index].output_port_map[source.port_index];
+            let destination_span = node.input_port_spans[destination_port_index];
+            for (route_index, source) in sources.iter().enumerate() {
                 edges.push(CompiledEdge {
-                    source: BufferId(source_buffer),
-                    destination: self.input_buffer(module_index, destination_port_index),
+                    source: BufferId(source.output_buffer_id),
+                    destination: self.input_buffer_channel(
+                        module_index,
+                        destination_port_index,
+                        route_index % destination_span.channel_count,
+                    ),
                     signal_type,
                     gain: 1.0,
                 });
@@ -263,31 +276,36 @@ impl RenderPlanBuilder<'_> {
 
     fn control_defaults(&self, module_index: usize) -> Vec<ControlDefault> {
         let node = &self.compiled.nodes()[module_index];
-        node.input_port_types
+        node.control_defaults
             .iter()
-            .enumerate()
-            .filter_map(|(port_index, signal_type)| {
-                if *signal_type != SignalType::Control
-                    || !node.input_port_map[port_index].is_empty()
-                {
+            .filter_map(|default| {
+                if !node.input_routes[default.input_port_index].is_empty() {
                     return None;
                 }
-
-                let port_name = &node.input_port_names[port_index];
-                node.parameters
-                    .get(port_name)
-                    .and_then(|value| value.parse::<f32>().ok())
-                    .or_else(|| default_control_value(node.module_kind, port_name))
-                    .map(|value| ControlDefault {
-                        buffer: self.input_buffer(module_index, port_index),
-                        value,
-                    })
+                Some(ControlDefault {
+                    buffer: self.input_buffer(module_index, default.input_port_index),
+                    slot: default.slot,
+                })
             })
             .collect()
     }
 
     fn input_buffer(&self, module_index: usize, port_index: usize) -> BufferId {
-        BufferId(self.input_buffer_starts[module_index] + port_index)
+        self.input_buffer_channel(module_index, port_index, 0)
+    }
+
+    fn input_buffer_channel(
+        &self,
+        module_index: usize,
+        port_index: usize,
+        channel: usize,
+    ) -> BufferId {
+        let node = &self.compiled.nodes()[module_index];
+        let offset = node.input_port_spans[..port_index]
+            .iter()
+            .map(|span| span.channel_count)
+            .sum::<usize>();
+        BufferId(self.input_buffer_starts[module_index] + offset + channel)
     }
 
     fn first_event_output_queue(&self, module_index: usize) -> Option<EventQueueId> {
@@ -350,65 +368,6 @@ impl RenderPlanBuilder<'_> {
         Some(EventQueueId(
             self.event_queue_starts[module_index] + event_ordinal,
         ))
-    }
-}
-
-pub(super) fn default_control_value(module_kind: ModuleKind, port_name: &str) -> Option<f32> {
-    match (module_kind, port_name) {
-        (ModuleKind::Oscillator, builtin_ports::PITCH) => Some(1.0),
-        // An unconnected promotion input contributes silence once promoted.
-        (ModuleKind::ControlToAudio, builtin_ports::IN) => Some(0.0),
-        (ModuleKind::Decay, builtin_ports::TIME_MS) => Some(100.0),
-        (ModuleKind::Sampler, builtin_ports::RATE) => Some(1.0),
-        (ModuleKind::EnvelopeFollower, builtin_ports::ATTACK) => Some(5.0),
-        (ModuleKind::EnvelopeFollower, builtin_ports::RELEASE) => Some(50.0),
-        (ModuleKind::EnvelopeFollower, builtin_ports::AMOUNT) => Some(1.0),
-        (ModuleKind::EnvelopeFollower, builtin_ports::OFFSET) => Some(0.0),
-        (ModuleKind::EnvelopeFollower, builtin_ports::INVERT) => Some(0.0),
-        (ModuleKind::Gain, builtin_ports::GAIN) => Some(1.0),
-        (ModuleKind::CurveMapper, builtin_ports::AMOUNT) => Some(1.0),
-        (ModuleKind::CurveMapper, builtin_ports::BIAS) => Some(0.0),
-        (ModuleKind::CurveMapper, builtin_ports::SCALE) => Some(1.0),
-        (ModuleKind::CurveMapper, builtin_ports::OFFSET) => Some(0.0),
-        (ModuleKind::DynamicsProcessor, builtin_ports::THRESHOLD) => Some(0.3),
-        (ModuleKind::DynamicsProcessor, builtin_ports::BELOW_RATIO) => Some(0.05),
-        (ModuleKind::DynamicsProcessor, builtin_ports::ABOVE_RATIO) => Some(0.077),
-        (ModuleKind::DynamicsProcessor, builtin_ports::ATTACK) => Some(0.05),
-        (ModuleKind::DynamicsProcessor, builtin_ports::RELEASE) => Some(0.1),
-        (ModuleKind::DynamicsProcessor, builtin_ports::KNEE) => Some(0.0),
-        (ModuleKind::DynamicsProcessor, builtin_ports::MAKEUP_GAIN) => Some(0.0),
-        (ModuleKind::DynamicsProcessor, builtin_ports::ATTACK_GAIN) => Some(0.5),
-        (ModuleKind::DynamicsProcessor, builtin_ports::SUSTAIN_GAIN) => Some(0.5),
-        (ModuleKind::Filter, builtin_ports::CUTOFF) => Some(0.5),
-        (ModuleKind::Filter, builtin_ports::RESONANCE) => Some(0.0),
-        (ModuleKind::Filter, builtin_ports::GAIN) => Some(0.5),
-        (ModuleKind::Saturator, builtin_ports::DRIVE) => Some(0.0),
-        (ModuleKind::Saturator, builtin_ports::BIAS) => Some(0.0),
-        (ModuleKind::Saturator, builtin_ports::CURVE_SELECT) => Some(0.0),
-        (ModuleKind::Convolution, builtin_ports::MIX) => Some(1.0),
-        (ModuleKind::Echo, builtin_ports::FEEDBACK) => Some(0.5),
-        (ModuleKind::Echo, builtin_ports::DAMPING_CUTOFF) => Some(0.5),
-        (ModuleKind::Echo, builtin_ports::WET) => Some(0.7),
-        (ModuleKind::Echo, builtin_ports::DRY) => Some(0.5),
-        (ModuleKind::Echo, builtin_ports::TIME_LEFT_MS) => Some(0.3),
-        (ModuleKind::Echo, builtin_ports::TIME_RIGHT_MS) => Some(0.3),
-        (ModuleKind::Echo, builtin_ports::PING_PONG) => Some(0.0),
-        (ModuleKind::Reverb, builtin_ports::DECAY_TIME) => Some(0.35),
-        (ModuleKind::Reverb, builtin_ports::ROOM_SIZE) => Some(0.7),
-        (ModuleKind::Reverb, builtin_ports::DAMPING) => Some(0.3),
-        (ModuleKind::Reverb, builtin_ports::DIFFUSION) => Some(0.5),
-        (ModuleKind::Reverb, builtin_ports::WET) => Some(0.7),
-        (ModuleKind::Reverb, builtin_ports::DRY) => Some(0.5),
-        (ModuleKind::Reverb, builtin_ports::PRE_DELAY) => Some(0.0),
-        (ModuleKind::Reverb, builtin_ports::STEREO_WIDTH) => Some(0.5),
-        (ModuleKind::FrequencySplitter, builtin_ports::CROSSOVER_HZ) => Some(0.2),
-        (ModuleKind::SpectralProcessor, builtin_ports::THRESHOLD) => Some(0.5),
-        (ModuleKind::SpectralProcessor, builtin_ports::MIX) => Some(0.5),
-        (ModuleKind::Adsr, builtin_ports::ATTACK) => Some(5.0),
-        (ModuleKind::Adsr, builtin_ports::DECAY) => Some(30.0),
-        (ModuleKind::Adsr, builtin_ports::SUSTAIN) => Some(0.7),
-        (ModuleKind::Adsr, builtin_ports::RELEASE) => Some(200.0),
-        _ => None,
     }
 }
 
@@ -535,9 +494,10 @@ mod tests {
             plan.global_steps[0].control_defaults.as_ref(),
             &[ControlDefault {
                 buffer: BufferId(1),
-                value: 1.0,
+                slot: ControlSlotId::from_index(0),
             }]
         );
+        assert_eq!(compiled.parameter_slot_value(0), Some(1.0));
     }
 
     #[test]

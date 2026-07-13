@@ -94,7 +94,10 @@ impl ModulePackageError {
             Self::ReadFailed { path, message } => Diagnostic::new(
                 error_codes::LIBRARY_PACKAGE_READ_FAILED,
                 Severity::Error,
-                format!("failed to read module package {}: {message}", path.display()),
+                format!(
+                    "failed to read module package {}: {message}",
+                    path.display()
+                ),
             ),
             Self::ParseFailed { path, message } => Diagnostic::new(
                 error_codes::LIBRARY_PACKAGE_PARSE_FAILED,
@@ -118,9 +121,7 @@ impl ModulePackageError {
             } => Diagnostic::new(
                 error_codes::LIBRARY_PATH_ESCAPE,
                 Severity::Error,
-                format!(
-                    "module package {reference} resource {resource} escapes its package root"
-                ),
+                format!("module package {reference} resource {resource} escapes its package root"),
             ),
         }
     }
@@ -206,7 +207,11 @@ pub fn expand_external_references(
 
         for asset in &document.assets {
             reject_resource_path_escape(reference, &asset.path)?;
-            if expanded.assets.iter().any(|existing| existing.id == asset.id) {
+            if expanded
+                .assets
+                .iter()
+                .any(|existing| existing.id == asset.id)
+            {
                 continue;
             }
             let mut rebased = asset.clone();
@@ -222,10 +227,7 @@ pub fn expand_external_references(
     Ok(expanded)
 }
 
-fn reject_resource_path_escape(
-    reference: &str,
-    resource: &str,
-) -> Result<(), ModulePackageError> {
+fn reject_resource_path_escape(reference: &str, resource: &str) -> Result<(), ModulePackageError> {
     let is_escape = Path::new(resource)
         .components()
         .any(|component| !matches!(component, Component::Normal(_)));
@@ -370,10 +372,8 @@ connections:
     /// returns `(lib_root, entry_path)`. The version segment is included so the
     /// reference in `HOST_PATCH` resolves.
     fn seed_drum_voice_package(tag: &str) -> (PathBuf, PathBuf) {
-        let lib_root = std::env::temp_dir().join(format!(
-            "dandrum-package-{tag}-{}",
-            std::process::id()
-        ));
+        let lib_root =
+            std::env::temp_dir().join(format!("dandrum-package-{tag}-{}", std::process::id()));
         let package_dir = lib_root.join("1.3.9").join("drum_voice");
         fs::create_dir_all(&package_dir).expect("package dir should be created");
         let entry = package_dir.join("drum_voice.yaml");
@@ -401,10 +401,8 @@ connections:
 
     #[test]
     fn entry_file_not_mirroring_its_folder_is_rejected() {
-        let lib_root = std::env::temp_dir().join(format!(
-            "dandrum-package-mismatch-{}",
-            std::process::id()
-        ));
+        let lib_root =
+            std::env::temp_dir().join(format!("dandrum-package-mismatch-{}", std::process::id()));
         let package_dir = lib_root.join("drum_voice");
         fs::create_dir_all(&package_dir).expect("package dir should be created");
         let entry = package_dir.join("voice.yaml");
@@ -474,10 +472,8 @@ connections:
 
     #[test]
     fn package_resources_rebase_onto_the_package_root() {
-        let lib_root = std::env::temp_dir().join(format!(
-            "dandrum-package-assets-{}",
-            std::process::id()
-        ));
+        let lib_root =
+            std::env::temp_dir().join(format!("dandrum-package-assets-{}", std::process::id()));
         let package_dir = lib_root.join("1.0.0").join("clap");
         fs::create_dir_all(&package_dir).expect("package dir should be created");
         fs::write(
@@ -523,8 +519,7 @@ connections:
         .expect("host patch should parse");
         let roots = MacroRoots::new().with_root(LIB_MACRO, &lib_root);
 
-        let expanded =
-            expand_external_references(&host, &roots).expect("package should expand");
+        let expanded = expand_external_references(&host, &roots).expect("package should expand");
 
         let asset = expanded
             .assets
@@ -543,10 +538,8 @@ connections:
 
     #[test]
     fn package_resource_escaping_its_root_is_rejected() {
-        let lib_root = std::env::temp_dir().join(format!(
-            "dandrum-package-escape-{}",
-            std::process::id()
-        ));
+        let lib_root =
+            std::env::temp_dir().join(format!("dandrum-package-escape-{}", std::process::id()));
         let package_dir = lib_root.join("1.0.0").join("evil");
         fs::create_dir_all(&package_dir).expect("package dir should be created");
         fs::write(

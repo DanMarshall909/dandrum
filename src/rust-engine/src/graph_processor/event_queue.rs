@@ -39,7 +39,11 @@ impl BoundedEventQueue {
         self.push_at(event, 0)
     }
 
-    pub(super) fn push_at(&mut self, event: ScriptEvent, frame_offset: u32) -> EventQueueResult<()> {
+    pub(super) fn push_at(
+        &mut self,
+        event: ScriptEvent,
+        frame_offset: u32,
+    ) -> EventQueueResult<()> {
         self.push_block_event(BlockEvent {
             frame_offset,
             event,
@@ -241,9 +245,17 @@ mod tests {
     fn push_at_preserves_non_zero_frame_offset_through_drain() {
         let mut queue = BoundedEventQueue::with_capacity(2);
         queue
-            .push_at(ScriptEvent::NoteOn { note: 60, velocity: 100 }, 37)
+            .push_at(
+                ScriptEvent::NoteOn {
+                    note: 60,
+                    velocity: 100,
+                },
+                37,
+            )
             .unwrap();
-        queue.push_at(ScriptEvent::NoteOff { note: 60 }, 41).unwrap();
+        queue
+            .push_at(ScriptEvent::NoteOff { note: 60 }, 41)
+            .unwrap();
 
         let events = queue.drain_block_events();
 
@@ -257,7 +269,13 @@ mod tests {
         queues
             .queue_mut(0)
             .unwrap()
-            .push_at(ScriptEvent::NoteOn { note: 60, velocity: 100 }, 9)
+            .push_at(
+                ScriptEvent::NoteOn {
+                    note: 60,
+                    velocity: 100,
+                },
+                9,
+            )
             .unwrap();
 
         queues

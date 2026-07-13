@@ -1,12 +1,12 @@
 use crate::envelope_follower::{DetectionMode, EnvelopeFollower};
 
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum ProcessorMode {
     Level,
     Transient,
 }
 
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Topology {
     Feedforward,
     Feedback,

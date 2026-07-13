@@ -1,6 +1,8 @@
 use std::collections::BTreeMap;
 
-use crate::patch::{ParameterValue, PatchDocument, PortReference, PresetParameterTargetDeclaration};
+use crate::patch::{
+    ParameterValue, PatchDocument, PortReference, PresetParameterTargetDeclaration,
+};
 
 /// Immutable instrument structure captured at load time.
 ///

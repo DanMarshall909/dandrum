@@ -1,6 +1,6 @@
 use std::f64::consts::E;
 
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum DetectionMode {
     Peak,
     Rms,

@@ -1573,10 +1573,9 @@ fn sampler_outputs_silence_after_sample_completion() {
 #[test]
 fn start_control_changes_sampler_playback_position_before_trigger() {
     let mut state = PerModuleState::Sampler {
-        sample: Some(LoadedSample::new(
-            48_000,
-            vec![0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0],
-        )),
+        sample: Some(
+            LoadedSample::new(48_000, vec![0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0]).into(),
+        ),
         position: 0.0,
         active: false,
     };
@@ -1604,7 +1603,7 @@ fn start_control_changes_sampler_playback_position_before_trigger() {
 #[test]
 fn loop_control_wraps_active_sampler_playback() {
     let mut state = PerModuleState::Sampler {
-        sample: Some(LoadedSample::new(48_000, vec![1.0, 2.0, 3.0])),
+        sample: Some(LoadedSample::new(48_000, vec![1.0, 2.0, 3.0]).into()),
         position: 0.0,
         active: false,
     };
@@ -1673,7 +1672,7 @@ fn sampler_render_repeats_exactly_for_same_inputs() {
 #[test]
 fn sampler_state_persists_across_sequential_process_calls() {
     let mut state = PerModuleState::Sampler {
-        sample: Some(LoadedSample::new(48_000, vec![0.1, 0.2, 0.3, 0.4, 0.5])),
+        sample: Some(LoadedSample::new(48_000, vec![0.1, 0.2, 0.3, 0.4, 0.5]).into()),
         position: 0.0,
         active: true,
     };

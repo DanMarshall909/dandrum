@@ -35,6 +35,14 @@ impl<'a> ProcessContext<'a> {
         self.frames
     }
 
+    pub(super) fn input_count(&self) -> usize {
+        self.input_buffers.len()
+    }
+
+    pub(super) fn output_count(&self) -> usize {
+        self.output_buffers.len()
+    }
+
     pub(super) fn input_sample(&self, index: usize, frame: usize, default: f32) -> f32 {
         let Some(buffer) = self.input_buffers.get(index).copied() else {
             return default;

@@ -15,8 +15,8 @@ use crate::diagnostics::{Diagnostic, Diagnostics, Severity, error_codes};
 use crate::graph::{PortDirection, SignalType};
 
 use super::{
-    ChannelCount, Connection, ControlDefault, DefinitionRegistry, GraphDefinition, Node, NodeId,
-    Port, PortRef, StaticArg, StaticParam, StaticType, StaticValue,
+    ChannelCount, Connection, ControlDefault, DefinitionRegistry, GraphDefinition, Multiplicity,
+    Node, NodeId, Port, PortRef, StaticArg, StaticParam, StaticType, StaticValue,
 };
 
 const YAML_EXTENSION: &str = "yaml";
@@ -143,6 +143,8 @@ struct PortDocument {
     direction: DirectionDocument,
     signal: SignalDocument,
     channels: ChannelDocument,
+    #[serde(default)]
+    multiplicity: MultiplicityDocument,
     default: Option<f64>,
     min: Option<f64>,
     max: Option<f64>,
@@ -166,6 +168,14 @@ enum SignalDocument {
     Audio,
     Control,
     Event,
+}
+
+#[derive(Clone, Copy, Debug, Default, Deserialize)]
+#[serde(rename_all = "snake_case")]
+enum MultiplicityDocument {
+    #[default]
+    SingleSource,
+    Summing,
 }
 
 #[derive(Clone, Debug, Deserialize)]
@@ -499,10 +509,15 @@ fn convert_port(document: &PortDocument) -> Result<Port, Diagnostics> {
             ChannelCount::Param(value.strip_prefix('$').unwrap_or(value).to_string())
         }
     };
+    let multiplicity = match document.multiplicity {
+        MultiplicityDocument::SingleSource => Multiplicity::SingleSource,
+        MultiplicityDocument::Summing => Multiplicity::Summing,
+    };
     let mut port = match document.direction {
         DirectionDocument::Input => Port::input(&document.name, signal, channels),
         DirectionDocument::Output => Port::output(&document.name, signal, channels),
     };
+    port = port.with_multiplicity(multiplicity);
     if let Some(default) = document.default {
         let mut control_default = ControlDefault::new(default);
         if let Some(min) = document.min {

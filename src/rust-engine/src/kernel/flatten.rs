@@ -22,7 +22,7 @@ use crate::diagnostics::{Diagnostic, Diagnostics, Severity, error_codes};
 use crate::graph::{PortDirection, SignalType};
 
 use super::{
-    CONTROL_TO_AUDIO_DEFINITION, Connection, DefinitionRegistry, GraphDefinition,
+    CONTROL_TO_AUDIO_DEFINITION, Connection, DefinitionRegistry, GraphDefinition, Multiplicity,
     NAMESPACE_SEPARATOR, Node, NodeId, PROMOTION_INPUT_PORT, PROMOTION_NODE_PREFIX,
     PROMOTION_OUTPUT_PORT, PortRef, PromotionStep, ResolvedPort, StaticValue,
 };
@@ -82,6 +82,7 @@ pub struct FlattenedGraph {
     /// computable from the graph's actual outputs rather than from terminal
     /// nodes, so a dead latency-bearing branch cannot inflate reported latency.
     root_output_sources: BTreeMap<String, Vec<PortRef>>,
+    root_input_destinations: BTreeMap<String, Vec<PortRef>>,
     /// The control→audio promotions the compiler inserted, in insertion order.
     promotions: Vec<PromotionStep>,
     expansion_count: usize,
@@ -104,6 +105,10 @@ impl FlattenedGraph {
     /// from. Empty for a root that declares no output ports.
     pub fn root_output_sources(&self) -> &BTreeMap<String, Vec<PortRef>> {
         &self.root_output_sources
+    }
+
+    pub fn root_input_destinations(&self) -> &BTreeMap<String, Vec<PortRef>> {
+        &self.root_input_destinations
     }
 
     /// The control→audio promotions the compiler inserted as visible nodes.
@@ -182,6 +187,7 @@ impl GraphDefinition {
             connections,
             root_ports,
             root_output_sources: interface.outputs,
+            root_input_destinations: interface.inputs,
             promotions,
             expansion_count: compiler.expansions,
         })
@@ -415,6 +421,7 @@ fn promotion_node(id: &NodeId, input_channels: u32, output_channels: u32) -> Ato
                 direction: PortDirection::Input,
                 signal_type: SignalType::Control,
                 channels: input_channels,
+                multiplicity: Multiplicity::default(),
                 control_default: None,
             },
             ResolvedPort {
@@ -422,6 +429,7 @@ fn promotion_node(id: &NodeId, input_channels: u32, output_channels: u32) -> Ato
                 direction: PortDirection::Output,
                 signal_type: SignalType::Audio,
                 channels: output_channels,
+                multiplicity: Multiplicity::default(),
                 control_default: None,
             },
         ],
