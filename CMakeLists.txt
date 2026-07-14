@@ -84,6 +84,7 @@ juce_add_plugin(dandrum-plugin
     NEEDS_MIDI_INPUT TRUE
     NEEDS_MIDI_OUTPUT FALSE
     NEEDS_WEBVIEW2 TRUE
+    NEEDS_WEB_BROWSER TRUE
     PRODUCT_NAME "Dandrum")
 
 target_sources(dandrum-plugin PRIVATE
