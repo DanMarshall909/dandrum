@@ -1,13 +1,14 @@
-inputs:
+ports:
   - name: trigger
-    signal_type: event
-    maps_to:
-      - env.gate
-outputs:
+    direction: input
+    signal: event
+    channels: 1
+    maps_to: env.gate
   - name: audio
-    signal_type: audio
-    maps_from:
-      - vca.audio_out
+    direction: output
+    signal: audio
+    channels: 1
+    maps_from: vca.audio_out
 modules:
   - id: osc
     type: oscillator

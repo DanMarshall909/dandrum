@@ -58,6 +58,7 @@ pub(super) fn process_module(
         Gain => process_vca(audio(AUDIO_IN), ctrl(GAIN)),
         ControlToAudio => process_control_to_audio(ctrl(IN)),
         CompensationDelay => process_compensation_delay(&mut states[module_idx], audio(AUDIO_IN)),
+        Poly => ModuleOutputs::empty(),
         Sampler => process_sampler(
             &mut states[module_idx],
             events_in,

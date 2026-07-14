@@ -77,6 +77,11 @@ pub mod error_codes {
     pub const KERNEL_STATIC_ARGUMENT_TYPE_MISMATCH: &str = "kernel.static_argument_type_mismatch";
     pub const KERNEL_STATIC_ARGUMENT_INVALID_ENUM_VALUE: &str =
         "kernel.static_argument_invalid_enum_value";
+    pub const KERNEL_STATIC_ARGUMENT_UNSUPPORTED_VALUE: &str =
+        "kernel.static_argument_unsupported_value";
+    pub const KERNEL_RESOURCE_KIND_MISMATCH: &str = "kernel.resource_kind_mismatch";
+    pub const KERNEL_RESOURCE_PATH_ESCAPE: &str = "kernel.resource_path_escape";
+    pub const KERNEL_RESOURCE_LOAD_FAILED: &str = "kernel.resource_load_failed";
     pub const KERNEL_STATIC_ARGUMENT_EXPRESSION: &str = "kernel.static_argument_expression";
     pub const KERNEL_UNKNOWN_STATIC_PARAM_REFERENCE: &str = "kernel.unknown_static_param_reference";
     pub const KERNEL_CHANNEL_COUNT_MISMATCH: &str = "kernel.channel_count_mismatch";
@@ -99,6 +104,15 @@ pub mod error_codes {
     pub const KERNEL_DOCUMENT_LEGACY_PARAMETERS: &str = "kernel.document.legacy_parameters";
     pub const KERNEL_DOCUMENT_LEGACY_BINDING: &str = "kernel.document.legacy_binding";
     pub const KERNEL_DOCUMENT_LEGACY_ASSET_BINDINGS: &str = "kernel.document.legacy_asset_bindings";
+    pub const KERNEL_DEFINITION_IMPLEMENTATION_UNSUPPORTED: &str =
+        "kernel.definition.implementation_unsupported";
+    pub const KERNEL_SCRIPT_DEFINITION_INVALID: &str = "kernel.definition.script_invalid";
+    pub const KERNEL_POLY_INVALID_MAX_VOICES: &str = "kernel.poly.invalid_max_voices";
+    pub const KERNEL_POLY_UNKNOWN_WRAPPED_DEFINITION: &str =
+        "kernel.poly.unknown_wrapped_definition";
+    pub const KERNEL_POLY_MALFORMED_INTERFACE: &str = "kernel.poly.malformed_interface";
+    pub const KERNEL_POLY_RUNTIME_UNSUPPORTED: &str = "kernel.poly.runtime_unsupported";
+    pub const KERNEL_POLY_NESTING_UNSUPPORTED: &str = "kernel.poly.nesting_unsupported";
     pub const KERNEL_PREPARATION_UNSUPPORTED_ROOT: &str = "kernel.preparation.unsupported_root";
     pub const KERNEL_PREPARATION_UNSUPPORTED_ATOMIC_PORT: &str =
         "kernel.preparation.unsupported_atomic_port";

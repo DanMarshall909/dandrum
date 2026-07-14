@@ -21,6 +21,7 @@ pub use self::offline::{
 };
 use self::outputs::BlockEvent;
 use self::outputs::ModuleOutputs;
+pub use self::polyphony::PreparedPolyRuntimeRegion;
 #[cfg(test)]
 use self::processing::{
     process_adsr, process_curve_mapper, process_envelope_follower, process_filter,

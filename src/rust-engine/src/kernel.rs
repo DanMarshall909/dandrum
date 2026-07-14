@@ -9,6 +9,8 @@
 //! through one path.
 
 use std::collections::{BTreeMap, BTreeSet};
+use std::fmt;
+use std::path::{Path, PathBuf};
 
 use crate::diagnostics::{Diagnostic, Diagnostics, Severity, error_codes};
 use crate::graph::{PortDirection, SignalType};
@@ -36,6 +38,54 @@ pub const PROMOTION_INPUT_PORT: &str = crate::graph::builtin_ports::IN;
 /// Output (audio) port name on a control→audio promotion node.
 pub const PROMOTION_OUTPUT_PORT: &str = crate::graph::builtin_ports::OUT;
 
+/// Structural definition name for a polyphonic region.
+pub const POLY_DEFINITION: &str = crate::builtins::module_types::POLY;
+/// Static argument naming the graph definition instantiated for each voice.
+pub const POLY_WRAPPED_DEFINITION_PARAM: &str = "definition";
+/// Static argument setting the region's preallocated voice capacity.
+pub const POLY_MAX_VOICES_PARAM: &str = "max_voices";
+/// Static argument selecting the voice allocation policy.
+pub const POLY_ALLOCATION_PARAM: &str = "allocation";
+pub const POLY_ALLOCATION_OLDEST_STEAL: &str = "oldest-steal";
+pub const POLY_ALLOCATION_REJECT_NEW: &str = "reject-new";
+/// Event input receiving note-on and note-off events for allocation.
+pub const POLY_NOTE_EVENTS_INPUT: &str = "notes";
+/// Optional wrapped voice lifecycle output consumed by the poly region rather
+/// than exposed as a summed public output.
+pub const POLY_DONE_OUTPUT: &str = "done";
+pub const POLY_MIN_VOICES: i64 = 1;
+pub const POLY_MAX_VOICES: i64 = u32::MAX as i64;
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum PolyAllocationPolicy {
+    OldestSteal,
+    RejectNew,
+}
+
+impl PolyAllocationPolicy {
+    pub fn from_static_value(value: &StaticValue) -> Option<Self> {
+        match value {
+            StaticValue::Enum(value) if value == POLY_ALLOCATION_OLDEST_STEAL => {
+                Some(Self::OldestSteal)
+            }
+            StaticValue::Enum(value) if value == POLY_ALLOCATION_REJECT_NEW => {
+                Some(Self::RejectNew)
+            }
+            _ => None,
+        }
+    }
+}
+
+/// Selects how a named graph definition is implemented. Ordinary definitions
+/// retain graph semantics; script-backed definitions are atomic and lower to
+/// the existing Rust script primitive.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub enum DefinitionImplementation {
+    #[default]
+    Graph,
+    Script,
+}
+
 /// Input multiplicity: whether an input port accepts a single source or
 /// arbitrarily many sources that the runtime sums.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
@@ -61,8 +111,73 @@ pub enum StaticType {
     Enum,
     /// Arbitrary construction-time text, such as inline script source.
     String,
-    /// Reference to an external resource (e.g. a sample or impulse response).
-    Resource,
+    /// Reference to an external resource of a declared semantic kind.
+    Resource(ResourceKind),
+}
+
+/// Semantic kind of immutable resource accepted by a static parameter.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub enum ResourceKind {
+    Sample,
+    ImpulseResponse,
+}
+
+impl ResourceKind {
+    pub const SAMPLE_NAME: &str = "sample";
+    pub const IMPULSE_RESPONSE_NAME: &str = "impulse_response";
+
+    pub fn as_str(self) -> &'static str {
+        match self {
+            Self::Sample => Self::SAMPLE_NAME,
+            Self::ImpulseResponse => Self::IMPULSE_RESPONSE_NAME,
+        }
+    }
+}
+
+impl fmt::Display for ResourceKind {
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        formatter.write_str(self.as_str())
+    }
+}
+
+/// Scope in which a resource literal was authored. Preparation maps a document
+/// origin to its current document root; package loading records the concrete
+/// package-version root directly.
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub enum ResourceOrigin {
+    Document,
+    Package(PathBuf),
+}
+
+/// Typed unresolved resource literal retained through static pass-through and
+/// flattening until preparation resolves it to a shared immutable handle.
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct ResourceRef {
+    kind: ResourceKind,
+    path: PathBuf,
+    origin: ResourceOrigin,
+}
+
+impl ResourceRef {
+    pub fn new(kind: ResourceKind, path: impl Into<PathBuf>, origin: ResourceOrigin) -> Self {
+        Self {
+            kind,
+            path: path.into(),
+            origin,
+        }
+    }
+
+    pub fn kind(&self) -> ResourceKind {
+        self.kind
+    }
+
+    pub fn path(&self) -> &Path {
+        &self.path
+    }
+
+    pub fn origin(&self) -> &ResourceOrigin {
+        &self.origin
+    }
 }
 
 /// A resolved value supplied for a static parameter.
@@ -71,7 +186,7 @@ pub enum StaticValue {
     Int(i64),
     Enum(String),
     String(String),
-    Resource(String),
+    Resource(ResourceRef),
 }
 
 impl StaticValue {
@@ -81,7 +196,7 @@ impl StaticValue {
             Self::Int(_) => StaticType::Int,
             Self::Enum(_) => StaticType::Enum,
             Self::String(_) => StaticType::String,
-            Self::Resource(_) => StaticType::Resource,
+            Self::Resource(reference) => StaticType::Resource(reference.kind()),
         }
     }
 }
@@ -483,6 +598,7 @@ impl Connection {
 #[derive(Clone, Debug, Default, PartialEq)]
 pub struct GraphDefinition {
     name: String,
+    implementation: DefinitionImplementation,
     static_params: Vec<StaticParam>,
     ports: Vec<Port>,
     nodes: Vec<Node>,
@@ -500,6 +616,11 @@ impl GraphDefinition {
 
     pub fn with_static_param(mut self, param: StaticParam) -> Self {
         self.static_params.push(param);
+        self
+    }
+
+    pub fn with_implementation(mut self, implementation: DefinitionImplementation) -> Self {
+        self.implementation = implementation;
         self
     }
 
@@ -526,6 +647,10 @@ impl GraphDefinition {
 
     pub fn name(&self) -> &str {
         &self.name
+    }
+
+    pub fn implementation(&self) -> DefinitionImplementation {
+        self.implementation
     }
 
     pub fn latency(&self) -> &LatencySpec {
@@ -816,7 +941,26 @@ impl GraphDefinition {
             };
 
             if let Some(value) = value {
-                if value.static_type() != param.static_type() {
+                if let (StaticType::Resource(expected_kind), StaticType::Resource(actual_kind)) =
+                    (param.static_type(), value.static_type())
+                    && expected_kind != actual_kind
+                {
+                    diagnostics.push(
+                        Diagnostic::new(
+                            error_codes::KERNEL_RESOURCE_KIND_MISMATCH,
+                            Severity::Error,
+                            format!(
+                                "node '{}' supplies a {actual_kind} resource for static parameter '{}', which requires {expected_kind}",
+                                node.id().as_str(),
+                                param.name()
+                            ),
+                        )
+                        .with_module_id(node.id().as_str())
+                        .with_expected(expected_kind.as_str())
+                        .with_actual(actual_kind.as_str()),
+                    );
+                    ok = false;
+                } else if value.static_type() != param.static_type() {
                     diagnostics.push(
                         Diagnostic::new(
                             error_codes::KERNEL_STATIC_ARGUMENT_TYPE_MISMATCH,
@@ -854,6 +998,28 @@ impl GraphDefinition {
                         .with_module_id(node.id().as_str())
                         .with_expected(param.allowed_values().join(", "))
                         .with_actual(enum_value),
+                    );
+                    ok = false;
+                } else if let StaticValue::Int(int_value) = &value
+                    && !param.allowed_values().is_empty()
+                    && !param
+                        .allowed_values()
+                        .iter()
+                        .any(|allowed| allowed == &int_value.to_string())
+                {
+                    diagnostics.push(
+                        Diagnostic::new(
+                            error_codes::KERNEL_STATIC_ARGUMENT_UNSUPPORTED_VALUE,
+                            Severity::Error,
+                            format!(
+                                "node '{}' supplies unsupported value '{int_value}' for integer static parameter '{}'",
+                                node.id().as_str(),
+                                param.name()
+                            ),
+                        )
+                        .with_module_id(node.id().as_str())
+                        .with_expected(param.allowed_values().join(", "))
+                        .with_actual(int_value.to_string()),
                     );
                     ok = false;
                 } else {
@@ -903,6 +1069,264 @@ impl GraphDefinition {
             .collect()
     }
 
+    fn resolve_node_ports(
+        &self,
+        node: &Node,
+        referenced: &GraphDefinition,
+        static_args: &BTreeMap<String, StaticValue>,
+        registry: &DefinitionRegistry,
+        diagnostics: &mut Diagnostics,
+    ) -> Option<Vec<ResolvedPort>> {
+        if referenced.name() != POLY_DEFINITION {
+            return Some(Self::resolve_ports(referenced, static_args));
+        }
+        self.resolve_poly_ports(node, static_args, registry, diagnostics)
+    }
+
+    fn resolve_poly_ports(
+        &self,
+        node: &Node,
+        static_args: &BTreeMap<String, StaticValue>,
+        registry: &DefinitionRegistry,
+        diagnostics: &mut Diagnostics,
+    ) -> Option<Vec<ResolvedPort>> {
+        let mut valid = true;
+        let max_voices = match static_args.get(POLY_MAX_VOICES_PARAM) {
+            Some(StaticValue::Int(value)) => *value,
+            _ => return None,
+        };
+        if !(POLY_MIN_VOICES..=POLY_MAX_VOICES).contains(&max_voices) {
+            diagnostics.push(
+                Diagnostic::new(
+                    error_codes::KERNEL_POLY_INVALID_MAX_VOICES,
+                    Severity::Error,
+                    format!(
+                        "poly node '{}' supplies max_voices {max_voices}, but it must be positive and convertible to a 32-bit voice count",
+                        node.id().as_str()
+                    ),
+                )
+                .with_module_id(node.id().as_str())
+                .with_expected(format!("{POLY_MIN_VOICES}..={POLY_MAX_VOICES}"))
+                .with_actual(max_voices.to_string()),
+            );
+            valid = false;
+        }
+
+        let wrapped_name = match static_args.get(POLY_WRAPPED_DEFINITION_PARAM) {
+            Some(StaticValue::String(name)) => name,
+            _ => return None,
+        };
+        let Some(wrapped) = registry.get(wrapped_name) else {
+            diagnostics.push(
+                Diagnostic::new(
+                    error_codes::KERNEL_POLY_UNKNOWN_WRAPPED_DEFINITION,
+                    Severity::Error,
+                    format!(
+                        "poly node '{}' wraps unknown definition '{wrapped_name}'",
+                        node.id().as_str()
+                    ),
+                )
+                .with_module_id(node.id().as_str())
+                .with_actual(wrapped_name),
+            );
+            return None;
+        };
+
+        wrapped.validate_static_references(diagnostics);
+        wrapped.validate_definition_structure(diagnostics);
+        let wrapped_args = wrapped.enclosing_context();
+        for param in wrapped.static_params() {
+            if param.default().is_none() {
+                diagnostics.push(
+                    Diagnostic::new(
+                        error_codes::KERNEL_POLY_MALFORMED_INTERFACE,
+                        Severity::Error,
+                        format!(
+                            "poly node '{}' cannot resolve wrapped definition '{}' interface because static parameter '{}' has no default",
+                            node.id().as_str(),
+                            wrapped.name(),
+                            param.name()
+                        ),
+                    )
+                    .with_module_id(node.id().as_str())
+                    .with_expected(format!("default for {}", param.name())),
+                );
+                valid = false;
+            }
+        }
+        if !wrapped.validate_resolved_static_references(&wrapped_args, diagnostics) {
+            valid = false;
+        }
+
+        let mut seen = BTreeSet::new();
+        let mut ports = vec![ResolvedPort {
+            name: POLY_NOTE_EVENTS_INPUT.to_string(),
+            direction: PortDirection::Input,
+            signal_type: SignalType::Event,
+            channels: 1,
+            multiplicity: Multiplicity::SingleSource,
+            control_default: None,
+        }];
+        seen.insert((true, POLY_NOTE_EVENTS_INPUT.to_string()));
+
+        for port in Self::resolve_ports(wrapped, &wrapped_args) {
+            let key = (
+                port.direction() == PortDirection::Input,
+                port.name().to_string(),
+            );
+            if port.name() == POLY_NOTE_EVENTS_INPUT || !seen.insert(key) {
+                diagnostics.push(
+                    Diagnostic::new(
+                        error_codes::KERNEL_POLY_MALFORMED_INTERFACE,
+                        Severity::Error,
+                        format!(
+                            "poly node '{}' cannot synthesize wrapped definition '{}' port '{}': the public poly interface would contain a duplicate port",
+                            node.id().as_str(),
+                            wrapped.name(),
+                            port.name()
+                        ),
+                    )
+                    .with_module_id(node.id().as_str())
+                    .with_port_name(port.name()),
+                );
+                valid = false;
+                continue;
+            }
+            if port.direction() == PortDirection::Output && port.name() == POLY_DONE_OUTPUT {
+                if matches!(port.signal_type(), SignalType::Event | SignalType::Control) {
+                    continue;
+                }
+                diagnostics.push(
+                    Diagnostic::new(
+                        error_codes::KERNEL_POLY_MALFORMED_INTERFACE,
+                        Severity::Error,
+                        format!(
+                            "poly node '{}' requires '{}.{}' to be an event or control lifecycle output",
+                            node.id().as_str(),
+                            wrapped.name(),
+                            port.name()
+                        ),
+                    )
+                    .with_module_id(node.id().as_str())
+                    .with_port_name(port.name())
+                    .with_expected("event or control output")
+                    .with_actual("audio output"),
+                );
+                valid = false;
+                continue;
+            }
+            if port.direction() == PortDirection::Output
+                && !matches!(port.signal_type(), SignalType::Audio | SignalType::Control)
+            {
+                diagnostics.push(
+                    Diagnostic::new(
+                        error_codes::KERNEL_POLY_MALFORMED_INTERFACE,
+                        Severity::Error,
+                        format!(
+                            "poly node '{}' cannot expose event output '{}.{}'; wrapped outputs must be audio or control",
+                            node.id().as_str(),
+                            wrapped.name(),
+                            port.name()
+                        ),
+                    )
+                    .with_module_id(node.id().as_str())
+                    .with_port_name(port.name())
+                    .with_expected("audio or control output")
+                    .with_actual("event output"),
+                );
+                valid = false;
+                continue;
+            }
+            ports.push(port);
+        }
+
+        valid.then_some(ports)
+    }
+
+    fn validate_nested_poly_interfaces(
+        &self,
+        registry: &DefinitionRegistry,
+        diagnostics: &mut Diagnostics,
+    ) {
+        let mut visited = BTreeSet::new();
+        visited.insert(self.name().to_string());
+        for node in self.nodes() {
+            let Some(referenced) = registry.get(node.definition_ref()) else {
+                continue;
+            };
+            if referenced.name() == POLY_DEFINITION {
+                let mut sink = Diagnostics::new();
+                let Some(args) = self.resolve_static_args(
+                    node,
+                    referenced,
+                    &self.enclosing_context(),
+                    &mut sink,
+                ) else {
+                    continue;
+                };
+                if let Some(StaticValue::String(name)) = args.get(POLY_WRAPPED_DEFINITION_PARAM)
+                    && let Some(wrapped) = registry.get(name)
+                {
+                    Self::validate_poly_interfaces_in_definition(
+                        wrapped,
+                        registry,
+                        &mut visited,
+                        diagnostics,
+                    );
+                }
+            } else {
+                Self::validate_poly_interfaces_in_definition(
+                    referenced,
+                    registry,
+                    &mut visited,
+                    diagnostics,
+                );
+            }
+        }
+    }
+
+    fn validate_poly_interfaces_in_definition(
+        definition: &GraphDefinition,
+        registry: &DefinitionRegistry,
+        visited: &mut BTreeSet<String>,
+        diagnostics: &mut Diagnostics,
+    ) {
+        if !visited.insert(definition.name().to_string()) {
+            return;
+        }
+        let enclosing = definition.enclosing_context();
+        for node in definition.nodes() {
+            let Some(referenced) = registry.get(node.definition_ref()) else {
+                continue;
+            };
+            if referenced.name() == POLY_DEFINITION {
+                let Some(args) =
+                    definition.resolve_static_args(node, referenced, &enclosing, diagnostics)
+                else {
+                    continue;
+                };
+                definition.resolve_poly_ports(node, &args, registry, diagnostics);
+                if let Some(StaticValue::String(name)) = args.get(POLY_WRAPPED_DEFINITION_PARAM)
+                    && let Some(wrapped) = registry.get(name)
+                {
+                    Self::validate_poly_interfaces_in_definition(
+                        wrapped,
+                        registry,
+                        visited,
+                        diagnostics,
+                    );
+                }
+            } else {
+                Self::validate_poly_interfaces_in_definition(
+                    referenced,
+                    registry,
+                    visited,
+                    diagnostics,
+                );
+            }
+        }
+    }
+
     /// Reject, loudly, any port channel count or latency spec on this definition
     /// that references a static parameter which is not a declared integer static
     /// parameter. Without this gate a dangling or mistyped reference would
@@ -923,6 +1347,92 @@ impl GraphDefinition {
         if let LatencySpec::StaticParam { name, .. } = &self.latency {
             self.require_integer_static_param(name, "processing latency", diagnostics);
         }
+    }
+
+    pub(crate) fn validate_definition_structure(&self, diagnostics: &mut Diagnostics) {
+        if self.implementation != DefinitionImplementation::Script {
+            return;
+        }
+
+        let invalid = |message: String| {
+            Diagnostic::new(
+                error_codes::KERNEL_SCRIPT_DEFINITION_INVALID,
+                Severity::Error,
+                message,
+            )
+            .with_module_id(self.name())
+        };
+        if !self.nodes.is_empty() {
+            diagnostics.push(invalid(format!(
+                "script-backed definition '{}' cannot declare internal modules",
+                self.name()
+            )));
+        }
+        if !self.connections.is_empty() {
+            diagnostics.push(invalid(format!(
+                "script-backed definition '{}' cannot declare internal connections",
+                self.name()
+            )));
+        }
+        for port in &self.ports {
+            if port.signal_type() == SignalType::Audio {
+                diagnostics.push(
+                    invalid(format!(
+                        "script-backed definition '{}' declares unsupported audio port '{}'",
+                        self.name(),
+                        port.name()
+                    ))
+                    .with_port_name(port.name()),
+                );
+            }
+            if !port.internal_targets().is_empty() || !port.internal_sources().is_empty() {
+                diagnostics.push(
+                    invalid(format!(
+                        "script-backed definition '{}' port '{}' cannot map to internal ports",
+                        self.name(),
+                        port.name()
+                    ))
+                    .with_port_name(port.name()),
+                );
+            }
+        }
+
+        self.require_script_static_param(
+            crate::builtins::SCRIPT_LANGUAGE_PARAMETER,
+            StaticType::Enum,
+            diagnostics,
+        );
+        self.require_script_static_param(
+            crate::builtins::SCRIPT_SOURCE_PARAMETER,
+            StaticType::String,
+            diagnostics,
+        );
+    }
+
+    fn require_script_static_param(
+        &self,
+        name: &str,
+        expected: StaticType,
+        diagnostics: &mut Diagnostics,
+    ) {
+        if self
+            .static_param(name)
+            .is_some_and(|param| param.static_type() == expected)
+        {
+            return;
+        }
+        diagnostics.push(
+            Diagnostic::new(
+                error_codes::KERNEL_SCRIPT_DEFINITION_INVALID,
+                Severity::Error,
+                format!(
+                    "script-backed definition '{}' must declare '{name}' as {expected:?}",
+                    self.name()
+                ),
+            )
+            .with_module_id(self.name())
+            .with_expected(format!("{name}: {expected:?}")),
+        );
     }
 
     fn require_integer_static_param(
@@ -1048,6 +1558,7 @@ impl GraphDefinition {
         // silently fall back to a default value.
         let mut checked: BTreeSet<String> = BTreeSet::new();
         self.validate_static_references(&mut diagnostics);
+        self.validate_definition_structure(&mut diagnostics);
         checked.insert(self.name().to_string());
 
         // Resolve every node's ports up front so connection checks share them.
@@ -1071,6 +1582,7 @@ impl GraphDefinition {
 
             if checked.insert(referenced.name().to_string()) {
                 referenced.validate_static_references(&mut diagnostics);
+                referenced.validate_definition_structure(&mut diagnostics);
             }
 
             let Some(static_args) =
@@ -1085,7 +1597,11 @@ impl GraphDefinition {
                 continue;
             }
 
-            let ports = Self::resolve_ports(referenced, &static_args);
+            let Some(ports) =
+                self.resolve_node_ports(node, referenced, &static_args, registry, &mut diagnostics)
+            else {
+                continue;
+            };
 
             // Overrides must target ports the referenced definition declares.
             for port_name in node.port_default_overrides().keys() {
@@ -1206,6 +1722,8 @@ impl GraphDefinition {
                 }
             }
         }
+
+        self.validate_nested_poly_interfaces(registry, &mut diagnostics);
 
         if let Some(path) = self.find_illegal_cycle(registry) {
             let printable = path
@@ -1449,7 +1967,7 @@ impl GraphDefinition {
         if !referenced.validate_resolved_static_references(&static_args, &mut sink) {
             return None;
         }
-        Some(Self::resolve_ports(referenced, &static_args))
+        self.resolve_node_ports(node, referenced, &static_args, registry, &mut sink)
     }
 
     /// Resolve the effective source of a node's control input port, applying
@@ -1463,8 +1981,8 @@ impl GraphDefinition {
         port_name: &str,
     ) -> Option<EffectiveInput> {
         let node = self.node(node_id)?;
-        let referenced = registry.get(node.definition_ref())?;
-        let port = referenced.ports().iter().find(|port| {
+        let ports = self.resolved_node_ports(registry, node_id)?;
+        let port = ports.iter().find(|port| {
             port.name() == port_name
                 && port.direction() == PortDirection::Input
                 && port.signal_type() == SignalType::Control

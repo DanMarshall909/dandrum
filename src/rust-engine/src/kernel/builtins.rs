@@ -15,8 +15,8 @@
 //! implicit.
 //!
 //! Channel-independent processors declare a `channels` static parameter and use
-//! it for their signal-path ports. Intrinsically stereo echo/reverb retain their
-//! L/R interfaces until their dedicated migration.
+//! it for their signal-path ports. Echo and reverb use the same span model but
+//! constrain the resolved width to their supported mono/stereo DSP shapes.
 //!
 //! Numeric tunable parameters are declared here as control input ports carrying
 //! their default and range. Non-resource text/enum/integer construction-time
@@ -46,7 +46,9 @@ use crate::graph::builtin_ports as ports;
 
 use super::{
     ChannelCount, ControlDefault, DefinitionRegistry, GraphDefinition, LatencySpec, Multiplicity,
-    Port, StaticParam, StaticType, StaticValue,
+    POLY_ALLOCATION_OLDEST_STEAL, POLY_ALLOCATION_PARAM, POLY_ALLOCATION_REJECT_NEW,
+    POLY_DEFINITION, POLY_MAX_VOICES_PARAM, POLY_NOTE_EVENTS_INPUT, POLY_WRAPPED_DEFINITION_PARAM,
+    Port, ResourceKind, StaticParam, StaticType, StaticValue,
 };
 
 const MONO: u32 = 1;
@@ -55,6 +57,8 @@ const MONO: u32 = 1;
 pub const SPECTRAL_FFT_SIZE_PARAM: &str = SPECTRAL_FFT_SIZE_PARAMETER;
 pub const DELAY_SAMPLES_PARAM: &str = DELAY_SAMPLES_PARAMETER;
 pub const CHANNELS_PARAM: &str = "channels";
+pub const SAMPLE_RESOURCE_PARAM: &str = "sample";
+pub const IMPULSE_RESPONSE_RESOURCE_PARAM: &str = "impulse_response";
 /// Default FFT frame size, matching the legacy spectral builtin.
 /// Spectral processing latency is `fft_size - SPECTRAL_LATENCY_OFFSET` samples.
 const SPECTRAL_LATENCY_OFFSET: u32 = 1;
@@ -122,6 +126,14 @@ fn primitive(name: &str) -> GraphDefinition {
 fn channel_primitive(name: &str) -> GraphDefinition {
     primitive(name).with_static_param(
         StaticParam::new(CHANNELS_PARAM, StaticType::Int).with_default(StaticValue::Int(1)),
+    )
+}
+
+fn mono_stereo_primitive(name: &str) -> GraphDefinition {
+    primitive(name).with_static_param(
+        StaticParam::new(CHANNELS_PARAM, StaticType::Int)
+            .with_default(StaticValue::Int(2))
+            .with_allowed_values(["1", "2"]),
     )
 }
 
@@ -232,6 +244,10 @@ fn builtin_definitions() -> Vec<GraphDefinition> {
                 StaticType::String,
             )),
         channel_primitive(names::SAMPLER)
+            .with_static_param(StaticParam::new(
+                SAMPLE_RESOURCE_PARAM,
+                StaticType::Resource(ResourceKind::Sample),
+            ))
             .with_port(event_in(ports::TRIGGER))
             .with_port(control_in(ports::RATE))
             .with_port(control_in(ports::START))
@@ -296,14 +312,13 @@ fn builtin_definitions() -> Vec<GraphDefinition> {
             .with_port(poly_audio_out(ports::MID))
             .with_port(poly_audio_out(ports::HIGH)),
         spectral_processor(),
-        primitive(names::ECHO)
+        mono_stereo_primitive(names::ECHO)
             .with_static_param(enum_param(
                 INTERPOLATION_PARAMETER,
                 INTERPOLATION_LINEAR,
                 &[INTERPOLATION_LINEAR, INTERPOLATION_CUBIC],
             ))
-            .with_port(audio_in(ports::AUDIO_IN_L))
-            .with_port(audio_in(ports::AUDIO_IN_R))
+            .with_port(poly_audio_in(ports::AUDIO_IN))
             .with_port(control_in(ports::TIME_LEFT_MS))
             .with_port(control_in(ports::TIME_RIGHT_MS))
             .with_port(control_in(ports::FEEDBACK))
@@ -312,16 +327,14 @@ fn builtin_definitions() -> Vec<GraphDefinition> {
             .with_port(control_in(ports::DRY))
             .with_port(control_in(ports::SYNC_DIVISION))
             .with_port(control_in(ports::PING_PONG))
-            .with_port(audio_out(ports::AUDIO_OUT_L))
-            .with_port(audio_out(ports::AUDIO_OUT_R)),
-        primitive(names::REVERB)
+            .with_port(poly_audio_out(ports::AUDIO_OUT)),
+        mono_stereo_primitive(names::REVERB)
             .with_static_param(enum_param(
                 INTERPOLATION_PARAMETER,
                 INTERPOLATION_LINEAR,
                 &[INTERPOLATION_LINEAR, INTERPOLATION_CUBIC],
             ))
-            .with_port(audio_in(ports::AUDIO_IN_L))
-            .with_port(audio_in(ports::AUDIO_IN_R))
+            .with_port(poly_audio_in(ports::AUDIO_IN))
             .with_port(control_in(ports::DECAY_TIME))
             .with_port(control_in(ports::ROOM_SIZE))
             .with_port(control_in(ports::PRE_DELAY))
@@ -330,8 +343,7 @@ fn builtin_definitions() -> Vec<GraphDefinition> {
             .with_port(control_in(ports::STEREO_WIDTH))
             .with_port(control_in(ports::WET))
             .with_port(control_in(ports::DRY))
-            .with_port(audio_out(ports::AUDIO_OUT_L))
-            .with_port(audio_out(ports::AUDIO_OUT_R)),
+            .with_port(poly_audio_out(ports::AUDIO_OUT)),
         channel_primitive(names::NOISE)
             .with_static_param(
                 StaticParam::new(NOISE_SEED_PARAMETER, StaticType::Int)
@@ -409,6 +421,19 @@ fn builtin_definitions() -> Vec<GraphDefinition> {
             .with_port(poly_control_in(ports::IN))
             .with_port(poly_audio_out(ports::OUT)),
         compensation_delay(),
+        primitive(POLY_DEFINITION)
+            .with_static_param(StaticParam::new(
+                POLY_WRAPPED_DEFINITION_PARAM,
+                StaticType::String,
+            ))
+            .with_static_param(StaticParam::new(POLY_MAX_VOICES_PARAM, StaticType::Int))
+            .with_static_param(
+                StaticParam::new(POLY_ALLOCATION_PARAM, StaticType::Enum).with_allowed_values([
+                    POLY_ALLOCATION_OLDEST_STEAL,
+                    POLY_ALLOCATION_REJECT_NEW,
+                ]),
+            )
+            .with_port(event_in(POLY_NOTE_EVENTS_INPUT)),
     ]
 }
 
@@ -450,6 +475,10 @@ fn convolution() -> GraphDefinition {
         .with_static_param(
             StaticParam::new(CHANNELS_PARAM, StaticType::Int).with_default(StaticValue::Int(1)),
         )
+        .with_static_param(StaticParam::new(
+            IMPULSE_RESPONSE_RESOURCE_PARAM,
+            StaticType::Resource(ResourceKind::ImpulseResponse),
+        ))
         .with_latency(LatencySpec::Samples(Convolution::BLOCK_SIZE as u32))
         .with_port(poly_audio_in(ports::AUDIO_IN))
         .with_port(control_in(ports::MIX))

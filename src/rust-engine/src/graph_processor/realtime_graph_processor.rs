@@ -15,7 +15,7 @@ use super::dispatch::process_module;
 use super::event_queue::{BoundedEventQueue, PreparedEventQueues};
 use super::input_provider::CompiledInputProvider;
 use super::outputs::{BlockEvent, ModuleOutputs};
-use super::polyphony::build_polyphonic_states_from_compiled;
+use super::polyphony::{PreparedPolyRuntimeRegion, build_polyphonic_states_from_compiled};
 use super::process_context::ProcessContext;
 use super::render_plan::{RenderPlan, RenderStep};
 use super::state::PerModuleState;
@@ -43,6 +43,7 @@ pub struct RealtimeGraphProcessor {
     voice_event_queues: Vec<Vec<BlockEvent>>,
     voice_queues: Vec<PreparedEventQueues>,
     accum: Vec<Option<ModuleOutputs>>,
+    prepared_poly_runtime_regions: Box<[PreparedPolyRuntimeRegion]>,
 }
 
 impl RealtimeGraphProcessor {
@@ -141,6 +142,12 @@ impl RealtimeGraphProcessor {
             render_plan.event_queues.queue_count,
             render_plan.event_queues.queue_capacity,
         );
+        let prepared_poly_runtime_regions = compiled
+            .poly_regions()
+            .iter()
+            .map(|region| PreparedPolyRuntimeRegion::new(region, sample_rate, sampler_assets))
+            .collect::<Vec<_>>()
+            .into_boxed_slice();
 
         let events_buffer = vec![
             BlockEvent {
@@ -186,11 +193,16 @@ impl RealtimeGraphProcessor {
                 accum.resize_with(accum_len, || None);
                 accum
             },
+            prepared_poly_runtime_regions,
         }
     }
 
     pub fn prepared_max_block_size(&self) -> usize {
         self.prepared_max_block_size
+    }
+
+    pub fn prepared_poly_runtime_regions(&self) -> &[PreparedPolyRuntimeRegion] {
+        &self.prepared_poly_runtime_regions
     }
 
     pub fn last_render_chunk_count(&self) -> usize {
@@ -889,7 +901,13 @@ fn process_channel_arena_step(
         ModuleKind::Filter => {
             arena_processing::process_filter(&mut states[step.module_index], &mut context)
         }
-        ModuleKind::AudioOutput => {}
+        ModuleKind::Echo => {
+            arena_processing::process_echo(&mut states[step.module_index], &mut context)
+        }
+        ModuleKind::Reverb => {
+            arena_processing::process_reverb(&mut states[step.module_index], &mut context)
+        }
+        ModuleKind::AudioOutput | ModuleKind::Poly => {}
         _ => unreachable!(),
     }
 }
@@ -907,6 +925,7 @@ fn is_mono_global_arena_supported(step: &RenderStep) -> bool {
 fn is_channel_arena_supported(step: &RenderStep) -> bool {
     match step.module_kind {
         ModuleKind::AudioOutput => step.input_buffers.len() >= 2,
+        ModuleKind::Poly => true,
         ModuleKind::AudioMixer => step.input_buffers.len() == step.output_buffers.len(),
         ModuleKind::Noise => step.input_buffers.is_empty() && !step.output_buffers.is_empty(),
         ModuleKind::Oscillator => step.input_buffers.len() <= 1 && step.output_buffers.len() == 1,
@@ -924,6 +943,14 @@ fn is_channel_arena_supported(step: &RenderStep) -> bool {
         ModuleKind::FrequencySplitter => {
             step.output_buffers.len() % 3 == 0
                 && step.input_buffers.len() == step.output_buffers.len() / 3 + 1
+        }
+        ModuleKind::Echo => {
+            matches!(step.output_buffers.len(), 1 | 2)
+                && step.input_buffers.len() == step.output_buffers.len() + 8
+        }
+        ModuleKind::Reverb => {
+            matches!(step.output_buffers.len(), 1 | 2)
+                && step.input_buffers.len() == step.output_buffers.len() + 8
         }
         _ => false,
     }

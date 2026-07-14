@@ -15,8 +15,9 @@ use crate::diagnostics::{Diagnostic, Diagnostics, Severity, error_codes};
 use crate::graph::{PortDirection, SignalType};
 
 use super::{
-    ChannelCount, Connection, ControlDefault, DefinitionRegistry, GraphDefinition, Multiplicity,
-    Node, NodeId, Port, PortRef, StaticArg, StaticParam, StaticType, StaticValue,
+    ChannelCount, Connection, ControlDefault, DefinitionImplementation, DefinitionRegistry,
+    GraphDefinition, Multiplicity, Node, NodeId, Port, PortRef, ResourceKind, ResourceOrigin,
+    ResourceRef, StaticArg, StaticParam, StaticType, StaticValue,
 };
 
 const YAML_EXTENSION: &str = "yaml";
@@ -106,6 +107,7 @@ struct PatchDocument {
 struct CompositeDocument {
     #[serde(rename = "type")]
     definition_type: String,
+    implementation: Option<String>,
     #[serde(default)]
     static_params: Vec<StaticParamDocument>,
     #[serde(default)]
@@ -122,6 +124,7 @@ struct StaticParamDocument {
     name: String,
     #[serde(rename = "type")]
     static_type: StaticTypeDocument,
+    resource_kind: Option<ResourceKindDocument>,
     default: Option<Value>,
     #[serde(default)]
     allowed_values: Vec<String>,
@@ -134,6 +137,29 @@ enum StaticTypeDocument {
     Enum,
     String,
     Resource,
+}
+
+#[derive(Clone, Copy, Debug, Deserialize)]
+#[serde(rename_all = "snake_case")]
+enum ResourceKindDocument {
+    Sample,
+    ImpulseResponse,
+}
+
+impl ResourceKindDocument {
+    fn into_kernel(self) -> ResourceKind {
+        match self {
+            Self::Sample => ResourceKind::Sample,
+            Self::ImpulseResponse => ResourceKind::ImpulseResponse,
+        }
+    }
+}
+
+#[derive(Clone, Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
+struct ResourceRefDocument {
+    kind: ResourceKindDocument,
+    path: String,
 }
 
 #[derive(Clone, Debug, Deserialize)]
@@ -249,6 +275,23 @@ pub fn load_kernel_patch_file(path: impl AsRef<Path>) -> Result<KernelPatch, Dia
 
 /// Parse YAML directly into the kernel graph model.
 pub fn load_kernel_patch_str(yaml: &str) -> Result<KernelPatch, Diagnostics> {
+    load_kernel_document_str(yaml, None, ResourceOrigin::Document, true)
+}
+
+pub(crate) fn load_kernel_definition_str(
+    yaml: &str,
+    definition_name: &str,
+    origin: ResourceOrigin,
+) -> Result<KernelPatch, Diagnostics> {
+    load_kernel_document_str(yaml, Some(definition_name), origin, false)
+}
+
+fn load_kernel_document_str(
+    yaml: &str,
+    definition_name: Option<&str>,
+    origin: ResourceOrigin,
+    require_output: bool,
+) -> Result<KernelPatch, Diagnostics> {
     let value: Value = serde_yaml::from_str(yaml).map_err(parse_diagnostic)?;
     reject_legacy_document_shape(&value)?;
     let document: PatchDocument = serde_yaml::from_value(value).map_err(parse_diagnostic)?;
@@ -258,40 +301,49 @@ pub fn load_kernel_patch_str(yaml: &str) -> Result<KernelPatch, Diagnostics> {
         version: document.metadata.version,
         author: document.metadata.author,
     };
-    let root_name = metadata.name.as_deref().unwrap_or(ROOT_DEFINITION_NAME);
+    let root_name = definition_name
+        .or(metadata.name.as_deref())
+        .unwrap_or(ROOT_DEFINITION_NAME);
 
     let mut registry = super::builtins::builtin_registry();
     for composite in &document.module_definitions {
         registry = registry.with_definition(convert_declaration(
             &composite.definition_type,
+            composite.implementation.as_deref(),
             &composite.static_params,
             &composite.ports,
+            &origin,
         )?);
     }
     for composite in &document.module_definitions {
         let definition = convert_graph(
             &composite.definition_type,
+            composite.implementation.as_deref(),
             &composite.static_params,
             &composite.ports,
             &composite.modules,
             &composite.connections,
             &registry,
+            &origin,
         )?;
         registry = registry.with_definition(definition);
     }
 
     let root = convert_graph(
         root_name,
+        None,
         &document.static_params,
         &document.ports,
         &document.modules,
         &document.connections,
         &registry,
+        &origin,
     )?;
-    if !root
-        .ports()
-        .iter()
-        .any(|port| port.direction() == PortDirection::Output)
+    if require_output
+        && !root
+            .ports()
+            .iter()
+            .any(|port| port.direction() == PortDirection::Output)
     {
         return Err(Diagnostic::new(
             error_codes::KERNEL_DOCUMENT_NO_OUTPUT,
@@ -448,15 +500,17 @@ fn string_field<'a>(mapping: &'a Mapping, field: &str) -> Option<&'a str> {
 
 fn convert_graph(
     name: &str,
+    implementation: Option<&str>,
     static_params: &[StaticParamDocument],
     ports: &[PortDocument],
     nodes: &[NodeDocument],
     connections: &[ConnectionDocument],
     registry: &DefinitionRegistry,
+    origin: &ResourceOrigin,
 ) -> Result<GraphDefinition, Diagnostics> {
-    let mut graph = convert_declaration(name, static_params, ports)?;
+    let mut graph = convert_declaration(name, implementation, static_params, ports, origin)?;
     for node in nodes {
-        graph = graph.with_node(convert_node(node, registry)?);
+        graph = graph.with_node(convert_node(node, registry, origin)?);
     }
     for connection in connections {
         graph = graph.with_connection(Connection::new(
@@ -464,35 +518,79 @@ fn convert_graph(
             parse_reference(&connection.to)?,
         ));
     }
+    let mut diagnostics = Diagnostics::new();
+    graph.validate_definition_structure(&mut diagnostics);
+    if diagnostics.has_errors() {
+        return Err(diagnostics);
+    }
     Ok(graph)
 }
 
 fn convert_declaration(
     name: &str,
+    implementation: Option<&str>,
     static_params: &[StaticParamDocument],
     ports: &[PortDocument],
+    origin: &ResourceOrigin,
 ) -> Result<GraphDefinition, Diagnostics> {
-    let mut graph = GraphDefinition::new(name);
+    let implementation = match implementation {
+        None => DefinitionImplementation::Graph,
+        Some("script") => DefinitionImplementation::Script,
+        Some(unsupported) => {
+            return Err(Diagnostic::new(
+                error_codes::KERNEL_DEFINITION_IMPLEMENTATION_UNSUPPORTED,
+                Severity::Error,
+                format!("definition '{name}' selects unsupported implementation '{unsupported}'"),
+            )
+            .with_module_id(name)
+            .with_expected("script")
+            .with_actual(unsupported)
+            .into());
+        }
+    };
+    let mut graph = GraphDefinition::new(name).with_implementation(implementation);
     for param in static_params {
-        graph = graph.with_static_param(convert_static_param(param)?);
+        graph = graph.with_static_param(convert_static_param(param, origin)?);
     }
     for port in ports {
         graph = graph.with_port(convert_port(port)?);
     }
+    let mut diagnostics = Diagnostics::new();
+    graph.validate_definition_structure(&mut diagnostics);
+    if diagnostics.has_errors() {
+        return Err(diagnostics);
+    }
     Ok(graph)
 }
 
-fn convert_static_param(document: &StaticParamDocument) -> Result<StaticParam, Diagnostics> {
+fn convert_static_param(
+    document: &StaticParamDocument,
+    origin: &ResourceOrigin,
+) -> Result<StaticParam, Diagnostics> {
     let static_type = match document.static_type {
         StaticTypeDocument::Int => StaticType::Int,
         StaticTypeDocument::Enum => StaticType::Enum,
         StaticTypeDocument::String => StaticType::String,
-        StaticTypeDocument::Resource => StaticType::Resource,
+        StaticTypeDocument::Resource => {
+            let Some(kind) = document.resource_kind else {
+                return Err(Diagnostic::new(
+                    error_codes::KERNEL_DOCUMENT_PARSE_FAILED,
+                    Severity::Error,
+                    format!(
+                        "resource static parameter '{}' must declare resource_kind",
+                        document.name
+                    ),
+                )
+                .with_expected("resource_kind: sample or impulse_response")
+                .into());
+            };
+            StaticType::Resource(kind.into_kernel())
+        }
     };
     let mut param = StaticParam::new(&document.name, static_type)
         .with_allowed_values(document.allowed_values.iter().map(String::as_str));
     if let Some(default) = &document.default {
-        param = param.with_default(convert_static_value(default, static_type)?);
+        param = param.with_default(convert_static_value(default, static_type, origin)?);
     }
     Ok(param)
 }
@@ -543,6 +641,7 @@ fn convert_port(document: &PortDocument) -> Result<Port, Diagnostics> {
 fn convert_node(
     document: &NodeDocument,
     registry: &DefinitionRegistry,
+    origin: &ResourceOrigin,
 ) -> Result<Node, Diagnostics> {
     let mut node = Node::new(NodeId::new(&document.id), &document.definition_type);
     for (name, value) in &document.static_args {
@@ -574,7 +673,7 @@ fn convert_node(
                     })
                     .map(StaticParam::static_type)
                     .unwrap_or_else(|| infer_static_type(value));
-                StaticArg::Literal(convert_static_value(value, expected)?)
+                StaticArg::Literal(convert_static_value(value, expected, origin)?)
             }
         };
         node = node.with_static_arg(name, arg);
@@ -588,21 +687,33 @@ fn convert_node(
 fn infer_static_type(value: &Value) -> StaticType {
     if value.as_i64().is_some() {
         StaticType::Int
+    } else if let Ok(reference) = serde_yaml::from_value::<ResourceRefDocument>(value.clone()) {
+        StaticType::Resource(reference.kind.into_kernel())
     } else {
         StaticType::String
     }
 }
 
-fn convert_static_value(value: &Value, expected: StaticType) -> Result<StaticValue, Diagnostics> {
+fn convert_static_value(
+    value: &Value,
+    expected: StaticType,
+    origin: &ResourceOrigin,
+) -> Result<StaticValue, Diagnostics> {
     let converted = match expected {
         StaticType::Int => value.as_i64().map(StaticValue::Int),
         StaticType::Enum => value.as_str().map(|value| StaticValue::Enum(value.into())),
         StaticType::String => value
             .as_str()
             .map(|value| StaticValue::String(value.into())),
-        StaticType::Resource => value
-            .as_str()
-            .map(|value| StaticValue::Resource(value.into())),
+        StaticType::Resource(_) => serde_yaml::from_value::<ResourceRefDocument>(value.clone())
+            .ok()
+            .map(|reference| {
+                StaticValue::Resource(ResourceRef::new(
+                    reference.kind.into_kernel(),
+                    reference.path,
+                    origin.clone(),
+                ))
+            }),
     };
     converted.ok_or_else(|| {
         Diagnostic::new(

@@ -1,57 +1,66 @@
-inputs:
+ports:
   - name: events
-    signal_type: event
+    direction: input
+    signal: event
+    channels: 1
     maps_to:
       - kick_route.events_in
       - snare_route.events_in
       - hat_route.events_in
-outputs:
   - name: main_left
-    signal_type: audio
-    maps_from:
-      - main_mixer.mix
+    direction: output
+    signal: audio
+    channels: 1
+    maps_from: main_mixer.mix
   - name: main_right
-    signal_type: audio
-    maps_from:
-      - main_mixer.mix
+    direction: output
+    signal: audio
+    channels: 1
+    maps_from: main_mixer.mix
   - name: kick_left
-    signal_type: audio
-    maps_from:
-      - kick_vca.audio_out
+    direction: output
+    signal: audio
+    channels: 1
+    maps_from: kick_vca.audio_out
   - name: kick_right
-    signal_type: audio
-    maps_from:
-      - kick_vca.audio_out
+    direction: output
+    signal: audio
+    channels: 1
+    maps_from: kick_vca.audio_out
   - name: snare_left
-    signal_type: audio
-    maps_from:
-      - snare_vca.audio_out
+    direction: output
+    signal: audio
+    channels: 1
+    maps_from: snare_vca.audio_out
   - name: snare_right
-    signal_type: audio
-    maps_from:
-      - snare_vca.audio_out
+    direction: output
+    signal: audio
+    channels: 1
+    maps_from: snare_vca.audio_out
   - name: hat_left
-    signal_type: audio
-    maps_from:
-      - hat_vca.audio_out
+    direction: output
+    signal: audio
+    channels: 1
+    maps_from: hat_vca.audio_out
   - name: hat_right
-    signal_type: audio
-    maps_from:
-      - hat_vca.audio_out
+    direction: output
+    signal: audio
+    channels: 1
+    maps_from: hat_vca.audio_out
 modules:
   - id: kick_route
     type: event_filter
-    parameters:
+    static:
       selector: note
       note: 60
   - id: snare_route
     type: event_filter
-    parameters:
+    static:
       selector: note
       note: 38
   - id: hat_route
     type: event_filter
-    parameters:
+    static:
       selector: note
       note: 42
   - id: kick_osc

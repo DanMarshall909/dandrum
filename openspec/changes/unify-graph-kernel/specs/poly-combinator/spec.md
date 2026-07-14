@@ -2,7 +2,7 @@
 
 ### Requirement: Poly node instantiates a wrapped definition per voice
 
-The engine SHALL provide a `poly` structural node that references a graph definition and a static `max_voices` count. It SHALL expose an event input for note events, forward its remaining inputs to every voice instance, and expose the wrapped definition's audio and control outputs as summed outputs. Each compiled poly node SHALL own an independent runtime region containing its allocator, voice state, queues, schedule, and accumulators. Polyphony SHALL be expressed only through `poly`; there SHALL be no graph-wide voice execution scope after migration completes.
+The engine SHALL provide a `poly` structural node using static keys `definition`, `max_voices`, and `allocation` to reference a graph definition, set its maximum voice count, and choose its allocation policy. It SHALL expose an event input for note events, forward its remaining inputs to every voice instance, and expose the wrapped definition's audio and control outputs as summed outputs. Each compiled poly node SHALL own an independent runtime region containing its allocator, voice state, queues, schedule, and accumulators. Polyphony SHALL be expressed only through `poly`; there SHALL be no graph-wide voice execution scope after migration completes.
 
 #### Scenario: Poly node wraps a voice definition
 

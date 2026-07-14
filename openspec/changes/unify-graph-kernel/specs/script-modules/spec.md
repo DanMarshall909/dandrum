@@ -2,7 +2,7 @@
 
 ### Requirement: Script modules are graph modules
 
-Script modules SHALL be represented as named script-backed graph definitions with declared event/control ports and typed language/source static parameters. Nodes SHALL instantiate those definitions through the same `type`, `static`, and `defaults` shape used for every other graph definition; instance-specific ad-hoc port declarations SHALL NOT be supported.
+Script modules SHALL be represented as named graph definitions marked `implementation: script`, with declared event/control ports and typed language/source static parameters. Nodes SHALL instantiate those definitions through the same `type`, `static`, and `defaults` shape used for every other graph definition; instance-specific ad-hoc port declarations SHALL NOT be supported. Compilation SHALL lower the named definition to the script primitive while preserving its declared interface and typed construction values.
 
 #### Scenario: Script module participates in routing
 
