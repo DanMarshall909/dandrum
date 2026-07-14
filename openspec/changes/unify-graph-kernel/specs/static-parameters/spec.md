@@ -2,7 +2,7 @@
 
 ### Requirement: Static parameter declarations
 
-A graph definition SHALL be able to declare typed static parameters (integer, enumeration, string, or resource reference) with optional defaults. Static parameters are resolved at compile time and SHALL NOT be modulatable or connectable at runtime. String static parameters SHALL support construction-time inline text such as script source without making that text a runtime signal.
+A graph definition SHALL be able to declare typed static parameters (integer, enumeration, string, or resource reference) with optional defaults. A resource declaration SHALL identify its required resource kind (`sample` or `impulse_response`), and a resource literal SHALL carry both its kind and path. Static parameters are resolved at compile time and SHALL NOT be modulatable or connectable at runtime. String static parameters SHALL support construction-time inline text such as script source without making that text a runtime signal.
 
 #### Scenario: Definition declares static parameter
 
@@ -18,6 +18,11 @@ A graph definition SHALL be able to declare typed static parameters (integer, en
 
 - **WHEN** a script definition declares its inline source as a string static parameter
 - **THEN** loading SHALL preserve the source for compile-time construction without exposing it as a connectable port
+
+#### Scenario: Resource declaration and literal retain kind
+
+- **WHEN** a definition declares a sample resource static parameter and a node supplies `{ kind: sample, path: samples/hit.wav }`
+- **THEN** loading SHALL preserve the required kind and typed resource reference for preparation without exposing either as a port
 
 ### Requirement: Static argument resolution
 
@@ -58,7 +63,7 @@ The compiler SHALL cache expanded definitions keyed by definition identity plus 
 
 ### Requirement: Resource static parameters resolve in preparation context
 
-A resource-reference static parameter SHALL resolve relative to the declaring patch or package root through an explicit preparation context. Resolution SHALL validate the resource kind, deduplicate immutable loaded data, and produce a typed handle before runtime state is created.
+A resource-reference static parameter SHALL resolve through an explicit preparation context carrying authoring origins, host sample rate, and package roots. A relative literal SHALL resolve from the document or package version in which that literal was written, and name pass-through SHALL preserve that origin. Resolution SHALL validate the declared and supplied resource kinds, require the canonical target to remain beneath its canonical origin root, deduplicate immutable loaded data, enforce exact sample-rate compatibility, and produce a typed handle before runtime state is created.
 
 #### Scenario: Package-relative resource resolves
 
@@ -69,6 +74,16 @@ A resource-reference static parameter SHALL resolve relative to the declaring pa
 
 - **WHEN** a convolution definition receives a resource that is not a supported impulse response
 - **THEN** preparation SHALL fail with a structured diagnostic before runtime state creation
+
+#### Scenario: Caller override retains caller origin through pass-through
+
+- **WHEN** a root document supplies a relative resource literal to a packaged definition through one or more static-parameter name pass-throughs
+- **THEN** preparation SHALL resolve that literal from the root document where it was written rather than the receiving package root
+
+#### Scenario: Shared resource data has disjoint runtime state
+
+- **WHEN** multiple flattened instances resolve the same canonical resource at the same host sample rate
+- **THEN** preparation SHALL share one immutable decoded allocation while constructing independent mutable processor state for every instance
 
 ### Requirement: No static expression language
 

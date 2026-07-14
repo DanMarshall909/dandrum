@@ -160,12 +160,10 @@ impl PreparedEventQueues {
         Ok(())
     }
 
-    #[cfg(test)]
     pub(super) fn queue_count(&self) -> usize {
         self.queues.len()
     }
 
-    #[cfg(test)]
     pub(super) fn capacity_per_queue(&self) -> usize {
         self.queues.first().map_or(0, |q| q.capacity())
     }

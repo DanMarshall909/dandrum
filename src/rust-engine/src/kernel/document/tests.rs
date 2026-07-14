@@ -2,7 +2,11 @@ use std::fs;
 
 use crate::diagnostics::error_codes;
 use crate::graph::{PortDirection, SignalType};
-use crate::kernel::{ChannelCount, StaticArg, StaticType, StaticValue};
+use crate::kernel::{
+    ChannelCount, DefinitionImplementation, POLY_ALLOCATION_OLDEST_STEAL, POLY_DEFINITION,
+    POLY_NOTE_EVENTS_INPUT, ResourceKind, ResourceOrigin, ResourceRef, StaticArg, StaticType,
+    StaticValue,
+};
 
 use super::{load_kernel_patch_file, load_kernel_patch_str};
 
@@ -24,7 +28,8 @@ static_params:
     default: "fn process(ctx) {}"
   - name: impulse
     type: resource
-    default: room_ir
+    resource_kind: impulse_response
+    default: { kind: impulse_response, path: room_ir.wav }
 ports:
   - name: level
     direction: input
@@ -53,6 +58,7 @@ module_definitions:
         type: string
       - name: impulse
         type: resource
+        resource_kind: impulse_response
     ports:
       - name: gain
         direction: input
@@ -79,7 +85,7 @@ modules:
       channels: $channels
       mode: driven
       label: main
-      impulse: room_ir
+      impulse: { kind: impulse_response, path: room_ir.wav }
     defaults:
       gain: 0.5
 connections:
@@ -112,8 +118,16 @@ fn complete_kernel_document_produces_root_and_inline_graph_definitions() {
         Some(&StaticValue::String("fn process(ctx) {}".into()))
     );
     assert_eq!(
+        root.static_params()[3].static_type(),
+        StaticType::Resource(ResourceKind::ImpulseResponse)
+    );
+    assert_eq!(
         root.static_params()[3].default(),
-        Some(&StaticValue::Resource("room_ir".into()))
+        Some(&StaticValue::Resource(ResourceRef::new(
+            ResourceKind::ImpulseResponse,
+            "room_ir.wav",
+            ResourceOrigin::Document,
+        )))
     );
 
     let level = &root.ports()[0];
@@ -145,7 +159,11 @@ fn complete_kernel_document_produces_root_and_inline_graph_definitions() {
     );
     assert_eq!(
         root.nodes()[0].static_args()["impulse"],
-        StaticArg::Literal(StaticValue::Resource("room_ir".into()))
+        StaticArg::Literal(StaticValue::Resource(ResourceRef::new(
+            ResourceKind::ImpulseResponse,
+            "room_ir.wav",
+            ResourceOrigin::Document,
+        )))
     );
     assert_eq!(root.nodes()[0].port_default_overrides()["gain"], 0.5);
     assert_eq!(root.connections().len(), 1);
@@ -154,6 +172,19 @@ fn complete_kernel_document_produces_root_and_inline_graph_definitions() {
     assert_eq!(composite.static_params().len(), 4);
     assert_eq!(composite.ports().len(), 2);
     assert_eq!(composite.nodes().len(), 1);
+}
+
+#[test]
+fn resource_static_parameter_requires_a_resource_kind() {
+    let error = load_kernel_patch_str(
+        "metadata: { name: missing-kind }\nstatic_params:\n  - { name: sample, type: resource }\nports:\n  - { name: out, direction: output, signal: audio, channels: 1 }\nmodules: []\nconnections: []\n",
+    )
+    .expect_err("resource declarations without a kind must fail");
+
+    assert_eq!(
+        error.errors().next().unwrap().error_code(),
+        error_codes::KERNEL_DOCUMENT_PARSE_FAILED
+    );
 }
 
 #[test]
@@ -448,5 +479,224 @@ connections: []
         audio_in.multiplicity(),
         crate::kernel::Multiplicity::SingleSource,
         "explicit single_source should parse"
+    );
+}
+
+const SCRIPT_DEFINITION_PATCH: &str = r#"
+metadata: { name: scripted }
+ports:
+  - { name: out, direction: output, signal: audio, channels: 1 }
+module_definitions:
+  - type: counter
+    implementation: script
+    static_params:
+      - { name: language, type: enum, default: rhai, allowed_values: [rhai] }
+      - { name: source, type: string }
+    ports:
+      - { name: events, direction: input, signal: event, channels: 1 }
+      - { name: increment, direction: input, signal: control, channels: 1, default: 1 }
+      - { name: count, direction: output, signal: control, channels: 1 }
+modules:
+  - id: first
+    type: counter
+    static: { source: "fn process(ctx) {}" }
+    defaults: { increment: 2 }
+  - id: second
+    type: counter
+    static: { source: "fn process(ctx) {}" }
+connections: []
+"#;
+
+#[test]
+fn script_backed_definition_uses_the_ordinary_node_shape() {
+    let patch = load_kernel_patch_str(SCRIPT_DEFINITION_PATCH).expect("script definition loads");
+    let definition = patch.registry().get("counter").expect("named definition");
+
+    assert_eq!(
+        definition.implementation(),
+        DefinitionImplementation::Script
+    );
+    assert_eq!(
+        definition.static_params()[0].static_type(),
+        StaticType::Enum
+    );
+    assert_eq!(
+        definition.static_params()[1].static_type(),
+        StaticType::String
+    );
+    assert_eq!(definition.ports().len(), 3);
+    assert_eq!(patch.root().nodes()[0].definition_ref(), "counter");
+    assert_eq!(
+        patch.root().nodes()[0].port_default_overrides()["increment"],
+        2.0
+    );
+}
+
+#[test]
+fn script_instances_reject_ad_hoc_port_fields() {
+    let yaml = SCRIPT_DEFINITION_PATCH.replace(
+        "    defaults: { increment: 2 }",
+        "    defaults: { increment: 2 }\n    inputs: [{ name: invented, signal: control }]",
+    );
+
+    let diagnostics = load_kernel_patch_str(&yaml).expect_err("instance ports are not authorable");
+
+    assert_eq!(
+        diagnostics.errors().next().unwrap().error_code(),
+        error_codes::KERNEL_DOCUMENT_PARSE_FAILED
+    );
+    assert!(diagnostics.all()[0].message().contains("inputs"));
+}
+
+#[test]
+fn script_definition_rejects_internal_graph_structure_and_audio_ports() {
+    for (replacement, expected_fragment) in [
+        (
+            "    implementation: script\n    modules: [{ id: inner, type: gain }]",
+            "internal modules",
+        ),
+        (
+            "    implementation: script\n    connections: [{ from: a.out, to: b.in }]",
+            "internal connections",
+        ),
+        (
+            "      - { name: count, direction: output, signal: audio, channels: 1 }",
+            "audio port",
+        ),
+    ] {
+        let yaml = if replacement.starts_with("    implementation") {
+            SCRIPT_DEFINITION_PATCH.replace("    implementation: script", replacement)
+        } else {
+            SCRIPT_DEFINITION_PATCH.replace(
+                "      - { name: count, direction: output, signal: control, channels: 1 }",
+                replacement,
+            )
+        };
+
+        let diagnostics =
+            load_kernel_patch_str(&yaml).expect_err("malformed script definition must fail");
+        let diagnostic = diagnostics.errors().next().unwrap();
+        assert_eq!(
+            diagnostic.error_code(),
+            error_codes::KERNEL_SCRIPT_DEFINITION_INVALID
+        );
+        assert!(diagnostic.message().contains(expected_fragment));
+        assert_eq!(diagnostic.module_id(), Some("counter"));
+    }
+}
+
+#[test]
+fn script_definition_requires_typed_language_and_source_declarations() {
+    for (yaml, expected_fragment) in [
+        (
+            SCRIPT_DEFINITION_PATCH.replace(
+                "      - { name: language, type: enum, default: rhai, allowed_values: [rhai] }\n",
+                "",
+            ),
+            "language",
+        ),
+        (
+            SCRIPT_DEFINITION_PATCH.replace("      - { name: source, type: string }\n", ""),
+            "source",
+        ),
+        (
+            SCRIPT_DEFINITION_PATCH
+                .replace("name: language, type: enum", "name: language, type: string"),
+            "language",
+        ),
+        (
+            SCRIPT_DEFINITION_PATCH
+                .replace("name: source, type: string", "name: source, type: int"),
+            "source",
+        ),
+    ] {
+        let diagnostics =
+            load_kernel_patch_str(&yaml).expect_err("script construction declarations are fixed");
+        let diagnostic = diagnostics.errors().next().unwrap();
+        assert_eq!(
+            diagnostic.error_code(),
+            error_codes::KERNEL_SCRIPT_DEFINITION_INVALID
+        );
+        assert!(diagnostic.message().contains(expected_fragment));
+        assert_eq!(diagnostic.module_id(), Some("counter"));
+    }
+}
+
+#[test]
+fn unsupported_definition_implementation_has_a_structured_diagnostic() {
+    let yaml = SCRIPT_DEFINITION_PATCH.replace("implementation: script", "implementation: wasm");
+
+    let diagnostics = load_kernel_patch_str(&yaml).expect_err("unsupported implementation fails");
+    let diagnostic = diagnostics.errors().next().unwrap();
+
+    assert_eq!(
+        diagnostic.error_code(),
+        error_codes::KERNEL_DEFINITION_IMPLEMENTATION_UNSUPPORTED
+    );
+    assert_eq!(diagnostic.module_id(), Some("counter"));
+    assert_eq!(diagnostic.actual(), Some("wasm"));
+}
+
+const POLY_PATCH: &str = r#"
+metadata: { name: poly_patch }
+ports:
+  - { name: master, direction: output, signal: audio, channels: 2, maps_from: voices.audio }
+module_definitions:
+  - type: voice
+    ports:
+      - { name: level, direction: input, signal: control, channels: 1, default: 0.5 }
+      - { name: audio, direction: output, signal: audio, channels: 2 }
+    modules: []
+    connections: []
+modules:
+  - { id: midi, type: midi_input }
+  - id: voices
+    type: poly
+    static: { definition: voice, max_voices: 8, allocation: oldest-steal }
+connections:
+  - { from: midi.events, to: voices.notes }
+"#;
+
+#[test]
+fn yaml_poly_node_uses_ordinary_node_shape_and_synthesized_interface() {
+    let patch = load_kernel_patch_str(POLY_PATCH).expect("poly YAML loads");
+    let poly = &patch.root().nodes()[1];
+
+    assert_eq!(poly.definition_ref(), POLY_DEFINITION);
+    assert_eq!(
+        poly.static_args()["allocation"],
+        StaticArg::Literal(StaticValue::Enum(POLY_ALLOCATION_OLDEST_STEAL.to_string()))
+    );
+    assert!(
+        patch.root().validate(patch.registry()).is_ok(),
+        "YAML connections validate through the synthesized interface"
+    );
+    let ports = patch
+        .root()
+        .resolved_node_ports(patch.registry(), poly.id())
+        .expect("poly ports resolve");
+    assert!(
+        ports
+            .iter()
+            .any(|port| port.name() == POLY_NOTE_EVENTS_INPUT)
+    );
+    assert!(ports.iter().any(|port| port.name() == "level"));
+    assert!(ports.iter().any(|port| port.name() == "audio"));
+}
+
+#[test]
+fn yaml_poly_rejects_invalid_allocation_policy_during_validation() {
+    let yaml = POLY_PATCH.replace("oldest-steal", "newest-steal");
+    let patch = load_kernel_patch_str(&yaml).expect("document shape still loads");
+    let validation = patch.root().validate(patch.registry());
+
+    assert_eq!(
+        validation
+            .diagnostics()
+            .errors()
+            .next()
+            .unwrap()
+            .error_code(),
+        error_codes::KERNEL_STATIC_ARGUMENT_INVALID_ENUM_VALUE
     );
 }

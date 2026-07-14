@@ -22,9 +22,11 @@ use crate::diagnostics::{Diagnostic, Diagnostics, Severity, error_codes};
 use crate::graph::{PortDirection, SignalType};
 
 use super::{
-    CONTROL_TO_AUDIO_DEFINITION, Connection, DefinitionRegistry, GraphDefinition, Multiplicity,
-    NAMESPACE_SEPARATOR, Node, NodeId, PROMOTION_INPUT_PORT, PROMOTION_NODE_PREFIX,
-    PROMOTION_OUTPUT_PORT, PortRef, PromotionStep, ResolvedPort, StaticValue,
+    CONTROL_TO_AUDIO_DEFINITION, Connection, DefinitionImplementation, DefinitionRegistry,
+    GraphDefinition, Multiplicity, NAMESPACE_SEPARATOR, Node, NodeId, POLY_ALLOCATION_PARAM,
+    POLY_DEFINITION, POLY_MAX_VOICES_PARAM, POLY_WRAPPED_DEFINITION_PARAM, PROMOTION_INPUT_PORT,
+    PROMOTION_NODE_PREFIX, PROMOTION_OUTPUT_PORT, PolyAllocationPolicy, PortRef, PromotionStep,
+    ResolvedPort, StaticValue,
 };
 
 /// Maximum composite nesting depth before flattening bails out. Guards against
@@ -75,6 +77,7 @@ impl AtomicNode {
 #[derive(Clone, Debug, PartialEq)]
 pub struct FlattenedGraph {
     nodes: Vec<AtomicNode>,
+    poly_regions: Vec<FlattenedPolyRegion>,
     connections: Vec<Connection>,
     root_ports: Vec<ResolvedPort>,
     /// Each root output port name mapped to the atomic port(s) it gathers from.
@@ -88,9 +91,39 @@ pub struct FlattenedGraph {
     expansion_count: usize,
 }
 
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct FlattenedPolyRegion {
+    node_id: NodeId,
+    wrapped_definition: String,
+    max_voices: usize,
+    allocation_policy: PolyAllocationPolicy,
+}
+
+impl FlattenedPolyRegion {
+    pub fn node_id(&self) -> &NodeId {
+        &self.node_id
+    }
+
+    pub fn wrapped_definition(&self) -> &str {
+        &self.wrapped_definition
+    }
+
+    pub fn max_voices(&self) -> usize {
+        self.max_voices
+    }
+
+    pub fn allocation_policy(&self) -> PolyAllocationPolicy {
+        self.allocation_policy
+    }
+}
+
 impl FlattenedGraph {
     pub fn nodes(&self) -> &[AtomicNode] {
         &self.nodes
+    }
+
+    pub fn poly_regions(&self) -> &[FlattenedPolyRegion] {
+        &self.poly_regions
     }
 
     pub fn connections(&self) -> &[Connection] {
@@ -142,6 +175,7 @@ struct Interface {
 #[derive(Clone, Debug)]
 struct Template {
     nodes: Vec<AtomicNode>,
+    poly_regions: Vec<FlattenedPolyRegion>,
     connections: Vec<Connection>,
     interface: Interface,
 }
@@ -179,11 +213,12 @@ impl GraphDefinition {
         }
 
         let template = template.expect("no errors implies a template");
-        let (nodes, connections, interface) = instantiate(&template, "");
+        let (nodes, poly_regions, connections, interface) = instantiate(&template, "");
         let (nodes, connections, promotions) = insert_promotions(nodes, connections);
         let root_ports = GraphDefinition::resolve_ports(self, &context);
         Ok(FlattenedGraph {
             nodes,
+            poly_regions,
             connections,
             root_ports,
             root_output_sources: interface.outputs,
@@ -212,6 +247,7 @@ impl Compiler<'_> {
         // resolution can silently fall back to a default value.
         if self.checked.insert(definition.name().to_string()) {
             definition.validate_static_references(&mut self.diagnostics);
+            definition.validate_definition_structure(&mut self.diagnostics);
         }
 
         // Reject out-of-range resolved values for this instance's static
@@ -223,7 +259,9 @@ impl Compiler<'_> {
         }
 
         // A definition with no internal nodes is an atomic primitive.
-        if definition.nodes().is_empty() {
+        if definition.implementation() == DefinitionImplementation::Script
+            || definition.nodes().is_empty()
+        {
             self.expansions += 1;
             let template = definition.atomic_template(static_context);
             self.cache.insert(key, template.clone());
@@ -274,6 +312,7 @@ impl Compiler<'_> {
         depth: usize,
     ) -> Template {
         let mut nodes = Vec::new();
+        let mut poly_regions = Vec::new();
         let mut connections = Vec::new();
         let mut child_interfaces: BTreeMap<NodeId, Interface> = BTreeMap::new();
 
@@ -303,16 +342,64 @@ impl Compiler<'_> {
                 continue;
             };
 
+            if referenced.name() == POLY_DEFINITION {
+                let Some(ports) = definition.resolve_node_ports(
+                    node,
+                    referenced,
+                    &child_args,
+                    self.registry,
+                    &mut self.diagnostics,
+                ) else {
+                    continue;
+                };
+                let wrapped_definition = match child_args.get(POLY_WRAPPED_DEFINITION_PARAM) {
+                    Some(StaticValue::String(value)) => value.clone(),
+                    _ => continue,
+                };
+                let max_voices = match child_args.get(POLY_MAX_VOICES_PARAM) {
+                    Some(StaticValue::Int(value)) => match usize::try_from(*value) {
+                        Ok(value) => value,
+                        Err(_) => continue,
+                    },
+                    _ => continue,
+                };
+                let Some(allocation_policy) = child_args
+                    .get(POLY_ALLOCATION_PARAM)
+                    .and_then(PolyAllocationPolicy::from_static_value)
+                else {
+                    continue;
+                };
+                let mut port_defaults = declared_control_defaults(&ports);
+                port_defaults.extend(node.port_default_overrides().clone());
+                nodes.push(AtomicNode {
+                    id: node.id().clone(),
+                    definition: POLY_DEFINITION.to_string(),
+                    static_args: child_args,
+                    port_defaults,
+                    ports: ports.clone(),
+                    latency: 0,
+                });
+                poly_regions.push(FlattenedPolyRegion {
+                    node_id: node.id().clone(),
+                    wrapped_definition,
+                    max_voices,
+                    allocation_policy,
+                });
+                child_interfaces.insert(node.id().clone(), atomic_interface(node.id(), &ports));
+                continue;
+            }
+
             let Some(child_template) = self.resolve_expansion(referenced, &child_args, depth + 1)
             else {
                 continue;
             };
 
-            let (mut child_nodes, child_connections, child_interface) =
+            let (mut child_nodes, mut child_poly_regions, child_connections, child_interface) =
                 instantiate(&child_template, node.id().as_str());
             apply_overrides(node, &child_interface, &mut child_nodes);
 
             nodes.extend(child_nodes);
+            poly_regions.append(&mut child_poly_regions);
             connections.extend(child_connections);
             child_interfaces.insert(node.id().clone(), child_interface);
         }
@@ -337,6 +424,7 @@ impl Compiler<'_> {
         let interface = compose_interface(definition, &child_interfaces);
         Template {
             nodes,
+            poly_regions,
             connections,
             interface,
         }
@@ -439,7 +527,15 @@ fn promotion_node(id: &NodeId, input_channels: u32, output_channels: u32) -> Ato
 
 /// Re-namespace a template under an instance `prefix`, yielding the concrete
 /// atomic nodes, connections, and boundary interface for that instance.
-fn instantiate(template: &Template, prefix: &str) -> (Vec<AtomicNode>, Vec<Connection>, Interface) {
+fn instantiate(
+    template: &Template,
+    prefix: &str,
+) -> (
+    Vec<AtomicNode>,
+    Vec<FlattenedPolyRegion>,
+    Vec<Connection>,
+    Interface,
+) {
     let nodes = template
         .nodes
         .iter()
@@ -464,12 +560,23 @@ fn instantiate(template: &Template, prefix: &str) -> (Vec<AtomicNode>, Vec<Conne
         })
         .collect();
 
+    let poly_regions = template
+        .poly_regions
+        .iter()
+        .map(|region| FlattenedPolyRegion {
+            node_id: NodeId::new(namespaced(prefix, region.node_id.as_str())),
+            wrapped_definition: region.wrapped_definition.clone(),
+            max_voices: region.max_voices,
+            allocation_policy: region.allocation_policy,
+        })
+        .collect();
+
     let interface = Interface {
         inputs: renamespace_map(&template.interface.inputs, prefix),
         outputs: renamespace_map(&template.interface.outputs, prefix),
     };
 
-    (nodes, connections, interface)
+    (nodes, poly_regions, connections, interface)
 }
 
 /// Apply a node instance's control-default overrides onto the atomic nodes its
@@ -537,12 +644,18 @@ impl GraphDefinition {
         Template {
             nodes: vec![AtomicNode {
                 id,
-                definition: self.name().to_string(),
+                definition: match self.implementation() {
+                    DefinitionImplementation::Graph => self.name().to_string(),
+                    DefinitionImplementation::Script => {
+                        crate::builtins::module_types::SCRIPT.to_string()
+                    }
+                },
                 static_args: static_args.clone(),
                 port_defaults: declared_control_defaults(&ports),
                 ports,
                 latency: self.latency().resolve(static_args),
             }],
+            poly_regions: Vec::new(),
             connections: Vec::new(),
             interface,
         }
@@ -623,9 +736,19 @@ fn cache_key(name: &str, static_args: &BTreeMap<String, StaticValue>) -> String 
                 key.push_str("string:");
                 key.push_str(text);
             }
-            StaticValue::Resource(text) => {
+            StaticValue::Resource(reference) => {
                 key.push_str("res:");
-                key.push_str(text);
+                key.push_str(reference.kind().as_str());
+                key.push(':');
+                key.push_str(&reference.path().to_string_lossy());
+                key.push(':');
+                match reference.origin() {
+                    super::ResourceOrigin::Document => key.push_str("document"),
+                    super::ResourceOrigin::Package(root) => {
+                        key.push_str("package:");
+                        key.push_str(&root.to_string_lossy());
+                    }
+                }
             }
         }
     }

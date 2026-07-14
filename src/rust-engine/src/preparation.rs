@@ -1,11 +1,13 @@
 use std::collections::{BTreeMap, BTreeSet};
 use std::fmt;
-use std::path::Path;
+use std::path::{Component, Path, PathBuf};
+use std::sync::Arc;
 
 use crate::builtins::module_kind::ModuleKind;
 use crate::compiled_patch::{
-    self, CompileError, CompiledNodeData, CompiledPatch, CompiledPortSpan, CompiledRootPort,
-    RootBusPlan,
+    self, CompileError, CompiledNodeData, CompiledPatch, CompiledPolyOutputAccumulator,
+    CompiledPolyRegion, CompiledPolyVoiceStorage, CompiledPortSpan, CompiledResourceHandles,
+    CompiledRootPort, ImpulseResponseResourceHandle, RootBusPlan, SampleResourceHandle,
 };
 use crate::diagnostics::{self, Diagnostic, Severity};
 use crate::graph::{
@@ -14,13 +16,193 @@ use crate::graph::{
 use crate::kernel::document::KernelPatch;
 use crate::kernel::flatten::FlattenedGraph;
 use crate::kernel::latency::LatencyPlan;
-use crate::kernel::{DefinitionRegistry, GraphDefinition, StaticValue};
+use crate::kernel::{
+    DefinitionRegistry, GraphDefinition, ResourceKind, ResourceOrigin, ResourceRef, StaticValue,
+};
+use crate::module_reference::MacroRoots;
 use crate::patch::{self, ParameterValue, PatchDocument, PresetDocument, RenderSettings};
-use crate::sample::{self, PreparedSamplerAssets, SampleLoadError};
+use crate::sample::{self, LoadedSample, PreparedSamplerAssets, SampleLoadError};
 
 const KERNEL_COMPENSATION_EDGE_PREFIX: &str = "compensation::edge::";
 const KERNEL_COMPENSATION_ROOT_PREFIX: &str = "compensation::root::";
 const KERNEL_OUTPUT_NODE_ID: &str = "kernel::audio_output";
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct PreparationContext {
+    document_root: PathBuf,
+    sample_rate_hz: u32,
+    macro_roots: MacroRoots,
+}
+
+impl PreparationContext {
+    pub fn new(document_root: impl Into<PathBuf>, sample_rate_hz: u32) -> Self {
+        Self {
+            document_root: document_root.into(),
+            sample_rate_hz,
+            macro_roots: MacroRoots::new(),
+        }
+    }
+
+    pub fn with_macro_roots(mut self, macro_roots: MacroRoots) -> Self {
+        self.macro_roots = macro_roots;
+        self
+    }
+
+    pub fn document_root(&self) -> &Path {
+        &self.document_root
+    }
+
+    pub fn sample_rate_hz(&self) -> u32 {
+        self.sample_rate_hz
+    }
+
+    pub fn macro_roots(&self) -> &MacroRoots {
+        &self.macro_roots
+    }
+}
+
+#[derive(Clone, Debug)]
+pub struct ResolvedResource {
+    kind: ResourceKind,
+    canonical_path: PathBuf,
+    sample: Arc<LoadedSample>,
+}
+
+impl ResolvedResource {
+    pub fn kind(&self) -> ResourceKind {
+        self.kind
+    }
+
+    pub fn canonical_path(&self) -> &Path {
+        &self.canonical_path
+    }
+
+    pub fn sample(&self) -> &LoadedSample {
+        &self.sample
+    }
+
+    fn shared_sample(&self) -> Arc<LoadedSample> {
+        Arc::clone(&self.sample)
+    }
+
+    #[cfg(test)]
+    fn shares_data_with(&self, other: &Self) -> bool {
+        Arc::ptr_eq(&self.sample, &other.sample)
+    }
+}
+
+pub struct ResourceResolver<'a> {
+    context: &'a PreparationContext,
+    loaded: BTreeMap<(PathBuf, u32), Arc<LoadedSample>>,
+}
+
+impl<'a> ResourceResolver<'a> {
+    pub fn new(context: &'a PreparationContext) -> Self {
+        Self {
+            context,
+            loaded: BTreeMap::new(),
+        }
+    }
+
+    pub fn loaded_resource_count(&self) -> usize {
+        self.loaded.len()
+    }
+
+    pub fn resolve(
+        &mut self,
+        reference: &ResourceRef,
+    ) -> Result<ResolvedResource, diagnostics::Diagnostics> {
+        if reference.path().is_absolute()
+            || reference
+                .path()
+                .components()
+                .any(|component| !matches!(component, Component::Normal(_)))
+        {
+            return Err(resource_path_escape(reference, None));
+        }
+
+        let origin_root = match reference.origin() {
+            ResourceOrigin::Document => self.context.document_root(),
+            ResourceOrigin::Package(root) => root,
+        };
+        let canonical_root = origin_root.canonicalize().map_err(|error| {
+            resource_load_failed(
+                reference,
+                origin_root,
+                format!("failed to resolve resource root: {error}"),
+            )
+        })?;
+        let joined = canonical_root.join(reference.path());
+        let canonical_path = joined.canonicalize().map_err(|error| {
+            resource_load_failed(
+                reference,
+                &joined,
+                format!("failed to resolve resource path: {error}"),
+            )
+        })?;
+        if !canonical_path.starts_with(&canonical_root) {
+            return Err(resource_path_escape(reference, Some(&canonical_path)));
+        }
+
+        let key = (canonical_path.clone(), self.context.sample_rate_hz());
+        let sample = if let Some(sample) = self.loaded.get(&key) {
+            Arc::clone(sample)
+        } else {
+            let loaded =
+                crate::audio_loading::load_pcm_wav(&canonical_path, self.context.sample_rate_hz())
+                    .map_err(|message| resource_load_failed(reference, &canonical_path, message))?;
+            let sample = Arc::new(LoadedSample::new(
+                loaded.sample_rate_hz(),
+                loaded.frames().to_vec(),
+            ));
+            self.loaded.insert(key, Arc::clone(&sample));
+            sample
+        };
+
+        Ok(ResolvedResource {
+            kind: reference.kind(),
+            canonical_path,
+            sample,
+        })
+    }
+}
+
+fn resource_path_escape(
+    reference: &ResourceRef,
+    canonical_path: Option<&Path>,
+) -> diagnostics::Diagnostics {
+    let actual = canonical_path.unwrap_or_else(|| reference.path());
+    Diagnostic::new(
+        diagnostics::error_codes::KERNEL_RESOURCE_PATH_ESCAPE,
+        Severity::Error,
+        format!(
+            "resource path '{}' escapes its authoring root",
+            reference.path().display()
+        ),
+    )
+    .with_expected("a relative canonical path beneath the authoring root")
+    .with_actual(actual.display().to_string())
+    .into()
+}
+
+fn resource_load_failed(
+    reference: &ResourceRef,
+    path: &Path,
+    message: impl fmt::Display,
+) -> diagnostics::Diagnostics {
+    Diagnostic::new(
+        diagnostics::error_codes::KERNEL_RESOURCE_LOAD_FAILED,
+        Severity::Error,
+        format!(
+            "failed to load {} resource '{}' at {}: {message}",
+            reference.kind(),
+            reference.path().display(),
+            path.display()
+        ),
+    )
+    .with_actual(path.display().to_string())
+    .into()
+}
 
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct HostBuses {
@@ -235,6 +417,32 @@ pub fn prepare_kernel_graph_with_buses(
     render_settings: &RenderSettings,
     host_buses: &HostBuses,
 ) -> Result<PreparedKernelInstrument, KernelPreparationError> {
+    prepare_kernel_graph_with_buses_internal(root, registry, render_settings, host_buses, None)
+}
+
+pub fn prepare_kernel_graph_with_buses_and_context(
+    root: &GraphDefinition,
+    registry: &DefinitionRegistry,
+    render_settings: &RenderSettings,
+    host_buses: &HostBuses,
+    context: &PreparationContext,
+) -> Result<PreparedKernelInstrument, KernelPreparationError> {
+    prepare_kernel_graph_with_buses_internal(
+        root,
+        registry,
+        render_settings,
+        host_buses,
+        Some(context),
+    )
+}
+
+fn prepare_kernel_graph_with_buses_internal(
+    root: &GraphDefinition,
+    registry: &DefinitionRegistry,
+    render_settings: &RenderSettings,
+    host_buses: &HostBuses,
+    context: Option<&PreparationContext>,
+) -> Result<PreparedKernelInstrument, KernelPreparationError> {
     let validation = root.validate(registry);
     if !validation.is_ok() {
         return Err(validation.diagnostics().clone().into());
@@ -247,7 +455,12 @@ pub fn prepare_kernel_graph_with_buses(
     let latency_plan = flattened_graph
         .balance_latency()
         .map_err(KernelPreparationError::from)?;
-    let lowered = lower_kernel_graph(&flattened_graph, &latency_plan)?;
+    let mut resource_resolver = context.map(ResourceResolver::new);
+    let resources = match resource_resolver.as_mut() {
+        Some(resolver) => resolve_flattened_resources(&flattened_graph, resolver)?,
+        None => BTreeMap::new(),
+    };
+    let lowered = lower_kernel_graph(&flattened_graph, &latency_plan, &resources)?;
     lowered
         .graph
         .validate()
@@ -280,6 +493,14 @@ pub fn prepare_kernel_graph_with_buses(
         &lowered.root_outputs,
         &compiled_patch,
     ));
+    let poly_regions = compile_poly_regions(
+        &flattened_graph,
+        registry,
+        render_settings,
+        resource_resolver.as_mut(),
+        &compiled_patch,
+    )?;
+    compiled_patch.set_poly_regions(poly_regions);
 
     Ok(PreparedKernelInstrument {
         flattened_graph,
@@ -287,6 +508,190 @@ pub fn prepare_kernel_graph_with_buses(
         graph: lowered.graph,
         compiled_patch,
     })
+}
+
+fn resolve_flattened_resources(
+    flattened: &FlattenedGraph,
+    resolver: &mut ResourceResolver<'_>,
+) -> Result<BTreeMap<String, CompiledResourceHandles>, KernelPreparationError> {
+    let mut by_node = BTreeMap::new();
+    for node in flattened.nodes() {
+        let mut handles = CompiledResourceHandles::default();
+        for value in node.static_args().values() {
+            let StaticValue::Resource(reference) = value else {
+                continue;
+            };
+            let resolved = resolver
+                .resolve(reference)
+                .map_err(KernelPreparationError::from)?;
+            match resolved.kind() {
+                ResourceKind::Sample => {
+                    handles.sample =
+                        Some(SampleResourceHandle::from_shared(resolved.shared_sample()));
+                }
+                ResourceKind::ImpulseResponse => {
+                    handles.impulse_response = Some(ImpulseResponseResourceHandle::from_shared(
+                        resolved.shared_sample(),
+                    ));
+                }
+            }
+        }
+        if handles != CompiledResourceHandles::default() {
+            by_node.insert(node.id().as_str().to_string(), handles);
+        }
+    }
+    Ok(by_node)
+}
+
+fn compile_poly_regions(
+    flattened: &FlattenedGraph,
+    registry: &DefinitionRegistry,
+    render_settings: &RenderSettings,
+    mut resource_resolver: Option<&mut ResourceResolver<'_>>,
+    parent: &CompiledPatch,
+) -> Result<Vec<CompiledPolyRegion>, KernelPreparationError> {
+    let mut compiled_regions = Vec::with_capacity(flattened.poly_regions().len());
+    for region in flattened.poly_regions() {
+        let wrapped = registry
+            .get(region.wrapped_definition())
+            .expect("validated poly region references an existing definition");
+        let child_flattened = wrapped
+            .flatten(registry)
+            .map_err(KernelPreparationError::from)?;
+        if let Some(nested) = child_flattened.poly_regions().first() {
+            let nested_id = format!(
+                "{}{}{}",
+                region.node_id().as_str(),
+                crate::kernel::NAMESPACE_SEPARATOR,
+                nested.node_id().as_str()
+            );
+            return Err(KernelPreparationError::from(diagnostics::Diagnostics::from(
+                Diagnostic::new(
+                    diagnostics::error_codes::KERNEL_POLY_NESTING_UNSUPPORTED,
+                    Severity::Error,
+                    format!(
+                        "poly node '{nested_id}' is nested inside poly region '{}'; nested regions are deferred to task 4.7",
+                        region.node_id().as_str()
+                    ),
+                )
+                .with_module_id(nested_id)
+                .with_suggested_fix("use a single poly region until nested poly regions are supported"),
+            )));
+        }
+
+        let latency_plan = child_flattened
+            .balance_latency()
+            .map_err(KernelPreparationError::from)?;
+        let resources = match resource_resolver.as_deref_mut() {
+            Some(resolver) => resolve_flattened_resources(&child_flattened, resolver)?,
+            None => BTreeMap::new(),
+        };
+        let lowered = lower_kernel_graph(&child_flattened, &latency_plan, &resources)?;
+        lowered
+            .graph
+            .validate()
+            .map_err(|error| KernelPreparationError::from(error.to_diagnostics()))?;
+        let mut child_patch = compiled_patch::compile_with_node_data(
+            &lowered.graph,
+            render_settings,
+            &lowered.node_data,
+        )
+        .map_err(|error| {
+            KernelPreparationError::from(diagnostics::Diagnostics::from(error.to_diagnostic()))
+        })?;
+        let child_input_spans = child_flattened
+            .root_ports()
+            .iter()
+            .filter(|port| port.direction() == PortDirection::Input)
+            .map(|port| {
+                let span = child_patch.reserve_root_input_span(
+                    port.channels() as usize,
+                    child_flattened
+                        .root_input_destinations()
+                        .get(port.name())
+                        .map(Vec::as_slice)
+                        .unwrap_or_default(),
+                );
+                (port.name().to_string(), span)
+            })
+            .collect::<BTreeMap<_, _>>();
+        let child_buses = HostBuses {
+            inputs: child_flattened
+                .root_ports()
+                .iter()
+                .filter(|port| port.direction() == PortDirection::Input)
+                .map(|port| (port.name().to_string(), port.channels() as usize))
+                .collect(),
+            outputs: child_flattened
+                .root_ports()
+                .iter()
+                .filter(|port| port.direction() == PortDirection::Output)
+                .map(|port| (port.name().to_string(), port.channels() as usize))
+                .collect(),
+        };
+        child_patch.set_root_bus_plan(root_bus_plan(
+            &child_flattened,
+            &child_buses,
+            &child_input_spans,
+            &lowered.root_outputs,
+            &child_patch,
+        ));
+
+        let state_count = child_patch.nodes().len();
+        let audio_buffer_count = child_patch.total_output_buffer_count()
+            + child_patch
+                .nodes()
+                .iter()
+                .flat_map(|node| node.input_port_spans.iter())
+                .map(|span| span.channel_count)
+                .sum::<usize>();
+        let event_queue_count = child_patch
+            .nodes()
+            .iter()
+            .flat_map(|node| {
+                node.input_port_types
+                    .iter()
+                    .chain(node.output_port_types.iter())
+            })
+            .filter(|signal_type| **signal_type == SignalType::Event)
+            .count()
+            .max(1);
+        let voices = (0..region.max_voices())
+            .map(|voice| {
+                CompiledPolyVoiceStorage::new(
+                    voice * state_count..(voice + 1) * state_count,
+                    voice * audio_buffer_count..(voice + 1) * audio_buffer_count,
+                    voice * event_queue_count..(voice + 1) * event_queue_count,
+                )
+            })
+            .collect();
+        let boundary = parent
+            .nodes()
+            .iter()
+            .find(|node| node.id.as_str() == region.node_id().as_str())
+            .expect("compiled parent retains its poly boundary node");
+        let output_accumulators = boundary
+            .output_port_names
+            .iter()
+            .zip(boundary.output_port_types.iter())
+            .zip(boundary.output_port_spans.iter())
+            .filter_map(|((name, signal_type), span)| {
+                (*signal_type != SignalType::Event)
+                    .then(|| CompiledPolyOutputAccumulator::new(name, *signal_type, *span))
+            })
+            .collect();
+        compiled_regions.push(CompiledPolyRegion::new(
+            region.node_id().as_str(),
+            region.max_voices(),
+            region.allocation_policy(),
+            child_flattened,
+            child_patch,
+            voices,
+            render_settings.block_size_frames as usize,
+            output_accumulators,
+        ));
+    }
+    Ok(compiled_regions)
 }
 
 fn validate_host_buses(
@@ -349,6 +754,7 @@ struct LoweredKernelGraph {
 fn lower_kernel_graph(
     flattened: &FlattenedGraph,
     latency_plan: &LatencyPlan,
+    resources: &BTreeMap<String, CompiledResourceHandles>,
 ) -> Result<LoweredKernelGraph, KernelPreparationError> {
     use crate::builtins::module_types;
     use crate::graph::builtin_ports;
@@ -392,6 +798,10 @@ fn lower_kernel_graph(
         .map_err(|error| {
             KernelPreparationError::from(diagnostics::Diagnostics::from(error.to_diagnostic()))
         })?;
+        data.resources = resources
+            .get(node.id().as_str())
+            .cloned()
+            .unwrap_or_default();
         data.port_channels.extend(
             node.ports()
                 .iter()
@@ -617,9 +1027,8 @@ fn legacy_ref(reference: &crate::kernel::PortRef) -> PortRef {
 fn static_value_to_string(value: &StaticValue) -> String {
     match value {
         StaticValue::Int(value) => value.to_string(),
-        StaticValue::Enum(value) | StaticValue::String(value) | StaticValue::Resource(value) => {
-            value.clone()
-        }
+        StaticValue::Enum(value) | StaticValue::String(value) => value.clone(),
+        StaticValue::Resource(reference) => reference.path().to_string_lossy().into_owned(),
     }
 }
 
@@ -763,26 +1172,600 @@ impl std::error::Error for PreparationError {
 mod tests {
     use super::*;
     use crate::builtins::{
-        DELAY_SAMPLES_PARAMETER, SPECTRAL_FFT_SIZE_PARAMETER, SPECTRAL_MODE_PARAMETER,
+        DELAY_SAMPLES_PARAMETER, SCRIPT_LANGUAGE_PARAMETER, SCRIPT_LANGUAGE_RHAI,
+        SCRIPT_SOURCE_PARAMETER, SPECTRAL_FFT_SIZE_PARAMETER, SPECTRAL_MODE_PARAMETER,
         SPECTRAL_MODE_PASSTHROUGH, module_types,
     };
+    use crate::compiled_patch::{CompiledConstruction, CompiledScriptLanguage};
     use crate::convolution::Convolution;
     use crate::core::TimedInputEvent;
     use crate::graph::{SignalType, builtin_ports};
     use crate::graph_processor::{RealtimeGraphProcessor, render_offline_compiled};
-    use crate::kernel::builtins::builtin_registry;
+    use crate::kernel::builtins::{IMPULSE_RESPONSE_RESOURCE_PARAM, builtin_registry};
     use crate::kernel::document::load_kernel_patch_str;
     use crate::kernel::{
         Connection, DefinitionRegistry, GraphDefinition, Node, NodeId, Port as KernelPort,
-        PortRef as KernelPortRef, StaticArg, StaticValue,
+        PortRef as KernelPortRef, ResourceKind, ResourceOrigin, ResourceRef, StaticArg,
+        StaticValue,
     };
+    use crate::module_reference::{LIB_MACRO, MacroRoots};
     use crate::patch;
     use crate::sample::LoadedSample;
     use crate::script::ScriptEvent;
     use std::collections::BTreeMap;
     use std::fs;
+    use std::path::PathBuf;
 
     const WET_NODE_ID: &str = "wet";
+    const UNIT_IR_PATH: &str = "unit-ir.wav";
+
+    fn poly_node(id: &str, definition: &str, max_voices: i64) -> Node {
+        Node::new(NodeId::new(id), crate::kernel::POLY_DEFINITION)
+            .with_static_arg(
+                crate::kernel::POLY_WRAPPED_DEFINITION_PARAM,
+                StaticArg::Literal(StaticValue::String(definition.to_string())),
+            )
+            .with_static_arg(
+                crate::kernel::POLY_MAX_VOICES_PARAM,
+                StaticArg::Literal(StaticValue::Int(max_voices)),
+            )
+            .with_static_arg(
+                crate::kernel::POLY_ALLOCATION_PARAM,
+                StaticArg::Literal(StaticValue::Enum(
+                    crate::kernel::POLY_ALLOCATION_REJECT_NEW.to_string(),
+                )),
+            )
+    }
+
+    fn gain_voice(name: &str) -> GraphDefinition {
+        GraphDefinition::new(name)
+            .with_port(
+                KernelPort::input("input", SignalType::Audio, 2)
+                    .maps_to(kernel_ref("gain", builtin_ports::AUDIO_IN)),
+            )
+            .with_port(
+                KernelPort::output("audio", SignalType::Audio, 2)
+                    .maps_from(kernel_ref("gain", builtin_ports::AUDIO_OUT)),
+            )
+            .with_node(
+                Node::new(NodeId::new("gain"), module_types::GAIN).with_static_arg(
+                    crate::kernel::builtins::CHANNELS_PARAM,
+                    StaticArg::Literal(StaticValue::Int(2)),
+                ),
+            )
+    }
+
+    fn poly_root(wrapped_definition: &str, max_voices: i64) -> GraphDefinition {
+        GraphDefinition::new("root")
+            .with_port(
+                KernelPort::input("input", SignalType::Audio, 2)
+                    .maps_to(kernel_ref("voices", "input")),
+            )
+            .with_port(
+                KernelPort::output("master", SignalType::Audio, 2)
+                    .maps_from(kernel_ref("voices", "audio")),
+            )
+            .with_node(poly_node("voices", wrapped_definition, max_voices))
+    }
+
+    #[test]
+    fn preparation_compiles_exactly_max_voices_of_disjoint_poly_storage() {
+        let registry = builtin_registry().with_definition(gain_voice("voice"));
+        let root = poly_root("voice", 3);
+        let buses = HostBuses::new()
+            .with_input("input", 2)
+            .with_output("master", 2);
+
+        let prepared =
+            prepare_kernel_graph_with_buses(&root, &registry, &KERNEL_RENDER_SETTINGS, &buses)
+                .expect("one non-nested poly region prepares");
+        let repeated =
+            prepare_kernel_graph_with_buses(&root, &registry, &KERNEL_RENDER_SETTINGS, &buses)
+                .expect("repeated preparation succeeds");
+
+        assert_eq!(prepared.compiled_patch(), repeated.compiled_patch());
+        assert_eq!(prepared.compiled_patch().poly_regions().len(), 1);
+        let region = &prepared.compiled_patch().poly_regions()[0];
+        assert_eq!(region.node_id(), "voices");
+        assert_eq!(region.max_voices(), 3);
+        assert_eq!(
+            region.allocation_policy(),
+            crate::kernel::PolyAllocationPolicy::RejectNew
+        );
+        assert_eq!(region.flattened_voice().nodes().len(), 1);
+        assert_eq!(region.child_schedule(), &[0]);
+        assert_eq!(region.voices().len(), 3);
+        assert_eq!(region.voices()[0].state_range(), 0..1);
+        assert_eq!(region.voices()[1].state_range(), 1..2);
+        assert_eq!(region.voices()[2].state_range(), 2..3);
+        assert_eq!(region.voices()[0].audio_buffer_range(), 0..7);
+        assert_eq!(region.voices()[1].audio_buffer_range(), 7..14);
+        assert_eq!(region.voices()[2].audio_buffer_range(), 14..21);
+        assert_eq!(region.voices()[0].event_queue_range(), 0..1);
+        assert_eq!(region.voices()[1].event_queue_range(), 1..2);
+        assert_eq!(region.voices()[2].event_queue_range(), 2..3);
+        assert_eq!(
+            region.event_queue_capacity(),
+            KERNEL_RENDER_SETTINGS.block_size_frames as usize
+        );
+        assert_eq!(region.output_accumulators().len(), 1);
+        assert_eq!(region.output_accumulators()[0].name(), "audio");
+        assert_eq!(region.output_accumulators()[0].span().channel_count, 2);
+        let boundary = prepared
+            .compiled_patch()
+            .nodes()
+            .iter()
+            .find(|node| node.id.as_str() == "voices")
+            .expect("parent retains structural poly node");
+        assert_eq!(boundary.module_kind, ModuleKind::Poly);
+        assert_eq!(boundary.input_port_names, ["notes", "input"]);
+        assert_eq!(boundary.input_port_spans[1].channel_count, 2);
+        assert_eq!(boundary.output_port_names, ["audio"]);
+        assert_eq!(boundary.output_port_spans[0].channel_count, 2);
+        assert!(prepared.compiled_patch().voice_node_indices().is_empty());
+    }
+
+    #[test]
+    fn preparation_rejects_nested_poly_until_nested_regions_are_supported() {
+        let inner = gain_voice("inner");
+        let outer = GraphDefinition::new("outer")
+            .with_port(
+                KernelPort::input("input", SignalType::Audio, 2)
+                    .maps_to(kernel_ref("inner_voices", "input")),
+            )
+            .with_port(
+                KernelPort::output("audio", SignalType::Audio, 2)
+                    .maps_from(kernel_ref("inner_voices", "audio")),
+            )
+            .with_node(poly_node("inner_voices", "inner", 2));
+        let registry = builtin_registry()
+            .with_definition(inner)
+            .with_definition(outer);
+        let error = prepare_kernel_graph_with_buses(
+            &poly_root("outer", 2),
+            &registry,
+            &KERNEL_RENDER_SETTINGS,
+            &HostBuses::new()
+                .with_input("input", 2)
+                .with_output("master", 2),
+        )
+        .expect_err("nested poly is deferred to task 4.7");
+        let diagnostic = error.diagnostics().errors().next().unwrap();
+
+        assert_eq!(
+            diagnostic.error_code(),
+            diagnostics::error_codes::KERNEL_POLY_NESTING_UNSUPPORTED
+        );
+        assert_eq!(diagnostic.module_id(), Some("voices::inner_voices"));
+    }
+
+    #[test]
+    fn realtime_construction_prepares_independent_stateful_poly_voice_storage() {
+        let stateful_voice = GraphDefinition::new("stateful_voice")
+            .with_implementation(crate::kernel::DefinitionImplementation::Script)
+            .with_static_param(
+                crate::kernel::StaticParam::new(
+                    SCRIPT_LANGUAGE_PARAMETER,
+                    crate::kernel::StaticType::Enum,
+                )
+                .with_default(StaticValue::Enum(SCRIPT_LANGUAGE_RHAI.to_string()))
+                .with_allowed_values([SCRIPT_LANGUAGE_RHAI]),
+            )
+            .with_static_param(
+                crate::kernel::StaticParam::new(
+                    SCRIPT_SOURCE_PARAMETER,
+                    crate::kernel::StaticType::String,
+                )
+                .with_default(StaticValue::String(
+                    r#"fn process(ctx) {
+                        let value = ctx.state_get("value") + 1.0;
+                        ctx.state_set("value", value);
+                        ctx.control("value", value);
+                    }"#
+                    .to_string(),
+                )),
+            )
+            .with_port(KernelPort::output("value", SignalType::Control, 1));
+        let root = GraphDefinition::new("root")
+            .with_port(
+                KernelPort::output("master", SignalType::Control, 1)
+                    .maps_from(kernel_ref("voices", "value")),
+            )
+            .with_node(poly_node("voices", "stateful_voice", 3));
+        let prepared = prepare_kernel_graph_with_buses(
+            &root,
+            &builtin_registry().with_definition(stateful_voice),
+            &KERNEL_RENDER_SETTINGS,
+            &HostBuses::new().with_output("master", 1),
+        )
+        .expect("stateful poly child prepares");
+
+        let runtime = RealtimeGraphProcessor::polyphonic_with_compiled_patch_and_sampler_assets_and_max_block_size(
+            prepared.graph().clone(),
+            prepared.compiled_patch().clone(),
+            KERNEL_RENDER_SETTINGS.sample_rate_hz as f32,
+            &PreparedSamplerAssets::empty(),
+            &crate::patch::VoiceAllocation::default(),
+            KERNEL_RENDER_SETTINGS.block_size_frames as usize,
+        );
+        let regions = runtime.prepared_poly_runtime_regions();
+
+        assert_eq!(regions.len(), 1);
+        let region = &regions[0];
+        assert_eq!(region.node_id(), "voices");
+        assert_eq!(region.voice_count(), 3);
+        assert_eq!(region.states_per_voice(), 1);
+        assert_eq!(region.child_module_kinds(), [ModuleKind::Script]);
+        let state_addresses = (0..region.voice_count())
+            .map(|voice| region.state_instance_address(voice, 0).unwrap())
+            .collect::<BTreeSet<_>>();
+        assert_eq!(
+            state_addresses.len(),
+            3,
+            "each voice owns a real state instance"
+        );
+        assert_eq!(region.voice_arena_count(), 3);
+        assert_eq!(region.audio_buffers_per_voice(), 1);
+        assert_eq!(region.voice_event_queue_set_count(), 3);
+        assert_eq!(region.event_queues_per_voice(), 1);
+        assert_eq!(
+            region.event_queue_capacity(),
+            KERNEL_RENDER_SETTINGS.block_size_frames as usize
+        );
+        assert_eq!(region.output_accumulator_buffer_count(), 1);
+    }
+
+    #[test]
+    fn named_script_definition_prepares_typed_construction_for_each_instance() {
+        let yaml = r#"
+metadata: { name: scripted }
+ports:
+  - { name: left, direction: output, signal: audio, channels: 1, maps_from: left_gain.audio_out }
+  - { name: right, direction: output, signal: audio, channels: 1, maps_from: right_gain.audio_out }
+module_definitions:
+  - type: counter
+    implementation: script
+    static_params:
+      - { name: language, type: enum, default: rhai, allowed_values: [rhai] }
+      - { name: source, type: string }
+    ports:
+      - { name: increment, direction: input, signal: control, channels: 1, default: 1 }
+      - { name: count, direction: output, signal: control, channels: 1 }
+modules:
+  - id: left_counter
+    type: counter
+    static:
+      source: |
+        fn process(ctx) {
+          let count = ctx.state_get("count") + ctx.controls.increment;
+          ctx.state_set("count", count);
+          ctx.control("count", count);
+        }
+  - id: right_counter
+    type: counter
+    static:
+      source: |
+        fn process(ctx) {
+          let count = ctx.state_get("count") + ctx.controls.increment;
+          ctx.state_set("count", count);
+          ctx.control("count", count);
+        }
+  - { id: left_gain, type: gain, defaults: { gain: 1 } }
+  - { id: right_gain, type: gain, defaults: { gain: 1 } }
+connections:
+  - { from: left_counter.count, to: left_gain.audio_in }
+  - { from: right_counter.count, to: right_gain.audio_in }
+"#;
+        let patch = load_kernel_patch_str(yaml).expect("script patch loads");
+
+        let prepared = prepare_kernel_patch(&patch, &KERNEL_RENDER_SETTINGS)
+            .expect("script-backed nodes prepare");
+
+        for id in ["left_counter", "right_counter"] {
+            let node = prepared
+                .compiled_patch()
+                .nodes()
+                .iter()
+                .find(|node| node.id.as_str() == id)
+                .expect("compiled script node");
+            assert_eq!(node.module_type, module_types::SCRIPT);
+            assert_eq!(node.module_kind, ModuleKind::Script);
+            assert!(
+                node.parameters.is_empty(),
+                "kernel scripts do not use legacy maps"
+            );
+            assert!(matches!(
+                &node.construction,
+                CompiledConstruction::Script {
+                    language: CompiledScriptLanguage::Rhai,
+                    source,
+                } if source.contains("state_get")
+            ));
+            assert_eq!(
+                node.input_port_names,
+                ["increment"],
+                "the named definition supplies the runtime interface"
+            );
+            assert_eq!(node.output_port_names, ["count"]);
+        }
+
+        assert_eq!(
+            patch.registry().get("counter").unwrap().static_params()[0].name(),
+            SCRIPT_LANGUAGE_PARAMETER
+        );
+        assert_eq!(
+            patch.registry().get("counter").unwrap().static_params()[0].default(),
+            Some(&StaticValue::Enum(SCRIPT_LANGUAGE_RHAI.to_string()))
+        );
+        assert_eq!(
+            patch.registry().get("counter").unwrap().static_params()[1].name(),
+            SCRIPT_SOURCE_PARAMETER
+        );
+
+        let (left, right) = render_offline_compiled(
+            prepared.compiled_patch(),
+            Vec::new(),
+            &PreparedSamplerAssets::empty(),
+        );
+        assert_eq!(
+            left, right,
+            "repeated script instances retain disjoint state"
+        );
+        assert!(
+            left[..KERNEL_RENDER_SETTINGS.block_size_frames as usize]
+                .iter()
+                .all(|sample| (*sample - 1.0).abs() <= f32::EPSILON),
+            "each script instance starts its own counter at one"
+        );
+        assert!(
+            left[KERNEL_RENDER_SETTINGS.block_size_frames as usize..]
+                .iter()
+                .all(|sample| (*sample - 2.0).abs() <= f32::EPSILON),
+            "each script instance advances only its own counter"
+        );
+    }
+
+    fn with_unit_impulse_response(node: Node) -> Node {
+        node.with_static_arg(
+            IMPULSE_RESPONSE_RESOURCE_PARAM,
+            StaticArg::Literal(StaticValue::Resource(ResourceRef::new(
+                ResourceKind::ImpulseResponse,
+                UNIT_IR_PATH,
+                ResourceOrigin::Document,
+            ))),
+        )
+    }
+
+    #[test]
+    fn preparation_context_resolves_and_deduplicates_document_resources() {
+        let root = resource_test_dir("deduplicates");
+        fs::create_dir_all(&root).unwrap();
+        let wav = root.join("hit.wav");
+        crate::wav::write_wav_stereo_i16(fs::File::create(&wav).unwrap(), 48_000, &[0.25], &[0.25])
+            .unwrap();
+        let library_root = root.join("library");
+        let context = PreparationContext::new(&root, 48_000)
+            .with_macro_roots(MacroRoots::new().with_root(LIB_MACRO, &library_root));
+        assert_eq!(context.sample_rate_hz(), 48_000);
+        assert_eq!(
+            context.macro_roots().root(LIB_MACRO),
+            Some(library_root.as_path())
+        );
+        let reference = ResourceRef::new(ResourceKind::Sample, "hit.wav", ResourceOrigin::Document);
+        let mut resolver = ResourceResolver::new(&context);
+
+        let first = resolver.resolve(&reference).expect("first load succeeds");
+        let second = resolver.resolve(&reference).expect("cached load succeeds");
+
+        assert_eq!(first.kind(), ResourceKind::Sample);
+        assert_eq!(first.canonical_path(), wav.canonicalize().unwrap());
+        assert!((first.sample().frames()[0] - 0.25).abs() < 0.0001);
+        assert!(first.shares_data_with(&second));
+        assert_eq!(resolver.loaded_resource_count(), 1);
+    }
+
+    #[test]
+    fn kernel_preparation_maps_shared_resources_to_namespaced_compiled_nodes() {
+        let root_dir = resource_test_dir("compiled-handles");
+        fs::create_dir_all(&root_dir).unwrap();
+        crate::wav::write_wav_stereo_i16(
+            fs::File::create(root_dir.join("hit.wav")).unwrap(),
+            48_000,
+            &[0.25],
+            &[0.25],
+        )
+        .unwrap();
+        let sample_ref = || {
+            StaticArg::Literal(StaticValue::Resource(ResourceRef::new(
+                ResourceKind::Sample,
+                "hit.wav",
+                ResourceOrigin::Document,
+            )))
+        };
+        let layer = GraphDefinition::new("sample_layer")
+            .with_static_param(crate::kernel::StaticParam::new(
+                crate::kernel::builtins::SAMPLE_RESOURCE_PARAM,
+                crate::kernel::StaticType::Resource(ResourceKind::Sample),
+            ))
+            .with_port(
+                KernelPort::input("trigger", SignalType::Event, 1)
+                    .maps_to(kernel_ref("sampler", builtin_ports::TRIGGER)),
+            )
+            .with_port(
+                KernelPort::output("audio", SignalType::Audio, 1)
+                    .maps_from(kernel_ref("sampler", builtin_ports::AUDIO)),
+            )
+            .with_node(
+                Node::new(NodeId::new("sampler"), module_types::SAMPLER).with_static_arg(
+                    crate::kernel::builtins::SAMPLE_RESOURCE_PARAM,
+                    StaticArg::ParamRef(crate::kernel::builtins::SAMPLE_RESOURCE_PARAM.to_string()),
+                ),
+            );
+        let root = GraphDefinition::new("root")
+            .with_port(
+                KernelPort::output("left", SignalType::Audio, 1)
+                    .maps_from(kernel_ref("first", "audio")),
+            )
+            .with_port(
+                KernelPort::output("right", SignalType::Audio, 1)
+                    .maps_from(kernel_ref("second", "audio")),
+            )
+            .with_node(Node::new(NodeId::new("midi"), module_types::MIDI_INPUT))
+            .with_node(
+                Node::new(NodeId::new("first"), "sample_layer")
+                    .with_static_arg(crate::kernel::builtins::SAMPLE_RESOURCE_PARAM, sample_ref()),
+            )
+            .with_node(
+                Node::new(NodeId::new("second"), "sample_layer")
+                    .with_static_arg(crate::kernel::builtins::SAMPLE_RESOURCE_PARAM, sample_ref()),
+            )
+            .with_connection(Connection::new(
+                kernel_ref("midi", builtin_ports::EVENTS),
+                kernel_ref("first", "trigger"),
+            ))
+            .with_connection(Connection::new(
+                kernel_ref("midi", builtin_ports::EVENTS),
+                kernel_ref("second", "trigger"),
+            ));
+        let registry = builtin_registry().with_definition(layer);
+        let context = PreparationContext::new(&root_dir, 48_000);
+
+        let prepared = prepare_kernel_graph_with_buses_and_context(
+            &root,
+            &registry,
+            &KERNEL_RENDER_SETTINGS,
+            &HostBuses::new()
+                .with_output("left", 1)
+                .with_output("right", 1),
+            &context,
+        )
+        .expect("resource-backed composite instances should prepare");
+        let first = prepared
+            .compiled_patch()
+            .nodes()
+            .iter()
+            .find(|node| node.id.as_str() == "first::sampler")
+            .unwrap()
+            .resources
+            .sample
+            .as_ref()
+            .unwrap();
+        let second = prepared
+            .compiled_patch()
+            .nodes()
+            .iter()
+            .find(|node| node.id.as_str() == "second::sampler")
+            .unwrap()
+            .resources
+            .sample
+            .as_ref()
+            .unwrap();
+
+        assert!(first.shares_data_with(second));
+        assert_eq!(first.frames().len(), 1);
+
+        let mut runtime = RealtimeGraphProcessor::polyphonic_with_compiled_patch_and_sampler_assets_and_max_block_size(
+            prepared.graph().clone(),
+            prepared.compiled_patch().clone(),
+            48_000.0,
+            &PreparedSamplerAssets::empty(),
+            &crate::patch::VoiceAllocation::default(),
+            8,
+        );
+        runtime.note_on(60, 100);
+        let mut left = [0.0; 8];
+        let mut right = [0.0; 8];
+        assert_eq!(runtime.render(&mut left, &mut right), 8);
+        assert!(left[0].abs() > f32::EPSILON);
+        assert_eq!(left, right, "sampler playback positions remain disjoint");
+    }
+
+    #[test]
+    fn resource_resolution_rejects_escape_and_sample_rate_mismatch() {
+        let root = resource_test_dir("containment");
+        fs::create_dir_all(&root).unwrap();
+        let wrong_rate = root.join("wrong-rate.wav");
+        crate::wav::write_wav_stereo_i16(
+            fs::File::create(&wrong_rate).unwrap(),
+            44_100,
+            &[0.25],
+            &[0.25],
+        )
+        .unwrap();
+        let context = PreparationContext::new(&root, 48_000);
+        let mut resolver = ResourceResolver::new(&context);
+
+        for path in [PathBuf::from("../outside.wav"), root.join("absolute.wav")] {
+            let error = resolver
+                .resolve(&ResourceRef::new(
+                    ResourceKind::Sample,
+                    path,
+                    ResourceOrigin::Document,
+                ))
+                .expect_err("escaping path must fail");
+            assert_eq!(
+                error.errors().next().unwrap().error_code(),
+                diagnostics::error_codes::KERNEL_RESOURCE_PATH_ESCAPE
+            );
+        }
+
+        let error = resolver
+            .resolve(&ResourceRef::new(
+                ResourceKind::Sample,
+                "wrong-rate.wav",
+                ResourceOrigin::Document,
+            ))
+            .expect_err("sample-rate mismatch must fail");
+        assert_eq!(
+            error.errors().next().unwrap().error_code(),
+            diagnostics::error_codes::KERNEL_RESOURCE_LOAD_FAILED
+        );
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn resource_resolution_rejects_symlink_escape() {
+        let root = resource_test_dir("symlink-root");
+        let outside = resource_test_dir("symlink-outside");
+        fs::create_dir_all(&root).unwrap();
+        fs::create_dir_all(&outside).unwrap();
+        let outside_wav = outside.join("outside.wav");
+        crate::wav::write_wav_stereo_i16(
+            fs::File::create(&outside_wav).unwrap(),
+            48_000,
+            &[0.25],
+            &[0.25],
+        )
+        .unwrap();
+        std::os::unix::fs::symlink(&outside_wav, root.join("linked.wav")).unwrap();
+        let context = PreparationContext::new(&root, 48_000);
+        let mut resolver = ResourceResolver::new(&context);
+
+        let error = resolver
+            .resolve(&ResourceRef::new(
+                ResourceKind::Sample,
+                "linked.wav",
+                ResourceOrigin::Document,
+            ))
+            .expect_err("canonical target outside root must fail");
+
+        assert_eq!(
+            error.errors().next().unwrap().error_code(),
+            diagnostics::error_codes::KERNEL_RESOURCE_PATH_ESCAPE
+        );
+    }
+
+    fn resource_test_dir(name: &str) -> PathBuf {
+        std::env::temp_dir().join(format!(
+            "dandrum-preparation-{name}-{}-{}",
+            std::process::id(),
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap()
+                .as_nanos()
+        ))
+    }
+
     const IMPULSE_TOLERANCE: f32 = 1.0e-5;
 
     const MINIMAL_PATCH: &str = r#"
@@ -1360,6 +2343,67 @@ connections:
     }
 
     #[test]
+    fn echo_and_reverb_render_mono_and_stereo_channel_spans() {
+        for effect in [module_types::ECHO, module_types::REVERB] {
+            for channels in [1_i64, 2] {
+                let root = GraphDefinition::new(format!("{effect}-{channels}"))
+                    .with_port(
+                        KernelPort::input("input", SignalType::Audio, channels as u32)
+                            .maps_to(kernel_ref("effect", builtin_ports::AUDIO_IN)),
+                    )
+                    .with_port(
+                        KernelPort::output("master", SignalType::Audio, channels as u32)
+                            .maps_from(kernel_ref("effect", builtin_ports::AUDIO_OUT)),
+                    )
+                    .with_node(
+                        Node::new(NodeId::new("effect"), effect)
+                            .with_static_arg(
+                                crate::kernel::builtins::CHANNELS_PARAM,
+                                StaticArg::Literal(StaticValue::Int(channels)),
+                            )
+                            .with_default_override(builtin_ports::WET, 0.0)
+                            .with_default_override(builtin_ports::DRY, 1.0),
+                    );
+                let prepared = prepare_kernel_graph_with_buses(
+                    &root,
+                    &builtin_registry(),
+                    &KERNEL_RENDER_SETTINGS,
+                    &HostBuses::new()
+                        .with_input("input", channels as usize)
+                        .with_output("master", channels as usize),
+                )
+                .unwrap_or_else(|error| {
+                    panic!("{effect} should prepare with {channels} channels: {error}")
+                });
+                let node = &prepared.compiled_patch().nodes()[0];
+                assert_eq!(node.input_port_spans[0].channel_count, channels as usize);
+                assert_eq!(node.output_port_spans[0].channel_count, channels as usize);
+
+                let mut runtime = RealtimeGraphProcessor::polyphonic_with_compiled_patch_and_sampler_assets_and_max_block_size(
+                    prepared.graph().clone(),
+                    prepared.compiled_patch().clone(),
+                    KERNEL_RENDER_SETTINGS.sample_rate_hz as f32,
+                    &PreparedSamplerAssets::empty(),
+                    &crate::patch::VoiceAllocation::default(),
+                    8,
+                );
+                let inputs = vec![
+                    (0..channels)
+                        .map(|channel| vec![0.25 + channel as f32 * 0.25; 8])
+                        .collect::<Vec<_>>(),
+                ];
+                let mut outputs = vec![vec![vec![0.0; 8]; channels as usize]];
+
+                assert_eq!(runtime.render_root_buses(&inputs, &mut outputs), 8);
+                assert_eq!(
+                    outputs, inputs,
+                    "{effect} dry signal preserves channel order"
+                );
+            }
+        }
+    }
+
+    #[test]
     fn named_bus_planning_validates_outputs_and_tolerates_missing_or_extra_inputs() {
         let root = GraphDefinition::new("bus-test")
             .with_port(
@@ -1511,12 +2555,12 @@ connections:
                 KernelPort::output("master", SignalType::Audio, 6)
                     .maps_from(kernel_ref("convolution", builtin_ports::AUDIO_OUT)),
             )
-            .with_node(
+            .with_node(with_unit_impulse_response(
                 Node::new(NodeId::new("convolution"), module_types::CONVOLUTION).with_static_arg(
                     crate::kernel::builtins::CHANNELS_PARAM,
                     StaticArg::Literal(StaticValue::Int(6)),
                 ),
-            );
+            ));
         let prepared = prepare_kernel_graph_with_buses(
             &root,
             &builtin_registry(),
@@ -1628,10 +2672,10 @@ connections:
 
     #[test]
     fn kernel_convolution_dry_and_wet_paths_render_time_aligned() {
-        let (root, registry) = latency_builtin_render_graph(Node::new(
+        let (root, registry) = latency_builtin_render_graph(with_unit_impulse_response(Node::new(
             NodeId::new(WET_NODE_ID),
             module_types::CONVOLUTION,
-        ));
+        )));
         let expected_frame = Convolution::BLOCK_SIZE;
         let settings = latency_render_settings(expected_frame + 2);
         let prepared = prepare_kernel_graph(&root, &registry, &settings)

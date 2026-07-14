@@ -1,8 +1,9 @@
 use super::*;
 use crate::diagnostics::error_codes;
 use crate::kernel::{
-    CONTROL_TO_AUDIO_DEFINITION, ChannelCount, ControlDefault, LatencySpec, Port, StaticArg,
-    StaticParam, StaticType,
+    CONTROL_TO_AUDIO_DEFINITION, ChannelCount, ControlDefault, DefinitionImplementation,
+    LatencySpec, Port, ResourceKind, ResourceOrigin, ResourceRef, StaticArg, StaticParam,
+    StaticType,
 };
 
 fn oscillator() -> GraphDefinition {
@@ -660,7 +661,10 @@ fn atomic_nodes_record_their_resolved_static_arguments() {
 fn sampler() -> GraphDefinition {
     GraphDefinition::new("sampler")
         .with_static_param(StaticParam::new("mode", StaticType::Enum))
-        .with_static_param(StaticParam::new("sample", StaticType::Resource))
+        .with_static_param(StaticParam::new(
+            "sample",
+            StaticType::Resource(ResourceKind::Sample),
+        ))
         .with_port(Port::output("audio", SignalType::Audio, 1))
 }
 
@@ -669,7 +673,11 @@ fn sampler_node(id: &str, mode: &str, sample: &str) -> Node {
         .with_static_arg("mode", StaticArg::Literal(StaticValue::Enum(mode.into())))
         .with_static_arg(
             "sample",
-            StaticArg::Literal(StaticValue::Resource(sample.into())),
+            StaticArg::Literal(StaticValue::Resource(ResourceRef::new(
+                ResourceKind::Sample,
+                sample,
+                ResourceOrigin::Document,
+            ))),
         )
 }
 
@@ -712,6 +720,120 @@ fn distinct_string_static_arguments_expand_separately() {
         flat.expansion_count(),
         3,
         "root plus one expansion for each distinct script source"
+    );
+}
+
+#[test]
+fn flattening_preserves_poly_as_an_explicit_structural_region() {
+    let voice =
+        GraphDefinition::new("voice").with_port(Port::output("audio", SignalType::Audio, 1));
+    let registry = crate::kernel::builtins::builtin_registry().with_definition(voice);
+    let root = GraphDefinition::new("root").with_node(
+        Node::new(NodeId::new("voices"), crate::kernel::POLY_DEFINITION)
+            .with_static_arg(
+                crate::kernel::POLY_WRAPPED_DEFINITION_PARAM,
+                StaticArg::Literal(StaticValue::String("voice".to_string())),
+            )
+            .with_static_arg(
+                crate::kernel::POLY_MAX_VOICES_PARAM,
+                StaticArg::Literal(StaticValue::Int(8)),
+            )
+            .with_static_arg(
+                crate::kernel::POLY_ALLOCATION_PARAM,
+                StaticArg::Literal(StaticValue::Enum(
+                    crate::kernel::POLY_ALLOCATION_OLDEST_STEAL.to_string(),
+                )),
+            ),
+    );
+
+    let flattened = root.flatten(&registry).expect("poly region flattens");
+
+    assert_eq!(flattened.poly_regions().len(), 1);
+    let region = &flattened.poly_regions()[0];
+    assert_eq!(region.node_id().as_str(), "voices");
+    assert_eq!(region.wrapped_definition(), "voice");
+    assert_eq!(region.max_voices(), 8);
+    assert_eq!(
+        region.allocation_policy(),
+        crate::kernel::PolyAllocationPolicy::OldestSteal
+    );
+    let boundary = flattened
+        .node(&NodeId::new("voices"))
+        .expect("poly boundary remains in its parent graph");
+    assert_eq!(boundary.definition(), crate::kernel::POLY_DEFINITION);
+    assert_eq!(
+        boundary.ports()[0].name(),
+        crate::kernel::POLY_NOTE_EVENTS_INPUT
+    );
+}
+
+#[test]
+fn named_script_definition_flattens_to_script_runtime_kind_with_declared_interface() {
+    let script = GraphDefinition::new("counter")
+        .with_implementation(DefinitionImplementation::Script)
+        .with_static_param(
+            StaticParam::new(crate::builtins::SCRIPT_LANGUAGE_PARAMETER, StaticType::Enum)
+                .with_default(StaticValue::Enum(
+                    crate::builtins::SCRIPT_LANGUAGE_RHAI.to_string(),
+                ))
+                .with_allowed_values([crate::builtins::SCRIPT_LANGUAGE_RHAI]),
+        )
+        .with_static_param(StaticParam::new(
+            crate::builtins::SCRIPT_SOURCE_PARAMETER,
+            StaticType::String,
+        ))
+        .with_port(Port::input("events", SignalType::Event, 1))
+        .with_port(
+            Port::input("increment", SignalType::Control, 1)
+                .with_control_default(ControlDefault::new(1.0)),
+        )
+        .with_port(Port::output("count", SignalType::Control, 1));
+    let registry = DefinitionRegistry::new().with_definition(script);
+    let source = StaticArg::Literal(StaticValue::String("fn process(ctx) {}".to_string()));
+    let root = GraphDefinition::new("root")
+        .with_node(
+            Node::new(NodeId::new("first"), "counter")
+                .with_static_arg(crate::builtins::SCRIPT_SOURCE_PARAMETER, source.clone())
+                .with_default_override("increment", 2.0),
+        )
+        .with_node(
+            Node::new(NodeId::new("second"), "counter")
+                .with_static_arg(crate::builtins::SCRIPT_SOURCE_PARAMETER, source),
+        );
+
+    let flat = root.flatten(&registry).expect("script definitions flatten");
+
+    assert_eq!(
+        flat.expansion_count(),
+        2,
+        "both instances share one template"
+    );
+    for id in ["first", "second"] {
+        let node = flat.node(&NodeId::new(id)).expect("script instance");
+        assert_eq!(node.definition(), crate::builtins::module_types::SCRIPT);
+        assert_eq!(
+            node.ports()
+                .iter()
+                .map(|port| (port.name(), port.signal_type()))
+                .collect::<Vec<_>>(),
+            [
+                ("events", SignalType::Event),
+                ("increment", SignalType::Control),
+                ("count", SignalType::Control),
+            ]
+        );
+        assert_eq!(
+            node.static_args()[crate::builtins::SCRIPT_LANGUAGE_PARAMETER],
+            StaticValue::Enum(crate::builtins::SCRIPT_LANGUAGE_RHAI.to_string())
+        );
+    }
+    assert_eq!(
+        flat.node(&NodeId::new("first")).unwrap().port_defaults()["increment"],
+        2.0
+    );
+    assert_eq!(
+        flat.node(&NodeId::new("second")).unwrap().port_defaults()["increment"],
+        1.0
     );
 }
 

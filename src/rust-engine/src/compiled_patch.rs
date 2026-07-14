@@ -22,7 +22,9 @@ use crate::dynamics_processor::{ProcessorMode, Topology};
 use crate::envelope_follower::DetectionMode;
 use crate::filter::{BiquadMode, CombType};
 use crate::graph::{ExecutionScope, Graph, ModuleId, ModuleNode, SignalType, builtin_ports};
+use crate::kernel::PolyAllocationPolicy;
 use crate::kernel::StaticValue;
+use crate::kernel::flatten::FlattenedGraph;
 use crate::oscillator::Waveform;
 use crate::patch::RenderSettings;
 use crate::sample::{LoadedSample, PreparedSamplerAssets};
@@ -44,6 +46,136 @@ pub struct CompiledPatch {
     render_settings: RenderSettings,
     parameter_slots: Vec<ParameterSlot>,
     root_bus_plan: RootBusPlan,
+    poly_regions: Vec<CompiledPolyRegion>,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct CompiledPolyRegion {
+    node_id: String,
+    max_voices: usize,
+    allocation_policy: PolyAllocationPolicy,
+    flattened_voice: FlattenedGraph,
+    child_patch: Box<CompiledPatch>,
+    child_schedule: Box<[ExecutionStep]>,
+    voices: Box<[CompiledPolyVoiceStorage]>,
+    event_queue_capacity: usize,
+    output_accumulators: Box<[CompiledPolyOutputAccumulator]>,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct CompiledPolyVoiceStorage {
+    state_range: std::ops::Range<usize>,
+    audio_buffer_range: std::ops::Range<usize>,
+    event_queue_range: std::ops::Range<usize>,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct CompiledPolyOutputAccumulator {
+    name: String,
+    signal_type: SignalType,
+    span: CompiledPortSpan,
+}
+
+impl CompiledPolyRegion {
+    pub(crate) fn new(
+        node_id: impl Into<String>,
+        max_voices: usize,
+        allocation_policy: PolyAllocationPolicy,
+        flattened_voice: FlattenedGraph,
+        child_patch: CompiledPatch,
+        voices: Vec<CompiledPolyVoiceStorage>,
+        event_queue_capacity: usize,
+        output_accumulators: Vec<CompiledPolyOutputAccumulator>,
+    ) -> Self {
+        let child_schedule = child_patch.execution_order().to_vec().into_boxed_slice();
+        Self {
+            node_id: node_id.into(),
+            max_voices,
+            allocation_policy,
+            flattened_voice,
+            child_patch: Box::new(child_patch),
+            child_schedule,
+            voices: voices.into_boxed_slice(),
+            event_queue_capacity,
+            output_accumulators: output_accumulators.into_boxed_slice(),
+        }
+    }
+
+    pub fn node_id(&self) -> &str {
+        &self.node_id
+    }
+    pub fn max_voices(&self) -> usize {
+        self.max_voices
+    }
+    pub fn allocation_policy(&self) -> PolyAllocationPolicy {
+        self.allocation_policy
+    }
+    pub fn flattened_voice(&self) -> &FlattenedGraph {
+        &self.flattened_voice
+    }
+    pub fn child_patch(&self) -> &CompiledPatch {
+        &self.child_patch
+    }
+    pub fn child_schedule(&self) -> &[ExecutionStep] {
+        &self.child_schedule
+    }
+    pub fn voices(&self) -> &[CompiledPolyVoiceStorage] {
+        &self.voices
+    }
+    pub fn event_queue_capacity(&self) -> usize {
+        self.event_queue_capacity
+    }
+    pub fn output_accumulators(&self) -> &[CompiledPolyOutputAccumulator] {
+        &self.output_accumulators
+    }
+}
+
+impl CompiledPolyVoiceStorage {
+    pub(crate) fn new(
+        state_range: std::ops::Range<usize>,
+        audio_buffer_range: std::ops::Range<usize>,
+        event_queue_range: std::ops::Range<usize>,
+    ) -> Self {
+        Self {
+            state_range,
+            audio_buffer_range,
+            event_queue_range,
+        }
+    }
+
+    pub fn state_range(&self) -> std::ops::Range<usize> {
+        self.state_range.clone()
+    }
+    pub fn audio_buffer_range(&self) -> std::ops::Range<usize> {
+        self.audio_buffer_range.clone()
+    }
+    pub fn event_queue_range(&self) -> std::ops::Range<usize> {
+        self.event_queue_range.clone()
+    }
+}
+
+impl CompiledPolyOutputAccumulator {
+    pub(crate) fn new(
+        name: impl Into<String>,
+        signal_type: SignalType,
+        span: CompiledPortSpan,
+    ) -> Self {
+        Self {
+            name: name.into(),
+            signal_type,
+            span,
+        }
+    }
+
+    pub fn name(&self) -> &str {
+        &self.name
+    }
+    pub fn signal_type(&self) -> SignalType {
+        self.signal_type
+    }
+    pub fn span(&self) -> CompiledPortSpan {
+        self.span
+    }
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -100,6 +232,7 @@ pub enum CompiledFilterAlgorithm {
 pub enum CompiledConstruction {
     None,
     Script {
+        language: CompiledScriptLanguage,
         source: String,
     },
     Oscillator {
@@ -144,6 +277,11 @@ pub enum CompiledConstruction {
     },
 }
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum CompiledScriptLanguage {
+    Rhai,
+}
+
 #[derive(Clone, Debug, PartialEq)]
 pub struct SampleResourceHandle(Arc<LoadedSample>);
 
@@ -163,6 +301,15 @@ impl SampleResourceHandle {
     pub fn sample_rate_hz(&self) -> u32 {
         self.0.sample_rate_hz()
     }
+
+    pub(crate) fn from_shared(sample: Arc<LoadedSample>) -> Self {
+        Self(sample)
+    }
+
+    #[cfg(test)]
+    pub(crate) fn shares_data_with(&self, other: &Self) -> bool {
+        Arc::ptr_eq(&self.0, &other.0)
+    }
 }
 
 impl From<LoadedSample> for SampleResourceHandle {
@@ -181,6 +328,10 @@ impl ImpulseResponseResourceHandle {
 
     pub fn sample(&self) -> &LoadedSample {
         &self.0
+    }
+
+    pub(crate) fn from_shared(sample: Arc<LoadedSample>) -> Self {
+        Self(sample)
     }
 }
 
@@ -422,6 +573,10 @@ fn construction_from_static_values(
 
     Ok(match kind {
         ModuleKind::Script => CompiledConstruction::Script {
+            language: match enum_value(crate::builtins::SCRIPT_LANGUAGE_PARAMETER) {
+                Some(crate::builtins::SCRIPT_LANGUAGE_RHAI) => CompiledScriptLanguage::Rhai,
+                _ => return Err(invalid(crate::builtins::SCRIPT_LANGUAGE_PARAMETER)),
+            },
             source: string_value(SCRIPT_SOURCE_PARAMETER)
                 .ok_or_else(|| invalid(SCRIPT_SOURCE_PARAMETER))?
                 .to_string(),
@@ -599,6 +754,10 @@ fn construction_from_legacy_values(
 
     Ok(match kind {
         ModuleKind::Script => CompiledConstruction::Script {
+            language: match value(crate::builtins::SCRIPT_LANGUAGE_PARAMETER) {
+                None | Some(crate::builtins::SCRIPT_LANGUAGE_RHAI) => CompiledScriptLanguage::Rhai,
+                _ => return Err(invalid(crate::builtins::SCRIPT_LANGUAGE_PARAMETER)),
+            },
             source: value(SCRIPT_SOURCE_PARAMETER)
                 .ok_or_else(|| invalid(SCRIPT_SOURCE_PARAMETER))?
                 .to_string(),
@@ -976,6 +1135,7 @@ fn compile_internal(
         render_settings: render_settings.clone(),
         parameter_slots,
         root_bus_plan: RootBusPlan::default(),
+        poly_regions: Vec::new(),
     })
 }
 
@@ -1115,6 +1275,14 @@ impl CompiledPatch {
 
     pub fn root_bus_plan(&self) -> &RootBusPlan {
         &self.root_bus_plan
+    }
+
+    pub fn poly_regions(&self) -> &[CompiledPolyRegion] {
+        &self.poly_regions
+    }
+
+    pub(crate) fn set_poly_regions(&mut self, regions: Vec<CompiledPolyRegion>) {
+        self.poly_regions = regions;
     }
 
     pub(crate) fn set_root_bus_plan(&mut self, plan: RootBusPlan) {

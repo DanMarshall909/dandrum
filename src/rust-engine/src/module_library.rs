@@ -292,9 +292,36 @@ fn io_error(path: &Path, error: io::Error) -> ModuleLibrarySeedError {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::module_package::load_package;
+    use crate::graph::{PortDirection, SignalType};
+    use crate::graph_processor::RealtimeGraphProcessor;
+    use crate::module_package::load_referenced_kernel_package;
     use crate::module_reference::{self, LIB_MACRO, MacroRoots};
+    use crate::patch::{RenderSettings, VoiceAllocation};
+    use crate::preparation::{
+        HostBuses, PreparationContext, prepare_kernel_graph_with_buses_and_context,
+    };
+    use crate::sample::PreparedSamplerAssets;
     use std::collections::BTreeSet;
+
+    const DRUM_VOICE_REFERENCE: &str = "$LIB/1.0.0/drum_voice/drum_voice.yaml";
+    const DRUM_MACHINE_REFERENCE: &str = "$LIB/1.0.0/drum_machine/drum_machine.yaml";
+    const RESOURCE_PACKAGE_PATH: &str = "sample_voice/sample_voice.yaml";
+    const RESOURCE_PACKAGE_REFERENCE: &str = "$LIB/1.0.0/sample_voice/sample_voice.yaml";
+    const RESOURCE_PACKAGE_YAML: &[u8] = br#"
+ports:
+  - { name: left, direction: output, signal: audio, channels: 1, maps_from: player.audio }
+  - { name: right, direction: output, signal: audio, channels: 1, maps_from: player.audio }
+modules:
+  - { id: midi, type: midi_input }
+  - id: player
+    type: sampler
+    static:
+      sample: { kind: sample, path: samples/hit.wav }
+connections:
+  - { from: midi.events, to: player.trigger }
+"#;
+    const TEST_SAMPLE_RATE_HZ: u32 = 48_000;
+    const TEST_BLOCK_SIZE_FRAMES: usize = 8;
 
     fn file(path: &str, contents: &[u8]) -> SeededLibraryFile {
         SeededLibraryFile {
@@ -351,20 +378,35 @@ mod tests {
     }
 
     #[test]
-    fn bundled_drum_machine_exposes_main_and_additional_stereo_outputs() {
+    fn bundled_packages_load_through_the_kernel_parser_with_characterized_public_ports() {
         let root = temp_root("drum-machine");
         seed_bundled_standard_library(&root).expect("bundled library should seed");
-        let package = load_package(
-            &root
-                .join(BUNDLED_STANDARD_LIBRARY_VERSION)
-                .join(BUNDLED_DRUM_MACHINE_PATH),
-        )
-        .expect("bundled drum_machine package should load");
-        let outputs = package
-            .document()
-            .outputs
+        let context = preparation_context(&root);
+        let voice = load_referenced_kernel_package(DRUM_VOICE_REFERENCE, &context)
+            .expect("bundled drum_voice should load through the kernel parser");
+        let machine = load_referenced_kernel_package(DRUM_MACHINE_REFERENCE, &context)
+            .expect("bundled drum_machine should load through the kernel parser");
+
+        let voice_ports = voice
+            .definition()
+            .ports()
             .iter()
-            .map(|output| output.name.as_str())
+            .map(|port| (port.name(), port.direction(), port.signal_type()))
+            .collect::<Vec<_>>();
+        assert_eq!(
+            voice_ports,
+            vec![
+                ("trigger", PortDirection::Input, SignalType::Event),
+                ("audio", PortDirection::Output, SignalType::Audio),
+            ]
+        );
+
+        let outputs = machine
+            .definition()
+            .ports()
+            .iter()
+            .filter(|port| port.direction() == PortDirection::Output)
+            .map(|port| port.name())
             .collect::<BTreeSet<_>>();
 
         for expected in [
@@ -385,31 +427,107 @@ mod tests {
     }
 
     #[test]
-    fn bundled_drum_machine_routes_voices_to_distinct_output_pairs() {
+    fn bundled_packages_retain_characterized_public_routing() {
         let root = temp_root("drum-machine-routes");
         seed_bundled_standard_library(&root).expect("bundled library should seed");
-        let package = load_package(
-            &root
-                .join(BUNDLED_STANDARD_LIBRARY_VERSION)
-                .join(BUNDLED_DRUM_MACHINE_PATH),
-        )
-        .expect("bundled drum_machine package should load");
+        let context = preparation_context(&root);
+        let voice = load_referenced_kernel_package(DRUM_VOICE_REFERENCE, &context)
+            .expect("bundled drum_voice should load through the kernel parser");
+        let machine = load_referenced_kernel_package(DRUM_MACHINE_REFERENCE, &context)
+            .expect("bundled drum_machine should load through the kernel parser");
 
-        let routed_sources = package
-            .document()
-            .outputs
+        assert_eq!(
+            voice.definition().ports()[0].internal_targets()[0]
+                .node()
+                .as_str(),
+            "env"
+        );
+        assert_eq!(
+            voice.definition().ports()[1].internal_sources()[0]
+                .node()
+                .as_str(),
+            "vca"
+        );
+
+        let routed_sources = machine
+            .definition()
+            .ports()
             .iter()
-            .filter_map(|output| {
-                output
-                    .maps_from
+            .filter_map(|port| {
+                port.internal_sources()
                     .first()
-                    .map(|source| (output.name.as_str(), source.module_id.as_str()))
+                    .map(|source| (port.name(), source.node().as_str()))
             })
             .collect::<BTreeSet<_>>();
 
         assert!(routed_sources.contains(&("kick_left", "kick_vca")));
         assert!(routed_sources.contains(&("snare_left", "snare_vca")));
         assert!(routed_sources.contains(&("hat_left", "hat_vca")));
+    }
+
+    #[test]
+    fn pinned_resource_package_prepares_and_renders_its_package_relative_sample() {
+        let root = temp_root("resource-package");
+        for (version, sample) in [("1.0.0", 0.25), ("2.0.0", 0.75)] {
+            seed_standard_library(
+                &root,
+                &SeededLibrary {
+                    version: version.to_string(),
+                    files: vec![file(RESOURCE_PACKAGE_PATH, RESOURCE_PACKAGE_YAML)],
+                },
+            )
+            .expect("resource package version should seed");
+            let sample_dir = root.join(version).join("sample_voice").join("samples");
+            fs::create_dir_all(&sample_dir).expect("sample directory should be created");
+            crate::wav::write_wav_stereo_i16(
+                fs::File::create(sample_dir.join("hit.wav")).unwrap(),
+                TEST_SAMPLE_RATE_HZ,
+                &[sample],
+                &[sample],
+            )
+            .expect("tiny package sample should be written");
+        }
+        let context = preparation_context(&root);
+        let package = load_referenced_kernel_package(RESOURCE_PACKAGE_REFERENCE, &context)
+            .expect("pinned resource package should load");
+        let settings = RenderSettings {
+            sample_rate_hz: TEST_SAMPLE_RATE_HZ,
+            block_size_frames: TEST_BLOCK_SIZE_FRAMES as u32,
+            duration_frames: TEST_BLOCK_SIZE_FRAMES as u64,
+        };
+        let prepared = prepare_kernel_graph_with_buses_and_context(
+            package.definition(),
+            package.registry(),
+            &settings,
+            &HostBuses::new()
+                .with_output("left", 1)
+                .with_output("right", 1),
+            &context,
+        )
+        .expect("pinned resource package should prepare through PreparationContext");
+        let mut runtime = RealtimeGraphProcessor::polyphonic_with_compiled_patch_and_sampler_assets_and_max_block_size(
+            prepared.graph().clone(),
+            prepared.compiled_patch().clone(),
+            TEST_SAMPLE_RATE_HZ as f32,
+            &PreparedSamplerAssets::empty(),
+            &VoiceAllocation::default(),
+            TEST_BLOCK_SIZE_FRAMES,
+        );
+        runtime.note_on(60, 100);
+        let mut left = [0.0; TEST_BLOCK_SIZE_FRAMES];
+        let mut right = [0.0; TEST_BLOCK_SIZE_FRAMES];
+
+        assert_eq!(
+            runtime.render(&mut left, &mut right),
+            TEST_BLOCK_SIZE_FRAMES
+        );
+        assert!((left[0] - 0.25).abs() < 0.0001);
+        assert_eq!(left, right);
+    }
+
+    fn preparation_context(root: &Path) -> PreparationContext {
+        PreparationContext::new(root, TEST_SAMPLE_RATE_HZ)
+            .with_macro_roots(MacroRoots::new().with_root(LIB_MACRO, root))
     }
 
     #[test]

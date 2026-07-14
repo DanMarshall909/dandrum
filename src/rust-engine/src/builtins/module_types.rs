@@ -29,6 +29,7 @@ pub const EVENT_FILTER: &str = "event_filter";
 pub const ENVELOPE_FOLLOWER: &str = "envelope_follower";
 pub const CURVE_MAPPER: &str = "curve_mapper";
 pub const DECAY: &str = "decay";
+pub const POLY: &str = "poly";
 
 /// Compiler-generated node promoting a `control` signal to `audio` where a
 /// control output feeds an audio input (see `unify-graph-kernel` §2.5).

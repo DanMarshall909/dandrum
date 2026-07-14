@@ -2,10 +2,12 @@ use crate::builtins::module_types as names;
 use crate::convolution::Convolution;
 use crate::diagnostics::error_codes;
 use crate::graph::SignalType;
-use crate::kernel::builtins::{SPECTRAL_FFT_SIZE_PARAM, builtin_registry};
+use crate::kernel::builtins::{
+    IMPULSE_RESPONSE_RESOURCE_PARAM, SPECTRAL_FFT_SIZE_PARAM, builtin_registry,
+};
 use crate::kernel::{
     Connection, DefinitionRegistry, FEEDBACK_DELAY_DEFINITION, GraphDefinition, LatencySpec, Node,
-    NodeId, Port, PortRef, StaticArg, StaticValue,
+    NodeId, Port, PortRef, ResourceKind, ResourceOrigin, ResourceRef, StaticArg, StaticValue,
 };
 
 fn source() -> GraphDefinition {
@@ -440,7 +442,16 @@ fn convolution_dry_and_wet_paths_are_compensated_to_alignment() {
     let root = GraphDefinition::new("root")
         .with_port(root_output("mix", "out"))
         .with_node(Node::new(NodeId::new("imp"), "source"))
-        .with_node(Node::new(NodeId::new("wet"), names::CONVOLUTION))
+        .with_node(
+            Node::new(NodeId::new("wet"), names::CONVOLUTION).with_static_arg(
+                IMPULSE_RESPONSE_RESOURCE_PARAM,
+                StaticArg::Literal(StaticValue::Resource(ResourceRef::new(
+                    ResourceKind::ImpulseResponse,
+                    "unit-ir.wav",
+                    ResourceOrigin::Document,
+                ))),
+            ),
+        )
         .with_node(Node::new(NodeId::new("mix"), "adder"))
         // dry path straight to the mix; wet path through the convolution
         .with_connection(cable("imp", "audio", "mix", "a"))

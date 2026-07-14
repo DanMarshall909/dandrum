@@ -40,7 +40,7 @@ Every built-in module SHALL declare its named input and output ports with signal
 
 ### Requirement: Script-backed definitions declare their interface
 
-An author-defined script processor SHALL be declared as a named graph definition with explicit ports and construction-time language/source static arguments. Script node instances SHALL obtain their interface from that definition and SHALL NOT add ad-hoc instance ports.
+An author-defined script processor SHALL be declared as a named graph definition marked `implementation: script`, with explicit ports and construction-time language/source static arguments. Script node instances SHALL obtain their interface from that definition and SHALL NOT add ad-hoc instance ports.
 
 #### Scenario: Script definition has connectable declared ports
 
@@ -60,6 +60,11 @@ Every built-in module type that requires compile-time configuration (channel cou
 
 - **WHEN** a future tool or LLM authoring workflow inspects a built-in module definition
 - **THEN** the definition SHALL expose enough port and static-parameter metadata to describe valid YAML declarations without reading module DSP implementation code
+
+#### Scenario: Resource-consuming builtins declare resource kind
+
+- **WHEN** sampler and convolution definitions are inspected
+- **THEN** sampler SHALL require a `sample` resource static argument and convolution SHALL require an `impulse_response` resource static argument
 
 ### Requirement: Built-in parameter declarations are authoritative
 

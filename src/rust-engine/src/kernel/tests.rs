@@ -43,6 +43,26 @@ fn only_error_code(validation: &KernelValidation) -> &str {
     errors[0].error_code()
 }
 
+fn poly_node(id: &str, definition: &str, max_voices: i64, allocation: &str) -> Node {
+    Node::new(NodeId::new(id), POLY_DEFINITION)
+        .with_static_arg(
+            POLY_WRAPPED_DEFINITION_PARAM,
+            StaticArg::Literal(StaticValue::String(definition.to_string())),
+        )
+        .with_static_arg(
+            POLY_MAX_VOICES_PARAM,
+            StaticArg::Literal(StaticValue::Int(max_voices)),
+        )
+        .with_static_arg(
+            POLY_ALLOCATION_PARAM,
+            StaticArg::Literal(StaticValue::Enum(allocation.to_string())),
+        )
+}
+
+fn poly_registry(voice: GraphDefinition) -> DefinitionRegistry {
+    builtins::builtin_registry().with_definition(voice)
+}
+
 // --- 1.1 Kernel types: construction and equality -------------------------
 
 #[test]
@@ -1023,4 +1043,325 @@ fn single_source_error_diagnostic_names_the_port_and_node() {
     assert_eq!(errors.len(), 1);
     assert_eq!(errors[0].module_id(), Some("c"));
     assert_eq!(errors[0].port_name(), Some("audio_in"));
+}
+
+// --- 4.1 Poly structural interface ---------------------------------------
+
+#[test]
+fn poly_synthesizes_note_forwarded_input_and_wrapped_output_interface() {
+    let voice = GraphDefinition::new("voice")
+        .with_port(
+            Port::input("sidechain", SignalType::Audio, 2).with_multiplicity(Multiplicity::Summing),
+        )
+        .with_port(
+            Port::input("level", SignalType::Control, 1).with_control_default(
+                ControlDefault::new(0.75)
+                    .with_min(0.0)
+                    .with_max(1.0)
+                    .with_unit("linear"),
+            ),
+        )
+        .with_port(Port::output("audio", SignalType::Audio, 2))
+        .with_port(Port::output("meter", SignalType::Control, 1));
+    let registry = poly_registry(voice);
+    let root = GraphDefinition::new("root").with_node(poly_node(
+        "voices",
+        "voice",
+        8,
+        POLY_ALLOCATION_OLDEST_STEAL,
+    ));
+
+    let validation = root.validate(&registry);
+    assert!(
+        validation.is_ok(),
+        "poly interface validates: {validation:?}"
+    );
+    let ports = root
+        .resolved_node_ports(&registry, &NodeId::new("voices"))
+        .expect("poly interface resolves");
+
+    assert_eq!(
+        ports
+            .iter()
+            .map(|port| (
+                port.name(),
+                port.direction(),
+                port.signal_type(),
+                port.channels(),
+                port.multiplicity(),
+            ))
+            .collect::<Vec<_>>(),
+        [
+            (
+                POLY_NOTE_EVENTS_INPUT,
+                PortDirection::Input,
+                SignalType::Event,
+                1,
+                Multiplicity::SingleSource,
+            ),
+            (
+                "sidechain",
+                PortDirection::Input,
+                SignalType::Audio,
+                2,
+                Multiplicity::Summing,
+            ),
+            (
+                "level",
+                PortDirection::Input,
+                SignalType::Control,
+                1,
+                Multiplicity::SingleSource,
+            ),
+            (
+                "audio",
+                PortDirection::Output,
+                SignalType::Audio,
+                2,
+                Multiplicity::SingleSource,
+            ),
+            (
+                "meter",
+                PortDirection::Output,
+                SignalType::Control,
+                1,
+                Multiplicity::SingleSource,
+            ),
+        ]
+    );
+    let level = ports.iter().find(|port| port.name() == "level").unwrap();
+    let default = level.control_default().expect("forwarded default");
+    assert_eq!(default.default(), 0.75);
+    assert_eq!(default.min(), Some(0.0));
+    assert_eq!(default.max(), Some(1.0));
+    assert_eq!(default.unit(), Some("linear"));
+}
+
+#[test]
+fn ordinary_connections_validate_against_the_synthesized_poly_interface() {
+    let notes = GraphDefinition::new("notes").with_port(Port::output("out", SignalType::Event, 1));
+    let audio = GraphDefinition::new("audio")
+        .with_port(Port::output("out", SignalType::Audio, 2))
+        .with_port(Port::input("in", SignalType::Audio, 2));
+    let voice = GraphDefinition::new("voice")
+        .with_port(Port::input("sidechain", SignalType::Audio, 2))
+        .with_port(Port::output("audio", SignalType::Audio, 2));
+    let registry = poly_registry(voice)
+        .with_definition(notes)
+        .with_definition(audio);
+    let root = GraphDefinition::new("root")
+        .with_node(Node::new(NodeId::new("notes"), "notes"))
+        .with_node(Node::new(NodeId::new("source"), "audio"))
+        .with_node(poly_node("voices", "voice", 8, POLY_ALLOCATION_REJECT_NEW))
+        .with_node(Node::new(NodeId::new("sink"), "audio"))
+        .with_connection(Connection::new(
+            PortRef::new(NodeId::new("notes"), "out"),
+            PortRef::new(NodeId::new("voices"), POLY_NOTE_EVENTS_INPUT),
+        ))
+        .with_connection(Connection::new(
+            PortRef::new(NodeId::new("source"), "out"),
+            PortRef::new(NodeId::new("voices"), "sidechain"),
+        ))
+        .with_connection(Connection::new(
+            PortRef::new(NodeId::new("voices"), "audio"),
+            PortRef::new(NodeId::new("sink"), "in"),
+        ));
+
+    assert!(
+        root.validate(&registry).is_ok(),
+        "ordinary compatible connections use the synthesized interface"
+    );
+}
+
+#[test]
+fn poly_connections_reject_missing_type_and_channel_mismatches_structurally() {
+    let voice = GraphDefinition::new("voice")
+        .with_port(Port::input("sidechain", SignalType::Audio, 2))
+        .with_port(Port::output("audio", SignalType::Audio, 2));
+    let source = GraphDefinition::new("source")
+        .with_port(Port::output("event", SignalType::Event, 1))
+        .with_port(Port::output("mono", SignalType::Audio, 1));
+    let registry = poly_registry(voice).with_definition(source);
+
+    for (port, expected_code) in [
+        ("missing", error_codes::KERNEL_MISSING_PORT),
+        ("sidechain", error_codes::KERNEL_INCOMPATIBLE_SIGNAL_TYPES),
+    ] {
+        let root = GraphDefinition::new("root")
+            .with_node(Node::new(NodeId::new("source"), "source"))
+            .with_node(poly_node(
+                "voices",
+                "voice",
+                8,
+                POLY_ALLOCATION_OLDEST_STEAL,
+            ))
+            .with_connection(Connection::new(
+                PortRef::new(NodeId::new("source"), "event"),
+                PortRef::new(NodeId::new("voices"), port),
+            ));
+        assert_eq!(only_error_code(&root.validate(&registry)), expected_code);
+    }
+
+    let channel_mismatch = GraphDefinition::new("root")
+        .with_node(Node::new(NodeId::new("source"), "source"))
+        .with_node(poly_node(
+            "voices",
+            "voice",
+            8,
+            POLY_ALLOCATION_OLDEST_STEAL,
+        ))
+        .with_connection(Connection::new(
+            PortRef::new(NodeId::new("source"), "mono"),
+            PortRef::new(NodeId::new("voices"), "sidechain"),
+        ));
+    assert_eq!(
+        only_error_code(&channel_mismatch.validate(&registry)),
+        error_codes::KERNEL_CHANNEL_COUNT_MISMATCH
+    );
+}
+
+#[test]
+fn poly_rejects_unconvertible_voice_counts_and_unknown_wrapped_definition() {
+    let registry = builtins::builtin_registry();
+    for (node, expected_code) in [
+        (
+            poly_node("zero", "missing", 0, POLY_ALLOCATION_OLDEST_STEAL),
+            error_codes::KERNEL_POLY_INVALID_MAX_VOICES,
+        ),
+        (
+            poly_node(
+                "wide",
+                "missing",
+                i64::from(u32::MAX) + 1,
+                POLY_ALLOCATION_OLDEST_STEAL,
+            ),
+            error_codes::KERNEL_POLY_INVALID_MAX_VOICES,
+        ),
+        (
+            poly_node("missing", "does-not-exist", 8, POLY_ALLOCATION_OLDEST_STEAL),
+            error_codes::KERNEL_POLY_UNKNOWN_WRAPPED_DEFINITION,
+        ),
+    ] {
+        let validation = GraphDefinition::new("root")
+            .with_node(node)
+            .validate(&registry);
+        assert!(
+            validation
+                .diagnostics()
+                .errors()
+                .any(|diagnostic| diagnostic.error_code() == expected_code),
+            "expected {expected_code}: {validation:?}"
+        );
+    }
+}
+
+#[test]
+fn poly_requires_all_three_structural_static_arguments() {
+    let registry = builtins::builtin_registry();
+    let validation = GraphDefinition::new("root")
+        .with_node(Node::new(NodeId::new("voices"), POLY_DEFINITION))
+        .validate(&registry);
+    let messages = validation
+        .diagnostics()
+        .errors()
+        .map(|diagnostic| diagnostic.message())
+        .collect::<Vec<_>>();
+
+    assert_eq!(messages.len(), 3);
+    for parameter in [
+        POLY_WRAPPED_DEFINITION_PARAM,
+        POLY_MAX_VOICES_PARAM,
+        POLY_ALLOCATION_PARAM,
+    ] {
+        assert!(
+            messages.iter().any(|message| message.contains(parameter)),
+            "missing required poly argument '{parameter}' is named"
+        );
+    }
+}
+
+#[test]
+fn poly_rejects_malformed_wrapped_interfaces() {
+    for voice in [
+        GraphDefinition::new("voice").with_port(Port::input(
+            POLY_NOTE_EVENTS_INPUT,
+            SignalType::Event,
+            1,
+        )),
+        GraphDefinition::new("voice").with_port(Port::output(
+            "invalid_event",
+            SignalType::Event,
+            1,
+        )),
+    ] {
+        let registry = poly_registry(voice);
+        let validation = GraphDefinition::new("root")
+            .with_node(poly_node(
+                "voices",
+                "voice",
+                8,
+                POLY_ALLOCATION_OLDEST_STEAL,
+            ))
+            .validate(&registry);
+        assert_eq!(
+            only_error_code(&validation),
+            error_codes::KERNEL_POLY_MALFORMED_INTERFACE
+        );
+    }
+}
+
+#[test]
+fn poly_accepts_designated_done_output_without_exposing_it_publicly() {
+    let voice = GraphDefinition::new("voice")
+        .with_port(Port::output("audio", SignalType::Audio, 1))
+        .with_port(Port::output(POLY_DONE_OUTPUT, SignalType::Event, 1));
+    let registry = poly_registry(voice);
+    let root = GraphDefinition::new("root").with_node(poly_node(
+        "voices",
+        "voice",
+        8,
+        POLY_ALLOCATION_OLDEST_STEAL,
+    ));
+
+    let validation = root.validate(&registry);
+    assert!(validation.is_ok(), "done is a valid lifecycle output");
+    let ports = root
+        .resolved_node_ports(&registry, &NodeId::new("voices"))
+        .expect("poly interface resolves");
+    assert!(ports.iter().any(|port| port.name() == "audio"));
+    assert!(ports.iter().all(|port| port.name() != POLY_DONE_OUTPUT));
+}
+
+#[test]
+fn nested_poly_interface_validation_reaches_the_inner_poly() {
+    let inner = GraphDefinition::new("inner").with_port(Port::output(
+        "invalid_event",
+        SignalType::Event,
+        1,
+    ));
+    let outer = GraphDefinition::new("outer").with_node(poly_node(
+        "inner_voices",
+        "inner",
+        2,
+        POLY_ALLOCATION_REJECT_NEW,
+    ));
+    let registry = builtins::builtin_registry()
+        .with_definition(inner)
+        .with_definition(outer);
+    let validation = GraphDefinition::new("root")
+        .with_node(poly_node(
+            "outer_voices",
+            "outer",
+            2,
+            POLY_ALLOCATION_REJECT_NEW,
+        ))
+        .validate(&registry);
+
+    assert!(
+        validation.diagnostics().errors().any(|diagnostic| {
+            diagnostic.error_code() == error_codes::KERNEL_POLY_MALFORMED_INTERFACE
+                && diagnostic.module_id() == Some("inner_voices")
+        }),
+        "nested malformed poly is diagnosed: {validation:?}"
+    );
 }

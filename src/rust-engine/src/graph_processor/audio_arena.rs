@@ -17,7 +17,6 @@ impl AudioArena {
         }
     }
 
-    #[cfg(test)]
     pub(super) fn buffer_count(&self) -> usize {
         self.buffer_count
     }

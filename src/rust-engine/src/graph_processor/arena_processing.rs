@@ -2,6 +2,8 @@ use super::process_context::ProcessContext;
 use super::state::PerModuleState;
 use crate::oscillator::OSCILLATOR_BASE_HZ;
 
+const STEREO_CHANNELS: usize = 2;
+
 pub(super) fn process_audio_mixer(context: &mut ProcessContext<'_>) {
     for channel in 0..context.output_count() {
         context
@@ -224,6 +226,105 @@ pub(super) fn process_frequency_splitter(
                 .unwrap();
         }
     }
+}
+
+pub(super) fn process_echo(state: &mut PerModuleState, context: &mut ProcessContext<'_>) {
+    let PerModuleState::Echo { processor, .. } = state else {
+        unreachable!()
+    };
+    let channels = context.output_count();
+    let time_left_input = channels;
+    let time_right_input = time_left_input + 1;
+    let feedback_input = time_right_input + 1;
+    let damping_input = feedback_input + 1;
+    let wet_input = damping_input + 1;
+    let dry_input = wet_input + 1;
+    let ping_pong_input = dry_input + 2;
+
+    for frame in 0..context.frames() {
+        let damping_norm = context.input_sample(damping_input, frame, 0.5);
+        processor.set_feedback(context.input_sample(feedback_input, frame, 0.5));
+        processor.set_damping_cutoff((20.0 * 1000.0_f32.powf(damping_norm)) as f64);
+        processor.set_wet_dry(
+            context.input_sample(wet_input, frame, 0.7),
+            context.input_sample(dry_input, frame, 0.5),
+        );
+        processor.set_delay_ms(
+            lerp(
+                1.0,
+                2000.0,
+                context.input_sample(time_left_input, frame, 0.5),
+            ) as f64,
+            lerp(
+                1.0,
+                2000.0,
+                context.input_sample(time_right_input, frame, 0.5),
+            ) as f64,
+        );
+        processor.set_ping_pong(context.input_sample(ping_pong_input, frame, 0.0) > 0.5);
+
+        let left_input = context.input_sample(0, frame, 0.0);
+        let right_input = if channels == STEREO_CHANNELS {
+            context.input_sample(1, frame, 0.0)
+        } else {
+            left_input
+        };
+        let (left, right) = processor.process(left_input, right_input);
+        context.set_output_sample(0, frame, left).unwrap();
+        if channels == STEREO_CHANNELS {
+            context.set_output_sample(1, frame, right).unwrap();
+        }
+    }
+}
+
+pub(super) fn process_reverb(state: &mut PerModuleState, context: &mut ProcessContext<'_>) {
+    let PerModuleState::Reverb { processor, .. } = state else {
+        unreachable!()
+    };
+    let channels = context.output_count();
+    let decay_input = channels;
+    let room_size_input = decay_input + 1;
+    let pre_delay_input = room_size_input + 1;
+    let damping_input = pre_delay_input + 1;
+    let diffusion_input = damping_input + 1;
+    let stereo_width_input = diffusion_input + 1;
+    let wet_input = stereo_width_input + 1;
+    let dry_input = wet_input + 1;
+
+    for frame in 0..context.frames() {
+        let damping_norm = context.input_sample(damping_input, frame, 0.5);
+        processor
+            .set_decay_time(lerp(0.1, 10.0, context.input_sample(decay_input, frame, 0.5)) as f64);
+        processor.set_room_size(context.input_sample(room_size_input, frame, 0.5));
+        processor.set_pre_delay(lerp(
+            0.0,
+            250.0,
+            context.input_sample(pre_delay_input, frame, 0.0),
+        ) as f64);
+        processor.set_damping((20.0 * 1000.0_f32.powf(damping_norm)) as f64);
+        processor.set_diffusion(context.input_sample(diffusion_input, frame, 0.5));
+        processor.set_stereo_width(context.input_sample(stereo_width_input, frame, 0.5));
+        processor.set_wet_dry(
+            context.input_sample(wet_input, frame, 0.7),
+            context.input_sample(dry_input, frame, 0.5),
+        );
+
+        let left_input = context.input_sample(0, frame, 0.0);
+        let right_input = if channels == STEREO_CHANNELS {
+            context.input_sample(1, frame, 0.0)
+        } else {
+            left_input
+        };
+        let (left, right) = processor.process(left_input, right_input);
+        context.set_output_sample(0, frame, left).unwrap();
+        if channels == STEREO_CHANNELS {
+            context.set_output_sample(1, frame, right).unwrap();
+        }
+    }
+}
+
+fn lerp(min: f32, max: f32, normalized: f32) -> f32 {
+    min + (max - min) * normalized.clamp(0.0, 1.0)
 }
 
 fn finite_or_zero(value: f32) -> f32 {

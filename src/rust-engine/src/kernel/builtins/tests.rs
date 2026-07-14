@@ -19,10 +19,13 @@ use crate::builtins::{
 };
 use crate::convolution::Convolution;
 use crate::diagnostics::error_codes;
-use crate::kernel::{GraphDefinition, Node, NodeId, StaticArg, StaticType, StaticValue};
+use crate::kernel::{
+    GraphDefinition, Node, NodeId, ResourceKind, ResourceOrigin, ResourceRef, StaticArg,
+    StaticType, StaticValue,
+};
 
 /// Every builtin the kernel registry must declare.
-const EXPECTED: [&str; 32] = [
+const EXPECTED: [&str; 33] = [
     names::MIDI_INPUT,
     names::AUDIO_OUTPUT,
     names::OSCILLATOR,
@@ -55,6 +58,7 @@ const EXPECTED: [&str; 32] = [
     names::DECAY,
     names::CONTROL_TO_AUDIO,
     names::COMPENSATION_DELAY,
+    POLY_DEFINITION,
 ];
 
 /// Resolve a definition's latency against its declared static-parameter
@@ -86,6 +90,28 @@ fn registry_declares_every_builtin_and_no_others() {
         EXPECTED.len(),
         "registry must contain exactly the declared builtins"
     );
+}
+
+#[test]
+fn poly_declares_structural_static_arguments_and_note_event_input() {
+    let registry = builtin_registry();
+    let poly = registry.get(POLY_DEFINITION).expect("poly declared");
+
+    assert_eq!(
+        static_param_of(poly, POLY_WRAPPED_DEFINITION_PARAM).static_type(),
+        StaticType::String
+    );
+    assert_eq!(
+        static_param_of(poly, POLY_MAX_VOICES_PARAM).static_type(),
+        StaticType::Int
+    );
+    assert_eq!(
+        static_param_of(poly, POLY_ALLOCATION_PARAM).allowed_values(),
+        [POLY_ALLOCATION_OLDEST_STEAL, POLY_ALLOCATION_REJECT_NEW]
+    );
+    let notes = port_of(poly, POLY_NOTE_EVENTS_INPUT, PortDirection::Input);
+    assert_eq!(notes.signal_type(), SignalType::Event);
+    assert_eq!(notes.channels(), &ChannelCount::Literal(1));
 }
 
 #[test]
@@ -218,18 +244,59 @@ fn adsr_tunable_controls_carry_declared_defaults_and_ranges() {
 }
 
 #[test]
-fn stereo_builtins_still_expose_left_right_port_pairs() {
-    // Channel-polymorphism (§3.3) collapses these into 2-channel ports; until
-    // then the legacy Graph the bridge lowers onto only understands _l/_r.
+fn echo_and_reverb_expose_constrained_multichannel_ports() {
     let registry = builtin_registry();
     for name in [names::ECHO, names::REVERB] {
         let definition = registry
             .get(name)
             .unwrap_or_else(|| panic!("{name} declared"));
-        port_of(definition, ports::AUDIO_IN_L, PortDirection::Input);
-        port_of(definition, ports::AUDIO_IN_R, PortDirection::Input);
-        port_of(definition, ports::AUDIO_OUT_L, PortDirection::Output);
-        port_of(definition, ports::AUDIO_OUT_R, PortDirection::Output);
+        assert_eq!(
+            static_param_of(definition, CHANNELS_PARAM).default(),
+            Some(&StaticValue::Int(2))
+        );
+        assert_eq!(
+            static_param_of(definition, CHANNELS_PARAM).allowed_values(),
+            &["1".to_string(), "2".to_string()]
+        );
+        assert_eq!(
+            port_of(definition, ports::AUDIO_IN, PortDirection::Input).channels(),
+            &ChannelCount::param(CHANNELS_PARAM)
+        );
+        assert_eq!(
+            port_of(definition, ports::AUDIO_OUT, PortDirection::Output).channels(),
+            &ChannelCount::param(CHANNELS_PARAM)
+        );
+        assert_eq!(
+            definition
+                .ports()
+                .iter()
+                .filter(|port| port.signal_type() == SignalType::Audio)
+                .count(),
+            2
+        );
+    }
+}
+
+#[test]
+fn echo_and_reverb_reject_channel_counts_wider_than_stereo() {
+    let registry = builtin_registry();
+    for name in [names::ECHO, names::REVERB] {
+        let root = GraphDefinition::new("root").with_node(
+            Node::new(NodeId::new("effect"), name)
+                .with_static_arg(CHANNELS_PARAM, StaticArg::Literal(StaticValue::Int(6))),
+        );
+
+        let validation = root.validate(&registry);
+        let diagnostic = validation
+            .diagnostics()
+            .errors()
+            .find(|diagnostic| {
+                diagnostic.error_code() == error_codes::KERNEL_STATIC_ARGUMENT_UNSUPPORTED_VALUE
+            })
+            .unwrap_or_else(|| panic!("{name} should reject six channels"));
+        assert_eq!(diagnostic.module_id(), Some("effect"));
+        assert_eq!(diagnostic.expected(), Some("1, 2"));
+        assert_eq!(diagnostic.actual(), Some("6"));
     }
 }
 
@@ -485,6 +552,52 @@ fn builtins_declare_all_non_resource_construction_parameters() {
 }
 
 #[test]
+fn sampler_and_convolution_declare_typed_resource_arguments() {
+    let registry = builtin_registry();
+    let sample = static_param_of(registry.get(names::SAMPLER).unwrap(), SAMPLE_RESOURCE_PARAM);
+    let impulse_response = static_param_of(
+        registry.get(names::CONVOLUTION).unwrap(),
+        IMPULSE_RESPONSE_RESOURCE_PARAM,
+    );
+
+    assert_eq!(
+        sample.static_type(),
+        StaticType::Resource(ResourceKind::Sample)
+    );
+    assert_eq!(sample.default(), None);
+    assert_eq!(
+        impulse_response.static_type(),
+        StaticType::Resource(ResourceKind::ImpulseResponse)
+    );
+    assert_eq!(impulse_response.default(), None);
+}
+
+#[test]
+fn convolution_rejects_a_sample_resource_before_preparation() {
+    let registry = builtin_registry();
+    let root = GraphDefinition::new("wrong-resource-kind").with_node(
+        Node::new(NodeId::new("convolution"), names::CONVOLUTION).with_static_arg(
+            IMPULSE_RESPONSE_RESOURCE_PARAM,
+            StaticArg::Literal(StaticValue::Resource(ResourceRef::new(
+                ResourceKind::Sample,
+                "not-an-ir.wav",
+                ResourceOrigin::Document,
+            ))),
+        ),
+    );
+
+    let validation = root.validate(&registry);
+    let diagnostic = validation.diagnostics().errors().next().unwrap();
+    assert_eq!(
+        diagnostic.error_code(),
+        error_codes::KERNEL_RESOURCE_KIND_MISMATCH
+    );
+    assert_eq!(diagnostic.module_id(), Some("convolution"));
+    assert_eq!(diagnostic.expected(), Some("impulse_response"));
+    assert_eq!(diagnostic.actual(), Some("sample"));
+}
+
+#[test]
 fn builtin_static_arguments_validate_through_graph_definition() {
     let registry = builtin_registry();
     let valid = GraphDefinition::new("valid_builtin_static_args")
@@ -623,6 +736,15 @@ fn generic_builtins_resolve_mono_stereo_and_six_channel_signal_ports() {
             if definition == names::COMPENSATION_DELAY {
                 node = node
                     .with_static_arg(DELAY_SAMPLES_PARAM, StaticArg::Literal(StaticValue::Int(1)));
+            } else if definition == names::CONVOLUTION {
+                node = node.with_static_arg(
+                    IMPULSE_RESPONSE_RESOURCE_PARAM,
+                    StaticArg::Literal(StaticValue::Resource(ResourceRef::new(
+                        ResourceKind::ImpulseResponse,
+                        "unit-ir.wav",
+                        ResourceOrigin::Document,
+                    ))),
+                );
             }
             let flattened = GraphDefinition::new("root")
                 .with_node(node)

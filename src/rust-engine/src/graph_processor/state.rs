@@ -3,7 +3,7 @@ use crate::builtins::module_kind::ModuleKind;
 use crate::compiled_patch::CompiledNodeData;
 use crate::compiled_patch::{
     CompiledConstruction, CompiledFilterAlgorithm, CompiledNode, CompiledResourceHandles,
-    SampleResourceHandle,
+    CompiledScriptLanguage, SampleResourceHandle,
 };
 use crate::convolution::Convolution;
 use crate::crossover::LinkwitzRiley4;
@@ -39,6 +39,8 @@ pub(super) enum PerModuleState {
     Vca,
     /// Stateless control→audio promotion (see `unify-graph-kernel` §2.5).
     ControlToAudio,
+    /// Structural boundary; child processing starts in task 4.3.
+    Poly,
     CompensationDelay {
         samples: Box<[Box<[f32]>]>,
         positions: Box<[usize]>,
@@ -178,13 +180,17 @@ impl PerModuleState {
     ) -> Self {
         match kind {
             ModuleKind::Script => {
-                let CompiledConstruction::Script { source } = construction else {
+                let CompiledConstruction::Script { language, source } = construction else {
                     panic!("script module {module_id} has mismatched construction data")
                 };
-                let runtime = RhaiScriptRuntime::compile(source, ScriptRuntimeLimits::default())
-                    .unwrap_or_else(|error| {
-                        panic!("script module {module_id} failed to prepare: {error}")
-                    });
+                let runtime = match language {
+                    CompiledScriptLanguage::Rhai => {
+                        RhaiScriptRuntime::compile(source, ScriptRuntimeLimits::default())
+                    }
+                }
+                .unwrap_or_else(|error| {
+                    panic!("script module {module_id} failed to prepare: {error}")
+                });
                 PerModuleState::Script {
                     runtime,
                     state: ScriptModuleState::default(),
@@ -210,6 +216,7 @@ impl PerModuleState {
             },
             ModuleKind::Gain => PerModuleState::Vca,
             ModuleKind::ControlToAudio => PerModuleState::ControlToAudio,
+            ModuleKind::Poly => PerModuleState::Poly,
             ModuleKind::CompensationDelay => {
                 let CompiledConstruction::CompensationDelay { samples } = construction else {
                     panic!("compensation delay module {module_id} has mismatched construction data")
@@ -417,7 +424,7 @@ impl PerModuleState {
     }
 
     pub(super) fn new_script_compiled(node: &CompiledNode) -> Self {
-        let CompiledConstruction::Script { source } = &node.construction else {
+        let CompiledConstruction::Script { language, source } = &node.construction else {
             panic!(
                 "script module {} has mismatched construction data",
                 node.id.as_str()
@@ -445,12 +452,14 @@ impl PerModuleState {
             .map(|(name, _)| name.clone())
             .collect();
 
-        let runtime = RhaiScriptRuntime::compile_with_output_ports(
-            source,
-            ScriptRuntimeLimits::default(),
-            event_outputs,
-            control_outputs,
-        )
+        let runtime = match language {
+            CompiledScriptLanguage::Rhai => RhaiScriptRuntime::compile_with_output_ports(
+                source,
+                ScriptRuntimeLimits::default(),
+                event_outputs,
+                control_outputs,
+            ),
+        }
         .unwrap_or_else(|error| {
             panic!(
                 "script module {} failed to prepare: {error}",

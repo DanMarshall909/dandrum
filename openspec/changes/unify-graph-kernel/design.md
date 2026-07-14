@@ -49,7 +49,7 @@ Constraints: realtime callback stays lock-free, allocation-free, IO-free (README
 
 ### D4: `poly` combinator replaces voice scope
 
-A structural primitive `poly { definition_ref, static max_voices, allocation policy }`:
+A structural primitive uses the ordinary node shape `type: poly` with static keys `definition`, `max_voices`, and `allocation`:
 
 - Preallocates `max_voices` flattened instances of the wrapped definition (satisfying the no-allocation callback contract).
 - Routes incoming note events to instances: policies `oldest-steal` and `reject-new` preserve both existing stealing and no-steal behavior.
@@ -85,9 +85,15 @@ Trunk-based with one explicit transitional adapter: (1) kernel types + validatio
 
 ### D10: Resources, presets, and configurable primitive definitions
 
-Resource static arguments resolve against an explicit preparation context carrying the document/package root and host sample rate. Resolution produces typed immutable resource handles, validates resource kind, deduplicates shared data, and preserves package-relative paths. Presets apply to a resolved root instance before flattening: value aliases replace root control defaults and asset aliases replace resource static arguments, with the precedence declared in the preset specifications.
+Resource static declarations and values are both typed. `ResourceKind` initially contains `sample` and `impulse_response`; a resource static parameter declares its required kind, and a literal value is a `ResourceRef { kind, path }`. Kernel YAML spells declarations as `type: resource` plus `resource_kind`, and values as `{ kind, path }`. Carrying kind on both sides makes a wrong-kind reference representable and rejectable before any file is loaded.
 
-Primitives whose interface is author-defined, notably scripts, are represented as named graph definitions rather than nodes with ad-hoc ports. A script-backed definition declares its public ports plus script language/source static arguments, then instances use the ordinary `Node` shape. This preserves the rule that every node gets its interface from its referenced definition. Port multiplicity is declared in that same interface.
+Every resource literal retains the origin where that literal was authored. A relative default authored in a package resolves from that package version root; a caller-supplied override resolves from the caller document root; name pass-through preserves the original literal's origin through composites and packages. Resolution occurs through an explicit `PreparationContext` carrying document origin, host sample rate, and `$LIB`/`$USER_LIB` roots. Existing files are canonicalized before loading, and the canonical target must remain beneath its canonical document/package root, rejecting absolute paths, parent traversal, and symlink escapes. Loading preserves the current exact-sample-rate requirement; resampling is a separate capability.
+
+The preparation cache is keyed by canonical resource identity and load-affecting settings, and deduplicates immutable decoded data independently of node instances. Typed sample and impulse-response handles wrap that shared data while each flattened node and each future poly voice receives disjoint mutable DSP state. Task 3.8 establishes this resource-bearing flattened/compiled-node contract; explicit poly regions in section 4 consume the contract rather than being pulled into resource preparation.
+
+Package entries load directly as provenance-bearing kernel graph definitions, including nested `$LIB`/`$USER_LIB` references. Task 3.8 removes `asset_bindings` from the migrated package model after package parity is proven; the remaining legacy patch field stays transitional until task 7.8. Presets apply to a resolved root instance before flattening: value aliases replace root control defaults and asset aliases replace resource static arguments, with the precedence declared in the preset specifications.
+
+Primitives whose interface is author-defined, notably scripts, are represented as named graph definitions rather than nodes with ad-hoc ports. YAML marks these with `implementation: script`; a script-backed definition declares its public ports plus script language/source static arguments, then instances use the ordinary `Node` shape. The compiler lowers the named definition to the existing script primitive while retaining that definition's declared interface and typed construction values. This preserves the rule that every node gets its interface from its referenced definition. Port multiplicity is declared in that same interface.
 
 Generic channel-independent builtins (gain, mixers, filters, delays, promotion, and similar processors) support arbitrary resolved channel counts by allocating state per channel where needed. Intrinsically stereo algorithms may constrain `channels` to supported values: echo and reverb support mono and stereo in this change and reject larger counts with a structured static-argument diagnostic. Arbitrary host bus widths remain valid because graphs can compose or split processors explicitly; not every primitive must accept every width.
 
@@ -159,3 +165,7 @@ Discipline: run every bulk edit in small, committed batches gated by `cargo test
 - Control-to-audio promotion is sample-and-hold for the current block-rate control model; linear interpolation is deferred until control timestamps or boundary values are specified. (Revised 2026-07-13.)
 - The poly allocation-policy enum includes `oldest-steal` and `reject-new`, preserving existing no-steal examples. (Revised 2026-07-13.)
 - FFI audio buses use planar channel buffers supplied per render call; the engine does not retain host-owned audio pointers. (Decided 2026-07-13.)
+- Resource static declarations and literal values both carry `ResourceKind`; literals retain their authoring origin through pass-through and flattening. (Decided 2026-07-13.)
+- Package/document resource containment is checked on canonical paths, including symlink escape rejection; resource loading preserves exact sample-rate matching. (Decided 2026-07-13.)
+- Resource preparation establishes shared typed handles on flattened/compiled nodes for future poly regions; it does not pull section 4 poly architecture forward. (Decided 2026-07-13.)
+- Task 3.8 removes `asset_bindings` from migrated package entries; task 7.8 removes the remaining legacy patch field. (Decided 2026-07-13.)
