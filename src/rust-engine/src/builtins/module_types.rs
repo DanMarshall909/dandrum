@@ -28,6 +28,7 @@ pub const NOTE_TO_CONTROL: &str = "note_to_control";
 pub const EVENT_FILTER: &str = "event_filter";
 pub const ENVELOPE_FOLLOWER: &str = "envelope_follower";
 pub const CURVE_MAPPER: &str = "curve_mapper";
+pub const SLEW: &str = "slew";
 pub const DECAY: &str = "decay";
 pub const POLY: &str = "poly";
 

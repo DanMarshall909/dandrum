@@ -69,3 +69,5 @@ pub const PITCH_RATIO: &str = "pitch_ratio";
 pub const VELOCITY: &str = "velocity";
 pub const IN: &str = "in";
 pub const OUT: &str = "out";
+pub const SLIDE: &str = "slide";
+pub const GLIDE: &str = "glide";

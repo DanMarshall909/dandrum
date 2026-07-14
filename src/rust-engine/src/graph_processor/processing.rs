@@ -395,6 +395,44 @@ pub(super) fn process_curve_mapper(
     outputs
 }
 
+pub(super) fn process_slew(
+    state: &mut PerModuleState,
+    value_in: &[f32],
+    glide_in: &[f32],
+    time_ms_in: &[f32],
+    frames: usize,
+) -> ModuleOutputs {
+    let (current, sample_rate) = match state {
+        PerModuleState::Slew {
+            current,
+            sample_rate,
+        } => (current, *sample_rate),
+        _ => unreachable!(),
+    };
+
+    let mut output = Vec::with_capacity(frames);
+    for i in 0..frames {
+        let target = value_in.get(i).copied().unwrap_or(0.0);
+        let glide = glide_in.get(i).copied().unwrap_or(0.0);
+        let time_ms = time_ms_in.get(i).copied().unwrap_or(0.0);
+        let glide_samples = (sample_rate * time_ms / 1000.0).max(1.0);
+        if glide > 0.5 && glide_samples > 1.0 {
+            // One-pole portamento: move a fixed fraction of the remaining
+            // distance toward the target each sample.
+            *current += (target - *current) / glide_samples;
+        } else {
+            *current = target;
+        }
+        output.push(*current);
+    }
+
+    let mut outputs = ModuleOutputs::empty();
+    outputs
+        .control
+        .insert(builtin_ports::VALUE.to_string(), output);
+    outputs
+}
+
 fn finite_or_zero(value: f32) -> f32 {
     if value.is_finite() { value } else { 0.0 }
 }
@@ -823,75 +861,90 @@ pub(super) fn process_note_to_control(
     events: &[BlockEvent],
     frames: usize,
 ) -> ModuleOutputs {
-    let (gate_active, current_note, current_velocity, current_frequency, current_pitch_ratio) =
-        match state {
-            PerModuleState::NoteToControl {
-                gate_active,
-                current_note,
-                current_velocity,
-                current_frequency,
-                current_pitch_ratio,
-            } => (
-                gate_active,
-                current_note,
-                current_velocity,
-                current_frequency,
-                current_pitch_ratio,
-            ),
-            _ => unreachable!(),
-        };
+    let (
+        gate_active,
+        current_note,
+        current_velocity,
+        current_frequency,
+        current_pitch_ratio,
+        current_slide,
+    ) = match state {
+        PerModuleState::NoteToControl {
+            gate_active,
+            current_note,
+            current_velocity,
+            current_frequency,
+            current_pitch_ratio,
+            current_slide,
+        } => (
+            gate_active,
+            current_note,
+            current_velocity,
+            current_frequency,
+            current_pitch_ratio,
+            current_slide,
+        ),
+        _ => unreachable!(),
+    };
 
     let mut frequency_out = vec![0.0_f32; frames];
     let mut pitch_ratio_out = vec![0.0_f32; frames];
     let mut velocity_out = vec![0.0_f32; frames];
+    let mut slide_out = vec![0.0_f32; frames];
     let mut gate_events = Vec::new();
 
-    for event in events {
-        let f = event.frame_offset as usize;
-        match &event.event {
-            ScriptEvent::NoteOn { note, velocity } => {
-                let freq = midi_note_to_freq(*note);
-                let ratio = freq / OSCILLATOR_BASE_HZ;
-                let norm_vel = (*velocity as f32) / 127.0;
-                *current_note = Some(*note);
-                *current_velocity = norm_vel;
-                *current_frequency = freq;
-                *current_pitch_ratio = ratio;
-                if f < frames {
-                    frequency_out[f] = freq;
-                    pitch_ratio_out[f] = ratio;
-                    velocity_out[f] = norm_vel;
-                }
-                *gate_active = true;
-                gate_events.push(BlockEvent {
-                    frame_offset: event.frame_offset,
-                    event: ScriptEvent::NoteOn {
-                        note: *note,
-                        velocity: *velocity,
-                    },
-                });
+    for i in 0..frames {
+        for event in events {
+            if event.frame_offset as usize != i {
+                continue;
             }
-            ScriptEvent::NoteOff { note } => {
-                if current_note.map(|n| n == *note).unwrap_or(false) {
-                    *gate_active = false;
-                    *current_note = None;
-                    *current_velocity = 0.0;
-                    *current_frequency = 0.0;
-                    *current_pitch_ratio = 0.0;
+            match &event.event {
+                ScriptEvent::NoteOn { note, velocity } => {
+                    let freq = midi_note_to_freq(*note);
+                    let ratio = freq / OSCILLATOR_BASE_HZ;
+                    let norm_vel = (*velocity as f32) / 127.0;
+                    // A note that starts while the previous one is still held is
+                    // a legato slide: keep the envelope gate high (no retrigger)
+                    // and flag the slide so a downstream slew glides the pitch.
+                    // A note from silence retriggers and snaps.
+                    *current_slide = *gate_active;
+                    if !*gate_active {
+                        *gate_active = true;
+                        gate_events.push(BlockEvent {
+                            frame_offset: event.frame_offset,
+                            event: ScriptEvent::NoteOn {
+                                note: *note,
+                                velocity: *velocity,
+                            },
+                        });
+                    }
+                    *current_note = Some(*note);
+                    *current_velocity = norm_vel;
+                    *current_frequency = freq;
+                    *current_pitch_ratio = ratio;
                 }
-                gate_events.push(BlockEvent {
-                    frame_offset: event.frame_offset,
-                    event: ScriptEvent::NoteOff { note: *note },
-                });
+                ScriptEvent::NoteOff { note } => {
+                    // Only the currently sounding note releases the gate; a stale
+                    // note-off from a slid-away note is ignored so legato holds.
+                    if current_note.map(|n| n == *note).unwrap_or(false) {
+                        *gate_active = false;
+                        *current_note = None;
+                        *current_velocity = 0.0;
+                        *current_slide = false;
+                        gate_events.push(BlockEvent {
+                            frame_offset: event.frame_offset,
+                            event: ScriptEvent::NoteOff { note: *note },
+                        });
+                    }
+                }
             }
         }
-    }
 
-    if *gate_active {
-        for frame in 0..frames {
-            frequency_out[frame] = *current_frequency;
-            pitch_ratio_out[frame] = *current_pitch_ratio;
-            velocity_out[frame] = *current_velocity;
+        if *gate_active {
+            frequency_out[i] = *current_frequency;
+            pitch_ratio_out[i] = *current_pitch_ratio;
+            velocity_out[i] = *current_velocity;
+            slide_out[i] = if *current_slide { 1.0 } else { 0.0 };
         }
     }
 
@@ -903,6 +956,7 @@ pub(super) fn process_note_to_control(
         .control
         .insert("pitch_ratio".to_string(), pitch_ratio_out);
     outputs.control.insert("velocity".to_string(), velocity_out);
+    outputs.control.insert("slide".to_string(), slide_out);
     outputs.events = gate_events;
     outputs
 }

@@ -11,7 +11,8 @@ use super::processing::{
     process_dynamics_processor, process_echo, process_envelope_follower, process_event_filter,
     process_filter, process_frequency_splitter, process_impulse, process_multiply, process_noise,
     process_note_to_control, process_note_to_rate, process_oscillator, process_reverb,
-    process_sampler, process_saturator, process_script, process_spectral_processor, process_vca,
+    process_sampler, process_saturator, process_script, process_slew, process_spectral_processor,
+    process_vca,
 };
 use super::state::PerModuleState;
 use crate::compiled_patch::effective_legacy_control_default;
@@ -67,6 +68,13 @@ pub(super) fn process_module(
             &mod_ctrl(LOOP_ENABLED),
             &mod_ctrl(LOOP_START),
             &mod_ctrl(LOOP_END),
+            frames,
+        ),
+        Slew => process_slew(
+            &mut states[module_idx],
+            &ctrl(VALUE),
+            &ctrl(GLIDE),
+            &ctrl(TIME_MS),
             frames,
         ),
         NoteToRate => process_note_to_rate(&mut states[module_idx], events_in, frames),

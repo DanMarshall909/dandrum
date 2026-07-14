@@ -1,9 +1,10 @@
 metadata:
   name: TB-303 Acid
   version: "0.1"
-# Monophonic acid bass line: saw oscillator into an envelope-swept moog filter,
-# amplitude VCA, and a saturator for drive. Mirrors the dandrum-demo acid chain
-# but routes the saturator into the output (the demo left it dangling).
+# Monophonic acid bassline. note_to_control drives a saw oscillator through a
+# reusable `slew` portamento (engaged only on legato/slide notes), an
+# envelope-swept moog filter, and a saturator. Accent = note velocity, routed
+# both to the VCA (louder) and, scaled, into the filter cutoff (brighter).
 voice_allocation:
   max_voices: 1
   stealing: oldest_active
@@ -17,13 +18,34 @@ modules:
     outputs:
       - name: events
         signal_type: event
-  - id: note_rate
-    type: note_to_rate
+  # Mono note source: snaps pitch, holds the gate across overlapping (slid)
+  # notes, and raises `slide` while a note is legato so the slew glides.
+  - id: ntc
+    type: note_to_control
     inputs:
       - name: events
         signal_type: event
     outputs:
-      - name: rate
+      - name: pitch_ratio
+        signal_type: control
+      - name: gate
+        signal_type: event
+      - name: velocity
+        signal_type: control
+      - name: slide
+        signal_type: control
+  # Portamento: glides pitch toward the target only while `glide` (slide) is on.
+  - id: pitch_slew
+    type: slew
+    parameters:
+      time_ms: 60
+    inputs:
+      - name: value
+        signal_type: control
+      - name: glide
+        signal_type: control
+    outputs:
+      - name: value
         signal_type: control
   - id: osc
     type: oscillator
@@ -35,9 +57,8 @@ modules:
     outputs:
       - name: audio
         signal_type: audio
-  # Amplitude envelope: fast attack, sustained hold while a key is down, quick
-  # release so held notes on the on-screen keyboard behave like a 303 gate.
-  - id: env
+  # Amplitude envelope: fast attack, sustained while held, quick release.
+  - id: amp_env
     type: adsr
     parameters:
       attack: 3
@@ -50,8 +71,7 @@ modules:
     outputs:
       - name: value
         signal_type: control
-  # Filter envelope: opens the cutoff on note-on then decays to a low sustain,
-  # producing the classic acid "wow" sweep.
+  # Filter envelope: opens the cutoff on note-on then decays — the acid "wow".
   - id: filter_env
     type: adsr
     parameters:
@@ -62,6 +82,36 @@ modules:
     inputs:
       - name: gate
         signal_type: event
+    outputs:
+      - name: value
+        signal_type: control
+  # Accent brightness: scale + offset the velocity so accented notes add extra
+  # cutoff. amount: 0 makes this a linear scaler (out = velocity*scale + offset).
+  - id: accent_bright
+    type: curve_mapper
+    parameters:
+      amount: 0
+      scale: 0.6
+      offset: -0.3
+    inputs:
+      - name: value
+        signal_type: control
+    outputs:
+      - name: value
+        signal_type: control
+  # Cutoff = filter envelope + accent brightness. A curve_mapper adds its
+  # `offset` input to the (linearly passed) `value` input, so it sums the two
+  # single-source control signals without needing a dedicated control mixer.
+  - id: cutoff_shaper
+    type: curve_mapper
+    parameters:
+      amount: 0
+      scale: 1
+    inputs:
+      - name: value
+        signal_type: control
+      - name: offset
+        signal_type: control
     outputs:
       - name: value
         signal_type: control
@@ -77,7 +127,18 @@ modules:
     outputs:
       - name: audio_out
         signal_type: audio
-  - id: vca
+  # Envelope VCA, then accent VCA (velocity) in series — accented notes louder.
+  - id: env_vca
+    type: gain
+    inputs:
+      - name: audio_in
+        signal_type: audio
+      - name: gain
+        signal_type: control
+    outputs:
+      - name: audio_out
+        signal_type: audio
+  - id: accent_vca
     type: gain
     inputs:
       - name: audio_in
@@ -112,22 +173,36 @@ modules:
         signal_type: audio
 connections:
   - from: midi.events
-    to: note_rate.events
-  - from: midi.events
-    to: env.gate
-  - from: midi.events
-    to: filter_env.gate
-  - from: note_rate.rate
+    to: ntc.events
+  - from: ntc.pitch_ratio
+    to: pitch_slew.value
+  - from: ntc.slide
+    to: pitch_slew.glide
+  - from: pitch_slew.value
     to: osc.pitch
+  - from: ntc.gate
+    to: amp_env.gate
+  - from: ntc.gate
+    to: filter_env.gate
+  - from: ntc.velocity
+    to: accent_bright.value
+  - from: ntc.velocity
+    to: accent_vca.gain
   - from: osc.audio
     to: filter.audio_in
   - from: filter_env.value
+    to: cutoff_shaper.value
+  - from: accent_bright.value
+    to: cutoff_shaper.offset
+  - from: cutoff_shaper.value
     to: filter.cutoff
   - from: filter.audio_out
-    to: vca.audio_in
-  - from: env.value
-    to: vca.gain
-  - from: vca.audio_out
+    to: env_vca.audio_in
+  - from: amp_env.value
+    to: env_vca.gain
+  - from: env_vca.audio_out
+    to: accent_vca.audio_in
+  - from: accent_vca.audio_out
     to: mixer.inputs
   - from: mixer.mix
     to: sat.audio_in

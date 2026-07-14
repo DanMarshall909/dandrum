@@ -314,6 +314,7 @@ impl BuiltInModuleRegistry {
             event_filter_definition(),
             envelope_follower_definition(),
             curve_mapper_definition(),
+            slew_definition(),
             decay_definition(),
             control_to_audio_definition(),
             compensation_delay_definition(),
@@ -760,6 +761,7 @@ fn note_to_control_definition() -> BuiltInModuleDefinition {
         .with_output(Port::output("pitch_ratio", Control))
         .with_output(Port::output("gate", Event))
         .with_output(Port::output("velocity", Control))
+        .with_output(Port::output("slide", Control))
 }
 
 fn envelope_follower_definition() -> BuiltInModuleDefinition {
@@ -840,6 +842,22 @@ fn curve_mapper_definition() -> BuiltInModuleDefinition {
         )
         .with_example(
             "- id: mapper\n  type: curve_mapper\n  parameters:\n    curve: s_curve\n    steps: 4",
+        )
+}
+
+fn slew_definition() -> BuiltInModuleDefinition {
+    // A gated one-pole-style portamento on a control signal: when the `glide`
+    // gate is open it ramps its output toward `value` over `time_ms`; when the
+    // gate is closed it snaps. Reusable for pitch slides, filter sweeps, etc.
+    BuiltInModuleDefinition::new(SLEW)
+        .with_execution_scope(ExecutionScope::Voice)
+        .with_inputs([(VALUE, Control), (GLIDE, Control), (TIME_MS, Control)])
+        .with_output(Port::output(VALUE, Control))
+        .with_parameter(
+            ParameterMetadata::new(TIME_MS, ParameterValueType::Number)
+                .with_default("60")
+                .with_range(0.0, 5000.0)
+                .with_description("glide time in milliseconds while the glide gate is open"),
         )
 }
 

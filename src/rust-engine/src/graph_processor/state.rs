@@ -37,6 +37,10 @@ pub(super) enum PerModuleState {
         sample_rate: f32,
     },
     Vca,
+    Slew {
+        current: f32,
+        sample_rate: f32,
+    },
     /// Stateless control→audio promotion (see `unify-graph-kernel` §2.5).
     ControlToAudio,
     /// Structural boundary; child processing starts in task 4.3.
@@ -97,6 +101,7 @@ pub(super) enum PerModuleState {
         current_velocity: f32,
         current_frequency: f32,
         current_pitch_ratio: f32,
+        current_slide: bool,
     },
     EventFilter {
         note: Option<u8>,
@@ -215,6 +220,10 @@ impl PerModuleState {
                 sample_rate,
             },
             ModuleKind::Gain => PerModuleState::Vca,
+            ModuleKind::Slew => PerModuleState::Slew {
+                current: 0.0,
+                sample_rate,
+            },
             ModuleKind::ControlToAudio => PerModuleState::ControlToAudio,
             ModuleKind::Poly => PerModuleState::Poly,
             ModuleKind::CompensationDelay => {
@@ -377,6 +386,7 @@ impl PerModuleState {
                 current_velocity: 0.0,
                 current_frequency: 0.0,
                 current_pitch_ratio: 0.0,
+                current_slide: false,
             },
             ModuleKind::EventFilter => {
                 let CompiledConstruction::EventFilter { note } = construction else {

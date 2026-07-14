@@ -1,6 +1,6 @@
 use super::processing::{
     EchoControls, ReverbControls, process_dynamics_processor, process_echo,
-    process_frequency_splitter, process_reverb,
+    process_frequency_splitter, process_note_to_control, process_reverb, process_slew,
 };
 use super::*;
 use crate::builtins::{
@@ -16,6 +16,7 @@ use crate::builtins::{
 };
 use crate::core::TimedInputEvent;
 use crate::fft;
+use crate::oscillator::OSCILLATOR_BASE_HZ;
 use crate::graph::*;
 use crate::patch;
 use crate::sample::{LoadedSample, PreparedSamplerAssets};
@@ -4138,6 +4139,225 @@ connections:
     );
 }
 
+// --- note_to_control legato + slide flag (TB-303) ----------------------------
+//
+// note_to_control snaps pitch and reports *when* to slide via its `slide`
+// output; the actual portamento is done by the reusable `slew` primitive below.
+
+const NTC_TEST_SAMPLE_RATE: f32 = 48_000.0;
+
+fn expected_pitch_ratio(note: u8) -> f32 {
+    let freq = 440.0 * 2.0_f32.powf((note as f32 - 69.0) / 12.0);
+    freq / OSCILLATOR_BASE_HZ
+}
+
+fn note_to_control_holding(note: u8) -> PerModuleState {
+    let ratio = expected_pitch_ratio(note);
+    PerModuleState::NoteToControl {
+        gate_active: true,
+        current_note: Some(note),
+        current_velocity: 100.0 / 127.0,
+        current_frequency: ratio * OSCILLATOR_BASE_HZ,
+        current_pitch_ratio: ratio,
+        current_slide: false,
+    }
+}
+
+fn ntc_note_on(note: u8) -> BlockEvent {
+    BlockEvent {
+        frame_offset: 0,
+        event: ScriptEvent::NoteOn {
+            note,
+            velocity: 100,
+        },
+    }
+}
+
+#[test]
+fn note_to_control_snaps_pitch_and_flags_slide_on_overlap() {
+    // A note that overlaps a held note snaps pitch_ratio to the new note and
+    // raises the `slide` flag so a downstream slew glides into it.
+    let mut state = note_to_control_holding(48);
+
+    let outputs = process_note_to_control(&mut state, &[ntc_note_on(60)], 64);
+
+    assert!(
+        (outputs.control["pitch_ratio"][0] - expected_pitch_ratio(60)).abs() < 1.0e-4,
+        "overlapping note should target the new pitch immediately (slew does the gliding)"
+    );
+    assert!(
+        outputs.control["slide"].iter().all(|&s| s > 0.5),
+        "an overlapping (legato) note must raise the slide flag"
+    );
+}
+
+#[test]
+fn note_to_control_does_not_retrigger_gate_on_legato_overlap() {
+    // An overlapping note is a slide: the amplitude envelope must not retrigger,
+    // so no NoteOn gate event is emitted.
+    let mut state = note_to_control_holding(48);
+
+    let outputs = process_note_to_control(&mut state, &[ntc_note_on(60)], 64);
+
+    assert!(
+        !outputs
+            .events
+            .iter()
+            .any(|e| matches!(e.event, ScriptEvent::NoteOn { .. })),
+        "legato overlap must not emit a retrigger NoteOn gate event"
+    );
+}
+
+#[test]
+fn note_to_control_snaps_and_retriggers_from_silence() {
+    // A note from silence snaps instantly to pitch, triggers the gate, and does
+    // not raise the slide flag.
+    let mut state = PerModuleState::NoteToControl {
+        gate_active: false,
+        current_note: None,
+        current_velocity: 0.0,
+        current_frequency: 0.0,
+        current_pitch_ratio: 0.0,
+        current_slide: false,
+    };
+
+    let outputs = process_note_to_control(&mut state, &[ntc_note_on(60)], 64);
+
+    assert!(
+        (outputs.control["pitch_ratio"][0] - expected_pitch_ratio(60)).abs() < 1.0e-4,
+        "note from silence should snap immediately to its pitch"
+    );
+    assert!(
+        outputs
+            .events
+            .iter()
+            .any(|e| matches!(e.event, ScriptEvent::NoteOn { .. })),
+        "note from silence should retrigger the gate with a NoteOn event"
+    );
+    assert!(
+        outputs.control["slide"].iter().all(|&s| s < 0.5),
+        "a note from silence must not raise the slide flag"
+    );
+}
+
+#[test]
+fn note_to_control_ignores_note_off_from_slid_away_note() {
+    // After sliding 48 -> 60 the note-off for the original note 48 is stale and
+    // must not release the gate; the voice keeps sounding at note 60.
+    let mut state = note_to_control_holding(60);
+    let note_off_48 = BlockEvent {
+        frame_offset: 0,
+        event: ScriptEvent::NoteOff { note: 48 },
+    };
+
+    let outputs = process_note_to_control(&mut state, &[note_off_48], 64);
+
+    assert!(
+        !outputs
+            .events
+            .iter()
+            .any(|e| matches!(e.event, ScriptEvent::NoteOff { .. })),
+        "a stale note-off from a slid-away note must not emit a gate release"
+    );
+    assert!(
+        outputs.control["velocity"].iter().all(|&v| v > 0.0),
+        "the gate should stay held after a stale note-off, keeping velocity non-zero"
+    );
+}
+
+// --- slew primitive (gated portamento) ---------------------------------------
+
+fn slew_state() -> PerModuleState {
+    PerModuleState::Slew {
+        current: 0.0,
+        sample_rate: NTC_TEST_SAMPLE_RATE,
+    }
+}
+
+#[test]
+fn slew_glides_toward_target_when_gate_open() {
+    // With the glide gate open, the output ramps toward the target over the
+    // glide time rather than jumping, and converges to it.
+    let mut state = slew_state();
+    let time_ms = 20.0;
+    let target = 1.0;
+    let frames = 8 * (NTC_TEST_SAMPLE_RATE * time_ms / 1000.0) as usize;
+
+    let outputs = process_slew(
+        &mut state,
+        &vec![target; frames],
+        &vec![1.0; frames],
+        &vec![time_ms; frames],
+        frames,
+    );
+    let out = &outputs.control["value"];
+
+    assert!(
+        out[0] > 0.0 && out[0] < target * 0.2,
+        "output should start gliding from 0, not jump to the target: got {}",
+        out[0]
+    );
+    assert!(
+        out.windows(2).all(|w| w[1] >= w[0]),
+        "a glide toward a higher target should be monotonically non-decreasing"
+    );
+    assert!(
+        (out[frames - 1] - target).abs() < 1.0e-2,
+        "output should converge to the target by the end of the glide: got {}",
+        out[frames - 1]
+    );
+}
+
+#[test]
+fn slew_snaps_to_target_when_gate_closed() {
+    // With the glide gate closed the slew passes its input straight through.
+    let mut state = slew_state();
+    let target = 0.75;
+
+    let outputs = process_slew(
+        &mut state,
+        &vec![target; 8],
+        &vec![0.0; 8],
+        &vec![60.0; 8],
+        8,
+    );
+
+    assert!(
+        outputs.control["value"].iter().all(|&v| (v - target).abs() < 1.0e-6),
+        "a closed glide gate must snap the output to the input immediately"
+    );
+}
+
+#[test]
+fn tb303_acid_accent_makes_notes_louder() {
+    // End-to-end: the tb303-acid patch routes note velocity to the VCA, so an
+    // accented (high-velocity) note renders louder than an unaccented one.
+    let Some(yaml) = read_repo_fixture("examples/patches/tb303-acid.yaml") else {
+        return;
+    };
+    let patch = patch::load_patch_str(&yaml).expect("tb303-acid.yaml should parse");
+    let graph = Graph::from_patch_declarations(&patch);
+    graph.validate().expect("tb303-acid graph should validate");
+
+    let rms_for_velocity = |velocity: u8| {
+        let events = vec![
+            note_on_value(0, 45, velocity),
+            TimedInputEvent::new(12_000, ScriptEvent::NoteOff { note: 45 }),
+        ];
+        let (left, _) = render_offline(&graph, &patch.render, events);
+        let sum_sq: f64 = left.iter().map(|&s| (s as f64) * (s as f64)).sum();
+        (sum_sq / left.len() as f64).sqrt()
+    };
+
+    let accented = rms_for_velocity(120);
+    let unaccented = rms_for_velocity(80);
+
+    assert!(
+        accented > unaccented * 1.1,
+        "accented note (rms {accented}) should be clearly louder than unaccented (rms {unaccented})"
+    );
+}
+
 #[test]
 fn note_to_control_clears_gate_on_matching_note_off() {
     let patch = patch::load_patch_str(
@@ -4274,11 +4494,14 @@ connections:
         },
         events,
     );
-    // Mismatched NoteOff should be ignored; gate stays active.
+    // A note-off for a note that is not the one sounding is fully ignored: it
+    // neither releases the gate nor forwards a spurious gate event downstream
+    // (which would otherwise wrongly retrigger/release an envelope). Only the
+    // initial NoteOn produces a gate click.
     let nonzero_count = left.iter().filter(|&&s| s != 0.0).count();
-    assert!(
-        nonzero_count >= 2,
-        "expected at least 2 impulse clicks (initial + continued gate); got {nonzero_count}"
+    assert_eq!(
+        nonzero_count, 1,
+        "mismatched note-off must not emit a gate event; expected only the initial NoteOn click"
     );
 }
 

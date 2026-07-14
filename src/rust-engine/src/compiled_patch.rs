@@ -929,6 +929,9 @@ pub(crate) fn effective_legacy_control_default(
         (ModuleKind::Adsr, builtin_ports::DECAY) => Some(30.0),
         (ModuleKind::Adsr, builtin_ports::SUSTAIN) => Some(0.7),
         (ModuleKind::Adsr, builtin_ports::RELEASE) => Some(200.0),
+        (ModuleKind::Slew, builtin_ports::VALUE) => Some(0.0),
+        (ModuleKind::Slew, builtin_ports::GLIDE) => Some(0.0),
+        (ModuleKind::Slew, builtin_ports::TIME_MS) => Some(60.0),
         _ => None,
     }
 }
