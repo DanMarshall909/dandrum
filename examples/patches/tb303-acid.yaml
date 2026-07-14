@@ -1,0 +1,137 @@
+metadata:
+  name: TB-303 Acid
+  version: "0.1"
+# Monophonic acid bass line: saw oscillator into an envelope-swept moog filter,
+# amplitude VCA, and a saturator for drive. Mirrors the dandrum-demo acid chain
+# but routes the saturator into the output (the demo left it dangling).
+voice_allocation:
+  max_voices: 1
+  stealing: oldest_active
+render:
+  sample_rate_hz: 48000
+  block_size_frames: 128
+  duration_frames: 48000
+modules:
+  - id: midi
+    type: midi_input
+    outputs:
+      - name: events
+        signal_type: event
+  - id: note_rate
+    type: note_to_rate
+    inputs:
+      - name: events
+        signal_type: event
+    outputs:
+      - name: rate
+        signal_type: control
+  - id: osc
+    type: oscillator
+    parameters:
+      waveform: saw
+    inputs:
+      - name: pitch
+        signal_type: control
+    outputs:
+      - name: audio
+        signal_type: audio
+  # Amplitude envelope: fast attack, sustained hold while a key is down, quick
+  # release so held notes on the on-screen keyboard behave like a 303 gate.
+  - id: env
+    type: adsr
+    parameters:
+      attack: 3
+      decay: 200
+      sustain: 0.8
+      release: 60
+    inputs:
+      - name: gate
+        signal_type: event
+    outputs:
+      - name: value
+        signal_type: control
+  # Filter envelope: opens the cutoff on note-on then decays to a low sustain,
+  # producing the classic acid "wow" sweep.
+  - id: filter_env
+    type: adsr
+    parameters:
+      attack: 3
+      decay: 250
+      sustain: 0.2
+      release: 120
+    inputs:
+      - name: gate
+        signal_type: event
+    outputs:
+      - name: value
+        signal_type: control
+  - id: filter
+    type: filter
+    parameters:
+      algorithm: moog
+    inputs:
+      - name: audio_in
+        signal_type: audio
+      - name: cutoff
+        signal_type: control
+    outputs:
+      - name: audio_out
+        signal_type: audio
+  - id: vca
+    type: gain
+    inputs:
+      - name: audio_in
+        signal_type: audio
+      - name: gain
+        signal_type: control
+    outputs:
+      - name: audio_out
+        signal_type: audio
+  - id: mixer
+    type: audio_mixer
+    inputs:
+      - name: inputs
+        signal_type: audio
+    outputs:
+      - name: mix
+        signal_type: audio
+  - id: sat
+    type: saturator
+    inputs:
+      - name: audio_in
+        signal_type: audio
+    outputs:
+      - name: audio_out
+        signal_type: audio
+  - id: out
+    type: audio_output
+    inputs:
+      - name: left
+        signal_type: audio
+      - name: right
+        signal_type: audio
+connections:
+  - from: midi.events
+    to: note_rate.events
+  - from: midi.events
+    to: env.gate
+  - from: midi.events
+    to: filter_env.gate
+  - from: note_rate.rate
+    to: osc.pitch
+  - from: osc.audio
+    to: filter.audio_in
+  - from: filter_env.value
+    to: filter.cutoff
+  - from: filter.audio_out
+    to: vca.audio_in
+  - from: env.value
+    to: vca.gain
+  - from: vca.audio_out
+    to: mixer.inputs
+  - from: mixer.mix
+    to: sat.audio_in
+  - from: sat.audio_out
+    to: out.left
+  - from: sat.audio_out
+    to: out.right
