@@ -1,6 +1,10 @@
 #include "PluginEditor.h"
 #include "Tb303WebUi.h"
 
+#include <cstring>
+#include <string>
+#include <vector>
+
 namespace
 {
 std::vector<std::byte> toBytes (const char* text)
@@ -10,6 +14,26 @@ std::vector<std::byte> toBytes (const char* text)
     std::memcpy (bytes.data(), text, length);
     return bytes;
 }
+
+constexpr auto nativeFunctionBootstrap = R"JS(
+(() => {
+  const backend = window.__JUCE__.backend;
+  let nextPromiseId = 0;
+  const pending = new Map();
+  backend.addEventListener('__juce__complete', ({ promiseId, result }) => {
+    const entry = pending.get(promiseId);
+    if (!entry) return;
+    pending.delete(promiseId);
+    entry.resolve(result);
+  });
+  backend.getNativeFunction = name => (...params) => {
+    const resultId = nextPromiseId++;
+    const promise = new Promise((resolve, reject) => pending.set(resultId, { resolve, reject }));
+    backend.emitEvent('__juce__invoke', { name, params, resultId });
+    return promise;
+  };
+})();
+)JS";
 }
 
 DandrumAudioProcessorEditor::DandrumAudioProcessorEditor (DandrumAudioProcessor& processorToUse)
@@ -45,6 +69,7 @@ juce::WebBrowserComponent::Options DandrumAudioProcessorEditor::createBrowserOpt
     auto options = Options{}
         .withNativeIntegrationEnabled()
         .withKeepPageLoadedWhenBrowserIsHidden()
+        .withUserScript (nativeFunctionBootstrap)
         .withNativeFunction (
             "setParameter",
             [this] (const juce::Array<juce::var>& arguments,
