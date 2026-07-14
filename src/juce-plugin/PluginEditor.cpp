@@ -1,171 +1,150 @@
 #include "PluginEditor.h"
+#include "Tb303WebUi.h"
+
+namespace
+{
+std::vector<std::byte> toBytes (const char* text)
+{
+    const auto length = std::char_traits<char>::length (text);
+    std::vector<std::byte> bytes (length);
+    std::memcpy (bytes.data(), text, length);
+    return bytes;
+}
+}
 
 DandrumAudioProcessorEditor::DandrumAudioProcessorEditor (DandrumAudioProcessor& processorToUse)
     : juce::AudioProcessorEditor (&processorToUse),
-      processor (processorToUse)
+      processor (processorToUse),
+      browser (createBrowserOptions())
 {
-    statusLabel.setJustificationType (juce::Justification::centredLeft);
-    addAndMakeVisible (statusLabel);
-
-    fileWatchToggle.setToggleState (processor.isFileWatchEnabled(), juce::dontSendNotification);
-    fileWatchToggle.onClick = [this]
-    {
-        processor.setFileWatchEnabled (fileWatchToggle.getToggleState());
-        updateStatusLabel();
-    };
-    addAndMakeVisible (fileWatchToggle);
-
-    loadPresetButton.onClick = [this]
-    {
-        presetChooser = std::make_unique<juce::FileChooser> (
-            "Load Dandrum preset",
-            juce::File(),
-            "*.yaml;*.yml");
-
-        presetChooser->launchAsync (
-            juce::FileBrowserComponent::openMode | juce::FileBrowserComponent::canSelectFiles,
-            [this] (const juce::FileChooser& chooser)
-            {
-                const auto file = chooser.getResult();
-                if (file.existsAsFile())
-                    processor.loadPresetFromFile (file);
-
-                updateStatusLabel();
-            });
-    };
-    addAndMakeVisible (loadPresetButton);
-
-    rebuildControls();
-    updateStatusLabel();
-    startTimerHz (8);
-
-    setSize (juce::jmax (420, 160 * juce::jmax (1, static_cast<int> (parameterControls.size()))), 360);
+    addAndMakeVisible (browser);
+    setResizable (true, true);
+    setResizeLimits (760, 430, 1500, 900);
+    setSize (1180, 650);
+    browser.goToURL (juce::WebBrowserComponent::getResourceProviderRoot());
+    lastSeenParameterSurfaceGeneration = processor.getParameterSurfaceGeneration();
+    startTimerHz (12);
 }
 
 DandrumAudioProcessorEditor::~DandrumAudioProcessorEditor() = default;
 
 void DandrumAudioProcessorEditor::paint (juce::Graphics& g)
 {
-    g.fillAll (getLookAndFeel().findColour (juce::ResizableWindow::backgroundColourId));
+    g.fillAll (juce::Colour (0xff111111));
 }
 
 void DandrumAudioProcessorEditor::resized()
 {
-    auto area = getLocalBounds().reduced (12);
-    auto top = area.removeFromTop (30);
-    loadPresetButton.setBounds (top.removeFromRight (140));
-    top.removeFromRight (8);
-    fileWatchToggle.setBounds (top.removeFromRight (110));
-    statusLabel.setBounds (top.removeFromLeft (juce::jmax (120, top.getWidth())));
-    area.removeFromTop (12);
+    browser.setBounds (getLocalBounds());
+}
 
-    const auto controlWidth = 120;
-    const auto labelHeight = 22;
-    const auto controlHeight = 140;
-    auto x = area.getX();
-    auto y = area.getY();
+juce::WebBrowserComponent::Options DandrumAudioProcessorEditor::createBrowserOptions()
+{
+    using Options = juce::WebBrowserComponent::Options;
 
-    for (auto& control : parameterControls)
-    {
-        if (x + controlWidth > area.getRight())
+    auto options = Options{}
+        .withNativeIntegrationEnabled()
+        .withKeepPageLoadedWhenBrowserIsHidden()
+        .withNativeFunction (
+            "setParameter",
+            [this] (const juce::Array<juce::var>& arguments,
+                    juce::WebBrowserComponent::NativeFunctionCompletion completion)
+            {
+                setParameterFromWeb (arguments, std::move (completion));
+            })
+        .withNativeFunction (
+            "getParameters",
+            [this] (const juce::Array<juce::var>& arguments,
+                    juce::WebBrowserComponent::NativeFunctionCompletion completion)
+            {
+                getParametersForWeb (arguments, std::move (completion));
+            });
+
+   #if JUCE_WINDOWS
+    options = options
+        .withBackend (Options::Backend::webview2)
+        .withWinWebView2Options (
+            Options::WinWebView2{}
+                .withUserDataFolder (juce::File::getSpecialLocation (juce::File::tempDirectory)
+                                         .getChildFile ("dandrum-webview2"))
+                .withStatusBarDisabled()
+                .withBuiltInErrorPageDisabled()
+                .withBackgroundColour (juce::Colour (0xff111111)));
+   #endif
+
+   #if JUCE_WEB_BROWSER_RESOURCE_PROVIDER_AVAILABLE
+    options = options.withResourceProvider (
+        [this] (const juce::String& path)
         {
-            x = area.getX();
-            y += labelHeight + controlHeight + 12;
-        }
+            return provideResource (path);
+        });
+   #endif
 
-        control.label->setBounds (x, y, controlWidth, labelHeight);
-        control.slider->setBounds (x, y + labelHeight, controlWidth, controlHeight);
-        x += controlWidth + 12;
-    }
+    return options;
 }
 
-void DandrumAudioProcessorEditor::rebuildControlsIfNeeded()
+std::optional<juce::WebBrowserComponent::Resource>
+DandrumAudioProcessorEditor::provideResource (const juce::String& path) const
 {
-    if (lastSeenParameterSurfaceGeneration != processor.getParameterSurfaceGeneration())
-        rebuildControls();
+    if (path == "/" || path == "/index.html")
+        return juce::WebBrowserComponent::Resource { toBytes (Tb303WebUi::indexHtml), "text/html" };
+
+    return std::nullopt;
 }
 
-void DandrumAudioProcessorEditor::rebuildControls()
+void DandrumAudioProcessorEditor::setParameterFromWeb (
+    const juce::Array<juce::var>& arguments,
+    juce::WebBrowserComponent::NativeFunctionCompletion completion)
 {
-    for (auto& control : parameterControls)
+    if (arguments.size() < 2)
     {
-        if (control.label != nullptr)
-            removeChildComponent (control.label.get());
-        if (control.slider != nullptr)
-            removeChildComponent (control.slider.get());
+        completion (juce::var ("setParameter expects parameter id and normalised value"));
+        return;
     }
-    parameterControls.clear();
+
+    const auto publicId = arguments[0].toString();
+    auto* parameter = processor.getParameterForPublicId (publicId);
+    if (parameter == nullptr)
+    {
+        completion (juce::var ("Unknown public parameter: " + publicId));
+        return;
+    }
+
+    const auto normalised = juce::jlimit (0.0f, 1.0f, static_cast<float> (arguments[1]));
+    parameter->beginChangeGesture();
+    parameter->setValueNotifyingHost (normalised);
+    parameter->endChangeGesture();
+    completion (juce::var());
+}
+
+void DandrumAudioProcessorEditor::getParametersForWeb (
+    const juce::Array<juce::var>&,
+    juce::WebBrowserComponent::NativeFunctionCompletion completion) const
+{
+    juce::Array<juce::var> result;
 
     for (const auto& publicId : processor.getActivePublicParameterIds())
     {
-        auto* rangedParameter = processor.getParameterForPublicId (publicId);
-        if (rangedParameter == nullptr)
+        auto* parameter = processor.getParameterForPublicId (publicId);
+        if (parameter == nullptr)
             continue;
 
-        ParameterControl control;
-        control.publicId = publicId;
-        control.parameter = rangedParameter;
-        control.label = std::make_unique<juce::Label>();
-        control.slider = std::make_unique<juce::Slider>();
-
-        auto labelText = processor.getPublicParameterDisplayName (publicId);
-        if (labelText.isEmpty())
-            labelText = publicId;
-
-        control.label->setText (labelText, juce::dontSendNotification);
-        control.label->setJustificationType (juce::Justification::centredLeft);
-        addAndMakeVisible (*control.label);
-
-        control.slider->setSliderStyle (juce::Slider::RotaryHorizontalVerticalDrag);
-        control.slider->setTextBoxStyle (juce::Slider::TextBoxBelow, false, 80, 20);
-        control.slider->setRange (0.0, 1.0, 0.001);
-        control.slider->setValue (rangedParameter->getValue(), juce::dontSendNotification);
-        control.slider->onValueChange = [slider = control.slider.get(), rangedParameter]
-        {
-            rangedParameter->beginChangeGesture();
-            rangedParameter->setValueNotifyingHost (static_cast<float> (slider->getValue()));
-            rangedParameter->endChangeGesture();
-        };
-        addAndMakeVisible (*control.slider);
-
-        parameterControls.push_back (std::move (control));
+        auto object = std::make_unique<juce::DynamicObject>();
+        object->setProperty ("id", publicId);
+        object->setProperty ("name", processor.getPublicParameterDisplayName (publicId));
+        object->setProperty ("value", parameter->getValue());
+        result.add (juce::var (object.release()));
     }
 
-    lastSeenParameterSurfaceGeneration = processor.getParameterSurfaceGeneration();
-    resized();
-}
-
-void DandrumAudioProcessorEditor::updateStatusLabel()
-{
-    juce::String statusText;
-    if (! processor.isInstrumentLoaded())
-    {
-        statusText = juce::String ("Dandrum: ") + processor.getLastLoadError();
-    }
-    else
-    {
-        statusText = juce::String ("Dandrum - ") + processor.replacementTransactionState();
-        if (processor.currentPresetName().isNotEmpty())
-            statusText += " - Preset: " + processor.currentPresetName();
-        if (processor.getLastReloadWarning().isNotEmpty())
-            statusText += " - Warning: " + processor.getLastReloadWarning();
-        if (processor.getLastPresetError().isNotEmpty())
-            statusText += " - Preset error: " + processor.getLastPresetError();
-        if (processor.getDroppedMidiEventCount() > 0)
-            statusText += " - Dropped MIDI events: " + juce::String (static_cast<int> (processor.getDroppedMidiEventCount()));
-    }
-
-    statusLabel.setText (statusText, juce::dontSendNotification);
+    completion (juce::var (result));
 }
 
 void DandrumAudioProcessorEditor::timerCallback()
 {
-    rebuildControlsIfNeeded();
-    updateStatusLabel();
+    const auto generation = processor.getParameterSurfaceGeneration();
+    if (generation == lastSeenParameterSurfaceGeneration)
+        return;
 
-    for (auto& control : parameterControls)
-    {
-        if (control.parameter != nullptr && control.slider != nullptr && ! control.slider->isMouseButtonDown())
-            control.slider->setValue (control.parameter->getValue(), juce::dontSendNotification);
-    }
+    lastSeenParameterSurfaceGeneration = generation;
+    browser.refresh();
 }
