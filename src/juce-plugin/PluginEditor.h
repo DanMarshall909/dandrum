@@ -1,15 +1,15 @@
 #pragma once
 
 #include <cstdint>
-#include <memory>
-#include <vector>
+#include <optional>
 
 #include <juce_audio_processors/juce_audio_processors.h>
+#include <juce_gui_extra/juce_gui_extra.h>
 
 #include "PluginProcessor.h"
 
 class DandrumAudioProcessorEditor final : public juce::AudioProcessorEditor,
-                                          private juce::Timer
+                                           private juce::Timer
 {
 public:
     explicit DandrumAudioProcessorEditor (DandrumAudioProcessor& processorToUse);
@@ -19,25 +19,16 @@ public:
     void resized() override;
 
 private:
-    struct ParameterControl
-    {
-        juce::String publicId;
-        juce::RangedAudioParameter* parameter = nullptr;
-        std::unique_ptr<juce::Label> label;
-        std::unique_ptr<juce::Slider> slider;
-    };
-
-    void rebuildControlsIfNeeded();
-    void rebuildControls();
-    void updateStatusLabel();
+    juce::WebBrowserComponent::Options createBrowserOptions();
+    std::optional<juce::WebBrowserComponent::Resource> provideResource (const juce::String& path) const;
+    void setParameterFromWeb (const juce::Array<juce::var>& arguments,
+                              juce::WebBrowserComponent::NativeFunctionCompletion completion);
+    void getParametersForWeb (const juce::Array<juce::var>& arguments,
+                              juce::WebBrowserComponent::NativeFunctionCompletion completion) const;
     void timerCallback() override;
 
     DandrumAudioProcessor& processor;
-    juce::Label statusLabel;
-    juce::ToggleButton fileWatchToggle { "Watch File" };
-    juce::TextButton loadPresetButton { "Load Preset..." };
-    std::unique_ptr<juce::FileChooser> presetChooser;
-    std::vector<ParameterControl> parameterControls;
+    juce::WebBrowserComponent browser;
     std::uint32_t lastSeenParameterSurfaceGeneration = static_cast<std::uint32_t> (-1);
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (DandrumAudioProcessorEditor)
