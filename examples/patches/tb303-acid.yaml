@@ -2,9 +2,9 @@ metadata:
   name: TB-303 Acid
   version: "0.1"
 # Monophonic acid bassline. note_to_control drives a saw oscillator through a
-# reusable `slew` portamento (engaged only on legato/slide notes), an
-# envelope-swept moog filter, and a saturator. Accent = note velocity, routed
-# both to the VCA (louder) and, scaled, into the filter cutoff (brighter).
+# reusable `slew` portamento (engaged only on legato/slide notes) and an
+# envelope-swept moog filter. Accent = note velocity, routed both to the VCA
+# (louder) and, scaled, into the filter cutoff (brighter).
 voice_allocation:
   max_voices: 1
   stealing: oldest_active
@@ -156,14 +156,6 @@ modules:
     outputs:
       - name: mix
         signal_type: audio
-  - id: sat
-    type: saturator
-    inputs:
-      - name: audio_in
-        signal_type: audio
-    outputs:
-      - name: audio_out
-        signal_type: audio
   - id: out
     type: audio_output
     inputs:
@@ -186,8 +178,6 @@ connections:
     to: filter_env.gate
   - from: ntc.velocity
     to: accent_bright.value
-  - from: ntc.velocity
-    to: accent_vca.gain
   - from: osc.audio
     to: filter.audio_in
   - from: filter_env.value
@@ -200,13 +190,15 @@ connections:
     to: env_vca.audio_in
   - from: amp_env.value
     to: env_vca.gain
+  # Accent VCA (velocity) after the envelope VCA, still pre-mixer (voice scope),
+  # so accented notes are audibly louder.
   - from: env_vca.audio_out
     to: accent_vca.audio_in
+  - from: ntc.velocity
+    to: accent_vca.gain
   - from: accent_vca.audio_out
     to: mixer.inputs
   - from: mixer.mix
-    to: sat.audio_in
-  - from: sat.audio_out
     to: out.left
-  - from: sat.audio_out
+  - from: mixer.mix
     to: out.right
