@@ -55,7 +55,7 @@ Model-tier tags follow design decision D11: `[frontier]` for architecture/realti
 
 ## 5. Host settings, buses, discovery, and FFI
 
-- [ ] [standard] 5.1 Split host preparation settings (sample rate, maximum block size/capacities) from offline invocation settings (required duration and output destinations). Add CLI flags with defaults `48000` Hz and `128` frames and required `--duration-frames`; use synthetic kernel fixtures before migrating example-owned settings in section 7
+- [x] [standard] 5.1 Split host preparation settings (sample rate, maximum block size/capacities) from offline invocation settings (required duration and output destinations). Add CLI flags with defaults `48000` Hz and `128` frames and required `--duration-frames`; use synthetic kernel fixtures before migrating example-owned settings in section 7
 - [x] [frontier] 5.2 Implement Rust root-port ↔ named-bus planning over channel spans: name matching, channel-count validation, missing root-output failure, missing host input for a root input produces silence, and extra host inputs are ignored. Test mono, stereo, six-channel, multiple-output, and root-input cases
 - [ ] [standard] 5.3 Unify capability discovery over kernel definitions: port metadata includes channels, multiplicity, defaults/ranges/units; static metadata includes types/defaults/enums/resource kinds; primitive, composite, script-backed, package, and root definitions use one representation. Prepared root enumeration reuses that representation and includes compiler-generated promotion nodes where applicable
 - [ ] [frontier] 5.4 Extend FFI with prepared root-port enumeration, total-latency query, and per-render planar named-bus channel views. Validate direction, channel count, frame capacity, null pointers, and lifetimes; never retain host-owned audio pointers after a call
@@ -70,7 +70,7 @@ Model-tier tags follow design decision D11: `[frontier]` for architecture/realti
 
 ## 7. Capability-cohort migration and cleanup
 
-- [ ] [mechanical] 7.1 Migrate simple mono non-script/non-resource/non-poly examples and presets to kernel documents and root buses; move each example's render settings into the Rust test harness and compare renders with existing references
+- [x] [mechanical] 7.1 Migrate simple mono non-script/non-resource/non-poly examples and presets to kernel documents and root buses; move each example's render settings into the Rust test harness and compare renders with existing references
 - [ ] [standard] 7.2 Migrate multichannel effect examples: collapse `_l`/`_r` declarations to channel spans, replace `audio_output` authoring with named root ports, and compare every named output rendered by the offline host
 - [ ] [standard] 7.3 Migrate sampler/convolution examples and packaged standard-library definitions to resource static arguments; verify package-relative and pinned-version resources render identically
 - [ ] [mechanical] 7.4 Migrate script examples to named script-backed definitions with declared event/control ports and prepared source

@@ -1,46 +1,27 @@
 metadata:
   name: Envelope Follower Ducking
-render:
-  sample_rate_hz: 48000
-  block_size_frames: 128
-  duration_frames: 2048
+ports:
+  - name: left
+    direction: output
+    signal: audio
+    channels: 1
+    maps_from: vca.audio_out
+  - name: right
+    direction: output
+    signal: audio
+    channels: 1
+    maps_from: vca.audio_out
 modules:
   - id: source
     type: oscillator
-    outputs:
-      - name: audio
-        signal_type: audio
   - id: follower
     type: envelope_follower
-    parameters:
+    static:
       mode: peak
-    inputs:
-      - name: audio_in
-        signal_type: audio
-      - name: invert
-        signal_type: control
-    outputs:
-      - name: value
-        signal_type: control
   - id: vca
     type: gain
-    inputs:
-      - name: audio_in
-        signal_type: audio
-      - name: gain
-        signal_type: control
-    outputs:
-      - name: audio_out
-        signal_type: audio
   - id: mixer
     type: audio_mixer
-  - id: out
-    type: audio_output
-    inputs:
-      - name: left
-        signal_type: audio
-      - name: right
-        signal_type: audio
 connections:
   - from: source.audio
     to: follower.audio_in
@@ -50,7 +31,3 @@ connections:
     to: vca.gain
   - from: vca.audio_out
     to: mixer.inputs
-  - from: mixer.mix
-    to: out.left
-  - from: mixer.mix
-    to: out.right

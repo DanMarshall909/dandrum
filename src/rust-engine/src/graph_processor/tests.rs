@@ -16,9 +16,11 @@ use crate::builtins::{
 };
 use crate::core::TimedInputEvent;
 use crate::fft;
+use crate::kernel::document::load_kernel_patch_str;
 use crate::oscillator::OSCILLATOR_BASE_HZ;
 use crate::graph::*;
 use crate::patch;
+use crate::preparation::prepare_kernel_patch;
 use crate::sample::{LoadedSample, PreparedSamplerAssets};
 use crate::script::ScriptEvent;
 use std::collections::BTreeMap;
@@ -3400,11 +3402,55 @@ fn simple_poly_synth_dogfood_consumes_note_events_through_generic_routing() {
 
 #[test]
 fn additional_acceptance_examples_load_validate_and_render_where_supported() {
-    for (fixture, note) in [
+    let kernel_migrated: &[(&str, u8)] = &[
         ("examples/patches/synthetic-snare.yaml", 38),
         ("examples/patches/synthetic-hats.yaml", 42),
-        ("examples/patches/synthetic-808-kick.yaml", 36),
-    ] {
+    ];
+    let render_settings = RenderSettings {
+        sample_rate_hz: 48_000,
+        block_size_frames: 128,
+        duration_frames: 2_048,
+    };
+    for (fixture, note) in kernel_migrated {
+        let Some(yaml) = read_repo_fixture(fixture) else {
+            return;
+        };
+        let patch = load_kernel_patch_str(&yaml)
+            .expect("acceptance example should parse as kernel patch");
+        let prepared = prepare_kernel_patch(&patch, &render_settings)
+            .expect("acceptance example should prepare");
+        let (left, right) = render_offline_compiled(
+            prepared.compiled_patch(),
+            vec![note_on_value(0, *note, 100)],
+            &PreparedSamplerAssets::empty(),
+        );
+        let (left_again, right_again) = render_offline_compiled(
+            prepared.compiled_patch(),
+            vec![note_on_value(0, *note, 100)],
+            &PreparedSamplerAssets::empty(),
+        );
+        assert_eq!(
+            left, left_again,
+            "{fixture} left channel should be deterministic"
+        );
+        assert_eq!(
+            right, right_again,
+            "{fixture} right channel should be deterministic"
+        );
+        let peak = left
+            .iter()
+            .chain(right.iter())
+            .map(|sample| sample.abs())
+            .fold(0.0_f32, f32::max);
+        assert!(
+            peak > 0.0,
+            "{fixture} should render non-empty audio; peak was {peak}"
+        );
+    }
+
+    {
+        let fixture = "examples/patches/synthetic-808-kick.yaml";
+        let note: u8 = 36;
         let Some(yaml) = read_repo_fixture(fixture) else {
             return;
         };
@@ -3700,6 +3746,17 @@ fn read_repo_fixture(relative_path: &str) -> Option<String> {
         }
         Err(error) => panic!("{} should exist: {error}", path.display()),
     }
+}
+
+fn render_kernel_patch(
+    yaml: &str,
+    settings: &RenderSettings,
+    events: Vec<TimedInputEvent>,
+) -> (Vec<f32>, Vec<f32>) {
+    let patch = load_kernel_patch_str(yaml).expect("kernel patch should parse");
+    let prepared =
+        prepare_kernel_patch(&patch, settings).expect("kernel patch should prepare");
+    render_offline_compiled(prepared.compiled_patch(), events, &PreparedSamplerAssets::empty())
 }
 
 // --- Offline vs Realtime parity ---
@@ -5474,4 +5531,121 @@ fn compensation_delay_delays_an_impulse_exactly_across_block_boundaries() {
     let mut expected = vec![0.0; settings.duration_frames as usize];
     expected[DELAY_SAMPLES] = 1.0;
     assert_eq!(left, expected);
+}
+
+#[test]
+fn kernel_simple_mono_osc_vca_renders_nonempty_audio() {
+    let yaml = r#"
+metadata:
+  name: Minimal Event Oscillator VCA
+ports:
+  - name: left
+    direction: output
+    signal: audio
+    channels: 1
+    maps_from: vca.audio_out
+  - name: right
+    direction: output
+    signal: audio
+    channels: 1
+    maps_from: vca.audio_out
+modules:
+  - id: midi
+    type: midi_input
+  - id: osc
+    type: oscillator
+  - id: env
+    type: adsr
+  - id: vca
+    type: gain
+connections:
+  - from: midi.events
+    to: env.gate
+  - from: osc.audio
+    to: vca.audio_in
+  - from: env.value
+    to: vca.gain
+"#;
+    let settings = RenderSettings {
+        sample_rate_hz: 48_000,
+        block_size_frames: 128,
+        duration_frames: 48_000,
+    };
+    let events = vec![note_on_value(0, 60, 100)];
+    let (left, right) = render_kernel_patch(yaml, &settings, events);
+
+    let peak = left
+        .iter()
+        .chain(right.iter())
+        .map(|s| s.abs())
+        .fold(0.0_f32, f32::max);
+    assert!(
+        peak > 0.0,
+        "kernel mono osc+vca should render non-empty audio; peak was {peak}"
+    );
+    assert_eq!(left, right, "stereo outputs should be identical for mono source");
+}
+
+#[test]
+fn kernel_oscillator_renders_nonzero_audio_without_midi() {
+    let yaml = r#"
+metadata:
+  name: Direct Oscillator
+ports:
+  - name: left
+    direction: output
+    signal: audio
+    channels: 1
+    maps_from: osc.audio
+  - name: right
+    direction: output
+    signal: audio
+    channels: 1
+    maps_from: osc.audio
+modules:
+  - id: osc
+    type: oscillator
+connections: []
+"#;
+    let settings = RenderSettings {
+        sample_rate_hz: 48_000,
+        block_size_frames: 512,
+        duration_frames: 512,
+    };
+    let (left, _right) = render_kernel_patch(yaml, &settings, Vec::new());
+
+    let peak = left.iter().map(|s| s.abs()).fold(0.0_f32, f32::max);
+    assert!(
+        peak > 0.0,
+        "kernel oscillator should render non-zero audio; peak was {peak}"
+    );
+    assert!(
+        left.iter().any(|s| s.abs() > 0.0),
+        "left channel should have non-zero samples"
+    );
+}
+
+#[test]
+fn kernel_migrated_examples_load_and_prepare() {
+    let candidates = [
+        "examples/patches/minimal-event-osc-vca.yaml",
+        "examples/patches/envelope-ducking.yaml",
+        "examples/patches/envelope-filter-modulation.yaml",
+        "examples/patches/synthetic-hats.yaml",
+        "examples/patches/synthetic-snare.yaml",
+    ];
+    let settings = RenderSettings {
+        sample_rate_hz: 48_000,
+        block_size_frames: 128,
+        duration_frames: 128,
+    };
+    for fixture in candidates {
+        let Some(yaml) = read_repo_fixture(fixture) else {
+            return;
+        };
+        let patch = load_kernel_patch_str(&yaml)
+            .unwrap_or_else(|e| panic!("{fixture} should parse as kernel patch: {e:?}"));
+        prepare_kernel_patch(&patch, &settings)
+            .unwrap_or_else(|e| panic!("{fixture} should prepare: {e:?}"));
+    }
 }

@@ -8,6 +8,9 @@ use crate::synth::DandrumEngine;
 const OUTPUT_FLAG: &str = "--output";
 const PRESET_FLAG: &str = "--preset";
 const SET_FLAG: &str = "--set";
+const SAMPLE_RATE_FLAG: &str = "--sample-rate";
+const BLOCK_SIZE_FLAG: &str = "--block-size";
+const DURATION_FRAMES_FLAG: &str = "--duration-frames";
 const RENDER_COMMAND: &str = "render";
 const RENDER_CHORDS_COMMAND: &str = "render-chords";
 const VALIDATE_COMMAND: &str = "validate";
@@ -83,6 +86,7 @@ fn render_with_events(
         };
     }
     apply_cli_overrides(&mut patch_doc, &render_args.overrides);
+    apply_render_overrides(&mut patch_doc, &render_args);
     let base_dir = render_args
         .patch
         .parent()
@@ -116,11 +120,14 @@ fn render_with_events(
 
 fn parse_render_args(args: Vec<String>) -> Result<RenderArgs, String> {
     if args.len() < 3 || args[1] != OUTPUT_FLAG {
-        return Err("render requires: <patch> --output <wav> [--preset <preset.yaml>] [--set module.parameter=value]".to_string());
+        return Err("render requires: <patch> --output <wav> [--preset <preset.yaml>] [--set module.parameter=value] [--sample-rate Hz] [--block-size frames] [--duration-frames frames]".to_string());
     }
 
     let mut overrides = Vec::new();
     let mut preset = None;
+    let mut sample_rate_hz = None;
+    let mut block_size_frames = None;
+    let mut duration_frames = None;
     let mut index = 3;
     while index < args.len() {
         match args[index].as_str() {
@@ -138,6 +145,39 @@ fn parse_render_args(args: Vec<String>) -> Result<RenderArgs, String> {
                 overrides.push(parse_cli_override(value)?);
                 index += 2;
             }
+            SAMPLE_RATE_FLAG => {
+                let Some(value) = args.get(index + 1) else {
+                    return Err(format!("{SAMPLE_RATE_FLAG} requires sample rate in Hz"));
+                };
+                sample_rate_hz = Some(
+                    value
+                        .parse()
+                        .map_err(|_| format!("{SAMPLE_RATE_FLAG} must be a positive integer"))?,
+                );
+                index += 2;
+            }
+            BLOCK_SIZE_FLAG => {
+                let Some(value) = args.get(index + 1) else {
+                    return Err(format!("{BLOCK_SIZE_FLAG} requires block size in frames"));
+                };
+                block_size_frames = Some(
+                    value
+                        .parse()
+                        .map_err(|_| format!("{BLOCK_SIZE_FLAG} must be a positive integer"))?,
+                );
+                index += 2;
+            }
+            DURATION_FRAMES_FLAG => {
+                let Some(value) = args.get(index + 1) else {
+                    return Err(format!("{DURATION_FRAMES_FLAG} requires duration in frames"));
+                };
+                duration_frames = Some(
+                    value
+                        .parse()
+                        .map_err(|_| format!("{DURATION_FRAMES_FLAG} must be a positive integer"))?,
+                );
+                index += 2;
+            }
             _ => return Err(format!("unexpected render argument: {}", args[index])),
         }
     }
@@ -147,6 +187,9 @@ fn parse_render_args(args: Vec<String>) -> Result<RenderArgs, String> {
         output: PathBuf::from(&args[2]),
         preset,
         overrides,
+        sample_rate_hz,
+        block_size_frames,
+        duration_frames,
     })
 }
 
@@ -185,6 +228,9 @@ struct RenderArgs {
     output: PathBuf,
     preset: Option<PathBuf>,
     overrides: Vec<CliParameterOverride>,
+    sample_rate_hz: Option<u32>,
+    block_size_frames: Option<u32>,
+    duration_frames: Option<u64>,
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -244,6 +290,18 @@ fn apply_cli_overrides(patch_doc: &mut patch::PatchDocument, overrides: &[CliPar
                     parameter_override.value.clone(),
                 );
         }
+    }
+}
+
+fn apply_render_overrides(patch_doc: &mut patch::PatchDocument, args: &RenderArgs) {
+    if let Some(sample_rate) = args.sample_rate_hz {
+        patch_doc.render.sample_rate_hz = sample_rate;
+    }
+    if let Some(block_size) = args.block_size_frames {
+        patch_doc.render.block_size_frames = block_size;
+    }
+    if let Some(duration) = args.duration_frames {
+        patch_doc.render.duration_frames = duration;
     }
 }
 
@@ -317,7 +375,7 @@ fn not_implemented(stdout: String) -> CliResult {
 }
 
 fn usage() -> String {
-    "Usage:\n  dandrum-cli validate <patch.yaml>\n  dandrum-cli render <patch.yaml> --output <output.wav> [--preset <preset.yaml>] [--set module.parameter=value]\n  dandrum-cli render-chords <patch.yaml> --output <output.wav> [--preset <preset.yaml>] [--set module.parameter=value]\n".to_string()
+    "Usage:\n  dandrum-cli validate <patch.yaml>\n  dandrum-cli render <patch.yaml> --output <output.wav> [--preset <preset.yaml>] [--set module.parameter=value] [--sample-rate Hz] [--block-size frames] [--duration-frames frames]\n  dandrum-cli render-chords <patch.yaml> --output <output.wav> [--preset <preset.yaml>] [--set module.parameter=value] [--sample-rate Hz] [--block-size frames] [--duration-frames frames]\n".to_string()
 }
 
 #[cfg(test)]
@@ -432,6 +490,107 @@ mod tests {
 
         assert_eq!(args.preset, Some(PathBuf::from("tight.yaml")));
         assert!(args.overrides.is_empty());
+    }
+
+    #[test]
+    fn parse_render_args_accepts_sample_rate_block_size_and_duration_flags() {
+        let args = parse_render_args(vec![
+            "patch.yaml".to_string(),
+            OUTPUT_FLAG.to_string(),
+            "out.wav".to_string(),
+            SAMPLE_RATE_FLAG.to_string(),
+            "22050".to_string(),
+            BLOCK_SIZE_FLAG.to_string(),
+            "256".to_string(),
+            DURATION_FRAMES_FLAG.to_string(),
+            "96000".to_string(),
+        ])
+        .expect("render args should parse");
+
+        assert_eq!(args.sample_rate_hz, Some(22050));
+        assert_eq!(args.block_size_frames, Some(256));
+        assert_eq!(args.duration_frames, Some(96000));
+    }
+
+    #[test]
+    fn parse_render_args_defaults_render_overrides_to_none() {
+        let args = parse_render_args(vec![
+            "patch.yaml".to_string(),
+            OUTPUT_FLAG.to_string(),
+            "out.wav".to_string(),
+        ])
+        .expect("render args should parse");
+
+        assert_eq!(args.sample_rate_hz, None);
+        assert_eq!(args.block_size_frames, None);
+        assert_eq!(args.duration_frames, None);
+    }
+
+    #[test]
+    fn parse_render_args_rejects_non_integer_sample_rate() {
+        let result = parse_render_args(vec![
+            "patch.yaml".to_string(),
+            OUTPUT_FLAG.to_string(),
+            "out.wav".to_string(),
+            SAMPLE_RATE_FLAG.to_string(),
+            "abc".to_string(),
+        ]);
+
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn apply_render_overrides_sets_patch_render_fields() {
+        let mut patch = patch::load_patch_str(
+            r#"
+metadata:
+  name: Render Override Test
+render:
+  sample_rate_hz: 48000
+  block_size_frames: 128
+modules:
+  - id: osc
+    type: oscillator
+"#,
+        )
+        .expect("patch should parse");
+        let args = RenderArgs {
+            patch: PathBuf::from("test.yaml"),
+            output: PathBuf::from("out.wav"),
+            preset: None,
+            overrides: Vec::new(),
+            sample_rate_hz: Some(22050),
+            block_size_frames: Some(256),
+            duration_frames: Some(96000),
+        };
+
+        apply_render_overrides(&mut patch, &args);
+
+        assert_eq!(patch.render.sample_rate_hz, 22050);
+        assert_eq!(patch.render.block_size_frames, 256);
+        assert_eq!(patch.render.duration_frames, 96000);
+    }
+
+    #[test]
+    fn yaml_without_duration_frames_uses_default() {
+        let patch = patch::load_patch_str(
+            r#"
+metadata:
+  name: No Duration
+render:
+  sample_rate_hz: 48000
+  block_size_frames: 128
+modules:
+  - id: osc
+    type: oscillator
+"#,
+        )
+        .expect("patch should parse");
+
+        assert_eq!(
+            patch.render.duration_frames,
+            patch::DEFAULT_DURATION_FRAMES
+        );
     }
 
     #[test]
