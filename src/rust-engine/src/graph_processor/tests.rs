@@ -16,9 +16,9 @@ use crate::builtins::{
 };
 use crate::core::TimedInputEvent;
 use crate::fft;
+use crate::graph::*;
 use crate::kernel::document::load_kernel_patch_str;
 use crate::oscillator::OSCILLATOR_BASE_HZ;
-use crate::graph::*;
 use crate::patch;
 use crate::preparation::prepare_kernel_patch;
 use crate::sample::{LoadedSample, PreparedSamplerAssets};
@@ -3415,8 +3415,8 @@ fn additional_acceptance_examples_load_validate_and_render_where_supported() {
         let Some(yaml) = read_repo_fixture(fixture) else {
             return;
         };
-        let patch = load_kernel_patch_str(&yaml)
-            .expect("acceptance example should parse as kernel patch");
+        let patch =
+            load_kernel_patch_str(&yaml).expect("acceptance example should parse as kernel patch");
         let prepared = prepare_kernel_patch(&patch, &render_settings)
             .expect("acceptance example should prepare");
         let (left, right) = render_offline_compiled(
@@ -3754,9 +3754,12 @@ fn render_kernel_patch(
     events: Vec<TimedInputEvent>,
 ) -> (Vec<f32>, Vec<f32>) {
     let patch = load_kernel_patch_str(yaml).expect("kernel patch should parse");
-    let prepared =
-        prepare_kernel_patch(&patch, settings).expect("kernel patch should prepare");
-    render_offline_compiled(prepared.compiled_patch(), events, &PreparedSamplerAssets::empty())
+    let prepared = prepare_kernel_patch(&patch, settings).expect("kernel patch should prepare");
+    render_offline_compiled(
+        prepared.compiled_patch(),
+        events,
+        &PreparedSamplerAssets::empty(),
+    )
 }
 
 // --- Offline vs Realtime parity ---
@@ -4380,7 +4383,9 @@ fn slew_snaps_to_target_when_gate_closed() {
     );
 
     assert!(
-        outputs.control["value"].iter().all(|&v| (v - target).abs() < 1.0e-6),
+        outputs.control["value"]
+            .iter()
+            .all(|&v| (v - target).abs() < 1.0e-6),
         "a closed glide gate must snap the output to the input immediately"
     );
 }
@@ -5583,7 +5588,10 @@ connections:
         peak > 0.0,
         "kernel mono osc+vca should render non-empty audio; peak was {peak}"
     );
-    assert_eq!(left, right, "stereo outputs should be identical for mono source");
+    assert_eq!(
+        left, right,
+        "stereo outputs should be identical for mono source"
+    );
 }
 
 #[test]

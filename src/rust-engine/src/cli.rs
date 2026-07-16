@@ -169,13 +169,14 @@ fn parse_render_args(args: Vec<String>) -> Result<RenderArgs, String> {
             }
             DURATION_FRAMES_FLAG => {
                 let Some(value) = args.get(index + 1) else {
-                    return Err(format!("{DURATION_FRAMES_FLAG} requires duration in frames"));
+                    return Err(format!(
+                        "{DURATION_FRAMES_FLAG} requires duration in frames"
+                    ));
                 };
-                duration_frames = Some(
-                    value
-                        .parse()
-                        .map_err(|_| format!("{DURATION_FRAMES_FLAG} must be a positive integer"))?,
-                );
+                duration_frames =
+                    Some(value.parse().map_err(|_| {
+                        format!("{DURATION_FRAMES_FLAG} must be a positive integer")
+                    })?);
                 index += 2;
             }
             _ => return Err(format!("unexpected render argument: {}", args[index])),
@@ -587,10 +588,7 @@ modules:
         )
         .expect("patch should parse");
 
-        assert_eq!(
-            patch.render.duration_frames,
-            patch::DEFAULT_DURATION_FRAMES
-        );
+        assert_eq!(patch.render.duration_frames, patch::DEFAULT_DURATION_FRAMES);
     }
 
     #[test]

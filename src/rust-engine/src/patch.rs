@@ -123,8 +123,6 @@ pub struct PatchMetadata {
     pub author: Option<String>,
 }
 
-pub const DEFAULT_SAMPLE_RATE_HZ: u32 = 48_000;
-pub const DEFAULT_BLOCK_SIZE_FRAMES: u32 = 128;
 pub const DEFAULT_DURATION_FRAMES: u64 = 48_000;
 
 fn default_duration_frames() -> u64 {
@@ -137,21 +135,6 @@ pub struct RenderSettings {
     pub block_size_frames: u32,
     #[serde(default = "default_duration_frames")]
     pub duration_frames: u64,
-}
-
-impl RenderSettings {
-    pub fn host_settings(&self) -> HostSettings {
-        HostSettings {
-            sample_rate_hz: self.sample_rate_hz,
-            block_size_frames: self.block_size_frames,
-        }
-    }
-}
-
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub struct HostSettings {
-    pub sample_rate_hz: u32,
-    pub block_size_frames: u32,
 }
 
 #[derive(Clone, Debug, Deserialize, PartialEq, Eq)]
