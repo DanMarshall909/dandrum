@@ -35,6 +35,11 @@ impl BoundedEventQueue {
         self.dropped_events
     }
 
+    #[cfg(test)]
+    pub(super) fn events(&self) -> &[BlockEvent] {
+        &self.events
+    }
+
     pub(super) fn push(&mut self, event: ScriptEvent) -> EventQueueResult<()> {
         self.push_at(event, 0)
     }
@@ -135,6 +140,11 @@ impl PreparedEventQueues {
 
     pub(super) fn queue_mut(&mut self, id: usize) -> Option<&mut BoundedEventQueue> {
         self.queues.get_mut(id)
+    }
+
+    #[cfg(test)]
+    pub(super) fn queue_ref(&self, id: usize) -> Option<&BoundedEventQueue> {
+        self.queues.get(id)
     }
 
     #[cfg(test)]

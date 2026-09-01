@@ -265,6 +265,28 @@ impl RealtimeGraphProcessor {
         0
     }
 
+    #[cfg(test)]
+    pub(crate) fn route_poly_note_event_for_test(
+        &mut self,
+        node_id: &str,
+        event: ScriptEvent,
+        frame_offset: u32,
+    ) {
+        let region = self
+            .prepared_poly_runtime_regions
+            .iter_mut()
+            .find(|region| region.node_id() == node_id)
+            .expect("test names a prepared poly region");
+        region.begin_block(self.prepared_max_block_size);
+        region.route_note_events(
+            &[BlockEvent {
+                frame_offset,
+                event,
+            }],
+            self.prepared_max_block_size,
+        );
+    }
+
     pub fn note_on(&mut self, note: u8, velocity: u8) {
         self.note_on_at(note, velocity, 0);
     }
@@ -390,24 +412,30 @@ impl RealtimeGraphProcessor {
         let frames = left.len().min(right.len());
         let block_start = self.current_frame;
         self.current_frame += frames as u64;
+        for region in self.prepared_poly_runtime_regions.iter_mut() {
+            region.begin_block(frames);
+        }
 
         if self.pending_events.is_empty() && self.render_mono_global_arena(left, right, frames) {
             self.last_render_used_arena = true;
             return frames;
         }
 
-        if self.midi_idx.is_none() && self.render_mono_global_arena(left, right, frames) {
-            self.pending_events
-                .drain_into_buffer(&mut *self.events_buffer);
-            self.last_render_used_arena = true;
-            return frames;
-        }
+        let predrained_event_count = if self.midi_idx.is_none() {
+            let event_count = self.drain_and_route_poly_events(frames);
+            if self.render_mono_global_arena(left, right, frames) {
+                self.last_render_used_arena = true;
+                return frames;
+            }
+            Some(event_count)
+        } else {
+            None
+        };
 
         self.last_render_used_arena = false;
 
-        let event_count = self
-            .pending_events
-            .drain_into_buffer(&mut *self.events_buffer);
+        let event_count =
+            predrained_event_count.unwrap_or_else(|| self.drain_and_route_poly_events(frames));
         let events = &self.events_buffer[..event_count];
 
         if self.allocator.max_voices() > 1 || !self.compiled.voice_node_indices().is_empty() {
@@ -484,6 +512,17 @@ impl RealtimeGraphProcessor {
         }
 
         frames
+    }
+
+    fn drain_and_route_poly_events(&mut self, frames: usize) -> usize {
+        let event_count = self
+            .pending_events
+            .drain_into_buffer(&mut self.events_buffer);
+        let events = &self.events_buffer[..event_count];
+        for region in self.prepared_poly_runtime_regions.iter_mut() {
+            region.route_note_events(events, frames);
+        }
+        event_count
     }
 
     fn render_mono_global_arena(
@@ -907,7 +946,7 @@ fn process_channel_arena_step(
         ModuleKind::Reverb => {
             arena_processing::process_reverb(&mut states[step.module_index], &mut context)
         }
-        ModuleKind::AudioOutput | ModuleKind::Poly => {}
+        ModuleKind::AudioOutput | ModuleKind::Poly | ModuleKind::VoiceIntrinsics => {}
         _ => unreachable!(),
     }
 }
@@ -926,6 +965,9 @@ fn is_channel_arena_supported(step: &RenderStep) -> bool {
     match step.module_kind {
         ModuleKind::AudioOutput => step.input_buffers.len() >= 2,
         ModuleKind::Poly => true,
+        ModuleKind::VoiceIntrinsics => {
+            step.input_buffers.is_empty() && step.output_buffers.len() == 2
+        }
         ModuleKind::AudioMixer => step.input_buffers.len() == step.output_buffers.len(),
         ModuleKind::Noise => step.input_buffers.is_empty() && !step.output_buffers.is_empty(),
         ModuleKind::Oscillator => step.input_buffers.len() <= 1 && step.output_buffers.len() == 1,

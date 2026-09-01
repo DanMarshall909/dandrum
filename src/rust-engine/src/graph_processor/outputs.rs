@@ -3,9 +3,9 @@ use std::collections::HashMap;
 use crate::script::ScriptEvent;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub(super) struct BlockEvent {
-    pub(super) frame_offset: u32,
-    pub(super) event: ScriptEvent,
+pub(crate) struct BlockEvent {
+    pub(crate) frame_offset: u32,
+    pub(crate) event: ScriptEvent,
 }
 
 pub(super) struct ModuleOutputs {

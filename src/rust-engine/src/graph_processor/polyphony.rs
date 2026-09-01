@@ -1,11 +1,32 @@
 use crate::builtins::module_kind::ModuleKind;
 use crate::compiled_patch::{CompiledPatch, CompiledPolyRegion};
+use crate::kernel::{
+    PolyAllocationPolicy, VOICE_GATE_OUTPUT, VOICE_NOTE_OUTPUT, VOICE_VELOCITY_OUTPUT,
+};
 use crate::sample::PreparedSamplerAssets;
+use crate::script::ScriptEvent;
 
 use super::audio_arena::AudioArena;
 use super::event_queue::PreparedEventQueues;
-use super::render_plan::AudioBufferPlan;
+use super::outputs::BlockEvent;
+use super::render_plan::{AudioBufferPlan, BufferId, EventQueueId, RenderPlan};
 use super::state::PerModuleState;
+
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+struct PolyVoiceSlot {
+    active: bool,
+    gate_held: bool,
+    note: u8,
+    velocity: u8,
+    allocation_order: u64,
+}
+
+#[derive(Clone, Copy, Debug)]
+struct VoiceIntrinsicBindings {
+    note: BufferId,
+    velocity: BufferId,
+    gate: EventQueueId,
+}
 
 pub struct PreparedPolyRuntimeRegion {
     node_id: String,
@@ -15,6 +36,10 @@ pub struct PreparedPolyRuntimeRegion {
     voice_event_queues: Box<[PreparedEventQueues]>,
     output_accumulator: AudioArena,
     audio_buffers_per_voice: usize,
+    allocation_policy: PolyAllocationPolicy,
+    slots: Box<[PolyVoiceSlot]>,
+    next_allocation_order: u64,
+    intrinsic_bindings: Option<VoiceIntrinsicBindings>,
 }
 
 impl PreparedPolyRuntimeRegion {
@@ -48,7 +73,11 @@ impl PreparedPolyRuntimeRegion {
             .voices()
             .first()
             .map_or(0, |voice| voice.event_queue_range().len());
-        let max_block_frames = compiled.event_queue_capacity().max(1);
+        let max_block_frames = compiled
+            .child_patch()
+            .render_settings()
+            .block_size_frames
+            .max(1) as usize;
         let voice_arenas = (0..compiled.max_voices())
             .map(|_| {
                 AudioArena::new(AudioBufferPlan {
@@ -75,6 +104,14 @@ impl PreparedPolyRuntimeRegion {
             max_block_frames,
             max_voices: 1,
         });
+        let child_render_plan = RenderPlan::from_compiled_patch(
+            compiled.child_patch(),
+            max_block_frames,
+            1,
+            compiled.event_queue_capacity(),
+        );
+        let intrinsic_bindings =
+            voice_intrinsic_bindings(compiled.child_patch(), &child_render_plan);
 
         Self {
             node_id: compiled.node_id().to_string(),
@@ -84,7 +121,117 @@ impl PreparedPolyRuntimeRegion {
             voice_event_queues,
             output_accumulator,
             audio_buffers_per_voice,
+            allocation_policy: compiled.allocation_policy(),
+            slots: vec![PolyVoiceSlot::default(); compiled.max_voices()].into_boxed_slice(),
+            next_allocation_order: 1,
+            intrinsic_bindings,
         }
+    }
+
+    pub(super) fn begin_block(&mut self, frames: usize) {
+        for queues in &mut self.voice_event_queues {
+            queues.clear_all();
+        }
+        for voice in 0..self.slots.len() {
+            self.write_intrinsic_controls(voice, frames);
+        }
+    }
+
+    pub(super) fn route_note_events(&mut self, events: &[BlockEvent], frames: usize) {
+        for event in events {
+            match event.event {
+                ScriptEvent::NoteOn { note, velocity } => {
+                    self.route_note_on(note, velocity, event.frame_offset, frames);
+                }
+                ScriptEvent::NoteOff { note } => {
+                    self.route_note_off(note, event.frame_offset);
+                }
+            }
+        }
+    }
+
+    fn route_note_on(&mut self, note: u8, velocity: u8, frame_offset: u32, frames: usize) {
+        let free = self.slots.iter().position(|slot| !slot.active);
+        let selected = free.or_else(|| match self.allocation_policy {
+            PolyAllocationPolicy::RejectNew => None,
+            PolyAllocationPolicy::OldestSteal => self
+                .slots
+                .iter()
+                .enumerate()
+                .filter(|(_, slot)| slot.active)
+                .min_by_key(|(_, slot)| slot.allocation_order)
+                .map(|(index, _)| index),
+        });
+        let Some(voice) = selected else { return };
+
+        if self.slots[voice].active {
+            let retired_note = self.slots[voice].note;
+            self.push_gate_event(
+                voice,
+                ScriptEvent::NoteOff { note: retired_note },
+                frame_offset,
+            );
+        }
+
+        let order = self.next_allocation_order;
+        self.next_allocation_order = self.next_allocation_order.wrapping_add(1).max(1);
+        self.slots[voice] = PolyVoiceSlot {
+            active: true,
+            gate_held: true,
+            note,
+            velocity,
+            allocation_order: order,
+        };
+        self.write_intrinsic_controls(voice, frames);
+        self.push_gate_event(voice, ScriptEvent::NoteOn { note, velocity }, frame_offset);
+    }
+
+    fn route_note_off(&mut self, note: u8, frame_offset: u32) {
+        for voice in 0..self.slots.len() {
+            if self.slots[voice].active
+                && self.slots[voice].gate_held
+                && self.slots[voice].note == note
+            {
+                self.slots[voice].gate_held = false;
+                self.push_gate_event(voice, ScriptEvent::NoteOff { note }, frame_offset);
+            }
+        }
+    }
+
+    fn write_intrinsic_controls(&mut self, voice: usize, frames: usize) {
+        let Some(bindings) = self.intrinsic_bindings else {
+            return;
+        };
+        let Some(arena) = self.voice_arenas.get_mut(voice) else {
+            return;
+        };
+        let slot = self.slots[voice];
+        let note = if slot.active {
+            2.0_f32.powf((f32::from(slot.note) - 60.0) / 12.0)
+        } else {
+            0.0
+        };
+        let velocity = if slot.active {
+            f32::from(slot.velocity) / 127.0
+        } else {
+            0.0
+        };
+        arena.fill(bindings.note, frames, note);
+        arena.fill(bindings.velocity, frames, velocity);
+    }
+
+    fn push_gate_event(&mut self, voice: usize, event: ScriptEvent, frame_offset: u32) {
+        let Some(bindings) = self.intrinsic_bindings else {
+            return;
+        };
+        let Some(queue) = self
+            .voice_event_queues
+            .get_mut(voice)
+            .and_then(|queues| queues.queue_mut(bindings.gate.0))
+        else {
+            return;
+        };
+        let _ = queue.push_at(event, frame_offset);
     }
 
     pub fn node_id(&self) -> &str {
@@ -137,6 +284,87 @@ impl PreparedPolyRuntimeRegion {
     pub fn output_accumulator_buffer_count(&self) -> usize {
         self.output_accumulator.buffer_count()
     }
+
+    pub fn active_voice_count(&self) -> usize {
+        self.slots.iter().filter(|slot| slot.active).count()
+    }
+
+    pub fn voice_note(&self, voice: usize) -> Option<u8> {
+        self.slots
+            .get(voice)
+            .filter(|slot| slot.active)
+            .map(|slot| slot.note)
+    }
+
+    pub fn voice_velocity(&self, voice: usize) -> Option<u8> {
+        self.slots
+            .get(voice)
+            .filter(|slot| slot.active)
+            .map(|slot| slot.velocity)
+    }
+
+    pub fn voice_gate_held(&self, voice: usize) -> Option<bool> {
+        self.slots
+            .get(voice)
+            .filter(|slot| slot.active)
+            .map(|slot| slot.gate_held)
+    }
+
+    pub fn voice_note_control(&self, voice: usize) -> Option<f32> {
+        let bindings = self.intrinsic_bindings?;
+        self.voice_arenas
+            .get(voice)
+            .map(|arena| arena.sample(bindings.note, 0))
+    }
+
+    pub fn voice_velocity_control(&self, voice: usize) -> Option<f32> {
+        let bindings = self.intrinsic_bindings?;
+        self.voice_arenas
+            .get(voice)
+            .map(|arena| arena.sample(bindings.velocity, 0))
+    }
+
+    #[cfg(test)]
+    pub(crate) fn voice_gate_events(&self, voice: usize) -> &[BlockEvent] {
+        let Some(bindings) = self.intrinsic_bindings else {
+            return &[];
+        };
+        self.voice_event_queues
+            .get(voice)
+            .and_then(|queues| queues.queue_ref(bindings.gate.0))
+            .map_or(&[], |queue| queue.events())
+    }
+}
+
+fn voice_intrinsic_bindings(
+    child: &CompiledPatch,
+    plan: &RenderPlan,
+) -> Option<VoiceIntrinsicBindings> {
+    let step = plan
+        .global_steps
+        .iter()
+        .find(|step| step.module_kind == ModuleKind::VoiceIntrinsics)?;
+    let node = child.nodes().get(step.module_index)?;
+    let non_event_buffer = |port_name: &str| {
+        node.output_port_names
+            .iter()
+            .zip(node.output_port_types.iter())
+            .filter(|(_, signal_type)| **signal_type != crate::graph::SignalType::Event)
+            .position(|(name, _)| name == port_name)
+            .and_then(|index| step.output_buffers.get(index).copied())
+    };
+    let gate_ordinal = node
+        .output_port_names
+        .iter()
+        .zip(node.output_port_types.iter())
+        .filter(|(_, signal_type)| **signal_type == crate::graph::SignalType::Event)
+        .position(|(name, _)| name == VOICE_GATE_OUTPUT)?;
+
+    Some(VoiceIntrinsicBindings {
+        note: non_event_buffer(VOICE_NOTE_OUTPUT)?,
+        velocity: non_event_buffer(VOICE_VELOCITY_OUTPUT)?,
+        gate: *step.event_outputs.get(gate_ordinal)?,
+    })
 }
 
 pub(super) fn build_polyphonic_states_from_compiled(

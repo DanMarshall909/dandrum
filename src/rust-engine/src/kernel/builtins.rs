@@ -48,7 +48,8 @@ use super::{
     ChannelCount, ControlDefault, DefinitionRegistry, GraphDefinition, LatencySpec, Multiplicity,
     POLY_ALLOCATION_OLDEST_STEAL, POLY_ALLOCATION_PARAM, POLY_ALLOCATION_REJECT_NEW,
     POLY_DEFINITION, POLY_MAX_VOICES_PARAM, POLY_NOTE_EVENTS_INPUT, POLY_WRAPPED_DEFINITION_PARAM,
-    Port, ResourceKind, StaticParam, StaticType, StaticValue,
+    Port, ResourceKind, StaticParam, StaticType, StaticValue, VOICE_GATE_OUTPUT,
+    VOICE_INTRINSIC_DEFINITION, VOICE_NOTE_OUTPUT, VOICE_VELOCITY_OUTPUT,
 };
 
 const MONO: u32 = 1;
@@ -434,6 +435,10 @@ fn builtin_definitions() -> Vec<GraphDefinition> {
                 ]),
             )
             .with_port(event_in(POLY_NOTE_EVENTS_INPUT)),
+        primitive(VOICE_INTRINSIC_DEFINITION)
+            .with_port(control_out(VOICE_NOTE_OUTPUT))
+            .with_port(control_out(VOICE_VELOCITY_OUTPUT))
+            .with_port(event_out(VOICE_GATE_OUTPUT)),
     ]
 }
 

@@ -25,7 +25,7 @@ use crate::kernel::{
 };
 
 /// Every builtin the kernel registry must declare.
-const EXPECTED: [&str; 33] = [
+const EXPECTED: [&str; 34] = [
     names::MIDI_INPUT,
     names::AUDIO_OUTPUT,
     names::OSCILLATOR,
@@ -59,6 +59,7 @@ const EXPECTED: [&str; 33] = [
     names::CONTROL_TO_AUDIO,
     names::COMPENSATION_DELAY,
     POLY_DEFINITION,
+    crate::kernel::VOICE_INTRINSIC_DEFINITION,
 ];
 
 /// Resolve a definition's latency against its declared static-parameter

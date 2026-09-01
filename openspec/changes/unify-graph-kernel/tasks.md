@@ -47,7 +47,7 @@ Model-tier tags follow design decision D11: `[frontier]` for architecture/realti
 
 - [x] [frontier] 4.1 Implement `poly` definition/interface validation: wrapped definition reference, static `max_voices`, allocation-policy enum (`oldest-steal`, `reject-new`), note-event input, forwarded inputs, and wrapped output shape
 - [x] [frontier] 4.2 Compile one non-nested `poly` into an explicit runtime region with preallocated flattened voice instances, disjoint state ranges, event queues, child schedule, and output accumulators; inspect preparation to prove exactly `max_voices` storage exists
-- [ ] [frontier] 4.3 Implement note-event routing, both allocation policies, and per-voice intrinsic ports (`voice.note`, `voice.velocity`, `voice.gate`) without per-block allocation
+- [x] [frontier] 4.3 Implement note-event routing, both allocation policies, and per-voice intrinsic ports (`voice.note`, `voice.velocity`, `voice.gate`) without per-block allocation
 - [ ] [frontier] 4.4 Implement channel-aware per-output summing across active voices and prove two simultaneous voices sum sample-wise; add sibling-poly tests proving independent allocators, state, queues, and mixes
 - [ ] [frontier] 4.5 Implement explicit `done` retirement, then gate-release plus documented silence-threshold/timeout fallback; prove retired voices contribute no stale output
 - [ ] [standard] 4.6 Add allocation-free full-capacity render coverage for activation, stealing/rejection, processing, mixing, and retirement using `realtime_allocation_tests.rs`

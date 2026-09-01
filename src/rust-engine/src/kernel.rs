@@ -56,6 +56,16 @@ pub const POLY_DONE_OUTPUT: &str = "done";
 pub const POLY_MIN_VOICES: i64 = 1;
 pub const POLY_MAX_VOICES: i64 = u32::MAX as i64;
 
+/// Reserved node identity injected into each definition wrapped by `poly`.
+/// Connections such as `voice.note` therefore use the ordinary `PortRef`
+/// syntax while remaining compiler-owned rather than authored nodes.
+pub const VOICE_INTRINSIC_NODE: &str = "voice";
+/// Internal primitive backing the compiler-injected per-voice source node.
+pub const VOICE_INTRINSIC_DEFINITION: &str = crate::builtins::module_types::VOICE_INTRINSICS;
+pub const VOICE_NOTE_OUTPUT: &str = "note";
+pub const VOICE_VELOCITY_OUTPUT: &str = "velocity";
+pub const VOICE_GATE_OUTPUT: &str = "gate";
+
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum PolyAllocationPolicy {
     OldestSteal,
@@ -639,6 +649,42 @@ impl GraphDefinition {
         self
     }
 
+    /// Clone a graph definition into the compilation scope supplied by a
+    /// `poly` region. The injected node is an ordinary typed source once it is
+    /// inside that scope, so validation, flattening, scheduling, and buffer
+    /// assignment do not need a second kind of connection endpoint.
+    pub(crate) fn with_voice_intrinsics(&self, diagnostics: &mut Diagnostics) -> Option<Self> {
+        if self.implementation == DefinitionImplementation::Script {
+            return Some(self.clone());
+        }
+        if self
+            .nodes
+            .iter()
+            .any(|node| node.id().as_str() == VOICE_INTRINSIC_NODE)
+        {
+            diagnostics.push(
+                Diagnostic::new(
+                    error_codes::KERNEL_POLY_MALFORMED_INTERFACE,
+                    Severity::Error,
+                    format!(
+                        "definition '{}' wrapped by poly declares reserved node id '{}'",
+                        self.name, VOICE_INTRINSIC_NODE
+                    ),
+                )
+                .with_module_id(VOICE_INTRINSIC_NODE)
+                .with_suggested_fix(
+                    "rename the authored node; 'voice' is reserved for poly intrinsics",
+                ),
+            );
+            return None;
+        }
+
+        Some(self.clone().with_node(Node::new(
+            NodeId::new(VOICE_INTRINSIC_NODE),
+            VOICE_INTRINSIC_DEFINITION,
+        )))
+    }
+
     /// Declare this (atomic) definition's processing latency.
     pub fn with_latency(mut self, latency: LatencySpec) -> Self {
         self.latency = latency;
@@ -1155,6 +1201,15 @@ impl GraphDefinition {
             }
         }
         if !wrapped.validate_resolved_static_references(&wrapped_args, diagnostics) {
+            valid = false;
+        }
+        if let Some(scoped) = wrapped.with_voice_intrinsics(diagnostics) {
+            let validation = scoped.validate(registry);
+            if !validation.is_ok() {
+                diagnostics.extend(validation.diagnostics().all().iter().cloned());
+                valid = false;
+            }
+        } else {
             valid = false;
         }
 

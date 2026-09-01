@@ -2,7 +2,13 @@ use super::*;
 use crate::builtins::build_definition;
 use crate::builtins::module_types;
 use crate::graph::{Cable, Graph, ModuleId, ModuleNode, PortRef, SignalType, builtin_ports};
+use crate::kernel::builtins::builtin_registry;
+use crate::kernel::{
+    Connection as KernelConnection, GraphDefinition, Node, NodeId, Port as KernelPort,
+    PortRef as KernelPortRef, StaticArg, StaticValue,
+};
 use crate::patch::RenderSettings;
+use crate::preparation::{HostBuses, prepare_kernel_graph_with_buses};
 use crate::sample::{LoadedSample, PreparedSamplerAssets};
 use crate::test_allocator::count_current_thread_allocations;
 use std::collections::BTreeMap;
@@ -363,4 +369,93 @@ fn event_driven_realtime_render_reuses_prepared_capacity_for_repeated_prepared_s
     );
     assert_eq!(processor.pending_event_capacity(), pending_event_capacity);
     assert_eq!(processor.prepared_voice_count(), voice_count);
+}
+
+#[test]
+fn prepared_poly_note_routing_performs_no_realtime_allocations() {
+    let voice = GraphDefinition::new("allocation_voice")
+        .with_port(
+            KernelPort::output("level", SignalType::Control, 1).maps_from(KernelPortRef::new(
+                NodeId::new("envelope"),
+                builtin_ports::VALUE,
+            )),
+        )
+        .with_node(Node::new(NodeId::new("envelope"), module_types::ADSR))
+        .with_connection(KernelConnection::new(
+            KernelPortRef::new(
+                NodeId::new(crate::kernel::VOICE_INTRINSIC_NODE),
+                crate::kernel::VOICE_GATE_OUTPUT,
+            ),
+            KernelPortRef::new(NodeId::new("envelope"), builtin_ports::GATE),
+        ));
+    let root = GraphDefinition::new("root")
+        .with_port(
+            KernelPort::output("level", SignalType::Control, 1)
+                .maps_from(KernelPortRef::new(NodeId::new("voices"), "level")),
+        )
+        .with_node(
+            Node::new(NodeId::new("voices"), crate::kernel::POLY_DEFINITION)
+                .with_static_arg(
+                    crate::kernel::POLY_WRAPPED_DEFINITION_PARAM,
+                    StaticArg::Literal(StaticValue::String("allocation_voice".to_string())),
+                )
+                .with_static_arg(
+                    crate::kernel::POLY_MAX_VOICES_PARAM,
+                    StaticArg::Literal(StaticValue::Int(2)),
+                )
+                .with_static_arg(
+                    crate::kernel::POLY_ALLOCATION_PARAM,
+                    StaticArg::Literal(StaticValue::Enum(
+                        crate::kernel::POLY_ALLOCATION_OLDEST_STEAL.to_string(),
+                    )),
+                ),
+        );
+    let settings = RenderSettings {
+        sample_rate_hz: 48_000,
+        block_size_frames: 64,
+        duration_frames: 64,
+    };
+    let prepared = prepare_kernel_graph_with_buses(
+        &root,
+        &builtin_registry().with_definition(voice),
+        &settings,
+        &HostBuses::new().with_output("level", 1),
+    )
+    .expect("fixed-capacity poly graph prepares");
+    let mut processor = RealtimeGraphProcessor::polyphonic_with_compiled_patch_and_sampler_assets_and_max_block_size(
+        prepared.graph().clone(),
+        prepared.compiled_patch().clone(),
+        48_000.0,
+        &PreparedSamplerAssets::empty(),
+        &VoiceAllocation::default(),
+        64,
+    );
+
+    processor.route_poly_note_event_for_test(
+        "voices",
+        crate::script::ScriptEvent::NoteOn {
+            note: 60,
+            velocity: 100,
+        },
+        0,
+    );
+    let allocation_count = count_current_thread_allocations(|| {
+        for note in 61..=72 {
+            processor.route_poly_note_event_for_test(
+                "voices",
+                crate::script::ScriptEvent::NoteOn {
+                    note,
+                    velocity: 100,
+                },
+                0,
+            );
+            processor.route_poly_note_event_for_test(
+                "voices",
+                crate::script::ScriptEvent::NoteOff { note },
+                63,
+            );
+        }
+    });
+
+    assert_eq!(allocation_count, 0);
 }

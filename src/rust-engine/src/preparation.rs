@@ -555,7 +555,11 @@ fn compile_poly_regions(
         let wrapped = registry
             .get(region.wrapped_definition())
             .expect("validated poly region references an existing definition");
-        let child_flattened = wrapped
+        let mut voice_scope_diagnostics = diagnostics::Diagnostics::new();
+        let scoped_voice = wrapped
+            .with_voice_intrinsics(&mut voice_scope_diagnostics)
+            .ok_or_else(|| KernelPreparationError::from(voice_scope_diagnostics.clone()))?;
+        let child_flattened = scoped_voice
             .flatten(registry)
             .map_err(KernelPreparationError::from)?;
         if let Some(nested) = child_flattened.poly_regions().first() {
@@ -687,7 +691,7 @@ fn compile_poly_regions(
             child_flattened,
             child_patch,
             voices,
-            render_settings.block_size_frames as usize,
+            (render_settings.block_size_frames as usize).saturating_mul(2),
             output_accumulators,
         ));
     }
@@ -1199,7 +1203,12 @@ mod tests {
     const WET_NODE_ID: &str = "wet";
     const UNIT_IR_PATH: &str = "unit-ir.wav";
 
-    fn poly_node(id: &str, definition: &str, max_voices: i64) -> Node {
+    fn poly_node_with_allocation(
+        id: &str,
+        definition: &str,
+        max_voices: i64,
+        allocation: &str,
+    ) -> Node {
         Node::new(NodeId::new(id), crate::kernel::POLY_DEFINITION)
             .with_static_arg(
                 crate::kernel::POLY_WRAPPED_DEFINITION_PARAM,
@@ -1211,10 +1220,17 @@ mod tests {
             )
             .with_static_arg(
                 crate::kernel::POLY_ALLOCATION_PARAM,
-                StaticArg::Literal(StaticValue::Enum(
-                    crate::kernel::POLY_ALLOCATION_REJECT_NEW.to_string(),
-                )),
+                StaticArg::Literal(StaticValue::Enum(allocation.to_string())),
             )
+    }
+
+    fn poly_node(id: &str, definition: &str, max_voices: i64) -> Node {
+        poly_node_with_allocation(
+            id,
+            definition,
+            max_voices,
+            crate::kernel::POLY_ALLOCATION_REJECT_NEW,
+        )
     }
 
     fn gain_voice(name: &str) -> GraphDefinition {
@@ -1248,6 +1264,71 @@ mod tests {
             .with_node(poly_node("voices", wrapped_definition, max_voices))
     }
 
+    fn intrinsic_voice() -> GraphDefinition {
+        GraphDefinition::new("intrinsic_voice")
+            .with_port(
+                KernelPort::output("pitch", SignalType::Control, 1)
+                    .maps_from(kernel_ref(crate::kernel::VOICE_INTRINSIC_NODE, "note")),
+            )
+            .with_port(
+                KernelPort::output("velocity", SignalType::Control, 1)
+                    .maps_from(kernel_ref(crate::kernel::VOICE_INTRINSIC_NODE, "velocity")),
+            )
+            .with_node(Node::new(NodeId::new("envelope"), module_types::ADSR))
+            .with_connection(Connection::new(
+                kernel_ref(crate::kernel::VOICE_INTRINSIC_NODE, "gate"),
+                kernel_ref("envelope", builtin_ports::GATE),
+            ))
+    }
+
+    fn intrinsic_poly_root(allocation: &str, max_voices: i64) -> GraphDefinition {
+        GraphDefinition::new("root")
+            .with_port(
+                KernelPort::output("pitch", SignalType::Control, 1)
+                    .maps_from(kernel_ref("voices", "pitch")),
+            )
+            .with_port(
+                KernelPort::output("velocity", SignalType::Control, 1)
+                    .maps_from(kernel_ref("voices", "velocity")),
+            )
+            .with_node(poly_node_with_allocation(
+                "voices",
+                "intrinsic_voice",
+                max_voices,
+                allocation,
+            ))
+    }
+
+    fn prepare_intrinsic_poly(allocation: &str, max_voices: i64) -> PreparedKernelInstrument {
+        prepare_kernel_graph_with_buses(
+            &intrinsic_poly_root(allocation, max_voices),
+            &builtin_registry().with_definition(intrinsic_voice()),
+            &KERNEL_RENDER_SETTINGS,
+            &HostBuses::new()
+                .with_output("pitch", 1)
+                .with_output("velocity", 1),
+        )
+        .expect("poly voice intrinsics prepare")
+    }
+
+    fn runtime_for(prepared: &PreparedKernelInstrument) -> RealtimeGraphProcessor {
+        RealtimeGraphProcessor::polyphonic_with_compiled_patch_and_sampler_assets_and_max_block_size(
+            prepared.graph().clone(),
+            prepared.compiled_patch().clone(),
+            KERNEL_RENDER_SETTINGS.sample_rate_hz as f32,
+            &PreparedSamplerAssets::empty(),
+            &crate::patch::VoiceAllocation::default(),
+            KERNEL_RENDER_SETTINGS.block_size_frames as usize,
+        )
+    }
+
+    fn render_one_block(runtime: &mut RealtimeGraphProcessor) {
+        let frames = KERNEL_RENDER_SETTINGS.block_size_frames as usize;
+        let mut left = vec![0.0; frames];
+        let mut right = vec![0.0; frames];
+        assert_eq!(runtime.render(&mut left, &mut right), frames);
+    }
+
     #[test]
     fn preparation_compiles_exactly_max_voices_of_disjoint_poly_storage() {
         let registry = builtin_registry().with_definition(gain_voice("voice"));
@@ -1272,21 +1353,21 @@ mod tests {
             region.allocation_policy(),
             crate::kernel::PolyAllocationPolicy::RejectNew
         );
-        assert_eq!(region.flattened_voice().nodes().len(), 1);
-        assert_eq!(region.child_schedule(), &[0]);
+        assert_eq!(region.flattened_voice().nodes().len(), 2);
+        assert_eq!(region.child_schedule(), &[0, 1]);
         assert_eq!(region.voices().len(), 3);
-        assert_eq!(region.voices()[0].state_range(), 0..1);
-        assert_eq!(region.voices()[1].state_range(), 1..2);
-        assert_eq!(region.voices()[2].state_range(), 2..3);
-        assert_eq!(region.voices()[0].audio_buffer_range(), 0..7);
-        assert_eq!(region.voices()[1].audio_buffer_range(), 7..14);
-        assert_eq!(region.voices()[2].audio_buffer_range(), 14..21);
+        assert_eq!(region.voices()[0].state_range(), 0..2);
+        assert_eq!(region.voices()[1].state_range(), 2..4);
+        assert_eq!(region.voices()[2].state_range(), 4..6);
+        assert_eq!(region.voices()[0].audio_buffer_range(), 0..9);
+        assert_eq!(region.voices()[1].audio_buffer_range(), 9..18);
+        assert_eq!(region.voices()[2].audio_buffer_range(), 18..27);
         assert_eq!(region.voices()[0].event_queue_range(), 0..1);
         assert_eq!(region.voices()[1].event_queue_range(), 1..2);
         assert_eq!(region.voices()[2].event_queue_range(), 2..3);
         assert_eq!(
             region.event_queue_capacity(),
-            KERNEL_RENDER_SETTINGS.block_size_frames as usize
+            (KERNEL_RENDER_SETTINGS.block_size_frames as usize) * 2
         );
         assert_eq!(region.output_accumulators().len(), 1);
         assert_eq!(region.output_accumulators()[0].name(), "audio");
@@ -1303,6 +1384,231 @@ mod tests {
         assert_eq!(boundary.output_port_names, ["audio"]);
         assert_eq!(boundary.output_port_spans[0].channel_count, 2);
         assert!(prepared.compiled_patch().voice_node_indices().is_empty());
+    }
+
+    #[test]
+    fn preparation_injects_typed_voice_intrinsics_into_the_wrapped_definition() {
+        let prepared = prepare_intrinsic_poly(crate::kernel::POLY_ALLOCATION_REJECT_NEW, 2);
+        let voice = prepared.compiled_patch().poly_regions()[0].flattened_voice();
+        let intrinsic = voice
+            .node(&NodeId::new(crate::kernel::VOICE_INTRINSIC_NODE))
+            .expect("compiler injects the intrinsic source node");
+
+        assert_eq!(
+            intrinsic.definition(),
+            crate::kernel::VOICE_INTRINSIC_DEFINITION
+        );
+        assert_eq!(
+            intrinsic
+                .ports()
+                .iter()
+                .map(|port| (port.name(), port.signal_type(), port.direction()))
+                .collect::<Vec<_>>(),
+            [
+                ("note", SignalType::Control, PortDirection::Output),
+                ("velocity", SignalType::Control, PortDirection::Output),
+                ("gate", SignalType::Event, PortDirection::Output),
+            ]
+        );
+        assert!(voice.connections().iter().any(|connection| {
+            connection.source().node().as_str() == crate::kernel::VOICE_INTRINSIC_NODE
+                && connection.source().port() == "gate"
+                && connection.destination().node().as_str() == "envelope"
+                && connection.destination().port() == builtin_ports::GATE
+        }));
+    }
+
+    #[test]
+    fn poly_note_ons_fill_distinct_free_voice_intrinsics() {
+        let prepared = prepare_intrinsic_poly(crate::kernel::POLY_ALLOCATION_REJECT_NEW, 2);
+        let mut runtime = runtime_for(&prepared);
+
+        runtime.note_on_at(60, 64, 3);
+        runtime.note_on_at(67, 127, 7);
+        render_one_block(&mut runtime);
+
+        let region = &runtime.prepared_poly_runtime_regions()[0];
+        assert_eq!(region.active_voice_count(), 2);
+        assert_eq!(region.voice_note(0), Some(60));
+        assert_eq!(region.voice_note(1), Some(67));
+        assert_eq!(region.voice_velocity(0), Some(64));
+        assert_eq!(region.voice_velocity(1), Some(127));
+        assert_eq!(region.voice_note_control(0), Some(1.0));
+        assert_eq!(region.voice_velocity_control(1), Some(1.0));
+        assert_eq!(region.voice_gate_events(0).len(), 1);
+        assert_eq!(region.voice_gate_events(0)[0].frame_offset, 3);
+        assert!(matches!(
+            region.voice_gate_events(0)[0].event,
+            ScriptEvent::NoteOn {
+                note: 60,
+                velocity: 64
+            }
+        ));
+    }
+
+    #[test]
+    fn poly_oldest_steal_retires_and_reuses_the_longest_active_voice() {
+        let prepared = prepare_intrinsic_poly(crate::kernel::POLY_ALLOCATION_OLDEST_STEAL, 2);
+        let mut runtime = runtime_for(&prepared);
+
+        runtime.note_on(60, 100);
+        render_one_block(&mut runtime);
+        runtime.note_on(64, 100);
+        render_one_block(&mut runtime);
+        runtime.note_on_at(67, 90, 11);
+        render_one_block(&mut runtime);
+
+        let region = &runtime.prepared_poly_runtime_regions()[0];
+        assert_eq!(region.active_voice_count(), 2);
+        assert_eq!(region.voice_note(0), Some(67));
+        assert_eq!(region.voice_velocity(0), Some(90));
+        assert_eq!(region.voice_note(1), Some(64));
+        assert_eq!(region.voice_gate_events(0).len(), 2);
+        assert!(matches!(
+            region.voice_gate_events(0)[0].event,
+            ScriptEvent::NoteOff { note: 60 }
+        ));
+        assert!(matches!(
+            region.voice_gate_events(0)[1].event,
+            ScriptEvent::NoteOn {
+                note: 67,
+                velocity: 90
+            }
+        ));
+    }
+
+    #[test]
+    fn poly_reject_new_keeps_existing_voices_unchanged_at_capacity() {
+        let prepared = prepare_intrinsic_poly(crate::kernel::POLY_ALLOCATION_REJECT_NEW, 2);
+        let mut runtime = runtime_for(&prepared);
+
+        for note in [60, 64, 67] {
+            runtime.note_on(note, 100);
+            render_one_block(&mut runtime);
+        }
+
+        let region = &runtime.prepared_poly_runtime_regions()[0];
+        assert_eq!(region.active_voice_count(), 2);
+        assert_eq!(region.voice_note(0), Some(60));
+        assert_eq!(region.voice_note(1), Some(64));
+        assert!(region.voice_gate_events(0).is_empty());
+        assert!(region.voice_gate_events(1).is_empty());
+    }
+
+    #[test]
+    fn poly_note_off_releases_only_matching_voice_gate() {
+        let prepared = prepare_intrinsic_poly(crate::kernel::POLY_ALLOCATION_REJECT_NEW, 2);
+        let mut runtime = runtime_for(&prepared);
+
+        runtime.note_on(60, 100);
+        runtime.note_on(64, 100);
+        render_one_block(&mut runtime);
+        runtime.note_off_at(60, 19);
+        render_one_block(&mut runtime);
+
+        let region = &runtime.prepared_poly_runtime_regions()[0];
+        assert_eq!(region.voice_gate_held(0), Some(false));
+        assert_eq!(region.voice_gate_held(1), Some(true));
+        assert_eq!(region.voice_gate_events(0).len(), 1);
+        assert_eq!(region.voice_gate_events(0)[0].frame_offset, 19);
+        assert!(matches!(
+            region.voice_gate_events(0)[0].event,
+            ScriptEvent::NoteOff { note: 60 }
+        ));
+        assert!(region.voice_gate_events(1).is_empty());
+    }
+
+    #[test]
+    fn poly_oldest_steal_gate_queue_covers_the_worst_case_input_block() {
+        let prepared = prepare_intrinsic_poly(crate::kernel::POLY_ALLOCATION_OLDEST_STEAL, 1);
+        let mut runtime = runtime_for(&prepared);
+        let block_events = KERNEL_RENDER_SETTINGS.block_size_frames as u8;
+
+        for note in 0..block_events {
+            runtime.note_on(note, 100);
+        }
+        render_one_block(&mut runtime);
+
+        let region = &runtime.prepared_poly_runtime_regions()[0];
+        assert_eq!(region.event_queue_capacity(), usize::from(block_events) * 2);
+        assert_eq!(
+            region.voice_gate_events(0).len(),
+            usize::from(block_events) * 2 - 1
+        );
+    }
+
+    #[test]
+    fn sibling_poly_regions_allocate_independently() {
+        let root = GraphDefinition::new("root")
+            .with_port(
+                KernelPort::output("first_pitch", SignalType::Control, 1)
+                    .maps_from(kernel_ref("first", "pitch")),
+            )
+            .with_port(
+                KernelPort::output("second_pitch", SignalType::Control, 1)
+                    .maps_from(kernel_ref("second", "pitch")),
+            )
+            .with_node(poly_node_with_allocation(
+                "first",
+                "intrinsic_voice",
+                1,
+                crate::kernel::POLY_ALLOCATION_OLDEST_STEAL,
+            ))
+            .with_node(poly_node_with_allocation(
+                "second",
+                "intrinsic_voice",
+                1,
+                crate::kernel::POLY_ALLOCATION_REJECT_NEW,
+            ));
+        let prepared = prepare_kernel_graph_with_buses(
+            &root,
+            &builtin_registry().with_definition(intrinsic_voice()),
+            &KERNEL_RENDER_SETTINGS,
+            &HostBuses::new()
+                .with_output("first_pitch", 1)
+                .with_output("second_pitch", 1),
+        )
+        .expect("sibling poly regions prepare");
+        let mut runtime = runtime_for(&prepared);
+
+        runtime.route_poly_note_event_for_test(
+            "first",
+            ScriptEvent::NoteOn {
+                note: 60,
+                velocity: 100,
+            },
+            0,
+        );
+        runtime.route_poly_note_event_for_test(
+            "second",
+            ScriptEvent::NoteOn {
+                note: 72,
+                velocity: 80,
+            },
+            0,
+        );
+        runtime.route_poly_note_event_for_test(
+            "first",
+            ScriptEvent::NoteOn {
+                note: 67,
+                velocity: 90,
+            },
+            0,
+        );
+
+        let first = runtime
+            .prepared_poly_runtime_regions()
+            .iter()
+            .find(|region| region.node_id() == "first")
+            .unwrap();
+        let second = runtime
+            .prepared_poly_runtime_regions()
+            .iter()
+            .find(|region| region.node_id() == "second")
+            .unwrap();
+        assert_eq!(first.voice_note(0), Some(67));
+        assert_eq!(second.voice_note(0), Some(72));
+        assert_eq!(second.voice_velocity(0), Some(80));
     }
 
     #[test]
@@ -1410,7 +1716,7 @@ mod tests {
         assert_eq!(region.event_queues_per_voice(), 1);
         assert_eq!(
             region.event_queue_capacity(),
-            KERNEL_RENDER_SETTINGS.block_size_frames as usize
+            (KERNEL_RENDER_SETTINGS.block_size_frames as usize) * 2
         );
         assert_eq!(region.output_accumulator_buffer_count(), 1);
     }

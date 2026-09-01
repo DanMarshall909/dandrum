@@ -37,6 +37,7 @@ pub enum ModuleKind {
     ControlToAudio,
     CompensationDelay,
     Poly,
+    VoiceIntrinsics,
 }
 
 impl ModuleKind {
@@ -76,6 +77,7 @@ impl ModuleKind {
             module_types::CONTROL_TO_AUDIO => Some(Self::ControlToAudio),
             module_types::COMPENSATION_DELAY => Some(Self::CompensationDelay),
             module_types::POLY => Some(Self::Poly),
+            module_types::VOICE_INTRINSICS => Some(Self::VoiceIntrinsics),
             _ => None,
         }
     }
@@ -112,6 +114,7 @@ impl ModuleKind {
                 | Self::ControlToAudio
                 | Self::CompensationDelay
                 | Self::Poly
+                | Self::VoiceIntrinsics
         )
     }
 }

@@ -45,6 +45,9 @@ pub(super) enum PerModuleState {
     ControlToAudio,
     /// Structural boundary; child processing starts in task 4.3.
     Poly,
+    /// Compiler-injected source whose prepared output buffers/queue are filled
+    /// directly by its owning poly runtime region.
+    VoiceIntrinsics,
     CompensationDelay {
         samples: Box<[Box<[f32]>]>,
         positions: Box<[usize]>,
@@ -226,6 +229,7 @@ impl PerModuleState {
             },
             ModuleKind::ControlToAudio => PerModuleState::ControlToAudio,
             ModuleKind::Poly => PerModuleState::Poly,
+            ModuleKind::VoiceIntrinsics => PerModuleState::VoiceIntrinsics,
             ModuleKind::CompensationDelay => {
                 let CompiledConstruction::CompensationDelay { samples } = construction else {
                     panic!("compensation delay module {module_id} has mismatched construction data")
