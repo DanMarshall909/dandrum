@@ -83,6 +83,20 @@ juce::WebBrowserComponent::Options DandrumAudioProcessorEditor::createBrowserOpt
                     juce::WebBrowserComponent::NativeFunctionCompletion completion)
             {
                 getParametersForWeb (arguments, std::move (completion));
+            })
+        .withNativeFunction (
+            "noteOn",
+            [this] (const juce::Array<juce::var>& arguments,
+                    juce::WebBrowserComponent::NativeFunctionCompletion completion)
+            {
+                noteOnFromWeb (arguments, std::move (completion));
+            })
+        .withNativeFunction (
+            "noteOff",
+            [this] (const juce::Array<juce::var>& arguments,
+                    juce::WebBrowserComponent::NativeFunctionCompletion completion)
+            {
+                noteOffFromWeb (arguments, std::move (completion));
             });
 
    #if JUCE_WINDOWS
@@ -146,6 +160,50 @@ void DandrumAudioProcessorEditor::getParametersForWeb (
     const juce::Array<juce::var>&,
     juce::WebBrowserComponent::NativeFunctionCompletion completion) const
 {
+    completion (parameterSnapshotForWeb());
+}
+
+void DandrumAudioProcessorEditor::noteOnFromWeb (
+    const juce::Array<juce::var>& arguments,
+    juce::WebBrowserComponent::NativeFunctionCompletion completion)
+{
+    if (arguments.size() < 2)
+    {
+        completion (juce::var ("noteOn expects MIDI note and normalised velocity"));
+        return;
+    }
+
+    if (! processor.enqueueEditorNoteOn (static_cast<int> (arguments[0]),
+                                         static_cast<float> (arguments[1])))
+    {
+        completion (juce::var ("Editor MIDI queue is full; note-on was dropped"));
+        return;
+    }
+
+    completion (juce::var());
+}
+
+void DandrumAudioProcessorEditor::noteOffFromWeb (
+    const juce::Array<juce::var>& arguments,
+    juce::WebBrowserComponent::NativeFunctionCompletion completion)
+{
+    if (arguments.isEmpty())
+    {
+        completion (juce::var ("noteOff expects a MIDI note"));
+        return;
+    }
+
+    if (! processor.enqueueEditorNoteOff (static_cast<int> (arguments[0])))
+    {
+        completion (juce::var ("Editor MIDI queue is full; note-off was dropped"));
+        return;
+    }
+
+    completion (juce::var());
+}
+
+juce::var DandrumAudioProcessorEditor::parameterSnapshotForWeb() const
+{
     juce::Array<juce::var> result;
 
     for (const auto& publicId : processor.getActivePublicParameterIds())
@@ -161,15 +219,18 @@ void DandrumAudioProcessorEditor::getParametersForWeb (
         result.add (juce::var (object.release()));
     }
 
-    completion (juce::var (result));
+    return juce::var (result);
 }
 
 void DandrumAudioProcessorEditor::timerCallback()
 {
     const auto generation = processor.getParameterSurfaceGeneration();
-    if (generation == lastSeenParameterSurfaceGeneration)
+    if (generation != lastSeenParameterSurfaceGeneration)
+    {
+        lastSeenParameterSurfaceGeneration = generation;
+        browser.refresh();
         return;
+    }
 
-    lastSeenParameterSurfaceGeneration = generation;
-    browser.refresh();
+    browser.emitEventIfBrowserIsVisible ("parameterValuesChanged", parameterSnapshotForWeb());
 }

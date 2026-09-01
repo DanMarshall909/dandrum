@@ -62,6 +62,10 @@ add_test(
         -DSOURCE_ROOT=${CMAKE_CURRENT_SOURCE_DIR}
         -P ${CMAKE_CURRENT_SOURCE_DIR}/tests/cmake/RealtimeCallbackSafety.cmake)
 
+add_executable(dandrum-tb303-web-ui-contract-test tests/cpp/Tb303WebUiContractTest.cpp)
+target_include_directories(dandrum-tb303-web-ui-contract-test PRIVATE src/juce-plugin)
+add_test(NAME tb303-web-ui-contract COMMAND dandrum-tb303-web-ui-contract-test)
+
 add_subdirectory(third_party/JUCE)
 
 juce_add_console_app(dandrum-drum-machine-demo PRODUCT_NAME "Dandrum Drum Machine Demo")

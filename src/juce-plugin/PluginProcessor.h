@@ -1,5 +1,6 @@
 #pragma once
 
+#include <array>
 #include <atomic>
 #include <cstdint>
 #include <map>
@@ -50,6 +51,11 @@ public:
     juce::String getPublicParameterDisplayName (juce::StringRef parameterId) const;
     juce::StringArray getActivePublicParameterIds() const;
     std::uint32_t getParameterSurfaceGeneration() const noexcept;
+
+    /// Enqueues a web-editor keyboard event for delivery by processBlock.
+    /// The message thread never calls the Rust engine directly.
+    bool enqueueEditorNoteOn (int noteNumber, float velocity) noexcept;
+    bool enqueueEditorNoteOff (int noteNumber) noexcept;
 
     /// Silences audio output during an explicit instrument-replacement
     /// transaction. Safe to call from any thread; processBlock reads this
@@ -110,15 +116,15 @@ public:
     /// surface. The audio callback only reads the atomic mute flag.
     juce::String replacementTransactionState() const;
 
-    /// Diagnostic counter placeholder for the plugin surface. The bounded MIDI
-    /// queue currently lives inside the Rust runtime; v1 exposes the status
-    /// surface now and can wire a richer Rust counter without UI churn later.
+    /// Number of web-editor MIDI events rejected because the fixed-capacity
+    /// message-thread-to-audio-thread queue was full.
     std::size_t getDroppedMidiEventCount() const noexcept;
 
 private:
     static constexpr std::intptr_t kNoEngineSlot = -1;
     static constexpr int kPublicParameterSlotCount = 64;
     static constexpr int kPluginStateSchemaVersion = 1;
+    static constexpr int kEditorMidiQueueCapacity = 128;
 
     enum class ReplacementState : int
     {
@@ -146,6 +152,13 @@ private:
         const std::atomic<float>* rawValue = nullptr;
         std::vector<std::intptr_t> engineSlotIndices;
         float lastAppliedNormalisedValue = 0.0f;
+    };
+
+    struct EditorMidiEvent
+    {
+        bool noteOn = false;
+        std::uint8_t note = 0;
+        std::uint8_t velocity = 0;
     };
 
     /// The plugin's explicit concept of "the currently loaded immutable
@@ -202,6 +215,8 @@ private:
     void applyChangedParameters (DandrumEngine* activeEngine) noexcept;
     void applySlotToEngine (ParameterSlot& slot, float normalisedValue, DandrumEngine* activeEngine) noexcept;
     void setSlotNormalisedValue (int slotIndex, float normalisedValue, bool notifyHost);
+    bool enqueueEditorMidiEvent (EditorMidiEvent event) noexcept;
+    void deliverEditorMidiEvents (DandrumEngine* activeEngine) noexcept;
 
     juce::AudioProcessorValueTreeState parameters;
     std::atomic<DandrumEngine*> engine { nullptr };
@@ -216,6 +231,8 @@ private:
     std::atomic<int> replacementState { static_cast<int> (ReplacementState::Running) };
     std::atomic<std::uint32_t> parameterSurfaceGeneration { 0 };
     std::atomic<std::size_t> droppedMidiEventCount { 0 };
+    std::array<EditorMidiEvent, kEditorMidiQueueCapacity> editorMidiEvents {};
+    juce::AbstractFifo editorMidiFifo { kEditorMidiQueueCapacity };
     // Serializes reloadInstrumentFromFile()/setStateInformation() replacement
     // work against itself: without this, overlapping reloads can each capture
     // the other's just-published engine as their own "previous" and destroy it

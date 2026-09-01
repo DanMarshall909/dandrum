@@ -25,6 +25,11 @@ private:
                               juce::WebBrowserComponent::NativeFunctionCompletion completion);
     void getParametersForWeb (const juce::Array<juce::var>& arguments,
                               juce::WebBrowserComponent::NativeFunctionCompletion completion) const;
+    void noteOnFromWeb (const juce::Array<juce::var>& arguments,
+                        juce::WebBrowserComponent::NativeFunctionCompletion completion);
+    void noteOffFromWeb (const juce::Array<juce::var>& arguments,
+                         juce::WebBrowserComponent::NativeFunctionCompletion completion);
+    juce::var parameterSnapshotForWeb() const;
     void timerCallback() override;
 
     DandrumAudioProcessor& processor;

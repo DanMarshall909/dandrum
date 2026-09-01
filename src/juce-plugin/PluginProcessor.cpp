@@ -604,6 +604,52 @@ bool DandrumAudioProcessor::isMuted() const noexcept
     return muted.load (std::memory_order_relaxed);
 }
 
+bool DandrumAudioProcessor::enqueueEditorMidiEvent (EditorMidiEvent event) noexcept
+{
+    const auto scope = editorMidiFifo.write (1);
+    if (scope.blockSize1 == 0)
+    {
+        droppedMidiEventCount.fetch_add (1, std::memory_order_relaxed);
+        return false;
+    }
+
+    editorMidiEvents[static_cast<std::size_t> (scope.startIndex1)] = event;
+    return true;
+}
+
+bool DandrumAudioProcessor::enqueueEditorNoteOn (int noteNumber, float velocity) noexcept
+{
+    const auto note = static_cast<std::uint8_t> (juce::jlimit (0, 127, noteNumber));
+    const auto midiVelocity = static_cast<std::uint8_t> (
+        juce::roundToInt (juce::jlimit (0.0f, 1.0f, velocity) * 127.0f));
+    return enqueueEditorMidiEvent ({ true, note, midiVelocity });
+}
+
+bool DandrumAudioProcessor::enqueueEditorNoteOff (int noteNumber) noexcept
+{
+    const auto note = static_cast<std::uint8_t> (juce::jlimit (0, 127, noteNumber));
+    return enqueueEditorMidiEvent ({ false, note, 0 });
+}
+
+void DandrumAudioProcessor::deliverEditorMidiEvents (DandrumEngine* activeEngine) noexcept
+{
+    const auto scope = editorMidiFifo.read (editorMidiFifo.getNumReady());
+    const auto deliverBlock = [this, activeEngine] (int startIndex, int eventCount)
+    {
+        for (int offset = 0; offset < eventCount; ++offset)
+        {
+            const auto& event = editorMidiEvents[static_cast<std::size_t> (startIndex + offset)];
+            if (event.noteOn)
+                dandrum_engine_note_on_at (activeEngine, event.note, event.velocity, 0);
+            else
+                dandrum_engine_note_off_at (activeEngine, event.note, 0);
+        }
+    };
+
+    deliverBlock (scope.startIndex1, scope.blockSize1);
+    deliverBlock (scope.startIndex2, scope.blockSize2);
+}
+
 void DandrumAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::MidiBuffer& midiMessages)
 {
     juce::ScopedNoDenormals noDenormals;
@@ -622,6 +668,7 @@ void DandrumAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce
     }
 
     applyChangedParameters (activeEngine);
+    deliverEditorMidiEvents (activeEngine);
 
     for (const auto metadata : midiMessages)
     {

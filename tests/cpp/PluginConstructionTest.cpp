@@ -263,6 +263,48 @@ int main()
 
     processor->releaseResources();
 
+    // The web editor runs on JUCE's message thread, so it feeds a bounded
+    // queue instead of touching the Rust engine while the audio callback may
+    // be rendering. Prove that an editor-originated note reaches that callback.
+    auto editorMidiProcessor = std::make_unique<DandrumAudioProcessor>();
+    editorMidiProcessor->setPlayConfigDetails (0, 2, 48000.0, blockSize);
+    editorMidiProcessor->prepareToPlay (48000.0, blockSize);
+    if (! editorMidiProcessor->enqueueEditorNoteOn (36, 1.0f))
+    {
+        std::cerr << "plugin rejected a web-editor note-on while its MIDI queue was empty\n";
+        return 1;
+    }
+
+    juce::AudioBuffer<float> editorMidiBuffer (2, blockSize);
+    editorMidiBuffer.clear();
+    juce::MidiBuffer noHostMidi;
+    editorMidiProcessor->processBlock (editorMidiBuffer, noHostMidi);
+    if (! bufferIsFinite (editorMidiBuffer) || ! bufferHasSignal (editorMidiBuffer))
+    {
+        std::cerr << "web-editor note-on did not produce finite audio signal\n";
+        return 1;
+    }
+
+    if (! editorMidiProcessor->enqueueEditorNoteOff (36))
+    {
+        std::cerr << "plugin rejected a web-editor note-off while its MIDI queue was empty\n";
+        return 1;
+    }
+    editorMidiProcessor->processBlock (editorMidiBuffer, noHostMidi);
+    editorMidiProcessor->releaseResources();
+
+    auto boundedQueueProcessor = std::make_unique<DandrumAudioProcessor>();
+    bool queueRejectedEvent = false;
+    for (int event = 0; event < 256; ++event)
+        queueRejectedEvent = ! boundedQueueProcessor->enqueueEditorNoteOn (36, 0.8f)
+                             || queueRejectedEvent;
+
+    if (! queueRejectedEvent || boundedQueueProcessor->getDroppedMidiEventCount() == 0)
+    {
+        std::cerr << "web-editor MIDI queue did not bound and report overflow\n";
+        return 1;
+    }
+
     // Prove that changing a public parameter (via the same APVTS path the
     // generic JUCE knobs use) actually reaches the running instrument, rather
     // than only updating the host-facing parameter value cosmetically.
