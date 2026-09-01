@@ -5657,3 +5657,87 @@ fn kernel_migrated_examples_load_and_prepare() {
             .unwrap_or_else(|e| panic!("{fixture} should prepare: {e:?}"));
     }
 }
+
+#[test]
+fn kernel_migrated_examples_match_legacy_reference_renders() {
+    let cases = vec![
+        (
+            "examples/patches/minimal-event-osc-vca.yaml",
+            include_str!(
+                "../../tests/fixtures/unify-graph-kernel/legacy/minimal-event-osc-vca.yaml"
+            ),
+            RenderSettings {
+                sample_rate_hz: 48_000,
+                block_size_frames: 128,
+                duration_frames: 48_000,
+            },
+            vec![
+                note_on_value(0, 60, 100),
+                TimedInputEvent::new(960, ScriptEvent::NoteOff { note: 60 }),
+            ],
+        ),
+        (
+            "examples/patches/envelope-ducking.yaml",
+            include_str!("../../tests/fixtures/unify-graph-kernel/legacy/envelope-ducking.yaml"),
+            RenderSettings {
+                sample_rate_hz: 48_000,
+                block_size_frames: 128,
+                duration_frames: 2_048,
+            },
+            Vec::new(),
+        ),
+        (
+            "examples/patches/envelope-filter-modulation.yaml",
+            include_str!(
+                "../../tests/fixtures/unify-graph-kernel/legacy/envelope-filter-modulation.yaml"
+            ),
+            RenderSettings {
+                sample_rate_hz: 48_000,
+                block_size_frames: 128,
+                duration_frames: 2_048,
+            },
+            Vec::new(),
+        ),
+        (
+            "examples/patches/synthetic-hats.yaml",
+            include_str!("../../tests/fixtures/unify-graph-kernel/legacy/synthetic-hats.yaml"),
+            RenderSettings {
+                sample_rate_hz: 48_000,
+                block_size_frames: 128,
+                duration_frames: 2_048,
+            },
+            vec![note_on_value(0, 42, 100)],
+        ),
+        (
+            "examples/patches/synthetic-snare.yaml",
+            include_str!("../../tests/fixtures/unify-graph-kernel/legacy/synthetic-snare.yaml"),
+            RenderSettings {
+                sample_rate_hz: 48_000,
+                block_size_frames: 128,
+                duration_frames: 2_048,
+            },
+            vec![note_on_value(0, 38, 100)],
+        ),
+    ];
+
+    for (fixture, legacy_yaml, settings, events) in cases {
+        let legacy_patch = patch::load_patch_str(legacy_yaml)
+            .unwrap_or_else(|error| panic!("legacy reference for {fixture} should parse: {error}"));
+        patch::validate_patch_schema(&legacy_patch).unwrap_or_else(|error| {
+            panic!("legacy reference for {fixture} should validate: {error}")
+        });
+        let legacy_graph = Graph::from_patch_declarations(&legacy_patch);
+        legacy_graph.validate().unwrap_or_else(|error| {
+            panic!("legacy reference for {fixture} should validate: {error}")
+        });
+        let expected = render_offline(&legacy_graph, &settings, events.clone());
+
+        let Some(kernel_yaml) = read_repo_fixture(fixture) else {
+            return;
+        };
+        let actual = render_kernel_patch(&kernel_yaml, &settings, events);
+
+        assert_eq!(actual.0, expected.0, "{fixture} left render changed");
+        assert_eq!(actual.1, expected.1, "{fixture} right render changed");
+    }
+}

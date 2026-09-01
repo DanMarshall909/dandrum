@@ -1,7 +1,9 @@
 use std::path::PathBuf;
 
 use crate::core::TimedInputEvent;
+use crate::diagnostics::error_codes;
 use crate::patch::{self, ParameterValue};
+use crate::sample::PreparedSamplerAssets;
 use crate::script::ScriptEvent;
 use crate::synth::DandrumEngine;
 
@@ -14,6 +16,8 @@ const DURATION_FRAMES_FLAG: &str = "--duration-frames";
 const RENDER_COMMAND: &str = "render";
 const RENDER_CHORDS_COMMAND: &str = "render-chords";
 const VALIDATE_COMMAND: &str = "validate";
+const DEFAULT_SAMPLE_RATE_HZ: u32 = 48_000;
+const DEFAULT_BLOCK_SIZE_FRAMES: u32 = 128;
 
 #[derive(Debug, PartialEq, Eq)]
 pub struct CliResult {
@@ -69,41 +73,60 @@ fn render_with_events(
     render_args: RenderArgs,
     events: impl FnOnce(&patch::RenderSettings) -> Vec<TimedInputEvent>,
 ) -> CliResult {
-    let mut patch_doc = match patch::load_patch_file(&render_args.patch) {
-        Ok(patch_doc) => patch_doc,
-        Err(load_error) => return error(format!("failed to render patch: {load_error}")),
+    let settings = patch::RenderSettings {
+        sample_rate_hz: render_args.sample_rate_hz.unwrap_or(DEFAULT_SAMPLE_RATE_HZ),
+        block_size_frames: render_args
+            .block_size_frames
+            .unwrap_or(DEFAULT_BLOCK_SIZE_FRAMES),
+        duration_frames: render_args
+            .duration_frames
+            .expect("parsed render arguments always include an offline duration"),
     };
-    if let Some(preset_path) = &render_args.preset {
-        let preset_doc = match patch::load_preset_file(preset_path) {
-            Ok(preset_doc) => preset_doc,
-            Err(load_error) => return error(format!("failed to render patch: {load_error}")),
-        };
-        patch_doc = match patch::apply_preset(&patch_doc, &preset_doc) {
-            Ok(patch_doc) => patch_doc,
-            Err(validation_error) => {
-                return error(format!("failed to render patch: {validation_error}"));
-            }
-        };
-    }
-    apply_cli_overrides(&mut patch_doc, &render_args.overrides);
-    apply_render_overrides(&mut patch_doc, &render_args);
-    let base_dir = render_args
-        .patch
-        .parent()
-        .unwrap_or_else(|| std::path::Path::new("."));
-    let prepared = match crate::preparation::prepare_instrument_document(patch_doc, base_dir) {
-        Ok(prepared) => prepared,
-        Err(prepare_error) => return error(format!("failed to render patch: {prepare_error}")),
-    };
-    let events = events(&prepared.patch_doc().render);
-    let mut engine = DandrumEngine::new();
-    let render = engine.render_prepared_instrument_offline(&prepared, events);
-    if let Err(write_error) = crate::wav::write_wav_file(
-        &render_args.output,
-        render.sample_rate_hz,
-        &render.left,
-        &render.right,
+
+    let (sample_rate_hz, left, right) = match crate::kernel::document::load_kernel_patch_file(
+        &render_args.patch,
     ) {
+        Ok(kernel_patch) => {
+            if render_args.preset.is_some() || !render_args.overrides.is_empty() {
+                return error(
+                        "failed to render patch: --preset and --set are not yet supported for kernel patch documents"
+                            .to_string(),
+                    );
+            }
+
+            let prepared = match crate::preparation::prepare_kernel_patch(&kernel_patch, &settings)
+            {
+                Ok(prepared) => prepared,
+                Err(prepare_error) => {
+                    return error(format!("failed to render patch: {prepare_error}"));
+                }
+            };
+            let events = events(&settings);
+            let (left, right) = crate::graph_processor::render_offline_compiled(
+                prepared.compiled_patch(),
+                events,
+                &PreparedSamplerAssets::empty(),
+            );
+            (settings.sample_rate_hz, left, right)
+        }
+        Err(diagnostics)
+            if diagnostics.all().iter().any(|diagnostic| {
+                diagnostic.error_code() == error_codes::KERNEL_DOCUMENT_LEGACY_RENDER
+            }) =>
+        {
+            match render_legacy_patch(&render_args, &settings, events) {
+                Ok(rendered) => rendered,
+                Err(message) => return error(message),
+            }
+        }
+        Err(diagnostics) => {
+            return error(format!("failed to render patch: {diagnostics}"));
+        }
+    };
+
+    if let Err(write_error) =
+        crate::wav::write_wav_file(&render_args.output, sample_rate_hz, &left, &right)
+    {
         return error(format!("failed to write wav: {write_error}"));
     }
 
@@ -118,6 +141,43 @@ fn render_with_events(
     }
 }
 
+fn render_legacy_patch(
+    render_args: &RenderArgs,
+    settings: &patch::RenderSettings,
+    events: impl FnOnce(&patch::RenderSettings) -> Vec<TimedInputEvent>,
+) -> Result<(u32, Vec<f32>, Vec<f32>), String> {
+    let mut patch_doc = match patch::load_patch_file(&render_args.patch) {
+        Ok(patch_doc) => patch_doc,
+        Err(load_error) => return Err(format!("failed to render patch: {load_error}")),
+    };
+    if let Some(preset_path) = &render_args.preset {
+        let preset_doc = match patch::load_preset_file(preset_path) {
+            Ok(preset_doc) => preset_doc,
+            Err(load_error) => return Err(format!("failed to render patch: {load_error}")),
+        };
+        patch_doc = match patch::apply_preset(&patch_doc, &preset_doc) {
+            Ok(patch_doc) => patch_doc,
+            Err(validation_error) => {
+                return Err(format!("failed to render patch: {validation_error}"));
+            }
+        };
+    }
+    apply_cli_overrides(&mut patch_doc, &render_args.overrides);
+    apply_legacy_host_settings(&mut patch_doc, settings);
+    let base_dir = render_args
+        .patch
+        .parent()
+        .unwrap_or_else(|| std::path::Path::new("."));
+    let prepared = match crate::preparation::prepare_instrument_document(patch_doc, base_dir) {
+        Ok(prepared) => prepared,
+        Err(prepare_error) => return Err(format!("failed to render patch: {prepare_error}")),
+    };
+    let events = events(&prepared.patch_doc().render);
+    let mut engine = DandrumEngine::new();
+    let render = engine.render_prepared_instrument_offline(&prepared, events);
+    Ok((render.sample_rate_hz, render.left, render.right))
+}
+
 fn parse_render_args(args: Vec<String>) -> Result<RenderArgs, String> {
     if args.len() < 3 || args[1] != OUTPUT_FLAG {
         return Err("render requires: <patch> --output <wav> [--preset <preset.yaml>] [--set module.parameter=value] [--sample-rate Hz] [--block-size frames] [--duration-frames frames]".to_string());
@@ -125,8 +185,8 @@ fn parse_render_args(args: Vec<String>) -> Result<RenderArgs, String> {
 
     let mut overrides = Vec::new();
     let mut preset = None;
-    let mut sample_rate_hz = None;
-    let mut block_size_frames = None;
+    let mut sample_rate_hz = Some(DEFAULT_SAMPLE_RATE_HZ);
+    let mut block_size_frames = Some(DEFAULT_BLOCK_SIZE_FRAMES);
     let mut duration_frames = None;
     let mut index = 3;
     while index < args.len() {
@@ -154,6 +214,9 @@ fn parse_render_args(args: Vec<String>) -> Result<RenderArgs, String> {
                         .parse()
                         .map_err(|_| format!("{SAMPLE_RATE_FLAG} must be a positive integer"))?,
                 );
+                if sample_rate_hz == Some(0) {
+                    return Err(format!("{SAMPLE_RATE_FLAG} must be a positive integer"));
+                }
                 index += 2;
             }
             BLOCK_SIZE_FLAG => {
@@ -165,6 +228,9 @@ fn parse_render_args(args: Vec<String>) -> Result<RenderArgs, String> {
                         .parse()
                         .map_err(|_| format!("{BLOCK_SIZE_FLAG} must be a positive integer"))?,
                 );
+                if block_size_frames == Some(0) {
+                    return Err(format!("{BLOCK_SIZE_FLAG} must be a positive integer"));
+                }
                 index += 2;
             }
             DURATION_FRAMES_FLAG => {
@@ -177,10 +243,19 @@ fn parse_render_args(args: Vec<String>) -> Result<RenderArgs, String> {
                     Some(value.parse().map_err(|_| {
                         format!("{DURATION_FRAMES_FLAG} must be a positive integer")
                     })?);
+                if duration_frames == Some(0) {
+                    return Err(format!("{DURATION_FRAMES_FLAG} must be a positive integer"));
+                }
                 index += 2;
             }
             _ => return Err(format!("unexpected render argument: {}", args[index])),
         }
+    }
+
+    if duration_frames.is_none() {
+        return Err(format!(
+            "{DURATION_FRAMES_FLAG} is required for offline rendering"
+        ));
     }
 
     Ok(RenderArgs {
@@ -294,16 +369,11 @@ fn apply_cli_overrides(patch_doc: &mut patch::PatchDocument, overrides: &[CliPar
     }
 }
 
-fn apply_render_overrides(patch_doc: &mut patch::PatchDocument, args: &RenderArgs) {
-    if let Some(sample_rate) = args.sample_rate_hz {
-        patch_doc.render.sample_rate_hz = sample_rate;
-    }
-    if let Some(block_size) = args.block_size_frames {
-        patch_doc.render.block_size_frames = block_size;
-    }
-    if let Some(duration) = args.duration_frames {
-        patch_doc.render.duration_frames = duration;
-    }
+fn apply_legacy_host_settings(
+    patch_doc: &mut patch::PatchDocument,
+    settings: &patch::RenderSettings,
+) {
+    patch_doc.render = settings.clone();
 }
 
 fn single_note_sequence(sample_rate: u32) -> Vec<TimedInputEvent> {
@@ -376,7 +446,7 @@ fn not_implemented(stdout: String) -> CliResult {
 }
 
 fn usage() -> String {
-    "Usage:\n  dandrum-cli validate <patch.yaml>\n  dandrum-cli render <patch.yaml> --output <output.wav> [--preset <preset.yaml>] [--set module.parameter=value] [--sample-rate Hz] [--block-size frames] [--duration-frames frames]\n  dandrum-cli render-chords <patch.yaml> --output <output.wav> [--preset <preset.yaml>] [--set module.parameter=value] [--sample-rate Hz] [--block-size frames] [--duration-frames frames]\n".to_string()
+    "Usage:\n  dandrum-cli validate <patch.yaml>\n  dandrum-cli render <patch.yaml> --output <output.wav> --duration-frames <frames> [--preset <preset.yaml>] [--set module.parameter=value] [--sample-rate Hz] [--block-size frames]\n  dandrum-cli render-chords <patch.yaml> --output <output.wav> --duration-frames <frames> [--preset <preset.yaml>] [--set module.parameter=value] [--sample-rate Hz] [--block-size frames]\n\nDefaults: --sample-rate 48000 --block-size 128\n".to_string()
 }
 
 #[cfg(test)]
@@ -465,6 +535,8 @@ mod tests {
             "patch.yaml".to_string(),
             OUTPUT_FLAG.to_string(),
             "out.wav".to_string(),
+            DURATION_FRAMES_FLAG.to_string(),
+            "48000".to_string(),
             SET_FLAG.to_string(),
             "kick.tune_hz=48".to_string(),
             SET_FLAG.to_string(),
@@ -484,6 +556,8 @@ mod tests {
             "patch.yaml".to_string(),
             OUTPUT_FLAG.to_string(),
             "out.wav".to_string(),
+            DURATION_FRAMES_FLAG.to_string(),
+            "48000".to_string(),
             PRESET_FLAG.to_string(),
             "tight.yaml".to_string(),
         ])
@@ -514,17 +588,31 @@ mod tests {
     }
 
     #[test]
-    fn parse_render_args_defaults_render_overrides_to_none() {
+    fn parse_render_args_defaults_preparation_settings_when_duration_is_supplied() {
         let args = parse_render_args(vec![
             "patch.yaml".to_string(),
             OUTPUT_FLAG.to_string(),
             "out.wav".to_string(),
+            DURATION_FRAMES_FLAG.to_string(),
+            "96000".to_string(),
         ])
         .expect("render args should parse");
 
-        assert_eq!(args.sample_rate_hz, None);
-        assert_eq!(args.block_size_frames, None);
-        assert_eq!(args.duration_frames, None);
+        assert_eq!(args.sample_rate_hz, Some(48_000));
+        assert_eq!(args.block_size_frames, Some(128));
+        assert_eq!(args.duration_frames, Some(96_000));
+    }
+
+    #[test]
+    fn parse_render_args_requires_duration_frames() {
+        let result = parse_render_args(vec![
+            "patch.yaml".to_string(),
+            OUTPUT_FLAG.to_string(),
+            "out.wav".to_string(),
+        ]);
+
+        let message = result.expect_err("offline duration must be explicit");
+        assert!(message.contains(DURATION_FRAMES_FLAG));
     }
 
     #[test]
@@ -535,13 +623,35 @@ mod tests {
             "out.wav".to_string(),
             SAMPLE_RATE_FLAG.to_string(),
             "abc".to_string(),
+            DURATION_FRAMES_FLAG.to_string(),
+            "48000".to_string(),
         ]);
 
         assert!(result.is_err());
     }
 
     #[test]
-    fn apply_render_overrides_sets_patch_render_fields() {
+    fn parse_render_args_rejects_zero_host_settings() {
+        for (flag, value) in [
+            (SAMPLE_RATE_FLAG, "0"),
+            (BLOCK_SIZE_FLAG, "0"),
+            (DURATION_FRAMES_FLAG, "0"),
+        ] {
+            let mut args = vec![
+                "patch.yaml".to_string(),
+                OUTPUT_FLAG.to_string(),
+                "out.wav".to_string(),
+                DURATION_FRAMES_FLAG.to_string(),
+                "48000".to_string(),
+            ];
+            args.extend([flag.to_string(), value.to_string()]);
+
+            assert!(parse_render_args(args).is_err(), "{flag} must reject zero");
+        }
+    }
+
+    #[test]
+    fn apply_legacy_host_settings_sets_patch_render_fields() {
         let mut patch = patch::load_patch_str(
             r#"
 metadata:
@@ -565,7 +675,12 @@ modules:
             duration_frames: Some(96000),
         };
 
-        apply_render_overrides(&mut patch, &args);
+        let settings = patch::RenderSettings {
+            sample_rate_hz: args.sample_rate_hz.unwrap(),
+            block_size_frames: args.block_size_frames.unwrap(),
+            duration_frames: args.duration_frames.unwrap(),
+        };
+        apply_legacy_host_settings(&mut patch, &settings);
 
         assert_eq!(patch.render.sample_rate_hz, 22050);
         assert_eq!(patch.render.block_size_frames, 256);
@@ -733,6 +848,8 @@ modules:
                 patch_path.to_string_lossy().to_string(),
                 "--output".to_string(),
                 first_output.to_string_lossy().to_string(),
+                DURATION_FRAMES_FLAG.to_string(),
+                "48000".to_string(),
             ]);
             let second = run([
                 "dandrum-cli".to_string(),
@@ -740,6 +857,8 @@ modules:
                 patch_path.to_string_lossy().to_string(),
                 "--output".to_string(),
                 second_output.to_string_lossy().to_string(),
+                DURATION_FRAMES_FLAG.to_string(),
+                "48000".to_string(),
             ]);
 
             assert_eq!(first.exit_code, 0, "{}", first.stderr);
@@ -762,6 +881,33 @@ modules:
     }
 
     #[test]
+    fn render_command_accepts_kernel_patch_with_host_owned_settings() {
+        let patch_path = example_path("patches", "synthetic-snare.yaml");
+        let output = temp_wav_path("synthetic-snare", "kernel");
+
+        let result = run([
+            "dandrum-cli".to_string(),
+            "render".to_string(),
+            patch_path.to_string_lossy().to_string(),
+            OUTPUT_FLAG.to_string(),
+            output.to_string_lossy().to_string(),
+            DURATION_FRAMES_FLAG.to_string(),
+            "2048".to_string(),
+        ]);
+
+        assert_eq!(result.exit_code, 0, "{}", result.stderr);
+        let bytes = fs::read(&output).expect("kernel render WAV should be readable");
+        assert_eq!(bytes.len(), WAV_HEADER_BYTES + 2048 * 2 * 2);
+        assert_eq!(
+            u32::from_le_bytes([bytes[24], bytes[25], bytes[26], bytes[27]]),
+            DEFAULT_SAMPLE_RATE_HZ
+        );
+        assert!(bytes[WAV_HEADER_BYTES..].iter().any(|byte| *byte != 0));
+
+        let _ = fs::remove_file(output);
+    }
+
+    #[test]
     fn render_command_loads_patch_with_external_preset_file() {
         let patch_path = example_path("patches", "synthetic-808-kick.yaml");
         let preset_path = example_path("presets", "tight-808-kick.yaml");
@@ -775,6 +921,8 @@ modules:
             output.to_string_lossy().to_string(),
             PRESET_FLAG.to_string(),
             preset_path.to_string_lossy().to_string(),
+            DURATION_FRAMES_FLAG.to_string(),
+            "48000".to_string(),
         ]);
 
         assert_eq!(result.exit_code, 0, "{}", result.stderr);
