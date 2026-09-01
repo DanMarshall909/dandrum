@@ -1,5 +1,5 @@
 use crate::builtins::module_kind::ModuleKind;
-use crate::compiled_patch::{CompiledPatch, CompiledPolyRegion};
+use crate::compiled_patch::{CompiledPatch, CompiledPolyRegion, CompiledPortSpan};
 use crate::kernel::{
     PolyAllocationPolicy, VOICE_GATE_OUTPUT, VOICE_NOTE_OUTPUT, VOICE_VELOCITY_OUTPUT,
 };
@@ -28,6 +28,12 @@ struct VoiceIntrinsicBindings {
     gate: EventQueueId,
 }
 
+#[derive(Clone, Copy, Debug)]
+struct PolyOutputBinding {
+    voice_span: CompiledPortSpan,
+    accumulator_start: usize,
+}
+
 pub struct PreparedPolyRuntimeRegion {
     node_id: String,
     states: Box<[Box<[PerModuleState]>]>,
@@ -40,6 +46,9 @@ pub struct PreparedPolyRuntimeRegion {
     slots: Box<[PolyVoiceSlot]>,
     next_allocation_order: u64,
     intrinsic_bindings: Option<VoiceIntrinsicBindings>,
+    child_render_plan: RenderPlan,
+    child_patch: Box<CompiledPatch>,
+    output_bindings: Box<[PolyOutputBinding]>,
 }
 
 impl PreparedPolyRuntimeRegion {
@@ -112,6 +121,27 @@ impl PreparedPolyRuntimeRegion {
         );
         let intrinsic_bindings =
             voice_intrinsic_bindings(compiled.child_patch(), &child_render_plan);
+        let mut next_accumulator = 0;
+        let output_bindings = compiled
+            .output_accumulators()
+            .iter()
+            .filter_map(|output| {
+                let voice_span = compiled
+                    .child_patch()
+                    .root_bus_plan()
+                    .outputs()
+                    .iter()
+                    .find(|port| port.name() == output.name())?
+                    .span()?;
+                let binding = PolyOutputBinding {
+                    voice_span,
+                    accumulator_start: next_accumulator,
+                };
+                next_accumulator += voice_span.channel_count;
+                Some(binding)
+            })
+            .collect::<Vec<_>>()
+            .into_boxed_slice();
 
         Self {
             node_id: compiled.node_id().to_string(),
@@ -125,6 +155,9 @@ impl PreparedPolyRuntimeRegion {
             slots: vec![PolyVoiceSlot::default(); compiled.max_voices()].into_boxed_slice(),
             next_allocation_order: 1,
             intrinsic_bindings,
+            child_render_plan,
+            child_patch: Box::new(compiled.child_patch().clone()),
+            output_bindings,
         }
     }
 
@@ -148,6 +181,79 @@ impl PreparedPolyRuntimeRegion {
                 }
             }
         }
+    }
+
+    pub(super) fn render_into(
+        &mut self,
+        parent_arena: &mut AudioArena,
+        parent_outputs: &[BufferId],
+        frames: usize,
+    ) -> bool {
+        for buffer in 0..self.output_accumulator.buffer_count() {
+            self.output_accumulator.clear(BufferId(buffer), frames);
+        }
+        for &buffer in parent_outputs {
+            parent_arena.clear(buffer, frames);
+        }
+
+        if self
+            .child_render_plan
+            .global_steps
+            .iter()
+            .any(|step| !super::realtime_graph_processor::is_channel_arena_supported(step))
+        {
+            return false;
+        }
+
+        for voice in 0..self.slots.len() {
+            if !self.slots[voice].active {
+                continue;
+            }
+            let arena = &mut self.voice_arenas[voice];
+            let states = &mut self.states[voice];
+            for step in self.child_render_plan.global_steps.iter() {
+                super::realtime_graph_processor::clear_and_route_arena_inputs(
+                    arena,
+                    step,
+                    frames,
+                    // Control defaults are owned by the child compiled patch.
+                    // The render plan's slot ids index this exact patch.
+                    //
+                    // Keeping this as a shared immutable borrow is the Rust
+                    // equivalent of sharing readonly construction metadata
+                    // across voice instances while their DSP state stays
+                    // disjoint.
+                    &self.child_patch,
+                );
+                super::realtime_graph_processor::process_channel_arena_step(
+                    arena, states, step, frames,
+                );
+            }
+
+            for binding in self.output_bindings.iter().copied() {
+                for channel in 0..binding.voice_span.channel_count {
+                    let source = BufferId(binding.voice_span.first_buffer + channel);
+                    let destination = BufferId(binding.accumulator_start + channel);
+                    for frame in 0..frames {
+                        let sum = self.output_accumulator.sample(destination, frame)
+                            + arena.sample(source, frame);
+                        self.output_accumulator.set_sample(destination, frame, sum);
+                    }
+                }
+            }
+        }
+
+        for (index, &destination) in parent_outputs.iter().enumerate() {
+            let source = BufferId(index);
+            for frame in 0..frames {
+                parent_arena.set_sample(
+                    destination,
+                    frame,
+                    self.output_accumulator.sample(source, frame),
+                );
+            }
+        }
+        true
     }
 
     fn route_note_on(&mut self, note: u8, velocity: u8, frame_offset: u32, frames: usize) {

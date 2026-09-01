@@ -368,6 +368,10 @@ impl RealtimeGraphProcessor {
         {
             return 0;
         }
+        for region in self.prepared_poly_runtime_regions.iter_mut() {
+            region.begin_block(frames);
+        }
+        self.drain_and_route_poly_events(frames);
 
         for (input_index, planned) in self.compiled.root_bus_plan().inputs().iter().enumerate() {
             let Some(span) = planned.span() else { continue };
@@ -386,8 +390,14 @@ impl RealtimeGraphProcessor {
         }
 
         for step in self.render_plan.global_steps.iter() {
-            clear_and_route_arena_inputs(&mut self.audio_arena, step, frames, &self.compiled);
-            process_channel_arena_step(&mut self.audio_arena, &mut self.states[0], step, frames);
+            process_channel_or_poly_step(
+                &mut self.audio_arena,
+                &mut self.states[0],
+                &mut self.prepared_poly_runtime_regions,
+                step,
+                frames,
+                &self.compiled,
+            );
         }
         for (planned, bus) in self
             .compiled
@@ -548,9 +558,9 @@ impl RealtimeGraphProcessor {
         let arena = &mut self.audio_arena;
         let states = &mut self.states[0];
         let compiled = &self.compiled;
+        let poly_regions = &mut self.prepared_poly_runtime_regions;
         for step in steps {
-            clear_and_route_arena_inputs(arena, step, frames, compiled);
-            process_channel_arena_step(arena, states, step, frames);
+            process_channel_or_poly_step(arena, states, poly_regions, step, frames, compiled);
             route_prepared_event_edges(&mut self.prepared_event_queues, step);
         }
 
@@ -881,7 +891,33 @@ fn route_step_outputs_to_global_event_queues(
     }
 }
 
-fn clear_and_route_arena_inputs(
+fn process_channel_or_poly_step(
+    arena: &mut AudioArena,
+    states: &mut [PerModuleState],
+    poly_regions: &mut [PreparedPolyRuntimeRegion],
+    step: &RenderStep,
+    frames: usize,
+    compiled: &CompiledPatch,
+) {
+    clear_and_route_arena_inputs(arena, step, frames, compiled);
+    if step.module_kind == ModuleKind::Poly {
+        let node_id = compiled.nodes()[step.module_index].id.as_str();
+        if let Some(region) = poly_regions
+            .iter_mut()
+            .find(|region| region.node_id() == node_id)
+        {
+            region.render_into(arena, &step.output_buffers, frames);
+        } else {
+            for &output in step.output_buffers.iter() {
+                arena.clear(output, frames);
+            }
+        }
+    } else {
+        process_channel_arena_step(arena, states, step, frames);
+    }
+}
+
+pub(super) fn clear_and_route_arena_inputs(
     arena: &mut AudioArena,
     step: &RenderStep,
     frames: usize,
@@ -901,7 +937,7 @@ fn clear_and_route_arena_inputs(
     }
 }
 
-fn process_channel_arena_step(
+pub(super) fn process_channel_arena_step(
     arena: &mut AudioArena,
     states: &mut [PerModuleState],
     step: &RenderStep,
@@ -961,7 +997,7 @@ fn is_mono_global_arena_supported(step: &RenderStep) -> bool {
     is_channel_arena_supported(step)
 }
 
-fn is_channel_arena_supported(step: &RenderStep) -> bool {
+pub(super) fn is_channel_arena_supported(step: &RenderStep) -> bool {
     match step.module_kind {
         ModuleKind::AudioOutput => step.input_buffers.len() >= 2,
         ModuleKind::Poly => true,

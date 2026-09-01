@@ -1281,6 +1281,72 @@ mod tests {
             ))
     }
 
+    fn oscillator_voice(name: &str) -> GraphDefinition {
+        GraphDefinition::new(name)
+            .with_port(
+                KernelPort::output("audio", SignalType::Audio, 1)
+                    .maps_from(kernel_ref("oscillator", builtin_ports::AUDIO)),
+            )
+            .with_node(Node::new(
+                NodeId::new("oscillator"),
+                module_types::OSCILLATOR,
+            ))
+            .with_connection(Connection::new(
+                kernel_ref(
+                    crate::kernel::VOICE_INTRINSIC_NODE,
+                    crate::kernel::VOICE_NOTE_OUTPUT,
+                ),
+                kernel_ref("oscillator", builtin_ports::PITCH),
+            ))
+    }
+
+    fn noise_voice(name: &str, channels: i64, seed: i64) -> GraphDefinition {
+        GraphDefinition::new(name)
+            .with_port(
+                KernelPort::output("audio", SignalType::Audio, channels as u32)
+                    .maps_from(kernel_ref("noise", builtin_ports::AUDIO)),
+            )
+            .with_node(
+                Node::new(NodeId::new("noise"), module_types::NOISE)
+                    .with_static_arg(
+                        crate::kernel::builtins::CHANNELS_PARAM,
+                        StaticArg::Literal(StaticValue::Int(channels)),
+                    )
+                    .with_static_arg(
+                        crate::builtins::NOISE_SEED_PARAMETER,
+                        StaticArg::Literal(StaticValue::Int(seed)),
+                    ),
+            )
+    }
+
+    fn prepare_audio_poly(voice: GraphDefinition, max_voices: i64) -> PreparedKernelInstrument {
+        let voice_name = voice.name().to_string();
+        let root = GraphDefinition::new("root")
+            .with_port(
+                KernelPort::output("left", SignalType::Audio, 1)
+                    .maps_from(kernel_ref("voices", "audio")),
+            )
+            .with_port(
+                KernelPort::output("right", SignalType::Audio, 1)
+                    .maps_from(kernel_ref("voices", "audio")),
+            )
+            .with_node(poly_node_with_allocation(
+                "voices",
+                &voice_name,
+                max_voices,
+                crate::kernel::POLY_ALLOCATION_REJECT_NEW,
+            ));
+        prepare_kernel_graph_with_buses(
+            &root,
+            &builtin_registry().with_definition(voice),
+            &KERNEL_RENDER_SETTINGS,
+            &HostBuses::new()
+                .with_output("left", 1)
+                .with_output("right", 1),
+        )
+        .expect("audio poly graph prepares")
+    }
+
     fn intrinsic_poly_root(allocation: &str, max_voices: i64) -> GraphDefinition {
         GraphDefinition::new("root")
             .with_port(
@@ -1609,6 +1675,153 @@ mod tests {
         assert_eq!(first.voice_note(0), Some(67));
         assert_eq!(second.voice_note(0), Some(72));
         assert_eq!(second.voice_velocity(0), Some(80));
+    }
+
+    #[test]
+    fn poly_two_active_voices_sum_sample_wise_without_hidden_velocity_scaling() {
+        let prepared = prepare_audio_poly(oscillator_voice("oscillator_voice"), 2);
+        let render = |notes: &[(u8, u8)]| {
+            let mut runtime = runtime_for(&prepared);
+            for &(note, velocity) in notes {
+                runtime.note_on(note, velocity);
+            }
+            let frames = KERNEL_RENDER_SETTINGS.block_size_frames as usize;
+            let mut left = vec![0.0; frames];
+            let mut right = vec![0.0; frames];
+            assert_eq!(runtime.render(&mut left, &mut right), frames);
+            assert_eq!(left, right);
+            left
+        };
+
+        let quiet_velocity = render(&[(60, 1)]);
+        let full_velocity = render(&[(60, 127)]);
+        let two_voices = render(&[(60, 1), (60, 127)]);
+
+        assert_eq!(quiet_velocity, full_velocity);
+        assert!(quiet_velocity.iter().any(|sample| sample.abs() > 0.001));
+        for ((single, doubled), second_single) in quiet_velocity
+            .iter()
+            .zip(two_voices.iter())
+            .zip(full_velocity.iter())
+        {
+            assert!((doubled - (single + second_single)).abs() < 1.0e-6);
+        }
+    }
+
+    #[test]
+    fn poly_sums_every_channel_of_a_six_channel_voice_output() {
+        let voice = noise_voice("six_channel_voice", 6, 1234);
+        let root = GraphDefinition::new("root")
+            .with_port(
+                KernelPort::output("surround", SignalType::Audio, 6)
+                    .maps_from(kernel_ref("voices", "audio")),
+            )
+            .with_node(poly_node_with_allocation(
+                "voices",
+                voice.name(),
+                2,
+                crate::kernel::POLY_ALLOCATION_REJECT_NEW,
+            ));
+        let prepared = prepare_kernel_graph_with_buses(
+            &root,
+            &builtin_registry().with_definition(voice),
+            &KERNEL_RENDER_SETTINGS,
+            &HostBuses::new().with_output("surround", 6),
+        )
+        .expect("six-channel poly prepares");
+        let render = |voice_count: usize| {
+            let mut runtime = runtime_for(&prepared);
+            for note in 0..voice_count {
+                runtime.note_on(60 + note as u8, 100);
+            }
+            let frames = KERNEL_RENDER_SETTINGS.block_size_frames as usize;
+            let mut outputs = vec![vec![vec![0.0; frames]; 6]];
+            assert_eq!(runtime.render_root_outputs(&mut outputs), frames);
+            outputs.remove(0)
+        };
+
+        let one = render(1);
+        let two = render(2);
+        assert_eq!(one.len(), 6);
+        for (single_channel, doubled_channel) in one.iter().zip(two.iter()) {
+            assert!(single_channel.iter().any(|sample| sample.abs() > 0.001));
+            for (single, doubled) in single_channel.iter().zip(doubled_channel.iter()) {
+                assert!((doubled - single * 2.0).abs() < 1.0e-6);
+            }
+        }
+    }
+
+    #[test]
+    fn sibling_poly_regions_keep_state_queues_and_different_width_mixes_independent() {
+        let mono = noise_voice("mono_voice", 1, 111);
+        let stereo = noise_voice("stereo_voice", 2, 222);
+        let root = GraphDefinition::new("root")
+            .with_port(
+                KernelPort::output("mono", SignalType::Audio, 1)
+                    .maps_from(kernel_ref("mono_poly", "audio")),
+            )
+            .with_port(
+                KernelPort::output("stereo", SignalType::Audio, 2)
+                    .maps_from(kernel_ref("stereo_poly", "audio")),
+            )
+            .with_node(poly_node_with_allocation(
+                "mono_poly",
+                mono.name(),
+                1,
+                crate::kernel::POLY_ALLOCATION_REJECT_NEW,
+            ))
+            .with_node(poly_node_with_allocation(
+                "stereo_poly",
+                stereo.name(),
+                1,
+                crate::kernel::POLY_ALLOCATION_REJECT_NEW,
+            ));
+        let prepared = prepare_kernel_graph_with_buses(
+            &root,
+            &builtin_registry()
+                .with_definition(mono)
+                .with_definition(stereo),
+            &KERNEL_RENDER_SETTINGS,
+            &HostBuses::new()
+                .with_output("mono", 1)
+                .with_output("stereo", 2),
+        )
+        .expect("mixed-width sibling poly regions prepare");
+        let mut runtime = runtime_for(&prepared);
+        runtime.route_poly_note_event_for_test(
+            "mono_poly",
+            ScriptEvent::NoteOn {
+                note: 60,
+                velocity: 100,
+            },
+            0,
+        );
+        runtime.route_poly_note_event_for_test(
+            "stereo_poly",
+            ScriptEvent::NoteOn {
+                note: 72,
+                velocity: 80,
+            },
+            0,
+        );
+        let regions = runtime.prepared_poly_runtime_regions();
+        assert_ne!(
+            regions[0].state_instance_address(0, 0),
+            regions[1].state_instance_address(0, 0)
+        );
+
+        let frames = KERNEL_RENDER_SETTINGS.block_size_frames as usize;
+        let mut outputs = vec![vec![vec![0.0; frames]], vec![vec![0.0; frames]; 2]];
+        assert_eq!(runtime.render_root_outputs(&mut outputs), frames);
+        assert_eq!(outputs[0].len(), 1);
+        assert_eq!(outputs[1].len(), 2);
+        assert!(outputs[0][0].iter().any(|sample| sample.abs() > 0.001));
+        assert!(
+            outputs[1]
+                .iter()
+                .flatten()
+                .any(|sample| sample.abs() > 0.001)
+        );
     }
 
     #[test]
