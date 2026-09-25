@@ -856,6 +856,10 @@ mod tests {
         capture.continue_work
     }
 
+    unsafe extern "C" fn stop_provider_work(_context: *mut std::ffi::c_void) -> bool {
+        false
+    }
+
     struct TestProposalProvider {
         response: Result<crate::graph_proposal::GraphProposalResponse, String>,
         requests: Mutex<Vec<crate::graph_proposal::GraphProposalRequest>>,
@@ -971,6 +975,14 @@ mod tests {
             .unwrap();
         assert!(manifest.contains("\"completed_evaluations\":2"));
         assert!(manifest.contains("\"reference_sha256\""));
+        let mut short_manifest = [0_i8; 2];
+        assert!(!unsafe {
+            dandrum_sound_match_copy_manifest_json(
+                matched,
+                short_manifest.as_mut_ptr(),
+                short_manifest.len(),
+            )
+        });
 
         assert_eq!(unsafe { dandrum_sound_match_parameter_count(matched) }, 4);
         let mut id = [0_i8; 128];
@@ -996,6 +1008,32 @@ mod tests {
         assert!(min <= initial && initial <= max);
         assert!(min <= best && best <= max);
         assert!((0.0..=1.0).contains(&normalized));
+        assert!(!unsafe {
+            dandrum_sound_match_parameter(
+                matched,
+                99,
+                id.as_mut_ptr(),
+                id.len(),
+                &mut min,
+                &mut max,
+                &mut initial,
+                &mut best,
+                &mut normalized,
+            )
+        });
+        assert!(!unsafe {
+            dandrum_sound_match_parameter(
+                matched,
+                0,
+                id.as_mut_ptr(),
+                id.len(),
+                std::ptr::null_mut(),
+                &mut max,
+                &mut initial,
+                &mut best,
+                &mut normalized,
+            )
+        });
 
         let metric_count = unsafe { dandrum_sound_match_metric_count(matched) };
         assert!(metric_count > 1);
@@ -1016,6 +1054,28 @@ mod tests {
         });
         assert!(time.is_finite() && candidate_rms.is_finite());
         assert!(!candidate_has_centroid || candidate_centroid.is_finite());
+        assert!(unsafe {
+            dandrum_sound_match_metric(
+                matched,
+                0,
+                true,
+                &mut time,
+                &mut candidate_rms,
+                &mut candidate_centroid,
+                &mut candidate_has_centroid,
+            )
+        });
+        assert!(!unsafe {
+            dandrum_sound_match_metric(
+                matched,
+                metric_count,
+                true,
+                &mut time,
+                &mut candidate_rms,
+                &mut candidate_centroid,
+                &mut candidate_has_centroid,
+            )
+        });
 
         for reference in [false, true] {
             let size = unsafe { dandrum_sound_match_wav_size(matched, reference) };
@@ -1025,6 +1085,9 @@ mod tests {
                 dandrum_sound_match_copy_wav(matched, reference, wav.as_mut_ptr(), wav.len())
             });
             assert_eq!(&wav[0..4], b"RIFF");
+            assert!(!unsafe {
+                dandrum_sound_match_copy_wav(matched, reference, wav.as_mut_ptr(), wav.len() - 1)
+            });
         }
 
         unsafe { dandrum_sound_match_destroy(matched) };
@@ -1122,6 +1185,20 @@ connections:
             unsafe { CStr::from_ptr(name.as_ptr()) }.to_str().unwrap(),
             "FFI proposal"
         );
+        let mut provider_id = [0_i8; 128];
+        assert!(unsafe {
+            dandrum_graph_proposal_provider_id(
+                proposal,
+                provider_id.as_mut_ptr(),
+                provider_id.len(),
+            )
+        });
+        assert_eq!(
+            unsafe { CStr::from_ptr(provider_id.as_ptr()) }
+                .to_str()
+                .unwrap(),
+            "ffi-test-provider"
+        );
         assert_eq!(
             unsafe { dandrum_graph_proposal_parameter_count(proposal) },
             1
@@ -1138,6 +1215,70 @@ connections:
         );
         assert!(unsafe { dandrum_graph_proposal_patch_yaml_size(proposal) } > 100);
         assert!(unsafe { dandrum_graph_proposal_explanation_size(proposal) } > 10);
+        let mut explanation =
+            vec![0_i8; unsafe { dandrum_graph_proposal_explanation_size(proposal) }];
+        let mut patch_yaml =
+            vec![0_i8; unsafe { dandrum_graph_proposal_patch_yaml_size(proposal) }];
+        assert!(unsafe {
+            dandrum_graph_proposal_copy_explanation(
+                proposal,
+                explanation.as_mut_ptr(),
+                explanation.len(),
+            )
+        });
+        assert!(unsafe {
+            dandrum_graph_proposal_copy_patch_yaml(
+                proposal,
+                patch_yaml.as_mut_ptr(),
+                patch_yaml.len(),
+            )
+        });
+        assert!(!unsafe {
+            dandrum_graph_proposal_copy_patch_yaml(
+                proposal,
+                patch_yaml.as_mut_ptr(),
+                patch_yaml.len() - 1,
+            )
+        });
+        assert!(!unsafe {
+            dandrum_graph_proposal_parameter(proposal, 1, parameter.as_mut_ptr(), parameter.len())
+        });
+        assert!(
+            unsafe { CStr::from_ptr(explanation.as_ptr()) }
+                .to_str()
+                .unwrap()
+                .contains("deterministic search")
+        );
+        assert!(
+            unsafe { CStr::from_ptr(patch_yaml.as_ptr()) }
+                .to_str()
+                .unwrap()
+                .contains("FFI proposal")
+        );
+        let cancelled_proposal = unsafe {
+            create_graph_proposal_with_provider(
+                matched,
+                &provider,
+                Some(stop_provider_work),
+                std::ptr::null_mut(),
+            )
+        };
+        assert!(!unsafe { dandrum_graph_proposal_is_ok(cancelled_proposal) });
+        let mut cancelled_error = [0_i8; 256];
+        assert!(unsafe {
+            dandrum_graph_proposal_error_message(
+                cancelled_proposal,
+                cancelled_error.as_mut_ptr(),
+                cancelled_error.len(),
+            )
+        });
+        assert!(
+            unsafe { CStr::from_ptr(cancelled_error.as_ptr()) }
+                .to_str()
+                .unwrap()
+                .contains("cancelled")
+        );
+        unsafe { dandrum_graph_proposal_destroy(cancelled_proposal) };
         unsafe { dandrum_graph_proposal_destroy(proposal) };
         unsafe { dandrum_sound_match_destroy(matched) };
     }
@@ -1182,6 +1323,55 @@ connections:
         );
         assert!(!unsafe { dandrum_sound_match_is_ok(std::ptr::null()) });
         assert!(!unsafe { dandrum_graph_proposal_is_ok(std::ptr::null()) });
+        assert_eq!(
+            unsafe { dandrum_sound_match_sample_rate_hz(std::ptr::null()) },
+            0
+        );
+        assert_eq!(
+            unsafe { dandrum_sound_match_duration_frames(std::ptr::null()) },
+            0
+        );
+        assert_eq!(
+            unsafe { dandrum_sound_match_manifest_json_size(std::ptr::null()) },
+            0
+        );
+        assert_eq!(
+            unsafe { dandrum_sound_match_metric_count(std::ptr::null()) },
+            0
+        );
+        assert!(!unsafe { dandrum_sound_match_was_cancelled(std::ptr::null()) });
+        assert!(!unsafe {
+            dandrum_sound_match_error_message(std::ptr::null(), error.as_mut_ptr(), error.len())
+        });
+        let proposal =
+            unsafe { dandrum_graph_proposal_create(std::ptr::null(), None, std::ptr::null_mut()) };
+        assert!(!proposal.is_null());
+        assert!(!unsafe { dandrum_graph_proposal_is_ok(proposal) });
+        assert!(unsafe {
+            dandrum_graph_proposal_error_message(proposal, error.as_mut_ptr(), error.len())
+        });
+        assert!(
+            unsafe { CStr::from_ptr(error.as_ptr()) }
+                .to_str()
+                .unwrap()
+                .contains("completed sound match")
+        );
+        assert_eq!(
+            unsafe { dandrum_graph_proposal_explanation_size(std::ptr::null()) },
+            0
+        );
+        assert_eq!(
+            unsafe { dandrum_graph_proposal_patch_yaml_size(std::ptr::null()) },
+            0
+        );
+        assert_eq!(
+            unsafe { dandrum_graph_proposal_parameter_count(std::ptr::null()) },
+            0
+        );
+        assert!(!unsafe {
+            dandrum_graph_proposal_patch_name(std::ptr::null(), error.as_mut_ptr(), error.len())
+        });
+        unsafe { dandrum_graph_proposal_destroy(proposal) };
         unsafe { dandrum_sound_match_destroy(std::ptr::null_mut()) };
         unsafe { dandrum_graph_proposal_destroy(std::ptr::null_mut()) };
     }

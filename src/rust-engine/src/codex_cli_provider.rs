@@ -115,6 +115,11 @@ impl<R: ProviderCommandRunner> GraphProposalProvider for CodexCliGraphProposalPr
         if is_cancelled() {
             return Err("Codex graph proposal was cancelled".to_string());
         }
+        if !request_numbers_are_finite(request) {
+            return Err(
+                "Codex graph proposal request contains non-finite numeric values".to_string(),
+            );
+        }
 
         let workspace = tempfile::Builder::new()
             .prefix("dandrum-codex-proposal-")
@@ -210,6 +215,22 @@ impl<R: ProviderCommandRunner> GraphProposalProvider for CodexCliGraphProposalPr
         crate::graph_proposal::parse_graph_proposal_response(&response_json)
             .map_err(bounded_diagnostic)
     }
+}
+
+fn request_numbers_are_finite(request: &GraphProposalRequest) -> bool {
+    let residual = request.residual;
+    residual.total.is_finite()
+        && residual.spectral.is_finite()
+        && residual.rms.is_finite()
+        && residual.centroid.is_finite()
+        && residual.candidate_gain.is_finite()
+        && request
+            .current_topology
+            .public_parameters
+            .iter()
+            .all(|parameter| {
+                parameter.min.is_none_or(f64::is_finite) && parameter.max.is_none_or(f64::is_finite)
+            })
 }
 
 impl ProviderCommandRunner for SystemProviderCommandRunner {
@@ -517,6 +538,8 @@ mod tests {
 
     #[test]
     fn codex_adapter_uses_chatgpt_login_and_isolated_structured_exec_without_api_keys() {
+        let default_provider = CodexCliGraphProposalProvider::default();
+        assert_eq!(default_provider.provider_id(), "codex-cli-chatgpt");
         let provider = provider_with([
             FakeStep::Output(success_output("Logged in using ChatGPT")),
             FakeStep::Proposal(proposal()),
@@ -624,9 +647,7 @@ mod tests {
         ])
         .propose(&request(), &|| false)
         .unwrap_err();
-        let cancelled = provider_with([FakeStep::Error(ProviderCommandError::Cancelled)])
-            .propose(&request(), &|| false)
-            .unwrap_err();
+        let cancelled = provider_with([]).propose(&request(), &|| true).unwrap_err();
         let invalid = provider_with([
             FakeStep::Output(success_output("Logged in using ChatGPT")),
             FakeStep::InvalidProposal("not json".to_string()),
@@ -637,6 +658,58 @@ mod tests {
         assert!(timeout.contains("timed out"));
         assert!(cancelled.contains("cancelled"));
         assert!(invalid.contains("invalid graph proposal response"));
+    }
+
+    #[test]
+    fn codex_adapter_reports_runner_failures_missing_and_oversized_response_files() {
+        let process = provider_with([FakeStep::Error(ProviderCommandError::Process(
+            "launch failed".to_string(),
+        ))])
+        .propose(&request(), &|| false)
+        .unwrap_err();
+        let missing = provider_with([
+            FakeStep::Output(success_output("Logged in using ChatGPT")),
+            FakeStep::Output(success_output("")),
+        ])
+        .propose(&request(), &|| false)
+        .unwrap_err();
+        let oversized = provider_with([
+            FakeStep::Output(success_output("Logged in using ChatGPT")),
+            FakeStep::InvalidProposal("x".repeat(MAX_PROVIDER_OUTPUT_BYTES + 1)),
+        ])
+        .propose(&request(), &|| false)
+        .unwrap_err();
+
+        assert!(process.contains("process failed"));
+        assert!(missing.contains("usable response file"));
+        assert!(oversized.contains("output limit"));
+    }
+
+    #[test]
+    fn codex_adapter_rejects_non_json_request_numbers_and_bounds_unicode_diagnostics() {
+        for invalid_number in 0..7 {
+            let mut invalid_request = request();
+            match invalid_number {
+                0 => invalid_request.residual.total = f64::NAN,
+                1 => invalid_request.residual.spectral = f64::INFINITY,
+                2 => invalid_request.residual.rms = f64::NEG_INFINITY,
+                3 => invalid_request.residual.centroid = f64::NAN,
+                4 => invalid_request.residual.candidate_gain = f64::INFINITY,
+                5 => invalid_request.current_topology.public_parameters[0].min = Some(f64::NAN),
+                6 => {
+                    invalid_request.current_topology.public_parameters[0].max = Some(f64::INFINITY)
+                }
+                _ => unreachable!(),
+            }
+            let error = provider_with([])
+                .propose(&invalid_request, &|| false)
+                .unwrap_err();
+            assert!(error.contains("non-finite"));
+        }
+        let unicode = bounded_diagnostic("é".repeat(MAX_DIAGNOSTIC_BYTES));
+
+        assert!(unicode.len() <= MAX_DIAGNOSTIC_BYTES);
+        assert!(unicode.is_char_boundary(unicode.len()));
     }
 
     fn system_command(
@@ -689,6 +762,12 @@ mod tests {
         assert!(matches!(
             SystemProviderCommandRunner.run(&missing, &|| false),
             Err(ProviderCommandError::MissingExecutable(_))
+        ));
+        let mut not_executable = system_command(&[], "", 16);
+        not_executable.program = std::env::temp_dir();
+        assert!(matches!(
+            SystemProviderCommandRunner.run(&not_executable, &|| false),
+            Err(ProviderCommandError::Process(_))
         ));
         assert_eq!(
             SystemProviderCommandRunner.run(&cancelled, &|| true),

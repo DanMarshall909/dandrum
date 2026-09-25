@@ -335,6 +335,52 @@ connections:
         requests: Mutex<Vec<GraphProposalRequest>>,
     }
 
+    struct UnstructuredProvider;
+
+    impl GraphProposalProvider for UnstructuredProvider {
+        fn provider_id(&self) -> &str {
+            "unstructured-provider"
+        }
+
+        fn capabilities(&self) -> GraphProposalCapabilities {
+            GraphProposalCapabilities {
+                structured_output: false,
+                cancellation: false,
+            }
+        }
+
+        fn propose(
+            &self,
+            _request: &GraphProposalRequest,
+            _is_cancelled: &dyn Fn() -> bool,
+        ) -> Result<GraphProposalResponse, String> {
+            panic!("an incompatible provider must not be invoked")
+        }
+    }
+
+    struct CancellationIgnoringProvider;
+
+    impl GraphProposalProvider for CancellationIgnoringProvider {
+        fn provider_id(&self) -> &str {
+            "cancellation-ignoring-provider"
+        }
+
+        fn capabilities(&self) -> GraphProposalCapabilities {
+            GraphProposalCapabilities {
+                structured_output: true,
+                cancellation: false,
+            }
+        }
+
+        fn propose(
+            &self,
+            _request: &GraphProposalRequest,
+            _is_cancelled: &dyn Fn() -> bool,
+        ) -> Result<GraphProposalResponse, String> {
+            RecordingProvider::valid().response
+        }
+    }
+
     impl RecordingProvider {
         fn valid() -> Self {
             Self {
@@ -556,5 +602,85 @@ connections:
 
         assert!(provider_error.contains("provider unavailable"));
         assert!(cancelled.contains("cancelled"));
+    }
+
+    #[test]
+    fn orchestration_rejects_unstructured_providers_and_post_response_cancellation() {
+        let fixture = acid_fixture();
+        let request = build_graph_proposal_request(&fixture, &match_manifest()).unwrap();
+
+        let incompatible = request_validated_graph_proposal(
+            &UnstructuredProvider,
+            &request,
+            Path::new("."),
+            &|| false,
+        )
+        .unwrap_err();
+        let cancelled = request_validated_graph_proposal(
+            &CancellationIgnoringProvider,
+            &request,
+            Path::new("."),
+            &|| true,
+        )
+        .unwrap_err();
+
+        assert!(incompatible.contains("structured output"));
+        assert!(cancelled.contains("cancelled"));
+    }
+
+    #[test]
+    fn local_validation_rejects_empty_fields_bad_yaml_and_unbounded_or_non_numeric_controls() {
+        let fixture = acid_fixture();
+        let request = build_graph_proposal_request(&fixture, &match_manifest()).unwrap();
+        let variants = [
+            (
+                "".to_string(),
+                "explanation".to_string(),
+                Vec::new(),
+                "patch_yaml",
+            ),
+            (
+                VALID_PATCH.to_string(),
+                "".to_string(),
+                Vec::new(),
+                "explanation",
+            ),
+            (
+                "not: [valid".to_string(),
+                "explanation".to_string(),
+                Vec::new(),
+                "invalid",
+            ),
+            (
+                VALID_PATCH.replace("      min: 0.25\n      max: 4\n", ""),
+                "explanation".to_string(),
+                vec!["oscillator.pitch".to_string()],
+                "finite bounds",
+            ),
+            (
+                VALID_PATCH.replace(
+                    "      min: 0.25\n      max: 4",
+                    "      min: 4\n      max: 0.25",
+                ),
+                "explanation".to_string(),
+                vec!["oscillator.pitch".to_string()],
+                "numeric with finite ordered bounds",
+            ),
+        ];
+
+        for (patch_yaml, explanation, suggested_search_parameters, expected) in variants {
+            let provider = RecordingProvider {
+                response: Ok(GraphProposalResponse {
+                    patch_yaml,
+                    explanation,
+                    suggested_search_parameters,
+                }),
+                requests: Mutex::new(Vec::new()),
+            };
+            let error =
+                request_validated_graph_proposal(&provider, &request, Path::new("."), &|| false)
+                    .unwrap_err();
+            assert!(error.contains(expected), "unexpected error: {error}");
+        }
     }
 }
