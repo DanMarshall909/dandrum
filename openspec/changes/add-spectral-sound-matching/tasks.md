@@ -33,7 +33,7 @@
 
 ## 6. Verification And Delivery
 
-- [ ] 6.1 Run focused RED/GREEN checks, rustfmt, the complete Rust suite, changed-code coverage, and focused mutation testing; strengthen any surviving behavior-relevant mutants.
+- [x] 6.1 Run focused RED/GREEN checks, rustfmt, the complete Rust suite, changed-code coverage, and focused mutation testing; strengthen any surviving behavior-relevant mutants.
 - [ ] 6.2 Configure and build the native targets, run CTest, and manually exercise reference selection, matching/cancellation, A/B audition, acceptance, and provider-unavailable behavior in the standalone plugin host.
 - [ ] 6.3 Strictly validate the OpenSpec change, sync accepted delta specs, map every scenario to a proving test, review fingerprints, and run `scripts/check-spec-coverage`.
 - [ ] 6.4 Inspect status/diff/log, perform an independent completion review against the acceptance criteria, address findings, and commit the verified change in focused boundaries.
