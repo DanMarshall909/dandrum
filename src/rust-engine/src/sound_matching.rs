@@ -597,16 +597,10 @@ fn validate_objective_input(
         return Err("sound matching sample rate must be positive".to_string());
     }
     let analysis = settings.analysis;
-    let nyquist_hz = f64::from(settings.sample_rate_hz) / 2.0;
-    if !analysis.min_frequency_hz.is_finite()
-        || !analysis.max_frequency_hz.is_finite()
-        || analysis.min_frequency_hz <= 0.0
-        || analysis.max_frequency_hz <= analysis.min_frequency_hz
-        || analysis.max_frequency_hz > nyquist_hz
-    {
-        return Err(format!(
-            "sound matching log-spectral minimum frequency and band must satisfy 0 < min < max <= {nyquist_hz} Hz"
-        ));
+    if !analysis.min_frequency_hz.is_finite() || analysis.min_frequency_hz <= 0.0 {
+        return Err(
+            "sound matching log-spectral minimum frequency must be finite and positive".to_string(),
+        );
     }
     crate::sound_analysis::validate_settings(settings.sample_rate_hz, analysis)
         .map_err(|error| format!("invalid sound matching analysis settings: {error}"))?;
@@ -960,7 +954,7 @@ mod tests {
                         ..SETTINGS
                     },
                 ),
-                "minimum frequency",
+                "frequency band",
             ),
             (
                 compare_aligned_audio(
@@ -974,7 +968,7 @@ mod tests {
                         ..SETTINGS
                     },
                 ),
-                "minimum frequency",
+                "frequency band",
             ),
             (
                 compare_aligned_audio(
