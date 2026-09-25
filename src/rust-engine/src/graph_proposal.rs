@@ -233,7 +233,7 @@ fn validate_graph_proposal(
         ) || !matches!(parameter.default, crate::patch::ParameterValue::Number(_))
             || !min.is_finite()
             || !max.is_finite()
-            || min > max
+            || min >= max
         {
             return Err(format!(
                 "suggested search parameter {parameter_id} must be numeric with finite ordered bounds"
@@ -666,6 +666,42 @@ connections:
                 vec!["oscillator.pitch".to_string()],
                 "numeric with finite ordered bounds",
             ),
+            (
+                VALID_PATCH.replace(
+                    "      type: number\n      default: 1",
+                    "      type: boolean\n      default: true",
+                ),
+                "explanation".to_string(),
+                vec!["oscillator.pitch".to_string()],
+                "numeric with finite ordered bounds",
+            ),
+            (
+                VALID_PATCH.replace("      default: 1", "      default: saw"),
+                "explanation".to_string(),
+                vec!["oscillator.pitch".to_string()],
+                "numeric with finite ordered bounds",
+            ),
+            (
+                VALID_PATCH.replace("      min: 0.25", "      min: .nan"),
+                "explanation".to_string(),
+                vec!["oscillator.pitch".to_string()],
+                "numeric with finite ordered bounds",
+            ),
+            (
+                VALID_PATCH.replace("      max: 4", "      max: .inf"),
+                "explanation".to_string(),
+                vec!["oscillator.pitch".to_string()],
+                "numeric with finite ordered bounds",
+            ),
+            (
+                VALID_PATCH.replace(
+                    "      min: 0.25\n      max: 4",
+                    "      min: 1\n      max: 1",
+                ),
+                "explanation".to_string(),
+                vec!["oscillator.pitch".to_string()],
+                "numeric with finite ordered bounds",
+            ),
         ];
 
         for (patch_yaml, explanation, suggested_search_parameters, expected) in variants {
@@ -682,5 +718,46 @@ connections:
                     .unwrap_err();
             assert!(error.contains(expected), "unexpected error: {error}");
         }
+    }
+
+    #[test]
+    fn local_safety_helpers_cover_top_level_nested_external_and_defined_modules() {
+        let top_script =
+            crate::patch::load_patch_str(&VALID_PATCH.replace("type: oscillator", "type: script"))
+                .unwrap();
+        let top_external = crate::patch::load_patch_str(
+            &VALID_PATCH.replace("type: oscillator", "type: $unsafe/external@1"),
+        )
+        .unwrap();
+        let nested_script = crate::patch::load_patch_str(&VALID_PATCH.replace(
+            "modules:",
+            "module_definitions:\n  - type: custom\n    modules:\n      - { id: unsafe, type: script }\nmodules:",
+        ))
+        .unwrap();
+        let nested_external = crate::patch::load_patch_str(&VALID_PATCH.replace(
+            "modules:",
+            "module_definitions:\n  - type: custom\n    modules:\n      - { id: unsafe, type: '$unsafe/external@1' }\nmodules:",
+        ))
+        .unwrap();
+        let defined = crate::patch::load_patch_str(&VALID_PATCH.replace(
+            "modules:\n  - id: osc\n    type: oscillator",
+            "module_definitions:\n  - type: custom\n    modules:\n      - { id: internal, type: oscillator }\nmodules:\n  - id: osc\n    type: custom",
+        ))
+        .unwrap();
+        let unknown = crate::patch::load_patch_str(
+            &VALID_PATCH.replace("type: oscillator", "type: unknown_oscillator"),
+        )
+        .unwrap();
+
+        assert!(patch_contains_forbidden_modules(&top_script));
+        assert!(patch_contains_forbidden_modules(&top_external));
+        assert!(patch_contains_forbidden_modules(&nested_script));
+        assert!(patch_contains_forbidden_modules(&nested_external));
+        assert!(!patch_contains_forbidden_modules(&defined));
+        assert_eq!(first_unknown_module_type(&defined), None);
+        assert_eq!(
+            first_unknown_module_type(&unknown),
+            Some("unknown_oscillator")
+        );
     }
 }

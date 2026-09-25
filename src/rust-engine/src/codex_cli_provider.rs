@@ -687,6 +687,8 @@ mod tests {
 
     #[test]
     fn codex_adapter_rejects_non_json_request_numbers_and_bounds_unicode_diagnostics() {
+        assert_eq!(MAX_PROVIDER_OUTPUT_BYTES, 64 * 1_024);
+        assert_eq!(MAX_DIAGNOSTIC_BYTES, 4 * 1_024);
         for invalid_number in 0..7 {
             let mut invalid_request = request();
             match invalid_number {
@@ -706,10 +708,28 @@ mod tests {
                 .unwrap_err();
             assert!(error.contains("non-finite"));
         }
-        let unicode = bounded_diagnostic("é".repeat(MAX_DIAGNOSTIC_BYTES));
+        let exact = "x".repeat(MAX_DIAGNOSTIC_BYTES);
+        let unicode = bounded_diagnostic(format!("{}é", "x".repeat(MAX_DIAGNOSTIC_BYTES - 1)));
+        let repeated_assignments =
+            bounded_diagnostic("before OPENAI_API_KEY=one middle OPENAI_API_KEY=two after");
 
-        assert!(unicode.len() <= MAX_DIAGNOSTIC_BYTES);
+        assert_eq!(bounded_diagnostic(&exact), exact);
+        assert_eq!(unicode.len(), MAX_DIAGNOSTIC_BYTES - 1);
         assert!(unicode.is_char_boundary(unicode.len()));
+        assert_eq!(
+            repeated_assignments,
+            "before OPENAI_API_KEY=[redacted] middle OPENAI_API_KEY=[redacted] after"
+        );
+
+        let directory = tempfile::tempdir().unwrap();
+        let exact_path = directory.path().join("exact-response.json");
+        fs::write(&exact_path, "x".repeat(MAX_PROVIDER_OUTPUT_BYTES)).unwrap();
+        assert_eq!(
+            read_bounded_file(&exact_path, MAX_PROVIDER_OUTPUT_BYTES)
+                .expect("an output exactly on the byte limit is valid")
+                .len(),
+            MAX_PROVIDER_OUTPUT_BYTES
+        );
     }
 
     fn system_command(
@@ -776,6 +796,29 @@ mod tests {
         assert_eq!(
             SystemProviderCommandRunner.run(&timeout, &|| false),
             Err(ProviderCommandError::TimedOut)
+        );
+
+        let directory = tempfile::tempdir().unwrap();
+        let survivor = directory.path().join("survived.txt");
+        let mut kill_check = system_command(
+            &[
+                "-c",
+                "sleep 0.15; printf survived > \"$1\"",
+                "dandrum-test",
+                survivor.to_str().unwrap(),
+            ],
+            "",
+            16,
+        );
+        kill_check.timeout = Duration::from_millis(20);
+        assert_eq!(
+            SystemProviderCommandRunner.run(&kill_check, &|| false),
+            Err(ProviderCommandError::TimedOut)
+        );
+        thread::sleep(Duration::from_millis(250));
+        assert!(
+            !survivor.exists(),
+            "the timed-out provider child must be killed"
         );
     }
 }

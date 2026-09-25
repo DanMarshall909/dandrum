@@ -720,7 +720,7 @@ mod tests {
     }
 
     #[test]
-    fn identical_audio_has_zero_loss_and_whole_region_gain_alignment_is_fixed() {
+    fn objective_identical_audio_has_zero_loss_and_whole_region_gain_alignment_is_fixed() {
         let reference = sine(440.0, |_| 0.4);
         let identical = compare_aligned_audio(&reference, &reference, SETTINGS)
             .expect("identical audio should compare");
@@ -738,7 +738,7 @@ mod tests {
     }
 
     #[test]
-    fn spectral_level_and_centroid_differences_raise_their_owning_terms() {
+    fn objective_spectral_level_and_centroid_differences_raise_their_owning_terms() {
         let reference = sine(440.0, |frame| if frame < 2_048 { 0.2 } else { 0.7 });
         let harmonic: Vec<f32> = reference
             .iter()
@@ -770,6 +770,14 @@ mod tests {
             assert!(score.centroid.is_finite());
             assert!(score.total.is_finite());
             assert!(score.total > 0.0);
+            assert!(
+                (score.total
+                    - (score.spectral * SETTINGS.weights.spectral
+                        + score.rms * SETTINGS.weights.rms
+                        + score.centroid * SETTINGS.weights.centroid))
+                    .abs()
+                    < 1.0e-12
+            );
         }
     }
 
@@ -853,6 +861,37 @@ mod tests {
                 .expect_err("non-finite candidate should fail")
                 .contains("finite")
         );
+
+        for weights in [
+            SoundMatchWeights {
+                spectral: -0.01,
+                rms: 0.2,
+                centroid: 0.1,
+            },
+            SoundMatchWeights {
+                spectral: f64::NAN,
+                rms: 0.2,
+                centroid: 0.1,
+            },
+            SoundMatchWeights {
+                spectral: 0.0,
+                rms: 0.0,
+                centroid: 0.0,
+            },
+        ] {
+            assert!(
+                compare_aligned_audio(
+                    &reference,
+                    &reference,
+                    SoundMatchObjectiveSettings {
+                        weights,
+                        ..SETTINGS
+                    },
+                )
+                .expect_err("each invalid weight contract should fail independently")
+                .contains("weights")
+            );
+        }
     }
 
     #[test]
@@ -863,6 +902,22 @@ mod tests {
             .expect("a silent candidate is a poor but valid candidate");
         assert_eq!(silent_candidate.candidate_gain, 1.0);
         assert!(silent_candidate.total.is_finite() && silent_candidate.total > 0.0);
+        assert!(
+            compare_aligned_audio(
+                &reference,
+                &reference,
+                SoundMatchObjectiveSettings {
+                    weights: SoundMatchWeights {
+                        spectral: -0.0,
+                        rms: 0.2,
+                        centroid: 0.1,
+                    },
+                    ..SETTINGS
+                },
+            )
+            .is_ok(),
+            "negative zero is a valid non-negative weight"
+        );
 
         let no_spectral_bins = compare_aligned_audio(
             &reference,
@@ -892,6 +947,99 @@ mod tests {
         .expect("audio shorter than the trajectory window should still compare spectrally");
         assert_eq!(no_trajectory_frames.rms, 0.0);
         assert_eq!(no_trajectory_frames.centroid, 0.0);
+
+        let mut epsilon_candidate = vec![0.0; 16];
+        epsilon_candidate[0] = f32::from_bits((127 - 26) << 23);
+        let mut impulse_reference = vec![0.0; 16];
+        impulse_reference[0] = 1.0;
+        let epsilon_energy = compare_aligned_audio(
+            &epsilon_candidate,
+            &impulse_reference,
+            SoundMatchObjectiveSettings {
+                spectral_windows: &[16],
+                analysis: AnalysisSettings {
+                    frame_size: 16,
+                    hop_size: 16,
+                    ..SETTINGS.analysis
+                },
+                ..SETTINGS
+            },
+        )
+        .expect("epsilon-energy candidate should compare");
+        assert_eq!(epsilon_energy.candidate_gain, 1.0);
+
+        let exact_floor = 2.0_f32.powi(-10);
+        let floor_reference = vec![exact_floor; 16];
+        let floor_error = compare_aligned_audio(
+            &floor_reference,
+            &floor_reference,
+            SoundMatchObjectiveSettings {
+                spectral_windows: &[16],
+                analysis: AnalysisSettings {
+                    frame_size: 16,
+                    hop_size: 16,
+                    silence_rms: f64::from(exact_floor),
+                    ..SETTINGS.analysis
+                },
+                ..SETTINGS
+            },
+        )
+        .expect_err("a reference exactly on the silence floor should be rejected");
+        assert!(floor_error.contains("non-silent"));
+    }
+
+    #[test]
+    fn objective_spectral_and_trajectory_formulas_match_numeric_fixtures() {
+        let reference: Vec<f32> = (0..96)
+            .map(|index| {
+                let amplitude = if index < 48 { 0.8 } else { 0.2 };
+                (std::f64::consts::TAU * 6_000.0 * index as f64 / 48_000.0).sin() as f32 * amplitude
+            })
+            .collect();
+        let candidate: Vec<f32> = (0..96)
+            .map(|index| {
+                let amplitude = if index < 48 { 0.15 } else { 0.7 };
+                ((std::f64::consts::TAU * 9_000.0 * index as f64 / 48_000.0).sin()
+                    + 0.25 * (std::f64::consts::TAU * 3_000.0 * index as f64 / 48_000.0).sin())
+                    as f32
+                    * amplitude
+            })
+            .collect();
+        let spectral = multi_resolution_spectral_loss(
+            &candidate,
+            &reference,
+            48_000,
+            &[16, 32],
+            3_000.0,
+            12_000.0,
+        );
+
+        let frame = |rms, centroid| crate::sound_analysis::AnalysisFrame {
+            start_frame: 0,
+            time_seconds: 0.0,
+            rms,
+            peak: rms,
+            spectral_centroid_hz: centroid,
+        };
+        let (rms, centroid) = trajectory_losses(
+            &[
+                frame(0.1, Some(200.0)),
+                frame(0.2, None),
+                frame(0.0, Some(0.0)),
+                frame(0.3, Some(100.0)),
+            ],
+            &[
+                frame(0.2, Some(100.0)),
+                frame(0.1, None),
+                frame(0.0, Some(100.0)),
+                frame(0.3, Some(0.0)),
+            ],
+            1.0e-6,
+        );
+
+        assert!((spectral - 229.30984419479594).abs() < 1.0e-9, "{spectral}");
+        assert!((rms - 0.045309529144728286).abs() < 1.0e-12, "{rms}");
+        assert!((centroid - 0.75).abs() < 1.0e-12, "{centroid}");
     }
 
     fn quadratic_score(values: &[f64]) -> Result<SoundMatchScore, String> {
@@ -978,6 +1126,66 @@ mod tests {
     }
 
     #[test]
+    fn bounded_search_uses_the_declared_coordinate_and_radius_schedule() {
+        let parameters = vec![
+            BoundedSearchParameter {
+                id: "a".to_string(),
+                min: -2.0,
+                max: 2.0,
+                initial: -1.0,
+            },
+            BoundedSearchParameter {
+                id: "b".to_string(),
+                min: 10.0,
+                max: 30.0,
+                initial: 28.0,
+            },
+            BoundedSearchParameter {
+                id: "c".to_string(),
+                min: 100.0,
+                max: 200.0,
+                initial: 150.0,
+            },
+        ];
+        let result = deterministic_bounded_search(
+            &parameters,
+            303,
+            10,
+            |_| Ok(SoundMatchScore::default()),
+            continue_search,
+        )
+        .expect("constant-score search should complete");
+
+        let expected = [
+            vec![0.6, 28.0, 150.0],
+            vec![-2.0, 28.0, 150.0],
+            vec![-1.0, 30.0, 150.0],
+            vec![-1.0, 20.0, 150.0],
+            vec![-1.0, 28.0, 190.0],
+            vec![-1.0, 28.0, 110.0],
+            vec![-1.8967948869879296, 24.08889416827367, 145.41339479738593],
+            vec![-1.7398431889674546, 26.655178228623146, 168.81270495872667],
+            vec![0.04, 28.0, 150.0],
+        ];
+        for (actual, expected) in result.history.iter().skip(1).zip(expected) {
+            assert!(
+                actual
+                    .values
+                    .iter()
+                    .zip(expected)
+                    .all(|(actual, expected)| (actual - expected).abs() < 1e-12),
+                "unexpected schedule value: {:?}",
+                actual.values
+            );
+        }
+    }
+
+    #[test]
+    fn stereo_matching_analysis_uses_the_arithmetic_mean() {
+        assert_eq!(mono_audio(&[1.0, -0.5], &[-0.5, 1.0]), vec![0.25, 0.25]);
+    }
+
+    #[test]
     fn bounded_search_rejects_invalid_contracts_before_evaluation() {
         let invalid_parameters = [
             vec![],
@@ -1049,11 +1257,23 @@ mod tests {
         cutoff: f64,
         name: &str,
     ) -> std::path::PathBuf {
+        write_scaled_reference(fixture, cutoff, 1.0, name)
+    }
+
+    fn write_scaled_reference(
+        fixture: &crate::sound_workbench::SoundFixture,
+        cutoff: f64,
+        gain: f32,
+        name: &str,
+    ) -> std::path::PathBuf {
         let values = std::collections::BTreeMap::from([("filter.cutoff".to_string(), cutoff)]);
-        let render = crate::sound_workbench::render_sound_fixture_with_public_numeric_values(
+        let mut render = crate::sound_workbench::render_sound_fixture_with_public_numeric_values(
             fixture, &values,
         )
         .expect("reference should render");
+        for sample in render.left.iter_mut().chain(&mut render.right) {
+            *sample *= gain;
+        }
         let path = temp_wav(name);
         crate::wav::write_wav_file(&path, render.sample_rate_hz, &render.left, &render.right)
             .expect("reference WAV should write");
@@ -1086,6 +1306,18 @@ mod tests {
         assert_eq!(cutoff.id, "filter.cutoff");
         assert!(cutoff.best >= cutoff.min && cutoff.best <= cutoff.max);
         assert!((0.0..=1.0).contains(&cutoff.normalized));
+        assert!(
+            (cutoff.normalized - (cutoff.best - cutoff.min) / (cutoff.max - cutoff.min)).abs()
+                < 1e-12
+        );
+        assert!(
+            artifact
+                .manifest
+                .history
+                .iter()
+                .enumerate()
+                .all(|(index, record)| record.index == index + 1)
+        );
         assert_eq!(artifact.sample_rate_hz, 48_000);
         assert_eq!(artifact.duration_frames, fixture.render.duration_frames);
         assert!(!artifact.candidate_metrics.is_empty());
@@ -1096,6 +1328,31 @@ mod tests {
         assert!(artifact.candidate_wav_bytes.starts_with(b"RIFF"));
         assert!(artifact.reference_wav_bytes.starts_with(b"RIFF"));
         assert_eq!(progress.len(), 8);
+    }
+
+    #[test]
+    fn fixture_match_applies_the_measured_gain_to_the_returned_candidate() {
+        let mut fixture = short_acid_fixture();
+        fixture.matching.as_mut().unwrap().max_evaluations = 1;
+        let reference_path = write_scaled_reference(&fixture, 0.4, 0.25, "scaled-reference");
+
+        let artifact = match_sound_fixture(&fixture, reference_path, continue_search)
+            .expect("scaled self-reference should match");
+        let candidate_rms = artifact
+            .candidate_metrics
+            .iter()
+            .map(|frame| frame.rms)
+            .sum::<f64>()
+            / artifact.candidate_metrics.len() as f64;
+        let reference_rms = artifact
+            .reference_metrics
+            .iter()
+            .map(|frame| frame.rms)
+            .sum::<f64>()
+            / artifact.reference_metrics.len() as f64;
+
+        assert!((artifact.manifest.best_score.candidate_gain - 0.25).abs() < 0.01);
+        assert!((candidate_rms / reference_rms - 1.0).abs() < 0.01);
     }
 
     #[test]
@@ -1140,6 +1397,24 @@ mod tests {
                 .expect_err("invalid reference should fail before search");
             assert!(error.contains(expected), "unexpected error: {error}");
         }
+
+        let near_silent = temp_wav("near-silent");
+        crate::wav::write_wav_file(
+            &near_silent,
+            48_000,
+            &vec![0.0005; 144_000],
+            &vec![0.0005; 144_000],
+        )
+        .unwrap();
+        let mut elevated_floor = fixture;
+        elevated_floor.analysis.silence_rms = 0.001;
+        elevated_floor.patch =
+            Path::new("/definitely/missing/near-silent-patch.yaml").to_path_buf();
+        assert!(
+            match_sound_fixture(&elevated_floor, near_silent, continue_search)
+                .expect_err("reference below the configured RMS floor should fail")
+                .contains("non-silent reference")
+        );
     }
 
     #[test]
