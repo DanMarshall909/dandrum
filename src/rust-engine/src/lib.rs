@@ -20,6 +20,7 @@ pub mod graph_processor;
 pub(crate) mod builtins;
 
 pub mod cli;
+pub mod codex_cli_provider;
 pub mod graph;
 pub mod graph_proposal;
 pub mod instrument_state;
