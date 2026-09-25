@@ -19,10 +19,10 @@
 
 ## 4. Offline Native Boundary
 
-- [ ] 4.1 Add failing Rust FFI tests for a coherent match handle, progress cancellation, typed best values, manifest data, reference/candidate audio, and proposal results.
-- [ ] 4.2 Implement the match/proposal opaque handles and update the shared C++ bindings.
-- [ ] 4.3 Add failing C++ controller tests for matching progress, conflict rejection, cancellation, completed comparison artifacts, and retryable errors.
-- [ ] 4.4 Extend `SoundLabController` background ownership and state snapshots for match and proposal jobs.
+- [x] 4.1 Add failing Rust FFI tests for a coherent match handle, progress cancellation, typed best values, manifest data, reference/candidate audio, and proposal results.
+- [x] 4.2 Implement the match/proposal opaque handles and update the shared C++ bindings.
+- [x] 4.3 Add failing C++ controller tests for matching progress, conflict rejection, cancellation, completed comparison artifacts, and retryable errors.
+- [x] 4.4 Extend `SoundLabController` background ownership and state snapshots for match and proposal jobs.
 
 ## 5. Sound Lab Workflow
 
