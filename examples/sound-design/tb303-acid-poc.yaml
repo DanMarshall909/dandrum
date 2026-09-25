@@ -14,6 +14,26 @@ analysis:
   max_frequency_hz: 20000
   silence_rms: 0.00001
 
+# The proof search uses one representative bar so interactive matching stays
+# bounded. Values identify the patch's public parameter surface; no internal
+# YAML scalar becomes an implicit optimizer control.
+matching:
+  seed: 303
+  max_evaluations: 16
+  region:
+    start_frame: 48000
+    length_frames: 96000
+  spectral_windows: [256, 1024, 4096]
+  weights:
+    spectral: 0.70
+    rms: 0.20
+    centroid: 0.10
+  parameters:
+    - filter.cutoff
+    - filter.resonance
+    - filter.envelope_modulation
+    - filter.decay_ms
+
 # One 16-step bar at 120 BPM. Event frames are relative to each loop start.
 # Ordinary gates are 3000 frames. A slide overlaps by 480 frames. A tie has
 # one Note On and one Note Off spanning both steps.

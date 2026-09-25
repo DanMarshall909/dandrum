@@ -1,6 +1,53 @@
 metadata:
   name: TB-303 Acid
   version: "0.1"
+instrument:
+  id: dandrum.tb303-acid
+  preset_schema_version: 1
+preset_surface:
+  parameters:
+    - name: filter.cutoff
+      type: number
+      default: 0.4
+      min: 0.02
+      max: 0.9
+      maps_to: accent_bright.offset
+    - name: filter.resonance
+      type: number
+      default: 0.65
+      min: 0
+      max: 1
+      maps_to: resonance_control.offset
+    - name: filter.envelope_modulation
+      type: number
+      default: 0.4
+      min: 0
+      max: 1
+      maps_to: cutoff_shaper.scale
+    - name: filter.decay_ms
+      type: number
+      default: 1000
+      min: 50
+      max: 3000
+      maps_to: filter_env.decay
+    - name: accent.brightness
+      type: number
+      default: 0.12
+      min: 0
+      max: 0.5
+      maps_to: accent_bright.scale
+    - name: amp.release_ms
+      type: number
+      default: 60
+      min: 5
+      max: 500
+      maps_to: amp_env.release
+    - name: slide.time_ms
+      type: number
+      default: 60
+      min: 0
+      max: 500
+      maps_to: pitch_slew.time_ms
 # Monophonic acid bassline. note_to_control drives a saw oscillator through a
 # reusable `slew` portamento (engaged only on legato/slide notes) and an
 # envelope-swept moog filter. Accent = note velocity, routed both to the VCA

@@ -1,14 +1,14 @@
 ## 1. Characterize Contracts
 
-- [ ] 1.1 Run the existing Rust and native Sound Lab tests and inspect coverage at the workbench, FFI, controller, and web-bridge seams before changing behavior.
-- [ ] 1.2 Add failing fixture/patch tests for the TB-303 public parameter surface and valid/invalid bounded matching declarations.
+- [x] 1.1 Run the existing Rust and native Sound Lab tests and inspect coverage at the workbench, FFI, controller, and web-bridge seams before changing behavior.
+- [x] 1.2 Add failing fixture/patch tests for the TB-303 public parameter surface and valid/invalid bounded matching declarations.
 
 ## 2. Spectral Objective
 
-- [ ] 2.1 Add failing tests for identical-audio loss, spectral/RMS/centroid discrimination, fixed whole-region gain alignment, reference validation, and finite score breakdowns.
-- [ ] 2.2 Implement multi-resolution log-spectral features and the reusable weighted objective with full changed-module coverage.
-- [ ] 2.3 Add failing tests for deterministic bounded search, self-reference improvement, monotonic progress, cancellation, and result provenance.
-- [ ] 2.4 Implement the seeded evolution search, patch-value application, coherent match artifact, content fingerprints, and CLI `match` command.
+- [x] 2.1 Add failing tests for identical-audio loss, spectral/RMS/centroid discrimination, fixed whole-region gain alignment, reference validation, and finite score breakdowns.
+- [x] 2.2 Implement multi-resolution log-spectral features and the reusable weighted objective with full changed-module coverage.
+- [x] 2.3 Add failing tests for deterministic bounded search, self-reference improvement, monotonic progress, cancellation, and result provenance.
+- [x] 2.4 Implement the seeded evolution search, patch-value application, coherent match artifact, content fingerprints, and CLI `match` command.
 
 ## 3. Provider-Neutral Graph Proposals
 

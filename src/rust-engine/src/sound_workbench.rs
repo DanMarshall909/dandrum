@@ -1,8 +1,9 @@
+use std::collections::BTreeSet;
 use std::fs;
 use std::fs::File;
 use std::path::{Path, PathBuf};
 
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 
 use crate::core::TimedInputEvent;
 use crate::patch::RenderSettings;
@@ -15,7 +16,32 @@ pub struct SoundFixture {
     pub patch: PathBuf,
     pub render: RenderSettings,
     pub analysis: AnalysisSettings,
+    #[serde(default)]
+    pub matching: Option<SoundMatchSettings>,
     pub timeline: SoundTimeline,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq)]
+pub struct SoundMatchSettings {
+    pub seed: u64,
+    pub max_evaluations: usize,
+    pub region: SoundMatchRegion,
+    pub spectral_windows: Vec<usize>,
+    pub weights: SoundMatchWeights,
+    pub parameters: Vec<String>,
+}
+
+#[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq, Eq)]
+pub struct SoundMatchRegion {
+    pub start_frame: u64,
+    pub length_frames: u64,
+}
+
+#[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq)]
+pub struct SoundMatchWeights {
+    pub spectral: f64,
+    pub rms: f64,
+    pub centroid: f64,
 }
 
 #[derive(Clone, Debug, Deserialize, PartialEq)]
@@ -68,6 +94,7 @@ pub fn load_sound_fixture_file(path: impl AsRef<Path>) -> Result<SoundFixture, S
                 fixture.patch.display()
             )
         })?;
+    validate_matching_declaration(&fixture)?;
     Ok(fixture)
 }
 
@@ -100,8 +127,51 @@ pub fn expand_timeline_events(fixture: &SoundFixture) -> Result<Vec<TimedInputEv
 }
 
 pub fn render_sound_fixture(fixture: &SoundFixture) -> Result<SoundRender, String> {
+    render_sound_fixture_with_public_numeric_values(fixture, &std::collections::BTreeMap::new())
+}
+
+pub fn render_sound_fixture_with_public_numeric_values(
+    fixture: &SoundFixture,
+    values: &std::collections::BTreeMap<String, f64>,
+) -> Result<SoundRender, String> {
     let mut patch_doc = crate::patch::load_patch_file(&fixture.patch)
         .map_err(|error| format!("failed to load sound fixture patch: {error}"))?;
+    for (parameter_id, value) in values {
+        let target = patch_doc
+            .preset_surface
+            .parameters
+            .iter()
+            .find(|target| target.name == *parameter_id)
+            .ok_or_else(|| format!("unknown public numeric parameter {parameter_id}"))?;
+        let (Some(min), Some(max)) = (target.min, target.max) else {
+            return Err(format!(
+                "public numeric parameter {parameter_id} does not declare matching bounds"
+            ));
+        };
+        if !value.is_finite() || *value < min || *value > max {
+            return Err(format!(
+                "public numeric parameter {parameter_id} value {value} is outside {min}..={max}"
+            ));
+        }
+        if !matches!(target.default, crate::patch::ParameterValue::Number(_)) {
+            return Err(format!("public parameter {parameter_id} is not numeric"));
+        }
+        let destination = target.maps_to.clone();
+        let module = patch_doc
+            .modules
+            .iter_mut()
+            .find(|module| module.id == destination.module_id)
+            .ok_or_else(|| {
+                format!(
+                    "public numeric parameter {parameter_id} targets missing module {}",
+                    destination.module_id
+                )
+            })?;
+        module.parameters.insert(
+            destination.port_name,
+            crate::patch::ParameterValue::Number(*value),
+        );
+    }
     patch_doc.render = fixture.render.clone();
     let patch_root = fixture.patch.parent().unwrap_or_else(|| Path::new("."));
     let prepared = crate::preparation::prepare_instrument_document(patch_doc, patch_root)
@@ -147,6 +217,7 @@ where
     match args.first().map(String::as_str) {
         Some("render") => run_render_command(&args),
         Some("analyze") => run_analyze_command(&args),
+        Some("match") => run_match_command(&args),
         Some("--help") | Some("-h") | None => workbench_success(workbench_usage()),
         Some(command) => workbench_error(format!(
             "unknown sound workbench command: {command}\n\n{}",
@@ -210,6 +281,40 @@ fn run_analyze_command(args: &[String]) -> WorkbenchResult {
     ))
 }
 
+fn run_match_command(args: &[String]) -> WorkbenchResult {
+    if args.len() != 7 || args[3] != "--output-wav" || args[5] != "--output-manifest" {
+        return workbench_error(format!(
+            "match requires a fixture, aligned PCM WAV, candidate WAV output, and manifest output\n\n{}",
+            workbench_usage()
+        ));
+    }
+    let fixture = match load_sound_fixture_file(&args[1]) {
+        Ok(fixture) => fixture,
+        Err(error) => return workbench_error(error),
+    };
+    let artifact = match crate::sound_matching::match_sound_fixture(&fixture, &args[2], |_| true) {
+        Ok(artifact) => artifact,
+        Err(error) => return workbench_error(error),
+    };
+    if let Err(error) = fs::write(&args[4], &artifact.candidate_wav_bytes) {
+        return workbench_error(format!("failed to write matched candidate WAV: {error}"));
+    }
+    let manifest = match serde_json::to_vec_pretty(&artifact.manifest) {
+        Ok(manifest) => manifest,
+        Err(error) => {
+            return workbench_error(format!("failed to serialize match manifest: {error}"));
+        }
+    };
+    if let Err(error) = fs::write(&args[6], manifest) {
+        return workbench_error(format!("failed to write match manifest: {error}"));
+    }
+
+    workbench_success(format!(
+        "fixture: {}\nreference: {}\ncandidate: {}\nmanifest: {}\nmatch: ok\n",
+        args[1], args[2], args[4], args[6]
+    ))
+}
+
 fn write_metrics_file(path: impl AsRef<Path>, metrics: &[AnalysisFrame]) -> Result<(), String> {
     let path = path.as_ref();
     let file = File::create(path)
@@ -235,7 +340,7 @@ fn workbench_error(stderr: String) -> WorkbenchResult {
 }
 
 fn workbench_usage() -> String {
-    "Usage:\n  dandrum-sound-workbench render <fixture.yaml> --output-wav <output.wav> --output-metrics <metrics.csv>\n  dandrum-sound-workbench analyze <fixture.yaml> <aligned-reference.wav> --output-metrics <metrics.csv>\n".to_string()
+    "Usage:\n  dandrum-sound-workbench render <fixture.yaml> --output-wav <output.wav> --output-metrics <metrics.csv>\n  dandrum-sound-workbench analyze <fixture.yaml> <aligned-reference.wav> --output-metrics <metrics.csv>\n  dandrum-sound-workbench match <fixture.yaml> <aligned-reference.wav> --output-wav <candidate.wav> --output-manifest <match.json>\n".to_string()
 }
 
 impl SoundEvent {
@@ -286,6 +391,101 @@ fn validate_fixture(fixture: &SoundFixture) -> Result<(), String> {
     Ok(())
 }
 
+fn validate_matching_declaration(fixture: &SoundFixture) -> Result<(), String> {
+    let Some(matching) = &fixture.matching else {
+        return Ok(());
+    };
+
+    if matching.seed == 0 {
+        return Err("sound matching seed must be positive".to_string());
+    }
+    if matching.max_evaluations == 0 {
+        return Err("sound matching evaluation count must be positive".to_string());
+    }
+    if matching.region.length_frames == 0
+        || matching
+            .region
+            .start_frame
+            .checked_add(matching.region.length_frames)
+            .is_none_or(|end| end > fixture.render.duration_frames)
+    {
+        return Err(
+            "sound matching region must be non-empty and fall within the render".to_string(),
+        );
+    }
+    if matching.spectral_windows.is_empty()
+        || matching.spectral_windows.iter().any(|window| {
+            *window < 16
+                || !window.is_power_of_two()
+                || u64::try_from(*window)
+                    .map_or(true, |window| window > matching.region.length_frames)
+        })
+    {
+        return Err(
+            "sound matching spectral windows must be powers of two within the matching region"
+                .to_string(),
+        );
+    }
+    let weights = [
+        matching.weights.spectral,
+        matching.weights.rms,
+        matching.weights.centroid,
+    ];
+    if weights
+        .iter()
+        .any(|weight| !weight.is_finite() || *weight < 0.0)
+        || weights.iter().sum::<f64>() <= 0.0
+    {
+        return Err(
+            "sound matching weights must be finite, non-negative, and non-zero".to_string(),
+        );
+    }
+    if matching.parameters.is_empty() {
+        return Err("sound matching must declare at least one public parameter".to_string());
+    }
+    let mut unique = BTreeSet::new();
+    if matching
+        .parameters
+        .iter()
+        .any(|parameter| !unique.insert(parameter))
+    {
+        return Err("sound matching public parameters must be unique".to_string());
+    }
+
+    let patch = crate::patch::load_patch_file(&fixture.patch)
+        .map_err(|error| format!("failed to load matching patch: {error}"))?;
+    for parameter_id in &matching.parameters {
+        let Some(target) = patch
+            .preset_surface
+            .parameters
+            .iter()
+            .find(|target| target.name == *parameter_id)
+        else {
+            return Err(format!(
+                "sound matching references unknown public numeric parameter {parameter_id}"
+            ));
+        };
+        let numeric = matches!(
+            (&target.value_type, &target.default),
+            (
+                crate::patch::PresetTargetType::Number
+                    | crate::patch::PresetTargetType::Integer,
+                crate::patch::ParameterValue::Number(value)
+            ) if value.is_finite()
+        );
+        let bounded = matches!(
+            (target.min, target.max),
+            (Some(min), Some(max)) if min.is_finite() && max.is_finite() && min < max
+        );
+        if !numeric || !bounded {
+            return Err(format!(
+                "sound matching public numeric parameter {parameter_id} must have a finite numeric default and ordered bounds"
+            ));
+        }
+    }
+    Ok(())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -306,7 +506,42 @@ mod tests {
     fn write_fixture_variant(name: &str, replace_from: &str, replace_to: &str) -> PathBuf {
         let output_dir = temp_dir("sound-fixture-validation");
         fs::create_dir_all(&output_dir).expect("fixture temp directory should be created");
+        let patch_path = acid_fixture_path()
+            .parent()
+            .expect("fixture should have a parent")
+            .join("../patches/tb303-acid.yaml")
+            .canonicalize()
+            .expect("TB-303 patch should resolve");
         let yaml = fs::read_to_string(acid_fixture_path()).expect("source fixture should be read");
+        assert!(
+            yaml.contains(replace_from),
+            "fixture replacement source should exist: {replace_from}"
+        );
+        let yaml = yaml.replacen(replace_from, replace_to, 1).replace(
+            "patch: ../patches/tb303-acid.yaml",
+            &format!("patch: {}", patch_path.display()),
+        );
+        let path = output_dir.join(format!("{name}.yaml"));
+        fs::write(&path, yaml).expect("fixture variant should write");
+        path
+    }
+
+    fn write_matching_fixture_variant(name: &str, replace_from: &str, replace_to: &str) -> PathBuf {
+        let output_dir = temp_dir("sound-matching-fixture-validation");
+        fs::create_dir_all(&output_dir).expect("fixture temp directory should be created");
+        let patch_path = acid_fixture_path()
+            .parent()
+            .expect("fixture should have a parent")
+            .join("../patches/tb303-acid.yaml")
+            .canonicalize()
+            .expect("TB-303 patch should resolve");
+        let yaml = fs::read_to_string(acid_fixture_path())
+            .expect("source fixture should be read")
+            .replacen(
+                "patch: ../patches/tb303-acid.yaml",
+                &format!("patch: {}", patch_path.display()),
+                1,
+            );
         assert!(
             yaml.contains(replace_from),
             "fixture replacement source should exist: {replace_from}"
@@ -314,6 +549,29 @@ mod tests {
         let path = output_dir.join(format!("{name}.yaml"));
         fs::write(&path, yaml.replacen(replace_from, replace_to, 1))
             .expect("fixture variant should write");
+        path
+    }
+
+    fn write_short_matching_fixture(name: &str) -> PathBuf {
+        let output_dir = temp_dir("sound-matching-cli");
+        fs::create_dir_all(&output_dir).expect("fixture temp directory should be created");
+        let patch_path = acid_fixture_path()
+            .parent()
+            .expect("fixture should have a parent")
+            .join("../patches/tb303-acid.yaml")
+            .canonicalize()
+            .expect("TB-303 patch should resolve");
+        let yaml = fs::read_to_string(acid_fixture_path())
+            .expect("source fixture should be read")
+            .replace(
+                "patch: ../patches/tb303-acid.yaml",
+                &format!("patch: {}", patch_path.display()),
+            )
+            .replace("duration_frames: 528000", "duration_frames: 144000")
+            .replace("max_evaluations: 16", "max_evaluations: 2")
+            .replace("repetitions: 4", "repetitions: 1");
+        let path = output_dir.join(format!("{name}.yaml"));
+        fs::write(&path, yaml).expect("short matching fixture should write");
         path
     }
 
@@ -372,6 +630,95 @@ mod tests {
         let second_bar = bar_start + fixture.timeline.length_frames;
         assert!(has_note_on(&events, second_bar, 36, 64));
         assert_eq!(events.len(), fixture.timeline.events.len() * 4);
+    }
+
+    #[test]
+    fn acid_fixture_declares_a_bounded_public_matching_problem() {
+        let fixture =
+            load_sound_fixture_file(acid_fixture_path()).expect("TB-303 sound fixture should load");
+        let matching = fixture
+            .matching
+            .as_ref()
+            .expect("TB-303 fixture should declare matching settings");
+        let patch = crate::patch::load_patch_file(&fixture.patch)
+            .expect("TB-303 patch should expose matching parameters");
+
+        assert_eq!(matching.seed, 303);
+        assert_eq!(matching.max_evaluations, 16);
+        assert_eq!(matching.region.start_frame, 48_000);
+        assert_eq!(matching.region.length_frames, 96_000);
+        assert_eq!(matching.spectral_windows, vec![256, 1_024, 4_096]);
+        assert!(matching.weights.spectral > 0.0);
+        assert!(matching.weights.rms > 0.0);
+        assert!(matching.weights.centroid > 0.0);
+        assert_eq!(
+            matching.parameters,
+            [
+                "filter.cutoff",
+                "filter.resonance",
+                "filter.envelope_modulation",
+                "filter.decay_ms",
+            ]
+        );
+
+        for parameter_id in &matching.parameters {
+            let target = patch
+                .preset_surface
+                .parameters
+                .iter()
+                .find(|target| target.name == *parameter_id)
+                .unwrap_or_else(|| panic!("missing public matching parameter {parameter_id}"));
+            let min = target
+                .min
+                .expect("matching parameter should have a minimum");
+            let max = target
+                .max
+                .expect("matching parameter should have a maximum");
+            assert!(min.is_finite() && max.is_finite() && min < max);
+            assert!(matches!(
+                target.default,
+                crate::patch::ParameterValue::Number(_)
+            ));
+        }
+    }
+
+    #[test]
+    fn fixture_loader_rejects_invalid_matching_declarations_before_rendering() {
+        let invalid_cases = [
+            ("zero-seed", "seed: 303", "seed: 0", "seed"),
+            (
+                "zero-evaluations",
+                "max_evaluations: 16",
+                "max_evaluations: 0",
+                "evaluation",
+            ),
+            (
+                "region-outside-render",
+                "length_frames: 96000\n  spectral_windows:",
+                "length_frames: 999999\n  spectral_windows:",
+                "matching region",
+            ),
+            (
+                "invalid-window",
+                "spectral_windows: [256, 1024, 4096]",
+                "spectral_windows: [255]",
+                "spectral window",
+            ),
+            ("invalid-weight", "spectral: 0.70", "spectral: -1", "weight"),
+            (
+                "unknown-parameter",
+                "- filter.cutoff",
+                "- filter.absent",
+                "unknown public numeric parameter",
+            ),
+        ];
+
+        for (name, from, to, expected) in invalid_cases {
+            let path = write_matching_fixture_variant(name, from, to);
+            let error = load_sound_fixture_file(path)
+                .expect_err("invalid matching declaration should fail before rendering");
+            assert!(error.contains(expected), "unexpected error: {error}");
+        }
     }
 
     #[test]
@@ -450,6 +797,48 @@ mod tests {
             first_metrics,
             fs::read_to_string(&second_csv).expect("second CSV should exist")
         );
+    }
+
+    #[test]
+    fn workbench_match_writes_candidate_wav_and_reproducible_manifest() {
+        let output_dir = temp_dir("sound-workbench-match");
+        fs::create_dir_all(&output_dir).expect("output directory should be created");
+        let fixture_path = write_short_matching_fixture("cli-match");
+        let fixture = load_sound_fixture_file(&fixture_path).expect("short fixture should load");
+        let reference = render_sound_fixture(&fixture).expect("reference should render");
+        let reference_wav = output_dir.join("reference.wav");
+        let candidate_wav = output_dir.join("candidate.wav");
+        let manifest_path = output_dir.join("match.json");
+        crate::wav::write_wav_file(
+            &reference_wav,
+            reference.sample_rate_hz,
+            &reference.left,
+            &reference.right,
+        )
+        .expect("reference WAV should write");
+
+        let result = run_sound_workbench([
+            "dandrum-sound-workbench".to_string(),
+            "match".to_string(),
+            fixture_path.display().to_string(),
+            reference_wav.display().to_string(),
+            "--output-wav".to_string(),
+            candidate_wav.display().to_string(),
+            "--output-manifest".to_string(),
+            manifest_path.display().to_string(),
+        ]);
+
+        assert_eq!(result.exit_code, 0, "{}", result.stderr);
+        assert!(result.stdout.contains("match: ok"));
+        assert!(fs::read(candidate_wav).unwrap().starts_with(b"RIFF"));
+        let manifest: crate::sound_matching::SoundMatchManifest =
+            serde_json::from_slice(&fs::read(manifest_path).expect("manifest should exist"))
+                .expect("manifest should be valid JSON");
+        assert_eq!(manifest.fixture_name, fixture.name);
+        assert_eq!(manifest.seed, 303);
+        assert_eq!(manifest.completed_evaluations, 2);
+        assert_eq!(manifest.history.len(), 2);
+        assert_eq!(manifest.reference_sha256.len(), 64);
     }
 
     #[test]
@@ -542,8 +931,8 @@ mod tests {
             ),
             (
                 "loop-length",
-                "length_frames: 96000",
-                "length_frames: 0",
+                "  length_frames: 96000\n  repetitions: 4",
+                "  length_frames: 0\n  repetitions: 4",
                 "timeline sizes",
             ),
             (
@@ -560,8 +949,8 @@ mod tests {
             ),
             (
                 "timeline-overflow",
-                "start_frame: 48000",
-                "start_frame: 18446744073709551615",
+                "timeline:\n  tempo_bpm: 120\n  steps_per_bar: 16\n  start_frame: 48000",
+                "timeline:\n  tempo_bpm: 120\n  steps_per_bar: 16\n  start_frame: 18446744073709551615",
                 "frame overflow",
             ),
             (
@@ -619,6 +1008,7 @@ mod tests {
         let unknown = run_sound_workbench(["dandrum-sound-workbench", "unknown"]);
         let bad_render = run_sound_workbench(["dandrum-sound-workbench", "render"]);
         let bad_analyze = run_sound_workbench(["dandrum-sound-workbench", "analyze"]);
+        let bad_match = run_sound_workbench(["dandrum-sound-workbench", "match"]);
         let missing_render_fixture = run_sound_workbench([
             "dandrum-sound-workbench",
             "render",
@@ -641,6 +1031,7 @@ mod tests {
             unknown,
             bad_render,
             bad_analyze,
+            bad_match,
             missing_render_fixture,
             missing_analyze_fixture,
         ] {
@@ -683,7 +1074,7 @@ mod tests {
         assert!(
             patch_result
                 .stderr
-                .contains("failed to load sound fixture patch")
+                .contains("failed to load matching patch")
         );
 
         let output_dir = temp_dir("sound-workbench-artifact-errors");

@@ -31,6 +31,7 @@ pub(crate) mod sample;
 pub mod script;
 
 pub mod sound_analysis;
+pub mod sound_matching;
 pub mod sound_workbench;
 pub mod sound_workbench_ffi;
 
