@@ -353,9 +353,10 @@ void DandrumAudioProcessorEditor::acceptSoundLabMatchFromWeb (
     juce::WebBrowserComponent::NativeFunctionCompletion completion)
 {
     const auto snapshot = soundLabController.snapshot();
-    if (snapshot.match == nullptr || snapshot.state == SoundLabController::State::cancelled)
+    if (snapshot.match == nullptr)
     {
-        completion (juce::var ("A completed Sound Lab match is required before acceptance"));
+        completion (juce::var (
+            "A completed or cancelled Sound Lab match is required before acceptance"));
         return;
     }
 

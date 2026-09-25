@@ -88,5 +88,12 @@ int main()
         return 1;
     }
 
+    if (editorSource.find ("snapshot.state == SoundLabController::State::cancelled")
+        != std::string::npos)
+    {
+        std::cerr << "JUCE editor rejects the retained best candidate from a cancelled match\n";
+        return 1;
+    }
+
     return 0;
 }
