@@ -11,6 +11,7 @@ use crate::graph_proposal::{
 
 const MAX_PROVIDER_OUTPUT_BYTES: usize = 64 * 1024;
 const MAX_DIAGNOSTIC_BYTES: usize = 4 * 1024;
+const PROVIDER_IO_CHUNK_BYTES: usize = 8_192;
 const REMOVED_API_KEY_VARIABLES: [&str; 2] = ["OPENAI_API_KEY", "CODEX_API_KEY"];
 const GRAPH_PROPOSAL_SCHEMA: &str = r#"{
   "type": "object",
@@ -342,8 +343,8 @@ where
     R: Read + Send + 'static,
 {
     thread::spawn(move || {
-        let mut bytes = Vec::with_capacity(limit.min(8 * 1024));
-        let mut chunk = [0_u8; 8 * 1024];
+        let mut bytes = Vec::with_capacity(limit.min(PROVIDER_IO_CHUNK_BYTES));
+        let mut chunk = [0_u8; PROVIDER_IO_CHUNK_BYTES];
         loop {
             let read = reader
                 .read(&mut chunk)
@@ -884,6 +885,16 @@ mod tests {
             started.elapsed() < Duration::from_millis(500),
             "timeout supervision must run independently of stdin writes"
         );
+    }
+
+    #[test]
+    fn system_runner_reports_when_a_child_closes_stdin_before_consuming_the_request() {
+        let command = system_command(&["-c", "exec true"], &"x".repeat(2_000_000), 16);
+
+        assert!(matches!(
+            SystemProviderCommandRunner.run(&command, &|| false),
+            Err(ProviderCommandError::Process(_))
+        ));
     }
 
     #[test]

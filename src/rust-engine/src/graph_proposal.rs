@@ -588,6 +588,13 @@ connections:
 
         assert_eq!(request.version, 1);
         assert_eq!(request.residual.total, 0.33);
+        assert!((request.features.candidate.mean_rms - 0.3).abs() < 1.0e-12);
+        assert!((request.features.reference.mean_rms - 0.15).abs() < 1.0e-12);
+        assert_eq!(
+            request.features.candidate.mean_spectral_centroid_hz,
+            1_500.0
+        );
+        assert_eq!(request.features.reference.mean_spectral_centroid_hz, 750.0);
         assert!(request.features.candidate.mean_rms > request.features.reference.mean_rms);
         assert!(request.features.candidate.max_peak > request.features.reference.max_peak);
         assert!(
@@ -596,7 +603,7 @@ connections:
         );
         assert!(request.features.delta.rms_db > 0.0);
         assert!(request.features.delta.peak_db > 0.0);
-        assert!(request.features.delta.centroid_octaves > 0.0);
+        assert_eq!(request.features.delta.centroid_octaves, 1.0);
         assert!(request.allowed_modules.contains(&"oscillator".to_string()));
         assert!(request.allowed_modules.contains(&"filter".to_string()));
         assert!(
@@ -666,6 +673,16 @@ connections:
         assert_eq!(request.features.delta.centroid_octaves, 0.0);
         assert_eq!(request.features.delta.rms_db, 0.0);
         assert_eq!(request.features.delta.peak_db, 0.0);
+
+        let audible = vec![frame(0.2, 0.5, Some(1_000.0))];
+        let candidate_only =
+            build_graph_proposal_request(&patch, &match_manifest(), &audible, &silent)
+                .expect("a silent reference has no meaningful centroid ratio");
+        let reference_only =
+            build_graph_proposal_request(&patch, &match_manifest(), &silent, &audible)
+                .expect("a silent candidate has no meaningful centroid ratio");
+        assert_eq!(candidate_only.features.delta.centroid_octaves, 0.0);
+        assert_eq!(reference_only.features.delta.centroid_octaves, 0.0);
     }
 
     #[test]

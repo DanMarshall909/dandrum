@@ -145,6 +145,30 @@ mod tests {
     }
 
     #[test]
+    fn decoder_accepts_empty_mono_and_odd_padded_pcm_wavs() {
+        let mut empty = Vec::new();
+        write_wav_stereo_i16(&mut empty, 48_000, &[], &[]).unwrap();
+        assert_eq!(empty.len(), 44);
+        assert!(decode_pcm_wav(&empty, 48_000).unwrap().frames().is_empty());
+
+        let mut mono = Vec::new();
+        write_wav_stereo_i16(&mut mono, 48_000, &[0.25], &[0.25]).unwrap();
+        mono[22..24].copy_from_slice(&1_u16.to_le_bytes());
+        mono[40..44].copy_from_slice(&2_u32.to_le_bytes());
+        mono.truncate(46);
+        let decoded_mono = decode_pcm_wav(&mono, 48_000).unwrap();
+        assert_eq!(decoded_mono.frames().len(), 1);
+        assert!((decoded_mono.frames()[0] - 0.25).abs() < 0.0001);
+
+        let mut padded = Vec::new();
+        write_wav_stereo_i16(&mut padded, 48_000, &[0.25], &[0.25]).unwrap();
+        padded.splice(12..12, *b"JUNK\x01\0\0\0x\0");
+        let riff_size = (padded.len() - 8) as u32;
+        padded[4..8].copy_from_slice(&riff_size.to_le_bytes());
+        assert_eq!(decode_pcm_wav(&padded, 48_000).unwrap().frames().len(), 1);
+    }
+
+    #[test]
     fn reports_missing_file() {
         let dir = unique_temp_dir("reports_missing_file");
         let wav_path = dir.join("missing.wav");
@@ -163,6 +187,19 @@ mod tests {
             .expect_err("unsupported format should fail");
 
         assert!(error.contains("unsupported format"));
+
+        let mut bad_riff = vec![0_u8; 44];
+        bad_riff[0..4].copy_from_slice(b"NOPE");
+        bad_riff[8..12].copy_from_slice(b"WAVE");
+        let mut bad_wave = bad_riff.clone();
+        bad_wave[0..4].copy_from_slice(b"RIFF");
+        bad_wave[8..12].copy_from_slice(b"NOPE");
+        for bytes in [bad_riff, bad_wave, b"RIFFxxxx".to_vec()] {
+            assert_eq!(
+                decode_pcm_wav(&bytes, 48_000).unwrap_err(),
+                "unsupported format; expected PCM WAV"
+            );
+        }
     }
 
     #[test]
@@ -172,8 +209,6 @@ mod tests {
 
         let mut malformed_chunk = b"RIFF\0\0\0\0WAVEdata\x64\0\0\0".to_vec();
         malformed_chunk.resize(24, 0);
-        let mut short_fmt = valid.clone();
-        short_fmt[16..20].copy_from_slice(&8_u32.to_le_bytes());
         let mut float_format = valid.clone();
         float_format[20..22].copy_from_slice(&3_u16.to_le_bytes());
         let mut zero_channels = valid.clone();
@@ -182,17 +217,30 @@ mod tests {
         incomplete_frame[40..44].copy_from_slice(&1_u32.to_le_bytes());
         incomplete_frame.truncate(46);
 
-        for bytes in [
-            malformed_chunk,
-            short_fmt,
-            float_format,
-            zero_channels,
-            incomplete_frame,
-        ] {
+        let mut short_fmt = float_format.clone();
+        short_fmt[16..20].copy_from_slice(&8_u32.to_le_bytes());
+        assert_eq!(
+            decode_pcm_wav(&short_fmt, 48_000).unwrap_err(),
+            "unsupported format; malformed fmt chunk"
+        );
+
+        for bytes in [malformed_chunk, float_format, incomplete_frame] {
             assert!(
                 decode_pcm_wav(&bytes, 48_000)
                     .expect_err("invalid WAV structure should fail")
                     .contains("unsupported format")
+            );
+        }
+
+        let mut too_many_channels = zero_channels.clone();
+        too_many_channels[22..24].copy_from_slice(&3_u16.to_le_bytes());
+        let mut wrong_width = zero_channels.clone();
+        wrong_width[22..24].copy_from_slice(&2_u16.to_le_bytes());
+        wrong_width[34..36].copy_from_slice(&24_u16.to_le_bytes());
+        for bytes in [zero_channels, too_many_channels, wrong_width] {
+            assert_eq!(
+                decode_pcm_wav(&bytes, 48_000).unwrap_err(),
+                "unsupported format; expected mono/stereo 16-bit PCM WAV"
             );
         }
     }

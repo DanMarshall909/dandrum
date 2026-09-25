@@ -934,12 +934,84 @@ mod tests {
                 ),
                 "minimum frequency",
             ),
+            (
+                compare_aligned_audio(
+                    &reference,
+                    &reference,
+                    SoundMatchObjectiveSettings {
+                        analysis: AnalysisSettings {
+                            min_frequency_hz: f64::NAN,
+                            ..SETTINGS.analysis
+                        },
+                        ..SETTINGS
+                    },
+                ),
+                "minimum frequency",
+            ),
+            (
+                compare_aligned_audio(
+                    &reference,
+                    &reference,
+                    SoundMatchObjectiveSettings {
+                        analysis: AnalysisSettings {
+                            max_frequency_hz: f64::NAN,
+                            ..SETTINGS.analysis
+                        },
+                        ..SETTINGS
+                    },
+                ),
+                "minimum frequency",
+            ),
+            (
+                compare_aligned_audio(
+                    &reference,
+                    &reference,
+                    SoundMatchObjectiveSettings {
+                        analysis: AnalysisSettings {
+                            max_frequency_hz: SETTINGS.analysis.min_frequency_hz,
+                            ..SETTINGS.analysis
+                        },
+                        ..SETTINGS
+                    },
+                ),
+                "minimum frequency",
+            ),
+            (
+                compare_aligned_audio(
+                    &reference,
+                    &reference,
+                    SoundMatchObjectiveSettings {
+                        analysis: AnalysisSettings {
+                            max_frequency_hz: 24_001.0,
+                            ..SETTINGS.analysis
+                        },
+                        ..SETTINGS
+                    },
+                ),
+                "24000",
+            ),
         ];
 
         for (result, expected) in cases {
             let error = result.expect_err("invalid objective input should fail");
             assert!(error.contains(expected), "unexpected error: {error}");
         }
+
+        assert!(
+            compare_aligned_audio(
+                &reference,
+                &reference,
+                SoundMatchObjectiveSettings {
+                    analysis: AnalysisSettings {
+                        max_frequency_hz: 24_000.0,
+                        ..SETTINGS.analysis
+                    },
+                    ..SETTINGS
+                },
+            )
+            .is_ok(),
+            "the log-spectral band may include the Nyquist boundary"
+        );
 
         let mut non_finite = reference.clone();
         non_finite[42] = f32::NAN;
@@ -1658,6 +1730,27 @@ connections:
                 .expect_err("non-numeric matching parameter should fail")
                 .contains("continuous numeric")
         );
+
+        let source_patch = std::fs::read_to_string(&fixture.patch).unwrap();
+        let invalid_numeric_directory = tempfile::tempdir().unwrap();
+        for (name, from, to) in [
+            ("initial", "default: 0.4", "default: .nan"),
+            ("minimum", "min: 0.02", "min: .nan"),
+            ("maximum", "max: 0.9", "max: .nan"),
+            ("order", "min: 0.02", "min: 0.95"),
+        ] {
+            let patch_path = invalid_numeric_directory
+                .path()
+                .join(format!("invalid-{name}.yaml"));
+            std::fs::write(&patch_path, source_patch.replacen(from, to, 1)).unwrap();
+            let mut invalid_numeric = fixture.clone();
+            invalid_numeric.patch = patch_path;
+            assert!(
+                match_sound_fixture(&invalid_numeric, &reference_path, continue_search)
+                    .expect_err("invalid direct-entry matching control should fail")
+                    .contains("finite continuous numeric default and ordered bounds")
+            );
+        }
 
         let mut invalid_analysis = fixture;
         invalid_analysis.analysis.hop_size = 0;

@@ -847,38 +847,109 @@ mod tests {
     }
 
     #[test]
+    fn matching_declaration_validates_window_and_weight_boundaries_independently() {
+        let mut fixture =
+            load_sound_fixture_file(acid_fixture_path()).expect("TB-303 fixture should load");
+        let matching = fixture.matching.as_mut().unwrap();
+
+        matching.spectral_windows = vec![16];
+        assert_eq!(validate_matching_declaration(&fixture), Ok(()));
+        fixture.matching.as_mut().unwrap().spectral_windows = vec![8];
+        assert!(validate_matching_declaration(&fixture).is_err());
+
+        let matching = fixture.matching.as_mut().unwrap();
+        matching.region.length_frames = 65_536;
+        matching.spectral_windows = vec![65_536];
+        assert_eq!(validate_matching_declaration(&fixture), Ok(()));
+        fixture.matching.as_mut().unwrap().spectral_windows = vec![131_072];
+        assert!(validate_matching_declaration(&fixture).is_err());
+
+        let matching = fixture.matching.as_mut().unwrap();
+        matching.spectral_windows = vec![16];
+        matching.weights = SoundMatchWeights {
+            spectral: 0.0,
+            rms: 0.5,
+            centroid: 0.5,
+        };
+        assert_eq!(validate_matching_declaration(&fixture), Ok(()));
+        for weights in [
+            SoundMatchWeights {
+                spectral: -0.1,
+                rms: 0.2,
+                centroid: 0.1,
+            },
+            SoundMatchWeights {
+                spectral: f64::NAN,
+                rms: 0.5,
+                centroid: 0.5,
+            },
+            SoundMatchWeights {
+                spectral: 0.0,
+                rms: 0.0,
+                centroid: 0.0,
+            },
+        ] {
+            fixture.matching.as_mut().unwrap().weights = weights;
+            assert!(validate_matching_declaration(&fixture).is_err());
+        }
+    }
+
+    #[test]
     fn snapshot_renderer_rejects_invalid_public_parameter_applications_before_rendering() {
         let fixture =
             load_sound_fixture_file(acid_fixture_path()).expect("TB-303 fixture should load");
         let patch = crate::patch::load_patch_file(&fixture.patch).expect("patch should load");
         let patch_root = fixture.patch.parent().unwrap();
-        let render = |patch: &crate::patch::PatchDocument, id: &str, value: f64| {
+        let render_result = |patch: &crate::patch::PatchDocument, id: &str, value: f64| {
             render_sound_fixture_with_patch_and_public_numeric_values(
                 &fixture,
                 patch,
                 patch_root,
                 &std::collections::BTreeMap::from([(id.to_string(), value)]),
             )
-            .expect_err("invalid public parameter application should fail")
         };
 
-        assert!(render(&patch, "filter.absent", 0.5).contains("unknown"));
-        assert!(render(&patch, "filter.cutoff", f64::NAN).contains("outside"));
+        assert!(
+            render_result(&patch, "filter.absent", 0.5)
+                .unwrap_err()
+                .contains("unknown")
+        );
+        for value in [f64::NAN, 0.01, 0.91] {
+            assert!(
+                render_result(&patch, "filter.cutoff", value)
+                    .unwrap_err()
+                    .contains("outside")
+            );
+        }
+        assert!(render_result(&patch, "filter.cutoff", 0.02).is_ok());
+        assert!(render_result(&patch, "filter.cutoff", 0.9).is_ok());
 
         let mut unbounded = patch.clone();
         unbounded.preset_surface.parameters[0].max = None;
-        assert!(render(&unbounded, "filter.cutoff", 0.5).contains("bounds"));
+        assert!(
+            render_result(&unbounded, "filter.cutoff", 0.5)
+                .unwrap_err()
+                .contains("bounds")
+        );
 
         let mut non_numeric = patch.clone();
         non_numeric.preset_surface.parameters[0].default =
             crate::patch::ParameterValue::Text("saw".to_string());
-        assert!(render(&non_numeric, "filter.cutoff", 0.5).contains("not numeric"));
+        assert!(
+            render_result(&non_numeric, "filter.cutoff", 0.5)
+                .unwrap_err()
+                .contains("not numeric")
+        );
 
         let mut missing_module = patch;
         missing_module.preset_surface.parameters[0]
             .maps_to
             .module_id = "absent".to_string();
-        assert!(render(&missing_module, "filter.cutoff", 0.5).contains("missing module"));
+        assert!(
+            render_result(&missing_module, "filter.cutoff", 0.5)
+                .unwrap_err()
+                .contains("missing module")
+        );
     }
 
     #[test]
@@ -908,6 +979,17 @@ mod tests {
                 .metrics
                 .iter()
                 .any(|frame| frame.spectral_centroid_hz.is_some())
+        );
+        let mono = first
+            .left
+            .iter()
+            .zip(&first.right)
+            .map(|(left, right)| (left + right) * 0.5)
+            .collect::<Vec<_>>();
+        assert_eq!(
+            first.metrics,
+            crate::sound_analysis::analyze_sound(&mono, first.sample_rate_hz, fixture.analysis,)
+                .unwrap()
         );
     }
 
