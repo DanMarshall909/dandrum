@@ -1333,6 +1333,30 @@ AC sound-design-workflow :: Sound workbench emits repeatable implementation arti
   test rust:acid_fixture_renders_deterministic_finite_non_silent_audio_and_metrics
   test rust:workbench_renders_repeatable_wav_and_metrics_artifacts
 
+AC sound-lab-ui :: Sound Lab presents one coherent analysis artifact :: Fixture render completes successfully
+  fp cd5e80cde254
+  test rust:ffi_render_handle_owns_one_coherent_acid_fixture_artifact
+  test cpp:tests/cpp/SoundLabControllerTest.cpp
+  test cpp:tests/cpp/Tb303WebUiContractTest.cpp
+
+AC sound-lab-ui :: Sound Lab presents one coherent analysis artifact :: Fixture render fails
+  fp b16439675642
+  test rust:ffi_render_handle_preserves_errors_and_rejects_invalid_access
+  test cpp:tests/cpp/SoundLabControllerTest.cpp
+
+AC sound-lab-ui :: Sound Lab renders the maintained fixture without blocking realtime audio :: User starts a Sound Lab render
+  fp 1885e42d15a3
+  test cpp:tests/cpp/SoundLabControllerTest.cpp
+  test cpp:tests/cmake/RealtimeCallbackSafety.cmake
+
+AC sound-lab-ui :: Sound Lab renders the maintained fixture without blocking realtime audio :: User starts another render while one is active
+  fp 6e1d85365db1
+  test cpp:tests/cpp/SoundLabControllerTest.cpp
+
+AC sound-lab-ui :: Sound Lab state crosses the existing editor bridge :: Editor opens before a Sound Lab render
+  fp 7b6424bbb922
+  test cpp:tests/cpp/Tb303WebUiContractTest.cpp
+
 AC spectral-processing :: Implementation approach :: STFT uses 50% overlap
   fp c49baf296d6a
   todo not yet mapped to a test

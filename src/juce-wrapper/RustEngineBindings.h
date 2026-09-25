@@ -7,6 +7,7 @@ extern "C"
 {
 struct DandrumEngine;
 struct DandrumRealtimeEventQueue;
+struct DandrumSoundFixtureRender;
 
 DandrumEngine* dandrum_engine_create();
 void dandrum_engine_destroy (DandrumEngine* engine);
@@ -40,6 +41,26 @@ void dandrum_realtime_event_queue_destroy (DandrumRealtimeEventQueue* queue);
 unsigned char dandrum_realtime_event_queue_note_on (DandrumRealtimeEventQueue* queue, unsigned char note, unsigned char velocity);
 unsigned char dandrum_realtime_event_queue_note_off (DandrumRealtimeEventQueue* queue, unsigned char note);
 std::size_t dandrum_realtime_event_queue_dropped_count (const DandrumRealtimeEventQueue* queue);
+DandrumSoundFixtureRender* dandrum_sound_fixture_render_create (const char* fixturePath);
+void dandrum_sound_fixture_render_destroy (DandrumSoundFixtureRender* render);
+bool dandrum_sound_fixture_render_is_ok (const DandrumSoundFixtureRender* render);
+bool dandrum_sound_fixture_render_error_message (const DandrumSoundFixtureRender* render,
+                                                 char* buffer,
+                                                 std::size_t bufferCapacity);
+std::uint32_t dandrum_sound_fixture_render_sample_rate_hz (const DandrumSoundFixtureRender* render);
+std::uint64_t dandrum_sound_fixture_render_duration_frames (const DandrumSoundFixtureRender* render);
+std::size_t dandrum_sound_fixture_render_metric_count (const DandrumSoundFixtureRender* render);
+bool dandrum_sound_fixture_render_metric (const DandrumSoundFixtureRender* render,
+                                          std::size_t index,
+                                          double* timeSeconds,
+                                          double* rms,
+                                          double* peak,
+                                          double* spectralCentroidHz,
+                                          bool* hasSpectralCentroid);
+std::size_t dandrum_sound_fixture_render_wav_size (const DandrumSoundFixtureRender* render);
+bool dandrum_sound_fixture_render_copy_wav (const DandrumSoundFixtureRender* render,
+                                            std::uint8_t* buffer,
+                                            std::size_t bufferCapacity);
 }
 
 // JUCE plugin-facing callers should use the status-preserving load path. The

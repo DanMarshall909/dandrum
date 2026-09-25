@@ -2,6 +2,7 @@
 #include "DefaultPatch.h"
 
 #include <algorithm>
+#include <csignal>
 #include <iostream>
 #include <memory>
 
@@ -54,6 +55,14 @@ bool hostParameterListContains (const juce::Array<juce::AudioProcessorParameter*
 
 int main()
 {
+   #if JUCE_LINUX
+    // The JUCE browser helper may close its startup pipe immediately on a
+    // headless CI worker with no authorised display. That is an expected
+    // unavailable-backend condition, not a reason for this processor/editor
+    // contract test to terminate on SIGPIPE.
+    std::signal (SIGPIPE, SIG_IGN);
+   #endif
+
     constexpr int expectedFixedHostParameterSlots = 64;
     constexpr int blockSize = 64;
 

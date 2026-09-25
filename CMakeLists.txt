@@ -64,7 +64,15 @@ add_test(
 
 add_executable(dandrum-tb303-web-ui-contract-test tests/cpp/Tb303WebUiContractTest.cpp)
 target_include_directories(dandrum-tb303-web-ui-contract-test PRIVATE src/juce-plugin)
+target_compile_definitions(dandrum-tb303-web-ui-contract-test PRIVATE DANDRUM_SOURCE_ROOT="${CMAKE_CURRENT_SOURCE_DIR}")
 add_test(NAME tb303-web-ui-contract COMMAND dandrum-tb303-web-ui-contract-test)
+
+add_executable(dandrum-sound-lab-controller-test
+    tests/cpp/SoundLabControllerTest.cpp
+    src/juce-plugin/SoundLabController.cpp)
+target_include_directories(dandrum-sound-lab-controller-test PRIVATE src/juce-wrapper src/juce-plugin)
+target_link_libraries(dandrum-sound-lab-controller-test PRIVATE dandrum_engine dl pthread m)
+add_test(NAME sound-lab-controller COMMAND dandrum-sound-lab-controller-test)
 
 add_subdirectory(third_party/JUCE)
 
@@ -94,7 +102,8 @@ juce_add_plugin(dandrum-plugin
 target_sources(dandrum-plugin PRIVATE
     src/juce-plugin/InstrumentFileWatcher.cpp
     src/juce-plugin/PluginEditor.cpp
-    src/juce-plugin/PluginProcessor.cpp)
+    src/juce-plugin/PluginProcessor.cpp
+    src/juce-plugin/SoundLabController.cpp)
 target_include_directories(dandrum-plugin PRIVATE src/juce-wrapper)
 target_compile_definitions(dandrum-plugin PRIVATE
     JUCE_USE_CURL=0
@@ -127,6 +136,20 @@ target_link_libraries(dandrum-plugin-file-watch-reload-test
     PRIVATE dandrum-plugin dandrum_engine juce::juce_audio_basics juce::juce_audio_processors juce::juce_audio_utils juce::juce_gui_extra
     PUBLIC juce::juce_recommended_config_flags juce::juce_recommended_lto_flags juce::juce_recommended_warning_flags)
 add_test(NAME cxx-plugin-file-watch-reload COMMAND dandrum-plugin-file-watch-reload-test)
+
+# These plain test executables compile JUCE's web-browser module themselves.
+# Unlike juce_add_plugin(), add_executable() does not automatically attach the
+# Linux WebKit/GTK usage requirements requested by NEEDS_WEB_BROWSER.
+if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+    foreach(plugin_test_target
+            dandrum-plugin-construction-test
+            dandrum-plugin-host-parameter-surface-test
+            dandrum-plugin-file-watch-reload-test)
+        target_include_directories(${plugin_test_target} PRIVATE
+            ${CMAKE_CURRENT_BINARY_DIR}/dandrum-plugin_artefacts/JuceLibraryCode)
+        target_link_libraries(${plugin_test_target} PRIVATE juce::pkgconfig_JUCE_BROWSER_LINUX_DEPS)
+    endforeach()
+endif()
 
 add_executable(dandrum-drum-loop-pattern-test tests/cpp/DrumLoopPatternTest.cpp)
 target_include_directories(dandrum-drum-loop-pattern-test PRIVATE src/juce-wrapper)

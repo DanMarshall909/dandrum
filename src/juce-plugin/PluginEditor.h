@@ -7,6 +7,7 @@
 #include <juce_gui_extra/juce_gui_extra.h>
 
 #include "PluginProcessor.h"
+#include "SoundLabController.h"
 
 class DandrumAudioProcessorEditor final : public juce::AudioProcessorEditor,
                                            private juce::Timer
@@ -29,12 +30,20 @@ private:
                         juce::WebBrowserComponent::NativeFunctionCompletion completion);
     void noteOffFromWeb (const juce::Array<juce::var>& arguments,
                          juce::WebBrowserComponent::NativeFunctionCompletion completion);
+    void renderSoundLabFromWeb (const juce::Array<juce::var>& arguments,
+                                juce::WebBrowserComponent::NativeFunctionCompletion completion);
+    void getSoundLabAnalysisForWeb (const juce::Array<juce::var>& arguments,
+                                    juce::WebBrowserComponent::NativeFunctionCompletion completion) const;
     juce::var parameterSnapshotForWeb() const;
+    juce::var soundLabSnapshotForWeb() const;
     void timerCallback() override;
 
     DandrumAudioProcessor& processor;
+    // Declared before the browser so it outlives browser-owned native callbacks.
+    SoundLabController soundLabController;
     juce::WebBrowserComponent browser;
     std::uint32_t lastSeenParameterSurfaceGeneration = static_cast<std::uint32_t> (-1);
+    std::uint64_t lastSeenSoundLabGeneration = static_cast<std::uint64_t> (-1);
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (DandrumAudioProcessorEditor)
 };

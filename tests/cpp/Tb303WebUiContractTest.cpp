@@ -1,6 +1,8 @@
 #include "Tb303WebUi.h"
 
+#include <fstream>
 #include <iostream>
+#include <sstream>
 #include <string_view>
 
 int main()
@@ -24,6 +26,36 @@ int main()
         || html.find ("native('noteOff')") == std::string_view::npos)
     {
         std::cerr << "web UI keyboard does not call the native note bridge\n";
+        return 1;
+    }
+
+    if (html.find ("native('renderSoundLab')") == std::string_view::npos
+        || html.find ("native('getSoundLabAnalysis')") == std::string_view::npos
+        || html.find ("soundLabAnalysisChanged") == std::string_view::npos)
+    {
+        std::cerr << "web UI does not use the native Sound Lab state bridge\n";
+        return 1;
+    }
+
+    if (html.find ("id=\"soundLabPlot\"") == std::string_view::npos
+        || html.find ("id=\"soundLabAudio\"") == std::string_view::npos
+        || html.find ("spectral_centroid_hz") == std::string_view::npos)
+    {
+        std::cerr << "web UI does not present Sound Lab audio and spectral trajectories\n";
+        return 1;
+    }
+
+    std::ifstream editorSourceFile (DANDRUM_SOURCE_ROOT "/src/juce-plugin/PluginEditor.cpp");
+    std::ostringstream editorSourceBuffer;
+    editorSourceBuffer << editorSourceFile.rdbuf();
+    const auto editorSource = editorSourceBuffer.str();
+    if (! editorSourceFile
+        || editorSource.find ("\"renderSoundLab\"") == std::string::npos
+        || editorSource.find ("\"getSoundLabAnalysis\"") == std::string::npos
+        || editorSource.find ("\"soundLabAnalysisChanged\"") == std::string::npos
+        || editorSource.find ("\"/sound-lab.wav\"") == std::string::npos)
+    {
+        std::cerr << "JUCE editor does not register the Sound Lab bridge and WAV resource\n";
         return 1;
     }
 

@@ -43,10 +43,11 @@ DandrumAudioProcessorEditor::DandrumAudioProcessorEditor (DandrumAudioProcessor&
 {
     addAndMakeVisible (browser);
     setResizable (true, true);
-    setResizeLimits (760, 430, 1500, 900);
-    setSize (1180, 650);
+    setResizeLimits (760, 560, 1500, 1100);
+    setSize (1180, 860);
     browser.goToURL (juce::WebBrowserComponent::getResourceProviderRoot());
     lastSeenParameterSurfaceGeneration = processor.getParameterSurfaceGeneration();
+    lastSeenSoundLabGeneration = soundLabController.generation();
     startTimerHz (12);
 }
 
@@ -97,6 +98,20 @@ juce::WebBrowserComponent::Options DandrumAudioProcessorEditor::createBrowserOpt
                     juce::WebBrowserComponent::NativeFunctionCompletion completion)
             {
                 noteOffFromWeb (arguments, std::move (completion));
+            })
+        .withNativeFunction (
+            "renderSoundLab",
+            [this] (const juce::Array<juce::var>& arguments,
+                    juce::WebBrowserComponent::NativeFunctionCompletion completion)
+            {
+                renderSoundLabFromWeb (arguments, std::move (completion));
+            })
+        .withNativeFunction (
+            "getSoundLabAnalysis",
+            [this] (const juce::Array<juce::var>& arguments,
+                    juce::WebBrowserComponent::NativeFunctionCompletion completion)
+            {
+                getSoundLabAnalysisForWeb (arguments, std::move (completion));
             });
 
    #if JUCE_WINDOWS
@@ -127,6 +142,17 @@ DandrumAudioProcessorEditor::provideResource (const juce::String& path) const
 {
     if (path == "/" || path == "/index.html")
         return juce::WebBrowserComponent::Resource { toBytes (Tb303WebUi::indexHtml), "text/html" };
+
+    if (path.startsWith ("/sound-lab.wav"))
+    {
+        const auto snapshot = soundLabController.snapshot();
+        if (snapshot.state != SoundLabController::State::ready || snapshot.data == nullptr)
+            return std::nullopt;
+
+        std::vector<std::byte> bytes (snapshot.data->wavBytes.size());
+        std::memcpy (bytes.data(), snapshot.data->wavBytes.data(), snapshot.data->wavBytes.size());
+        return juce::WebBrowserComponent::Resource { std::move (bytes), "audio/wav" };
+    }
 
     return std::nullopt;
 }
@@ -202,6 +228,26 @@ void DandrumAudioProcessorEditor::noteOffFromWeb (
     completion (juce::var());
 }
 
+void DandrumAudioProcessorEditor::renderSoundLabFromWeb (
+    const juce::Array<juce::var>&,
+    juce::WebBrowserComponent::NativeFunctionCompletion completion)
+{
+    if (! soundLabController.startRender (dandrum::soundDesignFixturePath()))
+    {
+        completion (juce::var ("Sound Lab is already rendering"));
+        return;
+    }
+
+    completion (juce::var());
+}
+
+void DandrumAudioProcessorEditor::getSoundLabAnalysisForWeb (
+    const juce::Array<juce::var>&,
+    juce::WebBrowserComponent::NativeFunctionCompletion completion) const
+{
+    completion (soundLabSnapshotForWeb());
+}
+
 juce::var DandrumAudioProcessorEditor::parameterSnapshotForWeb() const
 {
     juce::Array<juce::var> result;
@@ -222,6 +268,52 @@ juce::var DandrumAudioProcessorEditor::parameterSnapshotForWeb() const
     return juce::var (result);
 }
 
+juce::var DandrumAudioProcessorEditor::soundLabSnapshotForWeb() const
+{
+    const auto snapshot = soundLabController.snapshot();
+    auto report = std::make_unique<juce::DynamicObject>();
+    report->setProperty ("generation", static_cast<juce::int64> (snapshot.generation));
+
+    switch (snapshot.state)
+    {
+        case SoundLabController::State::idle: report->setProperty ("state", "idle"); break;
+        case SoundLabController::State::rendering: report->setProperty ("state", "rendering"); break;
+        case SoundLabController::State::ready: report->setProperty ("state", "ready"); break;
+        case SoundLabController::State::error: report->setProperty ("state", "error"); break;
+    }
+
+    if (! snapshot.error.empty())
+        report->setProperty ("error", juce::String (snapshot.error));
+
+    if (snapshot.data != nullptr)
+    {
+        report->setProperty ("sample_rate_hz", static_cast<int> (snapshot.data->sampleRateHz));
+        report->setProperty (
+            "duration_seconds",
+            static_cast<double> (snapshot.data->durationFrames) / snapshot.data->sampleRateHz);
+        report->setProperty (
+            "audio_url",
+            "/sound-lab.wav?generation=" + juce::String (static_cast<juce::int64> (snapshot.generation)));
+
+        juce::Array<juce::var> metrics;
+        metrics.ensureStorageAllocated (static_cast<int> (snapshot.data->metrics.size()));
+        for (const auto& metric : snapshot.data->metrics)
+        {
+            auto frame = std::make_unique<juce::DynamicObject>();
+            frame->setProperty ("time_seconds", metric.timeSeconds);
+            frame->setProperty ("rms", metric.rms);
+            frame->setProperty ("peak", metric.peak);
+            frame->setProperty (
+                "spectral_centroid_hz",
+                metric.hasSpectralCentroid ? juce::var (metric.spectralCentroidHz) : juce::var());
+            metrics.add (juce::var (frame.release()));
+        }
+        report->setProperty ("metrics", juce::var (metrics));
+    }
+
+    return juce::var (report.release());
+}
+
 void DandrumAudioProcessorEditor::timerCallback()
 {
     const auto generation = processor.getParameterSurfaceGeneration();
@@ -233,4 +325,11 @@ void DandrumAudioProcessorEditor::timerCallback()
     }
 
     browser.emitEventIfBrowserIsVisible ("parameterValuesChanged", parameterSnapshotForWeb());
+
+    const auto soundLabGeneration = soundLabController.generation();
+    if (soundLabGeneration != lastSeenSoundLabGeneration)
+    {
+        lastSeenSoundLabGeneration = soundLabGeneration;
+        browser.emitEventIfBrowserIsVisible ("soundLabAnalysisChanged", soundLabSnapshotForWeb());
+    }
 }

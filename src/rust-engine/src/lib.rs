@@ -32,6 +32,7 @@ pub mod script;
 
 pub mod sound_analysis;
 pub mod sound_workbench;
+pub mod sound_workbench_ffi;
 
 pub(crate) mod synth;
 
