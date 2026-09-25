@@ -76,7 +76,7 @@ modules:
     type: adsr
     parameters:
       attack: 3
-      decay: 250
+      decay: 1000
       sustain: 0.2
       release: 120
     inputs:
@@ -86,13 +86,14 @@ modules:
       - name: value
         signal_type: control
   # Accent brightness: scale + offset the velocity so accented notes add extra
-  # cutoff. amount: 0 makes this a linear scaler (out = velocity*scale + offset).
+  # cutoff above a positive base cutoff. amount: 0 makes this a linear scaler
+  # (out = velocity*scale + offset).
   - id: accent_bright
     type: curve_mapper
     parameters:
       amount: 0
-      scale: 0.6
-      offset: -0.3
+      scale: 0.12
+      offset: 0.4
     inputs:
       - name: value
         signal_type: control
@@ -106,11 +107,25 @@ modules:
     type: curve_mapper
     parameters:
       amount: 0
-      scale: 1
+      scale: 0.4
     inputs:
       - name: value
         signal_type: control
       - name: offset
+        signal_type: control
+    outputs:
+      - name: value
+        signal_type: control
+  # Deliberate fixed resonance for the proof-of-concept voice. Keeping it as a
+  # visible control module makes the value easy to expose or modulate later.
+  - id: resonance_control
+    type: curve_mapper
+    parameters:
+      amount: 0
+      scale: 0
+      offset: 0.65
+    inputs:
+      - name: value
         signal_type: control
     outputs:
       - name: value
@@ -123,6 +138,8 @@ modules:
       - name: audio_in
         signal_type: audio
       - name: cutoff
+        signal_type: control
+      - name: resonance
         signal_type: control
     outputs:
       - name: audio_out
@@ -186,6 +203,8 @@ connections:
     to: cutoff_shaper.offset
   - from: cutoff_shaper.value
     to: filter.cutoff
+  - from: resonance_control.value
+    to: filter.resonance
   - from: filter.audio_out
     to: env_vca.audio_in
   - from: amp_env.value

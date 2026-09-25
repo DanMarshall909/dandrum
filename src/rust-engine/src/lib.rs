@@ -30,6 +30,9 @@ pub mod patch;
 pub(crate) mod sample;
 pub mod script;
 
+pub mod sound_analysis;
+pub mod sound_workbench;
+
 pub(crate) mod synth;
 
 pub mod wav;

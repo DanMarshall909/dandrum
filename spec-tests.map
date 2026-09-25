@@ -88,6 +88,18 @@ AC acceptance-examples :: Synthetic snare follows after kick primitives are prov
   fp 1d0ab91386e4
   todo not yet mapped to a test
 
+AC acceptance-examples :: TB-303 acid accent changes level and timbre :: Accented note is louder and brighter
+  fp 1bd8dc197581
+  test rust:tb303_acid_accent_makes_notes_louder_and_brighter
+
+AC acceptance-examples :: TB-303 acid acceptance example drives deliberate resonance :: Acid patch declares a resonance route
+  fp 2b74336e9e7d
+  test rust:tb303_acid_drives_audible_resonance
+
+AC acceptance-examples :: TB-303 acid acceptance example sustains an evolving filter spectrum :: Held unaccented note retains mid-decay brightness
+  fp 8c5f933cabaa
+  test rust:tb303_acid_held_note_retains_mid_decay_brightness
+
 AC built-in-modules :: Built-in module state uses resolved parameters :: DSP state is prepared from resolved parameters
   fp 420cdb6d4113
   todo not yet mapped to a test
@@ -1303,6 +1315,23 @@ AC script-modules :: Script stable error reporting :: Script error has stable er
 AC script-modules :: Script state is retained safely :: Script remembers previous note
   fp e7bce780e09b
   todo not yet mapped to a test
+
+AC sound-design-workflow :: Sound analysis reports spectral and level trajectories :: Audible and silent frames produce meaningful metrics
+  fp 5fc1a199ab67
+  test rust:audible_and_silent_frames_report_meaningful_metrics
+
+AC sound-design-workflow :: Sound fixtures reproduce an implementation stimulus :: Acid fixture exercises representative voice behaviour
+  fp 34e884800e5b
+  test rust:acid_fixture_reproduces_accents_rests_ties_and_slides
+
+AC sound-design-workflow :: Sound workbench emits repeatable implementation artifacts :: Workbench analyzes an external reference recording
+  fp 1ccc051f946b
+  test rust:workbench_analyzes_external_wav_and_rejects_sample_rate_mismatch
+
+AC sound-design-workflow :: Sound workbench emits repeatable implementation artifacts :: Workbench renders the acid proof of concept
+  fp e63b6cab1998
+  test rust:acid_fixture_renders_deterministic_finite_non_silent_audio_and_metrics
+  test rust:workbench_renders_repeatable_wav_and_metrics_artifacts
 
 AC spectral-processing :: Implementation approach :: STFT uses 50% overlap
   fp c49baf296d6a

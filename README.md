@@ -47,6 +47,21 @@ Rust unit tests are the default home for core behavior:
 $HOME/.cargo/bin/cargo test --manifest-path src/rust-engine/Cargo.toml
 ```
 
+For iterative sound design, render the checked-in TB-303 proof-of-concept
+fixture to an audition WAV and a spectral/level trajectory:
+
+```bash
+$HOME/.cargo/bin/cargo run --manifest-path src/rust-engine/Cargo.toml \
+  --bin dandrum-sound-workbench -- \
+  render examples/sound-design/tb303-acid-poc.yaml \
+  --output-wav /tmp/tb303-dandrum.wav \
+  --output-metrics /tmp/tb303-dandrum.csv
+```
+
+See [the sound implementation workflow](docs/sound-implementation-workflow.md)
+for analyzing external clone, software-instrument, or hardware recordings with
+the same settings and promoting useful observations into regression tests.
+
 CMake exposes the same Rust tests through CTest for CI:
 
 ```bash

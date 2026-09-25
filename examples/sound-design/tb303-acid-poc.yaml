@@ -1,0 +1,55 @@
+version: 1
+name: TB-303 acid proof of concept
+patch: ../patches/tb303-acid.yaml
+
+render:
+  sample_rate_hz: 48000
+  block_size_frames: 64
+  duration_frames: 528000 # 1 s pre-roll + four 2 s bars + 2 s tail
+
+analysis:
+  frame_size: 1024
+  hop_size: 128
+  min_frequency_hz: 30
+  max_frequency_hz: 20000
+  silence_rms: 0.00001
+
+# One 16-step bar at 120 BPM. Event frames are relative to each loop start.
+# Ordinary gates are 3000 frames. A slide overlaps by 480 frames. A tie has
+# one Note On and one Note Off spanning both steps.
+timeline:
+  tempo_bpm: 120
+  steps_per_bar: 16
+  start_frame: 48000
+  length_frames: 96000
+  repetitions: 4
+  events:
+    - { frame: 0, type: note_on, note: 36, velocity: 64 }
+    - { frame: 3000, type: note_off, note: 36 }
+
+    - { frame: 6000, type: note_on, note: 36, velocity: 127 }
+    - { frame: 12000, type: note_on, note: 43, velocity: 64 }
+    - { frame: 12480, type: note_off, note: 36 }
+    - { frame: 15000, type: note_off, note: 43 }
+
+    - { frame: 24000, type: note_on, note: 48, velocity: 127 }
+    - { frame: 33000, type: note_off, note: 48 }
+
+    - { frame: 36000, type: note_on, note: 46, velocity: 64 }
+    - { frame: 42000, type: note_on, note: 48, velocity: 127 }
+    - { frame: 42480, type: note_off, note: 46 }
+    - { frame: 45000, type: note_off, note: 48 }
+
+    - { frame: 54000, type: note_on, note: 36, velocity: 64 }
+    - { frame: 57000, type: note_off, note: 36 }
+
+    - { frame: 60000, type: note_on, note: 36, velocity: 127 }
+    - { frame: 63000, type: note_off, note: 36 }
+
+    - { frame: 72000, type: note_on, note: 31, velocity: 64 }
+    - { frame: 78000, type: note_on, note: 43, velocity: 64 }
+    - { frame: 78480, type: note_off, note: 31 }
+    - { frame: 81000, type: note_off, note: 43 }
+
+    - { frame: 84000, type: note_on, note: 36, velocity: 127 }
+    - { frame: 93000, type: note_off, note: 36 }

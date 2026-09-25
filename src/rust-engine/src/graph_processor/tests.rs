@@ -3560,6 +3560,34 @@ fn rms(samples: &[f32]) -> f32 {
     (samples.iter().map(|sample| sample * sample).sum::<f32>() / samples.len() as f32).sqrt()
 }
 
+fn spectral_centroid_around(
+    samples: &[f32],
+    center_frame: usize,
+    window_frames: usize,
+    sample_rate_hz: f64,
+) -> f64 {
+    let start = center_frame
+        .checked_sub(window_frames / 2)
+        .expect("analysis window should start within the render");
+    let end = start + window_frames;
+    crate::sound_analysis::analyze_sound(
+        &samples[start..end],
+        sample_rate_hz as u32,
+        crate::sound_analysis::AnalysisSettings {
+            frame_size: window_frames,
+            hop_size: window_frames,
+            min_frequency_hz: 30.0,
+            max_frequency_hz: 20_000.0,
+            silence_rms: 0.0,
+        },
+    )
+    .expect("spectral regression window should analyze")
+    .into_iter()
+    .next()
+    .and_then(|frame| frame.spectral_centroid_hz)
+    .expect("spectral regression window should be audible")
+}
+
 #[test]
 fn drum_kit_module_examples_load_validate_and_render_with_documented_primitive_ports() {
     for (fixture, note, should_render) in [
@@ -4391,9 +4419,9 @@ fn slew_snaps_to_target_when_gate_closed() {
 }
 
 #[test]
-fn tb303_acid_accent_makes_notes_louder() {
-    // End-to-end: the tb303-acid patch routes note velocity to the VCA, so an
-    // accented (high-velocity) note renders louder than an unaccented one.
+fn tb303_acid_accent_makes_notes_louder_and_brighter() {
+    // End-to-end: the tb303-acid patch routes note velocity to both the VCA
+    // and cutoff shaping, so an accented note is louder and brighter.
     let Some(yaml) = read_repo_fixture("examples/patches/tb303-acid.yaml") else {
         return;
     };
@@ -4401,22 +4429,116 @@ fn tb303_acid_accent_makes_notes_louder() {
     let graph = Graph::from_patch_declarations(&patch);
     graph.validate().expect("tb303-acid graph should validate");
 
-    let rms_for_velocity = |velocity: u8| {
-        let events = vec![
-            note_on_value(0, 45, velocity),
-            TimedInputEvent::new(12_000, ScriptEvent::NoteOff { note: 45 }),
-        ];
-        let (left, _) = render_offline(&graph, &patch.render, events);
-        let sum_sq: f64 = left.iter().map(|&s| (s as f64) * (s as f64)).sum();
-        (sum_sq / left.len() as f64).sqrt()
+    let render_for_velocity = |velocity: u8| {
+        render_offline(&graph, &patch.render, vec![note_on_value(0, 45, velocity)]).0
     };
 
-    let accented = rms_for_velocity(120);
-    let unaccented = rms_for_velocity(80);
+    let accented = render_for_velocity(120);
+    let unaccented = render_for_velocity(80);
+    assert!(
+        accented
+            .iter()
+            .chain(&unaccented)
+            .all(|sample| sample.is_finite()),
+        "accented and unaccented notes should render only finite samples"
+    );
+
+    let accented_rms = rms(&accented);
+    let unaccented_rms = rms(&unaccented);
 
     assert!(
-        accented > unaccented * 1.1,
-        "accented note (rms {accented}) should be clearly louder than unaccented (rms {unaccented})"
+        accented_rms > unaccented_rms * 1.1,
+        "accented note (rms {accented_rms}) should be clearly louder than unaccented (rms {unaccented_rms})"
+    );
+
+    let sample_rate_hz = patch.render.sample_rate_hz as f64;
+    let accented_centroid = spectral_centroid_around(&accented, 24_000, 4_096, sample_rate_hz);
+    let unaccented_centroid = spectral_centroid_around(&unaccented, 24_000, 4_096, sample_rate_hz);
+    assert!(
+        accented_centroid > unaccented_centroid,
+        "accented note ({accented_centroid:.1} Hz) should be brighter than unaccented ({unaccented_centroid:.1} Hz)"
+    );
+}
+
+#[test]
+fn tb303_acid_held_note_retains_mid_decay_brightness() {
+    let Some(yaml) = read_repo_fixture("examples/patches/tb303-acid.yaml") else {
+        return;
+    };
+    let patch = patch::load_patch_str(&yaml).expect("tb303-acid.yaml should parse");
+    let graph = Graph::from_patch_declarations(&patch);
+    graph.validate().expect("tb303-acid graph should validate");
+
+    let (left, _) = render_offline(&graph, &patch.render, vec![note_on_value(0, 45, 80)]);
+    let (left_again, _) = render_offline(&graph, &patch.render, vec![note_on_value(0, 45, 80)]);
+    assert_eq!(
+        left, left_again,
+        "held TB-303 note should render deterministically"
+    );
+    assert!(
+        left.iter().all(|sample| sample.is_finite()),
+        "held TB-303 note should render only finite samples"
+    );
+
+    let sample_rate_hz = patch.render.sample_rate_hz as f64;
+    let mid_centroid = spectral_centroid_around(&left, 24_000, 4_096, sample_rate_hz);
+    let late_centroid = spectral_centroid_around(&left, 36_000, 4_096, sample_rate_hz);
+    println!("tb303 held-note centroids: 500ms={mid_centroid:.1}Hz, 750ms={late_centroid:.1}Hz");
+
+    assert!(
+        mid_centroid >= 500.0,
+        "mid-decay spectral centroid should stay at or above 500 Hz; got {mid_centroid:.1} Hz"
+    );
+    assert!(
+        late_centroid <= mid_centroid * 0.9,
+        "filter spectrum should keep darkening from 500 ms ({mid_centroid:.1} Hz) to 750 ms ({late_centroid:.1} Hz)"
+    );
+}
+
+#[test]
+fn tb303_acid_drives_audible_resonance() {
+    let Some(yaml) = read_repo_fixture("examples/patches/tb303-acid.yaml") else {
+        return;
+    };
+    let patch = patch::load_patch_str(&yaml).expect("tb303-acid.yaml should parse");
+    let resonance_cable = patch
+        .connections
+        .iter()
+        .find(|connection| {
+            connection.to.module_id == "filter"
+                && connection.to.port_name == builtin_ports::RESONANCE
+        })
+        .expect("tb303-acid should explicitly drive filter.resonance");
+    assert_eq!(
+        resonance_cable.from.port_name,
+        builtin_ports::VALUE,
+        "resonance should be driven by an inspectable control output"
+    );
+
+    let graph = Graph::from_patch_declarations(&patch);
+    graph.validate().expect("tb303-acid graph should validate");
+    let events = vec![note_on_value(0, 45, 80)];
+    let (resonant, _) = render_offline(&graph, &patch.render, events.clone());
+
+    let mut zero_resonance_patch = patch.clone();
+    zero_resonance_patch.connections.retain(|connection| {
+        connection.to.module_id != "filter" || connection.to.port_name != builtin_ports::RESONANCE
+    });
+    let zero_resonance_graph = Graph::from_patch_declarations(&zero_resonance_patch);
+    zero_resonance_graph
+        .validate()
+        .expect("comparison graph without resonance route should validate");
+    let (zero_resonance, _) =
+        render_offline(&zero_resonance_graph, &zero_resonance_patch.render, events);
+
+    let difference: Vec<f32> = resonant
+        .iter()
+        .zip(&zero_resonance)
+        .map(|(with_resonance, without_resonance)| with_resonance - without_resonance)
+        .collect();
+    assert!(
+        rms(&difference) > 0.001,
+        "the explicit resonance route should audibly change the rendered note"
     );
 }
 
