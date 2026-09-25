@@ -66,6 +66,15 @@ int main()
         return 1;
     }
 
+    if (html.find ("acceptMatchButton.disabled=busy||!hasMatch||state==='cancelled'")
+            != std::string_view::npos
+        || html.find ("proposalButton.disabled=busy||!hasMatch||state==='cancelled'")
+               != std::string_view::npos)
+    {
+        std::cerr << "web UI disables retained cancelled match results\n";
+        return 1;
+    }
+
     std::ifstream editorSourceFile (DANDRUM_SOURCE_ROOT "/src/juce-plugin/PluginEditor.cpp");
     std::ostringstream editorSourceBuffer;
     editorSourceBuffer << editorSourceFile.rdbuf();

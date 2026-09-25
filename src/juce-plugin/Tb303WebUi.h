@@ -142,7 +142,7 @@ function renderSoundLabState(report){
   report=report||{state:'idle'};const state=report.state||'idle';
   const busy=['rendering','matching','proposing'].includes(state),hasMatch=Array.isArray(report.best_parameters)&&report.best_parameters.length>0;
   labStatus.dataset.state=state;labStatus.textContent=state.replace('_',' ').toUpperCase();labReference.textContent=report.reference_name||'No WAV selected';
-  labButton.disabled=busy;chooseReferenceButton.disabled=busy;matchButton.disabled=busy||!report.reference_name;cancelMatchButton.disabled=!['matching','proposing'].includes(state);acceptMatchButton.disabled=busy||!hasMatch||state==='cancelled';proposalButton.disabled=busy||!hasMatch||state==='cancelled';
+  labButton.disabled=busy;chooseReferenceButton.disabled=busy;matchButton.disabled=busy||!report.reference_name;cancelMatchButton.disabled=!['matching','proposing'].includes(state);acceptMatchButton.disabled=busy||!hasMatch;proposalButton.disabled=busy||!hasMatch;
   const completed=Number(report.completed_evaluations)||0,maximum=Number(report.max_evaluations)||0;labProgress.max=Math.max(1,maximum);labProgress.value=completed;
   const score=report.manifest&&report.manifest.best_score;
   labScore.textContent=score?`TOTAL ${Number(score.total).toFixed(4)} · SPECTRAL ${Number(score.spectral).toFixed(4)} · RMS ${Number(score.rms).toFixed(4)} · CENTROID ${Number(score.centroid).toFixed(4)}`:(state==='matching'?`${completed} / ${maximum||'…'} evaluations · best ${Number(report.best_score||0).toFixed(4)}`:'No match score yet.');
