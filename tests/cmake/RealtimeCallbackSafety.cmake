@@ -75,9 +75,25 @@ extract_function_body(
     "${plugin_processor_source}"
     "void DandrumAudioProcessor::processBlock")
 
-if (plugin_process_block_body MATCHES "ScopedLock|CriticalSection|std::cout|std::cerr|new |malloc|dandrum_engine_load_patch|dandrum_engine_prepare|dandrum_engine_create|dandrum_engine_destroy|SoundLab|sound_fixture|sound_workbench|write_wav|fft")
-    message(FATAL_ERROR "DandrumAudioProcessor::processBlock contains callback-unsafe locking, allocation, console IO, engine lifecycle/loading, or offline Sound Lab work")
+if (plugin_process_block_body MATCHES "ScopedLock|CriticalSection|std::cout|std::cerr|new |malloc|dandrum_engine_load_patch|dandrum_engine_prepare|dandrum_engine_create|dandrum_engine_destroy|SoundLab|sound_fixture|sound_workbench|sound_match|reference|Sha256|optimizer|graph_proposal|provider|codex|std::process|write_wav|fft")
+    message(FATAL_ERROR "DandrumAudioProcessor::processBlock contains callback-unsafe locking, allocation, console IO, engine lifecycle/loading, matching, provider, or offline Sound Lab work")
 endif()
+
+foreach(realtime_rust_source
+        "src/rust-engine/src/realtime.rs"
+        "src/rust-engine/src/graph_processor/mod.rs"
+        "src/rust-engine/src/graph_processor/realtime_graph_processor.rs"
+        "src/rust-engine/src/graph_processor/processing.rs"
+        "src/rust-engine/src/graph_processor/block.rs"
+        "src/rust-engine/src/graph_processor/audio_arena.rs"
+        "src/rust-engine/src/graph_processor/event_queue.rs"
+        "src/rust-engine/src/synth.rs"
+        "src/rust-engine/src/ffi.rs")
+    read_source_relative(realtime_source_text "${realtime_rust_source}")
+    if (realtime_source_text MATCHES "codex_cli_provider|graph_proposal|sound_matching|match_sound_fixture|std::process|Command::new")
+        message(FATAL_ERROR "${realtime_rust_source} imports offline matching, proposal, or child-process work")
+    endif()
+endforeach()
 
 read_source_relative(main_source "src/juce-wrapper/Main.cpp")
 string(FIND "${main_source}" "defaultPatchPath(" default_patch_pos)

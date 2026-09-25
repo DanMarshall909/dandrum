@@ -26,10 +26,10 @@
 
 ## 5. Sound Lab Workflow
 
-- [ ] 5.1 Extend the web-editor contract test with failing assertions for reference selection, match/cancel controls, progress and score display, A/B audio, comparison plotting, acceptance, and proposal status.
-- [ ] 5.2 Add JUCE reference selection, match/proposal native functions and events, generation-addressed audio resources, and best-value acceptance through the public parameter surface.
-- [ ] 5.3 Implement the Sound Lab matching/comparison/proposal UI while preserving the existing render/analyse workflow.
-- [ ] 5.4 Extend the realtime source guard so matching, reference IO/hashing, optimization, and provider/process work cannot enter the audio path.
+- [x] 5.1 Extend the web-editor contract test with failing assertions for reference selection, match/cancel controls, progress and score display, A/B audio, comparison plotting, acceptance, and proposal status.
+- [x] 5.2 Add JUCE reference selection, match/proposal native functions and events, generation-addressed audio resources, and best-value acceptance through the public parameter surface.
+- [x] 5.3 Implement the Sound Lab matching/comparison/proposal UI while preserving the existing render/analyse workflow.
+- [x] 5.4 Extend the realtime source guard so matching, reference IO/hashing, optimization, and provider/process work cannot enter the audio path.
 
 ## 6. Verification And Delivery
 

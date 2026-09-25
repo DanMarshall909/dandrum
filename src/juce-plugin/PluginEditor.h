@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstdint>
+#include <memory>
 #include <optional>
 
 #include <juce_audio_processors/juce_audio_processors.h>
@@ -32,6 +33,19 @@ private:
                          juce::WebBrowserComponent::NativeFunctionCompletion completion);
     void renderSoundLabFromWeb (const juce::Array<juce::var>& arguments,
                                 juce::WebBrowserComponent::NativeFunctionCompletion completion);
+    void chooseSoundLabReferenceFromWeb (
+        const juce::Array<juce::var>& arguments,
+        juce::WebBrowserComponent::NativeFunctionCompletion completion);
+    void matchSoundLabFromWeb (const juce::Array<juce::var>& arguments,
+                               juce::WebBrowserComponent::NativeFunctionCompletion completion);
+    void cancelSoundLabFromWeb (const juce::Array<juce::var>& arguments,
+                                juce::WebBrowserComponent::NativeFunctionCompletion completion);
+    void acceptSoundLabMatchFromWeb (
+        const juce::Array<juce::var>& arguments,
+        juce::WebBrowserComponent::NativeFunctionCompletion completion);
+    void requestGraphProposalFromWeb (
+        const juce::Array<juce::var>& arguments,
+        juce::WebBrowserComponent::NativeFunctionCompletion completion);
     void getSoundLabAnalysisForWeb (const juce::Array<juce::var>& arguments,
                                     juce::WebBrowserComponent::NativeFunctionCompletion completion) const;
     juce::var parameterSnapshotForWeb() const;
@@ -41,6 +55,8 @@ private:
     DandrumAudioProcessor& processor;
     // Declared before the browser so it outlives browser-owned native callbacks.
     SoundLabController soundLabController;
+    juce::File soundLabReferenceFile;
+    std::unique_ptr<juce::FileChooser> soundLabFileChooser;
     juce::WebBrowserComponent browser;
     std::uint32_t lastSeenParameterSurfaceGeneration = static_cast<std::uint32_t> (-1);
     std::uint64_t lastSeenSoundLabGeneration = static_cast<std::uint64_t> (-1);

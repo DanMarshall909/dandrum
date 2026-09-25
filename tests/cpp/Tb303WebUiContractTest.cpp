@@ -45,6 +45,27 @@ int main()
         return 1;
     }
 
+    if (html.find ("native('chooseSoundLabReference')") == std::string_view::npos
+        || html.find ("native('matchSoundLab')") == std::string_view::npos
+        || html.find ("native('cancelSoundLab')") == std::string_view::npos
+        || html.find ("native('acceptSoundLabMatch')") == std::string_view::npos
+        || html.find ("native('requestGraphProposal')") == std::string_view::npos)
+    {
+        std::cerr << "web UI does not expose the reference/match/accept/proposal workflow\n";
+        return 1;
+    }
+
+    if (html.find ("id=\"soundLabProgress\"") == std::string_view::npos
+        || html.find ("id=\"soundLabScore\"") == std::string_view::npos
+        || html.find ("id=\"soundLabReferenceAudio\"") == std::string_view::npos
+        || html.find ("id=\"soundLabCandidateAudio\"") == std::string_view::npos
+        || html.find ("comparison_metrics") == std::string_view::npos
+        || html.find ("best_parameters") == std::string_view::npos)
+    {
+        std::cerr << "web UI does not show matching progress, A/B audio, scores, and comparison data\n";
+        return 1;
+    }
+
     std::ifstream editorSourceFile (DANDRUM_SOURCE_ROOT "/src/juce-plugin/PluginEditor.cpp");
     std::ostringstream editorSourceBuffer;
     editorSourceBuffer << editorSourceFile.rdbuf();
@@ -52,8 +73,16 @@ int main()
     if (! editorSourceFile
         || editorSource.find ("\"renderSoundLab\"") == std::string::npos
         || editorSource.find ("\"getSoundLabAnalysis\"") == std::string::npos
+        || editorSource.find ("\"chooseSoundLabReference\"") == std::string::npos
+        || editorSource.find ("\"matchSoundLab\"") == std::string::npos
+        || editorSource.find ("\"cancelSoundLab\"") == std::string::npos
+        || editorSource.find ("\"acceptSoundLabMatch\"") == std::string::npos
+        || editorSource.find ("\"requestGraphProposal\"") == std::string::npos
         || editorSource.find ("\"soundLabAnalysisChanged\"") == std::string::npos
-        || editorSource.find ("\"/sound-lab.wav\"") == std::string::npos)
+        || editorSource.find ("\"/sound-lab.wav\"") == std::string::npos
+        || editorSource.find ("\"/sound-lab-reference.wav\"") == std::string::npos
+        || editorSource.find ("\"/sound-lab-candidate.wav\"") == std::string::npos
+        || editorSource.find ("reloadInstrumentFromFile") == std::string::npos)
     {
         std::cerr << "JUCE editor does not register the Sound Lab bridge and WAV resource\n";
         return 1;

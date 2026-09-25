@@ -107,6 +107,41 @@ juce::WebBrowserComponent::Options DandrumAudioProcessorEditor::createBrowserOpt
                 renderSoundLabFromWeb (arguments, std::move (completion));
             })
         .withNativeFunction (
+            "chooseSoundLabReference",
+            [this] (const juce::Array<juce::var>& arguments,
+                    juce::WebBrowserComponent::NativeFunctionCompletion completion)
+            {
+                chooseSoundLabReferenceFromWeb (arguments, std::move (completion));
+            })
+        .withNativeFunction (
+            "matchSoundLab",
+            [this] (const juce::Array<juce::var>& arguments,
+                    juce::WebBrowserComponent::NativeFunctionCompletion completion)
+            {
+                matchSoundLabFromWeb (arguments, std::move (completion));
+            })
+        .withNativeFunction (
+            "cancelSoundLab",
+            [this] (const juce::Array<juce::var>& arguments,
+                    juce::WebBrowserComponent::NativeFunctionCompletion completion)
+            {
+                cancelSoundLabFromWeb (arguments, std::move (completion));
+            })
+        .withNativeFunction (
+            "acceptSoundLabMatch",
+            [this] (const juce::Array<juce::var>& arguments,
+                    juce::WebBrowserComponent::NativeFunctionCompletion completion)
+            {
+                acceptSoundLabMatchFromWeb (arguments, std::move (completion));
+            })
+        .withNativeFunction (
+            "requestGraphProposal",
+            [this] (const juce::Array<juce::var>& arguments,
+                    juce::WebBrowserComponent::NativeFunctionCompletion completion)
+            {
+                requestGraphProposalFromWeb (arguments, std::move (completion));
+            })
+        .withNativeFunction (
             "getSoundLabAnalysis",
             [this] (const juce::Array<juce::var>& arguments,
                     juce::WebBrowserComponent::NativeFunctionCompletion completion)
@@ -151,6 +186,21 @@ DandrumAudioProcessorEditor::provideResource (const juce::String& path) const
 
         std::vector<std::byte> bytes (snapshot.data->wavBytes.size());
         std::memcpy (bytes.data(), snapshot.data->wavBytes.data(), snapshot.data->wavBytes.size());
+        return juce::WebBrowserComponent::Resource { std::move (bytes), "audio/wav" };
+    }
+
+    if (path.startsWith ("/sound-lab-reference.wav")
+        || path.startsWith ("/sound-lab-candidate.wav"))
+    {
+        const auto snapshot = soundLabController.snapshot();
+        if (snapshot.match == nullptr)
+            return std::nullopt;
+
+        const auto& audio = path.startsWith ("/sound-lab-reference.wav")
+            ? snapshot.match->referenceWavBytes
+            : snapshot.match->candidateWavBytes;
+        std::vector<std::byte> bytes (audio.size());
+        std::memcpy (bytes.data(), audio.data(), audio.size());
         return juce::WebBrowserComponent::Resource { std::move (bytes), "audio/wav" };
     }
 
@@ -241,6 +291,110 @@ void DandrumAudioProcessorEditor::renderSoundLabFromWeb (
     completion (juce::var());
 }
 
+void DandrumAudioProcessorEditor::chooseSoundLabReferenceFromWeb (
+    const juce::Array<juce::var>&,
+    juce::WebBrowserComponent::NativeFunctionCompletion completion)
+{
+    if (soundLabFileChooser != nullptr)
+    {
+        completion (juce::var ("A reference-file chooser is already open"));
+        return;
+    }
+
+    soundLabFileChooser = std::make_unique<juce::FileChooser> (
+        "Choose an aligned 48 kHz PCM WAV reference",
+        soundLabReferenceFile.existsAsFile()
+            ? soundLabReferenceFile.getParentDirectory()
+            : juce::File::getSpecialLocation (juce::File::userHomeDirectory),
+        "*.wav");
+    soundLabFileChooser->launchAsync (
+        juce::FileBrowserComponent::openMode | juce::FileBrowserComponent::canSelectFiles,
+        [this, completion = std::move (completion)] (const juce::FileChooser& chooser) mutable
+        {
+            const auto selected = chooser.getResult();
+            if (selected.existsAsFile())
+                soundLabReferenceFile = selected;
+            soundLabFileChooser.reset();
+            browser.emitEventIfBrowserIsVisible ("soundLabAnalysisChanged",
+                                                 soundLabSnapshotForWeb());
+            completion (selected.existsAsFile() ? juce::var (selected.getFileName())
+                                                : juce::var());
+        });
+}
+
+void DandrumAudioProcessorEditor::matchSoundLabFromWeb (
+    const juce::Array<juce::var>&,
+    juce::WebBrowserComponent::NativeFunctionCompletion completion)
+{
+    if (! soundLabReferenceFile.existsAsFile())
+    {
+        completion (juce::var ("Choose a 48 kHz PCM WAV reference first"));
+        return;
+    }
+    if (! soundLabController.startMatch (dandrum::soundDesignFixturePath(),
+                                         soundLabReferenceFile.getFullPathName().toStdString()))
+    {
+        completion (juce::var ("Sound Lab already has offline work in progress"));
+        return;
+    }
+    completion (juce::var());
+}
+
+void DandrumAudioProcessorEditor::cancelSoundLabFromWeb (
+    const juce::Array<juce::var>&,
+    juce::WebBrowserComponent::NativeFunctionCompletion completion)
+{
+    soundLabController.cancelCurrentWork();
+    completion (juce::var());
+}
+
+void DandrumAudioProcessorEditor::acceptSoundLabMatchFromWeb (
+    const juce::Array<juce::var>&,
+    juce::WebBrowserComponent::NativeFunctionCompletion completion)
+{
+    const auto snapshot = soundLabController.snapshot();
+    if (snapshot.match == nullptr || snapshot.state == SoundLabController::State::cancelled)
+    {
+        completion (juce::var ("A completed Sound Lab match is required before acceptance"));
+        return;
+    }
+
+    const auto patchPath = dandrum::findRepositoryExample ("examples/patches/tb303-acid.yaml");
+    if (! processor.reloadInstrumentFromFile (juce::File (juce::String (patchPath.string()))))
+    {
+        completion (juce::var (processor.getLastLoadError()));
+        return;
+    }
+
+    for (const auto& value : snapshot.match->parameters)
+    {
+        auto* parameter = processor.getParameterForPublicId (juce::String (value.id));
+        if (parameter == nullptr)
+        {
+            completion (juce::var ("Matched public parameter is unavailable: "
+                                   + juce::String (value.id)));
+            return;
+        }
+        parameter->beginChangeGesture();
+        parameter->setValueNotifyingHost (static_cast<float> (value.normalized));
+        parameter->endChangeGesture();
+    }
+    completion (juce::var());
+}
+
+void DandrumAudioProcessorEditor::requestGraphProposalFromWeb (
+    const juce::Array<juce::var>&,
+    juce::WebBrowserComponent::NativeFunctionCompletion completion)
+{
+    if (! soundLabController.startProposal())
+    {
+        completion (juce::var (
+            "A completed match is required, and Sound Lab must not already be busy"));
+        return;
+    }
+    completion (juce::var());
+}
+
 void DandrumAudioProcessorEditor::getSoundLabAnalysisForWeb (
     const juce::Array<juce::var>&,
     juce::WebBrowserComponent::NativeFunctionCompletion completion) const
@@ -279,8 +433,25 @@ juce::var DandrumAudioProcessorEditor::soundLabSnapshotForWeb() const
         case SoundLabController::State::idle: report->setProperty ("state", "idle"); break;
         case SoundLabController::State::rendering: report->setProperty ("state", "rendering"); break;
         case SoundLabController::State::ready: report->setProperty ("state", "ready"); break;
+        case SoundLabController::State::matching: report->setProperty ("state", "matching"); break;
+        case SoundLabController::State::matched: report->setProperty ("state", "matched"); break;
+        case SoundLabController::State::cancelled: report->setProperty ("state", "cancelled"); break;
+        case SoundLabController::State::proposing: report->setProperty ("state", "proposing"); break;
+        case SoundLabController::State::proposalReady:
+            report->setProperty ("state", "proposal_ready");
+            break;
         case SoundLabController::State::error: report->setProperty ("state", "error"); break;
     }
+
+    report->setProperty ("reference_name",
+                         soundLabReferenceFile.existsAsFile()
+                             ? soundLabReferenceFile.getFileName()
+                             : juce::String());
+    report->setProperty ("completed_evaluations",
+                         static_cast<juce::int64> (snapshot.completedEvaluations));
+    report->setProperty ("max_evaluations",
+                         static_cast<juce::int64> (snapshot.maxEvaluations));
+    report->setProperty ("best_score", snapshot.bestScore);
 
     if (! snapshot.error.empty())
         report->setProperty ("error", juce::String (snapshot.error));
@@ -309,6 +480,77 @@ juce::var DandrumAudioProcessorEditor::soundLabSnapshotForWeb() const
             metrics.add (juce::var (frame.release()));
         }
         report->setProperty ("metrics", juce::var (metrics));
+    }
+
+    if (snapshot.match != nullptr)
+    {
+        report->setProperty ("sample_rate_hz", static_cast<int> (snapshot.match->sampleRateHz));
+        report->setProperty (
+            "duration_seconds",
+            static_cast<double> (snapshot.match->durationFrames) / snapshot.match->sampleRateHz);
+        report->setProperty (
+            "candidate_audio_url",
+            "/sound-lab-candidate.wav?generation="
+                + juce::String (static_cast<juce::int64> (snapshot.generation)));
+        report->setProperty (
+            "reference_audio_url",
+            "/sound-lab-reference.wav?generation="
+                + juce::String (static_cast<juce::int64> (snapshot.generation)));
+        report->setProperty ("manifest",
+                             juce::JSON::parse (juce::String (snapshot.match->manifestJson)));
+
+        juce::Array<juce::var> bestParameters;
+        bestParameters.ensureStorageAllocated (
+            static_cast<int> (snapshot.match->parameters.size()));
+        for (const auto& parameter : snapshot.match->parameters)
+        {
+            auto value = std::make_unique<juce::DynamicObject>();
+            value->setProperty ("id", juce::String (parameter.id));
+            value->setProperty ("min", parameter.min);
+            value->setProperty ("max", parameter.max);
+            value->setProperty ("initial", parameter.initial);
+            value->setProperty ("best", parameter.best);
+            value->setProperty ("normalized", parameter.normalized);
+            bestParameters.add (juce::var (value.release()));
+        }
+        report->setProperty ("best_parameters", juce::var (bestParameters));
+
+        juce::Array<juce::var> comparisonMetrics;
+        comparisonMetrics.ensureStorageAllocated (
+            static_cast<int> (snapshot.match->metrics.size()));
+        for (const auto& metric : snapshot.match->metrics)
+        {
+            auto frame = std::make_unique<juce::DynamicObject>();
+            frame->setProperty ("time_seconds", metric.timeSeconds);
+            frame->setProperty ("reference_rms", metric.referenceRms);
+            frame->setProperty ("candidate_rms", metric.candidateRms);
+            frame->setProperty (
+                "reference_spectral_centroid_hz",
+                metric.referenceHasSpectralCentroid
+                    ? juce::var (metric.referenceSpectralCentroidHz)
+                    : juce::var());
+            frame->setProperty (
+                "candidate_spectral_centroid_hz",
+                metric.candidateHasSpectralCentroid
+                    ? juce::var (metric.candidateSpectralCentroidHz)
+                    : juce::var());
+            comparisonMetrics.add (juce::var (frame.release()));
+        }
+        report->setProperty ("comparison_metrics", juce::var (comparisonMetrics));
+    }
+
+    if (snapshot.proposal != nullptr)
+    {
+        auto proposal = std::make_unique<juce::DynamicObject>();
+        proposal->setProperty ("provider_id", juce::String (snapshot.proposal->providerId));
+        proposal->setProperty ("patch_name", juce::String (snapshot.proposal->patchName));
+        proposal->setProperty ("explanation", juce::String (snapshot.proposal->explanation));
+        proposal->setProperty ("patch_yaml", juce::String (snapshot.proposal->patchYaml));
+        juce::Array<juce::var> searchParameters;
+        for (const auto& parameter : snapshot.proposal->suggestedSearchParameters)
+            searchParameters.add (juce::String (parameter));
+        proposal->setProperty ("suggested_search_parameters", juce::var (searchParameters));
+        report->setProperty ("proposal", juce::var (proposal.release()));
     }
 
     return juce::var (report.release());
