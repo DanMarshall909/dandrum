@@ -21,6 +21,7 @@ pub(crate) mod builtins;
 
 pub mod cli;
 pub mod graph;
+pub mod graph_proposal;
 pub mod instrument_state;
 pub mod kernel;
 pub mod module_library;

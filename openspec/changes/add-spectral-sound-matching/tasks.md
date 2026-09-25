@@ -12,8 +12,8 @@
 
 ## 3. Provider-Neutral Graph Proposals
 
-- [ ] 3.1 Add failing tests for the provider-neutral request/response contract, sanitized context, local validation, and non-application of invalid proposals.
-- [ ] 3.2 Implement canonical graph-proposal types, module/topology summarization, strict response parsing, and local patch/preparation validation.
+- [x] 3.1 Add failing tests for the provider-neutral request/response contract, sanitized context, local validation, and non-application of invalid proposals.
+- [x] 3.2 Implement canonical graph-proposal types, module/topology summarization, strict response parsing, and local patch/preparation validation.
 - [ ] 3.3 Add failing fake-runner tests for Codex CLI arguments, stdin/schema/output handling, API-key removal, missing-login/process/timeout/cancellation failures, and bounded diagnostics.
 - [ ] 3.4 Implement the Codex CLI adapter using the existing ChatGPT login in an isolated temporary read-only execution directory.
 
