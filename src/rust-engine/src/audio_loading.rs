@@ -26,6 +26,10 @@ impl LoadedAudio {
 
 pub fn load_pcm_wav(path: &Path, expected_sample_rate_hz: u32) -> Result<LoadedAudio, String> {
     let bytes = fs::read(path).map_err(|error| format!("failed to read file: {error}"))?;
+    decode_pcm_wav(&bytes, expected_sample_rate_hz)
+}
+
+pub fn decode_pcm_wav(bytes: &[u8], expected_sample_rate_hz: u32) -> Result<LoadedAudio, String> {
     if bytes.len() < 44 || &bytes[0..4] != b"RIFF" || &bytes[8..12] != b"WAVE" {
         return Err("unsupported format; expected PCM WAV".to_string());
     }
@@ -127,6 +131,20 @@ mod tests {
     }
 
     #[test]
+    fn decodes_an_owned_pcm_wav_snapshot_without_reopening_a_path() {
+        let mut bytes = Vec::new();
+        write_wav_stereo_i16(&mut bytes, 48_000, &[0.25, -0.5], &[0.25, -0.5])
+            .expect("WAV should write");
+
+        let audio = decode_pcm_wav(&bytes, 48_000).expect("owned WAV bytes should decode");
+
+        assert_eq!(audio.sample_rate_hz(), 48_000);
+        assert_eq!(audio.frames().len(), 2);
+        assert!((audio.frames()[0] - 0.25).abs() < 0.0001);
+        assert!((audio.frames()[1] + 0.5).abs() < 0.0001);
+    }
+
+    #[test]
     fn reports_missing_file() {
         let dir = unique_temp_dir("reports_missing_file");
         let wav_path = dir.join("missing.wav");
@@ -145,6 +163,38 @@ mod tests {
             .expect_err("unsupported format should fail");
 
         assert!(error.contains("unsupported format"));
+    }
+
+    #[test]
+    fn decoder_rejects_malformed_or_unsupported_pcm_chunks() {
+        let mut valid = Vec::new();
+        write_wav_stereo_i16(&mut valid, 48_000, &[0.25], &[0.25]).unwrap();
+
+        let mut malformed_chunk = b"RIFF\0\0\0\0WAVEdata\x64\0\0\0".to_vec();
+        malformed_chunk.resize(24, 0);
+        let mut short_fmt = valid.clone();
+        short_fmt[16..20].copy_from_slice(&8_u32.to_le_bytes());
+        let mut float_format = valid.clone();
+        float_format[20..22].copy_from_slice(&3_u16.to_le_bytes());
+        let mut zero_channels = valid.clone();
+        zero_channels[22..24].copy_from_slice(&0_u16.to_le_bytes());
+        let mut incomplete_frame = valid;
+        incomplete_frame[40..44].copy_from_slice(&1_u32.to_le_bytes());
+        incomplete_frame.truncate(46);
+
+        for bytes in [
+            malformed_chunk,
+            short_fmt,
+            float_format,
+            zero_channels,
+            incomplete_frame,
+        ] {
+            assert!(
+                decode_pcm_wav(&bytes, 48_000)
+                    .expect_err("invalid WAV structure should fail")
+                    .contains("unsupported format")
+            );
+        }
     }
 
     #[test]

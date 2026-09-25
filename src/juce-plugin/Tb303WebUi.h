@@ -104,6 +104,7 @@ const labCanvas=document.getElementById('soundLabPlot');
 const labLegend=document.getElementById('soundLabLegend');
 
 const setAudio=(element,url,generation)=>{if(!url)return;const key=`${generation}:${url}`;if(element.dataset.generation!==key){element.dataset.generation=key;element.src=url;element.load()}};
+const clearAudio=(...elements)=>elements.forEach(element=>{delete element.dataset.generation;element.removeAttribute('src');element.load()});
 const drawPlotBase=frames=>{
   const ctx=labCanvas.getContext('2d'),w=labCanvas.width,h=labCanvas.height,pad={l:38,r:42,t:22,b:24};
   ctx.clearRect(0,0,w,h);ctx.fillStyle='#080b09';ctx.fillRect(0,0,w,h);ctx.strokeStyle='#273027';ctx.lineWidth=1;ctx.fillStyle='#7e887e';ctx.font='9px monospace';
@@ -128,10 +129,12 @@ function plotSoundLab(frames){
 }
 
 function plotComparison(frames){
-  labLegend.innerHTML='<span style="--colour:#7e8b82">REF RMS</span><span style="--colour:#6ee7ff">CAND RMS</span><span style="--colour:#ff785e">REF CENTROID</span><span style="--colour:#ffb142">CAND CENTROID</span>';
+  labLegend.innerHTML='<span style="--colour:#7e8b82">REF RMS</span><span style="--colour:#6ee7ff">CAND RMS</span><span style="--colour:#59645d">REF PEAK</span><span style="--colour:#b9d9df">CAND PEAK</span><span style="--colour:#ff785e">REF CENTROID</span><span style="--colour:#ffb142">CAND CENTROID</span>';
   const plot=drawPlotBase(frames);if(!plot)return;
-  const maxRms=Math.max(0.001,...frames.flatMap(frame=>[Number(frame.reference_rms)||0,Number(frame.candidate_rms)||0]));
-  const yLevel=value=>plot.h-plot.pad.b-(plot.h-plot.pad.t-plot.pad.b)*clamp(value/maxRms);
+  const maxLevel=Math.max(0.001,...frames.flatMap(frame=>[Number(frame.reference_rms)||0,Number(frame.candidate_rms)||0,Number(frame.reference_peak)||0,Number(frame.candidate_peak)||0]));
+  const yLevel=value=>plot.h-plot.pad.b-(plot.h-plot.pad.t-plot.pad.b)*clamp(value/maxLevel);
+  plot.drawSeries(frame=>yLevel(frame.reference_peak),'#59645d',1,[2,3]);
+  plot.drawSeries(frame=>yLevel(frame.candidate_peak),'#b9d9df',1);
   plot.drawSeries(frame=>yLevel(frame.reference_rms),'#7e8b82',1.2,[4,3]);
   plot.drawSeries(frame=>yLevel(frame.candidate_rms),'#6ee7ff',1.7);
   plot.drawSeries(frame=>frame.reference_spectral_centroid_hz==null?null:plot.yCentroid(frame.reference_spectral_centroid_hz),'#ff785e',1.2,[4,3]);
@@ -143,6 +146,7 @@ function renderSoundLabState(report){
   const busy=['rendering','matching','proposing'].includes(state),hasMatch=Array.isArray(report.best_parameters)&&report.best_parameters.length>0;
   labStatus.dataset.state=state;labStatus.textContent=state.replace('_',' ').toUpperCase();labReference.textContent=report.reference_name||'No WAV selected';
   labButton.disabled=busy;chooseReferenceButton.disabled=busy;matchButton.disabled=busy||!report.reference_name;cancelMatchButton.disabled=!['matching','proposing'].includes(state);acceptMatchButton.disabled=busy||!hasMatch;proposalButton.disabled=busy||!hasMatch;
+  if(['idle','rendering','matching'].includes(state))clearAudio(labAudio,referenceAudio,candidateAudio);
   const completed=Number(report.completed_evaluations)||0,maximum=Number(report.max_evaluations)||0;labProgress.max=Math.max(1,maximum);labProgress.value=completed;
   const score=report.manifest&&report.manifest.best_score;
   labScore.textContent=score?`TOTAL ${Number(score.total).toFixed(4)} · SPECTRAL ${Number(score.spectral).toFixed(4)} · RMS ${Number(score.rms).toFixed(4)} · CENTROID ${Number(score.centroid).toFixed(4)}`:(state==='matching'?`${completed} / ${maximum||'…'} evaluations · best ${Number(report.best_score||0).toFixed(4)}`:'No match score yet.');
@@ -159,13 +163,15 @@ function renderSoundLabState(report){
   if(state==='ready'){
     const frames=report.metrics||[];plotSoundLab(frames);
     labMeta.textContent=`${Number(report.sample_rate_hz).toLocaleString()} Hz · ${Number(report.duration_seconds).toFixed(2)} s · ${frames.length.toLocaleString()} analysis frames`;
+    clearAudio(referenceAudio);
     setAudio(labAudio,report.audio_url,report.generation);setAudio(candidateAudio,report.audio_url,report.generation);
     showError('');return;
   }
   if(hasMatch){
-    const frames=report.comparison_metrics||[];plotComparison(frames);setAudio(referenceAudio,report.reference_audio_url,report.generation);setAudio(candidateAudio,report.candidate_audio_url,report.generation);
+    clearAudio(labAudio);const frames=report.comparison_metrics||[];plotComparison(frames);setAudio(referenceAudio,report.reference_audio_url,report.generation);setAudio(candidateAudio,report.candidate_audio_url,report.generation);
     const values=(report.best_parameters||[]).map(value=>`${value.id}=${Number(value.best).toPrecision(5)}`).join(' · ');
-    labMeta.textContent=`${completed}/${maximum} evaluations · ${frames.length.toLocaleString()} comparison frames${values?' · '+values:''}`;
+    const manifest=report.manifest||{},fingerprint=String(manifest.reference_sha256||'unavailable');
+    labMeta.textContent=`${completed}/${maximum} evaluations · seed ${manifest.seed??'unavailable'} · reference ${fingerprint} · ${frames.length.toLocaleString()} comparison frames${values?' · '+values:''}`;
   }
   if(state==='error'){showError(report.error||'Sound Lab offline work failed');return}
   if(state==='cancelled'){showError('Match cancelled; the best completed candidate is retained for audition.');return}

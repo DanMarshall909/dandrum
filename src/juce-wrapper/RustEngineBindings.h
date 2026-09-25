@@ -85,6 +85,10 @@ std::size_t dandrum_sound_match_manifest_json_size (const DandrumSoundMatch* mat
 bool dandrum_sound_match_copy_manifest_json (const DandrumSoundMatch* matched,
                                              char* buffer,
                                              std::size_t bufferCapacity);
+std::size_t dandrum_sound_match_patch_yaml_size (const DandrumSoundMatch* matched);
+bool dandrum_sound_match_copy_patch_yaml (const DandrumSoundMatch* matched,
+                                          char* buffer,
+                                          std::size_t bufferCapacity);
 std::size_t dandrum_sound_match_parameter_count (const DandrumSoundMatch* matched);
 bool dandrum_sound_match_parameter (const DandrumSoundMatch* matched,
                                     std::size_t index,
@@ -101,6 +105,7 @@ bool dandrum_sound_match_metric (const DandrumSoundMatch* matched,
                                  bool reference,
                                  double* timeSeconds,
                                  double* rms,
+                                 double* peak,
                                  double* spectralCentroidHz,
                                  bool* hasSpectralCentroid);
 std::size_t dandrum_sound_match_wav_size (const DandrumSoundMatch* matched, bool reference);

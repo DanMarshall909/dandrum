@@ -1,8 +1,8 @@
 use std::io::{self, Write};
 
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 
-#[derive(Clone, Copy, Debug, Deserialize, PartialEq)]
+#[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq)]
 pub struct AnalysisSettings {
     pub frame_size: usize,
     pub hop_size: usize,
@@ -115,7 +115,10 @@ pub fn write_metrics_csv<W: Write>(mut writer: W, frames: &[AnalysisFrame]) -> i
     Ok(())
 }
 
-fn validate_settings(sample_rate_hz: u32, settings: AnalysisSettings) -> Result<(), String> {
+pub(crate) fn validate_settings(
+    sample_rate_hz: u32,
+    settings: AnalysisSettings,
+) -> Result<(), String> {
     if sample_rate_hz == 0 {
         return Err("sound analysis sample rate must be positive".to_string());
     }

@@ -60,9 +60,19 @@ int main()
         || html.find ("id=\"soundLabReferenceAudio\"") == std::string_view::npos
         || html.find ("id=\"soundLabCandidateAudio\"") == std::string_view::npos
         || html.find ("comparison_metrics") == std::string_view::npos
+        || html.find ("reference_peak") == std::string_view::npos
+        || html.find ("candidate_peak") == std::string_view::npos
         || html.find ("best_parameters") == std::string_view::npos)
     {
         std::cerr << "web UI does not show matching progress, A/B audio, scores, and comparison data\n";
+        return 1;
+    }
+
+    if (html.find ("reference_sha256") == std::string_view::npos
+        || html.find ("manifest.seed") == std::string_view::npos
+        || html.find ("completed_evaluations") == std::string_view::npos)
+    {
+        std::cerr << "web UI does not show the match fingerprint, seed, and evaluation count\n";
         return 1;
     }
 
@@ -72,6 +82,15 @@ int main()
                != std::string_view::npos)
     {
         std::cerr << "web UI disables retained cancelled match results\n";
+        return 1;
+    }
+
+    if (html.find ("const clearAudio=") == std::string_view::npos
+        || html.find ("['idle','rendering','matching'].includes(state)") == std::string_view::npos
+        || html.find ("clearAudio(referenceAudio)") == std::string_view::npos
+        || html.find ("clearAudio(labAudio)") == std::string_view::npos)
+    {
+        std::cerr << "web UI can retain stale Sound Lab audio across generations\n";
         return 1;
     }
 
@@ -91,7 +110,10 @@ int main()
         || editorSource.find ("\"/sound-lab.wav\"") == std::string::npos
         || editorSource.find ("\"/sound-lab-reference.wav\"") == std::string::npos
         || editorSource.find ("\"/sound-lab-candidate.wav\"") == std::string::npos
-        || editorSource.find ("reloadInstrumentFromFile") == std::string::npos)
+        || editorSource.find ("soundLabController.discardResults") == std::string::npos
+        || editorSource.find ("hasExpectedSoundLabGeneration") == std::string::npos
+        || editorSource.find ("reloadInstrumentFromYaml") == std::string::npos
+        || editorSource.find ("snapshot.match->patchYaml") == std::string::npos)
     {
         std::cerr << "JUCE editor does not register the Sound Lab bridge and WAV resource\n";
         return 1;

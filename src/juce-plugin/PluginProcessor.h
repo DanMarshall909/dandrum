@@ -74,6 +74,13 @@ public:
     /// another is still building on it. Must not be called from processBlock.
     bool reloadInstrumentFromFile (const juce::File& yamlFile);
 
+    /// Loads an owned YAML snapshot while retaining sourceHint as the
+    /// instrument's provenance and relative-asset root. The snapshot is staged
+    /// beside sourceHint for Rust's path-based loader, then removed after the
+    /// replacement transaction. Must not be called from processBlock.
+    bool reloadInstrumentFromYaml (const juce::String& yamlText,
+                                   const juce::File& sourceHint);
+
     /// Enables/disables watching the loaded instrument file for external
     /// edits. While disabled, external edits do not trigger a reload and the
     /// running instrument is left unchanged until watching is re-enabled or a

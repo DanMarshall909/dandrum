@@ -81,12 +81,19 @@ pub struct SoundMatchEvaluationRecord {
 pub struct SoundMatchManifest {
     pub version: u32,
     pub fixture_name: String,
+    pub fixture_sha256: String,
+    pub patch_sha256: String,
     pub reference_name: String,
     pub reference_sha256: String,
+    pub optimizer: String,
     pub seed: u64,
     pub max_evaluations: usize,
     pub completed_evaluations: usize,
     pub status: SoundMatchStatus,
+    pub sample_rate_hz: u32,
+    pub block_size_frames: u32,
+    pub render_duration_frames: u64,
+    pub analysis: AnalysisSettings,
     pub region_start_frame: u64,
     pub region_length_frames: u64,
     pub spectral_windows: Vec<usize>,
@@ -99,6 +106,7 @@ pub struct SoundMatchManifest {
 #[derive(Clone, Debug, PartialEq)]
 pub struct SoundMatchArtifact {
     pub manifest: SoundMatchManifest,
+    pub patch_yaml: String,
     pub sample_rate_hz: u32,
     pub duration_frames: u64,
     pub candidate_metrics: Vec<crate::sound_analysis::AnalysisFrame>,
@@ -123,7 +131,7 @@ where
     let reference_wav_bytes = std::fs::read(reference_path)
         .map_err(|error| format!("failed to read reference WAV: {error}"))?;
     let reference_audio =
-        crate::audio_loading::load_pcm_wav(reference_path, fixture.render.sample_rate_hz)?;
+        crate::audio_loading::decode_pcm_wav(&reference_wav_bytes, fixture.render.sample_rate_hz)?;
     let region_start = usize::try_from(matching.region.start_frame)
         .map_err(|_| "sound matching region start does not fit this platform".to_string())?;
     let region_length = usize::try_from(matching.region.length_frames)
@@ -145,8 +153,13 @@ where
         return Err("sound matching requires a non-silent reference region".to_string());
     }
 
-    let patch = crate::patch::load_patch_file(&fixture.patch)
+    let patch_bytes = std::fs::read(&fixture.patch)
         .map_err(|error| format!("failed to load sound matching patch: {error}"))?;
+    let patch_yaml = std::str::from_utf8(&patch_bytes)
+        .map_err(|error| format!("failed to load sound matching patch as UTF-8: {error}"))?;
+    let patch = crate::patch::load_patch_str(patch_yaml)
+        .map_err(|error| format!("failed to load sound matching patch: {error}"))?;
+    let patch_root = fixture.patch.parent().unwrap_or_else(|| Path::new("."));
     let mut parameters = Vec::with_capacity(matching.parameters.len());
     for parameter_id in &matching.parameters {
         let target = patch
@@ -155,20 +168,27 @@ where
             .iter()
             .find(|target| target.name == *parameter_id)
             .ok_or_else(|| format!("unknown public numeric parameter {parameter_id}"))?;
-        let crate::patch::ParameterValue::Number(initial) = target.default else {
+        let (
+            crate::patch::PresetTargetType::Number,
+            crate::patch::ParameterValue::Number(initial),
+            Some(min),
+            Some(max),
+        ) = (&target.value_type, &target.default, target.min, target.max)
+        else {
             return Err(format!(
-                "public matching parameter {parameter_id} is not numeric"
+                "public matching parameter {parameter_id} must have a finite continuous numeric default and ordered bounds"
             ));
         };
+        if !initial.is_finite() || !min.is_finite() || !max.is_finite() || min >= max {
+            return Err(format!(
+                "public matching parameter {parameter_id} must have a finite continuous numeric default and ordered bounds"
+            ));
+        }
         parameters.push(BoundedSearchParameter {
             id: parameter_id.clone(),
-            min: target
-                .min
-                .expect("loaded matching fixtures have bounded search parameters"),
-            max: target
-                .max
-                .expect("loaded matching fixtures have bounded search parameters"),
-            initial,
+            min,
+            max,
+            initial: *initial,
         });
     }
 
@@ -188,9 +208,10 @@ where
                 .zip(values)
                 .map(|(parameter, value)| (parameter.id.clone(), *value))
                 .collect();
-            let render = crate::sound_workbench::render_sound_fixture_with_public_numeric_values(
-                fixture, &values,
-            )?;
+            let render =
+                crate::sound_workbench::render_sound_fixture_with_patch_and_public_numeric_values(
+                    fixture, &patch, patch_root, &values,
+                )?;
             let mono = mono_audio(&render.left, &render.right);
             compare_aligned_audio(
                 &mono[region_start..region_end],
@@ -206,11 +227,14 @@ where
         .zip(&search.best.values)
         .map(|(parameter, value)| (parameter.id.clone(), *value))
         .collect();
-    let mut candidate = crate::sound_workbench::render_sound_fixture_with_public_numeric_values(
-        fixture,
-        &best_values,
-    )
-    .expect("the best candidate was rendered successfully during the search");
+    let mut candidate =
+        crate::sound_workbench::render_sound_fixture_with_patch_and_public_numeric_values(
+            fixture,
+            &patch,
+            patch_root,
+            &best_values,
+        )
+        .expect("the best candidate was rendered successfully during the search");
     for sample in candidate.left.iter_mut().chain(&mut candidate.right) {
         *sample = (f64::from(*sample) * search.best.score.candidate_gain) as f32;
     }
@@ -236,10 +260,19 @@ where
     )
     .expect("writing a WAV to an in-memory byte vector cannot fail");
 
-    let reference_sha256 = Sha256::digest(&reference_wav_bytes)
-        .iter()
-        .map(|byte| format!("{byte:02x}"))
-        .collect();
+    let reference_sha256 = sha256_hex(&reference_wav_bytes);
+    let patch_sha256 = sha256_hex(&patch_bytes);
+    let fixture_identity = serde_json::to_vec(&SoundMatchFixtureIdentity {
+        version: fixture.version,
+        name: &fixture.name,
+        patch_sha256: &patch_sha256,
+        render: &fixture.render,
+        analysis: fixture.analysis,
+        matching,
+        timeline: &fixture.timeline,
+    })
+    .expect("sound fixture identity contains only serializable values");
+    let fixture_sha256 = sha256_hex(&fixture_identity);
     let best_parameters = parameters
         .iter()
         .zip(&search.best.values)
@@ -275,14 +308,21 @@ where
 
     Ok(SoundMatchArtifact {
         manifest: SoundMatchManifest {
-            version: 1,
+            version: 2,
             fixture_name: fixture.name.clone(),
+            fixture_sha256,
+            patch_sha256,
             reference_name,
             reference_sha256,
+            optimizer: "dandrum.seeded_evolution.v1".to_string(),
             seed: matching.seed,
             max_evaluations: matching.max_evaluations,
             completed_evaluations,
             status,
+            sample_rate_hz: fixture.render.sample_rate_hz,
+            block_size_frames: fixture.render.block_size_frames,
+            render_duration_frames: fixture.render.duration_frames,
+            analysis: fixture.analysis,
             region_start_frame: matching.region.start_frame,
             region_length_frames: matching.region.length_frames,
             spectral_windows: matching.spectral_windows.clone(),
@@ -291,6 +331,7 @@ where
             best_parameters,
             history,
         },
+        patch_yaml: patch_yaml.to_string(),
         sample_rate_hz: candidate.sample_rate_hz,
         duration_frames: candidate.left.len() as u64,
         candidate_metrics,
@@ -298,6 +339,24 @@ where
         candidate_wav_bytes,
         reference_wav_bytes,
     })
+}
+
+#[derive(Serialize)]
+struct SoundMatchFixtureIdentity<'a> {
+    version: u32,
+    name: &'a str,
+    patch_sha256: &'a str,
+    render: &'a crate::patch::RenderSettings,
+    analysis: AnalysisSettings,
+    matching: &'a crate::sound_workbench::SoundMatchSettings,
+    timeline: &'a crate::sound_workbench::SoundTimeline,
+}
+
+fn sha256_hex(bytes: &[u8]) -> String {
+    Sha256::digest(bytes)
+        .iter()
+        .map(|byte| format!("{byte:02x}"))
+        .collect()
 }
 
 fn mono_audio(left: &[f32], right: &[f32]) -> Vec<f32> {
@@ -537,6 +596,20 @@ fn validate_objective_input(
     if settings.sample_rate_hz == 0 {
         return Err("sound matching sample rate must be positive".to_string());
     }
+    let analysis = settings.analysis;
+    let nyquist_hz = f64::from(settings.sample_rate_hz) / 2.0;
+    if !analysis.min_frequency_hz.is_finite()
+        || !analysis.max_frequency_hz.is_finite()
+        || analysis.min_frequency_hz <= 0.0
+        || analysis.max_frequency_hz <= analysis.min_frequency_hz
+        || analysis.max_frequency_hz > nyquist_hz
+    {
+        return Err(format!(
+            "sound matching log-spectral minimum frequency and band must satisfy 0 < min < max <= {nyquist_hz} Hz"
+        ));
+    }
+    crate::sound_analysis::validate_settings(settings.sample_rate_hz, analysis)
+        .map_err(|error| format!("invalid sound matching analysis settings: {error}"))?;
     if candidate.len() != reference.len() || candidate.is_empty() {
         return Err(
             "sound matching requires candidate and reference to have the same aligned length"
@@ -846,6 +919,20 @@ mod tests {
                     },
                 ),
                 "hop size",
+            ),
+            (
+                compare_aligned_audio(
+                    &reference,
+                    &reference,
+                    SoundMatchObjectiveSettings {
+                        analysis: AnalysisSettings {
+                            min_frequency_hz: 0.0,
+                            ..SETTINGS.analysis
+                        },
+                        ..SETTINGS
+                    },
+                ),
+                "minimum frequency",
             ),
         ];
 
@@ -1297,6 +1384,22 @@ mod tests {
         assert_eq!(artifact.manifest.completed_evaluations, 8);
         assert_eq!(artifact.manifest.history.len(), 8);
         assert_eq!(artifact.manifest.reference_sha256.len(), 64);
+        assert_eq!(artifact.manifest.fixture_sha256.len(), 64);
+        assert_eq!(artifact.manifest.patch_sha256.len(), 64);
+        assert_eq!(artifact.manifest.optimizer, "dandrum.seeded_evolution.v1");
+        assert_eq!(
+            artifact.manifest.sample_rate_hz,
+            fixture.render.sample_rate_hz
+        );
+        assert_eq!(
+            artifact.manifest.block_size_frames,
+            fixture.render.block_size_frames
+        );
+        assert_eq!(
+            artifact.manifest.render_duration_frames,
+            fixture.render.duration_frames
+        );
+        assert_eq!(artifact.manifest.analysis, fixture.analysis);
         assert!(
             artifact.manifest.best_score.total < artifact.manifest.history[0].score.total,
             "{:?}",
@@ -1372,11 +1475,56 @@ mod tests {
     }
 
     #[test]
+    fn fixture_match_uses_immutable_patch_and_reference_snapshots_for_every_evaluation() {
+        let mut fixture = short_acid_fixture();
+        fixture.matching.as_mut().unwrap().max_evaluations = 2;
+        let directory =
+            std::env::temp_dir().join(format!("dandrum-match-snapshot-{}", std::process::id()));
+        std::fs::create_dir_all(&directory).unwrap();
+        let patch_path = directory.join("acid.yaml");
+        let original_patch = std::fs::read(&fixture.patch).unwrap();
+        std::fs::write(&patch_path, &original_patch).unwrap();
+        fixture.patch = patch_path.clone();
+        let reference_path = write_reference(&fixture, 0.75, "immutable-snapshot");
+        let original_reference = std::fs::read(&reference_path).unwrap();
+
+        let baseline = match_sound_fixture(&fixture, &reference_path, continue_search)
+            .expect("baseline snapshot match should complete");
+        std::fs::write(&patch_path, &original_patch).unwrap();
+        std::fs::write(&reference_path, &original_reference).unwrap();
+        let observed = match_sound_fixture(&fixture, &reference_path, |progress| {
+            if progress.completed_evaluations == 1 {
+                std::fs::write(&patch_path, b"not a patch").unwrap();
+                std::fs::write(&reference_path, b"not a wave").unwrap();
+            }
+            true
+        })
+        .expect("owned snapshots should isolate the running match from file edits");
+
+        assert_eq!(observed.manifest.history, baseline.manifest.history);
+        assert_eq!(
+            observed.manifest.best_parameters,
+            baseline.manifest.best_parameters
+        );
+        assert_eq!(observed.candidate_wav_bytes, baseline.candidate_wav_bytes);
+        assert_eq!(observed.reference_wav_bytes, original_reference);
+        assert_eq!(observed.patch_yaml.as_bytes(), original_patch);
+        assert_eq!(observed.patch_yaml, baseline.patch_yaml);
+        assert_eq!(
+            observed.manifest.reference_sha256,
+            baseline.manifest.reference_sha256
+        );
+        std::fs::remove_dir_all(directory).ok();
+        std::fs::remove_file(reference_path).ok();
+    }
+
+    #[test]
     fn fixture_match_rejects_short_silent_and_wrong_rate_references_before_search() {
         let fixture = short_acid_fixture();
         let short = temp_wav("short");
         let silent = temp_wav("silent");
         let wrong_rate = temp_wav("wrong-rate");
+        let unsupported = temp_wav("unsupported");
         crate::wav::write_wav_file(&short, 48_000, &vec![0.0; 96_000], &vec![0.0; 96_000]).unwrap();
         crate::wav::write_wav_file(&silent, 48_000, &vec![0.0; 144_000], &vec![0.0; 144_000])
             .unwrap();
@@ -1387,15 +1535,22 @@ mod tests {
             &vec![0.2; 144_000],
         )
         .unwrap();
+        std::fs::write(&unsupported, b"not a wave").unwrap();
 
         for (path, expected) in [
             (short, "shorter than the matching region"),
             (silent, "non-silent reference"),
             (wrong_rate, "sample-rate mismatch"),
+            (unsupported, "unsupported format"),
         ] {
-            let error = match_sound_fixture(&fixture, path, continue_search)
-                .expect_err("invalid reference should fail before search");
+            let mut progress_calls = 0;
+            let error = match_sound_fixture(&fixture, path, |_| {
+                progress_calls += 1;
+                true
+            })
+            .expect_err("invalid reference should fail before search");
             assert!(error.contains(expected), "unexpected error: {error}");
+            assert_eq!(progress_calls, 0, "optimizer must not start for {expected}");
         }
 
         let near_silent = temp_wav("near-silent");
@@ -1410,11 +1565,16 @@ mod tests {
         elevated_floor.analysis.silence_rms = 0.001;
         elevated_floor.patch =
             Path::new("/definitely/missing/near-silent-patch.yaml").to_path_buf();
+        let mut progress_calls = 0;
         assert!(
-            match_sound_fixture(&elevated_floor, near_silent, continue_search)
-                .expect_err("reference below the configured RMS floor should fail")
-                .contains("non-silent reference")
+            match_sound_fixture(&elevated_floor, near_silent, |_| {
+                progress_calls += 1;
+                true
+            })
+            .expect_err("reference below the configured RMS floor should fail")
+            .contains("non-silent reference")
         );
+        assert_eq!(progress_calls, 0);
     }
 
     #[test]
@@ -1496,7 +1656,7 @@ connections:
         assert!(
             match_sound_fixture(&non_numeric, &reference_path, continue_search)
                 .expect_err("non-numeric matching parameter should fail")
-                .contains("not numeric")
+                .contains("continuous numeric")
         );
 
         let mut invalid_analysis = fixture;

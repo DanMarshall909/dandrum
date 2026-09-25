@@ -264,6 +264,25 @@ pub unsafe extern "C" fn dandrum_sound_match_copy_manifest_json(
 }
 
 #[unsafe(no_mangle)]
+pub unsafe extern "C" fn dandrum_sound_match_patch_yaml_size(
+    matched: *const DandrumSoundMatch,
+) -> usize {
+    unsafe { match_artifact(matched) }.map_or(0, |artifact| artifact.matched.patch_yaml.len() + 1)
+}
+
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn dandrum_sound_match_copy_patch_yaml(
+    matched: *const DandrumSoundMatch,
+    buffer: *mut c_char,
+    buffer_capacity: usize,
+) -> bool {
+    let Some(artifact) = (unsafe { match_artifact(matched) }) else {
+        return false;
+    };
+    copy_complete_string_to_c_buffer(&artifact.matched.patch_yaml, buffer, buffer_capacity)
+}
+
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn dandrum_sound_match_parameter_count(
     matched: *const DandrumSoundMatch,
 ) -> usize {
@@ -326,11 +345,13 @@ pub unsafe extern "C" fn dandrum_sound_match_metric(
     reference: bool,
     time_seconds: *mut f64,
     rms: *mut f64,
+    peak: *mut f64,
     spectral_centroid_hz: *mut f64,
     has_spectral_centroid: *mut bool,
 ) -> bool {
     if time_seconds.is_null()
         || rms.is_null()
+        || peak.is_null()
         || spectral_centroid_hz.is_null()
         || has_spectral_centroid.is_null()
     {
@@ -350,6 +371,7 @@ pub unsafe extern "C" fn dandrum_sound_match_metric(
     unsafe {
         *time_seconds = metric.time_seconds;
         *rms = metric.rms;
+        *peak = metric.peak;
         *has_spectral_centroid = metric.spectral_centroid_hz.is_some();
         *spectral_centroid_hz = metric.spectral_centroid_hz.unwrap_or(0.0);
     }
@@ -404,9 +426,15 @@ unsafe fn create_graph_proposal_with_provider(
     let result = (unsafe { match_artifact(matched) })
         .ok_or_else(|| "a completed sound match is required for a graph proposal".to_string())
         .and_then(|artifact| {
+            let patch =
+                crate::patch::load_patch_str(&artifact.matched.patch_yaml).map_err(|error| {
+                    format!("failed to load the matched patch snapshot for graph proposal: {error}")
+                })?;
             let request = crate::graph_proposal::build_graph_proposal_request(
-                &artifact.fixture,
+                &patch,
                 &artifact.matched.manifest,
+                &artifact.matched.candidate_metrics,
+                &artifact.matched.reference_metrics,
             )?;
             let is_cancelled =
                 || cancellation_callback.is_some_and(|callback| !unsafe { callback(context) });
@@ -889,11 +917,13 @@ mod tests {
 
     fn short_match_files() -> (tempfile::TempDir, CString, CString) {
         let directory = tempfile::tempdir().unwrap();
-        let patch_path = Path::new(env!("CARGO_MANIFEST_DIR"))
+        let source_patch_path = Path::new(env!("CARGO_MANIFEST_DIR"))
             .join("../..")
             .join("examples/patches/tb303-acid.yaml")
             .canonicalize()
             .unwrap();
+        let patch_path = directory.path().join("matched-patch.yaml");
+        fs::copy(source_patch_path, &patch_path).unwrap();
         let source = fs::read_to_string(acid_fixture_path()).unwrap();
         let fixture_path = directory.path().join("short-acid.yaml");
         fs::write(
@@ -975,6 +1005,10 @@ mod tests {
             .unwrap();
         assert!(manifest.contains("\"completed_evaluations\":2"));
         assert!(manifest.contains("\"reference_sha256\""));
+        assert!(manifest.contains("\"fixture_sha256\""));
+        assert!(manifest.contains("\"patch_sha256\""));
+        assert!(manifest.contains("\"optimizer\":\"dandrum.seeded_evolution.v1\""));
+        assert!(manifest.contains("\"analysis\""));
         let mut short_manifest = [0_i8; 2];
         assert!(!unsafe {
             dandrum_sound_match_copy_manifest_json(
@@ -983,6 +1017,16 @@ mod tests {
                 short_manifest.len(),
             )
         });
+        let patch_yaml_size = unsafe { dandrum_sound_match_patch_yaml_size(matched) };
+        let mut patch_yaml = vec![0_i8; patch_yaml_size];
+        assert!(unsafe {
+            dandrum_sound_match_copy_patch_yaml(matched, patch_yaml.as_mut_ptr(), patch_yaml.len())
+        });
+        let patch_yaml = unsafe { CStr::from_ptr(patch_yaml.as_ptr()) }
+            .to_str()
+            .unwrap();
+        assert!(patch_yaml.contains("metadata:"));
+        assert!(patch_yaml.contains("modules:"));
 
         assert_eq!(unsafe { dandrum_sound_match_parameter_count(matched) }, 4);
         let mut id = [0_i8; 128];
@@ -1039,6 +1083,7 @@ mod tests {
         assert!(metric_count > 1);
         let mut time = 0.0;
         let mut candidate_rms = 0.0;
+        let mut candidate_peak = 0.0;
         let mut candidate_centroid = 0.0;
         let mut candidate_has_centroid = false;
         assert!(unsafe {
@@ -1048,12 +1093,25 @@ mod tests {
                 false,
                 &mut time,
                 &mut candidate_rms,
+                &mut candidate_peak,
                 &mut candidate_centroid,
                 &mut candidate_has_centroid,
             )
         });
-        assert!(time.is_finite() && candidate_rms.is_finite());
+        assert!(time.is_finite() && candidate_rms.is_finite() && candidate_peak.is_finite());
         assert!(!candidate_has_centroid || candidate_centroid.is_finite());
+        assert!(!unsafe {
+            dandrum_sound_match_metric(
+                matched,
+                0,
+                false,
+                &mut time,
+                &mut candidate_rms,
+                std::ptr::null_mut(),
+                &mut candidate_centroid,
+                &mut candidate_has_centroid,
+            )
+        });
         assert!(unsafe {
             dandrum_sound_match_metric(
                 matched,
@@ -1061,6 +1119,7 @@ mod tests {
                 true,
                 &mut time,
                 &mut candidate_rms,
+                &mut candidate_peak,
                 &mut candidate_centroid,
                 &mut candidate_has_centroid,
             )
@@ -1072,6 +1131,7 @@ mod tests {
                 true,
                 &mut time,
                 &mut candidate_rms,
+                &mut candidate_peak,
                 &mut candidate_centroid,
                 &mut candidate_has_centroid,
             )
@@ -1153,7 +1213,7 @@ connections:
   - { from: mixer.mix, to: out.left }
   - { from: mixer.mix, to: out.right }
 "#;
-        let (_directory, fixture_path, reference_path) = short_match_files();
+        let (directory, fixture_path, reference_path) = short_match_files();
         let matched = unsafe {
             dandrum_sound_match_create(
                 fixture_path.as_ptr(),
@@ -1170,6 +1230,7 @@ connections:
             }),
             requests: Mutex::new(Vec::new()),
         };
+        fs::write(directory.path().join("matched-patch.yaml"), "not a patch").unwrap();
 
         let proposal = unsafe {
             create_graph_proposal_with_provider(matched, &provider, None, std::ptr::null_mut())
@@ -1335,6 +1396,13 @@ connections:
             unsafe { dandrum_sound_match_manifest_json_size(std::ptr::null()) },
             0
         );
+        assert_eq!(
+            unsafe { dandrum_sound_match_patch_yaml_size(std::ptr::null()) },
+            0
+        );
+        assert!(!unsafe {
+            dandrum_sound_match_copy_patch_yaml(std::ptr::null(), error.as_mut_ptr(), error.len())
+        });
         assert_eq!(
             unsafe { dandrum_sound_match_metric_count(std::ptr::null()) },
             0

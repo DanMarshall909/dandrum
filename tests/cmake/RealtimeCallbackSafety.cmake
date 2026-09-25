@@ -9,6 +9,14 @@ function(read_source_relative out_var relative_path)
     set(${out_var} "${source_text}" PARENT_SCOPE)
 endfunction()
 
+function(strip_trailing_rust_test_module out_var source_text)
+    string(FIND "${source_text}" "\n#[cfg(test)]\nmod tests" test_module_pos)
+    if (NOT test_module_pos EQUAL -1)
+        string(SUBSTRING "${source_text}" 0 ${test_module_pos} source_text)
+    endif()
+    set(${out_var} "${source_text}" PARENT_SCOPE)
+endfunction()
+
 function(extract_function_body out_var source_text signature)
     string(FIND "${source_text}" "${signature}" signature_pos)
     if (signature_pos EQUAL -1)
@@ -79,6 +87,25 @@ if (plugin_process_block_body MATCHES "ScopedLock|CriticalSection|std::cout|std:
     message(FATAL_ERROR "DandrumAudioProcessor::processBlock contains callback-unsafe locking, allocation, console IO, engine lifecycle/loading, matching, provider, or offline Sound Lab work")
 endif()
 
+set(rust_offline_operation_pattern
+    "codex_cli_provider|graph_proposal|sound_matching|sound_workbench|match_sound_fixture|std::process|Command::new|std::fs|fs::(read|write|File|OpenOptions)|File::(open|create)|sha2|Sha256|rustfft|FftPlanner|deterministic_bounded_search|optimizer|reference_wav|load_pcm_wav|decode_pcm_wav|write_wav|fft")
+
+foreach(forbidden_rust_example
+        "use std::fs"
+        "std::fs::read"
+        "File::open"
+        "sha2::Sha256"
+        "rustfft::FftPlanner"
+        "deterministic_bounded_search"
+        "load_pcm_wav"
+        "write_wav_stereo_i16"
+        "codex_cli_provider"
+        "Command::new")
+    if (NOT forbidden_rust_example MATCHES "${rust_offline_operation_pattern}")
+        message(FATAL_ERROR "Realtime Rust guard calibration missed: ${forbidden_rust_example}")
+    endif()
+endforeach()
+
 foreach(realtime_rust_source
         "src/rust-engine/src/realtime.rs"
         "src/rust-engine/src/graph_processor/mod.rs"
@@ -90,8 +117,9 @@ foreach(realtime_rust_source
         "src/rust-engine/src/synth.rs"
         "src/rust-engine/src/ffi.rs")
     read_source_relative(realtime_source_text "${realtime_rust_source}")
-    if (realtime_source_text MATCHES "codex_cli_provider|graph_proposal|sound_matching|match_sound_fixture|std::process|Command::new")
-        message(FATAL_ERROR "${realtime_rust_source} imports offline matching, proposal, or child-process work")
+    strip_trailing_rust_test_module(realtime_production_source "${realtime_source_text}")
+    if (realtime_production_source MATCHES "${rust_offline_operation_pattern}")
+        message(FATAL_ERROR "${realtime_rust_source} imports file IO, FFT, hashing, optimization, matching, proposal, WAV, or child-process work")
     endif()
 endforeach()
 

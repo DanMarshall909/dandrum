@@ -9,7 +9,7 @@ use crate::core::TimedInputEvent;
 use crate::patch::RenderSettings;
 use crate::sound_analysis::{AnalysisFrame, AnalysisSettings};
 
-#[derive(Clone, Debug, Deserialize, PartialEq)]
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq)]
 pub struct SoundFixture {
     pub version: u32,
     pub name: String,
@@ -44,7 +44,7 @@ pub struct SoundMatchWeights {
     pub centroid: f64,
 }
 
-#[derive(Clone, Debug, Deserialize, PartialEq)]
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq)]
 pub struct SoundTimeline {
     pub tempo_bpm: f64,
     pub steps_per_bar: u32,
@@ -54,7 +54,7 @@ pub struct SoundTimeline {
     pub events: Vec<SoundEvent>,
 }
 
-#[derive(Clone, Debug, Deserialize, PartialEq, Eq)]
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(tag = "type", rename_all = "snake_case")]
 pub enum SoundEvent {
     NoteOn { frame: u64, note: u8, velocity: u8 },
@@ -134,8 +134,21 @@ pub fn render_sound_fixture_with_public_numeric_values(
     fixture: &SoundFixture,
     values: &std::collections::BTreeMap<String, f64>,
 ) -> Result<SoundRender, String> {
-    let mut patch_doc = crate::patch::load_patch_file(&fixture.patch)
+    let patch_doc = crate::patch::load_patch_file(&fixture.patch)
         .map_err(|error| format!("failed to load sound fixture patch: {error}"))?;
+    let patch_root = fixture.patch.parent().unwrap_or_else(|| Path::new("."));
+    render_sound_fixture_with_patch_and_public_numeric_values(
+        fixture, &patch_doc, patch_root, values,
+    )
+}
+
+pub(crate) fn render_sound_fixture_with_patch_and_public_numeric_values(
+    fixture: &SoundFixture,
+    patch_doc: &crate::patch::PatchDocument,
+    patch_root: &Path,
+    values: &std::collections::BTreeMap<String, f64>,
+) -> Result<SoundRender, String> {
+    let mut patch_doc = patch_doc.clone();
     for (parameter_id, value) in values {
         let target = patch_doc
             .preset_surface
@@ -173,7 +186,6 @@ pub fn render_sound_fixture_with_public_numeric_values(
         );
     }
     patch_doc.render = fixture.render.clone();
-    let patch_root = fixture.patch.parent().unwrap_or_else(|| Path::new("."));
     let prepared = crate::preparation::prepare_instrument_document(patch_doc, patch_root)
         .map_err(|error| format!("failed to prepare sound fixture patch: {error}"))?;
     let events = expand_timeline_events(fixture)?;
@@ -399,6 +411,13 @@ fn validate_matching_declaration(fixture: &SoundFixture) -> Result<(), String> {
     if matching.seed == 0 {
         return Err("sound matching seed must be positive".to_string());
     }
+    if !fixture.analysis.min_frequency_hz.is_finite() || fixture.analysis.min_frequency_hz <= 0.0 {
+        return Err(
+            "sound matching log-spectral minimum frequency must be finite and positive".to_string(),
+        );
+    }
+    crate::sound_analysis::validate_settings(fixture.render.sample_rate_hz, fixture.analysis)
+        .map_err(|error| format!("invalid sound matching analysis settings: {error}"))?;
     if matching.max_evaluations == 0 {
         return Err("sound matching evaluation count must be positive".to_string());
     }
@@ -468,8 +487,7 @@ fn validate_matching_declaration(fixture: &SoundFixture) -> Result<(), String> {
         let numeric = matches!(
             (&target.value_type, &target.default),
             (
-                crate::patch::PresetTargetType::Number
-                    | crate::patch::PresetTargetType::Integer,
+                crate::patch::PresetTargetType::Number,
                 crate::patch::ParameterValue::Number(value)
             ) if value.is_finite()
         );
@@ -479,7 +497,7 @@ fn validate_matching_declaration(fixture: &SoundFixture) -> Result<(), String> {
         );
         if !numeric || !bounded {
             return Err(format!(
-                "sound matching public numeric parameter {parameter_id} must have a finite numeric default and ordered bounds"
+                "sound matching public numeric parameter {parameter_id} must have a finite continuous numeric default and ordered bounds"
             ));
         }
     }
@@ -550,6 +568,35 @@ mod tests {
         fs::write(&path, yaml.replacen(replace_from, replace_to, 1))
             .expect("fixture variant should write");
         path
+    }
+
+    fn write_matching_patch_variant(name: &str, replace_from: &str, replace_to: &str) -> PathBuf {
+        let output_dir = temp_dir("sound-matching-patch-validation");
+        fs::create_dir_all(&output_dir).expect("patch temp directory should be created");
+        let source_patch = acid_fixture_path()
+            .parent()
+            .expect("fixture should have a parent")
+            .join("../patches/tb303-acid.yaml")
+            .canonicalize()
+            .expect("TB-303 patch should resolve");
+        let patch = fs::read_to_string(&source_patch).expect("source patch should be read");
+        assert!(
+            patch.contains(replace_from),
+            "patch replacement source should exist"
+        );
+        let patch_path = output_dir.join(format!("{name}-patch.yaml"));
+        fs::write(&patch_path, patch.replacen(replace_from, replace_to, 1))
+            .expect("patch variant should write");
+        let fixture = fs::read_to_string(acid_fixture_path())
+            .expect("source fixture should be read")
+            .replacen(
+                "patch: ../patches/tb303-acid.yaml",
+                &format!("patch: {}", patch_path.display()),
+                1,
+            );
+        let fixture_path = output_dir.join(format!("{name}.yaml"));
+        fs::write(&fixture_path, fixture).expect("fixture variant should write");
+        fixture_path
     }
 
     fn write_short_matching_fixture(name: &str) -> PathBuf {
@@ -706,10 +753,52 @@ mod tests {
             ),
             ("invalid-weight", "spectral: 0.70", "spectral: -1", "weight"),
             (
+                "zero-log-frequency",
+                "min_frequency_hz: 30",
+                "min_frequency_hz: 0",
+                "log-spectral minimum frequency",
+            ),
+            (
+                "invalid-analysis-frame",
+                "frame_size: 1024",
+                "frame_size: 1",
+                "frame size",
+            ),
+            (
+                "invalid-analysis-hop",
+                "hop_size: 128",
+                "hop_size: 0",
+                "hop size",
+            ),
+            (
+                "invalid-analysis-maximum",
+                "max_frequency_hz: 20000",
+                "max_frequency_hz: 30000",
+                "frequency band",
+            ),
+            (
+                "invalid-analysis-silence",
+                "silence_rms: 0.00001",
+                "silence_rms: -1",
+                "silence RMS",
+            ),
+            (
                 "unknown-parameter",
                 "- filter.cutoff",
                 "- filter.absent",
                 "unknown public numeric parameter",
+            ),
+            (
+                "empty-parameters",
+                "parameters:\n    - filter.cutoff\n    - filter.resonance\n    - filter.envelope_modulation\n    - filter.decay_ms",
+                "parameters: []",
+                "at least one public parameter",
+            ),
+            (
+                "duplicate-parameter",
+                "- filter.resonance",
+                "- filter.cutoff",
+                "must be unique",
             ),
         ];
 
@@ -719,6 +808,77 @@ mod tests {
                 .expect_err("invalid matching declaration should fail before rendering");
             assert!(error.contains(expected), "unexpected error: {error}");
         }
+
+        let patch_cases = [
+            (
+                "non-numeric-parameter",
+                "type: number\n      default: 0.4",
+                "type: boolean\n      default: true",
+                "finite continuous numeric default",
+            ),
+            (
+                "integer-parameter",
+                "type: number\n      default: 0.4",
+                "type: integer\n      default: 1",
+                "continuous numeric default",
+            ),
+            (
+                "unbounded-parameter",
+                "min: 0.02\n      max: 0.9",
+                "min: 0.02",
+                "ordered bounds",
+            ),
+        ];
+        for (name, from, to, expected) in patch_cases {
+            let path = write_matching_patch_variant(name, from, to);
+            let error = load_sound_fixture_file(path)
+                .expect_err("invalid patch matching declaration should fail before rendering");
+            assert!(error.contains(expected), "unexpected error: {error}");
+        }
+    }
+
+    #[test]
+    fn fixture_without_matching_declaration_remains_valid_for_render_only_workflows() {
+        let mut fixture =
+            load_sound_fixture_file(acid_fixture_path()).expect("TB-303 fixture should load");
+        fixture.matching = None;
+
+        assert_eq!(validate_matching_declaration(&fixture), Ok(()));
+    }
+
+    #[test]
+    fn snapshot_renderer_rejects_invalid_public_parameter_applications_before_rendering() {
+        let fixture =
+            load_sound_fixture_file(acid_fixture_path()).expect("TB-303 fixture should load");
+        let patch = crate::patch::load_patch_file(&fixture.patch).expect("patch should load");
+        let patch_root = fixture.patch.parent().unwrap();
+        let render = |patch: &crate::patch::PatchDocument, id: &str, value: f64| {
+            render_sound_fixture_with_patch_and_public_numeric_values(
+                &fixture,
+                patch,
+                patch_root,
+                &std::collections::BTreeMap::from([(id.to_string(), value)]),
+            )
+            .expect_err("invalid public parameter application should fail")
+        };
+
+        assert!(render(&patch, "filter.absent", 0.5).contains("unknown"));
+        assert!(render(&patch, "filter.cutoff", f64::NAN).contains("outside"));
+
+        let mut unbounded = patch.clone();
+        unbounded.preset_surface.parameters[0].max = None;
+        assert!(render(&unbounded, "filter.cutoff", 0.5).contains("bounds"));
+
+        let mut non_numeric = patch.clone();
+        non_numeric.preset_surface.parameters[0].default =
+            crate::patch::ParameterValue::Text("saw".to_string());
+        assert!(render(&non_numeric, "filter.cutoff", 0.5).contains("not numeric"));
+
+        let mut missing_module = patch;
+        missing_module.preset_surface.parameters[0]
+            .maps_to
+            .module_id = "absent".to_string();
+        assert!(render(&missing_module, "filter.cutoff", 0.5).contains("missing module"));
     }
 
     #[test]

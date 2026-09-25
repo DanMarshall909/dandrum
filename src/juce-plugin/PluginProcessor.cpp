@@ -961,6 +961,38 @@ bool DandrumAudioProcessor::reloadInstrumentFromFile (const juce::File& yamlFile
     return reloaded;
 }
 
+bool DandrumAudioProcessor::reloadInstrumentFromYaml (const juce::String& yamlText,
+                                                      const juce::File& sourceHint)
+{
+    const std::lock_guard<std::mutex> reloadLock (reloadMutex);
+    const auto parent = sourceHint.getParentDirectory();
+    if (! parent.isDirectory())
+    {
+        lastLoadError = "Instrument source directory does not exist: " + parent.getFullPathName();
+        return false;
+    }
+
+    const auto stagedFile = parent.getNonexistentChildFile (
+        ".dandrum_matched_snapshot_", ".yaml", false);
+    const auto* yamlBytes = yamlText.toRawUTF8();
+    if (! stagedFile.replaceWithData (yamlBytes,
+                                      static_cast<std::size_t> (yamlText.getNumBytesAsUTF8())))
+    {
+        lastLoadError = "Could not stage the matched instrument snapshot beside: "
+                        + sourceHint.getFullPathName();
+        return false;
+    }
+
+    loadedPreset = {};
+    const auto reloaded = replaceActiveEngineFromFile (
+        stagedFile, sourceHint, yamlText, true, false, &lastReloadWarning);
+    stagedFile.deleteFile();
+    if (reloaded)
+        instrumentFileWatcher.watchFile (sourceHint);
+
+    return reloaded;
+}
+
 void DandrumAudioProcessor::setFileWatchEnabled (bool shouldWatch)
 {
     instrumentFileWatcher.setEnabled (shouldWatch);

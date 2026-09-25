@@ -4,7 +4,7 @@ use std::fmt;
 use std::fs;
 use std::path::{Path, PathBuf};
 
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 
 use crate::builtins::{
     BuiltInModuleDefinition, BuiltInModuleRegistry, ParameterMetadata, ParameterValueType,
@@ -129,7 +129,7 @@ fn default_duration_frames() -> u64 {
     DEFAULT_DURATION_FRAMES
 }
 
-#[derive(Clone, Debug, Deserialize, PartialEq, Eq)]
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 pub struct RenderSettings {
     pub sample_rate_hz: u32,
     pub block_size_frames: u32,

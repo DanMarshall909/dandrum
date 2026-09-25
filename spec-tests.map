@@ -1467,6 +1467,7 @@ AC spectral-sound-matching :: Matching uses aligned multi-resolution spectral an
 AC spectral-sound-matching :: Parameter search is deterministic, bounded, and cancellable :: Same inputs reproduce the same search
   fp 019a0e4c9bfd
   test rust:bounded_search_is_seeded_reproducible_and_improves_the_initial_candidate
+  test rust:fixture_match_uses_immutable_patch_and_reference_snapshots_for_every_evaluation
 
 AC spectral-sound-matching :: Parameter search is deterministic, bounded, and cancellable :: Search improves a recoverable self-reference
   fp 9dedd3ef2d5b

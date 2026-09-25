@@ -61,6 +61,8 @@ public:
         double timeSeconds = 0.0;
         double referenceRms = 0.0;
         double candidateRms = 0.0;
+        double referencePeak = 0.0;
+        double candidatePeak = 0.0;
         double referenceSpectralCentroidHz = 0.0;
         double candidateSpectralCentroidHz = 0.0;
         bool referenceHasSpectralCentroid = false;
@@ -72,6 +74,7 @@ public:
         std::uint32_t sampleRateHz = 0;
         std::uint64_t durationFrames = 0;
         std::string manifestJson;
+        std::string patchYaml;
         std::vector<MatchParameter> parameters;
         std::vector<ComparisonMetric> metrics;
         std::vector<std::uint8_t> candidateWavBytes;
@@ -107,6 +110,7 @@ public:
     bool startMatch (const std::filesystem::path& fixturePath,
                      const std::filesystem::path& referencePath);
     bool startProposal();
+    bool discardResults();
     void cancelCurrentWork();
     State state() const noexcept;
     std::uint64_t generation() const noexcept;

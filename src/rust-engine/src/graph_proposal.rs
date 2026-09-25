@@ -3,7 +3,6 @@ use std::path::Path;
 use serde::{Deserialize, Serialize};
 
 use crate::sound_matching::SoundMatchManifest;
-use crate::sound_workbench::SoundFixture;
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
 pub struct GraphProposalCapabilities {
@@ -17,9 +16,36 @@ pub struct GraphProposalRequest {
     pub version: u32,
     pub goal: String,
     pub residual: GraphProposalResidual,
+    pub features: GraphProposalFeatureComparison,
     pub allowed_modules: Vec<String>,
     pub current_topology: GraphTopologySummary,
     pub constraints: Vec<String>,
+}
+
+#[derive(Clone, Copy, Debug, Serialize, Deserialize, PartialEq)]
+#[serde(deny_unknown_fields)]
+pub struct GraphProposalFeatureComparison {
+    pub reference: GraphProposalSoundFeatures,
+    pub candidate: GraphProposalSoundFeatures,
+    pub delta: GraphProposalFeatureDelta,
+}
+
+#[derive(Clone, Copy, Debug, Serialize, Deserialize, PartialEq)]
+#[serde(deny_unknown_fields)]
+pub struct GraphProposalSoundFeatures {
+    pub frame_count: usize,
+    pub centroid_frame_count: usize,
+    pub mean_rms: f64,
+    pub max_peak: f64,
+    pub mean_spectral_centroid_hz: f64,
+}
+
+#[derive(Clone, Copy, Debug, Serialize, Deserialize, PartialEq)]
+#[serde(deny_unknown_fields)]
+pub struct GraphProposalFeatureDelta {
+    pub rms_db: f64,
+    pub peak_db: f64,
+    pub centroid_octaves: f64,
 }
 
 #[derive(Clone, Copy, Debug, Serialize, Deserialize, PartialEq)]
@@ -92,11 +118,11 @@ pub trait GraphProposalProvider: Send + Sync {
 }
 
 pub fn build_graph_proposal_request(
-    fixture: &SoundFixture,
+    patch: &crate::patch::PatchDocument,
     matched: &SoundMatchManifest,
+    candidate_metrics: &[crate::sound_analysis::AnalysisFrame],
+    reference_metrics: &[crate::sound_analysis::AnalysisFrame],
 ) -> Result<GraphProposalRequest, String> {
-    let patch = crate::patch::load_patch_file(&fixture.patch)
-        .map_err(|error| format!("failed to load the current patch for graph proposal: {error}"))?;
     let allowed_modules = crate::builtins::BuiltInModuleRegistry::new()
         .module_types()
         .filter(|module_type| *module_type != crate::builtins::module_types::SCRIPT)
@@ -128,6 +154,17 @@ pub fn build_graph_proposal_request(
             max: parameter.max,
         })
         .collect();
+    let candidate = aggregate_sound_features(candidate_metrics)?;
+    let reference = aggregate_sound_features(reference_metrics)?;
+    let db_delta = |candidate: f64, reference: f64| {
+        20.0 * (candidate.max(1.0e-12) / reference.max(1.0e-12)).log10()
+    };
+    let centroid_octaves =
+        if candidate.mean_spectral_centroid_hz > 0.0 && reference.mean_spectral_centroid_hz > 0.0 {
+            (candidate.mean_spectral_centroid_hz / reference.mean_spectral_centroid_hz).log2()
+        } else {
+            0.0
+        };
 
     Ok(GraphProposalRequest {
         version: 1,
@@ -141,6 +178,15 @@ pub fn build_graph_proposal_request(
             candidate_gain: matched.best_score.candidate_gain,
             completed_evaluations: matched.completed_evaluations,
         },
+        features: GraphProposalFeatureComparison {
+            reference,
+            candidate,
+            delta: GraphProposalFeatureDelta {
+                rms_db: db_delta(candidate.mean_rms, reference.mean_rms),
+                peak_db: db_delta(candidate.max_peak, reference.max_peak),
+                centroid_octaves,
+            },
+        },
         allowed_modules,
         current_topology: GraphTopologySummary {
             modules,
@@ -153,9 +199,48 @@ pub fn build_graph_proposal_request(
                 .to_string(),
             "Expose every suggested search parameter through preset_surface.parameters with finite bounds."
                 .to_string(),
+            "Use the directional aggregate feature deltas as evidence; positive deltas mean the candidate exceeds the reference."
+                .to_string(),
             "Do not include reference audio, credentials, commands, or executable instructions."
                 .to_string(),
         ],
+    })
+}
+
+fn aggregate_sound_features(
+    metrics: &[crate::sound_analysis::AnalysisFrame],
+) -> Result<GraphProposalSoundFeatures, String> {
+    if metrics.is_empty() {
+        return Err("graph proposal requires non-empty coherent comparison metrics".to_string());
+    }
+    if metrics.iter().any(|frame| {
+        !frame.rms.is_finite()
+            || !frame.peak.is_finite()
+            || frame
+                .spectral_centroid_hz
+                .is_some_and(|centroid| !centroid.is_finite())
+    }) {
+        return Err("graph proposal comparison metrics must be finite".to_string());
+    }
+    let frame_count = metrics.len();
+    let mean_rms = metrics.iter().map(|frame| frame.rms).sum::<f64>() / frame_count as f64;
+    let max_peak = metrics.iter().map(|frame| frame.peak).fold(0.0, f64::max);
+    let centroids = metrics
+        .iter()
+        .filter_map(|frame| frame.spectral_centroid_hz)
+        .collect::<Vec<_>>();
+    let centroid_frame_count = centroids.len();
+    let mean_spectral_centroid_hz = if centroids.is_empty() {
+        0.0
+    } else {
+        centroids.iter().sum::<f64>() / centroids.len() as f64
+    };
+    Ok(GraphProposalSoundFeatures {
+        frame_count,
+        centroid_frame_count,
+        mean_rms,
+        max_peak,
+        mean_spectral_centroid_hz,
     })
 }
 
@@ -419,7 +504,7 @@ connections:
         }
     }
 
-    fn acid_fixture() -> SoundFixture {
+    fn acid_fixture() -> crate::sound_workbench::SoundFixture {
         crate::sound_workbench::load_sound_fixture_file(
             Path::new(env!("CARGO_MANIFEST_DIR"))
                 .join("../..")
@@ -430,14 +515,27 @@ connections:
 
     fn match_manifest() -> SoundMatchManifest {
         SoundMatchManifest {
-            version: 1,
+            version: 2,
             fixture_name: "TB-303 acid proof of concept".to_string(),
+            fixture_sha256: "cd".repeat(32),
+            patch_sha256: "ef".repeat(32),
             reference_name: "private-hardware-reference.wav".to_string(),
             reference_sha256: "ab".repeat(32),
+            optimizer: "dandrum.seeded_evolution.v1".to_string(),
             seed: 303,
             max_evaluations: 16,
             completed_evaluations: 16,
             status: crate::sound_matching::SoundMatchStatus::Completed,
+            sample_rate_hz: 48_000,
+            block_size_frames: 64,
+            render_duration_frames: 528_000,
+            analysis: crate::sound_analysis::AnalysisSettings {
+                frame_size: 1_024,
+                hop_size: 128,
+                min_frequency_hz: 30.0,
+                max_frequency_hz: 20_000.0,
+                silence_rms: 1.0e-5,
+            },
             region_start_frame: 48_000,
             region_length_frames: 96_000,
             spectral_windows: vec![256, 1_024, 4_096],
@@ -458,15 +556,47 @@ connections:
         }
     }
 
+    fn comparison_metrics() -> (
+        Vec<crate::sound_analysis::AnalysisFrame>,
+        Vec<crate::sound_analysis::AnalysisFrame>,
+    ) {
+        let frame = |rms, peak, centroid| crate::sound_analysis::AnalysisFrame {
+            start_frame: 0,
+            time_seconds: 0.01,
+            rms,
+            peak,
+            spectral_centroid_hz: Some(centroid),
+        };
+        (
+            vec![frame(0.4, 0.8, 2_000.0), frame(0.2, 0.6, 1_000.0)],
+            vec![frame(0.2, 0.5, 1_000.0), frame(0.1, 0.4, 500.0)],
+        )
+    }
+
+    fn proposal_request(fixture: &crate::sound_workbench::SoundFixture) -> GraphProposalRequest {
+        let (candidate, reference) = comparison_metrics();
+        let patch = crate::patch::load_patch_file(&fixture.patch).expect("acid patch should load");
+        build_graph_proposal_request(&patch, &match_manifest(), &candidate, &reference)
+            .expect("canonical request should build")
+    }
+
     #[test]
     fn canonical_request_contains_derived_residual_catalogue_and_sanitized_topology_only() {
         let fixture = acid_fixture();
-        let request = build_graph_proposal_request(&fixture, &match_manifest())
-            .expect("canonical request should build");
+        let request = proposal_request(&fixture);
         let json = serde_json::to_string(&request).unwrap();
 
         assert_eq!(request.version, 1);
         assert_eq!(request.residual.total, 0.33);
+        assert!(request.features.candidate.mean_rms > request.features.reference.mean_rms);
+        assert!(request.features.candidate.max_peak > request.features.reference.max_peak);
+        assert!(
+            request.features.candidate.mean_spectral_centroid_hz
+                > request.features.reference.mean_spectral_centroid_hz
+        );
+        assert!(request.features.delta.rms_db > 0.0);
+        assert!(request.features.delta.peak_db > 0.0);
+        assert!(request.features.delta.centroid_octaves > 0.0);
         assert!(request.allowed_modules.contains(&"oscillator".to_string()));
         assert!(request.allowed_modules.contains(&"filter".to_string()));
         assert!(
@@ -500,9 +630,48 @@ connections:
     }
 
     #[test]
+    fn feature_summary_rejects_missing_or_non_finite_metrics_and_handles_silent_centroids() {
+        assert!(
+            aggregate_sound_features(&[])
+                .unwrap_err()
+                .contains("non-empty")
+        );
+        let frame = |rms, peak, centroid| crate::sound_analysis::AnalysisFrame {
+            start_frame: 0,
+            time_seconds: 0.01,
+            rms,
+            peak,
+            spectral_centroid_hz: centroid,
+        };
+        for invalid in [
+            frame(f64::NAN, 0.5, Some(1_000.0)),
+            frame(0.2, f64::NAN, Some(1_000.0)),
+            frame(0.2, 0.5, Some(f64::NAN)),
+        ] {
+            assert!(
+                aggregate_sound_features(&[invalid])
+                    .unwrap_err()
+                    .contains("finite")
+            );
+        }
+
+        let fixture = acid_fixture();
+        let silent = vec![frame(0.0, 0.0, None)];
+        let patch = crate::patch::load_patch_file(&fixture.patch).expect("acid patch should load");
+        let request = build_graph_proposal_request(&patch, &match_manifest(), &silent, &silent)
+            .expect("silent finite feature summaries remain representable");
+
+        assert_eq!(request.features.candidate.centroid_frame_count, 0);
+        assert_eq!(request.features.candidate.mean_spectral_centroid_hz, 0.0);
+        assert_eq!(request.features.delta.centroid_octaves, 0.0);
+        assert_eq!(request.features.delta.rms_db, 0.0);
+        assert_eq!(request.features.delta.peak_db, 0.0);
+    }
+
+    #[test]
     fn provider_neutral_orchestration_returns_only_locally_validated_patch_proposals() {
         let fixture = acid_fixture();
-        let request = build_graph_proposal_request(&fixture, &match_manifest()).unwrap();
+        let request = proposal_request(&fixture);
         let provider = RecordingProvider::valid();
 
         let proposal =
@@ -531,7 +700,7 @@ connections:
     #[test]
     fn local_validation_rejects_assets_scripts_unknown_modules_and_unknown_search_controls() {
         let fixture = acid_fixture();
-        let request = build_graph_proposal_request(&fixture, &match_manifest()).unwrap();
+        let request = proposal_request(&fixture);
         let variants = [
             (
                 VALID_PATCH.replace(
@@ -583,7 +752,7 @@ connections:
     #[test]
     fn provider_failure_and_cancellation_remain_non_fatal_diagnostics() {
         let fixture = acid_fixture();
-        let request = build_graph_proposal_request(&fixture, &match_manifest()).unwrap();
+        let request = proposal_request(&fixture);
         let failed = RecordingProvider {
             response: Err("provider unavailable".to_string()),
             requests: Mutex::new(Vec::new()),
@@ -607,7 +776,7 @@ connections:
     #[test]
     fn orchestration_rejects_unstructured_providers_and_post_response_cancellation() {
         let fixture = acid_fixture();
-        let request = build_graph_proposal_request(&fixture, &match_manifest()).unwrap();
+        let request = proposal_request(&fixture);
 
         let incompatible = request_validated_graph_proposal(
             &UnstructuredProvider,
@@ -631,7 +800,7 @@ connections:
     #[test]
     fn local_validation_rejects_empty_fields_bad_yaml_and_unbounded_or_non_numeric_controls() {
         let fixture = acid_fixture();
-        let request = build_graph_proposal_request(&fixture, &match_manifest()).unwrap();
+        let request = proposal_request(&fixture);
         let variants = [
             (
                 "".to_string(),

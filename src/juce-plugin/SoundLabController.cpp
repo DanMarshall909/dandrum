@@ -131,6 +131,16 @@ bool SoundLabController::startProposal()
     return true;
 }
 
+bool SoundLabController::discardResults()
+{
+    if (! tryBeginWork (State::idle))
+        return false;
+
+    clearResults();
+    currentGeneration.fetch_add (1, std::memory_order_release);
+    return true;
+}
+
 void SoundLabController::cancelCurrentWork()
 {
     const auto state = currentState.load (std::memory_order_acquire);
@@ -280,6 +290,17 @@ void SoundLabController::matchOnWorker (std::filesystem::path fixturePath,
     }
     data->manifestJson = manifest.data();
 
+    const auto patchYamlSize = dandrum_sound_match_patch_yaml_size (matched.get());
+    std::vector<char> patchYaml (patchYamlSize);
+    if (patchYaml.empty()
+        || ! dandrum_sound_match_copy_patch_yaml (
+            matched.get(), patchYaml.data(), patchYaml.size()))
+    {
+        fail ("Rust could not copy the Sound Lab matched patch snapshot");
+        return;
+    }
+    data->patchYaml = patchYaml.data();
+
     const auto parameterCount = dandrum_sound_match_parameter_count (matched.get());
     data->parameters.reserve (parameterCount);
     for (std::size_t index = 0; index < parameterCount; ++index)
@@ -314,6 +335,7 @@ void SoundLabController::matchOnWorker (std::filesystem::path fixturePath,
                                           false,
                                           &metric.timeSeconds,
                                           &metric.candidateRms,
+                                          &metric.candidatePeak,
                                           &metric.candidateSpectralCentroidHz,
                                           &metric.candidateHasSpectralCentroid)
             || ! dandrum_sound_match_metric (matched.get(),
@@ -321,6 +343,7 @@ void SoundLabController::matchOnWorker (std::filesystem::path fixturePath,
                                               true,
                                               &referenceTime,
                                               &metric.referenceRms,
+                                              &metric.referencePeak,
                                               &metric.referenceSpectralCentroidHz,
                                               &metric.referenceHasSpectralCentroid))
         {

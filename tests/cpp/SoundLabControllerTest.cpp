@@ -184,10 +184,30 @@ int main()
         || match.completedEvaluations != 2 || match.maxEvaluations != 2
         || ! std::isfinite (match.bestScore) || match.match->parameters.size() != 4
         || match.match->metrics.empty() || match.match->candidateWavBytes.size() <= 44
-        || match.match->referenceWavBytes.size() <= 44 || match.match->manifestJson.empty())
+        || match.match->referenceWavBytes.size() <= 44 || match.match->manifestJson.empty()
+        || match.match->patchYaml.empty())
     {
         std::cerr << "Sound Lab completed match is missing progress or comparison artifacts: "
                   << match.error << '\n';
+        return 1;
+    }
+    const auto& comparison = match.match->metrics[match.match->metrics.size() / 2];
+    if (! std::isfinite (comparison.referencePeak)
+        || ! std::isfinite (comparison.candidatePeak))
+    {
+        std::cerr << "Sound Lab completed match is missing finite peak trajectories\n";
+        return 1;
+    }
+    if (! matcher.discardResults())
+    {
+        std::cerr << "Sound Lab could not discard a completed match for a new reference\n";
+        return 1;
+    }
+    const auto discarded = matcher.snapshot();
+    if (discarded.state != SoundLabController::State::idle || discarded.match != nullptr
+        || discarded.proposal != nullptr || discarded.completedEvaluations != 0)
+    {
+        std::cerr << "Sound Lab retained mixed-reference results after discard\n";
         return 1;
     }
 

@@ -34,6 +34,18 @@ constexpr auto nativeFunctionBootstrap = R"JS(
   };
 })();
 )JS";
+
+bool hasExpectedSoundLabGeneration (const juce::String& path,
+                                    std::uint64_t generation)
+{
+    const auto marker = juce::String ("?generation=");
+    const auto markerIndex = path.indexOf (marker);
+    if (markerIndex < 0)
+        return false;
+
+    return path.substring (markerIndex + marker.length())
+           == juce::String (static_cast<juce::int64> (generation));
+}
 }
 
 DandrumAudioProcessorEditor::DandrumAudioProcessorEditor (DandrumAudioProcessor& processorToUse)
@@ -181,7 +193,8 @@ DandrumAudioProcessorEditor::provideResource (const juce::String& path) const
     if (path.startsWith ("/sound-lab.wav"))
     {
         const auto snapshot = soundLabController.snapshot();
-        if (snapshot.state != SoundLabController::State::ready || snapshot.data == nullptr)
+        if (! hasExpectedSoundLabGeneration (path, snapshot.generation)
+            || snapshot.state != SoundLabController::State::ready || snapshot.data == nullptr)
             return std::nullopt;
 
         std::vector<std::byte> bytes (snapshot.data->wavBytes.size());
@@ -193,7 +206,8 @@ DandrumAudioProcessorEditor::provideResource (const juce::String& path) const
         || path.startsWith ("/sound-lab-candidate.wav"))
     {
         const auto snapshot = soundLabController.snapshot();
-        if (snapshot.match == nullptr)
+        if (! hasExpectedSoundLabGeneration (path, snapshot.generation)
+            || snapshot.match == nullptr)
             return std::nullopt;
 
         const auto& audio = path.startsWith ("/sound-lab-reference.wav")
@@ -313,7 +327,15 @@ void DandrumAudioProcessorEditor::chooseSoundLabReferenceFromWeb (
         {
             const auto selected = chooser.getResult();
             if (selected.existsAsFile())
+            {
+                if (! soundLabController.discardResults())
+                {
+                    soundLabFileChooser.reset();
+                    completion (juce::var ("Sound Lab is busy"));
+                    return;
+                }
                 soundLabReferenceFile = selected;
+            }
             soundLabFileChooser.reset();
             browser.emitEventIfBrowserIsVisible ("soundLabAnalysisChanged",
                                                  soundLabSnapshotForWeb());
@@ -361,7 +383,10 @@ void DandrumAudioProcessorEditor::acceptSoundLabMatchFromWeb (
     }
 
     const auto patchPath = dandrum::findRepositoryExample ("examples/patches/tb303-acid.yaml");
-    if (! processor.reloadInstrumentFromFile (juce::File (juce::String (patchPath.string()))))
+    if (! processor.reloadInstrumentFromYaml (
+            juce::String::fromUTF8 (snapshot.match->patchYaml.data(),
+                                    static_cast<int> (snapshot.match->patchYaml.size())),
+            juce::File (juce::String (patchPath.string()))))
     {
         completion (juce::var (processor.getLastLoadError()));
         return;
@@ -525,6 +550,8 @@ juce::var DandrumAudioProcessorEditor::soundLabSnapshotForWeb() const
             frame->setProperty ("time_seconds", metric.timeSeconds);
             frame->setProperty ("reference_rms", metric.referenceRms);
             frame->setProperty ("candidate_rms", metric.candidateRms);
+            frame->setProperty ("reference_peak", metric.referencePeak);
+            frame->setProperty ("candidate_peak", metric.candidatePeak);
             frame->setProperty (
                 "reference_spectral_centroid_hz",
                 metric.referenceHasSpectralCentroid

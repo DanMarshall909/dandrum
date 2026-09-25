@@ -1,5 +1,5 @@
 use std::fs::{self, File};
-use std::io::{Read, Seek, SeekFrom, Write};
+use std::io::{Read, Write};
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
 use std::thread;
@@ -224,6 +224,19 @@ fn request_numbers_are_finite(request: &GraphProposalRequest) -> bool {
         && residual.rms.is_finite()
         && residual.centroid.is_finite()
         && residual.candidate_gain.is_finite()
+        && [
+            request.features.reference.mean_rms,
+            request.features.reference.max_peak,
+            request.features.reference.mean_spectral_centroid_hz,
+            request.features.candidate.mean_rms,
+            request.features.candidate.max_peak,
+            request.features.candidate.mean_spectral_centroid_hz,
+            request.features.delta.rms_db,
+            request.features.delta.peak_db,
+            request.features.delta.centroid_octaves,
+        ]
+        .iter()
+        .all(|value| value.is_finite())
         && request
             .current_topology
             .public_parameters
@@ -243,23 +256,14 @@ impl ProviderCommandRunner for SystemProviderCommandRunner {
             return Err(ProviderCommandError::Cancelled);
         }
 
-        let mut stdout_file = tempfile::tempfile()
-            .map_err(|error| ProviderCommandError::Process(error.to_string()))?;
-        let mut stderr_file = tempfile::tempfile()
-            .map_err(|error| ProviderCommandError::Process(error.to_string()))?;
-        let child_stdout = stdout_file
-            .try_clone()
-            .map_err(|error| ProviderCommandError::Process(error.to_string()))?;
-        let child_stderr = stderr_file
-            .try_clone()
-            .map_err(|error| ProviderCommandError::Process(error.to_string()))?;
+        let started = Instant::now();
         let mut process = Command::new(&command.program);
         process
             .args(&command.arguments)
             .current_dir(&command.current_dir)
             .stdin(Stdio::piped())
-            .stdout(Stdio::from(child_stdout))
-            .stderr(Stdio::from(child_stderr));
+            .stdout(Stdio::piped())
+            .stderr(Stdio::piped());
         for variable in &command.removed_environment_variables {
             process.env_remove(variable);
         }
@@ -270,38 +274,57 @@ impl ProviderCommandRunner for SystemProviderCommandRunner {
                 ProviderCommandError::Process(error.to_string())
             }
         })?;
-        if let Some(mut stdin) = child.stdin.take() {
-            if let Err(error) = stdin.write_all(command.stdin.as_bytes()) {
-                let _ = child.kill();
-                let _ = child.wait();
-                return Err(ProviderCommandError::Process(error.to_string()));
-            }
-        }
+        let stdout_reader = spawn_bounded_reader(
+            child
+                .stdout
+                .take()
+                .expect("piped provider stdout is available"),
+            command.output_limit_bytes,
+        );
+        let stderr_reader = spawn_bounded_reader(
+            child
+                .stderr
+                .take()
+                .expect("piped provider stderr is available"),
+            command.output_limit_bytes,
+        );
+        let stdin_bytes = command.stdin.as_bytes().to_vec();
+        let stdin_writer = child.stdin.take().map(|mut stdin| {
+            thread::spawn(move || {
+                stdin
+                    .write_all(&stdin_bytes)
+                    .map_err(|error| ProviderCommandError::Process(error.to_string()))
+            })
+        });
 
-        let started = Instant::now();
-        let exit_status = loop {
+        let outcome = loop {
             if is_cancelled() {
                 terminate_child(&mut child);
-                return Err(ProviderCommandError::Cancelled);
+                break Err(ProviderCommandError::Cancelled);
             }
             if started.elapsed() >= command.timeout {
                 terminate_child(&mut child);
-                return Err(ProviderCommandError::TimedOut);
+                break Err(ProviderCommandError::TimedOut);
             }
             match child.try_wait() {
-                Ok(Some(status)) => break status,
+                Ok(Some(status)) => break Ok(status),
                 Ok(None) => thread::sleep(Duration::from_millis(10)),
                 Err(error) => {
                     terminate_child(&mut child);
-                    return Err(ProviderCommandError::Process(error.to_string()));
+                    break Err(ProviderCommandError::Process(error.to_string()));
                 }
             }
         };
+        let stdin_result = join_writer(stdin_writer)?;
+        let stdout = join_reader(stdout_reader)?;
+        let stderr = join_reader(stderr_reader)?;
+        let exit_status = outcome?;
+        stdin_result?;
 
         Ok(ProviderCommandOutput {
             exit_code: exit_status.code(),
-            stdout: read_bounded_tempfile(&mut stdout_file, command.output_limit_bytes)?,
-            stderr: read_bounded_tempfile(&mut stderr_file, command.output_limit_bytes)?,
+            stdout,
+            stderr,
         })
     }
 }
@@ -311,14 +334,46 @@ fn terminate_child(child: &mut std::process::Child) {
     let _ = child.wait();
 }
 
-fn read_bounded_tempfile(file: &mut File, limit: usize) -> Result<String, ProviderCommandError> {
-    file.seek(SeekFrom::Start(0))
-        .map_err(|error| ProviderCommandError::Process(error.to_string()))?;
-    let mut bytes = Vec::new();
-    file.take(limit as u64)
-        .read_to_end(&mut bytes)
-        .map_err(|error| ProviderCommandError::Process(error.to_string()))?;
-    Ok(String::from_utf8_lossy(&bytes).into_owned())
+fn spawn_bounded_reader<R>(
+    mut reader: R,
+    limit: usize,
+) -> thread::JoinHandle<Result<String, ProviderCommandError>>
+where
+    R: Read + Send + 'static,
+{
+    thread::spawn(move || {
+        let mut bytes = Vec::with_capacity(limit.min(8 * 1024));
+        let mut chunk = [0_u8; 8 * 1024];
+        loop {
+            let read = reader
+                .read(&mut chunk)
+                .map_err(|error| ProviderCommandError::Process(error.to_string()))?;
+            if read == 0 {
+                break;
+            }
+            let retained = read.min(limit.saturating_sub(bytes.len()));
+            bytes.extend_from_slice(&chunk[..retained]);
+        }
+        Ok(String::from_utf8_lossy(&bytes).into_owned())
+    })
+}
+
+fn join_reader(
+    reader: thread::JoinHandle<Result<String, ProviderCommandError>>,
+) -> Result<String, ProviderCommandError> {
+    reader.join().map_err(|_| {
+        ProviderCommandError::Process("provider output reader thread panicked".to_string())
+    })?
+}
+
+fn join_writer(
+    writer: Option<thread::JoinHandle<Result<(), ProviderCommandError>>>,
+) -> Result<Result<(), ProviderCommandError>, ProviderCommandError> {
+    writer.map_or(Ok(Ok(())), |writer| {
+        writer.join().map_err(|_| {
+            ProviderCommandError::Process("provider input writer thread panicked".to_string())
+        })
+    })
 }
 
 fn path_string(path: &Path) -> Result<String, String> {
@@ -403,7 +458,8 @@ fn redact_assignment(message: &mut String, variable: &str) {
 mod tests {
     use super::*;
     use crate::graph_proposal::{
-        GraphProposalResidual, GraphTopologyConnection, GraphTopologyModule,
+        GraphProposalFeatureComparison, GraphProposalFeatureDelta, GraphProposalResidual,
+        GraphProposalSoundFeatures, GraphTopologyConnection, GraphTopologyModule,
         GraphTopologyParameter, GraphTopologySummary,
     };
     use std::collections::VecDeque;
@@ -497,6 +553,27 @@ mod tests {
                 centroid: 0.1,
                 candidate_gain: 1.0,
                 completed_evaluations: 16,
+            },
+            features: GraphProposalFeatureComparison {
+                reference: GraphProposalSoundFeatures {
+                    frame_count: 16,
+                    centroid_frame_count: 12,
+                    mean_rms: 0.2,
+                    max_peak: 0.5,
+                    mean_spectral_centroid_hz: 1_000.0,
+                },
+                candidate: GraphProposalSoundFeatures {
+                    frame_count: 16,
+                    centroid_frame_count: 12,
+                    mean_rms: 0.3,
+                    max_peak: 0.7,
+                    mean_spectral_centroid_hz: 1_500.0,
+                },
+                delta: GraphProposalFeatureDelta {
+                    rms_db: 3.52,
+                    peak_db: 2.92,
+                    centroid_octaves: 0.58,
+                },
             },
             allowed_modules: vec!["oscillator".to_string(), "filter".to_string()],
             current_topology: GraphTopologySummary {
@@ -689,7 +766,7 @@ mod tests {
     fn codex_adapter_rejects_non_json_request_numbers_and_bounds_unicode_diagnostics() {
         assert_eq!(MAX_PROVIDER_OUTPUT_BYTES, 64 * 1_024);
         assert_eq!(MAX_DIAGNOSTIC_BYTES, 4 * 1_024);
-        for invalid_number in 0..7 {
+        for invalid_number in 0..16 {
             let mut invalid_request = request();
             match invalid_number {
                 0 => invalid_request.residual.total = f64::NAN,
@@ -697,8 +774,17 @@ mod tests {
                 2 => invalid_request.residual.rms = f64::NEG_INFINITY,
                 3 => invalid_request.residual.centroid = f64::NAN,
                 4 => invalid_request.residual.candidate_gain = f64::INFINITY,
-                5 => invalid_request.current_topology.public_parameters[0].min = Some(f64::NAN),
-                6 => {
+                5 => invalid_request.features.reference.mean_rms = f64::NAN,
+                6 => invalid_request.features.reference.max_peak = f64::NAN,
+                7 => invalid_request.features.reference.mean_spectral_centroid_hz = f64::NAN,
+                8 => invalid_request.features.candidate.mean_rms = f64::NAN,
+                9 => invalid_request.features.candidate.max_peak = f64::NAN,
+                10 => invalid_request.features.candidate.mean_spectral_centroid_hz = f64::NAN,
+                11 => invalid_request.features.delta.rms_db = f64::NAN,
+                12 => invalid_request.features.delta.peak_db = f64::NAN,
+                13 => invalid_request.features.delta.centroid_octaves = f64::NAN,
+                14 => invalid_request.current_topology.public_parameters[0].min = Some(f64::NAN),
+                15 => {
                     invalid_request.current_topology.public_parameters[0].max = Some(f64::INFINITY)
                 }
                 _ => unreachable!(),
@@ -769,6 +855,35 @@ mod tests {
         assert_eq!(output.exit_code, Some(0));
         assert_eq!(output.stdout, "request");
         assert_eq!(output.stderr, "warning");
+    }
+
+    #[test]
+    fn system_runner_drains_large_output_while_retaining_only_the_capture_limit() {
+        let command = system_command(&["-c", "head -c 262144 /dev/zero | tr '\\0' x"], "", 1_024);
+
+        let output = SystemProviderCommandRunner
+            .run(&command, &|| false)
+            .expect("large finite output should be drained without blocking the child");
+
+        assert_eq!(output.exit_code, Some(0));
+        assert_eq!(output.stdout, "x".repeat(1_024));
+        assert!(output.stderr.is_empty());
+    }
+
+    #[test]
+    fn system_runner_timeout_is_not_blocked_by_a_child_that_refuses_stdin() {
+        let mut command = system_command(&["-c", "exec sleep 1"], &"x".repeat(2_000_000), 16);
+        command.timeout = Duration::from_millis(20);
+        let started = Instant::now();
+
+        assert_eq!(
+            SystemProviderCommandRunner.run(&command, &|| false),
+            Err(ProviderCommandError::TimedOut)
+        );
+        assert!(
+            started.elapsed() < Duration::from_millis(500),
+            "timeout supervision must run independently of stdin writes"
+        );
     }
 
     #[test]

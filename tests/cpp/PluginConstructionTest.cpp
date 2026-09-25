@@ -423,6 +423,17 @@ int main()
         return 1;
     }
 
+    const auto matchedSnapshotYaml = longDefaultFile.loadFileAsString().replace (
+        "decay_ms: 1900", "decay_ms: 1700");
+    if (! reloadProcessor->reloadInstrumentFromYaml (matchedSnapshotYaml, longDefaultFile)
+        || reloadProcessor->currentInstrumentFile() != longDefaultFile
+        || reloadProcessor->currentInstrumentYaml() != matchedSnapshotYaml)
+    {
+        std::cerr << "reloadInstrumentFromYaml did not load and retain the immutable matched snapshot: "
+                  << reloadProcessor->getLastLoadError() << '\n';
+        return 1;
+    }
+
     const auto carriedOverTailRms = renderTailRms (*reloadProcessor, reloadBlockSize, reloadNumBlocks, 36);
     // The carried-over 50ms decay is fully silent this far into the tail, so its
     // tail RMS is ~0 and can't support a multiplicative bound. A broken carry-over
