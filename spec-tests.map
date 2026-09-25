@@ -100,6 +100,38 @@ AC acceptance-examples :: TB-303 acid acceptance example sustains an evolving fi
   fp 8c5f933cabaa
   test rust:tb303_acid_held_note_retains_mid_decay_brightness
 
+AC ai-graph-proposals :: AI work remains outside realtime processing :: Realtime source remains provider-free
+  fp 7f8c1814d1b5
+  test cpp:tests/cmake/RealtimeCallbackSafety.cmake
+
+AC ai-graph-proposals :: Codex CLI is the first adapter without direct API credentials :: Codex CLI is unavailable or not authenticated
+  fp 3f131b853b0e
+  test rust:codex_adapter_reports_missing_executable_and_requires_saved_chatgpt_login
+  test rust:codex_adapter_reports_timeout_cancellation_and_unusable_output
+  test rust:codex_adapter_bounds_and_redacts_process_diagnostics
+
+AC ai-graph-proposals :: Codex CLI is the first adapter without direct API credentials :: Codex adapter constructs an isolated invocation
+  fp c2d516f8026a
+  test rust:codex_adapter_uses_chatgpt_login_and_isolated_structured_exec_without_api_keys
+
+AC ai-graph-proposals :: Every provider proposal is locally validated :: Provider returns a valid patch proposal
+  fp 50b00a7d991a
+  test rust:provider_neutral_orchestration_returns_only_locally_validated_patch_proposals
+
+AC ai-graph-proposals :: Every provider proposal is locally validated :: Provider returns invalid or unsafe content
+  fp 071e026f1a35
+  test rust:local_validation_rejects_assets_scripts_unknown_modules_and_unknown_search_controls
+  test rust:response_parser_rejects_malformed_json_and_unknown_fields
+  test cpp:tests/cpp/Tb303WebUiContractTest.cpp
+
+AC ai-graph-proposals :: Graph proposals use a provider-neutral contract :: A different provider satisfies the same orchestration
+  fp 9c09607d009d
+  test rust:provider_neutral_orchestration_returns_only_locally_validated_patch_proposals
+
+AC ai-graph-proposals :: Provider context excludes reference audio and secrets :: Proposal request is built from a match result
+  fp 30dd56163049
+  test rust:canonical_request_contains_derived_residual_catalogue_and_sanitized_topology_only
+
 AC built-in-modules :: Built-in module state uses resolved parameters :: DSP state is prepared from resolved parameters
   fp 420cdb6d4113
   todo not yet mapped to a test
@@ -1333,6 +1365,21 @@ AC sound-design-workflow :: Sound workbench emits repeatable implementation arti
   test rust:acid_fixture_renders_deterministic_finite_non_silent_audio_and_metrics
   test rust:workbench_renders_repeatable_wav_and_metrics_artifacts
 
+AC sound-lab-ui :: Sound Lab can request a validated topology suggestion :: User requests a topology suggestion
+  fp 15a3a45d79e4
+  test rust:ffi_proposal_handle_exposes_only_locally_validated_provider_results
+  test cpp:tests/cpp/Tb303WebUiContractTest.cpp
+
+AC sound-lab-ui :: Sound Lab compares and accepts one coherent match :: Match completes successfully
+  fp 56cbb3bd66dd
+  test cpp:tests/cpp/SoundLabControllerTest.cpp
+  test cpp:tests/cpp/Tb303WebUiContractTest.cpp
+
+AC sound-lab-ui :: Sound Lab compares and accepts one coherent match :: User accepts the best candidate
+  fp 8fea1629a75e
+  test cpp:tests/cpp/Tb303WebUiContractTest.cpp
+  test cpp:tests/cpp/PluginHostParameterSurfaceTest.cpp
+
 AC sound-lab-ui :: Sound Lab presents one coherent analysis artifact :: Fixture render completes successfully
   fp cd5e80cde254
   test rust:ffi_render_handle_owns_one_coherent_acid_fixture_artifact
@@ -1352,6 +1399,19 @@ AC sound-lab-ui :: Sound Lab renders the maintained fixture without blocking rea
 AC sound-lab-ui :: Sound Lab renders the maintained fixture without blocking realtime audio :: User starts another render while one is active
   fp 6e1d85365db1
   test cpp:tests/cpp/SoundLabControllerTest.cpp
+
+AC sound-lab-ui :: Sound Lab runs reference matching as a background job :: User attempts conflicting work
+  fp 0a243fa7ef22
+  test cpp:tests/cpp/SoundLabControllerTest.cpp
+
+AC sound-lab-ui :: Sound Lab runs reference matching as a background job :: User cancels matching
+  fp b83165407e5b
+  test cpp:tests/cpp/SoundLabControllerTest.cpp
+
+AC sound-lab-ui :: Sound Lab runs reference matching as a background job :: User selects a reference and starts matching
+  fp e5475ff83931
+  test cpp:tests/cpp/SoundLabControllerTest.cpp
+  test cpp:tests/cpp/Tb303WebUiContractTest.cpp
 
 AC sound-lab-ui :: Sound Lab state crosses the existing editor bridge :: Editor opens before a Sound Lab render
   fp 7b6424bbb922
@@ -1380,6 +1440,50 @@ AC spectral-processing :: Spectral processor applies FFT-based effects :: Spectr
 AC spectral-processing :: Spectral processor applies FFT-based effects :: Spectral processor passes audio through with no modification
   fp 12befcf7a253
   todo not yet mapped to a test
+
+AC spectral-sound-matching :: Match results are coherent reproducible artifacts :: Match artifact records provenance and audition data
+  fp 20990d56ccf2
+  test rust:ffi_match_handle_owns_progress_parameters_manifest_metrics_and_both_wavs
+  test rust:fixture_match_improves_a_self_reference_and_returns_coherent_provenance
+
+AC spectral-sound-matching :: Matching remains outside realtime processing :: Realtime source remains free of matching work
+  fp f4dfce004af1
+  test cpp:tests/cmake/RealtimeCallbackSafety.cmake
+
+AC spectral-sound-matching :: Matching uses aligned multi-resolution spectral and trajectory evidence :: Matching identical audio produces the minimum loss
+  fp c18f756b1bd3
+  test rust:objective_identical_audio_has_zero_loss_and_whole_region_gain_alignment_is_fixed
+
+AC spectral-sound-matching :: Matching uses aligned multi-resolution spectral and trajectory evidence :: Reference format does not satisfy the fixture contract
+  fp a5694a7ee36f
+  test rust:fixture_match_rejects_short_silent_and_wrong_rate_references_before_search
+  test rust:workbench_analyzes_external_wav_and_rejects_sample_rate_mismatch
+
+AC spectral-sound-matching :: Matching uses aligned multi-resolution spectral and trajectory evidence :: Spectral and temporal differences increase their owning terms
+  fp d05246f43862
+  test rust:objective_spectral_level_and_centroid_differences_raise_their_owning_terms
+  test rust:objective_spectral_and_trajectory_formulas_match_numeric_fixtures
+
+AC spectral-sound-matching :: Parameter search is deterministic, bounded, and cancellable :: Same inputs reproduce the same search
+  fp 019a0e4c9bfd
+  test rust:bounded_search_is_seeded_reproducible_and_improves_the_initial_candidate
+
+AC spectral-sound-matching :: Parameter search is deterministic, bounded, and cancellable :: Search improves a recoverable self-reference
+  fp 9dedd3ef2d5b
+  test rust:fixture_match_improves_a_self_reference_and_returns_coherent_provenance
+
+AC spectral-sound-matching :: Parameter search is deterministic, bounded, and cancellable :: User cancels a running search
+  fp ea812304267d
+  test rust:fixture_match_returns_the_best_completed_candidate_when_cancelled
+  test rust:bounded_search_reports_monotonic_progress_and_preserves_best_on_cancellation
+
+AC spectral-sound-matching :: Sound fixtures declare a bounded matching problem :: Invalid matching declaration is rejected before search
+  fp 71df09a53f6e
+  test rust:fixture_loader_rejects_invalid_matching_declarations_before_rendering
+
+AC spectral-sound-matching :: Sound fixtures declare a bounded matching problem :: Valid matching declaration resolves public parameters
+  fp 06a1ebb82b82
+  test rust:acid_fixture_declares_a_bounded_public_matching_problem
 
 AC validation-diagnostics :: Diagnostic severity levels :: Error severity prevents render
   fp 9073e5cebd3a
