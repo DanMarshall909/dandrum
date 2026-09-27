@@ -980,6 +980,21 @@ AC plugin-integration :: Audio processing remains realtime safe :: Host calls pr
   fp 87ab7d33cbc7
   todo not yet mapped to a test
 
+AC plugin-integration :: Host preparation refreshes the loaded instrument runtime :: Host changes its audio settings
+  fp af0627fe3302
+  test rust:preparation_retains_parameter_values_and_resolved_slots
+  test rust:loaded_sampler_patch_renders_prepared_sample_assets_realtime
+  test cpp:tests/cpp/PluginConstructionTest.cpp
+
+AC plugin-integration :: Host preparation refreshes the loaded instrument runtime :: Initial load and preparation order agree
+  fp b646846e546b
+  test rust:loaded_instrument_uses_host_rate_independently_of_preparation_order
+  test cpp:tests/cpp/PluginConstructionTest.cpp
+
+AC plugin-integration :: Host preparation refreshes the loaded instrument runtime :: Session restoration and failed replacement survive preparation
+  fp aecd9325666f
+  test cpp:tests/cpp/PluginConstructionTest.cpp
+
 AC plugin-integration :: Instrument authoring is external to the plugin :: User wants to change the instrument graph
   fp 1acd47fefe20
   todo not yet mapped to a test

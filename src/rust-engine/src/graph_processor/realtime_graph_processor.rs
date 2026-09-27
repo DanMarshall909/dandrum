@@ -21,6 +21,9 @@ use super::render_plan::{RenderPlan, RenderStep};
 use super::state::PerModuleState;
 
 pub struct RealtimeGraphProcessor {
+    graph: Graph,
+    sampler_assets: PreparedSamplerAssets,
+    voice_allocation: VoiceAllocation,
     compiled: CompiledPatch,
     states: Vec<Vec<PerModuleState>>,
     midi_idx: Option<usize>,
@@ -162,6 +165,9 @@ impl RealtimeGraphProcessor {
         .into_boxed_slice();
 
         Self {
+            graph: graph.clone(),
+            sampler_assets: sampler_assets.clone(),
+            voice_allocation: voice_allocation.clone(),
             compiled,
             states,
             midi_idx,
@@ -195,6 +201,19 @@ impl RealtimeGraphProcessor {
             },
             prepared_poly_runtime_regions,
         }
+    }
+
+    /// Start a fresh processing session off the audio thread. Cloning the
+    /// compiled patch retains current parameter values and their slot indices.
+    pub(crate) fn prepare_realtime(&mut self, sample_rate: f32, max_block_size: usize) {
+        *self = Self::polyphonic_with_compiled_patch_and_sampler_assets_and_max_block_size(
+            self.graph.clone(),
+            self.compiled.clone(),
+            sample_rate,
+            &self.sampler_assets,
+            &self.voice_allocation,
+            max_block_size,
+        );
     }
 
     pub fn prepared_max_block_size(&self) -> usize {

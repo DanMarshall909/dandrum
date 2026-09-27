@@ -203,11 +203,133 @@ bool nearlyEqual (float actual, float expected, float tolerance)
 {
     return std::abs (actual - expected) <= tolerance;
 }
+
+bool preparationPreservesRestoredInstrumentAndHostSlots()
+{
+    juce::TemporaryFile modifiedPatch (".yaml");
+    auto yaml = defaultPatchFile().loadFileAsString();
+    if (! yaml.contains ("          attack: 0")
+        || ! modifiedPatch.getFile().replaceWithText (yaml.replace ("          attack: 0", "          attack: 50")))
+        return false;
+    DandrumAudioProcessor source;
+    source.setPlayConfigDetails (0, 2, 48000.0, 64);
+    source.prepareToPlay (48000.0, 64);
+    if (! source.reloadInstrumentFromFile (modifiedPatch.getFile()))
+        return false;
+    const std::pair<const char*, float> values[] {
+        { "kick.tune_hz", 0.5f }, { "kick.decay_ms", 0.25f }, { "kick.punch", 0.375f },
+        { "kick.click", 0.75f }, { "kick.sub_decay_ms", 0.125f }, { "kick.sub_level", 0.625f }
+    };
+    for (const auto& [id, normalized] : values)
+    {
+        auto* parameter = source.getParameterForPublicId (id);
+        if (parameter == nullptr)
+            return false;
+        parameter->setValueNotifyingHost (normalized);
+    }
+    juce::MemoryBlock saved;
+    source.getStateInformation (saved);
+
+    for (const bool restoreState : { false, true })
+    {
+        DandrumAudioProcessor processor;
+        const auto slots = processor.getParameters();
+        juce::StringArray slotIds;
+        for (const auto* slot : slots)
+            slotIds.add (static_cast<const juce::RangedAudioParameter*> (slot)->paramID);
+        if (restoreState)
+            processor.setStateInformation (saved.getData(), static_cast<int> (saved.getSize()));
+        else
+            for (const auto& [id, normalized] : values)
+                processor.getParameterForPublicId (id)->setValueNotifyingHost (normalized);
+
+        for (const auto& [rate, frames] : { std::pair { 44100.0, 64 }, { 48000.0, 1024 }, { 96000.0, 32 } })
+        {
+            processor.setPlayConfigDetails (0, 2, rate, frames);
+            processor.prepareToPlay (rate, frames);
+            const auto missing = juce::File::getSpecialLocation (juce::File::tempDirectory)
+                                     .getNonexistentChildFile ("dandrum_lifecycle_missing", ".yaml");
+            if (processor.reloadInstrumentFromFile (missing) || processor.getLastLoadError().isEmpty())
+                return false;
+            const auto& current = processor.getParameters();
+            if (current.size() != 64 || current.size() != slots.size())
+                return false;
+            for (int index = 0; index < current.size(); ++index)
+                if (current[index] != slots[index]
+                    || static_cast<juce::RangedAudioParameter*> (current[index])->paramID != slotIds[index])
+                    return false;
+
+            // Independent host path: prepare the raw engine before loading.
+            // unique_ptr's custom deleter owns the FFI handle even on failure.
+            std::unique_ptr<DandrumEngine, decltype (&dandrum_engine_destroy)> reference (
+                dandrum_engine_create(), &dandrum_engine_destroy);
+            dandrum_engine_prepare_realtime (reference.get(), static_cast<float> (rate), static_cast<std::size_t> (frames));
+            const auto referencePatch = restoreState ? modifiedPatch.getFile() : defaultPatchFile();
+            if (! dandrum_engine_load_patch (reference.get(), referencePatch.getFullPathName().toRawUTF8()))
+                return false;
+            // Physical values come from the authored ranges and inputs above.
+            const std::pair<const char*, double> physicalValues[] {
+                { "kick.tune_hz", 70.0 }, { "kick.decay_ms", 537.5 }, { "kick.punch", 0.375 },
+                { "kick.click", 0.75 }, { "kick.sub_decay_ms", 293.75 }, { "kick.sub_level", 0.625 }
+            };
+            for (const auto& [id, value] : physicalValues)
+                if (! dandrum_engine_set_public_numeric_parameter (reference.get(), id, value))
+                    return false;
+            for (const auto& [id, normalized] : values)
+            {
+                auto* parameter = processor.getParameterForPublicId (id);
+                if (parameter == nullptr || ! nearlyEqual (parameter->getValue(), normalized, 0.00001f))
+                    return false;
+            }
+            bool audible = false;
+            for (int block = 0; block < 8; ++block)
+            {
+                juce::AudioBuffer<float> actual (2, frames), expected (2, frames);
+                actual.clear();
+                expected.clear();
+                juce::MidiBuffer midi;
+                if (block == 0)
+                {
+                    midi.addEvent (juce::MidiMessage::noteOn (1, 36, (juce::uint8) 100), 5);
+                    dandrum_engine_note_on_at (reference.get(), 36, 100, 5);
+                }
+                processor.processBlock (actual, midi);
+                dandrum_engine_render (reference.get(), expected.getWritePointer (0), expected.getWritePointer (1),
+                                       static_cast<std::size_t> (frames));
+                audible = audible || bufferHasSignal (actual);
+                for (int channel = 0; channel < 2; ++channel)
+                    for (int frame = 0; frame < frames; ++frame)
+                        if (! nearlyEqual (actual.getSample (channel, frame), expected.getSample (channel, frame), 0.00001f))
+                        {
+                            std::cerr << "preparation audio mismatch: rate=" << rate << " restored=" << restoreState
+                                      << " block=" << block << " frame=" << frame
+                                      << " actual=" << actual.getSample (channel, frame)
+                                      << " expected=" << expected.getSample (channel, frame)
+                                      << " loaded=" << processor.isInstrumentLoaded()
+                                      << " muted=" << processor.isMuted()
+                                      << " next=" << actual.getSample (channel, 6)
+                                      << " end=" << actual.getSample (channel, frames - 1) << '\n';
+                            return false;
+                        }
+            }
+            if (! audible)
+                return false;
+            processor.releaseResources();
+        }
+    }
+    return true;
+}
 } // namespace
 
 int main()
 {
     constexpr int blockSize = 64;
+
+    if (! preparationPreservesRestoredInstrumentAndHostSlots())
+    {
+        std::cerr << "host preparation did not preserve instrument audio, restored values or fixed slots\n";
+        return 1;
+    }
 
     auto processor = std::make_unique<DandrumAudioProcessor>();
     if (! processor->isInstrumentLoaded())

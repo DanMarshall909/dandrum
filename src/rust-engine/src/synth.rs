@@ -289,6 +289,9 @@ impl DandrumEngine {
         self.sample_rate = sample_rate.max(1.0);
         self.prepared_max_block_size = max_block_size.max(1);
         self.fallback.set_sample_rate(sample_rate);
+        if let Some(processor) = &mut self.graph_processor {
+            processor.prepare_realtime(self.sample_rate, self.prepared_max_block_size);
+        }
     }
 
     pub fn load_patch_with_sampler_assets(
@@ -487,6 +490,118 @@ mod tests {
         assert!(right.iter().any(|sample| *sample != 0.0));
     }
 
+    fn preparation_test_patch() -> patch::PatchDocument {
+        patch::load_patch_str(
+            r#"
+metadata:
+  name: Preparation Sine
+render:
+  sample_rate_hz: 44100
+  block_size_frames: 64
+  duration_frames: 128
+modules:
+  - id: osc
+    type: oscillator
+    parameters:
+      waveform: sine
+      pitch: 1
+  - id: mix
+    type: audio_mixer
+  - id: out
+    type: audio_output
+connections:
+  - from: osc.audio
+    to: mix.inputs
+  - from: mix.mix
+    to: out.left
+  - from: mix.mix
+    to: out.right
+"#,
+        )
+        .unwrap()
+    }
+
+    fn render_stereo(engine: &mut DandrumEngine, frames: usize) -> (Vec<f32>, Vec<f32>) {
+        let mut left = vec![0.0; frames];
+        let mut right = vec![0.0; frames];
+        assert_eq!(engine.render(&mut left, &mut right), frames);
+        (left, right)
+    }
+
+    #[test]
+    fn loaded_instrument_uses_host_rate_independently_of_preparation_order() {
+        let patch = preparation_test_patch();
+        let prepared =
+            preparation::prepare_instrument_document(patch.clone(), Path::new(".")).unwrap();
+        for sample_rate in [44_100.0, 48_000.0, 96_000.0] {
+            for use_precompiled in [false, true] {
+                let load = |engine: &mut DandrumEngine| {
+                    if use_precompiled {
+                        engine.load_prepared_instrument(&prepared);
+                    } else {
+                        engine.load_patch_with_sampler_assets(
+                            &patch,
+                            &PreparedSamplerAssets::empty(),
+                        );
+                    }
+                };
+                let mut before = DandrumEngine::new();
+                before.prepare_realtime(sample_rate, 64);
+                load(&mut before);
+                let mut after = DandrumEngine::new();
+                load(&mut after);
+                after.prepare_realtime(sample_rate, 64);
+
+                before.note_on(60, 100);
+                after.note_on(60, 100);
+                let expected = render_stereo(&mut before, 128);
+                let actual = render_stereo(&mut after, 128);
+                assert_eq!(
+                    actual, expected,
+                    "rate {sample_rate}, precompiled {use_precompiled}"
+                );
+                // Independent oracle: a pitch ratio of 1 produces 220 Hz.
+                let expected_sample = (TAU * 220.0 * 100.0 / sample_rate).sin();
+                assert!(
+                    (actual.0[100] - expected_sample).abs() < 0.0001,
+                    "rate {sample_rate}: sample {} expected {expected_sample}",
+                    actual.0[100]
+                );
+                assert_eq!(actual.0, actual.1);
+            }
+        }
+    }
+
+    #[test]
+    fn preparation_retains_parameter_values_and_resolved_slots() {
+        let mut engine = DandrumEngine::new();
+        engine.load_patch_with_sampler_assets(
+            &preparation_test_patch(),
+            &PreparedSamplerAssets::empty(),
+        );
+        let pitch = engine.parameter_slot_index("osc", "pitch").unwrap();
+        assert!(engine.set_numeric_parameter_by_target("osc", "pitch", 1.5));
+        for (sample_rate, block_size) in [(48_000.0, 16), (96_000.0, 512), (44_100.0, 1)] {
+            engine.note_on(60, 100);
+            render_stereo(&mut engine, 37);
+            engine.prepare_realtime(sample_rate, block_size);
+            assert_eq!(engine.numeric_parameter_value("osc", "pitch"), Some(1.5));
+            assert_eq!(engine.parameter_slot_index("osc", "pitch"), Some(pitch));
+            engine.note_on(60, 100);
+            let audio = render_stereo(&mut engine, 128);
+            let expected = (TAU * 330.0 * 100.0 / sample_rate).sin();
+            assert!((audio.0[100] - expected).abs() < 0.0001);
+            // Previously resolved handles must still control audible pitch.
+            assert!(engine.set_parameter_slot(pitch, 2.0));
+            engine.prepare_realtime(sample_rate, block_size);
+            engine.note_on(60, 100);
+            let audio = render_stereo(&mut engine, 128);
+            let expected = (TAU * 440.0 * 100.0 / sample_rate).sin();
+            assert!((audio.0[100] - expected).abs() < 0.0001);
+            assert!(engine.set_parameter_slot(pitch, 1.5));
+        }
+    }
+
     #[test]
     fn loaded_sampler_patch_renders_prepared_sample_assets_realtime() {
         let patch = patch::load_patch_str(
@@ -536,6 +651,40 @@ connections:
         assert_eq!(rendered, 4);
         assert_eq!(left, vec![0.25, 0.5, 0.75, 0.0]);
         assert_eq!(right, vec![0.25, 0.5, 0.75, 0.0]);
+
+        // Preparation retains sample assets, drops queued notes and clears a
+        // partially played sample, including when the host repeats its settings.
+        for (sample_rate, block_size) in [(96_000.0, 1024), (96_000.0, 2), (96_000.0, 2)] {
+            engine.prepare_realtime(sample_rate, block_size);
+            engine.note_on(60, 100);
+            assert_eq!(render_stereo(&mut engine, 1).0, vec![0.25]);
+            engine.note_on_at(60, 100, 1);
+            engine.prepare_realtime(sample_rate, block_size);
+            assert_eq!(render_stereo(&mut engine, 4), (vec![0.0; 4], vec![0.0; 4]));
+
+            // Fill the queue with harmless note-offs. The last event must fit
+            // and trigger the sample at its specified offset.
+            for _ in 1..block_size {
+                engine.note_off(127);
+            }
+            engine.note_on_at(60, 100, (block_size - 1) as u32);
+            let mut expected = vec![0.0; block_size];
+            expected[block_size - 1] = 0.25;
+            assert_eq!(
+                render_stereo(&mut engine, block_size),
+                (expected.clone(), expected)
+            );
+
+            engine.prepare_realtime(sample_rate, block_size);
+            for _ in 0..block_size {
+                engine.note_off(127);
+            }
+            engine.note_on(60, 100); // Drop-newest policy at the new capacity.
+            assert_eq!(
+                render_stereo(&mut engine, block_size),
+                (vec![0.0; block_size], vec![0.0; block_size])
+            );
+        }
     }
 
     #[test]
