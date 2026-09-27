@@ -2,6 +2,8 @@
 
 The TB-303 editor contains instrument-independent WebView controls and host commands, while its processor starts with an 808 kick and Sound Lab uses a 303 fixture. A coherent demo configuration and reusable UI boundary will let another instrument use the same host plumbing without copying the editor.
 
+The [plugin and integration development experience review](../../../docs/plugin-integration-dev-experience-review.md) records related lifecycle, resource-loading, diagnostic, automation, and build findings. Its behavior changes require separate scoped tasks; this extraction retains the invariants listed below.
+
 ## What Changes
 
 - Extract the shared WebView parameter and MIDI bridge, metadata-driven controls, keyboard behavior, and resource serving from the TB-303 presentation.
