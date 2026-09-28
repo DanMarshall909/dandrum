@@ -66,6 +66,7 @@ bool dandrum_kernel_note_on_at (DandrumKernelInstrument* instrument,
 bool dandrum_kernel_note_off_at (DandrumKernelInstrument* instrument,
                                  unsigned char note,
                                  std::size_t frameOffset);
+bool dandrum_kernel_reset (DandrumKernelInstrument* instrument);
 std::size_t dandrum_kernel_render (DandrumKernelInstrument* instrument,
                                    const DandrumKernelInputBusView* inputs,
                                    std::size_t inputCount,
@@ -96,6 +97,7 @@ void dandrum_engine_prepare (DandrumEngine* engine, float sampleRate);
 void dandrum_engine_prepare_realtime (DandrumEngine* engine, float sampleRate, std::size_t maxBlockSize);
 void dandrum_engine_note_on (DandrumEngine* engine, unsigned char note, unsigned char velocity);
 void dandrum_engine_note_off (DandrumEngine* engine, unsigned char note);
+bool dandrum_engine_reset (DandrumEngine* engine);
 void dandrum_engine_note_on_at (DandrumEngine* engine, unsigned char note, unsigned char velocity, std::size_t frameOffset);
 void dandrum_engine_note_off_at (DandrumEngine* engine, unsigned char note, std::size_t frameOffset);
 std::size_t dandrum_engine_render (DandrumEngine* engine, float* left, float* right, std::size_t numSamples);

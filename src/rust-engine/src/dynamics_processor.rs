@@ -106,7 +106,6 @@ impl DynamicsProcessor {
         self.envelope_detector.set_params(attack_ms, release_ms);
     }
 
-    #[allow(dead_code)]
     pub fn reset(&mut self) {
         self.envelope_detector.reset();
         self.phase_is_attack = true;

@@ -339,6 +339,13 @@ pub unsafe extern "C" fn dandrum_kernel_note_off_at(
 }
 
 #[unsafe(no_mangle)]
+pub unsafe extern "C" fn dandrum_kernel_reset(engine: *mut DandrumKernelInstrument) -> bool {
+    mut_or!(engine, engine, false);
+    engine.runtime.reset();
+    true
+}
+
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn dandrum_kernel_render(
     engine: *mut DandrumKernelInstrument,
     inputs: *const DandrumKernelInputBusView,
@@ -784,6 +791,13 @@ pub unsafe extern "C" fn dandrum_engine_note_off(
     mut_or!(engine, engine, ());
 
     engine.note_off(note);
+}
+
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn dandrum_engine_reset(engine: *mut crate::synth::DandrumEngine) -> bool {
+    mut_or!(engine, engine, false);
+    engine.reset();
+    true
 }
 
 #[unsafe(no_mangle)]
@@ -1484,6 +1498,9 @@ mod tests {
             assert!(unsafe { dandrum_kernel_note_on_at(engine, 60, 100, 0) });
         }
         assert!(!unsafe { dandrum_kernel_note_on_at(engine, 60, 100, 0) });
+        assert!(unsafe { dandrum_kernel_reset(engine) });
+        assert!(unsafe { dandrum_kernel_note_on_at(engine, 61, 100, 0) });
+        assert!(!unsafe { dandrum_kernel_reset(std::ptr::null_mut()) });
         unsafe { dandrum_kernel_destroy(engine) };
     }
 
@@ -1498,6 +1515,37 @@ mod tests {
 
         assert!(!engine.is_null());
 
+        unsafe { dandrum_engine_destroy(engine) };
+    }
+
+    #[test]
+    fn c_ffi_reset_stops_audio_and_allows_a_later_note() {
+        let engine = dandrum_engine_create();
+        let mut left = [0.0_f32; 64];
+        let mut right = [0.0_f32; 64];
+        unsafe { dandrum_engine_note_on(engine, 60, 110) };
+        assert_eq!(
+            unsafe { dandrum_engine_render(engine, left.as_mut_ptr(), right.as_mut_ptr(), 64) },
+            64
+        );
+        assert!(left.iter().any(|sample| sample.abs() > 0.0));
+
+        assert!(unsafe { dandrum_engine_reset(engine) });
+        left.fill(0.0);
+        right.fill(0.0);
+        assert_eq!(
+            unsafe { dandrum_engine_render(engine, left.as_mut_ptr(), right.as_mut_ptr(), 64) },
+            64
+        );
+        assert_eq!(left, [0.0; 64]);
+        assert_eq!(right, [0.0; 64]);
+        unsafe { dandrum_engine_note_on(engine, 61, 110) };
+        assert_eq!(
+            unsafe { dandrum_engine_render(engine, left.as_mut_ptr(), right.as_mut_ptr(), 64) },
+            64
+        );
+        assert!(left.iter().any(|sample| sample.abs() > 0.0));
+        assert!(!unsafe { dandrum_engine_reset(std::ptr::null_mut()) });
         unsafe { dandrum_engine_destroy(engine) };
     }
 

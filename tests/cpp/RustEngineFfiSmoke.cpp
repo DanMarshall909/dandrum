@@ -65,7 +65,12 @@ bool kernelBusSmoke()
     const DandrumKernelOutputBusView output { "master", destinationChannels, 2, 8 };
     if (dandrum_kernel_render (instrument.get(), &input, 1, &output, 1, 8) != 8)
         return false;
-    return leftOut == leftIn && rightOut == rightIn;
+    if (! dandrum_kernel_reset (instrument.get()))
+        return false;
+    leftOut.fill (0.0f);
+    rightOut.fill (0.0f);
+    return dandrum_kernel_render (instrument.get(), &input, 1, &output, 1, 8) == 8
+        && leftOut == leftIn && rightOut == rightIn;
 }
 } // namespace
 
@@ -92,6 +97,15 @@ int main()
     float right[64] {};
     const auto rendered = dandrum_engine_render (engine, left, right, 64);
 
+    const auto reset = dandrum_engine_reset (engine);
+    float silentLeft[64] {};
+    float silentRight[64] {};
+    const auto silentFrames = dandrum_engine_render (engine, silentLeft, silentRight, 64);
+    dandrum_engine_note_on (engine, 61, 110);
+    float restartedLeft[64] {};
+    float restartedRight[64] {};
+    const auto restartedFrames = dandrum_engine_render (engine, restartedLeft, restartedRight, 64);
+
     dandrum_engine_note_off (engine, 60);
     dandrum_engine_destroy (engine);
 
@@ -104,6 +118,27 @@ int main()
     if (! bufferIsFinite (left, 64) || ! bufferIsFinite (right, 64))
     {
         std::cerr << "render produced non-finite samples\n";
+        return 1;
+    }
+
+    if (! reset || silentFrames != 64 || restartedFrames != 64)
+    {
+        std::cerr << "host reset failed to preserve a usable engine\n";
+        return 1;
+    }
+    bool restartedHasSignal = false;
+    for (std::size_t i = 0; i < 64; ++i)
+    {
+        if (silentLeft[i] != 0.0f || silentRight[i] != 0.0f)
+        {
+            std::cerr << "host reset left audio running\n";
+            return 1;
+        }
+        restartedHasSignal = restartedHasSignal || restartedLeft[i] != 0.0f || restartedRight[i] != 0.0f;
+    }
+    if (! restartedHasSignal || ! bufferIsFinite (restartedLeft, 64) || ! bufferIsFinite (restartedRight, 64))
+    {
+        std::cerr << "render after host reset produced non-finite samples\n";
         return 1;
     }
 

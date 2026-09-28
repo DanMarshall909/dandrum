@@ -75,7 +75,6 @@ impl DelayLine {
         0.5 * (a * f3 + b * f2 + c * f + 2.0 * d)
     }
 
-    #[allow(dead_code)]
     pub fn reset(&mut self) {
         self.buffer.fill(0.0);
         self.write_head = 0;

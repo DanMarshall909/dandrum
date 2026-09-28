@@ -36,7 +36,6 @@ impl EnvelopeFollower {
         self.mode = mode;
     }
 
-    #[allow(dead_code)]
     pub fn reset(&mut self) {
         self.envelope = 0.0;
     }

@@ -150,7 +150,6 @@ impl Echo {
         (out_l, out_r)
     }
 
-    #[allow(dead_code)]
     pub fn reset(&mut self) {
         self.delay_l.reset();
         self.delay_r.reset();

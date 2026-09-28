@@ -157,6 +157,10 @@ impl FallbackSynth {
         };
     }
 
+    fn reset(&mut self) {
+        self.voices = [Voice::default(); MAX_VOICES];
+    }
+
     fn note_off(&mut self, note: u8) {
         for voice in &mut self.voices {
             if voice.active && voice.note == note {
@@ -364,6 +368,13 @@ impl DandrumEngine {
 
     pub fn note_on(&mut self, note: u8, velocity: u8) {
         self.note_on_at(note, velocity, 0);
+    }
+
+    pub fn reset(&mut self) {
+        self.fallback.reset();
+        if let Some(processor) = &mut self.graph_processor {
+            processor.reset();
+        }
     }
 
     pub fn note_off(&mut self, note: u8) {

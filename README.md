@@ -131,6 +131,17 @@ unbounded latency.
 - `dandrum_realtime_event_queue_note_on` / `note_off` — non-blocking submit, returns `0` (accepted) or `1` (dropped).
 - `dandrum_realtime_event_queue_dropped_count` — reports total dropped events since creation.
 
+### Reset / panic (C FFI)
+
+When a voice slot is assigned to a new note, its filter, envelope follower, and other carried DSP state start clean;
+global reverb and echo tails continue through ordinary note activity. Oscillator phase remains free-running across note
+retrigger.
+
+A host can call `dandrum_engine_reset(engine)` or `dandrum_kernel_reset(instrument)` for panic, all-notes-off, or patch
+reload. Each call returns `true` for a live handle and clears pending notes, active voices, and effect tails. The handle
+remains usable for later notes and renders. Serialize reset with rendering and MIDI calls on that handle, as for other
+mutable engine FFI calls.
+
 ### Oversized block handling
 
 If the audio callback delivers a block larger than the prepared max block size, the engine splits the render internally

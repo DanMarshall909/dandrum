@@ -45,7 +45,6 @@ impl Convolution {
         self.wet = wet.clamp(0.0, 1.0);
     }
 
-    #[allow(dead_code)]
     pub fn reset(&mut self) {
         self.input_buffer.fill(0.0);
         self.input_pos = 0;

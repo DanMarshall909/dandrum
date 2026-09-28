@@ -23,8 +23,8 @@
 
 ## 3. FFI + cleanup
 
-- [ ] 3.1 Export an additive FFI symbol for host-driven reset/panic; confirm existing
+- [x] 3.1 Export an additive FFI symbol for host-driven reset/panic; confirm existing
       `dandrum_*` symbols are unchanged. Smoke-test it.
-- [ ] 3.2 Remove the `#[allow(dead_code)]` allowances on `reset()` methods now that they are
+- [x] 3.2 Remove the `#[allow(dead_code)]` allowances on `reset()` methods now that they are
       reachable; confirm the crate builds under `#![deny(dead_code)]`.
-- [ ] 3.3 Update docs to describe voice retrigger reset and the engine reset/panic entry point.
+- [x] 3.3 Update docs to describe voice retrigger reset and the engine reset/panic entry point.

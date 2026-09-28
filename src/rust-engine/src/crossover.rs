@@ -39,10 +39,7 @@ impl LinkwitzRiley4 {
         (low, high)
     }
 
-    // Clears filter state. Not dispatched during graph processing yet; kept for
-    // consistency with the other DSP processors' reset() convention (see the
-    // reset-on-retrigger question tracked for the coverage sweep).
-    #[allow(dead_code)]
+    // Clears filter state while keeping the prepared crossover frequencies.
     pub fn reset(&mut self) {
         self.lp_a.reset();
         self.lp_b.reset();
