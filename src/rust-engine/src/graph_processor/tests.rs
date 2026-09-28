@@ -6613,7 +6613,7 @@ fn kernel_migrated_examples_match_legacy_reference_renders() {
 }
 
 #[test]
-fn impulse_tone_and_velocity_vca_examples_match_legacy_render_through_master_bus() {
+fn composite_voice_examples_match_legacy_render_through_master_bus() {
     for (fixture, legacy_yaml) in [
         (
             "examples/patches/module-impulse-tone.yaml",
@@ -6622,6 +6622,12 @@ fn impulse_tone_and_velocity_vca_examples_match_legacy_render_through_master_bus
         (
             "examples/patches/module-velocity-vca.yaml",
             include_str!("../../tests/fixtures/unify-graph-kernel/legacy/module-velocity-vca.yaml"),
+        ),
+        (
+            "examples/patches/module-hidden-internals.yaml",
+            include_str!(
+                "../../tests/fixtures/unify-graph-kernel/legacy/module-hidden-internals.yaml"
+            ),
         ),
     ] {
         let legacy = patch::load_patch_str(legacy_yaml).expect("legacy reference parses");
