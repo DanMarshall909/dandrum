@@ -3251,13 +3251,16 @@ mod tests {
         let voice = GraphDefinition::new("unsupported_voice")
             .with_port(
                 KernelPort::output("audio", SignalType::Audio, 1)
-                    .maps_from(kernel_ref("saturator", builtin_ports::AUDIO_OUT)),
+                    .maps_from(kernel_ref("dynamics", builtin_ports::AUDIO_OUT)),
             )
             .with_node(Node::new(NodeId::new("noise"), module_types::NOISE))
-            .with_node(Node::new(NodeId::new("saturator"), module_types::SATURATOR))
+            .with_node(Node::new(
+                NodeId::new("dynamics"),
+                module_types::DYNAMICS_PROCESSOR,
+            ))
             .with_connection(Connection::new(
                 kernel_ref("noise", builtin_ports::AUDIO),
-                kernel_ref("saturator", builtin_ports::AUDIO_IN),
+                kernel_ref("dynamics", builtin_ports::AUDIO_IN),
             ));
         let root = GraphDefinition::new("root")
             .with_port(
@@ -3278,7 +3281,7 @@ mod tests {
             diagnostic.error_code(),
             diagnostics::error_codes::KERNEL_POLY_RUNTIME_UNSUPPORTED
         );
-        assert_eq!(diagnostic.module_id(), Some("voices::saturator"));
+        assert_eq!(diagnostic.module_id(), Some("voices::dynamics"));
     }
 
     #[test]

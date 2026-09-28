@@ -1380,6 +1380,7 @@ pub(super) fn process_channel_arena_step(
         ModuleKind::Filter => {
             arena_processing::process_filter(&mut states[step.module_index], &mut context)
         }
+        ModuleKind::Saturator => arena_processing::process_saturator(&mut context),
         ModuleKind::Echo => {
             arena_processing::process_echo(&mut states[step.module_index], &mut context)
         }
@@ -1421,6 +1422,7 @@ pub(super) fn is_channel_arena_supported(step: &RenderStep) -> bool {
         }
         ModuleKind::CurveMapper => step.input_buffers.len() == 5 && step.output_buffers.len() == 1,
         ModuleKind::Filter => step.input_buffers.len() == step.output_buffers.len() + 3,
+        ModuleKind::Saturator => step.input_buffers.len() == step.output_buffers.len() + 3,
         ModuleKind::ControlToAudio | ModuleKind::CompensationDelay => {
             step.input_buffers.len() == step.output_buffers.len()
         }

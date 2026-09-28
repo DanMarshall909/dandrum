@@ -715,6 +715,46 @@ fn feedback_delay_render_and_reset_use_only_prepared_storage() {
 }
 
 #[test]
+fn stereo_saturator_uses_channel_spans_without_realtime_allocation() {
+    let yaml = r#"
+ports:
+  - { name: source, direction: input, signal: audio, channels: 2, maps_to: sat.audio_in }
+  - { name: master, direction: output, signal: audio, channels: 2, maps_from: sat.audio_out }
+modules:
+  - { id: sat, type: saturator, static: { channels: 2 }, defaults: { bias: 0.5, curve_select: 0.25 } }
+connections: []
+"#;
+    let patch = load_kernel_patch_str(yaml).expect("stereo saturator parses");
+    let settings = RenderSettings {
+        sample_rate_hz: 48_000,
+        block_size_frames: 4,
+        duration_frames: 4,
+    };
+    let buses = HostBuses::new()
+        .with_input("source", 2)
+        .with_output("master", 2);
+    let prepared =
+        prepare_kernel_graph_with_buses(patch.root(), patch.registry(), &settings, &buses)
+            .expect("stereo saturator prepares");
+    let mut processor = RealtimeGraphProcessor::polyphonic_with_compiled_patch_and_sampler_assets_and_max_block_size(
+        prepared.graph().clone(),
+        prepared.compiled_patch().clone(),
+        48_000.0,
+        &PreparedSamplerAssets::empty(),
+        &VoiceAllocation::default(),
+        4,
+    );
+    let inputs = vec![vec![vec![0.25; 4], vec![-0.5; 4]]];
+    let mut outputs = vec![vec![vec![0.0; 4], vec![0.0; 4]]];
+    let allocations = count_current_thread_allocations(|| {
+        assert_eq!(processor.render_root_buses(&inputs, &mut outputs), 4);
+    });
+    assert_eq!(allocations, 0);
+    assert_eq!(outputs[0][0], [0.25; 4]);
+    assert_eq!(outputs[0][1], [-0.5; 4]);
+}
+
+#[test]
 fn full_capacity_poly_stealing_and_rejection_render_without_allocation() {
     for (allocation, expected_notes) in [
         (crate::kernel::POLY_ALLOCATION_OLDEST_STEAL, [67, 64]),

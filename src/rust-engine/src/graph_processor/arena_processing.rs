@@ -5,6 +5,7 @@ use super::process_context::ProcessContext;
 use super::state::PerModuleState;
 use crate::decay::DecayCurve;
 use crate::oscillator::OSCILLATOR_BASE_HZ;
+use crate::saturator::Saturator;
 use crate::script::ScriptEvent;
 
 const STEREO_CHANNELS: usize = 2;
@@ -503,6 +504,28 @@ pub(super) fn process_filter(state: &mut PerModuleState, context: &mut ProcessCo
             context
                 .set_output_sample(channel, frame, output)
                 .expect("filter output channel should be available in supported arena step");
+        }
+    }
+}
+
+pub(super) fn process_saturator(context: &mut ProcessContext<'_>) {
+    let channels = context.output_count();
+    for channel in 0..channels {
+        for frame in 0..context.frames() {
+            let drive_db = lerp(0.0, 48.0, context.input_sample(channels, frame, 0.0));
+            let bias = lerp(-1.0, 1.0, context.input_sample(channels + 1, frame, 0.0));
+            let curve_index = (context.input_sample(channels + 2, frame, 0.0) * 4.0)
+                .round()
+                .clamp(0.0, 4.0) as usize;
+            let sample = Saturator::process_builtin(
+                context.input_sample(channel, frame, 0.0) as f64,
+                drive_db as f64,
+                bias as f64,
+                curve_index,
+            ) as f32;
+            context
+                .set_output_sample(channel, frame, sample)
+                .expect("saturator output channel should be available");
         }
     }
 }

@@ -86,6 +86,19 @@ impl Saturator {
         self.curve.process(biased)
     }
 
+    /// Process a built-in curve without replacing the boxed custom curve.
+    /// This keeps per-sample curve modulation allocation-free in the graph
+    /// kernel's realtime path.
+    pub fn process_builtin(input: f64, drive_db: f64, bias: f64, curve_index: usize) -> f64 {
+        let driven = input * 10.0_f64.powf(drive_db / 20.0) + bias;
+        match curve_index {
+            1 => HardClipCurve.process(driven),
+            2 => SoftClipCurve.process(driven),
+            3 => SinFoldCurve.process(driven),
+            _ => TanhCurve.process(driven),
+        }
+    }
+
     #[allow(dead_code)]
     pub fn curve_name(&self) -> &'static str {
         self.curve.name()

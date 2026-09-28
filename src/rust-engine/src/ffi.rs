@@ -1403,7 +1403,7 @@ mod tests {
         let path = dir.path().join("unsupported.yaml");
         std::fs::write(
             &path,
-            "metadata: { name: unsupported }\nports:\n  - { name: master, direction: output, signal: audio, channels: 1, maps_from: saturator.audio_out }\nmodules:\n  - { id: saturator, type: saturator }\nconnections: []\n",
+            "metadata: { name: unsupported }\nports:\n  - { name: master, direction: output, signal: audio, channels: 1, maps_from: dynamics.audio_out }\nmodules:\n  - { id: dynamics, type: dynamics-processor }\nconnections: []\n",
         )
         .unwrap();
         let path = std::ffi::CString::new(path.to_str().unwrap()).unwrap();

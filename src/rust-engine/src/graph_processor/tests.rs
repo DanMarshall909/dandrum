@@ -6646,6 +6646,55 @@ connections:
 }
 
 #[test]
+fn kernel_saturator_renders_default_and_selected_curves_on_a_named_bus() {
+    let yaml = r#"
+ports:
+  - { name: source, direction: input, signal: audio, channels: 1, maps_to: sat.audio_in }
+  - { name: master, direction: output, signal: audio, channels: 1, maps_from: sat.audio_out }
+modules:
+  - { id: sat, type: saturator }
+connections: []
+"#;
+    let settings = RenderSettings {
+        sample_rate_hz: 48_000,
+        block_size_frames: 4,
+        duration_frames: 4,
+    };
+    let buses = HostBuses::new()
+        .with_input("source", 1)
+        .with_output("master", 1);
+    for (yaml, expected) in [
+        (yaml.to_string(), (0.5_f64 - 1.0).tanh() as f32),
+        (
+            yaml.replace(
+                "type: saturator",
+                "type: saturator, defaults: { bias: 0.5, curve_select: 0.25 }",
+            ),
+            0.5,
+        ),
+    ] {
+        let patch = load_kernel_patch_str(&yaml).expect("saturator patch parses");
+        let prepared =
+            prepare_kernel_graph_with_buses(patch.root(), patch.registry(), &settings, &buses)
+                .expect("saturator patch prepares");
+        let outputs = render_kernel_offline_named_with_inputs(
+            &prepared,
+            Vec::new(),
+            &PreparedSamplerAssets::empty(),
+            &BTreeMap::from([("source".to_string(), vec![vec![0.5; 4]])]),
+        )
+        .expect("saturator patch renders");
+        assert_eq!(outputs[0].0, "master");
+        for sample in &outputs[0].1[0] {
+            assert!(
+                (sample - expected).abs() < 1e-6,
+                "sample {sample} versus {expected}"
+            );
+        }
+    }
+}
+
+#[test]
 fn kernel_feedback_delay_delivers_control_feedback_on_a_later_block() {
     let yaml = r#"
 ports:
