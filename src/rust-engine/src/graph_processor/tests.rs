@@ -4000,13 +4000,12 @@ fn spectral_centroid_around(
 }
 
 #[test]
-fn drum_kit_module_examples_load_validate_and_render_with_documented_primitive_ports() {
+fn impulse_module_examples_load_validate_and_render_with_documented_primitive_ports() {
     for (fixture, note, should_render) in [
         ("examples/patches/module-velocity-vca.yaml", 60, true),
         ("examples/patches/module-impulse-tone.yaml", 60, true),
         ("examples/patches/module-impulse-noise.yaml", 60, true),
         ("examples/patches/module-impulse-layer.yaml", 60, true),
-        ("examples/patches/drum-kit.yaml", 36, true),
     ] {
         let Some(yaml) = read_repo_fixture(fixture) else {
             return;
@@ -4035,6 +4034,137 @@ fn drum_kit_module_examples_load_validate_and_render_with_documented_primitive_p
             peak > 0.0,
             "{fixture} should render non-empty audio; peak was {peak}"
         );
+    }
+}
+
+#[test]
+fn migrated_drum_kit_routes_each_pad_to_its_own_poly_region_and_stereo_bus() {
+    let legacy = patch::load_patch_str(include_str!(
+        "../../tests/fixtures/unify-graph-kernel/legacy/drum-kit.yaml"
+    ))
+    .expect("legacy drum kit reference parses");
+    let legacy_graph = Graph::from_patch_declarations(&legacy);
+    let yaml =
+        read_repo_fixture("examples/patches/drum-kit.yaml").expect("drum kit example exists");
+    let kernel = load_kernel_patch_str(&yaml).expect("drum kit is a kernel document");
+    let root = kernel.root();
+    let regions = root
+        .nodes()
+        .iter()
+        .filter(|node| node.definition_ref() == "poly")
+        .collect::<Vec<_>>();
+    assert_eq!(
+        regions.len(),
+        3,
+        "kick, snare, and hat allocate independently"
+    );
+    assert_eq!(
+        root.nodes()
+            .iter()
+            .filter(|node| node.definition_ref() == "event_filter")
+            .count(),
+        3,
+        "each pad has a generic MIDI note filter"
+    );
+    for (route, pad) in [
+        ("kick_route", "kick_voices"),
+        ("snare_route", "snare_voices"),
+        ("hat_route", "hat_voices"),
+    ] {
+        assert!(root.connections().iter().any(|connection| {
+            connection.source().node().as_str() == route
+                && connection.source().port() == "events_out"
+                && connection.destination().node().as_str() == pad
+                && connection.destination().port() == "notes"
+        }));
+    }
+
+    let settings = RenderSettings {
+        sample_rate_hz: 48_000,
+        block_size_frames: 128,
+        duration_frames: 2_048,
+    };
+    let prepared = prepare_kernel_patch(&kernel, &settings).expect("three pad regions prepare");
+    let compiled_regions = prepared.compiled_patch().poly_regions();
+    assert_eq!(compiled_regions.len(), 3);
+    assert!(
+        compiled_regions
+            .iter()
+            .all(|region| region.max_voices() == 8)
+    );
+
+    for (note, active_bus) in [(36, "kick"), (38, "snare"), (42, "hat")] {
+        let reference = render_offline_polyphonic(
+            &legacy_graph,
+            &settings,
+            vec![note_on_value(0, note, 100)],
+            &legacy.voice_allocation,
+        );
+        let rendered = render_kernel_offline_named(
+            &prepared,
+            vec![note_on_value(0, note, 100)],
+            &PreparedSamplerAssets::empty(),
+        )
+        .expect("each drum pad renders named root buses");
+        assert_eq!(rendered.len(), 4);
+        assert_eq!(rendered[0].0, "master");
+        for (_, channels) in &rendered {
+            assert_eq!(channels.len(), 2);
+        }
+        let active = rendered
+            .iter()
+            .find(|(name, _)| name == active_bus)
+            .expect("active pad has a group bus");
+        assert!(active.1.iter().flatten().any(|sample| sample.abs() > 0.001));
+        // The legacy global voice path stops this kit after its first block.
+        // Keep the original attack as the sonic reference for each migrated pad.
+        for frame in 0..settings.block_size_frames as usize {
+            assert!(
+                (rendered[0].1[0][frame] - reference.0[frame]).abs() < 1e-5,
+                "{active_bus} left channel preserves the legacy drum attack at frame {frame}: actual={}, reference={}",
+                rendered[0].1[0][frame],
+                reference.0[frame]
+            );
+        }
+        for (name, channels) in &rendered[1..] {
+            if name != active_bus {
+                assert!(channels.iter().flatten().all(|sample| *sample == 0.0));
+            }
+        }
+        for channel in 0..2 {
+            for frame in 0..settings.duration_frames as usize {
+                assert!(
+                    (rendered[0].1[channel][frame] - active.1[channel][frame]).abs() < 1e-6,
+                    "master equals the selected {active_bus} pad at frame {frame}"
+                );
+            }
+        }
+    }
+
+    let layered = render_kernel_offline_named(
+        &prepared,
+        vec![
+            note_on_value(0, 36, 100),
+            note_on_value(0, 38, 100),
+            note_on_value(0, 42, 100),
+        ],
+        &PreparedSamplerAssets::empty(),
+    )
+    .expect("independent pads render together");
+    for (_, channels) in &layered[1..] {
+        assert!(channels.iter().flatten().any(|sample| sample.abs() > 0.001));
+    }
+    for channel in 0..2 {
+        for frame in 0..settings.duration_frames as usize {
+            let groups = layered[1..]
+                .iter()
+                .map(|(_, channels)| channels[channel][frame])
+                .sum::<f32>();
+            assert!(
+                (layered[0].1[channel][frame] - groups).abs() < 1e-5,
+                "master sums all pad buses at frame {frame}"
+            );
+        }
     }
 }
 
