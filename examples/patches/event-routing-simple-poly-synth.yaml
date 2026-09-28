@@ -1,49 +1,27 @@
 metadata:
   name: Event Routing Simple Poly Synth
   version: "0.1"
-voice_allocation:
-  max_voices: 4
-  stealing: oldest_active
-render:
-  sample_rate_hz: 48000
-  block_size_frames: 64
-  duration_frames: 4800
+ports:
+  - { name: master, direction: output, signal: audio, channels: 2, maps_from: voices.audio }
+module_definitions:
+  - type: routed_voice
+    ports:
+      - { name: audio, direction: output, signal: audio, channels: 2, maps_from: vca.audio_out }
+    modules:
+      # The note filter admits only MIDI 60; this is its legacy C4/A3 pitch ratio.
+      - { id: osc, type: oscillator, static: { channels: 2 }, defaults: { pitch: 1.1892070770263672 } }
+      - { id: env, type: adsr }
+      - { id: vca, type: gain, static: { channels: 2 } }
+    connections:
+      - { from: voice.gate, to: env.gate }
+      - { from: osc.audio, to: vca.audio_in }
+      - { from: env.value, to: vca.gain }
 modules:
-  - id: midi
-    type: midi_input
-  - id: note_route
-    type: event_filter
-    parameters:
-      selector: note
-      note: 60
-  - id: note_controls
-    type: note_to_control
-  - id: osc
-    type: oscillator
-  - id: env
-    type: adsr
-  - id: vca
-    type: gain
-  - id: mixer
-    type: audio_mixer
-  - id: out
-    type: audio_output
+  - { id: midi, type: midi_input }
+  - { id: note_route, type: event_filter, static: { selector: note, note: 60 } }
+  - id: voices
+    type: poly
+    static: { definition: routed_voice, max_voices: 4, allocation: oldest-steal }
 connections:
-  - from: midi.events
-    to: note_route.events_in
-  - from: note_route.events_out
-    to: note_controls.events
-  - from: note_controls.pitch_ratio
-    to: osc.pitch
-  - from: note_controls.gate
-    to: env.gate
-  - from: osc.audio
-    to: vca.audio_in
-  - from: env.value
-    to: vca.gain
-  - from: vca.audio_out
-    to: mixer.inputs
-  - from: mixer.mix
-    to: out.left
-  - from: mixer.mix
-    to: out.right
+  - { from: midi.events, to: note_route.events_in }
+  - { from: note_route.events_out, to: voices.notes }

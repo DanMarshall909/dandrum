@@ -17,7 +17,7 @@ use super::input_provider::CompiledInputProvider;
 use super::outputs::{BlockEvent, ModuleOutputs};
 use super::polyphony::{PreparedPolyRuntimeRegion, build_polyphonic_states_from_compiled};
 use super::process_context::ProcessContext;
-use super::render_plan::{RenderPlan, RenderStep};
+use super::render_plan::{CompiledEventEdge, RenderPlan, RenderStep};
 use super::state::PerModuleState;
 
 pub struct RealtimeGraphProcessor {
@@ -429,13 +429,25 @@ impl RealtimeGraphProcessor {
     /// Preparation can use this to reject schedules that the named-bus arena
     /// path cannot execute before exposing a realtime handle to a host.
     pub(crate) fn can_render_root_buses(&self) -> bool {
-        self.midi_idx.is_none()
-            && self.allocator.max_voices() <= 1
+        self.allocator.max_voices() <= 1
             && self
                 .render_plan
                 .global_steps
                 .iter()
-                .all(is_channel_arena_supported)
+                .all(|step| match step.module_kind {
+                    ModuleKind::MidiInput => {
+                        step.input_buffers.is_empty()
+                            && step.output_buffers.is_empty()
+                            && step.event_outputs.len() == 1
+                    }
+                    ModuleKind::EventFilter => {
+                        step.input_buffers.is_empty()
+                            && step.output_buffers.is_empty()
+                            && step.event_inputs.len() == 1
+                            && step.event_outputs.len() == 1
+                    }
+                    _ => is_channel_arena_supported(step),
+                })
     }
 
     /// Render planar root input and output buffers in their prepared root-port
@@ -459,7 +471,28 @@ impl RealtimeGraphProcessor {
             region.begin_block(frames, self.current_frame);
         }
         self.prepared_event_queues.clear_all();
-        self.drain_and_route_poly_events(frames);
+        if let Some(midi_step) = self
+            .render_plan
+            .global_steps
+            .iter()
+            .find(|step| step.module_kind == ModuleKind::MidiInput)
+        {
+            let event_count = self
+                .pending_events
+                .drain_into_buffer(&mut self.events_buffer);
+            let events = &self.events_buffer[..event_count];
+            for &queue in midi_step.event_outputs.iter() {
+                let destination = self
+                    .prepared_event_queues
+                    .queue_mut(queue.0)
+                    .expect("compiled MIDI output has a prepared event queue");
+                for event in events {
+                    let _ = destination.push_at(event.event.clone(), event.frame_offset);
+                }
+            }
+        } else {
+            self.drain_and_route_poly_events(frames);
+        }
 
         for (input_index, planned) in self.compiled.root_bus_plan().inputs().iter().enumerate() {
             let Some(span) = planned.span() else { continue };
@@ -479,6 +512,39 @@ impl RealtimeGraphProcessor {
 
         for step in self.render_plan.global_steps.iter() {
             route_prepared_event_edges(&mut self.prepared_event_queues, step);
+            match step.module_kind {
+                ModuleKind::MidiInput => continue,
+                ModuleKind::EventFilter => {
+                    let PerModuleState::EventFilter { note } = &self.states[0][step.module_index]
+                    else {
+                        unreachable!()
+                    };
+                    let edge = CompiledEventEdge {
+                        source: step.event_inputs[0],
+                        destination: step.event_outputs[0],
+                    };
+                    let _ = self
+                        .prepared_event_queues
+                        .route_filtered_event_edge(edge, *note);
+                    continue;
+                }
+                ModuleKind::Poly => {
+                    let node_id = self.compiled.nodes()[step.module_index].id.as_str();
+                    let events = step
+                        .event_inputs
+                        .first()
+                        .and_then(|queue| self.prepared_event_queues.queue_ref(queue.0))
+                        .map_or(&[][..], |queue| queue.events());
+                    if let Some(region) = self
+                        .prepared_poly_runtime_regions
+                        .iter_mut()
+                        .find(|region| region.node_id() == node_id)
+                    {
+                        region.route_note_events(events, frames);
+                    }
+                }
+                _ => {}
+            }
             process_channel_or_poly_step(
                 &mut self.audio_arena,
                 &mut self.states[0],

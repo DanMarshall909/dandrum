@@ -1,0 +1,49 @@
+metadata:
+  name: Event Routing Simple Poly Synth
+  version: "0.1"
+voice_allocation:
+  max_voices: 4
+  stealing: oldest_active
+render:
+  sample_rate_hz: 48000
+  block_size_frames: 64
+  duration_frames: 4800
+modules:
+  - id: midi
+    type: midi_input
+  - id: note_route
+    type: event_filter
+    parameters:
+      selector: note
+      note: 60
+  - id: note_controls
+    type: note_to_control
+  - id: osc
+    type: oscillator
+  - id: env
+    type: adsr
+  - id: vca
+    type: gain
+  - id: mixer
+    type: audio_mixer
+  - id: out
+    type: audio_output
+connections:
+  - from: midi.events
+    to: note_route.events_in
+  - from: note_route.events_out
+    to: note_controls.events
+  - from: note_controls.pitch_ratio
+    to: osc.pitch
+  - from: note_controls.gate
+    to: env.gate
+  - from: osc.audio
+    to: vca.audio_in
+  - from: env.value
+    to: vca.gain
+  - from: vca.audio_out
+    to: mixer.inputs
+  - from: mixer.mix
+    to: out.left
+  - from: mixer.mix
+    to: out.right

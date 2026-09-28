@@ -3727,29 +3727,31 @@ fn simple_poly_synth_dogfood_consumes_note_events_through_generic_routing() {
     else {
         return;
     };
-    let patch = patch::load_patch_str(&yaml).expect("poly synth example should parse");
-    patch::validate_patch_schema(&patch).expect("poly synth example should validate");
+    let legacy = patch::load_patch_str(include_str!(
+        "../../tests/fixtures/unify-graph-kernel/legacy/event-routing-simple-poly-synth.yaml"
+    ))
+    .expect("legacy poly synth example should parse");
 
     assert!(
-        patch
+        legacy
             .modules
             .iter()
             .all(|module| module.module_type != "poly_synth")
     );
 
-    let graph = Graph::from_patch_declarations(&patch);
+    let graph = Graph::from_patch_declarations(&legacy);
     graph.validate().expect("poly synth graph should validate");
     let matching = render_offline_polyphonic(
         &graph,
-        &patch.render,
+        &legacy.render,
         vec![note_on_value(0, 60, 100)],
-        &patch.voice_allocation,
+        &legacy.voice_allocation,
     );
     let blocked = render_offline_polyphonic(
         &graph,
-        &patch.render,
+        &legacy.render,
         vec![note_on_value(0, 62, 100)],
-        &patch.voice_allocation,
+        &legacy.voice_allocation,
     );
 
     assert!(
@@ -3760,8 +3762,53 @@ fn simple_poly_synth_dogfood_consumes_note_events_through_generic_routing() {
             .any(|sample| *sample != 0.0),
         "matching note should render deterministic pitched audio"
     );
-    assert_eq!(blocked.0, vec![0.0; patch.render.duration_frames as usize]);
-    assert_eq!(blocked.1, vec![0.0; patch.render.duration_frames as usize]);
+    assert_eq!(blocked.0, vec![0.0; legacy.render.duration_frames as usize]);
+    assert_eq!(blocked.1, vec![0.0; legacy.render.duration_frames as usize]);
+
+    let kernel = load_kernel_patch_str(&yaml).expect("poly synth is a kernel document");
+    let prepared =
+        prepare_kernel_patch(&kernel, &legacy.render).expect("filtered poly synth prepares");
+    assert_eq!(
+        prepared.compiled_patch().poly_regions()[0].allocation_policy(),
+        crate::kernel::PolyAllocationPolicy::OldestSteal,
+    );
+    let actual = render_kernel_offline_named(
+        &prepared,
+        vec![note_on_value(0, 60, 100)],
+        &PreparedSamplerAssets::empty(),
+    )
+    .expect("matching note renders named master bus");
+    assert_eq!(actual.len(), 1);
+    assert_eq!(actual[0].0, "master");
+    for (channel, expected) in [matching.0, matching.1].iter().enumerate() {
+        if let Some((index, (found, wanted))) = actual[0].1[channel]
+            .iter()
+            .zip(expected)
+            .enumerate()
+            .find(|(_, (found, wanted))| found != wanted)
+        {
+            panic!(
+                "channel {channel} first differs at frame {index}: found {found}, expected {wanted}"
+            );
+        }
+    }
+
+    let mut runtime = RealtimeGraphProcessor::polyphonic_with_compiled_patch_and_sampler_assets_and_max_block_size(
+        prepared.graph().clone(),
+        prepared.compiled_patch().clone(),
+        legacy.render.sample_rate_hz as f32,
+        &PreparedSamplerAssets::empty(),
+        &patch::VoiceAllocation::default(),
+        legacy.render.block_size_frames as usize,
+    );
+    runtime.note_on(62, 100);
+    let mut outputs = vec![vec![vec![0.0; 64]; 2]];
+    assert_eq!(runtime.render_root_outputs(&mut outputs), 64);
+    assert_eq!(
+        runtime.prepared_poly_runtime_regions()[0].active_voice_count(),
+        0
+    );
+    assert!(outputs[0].iter().flatten().all(|sample| *sample == 0.0));
 }
 
 #[test]
@@ -6513,6 +6560,10 @@ fn migrated_polyphonic_pad_preserves_stereo_reverb_render() {
         read_repo_fixture("examples/patches/polyphonic-pad.yaml").expect("pad example exists");
     let kernel = load_kernel_patch_str(&yaml).expect("pad is a kernel document");
     let prepared = prepare_kernel_patch(&kernel, &settings).expect("pad poly region prepares");
+    assert_eq!(
+        prepared.compiled_patch().poly_regions()[0].allocation_policy(),
+        crate::kernel::PolyAllocationPolicy::OldestSteal,
+    );
     let actual = render_kernel_offline_named(&prepared, events, &PreparedSamplerAssets::empty())
         .expect("pad renders named stereo master bus");
 
