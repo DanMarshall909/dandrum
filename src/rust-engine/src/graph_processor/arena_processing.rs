@@ -361,6 +361,34 @@ pub(super) fn process_slew(state: &mut PerModuleState, context: &mut ProcessCont
     }
 }
 
+pub(super) fn process_dynamics(state: &mut PerModuleState, context: &mut ProcessContext<'_>) {
+    let PerModuleState::DynamicsProcessor { processors, .. } = state else {
+        unreachable!()
+    };
+    let channels = context.output_count();
+    for frame in 0..context.frames() {
+        let sidechain = context.input_sample(channels, frame, 0.0);
+        let controls = [
+            context.input_sample(channels + 1, frame, 0.3),
+            context.input_sample(channels + 2, frame, 0.05),
+            context.input_sample(channels + 3, frame, 0.077),
+            context.input_sample(channels + 4, frame, 0.05),
+            context.input_sample(channels + 5, frame, 0.1),
+            context.input_sample(channels + 6, frame, 0.0),
+            context.input_sample(channels + 7, frame, 0.0),
+            context.input_sample(channels + 8, frame, 0.5),
+            context.input_sample(channels + 9, frame, 0.5),
+        ];
+        for (channel, processor) in processors.iter_mut().enumerate() {
+            let audio = context.input_sample(channel, frame, 0.0);
+            let value = super::processing::dynamics_sample(processor, audio, sidechain, controls);
+            context
+                .set_output_sample(channel, frame, value)
+                .expect("dynamics output is present in a supported arena step");
+        }
+    }
+}
+
 pub(super) fn process_gain(context: &mut ProcessContext<'_>) {
     let channels = context.output_count();
     let gain_is_multichannel = context.input_count() >= channels * 2;

@@ -9,6 +9,7 @@ use super::helpers::{
 use super::outputs::{BlockEvent, ModuleOutputs};
 use super::state::PerModuleState;
 use crate::decay::DecayCurve;
+use crate::dynamics_processor::DynamicsProcessor;
 use crate::oscillator::OSCILLATOR_BASE_HZ;
 
 pub(super) struct EchoControls<'a> {
@@ -470,49 +471,66 @@ pub(super) fn process_dynamics_processor(
     sustain_gain_in: &[f32],
     frames: usize,
 ) -> ModuleOutputs {
-    let (processor, _sample_rate) = match state {
-        PerModuleState::DynamicsProcessor {
-            processor,
-            sample_rate,
-        } => (processor, *sample_rate),
+    let processor = match state {
+        PerModuleState::DynamicsProcessor { processors, .. } => &mut processors[0],
         _ => unreachable!(),
     };
 
     let mut audio_out = Vec::with_capacity(frames);
 
     for i in 0..frames {
-        let threshold_db = lerp(-80.0, 0.0, threshold_in[i]);
-        let below_ratio = lerp(0.0, 20.0, below_ratio_in[i]);
-        let above_ratio = lerp(1.0, 40.0, above_ratio_in[i]);
-        let attack_ms = log_lerp(0.1, 100.0, attack_in[i]);
-        let release_ms = log_lerp(10.0, 3000.0, release_in[i]);
-        let knee_db = lerp(0.0, 12.0, knee_in[i]);
-        let makeup_gain_db = lerp(0.0, 24.0, makeup_in[i]);
-        let attack_gain_db = lerp(-24.0, 24.0, attack_gain_in[i]);
-        let sustain_gain_db = lerp(-24.0, 24.0, sustain_gain_in[i]);
-
-        processor.set_level_params(
-            threshold_db as f64,
-            below_ratio as f64,
-            above_ratio as f64,
-            knee_db as f64,
-            makeup_gain_db as f64,
-        );
-        processor.set_transient_params(attack_gain_db as f64, sustain_gain_db as f64);
-        processor.set_time_constants(attack_ms as f64, release_ms as f64);
-
-        let has_sidechain = i < sidechain_in.len() && sidechain_in[i] != 0.0;
-        let sc = if has_sidechain {
-            Some(sidechain_in[i] as f64)
-        } else {
-            None
-        };
-
-        let out = processor.process(audio_in[i] as f64, sc);
-        audio_out.push(out as f32);
+        audio_out.push(dynamics_sample(
+            processor,
+            audio_in[i],
+            sidechain_in.get(i).copied().unwrap_or(0.0),
+            [
+                threshold_in[i],
+                below_ratio_in[i],
+                above_ratio_in[i],
+                attack_in[i],
+                release_in[i],
+                knee_in[i],
+                makeup_in[i],
+                attack_gain_in[i],
+                sustain_gain_in[i],
+            ],
+        ));
     }
 
     audio_output(builtin_ports::AUDIO_OUT, audio_out)
+}
+
+pub(super) fn dynamics_sample(
+    processor: &mut DynamicsProcessor,
+    audio: f32,
+    sidechain: f32,
+    controls: [f32; 9],
+) -> f32 {
+    let threshold_db = lerp(-80.0, 0.0, controls[0]);
+    let below_ratio = lerp(0.0, 20.0, controls[1]);
+    let above_ratio = lerp(1.0, 40.0, controls[2]);
+    let attack_ms = log_lerp(0.1, 100.0, controls[3]);
+    let release_ms = log_lerp(10.0, 3000.0, controls[4]);
+    let knee_db = lerp(0.0, 12.0, controls[5]);
+    let makeup_gain_db = lerp(0.0, 24.0, controls[6]);
+    let attack_gain_db = lerp(-24.0, 24.0, controls[7]);
+    let sustain_gain_db = lerp(-24.0, 24.0, controls[8]);
+
+    processor.set_level_params(
+        threshold_db as f64,
+        below_ratio as f64,
+        above_ratio as f64,
+        knee_db as f64,
+        makeup_gain_db as f64,
+    );
+    processor.set_transient_params(attack_gain_db as f64, sustain_gain_db as f64);
+    processor.set_time_constants(attack_ms as f64, release_ms as f64);
+    let sidechain = if sidechain != 0.0 {
+        Some(sidechain as f64)
+    } else {
+        None
+    };
+    processor.process(audio as f64, sidechain) as f32
 }
 
 pub(super) fn process_filter(

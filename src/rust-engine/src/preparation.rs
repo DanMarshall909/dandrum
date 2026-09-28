@@ -3242,8 +3242,8 @@ mod tests {
     }
 
     #[test]
-    fn preparation_rejects_poly_child_that_the_realtime_schedule_cannot_render() {
-        let voice = GraphDefinition::new("unsupported_voice")
+    fn preparation_renders_dynamics_inside_a_poly_child() {
+        let voice = GraphDefinition::new("dynamics_voice")
             .with_port(
                 KernelPort::output("audio", SignalType::Audio, 1)
                     .maps_from(kernel_ref("dynamics", builtin_ports::AUDIO_OUT)),
@@ -3263,20 +3263,19 @@ mod tests {
                     .maps_from(kernel_ref("voices", "audio")),
             )
             .with_node(poly_node("voices", voice.name(), 1));
-        let error = prepare_kernel_graph_with_buses(
+        let prepared = prepare_kernel_graph_with_buses(
             &root,
             &builtin_registry().with_definition(voice),
             &KERNEL_RENDER_SETTINGS,
             &HostBuses::new().with_output("master", 1),
         )
-        .expect_err("unrenderable poly child must fail during preparation");
-        let diagnostic = error.diagnostics().errors().next().unwrap();
-
-        assert_eq!(
-            diagnostic.error_code(),
-            diagnostics::error_codes::KERNEL_POLY_RUNTIME_UNSUPPORTED
-        );
-        assert_eq!(diagnostic.module_id(), Some("voices::dynamics"));
+        .expect("dynamics poly child prepares");
+        let mut runtime = runtime_for(&prepared);
+        let frames = KERNEL_RENDER_SETTINGS.block_size_frames as usize;
+        let mut outputs = vec![vec![vec![0.0; frames]]];
+        runtime.note_on(60, 100);
+        assert_eq!(runtime.render_root_outputs(&mut outputs), frames);
+        assert!(outputs[0][0].iter().any(|sample| sample.abs() > 0.001));
     }
 
     #[test]

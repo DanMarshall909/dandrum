@@ -715,6 +715,55 @@ fn feedback_delay_render_and_reset_use_only_prepared_storage() {
 }
 
 #[test]
+fn kernel_stereo_dynamics_render_and_reset_without_allocation() {
+    let patch = load_kernel_patch_str(
+        r#"
+ports:
+  - { name: source, direction: input, signal: audio, channels: 2, maps_to: dynamics.audio_in }
+  - { name: master, direction: output, signal: audio, channels: 2, maps_from: dynamics.audio_out }
+modules:
+  - { id: dynamics, type: dynamics-processor, static: { channels: 2 } }
+connections: []
+"#,
+    )
+    .expect("dynamics patch loads");
+    let settings = RenderSettings {
+        sample_rate_hz: 1_000,
+        block_size_frames: 16,
+        duration_frames: 16,
+    };
+    let buses = HostBuses::new()
+        .with_input("source", 2)
+        .with_output("master", 2);
+    let prepared =
+        prepare_kernel_graph_with_buses(patch.root(), patch.registry(), &settings, &buses)
+            .expect("dynamics patch prepares");
+    let mut processor = RealtimeGraphProcessor::polyphonic_with_compiled_patch_and_sampler_assets_and_max_block_size(
+        prepared.graph().clone(),
+        prepared.compiled_patch().clone(),
+        1_000.0,
+        &PreparedSamplerAssets::empty(),
+        &VoiceAllocation::default(),
+        16,
+    );
+    let inputs = vec![vec![vec![0.8; 16], vec![-0.4; 16]]];
+    let mut outputs = vec![vec![vec![0.0; 16], vec![0.0; 16]]];
+    let mut first_sample = 0.0;
+
+    let allocations = count_current_thread_allocations(|| {
+        assert_eq!(processor.render_root_buses(&inputs, &mut outputs), 16);
+        first_sample = outputs[0][0][0];
+        processor.reset();
+        assert_eq!(processor.render_root_buses(&inputs, &mut outputs), 16);
+    });
+
+    assert_eq!(allocations, 0);
+    assert_ne!(first_sample, 0.0);
+    assert_eq!(outputs[0][0][0], first_sample);
+    assert_ne!(outputs[0][0][0], outputs[0][1][0]);
+}
+
+#[test]
 fn kernel_slew_render_and_reset_use_only_prepared_storage() {
     let patch = load_kernel_patch_str(
         r#"

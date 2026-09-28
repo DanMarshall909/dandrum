@@ -1398,12 +1398,12 @@ mod tests {
     }
 
     #[test]
-    fn kernel_ffi_rejects_a_compiled_graph_with_no_root_bus_renderer() {
+    fn kernel_ffi_prepares_and_renders_a_dynamics_root_bus() {
         let dir = tempfile::tempdir().unwrap();
-        let path = dir.path().join("unsupported.yaml");
+        let path = dir.path().join("dynamics.yaml");
         std::fs::write(
             &path,
-            "metadata: { name: unsupported }\nports:\n  - { name: master, direction: output, signal: audio, channels: 1, maps_from: dynamics.audio_out }\nmodules:\n  - { id: dynamics, type: dynamics-processor }\nconnections: []\n",
+            "metadata: { name: dynamics }\nports:\n  - { name: master, direction: output, signal: audio, channels: 1, maps_from: dynamics.audio_out }\nmodules:\n  - { id: dynamics, type: dynamics-processor }\nconnections: []\n",
         )
         .unwrap();
         let path = std::ffi::CString::new(path.to_str().unwrap()).unwrap();
@@ -1414,10 +1414,23 @@ mod tests {
             channel_count: 1,
         };
 
-        assert!(
-            unsafe { dandrum_kernel_prepare_file(path.as_ptr(), 48_000, 8, &declaration, 1) }
-                .is_null()
+        let engine =
+            unsafe { dandrum_kernel_prepare_file(path.as_ptr(), 48_000, 8, &declaration, 1) };
+        assert!(!engine.is_null());
+        let mut samples = [1.0_f32; 8];
+        let channels = [samples.as_mut_ptr()];
+        let output = DandrumKernelOutputBusView {
+            name: name.as_ptr(),
+            channels: channels.as_ptr(),
+            channel_count: 1,
+            frame_capacity: 8,
+        };
+        assert_eq!(
+            unsafe { dandrum_kernel_render(engine, std::ptr::null(), 0, &output, 1, 8) },
+            8
         );
+        assert_eq!(samples, [0.0; 8]);
+        unsafe { dandrum_kernel_destroy(engine) };
     }
 
     #[test]

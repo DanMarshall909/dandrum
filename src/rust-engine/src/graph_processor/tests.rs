@@ -6646,6 +6646,84 @@ connections:
 }
 
 #[test]
+fn kernel_dynamics_matches_legacy_processing_for_independent_audio_channels() {
+    let settings = RenderSettings {
+        sample_rate_hz: 1_000,
+        block_size_frames: 16,
+        duration_frames: 64,
+    };
+    let buses = HostBuses::new()
+        .with_input("source", 2)
+        .with_output("master", 2);
+    let input = [vec![0.8; 64], vec![-0.4; 64]];
+    for (static_args, legacy_params) in [
+        ("channels: 2", BTreeMap::new()),
+        (
+            "channels: 2, mode: transient, detection: rms, topology: feedback",
+            BTreeMap::from([
+                (
+                    DYNAMICS_MODE_PARAMETER.to_string(),
+                    DYNAMICS_MODE_TRANSIENT.to_string(),
+                ),
+                (
+                    DYNAMICS_DETECTION_PARAMETER.to_string(),
+                    DETECTION_MODE_RMS.to_string(),
+                ),
+                (
+                    DYNAMICS_TOPOLOGY_PARAMETER.to_string(),
+                    DYNAMICS_TOPOLOGY_FEEDBACK.to_string(),
+                ),
+            ]),
+        ),
+    ] {
+        let yaml = format!(
+            "ports:\n  - {{ name: source, direction: input, signal: audio, channels: 2, maps_to: dyn.audio_in }}\n  - {{ name: master, direction: output, signal: audio, channels: 2, maps_from: dyn.audio_out }}\nmodules:\n  - {{ id: dyn, type: dynamics-processor, static: {{ {static_args} }} }}\nconnections: []\n"
+        );
+        let patch = load_kernel_patch_str(&yaml).expect("dynamics patch parses");
+        let prepared =
+            prepare_kernel_graph_with_buses(patch.root(), patch.registry(), &settings, &buses)
+                .expect("dynamics patch prepares");
+        let outputs = render_kernel_offline_named_with_inputs(
+            &prepared,
+            Vec::new(),
+            &PreparedSamplerAssets::empty(),
+            &BTreeMap::from([("source".to_string(), input.to_vec())]),
+        )
+        .expect("dynamics patch renders");
+        assert_eq!(outputs[0].0, "master");
+        for (channel, source) in input.iter().enumerate() {
+            let mut state = PerModuleState::new(
+                &ModuleNode::new(ModuleId::new("dyn"), module_types::DYNAMICS_PROCESSOR)
+                    .with_params(legacy_params.clone()),
+                1_000.0,
+                &PreparedSamplerAssets::empty(),
+            );
+            let control = |value| vec![value; 64];
+            let expected = process_dynamics_processor(
+                &mut state,
+                source,
+                &control(0.0),
+                &control(0.3),
+                &control(0.05),
+                &control(0.077),
+                &control(0.05),
+                &control(0.1),
+                &control(0.0),
+                &control(0.0),
+                &control(0.5),
+                &control(0.5),
+                64,
+            );
+            let expected = &expected.audio[builtin_ports::AUDIO_OUT];
+            assert_eq!(
+                outputs[0].1[channel], *expected,
+                "{static_args} channel {channel}"
+            );
+        }
+    }
+}
+
+#[test]
 fn kernel_slew_glides_while_gated_and_snaps_when_released() {
     let patch = load_kernel_patch_str(
         r#"

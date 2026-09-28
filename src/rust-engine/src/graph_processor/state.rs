@@ -73,8 +73,7 @@ pub(super) enum PerModuleState {
         active: bool,
     },
     DynamicsProcessor {
-        processor: DynamicsProcessor,
-        sample_rate: f32,
+        processors: Box<[DynamicsProcessor]>,
     },
     Saturator {
         processor: Saturator,
@@ -175,7 +174,11 @@ impl PerModuleState {
                 *position = 0.0;
                 *active = false;
             }
-            Self::DynamicsProcessor { processor, .. } => processor.reset(),
+            Self::DynamicsProcessor { processors, .. } => {
+                for processor in processors.iter_mut() {
+                    processor.reset();
+                }
+            }
             Self::Convolution { processors } => {
                 for processor in processors.iter_mut() {
                     processor.reset();
@@ -410,14 +413,16 @@ impl PerModuleState {
                 else {
                     panic!("dynamics module {module_id} has mismatched construction data")
                 };
-                let mut processor = DynamicsProcessor::new(sample_rate as f64, 5.0, 50.0);
-                processor.set_mode(*mode);
-                processor.set_detection(*detection);
-                processor.set_topology(*topology);
-                PerModuleState::DynamicsProcessor {
-                    processor,
-                    sample_rate,
-                }
+                let processors = (0..channels)
+                    .map(|_| {
+                        let mut processor = DynamicsProcessor::new(sample_rate as f64, 5.0, 50.0);
+                        processor.set_mode(*mode);
+                        processor.set_detection(*detection);
+                        processor.set_topology(*topology);
+                        processor
+                    })
+                    .collect();
+                PerModuleState::DynamicsProcessor { processors }
             }
             ModuleKind::Saturator => PerModuleState::Saturator {
                 processor: Saturator::new(),
