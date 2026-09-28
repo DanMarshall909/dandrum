@@ -62,11 +62,6 @@ add_test(
         -DSOURCE_ROOT=${CMAKE_CURRENT_SOURCE_DIR}
         -P ${CMAKE_CURRENT_SOURCE_DIR}/tests/cmake/RealtimeCallbackSafety.cmake)
 
-add_executable(dandrum-tb303-web-ui-contract-test tests/cpp/Tb303WebUiContractTest.cpp)
-target_include_directories(dandrum-tb303-web-ui-contract-test PRIVATE src/juce-plugin)
-target_compile_definitions(dandrum-tb303-web-ui-contract-test PRIVATE DANDRUM_SOURCE_ROOT="${CMAKE_CURRENT_SOURCE_DIR}")
-add_test(NAME tb303-web-ui-contract COMMAND dandrum-tb303-web-ui-contract-test)
-
 add_executable(dandrum-sound-lab-controller-test
     tests/cpp/SoundLabControllerTest.cpp
     src/juce-plugin/SoundLabController.cpp)
@@ -102,6 +97,7 @@ juce_add_plugin(dandrum-plugin
 target_sources(dandrum-plugin PRIVATE
     src/juce-plugin/InstrumentDemoConfiguration.cpp
     src/juce-plugin/InstrumentFileWatcher.cpp
+    src/juce-plugin/InstrumentHostWebBridge.cpp
     src/juce-plugin/PluginEditor.cpp
     src/juce-plugin/PluginProcessor.cpp
     src/juce-plugin/SoundLabController.cpp)
@@ -149,6 +145,8 @@ add_test(NAME cxx-plugin-demo-configuration COMMAND dandrum-plugin-demo-configur
 find_program(DANDRUM_NODE_EXECUTABLE node)
 if(DANDRUM_NODE_EXECUTABLE)
     add_test(NAME shared-instrument-ui COMMAND ${DANDRUM_NODE_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/tests/js/SharedInstrumentUiTest.mjs)
+    add_test(NAME tb303-page COMMAND ${DANDRUM_NODE_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/tests/js/Tb303PageTest.mjs)
+    add_test(NAME native-function-bootstrap COMMAND ${DANDRUM_NODE_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/tests/js/NativeFunctionBootstrapTest.mjs)
 endif()
 
 add_executable(dandrum-plugin-file-watch-reload-test tests/cpp/PluginFileWatchReloadTest.cpp)

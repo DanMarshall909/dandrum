@@ -1,6 +1,7 @@
 #include "PluginEditor.h"
 #include "DefaultPatch.h"
 
+#include <atomic>
 #include <chrono>
 #include <cmath>
 #include <csignal>
@@ -19,20 +20,23 @@ struct PluginEditorBridgeTestProbe
         juce::var result;
         bool completed = false;
         auto completion = [&] (juce::var value) { result = std::move (value); completed = true; };
-        if (command == "getParameters")
-            editor.getParametersForWeb (arguments, completion);
-        else if (command == "setParameter")
-            editor.setParameterFromWeb (arguments, completion);
-        else if (command == "noteOn")
-            editor.noteOnFromWeb (arguments, completion);
-        else if (command == "noteOff")
-            editor.noteOffFromWeb (arguments, completion);
-        else if (command == "renderSoundLab")
-            editor.renderSoundLabFromWeb (arguments, completion);
-        else if (command == "getSoundLabAnalysis")
-            editor.getSoundLabAnalysisForWeb (arguments, completion);
-        else
-            throw std::runtime_error ("unknown test command");
+        bool invoked = false;
+        for (auto& [name, callback] : editor.hostBridge.nativeFunctions())
+            if (name.toString() == command)
+            {
+                callback (arguments, completion);
+                invoked = true;
+                break;
+            }
+        if (! invoked)
+        {
+            if (command == "renderSoundLab")
+                editor.renderSoundLabFromWeb (arguments, completion);
+            else if (command == "getSoundLabAnalysis")
+                editor.getSoundLabAnalysisForWeb (arguments, completion);
+            else
+                throw std::runtime_error ("unknown test command");
+        }
         if (! completed)
             throw std::runtime_error ("native command did not complete synchronously");
         return result;
@@ -40,9 +44,14 @@ struct PluginEditorBridgeTestProbe
 
     static void refresh (DandrumAudioProcessorEditor& editor) { editor.timerCallback(); }
 
+    static bool publishUnchangedSurface (DandrumAudioProcessorEditor& editor)
+    {
+        return editor.hostBridge.publishParameterUpdates (editor.browser);
+    }
+
     static std::uint32_t seenSurfaceGeneration (const DandrumAudioProcessorEditor& editor)
     {
-        return editor.lastSeenParameterSurfaceGeneration;
+        return editor.hostBridge.lastSeenSurfaceGeneration();
     }
 
     static std::optional<juce::WebBrowserComponent::Resource> resource (
@@ -149,6 +158,9 @@ int main()
                            .toString().contains ("queue is full") || rejected;
         require (rejected && processor.getDroppedMidiEventCount() > 0,
                  "full MIDI queue was not reported to the browser");
+        require (PluginEditorBridgeTestProbe::invoke (editor, "noteOff", { 36 })
+                     .toString().contains ("queue is full"),
+                 "full MIDI queue did not report a dropped note-off");
 
         const auto previousGeneration = processor.getParameterSurfaceGeneration();
         const auto tb303 = juce::File (juce::String (
@@ -161,6 +173,8 @@ int main()
         require (PluginEditorBridgeTestProbe::seenSurfaceGeneration (editor)
                      == processor.getParameterSurfaceGeneration(),
                  "browser refresh did not consume the new public surface generation");
+        require (! PluginEditorBridgeTestProbe::publishUnchangedSurface (editor),
+                 "unchanged public surface caused another browser refresh");
         snapshot = PluginEditorBridgeTestProbe::invoke (editor, "getParameters");
         require (snapshot.getArray() != nullptr
                      && snapshot.getArray()->size() == processor.getActivePublicParameterIds().size()
@@ -233,9 +247,38 @@ int main()
         require (kickAnalysis.getProperty ("state", {}).toString() == "ready"
                      && std::abs (static_cast<double> (kickAnalysis.getProperty ("duration_seconds", {})) - 1.0) < 0.001,
                  "second demo Sound Lab did not use its own one-second kick fixture");
+
+        DandrumAudioProcessor changing (InstrumentDemoConfiguration::kick());
+        changing.setPlayConfigDetails (0, 2, 48000.0, 64);
+        changing.prepareToPlay (48000.0, 64);
+        std::atomic<bool> finished { false };
+        std::atomic<bool> reloadsSucceeded { true };
+        std::thread reloader ([&]
+        {
+            const auto kickFile = juce::File (juce::String (InstrumentDemoConfiguration::kick().instrumentPath.string()));
+            for (int n = 0; n < 24; ++n)
+                if (! changing.reloadInstrumentFromFile ((n % 2 == 0) ? tb303 : kickFile))
+                    reloadsSucceeded.store (false);
+            finished.store (true);
+        });
+        bool coherent = true;
+        do
+        {
+            const auto values = changing.getPublicParameterSnapshot();
+            if (values.size() != 6 && values.size() != 7)
+                coherent = false;
+            for (const auto& value : values)
+                if ((values.size() == 6 && ! value.id.startsWith ("kick."))
+                    || (values.size() == 7 && value.id.startsWith ("kick.")))
+                    coherent = false;
+        } while (! finished.load());
+        reloader.join();
+        require (reloadsSucceeded.load() && coherent,
+                 "editor parameter snapshots mixed two instrument surfaces during reload");
         processor.removeListener (&listener);
         processor.releaseResources();
         kick.releaseResources();
+        changing.releaseResources();
     }
     catch (const std::exception& error)
     {

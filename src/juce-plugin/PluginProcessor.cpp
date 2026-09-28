@@ -902,6 +902,24 @@ juce::StringArray DandrumAudioProcessor::getActivePublicParameterIds() const
     return ids;
 }
 
+std::vector<DandrumAudioProcessor::PublicParameterSnapshotEntry>
+DandrumAudioProcessor::getPublicParameterSnapshot() const
+{
+    const std::lock_guard<std::mutex> reloadLock (reloadMutex);
+    std::vector<PublicParameterSnapshotEntry> values;
+    values.reserve (parameterSlots.size());
+    for (const auto& slot : parameterSlots)
+    {
+        if (! slot.active)
+            continue;
+
+        // Every slot has a fixed JUCE parameter object for the processor lifetime.
+        const auto* parameter = parameters.getParameter (slot.slotParameterId);
+        values.push_back ({ slot.descriptor.id, slot.descriptor.name, parameter->getValue() });
+    }
+    return values;
+}
+
 std::uint32_t DandrumAudioProcessor::getParameterSurfaceGeneration() const noexcept
 {
     return parameterSurfaceGeneration.load (std::memory_order_relaxed);

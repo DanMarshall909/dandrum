@@ -12,9 +12,10 @@
 
 ## 3. Shared WebView Controls And Bridge
 
-- [ ] 3.1 Extract native bootstrap, parameter get/set, note-on/off, browser events, and shared resource serving into a reusable host bridge while preserving callback lifetime and error behavior (`plugin-integration`: public controls, playable notes scenarios).
-- [ ] 3.2 Extract JavaScript native-call/error handling, metadata-driven knobs, surface updates, and playable keyboard into shared assets; retain demo-specific HTML/CSS and presentation-only TB-303 steps (`plugin-integration`: public controls scenario).
-- [ ] 3.3 Replace moved source-text assertions with executable bridge/page assertions, inspect changed-code coverage, and reach full coverage for newly extracted modules.
+- [x] 3.1 Extract native bootstrap, parameter get/set, note-on/off, browser events, and shared resource serving into a reusable host bridge while preserving callback lifetime and error behavior (`plugin-integration`: public controls, playable notes scenarios).
+- [x] 3.2 Extract JavaScript native-call/error handling, metadata-driven knobs, surface updates, and playable keyboard into shared assets; retain demo-specific HTML/CSS and presentation-only TB-303 steps (`plugin-integration`: public controls scenario).
+- [x] 3.3 Replace moved source-text assertions with executable bridge/page assertions, inspect changed-code coverage, and reach full coverage for newly extracted modules.
+- [ ] 3.4 Add a failing out-of-tree working-directory test and resolve both configured demo patches and fixtures in developer builds without relying on the process directory (`instrument-demo-configuration`: unrelated working directory scenario).
 
 ## 4. Optional Sound Lab Composition
 

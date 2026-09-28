@@ -54,37 +54,8 @@ inline constexpr auto indexHtml = R"HTML(<!doctype html>
   </section>
   <div class="error" id="error"></div>
 </main>
+<script src="/shared-instrument-ui.js"></script>
 <script>
-const native=(name)=>(window.__JUCE__&&window.__JUCE__.backend&&window.__JUCE__.backend.getNativeFunction)?window.__JUCE__.backend.getNativeFunction(name):null;
-const showError=e=>document.getElementById('error').textContent=String(e||'');
-const handleNativeResult=result=>{if(result)showError(result);else showError('')};
-const send=(id,value)=>{const fn=native('setParameter');if(fn)fn(id,value).then(handleNativeResult).catch(showError)};
-const clamp=value=>Math.max(0,Math.min(1,Number(value)||0));
-const knobModels=new Map();
-
-function knob(parameter){
-  const c=document.createElement('div');c.className='control';
-  const wrap=document.createElement('div');wrap.className='knob-wrap';
-  const k=document.createElement('div');k.className='knob';k.tabIndex=0;
-  const indicator=document.createElement('i');k.appendChild(indicator);wrap.appendChild(k);
-  const label=document.createElement('div');label.className='label';label.textContent=parameter.name||parameter.id;c.append(wrap,label);
-  let v=clamp(parameter.value);const draw=()=>indicator.style.transform=`rotate(${-135+v*270}deg)`;const setValue=value=>{v=clamp(value);draw()};draw();
-  k.onpointerdown=e=>{k.setPointerCapture(e.pointerId);const sy=e.clientY,sv=v;k.onpointermove=m=>{setValue(sv+(sy-m.clientY)/170);send(parameter.id,v)};const end=()=>{k.onpointermove=null;k.onpointerup=null;k.onpointercancel=null};k.onpointerup=end;k.onpointercancel=end};
-  return{element:c,setValue};
-}
-
-const controls=document.getElementById('controls');
-function renderParameters(parameters){
-  controls.replaceChildren();knobModels.clear();
-  for(const parameter of parameters||[]){const model=knob(parameter);knobModels.set(parameter.id,model);controls.appendChild(model.element)}
-  if(knobModels.size===0){const empty=document.createElement('div');empty.className='empty-controls';empty.textContent='NO PUBLIC PARAMETERS';controls.appendChild(empty)}
-}
-function updateParameterValues(parameters){
-  const incoming=parameters||[];
-  if(incoming.length!==knobModels.size||incoming.some(parameter=>!knobModels.has(parameter.id))){renderParameters(incoming);return}
-  for(const parameter of incoming)knobModels.get(parameter.id).setValue(parameter.value);
-}
-
 const labStatus=document.getElementById('soundLabStatus');
 const labButton=document.getElementById('renderSoundLab');
 const chooseReferenceButton=document.getElementById('chooseSoundLabReference');
@@ -188,11 +159,8 @@ proposalButton.onclick=()=>{const fn=native('requestGraphProposal');if(!fn){show
 
 const steps=document.getElementById('steps');for(let n=0;n<16;n++){const b=document.createElement('button');b.className='step'+(n===0?' on':'');b.innerHTML=`<span></span>${n+1}`;b.onclick=()=>{document.querySelectorAll('.step').forEach(x=>x.classList.remove('on'));b.classList.add('on');document.getElementById('status').textContent=String(n+1).padStart(2,'0')};steps.appendChild(b)}
 for(const name of ['TRANSPOSE DOWN','TRANSPOSE UP','ACCENT','SLIDE','REST','TIE']){const b=document.createElement('button');b.className='fn';b.textContent=name;b.onclick=()=>b.classList.toggle('on');document.getElementById('functions').appendChild(b)}
-const notes=['C','C♯','D','D♯','E','F','F♯','G','G♯','A','A♯','B','C','C♯','D','D♯','E','F','F♯'];notes.forEach((note,n)=>{const b=document.createElement('button');b.className='key'+(note.includes('♯')?' black':'');b.textContent=note;b.onpointerdown=()=>{b.classList.add('on');const fn=native('noteOn');if(fn)fn(48+n,0.9).then(handleNativeResult).catch(showError)};const release=()=>{if(!b.classList.contains('on'))return;b.classList.remove('on');const fn=native('noteOff');if(fn)fn(48+n).then(handleNativeResult).catch(showError)};b.onpointerup=b.onpointerleave=b.onpointercancel=release;document.getElementById('keys').appendChild(b)});
-
-const get=native('getParameters');if(get)get().then(renderParameters).catch(showError);else renderParameters([]);
 const getSoundLab=native('getSoundLabAnalysis');if(getSoundLab)getSoundLab().then(renderSoundLabState).catch(showError);else renderSoundLabState({state:'idle'});
-if(window.__JUCE__&&window.__JUCE__.backend){window.__JUCE__.backend.addEventListener('parameterValuesChanged',updateParameterValues);window.__JUCE__.backend.addEventListener('soundLabAnalysisChanged',renderSoundLabState)}
+if(window.__JUCE__&&window.__JUCE__.backend)window.__JUCE__.backend.addEventListener('soundLabAnalysisChanged',renderSoundLabState)
 </script>
 </body>
 </html>)HTML";

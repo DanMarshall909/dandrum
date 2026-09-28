@@ -17,6 +17,13 @@
 class DandrumAudioProcessor final : public juce::AudioProcessor
 {
 public:
+    struct PublicParameterSnapshotEntry
+    {
+        juce::String id;
+        juce::String displayName;
+        float normalisedValue = 0.0f;
+    };
+
     explicit DandrumAudioProcessor (
         InstrumentDemoConfiguration configuration = InstrumentDemoConfiguration::tb303());
     ~DandrumAudioProcessor() override;
@@ -53,6 +60,7 @@ public:
     juce::RangedAudioParameter* getParameterForPublicId (juce::StringRef parameterId) const;
     juce::String getPublicParameterDisplayName (juce::StringRef parameterId) const;
     juce::StringArray getActivePublicParameterIds() const;
+    std::vector<PublicParameterSnapshotEntry> getPublicParameterSnapshot() const;
     std::uint32_t getParameterSurfaceGeneration() const noexcept;
 
     /// Enqueues a web-editor keyboard event for delivery by processBlock.
@@ -248,7 +256,7 @@ private:
     // work against itself: without this, overlapping reloads can each capture
     // the other's just-published engine as their own "previous" and destroy it
     // while it is still in use.
-    std::mutex reloadMutex;
+    mutable std::mutex reloadMutex;
     // Watches the loaded instrument file for external edits and reloads it
     // through the standard replacement transaction. Declared last so it is
     // destroyed (and its timer stopped) before the members its callback uses.

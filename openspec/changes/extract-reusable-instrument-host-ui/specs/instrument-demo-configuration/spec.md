@@ -18,6 +18,13 @@ The instrument host SHALL select its starting instrument, display title, UI asse
 - **AND** its own fixture SHALL render through the shared Sound Lab path
 - **AND** its public parameter controls SHALL come from that instrument's metadata
 
+#### Scenario: Demo launches from an unrelated working directory
+
+- **GIVEN** a developer build has the maintained demo patches and fixtures in its source checkout
+- **WHEN** the plugin is instantiated with a process working directory outside that checkout and build tree
+- **THEN** both demo configurations SHALL resolve their own patch and fixture paths
+- **AND** a fresh instance of either demo SHALL load its instrument and public controls
+
 #### Scenario: Host restores a saved instrument
 
 - **GIVEN** saved plugin state contains an instrument definition and current public values

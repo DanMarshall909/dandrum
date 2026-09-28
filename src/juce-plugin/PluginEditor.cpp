@@ -1,40 +1,10 @@
 #include "PluginEditor.h"
-#include "SharedInstrumentUi.h"
 
 #include <cstring>
-#include <string>
 #include <vector>
 
 namespace
 {
-std::vector<std::byte> toBytes (const char* text)
-{
-    const auto length = std::char_traits<char>::length (text);
-    std::vector<std::byte> bytes (length);
-    std::memcpy (bytes.data(), text, length);
-    return bytes;
-}
-
-constexpr auto nativeFunctionBootstrap = R"JS(
-(() => {
-  const backend = window.__JUCE__.backend;
-  let nextPromiseId = 0;
-  const pending = new Map();
-  backend.addEventListener('__juce__complete', ({ promiseId, result }) => {
-    const entry = pending.get(promiseId);
-    if (!entry) return;
-    pending.delete(promiseId);
-    entry.resolve(result);
-  });
-  backend.getNativeFunction = name => (...params) => {
-    const resultId = nextPromiseId++;
-    const promise = new Promise((resolve, reject) => pending.set(resultId, { resolve, reject }));
-    backend.emitEvent('__juce__invoke', { name, params, resultId });
-    return promise;
-  };
-})();
-)JS";
-
 bool hasExpectedSoundLabGeneration (const juce::String& path,
                                     std::uint64_t generation)
 {
@@ -51,6 +21,7 @@ bool hasExpectedSoundLabGeneration (const juce::String& path,
 DandrumAudioProcessorEditor::DandrumAudioProcessorEditor (DandrumAudioProcessor& processorToUse)
     : juce::AudioProcessorEditor (&processorToUse),
       processor (processorToUse),
+      hostBridge (processorToUse),
       browser (createBrowserOptions())
 {
     addAndMakeVisible (browser);
@@ -59,7 +30,6 @@ DandrumAudioProcessorEditor::DandrumAudioProcessorEditor (DandrumAudioProcessor&
     setResizeLimits (760, 560, 1500, 1100);
     setSize (1180, 860);
     browser.goToURL (juce::WebBrowserComponent::getResourceProviderRoot());
-    lastSeenParameterSurfaceGeneration = processor.getParameterSurfaceGeneration();
     lastSeenSoundLabGeneration = soundLabController.generation();
     startTimerHz (12);
 }
@@ -80,38 +50,10 @@ juce::WebBrowserComponent::Options DandrumAudioProcessorEditor::createBrowserOpt
 {
     using Options = juce::WebBrowserComponent::Options;
 
-    auto options = Options{}
+    auto options = hostBridge.addNativeFunctions (Options{}
         .withNativeIntegrationEnabled()
         .withKeepPageLoadedWhenBrowserIsHidden()
-        .withUserScript (nativeFunctionBootstrap)
-        .withNativeFunction (
-            "setParameter",
-            [this] (const juce::Array<juce::var>& arguments,
-                    juce::WebBrowserComponent::NativeFunctionCompletion completion)
-            {
-                setParameterFromWeb (arguments, std::move (completion));
-            })
-        .withNativeFunction (
-            "getParameters",
-            [this] (const juce::Array<juce::var>& arguments,
-                    juce::WebBrowserComponent::NativeFunctionCompletion completion)
-            {
-                getParametersForWeb (arguments, std::move (completion));
-            })
-        .withNativeFunction (
-            "noteOn",
-            [this] (const juce::Array<juce::var>& arguments,
-                    juce::WebBrowserComponent::NativeFunctionCompletion completion)
-            {
-                noteOnFromWeb (arguments, std::move (completion));
-            })
-        .withNativeFunction (
-            "noteOff",
-            [this] (const juce::Array<juce::var>& arguments,
-                    juce::WebBrowserComponent::NativeFunctionCompletion completion)
-            {
-                noteOffFromWeb (arguments, std::move (completion));
-            })
+        .withUserScript (InstrumentHostWebBridge::bootstrapScript()))
         .withNativeFunction (
             "renderSoundLab",
             [this] (const juce::Array<juce::var>& arguments,
@@ -188,11 +130,8 @@ juce::WebBrowserComponent::Options DandrumAudioProcessorEditor::createBrowserOpt
 std::optional<juce::WebBrowserComponent::Resource>
 DandrumAudioProcessorEditor::provideResource (const juce::String& path) const
 {
-    if (path == "/" || path == "/index.html")
-        return juce::WebBrowserComponent::Resource { toBytes (processor.demoConfiguration().indexHtml.c_str()), "text/html" };
-
-    if (path == "/shared-instrument-ui.js")
-        return juce::WebBrowserComponent::Resource { toBytes (SharedInstrumentUi::script), "text/javascript" };
+    if (auto shared = hostBridge.provideResource (path))
+        return shared;
 
     if (path.startsWith ("/sound-lab.wav"))
     {
@@ -223,77 +162,6 @@ DandrumAudioProcessorEditor::provideResource (const juce::String& path) const
     }
 
     return std::nullopt;
-}
-
-void DandrumAudioProcessorEditor::setParameterFromWeb (
-    const juce::Array<juce::var>& arguments,
-    juce::WebBrowserComponent::NativeFunctionCompletion completion)
-{
-    if (arguments.size() < 2)
-    {
-        completion (juce::var ("setParameter expects parameter id and normalised value"));
-        return;
-    }
-
-    const auto publicId = arguments[0].toString();
-    auto* parameter = processor.getParameterForPublicId (publicId);
-    if (parameter == nullptr)
-    {
-        completion (juce::var ("Unknown public parameter: " + publicId));
-        return;
-    }
-
-    const auto normalised = juce::jlimit (0.0f, 1.0f, static_cast<float> (arguments[1]));
-    parameter->beginChangeGesture();
-    parameter->setValueNotifyingHost (normalised);
-    parameter->endChangeGesture();
-    completion (juce::var());
-}
-
-void DandrumAudioProcessorEditor::getParametersForWeb (
-    const juce::Array<juce::var>&,
-    juce::WebBrowserComponent::NativeFunctionCompletion completion) const
-{
-    completion (parameterSnapshotForWeb());
-}
-
-void DandrumAudioProcessorEditor::noteOnFromWeb (
-    const juce::Array<juce::var>& arguments,
-    juce::WebBrowserComponent::NativeFunctionCompletion completion)
-{
-    if (arguments.size() < 2)
-    {
-        completion (juce::var ("noteOn expects MIDI note and normalised velocity"));
-        return;
-    }
-
-    if (! processor.enqueueEditorNoteOn (static_cast<int> (arguments[0]),
-                                         static_cast<float> (arguments[1])))
-    {
-        completion (juce::var ("Editor MIDI queue is full; note-on was dropped"));
-        return;
-    }
-
-    completion (juce::var());
-}
-
-void DandrumAudioProcessorEditor::noteOffFromWeb (
-    const juce::Array<juce::var>& arguments,
-    juce::WebBrowserComponent::NativeFunctionCompletion completion)
-{
-    if (arguments.isEmpty())
-    {
-        completion (juce::var ("noteOff expects a MIDI note"));
-        return;
-    }
-
-    if (! processor.enqueueEditorNoteOff (static_cast<int> (arguments[0])))
-    {
-        completion (juce::var ("Editor MIDI queue is full; note-off was dropped"));
-        return;
-    }
-
-    completion (juce::var());
 }
 
 void DandrumAudioProcessorEditor::renderSoundLabFromWeb (
@@ -449,26 +317,6 @@ void DandrumAudioProcessorEditor::getSoundLabAnalysisForWeb (
     completion (soundLabSnapshotForWeb());
 }
 
-juce::var DandrumAudioProcessorEditor::parameterSnapshotForWeb() const
-{
-    juce::Array<juce::var> result;
-
-    for (const auto& publicId : processor.getActivePublicParameterIds())
-    {
-        auto* parameter = processor.getParameterForPublicId (publicId);
-        if (parameter == nullptr)
-            continue;
-
-        auto object = std::make_unique<juce::DynamicObject>();
-        object->setProperty ("id", publicId);
-        object->setProperty ("name", processor.getPublicParameterDisplayName (publicId));
-        object->setProperty ("value", parameter->getValue());
-        result.add (juce::var (object.release()));
-    }
-
-    return juce::var (result);
-}
-
 juce::var DandrumAudioProcessorEditor::soundLabSnapshotForWeb() const
 {
     const auto snapshot = soundLabController.snapshot();
@@ -607,15 +455,8 @@ juce::var DandrumAudioProcessorEditor::soundLabSnapshotForWeb() const
 
 void DandrumAudioProcessorEditor::timerCallback()
 {
-    const auto generation = processor.getParameterSurfaceGeneration();
-    if (generation != lastSeenParameterSurfaceGeneration)
-    {
-        lastSeenParameterSurfaceGeneration = generation;
-        browser.refresh();
+    if (hostBridge.publishParameterUpdates (browser))
         return;
-    }
-
-    browser.emitEventIfBrowserIsVisible ("parameterValuesChanged", parameterSnapshotForWeb());
 
     const auto soundLabGeneration = soundLabController.generation();
     if (soundLabGeneration != lastSeenSoundLabGeneration)
