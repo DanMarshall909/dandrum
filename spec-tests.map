@@ -1731,8 +1731,9 @@ AC yaml-patch-format :: Stable module identifiers :: Duplicate module identifier
 
 AC yaml-patch-format :: YAML patch document :: Non-YAML patch is rejected
   fp 28b8a5dfa0fb
-  todo not yet mapped to a test
+  test rust:unsupported_file_format_has_structured_diagnostic
 
 AC yaml-patch-format :: YAML patch document :: YAML patch is loaded
   fp 77f32c949040
-  todo not yet mapped to a test
+  test rust:yaml_and_yml_files_load_through_public_file_surface
+  test rust:kernel_loader_checks_external_schema_before_constructing_a_graph

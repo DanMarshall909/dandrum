@@ -1,381 +1,160 @@
 $schema: https://json-schema.org/draft/2020-12/schema
 $id: https://dandrum.local/schema/patch.schema.yaml
-# Editor-facing shape validation for the patch document.
-# Runtime graph and DSP semantics still live in Rust.
-title: Dandrum Patch Schema
+title: Dandrum kernel patch
+description: Shape of a root graph document. Graph and DSP invariants are validated by the kernel.
 type: object
-required:
-  - metadata
-  - render
-  - modules
 additionalProperties: false
 properties:
-  metadata:
-    $ref: "#/$defs/metadata"
-  instrument:
-    $ref: "#/$defs/instrumentIdentity"
-  preset_surface:
-    $ref: "#/$defs/presetSurfaceDeclaration"
-  render:
-    $ref: "#/$defs/renderSettings"
-  assets:
+  metadata: { $ref: '#/$defs/metadata' }
+  instrument: { $ref: '#/$defs/instrumentIdentity' }
+  preset_surface: { $ref: '#/$defs/presetSurface' }
+  static_params:
     type: array
-    items:
-      $ref: "#/$defs/assetDeclaration"
+    items: { $ref: '#/$defs/staticParam' }
+  ports:
+    type: array
+    items: { $ref: '#/$defs/port' }
   module_definitions:
     type: array
-    items:
-      $ref: "#/$defs/moduleDefinitionDeclaration"
+    items: { $ref: '#/$defs/definition' }
   modules:
     type: array
-    minItems: 1
-    items:
-      $ref: "#/$defs/moduleDeclaration"
+    items: { $ref: '#/$defs/node' }
   connections:
     type: array
-    items:
-      $ref: "#/$defs/connectionDeclaration"
-  parameters:
-    type: object
-    additionalProperties:
-      type: object
-      additionalProperties:
-        $ref: "#/$defs/parameterValue"
-  presets:
-    type: object
-    additionalProperties:
-      type: object
-      additionalProperties:
-        type: object
-        additionalProperties:
-          $ref: "#/$defs/parameterValue"
-  # Optional active preset. Declared presets are inert unless selected here.
-  selected_preset:
+    items: { $ref: '#/$defs/connection' }
+$defs:
+  name:
     type: string
     minLength: 1
-  voice_allocation:
-    $ref: "#/$defs/voiceAllocation"
-$defs:
   metadata:
     type: object
-    required:
-      - name
     additionalProperties: false
     properties:
-      name:
-        type: string
-        minLength: 1
-      version:
-        type: string
-        minLength: 1
-      author:
-        type: string
-        minLength: 1
+      name: { $ref: '#/$defs/name' }
+      version: { $ref: '#/$defs/name' }
+      author: { $ref: '#/$defs/name' }
   instrumentIdentity:
     type: object
-    required:
-      - id
-      - preset_schema_version
+    required: [id, preset_schema_version]
     additionalProperties: false
     properties:
-      id:
-        type: string
-        minLength: 1
-      preset_schema_version:
-        type: integer
-        minimum: 1
-  presetSurfaceDeclaration:
+      id: { $ref: '#/$defs/name' }
+      preset_schema_version: { type: integer, minimum: 1 }
+  presetSurface:
     type: object
     additionalProperties: false
     properties:
       parameters:
         type: array
-        items:
-          $ref: "#/$defs/presetParameterTargetDeclaration"
+        items: { $ref: '#/$defs/presetAlias' }
       assets:
         type: array
-        items:
-          $ref: "#/$defs/presetAssetTargetDeclaration"
-  presetParameterTargetDeclaration:
+        items: { $ref: '#/$defs/presetAlias' }
+  presetAlias:
     type: object
-    required:
-      - name
-      - type
-      - default
-      - maps_to
+    required: [name, maps_to]
     additionalProperties: false
     properties:
-      name:
-        type: string
-        minLength: 1
-      type:
-        type: string
-        enum:
-          - boolean
-          - number
-          - integer
-          - text
-      default:
-        $ref: "#/$defs/parameterValue"
-      min:
-        type: number
-      max:
-        type: number
-      maps_to:
-        $ref: "#/$defs/portReference"
-  presetAssetTargetDeclaration:
+      name: { $ref: '#/$defs/name' }
+      maps_to: { $ref: '#/$defs/name' }
+  staticParam:
     type: object
-    required:
-      - name
-      - kind
-      - default
-      - maps_to
+    required: [name, type]
     additionalProperties: false
     properties:
-      name:
-        type: string
-        minLength: 1
-      kind:
-        type: string
-        enum:
-          - sample
-          - script
-      default:
-        type: string
-        minLength: 1
-      maps_to:
-        $ref: "#/$defs/portReference"
-  renderSettings:
-    type: object
-    required:
-      - sample_rate_hz
-      - block_size_frames
-      - duration_frames
-    additionalProperties: false
-    properties:
-      sample_rate_hz:
-        type: integer
-        minimum: 1
-      block_size_frames:
-        type: integer
-        minimum: 1
-      duration_frames:
-        type: integer
-        minimum: 1
-  assetDeclaration:
-    type: object
-    required:
-      - id
-      - kind
-      - path
-    additionalProperties: false
-    properties:
-      id:
-        type: string
-        minLength: 1
-      kind:
-        type: string
-        enum:
-          - sample
-          - script
-      path:
-        type: string
-        minLength: 1
-  portDeclaration:
-    type: object
-    required:
-      - name
-      - signal_type
-    additionalProperties: false
-    properties:
-      name:
-        type: string
-        minLength: 1
-      signal_type:
-        type: string
-        enum:
-          - audio
-          - control
-          - event
-  portReference:
-    oneOf:
-      - type: string
-        pattern: "^[^.]+\\.[^.]+$"
-      - type: object
-        required:
-          - module_id
-          - port_name
-        additionalProperties: false
-        properties:
-          module_id:
-            type: string
-            minLength: 1
-          port_name:
-            type: string
-            minLength: 1
-  connectionDeclaration:
-    type: object
-    required:
-      - from
-      - to
-    additionalProperties: false
-    properties:
-      from:
-        $ref: "#/$defs/portReference"
-      to:
-        $ref: "#/$defs/portReference"
-  parameterValue:
-    oneOf:
-      - type: boolean
-      - type: number
-      - type: string
-  moduleDeclaration:
-    type: object
-    required:
-      - id
-      - type
-    additionalProperties: false
-    properties:
-      id:
-        type: string
-        minLength: 1
-      type:
-        type: string
-        minLength: 1
-      inputs:
+      name: { $ref: '#/$defs/name' }
+      type: { enum: [int, enum, string, resource] }
+      resource_kind: { enum: [sample, impulse_response] }
+      default: { $ref: '#/$defs/staticValue' }
+      allowed_values:
         type: array
-        items:
-          $ref: "#/$defs/portDeclaration"
-      outputs:
-        type: array
-        items:
-          $ref: "#/$defs/portDeclaration"
-      parameters:
+        items: { type: string }
+  resourceRef:
+    type: object
+    required: [kind, path]
+    additionalProperties: false
+    properties:
+      kind: { enum: [sample, impulse_response] }
+      path: { $ref: '#/$defs/name' }
+  staticValue:
+    oneOf:
+      - { type: integer }
+      - { type: string }
+      - { $ref: '#/$defs/resourceRef' }
+      - { type: 'null' }
+  port:
+    type: object
+    required: [name, direction, signal, channels]
+    additionalProperties: false
+    properties:
+      name: { $ref: '#/$defs/name' }
+      direction: { enum: [input, output] }
+      signal: { enum: [audio, control, event] }
+      channels:
+        oneOf:
+          - { type: integer, minimum: 0 }
+          - { $ref: '#/$defs/name' }
+      multiplicity: { enum: [single_source, summing] }
+      default: { type: [number, 'null'] }
+      min: { type: [number, 'null'] }
+      max: { type: [number, 'null'] }
+      unit: { type: [string, 'null'] }
+      maps_to: { $ref: '#/$defs/referenceList' }
+      maps_from: { $ref: '#/$defs/referenceList' }
+  referenceList:
+    oneOf:
+      - { type: string }
+      - type: array
+        items: { type: string }
+  node:
+    type: object
+    required: [id, type]
+    additionalProperties: false
+    properties:
+      id: { $ref: '#/$defs/name' }
+      type: { $ref: '#/$defs/name' }
+      static:
         type: object
-        additionalProperties:
-          $ref: "#/$defs/parameterValue"
-  compositeInputDeclaration:
+        additionalProperties: { $ref: '#/$defs/staticValue' }
+      defaults:
+        type: object
+        additionalProperties: { type: number }
+    allOf:
+      - if:
+          properties:
+            type: { const: poly }
+          required: [type]
+        then:
+          properties:
+            static:
+              properties:
+                definition: { type: string }
+                max_voices: { type: integer }
+                allocation: { type: string }
+  connection:
     type: object
-    required:
-      - name
-      - signal_type
+    required: [from, to]
     additionalProperties: false
     properties:
-      name:
-        type: string
-        minLength: 1
-      signal_type:
-        type: string
-        enum:
-          - audio
-          - control
-          - event
-      maps_to:
-        type: array
-        items:
-          $ref: "#/$defs/portReference"
-  compositeOutputDeclaration:
+      from: { type: string }
+      to: { type: string }
+  definition:
     type: object
-    required:
-      - name
-      - signal_type
+    required: [type]
     additionalProperties: false
     properties:
-      name:
-        type: string
-        minLength: 1
-      signal_type:
-        type: string
-        enum:
-          - audio
-          - control
-          - event
-      maps_from:
+      type: { $ref: '#/$defs/name' }
+      implementation: { type: string }
+      static_params:
         type: array
-        items:
-          $ref: "#/$defs/portReference"
-  compositeBindingDeclaration:
-    type: object
-    required:
-      - name
-    additionalProperties: false
-    properties:
-      name:
-        type: string
-        minLength: 1
-      type:
-        type: string
-        enum:
-          - boolean
-          - number
-          - string
-      default:
-        $ref: "#/$defs/parameterValue"
-      value:
-        $ref: "#/$defs/parameterValue"
-      min:
-        type: number
-      max:
-        type: number
-      unit:
-        type: string
-        minLength: 1
-      description:
-        type: string
-        minLength: 1
-      required:
-        type: boolean
-      expression:
-        type: string
-        minLength: 1
-      maps_to:
+        items: { $ref: '#/$defs/staticParam' }
+      ports:
         type: array
-        items:
-          $ref: "#/$defs/portReference"
-  moduleDefinitionDeclaration:
-    type: object
-    required:
-      - type
-    additionalProperties: false
-    properties:
-      type:
-        type: string
-        minLength: 1
-      inputs:
-        type: array
-        items:
-          $ref: "#/$defs/compositeInputDeclaration"
-      outputs:
-        type: array
-        items:
-          $ref: "#/$defs/compositeOutputDeclaration"
-      parameters:
-        type: array
-        items:
-          $ref: "#/$defs/compositeBindingDeclaration"
-      asset_bindings:
-        type: array
-        items:
-          $ref: "#/$defs/compositeBindingDeclaration"
+        items: { $ref: '#/$defs/port' }
       modules:
         type: array
-        items:
-          $ref: "#/$defs/moduleDeclaration"
+        items: { $ref: '#/$defs/node' }
       connections:
         type: array
-        items:
-          $ref: "#/$defs/connectionDeclaration"
-  voiceAllocation:
-    type: object
-    required:
-      - max_voices
-    additionalProperties: false
-    properties:
-      max_voices:
-        type: integer
-        minimum: 1
-      stealing:
-        type: string
-        enum:
-          - disabled
-          - oldest_active
+        items: { $ref: '#/$defs/connection' }

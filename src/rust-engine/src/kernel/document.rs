@@ -7,6 +7,7 @@
 use std::collections::{BTreeMap, BTreeSet};
 use std::fs;
 use std::path::Path;
+use std::sync::OnceLock;
 
 use serde::Deserialize;
 use serde_yaml::{Mapping, Value};
@@ -522,6 +523,7 @@ fn load_kernel_document_str(
 ) -> Result<KernelPatch, Diagnostics> {
     let value: Value = serde_yaml::from_str(yaml).map_err(parse_diagnostic)?;
     reject_legacy_document_shape(&value)?;
+    validate_kernel_schema(&value)?;
     let document: PatchDocument = serde_yaml::from_value(value).map_err(parse_diagnostic)?;
 
     let metadata = KernelPatchMetadata {
@@ -591,6 +593,49 @@ fn load_kernel_document_str(
         root,
         registry,
     })
+}
+
+/// Validate the parsed YAML against the repository schema before Serde or
+/// graph construction. The schema is embedded from its checked-in YAML file
+/// so installed binaries do not depend on a source-tree path at runtime.
+fn validate_kernel_schema(value: &Value) -> Result<(), Diagnostics> {
+    static VALIDATOR: OnceLock<Result<jsonschema::Validator, String>> = OnceLock::new();
+    let validator = VALIDATOR.get_or_init(|| {
+        let schema: serde_json::Value = serde_yaml::from_str(include_str!(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/../../schema/patch.schema.yaml"
+        )))
+        .map_err(|error| format!("invalid kernel schema YAML: {error}"))?;
+        jsonschema::validator_for(&schema)
+            .map_err(|error| format!("invalid kernel JSON Schema: {error}"))
+    });
+    let validator = validator.as_ref().map_err(|message| {
+        Diagnostic::new(
+            error_codes::KERNEL_DOCUMENT_SCHEMA_FAILED,
+            Severity::Error,
+            message,
+        )
+    })?;
+    let instance = serde_json::to_value(value).map_err(|error| {
+        Diagnostic::new(
+            error_codes::KERNEL_DOCUMENT_SCHEMA_FAILED,
+            Severity::Error,
+            format!("kernel patch YAML cannot be represented as JSON: {error}"),
+        )
+    })?;
+    let mut diagnostics = Diagnostics::new();
+    for error in validator.iter_errors(&instance) {
+        diagnostics.push(Diagnostic::new(
+            error_codes::KERNEL_DOCUMENT_SCHEMA_FAILED,
+            Severity::Error,
+            format!("kernel patch schema at {}: {error}", error.instance_path()),
+        ));
+    }
+    if diagnostics.has_errors() {
+        Err(diagnostics)
+    } else {
+        Ok(())
+    }
 }
 
 fn resolve_preset_surface(

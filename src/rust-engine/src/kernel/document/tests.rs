@@ -214,7 +214,15 @@ fn kernel_preset_surface_rejects_duplicate_or_unresolved_aliases() {
         "name: '', maps_to: volume",
     );
     let error = load_kernel_patch_str(&unnamed).expect_err("unnamed alias fails");
-    assert!(error.to_string().contains("preset target name is required"));
+    assert_eq!(
+        error.errors().next().unwrap().error_code(),
+        error_codes::KERNEL_DOCUMENT_SCHEMA_FAILED,
+    );
+    assert!(
+        error
+            .to_string()
+            .contains("/preset_surface/parameters/0/name")
+    );
 
     let no_default =
         PRESET_PATCH.replace("    default: { kind: sample, path: original.wav }\n", "");
@@ -929,7 +937,7 @@ fn script_instances_reject_ad_hoc_port_fields() {
 
     assert_eq!(
         diagnostics.errors().next().unwrap().error_code(),
-        error_codes::KERNEL_DOCUMENT_PARSE_FAILED
+        error_codes::KERNEL_DOCUMENT_SCHEMA_FAILED
     );
     assert!(diagnostics.all()[0].message().contains("inputs"));
 }
@@ -1085,4 +1093,104 @@ fn yaml_poly_rejects_invalid_allocation_policy_during_validation() {
             .error_code(),
         error_codes::KERNEL_STATIC_ARGUMENT_INVALID_ENUM_VALUE
     );
+}
+
+#[test]
+fn kernel_loader_checks_external_schema_before_constructing_a_graph() {
+    let yaml = r#"
+metadata: { name: schema_check }
+instrument: { id: "", preset_schema_version: 0 }
+ports:
+  - { name: out, direction: output, signal: audio, channels: 1, maps_from: osc.audio }
+modules:
+  - { id: osc, type: oscillator }
+"#;
+
+    let error =
+        load_kernel_patch_str(yaml).expect_err("empty preset identity fails schema validation");
+    assert_eq!(
+        error.errors().next().unwrap().error_code(),
+        error_codes::KERNEL_DOCUMENT_SCHEMA_FAILED,
+    );
+    assert!(error.to_string().contains("instrument"));
+}
+
+#[test]
+fn external_kernel_schema_and_serde_agree_on_document_shape_fixtures() {
+    let fixtures = [
+        ("complete", COMPLETE_PATCH, true),
+        ("preset", PRESET_PATCH, true),
+        ("script", SCRIPT_DEFINITION_PATCH, true),
+        ("poly", POLY_PATCH, true),
+        (
+            "summing",
+            "ports:\n  - { name: mix, direction: input, signal: audio, channels: 2, multiplicity: summing }\n",
+            true,
+        ),
+        (
+            "unknown-root",
+            "ports: []\nmodules: []\nunknown: true\n",
+            false,
+        ),
+        (
+            "legacy-render",
+            "render: { sample_rate_hz: 48000 }\n",
+            false,
+        ),
+        (
+            "legacy-voice-allocation",
+            "voice_allocation: { max_voices: 8 }\n",
+            false,
+        ),
+        (
+            "unknown-node",
+            "modules:\n  - { id: osc, type: oscillator, inputs: [] }\n",
+            false,
+        ),
+        (
+            "missing-port-channels",
+            "ports:\n  - { name: out, direction: output, signal: audio }\n",
+            false,
+        ),
+        (
+            "bad-multiplicity",
+            "ports:\n  - { name: out, direction: output, signal: audio, channels: 1, multiplicity: many }\n",
+            false,
+        ),
+        (
+            "bad-static-type",
+            "static_params:\n  - { name: channels, type: float }\n",
+            false,
+        ),
+        (
+            "bad-resource-kind",
+            "static_params:\n  - { name: sample, type: resource, resource_kind: script }\n",
+            false,
+        ),
+    ];
+
+    for (name, yaml, expected) in fixtures {
+        let value: serde_yaml::Value = serde_yaml::from_str(yaml).expect("fixture YAML parses");
+        assert_eq!(
+            super::validate_kernel_schema(&value).is_ok(),
+            expected,
+            "schema: {name}",
+        );
+        assert_eq!(
+            serde_yaml::from_value::<super::PatchDocument>(value).is_ok(),
+            expected,
+            "Serde: {name}",
+        );
+    }
+}
+
+#[test]
+fn external_schema_checks_poly_static_argument_types() {
+    let yaml = POLY_PATCH.replace("max_voices: 8", "max_voices: many");
+    let error = load_kernel_patch_str(&yaml).expect_err("poly shape should fail schema validation");
+    assert_eq!(
+        error.errors().next().unwrap().error_code(),
+        error_codes::KERNEL_DOCUMENT_SCHEMA_FAILED,
+    );
+    assert!(error.to_string().contains("/modules/1/static/max_voices"));
 }

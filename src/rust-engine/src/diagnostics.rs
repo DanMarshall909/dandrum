@@ -97,6 +97,7 @@ pub mod error_codes {
     pub const KERNEL_DOCUMENT_UNSUPPORTED_FORMAT: &str = "kernel.document.unsupported_format";
     pub const KERNEL_DOCUMENT_READ_FAILED: &str = "kernel.document.read_failed";
     pub const KERNEL_DOCUMENT_PARSE_FAILED: &str = "kernel.document.parse_failed";
+    pub const KERNEL_DOCUMENT_SCHEMA_FAILED: &str = "kernel.document.schema_failed";
     pub const KERNEL_DOCUMENT_NO_OUTPUT: &str = "kernel.document.no_output";
     pub const KERNEL_DOCUMENT_LEGACY_RENDER: &str = "kernel.document.legacy_render";
     pub const KERNEL_DOCUMENT_LEGACY_VOICE_ALLOCATION: &str =
