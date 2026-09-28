@@ -59,7 +59,7 @@ Model-tier tags follow design decision D11: `[frontier]` for architecture/realti
 - [x] [frontier] 5.2 Implement Rust root-port ↔ named-bus planning over channel spans: name matching, channel-count validation, missing root-output failure, missing host input for a root input produces silence, and extra host inputs are ignored. Test mono, stereo, six-channel, multiple-output, and root-input cases
 - [x] [standard] 5.3 Unify capability discovery over kernel definitions: port metadata includes channels, multiplicity, defaults/ranges/units; static metadata includes types/defaults/enums/resource kinds; primitive, composite, script-backed, package, and root definitions use one representation. Prepared root enumeration reuses that representation and includes compiler-generated promotion nodes where applicable
 - [x] [frontier] 5.4 Extend FFI with prepared root-port enumeration, total-latency query, and per-render planar named-bus channel views. Validate direction, channel count, frame capacity, null pointers, and lifetimes; never retain host-owned audio pointers after a call
-- [ ] [standard] 5.5 Update JUCE, plugin integration, CLI, and offline renderer to declare and bind named buses; a stereo host binds one 2-channel `master` output, while offline rendering preserves all named outputs. Verify the JUCE demo produces nonzero audio through `master`
+- [x] [standard] 5.5 Update JUCE, plugin integration, CLI, and offline renderer to declare and bind named buses; a stereo host binds one 2-channel `master` output, while offline rendering preserves all named outputs. Verify the JUCE demo produces nonzero audio through `master`
 
 ## 6. YAML document, presets, and schema
 

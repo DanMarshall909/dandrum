@@ -236,10 +236,12 @@ private:
     void setSlotNormalisedValue (int slotIndex, float normalisedValue);
     bool enqueueEditorMidiEvent (EditorMidiEvent event) noexcept;
     void deliverEditorMidiEvents (DandrumEngine* activeEngine) noexcept;
+    void deliverEditorKernelMidiEvents (DandrumKernelInstrument* activeKernel) noexcept;
 
     const InstrumentDemoConfiguration configuration;
     juce::AudioProcessorValueTreeState parameters;
     std::atomic<DandrumEngine*> engine { nullptr };
+    std::atomic<DandrumKernelInstrument*> kernel { nullptr };
     bool instrumentLoaded = false;
     juce::String lastLoadError;
     juce::String lastPresetError;

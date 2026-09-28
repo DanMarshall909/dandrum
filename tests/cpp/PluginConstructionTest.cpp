@@ -442,6 +442,72 @@ int main()
 {
     constexpr int blockSize = 64;
 
+    const auto kernelFile = juce::File::getSpecialLocation (juce::File::tempDirectory)
+                                .getChildFile ("dandrum-plugin-kernel-"
+                                               + juce::String (juce::Random::getSystemRandom().nextInt())
+                                               + ".yaml");
+    kernelFile.replaceWithText (
+        "metadata: { name: plugin-kernel }\n"
+        "ports:\n"
+        "  - { name: master, direction: output, signal: audio, channels: 2, maps_from: source.out }\n"
+        "modules:\n"
+        "  - { id: source, type: control_to_audio, static: { channels: 2 }, defaults: { in: 0.25 } }\n"
+        "connections: []\n");
+    auto kernelConfiguration = InstrumentDemoConfiguration::kick();
+    kernelConfiguration.instrumentPath = kernelFile.getFullPathName().toStdString();
+    DandrumAudioProcessor kernelProcessor (kernelConfiguration);
+    kernelProcessor.setPlayConfigDetails (0, 2, 48000.0, blockSize);
+    kernelProcessor.prepareToPlay (48000.0, blockSize);
+    juce::AudioBuffer<float> kernelBuffer (2, blockSize);
+    kernelBuffer.clear();
+    juce::MidiBuffer kernelMidi;
+    kernelProcessor.processBlock (kernelBuffer, kernelMidi);
+    if (! kernelProcessor.isInstrumentLoaded()
+        || ! nearlyEqual (kernelBuffer.getSample (0, 0), 0.25f, 0.00001f))
+    {
+        std::cerr << "plugin did not render kernel master output\n";
+        return 1;
+    }
+    kernelFile.replaceWithText (
+        "metadata: { name: plugin-kernel-reload }\n"
+        "ports:\n"
+        "  - { name: master, direction: output, signal: audio, channels: 2, maps_from: source.out }\n"
+        "modules:\n"
+        "  - { id: source, type: control_to_audio, static: { channels: 2 }, defaults: { in: -0.5 } }\n"
+        "connections: []\n");
+    if (! kernelProcessor.reloadInstrumentFromFile (kernelFile))
+    {
+        std::cerr << "plugin did not reload kernel master output\n";
+        return 1;
+    }
+    kernelBuffer.clear();
+    kernelProcessor.processBlock (kernelBuffer, kernelMidi);
+    if (! nearlyEqual (kernelBuffer.getSample (0, 0), -0.5f, 0.00001f))
+    {
+        std::cerr << "plugin kernel reload did not change master output\n";
+        return 1;
+    }
+    juce::MemoryBlock kernelState;
+    kernelProcessor.getStateInformation (kernelState);
+    DandrumAudioProcessor restoredKernel (InstrumentDemoConfiguration::kick());
+    restoredKernel.setPlayConfigDetails (0, 2, 48000.0, blockSize);
+    restoredKernel.prepareToPlay (48000.0, blockSize);
+    restoredKernel.setStateInformation (kernelState.getData(), static_cast<int> (kernelState.getSize()));
+    kernelBuffer.clear();
+    restoredKernel.processBlock (kernelBuffer, kernelMidi);
+    if (! nearlyEqual (kernelBuffer.getSample (0, 0), -0.5f, 0.00001f))
+    {
+        std::cerr << "plugin did not restore embedded kernel master output\n";
+        return 1;
+    }
+    if (! kernelProcessor.reloadInstrumentFromFile (defaultPatchFile())
+        || ! kernelProcessor.hasPublicParameter ("kick.tune_hz"))
+    {
+        std::cerr << "plugin did not switch from a kernel patch to a legacy patch\n";
+        return 1;
+    }
+    kernelFile.deleteFile();
+
     if (! hostMidiVelocityMatchesRustEvent())
     {
         std::cerr << "host MIDI velocity did not reach Rust unchanged\n";
