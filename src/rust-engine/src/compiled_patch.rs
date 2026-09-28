@@ -183,7 +183,6 @@ pub struct CompiledNode {
     pub id: ModuleId,
     pub module_type: String,
     pub module_kind: ModuleKind,
-    pub execution_scope: ExecutionScope,
     pub input_port_map: Vec<Vec<CompiledPortRef>>,
     pub input_routes: Vec<Vec<CompiledInputSource>>,
     pub output_port_map: Vec<usize>,
@@ -1092,7 +1091,6 @@ fn compile_internal(
                 id: module.id().clone(),
                 module_type: module_type_str.to_string(),
                 module_kind: kind,
-                execution_scope: module.execution_scope(),
                 input_port_map: vec![Vec::new(); input_count],
                 input_routes: vec![Vec::new(); input_count],
                 output_port_map: output_port_spans
@@ -1120,12 +1118,12 @@ fn compile_internal(
     let global_node_indices = topological_order
         .iter()
         .copied()
-        .filter(|index| nodes[*index].execution_scope == ExecutionScope::Global)
+        .filter(|index| graph.modules()[*index].execution_scope() == ExecutionScope::Global)
         .collect::<Vec<_>>();
     let voice_node_indices = topological_order
         .iter()
         .copied()
-        .filter(|index| nodes[*index].execution_scope == ExecutionScope::Voice)
+        .filter(|index| graph.modules()[*index].execution_scope() == ExecutionScope::Voice)
         .collect::<Vec<_>>();
     let execution_order = global_node_indices
         .iter()

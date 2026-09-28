@@ -4203,7 +4203,6 @@ connections: []
             .iter()
             .find(|node| node.id.as_str() == "layer::voice::osc")
             .expect("oscillator should compile");
-        assert_eq!(osc.execution_scope, crate::graph::ExecutionScope::Global);
         assert_eq!(
             osc.construction,
             crate::compiled_patch::CompiledConstruction::Oscillator {
