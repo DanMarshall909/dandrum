@@ -459,3 +459,139 @@ fn prepared_poly_note_routing_performs_no_realtime_allocations() {
 
     assert_eq!(allocation_count, 0);
 }
+
+fn prepared_constant_poly(allocation: &str, done_on_gate_event: bool) -> RealtimeGraphProcessor {
+    let mut voice =
+        GraphDefinition::new("constant_voice")
+            .with_port(KernelPort::output("audio", SignalType::Audio, 1).maps_from(
+                KernelPortRef::new(NodeId::new("constant"), builtin_ports::OUT),
+            ))
+            .with_node(
+                Node::new(NodeId::new("constant"), module_types::CONTROL_TO_AUDIO)
+                    .with_default_override(builtin_ports::IN, 0.25),
+            );
+    if done_on_gate_event {
+        voice = voice.with_port(
+            KernelPort::output(crate::kernel::POLY_DONE_OUTPUT, SignalType::Event, 1).maps_from(
+                KernelPortRef::new(
+                    NodeId::new(crate::kernel::VOICE_INTRINSIC_NODE),
+                    crate::kernel::VOICE_GATE_OUTPUT,
+                ),
+            ),
+        );
+    }
+    let root = GraphDefinition::new("root")
+        .with_port(
+            KernelPort::output("left", SignalType::Audio, 1)
+                .maps_from(KernelPortRef::new(NodeId::new("voices"), "audio")),
+        )
+        .with_port(
+            KernelPort::output("right", SignalType::Audio, 1)
+                .maps_from(KernelPortRef::new(NodeId::new("voices"), "audio")),
+        )
+        .with_node(
+            Node::new(NodeId::new("voices"), crate::kernel::POLY_DEFINITION)
+                .with_static_arg(
+                    crate::kernel::POLY_WRAPPED_DEFINITION_PARAM,
+                    StaticArg::Literal(StaticValue::String("constant_voice".to_string())),
+                )
+                .with_static_arg(
+                    crate::kernel::POLY_MAX_VOICES_PARAM,
+                    StaticArg::Literal(StaticValue::Int(2)),
+                )
+                .with_static_arg(
+                    crate::kernel::POLY_ALLOCATION_PARAM,
+                    StaticArg::Literal(StaticValue::Enum(allocation.to_string())),
+                ),
+        );
+    let settings = RenderSettings {
+        sample_rate_hz: 48_000,
+        block_size_frames: 64,
+        duration_frames: 64,
+    };
+    let prepared = prepare_kernel_graph_with_buses(
+        &root,
+        &builtin_registry().with_definition(voice),
+        &settings,
+        &HostBuses::new()
+            .with_output("left", 1)
+            .with_output("right", 1),
+    )
+    .expect("constant poly graph prepares");
+    RealtimeGraphProcessor::polyphonic_with_compiled_patch_and_sampler_assets_and_max_block_size(
+        prepared.graph().clone(),
+        prepared.compiled_patch().clone(),
+        48_000.0,
+        &PreparedSamplerAssets::empty(),
+        &VoiceAllocation::default(),
+        64,
+    )
+}
+
+#[test]
+fn full_capacity_poly_activation_mix_and_done_retirement_do_not_allocate() {
+    let mut processor = prepared_constant_poly(crate::kernel::POLY_ALLOCATION_REJECT_NEW, true);
+    let mut left = [0.0; 64];
+    let mut right = [0.0; 64];
+
+    let allocation_count = count_current_thread_allocations(|| {
+        processor.note_on(60, 100);
+        processor.note_on(64, 100);
+        assert_eq!(processor.render(&mut left, &mut right), 64);
+    });
+    assert_eq!(allocation_count, 0);
+    assert!(left.iter().all(|sample| *sample == 0.5));
+    assert_eq!(left, right);
+    assert_eq!(
+        processor.prepared_poly_runtime_regions()[0].active_voice_count(),
+        0
+    );
+
+    let reuse_allocations = count_current_thread_allocations(|| {
+        assert_eq!(processor.render(&mut left, &mut right), 64);
+        processor.note_on(67, 100);
+        processor.note_on(72, 100);
+        assert_eq!(processor.render(&mut left, &mut right), 64);
+    });
+    assert_eq!(reuse_allocations, 0);
+    assert!(left.iter().all(|sample| *sample == 0.5));
+    assert_eq!(left, right);
+    assert_eq!(
+        processor.prepared_poly_runtime_regions()[0].active_voice_count(),
+        0
+    );
+
+    assert_eq!(processor.render(&mut left, &mut right), 64);
+    assert!(left.iter().all(|sample| *sample == 0.0));
+    assert!(right.iter().all(|sample| *sample == 0.0));
+}
+
+#[test]
+fn full_capacity_poly_stealing_and_rejection_render_without_allocation() {
+    for (allocation, expected_notes) in [
+        (crate::kernel::POLY_ALLOCATION_OLDEST_STEAL, [67, 64]),
+        (crate::kernel::POLY_ALLOCATION_REJECT_NEW, [60, 64]),
+    ] {
+        let mut processor = prepared_constant_poly(allocation, false);
+        let mut left = [0.0; 64];
+        let mut right = [0.0; 64];
+
+        let allocation_count = count_current_thread_allocations(|| {
+            processor.note_on(60, 100);
+            processor.note_on(64, 100);
+            assert_eq!(processor.render(&mut left, &mut right), 64);
+            processor.note_on(67, 100);
+            assert_eq!(processor.render(&mut left, &mut right), 64);
+        });
+        assert_eq!(allocation_count, 0, "allocation policy: {allocation}");
+        assert!(left.iter().all(|sample| *sample == 0.5));
+        assert_eq!(left, right);
+        let region = &processor.prepared_poly_runtime_regions()[0];
+        assert_eq!(region.active_voice_count(), 2);
+        assert_eq!(
+            [region.voice_note(0).unwrap(), region.voice_note(1).unwrap()],
+            expected_notes,
+            "allocation policy: {allocation}"
+        );
+    }
+}
