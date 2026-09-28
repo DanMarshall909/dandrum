@@ -13,16 +13,43 @@ pub fn write_wav_file(
 }
 
 pub fn write_wav_stereo_i16<W: Write>(
-    mut writer: W,
+    writer: W,
     sample_rate_hz: u32,
     left: &[f32],
     right: &[f32],
 ) -> io::Result<()> {
-    let frame_count = left.len().min(right.len());
-    let data_size = frame_count as u32 * 2 * 2;
-    let riff_size = 36 + data_size;
-    let byte_rate = sample_rate_hz * 2 * 2;
-    let block_align: u16 = 2 * 2;
+    write_wav_channels_i16(writer, sample_rate_hz, &[left, right])
+}
+
+pub fn write_wav_channels_i16<W: Write>(
+    mut writer: W,
+    sample_rate_hz: u32,
+    channels: &[&[f32]],
+) -> io::Result<()> {
+    let channel_count = u16::try_from(channels.len())
+        .ok()
+        .filter(|count| *count > 0)
+        .ok_or_else(|| io::Error::new(io::ErrorKind::InvalidInput, "invalid channel count"))?;
+    let frame_count = channels
+        .iter()
+        .map(|channel| channel.len())
+        .min()
+        .unwrap_or(0);
+    let block_align = channel_count
+        .checked_mul(2)
+        .ok_or_else(|| io::Error::new(io::ErrorKind::InvalidInput, "too many WAV channels"))?;
+    let data_size = u32::try_from(frame_count)
+        .ok()
+        .and_then(|frames| frames.checked_mul(u32::from(block_align)))
+        .ok_or_else(|| io::Error::new(io::ErrorKind::InvalidInput, "WAV is too large"))?;
+    let riff_size = 36u32
+        .checked_add(data_size)
+        .ok_or_else(|| io::Error::new(io::ErrorKind::InvalidInput, "WAV is too large"))?;
+    let byte_rate = sample_rate_hz
+        .checked_mul(u32::from(block_align))
+        .ok_or_else(|| {
+            io::Error::new(io::ErrorKind::InvalidInput, "WAV sample rate is too large")
+        })?;
 
     writer.write_all(b"RIFF")?;
     writer.write_all(&riff_size.to_le_bytes())?;
@@ -30,7 +57,7 @@ pub fn write_wav_stereo_i16<W: Write>(
     writer.write_all(b"fmt ")?;
     writer.write_all(&16u32.to_le_bytes())?;
     writer.write_all(&1u16.to_le_bytes())?;
-    writer.write_all(&2u16.to_le_bytes())?;
+    writer.write_all(&channel_count.to_le_bytes())?;
     writer.write_all(&sample_rate_hz.to_le_bytes())?;
     writer.write_all(&byte_rate.to_le_bytes())?;
     writer.write_all(&block_align.to_le_bytes())?;
@@ -39,8 +66,9 @@ pub fn write_wav_stereo_i16<W: Write>(
     writer.write_all(&data_size.to_le_bytes())?;
 
     for frame in 0..frame_count {
-        writer.write_all(&float_to_i16(left[frame]).to_le_bytes())?;
-        writer.write_all(&float_to_i16(right[frame]).to_le_bytes())?;
+        for channel in channels {
+            writer.write_all(&float_to_i16(channel[frame]).to_le_bytes())?;
+        }
     }
 
     Ok(())
@@ -98,5 +126,26 @@ mod tests {
             4
         );
         assert_eq!(bytes.len(), 48);
+    }
+
+    #[test]
+    fn planar_wav_writer_preserves_mono_and_six_channel_samples() {
+        let mut mono = Vec::new();
+        write_wav_channels_i16(&mut mono, 48_000, &[&[-0.5, 0.5]]).expect("mono WAV should write");
+        assert_eq!(u16::from_le_bytes([mono[22], mono[23]]), 1);
+        assert_eq!(i16::from_le_bytes([mono[44], mono[45]]), -16384);
+        assert_eq!(i16::from_le_bytes([mono[46], mono[47]]), 16383);
+
+        let channels = vec![vec![0.25]; 6];
+        let planes: Vec<_> = channels.iter().map(Vec::as_slice).collect();
+        let mut surround = Vec::new();
+        write_wav_channels_i16(&mut surround, 48_000, &planes)
+            .expect("six channel WAV should write");
+        assert_eq!(u16::from_le_bytes([surround[22], surround[23]]), 6);
+        assert_eq!(
+            u32::from_le_bytes([surround[40], surround[41], surround[42], surround[43]]),
+            12
+        );
+        assert_eq!(surround.len(), 56);
     }
 }

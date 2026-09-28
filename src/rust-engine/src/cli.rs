@@ -102,12 +102,43 @@ fn render_with_events(
                 }
             };
             let events = events(&settings);
-            let (left, right) = crate::graph_processor::render_offline_compiled(
-                prepared.compiled_patch(),
-                events,
+            let rendered = match crate::graph_processor::render_kernel_offline_named(
+                &prepared,
+                events.clone(),
                 &PreparedSamplerAssets::empty(),
-            );
-            (settings.sample_rate_hz, left, right)
+            ) {
+                Ok(rendered) => rendered,
+                Err("prepared graph cannot render named root buses")
+                    if has_legacy_stereo_outputs(&prepared) =>
+                {
+                    let (left, right) = crate::graph_processor::render_offline_compiled(
+                        prepared.compiled_patch(),
+                        events,
+                        &PreparedSamplerAssets::empty(),
+                    );
+                    vec![
+                        ("left".to_string(), vec![left]),
+                        ("right".to_string(), vec![right]),
+                    ]
+                }
+                Err(message) => return error(format!("failed to render patch: {message}")),
+            };
+            return match write_kernel_output_wavs(
+                &render_args.output,
+                settings.sample_rate_hz,
+                &rendered,
+            ) {
+                Ok(paths) => {
+                    let mut result = render_success(&render_args);
+                    for path in paths.into_iter().skip(1) {
+                        result
+                            .stdout
+                            .push_str(&format!("output: {}\n", path.display()));
+                    }
+                    result
+                }
+                Err(message) => error(format!("failed to write wav: {message}")),
+            };
         }
         Err(diagnostics)
             if diagnostics.all().iter().any(|diagnostic| {
@@ -130,6 +161,10 @@ fn render_with_events(
         return error(format!("failed to write wav: {write_error}"));
     }
 
+    render_success(&render_args)
+}
+
+fn render_success(render_args: &RenderArgs) -> CliResult {
     CliResult {
         exit_code: 0,
         stdout: format!(
@@ -139,6 +174,70 @@ fn render_with_events(
         ),
         stderr: String::new(),
     }
+}
+
+fn has_legacy_stereo_outputs(prepared: &crate::preparation::PreparedKernelInstrument) -> bool {
+    let outputs = prepared.compiled_patch().root_bus_plan().outputs();
+    outputs.len() == 2
+        && outputs[0].name() == "left"
+        && outputs[0].channel_count() == 1
+        && outputs[1].name() == "right"
+        && outputs[1].channel_count() == 1
+}
+
+fn write_kernel_output_wavs(
+    output: &std::path::Path,
+    sample_rate_hz: u32,
+    buses: &[(String, Vec<Vec<f32>>)],
+) -> Result<Vec<PathBuf>, String> {
+    if buses.is_empty() {
+        return Err("kernel patch has no audio outputs".to_string());
+    }
+    if buses.len() == 2
+        && buses[0].0 == "left"
+        && buses[0].1.len() == 1
+        && buses[1].0 == "right"
+        && buses[1].1.len() == 1
+    {
+        crate::wav::write_wav_file(output, sample_rate_hz, &buses[0].1[0], &buses[1].1[0])
+            .map_err(|err| err.to_string())?;
+        return Ok(vec![output.to_path_buf()]);
+    }
+    let primary = buses
+        .iter()
+        .position(|(name, _)| name == "master")
+        .unwrap_or(0);
+    let mut paths = vec![output.to_path_buf()];
+    for (index, (name, channels)) in buses.iter().enumerate() {
+        let path = if index == primary {
+            output.to_path_buf()
+        } else {
+            let stem = output
+                .file_stem()
+                .ok_or_else(|| "output path needs a file name".to_string())?
+                .to_string_lossy();
+            let safe_name = name
+                .as_bytes()
+                .iter()
+                .map(|byte| {
+                    if byte.is_ascii_alphanumeric() || matches!(*byte, b'-' | b'_') {
+                        (*byte as char).to_string()
+                    } else {
+                        format!("%{byte:02X}")
+                    }
+                })
+                .collect::<String>();
+            output.with_file_name(format!("{stem}-{safe_name}.wav"))
+        };
+        let file = std::fs::File::create(&path).map_err(|err| err.to_string())?;
+        let planes: Vec<_> = channels.iter().map(Vec::as_slice).collect();
+        crate::wav::write_wav_channels_i16(file, sample_rate_hz, &planes)
+            .map_err(|err| err.to_string())?;
+        if index != primary {
+            paths.push(path);
+        }
+    }
+    Ok(paths)
 }
 
 fn render_legacy_patch(
@@ -905,6 +1004,51 @@ modules:
         assert!(bytes[WAV_HEADER_BYTES..].iter().any(|byte| *byte != 0));
 
         let _ = fs::remove_file(output);
+    }
+
+    #[test]
+    fn render_command_writes_each_named_kernel_bus_to_its_own_wav() {
+        let output = temp_wav_path("named-buses", "master");
+        let patch = output.with_extension("yaml");
+        let cue = output.with_file_name(format!(
+            "{}-cue.wav",
+            output.file_stem().unwrap().to_string_lossy()
+        ));
+        fs::write(
+            &patch,
+            "metadata: { name: named-buses }\nports:\n  - { name: master, direction: output, signal: audio, channels: 2, maps_from: master_source.out }\n  - { name: cue, direction: output, signal: audio, channels: 1, maps_from: cue_source.out }\nmodules:\n  - { id: master_source, type: control_to_audio, static: { channels: 2 }, defaults: { in: 0.25 } }\n  - { id: cue_source, type: control_to_audio, defaults: { in: -0.5 } }\nconnections: []\n",
+        )
+        .unwrap();
+        let result = run([
+            "dandrum-cli".to_string(),
+            "render".to_string(),
+            patch.to_string_lossy().to_string(),
+            OUTPUT_FLAG.to_string(),
+            output.to_string_lossy().to_string(),
+            DURATION_FRAMES_FLAG.to_string(),
+            "12".to_string(),
+            BLOCK_SIZE_FLAG.to_string(),
+            "8".to_string(),
+        ]);
+        assert_eq!(result.exit_code, 0, "{}", result.stderr);
+        assert!(result.stdout.contains(&cue.to_string_lossy().to_string()));
+        let master_bytes = fs::read(&output).unwrap();
+        let cue_bytes = fs::read(&cue).unwrap();
+        assert_eq!(master_bytes.len(), WAV_HEADER_BYTES + 12 * 2 * 2);
+        assert_eq!(cue_bytes.len(), WAV_HEADER_BYTES + 12 * 2);
+        assert!(
+            master_bytes[WAV_HEADER_BYTES..]
+                .iter()
+                .any(|sample| *sample != 0)
+        );
+        assert!(
+            cue_bytes[WAV_HEADER_BYTES..]
+                .iter()
+                .any(|sample| *sample != 0)
+        );
+        let _ = fs::remove_file(patch);
+        let _ = fs::remove_file(output);
+        let _ = fs::remove_file(cue);
     }
 
     #[test]
