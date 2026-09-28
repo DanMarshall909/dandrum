@@ -579,6 +579,41 @@ fn connection_to_missing_node_is_rejected() {
 }
 
 #[test]
+fn public_input_mapping_to_missing_internal_node_is_rejected() {
+    let registry = DefinitionRegistry::new().with_definition(gain_primitive());
+    let root = GraphDefinition::new("root")
+        .with_node(Node::new(NodeId::new("amp"), "gain"))
+        .with_port(
+            Port::input("level", SignalType::Control, 1)
+                .maps_to(PortRef::new(NodeId::new("ghost"), "level")),
+        );
+
+    assert_eq!(
+        only_error_code(&root.validate(&registry)),
+        error_codes::KERNEL_MISSING_NODE
+    );
+}
+
+#[test]
+fn nested_public_mapping_to_wrong_direction_is_rejected() {
+    let composite = GraphDefinition::new("voice")
+        .with_node(Node::new(NodeId::new("amp"), "gain"))
+        .with_port(
+            Port::input("level", SignalType::Control, 1)
+                .maps_to(PortRef::new(NodeId::new("amp"), "audio_out")),
+        );
+    let registry = DefinitionRegistry::new()
+        .with_definition(gain_primitive())
+        .with_definition(composite);
+    let root = GraphDefinition::new("root").with_node(Node::new(NodeId::new("voice"), "voice"));
+
+    assert_eq!(
+        only_error_code(&root.validate(&registry)),
+        error_codes::KERNEL_INCORRECT_PORT_DIRECTION
+    );
+}
+
+#[test]
 fn connection_to_a_port_the_definition_does_not_declare_reports_a_missing_port() {
     let registry = DefinitionRegistry::new().with_definition(gain_primitive());
     let definition = GraphDefinition::new("root")

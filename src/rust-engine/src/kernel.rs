@@ -1813,6 +1813,18 @@ impl GraphDefinition {
             );
         }
 
+        self.validate_nested_poly_interfaces(registry, &mut diagnostics);
+        self.validate_public_mappings(registry, &mut diagnostics);
+        for definition in registry.definitions() {
+            if definition != self
+                && definition.ports().iter().any(|port| {
+                    !port.internal_targets().is_empty() || !port.internal_sources().is_empty()
+                })
+            {
+                definition.validate_public_mappings(registry, &mut diagnostics);
+            }
+        }
+
         for connection in &self.connections {
             let source = self.resolve_endpoint(
                 connection.source(),
@@ -1905,8 +1917,6 @@ impl GraphDefinition {
             }
         }
 
-        self.validate_nested_poly_interfaces(registry, &mut diagnostics);
-
         if let Some(path) = self.find_illegal_cycle(registry) {
             let printable = path
                 .iter()
@@ -1930,6 +1940,98 @@ impl GraphDefinition {
         KernelValidation {
             diagnostics,
             promotions,
+        }
+    }
+
+    fn validate_public_mappings(
+        &self,
+        registry: &DefinitionRegistry,
+        diagnostics: &mut Diagnostics,
+    ) {
+        let public_ports = Self::resolve_ports(self, &self.enclosing_context());
+        let referenced_nodes = self
+            .ports()
+            .iter()
+            .flat_map(|port| match port.direction() {
+                PortDirection::Input => port.internal_targets(),
+                PortDirection::Output => port.internal_sources(),
+            })
+            .map(PortRef::node)
+            .collect::<BTreeSet<_>>();
+        let resolved_nodes = self
+            .nodes()
+            .iter()
+            .filter(|node| referenced_nodes.contains(node.id()))
+            .filter(|node| node.definition_ref() != POLY_DEFINITION)
+            .filter_map(|node| {
+                Some((
+                    node.id(),
+                    ResolvedNode {
+                        definition: registry.get(node.definition_ref())?,
+                        ports: self.resolved_node_ports(registry, node.id())?,
+                    },
+                ))
+            })
+            .collect::<BTreeMap<_, _>>();
+        for (public, resolved_public) in self.ports().iter().zip(public_ports.iter()) {
+            // A wrapped voice's completion output is checked by poly preparation,
+            // which reports the region-specific malformed-interface diagnostic.
+            if public.name() == POLY_DONE_OUTPUT {
+                continue;
+            }
+            let mappings = match public.direction() {
+                PortDirection::Input => public.internal_targets(),
+                PortDirection::Output => public.internal_sources(),
+            };
+            for reference in mappings {
+                if reference.node().as_str() == VOICE_INTRINSIC_NODE {
+                    continue;
+                }
+                let Some(mapped) = self.resolve_endpoint(
+                    reference,
+                    public.direction(),
+                    &resolved_nodes,
+                    diagnostics,
+                ) else {
+                    continue;
+                };
+                if mapped.signal_type() != resolved_public.signal_type() {
+                    diagnostics.push(
+                        Diagnostic::new(
+                            error_codes::KERNEL_INCOMPATIBLE_SIGNAL_TYPES,
+                            Severity::Error,
+                            format!(
+                                "public port '{}' is {:?}, but mapped port '{}.{}' is {:?}",
+                                public.name(),
+                                resolved_public.signal_type(),
+                                reference.node().as_str(),
+                                reference.port(),
+                                mapped.signal_type()
+                            ),
+                        )
+                        .with_module_id(reference.node().as_str())
+                        .with_port_name(reference.port()),
+                    );
+                }
+                if mapped.channels() != resolved_public.channels() {
+                    diagnostics.push(
+                        Diagnostic::new(
+                            error_codes::KERNEL_CHANNEL_COUNT_MISMATCH,
+                            Severity::Error,
+                            format!(
+                                "public port '{}' has {} channel(s), but mapped port '{}.{}' has {} channel(s)",
+                                public.name(),
+                                resolved_public.channels(),
+                                reference.node().as_str(),
+                                reference.port(),
+                                mapped.channels()
+                            ),
+                        )
+                        .with_module_id(reference.node().as_str())
+                        .with_port_name(reference.port()),
+                    );
+                }
+            }
         }
     }
 

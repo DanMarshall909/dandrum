@@ -272,11 +272,11 @@ AC composite-authoring :: Composite parameter exposure :: Undeclared composite p
 
 AC composite-authoring :: Composite port mapping :: Public input maps to internal input
   fp 223acba865f7
-  todo not yet mapped to a test
+  test rust:composite_input_port_forwards_incoming_connections_to_internal_ports
 
 AC composite-authoring :: Composite port mapping :: Public output maps from internal output
   fp e2423aad9394
-  todo not yet mapped to a test
+  test rust:boundary_ports_forward_connections_to_atomic_ports
 
 AC composite-authoring :: External composite libraries are optional future extension :: External composite loaded later
   fp 901c8f5c6747
