@@ -7055,6 +7055,107 @@ fn tom_and_conga_examples_preserve_legacy_preset_renders() {
 }
 
 #[test]
+fn snare_examples_preserve_legacy_preset_renders_on_named_buses() {
+    for (fixture, legacy_yaml, instrument_id, default_values, changed_values, alias_count) in [
+        (
+            "examples/patches/drums/drum-808-snare.yaml",
+            include_str!("../../tests/fixtures/unify-graph-kernel/legacy/drum-808-snare.yaml"),
+            "dandrum.drum-808-snare",
+            "snare.tune: 0.85, snare.tone_level: 0.7, snare.tone_decay_ms: 180, snare.snappy: 0.8, snare.noise_decay_ms: 220",
+            "snare.tune: 1.2, snare.tone_level: 0.3, snare.tone_decay_ms: 50, snare.snappy: 0.5, snare.noise_decay_ms: 70",
+            5,
+        ),
+        (
+            "examples/patches/drums/drum-909-snare.yaml",
+            include_str!("../../tests/fixtures/unify-graph-kernel/legacy/drum-909-snare.yaml"),
+            "dandrum.drum-909-snare",
+            "snare.tone_level: 0.4, snare.tone_decay_ms: 90, snare.snappy: 1, snare.noise_decay_ms: 160",
+            "snare.tone_level: 0.3, snare.tone_decay_ms: 50, snare.snappy: 0.5, snare.noise_decay_ms: 70",
+            4,
+        ),
+    ] {
+        let yaml = read_repo_fixture(fixture).expect("snare example exists");
+        let patch = load_kernel_patch_str(&yaml).expect("snare loads as kernel patch");
+        assert_eq!(
+            patch.instrument().expect("instrument identity").id,
+            instrument_id
+        );
+        assert_eq!(patch.preset_surface().parameters().len(), alias_count);
+        let settings = RenderSettings {
+            sample_rate_hz: 48_000,
+            block_size_frames: 128,
+            duration_frames: 2_048,
+        };
+        let events = vec![note_on_value(0, 38, 110)];
+        let mut baseline = None;
+        for (case, values) in [
+            ("advertised defaults", default_values),
+            ("changed controls", changed_values),
+        ] {
+            let preset = patch::load_preset_str(&format!(
+                "name: {case}\ninstrument: {{ id: {instrument_id}, preset_schema_version: 1 }}\nvalues: {{ {values} }}\n"
+            ))
+            .expect("snare preset parses");
+            let mut legacy = patch::apply_preset(
+                &patch::load_patch_str(legacy_yaml).expect("legacy snare reference parses"),
+                &preset,
+            )
+            .expect("legacy snare preset applies");
+            legacy.render = settings.clone();
+            let legacy = crate::preparation::prepare_instrument_document(legacy, Path::new("."))
+                .expect("legacy snare prepares");
+            let expected = crate::synth::DandrumEngine::new()
+                .render_prepared_instrument_offline(&legacy, events.clone());
+            assert!(expected.left.iter().any(|sample| sample.abs() > 0.001));
+            assert_eq!(expected.left, expected.right);
+
+            let applied = if case == "advertised defaults" {
+                patch.clone()
+            } else {
+                patch
+                    .apply_preset(&preset)
+                    .expect("kernel snare preset applies")
+            };
+            let prepared = prepare_kernel_patch(&applied, &settings).expect("snare prepares");
+            let buses = render_kernel_offline_named(
+                &prepared,
+                events.clone(),
+                &PreparedSamplerAssets::empty(),
+            )
+            .expect("snare renders on named buses");
+            assert_eq!(buses.len(), 2);
+            for (channel, name, expected) in
+                [(0, "left", &expected.left), (1, "right", &expected.right)]
+            {
+                assert_eq!(buses[channel].0, name);
+                assert_eq!(buses[channel].1.len(), 1);
+                let actual = &buses[channel].1[0];
+                assert_eq!(actual.len(), expected.len());
+                let mismatch = actual
+                    .iter()
+                    .zip(expected)
+                    .position(|(actual, expected)| actual != expected);
+                assert_eq!(
+                    mismatch,
+                    None,
+                    "{fixture} {case} {name} differs at frame {mismatch:?}: actual {:?}, expected {:?}",
+                    mismatch.map(|frame| actual[frame]),
+                    mismatch.map(|frame| expected[frame]),
+                );
+            }
+            if let Some(baseline) = &baseline {
+                assert_ne!(
+                    &expected.left, baseline,
+                    "changed controls should change the snare sound"
+                );
+            } else {
+                baseline = Some(expected.left);
+            }
+        }
+    }
+}
+
+#[test]
 fn impulse_noise_and_layer_examples_match_legacy_render_on_named_buses() {
     for (fixture, legacy_yaml) in [
         (
