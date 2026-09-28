@@ -29,13 +29,6 @@ The plugin editor SHALL present playable controls from the loaded instrument's p
 - **AND** each control SHALL use its declared identity and display name
 - **AND** changing a control SHALL notify the host through the corresponding stable parameter slot
 
-#### Scenario: Plugin editor displays runtime information
-
-- **GIVEN** a plugin instance has loaded or attempted to load an instrument
-- **WHEN** the plugin editor is visible
-- **THEN** it SHALL display the instrument identity or name when available
-- **AND** it SHALL display load/prepare status or error text when available
-
 #### Scenario: Editor sends playable notes
 
 - **WHEN** a user presses and releases a key in the configured editor

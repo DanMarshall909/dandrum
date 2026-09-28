@@ -5,7 +5,7 @@
 #
 #   AC <capability> :: <Requirement> :: <Scenario>
 #     fp   <fingerprint>   recorded hash of the scenario text
-#     test <id>            rust:<fn_name> or cpp:<path> (repeatable)
+#     test <id>            rust:<fn_name>, cpp:<path>, or js:<path> (repeatable)
 #     todo <reason>        ratchet backlog until a real test is mapped
 #
 # When a scenario is edited its fingerprint drifts and the check fails: review
@@ -122,7 +122,6 @@ AC ai-graph-proposals :: Every provider proposal is locally validated :: Provide
   fp 071e026f1a35
   test rust:local_validation_rejects_assets_scripts_unknown_modules_and_unknown_search_controls
   test rust:response_parser_rejects_malformed_json_and_unknown_fields
-  test cpp:tests/cpp/Tb303WebUiContractTest.cpp
 
 AC ai-graph-proposals :: Graph proposals use a provider-neutral contract :: A different provider satisfies the same orchestration
   fp 9c09607d009d
@@ -836,6 +835,32 @@ AC headless-engine :: Offline rendering entry point :: Rendering is deterministi
   fp 747cd9938709
   todo not yet mapped to a test
 
+AC instrument-demo-configuration :: Demo configuration selects a coherent instrument experience :: Demo launches from an unrelated working directory
+  fp 3801088ed6cc
+  test cpp:tests/cpp/PluginDemoConfigurationTest.cpp
+
+AC instrument-demo-configuration :: Demo configuration selects a coherent instrument experience :: Host restores a saved instrument
+  fp bb87d4566a39
+  test cpp:tests/cpp/PluginDemoConfigurationTest.cpp
+
+AC instrument-demo-configuration :: Demo configuration selects a coherent instrument experience :: Second instrument demo opens
+  fp e8ee17060073
+  test cpp:tests/cpp/PluginDemoConfigurationTest.cpp
+  test cpp:tests/cpp/PluginEditorBridgeTest.cpp
+
+AC instrument-demo-configuration :: Demo configuration selects a coherent instrument experience :: TB-303 demo opens fresh
+  fp 5d5f04e81533
+  test cpp:tests/cpp/PluginDemoConfigurationTest.cpp
+  test cpp:tests/cpp/PluginEditorBridgeTest.cpp
+
+AC instrument-demo-configuration :: Sound Lab is optional and instrument compatible :: Active instrument no longer matches the fixture
+  fp d411ba609f44
+  test cpp:tests/cpp/PluginEditorBridgeTest.cpp
+
+AC instrument-demo-configuration :: Sound Lab is optional and instrument compatible :: Configuration has no Sound Lab fixture
+  fp 2ce5a1261347
+  test cpp:tests/cpp/PluginEditorBridgeTest.cpp
+
 AC instrument-presets :: Example preset YAML :: Example preset YAML is loadable
   fp b4ecf2051cab
   todo not yet mapped to a test
@@ -980,6 +1005,14 @@ AC plugin-integration :: Audio processing remains realtime safe :: Host calls pr
   fp 87ab7d33cbc7
   todo not yet mapped to a test
 
+AC plugin-integration :: Host boundary preserves authored defaults and note velocity :: Fresh instrument starts with authored defaults
+  fp 1b6dd4d3072c
+  test cpp:tests/cpp/PluginConstructionTest.cpp
+
+AC plugin-integration :: Host boundary preserves authored defaults and note velocity :: Host MIDI velocity reaches the instrument
+  fp 4aeaea3b98b3
+  test cpp:tests/cpp/PluginConstructionTest.cpp
+
 AC plugin-integration :: Host preparation refreshes the loaded instrument runtime :: Host changes its audio settings
   fp af0627fe3302
   test rust:preparation_retains_parameter_values_and_resolved_slots
@@ -1019,11 +1052,17 @@ AC plugin-integration :: Parameter surface is stable for a loaded instrument :: 
   fp 6e5d73df1ca4
   todo not yet mapped to a test
 
-AC plugin-integration :: Plugin editor uses native JUCE generic controls :: Loaded instrument declares public parameters
-  fp 631e53f08e32
-  todo not yet mapped to a test
+AC plugin-integration :: Plugin editor presents declared public controls :: Editor sends playable notes
+  fp 6d66d1803e69
+  test cpp:tests/cpp/PluginEditorBridgeTest.cpp
+  test js:tests/js/SharedInstrumentUiTest.mjs
 
-AC plugin-integration :: Plugin editor uses native JUCE generic controls :: Plugin editor displays runtime information
+AC plugin-integration :: Plugin editor presents declared public controls :: Loaded instrument declares public parameters
+  fp 28cb581e7093
+  test cpp:tests/cpp/PluginEditorBridgeTest.cpp
+  test js:tests/js/SharedInstrumentUiTest.mjs
+
+AC plugin-integration :: Plugin editor presents declared public controls :: Plugin editor displays runtime information
   fp bddf665c051b
   todo not yet mapped to a test
 
@@ -1383,23 +1422,25 @@ AC sound-design-workflow :: Sound workbench emits repeatable implementation arti
 AC sound-lab-ui :: Sound Lab can request a validated topology suggestion :: User requests a topology suggestion
   fp 15a3a45d79e4
   test rust:ffi_proposal_handle_exposes_only_locally_validated_provider_results
-  test cpp:tests/cpp/Tb303WebUiContractTest.cpp
+  test js:tests/js/Tb303PageTest.mjs
 
 AC sound-lab-ui :: Sound Lab compares and accepts one coherent match :: Match completes successfully
   fp 56cbb3bd66dd
   test cpp:tests/cpp/SoundLabControllerTest.cpp
-  test cpp:tests/cpp/Tb303WebUiContractTest.cpp
+  test cpp:tests/cpp/PluginEditorBridgeTest.cpp
+  test js:tests/js/Tb303PageTest.mjs
 
 AC sound-lab-ui :: Sound Lab compares and accepts one coherent match :: User accepts the best candidate
-  fp 8fea1629a75e
-  test cpp:tests/cpp/Tb303WebUiContractTest.cpp
+  fp 3955600800de
   test cpp:tests/cpp/PluginHostParameterSurfaceTest.cpp
+  test cpp:tests/cpp/PluginEditorBridgeTest.cpp
+  test js:tests/js/Tb303PageTest.mjs
 
 AC sound-lab-ui :: Sound Lab presents one coherent analysis artifact :: Fixture render completes successfully
   fp cd5e80cde254
   test rust:ffi_render_handle_owns_one_coherent_acid_fixture_artifact
   test cpp:tests/cpp/SoundLabControllerTest.cpp
-  test cpp:tests/cpp/Tb303WebUiContractTest.cpp
+  test js:tests/js/Tb303PageTest.mjs
 
 AC sound-lab-ui :: Sound Lab presents one coherent analysis artifact :: Fixture render fails
   fp b16439675642
@@ -1407,9 +1448,11 @@ AC sound-lab-ui :: Sound Lab presents one coherent analysis artifact :: Fixture 
   test cpp:tests/cpp/SoundLabControllerTest.cpp
 
 AC sound-lab-ui :: Sound Lab renders the maintained fixture without blocking realtime audio :: User starts a Sound Lab render
-  fp 1885e42d15a3
+  fp 717f4e10302b
   test cpp:tests/cpp/SoundLabControllerTest.cpp
   test cpp:tests/cmake/RealtimeCallbackSafety.cmake
+  test cpp:tests/cpp/PluginEditorBridgeTest.cpp
+  test js:tests/js/Tb303PageTest.mjs
 
 AC sound-lab-ui :: Sound Lab renders the maintained fixture without blocking realtime audio :: User starts another render while one is active
   fp 6e1d85365db1
@@ -1426,11 +1469,13 @@ AC sound-lab-ui :: Sound Lab runs reference matching as a background job :: User
 AC sound-lab-ui :: Sound Lab runs reference matching as a background job :: User selects a reference and starts matching
   fp e5475ff83931
   test cpp:tests/cpp/SoundLabControllerTest.cpp
-  test cpp:tests/cpp/Tb303WebUiContractTest.cpp
+  test cpp:tests/cpp/PluginEditorBridgeTest.cpp
+  test js:tests/js/Tb303PageTest.mjs
 
 AC sound-lab-ui :: Sound Lab state crosses the existing editor bridge :: Editor opens before a Sound Lab render
-  fp 7b6424bbb922
-  test cpp:tests/cpp/Tb303WebUiContractTest.cpp
+  fp fca520d3b4bf
+  test cpp:tests/cpp/PluginEditorBridgeTest.cpp
+  test js:tests/js/Tb303PageTest.mjs
 
 AC spectral-processing :: Implementation approach :: STFT uses 50% overlap
   fp c49baf296d6a

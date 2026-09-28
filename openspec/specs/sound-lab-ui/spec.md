@@ -1,18 +1,19 @@
 ## Purpose
 
-Define the embedded Sound Lab workflow for rendering the maintained TB-303 sound-design fixture away from realtime audio, then auditioning and inspecting one coherent audio-and-analysis artifact.
+Define the optional embedded Sound Lab workflow for rendering a demo's maintained sound-design fixture away from realtime audio, then auditioning and inspecting one coherent audio-and-analysis artifact.
 
 ## Requirements
 
 ### Requirement: Sound Lab renders the maintained fixture without blocking realtime audio
 
-The instrument editor SHALL provide an explicit Sound Lab action that renders the maintained TB-303 proof-of-concept fixture through the Rust sound workbench away from both the audio callback and the editor message thread.
+When a demo configuration enables Sound Lab, the instrument editor SHALL provide an explicit action that renders that demo's maintained fixture through the Rust sound workbench away from both the audio callback and the editor message thread.
 
 #### Scenario: User starts a Sound Lab render
 
+- **GIVEN** the configured fixture matches the active instrument
 - **WHEN** the user requests a Sound Lab render while no render is active
 - **THEN** the panel SHALL enter a rendering state immediately
-- **AND** the fixture render and analysis SHALL execute on a background worker
+- **AND** the configured fixture render and analysis SHALL execute on a background worker
 - **AND** normal plugin audio processing SHALL NOT perform fixture loading, offline rendering, FFT analysis, or WAV construction
 
 #### Scenario: User starts another render while one is active
@@ -40,11 +41,11 @@ The Sound Lab SHALL present audition audio and measured trajectories from the sa
 
 ### Requirement: Sound Lab state crosses the existing editor bridge
 
-The embedded editor SHALL invoke Sound Lab rendering through a named JUCE native function and SHALL receive state updates through the browser event bridge.
+When Sound Lab is enabled for a demo, the embedded editor SHALL invoke Sound Lab rendering through a named JUCE native function and SHALL receive state updates through the browser event bridge.
 
 #### Scenario: Editor opens before a Sound Lab render
 
-- **WHEN** the editor page initializes
+- **WHEN** a Sound Lab-enabled editor page initializes
 - **THEN** it SHALL query and display the current Sound Lab state
 - **AND** it SHALL subscribe to later Sound Lab state-change events
 
@@ -82,8 +83,9 @@ Sound Lab SHALL present the reference and best candidate from one match result w
 
 #### Scenario: User accepts the best candidate
 
+- **GIVEN** the active instrument matches the configured Sound Lab fixture
 - **WHEN** the user accepts a completed or cancelled best candidate
-- **THEN** the matching patch SHALL become the active instrument
+- **THEN** the matching patch from the configured instrument source SHALL become the active instrument
 - **AND** every best public parameter value SHALL be applied through the instrument's public parameter surface
 - **AND** the UI SHALL report acceptance without editing the repository fixture
 

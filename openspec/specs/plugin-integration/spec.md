@@ -32,16 +32,34 @@ The plugin SHALL NOT provide graph or YAML authoring capabilities in its DAW edi
 - **THEN** the plugin SHALL NOT expose those edits as plugin UI actions
 - **AND** instrument authoring SHALL be performed through the CLI or a dedicated external authoring interface
 
-### Requirement: Plugin editor uses native JUCE generic controls
+### Requirement: Host boundary preserves authored defaults and note velocity
 
-The plugin editor SHALL use native JUCE controls for the v1 DAW UI.
+The plugin SHALL keep authored public defaults synchronized between host parameter state and the running Rust instrument, and SHALL forward JUCE MIDI note velocity without rescaling its already encoded 0–127 value.
+
+#### Scenario: Fresh instrument starts with authored defaults
+
+- **GIVEN** a new plugin instance loads an instrument without saved state or parameter automation
+- **WHEN** the first audio block is processed
+- **THEN** its host parameter values and Rust render SHALL use the instrument's authored public defaults
+
+#### Scenario: Host MIDI velocity reaches the instrument
+
+- **GIVEN** the host sends a JUCE note-on with velocity `V` and a block-local offset
+- **WHEN** the plugin processes that block
+- **THEN** Rust SHALL receive velocity `V` at the same offset
+- **AND** its render SHALL match a direct Rust note event with the same note, velocity, and offset
+
+### Requirement: Plugin editor presents declared public controls
+
+The plugin editor SHALL present playable controls from the loaded instrument's public parameter metadata through the configured editor UI. The UI technology and appearance SHALL not change public parameter identity or host automation slots.
 
 #### Scenario: Loaded instrument declares public parameters
 
 - **GIVEN** a loaded instrument declares public parameters in `preset_surface.parameters`
-- **WHEN** the plugin editor is opened
-- **THEN** the editor SHALL display one generic JUCE control for each declared public parameter
-- **AND** the controls SHOULD use declared display labels, ranges, defaults, and units when available
+- **WHEN** the plugin editor opens or the public surface changes after explicit replacement
+- **THEN** the editor SHALL display one control for each active public parameter
+- **AND** each control SHALL use its declared identity and display name
+- **AND** changing a control SHALL notify the host through the corresponding stable parameter slot
 
 #### Scenario: Plugin editor displays runtime information
 
@@ -49,6 +67,12 @@ The plugin editor SHALL use native JUCE controls for the v1 DAW UI.
 - **WHEN** the plugin editor is visible
 - **THEN** it SHALL display the instrument identity or name when available
 - **AND** it SHALL display load/prepare status or error text when available
+
+#### Scenario: Editor sends playable notes
+
+- **WHEN** a user presses and releases a key in the configured editor
+- **THEN** note-on and note-off SHALL enter the bounded editor MIDI queue
+- **AND** a full queue SHALL be reported without blocking the audio callback
 
 ### Requirement: Parameter surface is stable for a loaded instrument
 
