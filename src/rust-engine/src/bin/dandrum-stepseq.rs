@@ -12,12 +12,12 @@ use crossterm::terminal::{
 };
 use crossterm::{execute, queue};
 
+use dandrum_engine::PreparedSamplerAssets;
 use dandrum_engine::core::TimedInputEvent;
-use dandrum_engine::graph::{
-    Cable, Graph, ModuleId, ModuleNode, PortRef, SignalType, builtin_ports,
-};
-use dandrum_engine::graph_processor::render_offline;
+use dandrum_engine::graph_processor::render_kernel_offline_named;
+use dandrum_engine::kernel::document::load_kernel_patch_str;
 use dandrum_engine::patch::RenderSettings;
+use dandrum_engine::preparation::prepare_kernel_patch;
 use dandrum_engine::script::ScriptEvent;
 use dandrum_engine::wav::write_wav_file;
 
@@ -216,232 +216,111 @@ fn build_events(seq: &Sequencer) -> Vec<TimedInputEvent> {
     events
 }
 
-fn build_patch_yaml(seq: &Sequencer) -> String {
-    let bpm = seq.bpm;
-    let ticks_per_step = (60.0 / bpm as f64 * 48000.0 / 4.0) as u64;
-    let total = ticks_per_step * 16 + 48000;
+fn build_live_patch_yaml() -> &'static str {
+    r#"metadata:
+  name: stepseq-pattern
+ports:
+  - { name: master, direction: output, signal: audio, channels: 2, maps_from: mixer.mix }
+modules:
+  - { id: midi, type: midi_input }
+  - { id: note_rate, type: note_to_rate }
+  - { id: osc, type: oscillator, static: { channels: 2 } }
+  - { id: env, type: adsr }
+  - { id: vca, type: gain, static: { channels: 2 } }
+  - { id: sat, type: saturator, static: { channels: 2 } }
+  - { id: mixer, type: audio_mixer, static: { channels: 2 } }
+connections:
+  - { from: midi.events, to: note_rate.events }
+  - { from: midi.events, to: env.gate }
+  - { from: note_rate.rate, to: osc.pitch }
+  - { from: osc.audio, to: vca.audio_in }
+  - { from: env.value, to: vca.gain }
+  - { from: vca.audio_out, to: sat.audio_in }
+  - { from: sat.audio_out, to: mixer.inputs }
+"#
+}
 
-    let mut yaml = String::new();
-    yaml.push_str("metadata:\n");
-    yaml.push_str("  name: stepseq-pattern\n");
-    yaml.push_str("render:\n");
-    yaml.push_str("  sample_rate_hz: 48000\n");
-    yaml.push_str("  block_size_frames: 64\n");
-    yaml.push_str(&format!("  duration_frames: {}\n", total));
-    yaml.push_str("modules:\n");
-    yaml.push_str("  - id: midi\n");
-    yaml.push_str("    type: midi_input\n");
-    yaml.push_str("    outputs:\n");
-    yaml.push_str("      - name: events\n");
-    yaml.push_str("        signal_type: event\n");
-    yaml.push_str("  - id: note_rate\n");
-    yaml.push_str("    type: note_to_rate\n");
-    yaml.push_str("    inputs:\n");
-    yaml.push_str("      - name: events\n");
-    yaml.push_str("        signal_type: event\n");
-    yaml.push_str("    outputs:\n");
-    yaml.push_str("      - name: rate\n");
-    yaml.push_str("        signal_type: control\n");
-    yaml.push_str("  - id: osc\n");
-    yaml.push_str("    type: oscillator\n");
-    yaml.push_str("    inputs:\n");
-    yaml.push_str("      - name: pitch\n");
-    yaml.push_str("        signal_type: control\n");
-    yaml.push_str("    outputs:\n");
-    yaml.push_str("      - name: audio\n");
-    yaml.push_str("        signal_type: audio\n");
-    yaml.push_str("  - id: env\n");
-    yaml.push_str("    type: adsr\n");
-    yaml.push_str("    inputs:\n");
-    yaml.push_str("      - name: gate\n");
-    yaml.push_str("        signal_type: event\n");
-    yaml.push_str("    outputs:\n");
-    yaml.push_str("      - name: value\n");
-    yaml.push_str("        signal_type: control\n");
-    yaml.push_str("  - id: filter_env\n");
-    yaml.push_str("    type: adsr\n");
-    yaml.push_str("    inputs:\n");
-    yaml.push_str("      - name: gate\n");
-    yaml.push_str("        signal_type: event\n");
-    yaml.push_str("    outputs:\n");
-    yaml.push_str("      - name: value\n");
-    yaml.push_str("        signal_type: control\n");
-    yaml.push_str("  - id: filter\n");
-    yaml.push_str("    type: filter\n");
-    yaml.push_str("    inputs:\n");
-    yaml.push_str("      - name: audio_in\n");
-    yaml.push_str("        signal_type: audio\n");
-    yaml.push_str("      - name: cutoff\n");
-    yaml.push_str("        signal_type: control\n");
-    yaml.push_str("    outputs:\n");
-    yaml.push_str("      - name: audio_out\n");
-    yaml.push_str("        signal_type: audio\n");
-    yaml.push_str("  - id: vca\n");
-    yaml.push_str("    type: gain\n");
-    yaml.push_str("    inputs:\n");
-    yaml.push_str("      - name: audio_in\n");
-    yaml.push_str("        signal_type: audio\n");
-    yaml.push_str("      - name: gain\n");
-    yaml.push_str("        signal_type: control\n");
-    yaml.push_str("    outputs:\n");
-    yaml.push_str("      - name: audio_out\n");
-    yaml.push_str("        signal_type: audio\n");
-    yaml.push_str("  - id: sat\n");
-    yaml.push_str("    type: saturator\n");
-    yaml.push_str("    inputs:\n");
-    yaml.push_str("      - name: audio_in\n");
-    yaml.push_str("        signal_type: audio\n");
-    yaml.push_str("      - name: drive\n");
-    yaml.push_str("        signal_type: control\n");
-    yaml.push_str("      - name: bias\n");
-    yaml.push_str("        signal_type: control\n");
-    yaml.push_str("      - name: curve_select\n");
-    yaml.push_str("        signal_type: control\n");
-    yaml.push_str("    outputs:\n");
-    yaml.push_str("      - name: audio_out\n");
-    yaml.push_str("        signal_type: audio\n");
-    yaml.push_str("  - id: mixer\n");
-    yaml.push_str("    type: audio_mixer\n");
-    yaml.push_str("  - id: out\n");
-    yaml.push_str("    type: audio_output\n");
-    yaml.push_str("    inputs:\n");
-    yaml.push_str("      - name: left\n");
-    yaml.push_str("        signal_type: audio\n");
-    yaml.push_str("      - name: right\n");
-    yaml.push_str("        signal_type: audio\n");
-
-    // Connections
-    yaml.push_str("connections:\n");
-    yaml.push_str("  - from: midi.events\n");
-    yaml.push_str("    to: note_rate.events\n");
-    yaml.push_str("  - from: midi.events\n");
-    yaml.push_str("    to: env.gate\n");
-    yaml.push_str("  - from: midi.events\n");
-    yaml.push_str("    to: filter_env.gate\n");
-    yaml.push_str("  - from: note_rate.rate\n");
-    yaml.push_str("    to: osc.pitch\n");
-    yaml.push_str("  - from: osc.audio\n");
-    yaml.push_str("    to: filter.audio_in\n");
-    yaml.push_str("  - from: filter_env.value\n");
-    yaml.push_str("    to: filter.cutoff\n");
-    yaml.push_str("  - from: filter.audio_out\n");
-    yaml.push_str("    to: vca.audio_in\n");
-    yaml.push_str("  - from: env.value\n");
-    yaml.push_str("    to: vca.gain\n");
-    yaml.push_str("  - from: vca.audio_out\n");
-    yaml.push_str("    to: sat.audio_in\n");
-    yaml.push_str("  - from: sat.audio_out\n");
-    yaml.push_str("    to: mixer.inputs\n");
-    yaml.push_str("  - from: mixer.mix\n");
-    yaml.push_str("    to: out.left\n");
-    yaml.push_str("  - from: mixer.mix\n");
-    yaml.push_str("    to: out.right\n");
-
-    yaml
+fn build_patch_yaml() -> &'static str {
+    r#"metadata:
+  name: stepseq-pattern
+ports:
+  - { name: master, direction: output, signal: audio, channels: 2, maps_from: mixer.mix }
+modules:
+  - { id: midi, type: midi_input }
+  - { id: note_rate, type: note_to_rate }
+  - { id: osc, type: oscillator, static: { channels: 2 } }
+  - { id: env, type: adsr }
+  - { id: filter_env, type: adsr }
+  - { id: filter, type: filter, static: { channels: 2 } }
+  - { id: vca, type: gain, static: { channels: 2 } }
+  - { id: sat, type: saturator, static: { channels: 2 } }
+  - { id: mixer, type: audio_mixer, static: { channels: 2 } }
+connections:
+  - { from: midi.events, to: note_rate.events }
+  - { from: midi.events, to: env.gate }
+  - { from: midi.events, to: filter_env.gate }
+  - { from: note_rate.rate, to: osc.pitch }
+  - { from: osc.audio, to: filter.audio_in }
+  - { from: filter_env.value, to: filter.cutoff }
+  - { from: filter.audio_out, to: vca.audio_in }
+  - { from: env.value, to: vca.gain }
+  - { from: vca.audio_out, to: sat.audio_in }
+  - { from: sat.audio_out, to: mixer.inputs }
+"#
 }
 
 fn play_pattern(seq: &Sequencer) {
     let events = build_events(seq);
     let total = if events.is_empty() {
-        48000
+        48_000
     } else {
-        let last_event = events.last().unwrap().frame() + 24000;
-        last_event + 48000
+        events.last().unwrap().frame() + 24_000 + 48_000
     };
-
-    let modules = vec![
-        ModuleNode::new(ModuleId::new("midi"), "midi_input")
-            .with_output(builtin_ports::EVENTS, SignalType::Event),
-        ModuleNode::new(ModuleId::new("note_rate"), "note_to_rate")
-            .with_input(builtin_ports::EVENTS, SignalType::Event)
-            .with_output(builtin_ports::RATE, SignalType::Control),
-        ModuleNode::new(ModuleId::new("osc"), "oscillator")
-            .with_input(builtin_ports::PITCH, SignalType::Control)
-            .with_output(builtin_ports::AUDIO, SignalType::Audio),
-        ModuleNode::new(ModuleId::new("env"), "adsr")
-            .with_input(builtin_ports::GATE, SignalType::Event)
-            .with_output(builtin_ports::VALUE, SignalType::Control),
-        ModuleNode::new(ModuleId::new("vca"), "gain")
-            .with_input(builtin_ports::AUDIO_IN, SignalType::Audio)
-            .with_input(builtin_ports::GAIN, SignalType::Control)
-            .with_output(builtin_ports::AUDIO_OUT, SignalType::Audio),
-        ModuleNode::new(ModuleId::new("sat"), "saturator")
-            .with_input(builtin_ports::AUDIO_IN, SignalType::Audio)
-            .with_input(builtin_ports::DRIVE, SignalType::Control)
-            .with_input(builtin_ports::BIAS, SignalType::Control)
-            .with_input(builtin_ports::CURVE_SELECT, SignalType::Control)
-            .with_output(builtin_ports::AUDIO_OUT, SignalType::Audio),
-        ModuleNode::new(ModuleId::new("mixer"), "audio_mixer")
-            .with_mixing_input(builtin_ports::INPUTS, SignalType::Audio)
-            .with_output(builtin_ports::MIX, SignalType::Audio),
-        ModuleNode::new(ModuleId::new("out"), "audio_output")
-            .with_input(builtin_ports::LEFT, SignalType::Audio)
-            .with_input(builtin_ports::RIGHT, SignalType::Audio),
-    ];
-
-    let cables = vec![
-        Cable::new(
-            PortRef::new(ModuleId::new("midi"), builtin_ports::EVENTS),
-            PortRef::new(ModuleId::new("note_rate"), builtin_ports::EVENTS),
-        ),
-        Cable::new(
-            PortRef::new(ModuleId::new("midi"), builtin_ports::EVENTS),
-            PortRef::new(ModuleId::new("env"), builtin_ports::GATE),
-        ),
-        Cable::new(
-            PortRef::new(ModuleId::new("note_rate"), builtin_ports::RATE),
-            PortRef::new(ModuleId::new("osc"), builtin_ports::PITCH),
-        ),
-        Cable::new(
-            PortRef::new(ModuleId::new("osc"), builtin_ports::AUDIO),
-            PortRef::new(ModuleId::new("vca"), builtin_ports::AUDIO_IN),
-        ),
-        Cable::new(
-            PortRef::new(ModuleId::new("env"), builtin_ports::VALUE),
-            PortRef::new(ModuleId::new("vca"), builtin_ports::GAIN),
-        ),
-        Cable::new(
-            PortRef::new(ModuleId::new("vca"), builtin_ports::AUDIO_OUT),
-            PortRef::new(ModuleId::new("sat"), builtin_ports::AUDIO_IN),
-        ),
-        Cable::new(
-            PortRef::new(ModuleId::new("sat"), builtin_ports::AUDIO_OUT),
-            PortRef::new(ModuleId::new("mixer"), builtin_ports::INPUTS),
-        ),
-        Cable::new(
-            PortRef::new(ModuleId::new("mixer"), builtin_ports::MIX),
-            PortRef::new(ModuleId::new("out"), builtin_ports::LEFT),
-        ),
-        Cable::new(
-            PortRef::new(ModuleId::new("mixer"), builtin_ports::MIX),
-            PortRef::new(ModuleId::new("out"), builtin_ports::RIGHT),
-        ),
-    ];
-
-    let graph = Graph::new(modules, cables);
-    if let Err(e) = graph.validate() {
-        eprintln!("Graph validation error: {e}");
-        return;
-    }
-
     let settings = RenderSettings {
-        sample_rate_hz: 48000,
+        sample_rate_hz: 48_000,
         block_size_frames: 64,
         duration_frames: total,
     };
-
-    let (left, right) = render_offline(&graph, &settings, events);
+    let patch = match load_kernel_patch_str(build_live_patch_yaml()) {
+        Ok(patch) => patch,
+        Err(error) => {
+            eprintln!("Patch error: {error}");
+            return;
+        }
+    };
+    let prepared = match prepare_kernel_patch(&patch, &settings) {
+        Ok(prepared) => prepared,
+        Err(error) => {
+            eprintln!("Preparation error: {error}");
+            return;
+        }
+    };
+    let outputs =
+        match render_kernel_offline_named(&prepared, events, &PreparedSamplerAssets::empty()) {
+            Ok(outputs) => outputs,
+            Err(error) => {
+                eprintln!("Render error: {error}");
+                return;
+            }
+        };
+    let Some((_, master)) = outputs.iter().find(|(name, _)| name == "master") else {
+        eprintln!("Render error: missing master bus");
+        return;
+    };
+    if master.len() != 2 {
+        eprintln!("Render error: master bus must be stereo");
+        return;
+    }
     let tmp = format!("/tmp/dandrum-seq-{}.wav", std::process::id());
-    if let Err(e) = write_wav_file(Path::new(&tmp), 48000, &left, &right) {
-        eprintln!("Write error: {e}");
+    if let Err(error) = write_wav_file(Path::new(&tmp), 48_000, &master[0], &master[1]) {
+        eprintln!("Write error: {error}");
         return;
     }
 
-    // Play via aplay (non-blocking)
-    let tmp2 = tmp.clone();
+    // Play via aplay (non-blocking).
     thread::spawn(move || {
-        let _ = std::process::Command::new("aplay").arg(&tmp2).status();
-        let _ = std::fs::remove_file(&tmp2);
+        let _ = std::process::Command::new("aplay").arg(&tmp).status();
+        let _ = std::fs::remove_file(&tmp);
     });
 }
 
@@ -707,7 +586,7 @@ fn run_tui() -> io::Result<()> {
                 stdout.flush()?;
             }
             KeyCode::Char('S') => {
-                let patch_yaml = build_patch_yaml(&seq);
+                let patch_yaml = build_patch_yaml();
                 match std::fs::write("/tmp/pattern-patch.yaml", &patch_yaml) {
                     Ok(_) => queue!(
                         stdout,
@@ -774,8 +653,8 @@ fn main() -> io::Result<()> {
             "/tmp/pattern.yaml"
         };
         match load_yaml(path) {
-            Ok(seq) => {
-                let patch_yaml = build_patch_yaml(&seq);
+            Ok(_) => {
+                let patch_yaml = build_patch_yaml();
                 let out_path = path.replace(".yaml", "-patch.yaml");
                 std::fs::write(&out_path, &patch_yaml)
                     .map_err(|e| io::Error::new(io::ErrorKind::Other, e.to_string()))?;
@@ -791,6 +670,30 @@ fn main() -> io::Result<()> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn live_and_exported_stepseq_patches_render_on_stereo_master_buses() {
+        let seq = Sequencer::new();
+        let settings = RenderSettings {
+            sample_rate_hz: 48_000,
+            block_size_frames: 64,
+            duration_frames: 1_024,
+        };
+        for yaml in [build_live_patch_yaml(), build_patch_yaml()] {
+            let patch = load_kernel_patch_str(yaml).expect("stepseq patch uses kernel YAML");
+            let prepared = prepare_kernel_patch(&patch, &settings).expect("stepseq patch prepares");
+            let outputs = render_kernel_offline_named(
+                &prepared,
+                build_events(&seq),
+                &PreparedSamplerAssets::empty(),
+            )
+            .expect("stepseq patch renders the pattern");
+            assert_eq!(outputs.len(), 1);
+            assert_eq!(outputs[0].0, "master");
+            assert_eq!(outputs[0].1.len(), 2);
+            assert_eq!(outputs[0].1[0], outputs[0].1[1]);
+            assert!(outputs[0].1[0].iter().any(|sample| sample.abs() > 0.001));
+        }
+    }
 
     #[test]
     fn shift_up_and_down_change_note_by_octaves() {
