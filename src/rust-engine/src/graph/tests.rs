@@ -1199,6 +1199,74 @@ fn validation_reports_cycle_path_with_participating_ports() {
 }
 
 #[test]
+fn feedback_delay_does_not_hide_a_separate_instantaneous_cycle() {
+    let graph = Graph::new(
+        vec![
+            ModuleNode::new(ModuleId::new("a"), "audio_mixer")
+                .with_mixing_input("audio_in", SignalType::Audio)
+                .with_output("audio_out", SignalType::Audio),
+            ModuleNode::new(ModuleId::new("delay"), "feedback_delay")
+                .with_input("audio_in", SignalType::Audio)
+                .with_output("audio_out", SignalType::Audio),
+            ModuleNode::new(ModuleId::new("b"), "gain")
+                .with_input("audio_in", SignalType::Audio)
+                .with_output("audio_out", SignalType::Audio),
+        ],
+        vec![
+            Cable::new(port_ref("a", "audio_out"), port_ref("delay", "audio_in")),
+            Cable::new(port_ref("delay", "audio_out"), port_ref("a", "audio_in")),
+            Cable::new(port_ref("a", "audio_out"), port_ref("b", "audio_in")),
+            Cable::new(port_ref("b", "audio_out"), port_ref("a", "audio_in")),
+        ],
+    );
+
+    let error = graph
+        .validate()
+        .expect_err("the a-b cycle contains no feedback delay");
+    assert!(error.diagnostics().iter().any(|diagnostic| matches!(
+        diagnostic,
+        GraphDiagnostic::CycleDetected { path }
+            if path == &vec![
+                Cable::new(port_ref("a", "audio_out"), port_ref("b", "audio_in")),
+                Cable::new(port_ref("b", "audio_out"), port_ref("a", "audio_in")),
+            ]
+    )));
+}
+
+#[test]
+fn feedback_delay_does_not_cut_event_cycles() {
+    let graph = Graph::new(
+        vec![
+            ModuleNode::new(ModuleId::new("source"), "event_filter")
+                .with_input("events_in", SignalType::Event)
+                .with_output("events_out", SignalType::Event),
+            ModuleNode::new(ModuleId::new("delay"), "feedback_delay")
+                .with_input("events_in", SignalType::Event)
+                .with_output("events_out", SignalType::Event),
+        ],
+        vec![
+            Cable::new(
+                port_ref("source", "events_out"),
+                port_ref("delay", "events_in"),
+            ),
+            Cable::new(
+                port_ref("delay", "events_out"),
+                port_ref("source", "events_in"),
+            ),
+        ],
+    );
+
+    assert!(
+        graph
+            .validate()
+            .expect_err("feedback_delay cannot schedule event cycles")
+            .diagnostics()
+            .iter()
+            .any(|diagnostic| matches!(diagnostic, GraphDiagnostic::CycleDetected { .. }))
+    );
+}
+
+#[test]
 fn validation_rejects_audio_feedback_cycle_through_ordinary_delay() {
     let graph = Graph::new(
         vec![

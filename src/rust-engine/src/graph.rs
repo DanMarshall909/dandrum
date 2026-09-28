@@ -497,51 +497,24 @@ impl Graph {
             if let Some(path) =
                 self.find_cycle_from(module.id(), &mut visiting, &mut visited, &mut stack)
             {
-                let Some(signal_type) = self.cycle_signal_type(&path) else {
-                    return Some(path);
-                };
-
-                if !self.cycle_has_feedback_boundary(&path, signal_type) {
-                    return Some(path);
-                }
+                return Some(path);
             }
         }
 
         None
     }
 
-    fn cycle_signal_type(&self, path: &[Cable]) -> Option<SignalType> {
-        path.iter().find_map(|cable| {
-            self.port(cable.source(), PortDirection::Output)
-                .map(Port::signal_type)
-        })
-    }
-
-    fn cycle_has_feedback_boundary(&self, path: &[Cable], signal_type: SignalType) -> bool {
-        path.iter().any(|cable| {
-            self.modules
-                .iter()
-                .find(|module| module.id() == cable.source().module_id())
-                .is_some_and(|module| {
-                    module.module_type() == crate::builtins::module_types::FEEDBACK_DELAY
-                        && matches!(signal_type, SignalType::Audio | SignalType::Control)
-                })
-        })
-    }
-
-    fn port(&self, reference: &PortRef, direction: PortDirection) -> Option<&Port> {
-        let module = self
-            .modules
+    fn is_feedback_cut_edge(&self, cable: &Cable) -> bool {
+        self.modules
             .iter()
-            .find(|module| module.id() == reference.module_id())?;
-        let ports = match direction {
-            PortDirection::Input => module.inputs(),
-            PortDirection::Output => module.outputs(),
-        };
-
-        ports
-            .iter()
-            .find(|port| port.name() == reference.port_name())
+            .find(|module| module.id() == cable.source().module_id())
+            .is_some_and(|module| {
+                module.module_type() == crate::builtins::module_types::FEEDBACK_DELAY
+                    && module.outputs().iter().any(|port| {
+                        port.name() == cable.source().port_name()
+                            && matches!(port.signal_type(), SignalType::Audio | SignalType::Control)
+                    })
+            })
     }
 
     fn find_cycle_from(
@@ -557,11 +530,9 @@ impl Graph {
 
         visiting.insert(module_id.clone());
 
-        for cable in self
-            .cables
-            .iter()
-            .filter(|cable| cable.source().module_id() == module_id)
-        {
+        for cable in self.cables.iter().filter(|cable| {
+            cable.source().module_id() == module_id && !self.is_feedback_cut_edge(cable)
+        }) {
             let next_module = cable.destination().module_id();
 
             if visiting.contains(next_module) {
