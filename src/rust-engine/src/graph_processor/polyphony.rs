@@ -18,6 +18,8 @@ use super::state::PerModuleState;
 const RELEASE_SILENCE_THRESHOLD: f32 = 1.0e-4;
 /// A released voice without `done` must remain silent for this long to retire.
 const RELEASE_SILENCE_SECONDS: f32 = 0.010;
+/// A released voice without `done` is retired by this deadline even if audible.
+const RELEASE_TIMEOUT_SECONDS: f32 = 5.0;
 
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 struct PolyVoiceSlot {
@@ -27,6 +29,8 @@ struct PolyVoiceSlot {
     velocity: u8,
     allocation_order: u64,
     quiet_frames_after_release: usize,
+    released_frames: usize,
+    release_offset_pending: usize,
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -63,6 +67,7 @@ pub struct PreparedPolyRuntimeRegion {
     intrinsic_bindings: Option<VoiceIntrinsicBindings>,
     done_binding: Option<DoneBinding>,
     silence_hold_frames: usize,
+    release_timeout_frames: usize,
     child_render_plan: RenderPlan,
     child_patch: Box<CompiledPatch>,
     output_bindings: Box<[PolyOutputBinding]>,
@@ -176,6 +181,8 @@ impl PreparedPolyRuntimeRegion {
             intrinsic_bindings,
             done_binding,
             silence_hold_frames: ((sample_rate * RELEASE_SILENCE_SECONDS).ceil() as usize).max(1),
+            release_timeout_frames: ((sample_rate * RELEASE_TIMEOUT_SECONDS).ceil() as usize)
+                .max(1),
             child_render_plan,
             child_patch: Box::new(compiled.child_patch().clone()),
             output_bindings,
@@ -233,6 +240,7 @@ impl PreparedPolyRuntimeRegion {
             let arena = &mut self.voice_arenas[voice];
             let states = &mut self.states[voice];
             let mut audio_audible = false;
+            let release_start = self.slots[voice].release_offset_pending.min(frames);
             for step in self.child_render_plan.global_steps.iter() {
                 super::realtime_graph_processor::clear_and_route_arena_inputs(
                     arena,
@@ -258,7 +266,8 @@ impl PreparedPolyRuntimeRegion {
                     let destination = BufferId(binding.accumulator_start + channel);
                     for frame in 0..frames {
                         let sample = arena.sample(source, frame);
-                        audio_audible |= binding.signal_type == SignalType::Audio
+                        audio_audible |= frame >= release_start
+                            && binding.signal_type == SignalType::Audio
                             && sample.abs() > RELEASE_SILENCE_THRESHOLD;
                         let sum = self.output_accumulator.sample(destination, frame) + sample;
                         self.output_accumulator.set_sample(destination, frame, sum);
@@ -276,12 +285,18 @@ impl PreparedPolyRuntimeRegion {
                 self.slots[voice].active = false;
             } else if self.done_binding.is_none() && !self.slots[voice].gate_held {
                 let slot = &mut self.slots[voice];
+                let released_this_block = frames - release_start;
+                slot.release_offset_pending = slot.release_offset_pending.saturating_sub(frames);
+                slot.released_frames = slot.released_frames.saturating_add(released_this_block);
                 slot.quiet_frames_after_release = if audio_audible {
                     0
                 } else {
-                    slot.quiet_frames_after_release.saturating_add(frames)
+                    slot.quiet_frames_after_release
+                        .saturating_add(released_this_block)
                 };
-                if slot.quiet_frames_after_release >= self.silence_hold_frames {
+                if slot.quiet_frames_after_release >= self.silence_hold_frames
+                    || slot.released_frames >= self.release_timeout_frames
+                {
                     slot.active = false;
                 }
             }
@@ -332,6 +347,8 @@ impl PreparedPolyRuntimeRegion {
             velocity,
             allocation_order: order,
             quiet_frames_after_release: 0,
+            released_frames: 0,
+            release_offset_pending: 0,
         };
         self.write_intrinsic_controls(voice, frames);
         self.push_gate_event(voice, ScriptEvent::NoteOn { note, velocity }, frame_offset);
@@ -344,6 +361,7 @@ impl PreparedPolyRuntimeRegion {
                 && self.slots[voice].note == note
             {
                 self.slots[voice].gate_held = false;
+                self.slots[voice].release_offset_pending = frame_offset as usize;
                 self.push_gate_event(voice, ScriptEvent::NoteOff { note }, frame_offset);
             }
         }

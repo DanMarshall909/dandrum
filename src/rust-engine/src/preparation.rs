@@ -1806,14 +1806,14 @@ mod tests {
             "silence while the gate is held must not retire the voice"
         );
 
-        runtime.note_off(60);
-        for _ in 0..59 {
+        runtime.note_off_at(60, 4);
+        for _ in 0..60 {
             render_one_block(&mut runtime);
         }
         assert_eq!(
             runtime.prepared_poly_runtime_regions()[0].active_voice_count(),
             1,
-            "59 eight-frame blocks at 48 kHz are shorter than 10 ms"
+            "a note-off at frame four leaves only 476 silent frames after 60 blocks"
         );
         render_one_block(&mut runtime);
         assert_eq!(
@@ -1827,6 +1827,69 @@ mod tests {
             runtime.prepared_poly_runtime_regions()[0].voice_note(0),
             Some(64)
         );
+    }
+
+    #[test]
+    fn poly_without_done_times_out_after_five_seconds_of_audible_release() {
+        let voice = noise_voice("sustained_voice", 1, 1234);
+        let root = GraphDefinition::new("root")
+            .with_port(
+                KernelPort::output("left", SignalType::Audio, 1)
+                    .maps_from(kernel_ref("voices", "audio")),
+            )
+            .with_port(
+                KernelPort::output("right", SignalType::Audio, 1)
+                    .maps_from(kernel_ref("voices", "audio")),
+            )
+            .with_node(poly_node("voices", voice.name(), 1));
+        let settings = patch::RenderSettings {
+            sample_rate_hz: 1_000,
+            block_size_frames: 100,
+            duration_frames: 100,
+        };
+        let prepared = prepare_kernel_graph_with_buses(
+            &root,
+            &builtin_registry().with_definition(voice),
+            &settings,
+            &HostBuses::new()
+                .with_output("left", 1)
+                .with_output("right", 1),
+        )
+        .expect("sustained poly voice prepares");
+        let mut runtime = RealtimeGraphProcessor::polyphonic_with_compiled_patch_and_sampler_assets_and_max_block_size(
+            prepared.graph().clone(),
+            prepared.compiled_patch().clone(),
+            1_000.0,
+            &PreparedSamplerAssets::empty(),
+            &crate::patch::VoiceAllocation::default(),
+            100,
+        );
+        let mut left = vec![0.0; 100];
+        let mut right = vec![0.0; 100];
+
+        runtime.note_on(60, 100);
+        assert_eq!(runtime.render(&mut left, &mut right), 100);
+        assert!(left.iter().any(|sample| sample.abs() > 0.001));
+
+        runtime.note_off_at(60, 50);
+        for _ in 0..50 {
+            assert_eq!(runtime.render(&mut left, &mut right), 100);
+        }
+        assert_eq!(
+            runtime.prepared_poly_runtime_regions()[0].active_voice_count(),
+            1,
+            "note-off at frame 50 leaves only 4.95 seconds elapsed"
+        );
+        assert!(left.iter().any(|sample| sample.abs() > 0.001));
+
+        assert_eq!(runtime.render(&mut left, &mut right), 100);
+        assert_eq!(
+            runtime.prepared_poly_runtime_regions()[0].active_voice_count(),
+            0
+        );
+        assert_eq!(runtime.render(&mut left, &mut right), 100);
+        assert!(left.iter().all(|sample| *sample == 0.0));
+        assert!(right.iter().all(|sample| *sample == 0.0));
     }
 
     #[test]
