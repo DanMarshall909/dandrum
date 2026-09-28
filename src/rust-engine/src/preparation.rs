@@ -562,26 +562,6 @@ fn compile_poly_regions(
         let child_flattened = scoped_voice
             .flatten(registry)
             .map_err(KernelPreparationError::from)?;
-        if let Some(nested) = child_flattened.poly_regions().first() {
-            let nested_id = format!(
-                "{}{}{}",
-                region.node_id().as_str(),
-                crate::kernel::NAMESPACE_SEPARATOR,
-                nested.node_id().as_str()
-            );
-            return Err(KernelPreparationError::from(diagnostics::Diagnostics::from(
-                Diagnostic::new(
-                    diagnostics::error_codes::KERNEL_POLY_NESTING_UNSUPPORTED,
-                    Severity::Error,
-                    format!(
-                        "poly node '{nested_id}' is nested inside poly region '{}'; nested regions are deferred to task 4.7",
-                        region.node_id().as_str()
-                    ),
-                )
-                .with_module_id(nested_id)
-                .with_suggested_fix("use a single poly region until nested poly regions are supported"),
-            )));
-        }
 
         let latency_plan = child_flattened
             .balance_latency()
@@ -680,6 +660,14 @@ fn compile_poly_regions(
             &lowered.root_outputs,
             &child_patch,
         ));
+        let nested_regions = compile_poly_regions(
+            &child_flattened,
+            registry,
+            render_settings,
+            resource_resolver.as_deref_mut(),
+            &child_patch,
+        )?;
+        child_patch.set_poly_regions(nested_regions);
 
         let event_queue_capacity = (render_settings.block_size_frames as usize).saturating_mul(2);
         if let Some((child_id, module_type)) = crate::graph_processor::first_unrenderable_poly_child(
@@ -1277,6 +1265,7 @@ mod tests {
     use crate::patch;
     use crate::sample::LoadedSample;
     use crate::script::ScriptEvent;
+    use crate::test_allocator::count_current_thread_allocations;
     use std::collections::BTreeMap;
     use std::fs;
     use std::path::PathBuf;
@@ -2397,37 +2386,137 @@ mod tests {
     }
 
     #[test]
-    fn preparation_rejects_nested_poly_until_nested_regions_are_supported() {
-        let inner = gain_voice("inner");
+    fn nested_poly_voices_render_through_independent_inner_pools() {
+        let inner = constant_voice("inner", 0.25);
         let outer = GraphDefinition::new("outer")
             .with_port(
-                KernelPort::input("input", SignalType::Audio, 2)
-                    .maps_to(kernel_ref("inner_voices", "input")),
-            )
-            .with_port(
-                KernelPort::output("audio", SignalType::Audio, 2)
+                KernelPort::output("audio", SignalType::Audio, 1)
                     .maps_from(kernel_ref("inner_voices", "audio")),
             )
-            .with_node(poly_node("inner_voices", "inner", 2));
+            .with_node(poly_node("inner_voices", "inner", 2))
+            .with_connection(Connection::new(
+                kernel_ref(
+                    crate::kernel::VOICE_INTRINSIC_NODE,
+                    crate::kernel::VOICE_GATE_OUTPUT,
+                ),
+                kernel_ref("inner_voices", "notes"),
+            ));
+        let root = GraphDefinition::new("root")
+            .with_port(
+                KernelPort::output("master", SignalType::Audio, 1)
+                    .maps_from(kernel_ref("voices", "audio")),
+            )
+            .with_node(poly_node_with_allocation(
+                "voices",
+                "outer",
+                2,
+                crate::kernel::POLY_ALLOCATION_OLDEST_STEAL,
+            ));
         let registry = builtin_registry()
-            .with_definition(inner)
-            .with_definition(outer);
-        let error = prepare_kernel_graph_with_buses(
-            &poly_root("outer", 2),
+            .with_definition(inner.clone())
+            .with_definition(outer.clone());
+        let prepared = prepare_kernel_graph_with_buses(
+            &root,
             &registry,
             &KERNEL_RENDER_SETTINGS,
-            &HostBuses::new()
-                .with_input("input", 2)
-                .with_output("master", 2),
+            &HostBuses::new().with_output("master", 1),
         )
-        .expect_err("nested poly is deferred to task 4.7");
-        let diagnostic = error.diagnostics().errors().next().unwrap();
-
+        .expect("nested poly regions prepare");
+        assert_eq!(prepared.compiled_patch().poly_regions().len(), 1);
         assert_eq!(
-            diagnostic.error_code(),
-            diagnostics::error_codes::KERNEL_POLY_NESTING_UNSUPPORTED
+            prepared.compiled_patch().poly_regions()[0]
+                .child_patch()
+                .poly_regions()
+                .len(),
+            1
         );
-        assert_eq!(diagnostic.module_id(), Some("voices::inner_voices"));
+        let mut runtime = runtime_for(&prepared);
+        let frames = KERNEL_RENDER_SETTINGS.block_size_frames as usize;
+        let mut outputs = vec![vec![vec![0.0; frames]]];
+
+        let allocation_count = count_current_thread_allocations(|| {
+            runtime.note_on(60, 100);
+            runtime.note_on(64, 100);
+            assert_eq!(runtime.render_root_outputs(&mut outputs), frames);
+        });
+        assert_eq!(allocation_count, 0);
+        let outer_region = &runtime.prepared_poly_runtime_regions()[0];
+        let inner_a = outer_region
+            .nested_region_for_voice(0, "inner_voices")
+            .unwrap();
+        let inner_b = outer_region
+            .nested_region_for_voice(1, "inner_voices")
+            .unwrap();
+        assert_eq!(inner_a.active_voice_count(), 1);
+        assert_eq!(inner_b.active_voice_count(), 1);
+        assert_eq!(inner_a.voice_count(), 2);
+        assert_eq!(inner_b.voice_count(), 2);
+        assert_eq!(inner_a.output_accumulator_buffer_count(), 1);
+        assert_eq!(inner_b.output_accumulator_buffer_count(), 1);
+        assert_eq!(inner_a.voice_note(0), Some(60));
+        assert_eq!(inner_b.voice_note(0), Some(64));
+        assert_ne!(
+            inner_a.state_instance_address(0, 0),
+            inner_b.state_instance_address(0, 0)
+        );
+        assert!(
+            outputs[0][0].iter().all(|sample| *sample == 0.5),
+            "{outputs:?}"
+        );
+
+        let steal_allocations = count_current_thread_allocations(|| {
+            runtime.note_on(67, 100);
+            assert_eq!(runtime.render_root_outputs(&mut outputs), frames);
+        });
+        assert_eq!(steal_allocations, 0);
+        let outer_region = &runtime.prepared_poly_runtime_regions()[0];
+        let inner_a = outer_region
+            .nested_region_for_voice(0, "inner_voices")
+            .unwrap();
+        let inner_b = outer_region
+            .nested_region_for_voice(1, "inner_voices")
+            .unwrap();
+        assert_eq!(inner_a.active_voice_count(), 1);
+        assert_eq!(inner_b.active_voice_count(), 1);
+        assert_eq!(inner_a.voice_note(0), Some(67));
+        assert_eq!(inner_b.voice_note(0), Some(64));
+        assert!(
+            outputs[0][0].iter().all(|sample| *sample == 0.5),
+            "{outputs:?}"
+        );
+
+        let done_outer = outer.with_port(
+            KernelPort::output(crate::kernel::POLY_DONE_OUTPUT, SignalType::Event, 1).maps_from(
+                kernel_ref(
+                    crate::kernel::VOICE_INTRINSIC_NODE,
+                    crate::kernel::VOICE_GATE_OUTPUT,
+                ),
+            ),
+        );
+        let done_prepared = prepare_kernel_graph_with_buses(
+            &root,
+            &builtin_registry()
+                .with_definition(inner)
+                .with_definition(done_outer),
+            &KERNEL_RENDER_SETTINGS,
+            &HostBuses::new().with_output("master", 1),
+        )
+        .expect("nested poly with parent completion prepares");
+        let mut done_runtime = runtime_for(&done_prepared);
+        done_runtime.note_on(60, 100);
+        assert_eq!(done_runtime.render_root_outputs(&mut outputs), frames);
+        assert!(outputs[0][0].iter().all(|sample| *sample == 0.25));
+        let retired_outer = &done_runtime.prepared_poly_runtime_regions()[0];
+        assert_eq!(retired_outer.active_voice_count(), 0);
+        assert_eq!(
+            retired_outer
+                .nested_region_for_voice(0, "inner_voices")
+                .unwrap()
+                .active_voice_count(),
+            0
+        );
+        assert_eq!(done_runtime.render_root_outputs(&mut outputs), frames);
+        assert!(outputs[0][0].iter().all(|sample| *sample == 0.0));
     }
 
     #[test]

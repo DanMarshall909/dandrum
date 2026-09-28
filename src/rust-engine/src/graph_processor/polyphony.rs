@@ -65,6 +65,7 @@ pub struct PreparedPolyRuntimeRegion {
     child_module_kinds: Box<[ModuleKind]>,
     voice_arenas: Box<[AudioArena]>,
     voice_event_queues: Box<[PreparedEventQueues]>,
+    nested_regions: Box<[Box<[PreparedPolyRuntimeRegion]>]>,
     output_accumulator: AudioArena,
     audio_buffers_per_voice: usize,
     allocation_policy: PolyAllocationPolicy,
@@ -132,6 +133,18 @@ impl PreparedPolyRuntimeRegion {
             })
             .collect::<Vec<_>>()
             .into_boxed_slice();
+        let nested_regions = (0..compiled.max_voices())
+            .map(|_| {
+                compiled
+                    .child_patch()
+                    .poly_regions()
+                    .iter()
+                    .map(|region| Self::new(region, sample_rate, sampler_assets))
+                    .collect::<Vec<_>>()
+                    .into_boxed_slice()
+            })
+            .collect::<Vec<_>>()
+            .into_boxed_slice();
         let output_buffer_count = compiled
             .output_accumulators()
             .iter()
@@ -180,6 +193,7 @@ impl PreparedPolyRuntimeRegion {
             child_module_kinds,
             voice_arenas,
             voice_event_queues,
+            nested_regions,
             output_accumulator,
             audio_buffers_per_voice,
             allocation_policy: compiled.allocation_policy(),
@@ -201,6 +215,11 @@ impl PreparedPolyRuntimeRegion {
         self.block_start_frame = block_start_frame;
         for queues in &mut self.voice_event_queues {
             queues.clear_all();
+        }
+        for regions in &mut self.nested_regions {
+            for region in regions.iter_mut() {
+                region.begin_block(frames, block_start_frame);
+            }
         }
         for voice in 0..self.slots.len() {
             self.write_intrinsic_controls(voice, frames);
@@ -267,6 +286,20 @@ impl PreparedPolyRuntimeRegion {
                     &self.child_patch,
                 );
                 match step.module_kind {
+                    ModuleKind::Poly => {
+                        let node_id = self.child_patch.nodes()[step.module_index].id.as_str();
+                        let events = step
+                            .event_inputs
+                            .first()
+                            .and_then(|queue| self.voice_event_queues[voice].queue_ref(queue.0))
+                            .map_or(&[][..], |queue| queue.events());
+                        let nested = self.nested_regions[voice]
+                            .iter_mut()
+                            .find(|region| region.node_id() == node_id)
+                            .expect("compiled nested poly has a prepared runtime region");
+                        nested.route_note_events(events, frames);
+                        nested.render_into(arena, &step.output_buffers, frames);
+                    }
                     ModuleKind::EventFilter => {
                         let PerModuleState::EventFilter { note } = &states[step.module_index]
                         else {
@@ -334,6 +367,9 @@ impl PreparedPolyRuntimeRegion {
             };
             if done {
                 self.slots[voice].active = false;
+                for region in self.nested_regions[voice].iter_mut() {
+                    region.retire_all_voices();
+                }
             } else if self.done_binding.is_none() && !self.slots[voice].gate_held {
                 let slot = &mut self.slots[voice];
                 let released_this_block = frames - release_start;
@@ -349,6 +385,9 @@ impl PreparedPolyRuntimeRegion {
                     || slot.released_frames >= self.release_timeout_frames
                 {
                     slot.active = false;
+                    for region in self.nested_regions[voice].iter_mut() {
+                        region.retire_all_voices();
+                    }
                 }
             }
         }
@@ -381,6 +420,9 @@ impl PreparedPolyRuntimeRegion {
 
         if self.slots[voice].active {
             let retired_note = self.slots[voice].note;
+            for region in self.nested_regions[voice].iter_mut() {
+                region.retire_all_voices();
+            }
             self.push_gate_event(
                 voice,
                 ScriptEvent::NoteOff { note: retired_note },
@@ -413,6 +455,21 @@ impl PreparedPolyRuntimeRegion {
                 self.slots[voice].gate_held = false;
                 self.slots[voice].release_offset_pending = frame_offset as usize;
                 self.push_gate_event(voice, ScriptEvent::NoteOff { note }, frame_offset);
+            }
+        }
+    }
+
+    fn retire_all_voices(&mut self) {
+        for slot in self.slots.iter_mut() {
+            slot.active = false;
+            slot.gate_held = false;
+        }
+        for queues in self.voice_event_queues.iter_mut() {
+            queues.clear_all();
+        }
+        for regions in self.nested_regions.iter_mut() {
+            for region in regions.iter_mut() {
+                region.retire_all_voices();
             }
         }
     }
@@ -506,6 +563,18 @@ impl PreparedPolyRuntimeRegion {
 
     pub fn active_voice_count(&self) -> usize {
         self.slots.iter().filter(|slot| slot.active).count()
+    }
+
+    #[cfg(test)]
+    pub(crate) fn nested_region_for_voice(
+        &self,
+        voice: usize,
+        node_id: &str,
+    ) -> Option<&PreparedPolyRuntimeRegion> {
+        self.nested_regions
+            .get(voice)?
+            .iter()
+            .find(|region| region.node_id() == node_id)
     }
 
     pub fn voice_note(&self, voice: usize) -> Option<u8> {
