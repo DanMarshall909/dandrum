@@ -133,23 +133,10 @@ fn render_with_events(
             let events = events(&settings);
             let rendered = match crate::graph_processor::render_kernel_offline_named(
                 &prepared,
-                events.clone(),
+                events,
                 &PreparedSamplerAssets::empty(),
             ) {
                 Ok(rendered) => rendered,
-                Err("prepared graph cannot render named root buses")
-                    if has_legacy_stereo_outputs(&prepared) =>
-                {
-                    let (left, right) = crate::graph_processor::render_offline_compiled(
-                        prepared.compiled_patch(),
-                        events,
-                        &PreparedSamplerAssets::empty(),
-                    );
-                    vec![
-                        ("left".to_string(), vec![left]),
-                        ("right".to_string(), vec![right]),
-                    ]
-                }
                 Err(message) => return error(format!("failed to render patch: {message}")),
             };
             return match write_kernel_output_wavs(
@@ -203,15 +190,6 @@ fn render_success(render_args: &RenderArgs) -> CliResult {
         ),
         stderr: String::new(),
     }
-}
-
-fn has_legacy_stereo_outputs(prepared: &crate::preparation::PreparedKernelInstrument) -> bool {
-    let outputs = prepared.compiled_patch().root_bus_plan().outputs();
-    outputs.len() == 2
-        && outputs[0].name() == "left"
-        && outputs[0].channel_count() == 1
-        && outputs[1].name() == "right"
-        && outputs[1].channel_count() == 1
 }
 
 fn write_kernel_output_wavs(
