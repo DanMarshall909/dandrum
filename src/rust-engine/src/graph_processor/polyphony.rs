@@ -222,7 +222,7 @@ impl PreparedPolyRuntimeRegion {
         parent_arena: &mut AudioArena,
         parent_outputs: &[BufferId],
         frames: usize,
-    ) -> bool {
+    ) {
         for buffer in 0..self.output_accumulator.buffer_count() {
             self.output_accumulator.clear(BufferId(buffer), frames);
         }
@@ -230,14 +230,12 @@ impl PreparedPolyRuntimeRegion {
             parent_arena.clear(buffer, frames);
         }
 
-        if self
-            .child_render_plan
-            .global_steps
-            .iter()
-            .any(|step| !is_poly_child_arena_supported(step))
-        {
-            return false;
-        }
+        debug_assert!(
+            self.child_render_plan
+                .global_steps
+                .iter()
+                .all(is_poly_child_arena_supported)
+        );
 
         for voice in 0..self.slots.len() {
             if !self.slots[voice].active {
@@ -352,7 +350,6 @@ impl PreparedPolyRuntimeRegion {
                 );
             }
         }
-        true
     }
 
     fn route_note_on(&mut self, note: u8, velocity: u8, frame_offset: u32, frames: usize) {
@@ -560,6 +557,21 @@ fn is_poly_child_arena_supported(step: &RenderStep) -> bool {
         }
         _ => super::realtime_graph_processor::is_channel_arena_supported(step),
     }
+}
+
+pub(crate) fn first_unrenderable_poly_child(
+    child: &CompiledPatch,
+    max_block_frames: usize,
+    event_queue_capacity: usize,
+) -> Option<(String, String)> {
+    let plan = RenderPlan::from_compiled_patch(child, max_block_frames, 1, event_queue_capacity);
+    plan.global_steps
+        .iter()
+        .find(|step| !is_poly_child_arena_supported(step))
+        .map(|step| {
+            let node = &child.nodes()[step.module_index];
+            (node.id.as_str().to_string(), node.module_type.clone())
+        })
 }
 
 fn voice_done_binding(compiled: &CompiledPolyRegion, plan: &RenderPlan) -> Option<DoneBinding> {

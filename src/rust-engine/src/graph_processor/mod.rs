@@ -22,6 +22,7 @@ pub use self::offline::{
 use self::outputs::BlockEvent;
 use self::outputs::ModuleOutputs;
 pub use self::polyphony::PreparedPolyRuntimeRegion;
+pub(crate) use self::polyphony::first_unrenderable_poly_child;
 #[cfg(test)]
 use self::processing::{
     process_adsr, process_curve_mapper, process_envelope_follower, process_filter,

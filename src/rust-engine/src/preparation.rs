@@ -641,6 +641,47 @@ fn compile_poly_regions(
             &child_patch,
         ));
 
+        let event_queue_capacity = (render_settings.block_size_frames as usize).saturating_mul(2);
+        if let Some((child_id, module_type)) = crate::graph_processor::first_unrenderable_poly_child(
+            &child_patch,
+            render_settings.block_size_frames as usize,
+            event_queue_capacity,
+        ) {
+            let module_id = if child_id.is_empty() {
+                region.node_id().as_str().to_string()
+            } else {
+                format!(
+                    "{}{}{}",
+                    region.node_id().as_str(),
+                    crate::kernel::NAMESPACE_SEPARATOR,
+                    child_id
+                )
+            };
+            let child_label = if child_id.is_empty() {
+                "wrapped definition".to_string()
+            } else {
+                format!("child module '{child_id}'")
+            };
+            return Err(KernelPreparationError::from(
+                diagnostics::Diagnostics::from(
+                    Diagnostic::new(
+                        diagnostics::error_codes::KERNEL_POLY_RUNTIME_UNSUPPORTED,
+                        Severity::Error,
+                        format!(
+                            "poly region '{}' cannot render {} of type '{}'",
+                            region.node_id().as_str(),
+                            child_label,
+                            module_type
+                        ),
+                    )
+                    .with_module_id(module_id)
+                    .with_suggested_fix(
+                        "use a child module supported by the prepared poly runtime",
+                    ),
+                ),
+            ));
+        }
+
         let state_count = child_patch.nodes().len();
         let audio_buffer_count = child_patch.total_output_buffer_count()
             + child_patch
@@ -691,7 +732,7 @@ fn compile_poly_regions(
             child_flattened,
             child_patch,
             voices,
-            (render_settings.block_size_frames as usize).saturating_mul(2),
+            event_queue_capacity,
             output_accumulators,
         ));
     }
@@ -2202,8 +2243,43 @@ mod tests {
     }
 
     #[test]
-    fn realtime_construction_prepares_independent_stateful_poly_voice_storage() {
-        let stateful_voice = GraphDefinition::new("stateful_voice")
+    fn preparation_rejects_poly_child_that_the_realtime_schedule_cannot_render() {
+        let voice = GraphDefinition::new("unsupported_voice")
+            .with_port(
+                KernelPort::output("audio", SignalType::Audio, 1)
+                    .maps_from(kernel_ref("saturator", builtin_ports::AUDIO_OUT)),
+            )
+            .with_node(Node::new(NodeId::new("noise"), module_types::NOISE))
+            .with_node(Node::new(NodeId::new("saturator"), module_types::SATURATOR))
+            .with_connection(Connection::new(
+                kernel_ref("noise", builtin_ports::AUDIO),
+                kernel_ref("saturator", builtin_ports::AUDIO_IN),
+            ));
+        let root = GraphDefinition::new("root")
+            .with_port(
+                KernelPort::output("master", SignalType::Audio, 1)
+                    .maps_from(kernel_ref("voices", "audio")),
+            )
+            .with_node(poly_node("voices", voice.name(), 1));
+        let error = prepare_kernel_graph_with_buses(
+            &root,
+            &builtin_registry().with_definition(voice),
+            &KERNEL_RENDER_SETTINGS,
+            &HostBuses::new().with_output("master", 1),
+        )
+        .expect_err("unrenderable poly child must fail during preparation");
+        let diagnostic = error.diagnostics().errors().next().unwrap();
+
+        assert_eq!(
+            diagnostic.error_code(),
+            diagnostics::error_codes::KERNEL_POLY_RUNTIME_UNSUPPORTED
+        );
+        assert_eq!(diagnostic.module_id(), Some("voices::saturator"));
+    }
+
+    #[test]
+    fn preparation_names_a_direct_script_voice_when_its_runtime_is_unsupported() {
+        let voice = GraphDefinition::new("script_voice")
             .with_implementation(crate::kernel::DefinitionImplementation::Script)
             .with_static_param(
                 crate::kernel::StaticParam::new(
@@ -2219,12 +2295,7 @@ mod tests {
                     crate::kernel::StaticType::String,
                 )
                 .with_default(StaticValue::String(
-                    r#"fn process(ctx) {
-                        let value = ctx.state_get("value") + 1.0;
-                        ctx.state_set("value", value);
-                        ctx.control("value", value);
-                    }"#
-                    .to_string(),
+                    "fn process(ctx) { ctx.control(\"value\", 0.5); }".to_string(),
                 )),
             )
             .with_port(KernelPort::output("value", SignalType::Control, 1));
@@ -2232,6 +2303,31 @@ mod tests {
             .with_port(
                 KernelPort::output("master", SignalType::Control, 1)
                     .maps_from(kernel_ref("voices", "value")),
+            )
+            .with_node(poly_node("voices", voice.name(), 1));
+        let error = prepare_kernel_graph_with_buses(
+            &root,
+            &builtin_registry().with_definition(voice),
+            &KERNEL_RENDER_SETTINGS,
+            &HostBuses::new().with_output("master", 1),
+        )
+        .expect_err("direct script voice cannot render in the prepared poly runtime yet");
+        let diagnostic = error.diagnostics().errors().next().unwrap();
+
+        assert_eq!(
+            diagnostic.error_code(),
+            diagnostics::error_codes::KERNEL_POLY_RUNTIME_UNSUPPORTED
+        );
+        assert_eq!(diagnostic.module_id(), Some("voices"));
+    }
+
+    #[test]
+    fn realtime_construction_prepares_independent_stateful_poly_voice_storage() {
+        let stateful_voice = noise_voice("stateful_voice", 1, 1234);
+        let root = GraphDefinition::new("root")
+            .with_port(
+                KernelPort::output("master", SignalType::Audio, 1)
+                    .maps_from(kernel_ref("voices", "audio")),
             )
             .with_node(poly_node("voices", "stateful_voice", 3));
         let prepared = prepare_kernel_graph_with_buses(
@@ -2256,10 +2352,14 @@ mod tests {
         let region = &regions[0];
         assert_eq!(region.node_id(), "voices");
         assert_eq!(region.voice_count(), 3);
-        assert_eq!(region.states_per_voice(), 1);
-        assert_eq!(region.child_module_kinds(), [ModuleKind::Script]);
+        assert_eq!(region.states_per_voice(), region.child_module_kinds().len());
+        let noise_index = region
+            .child_module_kinds()
+            .iter()
+            .position(|kind| *kind == ModuleKind::Noise)
+            .expect("the prepared voice contains stateful noise");
         let state_addresses = (0..region.voice_count())
-            .map(|voice| region.state_instance_address(voice, 0).unwrap())
+            .map(|voice| region.state_instance_address(voice, noise_index).unwrap())
             .collect::<BTreeSet<_>>();
         assert_eq!(
             state_addresses.len(),
@@ -2267,7 +2367,7 @@ mod tests {
             "each voice owns a real state instance"
         );
         assert_eq!(region.voice_arena_count(), 3);
-        assert_eq!(region.audio_buffers_per_voice(), 1);
+        assert!(region.audio_buffers_per_voice() > 0);
         assert_eq!(region.voice_event_queue_set_count(), 3);
         assert_eq!(region.event_queues_per_voice(), 1);
         assert_eq!(
