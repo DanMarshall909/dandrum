@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::{BTreeMap, HashMap};
 
 use crate::builtins::module_kind::ModuleKind;
 use crate::compiled_patch::{self, CompiledPatch};
@@ -429,6 +429,14 @@ impl RealtimeGraphProcessor {
     /// Preparation can use this to reject schedules that the named-bus arena
     /// path cannot execute before exposing a realtime handle to a host.
     pub(crate) fn can_render_root_buses(&self) -> bool {
+        self.can_render_root_buses_with_scripts(false)
+    }
+
+    pub(crate) fn can_render_root_buses_offline(&self) -> bool {
+        self.can_render_root_buses_with_scripts(true)
+    }
+
+    fn can_render_root_buses_with_scripts(&self, allow_scripts: bool) -> bool {
         self.allocator.max_voices() <= 1
             && self
                 .render_plan
@@ -466,6 +474,7 @@ impl RealtimeGraphProcessor {
                             && step.output_buffers.len() == 1
                             && step.event_inputs.len() == 1
                     }
+                    ModuleKind::Script => allow_scripts,
                     _ => is_channel_arena_supported(step),
                 })
     }
@@ -477,6 +486,23 @@ impl RealtimeGraphProcessor {
         inputs: &[Vec<Vec<f32>>],
         outputs: &mut [Vec<Vec<f32>>],
     ) -> usize {
+        self.render_root_buses_with_scripts(inputs, outputs, false)
+    }
+
+    pub(crate) fn render_root_buses_offline(
+        &mut self,
+        inputs: &[Vec<Vec<f32>>],
+        outputs: &mut [Vec<Vec<f32>>],
+    ) -> usize {
+        self.render_root_buses_with_scripts(inputs, outputs, true)
+    }
+
+    fn render_root_buses_with_scripts(
+        &mut self,
+        inputs: &[Vec<Vec<f32>>],
+        outputs: &mut [Vec<Vec<f32>>],
+        allow_scripts: bool,
+    ) -> usize {
         let Some(frames) = outputs
             .iter()
             .flat_map(|bus| bus.iter().map(Vec::len))
@@ -484,7 +510,9 @@ impl RealtimeGraphProcessor {
         else {
             return 0;
         };
-        if frames > self.prepared_max_block_size || !self.can_render_root_buses() {
+        if frames > self.prepared_max_block_size
+            || !self.can_render_root_buses_with_scripts(allow_scripts)
+        {
             return 0;
         }
         for region in self.prepared_poly_runtime_regions.iter_mut() {
@@ -603,6 +631,17 @@ impl RealtimeGraphProcessor {
                         }
                         _ => unreachable!(),
                     }
+                    continue;
+                }
+                ModuleKind::Script => {
+                    process_offline_script_step(
+                        &mut self.audio_arena,
+                        &mut self.states[0],
+                        &mut self.prepared_event_queues,
+                        step,
+                        frames,
+                        &self.compiled,
+                    );
                     continue;
                 }
                 ModuleKind::Poly => {
@@ -1135,6 +1174,79 @@ fn route_step_outputs_to_global_event_queues(
             let _ = global_event_queues
                 .queue_mut(eq_id.0)
                 .map(|q| q.push(be.event.clone()));
+        }
+    }
+}
+
+fn process_offline_script_step(
+    arena: &mut AudioArena,
+    states: &mut [PerModuleState],
+    event_queues: &mut PreparedEventQueues,
+    step: &RenderStep,
+    frames: usize,
+    compiled: &CompiledPatch,
+) {
+    clear_and_route_arena_inputs(arena, step, frames, compiled);
+    let node = &compiled.nodes()[step.module_index];
+    let mut controls = BTreeMap::new();
+    let mut input_buffer = 0;
+    for (name, span) in node
+        .input_port_names
+        .iter()
+        .zip(node.input_port_spans.iter())
+    {
+        if span.channel_count > 0 {
+            controls.insert(
+                name.clone(),
+                arena.sample(step.input_buffers[input_buffer], 0),
+            );
+            input_buffer += span.channel_count;
+        }
+    }
+    let mut events = Vec::new();
+    for queue_id in step.event_inputs.iter() {
+        if let Some(queue) = event_queues.queue_ref(queue_id.0) {
+            events.extend_from_slice(queue.events());
+        }
+    }
+    let rendered = super::processing::process_script(
+        &mut states[step.module_index],
+        &events,
+        controls,
+        frames,
+    );
+    let mut output_buffer = 0;
+    let mut event_output = 0;
+    for (name, span) in node
+        .output_port_names
+        .iter()
+        .zip(node.output_port_spans.iter())
+    {
+        if span.channel_count > 0 {
+            let samples = rendered.control.get(name);
+            for channel in 0..span.channel_count {
+                let buffer = step.output_buffers[output_buffer + channel];
+                for frame in 0..frames {
+                    arena.set_sample(
+                        buffer,
+                        frame,
+                        samples
+                            .and_then(|samples| samples.get(frame))
+                            .copied()
+                            .unwrap_or(0.0),
+                    );
+                }
+            }
+            output_buffer += span.channel_count;
+        } else {
+            if let Some(output_events) = rendered.event_ports.get(name) {
+                if let Some(queue) = event_queues.queue_mut(step.event_outputs[event_output].0) {
+                    for event in output_events {
+                        let _ = queue.push_at(event.event.clone(), event.frame_offset);
+                    }
+                }
+            }
+            event_output += 1;
         }
     }
 }

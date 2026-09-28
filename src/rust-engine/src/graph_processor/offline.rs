@@ -62,7 +62,7 @@ pub fn render_kernel_offline_named_with_inputs(
             &VoiceAllocation::default(),
             settings.block_size_frames as usize,
         );
-    if !processor.can_render_root_buses() {
+    if !processor.can_render_root_buses_offline() {
         return Err("prepared graph cannot render named root buses");
     }
     let output_ports = compiled.root_bus_plan().outputs();
@@ -111,7 +111,7 @@ pub fn render_kernel_offline_named_with_inputs(
                     .unwrap_or_default()
             })
             .collect::<Vec<_>>();
-        if processor.render_root_buses(&block_inputs, &mut buffers) != frames {
+        if processor.render_root_buses_offline(&block_inputs, &mut buffers) != frames {
             return Err("named root bus render failed");
         }
         for ((_, destination), bus) in rendered.iter_mut().zip(buffers) {

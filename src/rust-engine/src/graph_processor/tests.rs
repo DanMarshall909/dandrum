@@ -3905,6 +3905,35 @@ fn additional_acceptance_examples_load_validate_and_render_where_supported() {
 }
 
 #[test]
+fn script_counter_routes_events_and_keeps_named_control_outputs_separate() {
+    let Some(yaml) = read_repo_fixture("examples/patches/script-state-counter.yaml") else {
+        return;
+    };
+    let patch = load_kernel_patch_str(&yaml).expect("script example parses");
+    let settings = RenderSettings {
+        sample_rate_hz: 48_000,
+        block_size_frames: 8,
+        duration_frames: 24,
+    };
+    let prepared = prepare_kernel_patch(&patch, &settings).expect("script example prepares");
+    let rendered = render_kernel_offline_named(
+        &prepared,
+        vec![note_on_value(0, 60, 100), note_on_value(16, 62, 100)],
+        &PreparedSamplerAssets::empty(),
+    )
+    .expect("script example renders named control buses");
+    assert_eq!(rendered.len(), 2);
+    assert_eq!(rendered[0].0, "count");
+    assert_eq!(rendered[1].0, "previous_count");
+    assert!(rendered[0].1[0][..8].iter().all(|value| *value == 1.0));
+    assert!(rendered[1].1[0][..8].iter().all(|value| *value == 0.0));
+    assert!(rendered[0].1[0][8..16].iter().all(|value| *value == 0.0));
+    assert!(rendered[1].1[0][8..16].iter().all(|value| *value == 1.0));
+    assert!(rendered[0].1[0][16..].iter().all(|value| *value == 2.0));
+    assert!(rendered[1].1[0][16..].iter().all(|value| *value == 1.0));
+}
+
+#[test]
 fn synthetic_808_kick_example_has_808_like_spectral_shape() {
     let Some(yaml) = read_repo_fixture("examples/patches/synthetic-808-kick.yaml") else {
         return;

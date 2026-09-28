@@ -1439,9 +1439,7 @@ mod tests {
     use crate::convolution::Convolution;
     use crate::core::TimedInputEvent;
     use crate::graph::{SignalType, builtin_ports};
-    use crate::graph_processor::{
-        RealtimeGraphProcessor, render_kernel_offline_named, render_offline_compiled,
-    };
+    use crate::graph_processor::{RealtimeGraphProcessor, render_kernel_offline_named};
     use crate::kernel::builtins::{IMPULSE_RESPONSE_RESOURCE_PARAM, builtin_registry};
     use crate::kernel::document::load_kernel_patch_str;
     use crate::kernel::{
@@ -3521,11 +3519,24 @@ connections:
             SCRIPT_SOURCE_PARAMETER
         );
 
-        let (left, right) = render_offline_compiled(
-            prepared.compiled_patch(),
-            Vec::new(),
+        let rendered =
+            render_kernel_offline_named(&prepared, Vec::new(), &PreparedSamplerAssets::empty())
+                .expect("script instances render named root buses offline");
+        let realtime = RealtimeGraphProcessor::polyphonic_with_compiled_patch_and_sampler_assets_and_max_block_size(
+            prepared.graph().clone(),
+            prepared.compiled_patch().clone(),
+            KERNEL_RENDER_SETTINGS.sample_rate_hz as f32,
             &PreparedSamplerAssets::empty(),
+            &patch::VoiceAllocation::default(),
+            KERNEL_RENDER_SETTINGS.block_size_frames as usize,
         );
+        assert!(realtime.can_render_root_buses_offline());
+        assert!(!realtime.can_render_root_buses());
+        assert_eq!(rendered.len(), 2);
+        assert_eq!(rendered[0].0, builtin_ports::LEFT);
+        assert_eq!(rendered[1].0, builtin_ports::RIGHT);
+        let left = &rendered[0].1[0];
+        let right = &rendered[1].1[0];
         assert_eq!(
             left, right,
             "repeated script instances retain disjoint state"
