@@ -531,39 +531,43 @@ fn prepared_constant_poly(allocation: &str, done_on_gate_event: bool) -> Realtim
 #[test]
 fn full_capacity_poly_activation_mix_and_done_retirement_do_not_allocate() {
     let mut processor = prepared_constant_poly(crate::kernel::POLY_ALLOCATION_REJECT_NEW, true);
-    let mut left = [0.0; 64];
-    let mut right = [0.0; 64];
+    let mut outputs = vec![vec![vec![0.0; 64]]; 2];
 
     let allocation_count = count_current_thread_allocations(|| {
         processor.note_on(60, 100);
         processor.note_on(64, 100);
-        assert_eq!(processor.render(&mut left, &mut right), 64);
+        assert_eq!(processor.render_root_outputs(&mut outputs), 64);
     });
     assert_eq!(allocation_count, 0);
-    assert!(left.iter().all(|sample| *sample == 0.5));
-    assert_eq!(left, right);
+    assert!(outputs[0][0].iter().all(|sample| *sample == 0.5));
+    assert_eq!(outputs[0], outputs[1]);
     assert_eq!(
         processor.prepared_poly_runtime_regions()[0].active_voice_count(),
         0
     );
 
     let reuse_allocations = count_current_thread_allocations(|| {
-        assert_eq!(processor.render(&mut left, &mut right), 64);
+        assert_eq!(processor.render_root_outputs(&mut outputs), 64);
         processor.note_on(67, 100);
         processor.note_on(72, 100);
-        assert_eq!(processor.render(&mut left, &mut right), 64);
+        assert_eq!(processor.render_root_outputs(&mut outputs), 64);
     });
     assert_eq!(reuse_allocations, 0);
-    assert!(left.iter().all(|sample| *sample == 0.5));
-    assert_eq!(left, right);
+    assert!(outputs[0][0].iter().all(|sample| *sample == 0.5));
+    assert_eq!(outputs[0], outputs[1]);
     assert_eq!(
         processor.prepared_poly_runtime_regions()[0].active_voice_count(),
         0
     );
 
-    assert_eq!(processor.render(&mut left, &mut right), 64);
-    assert!(left.iter().all(|sample| *sample == 0.0));
-    assert!(right.iter().all(|sample| *sample == 0.0));
+    assert_eq!(processor.render_root_outputs(&mut outputs), 64);
+    assert!(
+        outputs
+            .iter()
+            .flatten()
+            .flatten()
+            .all(|sample| *sample == 0.0)
+    );
 }
 
 #[test]
@@ -573,19 +577,18 @@ fn full_capacity_poly_stealing_and_rejection_render_without_allocation() {
         (crate::kernel::POLY_ALLOCATION_REJECT_NEW, [60, 64]),
     ] {
         let mut processor = prepared_constant_poly(allocation, false);
-        let mut left = [0.0; 64];
-        let mut right = [0.0; 64];
+        let mut outputs = vec![vec![vec![0.0; 64]]; 2];
 
         let allocation_count = count_current_thread_allocations(|| {
             processor.note_on(60, 100);
             processor.note_on(64, 100);
-            assert_eq!(processor.render(&mut left, &mut right), 64);
+            assert_eq!(processor.render_root_outputs(&mut outputs), 64);
             processor.note_on(67, 100);
-            assert_eq!(processor.render(&mut left, &mut right), 64);
+            assert_eq!(processor.render_root_outputs(&mut outputs), 64);
         });
         assert_eq!(allocation_count, 0, "allocation policy: {allocation}");
-        assert!(left.iter().all(|sample| *sample == 0.5));
-        assert_eq!(left, right);
+        assert!(outputs[0][0].iter().all(|sample| *sample == 0.5));
+        assert_eq!(outputs[0], outputs[1]);
         let region = &processor.prepared_poly_runtime_regions()[0];
         assert_eq!(region.active_voice_count(), 2);
         assert_eq!(
