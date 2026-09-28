@@ -973,6 +973,20 @@ fn classify_signal(source: SignalType, destination: SignalType) -> SignalCompati
     }
 }
 
+fn retired_audio_output_diagnostic(owner: &GraphDefinition, node: &Node) -> Diagnostic {
+    Diagnostic::new(
+        error_codes::KERNEL_UNKNOWN_DEFINITION,
+        Severity::Error,
+        format!(
+            "node '{}' in definition '{}' references retired definition 'audio_output'",
+            node.id().as_str(),
+            owner.name()
+        ),
+    )
+    .with_module_id(node.id().as_str())
+    .with_suggested_fix("declare a named root output port mapped from the source module")
+}
+
 impl GraphDefinition {
     /// Resolve this definition's own static parameters to concrete values using
     /// their declared defaults. This is the enclosing context against which
@@ -1710,6 +1724,13 @@ impl GraphDefinition {
         let mut diagnostics = Diagnostics::new();
         let mut promotions = Vec::new();
         let enclosing = self.enclosing_context();
+        for definition in registry.definitions() {
+            for node in definition.nodes() {
+                if node.definition_ref() == crate::builtins::module_types::AUDIO_OUTPUT {
+                    diagnostics.push(retired_audio_output_diagnostic(definition, node));
+                }
+            }
+        }
 
         // Reject dangling channel/latency static references before anything can
         // silently fall back to a default value.
@@ -1721,23 +1742,23 @@ impl GraphDefinition {
         // Resolve every node's ports up front so connection checks share them.
         let mut resolved_nodes: BTreeMap<&NodeId, ResolvedNode<'_>> = BTreeMap::new();
         for node in &self.nodes {
+            if node.definition_ref() == crate::builtins::module_types::AUDIO_OUTPUT {
+                diagnostics.push(retired_audio_output_diagnostic(self, node));
+                continue;
+            }
             let Some(referenced) = registry.get(node.definition_ref()) else {
-                let mut diagnostic = Diagnostic::new(
-                    error_codes::KERNEL_UNKNOWN_DEFINITION,
-                    Severity::Error,
-                    format!(
-                        "node '{}' references unknown definition '{}'",
-                        node.id().as_str(),
-                        node.definition_ref()
-                    ),
-                )
-                .with_module_id(node.id().as_str());
-                if node.definition_ref() == crate::builtins::module_types::AUDIO_OUTPUT {
-                    diagnostic = diagnostic.with_suggested_fix(
-                        "declare a named root output port mapped from the source module",
-                    );
-                }
-                diagnostics.push(diagnostic);
+                diagnostics.push(
+                    Diagnostic::new(
+                        error_codes::KERNEL_UNKNOWN_DEFINITION,
+                        Severity::Error,
+                        format!(
+                            "node '{}' references unknown definition '{}'",
+                            node.id().as_str(),
+                            node.definition_ref()
+                        ),
+                    )
+                    .with_module_id(node.id().as_str()),
+                );
                 continue;
             };
 

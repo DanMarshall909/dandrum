@@ -334,6 +334,11 @@ impl Compiler<'_> {
         let mut child_interfaces: BTreeMap<NodeId, Interface> = BTreeMap::new();
 
         for node in definition.nodes() {
+            if node.definition_ref() == crate::builtins::module_types::AUDIO_OUTPUT {
+                self.diagnostics
+                    .push(super::retired_audio_output_diagnostic(definition, node));
+                continue;
+            }
             let Some(referenced) = self.registry.get(node.definition_ref()) else {
                 self.diagnostics.push(
                     Diagnostic::new(

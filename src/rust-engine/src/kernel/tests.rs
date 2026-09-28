@@ -1015,6 +1015,36 @@ fn audio_output_is_not_authorable_and_diagnostic_points_to_root_ports() {
     );
 }
 
+#[test]
+fn audio_output_cannot_be_reintroduced_as_a_custom_definition() {
+    let registry = DefinitionRegistry::new()
+        .with_definition(GraphDefinition::new("audio_output"))
+        .with_definition(
+            GraphDefinition::new("wrapper")
+                .with_node(Node::new(NodeId::new("nested_out"), "audio_output")),
+        );
+    for definition in [
+        GraphDefinition::new("direct").with_node(Node::new(NodeId::new("out"), "audio_output")),
+        GraphDefinition::new("nested").with_node(Node::new(NodeId::new("child"), "wrapper")),
+    ] {
+        let validation = definition.validate(&registry);
+        let rejection = validation
+            .diagnostics()
+            .errors()
+            .find(|diagnostic| diagnostic.error_code() == error_codes::KERNEL_UNKNOWN_DEFINITION)
+            .expect("retired audio_output is rejected even when registered by the author");
+        assert!(
+            rejection
+                .suggested_fix()
+                .is_some_and(|fix| fix.contains("root output port"))
+        );
+        assert!(
+            definition.flatten(&registry).is_err(),
+            "direct flattening also rejects the retired output node"
+        );
+    }
+}
+
 // --- 3.3 Input multiplicity ----------------------------------------------
 
 fn summing_mixer_primitive() -> GraphDefinition {
