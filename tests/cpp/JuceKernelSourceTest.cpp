@@ -44,8 +44,12 @@ int main()
     }
     std::filesystem::remove (path);
     const auto legacyPath = std::filesystem::path (DANDRUM_SOURCE_ROOT)
-                          / "examples/patches/polyphonic-pad.yaml";
-    if (! source.loadPatch (juce::String (legacyPath.string())))
+                          / "src/rust-engine/tests/fixtures/unify-graph-kernel/legacy/polyphonic-pad.yaml";
+    if (source.loadPatch (juce::String (legacyPath.string())))
         return 4;
+    buffer.clear();
+    source.getNextAudioBlock (juce::AudioSourceChannelInfo (&buffer, 0, 8));
+    if (std::abs (buffer.getSample (0, 0) - 0.25f) > 0.00001f)
+        return 6;
     return 0;
 }

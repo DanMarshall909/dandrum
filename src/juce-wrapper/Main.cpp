@@ -20,12 +20,6 @@ void handleSignal (int)
     shouldQuit.store (true);
 }
 
-void waitForEngineToFinish (const RustEngineSource& engineSource)
-{
-    while (! engineSource.hasFinished())
-        juce::Thread::sleep (10);
-}
-
 int runDrumLoopDemo (RustEngineSource& engineSource, const juce::File& patchPath)
 {
     if (! engineSource.loadPatch (patchPath.getFullPathName()))
@@ -145,7 +139,6 @@ int main (int argc, char* argv[])
             syntheticMidi.handleIncomingMidiMessage (nullptr, juce::MidiMessage::noteOn (1, note, static_cast<juce::uint8> (110)));
             juce::Thread::sleep (180);
             syntheticMidi.handleIncomingMidiMessage (nullptr, juce::MidiMessage::noteOff (1, note));
-            waitForEngineToFinish (engineSource);
             return 0;
         }
 
@@ -164,7 +157,6 @@ int main (int argc, char* argv[])
                 juce::Thread::sleep (40);
             }
 
-            waitForEngineToFinish (engineSource);
             return 0;
         }
 
@@ -198,7 +190,6 @@ int main (int argc, char* argv[])
 
         std::cout << "Rust engine test note. Use --test-midi-note <note>, --test-midi-scale, --list-midi-inputs, or --midi-input <index>.\n";
         engineSource.noteOn (60, 110);
-        waitForEngineToFinish (engineSource);
         return 0;
     }();
 

@@ -23,7 +23,6 @@ public:
     bool loadPatch (const juce::String& yamlPath);
     bool noteOn (int note, int velocity);
     bool noteOff (int note);
-    bool hasFinished() const;
 
 private:
     enum class PendingMidiEventType
@@ -49,7 +48,6 @@ private:
     std::atomic<std::size_t> droppedMidiEvents { 0 };
 
     mutable juce::CriticalSection engineLock;
-    DandrumEngine* engine = nullptr;
     DandrumKernelInstrument* kernel = nullptr;
     juce::String kernelPath;
     std::uint32_t sampleRateHz = 48000;
