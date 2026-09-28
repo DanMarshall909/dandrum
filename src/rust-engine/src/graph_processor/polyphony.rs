@@ -35,6 +35,12 @@ struct PolyOutputBinding {
     accumulator_start: usize,
 }
 
+#[derive(Clone, Copy, Debug)]
+enum DoneBinding {
+    Event(EventQueueId),
+    Control(BufferId),
+}
+
 pub struct PreparedPolyRuntimeRegion {
     node_id: String,
     states: Box<[Box<[PerModuleState]>]>,
@@ -47,7 +53,7 @@ pub struct PreparedPolyRuntimeRegion {
     slots: Box<[PolyVoiceSlot]>,
     next_allocation_order: u64,
     intrinsic_bindings: Option<VoiceIntrinsicBindings>,
-    done_event_queue: Option<EventQueueId>,
+    done_binding: Option<DoneBinding>,
     child_render_plan: RenderPlan,
     child_patch: Box<CompiledPatch>,
     output_bindings: Box<[PolyOutputBinding]>,
@@ -123,7 +129,7 @@ impl PreparedPolyRuntimeRegion {
         );
         let intrinsic_bindings =
             voice_intrinsic_bindings(compiled.child_patch(), &child_render_plan);
-        let done_event_queue = voice_done_event_queue(compiled, &child_render_plan);
+        let done_binding = voice_done_binding(compiled, &child_render_plan);
         let mut next_accumulator = 0;
         let output_bindings = compiled
             .output_accumulators()
@@ -158,7 +164,7 @@ impl PreparedPolyRuntimeRegion {
             slots: vec![PolyVoiceSlot::default(); compiled.max_voices()].into_boxed_slice(),
             next_allocation_order: 1,
             intrinsic_bindings,
-            done_event_queue,
+            done_binding,
             child_render_plan,
             child_patch: Box::new(compiled.child_patch().clone()),
             output_bindings,
@@ -245,11 +251,14 @@ impl PreparedPolyRuntimeRegion {
                     }
                 }
             }
-            if self.done_event_queue.is_some_and(|queue| {
-                self.voice_event_queues[voice]
+            let done = match self.done_binding {
+                Some(DoneBinding::Event(queue)) => self.voice_event_queues[voice]
                     .queue_ref(queue.0)
-                    .is_some_and(|events| !events.is_empty())
-            }) {
+                    .is_some_and(|events| !events.is_empty()),
+                Some(DoneBinding::Control(buffer)) => arena.sample(buffer, 0) > 0.0,
+                None => false,
+            };
+            if done {
                 self.slots[voice].active = false;
             }
         }
@@ -453,10 +462,7 @@ impl PreparedPolyRuntimeRegion {
     }
 }
 
-fn voice_done_event_queue(
-    compiled: &CompiledPolyRegion,
-    plan: &RenderPlan,
-) -> Option<EventQueueId> {
+fn voice_done_binding(compiled: &CompiledPolyRegion, plan: &RenderPlan) -> Option<DoneBinding> {
     let source = compiled
         .flattened_voice()
         .root_output_sources()
@@ -469,13 +475,28 @@ fn voice_done_event_queue(
             == source.node().as_str()
     })?;
     let node = &compiled.child_patch().nodes()[step.module_index];
-    let event_ordinal = node
+    let output_index = node
         .output_port_names
         .iter()
-        .zip(node.output_port_types.iter())
-        .filter(|(_, signal_type)| **signal_type == crate::graph::SignalType::Event)
-        .position(|(name, _)| name == source.port())?;
-    step.event_outputs.get(event_ordinal).copied()
+        .position(|name| name == source.port())?;
+    let signal_type = node.output_port_types[output_index];
+    let is_event = signal_type == crate::graph::SignalType::Event;
+    let ordinal = node.output_port_types[..output_index]
+        .iter()
+        .filter(|kind| (**kind == crate::graph::SignalType::Event) == is_event)
+        .count();
+    if is_event {
+        step.event_outputs
+            .get(ordinal)
+            .copied()
+            .map(DoneBinding::Event)
+    } else {
+        // Validation permits only event or control for a voice's `done` port.
+        step.output_buffers
+            .get(ordinal)
+            .copied()
+            .map(DoneBinding::Control)
+    }
 }
 
 fn voice_intrinsic_bindings(
