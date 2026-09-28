@@ -1319,6 +1319,18 @@ mod tests {
             )
     }
 
+    fn constant_voice(name: &str, sample: f64) -> GraphDefinition {
+        GraphDefinition::new(name)
+            .with_port(
+                KernelPort::output("audio", SignalType::Audio, 1)
+                    .maps_from(kernel_ref("constant", builtin_ports::OUT)),
+            )
+            .with_node(
+                Node::new(NodeId::new("constant"), module_types::CONTROL_TO_AUDIO)
+                    .with_default_override(builtin_ports::IN, sample),
+            )
+    }
+
     fn prepare_audio_poly(voice: GraphDefinition, max_voices: i64) -> PreparedKernelInstrument {
         let voice_name = voice.name().to_string();
         let root = GraphDefinition::new("root")
@@ -1706,6 +1718,49 @@ mod tests {
         {
             assert!((doubled - (single + second_single)).abs() < 1.0e-6);
         }
+    }
+
+    #[test]
+    fn poly_two_constant_voices_sum_to_a_positive_absolute_value() {
+        let prepared = prepare_audio_poly(constant_voice("constant_voice", 0.25), 2);
+        let mut runtime = runtime_for(&prepared);
+        let frames = KERNEL_RENDER_SETTINGS.block_size_frames as usize;
+        let mut left = vec![0.0; frames];
+        let mut right = vec![0.0; frames];
+
+        runtime.note_on(60, 100);
+        assert_eq!(runtime.render(&mut left, &mut right), frames);
+        assert!(left.iter().all(|sample| *sample == 0.25));
+        assert_eq!(left, right);
+
+        runtime.note_on(64, 100);
+        assert_eq!(runtime.render(&mut left, &mut right), frames);
+        assert!(left.iter().all(|sample| *sample == 0.5));
+        assert_eq!(left, right);
+    }
+
+    #[test]
+    fn poly_retires_released_voice_at_the_silence_threshold() {
+        let prepared = prepare_audio_poly(constant_voice("threshold_voice", 1.0e-4), 1);
+        let mut runtime = runtime_for(&prepared);
+
+        runtime.note_on(60, 100);
+        render_one_block(&mut runtime);
+        runtime.note_off(60);
+        for _ in 0..59 {
+            render_one_block(&mut runtime);
+        }
+        assert_eq!(
+            runtime.prepared_poly_runtime_regions()[0].active_voice_count(),
+            1,
+            "59 eight-frame blocks are shorter than ten milliseconds"
+        );
+        render_one_block(&mut runtime);
+        assert_eq!(
+            runtime.prepared_poly_runtime_regions()[0].active_voice_count(),
+            0,
+            "a signal exactly at the threshold counts as silent"
+        );
     }
 
     #[test]
