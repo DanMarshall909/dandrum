@@ -516,6 +516,17 @@ impl PreparedPolyRuntimeRegion {
             .map(|slot| slot.gate_held)
     }
 
+    #[cfg(test)]
+    pub(crate) fn set_child_control_default_for_test(
+        &mut self,
+        module_id: &str,
+        port_name: &str,
+        value: f32,
+    ) -> bool {
+        self.child_patch
+            .set_numeric_parameter_by_target(module_id, port_name, value)
+    }
+
     pub fn voice_note_control(&self, voice: usize) -> Option<f32> {
         let bindings = self.intrinsic_bindings?;
         self.voice_arenas

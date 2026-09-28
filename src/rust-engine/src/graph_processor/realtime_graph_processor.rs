@@ -306,6 +306,22 @@ impl RealtimeGraphProcessor {
         );
     }
 
+    #[cfg(test)]
+    pub(crate) fn set_poly_child_control_default_for_test(
+        &mut self,
+        poly_node_id: &str,
+        child_module_id: &str,
+        port_name: &str,
+        value: f32,
+    ) -> bool {
+        self.prepared_poly_runtime_regions
+            .iter_mut()
+            .find(|region| region.node_id() == poly_node_id)
+            .is_some_and(|region| {
+                region.set_child_control_default_for_test(child_module_id, port_name, value)
+            })
+    }
+
     pub fn note_on(&mut self, note: u8, velocity: u8) {
         self.note_on_at(note, velocity, 0);
     }

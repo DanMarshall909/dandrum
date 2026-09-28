@@ -1805,6 +1805,55 @@ mod tests {
     }
 
     #[test]
+    fn poly_audible_block_resets_the_released_silence_window() {
+        let prepared = prepare_audio_poly(constant_voice("interrupted_tail", 0.0), 1);
+        let mut runtime = runtime_for(&prepared);
+
+        runtime.note_on(60, 100);
+        render_one_block(&mut runtime);
+        runtime.note_off(60);
+        for _ in 0..59 {
+            render_one_block(&mut runtime);
+        }
+        assert_eq!(
+            runtime.prepared_poly_runtime_regions()[0].active_voice_count(),
+            1
+        );
+
+        assert!(runtime.set_poly_child_control_default_for_test(
+            "voices",
+            "constant",
+            builtin_ports::IN,
+            0.25,
+        ));
+        render_one_block(&mut runtime);
+        assert_eq!(
+            runtime.prepared_poly_runtime_regions()[0].active_voice_count(),
+            1
+        );
+
+        assert!(runtime.set_poly_child_control_default_for_test(
+            "voices",
+            "constant",
+            builtin_ports::IN,
+            0.0,
+        ));
+        for _ in 0..59 {
+            render_one_block(&mut runtime);
+        }
+        assert_eq!(
+            runtime.prepared_poly_runtime_regions()[0].active_voice_count(),
+            1,
+            "the first quiet window cannot count across the loud block"
+        );
+        render_one_block(&mut runtime);
+        assert_eq!(
+            runtime.prepared_poly_runtime_regions()[0].active_voice_count(),
+            0
+        );
+    }
+
+    #[test]
     fn poly_done_event_retires_voice_and_clears_its_future_output() {
         let voice = noise_voice("done_voice", 1, 1234).with_port(
             KernelPort::output(crate::kernel::POLY_DONE_OUTPUT, SignalType::Event, 1).maps_from(
