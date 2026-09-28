@@ -473,6 +473,22 @@ impl PreparedPolyRuntimeRegion {
                             self.block_start_frame,
                         );
                     }
+                    ModuleKind::Sampler => {
+                        let events = self.voice_event_queues[voice]
+                            .queue_ref(step.event_inputs[0].0)
+                            .map_or(&[][..], |queue| queue.events());
+                        let mut context = ProcessContext::new(
+                            arena,
+                            &step.input_buffers,
+                            &step.output_buffers,
+                            frames,
+                        );
+                        super::arena_processing::process_sampler(
+                            &mut states[step.module_index],
+                            &mut context,
+                            events,
+                        );
+                    }
                     _ => super::realtime_graph_processor::process_channel_arena_step(
                         arena, states, step, frames,
                     ),
@@ -820,6 +836,11 @@ fn is_poly_child_arena_supported(step: &RenderStep) -> bool {
         ModuleKind::Adsr => {
             step.input_buffers.len() == 4
                 && step.output_buffers.len() == 1
+                && step.event_inputs.len() == 1
+        }
+        ModuleKind::Sampler => {
+            step.input_buffers.len() == 5
+                && !step.output_buffers.is_empty()
                 && step.event_inputs.len() == 1
         }
         _ => super::realtime_graph_processor::is_channel_arena_supported(step),

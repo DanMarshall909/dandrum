@@ -6443,6 +6443,48 @@ fn migrated_polyphonic_chords_preserve_render_and_reject_new_notes_at_capacity()
 }
 
 #[test]
+fn migrated_polyphonic_sampler_chords_preserve_sample_render() {
+    let legacy = patch::load_patch_str(include_str!(
+        "../../tests/fixtures/unify-graph-kernel/legacy/polyphonic-sampler-chords.yaml"
+    ))
+    .expect("legacy polyphonic sampler parses");
+    let settings = RenderSettings {
+        duration_frames: 2_048,
+        ..legacy.render.clone()
+    };
+    let events = vec![note_on_value(0, 60, 100), note_on_value(256, 67, 110)];
+    let patch_root = Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("../..")
+        .join("examples/patches");
+    let assets = prepare_sampler_assets(&legacy, &patch_root).expect("legacy sample resolves");
+    let expected = render_offline_with_sampler_assets_polyphonic(
+        &Graph::from_patch_declarations(&legacy),
+        &settings,
+        events.clone(),
+        &assets,
+        &legacy.voice_allocation,
+    );
+    assert!(expected.0.iter().any(|sample| sample.abs() > 0.001));
+    assert_eq!(expected.1, vec![0.0; settings.duration_frames as usize]);
+
+    let yaml = read_repo_fixture("examples/patches/polyphonic-sampler-chords.yaml")
+        .expect("polyphonic sampler example exists");
+    let kernel = load_kernel_patch_str(&yaml).expect("polyphonic sampler is a kernel document");
+    let context = PreparationContext::new(&patch_root, settings.sample_rate_hz);
+    let prepared = prepare_kernel_patch_with_context(&kernel, &settings, &context)
+        .expect("polyphonic sampler resource prepares");
+    let actual = render_kernel_offline_named(&prepared, events, &PreparedSamplerAssets::empty())
+        .expect("polyphonic sampler renders named output");
+
+    assert_eq!(actual.len(), 1);
+    assert_eq!(actual[0].0, "left");
+    assert_eq!(
+        actual[0].1[0], expected.0,
+        "polyphonic sample render changed"
+    );
+}
+
+#[test]
 fn convolution_example_loads_typed_impulse_resource_and_renders_named_bus() {
     let fixture = "examples/patches/minimal-convolution.yaml";
     let yaml = read_repo_fixture(fixture).expect("convolution example exists");

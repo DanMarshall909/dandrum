@@ -1,3 +1,4 @@
+use super::helpers::{normalized_end_position, normalized_position};
 use super::outputs::BlockEvent;
 use super::process_context::ProcessContext;
 use super::state::PerModuleState;
@@ -32,6 +33,111 @@ pub(super) fn process_noise(state: &mut PerModuleState, context: &mut ProcessCon
                 .expect("noise output channel should be available in supported arena step");
             *rng_state = x;
         }
+    }
+}
+
+pub(super) fn process_sampler(
+    state: &mut PerModuleState,
+    context: &mut ProcessContext<'_>,
+    events: &[BlockEvent],
+) {
+    let PerModuleState::Sampler {
+        sample,
+        position,
+        active,
+    } = state
+    else {
+        unreachable!()
+    };
+    let frames = sample.as_ref().map_or(&[][..], |sample| sample.frames());
+    if frames.is_empty() {
+        for frame in 0..context.frames() {
+            for channel in 0..context.output_count() {
+                context
+                    .set_output_sample(channel, frame, 0.0)
+                    .expect("sampler output channel should be available in supported arena step");
+            }
+        }
+        return;
+    }
+
+    for frame in 0..context.frames() {
+        for event in events
+            .iter()
+            .filter(|event| event.frame_offset as usize == frame)
+        {
+            if matches!(event.event, ScriptEvent::NoteOn { .. }) {
+                *position = normalized_position(context.input_sample(1, frame, 0.0), frames.len());
+                *active = true;
+            }
+        }
+
+        let mut output = 0.0;
+        if *active {
+            let index = *position as usize;
+            if index >= frames.len() {
+                *active = false;
+            } else {
+                output = frames[index];
+                let rate = context.input_sample(0, frame, 1.0).max(0.0);
+                *position += rate;
+                if context.input_sample(2, frame, 0.0) > 0.5 {
+                    let loop_start =
+                        normalized_position(context.input_sample(3, frame, 0.0), frames.len());
+                    let mut loop_end =
+                        normalized_end_position(context.input_sample(4, frame, 1.0), frames.len());
+                    if loop_end <= loop_start {
+                        loop_end = frames.len() as f32;
+                    }
+                    while *position >= loop_end {
+                        *position = loop_start + (*position - loop_end);
+                    }
+                } else if *position >= frames.len() as f32 {
+                    *active = false;
+                }
+            }
+        }
+        for channel in 0..context.output_count() {
+            context
+                .set_output_sample(channel, frame, output)
+                .expect("sampler output channel should be available in supported arena step");
+        }
+    }
+}
+
+#[cfg(test)]
+mod sampler_tests {
+    use super::super::audio_arena::AudioArena;
+    use super::super::render_plan::{AudioBufferPlan, BufferId};
+    use super::*;
+
+    #[test]
+    fn sampler_without_decoded_frames_clears_its_output_span() {
+        let mut arena = AudioArena::new(AudioBufferPlan {
+            buffer_count: 6,
+            max_block_frames: 4,
+            max_voices: 1,
+        });
+        arena.fill(BufferId(5), 4, 0.75);
+        let inputs = [
+            BufferId(0),
+            BufferId(1),
+            BufferId(2),
+            BufferId(3),
+            BufferId(4),
+        ];
+        let outputs = [BufferId(5)];
+        let mut context = ProcessContext::new(&mut arena, &inputs, &outputs, 4);
+        let mut state = PerModuleState::Sampler {
+            sample: None,
+            position: 0.0,
+            active: false,
+        };
+
+        process_sampler(&mut state, &mut context, &[]);
+
+        assert_eq!(arena.sample(BufferId(5), 0), 0.0);
+        assert_eq!(arena.sample(BufferId(5), 3), 0.0);
     }
 }
 
