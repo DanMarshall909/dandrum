@@ -4096,7 +4096,6 @@ fn spectral_centroid_around(
 fn impulse_module_examples_load_validate_and_render_with_documented_primitive_ports() {
     for (fixture, note, should_render) in [
         ("examples/patches/module-velocity-vca.yaml", 60, true),
-        ("examples/patches/module-impulse-layer.yaml", 60, true),
     ] {
         let Some(yaml) = read_repo_fixture(fixture) else {
             return;
@@ -6691,44 +6690,61 @@ fn impulse_tone_example_matches_legacy_render_through_master_bus() {
 }
 
 #[test]
-fn impulse_noise_example_matches_legacy_render_on_named_buses() {
-    let legacy_yaml =
-        include_str!("../../tests/fixtures/unify-graph-kernel/legacy/module-impulse-noise.yaml");
-    let legacy = patch::load_patch_str(legacy_yaml).expect("legacy reference parses");
-    patch::validate_patch_schema(&legacy).expect("legacy reference validates");
-    let graph = Graph::from_patch_declarations(&legacy);
-    graph.validate().expect("legacy graph validates");
-    let events = vec![
-        note_on_value(0, 60, 100),
-        TimedInputEvent::new(960, ScriptEvent::NoteOff { note: 60 }),
-    ];
-    let (expected_left, expected_right) = render_offline(&graph, &legacy.render, events.clone());
-    assert!(expected_left.iter().any(|sample| sample.abs() > 0.001));
-    assert_eq!(expected_left, expected_right);
+fn impulse_noise_and_layer_examples_match_legacy_render_on_named_buses() {
+    for (fixture, legacy_yaml) in [
+        (
+            "examples/patches/module-impulse-noise.yaml",
+            include_str!(
+                "../../tests/fixtures/unify-graph-kernel/legacy/module-impulse-noise.yaml"
+            ),
+        ),
+        (
+            "examples/patches/module-impulse-layer.yaml",
+            include_str!(
+                "../../tests/fixtures/unify-graph-kernel/legacy/module-impulse-layer.yaml"
+            ),
+        ),
+    ] {
+        let legacy = patch::load_patch_str(legacy_yaml).expect("legacy reference parses");
+        patch::validate_patch_schema(&legacy).expect("legacy reference validates");
+        let graph = Graph::from_patch_declarations(&legacy);
+        graph.validate().expect("legacy graph validates");
+        let events = vec![
+            note_on_value(0, 60, 100),
+            TimedInputEvent::new(960, ScriptEvent::NoteOff { note: 60 }),
+        ];
+        let (expected_left, expected_right) =
+            render_offline(&graph, &legacy.render, events.clone());
+        assert!(expected_left.iter().any(|sample| sample.abs() > 0.001));
+        assert_eq!(expected_left, expected_right);
 
-    let yaml = read_repo_fixture("examples/patches/module-impulse-noise.yaml")
-        .expect("migrated example exists");
-    let kernel = load_kernel_patch_str(&yaml).expect("example loads as kernel patch");
-    let prepared = prepare_kernel_patch(&kernel, &legacy.render).expect("kernel patch prepares");
-    let buses = render_kernel_offline_named(&prepared, events, &PreparedSamplerAssets::empty())
-        .expect("kernel patch renders");
-    assert_eq!(buses.len(), 2);
-    assert_eq!(buses[0].0, "left");
-    assert_eq!(buses[1].0, "right");
-    assert_eq!(buses[0].1.len(), 1);
-    assert_eq!(buses[1].1.len(), 1);
-    for (actual, expected) in [(&buses[0].1[0], expected_left), (&buses[1].1[0], expected_right)] {
-        let mismatch = actual
-            .iter()
-            .zip(&expected)
-            .position(|(actual, expected)| actual != expected);
-        assert_eq!(
-            mismatch,
-            None,
-            "impulse noise differs from legacy reference at frame {mismatch:?}: actual {:?}, expected {:?}",
-            mismatch.map(|frame| actual[frame]),
-            mismatch.map(|frame| expected[frame])
-        );
+        let yaml = read_repo_fixture(fixture).expect("migrated example exists");
+        let kernel = load_kernel_patch_str(&yaml).expect("example loads as kernel patch");
+        let prepared =
+            prepare_kernel_patch(&kernel, &legacy.render).expect("kernel patch prepares");
+        let buses = render_kernel_offline_named(&prepared, events, &PreparedSamplerAssets::empty())
+            .expect("kernel patch renders");
+        assert_eq!(buses.len(), 2);
+        assert_eq!(buses[0].0, "left");
+        assert_eq!(buses[1].0, "right");
+        assert_eq!(buses[0].1.len(), 1);
+        assert_eq!(buses[1].1.len(), 1);
+        for (actual, expected) in [
+            (&buses[0].1[0], expected_left),
+            (&buses[1].1[0], expected_right),
+        ] {
+            let mismatch = actual
+                .iter()
+                .zip(&expected)
+                .position(|(actual, expected)| actual != expected);
+            assert_eq!(
+                mismatch,
+                None,
+                "{fixture} differs from legacy reference at frame {mismatch:?}: actual {:?}, expected {:?}",
+                mismatch.map(|frame| actual[frame]),
+                mismatch.map(|frame| expected[frame])
+            );
+        }
     }
 }
 

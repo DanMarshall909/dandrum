@@ -1,0 +1,76 @@
+metadata:
+  name: Composite Impulse Layer
+render:
+  sample_rate_hz: 48000
+  block_size_frames: 128
+  duration_frames: 2048
+module_definitions:
+  - type: impulse_layer
+    inputs:
+      - name: events
+        signal_type: event
+        maps_to:
+          - note_controls.events
+          - envelope.gate
+    outputs:
+      - name: audio
+        signal_type: audio
+        maps_from:
+          - velocity_gain.audio_out
+    modules:
+      - id: note_controls
+        type: note_to_control
+      - id: tone
+        type: oscillator
+      - id: noise
+        type: noise
+        parameters:
+          seed: 909
+      - id: filter
+        type: filter
+        parameters:
+          algorithm: biquad
+          mode: lowpass
+      - id: source_mix
+        type: audio_mixer
+      - id: envelope
+        type: adsr
+      - id: envelope_gain
+        type: gain
+      - id: velocity_gain
+        type: gain
+    connections:
+      - from: note_controls.pitch_ratio
+        to: tone.pitch
+      - from: tone.audio
+        to: source_mix.inputs
+      - from: noise.audio
+        to: filter.audio_in
+      - from: filter.audio_out
+        to: source_mix.inputs
+      - from: source_mix.mix
+        to: envelope_gain.audio_in
+      - from: envelope.value
+        to: envelope_gain.gain
+      - from: envelope_gain.audio_out
+        to: velocity_gain.audio_in
+      - from: note_controls.velocity
+        to: velocity_gain.gain
+modules:
+  - id: midi
+    type: midi_input
+  - id: voice
+    type: impulse_layer
+  - id: mixer
+    type: audio_mixer
+  - id: out
+    type: audio_output
+connections:
+  - from: midi.events
+    to: voice.events
+  - from: voice.audio
+    to: mixer.inputs
+  - from: mixer.mix
+    to: out.left
+  - from: mixer.mix
+    to: out.right
