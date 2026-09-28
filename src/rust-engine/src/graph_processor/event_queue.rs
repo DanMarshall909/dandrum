@@ -35,7 +35,6 @@ impl BoundedEventQueue {
         self.dropped_events
     }
 
-    #[cfg(test)]
     pub(super) fn events(&self) -> &[BlockEvent] {
         &self.events
     }
@@ -166,6 +165,20 @@ impl PreparedEventQueues {
             destination.push_at(event.event, event.frame_offset)?;
         }
 
+        Ok(())
+    }
+
+    pub(super) fn route_filtered_event_edge(
+        &mut self,
+        edge: CompiledEventEdge,
+        note: Option<u8>,
+    ) -> EventQueueResult<()> {
+        let (source, destination) = self.queue_pair(edge.source, edge.destination)?;
+        for event in source.events.iter() {
+            if super::processing::event_matches_note(event, note) {
+                destination.push_at(event.event.clone(), event.frame_offset)?;
+            }
+        }
         Ok(())
     }
 

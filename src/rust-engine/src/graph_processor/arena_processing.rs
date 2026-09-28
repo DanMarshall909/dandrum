@@ -1,6 +1,8 @@
+use super::outputs::BlockEvent;
 use super::process_context::ProcessContext;
 use super::state::PerModuleState;
 use crate::oscillator::OSCILLATOR_BASE_HZ;
+use crate::script::ScriptEvent;
 
 const STEREO_CHANNELS: usize = 2;
 
@@ -71,6 +73,78 @@ pub(super) fn process_gain(context: &mut ProcessContext<'_>) {
             .write_output_from_two_inputs(channel, channel, gain_input, |audio, gain| audio * gain)
             .expect("gain channel buffers should be available in supported arena step");
     }
+}
+
+pub(super) fn process_adsr(
+    state: &mut PerModuleState,
+    context: &mut ProcessContext<'_>,
+    events: &[BlockEvent],
+    block_start_frame: u64,
+) {
+    let PerModuleState::Adsr {
+        level,
+        gate_active,
+        release_start_frame,
+        release_start_level,
+        sample_rate,
+    } = state
+    else {
+        unreachable!()
+    };
+    let mut final_level = *level;
+
+    for frame in 0..context.frames() {
+        let absolute_frame = block_start_frame + frame as u64;
+        for event in events {
+            if event.frame_offset as usize == frame {
+                match &event.event {
+                    ScriptEvent::NoteOn { .. } => {
+                        *gate_active = true;
+                        *release_start_frame = absolute_frame;
+                    }
+                    ScriptEvent::NoteOff { .. } => {
+                        *gate_active = false;
+                        *release_start_frame = absolute_frame;
+                        *release_start_level = *level;
+                    }
+                }
+            }
+        }
+
+        let attack_ms =
+            super::processing::adsr_time_ms(context.input_sample(0, frame, 5.0), 2.0, 100.0);
+        let decay_ms =
+            super::processing::adsr_time_ms(context.input_sample(1, frame, 30.0), 10.0, 1000.0);
+        let sustain = context.input_sample(2, frame, 0.7).clamp(0.0, 1.0);
+        let release_ms =
+            super::processing::adsr_time_ms(context.input_sample(3, frame, 200.0), 10.0, 3000.0);
+        let attack_frames = (*sample_rate * attack_ms / 1000.0) as u64;
+        let decay_frames = (*sample_rate * decay_ms / 1000.0) as u64;
+        let release_frames = (*sample_rate * release_ms / 1000.0) as u64;
+
+        final_level = if *gate_active {
+            let lifetime = absolute_frame - *release_start_frame;
+            if lifetime < attack_frames {
+                lifetime as f32 / attack_frames as f32
+            } else if lifetime < attack_frames + decay_frames {
+                let progress = (lifetime - attack_frames) as f32 / decay_frames as f32;
+                1.0 - (1.0 - sustain) * progress
+            } else {
+                sustain
+            }
+        } else {
+            let progress = (absolute_frame - *release_start_frame) as f32 / release_frames as f32;
+            if progress >= 1.0 {
+                0.0
+            } else {
+                *release_start_level * (1.0 - progress)
+            }
+        };
+        context
+            .set_output_sample(0, frame, final_level)
+            .expect("ADSR output buffer should be available in supported arena step");
+    }
+    *level = final_level;
 }
 
 pub(super) fn process_envelope_follower(

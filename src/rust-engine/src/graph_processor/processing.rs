@@ -147,7 +147,7 @@ pub(super) fn process_adsr(
     outputs
 }
 
-fn adsr_time_ms(value: f32, min_ms: f32, max_ms: f32) -> f32 {
+pub(super) fn adsr_time_ms(value: f32, min_ms: f32, max_ms: f32) -> f32 {
     if value > 1.0 {
         value.clamp(min_ms, max_ms)
     } else {
@@ -437,7 +437,7 @@ fn finite_or_zero(value: f32) -> f32 {
     if value.is_finite() { value } else { 0.0 }
 }
 
-fn event_matches_note(event: &BlockEvent, expected_note: Option<u8>) -> bool {
+pub(super) fn event_matches_note(event: &BlockEvent, expected_note: Option<u8>) -> bool {
     let Some(expected_note) = expected_note else {
         return true;
     };

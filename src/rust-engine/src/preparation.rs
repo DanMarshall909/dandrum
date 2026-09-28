@@ -1799,6 +1799,110 @@ mod tests {
     }
 
     #[test]
+    fn poly_child_event_filter_can_signal_done() {
+        let voice = noise_voice("filtered_done_voice", 1, 1234)
+            .with_port(
+                KernelPort::output(crate::kernel::POLY_DONE_OUTPUT, SignalType::Event, 1)
+                    .maps_from(kernel_ref("filter", builtin_ports::EVENTS_OUT)),
+            )
+            .with_node(
+                Node::new(NodeId::new("filter"), module_types::EVENT_FILTER).with_static_arg(
+                    crate::builtins::EVENT_FILTER_NOTE_PARAMETER,
+                    StaticArg::Literal(StaticValue::Int(60)),
+                ),
+            )
+            .with_connection(Connection::new(
+                kernel_ref(
+                    crate::kernel::VOICE_INTRINSIC_NODE,
+                    crate::kernel::VOICE_GATE_OUTPUT,
+                ),
+                kernel_ref("filter", builtin_ports::EVENTS_IN),
+            ));
+        let prepared = prepare_audio_poly(voice, 1);
+        let mut runtime = runtime_for(&prepared);
+        let frames = KERNEL_RENDER_SETTINGS.block_size_frames as usize;
+        let mut left = vec![0.0; frames];
+        let mut right = vec![0.0; frames];
+
+        runtime.note_on(60, 100);
+        assert_eq!(runtime.render(&mut left, &mut right), frames);
+        assert!(left.iter().any(|sample| sample.abs() > 0.001));
+        assert_eq!(
+            runtime.prepared_poly_runtime_regions()[0].active_voice_count(),
+            0
+        );
+
+        assert_eq!(runtime.render(&mut left, &mut right), frames);
+        assert!(left.iter().all(|sample| *sample == 0.0));
+        assert!(right.iter().all(|sample| *sample == 0.0));
+    }
+
+    #[test]
+    fn poly_adsr_child_renders_audible_release_then_retires() {
+        let voice = GraphDefinition::new("enveloped_voice")
+            .with_port(
+                KernelPort::output("audio", SignalType::Audio, 1)
+                    .maps_from(kernel_ref("gain", builtin_ports::AUDIO_OUT)),
+            )
+            .with_node(
+                Node::new(NodeId::new("constant"), module_types::CONTROL_TO_AUDIO)
+                    .with_default_override(builtin_ports::IN, 0.25),
+            )
+            .with_node(
+                Node::new(NodeId::new("envelope"), module_types::ADSR)
+                    .with_default_override(builtin_ports::ATTACK, 0.0)
+                    .with_default_override(builtin_ports::SUSTAIN, 1.0)
+                    .with_default_override(builtin_ports::RELEASE, 0.0),
+            )
+            .with_node(Node::new(NodeId::new("gain"), module_types::GAIN))
+            .with_connection(Connection::new(
+                kernel_ref("constant", builtin_ports::OUT),
+                kernel_ref("gain", builtin_ports::AUDIO_IN),
+            ))
+            .with_connection(Connection::new(
+                kernel_ref("envelope", builtin_ports::VALUE),
+                kernel_ref("gain", builtin_ports::GAIN),
+            ))
+            .with_connection(Connection::new(
+                kernel_ref(
+                    crate::kernel::VOICE_INTRINSIC_NODE,
+                    crate::kernel::VOICE_GATE_OUTPUT,
+                ),
+                kernel_ref("envelope", builtin_ports::GATE),
+            ));
+        let prepared = prepare_audio_poly(voice, 1);
+        let mut runtime = runtime_for(&prepared);
+        let frames = KERNEL_RENDER_SETTINGS.block_size_frames as usize;
+        let mut left = vec![0.0; frames];
+        let mut right = vec![0.0; frames];
+
+        runtime.note_on(60, 100);
+        for _ in 0..20 {
+            assert_eq!(runtime.render(&mut left, &mut right), frames);
+        }
+        assert!(left.iter().any(|sample| *sample > 0.1));
+
+        runtime.note_off(60);
+        assert_eq!(runtime.render(&mut left, &mut right), frames);
+        assert!(left.iter().any(|sample| *sample > 0.1));
+        assert_eq!(
+            runtime.prepared_poly_runtime_regions()[0].active_voice_count(),
+            1
+        );
+
+        for _ in 0..120 {
+            assert_eq!(runtime.render(&mut left, &mut right), frames);
+        }
+        assert_eq!(
+            runtime.prepared_poly_runtime_regions()[0].active_voice_count(),
+            0
+        );
+        assert_eq!(runtime.render(&mut left, &mut right), frames);
+        assert!(left.iter().all(|sample| *sample == 0.0));
+        assert!(right.iter().all(|sample| *sample == 0.0));
+    }
+
+    #[test]
     fn poly_done_control_retires_only_when_signalled() {
         let voice = noise_voice("control_done_voice", 1, 1234).with_port(
             KernelPort::output(crate::kernel::POLY_DONE_OUTPUT, SignalType::Control, 1).maps_from(

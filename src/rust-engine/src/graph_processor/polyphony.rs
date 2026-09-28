@@ -11,7 +11,10 @@ use crate::script::ScriptEvent;
 use super::audio_arena::AudioArena;
 use super::event_queue::PreparedEventQueues;
 use super::outputs::BlockEvent;
-use super::render_plan::{AudioBufferPlan, BufferId, EventQueueId, RenderPlan};
+use super::process_context::ProcessContext;
+use super::render_plan::{
+    AudioBufferPlan, BufferId, CompiledEventEdge, EventQueueId, RenderPlan, RenderStep,
+};
 use super::state::PerModuleState;
 
 /// Linear peak amplitude below which a released voice counts as silent.
@@ -64,6 +67,7 @@ pub struct PreparedPolyRuntimeRegion {
     allocation_policy: PolyAllocationPolicy,
     slots: Box<[PolyVoiceSlot]>,
     next_allocation_order: u64,
+    block_start_frame: u64,
     intrinsic_bindings: Option<VoiceIntrinsicBindings>,
     done_binding: Option<DoneBinding>,
     silence_hold_frames: usize,
@@ -178,6 +182,7 @@ impl PreparedPolyRuntimeRegion {
             allocation_policy: compiled.allocation_policy(),
             slots: vec![PolyVoiceSlot::default(); compiled.max_voices()].into_boxed_slice(),
             next_allocation_order: 1,
+            block_start_frame: 0,
             intrinsic_bindings,
             done_binding,
             silence_hold_frames: ((sample_rate * RELEASE_SILENCE_SECONDS).ceil() as usize).max(1),
@@ -189,7 +194,8 @@ impl PreparedPolyRuntimeRegion {
         }
     }
 
-    pub(super) fn begin_block(&mut self, frames: usize) {
+    pub(super) fn begin_block(&mut self, frames: usize, block_start_frame: u64) {
+        self.block_start_frame = block_start_frame;
         for queues in &mut self.voice_event_queues {
             queues.clear_all();
         }
@@ -228,7 +234,7 @@ impl PreparedPolyRuntimeRegion {
             .child_render_plan
             .global_steps
             .iter()
-            .any(|step| !super::realtime_graph_processor::is_channel_arena_supported(step))
+            .any(|step| !is_poly_child_arena_supported(step))
         {
             return false;
         }
@@ -242,6 +248,9 @@ impl PreparedPolyRuntimeRegion {
             let mut audio_audible = false;
             let release_start = self.slots[voice].release_offset_pending.min(frames);
             for step in self.child_render_plan.global_steps.iter() {
+                for edge in step.incoming_event_edges.iter().copied() {
+                    let _ = self.voice_event_queues[voice].route_event_edge(edge);
+                }
                 super::realtime_graph_processor::clear_and_route_arena_inputs(
                     arena,
                     step,
@@ -255,9 +264,40 @@ impl PreparedPolyRuntimeRegion {
                     // disjoint.
                     &self.child_patch,
                 );
-                super::realtime_graph_processor::process_channel_arena_step(
-                    arena, states, step, frames,
-                );
+                match step.module_kind {
+                    ModuleKind::EventFilter => {
+                        let PerModuleState::EventFilter { note } = &states[step.module_index]
+                        else {
+                            unreachable!()
+                        };
+                        let edge = CompiledEventEdge {
+                            source: step.event_inputs[0],
+                            destination: step.event_outputs[0],
+                        };
+                        let _ =
+                            self.voice_event_queues[voice].route_filtered_event_edge(edge, *note);
+                    }
+                    ModuleKind::Adsr => {
+                        let events = self.voice_event_queues[voice]
+                            .queue_ref(step.event_inputs[0].0)
+                            .map_or(&[][..], |queue| queue.events());
+                        let mut context = ProcessContext::new(
+                            arena,
+                            &step.input_buffers,
+                            &step.output_buffers,
+                            frames,
+                        );
+                        super::arena_processing::process_adsr(
+                            &mut states[step.module_index],
+                            &mut context,
+                            events,
+                            self.block_start_frame,
+                        );
+                    }
+                    _ => super::realtime_graph_processor::process_channel_arena_step(
+                        arena, states, step, frames,
+                    ),
+                }
             }
 
             for binding in self.output_bindings.iter().copied() {
@@ -502,6 +542,23 @@ impl PreparedPolyRuntimeRegion {
             .get(voice)
             .and_then(|queues| queues.queue_ref(bindings.gate.0))
             .map_or(&[], |queue| queue.events())
+    }
+}
+
+fn is_poly_child_arena_supported(step: &RenderStep) -> bool {
+    match step.module_kind {
+        ModuleKind::EventFilter => {
+            step.input_buffers.is_empty()
+                && step.output_buffers.is_empty()
+                && step.event_inputs.len() == 1
+                && step.event_outputs.len() == 1
+        }
+        ModuleKind::Adsr => {
+            step.input_buffers.len() == 4
+                && step.output_buffers.len() == 1
+                && step.event_inputs.len() == 1
+        }
+        _ => super::realtime_graph_processor::is_channel_arena_supported(step),
     }
 }
 

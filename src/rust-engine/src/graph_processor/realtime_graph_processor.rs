@@ -296,7 +296,7 @@ impl RealtimeGraphProcessor {
             .iter_mut()
             .find(|region| region.node_id() == node_id)
             .expect("test names a prepared poly region");
-        region.begin_block(self.prepared_max_block_size);
+        region.begin_block(self.prepared_max_block_size, self.current_frame);
         region.route_note_events(
             &[BlockEvent {
                 frame_offset,
@@ -388,7 +388,7 @@ impl RealtimeGraphProcessor {
             return 0;
         }
         for region in self.prepared_poly_runtime_regions.iter_mut() {
-            region.begin_block(frames);
+            region.begin_block(frames, self.current_frame);
         }
         self.drain_and_route_poly_events(frames);
 
@@ -442,7 +442,7 @@ impl RealtimeGraphProcessor {
         let block_start = self.current_frame;
         self.current_frame += frames as u64;
         for region in self.prepared_poly_runtime_regions.iter_mut() {
-            region.begin_block(frames);
+            region.begin_block(frames, block_start);
         }
 
         if self.pending_events.is_empty() && self.render_mono_global_arena(left, right, frames) {
