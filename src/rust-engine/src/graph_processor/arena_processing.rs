@@ -176,9 +176,14 @@ pub(super) fn process_note_to_control(
                 ScriptEvent::NoteOff { .. } => {}
             }
         }
-        for (channel, value) in [*current_frequency, *current_pitch_ratio, *current_velocity]
-            .into_iter()
-            .enumerate()
+        for (channel, value) in [
+            *current_frequency,
+            *current_pitch_ratio,
+            *current_velocity,
+            if *current_slide { 1.0 } else { 0.0 },
+        ]
+        .into_iter()
+        .enumerate()
         {
             context
                 .set_output_sample(channel, frame, if *gate_active { value } else { 0.0 })

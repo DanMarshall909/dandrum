@@ -902,7 +902,7 @@ fn is_poly_child_arena_supported(step: &RenderStep) -> bool {
         }
         ModuleKind::NoteToControl => {
             step.input_buffers.is_empty()
-                && step.output_buffers.len() == 3
+                && step.output_buffers.len() == 4
                 && step.event_inputs.len() == 1
                 && step.event_outputs.len() == 1
         }

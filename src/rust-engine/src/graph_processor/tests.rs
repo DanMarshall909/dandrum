@@ -4964,6 +4964,49 @@ connections:
 
 const NTC_TEST_SAMPLE_RATE: f32 = 48_000.0;
 
+#[test]
+fn kernel_note_to_control_slide_tracks_legato_and_stale_note_off() {
+    let patch = load_kernel_patch_str(
+        r#"
+metadata: { name: Legato Slide }
+ports:
+  - { name: master, direction: output, signal: audio, channels: 1, maps_from: slide_gain.audio_out }
+modules:
+  - { id: midi, type: midi_input }
+  - { id: ntc, type: note_to_control }
+  - { id: osc, type: oscillator, static: { waveform: square } }
+  - { id: slide_gain, type: gain }
+connections:
+  - { from: midi.events, to: ntc.events }
+  - { from: ntc.pitch_ratio, to: osc.pitch }
+  - { from: osc.audio, to: slide_gain.audio_in }
+  - { from: ntc.slide, to: slide_gain.gain }
+"#,
+    )
+    .expect("slide is a declared note_to_control output");
+    let settings = RenderSettings {
+        sample_rate_hz: 48_000,
+        block_size_frames: 32,
+        duration_frames: 160,
+    };
+    let prepared = prepare_kernel_patch(&patch, &settings).expect("legato graph prepares");
+    let events = vec![
+        note_on_value(0, 48, 100),
+        note_on_value(64, 60, 100),
+        TimedInputEvent::new(96, ScriptEvent::NoteOff { note: 48 }),
+        TimedInputEvent::new(128, ScriptEvent::NoteOff { note: 60 }),
+    ];
+    let buses = render_kernel_offline_named(&prepared, events, &PreparedSamplerAssets::empty())
+        .expect("legato graph renders through its named root bus");
+    let audio = &buses[0].1[0];
+
+    assert_eq!(buses[0].0, "master");
+    assert!(audio[..64].iter().all(|sample| *sample == 0.0));
+    assert!(audio[64..96].iter().any(|sample| sample.abs() > 0.1));
+    assert!(audio[96..128].iter().any(|sample| sample.abs() > 0.1));
+    assert!(audio[128..].iter().all(|sample| *sample == 0.0));
+}
+
 fn expected_pitch_ratio(note: u8) -> f32 {
     let freq = 440.0 * 2.0_f32.powf((note as f32 - 69.0) / 12.0);
     freq / OSCILLATOR_BASE_HZ

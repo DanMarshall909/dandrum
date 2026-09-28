@@ -360,7 +360,8 @@ fn builtin_definitions() -> Vec<GraphDefinition> {
             .with_port(control_out(ports::FREQUENCY))
             .with_port(control_out(ports::PITCH_RATIO))
             .with_port(event_out(ports::GATE))
-            .with_port(control_out(ports::VELOCITY)),
+            .with_port(control_out(ports::VELOCITY))
+            .with_port(control_out(ports::SLIDE)),
         channel_primitive(names::ENVELOPE_FOLLOWER)
             .with_static_param(enum_param(
                 DETECTION_MODE_PARAMETER,

@@ -459,6 +459,12 @@ impl RealtimeGraphProcessor {
                             && step.output_buffers.len() == 1
                             && step.event_inputs.len() == 1
                     }
+                    ModuleKind::NoteToControl => {
+                        step.input_buffers.is_empty()
+                            && step.output_buffers.len() == 4
+                            && step.event_inputs.len() == 1
+                            && step.event_outputs.len() == 1
+                    }
                     ModuleKind::Sampler => {
                         step.input_buffers.len() == 5
                             && !step.output_buffers.is_empty()
@@ -598,6 +604,25 @@ impl RealtimeGraphProcessor {
                         &mut context,
                         events,
                         self.current_frame,
+                    );
+                    continue;
+                }
+                ModuleKind::NoteToControl => {
+                    let (input, output) = self
+                        .prepared_event_queues
+                        .queue_pair(step.event_inputs[0], step.event_outputs[0])
+                        .expect("compiled note_to_control queues are distinct and valid");
+                    let mut context = ProcessContext::new(
+                        &mut self.audio_arena,
+                        &step.input_buffers,
+                        &step.output_buffers,
+                        frames,
+                    );
+                    arena_processing::process_note_to_control(
+                        &mut self.states[0][step.module_index],
+                        &mut context,
+                        input.events(),
+                        output,
                     );
                     continue;
                 }
