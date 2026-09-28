@@ -385,6 +385,18 @@ impl RealtimeGraphProcessor {
         self.render_root_buses(&[], outputs)
     }
 
+    /// Preparation can use this to reject schedules that the named-bus arena
+    /// path cannot execute before exposing a realtime handle to a host.
+    pub(crate) fn can_render_root_buses(&self) -> bool {
+        self.midi_idx.is_none()
+            && self.allocator.max_voices() <= 1
+            && self
+                .render_plan
+                .global_steps
+                .iter()
+                .all(is_channel_arena_supported)
+    }
+
     /// Render planar root input and output buffers in their prepared root-port
     /// order. Omitted input entries are treated as silence.
     pub fn render_root_buses(
@@ -399,15 +411,7 @@ impl RealtimeGraphProcessor {
         else {
             return 0;
         };
-        if frames > self.prepared_max_block_size
-            || self.midi_idx.is_some()
-            || self.allocator.max_voices() > 1
-            || self
-                .render_plan
-                .global_steps
-                .iter()
-                .any(|step| !is_channel_arena_supported(step))
-        {
+        if frames > self.prepared_max_block_size || !self.can_render_root_buses() {
             return 0;
         }
         for region in self.prepared_poly_runtime_regions.iter_mut() {

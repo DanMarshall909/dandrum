@@ -6,6 +6,7 @@
 extern "C"
 {
 struct DandrumEngine;
+struct DandrumKernelInstrument;
 struct DandrumRealtimeEventQueue;
 struct DandrumSoundFixtureRender;
 struct DandrumSoundMatch;
@@ -16,6 +17,54 @@ using DandrumSoundMatchProgressCallback = bool (*) (void* context,
                                                     std::size_t maxEvaluations,
                                                     double bestTotal);
 using DandrumCancellationCallback = bool (*) (void* context);
+
+// Direction: 1=input, 2=output. Signal type: 1=audio, 2=control, 3=event.
+// Bus declarations and planar views are for audio/control ports. Event root
+// ports are enumerable but have no float bus binding in this ABI.
+// Names, pointer arrays, and channel buffers must stay valid through each call.
+// Calls that render or destroy the same instrument must not overlap.
+struct DandrumKernelBusDeclaration
+{
+    const char* name;
+    std::uint32_t direction;
+    std::size_t channelCount;
+};
+struct DandrumKernelInputBusView
+{
+    const char* name;
+    const float* const* channels;
+    std::size_t channelCount;
+    std::size_t frameCapacity;
+};
+struct DandrumKernelOutputBusView
+{
+    const char* name;
+    float* const* channels;
+    std::size_t channelCount;
+    std::size_t frameCapacity;
+};
+
+DandrumKernelInstrument* dandrum_kernel_prepare_file (const char* path,
+                                                       std::uint32_t sampleRateHz,
+                                                       std::size_t maxBlockSize,
+                                                       const DandrumKernelBusDeclaration* buses,
+                                                       std::size_t busCount);
+void dandrum_kernel_destroy (DandrumKernelInstrument* instrument);
+std::size_t dandrum_kernel_root_port_count (const DandrumKernelInstrument* instrument);
+bool dandrum_kernel_root_port (const DandrumKernelInstrument* instrument,
+                               std::size_t index,
+                               char* name,
+                               std::size_t nameCapacity,
+                               std::uint32_t* direction,
+                               std::uint32_t* signalType,
+                               std::size_t* channels);
+std::uint32_t dandrum_kernel_total_latency_samples (const DandrumKernelInstrument* instrument);
+std::size_t dandrum_kernel_render (DandrumKernelInstrument* instrument,
+                                   const DandrumKernelInputBusView* inputs,
+                                   std::size_t inputCount,
+                                   const DandrumKernelOutputBusView* outputs,
+                                   std::size_t outputCount,
+                                   std::size_t frames);
 
 DandrumEngine* dandrum_engine_create();
 void dandrum_engine_destroy (DandrumEngine* engine);
