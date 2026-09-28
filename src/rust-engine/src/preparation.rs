@@ -10,9 +10,7 @@ use crate::compiled_patch::{
     CompiledRootPort, ImpulseResponseResourceHandle, RootBusPlan, SampleResourceHandle,
 };
 use crate::diagnostics::{self, Diagnostic, Severity};
-use crate::graph::{
-    Cable, ExecutionScope, Graph, ModuleId, ModuleNode, PortDirection, PortRef, SignalType,
-};
+use crate::graph::{Cable, Graph, ModuleId, ModuleNode, PortDirection, PortRef, SignalType};
 use crate::kernel::document::KernelPatch;
 use crate::kernel::flatten::FlattenedGraph;
 use crate::kernel::latency::LatencyPlan;
@@ -1024,8 +1022,7 @@ fn lower_kernel_graph(
     let mut modules = Vec::new();
     let mut node_data = BTreeMap::new();
     for node in flattened.nodes() {
-        let mut lowered = ModuleNode::new(ModuleId::new(node.id().as_str()), node.definition())
-            .with_execution_scope(ExecutionScope::Global);
+        let mut lowered = ModuleNode::new(ModuleId::new(node.id().as_str()), node.definition());
         for port in node.ports() {
             lowered = match port.direction() {
                 PortDirection::Input => {

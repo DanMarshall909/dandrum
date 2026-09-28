@@ -1115,16 +1115,22 @@ fn compile_internal(
 
     resolve_routing(graph, &module_indices, &mut nodes)?;
 
-    let global_node_indices = topological_order
-        .iter()
-        .copied()
-        .filter(|index| graph.modules()[*index].execution_scope() == ExecutionScope::Global)
-        .collect::<Vec<_>>();
-    let voice_node_indices = topological_order
-        .iter()
-        .copied()
-        .filter(|index| graph.modules()[*index].execution_scope() == ExecutionScope::Voice)
-        .collect::<Vec<_>>();
+    let (global_node_indices, voice_node_indices) = if supplied_node_data.is_some() {
+        (topological_order.clone(), Vec::new())
+    } else {
+        (
+            topological_order
+                .iter()
+                .copied()
+                .filter(|index| graph.modules()[*index].execution_scope() == ExecutionScope::Global)
+                .collect::<Vec<_>>(),
+            topological_order
+                .iter()
+                .copied()
+                .filter(|index| graph.modules()[*index].execution_scope() == ExecutionScope::Voice)
+                .collect::<Vec<_>>(),
+        )
+    };
     let execution_order = global_node_indices
         .iter()
         .chain(voice_node_indices.iter())
@@ -1638,6 +1644,32 @@ mod tests {
 
         assert_eq!(compiled.execution_order(), &[0, 1, 2]);
         assert_eq!(compiled.topological_order(), &[0, 1, 2]);
+    }
+
+    #[test]
+    fn kernel_nodes_follow_dependency_order_without_legacy_voice_scope() {
+        let graph = Graph::new(
+            vec![audio_source("osc").with_execution_scope(ExecutionScope::Voice)],
+            vec![],
+        );
+        let node_data = BTreeMap::from([(
+            "osc".to_string(),
+            CompiledNodeData::from_kernel(
+                "osc",
+                ModuleKind::Oscillator,
+                &BTreeMap::new(),
+                &BTreeMap::new(),
+            )
+            .expect("oscillator construction should compile"),
+        )]);
+
+        let compiled =
+            compile_with_node_data(&graph, &render_settings(), &node_data, &BTreeMap::new())
+                .expect("kernel graph should compile");
+
+        assert_eq!(compiled.execution_order(), &[0]);
+        assert_eq!(compiled.global_node_indices(), &[0]);
+        assert!(compiled.voice_node_indices().is_empty());
     }
 
     #[test]
