@@ -206,6 +206,34 @@ fn graph_declaration_has_patch_and_composite_symmetry() {
 }
 
 #[test]
+fn parsed_root_composite_script_and_primitive_use_the_same_discovery_schema() {
+    let patch = load_kernel_patch_str(COMPLETE_PATCH).expect("kernel patch loads");
+    let root = patch.root().metadata();
+    let composite = patch.registry().discover("amplifier").unwrap();
+    let primitive = patch.registry().discover("gain").unwrap();
+    let scripted = load_kernel_patch_str(SCRIPT_DEFINITION_PATCH).expect("script patch loads");
+    let script = scripted.registry().discover("counter").unwrap();
+
+    assert_eq!(root.name(), "reusable_voice");
+    assert_eq!(root.ports()[1].channels(), &ChannelCount::param("channels"));
+    assert_eq!(
+        root.static_params()[3].static_type(),
+        StaticType::Resource(ResourceKind::ImpulseResponse)
+    );
+    assert_eq!(
+        composite.ports()[0].control_default().unwrap().unit(),
+        Some("linear")
+    );
+    assert_eq!(
+        composite.static_params()[1].allowed_values(),
+        ["clean", "driven"]
+    );
+    assert_eq!(primitive.ports()[0].name(), "audio_in");
+    assert_eq!(script.ports()[0].signal_type(), SignalType::Event);
+    assert_eq!(script.static_params()[1].static_type(), StaticType::String);
+}
+
+#[test]
 fn standalone_composite_shape_loads_as_a_root_patch() {
     let yaml = r#"
 metadata: { name: amplifier }

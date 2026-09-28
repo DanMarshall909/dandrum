@@ -494,6 +494,90 @@ impl Port {
     }
 }
 
+/// Public port facts shared by definition discovery and prepared-graph
+/// enumeration. Prepared ports replace a static channel reference with its
+/// resolved literal count while preserving the same metadata shape.
+#[derive(Clone, Debug, PartialEq)]
+pub struct PortMetadata {
+    name: String,
+    direction: PortDirection,
+    signal_type: SignalType,
+    channels: ChannelCount,
+    multiplicity: Multiplicity,
+    control_default: Option<ControlDefault>,
+}
+
+impl PortMetadata {
+    fn declared(port: &Port) -> Self {
+        Self {
+            name: port.name().to_string(),
+            direction: port.direction(),
+            signal_type: port.signal_type(),
+            channels: port.channels().clone(),
+            multiplicity: port.multiplicity(),
+            control_default: port.control_default().cloned(),
+        }
+    }
+
+    pub(crate) fn resolved(port: &ResolvedPort) -> Self {
+        Self {
+            name: port.name().to_string(),
+            direction: port.direction(),
+            signal_type: port.signal_type(),
+            channels: ChannelCount::Literal(port.channels()),
+            multiplicity: port.multiplicity(),
+            control_default: port.control_default().cloned(),
+        }
+    }
+
+    pub fn name(&self) -> &str {
+        &self.name
+    }
+
+    pub fn direction(&self) -> PortDirection {
+        self.direction
+    }
+
+    pub fn signal_type(&self) -> SignalType {
+        self.signal_type
+    }
+
+    pub fn channels(&self) -> &ChannelCount {
+        &self.channels
+    }
+
+    pub fn multiplicity(&self) -> Multiplicity {
+        self.multiplicity
+    }
+
+    pub fn control_default(&self) -> Option<&ControlDefault> {
+        self.control_default.as_ref()
+    }
+}
+
+/// Discoverable interface of any graph definition, including a patch root.
+/// The representation has no primitive/composite/script/package distinction.
+#[derive(Clone, Debug, PartialEq)]
+pub struct DefinitionMetadata {
+    name: String,
+    ports: Vec<PortMetadata>,
+    static_params: Vec<StaticParam>,
+}
+
+impl DefinitionMetadata {
+    pub fn name(&self) -> &str {
+        &self.name
+    }
+
+    pub fn ports(&self) -> &[PortMetadata] {
+        &self.ports
+    }
+
+    pub fn static_params(&self) -> &[StaticParam] {
+        &self.static_params
+    }
+}
+
 /// Identity of a node instance within a graph definition.
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct NodeId(String);
@@ -711,6 +795,14 @@ impl GraphDefinition {
         &self.ports
     }
 
+    pub fn metadata(&self) -> DefinitionMetadata {
+        DefinitionMetadata {
+            name: self.name.clone(),
+            ports: self.ports.iter().map(PortMetadata::declared).collect(),
+            static_params: self.static_params.clone(),
+        }
+    }
+
     pub fn nodes(&self) -> &[Node] {
         &self.nodes
     }
@@ -828,6 +920,10 @@ impl DefinitionRegistry {
 
     pub fn get(&self, name: &str) -> Option<&GraphDefinition> {
         self.definitions.get(name)
+    }
+
+    pub fn discover(&self, name: &str) -> Option<DefinitionMetadata> {
+        self.get(name).map(GraphDefinition::metadata)
     }
 
     /// Every registered definition, in name order. Capability discovery and

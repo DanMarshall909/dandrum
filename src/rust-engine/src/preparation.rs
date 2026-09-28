@@ -17,7 +17,8 @@ use crate::kernel::document::KernelPatch;
 use crate::kernel::flatten::FlattenedGraph;
 use crate::kernel::latency::LatencyPlan;
 use crate::kernel::{
-    DefinitionRegistry, GraphDefinition, ResourceKind, ResourceOrigin, ResourceRef, StaticValue,
+    DefinitionRegistry, GraphDefinition, PortMetadata, ResourceKind, ResourceOrigin, ResourceRef,
+    StaticValue,
 };
 use crate::module_reference::MacroRoots;
 use crate::patch::{self, ParameterValue, PatchDocument, PresetDocument, RenderSettings};
@@ -290,6 +291,27 @@ pub struct PreparedKernelInstrument {
     compiled_patch: CompiledPatch,
 }
 
+#[derive(Clone, Debug, PartialEq)]
+pub struct PreparedNodeMetadata {
+    id: String,
+    definition: String,
+    ports: Vec<PortMetadata>,
+}
+
+impl PreparedNodeMetadata {
+    pub fn id(&self) -> &str {
+        &self.id
+    }
+
+    pub fn definition(&self) -> &str {
+        &self.definition
+    }
+
+    pub fn ports(&self) -> &[PortMetadata] {
+        &self.ports
+    }
+}
+
 impl PreparedKernelInstrument {
     pub fn flattened_graph(&self) -> &FlattenedGraph {
         &self.flattened_graph
@@ -309,6 +331,45 @@ impl PreparedKernelInstrument {
 
     pub fn compiled_patch(&self) -> &CompiledPatch {
         &self.compiled_patch
+    }
+
+    /// Resolved root ports, expressed in the same schema as declaration
+    /// discovery. Static channel references have become literal counts.
+    pub fn root_port_metadata(&self) -> Vec<PortMetadata> {
+        self.flattened_graph
+            .root_ports()
+            .iter()
+            .map(PortMetadata::resolved)
+            .collect()
+    }
+
+    /// Includes compiler-generated nodes such as control-to-audio promotion.
+    pub fn node_metadata(&self) -> Vec<PreparedNodeMetadata> {
+        let mut nodes = Vec::new();
+        collect_prepared_node_metadata(&self.flattened_graph, &self.compiled_patch, "", &mut nodes);
+        nodes
+    }
+}
+
+fn collect_prepared_node_metadata(
+    flattened: &FlattenedGraph,
+    compiled: &CompiledPatch,
+    prefix: &str,
+    nodes: &mut Vec<PreparedNodeMetadata>,
+) {
+    nodes.extend(flattened.nodes().iter().map(|node| PreparedNodeMetadata {
+        id: format!("{prefix}{}", node.id().as_str()),
+        definition: node.definition().to_string(),
+        ports: node.ports().iter().map(PortMetadata::resolved).collect(),
+    }));
+    for region in compiled.poly_regions() {
+        let child_prefix = format!("{prefix}{}::", region.node_id());
+        collect_prepared_node_metadata(
+            region.flattened_voice(),
+            region.child_patch(),
+            &child_prefix,
+            nodes,
+        );
     }
 }
 
@@ -1351,6 +1412,159 @@ mod tests {
             max_voices,
             crate::kernel::POLY_ALLOCATION_REJECT_NEW,
         )
+    }
+
+    #[test]
+    fn prepared_discovery_reuses_root_port_metadata_and_lists_promotion_nodes() {
+        let root = GraphDefinition::new("root")
+            .with_port(
+                KernelPort::input("level", SignalType::Control, 1)
+                    .with_control_default(crate::kernel::ControlDefault::new(0.5))
+                    .maps_to(kernel_ref("gain", builtin_ports::GAIN)),
+            )
+            .with_port(
+                KernelPort::output("master", SignalType::Audio, 1)
+                    .maps_from(kernel_ref("gain", builtin_ports::AUDIO_OUT)),
+            )
+            .with_node(Node::new(NodeId::new("source"), module_types::CURVE_MAPPER))
+            .with_node(Node::new(NodeId::new("gain"), module_types::GAIN))
+            .with_connection(Connection::new(
+                kernel_ref("source", builtin_ports::VALUE),
+                kernel_ref("gain", builtin_ports::AUDIO_IN),
+            ));
+        let discovered = root.metadata();
+        let prepared = prepare_kernel_graph_with_buses(
+            &root,
+            &builtin_registry(),
+            &KERNEL_RENDER_SETTINGS,
+            &HostBuses::new().with_output("master", 1),
+        )
+        .expect("root with promoted connection prepares");
+
+        assert_eq!(discovered.ports().len(), 2);
+        let prepared_ports = prepared.root_port_metadata();
+        assert_eq!(prepared_ports, discovered.ports());
+        let promotion = prepared
+            .node_metadata()
+            .into_iter()
+            .find(|node| node.definition() == crate::kernel::CONTROL_TO_AUDIO_DEFINITION)
+            .expect("generated promotion is discoverable");
+        assert!(
+            promotion
+                .id()
+                .contains(crate::kernel::PROMOTION_NODE_PREFIX)
+        );
+        assert_eq!(
+            promotion.ports()[0].name(),
+            crate::kernel::PROMOTION_INPUT_PORT
+        );
+        assert_eq!(
+            promotion.ports()[0].channels(),
+            &crate::kernel::ChannelCount::Literal(1)
+        );
+        assert_eq!(
+            promotion.ports()[1].name(),
+            crate::kernel::PROMOTION_OUTPUT_PORT
+        );
+        assert_eq!(promotion.ports()[1].signal_type(), SignalType::Audio);
+    }
+
+    #[test]
+    fn prepared_root_discovery_resolves_static_channel_references() {
+        let root = GraphDefinition::new("root")
+            .with_static_param(
+                crate::kernel::StaticParam::new("channels", crate::kernel::StaticType::Int)
+                    .with_default(StaticValue::Int(2)),
+            )
+            .with_port(
+                KernelPort::output(
+                    "master",
+                    SignalType::Audio,
+                    crate::kernel::ChannelCount::param("channels"),
+                )
+                .maps_from(kernel_ref("gain", builtin_ports::AUDIO_OUT)),
+            )
+            .with_node(
+                Node::new(NodeId::new("gain"), module_types::GAIN).with_static_arg(
+                    crate::kernel::builtins::CHANNELS_PARAM,
+                    StaticArg::ParamRef("channels".into()),
+                ),
+            );
+        let prepared = prepare_kernel_graph_with_buses(
+            &root,
+            &builtin_registry(),
+            &KERNEL_RENDER_SETTINGS,
+            &HostBuses::new().with_output("master", 2),
+        )
+        .expect("static root channel count resolves");
+
+        assert_eq!(
+            root.metadata().ports()[0].channels(),
+            &crate::kernel::ChannelCount::param("channels")
+        );
+        assert_eq!(
+            prepared.root_port_metadata()[0].channels(),
+            &crate::kernel::ChannelCount::Literal(2)
+        );
+        assert_eq!(
+            prepared
+                .node_metadata()
+                .into_iter()
+                .find(|node| node.id() == "gain")
+                .unwrap()
+                .ports()
+                .iter()
+                .find(|port| port.name() == builtin_ports::AUDIO_OUT)
+                .unwrap()
+                .channels(),
+            &crate::kernel::ChannelCount::Literal(2)
+        );
+    }
+
+    #[test]
+    fn prepared_discovery_includes_promotions_inside_nested_poly_voices() {
+        let inner = GraphDefinition::new("promoted_inner")
+            .with_port(
+                KernelPort::output("audio", SignalType::Audio, 1)
+                    .maps_from(kernel_ref("gain", builtin_ports::AUDIO_OUT)),
+            )
+            .with_node(Node::new(NodeId::new("source"), module_types::CURVE_MAPPER))
+            .with_node(Node::new(NodeId::new("gain"), module_types::GAIN))
+            .with_connection(Connection::new(
+                kernel_ref("source", builtin_ports::VALUE),
+                kernel_ref("gain", builtin_ports::AUDIO_IN),
+            ));
+        let outer = GraphDefinition::new("outer")
+            .with_port(
+                KernelPort::output("audio", SignalType::Audio, 1)
+                    .maps_from(kernel_ref("inner_voices", "audio")),
+            )
+            .with_node(poly_node("inner_voices", inner.name(), 1));
+        let root = GraphDefinition::new("root")
+            .with_port(
+                KernelPort::output("master", SignalType::Audio, 1)
+                    .maps_from(kernel_ref("voices", "audio")),
+            )
+            .with_node(poly_node("voices", outer.name(), 1));
+        let prepared = prepare_kernel_graph_with_buses(
+            &root,
+            &builtin_registry()
+                .with_definition(inner)
+                .with_definition(outer),
+            &KERNEL_RENDER_SETTINGS,
+            &HostBuses::new().with_output("master", 1),
+        )
+        .expect("nested promotion prepares");
+
+        let nodes = prepared.node_metadata();
+        let promotions = nodes
+            .iter()
+            .filter(|node| node.definition() == crate::kernel::CONTROL_TO_AUDIO_DEFINITION)
+            .collect::<Vec<_>>();
+        assert_eq!(promotions.len(), 1);
+        assert!(promotions[0].id().starts_with("voices::inner_voices::"));
+        assert_eq!(promotions[0].ports()[0].signal_type(), SignalType::Control);
+        assert_eq!(promotions[0].ports()[1].signal_type(), SignalType::Audio);
     }
 
     fn gain_voice(name: &str) -> GraphDefinition {

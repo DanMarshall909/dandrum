@@ -140,6 +140,66 @@ fn static_parameter_declaration_is_preserved_for_resolution_and_discovery() {
 }
 
 #[test]
+fn discovery_uses_one_port_and_static_schema_for_definition_kinds() {
+    let public_port = Port::input(
+        "level",
+        SignalType::Control,
+        ChannelCount::param("channels"),
+    )
+    .with_multiplicity(Multiplicity::Summing)
+    .with_control_default(
+        ControlDefault::new(0.5)
+            .with_min(0.0)
+            .with_max(1.0)
+            .with_unit("linear"),
+    );
+    let channel_param =
+        StaticParam::new("channels", StaticType::Int).with_default(StaticValue::Int(2));
+    let enum_param = StaticParam::new("mode", StaticType::Enum)
+        .with_default(StaticValue::Enum("soft".into()))
+        .with_allowed_values(["soft", "hard"]);
+    let resource_param = StaticParam::new("sample", StaticType::Resource(ResourceKind::Sample));
+    let definitions = [
+        GraphDefinition::new("primitive"),
+        GraphDefinition::new("composite").with_node(Node::new(NodeId::new("child"), "primitive")),
+        GraphDefinition::new("script").with_implementation(DefinitionImplementation::Script),
+        GraphDefinition::new("$LIB/package"),
+        GraphDefinition::new("root"),
+    ];
+    let mut registry = DefinitionRegistry::new();
+    for definition in definitions {
+        registry = registry.with_definition(
+            definition
+                .with_static_param(channel_param.clone())
+                .with_static_param(enum_param.clone())
+                .with_static_param(resource_param.clone())
+                .with_port(public_port.clone()),
+        );
+    }
+
+    for name in ["primitive", "composite", "script", "$LIB/package", "root"] {
+        let discovered = registry.discover(name).expect("definition is discoverable");
+        assert_eq!(discovered.name(), name);
+        assert_eq!(discovered.ports().len(), 1);
+        let port = &discovered.ports()[0];
+        assert_eq!(port.name(), "level");
+        assert_eq!(port.direction(), PortDirection::Input);
+        assert_eq!(port.signal_type(), SignalType::Control);
+        assert_eq!(port.channels(), &ChannelCount::param("channels"));
+        assert_eq!(port.multiplicity(), Multiplicity::Summing);
+        let control = port.control_default().unwrap();
+        assert_eq!(control.default(), 0.5);
+        assert_eq!(control.min(), Some(0.0));
+        assert_eq!(control.max(), Some(1.0));
+        assert_eq!(control.unit(), Some("linear"));
+        assert_eq!(discovered.static_params()[0], channel_param);
+        assert_eq!(discovered.static_params()[1], enum_param);
+        assert_eq!(discovered.static_params()[2], resource_param);
+    }
+    assert!(registry.discover("missing").is_none());
+}
+
+#[test]
 fn string_static_parameter_preserves_inline_script_source() {
     let source = "fn process(input) { input }";
     let script = GraphDefinition::new("script").with_static_param(

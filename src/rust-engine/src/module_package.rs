@@ -229,6 +229,10 @@ connections: []
             load_kernel_patch_str(&format!("metadata: {{ name: {reference} }}\n{DEFINITION}"))
                 .expect("equivalent inline definition should load");
 
+        let packaged_metadata = packaged.registry().discover(reference).unwrap();
+        assert_eq!(packaged_metadata, inline.root().metadata());
+        assert_eq!(packaged_metadata.ports()[0].name(), "audio_in");
+
         assert_eq!(packaged.definition(), inline.root());
         assert_eq!(
             packaged
