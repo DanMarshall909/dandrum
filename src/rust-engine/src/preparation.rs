@@ -1895,7 +1895,23 @@ mod tests {
         let frames = KERNEL_RENDER_SETTINGS.block_size_frames as usize;
         let mut left = vec![0.0; frames];
         let mut right = vec![0.0; frames];
-        assert_eq!(runtime.render(&mut left, &mut right), frames);
+        assert_eq!(
+            render_two_mono_root_ports(runtime, &mut left, &mut right),
+            frames
+        );
+    }
+
+    fn render_two_mono_root_ports(
+        runtime: &mut RealtimeGraphProcessor,
+        left: &mut [f32],
+        right: &mut [f32],
+    ) -> usize {
+        assert_eq!(left.len(), right.len());
+        let mut outputs = vec![vec![vec![0.0; left.len()]]; 2];
+        let frames = runtime.render_root_outputs(&mut outputs);
+        left[..frames].copy_from_slice(&outputs[0][0][..frames]);
+        right[..frames].copy_from_slice(&outputs[1][0][..frames]);
+        frames
     }
 
     #[test]
@@ -2191,7 +2207,10 @@ mod tests {
             let frames = KERNEL_RENDER_SETTINGS.block_size_frames as usize;
             let mut left = vec![0.0; frames];
             let mut right = vec![0.0; frames];
-            assert_eq!(runtime.render(&mut left, &mut right), frames);
+            assert_eq!(
+                render_two_mono_root_ports(&mut runtime, &mut left, &mut right),
+                frames
+            );
             assert_eq!(left, right);
             left
         };
@@ -2220,12 +2239,18 @@ mod tests {
         let mut right = vec![0.0; frames];
 
         runtime.note_on(60, 100);
-        assert_eq!(runtime.render(&mut left, &mut right), frames);
+        assert_eq!(
+            render_two_mono_root_ports(&mut runtime, &mut left, &mut right),
+            frames
+        );
         assert!(left.iter().all(|sample| *sample == 0.25));
         assert_eq!(left, right);
 
         runtime.note_on(64, 100);
-        assert_eq!(runtime.render(&mut left, &mut right), frames);
+        assert_eq!(
+            render_two_mono_root_ports(&mut runtime, &mut left, &mut right),
+            frames
+        );
         assert!(left.iter().all(|sample| *sample == 0.5));
         assert_eq!(left, right);
     }
@@ -2320,7 +2345,10 @@ mod tests {
         let mut right = vec![0.0; frames];
 
         runtime.note_on(60, 100);
-        assert_eq!(runtime.render(&mut left, &mut right), frames);
+        assert_eq!(
+            render_two_mono_root_ports(&mut runtime, &mut left, &mut right),
+            frames
+        );
         assert!(left.iter().any(|sample| sample.abs() > 0.001));
         assert_eq!(
             runtime.prepared_poly_runtime_regions()[0].active_voice_count(),
@@ -2329,12 +2357,18 @@ mod tests {
 
         left.fill(f32::NAN);
         right.fill(f32::NAN);
-        assert_eq!(runtime.render(&mut left, &mut right), frames);
+        assert_eq!(
+            render_two_mono_root_ports(&mut runtime, &mut left, &mut right),
+            frames
+        );
         assert!(left.iter().all(|sample| *sample == 0.0));
         assert!(right.iter().all(|sample| *sample == 0.0));
 
         runtime.note_on(64, 100);
-        assert_eq!(runtime.render(&mut left, &mut right), frames);
+        assert_eq!(
+            render_two_mono_root_ports(&mut runtime, &mut left, &mut right),
+            frames
+        );
         assert!(left.iter().any(|sample| sample.abs() > 0.001));
     }
 
@@ -2365,20 +2399,29 @@ mod tests {
         let mut right = vec![0.0; frames];
 
         runtime.note_on(60, 100);
-        assert_eq!(runtime.render(&mut left, &mut right), frames);
+        assert_eq!(
+            render_two_mono_root_ports(&mut runtime, &mut left, &mut right),
+            frames
+        );
         assert!(left.iter().any(|sample| sample.abs() > 0.001));
         assert_eq!(
             runtime.prepared_poly_runtime_regions()[0].active_voice_count(),
             0
         );
 
-        assert_eq!(runtime.render(&mut left, &mut right), frames);
+        assert_eq!(
+            render_two_mono_root_ports(&mut runtime, &mut left, &mut right),
+            frames
+        );
         assert!(left.iter().all(|sample| *sample == 0.0));
         assert!(right.iter().all(|sample| *sample == 0.0));
 
         let mut unmatched = runtime_for(&prepared);
         unmatched.note_on(61, 100);
-        assert_eq!(unmatched.render(&mut left, &mut right), frames);
+        assert_eq!(
+            render_two_mono_root_ports(&mut unmatched, &mut left, &mut right),
+            frames
+        );
         assert!(left.iter().any(|sample| sample.abs() > 0.001));
         assert_eq!(
             unmatched.prepared_poly_runtime_regions()[0].active_voice_count(),
@@ -2428,12 +2471,18 @@ mod tests {
 
         runtime.note_on(60, 100);
         for _ in 0..200 {
-            assert_eq!(runtime.render(&mut left, &mut right), frames);
+            assert_eq!(
+                render_two_mono_root_ports(&mut runtime, &mut left, &mut right),
+                frames
+            );
         }
         assert!(left.iter().all(|sample| *sample == 0.125));
 
         runtime.note_off(60);
-        assert_eq!(runtime.render(&mut left, &mut right), frames);
+        assert_eq!(
+            render_two_mono_root_ports(&mut runtime, &mut left, &mut right),
+            frames
+        );
         assert!(left.iter().any(|sample| *sample > 0.1));
         assert_eq!(
             runtime.prepared_poly_runtime_regions()[0].active_voice_count(),
@@ -2441,20 +2490,29 @@ mod tests {
         );
 
         for _ in 0..120 {
-            assert_eq!(runtime.render(&mut left, &mut right), frames);
+            assert_eq!(
+                render_two_mono_root_ports(&mut runtime, &mut left, &mut right),
+                frames
+            );
         }
         assert_eq!(
             runtime.prepared_poly_runtime_regions()[0].active_voice_count(),
             0
         );
-        assert_eq!(runtime.render(&mut left, &mut right), frames);
+        assert_eq!(
+            render_two_mono_root_ports(&mut runtime, &mut left, &mut right),
+            frames
+        );
         assert!(left.iter().all(|sample| *sample == 0.0));
         assert!(right.iter().all(|sample| *sample == 0.0));
 
         let mut midblock = runtime_for(&prepared);
         midblock.note_on_at(60, 100, 0);
         midblock.note_off_at(60, 4);
-        assert_eq!(midblock.render(&mut left, &mut right), frames);
+        assert_eq!(
+            render_two_mono_root_ports(&mut midblock, &mut left, &mut right),
+            frames
+        );
         assert!((left[3] - 0.0078125).abs() < 1.0e-6);
         assert!(
             (left[4] - left[3]).abs() < 1.0e-6,
@@ -2484,7 +2542,10 @@ mod tests {
 
         let mut unsignalled = runtime_for(&prepared);
         unsignalled.note_on(60, 0);
-        assert_eq!(unsignalled.render(&mut left, &mut right), frames);
+        assert_eq!(
+            render_two_mono_root_ports(&mut unsignalled, &mut left, &mut right),
+            frames
+        );
         assert_eq!(
             unsignalled.prepared_poly_runtime_regions()[0].active_voice_count(),
             1
@@ -2493,12 +2554,18 @@ mod tests {
 
         let mut signalled = runtime_for(&prepared);
         signalled.note_on(60, 100);
-        assert_eq!(signalled.render(&mut left, &mut right), frames);
+        assert_eq!(
+            render_two_mono_root_ports(&mut signalled, &mut left, &mut right),
+            frames
+        );
         assert_eq!(
             signalled.prepared_poly_runtime_regions()[0].active_voice_count(),
             0
         );
-        assert_eq!(signalled.render(&mut left, &mut right), frames);
+        assert_eq!(
+            render_two_mono_root_ports(&mut signalled, &mut left, &mut right),
+            frames
+        );
         assert!(left.iter().all(|sample| *sample == 0.0));
         assert!(right.iter().all(|sample| *sample == 0.0));
     }
@@ -2539,7 +2606,10 @@ mod tests {
         let mut right = vec![0.0; frames];
 
         runtime.note_on(60, 100);
-        assert_eq!(runtime.render(&mut left, &mut right), frames);
+        assert_eq!(
+            render_two_mono_root_ports(&mut runtime, &mut left, &mut right),
+            frames
+        );
         assert_eq!(
             runtime.prepared_poly_runtime_regions()[0].active_voice_count(),
             0
@@ -2666,12 +2736,18 @@ mod tests {
         let mut right = vec![0.0; 100];
 
         runtime.note_on(60, 100);
-        assert_eq!(runtime.render(&mut left, &mut right), 100);
+        assert_eq!(
+            render_two_mono_root_ports(&mut runtime, &mut left, &mut right),
+            100
+        );
         assert!(left.iter().any(|sample| sample.abs() > 0.001));
 
         runtime.note_off_at(60, 50);
         for _ in 0..50 {
-            assert_eq!(runtime.render(&mut left, &mut right), 100);
+            assert_eq!(
+                render_two_mono_root_ports(&mut runtime, &mut left, &mut right),
+                100
+            );
         }
         assert_eq!(
             runtime.prepared_poly_runtime_regions()[0].active_voice_count(),
@@ -2680,12 +2756,18 @@ mod tests {
         );
         assert!(left.iter().any(|sample| sample.abs() > 0.001));
 
-        assert_eq!(runtime.render(&mut left, &mut right), 100);
+        assert_eq!(
+            render_two_mono_root_ports(&mut runtime, &mut left, &mut right),
+            100
+        );
         assert_eq!(
             runtime.prepared_poly_runtime_regions()[0].active_voice_count(),
             0
         );
-        assert_eq!(runtime.render(&mut left, &mut right), 100);
+        assert_eq!(
+            render_two_mono_root_ports(&mut runtime, &mut left, &mut right),
+            100
+        );
         assert!(left.iter().all(|sample| *sample == 0.0));
         assert!(right.iter().all(|sample| *sample == 0.0));
     }
@@ -3610,7 +3692,10 @@ connections:
         runtime.note_on(60, 100);
         let mut left = [0.0; 8];
         let mut right = [0.0; 8];
-        assert_eq!(runtime.render(&mut left, &mut right), 8);
+        assert_eq!(
+            render_two_mono_root_ports(&mut runtime, &mut left, &mut right),
+            8
+        );
         assert!(left[0].abs() > f32::EPSILON);
         assert_eq!(left, right, "sampler playback positions remain disjoint");
     }
@@ -4200,13 +4285,13 @@ connections: []
         );
         let mut left = [0.0; KERNEL_RENDER_SETTINGS.block_size_frames as usize];
         let mut right = [0.0; KERNEL_RENDER_SETTINGS.block_size_frames as usize];
-        realtime.render(&mut left, &mut right);
+        render_two_mono_root_ports(&mut realtime, &mut left, &mut right);
         assert!(
             left.iter().any(|sample| sample.abs() > f32::EPSILON),
             "the typed gain default reaches the realtime arena path"
         );
         assert!(realtime.set_numeric_parameter_by_target("layer::voice::amp", "gain", 0.0));
-        realtime.render(&mut left, &mut right);
+        render_two_mono_root_ports(&mut realtime, &mut left, &mut right);
         assert!(
             left.iter().all(|sample| sample.abs() <= f32::EPSILON),
             "the arena reads the current typed control slot each block"
