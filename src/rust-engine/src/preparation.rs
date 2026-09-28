@@ -1085,7 +1085,7 @@ fn lower_kernel_graph(
         {
             let id = format!("{KERNEL_COMPENSATION_EDGE_PREFIX}{index}");
             reserve_generated_id(&mut ids, &id)?;
-            modules.push(compensation_delay_node(&id, compensation.samples()));
+            modules.push(compensation_delay_node(&id));
             let mut data = CompiledNodeData::compensation_delay(compensation.samples());
             data.port_channels.insert(
                 builtin_ports::AUDIO_IN.to_string(),
@@ -1126,7 +1126,7 @@ fn lower_kernel_graph(
             }) {
             let id = format!("{KERNEL_COMPENSATION_ROOT_PREFIX}{root_name}::{index}");
             reserve_generated_id(&mut ids, &id)?;
-            modules.push(compensation_delay_node(&id, compensation.samples()));
+            modules.push(compensation_delay_node(&id));
             let mut data = CompiledNodeData::compensation_delay(compensation.samples());
             data.port_channels.insert(
                 builtin_ports::AUDIO_IN.to_string(),
@@ -1204,18 +1204,13 @@ fn root_bus_plan(
     RootBusPlan::new(inputs, outputs)
 }
 
-fn compensation_delay_node(id: &str, samples: u32) -> ModuleNode {
+fn compensation_delay_node(id: &str) -> ModuleNode {
     ModuleNode::new(
         ModuleId::new(id),
         crate::builtins::module_types::COMPENSATION_DELAY,
     )
-    .with_execution_scope(ExecutionScope::Global)
     .with_input(crate::graph::builtin_ports::AUDIO_IN, SignalType::Audio)
     .with_output(crate::graph::builtin_ports::AUDIO_OUT, SignalType::Audio)
-    .with_params(BTreeMap::from([(
-        crate::builtins::DELAY_SAMPLES_PARAMETER.to_string(),
-        samples.to_string(),
-    )]))
 }
 
 fn reserve_generated_id(
