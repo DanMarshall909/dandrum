@@ -20,7 +20,7 @@ use crate::graph::*;
 use crate::kernel::document::load_kernel_patch_str;
 use crate::oscillator::OSCILLATOR_BASE_HZ;
 use crate::patch;
-use crate::preparation::prepare_kernel_patch;
+use crate::preparation::{HostBuses, prepare_kernel_graph_with_buses, prepare_kernel_patch};
 use crate::sample::{LoadedSample, PreparedSamplerAssets};
 use crate::script::ScriptEvent;
 use std::collections::BTreeMap;
@@ -3513,28 +3513,134 @@ fn compiled_render_matches_raw_for_reverb_chain() {
 
 #[test]
 fn module_echo_yaml_loads_and_validates() {
-    let Some(yaml) = read_repo_fixture("examples/patches/module-echo.yaml") else {
-        return;
-    };
-    let patch = patch::load_patch_str(&yaml).expect("module-echo.yaml should parse");
-    patch::validate_patch_schema(&patch).expect("module-echo.yaml schema should be valid");
-    let graph = Graph::from_patch_declarations(&patch);
-    graph
-        .validate()
-        .expect("module-echo.yaml graph should validate");
+    assert_stereo_effect_composite("examples/patches/module-echo.yaml", "delay_echo");
 }
 
 #[test]
 fn module_reverb_yaml_loads_and_validates() {
-    let Some(yaml) = read_repo_fixture("examples/patches/module-reverb.yaml") else {
+    assert_stereo_effect_composite("examples/patches/module-reverb.yaml", "spatial_reverb");
+}
+
+fn assert_stereo_effect_composite(path: &str, definition_name: &str) {
+    let Some(yaml) = read_repo_fixture(path) else {
         return;
     };
-    let patch = patch::load_patch_str(&yaml).expect("module-reverb.yaml should parse");
-    patch::validate_patch_schema(&patch).expect("module-reverb.yaml schema should be valid");
-    let graph = Graph::from_patch_declarations(&patch);
-    graph
-        .validate()
-        .expect("module-reverb.yaml graph should validate");
+    let patch = load_kernel_patch_str(&yaml).expect("kernel composite example loads");
+    let definition = patch
+        .registry()
+        .get(definition_name)
+        .expect("composite definition");
+    let audio_ports = definition
+        .ports()
+        .iter()
+        .filter(|port| port.signal_type() == SignalType::Audio)
+        .collect::<Vec<_>>();
+    assert_eq!(audio_ports.len(), 2);
+    assert_eq!(audio_ports[0].name(), "audio_in");
+    assert_eq!(audio_ports[1].name(), "audio_out");
+    for port in audio_ports {
+        assert_eq!(
+            port.channels(),
+            &crate::kernel::ChannelCount::Param("channels".into()),
+            "{path} declares a channel span for {}",
+            port.name(),
+        );
+    }
+}
+
+#[test]
+fn migrated_stereo_effect_examples_match_legacy_named_outputs() {
+    let cases = [
+        (
+            "examples/patches/echo-demo.yaml",
+            include_str!("../../tests/fixtures/unify-graph-kernel/legacy/echo-demo.yaml"),
+            "echo",
+        ),
+        (
+            "examples/patches/module-echo.yaml",
+            include_str!("../../tests/fixtures/unify-graph-kernel/legacy/module-echo.yaml"),
+            "delay",
+        ),
+        (
+            "examples/patches/reverb-demo.yaml",
+            include_str!("../../tests/fixtures/unify-graph-kernel/legacy/reverb-demo.yaml"),
+            "reverb",
+        ),
+        (
+            "examples/patches/module-reverb.yaml",
+            include_str!("../../tests/fixtures/unify-graph-kernel/legacy/module-reverb.yaml"),
+            "reverb_mod",
+        ),
+    ];
+    for (path, legacy_yaml, effect_id) in cases {
+        let Some(kernel_yaml) = read_repo_fixture(path) else {
+            return;
+        };
+        let legacy = patch::load_patch_str(legacy_yaml).expect("legacy reference loads");
+        let settings = legacy.render.clone();
+        let events = vec![
+            note_on_value(0, 60, 100),
+            TimedInputEvent::new(960, ScriptEvent::NoteOff { note: 60 }),
+        ];
+        let expected = render_offline(
+            &Graph::from_patch_declarations(&legacy),
+            &settings,
+            events.clone(),
+        );
+        assert!(
+            expected.0.iter().any(|sample| sample.abs() > 0.001)
+                && expected.1.iter().any(|sample| sample.abs() > 0.001),
+            "{path} reference must render both channels",
+        );
+
+        let mut dry = legacy.clone();
+        dry.connections.retain(|connection| {
+            connection.from.module_id != effect_id && connection.to.module_id != effect_id
+        });
+        for side in ["left", "right"] {
+            dry.connections.push(patch::ConnectionDeclaration {
+                from: patch::PortReference {
+                    module_id: "mixer".into(),
+                    port_name: "mix".into(),
+                },
+                to: patch::PortReference {
+                    module_id: "out".into(),
+                    port_name: side.into(),
+                },
+            });
+        }
+        let dry_audio = render_offline(&Graph::from_patch_declarations(&dry), &settings, events);
+
+        let kernel = load_kernel_patch_str(&kernel_yaml)
+            .unwrap_or_else(|error| panic!("{path} should load as a kernel patch: {error}"));
+        let prepared = prepare_kernel_graph_with_buses(
+            kernel.root(),
+            kernel.registry(),
+            &settings,
+            &HostBuses::new()
+                .with_input("in", 2)
+                .with_output("master", 2),
+        )
+        .unwrap_or_else(|error| panic!("{path} should prepare: {error}"));
+        let inputs = BTreeMap::from([("in".to_string(), vec![dry_audio.0, dry_audio.1])]);
+        let actual = render_kernel_offline_named_with_inputs(
+            &prepared,
+            Vec::new(),
+            &PreparedSamplerAssets::empty(),
+            &inputs,
+        )
+        .unwrap_or_else(|error| panic!("{path} should render: {error}"));
+
+        assert_eq!(
+            actual.len(),
+            1,
+            "{path} must expose exactly one named output"
+        );
+        assert_eq!(actual[0].0, "master", "{path} names its stereo output");
+        assert_eq!(actual[0].1.len(), 2, "{path} preserves both channels");
+        assert_eq!(actual[0].1[0], expected.0, "{path} left output changed");
+        assert_eq!(actual[0].1[1], expected.1, "{path} right output changed");
+    }
 }
 
 #[test]

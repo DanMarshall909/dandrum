@@ -581,7 +581,7 @@ AC echo :: Echo SHALL expose built-in module ports :: Module registration has co
 
 AC echo :: Echo SHALL have a YAML composite module definition example :: Composite echo example loads without error
   fp 084ae899525e
-  todo not yet mapped to a test
+  test rust:module_echo_yaml_loads_and_validates
 
 AC echo :: Echo SHALL process in global (non-voice) scope :: Echo is global scope
   fp 54740311f9aa
@@ -1168,7 +1168,7 @@ AC reverb :: Reverb SHALL expose built-in module ports :: Module registration ha
 
 AC reverb :: Reverb SHALL have a YAML composite module definition example :: Composite reverb example loads without error
   fp 36f6158d9bea
-  todo not yet mapped to a test
+  test rust:module_reverb_yaml_loads_and_validates
 
 AC reverb :: Reverb SHALL process in global (non-voice) scope :: Reverb is global scope
   fp bdfb2033aac7
