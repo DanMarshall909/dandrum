@@ -1,11 +1,9 @@
 use std::path::PathBuf;
 
 use crate::core::TimedInputEvent;
-use crate::diagnostics::error_codes;
 use crate::patch::{self, ParameterValue};
 use crate::sample::PreparedSamplerAssets;
 use crate::script::ScriptEvent;
-use crate::synth::DandrumEngine;
 
 const OUTPUT_FLAG: &str = "--output";
 const PRESET_FLAG: &str = "--preset";
@@ -83,101 +81,96 @@ fn render_with_events(
             .expect("parsed render arguments always include an offline duration"),
     };
 
-    let (sample_rate_hz, left, right) = match crate::kernel::document::load_kernel_patch_file(
-        &render_args.patch,
-    ) {
-        Ok(kernel_patch) => {
-            if render_args.preset.is_some() || !render_args.overrides.is_empty() {
-                return error(
-                        "failed to render patch: --preset and --set are not yet supported for kernel patch documents"
-                            .to_string(),
-                    );
+    let kernel_patch = match crate::kernel::document::load_kernel_patch_file(&render_args.patch) {
+        Ok(kernel_patch) => kernel_patch,
+        Err(diagnostics) => return error(format!("failed to render patch: {diagnostics}")),
+    };
+    if !render_args.overrides.is_empty() {
+        return error(
+            "failed to render patch: --set is not yet supported for kernel patch documents"
+                .to_string(),
+        );
+    }
+    let preset = match render_args.preset.as_ref() {
+        Some(path) => match patch::load_preset_file(path) {
+            Ok(preset) => Some(preset),
+            Err(load_error) => {
+                return error(format!("failed to load preset: {load_error}"));
             }
-
-            let references = crate::module_package::external_references(
-                kernel_patch.root(),
-                kernel_patch.registry(),
-            );
-            let prepared = if references.is_empty() {
-                crate::preparation::prepare_kernel_patch(&kernel_patch, &settings)
-            } else {
-                let roots = match crate::module_library::default_host_macro_roots() {
-                    Ok(roots) => roots,
-                    Err(seed_error) => {
-                        return error(format!(
-                            "failed to render patch: {}",
-                            seed_error.to_diagnostic()
-                        ));
-                    }
-                };
-                let context = crate::preparation::PreparationContext::new(
-                    render_args
-                        .patch
-                        .parent()
-                        .unwrap_or_else(|| std::path::Path::new(".")),
-                    settings.sample_rate_hz,
-                )
-                .with_macro_roots(roots);
-                crate::preparation::prepare_kernel_patch_with_context(
-                    &kernel_patch,
-                    &settings,
-                    &context,
-                )
-            };
-            let prepared = match prepared {
-                Ok(prepared) => prepared,
-                Err(prepare_error) => {
-                    return error(format!("failed to render patch: {prepare_error}"));
-                }
-            };
-            let events = events(&settings);
-            let rendered = match crate::graph_processor::render_kernel_offline_named(
-                &prepared,
-                events,
-                &PreparedSamplerAssets::empty(),
-            ) {
-                Ok(rendered) => rendered,
-                Err(message) => return error(format!("failed to render patch: {message}")),
-            };
-            return match write_kernel_output_wavs(
-                &render_args.output,
-                settings.sample_rate_hz,
-                &rendered,
-            ) {
-                Ok(paths) => {
-                    let mut result = render_success(&render_args);
-                    for path in paths.into_iter().skip(1) {
-                        result
-                            .stdout
-                            .push_str(&format!("output: {}\n", path.display()));
-                    }
-                    result
-                }
-                Err(message) => error(format!("failed to write wav: {message}")),
-            };
-        }
-        Err(diagnostics)
-            if diagnostics.all().iter().any(|diagnostic| {
-                diagnostic.error_code() == error_codes::KERNEL_DOCUMENT_LEGACY_RENDER
-            }) =>
-        {
-            match render_legacy_patch(&render_args, &settings, events) {
-                Ok(rendered) => rendered,
-                Err(message) => return error(message),
-            }
-        }
-        Err(diagnostics) => {
-            return error(format!("failed to render patch: {diagnostics}"));
-        }
+        },
+        None => None,
     };
 
-    if let Err(write_error) =
-        crate::wav::write_wav_file(&render_args.output, sample_rate_hz, &left, &right)
-    {
-        return error(format!("failed to write wav: {write_error}"));
-    }
-
-    render_success(&render_args)
+    let references =
+        crate::module_package::external_references(kernel_patch.root(), kernel_patch.registry());
+    let prepared = if references.is_empty() {
+        match preset.as_ref() {
+            Some(preset) => crate::preparation::prepare_kernel_patch_with_preset(
+                &kernel_patch,
+                preset,
+                &settings,
+            ),
+            None => crate::preparation::prepare_kernel_patch(&kernel_patch, &settings),
+        }
+    } else {
+        let roots = match crate::module_library::default_host_macro_roots() {
+            Ok(roots) => roots,
+            Err(seed_error) => {
+                return error(format!(
+                    "failed to render patch: {}",
+                    seed_error.to_diagnostic()
+                ));
+            }
+        };
+        let context = crate::preparation::PreparationContext::new(
+            render_args
+                .patch
+                .parent()
+                .unwrap_or_else(|| std::path::Path::new(".")),
+            settings.sample_rate_hz,
+        )
+        .with_macro_roots(roots);
+        match preset.as_ref() {
+            Some(preset) => crate::preparation::prepare_kernel_patch_with_preset_and_context(
+                &kernel_patch,
+                preset,
+                &settings,
+                &context,
+            ),
+            None => crate::preparation::prepare_kernel_patch_with_context(
+                &kernel_patch,
+                &settings,
+                &context,
+            ),
+        }
+    };
+    let prepared = match prepared {
+        Ok(prepared) => prepared,
+        Err(prepare_error) => {
+            return error(format!("failed to render patch: {prepare_error}"));
+        }
+    };
+    let events = events(&settings);
+    let rendered = match crate::graph_processor::render_kernel_offline_named(
+        &prepared,
+        events,
+        &PreparedSamplerAssets::empty(),
+    ) {
+        Ok(rendered) => rendered,
+        Err(message) => return error(format!("failed to render patch: {message}")),
+    };
+    return match write_kernel_output_wavs(&render_args.output, settings.sample_rate_hz, &rendered) {
+        Ok(paths) => {
+            let mut result = render_success(&render_args);
+            for path in paths.into_iter().skip(1) {
+                result
+                    .stdout
+                    .push_str(&format!("output: {}\n", path.display()));
+            }
+            result
+        }
+        Err(message) => error(format!("failed to write wav: {message}")),
+    };
 }
 
 fn render_success(render_args: &RenderArgs) -> CliResult {
@@ -245,43 +238,6 @@ fn write_kernel_output_wavs(
         }
     }
     Ok(paths)
-}
-
-fn render_legacy_patch(
-    render_args: &RenderArgs,
-    settings: &patch::RenderSettings,
-    events: impl FnOnce(&patch::RenderSettings) -> Vec<TimedInputEvent>,
-) -> Result<(u32, Vec<f32>, Vec<f32>), String> {
-    let mut patch_doc = match patch::load_patch_file(&render_args.patch) {
-        Ok(patch_doc) => patch_doc,
-        Err(load_error) => return Err(format!("failed to render patch: {load_error}")),
-    };
-    if let Some(preset_path) = &render_args.preset {
-        let preset_doc = match patch::load_preset_file(preset_path) {
-            Ok(preset_doc) => preset_doc,
-            Err(load_error) => return Err(format!("failed to render patch: {load_error}")),
-        };
-        patch_doc = match patch::apply_preset(&patch_doc, &preset_doc) {
-            Ok(patch_doc) => patch_doc,
-            Err(validation_error) => {
-                return Err(format!("failed to render patch: {validation_error}"));
-            }
-        };
-    }
-    apply_cli_overrides(&mut patch_doc, &render_args.overrides);
-    apply_legacy_host_settings(&mut patch_doc, settings);
-    let base_dir = render_args
-        .patch
-        .parent()
-        .unwrap_or_else(|| std::path::Path::new("."));
-    let prepared = match crate::preparation::prepare_instrument_document(patch_doc, base_dir) {
-        Ok(prepared) => prepared,
-        Err(prepare_error) => return Err(format!("failed to render patch: {prepare_error}")),
-    };
-    let events = events(&prepared.patch_doc().render);
-    let mut engine = DandrumEngine::new();
-    let render = engine.render_prepared_instrument_offline(&prepared, events);
-    Ok((render.sample_rate_hz, render.left, render.right))
 }
 
 fn parse_render_args(args: Vec<String>) -> Result<RenderArgs, String> {
@@ -449,37 +405,6 @@ fn parse_cli_parameter_value(raw_value: &str) -> ParameterValue {
             .map(ParameterValue::Number)
             .unwrap_or_else(|_| ParameterValue::Text(raw_value.to_string())),
     }
-}
-
-fn apply_cli_overrides(patch_doc: &mut patch::PatchDocument, overrides: &[CliParameterOverride]) {
-    for parameter_override in overrides {
-        if let Some(module) = patch_doc
-            .modules
-            .iter_mut()
-            .find(|module| module.id == parameter_override.module_id)
-        {
-            module.parameters.insert(
-                parameter_override.parameter_name.clone(),
-                parameter_override.value.clone(),
-            );
-        } else {
-            patch_doc
-                .parameters
-                .entry(parameter_override.module_id.clone())
-                .or_default()
-                .insert(
-                    parameter_override.parameter_name.clone(),
-                    parameter_override.value.clone(),
-                );
-        }
-    }
-}
-
-fn apply_legacy_host_settings(
-    patch_doc: &mut patch::PatchDocument,
-    settings: &patch::RenderSettings,
-) {
-    patch_doc.render = settings.clone();
 }
 
 fn single_note_sequence(sample_rate: u32) -> Vec<TimedInputEvent> {
@@ -757,43 +682,6 @@ mod tests {
     }
 
     #[test]
-    fn apply_legacy_host_settings_sets_patch_render_fields() {
-        let mut patch = patch::load_patch_str(
-            r#"
-metadata:
-  name: Render Override Test
-render:
-  sample_rate_hz: 48000
-  block_size_frames: 128
-modules:
-  - id: osc
-    type: oscillator
-"#,
-        )
-        .expect("patch should parse");
-        let args = RenderArgs {
-            patch: PathBuf::from("test.yaml"),
-            output: PathBuf::from("out.wav"),
-            preset: None,
-            overrides: Vec::new(),
-            sample_rate_hz: Some(22050),
-            block_size_frames: Some(256),
-            duration_frames: Some(96000),
-        };
-
-        let settings = patch::RenderSettings {
-            sample_rate_hz: args.sample_rate_hz.unwrap(),
-            block_size_frames: args.block_size_frames.unwrap(),
-            duration_frames: args.duration_frames.unwrap(),
-        };
-        apply_legacy_host_settings(&mut patch, &settings);
-
-        assert_eq!(patch.render.sample_rate_hz, 22050);
-        assert_eq!(patch.render.block_size_frames, 256);
-        assert_eq!(patch.render.duration_frames, 96000);
-    }
-
-    #[test]
     fn yaml_without_duration_frames_uses_default() {
         let patch = patch::load_patch_str(
             r#"
@@ -810,118 +698,6 @@ modules:
         .expect("patch should parse");
 
         assert_eq!(patch.render.duration_frames, patch::DEFAULT_DURATION_FRAMES);
-    }
-
-    #[test]
-    fn cli_overrides_apply_after_yaml_values_and_last_repeated_value_wins() {
-        let mut patch = patch::load_patch_str(
-            r#"
-metadata:
-  name: CLI Override Apply
-render:
-  sample_rate_hz: 48000
-  block_size_frames: 128
-  duration_frames: 128
-modules:
-  - id: filt
-    type: filter
-    parameters:
-      algorithm: moog
-"#,
-        )
-        .expect("patch should parse");
-        let overrides = vec![
-            parse_cli_override("filt.algorithm=biquad").expect("override should parse"),
-            parse_cli_override("filt.algorithm=comb").expect("override should parse"),
-        ];
-
-        apply_cli_overrides(&mut patch, &overrides);
-
-        assert_eq!(
-            patch.modules[0].parameters.get("algorithm"),
-            Some(&ParameterValue::Text("comb".to_string()))
-        );
-    }
-
-    #[test]
-    fn cli_override_validation_rejects_unknown_module() {
-        let mut patch = patch::load_patch_str(
-            r#"
-metadata:
-  name: CLI Unknown Module
-render:
-  sample_rate_hz: 48000
-  block_size_frames: 128
-  duration_frames: 128
-modules:
-  - id: filt
-    type: filter
-"#,
-        )
-        .expect("patch should parse");
-        let overrides =
-            vec![parse_cli_override("missing.algorithm=moog").expect("override parses")];
-
-        apply_cli_overrides(&mut patch, &overrides);
-        let diagnostics = patch::validate_patch_schema(&patch)
-            .expect_err("unknown module override should fail")
-            .to_diagnostics();
-
-        assert!(
-            diagnostics
-                .all()
-                .iter()
-                .any(|diagnostic| diagnostic.module_id() == Some("missing"))
-        );
-    }
-
-    #[test]
-    fn cli_override_validation_uses_declaration_type_range_and_enum_checks() {
-        let mut patch = patch::load_patch_str(
-            r#"
-metadata:
-  name: CLI Invalid Values
-render:
-  sample_rate_hz: 48000
-  block_size_frames: 128
-  duration_frames: 128
-modules:
-  - id: filt
-    type: filter
-  - id: spectral
-    type: spectral_processor
-"#,
-        )
-        .expect("patch should parse");
-        let overrides = vec![
-            parse_cli_override("filt.algorithm=banana").expect("enum override parses"),
-            parse_cli_override("spectral.fft_size=64").expect("range override parses"),
-            parse_cli_override("spectral.mix=wide").expect("type override parses"),
-        ];
-
-        apply_cli_overrides(&mut patch, &overrides);
-        let diagnostics = patch::validate_patch_schema(&patch)
-            .expect_err("invalid overrides should fail")
-            .to_diagnostics();
-
-        assert!(
-            diagnostics
-                .all()
-                .iter()
-                .any(|diagnostic| diagnostic.message().contains("algorithm"))
-        );
-        assert!(
-            diagnostics
-                .all()
-                .iter()
-                .any(|diagnostic| diagnostic.message().contains("fft_size"))
-        );
-        assert!(
-            diagnostics
-                .all()
-                .iter()
-                .any(|diagnostic| diagnostic.message().contains("mix"))
-        );
     }
 
     #[test]
@@ -984,6 +760,28 @@ modules:
             let _ = fs::remove_file(first_output);
             let _ = fs::remove_file(second_output);
         }
+    }
+
+    #[test]
+    fn render_command_rejects_legacy_patch_without_rendering_a_wav() {
+        let patch_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+            .join("tests/fixtures/unify-graph-kernel/legacy/event-routing-drum-machine.yaml");
+        let output = temp_wav_path("legacy-drum-machine", "rejected");
+        let _ = fs::remove_file(&output);
+
+        let result = run([
+            "dandrum-cli".to_string(),
+            "render".to_string(),
+            patch_path.to_string_lossy().to_string(),
+            OUTPUT_FLAG.to_string(),
+            output.to_string_lossy().to_string(),
+            DURATION_FRAMES_FLAG.to_string(),
+            "4800".to_string(),
+        ]);
+
+        assert_eq!(result.exit_code, 2);
+        assert!(result.stderr.contains("legacy field 'render'"));
+        assert!(!output.exists());
     }
 
     #[test]
@@ -1118,27 +916,64 @@ modules:
 
     #[test]
     fn render_command_loads_patch_with_external_preset_file() {
-        let patch_path = example_path("patches", "synthetic-808-kick.yaml");
-        let preset_path = example_path("presets", "tight-808-kick.yaml");
-        let output = temp_wav_path("tight-808-kick", "preset");
+        let directory = tempfile::tempdir().expect("temporary kernel patch directory");
+        let patch_path = directory.path().join("oscillator.yaml");
+        let preset_path = directory.path().join("quiet.yaml");
+        let default_output = directory.path().join("default.wav");
+        let preset_output = directory.path().join("preset.wav");
+        fs::write(
+            &patch_path,
+            r#"
+instrument: { id: test.oscillator, preset_schema_version: 1 }
+ports:
+  - { name: volume, direction: input, signal: control, channels: 1, default: 0.75, min: 0, max: 1, maps_to: amp.gain }
+  - { name: master, direction: output, signal: audio, channels: 1, maps_from: amp.audio_out }
+preset_surface:
+  parameters:
+    - { name: loudness, maps_to: volume }
+modules:
+  - { id: osc, type: oscillator }
+  - { id: amp, type: gain }
+connections:
+  - { from: osc.audio, to: amp.audio_in }
+"#,
+        )
+        .expect("write kernel patch");
+        fs::write(
+            &preset_path,
+            "name: Quiet\ninstrument: { id: test.oscillator, preset_schema_version: 1 }\nvalues: { loudness: 0.25 }\n",
+        )
+        .expect("write external preset");
+
+        let default_result = run([
+            "dandrum-cli".to_string(),
+            "render".to_string(),
+            patch_path.to_string_lossy().to_string(),
+            OUTPUT_FLAG.to_string(),
+            default_output.to_string_lossy().to_string(),
+            DURATION_FRAMES_FLAG.to_string(),
+            "512".to_string(),
+        ]);
+        assert_eq!(default_result.exit_code, 0, "{}", default_result.stderr);
 
         let result = run([
             "dandrum-cli".to_string(),
             "render".to_string(),
             patch_path.to_string_lossy().to_string(),
             OUTPUT_FLAG.to_string(),
-            output.to_string_lossy().to_string(),
+            preset_output.to_string_lossy().to_string(),
             PRESET_FLAG.to_string(),
             preset_path.to_string_lossy().to_string(),
             DURATION_FRAMES_FLAG.to_string(),
-            "48000".to_string(),
+            "512".to_string(),
         ]);
 
         assert_eq!(result.exit_code, 0, "{}", result.stderr);
         assert!(result.stdout.contains("render: ok"));
-        assert!(fs::metadata(&output).expect("WAV should exist").len() > WAV_HEADER_BYTES as u64);
-
-        let _ = fs::remove_file(output);
+        let default_wav = fs::read(&default_output).expect("default WAV should exist");
+        let preset_wav = fs::read(&preset_output).expect("preset WAV should exist");
+        assert!(preset_wav.len() > WAV_HEADER_BYTES);
+        assert_ne!(preset_wav, default_wav, "preset must change rendered audio");
     }
 
     fn example_path(kind: &str, name: &str) -> PathBuf {
