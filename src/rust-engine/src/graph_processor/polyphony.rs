@@ -1,6 +1,6 @@
 use crate::builtins::module_kind::ModuleKind;
 use crate::compiled_patch::{CompiledPatch, CompiledPolyRegion, CompiledPortSpan};
-use crate::graph::SignalType;
+use crate::graph::{PortDirection, SignalType};
 use crate::kernel::{
     POLY_DONE_OUTPUT, PolyAllocationPolicy, VOICE_GATE_OUTPUT, VOICE_NOTE_OUTPUT,
     VOICE_VELOCITY_OUTPUT,
@@ -51,6 +51,18 @@ struct PolyOutputBinding {
 }
 
 #[derive(Clone, Copy, Debug)]
+struct ForwardedBufferInput {
+    parent_start: usize,
+    child_span: CompiledPortSpan,
+}
+
+#[derive(Debug)]
+struct ForwardedEventInput {
+    parent_index: usize,
+    child_queues: Box<[EventQueueId]>,
+}
+
+#[derive(Clone, Copy, Debug)]
 enum DoneBinding {
     Event(EventQueueId),
     Control {
@@ -78,6 +90,8 @@ pub struct PreparedPolyRuntimeRegion {
     release_timeout_frames: usize,
     child_render_plan: RenderPlan,
     child_patch: Box<CompiledPatch>,
+    forwarded_buffer_inputs: Box<[ForwardedBufferInput]>,
+    forwarded_event_inputs: Box<[ForwardedEventInput]>,
     output_bindings: Box<[PolyOutputBinding]>,
 }
 
@@ -164,6 +178,76 @@ impl PreparedPolyRuntimeRegion {
         let intrinsic_bindings =
             voice_intrinsic_bindings(compiled.child_patch(), &child_render_plan);
         let done_binding = voice_done_binding(compiled, &child_render_plan);
+        let mut parent_start = 0;
+        let forwarded_buffer_inputs = compiled
+            .flattened_voice()
+            .root_ports()
+            .iter()
+            .filter(|port| {
+                port.direction() == PortDirection::Input && port.signal_type() != SignalType::Event
+            })
+            .map(|port| {
+                let child_span = compiled
+                    .child_patch()
+                    .root_bus_plan()
+                    .inputs()
+                    .iter()
+                    .find(|input| input.name() == port.name())
+                    .and_then(|input| input.span())
+                    .expect("compiled voice input has a reserved span");
+                let binding = ForwardedBufferInput {
+                    parent_start,
+                    child_span,
+                };
+                parent_start += child_span.channel_count;
+                binding
+            })
+            .collect::<Vec<_>>()
+            .into_boxed_slice();
+        let mut parent_event_index = 1; // The poly node's first event input is `notes`.
+        let forwarded_event_inputs = compiled
+            .flattened_voice()
+            .root_ports()
+            .iter()
+            .filter(|port| {
+                port.direction() == PortDirection::Input && port.signal_type() == SignalType::Event
+            })
+            .map(|port| {
+                let child_queues = compiled
+                    .flattened_voice()
+                    .root_input_destinations()
+                    .get(port.name())
+                    .into_iter()
+                    .flatten()
+                    .filter_map(|destination| {
+                        let step = child_render_plan.global_steps.iter().find(|step| {
+                            compiled.child_patch().nodes()[step.module_index]
+                                .id
+                                .as_str()
+                                == destination.node().as_str()
+                        })?;
+                        let node = &compiled.child_patch().nodes()[step.module_index];
+                        let port_index = node
+                            .input_port_names
+                            .iter()
+                            .position(|name| name == destination.port())?;
+                        let ordinal = node.input_port_types[..port_index]
+                            .iter()
+                            .filter(|kind| **kind == SignalType::Event)
+                            .count();
+                        step.event_inputs.get(ordinal).copied()
+                    })
+                    .collect::<Vec<_>>()
+                    .into_boxed_slice();
+                let binding = ForwardedEventInput {
+                    parent_index: parent_event_index,
+                    child_queues,
+                };
+                parent_event_index += 1;
+                binding
+            })
+            .collect::<Vec<_>>()
+            .into_boxed_slice();
         let mut next_accumulator = 0;
         let output_bindings = compiled
             .output_accumulators()
@@ -207,6 +291,8 @@ impl PreparedPolyRuntimeRegion {
                 .max(1),
             child_render_plan,
             child_patch: Box::new(compiled.child_patch().clone()),
+            forwarded_buffer_inputs,
+            forwarded_event_inputs,
             output_bindings,
         }
     }
@@ -242,6 +328,9 @@ impl PreparedPolyRuntimeRegion {
     pub(super) fn render_into(
         &mut self,
         parent_arena: &mut AudioArena,
+        parent_inputs: &[BufferId],
+        parent_event_inputs: &[EventQueueId],
+        parent_event_queues: &PreparedEventQueues,
         parent_outputs: &[BufferId],
         frames: usize,
     ) {
@@ -265,6 +354,31 @@ impl PreparedPolyRuntimeRegion {
             }
             let arena = &mut self.voice_arenas[voice];
             let states = &mut self.states[voice];
+            for binding in self.forwarded_buffer_inputs.iter().copied() {
+                for channel in 0..binding.child_span.channel_count {
+                    let source = parent_inputs[binding.parent_start + channel];
+                    let destination = BufferId(binding.child_span.first_buffer + channel);
+                    for frame in 0..frames {
+                        arena.set_sample(destination, frame, parent_arena.sample(source, frame));
+                    }
+                }
+            }
+            for binding in self.forwarded_event_inputs.iter() {
+                let Some(events) = parent_event_inputs
+                    .get(binding.parent_index)
+                    .and_then(|queue| parent_event_queues.queue_ref(queue.0))
+                else {
+                    continue;
+                };
+                for destination in binding.child_queues.iter().copied() {
+                    let child_queue = self.voice_event_queues[voice]
+                        .queue_mut(destination.0)
+                        .expect("compiled voice event input has a prepared queue");
+                    for event in events.events() {
+                        let _ = child_queue.push_at(event.event.clone(), event.frame_offset);
+                    }
+                }
+            }
             let mut audio_audible = false;
             let mut control_done = false;
             let release_start = self.slots[voice].release_offset_pending.min(frames);
@@ -298,7 +412,14 @@ impl PreparedPolyRuntimeRegion {
                             .find(|region| region.node_id() == node_id)
                             .expect("compiled nested poly has a prepared runtime region");
                         nested.route_note_events(events, frames);
-                        nested.render_into(arena, &step.output_buffers, frames);
+                        nested.render_into(
+                            arena,
+                            &step.input_buffers,
+                            &step.event_inputs,
+                            &self.voice_event_queues[voice],
+                            &step.output_buffers,
+                            frames,
+                        );
                     }
                     ModuleKind::EventFilter => {
                         let PerModuleState::EventFilter { note } = &states[step.module_index]
@@ -575,6 +696,29 @@ impl PreparedPolyRuntimeRegion {
             .get(voice)?
             .iter()
             .find(|region| region.node_id() == node_id)
+    }
+
+    #[cfg(test)]
+    pub(crate) fn nested_region_for_voice_mut(
+        &mut self,
+        voice: usize,
+        node_id: &str,
+    ) -> Option<&mut PreparedPolyRuntimeRegion> {
+        self.nested_regions
+            .get_mut(voice)?
+            .iter_mut()
+            .find(|region| region.node_id() == node_id)
+    }
+
+    #[cfg(test)]
+    pub(crate) fn route_note_event_for_test(&mut self, event: ScriptEvent, frames: usize) {
+        self.route_note_events(
+            &[BlockEvent {
+                frame_offset: 0,
+                event,
+            }],
+            frames,
+        );
     }
 
     pub fn voice_note(&self, voice: usize) -> Option<u8> {

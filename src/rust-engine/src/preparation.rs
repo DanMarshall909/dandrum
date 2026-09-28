@@ -465,11 +465,15 @@ fn prepare_kernel_graph_with_buses_internal(
         .graph
         .validate()
         .map_err(|error| KernelPreparationError::from(error.to_diagnostics()))?;
-    let mut compiled_patch =
-        compiled_patch::compile_with_node_data(&lowered.graph, render_settings, &lowered.node_data)
-            .map_err(|error| {
-                KernelPreparationError::from(diagnostics::Diagnostics::from(error.to_diagnostic()))
-            })?;
+    let mut compiled_patch = compiled_patch::compile_with_node_data(
+        &lowered.graph,
+        render_settings,
+        &lowered.node_data,
+        &lowered.root_outputs,
+    )
+    .map_err(|error| {
+        KernelPreparationError::from(diagnostics::Diagnostics::from(error.to_diagnostic()))
+    })?;
     let root_input_spans = flattened_graph
         .root_ports()
         .iter()
@@ -622,6 +626,7 @@ fn compile_poly_regions_with_path(
             &lowered.graph,
             render_settings,
             &lowered.node_data,
+            &lowered.root_outputs,
         )
         .map_err(|error| {
             KernelPreparationError::from(diagnostics::Diagnostics::from(error.to_diagnostic()))
@@ -2509,6 +2514,41 @@ mod tests {
             "{outputs:?}"
         );
 
+        let inner_a = runtime.prepared_poly_runtime_regions_mut_for_test()[0]
+            .nested_region_for_voice_mut(0, "inner_voices")
+            .unwrap();
+        inner_a.route_note_event_for_test(
+            ScriptEvent::NoteOn {
+                note: 72,
+                velocity: 100,
+            },
+            frames,
+        );
+        inner_a.route_note_event_for_test(
+            ScriptEvent::NoteOn {
+                note: 75,
+                velocity: 100,
+            },
+            frames,
+        );
+        assert_eq!(runtime.render_root_outputs(&mut outputs), frames);
+        let outer_region = &runtime.prepared_poly_runtime_regions()[0];
+        let inner_a = outer_region
+            .nested_region_for_voice(0, "inner_voices")
+            .unwrap();
+        let inner_b = outer_region
+            .nested_region_for_voice(1, "inner_voices")
+            .unwrap();
+        assert_eq!(inner_a.active_voice_count(), 2);
+        assert_eq!(inner_a.voice_note(0), Some(60));
+        assert_eq!(inner_a.voice_note(1), Some(72));
+        assert_eq!(inner_b.active_voice_count(), 1);
+        assert_eq!(inner_b.voice_note(0), Some(64));
+        assert!(
+            outputs[0][0].iter().all(|sample| *sample == 0.75),
+            "{outputs:?}"
+        );
+
         let steal_allocations = count_current_thread_allocations(|| {
             runtime.note_on(67, 100);
             assert_eq!(runtime.render_root_outputs(&mut outputs), frames);
@@ -2565,6 +2605,62 @@ mod tests {
     }
 
     #[test]
+    fn nested_poly_root_output_survives_later_consumers_of_the_same_source() {
+        let inner = constant_voice("inner_liveness", 0.25);
+        let outer = GraphDefinition::new("outer_liveness")
+            .with_port(
+                KernelPort::output("audio", SignalType::Audio, 1)
+                    .maps_from(kernel_ref("inner_voices", "audio")),
+            )
+            .with_node(poly_node("inner_voices", inner.name(), 1))
+            .with_node(
+                Node::new(NodeId::new("mute"), module_types::GAIN)
+                    .with_default_override(builtin_ports::GAIN, 0.0),
+            )
+            .with_node(Node::new(NodeId::new("later"), module_types::GAIN))
+            .with_connection(Connection::new(
+                kernel_ref(
+                    crate::kernel::VOICE_INTRINSIC_NODE,
+                    crate::kernel::VOICE_GATE_OUTPUT,
+                ),
+                kernel_ref("inner_voices", "notes"),
+            ))
+            .with_connection(Connection::new(
+                kernel_ref("inner_voices", "audio"),
+                kernel_ref("mute", builtin_ports::AUDIO_IN),
+            ))
+            .with_connection(Connection::new(
+                kernel_ref("mute", builtin_ports::AUDIO_OUT),
+                kernel_ref("later", builtin_ports::AUDIO_IN),
+            ));
+        let root = GraphDefinition::new("root")
+            .with_port(
+                KernelPort::output("master", SignalType::Audio, 1)
+                    .maps_from(kernel_ref("voices", "audio")),
+            )
+            .with_node(poly_node("voices", outer.name(), 1));
+        let prepared = prepare_kernel_graph_with_buses(
+            &root,
+            &builtin_registry()
+                .with_definition(inner)
+                .with_definition(outer),
+            &KERNEL_RENDER_SETTINGS,
+            &HostBuses::new().with_output("master", 1),
+        )
+        .expect("nested graph with a shared root source prepares");
+        let mut runtime = runtime_for(&prepared);
+        let frames = KERNEL_RENDER_SETTINGS.block_size_frames as usize;
+        let mut outputs = vec![vec![vec![0.0; frames]]];
+
+        runtime.note_on(60, 100);
+        assert_eq!(runtime.render_root_outputs(&mut outputs), frames);
+        assert!(
+            outputs[0][0].iter().all(|sample| *sample == 0.25),
+            "{outputs:?}"
+        );
+    }
+
+    #[test]
     fn preparation_rejects_recursive_poly_wrapping_before_expansion() {
         let recursive = GraphDefinition::new("recursive")
             .with_port(
@@ -2590,6 +2686,162 @@ mod tests {
             error.diagnostics().errors().next().unwrap().error_code(),
             diagnostics::error_codes::KERNEL_RECURSIVE_DEFINITION
         );
+    }
+
+    #[test]
+    fn nested_poly_forwards_audio_and_control_inputs_to_each_inner_voice() {
+        let inner = GraphDefinition::new("inner_gain")
+            .with_port(
+                KernelPort::input("input", SignalType::Audio, 2)
+                    .maps_to(kernel_ref("gain", builtin_ports::AUDIO_IN)),
+            )
+            .with_port(
+                KernelPort::input("level", SignalType::Control, 1)
+                    .maps_to(kernel_ref("gain", builtin_ports::GAIN)),
+            )
+            .with_port(
+                KernelPort::output("audio", SignalType::Audio, 2)
+                    .maps_from(kernel_ref("gain", builtin_ports::AUDIO_OUT)),
+            )
+            .with_node(
+                Node::new(NodeId::new("gain"), module_types::GAIN).with_static_arg(
+                    crate::kernel::builtins::CHANNELS_PARAM,
+                    StaticArg::Literal(StaticValue::Int(2)),
+                ),
+            );
+        let outer = GraphDefinition::new("outer_gain")
+            .with_port(
+                KernelPort::input("input", SignalType::Audio, 2)
+                    .maps_to(kernel_ref("inner_voices", "input")),
+            )
+            .with_port(
+                KernelPort::input("level", SignalType::Control, 1)
+                    .maps_to(kernel_ref("inner_voices", "level")),
+            )
+            .with_port(
+                KernelPort::output("audio", SignalType::Audio, 2)
+                    .maps_from(kernel_ref("inner_voices", "audio")),
+            )
+            .with_node(poly_node("inner_voices", "inner_gain", 2))
+            .with_connection(Connection::new(
+                kernel_ref(
+                    crate::kernel::VOICE_INTRINSIC_NODE,
+                    crate::kernel::VOICE_GATE_OUTPUT,
+                ),
+                kernel_ref("inner_voices", "notes"),
+            ));
+        let root = GraphDefinition::new("root")
+            .with_port(
+                KernelPort::input("input", SignalType::Audio, 2)
+                    .maps_to(kernel_ref("voices", "input")),
+            )
+            .with_port(
+                KernelPort::input("level", SignalType::Control, 1)
+                    .maps_to(kernel_ref("voices", "level")),
+            )
+            .with_port(
+                KernelPort::output("master", SignalType::Audio, 2)
+                    .maps_from(kernel_ref("voices", "audio")),
+            )
+            .with_node(poly_node("voices", "outer_gain", 2));
+        let prepared = prepare_kernel_graph_with_buses(
+            &root,
+            &builtin_registry()
+                .with_definition(inner)
+                .with_definition(outer),
+            &KERNEL_RENDER_SETTINGS,
+            &HostBuses::new()
+                .with_input("input", 2)
+                .with_input("level", 1)
+                .with_output("master", 2),
+        )
+        .expect("nested forwarded inputs prepare");
+        let mut runtime = runtime_for(&prepared);
+        let frames = KERNEL_RENDER_SETTINGS.block_size_frames as usize;
+        let inputs = vec![
+            vec![vec![-0.5; frames], vec![0.25; frames]],
+            vec![vec![0.5; frames]],
+        ];
+        let mut outputs = vec![vec![vec![0.0; frames]; 2]];
+
+        let allocations = count_current_thread_allocations(|| {
+            runtime.note_on(60, 100);
+            runtime.note_on(64, 100);
+            assert_eq!(runtime.render_root_buses(&inputs, &mut outputs), frames);
+        });
+        assert_eq!(allocations, 0);
+        assert!(outputs[0][0].iter().all(|sample| *sample == -0.5));
+        assert!(outputs[0][1].iter().all(|sample| *sample == 0.25));
+    }
+
+    #[test]
+    fn nested_poly_forwards_an_event_input_to_inner_completion() {
+        let inner = constant_voice("inner_event_voice", 0.25)
+            .with_port(
+                KernelPort::input("trigger", SignalType::Event, 1)
+                    .maps_to(kernel_ref("filter", builtin_ports::EVENTS_IN)),
+            )
+            .with_port(
+                KernelPort::output(crate::kernel::POLY_DONE_OUTPUT, SignalType::Event, 1)
+                    .maps_from(kernel_ref("filter", builtin_ports::EVENTS_OUT)),
+            )
+            .with_node(
+                Node::new(NodeId::new("filter"), module_types::EVENT_FILTER).with_static_arg(
+                    crate::builtins::EVENT_FILTER_NOTE_PARAMETER,
+                    StaticArg::Literal(StaticValue::Int(60)),
+                ),
+            );
+        let outer = GraphDefinition::new("outer_event_voice")
+            .with_port(
+                KernelPort::output("audio", SignalType::Audio, 1)
+                    .maps_from(kernel_ref("inner_voices", "audio")),
+            )
+            .with_node(poly_node("inner_voices", "inner_event_voice", 1))
+            .with_connection(Connection::new(
+                kernel_ref(
+                    crate::kernel::VOICE_INTRINSIC_NODE,
+                    crate::kernel::VOICE_GATE_OUTPUT,
+                ),
+                kernel_ref("inner_voices", "notes"),
+            ))
+            .with_connection(Connection::new(
+                kernel_ref(
+                    crate::kernel::VOICE_INTRINSIC_NODE,
+                    crate::kernel::VOICE_GATE_OUTPUT,
+                ),
+                kernel_ref("inner_voices", "trigger"),
+            ));
+        let root = GraphDefinition::new("root")
+            .with_port(
+                KernelPort::output("master", SignalType::Audio, 1)
+                    .maps_from(kernel_ref("voices", "audio")),
+            )
+            .with_node(poly_node("voices", "outer_event_voice", 1));
+        let prepared = prepare_kernel_graph_with_buses(
+            &root,
+            &builtin_registry()
+                .with_definition(inner)
+                .with_definition(outer),
+            &KERNEL_RENDER_SETTINGS,
+            &HostBuses::new().with_output("master", 1),
+        )
+        .expect("nested event forwarding prepares");
+        let mut runtime = runtime_for(&prepared);
+        let frames = KERNEL_RENDER_SETTINGS.block_size_frames as usize;
+        let mut outputs = vec![vec![vec![0.0; frames]]];
+
+        let allocations = count_current_thread_allocations(|| {
+            runtime.note_on(60, 100);
+            assert_eq!(runtime.render_root_outputs(&mut outputs), frames);
+        });
+        assert_eq!(allocations, 0);
+        assert!(outputs[0][0].iter().all(|sample| *sample == 0.25));
+        let inner = runtime.prepared_poly_runtime_regions()[0]
+            .nested_region_for_voice(0, "inner_voices")
+            .unwrap();
+        assert_eq!(inner.active_voice_count(), 0);
+        assert_eq!(runtime.render_root_outputs(&mut outputs), frames);
+        assert!(outputs[0][0].iter().all(|sample| *sample == 0.0));
     }
 
     #[test]

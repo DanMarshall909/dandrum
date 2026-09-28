@@ -224,6 +224,13 @@ impl RealtimeGraphProcessor {
         &self.prepared_poly_runtime_regions
     }
 
+    #[cfg(test)]
+    pub(crate) fn prepared_poly_runtime_regions_mut_for_test(
+        &mut self,
+    ) -> &mut [PreparedPolyRuntimeRegion] {
+        &mut self.prepared_poly_runtime_regions
+    }
+
     pub fn last_render_chunk_count(&self) -> usize {
         self.last_render_chunk_count
     }
@@ -406,6 +413,7 @@ impl RealtimeGraphProcessor {
         for region in self.prepared_poly_runtime_regions.iter_mut() {
             region.begin_block(frames, self.current_frame);
         }
+        self.prepared_event_queues.clear_all();
         self.drain_and_route_poly_events(frames);
 
         for (input_index, planned) in self.compiled.root_bus_plan().inputs().iter().enumerate() {
@@ -425,10 +433,12 @@ impl RealtimeGraphProcessor {
         }
 
         for step in self.render_plan.global_steps.iter() {
+            route_prepared_event_edges(&mut self.prepared_event_queues, step);
             process_channel_or_poly_step(
                 &mut self.audio_arena,
                 &mut self.states[0],
                 &mut self.prepared_poly_runtime_regions,
+                &self.prepared_event_queues,
                 step,
                 frames,
                 &self.compiled,
@@ -460,6 +470,7 @@ impl RealtimeGraphProcessor {
         for region in self.prepared_poly_runtime_regions.iter_mut() {
             region.begin_block(frames, block_start);
         }
+        self.prepared_event_queues.clear_all();
 
         if self.pending_events.is_empty() && self.render_mono_global_arena(left, right, frames) {
             self.last_render_used_arena = true;
@@ -594,9 +605,18 @@ impl RealtimeGraphProcessor {
         let states = &mut self.states[0];
         let compiled = &self.compiled;
         let poly_regions = &mut self.prepared_poly_runtime_regions;
+        let event_queues = &mut self.prepared_event_queues;
         for step in steps {
-            process_channel_or_poly_step(arena, states, poly_regions, step, frames, compiled);
-            route_prepared_event_edges(&mut self.prepared_event_queues, step);
+            route_prepared_event_edges(event_queues, step);
+            process_channel_or_poly_step(
+                arena,
+                states,
+                poly_regions,
+                event_queues,
+                step,
+                frames,
+                compiled,
+            );
         }
 
         let output = self
@@ -930,6 +950,7 @@ fn process_channel_or_poly_step(
     arena: &mut AudioArena,
     states: &mut [PerModuleState],
     poly_regions: &mut [PreparedPolyRuntimeRegion],
+    event_queues: &PreparedEventQueues,
     step: &RenderStep,
     frames: usize,
     compiled: &CompiledPatch,
@@ -941,7 +962,14 @@ fn process_channel_or_poly_step(
             .iter_mut()
             .find(|region| region.node_id() == node_id)
         {
-            region.render_into(arena, &step.output_buffers, frames);
+            region.render_into(
+                arena,
+                &step.input_buffers,
+                &step.event_inputs,
+                event_queues,
+                &step.output_buffers,
+                frames,
+            );
         } else {
             for &output in step.output_buffers.iter() {
                 arena.clear(output, frames);

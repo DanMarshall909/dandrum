@@ -940,21 +940,23 @@ pub fn compile(
     graph: &Graph,
     render_settings: &RenderSettings,
 ) -> Result<CompiledPatch, CompileError> {
-    compile_internal(graph, render_settings, None)
+    compile_internal(graph, render_settings, None, None)
 }
 
 pub(crate) fn compile_with_node_data(
     graph: &Graph,
     render_settings: &RenderSettings,
     node_data: &BTreeMap<String, CompiledNodeData>,
+    root_outputs: &BTreeMap<String, crate::kernel::PortRef>,
 ) -> Result<CompiledPatch, CompileError> {
-    compile_internal(graph, render_settings, Some(node_data))
+    compile_internal(graph, render_settings, Some(node_data), Some(root_outputs))
 }
 
 fn compile_internal(
     graph: &Graph,
     render_settings: &RenderSettings,
     supplied_node_data: Option<&BTreeMap<String, CompiledNodeData>>,
+    root_outputs: Option<&BTreeMap<String, crate::kernel::PortRef>>,
 ) -> Result<CompiledPatch, CompileError> {
     let module_indices = module_indices_by_id(graph);
     let topological_order = topological_sort(graph, &module_indices)?;
@@ -963,6 +965,7 @@ fn compile_internal(
         &module_indices,
         &topological_order,
         supplied_node_data,
+        root_outputs,
     )?;
     let mut module_output_buffer_layout = Vec::with_capacity(graph.modules().len());
     let mut parameter_slots = Vec::new();
@@ -1147,6 +1150,7 @@ fn color_output_spans(
     module_indices: &BTreeMap<&str, usize>,
     topological_order: &[usize],
     supplied_node_data: Option<&BTreeMap<String, CompiledNodeData>>,
+    root_outputs: Option<&BTreeMap<String, crate::kernel::PortRef>>,
 ) -> Result<(Vec<Vec<CompiledPortSpan>>, usize), CompileError> {
     let order_position = topological_order
         .iter()
@@ -1160,17 +1164,28 @@ fn color_output_spans(
                 continue;
             }
             let start = order_position[&module_index];
-            let end = graph
-                .cables()
-                .iter()
-                .filter(|cable| {
-                    cable.source().module_id() == module.id()
-                        && cable.source().port_name() == port.name()
+            let is_root_output = root_outputs.is_some_and(|outputs| {
+                outputs.values().any(|source| {
+                    source.node().as_str() == module.id().as_str() && source.port() == port.name()
                 })
-                .filter_map(|cable| module_indices.get(cable.destination().module_id().as_str()))
-                .map(|destination| order_position[destination])
-                .max()
-                .unwrap_or(topological_order.len());
+            });
+            let end = if is_root_output {
+                topological_order.len()
+            } else {
+                graph
+                    .cables()
+                    .iter()
+                    .filter(|cable| {
+                        cable.source().module_id() == module.id()
+                            && cable.source().port_name() == port.name()
+                    })
+                    .filter_map(|cable| {
+                        module_indices.get(cable.destination().module_id().as_str())
+                    })
+                    .map(|destination| order_position[destination])
+                    .max()
+                    .unwrap_or(topological_order.len())
+            };
             intervals.push((
                 start,
                 module_index,

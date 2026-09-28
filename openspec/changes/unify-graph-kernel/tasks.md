@@ -51,7 +51,7 @@ Model-tier tags follow design decision D11: `[frontier]` for architecture/realti
 - [x] [frontier] 4.4 Implement channel-aware per-output summing across active voices and prove two simultaneous voices sum sample-wise; add sibling-poly tests proving independent allocators, state, queues, and mixes
 - [x] [frontier] 4.5 Implement explicit `done` retirement, then gate-release plus documented silence-threshold/timeout fallback; prove retired voices contribute no stale output
 - [x] [standard] 4.6 Add allocation-free full-capacity render coverage for activation, stealing/rejection, processing, mixing, and retirement using `realtime_allocation_tests.rs`
-- [ ] [frontier] 4.7 Support nested poly regions with independent child allocators and accumulation buffers; retain the legacy graph-wide scope machinery only for unmigrated callers until task 7.8
+- [x] [frontier] 4.7 Support nested poly regions with independent child allocators and accumulation buffers; retain the legacy graph-wide scope machinery only for unmigrated callers until task 7.8
 
 ## 5. Host settings, buses, discovery, and FFI
 
