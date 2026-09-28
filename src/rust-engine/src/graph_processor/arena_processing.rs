@@ -160,9 +160,11 @@ pub(super) fn process_oscillator(state: &mut PerModuleState, context: &mut Proce
         if *phase >= 1.0 {
             *phase -= 1.0;
         }
-        context
-            .set_output_sample(0, frame, output)
-            .expect("oscillator output buffer should be available in supported arena step");
+        for channel in 0..context.output_count() {
+            context
+                .set_output_sample(channel, frame, output)
+                .expect("oscillator output buffer should be available in supported arena step");
+        }
     }
 }
 

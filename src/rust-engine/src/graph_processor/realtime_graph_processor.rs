@@ -1119,7 +1119,7 @@ pub(super) fn is_channel_arena_supported(step: &RenderStep) -> bool {
         }
         ModuleKind::AudioMixer => step.input_buffers.len() == step.output_buffers.len(),
         ModuleKind::Noise => step.input_buffers.is_empty() && !step.output_buffers.is_empty(),
-        ModuleKind::Oscillator => step.input_buffers.len() <= 1 && step.output_buffers.len() == 1,
+        ModuleKind::Oscillator => step.input_buffers.len() <= 1 && !step.output_buffers.is_empty(),
         ModuleKind::Gain => step.input_buffers.len() == step.output_buffers.len() + 1,
         ModuleKind::Multiply => step.input_buffers.len() == step.output_buffers.len() * 2,
         ModuleKind::EnvelopeFollower => {

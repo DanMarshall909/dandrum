@@ -6485,6 +6485,44 @@ fn migrated_polyphonic_sampler_chords_preserve_sample_render() {
 }
 
 #[test]
+fn migrated_polyphonic_pad_preserves_stereo_reverb_render() {
+    let legacy = patch::load_patch_str(include_str!(
+        "../../tests/fixtures/unify-graph-kernel/legacy/polyphonic-pad.yaml"
+    ))
+    .expect("legacy pad example parses");
+    let settings = RenderSettings {
+        duration_frames: 2_048,
+        ..legacy.render.clone()
+    };
+    let events = vec![
+        note_on_value(0, 60, 100),
+        note_on_value(128, 67, 110),
+        TimedInputEvent::new(512, ScriptEvent::NoteOff { note: 60 }),
+        TimedInputEvent::new(768, ScriptEvent::NoteOff { note: 67 }),
+    ];
+    let expected = render_offline_polyphonic(
+        &Graph::from_patch_declarations(&legacy),
+        &settings,
+        events.clone(),
+        &legacy.voice_allocation,
+    );
+    assert!(expected.0.iter().any(|sample| sample.abs() > 0.001));
+    assert!(expected.1.iter().any(|sample| sample.abs() > 0.001));
+
+    let yaml =
+        read_repo_fixture("examples/patches/polyphonic-pad.yaml").expect("pad example exists");
+    let kernel = load_kernel_patch_str(&yaml).expect("pad is a kernel document");
+    let prepared = prepare_kernel_patch(&kernel, &settings).expect("pad poly region prepares");
+    let actual = render_kernel_offline_named(&prepared, events, &PreparedSamplerAssets::empty())
+        .expect("pad renders named stereo master bus");
+
+    assert_eq!(actual.len(), 1);
+    assert_eq!(actual[0].0, "master");
+    assert_eq!(actual[0].1[0], expected.0, "pad left render changed");
+    assert_eq!(actual[0].1[1], expected.1, "pad right render changed");
+}
+
+#[test]
 fn convolution_example_loads_typed_impulse_resource_and_renders_named_bus() {
     let fixture = "examples/patches/minimal-convolution.yaml";
     let yaml = read_repo_fixture(fixture).expect("convolution example exists");

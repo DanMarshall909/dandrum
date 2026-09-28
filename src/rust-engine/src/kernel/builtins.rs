@@ -68,10 +68,6 @@ fn audio_in(name: &str) -> Port {
     Port::input(name, SignalType::Audio, MONO)
 }
 
-fn audio_out(name: &str) -> Port {
-    Port::output(name, SignalType::Audio, MONO)
-}
-
 fn poly_audio_in(name: &str) -> Port {
     Port::input(name, SignalType::Audio, ChannelCount::param(CHANNELS_PARAM))
 }
@@ -162,7 +158,7 @@ fn builtin_definitions() -> Vec<GraphDefinition> {
         primitive(names::AUDIO_OUTPUT)
             .with_port(audio_in(ports::LEFT))
             .with_port(audio_in(ports::RIGHT)),
-        primitive(names::OSCILLATOR)
+        channel_primitive(names::OSCILLATOR)
             .with_static_param(enum_param(
                 WAVEFORM_PARAMETER,
                 WAVEFORM_SAW,
@@ -174,7 +170,7 @@ fn builtin_definitions() -> Vec<GraphDefinition> {
                 ],
             ))
             .with_port(tunable(ports::PITCH, 1.0, 0.0, 64.0))
-            .with_port(audio_out(ports::AUDIO)),
+            .with_port(poly_audio_out(ports::AUDIO)),
         channel_primitive(names::GAIN)
             .with_port(poly_audio_in(ports::AUDIO_IN))
             .with_port(tunable(ports::GAIN, 1.0, 0.0, 4.0))

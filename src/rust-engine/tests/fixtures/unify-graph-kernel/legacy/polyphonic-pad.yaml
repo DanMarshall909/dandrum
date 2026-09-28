@@ -1,0 +1,103 @@
+metadata:
+  name: Polyphonic Pad
+  version: "0.1"
+# Eight voices keeps the pad lush without changing the engine's voice model.
+voice_allocation:
+  max_voices: 8
+  stealing: oldest_active
+render:
+  sample_rate_hz: 48000
+  block_size_frames: 128
+  duration_frames: 240000
+modules:
+  - id: midi
+    type: midi_input
+    outputs:
+      - name: events
+        signal_type: event
+  - id: note_rate
+    type: note_to_rate
+    inputs:
+      - name: events
+        signal_type: event
+    outputs:
+      - name: rate
+        signal_type: control
+  - id: osc
+    type: oscillator
+    inputs:
+      - name: pitch
+        signal_type: control
+    outputs:
+      - name: audio
+        signal_type: audio
+  - id: env
+    type: adsr
+    inputs:
+      - name: gate
+        signal_type: event
+    outputs:
+      - name: value
+        signal_type: control
+  # Voice amplitude stays under ADSR control; the long tail comes from the
+  # engine's default envelope timings and the added reverb return.
+  - id: vca
+    type: gain
+    inputs:
+      - name: audio_in
+        signal_type: audio
+      - name: gain
+        signal_type: control
+    outputs:
+      - name: audio_out
+        signal_type: audio
+  - id: mix
+    type: audio_mixer
+    inputs:
+      - name: inputs
+        signal_type: audio
+    outputs:
+      - name: mix
+        signal_type: audio
+  - id: reverb
+    type: reverb
+    # The reverb adds the slow motion and width that makes the patch feel like
+    # a pad instead of a dry oscillator stack.
+    inputs:
+      - name: audio_in_l
+        signal_type: audio
+      - name: audio_in_r
+        signal_type: audio
+    outputs:
+      - name: audio_out_l
+        signal_type: audio
+      - name: audio_out_r
+        signal_type: audio
+  - id: out
+    type: audio_output
+    inputs:
+      - name: left
+        signal_type: audio
+      - name: right
+        signal_type: audio
+connections:
+  - from: midi.events
+    to: note_rate.events
+  - from: midi.events
+    to: env.gate
+  - from: note_rate.rate
+    to: osc.pitch
+  - from: osc.audio
+    to: vca.audio_in
+  - from: env.value
+    to: vca.gain
+  - from: vca.audio_out
+    to: mix.inputs
+  - from: mix.mix
+    to: reverb.audio_in_l
+  - from: mix.mix
+    to: reverb.audio_in_r
+  - from: reverb.audio_out_l
+    to: out.left
+  - from: reverb.audio_out_r
+    to: out.right
