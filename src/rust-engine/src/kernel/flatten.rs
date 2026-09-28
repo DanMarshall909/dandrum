@@ -213,7 +213,24 @@ impl GraphDefinition {
         }
 
         let template = template.expect("no errors implies a template");
-        let (nodes, poly_regions, connections, interface) = instantiate(&template, "");
+        let (mut nodes, poly_regions, connections, interface) = instantiate(&template, "");
+        for port in self.ports() {
+            let Some(default) = port.control_default() else {
+                continue;
+            };
+            let Some(targets) = interface.inputs.get(port.name()) else {
+                continue;
+            };
+            for target in targets {
+                let atomic = nodes
+                    .iter_mut()
+                    .find(|atomic| atomic.id == *target.node())
+                    .expect("a root interface reference names a flattened node");
+                atomic
+                    .port_defaults
+                    .insert(target.port().to_string(), default.default());
+            }
+        }
         let (nodes, connections, promotions) = insert_promotions(nodes, connections);
         let root_ports = GraphDefinition::resolve_ports(self, &context);
         Ok(FlattenedGraph {

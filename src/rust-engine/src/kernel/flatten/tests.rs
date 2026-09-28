@@ -144,6 +144,30 @@ fn declared_default_becomes_effective_atomic_default_without_override() {
 }
 
 #[test]
+fn root_control_default_reaches_every_mapped_atomic_input() {
+    let registry = DefinitionRegistry::new().with_definition(gain());
+    let root = GraphDefinition::new("root")
+        .with_port(
+            Port::input("volume", SignalType::Control, 1)
+                .with_control_default(ControlDefault::new(0.4))
+                .maps_to(PortRef::new(NodeId::new("left"), "level"))
+                .maps_to(PortRef::new(NodeId::new("right"), "level")),
+        )
+        .with_node(Node::new(NodeId::new("left"), "gain"))
+        .with_node(Node::new(NodeId::new("right"), "gain"));
+
+    let flat = root.flatten(&registry).expect("flattens");
+
+    for id in ["left", "right"] {
+        assert_eq!(
+            flat.node(&NodeId::new(id)).unwrap().port_defaults()["level"],
+            0.4,
+            "root default reaches {id}"
+        );
+    }
+}
+
+#[test]
 fn repeated_identical_instances_reuse_one_expansion() {
     let registry = DefinitionRegistry::new().with_definition(echo());
     let mut root = GraphDefinition::new("root");
