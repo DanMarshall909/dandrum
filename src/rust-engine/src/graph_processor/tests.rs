@@ -6669,6 +6669,117 @@ fn composite_voice_examples_match_legacy_render_through_master_bus() {
 }
 
 #[test]
+fn drum_909_kick_preserves_legacy_preset_render_and_controls() {
+    let fixture = "examples/patches/drums/drum-909-kick.yaml";
+    let legacy_yaml =
+        include_str!("../../tests/fixtures/unify-graph-kernel/legacy/drum-909-kick.yaml");
+    let legacy = patch::load_patch_str(legacy_yaml).expect("legacy kick reference parses");
+    let preset = patch::load_preset_str(
+        "name: advertised defaults\ninstrument: { id: dandrum.drum-909-kick, preset_schema_version: 1 }\nvalues: { kick.decay_ms: 260, kick.sweep: 0.9, kick.pitch_decay_ms: 45, kick.click: 0.8, kick.level: 1 }\n",
+    )
+    .expect("kick preset parses");
+    let mut legacy = patch::apply_preset(&legacy, &preset).expect("legacy kick preset applies");
+    let settings = RenderSettings {
+        sample_rate_hz: 48_000,
+        block_size_frames: 128,
+        duration_frames: 2_048,
+    };
+    legacy.render = settings.clone();
+    let events = vec![note_on_value(0, 36, 100)];
+    let prepared_legacy = crate::preparation::prepare_instrument_document(legacy, Path::new("."))
+        .expect("legacy kick prepares with its preset defaults");
+    let expected = crate::synth::DandrumEngine::new()
+        .render_prepared_instrument_offline(&prepared_legacy, events.clone());
+    assert!(expected.left.iter().any(|sample| sample.abs() > 0.001));
+    assert_eq!(expected.left, expected.right);
+
+    let yaml = read_repo_fixture(fixture).expect("kick example exists");
+    let patch = load_kernel_patch_str(&yaml).expect("kick loads as kernel patch");
+    assert_eq!(
+        patch.instrument().expect("instrument identity").id,
+        "dandrum.drum-909-kick"
+    );
+    let aliases: Vec<_> = patch
+        .preset_surface()
+        .parameters()
+        .iter()
+        .map(|alias| alias.name())
+        .collect();
+    assert_eq!(
+        aliases,
+        [
+            "kick.decay_ms",
+            "kick.sweep",
+            "kick.pitch_decay_ms",
+            "kick.click",
+            "kick.level"
+        ]
+    );
+    let prepared = prepare_kernel_patch(&patch, &settings).expect("kick prepares");
+    let buses =
+        render_kernel_offline_named(&prepared, events.clone(), &PreparedSamplerAssets::empty())
+            .expect("kick renders on named buses");
+    assert_eq!(buses.len(), 1);
+    assert_eq!(buses[0].0, "master");
+    assert_eq!(buses[0].1.len(), 2);
+    for (channel, expected) in [(0, &expected.left), (1, &expected.right)] {
+        let actual = &buses[0].1[channel];
+        assert_eq!(actual.len(), expected.len());
+        let mismatch = actual
+            .iter()
+            .zip(expected)
+            .position(|(actual, expected)| actual != expected);
+        assert_eq!(
+            mismatch,
+            None,
+            "{fixture} master channel {channel} differs at frame {mismatch:?}: actual {:?}, expected {:?}",
+            mismatch.map(|frame| actual[frame]),
+            mismatch.map(|frame| expected[frame]),
+        );
+    }
+
+    let changed_preset = patch::load_preset_str(
+        "name: shorter and quieter\ninstrument: { id: dandrum.drum-909-kick, preset_schema_version: 1 }\nvalues: { kick.decay_ms: 90, kick.sweep: 1.4, kick.pitch_decay_ms: 18, kick.click: 0.2, kick.level: 0.5 }\n",
+    )
+    .expect("changed kick preset parses");
+    let mut changed_legacy = patch::apply_preset(
+        &patch::load_patch_str(legacy_yaml).expect("legacy kick reference parses"),
+        &changed_preset,
+    )
+    .expect("changed legacy preset applies");
+    changed_legacy.render = settings.clone();
+    let changed_legacy =
+        crate::preparation::prepare_instrument_document(changed_legacy, Path::new("."))
+            .expect("changed legacy kick prepares");
+    let changed_expected = crate::synth::DandrumEngine::new()
+        .render_prepared_instrument_offline(&changed_legacy, events.clone());
+    assert_ne!(changed_expected.left, expected.left);
+    let changed_patch = patch
+        .apply_preset(&changed_preset)
+        .expect("kernel preset applies");
+    let changed_prepared =
+        prepare_kernel_patch(&changed_patch, &settings).expect("changed kick prepares");
+    let changed_buses =
+        render_kernel_offline_named(&changed_prepared, events, &PreparedSamplerAssets::empty())
+            .expect("changed kick renders");
+    for (channel, expected) in [(0, &changed_expected.left), (1, &changed_expected.right)] {
+        let actual = &changed_buses[0].1[channel];
+        assert_eq!(actual.len(), expected.len());
+        let mismatch = actual
+            .iter()
+            .zip(expected)
+            .position(|(actual, expected)| actual != expected);
+        assert_eq!(
+            mismatch,
+            None,
+            "changed kick channel {channel} differs at frame {mismatch:?}: actual {:?}, expected {:?}",
+            mismatch.map(|frame| actual[frame]),
+            mismatch.map(|frame| expected[frame]),
+        );
+    }
+}
+
+#[test]
 fn impulse_noise_and_layer_examples_match_legacy_render_on_named_buses() {
     for (fixture, legacy_yaml) in [
         (

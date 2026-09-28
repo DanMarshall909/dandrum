@@ -9,7 +9,11 @@ use std::fs;
 use std::path::PathBuf;
 
 use crate::core::TimedInputEvent;
-use crate::patch::{self, validate_patch_schema};
+use crate::graph_processor::render_kernel_offline_named;
+use crate::kernel::document::load_kernel_patch_file;
+use crate::patch::{self, RenderSettings, validate_patch_schema};
+use crate::preparation::prepare_kernel_patch;
+use crate::sample::PreparedSamplerAssets;
 use crate::script::ScriptEvent;
 use crate::synth::DandrumEngine;
 
@@ -59,6 +63,19 @@ fn peak(samples: &[f32]) -> f32 {
 #[test]
 fn every_drum_voice_loads_validates_and_declares_public_parameters() {
     for path in drum_patch_paths() {
+        if let Ok(kernel) = load_kernel_patch_file(&path) {
+            assert!(
+                kernel.instrument().is_some(),
+                "{} should declare an instrument identity so presets can target it",
+                path.display()
+            );
+            assert!(
+                !kernel.preset_surface().parameters().is_empty(),
+                "{} should expose at least one public parameter through preset_surface",
+                path.display()
+            );
+            continue;
+        }
         let patch = patch::load_patch_file(&path)
             .unwrap_or_else(|error| panic!("{} should parse: {error}", path.display()));
 
@@ -81,6 +98,29 @@ fn every_drum_voice_loads_validates_and_declares_public_parameters() {
 #[test]
 fn every_drum_voice_renders_non_silent_audio_from_a_midi_trigger() {
     for path in drum_patch_paths() {
+        if let Ok(kernel) = load_kernel_patch_file(&path) {
+            let settings = RenderSettings {
+                sample_rate_hz: SAMPLE_RATE_HZ as u32,
+                block_size_frames: 128,
+                duration_frames: 2_048,
+            };
+            let prepared = prepare_kernel_patch(&kernel, &settings)
+                .unwrap_or_else(|error| panic!("{} should prepare: {error}", path.display()));
+            let buses = render_kernel_offline_named(
+                &prepared,
+                note_on_at_start(),
+                &PreparedSamplerAssets::empty(),
+            )
+            .unwrap_or_else(|error| panic!("{} should render: {error}", path.display()));
+            assert!(
+                buses.iter().any(|(_, channels)| {
+                    channels.len() == 2 && peak(&channels[0]) > 0.0 && peak(&channels[1]) > 0.0
+                }),
+                "{} should render non-silent stereo audio from a MIDI trigger",
+                path.display()
+            );
+            continue;
+        }
         let mut engine = DandrumEngine::new();
         engine.prepare(SAMPLE_RATE_HZ);
         let render = engine

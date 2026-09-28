@@ -473,6 +473,28 @@ impl PreparedPolyRuntimeRegion {
                             self.block_start_frame,
                         );
                     }
+                    ModuleKind::Decay | ModuleKind::Impulse => {
+                        let events = self.voice_event_queues[voice]
+                            .queue_ref(step.event_inputs[0].0)
+                            .map_or(&[][..], |queue| queue.events());
+                        let mut context = ProcessContext::new(
+                            arena,
+                            &step.input_buffers,
+                            &step.output_buffers,
+                            frames,
+                        );
+                        match step.module_kind {
+                            ModuleKind::Decay => super::arena_processing::process_decay(
+                                &mut states[step.module_index],
+                                &mut context,
+                                events,
+                            ),
+                            ModuleKind::Impulse => {
+                                super::arena_processing::process_impulse(&mut context, events)
+                            }
+                            _ => unreachable!(),
+                        }
+                    }
                     ModuleKind::Sampler => {
                         let events = self.voice_event_queues[voice]
                             .queue_ref(step.event_inputs[0].0)
@@ -853,6 +875,16 @@ fn is_poly_child_arena_supported(step: &RenderStep) -> bool {
         ModuleKind::Adsr => {
             step.input_buffers.len() == 4
                 && step.output_buffers.len() == 1
+                && step.event_inputs.len() == 1
+        }
+        ModuleKind::Decay => {
+            step.input_buffers.len() == 1
+                && step.output_buffers.len() == 1
+                && step.event_inputs.len() == 1
+        }
+        ModuleKind::Impulse => {
+            step.input_buffers.is_empty()
+                && !step.output_buffers.is_empty()
                 && step.event_inputs.len() == 1
         }
         ModuleKind::Sampler => {

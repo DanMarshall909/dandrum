@@ -3,6 +3,7 @@ use super::helpers::{normalized_end_position, normalized_position};
 use super::outputs::BlockEvent;
 use super::process_context::ProcessContext;
 use super::state::PerModuleState;
+use crate::decay::DecayCurve;
 use crate::oscillator::OSCILLATOR_BASE_HZ;
 use crate::script::ScriptEvent;
 
@@ -190,9 +191,57 @@ pub(super) fn process_impulse(context: &mut ProcessContext<'_>, events: &[BlockE
         let triggered = events
             .iter()
             .any(|event| event.frame_offset as usize == frame);
+        for channel in 0..context.output_count() {
+            context
+                .set_output_sample(channel, frame, if triggered { 1.0 } else { 0.0 })
+                .expect("impulse output is present in a supported arena step");
+        }
+    }
+}
+
+pub(super) fn process_decay(
+    state: &mut PerModuleState,
+    context: &mut ProcessContext<'_>,
+    events: &[BlockEvent],
+) {
+    let PerModuleState::Decay {
+        level,
+        triggered,
+        elapsed_frames,
+        sample_rate,
+        curve,
+    } = state
+    else {
+        unreachable!()
+    };
+
+    for frame in 0..context.frames() {
+        for event in events {
+            if event.frame_offset as usize == frame
+                && matches!(event.event, ScriptEvent::NoteOn { .. })
+            {
+                *level = 1.0;
+                *triggered = true;
+                *elapsed_frames = 0;
+            }
+        }
+        if *triggered {
+            let time_ms = context.input_sample(0, frame, 100.0);
+            let decay_frames = (*sample_rate * time_ms / 1000.0).max(1.0);
+            let t = *elapsed_frames as f32 / decay_frames;
+            *level = match curve {
+                DecayCurve::Linear => (1.0 - t).max(0.0),
+                DecayCurve::Exponential => (-4.0 * t).exp(),
+            };
+            *elapsed_frames += 1;
+            if *level <= 0.0 {
+                *level = 0.0;
+                *triggered = false;
+            }
+        }
         context
-            .set_output_sample(0, frame, if triggered { 1.0 } else { 0.0 })
-            .expect("impulse output is present in a supported arena step");
+            .set_output_sample(0, frame, *level)
+            .expect("decay output is present in a supported arena step");
     }
 }
 

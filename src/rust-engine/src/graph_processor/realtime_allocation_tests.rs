@@ -611,6 +611,38 @@ fn poly_note_to_control_renders_and_releases_without_allocation() {
 }
 
 #[test]
+fn poly_drum_decay_and_stereo_impulse_render_without_allocation() {
+    let patch = load_kernel_patch_str(include_str!(
+        "../../../../examples/patches/drums/drum-909-kick.yaml"
+    ))
+    .expect("909 kick example loads");
+    let settings = RenderSettings {
+        sample_rate_hz: 48_000,
+        block_size_frames: 64,
+        duration_frames: 64,
+    };
+    let prepared = prepare_kernel_patch(&patch, &settings).expect("909 kick prepares");
+    let mut processor = RealtimeGraphProcessor::polyphonic_with_compiled_patch_and_sampler_assets_and_max_block_size(
+        prepared.graph().clone(),
+        prepared.compiled_patch().clone(),
+        48_000.0,
+        &PreparedSamplerAssets::empty(),
+        &VoiceAllocation::default(),
+        64,
+    );
+    let mut outputs = vec![vec![vec![0.0; 64]; 2]];
+
+    let allocation_count = count_current_thread_allocations(|| {
+        processor.note_on(36, 100);
+        assert_eq!(processor.render_root_outputs(&mut outputs), 64);
+    });
+
+    assert_eq!(allocation_count, 0);
+    assert!(outputs[0][0].iter().any(|sample| sample.abs() > 0.001));
+    assert_eq!(outputs[0][0], outputs[0][1]);
+}
+
+#[test]
 fn full_capacity_poly_stealing_and_rejection_render_without_allocation() {
     for (allocation, expected_notes) in [
         (crate::kernel::POLY_ALLOCATION_OLDEST_STEAL, [67, 64]),

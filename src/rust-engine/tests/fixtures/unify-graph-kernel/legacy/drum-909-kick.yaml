@@ -1,0 +1,134 @@
+metadata:
+  name: Drum 909 Kick
+# 909-style kick: a tuned sine body with a fast, deep pitch sweep, an
+# exponential amplitude decay, and a bright transient click (impulse through a
+# highpass). Built from reusable primitives only. Public controls map to live
+# runtime targets. Seed values are tuning hints from public 909 references,
+# refined offline.
+instrument:
+  id: dandrum.drum-909-kick
+  preset_schema_version: 1
+preset_surface:
+  parameters:
+    - name: kick.decay_ms
+      type: number
+      default: 260
+      min: 40
+      max: 1200
+      maps_to: amp_env.time_ms
+    - name: kick.sweep
+      type: number
+      default: 0.9
+      min: 0
+      max: 3
+      maps_to: pitch_map.scale
+    - name: kick.pitch_decay_ms
+      type: number
+      default: 45
+      min: 5
+      max: 300
+      maps_to: pitch_env.time_ms
+    - name: kick.click
+      type: number
+      default: 0.8
+      min: 0
+      max: 2
+      maps_to: click_trim.gain
+    - name: kick.level
+      type: number
+      default: 1
+      min: 0
+      max: 2
+      maps_to: body_trim.gain
+render:
+  sample_rate_hz: 48000
+  block_size_frames: 128
+  duration_frames: 48000
+modules:
+  - id: midi
+    type: midi_input
+  - id: ntr
+    type: note_to_control
+  - id: pitch_env
+    type: decay
+    parameters:
+      curve: exponential
+  - id: pitch_map
+    type: curve_mapper
+    parameters:
+      scale: 0.9
+  - id: body
+    type: oscillator
+    parameters:
+      waveform: sine
+  - id: amp_env
+    type: decay
+    parameters:
+      curve: exponential
+  - id: body_vca
+    type: gain
+  - id: body_trim
+    type: gain
+    parameters:
+      gain: 1
+  - id: click
+    type: impulse
+  - id: click_hp
+    type: filter
+    parameters:
+      algorithm: biquad
+      mode: highpass
+  - id: click_env
+    type: decay
+    parameters:
+      curve: exponential
+      time_ms: 6
+  - id: click_vca
+    type: gain
+  - id: click_trim
+    type: gain
+    parameters:
+      gain: 0.8
+  - id: mixer
+    type: audio_mixer
+  - id: out
+    type: audio_output
+connections:
+  - from: midi.events
+    to: ntr.events
+  - from: midi.events
+    to: pitch_env.trigger
+  - from: midi.events
+    to: amp_env.trigger
+  - from: midi.events
+    to: click.trigger
+  - from: midi.events
+    to: click_env.trigger
+  - from: pitch_env.value
+    to: pitch_map.value
+  - from: ntr.pitch_ratio
+    to: pitch_map.offset
+  - from: pitch_map.value
+    to: body.pitch
+  - from: body.audio
+    to: body_vca.audio_in
+  - from: amp_env.value
+    to: body_vca.gain
+  - from: body_vca.audio_out
+    to: body_trim.audio_in
+  - from: body_trim.audio_out
+    to: mixer.inputs
+  - from: click.audio
+    to: click_hp.audio_in
+  - from: click_hp.audio_out
+    to: click_vca.audio_in
+  - from: click_env.value
+    to: click_vca.gain
+  - from: click_vca.audio_out
+    to: click_trim.audio_in
+  - from: click_trim.audio_out
+    to: mixer.inputs
+  - from: mixer.mix
+    to: out.left
+  - from: mixer.mix
+    to: out.right
