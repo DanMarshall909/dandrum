@@ -5198,13 +5198,8 @@ fn tb303_acid_accent_makes_notes_louder_and_brighter() {
     let Some(yaml) = read_repo_fixture("examples/patches/tb303-acid.yaml") else {
         return;
     };
-    let patch = patch::load_patch_str(&yaml).expect("tb303-acid.yaml should parse");
-    let graph = Graph::from_patch_declarations(&patch);
-    graph.validate().expect("tb303-acid graph should validate");
-
-    let render_for_velocity = |velocity: u8| {
-        render_offline(&graph, &patch.render, vec![note_on_value(0, 45, velocity)]).0
-    };
+    let render_for_velocity =
+        |velocity: u8| render_acid_kernel(&yaml, vec![note_on_value(0, 45, velocity)]);
 
     let accented = render_for_velocity(120);
     let unaccented = render_for_velocity(80);
@@ -5224,7 +5219,7 @@ fn tb303_acid_accent_makes_notes_louder_and_brighter() {
         "accented note (rms {accented_rms}) should be clearly louder than unaccented (rms {unaccented_rms})"
     );
 
-    let sample_rate_hz = patch.render.sample_rate_hz as f64;
+    let sample_rate_hz = 48_000.0;
     let accented_centroid = spectral_centroid_around(&accented, 24_000, 4_096, sample_rate_hz);
     let unaccented_centroid = spectral_centroid_around(&unaccented, 24_000, 4_096, sample_rate_hz);
     assert!(
@@ -5238,12 +5233,8 @@ fn tb303_acid_held_note_retains_mid_decay_brightness() {
     let Some(yaml) = read_repo_fixture("examples/patches/tb303-acid.yaml") else {
         return;
     };
-    let patch = patch::load_patch_str(&yaml).expect("tb303-acid.yaml should parse");
-    let graph = Graph::from_patch_declarations(&patch);
-    graph.validate().expect("tb303-acid graph should validate");
-
-    let (left, _) = render_offline(&graph, &patch.render, vec![note_on_value(0, 45, 80)]);
-    let (left_again, _) = render_offline(&graph, &patch.render, vec![note_on_value(0, 45, 80)]);
+    let left = render_acid_kernel(&yaml, vec![note_on_value(0, 45, 80)]);
+    let left_again = render_acid_kernel(&yaml, vec![note_on_value(0, 45, 80)]);
     assert_eq!(
         left, left_again,
         "held TB-303 note should render deterministically"
@@ -5253,7 +5244,7 @@ fn tb303_acid_held_note_retains_mid_decay_brightness() {
         "held TB-303 note should render only finite samples"
     );
 
-    let sample_rate_hz = patch.render.sample_rate_hz as f64;
+    let sample_rate_hz = 48_000.0;
     let mid_centroid = spectral_centroid_around(&left, 24_000, 4_096, sample_rate_hz);
     let late_centroid = spectral_centroid_around(&left, 36_000, 4_096, sample_rate_hz);
     println!("tb303 held-note centroids: 500ms={mid_centroid:.1}Hz, 750ms={late_centroid:.1}Hz");
@@ -5273,36 +5264,28 @@ fn tb303_acid_drives_audible_resonance() {
     let Some(yaml) = read_repo_fixture("examples/patches/tb303-acid.yaml") else {
         return;
     };
-    let patch = patch::load_patch_str(&yaml).expect("tb303-acid.yaml should parse");
+    let patch = load_kernel_patch_str(&yaml).expect("tb303-acid.yaml should parse as kernel YAML");
     let resonance_cable = patch
-        .connections
+        .root()
+        .connections()
         .iter()
         .find(|connection| {
-            connection.to.module_id == "filter"
-                && connection.to.port_name == builtin_ports::RESONANCE
+            connection.destination().node().as_str() == "filter"
+                && connection.destination().port() == builtin_ports::RESONANCE
         })
         .expect("tb303-acid should explicitly drive filter.resonance");
     assert_eq!(
-        resonance_cable.from.port_name,
+        resonance_cable.source().port(),
         builtin_ports::VALUE,
         "resonance should be driven by an inspectable control output"
     );
 
-    let graph = Graph::from_patch_declarations(&patch);
-    graph.validate().expect("tb303-acid graph should validate");
     let events = vec![note_on_value(0, 45, 80)];
-    let (resonant, _) = render_offline(&graph, &patch.render, events.clone());
+    let resonant = render_acid_kernel(&yaml, events.clone());
 
-    let mut zero_resonance_patch = patch.clone();
-    zero_resonance_patch.connections.retain(|connection| {
-        connection.to.module_id != "filter" || connection.to.port_name != builtin_ports::RESONANCE
-    });
-    let zero_resonance_graph = Graph::from_patch_declarations(&zero_resonance_patch);
-    zero_resonance_graph
-        .validate()
-        .expect("comparison graph without resonance route should validate");
-    let (zero_resonance, _) =
-        render_offline(&zero_resonance_graph, &zero_resonance_patch.render, events);
+    let resonance_route = "  - { from: resonance_control.value, to: filter.resonance }\n";
+    assert!(yaml.contains(resonance_route));
+    let zero_resonance = render_acid_kernel(&yaml.replace(resonance_route, ""), events);
 
     let difference: Vec<f32> = resonant
         .iter()
@@ -5313,6 +5296,25 @@ fn tb303_acid_drives_audible_resonance() {
         rms(&difference) > 0.001,
         "the explicit resonance route should audibly change the rendered note"
     );
+}
+
+fn render_acid_kernel(yaml: &str, events: Vec<TimedInputEvent>) -> Vec<f32> {
+    let patch = load_kernel_patch_str(yaml).expect("acid kernel patch should parse");
+    let settings = RenderSettings {
+        sample_rate_hz: 48_000,
+        block_size_frames: 128,
+        duration_frames: 48_000,
+    };
+    let prepared =
+        prepare_kernel_patch(&patch, &settings).expect("acid kernel patch should prepare");
+    let buses = render_kernel_offline_named(&prepared, events, &PreparedSamplerAssets::empty())
+        .expect("acid kernel patch should render");
+    buses
+        .into_iter()
+        .find(|(name, _)| name == "master")
+        .expect("acid patch should expose master")
+        .1[0]
+        .clone()
 }
 
 #[test]

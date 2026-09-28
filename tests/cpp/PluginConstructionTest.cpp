@@ -257,19 +257,32 @@ bool hostMidiVelocityMatchesRustEvent()
     processor.setPlayConfigDetails (0, 2, 48000.0, frames);
     processor.prepareToPlay (48000.0, frames);
     if (! processor.reloadInstrumentFromFile (patch))
+    {
+        std::cerr << "acid kernel patch did not reload in plugin\n";
         return false;
+    }
 
-    std::unique_ptr<DandrumEngine, decltype (&dandrum_engine_destroy)> reference (
-        dandrum_engine_create(), &dandrum_engine_destroy);
+    const DandrumKernelBusDeclaration buses[] {
+        { "master", 2, 2 }, { "filter_cutoff", 1, 1 }, { "filter_resonance", 1, 1 },
+        { "filter_envelope_modulation", 1, 1 }, { "filter_decay_ms", 1, 1 },
+        { "accent_brightness", 1, 1 }, { "amp_release_ms", 1, 1 }, { "slide_time_ms", 1, 1 }
+    };
+    std::unique_ptr<DandrumKernelInstrument, decltype (&dandrum_kernel_destroy)> reference (
+        dandrum_kernel_prepare_file (patch.getFullPathName().toRawUTF8(), 48000, frames,
+                                     buses, std::size (buses)),
+        &dandrum_kernel_destroy);
     if (reference == nullptr)
+    {
+        std::cerr << "acid kernel reference did not prepare\n";
         return false;
-    dandrum_engine_prepare_realtime (reference.get(), 48000.0f, frames);
-    if (! dandrum_engine_load_patch (reference.get(), patch.getFullPathName().toRawUTF8()))
-        return false;
+    }
 
     const auto count = dandrum_patch_public_numeric_parameter_count (patch.getFullPathName().toRawUTF8());
     if (count == 0)
+    {
+        std::cerr << "acid kernel patch exposed no public controls\n";
         return false;
+    }
     for (std::size_t index = 0; index < count; ++index)
     {
         char id[128] {}, name[128] {};
@@ -280,10 +293,17 @@ bool hostMidiVelocityMatchesRustEvent()
             return false;
         auto* hostParameter = processor.getParameterForPublicId (id);
         if (hostParameter == nullptr)
+        {
+            std::cerr << "plugin missing public control " << id << '\n';
             return false;
+        }
         hostParameter->setValueNotifyingHost (0.5f);
-        if (! dandrum_engine_set_public_numeric_parameter (reference.get(), id, (minimum + maximum) / 2.0))
+        if (! dandrum_kernel_set_public_numeric_parameter_by_slot (reference.get(), index,
+                                                                  (minimum + maximum) / 2.0))
+        {
+            std::cerr << "kernel reference rejected public control " << id << '\n';
             return false;
+        }
     }
 
     juce::AudioBuffer<float> actual (2, frames), expected (2, frames);
@@ -291,11 +311,20 @@ bool hostMidiVelocityMatchesRustEvent()
     expected.clear();
     juce::MidiBuffer hostMidi;
     hostMidi.addEvent (juce::MidiMessage::noteOn (1, 60, velocity), offset);
-    dandrum_engine_note_on_at (reference.get(), 60, velocity, offset);
+    dandrum_kernel_note_on_at (reference.get(), 60, velocity, offset);
     processor.processBlock (actual, hostMidi);
-    dandrum_engine_render (reference.get(), expected.getWritePointer (0), expected.getWritePointer (1), frames);
-    if (! bufferHasSignal (expected))
+    float* channels[] { expected.getWritePointer (0), expected.getWritePointer (1) };
+    const DandrumKernelOutputBusView output { "master", channels, 2, frames };
+    if (dandrum_kernel_render (reference.get(), nullptr, 0, &output, 1, frames) != frames)
+    {
+        std::cerr << "kernel reference did not render master\n";
         return false;
+    }
+    if (! bufferHasSignal (expected))
+    {
+        std::cerr << "kernel reference master was silent\n";
+        return false;
+    }
     for (int channel = 0; channel < 2; ++channel)
         for (int frame = 0; frame < frames; ++frame)
             if (! nearlyEqual (actual.getSample (channel, frame), expected.getSample (channel, frame), 0.00001f))

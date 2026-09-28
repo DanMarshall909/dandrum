@@ -819,7 +819,7 @@ mod tests {
             .matching
             .as_ref()
             .expect("TB-303 fixture should declare matching settings");
-        let patch = crate::patch::load_patch_file(&fixture.patch)
+        let patch = SoundPatch::load(&fixture.patch)
             .expect("TB-303 patch should expose matching parameters");
 
         assert_eq!(matching.seed, 303);
@@ -842,22 +842,10 @@ mod tests {
 
         for parameter_id in &matching.parameters {
             let target = patch
-                .preset_surface
-                .parameters
-                .iter()
-                .find(|target| target.name == *parameter_id)
-                .unwrap_or_else(|| panic!("missing public matching parameter {parameter_id}"));
-            let min = target
-                .min
-                .expect("matching parameter should have a minimum");
-            let max = target
-                .max
-                .expect("matching parameter should have a maximum");
-            assert!(min.is_finite() && max.is_finite() && min < max);
-            assert!(matches!(
-                target.default,
-                crate::patch::ParameterValue::Number(_)
-            ));
+                .numeric_target(parameter_id)
+                .unwrap_or_else(|error| panic!("missing public matching parameter: {error}"));
+            assert!(target.min.is_finite() && target.max.is_finite() && target.min < target.max);
+            assert!(target.default.is_finite());
         }
     }
 
@@ -941,26 +929,12 @@ mod tests {
             assert!(error.contains(expected), "unexpected error: {error}");
         }
 
-        let patch_cases = [
-            (
-                "non-numeric-parameter",
-                "type: number\n      default: 0.4",
-                "type: boolean\n      default: true",
-                "finite continuous numeric default",
-            ),
-            (
-                "integer-parameter",
-                "type: number\n      default: 0.4",
-                "type: integer\n      default: 1",
-                "continuous numeric default",
-            ),
-            (
-                "unbounded-parameter",
-                "min: 0.02\n      max: 0.9",
-                "min: 0.02",
-                "ordered bounds",
-            ),
-        ];
+        let patch_cases = [(
+            "unbounded-parameter",
+            "default: 0.4, min: 0.02, max: 0.9",
+            "default: 0.4, min: 0.02",
+            "ordered bounds",
+        )];
         for (name, from, to, expected) in patch_cases {
             let path = write_matching_patch_variant(name, from, to);
             let error = load_sound_fixture_file(path)
@@ -1030,12 +1004,11 @@ mod tests {
     fn snapshot_renderer_rejects_invalid_public_parameter_applications_before_rendering() {
         let fixture =
             load_sound_fixture_file(acid_fixture_path()).expect("TB-303 fixture should load");
-        let patch = crate::patch::load_patch_file(&fixture.patch).expect("patch should load");
+        let patch = SoundPatch::load(&fixture.patch).expect("patch should load");
         let patch_root = fixture.patch.parent().unwrap();
-        let render_result = |patch: &crate::patch::PatchDocument, id: &str, value: f64| {
-            render_sound_fixture_with_patch_and_public_numeric_values(
+        let render_result = |patch: &SoundPatch, id: &str, value: f64| {
+            patch.render(
                 &fixture,
-                patch,
                 patch_root,
                 &std::collections::BTreeMap::from([(id.to_string(), value)]),
             )
@@ -1056,32 +1029,30 @@ mod tests {
         assert!(render_result(&patch, "filter.cutoff", 0.02).is_ok());
         assert!(render_result(&patch, "filter.cutoff", 0.9).is_ok());
 
-        let mut unbounded = patch.clone();
-        unbounded.preset_surface.parameters[0].max = None;
+        let yaml = fs::read_to_string(&fixture.patch).expect("acid YAML should read");
+        let unbounded = yaml.replacen(
+            "default: 0.4, min: 0.02, max: 0.9",
+            "default: 0.4, min: 0.02",
+            1,
+        );
+        let unbounded = SoundPatch::Kernel(
+            crate::kernel::document::load_kernel_patch_str(&unbounded)
+                .expect("unbounded control patch should parse"),
+        );
         assert!(
             render_result(&unbounded, "filter.cutoff", 0.5)
                 .unwrap_err()
-                .contains("bounds")
+                .contains("ordered bounds")
         );
 
-        let mut non_numeric = patch.clone();
-        non_numeric.preset_surface.parameters[0].default =
-            crate::patch::ParameterValue::Text("saw".to_string());
-        assert!(
-            render_result(&non_numeric, "filter.cutoff", 0.5)
-                .unwrap_err()
-                .contains("not numeric")
+        assert!(yaml.contains("maps_to: accent_bright.offset"));
+        let missing_module =
+            yaml.replacen("maps_to: accent_bright.offset", "maps_to: absent.offset", 1);
+        let missing_module = SoundPatch::Kernel(
+            crate::kernel::document::load_kernel_patch_str(&missing_module)
+                .expect("kernel document syntax is valid"),
         );
-
-        let mut missing_module = patch;
-        missing_module.preset_surface.parameters[0]
-            .maps_to
-            .module_id = "absent".to_string();
-        assert!(
-            render_result(&missing_module, "filter.cutoff", 0.5)
-                .unwrap_err()
-                .contains("missing module")
-        );
+        assert!(render_result(&missing_module, "filter.cutoff", 0.5).is_err());
     }
 
     #[test]
@@ -1129,8 +1100,7 @@ mod tests {
     fn acid_kernel_variant_loads_as_a_kernel_document() {
         let fixture =
             load_sound_fixture_file(acid_fixture_path()).expect("TB-303 sound fixture should load");
-        let kernel_path = fixture.patch.with_file_name("tb303-acid-kernel.yaml");
-        let kernel = crate::kernel::document::load_kernel_patch_file(&kernel_path)
+        let kernel = crate::kernel::document::load_kernel_patch_file(&fixture.patch)
             .expect("TB-303 patch should use the kernel document shape");
         let legacy = crate::patch::load_patch_str(include_str!(
             "../tests/fixtures/unify-graph-kernel/legacy/tb303-acid.yaml"
@@ -1157,9 +1127,8 @@ mod tests {
 
     #[test]
     fn acid_kernel_render_preserves_legacy_calibration() {
-        let mut fixture =
+        let fixture =
             load_sound_fixture_file(acid_fixture_path()).expect("TB-303 sound fixture should load");
-        fixture.patch = fixture.patch.with_file_name("tb303-acid-kernel.yaml");
         let legacy = crate::patch::load_patch_str(include_str!(
             "../tests/fixtures/unify-graph-kernel/legacy/tb303-acid.yaml"
         ))

@@ -944,15 +944,10 @@ mod tests {
     }
 
     fn short_match_files() -> (tempfile::TempDir, CString, CString) {
-        short_match_files_with_patch("tb303-acid.yaml")
-    }
-
-    fn short_match_files_with_patch(patch_name: &str) -> (tempfile::TempDir, CString, CString) {
         let directory = tempfile::tempdir().unwrap();
         let source_patch_path = Path::new(env!("CARGO_MANIFEST_DIR"))
             .join("../..")
-            .join("examples/patches")
-            .join(patch_name)
+            .join("examples/patches/tb303-acid.yaml")
             .canonicalize()
             .unwrap();
         let patch_path = directory.path().join("matched-patch.yaml");
@@ -1222,29 +1217,17 @@ metadata:
 instrument:
   id: dandrum.ffi-proposal
   preset_schema_version: 1
+ports:
+  - { name: oscillator_pitch, direction: input, signal: control, channels: 1, default: 1, min: 0.25, max: 4, maps_to: osc.pitch }
+  - { name: master, direction: output, signal: audio, channels: 2, maps_from: mixer.mix }
 preset_surface:
   parameters:
-    - name: oscillator.pitch
-      type: number
-      default: 1
-      min: 0.25
-      max: 4
-      maps_to: osc.pitch
-render:
-  sample_rate_hz: 48000
-  block_size_frames: 64
+    - { name: oscillator.pitch, maps_to: oscillator_pitch }
 modules:
-  - { id: osc, type: oscillator }
-  - { id: mixer, type: audio_mixer }
-  - id: out
-    type: audio_output
-    inputs:
-      - { name: left, signal_type: audio }
-      - { name: right, signal_type: audio }
+  - { id: osc, type: oscillator, static: { channels: 2 } }
+  - { id: mixer, type: audio_mixer, static: { channels: 2 } }
 connections:
   - { from: osc.audio, to: mixer.inputs }
-  - { from: mixer.mix, to: out.left }
-  - { from: mixer.mix, to: out.right }
 "#;
         let (directory, fixture_path, reference_path) = short_match_files();
         let matched = unsafe {
@@ -1379,8 +1362,7 @@ connections:
 
     #[test]
     fn ffi_proposal_request_reads_kernel_topology_from_matched_snapshot() {
-        let (directory, fixture_path, reference_path) =
-            short_match_files_with_patch("tb303-acid-kernel.yaml");
+        let (directory, fixture_path, reference_path) = short_match_files();
         let matched = unsafe {
             dandrum_sound_match_create(
                 fixture_path.as_ptr(),

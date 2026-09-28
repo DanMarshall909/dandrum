@@ -816,8 +816,9 @@ connections:
 
     fn proposal_request(fixture: &crate::sound_workbench::SoundFixture) -> GraphProposalRequest {
         let (candidate, reference) = comparison_metrics();
-        let patch = crate::patch::load_patch_file(&fixture.patch).expect("acid patch should load");
-        build_graph_proposal_request(&patch, &match_manifest(), &candidate, &reference)
+        let patch = crate::kernel::document::load_kernel_patch_file(&fixture.patch)
+            .expect("acid kernel patch should load");
+        build_kernel_graph_proposal_request(&patch, &match_manifest(), &candidate, &reference)
             .expect("canonical request should build")
     }
 
@@ -881,7 +882,7 @@ connections:
     fn kernel_request_uses_root_graph_and_public_aliases_without_private_match_data() {
         let path = Path::new(env!("CARGO_MANIFEST_DIR"))
             .join("../..")
-            .join("examples/patches/tb303-acid-kernel.yaml");
+            .join("examples/patches/tb303-acid.yaml");
         let patch = crate::kernel::document::load_kernel_patch_file(&path).unwrap();
         let (candidate, reference) = comparison_metrics();
         let request =
@@ -956,9 +957,11 @@ connections:
 
         let fixture = acid_fixture();
         let silent = vec![frame(0.0, 0.0, None)];
-        let patch = crate::patch::load_patch_file(&fixture.patch).expect("acid patch should load");
-        let request = build_graph_proposal_request(&patch, &match_manifest(), &silent, &silent)
-            .expect("silent finite feature summaries remain representable");
+        let patch = crate::kernel::document::load_kernel_patch_file(&fixture.patch)
+            .expect("acid kernel patch should load");
+        let request =
+            build_kernel_graph_proposal_request(&patch, &match_manifest(), &silent, &silent)
+                .expect("silent finite feature summaries remain representable");
 
         assert_eq!(request.features.candidate.centroid_frame_count, 0);
         assert_eq!(request.features.candidate.mean_spectral_centroid_hz, 0.0);
@@ -968,10 +971,10 @@ connections:
 
         let audible = vec![frame(0.2, 0.5, Some(1_000.0))];
         let candidate_only =
-            build_graph_proposal_request(&patch, &match_manifest(), &audible, &silent)
+            build_kernel_graph_proposal_request(&patch, &match_manifest(), &audible, &silent)
                 .expect("a silent reference has no meaningful centroid ratio");
         let reference_only =
-            build_graph_proposal_request(&patch, &match_manifest(), &silent, &audible)
+            build_kernel_graph_proposal_request(&patch, &match_manifest(), &silent, &audible)
                 .expect("a silent candidate has no meaningful centroid ratio");
         assert_eq!(candidate_only.features.delta.centroid_octaves, 0.0);
         assert_eq!(reference_only.features.delta.centroid_octaves, 0.0);
