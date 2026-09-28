@@ -4,6 +4,7 @@
 #include <cmath>
 #include <cstddef>
 #include <iostream>
+#include <memory>
 
 namespace
 {
@@ -19,33 +20,29 @@ bool bufferIsFinite (const float* samples, std::size_t count)
 
 int main()
 {
-    DandrumEngine* engine = dandrum_engine_create();
-    if (engine == nullptr)
-    {
-        std::cerr << "dandrum_engine_create returned null\n";
-        return 1;
-    }
-
     const auto patchPath = dandrum::defaultPatchPath().string();
-    if (! dandrum_engine_load_patch (engine, patchPath.c_str()))
+    constexpr std::size_t numSamples = 64;
+    const DandrumKernelBusDeclaration master { "master", 2, 2 };
+    std::unique_ptr<DandrumKernelInstrument, decltype (&dandrum_kernel_destroy)> engine (
+        dandrum_kernel_prepare_file (patchPath.c_str(), 48000, numSamples, &master, 1),
+        &dandrum_kernel_destroy);
+    if (! engine)
     {
         std::cerr << "failed to load default patch: " << patchPath << '\n';
         return 1;
     }
 
-    constexpr std::size_t numSamples = 64;
     constexpr std::size_t noteOnOffset = 20;
     constexpr std::size_t noteOffOffset = 50;
 
-    dandrum_engine_prepare_realtime (engine, 48000.0f, numSamples);
-    dandrum_engine_note_on_at (engine, 60, 110, noteOnOffset);
-    dandrum_engine_note_off_at (engine, 60, noteOffOffset);
+    dandrum_kernel_note_on_at (engine.get(), 60, 110, noteOnOffset);
+    dandrum_kernel_note_off_at (engine.get(), 60, noteOffOffset);
 
     float left[numSamples] {};
     float right[numSamples] {};
-    const auto rendered = dandrum_engine_render (engine, left, right, numSamples);
-
-    dandrum_engine_destroy (engine);
+    float* channels[] { left, right };
+    const DandrumKernelOutputBusView output { "master", channels, 2, numSamples };
+    const auto rendered = dandrum_kernel_render (engine.get(), nullptr, 0, &output, 1, numSamples);
 
     if (rendered != numSamples)
     {

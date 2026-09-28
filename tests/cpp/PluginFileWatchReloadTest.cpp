@@ -11,6 +11,12 @@ namespace
 constexpr int blockSize = 64;
 constexpr double sampleRate = 48000.0;
 constexpr int kickNote = 36;
+const juce::String decayMarker = "{ name: decay_ms, direction: input, signal: control, channels: 1, default: ";
+
+bool containsDecayValue (const juce::String& yaml, const juce::String& value)
+{
+    return yaml.contains (decayMarker + value + ",");
+}
 
 juce::File defaultPatchFile()
 {
@@ -24,11 +30,10 @@ juce::File defaultPatchFile()
 juce::File writeKickPatchWithDecay (const juce::String& prefix, const juce::String& decayValue)
 {
     auto content = defaultPatchFile().loadFileAsString();
-    const juce::String marker = "decay_ms: 650";
-    if (! content.contains (marker))
+    if (! containsDecayValue (content, "650"))
         return {};
 
-    content = content.replace (marker, "decay_ms: " + decayValue);
+    content = content.replace (decayMarker + "650,", decayMarker + decayValue + ",");
     auto file = juce::File::getSpecialLocation (juce::File::tempDirectory)
                     .getChildFile (prefix + juce::String (juce::Random::getSystemRandom().nextInt()) + ".yaml");
     file.replaceWithText (content);
@@ -40,11 +45,10 @@ juce::File writeKickPatchWithDecay (const juce::String& prefix, const juce::Stri
 bool editFileDecay (const juce::File& file, const juce::String& from, const juce::String& to)
 {
     auto content = file.loadFileAsString();
-    const juce::String marker = "decay_ms: " + from;
-    if (! content.contains (marker))
+    if (! containsDecayValue (content, from))
         return false;
 
-    content = content.replace (marker, "decay_ms: " + to);
+    content = content.replace (decayMarker + from + ",", decayMarker + to + ",");
     file.replaceWithText (content);
     return true;
 }
@@ -107,7 +111,7 @@ int main()
             std::cerr << "processor did not start watching the reloaded instrument file\n";
             return 1;
         }
-        if (! processor->currentInstrumentYaml().contains ("decay_ms: 650"))
+        if (! containsDecayValue (processor->currentInstrumentYaml(), "650"))
         {
             std::cerr << "test setup: watched file did not load the expected baseline decay\n";
             return 1;
@@ -121,7 +125,7 @@ int main()
 
         // A single poll detects the change but must not yet reload it.
         processor->pollInstrumentFileForChanges();
-        if (! processor->currentInstrumentYaml().contains ("decay_ms: 650"))
+        if (! containsDecayValue (processor->currentInstrumentYaml(), "650"))
         {
             std::cerr << "watched file reloaded before the change was observed as stable\n";
             return 1;
@@ -130,7 +134,7 @@ int main()
         // Once the change is stable across polls it reloads via the replacement
         // transaction, which returns to the running state afterward.
         processor->pollInstrumentFileForChanges();
-        if (! processor->currentInstrumentYaml().contains ("decay_ms: 1900"))
+        if (! containsDecayValue (processor->currentInstrumentYaml(), "1900"))
         {
             std::cerr << "detected external change did not reload the instrument\n";
             return 1;
@@ -175,7 +179,7 @@ int main()
         processor->pollInstrumentFileForChanges();
         processor->pollInstrumentFileForChanges();
 
-        if (! processor->currentInstrumentYaml().contains ("decay_ms: 650"))
+        if (! containsDecayValue (processor->currentInstrumentYaml(), "650"))
         {
             std::cerr << "a failed file-watch reload replaced the previously loaded instrument\n";
             return 1;
@@ -215,7 +219,7 @@ int main()
         // First fragment of an in-progress save: observed once, not yet stable.
         file.replaceWithText ("metadata:\n  name: half-written\n");
         processor->pollInstrumentFileForChanges();
-        if (! processor->currentInstrumentYaml().contains ("decay_ms: 650"))
+        if (! containsDecayValue (processor->currentInstrumentYaml(), "650"))
         {
             std::cerr << "a single mid-write observation triggered a premature reload\n";
             return 1;
@@ -231,7 +235,7 @@ int main()
         finalFile.deleteFile();
 
         processor->pollInstrumentFileForChanges();
-        if (! processor->currentInstrumentYaml().contains ("decay_ms: 650"))
+        if (! containsDecayValue (processor->currentInstrumentYaml(), "650"))
         {
             std::cerr << "an unstable (still-changing) file triggered a reload before stabilising\n";
             return 1;
@@ -240,7 +244,7 @@ int main()
         // The file has now stopped changing; the next poll makes it stable and
         // the reload finally happens.
         processor->pollInstrumentFileForChanges();
-        if (! processor->currentInstrumentYaml().contains ("decay_ms: 1234"))
+        if (! containsDecayValue (processor->currentInstrumentYaml(), "1234"))
         {
             std::cerr << "a stabilised file was not reloaded once it stopped changing\n";
             return 1;
@@ -273,7 +277,7 @@ int main()
 
         for (int i = 0; i < 3; ++i)
             processor->pollInstrumentFileForChanges();
-        if (! processor->currentInstrumentYaml().contains ("decay_ms: 650"))
+        if (! containsDecayValue (processor->currentInstrumentYaml(), "650"))
         {
             std::cerr << "an external edit reloaded while file watching was disabled\n";
             return 1;
@@ -285,7 +289,7 @@ int main()
             std::cerr << "manual reload failed while watching was disabled: " << processor->getLastLoadError() << '\n';
             return 1;
         }
-        if (! processor->currentInstrumentYaml().contains ("decay_ms: 1500"))
+        if (! containsDecayValue (processor->currentInstrumentYaml(), "1500"))
         {
             std::cerr << "manual reload did not apply while watching was disabled\n";
             return 1;
@@ -304,7 +308,7 @@ int main()
 
         processor->pollInstrumentFileForChanges();
         processor->pollInstrumentFileForChanges();
-        if (! processor->currentInstrumentYaml().contains ("decay_ms: 200"))
+        if (! containsDecayValue (processor->currentInstrumentYaml(), "200"))
         {
             std::cerr << "re-enabling file watching did not resume automatic reloads\n";
             return 1;

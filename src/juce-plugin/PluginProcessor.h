@@ -170,6 +170,7 @@ private:
         PublicParameterDescriptor descriptor;
         const std::atomic<float>* rawValue = nullptr;
         std::vector<std::intptr_t> engineSlotIndices;
+        std::intptr_t kernelSlotIndex = kNoEngineSlot;
         float lastAppliedNormalisedValue = 0.0f;
     };
 
@@ -231,8 +232,9 @@ private:
     void preparePublicParameterSlots (const std::vector<PublicParameterDescriptor>& descriptors,
                                       juce::String* droppedParametersWarning,
                                       bool preferCurrentSlotValues);
-    void applyChangedParameters (DandrumEngine* activeEngine) noexcept;
+    void applyChangedParameters (DandrumEngine* activeEngine, DandrumKernelInstrument* activeKernel) noexcept;
     void applySlotToEngine (ParameterSlot& slot, float normalisedValue, DandrumEngine* activeEngine) noexcept;
+    void applySlotToKernel (ParameterSlot& slot, float normalisedValue, DandrumKernelInstrument* activeKernel) noexcept;
     void setSlotNormalisedValue (int slotIndex, float normalisedValue);
     bool enqueueEditorMidiEvent (EditorMidiEvent event) noexcept;
     void deliverEditorMidiEvents (DandrumEngine* activeEngine) noexcept;

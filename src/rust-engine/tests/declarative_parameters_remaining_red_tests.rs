@@ -1,8 +1,8 @@
 use dandrum_engine::core::TimedInputEvent;
 use dandrum_engine::graph::Graph;
 use dandrum_engine::patch::{
-    AssetKind, ParameterValue, PresetTargetType, apply_preset, load_patch_str, load_preset_file,
-    load_preset_str, resolve_module_parameters, validate_patch_schema, validate_preset,
+    AssetKind, ParameterValue, PresetTargetType, load_patch_str, load_preset_file, load_preset_str,
+    resolve_module_parameters, validate_patch_schema, validate_preset,
     validate_preset_compatibility,
 };
 use dandrum_engine::script::ScriptEvent;
@@ -827,11 +827,15 @@ modules:
 #[test]
 fn synthetic_808_kick_example_declares_public_controls_and_renders() {
     let patch_path = example_patch_path("synthetic-808-kick.yaml");
-    let patch = dandrum_engine::patch::load_patch_file(&patch_path).expect("kick example parses");
-
-    validate_patch_schema(&patch).expect("kick example should validate");
-    let graph = Graph::from_patch_declarations(&patch);
-    graph.validate().expect("kick example graph validates");
+    let patch = dandrum_engine::kernel::document::load_kernel_patch_file(&patch_path)
+        .expect("kick example parses");
+    let settings = dandrum_engine::patch::RenderSettings {
+        sample_rate_hz: 48_000,
+        block_size_frames: 128,
+        duration_frames: 12_000,
+    };
+    let prepared = dandrum_engine::preparation::prepare_kernel_patch(&patch, &settings)
+        .expect("kick example prepares");
     let events = vec![TimedInputEvent::new(
         0,
         ScriptEvent::NoteOn {
@@ -839,25 +843,28 @@ fn synthetic_808_kick_example_declares_public_controls_and_renders() {
             velocity: 110,
         },
     )];
-    let (left, _right) =
-        dandrum_engine::graph_processor::render_offline(&graph, &patch.render, events);
+    let rendered = dandrum_engine::graph_processor::render_kernel_offline_named(
+        &prepared,
+        events,
+        &dandrum_engine::PreparedSamplerAssets::empty(),
+    )
+    .expect("kick example renders");
 
-    assert!(left.iter().any(|sample| sample.abs() > 0.0));
+    assert_eq!(rendered[0].0, "master");
+    assert!(rendered[0].1[0].iter().any(|sample| sample.abs() > 0.0));
 }
 
 #[test]
 fn synthetic_808_kick_public_controls_are_discoverable_without_internal_leakage() {
     let patch_path = example_patch_path("synthetic-808-kick.yaml");
-    let patch = dandrum_engine::patch::load_patch_file(&patch_path).expect("kick example parses");
-    let kick = patch
-        .module_definitions
+    let patch = dandrum_engine::kernel::document::load_kernel_patch_file(&patch_path)
+        .expect("kick example parses");
+    let public_names = patch
+        .root()
+        .ports()
         .iter()
-        .find(|definition| definition.module_type == "synthetic_808_kick")
-        .expect("kick module should be declared");
-    let public_names = kick
-        .parameters
-        .iter()
-        .map(|parameter| parameter.name.as_str())
+        .filter(|port| port.direction() == dandrum_engine::graph::PortDirection::Input)
+        .map(|port| port.name())
         .collect::<Vec<_>>();
 
     assert_eq!(
@@ -874,17 +881,20 @@ fn synthetic_808_kick_public_controls_are_discoverable_without_internal_leakage(
     assert!(!public_names.contains(&"seed"));
     assert!(!public_names.contains(&"fft_size"));
     assert!(
-        kick.parameters
+        patch
+            .root()
+            .ports()
             .iter()
-            .all(|parameter| parameter.description.is_some())
+            .filter(|port| { port.direction() == dandrum_engine::graph::PortDirection::Input })
+            .all(|port| port.control_default().is_some())
     );
 }
 
 #[test]
 fn synthetic_808_kick_yaml_decay_control_changes_render_deterministically() {
     let patch_path = example_patch_path("synthetic-808-kick.yaml");
-    let patch = dandrum_engine::patch::load_patch_file(&patch_path).expect("kick example parses");
-    validate_patch_schema(&patch).expect("kick example should validate");
+    let patch = dandrum_engine::kernel::document::load_kernel_patch_file(&patch_path)
+        .expect("kick example parses");
     let first_preset = load_preset_str(
         r#"
 name: Kick Long
@@ -907,40 +917,39 @@ values:
 "#,
     )
     .expect("second preset should parse");
-    validate_preset(&patch, &first_preset).expect("first preset should validate");
-    validate_preset(&patch, &second_preset).expect("second preset should validate");
-    let first_patch = apply_preset(&patch, &first_preset).expect("first preset should apply");
-    let second_patch = apply_preset(&patch, &second_preset).expect("second preset should apply");
-    let first_graph = Graph::from_patch_declarations(&first_patch);
-    let second_graph = Graph::from_patch_declarations(&second_patch);
-    first_graph.validate().expect("first graph validates");
-    second_graph.validate().expect("second graph validates");
-    let events = vec![
-        TimedInputEvent::new(
-            0,
-            ScriptEvent::NoteOn {
-                note: 36,
-                velocity: 110,
-            },
-        ),
-        TimedInputEvent::new(96_000, ScriptEvent::NoteOff { note: 36 }),
-    ];
-
-    let (first_left, _) = dandrum_engine::graph_processor::render_offline(
-        &first_graph,
-        &first_patch.render,
-        events.clone(),
-    );
-    let (first_left_again, _) = dandrum_engine::graph_processor::render_offline(
-        &first_graph,
-        &first_patch.render,
-        events.clone(),
-    );
-    let (second_left, _) = dandrum_engine::graph_processor::render_offline(
-        &second_graph,
-        &second_patch.render,
-        events,
-    );
+    let first_patch = patch
+        .apply_preset(&first_preset)
+        .expect("first preset should apply");
+    let second_patch = patch
+        .apply_preset(&second_preset)
+        .expect("second preset should apply");
+    let settings = dandrum_engine::patch::RenderSettings {
+        sample_rate_hz: 48_000,
+        block_size_frames: 128,
+        duration_frames: 12_000,
+    };
+    let events = vec![TimedInputEvent::new(
+        0,
+        ScriptEvent::NoteOn {
+            note: 36,
+            velocity: 110,
+        },
+    )];
+    let render = |patch| {
+        let prepared = dandrum_engine::preparation::prepare_kernel_patch(patch, &settings)
+            .expect("kick prepares");
+        dandrum_engine::graph_processor::render_kernel_offline_named(
+            &prepared,
+            events.clone(),
+            &dandrum_engine::PreparedSamplerAssets::empty(),
+        )
+        .expect("kick renders")[0]
+            .1[0]
+            .clone()
+    };
+    let first_left = render(&first_patch);
+    let first_left_again = render(&first_patch);
+    let second_left = render(&second_patch);
 
     assert_eq!(first_left, first_left_again);
     assert_ne!(first_left, second_left);
@@ -948,37 +957,31 @@ values:
 
 #[test]
 fn example_preset_loads_against_matching_patch_and_applies_public_values() {
-    let patch =
-        dandrum_engine::patch::load_patch_file(example_patch_path("synthetic-808-kick.yaml"))
-            .expect("kick example parses");
+    let patch = dandrum_engine::kernel::document::load_kernel_patch_file(example_patch_path(
+        "synthetic-808-kick.yaml",
+    ))
+    .expect("kick example parses");
     let preset = load_preset_file(example_preset_path("tight-808-kick.yaml"))
         .expect("preset example parses");
 
-    validate_patch_schema(&patch).expect("kick example should validate");
-    validate_preset(&patch, &preset).expect("preset should validate against matching patch");
-    let patched = apply_preset(&patch, &preset).expect("preset should apply");
-    let kick = patched
-        .modules
-        .iter()
-        .find(|module| module.id == "kick")
-        .expect("kick module should exist");
-
-    assert_eq!(
-        kick.parameters.get("tune_hz"),
-        Some(&ParameterValue::Number(52.0))
-    );
-    assert_eq!(
-        kick.parameters.get("decay_ms"),
-        Some(&ParameterValue::Number(420.0))
-    );
-    assert_eq!(
-        kick.parameters.get("punch"),
-        Some(&ParameterValue::Number(0.9))
-    );
-    assert_eq!(
-        kick.parameters.get("click"),
-        Some(&ParameterValue::Number(0.8))
-    );
+    let patched = patch.apply_preset(&preset).expect("preset should apply");
+    for (name, expected) in [
+        ("tune_hz", 52.0),
+        ("decay_ms", 420.0),
+        ("punch", 0.9),
+        ("click", 0.8),
+        ("sub_decay_ms", 600.0),
+        ("sub_level", 0.9),
+    ] {
+        let actual = patched
+            .root()
+            .ports()
+            .iter()
+            .find(|port| port.name() == name)
+            .and_then(|port| port.control_default())
+            .expect("preset target is a root control port");
+        assert_eq!(actual.default(), expected, "{name} preset value applies");
+    }
 }
 
 fn example_patch_path(name: &str) -> PathBuf {

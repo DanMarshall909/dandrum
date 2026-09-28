@@ -30,6 +30,7 @@ pub mod module_package;
 pub mod module_reference;
 pub mod patch;
 pub(crate) mod sample;
+pub use sample::PreparedSamplerAssets;
 pub mod script;
 
 pub mod sound_analysis;

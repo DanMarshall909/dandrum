@@ -73,7 +73,15 @@ pub struct DandrumKernelInstrument {
     planar_output_names: Vec<String>,
     input_scratch: Vec<Vec<Vec<f32>>>,
     output_scratch: Vec<Vec<Vec<f32>>>,
+    public_controls: Vec<KernelPublicControl>,
     max_block_size: usize,
+}
+
+struct KernelPublicControl {
+    input_index: Option<usize>,
+    value: f32,
+    min: Option<f64>,
+    max: Option<f64>,
 }
 
 unsafe fn ffi_name<'a>(pointer: &'a *const c_char) -> Option<&'a str> {
@@ -218,6 +226,20 @@ pub unsafe extern "C" fn dandrum_kernel_prepare_file(
     };
     let input_scratch = scratch(PortDirection::Input);
     let output_scratch = scratch(PortDirection::Output);
+    let public_controls = patch
+        .preset_surface()
+        .parameters()
+        .iter()
+        .map(|alias| KernelPublicControl {
+            input_index: input_names
+                .iter()
+                .position(|name| name == alias.port_name())
+                .filter(|_| declared_inputs.contains_key(alias.port_name())),
+            value: alias.control_default().default() as f32,
+            min: alias.control_default().min(),
+            max: alias.control_default().max(),
+        })
+        .collect();
     let runtime = RealtimeGraphProcessor::polyphonic_with_compiled_patch_and_sampler_assets_and_max_block_size(
         prepared.graph().clone(),
         prepared.compiled_patch().clone(),
@@ -240,8 +262,31 @@ pub unsafe extern "C" fn dandrum_kernel_prepare_file(
         planar_output_names,
         input_scratch,
         output_scratch,
+        public_controls,
         max_block_size,
     }))
+}
+
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn dandrum_kernel_set_public_numeric_parameter_by_slot(
+    engine: *mut DandrumKernelInstrument,
+    slot_index: usize,
+    value: f64,
+) -> bool {
+    mut_or!(engine, engine, false);
+    let Some(control) = engine.public_controls.get_mut(slot_index) else {
+        return false;
+    };
+    if control.input_index.is_none()
+        || !value.is_finite()
+        || control.min.is_some_and(|min| value < min)
+        || control.max.is_some_and(|max| value > max)
+        || !(value as f32).is_finite()
+    {
+        return false;
+    }
+    control.value = value as f32;
+    true
 }
 
 #[unsafe(no_mangle)]
@@ -430,6 +475,13 @@ pub unsafe extern "C" fn dandrum_kernel_render(
             channel.fill(0.0);
         }
     }
+    for control in &engine.public_controls {
+        if let Some(index) = control.input_index {
+            for channel in &mut engine.input_scratch[index] {
+                channel.fill(control.value);
+            }
+        }
+    }
     for bus in engine.output_scratch.iter_mut() {
         for channel in bus.iter_mut() {
             channel.resize(frames, 0.0);
@@ -538,6 +590,9 @@ pub unsafe extern "C" fn dandrum_patch_public_numeric_parameter_count(
     let Some(path) = c_path(path) else {
         return 0;
     };
+    if let Ok(patch) = crate::kernel::document::load_kernel_patch_file(&path) {
+        return patch.preset_surface().parameters().len();
+    }
     let Ok(patch) = crate::patch::load_patch_file(&path) else {
         return 0;
     };
@@ -548,6 +603,25 @@ pub unsafe extern "C" fn dandrum_patch_public_numeric_parameter_count(
         .iter()
         .filter(|target| is_numeric_target(target.value_type, &target.default))
         .count()
+}
+
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn dandrum_patch_public_numeric_parameter_port_name(
+    path: *const c_char,
+    index: usize,
+    buffer: *mut c_char,
+    capacity: usize,
+) -> bool {
+    let Some(path) = c_path(path) else {
+        return false;
+    };
+    let Ok(patch) = crate::kernel::document::load_kernel_patch_file(&path) else {
+        return false;
+    };
+    let Some(alias) = patch.preset_surface().parameters().get(index) else {
+        return false;
+    };
+    copy_string_to_c_buffer(alias.port_name(), buffer, capacity)
 }
 
 #[unsafe(no_mangle)]
@@ -565,6 +639,22 @@ pub unsafe extern "C" fn dandrum_patch_public_numeric_parameter_descriptor(
     let Some(path) = c_path(path) else {
         return false;
     };
+    if let Ok(patch) = crate::kernel::document::load_kernel_patch_file(&path) {
+        let Some(target) = patch.preset_surface().parameters().get(index) else {
+            return false;
+        };
+        if default_value.is_null() || min_value.is_null() || max_value.is_null() {
+            return false;
+        }
+        let control = target.control_default();
+        unsafe {
+            *default_value = control.default();
+            *min_value = control.min().unwrap_or(0.0);
+            *max_value = control.max().unwrap_or(1.0);
+        }
+        return copy_string_to_c_buffer(target.name(), id_buffer, id_buffer_capacity)
+            && copy_string_to_c_buffer(target.name(), name_buffer, name_buffer_capacity);
+    }
     let Ok(patch) = crate::patch::load_patch_file(&path) else {
         return false;
     };
@@ -1587,6 +1677,134 @@ mod tests {
         assert_eq!(max_value, 500.0);
 
         std::fs::remove_file(path).ok();
+    }
+
+    #[test]
+    fn c_ffi_discovers_kernel_patch_public_control_aliases() {
+        let path = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("../..")
+            .join("examples/patches/synthetic-808-kick.yaml");
+        let c_path = std::ffi::CString::new(path.to_str().unwrap()).unwrap();
+        assert_eq!(
+            unsafe { dandrum_patch_public_numeric_parameter_count(c_path.as_ptr()) },
+            6
+        );
+        let mut id = [0_i8; 64];
+        let mut name = [0_i8; 64];
+        let mut default_value = 0.0;
+        let mut min_value = 0.0;
+        let mut max_value = 0.0;
+        assert!(unsafe {
+            dandrum_patch_public_numeric_parameter_descriptor(
+                c_path.as_ptr(),
+                1,
+                id.as_mut_ptr(),
+                id.len(),
+                name.as_mut_ptr(),
+                name.len(),
+                &mut default_value,
+                &mut min_value,
+                &mut max_value,
+            )
+        });
+        assert_eq!(
+            unsafe { CStr::from_ptr(id.as_ptr()) }.to_str().unwrap(),
+            "kick.decay_ms"
+        );
+        assert_eq!(default_value, 650.0);
+        assert_eq!(min_value, 50.0);
+        assert_eq!(max_value, 2_000.0);
+    }
+
+    #[test]
+    fn c_ffi_kernel_public_control_slot_drives_a_bound_root_input() {
+        let path = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("../..")
+            .join("examples/patches/synthetic-808-kick.yaml");
+        let c_path = std::ffi::CString::new(path.to_str().unwrap()).unwrap();
+        let mut port_name = [0_i8; 64];
+        assert!(unsafe {
+            dandrum_patch_public_numeric_parameter_port_name(
+                c_path.as_ptr(),
+                1,
+                port_name.as_mut_ptr(),
+                port_name.len(),
+            )
+        });
+        assert_eq!(
+            unsafe { CStr::from_ptr(port_name.as_ptr()) }
+                .to_str()
+                .unwrap(),
+            "decay_ms"
+        );
+        let master = std::ffi::CString::new("master").unwrap();
+        let decay = std::ffi::CString::new("decay_ms").unwrap();
+        let buses = [
+            DandrumKernelBusDeclaration {
+                name: master.as_ptr(),
+                direction: 2,
+                channel_count: 2,
+            },
+            DandrumKernelBusDeclaration {
+                name: decay.as_ptr(),
+                direction: 1,
+                channel_count: 1,
+            },
+        ];
+        let render = |value| {
+            let engine = unsafe {
+                dandrum_kernel_prepare_file(
+                    c_path.as_ptr(),
+                    48_000,
+                    128,
+                    buses.as_ptr(),
+                    buses.len(),
+                )
+            };
+            assert!(!engine.is_null());
+            assert!(!unsafe {
+                dandrum_kernel_set_public_numeric_parameter_by_slot(engine, 1, f64::NAN)
+            });
+            assert!(!unsafe {
+                dandrum_kernel_set_public_numeric_parameter_by_slot(engine, 1, 2_001.0)
+            });
+            assert!(!unsafe {
+                dandrum_kernel_set_public_numeric_parameter_by_slot(engine, 6, value)
+            });
+            let mut left = [0.0_f32; 128];
+            let mut right = [0.0_f32; 128];
+            let channels = [left.as_mut_ptr(), right.as_mut_ptr()];
+            let output = DandrumKernelOutputBusView {
+                name: master.as_ptr(),
+                channels: channels.as_ptr(),
+                channel_count: 2,
+                frame_capacity: 128,
+            };
+            let allocations = crate::test_allocator::count_current_thread_allocations(|| {
+                assert!(unsafe {
+                    dandrum_kernel_set_public_numeric_parameter_by_slot(engine, 1, value)
+                });
+                assert!(unsafe { dandrum_kernel_note_on_at(engine, 36, 110, 0) });
+                assert_eq!(
+                    unsafe { dandrum_kernel_render(engine, std::ptr::null(), 0, &output, 1, 128) },
+                    128
+                );
+            });
+            assert_eq!(
+                allocations, 0,
+                "parameter update and render remain allocation-free"
+            );
+            unsafe { dandrum_kernel_destroy(engine) };
+            left
+        };
+        assert_ne!(render(250.0), render(1_400.0));
+        let master_only = [buses[0]];
+        let unbound = unsafe {
+            dandrum_kernel_prepare_file(c_path.as_ptr(), 48_000, 128, master_only.as_ptr(), 1)
+        };
+        assert!(!unbound.is_null());
+        assert!(!unsafe { dandrum_kernel_set_public_numeric_parameter_by_slot(unbound, 1, 250.0) });
+        unsafe { dandrum_kernel_destroy(unbound) };
     }
 
     #[test]

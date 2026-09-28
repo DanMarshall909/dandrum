@@ -3929,15 +3929,30 @@ fn additional_acceptance_examples_load_validate_and_render_where_supported() {
         let Some(yaml) = read_repo_fixture(fixture) else {
             return;
         };
-        let patch = patch::load_patch_str(&yaml).expect("acceptance example should parse");
-        patch::validate_patch_schema(&patch).expect("acceptance example should validate");
-        let graph = Graph::from_patch_declarations(&patch);
-        graph.validate().expect("acceptance graph should validate");
-
-        let (left, right) =
-            render_offline(&graph, &patch.render, vec![note_on_value(0, note, 100)]);
-        let (left_again, right_again) =
-            render_offline(&graph, &patch.render, vec![note_on_value(0, note, 100)]);
+        let patch = load_kernel_patch_str(&yaml).expect("acceptance example should parse");
+        let settings = RenderSettings {
+            sample_rate_hz: 48_000,
+            block_size_frames: 128,
+            duration_frames: 48_000,
+        };
+        let prepared = prepare_kernel_patch(&patch, &settings).expect("kick should prepare");
+        let rendered = render_kernel_offline_named(
+            &prepared,
+            vec![note_on_value(0, note, 100)],
+            &PreparedSamplerAssets::empty(),
+        )
+        .expect("kick should render");
+        let rendered_again = render_kernel_offline_named(
+            &prepared,
+            vec![note_on_value(0, note, 100)],
+            &PreparedSamplerAssets::empty(),
+        )
+        .expect("kick should render deterministically");
+        assert_eq!(rendered[0].0, "master");
+        let left = &rendered[0].1[0];
+        let right = &rendered[0].1[1];
+        let left_again = &rendered_again[0].1[0];
+        let right_again = &rendered_again[0].1[1];
 
         assert_eq!(
             left, left_again,
@@ -3993,16 +4008,19 @@ fn synthetic_808_kick_example_has_808_like_spectral_shape() {
     let Some(yaml) = read_repo_fixture("examples/patches/synthetic-808-kick.yaml") else {
         return;
     };
-    let patch = patch::load_patch_str(&yaml).expect("808 kick example should parse");
-    patch::validate_patch_schema(&patch).expect("808 kick example should validate");
-    let graph = Graph::from_patch_declarations(&patch);
-    graph
-        .validate()
-        .expect("808 kick example graph should validate");
+    let patch = load_kernel_patch_str(&yaml).expect("808 kick example should parse");
+    let settings = RenderSettings {
+        sample_rate_hz: 48_000,
+        block_size_frames: 128,
+        duration_frames: 48_000,
+    };
+    let prepared = prepare_kernel_patch(&patch, &settings).expect("kick should prepare");
     // No NoteOff — the ADSR (sustain=0) and sub gain envelope decay naturally.
     let events = vec![note_on_value(0, 36, 110)];
-    let (left, _) = render_offline(&graph, &patch.render, events);
-    let spectrum = fft::compute_magnitude_response(&left, patch.render.sample_rate_hz as f64).bins;
+    let rendered = render_kernel_offline_named(&prepared, events, &PreparedSamplerAssets::empty())
+        .expect("kick should render");
+    let left = &rendered[0].1[0];
+    let spectrum = fft::compute_magnitude_response(left, settings.sample_rate_hz as f64).bins;
     let sub_band = average_band_db(&spectrum, 35.0, 90.0);
     let low_mid_band = average_band_db(&spectrum, 120.0, 400.0);
     let click_band = average_band_db(&spectrum, 1_500.0, 6_000.0);
@@ -7361,6 +7379,103 @@ fn control_mixer_modulation_example_renders_an_audible_named_output() {
         samples[0], samples[128],
         "the modulation advances across blocks"
     );
+}
+
+#[test]
+fn synthetic_808_kick_preserves_legacy_renders_on_named_master_bus() {
+    let legacy_yaml =
+        include_str!("../../tests/fixtures/unify-graph-kernel/legacy/synthetic-808-kick.yaml");
+    let yaml = read_repo_fixture("examples/patches/synthetic-808-kick.yaml")
+        .expect("synthetic kick example exists");
+    let patch = load_kernel_patch_str(&yaml).expect("synthetic kick loads as a kernel patch");
+    let settings = RenderSettings {
+        sample_rate_hz: 48_000,
+        block_size_frames: 128,
+        duration_frames: 12_000,
+    };
+    let events = vec![note_on_value(0, 36, 110)];
+    for (case, preset) in [
+        ("patch defaults", None),
+        (
+            "tight preset",
+            Some(
+                patch::load_preset_str(include_str!(
+                    "../../../../examples/presets/tight-808-kick.yaml"
+                ))
+                .expect("tight kick preset parses"),
+            ),
+        ),
+    ] {
+        let mut legacy = patch::load_patch_str(legacy_yaml).expect("legacy kick loads");
+        let selected = if let Some(preset) = preset.as_ref() {
+            legacy = patch::apply_preset(&legacy, preset).expect("legacy preset applies");
+            patch.apply_preset(preset).expect("kernel preset applies")
+        } else {
+            patch.clone()
+        };
+        legacy.render = settings.clone();
+        let expected_graph = Graph::from_patch_declarations(&legacy);
+        expected_graph.validate().expect("legacy kick validates");
+        let (expected_left, expected_right) =
+            render_offline(&expected_graph, &settings, events.clone());
+        assert!(expected_left.iter().any(|sample| sample.abs() > 0.01));
+
+        let prepared = prepare_kernel_patch(&selected, &settings).expect("kernel kick prepares");
+        let rendered =
+            render_kernel_offline_named(&prepared, events.clone(), &PreparedSamplerAssets::empty())
+                .expect("kernel kick renders");
+        assert_eq!(rendered.len(), 1, "{case} exposes only master");
+        assert_eq!(rendered[0].0, "master");
+        assert_eq!(rendered[0].1.len(), 2);
+        for (channel, expected) in [(0, &expected_left), (1, &expected_right)] {
+            let actual = &rendered[0].1[channel];
+            assert_eq!(actual.len(), expected.len());
+            let mismatch = actual.iter().zip(expected).position(|(a, e)| a != e);
+            assert_eq!(
+                mismatch,
+                None,
+                "{case} master channel {channel} differs at frame {mismatch:?}: actual {:?}, expected {:?}",
+                mismatch.map(|frame| actual[frame]),
+                mismatch.map(|frame| expected[frame]),
+            );
+        }
+    }
+}
+
+#[test]
+fn synthetic_808_kick_decay_accepts_a_live_root_control_bus() {
+    let yaml = read_repo_fixture("examples/patches/synthetic-808-kick.yaml")
+        .expect("synthetic kick example exists");
+    let patch = load_kernel_patch_str(&yaml).expect("synthetic kick loads");
+    let settings = RenderSettings {
+        sample_rate_hz: 48_000,
+        block_size_frames: 128,
+        duration_frames: 12_000,
+    };
+    let buses = HostBuses::new()
+        .with_input("decay_ms", 1)
+        .with_output("master", 2);
+    let prepared =
+        prepare_kernel_graph_with_buses(patch.root(), patch.registry(), &settings, &buses)
+            .expect("kick accepts a root control bus");
+    let render = |decay_ms| {
+        let inputs = BTreeMap::from([(
+            "decay_ms".to_string(),
+            vec![vec![decay_ms; settings.duration_frames as usize]],
+        )]);
+        render_kernel_offline_named_with_inputs(
+            &prepared,
+            vec![note_on_value(0, 36, 110)],
+            &PreparedSamplerAssets::empty(),
+            &inputs,
+        )
+        .expect("kick renders with control bus")[0]
+            .1[0]
+            .clone()
+    };
+    let short = render(250.0);
+    let long = render(1_400.0);
+    assert_ne!(short, long, "live decay control changes the kick tail");
 }
 
 #[test]

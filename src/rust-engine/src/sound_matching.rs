@@ -157,38 +157,23 @@ where
         .map_err(|error| format!("failed to load sound matching patch: {error}"))?;
     let patch_yaml = std::str::from_utf8(&patch_bytes)
         .map_err(|error| format!("failed to load sound matching patch as UTF-8: {error}"))?;
-    let patch = crate::patch::load_patch_str(patch_yaml)
+    let patch = crate::sound_workbench::SoundPatch::load(&fixture.patch)
         .map_err(|error| format!("failed to load sound matching patch: {error}"))?;
     let patch_root = fixture.patch.parent().unwrap_or_else(|| Path::new("."));
     let mut parameters = Vec::with_capacity(matching.parameters.len());
     for parameter_id in &matching.parameters {
-        let target = patch
-            .preset_surface
-            .parameters
-            .iter()
-            .find(|target| target.name == *parameter_id)
-            .ok_or_else(|| format!("unknown public numeric parameter {parameter_id}"))?;
-        let (
-            crate::patch::PresetTargetType::Number,
-            crate::patch::ParameterValue::Number(initial),
-            Some(min),
-            Some(max),
-        ) = (&target.value_type, &target.default, target.min, target.max)
-        else {
-            return Err(format!(
-                "public matching parameter {parameter_id} must have a finite continuous numeric default and ordered bounds"
-            ));
-        };
-        if !initial.is_finite() || !min.is_finite() || !max.is_finite() || min >= max {
-            return Err(format!(
-                "public matching parameter {parameter_id} must have a finite continuous numeric default and ordered bounds"
-            ));
-        }
+        let target = patch.numeric_target(parameter_id).map_err(|error| {
+            if error.starts_with("unknown public numeric parameter") {
+                error
+            } else {
+                format!("public matching parameter {parameter_id} must have a finite continuous numeric default and ordered bounds")
+            }
+        })?;
         parameters.push(BoundedSearchParameter {
             id: parameter_id.clone(),
-            min,
-            max,
-            initial: *initial,
+            min: target.min,
+            max: target.max,
+            initial: target.default,
         });
     }
 
@@ -208,10 +193,7 @@ where
                 .zip(values)
                 .map(|(parameter, value)| (parameter.id.clone(), *value))
                 .collect();
-            let render =
-                crate::sound_workbench::render_sound_fixture_with_patch_and_public_numeric_values(
-                    fixture, &patch, patch_root, &values,
-                )?;
+            let render = patch.render(fixture, patch_root, &values)?;
             let mono = mono_audio(&render.left, &render.right);
             compare_aligned_audio(
                 &mono[region_start..region_end],
@@ -227,13 +209,8 @@ where
         .zip(&search.best.values)
         .map(|(parameter, value)| (parameter.id.clone(), *value))
         .collect();
-    let mut candidate =
-        crate::sound_workbench::render_sound_fixture_with_patch_and_public_numeric_values(
-            fixture,
-            &patch,
-            patch_root,
-            &best_values,
-        )
+    let mut candidate = patch
+        .render(fixture, patch_root, &best_values)
         .expect("the best candidate was rendered successfully during the search");
     for sample in candidate.left.iter_mut().chain(&mut candidate.right) {
         *sample = (f64::from(*sample) * search.best.score.candidate_gain) as f32;

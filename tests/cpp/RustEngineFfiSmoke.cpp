@@ -76,38 +76,37 @@ bool kernelBusSmoke()
 
 int main()
 {
-    DandrumEngine* engine = dandrum_engine_create();
-    if (engine == nullptr)
-    {
-        std::cerr << "dandrum_engine_create returned null\n";
-        return 1;
-    }
-
     const auto patchPath = dandrum::defaultPatchPath().string();
-    if (! dandrum_engine_load_patch (engine, patchPath.c_str()))
+    const DandrumKernelBusDeclaration master { "master", 2, 2 };
+    std::unique_ptr<DandrumKernelInstrument, decltype (&dandrum_kernel_destroy)> engine (
+        dandrum_kernel_prepare_file (patchPath.c_str(), 48000, 64, &master, 1),
+        &dandrum_kernel_destroy);
+    if (! engine)
     {
         std::cerr << "failed to load default patch: " << patchPath << '\n';
         return 1;
     }
 
-    dandrum_engine_prepare (engine, 48000.0f);
-    dandrum_engine_note_on (engine, 60, 110);
+    dandrum_kernel_note_on_at (engine.get(), 60, 110, 0);
 
     float left[64] {};
     float right[64] {};
-    const auto rendered = dandrum_engine_render (engine, left, right, 64);
+    float* channels[] { left, right };
+    const DandrumKernelOutputBusView output { "master", channels, 2, 64 };
+    const auto rendered = dandrum_kernel_render (engine.get(), nullptr, 0, &output, 1, 64);
 
-    const auto reset = dandrum_engine_reset (engine);
+    const auto reset = dandrum_kernel_reset (engine.get());
     float silentLeft[64] {};
     float silentRight[64] {};
-    const auto silentFrames = dandrum_engine_render (engine, silentLeft, silentRight, 64);
-    dandrum_engine_note_on (engine, 61, 110);
+    float* silentChannels[] { silentLeft, silentRight };
+    const DandrumKernelOutputBusView silentOutput { "master", silentChannels, 2, 64 };
+    const auto silentFrames = dandrum_kernel_render (engine.get(), nullptr, 0, &silentOutput, 1, 64);
+    dandrum_kernel_note_on_at (engine.get(), 61, 110, 0);
     float restartedLeft[64] {};
     float restartedRight[64] {};
-    const auto restartedFrames = dandrum_engine_render (engine, restartedLeft, restartedRight, 64);
-
-    dandrum_engine_note_off (engine, 60);
-    dandrum_engine_destroy (engine);
+    float* restartedChannels[] { restartedLeft, restartedRight };
+    const DandrumKernelOutputBusView restartedOutput { "master", restartedChannels, 2, 64 };
+    const auto restartedFrames = dandrum_kernel_render (engine.get(), nullptr, 0, &restartedOutput, 1, 64);
 
     if (rendered != 64)
     {

@@ -20,29 +20,11 @@ juce::File writePatchWithNoPublicParameters()
         "instrument:\n"
         "  id: dandrum.host-surface-no-public-parameters\n"
         "  preset_schema_version: 1\n"
-        "render:\n"
-        "  sample_rate_hz: 48000\n"
-        "  block_size_frames: 64\n"
-        "  duration_frames: 128\n"
+        "ports:\n"
+        "  - { name: master, direction: output, signal: audio, channels: 2, maps_from: tone.out }\n"
         "modules:\n"
-        "  - id: osc\n"
-        "    type: oscillator\n"
-        "  - id: mixer\n"
-        "    type: audio_mixer\n"
-        "  - id: out\n"
-        "    type: audio_output\n"
-        "    inputs:\n"
-        "      - name: left\n"
-        "        signal_type: audio\n"
-        "      - name: right\n"
-        "        signal_type: audio\n"
-        "connections:\n"
-        "  - from: osc.audio\n"
-        "    to: mixer.inputs\n"
-        "  - from: mixer.mix\n"
-        "    to: out.left\n"
-        "  - from: mixer.mix\n"
-        "    to: out.right\n");
+        "  - { id: tone, type: control_to_audio, static: { channels: 2 }, defaults: { in: 0.25 } }\n"
+        "connections: []\n");
     return file;
 }
 

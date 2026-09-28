@@ -2,6 +2,7 @@
 #include "DefaultPatch.h"
 
 #include <cmath>
+#include <iterator>
 #include <iostream>
 #include <memory>
 #include <thread>
@@ -100,6 +101,11 @@ juce::File defaultPatchFile()
     return juce::File (juce::String (dandrum::defaultPatchPath().string()));
 }
 
+juce::String decayControlDefault (const juce::String& value)
+{
+    return "{ name: decay_ms, direction: input, signal: control, channels: 1, default: " + value + ",";
+}
+
 juce::File examplePresetFile (const juce::String& name)
 {
     const auto path = dandrum::defaultPatchPath().parent_path().parent_path() / "presets" / name.toStdString();
@@ -131,21 +137,17 @@ juce::File writePatchWithAdditionalPublicParameter()
 {
     const auto original = defaultPatchFile();
     auto content = original.loadFileAsString();
-    const juce::String oldText = "      maps_to: kick.click\n    - name: kick.sub_decay_ms";
-    const juce::String newText =
-        "      maps_to: kick.click\n"
-        "    - name: kick.extra_click\n"
-        "      type: number\n"
-        "      default: 0.25\n"
-        "      min: 0\n"
-        "      max: 1\n"
-        "      maps_to: kick.click\n"
-        "    - name: kick.sub_decay_ms";
-
-    if (! content.contains (oldText))
+    const juce::String rootMarker = "  - { name: sub_decay_ms, direction: input, signal: control, channels: 1, default: 800, min: 50, max: 2000, maps_to: voices.sub_decay_ms }";
+    const juce::String aliasMarker = "    - { name: kick.sub_decay_ms, maps_to: sub_decay_ms }";
+    if (! content.contains (rootMarker) || ! content.contains (aliasMarker))
         return {};
 
-    content = content.replace (oldText, newText);
+    content = content.replace (rootMarker,
+                               "  - { name: extra_click, direction: input, signal: control, channels: 1, default: 0.25, min: 0, max: 1 }\n"
+                               + rootMarker);
+    content = content.replace (aliasMarker,
+                               "    - { name: kick.extra_click, maps_to: extra_click }\n"
+                               + aliasMarker);
     auto modified = juce::File::getSpecialLocation (juce::File::tempDirectory)
                          .getChildFile ("dandrum_added_public_parameter_" + juce::String (juce::Random::getSystemRandom().nextInt()) + ".yaml");
     modified.replaceWithText (content);
@@ -165,29 +167,11 @@ juce::File writePatchWithNoPublicParameters()
         "instrument:\n"
         "  id: dandrum.no-public-parameters\n"
         "  preset_schema_version: 1\n"
-        "render:\n"
-        "  sample_rate_hz: 48000\n"
-        "  block_size_frames: 64\n"
-        "  duration_frames: 128\n"
+        "ports:\n"
+        "  - { name: master, direction: output, signal: audio, channels: 2, maps_from: tone.out }\n"
         "modules:\n"
-        "  - id: osc\n"
-        "    type: oscillator\n"
-        "  - id: mixer\n"
-        "    type: audio_mixer\n"
-        "  - id: out\n"
-        "    type: audio_output\n"
-        "    inputs:\n"
-        "      - name: left\n"
-        "        signal_type: audio\n"
-        "      - name: right\n"
-        "        signal_type: audio\n"
-        "connections:\n"
-        "  - from: osc.audio\n"
-        "    to: mixer.inputs\n"
-        "  - from: mixer.mix\n"
-        "    to: out.left\n"
-        "  - from: mixer.mix\n"
-        "    to: out.right\n");
+        "  - { id: tone, type: control_to_audio, static: { channels: 2 }, defaults: { in: 0.25 } }\n"
+        "connections: []\n");
     return file;
 }
 
@@ -211,13 +195,13 @@ bool freshInstrumentUsesAuthoredDefaults()
     processor.setPlayConfigDetails (0, 2, 48000.0, frames);
     processor.prepareToPlay (48000.0, frames);
 
-    std::unique_ptr<DandrumEngine, decltype (&dandrum_engine_destroy)> reference (
-        dandrum_engine_create(), &dandrum_engine_destroy);
     const auto patch = defaultPatchFile();
-    if (reference == nullptr
-        || ! dandrum_engine_load_patch (reference.get(), patch.getFullPathName().toRawUTF8()))
+    const DandrumKernelBusDeclaration master { "master", 2, 2 };
+    std::unique_ptr<DandrumKernelInstrument, decltype (&dandrum_kernel_destroy)> reference (
+        dandrum_kernel_prepare_file (patch.getFullPathName().toRawUTF8(), 48000, frames, &master, 1),
+        &dandrum_kernel_destroy);
+    if (reference == nullptr)
         return false;
-    dandrum_engine_prepare_realtime (reference.get(), 48000.0f, frames);
 
     const auto count = dandrum_patch_public_numeric_parameter_count (patch.getFullPathName().toRawUTF8());
     if (count == 0)
@@ -242,9 +226,12 @@ bool freshInstrumentUsesAuthoredDefaults()
     juce::MidiBuffer noHostMidi;
     if (! processor.enqueueEditorNoteOn (36, 100.0f / 127.0f))
         return false;
-    dandrum_engine_note_on_at (reference.get(), 36, 100, 0);
+    dandrum_kernel_note_on_at (reference.get(), 36, 100, 0);
     processor.processBlock (actual, noHostMidi);
-    dandrum_engine_render (reference.get(), expected.getWritePointer (0), expected.getWritePointer (1), frames);
+    float* channels[] { expected.getWritePointer (0), expected.getWritePointer (1) };
+    const DandrumKernelOutputBusView output { "master", channels, 2, frames };
+    if (dandrum_kernel_render (reference.get(), nullptr, 0, &output, 1, frames) != frames)
+        return false;
     if (! bufferHasSignal (expected))
         return false;
     for (int channel = 0; channel < 2; ++channel)
@@ -325,8 +312,9 @@ bool preparationPreservesRestoredInstrumentAndHostSlots()
 {
     juce::TemporaryFile modifiedPatch (".yaml");
     auto yaml = defaultPatchFile().loadFileAsString();
-    if (! yaml.contains ("          attack: 0")
-        || ! modifiedPatch.getFile().replaceWithText (yaml.replace ("          attack: 0", "          attack: 50")))
+    if (! yaml.contains ("defaults: { sustain: 0, attack: 0 }")
+        || ! modifiedPatch.getFile().replaceWithText (yaml.replace ("defaults: { sustain: 0, attack: 0 }",
+                                                                 "defaults: { sustain: 0, attack: 50 }")))
         return false;
     DandrumAudioProcessor source (InstrumentDemoConfiguration::kick());
     source.setPlayConfigDetails (0, 2, 48000.0, 64);
@@ -376,21 +364,29 @@ bool preparationPreservesRestoredInstrumentAndHostSlots()
                     || static_cast<juce::RangedAudioParameter*> (current[index])->paramID != slotIds[index])
                     return false;
 
-            // Independent host path: prepare the raw engine before loading.
-            // unique_ptr's custom deleter owns the FFI handle even on failure.
-            std::unique_ptr<DandrumEngine, decltype (&dandrum_engine_destroy)> reference (
-                dandrum_engine_create(), &dandrum_engine_destroy);
-            dandrum_engine_prepare_realtime (reference.get(), static_cast<float> (rate), static_cast<std::size_t> (frames));
+            // Independent named-bus host path. The custom deleter owns the
+            // FFI handle even when a later comparison fails.
             const auto referencePatch = restoreState ? modifiedPatch.getFile() : defaultPatchFile();
-            if (! dandrum_engine_load_patch (reference.get(), referencePatch.getFullPathName().toRawUTF8()))
+            const DandrumKernelBusDeclaration buses[] {
+                { "master", 2, 2 }, { "tune_hz", 1, 1 }, { "decay_ms", 1, 1 },
+                { "punch", 1, 1 }, { "click", 1, 1 }, { "sub_decay_ms", 1, 1 },
+                { "sub_level", 1, 1 }
+            };
+            std::unique_ptr<DandrumKernelInstrument, decltype (&dandrum_kernel_destroy)> reference (
+                dandrum_kernel_prepare_file (referencePatch.getFullPathName().toRawUTF8(),
+                                             static_cast<std::uint32_t> (rate),
+                                             static_cast<std::size_t> (frames), buses, std::size (buses)),
+                &dandrum_kernel_destroy);
+            if (reference == nullptr)
                 return false;
             // Physical values come from the authored ranges and inputs above.
             const std::pair<const char*, double> physicalValues[] {
                 { "kick.tune_hz", 70.0 }, { "kick.decay_ms", 537.5 }, { "kick.punch", 0.375 },
                 { "kick.click", 0.75 }, { "kick.sub_decay_ms", 293.75 }, { "kick.sub_level", 0.625 }
             };
-            for (const auto& [id, value] : physicalValues)
-                if (! dandrum_engine_set_public_numeric_parameter (reference.get(), id, value))
+            for (std::size_t index = 0; index < std::size (physicalValues); ++index)
+                if (! dandrum_kernel_set_public_numeric_parameter_by_slot (reference.get(), index,
+                                                                            physicalValues[index].second))
                     return false;
             for (const auto& [id, normalized] : values)
             {
@@ -408,11 +404,15 @@ bool preparationPreservesRestoredInstrumentAndHostSlots()
                 if (block == 0)
                 {
                     midi.addEvent (juce::MidiMessage::noteOn (1, 36, (juce::uint8) 100), 5);
-                    dandrum_engine_note_on_at (reference.get(), 36, 100, 5);
+                    dandrum_kernel_note_on_at (reference.get(), 36, 100, 5);
                 }
                 processor.processBlock (actual, midi);
-                dandrum_engine_render (reference.get(), expected.getWritePointer (0), expected.getWritePointer (1),
-                                       static_cast<std::size_t> (frames));
+                float* channels[] { expected.getWritePointer (0), expected.getWritePointer (1) };
+                const DandrumKernelOutputBusView output { "master", channels, 2,
+                                                          static_cast<std::size_t> (frames) };
+                if (dandrum_kernel_render (reference.get(), nullptr, 0, &output, 1,
+                                           static_cast<std::size_t> (frames)) != static_cast<std::size_t> (frames))
+                    return false;
                 audible = audible || bufferHasSignal (actual);
                 for (int channel = 0; channel < 2; ++channel)
                     for (int frame = 0; frame < frames; ++frame)
@@ -503,7 +503,7 @@ int main()
     if (! kernelProcessor.reloadInstrumentFromFile (defaultPatchFile())
         || ! kernelProcessor.hasPublicParameter ("kick.tune_hz"))
     {
-        std::cerr << "plugin did not switch from a kernel patch to a legacy patch\n";
+        std::cerr << "plugin did not switch back to the default kick patch\n";
         return 1;
     }
     kernelFile.deleteFile();
@@ -717,7 +717,7 @@ int main()
     // The replacement file declares a much longer default (1900ms), so if
     // carry-over were broken and the new file's own default won instead, this
     // render would come out clearly longer/louder than shortBeforeReloadTailRms.
-    const auto longDefaultFile = writeModifiedKickPatch ("decay_ms: 650", "decay_ms: 1900");
+    const auto longDefaultFile = writeModifiedKickPatch (decayControlDefault ("650"), decayControlDefault ("1900"));
     if (! reloadProcessor->reloadInstrumentFromFile (longDefaultFile))
     {
         std::cerr << "reloadInstrumentFromFile failed unexpectedly: "
@@ -727,7 +727,7 @@ int main()
 
     if (! reloadProcessor->isInstrumentLoaded()
         || reloadProcessor->currentInstrumentFile() != longDefaultFile
-        || ! reloadProcessor->currentInstrumentYaml().contains ("decay_ms: 1900"))
+        || ! reloadProcessor->currentInstrumentYaml().contains (decayControlDefault ("1900")))
     {
         std::cerr << "reloadInstrumentFromFile did not update loaded-instrument bookkeeping\n";
         return 1;
@@ -741,7 +741,7 @@ int main()
     }
 
     const auto matchedSnapshotYaml = longDefaultFile.loadFileAsString().replace (
-        "decay_ms: 1900", "decay_ms: 1700");
+        decayControlDefault ("1900"), decayControlDefault ("1700"));
     if (! reloadProcessor->reloadInstrumentFromYaml (matchedSnapshotYaml, longDefaultFile)
         || reloadProcessor->currentInstrumentFile() != longDefaultFile
         || reloadProcessor->currentInstrumentYaml() != matchedSnapshotYaml)
@@ -857,7 +857,7 @@ int main()
     // silently writing an unmodified copy when the target line isn't found,
     // so a future drift in the bundled patch can't silently defang the
     // reload/carry-over test above.
-    const auto noSuchTargetFile = writeModifiedKickPatch ("decay_ms: this-value-does-not-exist", "decay_ms: 1900");
+    const auto noSuchTargetFile = writeModifiedKickPatch (decayControlDefault ("this-value-does-not-exist"), decayControlDefault ("1900"));
     if (noSuchTargetFile != juce::File())
     {
         std::cerr << "writeModifiedKickPatch did not report failure for an unmatched target line\n";
@@ -890,7 +890,7 @@ int main()
         racingProcessor->prepareToPlay (48000.0, blockSize);
 
         const auto defaultFile = defaultPatchFile();
-        const auto alternateFile = writeModifiedKickPatch ("decay_ms: 650", "decay_ms: 700");
+        const auto alternateFile = writeModifiedKickPatch (decayControlDefault ("650"), decayControlDefault ("700"));
 
         constexpr int threadCount = 4;
         constexpr int iterationsPerThread = 20;
@@ -1055,7 +1055,7 @@ int main()
         stateProcessor->setPlayConfigDetails (0, 2, 48000.0, blockSize);
         stateProcessor->prepareToPlay (48000.0, blockSize);
 
-        const auto restoredLongDefaultFile = writeModifiedKickPatch ("decay_ms: 650", "decay_ms: 1750");
+        const auto restoredLongDefaultFile = writeModifiedKickPatch (decayControlDefault ("650"), decayControlDefault ("1750"));
         if (! stateProcessor->reloadInstrumentFromFile (restoredLongDefaultFile))
         {
             std::cerr << "state restore setup failed to reload modified instrument: "
@@ -1075,7 +1075,7 @@ int main()
         auto restoredStateProcessor = std::make_unique<DandrumAudioProcessor> (InstrumentDemoConfiguration::kick());
         restoredStateProcessor->setStateInformation (savedState.getData(), static_cast<int> (savedState.getSize()));
 
-        if (! restoredStateProcessor->currentInstrumentYaml().contains ("decay_ms: 1750"))
+        if (! restoredStateProcessor->currentInstrumentYaml().contains (decayControlDefault ("1750")))
         {
             std::cerr << "state restore did not restore embedded instrument YAML\n";
             return 1;

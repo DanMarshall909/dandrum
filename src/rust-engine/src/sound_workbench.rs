@@ -69,6 +69,88 @@ pub struct SoundRender {
     pub metrics: Vec<AnalysisFrame>,
 }
 
+pub(crate) enum SoundPatch {
+    Kernel(crate::kernel::document::KernelPatch),
+    Legacy(crate::patch::PatchDocument),
+}
+
+pub(crate) struct PublicNumericTarget {
+    pub default: f64,
+    pub min: f64,
+    pub max: f64,
+}
+
+impl SoundPatch {
+    pub(crate) fn load(path: &Path) -> Result<Self, String> {
+        if let Ok(patch) = crate::kernel::document::load_kernel_patch_file(path) {
+            return Ok(Self::Kernel(patch));
+        }
+        crate::patch::load_patch_file(path)
+            .map(Self::Legacy)
+            .map_err(|error| format!("failed to load sound fixture patch: {error}"))
+    }
+
+    pub(crate) fn numeric_target(&self, parameter_id: &str) -> Result<PublicNumericTarget, String> {
+        let invalid = || {
+            format!(
+                "public numeric parameter {parameter_id} must have a finite continuous numeric default and ordered bounds"
+            )
+        };
+        let (default, min, max) = match self {
+            Self::Kernel(patch) => {
+                let target = patch
+                    .preset_surface()
+                    .parameters()
+                    .iter()
+                    .find(|target| target.name() == parameter_id)
+                    .ok_or_else(|| format!("unknown public numeric parameter {parameter_id}"))?;
+                let control = target.control_default();
+                (control.default(), control.min(), control.max())
+            }
+            Self::Legacy(patch) => {
+                let target = patch
+                    .preset_surface
+                    .parameters
+                    .iter()
+                    .find(|target| target.name == parameter_id)
+                    .ok_or_else(|| format!("unknown public numeric parameter {parameter_id}"))?;
+                if target.value_type != crate::patch::PresetTargetType::Number {
+                    return Err(invalid());
+                }
+                let crate::patch::ParameterValue::Number(default) = &target.default else {
+                    return Err(invalid());
+                };
+                (*default, target.min, target.max)
+            }
+        };
+        let (Some(min), Some(max)) = (min, max) else {
+            return Err(invalid());
+        };
+        if !default.is_finite() || !min.is_finite() || !max.is_finite() || min >= max {
+            return Err(invalid());
+        }
+        Ok(PublicNumericTarget { default, min, max })
+    }
+
+    pub(crate) fn render(
+        &self,
+        fixture: &SoundFixture,
+        patch_root: &Path,
+        values: &std::collections::BTreeMap<String, f64>,
+    ) -> Result<SoundRender, String> {
+        match self {
+            Self::Kernel(patch) => {
+                render_sound_fixture_with_kernel_patch_and_public_numeric_values(
+                    fixture, patch, patch_root, values,
+                )
+            }
+            Self::Legacy(patch) => render_sound_fixture_with_patch_and_public_numeric_values(
+                fixture, patch, patch_root, values,
+            ),
+        }
+    }
+}
+
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct WorkbenchResult {
     pub exit_code: i32,
@@ -134,12 +216,81 @@ pub fn render_sound_fixture_with_public_numeric_values(
     fixture: &SoundFixture,
     values: &std::collections::BTreeMap<String, f64>,
 ) -> Result<SoundRender, String> {
-    let patch_doc = crate::patch::load_patch_file(&fixture.patch)
-        .map_err(|error| format!("failed to load sound fixture patch: {error}"))?;
+    let patch_doc = SoundPatch::load(&fixture.patch)?;
     let patch_root = fixture.patch.parent().unwrap_or_else(|| Path::new("."));
-    render_sound_fixture_with_patch_and_public_numeric_values(
-        fixture, &patch_doc, patch_root, values,
+    patch_doc.render(fixture, patch_root, values)
+}
+
+fn render_sound_fixture_with_kernel_patch_and_public_numeric_values(
+    fixture: &SoundFixture,
+    patch: &crate::kernel::document::KernelPatch,
+    patch_root: &Path,
+    values: &std::collections::BTreeMap<String, f64>,
+) -> Result<SoundRender, String> {
+    let mut patch = patch.clone();
+    if !values.is_empty() {
+        let identity = patch
+            .instrument()
+            .cloned()
+            .ok_or_else(|| "sound fixture patch has no instrument identity".to_string())?;
+        for (parameter_id, value) in values {
+            let target = SoundPatch::Kernel(patch.clone()).numeric_target(parameter_id)?;
+            if !value.is_finite() || *value < target.min || *value > target.max {
+                return Err(format!(
+                    "public numeric parameter {parameter_id} value {value} is outside {}..={}",
+                    target.min, target.max
+                ));
+            }
+        }
+        let preset = crate::patch::PresetDocument {
+            name: "Sound Lab controls".to_string(),
+            instrument: identity,
+            values: values
+                .iter()
+                .map(|(name, value)| (name.clone(), crate::patch::ParameterValue::Number(*value)))
+                .collect(),
+            assets: Default::default(),
+            metadata: None,
+            extra_fields: Default::default(),
+        };
+        patch = patch
+            .apply_preset(&preset)
+            .map_err(|error| format!("failed to apply sound fixture values: {error}"))?;
+    }
+    let context =
+        crate::preparation::PreparationContext::new(patch_root, fixture.render.sample_rate_hz);
+    let prepared =
+        crate::preparation::prepare_kernel_patch_with_context(&patch, &fixture.render, &context)
+            .map_err(|error| format!("failed to prepare sound fixture patch: {error}"))?;
+    let buses = crate::graph_processor::render_kernel_offline_named(
+        &prepared,
+        expand_timeline_events(fixture)?,
+        &crate::sample::PreparedSamplerAssets::empty(),
     )
+    .map_err(|error| format!("failed to render sound fixture patch: {error}"))?;
+    let (_, channels) = buses
+        .into_iter()
+        .find(|(name, _)| name == "master")
+        .ok_or_else(|| "sound fixture patch has no master output bus".to_string())?;
+    let [left, right]: [Vec<f32>; 2] = channels
+        .try_into()
+        .map_err(|_| "sound fixture master bus must have two channels".to_string())?;
+    let mono: Vec<f32> = left
+        .iter()
+        .zip(&right)
+        .map(|(left, right)| (left + right) * 0.5)
+        .collect();
+    let metrics = crate::sound_analysis::analyze_sound(
+        &mono,
+        fixture.render.sample_rate_hz,
+        fixture.analysis,
+    )?;
+    Ok(SoundRender {
+        sample_rate_hz: fixture.render.sample_rate_hz,
+        left,
+        right,
+        metrics,
+    })
 }
 
 pub(crate) fn render_sound_fixture_with_patch_and_public_numeric_values(
@@ -471,35 +622,16 @@ fn validate_matching_declaration(fixture: &SoundFixture) -> Result<(), String> {
         return Err("sound matching public parameters must be unique".to_string());
     }
 
-    let patch = crate::patch::load_patch_file(&fixture.patch)
+    let patch = SoundPatch::load(&fixture.patch)
         .map_err(|error| format!("failed to load matching patch: {error}"))?;
     for parameter_id in &matching.parameters {
-        let Some(target) = patch
-            .preset_surface
-            .parameters
-            .iter()
-            .find(|target| target.name == *parameter_id)
-        else {
-            return Err(format!(
-                "sound matching references unknown public numeric parameter {parameter_id}"
-            ));
-        };
-        let numeric = matches!(
-            (&target.value_type, &target.default),
-            (
-                crate::patch::PresetTargetType::Number,
-                crate::patch::ParameterValue::Number(value)
-            ) if value.is_finite()
-        );
-        let bounded = matches!(
-            (target.min, target.max),
-            (Some(min), Some(max)) if min.is_finite() && max.is_finite() && min < max
-        );
-        if !numeric || !bounded {
-            return Err(format!(
-                "sound matching public numeric parameter {parameter_id} must have a finite continuous numeric default and ordered bounds"
-            ));
-        }
+        patch.numeric_target(parameter_id).map_err(|error| {
+            if error.starts_with("unknown public numeric parameter") {
+                format!("sound matching references unknown public numeric parameter {parameter_id}")
+            } else {
+                format!("sound matching {error}")
+            }
+        })?;
     }
     Ok(())
 }
@@ -991,6 +1123,55 @@ mod tests {
             crate::sound_analysis::analyze_sound(&mono, first.sample_rate_hz, fixture.analysis,)
                 .unwrap()
         );
+    }
+
+    #[test]
+    fn synthetic_kick_sound_fixture_renders_kernel_patch_and_public_decay_values() {
+        let path = Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("../..")
+            .join("examples/sound-design/synthetic-808-kick-poc.yaml");
+        let fixture = load_sound_fixture_file(path).expect("synthetic kick fixture loads");
+        let default = render_sound_fixture(&fixture).expect("kernel kick fixture renders");
+        assert_eq!(default.left.len(), fixture.render.duration_frames as usize);
+        assert!(default.left.iter().any(|sample| sample.abs() > 0.01));
+        assert_eq!(default.left, default.right);
+        let short = render_sound_fixture_with_public_numeric_values(
+            &fixture,
+            &std::collections::BTreeMap::from([("kick.decay_ms".to_string(), 250.0)]),
+        )
+        .expect("short decay renders");
+        let long = render_sound_fixture_with_public_numeric_values(
+            &fixture,
+            &std::collections::BTreeMap::from([("kick.decay_ms".to_string(), 1_400.0)]),
+        )
+        .expect("long decay renders");
+        assert_ne!(short.left, long.left);
+    }
+
+    #[test]
+    fn synthetic_kick_sound_matching_uses_kernel_public_controls() {
+        let path = Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("../..")
+            .join("examples/sound-design/synthetic-808-kick-poc.yaml");
+        let fixture = load_sound_fixture_file(path).expect("synthetic kick fixture loads");
+        let reference = render_sound_fixture(&fixture).expect("reference renders");
+        let wav = tempfile::Builder::new()
+            .suffix(".wav")
+            .tempfile()
+            .expect("temporary WAV opens");
+        crate::wav::write_wav_file(
+            wav.path(),
+            reference.sample_rate_hz,
+            &reference.left,
+            &reference.right,
+        )
+        .expect("reference WAV writes");
+        let artifact = crate::sound_matching::match_sound_fixture(&fixture, wav.path(), |_| true)
+            .expect("kernel patch matches against reference audio");
+        assert_eq!(artifact.manifest.best_parameters.len(), 2);
+        assert_eq!(artifact.manifest.best_parameters[0].id, "kick.tune_hz");
+        assert_eq!(artifact.manifest.best_parameters[1].id, "kick.decay_ms");
+        assert!(!artifact.candidate_wav_bytes.is_empty());
     }
 
     #[test]

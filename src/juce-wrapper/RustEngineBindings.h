@@ -67,6 +67,9 @@ bool dandrum_kernel_note_off_at (DandrumKernelInstrument* instrument,
                                  unsigned char note,
                                  std::size_t frameOffset);
 bool dandrum_kernel_reset (DandrumKernelInstrument* instrument);
+bool dandrum_kernel_set_public_numeric_parameter_by_slot (DandrumKernelInstrument* instrument,
+                                                           std::size_t slotIndex,
+                                                           double value);
 std::size_t dandrum_kernel_render (DandrumKernelInstrument* instrument,
                                    const DandrumKernelInputBusView* inputs,
                                    std::size_t inputCount,
@@ -80,6 +83,10 @@ bool dandrum_engine_load_patch (DandrumEngine* engine, const char* path);
 bool dandrum_engine_load_patch_with_error (DandrumEngine* engine, const char* path);
 bool dandrum_engine_last_error_message (char* buffer, std::size_t bufferCapacity);
 std::size_t dandrum_patch_public_numeric_parameter_count (const char* path);
+bool dandrum_patch_public_numeric_parameter_port_name (const char* path,
+                                                        std::size_t index,
+                                                        char* buffer,
+                                                        std::size_t capacity);
 bool dandrum_patch_public_numeric_parameter_descriptor (const char* path,
                                                        std::size_t index,
                                                        char* idBuffer,

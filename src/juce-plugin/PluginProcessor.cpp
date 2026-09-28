@@ -10,6 +10,7 @@
 #include <map>
 #include <memory>
 #include <set>
+#include <string>
 #include <vector>
 
 namespace
@@ -90,6 +91,35 @@ juce::File writeStateRestoreInstrumentFile (const juce::String& yamlText)
                                    + ".yaml");
     file.replaceWithText (yamlText);
     return file;
+}
+
+DandrumKernelInstrument* prepareKernelWithPublicControls (const std::string& path,
+                                                          std::uint32_t sampleRate,
+                                                          std::size_t blockSize)
+{
+    const auto parameterCount = dandrum_patch_public_numeric_parameter_count (path.c_str());
+    std::vector<std::string> controlNames;
+    controlNames.reserve (parameterCount);
+    for (std::size_t index = 0; index < parameterCount; ++index)
+    {
+        std::array<char, 128> name {};
+        if (! dandrum_patch_public_numeric_parameter_port_name (path.c_str(), index,
+                                                                name.data(), name.size())
+            || name[0] == '\0')
+            return nullptr;
+
+        if (std::find (controlNames.begin(), controlNames.end(), name.data()) == controlNames.end())
+            controlNames.emplace_back (name.data());
+    }
+
+    std::vector<DandrumKernelBusDeclaration> buses;
+    buses.reserve (controlNames.size() + 1);
+    buses.push_back ({ "master", 2, 2 });
+    for (const auto& name : controlNames)
+        buses.push_back ({ name.c_str(), 1, 1 });
+
+    return dandrum_kernel_prepare_file (path.c_str(), sampleRate, blockSize,
+                                        buses.data(), buses.size());
 }
 } // namespace
 
@@ -322,9 +352,7 @@ bool DandrumAudioProcessor::loadDefaultInstrument()
 
     const auto& patchPath = configuration.instrumentPath;
     const juce::File patchFile (juce::String (patchPath.string()));
-    const DandrumKernelBusDeclaration master { "master", 2, 2 };
-    auto* preparedKernel = dandrum_kernel_prepare_file (patchPath.string().c_str(), 44100, 512,
-                                                        &master, 1);
+    auto* preparedKernel = prepareKernelWithPublicControls (patchPath.string(), 44100, 512);
     if (preparedKernel != nullptr)
         kernel.store (preparedKernel, std::memory_order_relaxed);
     else if (! dandrum_engine_load_patch (activeEngine, patchPath.string().c_str()))
@@ -355,14 +383,15 @@ void DandrumAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBloc
     const auto blockSize = static_cast<std::size_t> (juce::jmax (1, samplesPerBlock));
     if (auto* activeKernel = kernel.load (std::memory_order_relaxed))
     {
-        const DandrumKernelBusDeclaration master { "master", 2, 2 };
-        auto* replacement = dandrum_kernel_prepare_file (
-            loadedInstrument.sourceFile.getFullPathName().toRawUTF8(),
-            static_cast<std::uint32_t> (juce::jmax (1.0, sampleRate)),
-            blockSize, &master, 1);
+        auto* replacement = prepareKernelWithPublicControls (
+            loadedInstrument.sourceFile.getFullPathName().toStdString(),
+            static_cast<std::uint32_t> (juce::jmax (1.0, sampleRate)), blockSize);
         if (replacement != nullptr)
         {
             kernel.store (replacement, std::memory_order_relaxed);
+            for (auto& slot : parameterSlots)
+                if (slot.active && slot.kernelSlotIndex != kNoEngineSlot && slot.rawValue != nullptr)
+                    applySlotToKernel (slot, slot.rawValue->load (std::memory_order_relaxed), replacement);
             dandrum_kernel_destroy (activeKernel);
         }
     }
@@ -412,10 +441,9 @@ bool DandrumAudioProcessor::replaceActiveEngineFromFile (const juce::File& yamlF
     }
 
     const auto path = yamlFile.getFullPathName().toStdString();
-    const DandrumKernelBusDeclaration master { "master", 2, 2 };
-    if (auto* candidateKernel = dandrum_kernel_prepare_file (
-            path.c_str(), static_cast<std::uint32_t> (juce::jmax (1.0, sampleRate)),
-            static_cast<std::size_t> (juce::jmax (1, blockSize)), &master, 1))
+    if (auto* candidateKernel = prepareKernelWithPublicControls (
+            path, static_cast<std::uint32_t> (juce::jmax (1.0, sampleRate)),
+            static_cast<std::size_t> (juce::jmax (1, blockSize))))
     {
         juce::String instrumentId;
         int schemaVersion = 0;
@@ -514,6 +542,7 @@ void DandrumAudioProcessor::preparePublicParameterSlots (const std::vector<Publi
         droppedParametersWarning->clear();
 
     auto* activeEngine = engine.load (std::memory_order_relaxed);
+    auto* activeKernel = kernel.load (std::memory_order_relaxed);
     if (activeEngine == nullptr || ! instrumentLoaded)
         return;
 
@@ -537,6 +566,7 @@ void DandrumAudioProcessor::preparePublicParameterSlots (const std::vector<Publi
         slot.active = false;
         slot.descriptor = {};
         slot.engineSlotIndices.clear();
+        slot.kernelSlotIndex = kNoEngineSlot;
         slot.lastAppliedNormalisedValue = slot.rawValue != nullptr ? slot.rawValue->load (std::memory_order_relaxed) : 0.0f;
     }
 
@@ -557,14 +587,21 @@ void DandrumAudioProcessor::preparePublicParameterSlots (const std::vector<Publi
         const auto normalisedValue = normalisePublicValue (slot.descriptor, actualValue);
         setSlotNormalisedValue (slotIndex, normalisedValue);
 
-        const auto targetCount = dandrum_engine_public_numeric_parameter_target_count (activeEngine, slot.descriptor.id.toRawUTF8());
-        for (std::size_t targetIndex = 0; targetIndex < targetCount; ++targetIndex)
+        if (activeKernel != nullptr)
         {
-            slot.engineSlotIndices.push_back (dandrum_engine_prepare_public_numeric_parameter_slot_at (
-                activeEngine, slot.descriptor.id.toRawUTF8(), targetIndex));
+            slot.kernelSlotIndex = slotIndex;
+            applySlotToKernel (slot, normalisedValue, activeKernel);
         }
-
-        applySlotToEngine (slot, normalisedValue, activeEngine);
+        else
+        {
+            const auto targetCount = dandrum_engine_public_numeric_parameter_target_count (activeEngine, slot.descriptor.id.toRawUTF8());
+            for (std::size_t targetIndex = 0; targetIndex < targetCount; ++targetIndex)
+            {
+                slot.engineSlotIndices.push_back (dandrum_engine_prepare_public_numeric_parameter_slot_at (
+                    activeEngine, slot.descriptor.id.toRawUTF8(), targetIndex));
+            }
+            applySlotToEngine (slot, normalisedValue, activeEngine);
+        }
         slot.lastAppliedNormalisedValue = normalisedValue;
     }
 
@@ -626,21 +663,38 @@ void DandrumAudioProcessor::applySlotToEngine (ParameterSlot& slot, float normal
         slot.lastAppliedNormalisedValue = normalisedValue;
 }
 
-void DandrumAudioProcessor::applyChangedParameters (DandrumEngine* activeEngine) noexcept
+void DandrumAudioProcessor::applySlotToKernel (ParameterSlot& slot,
+                                              float normalisedValue,
+                                              DandrumKernelInstrument* activeKernel) noexcept
 {
-    if (activeEngine == nullptr)
+    if (activeKernel == nullptr || ! slot.active || slot.kernelSlotIndex == kNoEngineSlot)
+        return;
+
+    const auto actualValue = denormalisePublicValue (slot.descriptor, normalisedValue);
+    if (dandrum_kernel_set_public_numeric_parameter_by_slot (
+            activeKernel, static_cast<std::size_t> (slot.kernelSlotIndex), actualValue))
+        slot.lastAppliedNormalisedValue = normalisedValue;
+}
+
+void DandrumAudioProcessor::applyChangedParameters (DandrumEngine* activeEngine,
+                                                    DandrumKernelInstrument* activeKernel) noexcept
+{
+    if (activeEngine == nullptr && activeKernel == nullptr)
         return;
 
     for (auto& slot : parameterSlots)
     {
-        if (! slot.active || slot.rawValue == nullptr || slot.engineSlotIndices.empty())
+        if (! slot.active || slot.rawValue == nullptr)
             continue;
 
         const auto currentValue = slot.rawValue->load (std::memory_order_relaxed);
         if (sameBitPattern (currentValue, slot.lastAppliedNormalisedValue))
             continue;
 
-        applySlotToEngine (slot, currentValue, activeEngine);
+        if (activeKernel != nullptr)
+            applySlotToKernel (slot, currentValue, activeKernel);
+        else
+            applySlotToEngine (slot, currentValue, activeEngine);
     }
 }
 
@@ -744,6 +798,7 @@ void DandrumAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce
         if (buffer.getNumChannels() < 2)
             return;
 
+        applyChangedParameters (activeEngine, activeKernel);
         deliverEditorKernelMidiEvents (activeKernel);
         const auto preparedBlockSize = static_cast<std::size_t> (juce::jmax (1, getBlockSize()));
         for (std::size_t blockStart = 0; blockStart < static_cast<std::size_t> (numSamples);)
@@ -779,7 +834,7 @@ void DandrumAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce
         return;
     }
 
-    applyChangedParameters (activeEngine);
+    applyChangedParameters (activeEngine, nullptr);
     deliverEditorMidiEvents (activeEngine);
 
     for (const auto metadata : midiMessages)
@@ -900,10 +955,9 @@ void DandrumAudioProcessor::setStateInformation (const void* data, int sizeInByt
         const auto sampleRate = getSampleRate() > 0.0 ? getSampleRate() : 44100.0;
         const auto blockSize = getBlockSize() > 0 ? getBlockSize() : 512;
         const auto restorePath = restoreFile.getFullPathName().toStdString();
-        const DandrumKernelBusDeclaration master { "master", 2, 2 };
-        candidateKernel = dandrum_kernel_prepare_file (
-            restorePath.c_str(), static_cast<std::uint32_t> (juce::jmax (1.0, sampleRate)),
-            static_cast<std::size_t> (juce::jmax (1, blockSize)), &master, 1);
+        candidateKernel = prepareKernelWithPublicControls (
+            restorePath, static_cast<std::uint32_t> (juce::jmax (1.0, sampleRate)),
+            static_cast<std::size_t> (juce::jmax (1, blockSize)));
         if (candidateKernel == nullptr)
         {
             candidate = dandrum_engine_create();
@@ -1226,7 +1280,10 @@ bool DandrumAudioProcessor::loadPresetFromFile (const juce::File& presetFile)
 
         const auto normalised = normalisePublicValue (slot.descriptor, static_cast<float> (found->second));
         setSlotNormalisedValue (slotIndex, normalised);
-        applySlotToEngine (slot, normalised, activeEngine);
+        if (auto* activeKernel = kernel.load (std::memory_order_relaxed))
+            applySlotToKernel (slot, normalised, activeKernel);
+        else
+            applySlotToEngine (slot, normalised, activeEngine);
     }
 
     loadedPreset.sourceFile = presetFile;

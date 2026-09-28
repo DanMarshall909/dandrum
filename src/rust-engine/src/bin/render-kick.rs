@@ -1,9 +1,11 @@
 use std::path::Path;
 
+use dandrum_engine::PreparedSamplerAssets;
 use dandrum_engine::core::TimedInputEvent;
-use dandrum_engine::graph::Graph;
-use dandrum_engine::graph_processor::render_offline_polyphonic;
-use dandrum_engine::patch;
+use dandrum_engine::graph_processor::render_kernel_offline_named;
+use dandrum_engine::kernel::document::load_kernel_patch_file;
+use dandrum_engine::patch::{self, RenderSettings};
+use dandrum_engine::preparation::prepare_kernel_patch;
 use dandrum_engine::script::ScriptEvent;
 use dandrum_engine::wav::write_wav_file;
 
@@ -11,13 +13,16 @@ fn main() {
     let patch_path = Path::new("../../examples/patches/synthetic-808-kick.yaml");
     let preset_path = Path::new("../../examples/presets/tight-808-kick.yaml");
 
-    let mut patch_doc = patch::load_patch_file(patch_path).expect("load patch");
+    let patch_doc = load_kernel_patch_file(patch_path).expect("load patch");
     let preset_doc = patch::load_preset_file(preset_path).expect("load preset");
-    patch_doc = patch::apply_preset(&patch_doc, &preset_doc).expect("apply preset");
+    let patch_doc = patch_doc.apply_preset(&preset_doc).expect("apply preset");
 
-    let graph = Graph::from_patch_declarations(&patch_doc);
-    let render_settings = &patch_doc.render;
-    let voice_allocation = &patch_doc.voice_allocation;
+    let render_settings = RenderSettings {
+        sample_rate_hz: 48_000,
+        block_size_frames: 128,
+        duration_frames: 48_000,
+    };
+    let prepared = prepare_kernel_patch(&patch_doc, &render_settings).expect("prepare patch");
 
     let note = 36u8;
     let duration = render_settings.duration_frames;
@@ -32,14 +37,18 @@ fn main() {
         TimedInputEvent::new(duration.saturating_sub(1), ScriptEvent::NoteOff { note }),
     ];
 
-    let (left, right) =
-        render_offline_polyphonic(&graph, render_settings, events, voice_allocation);
+    let buses = render_kernel_offline_named(&prepared, events, &PreparedSamplerAssets::empty())
+        .expect("render kick");
+    let (_, channels) = buses
+        .into_iter()
+        .find(|(name, _)| name == "master")
+        .expect("kick exposes master bus");
 
     write_wav_file(
         Path::new("/tmp/dandrum-synth-kick.wav"),
         render_settings.sample_rate_hz,
-        &left,
-        &right,
+        &channels[0],
+        &channels[1],
     )
     .expect("write wav");
 
