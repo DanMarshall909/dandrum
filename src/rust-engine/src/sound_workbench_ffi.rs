@@ -426,16 +426,30 @@ unsafe fn create_graph_proposal_with_provider(
     let result = (unsafe { match_artifact(matched) })
         .ok_or_else(|| "a completed sound match is required for a graph proposal".to_string())
         .and_then(|artifact| {
-            let patch =
-                crate::patch::load_patch_str(&artifact.matched.patch_yaml).map_err(|error| {
-                    format!("failed to load the matched patch snapshot for graph proposal: {error}")
-                })?;
-            let request = crate::graph_proposal::build_graph_proposal_request(
-                &patch,
-                &artifact.matched.manifest,
-                &artifact.matched.candidate_metrics,
-                &artifact.matched.reference_metrics,
-            )?;
+            let request = if let Ok(patch) =
+                crate::kernel::document::load_kernel_patch_str(&artifact.matched.patch_yaml)
+            {
+                crate::graph_proposal::build_kernel_graph_proposal_request(
+                    &patch,
+                    &artifact.matched.manifest,
+                    &artifact.matched.candidate_metrics,
+                    &artifact.matched.reference_metrics,
+                )?
+            } else {
+                let patch = crate::patch::load_patch_str(&artifact.matched.patch_yaml).map_err(
+                    |error| {
+                        format!(
+                            "failed to load the matched patch snapshot for graph proposal: {error}"
+                        )
+                    },
+                )?;
+                crate::graph_proposal::build_graph_proposal_request(
+                    &patch,
+                    &artifact.matched.manifest,
+                    &artifact.matched.candidate_metrics,
+                    &artifact.matched.reference_metrics,
+                )?
+            };
             let is_cancelled =
                 || cancellation_callback.is_some_and(|callback| !unsafe { callback(context) });
             let patch_root = artifact
@@ -916,10 +930,15 @@ mod tests {
     }
 
     fn short_match_files() -> (tempfile::TempDir, CString, CString) {
+        short_match_files_with_patch("tb303-acid.yaml")
+    }
+
+    fn short_match_files_with_patch(patch_name: &str) -> (tempfile::TempDir, CString, CString) {
         let directory = tempfile::tempdir().unwrap();
         let source_patch_path = Path::new(env!("CARGO_MANIFEST_DIR"))
             .join("../..")
-            .join("examples/patches/tb303-acid.yaml")
+            .join("examples/patches")
+            .join(patch_name)
             .canonicalize()
             .unwrap();
         let patch_path = directory.path().join("matched-patch.yaml");
@@ -1340,6 +1359,52 @@ connections:
                 .contains("cancelled")
         );
         unsafe { dandrum_graph_proposal_destroy(cancelled_proposal) };
+        unsafe { dandrum_graph_proposal_destroy(proposal) };
+        unsafe { dandrum_sound_match_destroy(matched) };
+    }
+
+    #[test]
+    fn ffi_proposal_request_reads_kernel_topology_from_matched_snapshot() {
+        let (_directory, fixture_path, reference_path) =
+            short_match_files_with_patch("tb303-acid-kernel.yaml");
+        let matched = unsafe {
+            dandrum_sound_match_create(
+                fixture_path.as_ptr(),
+                reference_path.as_ptr(),
+                None,
+                std::ptr::null_mut(),
+            )
+        };
+        assert!(unsafe { dandrum_sound_match_is_ok(matched) });
+        let provider = TestProposalProvider {
+            response: Err("provider unavailable".to_string()),
+            requests: Mutex::new(Vec::new()),
+        };
+
+        let proposal = unsafe {
+            create_graph_proposal_with_provider(matched, &provider, None, std::ptr::null_mut())
+        };
+
+        let requests = provider.requests.lock().unwrap();
+        assert_eq!(requests.len(), 1);
+        assert!(
+            requests[0]
+                .current_topology
+                .modules
+                .iter()
+                .any(|module| { module.id == "filter" && module.module_type == "filter" })
+        );
+        assert!(
+            requests[0]
+                .current_topology
+                .public_parameters
+                .iter()
+                .any(|parameter| {
+                    parameter.id == "filter.cutoff" && parameter.min == Some(0.02)
+                })
+        );
+        assert!(!unsafe { dandrum_graph_proposal_is_ok(proposal) });
+        drop(requests);
         unsafe { dandrum_graph_proposal_destroy(proposal) };
         unsafe { dandrum_sound_match_destroy(matched) };
     }

@@ -154,6 +154,97 @@ pub fn build_graph_proposal_request(
             max: parameter.max,
         })
         .collect();
+    build_request(
+        matched,
+        candidate_metrics,
+        reference_metrics,
+        allowed_modules,
+        GraphTopologySummary {
+            modules,
+            connections,
+            public_parameters,
+        },
+    )
+}
+
+pub fn build_kernel_graph_proposal_request(
+    patch: &crate::kernel::document::KernelPatch,
+    matched: &SoundMatchManifest,
+    candidate_metrics: &[crate::sound_analysis::AnalysisFrame],
+    reference_metrics: &[crate::sound_analysis::AnalysisFrame],
+) -> Result<GraphProposalRequest, String> {
+    let mut allowed_modules = crate::kernel::builtins::builtin_registry()
+        .definitions()
+        .filter(|definition| {
+            definition.implementation() != crate::kernel::DefinitionImplementation::Script
+                && definition.name() != crate::builtins::module_types::SCRIPT
+                && !matches!(
+                    definition.name(),
+                    crate::kernel::VOICE_INTRINSIC_DEFINITION
+                        | crate::kernel::CONTROL_TO_AUDIO_DEFINITION
+                )
+        })
+        .map(|definition| definition.name().to_string())
+        .collect::<Vec<_>>();
+    allowed_modules.push(crate::kernel::POLY_DEFINITION.to_string());
+    allowed_modules.sort();
+    allowed_modules.dedup();
+    let modules = patch
+        .root()
+        .nodes()
+        .iter()
+        .map(|node| GraphTopologyModule {
+            id: node.id().as_str().to_string(),
+            module_type: node.definition_ref().to_string(),
+        })
+        .collect();
+    let connections = patch
+        .root()
+        .connections()
+        .iter()
+        .map(|connection| GraphTopologyConnection {
+            from: format!(
+                "{}.{}",
+                connection.source().node().as_str(),
+                connection.source().port()
+            ),
+            to: format!(
+                "{}.{}",
+                connection.destination().node().as_str(),
+                connection.destination().port()
+            ),
+        })
+        .collect();
+    let public_parameters = patch
+        .preset_surface()
+        .parameters()
+        .iter()
+        .map(|parameter| GraphTopologyParameter {
+            id: parameter.name().to_string(),
+            min: parameter.control_default().min(),
+            max: parameter.control_default().max(),
+        })
+        .collect();
+    build_request(
+        matched,
+        candidate_metrics,
+        reference_metrics,
+        allowed_modules,
+        GraphTopologySummary {
+            modules,
+            connections,
+            public_parameters,
+        },
+    )
+}
+
+fn build_request(
+    matched: &SoundMatchManifest,
+    candidate_metrics: &[crate::sound_analysis::AnalysisFrame],
+    reference_metrics: &[crate::sound_analysis::AnalysisFrame],
+    allowed_modules: Vec<String>,
+    current_topology: GraphTopologySummary,
+) -> Result<GraphProposalRequest, String> {
     let candidate = aggregate_sound_features(candidate_metrics)?;
     let reference = aggregate_sound_features(reference_metrics)?;
     let db_delta = |candidate: f64, reference: f64| {
@@ -188,11 +279,7 @@ pub fn build_graph_proposal_request(
             },
         },
         allowed_modules,
-        current_topology: GraphTopologySummary {
-            modules,
-            connections,
-            public_parameters,
-        },
+        current_topology,
         constraints: vec![
             "Use only module types listed in allowed_modules.".to_string(),
             "Return a complete patch with no assets, scripts, external references, or filesystem paths."
@@ -633,6 +720,56 @@ connections:
         assert!(!json.contains(".wav"));
         assert!(!json.contains("RIFF"));
         assert!(!json.contains(&fixture.patch.display().to_string()));
+        assert!(!json.contains("ab".repeat(32).as_str()));
+    }
+
+    #[test]
+    fn kernel_request_uses_root_graph_and_public_aliases_without_private_match_data() {
+        let path = Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("../..")
+            .join("examples/patches/tb303-acid-kernel.yaml");
+        let patch = crate::kernel::document::load_kernel_patch_file(&path).unwrap();
+        let (candidate, reference) = comparison_metrics();
+        let request =
+            build_kernel_graph_proposal_request(&patch, &match_manifest(), &candidate, &reference)
+                .unwrap();
+        let json = serde_json::to_string(&request).unwrap();
+
+        assert_eq!(request.residual.total, 0.33);
+        assert_eq!(request.features.delta.centroid_octaves, 1.0);
+        assert!(request.allowed_modules.contains(&"oscillator".to_string()));
+        assert!(request.allowed_modules.contains(&"poly".to_string()));
+        assert!(!request.allowed_modules.contains(&"script".to_string()));
+        assert!(
+            request
+                .current_topology
+                .modules
+                .iter()
+                .any(|module| { module.id == "filter" && module.module_type == "filter" })
+        );
+        assert!(
+            request
+                .current_topology
+                .connections
+                .iter()
+                .any(|connection| {
+                    connection.from == "osc.audio" && connection.to == "filter.audio_in"
+                })
+        );
+        assert!(
+            request
+                .current_topology
+                .public_parameters
+                .iter()
+                .any(|parameter| {
+                    parameter.id == "filter.cutoff"
+                        && parameter.min == Some(0.02)
+                        && parameter.max == Some(0.9)
+                })
+        );
+        assert!(!json.contains("private-hardware-reference"));
+        assert!(!json.contains(".wav"));
+        assert!(!json.contains(&path.display().to_string()));
         assert!(!json.contains("ab".repeat(32).as_str()));
     }
 

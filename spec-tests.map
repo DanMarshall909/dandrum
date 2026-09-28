@@ -130,6 +130,7 @@ AC ai-graph-proposals :: Graph proposals use a provider-neutral contract :: A di
 AC ai-graph-proposals :: Provider context excludes reference audio and secrets :: Proposal request is built from a match result
   fp 30dd56163049
   test rust:canonical_request_contains_derived_residual_catalogue_and_sanitized_topology_only
+  test rust:kernel_request_uses_root_graph_and_public_aliases_without_private_match_data
 
 AC built-in-modules :: Built-in module state uses resolved parameters :: DSP state is prepared from resolved parameters
   fp 420cdb6d4113
