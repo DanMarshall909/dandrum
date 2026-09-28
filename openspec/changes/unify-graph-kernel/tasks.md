@@ -49,8 +49,8 @@ Model-tier tags follow design decision D11: `[frontier]` for architecture/realti
 - [x] [frontier] 4.2 Compile one non-nested `poly` into an explicit runtime region with preallocated flattened voice instances, disjoint state ranges, event queues, child schedule, and output accumulators; inspect preparation to prove exactly `max_voices` storage exists
 - [x] [frontier] 4.3 Implement note-event routing, both allocation policies, and per-voice intrinsic ports (`voice.note`, `voice.velocity`, `voice.gate`) without per-block allocation
 - [x] [frontier] 4.4 Implement channel-aware per-output summing across active voices and prove two simultaneous voices sum sample-wise; add sibling-poly tests proving independent allocators, state, queues, and mixes
-- [ ] [frontier] 4.5 Implement explicit `done` retirement, then gate-release plus documented silence-threshold/timeout fallback; prove retired voices contribute no stale output
-- [ ] [standard] 4.6 Add allocation-free full-capacity render coverage for activation, stealing/rejection, processing, mixing, and retirement using `realtime_allocation_tests.rs`
+- [x] [frontier] 4.5 Implement explicit `done` retirement, then gate-release plus documented silence-threshold/timeout fallback; prove retired voices contribute no stale output
+- [x] [standard] 4.6 Add allocation-free full-capacity render coverage for activation, stealing/rejection, processing, mixing, and retirement using `realtime_allocation_tests.rs`
 - [ ] [frontier] 4.7 Support nested poly regions with independent child allocators and accumulation buffers; retain the legacy graph-wide scope machinery only for unmigrated callers until task 7.8
 
 ## 5. Host settings, buses, discovery, and FFI
