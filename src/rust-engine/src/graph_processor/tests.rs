@@ -3830,16 +3830,25 @@ fn additional_acceptance_examples_load_validate_and_render_where_supported() {
             load_kernel_patch_str(&yaml).expect("acceptance example should parse as kernel patch");
         let prepared = prepare_kernel_patch(&patch, &render_settings)
             .expect("acceptance example should prepare");
-        let (left, right) = render_offline_compiled(
-            prepared.compiled_patch(),
+        let rendered = render_kernel_offline_named(
+            &prepared,
             vec![note_on_value(0, *note, 100)],
             &PreparedSamplerAssets::empty(),
-        );
-        let (left_again, right_again) = render_offline_compiled(
-            prepared.compiled_patch(),
+        )
+        .expect("acceptance example should render through named root buses");
+        let rendered_again = render_kernel_offline_named(
+            &prepared,
             vec![note_on_value(0, *note, 100)],
             &PreparedSamplerAssets::empty(),
-        );
+        )
+        .expect("acceptance example should render deterministically");
+        assert_eq!(rendered.len(), 2, "{fixture} has left and right buses");
+        assert_eq!(rendered[0].0, "left");
+        assert_eq!(rendered[1].0, "right");
+        let left = &rendered[0].1[0];
+        let right = &rendered[1].1[0];
+        let left_again = &rendered_again[0].1[0];
+        let right_again = &rendered_again[1].1[0];
         assert_eq!(
             left, left_again,
             "{fixture} left channel should be deterministic"
