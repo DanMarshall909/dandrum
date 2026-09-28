@@ -1,27 +1,26 @@
 metadata:
   name: Minimal Sampler
-ports:
-  - name: left
-    direction: output
-    signal: audio
-    channels: 1
-    maps_from: mixer.mix
-  - name: right
-    direction: output
-    signal: audio
-    channels: 1
-    maps_from: mixer.mix
+render:
+  sample_rate_hz: 22050
+  block_size_frames: 64
+  duration_frames: 256
+assets:
+  - id: hit
+    kind: sample
+    path: ../../third_party/JUCE/examples/Assets/cello.wav
 modules:
   - id: midi
     type: midi_input
   - id: sampler
     type: sampler
-    static:
-      sample: { kind: sample, path: assets/cello.wav }
+    parameters:
+      asset: hit
   - id: note_rate
     type: note_to_rate
   - id: mixer
     type: audio_mixer
+  - id: out
+    type: audio_output
 connections:
   - from: midi.events
     to: sampler.trigger
@@ -31,3 +30,7 @@ connections:
     to: sampler.rate
   - from: sampler.audio
     to: mixer.inputs
+  - from: mixer.mix
+    to: out.left
+  - from: mixer.mix
+    to: out.right

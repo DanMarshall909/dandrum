@@ -20,8 +20,12 @@ use crate::graph::*;
 use crate::kernel::document::load_kernel_patch_str;
 use crate::oscillator::OSCILLATOR_BASE_HZ;
 use crate::patch;
-use crate::preparation::{HostBuses, prepare_kernel_graph_with_buses, prepare_kernel_patch};
-use crate::sample::{LoadedSample, PreparedSamplerAssets};
+use crate::preparation::{
+    HostBuses, PreparationContext, prepare_kernel_graph_with_buses,
+    prepare_kernel_graph_with_buses_and_context, prepare_kernel_patch,
+    prepare_kernel_patch_with_context,
+};
+use crate::sample::{LoadedSample, PreparedSamplerAssets, prepare_sampler_assets};
 use crate::script::ScriptEvent;
 use std::collections::BTreeMap;
 use std::fs;
@@ -6222,4 +6226,87 @@ fn kernel_migrated_examples_match_legacy_reference_renders() {
         assert_eq!(actual.0, expected.0, "{fixture} left render changed");
         assert_eq!(actual.1, expected.1, "{fixture} right render changed");
     }
+}
+
+#[test]
+fn migrated_minimal_sampler_matches_legacy_resource_render() {
+    let fixture = "examples/patches/minimal-sampler.yaml";
+    let legacy_yaml =
+        include_str!("../../tests/fixtures/unify-graph-kernel/legacy/minimal-sampler.yaml");
+    let legacy = patch::load_patch_str(legacy_yaml).expect("legacy sampler reference parses");
+    let settings = RenderSettings {
+        duration_frames: 1_024,
+        ..legacy.render.clone()
+    };
+    let events = vec![note_on_value(0, 60, 100)];
+    let patch_root = Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("../..")
+        .join("examples/patches");
+    let assets = prepare_sampler_assets(&legacy, &patch_root).expect("legacy sampler asset loads");
+    let expected = render_offline_with_sampler_assets(
+        &Graph::from_patch_declarations(&legacy),
+        &settings,
+        events.clone(),
+        &assets,
+    );
+    assert!(
+        expected.0.iter().any(|sample| sample.abs() > 0.001),
+        "legacy sampler reference must produce audio"
+    );
+
+    let yaml = read_repo_fixture(fixture).expect("sampler example exists");
+    let kernel = load_kernel_patch_str(&yaml).expect("sampler example is a kernel document");
+    let context = PreparationContext::new(&patch_root, settings.sample_rate_hz);
+    let prepared = prepare_kernel_patch_with_context(&kernel, &settings, &context)
+        .expect("sampler resource resolves beneath the patch root");
+    let actual = render_offline_compiled(
+        prepared.compiled_patch(),
+        events,
+        &PreparedSamplerAssets::empty(),
+    );
+    assert_eq!(actual.0, expected.0, "sampler left render changed");
+    assert_eq!(actual.1, expected.1, "sampler right render changed");
+}
+
+#[test]
+fn convolution_example_loads_typed_impulse_resource_and_renders_named_bus() {
+    let fixture = "examples/patches/minimal-convolution.yaml";
+    let yaml = read_repo_fixture(fixture).expect("convolution example exists");
+    let kernel = load_kernel_patch_str(&yaml).expect("convolution example is a kernel document");
+    let settings = RenderSettings {
+        sample_rate_hz: 48_000,
+        block_size_frames: 128,
+        duration_frames: 1_024,
+    };
+    let patch_root = Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("../..")
+        .join("examples/patches");
+    let context = PreparationContext::new(&patch_root, settings.sample_rate_hz);
+    let prepared = prepare_kernel_graph_with_buses_and_context(
+        kernel.root(),
+        kernel.registry(),
+        &settings,
+        &HostBuses::new()
+            .with_input("in", 1)
+            .with_output("master", 1),
+        &context,
+    )
+    .expect("convolution resource resolves beneath the patch root");
+    let mut impulse = vec![0.0; settings.duration_frames as usize];
+    impulse[0] = 1.0;
+    let inputs = BTreeMap::from([("in".to_string(), vec![impulse])]);
+    let rendered = render_kernel_offline_named_with_inputs(
+        &prepared,
+        Vec::new(),
+        &PreparedSamplerAssets::empty(),
+        &inputs,
+    )
+    .expect("convolution example renders named output bus");
+
+    assert_eq!(rendered.len(), 1);
+    assert_eq!(rendered[0].0, "master");
+    let samples = &rendered[0].1[0];
+    assert!(samples[512] > 0.9, "unit IR produces delayed wet impulse");
+    assert!(samples[..512].iter().all(|sample| sample.abs() < 0.0001));
+    assert!(samples[513..].iter().all(|sample| sample.abs() < 0.0001));
 }

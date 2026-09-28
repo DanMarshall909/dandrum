@@ -1,0 +1,11 @@
+ports:
+  - { name: left, direction: output, signal: audio, channels: 1, maps_from: player.audio }
+  - { name: right, direction: output, signal: audio, channels: 1, maps_from: player.audio }
+modules:
+  - { id: midi, type: midi_input }
+  - id: player
+    type: sampler
+    static:
+      sample: { kind: sample, path: samples/hit.wav }
+connections:
+  - { from: midi.events, to: player.trigger }

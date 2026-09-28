@@ -1,0 +1,21 @@
+metadata:
+  name: Minimal Convolution
+ports:
+  - name: in
+    direction: input
+    signal: audio
+    channels: 1
+    maps_to: convolution.audio_in
+  - name: master
+    direction: output
+    signal: audio
+    channels: 1
+    maps_from: convolution.audio_out
+modules:
+  - id: convolution
+    type: convolution
+    static:
+      impulse_response: { kind: impulse_response, path: assets/unit-impulse-48k.wav }
+    defaults:
+      mix: 1.0
+connections: []

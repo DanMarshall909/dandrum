@@ -29,6 +29,12 @@ const BUNDLED_DRUM_VOICE_YAML: &[u8] =
 const BUNDLED_DRUM_MACHINE_PATH: &str = "drum_machine/drum_machine.yaml";
 const BUNDLED_DRUM_MACHINE_YAML: &[u8] =
     include_bytes!("../module-library/1.0.0/drum_machine/drum_machine.yaml");
+const BUNDLED_SAMPLE_VOICE_PATH: &str = "sample_voice/sample_voice.yaml";
+const BUNDLED_SAMPLE_VOICE_YAML: &[u8] =
+    include_bytes!("../module-library/1.0.0/sample_voice/sample_voice.yaml");
+const BUNDLED_SAMPLE_VOICE_WAV_PATH: &str = "sample_voice/samples/hit.wav";
+const BUNDLED_SAMPLE_VOICE_WAV: &[u8] =
+    include_bytes!("../module-library/1.0.0/sample_voice/samples/hit.wav");
 
 /// One file bundled into a seeded module-library version.
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -140,6 +146,14 @@ pub fn bundled_standard_library() -> SeededLibrary {
                 path: BUNDLED_DRUM_MACHINE_PATH.to_string(),
                 contents: BUNDLED_DRUM_MACHINE_YAML.to_vec(),
             },
+            SeededLibraryFile {
+                path: BUNDLED_SAMPLE_VOICE_PATH.to_string(),
+                contents: BUNDLED_SAMPLE_VOICE_YAML.to_vec(),
+            },
+            SeededLibraryFile {
+                path: BUNDLED_SAMPLE_VOICE_WAV_PATH.to_string(),
+                contents: BUNDLED_SAMPLE_VOICE_WAV.to_vec(),
+            },
         ],
     }
 }
@@ -167,14 +181,32 @@ pub fn seed_standard_library(
     let version_root = root.join(&library.version);
     let manifest_path = version_root.join(STANDARD_LIBRARY_CRC_FILENAME);
 
-    if recorded_crc(&manifest_path)? == Some(crc) {
+    fs::create_dir_all(root).map_err(|error| io_error(root, error))?;
+    // The lock also covers the CRC check so concurrent hosts cannot each
+    // replace the same version directory after observing an old manifest.
+    let lock_path = root.join(format!(".{}.seed.lock", library.version));
+    let lock_file = fs::File::options()
+        .create(true)
+        .write(true)
+        .open(&lock_path)
+        .map_err(|error| io_error(&lock_path, error))?;
+    lock_file
+        .lock()
+        .map_err(|error| io_error(&lock_path, error))?;
+
+    // A matching manifest alone cannot prove the directory is complete after
+    // an interrupted or older concurrent extraction.
+    if recorded_crc(&manifest_path)? == Some(crc)
+        && library
+            .files
+            .iter()
+            .all(|file| version_root.join(&file.path).is_file())
+    {
         return Ok(SeedResult::SkippedUnchanged {
             version: library.version.clone(),
             crc,
         });
     }
-
-    fs::create_dir_all(root).map_err(|error| io_error(root, error))?;
 
     let staging_root = root.join(format!(
         ".{}.extracting.{}",
@@ -330,19 +362,8 @@ mod tests {
     const DRUM_MACHINE_REFERENCE: &str = "$LIB/1.0.0/drum_machine/drum_machine.yaml";
     const RESOURCE_PACKAGE_PATH: &str = "sample_voice/sample_voice.yaml";
     const RESOURCE_PACKAGE_REFERENCE: &str = "$LIB/1.0.0/sample_voice/sample_voice.yaml";
-    const RESOURCE_PACKAGE_YAML: &[u8] = br#"
-ports:
-  - { name: left, direction: output, signal: audio, channels: 1, maps_from: player.audio }
-  - { name: right, direction: output, signal: audio, channels: 1, maps_from: player.audio }
-modules:
-  - { id: midi, type: midi_input }
-  - id: player
-    type: sampler
-    static:
-      sample: { kind: sample, path: samples/hit.wav }
-connections:
-  - { from: midi.events, to: player.trigger }
-"#;
+    const NEWER_RESOURCE_PACKAGE_REFERENCE: &str = "$LIB/2.0.0/sample_voice/sample_voice.yaml";
+    const RESOURCE_PACKAGE_YAML: &[u8] = BUNDLED_SAMPLE_VOICE_YAML;
     const TEST_SAMPLE_RATE_HZ: u32 = 48_000;
     const TEST_BLOCK_SIZE_FRAMES: usize = 8;
 
@@ -361,7 +382,7 @@ connections:
     }
 
     #[test]
-    fn bundled_standard_library_contains_the_drum_voice_and_drum_machine_packages() {
+    fn bundled_standard_library_contains_kernel_packages_and_sample_resource() {
         let bundled = bundled_standard_library();
         let paths = bundled
             .files
@@ -378,6 +399,8 @@ connections:
             paths.contains(BUNDLED_DRUM_MACHINE_PATH),
             "the bundled standard library should carry the drum_machine package entry YAML"
         );
+        assert!(paths.contains("sample_voice/sample_voice.yaml"));
+        assert!(paths.contains("sample_voice/samples/hit.wav"));
     }
 
     #[test]
@@ -491,61 +514,68 @@ connections:
     #[test]
     fn pinned_resource_package_prepares_and_renders_its_package_relative_sample() {
         let root = temp_root("resource-package");
-        for (version, sample) in [("1.0.0", 0.25), ("2.0.0", 0.75)] {
-            seed_standard_library(
-                &root,
-                &SeededLibrary {
-                    version: version.to_string(),
-                    files: vec![file(RESOURCE_PACKAGE_PATH, RESOURCE_PACKAGE_YAML)],
-                },
-            )
-            .expect("resource package version should seed");
-            let sample_dir = root.join(version).join("sample_voice").join("samples");
-            fs::create_dir_all(&sample_dir).expect("sample directory should be created");
-            crate::wav::write_wav_stereo_i16(
-                fs::File::create(sample_dir.join("hit.wav")).unwrap(),
-                TEST_SAMPLE_RATE_HZ,
-                &[sample],
-                &[sample],
-            )
-            .expect("tiny package sample should be written");
-        }
+        seed_bundled_standard_library(&root).expect("bundled resource package should seed");
+        seed_standard_library(
+            &root,
+            &SeededLibrary {
+                version: "2.0.0".to_string(),
+                files: vec![file(RESOURCE_PACKAGE_PATH, RESOURCE_PACKAGE_YAML)],
+            },
+        )
+        .expect("newer resource package version should seed");
+        let sample_dir = root.join("2.0.0").join("sample_voice").join("samples");
+        fs::create_dir_all(&sample_dir).expect("sample directory should be created");
+        crate::wav::write_wav_stereo_i16(
+            fs::File::create(sample_dir.join("hit.wav")).unwrap(),
+            TEST_SAMPLE_RATE_HZ,
+            &[0.75],
+            &[0.75],
+        )
+        .expect("newer package sample should be written");
         let context = preparation_context(&root);
-        let package = load_referenced_kernel_package(RESOURCE_PACKAGE_REFERENCE, &context)
-            .expect("pinned resource package should load");
         let settings = RenderSettings {
             sample_rate_hz: TEST_SAMPLE_RATE_HZ,
             block_size_frames: TEST_BLOCK_SIZE_FRAMES as u32,
             duration_frames: TEST_BLOCK_SIZE_FRAMES as u64,
         };
-        let prepared = prepare_kernel_graph_with_buses_and_context(
-            package.definition(),
-            package.registry(),
-            &settings,
-            &HostBuses::new()
-                .with_output("left", 1)
-                .with_output("right", 1),
-            &context,
-        )
-        .expect("pinned resource package should prepare through PreparationContext");
-        let mut runtime = RealtimeGraphProcessor::polyphonic_with_compiled_patch_and_sampler_assets_and_max_block_size(
-            prepared.graph().clone(),
-            prepared.compiled_patch().clone(),
-            TEST_SAMPLE_RATE_HZ as f32,
-            &PreparedSamplerAssets::empty(),
-            &VoiceAllocation::default(),
-            TEST_BLOCK_SIZE_FRAMES,
-        );
-        runtime.note_on(60, 100);
-        let mut left = [0.0; TEST_BLOCK_SIZE_FRAMES];
-        let mut right = [0.0; TEST_BLOCK_SIZE_FRAMES];
+        for (reference, expected_first_sample) in [
+            (RESOURCE_PACKAGE_REFERENCE, 0.25),
+            (NEWER_RESOURCE_PACKAGE_REFERENCE, 0.75),
+        ] {
+            let package = load_referenced_kernel_package(reference, &context)
+                .expect("pinned resource package should load");
+            let prepared = prepare_kernel_graph_with_buses_and_context(
+                package.definition(),
+                package.registry(),
+                &settings,
+                &HostBuses::new()
+                    .with_output("left", 1)
+                    .with_output("right", 1),
+                &context,
+            )
+            .expect("pinned resource package should prepare through PreparationContext");
+            let mut runtime = RealtimeGraphProcessor::polyphonic_with_compiled_patch_and_sampler_assets_and_max_block_size(
+                prepared.graph().clone(),
+                prepared.compiled_patch().clone(),
+                TEST_SAMPLE_RATE_HZ as f32,
+                &PreparedSamplerAssets::empty(),
+                &VoiceAllocation::default(),
+                TEST_BLOCK_SIZE_FRAMES,
+            );
+            runtime.note_on(60, 100);
+            let mut left = [0.0; TEST_BLOCK_SIZE_FRAMES];
+            let mut right = [0.0; TEST_BLOCK_SIZE_FRAMES];
 
-        assert_eq!(
-            runtime.render(&mut left, &mut right),
-            TEST_BLOCK_SIZE_FRAMES
-        );
-        assert!((left[0] - 0.25).abs() < 0.0001);
-        assert_eq!(left, right);
+            assert_eq!(
+                runtime.render(&mut left, &mut right),
+                TEST_BLOCK_SIZE_FRAMES
+            );
+            assert!(
+                (left[0] - expected_first_sample).abs() < 0.0001,
+                "{reference} should render its own package-relative sample",
+            );
+            assert_eq!(left, right);
+        }
     }
 
     fn preparation_context(root: &Path) -> PreparationContext {
@@ -584,6 +614,24 @@ connections:
     }
 
     #[test]
+    fn matching_crc_repairs_a_missing_bundled_package_file() {
+        let root = tempfile::tempdir().expect("isolated library root");
+        let bundled = bundled_standard_library();
+        seed_standard_library(root.path(), &bundled).expect("bundle seeds");
+        let missing = root
+            .path()
+            .join(BUNDLED_STANDARD_LIBRARY_VERSION)
+            .join(BUNDLED_DRUM_VOICE_PATH);
+        fs::remove_file(&missing).expect("bundled file can be removed");
+
+        let result = seed_standard_library(root.path(), &bundled)
+            .expect("seeding should repair a missing file despite matching CRC");
+
+        assert!(matches!(result, SeedResult::Extracted { .. }));
+        assert_eq!(fs::read(missing).unwrap(), BUNDLED_DRUM_VOICE_YAML);
+    }
+
+    #[test]
     fn changed_crc_replaces_only_that_version_directory() {
         let root = temp_root("changed");
         seed_standard_library(&root, &library("1.0.0", b"old\n"))
@@ -610,6 +658,46 @@ connections:
         assert!(
             !root.join("1.0.0").join("stale.txt").exists(),
             "replacing one version should not retain stale files inside that version"
+        );
+    }
+
+    #[test]
+    fn concurrent_seeders_publish_one_complete_updated_version() {
+        let root = tempfile::tempdir().expect("isolated library root");
+        let old = library("1.0.0", b"old\n");
+        let updated = library("1.0.0", b"new\n");
+        seed_standard_library(root.path(), &old).expect("old version seeds");
+        let start = std::sync::Arc::new(std::sync::Barrier::new(8));
+        let workers = (0..8)
+            .map(|_| {
+                let root = root.path().to_path_buf();
+                let updated = updated.clone();
+                let start = std::sync::Arc::clone(&start);
+                std::thread::spawn(move || {
+                    start.wait();
+                    seed_standard_library(&root, &updated)
+                })
+            })
+            .collect::<Vec<_>>();
+        for worker in workers {
+            worker
+                .join()
+                .expect("seeder thread should not panic")
+                .expect("concurrent seeder should succeed");
+        }
+        assert_eq!(
+            fs::read(root.path().join("1.0.0/drum_voice/drum_voice.yaml")).unwrap(),
+            b"new\n"
+        );
+        assert_eq!(
+            recorded_crc(
+                &root
+                    .path()
+                    .join("1.0.0")
+                    .join(STANDARD_LIBRARY_CRC_FILENAME)
+            )
+            .unwrap(),
+            Some(seeded_library_crc(&updated))
         );
     }
 
