@@ -426,15 +426,18 @@ unsafe fn create_graph_proposal_with_provider(
     let result = (unsafe { match_artifact(matched) })
         .ok_or_else(|| "a completed sound match is required for a graph proposal".to_string())
         .and_then(|artifact| {
-            let request = if let Ok(patch) =
+            let (request, kernel_format) = if let Ok(patch) =
                 crate::kernel::document::load_kernel_patch_str(&artifact.matched.patch_yaml)
             {
-                crate::graph_proposal::build_kernel_graph_proposal_request(
-                    &patch,
-                    &artifact.matched.manifest,
-                    &artifact.matched.candidate_metrics,
-                    &artifact.matched.reference_metrics,
-                )?
+                (
+                    crate::graph_proposal::build_kernel_graph_proposal_request(
+                        &patch,
+                        &artifact.matched.manifest,
+                        &artifact.matched.candidate_metrics,
+                        &artifact.matched.reference_metrics,
+                    )?,
+                    true,
+                )
             } else {
                 let patch = crate::patch::load_patch_str(&artifact.matched.patch_yaml).map_err(
                     |error| {
@@ -443,12 +446,15 @@ unsafe fn create_graph_proposal_with_provider(
                         )
                     },
                 )?;
-                crate::graph_proposal::build_graph_proposal_request(
-                    &patch,
-                    &artifact.matched.manifest,
-                    &artifact.matched.candidate_metrics,
-                    &artifact.matched.reference_metrics,
-                )?
+                (
+                    crate::graph_proposal::build_graph_proposal_request(
+                        &patch,
+                        &artifact.matched.manifest,
+                        &artifact.matched.candidate_metrics,
+                        &artifact.matched.reference_metrics,
+                    )?,
+                    false,
+                )
             };
             let is_cancelled =
                 || cancellation_callback.is_some_and(|callback| !unsafe { callback(context) });
@@ -457,12 +463,20 @@ unsafe fn create_graph_proposal_with_provider(
                 .patch
                 .parent()
                 .unwrap_or_else(|| std::path::Path::new("."));
-            crate::graph_proposal::request_validated_graph_proposal(
-                provider,
-                &request,
-                patch_root,
-                &is_cancelled,
-            )
+            if kernel_format {
+                crate::graph_proposal::request_validated_kernel_graph_proposal(
+                    provider,
+                    &request,
+                    &is_cancelled,
+                )
+            } else {
+                crate::graph_proposal::request_validated_graph_proposal(
+                    provider,
+                    &request,
+                    patch_root,
+                    &is_cancelled,
+                )
+            }
         });
     Box::into_raw(Box::new(DandrumGraphProposal { result }))
 }
@@ -1365,7 +1379,7 @@ connections:
 
     #[test]
     fn ffi_proposal_request_reads_kernel_topology_from_matched_snapshot() {
-        let (_directory, fixture_path, reference_path) =
+        let (directory, fixture_path, reference_path) =
             short_match_files_with_patch("tb303-acid-kernel.yaml");
         let matched = unsafe {
             dandrum_sound_match_create(
@@ -1377,7 +1391,12 @@ connections:
         };
         assert!(unsafe { dandrum_sound_match_is_ok(matched) });
         let provider = TestProposalProvider {
-            response: Err("provider unavailable".to_string()),
+            response: Ok(crate::graph_proposal::GraphProposalResponse {
+                patch_yaml: fs::read_to_string(directory.path().join("matched-patch.yaml"))
+                    .unwrap(),
+                explanation: "Keep the kernel graph for another search.".to_string(),
+                suggested_search_parameters: vec!["filter.cutoff".to_string()],
+            }),
             requests: Mutex::new(Vec::new()),
         };
 
@@ -1403,7 +1422,11 @@ connections:
                     parameter.id == "filter.cutoff" && parameter.min == Some(0.02)
                 })
         );
-        assert!(!unsafe { dandrum_graph_proposal_is_ok(proposal) });
+        assert!(unsafe { dandrum_graph_proposal_is_ok(proposal) });
+        assert_eq!(
+            unsafe { dandrum_graph_proposal_parameter_count(proposal) },
+            1
+        );
         drop(requests);
         unsafe { dandrum_graph_proposal_destroy(proposal) };
         unsafe { dandrum_sound_match_destroy(matched) };

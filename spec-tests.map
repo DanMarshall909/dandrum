@@ -117,11 +117,13 @@ AC ai-graph-proposals :: Codex CLI is the first adapter without direct API crede
 AC ai-graph-proposals :: Every provider proposal is locally validated :: Provider returns a valid patch proposal
   fp 50b00a7d991a
   test rust:provider_neutral_orchestration_returns_only_locally_validated_patch_proposals
+  test rust:kernel_proposals_are_prepared_and_unsafe_or_unbounded_responses_are_rejected
 
 AC ai-graph-proposals :: Every provider proposal is locally validated :: Provider returns invalid or unsafe content
   fp 071e026f1a35
   test rust:local_validation_rejects_assets_scripts_unknown_modules_and_unknown_search_controls
   test rust:response_parser_rejects_malformed_json_and_unknown_fields
+  test rust:kernel_proposals_are_prepared_and_unsafe_or_unbounded_responses_are_rejected
 
 AC ai-graph-proposals :: Graph proposals use a provider-neutral contract :: A different provider satisfies the same orchestration
   fp 9c09607d009d

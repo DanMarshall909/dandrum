@@ -183,6 +183,9 @@ pub fn build_kernel_graph_proposal_request(
                     crate::kernel::VOICE_INTRINSIC_DEFINITION
                         | crate::kernel::CONTROL_TO_AUDIO_DEFINITION
                 )
+                && !definition.static_params().iter().any(|param| {
+                    matches!(param.static_type(), crate::kernel::StaticType::Resource(_))
+                })
         })
         .map(|definition| definition.name().to_string())
         .collect::<Vec<_>>();
@@ -341,6 +344,24 @@ pub fn request_validated_graph_proposal(
     patch_root: &Path,
     is_cancelled: &dyn Fn() -> bool,
 ) -> Result<ValidatedGraphProposal, String> {
+    let response = request_graph_proposal_response(provider, request, is_cancelled)?;
+    validate_graph_proposal(provider.provider_id(), response, patch_root)
+}
+
+pub fn request_validated_kernel_graph_proposal(
+    provider: &dyn GraphProposalProvider,
+    request: &GraphProposalRequest,
+    is_cancelled: &dyn Fn() -> bool,
+) -> Result<ValidatedGraphProposal, String> {
+    let response = request_graph_proposal_response(provider, request, is_cancelled)?;
+    validate_kernel_graph_proposal(provider.provider_id(), response)
+}
+
+fn request_graph_proposal_response(
+    provider: &dyn GraphProposalProvider,
+    request: &GraphProposalRequest,
+    is_cancelled: &dyn Fn() -> bool,
+) -> Result<GraphProposalResponse, String> {
     if !provider.capabilities().structured_output {
         return Err(format!(
             "graph proposal provider {} does not support structured output",
@@ -351,7 +372,121 @@ pub fn request_validated_graph_proposal(
     if is_cancelled() {
         return Err("graph proposal cancelled".to_string());
     }
-    validate_graph_proposal(provider.provider_id(), response, patch_root)
+    Ok(response)
+}
+
+fn validate_kernel_graph_proposal(
+    provider_id: &str,
+    response: GraphProposalResponse,
+) -> Result<ValidatedGraphProposal, String> {
+    if response.patch_yaml.trim().is_empty() {
+        return Err("graph proposal patch_yaml must not be empty".to_string());
+    }
+    if response.explanation.trim().is_empty() {
+        return Err("graph proposal explanation must not be empty".to_string());
+    }
+    let patch = crate::kernel::document::load_kernel_patch_str(&response.patch_yaml)
+        .map_err(|error| format!("proposed kernel patch is invalid: {error}"))?;
+    if !patch.preset_surface().assets().is_empty() {
+        return Err("proposed patch must not declare assets".to_string());
+    }
+    let builtins = crate::kernel::builtins::builtin_registry();
+    let mut authored = vec![patch.root()];
+    authored.extend(
+        patch
+            .registry()
+            .definitions()
+            .filter(|definition| builtins.get(definition.name()) != Some(*definition)),
+    );
+    for definition in authored {
+        if definition.implementation() == crate::kernel::DefinitionImplementation::Script {
+            return Err("proposed patch must not contain script modules".to_string());
+        }
+        if definition
+            .static_params()
+            .iter()
+            .any(|param| matches!(param.static_type(), crate::kernel::StaticType::Resource(_)))
+        {
+            return Err("proposed patch must not declare assets".to_string());
+        }
+        for node in definition.nodes() {
+            let module_type = node.definition_ref();
+            if crate::module_reference::is_external_reference(module_type) {
+                return Err(
+                    "proposed patch must not contain external module references".to_string()
+                );
+            }
+            if module_type == crate::builtins::module_types::SCRIPT
+                || patch.registry().get(module_type).is_some_and(|resolved| {
+                    resolved.implementation() == crate::kernel::DefinitionImplementation::Script
+                })
+            {
+                return Err("proposed patch must not contain script modules".to_string());
+            }
+            if patch.registry().get(module_type).is_none()
+                && module_type != crate::kernel::POLY_DEFINITION
+            {
+                return Err(format!(
+                    "proposed patch contains unknown module type {module_type}"
+                ));
+            }
+            if node.static_args().values().any(|arg| {
+                matches!(
+                    arg,
+                    crate::kernel::StaticArg::Literal(crate::kernel::StaticValue::Resource(_))
+                )
+            }) || patch.registry().get(module_type).is_some_and(|resolved| {
+                resolved.static_params().iter().any(|param| {
+                    matches!(param.static_type(), crate::kernel::StaticType::Resource(_))
+                })
+            }) {
+                return Err("proposed patch must not declare assets".to_string());
+            }
+        }
+    }
+    for parameter_id in &response.suggested_search_parameters {
+        let Some(parameter) = patch
+            .preset_surface()
+            .parameters()
+            .iter()
+            .find(|parameter| parameter.name() == parameter_id)
+        else {
+            return Err(format!(
+                "suggested search parameter {parameter_id} is not exposed by the proposed patch"
+            ));
+        };
+        let control = parameter.control_default();
+        let (Some(min), Some(max)) = (control.min(), control.max()) else {
+            return Err(format!(
+                "suggested search parameter {parameter_id} must declare finite bounds"
+            ));
+        };
+        if !control.default().is_finite() || !min.is_finite() || !max.is_finite() || min >= max {
+            return Err(format!(
+                "suggested search parameter {parameter_id} must be numeric with finite ordered bounds"
+            ));
+        }
+    }
+    crate::preparation::prepare_kernel_patch(
+        &patch,
+        &crate::patch::RenderSettings {
+            sample_rate_hz: 48_000,
+            block_size_frames: 64,
+            duration_frames: 64,
+        },
+    )
+    .map_err(|error| format!("proposed patch failed local preparation: {error}"))?;
+    Ok(ValidatedGraphProposal {
+        provider_id: provider_id.to_string(),
+        patch_name: patch
+            .metadata()
+            .name()
+            .unwrap_or("Untitled patch")
+            .to_string(),
+        explanation: response.explanation,
+        suggested_search_parameters: response.suggested_search_parameters,
+        patch_yaml: response.patch_yaml,
+    })
 }
 
 fn validate_graph_proposal(
@@ -500,6 +635,25 @@ connections:
   - { from: osc.audio, to: mixer.inputs }
   - { from: mixer.mix, to: out.left }
   - { from: mixer.mix, to: out.right }
+"#;
+
+    const VALID_KERNEL_PATCH: &str = r#"
+metadata:
+  name: Proposed Kernel Voice
+instrument:
+  id: dandrum.proposed-kernel
+  preset_schema_version: 1
+ports:
+  - { name: oscillator_pitch, direction: input, signal: control, channels: 1, default: 1, min: 0.25, max: 4, maps_to: osc.pitch }
+  - { name: master, direction: output, signal: audio, channels: 2, maps_from: mixer.mix }
+preset_surface:
+  parameters:
+    - { name: oscillator.pitch, maps_to: oscillator_pitch }
+modules:
+  - { id: osc, type: oscillator, static: { channels: 2 } }
+  - { id: mixer, type: audio_mixer, static: { channels: 2 } }
+connections:
+  - { from: osc.audio, to: mixer.inputs }
 "#;
 
     struct RecordingProvider {
@@ -740,6 +894,7 @@ connections:
         assert!(request.allowed_modules.contains(&"oscillator".to_string()));
         assert!(request.allowed_modules.contains(&"poly".to_string()));
         assert!(!request.allowed_modules.contains(&"script".to_string()));
+        assert!(!request.allowed_modules.contains(&"sampler".to_string()));
         assert!(
             request
                 .current_topology
@@ -836,6 +991,82 @@ connections:
         assert_eq!(proposal.patch_name, "Proposed Acid Voice");
         assert_eq!(proposal.suggested_search_parameters, ["oscillator.pitch"]);
         assert_eq!(provider.requests.lock().unwrap().as_slice(), [request]);
+    }
+
+    #[test]
+    fn kernel_proposals_are_prepared_and_unsafe_or_unbounded_responses_are_rejected() {
+        let fixture = acid_fixture();
+        let request = proposal_request(&fixture);
+        let valid = RecordingProvider {
+            response: Ok(GraphProposalResponse {
+                patch_yaml: VALID_KERNEL_PATCH.to_string(),
+                explanation: "Expose pitch for the next search.".to_string(),
+                suggested_search_parameters: vec!["oscillator.pitch".to_string()],
+            }),
+            requests: Mutex::new(Vec::new()),
+        };
+        let proposal = request_validated_kernel_graph_proposal(&valid, &request, &|| false)
+            .expect("safe kernel proposal should prepare");
+        assert_eq!(proposal.patch_name, "Proposed Kernel Voice");
+        assert_eq!(proposal.suggested_search_parameters, ["oscillator.pitch"]);
+
+        let variants = [
+            (
+                VALID_KERNEL_PATCH.replace(
+                    "  - { id: osc, type: oscillator, static: { channels: 2 } }",
+                    "  - { id: osc, type: script, static: { source: 'fn process() {}' } }",
+                ),
+                "script",
+            ),
+            (
+                VALID_KERNEL_PATCH.replace(
+                    "modules:",
+                    "module_definitions:\n  - type: hidden_script\n    implementation: script\n    static_params:\n      - { name: source, type: string, default: 'fn process() {}' }\nmodules:",
+                ),
+                "script",
+            ),
+            (
+                VALID_KERNEL_PATCH.replace(
+                    "  - { id: osc, type: oscillator, static: { channels: 2 } }",
+                    "  - { id: osc, type: $LIB/1.0/voice/voice.yaml }",
+                ),
+                "external",
+            ),
+            (
+                VALID_KERNEL_PATCH.replace(
+                    "modules:",
+                    "static_params:\n  - { name: sample, type: resource, resource_kind: sample, default: { kind: sample, path: private.wav } }\nmodules:",
+                ),
+                "assets",
+            ),
+            (
+                VALID_KERNEL_PATCH.replace(
+                    "type: oscillator",
+                    "type: imaginary_oscillator",
+                ),
+                "unknown",
+            ),
+            (
+                VALID_KERNEL_PATCH.replace("min: 0.25, max: 4, ", ""),
+                "finite bounds",
+            ),
+        ];
+        for (patch_yaml, expected) in variants {
+            let provider = RecordingProvider {
+                response: Ok(GraphProposalResponse {
+                    patch_yaml,
+                    explanation: "invalid graph".to_string(),
+                    suggested_search_parameters: vec!["oscillator.pitch".to_string()],
+                }),
+                requests: Mutex::new(Vec::new()),
+            };
+            let error = request_validated_kernel_graph_proposal(&provider, &request, &|| false)
+                .expect_err("unsafe or unbounded kernel proposal should fail");
+            assert!(
+                error.to_lowercase().contains(expected),
+                "unexpected error: {error}"
+            );
+        }
     }
 
     #[test]
