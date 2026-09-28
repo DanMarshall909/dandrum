@@ -504,13 +504,17 @@ fn prepare_kernel_graph_with_buses_internal(
     host_buses: &HostBuses,
     context: Option<&PreparationContext>,
 ) -> Result<PreparedKernelInstrument, KernelPreparationError> {
-    let validation = root.validate(registry);
+    let resolved_registry = match context {
+        Some(context) => resolve_external_definitions(root, registry, context)?,
+        None => registry.clone(),
+    };
+    let validation = root.validate(&resolved_registry);
     if !validation.is_ok() {
         return Err(validation.diagnostics().clone().into());
     }
 
     let flattened_graph = root
-        .flatten(registry)
+        .flatten(&resolved_registry)
         .map_err(KernelPreparationError::from)?;
     validate_host_buses(&flattened_graph, host_buses)?;
     let latency_plan = flattened_graph
@@ -560,7 +564,7 @@ fn prepare_kernel_graph_with_buses_internal(
     ));
     let poly_regions = compile_poly_regions(
         &flattened_graph,
-        registry,
+        &resolved_registry,
         render_settings,
         resource_resolver.as_mut(),
         &compiled_patch,
@@ -573,6 +577,30 @@ fn prepare_kernel_graph_with_buses_internal(
         graph: lowered.graph,
         compiled_patch,
     })
+}
+
+fn resolve_external_definitions(
+    root: &GraphDefinition,
+    registry: &DefinitionRegistry,
+    context: &PreparationContext,
+) -> Result<DefinitionRegistry, KernelPreparationError> {
+    let mut resolved = registry.clone();
+    let references = std::iter::once(root)
+        .chain(registry.definitions())
+        .flat_map(|definition| definition.nodes())
+        .map(|node| node.definition_ref())
+        .filter(|reference| crate::module_reference::is_external_reference(reference))
+        .collect::<BTreeSet<_>>();
+    for reference in references {
+        let package = crate::module_package::load_referenced_kernel_package(reference, context)
+            .map_err(|error| {
+                KernelPreparationError::from(diagnostics::Diagnostics::from(error.to_diagnostic()))
+            })?;
+        for definition in package.registry().definitions() {
+            resolved = resolved.with_definition(definition.clone());
+        }
+    }
+    Ok(resolved)
 }
 
 fn resolve_flattened_resources(

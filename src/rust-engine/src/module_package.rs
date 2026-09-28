@@ -421,4 +421,107 @@ connections: []
             crate::diagnostics::error_codes::KERNEL_DOCUMENT_LEGACY_ASSET_BINDINGS
         );
     }
+
+    #[test]
+    fn external_library_and_user_modules_render_identically_to_inline_definition() {
+        use crate::graph_processor::render_kernel_offline_named;
+        use crate::patch::RenderSettings;
+        use crate::preparation::{HostBuses, prepare_kernel_graph_with_buses_and_context};
+        use crate::sample::PreparedSamplerAssets;
+
+        const DEFINITION: &str = "ports:\n  - { name: audio, direction: output, signal: audio, channels: 1, maps_from: source.out }\nmodules:\n  - { id: source, type: control_to_audio, defaults: { in: -0.5 } }\nconnections: []\n";
+        let directory = tempfile::tempdir().unwrap();
+        let lib_root = directory.path().join("lib");
+        let user_root = directory.path().join("user");
+        seed_kernel_package(&lib_root, "1.0.0", "voice", DEFINITION);
+        fs::create_dir_all(user_root.join("voice")).unwrap();
+        fs::write(user_root.join("voice/voice.yaml"), DEFINITION).unwrap();
+        let roots = MacroRoots::new()
+            .with_root(LIB_MACRO, &lib_root)
+            .with_root(crate::module_reference::USER_LIB_MACRO, &user_root);
+        let context = PreparationContext::new(directory.path(), 48_000).with_macro_roots(roots);
+        let settings = RenderSettings {
+            sample_rate_hz: 48_000,
+            block_size_frames: 8,
+            duration_frames: 12,
+        };
+        let buses = HostBuses::new().with_output("master", 1);
+        let indented_definition = DEFINITION
+            .lines()
+            .map(|line| format!("    {line}\n"))
+            .collect::<String>();
+        let inline_yaml = format!(
+            "metadata: {{ name: inline }}\nports:\n  - {{ name: master, direction: output, signal: audio, channels: 1, maps_from: voice.audio }}\nmodule_definitions:\n  - type: voice\n{}modules:\n  - {{ id: voice, type: voice }}\nconnections: []\n",
+            indented_definition
+        );
+        let inline = load_kernel_patch_str(&inline_yaml).unwrap();
+        let render = |patch: &crate::kernel::document::KernelPatch| {
+            let prepared = prepare_kernel_graph_with_buses_and_context(
+                patch.root(),
+                patch.registry(),
+                &settings,
+                &buses,
+                &context,
+            )
+            .expect("external and inline modules should prepare");
+            let outputs =
+                render_kernel_offline_named(&prepared, vec![], &PreparedSamplerAssets::empty())
+                    .expect("prepared module should render");
+            let planes: Vec<_> = outputs[0].1.iter().map(Vec::as_slice).collect();
+            let mut bytes = Vec::new();
+            crate::wav::write_wav_channels_i16(&mut bytes, 48_000, &planes).unwrap();
+            bytes
+        };
+        let inline_bytes = render(&inline);
+        for reference in ["$LIB/1.0.0/voice/voice.yaml", "$USER_LIB/voice/voice.yaml"] {
+            let external = load_kernel_patch_str(&format!(
+                "metadata: {{ name: external }}\nports:\n  - {{ name: master, direction: output, signal: audio, channels: 1, maps_from: voice.audio }}\nmodules:\n  - {{ id: voice, type: {reference} }}\nconnections: []\n"
+            ))
+            .unwrap();
+            assert_eq!(render(&external), inline_bytes, "{reference}");
+        }
+    }
+
+    #[test]
+    fn external_reference_errors_are_reported_during_preparation() {
+        use crate::patch::RenderSettings;
+        use crate::preparation::{HostBuses, prepare_kernel_graph_with_buses_and_context};
+
+        let directory = tempfile::tempdir().unwrap();
+        let context = PreparationContext::new(directory.path(), 48_000)
+            .with_macro_roots(MacroRoots::new().with_root(LIB_MACRO, directory.path()));
+        let settings = RenderSettings {
+            sample_rate_hz: 48_000,
+            block_size_frames: 8,
+            duration_frames: 8,
+        };
+        for (reference, code) in [
+            (
+                "$NOPE/voice/voice.yaml",
+                crate::diagnostics::error_codes::LIBRARY_UNKNOWN_MACRO,
+            ),
+            (
+                "$LIB/../voice/voice.yaml",
+                crate::diagnostics::error_codes::LIBRARY_PATH_ESCAPE,
+            ),
+        ] {
+            let patch = load_kernel_patch_str(&format!(
+                "metadata: {{ name: external-error }}\nports:\n  - {{ name: master, direction: output, signal: audio, channels: 1, maps_from: voice.audio }}\nmodules:\n  - {{ id: voice, type: {reference} }}\nconnections: []\n"
+            ))
+            .unwrap();
+            let error = prepare_kernel_graph_with_buses_and_context(
+                patch.root(),
+                patch.registry(),
+                &settings,
+                &HostBuses::new().with_output("master", 1),
+                &context,
+            )
+            .expect_err("invalid module reference must fail preparation");
+            assert_eq!(
+                error.diagnostics().all()[0].error_code(),
+                code,
+                "{reference}"
+            );
+        }
+    }
 }
