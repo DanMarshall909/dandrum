@@ -4093,41 +4093,6 @@ fn spectral_centroid_around(
 }
 
 #[test]
-fn impulse_module_examples_load_validate_and_render_with_documented_primitive_ports() {
-    for (fixture, note, should_render) in [
-        ("examples/patches/module-velocity-vca.yaml", 60, true),
-    ] {
-        let Some(yaml) = read_repo_fixture(fixture) else {
-            return;
-        };
-        let patch = patch::load_patch_str(&yaml).expect("drum kit example should parse");
-
-        patch::validate_patch_schema(&patch).expect("drum kit example schema should validate");
-        let graph = Graph::from_patch_declarations(&patch);
-        graph
-            .validate()
-            .expect("drum kit example graph should validate");
-
-        if !should_render {
-            continue;
-        }
-
-        let (left, right) =
-            render_offline(&graph, &patch.render, vec![note_on_value(0, note, 100)]);
-
-        let peak = left
-            .iter()
-            .chain(right.iter())
-            .map(|sample| sample.abs())
-            .fold(0.0_f32, f32::max);
-        assert!(
-            peak > 0.0,
-            "{fixture} should render non-empty audio; peak was {peak}"
-        );
-    }
-}
-
-#[test]
 fn migrated_drum_kit_routes_each_pad_to_its_own_poly_region_and_stereo_bus() {
     let legacy = patch::load_patch_str(include_str!(
         "../../tests/fixtures/unify-graph-kernel/legacy/drum-kit.yaml"
@@ -6648,44 +6613,52 @@ fn kernel_migrated_examples_match_legacy_reference_renders() {
 }
 
 #[test]
-fn impulse_tone_example_matches_legacy_render_through_master_bus() {
-    let legacy_yaml =
-        include_str!("../../tests/fixtures/unify-graph-kernel/legacy/module-impulse-tone.yaml");
-    let legacy = patch::load_patch_str(legacy_yaml).expect("legacy reference parses");
-    patch::validate_patch_schema(&legacy).expect("legacy reference validates");
-    let graph = Graph::from_patch_declarations(&legacy);
-    graph.validate().expect("legacy graph validates");
-    let settings = legacy.render.clone();
-    let events = vec![
-        note_on_value(0, 60, 100),
-        TimedInputEvent::new(960, ScriptEvent::NoteOff { note: 60 }),
-    ];
-    let (expected_left, expected_right) = render_offline(&graph, &settings, events.clone());
-    assert!(expected_left.iter().any(|sample| sample.abs() > 0.001));
-    assert_eq!(expected_left, expected_right);
+fn impulse_tone_and_velocity_vca_examples_match_legacy_render_through_master_bus() {
+    for (fixture, legacy_yaml) in [
+        (
+            "examples/patches/module-impulse-tone.yaml",
+            include_str!("../../tests/fixtures/unify-graph-kernel/legacy/module-impulse-tone.yaml"),
+        ),
+        (
+            "examples/patches/module-velocity-vca.yaml",
+            include_str!("../../tests/fixtures/unify-graph-kernel/legacy/module-velocity-vca.yaml"),
+        ),
+    ] {
+        let legacy = patch::load_patch_str(legacy_yaml).expect("legacy reference parses");
+        patch::validate_patch_schema(&legacy).expect("legacy reference validates");
+        let graph = Graph::from_patch_declarations(&legacy);
+        graph.validate().expect("legacy graph validates");
+        let settings = legacy.render.clone();
+        let events = vec![
+            note_on_value(0, 60, 100),
+            TimedInputEvent::new(960, ScriptEvent::NoteOff { note: 60 }),
+        ];
+        let (expected_left, expected_right) = render_offline(&graph, &settings, events.clone());
+        assert!(expected_left.iter().any(|sample| sample.abs() > 0.001));
+        assert_eq!(expected_left, expected_right);
 
-    let yaml = read_repo_fixture("examples/patches/module-impulse-tone.yaml")
-        .expect("migrated example exists");
-    let kernel = load_kernel_patch_str(&yaml).expect("example loads as kernel patch");
-    let prepared = prepare_kernel_patch(&kernel, &settings).expect("kernel patch prepares");
-    let buses = render_kernel_offline_named(&prepared, events, &PreparedSamplerAssets::empty())
-        .expect("kernel patch renders");
-    assert_eq!(buses.len(), 1);
-    assert_eq!(buses[0].0, "master");
-    assert_eq!(buses[0].1.len(), 2);
-    for (channel, expected) in [(0, expected_left), (1, expected_right)] {
-        let actual = &buses[0].1[channel];
-        let mismatch = actual
-            .iter()
-            .zip(&expected)
-            .position(|(actual, expected)| actual != expected);
-        assert_eq!(
-            mismatch,
-            None,
-            "master channel {channel} differs from legacy reference at frame {mismatch:?}: actual {:?}, expected {:?}",
-            mismatch.map(|frame| actual[frame]),
-            mismatch.map(|frame| expected[frame])
-        );
+        let yaml = read_repo_fixture(fixture).expect("migrated example exists");
+        let kernel = load_kernel_patch_str(&yaml).expect("example loads as kernel patch");
+        let prepared = prepare_kernel_patch(&kernel, &settings).expect("kernel patch prepares");
+        let buses = render_kernel_offline_named(&prepared, events, &PreparedSamplerAssets::empty())
+            .expect("kernel patch renders");
+        assert_eq!(buses.len(), 1);
+        assert_eq!(buses[0].0, "master");
+        assert_eq!(buses[0].1.len(), 2);
+        for (channel, expected) in [(0, expected_left), (1, expected_right)] {
+            let actual = &buses[0].1[channel];
+            let mismatch = actual
+                .iter()
+                .zip(&expected)
+                .position(|(actual, expected)| actual != expected);
+            assert_eq!(
+                mismatch,
+                None,
+                "{fixture} master channel {channel} differs from legacy reference at frame {mismatch:?}: actual {:?}, expected {:?}",
+                mismatch.map(|frame| actual[frame]),
+                mismatch.map(|frame| expected[frame])
+            );
+        }
     }
 }
 

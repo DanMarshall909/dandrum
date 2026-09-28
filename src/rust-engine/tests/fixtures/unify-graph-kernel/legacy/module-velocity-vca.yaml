@@ -1,0 +1,66 @@
+metadata:
+  name: Composite Velocity VCA
+render:
+  sample_rate_hz: 48000
+  block_size_frames: 128
+  duration_frames: 1024
+module_definitions:
+  - type: velocity_vca
+    inputs:
+      - name: events
+        signal_type: event
+        maps_to:
+          - note_controls.events
+      - name: envelope
+        signal_type: control
+        maps_to:
+          - envelope_gain.gain
+      - name: audio
+        signal_type: audio
+        maps_to:
+          - envelope_gain.audio_in
+    outputs:
+      - name: audio
+        signal_type: audio
+        maps_from:
+          - velocity_gain.audio_out
+    modules:
+      - id: note_controls
+        type: note_to_control
+      - id: envelope_gain
+        type: gain
+      - id: velocity_gain
+        type: gain
+    connections:
+      - from: envelope_gain.audio_out
+        to: velocity_gain.audio_in
+      - from: note_controls.velocity
+        to: velocity_gain.gain
+modules:
+  - id: midi
+    type: midi_input
+  - id: source
+    type: oscillator
+  - id: envelope
+    type: adsr
+  - id: vca
+    type: velocity_vca
+  - id: mixer
+    type: audio_mixer
+  - id: out
+    type: audio_output
+connections:
+  - from: midi.events
+    to: envelope.gate
+  - from: midi.events
+    to: vca.events
+  - from: envelope.value
+    to: vca.envelope
+  - from: source.audio
+    to: vca.audio
+  - from: vca.audio
+    to: mixer.inputs
+  - from: mixer.mix
+    to: out.left
+  - from: mixer.mix
+    to: out.right
