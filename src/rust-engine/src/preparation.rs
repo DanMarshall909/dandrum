@@ -1075,17 +1075,7 @@ fn lower_kernel_graph(
                 });
         }
         node_data.insert(node.id().as_str().to_string(), data);
-        let mut legacy_parameters = node
-            .static_args()
-            .iter()
-            .map(|(name, value)| (name.clone(), static_value_to_string(value)))
-            .collect::<BTreeMap<_, _>>();
-        legacy_parameters.extend(
-            node.port_defaults()
-                .iter()
-                .map(|(name, value)| (name.clone(), value.to_string())),
-        );
-        modules.push(lowered.with_params(legacy_parameters));
+        modules.push(lowered);
     }
 
     let mut cables = Vec::new();
@@ -1251,14 +1241,6 @@ fn reserve_generated_id(
 
 fn legacy_ref(reference: &crate::kernel::PortRef) -> PortRef {
     PortRef::new(ModuleId::new(reference.node().as_str()), reference.port())
-}
-
-fn static_value_to_string(value: &StaticValue) -> String {
-    match value {
-        StaticValue::Int(value) => value.to_string(),
-        StaticValue::Enum(value) | StaticValue::String(value) => value.clone(),
-        StaticValue::Resource(reference) => reference.path().to_string_lossy().into_owned(),
-    }
 }
 
 pub(crate) fn prepare_instrument_document(
@@ -4205,6 +4187,15 @@ connections: []
 
         let prepared = prepare_kernel_patch(&patch, &KERNEL_RENDER_SETTINGS)
             .expect("kernel patch should prepare");
+
+        assert!(
+            prepared
+                .graph()
+                .modules()
+                .iter()
+                .all(|node| node.params().is_empty()),
+            "kernel graph modules carry typed construction and defaults without legacy parameter maps"
+        );
 
         let ids = prepared
             .flattened_graph()
