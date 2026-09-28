@@ -1,109 +1,59 @@
 metadata:
   name: Drum 909 Clap
-# 909-style clap: a bright bandpassed noise "snap" over a diffuse noise tail,
-# tighter and brighter than the 808 clap. Built from noise, filter, decay, and
-# gain primitives only. Public controls map to live runtime targets. Seed
-# values are tuning hints from public 909 references, refined offline.
+# A noise snap and diffuse tail shaped by independent exponential decays.
+# Public preset controls address the voice inputs.
 instrument:
   id: dandrum.drum-909-clap
   preset_schema_version: 1
+ports:
+  - { name: snap_decay_ms, direction: input, signal: control, channels: 1, default: 12, min: 3, max: 100, maps_to: voices.snap_decay_ms }
+  - { name: body_decay_ms, direction: input, signal: control, channels: 1, default: 120, min: 20, max: 500, maps_to: voices.body_decay_ms }
+  - { name: snap_level, direction: input, signal: control, channels: 1, default: 1, min: 0, max: 2, maps_to: voices.snap_level }
+  - { name: body_level, direction: input, signal: control, channels: 1, default: 0.4, min: 0, max: 2, maps_to: voices.body_level }
+  - { name: left, direction: output, signal: audio, channels: 1, maps_from: voices.audio }
+  - { name: right, direction: output, signal: audio, channels: 1, maps_from: voices.audio }
 preset_surface:
   parameters:
-    - name: clap.snap_decay_ms
-      type: number
-      default: 12
-      min: 3
-      max: 100
-      maps_to: snap_env.time_ms
-    - name: clap.body_decay_ms
-      type: number
-      default: 120
-      min: 20
-      max: 500
-      maps_to: body_env.time_ms
-    - name: clap.snap_level
-      type: number
-      default: 1
-      min: 0
-      max: 2
-      maps_to: snap_trim.gain
-    - name: clap.body_level
-      type: number
-      default: 0.4
-      min: 0
-      max: 2
-      maps_to: body_trim.gain
-render:
-  sample_rate_hz: 48000
-  block_size_frames: 128
-  duration_frames: 48000
+    - { name: clap.snap_decay_ms, maps_to: snap_decay_ms }
+    - { name: clap.body_decay_ms, maps_to: body_decay_ms }
+    - { name: clap.snap_level, maps_to: snap_level }
+    - { name: clap.body_level, maps_to: body_level }
+module_definitions:
+  - type: clap_voice
+    ports:
+      - { name: snap_decay_ms, direction: input, signal: control, channels: 1, default: 12, min: 3, max: 100, maps_to: snap_env.time_ms }
+      - { name: body_decay_ms, direction: input, signal: control, channels: 1, default: 120, min: 20, max: 500, maps_to: body_env.time_ms }
+      - { name: snap_level, direction: input, signal: control, channels: 1, default: 1, min: 0, max: 2, maps_to: snap_trim.gain }
+      - { name: body_level, direction: input, signal: control, channels: 1, default: 0.4, min: 0, max: 2, maps_to: body_trim.gain }
+      - { name: audio, direction: output, signal: audio, channels: 1, maps_from: mixer.mix }
+    modules:
+      - { id: noise, type: noise, static: { seed: 9091 } }
+      - { id: snap_hp, type: filter, static: { algorithm: biquad, mode: highpass } }
+      - { id: snap_env, type: decay, static: { curve: exponential } }
+      - { id: snap_vca, type: gain }
+      - { id: snap_trim, type: gain }
+      - { id: body_hp, type: filter, static: { algorithm: biquad, mode: highpass } }
+      - { id: body_env, type: decay, static: { curve: exponential } }
+      - { id: body_vca, type: gain }
+      - { id: body_trim, type: gain }
+      - { id: mixer, type: audio_mixer }
+    connections:
+      - { from: voice.gate, to: snap_env.trigger }
+      - { from: voice.gate, to: body_env.trigger }
+      - { from: noise.audio, to: snap_hp.audio_in }
+      - { from: snap_hp.audio_out, to: snap_vca.audio_in }
+      - { from: snap_env.value, to: snap_vca.gain }
+      - { from: snap_vca.audio_out, to: snap_trim.audio_in }
+      - { from: snap_trim.audio_out, to: mixer.inputs }
+      - { from: noise.audio, to: body_hp.audio_in }
+      - { from: body_hp.audio_out, to: body_vca.audio_in }
+      - { from: body_env.value, to: body_vca.gain }
+      - { from: body_vca.audio_out, to: body_trim.audio_in }
+      - { from: body_trim.audio_out, to: mixer.inputs }
 modules:
-  - id: midi
-    type: midi_input
-  - id: noise
-    type: noise
-    parameters:
-      seed: 9091
-  - id: snap_hp
-    type: filter
-    parameters:
-      algorithm: biquad
-      mode: highpass
-  - id: snap_env
-    type: decay
-    parameters:
-      curve: exponential
-  - id: snap_vca
-    type: gain
-  - id: snap_trim
-    type: gain
-    parameters:
-      gain: 1
-  - id: body_hp
-    type: filter
-    parameters:
-      algorithm: biquad
-      mode: highpass
-  - id: body_env
-    type: decay
-    parameters:
-      curve: exponential
-  - id: body_vca
-    type: gain
-  - id: body_trim
-    type: gain
-    parameters:
-      gain: 0.4
-  - id: mixer
-    type: audio_mixer
-  - id: out
-    type: audio_output
+  - { id: midi, type: midi_input }
+  - id: voices
+    type: poly
+    static: { definition: clap_voice, max_voices: 1, allocation: reject-new }
 connections:
-  - from: midi.events
-    to: snap_env.trigger
-  - from: midi.events
-    to: body_env.trigger
-  - from: noise.audio
-    to: snap_hp.audio_in
-  - from: snap_hp.audio_out
-    to: snap_vca.audio_in
-  - from: snap_env.value
-    to: snap_vca.gain
-  - from: snap_vca.audio_out
-    to: snap_trim.audio_in
-  - from: snap_trim.audio_out
-    to: mixer.inputs
-  - from: noise.audio
-    to: body_hp.audio_in
-  - from: body_hp.audio_out
-    to: body_vca.audio_in
-  - from: body_env.value
-    to: body_vca.gain
-  - from: body_vca.audio_out
-    to: body_trim.audio_in
-  - from: body_trim.audio_out
-    to: mixer.inputs
-  - from: mixer.mix
-    to: out.left
-  - from: mixer.mix
-    to: out.right
+  - { from: midi.events, to: voices.notes }

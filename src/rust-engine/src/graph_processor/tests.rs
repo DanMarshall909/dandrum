@@ -6780,6 +6780,120 @@ fn drum_909_kick_preserves_legacy_preset_render_and_controls() {
 }
 
 #[test]
+fn clap_examples_preserve_legacy_preset_renders_on_named_buses() {
+    for (fixture, legacy_yaml, instrument_id, snap_ms, body_ms, body_level) in [
+        (
+            "examples/patches/drums/drum-808-clap.yaml",
+            include_str!("../../tests/fixtures/unify-graph-kernel/legacy/drum-808-clap.yaml"),
+            "dandrum.drum-808-clap",
+            18,
+            160,
+            0.5,
+        ),
+        (
+            "examples/patches/drums/drum-909-clap.yaml",
+            include_str!("../../tests/fixtures/unify-graph-kernel/legacy/drum-909-clap.yaml"),
+            "dandrum.drum-909-clap",
+            12,
+            120,
+            0.4,
+        ),
+    ] {
+        let yaml = read_repo_fixture(fixture).expect("clap example exists");
+        let patch = load_kernel_patch_str(&yaml).expect("clap loads as kernel patch");
+        assert_eq!(
+            patch.instrument().expect("instrument identity").id,
+            instrument_id
+        );
+        assert_eq!(
+            patch
+                .preset_surface()
+                .parameters()
+                .iter()
+                .map(|alias| alias.name())
+                .collect::<Vec<_>>(),
+            [
+                "clap.snap_decay_ms",
+                "clap.body_decay_ms",
+                "clap.snap_level",
+                "clap.body_level",
+            ]
+        );
+        let settings = RenderSettings {
+            sample_rate_hz: 48_000,
+            block_size_frames: 128,
+            duration_frames: 2_048,
+        };
+        let events = vec![note_on_value(0, 39, 110)];
+        let mut baseline = None;
+        for (case, snap_ms, body_ms, snap_level, body_level) in [
+            ("advertised defaults", snap_ms, body_ms, 1.0, body_level),
+            ("changed controls", 6, 50, 0.35, 0.2),
+        ] {
+            let preset = patch::load_preset_str(&format!(
+                "name: {case}\ninstrument: {{ id: {instrument_id}, preset_schema_version: 1 }}\nvalues: {{ clap.snap_decay_ms: {snap_ms}, clap.body_decay_ms: {body_ms}, clap.snap_level: {snap_level}, clap.body_level: {body_level} }}\n"
+            ))
+            .expect("clap preset parses");
+            let mut legacy = patch::apply_preset(
+                &patch::load_patch_str(legacy_yaml).expect("legacy clap reference parses"),
+                &preset,
+            )
+            .expect("legacy clap preset applies");
+            legacy.render = settings.clone();
+            let legacy = crate::preparation::prepare_instrument_document(legacy, Path::new("."))
+                .expect("legacy clap prepares");
+            let expected = crate::synth::DandrumEngine::new()
+                .render_prepared_instrument_offline(&legacy, events.clone());
+            assert!(expected.left.iter().any(|sample| sample.abs() > 0.001));
+            assert_eq!(expected.left, expected.right);
+
+            let applied = if case == "advertised defaults" {
+                patch.clone()
+            } else {
+                patch
+                    .apply_preset(&preset)
+                    .expect("kernel clap preset applies")
+            };
+            let prepared = prepare_kernel_patch(&applied, &settings).expect("clap prepares");
+            let buses = render_kernel_offline_named(
+                &prepared,
+                events.clone(),
+                &PreparedSamplerAssets::empty(),
+            )
+            .expect("clap renders on named buses");
+            assert_eq!(buses.len(), 2);
+            for (channel, name, expected) in
+                [(0, "left", &expected.left), (1, "right", &expected.right)]
+            {
+                assert_eq!(buses[channel].0, name);
+                assert_eq!(buses[channel].1.len(), 1);
+                let actual = &buses[channel].1[0];
+                assert_eq!(actual.len(), expected.len());
+                let mismatch = actual
+                    .iter()
+                    .zip(expected)
+                    .position(|(actual, expected)| actual != expected);
+                assert_eq!(
+                    mismatch,
+                    None,
+                    "{fixture} {case} {name} differs at frame {mismatch:?}: actual {:?}, expected {:?}",
+                    mismatch.map(|frame| actual[frame]),
+                    mismatch.map(|frame| expected[frame]),
+                );
+            }
+            if let Some(baseline) = &baseline {
+                assert_ne!(
+                    &expected.left, baseline,
+                    "changed controls should change the clap sound"
+                );
+            } else {
+                baseline = Some(expected.left);
+            }
+        }
+    }
+}
+
+#[test]
 fn impulse_noise_and_layer_examples_match_legacy_render_on_named_buses() {
     for (fixture, legacy_yaml) in [
         (

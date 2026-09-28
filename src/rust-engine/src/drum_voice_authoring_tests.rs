@@ -112,10 +112,17 @@ fn every_drum_voice_renders_non_silent_audio_from_a_midi_trigger() {
                 &PreparedSamplerAssets::empty(),
             )
             .unwrap_or_else(|error| panic!("{} should render: {error}", path.display()));
+            let stereo_bus = buses.iter().any(|(_, channels)| {
+                channels.len() == 2 && peak(&channels[0]) > 0.0 && peak(&channels[1]) > 0.0
+            });
+            let mono_output = |name: &str| {
+                buses
+                    .iter()
+                    .find(|(bus, _)| bus == name)
+                    .is_some_and(|(_, channels)| channels.len() == 1 && peak(&channels[0]) > 0.0)
+            };
             assert!(
-                buses.iter().any(|(_, channels)| {
-                    channels.len() == 2 && peak(&channels[0]) > 0.0 && peak(&channels[1]) > 0.0
-                }),
+                stereo_bus || (mono_output("left") && mono_output("right")),
                 "{} should render non-silent stereo audio from a MIDI trigger",
                 path.display()
             );
