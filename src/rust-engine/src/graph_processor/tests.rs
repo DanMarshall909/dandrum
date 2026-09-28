@@ -3996,36 +3996,151 @@ fn script_mapping_example_is_event_control_only_and_validates() {
     let Some(yaml) = read_repo_fixture("examples/patches/script-velocity-map.yaml") else {
         return;
     };
-    let patch = patch::load_patch_str(&yaml).expect("script example should parse");
-
-    patch::validate_patch_schema(&patch).expect("script example should validate");
-    let script = patch
-        .modules
+    let legacy = patch::load_patch_str(include_str!(
+        "../../tests/fixtures/unify-graph-kernel/legacy/script-velocity-map.yaml"
+    ))
+    .expect("legacy script example parses");
+    let expected_source = match legacy.modules[1].parameters.get("source") {
+        Some(patch::ParameterValue::Text(source)) => source,
+        _ => panic!("legacy script source is text"),
+    };
+    let kernel = load_kernel_patch_str(&yaml).expect("script example is a kernel document");
+    let script = kernel
+        .registry()
+        .get("velocity_mapper")
+        .expect("named script definition exists");
+    assert_eq!(
+        script.implementation(),
+        crate::kernel::DefinitionImplementation::Script
+    );
+    let ports = script
+        .ports()
         .iter()
-        .find(|module| module.id == "velocity_map")
-        .expect("script module should exist");
-
+        .map(|port| (port.name(), port.direction(), port.signal_type()))
+        .collect::<Vec<_>>();
+    assert_eq!(
+        ports,
+        [
+            ("notes", PortDirection::Input, SignalType::Event),
+            ("velocity", PortDirection::Output, SignalType::Control),
+            ("routed_notes", PortDirection::Output, SignalType::Event),
+        ]
+    );
     assert!(
         script
-            .outputs
+            .ports()
             .iter()
-            .all(|output| output.signal_type != patch::SignalType::Audio)
+            .all(|port| port.signal_type() != SignalType::Audio)
     );
+
+    let prepared = prepare_kernel_patch(&kernel, &legacy.render)
+        .expect("script source prepares through its named definition");
+    let compiled = prepared
+        .compiled_patch()
+        .nodes()
+        .iter()
+        .find(|node| node.id.as_str() == "velocity_map")
+        .expect("compiled script node exists");
+    assert!(matches!(
+        &compiled.construction,
+        crate::compiled_patch::CompiledConstruction::Script {
+            language: crate::compiled_patch::CompiledScriptLanguage::Rhai,
+            source,
+        } if source == expected_source
+    ));
 }
 
 #[test]
 fn script_examples_parse_and_validate() {
-    for fixture in [
-        "examples/patches/script-drum-event-router.yaml",
-        "examples/patches/script-velocity-accent.yaml",
-        "examples/patches/script-state-counter.yaml",
+    for (fixture, legacy_yaml, script_id, definition_name, expected_ports) in [
+        (
+            "examples/patches/script-drum-event-router.yaml",
+            include_str!(
+                "../../tests/fixtures/unify-graph-kernel/legacy/script-drum-event-router.yaml"
+            ),
+            "drum_router",
+            "drum_event_router",
+            vec![
+                ("events", PortDirection::Input, SignalType::Event),
+                ("kick", PortDirection::Output, SignalType::Event),
+                ("snare", PortDirection::Output, SignalType::Event),
+                ("hat", PortDirection::Output, SignalType::Event),
+            ],
+        ),
+        (
+            "examples/patches/script-velocity-accent.yaml",
+            include_str!(
+                "../../tests/fixtures/unify-graph-kernel/legacy/script-velocity-accent.yaml"
+            ),
+            "accent_mapper",
+            "velocity_accent",
+            vec![
+                ("events", PortDirection::Input, SignalType::Event),
+                ("accent", PortDirection::Output, SignalType::Control),
+            ],
+        ),
+        (
+            "examples/patches/script-state-counter.yaml",
+            include_str!(
+                "../../tests/fixtures/unify-graph-kernel/legacy/script-state-counter.yaml"
+            ),
+            "note_counter",
+            "state_counter",
+            vec![
+                ("events", PortDirection::Input, SignalType::Event),
+                ("count", PortDirection::Output, SignalType::Control),
+                ("previous_count", PortDirection::Output, SignalType::Control),
+            ],
+        ),
     ] {
         let Some(yaml) = read_repo_fixture(fixture) else {
             continue;
         };
-        let patch = patch::load_patch_str(&yaml).expect("script example should parse");
-
-        patch::validate_patch_schema(&patch).expect("script example should validate");
+        let legacy = patch::load_patch_str(legacy_yaml).expect("legacy script example parses");
+        let expected_source = match legacy
+            .modules
+            .iter()
+            .find(|module| module.id == script_id)
+            .and_then(|module| module.parameters.get("source"))
+        {
+            Some(patch::ParameterValue::Text(source)) => source,
+            _ => panic!("{fixture} legacy script source is text"),
+        };
+        let kernel = load_kernel_patch_str(&yaml)
+            .unwrap_or_else(|error| panic!("{fixture} should be a kernel document: {error}"));
+        let definition = kernel
+            .registry()
+            .get(definition_name)
+            .expect("named script definition exists");
+        assert_eq!(
+            definition.implementation(),
+            crate::kernel::DefinitionImplementation::Script,
+            "{fixture} uses a script-backed definition",
+        );
+        let ports = definition
+            .ports()
+            .iter()
+            .map(|port| (port.name(), port.direction(), port.signal_type()))
+            .collect::<Vec<_>>();
+        assert_eq!(ports, expected_ports, "{fixture} script interface changed");
+        let prepared = prepare_kernel_patch(&kernel, &legacy.render)
+            .unwrap_or_else(|error| panic!("{fixture} should prepare: {error}"));
+        let compiled = prepared
+            .compiled_patch()
+            .nodes()
+            .iter()
+            .find(|node| node.id.as_str() == script_id)
+            .expect("compiled script node exists");
+        assert!(
+            matches!(
+                &compiled.construction,
+                crate::compiled_patch::CompiledConstruction::Script {
+                    language: crate::compiled_patch::CompiledScriptLanguage::Rhai,
+                    source,
+                } if source == expected_source
+            ),
+            "{fixture} retains its source in typed construction data"
+        );
     }
 }
 

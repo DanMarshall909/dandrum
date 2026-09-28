@@ -1,0 +1,30 @@
+metadata:
+  name: Script Velocity Accent
+render:
+  sample_rate_hz: 48000
+  block_size_frames: 128
+  duration_frames: 128
+modules:
+  - id: midi
+    type: midi_input
+  - id: accent_mapper
+    type: script
+    parameters:
+      language: rhai
+      source: |
+        fn process(ctx) {
+          for event in ctx.events {
+            if event.type == "note_on" {
+              ctx.control("accent", event.velocity / 127.0);
+            }
+          }
+        }
+    inputs:
+      - name: events
+        signal_type: event
+    outputs:
+      - name: accent
+        signal_type: control
+connections:
+  - from: midi.events
+    to: accent_mapper.events

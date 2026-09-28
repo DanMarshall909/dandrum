@@ -1,16 +1,24 @@
 metadata:
   name: Script State Counter
-render:
-  sample_rate_hz: 48000
-  block_size_frames: 128
-  duration_frames: 256
+ports:
+  - { name: count, direction: output, signal: control, channels: 1, maps_from: note_counter.count }
+  - { name: previous_count, direction: output, signal: control, channels: 1, maps_from: note_counter.previous_count }
+module_definitions:
+  - type: state_counter
+    implementation: script
+    static_params:
+      - { name: language, type: enum, default: rhai, allowed_values: [rhai] }
+      - { name: source, type: string }
+    ports:
+      - { name: events, direction: input, signal: event, channels: 1 }
+      - { name: count, direction: output, signal: control, channels: 1 }
+      - { name: previous_count, direction: output, signal: control, channels: 1 }
 modules:
   - id: midi
     type: midi_input
   - id: note_counter
-    type: script
-    parameters:
-      language: rhai
+    type: state_counter
+    static:
       source: |
         fn process(ctx) {
           let count = ctx.state_get("count");
@@ -25,14 +33,6 @@ modules:
             ctx.control("previous_count", count);
           }
         }
-    inputs:
-      - name: events
-        signal_type: event
-    outputs:
-      - name: count
-        signal_type: control
-      - name: previous_count
-        signal_type: control
 connections:
   - from: midi.events
     to: note_counter.events

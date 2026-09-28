@@ -1,16 +1,24 @@
 metadata:
   name: Script Drum Event Router
-render:
-  sample_rate_hz: 48000
-  block_size_frames: 128
-  duration_frames: 128
+ports:
+  - { name: kick, direction: output, signal: event, channels: 1, maps_from: drum_router.kick }
+module_definitions:
+  - type: drum_event_router
+    implementation: script
+    static_params:
+      - { name: language, type: enum, default: rhai, allowed_values: [rhai] }
+      - { name: source, type: string }
+    ports:
+      - { name: events, direction: input, signal: event, channels: 1 }
+      - { name: kick, direction: output, signal: event, channels: 1 }
+      - { name: snare, direction: output, signal: event, channels: 1 }
+      - { name: hat, direction: output, signal: event, channels: 1 }
 modules:
   - id: midi
     type: midi_input
   - id: drum_router
-    type: script
-    parameters:
-      language: rhai
+    type: drum_event_router
+    static:
       source: |
         fn process(ctx) {
           for event in ctx.events {
@@ -27,16 +35,6 @@ modules:
             }
           }
         }
-    inputs:
-      - name: events
-        signal_type: event
-    outputs:
-      - name: kick
-        signal_type: event
-      - name: snare
-        signal_type: event
-      - name: hat
-        signal_type: event
 connections:
   - from: midi.events
     to: drum_router.events

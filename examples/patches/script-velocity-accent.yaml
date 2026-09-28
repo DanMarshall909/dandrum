@@ -1,16 +1,22 @@
 metadata:
   name: Script Velocity Accent
-render:
-  sample_rate_hz: 48000
-  block_size_frames: 128
-  duration_frames: 128
+ports:
+  - { name: accent, direction: output, signal: control, channels: 1, maps_from: accent_mapper.accent }
+module_definitions:
+  - type: velocity_accent
+    implementation: script
+    static_params:
+      - { name: language, type: enum, default: rhai, allowed_values: [rhai] }
+      - { name: source, type: string }
+    ports:
+      - { name: events, direction: input, signal: event, channels: 1 }
+      - { name: accent, direction: output, signal: control, channels: 1 }
 modules:
   - id: midi
     type: midi_input
   - id: accent_mapper
-    type: script
-    parameters:
-      language: rhai
+    type: velocity_accent
+    static:
       source: |
         fn process(ctx) {
           for event in ctx.events {
@@ -19,12 +25,6 @@ modules:
             }
           }
         }
-    inputs:
-      - name: events
-        signal_type: event
-    outputs:
-      - name: accent
-        signal_type: control
 connections:
   - from: midi.events
     to: accent_mapper.events

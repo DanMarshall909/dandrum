@@ -73,7 +73,7 @@ Model-tier tags follow design decision D11: `[frontier]` for architecture/realti
 - [x] [mechanical] 7.1 Migrate simple mono non-script/non-resource/non-poly examples and presets to kernel documents and root buses; move each example's render settings into the Rust test harness and compare renders with existing references
 - [x] [standard] 7.2 Migrate multichannel effect examples: collapse `_l`/`_r` declarations to channel spans, replace `audio_output` authoring with named root ports, and compare every named output rendered by the offline host
 - [x] [standard] 7.3 Migrate sampler/convolution examples and packaged standard-library definitions to resource static arguments; verify package-relative and pinned-version resources render identically
-- [ ] [mechanical] 7.4 Migrate script examples to named script-backed definitions with declared event/control ports and prepared source
+- [x] [mechanical] 7.4 Migrate script examples to named script-backed definitions with declared event/control ports and prepared source
 - [ ] [standard] 7.5 Migrate non-drum polyphonic examples from `voice_allocation` to `poly`, mapping legacy stealing-disabled behavior to `reject-new`; preserve note-allocation and render behavior
 - [ ] [standard] 7.6 Migrate the drum-kit example separately to independent per-pad poly regions and multiple named 2-channel root outputs; prove `master` plus at least one group bus render nonzero audio
 - [ ] [standard] 7.7 Delete the authorable `audio_output` builtin and transitional synthesized sink only after all Rust and host callers bind root buses; retain a structured rejection diagnostic directing authors to root output ports
