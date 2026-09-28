@@ -563,18 +563,17 @@ mod tests {
                 TEST_BLOCK_SIZE_FRAMES,
             );
             runtime.note_on(60, 100);
-            let mut left = [0.0; TEST_BLOCK_SIZE_FRAMES];
-            let mut right = [0.0; TEST_BLOCK_SIZE_FRAMES];
+            let mut outputs = vec![vec![vec![0.0; TEST_BLOCK_SIZE_FRAMES]]; 2];
 
             assert_eq!(
-                runtime.render(&mut left, &mut right),
+                runtime.render_root_outputs(&mut outputs),
                 TEST_BLOCK_SIZE_FRAMES
             );
             assert!(
-                (left[0] - expected_first_sample).abs() < 0.0001,
+                (outputs[0][0][0] - expected_first_sample).abs() < 0.0001,
                 "{reference} should render its own package-relative sample",
             );
-            assert_eq!(left, right);
+            assert_eq!(outputs[0], outputs[1]);
         }
     }
 
