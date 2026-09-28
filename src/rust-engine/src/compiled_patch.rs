@@ -197,8 +197,6 @@ pub struct CompiledNode {
     pub construction: CompiledConstruction,
     pub control_defaults: Vec<CompiledControlDefault>,
     pub resources: CompiledResourceHandles,
-    /// Transitional source data retained for legacy callers until task 7.8.
-    pub parameters: BTreeMap<String, String>,
     pub parameter_slot_indices: BTreeMap<String, usize>,
 }
 
@@ -1034,11 +1032,6 @@ fn compile_internal(
                 .enumerate()
                 .map(|(index, name)| (name.clone(), index))
                 .collect();
-            let parameters = if supplied_node_data.is_some() {
-                BTreeMap::new()
-            } else {
-                module.params().clone()
-            };
             let data = match supplied_node_data {
                 Some(all_data) => all_data.get(module.id().as_str()).cloned().ok_or_else(|| {
                     CompileError::InvalidConstructionData {
@@ -1116,7 +1109,6 @@ fn compile_internal(
                 construction: data.construction,
                 control_defaults,
                 resources: data.resources,
-                parameters,
                 parameter_slot_indices,
             })
         })

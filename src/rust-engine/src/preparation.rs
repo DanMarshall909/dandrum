@@ -3433,10 +3433,6 @@ connections:
                 .expect("compiled script node");
             assert_eq!(node.module_type, module_types::SCRIPT);
             assert_eq!(node.module_kind, ModuleKind::Script);
-            assert!(
-                node.parameters.is_empty(),
-                "kernel scripts do not use legacy maps"
-            );
             assert!(matches!(
                 &node.construction,
                 CompiledConstruction::Script {
@@ -3887,7 +3883,7 @@ modules:
     }
 
     #[test]
-    fn preparation_pipeline_passes_resolved_parameters_into_compiled_nodes() {
+    fn preparation_pipeline_compiles_resolved_filter_parameters_into_typed_state() {
         let patch_doc = patch::load_patch_str(
             r#"
 metadata:
@@ -3920,13 +3916,16 @@ modules:
             .expect("filter node should compile");
 
         assert_eq!(
-            filt.parameters.get("algorithm"),
-            Some(&"biquad".to_string())
+            filt.construction,
+            CompiledConstruction::Filter {
+                algorithm: crate::compiled_patch::CompiledFilterAlgorithm::Biquad(
+                    crate::filter::BiquadMode::Highpass,
+                ),
+            }
         );
-        assert_eq!(filt.parameters.get("mode"), Some(&"highpass".to_string()));
         assert_eq!(
-            filt.parameters.get("comb_type"),
-            Some(&"feedback".to_string())
+            resolved["filt"]["comb_type"],
+            ParameterValue::Text("feedback".to_string())
         );
     }
 
@@ -4210,10 +4209,6 @@ connections: []
             crate::compiled_patch::CompiledConstruction::Oscillator {
                 waveform: crate::oscillator::Waveform::Sine,
             }
-        );
-        assert!(
-            osc.parameters.is_empty(),
-            "kernel construction/default data does not pass through the legacy parameter map"
         );
         assert_eq!(
             prepared
