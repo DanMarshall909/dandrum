@@ -90,7 +90,9 @@ impl ModuleKind {
                 | Self::Oscillator
                 | Self::Gain
                 | Self::AudioMixer
+                | Self::ControlMixer
                 | Self::Adsr
+                | Self::Lfo
                 | Self::Filter
                 | Self::Sampler
                 | Self::NoteToRate

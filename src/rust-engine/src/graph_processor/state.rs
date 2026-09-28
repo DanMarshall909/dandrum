@@ -29,6 +29,10 @@ pub(super) enum PerModuleState {
         sample_rate: f32,
         waveform: Waveform,
     },
+    Lfo {
+        phase: f32,
+        sample_rate: f32,
+    },
     Adsr {
         level: f32,
         gate_active: bool,
@@ -147,6 +151,7 @@ impl PerModuleState {
                 *release_start_level = 0.0;
             }
             Self::Slew { current, .. } => *current = 0.0,
+            Self::Lfo { phase, .. } => *phase = 0.0,
             Self::CompensationDelay { samples, positions } => {
                 for channel in samples.iter_mut() {
                     channel.fill(0.0);
@@ -329,6 +334,10 @@ impl PerModuleState {
                 release_start_level: 0.0,
                 sample_rate,
             },
+            ModuleKind::Lfo => PerModuleState::Lfo {
+                phase: 0.0,
+                sample_rate,
+            },
             ModuleKind::Gain => PerModuleState::Vca,
             ModuleKind::Slew => PerModuleState::Slew {
                 current: 0.0,
@@ -352,7 +361,7 @@ impl PerModuleState {
             ModuleKind::AudioOutput => PerModuleState::AudioOutput,
             ModuleKind::MidiInput => PerModuleState::MidiInput,
             ModuleKind::NoteToRate => PerModuleState::NoteToRate { rate: 1.0 },
-            ModuleKind::AudioMixer => PerModuleState::AudioMixer,
+            ModuleKind::AudioMixer | ModuleKind::ControlMixer => PerModuleState::AudioMixer,
             ModuleKind::Sampler => PerModuleState::Sampler {
                 sample: resources.sample.clone().or_else(|| {
                     sampler_assets
@@ -535,11 +544,7 @@ impl PerModuleState {
                     curve: *curve,
                 }
             }
-            ModuleKind::Lfo
-            | ModuleKind::ControlMixer
-            | ModuleKind::AudioDelayOneSample
-            | ModuleKind::BlockDelay
-            | ModuleKind::ControlDelay => {
+            ModuleKind::AudioDelayOneSample | ModuleKind::BlockDelay | ModuleKind::ControlDelay => {
                 panic!("module kind {kind:?} does not have a per-module state variant")
             }
         }

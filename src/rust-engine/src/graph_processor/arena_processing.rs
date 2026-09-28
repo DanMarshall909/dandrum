@@ -327,6 +327,20 @@ pub(super) fn process_oscillator(state: &mut PerModuleState, context: &mut Proce
     }
 }
 
+pub(super) fn process_lfo(state: &mut PerModuleState, context: &mut ProcessContext<'_>) {
+    let PerModuleState::Lfo { phase, sample_rate } = state else {
+        unreachable!()
+    };
+    for frame in 0..context.frames() {
+        let rate = context.input_sample(0, frame, 1.0).max(0.0);
+        let value = 0.5 + 0.5 * (*phase * std::f32::consts::TAU).sin();
+        context
+            .set_output_sample(0, frame, value)
+            .expect("LFO output is present in a supported arena step");
+        *phase = (*phase + rate / *sample_rate).rem_euclid(1.0);
+    }
+}
+
 pub(super) fn process_gain(context: &mut ProcessContext<'_>) {
     let channels = context.output_count();
     let gain_is_multichannel = context.input_count() >= channels * 2;

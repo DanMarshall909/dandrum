@@ -184,7 +184,7 @@ fn builtin_definitions() -> Vec<GraphDefinition> {
             .with_port(tunable(ports::RELEASE, 200.0, 0.0, 10000.0))
             .with_port(control_out(ports::VALUE)),
         primitive(names::LFO)
-            .with_port(control_in(ports::RATE))
+            .with_port(defaulted(ports::RATE, 1.0))
             .with_port(control_out(ports::VALUE)),
         channel_primitive(names::FILTER)
             .with_static_param(enum_param(

@@ -7255,6 +7255,115 @@ fn cowbell_preserves_legacy_preset_renders_on_master_bus() {
 }
 
 #[test]
+fn lfo_and_control_mixer_render_a_summed_control_bus_across_blocks() {
+    let patch = load_kernel_patch_str(
+        r#"
+metadata: { name: lfo_control_mix }
+ports:
+  - { name: modulation, direction: output, signal: control, channels: 1, maps_from: mix.sum }
+modules:
+  - { id: moving, type: lfo, defaults: { rate: 12000 } }
+  - { id: steady, type: lfo, defaults: { rate: 0 } }
+  - { id: mix, type: control_mixer }
+connections:
+  - { from: moving.value, to: mix.inputs }
+  - { from: steady.value, to: mix.inputs }
+"#,
+    )
+    .expect("kernel modulation patch loads");
+    let settings = RenderSettings {
+        sample_rate_hz: 48_000,
+        block_size_frames: 4,
+        duration_frames: 8,
+    };
+    let prepared = prepare_kernel_patch(&patch, &settings).expect("LFO and control mixer prepare");
+    let buses = render_kernel_offline_named(&prepared, Vec::new(), &PreparedSamplerAssets::empty())
+        .expect("control mix renders");
+    assert_eq!(buses.len(), 1);
+    assert_eq!(buses[0].0, "modulation");
+    assert_eq!(buses[0].1.len(), 1);
+    for (frame, expected) in [1.0, 1.5, 1.0, 0.5, 1.0, 1.5, 1.0, 0.5]
+        .into_iter()
+        .enumerate()
+    {
+        assert!(
+            (buses[0].1[0][frame] - expected).abs() < 1.0e-6,
+            "frame {frame} should sum both LFO values without clipping"
+        );
+    }
+}
+
+#[test]
+fn engine_reset_restarts_lfo_phase() {
+    let patch = load_kernel_patch_str(
+        r#"
+metadata: { name: lfo_reset }
+ports:
+  - { name: modulation, direction: output, signal: control, channels: 1, maps_from: lfo.value }
+modules:
+  - { id: lfo, type: lfo, defaults: { rate: 4000 } }
+connections: []
+"#,
+    )
+    .expect("LFO patch loads");
+    let settings = RenderSettings {
+        sample_rate_hz: 48_000,
+        block_size_frames: 3,
+        duration_frames: 9,
+    };
+    let prepared = prepare_kernel_patch(&patch, &settings).expect("LFO patch prepares");
+    let mut processor = RealtimeGraphProcessor::polyphonic_with_compiled_patch_and_sampler_assets_and_max_block_size(
+        prepared.graph().clone(),
+        prepared.compiled_patch().clone(),
+        48_000.0,
+        &PreparedSamplerAssets::empty(),
+        &patch::VoiceAllocation::default(),
+        3,
+    );
+    let mut outputs = vec![vec![vec![0.0; 3]]];
+    assert_eq!(processor.render_root_outputs(&mut outputs), 3);
+    let first = outputs[0][0].clone();
+    assert_eq!(first[0], 0.5);
+    assert_eq!(processor.render_root_outputs(&mut outputs), 3);
+    assert_ne!(
+        outputs[0][0][0], first[0],
+        "the LFO phase should advance between blocks"
+    );
+    processor.reset();
+    assert_eq!(processor.render_root_outputs(&mut outputs), 3);
+    assert_eq!(
+        outputs[0][0], first,
+        "reset should restart the LFO at phase zero"
+    );
+}
+
+#[test]
+fn control_mixer_modulation_example_renders_an_audible_named_output() {
+    let fixture = "examples/patches/control-mixer-modulation.yaml";
+    let yaml = read_repo_fixture(fixture).expect("modulation example exists");
+    let patch = load_kernel_patch_str(&yaml).expect("modulation example loads as kernel patch");
+    let settings = RenderSettings {
+        sample_rate_hz: 48_000,
+        block_size_frames: 128,
+        duration_frames: 2_048,
+    };
+    let prepared = prepare_kernel_patch(&patch, &settings).expect("modulation example prepares");
+    let buses = render_kernel_offline_named(&prepared, Vec::new(), &PreparedSamplerAssets::empty())
+        .expect("modulation example renders");
+    assert_eq!(buses.len(), 1);
+    assert_eq!(buses[0].0, "left");
+    assert_eq!(buses[0].1.len(), 1);
+    let samples = &buses[0].1[0];
+    assert_eq!(samples.len(), settings.duration_frames as usize);
+    assert_eq!(samples[0], -0.5, "the saw starts at -1 and the LFO at 0.5");
+    assert!(samples.iter().any(|sample| sample.abs() > 0.1));
+    assert_ne!(
+        samples[0], samples[128],
+        "the modulation advances across blocks"
+    );
+}
+
+#[test]
 fn sampler_backed_909_drums_preserve_legacy_preset_renders() {
     for (fixture, legacy_yaml, instrument_id, alias, sample_name, level) in [
         (

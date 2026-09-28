@@ -643,6 +643,36 @@ fn poly_drum_decay_and_stereo_impulse_render_without_allocation() {
 }
 
 #[test]
+fn lfo_control_mixer_and_gain_render_without_allocation() {
+    let patch = load_kernel_patch_str(include_str!(
+        "../../../../examples/patches/control-mixer-modulation.yaml"
+    ))
+    .expect("modulation example loads");
+    let settings = RenderSettings {
+        sample_rate_hz: 48_000,
+        block_size_frames: 128,
+        duration_frames: 128,
+    };
+    let prepared = prepare_kernel_patch(&patch, &settings).expect("modulation example prepares");
+    let mut processor = RealtimeGraphProcessor::polyphonic_with_compiled_patch_and_sampler_assets_and_max_block_size(
+        prepared.graph().clone(),
+        prepared.compiled_patch().clone(),
+        48_000.0,
+        &PreparedSamplerAssets::empty(),
+        &VoiceAllocation::default(),
+        128,
+    );
+    let mut outputs = vec![vec![vec![0.0; 128]]];
+
+    let allocation_count = count_current_thread_allocations(|| {
+        assert_eq!(processor.render_root_outputs(&mut outputs), 128);
+    });
+
+    assert_eq!(allocation_count, 0);
+    assert_eq!(outputs[0][0][0], -0.5);
+}
+
+#[test]
 fn full_capacity_poly_stealing_and_rejection_render_without_allocation() {
     for (allocation, expected_notes) in [
         (crate::kernel::POLY_ALLOCATION_OLDEST_STEAL, [67, 64]),

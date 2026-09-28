@@ -1314,12 +1314,17 @@ pub(super) fn process_channel_arena_step(
     let mut context = ProcessContext::new(arena, &step.input_buffers, &step.output_buffers, frames);
 
     match step.module_kind {
-        ModuleKind::AudioMixer => arena_processing::process_audio_mixer(&mut context),
+        ModuleKind::AudioMixer | ModuleKind::ControlMixer => {
+            arena_processing::process_audio_mixer(&mut context)
+        }
         ModuleKind::Noise => {
             arena_processing::process_noise(&mut states[step.module_index], &mut context)
         }
         ModuleKind::Oscillator => {
             arena_processing::process_oscillator(&mut states[step.module_index], &mut context)
+        }
+        ModuleKind::Lfo => {
+            arena_processing::process_lfo(&mut states[step.module_index], &mut context)
         }
         ModuleKind::Gain | ModuleKind::Multiply => arena_processing::process_gain(&mut context),
         ModuleKind::ControlToAudio => arena_processing::process_control_to_audio(&mut context),
@@ -1376,9 +1381,12 @@ pub(super) fn is_channel_arena_supported(step: &RenderStep) -> bool {
         ModuleKind::VoiceIntrinsics => {
             step.input_buffers.is_empty() && step.output_buffers.len() == 2
         }
-        ModuleKind::AudioMixer => step.input_buffers.len() == step.output_buffers.len(),
+        ModuleKind::AudioMixer | ModuleKind::ControlMixer => {
+            step.input_buffers.len() == step.output_buffers.len()
+        }
         ModuleKind::Noise => step.input_buffers.is_empty() && !step.output_buffers.is_empty(),
         ModuleKind::Oscillator => step.input_buffers.len() <= 1 && !step.output_buffers.is_empty(),
+        ModuleKind::Lfo => step.input_buffers.len() == 1 && step.output_buffers.len() == 1,
         ModuleKind::Gain => step.input_buffers.len() == step.output_buffers.len() + 1,
         ModuleKind::Multiply => step.input_buffers.len() == step.output_buffers.len() * 2,
         ModuleKind::EnvelopeFollower => {
