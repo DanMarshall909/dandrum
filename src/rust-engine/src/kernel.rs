@@ -1605,6 +1605,12 @@ impl GraphDefinition {
     /// connections for signal-type and channel-count compatibility, and
     /// recording control→audio promotions.
     pub fn validate(&self, registry: &DefinitionRegistry) -> KernelValidation {
+        if let Some(diagnostic) = self.definition_expansion_diagnostic(registry) {
+            return KernelValidation {
+                diagnostics: diagnostic.into(),
+                promotions: Vec::new(),
+            };
+        }
         let mut diagnostics = Diagnostics::new();
         let mut promotions = Vec::new();
         let enclosing = self.enclosing_context();
@@ -1804,6 +1810,73 @@ impl GraphDefinition {
             diagnostics,
             promotions,
         }
+    }
+
+    fn definition_expansion_diagnostic(&self, registry: &DefinitionRegistry) -> Option<Diagnostic> {
+        fn visit(
+            definition: &GraphDefinition,
+            registry: &DefinitionRegistry,
+            path: &mut Vec<String>,
+        ) -> Option<Diagnostic> {
+            if definition.nodes().is_empty() {
+                return None;
+            }
+            if path.iter().any(|name| name == definition.name()) {
+                return Some(
+                    Diagnostic::new(
+                        error_codes::KERNEL_RECURSIVE_DEFINITION,
+                        Severity::Error,
+                        format!(
+                            "definition '{}' is recursive through {}",
+                            definition.name(),
+                            path.join(" -> ")
+                        ),
+                    )
+                    .with_module_id(definition.name()),
+                );
+            }
+            if path.len() >= flatten::MAX_FLATTEN_DEPTH {
+                return Some(
+                    Diagnostic::new(
+                        error_codes::KERNEL_MAX_DEPTH_EXCEEDED,
+                        Severity::Error,
+                        format!(
+                            "definition '{}' exceeds the maximum nesting depth of {}",
+                            definition.name(),
+                            flatten::MAX_FLATTEN_DEPTH
+                        ),
+                    )
+                    .with_module_id(definition.name()),
+                );
+            }
+            path.push(definition.name().to_string());
+            let enclosing = definition.enclosing_context();
+            for node in definition.nodes() {
+                let Some(referenced) = registry.get(node.definition_ref()) else {
+                    continue;
+                };
+                let next = if referenced.name() == POLY_DEFINITION {
+                    let mut sink = Diagnostics::new();
+                    definition
+                        .resolve_static_args(node, referenced, &enclosing, &mut sink)
+                        .and_then(|args| match args.get(POLY_WRAPPED_DEFINITION_PARAM) {
+                            Some(StaticValue::String(name)) => registry.get(name),
+                            _ => None,
+                        })
+                } else {
+                    Some(referenced)
+                };
+                if let Some(next) = next {
+                    if let Some(diagnostic) = visit(next, registry, path) {
+                        return Some(diagnostic);
+                    }
+                }
+            }
+            path.pop();
+            None
+        }
+
+        visit(self, registry, &mut Vec::new())
     }
 
     /// Find a routing cycle that does not pass through any `feedback_delay`

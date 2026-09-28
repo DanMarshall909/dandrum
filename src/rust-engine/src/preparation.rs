@@ -547,11 +547,54 @@ fn compile_poly_regions(
     flattened: &FlattenedGraph,
     registry: &DefinitionRegistry,
     render_settings: &RenderSettings,
+    resource_resolver: Option<&mut ResourceResolver<'_>>,
+    parent: &CompiledPatch,
+) -> Result<Vec<CompiledPolyRegion>, KernelPreparationError> {
+    compile_poly_regions_with_path(
+        flattened,
+        registry,
+        render_settings,
+        resource_resolver,
+        parent,
+        &mut Vec::new(),
+    )
+}
+
+fn compile_poly_regions_with_path(
+    flattened: &FlattenedGraph,
+    registry: &DefinitionRegistry,
+    render_settings: &RenderSettings,
     mut resource_resolver: Option<&mut ResourceResolver<'_>>,
     parent: &CompiledPatch,
+    path: &mut Vec<String>,
 ) -> Result<Vec<CompiledPolyRegion>, KernelPreparationError> {
     let mut compiled_regions = Vec::with_capacity(flattened.poly_regions().len());
     for region in flattened.poly_regions() {
+        let code = if path.iter().any(|name| name == region.wrapped_definition()) {
+            Some(diagnostics::error_codes::KERNEL_RECURSIVE_DEFINITION)
+        } else if path.len() >= crate::kernel::flatten::MAX_FLATTEN_DEPTH {
+            Some(diagnostics::error_codes::KERNEL_MAX_DEPTH_EXCEEDED)
+        } else {
+            None
+        };
+        if let Some(code) = code {
+            return Err(KernelPreparationError::from(
+                diagnostics::Diagnostics::from(
+                    Diagnostic::new(
+                        code,
+                        Severity::Error,
+                        format!(
+                            "poly region '{}' cannot expand wrapped definition '{}' after {}",
+                            region.node_id().as_str(),
+                            region.wrapped_definition(),
+                            path.join(" -> ")
+                        ),
+                    )
+                    .with_module_id(region.node_id().as_str()),
+                ),
+            ));
+        }
+        path.push(region.wrapped_definition().to_string());
         let wrapped = registry
             .get(region.wrapped_definition())
             .expect("validated poly region references an existing definition");
@@ -660,13 +703,15 @@ fn compile_poly_regions(
             &lowered.root_outputs,
             &child_patch,
         ));
-        let nested_regions = compile_poly_regions(
+        let nested_regions = compile_poly_regions_with_path(
             &child_flattened,
             registry,
             render_settings,
             resource_resolver.as_deref_mut(),
             &child_patch,
+            path,
         )?;
+        path.pop();
         child_patch.set_poly_regions(nested_regions);
 
         let event_queue_capacity = (render_settings.block_size_frames as usize).saturating_mul(2);
@@ -2517,6 +2562,34 @@ mod tests {
         );
         assert_eq!(done_runtime.render_root_outputs(&mut outputs), frames);
         assert!(outputs[0][0].iter().all(|sample| *sample == 0.0));
+    }
+
+    #[test]
+    fn preparation_rejects_recursive_poly_wrapping_before_expansion() {
+        let recursive = GraphDefinition::new("recursive")
+            .with_port(
+                KernelPort::output("audio", SignalType::Audio, 1)
+                    .maps_from(kernel_ref("again", "audio")),
+            )
+            .with_node(poly_node("again", "recursive", 1));
+        let root = GraphDefinition::new("root")
+            .with_port(
+                KernelPort::output("master", SignalType::Audio, 1)
+                    .maps_from(kernel_ref("voices", "audio")),
+            )
+            .with_node(poly_node("voices", "recursive", 1));
+
+        let error = prepare_kernel_graph_with_buses(
+            &root,
+            &builtin_registry().with_definition(recursive),
+            &KERNEL_RENDER_SETTINGS,
+            &HostBuses::new().with_output("master", 1),
+        )
+        .expect_err("recursive poly wrapping must fail before expansion");
+        assert_eq!(
+            error.diagnostics().errors().next().unwrap().error_code(),
+            diagnostics::error_codes::KERNEL_RECURSIVE_DEFINITION
+        );
     }
 
     #[test]

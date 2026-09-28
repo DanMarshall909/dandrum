@@ -1333,6 +1333,79 @@ fn poly_accepts_designated_done_output_without_exposing_it_publicly() {
 }
 
 #[test]
+fn poly_validation_rejects_direct_and_mutual_wrapped_definition_cycles() {
+    let direct = GraphDefinition::new("direct")
+        .with_port(Port::output("audio", SignalType::Audio, 1))
+        .with_node(poly_node("nested", "direct", 1, POLY_ALLOCATION_REJECT_NEW));
+    let direct_root = GraphDefinition::new("root").with_node(poly_node(
+        "voices",
+        "direct",
+        1,
+        POLY_ALLOCATION_REJECT_NEW,
+    ));
+    let direct_registry = builtins::builtin_registry().with_definition(direct);
+    assert_eq!(
+        only_error_code(&direct_root.validate(&direct_registry)),
+        error_codes::KERNEL_RECURSIVE_DEFINITION
+    );
+
+    let first = GraphDefinition::new("first")
+        .with_port(Port::output("audio", SignalType::Audio, 1))
+        .with_node(poly_node(
+            "second_poly",
+            "second",
+            1,
+            POLY_ALLOCATION_REJECT_NEW,
+        ));
+    let second = GraphDefinition::new("second")
+        .with_port(Port::output("audio", SignalType::Audio, 1))
+        .with_node(poly_node(
+            "first_poly",
+            "first",
+            1,
+            POLY_ALLOCATION_REJECT_NEW,
+        ));
+    let mutual_registry = builtins::builtin_registry()
+        .with_definition(first)
+        .with_definition(second);
+    let mutual_root = GraphDefinition::new("root").with_node(poly_node(
+        "voices",
+        "first",
+        1,
+        POLY_ALLOCATION_REJECT_NEW,
+    ));
+    assert_eq!(
+        only_error_code(&mutual_root.validate(&mutual_registry)),
+        error_codes::KERNEL_RECURSIVE_DEFINITION
+    );
+}
+
+#[test]
+fn poly_validation_bounds_nested_definition_depth() {
+    let mut registry = builtins::builtin_registry();
+    for depth in (0..flatten::MAX_FLATTEN_DEPTH).rev() {
+        let name = format!("level_{depth}");
+        let wrapped = format!("level_{}", depth + 1);
+        registry = registry.with_definition(
+            GraphDefinition::new(name)
+                .with_port(Port::output("audio", SignalType::Audio, 1))
+                .with_node(poly_node("nested", &wrapped, 1, POLY_ALLOCATION_REJECT_NEW)),
+        );
+    }
+    let root = GraphDefinition::new("root").with_node(poly_node(
+        "voices",
+        "level_0",
+        1,
+        POLY_ALLOCATION_REJECT_NEW,
+    ));
+
+    assert_eq!(
+        only_error_code(&root.validate(&registry)),
+        error_codes::KERNEL_MAX_DEPTH_EXCEEDED
+    );
+}
+
+#[test]
 fn nested_poly_interface_validation_reaches_the_inner_poly() {
     let inner = GraphDefinition::new("inner").with_port(Port::output(
         "invalid_event",
