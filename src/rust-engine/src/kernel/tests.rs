@@ -990,6 +990,31 @@ fn node_referencing_unknown_definition_is_rejected() {
     );
 }
 
+#[test]
+fn audio_output_is_not_authorable_and_diagnostic_points_to_root_ports() {
+    let registry = builtins::builtin_registry();
+    assert!(registry.get("audio_output").is_none());
+    let definition =
+        GraphDefinition::new("root").with_node(Node::new(NodeId::new("out"), "audio_output"));
+
+    let validation = definition.validate(&registry);
+    assert_eq!(
+        only_error_code(&validation),
+        error_codes::KERNEL_UNKNOWN_DEFINITION
+    );
+    let error = validation
+        .diagnostics()
+        .errors()
+        .next()
+        .expect("audio_output is rejected");
+    assert_eq!(error.module_id(), Some("out"));
+    assert!(
+        error
+            .suggested_fix()
+            .is_some_and(|fix| fix.contains("root output port"))
+    );
+}
+
 // --- 3.3 Input multiplicity ----------------------------------------------
 
 fn summing_mixer_primitive() -> GraphDefinition {

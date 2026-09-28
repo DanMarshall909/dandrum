@@ -64,10 +64,6 @@ pub const IMPULSE_RESPONSE_RESOURCE_PARAM: &str = "impulse_response";
 /// Spectral processing latency is `fft_size - SPECTRAL_LATENCY_OFFSET` samples.
 const SPECTRAL_LATENCY_OFFSET: u32 = 1;
 
-fn audio_in(name: &str) -> Port {
-    Port::input(name, SignalType::Audio, MONO)
-}
-
 fn poly_audio_in(name: &str) -> Port {
     Port::input(name, SignalType::Audio, ChannelCount::param(CHANNELS_PARAM))
 }
@@ -153,11 +149,6 @@ pub fn builtin_registry() -> DefinitionRegistry {
 fn builtin_definitions() -> Vec<GraphDefinition> {
     vec![
         primitive(names::MIDI_INPUT).with_port(event_out(ports::EVENTS)),
-        // Deleted in §3.4 in favour of root ports; declared meanwhile so the
-        // registry covers every builtin the legacy graph can name.
-        primitive(names::AUDIO_OUTPUT)
-            .with_port(audio_in(ports::LEFT))
-            .with_port(audio_in(ports::RIGHT)),
         channel_primitive(names::OSCILLATOR)
             .with_static_param(enum_param(
                 WAVEFORM_PARAMETER,

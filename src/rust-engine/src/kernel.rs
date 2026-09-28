@@ -1722,18 +1722,22 @@ impl GraphDefinition {
         let mut resolved_nodes: BTreeMap<&NodeId, ResolvedNode<'_>> = BTreeMap::new();
         for node in &self.nodes {
             let Some(referenced) = registry.get(node.definition_ref()) else {
-                diagnostics.push(
-                    Diagnostic::new(
-                        error_codes::KERNEL_UNKNOWN_DEFINITION,
-                        Severity::Error,
-                        format!(
-                            "node '{}' references unknown definition '{}'",
-                            node.id().as_str(),
-                            node.definition_ref()
-                        ),
-                    )
-                    .with_module_id(node.id().as_str()),
-                );
+                let mut diagnostic = Diagnostic::new(
+                    error_codes::KERNEL_UNKNOWN_DEFINITION,
+                    Severity::Error,
+                    format!(
+                        "node '{}' references unknown definition '{}'",
+                        node.id().as_str(),
+                        node.definition_ref()
+                    ),
+                )
+                .with_module_id(node.id().as_str());
+                if node.definition_ref() == crate::builtins::module_types::AUDIO_OUTPUT {
+                    diagnostic = diagnostic.with_suggested_fix(
+                        "declare a named root output port mapped from the source module",
+                    );
+                }
+                diagnostics.push(diagnostic);
                 continue;
             };
 
