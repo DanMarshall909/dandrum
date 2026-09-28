@@ -1740,6 +1740,88 @@ mod tests {
         .expect("audio poly graph prepares")
     }
 
+    #[test]
+    fn stolen_kernel_poly_filter_voice_matches_a_fresh_onset() {
+        let voice = GraphDefinition::new("filtered_noise_voice")
+            .with_port(
+                KernelPort::output("audio", SignalType::Audio, 1)
+                    .maps_from(kernel_ref("filter", builtin_ports::AUDIO_OUT)),
+            )
+            .with_node(
+                Node::new(NodeId::new("noise"), module_types::NOISE).with_static_arg(
+                    crate::builtins::NOISE_SEED_PARAMETER,
+                    StaticArg::Literal(StaticValue::Int(1234)),
+                ),
+            )
+            .with_node(
+                Node::new(NodeId::new("filter"), module_types::FILTER)
+                    .with_default_override(builtin_ports::CUTOFF, 0.75)
+                    .with_default_override(builtin_ports::RESONANCE, 0.9),
+            )
+            .with_connection(Connection::new(
+                kernel_ref("noise", builtin_ports::AUDIO),
+                kernel_ref("filter", builtin_ports::AUDIO_IN),
+            ));
+        let root = GraphDefinition::new("root")
+            .with_port(
+                KernelPort::output("left", SignalType::Audio, 1)
+                    .maps_from(kernel_ref("voices", "audio")),
+            )
+            .with_port(
+                KernelPort::output("right", SignalType::Audio, 1)
+                    .maps_from(kernel_ref("voices", "audio")),
+            )
+            .with_node(poly_node_with_allocation(
+                "voices",
+                voice.name(),
+                1,
+                crate::kernel::POLY_ALLOCATION_OLDEST_STEAL,
+            ));
+        let prepared = prepare_kernel_graph_with_buses(
+            &root,
+            &builtin_registry().with_definition(voice),
+            &KERNEL_RENDER_SETTINGS,
+            &HostBuses::new()
+                .with_output("left", 1)
+                .with_output("right", 1),
+        )
+        .expect("filtered poly voice prepares");
+        let frames = KERNEL_RENDER_SETTINGS.block_size_frames as usize;
+        let render = |runtime: &mut RealtimeGraphProcessor| {
+            let mut outputs = vec![vec![vec![0.0; frames]]; 2];
+            assert_eq!(runtime.render_root_outputs(&mut outputs), frames);
+            outputs[0][0].clone()
+        };
+        let mut reused = runtime_for(&prepared);
+        reused.note_on(60, 100);
+        let first = render(&mut reused);
+        assert!(first.iter().any(|sample| sample.abs() > 0.001));
+        reused.note_on(61, 100);
+        let retriggered = render(&mut reused);
+        let mut fresh = runtime_for(&prepared);
+        fresh.note_on(61, 100);
+        assert_eq!(retriggered, render(&mut fresh));
+    }
+
+    #[test]
+    fn engine_reset_retires_kernel_poly_voices_and_allows_a_new_note() {
+        let prepared = prepare_audio_poly(constant_voice("constant_voice", 0.25), 1);
+        let mut runtime = runtime_for(&prepared);
+        let frames = KERNEL_RENDER_SETTINGS.block_size_frames as usize;
+        let render = |runtime: &mut RealtimeGraphProcessor| {
+            let mut outputs = vec![vec![vec![0.0; frames]]; 2];
+            assert_eq!(runtime.render_root_outputs(&mut outputs), frames);
+            outputs[0][0].clone()
+        };
+
+        runtime.note_on(60, 100);
+        assert_eq!(render(&mut runtime), vec![0.25; frames]);
+        runtime.reset();
+        assert_eq!(render(&mut runtime), vec![0.0; frames]);
+        runtime.note_on(61, 100);
+        assert_eq!(render(&mut runtime), vec![0.25; frames]);
+    }
+
     fn intrinsic_poly_root(allocation: &str, max_voices: i64) -> GraphDefinition {
         GraphDefinition::new("root")
             .with_port(

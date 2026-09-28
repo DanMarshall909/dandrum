@@ -333,6 +333,39 @@ impl RealtimeGraphProcessor {
         self.note_on_at(note, velocity, 0);
     }
 
+    /// Stop every voice and clear prepared DSP and event state for panic or reload.
+    pub fn reset(&mut self) {
+        self.pending_events.clear();
+        self.prepared_event_queues.clear_all();
+        self.allocator.reset();
+        for voice in &mut self.states {
+            for state in voice {
+                state.reset_all();
+            }
+        }
+        for region in self.prepared_poly_runtime_regions.iter_mut() {
+            region.reset();
+        }
+        self.audio_arena.reset();
+        for queue in &mut self.voice_event_queues {
+            queue.clear();
+        }
+        for queues in &mut self.voice_queues {
+            queues.clear_all();
+        }
+        self.module_outputs.clear();
+        if let Some(outputs) = self.scratch_outputs.as_mut() {
+            outputs.clear();
+        }
+        self.scratch_left.clear();
+        self.scratch_right.clear();
+        self.events_scratch.clear();
+        self.accum.clear();
+        self.current_frame = 0;
+        self.last_render_chunk_count = 0;
+        self.last_render_used_arena = false;
+    }
+
     pub fn note_off(&mut self, note: u8) {
         self.note_off_at(note, 0);
     }

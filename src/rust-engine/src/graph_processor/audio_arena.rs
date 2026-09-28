@@ -21,6 +21,10 @@ impl AudioArena {
         self.buffer_count
     }
 
+    pub(super) fn reset(&mut self) {
+        self.buffers.fill(0.0);
+    }
+
     #[cfg(test)]
     pub(super) fn frames(&self) -> usize {
         self.frames

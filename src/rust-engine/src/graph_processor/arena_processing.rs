@@ -16,7 +16,7 @@ pub(super) fn process_audio_mixer(context: &mut ProcessContext<'_>) {
 
 pub(super) fn process_noise(state: &mut PerModuleState, context: &mut ProcessContext<'_>) {
     let rng_states = match state {
-        PerModuleState::Noise { states } => states,
+        PerModuleState::Noise { states, .. } => states,
         _ => unreachable!(),
     };
 

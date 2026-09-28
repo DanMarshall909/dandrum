@@ -1831,8 +1831,7 @@ fn stolen_filter_voice_starts_with_the_same_onset_as_a_fresh_voice() {
     );
 }
 
-#[test]
-fn rejected_note_on_and_note_off_leave_global_reverb_tail_unchanged() {
+fn poly_sampler_with_global_reverb_graph() -> Graph {
     let base = poly_sampler_graph(
         vec![
             ModuleNode::new(ModuleId::new("room"), module_types::REVERB)
@@ -1870,6 +1869,12 @@ fn rejected_note_on_and_note_off_leave_global_reverb_tail_unchanged() {
     }
     let graph = Graph::new(base.modules().to_vec(), cables);
     graph.validate().expect("reverb graph should validate");
+    graph
+}
+
+#[test]
+fn rejected_note_on_and_note_off_leave_global_reverb_tail_unchanged() {
+    let graph = poly_sampler_with_global_reverb_graph();
     let assets = sampler_assets(
         std::iter::once(1.0)
             .chain(std::iter::repeat_n(0.0, 4095))
@@ -1898,6 +1903,84 @@ fn rejected_note_on_and_note_off_leave_global_reverb_tail_unchanged() {
     note_activity.render(&mut active_tail, &mut [0.0; 1024]);
     assert!(reference_tail.iter().any(|sample| sample.abs() > 0.0));
     assert_eq!(active_tail, reference_tail);
+}
+
+#[test]
+fn accepted_note_on_adds_to_global_reverb_without_erasing_earlier_tail() {
+    let graph = poly_sampler_with_global_reverb_graph();
+    let assets = sampler_assets(
+        std::iter::once(1.0)
+            .chain(std::iter::repeat_n(0.0, 4095))
+            .collect(),
+    );
+    let make_processor = || {
+        RealtimeGraphProcessor::polyphonic_with_sampler_assets_and_max_block_size(
+            graph.clone(),
+            48_000.0,
+            &assets,
+            &poly_allocation(2),
+            1024,
+        )
+    };
+    let mut earlier_only = make_processor();
+    let mut later_only = make_processor();
+    let mut both = make_processor();
+    for processor in [&mut earlier_only, &mut both] {
+        processor.note_on(60, 100);
+    }
+    for processor in [&mut earlier_only, &mut later_only, &mut both] {
+        processor.render(&mut [0.0; 1024], &mut [0.0; 1024]);
+    }
+    later_only.note_on(61, 100);
+    both.note_on(61, 100);
+    let mut earlier_tail = [0.0; 1024];
+    let mut later_response = [0.0; 1024];
+    let mut combined = [0.0; 1024];
+    earlier_only.render(&mut earlier_tail, &mut [0.0; 1024]);
+    later_only.render(&mut later_response, &mut [0.0; 1024]);
+    both.render(&mut combined, &mut [0.0; 1024]);
+    assert!(earlier_tail.iter().any(|sample| sample.abs() > 0.0));
+    assert!(later_response.iter().any(|sample| sample.abs() > 0.0));
+    for frame in 0..1024 {
+        let expected = earlier_tail[frame] + later_response[frame];
+        assert!(
+            (combined[frame] - expected).abs() < 0.00001,
+            "global reverb tail changed at frame {frame}: {} vs {expected}",
+            combined[frame]
+        );
+    }
+}
+
+#[test]
+fn engine_reset_stops_voices_and_clears_global_reverb_tail() {
+    let graph = poly_sampler_with_global_reverb_graph();
+    let assets = sampler_assets(
+        std::iter::once(1.0)
+            .chain(std::iter::repeat_n(0.0, 4095))
+            .collect(),
+    );
+    let mut processor = RealtimeGraphProcessor::polyphonic_with_sampler_assets_and_max_block_size(
+        graph,
+        48_000.0,
+        &assets,
+        &poly_allocation(1),
+        1024,
+    );
+    processor.note_on(60, 100);
+    processor.render(&mut [0.0; 1024], &mut [0.0; 1024]);
+    let mut tail = [0.0; 1024];
+    processor.render(&mut tail, &mut [0.0; 1024]);
+    assert!(tail.iter().any(|sample| sample.abs() > 0.0));
+
+    processor.reset();
+    let mut silent = [1.0; 1024];
+    processor.render(&mut silent, &mut [1.0; 1024]);
+    assert_eq!(silent, [0.0; 1024]);
+
+    processor.note_on(60, 100);
+    let mut restarted = [0.0; 1024];
+    processor.render(&mut restarted, &mut [0.0; 1024]);
+    assert!(restarted.iter().any(|sample| sample.abs() > 0.0));
 }
 
 #[test]

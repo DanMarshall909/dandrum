@@ -31,6 +31,10 @@ impl BoundedEventQueue {
         self.events.is_empty()
     }
 
+    pub(super) fn clear(&mut self) {
+        self.events.clear();
+    }
+
     pub(super) fn dropped_events(&self) -> usize {
         self.dropped_events
     }

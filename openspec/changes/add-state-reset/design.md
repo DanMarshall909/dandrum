@@ -37,3 +37,24 @@ the code is unreachable, and they need different handling:
 
 - Oscillator phase reset on note-on (free-running oscillators are a separate, deliberate
   design choice and not part of the `reset()` family addressed here).
+
+## State audit
+
+`PerModuleState` is instantiated per prepared voice slot, even for nodes with global
+execution scope. The allocation path therefore uses compiled voice-node indices in
+the legacy graph and a poly region's child-state array in the kernel graph. A reset
+of every state in legacy slot zero on note-on would also erase global effect tails.
+
+- Processor-owned history: filter (all algorithms and channels), envelope follower,
+  dynamics, convolution, echo, reverb, frequency splitter, and spectral processor
+  have reset methods that clear their history while retaining prepared parameters
+  and resources.
+- Directly-owned history: ADSR, slew, compensation delay, note-to-rate, sampler,
+  noise generator, note-to-control, decay, and script state need field-level reset
+  dispatch. Noise retains its initial seed so a reset can restore every channel's
+  stream without allocating.
+- Stateless or configuration-only variants: gain/VCA, promotion, poly structure,
+  voice intrinsics, audio/MIDI ports, mixer, saturator, impulse, multiply, event
+  filter selector, and curve mapper require no reset action.
+- Oscillator phase intentionally continues across note allocations, but an explicit
+  engine reset clears it along with all other voice and global state.

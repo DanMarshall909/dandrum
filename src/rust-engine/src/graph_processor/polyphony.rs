@@ -96,6 +96,29 @@ pub struct PreparedPolyRuntimeRegion {
 }
 
 impl PreparedPolyRuntimeRegion {
+    pub(super) fn reset(&mut self) {
+        self.retire_all_voices();
+        for voice in self.states.iter_mut() {
+            for state in voice.iter_mut() {
+                state.reset_all();
+            }
+        }
+        for arena in self.voice_arenas.iter_mut() {
+            arena.reset();
+        }
+        for queues in self.voice_event_queues.iter_mut() {
+            queues.clear_all();
+        }
+        for regions in self.nested_regions.iter_mut() {
+            for region in regions.iter_mut() {
+                region.reset();
+            }
+        }
+        self.output_accumulator.reset();
+        self.next_allocation_order = 1;
+        self.block_start_frame = 0;
+    }
+
     pub(super) fn new(
         compiled: &CompiledPolyRegion,
         sample_rate: f32,
@@ -549,6 +572,13 @@ impl PreparedPolyRuntimeRegion {
                 ScriptEvent::NoteOff { note: retired_note },
                 frame_offset,
             );
+        }
+
+        for state in self.states[voice].iter_mut() {
+            state.reset_voice();
+        }
+        for region in self.nested_regions[voice].iter_mut() {
+            region.reset();
         }
 
         let order = self.next_allocation_order;

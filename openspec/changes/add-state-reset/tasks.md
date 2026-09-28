@@ -1,24 +1,24 @@
 ## 1. Voice retrigger reset
 
-- [ ] 1.1 Identify which voice-scoped modules carry resettable state (start with `filter`
+- [x] 1.1 Identify which voice-scoped modules carry resettable state (start with `filter`
       and `envelope_follower`; audit the rest of the `ExecutionScope::Voice` modules) and
       confirm each exposes a `reset()` that fully clears that state.
-- [ ] 1.2 Add a reset entry point on `PerModuleState` that dispatches `reset()` to the
+- [x] 1.2 Add a reset entry point on `PerModuleState` that dispatches `reset()` to the
       stateful variants and is a no-op for stateless ones.
-- [ ] 1.3 Call the per-voice reset when a voice is allocated for a note-on (voice-allocation
+- [x] 1.3 Call the per-voice reset when a voice is allocated for a note-on (voice-allocation
       path in `realtime_graph_processor`), before the note renders.
-- [ ] 1.4 Behaviour test: a retriggered high-resonance filter voice starts without the
+- [x] 1.4 Behaviour test: a retriggered high-resonance filter voice starts without the
       previous note's decaying tail; confirm global effect tails are untouched by note
       activity.
 
 ## 2. Engine reset / panic
 
-- [ ] 2.1 Add a reset entry point that dispatches `reset()` to global (non-voice-scoped)
+- [x] 2.1 Add a reset entry point that dispatches `reset()` to global (non-voice-scoped)
       effect state as well (`reverb`, `echo`, `dynamics`, `convolution`, `spectral`,
       `saturator`, `frequency_splitter`).
-- [ ] 2.2 Add an engine-level `reset()` on the realtime graph processor / facade that stops
+- [x] 2.2 Add an engine-level `reset()` on the realtime graph processor / facade that stops
       all active voices and cascades the reset to every module's state.
-- [ ] 2.3 Behaviour test: impulse-excited reverb renders silence after engine reset; active
+- [x] 2.3 Behaviour test: impulse-excited reverb renders silence after engine reset; active
       voices become inactive after reset.
 
 ## 3. FFI + cleanup

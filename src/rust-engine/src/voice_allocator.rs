@@ -39,6 +39,16 @@ impl VoiceAllocator {
         self.max_voices
     }
 
+    pub fn reset(&mut self) {
+        for slot in &mut self.slots {
+            slot.active = false;
+            slot.note = 0;
+            slot.velocity = 0;
+            slot.allocation_order = 0;
+        }
+        self.next_order = 1;
+    }
+
     pub fn note_on(&mut self, note: u8, velocity: u8) -> Option<usize> {
         let order = self.next_order;
         self.next_order += 1;

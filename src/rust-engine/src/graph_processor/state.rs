@@ -95,6 +95,7 @@ pub(super) enum PerModuleState {
     },
     Noise {
         states: Box<[u32]>,
+        initial_seed: u32,
     },
     Impulse,
     Multiply,
@@ -133,13 +134,107 @@ pub(super) enum PerModuleState {
 impl PerModuleState {
     pub(super) fn reset_voice(&mut self) {
         match self {
+            Self::Adsr {
+                level,
+                gate_active,
+                release_start_frame,
+                release_start_level,
+                ..
+            } => {
+                *level = 0.0;
+                *gate_active = false;
+                *release_start_frame = 0;
+                *release_start_level = 0.0;
+            }
+            Self::Slew { current, .. } => *current = 0.0,
+            Self::CompensationDelay { samples, positions } => {
+                for channel in samples.iter_mut() {
+                    channel.fill(0.0);
+                }
+                positions.fill(0);
+            }
+            Self::NoteToRate { rate } => *rate = 1.0,
+            Self::Sampler {
+                position, active, ..
+            } => {
+                *position = 0.0;
+                *active = false;
+            }
+            Self::DynamicsProcessor { processor, .. } => processor.reset(),
+            Self::Convolution { processors } => {
+                for processor in processors.iter_mut() {
+                    processor.reset();
+                }
+            }
             Self::Filter { filters, .. } => {
                 for filter in filters.iter_mut() {
                     filter.reset();
                 }
             }
+            Self::Echo { processor, .. } => processor.reset(),
+            Self::Reverb { processor, .. } => processor.reset(),
+            Self::FrequencySplitter { filters, .. } => {
+                for (low, high) in filters.iter_mut() {
+                    low.reset();
+                    high.reset();
+                }
+            }
+            Self::SpectralProcessor { processor } => processor.reset(),
+            Self::Noise {
+                states,
+                initial_seed,
+            } => {
+                for (channel, state) in states.iter_mut().enumerate() {
+                    *state = initial_seed.wrapping_add(channel as u32);
+                }
+            }
+            Self::NoteToControl {
+                gate_active,
+                current_note,
+                current_velocity,
+                current_frequency,
+                current_pitch_ratio,
+                current_slide,
+            } => {
+                *gate_active = false;
+                *current_note = None;
+                *current_velocity = 0.0;
+                *current_frequency = 0.0;
+                *current_pitch_ratio = 0.0;
+                *current_slide = false;
+            }
             Self::EnvelopeFollower { detector, .. } => detector.reset(),
-            _ => {}
+            Self::Decay {
+                level,
+                triggered,
+                elapsed_frames,
+                ..
+            } => {
+                *level = 0.0;
+                *triggered = false;
+                *elapsed_frames = 0;
+            }
+            Self::Script { state, .. } => *state = ScriptModuleState::default(),
+            Self::Oscillator { .. }
+            | Self::Vca
+            | Self::ControlToAudio
+            | Self::Poly
+            | Self::VoiceIntrinsics
+            | Self::AudioOutput
+            | Self::MidiInput
+            | Self::AudioMixer
+            | Self::Saturator { .. }
+            | Self::Impulse
+            | Self::Multiply
+            | Self::EventFilter { .. }
+            | Self::CurveMapper { .. } => {}
+        }
+    }
+
+    pub(super) fn reset_all(&mut self) {
+        self.reset_voice();
+        if let Self::Oscillator { phase, .. } = self {
+            *phase = 0.0;
         }
     }
 
@@ -392,6 +487,7 @@ impl PerModuleState {
                         .map(|channel| seed.wrapping_add(channel as u32))
                         .collect::<Vec<_>>()
                         .into_boxed_slice(),
+                    initial_seed: *seed,
                 }
             }
             ModuleKind::Impulse => PerModuleState::Impulse,
