@@ -119,3 +119,6 @@ processing, format, and provenance are controlled.
 Do not commit third-party audio or proprietary software content without clear
 redistribution permission. It is sufficient to commit Dandrum-owned fixtures,
 analysis code, non-infringing derived metrics, and test thresholds.
+
+The Din Sync 303 set now has a local provenance record, per-note measurements,
+and a [follow-up calibration task](tasks/tb303-dinsync-reference-calibration.md).
