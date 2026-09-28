@@ -446,6 +446,11 @@ impl RealtimeGraphProcessor {
                             && step.event_inputs.len() == 1
                             && step.event_outputs.len() == 1
                     }
+                    ModuleKind::Adsr => {
+                        step.input_buffers.len() == 4
+                            && step.output_buffers.len() == 1
+                            && step.event_inputs.len() == 1
+                    }
                     _ => is_channel_arena_supported(step),
                 })
     }
@@ -526,6 +531,25 @@ impl RealtimeGraphProcessor {
                     let _ = self
                         .prepared_event_queues
                         .route_filtered_event_edge(edge, *note);
+                    continue;
+                }
+                ModuleKind::Adsr => {
+                    let events = self
+                        .prepared_event_queues
+                        .queue_ref(step.event_inputs[0].0)
+                        .map_or(&[][..], |queue| queue.events());
+                    let mut context = ProcessContext::new(
+                        &mut self.audio_arena,
+                        &step.input_buffers,
+                        &step.output_buffers,
+                        frames,
+                    );
+                    arena_processing::process_adsr(
+                        &mut self.states[0][step.module_index],
+                        &mut context,
+                        events,
+                        self.current_frame,
+                    );
                     continue;
                 }
                 ModuleKind::Poly => {
