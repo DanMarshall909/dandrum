@@ -6384,6 +6384,65 @@ fn migrated_minimal_sampler_matches_legacy_resource_render() {
 }
 
 #[test]
+fn migrated_polyphonic_chords_preserve_render_and_reject_new_notes_at_capacity() {
+    let legacy = patch::load_patch_str(include_str!(
+        "../../tests/fixtures/unify-graph-kernel/legacy/polyphonic-chords.yaml"
+    ))
+    .expect("legacy polyphonic chords parse");
+    let settings = RenderSettings {
+        duration_frames: 1_024,
+        ..legacy.render.clone()
+    };
+    let notes = [60, 64, 67, 72, 76, 79, 84];
+    let accepted = notes[..6]
+        .iter()
+        .map(|note| note_on_value(0, *note, 100))
+        .collect::<Vec<_>>();
+    let mut over_capacity = accepted.clone();
+    over_capacity.push(note_on_value(128, notes[6], 100));
+    let legacy_graph = Graph::from_patch_declarations(&legacy);
+    let expected = render_offline_polyphonic(
+        &legacy_graph,
+        &settings,
+        over_capacity.clone(),
+        &legacy.voice_allocation,
+    );
+    assert!(expected.0.iter().any(|sample| sample.abs() > 0.001));
+    assert_eq!(expected.1, vec![0.0; settings.duration_frames as usize]);
+    let baseline = render_offline_polyphonic(
+        &legacy_graph,
+        &settings,
+        accepted.clone(),
+        &legacy.voice_allocation,
+    );
+    assert_eq!(
+        expected.0, baseline.0,
+        "legacy disabled stealing rejects note seven"
+    );
+
+    let yaml = read_repo_fixture("examples/patches/polyphonic-chords.yaml")
+        .expect("polyphonic chords example exists");
+    let kernel = load_kernel_patch_str(&yaml).expect("polyphonic chords are a kernel document");
+    let prepared = prepare_kernel_patch(&kernel, &settings).expect("poly region prepares");
+    let actual =
+        render_kernel_offline_named(&prepared, over_capacity, &PreparedSamplerAssets::empty())
+            .expect("polyphonic chords render named root output");
+    let accepted_only =
+        render_kernel_offline_named(&prepared, accepted, &PreparedSamplerAssets::empty())
+            .expect("six accepted notes render");
+    assert_eq!(actual.len(), 1);
+    assert_eq!(actual[0].0, "left");
+    assert_eq!(
+        actual[0].1[0], expected.0,
+        "polyphonic chord render changed"
+    );
+    assert_eq!(
+        actual, accepted_only,
+        "reject-new preserves six active voices"
+    );
+}
+
+#[test]
 fn convolution_example_loads_typed_impulse_resource_and_renders_named_bus() {
     let fixture = "examples/patches/minimal-convolution.yaml";
     let yaml = read_repo_fixture(fixture).expect("convolution example exists");
