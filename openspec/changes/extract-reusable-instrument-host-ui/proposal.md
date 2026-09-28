@@ -12,6 +12,7 @@ The [plugin and integration development experience review](../../../docs/plugin-
 - Prove reuse with a second instrument configuration, distinct fixture and appearance, using the same host and UI plumbing.
 - Preserve DSP algorithms, fixture event timing, public parameter IDs, fixed host automation slots, and replacement/state behavior.
 - Replace source-text WebView assertions with behavior-focused bridge and page tests where extraction moves implementation.
+- Repair host-boundary synchronization discovered during baseline: authored public defaults must remain active after the first audio block, and host MIDI velocity must reach Rust unchanged. These corrections are characterized before the demo configuration changes.
 
 The existing default plugin instrument changes from the synthetic 808 kick to the TB-303 for the TB-303 demo. Saved plugin state continues to restore its embedded instrument definition.
 

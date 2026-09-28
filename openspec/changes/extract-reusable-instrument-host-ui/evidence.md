@@ -14,3 +14,14 @@ Coverage inspection: `PluginConstructionTest.cpp` covers fixed slots, editor MID
 ## Native bridge characterization (task 1.2)
 
 `cxx-plugin-editor-bridge`: pass. It invokes the editor's native handlers and checks metadata snapshots, a parameter change reaching the same fixed host slot and listener, missing/unknown arguments, note-on/off admission and full-queue rejection, replacement-surface generation consumption, current page serving, Sound Lab render/duplicate response, and current-versus-stale generation WAV serving. The browser refresh check proves the generation transition and new snapshot; a visible browser navigation is not asserted in the headless CTest runner.
+
+## Host boundary corrections (task 1.3)
+
+Two new direct-Rust comparison tests in `cxx-plugin-construction` were red before the production fix:
+
+- Fresh default 808: first sample host `0`, Rust `0.999942`; the visible host slot had the authored default, but the APVTS raw value used by the audio callback did not.
+- TB-303 host MIDI note-on velocity 100 at frame 7: host sample `-0.000962368`, direct Rust sample `-0.000132931`; JUCE `getVelocity()` was multiplied by 127 a second time.
+
+After changing slot initialization to notify the host/APVTS listener and forwarding JUCE's byte velocity directly, `cxx-plugin-construction` passes. The tests compare the full first stereo block against a separate Rust engine, including frame offset and all authored/default or explicit public values.
+
+The complete CMake build passed, including plugin formats and the new bridge test. Complete CTest passed 11/11 (14.05 seconds). `openspec validate extract-reusable-instrument-host-ui --strict` passed. The build printed nonfatal Linux display authorization warnings while generating VST3 module information; artifacts and tests completed successfully.

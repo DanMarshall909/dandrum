@@ -1,5 +1,22 @@
 ## ADDED Requirements
 
+### Requirement: Host boundary preserves authored defaults and note velocity
+
+The plugin SHALL keep authored public defaults synchronized between host parameter state and the running Rust instrument, and SHALL forward JUCE MIDI note velocity without rescaling its already encoded 0–127 value.
+
+#### Scenario: Fresh instrument starts with authored defaults
+
+- **GIVEN** a new plugin instance loads an instrument without saved state or parameter automation
+- **WHEN** the first audio block is processed
+- **THEN** its host parameter values and Rust render SHALL use the instrument's authored public defaults
+
+#### Scenario: Host MIDI velocity reaches the instrument
+
+- **GIVEN** the host sends a JUCE note-on with velocity `V` and a block-local offset
+- **WHEN** the plugin processes that block
+- **THEN** Rust SHALL receive velocity `V` at the same offset
+- **AND** its render SHALL match a direct Rust note event with the same note, velocity, and offset
+
 ### Requirement: Plugin editor presents declared public controls
 
 The plugin editor SHALL present playable controls from the loaded instrument's public parameter metadata through the configured editor UI. The UI technology and appearance SHALL not change public parameter identity or host automation slots.

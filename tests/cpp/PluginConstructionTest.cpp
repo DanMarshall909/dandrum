@@ -204,6 +204,123 @@ bool nearlyEqual (float actual, float expected, float tolerance)
     return std::abs (actual - expected) <= tolerance;
 }
 
+bool freshInstrumentUsesAuthoredDefaults()
+{
+    constexpr int frames = 512;
+    DandrumAudioProcessor processor;
+    processor.setPlayConfigDetails (0, 2, 48000.0, frames);
+    processor.prepareToPlay (48000.0, frames);
+
+    std::unique_ptr<DandrumEngine, decltype (&dandrum_engine_destroy)> reference (
+        dandrum_engine_create(), &dandrum_engine_destroy);
+    const auto patch = defaultPatchFile();
+    if (reference == nullptr
+        || ! dandrum_engine_load_patch (reference.get(), patch.getFullPathName().toRawUTF8()))
+        return false;
+    dandrum_engine_prepare_realtime (reference.get(), 48000.0f, frames);
+
+    const auto count = dandrum_patch_public_numeric_parameter_count (patch.getFullPathName().toRawUTF8());
+    if (count == 0)
+        return false;
+    for (std::size_t index = 0; index < count; ++index)
+    {
+        char id[128] {}, name[128] {};
+        double authoredDefault = 0.0, minimum = 0.0, maximum = 0.0;
+        if (! dandrum_patch_public_numeric_parameter_descriptor (
+                patch.getFullPathName().toRawUTF8(), index, id, sizeof (id), name, sizeof (name),
+                &authoredDefault, &minimum, &maximum))
+            return false;
+        const auto* hostParameter = processor.getParameterForPublicId (id);
+        const auto expectedNormalised = static_cast<float> ((authoredDefault - minimum) / (maximum - minimum));
+        if (hostParameter == nullptr || ! nearlyEqual (hostParameter->getValue(), expectedNormalised, 0.00001f))
+            return false;
+    }
+
+    juce::AudioBuffer<float> actual (2, frames), expected (2, frames);
+    actual.clear();
+    expected.clear();
+    juce::MidiBuffer noHostMidi;
+    if (! processor.enqueueEditorNoteOn (36, 100.0f / 127.0f))
+        return false;
+    dandrum_engine_note_on_at (reference.get(), 36, 100, 0);
+    processor.processBlock (actual, noHostMidi);
+    dandrum_engine_render (reference.get(), expected.getWritePointer (0), expected.getWritePointer (1), frames);
+    if (! bufferHasSignal (expected))
+        return false;
+    for (int channel = 0; channel < 2; ++channel)
+        for (int frame = 0; frame < frames; ++frame)
+            if (! nearlyEqual (actual.getSample (channel, frame), expected.getSample (channel, frame), 0.00001f))
+            {
+                std::cerr << "fresh default mismatch at frame " << frame << ": host="
+                          << actual.getSample (channel, frame) << " Rust=" << expected.getSample (channel, frame) << '\n';
+                return false;
+            }
+    processor.releaseResources();
+    return true;
+}
+
+bool hostMidiVelocityMatchesRustEvent()
+{
+    constexpr int frames = 512;
+    constexpr int offset = 7;
+    constexpr juce::uint8 velocity = 100;
+    const auto patch = juce::File (juce::String (
+        dandrum::findRepositoryExample ("examples/patches/tb303-acid.yaml").string()));
+    DandrumAudioProcessor processor;
+    processor.setPlayConfigDetails (0, 2, 48000.0, frames);
+    processor.prepareToPlay (48000.0, frames);
+    if (! processor.reloadInstrumentFromFile (patch))
+        return false;
+
+    std::unique_ptr<DandrumEngine, decltype (&dandrum_engine_destroy)> reference (
+        dandrum_engine_create(), &dandrum_engine_destroy);
+    if (reference == nullptr)
+        return false;
+    dandrum_engine_prepare_realtime (reference.get(), 48000.0f, frames);
+    if (! dandrum_engine_load_patch (reference.get(), patch.getFullPathName().toRawUTF8()))
+        return false;
+
+    const auto count = dandrum_patch_public_numeric_parameter_count (patch.getFullPathName().toRawUTF8());
+    if (count == 0)
+        return false;
+    for (std::size_t index = 0; index < count; ++index)
+    {
+        char id[128] {}, name[128] {};
+        double authoredDefault = 0.0, minimum = 0.0, maximum = 0.0;
+        if (! dandrum_patch_public_numeric_parameter_descriptor (
+                patch.getFullPathName().toRawUTF8(), index, id, sizeof (id), name, sizeof (name),
+                &authoredDefault, &minimum, &maximum))
+            return false;
+        auto* hostParameter = processor.getParameterForPublicId (id);
+        if (hostParameter == nullptr)
+            return false;
+        hostParameter->setValueNotifyingHost (0.5f);
+        if (! dandrum_engine_set_public_numeric_parameter (reference.get(), id, (minimum + maximum) / 2.0))
+            return false;
+    }
+
+    juce::AudioBuffer<float> actual (2, frames), expected (2, frames);
+    actual.clear();
+    expected.clear();
+    juce::MidiBuffer hostMidi;
+    hostMidi.addEvent (juce::MidiMessage::noteOn (1, 60, velocity), offset);
+    dandrum_engine_note_on_at (reference.get(), 60, velocity, offset);
+    processor.processBlock (actual, hostMidi);
+    dandrum_engine_render (reference.get(), expected.getWritePointer (0), expected.getWritePointer (1), frames);
+    if (! bufferHasSignal (expected))
+        return false;
+    for (int channel = 0; channel < 2; ++channel)
+        for (int frame = 0; frame < frames; ++frame)
+            if (! nearlyEqual (actual.getSample (channel, frame), expected.getSample (channel, frame), 0.00001f))
+            {
+                std::cerr << "MIDI velocity mismatch at frame " << frame << ": host="
+                          << actual.getSample (channel, frame) << " Rust=" << expected.getSample (channel, frame) << '\n';
+                return false;
+            }
+    processor.releaseResources();
+    return true;
+}
+
 bool preparationPreservesRestoredInstrumentAndHostSlots()
 {
     juce::TemporaryFile modifiedPatch (".yaml");
@@ -324,6 +441,18 @@ bool preparationPreservesRestoredInstrumentAndHostSlots()
 int main()
 {
     constexpr int blockSize = 64;
+
+    if (! hostMidiVelocityMatchesRustEvent())
+    {
+        std::cerr << "host MIDI velocity did not reach Rust unchanged\n";
+        return 1;
+    }
+
+    if (! freshInstrumentUsesAuthoredDefaults())
+    {
+        std::cerr << "fresh plugin parameters did not retain authored engine defaults\n";
+        return 1;
+    }
 
     if (! preparationPreservesRestoredInstrumentAndHostSlots())
     {

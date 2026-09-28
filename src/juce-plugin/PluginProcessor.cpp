@@ -502,7 +502,7 @@ void DandrumAudioProcessor::preparePublicParameterSlots (const std::vector<Publi
             actualValue = clampToDescriptorRange (slot.descriptor, carried->second);
 
         const auto normalisedValue = normalisePublicValue (slot.descriptor, actualValue);
-        setSlotNormalisedValue (slotIndex, normalisedValue, false);
+        setSlotNormalisedValue (slotIndex, normalisedValue);
 
         const auto targetCount = dandrum_engine_public_numeric_parameter_target_count (activeEngine, slot.descriptor.id.toRawUTF8());
         for (std::size_t targetIndex = 0; targetIndex < targetCount; ++targetIndex)
@@ -537,7 +537,7 @@ void DandrumAudioProcessor::preparePublicParameterSlots (const std::vector<Publi
     parameterSurfaceGeneration.fetch_add (1, std::memory_order_relaxed);
 }
 
-void DandrumAudioProcessor::setSlotNormalisedValue (int slotIndex, float normalisedValue, bool notifyHost)
+void DandrumAudioProcessor::setSlotNormalisedValue (int slotIndex, float normalisedValue)
 {
     if (! juce::isPositiveAndBelow (slotIndex, kPublicParameterSlotCount))
         return;
@@ -547,10 +547,7 @@ void DandrumAudioProcessor::setSlotNormalisedValue (int slotIndex, float normali
         return;
 
     const auto value = juce::jlimit (0.0f, 1.0f, normalisedValue);
-    if (notifyHost)
-        parameter->setValueNotifyingHost (value);
-    else
-        parameter->setValue (value);
+    parameter->setValueNotifyingHost (value);
 }
 
 void DandrumAudioProcessor::applySlotToEngine (ParameterSlot& slot, float normalisedValue, DandrumEngine* activeEngine) noexcept
@@ -679,7 +676,7 @@ void DandrumAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce
         {
             dandrum_engine_note_on_at (activeEngine,
                                        static_cast<unsigned char> (message.getNoteNumber()),
-                                       static_cast<unsigned char> (message.getVelocity() * 127.0f),
+                                       message.getVelocity(),
                                        frameOffset);
         }
         else if (message.isNoteOff())
@@ -1066,7 +1063,7 @@ bool DandrumAudioProcessor::loadPresetFromFile (const juce::File& presetFile)
             continue;
 
         const auto normalised = normalisePublicValue (slot.descriptor, static_cast<float> (found->second));
-        setSlotNormalisedValue (slotIndex, normalised, true);
+        setSlotNormalisedValue (slotIndex, normalised);
         applySlotToEngine (slot, normalised, activeEngine);
     }
 

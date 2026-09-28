@@ -2,6 +2,7 @@
 
 - [x] 1.1 Run focused processor, Sound Lab, and WebView tests; inspect coverage and record the deterministic TB-303 fixture PCM/metrics fingerprint before editing behavior.
 - [x] 1.2 Add behavior tests for parameter set/get and host notification, unknown IDs, note-on/off and queue overflow, browser surface refresh, and Sound Lab generation-scoped resources before moving bridge code.
+- [x] 1.3 Add failing host-boundary tests for authored public defaults after the first audio block and unchanged JUCE MIDI velocity, repair both paths, and verify current 808 behavior before selecting the TB-303 demo (`plugin-integration`: host-boundary defaults and velocity scenarios).
 
 ## 2. Coherent Demo Configuration
 

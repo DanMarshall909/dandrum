@@ -221,7 +221,7 @@ private:
                                       bool preferCurrentSlotValues);
     void applyChangedParameters (DandrumEngine* activeEngine) noexcept;
     void applySlotToEngine (ParameterSlot& slot, float normalisedValue, DandrumEngine* activeEngine) noexcept;
-    void setSlotNormalisedValue (int slotIndex, float normalisedValue, bool notifyHost);
+    void setSlotNormalisedValue (int slotIndex, float normalisedValue);
     bool enqueueEditorMidiEvent (EditorMidiEvent event) noexcept;
     void deliverEditorMidiEvents (DandrumEngine* activeEngine) noexcept;
 
