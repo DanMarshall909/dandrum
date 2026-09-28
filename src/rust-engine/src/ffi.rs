@@ -303,6 +303,35 @@ pub unsafe extern "C" fn dandrum_kernel_total_latency_samples(
 }
 
 #[unsafe(no_mangle)]
+pub unsafe extern "C" fn dandrum_kernel_note_on_at(
+    engine: *mut DandrumKernelInstrument,
+    note: u8,
+    velocity: u8,
+    frame_offset: usize,
+) -> bool {
+    mut_or!(engine, engine, false);
+    if note > 127 || velocity > 127 || frame_offset >= engine.max_block_size {
+        return false;
+    }
+    engine
+        .runtime
+        .try_note_on_at(note, velocity, frame_offset as u32)
+}
+
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn dandrum_kernel_note_off_at(
+    engine: *mut DandrumKernelInstrument,
+    note: u8,
+    frame_offset: usize,
+) -> bool {
+    mut_or!(engine, engine, false);
+    if note > 127 || frame_offset >= engine.max_block_size {
+        return false;
+    }
+    engine.runtime.try_note_off_at(note, frame_offset as u32)
+}
+
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn dandrum_kernel_render(
     engine: *mut DandrumKernelInstrument,
     inputs: *const DandrumKernelInputBusView,
@@ -1402,6 +1431,52 @@ mod tests {
         );
         assert_eq!(negative, [-0.5; 8]);
         assert_eq!(positive, [0.25; 8]);
+        unsafe { dandrum_kernel_destroy(engine) };
+    }
+
+    #[test]
+    fn kernel_ffi_accepts_bounded_note_events_for_a_prepared_host() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("note-events.yaml");
+        std::fs::write(
+            &path,
+            "metadata: { name: note-events }\nports:\n  - { name: master, direction: output, signal: audio, channels: 2, maps_from: source.out }\nmodules:\n  - { id: source, type: control_to_audio, static: { channels: 2 }, defaults: { in: 0.25 } }\nconnections: []\n",
+        )
+        .unwrap();
+        let path = std::ffi::CString::new(path.to_str().unwrap()).unwrap();
+        let master_name = std::ffi::CString::new("master").unwrap();
+        let bus = DandrumKernelBusDeclaration {
+            name: master_name.as_ptr(),
+            direction: 2,
+            channel_count: 2,
+        };
+        let engine = unsafe { dandrum_kernel_prepare_file(path.as_ptr(), 48_000, 8, &bus, 1) };
+        assert!(!engine.is_null());
+        assert!(!unsafe { dandrum_kernel_note_on_at(std::ptr::null_mut(), 60, 100, 0) });
+        assert!(!unsafe { dandrum_kernel_note_on_at(engine, 60, 100, 8) });
+        assert!(!unsafe { dandrum_kernel_note_off_at(engine, 60, 8) });
+        assert!(!unsafe { dandrum_kernel_note_on_at(engine, 128, 100, 0) });
+        assert!(!unsafe { dandrum_kernel_note_off_at(engine, 128, 0) });
+        assert!(unsafe { dandrum_kernel_note_on_at(engine, 60, 100, 3) });
+        assert!(unsafe { dandrum_kernel_note_off_at(engine, 60, 6) });
+        let mut left = [0.0_f32; 8];
+        let mut right = [0.0_f32; 8];
+        let channels = [left.as_mut_ptr(), right.as_mut_ptr()];
+        let view = DandrumKernelOutputBusView {
+            name: master_name.as_ptr(),
+            channels: channels.as_ptr(),
+            channel_count: 2,
+            frame_capacity: 8,
+        };
+        assert_eq!(
+            unsafe { dandrum_kernel_render(engine, std::ptr::null(), 0, &view, 1, 8) },
+            8
+        );
+        assert_eq!(left, [0.25; 8]);
+        for _ in 0..8 {
+            assert!(unsafe { dandrum_kernel_note_on_at(engine, 60, 100, 0) });
+        }
+        assert!(!unsafe { dandrum_kernel_note_on_at(engine, 60, 100, 0) });
         unsafe { dandrum_kernel_destroy(engine) };
     }
 

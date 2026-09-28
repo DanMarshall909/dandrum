@@ -338,15 +338,23 @@ impl RealtimeGraphProcessor {
     }
 
     pub fn note_on_at(&mut self, note: u8, velocity: u8, frame_offset: u32) {
-        let _ = self
-            .pending_events
-            .push_at(ScriptEvent::NoteOn { note, velocity }, frame_offset);
+        let _ = self.try_note_on_at(note, velocity, frame_offset);
     }
 
     pub fn note_off_at(&mut self, note: u8, frame_offset: u32) {
-        let _ = self
-            .pending_events
-            .push_at(ScriptEvent::NoteOff { note }, frame_offset);
+        let _ = self.try_note_off_at(note, frame_offset);
+    }
+
+    pub fn try_note_on_at(&mut self, note: u8, velocity: u8, frame_offset: u32) -> bool {
+        self.pending_events
+            .push_at(ScriptEvent::NoteOn { note, velocity }, frame_offset)
+            .is_ok()
+    }
+
+    pub fn try_note_off_at(&mut self, note: u8, frame_offset: u32) -> bool {
+        self.pending_events
+            .push_at(ScriptEvent::NoteOff { note }, frame_offset)
+            .is_ok()
     }
 
     pub fn render(&mut self, left: &mut [f32], right: &mut [f32]) -> usize {

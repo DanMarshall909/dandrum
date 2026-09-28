@@ -59,6 +59,13 @@ bool dandrum_kernel_root_port (const DandrumKernelInstrument* instrument,
                                std::uint32_t* signalType,
                                std::size_t* channels);
 std::uint32_t dandrum_kernel_total_latency_samples (const DandrumKernelInstrument* instrument);
+bool dandrum_kernel_note_on_at (DandrumKernelInstrument* instrument,
+                                unsigned char note,
+                                unsigned char velocity,
+                                std::size_t frameOffset);
+bool dandrum_kernel_note_off_at (DandrumKernelInstrument* instrument,
+                                 unsigned char note,
+                                 std::size_t frameOffset);
 std::size_t dandrum_kernel_render (DandrumKernelInstrument* instrument,
                                    const DandrumKernelInputBusView* inputs,
                                    std::size_t inputCount,
