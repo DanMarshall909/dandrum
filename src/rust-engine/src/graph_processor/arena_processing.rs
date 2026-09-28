@@ -127,6 +127,36 @@ pub(super) fn process_note_to_rate(
     }
 }
 
+pub(super) fn process_impulse(context: &mut ProcessContext<'_>, events: &[BlockEvent]) {
+    for frame in 0..context.frames() {
+        let triggered = events
+            .iter()
+            .any(|event| event.frame_offset as usize == frame);
+        context
+            .set_output_sample(0, frame, if triggered { 1.0 } else { 0.0 })
+            .expect("impulse output is present in a supported arena step");
+    }
+}
+
+pub(super) fn process_spectral_processor(
+    state: &mut PerModuleState,
+    context: &mut ProcessContext<'_>,
+) {
+    let PerModuleState::SpectralProcessor { processor } = state else {
+        unreachable!()
+    };
+    for frame in 0..context.frames() {
+        let audio = context.input_sample(0, frame, 0.0);
+        let threshold_db = context.input_sample(1, frame, 0.0) as f64 * 80.0 - 40.0;
+        let mix = context.input_sample(2, frame, 1.0);
+        processor.set_threshold(threshold_db);
+        let processed = processor.process(audio);
+        context
+            .set_output_sample(0, frame, processed * mix + audio * (1.0 - mix))
+            .expect("spectral output is present in a supported arena step");
+    }
+}
+
 #[cfg(test)]
 mod sampler_tests {
     use super::super::audio_arena::AudioArena;

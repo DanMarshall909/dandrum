@@ -1439,7 +1439,9 @@ mod tests {
     use crate::convolution::Convolution;
     use crate::core::TimedInputEvent;
     use crate::graph::{SignalType, builtin_ports};
-    use crate::graph_processor::{RealtimeGraphProcessor, render_offline_compiled};
+    use crate::graph_processor::{
+        RealtimeGraphProcessor, render_kernel_offline_named, render_offline_compiled,
+    };
     use crate::kernel::builtins::{IMPULSE_RESPONSE_RESOURCE_PARAM, builtin_registry};
     use crate::kernel::document::load_kernel_patch_str;
     use crate::kernel::{
@@ -4669,22 +4671,34 @@ connections:
             },
         )];
 
-        let (offline_left, offline_right) = render_offline_compiled(
-            prepared.compiled_patch(),
-            events,
-            &PreparedSamplerAssets::empty(),
-        );
+        let (offline_left, offline_right) =
+            render_named_stereo(&prepared, events, &PreparedSamplerAssets::empty());
         assert_eq!(&offline_left[..3], &[0.0, 2.0, 0.0]);
         assert_eq!(&offline_right[..3], &[0.0, 1.0, 0.0]);
 
-        let mut realtime = RealtimeGraphProcessor::new(
+        let mut realtime = RealtimeGraphProcessor::polyphonic_with_compiled_patch_and_sampler_assets_and_max_block_size(
             prepared.graph().clone(),
+            prepared.compiled_patch().clone(),
             KERNEL_RENDER_SETTINGS.sample_rate_hz as f32,
+            &PreparedSamplerAssets::empty(),
+            &patch::VoiceAllocation::default(),
+            KERNEL_RENDER_SETTINGS.block_size_frames as usize,
         );
         realtime.note_on(60, 100);
-        let mut realtime_left = vec![0.0; KERNEL_RENDER_SETTINGS.duration_frames as usize];
-        let mut realtime_right = vec![0.0; KERNEL_RENDER_SETTINGS.duration_frames as usize];
-        realtime.render(&mut realtime_left, &mut realtime_right);
+        let mut realtime_left = Vec::new();
+        let mut realtime_right = Vec::new();
+        for _ in 0..KERNEL_RENDER_SETTINGS.duration_frames
+            / KERNEL_RENDER_SETTINGS.block_size_frames as u64
+        {
+            let mut outputs =
+                vec![vec![vec![0.0; KERNEL_RENDER_SETTINGS.block_size_frames as usize]]; 2];
+            assert_eq!(
+                realtime.render_root_outputs(&mut outputs),
+                KERNEL_RENDER_SETTINGS.block_size_frames as usize
+            );
+            realtime_left.extend_from_slice(&outputs[0][0]);
+            realtime_right.extend_from_slice(&outputs[1][0]);
+        }
 
         assert_eq!(realtime_left, offline_left);
         assert_eq!(realtime_right, offline_right);
@@ -4705,8 +4719,7 @@ connections:
             LoadedSample::new(settings.sample_rate_hz, vec![1.0]),
         )]));
 
-        let (left, right) =
-            render_offline_compiled(prepared.compiled_patch(), vec![note_on_at(0)], &assets);
+        let (left, right) = render_named_stereo(&prepared, vec![note_on_at(0)], &assets);
 
         assert_aligned_impulse(&left, expected_frame);
         assert_aligned_impulse(&right, expected_frame);
@@ -4763,8 +4776,8 @@ connections:
                 Some(1.0)
             );
 
-            let (left, right) = render_offline_compiled(
-                prepared.compiled_patch(),
+            let (left, right) = render_named_stereo(
+                &prepared,
                 vec![note_on_at(trigger_frame as u64)],
                 &PreparedSamplerAssets::empty(),
             );
@@ -4772,6 +4785,44 @@ connections:
             assert_aligned_impulse(&left, expected_frame);
             assert_aligned_impulse(&right, expected_frame);
         }
+    }
+
+    #[test]
+    fn kernel_spectral_named_root_render_allocates_nothing_after_preparation() {
+        let wet = Node::new(NodeId::new(WET_NODE_ID), module_types::SPECTRAL_PROCESSOR)
+            .with_static_arg(
+                SPECTRAL_FFT_SIZE_PARAMETER,
+                StaticArg::Literal(StaticValue::Int(512)),
+            )
+            .with_static_arg(
+                SPECTRAL_MODE_PARAMETER,
+                StaticArg::Literal(StaticValue::Enum(SPECTRAL_MODE_PASSTHROUGH.to_string())),
+            );
+        let (root, registry) = latency_builtin_render_graph(wet);
+        let settings = latency_render_settings(512);
+        let prepared = prepare_kernel_graph(&root, &registry, &settings).unwrap();
+        let mut realtime = RealtimeGraphProcessor::polyphonic_with_compiled_patch_and_sampler_assets_and_max_block_size(
+            prepared.graph().clone(),
+            prepared.compiled_patch().clone(),
+            settings.sample_rate_hz as f32,
+            &PreparedSamplerAssets::empty(),
+            &patch::VoiceAllocation::default(),
+            settings.block_size_frames as usize,
+        );
+        let mut outputs = vec![vec![vec![0.0; settings.block_size_frames as usize]]; 2];
+        realtime.note_on(60, 100);
+        let allocations = count_current_thread_allocations(|| {
+            for _ in 0..settings.duration_frames / settings.block_size_frames as u64 {
+                assert_eq!(
+                    realtime.render_root_outputs(&mut outputs),
+                    settings.block_size_frames as usize
+                );
+            }
+        });
+        assert_eq!(
+            allocations, 0,
+            "spectral FFT plans and scratch belong to preparation"
+        );
     }
 
     fn latency_builtin_render_graph(wet: Node) -> (GraphDefinition, DefinitionRegistry) {
@@ -4806,6 +4857,21 @@ connections:
                 kernel_ref("mix", builtin_ports::INPUTS),
             ));
         (root, registry)
+    }
+
+    fn render_named_stereo(
+        prepared: &PreparedKernelInstrument,
+        events: Vec<TimedInputEvent>,
+        assets: &PreparedSamplerAssets,
+    ) -> (Vec<f32>, Vec<f32>) {
+        let rendered = render_kernel_offline_named(prepared, events, assets)
+            .expect("latency graph renders named root buses");
+        assert_eq!(rendered.len(), 2);
+        assert_eq!(rendered[0].0, builtin_ports::LEFT);
+        assert_eq!(rendered[1].0, builtin_ports::RIGHT);
+        assert_eq!(rendered[0].1.len(), 1);
+        assert_eq!(rendered[1].1.len(), 1);
+        (rendered[0].1[0].clone(), rendered[1].1[0].clone())
     }
 
     fn latency_render_settings(duration_frames: usize) -> patch::RenderSettings {

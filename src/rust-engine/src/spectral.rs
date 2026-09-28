@@ -1,5 +1,6 @@
 use num_complex::Complex;
-use rustfft::FftPlanner;
+use rustfft::{Fft, FftPlanner};
+use std::sync::Arc;
 
 pub struct SpectralProcessor {
     frame_size: usize,
@@ -12,6 +13,10 @@ pub struct SpectralProcessor {
     frames_processed: usize,
     mode: SpectralMode,
     threshold_db: f64,
+    spectrum: Vec<Complex<f64>>,
+    fft_scratch: Vec<Complex<f64>>,
+    forward_fft: Arc<dyn Fft<f64>>,
+    inverse_fft: Arc<dyn Fft<f64>>,
 }
 
 #[allow(dead_code)]
@@ -25,6 +30,12 @@ impl SpectralProcessor {
     pub fn new(frame_size: usize, mode: SpectralMode) -> Self {
         let hop_size = frame_size / 2;
         let window = Self::hann_window(frame_size);
+        let mut planner = FftPlanner::new();
+        let forward_fft = planner.plan_fft_forward(frame_size);
+        let inverse_fft = planner.plan_fft_inverse(frame_size);
+        let scratch_len = forward_fft
+            .get_inplace_scratch_len()
+            .max(inverse_fft.get_inplace_scratch_len());
         Self {
             frame_size,
             hop_size,
@@ -36,6 +47,10 @@ impl SpectralProcessor {
             frames_processed: 0,
             mode,
             threshold_db: -40.0,
+            spectrum: vec![Complex::new(0.0, 0.0); frame_size],
+            fft_scratch: vec![Complex::new(0.0, 0.0); scratch_len],
+            forward_fft,
+            inverse_fft,
         }
     }
 
@@ -74,22 +89,18 @@ impl SpectralProcessor {
 
     fn process_frame(&mut self) {
         let start = self.write_pos % self.frame_size;
-        let mut buffer: Vec<Complex<f64>> = (0..self.frame_size)
-            .map(|i| {
-                let idx = (start + i) % self.frame_size;
-                Complex::new(self.input_buf[idx] * self.window[i], 0.0)
-            })
-            .collect();
-
-        let mut planner = FftPlanner::new();
-        let fft = planner.plan_fft_forward(self.frame_size);
-        fft.process(&mut buffer);
+        for i in 0..self.frame_size {
+            let idx = (start + i) % self.frame_size;
+            self.spectrum[i] = Complex::new(self.input_buf[idx] * self.window[i], 0.0);
+        }
+        self.forward_fft
+            .process_with_scratch(&mut self.spectrum, &mut self.fft_scratch);
 
         match self.mode {
             SpectralMode::Passthrough => {}
             SpectralMode::Gate => {
                 let threshold_linear = 10.0_f64.powf(self.threshold_db / 20.0);
-                for bin in buffer.iter_mut() {
+                for bin in self.spectrum.iter_mut() {
                     let mag = bin.norm();
                     if mag < threshold_linear {
                         *bin = Complex::new(0.0, 0.0);
@@ -98,14 +109,14 @@ impl SpectralProcessor {
             }
         }
 
-        let ifft = planner.plan_fft_inverse(self.frame_size);
-        ifft.process(&mut buffer);
+        self.inverse_fft
+            .process_with_scratch(&mut self.spectrum, &mut self.fft_scratch);
 
         let out_offset = (self.write_pos - self.frame_size) % (self.frame_size * 2);
 
         for i in 0..self.frame_size {
             let idx = (out_offset + i) % (self.frame_size * 2);
-            self.output_buf[idx] += buffer[i].re / self.frame_size as f64;
+            self.output_buf[idx] += self.spectrum[i].re / self.frame_size as f64;
         }
     }
 

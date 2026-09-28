@@ -461,6 +461,11 @@ impl RealtimeGraphProcessor {
                             && step.output_buffers.len() == 1
                             && step.event_inputs.len() == 1
                     }
+                    ModuleKind::Impulse => {
+                        step.input_buffers.is_empty()
+                            && step.output_buffers.len() == 1
+                            && step.event_inputs.len() == 1
+                    }
                     _ => is_channel_arena_supported(step),
                 })
     }
@@ -568,7 +573,7 @@ impl RealtimeGraphProcessor {
                     );
                     continue;
                 }
-                ModuleKind::Sampler | ModuleKind::NoteToRate => {
+                ModuleKind::Sampler | ModuleKind::NoteToRate | ModuleKind::Impulse => {
                     clear_and_route_arena_inputs(
                         &mut self.audio_arena,
                         step,
@@ -592,6 +597,9 @@ impl RealtimeGraphProcessor {
                         }
                         ModuleKind::NoteToRate => {
                             arena_processing::process_note_to_rate(state, &mut context, events)
+                        }
+                        ModuleKind::Impulse => {
+                            arena_processing::process_impulse(&mut context, events)
                         }
                         _ => unreachable!(),
                     }
@@ -1210,6 +1218,10 @@ pub(super) fn process_channel_arena_step(
         ModuleKind::Convolution => {
             arena_processing::process_convolution(&mut states[step.module_index], &mut context)
         }
+        ModuleKind::SpectralProcessor => arena_processing::process_spectral_processor(
+            &mut states[step.module_index],
+            &mut context,
+        ),
         ModuleKind::FrequencySplitter => arena_processing::process_frequency_splitter(
             &mut states[step.module_index],
             &mut context,
@@ -1266,6 +1278,9 @@ pub(super) fn is_channel_arena_supported(step: &RenderStep) -> bool {
             step.input_buffers.len() == step.output_buffers.len()
         }
         ModuleKind::Convolution => step.input_buffers.len() == step.output_buffers.len() + 1,
+        ModuleKind::SpectralProcessor => {
+            step.input_buffers.len() == 3 && step.output_buffers.len() == 1
+        }
         ModuleKind::FrequencySplitter => {
             step.output_buffers.len() % 3 == 0
                 && step.input_buffers.len() == step.output_buffers.len() / 3 + 1
