@@ -83,6 +83,16 @@ target_link_libraries(dandrum-drum-machine-demo
     PRIVATE dandrum_engine juce::juce_audio_basics juce::juce_audio_devices juce::juce_core
     PUBLIC juce::juce_recommended_config_flags juce::juce_recommended_lto_flags juce::juce_recommended_warning_flags)
 
+add_executable(dandrum-juce-kernel-source-test
+    tests/cpp/JuceKernelSourceTest.cpp
+    src/juce-wrapper/RustEngineSource.cpp)
+target_compile_definitions(dandrum-juce-kernel-source-test PRIVATE
+    DANDRUM_SOURCE_ROOT="${CMAKE_CURRENT_SOURCE_DIR}" JUCE_USE_CURL=0 JUCE_WEB_BROWSER=0)
+target_link_libraries(dandrum-juce-kernel-source-test
+    PRIVATE dandrum_engine juce::juce_audio_basics juce::juce_audio_devices juce::juce_core
+    PUBLIC juce::juce_recommended_config_flags juce::juce_recommended_lto_flags juce::juce_recommended_warning_flags)
+add_test(NAME cxx-juce-kernel-source COMMAND dandrum-juce-kernel-source-test)
+
 juce_add_plugin(dandrum-plugin
     PLUGIN_MANUFACTURER_CODE Dndr
     PLUGIN_CODE Dndm

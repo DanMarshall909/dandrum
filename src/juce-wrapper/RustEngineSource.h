@@ -3,6 +3,7 @@
 #include <array>
 #include <atomic>
 #include <cstddef>
+#include <cstdint>
 
 #include <juce_audio_basics/juce_audio_basics.h>
 #include <juce_core/juce_core.h>
@@ -49,4 +50,8 @@ private:
 
     mutable juce::CriticalSection engineLock;
     DandrumEngine* engine = nullptr;
+    DandrumKernelInstrument* kernel = nullptr;
+    juce::String kernelPath;
+    std::uint32_t sampleRateHz = 48000;
+    std::size_t maxBlockSize = 512;
 };
