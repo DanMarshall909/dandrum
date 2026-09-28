@@ -1,10 +1,39 @@
 #include "PluginEditor.h"
+#include "SoundLabWebUi.h"
 
 #include <cstring>
+#include <string>
+#include <string_view>
 #include <vector>
 
 namespace
 {
+std::vector<std::byte> toBytes (const char* text)
+{
+    const auto length = std::char_traits<char>::length (text);
+    std::vector<std::byte> bytes (length);
+    std::memcpy (bytes.data(), text, length);
+    return bytes;
+}
+
+void replaceMarker (std::string& page, std::string_view marker, std::string_view replacement)
+{
+    const auto position = page.find (marker);
+    if (position != std::string::npos)
+        page.replace (position, marker.size(), replacement);
+}
+
+std::string composePage (std::string page, bool soundLabEnabled)
+{
+    replaceMarker (page, "<!--sound-lab-panel-->",
+                   soundLabEnabled ? SoundLabWebUi::panelHtml : "");
+    replaceMarker (page, "/*sound-lab-style*/",
+                   soundLabEnabled ? SoundLabWebUi::css : "");
+    replaceMarker (page, "<!--sound-lab-script-->",
+                   soundLabEnabled ? "<script src=\"/sound-lab-ui.js\"></script>" : "");
+    return page;
+}
+
 bool hasExpectedSoundLabGeneration (const juce::String& path,
                                     std::uint64_t generation)
 {
@@ -22,6 +51,8 @@ DandrumAudioProcessorEditor::DandrumAudioProcessorEditor (DandrumAudioProcessor&
     : juce::AudioProcessorEditor (&processorToUse),
       processor (processorToUse),
       hostBridge (processorToUse),
+      soundLabController (processorToUse.demoConfiguration().soundLabFixturePath
+                              ? std::make_unique<SoundLabController>() : nullptr),
       browser (createBrowserOptions())
 {
     addAndMakeVisible (browser);
@@ -30,7 +61,8 @@ DandrumAudioProcessorEditor::DandrumAudioProcessorEditor (DandrumAudioProcessor&
     setResizeLimits (760, 560, 1500, 1100);
     setSize (1180, 860);
     browser.goToURL (juce::WebBrowserComponent::getResourceProviderRoot());
-    lastSeenSoundLabGeneration = soundLabController.generation();
+    if (soundLabController != nullptr)
+        lastSeenSoundLabGeneration = soundLabController->generation();
     startTimerHz (12);
 }
 
@@ -53,8 +85,10 @@ juce::WebBrowserComponent::Options DandrumAudioProcessorEditor::createBrowserOpt
     auto options = hostBridge.addNativeFunctions (Options{}
         .withNativeIntegrationEnabled()
         .withKeepPageLoadedWhenBrowserIsHidden()
-        .withUserScript (InstrumentHostWebBridge::bootstrapScript()))
-        .withNativeFunction (
+        .withUserScript (InstrumentHostWebBridge::bootstrapScript()));
+
+    if (soundLabController != nullptr)
+        options = options.withNativeFunction (
             "renderSoundLab",
             [this] (const juce::Array<juce::var>& arguments,
                     juce::WebBrowserComponent::NativeFunctionCompletion completion)
@@ -130,12 +164,22 @@ juce::WebBrowserComponent::Options DandrumAudioProcessorEditor::createBrowserOpt
 std::optional<juce::WebBrowserComponent::Resource>
 DandrumAudioProcessorEditor::provideResource (const juce::String& path) const
 {
-    if (auto shared = hostBridge.provideResource (path))
+    const bool soundLabEnabled = soundLabController != nullptr
+                                 && processor.isSoundLabInstrumentCompatible();
+    if (path == "/sound-lab-ui.js" && soundLabEnabled)
+        return juce::WebBrowserComponent::Resource {
+            toBytes (SoundLabWebUi::script), "text/javascript" };
+
+    if (auto shared = hostBridge.provideResource (
+            path, composePage (processor.demoConfiguration().indexHtml, soundLabEnabled)))
         return shared;
+
+    if (! soundLabEnabled)
+        return std::nullopt;
 
     if (path.startsWith ("/sound-lab.wav"))
     {
-        const auto snapshot = soundLabController.snapshot();
+        const auto snapshot = soundLabController->snapshot();
         if (! hasExpectedSoundLabGeneration (path, snapshot.generation)
             || snapshot.state != SoundLabController::State::ready || snapshot.data == nullptr)
             return std::nullopt;
@@ -148,7 +192,7 @@ DandrumAudioProcessorEditor::provideResource (const juce::String& path) const
     if (path.startsWith ("/sound-lab-reference.wav")
         || path.startsWith ("/sound-lab-candidate.wav"))
     {
-        const auto snapshot = soundLabController.snapshot();
+        const auto snapshot = soundLabController->snapshot();
         if (! hasExpectedSoundLabGeneration (path, snapshot.generation)
             || snapshot.match == nullptr)
             return std::nullopt;
@@ -168,13 +212,13 @@ void DandrumAudioProcessorEditor::renderSoundLabFromWeb (
     const juce::Array<juce::var>&,
     juce::WebBrowserComponent::NativeFunctionCompletion completion)
 {
-    const auto& fixture = processor.demoConfiguration().soundLabFixturePath;
-    if (! fixture.has_value())
+    if (! processor.isSoundLabInstrumentCompatible())
     {
-        completion (juce::var ("Sound Lab is not configured for this demo"));
+        completion (juce::var ("Sound Lab fixture does not match the active instrument"));
         return;
     }
-    if (! soundLabController.startRender (*fixture))
+    const auto& fixture = processor.demoConfiguration().soundLabFixturePath;
+    if (! soundLabController->startRender (*fixture))
     {
         completion (juce::var ("Sound Lab is already rendering"));
         return;
@@ -187,6 +231,11 @@ void DandrumAudioProcessorEditor::chooseSoundLabReferenceFromWeb (
     const juce::Array<juce::var>&,
     juce::WebBrowserComponent::NativeFunctionCompletion completion)
 {
+    if (! processor.isSoundLabInstrumentCompatible())
+    {
+        completion (juce::var ("Sound Lab fixture does not match the active instrument"));
+        return;
+    }
     if (soundLabFileChooser != nullptr)
     {
         completion (juce::var ("A reference-file chooser is already open"));
@@ -206,7 +255,7 @@ void DandrumAudioProcessorEditor::chooseSoundLabReferenceFromWeb (
             const auto selected = chooser.getResult();
             if (selected.existsAsFile())
             {
-                if (! soundLabController.discardResults())
+                if (! soundLabController->discardResults())
                 {
                     soundLabFileChooser.reset();
                     completion (juce::var ("Sound Lab is busy"));
@@ -226,18 +275,18 @@ void DandrumAudioProcessorEditor::matchSoundLabFromWeb (
     const juce::Array<juce::var>&,
     juce::WebBrowserComponent::NativeFunctionCompletion completion)
 {
-    const auto& fixture = processor.demoConfiguration().soundLabFixturePath;
-    if (! fixture.has_value())
+    if (! processor.isSoundLabInstrumentCompatible())
     {
-        completion (juce::var ("Sound Lab is not configured for this demo"));
+        completion (juce::var ("Sound Lab fixture does not match the active instrument"));
         return;
     }
+    const auto& fixture = processor.demoConfiguration().soundLabFixturePath;
     if (! soundLabReferenceFile.existsAsFile())
     {
         completion (juce::var ("Choose a 48 kHz PCM WAV reference first"));
         return;
     }
-    if (! soundLabController.startMatch (*fixture,
+    if (! soundLabController->startMatch (*fixture,
                                          soundLabReferenceFile.getFullPathName().toStdString()))
     {
         completion (juce::var ("Sound Lab already has offline work in progress"));
@@ -250,7 +299,12 @@ void DandrumAudioProcessorEditor::cancelSoundLabFromWeb (
     const juce::Array<juce::var>&,
     juce::WebBrowserComponent::NativeFunctionCompletion completion)
 {
-    soundLabController.cancelCurrentWork();
+    if (! processor.isSoundLabInstrumentCompatible())
+    {
+        completion (juce::var ("Sound Lab fixture does not match the active instrument"));
+        return;
+    }
+    soundLabController->cancelCurrentWork();
     completion (juce::var());
 }
 
@@ -258,7 +312,12 @@ void DandrumAudioProcessorEditor::acceptSoundLabMatchFromWeb (
     const juce::Array<juce::var>&,
     juce::WebBrowserComponent::NativeFunctionCompletion completion)
 {
-    const auto snapshot = soundLabController.snapshot();
+    if (! processor.isSoundLabInstrumentCompatible())
+    {
+        completion (juce::var ("Sound Lab fixture does not match the active instrument"));
+        return;
+    }
+    const auto snapshot = soundLabController->snapshot();
     if (snapshot.match == nullptr)
     {
         completion (juce::var (
@@ -301,7 +360,12 @@ void DandrumAudioProcessorEditor::requestGraphProposalFromWeb (
     const juce::Array<juce::var>&,
     juce::WebBrowserComponent::NativeFunctionCompletion completion)
 {
-    if (! soundLabController.startProposal())
+    if (! processor.isSoundLabInstrumentCompatible())
+    {
+        completion (juce::var ("Sound Lab fixture does not match the active instrument"));
+        return;
+    }
+    if (! soundLabController->startProposal())
     {
         completion (juce::var (
             "A completed match is required, and Sound Lab must not already be busy"));
@@ -314,12 +378,17 @@ void DandrumAudioProcessorEditor::getSoundLabAnalysisForWeb (
     const juce::Array<juce::var>&,
     juce::WebBrowserComponent::NativeFunctionCompletion completion) const
 {
+    if (! processor.isSoundLabInstrumentCompatible())
+    {
+        completion (juce::var ("Sound Lab fixture does not match the active instrument"));
+        return;
+    }
     completion (soundLabSnapshotForWeb());
 }
 
 juce::var DandrumAudioProcessorEditor::soundLabSnapshotForWeb() const
 {
-    const auto snapshot = soundLabController.snapshot();
+    const auto snapshot = soundLabController->snapshot();
     auto report = std::make_unique<juce::DynamicObject>();
     report->setProperty ("generation", static_cast<juce::int64> (snapshot.generation));
 
@@ -458,7 +527,10 @@ void DandrumAudioProcessorEditor::timerCallback()
     if (hostBridge.publishParameterUpdates (browser))
         return;
 
-    const auto soundLabGeneration = soundLabController.generation();
+    if (soundLabController == nullptr)
+        return;
+
+    const auto soundLabGeneration = soundLabController->generation();
     if (soundLabGeneration != lastSeenSoundLabGeneration)
     {
         lastSeenSoundLabGeneration = soundLabGeneration;

@@ -2,9 +2,9 @@
 
 Recorded: 2026-09-27. Reviewed revision: `8cc0823712f92b012bae65dc16c17c7740a2265e`.
 
-This review identifies practical improvements to building, debugging, testing, and extending the Dandrum plugin. It records findings and recommended work; the changes below have not been implemented. Reproduced failures are distinguished from observations made by reading the code.
+This review records findings at the revision above. Since that snapshot, host preparation order has been fixed; developer-build demo assets resolve from the source checkout; and the reusable host bridge, pages, optional Sound Lab, and executable WebView tests have been implemented in `extract-reusable-instrument-host-ui`. Installed-plugin asset packaging, a faster browser asset loop, Rust-owned load metadata/diagnostics, automation meaning, and a unified reload transaction remain open. Reproduced failures below describe the reviewed revision, not current behavior.
 
-The [reusable instrument host and UI proposal](../openspec/changes/extract-reusable-instrument-host-ui/proposal.md) already covers shared WebView controls, explicit demo configuration, optional Sound Lab, and a second instrument as proof of reuse. The lifecycle and automation behavior changes below need their own scoped tasks and acceptance tests before implementation. This review does not expand that proposal's implementation scope.
+The [reusable instrument host and UI change](../openspec/changes/extract-reusable-instrument-host-ui/proposal.md) covers shared WebView controls, explicit demo configuration, optional Sound Lab, and a second instrument as proof of reuse. The remaining lifecycle and automation recommendations need their own scoped tasks and acceptance tests.
 
 ## 1. Make loading and preparation follow one lifecycle
 
@@ -93,7 +93,7 @@ Sources: [host slot assignment](../src/juce-plugin/PluginProcessor.cpp), [WebVie
 
 **Code findings:** HTML, CSS, and JavaScript are embedded in a C++ header. The WebView contract test mostly searches that text and `PluginEditor.cpp` for substrings. Processor test targets also compile/link the browser dependencies.
 
-Sources: [embedded page](../src/juce-plugin/Tb303WebUi.h), [WebView contract test](../tests/cpp/Tb303WebUiContractTest.cpp), [native test targets](../CMakeLists.txt).
+Sources at the reviewed revision: [embedded page](../src/juce-plugin/Tb303WebUi.h) and [native test targets](../CMakeLists.txt). The former source-text test has since been replaced by the [executable editor bridge test](../tests/cpp/PluginEditorBridgeTest.cpp) and [page behavior test](../tests/js/Tb303PageTest.mjs).
 
 **Recommended change:** keep UI code in ordinary assets, serve those assets directly during development, and embed the same assets for distribution. Exercise browser control behavior and native commands through executable tests. Keep fast processor tests independent of the browser where practical, and add a separate integration test that loads the built VST3 artifact.
 

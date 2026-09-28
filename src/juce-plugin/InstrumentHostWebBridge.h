@@ -3,6 +3,7 @@
 #include <array>
 #include <cstdint>
 #include <optional>
+#include <string>
 #include <utility>
 
 #include <juce_gui_extra/juce_gui_extra.h>
@@ -19,7 +20,8 @@ public:
     std::array<NativeFunctionEntry, 4> nativeFunctions();
     juce::WebBrowserComponent::Options addNativeFunctions (
         juce::WebBrowserComponent::Options options);
-    std::optional<juce::WebBrowserComponent::Resource> provideResource (const juce::String& path) const;
+    std::optional<juce::WebBrowserComponent::Resource> provideResource (
+        const juce::String& path, const std::string& pageHtml) const;
     bool publishParameterUpdates (juce::WebBrowserComponent& browser);
 
     void setParameterFromWeb (const juce::Array<juce::var>& arguments,

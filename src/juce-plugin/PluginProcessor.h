@@ -117,6 +117,7 @@ public:
     /// The currently loaded instrument's source file, if loaded from one. This
     /// is only a restore hint; plugin state embeds the YAML content too.
     const juce::File& currentInstrumentFile() const noexcept;
+    bool isSoundLabInstrumentCompatible() const;
 
     /// The currently loaded instrument's YAML content, captured at load time
     /// so it can be embedded in plugin state without depending on the source

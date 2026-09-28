@@ -90,11 +90,12 @@ juce::WebBrowserComponent::Options InstrumentHostWebBridge::addNativeFunctions (
 }
 
 std::optional<juce::WebBrowserComponent::Resource>
-InstrumentHostWebBridge::provideResource (const juce::String& path) const
+InstrumentHostWebBridge::provideResource (const juce::String& path,
+                                          const std::string& pageHtml) const
 {
     if (path == "/" || path == "/index.html")
         return juce::WebBrowserComponent::Resource {
-            toBytes (processor.demoConfiguration().indexHtml.c_str()), "text/html" };
+            toBytes (pageHtml.c_str()), "text/html" };
 
     if (path == "/shared-instrument-ui.js")
         return juce::WebBrowserComponent::Resource {

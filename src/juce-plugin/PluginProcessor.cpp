@@ -930,6 +930,16 @@ const juce::File& DandrumAudioProcessor::currentInstrumentFile() const noexcept
     return loadedInstrument.sourceFile;
 }
 
+bool DandrumAudioProcessor::isSoundLabInstrumentCompatible() const
+{
+    const std::lock_guard<std::mutex> reloadLock (reloadMutex);
+    return instrumentLoaded
+           && configuration.soundLabFixturePath.has_value()
+           && configuration.matchSourcePath.has_value()
+           && loadedInstrument.sourceFile == juce::File (juce::String (configuration.matchSourcePath->string()))
+           && loadedInstrument.instrumentId == juce::String (configuration.instrumentId);
+}
+
 const juce::String& DandrumAudioProcessor::currentInstrumentYaml() const noexcept
 {
     return loadedInstrument.yamlContent;

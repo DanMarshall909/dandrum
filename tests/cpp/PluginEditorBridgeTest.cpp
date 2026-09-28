@@ -16,29 +16,23 @@ struct PluginEditorBridgeTestProbe
                              const juce::String& command,
                              const juce::Array<juce::var>& arguments = {})
     {
+        const auto options = editor.createBrowserOptions();
+        const auto& functions = options.getNativeFunctions();
+        const auto found = functions.find (juce::Identifier (command));
+        if (found == functions.end())
+            throw std::runtime_error ("browser command is not registered: " + command.toStdString());
         juce::var result;
         bool completed = false;
         auto completion = [&] (juce::var value) { result = std::move (value); completed = true; };
-        bool invoked = false;
-        for (auto& [name, callback] : editor.hostBridge.nativeFunctions())
-            if (name.toString() == command)
-            {
-                callback (arguments, completion);
-                invoked = true;
-                break;
-            }
-        if (! invoked)
-        {
-            if (command == "renderSoundLab")
-                editor.renderSoundLabFromWeb (arguments, completion);
-            else if (command == "getSoundLabAnalysis")
-                editor.getSoundLabAnalysisForWeb (arguments, completion);
-            else
-                throw std::runtime_error ("unknown test command");
-        }
+        found->second (arguments, completion);
         if (! completed)
             throw std::runtime_error ("native command did not complete synchronously");
         return result;
+    }
+
+    static bool hasCommand (DandrumAudioProcessorEditor& editor, const juce::String& command)
+    {
+        return editor.createBrowserOptions().getNativeFunctions().count (juce::Identifier (command)) == 1;
     }
 
     static void refresh (DandrumAudioProcessorEditor& editor) { editor.timerCallback(); }
@@ -57,6 +51,22 @@ struct PluginEditorBridgeTestProbe
         const DandrumAudioProcessorEditor& editor, const juce::String& path)
     {
         return editor.provideResource (path);
+    }
+
+    static bool hasSoundLab (const DandrumAudioProcessorEditor& editor)
+    {
+        return editor.soundLabController != nullptr;
+    }
+
+    static void setReferenceFile (DandrumAudioProcessorEditor& editor, juce::File file)
+    {
+        editor.soundLabReferenceFile = std::move (file);
+    }
+
+    static juce::String matchedPatch (const DandrumAudioProcessorEditor& editor)
+    {
+        const auto snapshot = editor.soundLabController->snapshot();
+        return snapshot.match != nullptr ? juce::String (snapshot.match->patchYaml) : juce::String();
     }
 };
 
@@ -108,6 +118,13 @@ int main()
         HostListener listener;
         processor.addListener (&listener);
         DandrumAudioProcessorEditor editor (processor);
+
+        for (const auto* command : { "getParameters", "setParameter", "noteOn", "noteOff",
+                                     "renderSoundLab", "chooseSoundLabReference", "matchSoundLab",
+                                     "cancelSoundLab", "acceptSoundLabMatch", "requestGraphProposal",
+                                     "getSoundLabAnalysis" })
+            require (PluginEditorBridgeTestProbe::hasCommand (editor, command),
+                     std::string ("configured editor did not register ") + command);
 
         auto snapshot = PluginEditorBridgeTestProbe::invoke (editor, "getParameters");
         const auto defaultIds = processor.getActivePublicParameterIds();
@@ -182,6 +199,17 @@ int main()
                      && ! findParameter (snapshot, "kick.tune_hz").isObject(),
                  "browser refresh did not expose replacement instrument controls");
 
+        require (PluginEditorBridgeTestProbe::invoke (editor, "renderSoundLab")
+                     .toString().contains ("does not match"),
+                 "Sound Lab rendered the kick fixture after the active instrument changed to TB-303");
+        require (PluginEditorBridgeTestProbe::invoke (editor, "matchSoundLab")
+                     .toString().contains ("does not match"),
+                 "Sound Lab matched the kick fixture after the active instrument changed to TB-303");
+        require (processor.reloadInstrumentFromFile (
+                     juce::File (juce::String (InstrumentDemoConfiguration::kick().instrumentPath.string()))),
+                 "could not restore kick before its Sound Lab render");
+        PluginEditorBridgeTestProbe::refresh (editor);
+
         const auto html = PluginEditorBridgeTestProbe::resource (editor, "/index.html");
         require (html.has_value() && html->mimeType == "text/html" && ! html->data.empty(),
                  "editor failed to serve its configured page");
@@ -223,8 +251,12 @@ int main()
                      && kickPageText.find ("Dandrum 808 Kick") != std::string::npos
                      && kickPageText.find ("<span>KICK</span>") != std::string::npos
                      && kickPageText.find ("/shared-instrument-ui.js") != std::string::npos
+                     && kickPageText.find ("soundLabStatus") != std::string::npos
+                     && kickPageText.find ("/sound-lab-ui.js") != std::string::npos
                      && kickPageText != InstrumentDemoConfiguration::tb303().indexHtml,
                  "second demo did not serve a distinct page through the same resource provider");
+        require (PluginEditorBridgeTestProbe::resource (kickEditor, "/sound-lab-ui.js").has_value(),
+                 "configured kick demo did not serve shared Sound Lab behavior");
         const auto sharedScript = PluginEditorBridgeTestProbe::resource (kickEditor, "/shared-instrument-ui.js");
         require (sharedScript.has_value() && sharedScript->mimeType == "text/javascript"
                      && ! sharedScript->data.empty(),
@@ -246,6 +278,120 @@ int main()
         require (kickAnalysis.getProperty ("state", {}).toString() == "ready"
                      && std::abs (static_cast<double> (kickAnalysis.getProperty ("duration_seconds", {})) - 1.0) < 0.001,
                  "second demo Sound Lab did not use its own one-second kick fixture");
+
+        const auto referenceFile = juce::File::getSpecialLocation (juce::File::tempDirectory)
+                                       .getNonexistentChildFile ("dandrum_kick_match_reference", ".wav");
+        struct ReferenceFileGuard
+        {
+            juce::File file;
+            ~ReferenceFileGuard() { file.deleteFile(); }
+        } referenceGuard { referenceFile };
+        SoundLabController referenceRenderer;
+        require (referenceRenderer.startRender (*InstrumentDemoConfiguration::kick().soundLabFixturePath),
+                 "could not render the configured kick reference");
+        for (int i = 0; i < 400 && referenceRenderer.state() == SoundLabController::State::rendering; ++i)
+            std::this_thread::sleep_for (std::chrono::milliseconds (25));
+        const auto reference = referenceRenderer.snapshot();
+        require (reference.state == SoundLabController::State::ready && reference.data != nullptr
+                     && referenceFile.replaceWithData (reference.data->wavBytes.data(),
+                                                       reference.data->wavBytes.size()),
+                 "could not write the configured kick reference WAV");
+        PluginEditorBridgeTestProbe::setReferenceFile (kickEditor, referenceFile);
+        require (PluginEditorBridgeTestProbe::invoke (kickEditor, "matchSoundLab").isVoid(),
+                 "configured kick Sound Lab did not start matching");
+        juce::var matched;
+        for (int i = 0; i < 400; ++i)
+        {
+            matched = PluginEditorBridgeTestProbe::invoke (kickEditor, "getSoundLabAnalysis");
+            if (matched.getProperty ("state", {}).toString() != "matching")
+                break;
+            std::this_thread::sleep_for (std::chrono::milliseconds (25));
+        }
+        require (matched.getProperty ("state", {}).toString() == "matched"
+                     && matched.getProperty ("best_parameters", {}).getArray() != nullptr,
+                 "configured kick Sound Lab did not produce a match");
+        const auto referenceAudio = matched.getProperty ("reference_audio_url", {}).toString();
+        const auto candidateAudio = matched.getProperty ("candidate_audio_url", {}).toString();
+        require (PluginEditorBridgeTestProbe::resource (kickEditor, referenceAudio).has_value()
+                     && PluginEditorBridgeTestProbe::resource (kickEditor, candidateAudio).has_value()
+                     && ! PluginEditorBridgeTestProbe::resource (
+                         kickEditor, "/sound-lab-candidate.wav?generation=0"),
+                 "matched Sound Lab audio did not honor its generation");
+        const auto matchedPatch = PluginEditorBridgeTestProbe::matchedPatch (kickEditor);
+        require (kick.reloadInstrumentFromFile (tb303),
+                 "could not replace the active instrument before match rejection");
+        require (PluginEditorBridgeTestProbe::invoke (kickEditor, "acceptSoundLabMatch")
+                     .toString().contains ("does not match"),
+                 "Sound Lab accepted kick results into a different active instrument");
+        require (! PluginEditorBridgeTestProbe::resource (kickEditor, "/sound-lab-ui.js"),
+                 "mismatched active instrument still exposed Sound Lab behavior");
+        const auto mismatchedPage = PluginEditorBridgeTestProbe::resource (kickEditor, "/index.html");
+        const auto mismatchedPageText = mismatchedPage.has_value()
+            ? std::string (reinterpret_cast<const char*> (mismatchedPage->data.data()),
+                           mismatchedPage->data.size())
+            : std::string();
+        require (mismatchedPageText.find ("soundLabStatus") == std::string::npos,
+                 "mismatched active instrument still exposed the Sound Lab panel");
+        juce::AudioBuffer<float> replacedAudio (2, 64);
+        replacedAudio.clear();
+        juce::MidiBuffer replacedMidi;
+        replacedMidi.addEvent (juce::MidiMessage::noteOn (1, 60, static_cast<juce::uint8> (100)), 0);
+        kick.processBlock (replacedAudio, replacedMidi);
+        bool replacedInstrumentAudible = false;
+        for (int frame = 0; frame < replacedAudio.getNumSamples(); ++frame)
+            replacedInstrumentAudible |= std::abs (replacedAudio.getSample (0, frame)) > 0.0000001f;
+        require (replacedInstrumentAudible,
+                 "mismatched active instrument stopped processing audio");
+        require (kick.reloadInstrumentFromFile (juce::File (juce::String (
+                     InstrumentDemoConfiguration::kick().instrumentPath.string()))),
+                 "could not restore the configured kick before match acceptance");
+        require (matchedPatch.isNotEmpty()
+                     && PluginEditorBridgeTestProbe::invoke (kickEditor, "acceptSoundLabMatch").isVoid()
+                     && kick.currentInstrumentYaml() == matchedPatch
+                     && kick.currentInstrumentFile().getFullPathName().toStdString()
+                            == InstrumentDemoConfiguration::kick().matchSourcePath->string(),
+                 "accepted match did not reload the configured source patch");
+        const auto bestParameters = matched.getProperty ("best_parameters", {});
+        for (const auto& best : *bestParameters.getArray())
+        {
+            const auto* matchedParameter = kick.getParameterForPublicId (best.getProperty ("id", {}).toString());
+            require (matchedParameter != nullptr
+                         && std::abs (matchedParameter->getValue()
+                                      - static_cast<float> (best.getProperty ("normalized", {}))) < 0.00001f,
+                     "accepted match did not apply a best public parameter value");
+        }
+
+        auto withoutLab = InstrumentDemoConfiguration::kick();
+        withoutLab.soundLabFixturePath.reset();
+        withoutLab.matchSourcePath.reset();
+        DandrumAudioProcessor plain (withoutLab);
+        plain.setPlayConfigDetails (0, 2, 48000.0, 64);
+        plain.prepareToPlay (48000.0, 64);
+        DandrumAudioProcessorEditor plainEditor (plain);
+        require (! PluginEditorBridgeTestProbe::hasSoundLab (plainEditor),
+                 "fixture-free demo still created a Sound Lab integration");
+        for (const auto* command : { "getParameters", "setParameter", "noteOn", "noteOff" })
+            require (PluginEditorBridgeTestProbe::hasCommand (plainEditor, command),
+                     std::string ("fixture-free editor lost ") + command);
+        for (const auto* command : { "renderSoundLab", "chooseSoundLabReference", "matchSoundLab",
+                                     "cancelSoundLab", "acceptSoundLabMatch", "requestGraphProposal",
+                                     "getSoundLabAnalysis" })
+            require (! PluginEditorBridgeTestProbe::hasCommand (plainEditor, command),
+                     std::string ("fixture-free editor registered ") + command);
+        require (! PluginEditorBridgeTestProbe::resource (plainEditor, "/sound-lab-ui.js"),
+                 "fixture-free demo exposed Sound Lab behavior");
+        const auto plainPage = PluginEditorBridgeTestProbe::resource (plainEditor, "/index.html");
+        const auto plainPageText = plainPage.has_value()
+            ? std::string (reinterpret_cast<const char*> (plainPage->data.data()), plainPage->data.size())
+            : std::string();
+        require (plainPageText.find ("soundLabStatus") == std::string::npos,
+                 "fixture-free demo exposed a Sound Lab panel");
+        require (PluginEditorBridgeTestProbe::invoke (plainEditor, "getParameters").getArray() != nullptr
+                     && PluginEditorBridgeTestProbe::invoke (plainEditor, "noteOn", { 36, 0.7 }).isVoid(),
+                 "fixture-free demo lost shared parameter or playable-note controls");
+        require (! PluginEditorBridgeTestProbe::resource (plainEditor, "/sound-lab.wav?generation=0"),
+                 "fixture-free demo exposed a Sound Lab audio resource");
+        plain.releaseResources();
 
         DandrumAudioProcessor changing (InstrumentDemoConfiguration::kick());
         changing.setPlayConfigDetails (0, 2, 48000.0, 64);

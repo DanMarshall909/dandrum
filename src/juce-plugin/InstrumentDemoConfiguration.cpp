@@ -19,7 +19,8 @@ InstrumentDemoConfiguration InstrumentDemoConfiguration::tb303()
              fixture,
              patch,
              "Dandrum TB-303",
-             Tb303WebUi::indexHtml };
+             Tb303WebUi::indexHtml,
+             "dandrum.tb303-acid" };
 }
 
 InstrumentDemoConfiguration InstrumentDemoConfiguration::kick()
@@ -30,5 +31,6 @@ InstrumentDemoConfiguration InstrumentDemoConfiguration::kick()
              fixture,
              patch,
              "Dandrum 808 Kick",
-             KickWebUi::indexHtml };
+             KickWebUi::indexHtml,
+             "dandrum.synthetic-808-kick" };
 }

@@ -64,11 +64,28 @@ the same settings and promoting useful observations into regression tests.
 
 CMake exposes the same Rust tests through CTest for CI:
 
+Node.js is required when configuring the CMake project because CTest also runs
+the WebView control, page, and native bridge JavaScript checks.
+
 ```bash
 $HOME/.local/bin/cmake -S . -B build
 $HOME/.local/bin/cmake --build build
 ctest --test-dir build
 ```
+
+## Plugin demo development
+
+The same CMake build produces the JUCE standalone plugin at
+`build/dandrum-plugin_artefacts/Standalone/Dandrum` and a VST3 bundle at
+`build/dandrum-plugin_artefacts/VST3/Dandrum.vst3`. Run the standalone plugin with:
+
+```bash
+./build/dandrum-plugin_artefacts/Standalone/Dandrum
+```
+
+The shipped demo opens the TB-303 patch. `InstrumentDemoConfiguration::kick()` selects a second 808 kick patch, fixture, and page through the same processor and WebView bridge; the C++ demo-configuration and editor-bridge tests construct that variant. To add another developer demo, supply its patch and optional Sound Lab fixture/source in `InstrumentDemoConfiguration`, then supply an HTML page with `controls`, `keys`, and `error` elements. Load `/shared-instrument-ui.js` for metadata-driven controls and playable notes. A Sound Lab-enabled page places `<!--sound-lab-panel-->`, `/*sound-lab-style*/`, and `<!--sound-lab-script-->` markers where the shared feature should appear. The editor fills those markers only while the active instrument matches the configured Sound Lab source and ID.
+
+Developer builds resolve the maintained demo patches and fixtures from the CMake source checkout, even when the process starts elsewhere. Installed-plugin asset packaging remains a separate task. The executable browser, bridge, processor, and Rust checks run through `ctest --test-dir build --output-on-failure`.
 
 ## Realtime Callback Contract
 
