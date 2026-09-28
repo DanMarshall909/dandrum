@@ -516,6 +516,21 @@ int main()
         std::cerr << "plugin kernel reload did not change master output\n";
         return 1;
     }
+    const auto legacyPatch = juce::File (juce::String (DANDRUM_SOURCE_ROOT))
+                                 .getChildFile ("src/rust-engine/tests/fixtures/unify-graph-kernel/legacy/polyphonic-pad.yaml");
+    if (kernelProcessor.reloadInstrumentFromFile (legacyPatch)
+        || kernelProcessor.getLastLoadError().isEmpty())
+    {
+        std::cerr << "plugin accepted a legacy instrument after kernel migration\n";
+        return 1;
+    }
+    kernelBuffer.clear();
+    kernelProcessor.processBlock (kernelBuffer, kernelMidi);
+    if (! nearlyEqual (kernelBuffer.getSample (0, 0), -0.5f, 0.00001f))
+    {
+        std::cerr << "rejected legacy instrument replaced the running kernel\n";
+        return 1;
+    }
     juce::MemoryBlock kernelState;
     kernelProcessor.getStateInformation (kernelState);
     DandrumAudioProcessor restoredKernel (InstrumentDemoConfiguration::kick());
