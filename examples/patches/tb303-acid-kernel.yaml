@@ -1,0 +1,64 @@
+metadata:
+  name: TB-303 Acid
+  version: "0.1"
+instrument:
+  id: dandrum.tb303-acid
+  preset_schema_version: 1
+
+# These root controls preserve the original Sound Lab and plugin preset
+# surface. The aliases below retain the public dotted parameter names.
+ports:
+  - { name: filter_cutoff, direction: input, signal: control, channels: 1, default: 0.4, min: 0.02, max: 0.9, maps_to: accent_bright.offset }
+  - { name: filter_resonance, direction: input, signal: control, channels: 1, default: 0.65, min: 0, max: 1, maps_to: resonance_control.offset }
+  - { name: filter_envelope_modulation, direction: input, signal: control, channels: 1, default: 0.4, min: 0, max: 1, maps_to: cutoff_shaper.scale }
+  - { name: filter_decay_ms, direction: input, signal: control, channels: 1, default: 1000, min: 50, max: 3000, maps_to: filter_env.decay }
+  - { name: accent_brightness, direction: input, signal: control, channels: 1, default: 0.12, min: 0, max: 0.5, maps_to: accent_bright.scale }
+  - { name: amp_release_ms, direction: input, signal: control, channels: 1, default: 60, min: 5, max: 500, maps_to: amp_env.release }
+  - { name: slide_time_ms, direction: input, signal: control, channels: 1, default: 60, min: 0, max: 500, maps_to: pitch_slew.time_ms }
+  - { name: master, direction: output, signal: audio, channels: 2, maps_from: mixer.mix }
+
+preset_surface:
+  parameters:
+    - { name: filter.cutoff, maps_to: filter_cutoff }
+    - { name: filter.resonance, maps_to: filter_resonance }
+    - { name: filter.envelope_modulation, maps_to: filter_envelope_modulation }
+    - { name: filter.decay_ms, maps_to: filter_decay_ms }
+    - { name: accent.brightness, maps_to: accent_brightness }
+    - { name: amp.release_ms, maps_to: amp_release_ms }
+    - { name: slide.time_ms, maps_to: slide_time_ms }
+
+# A single note_to_control holds the mono note across overlaps. Its slide
+# output engages portamento without retriggering either envelope on legato.
+modules:
+  - { id: midi, type: midi_input }
+  - { id: ntc, type: note_to_control }
+  - { id: pitch_slew, type: slew }
+  - { id: osc, type: oscillator, static: { waveform: saw, channels: 2 } }
+  - { id: amp_env, type: adsr, defaults: { attack: 3, decay: 200, sustain: 0.8 } }
+  - { id: filter_env, type: adsr, defaults: { attack: 3, sustain: 0.2, release: 120 } }
+  - { id: accent_bright, type: curve_mapper, defaults: { amount: 0 } }
+  - { id: cutoff_shaper, type: curve_mapper, defaults: { amount: 0 } }
+  - { id: resonance_control, type: curve_mapper, defaults: { amount: 0, scale: 0 } }
+  - { id: filter, type: filter, static: { algorithm: moog, channels: 2 } }
+  - { id: env_vca, type: gain, static: { channels: 2 } }
+  - { id: accent_vca, type: gain, static: { channels: 2 } }
+  - { id: mixer, type: audio_mixer, static: { channels: 2 } }
+
+connections:
+  - { from: midi.events, to: ntc.events }
+  - { from: ntc.pitch_ratio, to: pitch_slew.value }
+  - { from: ntc.slide, to: pitch_slew.glide }
+  - { from: pitch_slew.value, to: osc.pitch }
+  - { from: ntc.gate, to: amp_env.gate }
+  - { from: ntc.gate, to: filter_env.gate }
+  - { from: ntc.velocity, to: accent_bright.value }
+  - { from: osc.audio, to: filter.audio_in }
+  - { from: filter_env.value, to: cutoff_shaper.value }
+  - { from: accent_bright.value, to: cutoff_shaper.offset }
+  - { from: cutoff_shaper.value, to: filter.cutoff }
+  - { from: resonance_control.value, to: filter.resonance }
+  - { from: filter.audio_out, to: env_vca.audio_in }
+  - { from: amp_env.value, to: env_vca.gain }
+  - { from: env_vca.audio_out, to: accent_vca.audio_in }
+  - { from: ntc.velocity, to: accent_vca.gain }
+  - { from: accent_vca.audio_out, to: mixer.inputs }

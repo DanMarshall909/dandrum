@@ -640,7 +640,7 @@ fn validate_matching_declaration(fixture: &SoundFixture) -> Result<(), String> {
 mod tests {
     use super::*;
     use crate::script::ScriptEvent;
-    use std::collections::BTreeSet;
+    use std::collections::{BTreeMap, BTreeSet};
     use std::fs;
 
     fn acid_fixture_path() -> PathBuf {
@@ -1123,6 +1123,91 @@ mod tests {
             crate::sound_analysis::analyze_sound(&mono, first.sample_rate_hz, fixture.analysis,)
                 .unwrap()
         );
+    }
+
+    #[test]
+    fn acid_kernel_variant_loads_as_a_kernel_document() {
+        let fixture =
+            load_sound_fixture_file(acid_fixture_path()).expect("TB-303 sound fixture should load");
+        let kernel_path = fixture.patch.with_file_name("tb303-acid-kernel.yaml");
+        let kernel = crate::kernel::document::load_kernel_patch_file(&kernel_path)
+            .expect("TB-303 patch should use the kernel document shape");
+        let legacy = crate::patch::load_patch_str(include_str!(
+            "../tests/fixtures/unify-graph-kernel/legacy/tb303-acid.yaml"
+        ))
+        .expect("pre-migration acid patch should parse");
+        let kernel = SoundPatch::Kernel(kernel);
+        let legacy = SoundPatch::Legacy(legacy);
+        for name in [
+            "filter.cutoff",
+            "filter.resonance",
+            "filter.envelope_modulation",
+            "filter.decay_ms",
+            "accent.brightness",
+            "amp.release_ms",
+            "slide.time_ms",
+        ] {
+            let expected = legacy.numeric_target(name).expect("legacy control exists");
+            let actual = kernel.numeric_target(name).expect("kernel control exists");
+            assert_eq!(actual.default, expected.default, "{name} default changed");
+            assert_eq!(actual.min, expected.min, "{name} minimum changed");
+            assert_eq!(actual.max, expected.max, "{name} maximum changed");
+        }
+    }
+
+    #[test]
+    fn acid_kernel_render_preserves_legacy_calibration() {
+        let mut fixture =
+            load_sound_fixture_file(acid_fixture_path()).expect("TB-303 sound fixture should load");
+        fixture.patch = fixture.patch.with_file_name("tb303-acid-kernel.yaml");
+        let legacy = crate::patch::load_patch_str(include_str!(
+            "../tests/fixtures/unify-graph-kernel/legacy/tb303-acid.yaml"
+        ))
+        .expect("pre-migration acid patch should parse");
+        let patch_root = fixture.patch.parent().expect("acid patch has a directory");
+
+        for values in [
+            BTreeMap::new(),
+            BTreeMap::from([("filter.cutoff".to_string(), 0.7)]),
+        ] {
+            let expected = render_sound_fixture_with_patch_and_public_numeric_values(
+                &fixture, &legacy, patch_root, &values,
+            )
+            .expect("legacy calibration should render");
+            let actual = render_sound_fixture_with_public_numeric_values(&fixture, &values)
+                .expect("kernel acid patch should render");
+            if values.is_empty() {
+                assert!(actual.left[49_000] < -0.04);
+            }
+            for (name, actual, expected) in [
+                ("left", &actual.left, &expected.left),
+                ("right", &actual.right, &expected.right),
+            ] {
+                assert_eq!(actual.len(), expected.len());
+                let max_difference = actual
+                    .iter()
+                    .zip(expected)
+                    .map(|(actual, expected)| (actual - expected).abs())
+                    .fold(0.0_f32, f32::max);
+                let rms_difference = (actual
+                    .iter()
+                    .zip(expected)
+                    .map(|(actual, expected)| f64::from(actual - expected).powi(2))
+                    .sum::<f64>()
+                    / actual.len() as f64)
+                    .sqrt();
+                // The legacy offline renderer skips inactive voice processing;
+                // the kernel root runs continuously, changing only onset transients.
+                assert!(
+                    max_difference < 0.01,
+                    "{name} peak difference {max_difference} for {values:?}"
+                );
+                assert!(
+                    rms_difference < 0.0001,
+                    "{name} RMS difference {rms_difference} for {values:?}"
+                );
+            }
+        }
     }
 
     #[test]

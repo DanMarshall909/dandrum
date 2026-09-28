@@ -1,0 +1,270 @@
+metadata:
+  name: TB-303 Acid
+  version: "0.1"
+instrument:
+  id: dandrum.tb303-acid
+  preset_schema_version: 1
+preset_surface:
+  parameters:
+    - name: filter.cutoff
+      type: number
+      default: 0.4
+      min: 0.02
+      max: 0.9
+      maps_to: accent_bright.offset
+    - name: filter.resonance
+      type: number
+      default: 0.65
+      min: 0
+      max: 1
+      maps_to: resonance_control.offset
+    - name: filter.envelope_modulation
+      type: number
+      default: 0.4
+      min: 0
+      max: 1
+      maps_to: cutoff_shaper.scale
+    - name: filter.decay_ms
+      type: number
+      default: 1000
+      min: 50
+      max: 3000
+      maps_to: filter_env.decay
+    - name: accent.brightness
+      type: number
+      default: 0.12
+      min: 0
+      max: 0.5
+      maps_to: accent_bright.scale
+    - name: amp.release_ms
+      type: number
+      default: 60
+      min: 5
+      max: 500
+      maps_to: amp_env.release
+    - name: slide.time_ms
+      type: number
+      default: 60
+      min: 0
+      max: 500
+      maps_to: pitch_slew.time_ms
+# Monophonic acid bassline. note_to_control drives a saw oscillator through a
+# reusable `slew` portamento (engaged only on legato/slide notes) and an
+# envelope-swept moog filter. Accent = note velocity, routed both to the VCA
+# (louder) and, scaled, into the filter cutoff (brighter).
+voice_allocation:
+  max_voices: 1
+  stealing: oldest_active
+render:
+  sample_rate_hz: 48000
+  block_size_frames: 128
+  duration_frames: 48000
+modules:
+  - id: midi
+    type: midi_input
+    outputs:
+      - name: events
+        signal_type: event
+  # Mono note source: snaps pitch, holds the gate across overlapping (slid)
+  # notes, and raises `slide` while a note is legato so the slew glides.
+  - id: ntc
+    type: note_to_control
+    inputs:
+      - name: events
+        signal_type: event
+    outputs:
+      - name: pitch_ratio
+        signal_type: control
+      - name: gate
+        signal_type: event
+      - name: velocity
+        signal_type: control
+      - name: slide
+        signal_type: control
+  # Portamento: glides pitch toward the target only while `glide` (slide) is on.
+  - id: pitch_slew
+    type: slew
+    parameters:
+      time_ms: 60
+    inputs:
+      - name: value
+        signal_type: control
+      - name: glide
+        signal_type: control
+    outputs:
+      - name: value
+        signal_type: control
+  - id: osc
+    type: oscillator
+    parameters:
+      waveform: saw
+    inputs:
+      - name: pitch
+        signal_type: control
+    outputs:
+      - name: audio
+        signal_type: audio
+  # Amplitude envelope: fast attack, sustained while held, quick release.
+  - id: amp_env
+    type: adsr
+    parameters:
+      attack: 3
+      decay: 200
+      sustain: 0.8
+      release: 60
+    inputs:
+      - name: gate
+        signal_type: event
+    outputs:
+      - name: value
+        signal_type: control
+  # Filter envelope: opens the cutoff on note-on then decays — the acid "wow".
+  - id: filter_env
+    type: adsr
+    parameters:
+      attack: 3
+      decay: 1000
+      sustain: 0.2
+      release: 120
+    inputs:
+      - name: gate
+        signal_type: event
+    outputs:
+      - name: value
+        signal_type: control
+  # Accent brightness: scale + offset the velocity so accented notes add extra
+  # cutoff above a positive base cutoff. amount: 0 makes this a linear scaler
+  # (out = velocity*scale + offset).
+  - id: accent_bright
+    type: curve_mapper
+    parameters:
+      amount: 0
+      scale: 0.12
+      offset: 0.4
+    inputs:
+      - name: value
+        signal_type: control
+    outputs:
+      - name: value
+        signal_type: control
+  # Cutoff = filter envelope + accent brightness. A curve_mapper adds its
+  # `offset` input to the (linearly passed) `value` input, so it sums the two
+  # single-source control signals without needing a dedicated control mixer.
+  - id: cutoff_shaper
+    type: curve_mapper
+    parameters:
+      amount: 0
+      scale: 0.4
+    inputs:
+      - name: value
+        signal_type: control
+      - name: offset
+        signal_type: control
+    outputs:
+      - name: value
+        signal_type: control
+  # Deliberate fixed resonance for the proof-of-concept voice. Keeping it as a
+  # visible control module makes the value easy to expose or modulate later.
+  - id: resonance_control
+    type: curve_mapper
+    parameters:
+      amount: 0
+      scale: 0
+      offset: 0.65
+    inputs:
+      - name: value
+        signal_type: control
+    outputs:
+      - name: value
+        signal_type: control
+  - id: filter
+    type: filter
+    parameters:
+      algorithm: moog
+    inputs:
+      - name: audio_in
+        signal_type: audio
+      - name: cutoff
+        signal_type: control
+      - name: resonance
+        signal_type: control
+    outputs:
+      - name: audio_out
+        signal_type: audio
+  # Envelope VCA, then accent VCA (velocity) in series — accented notes louder.
+  - id: env_vca
+    type: gain
+    inputs:
+      - name: audio_in
+        signal_type: audio
+      - name: gain
+        signal_type: control
+    outputs:
+      - name: audio_out
+        signal_type: audio
+  - id: accent_vca
+    type: gain
+    inputs:
+      - name: audio_in
+        signal_type: audio
+      - name: gain
+        signal_type: control
+    outputs:
+      - name: audio_out
+        signal_type: audio
+  - id: mixer
+    type: audio_mixer
+    inputs:
+      - name: inputs
+        signal_type: audio
+    outputs:
+      - name: mix
+        signal_type: audio
+  - id: out
+    type: audio_output
+    inputs:
+      - name: left
+        signal_type: audio
+      - name: right
+        signal_type: audio
+connections:
+  - from: midi.events
+    to: ntc.events
+  - from: ntc.pitch_ratio
+    to: pitch_slew.value
+  - from: ntc.slide
+    to: pitch_slew.glide
+  - from: pitch_slew.value
+    to: osc.pitch
+  - from: ntc.gate
+    to: amp_env.gate
+  - from: ntc.gate
+    to: filter_env.gate
+  - from: ntc.velocity
+    to: accent_bright.value
+  - from: osc.audio
+    to: filter.audio_in
+  - from: filter_env.value
+    to: cutoff_shaper.value
+  - from: accent_bright.value
+    to: cutoff_shaper.offset
+  - from: cutoff_shaper.value
+    to: filter.cutoff
+  - from: resonance_control.value
+    to: filter.resonance
+  - from: filter.audio_out
+    to: env_vca.audio_in
+  - from: amp_env.value
+    to: env_vca.gain
+  # Accent VCA (velocity) after the envelope VCA, still pre-mixer (voice scope),
+  # so accented notes are audibly louder.
+  - from: env_vca.audio_out
+    to: accent_vca.audio_in
+  - from: ntc.velocity
+    to: accent_vca.gain
+  - from: accent_vca.audio_out
+    to: mixer.inputs
+  - from: mixer.mix
+    to: out.left
+  - from: mixer.mix
+    to: out.right
