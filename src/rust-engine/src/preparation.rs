@@ -1780,6 +1780,56 @@ mod tests {
     }
 
     #[test]
+    fn poly_without_done_retires_after_ten_milliseconds_of_released_silence() {
+        let voice = GraphDefinition::new("silent_voice")
+            .with_port(
+                KernelPort::output("audio", SignalType::Audio, 1)
+                    .maps_from(kernel_ref("gain", builtin_ports::AUDIO_OUT)),
+            )
+            .with_port(
+                KernelPort::output("velocity", SignalType::Control, 1).maps_from(kernel_ref(
+                    crate::kernel::VOICE_INTRINSIC_NODE,
+                    crate::kernel::VOICE_VELOCITY_OUTPUT,
+                )),
+            )
+            .with_node(Node::new(NodeId::new("gain"), module_types::GAIN));
+        let prepared = prepare_audio_poly(voice, 1);
+        let mut runtime = runtime_for(&prepared);
+
+        runtime.note_on(60, 100);
+        for _ in 0..64 {
+            render_one_block(&mut runtime);
+        }
+        assert_eq!(
+            runtime.prepared_poly_runtime_regions()[0].active_voice_count(),
+            1,
+            "silence while the gate is held must not retire the voice"
+        );
+
+        runtime.note_off(60);
+        for _ in 0..59 {
+            render_one_block(&mut runtime);
+        }
+        assert_eq!(
+            runtime.prepared_poly_runtime_regions()[0].active_voice_count(),
+            1,
+            "59 eight-frame blocks at 48 kHz are shorter than 10 ms"
+        );
+        render_one_block(&mut runtime);
+        assert_eq!(
+            runtime.prepared_poly_runtime_regions()[0].active_voice_count(),
+            0
+        );
+
+        runtime.note_on(64, 100);
+        render_one_block(&mut runtime);
+        assert_eq!(
+            runtime.prepared_poly_runtime_regions()[0].voice_note(0),
+            Some(64)
+        );
+    }
+
+    #[test]
     fn poly_sums_every_channel_of_a_six_channel_voice_output() {
         let voice = noise_voice("six_channel_voice", 6, 1234);
         let root = GraphDefinition::new("root")

@@ -1,5 +1,6 @@
 use crate::builtins::module_kind::ModuleKind;
 use crate::compiled_patch::{CompiledPatch, CompiledPolyRegion, CompiledPortSpan};
+use crate::graph::SignalType;
 use crate::kernel::{
     POLY_DONE_OUTPUT, PolyAllocationPolicy, VOICE_GATE_OUTPUT, VOICE_NOTE_OUTPUT,
     VOICE_VELOCITY_OUTPUT,
@@ -13,6 +14,11 @@ use super::outputs::BlockEvent;
 use super::render_plan::{AudioBufferPlan, BufferId, EventQueueId, RenderPlan};
 use super::state::PerModuleState;
 
+/// Linear peak amplitude below which a released voice counts as silent.
+const RELEASE_SILENCE_THRESHOLD: f32 = 1.0e-4;
+/// A released voice without `done` must remain silent for this long to retire.
+const RELEASE_SILENCE_SECONDS: f32 = 0.010;
+
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 struct PolyVoiceSlot {
     active: bool,
@@ -20,6 +26,7 @@ struct PolyVoiceSlot {
     note: u8,
     velocity: u8,
     allocation_order: u64,
+    quiet_frames_after_release: usize,
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -33,6 +40,7 @@ struct VoiceIntrinsicBindings {
 struct PolyOutputBinding {
     voice_span: CompiledPortSpan,
     accumulator_start: usize,
+    signal_type: SignalType,
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -54,6 +62,7 @@ pub struct PreparedPolyRuntimeRegion {
     next_allocation_order: u64,
     intrinsic_bindings: Option<VoiceIntrinsicBindings>,
     done_binding: Option<DoneBinding>,
+    silence_hold_frames: usize,
     child_render_plan: RenderPlan,
     child_patch: Box<CompiledPatch>,
     output_bindings: Box<[PolyOutputBinding]>,
@@ -145,6 +154,7 @@ impl PreparedPolyRuntimeRegion {
                 let binding = PolyOutputBinding {
                     voice_span,
                     accumulator_start: next_accumulator,
+                    signal_type: output.signal_type(),
                 };
                 next_accumulator += voice_span.channel_count;
                 Some(binding)
@@ -165,6 +175,7 @@ impl PreparedPolyRuntimeRegion {
             next_allocation_order: 1,
             intrinsic_bindings,
             done_binding,
+            silence_hold_frames: ((sample_rate * RELEASE_SILENCE_SECONDS).ceil() as usize).max(1),
             child_render_plan,
             child_patch: Box::new(compiled.child_patch().clone()),
             output_bindings,
@@ -221,6 +232,7 @@ impl PreparedPolyRuntimeRegion {
             }
             let arena = &mut self.voice_arenas[voice];
             let states = &mut self.states[voice];
+            let mut audio_audible = false;
             for step in self.child_render_plan.global_steps.iter() {
                 super::realtime_graph_processor::clear_and_route_arena_inputs(
                     arena,
@@ -245,8 +257,10 @@ impl PreparedPolyRuntimeRegion {
                     let source = BufferId(binding.voice_span.first_buffer + channel);
                     let destination = BufferId(binding.accumulator_start + channel);
                     for frame in 0..frames {
-                        let sum = self.output_accumulator.sample(destination, frame)
-                            + arena.sample(source, frame);
+                        let sample = arena.sample(source, frame);
+                        audio_audible |= binding.signal_type == SignalType::Audio
+                            && sample.abs() > RELEASE_SILENCE_THRESHOLD;
+                        let sum = self.output_accumulator.sample(destination, frame) + sample;
                         self.output_accumulator.set_sample(destination, frame, sum);
                     }
                 }
@@ -260,6 +274,16 @@ impl PreparedPolyRuntimeRegion {
             };
             if done {
                 self.slots[voice].active = false;
+            } else if self.done_binding.is_none() && !self.slots[voice].gate_held {
+                let slot = &mut self.slots[voice];
+                slot.quiet_frames_after_release = if audio_audible {
+                    0
+                } else {
+                    slot.quiet_frames_after_release.saturating_add(frames)
+                };
+                if slot.quiet_frames_after_release >= self.silence_hold_frames {
+                    slot.active = false;
+                }
             }
         }
 
@@ -307,6 +331,7 @@ impl PreparedPolyRuntimeRegion {
             note,
             velocity,
             allocation_order: order,
+            quiet_frames_after_release: 0,
         };
         self.write_intrinsic_controls(voice, frames);
         self.push_gate_event(voice, ScriptEvent::NoteOn { note, velocity }, frame_offset);
