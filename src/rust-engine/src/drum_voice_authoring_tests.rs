@@ -14,9 +14,11 @@ use crate::graph_processor::{
     render_kernel_offline_named, render_kernel_offline_named_with_inputs,
 };
 use crate::kernel::document::load_kernel_patch_file;
+use crate::kernel::{ResourceKind, StaticArg, StaticValue};
 use crate::patch::{self, RenderSettings, validate_patch_schema};
 use crate::preparation::{
-    HostBuses, PreparedKernelInstrument, prepare_kernel_graph_with_buses, prepare_kernel_patch,
+    HostBuses, PreparationContext, PreparedKernelInstrument, prepare_kernel_graph_with_buses,
+    prepare_kernel_patch_with_context,
 };
 use crate::sample::PreparedSamplerAssets;
 use crate::script::ScriptEvent;
@@ -109,7 +111,11 @@ fn every_drum_voice_renders_non_silent_audio_from_a_midi_trigger() {
                 block_size_frames: 128,
                 duration_frames: 2_048,
             };
-            let prepared = prepare_kernel_patch(&kernel, &settings)
+            let context = PreparationContext::new(
+                path.parent().expect("drum patch has a parent directory"),
+                settings.sample_rate_hz,
+            );
+            let prepared = prepare_kernel_patch_with_context(&kernel, &settings, &context)
                 .unwrap_or_else(|error| panic!("{} should prepare: {error}", path.display()));
             let buses = render_kernel_offline_named(
                 &prepared,
@@ -160,14 +166,35 @@ fn sampler_backed_909_metallic_voices_reference_placeholder_assets() {
             continue;
         }
 
-        let patch = patch::load_patch_file(&path).expect("metallic voice should parse");
-        assert!(
-            patch
-                .assets
+        if let Ok(kernel) = load_kernel_patch_file(&path) {
+            let voice = kernel
+                .registry()
+                .get("metallic_voice")
+                .expect("metallic voice definition");
+            let sampler = voice
+                .nodes()
                 .iter()
-                .any(|asset| { asset.path.contains("assets/drums/909") }),
-            "{name} should reference a self-authored placeholder sample under assets/drums/909",
-        );
+                .find(|node| node.id().as_str() == "sampler")
+                .expect("metallic voice sampler");
+            assert!(
+                matches!(
+                    sampler.static_args().get("sample"),
+                    Some(StaticArg::Literal(StaticValue::Resource(resource)))
+                        if resource.kind() == ResourceKind::Sample
+                            && resource.path().starts_with("assets/drums/909")
+                ),
+                "{name} should reference a typed self-authored placeholder sample under assets/drums/909",
+            );
+        } else {
+            let patch = patch::load_patch_file(&path).expect("metallic voice should parse");
+            assert!(
+                patch
+                    .assets
+                    .iter()
+                    .any(|asset| { asset.path.contains("assets/drums/909") }),
+                "{name} should reference a self-authored placeholder sample under assets/drums/909",
+            );
+        }
     }
 }
 

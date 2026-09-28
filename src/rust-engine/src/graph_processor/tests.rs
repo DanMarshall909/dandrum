@@ -7255,6 +7255,145 @@ fn cowbell_preserves_legacy_preset_renders_on_master_bus() {
 }
 
 #[test]
+fn sampler_backed_909_drums_preserve_legacy_preset_renders() {
+    for (fixture, legacy_yaml, instrument_id, alias, sample_name, level) in [
+        (
+            "examples/patches/drums/drum-909-hat-closed.yaml",
+            include_str!("../../tests/fixtures/unify-graph-kernel/legacy/drum-909-hat-closed.yaml"),
+            "dandrum.drum-909-hat-closed",
+            "hat.level",
+            "hat-closed.wav",
+            0.8,
+        ),
+        (
+            "examples/patches/drums/drum-909-hat-open.yaml",
+            include_str!("../../tests/fixtures/unify-graph-kernel/legacy/drum-909-hat-open.yaml"),
+            "dandrum.drum-909-hat-open",
+            "hat.level",
+            "hat-open.wav",
+            0.8,
+        ),
+        (
+            "examples/patches/drums/drum-909-crash.yaml",
+            include_str!("../../tests/fixtures/unify-graph-kernel/legacy/drum-909-crash.yaml"),
+            "dandrum.drum-909-crash",
+            "crash.level",
+            "crash.wav",
+            0.7,
+        ),
+        (
+            "examples/patches/drums/drum-909-ride.yaml",
+            include_str!("../../tests/fixtures/unify-graph-kernel/legacy/drum-909-ride.yaml"),
+            "dandrum.drum-909-ride",
+            "ride.level",
+            "ride.wav",
+            0.7,
+        ),
+    ] {
+        let yaml = read_repo_fixture(fixture).expect("metallic drum example exists");
+        let patch = load_kernel_patch_str(&yaml).expect("metallic drum loads as kernel patch");
+        assert_eq!(
+            patch.instrument().expect("instrument identity").id,
+            instrument_id
+        );
+        assert_eq!(patch.preset_surface().parameters()[0].name(), alias);
+        let voice = patch
+            .registry()
+            .get("metallic_voice")
+            .expect("voice definition");
+        let sample = voice
+            .nodes()
+            .iter()
+            .find(|node| node.id().as_str() == "sampler")
+            .expect("sampler node");
+        let Some(crate::kernel::StaticArg::Literal(crate::kernel::StaticValue::Resource(resource))) =
+            sample.static_args().get("sample")
+        else {
+            panic!("{fixture} should declare a typed sample resource");
+        };
+        assert_eq!(resource.kind(), crate::kernel::ResourceKind::Sample);
+        assert_eq!(
+            resource.path(),
+            Path::new("assets/drums/909").join(sample_name)
+        );
+
+        let settings = RenderSettings {
+            sample_rate_hz: 48_000,
+            block_size_frames: 128,
+            duration_frames: 2_048,
+        };
+        let patch_root = Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("../..")
+            .join("examples/patches/drums");
+        let context = PreparationContext::new(&patch_root, settings.sample_rate_hz);
+        let events = vec![note_on_value(0, 42, 110)];
+        let mut baseline = None;
+        for (case, level) in [("advertised defaults", level), ("changed level", 0.3)] {
+            let preset = patch::load_preset_str(&format!(
+                "name: {case}\ninstrument: {{ id: {instrument_id}, preset_schema_version: 1 }}\nvalues: {{ {alias}: {level} }}\n"
+            ))
+            .expect("metallic drum preset parses");
+            let mut legacy = patch::apply_preset(
+                &patch::load_patch_str(legacy_yaml).expect("legacy metallic drum parses"),
+                &preset,
+            )
+            .expect("legacy metallic drum preset applies");
+            legacy.render = settings.clone();
+            let legacy = crate::preparation::prepare_instrument_document(legacy, &patch_root)
+                .expect("legacy metallic drum prepares with sample");
+            let expected = crate::synth::DandrumEngine::new()
+                .render_prepared_instrument_offline(&legacy, events.clone());
+            assert!(expected.left.iter().any(|sample| sample.abs() > 0.001));
+            assert_eq!(expected.left, expected.right);
+
+            let applied = if case == "advertised defaults" {
+                patch.clone()
+            } else {
+                patch
+                    .apply_preset(&preset)
+                    .expect("kernel metallic drum preset applies")
+            };
+            let prepared = prepare_kernel_patch_with_context(&applied, &settings, &context)
+                .expect("typed drum sample resolves within the patch root");
+            let buses = render_kernel_offline_named(
+                &prepared,
+                events.clone(),
+                &PreparedSamplerAssets::empty(),
+            )
+            .expect("metallic drum renders on named buses");
+            assert_eq!(buses.len(), 2);
+            for (channel, name, expected) in
+                [(0, "left", &expected.left), (1, "right", &expected.right)]
+            {
+                assert_eq!(buses[channel].0, name);
+                assert_eq!(buses[channel].1.len(), 1);
+                let actual = &buses[channel].1[0];
+                assert_eq!(actual.len(), expected.len());
+                let mismatch = actual
+                    .iter()
+                    .zip(expected)
+                    .position(|(actual, expected)| actual != expected);
+                assert_eq!(
+                    mismatch,
+                    None,
+                    "{fixture} {case} {name} differs at frame {mismatch:?}: actual {:?}, expected {:?}",
+                    mismatch.map(|frame| actual[frame]),
+                    mismatch.map(|frame| expected[frame]),
+                );
+            }
+            if let Some(baseline) = &baseline {
+                assert_ne!(
+                    &expected.left, baseline,
+                    "changed level should change the sample output"
+                );
+            } else {
+                baseline = Some(expected.left);
+            }
+        }
+    }
+}
+
+#[test]
 fn impulse_noise_and_layer_examples_match_legacy_render_on_named_buses() {
     for (fixture, legacy_yaml) in [
         (
