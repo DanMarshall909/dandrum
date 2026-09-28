@@ -257,7 +257,6 @@ mod tests {
                 maps_from: vec![port_ref("osc.audio")],
             }],
             parameters: vec![],
-            asset_bindings: vec![],
             modules: vec![ordinary("osc", "oscillator"), ordinary("env", "adsr")],
             connections: vec![connection("osc.audio", "env.gate")],
         }

@@ -256,62 +256,26 @@ modules:
 }
 
 #[test]
-fn module_asset_bindings_accept_only_existing_sample_assets() {
-    let diagnostics = diagnostics_for_invalid_patch(
+fn legacy_module_asset_bindings_are_rejected() {
+    let error = load_patch_str(
         r#"
 metadata:
-  name: Module Asset Bindings
+  name: Legacy Asset Binding
 render:
   sample_rate_hz: 48000
   block_size_frames: 64
   duration_frames: 64
-assets:
-  - id: kick
-    kind: sample
-    path: kick.wav
-  - id: script_asset
-    kind: script
-    path: map.rhai
 module_definitions:
   - type: test.sample_wrapper
     asset_bindings:
       - name: hit
     modules: []
-modules:
-  - id: numeric_asset
-    type: test.sample_wrapper
-    parameters:
-      hit: 123
-  - id: missing_asset
-    type: test.sample_wrapper
-    parameters:
-      hit: missing
-  - id: wrong_kind
-    type: test.sample_wrapper
-    parameters:
-      hit: script_asset
-  - id: ok
-    type: test.sample_wrapper
-    parameters:
-      hit: kick
+modules: []
 "#,
-    );
+    )
+    .expect_err("legacy composite asset bindings must be rejected");
 
-    assert_diagnostic_contains(
-        &diagnostics,
-        error_codes::VALIDATION_TYPE_MISMATCH,
-        "asset binding hit must be a text asset ID",
-    );
-    assert_diagnostic_contains(
-        &diagnostics,
-        error_codes::VALIDATION_UNKNOWN_MODULE,
-        "asset binding hit references missing asset missing",
-    );
-    assert_diagnostic_contains(
-        &diagnostics,
-        error_codes::VALIDATION_TYPE_MISMATCH,
-        "asset binding hit references asset script_asset with kind Script; expected sample",
-    );
+    assert!(error.to_string().contains("asset_bindings"), "{error}");
 }
 
 #[test]
@@ -733,19 +697,18 @@ modules:
 }
 
 #[test]
-fn module_asset_binding_unset_on_instance_is_skipped() {
-    let patch = load_patch_str(
+fn empty_legacy_module_asset_bindings_are_rejected() {
+    let error = load_patch_str(
         r#"
 metadata:
-  name: Module Optional Asset
+  name: Legacy Empty Asset Binding
 render:
   sample_rate_hz: 48000
   block_size_frames: 64
   duration_frames: 64
 module_definitions:
   - type: test.optional_asset
-    asset_bindings:
-      - name: hit
+    asset_bindings: []
     modules:
       - id: body
         type: gain
@@ -754,10 +717,9 @@ modules:
     type: test.optional_asset
 "#,
     )
-    .expect("patch should parse");
+    .expect_err("even empty legacy asset bindings must be rejected");
 
-    validate_patch_schema(&patch)
-        .expect("an instance that omits an optional asset binding should validate");
+    assert!(error.to_string().contains("asset_bindings"), "{error}");
 }
 
 #[test]

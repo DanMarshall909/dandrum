@@ -3,12 +3,13 @@ use std::collections::{BTreeMap, BTreeSet};
 use crate::builtins::{BuiltInModuleRegistry, module_types};
 use crate::diagnostics::{Diagnostic, Severity, error_codes};
 use crate::patch::{
-    AssetKind, ConnectionDeclaration, ModuleDeclaration, ParameterValue, PatchDocument,
-    PatchValidationError, PortReference, SignalType, validate_port_reference,
+    ConnectionDeclaration, ModuleDeclaration, ParameterValue, PatchDocument, PatchValidationError,
+    PortReference, SignalType, validate_port_reference,
 };
 use serde::Deserialize;
 
 #[derive(Clone, Debug, Deserialize, PartialEq)]
+#[serde(deny_unknown_fields)]
 pub struct ModuleDefinitionDeclaration {
     #[serde(rename = "type")]
     pub module_type: String,
@@ -18,8 +19,6 @@ pub struct ModuleDefinitionDeclaration {
     pub outputs: Vec<ModuleOutputDeclaration>,
     #[serde(default)]
     pub parameters: Vec<ModuleBindingDeclaration>,
-    #[serde(default)]
-    pub asset_bindings: Vec<ModuleBindingDeclaration>,
     #[serde(default)]
     pub modules: Vec<ModuleDeclaration>,
     #[serde(default)]
@@ -473,7 +472,6 @@ pub(super) fn validate_module_instance_bindings(
     let declared_bindings = definition
         .parameters
         .iter()
-        .chain(definition.asset_bindings.iter())
         .map(|binding| binding.name.as_str())
         .collect::<BTreeSet<_>>();
 
@@ -514,44 +512,6 @@ pub(super) fn validate_module_instance_bindings(
         }
 
         validate_module_numeric_range(definition, parameter, "value", value, diagnostics);
-    }
-
-    for binding in &definition.asset_bindings {
-        let Some(value) = module.parameters.get(&binding.name) else {
-            continue;
-        };
-        let ParameterValue::Text(asset_id) = value else {
-            diagnostics.push(Diagnostic::new(
-                error_codes::VALIDATION_TYPE_MISMATCH,
-                Severity::Error,
-                format!(
-                    "module {} instance {} asset binding {} must be a text asset ID",
-                    definition.module_type, module.id, binding.name
-                ),
-            ));
-            continue;
-        };
-        let Some(asset) = patch.assets.iter().find(|asset| asset.id == *asset_id) else {
-            diagnostics.push(Diagnostic::new(
-                error_codes::VALIDATION_UNKNOWN_MODULE,
-                Severity::Error,
-                format!(
-                    "module {} instance {} asset binding {} references missing asset {}",
-                    definition.module_type, module.id, binding.name, asset_id
-                ),
-            ));
-            continue;
-        };
-        if asset.kind != AssetKind::Sample {
-            diagnostics.push(Diagnostic::new(
-                error_codes::VALIDATION_TYPE_MISMATCH,
-                Severity::Error,
-                format!(
-                    "module {} instance {} asset binding {} references asset {} with kind {:?}; expected sample",
-                    definition.module_type, module.id, binding.name, asset_id, asset.kind
-                ),
-            ));
-        }
     }
 }
 

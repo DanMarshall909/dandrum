@@ -1286,19 +1286,6 @@ fn collect_referenced_asset_ids<'a>(patch: &'a PatchDocument) -> BTreeSet<&'a st
         if let Some(ParameterValue::Text(asset_id)) = module.parameters.get("asset") {
             ids.insert(asset_id.as_str());
         }
-        if let Some(definition) = patch
-            .module_definitions
-            .iter()
-            .find(|d| d.module_type == module.module_type)
-        {
-            for binding in &definition.asset_bindings {
-                if let Some(ParameterValue::Text(asset_id)) =
-                    module.parameters.get(binding.name.as_str())
-                {
-                    ids.insert(asset_id.as_str());
-                }
-            }
-        }
     }
 
     for definition in &patch.module_definitions {
