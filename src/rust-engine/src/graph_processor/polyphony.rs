@@ -53,7 +53,10 @@ struct PolyOutputBinding {
 #[derive(Clone, Copy, Debug)]
 enum DoneBinding {
     Event(EventQueueId),
-    Control(BufferId),
+    Control {
+        buffer: BufferId,
+        producer_step: usize,
+    },
 }
 
 pub struct PreparedPolyRuntimeRegion {
@@ -244,8 +247,9 @@ impl PreparedPolyRuntimeRegion {
             let arena = &mut self.voice_arenas[voice];
             let states = &mut self.states[voice];
             let mut audio_audible = false;
+            let mut control_done = false;
             let release_start = self.slots[voice].release_offset_pending.min(frames);
-            for step in self.child_render_plan.global_steps.iter() {
+            for (step_index, step) in self.child_render_plan.global_steps.iter().enumerate() {
                 for edge in step.incoming_event_edges.iter().copied() {
                     let _ = self.voice_event_queues[voice].route_event_edge(edge);
                 }
@@ -296,6 +300,15 @@ impl PreparedPolyRuntimeRegion {
                         arena, states, step, frames,
                     ),
                 }
+                if let Some(DoneBinding::Control {
+                    buffer,
+                    producer_step,
+                }) = self.done_binding
+                {
+                    if step_index == producer_step {
+                        control_done = arena.sample(buffer, 0) > 0.0;
+                    }
+                }
             }
 
             for binding in self.output_bindings.iter().copied() {
@@ -316,7 +329,7 @@ impl PreparedPolyRuntimeRegion {
                 Some(DoneBinding::Event(queue)) => self.voice_event_queues[voice]
                     .queue_ref(queue.0)
                     .is_some_and(|events| !events.is_empty()),
-                Some(DoneBinding::Control(buffer)) => arena.sample(buffer, 0) > 0.0,
+                Some(DoneBinding::Control { .. }) => control_done,
                 None => false,
             };
             if done {
@@ -591,7 +604,7 @@ fn voice_done_binding(compiled: &CompiledPolyRegion, plan: &RenderPlan) -> Optio
         .root_output_sources()
         .get(POLY_DONE_OUTPUT)?
         .first()?;
-    let step = plan.global_steps.iter().find(|step| {
+    let (producer_step, step) = plan.global_steps.iter().enumerate().find(|(_, step)| {
         compiled.child_patch().nodes()[step.module_index]
             .id
             .as_str()
@@ -618,7 +631,10 @@ fn voice_done_binding(compiled: &CompiledPolyRegion, plan: &RenderPlan) -> Optio
         step.output_buffers
             .get(ordinal)
             .copied()
-            .map(DoneBinding::Control)
+            .map(|buffer| DoneBinding::Control {
+                buffer,
+                producer_step,
+            })
     }
 }
 

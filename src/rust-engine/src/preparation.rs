@@ -603,6 +603,46 @@ fn compile_poly_regions(
         .map_err(|error| {
             KernelPreparationError::from(diagnostics::Diagnostics::from(error.to_diagnostic()))
         })?;
+        if let Some(done) = child_flattened
+            .root_ports()
+            .iter()
+            .find(|port| port.name() == crate::kernel::POLY_DONE_OUTPUT)
+        {
+            let sources = child_flattened
+                .root_output_sources()
+                .get(crate::kernel::POLY_DONE_OUTPUT)
+                .map(Vec::as_slice)
+                .unwrap_or_default();
+            let valid_source = sources.len() == 1
+                && child_patch.nodes().iter().any(|node| {
+                    node.id.as_str() == sources[0].node().as_str()
+                        && node
+                            .output_port_names
+                            .iter()
+                            .zip(&node.output_port_types)
+                            .any(|(name, signal_type)| {
+                                name == sources[0].port() && *signal_type == done.signal_type()
+                            })
+                });
+            if !valid_source {
+                return Err(KernelPreparationError::from(
+                    diagnostics::Diagnostics::from(
+                        Diagnostic::new(
+                            diagnostics::error_codes::KERNEL_POLY_MALFORMED_INTERFACE,
+                            Severity::Error,
+                            format!(
+                                "poly region '{}' declares a 'done' output without one resolvable source",
+                                region.node_id().as_str()
+                            ),
+                        )
+                        .with_module_id(region.node_id().as_str())
+                        .with_suggested_fix(
+                            "map 'done' from one child event or control output",
+                        ),
+                    ),
+                ));
+            }
+        }
         let child_input_spans = child_flattened
             .root_ports()
             .iter()
@@ -2000,18 +2040,33 @@ mod tests {
         assert_eq!(runtime.render(&mut left, &mut right), frames);
         assert!(left.iter().all(|sample| *sample == 0.0));
         assert!(right.iter().all(|sample| *sample == 0.0));
+
+        let mut midblock = runtime_for(&prepared);
+        midblock.note_on_at(60, 100, 0);
+        midblock.note_off_at(60, 4);
+        assert_eq!(midblock.render(&mut left, &mut right), frames);
+        assert!((left[3] - 0.0078125).abs() < 1.0e-6);
+        assert!(
+            (left[4] - left[3]).abs() < 1.0e-6,
+            "release begins at the level reached immediately before note-off"
+        );
     }
 
     #[test]
     fn poly_done_control_retires_only_when_signalled() {
-        let voice = noise_voice("control_done_voice", 1, 1234).with_port(
-            KernelPort::output(crate::kernel::POLY_DONE_OUTPUT, SignalType::Control, 1).maps_from(
+        let voice = noise_voice("control_done_voice", 1, 1234)
+            .with_port(
+                KernelPort::output(crate::kernel::POLY_DONE_OUTPUT, SignalType::Control, 1)
+                    .maps_from(kernel_ref("mapper", builtin_ports::VALUE)),
+            )
+            .with_node(Node::new(NodeId::new("mapper"), module_types::CURVE_MAPPER))
+            .with_connection(Connection::new(
                 kernel_ref(
                     crate::kernel::VOICE_INTRINSIC_NODE,
                     crate::kernel::VOICE_VELOCITY_OUTPUT,
                 ),
-            ),
-        );
+                kernel_ref("mapper", builtin_ports::VALUE),
+            ));
         let prepared = prepare_audio_poly(voice, 1);
         let frames = KERNEL_RENDER_SETTINGS.block_size_frames as usize;
         let mut left = vec![0.0; frames];
@@ -2036,6 +2091,80 @@ mod tests {
         assert_eq!(signalled.render(&mut left, &mut right), frames);
         assert!(left.iter().all(|sample| *sample == 0.0));
         assert!(right.iter().all(|sample| *sample == 0.0));
+    }
+
+    #[test]
+    fn poly_done_control_is_observed_before_a_later_child_reuses_its_buffer() {
+        let voice = GraphDefinition::new("reused_done_voice")
+            .with_port(
+                KernelPort::output("audio", SignalType::Audio, 1)
+                    .maps_from(kernel_ref("gain2", builtin_ports::AUDIO_OUT)),
+            )
+            .with_port(
+                KernelPort::output(crate::kernel::POLY_DONE_OUTPUT, SignalType::Control, 1)
+                    .maps_from(kernel_ref("mapper", builtin_ports::VALUE)),
+            )
+            .with_node(Node::new(NodeId::new("mapper"), module_types::CURVE_MAPPER))
+            .with_node(Node::new(NodeId::new("gain1"), module_types::GAIN))
+            .with_node(Node::new(NodeId::new("gain2"), module_types::GAIN))
+            .with_connection(Connection::new(
+                kernel_ref(
+                    crate::kernel::VOICE_INTRINSIC_NODE,
+                    crate::kernel::VOICE_VELOCITY_OUTPUT,
+                ),
+                kernel_ref("mapper", builtin_ports::VALUE),
+            ))
+            .with_connection(Connection::new(
+                kernel_ref("mapper", builtin_ports::VALUE),
+                kernel_ref("gain1", builtin_ports::GAIN),
+            ))
+            .with_connection(Connection::new(
+                kernel_ref("gain1", builtin_ports::AUDIO_OUT),
+                kernel_ref("gain2", builtin_ports::AUDIO_IN),
+            ));
+        let prepared = prepare_audio_poly(voice, 1);
+        let mut runtime = runtime_for(&prepared);
+        let frames = KERNEL_RENDER_SETTINGS.block_size_frames as usize;
+        let mut left = vec![0.0; frames];
+        let mut right = vec![0.0; frames];
+
+        runtime.note_on(60, 100);
+        assert_eq!(runtime.render(&mut left, &mut right), frames);
+        assert_eq!(
+            runtime.prepared_poly_runtime_regions()[0].active_voice_count(),
+            0
+        );
+    }
+
+    #[test]
+    fn preparation_rejects_declared_poly_done_without_a_resolvable_source() {
+        for done_port in [
+            KernelPort::output(crate::kernel::POLY_DONE_OUTPUT, SignalType::Control, 1),
+            KernelPort::output(crate::kernel::POLY_DONE_OUTPUT, SignalType::Control, 1)
+                .maps_from(kernel_ref("noise", "unknown_output")),
+        ] {
+            let voice = noise_voice("missing_done_voice", 1, 1234).with_port(done_port);
+            let root = GraphDefinition::new("root")
+                .with_port(
+                    KernelPort::output("master", SignalType::Audio, 1)
+                        .maps_from(kernel_ref("voices", "audio")),
+                )
+                .with_node(poly_node("voices", voice.name(), 1));
+            let error = prepare_kernel_graph_with_buses(
+                &root,
+                &builtin_registry().with_definition(voice),
+                &KERNEL_RENDER_SETTINGS,
+                &HostBuses::new().with_output("master", 1),
+            )
+            .expect_err("declared done requires one resolvable source");
+            let diagnostic = error.diagnostics().errors().next().unwrap();
+
+            assert_eq!(
+                diagnostic.error_code(),
+                diagnostics::error_codes::KERNEL_POLY_MALFORMED_INTERFACE
+            );
+            assert_eq!(diagnostic.module_id(), Some("voices"));
+        }
     }
 
     #[test]

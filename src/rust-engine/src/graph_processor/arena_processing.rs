@@ -105,7 +105,7 @@ pub(super) fn process_adsr(
                     ScriptEvent::NoteOff { .. } => {
                         *gate_active = false;
                         *release_start_frame = absolute_frame;
-                        *release_start_level = *level;
+                        *release_start_level = final_level;
                     }
                 }
             }

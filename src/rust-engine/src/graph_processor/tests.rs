@@ -2141,6 +2141,43 @@ fn realtime_processor_is_finished_tracks_full_voice_lifecycle() {
 }
 
 #[test]
+fn adsr_midblock_note_off_releases_from_the_previous_sample() {
+    let mut state = PerModuleState::Adsr {
+        level: 0.0,
+        gate_active: false,
+        release_start_frame: 0,
+        release_start_level: 0.0,
+        sample_rate: 48_000.0,
+    };
+    let output = process_adsr(
+        &mut state,
+        &[
+            BlockEvent {
+                frame_offset: 0,
+                event: ScriptEvent::NoteOn {
+                    note: 60,
+                    velocity: 100,
+                },
+            },
+            BlockEvent {
+                frame_offset: 4,
+                event: ScriptEvent::NoteOff { note: 60 },
+            },
+        ],
+        &[0.0; 8],
+        &[0.0; 8],
+        &[0.5; 8],
+        &[0.0; 8],
+        0,
+        8,
+    );
+    let levels = &output.control[builtin_ports::VALUE];
+
+    assert!((levels[3] - 0.03125).abs() < 1.0e-6);
+    assert!((levels[4] - levels[3]).abs() < 1.0e-6);
+}
+
+#[test]
 fn adsr_release_duration_matches_default_release_time() {
     // Direct unit test of process_adsr release phase duration.
     // Default release = 200ms. At 48kHz that's 9600 frames.

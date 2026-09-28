@@ -1260,15 +1260,18 @@ AC rust-engine-architecture :: Patch preparation pipeline :: Valid patch produce
 
 AC rust-engine-architecture :: Polyphonic realtime rendering uses prepared storage :: Inactive voices do not leak stale output
   fp 513da6044e60
-  todo not yet mapped to a test
+  test rust:poly_done_event_retires_voice_and_clears_its_future_output
+  test rust:full_capacity_poly_activation_mix_and_done_retirement_do_not_allocate
 
 AC rust-engine-architecture :: Polyphonic realtime rendering uses prepared storage :: Voice event routing uses prepared queues
   fp 74aee0e24f3d
-  todo not yet mapped to a test
+  test rust:prepared_poly_note_routing_performs_no_realtime_allocations
+  test rust:full_capacity_poly_stealing_and_rejection_render_without_allocation
 
 AC rust-engine-architecture :: Polyphonic realtime rendering uses prepared storage :: Voice outputs accumulate into prepared buffers
   fp 598da39f1cac
-  todo not yet mapped to a test
+  test rust:full_capacity_poly_activation_mix_and_done_retirement_do_not_allocate
+  test rust:full_capacity_poly_stealing_and_rejection_render_without_allocation
 
 AC rust-engine-architecture :: Public API boundary :: Crate root exposes facade APIs
   fp 02d4009ccbb0
