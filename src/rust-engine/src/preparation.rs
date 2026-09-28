@@ -26,7 +26,6 @@ use crate::sample::{self, LoadedSample, PreparedSamplerAssets, SampleLoadError};
 
 const KERNEL_COMPENSATION_EDGE_PREFIX: &str = "compensation::edge::";
 const KERNEL_COMPENSATION_ROOT_PREFIX: &str = "compensation::root::";
-const KERNEL_OUTPUT_NODE_ID: &str = "kernel::audio_output";
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct PreparationContext {
@@ -1015,7 +1014,6 @@ fn lower_kernel_graph(
     latency_plan: &LatencyPlan,
     resources: &BTreeMap<String, CompiledResourceHandles>,
 ) -> Result<LoweredKernelGraph, KernelPreparationError> {
-    use crate::builtins::module_types;
     use crate::graph::builtin_ports;
 
     let mut ids = flattened
@@ -1163,34 +1161,6 @@ fn lower_kernel_graph(
         root_outputs.insert(root_name.clone(), kernel_ref_from_legacy(&source));
     }
 
-    let legacy_stereo = root_outputs.len() == 2
-        && [builtin_ports::LEFT, builtin_ports::RIGHT]
-            .iter()
-            .all(|name| {
-                flattened
-                    .root_ports()
-                    .iter()
-                    .any(|port| port.name() == *name && port.channels() == 1)
-            });
-    if legacy_stereo {
-        reserve_generated_id(&mut ids, KERNEL_OUTPUT_NODE_ID)?;
-        modules.push(
-            ModuleNode::new(
-                ModuleId::new(KERNEL_OUTPUT_NODE_ID),
-                module_types::AUDIO_OUTPUT,
-            )
-            .with_execution_scope(ExecutionScope::Global)
-            .with_input(builtin_ports::LEFT, SignalType::Audio)
-            .with_input(builtin_ports::RIGHT, SignalType::Audio),
-        );
-        for root_name in [builtin_ports::LEFT, builtin_ports::RIGHT] {
-            cables.push(Cable::new(
-                legacy_ref(&root_outputs[root_name]),
-                PortRef::new(ModuleId::new(KERNEL_OUTPUT_NODE_ID), root_name),
-            ));
-        }
-        node_data.insert(KERNEL_OUTPUT_NODE_ID.to_string(), CompiledNodeData::none());
-    }
     Ok(LoweredKernelGraph {
         graph: Graph::new(modules, cables),
         node_data,
@@ -4285,7 +4255,7 @@ connections: []
                 .numeric_parameter_value("layer::voice::amp", "gain"),
             Some(0.25)
         );
-        assert_eq!(prepared.compiled_patch().audio_output_index(), Some(2));
+        assert_eq!(prepared.compiled_patch().audio_output_index(), None);
         assert_eq!(prepared.total_latency_samples(), 0);
 
         let mut realtime = RealtimeGraphProcessor::polyphonic_with_compiled_patch_and_sampler_assets_and_max_block_size(
@@ -4666,7 +4636,7 @@ connections:
                     .parameter_slot_index(node.id.as_str(), DELAY_SAMPLES_PARAMETER)
                     .is_none()
         }));
-        assert_eq!(prepared.compiled_patch().audio_output_index(), Some(6));
+        assert_eq!(prepared.compiled_patch().audio_output_index(), None);
     }
 
     #[test]

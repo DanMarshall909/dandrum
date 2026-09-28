@@ -501,15 +501,6 @@ impl CompileError {
 }
 
 impl CompiledNodeData {
-    pub(crate) fn none() -> Self {
-        Self {
-            construction: CompiledConstruction::None,
-            control_defaults: BTreeMap::new(),
-            resources: CompiledResourceHandles::default(),
-            port_channels: BTreeMap::new(),
-        }
-    }
-
     pub(crate) fn from_kernel(
         module_id: &str,
         kind: ModuleKind,
