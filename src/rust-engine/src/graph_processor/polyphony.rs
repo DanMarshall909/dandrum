@@ -489,6 +489,23 @@ impl PreparedPolyRuntimeRegion {
                             events,
                         );
                     }
+                    ModuleKind::NoteToControl => {
+                        let (input, output) = self.voice_event_queues[voice]
+                            .queue_pair(step.event_inputs[0], step.event_outputs[0])
+                            .expect("compiled note_to_control queues are distinct and valid");
+                        let mut context = ProcessContext::new(
+                            arena,
+                            &step.input_buffers,
+                            &step.output_buffers,
+                            frames,
+                        );
+                        super::arena_processing::process_note_to_control(
+                            &mut states[step.module_index],
+                            &mut context,
+                            input.events(),
+                            output,
+                        );
+                    }
                     _ => super::realtime_graph_processor::process_channel_arena_step(
                         arena, states, step, frames,
                     ),
@@ -842,6 +859,12 @@ fn is_poly_child_arena_supported(step: &RenderStep) -> bool {
             step.input_buffers.len() == 5
                 && !step.output_buffers.is_empty()
                 && step.event_inputs.len() == 1
+        }
+        ModuleKind::NoteToControl => {
+            step.input_buffers.is_empty()
+                && step.output_buffers.len() == 3
+                && step.event_inputs.len() == 1
+                && step.event_outputs.len() == 1
         }
         _ => super::realtime_graph_processor::is_channel_arena_supported(step),
     }

@@ -1,3 +1,4 @@
+use super::event_queue::BoundedEventQueue;
 use super::helpers::{normalized_end_position, normalized_position};
 use super::outputs::BlockEvent;
 use super::process_context::ProcessContext;
@@ -124,6 +125,63 @@ pub(super) fn process_note_to_rate(
         context
             .set_output_sample(0, frame, *rate)
             .expect("note-to-rate output is present in a supported arena step");
+    }
+}
+
+pub(super) fn process_note_to_control(
+    state: &mut PerModuleState,
+    context: &mut ProcessContext<'_>,
+    events: &[BlockEvent],
+    gate_output: &mut BoundedEventQueue,
+) {
+    let PerModuleState::NoteToControl {
+        gate_active,
+        current_note,
+        current_velocity,
+        current_frequency,
+        current_pitch_ratio,
+        current_slide,
+    } = state
+    else {
+        unreachable!()
+    };
+
+    for frame in 0..context.frames() {
+        for event in events {
+            if event.frame_offset as usize != frame {
+                continue;
+            }
+            match &event.event {
+                ScriptEvent::NoteOn { note, velocity } => {
+                    let frequency = super::processing::midi_note_to_freq(*note);
+                    *current_slide = *gate_active;
+                    if !*gate_active {
+                        *gate_active = true;
+                        let _ = gate_output.push_at(event.event.clone(), event.frame_offset);
+                    }
+                    *current_note = Some(*note);
+                    *current_velocity = f32::from(*velocity) / 127.0;
+                    *current_frequency = frequency;
+                    *current_pitch_ratio = frequency / OSCILLATOR_BASE_HZ;
+                }
+                ScriptEvent::NoteOff { note } if *current_note == Some(*note) => {
+                    *gate_active = false;
+                    *current_note = None;
+                    *current_velocity = 0.0;
+                    *current_slide = false;
+                    let _ = gate_output.push_at(event.event.clone(), event.frame_offset);
+                }
+                ScriptEvent::NoteOff { .. } => {}
+            }
+        }
+        for (channel, value) in [*current_frequency, *current_pitch_ratio, *current_velocity]
+            .into_iter()
+            .enumerate()
+        {
+            context
+                .set_output_sample(channel, frame, if *gate_active { value } else { 0.0 })
+                .expect("note_to_control output buffer is present in a supported arena step");
+        }
     }
 }
 

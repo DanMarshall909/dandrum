@@ -205,7 +205,7 @@ impl PreparedEventQueues {
         }
     }
 
-    fn queue_pair(
+    pub(super) fn queue_pair(
         &mut self,
         source_id: EventQueueId,
         destination_id: EventQueueId,

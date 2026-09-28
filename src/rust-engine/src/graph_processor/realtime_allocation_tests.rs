@@ -3,12 +3,13 @@ use crate::builtins::build_definition;
 use crate::builtins::module_types;
 use crate::graph::{Cable, Graph, ModuleId, ModuleNode, PortRef, SignalType, builtin_ports};
 use crate::kernel::builtins::builtin_registry;
+use crate::kernel::document::load_kernel_patch_str;
 use crate::kernel::{
     Connection as KernelConnection, GraphDefinition, Node, NodeId, Port as KernelPort,
     PortRef as KernelPortRef, StaticArg, StaticValue,
 };
 use crate::patch::RenderSettings;
-use crate::preparation::{HostBuses, prepare_kernel_graph_with_buses};
+use crate::preparation::{HostBuses, prepare_kernel_graph_with_buses, prepare_kernel_patch};
 use crate::sample::{LoadedSample, PreparedSamplerAssets};
 use crate::test_allocator::count_current_thread_allocations;
 use std::collections::BTreeMap;
@@ -567,6 +568,45 @@ fn full_capacity_poly_activation_mix_and_done_retirement_do_not_allocate() {
             .flatten()
             .flatten()
             .all(|sample| *sample == 0.0)
+    );
+}
+
+#[test]
+fn poly_note_to_control_renders_and_releases_without_allocation() {
+    let patch = load_kernel_patch_str(include_str!(
+        "../../../../examples/patches/module-impulse-tone.yaml"
+    ))
+    .expect("impulse tone example loads");
+    let settings = RenderSettings {
+        sample_rate_hz: 48_000,
+        block_size_frames: 64,
+        duration_frames: 128,
+    };
+    let prepared = prepare_kernel_patch(&patch, &settings).expect("impulse tone prepares");
+    let mut processor = RealtimeGraphProcessor::polyphonic_with_compiled_patch_and_sampler_assets_and_max_block_size(
+        prepared.graph().clone(),
+        prepared.compiled_patch().clone(),
+        48_000.0,
+        &PreparedSamplerAssets::empty(),
+        &VoiceAllocation::default(),
+        64,
+    );
+    let mut outputs = vec![vec![vec![0.0; 64]; 2]];
+    let mut note_was_audible = false;
+
+    let allocation_count = count_current_thread_allocations(|| {
+        processor.note_on(60, 100);
+        assert_eq!(processor.render_root_outputs(&mut outputs), 64);
+        note_was_audible = outputs[0][0].iter().any(|sample| sample.abs() > 0.001);
+        processor.note_off(60);
+        assert_eq!(processor.render_root_outputs(&mut outputs), 64);
+    });
+    assert_eq!(allocation_count, 0);
+    assert!(note_was_audible);
+    assert!(
+        outputs[0]
+            .iter()
+            .all(|channel| channel.iter().all(|sample| *sample == 0.0))
     );
 }
 
