@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::{BTreeMap, HashMap};
 
 use crate::compiled_patch::CompiledPatch;
 use crate::core::{BlockScheduler, TimedInputEvent};
@@ -21,10 +21,37 @@ pub fn render_kernel_offline_named(
     events: Vec<TimedInputEvent>,
     sampler_assets: &PreparedSamplerAssets,
 ) -> Result<Vec<(String, Vec<Vec<f32>>)>, &'static str> {
+    render_kernel_offline_named_with_inputs(prepared, events, sampler_assets, &BTreeMap::new())
+}
+
+/// Render named root outputs with complete planar input buses indexed by root
+/// port name. Missing input buses are silent, matching realtime host binding.
+pub fn render_kernel_offline_named_with_inputs(
+    prepared: &PreparedKernelInstrument,
+    events: Vec<TimedInputEvent>,
+    sampler_assets: &PreparedSamplerAssets,
+    inputs: &BTreeMap<String, Vec<Vec<f32>>>,
+) -> Result<Vec<(String, Vec<Vec<f32>>)>, &'static str> {
     let compiled = prepared.compiled_patch();
     let settings = compiled.render_settings();
     if settings.block_size_frames == 0 {
         return Err("offline render block size must be positive");
+    }
+    let input_ports = compiled.root_bus_plan().inputs();
+    for (name, channels) in inputs {
+        let Some(port) = input_ports.iter().find(|port| port.name() == name) else {
+            return Err("offline render received an unknown root input bus");
+        };
+        if !port.is_bound() {
+            return Err("offline render received an unbound root input bus");
+        }
+        if channels.len() != port.channel_count()
+            || channels
+                .iter()
+                .any(|channel| channel.len() < settings.duration_frames as usize)
+        {
+            return Err("offline render input bus has wrong channel or frame count");
+        }
     }
     let mut processor =
         RealtimeGraphProcessor::polyphonic_with_compiled_patch_and_sampler_assets_and_max_block_size(
@@ -69,7 +96,22 @@ pub fn render_kernel_offline_named(
             .iter()
             .map(|port| vec![vec![0.0; frames]; port.channel_count()])
             .collect();
-        if processor.render_root_buses(&[], &mut buffers) != frames {
+        let block_start = block.start_frame() as usize;
+        let block_inputs = input_ports
+            .iter()
+            .map(|port| {
+                inputs
+                    .get(port.name())
+                    .map(|channels| {
+                        channels
+                            .iter()
+                            .map(|channel| channel[block_start..block_start + frames].to_vec())
+                            .collect()
+                    })
+                    .unwrap_or_default()
+            })
+            .collect::<Vec<_>>();
+        if processor.render_root_buses(&block_inputs, &mut buffers) != frames {
             return Err("named root bus render failed");
         }
         for ((_, destination), bus) in rendered.iter_mut().zip(buffers) {
@@ -235,6 +277,31 @@ mod named_bus_tests {
     use crate::kernel::builtins::{CHANNELS_PARAM, builtin_registry};
     use crate::kernel::{GraphDefinition, Node, NodeId, Port, PortRef, StaticArg, StaticValue};
     use crate::preparation::{HostBuses, prepare_kernel_graph_with_buses};
+    use std::collections::BTreeMap;
+
+    fn stereo_gain_root() -> GraphDefinition {
+        GraphDefinition::new("stereo_effect")
+            .with_port(
+                Port::input("in", SignalType::Audio, 2)
+                    .maps_to(PortRef::new(NodeId::new("gain"), builtin_ports::AUDIO_IN)),
+            )
+            .with_port(
+                Port::output("master", SignalType::Audio, 2)
+                    .maps_from(PortRef::new(NodeId::new("gain"), builtin_ports::AUDIO_OUT)),
+            )
+            .with_node(
+                Node::new(NodeId::new("gain"), crate::builtins::module_types::GAIN)
+                    .with_static_arg(CHANNELS_PARAM, StaticArg::Literal(StaticValue::Int(2))),
+            )
+    }
+
+    fn stereo_settings() -> RenderSettings {
+        RenderSettings {
+            sample_rate_hz: 48_000,
+            block_size_frames: 8,
+            duration_frames: 12,
+        }
+    }
 
     #[test]
     fn kernel_offline_render_preserves_every_named_output_across_blocks() {
@@ -287,5 +354,94 @@ mod named_bus_tests {
         assert_eq!(rendered[0].1, vec![vec![0.25; 12], vec![0.0; 12]]);
         assert_eq!(rendered[1].0, "cue");
         assert_eq!(rendered[1].1, vec![vec![-0.5; 12]]);
+    }
+
+    #[test]
+    fn kernel_offline_render_routes_named_stereo_input_across_blocks() {
+        let root = stereo_gain_root();
+        let settings = stereo_settings();
+        let prepared = prepare_kernel_graph_with_buses(
+            &root,
+            &builtin_registry(),
+            &settings,
+            &HostBuses::new()
+                .with_input("in", 2)
+                .with_output("master", 2),
+        )
+        .expect("stereo root buses prepare");
+        let left = (0..12)
+            .map(|sample| sample as f32 / 12.0)
+            .collect::<Vec<_>>();
+        let right = (0..12)
+            .map(|sample| -(sample as f32) / 12.0)
+            .collect::<Vec<_>>();
+        let inputs = BTreeMap::from([("in".to_string(), vec![left.clone(), right.clone()])]);
+
+        let rendered = render_kernel_offline_named_with_inputs(
+            &prepared,
+            vec![],
+            &PreparedSamplerAssets::empty(),
+            &inputs,
+        )
+        .expect("named input renders");
+
+        assert_eq!(rendered, vec![("master".to_string(), vec![left, right])]);
+    }
+
+    #[test]
+    fn kernel_offline_render_rejects_malformed_named_inputs() {
+        let root = stereo_gain_root();
+        let settings = stereo_settings();
+        let bound = prepare_kernel_graph_with_buses(
+            &root,
+            &builtin_registry(),
+            &settings,
+            &HostBuses::new()
+                .with_input("in", 2)
+                .with_output("master", 2),
+        )
+        .expect("input binds");
+        let unbound = prepare_kernel_graph_with_buses(
+            &root,
+            &builtin_registry(),
+            &settings,
+            &HostBuses::new().with_output("master", 2),
+        )
+        .expect("input may be unbound");
+        let render = |prepared: &PreparedKernelInstrument,
+                      inputs: BTreeMap<String, Vec<Vec<f32>>>| {
+            render_kernel_offline_named_with_inputs(
+                prepared,
+                vec![],
+                &PreparedSamplerAssets::empty(),
+                &inputs,
+            )
+        };
+
+        assert_eq!(
+            render(
+                &bound,
+                BTreeMap::from([("unknown".into(), vec![vec![0.0; 12]; 2])])
+            ),
+            Err("offline render received an unknown root input bus"),
+        );
+        assert_eq!(
+            render(
+                &unbound,
+                BTreeMap::from([("in".into(), vec![vec![0.0; 12]; 2])])
+            ),
+            Err("offline render received an unbound root input bus"),
+        );
+        assert_eq!(
+            render(&bound, BTreeMap::from([("in".into(), vec![vec![0.0; 12]])])),
+            Err("offline render input bus has wrong channel or frame count"),
+        );
+        assert_eq!(
+            render(
+                &bound,
+                BTreeMap::from([("in".into(), vec![vec![0.0; 11]; 2])])
+            ),
+            Err("offline render input bus has wrong channel or frame count"),
+        );
     }
 }
