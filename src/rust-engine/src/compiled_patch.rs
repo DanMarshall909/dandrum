@@ -241,6 +241,9 @@ pub enum CompiledConstruction {
     CompensationDelay {
         samples: usize,
     },
+    FeedbackDelay {
+        samples: usize,
+    },
     Dynamics {
         mode: ProcessorMode,
         detection: DetectionMode,
@@ -586,6 +589,15 @@ fn construction_from_static_values(
             .filter(|samples| *samples > 0)
             .ok_or_else(|| invalid(DELAY_SAMPLES_PARAMETER))?,
         },
+        ModuleKind::FeedbackDelay => CompiledConstruction::FeedbackDelay {
+            samples: usize::try_from(
+                int_value(DELAY_SAMPLES_PARAMETER)
+                    .ok_or_else(|| invalid(DELAY_SAMPLES_PARAMETER))?,
+            )
+            .ok()
+            .filter(|samples| *samples > 0)
+            .ok_or_else(|| invalid(DELAY_SAMPLES_PARAMETER))?,
+        },
         ModuleKind::DynamicsProcessor => CompiledConstruction::Dynamics {
             mode: match enum_value(DYNAMICS_MODE_PARAMETER) {
                 Some(DYNAMICS_MODE_TRANSIENT) => ProcessorMode::Transient,
@@ -702,7 +714,9 @@ fn is_static_construction_parameter(kind: ModuleKind, name: &str) -> bool {
             crate::builtins::SCRIPT_LANGUAGE_PARAMETER | SCRIPT_SOURCE_PARAMETER
         ),
         ModuleKind::Oscillator => name == WAVEFORM_PARAMETER,
-        ModuleKind::CompensationDelay => name == DELAY_SAMPLES_PARAMETER,
+        ModuleKind::CompensationDelay | ModuleKind::FeedbackDelay => {
+            name == DELAY_SAMPLES_PARAMETER
+        }
         ModuleKind::DynamicsProcessor => matches!(
             name,
             DYNAMICS_MODE_PARAMETER | DYNAMICS_DETECTION_PARAMETER | DYNAMICS_TOPOLOGY_PARAMETER
@@ -759,6 +773,12 @@ fn construction_from_legacy_values(
                 .unwrap_or(Waveform::DEFAULT),
         },
         ModuleKind::CompensationDelay => CompiledConstruction::CompensationDelay {
+            samples: value(DELAY_SAMPLES_PARAMETER)
+                .and_then(|value| value.parse::<usize>().ok())
+                .filter(|samples| *samples > 0)
+                .ok_or_else(|| invalid(DELAY_SAMPLES_PARAMETER))?,
+        },
+        ModuleKind::FeedbackDelay => CompiledConstruction::FeedbackDelay {
             samples: value(DELAY_SAMPLES_PARAMETER)
                 .and_then(|value| value.parse::<usize>().ok())
                 .filter(|samples| *samples > 0)
@@ -1028,6 +1048,14 @@ fn compile_internal(
                 })?,
                 None => legacy_node_data(module.id().as_str(), kind, module)?,
             };
+            if let CompiledConstruction::FeedbackDelay { samples } = &data.construction {
+                if *samples < render_settings.block_size_frames as usize {
+                    return Err(CompileError::InvalidConstructionData {
+                        module_id: module.id().as_str().to_string(),
+                        parameter_name: DELAY_SAMPLES_PARAMETER.to_string(),
+                    });
+                }
+            }
             let input_channel_counts = module
                 .inputs()
                 .iter()
@@ -1171,9 +1199,19 @@ fn color_output_spans(
                             && cable.source().port_name() == port.name()
                     })
                     .filter_map(|cable| {
-                        module_indices.get(cable.destination().module_id().as_str())
+                        let destination =
+                            module_indices.get(cable.destination().module_id().as_str())?;
+                        Some(
+                            if graph.modules()[*destination].module_type()
+                                == crate::builtins::module_types::FEEDBACK_DELAY
+                            {
+                                // The feedback tap is captured after the forward schedule.
+                                topological_order.len()
+                            } else {
+                                order_position[destination]
+                            },
+                        )
                     })
-                    .map(|destination| order_position[destination])
                     .max()
                     .unwrap_or(topological_order.len())
             };
@@ -1443,6 +1481,11 @@ fn topological_sort(
         let source = module_index(module_indices, cable.source().module_id().as_str(), "")?;
         let destination =
             module_index(module_indices, cable.destination().module_id().as_str(), "")?;
+        if graph.modules()[destination].module_type()
+            == crate::builtins::module_types::FEEDBACK_DELAY
+        {
+            continue;
+        }
         adjacency[source].push(destination);
         in_degree[destination] += 1;
     }

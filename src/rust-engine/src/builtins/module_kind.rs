@@ -36,6 +36,7 @@ pub enum ModuleKind {
     /// Compiler-generated control→audio promotion (see `unify-graph-kernel` §2.5).
     ControlToAudio,
     CompensationDelay,
+    FeedbackDelay,
     Poly,
     VoiceIntrinsics,
 }
@@ -76,6 +77,7 @@ impl ModuleKind {
             module_types::DECAY => Some(Self::Decay),
             module_types::CONTROL_TO_AUDIO => Some(Self::ControlToAudio),
             module_types::COMPENSATION_DELAY => Some(Self::CompensationDelay),
+            module_types::FEEDBACK_DELAY => Some(Self::FeedbackDelay),
             module_types::POLY => Some(Self::Poly),
             module_types::VOICE_INTRINSICS => Some(Self::VoiceIntrinsics),
             _ => None,
@@ -115,6 +117,7 @@ impl ModuleKind {
                 | Self::Decay
                 | Self::ControlToAudio
                 | Self::CompensationDelay
+                | Self::FeedbackDelay
                 | Self::Poly
                 | Self::VoiceIntrinsics
         )

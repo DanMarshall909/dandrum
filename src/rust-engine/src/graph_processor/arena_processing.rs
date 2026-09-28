@@ -537,6 +537,36 @@ pub(super) fn process_compensation_delay(
     }
 }
 
+/// Emit the prior samples before the forward schedule evaluates the feedback
+/// tap. `delay_samples` is at least the prepared block size, so the tap can be
+/// captured after the schedule without changing any sample emitted here.
+pub(super) fn emit_feedback_delay(state: &PerModuleState, context: &mut ProcessContext<'_>) {
+    let PerModuleState::FeedbackDelay { samples, position } = state else {
+        unreachable!()
+    };
+    for (channel, ring) in samples.iter().enumerate() {
+        for frame in 0..context.frames() {
+            context
+                .set_output_sample(channel, frame, ring[(position + frame) % ring.len()])
+                .expect("feedback output channel should be available");
+        }
+    }
+}
+
+/// Capture the just-computed feedback tap after all forward nodes have run.
+pub(super) fn capture_feedback_delay(state: &mut PerModuleState, context: &ProcessContext<'_>) {
+    let PerModuleState::FeedbackDelay { samples, position } = state else {
+        unreachable!()
+    };
+    let start = *position;
+    for (channel, ring) in samples.iter_mut().enumerate() {
+        for frame in 0..context.frames() {
+            ring[(start + frame) % ring.len()] = context.input_sample(channel, frame, 0.0);
+        }
+    }
+    *position = (start + context.frames()) % samples[0].len();
+}
+
 pub(super) fn process_convolution(state: &mut PerModuleState, context: &mut ProcessContext<'_>) {
     let PerModuleState::Convolution { processors } = state else {
         unreachable!()

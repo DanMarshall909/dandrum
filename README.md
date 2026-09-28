@@ -66,7 +66,11 @@ controls and carry public preset values. Define reusable graphs under
 `module_definitions` or load a [module package](docs/module-library.md).
 The [polyphonic chords example](examples/patches/polyphonic-chords.yaml) shows
 an explicit `poly` region. Feedback cycles require `feedback_delay`; ordinary
-effect delays do not legalize a cycle.
+effect delays do not legalize a cycle. The
+[delayed feedback example](examples/patches/delayed-feedback.yaml) uses
+`delay_samples` equal to one prepared block; the declared delay must be at
+least the host's maximum block size. Its `source` root input expects a host
+audio bus, and its `master` output carries the dry signal plus decaying repeats.
 
 From the repository root, render a checked-in kernel patch with host settings
 on the command line:

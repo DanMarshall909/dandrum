@@ -673,6 +673,48 @@ fn lfo_control_mixer_and_gain_render_without_allocation() {
 }
 
 #[test]
+fn feedback_delay_render_and_reset_use_only_prepared_storage() {
+    let patch = load_kernel_patch_str(include_str!(
+        "../../../../examples/patches/delayed-feedback.yaml"
+    ))
+    .expect("feedback example loads");
+    let settings = RenderSettings {
+        sample_rate_hz: 48_000,
+        block_size_frames: 128,
+        duration_frames: 256,
+    };
+    let buses = HostBuses::new()
+        .with_input("source", 1)
+        .with_output("master", 1);
+    let prepared =
+        prepare_kernel_graph_with_buses(patch.root(), patch.registry(), &settings, &buses)
+            .expect("feedback example prepares");
+    let mut processor = RealtimeGraphProcessor::polyphonic_with_compiled_patch_and_sampler_assets_and_max_block_size(
+        prepared.graph().clone(),
+        prepared.compiled_patch().clone(),
+        48_000.0,
+        &PreparedSamplerAssets::empty(),
+        &VoiceAllocation::default(),
+        128,
+    );
+    let mut inputs = vec![vec![vec![0.0; 128]]];
+    let mut outputs = vec![vec![vec![0.0; 128]]];
+    inputs[0][0][0] = 1.0;
+
+    let allocation_count = count_current_thread_allocations(|| {
+        assert_eq!(processor.render_root_buses(&inputs, &mut outputs), 128);
+        inputs[0][0][0] = 0.0;
+        assert_eq!(processor.render_root_buses(&inputs, &mut outputs), 128);
+        assert_eq!(outputs[0][0][0], 0.5);
+        processor.reset();
+        assert_eq!(processor.render_root_buses(&inputs, &mut outputs), 128);
+    });
+
+    assert_eq!(allocation_count, 0);
+    assert!(outputs[0][0].iter().all(|sample| *sample == 0.0));
+}
+
+#[test]
 fn full_capacity_poly_stealing_and_rejection_render_without_allocation() {
     for (allocation, expected_notes) in [
         (crate::kernel::POLY_ALLOCATION_OLDEST_STEAL, [67, 64]),

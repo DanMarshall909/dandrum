@@ -671,6 +671,13 @@ impl RealtimeGraphProcessor {
                 &self.compiled,
             );
         }
+        capture_feedback_delays(
+            &mut self.audio_arena,
+            &mut self.states[0],
+            &self.render_plan.global_steps,
+            frames,
+            &self.compiled,
+        );
         for (planned, bus) in self
             .compiled
             .root_bus_plan()
@@ -1305,6 +1312,23 @@ pub(super) fn clear_and_route_arena_inputs(
     }
 }
 
+pub(super) fn capture_feedback_delays(
+    arena: &mut AudioArena,
+    states: &mut [PerModuleState],
+    steps: &[RenderStep],
+    frames: usize,
+    compiled: &CompiledPatch,
+) {
+    for step in steps
+        .iter()
+        .filter(|step| step.module_kind == ModuleKind::FeedbackDelay)
+    {
+        clear_and_route_arena_inputs(arena, step, frames, compiled);
+        let context = ProcessContext::new(arena, &step.input_buffers, &step.output_buffers, frames);
+        arena_processing::capture_feedback_delay(&mut states[step.module_index], &context);
+    }
+}
+
 pub(super) fn process_channel_arena_step(
     arena: &mut AudioArena,
     states: &mut [PerModuleState],
@@ -1332,6 +1356,9 @@ pub(super) fn process_channel_arena_step(
             &mut states[step.module_index],
             &mut context,
         ),
+        ModuleKind::FeedbackDelay => {
+            arena_processing::emit_feedback_delay(&states[step.module_index], &mut context)
+        }
         ModuleKind::Convolution => {
             arena_processing::process_convolution(&mut states[step.module_index], &mut context)
         }
@@ -1396,6 +1423,9 @@ pub(super) fn is_channel_arena_supported(step: &RenderStep) -> bool {
         ModuleKind::Filter => step.input_buffers.len() == step.output_buffers.len() + 3,
         ModuleKind::ControlToAudio | ModuleKind::CompensationDelay => {
             step.input_buffers.len() == step.output_buffers.len()
+        }
+        ModuleKind::FeedbackDelay => {
+            step.input_buffers.len() == step.output_buffers.len() && step.output_buffers.len() >= 2
         }
         ModuleKind::Convolution => step.input_buffers.len() == step.output_buffers.len() + 1,
         ModuleKind::SpectralProcessor => {

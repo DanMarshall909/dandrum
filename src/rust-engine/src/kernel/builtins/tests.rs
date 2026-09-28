@@ -25,7 +25,7 @@ use crate::kernel::{
 };
 
 /// Every builtin the kernel registry must declare.
-const EXPECTED: [&str; 33] = [
+const EXPECTED: [&str; 34] = [
     names::MIDI_INPUT,
     names::OSCILLATOR,
     names::GAIN,
@@ -57,6 +57,7 @@ const EXPECTED: [&str; 33] = [
     names::DECAY,
     names::CONTROL_TO_AUDIO,
     names::COMPENSATION_DELAY,
+    names::FEEDBACK_DELAY,
     POLY_DEFINITION,
     crate::kernel::VOICE_INTRINSIC_DEFINITION,
 ];
@@ -112,6 +113,28 @@ fn poly_declares_structural_static_arguments_and_note_event_input() {
     let notes = port_of(poly, POLY_NOTE_EVENTS_INPUT, PortDirection::Input);
     assert_eq!(notes.signal_type(), SignalType::Event);
     assert_eq!(notes.channels(), &ChannelCount::Literal(1));
+}
+
+#[test]
+fn feedback_delay_declares_both_rates_and_its_static_delay() {
+    let registry = builtin_registry();
+    let feedback = registry
+        .get(names::FEEDBACK_DELAY)
+        .expect("feedback delay declared");
+    assert_eq!(
+        static_param_of(feedback, DELAY_SAMPLES_PARAM).static_type(),
+        StaticType::Int
+    );
+    let args = BTreeMap::from([(DELAY_SAMPLES_PARAM.to_string(), StaticValue::Int(128))]);
+    assert_eq!(feedback.latency().resolve(&args), 128);
+    for (name, direction, signal) in [
+        (ports::AUDIO_IN, PortDirection::Input, SignalType::Audio),
+        (ports::AUDIO_OUT, PortDirection::Output, SignalType::Audio),
+        (ports::VALUE, PortDirection::Input, SignalType::Control),
+        (ports::VALUE, PortDirection::Output, SignalType::Control),
+    ] {
+        assert_eq!(port_of(feedback, name, direction).signal_type(), signal);
+    }
 }
 
 #[test]

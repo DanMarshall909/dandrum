@@ -6581,6 +6581,208 @@ fn tune_examples_render_notes_through_a_one_block_delay_on_named_outputs() {
 }
 
 #[test]
+fn kernel_feedback_delay_repeats_an_impulse_one_block_later() {
+    let yaml = r#"
+metadata: { name: Delayed Feedback }
+ports:
+  - { name: source, direction: input, signal: audio, channels: 1, maps_to: sum.inputs }
+  - { name: master, direction: output, signal: audio, channels: 1, maps_from: sum.mix }
+modules:
+  - { id: sum, type: audio_mixer }
+  - { id: feedback, type: feedback_delay, static: { delay_samples: 4 } }
+  - { id: half, type: gain, defaults: { gain: 0.5 } }
+connections:
+  - { from: sum.mix, to: feedback.audio_in }
+  - { from: feedback.audio_out, to: half.audio_in }
+  - { from: half.audio_out, to: sum.inputs }
+"#;
+    let patch = load_kernel_patch_str(yaml).expect("feedback patch parses");
+    let settings = RenderSettings {
+        sample_rate_hz: 48_000,
+        block_size_frames: 4,
+        duration_frames: 12,
+    };
+    let buses = HostBuses::new()
+        .with_input("source", 1)
+        .with_output("master", 1);
+    let prepared =
+        prepare_kernel_graph_with_buses(patch.root(), patch.registry(), &settings, &buses)
+            .expect("feedback cycle prepares through explicit delay");
+    let mut input = vec![0.0; 12];
+    input[0] = 1.0;
+    let outputs = render_kernel_offline_named_with_inputs(
+        &prepared,
+        Vec::new(),
+        &PreparedSamplerAssets::empty(),
+        &BTreeMap::from([("source".to_string(), vec![input.clone()])]),
+    )
+    .expect("feedback cycle renders");
+    assert_eq!(outputs.len(), 1);
+    assert_eq!(outputs[0].0, "master");
+    assert_eq!(
+        outputs[0].1[0],
+        [1.0, 0.0, 0.0, 0.0, 0.5, 0.0, 0.0, 0.0, 0.25, 0.0, 0.0, 0.0]
+    );
+
+    // Here the sum output is consumed only by the late feedback tap. Its
+    // buffer must stay live until capture even though the root reads `half`.
+    let tap_only =
+        load_kernel_patch_str(&yaml.replace("maps_from: sum.mix", "maps_from: half.audio_out"))
+            .expect("feedback tap-only variant parses");
+    let prepared =
+        prepare_kernel_graph_with_buses(tap_only.root(), tap_only.registry(), &settings, &buses)
+            .expect("tap-only variant prepares");
+    let outputs = render_kernel_offline_named_with_inputs(
+        &prepared,
+        Vec::new(),
+        &PreparedSamplerAssets::empty(),
+        &BTreeMap::from([("source".to_string(), vec![input])]),
+    )
+    .expect("tap-only variant renders");
+    assert_eq!(
+        outputs[0].1[0],
+        [0.0, 0.0, 0.0, 0.0, 0.5, 0.0, 0.0, 0.0, 0.25, 0.0, 0.0, 0.0]
+    );
+}
+
+#[test]
+fn kernel_feedback_delay_delivers_control_feedback_on_a_later_block() {
+    let yaml = r#"
+ports:
+  - { name: source, direction: input, signal: control, channels: 1, maps_to: sum.inputs }
+  - { name: master, direction: output, signal: control, channels: 1, maps_from: sum.sum }
+modules:
+  - { id: sum, type: control_mixer }
+  - { id: feedback, type: feedback_delay, static: { delay_samples: 4 } }
+connections:
+  - { from: sum.sum, to: feedback.value }
+  - { from: feedback.value, to: sum.inputs }
+"#;
+    let patch = load_kernel_patch_str(yaml).expect("control feedback patch parses");
+    let settings = RenderSettings {
+        sample_rate_hz: 48_000,
+        block_size_frames: 4,
+        duration_frames: 12,
+    };
+    let buses = HostBuses::new()
+        .with_input("source", 1)
+        .with_output("master", 1);
+    let prepared =
+        prepare_kernel_graph_with_buses(patch.root(), patch.registry(), &settings, &buses)
+            .expect("control cycle prepares through feedback_delay");
+    let mut source = vec![0.0; 12];
+    source[0] = 1.0;
+    let outputs = render_kernel_offline_named_with_inputs(
+        &prepared,
+        Vec::new(),
+        &PreparedSamplerAssets::empty(),
+        &BTreeMap::from([("source".to_string(), vec![source])]),
+    )
+    .expect("control cycle renders");
+    assert_eq!(
+        outputs[0].1[0],
+        [1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0]
+    );
+}
+
+#[test]
+fn feedback_delay_shorter_than_the_prepared_block_is_rejected() {
+    let yaml = r#"
+ports:
+  - { name: master, direction: output, signal: audio, channels: 1, maps_from: feedback.audio_out }
+modules:
+  - { id: feedback, type: feedback_delay, static: { delay_samples: 3 } }
+connections: []
+"#;
+    let patch = load_kernel_patch_str(yaml).expect("feedback patch parses");
+    let settings = RenderSettings {
+        sample_rate_hz: 48_000,
+        block_size_frames: 4,
+        duration_frames: 4,
+    };
+    let error = prepare_kernel_patch(&patch, &settings).expect_err("feedback needs one full block");
+    assert!(error.to_string().contains("delay_samples"));
+}
+
+#[test]
+fn delayed_feedback_example_renders_a_named_bus_with_recurring_blocks() {
+    let yaml = read_repo_fixture("examples/patches/delayed-feedback.yaml")
+        .expect("delayed feedback example exists");
+    let patch = load_kernel_patch_str(&yaml).expect("feedback example uses kernel YAML");
+    let settings = RenderSettings {
+        sample_rate_hz: 48_000,
+        block_size_frames: 128,
+        duration_frames: 384,
+    };
+    let buses = HostBuses::new()
+        .with_input("source", 1)
+        .with_output("master", 1);
+    let prepared =
+        prepare_kernel_graph_with_buses(patch.root(), patch.registry(), &settings, &buses)
+            .expect("feedback example prepares");
+    let mut source = vec![0.0; 384];
+    source[0] = 1.0;
+    let outputs = render_kernel_offline_named_with_inputs(
+        &prepared,
+        Vec::new(),
+        &PreparedSamplerAssets::empty(),
+        &BTreeMap::from([("source".to_string(), vec![source])]),
+    )
+    .expect("feedback example renders");
+    let samples = &outputs[0].1[0];
+    assert_eq!(outputs[0].0, "master");
+    assert_eq!(samples[0], 1.0);
+    assert_eq!(samples[128], 0.5);
+    assert_eq!(samples[256], 0.25);
+    assert_eq!(samples.iter().filter(|sample| **sample != 0.0).count(), 3);
+}
+
+#[test]
+fn feedback_delay_inside_a_poly_voice_keeps_its_own_cycle_state() {
+    let yaml = r#"
+ports:
+  - { name: master, direction: output, signal: audio, channels: 1, maps_from: voices.audio }
+module_definitions:
+  - type: echo_voice
+    ports:
+      - { name: audio, direction: output, signal: audio, channels: 1, maps_from: sum.mix }
+    modules:
+      - { id: impulse, type: impulse }
+      - { id: sum, type: audio_mixer }
+      - { id: feedback, type: feedback_delay, static: { delay_samples: 4 } }
+      - { id: half, type: gain, defaults: { gain: 0.5 } }
+    connections:
+      - { from: voice.gate, to: impulse.trigger }
+      - { from: impulse.audio, to: sum.inputs }
+      - { from: sum.mix, to: feedback.audio_in }
+      - { from: feedback.audio_out, to: half.audio_in }
+      - { from: half.audio_out, to: sum.inputs }
+modules:
+  - { id: midi, type: midi_input }
+  - { id: voices, type: poly, static: { definition: echo_voice, max_voices: 1, allocation: reject-new } }
+connections:
+  - { from: midi.events, to: voices.notes }
+"#;
+    let patch = load_kernel_patch_str(yaml).expect("poly feedback patch parses");
+    let settings = RenderSettings {
+        sample_rate_hz: 48_000,
+        block_size_frames: 4,
+        duration_frames: 12,
+    };
+    let prepared = prepare_kernel_patch(&patch, &settings).expect("poly feedback prepares");
+    let outputs = render_kernel_offline_named(
+        &prepared,
+        vec![note_on(0, 100)],
+        &PreparedSamplerAssets::empty(),
+    )
+    .expect("poly feedback renders");
+    assert_eq!(
+        outputs[0].1[0],
+        [1.0, 0.0, 0.0, 0.0, 0.5, 0.0, 0.0, 0.0, 0.25, 0.0, 0.0, 0.0]
+    );
+}
+
+#[test]
 fn kernel_migrated_examples_match_legacy_reference_renders() {
     let cases = vec![
         (

@@ -56,6 +56,10 @@ pub(super) enum PerModuleState {
         samples: Box<[Box<[f32]>]>,
         positions: Box<[usize]>,
     },
+    FeedbackDelay {
+        samples: Box<[Box<[f32]>]>,
+        position: usize,
+    },
     AudioOutput,
     MidiInput,
     NoteToRate {
@@ -157,6 +161,12 @@ impl PerModuleState {
                     channel.fill(0.0);
                 }
                 positions.fill(0);
+            }
+            Self::FeedbackDelay { samples, position } => {
+                for channel in samples.iter_mut() {
+                    channel.fill(0.0);
+                }
+                *position = 0;
             }
             Self::NoteToRate { rate } => *rate = 1.0,
             Self::Sampler {
@@ -281,11 +291,18 @@ impl PerModuleState {
             &node.resources,
             sample_rate,
             sampler_assets,
-            node.output_port_spans
-                .iter()
-                .map(|span| span.channel_count)
-                .max()
-                .unwrap_or(1),
+            if node.module_kind == ModuleKind::FeedbackDelay {
+                node.output_port_spans
+                    .iter()
+                    .map(|span| span.channel_count)
+                    .sum()
+            } else {
+                node.output_port_spans
+                    .iter()
+                    .map(|span| span.channel_count)
+                    .max()
+                    .unwrap_or(1)
+            },
         )
     }
 
@@ -356,6 +373,18 @@ impl PerModuleState {
                         .collect::<Vec<_>>()
                         .into_boxed_slice(),
                     positions: vec![0; channels].into_boxed_slice(),
+                }
+            }
+            ModuleKind::FeedbackDelay => {
+                let CompiledConstruction::FeedbackDelay { samples } = construction else {
+                    panic!("feedback delay module {module_id} has mismatched construction data")
+                };
+                PerModuleState::FeedbackDelay {
+                    samples: (0..channels)
+                        .map(|_| vec![0.0; *samples].into_boxed_slice())
+                        .collect::<Vec<_>>()
+                        .into_boxed_slice(),
+                    position: 0,
                 }
             }
             ModuleKind::AudioOutput => PerModuleState::AudioOutput,

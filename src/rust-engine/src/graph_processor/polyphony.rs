@@ -543,6 +543,14 @@ impl PreparedPolyRuntimeRegion {
                 }
             }
 
+            super::realtime_graph_processor::capture_feedback_delays(
+                arena,
+                states,
+                &self.child_render_plan.global_steps,
+                frames,
+                &self.child_patch,
+            );
+
             for binding in self.output_bindings.iter().copied() {
                 for channel in 0..binding.voice_span.channel_count {
                     let source = BufferId(binding.voice_span.first_buffer + channel);

@@ -537,7 +537,11 @@ impl Graph {
             self.modules
                 .iter()
                 .find(|module| module.id() == cable.source().module_id())
-                .is_some_and(|module| module.feedback_boundaries().contains(&signal_type))
+                .is_some_and(|module| {
+                    module.feedback_boundaries().contains(&signal_type)
+                        || (module.module_type() == crate::builtins::module_types::FEEDBACK_DELAY
+                            && matches!(signal_type, SignalType::Audio | SignalType::Control))
+                })
         })
     }
 

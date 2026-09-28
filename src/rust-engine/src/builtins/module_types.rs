@@ -41,3 +41,5 @@ pub const CONTROL_TO_AUDIO: &str = "control_to_audio";
 
 /// Compiler-generated fixed delay used to align converging signal paths.
 pub const COMPENSATION_DELAY: &str = "compensation_delay";
+/// Explicit block-or-longer boundary for audio and control feedback cycles.
+pub const FEEDBACK_DELAY: &str = "feedback_delay";

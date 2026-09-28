@@ -413,6 +413,16 @@ fn builtin_definitions() -> Vec<GraphDefinition> {
             .with_port(poly_control_in(ports::IN))
             .with_port(poly_audio_out(ports::OUT)),
         compensation_delay(),
+        channel_primitive(names::FEEDBACK_DELAY)
+            .with_static_param(StaticParam::new(DELAY_SAMPLES_PARAM, StaticType::Int))
+            .with_latency(LatencySpec::StaticParam {
+                name: DELAY_SAMPLES_PARAM.to_string(),
+                minus: 0,
+            })
+            .with_port(poly_audio_in(ports::AUDIO_IN))
+            .with_port(control_in(ports::VALUE))
+            .with_port(poly_audio_out(ports::AUDIO_OUT))
+            .with_port(control_out(ports::VALUE)),
         primitive(POLY_DEFINITION)
             .with_static_param(StaticParam::new(
                 POLY_WRAPPED_DEFINITION_PARAM,

@@ -17,7 +17,7 @@ use crate::graph::{PortDirection, SignalType};
 
 /// Definition name of the feedback-delay primitive: the only node through which
 /// a routing cycle (audio or control) is legal.
-pub const FEEDBACK_DELAY_DEFINITION: &str = "feedback_delay";
+pub const FEEDBACK_DELAY_DEFINITION: &str = crate::builtins::module_types::FEEDBACK_DELAY;
 
 /// Separator between a composite instance identity and an internal node
 /// identity when flattening produces namespaced atomic node ids.
