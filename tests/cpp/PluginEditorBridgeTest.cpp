@@ -1,5 +1,4 @@
 #include "PluginEditor.h"
-#include "DefaultPatch.h"
 
 #include <atomic>
 #include <chrono>
@@ -164,7 +163,7 @@ int main()
 
         const auto previousGeneration = processor.getParameterSurfaceGeneration();
         const auto tb303 = juce::File (juce::String (
-            dandrum::findRepositoryExample ("examples/patches/tb303-acid.yaml").string()));
+            InstrumentDemoConfiguration::tb303().instrumentPath.string()));
         require (processor.reloadInstrumentFromFile (tb303),
                  "could not reload distinct instrument for browser refresh test");
         require (processor.getParameterSurfaceGeneration() != previousGeneration,

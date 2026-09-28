@@ -103,6 +103,7 @@ target_sources(dandrum-plugin PRIVATE
     src/juce-plugin/SoundLabController.cpp)
 target_include_directories(dandrum-plugin PRIVATE src/juce-wrapper)
 target_compile_definitions(dandrum-plugin PRIVATE
+    DANDRUM_SOURCE_ROOT="${CMAKE_CURRENT_SOURCE_DIR}"
     JUCE_USE_CURL=0
     JUCE_WEB_BROWSER=1
     JUCE_USE_WIN_WEBVIEW2=1)

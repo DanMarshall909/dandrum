@@ -1,7 +1,7 @@
 #include "PluginProcessor.h"
-#include "DefaultPatch.h"
 
 #include <cmath>
+#include <filesystem>
 #include <iostream>
 #include <memory>
 #include <vector>
@@ -22,7 +22,7 @@ int main()
 {
     DandrumAudioProcessor processor;
     const auto expected = juce::File (juce::String (
-        dandrum::findRepositoryExample ("examples/patches/tb303-acid.yaml").string()));
+        InstrumentDemoConfiguration::tb303().instrumentPath.string()));
     if (! processor.isInstrumentLoaded()
         || processor.currentInstrumentFile() != expected
         || ! processor.hasPublicParameter ("filter.cutoff")
@@ -35,8 +35,7 @@ int main()
     const auto& tb303 = processor.demoConfiguration();
     if (tb303.instrumentPath != expected.getFullPathName().toStdString()
         || ! tb303.soundLabFixturePath.has_value()
-        || *tb303.soundLabFixturePath
-               != dandrum::findRepositoryExample ("examples/sound-design/tb303-acid-poc.yaml")
+        || tb303.soundLabFixturePath->filename() != "tb303-acid-poc.yaml"
         || ! tb303.matchSourcePath.has_value()
         || *tb303.matchSourcePath != expected.getFullPathName().toStdString()
         || tb303.title != "Dandrum TB-303"
@@ -53,8 +52,7 @@ int main()
         || ! kick.hasPublicParameter ("kick.tune_hz")
         || kick.hasPublicParameter ("filter.cutoff")
         || ! kickConfig.soundLabFixturePath.has_value()
-        || *kickConfig.soundLabFixturePath
-               != dandrum::findRepositoryExample ("examples/sound-design/synthetic-808-kick-poc.yaml")
+        || kickConfig.soundLabFixturePath->filename() != "synthetic-808-kick-poc.yaml"
         || ! kickConfig.matchSourcePath.has_value()
         || *kickConfig.matchSourcePath != kickConfig.instrumentPath
         || kickConfig.title == tb303.title
@@ -124,5 +122,43 @@ int main()
 
     kick.releaseResources();
     restored.releaseResources();
+
+    const auto previousDirectory = std::filesystem::current_path();
+    const auto unrelatedDirectory = juce::File::getSpecialLocation (juce::File::tempDirectory)
+                                        .getNonexistentChildFile ("dandrum_demo_unrelated_cwd", "");
+    if (! unrelatedDirectory.createDirectory())
+        return 1;
+    struct WorkingDirectoryGuard
+    {
+        std::filesystem::path previous;
+        juce::File temporary;
+        ~WorkingDirectoryGuard()
+        {
+            std::filesystem::current_path (previous);
+            temporary.deleteRecursively();
+        }
+    } guard { previousDirectory, unrelatedDirectory };
+    std::filesystem::current_path (unrelatedDirectory.getFullPathName().toStdString());
+
+    for (const auto& configuration : { InstrumentDemoConfiguration::tb303(),
+                                       InstrumentDemoConfiguration::kick() })
+    {
+        if (! configuration.instrumentPath.is_absolute()
+            || ! std::filesystem::exists (configuration.instrumentPath)
+            || ! configuration.soundLabFixturePath.has_value()
+            || ! configuration.soundLabFixturePath->is_absolute()
+            || ! std::filesystem::exists (*configuration.soundLabFixturePath))
+        {
+            std::cerr << "demo patch or fixture did not resolve outside the checkout\n";
+            return 1;
+        }
+        DandrumAudioProcessor fromUnrelatedDirectory (configuration);
+        if (! fromUnrelatedDirectory.isInstrumentLoaded()
+            || fromUnrelatedDirectory.getActivePublicParameterIds().isEmpty())
+        {
+            std::cerr << "demo did not load its public instrument outside the checkout\n";
+            return 1;
+        }
+    }
     return 0;
 }
