@@ -1925,6 +1925,16 @@ mod tests {
         assert_eq!(runtime.render(&mut left, &mut right), frames);
         assert!(left.iter().all(|sample| *sample == 0.0));
         assert!(right.iter().all(|sample| *sample == 0.0));
+
+        let mut unmatched = runtime_for(&prepared);
+        unmatched.note_on(61, 100);
+        assert_eq!(unmatched.render(&mut left, &mut right), frames);
+        assert!(left.iter().any(|sample| sample.abs() > 0.001));
+        assert_eq!(
+            unmatched.prepared_poly_runtime_regions()[0].active_voice_count(),
+            1,
+            "a filter for note 60 must not signal done for note 61"
+        );
     }
 
     #[test]
@@ -1941,7 +1951,7 @@ mod tests {
             .with_node(
                 Node::new(NodeId::new("envelope"), module_types::ADSR)
                     .with_default_override(builtin_ports::ATTACK, 0.0)
-                    .with_default_override(builtin_ports::SUSTAIN, 1.0)
+                    .with_default_override(builtin_ports::SUSTAIN, 0.5)
                     .with_default_override(builtin_ports::RELEASE, 0.0),
             )
             .with_node(Node::new(NodeId::new("gain"), module_types::GAIN))
@@ -1967,10 +1977,10 @@ mod tests {
         let mut right = vec![0.0; frames];
 
         runtime.note_on(60, 100);
-        for _ in 0..20 {
+        for _ in 0..200 {
             assert_eq!(runtime.render(&mut left, &mut right), frames);
         }
-        assert!(left.iter().any(|sample| *sample > 0.1));
+        assert!(left.iter().all(|sample| *sample == 0.125));
 
         runtime.note_off(60);
         assert_eq!(runtime.render(&mut left, &mut right), frames);
