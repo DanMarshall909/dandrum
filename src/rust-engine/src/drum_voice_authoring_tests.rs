@@ -5,14 +5,19 @@
 //! trigger, and that the primitive gaps closed for drum authoring (oscillator
 //! waveform selection and runtime-updatable decay) behave as specified.
 
+use std::collections::BTreeMap;
 use std::fs;
 use std::path::PathBuf;
 
 use crate::core::TimedInputEvent;
-use crate::graph_processor::render_kernel_offline_named;
+use crate::graph_processor::{
+    render_kernel_offline_named, render_kernel_offline_named_with_inputs,
+};
 use crate::kernel::document::load_kernel_patch_file;
 use crate::patch::{self, RenderSettings, validate_patch_schema};
-use crate::preparation::prepare_kernel_patch;
+use crate::preparation::{
+    HostBuses, PreparedKernelInstrument, prepare_kernel_graph_with_buses, prepare_kernel_patch,
+};
 use crate::sample::PreparedSamplerAssets;
 use crate::script::ScriptEvent;
 use crate::synth::DandrumEngine;
@@ -166,35 +171,44 @@ fn sampler_backed_909_metallic_voices_reference_placeholder_assets() {
     }
 }
 
-fn render_tom_with_runtime_decay(decay_ms: f32) -> Vec<f32> {
-    let path = drums_dir().join("drum-808-tom.yaml");
-    let mut engine = DandrumEngine::new();
-    engine.prepare(SAMPLE_RATE_HZ);
-    engine
-        .load_patch_file(&path)
-        .expect("808 tom should load for runtime parameter test");
-
-    // Change the mapped decay target at runtime. `amp_env.time_ms` is the live
-    // control input the tom's `tom.decay_ms` public parameter maps onto.
-    assert!(
-        engine.set_numeric_parameter_by_target("amp_env", "time_ms", decay_ms),
-        "amp_env.time_ms should be an addressable runtime target"
-    );
-
-    engine.note_on(TRIGGER_NOTE, TRIGGER_VELOCITY);
-    let frames = (SAMPLE_RATE_HZ as usize) / 2;
-    let mut left = vec![0.0_f32; frames];
-    let mut right = vec![0.0_f32; frames];
-    engine.render(&mut left, &mut right);
-    left
+fn render_tom_with_runtime_decay(prepared: &PreparedKernelInstrument, decay: Vec<f32>) -> Vec<f32> {
+    let inputs = BTreeMap::from([("decay_ms".to_string(), vec![decay])]);
+    let buses = render_kernel_offline_named_with_inputs(
+        prepared,
+        note_on_at_start(),
+        &PreparedSamplerAssets::empty(),
+        &inputs,
+    )
+    .expect("808 tom renders with a live root decay control");
+    assert_eq!(buses[0].0, "master");
+    assert_eq!(buses[0].1[0], buses[0].1[1]);
+    buses[0].1[0].clone()
 }
 
 #[test]
 fn decay_public_parameter_updates_mapped_target_at_runtime_without_reloading_yaml() {
-    // Task 1.3: a decay parameter exposed through preset_surface updates the
-    // mapped runtime target without rewriting or reparsing YAML.
-    let short = render_tom_with_runtime_decay(60.0);
-    let long = render_tom_with_runtime_decay(900.0);
+    // Task 1.3: the public decay control is a root input bus. It can change
+    // during a note while the prepared graph and voice state stay in place.
+    let patch = load_kernel_patch_file(drums_dir().join("drum-808-tom.yaml"))
+        .expect("808 tom loads as a kernel patch");
+    let frames = SAMPLE_RATE_HZ as usize / 2;
+    let settings = RenderSettings {
+        sample_rate_hz: SAMPLE_RATE_HZ as u32,
+        block_size_frames: 128,
+        duration_frames: frames as u64,
+    };
+    let host = HostBuses::new()
+        .with_input("decay_ms", 1)
+        .with_output("master", 2);
+    let prepared =
+        prepare_kernel_graph_with_buses(patch.root(), patch.registry(), &settings, &host)
+            .expect("808 tom binds its public decay control to a host input");
+    let short = render_tom_with_runtime_decay(&prepared, vec![60.0; frames]);
+    let long = render_tom_with_runtime_decay(&prepared, vec![900.0; frames]);
+    let switch_frame = frames / 4;
+    let mut changing = vec![60.0; frames];
+    changing[switch_frame..].fill(900.0);
+    let changing = render_tom_with_runtime_decay(&prepared, changing);
 
     let tail = |samples: &[f32]| -> f32 {
         let start = samples.len() * 3 / 4;
@@ -207,6 +221,11 @@ fn decay_public_parameter_updates_mapped_target_at_runtime_without_reloading_yam
          (short={}, long={})",
         tail(&short),
         tail(&long)
+    );
+    assert_eq!(
+        &changing[switch_frame..],
+        &long[switch_frame..],
+        "the running voice should use the new decay value from the first changed frame"
     );
 }
 

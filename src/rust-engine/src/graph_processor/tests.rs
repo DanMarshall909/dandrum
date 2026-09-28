@@ -6894,6 +6894,167 @@ fn clap_examples_preserve_legacy_preset_renders_on_named_buses() {
 }
 
 #[test]
+fn tom_and_conga_examples_preserve_legacy_preset_renders() {
+    for (
+        fixture,
+        legacy_yaml,
+        instrument_id,
+        alias,
+        decay_ms,
+        sweep,
+        pitch_decay_ms,
+        decay_max,
+        sweep_max,
+    ) in [
+        (
+            "examples/patches/drums/drum-808-tom.yaml",
+            include_str!("../../tests/fixtures/unify-graph-kernel/legacy/drum-808-tom.yaml"),
+            "dandrum.drum-808-tom",
+            "tom",
+            320,
+            0.35,
+            60,
+            1200,
+            2.0,
+        ),
+        (
+            "examples/patches/drums/drum-909-tom.yaml",
+            include_str!("../../tests/fixtures/unify-graph-kernel/legacy/drum-909-tom.yaml"),
+            "dandrum.drum-909-tom",
+            "tom",
+            260,
+            0.45,
+            70,
+            1000,
+            2.0,
+        ),
+        (
+            "examples/patches/drums/drum-808-conga.yaml",
+            include_str!("../../tests/fixtures/unify-graph-kernel/legacy/drum-808-conga.yaml"),
+            "dandrum.drum-808-conga",
+            "conga",
+            180,
+            0.2,
+            40,
+            600,
+            1.5,
+        ),
+    ] {
+        let yaml = read_repo_fixture(fixture).expect("drum example exists");
+        let patch = load_kernel_patch_str(&yaml).expect("drum loads as kernel patch");
+        assert_eq!(
+            patch.instrument().expect("instrument identity").id,
+            instrument_id
+        );
+        assert_eq!(
+            patch
+                .preset_surface()
+                .parameters()
+                .iter()
+                .map(|alias| alias.name())
+                .collect::<Vec<_>>(),
+            [
+                format!("{alias}.decay_ms"),
+                format!("{alias}.sweep"),
+                format!("{alias}.pitch_decay_ms"),
+                format!("{alias}.level"),
+            ]
+        );
+        assert_eq!(
+            patch
+                .root()
+                .ports()
+                .iter()
+                .find(|port| port.name() == "decay_ms")
+                .and_then(|port| port.control_default())
+                .expect("decay control")
+                .max(),
+            Some(decay_max as f64),
+        );
+        assert_eq!(
+            patch
+                .root()
+                .ports()
+                .iter()
+                .find(|port| port.name() == "sweep")
+                .and_then(|port| port.control_default())
+                .expect("sweep control")
+                .max(),
+            Some(sweep_max),
+        );
+        let settings = RenderSettings {
+            sample_rate_hz: 48_000,
+            block_size_frames: 128,
+            duration_frames: 2_048,
+        };
+        let events = vec![note_on_value(0, 48, 110)];
+        let mut baseline = None;
+        for (case, decay_ms, sweep, pitch_decay_ms, level) in [
+            ("advertised defaults", decay_ms, sweep, pitch_decay_ms, 0.9),
+            ("changed controls", 90, 0.8, 20, 0.5),
+        ] {
+            let preset = patch::load_preset_str(&format!(
+                "name: {case}\ninstrument: {{ id: {instrument_id}, preset_schema_version: 1 }}\nvalues: {{ {alias}.decay_ms: {decay_ms}, {alias}.sweep: {sweep}, {alias}.pitch_decay_ms: {pitch_decay_ms}, {alias}.level: {level} }}\n"
+            ))
+            .expect("drum preset parses");
+            let mut legacy = patch::apply_preset(
+                &patch::load_patch_str(legacy_yaml).expect("legacy drum reference parses"),
+                &preset,
+            )
+            .expect("legacy drum preset applies");
+            legacy.render = settings.clone();
+            let legacy = crate::preparation::prepare_instrument_document(legacy, Path::new("."))
+                .expect("legacy drum prepares");
+            let expected = crate::synth::DandrumEngine::new()
+                .render_prepared_instrument_offline(&legacy, events.clone());
+            assert!(expected.left.iter().any(|sample| sample.abs() > 0.001));
+            assert_eq!(expected.left, expected.right);
+
+            let applied = if case == "advertised defaults" {
+                patch.clone()
+            } else {
+                patch
+                    .apply_preset(&preset)
+                    .expect("kernel drum preset applies")
+            };
+            let prepared = prepare_kernel_patch(&applied, &settings).expect("drum prepares");
+            let buses = render_kernel_offline_named(
+                &prepared,
+                events.clone(),
+                &PreparedSamplerAssets::empty(),
+            )
+            .expect("drum renders on named buses");
+            assert_eq!(buses.len(), 1);
+            assert_eq!(buses[0].0, "master");
+            assert_eq!(buses[0].1.len(), 2);
+            for (channel, expected) in [(0, &expected.left), (1, &expected.right)] {
+                let actual = &buses[0].1[channel];
+                assert_eq!(actual.len(), expected.len());
+                let mismatch = actual
+                    .iter()
+                    .zip(expected)
+                    .position(|(actual, expected)| actual != expected);
+                assert_eq!(
+                    mismatch,
+                    None,
+                    "{fixture} {case} master channel {channel} differs at frame {mismatch:?}: actual {:?}, expected {:?}",
+                    mismatch.map(|frame| actual[frame]),
+                    mismatch.map(|frame| expected[frame]),
+                );
+            }
+            if let Some(baseline) = &baseline {
+                assert_ne!(
+                    &expected.left, baseline,
+                    "changed controls should change the drum sound"
+                );
+            } else {
+                baseline = Some(expected.left);
+            }
+        }
+    }
+}
+
+#[test]
 fn impulse_noise_and_layer_examples_match_legacy_render_on_named_buses() {
     for (fixture, legacy_yaml) in [
         (
