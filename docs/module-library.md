@@ -36,4 +36,4 @@ $HOME/.cargo/bin/cargo run --manifest-path src/rust-engine/Cargo.toml \
   --output /tmp/dandrum-library-drum-voice.wav --duration-frames 4800
 ```
 
-The CLI supplies render settings, seeds `$LIB` during preparation, and writes the example's `left` and `right` root outputs as a stereo WAV. Inline definitions remain supported; `event-routing-drum-machine.yaml` is an inline example pending its kernel format migration.
+The CLI supplies render settings, seeds `$LIB` during preparation, and writes the example's `left` and `right` root outputs as a stereo WAV. Inline definitions remain supported; `event-routing-drum-machine.yaml` uses a named `drum_voice` definition and a stereo `master` root output.

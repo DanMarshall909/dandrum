@@ -3648,28 +3648,88 @@ fn migrated_stereo_effect_examples_match_legacy_named_outputs() {
 }
 
 #[test]
+fn migrated_event_routing_drum_machine_preserves_legacy_pad_audio() {
+    let Some(yaml) = read_repo_fixture("examples/patches/event-routing-drum-machine.yaml") else {
+        return;
+    };
+    let kernel = load_kernel_patch_str(&yaml).expect("drum machine example uses kernel YAML");
+    let legacy = patch::load_patch_str(include_str!(
+        "../../tests/fixtures/unify-graph-kernel/legacy/event-routing-drum-machine.yaml"
+    ))
+    .expect("legacy drum machine reference parses");
+    let legacy_graph = Graph::from_patch_declarations(&legacy);
+    legacy_graph
+        .validate()
+        .expect("legacy drum machine reference validates");
+    let prepared = prepare_kernel_patch(&kernel, &legacy.render)
+        .expect("migrated drum machine prepares with host settings");
+
+    for note in [60, 38, 42] {
+        let events = vec![note_on_value(0, note, 100)];
+        let (expected_left, expected_right) =
+            render_offline(&legacy_graph, &legacy.render, events.clone());
+        let rendered =
+            render_kernel_offline_named(&prepared, events, &PreparedSamplerAssets::empty())
+                .expect("migrated drum machine renders a named bus");
+        assert_eq!(rendered.len(), 1);
+        assert_eq!(rendered[0].0, "master");
+        assert_eq!(rendered[0].1.len(), 2);
+        assert_eq!(
+            rendered[0].1[0], expected_left,
+            "note {note} left audio changed"
+        );
+        assert_eq!(
+            rendered[0].1[1], expected_right,
+            "note {note} right audio changed"
+        );
+        assert!(
+            rendered[0].1[0].iter().any(|sample| sample.abs() > 0.001),
+            "note {note} produces audible audio"
+        );
+        assert!(
+            rendered[0].1[0][1] < -0.001,
+            "the saw attack has a known negative polarity"
+        );
+    }
+}
+
+#[test]
 fn drum_machine_dogfood_routes_notes_to_explicit_voice_modules_without_primitive() {
     let Some(yaml) = read_repo_fixture("examples/patches/event-routing-drum-machine.yaml") else {
         return;
     };
-    let patch = patch::load_patch_str(&yaml).expect("drum machine example should parse");
-    patch::validate_patch_schema(&patch).expect("drum machine example should validate");
+    let patch = load_kernel_patch_str(&yaml).expect("drum machine example should parse");
 
     assert!(
         patch
-            .modules
+            .root()
+            .nodes()
             .iter()
-            .all(|module| module.module_type != "drum_machine")
+            .all(|node| node.definition_ref() != "drum_machine")
     );
 
-    let graph = Graph::from_patch_declarations(&patch);
-    graph
-        .validate()
-        .expect("drum machine graph should validate");
-    let cable_pairs = graph
-        .cables()
+    let prepared = prepare_kernel_patch(
+        &patch,
+        &patch::RenderSettings {
+            sample_rate_hz: 48_000,
+            block_size_frames: 64,
+            duration_frames: 4_800,
+        },
+    )
+    .expect("drum machine graph should prepare");
+    let cable_pairs = prepared
+        .flattened_graph()
+        .connections()
         .iter()
-        .map(|cable| format!("{}->{}", cable.source(), cable.destination()))
+        .map(|cable| {
+            format!(
+                "{}.{}->{}.{}",
+                cable.source().node().as_str(),
+                cable.source().port(),
+                cable.destination().node().as_str(),
+                cable.destination().port()
+            )
+        })
         .collect::<Vec<_>>();
 
     assert!(cable_pairs.contains(&"kick_route.events_out->kick_voice::env.gate".to_string()));
@@ -3678,15 +3738,6 @@ fn drum_machine_dogfood_routes_notes_to_explicit_voice_modules_without_primitive
     assert!(cable_pairs.contains(&"kick_voice::vca.audio_out->mixer.inputs".to_string()));
     assert!(cable_pairs.contains(&"snare_voice::vca.audio_out->mixer.inputs".to_string()));
     assert!(cable_pairs.contains(&"hat_voice::vca.audio_out->mixer.inputs".to_string()));
-
-    for note in [60, 38, 42] {
-        let (left, right) =
-            render_offline(&graph, &patch.render, vec![note_on_value(0, note, 100)]);
-        assert!(
-            left.iter().chain(right.iter()).any(|sample| *sample != 0.0),
-            "note {note} should render through its explicit downstream voice"
-        );
-    }
 }
 
 #[test]
@@ -3694,13 +3745,15 @@ fn drum_machine_loop_schedule_loads_routes_and_renders_audio() {
     let Some(yaml) = read_repo_fixture("examples/patches/event-routing-drum-machine.yaml") else {
         return;
     };
-    let patch = patch::load_patch_str(&yaml).expect("drum machine example should parse");
-    patch::validate_patch_schema(&patch).expect("drum machine example should validate");
-
-    let graph = Graph::from_patch_declarations(&patch);
-    graph
-        .validate()
-        .expect("drum machine graph should validate");
+    let patch = load_kernel_patch_str(&yaml).expect("drum machine example should parse");
+    let legacy = patch::load_patch_str(include_str!(
+        "../../tests/fixtures/unify-graph-kernel/legacy/event-routing-drum-machine.yaml"
+    ))
+    .expect("legacy reference parses");
+    let graph = Graph::from_patch_declarations(&legacy);
+    graph.validate().expect("legacy reference graph validates");
+    let prepared =
+        prepare_kernel_patch(&patch, &legacy.render).expect("drum machine graph should prepare");
 
     let events = vec![
         note_on_value(0, 60, 100),
@@ -3713,12 +3766,14 @@ fn drum_machine_loop_schedule_loads_routes_and_renders_audio() {
         note_on_value(875, 42, 88),
     ];
 
-    let (left, right) = render_offline(&graph, &patch.render, events);
-
-    assert!(
-        left.iter().chain(right.iter()).any(|sample| *sample != 0.0),
-        "drum loop schedule should render non-zero audio"
-    );
+    let (expected_left, expected_right) = render_offline(&graph, &legacy.render, events.clone());
+    let rendered = render_kernel_offline_named(&prepared, events, &PreparedSamplerAssets::empty())
+        .expect("drum loop renders master bus");
+    assert_eq!(rendered.len(), 1);
+    assert_eq!(rendered[0].0, "master");
+    assert_eq!(rendered[0].1[0], expected_left);
+    assert_eq!(rendered[0].1[1], expected_right);
+    assert!(rendered[0].1[0].iter().any(|sample| sample.abs() > 0.001));
 }
 
 #[test]
