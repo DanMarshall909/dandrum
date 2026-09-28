@@ -6547,6 +6547,40 @@ fn kernel_migrated_examples_load_and_prepare() {
 }
 
 #[test]
+fn tune_examples_render_notes_through_a_one_block_delay_on_named_outputs() {
+    let settings = RenderSettings {
+        sample_rate_hz: 48_000,
+        block_size_frames: 128,
+        duration_frames: 1_024,
+    };
+    for fixture in [
+        "examples/patches/minimal-tune.yaml",
+        "examples/patches/short-tune-with-delay.yaml",
+    ] {
+        let yaml = read_repo_fixture(fixture).expect("tune example exists");
+        let patch = load_kernel_patch_str(&yaml)
+            .unwrap_or_else(|error| panic!("{fixture} should load as a kernel patch: {error}"));
+        let prepared = prepare_kernel_patch(&patch, &settings)
+            .unwrap_or_else(|error| panic!("{fixture} should prepare: {error}"));
+        let outputs = render_kernel_offline_named(
+            &prepared,
+            vec![note_on(0, 100)],
+            &PreparedSamplerAssets::empty(),
+        )
+        .unwrap_or_else(|error| panic!("{fixture} should render: {error}"));
+        assert_eq!(outputs.len(), 1, "{fixture} has one named output");
+        assert_eq!(outputs[0].0, "master");
+        assert_eq!(outputs[0].1.len(), 1);
+        let samples = &outputs[0].1[0];
+        assert!(samples[..128].iter().all(|sample| *sample == 0.0));
+        assert!(
+            samples[128..].iter().any(|sample| sample.abs() > 0.01),
+            "{fixture} should become audible after the delayed first block"
+        );
+    }
+}
+
+#[test]
 fn kernel_migrated_examples_match_legacy_reference_renders() {
     let cases = vec![
         (

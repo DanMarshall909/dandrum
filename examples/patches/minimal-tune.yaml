@@ -1,58 +1,19 @@
 metadata:
   name: Minimal Tune
   version: "0.1"
-render:
-  sample_rate_hz: 48000
-  block_size_frames: 128
-  duration_frames: 48000
+ports:
+  - { name: master, direction: output, signal: audio, channels: 1, maps_from: delay.audio_out }
 modules:
-  - id: osc
-    type: oscillator
-    inputs:
-      - name: gate
-        signal_type: event
-      - name: pitch
-        signal_type: control
-    outputs:
-      - name: audio
-        signal_type: audio
-  - id: env
-    type: adsr
-    inputs:
-      - name: gate
-        signal_type: event
-    outputs:
-      - name: value
-        signal_type: control
-  - id: vca
-    type: gain
-    inputs:
-      - name: audio_in
-        signal_type: audio
-      - name: gain
-        signal_type: control
-    outputs:
-      - name: audio_out
-        signal_type: audio
-  - id: delay
-    type: block_delay
-    inputs:
-      - name: audio_in
-        signal_type: audio
-    outputs:
-      - name: audio_out
-        signal_type: audio
-  - id: out
-    type: audio_output
-    inputs:
-      - name: left
-        signal_type: audio
+  - { id: midi, type: midi_input }
+  - { id: note, type: note_to_rate }
+  - { id: osc, type: oscillator }
+  - { id: env, type: adsr }
+  - { id: vca, type: gain }
+  - { id: delay, type: compensation_delay, static: { delay_samples: 128 } }
 connections:
-  - from: osc.audio
-    to: vca.audio_in
-  - from: env.value
-    to: vca.gain
-  - from: vca.audio_out
-    to: delay.audio_in
-  - from: delay.audio_out
-    to: out.left
+  - { from: midi.events, to: note.events }
+  - { from: midi.events, to: env.gate }
+  - { from: note.rate, to: osc.pitch }
+  - { from: osc.audio, to: vca.audio_in }
+  - { from: env.value, to: vca.gain }
+  - { from: vca.audio_out, to: delay.audio_in }
