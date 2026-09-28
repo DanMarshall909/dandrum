@@ -21,6 +21,7 @@ public:
     void resized() override;
 
 private:
+    friend struct PluginEditorBridgeTestProbe;
     juce::WebBrowserComponent::Options createBrowserOptions();
     std::optional<juce::WebBrowserComponent::Resource> provideResource (const juce::String& path) const;
     void setParameterFromWeb (const juce::Array<juce::var>& arguments,

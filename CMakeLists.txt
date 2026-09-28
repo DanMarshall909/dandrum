@@ -129,6 +129,14 @@ target_link_libraries(dandrum-plugin-host-parameter-surface-test
     PUBLIC juce::juce_recommended_config_flags juce::juce_recommended_lto_flags juce::juce_recommended_warning_flags)
 add_test(NAME cxx-plugin-host-parameter-surface COMMAND dandrum-plugin-host-parameter-surface-test)
 
+add_executable(dandrum-plugin-editor-bridge-test tests/cpp/PluginEditorBridgeTest.cpp)
+target_include_directories(dandrum-plugin-editor-bridge-test PRIVATE src/juce-wrapper src/juce-plugin)
+target_compile_definitions(dandrum-plugin-editor-bridge-test PRIVATE JUCE_USE_CURL=0 JUCE_WEB_BROWSER=1 JUCE_USE_WIN_WEBVIEW2=1)
+target_link_libraries(dandrum-plugin-editor-bridge-test
+    PRIVATE dandrum-plugin dandrum_engine juce::juce_audio_basics juce::juce_audio_processors juce::juce_audio_utils juce::juce_gui_extra
+    PUBLIC juce::juce_recommended_config_flags juce::juce_recommended_lto_flags juce::juce_recommended_warning_flags)
+add_test(NAME cxx-plugin-editor-bridge COMMAND dandrum-plugin-editor-bridge-test)
+
 add_executable(dandrum-plugin-file-watch-reload-test tests/cpp/PluginFileWatchReloadTest.cpp)
 target_include_directories(dandrum-plugin-file-watch-reload-test PRIVATE src/juce-wrapper src/juce-plugin)
 target_compile_definitions(dandrum-plugin-file-watch-reload-test PRIVATE JUCE_USE_CURL=0 JUCE_WEB_BROWSER=1 JUCE_USE_WIN_WEBVIEW2=1)
@@ -144,6 +152,7 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
     foreach(plugin_test_target
             dandrum-plugin-construction-test
             dandrum-plugin-host-parameter-surface-test
+            dandrum-plugin-editor-bridge-test
             dandrum-plugin-file-watch-reload-test)
         target_include_directories(${plugin_test_target} PRIVATE
             ${CMAKE_CURRENT_BINARY_DIR}/dandrum-plugin_artefacts/JuceLibraryCode)

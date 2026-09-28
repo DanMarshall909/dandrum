@@ -1,7 +1,7 @@
 ## 1. Characterize Existing Behavior
 
-- [ ] 1.1 Run focused processor, Sound Lab, and WebView tests; inspect coverage and record the deterministic TB-303 fixture PCM/metrics fingerprint before editing behavior.
-- [ ] 1.2 Add behavior tests for parameter set/get and host notification, unknown IDs, note-on/off and queue overflow, browser surface refresh, and Sound Lab generation-scoped resources before moving bridge code.
+- [x] 1.1 Run focused processor, Sound Lab, and WebView tests; inspect coverage and record the deterministic TB-303 fixture PCM/metrics fingerprint before editing behavior.
+- [x] 1.2 Add behavior tests for parameter set/get and host notification, unknown IDs, note-on/off and queue overflow, browser surface refresh, and Sound Lab generation-scoped resources before moving bridge code.
 
 ## 2. Coherent Demo Configuration
 
