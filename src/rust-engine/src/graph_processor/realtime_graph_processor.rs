@@ -659,7 +659,7 @@ impl RealtimeGraphProcessor {
         events_scratch: &mut Vec<BlockEvent>,
     ) {
         global_event_queues.clear_all();
-        prepare_voice_event_queues(voice_event_queues, events, allocator);
+        prepare_voice_event_queues(voice_event_queues, events, allocator, states, compiled);
 
         if !has_active_voice(allocator) {
             left_out.extend(std::iter::repeat_n(0.0, frames));
@@ -810,6 +810,8 @@ fn prepare_voice_event_queues(
     voice_events: &mut Vec<Vec<BlockEvent>>,
     events: &[BlockEvent],
     allocator: &mut VoiceAllocator,
+    states: &mut [Vec<PerModuleState>],
+    compiled: &CompiledPatch,
 ) {
     let max_voices = allocator.max_voices();
     while voice_events.len() < max_voices {
@@ -823,6 +825,9 @@ fn prepare_voice_event_queues(
         if let ScriptEvent::NoteOn { note, velocity } = &event.event
             && let Some(slot) = allocator.note_on(*note, *velocity)
         {
+            for &node_index in compiled.voice_node_indices() {
+                states[slot][node_index].reset_voice();
+            }
             voice_events[slot].push(event.clone());
         }
     }

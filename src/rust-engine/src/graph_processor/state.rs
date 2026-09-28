@@ -131,6 +131,18 @@ pub(super) enum PerModuleState {
 }
 
 impl PerModuleState {
+    pub(super) fn reset_voice(&mut self) {
+        match self {
+            Self::Filter { filters, .. } => {
+                for filter in filters.iter_mut() {
+                    filter.reset();
+                }
+            }
+            Self::EnvelopeFollower { detector, .. } => detector.reset(),
+            _ => {}
+        }
+    }
+
     #[cfg(test)]
     pub(super) fn new(
         module: &ModuleNode,

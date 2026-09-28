@@ -1767,6 +1767,140 @@ fn poly_allocation_stealing(max_voices: u32) -> VoiceAllocation {
 }
 
 #[test]
+fn stolen_filter_voice_starts_with_the_same_onset_as_a_fresh_voice() {
+    let base = poly_sampler_graph(
+        vec![
+            ModuleNode::new(ModuleId::new("voice_filter"), module_types::FILTER)
+                .with_execution_scope(ExecutionScope::Voice)
+                .with_input(builtin_ports::AUDIO_IN, SignalType::Audio)
+                .with_output(builtin_ports::AUDIO_OUT, SignalType::Audio),
+        ],
+        Vec::new(),
+    );
+    let mut cables: Vec<Cable> = base
+        .cables()
+        .iter()
+        .filter(|cable| {
+            cable.source().module_id().as_str() != "sampler"
+                || cable.destination().module_id().as_str() != "mixer"
+        })
+        .cloned()
+        .collect();
+    cables.push(Cable::new(
+        PortRef::new(ModuleId::new("sampler"), builtin_ports::AUDIO),
+        PortRef::new(ModuleId::new("voice_filter"), builtin_ports::AUDIO_IN),
+    ));
+    cables.push(Cable::new(
+        PortRef::new(ModuleId::new("voice_filter"), builtin_ports::AUDIO_OUT),
+        PortRef::new(ModuleId::new("mixer"), builtin_ports::INPUTS),
+    ));
+    let graph = Graph::new(base.modules().to_vec(), cables);
+    graph
+        .validate()
+        .expect("filter voice graph should validate");
+
+    let assets = sampler_assets(
+        std::iter::once(1.0)
+            .chain(std::iter::repeat_n(0.0, 127))
+            .collect(),
+    );
+    let make_processor = || {
+        RealtimeGraphProcessor::polyphonic_with_sampler_assets_and_max_block_size(
+            graph.clone(),
+            48_000.0,
+            &assets,
+            &poly_allocation_stealing(1),
+            64,
+        )
+    };
+    let mut reused = make_processor();
+    reused.note_on(60, 100);
+    reused.render(&mut [0.0; 64], &mut [0.0; 64]);
+    reused.note_on(61, 100);
+    let mut retriggered = [0.0; 64];
+    reused.render(&mut retriggered, &mut [0.0; 64]);
+
+    let mut fresh = make_processor();
+    fresh.note_on(61, 100);
+    let mut first = [0.0; 64];
+    fresh.render(&mut first, &mut [0.0; 64]);
+    assert!(first.iter().any(|sample| sample.abs() > 0.0));
+    assert_eq!(
+        retriggered, first,
+        "a stolen voice must lose its filter memory"
+    );
+}
+
+#[test]
+fn rejected_note_on_and_note_off_leave_global_reverb_tail_unchanged() {
+    let base = poly_sampler_graph(
+        vec![
+            ModuleNode::new(ModuleId::new("room"), module_types::REVERB)
+                .with_execution_scope(ExecutionScope::Global)
+                .with_input(builtin_ports::AUDIO_IN_L, SignalType::Audio)
+                .with_input(builtin_ports::AUDIO_IN_R, SignalType::Audio)
+                .with_output(builtin_ports::AUDIO_OUT_L, SignalType::Audio)
+                .with_output(builtin_ports::AUDIO_OUT_R, SignalType::Audio),
+        ],
+        Vec::new(),
+    );
+    let mut cables: Vec<Cable> = base
+        .cables()
+        .iter()
+        .filter(|cable| {
+            cable.source().module_id().as_str() != "mixer"
+                || cable.destination().module_id().as_str() != "out"
+        })
+        .cloned()
+        .collect();
+    for input in [builtin_ports::AUDIO_IN_L, builtin_ports::AUDIO_IN_R] {
+        cables.push(Cable::new(
+            PortRef::new(ModuleId::new("mixer"), builtin_ports::MIX),
+            PortRef::new(ModuleId::new("room"), input),
+        ));
+    }
+    for (output, input) in [
+        (builtin_ports::AUDIO_OUT_L, builtin_ports::LEFT),
+        (builtin_ports::AUDIO_OUT_R, builtin_ports::RIGHT),
+    ] {
+        cables.push(Cable::new(
+            PortRef::new(ModuleId::new("room"), output),
+            PortRef::new(ModuleId::new("out"), input),
+        ));
+    }
+    let graph = Graph::new(base.modules().to_vec(), cables);
+    graph.validate().expect("reverb graph should validate");
+    let assets = sampler_assets(
+        std::iter::once(1.0)
+            .chain(std::iter::repeat_n(0.0, 4095))
+            .collect(),
+    );
+    let make_processor = || {
+        RealtimeGraphProcessor::polyphonic_with_sampler_assets_and_max_block_size(
+            graph.clone(),
+            48_000.0,
+            &assets,
+            &poly_allocation(1),
+            1024,
+        )
+    };
+    let mut untouched = make_processor();
+    let mut note_activity = make_processor();
+    for processor in [&mut untouched, &mut note_activity] {
+        processor.note_on(60, 100);
+        processor.render(&mut [0.0; 1024], &mut [0.0; 1024]);
+    }
+    note_activity.note_off(90);
+    note_activity.note_on(61, 100); // rejected while the first voice is active
+    let mut reference_tail = [0.0; 1024];
+    let mut active_tail = [0.0; 1024];
+    untouched.render(&mut reference_tail, &mut [0.0; 1024]);
+    note_activity.render(&mut active_tail, &mut [0.0; 1024]);
+    assert!(reference_tail.iter().any(|sample| sample.abs() > 0.0));
+    assert_eq!(active_tail, reference_tail);
+}
+
+#[test]
 fn overlapping_sampler_notes_mix_instead_of_replacing() {
     let graph = poly_sampler_graph(Vec::new(), Vec::new());
     graph.validate().expect("graph should validate");
