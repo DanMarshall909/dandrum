@@ -183,6 +183,11 @@ fn builtin_definitions() -> Vec<GraphDefinition> {
             .with_port(tunable(ports::SUSTAIN, 0.7, 0.0, 1.0))
             .with_port(tunable(ports::RELEASE, 200.0, 0.0, 10000.0))
             .with_port(control_out(ports::VALUE)),
+        primitive(names::SLEW)
+            .with_port(control_in(ports::VALUE))
+            .with_port(defaulted(ports::GLIDE, 0.0))
+            .with_port(tunable(ports::TIME_MS, 60.0, 0.0, 5000.0))
+            .with_port(control_out(ports::VALUE)),
         primitive(names::LFO)
             .with_port(defaulted(ports::RATE, 1.0))
             .with_port(control_out(ports::VALUE)),

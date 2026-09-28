@@ -6646,6 +6646,55 @@ connections:
 }
 
 #[test]
+fn kernel_slew_glides_while_gated_and_snaps_when_released() {
+    let patch = load_kernel_patch_str(
+        r#"
+ports:
+  - { name: target, direction: input, signal: control, channels: 1, maps_to: glide.value }
+  - { name: gate, direction: input, signal: control, channels: 1, maps_to: glide.glide }
+  - { name: master, direction: output, signal: control, channels: 1, maps_from: glide.value }
+modules:
+  - { id: glide, type: slew, defaults: { time_ms: 4 } }
+connections: []
+"#,
+    )
+    .expect("slew patch parses");
+    let settings = RenderSettings {
+        sample_rate_hz: 1_000,
+        block_size_frames: 4,
+        duration_frames: 8,
+    };
+    let buses = HostBuses::new()
+        .with_input("target", 1)
+        .with_input("gate", 1)
+        .with_output("master", 1);
+    let prepared =
+        prepare_kernel_graph_with_buses(patch.root(), patch.registry(), &settings, &buses)
+            .expect("slew patch prepares");
+    let outputs = render_kernel_offline_named_with_inputs(
+        &prepared,
+        Vec::new(),
+        &PreparedSamplerAssets::empty(),
+        &BTreeMap::from([
+            (
+                "target".to_string(),
+                vec![vec![0.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0]],
+            ),
+            (
+                "gate".to_string(),
+                vec![vec![0.0, 1.0, 1.0, 1.0, 1.0, 0.0, 0.0, 0.0]],
+            ),
+        ]),
+    )
+    .expect("slew patch renders");
+    assert_eq!(outputs[0].0, "master");
+    assert_eq!(
+        outputs[0].1[0],
+        [0.0, 0.25, 0.4375, 0.578125, 0.68359375, 1.0, 1.0, 1.0]
+    );
+}
+
+#[test]
 fn kernel_saturator_renders_default_and_selected_curves_on_a_named_bus() {
     let yaml = r#"
 ports:

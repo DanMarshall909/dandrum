@@ -1350,6 +1350,9 @@ pub(super) fn process_channel_arena_step(
         ModuleKind::Lfo => {
             arena_processing::process_lfo(&mut states[step.module_index], &mut context)
         }
+        ModuleKind::Slew => {
+            arena_processing::process_slew(&mut states[step.module_index], &mut context)
+        }
         ModuleKind::Gain | ModuleKind::Multiply => arena_processing::process_gain(&mut context),
         ModuleKind::ControlToAudio => arena_processing::process_control_to_audio(&mut context),
         ModuleKind::CompensationDelay => arena_processing::process_compensation_delay(
@@ -1415,6 +1418,7 @@ pub(super) fn is_channel_arena_supported(step: &RenderStep) -> bool {
         ModuleKind::Noise => step.input_buffers.is_empty() && !step.output_buffers.is_empty(),
         ModuleKind::Oscillator => step.input_buffers.len() <= 1 && !step.output_buffers.is_empty(),
         ModuleKind::Lfo => step.input_buffers.len() == 1 && step.output_buffers.len() == 1,
+        ModuleKind::Slew => step.input_buffers.len() == 3 && step.output_buffers.len() == 1,
         ModuleKind::Gain => step.input_buffers.len() == step.output_buffers.len() + 1,
         ModuleKind::Multiply => step.input_buffers.len() == step.output_buffers.len() * 2,
         ModuleKind::EnvelopeFollower => {

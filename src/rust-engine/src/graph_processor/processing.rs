@@ -415,15 +415,7 @@ pub(super) fn process_slew(
         let target = value_in.get(i).copied().unwrap_or(0.0);
         let glide = glide_in.get(i).copied().unwrap_or(0.0);
         let time_ms = time_ms_in.get(i).copied().unwrap_or(0.0);
-        let glide_samples = (sample_rate * time_ms / 1000.0).max(1.0);
-        if glide > 0.5 && glide_samples > 1.0 {
-            // One-pole portamento: move a fixed fraction of the remaining
-            // distance toward the target each sample.
-            *current += (target - *current) / glide_samples;
-        } else {
-            *current = target;
-        }
-        output.push(*current);
+        output.push(slew_step(current, sample_rate, target, glide, time_ms));
     }
 
     let mut outputs = ModuleOutputs::empty();
@@ -431,6 +423,22 @@ pub(super) fn process_slew(
         .control
         .insert(builtin_ports::VALUE.to_string(), output);
     outputs
+}
+
+pub(super) fn slew_step(
+    current: &mut f32,
+    sample_rate: f32,
+    target: f32,
+    glide: f32,
+    time_ms: f32,
+) -> f32 {
+    let glide_samples = (sample_rate * time_ms / 1000.0).max(1.0);
+    if glide > 0.5 && glide_samples > 1.0 {
+        *current += (target - *current) / glide_samples;
+    } else {
+        *current = target;
+    }
+    *current
 }
 
 fn finite_or_zero(value: f32) -> f32 {

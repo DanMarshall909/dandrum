@@ -715,6 +715,54 @@ fn feedback_delay_render_and_reset_use_only_prepared_storage() {
 }
 
 #[test]
+fn kernel_slew_render_and_reset_use_only_prepared_storage() {
+    let patch = load_kernel_patch_str(
+        r#"
+ports:
+  - { name: target, direction: input, signal: control, channels: 1, maps_to: glide.value }
+  - { name: gate, direction: input, signal: control, channels: 1, maps_to: glide.glide }
+  - { name: master, direction: output, signal: control, channels: 1, maps_from: glide.value }
+modules:
+  - { id: glide, type: slew, defaults: { time_ms: 4 } }
+connections: []
+"#,
+    )
+    .expect("slew patch loads");
+    let settings = RenderSettings {
+        sample_rate_hz: 1_000,
+        block_size_frames: 4,
+        duration_frames: 4,
+    };
+    let buses = HostBuses::new()
+        .with_input("target", 1)
+        .with_input("gate", 1)
+        .with_output("master", 1);
+    let prepared =
+        prepare_kernel_graph_with_buses(patch.root(), patch.registry(), &settings, &buses)
+            .expect("slew patch prepares");
+    let mut processor = RealtimeGraphProcessor::polyphonic_with_compiled_patch_and_sampler_assets_and_max_block_size(
+        prepared.graph().clone(),
+        prepared.compiled_patch().clone(),
+        1_000.0,
+        &PreparedSamplerAssets::empty(),
+        &VoiceAllocation::default(),
+        4,
+    );
+    let inputs = vec![vec![vec![1.0; 4]], vec![vec![1.0; 4]]];
+    let mut outputs = vec![vec![vec![0.0; 4]]];
+
+    let allocations = count_current_thread_allocations(|| {
+        assert_eq!(processor.render_root_buses(&inputs, &mut outputs), 4);
+        assert_eq!(outputs[0][0], [0.25, 0.4375, 0.578125, 0.68359375]);
+        processor.reset();
+        assert_eq!(processor.render_root_buses(&inputs, &mut outputs), 4);
+    });
+
+    assert_eq!(allocations, 0);
+    assert_eq!(outputs[0][0], [0.25, 0.4375, 0.578125, 0.68359375]);
+}
+
+#[test]
 fn stereo_saturator_uses_channel_spans_without_realtime_allocation() {
     let yaml = r#"
 ports:

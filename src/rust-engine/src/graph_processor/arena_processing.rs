@@ -342,6 +342,25 @@ pub(super) fn process_lfo(state: &mut PerModuleState, context: &mut ProcessConte
     }
 }
 
+pub(super) fn process_slew(state: &mut PerModuleState, context: &mut ProcessContext<'_>) {
+    let PerModuleState::Slew {
+        current,
+        sample_rate,
+    } = state
+    else {
+        unreachable!()
+    };
+    for frame in 0..context.frames() {
+        let target = context.input_sample(0, frame, 0.0);
+        let glide = context.input_sample(1, frame, 0.0);
+        let time_ms = context.input_sample(2, frame, 60.0);
+        let value = super::processing::slew_step(current, *sample_rate, target, glide, time_ms);
+        context
+            .set_output_sample(0, frame, value)
+            .expect("slew output is present in a supported arena step");
+    }
+}
+
 pub(super) fn process_gain(context: &mut ProcessContext<'_>) {
     let channels = context.output_count();
     let gain_is_multichannel = context.input_count() >= channels * 2;

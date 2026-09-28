@@ -25,13 +25,14 @@ use crate::kernel::{
 };
 
 /// Every builtin the kernel registry must declare.
-const EXPECTED: [&str; 34] = [
+const EXPECTED: [&str; 35] = [
     names::MIDI_INPUT,
     names::OSCILLATOR,
     names::GAIN,
     names::AUDIO_MIXER,
     names::CONTROL_MIXER,
     names::ADSR,
+    names::SLEW,
     names::LFO,
     names::FILTER,
     names::AUDIO_DELAY_ONE_SAMPLE,
