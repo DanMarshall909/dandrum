@@ -56,13 +56,12 @@ fn parameter_values_convert_to_exact_patch_strings() {
 }
 
 #[test]
-fn feedback_boundary_must_be_on_cycle_source_module() {
+fn feedback_delay_must_be_on_cycle_source_module() {
     let graph = Graph::new(
         vec![
-            ModuleNode::new(ModuleId::new("delay"), "delay")
+            ModuleNode::new(ModuleId::new("delay"), "feedback_delay")
                 .with_input("in", SignalType::Audio)
-                .with_output("out", SignalType::Audio)
-                .with_feedback_boundary(SignalType::Audio),
+                .with_output("out", SignalType::Audio),
             ModuleNode::new(ModuleId::new("gain"), "gain")
                 .with_input("in", SignalType::Audio)
                 .with_output("out", SignalType::Audio),
@@ -81,11 +80,11 @@ fn feedback_boundary_must_be_on_cycle_source_module() {
 
     graph
         .validate()
-        .expect("delay source boundary should make feedback explicit");
+        .expect("feedback_delay should make feedback explicit");
 
-    let graph_without_boundary = Graph::new(
+    let graph_with_ordinary_delay = Graph::new(
         vec![
-            ModuleNode::new(ModuleId::new("delay"), "delay")
+            ModuleNode::new(ModuleId::new("delay"), "audio_delay_one_sample")
                 .with_input("in", SignalType::Audio)
                 .with_output("out", SignalType::Audio),
             ModuleNode::new(ModuleId::new("gain"), "gain")
@@ -96,7 +95,7 @@ fn feedback_boundary_must_be_on_cycle_source_module() {
     );
 
     assert!(matches!(
-        graph_without_boundary
+        graph_with_ordinary_delay
             .validate()
             .expect_err("cycle should fail")
             .diagnostics()[0],
@@ -105,13 +104,12 @@ fn feedback_boundary_must_be_on_cycle_source_module() {
 }
 
 #[test]
-fn unrelated_feedback_boundary_does_not_validate_separate_cycle() {
+fn unrelated_feedback_delay_does_not_validate_separate_cycle() {
     let graph = Graph::new(
         vec![
-            ModuleNode::new(ModuleId::new("unrelated_delay"), "delay")
+            ModuleNode::new(ModuleId::new("unrelated_delay"), "feedback_delay")
                 .with_input("in", SignalType::Audio)
-                .with_output("out", SignalType::Audio)
-                .with_feedback_boundary(SignalType::Audio),
+                .with_output("out", SignalType::Audio),
             ModuleNode::new(ModuleId::new("a"), "gain")
                 .with_input("in", SignalType::Audio)
                 .with_output("out", SignalType::Audio),
@@ -1201,7 +1199,7 @@ fn validation_reports_cycle_path_with_participating_ports() {
 }
 
 #[test]
-fn validation_accepts_audio_feedback_cycle_with_explicit_audio_delay_boundary() {
+fn validation_rejects_audio_feedback_cycle_through_ordinary_delay() {
     let graph = Graph::new(
         vec![
             ModuleNode::new(ModuleId::new("gain"), "gain")
@@ -1209,8 +1207,7 @@ fn validation_accepts_audio_feedback_cycle_with_explicit_audio_delay_boundary() 
                 .with_output("audio_out", SignalType::Audio),
             ModuleNode::new(ModuleId::new("delay"), "audio_delay_one_sample")
                 .with_input("audio_in", SignalType::Audio)
-                .with_output("audio_out", SignalType::Audio)
-                .with_feedback_boundary(SignalType::Audio),
+                .with_output("audio_out", SignalType::Audio),
         ],
         vec![
             Cable::new(port_ref("gain", "audio_out"), port_ref("delay", "audio_in")),
@@ -1218,9 +1215,14 @@ fn validation_accepts_audio_feedback_cycle_with_explicit_audio_delay_boundary() 
         ],
     );
 
-    graph
-        .validate()
-        .expect("audio feedback through explicit audio delay should validate");
+    assert!(
+        graph
+            .validate()
+            .expect_err("ordinary audio delay must not legalize a cycle")
+            .diagnostics()
+            .iter()
+            .any(|diagnostic| matches!(diagnostic, GraphDiagnostic::CycleDetected { .. }))
+    );
 }
 
 #[test]
@@ -1257,16 +1259,15 @@ fn validation_rejects_instantaneous_audio_feedback_cycle() {
 }
 
 #[test]
-fn validation_accepts_control_feedback_cycle_with_explicit_control_delay_boundary() {
+fn validation_accepts_control_feedback_cycle_with_feedback_delay() {
     let graph = Graph::new(
         vec![
             ModuleNode::new(ModuleId::new("scale"), "control_scale")
                 .with_input("value", SignalType::Control)
                 .with_output("value", SignalType::Control),
-            ModuleNode::new(ModuleId::new("delay"), "control_delay")
+            ModuleNode::new(ModuleId::new("delay"), "feedback_delay")
                 .with_input("value", SignalType::Control)
-                .with_output("value", SignalType::Control)
-                .with_feedback_boundary(SignalType::Control),
+                .with_output("value", SignalType::Control),
         ],
         vec![
             Cable::new(port_ref("scale", "value"), port_ref("delay", "value")),
@@ -1276,7 +1277,27 @@ fn validation_accepts_control_feedback_cycle_with_explicit_control_delay_boundar
 
     graph
         .validate()
-        .expect("control feedback through explicit control delay should validate");
+        .expect("control feedback through feedback_delay should validate");
+
+    let ordinary_delay = Graph::new(
+        vec![
+            ModuleNode::new(ModuleId::new("scale"), "control_scale")
+                .with_input("value", SignalType::Control)
+                .with_output("value", SignalType::Control),
+            ModuleNode::new(ModuleId::new("delay"), "control_delay")
+                .with_input("value", SignalType::Control)
+                .with_output("value", SignalType::Control),
+        ],
+        graph.cables().to_vec(),
+    );
+    assert!(
+        ordinary_delay
+            .validate()
+            .expect_err("ordinary control delay must not legalize a cycle")
+            .diagnostics()
+            .iter()
+            .any(|diagnostic| matches!(diagnostic, GraphDiagnostic::CycleDetected { .. }))
+    );
 }
 
 #[test]

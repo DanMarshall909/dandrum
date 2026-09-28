@@ -24,7 +24,6 @@ pub struct ModuleNode {
     module_type: String,
     inputs: Vec<Port>,
     outputs: Vec<Port>,
-    feedback_boundaries: Vec<SignalType>,
     execution_scope: ExecutionScope,
     params: BTreeMap<String, String>,
 }
@@ -133,7 +132,6 @@ impl ModuleNode {
             module_type: module_type.into(),
             inputs: Vec::new(),
             outputs: Vec::new(),
-            feedback_boundaries: Vec::new(),
             execution_scope: ExecutionScope::Global,
             params: BTreeMap::new(),
         }
@@ -172,11 +170,6 @@ impl ModuleNode {
         self
     }
 
-    pub fn with_feedback_boundary(mut self, signal_type: SignalType) -> Self {
-        self.feedback_boundaries.push(signal_type);
-        self
-    }
-
     pub fn id(&self) -> &ModuleId {
         &self.id
     }
@@ -191,10 +184,6 @@ impl ModuleNode {
 
     pub fn outputs(&self) -> &[Port] {
         &self.outputs
-    }
-
-    pub fn feedback_boundaries(&self) -> &[SignalType] {
-        &self.feedback_boundaries
     }
 }
 
@@ -315,10 +304,6 @@ impl Graph {
 
                     for output in definition.outputs() {
                         node = node.with_output(output.name().to_string(), output.signal_type());
-                    }
-
-                    for boundary in definition.feedback_boundaries() {
-                        node = node.with_feedback_boundary(*boundary);
                     }
                 }
 
@@ -538,9 +523,8 @@ impl Graph {
                 .iter()
                 .find(|module| module.id() == cable.source().module_id())
                 .is_some_and(|module| {
-                    module.feedback_boundaries().contains(&signal_type)
-                        || (module.module_type() == crate::builtins::module_types::FEEDBACK_DELAY
-                            && matches!(signal_type, SignalType::Audio | SignalType::Control))
+                    module.module_type() == crate::builtins::module_types::FEEDBACK_DELAY
+                        && matches!(signal_type, SignalType::Audio | SignalType::Control)
                 })
         })
     }

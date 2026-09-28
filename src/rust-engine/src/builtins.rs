@@ -161,7 +161,6 @@ pub struct BuiltInModuleDefinition {
     module_type: String,
     inputs: Vec<Port>,
     outputs: Vec<Port>,
-    feedback_boundaries: Vec<SignalType>,
     execution_scope: ExecutionScope,
     parameters: Vec<ParameterMetadata>,
     examples: Vec<String>,
@@ -179,7 +178,6 @@ impl BuiltInModuleDefinition {
             module_type: module_type.into(),
             inputs: Vec::new(),
             outputs: Vec::new(),
-            feedback_boundaries: Vec::new(),
             execution_scope: ExecutionScope::Global,
             parameters: Vec::new(),
             examples: Vec::new(),
@@ -249,11 +247,6 @@ impl BuiltInModuleDefinition {
         self
     }
 
-    pub fn with_feedback_boundary(mut self, signal_type: SignalType) -> Self {
-        self.feedback_boundaries.push(signal_type);
-        self
-    }
-
     #[allow(dead_code)]
     pub fn module_type(&self) -> &str {
         &self.module_type
@@ -265,10 +258,6 @@ impl BuiltInModuleDefinition {
 
     pub fn outputs(&self) -> &[Port] {
         &self.outputs
-    }
-
-    pub fn feedback_boundaries(&self) -> &[SignalType] {
-        &self.feedback_boundaries
     }
 
     pub fn with_module_category(mut self, category: ModuleCategory) -> Self {
@@ -493,21 +482,18 @@ fn audio_delay_one_sample_definition() -> BuiltInModuleDefinition {
     BuiltInModuleDefinition::new(AUDIO_DELAY_ONE_SAMPLE)
         .with_inputs([(AUDIO_IN, Audio)])
         .with_output(Port::output(AUDIO_OUT, Audio))
-        .with_feedback_boundary(Audio)
 }
 
 fn block_delay_definition() -> BuiltInModuleDefinition {
     BuiltInModuleDefinition::new(BLOCK_DELAY)
         .with_inputs([(AUDIO_IN, Audio)])
         .with_output(Port::output(AUDIO_OUT, Audio))
-        .with_feedback_boundary(Audio)
 }
 
 fn control_delay_definition() -> BuiltInModuleDefinition {
     BuiltInModuleDefinition::new(CONTROL_DELAY)
         .with_inputs([(VALUE, Control)])
         .with_output(Port::output(VALUE, Control))
-        .with_feedback_boundary(Control)
 }
 
 fn script_definition() -> BuiltInModuleDefinition {

@@ -109,7 +109,7 @@ fn initialized_registry_contains_synthesis_control_and_mixer_definitions() {
 }
 
 #[test]
-fn initialized_registry_contains_delay_definitions_with_feedback_boundaries() {
+fn initialized_registry_contains_ordinary_delay_definitions_with_typed_ports() {
     let registry = BuiltInModuleRegistry::new();
 
     let one_sample_delay = registry
@@ -117,21 +117,18 @@ fn initialized_registry_contains_delay_definitions_with_feedback_boundaries() {
         .expect("one-sample audio delay should be built in");
     assert_has_audio_input(one_sample_delay, AUDIO_IN);
     assert_has_audio_output(one_sample_delay, AUDIO_OUT);
-    assert_eq!(one_sample_delay.feedback_boundaries(), &[Audio]);
 
     let block_delay = registry
         .get(BLOCK_DELAY)
         .expect("block delay should be built in");
     assert_has_audio_input(block_delay, AUDIO_IN);
     assert_has_audio_output(block_delay, AUDIO_OUT);
-    assert_eq!(block_delay.feedback_boundaries(), &[Audio]);
 
     let control_delay = registry
         .get(CONTROL_DELAY)
         .expect("control delay should be built in");
     assert_has_control_input(control_delay, VALUE);
     assert_has_control_output(control_delay, VALUE);
-    assert_eq!(control_delay.feedback_boundaries(), &[Control]);
 }
 
 #[test]
@@ -143,7 +140,6 @@ fn compensation_delay_declares_audio_ports_and_required_delay_length() {
 
     assert_has_audio_input(delay, AUDIO_IN);
     assert_has_audio_output(delay, AUDIO_OUT);
-    assert!(delay.feedback_boundaries().is_empty());
 
     let delay_samples = delay
         .parameters()
@@ -187,7 +183,7 @@ fn assert_has_control_mixing_input(definition: &BuiltInModuleDefinition, port_na
 }
 
 #[test]
-fn built_in_module_tests_inspect_port_directions_and_feedback_boundaries() {
+fn built_in_module_tests_inspect_port_directions() {
     let registry = BuiltInModuleRegistry::new();
 
     for module_type in [
@@ -227,21 +223,6 @@ fn built_in_module_tests_inspect_port_directions_and_feedback_boundaries() {
             assert_eq!(output.direction(), PortDirection::Output);
         }
     }
-
-    assert_eq!(
-        registry
-            .get(AUDIO_DELAY_ONE_SAMPLE)
-            .expect("one-sample delay should be built in")
-            .feedback_boundaries(),
-        &[Audio]
-    );
-    assert_eq!(
-        registry
-            .get(CONTROL_DELAY)
-            .expect("control delay should be built in")
-            .feedback_boundaries(),
-        &[Control]
-    );
 }
 
 #[test]
@@ -266,7 +247,6 @@ fn event_filter_definition_exposes_event_ports_selector_metadata_defaults_and_ex
             .iter()
             .all(|port| port.signal_type() == Event)
     );
-    assert!(event_filter.feedback_boundaries().is_empty());
     assert!(event_filter.examples().iter().any(|example| {
         example.contains(EVENT_FILTER)
             && example.contains(EVENT_FILTER_SELECTOR_PARAMETER)
@@ -303,7 +283,6 @@ fn initialized_registry_contains_script_definition_with_yaml_declared_ports() {
 
     assert!(script.inputs().is_empty());
     assert!(script.outputs().is_empty());
-    assert!(script.feedback_boundaries().is_empty());
 }
 
 #[test]
