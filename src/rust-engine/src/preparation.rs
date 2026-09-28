@@ -1709,6 +1709,41 @@ mod tests {
     }
 
     #[test]
+    fn poly_done_event_retires_voice_and_clears_its_future_output() {
+        let voice = noise_voice("done_voice", 1, 1234).with_port(
+            KernelPort::output(crate::kernel::POLY_DONE_OUTPUT, SignalType::Event, 1).maps_from(
+                kernel_ref(
+                    crate::kernel::VOICE_INTRINSIC_NODE,
+                    crate::kernel::VOICE_GATE_OUTPUT,
+                ),
+            ),
+        );
+        let prepared = prepare_audio_poly(voice, 1);
+        let mut runtime = runtime_for(&prepared);
+        let frames = KERNEL_RENDER_SETTINGS.block_size_frames as usize;
+        let mut left = vec![0.0; frames];
+        let mut right = vec![0.0; frames];
+
+        runtime.note_on(60, 100);
+        assert_eq!(runtime.render(&mut left, &mut right), frames);
+        assert!(left.iter().any(|sample| sample.abs() > 0.001));
+        assert_eq!(
+            runtime.prepared_poly_runtime_regions()[0].active_voice_count(),
+            0
+        );
+
+        left.fill(f32::NAN);
+        right.fill(f32::NAN);
+        assert_eq!(runtime.render(&mut left, &mut right), frames);
+        assert!(left.iter().all(|sample| *sample == 0.0));
+        assert!(right.iter().all(|sample| *sample == 0.0));
+
+        runtime.note_on(64, 100);
+        assert_eq!(runtime.render(&mut left, &mut right), frames);
+        assert!(left.iter().any(|sample| sample.abs() > 0.001));
+    }
+
+    #[test]
     fn poly_sums_every_channel_of_a_six_channel_voice_output() {
         let voice = noise_voice("six_channel_voice", 6, 1234);
         let root = GraphDefinition::new("root")

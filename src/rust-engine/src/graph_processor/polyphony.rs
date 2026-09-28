@@ -1,7 +1,8 @@
 use crate::builtins::module_kind::ModuleKind;
 use crate::compiled_patch::{CompiledPatch, CompiledPolyRegion, CompiledPortSpan};
 use crate::kernel::{
-    PolyAllocationPolicy, VOICE_GATE_OUTPUT, VOICE_NOTE_OUTPUT, VOICE_VELOCITY_OUTPUT,
+    POLY_DONE_OUTPUT, PolyAllocationPolicy, VOICE_GATE_OUTPUT, VOICE_NOTE_OUTPUT,
+    VOICE_VELOCITY_OUTPUT,
 };
 use crate::sample::PreparedSamplerAssets;
 use crate::script::ScriptEvent;
@@ -46,6 +47,7 @@ pub struct PreparedPolyRuntimeRegion {
     slots: Box<[PolyVoiceSlot]>,
     next_allocation_order: u64,
     intrinsic_bindings: Option<VoiceIntrinsicBindings>,
+    done_event_queue: Option<EventQueueId>,
     child_render_plan: RenderPlan,
     child_patch: Box<CompiledPatch>,
     output_bindings: Box<[PolyOutputBinding]>,
@@ -121,6 +123,7 @@ impl PreparedPolyRuntimeRegion {
         );
         let intrinsic_bindings =
             voice_intrinsic_bindings(compiled.child_patch(), &child_render_plan);
+        let done_event_queue = voice_done_event_queue(compiled, &child_render_plan);
         let mut next_accumulator = 0;
         let output_bindings = compiled
             .output_accumulators()
@@ -155,6 +158,7 @@ impl PreparedPolyRuntimeRegion {
             slots: vec![PolyVoiceSlot::default(); compiled.max_voices()].into_boxed_slice(),
             next_allocation_order: 1,
             intrinsic_bindings,
+            done_event_queue,
             child_render_plan,
             child_patch: Box::new(compiled.child_patch().clone()),
             output_bindings,
@@ -240,6 +244,13 @@ impl PreparedPolyRuntimeRegion {
                         self.output_accumulator.set_sample(destination, frame, sum);
                     }
                 }
+            }
+            if self.done_event_queue.is_some_and(|queue| {
+                self.voice_event_queues[voice]
+                    .queue_ref(queue.0)
+                    .is_some_and(|events| !events.is_empty())
+            }) {
+                self.slots[voice].active = false;
             }
         }
 
@@ -440,6 +451,31 @@ impl PreparedPolyRuntimeRegion {
             .and_then(|queues| queues.queue_ref(bindings.gate.0))
             .map_or(&[], |queue| queue.events())
     }
+}
+
+fn voice_done_event_queue(
+    compiled: &CompiledPolyRegion,
+    plan: &RenderPlan,
+) -> Option<EventQueueId> {
+    let source = compiled
+        .flattened_voice()
+        .root_output_sources()
+        .get(POLY_DONE_OUTPUT)?
+        .first()?;
+    let step = plan.global_steps.iter().find(|step| {
+        compiled.child_patch().nodes()[step.module_index]
+            .id
+            .as_str()
+            == source.node().as_str()
+    })?;
+    let node = &compiled.child_patch().nodes()[step.module_index];
+    let event_ordinal = node
+        .output_port_names
+        .iter()
+        .zip(node.output_port_types.iter())
+        .filter(|(_, signal_type)| **signal_type == crate::graph::SignalType::Event)
+        .position(|(name, _)| name == source.port())?;
+    step.event_outputs.get(event_ordinal).copied()
 }
 
 fn voice_intrinsic_bindings(

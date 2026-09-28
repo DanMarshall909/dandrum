@@ -142,7 +142,6 @@ impl PreparedEventQueues {
         self.queues.get_mut(id)
     }
 
-    #[cfg(test)]
     pub(super) fn queue_ref(&self, id: usize) -> Option<&BoundedEventQueue> {
         self.queues.get(id)
     }
