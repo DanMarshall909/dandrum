@@ -94,7 +94,7 @@ int main()
 
     try
     {
-        DandrumAudioProcessor processor;
+        DandrumAudioProcessor processor (InstrumentDemoConfiguration::kick());
         processor.setPlayConfigDetails (0, 2, 48000.0, 64);
         processor.prepareToPlay (48000.0, 64);
         HostListener listener;
@@ -197,8 +197,45 @@ int main()
                      && ! PluginEditorBridgeTestProbe::resource (editor, "/sound-lab.wav")
                      && ! PluginEditorBridgeTestProbe::resource (editor, "/unknown"),
                  "editor served a stale or unknown resource");
+
+        DandrumAudioProcessor kick (InstrumentDemoConfiguration::kick());
+        kick.setPlayConfigDetails (0, 2, 48000.0, 64);
+        kick.prepareToPlay (48000.0, 64);
+        DandrumAudioProcessorEditor kickEditor (kick);
+        const auto kickPage = PluginEditorBridgeTestProbe::resource (kickEditor, "/index.html");
+        const auto kickPageText = kickPage.has_value()
+            ? std::string (reinterpret_cast<const char*> (kickPage->data.data()), kickPage->data.size())
+            : std::string();
+        require (kickPage.has_value() && kickPage->mimeType == "text/html"
+                     && kickPageText.find ("Dandrum 808 Kick") != std::string::npos
+                     && kickPageText.find ("<span>KICK</span>") != std::string::npos
+                     && kickPageText.find ("/shared-instrument-ui.js") != std::string::npos
+                     && kickPageText != InstrumentDemoConfiguration::tb303().indexHtml,
+                 "second demo did not serve a distinct page through the same resource provider");
+        const auto sharedScript = PluginEditorBridgeTestProbe::resource (kickEditor, "/shared-instrument-ui.js");
+        require (sharedScript.has_value() && sharedScript->mimeType == "text/javascript"
+                     && ! sharedScript->data.empty(),
+                 "second demo did not serve the shared playable control behavior");
+        const auto kickParameters = PluginEditorBridgeTestProbe::invoke (kickEditor, "getParameters");
+        require (findParameter (kickParameters, "kick.tune_hz").isObject()
+                     && ! findParameter (kickParameters, "filter.cutoff").isObject(),
+                 "second demo did not expose kick metadata through the same bridge");
+        require (PluginEditorBridgeTestProbe::invoke (kickEditor, "renderSoundLab").isVoid(),
+                 "second demo could not start its configured Sound Lab render");
+        juce::var kickAnalysis;
+        for (int i = 0; i < 400; ++i)
+        {
+            kickAnalysis = PluginEditorBridgeTestProbe::invoke (kickEditor, "getSoundLabAnalysis");
+            if (kickAnalysis.getProperty ("state", {}).toString() != "rendering")
+                break;
+            std::this_thread::sleep_for (std::chrono::milliseconds (25));
+        }
+        require (kickAnalysis.getProperty ("state", {}).toString() == "ready"
+                     && std::abs (static_cast<double> (kickAnalysis.getProperty ("duration_seconds", {})) - 1.0) < 0.001,
+                 "second demo Sound Lab did not use its own one-second kick fixture");
         processor.removeListener (&listener);
         processor.releaseResources();
+        kick.releaseResources();
     }
     catch (const std::exception& error)
     {

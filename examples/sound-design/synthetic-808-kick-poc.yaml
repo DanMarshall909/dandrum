@@ -1,0 +1,40 @@
+version: 1
+name: Synthetic 808 kick proof of concept
+patch: ../patches/synthetic-808-kick.yaml
+
+render:
+  sample_rate_hz: 48000
+  block_size_frames: 64
+  duration_frames: 48000
+
+analysis:
+  frame_size: 1024
+  hop_size: 128
+  min_frequency_hz: 30
+  max_frequency_hz: 20000
+  silence_rms: 0.00001
+
+matching:
+  seed: 808
+  max_evaluations: 2
+  region:
+    start_frame: 0
+    length_frames: 48000
+  spectral_windows: [256, 1024, 4096]
+  weights:
+    spectral: 0.70
+    rms: 0.20
+    centroid: 0.10
+  parameters:
+    - kick.tune_hz
+    - kick.decay_ms
+
+timeline:
+  tempo_bpm: 120
+  steps_per_bar: 16
+  start_frame: 0
+  length_frames: 48000
+  repetitions: 1
+  events:
+    - { frame: 0, type: note_on, note: 36, velocity: 100 }
+    - { frame: 12000, type: note_off, note: 36 }

@@ -6,9 +6,9 @@
 
 ## 2. Coherent Demo Configuration
 
-- [ ] 2.1 Add failing tests for fresh TB-303 configuration, second instrument configuration, fixed automation-slot identity, saved-state restoration, and failed-reload recovery (`instrument-demo-configuration`: TB-303, second demo, restore scenarios).
-- [ ] 2.2 Introduce immutable demo configuration and select the TB-303 patch, fixture, match source, title, and UI assets for the shipped plugin; keep the common `DandrumAudioProcessor` host.
-- [ ] 2.3 Add the second instrument fixture and distinct appearance; prove that its configuration loads, renders, and exposes metadata-driven controls without host code duplication (`instrument-demo-configuration`: second demo scenario).
+- [x] 2.1 Add failing tests for fresh TB-303 configuration, second instrument configuration, fixed automation-slot identity, saved-state restoration, and failed-reload recovery (`instrument-demo-configuration`: TB-303, second demo, restore scenarios).
+- [x] 2.2 Introduce immutable demo configuration and select the TB-303 patch, fixture, match source, title, and UI assets for the shipped plugin; keep the common `DandrumAudioProcessor` host.
+- [x] 2.3 Add the second instrument fixture and distinct appearance; prove that its configuration loads, renders, and exposes metadata-driven controls without host code duplication (`instrument-demo-configuration`: second demo scenario).
 
 ## 3. Shared WebView Controls And Bridge
 

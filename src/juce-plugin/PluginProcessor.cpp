@@ -1,6 +1,5 @@
 #include "PluginProcessor.h"
 #include "PluginEditor.h"
-#include "DefaultPatch.h"
 
 #include <algorithm>
 #include <array>
@@ -282,10 +281,11 @@ float DandrumAudioProcessor::denormalisePublicValue (const PublicParameterDescri
     return clampToDescriptorRange (descriptor, descriptor.minValue + juce::jlimit (0.0f, 1.0f, normalisedValue) * width);
 }
 
-DandrumAudioProcessor::DandrumAudioProcessor()
+DandrumAudioProcessor::DandrumAudioProcessor (InstrumentDemoConfiguration demo)
     : juce::AudioProcessor (BusesProperties()
                                  .withInput ("Input", juce::AudioChannelSet::stereo(), true)
                                  .withOutput ("Output", juce::AudioChannelSet::stereo(), true)),
+      configuration (std::move (demo)),
       parameters (*this, nullptr, "DandrumState", createParameterLayout()),
       engine (dandrum_engine_create())
 {
@@ -298,7 +298,7 @@ DandrumAudioProcessor::DandrumAudioProcessor()
 
     instrumentLoaded = loadDefaultInstrument();
     if (instrumentLoaded)
-        preparePublicParameterSlots (loadPublicParameterDescriptors (dandrum::defaultPatchPath().string()), nullptr, false);
+        preparePublicParameterSlots (loadPublicParameterDescriptors (configuration.instrumentPath.string()), nullptr, false);
 
     instrumentFileWatcher.onReload ([this] (const juce::File& changedFile) { reloadInstrumentFromFile (changedFile); });
     if (instrumentLoaded && loadedInstrument.sourceFile.existsAsFile())
@@ -319,7 +319,7 @@ bool DandrumAudioProcessor::loadDefaultInstrument()
         return false;
     }
 
-    const auto patchPath = dandrum::defaultPatchPath();
+    const auto& patchPath = configuration.instrumentPath;
     const juce::File patchFile (juce::String (patchPath.string()));
     if (! dandrum_engine_load_patch (activeEngine, patchPath.string().c_str()))
     {
@@ -860,6 +860,11 @@ const juce::String& DandrumAudioProcessor::getLastLoadError() const noexcept
 const juce::String& DandrumAudioProcessor::getLastPresetError() const noexcept
 {
     return lastPresetError;
+}
+
+const InstrumentDemoConfiguration& DandrumAudioProcessor::demoConfiguration() const noexcept
+{
+    return configuration;
 }
 
 bool DandrumAudioProcessor::hasPublicParameter (juce::StringRef parameterId) const

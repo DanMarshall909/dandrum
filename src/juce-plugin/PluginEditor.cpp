@@ -1,5 +1,5 @@
 #include "PluginEditor.h"
-#include "Tb303WebUi.h"
+#include "SharedInstrumentUi.h"
 
 #include <cstring>
 #include <string>
@@ -54,6 +54,7 @@ DandrumAudioProcessorEditor::DandrumAudioProcessorEditor (DandrumAudioProcessor&
       browser (createBrowserOptions())
 {
     addAndMakeVisible (browser);
+    setName (juce::String (processor.demoConfiguration().title));
     setResizable (true, true);
     setResizeLimits (760, 560, 1500, 1100);
     setSize (1180, 860);
@@ -188,7 +189,10 @@ std::optional<juce::WebBrowserComponent::Resource>
 DandrumAudioProcessorEditor::provideResource (const juce::String& path) const
 {
     if (path == "/" || path == "/index.html")
-        return juce::WebBrowserComponent::Resource { toBytes (Tb303WebUi::indexHtml), "text/html" };
+        return juce::WebBrowserComponent::Resource { toBytes (processor.demoConfiguration().indexHtml.c_str()), "text/html" };
+
+    if (path == "/shared-instrument-ui.js")
+        return juce::WebBrowserComponent::Resource { toBytes (SharedInstrumentUi::script), "text/javascript" };
 
     if (path.startsWith ("/sound-lab.wav"))
     {
@@ -296,7 +300,13 @@ void DandrumAudioProcessorEditor::renderSoundLabFromWeb (
     const juce::Array<juce::var>&,
     juce::WebBrowserComponent::NativeFunctionCompletion completion)
 {
-    if (! soundLabController.startRender (dandrum::soundDesignFixturePath()))
+    const auto& fixture = processor.demoConfiguration().soundLabFixturePath;
+    if (! fixture.has_value())
+    {
+        completion (juce::var ("Sound Lab is not configured for this demo"));
+        return;
+    }
+    if (! soundLabController.startRender (*fixture))
     {
         completion (juce::var ("Sound Lab is already rendering"));
         return;
@@ -348,12 +358,18 @@ void DandrumAudioProcessorEditor::matchSoundLabFromWeb (
     const juce::Array<juce::var>&,
     juce::WebBrowserComponent::NativeFunctionCompletion completion)
 {
+    const auto& fixture = processor.demoConfiguration().soundLabFixturePath;
+    if (! fixture.has_value())
+    {
+        completion (juce::var ("Sound Lab is not configured for this demo"));
+        return;
+    }
     if (! soundLabReferenceFile.existsAsFile())
     {
         completion (juce::var ("Choose a 48 kHz PCM WAV reference first"));
         return;
     }
-    if (! soundLabController.startMatch (dandrum::soundDesignFixturePath(),
+    if (! soundLabController.startMatch (*fixture,
                                          soundLabReferenceFile.getFullPathName().toStdString()))
     {
         completion (juce::var ("Sound Lab already has offline work in progress"));
@@ -382,11 +398,16 @@ void DandrumAudioProcessorEditor::acceptSoundLabMatchFromWeb (
         return;
     }
 
-    const auto patchPath = dandrum::findRepositoryExample ("examples/patches/tb303-acid.yaml");
+    const auto& matchSource = processor.demoConfiguration().matchSourcePath;
+    if (! matchSource.has_value())
+    {
+        completion (juce::var ("Sound Lab match source is not configured for this demo"));
+        return;
+    }
     if (! processor.reloadInstrumentFromYaml (
             juce::String::fromUTF8 (snapshot.match->patchYaml.data(),
                                     static_cast<int> (snapshot.match->patchYaml.size())),
-            juce::File (juce::String (patchPath.string()))))
+            juce::File (juce::String (matchSource->string()))))
     {
         completion (juce::var (processor.getLastLoadError()));
         return;

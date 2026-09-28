@@ -82,7 +82,7 @@ float renderTailRms (DandrumAudioProcessor& processor, int blockSize, int numBlo
 
 float renderKickTailRms (float normalizedDecayValue, int blockSize, int numBlocks)
 {
-    auto processor = std::make_unique<DandrumAudioProcessor>();
+    auto processor = std::make_unique<DandrumAudioProcessor> (InstrumentDemoConfiguration::kick());
     processor->setPlayConfigDetails (0, 2, 48000.0, blockSize);
     processor->prepareToPlay (48000.0, blockSize);
 
@@ -207,7 +207,7 @@ bool nearlyEqual (float actual, float expected, float tolerance)
 bool freshInstrumentUsesAuthoredDefaults()
 {
     constexpr int frames = 512;
-    DandrumAudioProcessor processor;
+    DandrumAudioProcessor processor (InstrumentDemoConfiguration::kick());
     processor.setPlayConfigDetails (0, 2, 48000.0, frames);
     processor.prepareToPlay (48000.0, frames);
 
@@ -266,7 +266,7 @@ bool hostMidiVelocityMatchesRustEvent()
     constexpr juce::uint8 velocity = 100;
     const auto patch = juce::File (juce::String (
         dandrum::findRepositoryExample ("examples/patches/tb303-acid.yaml").string()));
-    DandrumAudioProcessor processor;
+    DandrumAudioProcessor processor (InstrumentDemoConfiguration::kick());
     processor.setPlayConfigDetails (0, 2, 48000.0, frames);
     processor.prepareToPlay (48000.0, frames);
     if (! processor.reloadInstrumentFromFile (patch))
@@ -328,7 +328,7 @@ bool preparationPreservesRestoredInstrumentAndHostSlots()
     if (! yaml.contains ("          attack: 0")
         || ! modifiedPatch.getFile().replaceWithText (yaml.replace ("          attack: 0", "          attack: 50")))
         return false;
-    DandrumAudioProcessor source;
+    DandrumAudioProcessor source (InstrumentDemoConfiguration::kick());
     source.setPlayConfigDetails (0, 2, 48000.0, 64);
     source.prepareToPlay (48000.0, 64);
     if (! source.reloadInstrumentFromFile (modifiedPatch.getFile()))
@@ -349,7 +349,7 @@ bool preparationPreservesRestoredInstrumentAndHostSlots()
 
     for (const bool restoreState : { false, true })
     {
-        DandrumAudioProcessor processor;
+        DandrumAudioProcessor processor (InstrumentDemoConfiguration::kick());
         const auto slots = processor.getParameters();
         juce::StringArray slotIds;
         for (const auto* slot : slots)
@@ -460,7 +460,7 @@ int main()
         return 1;
     }
 
-    auto processor = std::make_unique<DandrumAudioProcessor>();
+    auto processor = std::make_unique<DandrumAudioProcessor> (InstrumentDemoConfiguration::kick());
     if (! processor->isInstrumentLoaded())
     {
         std::cerr << processor->getLastLoadError() << '\n';
@@ -481,7 +481,7 @@ int main()
         return 1;
     }
 
-    auto restored = std::make_unique<DandrumAudioProcessor>();
+    auto restored = std::make_unique<DandrumAudioProcessor> (InstrumentDemoConfiguration::kick());
     restored->setStateInformation (state.getData(), static_cast<int> (state.getSize()));
     if (! restored->hasPublicParameter ("kick.tune_hz"))
     {
@@ -517,7 +517,7 @@ int main()
     // The web editor runs on JUCE's message thread, so it feeds a bounded
     // queue instead of touching the Rust engine while the audio callback may
     // be rendering. Prove that an editor-originated note reaches that callback.
-    auto editorMidiProcessor = std::make_unique<DandrumAudioProcessor>();
+    auto editorMidiProcessor = std::make_unique<DandrumAudioProcessor> (InstrumentDemoConfiguration::kick());
     editorMidiProcessor->setPlayConfigDetails (0, 2, 48000.0, blockSize);
     editorMidiProcessor->prepareToPlay (48000.0, blockSize);
     if (! editorMidiProcessor->enqueueEditorNoteOn (36, 1.0f))
@@ -544,7 +544,7 @@ int main()
     editorMidiProcessor->processBlock (editorMidiBuffer, noHostMidi);
     editorMidiProcessor->releaseResources();
 
-    auto boundedQueueProcessor = std::make_unique<DandrumAudioProcessor>();
+    auto boundedQueueProcessor = std::make_unique<DandrumAudioProcessor> (InstrumentDemoConfiguration::kick());
     bool queueRejectedEvent = false;
     for (int event = 0; event < 256; ++event)
         queueRejectedEvent = ! boundedQueueProcessor->enqueueEditorNoteOn (36, 0.8f)
@@ -573,7 +573,7 @@ int main()
 
     // Public parameter changes must never mutate or reload the loaded YAML.
     {
-        auto yamlCheckProcessor = std::make_unique<DandrumAudioProcessor>();
+        auto yamlCheckProcessor = std::make_unique<DandrumAudioProcessor> (InstrumentDemoConfiguration::kick());
         yamlCheckProcessor->setPlayConfigDetails (0, 2, 48000.0, decayBlockSize);
         yamlCheckProcessor->prepareToPlay (48000.0, decayBlockSize);
         const auto yamlBefore = yamlCheckProcessor->currentInstrumentYaml();
@@ -601,7 +601,7 @@ int main()
     }
 
     // Muting should silence the processor even with an active note.
-    auto mutedProcessor = std::make_unique<DandrumAudioProcessor>();
+    auto mutedProcessor = std::make_unique<DandrumAudioProcessor> (InstrumentDemoConfiguration::kick());
     mutedProcessor->setPlayConfigDetails (0, 2, 48000.0, blockSize);
     mutedProcessor->prepareToPlay (48000.0, blockSize);
     mutedProcessor->setMuted (true);
@@ -634,7 +634,7 @@ int main()
     constexpr int reloadBlockSize = 128;
     constexpr int reloadNumBlocks = 40; // ~106ms at 48kHz
 
-    auto reloadProcessor = std::make_unique<DandrumAudioProcessor>();
+    auto reloadProcessor = std::make_unique<DandrumAudioProcessor> (InstrumentDemoConfiguration::kick());
     reloadProcessor->setPlayConfigDetails (0, 2, 48000.0, reloadBlockSize);
     reloadProcessor->prepareToPlay (48000.0, reloadBlockSize);
 
@@ -723,7 +723,7 @@ int main()
     // expose it through an unused fixed host slot and initialise it from the
     // YAML-declared default value.
     {
-        auto addProcessor = std::make_unique<DandrumAudioProcessor>();
+        auto addProcessor = std::make_unique<DandrumAudioProcessor> (InstrumentDemoConfiguration::kick());
         addProcessor->setPlayConfigDetails (0, 2, 48000.0, blockSize);
         addProcessor->prepareToPlay (48000.0, blockSize);
 
@@ -757,7 +757,7 @@ int main()
     }
 
     // Reload failure: the previous instrument keeps running unchanged.
-    auto failedReloadProcessor = std::make_unique<DandrumAudioProcessor>();
+    auto failedReloadProcessor = std::make_unique<DandrumAudioProcessor> (InstrumentDemoConfiguration::kick());
     failedReloadProcessor->setPlayConfigDetails (0, 2, 48000.0, blockSize);
     failedReloadProcessor->prepareToPlay (48000.0, blockSize);
 
@@ -802,7 +802,7 @@ int main()
     // with an invalid (zero) sample rate when called before the host has ever
     // called prepareToPlay.
     {
-        auto unpreparedProcessor = std::make_unique<DandrumAudioProcessor>();
+        auto unpreparedProcessor = std::make_unique<DandrumAudioProcessor> (InstrumentDemoConfiguration::kick());
         if (unpreparedProcessor->reloadInstrumentFromFile (defaultPatchFile()))
         {
             std::cerr << "reloadInstrumentFromFile succeeded before prepareToPlay was ever called\n";
@@ -819,7 +819,7 @@ int main()
     // another in-flight reload is still using: two threads hammering reload
     // on the same processor must leave it in a valid, still-rendering state.
     {
-        auto racingProcessor = std::make_unique<DandrumAudioProcessor>();
+        auto racingProcessor = std::make_unique<DandrumAudioProcessor> (InstrumentDemoConfiguration::kick());
         racingProcessor->setPlayConfigDetails (0, 2, 48000.0, blockSize);
         racingProcessor->prepareToPlay (48000.0, blockSize);
 
@@ -868,7 +868,7 @@ int main()
     // Reloading to an instrument that drops previously-live public parameters
     // must be visibly reconciled (design.md), not silently absorbed.
     {
-        auto dropProcessor = std::make_unique<DandrumAudioProcessor>();
+        auto dropProcessor = std::make_unique<DandrumAudioProcessor> (InstrumentDemoConfiguration::kick());
         dropProcessor->setPlayConfigDetails (0, 2, 48000.0, blockSize);
         dropProcessor->prepareToPlay (48000.0, blockSize);
 
@@ -899,7 +899,7 @@ int main()
     // Compatible presets should apply as public value changes for the loaded
     // instrument. They must not replace or mutate the immutable instrument YAML.
     {
-        auto presetProcessor = std::make_unique<DandrumAudioProcessor>();
+        auto presetProcessor = std::make_unique<DandrumAudioProcessor> (InstrumentDemoConfiguration::kick());
         presetProcessor->setPlayConfigDetails (0, 2, 48000.0, blockSize);
         presetProcessor->prepareToPlay (48000.0, blockSize);
         const auto yamlBefore = presetProcessor->currentInstrumentYaml();
@@ -935,7 +935,7 @@ int main()
 
     // Incompatible or structural presets should be reported, not applied.
     {
-        auto rejectProcessor = std::make_unique<DandrumAudioProcessor>();
+        auto rejectProcessor = std::make_unique<DandrumAudioProcessor> (InstrumentDemoConfiguration::kick());
         rejectProcessor->setPlayConfigDetails (0, 2, 48000.0, blockSize);
         rejectProcessor->prepareToPlay (48000.0, blockSize);
 
@@ -985,7 +985,7 @@ int main()
     // State persistence should embed enough instrument and preset information
     // to restore without depending only on the original absolute file paths.
     {
-        auto stateProcessor = std::make_unique<DandrumAudioProcessor>();
+        auto stateProcessor = std::make_unique<DandrumAudioProcessor> (InstrumentDemoConfiguration::kick());
         stateProcessor->setPlayConfigDetails (0, 2, 48000.0, blockSize);
         stateProcessor->prepareToPlay (48000.0, blockSize);
 
@@ -1006,7 +1006,7 @@ int main()
         juce::MemoryBlock savedState;
         stateProcessor->getStateInformation (savedState);
 
-        auto restoredStateProcessor = std::make_unique<DandrumAudioProcessor>();
+        auto restoredStateProcessor = std::make_unique<DandrumAudioProcessor> (InstrumentDemoConfiguration::kick());
         restoredStateProcessor->setStateInformation (savedState.getData(), static_cast<int> (savedState.getSize()));
 
         if (! restoredStateProcessor->currentInstrumentYaml().contains ("decay_ms: 1750"))

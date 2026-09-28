@@ -74,7 +74,7 @@ bool renderHasSignal (DandrumAudioProcessor& processor)
 
 std::unique_ptr<DandrumAudioProcessor> makeProcessorWatching (const juce::File& file)
 {
-    auto processor = std::make_unique<DandrumAudioProcessor>();
+    auto processor = std::make_unique<DandrumAudioProcessor> (InstrumentDemoConfiguration::kick());
     processor->setPlayConfigDetails (0, 2, sampleRate, blockSize);
     processor->prepareToPlay (sampleRate, blockSize);
     if (! processor->reloadInstrumentFromFile (file))

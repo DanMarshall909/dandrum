@@ -11,12 +11,14 @@
 #include <juce_audio_processors/juce_audio_processors.h>
 
 #include "InstrumentFileWatcher.h"
+#include "InstrumentDemoConfiguration.h"
 #include "RustEngineBindings.h"
 
 class DandrumAudioProcessor final : public juce::AudioProcessor
 {
 public:
-    DandrumAudioProcessor();
+    explicit DandrumAudioProcessor (
+        InstrumentDemoConfiguration configuration = InstrumentDemoConfiguration::tb303());
     ~DandrumAudioProcessor() override;
 
     using juce::AudioProcessor::processBlock;
@@ -46,6 +48,7 @@ public:
     bool isInstrumentLoaded() const noexcept;
     const juce::String& getLastLoadError() const noexcept;
     const juce::String& getLastPresetError() const noexcept;
+    const InstrumentDemoConfiguration& demoConfiguration() const noexcept;
     bool hasPublicParameter (juce::StringRef parameterId) const;
     juce::RangedAudioParameter* getParameterForPublicId (juce::StringRef parameterId) const;
     juce::String getPublicParameterDisplayName (juce::StringRef parameterId) const;
@@ -225,6 +228,7 @@ private:
     bool enqueueEditorMidiEvent (EditorMidiEvent event) noexcept;
     void deliverEditorMidiEvents (DandrumEngine* activeEngine) noexcept;
 
+    const InstrumentDemoConfiguration configuration;
     juce::AudioProcessorValueTreeState parameters;
     std::atomic<DandrumEngine*> engine { nullptr };
     bool instrumentLoaded = false;

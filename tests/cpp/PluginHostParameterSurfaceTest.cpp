@@ -66,7 +66,7 @@ int main()
     constexpr int expectedFixedHostParameterSlots = 64;
     constexpr int blockSize = 64;
 
-    auto processor = std::make_unique<DandrumAudioProcessor>();
+    auto processor = std::make_unique<DandrumAudioProcessor> (InstrumentDemoConfiguration::kick());
     processor->setPlayConfigDetails (0, 2, 48000.0, blockSize);
     processor->prepareToPlay (48000.0, blockSize);
 
