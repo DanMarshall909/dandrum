@@ -7156,6 +7156,105 @@ fn snare_examples_preserve_legacy_preset_renders_on_named_buses() {
 }
 
 #[test]
+fn cowbell_preserves_legacy_preset_renders_on_master_bus() {
+    let fixture = "examples/patches/drums/drum-808-cowbell.yaml";
+    let legacy_yaml =
+        include_str!("../../tests/fixtures/unify-graph-kernel/legacy/drum-808-cowbell.yaml");
+    let yaml = read_repo_fixture(fixture).expect("cowbell example exists");
+    let patch = load_kernel_patch_str(&yaml).expect("cowbell loads as kernel patch");
+    assert_eq!(
+        patch.instrument().expect("instrument identity").id,
+        "dandrum.drum-808-cowbell"
+    );
+    assert_eq!(
+        patch
+            .preset_surface()
+            .parameters()
+            .iter()
+            .map(|alias| alias.name())
+            .collect::<Vec<_>>(),
+        [
+            "cowbell.tune",
+            "cowbell.tune_high",
+            "cowbell.decay_ms",
+            "cowbell.level"
+        ]
+    );
+    let settings = RenderSettings {
+        sample_rate_hz: 48_000,
+        block_size_frames: 128,
+        duration_frames: 2_048,
+    };
+    let events = vec![note_on_value(0, 56, 110)];
+    let mut baseline = None;
+    for (case, values) in [
+        (
+            "advertised defaults",
+            "cowbell.tune: 2.45, cowbell.tune_high: 3.63, cowbell.decay_ms: 180, cowbell.level: 0.7",
+        ),
+        (
+            "changed controls",
+            "cowbell.tune: 3.1, cowbell.tune_high: 4.2, cowbell.decay_ms: 70, cowbell.level: 0.4",
+        ),
+    ] {
+        let preset = patch::load_preset_str(&format!(
+            "name: {case}\ninstrument: {{ id: dandrum.drum-808-cowbell, preset_schema_version: 1 }}\nvalues: {{ {values} }}\n"
+        ))
+        .expect("cowbell preset parses");
+        let mut legacy = patch::apply_preset(
+            &patch::load_patch_str(legacy_yaml).expect("legacy cowbell reference parses"),
+            &preset,
+        )
+        .expect("legacy cowbell preset applies");
+        legacy.render = settings.clone();
+        let legacy = crate::preparation::prepare_instrument_document(legacy, Path::new("."))
+            .expect("legacy cowbell prepares");
+        let expected = crate::synth::DandrumEngine::new()
+            .render_prepared_instrument_offline(&legacy, events.clone());
+        assert!(expected.left.iter().any(|sample| sample.abs() > 0.001));
+        assert_eq!(expected.left, expected.right);
+
+        let applied = if case == "advertised defaults" {
+            patch.clone()
+        } else {
+            patch
+                .apply_preset(&preset)
+                .expect("kernel cowbell preset applies")
+        };
+        let prepared = prepare_kernel_patch(&applied, &settings).expect("cowbell prepares");
+        let buses =
+            render_kernel_offline_named(&prepared, events.clone(), &PreparedSamplerAssets::empty())
+                .expect("cowbell renders on named bus");
+        assert_eq!(buses.len(), 1);
+        assert_eq!(buses[0].0, "master");
+        assert_eq!(buses[0].1.len(), 2);
+        for (channel, expected) in [(0, &expected.left), (1, &expected.right)] {
+            let actual = &buses[0].1[channel];
+            assert_eq!(actual.len(), expected.len());
+            let mismatch = actual
+                .iter()
+                .zip(expected)
+                .position(|(actual, expected)| actual != expected);
+            assert_eq!(
+                mismatch,
+                None,
+                "{fixture} {case} master channel {channel} differs at frame {mismatch:?}: actual {:?}, expected {:?}",
+                mismatch.map(|frame| actual[frame]),
+                mismatch.map(|frame| expected[frame]),
+            );
+        }
+        if let Some(baseline) = &baseline {
+            assert_ne!(
+                &expected.left, baseline,
+                "changed controls should change the cowbell sound"
+            );
+        } else {
+            baseline = Some(expected.left);
+        }
+    }
+}
+
+#[test]
 fn impulse_noise_and_layer_examples_match_legacy_render_on_named_buses() {
     for (fixture, legacy_yaml) in [
         (
