@@ -6374,6 +6374,10 @@ connections:
 
 #[test]
 fn named_root_renderer_processes_top_level_adsr_midi_events() {
+    let legacy = patch::load_patch_str(include_str!(
+        "../../tests/fixtures/unify-graph-kernel/legacy/synthetic-snare.yaml"
+    ))
+    .expect("legacy snare reference parses");
     let yaml = read_repo_fixture("examples/patches/synthetic-snare.yaml")
         .expect("synthetic snare example exists");
     let kernel = load_kernel_patch_str(&yaml).expect("snare is a kernel document");
@@ -6384,20 +6388,24 @@ fn named_root_renderer_processes_top_level_adsr_midi_events() {
     };
     let prepared = prepare_kernel_patch(&kernel, &settings).expect("snare prepares");
 
-    let buses = render_kernel_offline_named(
-        &prepared,
-        vec![
-            note_on_value(0, 60, 100),
-            TimedInputEvent::new(960, ScriptEvent::NoteOff { note: 60 }),
-        ],
-        &PreparedSamplerAssets::empty(),
-    )
-    .expect("named root renderer handles the snare envelopes");
+    let events = vec![
+        note_on_value(0, 38, 100),
+        TimedInputEvent::new(960, ScriptEvent::NoteOff { note: 38 }),
+    ];
+    let expected = render_offline(
+        &Graph::from_patch_declarations(&legacy),
+        &settings,
+        events.clone(),
+    );
+    let buses = render_kernel_offline_named(&prepared, events, &PreparedSamplerAssets::empty())
+        .expect("named root renderer handles the snare envelopes");
     assert_eq!(buses[0].0, "left");
     assert_eq!(buses[1].0, "right");
     assert_eq!(buses[0].1[0].len(), settings.duration_frames as usize);
     assert_eq!(buses[0].1, buses[1].1);
     assert!(buses[0].1[0].iter().any(|sample| sample.abs() > 0.001));
+    assert_eq!(buses[0].1[0], expected.0);
+    assert_eq!(buses[1].1[0], expected.1);
 }
 
 #[test]
@@ -6558,34 +6566,42 @@ fn migrated_minimal_sampler_matches_legacy_resource_render() {
         duration_frames: 1_024,
         ..legacy.render.clone()
     };
-    let events = vec![note_on_value(0, 60, 100)];
     let patch_root = Path::new(env!("CARGO_MANIFEST_DIR"))
         .join("../..")
         .join("examples/patches");
     let assets = prepare_sampler_assets(&legacy, &patch_root).expect("legacy sampler asset loads");
-    let expected = render_offline_with_sampler_assets(
-        &Graph::from_patch_declarations(&legacy),
-        &settings,
-        events.clone(),
-        &assets,
-    );
-    assert!(
-        expected.0.iter().any(|sample| sample.abs() > 0.001),
-        "legacy sampler reference must produce audio"
-    );
 
     let yaml = read_repo_fixture(fixture).expect("sampler example exists");
     let kernel = load_kernel_patch_str(&yaml).expect("sampler example is a kernel document");
     let context = PreparationContext::new(&patch_root, settings.sample_rate_hz);
     let prepared = prepare_kernel_patch_with_context(&kernel, &settings, &context)
         .expect("sampler resource resolves beneath the patch root");
-    let actual = render_offline_compiled(
-        prepared.compiled_patch(),
-        events,
-        &PreparedSamplerAssets::empty(),
-    );
-    assert_eq!(actual.0, expected.0, "sampler left render changed");
-    assert_eq!(actual.1, expected.1, "sampler right render changed");
+    for note in [60, 67] {
+        let events = vec![note_on_value(0, note, 100)];
+        let expected = render_offline_with_sampler_assets(
+            &Graph::from_patch_declarations(&legacy),
+            &settings,
+            events.clone(),
+            &assets,
+        );
+        assert!(
+            expected.0.iter().any(|sample| sample.abs() > 0.001),
+            "legacy sampler reference must produce audio for note {note}"
+        );
+        let actual =
+            render_kernel_offline_named(&prepared, events, &PreparedSamplerAssets::empty())
+                .expect("sampler renders named root buses");
+        assert_eq!(actual[0].0, "left");
+        assert_eq!(actual[1].0, "right");
+        assert_eq!(
+            actual[0].1[0], expected.0,
+            "sampler left render changed for note {note}"
+        );
+        assert_eq!(
+            actual[1].1[0], expected.1,
+            "sampler right render changed for note {note}"
+        );
+    }
 }
 
 #[test]

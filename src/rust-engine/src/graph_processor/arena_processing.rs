@@ -105,6 +105,28 @@ pub(super) fn process_sampler(
     }
 }
 
+pub(super) fn process_note_to_rate(
+    state: &mut PerModuleState,
+    context: &mut ProcessContext<'_>,
+    events: &[BlockEvent],
+) {
+    let PerModuleState::NoteToRate { rate } = state else {
+        unreachable!()
+    };
+    for frame in 0..context.frames() {
+        for event in events {
+            if event.frame_offset as usize == frame {
+                if let ScriptEvent::NoteOn { note, .. } = &event.event {
+                    *rate = 2.0f32.powf((f32::from(*note) - 60.0) / 12.0);
+                }
+            }
+        }
+        context
+            .set_output_sample(0, frame, *rate)
+            .expect("note-to-rate output is present in a supported arena step");
+    }
+}
+
 #[cfg(test)]
 mod sampler_tests {
     use super::super::audio_arena::AudioArena;

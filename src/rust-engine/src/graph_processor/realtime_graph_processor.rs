@@ -451,6 +451,16 @@ impl RealtimeGraphProcessor {
                             && step.output_buffers.len() == 1
                             && step.event_inputs.len() == 1
                     }
+                    ModuleKind::Sampler => {
+                        step.input_buffers.len() == 5
+                            && !step.output_buffers.is_empty()
+                            && step.event_inputs.len() == 1
+                    }
+                    ModuleKind::NoteToRate => {
+                        step.input_buffers.is_empty()
+                            && step.output_buffers.len() == 1
+                            && step.event_inputs.len() == 1
+                    }
                     _ => is_channel_arena_supported(step),
                 })
     }
@@ -534,6 +544,12 @@ impl RealtimeGraphProcessor {
                     continue;
                 }
                 ModuleKind::Adsr => {
+                    clear_and_route_arena_inputs(
+                        &mut self.audio_arena,
+                        step,
+                        frames,
+                        &self.compiled,
+                    );
                     let events = self
                         .prepared_event_queues
                         .queue_ref(step.event_inputs[0].0)
@@ -550,6 +566,35 @@ impl RealtimeGraphProcessor {
                         events,
                         self.current_frame,
                     );
+                    continue;
+                }
+                ModuleKind::Sampler | ModuleKind::NoteToRate => {
+                    clear_and_route_arena_inputs(
+                        &mut self.audio_arena,
+                        step,
+                        frames,
+                        &self.compiled,
+                    );
+                    let events = self
+                        .prepared_event_queues
+                        .queue_ref(step.event_inputs[0].0)
+                        .map_or(&[][..], |queue| queue.events());
+                    let mut context = ProcessContext::new(
+                        &mut self.audio_arena,
+                        &step.input_buffers,
+                        &step.output_buffers,
+                        frames,
+                    );
+                    let state = &mut self.states[0][step.module_index];
+                    match step.module_kind {
+                        ModuleKind::Sampler => {
+                            arena_processing::process_sampler(state, &mut context, events)
+                        }
+                        ModuleKind::NoteToRate => {
+                            arena_processing::process_note_to_rate(state, &mut context, events)
+                        }
+                        _ => unreachable!(),
+                    }
                     continue;
                 }
                 ModuleKind::Poly => {
