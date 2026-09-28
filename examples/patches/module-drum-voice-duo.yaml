@@ -1,0 +1,31 @@
+metadata:
+  name: Two Shared Drum Voices
+ports:
+  - name: left
+    direction: output
+    signal: audio
+    channels: 1
+    maps_from: mixer.mix
+  - name: right
+    direction: output
+    signal: audio
+    channels: 1
+    maps_from: mixer.mix
+modules:
+  - id: midi
+    type: midi_input
+  - id: voice_a
+    type: $LIB/1.0.0/drum_voice/drum_voice.yaml
+  - id: voice_b
+    type: $LIB/1.0.0/drum_voice/drum_voice.yaml
+  - id: mixer
+    type: audio_mixer
+connections:
+  - from: midi.events
+    to: voice_a.trigger
+  - from: midi.events
+    to: voice_b.trigger
+  - from: voice_a.audio
+    to: mixer.inputs
+  - from: voice_b.audio
+    to: mixer.inputs

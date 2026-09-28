@@ -30,6 +30,9 @@ engine boundary; JUCE, CLI, GUI, plugin, and realtime driver code should stay ou
 A machine-readable patch schema lives at `schema/patch.schema.yaml`. It is for editor and external validation; Rust
 still performs semantic validation when loading patches.
 
+Reusable defined modules can be loaded from the versioned `$LIB` standard library or a mutable `$USER_LIB` directory.
+See [module library authoring and the drum voice example](docs/module-library.md).
+
 Patch YAML can declare an external preset contract with `instrument` and `preset_surface`. `instrument.id` identifies
 the compatible instrument, and `instrument.preset_schema_version` lets future incompatible public-surface changes reject
 old preset files. `preset_surface.parameters` exposes named preset targets with a `type`, `default`, optional `min` /
@@ -101,7 +104,8 @@ unbounded latency.
   upfront).
 - **Drains events**: Reads pending MIDI events from the lock-free SPSC queue (`pendingMidiEvents`) at the start of each
   block.
-- **Renders directly**: Calls `dandrum_engine_render` with the prepared engine state.
+- **Renders directly**: Calls `dandrum_kernel_render` for a named `master` bus or `dandrum_engine_render`
+  for a legacy patch, using prepared engine state.
 
 ### MIDI callback (`MidiToRustEngine::handleIncomingMidiMessage`)
 

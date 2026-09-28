@@ -41,9 +41,9 @@
 - [x] 5.1 Add tests: an external `$LIB` module reference loads and expands identically to the same definition inline (byte-identical rendered output); `$USER_LIB` reference works; unknown macro and path-escape are rejected.
 - [x] 5.2 Add tests: CRC-unchanged skips extraction, CRC-change re-seeds additively, pinned older versions still resolve, and `latest` follows the newest version. Added module-library seeding tests for unchanged CRC skip, changed CRC replacement, additive newer-version seeding, pinned older version presence, and resolver-driven `latest` selection.
 - [x] 5.3 Add tests proving the bundled `drum_machine` module exposes a main plus at least one additional stereo output pair and routes voices to distinct outs (closing the drum-machine multi-output acceptance criteria). Added package-load assertions for main/kick/snare/hat stereo outputs and distinct voice source routing.
-- [ ] 5.4 Update example patches to reference the shared `$LIB` modules instead of duplicating them inline (keeping at least one inline example to prove inline still works); document module packaging, versioning, macro roots, and defined-module terminology.
+- [x] 5.4 Update example patches to reference the shared `$LIB` modules instead of duplicating them inline (keeping at least one inline example to prove inline still works); document module packaging, versioning, macro roots, and defined-module terminology.
 
 ## 6. Verify
 
-- [ ] 6.1 Full Rust test suite passes with identical behavior for existing inline defined-module patches.
-- [ ] 6.2 Run the rust-coverage and spec-coverage gates; confirm both pass.
+- [x] 6.1 Full Rust test suite passes with identical behavior for existing inline defined-module patches. Full `cargo test --quiet` passed (789 library tests plus integration/doc suites), including the existing inline examples.
+- [x] 6.2 Run the rust-coverage and spec-coverage gates; confirm both pass. `scripts/check-rust-coverage` and `scripts/check-spec-coverage` passed.

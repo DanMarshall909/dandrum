@@ -11,9 +11,11 @@ use std::io;
 use std::path::{Component, Path, PathBuf};
 
 use crate::diagnostics::{Diagnostic, Severity, error_codes};
+use crate::module_reference::{LIB_MACRO, MacroRoots, USER_LIB_MACRO};
 
 /// Environment variable that overrides the default seeded `$LIB` storage root.
 pub const STANDARD_LIBRARY_ROOT_ENV_VAR: &str = "DANDRUM_MODULE_LIBRARY_ROOT";
+pub const USER_LIBRARY_ROOT_ENV_VAR: &str = "DANDRUM_USER_LIBRARY_ROOT";
 
 /// Manifest file written inside each seeded version directory.
 pub const STANDARD_LIBRARY_CRC_FILENAME: &str = ".dandrum-library.crc";
@@ -66,7 +68,7 @@ impl ModuleLibrarySeedError {
             Self::MissingHomeDirectory => Diagnostic::new(
                 error_codes::LIBRARY_SEED_FAILED,
                 Severity::Error,
-                "cannot determine a default module library root; set DANDRUM_MODULE_LIBRARY_ROOT",
+                "cannot determine default module library roots; set DANDRUM_MODULE_LIBRARY_ROOT and DANDRUM_USER_LIBRARY_ROOT",
             ),
             Self::InvalidVersion { version } => Diagnostic::new(
                 error_codes::LIBRARY_SEED_FAILED,
@@ -102,6 +104,27 @@ pub fn default_standard_library_root() -> Result<PathBuf, ModuleLibrarySeedError
     home_directory()
         .map(|home| home.join(".dandrum").join("lib"))
         .ok_or(ModuleLibrarySeedError::MissingHomeDirectory)
+}
+
+/// Returns the mutable user module root without creating it.
+pub fn default_user_library_root() -> Result<PathBuf, ModuleLibrarySeedError> {
+    if let Some(root) = std::env::var_os(USER_LIBRARY_ROOT_ENV_VAR) {
+        return Ok(PathBuf::from(root));
+    }
+    home_directory()
+        .map(|home| home.join(".dandrum").join("modules"))
+        .ok_or(ModuleLibrarySeedError::MissingHomeDirectory)
+}
+
+/// Configures the two host macros and checks the bundled standard-library
+/// seed. Hosts call this only while preparing a patch with external modules.
+pub fn default_host_macro_roots() -> Result<MacroRoots, ModuleLibrarySeedError> {
+    let standard = default_standard_library_root()?;
+    let user = default_user_library_root()?;
+    seed_bundled_standard_library(&standard)?;
+    Ok(MacroRoots::new()
+        .with_root(LIB_MACRO, standard)
+        .with_root(USER_LIB_MACRO, user))
 }
 
 /// Returns the immutable standard module-library bundle shipped with the engine.

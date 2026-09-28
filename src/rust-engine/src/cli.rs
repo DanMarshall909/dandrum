@@ -94,8 +94,37 @@ fn render_with_events(
                     );
             }
 
-            let prepared = match crate::preparation::prepare_kernel_patch(&kernel_patch, &settings)
-            {
+            let references = crate::module_package::external_references(
+                kernel_patch.root(),
+                kernel_patch.registry(),
+            );
+            let prepared = if references.is_empty() {
+                crate::preparation::prepare_kernel_patch(&kernel_patch, &settings)
+            } else {
+                let roots = match crate::module_library::default_host_macro_roots() {
+                    Ok(roots) => roots,
+                    Err(seed_error) => {
+                        return error(format!(
+                            "failed to render patch: {}",
+                            seed_error.to_diagnostic()
+                        ));
+                    }
+                };
+                let context = crate::preparation::PreparationContext::new(
+                    render_args
+                        .patch
+                        .parent()
+                        .unwrap_or_else(|| std::path::Path::new(".")),
+                    settings.sample_rate_hz,
+                )
+                .with_macro_roots(roots);
+                crate::preparation::prepare_kernel_patch_with_context(
+                    &kernel_patch,
+                    &settings,
+                    &context,
+                )
+            };
+            let prepared = match prepared {
                 Ok(prepared) => prepared,
                 Err(prepare_error) => {
                     return error(format!("failed to render patch: {prepare_error}"));
@@ -1049,6 +1078,64 @@ modules:
         let _ = fs::remove_file(patch);
         let _ = fs::remove_file(output);
         let _ = fs::remove_file(cue);
+    }
+
+    #[test]
+    fn render_command_uses_the_shared_drum_voice_library_example() {
+        let patch_path = example_path("patches", "module-drum-voice.yaml");
+        let patch = crate::kernel::document::load_kernel_patch_file(&patch_path)
+            .expect("library example should use the kernel document shape");
+        assert!(
+            patch
+                .root()
+                .nodes()
+                .iter()
+                .any(|node| { node.definition_ref() == "$LIB/1.0.0/drum_voice/drum_voice.yaml" })
+        );
+        let output = temp_wav_path("module-drum-voice", "library");
+        let result = run([
+            "dandrum-cli".to_string(),
+            "render".to_string(),
+            patch_path.to_string_lossy().to_string(),
+            OUTPUT_FLAG.to_string(),
+            output.to_string_lossy().to_string(),
+            DURATION_FRAMES_FLAG.to_string(),
+            "4800".to_string(),
+        ]);
+        assert_eq!(result.exit_code, 0, "{}", result.stderr);
+        let bytes = fs::read(&output).expect("library example should write a WAV");
+        assert!(bytes[WAV_HEADER_BYTES..].iter().any(|byte| *byte != 0));
+        let _ = fs::remove_file(output);
+    }
+
+    #[test]
+    fn render_command_reuses_the_shared_drum_voice_in_a_second_example() {
+        let patch_path = example_path("patches", "module-drum-voice-duo.yaml");
+        let patch = crate::kernel::document::load_kernel_patch_file(&patch_path)
+            .expect("second library example should parse");
+        assert_eq!(
+            patch
+                .root()
+                .nodes()
+                .iter()
+                .filter(|node| { node.definition_ref() == "$LIB/1.0.0/drum_voice/drum_voice.yaml" })
+                .count(),
+            2
+        );
+        let output = temp_wav_path("module-drum-voice-duo", "library");
+        let result = run([
+            "dandrum-cli".to_string(),
+            "render".to_string(),
+            patch_path.to_string_lossy().to_string(),
+            OUTPUT_FLAG.to_string(),
+            output.to_string_lossy().to_string(),
+            DURATION_FRAMES_FLAG.to_string(),
+            "4800".to_string(),
+        ]);
+        assert_eq!(result.exit_code, 0, "{}", result.stderr);
+        let bytes = fs::read(&output).expect("second library example should write a WAV");
+        assert!(bytes[WAV_HEADER_BYTES..].iter().any(|byte| *byte != 0));
+        let _ = fs::remove_file(output);
     }
 
     #[test]

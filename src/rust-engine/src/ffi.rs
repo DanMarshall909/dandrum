@@ -166,10 +166,17 @@ pub unsafe extern "C" fn dandrum_kernel_prepare_file(
     if usize::try_from(settings.block_size_frames).ok() != Some(max_block_size) {
         return std::ptr::null_mut();
     }
-    let context = preparation::PreparationContext::new(
+    let references = crate::module_package::external_references(patch.root(), patch.registry());
+    let mut context = preparation::PreparationContext::new(
         path.parent().unwrap_or_else(|| std::path::Path::new(".")),
         sample_rate_hz,
     );
+    if !references.is_empty() {
+        let Ok(roots) = crate::module_library::default_host_macro_roots() else {
+            return std::ptr::null_mut();
+        };
+        context = context.with_macro_roots(roots);
+    }
     let Ok(prepared) = preparation::prepare_kernel_graph_with_buses_and_context(
         patch.root(),
         patch.registry(),

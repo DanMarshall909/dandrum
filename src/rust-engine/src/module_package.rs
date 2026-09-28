@@ -165,7 +165,10 @@ fn load_kernel_entry(
     Ok((package.root().clone(), package.registry().clone()))
 }
 
-fn external_references(root: &GraphDefinition, registry: &DefinitionRegistry) -> VecDeque<String> {
+pub(crate) fn external_references(
+    root: &GraphDefinition,
+    registry: &DefinitionRegistry,
+) -> VecDeque<String> {
     std::iter::once(root)
         .chain(registry.definitions())
         .flat_map(|definition| definition.nodes())

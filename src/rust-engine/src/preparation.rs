@@ -448,6 +448,21 @@ pub fn prepare_kernel_patch(
     prepare_kernel_graph(patch.root(), patch.registry(), render_settings)
 }
 
+pub fn prepare_kernel_patch_with_context(
+    patch: &KernelPatch,
+    render_settings: &RenderSettings,
+    context: &PreparationContext,
+) -> Result<PreparedKernelInstrument, KernelPreparationError> {
+    let buses = default_kernel_output_buses(patch.root());
+    prepare_kernel_graph_with_buses_and_context(
+        patch.root(),
+        patch.registry(),
+        render_settings,
+        &buses,
+        context,
+    )
+}
+
 /// Validate, flatten, latency-balance, lower, and compile a kernel root using
 /// the supplied definition registry.
 pub fn prepare_kernel_graph(
@@ -455,7 +470,12 @@ pub fn prepare_kernel_graph(
     registry: &DefinitionRegistry,
     render_settings: &RenderSettings,
 ) -> Result<PreparedKernelInstrument, KernelPreparationError> {
-    let default_buses = HostBuses {
+    let default_buses = default_kernel_output_buses(root);
+    prepare_kernel_graph_with_buses(root, registry, render_settings, &default_buses)
+}
+
+fn default_kernel_output_buses(root: &GraphDefinition) -> HostBuses {
+    HostBuses {
         inputs: BTreeMap::new(),
         outputs: root
             .ports()
@@ -468,8 +488,7 @@ pub fn prepare_kernel_graph(
                 crate::kernel::ChannelCount::Param(_) => None,
             })
             .collect(),
-    };
-    prepare_kernel_graph_with_buses(root, registry, render_settings, &default_buses)
+    }
 }
 
 pub fn prepare_kernel_graph_with_buses(
