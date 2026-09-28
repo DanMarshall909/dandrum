@@ -27,34 +27,77 @@ calls it from the JUCE audio callback.
 The headless engine core is implemented in Rust under `src/rust-engine/`. The `core` module is the frontend-independent
 engine boundary; JUCE, CLI, GUI, plugin, and realtime driver code should stay outside that module.
 
-A machine-readable patch schema lives at `schema/patch.schema.yaml`. It is for editor and external validation; Rust
-still performs semantic validation when loading patches.
+A machine-readable patch schema lives at `schema/patch.schema.yaml`. The Rust
+loader checks it before graph construction, then validates graph semantics.
 
 Reusable defined modules can be loaded from the versioned `$LIB` standard library or a mutable `$USER_LIB` directory.
 See [module library authoring and the drum voice example](docs/module-library.md).
 
 Patch YAML can declare an external preset contract with `instrument` and `preset_surface`. `instrument.id` identifies
 the compatible instrument, and `instrument.preset_schema_version` lets future incompatible public-surface changes reject
-old preset files. `preset_surface.parameters` exposes named preset targets with a `type`, `default`, optional `min` /
-`max`, and `maps_to` destination such as `kick.tune_hz`. `preset_surface.assets` exposes asset choices with `kind`,
-`default`, and `maps_to`.
+old preset files. `preset_surface.parameters` gives public names such as `kick.decay_ms` to root control ports; the ports
+hold the defaults and ranges and map to module controls. `preset_surface.assets` maps public asset names to static
+resource arguments.
 
 External preset YAML files live independently from patches. A preset declares `name`, matching `instrument`, optional
 `metadata`, `values` for public parameter targets, and `assets` for public asset targets. Presets cannot declare graph,
 routing, render, event, script, scheduling, or feedback fields; those remain patch structure. See
 `examples/patches/synthetic-808-kick.yaml` and `examples/presets/tight-808-kick.yaml`.
 
+## Patch authoring and offline rendering
+
+A patch is a graph definition. Its `ports` declare the host interface;
+`modules` instantiate primitives or defined modules; `connections` are cables
+between module ports. This two-channel patch exposes one named output bus:
+
+```yaml
+metadata: { name: Simple Tone }
+ports:
+  - { name: master, direction: output, signal: audio, channels: 2, maps_from: osc.audio }
+modules:
+  - { id: osc, type: oscillator, static: { channels: 2, waveform: sine }, defaults: { pitch: 1.0 } }
+connections: []
+```
+
+`static` supplies construction-time arguments such as channel count, waveform,
+or a sample resource. `defaults` sets unconnected control input values; a
+cable to that input takes precedence. Root control inputs can map to module
+controls and carry public preset values. Define reusable graphs under
+`module_definitions` or load a [module package](docs/module-library.md).
+The [polyphonic chords example](examples/patches/polyphonic-chords.yaml) shows
+an explicit `poly` region. Feedback cycles require `feedback_delay`; ordinary
+effect delays do not legalize a cycle.
+
+From the repository root, render a checked-in kernel patch with host settings
+on the command line:
+
+```bash
+CARGO_TARGET_DIR="$PWD/build/rust-target" $HOME/.cargo/bin/cargo run \
+  --manifest-path src/rust-engine/Cargo.toml --bin dandrum-cli -- \
+  render examples/patches/event-routing-drum-machine.yaml \
+  --output /tmp/dandrum-drum-machine.wav --duration-frames 4800 \
+  --sample-rate 48000 --block-size 128
+```
+
+`--duration-frames` is required. The sample rate and block size default to
+48,000 Hz and 128 frames. For one `master` output, `--output` names its WAV;
+additional named audio outputs get separate WAV files. A pair of mono `left`
+and `right` outputs becomes one stereo WAV. The authored patch has no `render`
+settings or `audio_output` module.
+
 Rust unit tests are the default home for core behavior:
 
 ```bash
-$HOME/.cargo/bin/cargo test --manifest-path src/rust-engine/Cargo.toml
+CARGO_TARGET_DIR="$PWD/build/rust-target" $HOME/.cargo/bin/cargo test \
+  --manifest-path src/rust-engine/Cargo.toml
 ```
 
 For iterative sound design, render the checked-in TB-303 proof-of-concept
 fixture to an audition WAV and a spectral/level trajectory:
 
 ```bash
-$HOME/.cargo/bin/cargo run --manifest-path src/rust-engine/Cargo.toml \
+CARGO_TARGET_DIR="$PWD/build/rust-target" $HOME/.cargo/bin/cargo run \
+  --manifest-path src/rust-engine/Cargo.toml \
   --bin dandrum-sound-workbench -- \
   render examples/sound-design/tb303-acid-poc.yaml \
   --output-wav /tmp/tb303-dandrum.wav \
@@ -104,8 +147,8 @@ unbounded latency.
   upfront).
 - **Drains events**: Reads pending MIDI events from the lock-free SPSC queue (`pendingMidiEvents`) at the start of each
   block.
-- **Renders directly**: Calls `dandrum_kernel_render` for a named `master` bus or `dandrum_engine_render`
-  for a legacy patch, using prepared engine state.
+- **Renders directly**: Calls `dandrum_kernel_render` with a planar named `master` bus or
+  `dandrum_engine_render` for a legacy patch, using prepared engine state.
 
 ### MIDI callback (`MidiToRustEngine::handleIncomingMidiMessage`)
 
@@ -120,8 +163,9 @@ unbounded latency.
 
 - **Holds `engineLock`**: Patch filesystem I/O, YAML parsing, graph construction, and asset preparation happen under the
   CriticalSection.
-- **Prepares realtime state**: `prepareToPlay` calls `dandrum_engine_prepare_realtime` to set sample rate and max block
-  size, allocating scratch buffers off the audio thread.
+- **Prepares realtime state**: `prepareToPlay` prepares the legacy engine or calls
+  `dandrum_kernel_prepare_file` with the sample rate, maximum block size, and
+  declared named buses, allocating scratch buffers off the audio thread.
 - **Engine replacement**: Old engine state remains alive (via the lock) until no callback can access it. Destruction
   under the lock ensures safe teardown.
 
@@ -130,6 +174,24 @@ unbounded latency.
 - `dandrum_realtime_event_queue_create(capacity)` — creates a fixed-capacity queue.
 - `dandrum_realtime_event_queue_note_on` / `note_off` — non-blocking submit, returns `0` (accepted) or `1` (dropped).
 - `dandrum_realtime_event_queue_dropped_count` — reports total dropped events since creation.
+
+### Kernel buses and public controls (C FFI)
+
+`dandrum_kernel_prepare_file` binds host buses by name, direction, and channel
+count. A missing root output or a mismatched width fails preparation; an
+unbound root input reads silence or its declared control default. Hosts can
+enumerate the prepared root interface with `dandrum_kernel_root_port_count`
+and `dandrum_kernel_root_port`, and report latency with
+`dandrum_kernel_total_latency_samples`. Event root ports are discoverable but
+do not use planar float views.
+
+For each render call, `dandrum_kernel_render` receives planar input and output
+views. The caller keeps bus names, channel-pointer arrays, and sample buffers
+valid through the call; the engine does not retain them. The JUCE demo and
+plugin bind a stereo `master` output. The plugin also binds public root control
+inputs and uses `dandrum_kernel_set_public_numeric_parameter_by_slot` to apply
+prevalidated numeric values without allocating in the audio callback. Note
+events use `dandrum_kernel_note_on_at` and `dandrum_kernel_note_off_at`.
 
 ### Reset / panic (C FFI)
 

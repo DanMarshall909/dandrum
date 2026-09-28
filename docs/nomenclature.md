@@ -14,6 +14,9 @@ Use this vocabulary consistently in code comments, examples, user-facing documen
 | Runtime behaviour module | Script module | script node |
 | Graph connection | Cable | wire, edge |
 | Input/output endpoint | Port | pin |
+| Patch or defined module interface | Root port | output module, implicit stereo sink |
+| Host connection to a root audio port | Named bus | fixed left/right output |
+| Repeated note processing area | Poly region | graph-wide voice scope |
 
 Internal Rust types may keep existing names such as `ModuleNode` where they already describe implementation detail. New user-facing names should follow the preferred terms.
 
@@ -36,6 +39,21 @@ Use these responsibility boundaries:
 - **Script module**: event/control-rate policy logic only.
 - **Patch**: complete instrument/effect graph that can be validated and rendered.
 - **Preset**: named parameter values applied to a compatible patch or module surface.
+
+A patch and a defined module have the same graph shape: ports, modules, and cables.
+The patch's root ports form its public interface. A root audio output connects to
+a host bus of the same name and channel count; a stereo output can be one
+two-channel `master` port. A root control input can expose a live public value.
+
+Use **static argument** for a value resolved when the graph is prepared, such
+as channel count, waveform, maximum delay length, or a sample resource. Use
+**control port default** for a tunable value that a cable or host can replace
+while the patch runs. A summing input has **summing multiplicity** and accepts
+multiple cables; ordinary inputs accept one.
+
+`poly` creates a **poly region** with a fixed maximum voice count and its own
+note allocation. `feedback_delay` is the explicit boundary required in a
+feedback cycle; an ordinary delay effect does not make a cycle legal.
 
 ## Naming style
 
