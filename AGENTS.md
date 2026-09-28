@@ -42,6 +42,14 @@
   extracted module before committing it.
 - Run mutation tests periodically (`cargo-mutants`) to catch weak or missing test coverage, especially after
   implementing path-critical DSP or control-flow behavior.
+- Before a mutation or coverage run, check free disk space and the size of existing build targets. When space is tight,
+  select changed code and focused unit tests, use `cargo mutants --copy-target false`, and clean task-generated build
+  artifacts afterward. Do not remove unrelated caches to make a test run fit.
+- For DSP and mixing tests, assert a known signed output value or waveform as well as relationships between renders.
+  Relative comparisons alone can pass when both paths share the same incorrect transformation.
+- When testing a composed voice or graph, exercise a representative child module that produces the output or event;
+  direct mappings from voice intrinsics prove wiring only. Assert rendered output and lifecycle behavior, and reject
+  unsupported child steps during preparation instead of silently rendering silence.
 - Pre-push hook (`.githooks/pre-push`) runs `cargo test` then `cargo mutants` before every push. Skip with
   `git push --no-verify` when needed.
 - When asserting multiple ports of the same type on the same module definition, use the macros already established in
