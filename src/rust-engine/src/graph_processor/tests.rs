@@ -4439,11 +4439,12 @@ fn render_kernel_patch(
 ) -> (Vec<f32>, Vec<f32>) {
     let patch = load_kernel_patch_str(yaml).expect("kernel patch should parse");
     let prepared = prepare_kernel_patch(&patch, settings).expect("kernel patch should prepare");
-    render_offline_compiled(
-        prepared.compiled_patch(),
-        events,
-        &PreparedSamplerAssets::empty(),
-    )
+    let buses = render_kernel_offline_named(&prepared, events, &PreparedSamplerAssets::empty())
+        .expect("kernel patch renders named root outputs");
+    assert_eq!(buses.len(), 2);
+    assert_eq!(buses[0].0, "left");
+    assert_eq!(buses[1].0, "right");
+    (buses[0].1[0].clone(), buses[1].1[0].clone())
 }
 
 // --- Offline vs Realtime parity ---
