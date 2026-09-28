@@ -66,5 +66,5 @@ before spectral comparison: the current `tb303-acid-poc.yaml` fixture is a
 cutoff, resonance, envelope-modulation, decay, and accent trajectories above;
 these recordings do not isolate slide behavior.
 
-The [follow-up calibration task](../../../../docs/tasks/tb303-dinsync-reference-calibration.md)
+The [follow-up calibration task](../../../../docs/issues/open/sound-design/tb303-001-dinsync-reference-calibration.md)
 records the comparison and verification work still needed.

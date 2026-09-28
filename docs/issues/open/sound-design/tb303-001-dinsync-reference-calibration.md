@@ -1,4 +1,4 @@
-# Task: calibrate the TB-303 patch against Din Sync reference notes
+# TB303-001: Calibrate the TB-303 patch against Din Sync reference notes
 
 Status: open. This is a follow-up to the completed
 `improve-tb303-dsp-fidelity` proof of concept. It does not change the current
@@ -14,9 +14,9 @@ Status: open. This is a follow-up to the completed
 - The local archive is `examples/assets/references/tb303/x0x-reference.zip`
   (SHA-256 `f6aaeb3361f87ed1f215af1e17905562a11f978b8ed350a8e9e2be514917a450`).
   The extracted WAVs are in its Git-ignored `wav/` directory. The source URL,
-  format, and handling policy are in the [asset README](../../examples/assets/references/tb303/README.md).
-- [Analysis notes](../../examples/assets/references/tb303/ANALYSIS.md) give the
-  measurement method and initial findings; [per-note metrics](../../examples/assets/references/tb303/analysis.csv)
+  format, and handling policy are in the [asset README](../../../../examples/assets/references/tb303/README.md).
+- [Analysis notes](../../../../examples/assets/references/tb303/ANALYSIS.md) give the
+  measurement method and initial findings; [per-note metrics](../../../../examples/assets/references/tb303/analysis.csv)
   preserve all 400 measurements. These are derived evidence, not a claim of
   exact hardware equivalence.
 - The five repeated all-50% unaccented saw recordings span 1.8% in RMS and
