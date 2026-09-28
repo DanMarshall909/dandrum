@@ -110,6 +110,10 @@ fn tunable(name: &str, default: f64, min: f64, max: f64) -> Port {
     control_in(name).with_control_default(ControlDefault::new(default).with_min(min).with_max(max))
 }
 
+fn defaulted(name: &str, default: f64) -> Port {
+    control_in(name).with_control_default(ControlDefault::new(default))
+}
+
 /// A zero-latency primitive. Stating latency at construction means no builtin is
 /// ever implicitly zero.
 fn primitive(name: &str) -> GraphDefinition {
@@ -207,9 +211,9 @@ fn builtin_definitions() -> Vec<GraphDefinition> {
                 &[DYNAMICS_TOPOLOGY_FEEDBACK, DYNAMICS_TOPOLOGY_FEEDFORWARD],
             ))
             .with_port(poly_audio_in(ports::AUDIO_IN))
-            .with_port(control_in(ports::CUTOFF))
-            .with_port(control_in(ports::RESONANCE))
-            .with_port(control_in(ports::GAIN))
+            .with_port(defaulted(ports::CUTOFF, 0.5))
+            .with_port(defaulted(ports::RESONANCE, 0.0))
+            .with_port(defaulted(ports::GAIN, 0.5))
             .with_port(poly_audio_out(ports::AUDIO_OUT)),
         channel_primitive(names::AUDIO_DELAY_ONE_SAMPLE)
             .with_port(poly_audio_in(ports::AUDIO_IN))
@@ -237,7 +241,7 @@ fn builtin_definitions() -> Vec<GraphDefinition> {
                 StaticType::Resource(ResourceKind::Sample),
             ))
             .with_port(event_in(ports::TRIGGER))
-            .with_port(control_in(ports::RATE))
+            .with_port(defaulted(ports::RATE, 1.0))
             .with_port(control_in(ports::START))
             .with_port(control_in(ports::LOOP_ENABLED))
             .with_port(control_in(ports::LOOP_START))
@@ -276,15 +280,15 @@ fn builtin_definitions() -> Vec<GraphDefinition> {
             ))
             .with_port(poly_audio_in(ports::AUDIO_IN))
             .with_port(control_in(ports::SIDECHAIN_IN))
-            .with_port(control_in(ports::THRESHOLD))
-            .with_port(control_in(ports::BELOW_RATIO))
-            .with_port(control_in(ports::ABOVE_RATIO))
-            .with_port(control_in(ports::ATTACK))
-            .with_port(control_in(ports::RELEASE))
-            .with_port(control_in(ports::KNEE))
-            .with_port(control_in(ports::MAKEUP_GAIN))
-            .with_port(control_in(ports::ATTACK_GAIN))
-            .with_port(control_in(ports::SUSTAIN_GAIN))
+            .with_port(defaulted(ports::THRESHOLD, 0.3))
+            .with_port(defaulted(ports::BELOW_RATIO, 0.05))
+            .with_port(defaulted(ports::ABOVE_RATIO, 0.077))
+            .with_port(defaulted(ports::ATTACK, 0.05))
+            .with_port(defaulted(ports::RELEASE, 0.1))
+            .with_port(defaulted(ports::KNEE, 0.0))
+            .with_port(defaulted(ports::MAKEUP_GAIN, 0.0))
+            .with_port(defaulted(ports::ATTACK_GAIN, 0.5))
+            .with_port(defaulted(ports::SUSTAIN_GAIN, 0.5))
             .with_port(poly_audio_out(ports::AUDIO_OUT)),
         channel_primitive(names::SATURATOR)
             .with_port(poly_audio_in(ports::AUDIO_IN))
@@ -295,7 +299,7 @@ fn builtin_definitions() -> Vec<GraphDefinition> {
         convolution(),
         channel_primitive(names::FREQUENCY_SPLITTER)
             .with_port(poly_audio_in(ports::AUDIO_IN))
-            .with_port(control_in(ports::CROSSOVER_HZ))
+            .with_port(defaulted(ports::CROSSOVER_HZ, 0.2))
             .with_port(poly_audio_out(ports::LOW))
             .with_port(poly_audio_out(ports::MID))
             .with_port(poly_audio_out(ports::HIGH)),
@@ -307,12 +311,12 @@ fn builtin_definitions() -> Vec<GraphDefinition> {
                 &[INTERPOLATION_LINEAR, INTERPOLATION_CUBIC],
             ))
             .with_port(poly_audio_in(ports::AUDIO_IN))
-            .with_port(control_in(ports::TIME_LEFT_MS))
-            .with_port(control_in(ports::TIME_RIGHT_MS))
-            .with_port(control_in(ports::FEEDBACK))
-            .with_port(control_in(ports::DAMPING_CUTOFF))
-            .with_port(control_in(ports::WET))
-            .with_port(control_in(ports::DRY))
+            .with_port(defaulted(ports::TIME_LEFT_MS, 0.3))
+            .with_port(defaulted(ports::TIME_RIGHT_MS, 0.3))
+            .with_port(defaulted(ports::FEEDBACK, 0.5))
+            .with_port(defaulted(ports::DAMPING_CUTOFF, 0.5))
+            .with_port(defaulted(ports::WET, 0.7))
+            .with_port(defaulted(ports::DRY, 0.5))
             .with_port(control_in(ports::SYNC_DIVISION))
             .with_port(control_in(ports::PING_PONG))
             .with_port(poly_audio_out(ports::AUDIO_OUT)),
@@ -323,14 +327,14 @@ fn builtin_definitions() -> Vec<GraphDefinition> {
                 &[INTERPOLATION_LINEAR, INTERPOLATION_CUBIC],
             ))
             .with_port(poly_audio_in(ports::AUDIO_IN))
-            .with_port(control_in(ports::DECAY_TIME))
-            .with_port(control_in(ports::ROOM_SIZE))
-            .with_port(control_in(ports::PRE_DELAY))
-            .with_port(control_in(ports::DAMPING))
-            .with_port(control_in(ports::DIFFUSION))
-            .with_port(control_in(ports::STEREO_WIDTH))
-            .with_port(control_in(ports::WET))
-            .with_port(control_in(ports::DRY))
+            .with_port(defaulted(ports::DECAY_TIME, 0.35))
+            .with_port(defaulted(ports::ROOM_SIZE, 0.7))
+            .with_port(defaulted(ports::PRE_DELAY, 0.0))
+            .with_port(defaulted(ports::DAMPING, 0.3))
+            .with_port(defaulted(ports::DIFFUSION, 0.5))
+            .with_port(defaulted(ports::STEREO_WIDTH, 0.5))
+            .with_port(defaulted(ports::WET, 0.7))
+            .with_port(defaulted(ports::DRY, 0.5))
             .with_port(poly_audio_out(ports::AUDIO_OUT)),
         channel_primitive(names::NOISE)
             .with_static_param(
@@ -359,11 +363,11 @@ fn builtin_definitions() -> Vec<GraphDefinition> {
                 &[DETECTION_MODE_PEAK, DETECTION_MODE_RMS],
             ))
             .with_port(poly_audio_in(ports::AUDIO_IN))
-            .with_port(control_in(ports::ATTACK))
-            .with_port(control_in(ports::RELEASE))
-            .with_port(control_in(ports::AMOUNT))
-            .with_port(control_in(ports::OFFSET))
-            .with_port(control_in(ports::INVERT))
+            .with_port(defaulted(ports::ATTACK, 5.0))
+            .with_port(defaulted(ports::RELEASE, 50.0))
+            .with_port(defaulted(ports::AMOUNT, 1.0))
+            .with_port(defaulted(ports::OFFSET, 0.0))
+            .with_port(defaulted(ports::INVERT, 0.0))
             .with_port(Port::output(
                 ports::VALUE,
                 SignalType::Control,
@@ -473,7 +477,7 @@ fn convolution() -> GraphDefinition {
         ))
         .with_latency(LatencySpec::Samples(Convolution::BLOCK_SIZE as u32))
         .with_port(poly_audio_in(ports::AUDIO_IN))
-        .with_port(control_in(ports::MIX))
+        .with_port(defaulted(ports::MIX, 1.0))
         .with_port(poly_audio_out(ports::AUDIO_OUT))
 }
 

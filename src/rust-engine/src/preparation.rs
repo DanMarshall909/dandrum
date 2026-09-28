@@ -1069,10 +1069,7 @@ fn lower_kernel_graph(
         }) {
             data.control_defaults
                 .entry(port.name().to_string())
-                .or_insert_with(|| {
-                    compiled_patch::effective_legacy_control_default(kind, port.name())
-                        .unwrap_or(0.0)
-                });
+                .or_insert(0.0);
         }
         node_data.insert(node.id().as_str().to_string(), data);
         modules.push(lowered);
@@ -4269,6 +4266,45 @@ connections: []
         assert!(
             left.iter().all(|sample| sample.abs() <= f32::EPSILON),
             "the arena reads the current typed control slot each block"
+        );
+    }
+
+    #[test]
+    fn kernel_preparation_does_not_inherit_undeclared_legacy_control_defaults() {
+        let gain = GraphDefinition::new(module_types::GAIN)
+            .with_latency(crate::kernel::LatencySpec::Zero)
+            .with_port(KernelPort::input(
+                builtin_ports::AUDIO_IN,
+                SignalType::Audio,
+                1,
+            ))
+            .with_port(KernelPort::input(
+                builtin_ports::GAIN,
+                SignalType::Control,
+                1,
+            ))
+            .with_port(KernelPort::output(
+                builtin_ports::AUDIO_OUT,
+                SignalType::Audio,
+                1,
+            ));
+        let registry = DefinitionRegistry::new().with_definition(gain);
+        let root = GraphDefinition::new("default-source")
+            .with_port(
+                KernelPort::output("master", SignalType::Audio, 1)
+                    .maps_from(kernel_ref("amp", builtin_ports::AUDIO_OUT)),
+            )
+            .with_node(Node::new(NodeId::new("amp"), module_types::GAIN));
+
+        let prepared = prepare_kernel_graph(&root, &registry, &KERNEL_RENDER_SETTINGS)
+            .expect("primitive without a declared control default prepares");
+
+        assert_eq!(
+            prepared
+                .compiled_patch()
+                .numeric_parameter_value("amp", builtin_ports::GAIN),
+            Some(0.0),
+            "the kernel definition did not declare the legacy gain default"
         );
     }
 
