@@ -2,11 +2,19 @@ use std::fs;
 
 use crate::diagnostics::error_codes;
 use crate::graph::{PortDirection, SignalType};
+use crate::graph_processor::render_kernel_offline_named;
 use crate::kernel::{
     ChannelCount, DefinitionImplementation, POLY_ALLOCATION_OLDEST_STEAL, POLY_DEFINITION,
     POLY_NOTE_EVENTS_INPUT, ResourceKind, ResourceOrigin, ResourceRef, StaticArg, StaticType,
     StaticValue,
 };
+use crate::patch::RenderSettings;
+use crate::patch::load_preset_str;
+use crate::preparation::{
+    PreparationContext, prepare_kernel_patch_with_preset,
+    prepare_kernel_patch_with_preset_and_context,
+};
+use crate::sample::PreparedSamplerAssets;
 
 use super::{load_kernel_patch_file, load_kernel_patch_str};
 
@@ -92,6 +100,356 @@ connections:
   - from: amp.audio_out
     to: amp.audio_in
 "#;
+
+const PRESET_PATCH: &str = r#"
+metadata: { name: preset_test }
+instrument: { id: test.instrument, preset_schema_version: 2 }
+static_params:
+  - name: sample
+    type: resource
+    resource_kind: sample
+    default: { kind: sample, path: original.wav }
+ports:
+  - { name: volume, direction: input, signal: control, channels: 1, default: 0.75, min: 0, max: 1, maps_to: amp.gain }
+  - { name: out, direction: output, signal: audio, channels: 1, maps_from: amp.audio_out }
+preset_surface:
+  parameters:
+    - { name: loudness, maps_to: volume }
+  assets:
+    - { name: hit, maps_to: sample }
+modules:
+  - { id: osc, type: oscillator }
+  - { id: amp, type: gain }
+connections:
+  - { from: osc.audio, to: amp.audio_in }
+"#;
+
+#[test]
+fn kernel_preset_surface_preserves_aliased_root_metadata() {
+    let patch = load_kernel_patch_str(PRESET_PATCH).expect("preset patch loads");
+
+    let identity = patch.instrument().expect("instrument identity");
+    assert_eq!(identity.id, "test.instrument");
+    assert_eq!(identity.preset_schema_version, 2);
+    let value = &patch.preset_surface().parameters()[0];
+    assert_eq!(value.name(), "loudness");
+    assert_eq!(value.port_name(), "volume");
+    assert_eq!(value.control_default().default(), 0.75);
+    assert_eq!(value.control_default().min(), Some(0.0));
+    assert_eq!(value.control_default().max(), Some(1.0));
+    let asset = &patch.preset_surface().assets()[0];
+    assert_eq!(asset.name(), "hit");
+    assert_eq!(asset.static_param_name(), "sample");
+    assert_eq!(asset.kind(), ResourceKind::Sample);
+    assert_eq!(
+        asset.default().unwrap().path().to_str(),
+        Some("original.wav")
+    );
+}
+
+#[test]
+fn kernel_preset_application_changes_root_defaults_before_flattening() {
+    let patch = load_kernel_patch_str(PRESET_PATCH).expect("preset patch loads");
+    let preset = load_preset_str(
+        "name: loud\ninstrument: { id: test.instrument, preset_schema_version: 2 }\nvalues: { loudness: 0.4 }\nassets: { hit: alternate.wav }\n",
+    )
+    .expect("preset loads");
+
+    let applied = patch.apply_preset(&preset).expect("preset applies");
+    let flat = applied
+        .root()
+        .flatten(applied.registry())
+        .expect("flattens");
+
+    assert_eq!(
+        applied.root().ports()[0]
+            .control_default()
+            .unwrap()
+            .default(),
+        0.4
+    );
+    assert_eq!(
+        flat.node(&crate::kernel::NodeId::new("amp"))
+            .unwrap()
+            .port_defaults()["gain"],
+        0.4
+    );
+    assert_eq!(
+        applied.root().static_params()[0].default(),
+        Some(&StaticValue::Resource(ResourceRef::new(
+            ResourceKind::Sample,
+            "alternate.wav",
+            ResourceOrigin::Document,
+        )))
+    );
+    assert_eq!(
+        patch.root().ports()[0].control_default().unwrap().default(),
+        0.75
+    );
+}
+
+#[test]
+fn kernel_preset_surface_rejects_duplicate_or_unresolved_aliases() {
+    let duplicate = PRESET_PATCH.replace(
+        "  assets:\n    - { name: hit, maps_to: sample }",
+        "  assets:\n    - { name: loudness, maps_to: sample }",
+    );
+    let error = load_kernel_patch_str(&duplicate).expect_err("duplicate alias fails");
+    assert!(
+        error
+            .to_string()
+            .contains("duplicate preset target loudness")
+    );
+
+    let missing = PRESET_PATCH.replace("maps_to: volume }", "maps_to: missing }");
+    let error = load_kernel_patch_str(&missing).expect_err("missing destination fails");
+    assert!(
+        error
+            .to_string()
+            .contains("unresolved control input missing")
+    );
+
+    let unnamed = PRESET_PATCH.replace(
+        "name: loudness, maps_to: volume",
+        "name: '', maps_to: volume",
+    );
+    let error = load_kernel_patch_str(&unnamed).expect_err("unnamed alias fails");
+    assert!(error.to_string().contains("preset target name is required"));
+
+    let no_default =
+        PRESET_PATCH.replace("    default: { kind: sample, path: original.wav }\n", "");
+    let error = load_kernel_patch_str(&no_default).expect_err("asset alias needs default");
+    assert!(
+        error
+            .to_string()
+            .contains("requires a declared resource default")
+    );
+}
+
+#[test]
+fn kernel_preset_rejects_identity_unknown_targets_and_incompatible_values() {
+    let patch = load_kernel_patch_str(PRESET_PATCH).expect("preset patch loads");
+    for (yaml, expected) in [
+        (
+            "name: wrong\ninstrument: { id: other, preset_schema_version: 2 }\n",
+            "does not match patch instrument",
+        ),
+        (
+            "name: wrong-version\ninstrument: { id: test.instrument, preset_schema_version: 3 }\n",
+            "does not match patch instrument",
+        ),
+        (
+            "name: unknown\ninstrument: { id: test.instrument, preset_schema_version: 2 }\nvalues: { other: 0.5 }\n",
+            "unknown preset target other",
+        ),
+        (
+            "name: type\ninstrument: { id: test.instrument, preset_schema_version: 2 }\nvalues: { loudness: loud }\n",
+            "incompatible type or range",
+        ),
+        (
+            "name: range\ninstrument: { id: test.instrument, preset_schema_version: 2 }\nvalues: { loudness: 2.0 }\n",
+            "incompatible type or range",
+        ),
+        (
+            "name: structural\ninstrument: { id: test.instrument, preset_schema_version: 2 }\nmodules: []\n",
+            "preset cannot declare structural field modules",
+        ),
+    ] {
+        let preset = load_preset_str(yaml).expect("preset YAML loads");
+        let error = patch
+            .apply_preset(&preset)
+            .expect_err("incompatible preset fails");
+        assert!(error.to_string().contains(expected), "{error}");
+    }
+}
+
+#[test]
+fn kernel_preset_compatibility_diagnostics_identify_expected_and_actual_identity() {
+    let patch = load_kernel_patch_str(PRESET_PATCH).expect("preset patch loads");
+    for (yaml, expected, actual) in [
+        (
+            "name: wrong-id\ninstrument: { id: other, preset_schema_version: 2 }\n",
+            "test.instrument",
+            "other",
+        ),
+        (
+            "name: wrong-version\ninstrument: { id: test.instrument, preset_schema_version: 3 }\n",
+            "2",
+            "3",
+        ),
+    ] {
+        let preset = load_preset_str(yaml).expect("preset loads");
+        let error = patch
+            .apply_preset(&preset)
+            .expect_err("incompatible preset fails");
+        let diagnostic = error.errors().next().expect("compatibility diagnostic");
+        assert_eq!(diagnostic.expected(), Some(expected));
+        assert_eq!(diagnostic.actual(), Some(actual));
+    }
+}
+
+#[test]
+fn omitted_kernel_preset_targets_keep_root_defaults() {
+    let patch = load_kernel_patch_str(PRESET_PATCH).expect("preset patch loads");
+    let preset = load_preset_str(
+        "name: plain\ninstrument: { id: test.instrument, preset_schema_version: 2 }\n",
+    )
+    .expect("preset loads");
+
+    let applied = patch.apply_preset(&preset).expect("preset applies");
+    assert_eq!(
+        applied.root().ports()[0]
+            .control_default()
+            .unwrap()
+            .default(),
+        0.75
+    );
+    assert_eq!(
+        applied.root().static_params()[0].default(),
+        patch.root().static_params()[0].default()
+    );
+}
+
+#[test]
+fn kernel_preset_asset_passes_through_root_static_parameter_to_node() {
+    let yaml = PRESET_PATCH.replace(
+        "  - { id: amp, type: gain }",
+        "  - { id: amp, type: gain }\n  - { id: hit, type: sampler, static: { sample: $sample } }",
+    );
+    let patch = load_kernel_patch_str(&yaml).expect("resource patch loads");
+    let preset = load_preset_str(
+        "name: alternate\ninstrument: { id: test.instrument, preset_schema_version: 2 }\nassets: { hit: alternate.wav }\n",
+    )
+    .expect("preset loads");
+
+    let applied = patch.apply_preset(&preset).expect("preset applies");
+    let flat = applied
+        .root()
+        .flatten(applied.registry())
+        .expect("flattens");
+    assert_eq!(
+        flat.node(&crate::kernel::NodeId::new("hit"))
+            .unwrap()
+            .static_args()["sample"],
+        StaticValue::Resource(ResourceRef::new(
+            ResourceKind::Sample,
+            "alternate.wav",
+            ResourceOrigin::Document,
+        ))
+    );
+}
+
+#[test]
+fn kernel_preset_asset_is_resolved_during_context_preparation() {
+    let directory = tempfile::tempdir().expect("temporary resource root");
+    for (name, sample) in [("original.wav", 0.25), ("alternate.wav", 0.75)] {
+        crate::wav::write_wav_stereo_i16(
+            fs::File::create(directory.path().join(name)).expect("create sample"),
+            48_000,
+            &[sample],
+            &[sample],
+        )
+        .expect("write sample");
+    }
+    let yaml = PRESET_PATCH.replace(
+        "  - { id: amp, type: gain }",
+        "  - { id: amp, type: gain }\n  - { id: hit, type: sampler, static: { sample: $sample } }",
+    );
+    let patch = load_kernel_patch_str(&yaml).expect("resource patch loads");
+    let preset = load_preset_str(
+        "name: alternate\ninstrument: { id: test.instrument, preset_schema_version: 2 }\nassets: { hit: alternate.wav }\n",
+    )
+    .expect("preset loads");
+    let settings = RenderSettings {
+        sample_rate_hz: 48_000,
+        block_size_frames: 16,
+        duration_frames: 16,
+    };
+    let context = PreparationContext::new(directory.path(), 48_000);
+
+    let prepared =
+        prepare_kernel_patch_with_preset_and_context(&patch, &preset, &settings, &context)
+            .expect("preset resource prepares");
+    let sample = prepared
+        .compiled_patch()
+        .nodes()
+        .iter()
+        .find(|node| node.id.as_str() == "hit")
+        .and_then(|node| node.resources.sample.as_ref())
+        .expect("sampler has resolved sample");
+    assert!((sample.frames()[0] - 0.75).abs() < 0.0001);
+}
+
+#[test]
+fn incoming_control_connection_takes_precedence_over_preset_default() {
+    let yaml = PRESET_PATCH
+        .replace(
+            "  - { id: amp, type: gain }",
+            "  - { id: amp, type: gain }\n  - { id: follower, type: envelope_follower }",
+        )
+        .replace(
+            "  - { from: osc.audio, to: amp.audio_in }",
+            "  - { from: osc.audio, to: amp.audio_in }\n  - { from: osc.audio, to: follower.audio_in }\n  - { from: follower.value, to: amp.gain }",
+        );
+    let patch = load_kernel_patch_str(&yaml).expect("patch loads");
+    let preset = load_preset_str(
+        "name: quiet\ninstrument: { id: test.instrument, preset_schema_version: 2 }\nvalues: { loudness: 0.4 }\n",
+    )
+    .expect("preset loads");
+    let settings = RenderSettings {
+        sample_rate_hz: 48_000,
+        block_size_frames: 128,
+        duration_frames: 512,
+    };
+
+    let preset_prepared = prepare_kernel_patch_with_preset(&patch, &preset, &settings)
+        .expect("preset patch prepares");
+    let default_prepared = crate::preparation::prepare_kernel_patch(&patch, &settings)
+        .expect("default patch prepares");
+    let render = |prepared: &_| {
+        render_kernel_offline_named(prepared, Vec::new(), &PreparedSamplerAssets::empty())
+            .expect("named render succeeds")
+    };
+    let preset_render = render(&preset_prepared);
+    assert!(
+        preset_render[0].1[0]
+            .iter()
+            .any(|sample| sample.abs() > 0.001)
+    );
+    assert_eq!(preset_render, render(&default_prepared));
+}
+
+#[test]
+fn kernel_preset_render_is_deterministic_and_uses_aliased_default() {
+    let patch = load_kernel_patch_str(PRESET_PATCH).expect("preset patch loads");
+    let preset = load_preset_str(
+        "name: quiet\ninstrument: { id: test.instrument, preset_schema_version: 2 }\nvalues: { loudness: 0.4 }\n",
+    )
+    .expect("preset loads");
+    let settings = RenderSettings {
+        sample_rate_hz: 48_000,
+        block_size_frames: 128,
+        duration_frames: 512,
+    };
+
+    let prepared = prepare_kernel_patch_with_preset(&patch, &preset, &settings)
+        .expect("preset patch prepares");
+    let render = || {
+        render_kernel_offline_named(&prepared, Vec::new(), &PreparedSamplerAssets::empty())
+            .expect("named render succeeds")
+    };
+    let first = render();
+    let second = render();
+    assert_eq!(first, second);
+    assert!(first[0].1[0].iter().any(|sample| sample.abs() > 0.01));
+
+    let default = crate::preparation::prepare_kernel_patch(&patch, &settings)
+        .expect("default patch prepares");
+    let default_render =
+        render_kernel_offline_named(&default, Vec::new(), &PreparedSamplerAssets::empty())
+            .expect("default named render succeeds");
+    assert_ne!(first[0].1[0], default_render[0].1[0]);
+}
 
 #[test]
 fn complete_kernel_document_produces_root_and_inline_graph_definitions() {

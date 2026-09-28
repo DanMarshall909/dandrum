@@ -65,7 +65,7 @@ Model-tier tags follow design decision D11: `[frontier]` for architecture/realti
 
 - [x] 6.1 Implement the kernel patch document shape: `metadata`, `static_params`, `ports` (root inputs/outputs), `module_definitions`, `modules` (with `static` and `defaults` mappings), `connections`; reject legacy `render`, `voice_allocation`, instance `parameters`, `${name}` bindings, `asset_bindings`
 - [x] 6.2 Make composite `module_definitions` full graph definitions: static params, public control ports with defaults/range replacing composite `parameters`; patch document loadable as a composite definition (patch/module symmetry test)
-- [ ] [frontier] 6.3 Add kernel instrument identity and preset aliases to the document model. Resolve value aliases onto root control defaults and resource aliases onto resource static arguments before flattening; propagate root defaults through `maps_to`, preserve precedence and compatibility checks, and retain deterministic render tests
+- [x] [frontier] 6.3 Add kernel instrument identity and preset aliases to the document model. Resolve value aliases onto root control defaults and resource aliases onto resource static arguments before flattening; propagate root defaults through `maps_to`, preserve precedence and compatibility checks, and retain deterministic render tests
 - [ ] [standard] 6.4 Rewrite `schema/patch.schema.yaml` for the complete kernel shape (multiplicity, script-backed definitions, preset aliases, resources, poly declarations; no render/voice-allocation/legacy parameters). Make runtime loading validate against the external schema before graph construction and add schema/Serde parity fixtures
 
 ## 7. Capability-cohort migration and cleanup

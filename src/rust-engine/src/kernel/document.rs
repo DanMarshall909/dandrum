@@ -4,7 +4,7 @@
 //! drives preparation. Both root patches and inline composites pass through the
 //! same graph-declaration conversion into [`GraphDefinition`].
 
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 use std::fs;
 use std::path::Path;
 
@@ -13,6 +13,7 @@ use serde_yaml::{Mapping, Value};
 
 use crate::diagnostics::{Diagnostic, Diagnostics, Severity, error_codes};
 use crate::graph::{PortDirection, SignalType};
+use crate::patch::{InstrumentIdentity, ParameterValue, PresetDocument};
 
 use super::{
     ChannelCount, Connection, ControlDefault, DefinitionImplementation, DefinitionRegistry,
@@ -59,11 +60,21 @@ impl KernelPatchMetadata {
 #[derive(Clone, Debug)]
 pub struct KernelPatch {
     metadata: KernelPatchMetadata,
+    instrument: Option<InstrumentIdentity>,
+    preset_surface: KernelPresetSurface,
     root: GraphDefinition,
     registry: DefinitionRegistry,
 }
 
 impl KernelPatch {
+    pub fn instrument(&self) -> Option<&InstrumentIdentity> {
+        self.instrument.as_ref()
+    }
+
+    pub fn preset_surface(&self) -> &KernelPresetSurface {
+        &self.preset_surface
+    }
+
     pub fn metadata(&self) -> &KernelPatchMetadata {
         &self.metadata
     }
@@ -74,6 +85,204 @@ impl KernelPatch {
 
     pub fn registry(&self) -> &DefinitionRegistry {
         &self.registry
+    }
+
+    /// Apply a compatible preset to root declarations before graph flattening.
+    pub fn apply_preset(&self, preset: &PresetDocument) -> Result<Self, Diagnostics> {
+        let mut diagnostics = Diagnostics::new();
+        match &self.instrument {
+            None => diagnostics.push(Diagnostic::new(
+                error_codes::VALIDATION_MISSING_FIELD,
+                Severity::Error,
+                "patch does not declare instrument preset identity",
+            )),
+            Some(identity) => {
+                if identity.id != preset.instrument.id {
+                    diagnostics.push(
+                        Diagnostic::new(
+                            error_codes::VALIDATION_INVALID_VALUE,
+                            Severity::Error,
+                            format!(
+                                "preset instrument {} does not match patch instrument {}",
+                                preset.instrument.id, identity.id
+                            ),
+                        )
+                        .with_expected(&identity.id)
+                        .with_actual(&preset.instrument.id),
+                    );
+                }
+                if identity.preset_schema_version != preset.instrument.preset_schema_version {
+                    diagnostics.push(
+                        Diagnostic::new(
+                            error_codes::VALIDATION_INVALID_VALUE,
+                            Severity::Error,
+                            format!("preset schema version {} does not match patch instrument schema version {}", preset.instrument.preset_schema_version, identity.preset_schema_version),
+                        )
+                        .with_expected(identity.preset_schema_version.to_string())
+                        .with_actual(preset.instrument.preset_schema_version.to_string()),
+                    );
+                }
+            }
+        }
+        for name in preset.values.keys() {
+            if !self
+                .preset_surface
+                .parameters
+                .iter()
+                .any(|alias| alias.name == *name)
+            {
+                diagnostics.push(Diagnostic::new(
+                    error_codes::VALIDATION_INVALID_VALUE,
+                    Severity::Error,
+                    format!("unknown preset target {name}"),
+                ));
+            }
+        }
+        for name in preset.assets.keys() {
+            if !self
+                .preset_surface
+                .assets
+                .iter()
+                .any(|alias| alias.name == *name)
+            {
+                diagnostics.push(Diagnostic::new(
+                    error_codes::VALIDATION_INVALID_VALUE,
+                    Severity::Error,
+                    format!("unknown preset target {name}"),
+                ));
+            }
+        }
+        for alias in &self.preset_surface.parameters {
+            if let Some(value) = preset.values.get(&alias.name) {
+                match value {
+                    ParameterValue::Number(value)
+                        if value.is_finite()
+                            && alias.default.min().is_none_or(|min| *value >= min)
+                            && alias.default.max().is_none_or(|max| *value <= max) => {}
+                    _ => diagnostics.push(Diagnostic::new(
+                        error_codes::VALIDATION_INVALID_VALUE,
+                        Severity::Error,
+                        format!(
+                            "preset target {} has incompatible type or range",
+                            alias.name
+                        ),
+                    )),
+                }
+            }
+        }
+        for field in preset.extra_fields.keys() {
+            if [
+                "modules",
+                "connections",
+                "ports",
+                "static_params",
+                "module_definitions",
+                "preset_surface",
+                "render",
+                "voice_allocation",
+            ]
+            .contains(&field.as_str())
+            {
+                diagnostics.push(Diagnostic::new(
+                    error_codes::VALIDATION_INVALID_VALUE,
+                    Severity::Error,
+                    format!("preset cannot declare structural field {field}"),
+                ));
+            }
+        }
+        if diagnostics.has_errors() {
+            return Err(diagnostics);
+        }
+
+        let mut applied = self.clone();
+        for alias in &self.preset_surface.parameters {
+            if let Some(ParameterValue::Number(value)) = preset.values.get(&alias.name) {
+                let port = applied
+                    .root
+                    .ports
+                    .iter_mut()
+                    .find(|port| port.name == alias.port_name)
+                    .expect("alias destination was validated at load time");
+                port.control_default
+                    .as_mut()
+                    .expect("control alias has a default")
+                    .default = *value;
+            }
+        }
+        for alias in &self.preset_surface.assets {
+            if let Some(path) = preset.assets.get(&alias.name) {
+                let param = applied
+                    .root
+                    .static_params
+                    .iter_mut()
+                    .find(|param| param.name == alias.static_param_name)
+                    .expect("alias destination was validated at load time");
+                param.default = Some(StaticValue::Resource(ResourceRef::new(
+                    alias.kind,
+                    path,
+                    ResourceOrigin::Document,
+                )));
+            }
+        }
+        Ok(applied)
+    }
+}
+
+/// Preset names mapped to typed root declarations.
+#[derive(Clone, Debug, Default)]
+pub struct KernelPresetSurface {
+    parameters: Vec<KernelPresetValueAlias>,
+    assets: Vec<KernelPresetAssetAlias>,
+}
+
+impl KernelPresetSurface {
+    pub fn parameters(&self) -> &[KernelPresetValueAlias] {
+        &self.parameters
+    }
+    pub fn assets(&self) -> &[KernelPresetAssetAlias] {
+        &self.assets
+    }
+}
+
+#[derive(Clone, Debug)]
+pub struct KernelPresetValueAlias {
+    name: String,
+    port_name: String,
+    default: ControlDefault,
+}
+
+impl KernelPresetValueAlias {
+    pub fn name(&self) -> &str {
+        &self.name
+    }
+    pub fn port_name(&self) -> &str {
+        &self.port_name
+    }
+    pub fn control_default(&self) -> &ControlDefault {
+        &self.default
+    }
+}
+
+#[derive(Clone, Debug)]
+pub struct KernelPresetAssetAlias {
+    name: String,
+    static_param_name: String,
+    kind: ResourceKind,
+    default: Option<ResourceRef>,
+}
+
+impl KernelPresetAssetAlias {
+    pub fn name(&self) -> &str {
+        &self.name
+    }
+    pub fn static_param_name(&self) -> &str {
+        &self.static_param_name
+    }
+    pub fn kind(&self) -> ResourceKind {
+        self.kind
+    }
+    pub fn default(&self) -> Option<&ResourceRef> {
+        self.default.as_ref()
     }
 }
 
@@ -90,6 +299,9 @@ struct MetadataDocument {
 struct PatchDocument {
     #[serde(default)]
     metadata: MetadataDocument,
+    instrument: Option<InstrumentIdentity>,
+    #[serde(default)]
+    preset_surface: PresetSurfaceDocument,
     #[serde(default)]
     static_params: Vec<StaticParamDocument>,
     #[serde(default)]
@@ -100,6 +312,22 @@ struct PatchDocument {
     modules: Vec<NodeDocument>,
     #[serde(default)]
     connections: Vec<ConnectionDocument>,
+}
+
+#[derive(Clone, Debug, Default, Deserialize)]
+#[serde(deny_unknown_fields)]
+struct PresetSurfaceDocument {
+    #[serde(default)]
+    parameters: Vec<PresetAliasDocument>,
+    #[serde(default)]
+    assets: Vec<PresetAliasDocument>,
+}
+
+#[derive(Clone, Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
+struct PresetAliasDocument {
+    name: String,
+    maps_to: String,
 }
 
 #[derive(Clone, Debug, Deserialize)]
@@ -354,11 +582,124 @@ fn load_kernel_document_str(
         .into());
     }
 
+    let preset_surface = resolve_preset_surface(&document.preset_surface, &root)?;
+
     Ok(KernelPatch {
         metadata,
+        instrument: document.instrument,
+        preset_surface,
         root,
         registry,
     })
+}
+
+fn resolve_preset_surface(
+    document: &PresetSurfaceDocument,
+    root: &GraphDefinition,
+) -> Result<KernelPresetSurface, Diagnostics> {
+    let mut surface = KernelPresetSurface::default();
+    let mut names = BTreeSet::new();
+    let mut diagnostics = Diagnostics::new();
+    for alias in &document.parameters {
+        if alias.name.trim().is_empty() {
+            diagnostics.push(Diagnostic::new(
+                error_codes::VALIDATION_MISSING_FIELD,
+                Severity::Error,
+                "preset target name is required",
+            ));
+            continue;
+        }
+        if !names.insert(alias.name.as_str()) {
+            diagnostics.push(Diagnostic::new(
+                error_codes::VALIDATION_INVALID_VALUE,
+                Severity::Error,
+                format!("duplicate preset target {}", alias.name),
+            ));
+        }
+        let port = root
+            .ports()
+            .iter()
+            .find(|port| port.name() == alias.maps_to);
+        match port {
+            Some(port)
+                if port.direction() == PortDirection::Input
+                    && port.signal_type() == SignalType::Control
+                    && port.control_default().is_some() =>
+            {
+                surface.parameters.push(KernelPresetValueAlias {
+                    name: alias.name.clone(),
+                    port_name: alias.maps_to.clone(),
+                    default: port.control_default().expect("checked above").clone(),
+                });
+            }
+            _ => diagnostics.push(Diagnostic::new(
+                error_codes::VALIDATION_INVALID_VALUE,
+                Severity::Error,
+                format!(
+                    "preset target {} maps to unresolved control input {}",
+                    alias.name, alias.maps_to
+                ),
+            )),
+        }
+    }
+    for alias in &document.assets {
+        if alias.name.trim().is_empty() {
+            diagnostics.push(Diagnostic::new(
+                error_codes::VALIDATION_MISSING_FIELD,
+                Severity::Error,
+                "preset target name is required",
+            ));
+            continue;
+        }
+        if !names.insert(alias.name.as_str()) {
+            diagnostics.push(Diagnostic::new(
+                error_codes::VALIDATION_INVALID_VALUE,
+                Severity::Error,
+                format!("duplicate preset target {}", alias.name),
+            ));
+        }
+        let param = root
+            .static_params()
+            .iter()
+            .find(|param| param.name() == alias.maps_to);
+        match param {
+            Some(param) if matches!(param.static_type(), StaticType::Resource(_)) => {
+                let StaticType::Resource(kind) = param.static_type() else {
+                    unreachable!()
+                };
+                let Some(StaticValue::Resource(default)) = param.default() else {
+                    diagnostics.push(Diagnostic::new(
+                        error_codes::VALIDATION_MISSING_FIELD,
+                        Severity::Error,
+                        format!(
+                            "preset target {} requires a declared resource default",
+                            alias.name
+                        ),
+                    ));
+                    continue;
+                };
+                surface.assets.push(KernelPresetAssetAlias {
+                    name: alias.name.clone(),
+                    static_param_name: alias.maps_to.clone(),
+                    kind,
+                    default: Some(default.clone()),
+                });
+            }
+            _ => diagnostics.push(Diagnostic::new(
+                error_codes::VALIDATION_INVALID_VALUE,
+                Severity::Error,
+                format!(
+                    "preset target {} maps to unresolved resource static parameter {}",
+                    alias.name, alias.maps_to
+                ),
+            )),
+        }
+    }
+    if diagnostics.has_errors() {
+        Err(diagnostics)
+    } else {
+        Ok(surface)
+    }
 }
 
 fn parse_diagnostic(error: serde_yaml::Error) -> Diagnostics {

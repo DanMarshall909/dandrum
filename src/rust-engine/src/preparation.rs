@@ -448,6 +448,29 @@ pub fn prepare_kernel_patch(
     prepare_kernel_graph(patch.root(), patch.registry(), render_settings)
 }
 
+pub fn prepare_kernel_patch_with_preset(
+    patch: &KernelPatch,
+    preset: &PresetDocument,
+    render_settings: &RenderSettings,
+) -> Result<PreparedKernelInstrument, KernelPreparationError> {
+    let applied = patch
+        .apply_preset(preset)
+        .map_err(KernelPreparationError::from)?;
+    prepare_kernel_patch(&applied, render_settings)
+}
+
+pub fn prepare_kernel_patch_with_preset_and_context(
+    patch: &KernelPatch,
+    preset: &PresetDocument,
+    render_settings: &RenderSettings,
+    context: &PreparationContext,
+) -> Result<PreparedKernelInstrument, KernelPreparationError> {
+    let applied = patch
+        .apply_preset(preset)
+        .map_err(KernelPreparationError::from)?;
+    prepare_kernel_patch_with_context(&applied, render_settings, context)
+}
+
 pub fn prepare_kernel_patch_with_context(
     patch: &KernelPatch,
     render_settings: &RenderSettings,
@@ -562,6 +585,11 @@ fn prepare_kernel_graph_with_buses_internal(
         .root_ports()
         .iter()
         .filter(|port| port.direction() == PortDirection::Input)
+        // An unbound control input uses its compiled default. Reserving a
+        // silent host span here would turn that default into zero instead.
+        .filter(|port| {
+            port.signal_type() != SignalType::Control || host_buses.inputs.contains_key(port.name())
+        })
         .map(|port| {
             let span = compiled_patch.reserve_root_input_span(
                 port.channels() as usize,
