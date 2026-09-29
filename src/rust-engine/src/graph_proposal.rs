@@ -1,5 +1,3 @@
-use std::path::Path;
-
 use serde::{Deserialize, Serialize};
 
 use crate::sound_matching::SoundMatchManifest;
@@ -115,56 +113,6 @@ pub trait GraphProposalProvider: Send + Sync {
         request: &GraphProposalRequest,
         is_cancelled: &dyn Fn() -> bool,
     ) -> Result<GraphProposalResponse, String>;
-}
-
-pub fn build_graph_proposal_request(
-    patch: &crate::patch::PatchDocument,
-    matched: &SoundMatchManifest,
-    candidate_metrics: &[crate::sound_analysis::AnalysisFrame],
-    reference_metrics: &[crate::sound_analysis::AnalysisFrame],
-) -> Result<GraphProposalRequest, String> {
-    let allowed_modules = crate::builtins::BuiltInModuleRegistry::new()
-        .module_types()
-        .filter(|module_type| *module_type != crate::builtins::module_types::SCRIPT)
-        .map(str::to_string)
-        .collect();
-    let modules = patch
-        .modules
-        .iter()
-        .map(|module| GraphTopologyModule {
-            id: module.id.clone(),
-            module_type: module.module_type.clone(),
-        })
-        .collect();
-    let connections = patch
-        .connections
-        .iter()
-        .map(|connection| GraphTopologyConnection {
-            from: connection.from.to_string(),
-            to: connection.to.to_string(),
-        })
-        .collect();
-    let public_parameters = patch
-        .preset_surface
-        .parameters
-        .iter()
-        .map(|parameter| GraphTopologyParameter {
-            id: parameter.name.clone(),
-            min: parameter.min,
-            max: parameter.max,
-        })
-        .collect();
-    build_request(
-        matched,
-        candidate_metrics,
-        reference_metrics,
-        allowed_modules,
-        GraphTopologySummary {
-            modules,
-            connections,
-            public_parameters,
-        },
-    )
 }
 
 pub fn build_kernel_graph_proposal_request(
@@ -338,16 +286,6 @@ pub fn parse_graph_proposal_response(json: &str) -> Result<GraphProposalResponse
     serde_json::from_str(json).map_err(|error| format!("invalid graph proposal response: {error}"))
 }
 
-pub fn request_validated_graph_proposal(
-    provider: &dyn GraphProposalProvider,
-    request: &GraphProposalRequest,
-    patch_root: &Path,
-    is_cancelled: &dyn Fn() -> bool,
-) -> Result<ValidatedGraphProposal, String> {
-    let response = request_graph_proposal_response(provider, request, is_cancelled)?;
-    validate_graph_proposal(provider.provider_id(), response, patch_root)
-}
-
 pub fn request_validated_kernel_graph_proposal(
     provider: &dyn GraphProposalProvider,
     request: &GraphProposalRequest,
@@ -489,153 +427,11 @@ fn validate_kernel_graph_proposal(
     })
 }
 
-fn validate_graph_proposal(
-    provider_id: &str,
-    response: GraphProposalResponse,
-    patch_root: &Path,
-) -> Result<ValidatedGraphProposal, String> {
-    if response.patch_yaml.trim().is_empty() {
-        return Err("graph proposal patch_yaml must not be empty".to_string());
-    }
-    if response.explanation.trim().is_empty() {
-        return Err("graph proposal explanation must not be empty".to_string());
-    }
-
-    let patch = crate::patch::load_patch_str(&response.patch_yaml)
-        .map_err(|error| format!("proposed patch is invalid: {error}"))?;
-    if !patch.assets.is_empty() || !patch.preset_surface.assets.is_empty() {
-        return Err("proposed patch must not declare assets".to_string());
-    }
-    if patch_contains_forbidden_modules(&patch) {
-        return Err(
-            "proposed patch must not contain script modules or external module references"
-                .to_string(),
-        );
-    }
-    if let Some(module_type) = first_unknown_module_type(&patch) {
-        return Err(format!(
-            "proposed patch contains unknown module type {module_type}"
-        ));
-    }
-
-    for parameter_id in &response.suggested_search_parameters {
-        let Some(parameter) = patch
-            .preset_surface
-            .parameters
-            .iter()
-            .find(|parameter| parameter.name == *parameter_id)
-        else {
-            return Err(format!(
-                "suggested search parameter {parameter_id} is not exposed by the proposed patch"
-            ));
-        };
-        let (Some(min), Some(max)) = (parameter.min, parameter.max) else {
-            return Err(format!(
-                "suggested search parameter {parameter_id} must declare finite bounds"
-            ));
-        };
-        if !matches!(
-            parameter.value_type,
-            crate::patch::PresetTargetType::Number | crate::patch::PresetTargetType::Integer
-        ) || !matches!(parameter.default, crate::patch::ParameterValue::Number(_))
-            || !min.is_finite()
-            || !max.is_finite()
-            || min >= max
-        {
-            return Err(format!(
-                "suggested search parameter {parameter_id} must be numeric with finite ordered bounds"
-            ));
-        }
-    }
-
-    crate::preparation::prepare_instrument_document(patch.clone(), patch_root)
-        .map_err(|error| format!("proposed patch failed local preparation: {error}"))?;
-
-    Ok(ValidatedGraphProposal {
-        provider_id: provider_id.to_string(),
-        patch_name: patch.metadata.name,
-        explanation: response.explanation,
-        suggested_search_parameters: response.suggested_search_parameters,
-        patch_yaml: response.patch_yaml,
-    })
-}
-
-fn patch_contains_forbidden_modules(patch: &crate::patch::PatchDocument) -> bool {
-    let forbidden = |module_type: &str| {
-        module_type == crate::builtins::module_types::SCRIPT || module_type.starts_with('$')
-    };
-    patch
-        .modules
-        .iter()
-        .any(|module| forbidden(&module.module_type))
-        || patch.module_definitions.iter().any(|definition| {
-            definition
-                .modules
-                .iter()
-                .any(|module| forbidden(&module.module_type))
-        })
-}
-
-fn first_unknown_module_type(patch: &crate::patch::PatchDocument) -> Option<&str> {
-    let registry = crate::builtins::BuiltInModuleRegistry::new();
-    let is_unknown = |module_type: &str| {
-        registry.get(module_type).is_none()
-            && !patch
-                .module_definitions
-                .iter()
-                .any(|definition| definition.module_type == module_type)
-    };
-    patch
-        .modules
-        .iter()
-        .chain(
-            patch
-                .module_definitions
-                .iter()
-                .flat_map(|definition| definition.modules.iter()),
-        )
-        .map(|module| module.module_type.as_str())
-        .find(|module_type| is_unknown(module_type))
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::path::Path;
     use std::sync::Mutex;
-
-    const VALID_PATCH: &str = r#"
-metadata:
-  name: Proposed Acid Voice
-instrument:
-  id: dandrum.proposed-acid
-  preset_schema_version: 1
-preset_surface:
-  parameters:
-    - name: oscillator.pitch
-      type: number
-      default: 1
-      min: 0.25
-      max: 4
-      maps_to: osc.pitch
-render:
-  sample_rate_hz: 48000
-  block_size_frames: 64
-  duration_frames: 48000
-modules:
-  - id: osc
-    type: oscillator
-  - id: mixer
-    type: audio_mixer
-  - id: out
-    type: audio_output
-    inputs:
-      - { name: left, signal_type: audio }
-      - { name: right, signal_type: audio }
-connections:
-  - { from: osc.audio, to: mixer.inputs }
-  - { from: mixer.mix, to: out.left }
-  - { from: mixer.mix, to: out.right }
-"#;
 
     const VALID_KERNEL_PATCH: &str = r#"
 metadata:
@@ -711,7 +507,7 @@ connections:
         fn valid() -> Self {
             Self {
                 response: Ok(GraphProposalResponse {
-                    patch_yaml: VALID_PATCH.to_string(),
+                    patch_yaml: VALID_KERNEL_PATCH.to_string(),
                     explanation: "Add a separately tunable oscillator pitch.".to_string(),
                     suggested_search_parameters: vec!["oscillator.pitch".to_string()],
                 }),
@@ -986,12 +782,11 @@ connections:
         let request = proposal_request(&fixture);
         let provider = RecordingProvider::valid();
 
-        let proposal =
-            request_validated_graph_proposal(&provider, &request, Path::new("."), &|| false)
-                .expect("valid provider patch should pass local preparation");
+        let proposal = request_validated_kernel_graph_proposal(&provider, &request, &|| false)
+            .expect("valid provider patch should pass local preparation");
 
         assert_eq!(proposal.provider_id, "test-provider");
-        assert_eq!(proposal.patch_name, "Proposed Acid Voice");
+        assert_eq!(proposal.patch_name, "Proposed Kernel Voice");
         assert_eq!(proposal.suggested_search_parameters, ["oscillator.pitch"]);
         assert_eq!(provider.requests.lock().unwrap().as_slice(), [request]);
     }
@@ -1086,33 +881,36 @@ connections:
     }
 
     #[test]
-    fn local_validation_rejects_assets_scripts_unknown_modules_and_unknown_search_controls() {
+    fn local_validation_rejects_nested_unsafe_modules_and_unknown_search_controls() {
         let fixture = acid_fixture();
         let request = proposal_request(&fixture);
         let variants = [
             (
-                VALID_PATCH.replace(
-                    "render:",
-                    "assets:\n  - { id: sample, kind: sample, path: private.wav }\nrender:",
-                ),
-                Vec::new(),
-                "assets",
-            ),
-            (
-                VALID_PATCH.replace(
-                    "  - id: osc\n    type: oscillator",
-                    "  - id: osc\n    type: script\n    parameters:\n      language: rhai\n      source: 'fn process() {}'",
+                VALID_KERNEL_PATCH.replace(
+                    "modules:",
+                    "module_definitions:\n  - type: hidden_script_node\n    modules:\n      - { id: unsafe, type: script }\nmodules:",
                 ),
                 Vec::new(),
                 "script",
             ),
             (
-                VALID_PATCH.replace("type: oscillator", "type: imaginary_oscillator"),
+                VALID_KERNEL_PATCH.replace(
+                    "modules:",
+                    "module_definitions:\n  - type: hidden_external_node\n    modules:\n      - { id: unsafe, type: '$unsafe/external@1' }\nmodules:",
+                ),
+                Vec::new(),
+                "external",
+            ),
+            (
+                VALID_KERNEL_PATCH.replace(
+                    "modules:",
+                    "module_definitions:\n  - type: hidden_unknown_node\n    modules:\n      - { id: unsafe, type: imaginary_oscillator }\nmodules:",
+                ),
                 Vec::new(),
                 "unknown",
             ),
             (
-                VALID_PATCH.to_string(),
+                VALID_KERNEL_PATCH.to_string(),
                 vec!["missing.control".to_string()],
                 "suggested search parameter",
             ),
@@ -1127,9 +925,8 @@ connections:
                 }),
                 requests: Mutex::new(Vec::new()),
             };
-            let error =
-                request_validated_graph_proposal(&provider, &request, Path::new("."), &|| false)
-                    .expect_err("unsafe or invalid proposal should be rejected locally");
+            let error = request_validated_kernel_graph_proposal(&provider, &request, &|| false)
+                .expect_err("unsafe or invalid proposal should be rejected locally");
             assert!(
                 error.to_lowercase().contains(expected),
                 "unexpected error: {error}"
@@ -1146,16 +943,13 @@ connections:
             requests: Mutex::new(Vec::new()),
         };
 
-        let provider_error =
-            request_validated_graph_proposal(&failed, &request, Path::new("."), &|| false)
-                .expect_err("provider failure should be returned");
-        let cancelled = request_validated_graph_proposal(
-            &RecordingProvider::valid(),
-            &request,
-            Path::new("."),
-            &|| true,
-        )
-        .expect_err("cancellation should be returned");
+        let provider_error = request_validated_kernel_graph_proposal(&failed, &request, &|| false)
+            .expect_err("provider failure should be returned");
+        let cancelled =
+            request_validated_kernel_graph_proposal(&RecordingProvider::valid(), &request, &|| {
+                true
+            })
+            .expect_err("cancellation should be returned");
 
         assert!(provider_error.contains("provider unavailable"));
         assert!(cancelled.contains("cancelled"));
@@ -1166,17 +960,12 @@ connections:
         let fixture = acid_fixture();
         let request = proposal_request(&fixture);
 
-        let incompatible = request_validated_graph_proposal(
-            &UnstructuredProvider,
-            &request,
-            Path::new("."),
-            &|| false,
-        )
-        .unwrap_err();
-        let cancelled = request_validated_graph_proposal(
+        let incompatible =
+            request_validated_kernel_graph_proposal(&UnstructuredProvider, &request, &|| false)
+                .unwrap_err();
+        let cancelled = request_validated_kernel_graph_proposal(
             &CancellationIgnoringProvider,
             &request,
-            Path::new("."),
             &|| true,
         )
         .unwrap_err();
@@ -1186,7 +975,7 @@ connections:
     }
 
     #[test]
-    fn local_validation_rejects_empty_fields_bad_yaml_and_unbounded_or_non_numeric_controls() {
+    fn local_validation_rejects_empty_fields_bad_yaml_and_unbounded_controls() {
         let fixture = acid_fixture();
         let request = proposal_request(&fixture);
         let variants = [
@@ -1197,7 +986,7 @@ connections:
                 "patch_yaml",
             ),
             (
-                VALID_PATCH.to_string(),
+                VALID_KERNEL_PATCH.to_string(),
                 "".to_string(),
                 Vec::new(),
                 "explanation",
@@ -1209,55 +998,34 @@ connections:
                 "invalid",
             ),
             (
-                VALID_PATCH.replace("      min: 0.25\n      max: 4\n", ""),
+                VALID_KERNEL_PATCH.replace("min: 0.25, max: 4, ", ""),
                 "explanation".to_string(),
                 vec!["oscillator.pitch".to_string()],
                 "finite bounds",
             ),
             (
-                VALID_PATCH.replace(
-                    "      min: 0.25\n      max: 4",
-                    "      min: 4\n      max: 0.25",
-                ),
+                VALID_KERNEL_PATCH.replace("min: 0.25, max: 4", "min: 4, max: 0.25"),
                 "explanation".to_string(),
                 vec!["oscillator.pitch".to_string()],
-                "numeric with finite ordered bounds",
+                "bounds",
             ),
             (
-                VALID_PATCH.replace(
-                    "      type: number\n      default: 1",
-                    "      type: boolean\n      default: true",
-                ),
+                VALID_KERNEL_PATCH.replace("min: 0.25", "min: .nan"),
                 "explanation".to_string(),
                 vec!["oscillator.pitch".to_string()],
-                "numeric with finite ordered bounds",
+                "finite",
             ),
             (
-                VALID_PATCH.replace("      default: 1", "      default: saw"),
+                VALID_KERNEL_PATCH.replace("max: 4", "max: .inf"),
                 "explanation".to_string(),
                 vec!["oscillator.pitch".to_string()],
-                "numeric with finite ordered bounds",
+                "finite",
             ),
             (
-                VALID_PATCH.replace("      min: 0.25", "      min: .nan"),
+                VALID_KERNEL_PATCH.replace("min: 0.25, max: 4", "min: 1, max: 1"),
                 "explanation".to_string(),
                 vec!["oscillator.pitch".to_string()],
-                "numeric with finite ordered bounds",
-            ),
-            (
-                VALID_PATCH.replace("      max: 4", "      max: .inf"),
-                "explanation".to_string(),
-                vec!["oscillator.pitch".to_string()],
-                "numeric with finite ordered bounds",
-            ),
-            (
-                VALID_PATCH.replace(
-                    "      min: 0.25\n      max: 4",
-                    "      min: 1\n      max: 1",
-                ),
-                "explanation".to_string(),
-                vec!["oscillator.pitch".to_string()],
-                "numeric with finite ordered bounds",
+                "bounds",
             ),
         ];
 
@@ -1270,51 +1038,9 @@ connections:
                 }),
                 requests: Mutex::new(Vec::new()),
             };
-            let error =
-                request_validated_graph_proposal(&provider, &request, Path::new("."), &|| false)
-                    .unwrap_err();
+            let error = request_validated_kernel_graph_proposal(&provider, &request, &|| false)
+                .unwrap_err();
             assert!(error.contains(expected), "unexpected error: {error}");
         }
-    }
-
-    #[test]
-    fn local_safety_helpers_cover_top_level_nested_external_and_defined_modules() {
-        let top_script =
-            crate::patch::load_patch_str(&VALID_PATCH.replace("type: oscillator", "type: script"))
-                .unwrap();
-        let top_external = crate::patch::load_patch_str(
-            &VALID_PATCH.replace("type: oscillator", "type: $unsafe/external@1"),
-        )
-        .unwrap();
-        let nested_script = crate::patch::load_patch_str(&VALID_PATCH.replace(
-            "modules:",
-            "module_definitions:\n  - type: custom\n    modules:\n      - { id: unsafe, type: script }\nmodules:",
-        ))
-        .unwrap();
-        let nested_external = crate::patch::load_patch_str(&VALID_PATCH.replace(
-            "modules:",
-            "module_definitions:\n  - type: custom\n    modules:\n      - { id: unsafe, type: '$unsafe/external@1' }\nmodules:",
-        ))
-        .unwrap();
-        let defined = crate::patch::load_patch_str(&VALID_PATCH.replace(
-            "modules:\n  - id: osc\n    type: oscillator",
-            "module_definitions:\n  - type: custom\n    modules:\n      - { id: internal, type: oscillator }\nmodules:\n  - id: osc\n    type: custom",
-        ))
-        .unwrap();
-        let unknown = crate::patch::load_patch_str(
-            &VALID_PATCH.replace("type: oscillator", "type: unknown_oscillator"),
-        )
-        .unwrap();
-
-        assert!(patch_contains_forbidden_modules(&top_script));
-        assert!(patch_contains_forbidden_modules(&top_external));
-        assert!(patch_contains_forbidden_modules(&nested_script));
-        assert!(patch_contains_forbidden_modules(&nested_external));
-        assert!(!patch_contains_forbidden_modules(&defined));
-        assert_eq!(first_unknown_module_type(&defined), None);
-        assert_eq!(
-            first_unknown_module_type(&unknown),
-            Some("unknown_oscillator")
-        );
     }
 }
