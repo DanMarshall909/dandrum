@@ -1,5 +1,8 @@
+#[cfg(test)]
 use crate::graph::Graph;
-use crate::patch::{PatchDocument, RenderSettings};
+#[cfg(test)]
+use crate::patch::PatchDocument;
+use crate::patch::RenderSettings;
 use crate::script::ScriptEvent;
 
 pub struct Engine;
@@ -31,6 +34,7 @@ pub struct BlockScheduler {
     input_events: Vec<TimedInputEvent>,
 }
 
+#[cfg(test)]
 #[derive(Clone, Debug, PartialEq)]
 pub struct OfflineRenderResult {
     left: Vec<f32>,
@@ -54,6 +58,7 @@ impl Engine {
         BlockScheduler::new(settings.duration_frames, settings.block_size_frames)
     }
 
+    #[cfg(test)]
     pub fn render_offline(
         &self,
         patch: &PatchDocument,
@@ -110,6 +115,7 @@ impl ScheduledInputEvent {
     }
 }
 
+#[cfg(test)]
 impl OfflineRenderResult {
     pub fn left(&self) -> &[f32] {
         &self.left
