@@ -140,11 +140,11 @@ AC built-in-modules :: Built-in module state uses resolved parameters :: DSP sta
 
 AC built-in-modules :: Built-in modules declare ports :: VCA module exposes audio and control ports
   fp 65f4f9a0d565
-  todo not yet mapped to a test
+  test rust:gain_declares_audio_ports_and_a_tunable_gain_control
 
 AC built-in-modules :: Built-in modules declare static parameters :: Built-in declaration supports authoring tools
   fp 086cdf9c149a
-  todo not yet mapped to a test
+  test rust:discovery_uses_one_port_and_static_schema_for_definition_kinds
 
 AC built-in-modules :: Built-in modules declare static parameters :: Built-in parameter declarations are registered
   fp 365791d5a845
@@ -236,7 +236,7 @@ AC capability-discovery :: Module parameter metadata :: Query module parameters
 
 AC capability-discovery :: Module port metadata :: Query module ports
   fp a7762244efbb
-  todo not yet mapped to a test
+  test rust:discovery_uses_one_port_and_static_schema_for_definition_kinds
 
 AC capability-discovery :: Module type enumeration :: Enumerate module types
   fp 2afaeae32d59
@@ -288,7 +288,7 @@ AC composite-authoring :: External composite libraries are optional future exten
 
 AC composite-authoring :: Inline composite module definitions :: Composite definition declared inline
   fp f09100add35e
-  todo not yet mapped to a test
+  test rust:complete_kernel_document_produces_root_and_inline_graph_definitions
 
 AC composite-authoring :: Inline composite module definitions :: Existing composite patches remain valid
   fp 5e79804a9521
@@ -492,11 +492,11 @@ AC drum-kit-patches :: Complete drum kit patch :: Drum kit patch has voice alloc
 
 AC drum-kit-patches :: Complete drum kit patch :: Drum kit patch loads and renders
   fp 00248fc519d0
-  todo not yet mapped to a test
+  test rust:migrated_drum_kit_routes_each_pad_to_its_own_poly_region_and_stereo_bus
 
 AC drum-kit-patches :: Complete drum kit patch :: Drum kit uses generic event routing
   fp 979197412de3
-  todo not yet mapped to a test
+  test rust:migrated_drum_kit_routes_each_pad_to_its_own_poly_region_and_stereo_bus
 
 AC drum-kit-patches :: Drum kit supports multiple stereo outputs :: Drum kit exposes stereo output pairs
   fp f880e986a9e0
@@ -664,7 +664,7 @@ AC feedback-routing :: Audio feedback requires delay boundary :: Audio feedback 
 
 AC feedback-routing :: Audio feedback requires delay boundary :: Instantaneous audio feedback is rejected
   fp d3fc6bde26f3
-  todo not yet mapped to a test
+  test rust:instantaneous_audio_feedback_is_rejected_naming_the_required_primitive
 
 AC feedback-routing :: Control feedback requires scheduling boundary :: Control feedback through control delay is valid
   fp 860fa652ccf0
@@ -672,7 +672,7 @@ AC feedback-routing :: Control feedback requires scheduling boundary :: Control 
 
 AC feedback-routing :: Control feedback requires scheduling boundary :: Instantaneous control feedback is rejected
   fp 8f5291be67fc
-  todo not yet mapped to a test
+  test rust:instantaneous_control_feedback_is_rejected
 
 AC feedback-routing :: Event and script feedback is future scheduled :: Event feedback is queued
   fp 7d0adfcc0c1c
@@ -878,7 +878,7 @@ AC instrument-presets :: Preset YAML document :: Preset document is loaded
 
 AC instrument-presets :: Preset application :: Missing preset value uses default
   fp b2066241dc1d
-  todo not yet mapped to a test
+  test rust:omitted_kernel_preset_targets_keep_root_defaults
 
 AC instrument-presets :: Preset application :: Preset value reaches graph construction
   fp 7bd1b7cce7bc
@@ -886,7 +886,7 @@ AC instrument-presets :: Preset application :: Preset value reaches graph constr
 
 AC instrument-presets :: Preset application :: Render with preset is deterministic
   fp 4d84fa78ccfa
-  todo not yet mapped to a test
+  test rust:kernel_preset_render_is_deterministic_and_uses_aliased_default
 
 AC instrument-presets :: Preset compatibility :: Compatible preset is accepted
   fp fdd9cf33cb3d
@@ -910,15 +910,15 @@ AC instrument-presets :: Preset metadata :: Preset declares metadata
 
 AC instrument-presets :: Preset target validation :: Preset sets declared target
   fp e284b42bc85e
-  todo not yet mapped to a test
+  test rust:kernel_preset_application_changes_root_defaults_before_flattening
 
 AC instrument-presets :: Preset target validation :: Preset sets incompatible value
   fp 74cc25032aeb
-  todo not yet mapped to a test
+  test rust:kernel_preset_rejects_identity_unknown_targets_and_incompatible_values
 
 AC instrument-presets :: Preset target validation :: Preset sets unknown target
   fp dace37ec8a86
-  todo not yet mapped to a test
+  test rust:kernel_preset_rejects_identity_unknown_targets_and_incompatible_values
 
 AC instrument-presets :: Presets cannot change graph structure :: Preset cannot bypass routing validation
   fp a541f8c35f31
@@ -986,23 +986,23 @@ AC modular-routing-graph :: Explicit many-to-one routing :: Multiple sources req
 
 AC modular-routing-graph :: Instrument graph model :: Graph is constructed from patch declarations
   fp 18f898cb8019
-  todo not yet mapped to a test
+  test rust:complete_kernel_document_produces_root_and_inline_graph_definitions
 
 AC modular-routing-graph :: Named typed ports :: Port direction is validated
   fp 006a3a316e90
-  todo not yet mapped to a test
+  test rust:connection_from_input_port_reports_incorrect_direction
 
 AC modular-routing-graph :: Named typed ports :: Port existence is validated
   fp 16553926eb8b
-  todo not yet mapped to a test
+  test rust:connection_to_a_port_the_definition_does_not_declare_reports_a_missing_port
 
 AC modular-routing-graph :: Signal compatibility validation :: Compatible audio output connects to compatible audio input
   fp 139b39b33727
-  todo not yet mapped to a test
+  test rust:matching_channel_counts_connect
 
 AC modular-routing-graph :: Signal compatibility validation :: Incompatible signal types are rejected
   fp 3b0cd91dc5c3
-  todo not yet mapped to a test
+  test rust:event_ports_never_convert_to_audio
 
 AC plugin-integration :: Audio processing remains realtime safe :: Host calls processBlock
   fp 87ab7d33cbc7
@@ -1219,11 +1219,11 @@ AC reverb :: Reverb SHALL use Schroeder/Moorer topology :: Impulse response has 
 
 AC rust-engine-architecture :: Compiled patch drives offline and realtime rendering :: Event routing uses typed event edges
   fp 70a53ab145f9
-  todo not yet mapped to a test
+  test rust:prepared_poly_note_routing_performs_no_realtime_allocations
 
 AC rust-engine-architecture :: Compiled patch drives offline and realtime rendering :: Offline render uses compiled patch
   fp 341ee2b01c77
-  todo not yet mapped to a test
+  test rust:kernel_compensation_aligns_impulses_and_preserves_offline_realtime_parity
 
 AC rust-engine-architecture :: Compiled patch drives offline and realtime rendering :: Realtime render avoids port-name lookup
   fp b0aff7c7ff54
@@ -1231,11 +1231,11 @@ AC rust-engine-architecture :: Compiled patch drives offline and realtime render
 
 AC rust-engine-architecture :: Compiled patch drives offline and realtime rendering :: Realtime render uses compiled render plan
   fp 518e6f5f9ce4
-  todo not yet mapped to a test
+  test rust:full_capacity_poly_activation_mix_and_done_retirement_do_not_allocate
 
 AC rust-engine-architecture :: Compiled patch drives offline and realtime rendering :: Shared compilation preserves parity
   fp 408c58a09a9e
-  todo not yet mapped to a test
+  test rust:kernel_compensation_aligns_impulses_and_preserves_offline_realtime_parity
 
 AC rust-engine-architecture :: DSP algorithms are independent from graph concerns :: DSP can be tested without graph setup
   fp 040c4a1eb13f
@@ -1255,11 +1255,11 @@ AC rust-engine-architecture :: FFI boundary delegates to safe Rust APIs :: Inval
 
 AC rust-engine-architecture :: Patch preparation pipeline :: Invalid patch fails before runtime creation
   fp 602d77c96dcb
-  todo not yet mapped to a test
+  test rust:unknown_static_and_default_names_are_reported_by_kernel_validation
 
 AC rust-engine-architecture :: Patch preparation pipeline :: Valid patch produces prepared runtime
   fp 099dd428ce32
-  todo not yet mapped to a test
+  test rust:kernel_preparation_maps_shared_resources_to_namespaced_compiled_nodes
 
 AC rust-engine-architecture :: Polyphonic realtime rendering uses prepared storage :: Inactive voices do not leak stale output
   fp 513da6044e60
@@ -1382,7 +1382,7 @@ AC script-modules :: Script failures are deterministic and non-fatal :: Runtime 
 
 AC script-modules :: Script modules are graph modules :: Script module participates in routing
   fp b13cddd55112
-  todo not yet mapped to a test
+  test rust:script_counter_routes_events_and_keeps_named_control_outputs_separate
 
 AC script-modules :: Script modules process events and control signals :: Script transforms MIDI event to control output
   fp 0bf2f52b63aa
@@ -1706,19 +1706,19 @@ AC yaml-patch-format :: Presets are parameter sets, not new graph semantics :: P
 
 AC yaml-patch-format :: Public preset surface :: Duplicate preset targets are rejected
   fp 9bf583fa46a6
-  todo not yet mapped to a test
+  test rust:kernel_preset_surface_rejects_duplicate_or_unresolved_aliases
 
 AC yaml-patch-format :: Public preset surface :: Patch declares preset asset target
   fp 5b67c31db7fa
-  todo not yet mapped to a test
+  test rust:kernel_preset_surface_preserves_aliased_root_metadata
 
 AC yaml-patch-format :: Public preset surface :: Patch declares preset parameter target
   fp 3e07e66539e6
-  todo not yet mapped to a test
+  test rust:kernel_preset_surface_preserves_aliased_root_metadata
 
 AC yaml-patch-format :: Public preset surface :: Preset target maps to missing destination
   fp 3a5c8260c2dd
-  todo not yet mapped to a test
+  test rust:kernel_preset_surface_rejects_duplicate_or_unresolved_aliases
 
 AC yaml-patch-format :: Resolved YAML patch preparation :: Resolved patch contains concrete parameters
   fp 0f52c085ce8d
