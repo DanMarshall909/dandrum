@@ -1,7 +1,12 @@
+#[cfg(test)]
 use crate::graph::{Port, SignalType, builtin_ports};
+#[cfg(test)]
 use SignalType::*;
+#[cfg(test)]
 use builtin_ports::*;
+#[cfg(test)]
 use module_types::*;
+#[cfg(test)]
 use std::collections::BTreeMap;
 
 pub mod module_kind;
@@ -9,6 +14,7 @@ pub mod module_types;
 
 /// The type of value a parameter accepts.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[cfg(test)]
 pub enum ParameterValueType {
     Integer,
     Number,
@@ -17,6 +23,7 @@ pub enum ParameterValueType {
 
 /// Metadata describing a single configurable parameter of a built-in module.
 #[derive(Clone, Debug, PartialEq)]
+#[cfg(test)]
 pub struct ParameterMetadata {
     name: String,
     value_type: ParameterValueType,
@@ -81,6 +88,7 @@ pub const SPECTRAL_WINDOW_HANN: &str = "hann";
 pub const NOISE_SEED_PARAMETER: &str = "seed";
 pub const NOISE_DEFAULT_SEED: u32 = 0;
 
+#[cfg(test)]
 impl ParameterMetadata {
     pub fn new(name: impl Into<String>, value_type: ParameterValueType) -> Self {
         Self {
@@ -151,12 +159,14 @@ impl ParameterMetadata {
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[cfg(test)]
 pub enum ModuleCategory {
     Primitive,
     Script,
 }
 
 #[derive(Clone, Debug, PartialEq)]
+#[cfg(test)]
 pub struct BuiltInModuleDefinition {
     module_type: String,
     inputs: Vec<Port>,
@@ -167,10 +177,12 @@ pub struct BuiltInModuleDefinition {
 }
 
 #[derive(Clone, Debug, PartialEq)]
+#[cfg(test)]
 pub struct BuiltInModuleRegistry {
     definitions: BTreeMap<String, BuiltInModuleDefinition>,
 }
 
+#[cfg(test)]
 impl BuiltInModuleDefinition {
     pub fn new(module_type: impl Into<String>) -> Self {
         Self {
@@ -260,6 +272,7 @@ impl BuiltInModuleDefinition {
     }
 }
 
+#[cfg(test)]
 impl BuiltInModuleRegistry {
     pub fn new() -> Self {
         Self::from_definitions(vec![
@@ -319,6 +332,7 @@ impl BuiltInModuleRegistry {
     }
 }
 
+#[cfg(test)]
 fn midi_input_definition() -> BuiltInModuleDefinition {
     BuiltInModuleDefinition::new(MIDI_INPUT).with_output(Port::output(EVENTS, Event))
 }
@@ -328,6 +342,7 @@ fn audio_output_definition() -> BuiltInModuleDefinition {
     BuiltInModuleDefinition::new(AUDIO_OUTPUT).with_inputs([(LEFT, Audio), (RIGHT, Audio)])
 }
 
+#[cfg(test)]
 fn oscillator_definition() -> BuiltInModuleDefinition {
     BuiltInModuleDefinition::new(OSCILLATOR)
         .with_inputs([(PITCH, Control)])
@@ -358,6 +373,7 @@ fn oscillator_definition() -> BuiltInModuleDefinition {
         .with_example("- id: osc\n  type: oscillator\n  parameters:\n    waveform: sine")
 }
 
+#[cfg(test)]
 fn gain_definition() -> BuiltInModuleDefinition {
     BuiltInModuleDefinition::new(module_types::GAIN)
         .with_inputs([(AUDIO_IN, Audio), (builtin_ports::GAIN, Control)])
@@ -371,18 +387,21 @@ fn gain_definition() -> BuiltInModuleDefinition {
         )
 }
 
+#[cfg(test)]
 fn audio_mixer_definition() -> BuiltInModuleDefinition {
     BuiltInModuleDefinition::new(AUDIO_MIXER)
         .with_input(Port::mixing_input(INPUTS, Audio))
         .with_output(Port::output(MIX, Audio))
 }
 
+#[cfg(test)]
 fn control_mixer_definition() -> BuiltInModuleDefinition {
     BuiltInModuleDefinition::new(CONTROL_MIXER)
         .with_input(Port::mixing_input(INPUTS, Control))
         .with_output(Port::output(SUM, Control))
 }
 
+#[cfg(test)]
 fn adsr_definition() -> BuiltInModuleDefinition {
     BuiltInModuleDefinition::new(ADSR)
         .with_inputs([
@@ -419,12 +438,14 @@ fn adsr_definition() -> BuiltInModuleDefinition {
         )
 }
 
+#[cfg(test)]
 fn lfo_definition() -> BuiltInModuleDefinition {
     BuiltInModuleDefinition::new(LFO)
         .with_inputs([(RATE, Control)])
         .with_output(Port::output(VALUE, Control))
 }
 
+#[cfg(test)]
 fn filter_definition() -> BuiltInModuleDefinition {
     BuiltInModuleDefinition::new(FILTER)
         .with_inputs([
@@ -465,24 +486,28 @@ fn filter_definition() -> BuiltInModuleDefinition {
         )
 }
 
+#[cfg(test)]
 fn audio_delay_one_sample_definition() -> BuiltInModuleDefinition {
     BuiltInModuleDefinition::new(AUDIO_DELAY_ONE_SAMPLE)
         .with_inputs([(AUDIO_IN, Audio)])
         .with_output(Port::output(AUDIO_OUT, Audio))
 }
 
+#[cfg(test)]
 fn block_delay_definition() -> BuiltInModuleDefinition {
     BuiltInModuleDefinition::new(BLOCK_DELAY)
         .with_inputs([(AUDIO_IN, Audio)])
         .with_output(Port::output(AUDIO_OUT, Audio))
 }
 
+#[cfg(test)]
 fn control_delay_definition() -> BuiltInModuleDefinition {
     BuiltInModuleDefinition::new(CONTROL_DELAY)
         .with_inputs([(VALUE, Control)])
         .with_output(Port::output(VALUE, Control))
 }
 
+#[cfg(test)]
 fn script_definition() -> BuiltInModuleDefinition {
     BuiltInModuleDefinition::new(SCRIPT)
         .with_module_category(ModuleCategory::Script)
@@ -498,6 +523,7 @@ fn script_definition() -> BuiltInModuleDefinition {
         )
 }
 
+#[cfg(test)]
 fn sampler_definition() -> BuiltInModuleDefinition {
     BuiltInModuleDefinition::new(SAMPLER)
         .with_inputs([
@@ -520,12 +546,14 @@ fn sampler_definition() -> BuiltInModuleDefinition {
 /// output. Control and audio share the same per-sample buffer representation,
 /// so the promotion is a buffer copy; the node exists so the conversion is a
 /// visible, inspectable graph node rather than an implicit coercion.
+#[cfg(test)]
 fn control_to_audio_definition() -> BuiltInModuleDefinition {
     BuiltInModuleDefinition::new(CONTROL_TO_AUDIO)
         .with_inputs([(IN, Control)])
         .with_output(Port::output(OUT, Audio))
 }
 
+#[cfg(test)]
 fn compensation_delay_definition() -> BuiltInModuleDefinition {
     BuiltInModuleDefinition::new(COMPENSATION_DELAY)
         .with_inputs([(AUDIO_IN, Audio)])
@@ -536,12 +564,14 @@ fn compensation_delay_definition() -> BuiltInModuleDefinition {
         ))
 }
 
+#[cfg(test)]
 fn note_to_rate_definition() -> BuiltInModuleDefinition {
     BuiltInModuleDefinition::new(NOTE_TO_RATE)
         .with_inputs([(EVENTS, Event)])
         .with_output(Port::output(RATE, Control))
 }
 
+#[cfg(test)]
 fn event_filter_definition() -> BuiltInModuleDefinition {
     BuiltInModuleDefinition::new(EVENT_FILTER)
         .with_inputs([(EVENTS_IN, Event)])
@@ -563,6 +593,7 @@ fn event_filter_definition() -> BuiltInModuleDefinition {
         )
 }
 
+#[cfg(test)]
 fn dynamics_processor_definition() -> BuiltInModuleDefinition {
     BuiltInModuleDefinition::new(DYNAMICS_PROCESSOR)
         .with_inputs([
@@ -602,6 +633,7 @@ fn dynamics_processor_definition() -> BuiltInModuleDefinition {
         )
 }
 
+#[cfg(test)]
 fn saturator_definition() -> BuiltInModuleDefinition {
     BuiltInModuleDefinition::new(SATURATOR)
         .with_inputs([
@@ -613,12 +645,14 @@ fn saturator_definition() -> BuiltInModuleDefinition {
         .with_output(Port::output(AUDIO_OUT, Audio))
 }
 
+#[cfg(test)]
 fn convolution_definition() -> BuiltInModuleDefinition {
     BuiltInModuleDefinition::new(CONVOLUTION)
         .with_inputs([(AUDIO_IN, Audio), (MIX, Control)])
         .with_output(Port::output(AUDIO_OUT, Audio))
 }
 
+#[cfg(test)]
 fn frequency_splitter_definition() -> BuiltInModuleDefinition {
     BuiltInModuleDefinition::new(FREQUENCY_SPLITTER)
         .with_inputs([(AUDIO_IN, Audio), (CROSSOVER_HZ, Control)])
@@ -627,6 +661,7 @@ fn frequency_splitter_definition() -> BuiltInModuleDefinition {
         .with_output(Port::output("high", Audio))
 }
 
+#[cfg(test)]
 fn spectral_processor_definition() -> BuiltInModuleDefinition {
     BuiltInModuleDefinition::new(SPECTRAL_PROCESSOR)
         .with_inputs([(AUDIO_IN, Audio), (THRESHOLD, Control), (MIX, Control)])
@@ -669,6 +704,7 @@ fn spectral_processor_definition() -> BuiltInModuleDefinition {
         )
 }
 
+#[cfg(test)]
 fn echo_definition() -> BuiltInModuleDefinition {
     BuiltInModuleDefinition::new(ECHO)
         .with_inputs([(AUDIO_IN_L, Audio), (AUDIO_IN_R, Audio)])
@@ -687,6 +723,7 @@ fn echo_definition() -> BuiltInModuleDefinition {
         .with_parameter(interpolation_parameter())
 }
 
+#[cfg(test)]
 fn interpolation_parameter() -> ParameterMetadata {
     ParameterMetadata::new(INTERPOLATION_PARAMETER, ParameterValueType::Text)
         .with_default(INTERPOLATION_LINEAR)
@@ -694,6 +731,7 @@ fn interpolation_parameter() -> ParameterMetadata {
         .with_description("fractional-delay interpolation quality")
 }
 
+#[cfg(test)]
 fn noise_definition() -> BuiltInModuleDefinition {
     BuiltInModuleDefinition::new(NOISE)
         .with_output(Port::output(AUDIO, Audio))
@@ -704,12 +742,14 @@ fn noise_definition() -> BuiltInModuleDefinition {
         )
 }
 
+#[cfg(test)]
 fn impulse_definition() -> BuiltInModuleDefinition {
     BuiltInModuleDefinition::new(IMPULSE)
         .with_inputs([(TRIGGER, Event)])
         .with_output(Port::output(AUDIO, Audio))
 }
 
+#[cfg(test)]
 fn multiply_definition() -> BuiltInModuleDefinition {
     // Multiply is audio-only. Both inputs accept audio signals and produce
     // an audio-rate product. Control-rate multiplication is deferred until
@@ -719,6 +759,7 @@ fn multiply_definition() -> BuiltInModuleDefinition {
         .with_output(Port::output(AUDIO_OUT, Audio))
 }
 
+#[cfg(test)]
 fn note_to_control_definition() -> BuiltInModuleDefinition {
     BuiltInModuleDefinition::new(NOTE_TO_CONTROL)
         .with_inputs([(EVENTS, Event)])
@@ -729,6 +770,7 @@ fn note_to_control_definition() -> BuiltInModuleDefinition {
         .with_output(Port::output("slide", Control))
 }
 
+#[cfg(test)]
 fn envelope_follower_definition() -> BuiltInModuleDefinition {
     BuiltInModuleDefinition::new(ENVELOPE_FOLLOWER)
         .with_inputs([
@@ -749,6 +791,7 @@ fn envelope_follower_definition() -> BuiltInModuleDefinition {
         .with_example("- id: follower\n  type: envelope_follower\n  parameters:\n    mode: peak")
 }
 
+#[cfg(test)]
 fn curve_mapper_definition() -> BuiltInModuleDefinition {
     BuiltInModuleDefinition::new(CURVE_MAPPER)
         .with_inputs([
@@ -808,6 +851,7 @@ fn curve_mapper_definition() -> BuiltInModuleDefinition {
         )
 }
 
+#[cfg(test)]
 fn slew_definition() -> BuiltInModuleDefinition {
     // A gated one-pole-style portamento on a control signal: when the `glide`
     // gate is open it ramps its output toward `value` over `time_ms`; when the
@@ -823,6 +867,7 @@ fn slew_definition() -> BuiltInModuleDefinition {
         )
 }
 
+#[cfg(test)]
 fn decay_definition() -> BuiltInModuleDefinition {
     BuiltInModuleDefinition::new(module_types::DECAY)
         .with_inputs([(TRIGGER, Event), (TIME_MS, Control)])
@@ -844,6 +889,7 @@ fn decay_definition() -> BuiltInModuleDefinition {
         )
 }
 
+#[cfg(test)]
 fn reverb_definition() -> BuiltInModuleDefinition {
     BuiltInModuleDefinition::new(REVERB)
         .with_inputs([

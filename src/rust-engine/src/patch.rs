@@ -1,4 +1,5 @@
 use std::collections::BTreeMap;
+#[cfg(test)]
 use std::collections::BTreeSet;
 use std::fmt;
 use std::fs;
@@ -6,22 +7,28 @@ use std::path::{Path, PathBuf};
 
 use serde::{Deserialize, Serialize};
 
+#[cfg(test)]
 use crate::builtins::{
     BuiltInModuleDefinition, BuiltInModuleRegistry, ParameterMetadata, ParameterValueType,
     SCRIPT_LANGUAGE_PARAMETER, SCRIPT_LANGUAGE_RHAI, SCRIPT_SOURCE_PARAMETER, module_types,
 };
+#[cfg(test)]
 use crate::diagnostics::{self, Diagnostic, Diagnostics, Severity, error_codes};
+#[cfg(test)]
 use crate::script::{RhaiScriptRuntime, ScriptPrepareError, ScriptRuntimeLimits};
 
 #[path = "patch_module.rs"]
+#[cfg(test)]
 mod patch_module;
 
+#[cfg(test)]
 pub use patch_module::{
     ModuleBindingDeclaration, ModuleDefinitionDeclaration, ModuleInputDeclaration,
     ModuleOutputDeclaration,
 };
 
 #[derive(Clone, Debug, Deserialize, PartialEq)]
+#[cfg(test)]
 pub struct PatchDocument {
     pub metadata: PatchMetadata,
     #[serde(default)]
@@ -56,6 +63,7 @@ pub struct InstrumentIdentity {
 }
 
 #[derive(Clone, Debug, Default, Deserialize, PartialEq)]
+#[cfg(test)]
 pub struct PresetSurfaceDeclaration {
     #[serde(default)]
     pub parameters: Vec<PresetParameterTargetDeclaration>,
@@ -87,6 +95,7 @@ pub struct PresetMetadata {
 }
 
 #[derive(Clone, Debug, Deserialize, PartialEq)]
+#[cfg(test)]
 pub struct PresetParameterTargetDeclaration {
     pub name: String,
     #[serde(rename = "type")]
@@ -100,6 +109,7 @@ pub struct PresetParameterTargetDeclaration {
 }
 
 #[derive(Clone, Debug, Deserialize, PartialEq, Eq)]
+#[cfg(test)]
 pub struct PresetAssetTargetDeclaration {
     pub name: String,
     pub kind: AssetKind,
@@ -109,6 +119,7 @@ pub struct PresetAssetTargetDeclaration {
 
 #[derive(Clone, Copy, Debug, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "snake_case")]
+#[cfg(test)]
 pub enum PresetTargetType {
     Boolean,
     Number,
@@ -117,6 +128,7 @@ pub enum PresetTargetType {
 }
 
 #[derive(Clone, Debug, Default, Deserialize, PartialEq, Eq)]
+#[cfg(test)]
 pub struct PatchMetadata {
     pub name: String,
     pub version: Option<String>,
@@ -138,6 +150,7 @@ pub struct RenderSettings {
 }
 
 #[derive(Clone, Debug, Deserialize, PartialEq, Eq)]
+#[cfg(test)]
 pub struct AssetDeclaration {
     pub id: String,
     pub kind: AssetKind,
@@ -146,12 +159,14 @@ pub struct AssetDeclaration {
 
 #[derive(Clone, Debug, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "snake_case")]
+#[cfg(test)]
 pub enum AssetKind {
     Sample,
     Script,
 }
 
 #[derive(Clone, Debug, Deserialize, PartialEq)]
+#[cfg(test)]
 pub struct ModuleDeclaration {
     pub id: String,
     #[serde(rename = "type")]
@@ -166,6 +181,7 @@ pub struct ModuleDeclaration {
     pub extra_fields: BTreeMap<String, serde_yaml::Value>,
 }
 
+#[cfg(test)]
 const EVENT_ROUTING_SIGNAL_CHAIN_FIELDS: &[&str] = &[
     "module_definitions",
     "modules",
@@ -174,6 +190,7 @@ const EVENT_ROUTING_SIGNAL_CHAIN_FIELDS: &[&str] = &[
     "audio_outputs",
     "mix_outputs",
 ];
+#[cfg(test)]
 const EVENT_ROUTING_SEQUENCING_FIELDS: &[&str] = &[
     "pattern",
     "patterns",
@@ -182,7 +199,9 @@ const EVENT_ROUTING_SEQUENCING_FIELDS: &[&str] = &[
     "transport",
     "clock",
 ];
+#[cfg(test)]
 const SCRIPT_SOURCE_FIELD: &str = "source";
+#[cfg(test)]
 const SCRIPT_DISALLOWED_API_TOKENS: &[&str] = &[
     "std::fs",
     "fs::",
@@ -195,6 +214,7 @@ const SCRIPT_DISALLOWED_API_TOKENS: &[&str] = &[
     "random",
     "alloc",
 ];
+#[cfg(test)]
 const PRESET_STRUCTURAL_FIELDS: &[&str] = &[
     "module_definitions",
     "modules",
@@ -209,6 +229,7 @@ const PRESET_STRUCTURAL_FIELDS: &[&str] = &[
 ];
 
 #[derive(Clone, Debug, Deserialize, PartialEq, Eq)]
+#[cfg(test)]
 pub struct PortDeclaration {
     pub name: String,
     pub signal_type: SignalType,
@@ -216,6 +237,7 @@ pub struct PortDeclaration {
 
 #[derive(Clone, Debug, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "snake_case")]
+#[cfg(test)]
 pub enum SignalType {
     Audio,
     Control,
@@ -231,24 +253,28 @@ pub enum ParameterValue {
 }
 
 #[derive(Clone, Debug, Deserialize, PartialEq, Eq)]
+#[cfg(test)]
 pub struct ConnectionDeclaration {
     pub from: PortReference,
     pub to: PortReference,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
+#[cfg(test)]
 pub struct PortReference {
     pub module_id: String,
     pub port_name: String,
 }
 
 #[derive(Clone, Debug, Deserialize, PartialEq, Eq)]
+#[cfg(test)]
 pub struct VoiceAllocation {
     pub max_voices: u32,
     #[serde(default)]
     pub stealing: VoiceStealingPolicy,
 }
 
+#[cfg(test)]
 impl Default for VoiceAllocation {
     fn default() -> Self {
         Self {
@@ -260,6 +286,7 @@ impl Default for VoiceAllocation {
 
 #[derive(Clone, Debug, Default, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "snake_case")]
+#[cfg(test)]
 pub enum VoiceStealingPolicy {
     #[default]
     Disabled,
@@ -267,6 +294,7 @@ pub enum VoiceStealingPolicy {
 }
 
 #[derive(Debug)]
+#[cfg(test)]
 pub enum PatchLoadError {
     UnsupportedFormat {
         path: PathBuf,
@@ -297,10 +325,12 @@ pub enum PresetLoadError {
 }
 
 #[derive(Clone, Debug, PartialEq)]
+#[cfg(test)]
 pub struct PatchValidationError {
     diagnostics: Diagnostics,
 }
 
+#[cfg(test)]
 impl PatchValidationError {
     pub fn new() -> Self {
         Self {
@@ -325,6 +355,7 @@ impl PatchValidationError {
     }
 }
 
+#[cfg(test)]
 pub fn load_patch_file(path: impl AsRef<Path>) -> Result<PatchDocument, PatchLoadError> {
     let path = path.as_ref();
 
@@ -348,6 +379,7 @@ pub fn load_patch_file(path: impl AsRef<Path>) -> Result<PatchDocument, PatchLoa
     })
 }
 
+#[cfg(test)]
 pub fn load_patch_str(yaml: &str) -> Result<PatchDocument, PatchLoadError> {
     serde_yaml::from_str(yaml).map_err(|error| PatchLoadError::ParseFailed {
         path: None,
@@ -385,6 +417,7 @@ pub fn load_preset_str(yaml: &str) -> Result<PresetDocument, PresetLoadError> {
     })
 }
 
+#[cfg(test)]
 pub fn validate_preset_compatibility(
     patch: &PatchDocument,
     preset: &PresetDocument,
@@ -437,6 +470,7 @@ pub fn validate_preset_compatibility(
     }
 }
 
+#[cfg(test)]
 pub fn validate_preset(
     patch: &PatchDocument,
     preset: &PresetDocument,
@@ -458,6 +492,7 @@ pub fn validate_preset(
     }
 }
 
+#[cfg(test)]
 pub fn apply_preset(
     patch: &PatchDocument,
     preset: &PresetDocument,
@@ -503,6 +538,7 @@ pub fn apply_preset(
     Ok(patched)
 }
 
+#[cfg(test)]
 fn apply_preset_parameter_value(
     patch: &mut PatchDocument,
     destination: &PortReference,
@@ -521,6 +557,7 @@ fn apply_preset_parameter_value(
         .insert(destination.port_name.clone(), value);
 }
 
+#[cfg(test)]
 fn validate_preset_structural_fields(
     preset: &PresetDocument,
     diagnostics: &mut PatchValidationError,
@@ -538,6 +575,7 @@ fn validate_preset_structural_fields(
     }
 }
 
+#[cfg(test)]
 fn validate_preset_values(
     patch: &PatchDocument,
     preset: &PresetDocument,
@@ -596,6 +634,7 @@ fn validate_preset_values(
     }
 }
 
+#[cfg(test)]
 fn validate_preset_asset_values(
     patch: &PatchDocument,
     preset: &PresetDocument,
@@ -642,6 +681,7 @@ fn validate_preset_asset_values(
     }
 }
 
+#[cfg(test)]
 pub fn resolve_module_parameters(
     patch: &PatchDocument,
 ) -> Result<BTreeMap<String, BTreeMap<String, ParameterValue>>, PatchValidationError> {
@@ -689,6 +729,7 @@ pub fn resolve_module_parameters(
     Ok(resolved)
 }
 
+#[cfg(test)]
 fn default_parameter_value(metadata: &ParameterMetadata) -> Option<ParameterValue> {
     let default = metadata.default()?;
 
@@ -700,6 +741,7 @@ fn default_parameter_value(metadata: &ParameterMetadata) -> Option<ParameterValu
     }
 }
 
+#[cfg(test)]
 pub fn validate_patch_schema(patch: &PatchDocument) -> Result<(), PatchValidationError> {
     let mut result = PatchValidationError::new();
     let registry = BuiltInModuleRegistry::new();
@@ -834,6 +876,7 @@ pub fn validate_patch_schema(patch: &PatchDocument) -> Result<(), PatchValidatio
     }
 }
 
+#[cfg(test)]
 fn validate_script_module(module: &ModuleDeclaration, diagnostics: &mut PatchValidationError) {
     for input in &module.inputs {
         if input.signal_type == SignalType::Audio {
@@ -976,6 +1019,7 @@ fn validate_script_module(module: &ModuleDeclaration, diagnostics: &mut PatchVal
     }
 }
 
+#[cfg(test)]
 fn script_source(module: &ModuleDeclaration) -> Option<Result<&str, Diagnostic>> {
     if let Some(source) = module.parameters.get(SCRIPT_SOURCE_PARAMETER) {
         return Some(match source {
@@ -1007,6 +1051,7 @@ fn script_source(module: &ModuleDeclaration) -> Option<Result<&str, Diagnostic>>
     })
 }
 
+#[cfg(test)]
 fn validate_event_routing_module(
     module: &ModuleDeclaration,
     diagnostics: &mut PatchValidationError,
@@ -1054,6 +1099,7 @@ fn validate_event_routing_module(
     }
 }
 
+#[cfg(test)]
 fn validate_declared_parameters_for_module(
     source_label: &str,
     module_id: &str,
@@ -1090,6 +1136,7 @@ fn validate_declared_parameters_for_module(
     }
 }
 
+#[cfg(test)]
 fn validate_parameter_value(
     source_label: &str,
     module_id: &str,
@@ -1172,6 +1219,7 @@ fn validate_parameter_value(
     }
 }
 
+#[cfg(test)]
 fn parameter_value_matches_type(value: &ParameterValue, expected: ParameterValueType) -> bool {
     match (value, expected) {
         (ParameterValue::Number(value), ParameterValueType::Integer) => value.fract() == 0.0,
@@ -1181,6 +1229,7 @@ fn parameter_value_matches_type(value: &ParameterValue, expected: ParameterValue
     }
 }
 
+#[cfg(test)]
 fn parameter_type_name(value_type: ParameterValueType) -> &'static str {
     match value_type {
         ParameterValueType::Integer => "integer",
@@ -1189,6 +1238,7 @@ fn parameter_type_name(value_type: ParameterValueType) -> &'static str {
     }
 }
 
+#[cfg(test)]
 fn parameter_value_type_name(value: &ParameterValue) -> &'static str {
     match value {
         ParameterValue::Boolean(_) => "boolean",
@@ -1197,6 +1247,7 @@ fn parameter_value_type_name(value: &ParameterValue) -> &'static str {
     }
 }
 
+#[cfg(test)]
 fn declared_parameter_names(definition: &BuiltInModuleDefinition) -> String {
     let names = definition
         .parameters()
@@ -1211,6 +1262,7 @@ fn declared_parameter_names(definition: &BuiltInModuleDefinition) -> String {
     }
 }
 
+#[cfg(test)]
 fn validate_sampler_asset_reference(
     module: &ModuleDeclaration,
     patch: &PatchDocument,
@@ -1279,6 +1331,7 @@ fn validate_sampler_asset_reference(
     }
 }
 
+#[cfg(test)]
 fn collect_referenced_asset_ids<'a>(patch: &'a PatchDocument) -> BTreeSet<&'a str> {
     let mut ids: BTreeSet<&'a str> = BTreeSet::new();
 
@@ -1299,6 +1352,7 @@ fn collect_referenced_asset_ids<'a>(patch: &'a PatchDocument) -> BTreeSet<&'a st
     ids
 }
 
+#[cfg(test)]
 fn validate_asset_usage(patch: &PatchDocument, diagnostics: &mut PatchValidationError) {
     let referenced = collect_referenced_asset_ids(patch);
 
@@ -1316,6 +1370,7 @@ fn validate_asset_usage(patch: &PatchDocument, diagnostics: &mut PatchValidation
     }
 }
 
+#[cfg(test)]
 fn validate_selected_preset(patch: &PatchDocument, diagnostics: &mut PatchValidationError) {
     let Some(name) = patch.selected_preset.as_deref() else {
         return;
@@ -1339,6 +1394,7 @@ fn validate_selected_preset(patch: &PatchDocument, diagnostics: &mut PatchValida
     }
 }
 
+#[cfg(test)]
 fn validate_patch_level_parameters(
     patch: &PatchDocument,
     registry: &BuiltInModuleRegistry,
@@ -1383,6 +1439,7 @@ fn validate_patch_level_parameters(
     }
 }
 
+#[cfg(test)]
 fn validate_presets(
     patch: &PatchDocument,
     registry: &BuiltInModuleRegistry,
@@ -1422,6 +1479,7 @@ fn validate_presets(
     }
 }
 
+#[cfg(test)]
 fn validate_preset_surface(
     patch: &PatchDocument,
     registry: &BuiltInModuleRegistry,
@@ -1481,6 +1539,7 @@ fn validate_preset_surface(
     }
 }
 
+#[cfg(test)]
 fn validate_preset_target_name(
     name: &str,
     target_names: &mut BTreeSet<String>,
@@ -1501,6 +1560,7 @@ fn validate_preset_target_name(
     }
 }
 
+#[cfg(test)]
 fn validate_preset_parameter_destination(
     patch: &PatchDocument,
     registry: &BuiltInModuleRegistry,
@@ -1565,6 +1625,7 @@ fn validate_preset_parameter_destination(
     }
 }
 
+#[cfg(test)]
 fn validate_preset_asset_destination(
     patch: &PatchDocument,
     registry: &BuiltInModuleRegistry,
@@ -1632,6 +1693,7 @@ fn validate_preset_asset_destination(
     }
 }
 
+#[cfg(test)]
 fn preset_value_matches_type(value: &ParameterValue, expected: PresetTargetType) -> bool {
     match (value, expected) {
         (ParameterValue::Boolean(_), PresetTargetType::Boolean) => true,
@@ -1642,6 +1704,7 @@ fn preset_value_matches_type(value: &ParameterValue, expected: PresetTargetType)
     }
 }
 
+#[cfg(test)]
 fn preset_target_type_name(value_type: PresetTargetType) -> &'static str {
     match value_type {
         PresetTargetType::Boolean => "boolean",
@@ -1651,6 +1714,7 @@ fn preset_target_type_name(value_type: PresetTargetType) -> &'static str {
     }
 }
 
+#[cfg(test)]
 impl<'de> Deserialize<'de> for PortReference {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
@@ -1674,6 +1738,7 @@ impl<'de> Deserialize<'de> for PortReference {
     }
 }
 
+#[cfg(test)]
 impl fmt::Display for PatchLoadError {
     fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
@@ -1729,8 +1794,10 @@ impl fmt::Display for PresetLoadError {
 
 impl std::error::Error for PresetLoadError {}
 
+#[cfg(test)]
 impl std::error::Error for PatchLoadError {}
 
+#[cfg(test)]
 impl PatchLoadError {
     pub fn to_diagnostic(&self) -> Diagnostic {
         match self {
@@ -1763,6 +1830,7 @@ impl PatchLoadError {
     }
 }
 
+#[cfg(test)]
 impl PatchValidationError {
     pub fn to_diagnostics(&self) -> Diagnostics {
         self.diagnostics.clone()
@@ -1773,12 +1841,14 @@ impl PatchValidationError {
     }
 }
 
+#[cfg(test)]
 impl fmt::Display for PortReference {
     fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(formatter, "{}.{}", self.module_id, self.port_name)
     }
 }
 
+#[cfg(test)]
 impl fmt::Display for PatchValidationError {
     fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(formatter, "patch validation failed")?;
@@ -1791,6 +1861,7 @@ impl fmt::Display for PatchValidationError {
     }
 }
 
+#[cfg(test)]
 impl std::error::Error for PatchValidationError {}
 
 fn is_yaml_path(path: &Path) -> bool {
@@ -1799,6 +1870,7 @@ fn is_yaml_path(path: &Path) -> bool {
         .is_some_and(|extension| matches!(extension, "yaml" | "yml"))
 }
 
+#[cfg(test)]
 pub(super) fn validate_port_reference(
     label: &str,
     reference: &PortReference,
