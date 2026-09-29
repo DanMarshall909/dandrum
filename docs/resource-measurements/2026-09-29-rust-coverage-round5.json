@@ -1,0 +1,15 @@
+{
+  "command": [
+    "scripts/check-rust-coverage"
+  ],
+  "startedAtUtc": "2026-09-29T10:44:38.110016+00:00",
+  "durationSecondsExact": 58.11,
+  "exitCode": 0,
+  "peakTaskRssMiB": 2005,
+  "peakTaskSwapMiB": 0,
+  "minimumAvailableMiB": 20049,
+  "taskConcurrency": 1,
+  "samplePeriodMilliseconds": 50,
+  "samples": 1102,
+  "method": "Sum VmRSS and VmSwap from /proc status for the launched process group; MemAvailable from /proc/meminfo."
+}
