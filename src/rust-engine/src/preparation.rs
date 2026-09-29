@@ -1925,6 +1925,63 @@ mod tests {
     }
 
     #[test]
+    fn stolen_kernel_poly_oscillator_continues_phase_until_engine_reset() {
+        let voice = GraphDefinition::new("free_running_voice")
+            .with_port(
+                KernelPort::output("audio", SignalType::Audio, 1)
+                    .maps_from(kernel_ref("oscillator", builtin_ports::AUDIO)),
+            )
+            .with_node(Node::new(
+                NodeId::new("oscillator"),
+                module_types::OSCILLATOR,
+            ));
+        let root = GraphDefinition::new("root")
+            .with_port(
+                KernelPort::output("left", SignalType::Audio, 1)
+                    .maps_from(kernel_ref("voices", "audio")),
+            )
+            .with_node(poly_node_with_allocation(
+                "voices",
+                voice.name(),
+                1,
+                crate::kernel::POLY_ALLOCATION_OLDEST_STEAL,
+            ));
+        let prepared = prepare_kernel_graph_with_buses(
+            &root,
+            &builtin_registry().with_definition(voice),
+            &KERNEL_RENDER_SETTINGS,
+            &HostBuses::new().with_output("left", 1),
+        )
+        .expect("free-running oscillator voice prepares");
+        let frames = KERNEL_RENDER_SETTINGS.block_size_frames as usize;
+        let render = |runtime: &mut RealtimeGraphProcessor| {
+            let mut outputs = vec![vec![vec![0.0; frames]]];
+            assert_eq!(runtime.render_root_outputs(&mut outputs), frames);
+            outputs[0][0].clone()
+        };
+
+        let mut runtime = runtime_for(&prepared);
+        runtime.note_on(60, 100);
+        let first = render(&mut runtime);
+        assert_eq!(
+            first[0], -1.0,
+            "the default saw starts at negative full scale"
+        );
+        let expected_continued_onset = -1.0 + 2.0 * 8.0 * 220.0 / 48_000.0;
+
+        runtime.note_on(61, 100);
+        let continued = render(&mut runtime);
+        assert!(
+            (continued[0] - expected_continued_onset).abs() < 0.000001,
+            "a stolen oscillator must keep its phase: {continued:?}"
+        );
+
+        runtime.reset();
+        runtime.note_on(62, 100);
+        assert_eq!(render(&mut runtime), first);
+    }
+
+    #[test]
     fn engine_reset_retires_kernel_poly_voices_and_allows_a_new_note() {
         let prepared = prepare_audio_poly(constant_voice("constant_voice", 0.25), 1);
         let mut runtime = runtime_for(&prepared);

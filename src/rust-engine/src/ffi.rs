@@ -1368,7 +1368,7 @@ mod tests {
     }
 
     #[test]
-    fn kernel_ffi_poly_voice_starts_and_steals_at_the_event_sample() {
+    fn kernel_ffi_poly_voice_starts_steals_and_resets() {
         let dir = tempfile::tempdir().unwrap();
         let path = dir.path().join("poly-timing.yaml");
         std::fs::write(
@@ -1413,6 +1413,94 @@ mod tests {
         for sample in &samples[4..] {
             assert!((*sample - 64.0 / 127.0).abs() < 0.0001, "{samples:?}");
         }
+
+        assert!(unsafe { dandrum_kernel_reset(engine) });
+        samples.fill(f32::NAN);
+        assert_eq!(
+            unsafe { dandrum_kernel_render(engine, std::ptr::null(), 0, &output, 1, 8) },
+            8
+        );
+        assert_eq!(samples, [0.0; 8], "reset must retire the active voice");
+
+        assert!(unsafe { dandrum_kernel_note_on_at(engine, 62, 127, 0) });
+        assert_eq!(
+            unsafe { dandrum_kernel_render(engine, std::ptr::null(), 0, &output, 1, 8) },
+            8
+        );
+        assert_eq!(samples, [1.0; 8], "the reset engine must accept a new note");
+        unsafe { dandrum_kernel_destroy(engine) };
+    }
+
+    #[test]
+    fn kernel_ffi_reset_clears_effect_tail_and_allows_reuse() {
+        let patch = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("../../examples/patches/reverb-demo.yaml");
+        let path = std::ffi::CString::new(patch.to_str().unwrap()).unwrap();
+        let input_name = std::ffi::CString::new("in").unwrap();
+        let output_name = std::ffi::CString::new("master").unwrap();
+        let declarations = [
+            DandrumKernelBusDeclaration {
+                name: input_name.as_ptr(),
+                direction: 1,
+                channel_count: 2,
+            },
+            DandrumKernelBusDeclaration {
+                name: output_name.as_ptr(),
+                direction: 2,
+                channel_count: 2,
+            },
+        ];
+        let engine = unsafe {
+            dandrum_kernel_prepare_file(path.as_ptr(), 48_000, 128, declarations.as_ptr(), 2)
+        };
+        assert!(!engine.is_null());
+
+        let mut source = [0.0_f32; 128];
+        source[0] = 1.0;
+        let mut left = [0.0_f32; 128];
+        let mut right = [0.0_f32; 128];
+        let destinations = [left.as_mut_ptr(), right.as_mut_ptr()];
+        let output = DandrumKernelOutputBusView {
+            name: output_name.as_ptr(),
+            channels: destinations.as_ptr(),
+            channel_count: 2,
+            frame_capacity: 128,
+            bus_index: 0,
+        };
+        let render = |source: &[f32; 128]| {
+            let sources = [source.as_ptr(), source.as_ptr()];
+            let input = DandrumKernelInputBusView {
+                name: input_name.as_ptr(),
+                channels: sources.as_ptr(),
+                channel_count: 2,
+                frame_capacity: 128,
+                bus_index: 0,
+            };
+            unsafe { dandrum_kernel_render(engine, &input, 1, &output, 1, 128) }
+        };
+
+        assert_eq!(render(&source), 128);
+        let first_block = left;
+        assert!(first_block.iter().any(|sample| sample.abs() > 0.0));
+        source.fill(0.0);
+        let mut heard_tail = false;
+        for _ in 0..64 {
+            assert_eq!(render(&source), 128);
+            heard_tail |= left.iter().any(|sample| sample.abs() > 0.0);
+        }
+        assert!(heard_tail, "the reset check needs an excited effect tail");
+
+        assert!(unsafe { dandrum_kernel_reset(engine) });
+        for _ in 0..64 {
+            left.fill(f32::NAN);
+            right.fill(f32::NAN);
+            assert_eq!(render(&source), 128);
+            assert_eq!(left, [0.0; 128], "reset must clear the left reverb tail");
+            assert_eq!(right, [0.0; 128], "reset must clear the right reverb tail");
+        }
+        source[0] = 1.0;
+        assert_eq!(render(&source), 128);
+        assert_eq!(left, first_block, "the reset engine must process new input");
         unsafe { dandrum_kernel_destroy(engine) };
     }
 

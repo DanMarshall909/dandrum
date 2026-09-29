@@ -1,4 +1,8 @@
-## ADDED Requirements
+## Purpose
+
+Specify voice retrigger and whole-engine reset behaviour.
+
+## Requirements
 
 ### Requirement: Voice-scoped module state SHALL be reset on note retrigger
 

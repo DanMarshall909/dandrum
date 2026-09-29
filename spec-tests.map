@@ -1554,6 +1554,34 @@ AC spectral-sound-matching :: Sound fixtures declare a bounded matching problem 
   fp 06a1ebb82b82
   test rust:acid_fixture_declares_a_bounded_public_matching_problem
 
+AC state-reset :: Host callers SHALL be able to trigger an engine reset :: Host invokes reset over FFI
+  fp 62133eec1e5a
+  test rust:kernel_ffi_poly_voice_starts_steals_and_resets
+  test rust:kernel_ffi_reset_clears_effect_tail_and_allows_reuse
+
+AC state-reset :: The engine SHALL provide an explicit reset that clears all state :: Engine reset clears reverb tail
+  fp fcd5289cdba7
+  test rust:engine_reset_stops_voices_and_clears_global_reverb_tail
+
+AC state-reset :: The engine SHALL provide an explicit reset that clears all state :: Engine reset stops active voices
+  fp 89b616887c7b
+  test rust:engine_reset_stops_voices_and_clears_global_reverb_tail
+  test rust:engine_reset_retires_kernel_poly_voices_and_allows_a_new_note
+
+AC state-reset :: Voice-scoped module state SHALL be reset on note retrigger :: Global effect tails are not reset by note activity
+  fp 6d18c024fe4a
+  test rust:accepted_note_on_adds_to_global_reverb_without_erasing_earlier_tail
+  test rust:rejected_note_on_and_note_off_leave_global_reverb_tail_unchanged
+
+AC state-reset :: Voice-scoped module state SHALL be reset on note retrigger :: Oscillator phase remains free-running until engine reset
+  fp 05ee35547b1a
+  test rust:stolen_kernel_poly_oscillator_continues_phase_until_engine_reset
+
+AC state-reset :: Voice-scoped module state SHALL be reset on note retrigger :: Retriggered resonant filter starts clean
+  fp d46230fdf90b
+  test rust:stolen_filter_voice_starts_with_the_same_onset_as_a_fresh_voice
+  test rust:stolen_kernel_poly_filter_voice_matches_a_fresh_onset
+
 AC validation-diagnostics :: Diagnostic severity levels :: Error severity prevents render
   fp 9073e5cebd3a
   todo not yet mapped to a test
