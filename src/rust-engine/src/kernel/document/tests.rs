@@ -330,6 +330,17 @@ fn malformed_yaml_shapes_fail_schema_without_panicking() {
 }
 
 #[test]
+fn non_string_yaml_mapping_keys_fail_before_graph_construction() {
+    let yaml = "? [one, two]\n: 1\n";
+    let error = load_kernel_patch_str(yaml).expect_err("non-JSON mapping key fails");
+    assert_eq!(
+        error.errors().next().unwrap().error_code(),
+        error_codes::KERNEL_DOCUMENT_SCHEMA_FAILED
+    );
+    assert!(error.to_string().contains("cannot be represented as JSON"));
+}
+
+#[test]
 fn unresolved_node_static_literals_keep_inferred_types() {
     let patch = load_kernel_patch_str(
         "ports:\n  - { name: out, direction: output, signal: audio, channels: 1 }\nmodules:\n  - { id: future, type: future_module, static: { count: 3, label: bright, sample: { kind: sample, path: hit.wav } } }\nconnections: []\n",

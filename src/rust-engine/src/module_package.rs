@@ -669,6 +669,79 @@ connections: []
     }
 
     #[test]
+    fn caller_resource_override_keeps_document_origin_through_package_pass_through() {
+        use crate::graph_processor::render_kernel_offline_named;
+        use crate::patch::RenderSettings;
+        use crate::preparation::{HostBuses, prepare_kernel_graph_with_buses_and_context};
+        use crate::sample::PreparedSamplerAssets;
+
+        const PACKAGE: &str = "static_params:\n  - name: sample\n    type: resource\n    resource_kind: sample\n    default: { kind: sample, path: samples/default.wav }\nports:\n  - { name: audio, direction: output, signal: audio, channels: 1, maps_from: player.audio }\nmodules:\n  - { id: midi, type: midi_input }\n  - { id: player, type: sampler, static: { sample: $sample } }\nconnections:\n  - { from: midi.events, to: player.trigger }\n";
+        let directory = tempfile::tempdir().expect("isolated document and library roots");
+        let lib_root = directory.path().join("lib");
+        let entry = seed_kernel_package(&lib_root, "1.0.0", "voice", PACKAGE);
+        let package_sample = entry.parent().unwrap().join("samples/default.wav");
+        fs::create_dir_all(package_sample.parent().unwrap()).unwrap();
+        for (path, value) in [
+            (package_sample, 0.25),
+            (directory.path().join("caller.wav"), -0.5),
+        ] {
+            crate::wav::write_wav_stereo_i16(
+                fs::File::create(path).unwrap(),
+                48_000,
+                &[value],
+                &[value],
+            )
+            .unwrap();
+        }
+        let patch = load_kernel_patch_str(
+            "ports:\n  - { name: master, direction: output, signal: audio, channels: 1, maps_from: voice.audio }\nmodules:\n  - { id: voice, type: $LIB/1.0.0/voice/voice.yaml, static: { sample: { kind: sample, path: caller.wav } } }\nconnections: []\n",
+        )
+        .expect("caller patch loads");
+        let context = PreparationContext::new(directory.path(), 48_000)
+            .with_macro_roots(MacroRoots::new().with_root(LIB_MACRO, &lib_root));
+        let settings = RenderSettings {
+            sample_rate_hz: 48_000,
+            block_size_frames: 8,
+            duration_frames: 8,
+        };
+        let prepared = prepare_kernel_graph_with_buses_and_context(
+            patch.root(),
+            patch.registry(),
+            &settings,
+            &HostBuses::new().with_output("master", 1),
+            &context,
+        )
+        .expect("caller resource prepares through package pass-through");
+        let sampler = prepared
+            .flattened_graph()
+            .nodes()
+            .iter()
+            .find(|node| node.definition() == "sampler")
+            .expect("packaged sampler is flattened");
+        assert_eq!(
+            sampler.static_args()[SAMPLE_RESOURCE_PARAM],
+            StaticValue::Resource(crate::kernel::ResourceRef::new(
+                ResourceKind::Sample,
+                "caller.wav",
+                ResourceOrigin::Document,
+            ))
+        );
+        let rendered = render_kernel_offline_named(
+            &prepared,
+            vec![crate::core::TimedInputEvent::new(
+                0,
+                crate::script::ScriptEvent::NoteOn {
+                    note: 60,
+                    velocity: 100,
+                },
+            )],
+            &PreparedSamplerAssets::empty(),
+        )
+        .expect("caller sample renders");
+        assert!((rendered[0].1[0][0] + 0.5).abs() < 0.0001);
+    }
+
+    #[test]
     fn external_reference_errors_are_reported_during_preparation() {
         use crate::patch::RenderSettings;
         use crate::preparation::{HostBuses, prepare_kernel_graph_with_buses_and_context};
