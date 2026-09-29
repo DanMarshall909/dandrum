@@ -715,10 +715,12 @@ impl RealtimeGraphProcessor {
                 self.audio_arena.clear(buffer, frames);
                 if planned.is_bound() {
                     if let Some(source) = inputs.get(input_index).and_then(|bus| bus.get(channel)) {
-                        let actual = frames.min(source.len().saturating_sub(segment_start));
-                        self.audio_arena
-                            .slice_mut(buffer, actual)
-                            .copy_from_slice(&source[segment_start..segment_start + actual]);
+                        if let Some(remaining) = source.get(segment_start..) {
+                            let actual = frames.min(remaining.len());
+                            self.audio_arena
+                                .slice_mut(buffer, actual)
+                                .copy_from_slice(&remaining[..actual]);
+                        }
                     }
                 }
             }

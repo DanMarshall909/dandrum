@@ -3408,6 +3408,49 @@ mod tests {
     }
 
     #[test]
+    fn segmented_poly_render_zero_fills_short_bound_audio_input() {
+        let voice = GraphDefinition::new("input_voice")
+            .with_port(
+                KernelPort::input("input", SignalType::Audio, 1)
+                    .maps_to(kernel_ref("gain", builtin_ports::AUDIO_IN)),
+            )
+            .with_port(
+                KernelPort::output("audio", SignalType::Audio, 1)
+                    .maps_from(kernel_ref("gain", builtin_ports::AUDIO_OUT)),
+            )
+            .with_node(Node::new(NodeId::new("gain"), module_types::GAIN));
+        let root = GraphDefinition::new("root")
+            .with_port(
+                KernelPort::input("input", SignalType::Audio, 1)
+                    .maps_to(kernel_ref("voices", "input")),
+            )
+            .with_port(
+                KernelPort::output("master", SignalType::Audio, 1)
+                    .maps_from(kernel_ref("voices", "audio")),
+            )
+            .with_node(poly_node_with_allocation(
+                "voices",
+                "input_voice",
+                1,
+                crate::kernel::POLY_ALLOCATION_OLDEST_STEAL,
+            ));
+        let prepared = prepare_kernel_graph_with_buses(
+            &root,
+            &builtin_registry().with_definition(voice),
+            &KERNEL_RENDER_SETTINGS,
+            &HostBuses::new().with_input("input", 1).with_output("master", 1),
+        )
+        .expect("bound-input poly graph prepares");
+        let mut runtime = runtime_for(&prepared);
+        let inputs = vec![vec![vec![0.25_f32; 2]]];
+        let mut outputs = vec![vec![vec![0.0_f32; 8]]];
+        runtime.note_on_at(60, 100, 0);
+        runtime.note_on_at(61, 100, 4);
+        assert_eq!(runtime.render_root_buses(&inputs, &mut outputs), 8);
+        assert_eq!(outputs[0][0], [0.25, 0.25, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]);
+    }
+
+    #[test]
     fn preparation_renders_dynamics_inside_a_poly_child() {
         let voice = GraphDefinition::new("dynamics_voice")
             .with_port(
