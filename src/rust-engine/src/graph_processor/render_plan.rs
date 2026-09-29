@@ -1,6 +1,7 @@
 use crate::builtins::module_kind::ModuleKind;
 use crate::compiled_patch::{CompiledPatch, ControlSlotId};
 use crate::graph::SignalType;
+#[cfg(test)]
 use crate::graph::builtin_ports;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
@@ -55,6 +56,7 @@ pub(super) struct EventQueuePlan {
     pub(super) queue_capacity: usize,
 }
 
+#[cfg(test)]
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(super) struct AudioOutputBinding {
     pub(super) left: BufferId,
@@ -68,6 +70,7 @@ pub(super) struct RenderPlan {
     pub(super) audio_buffers: AudioBufferPlan,
     pub(super) event_queues: EventQueuePlan,
     pub(super) midi_input: Option<EventQueueId>,
+    #[cfg(test)]
     pub(super) audio_output: Option<AudioOutputBinding>,
 }
 
@@ -136,6 +139,7 @@ impl RenderPlan {
             midi_input: compiled
                 .midi_input_index()
                 .and_then(|module_index| builder.first_event_output_queue(module_index)),
+            #[cfg(test)]
             audio_output: compiled
                 .audio_output_index()
                 .and_then(|module_index| builder.audio_output_binding(module_index)),
@@ -317,6 +321,7 @@ impl RenderPlanBuilder<'_> {
             .and_then(|port_index| self.event_queue(module_index, output_offset + port_index))
     }
 
+    #[cfg(test)]
     fn audio_output_binding(&self, module_index: usize) -> Option<AudioOutputBinding> {
         let node = &self.compiled.nodes()[module_index];
         let left_index = node

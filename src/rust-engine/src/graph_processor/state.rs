@@ -61,6 +61,7 @@ pub(super) enum PerModuleState {
         samples: Box<[Box<[f32]>]>,
         position: usize,
     },
+    #[cfg(test)]
     AudioOutput,
     MidiInput,
     NoteToRate {
@@ -243,7 +244,6 @@ impl PerModuleState {
             | Self::ControlToAudio
             | Self::Poly
             | Self::VoiceIntrinsics
-            | Self::AudioOutput
             | Self::MidiInput
             | Self::AudioMixer
             | Self::Saturator { .. }
@@ -251,6 +251,8 @@ impl PerModuleState {
             | Self::Multiply
             | Self::EventFilter { .. }
             | Self::CurveMapper { .. } => {}
+            #[cfg(test)]
+            Self::AudioOutput => {}
         }
     }
 
@@ -396,6 +398,7 @@ impl PerModuleState {
                     position: 0,
                 }
             }
+            #[cfg(test)]
             ModuleKind::AudioOutput => PerModuleState::AudioOutput,
             ModuleKind::MidiInput => PerModuleState::MidiInput,
             ModuleKind::NoteToRate => PerModuleState::NoteToRate { rate: 1.0 },

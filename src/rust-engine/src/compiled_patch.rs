@@ -48,6 +48,7 @@ pub struct CompiledPatch {
     voice_node_indices: Vec<usize>,
     global_node_indices: Vec<usize>,
     midi_input_index: Option<usize>,
+    #[cfg(test)]
     audio_output_index: Option<usize>,
     module_output_buffer_layout: Vec<CompiledModuleBufferLayout>,
     total_output_buffer_count: usize,
@@ -1184,6 +1185,7 @@ fn compile_internal(
             .modules()
             .iter()
             .position(|module| module.module_type() == "midi_input"),
+        #[cfg(test)]
         audio_output_index: graph
             .modules()
             .iter()
@@ -1337,6 +1339,7 @@ impl CompiledPatch {
         self.midi_input_index
     }
 
+    #[cfg(test)]
     pub fn audio_output_index(&self) -> Option<usize> {
         self.audio_output_index
     }

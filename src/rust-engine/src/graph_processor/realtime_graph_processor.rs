@@ -1536,7 +1536,9 @@ pub(super) fn process_channel_arena_step(
         ModuleKind::Reverb => {
             arena_processing::process_reverb(&mut states[step.module_index], &mut context)
         }
-        ModuleKind::AudioOutput | ModuleKind::Poly | ModuleKind::VoiceIntrinsics => {}
+        ModuleKind::Poly | ModuleKind::VoiceIntrinsics => {}
+        #[cfg(test)]
+        ModuleKind::AudioOutput => {}
         _ => unreachable!(),
     }
 }
@@ -1554,6 +1556,7 @@ fn is_mono_global_arena_supported(step: &RenderStep) -> bool {
 
 pub(super) fn is_channel_arena_supported(step: &RenderStep) -> bool {
     match step.module_kind {
+        #[cfg(test)]
         ModuleKind::AudioOutput => step.input_buffers.len() >= 2,
         ModuleKind::Poly => true,
         ModuleKind::VoiceIntrinsics => {

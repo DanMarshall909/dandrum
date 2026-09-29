@@ -3,6 +3,7 @@ use super::module_types;
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum ModuleKind {
     MidiInput,
+    #[cfg(test)]
     AudioOutput,
     Oscillator,
     Gain,
@@ -45,6 +46,7 @@ impl ModuleKind {
     pub fn from_str(s: &str) -> Option<Self> {
         match s {
             module_types::MIDI_INPUT => Some(Self::MidiInput),
+            #[cfg(test)]
             module_types::AUDIO_OUTPUT => Some(Self::AudioOutput),
             module_types::OSCILLATOR => Some(Self::Oscillator),
             module_types::GAIN => Some(Self::Gain),
@@ -85,10 +87,13 @@ impl ModuleKind {
     }
 
     pub fn is_render_supported(self) -> bool {
+        #[cfg(test)]
+        if self == Self::AudioOutput {
+            return true;
+        }
         matches!(
             self,
             Self::MidiInput
-                | Self::AudioOutput
                 | Self::Oscillator
                 | Self::Gain
                 | Self::AudioMixer
