@@ -46,12 +46,25 @@ def main() -> int:
     if result.returncode != 0:
         return result.returncode
 
-    uncovered = parse_missing_lines(result.stdout)
+    try:
+        measured = parse_measured_files(result.stdout)
+        uncovered = parse_missing_lines(result.stdout)
+    except PolicyError as error:
+        print(f"coverage report error: {error}", file=sys.stderr)
+        return 2
     failures: list[str] = []
     stale_allowlist: list[str] = []
 
     for path in sorted(strict_files):
+        if not (ROOT / path).is_file():
+            failures.append(f"{path}: strict source file does not exist")
+        if path not in measured:
+            failures.append(f"{path}: strict file is absent from the coverage report")
+            continue
         file_uncovered = uncovered.get(path, set())
+        if measured[path] > 0 and not file_uncovered:
+            failures.append(f"{path}: report omits uncovered-line detail")
+            continue
         file_allowed = allowed_for(path, allowed)
         unexpected = sorted(file_uncovered - file_allowed)
         if unexpected:
@@ -101,6 +114,35 @@ def read_policy(path: Path) -> tuple[set[str], dict[tuple[str, int], str]]:
             )
 
     return strict_files, allowed
+
+
+def parse_measured_files(output: str) -> dict[str, int]:
+    lines = output.splitlines()
+    if len(lines) < 4 or not lines[0].startswith("Filename ") or not lines[1].startswith("-"):
+        raise PolicyError("missing LLVM coverage summary table")
+
+    measured: dict[str, int] = {}
+    total_missed: int | None = None
+    for line in lines[2:]:
+        columns = line.split()
+        if not columns or line.startswith("-"):
+            continue
+        if columns[0] == "TOTAL":
+            if len(columns) < 10 or not columns[8].isdigit():
+                raise PolicyError("malformed LLVM coverage total")
+            total_missed = int(columns[8])
+            break
+        if len(columns) < 10 or not columns[8].isdigit():
+            raise PolicyError(f"malformed LLVM coverage file row: {line}")
+        path = f"src/rust-engine/src/{columns[0]}"
+        if path in measured:
+            raise PolicyError(f"duplicate LLVM coverage file row: {path}")
+        measured[path] = int(columns[8])
+    if total_missed is None or not measured:
+        raise PolicyError("incomplete LLVM coverage summary table")
+    if total_missed > 0 and "Uncovered Lines:" not in output:
+        raise PolicyError("LLVM coverage report omitted uncovered-line data")
+    return measured
 
 
 def parse_location(location: str, policy_line: int) -> tuple[str, int]:

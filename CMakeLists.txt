@@ -169,6 +169,11 @@ add_test(NAME spec-coverage-map
             -s ${CMAKE_CURRENT_SOURCE_DIR}/tests/python
             -p test_spec_coverage_map.py)
 
+add_test(NAME rust-coverage-gate
+    COMMAND ${CMAKE_COMMAND} -E env PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover
+            -s ${CMAKE_CURRENT_SOURCE_DIR}/tests/python
+            -p test_rust_coverage_gate.py)
+
 find_program(DANDRUM_NODE_EXECUTABLE node)
 if(NOT DANDRUM_NODE_EXECUTABLE OR NOT EXISTS "${DANDRUM_NODE_EXECUTABLE}")
     message(FATAL_ERROR "Node.js is required to run the WebView page and native bridge tests")
