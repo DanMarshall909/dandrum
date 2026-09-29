@@ -23,6 +23,7 @@ pub mod cli;
 pub mod codex_cli_provider;
 pub mod graph;
 pub mod graph_proposal;
+#[cfg(test)]
 pub mod instrument_state;
 pub mod kernel;
 pub mod module_library;
