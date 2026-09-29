@@ -81,4 +81,6 @@ Model-tier tags follow design decision D11: `[frontier]` for architecture/realti
 
   Historical parity code and its assertions are compiled only under `#[cfg(test)]`; the release archive and source-field CTest gates enforce the production retirement.
 - [x] [mechanical] 7.9 Update `docs/nomenclature.md`, README authoring/render examples, FFI/JUCE documentation, and module-package documentation for graph definitions, static parameters/resources, multiplicity, poly regions, feedback_delay, root ports, and named buses
-- [ ] [mechanical] 7.10 Full verification: `cargo test`, CTest, spec coverage, coverage target per repo policy, allocation tests, all example reference comparisons, package tests, JUCE demo end-to-end through `master`, `openspec validate unify-graph-kernel --type change --strict`, and zero forbidden legacy symbols; escalate diagnosis of any non-obvious failure under D11
+- [x] [mechanical] 7.10 Full verification: `cargo test`, CTest, spec coverage, coverage target per repo policy, allocation tests, all example reference comparisons, package tests, JUCE demo end-to-end through `master`, `openspec validate unify-graph-kernel --type change --strict`, and zero forbidden legacy symbols; escalate diagnosis of any non-obvious failure under D11
+
+  Verified 2026-09-29: Rust suite (908 library tests plus binary/doctests), CTest (18/18 including allocation, JUCE named-bus, symbol, field, package, and spec gates), strict Rust coverage policy, example/reference comparisons, synthetic-note JUCE demo, and strict OpenSpec validation.
