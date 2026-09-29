@@ -142,10 +142,7 @@ pub unsafe extern "C" fn dandrum_kernel_prepare_file(
             _ => return std::ptr::null_mut(),
         }
     }
-    let Ok(flattened) = patch.root().flatten(patch.registry()) else {
-        return std::ptr::null_mut();
-    };
-    for port in flattened.root_ports() {
+    for port in patch.root().ports() {
         if port.signal_type() != SignalType::Event {
             continue;
         }
@@ -156,11 +153,7 @@ pub unsafe extern "C" fn dandrum_kernel_prepare_file(
             PortDirection::Output if declared_outputs.contains_key(port.name()) => {
                 return std::ptr::null_mut();
             }
-            PortDirection::Output => {
-                // Event roots are discoverable, but planar float views cannot
-                // carry events. Bind internally for root-shape validation.
-                buses = buses.with_output(port.name(), port.channels() as usize);
-            }
+            PortDirection::Output => {}
             PortDirection::Input => {}
         }
     }
@@ -183,7 +176,7 @@ pub unsafe extern "C" fn dandrum_kernel_prepare_file(
         };
         context = context.with_macro_roots(roots);
     }
-    let Ok(prepared) = preparation::prepare_kernel_graph_with_buses_and_context(
+    let Ok(prepared) = preparation::prepare_kernel_graph_for_planar_ffi(
         patch.root(),
         patch.registry(),
         &settings,
@@ -974,6 +967,44 @@ mod tests {
             8
         );
         assert_eq!(samples, [0.0; 8]);
+        unsafe { dandrum_kernel_destroy(engine) };
+    }
+
+    #[test]
+    fn kernel_ffi_prepares_and_renders_a_package_relative_sample() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("packaged-sample.yaml");
+        std::fs::write(
+            &path,
+            "ports:\n  - { name: master, direction: output, signal: audio, channels: 1, maps_from: voice.left }\nmodules:\n  - { id: voice, type: $LIB/1.0.0/sample_voice/sample_voice.yaml }\nconnections: []\n",
+        )
+        .unwrap();
+        let path = std::ffi::CString::new(path.to_str().unwrap()).unwrap();
+        let master_name = std::ffi::CString::new("master").unwrap();
+        let bus = DandrumKernelBusDeclaration {
+            name: master_name.as_ptr(),
+            direction: 2,
+            channel_count: 1,
+        };
+        let engine = unsafe { dandrum_kernel_prepare_file(path.as_ptr(), 48_000, 8, &bus, 1) };
+        assert!(
+            !engine.is_null(),
+            "package-backed patch should prepare through FFI"
+        );
+        assert!(unsafe { dandrum_kernel_note_on_at(engine, 60, 100, 0) });
+        let mut samples = [0.0_f32; 8];
+        let channels = [samples.as_mut_ptr()];
+        let output = DandrumKernelOutputBusView {
+            name: master_name.as_ptr(),
+            channels: channels.as_ptr(),
+            channel_count: 1,
+            frame_capacity: 8,
+        };
+        assert_eq!(
+            unsafe { dandrum_kernel_render(engine, std::ptr::null(), 0, &output, 1, 8) },
+            8
+        );
+        assert!((samples[0] - 0.25).abs() < 0.0001, "{samples:?}");
         unsafe { dandrum_kernel_destroy(engine) };
     }
 

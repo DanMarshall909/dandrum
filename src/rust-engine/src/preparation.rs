@@ -527,7 +527,14 @@ pub fn prepare_kernel_graph_with_buses(
     render_settings: &RenderSettings,
     host_buses: &HostBuses,
 ) -> Result<PreparedKernelInstrument, KernelPreparationError> {
-    prepare_kernel_graph_with_buses_internal(root, registry, render_settings, host_buses, None)
+    prepare_kernel_graph_with_buses_internal(
+        root,
+        registry,
+        render_settings,
+        host_buses,
+        None,
+        false,
+    )
 }
 
 pub fn prepare_kernel_graph_with_buses_and_context(
@@ -543,6 +550,26 @@ pub fn prepare_kernel_graph_with_buses_and_context(
         render_settings,
         host_buses,
         Some(context),
+        false,
+    )
+}
+
+/// A planar host discovers event root outputs but cannot bind them to float
+/// buffers. Bind those outputs internally after package resolution and flattening.
+pub(crate) fn prepare_kernel_graph_for_planar_ffi(
+    root: &GraphDefinition,
+    registry: &DefinitionRegistry,
+    render_settings: &RenderSettings,
+    host_buses: &HostBuses,
+    context: &PreparationContext,
+) -> Result<PreparedKernelInstrument, KernelPreparationError> {
+    prepare_kernel_graph_with_buses_internal(
+        root,
+        registry,
+        render_settings,
+        host_buses,
+        Some(context),
+        true,
     )
 }
 
@@ -552,6 +579,7 @@ fn prepare_kernel_graph_with_buses_internal(
     render_settings: &RenderSettings,
     host_buses: &HostBuses,
     context: Option<&PreparationContext>,
+    bind_event_outputs: bool,
 ) -> Result<PreparedKernelInstrument, KernelPreparationError> {
     let resolved_registry = match context {
         Some(context) => resolve_external_definitions(root, registry, context)?,
@@ -565,7 +593,18 @@ fn prepare_kernel_graph_with_buses_internal(
     let flattened_graph = root
         .flatten(&resolved_registry)
         .map_err(KernelPreparationError::from)?;
-    validate_host_buses(&flattened_graph, host_buses)?;
+    let mut host_buses = host_buses.clone();
+    if bind_event_outputs {
+        for port in flattened_graph.root_ports() {
+            if port.direction() == PortDirection::Output && port.signal_type() == SignalType::Event
+            {
+                host_buses
+                    .outputs
+                    .insert(port.name().to_string(), port.channels() as usize);
+            }
+        }
+    }
+    validate_host_buses(&flattened_graph, &host_buses)?;
     let latency_plan = flattened_graph
         .balance_latency()
         .map_err(KernelPreparationError::from)?;
@@ -611,7 +650,7 @@ fn prepare_kernel_graph_with_buses_internal(
         .collect::<BTreeMap<_, _>>();
     compiled_patch.set_root_bus_plan(root_bus_plan(
         &flattened_graph,
-        host_buses,
+        &host_buses,
         &root_input_spans,
         &lowered.root_outputs,
         &compiled_patch,
