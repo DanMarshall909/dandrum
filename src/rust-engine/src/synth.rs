@@ -6,7 +6,6 @@ use crate::graph::Graph;
 use crate::graph_processor::RealtimeGraphProcessor;
 use crate::patch;
 use crate::preparation::{self, PreparationError};
-use crate::realtime::RealtimeEvent;
 use crate::sample::PreparedSamplerAssets;
 
 #[derive(Debug)]
@@ -157,10 +156,6 @@ impl FallbackSynth {
         };
     }
 
-    fn reset(&mut self) {
-        self.voices = [Voice::default(); MAX_VOICES];
-    }
-
     fn note_off(&mut self, note: u8) {
         for voice in &mut self.voices {
             if voice.active && voice.note == note {
@@ -228,12 +223,6 @@ impl DandrumEngine {
             fallback: FallbackSynth::new(44_100.0),
             graph_processor: None,
         }
-    }
-
-    pub fn load_patch_file(&mut self, path: &Path) -> Result<(), LoadPatchError> {
-        let prepared = prepare_patch_file(path)?;
-        self.load_prepared_instrument(&prepared);
-        Ok(())
     }
 
     pub fn render_patch_file_offline(
@@ -371,13 +360,6 @@ impl DandrumEngine {
         self.note_on_at(note, velocity, 0);
     }
 
-    pub fn reset(&mut self) {
-        self.fallback.reset();
-        if let Some(processor) = &mut self.graph_processor {
-            processor.reset();
-        }
-    }
-
     pub fn note_off(&mut self, note: u8) {
         self.note_off_at(note, 0);
     }
@@ -398,13 +380,6 @@ impl DandrumEngine {
         }
 
         self.fallback.note_off(note);
-    }
-
-    pub fn handle_realtime_event(&mut self, event: RealtimeEvent) {
-        match event {
-            RealtimeEvent::NoteOn { note, velocity } => self.note_on(note, velocity),
-            RealtimeEvent::NoteOff { note } => self.note_off(note),
-        }
     }
 
     pub fn render(&mut self, left: &mut [f32], right: &mut [f32]) -> usize {

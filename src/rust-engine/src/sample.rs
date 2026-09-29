@@ -1,7 +1,10 @@
 use std::collections::BTreeMap;
+#[cfg(test)]
 use std::fmt;
+#[cfg(test)]
 use std::path::Path;
 
+#[cfg(test)]
 use crate::patch::{AssetKind, ParameterValue, PatchDocument};
 
 #[derive(Clone, Debug, PartialEq)]
@@ -15,11 +18,13 @@ pub struct PreparedSamplerAssets {
     samples_by_module: BTreeMap<String, LoadedSample>,
 }
 
+#[cfg(test)]
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct SampleLoadError {
     diagnostics: Vec<String>,
 }
 
+#[cfg(test)]
 pub fn prepare_sampler_assets(
     patch: &PatchDocument,
     base_dir: impl AsRef<Path>,
@@ -103,12 +108,14 @@ impl PreparedSamplerAssets {
     }
 }
 
+#[cfg(test)]
 impl SampleLoadError {
     pub fn diagnostics(&self) -> &[String] {
         &self.diagnostics
     }
 }
 
+#[cfg(test)]
 impl fmt::Display for SampleLoadError {
     fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(formatter, "sample asset loading failed")?;
@@ -119,8 +126,10 @@ impl fmt::Display for SampleLoadError {
     }
 }
 
+#[cfg(test)]
 impl std::error::Error for SampleLoadError {}
 
+#[cfg(test)]
 fn load_pcm_wav(path: &Path, expected_sample_rate_hz: u32) -> Result<LoadedSample, String> {
     let loaded = crate::audio_loading::load_pcm_wav(path, expected_sample_rate_hz)?;
     Ok(LoadedSample::new(

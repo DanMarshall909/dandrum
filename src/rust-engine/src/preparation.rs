@@ -19,8 +19,12 @@ use crate::kernel::{
     StaticValue,
 };
 use crate::module_reference::MacroRoots;
-use crate::patch::{self, ParameterValue, PatchDocument, PresetDocument, RenderSettings};
-use crate::sample::{self, LoadedSample, PreparedSamplerAssets, SampleLoadError};
+#[cfg(test)]
+use crate::patch::{self, ParameterValue, PatchDocument};
+use crate::patch::{PresetDocument, RenderSettings};
+use crate::sample::LoadedSample;
+#[cfg(test)]
+use crate::sample::{self, PreparedSamplerAssets, SampleLoadError};
 
 const KERNEL_COMPENSATION_EDGE_PREFIX: &str = "compensation::edge::";
 const KERNEL_COMPENSATION_ROOT_PREFIX: &str = "compensation::root::";
@@ -225,6 +229,7 @@ impl HostBuses {
 }
 
 #[derive(Debug)]
+#[cfg(test)]
 pub(crate) enum PreparationError {
     Load(patch::PatchLoadError),
     Schema(patch::PatchValidationError),
@@ -263,11 +268,13 @@ impl fmt::Display for KernelPreparationError {
 impl std::error::Error for KernelPreparationError {}
 
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
+#[cfg(test)]
 pub(crate) struct PreparationDiagnostics {
     messages: Vec<String>,
 }
 
 #[derive(Clone, Debug, PartialEq)]
+#[cfg(test)]
 pub(crate) struct PreparedInstrument {
     patch_doc: PatchDocument,
     resolved_parameters: BTreeMap<String, BTreeMap<String, ParameterValue>>,
@@ -370,6 +377,7 @@ fn collect_prepared_node_metadata(
     }
 }
 
+#[cfg(test)]
 impl PreparedInstrument {
     pub(crate) fn new(
         patch_doc: PatchDocument,
@@ -418,6 +426,7 @@ impl PreparedInstrument {
     }
 }
 
+#[cfg(test)]
 impl PreparationDiagnostics {
     #[allow(dead_code)]
     pub(crate) fn messages(&self) -> &[String] {
@@ -425,6 +434,7 @@ impl PreparationDiagnostics {
     }
 }
 
+#[cfg(test)]
 pub(crate) fn prepare_instrument_file(
     path: impl AsRef<Path>,
 ) -> Result<PreparedInstrument, PreparationError> {
@@ -1232,6 +1242,7 @@ fn legacy_ref(reference: &crate::kernel::PortRef) -> PortRef {
     PortRef::new(ModuleId::new(reference.node().as_str()), reference.port())
 }
 
+#[cfg(test)]
 pub(crate) fn prepare_instrument_document(
     patch_doc: PatchDocument,
     base_dir: impl AsRef<Path>,
@@ -1254,6 +1265,7 @@ pub(crate) fn prepare_instrument_document(
 }
 
 #[allow(dead_code)]
+#[cfg(test)]
 pub(crate) fn prepare_instrument_document_with_preset(
     patch_doc: PatchDocument,
     preset_doc: &PresetDocument,
@@ -1264,16 +1276,19 @@ pub(crate) fn prepare_instrument_document_with_preset(
     prepare_instrument_document(patched_doc, base_dir)
 }
 
+#[cfg(test)]
 pub(crate) fn load_patch_document(
     path: impl AsRef<Path>,
 ) -> Result<PatchDocument, PreparationError> {
     patch::load_patch_file(path).map_err(PreparationError::Load)
 }
 
+#[cfg(test)]
 pub(crate) fn validate_patch_document(patch_doc: &PatchDocument) -> Result<(), PreparationError> {
     patch::validate_patch_schema(patch_doc).map_err(PreparationError::Schema)
 }
 
+#[cfg(test)]
 pub(crate) fn resolve_patch_parameters(
     patch_doc: &PatchDocument,
 ) -> Result<BTreeMap<String, BTreeMap<String, ParameterValue>>, PreparationError> {
@@ -1281,11 +1296,13 @@ pub(crate) fn resolve_patch_parameters(
 }
 
 #[allow(dead_code)]
+#[cfg(test)]
 pub(crate) fn build_validated_graph(patch_doc: &PatchDocument) -> Result<Graph, PreparationError> {
     let resolved_parameters = resolve_patch_parameters(patch_doc)?;
     build_validated_graph_with_resolved_parameters(patch_doc, &resolved_parameters)
 }
 
+#[cfg(test)]
 fn build_validated_graph_with_resolved_parameters(
     patch_doc: &PatchDocument,
     resolved_parameters: &BTreeMap<String, BTreeMap<String, ParameterValue>>,
@@ -1296,6 +1313,7 @@ fn build_validated_graph_with_resolved_parameters(
     Ok(graph)
 }
 
+#[cfg(test)]
 fn patch_document_with_resolved_parameters(
     patch_doc: &PatchDocument,
     resolved_parameters: &BTreeMap<String, BTreeMap<String, ParameterValue>>,
@@ -1312,6 +1330,7 @@ fn patch_document_with_resolved_parameters(
     resolved_patch
 }
 
+#[cfg(test)]
 pub(crate) fn prepare_assets(
     patch_doc: &PatchDocument,
     base_dir: impl AsRef<Path>,
@@ -1319,6 +1338,7 @@ pub(crate) fn prepare_assets(
     sample::prepare_sampler_assets(patch_doc, base_dir).map_err(PreparationError::Assets)
 }
 
+#[cfg(test)]
 pub(crate) fn compile_patch(
     graph: &Graph,
     patch_doc: &PatchDocument,
@@ -1326,6 +1346,7 @@ pub(crate) fn compile_patch(
     compiled_patch::compile(graph, &patch_doc.render).map_err(PreparationError::Compile)
 }
 
+#[cfg(test)]
 impl PreparationError {
     #[allow(dead_code)]
     pub fn to_diagnostics(&self) -> diagnostics::Diagnostics {
@@ -1344,6 +1365,7 @@ impl PreparationError {
     }
 }
 
+#[cfg(test)]
 impl fmt::Display for PreparationError {
     fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
@@ -1356,6 +1378,7 @@ impl fmt::Display for PreparationError {
     }
 }
 
+#[cfg(test)]
 impl std::error::Error for PreparationError {
     fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
         match self {

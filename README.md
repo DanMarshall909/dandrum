@@ -151,8 +151,8 @@ unbounded latency.
   upfront).
 - **Drains events**: Reads pending MIDI events from the lock-free SPSC queue (`pendingMidiEvents`) at the start of each
   block.
-- **Renders directly**: Calls `dandrum_kernel_render` with a planar named `master` bus or
-  `dandrum_engine_render` for a legacy patch, using prepared engine state.
+- **Renders directly**: Calls `dandrum_kernel_render` with a planar named `master` bus, using
+  prepared engine state.
 
 ### MIDI callback (`MidiToRustEngine::handleIncomingMidiMessage`)
 
@@ -203,8 +203,8 @@ When a voice slot is assigned to a new note, its filter, envelope follower, and 
 global reverb and echo tails continue through ordinary note activity. Oscillator phase remains free-running across note
 retrigger.
 
-A host can call `dandrum_engine_reset(engine)` or `dandrum_kernel_reset(instrument)` for panic, all-notes-off, or patch
-reload. Each call returns `true` for a live handle and clears pending notes, active voices, and effect tails. The handle
+A host can call `dandrum_kernel_reset(instrument)` for panic, all-notes-off, or patch reload. The call
+returns `true` for a live handle and clears pending notes, active voices, and effect tails. The handle
 remains usable for later notes and renders. Serialize reset with rendering and MIDI calls on that handle, as for other
 mutable engine FFI calls.
 

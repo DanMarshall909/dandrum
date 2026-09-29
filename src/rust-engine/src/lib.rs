@@ -38,6 +38,7 @@ pub mod sound_matching;
 pub mod sound_workbench;
 pub mod sound_workbench_ffi;
 
+#[cfg(test)]
 pub(crate) mod synth;
 
 pub mod wav;
@@ -69,6 +70,5 @@ pub(crate) mod dynamics_processor;
 pub(crate) mod saturator;
 
 pub mod ffi;
-pub mod ffi_status;
 
 pub mod diagnostics;

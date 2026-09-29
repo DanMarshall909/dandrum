@@ -27,7 +27,9 @@ use crate::kernel::StaticValue;
 use crate::kernel::flatten::FlattenedGraph;
 use crate::oscillator::Waveform;
 use crate::patch::RenderSettings;
-use crate::sample::{LoadedSample, PreparedSamplerAssets};
+use crate::sample::LoadedSample;
+#[cfg(test)]
+use crate::sample::PreparedSamplerAssets;
 use crate::spectral::SpectralMode;
 
 pub type ExecutionStep = usize;
@@ -1410,6 +1412,7 @@ impl CompiledPatch {
             .copied()
     }
 
+    #[cfg(test)]
     pub(crate) fn attach_legacy_resources(&mut self, assets: &PreparedSamplerAssets) {
         for node in &mut self.nodes {
             let Some(sample) = assets.get(node.id.as_str()).cloned() else {
