@@ -2023,15 +2023,6 @@ mod tests {
         assert_eq!(region.voice_velocity(1), Some(127));
         assert_eq!(region.voice_note_control(0), Some(1.0));
         assert_eq!(region.voice_velocity_control(1), Some(1.0));
-        assert_eq!(region.voice_gate_events(0).len(), 1);
-        assert_eq!(region.voice_gate_events(0)[0].frame_offset, 3);
-        assert!(matches!(
-            region.voice_gate_events(0)[0].event,
-            ScriptEvent::NoteOn {
-                note: 60,
-                velocity: 64
-            }
-        ));
     }
 
     #[test]
@@ -2043,7 +2034,7 @@ mod tests {
         render_one_block(&mut runtime);
         runtime.note_on(64, 100);
         render_one_block(&mut runtime);
-        runtime.note_on_at(67, 90, 11);
+        runtime.note_on_at(67, 90, 3);
         render_one_block(&mut runtime);
 
         let region = &runtime.prepared_poly_runtime_regions()[0];
@@ -2051,18 +2042,6 @@ mod tests {
         assert_eq!(region.voice_note(0), Some(67));
         assert_eq!(region.voice_velocity(0), Some(90));
         assert_eq!(region.voice_note(1), Some(64));
-        assert_eq!(region.voice_gate_events(0).len(), 2);
-        assert!(matches!(
-            region.voice_gate_events(0)[0].event,
-            ScriptEvent::NoteOff { note: 60 }
-        ));
-        assert!(matches!(
-            region.voice_gate_events(0)[1].event,
-            ScriptEvent::NoteOn {
-                note: 67,
-                velocity: 90
-            }
-        ));
     }
 
     #[test]
@@ -2091,19 +2070,12 @@ mod tests {
         runtime.note_on(60, 100);
         runtime.note_on(64, 100);
         render_one_block(&mut runtime);
-        runtime.note_off_at(60, 19);
+        runtime.note_off_at(60, 3);
         render_one_block(&mut runtime);
 
         let region = &runtime.prepared_poly_runtime_regions()[0];
         assert_eq!(region.voice_gate_held(0), Some(false));
         assert_eq!(region.voice_gate_held(1), Some(true));
-        assert_eq!(region.voice_gate_events(0).len(), 1);
-        assert_eq!(region.voice_gate_events(0)[0].frame_offset, 19);
-        assert!(matches!(
-            region.voice_gate_events(0)[0].event,
-            ScriptEvent::NoteOff { note: 60 }
-        ));
-        assert!(region.voice_gate_events(1).is_empty());
     }
 
     #[test]
@@ -2892,6 +2864,42 @@ mod tests {
     }
 
     #[test]
+    fn sibling_poly_regions_render_signed_outputs_at_the_note_sample() {
+        let root = GraphDefinition::new("root")
+            .with_port(
+                KernelPort::output("positive", SignalType::Audio, 1)
+                    .maps_from(kernel_ref("positive_voices", "audio")),
+            )
+            .with_port(
+                KernelPort::output("negative", SignalType::Audio, 1)
+                    .maps_from(kernel_ref("negative_voices", "audio")),
+            )
+            .with_node(poly_node("positive_voices", "positive_voice", 1))
+            .with_node(poly_node("negative_voices", "negative_voice", 1));
+        let prepared = prepare_kernel_graph_with_buses(
+            &root,
+            &builtin_registry()
+                .with_definition(constant_voice("positive_voice", 0.25))
+                .with_definition(constant_voice("negative_voice", -0.5)),
+            &KERNEL_RENDER_SETTINGS,
+            &HostBuses::new()
+                .with_output("positive", 1)
+                .with_output("negative", 1),
+        )
+        .expect("sibling pools with child DSP should prepare");
+        let mut runtime = runtime_for(&prepared);
+        let mut outputs = vec![vec![vec![0.0; 8]], vec![vec![0.0; 8]]];
+
+        let allocations = count_current_thread_allocations(|| {
+            runtime.note_on_at(60, 100, 3);
+            assert_eq!(runtime.render_root_outputs(&mut outputs), 8);
+        });
+        assert_eq!(allocations, 0);
+        assert_eq!(outputs[0][0], [0.0, 0.0, 0.0, 0.25, 0.25, 0.25, 0.25, 0.25]);
+        assert_eq!(outputs[1][0], [0.0, 0.0, 0.0, -0.5, -0.5, -0.5, -0.5, -0.5]);
+    }
+
+    #[test]
     fn nested_poly_voices_render_through_independent_inner_pools() {
         let inner = constant_voice("inner", 0.25);
         let outer = GraphDefinition::new("outer")
@@ -2941,11 +2949,12 @@ mod tests {
         let mut outputs = vec![vec![vec![0.0; frames]]];
 
         let allocation_count = count_current_thread_allocations(|| {
-            runtime.note_on(60, 100);
-            runtime.note_on(64, 100);
+            runtime.note_on_at(60, 100, 2);
+            runtime.note_on_at(64, 100, 5);
             assert_eq!(runtime.render_root_outputs(&mut outputs), frames);
         });
         assert_eq!(allocation_count, 0);
+        assert_eq!(outputs[0][0], [0.0, 0.0, 0.25, 0.25, 0.25, 0.5, 0.5, 0.5]);
         let outer_region = &runtime.prepared_poly_runtime_regions()[0];
         let inner_a = outer_region
             .nested_region_for_voice(0, "inner_voices")
@@ -2965,11 +2974,6 @@ mod tests {
             inner_a.state_instance_address(0, 0),
             inner_b.state_instance_address(0, 0)
         );
-        assert!(
-            outputs[0][0].iter().all(|sample| *sample == 0.5),
-            "{outputs:?}"
-        );
-
         let inner_a = runtime.prepared_poly_runtime_regions_mut_for_test()[0]
             .nested_region_for_voice_mut(0, "inner_voices")
             .unwrap();

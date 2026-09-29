@@ -1182,6 +1182,54 @@ mod tests {
         unsafe { dandrum_kernel_destroy(engine) };
     }
 
+    #[test]
+    fn kernel_ffi_poly_voice_starts_and_steals_at_the_event_sample() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("poly-timing.yaml");
+        std::fs::write(
+            &path,
+            "ports:\n  - { name: master, direction: output, signal: audio, channels: 1, maps_from: voices.audio }\nmodule_definitions:\n  - type: velocity_voice\n    ports:\n      - { name: audio, direction: output, signal: audio, channels: 1, maps_from: amp.audio_out }\n    modules:\n      - { id: constant, type: control_to_audio, defaults: { in: 1.0 } }\n      - { id: amp, type: gain }\n    connections:\n      - { from: constant.out, to: amp.audio_in }\n      - { from: voice.velocity, to: amp.gain }\nmodules:\n  - { id: voices, type: poly, static: { definition: velocity_voice, max_voices: 1, allocation: oldest-steal } }\nconnections: []\n",
+        )
+        .unwrap();
+        let path = std::ffi::CString::new(path.to_str().unwrap()).unwrap();
+        let master_name = std::ffi::CString::new("master").unwrap();
+        let bus = DandrumKernelBusDeclaration {
+            name: master_name.as_ptr(),
+            direction: 2,
+            channel_count: 1,
+        };
+        let engine = unsafe { dandrum_kernel_prepare_file(path.as_ptr(), 48_000, 8, &bus, 1) };
+        assert!(!engine.is_null());
+        let mut samples = [0.0_f32; 8];
+        let channels = [samples.as_mut_ptr()];
+        let output = DandrumKernelOutputBusView {
+            name: master_name.as_ptr(),
+            channels: channels.as_ptr(),
+            channel_count: 1,
+            frame_capacity: 8,
+        };
+        assert!(unsafe { dandrum_kernel_note_on_at(engine, 60, 127, 4) });
+        assert_eq!(
+            unsafe { dandrum_kernel_render(engine, std::ptr::null(), 0, &output, 1, 8) },
+            8
+        );
+        assert_eq!(samples, [0.0, 0.0, 0.0, 0.0, 1.0, 1.0, 1.0, 1.0]);
+
+        let allocations = crate::test_allocator::count_current_thread_allocations(|| {
+            assert!(unsafe { dandrum_kernel_note_on_at(engine, 61, 64, 4) });
+            assert_eq!(
+                unsafe { dandrum_kernel_render(engine, std::ptr::null(), 0, &output, 1, 8) },
+                8
+            );
+        });
+        assert_eq!(allocations, 0);
+        assert_eq!(samples[..4], [1.0; 4]);
+        for sample in &samples[4..] {
+            assert!((*sample - 64.0 / 127.0).abs() < 0.0001, "{samples:?}");
+        }
+        unsafe { dandrum_kernel_destroy(engine) };
+    }
+
     fn assert_no_panic(name: &str, f: impl FnOnce()) {
         let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(f));
         assert!(result.is_ok(), "{name}");

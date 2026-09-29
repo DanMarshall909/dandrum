@@ -626,6 +626,44 @@ impl RealtimeGraphProcessor {
         {
             return 0;
         }
+        let event_count = self
+            .pending_events
+            .drain_into_buffer(&mut self.events_buffer);
+        let segment_poly_events = !self.prepared_poly_runtime_regions.is_empty() && event_count > 0;
+        let mut segment_start = 0;
+        while segment_start < frames {
+            let segment_end = if segment_poly_events {
+                self.events_buffer[..event_count]
+                    .iter()
+                    .map(|event| event.frame_offset as usize)
+                    .filter(|offset| *offset > segment_start && *offset < frames)
+                    .min()
+                    .unwrap_or(frames)
+            } else {
+                frames
+            };
+            self.render_root_bus_segment(
+                inputs,
+                outputs,
+                segment_start,
+                segment_end - segment_start,
+                event_count,
+                segment_poly_events,
+            );
+            segment_start = segment_end;
+        }
+        frames
+    }
+
+    fn render_root_bus_segment(
+        &mut self,
+        inputs: &[Vec<Vec<f32>>],
+        outputs: &mut [Vec<Vec<f32>>],
+        segment_start: usize,
+        frames: usize,
+        event_count: usize,
+        segment_poly_events: bool,
+    ) {
         for region in self.prepared_poly_runtime_regions.iter_mut() {
             region.begin_block(frames, self.current_frame);
         }
@@ -636,21 +674,38 @@ impl RealtimeGraphProcessor {
             .iter()
             .find(|step| step.module_kind == ModuleKind::MidiInput)
         {
-            let event_count = self
-                .pending_events
-                .drain_into_buffer(&mut self.events_buffer);
-            let events = &self.events_buffer[..event_count];
             for &queue in midi_step.event_outputs.iter() {
                 let destination = self
                     .prepared_event_queues
                     .queue_mut(queue.0)
                     .expect("compiled MIDI output has a prepared event queue");
-                for event in events {
-                    let _ = destination.push_at(event.event.clone(), event.frame_offset);
+                for event in &self.events_buffer[..event_count] {
+                    if !segment_poly_events || event.frame_offset as usize == segment_start {
+                        let offset = if segment_poly_events {
+                            0
+                        } else {
+                            event.frame_offset
+                        };
+                        let _ = destination.push_at(event.event.clone(), offset);
+                    }
                 }
             }
         } else {
-            self.drain_and_route_poly_events(frames);
+            for event in &self.events_buffer[..event_count] {
+                if !segment_poly_events || event.frame_offset as usize == segment_start {
+                    let routed = BlockEvent {
+                        frame_offset: if segment_poly_events {
+                            0
+                        } else {
+                            event.frame_offset
+                        },
+                        event: event.event.clone(),
+                    };
+                    for region in self.prepared_poly_runtime_regions.iter_mut() {
+                        region.route_note_events(std::slice::from_ref(&routed), frames);
+                    }
+                }
+            }
         }
 
         for (input_index, planned) in self.compiled.root_bus_plan().inputs().iter().enumerate() {
@@ -660,10 +715,10 @@ impl RealtimeGraphProcessor {
                 self.audio_arena.clear(buffer, frames);
                 if planned.is_bound() {
                     if let Some(source) = inputs.get(input_index).and_then(|bus| bus.get(channel)) {
-                        let actual = frames.min(source.len());
+                        let actual = frames.min(source.len().saturating_sub(segment_start));
                         self.audio_arena
                             .slice_mut(buffer, actual)
-                            .copy_from_slice(&source[..actual]);
+                            .copy_from_slice(&source[segment_start..segment_start + actual]);
                     }
                 }
             }
@@ -817,14 +872,15 @@ impl RealtimeGraphProcessor {
         {
             let Some(span) = planned.span() else { continue };
             for (channel, destination) in bus.iter_mut().enumerate().take(span.channel_count) {
-                destination[..frames].copy_from_slice(self.audio_arena.slice(
-                    super::render_plan::BufferId(span.first_buffer + channel),
-                    frames,
-                ));
+                destination[segment_start..segment_start + frames].copy_from_slice(
+                    self.audio_arena.slice(
+                        super::render_plan::BufferId(span.first_buffer + channel),
+                        frames,
+                    ),
+                );
             }
         }
         self.current_frame += frames as u64;
-        frames
     }
 
     #[cfg(test)]
