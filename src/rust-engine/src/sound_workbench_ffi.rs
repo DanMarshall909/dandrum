@@ -33,7 +33,6 @@ pub struct DandrumSoundMatch {
 }
 
 struct SoundMatchFfiArtifact {
-    fixture: crate::sound_workbench::SoundFixture,
     matched: crate::sound_matching::SoundMatchArtifact,
     manifest_json: String,
 }
@@ -426,57 +425,27 @@ unsafe fn create_graph_proposal_with_provider(
     let result = (unsafe { match_artifact(matched) })
         .ok_or_else(|| "a completed sound match is required for a graph proposal".to_string())
         .and_then(|artifact| {
-            let (request, kernel_format) = if let Ok(patch) =
-                crate::kernel::document::load_kernel_patch_str(&artifact.matched.patch_yaml)
-            {
-                (
-                    crate::graph_proposal::build_kernel_graph_proposal_request(
-                        &patch,
-                        &artifact.matched.manifest,
-                        &artifact.matched.candidate_metrics,
-                        &artifact.matched.reference_metrics,
-                    )?,
-                    true,
+            let patch = crate::kernel::document::load_kernel_patch_str(
+                &artifact.matched.patch_yaml,
+            )
+            .map_err(|error| {
+                format!(
+                    "failed to load the matched kernel patch snapshot for graph proposal: {error}"
                 )
-            } else {
-                let patch = crate::patch::load_patch_str(&artifact.matched.patch_yaml).map_err(
-                    |error| {
-                        format!(
-                            "failed to load the matched patch snapshot for graph proposal: {error}"
-                        )
-                    },
-                )?;
-                (
-                    crate::graph_proposal::build_graph_proposal_request(
-                        &patch,
-                        &artifact.matched.manifest,
-                        &artifact.matched.candidate_metrics,
-                        &artifact.matched.reference_metrics,
-                    )?,
-                    false,
-                )
-            };
+            })?;
+            let request = crate::graph_proposal::build_kernel_graph_proposal_request(
+                &patch,
+                &artifact.matched.manifest,
+                &artifact.matched.candidate_metrics,
+                &artifact.matched.reference_metrics,
+            )?;
             let is_cancelled =
                 || cancellation_callback.is_some_and(|callback| !unsafe { callback(context) });
-            let patch_root = artifact
-                .fixture
-                .patch
-                .parent()
-                .unwrap_or_else(|| std::path::Path::new("."));
-            if kernel_format {
-                crate::graph_proposal::request_validated_kernel_graph_proposal(
-                    provider,
-                    &request,
-                    &is_cancelled,
-                )
-            } else {
-                crate::graph_proposal::request_validated_graph_proposal(
-                    provider,
-                    &request,
-                    patch_root,
-                    &is_cancelled,
-                )
-            }
+            crate::graph_proposal::request_validated_kernel_graph_proposal(
+                provider,
+                &request,
+                &is_cancelled,
+            )
         });
     Box::into_raw(Box::new(DandrumGraphProposal { result }))
 }
@@ -615,7 +584,6 @@ fn match_fixture_artifact(
     let manifest_json = serde_json::to_string(&matched.manifest)
         .map_err(|error| format!("failed to serialize sound match manifest: {error}"))?;
     Ok(SoundMatchFfiArtifact {
-        fixture,
         matched,
         manifest_json,
     })
@@ -1410,6 +1378,58 @@ connections:
             1
         );
         drop(requests);
+        unsafe { dandrum_graph_proposal_destroy(proposal) };
+        unsafe { dandrum_sound_match_destroy(matched) };
+    }
+
+    #[test]
+    fn ffi_proposal_rejects_legacy_matched_snapshot_before_contacting_provider() {
+        let (_directory, fixture_path, reference_path) = short_match_files();
+        let matched = unsafe {
+            dandrum_sound_match_create(
+                fixture_path.as_ptr(),
+                reference_path.as_ptr(),
+                None,
+                std::ptr::null_mut(),
+            )
+        };
+        assert!(unsafe { dandrum_sound_match_is_ok(matched) });
+        unsafe { &mut *matched }
+            .result
+            .as_mut()
+            .unwrap()
+            .matched
+            .patch_yaml = r#"
+metadata: { name: Legacy proposal snapshot }
+render: { sample_rate_hz: 48000, block_size_frames: 64, duration_frames: 64 }
+modules:
+  - { id: osc, type: oscillator }
+  - { id: out, type: audio_output }
+connections:
+  - { from: osc.audio, to: out.left }
+"#
+        .to_string();
+        let provider = TestProposalProvider {
+            response: Err("provider should not be called".to_string()),
+            requests: Mutex::new(Vec::new()),
+        };
+
+        let proposal = unsafe {
+            create_graph_proposal_with_provider(matched, &provider, None, std::ptr::null_mut())
+        };
+
+        assert!(!unsafe { dandrum_graph_proposal_is_ok(proposal) });
+        assert!(provider.requests.lock().unwrap().is_empty());
+        let mut error = [0_i8; 512];
+        assert!(unsafe {
+            dandrum_graph_proposal_error_message(proposal, error.as_mut_ptr(), error.len())
+        });
+        assert!(
+            unsafe { CStr::from_ptr(error.as_ptr()) }
+                .to_str()
+                .unwrap()
+                .contains("kernel patch")
+        );
         unsafe { dandrum_graph_proposal_destroy(proposal) };
         unsafe { dandrum_sound_match_destroy(matched) };
     }
