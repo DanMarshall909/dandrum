@@ -851,6 +851,17 @@ fn legacy_composite_asset_bindings_are_rejected_with_definition_context() {
 }
 
 #[test]
+fn legacy_composite_parameters_are_rejected_with_definition_context() {
+    let yaml = "ports: []\nmodule_definitions:\n  - type: child\n    parameters: []\n    ports: []\n    modules: []\n    connections: []\nmodules: []\nconnections: []\n";
+    let diagnostics = load_kernel_patch_str(yaml).expect_err("legacy parameters fail");
+    assert_eq!(
+        diagnostics.all()[0].error_code(),
+        error_codes::KERNEL_DOCUMENT_LEGACY_PARAMETERS
+    );
+    assert_eq!(diagnostics.all()[0].module_id(), Some("child"));
+}
+
+#[test]
 fn patch_without_root_output_has_structured_diagnostic() {
     let yaml = "metadata: { name: silent }\nports:\n  - { name: level, direction: input, signal: control, channels: 1, default: 0 }\nmodules: []\nconnections: []\n";
     let diagnostics = load_kernel_patch_str(yaml).expect_err("root output is required");

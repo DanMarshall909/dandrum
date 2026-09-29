@@ -3085,6 +3085,89 @@ mod tests {
     }
 
     #[test]
+    fn released_nested_poly_voice_retires_its_inner_pool_after_silence() {
+        let inner = GraphDefinition::new("inner")
+            .with_port(
+                KernelPort::output("audio", SignalType::Audio, 1)
+                    .maps_from(kernel_ref("gain", builtin_ports::AUDIO_OUT)),
+            )
+            .with_node(
+                Node::new(NodeId::new("constant"), module_types::CONTROL_TO_AUDIO)
+                    .with_default_override(builtin_ports::IN, 0.25),
+            )
+            .with_node(
+                Node::new(NodeId::new("envelope"), module_types::ADSR)
+                    .with_default_override(builtin_ports::ATTACK, 0.0)
+                    .with_default_override(builtin_ports::SUSTAIN, 0.5)
+                    .with_default_override(builtin_ports::RELEASE, 0.0),
+            )
+            .with_node(Node::new(NodeId::new("gain"), module_types::GAIN))
+            .with_connection(Connection::new(
+                kernel_ref("constant", builtin_ports::OUT),
+                kernel_ref("gain", builtin_ports::AUDIO_IN),
+            ))
+            .with_connection(Connection::new(
+                kernel_ref("envelope", builtin_ports::VALUE),
+                kernel_ref("gain", builtin_ports::GAIN),
+            ))
+            .with_connection(Connection::new(
+                kernel_ref(
+                    crate::kernel::VOICE_INTRINSIC_NODE,
+                    crate::kernel::VOICE_GATE_OUTPUT,
+                ),
+                kernel_ref("envelope", builtin_ports::GATE),
+            ));
+        let outer = GraphDefinition::new("outer")
+            .with_port(
+                KernelPort::output("audio", SignalType::Audio, 1)
+                    .maps_from(kernel_ref("inner_voices", "audio")),
+            )
+            .with_node(poly_node("inner_voices", "inner", 1))
+            .with_connection(Connection::new(
+                kernel_ref(
+                    crate::kernel::VOICE_INTRINSIC_NODE,
+                    crate::kernel::VOICE_GATE_OUTPUT,
+                ),
+                kernel_ref("inner_voices", "notes"),
+            ));
+        let root = GraphDefinition::new("root")
+            .with_port(
+                KernelPort::output("master", SignalType::Audio, 1)
+                    .maps_from(kernel_ref("voices", "audio")),
+            )
+            .with_node(poly_node("voices", "outer", 1));
+        let prepared = prepare_kernel_graph_with_buses(
+            &root,
+            &builtin_registry().with_definition(inner).with_definition(outer),
+            &KERNEL_RENDER_SETTINGS,
+            &HostBuses::new().with_output("master", 1),
+        )
+        .expect("nested envelope prepares");
+        let mut runtime = runtime_for(&prepared);
+        let frames = KERNEL_RENDER_SETTINGS.block_size_frames as usize;
+        let mut outputs = vec![vec![vec![0.0; frames]]];
+        runtime.note_on(60, 100);
+        for _ in 0..200 {
+            assert_eq!(runtime.render_root_outputs(&mut outputs), frames);
+        }
+        assert_eq!(outputs[0][0], vec![0.125; frames]);
+        runtime.note_off(60);
+        for _ in 0..120 {
+            assert_eq!(runtime.render_root_outputs(&mut outputs), frames);
+        }
+        assert_eq!(outputs[0][0], vec![0.0; frames]);
+        let outer_region = &runtime.prepared_poly_runtime_regions()[0];
+        assert_eq!(outer_region.active_voice_count(), 0);
+        assert_eq!(
+            outer_region
+                .nested_region_for_voice(0, "inner_voices")
+                .unwrap()
+                .active_voice_count(),
+            0
+        );
+    }
+
+    #[test]
     fn nested_poly_root_output_survives_later_consumers_of_the_same_source() {
         let inner = constant_voice("inner_liveness", 0.25);
         let outer = GraphDefinition::new("outer_liveness")
