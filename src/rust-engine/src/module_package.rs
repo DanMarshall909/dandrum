@@ -262,6 +262,49 @@ mod tests {
     }
 
     #[test]
+    fn package_entry_reports_name_and_read_failures() {
+        let directory = tempfile::tempdir().expect("temporary package root");
+        let folder = directory.path().join("voice");
+        fs::create_dir_all(&folder).expect("create package folder");
+        let mismatched = folder.join("other.yaml");
+        let error = validate_package_entry_path(&mismatched)
+            .expect_err("entry must mirror folder name");
+        assert_eq!(
+            error.to_diagnostic().error_code(),
+            error_codes::LIBRARY_PACKAGE_NAME_MISMATCH
+        );
+        assert!(error.to_diagnostic().message().contains("voice.yaml"));
+
+        let missing = folder.join("voice.yaml");
+        let error = load_kernel_entry("$LIB/voice/voice.yaml", &missing, &folder)
+            .expect_err("missing entry cannot be loaded");
+        assert_eq!(
+            error.to_diagnostic().error_code(),
+            error_codes::LIBRARY_PACKAGE_READ_FAILED
+        );
+        assert!(error.to_diagnostic().message().contains("voice.yaml"));
+    }
+
+    #[test]
+    fn package_resolution_reports_missing_root_and_entry() {
+        let directory = tempfile::tempdir().expect("temporary directory");
+        let missing_root = directory.path().join("missing");
+        let context = PreparationContext::new(directory.path(), 48_000)
+            .with_macro_roots(MacroRoots::new().with_root(LIB_MACRO, &missing_root));
+        let reference = "$LIB/1.0.0/voice/voice.yaml";
+        let error = resolve_contained_entry(reference, &context)
+            .expect_err("missing library root fails");
+        assert_eq!(error.to_diagnostic().error_code(), error_codes::LIBRARY_PACKAGE_READ_FAILED);
+        assert!(error.to_diagnostic().message().contains("missing"));
+
+        fs::create_dir_all(&missing_root).expect("create library root");
+        let error = resolve_contained_entry(reference, &context)
+            .expect_err("missing package entry fails");
+        assert_eq!(error.to_diagnostic().error_code(), error_codes::LIBRARY_PACKAGE_READ_FAILED);
+        assert!(error.to_diagnostic().message().contains("voice.yaml"));
+    }
+
+    #[test]
     fn packaged_kernel_definition_is_equivalent_to_inline_definition() {
         const DEFINITION: &str = r#"
 ports:

@@ -299,6 +299,37 @@ fn preset_application_requires_instrument_identity_and_known_asset_target() {
 }
 
 #[test]
+fn preset_surface_rejects_unknown_asset_destination_and_duplicate_parameter_name() {
+    let missing_asset = PRESET_PATCH.replace("maps_to: sample }", "maps_to: missing }");
+    let error = load_kernel_patch_str(&missing_asset)
+        .expect_err("asset target must name a resource static parameter");
+    assert!(error.to_string().contains("unresolved resource static parameter missing"));
+
+    let duplicate_parameter = PRESET_PATCH.replace(
+        "    - { name: loudness, maps_to: volume }",
+        "    - { name: loudness, maps_to: volume }\n    - { name: loudness, maps_to: out }",
+    );
+    let error = load_kernel_patch_str(&duplicate_parameter)
+        .expect_err("duplicate parameter target must fail");
+    assert!(error.to_string().contains("duplicate preset target loudness"));
+}
+
+#[test]
+fn malformed_yaml_shapes_fail_schema_without_panicking() {
+    for yaml in [
+        "42",
+        "module_definitions: [42]\nports: []\nmodules: []\nconnections: []\n",
+        "ports: []\nmodules: [42]\nconnections: []\n",
+    ] {
+        let error = load_kernel_patch_str(yaml).expect_err("malformed document fails");
+        assert_eq!(
+            error.errors().next().unwrap().error_code(),
+            error_codes::KERNEL_DOCUMENT_SCHEMA_FAILED
+        );
+    }
+}
+
+#[test]
 fn missing_kernel_patch_file_has_read_diagnostic() {
     let directory = tempfile::tempdir().expect("temporary directory");
     let path = directory.path().join("absent.yaml");
