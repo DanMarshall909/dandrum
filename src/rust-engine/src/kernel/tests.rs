@@ -633,6 +633,44 @@ fn nested_public_mapping_to_wrong_direction_is_rejected() {
 }
 
 #[test]
+fn a_primitive_can_replace_a_composite_without_changing_the_caller_graph() {
+    let input = Port::input("audio_in", SignalType::Audio, 1);
+    let output = Port::output("audio_out", SignalType::Audio, 1);
+    let composite = GraphDefinition::new("voice")
+        .with_port(input.clone().maps_to(PortRef::new(NodeId::new("inner"), "audio_in")))
+        .with_port(output.clone().maps_from(PortRef::new(NodeId::new("inner"), "audio_out")))
+        .with_node(Node::new(NodeId::new("inner"), "gain"));
+    let primitive = GraphDefinition::new("voice")
+        .with_latency(LatencySpec::Zero)
+        .with_port(input)
+        .with_port(output);
+    let caller = GraphDefinition::new("caller")
+        .with_port(
+            Port::input("in", SignalType::Audio, 1)
+                .maps_to(PortRef::new(NodeId::new("voice"), "audio_in")),
+        )
+        .with_port(
+            Port::output("out", SignalType::Audio, 1)
+                .maps_from(PortRef::new(NodeId::new("voice"), "audio_out")),
+        )
+        .with_node(Node::new(NodeId::new("voice"), "voice"));
+    let inline_registry = DefinitionRegistry::new()
+        .with_definition(gain_primitive())
+        .with_definition(composite);
+    let primitive_registry = DefinitionRegistry::new().with_definition(primitive);
+
+    let inline = caller.flatten(&inline_registry).expect("composite flattens");
+    let atomic = caller.flatten(&primitive_registry).expect("primitive flattens");
+    assert_eq!(inline.root_ports(), atomic.root_ports());
+    assert_eq!(inline.root_input_destinations()["in"].len(), 1);
+    assert_eq!(atomic.root_input_destinations()["in"].len(), 1);
+    assert_eq!(inline.root_output_sources()["out"].len(), 1);
+    assert_eq!(atomic.root_output_sources()["out"].len(), 1);
+    assert_eq!(inline.nodes()[0].definition(), "gain");
+    assert_eq!(atomic.nodes()[0].definition(), "voice");
+}
+
+#[test]
 fn connection_to_a_port_the_definition_does_not_declare_reports_a_missing_port() {
     let registry = DefinitionRegistry::new().with_definition(gain_primitive());
     let definition = GraphDefinition::new("root")
