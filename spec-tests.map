@@ -1219,7 +1219,7 @@ AC reverb :: Reverb SHALL use Schroeder/Moorer topology :: Impulse response has 
 
 AC rust-engine-architecture :: Compiled patch drives offline and realtime rendering :: Event routing uses typed event edges
   fp 70a53ab145f9
-  test rust:prepared_poly_note_routing_performs_no_realtime_allocations
+  test rust:render_plan_resolves_event_edges_to_event_queue_ids
 
 AC rust-engine-architecture :: Compiled patch drives offline and realtime rendering :: Offline render uses compiled patch
   fp 341ee2b01c77
