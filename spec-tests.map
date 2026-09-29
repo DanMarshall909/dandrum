@@ -121,7 +121,7 @@ AC ai-graph-proposals :: Every provider proposal is locally validated :: Provide
 
 AC ai-graph-proposals :: Every provider proposal is locally validated :: Provider returns invalid or unsafe content
   fp 071e026f1a35
-  test rust:local_validation_rejects_assets_scripts_unknown_modules_and_unknown_search_controls
+  test rust:local_validation_rejects_nested_unsafe_modules_and_unknown_search_controls
   test rust:response_parser_rejects_malformed_json_and_unknown_fields
   test rust:kernel_proposals_are_prepared_and_unsafe_or_unbounded_responses_are_rejected
 

@@ -209,6 +209,7 @@ impl BuiltInModuleDefinition {
         self
     }
 
+    #[cfg(test)]
     pub fn execution_scope(&self) -> ExecutionScope {
         self.execution_scope
     }

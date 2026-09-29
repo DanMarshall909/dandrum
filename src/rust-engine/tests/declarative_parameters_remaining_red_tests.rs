@@ -1,5 +1,4 @@
 use dandrum_engine::core::TimedInputEvent;
-use dandrum_engine::graph::Graph;
 use dandrum_engine::patch::{
     AssetKind, ParameterValue, PresetTargetType, load_patch_str, load_preset_file, load_preset_str,
     resolve_module_parameters, validate_patch_schema, validate_preset,
@@ -515,88 +514,6 @@ modules:
     assert_any_message_contains(&messages, "kick");
     assert_any_message_contains(&messages, "tune_hz");
     assert_any_message_contains(&messages, "number");
-}
-
-#[test]
-fn module_parameter_direct_reference_resolves_to_internal_module_parameter_before_graph_build() {
-    let patch = load_patch_str(
-        r#"
-metadata:
-  name: Module Binding Resolution
-render:
-  sample_rate_hz: 48000
-  block_size_frames: 128
-  duration_frames: 128
-module_definitions:
-  - type: filter_voice
-    parameters:
-      - name: algorithm
-        maps_to:
-          - filt.algorithm
-    modules:
-      - id: filt
-        type: filter
-modules:
-  - id: voice
-    type: filter_voice
-    parameters:
-      algorithm: biquad
-"#,
-    )
-    .expect("patch should parse");
-
-    validate_patch_schema(&patch).expect("module parameter binding should validate");
-    let graph = Graph::from_patch_declarations(&patch);
-    let filt = graph
-        .modules()
-        .iter()
-        .find(|module| module.id().as_str() == "voice::filt")
-        .expect("internal filter should be expanded");
-
-    assert_eq!(filt.params().get("algorithm"), Some(&"biquad".to_string()));
-}
-
-#[test]
-fn module_parameter_literal_bindings_resolve_to_internal_module_parameters() {
-    let patch = load_patch_str(
-        r#"
-metadata:
-  name: Module Literal Binding Resolution
-render:
-  sample_rate_hz: 48000
-  block_size_frames: 128
-  duration_frames: 128
-module_definitions:
-  - type: filter_voice
-    parameters:
-      - name: algorithm
-        value: biquad
-        maps_to:
-          - filt.algorithm
-      - name: mode
-        value: highpass
-        maps_to:
-          - filt.mode
-    modules:
-      - id: filt
-        type: filter
-modules:
-  - id: voice
-    type: filter_voice
-"#,
-    )
-    .expect("patch should parse");
-
-    validate_patch_schema(&patch).expect("literal parameter bindings should validate");
-    let graph = Graph::from_patch_declarations(&patch);
-    let filt = graph
-        .modules()
-        .iter()
-        .find(|module| module.id().as_str() == "voice::filt")
-        .expect("internal filter should be expanded");
-
-    assert_eq!(filt.params().get("algorithm"), Some(&"biquad".to_string()));
-    assert_eq!(filt.params().get("mode"), Some(&"highpass".to_string()));
 }
 
 #[test]

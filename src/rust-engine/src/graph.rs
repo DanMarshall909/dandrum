@@ -1,11 +1,15 @@
 use std::collections::{BTreeMap, BTreeSet};
 
+#[cfg(test)]
 use crate::patch::ParameterValue;
 use std::fmt;
 
+#[cfg(test)]
 use crate::builtins::{BuiltInModuleRegistry, module_types};
+#[cfg(test)]
 use crate::patch;
 
+#[cfg(test)]
 #[path = "graph_module.rs"]
 mod graph_module;
 
@@ -271,6 +275,7 @@ impl Graph {
         Self { modules, cables }
     }
 
+    #[cfg(test)]
     pub fn from_patch_declarations(patch: &patch::PatchDocument) -> Self {
         let registry = BuiltInModuleRegistry::new();
         let (module_declarations, connection_declarations) =
@@ -720,6 +725,7 @@ impl GraphValidationError {
     }
 }
 
+#[cfg(test)]
 pub fn parameter_value_to_string(value: &ParameterValue) -> String {
     match value {
         ParameterValue::Boolean(b) => b.to_string(),
@@ -728,6 +734,7 @@ pub fn parameter_value_to_string(value: &ParameterValue) -> String {
     }
 }
 
+#[cfg(test)]
 impl From<&patch::SignalType> for SignalType {
     fn from(signal_type: &patch::SignalType) -> Self {
         match signal_type {

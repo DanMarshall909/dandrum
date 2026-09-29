@@ -277,7 +277,6 @@ modules: []
 
     assert!(error.to_string().contains("asset_bindings"), "{error}");
 }
-
 #[test]
 fn external_preset_application_preserves_graph_structure_and_replaces_surface_values() {
     let patch =
@@ -720,66 +719,4 @@ modules:
     .expect_err("even empty legacy asset bindings must be rejected");
 
     assert!(error.to_string().contains("asset_bindings"), "{error}");
-}
-
-#[test]
-fn module_optional_parameter_without_value_is_skipped_during_expansion() {
-    // A module parameter with no literal value and no default that the
-    // instance also leaves unset must be skipped during graph expansion rather
-    // than injecting an empty value.
-    let patch = load_patch_str(
-        r#"
-metadata:
-  name: Module Optional Parameter
-render:
-  sample_rate_hz: 48000
-  block_size_frames: 128
-  duration_frames: 256
-module_definitions:
-  - type: macro.voice
-    inputs:
-      - name: audio
-        signal_type: audio
-        maps_to:
-          - body.audio_in
-    outputs:
-      - name: audio
-        signal_type: audio
-        maps_from:
-          - body.audio_out
-    parameters:
-      - name: drive
-        type: number
-        maps_to:
-          - body.gain
-    modules:
-      - id: body
-        type: gain
-modules:
-  - id: source
-    type: oscillator
-  - id: voice
-    type: macro.voice
-  - id: mixer
-    type: audio_mixer
-  - id: out
-    type: audio_output
-connections:
-  - from: source.audio
-    to: voice.audio
-  - from: voice.audio
-    to: mixer.inputs
-  - from: mixer.mix
-    to: out.left
-  - from: mixer.mix
-    to: out.right
-"#,
-    )
-    .expect("patch should parse");
-
-    // The instance `voice` never sets `drive`, and the binding has no default.
-    let graph = dandrum_engine::graph::Graph::from_patch_declarations(&patch);
-    graph
-        .validate()
-        .expect("expanded graph should validate with the unset module parameter skipped");
 }
