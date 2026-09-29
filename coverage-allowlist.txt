@@ -45,14 +45,14 @@ allow src/rust-engine/src/kernel/document.rs:1051 earlier legacy binding validat
 allow src/rust-engine/src/kernel/document.rs:1052 earlier legacy binding validation
 
 # Declared root inputs always have an interface entry, including empty targets.
-allow src/rust-engine/src/kernel/flatten.rs:222 declared root input has interface entry
+allow src/rust-engine/src/kernel/flatten.rs:233 declared root input has interface entry
 
 # Poly static arguments and synthesized ports are checked before flattening.
-allow src/rust-engine/src/kernel/flatten.rs:375 validated poly port resolution
-allow src/rust-engine/src/kernel/flatten.rs:379 validated poly definition argument
-allow src/rust-engine/src/kernel/flatten.rs:384 validated positive poly voice count
-allow src/rust-engine/src/kernel/flatten.rs:386 validated poly voice count type
-allow src/rust-engine/src/kernel/flatten.rs:392 validated poly allocation policy
+allow src/rust-engine/src/kernel/flatten.rs:386 validated poly port resolution
+allow src/rust-engine/src/kernel/flatten.rs:390 validated poly definition argument
+allow src/rust-engine/src/kernel/flatten.rs:395 validated positive poly voice count
+allow src/rust-engine/src/kernel/flatten.rs:397 validated poly voice count type
+allow src/rust-engine/src/kernel/flatten.rs:403 validated poly allocation policy
 
 # Public package references have a UTF-8 package name; the remaining lines are
 # panic branches in tests that assert the successful package/resource path.

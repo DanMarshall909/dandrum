@@ -153,6 +153,17 @@ impl FlattenedGraph {
         self.nodes.iter().find(|node| node.id() == id)
     }
 
+    /// Record the audio latency of a prepared poly child before its parent is
+    /// balanced. The region and structural node are created together by flattening.
+    pub(crate) fn set_poly_region_latency(&mut self, id: &NodeId, samples: u32) {
+        let node = self
+            .nodes
+            .iter_mut()
+            .find(|node| node.id == *id && node.definition == POLY_DEFINITION)
+            .expect("flattened poly region has a structural node");
+        node.latency = samples;
+    }
+
     /// The number of distinct `(definition, static arguments)` keys structurally
     /// expanded — i.e. cache misses. Repeated identical instances do not
     /// increase this count.

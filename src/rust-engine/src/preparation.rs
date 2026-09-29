@@ -12,7 +12,7 @@ use crate::compiled_patch::{
 use crate::diagnostics::{self, Diagnostic, Severity};
 use crate::graph::{Cable, Graph, ModuleId, ModuleNode, PortDirection, PortRef, SignalType};
 use crate::kernel::document::KernelPatch;
-use crate::kernel::flatten::FlattenedGraph;
+use crate::kernel::flatten::{FlattenedGraph, FlattenedPolyRegion};
 use crate::kernel::latency::LatencyPlan;
 use crate::kernel::{
     DefinitionRegistry, GraphDefinition, PortMetadata, ResourceKind, ResourceOrigin, ResourceRef,
@@ -590,7 +590,7 @@ fn prepare_kernel_graph_with_buses_internal(
         return Err(validation.diagnostics().clone().into());
     }
 
-    let flattened_graph = resolved_root
+    let mut flattened_graph = resolved_root
         .flatten(&resolved_registry)
         .map_err(KernelPreparationError::from)?;
     let mut host_buses = host_buses.clone();
@@ -605,9 +605,8 @@ fn prepare_kernel_graph_with_buses_internal(
         }
     }
     validate_host_buses(&flattened_graph, &host_buses)?;
-    let latency_plan = flattened_graph
-        .balance_latency()
-        .map_err(KernelPreparationError::from)?;
+    let latency_plan =
+        balance_poly_latencies(&mut flattened_graph, &resolved_registry, &mut Vec::new())?;
     let mut resource_resolver = context.map(ResourceResolver::new);
     let resources = match resource_resolver.as_mut() {
         Some(resolver) => resolve_flattened_resources(&flattened_graph, resolver)?,
@@ -727,6 +726,68 @@ fn resolve_external_definitions(
     Ok((resolved_root, resolved))
 }
 
+/// Resolve nested voice latency before balancing the enclosing graph. A poly
+/// node is structural at render time, but its child audio path contributes
+/// real latency to every parent path and feedback cycle containing that node.
+fn balance_poly_latencies(
+    flattened: &mut FlattenedGraph,
+    registry: &DefinitionRegistry,
+    path: &mut Vec<String>,
+) -> Result<LatencyPlan, KernelPreparationError> {
+    for region in flattened.poly_regions().to_vec() {
+        validate_poly_region_path(&region, path)?;
+        let wrapped_name = region.wrapped_definition();
+        path.push(wrapped_name.to_string());
+        let wrapped = registry
+            .get(wrapped_name)
+            .expect("validated poly region references an existing definition");
+        let mut voice_scope_diagnostics = diagnostics::Diagnostics::new();
+        let scoped_voice = wrapped
+            .with_voice_intrinsics(&mut voice_scope_diagnostics)
+            .ok_or_else(|| KernelPreparationError::from(voice_scope_diagnostics.clone()))?;
+        let mut child = scoped_voice
+            .flatten(registry)
+            .map_err(KernelPreparationError::from)?;
+        let child_plan = balance_poly_latencies(&mut child, registry, path)?;
+        path.pop();
+        flattened.set_poly_region_latency(region.node_id(), child_plan.root_latency());
+    }
+    flattened
+        .balance_latency()
+        .map_err(KernelPreparationError::from)
+}
+
+fn validate_poly_region_path(
+    region: &FlattenedPolyRegion,
+    path: &[String],
+) -> Result<(), KernelPreparationError> {
+    let code = if path.iter().any(|name| name == region.wrapped_definition()) {
+        Some(diagnostics::error_codes::KERNEL_RECURSIVE_DEFINITION)
+    } else if path.len() >= crate::kernel::flatten::MAX_FLATTEN_DEPTH {
+        Some(diagnostics::error_codes::KERNEL_MAX_DEPTH_EXCEEDED)
+    } else {
+        None
+    };
+    if let Some(code) = code {
+        return Err(KernelPreparationError::from(
+            diagnostics::Diagnostics::from(
+                Diagnostic::new(
+                    code,
+                    Severity::Error,
+                    format!(
+                        "poly region '{}' cannot expand wrapped definition '{}' after {}",
+                        region.node_id().as_str(),
+                        region.wrapped_definition(),
+                        path.join(" -> ")
+                    ),
+                )
+                .with_module_id(region.node_id().as_str()),
+            ),
+        ));
+    }
+    Ok(())
+}
+
 fn resolve_flattened_resources(
     flattened: &FlattenedGraph,
     resolver: &mut ResourceResolver<'_>,
@@ -787,30 +848,7 @@ fn compile_poly_regions_with_path(
 ) -> Result<Vec<CompiledPolyRegion>, KernelPreparationError> {
     let mut compiled_regions = Vec::with_capacity(flattened.poly_regions().len());
     for region in flattened.poly_regions() {
-        let code = if path.iter().any(|name| name == region.wrapped_definition()) {
-            Some(diagnostics::error_codes::KERNEL_RECURSIVE_DEFINITION)
-        } else if path.len() >= crate::kernel::flatten::MAX_FLATTEN_DEPTH {
-            Some(diagnostics::error_codes::KERNEL_MAX_DEPTH_EXCEEDED)
-        } else {
-            None
-        };
-        if let Some(code) = code {
-            return Err(KernelPreparationError::from(
-                diagnostics::Diagnostics::from(
-                    Diagnostic::new(
-                        code,
-                        Severity::Error,
-                        format!(
-                            "poly region '{}' cannot expand wrapped definition '{}' after {}",
-                            region.node_id().as_str(),
-                            region.wrapped_definition(),
-                            path.join(" -> ")
-                        ),
-                    )
-                    .with_module_id(region.node_id().as_str()),
-                ),
-            ));
-        }
+        validate_poly_region_path(region, path)?;
         path.push(region.wrapped_definition().to_string());
         let wrapped = registry
             .get(region.wrapped_definition())
@@ -819,13 +857,10 @@ fn compile_poly_regions_with_path(
         let scoped_voice = wrapped
             .with_voice_intrinsics(&mut voice_scope_diagnostics)
             .ok_or_else(|| KernelPreparationError::from(voice_scope_diagnostics.clone()))?;
-        let child_flattened = scoped_voice
+        let mut child_flattened = scoped_voice
             .flatten(registry)
             .map_err(KernelPreparationError::from)?;
-
-        let latency_plan = child_flattened
-            .balance_latency()
-            .map_err(KernelPreparationError::from)?;
+        let latency_plan = balance_poly_latencies(&mut child_flattened, registry, path)?;
         let resources = match resource_resolver.as_deref_mut() {
             Some(resolver) => resolve_flattened_resources(&child_flattened, resolver)?,
             None => BTreeMap::new(),
@@ -5143,6 +5178,143 @@ connections:
                 "frame {frame} was {sample}, expected {expected} within {IMPULSE_TOLERANCE}"
             );
         }
+    }
+
+    fn delayed_poly_voice(name: &str) -> GraphDefinition {
+        GraphDefinition::new(name)
+            .with_port(
+                KernelPort::output("audio", SignalType::Audio, 1)
+                    .maps_from(kernel_ref("delay", builtin_ports::AUDIO_OUT)),
+            )
+            .with_node(
+                Node::new(NodeId::new("source"), module_types::CONTROL_TO_AUDIO)
+                    .with_default_override(builtin_ports::IN, 0.5),
+            )
+            .with_node(
+                Node::new(NodeId::new("delay"), module_types::COMPENSATION_DELAY).with_static_arg(
+                    DELAY_SAMPLES_PARAMETER,
+                    StaticArg::Literal(StaticValue::Int(3)),
+                ),
+            )
+            .with_connection(Connection::new(
+                kernel_ref("source", builtin_ports::OUT),
+                kernel_ref("delay", builtin_ports::AUDIO_IN),
+            ))
+    }
+
+    fn assert_poly_latency_aligns_parent_outputs(voice_name: &str, registry: &DefinitionRegistry) {
+        let root = GraphDefinition::new("root")
+            .with_port(
+                KernelPort::output("dry", SignalType::Audio, 1)
+                    .maps_from(kernel_ref("dry_source", builtin_ports::OUT)),
+            )
+            .with_port(
+                KernelPort::output("wet", SignalType::Audio, 1)
+                    .maps_from(kernel_ref("voices", "audio")),
+            )
+            .with_node(
+                Node::new(NodeId::new("dry_source"), module_types::CONTROL_TO_AUDIO)
+                    .with_default_override(builtin_ports::IN, 0.25),
+            )
+            .with_node(poly_node("voices", voice_name, 1));
+        let prepared = prepare_kernel_graph_with_buses(
+            &root,
+            registry,
+            &KERNEL_RENDER_SETTINGS,
+            &HostBuses::new().with_output("dry", 1).with_output("wet", 1),
+        )
+        .expect("delayed poly graph prepares");
+        assert_eq!(prepared.total_latency_samples(), 3);
+        assert_eq!(prepared.latency_plan().root_compensations().len(), 1);
+        let mut runtime = runtime_for(&prepared);
+        let mut outputs = vec![vec![vec![0.0; 8]]; 2];
+        runtime.note_on(60, 100);
+        assert_eq!(runtime.render_root_outputs(&mut outputs), 8);
+        assert_eq!(outputs[0][0], [0.0, 0.0, 0.0, 0.25, 0.25, 0.25, 0.25, 0.25]);
+        assert_eq!(outputs[1][0], [0.0, 0.0, 0.0, 0.5, 0.5, 0.5, 0.5, 0.5]);
+    }
+
+    #[test]
+    fn delayed_poly_voice_latency_aligns_parent_dry_and_wet_outputs() {
+        let voice = delayed_poly_voice("delayed_voice");
+        assert_poly_latency_aligns_parent_outputs(
+            voice.name(),
+            &builtin_registry().with_definition(voice.clone()),
+        );
+    }
+
+    #[test]
+    fn nested_delayed_poly_voice_latency_aligns_parent_dry_and_wet_outputs() {
+        let inner = delayed_poly_voice("delayed_inner");
+        let outer = GraphDefinition::new("delayed_outer")
+            .with_port(
+                KernelPort::output("audio", SignalType::Audio, 1)
+                    .maps_from(kernel_ref("inner_voices", "audio")),
+            )
+            .with_node(poly_node("inner_voices", inner.name(), 1))
+            .with_connection(Connection::new(
+                kernel_ref(
+                    crate::kernel::VOICE_INTRINSIC_NODE,
+                    crate::kernel::VOICE_GATE_OUTPUT,
+                ),
+                kernel_ref("inner_voices", "notes"),
+            ));
+        assert_poly_latency_aligns_parent_outputs(
+            outer.name(),
+            &builtin_registry()
+                .with_definition(inner)
+                .with_definition(outer.clone()),
+        );
+    }
+
+    #[test]
+    fn delayed_poly_boundary_in_feedback_cycle_is_rejected() {
+        let voice = GraphDefinition::new("delayed_feedback_voice")
+            .with_port(
+                KernelPort::input("audio_in", SignalType::Audio, 1)
+                    .maps_to(kernel_ref("delay", builtin_ports::AUDIO_IN)),
+            )
+            .with_port(
+                KernelPort::output("audio", SignalType::Audio, 1)
+                    .maps_from(kernel_ref("delay", builtin_ports::AUDIO_OUT)),
+            )
+            .with_node(
+                Node::new(NodeId::new("delay"), module_types::COMPENSATION_DELAY).with_static_arg(
+                    DELAY_SAMPLES_PARAMETER,
+                    StaticArg::Literal(StaticValue::Int(3)),
+                ),
+            );
+        let root = GraphDefinition::new("feedback_root")
+            .with_port(
+                KernelPort::output("master", SignalType::Audio, 1)
+                    .maps_from(kernel_ref("voices", "audio")),
+            )
+            .with_node(poly_node("voices", voice.name(), 1))
+            .with_node(
+                Node::new(NodeId::new("feedback"), module_types::FEEDBACK_DELAY).with_static_arg(
+                    DELAY_SAMPLES_PARAMETER,
+                    StaticArg::Literal(StaticValue::Int(8)),
+                ),
+            )
+            .with_connection(Connection::new(
+                kernel_ref("voices", "audio"),
+                kernel_ref("feedback", builtin_ports::AUDIO_IN),
+            ))
+            .with_connection(Connection::new(
+                kernel_ref("feedback", builtin_ports::AUDIO_OUT),
+                kernel_ref("voices", "audio_in"),
+            ));
+        let error = prepare_kernel_graph_with_buses(
+            &root,
+            &builtin_registry().with_definition(voice),
+            &KERNEL_RENDER_SETTINGS,
+            &HostBuses::new().with_output("master", 1),
+        )
+        .expect_err("a delayed poly region cannot be inside a feedback cycle");
+        assert_eq!(
+            error.diagnostics().errors().next().unwrap().error_code(),
+            diagnostics::error_codes::KERNEL_LATENCY_IN_FEEDBACK_CYCLE
+        );
     }
 
     fn latency_test_graph() -> (GraphDefinition, DefinitionRegistry) {
