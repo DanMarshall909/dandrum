@@ -646,7 +646,7 @@ connections: []
             seed_kernel_package(&lib_root, "1.0.0", name, &package);
         }
         let patch = load_kernel_patch_str(
-            "ports:\n  - { name: local, direction: output, signal: audio, channels: 1, maps_from: own.audio_out }\n  - { name: first, direction: output, signal: audio, channels: 1, maps_from: first_package.audio }\n  - { name: second, direction: output, signal: audio, channels: 1, maps_from: second_package.audio }\nmodule_definitions:\n  - type: gain\n    ports:\n      - { name: audio_in, direction: input, signal: audio, channels: 1, maps_to: sink.inputs }\n      - { name: audio_out, direction: output, signal: audio, channels: 1, maps_from: source.out }\n    modules:\n      - { id: sink, type: audio_mixer }\n      - { id: source, type: control_to_audio, defaults: { in: 0.75 } }\n    connections: []\nmodules:\n  - { id: own, type: gain }\n  - { id: first_package, type: $LIB/1.0.0/one/one.yaml }\n  - { id: second_package, type: $LIB/1.0.0/two/two.yaml }\nconnections: []\n",
+            "ports:\n  - { name: local, direction: output, signal: audio, channels: 1, maps_from: own.audio_out }\n  - { name: collision, direction: output, signal: audio, channels: 1, maps_from: special.audio_out }\n  - { name: first, direction: output, signal: audio, channels: 1, maps_from: first_package.audio }\n  - { name: second, direction: output, signal: audio, channels: 1, maps_from: second_package.audio }\nmodule_definitions:\n  - type: gain\n    ports:\n      - { name: audio_in, direction: input, signal: audio, channels: 1, maps_to: sink.inputs }\n      - { name: audio_out, direction: output, signal: audio, channels: 1, maps_from: source.out }\n    modules:\n      - { id: sink, type: audio_mixer }\n      - { id: source, type: control_to_audio, defaults: { in: 0.75 } }\n    connections: []\n  - type: \"#caller::gain\"\n    ports:\n      - { name: audio_out, direction: output, signal: audio, channels: 1, maps_from: source.out }\n    modules:\n      - { id: source, type: control_to_audio, defaults: { in: -0.125 } }\n    connections: []\nmodules:\n  - { id: own, type: gain }\n  - { id: special, type: \"#caller::gain\" }\n  - { id: first_package, type: $LIB/1.0.0/one/one.yaml }\n  - { id: second_package, type: $LIB/1.0.0/two/two.yaml }\nconnections: []\n",
         )
         .unwrap();
         let context = PreparationContext::new(directory.path(), 48_000)
@@ -662,17 +662,32 @@ connections: []
             &settings,
             &HostBuses::new()
                 .with_output("local", 1)
+                .with_output("collision", 1)
                 .with_output("first", 1)
                 .with_output("second", 1),
             &context,
         )
         .expect("caller and both packages prepare without changing each other's bindings");
+        let prepared_again = prepare_kernel_graph_with_buses_and_context(
+            patch.root(),
+            patch.registry(),
+            &settings,
+            &HostBuses::new()
+                .with_output("local", 1)
+                .with_output("collision", 1)
+                .with_output("first", 1)
+                .with_output("second", 1),
+            &context,
+        )
+        .expect("the same caller and packages prepare repeatably");
+        assert_eq!(prepared.compiled_patch(), prepared_again.compiled_patch());
         let outputs =
             render_kernel_offline_named(&prepared, vec![], &PreparedSamplerAssets::empty())
-                .expect("all three branches render");
+                .expect("all four branches render");
         assert_eq!(outputs[0], ("local".to_string(), vec![vec![0.75; 8]]));
-        assert_eq!(outputs[1], ("first".to_string(), vec![vec![0.25; 8]]));
-        assert_eq!(outputs[2], ("second".to_string(), vec![vec![-0.5; 8]]));
+        assert_eq!(outputs[1], ("collision".to_string(), vec![vec![-0.125; 8]]));
+        assert_eq!(outputs[2], ("first".to_string(), vec![vec![0.25; 8]]));
+        assert_eq!(outputs[3], ("second".to_string(), vec![vec![-0.5; 8]]));
     }
 
     #[test]

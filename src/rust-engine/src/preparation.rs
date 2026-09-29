@@ -686,24 +686,52 @@ fn resolve_external_definitions(
         return Ok((root.clone(), registry.clone()));
     }
 
-    // Package parsers include the canonical builtins in their registry. Bind
-    // caller overrides of builtin names to private identities before importing
-    // those package registries: caller nodes retain their own definitions while
-    // package nodes retain the canonical builtins they were authored against.
-    let caller_names = crate::kernel::builtins::builtin_registry()
-        .definitions()
-        .filter(|builtin| {
-            registry
-                .get(builtin.name())
-                .is_some_and(|caller| caller != *builtin)
-        })
-        .map(|builtin| {
-            (
-                builtin.name().to_string(),
-                format!("#caller::{}", builtin.name()),
+    let packages = references
+        .into_iter()
+        .map(|reference| {
+            crate::module_package::load_referenced_kernel_package(reference, context).map_err(
+                |error| {
+                    KernelPreparationError::from(diagnostics::Diagnostics::from(
+                        error.to_diagnostic(),
+                    ))
+                },
             )
         })
-        .collect::<BTreeMap<_, _>>();
+        .collect::<Result<Vec<_>, _>>()?;
+
+    // Package parsers include the canonical builtins in their registry. Bind
+    // caller overrides to fresh identities before importing package definitions,
+    // while preserving every name authored by the caller or a package.
+    let mut occupied = std::iter::once(root.name().to_string())
+        .chain(
+            registry
+                .definitions()
+                .map(|definition| definition.name().to_string()),
+        )
+        .chain(packages.iter().flat_map(|package| {
+            package
+                .registry()
+                .definitions()
+                .map(|definition| definition.name().to_string())
+        }))
+        .collect::<BTreeSet<_>>();
+    let mut caller_names = BTreeMap::new();
+    for builtin in crate::kernel::builtins::builtin_registry().definitions() {
+        if registry
+            .get(builtin.name())
+            .is_some_and(|caller| caller != builtin)
+        {
+            let stem = format!("#caller::{}", builtin.name());
+            let mut alias = stem.clone();
+            let mut suffix = 1;
+            while occupied.contains(&alias) {
+                alias = format!("{stem}::{suffix}");
+                suffix += 1;
+            }
+            occupied.insert(alias.clone());
+            caller_names.insert(builtin.name().to_string(), alias);
+        }
+    }
     let resolved_root = root.with_scoped_definition_refs(root.name(), &caller_names);
     let mut resolved = DefinitionRegistry::new();
     for definition in registry.definitions() {
@@ -714,11 +742,7 @@ fn resolve_external_definitions(
         resolved =
             resolved.with_definition(definition.with_scoped_definition_refs(name, &caller_names));
     }
-    for reference in references {
-        let package = crate::module_package::load_referenced_kernel_package(reference, context)
-            .map_err(|error| {
-                KernelPreparationError::from(diagnostics::Diagnostics::from(error.to_diagnostic()))
-            })?;
+    for package in packages {
         for definition in package.registry().definitions() {
             resolved = resolved.with_definition(definition.clone());
         }
