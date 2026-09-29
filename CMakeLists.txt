@@ -36,6 +36,10 @@ add_test(
         -P ${CMAKE_CURRENT_SOURCE_DIR}/tests/cmake/RetiredEngineFfiSymbols.cmake)
 
 add_test(
+    NAME retired-kernel-fields
+    COMMAND python3 ${CMAKE_CURRENT_SOURCE_DIR}/scripts/check-kernel-retirement.py)
+
+add_test(
     NAME rust-engine-tests
     COMMAND ${CMAKE_COMMAND} -E env CARGO_TARGET_DIR=${CMAKE_CURRENT_BINARY_DIR}/rust-target ${CARGO_BIN} test
     WORKING_DIRECTORY ${RUST_ENGINE_DIR})
