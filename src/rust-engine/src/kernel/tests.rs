@@ -225,6 +225,10 @@ fn private_definition_names_do_not_rewrite_unrelated_string_parameters() {
             StaticParam::new("source", StaticType::String)
                 .with_default(StaticValue::String("helper".to_string())),
         )
+        .with_static_param(
+            StaticParam::new("definition", StaticType::String)
+                .with_default(StaticValue::String("helper".to_string())),
+        )
         .with_scoped_definition_refs(
             "script",
             &BTreeMap::from([("helper".to_string(), "package::helper".to_string())]),
@@ -235,6 +239,10 @@ fn private_definition_names_do_not_rewrite_unrelated_string_parameters() {
     let flat = root.flatten(&registry).expect("string source resolves");
     assert_eq!(
         flat.nodes()[0].static_args().get("source"),
+        Some(&StaticValue::String("helper".to_string()))
+    );
+    assert_eq!(
+        flat.nodes()[0].static_args().get("definition"),
         Some(&StaticValue::String("helper".to_string()))
     );
 }
