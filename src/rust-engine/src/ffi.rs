@@ -590,19 +590,10 @@ pub unsafe extern "C" fn dandrum_patch_public_numeric_parameter_count(
     let Some(path) = c_path(path) else {
         return 0;
     };
-    if let Ok(patch) = crate::kernel::document::load_kernel_patch_file(&path) {
-        return patch.preset_surface().parameters().len();
-    }
-    let Ok(patch) = crate::patch::load_patch_file(&path) else {
+    let Ok(patch) = crate::kernel::document::load_kernel_patch_file(&path) else {
         return 0;
     };
-
-    patch
-        .preset_surface
-        .parameters
-        .iter()
-        .filter(|target| is_numeric_target(target.value_type, &target.default))
-        .count()
+    patch.preset_surface().parameters().len()
 }
 
 #[unsafe(no_mangle)]
@@ -639,50 +630,23 @@ pub unsafe extern "C" fn dandrum_patch_public_numeric_parameter_descriptor(
     let Some(path) = c_path(path) else {
         return false;
     };
-    if let Ok(patch) = crate::kernel::document::load_kernel_patch_file(&path) {
-        let Some(target) = patch.preset_surface().parameters().get(index) else {
-            return false;
-        };
-        if default_value.is_null() || min_value.is_null() || max_value.is_null() {
-            return false;
-        }
-        let control = target.control_default();
-        unsafe {
-            *default_value = control.default();
-            *min_value = control.min().unwrap_or(0.0);
-            *max_value = control.max().unwrap_or(1.0);
-        }
-        return copy_string_to_c_buffer(target.name(), id_buffer, id_buffer_capacity)
-            && copy_string_to_c_buffer(target.name(), name_buffer, name_buffer_capacity);
-    }
-    let Ok(patch) = crate::patch::load_patch_file(&path) else {
+    let Ok(patch) = crate::kernel::document::load_kernel_patch_file(&path) else {
         return false;
     };
-    let Some(target) = patch
-        .preset_surface
-        .parameters
-        .iter()
-        .filter(|target| is_numeric_target(target.value_type, &target.default))
-        .nth(index)
-    else {
+    let Some(target) = patch.preset_surface().parameters().get(index) else {
         return false;
     };
-    let Some(default) = number_value(&target.default) else {
-        return false;
-    };
-
     if default_value.is_null() || min_value.is_null() || max_value.is_null() {
         return false;
     }
-
+    let control = target.control_default();
     unsafe {
-        *default_value = default;
-        *min_value = target.min.unwrap_or(0.0);
-        *max_value = target.max.unwrap_or(1.0);
+        *default_value = control.default();
+        *min_value = control.min().unwrap_or(0.0);
+        *max_value = control.max().unwrap_or(1.0);
     }
-
-    copy_string_to_c_buffer(&target.name, id_buffer, id_buffer_capacity)
-        && copy_string_to_c_buffer(&target.name, name_buffer, name_buffer_capacity)
+    copy_string_to_c_buffer(target.name(), id_buffer, id_buffer_capacity)
+        && copy_string_to_c_buffer(target.name(), name_buffer, name_buffer_capacity)
 }
 
 #[unsafe(no_mangle)]
@@ -1653,12 +1617,12 @@ mod tests {
     }
 
     #[test]
-    fn c_ffi_renders_public_numeric_parameter_descriptors_from_patch_path() {
+    fn c_ffi_public_parameter_metadata_rejects_legacy_patch_paths() {
         let path = write_parameterised_adsr_patch("dandrum_test_public_parameters.yaml");
         let c_path = std::ffi::CString::new(path.to_str().unwrap()).unwrap();
         assert_eq!(
             unsafe { dandrum_patch_public_numeric_parameter_count(c_path.as_ptr()) },
-            1
+            0
         );
 
         let mut id = [0_i8; 64];
@@ -1680,14 +1644,7 @@ mod tests {
             )
         };
 
-        assert!(result);
-        assert_eq!(
-            unsafe { CStr::from_ptr(id.as_ptr()) }.to_str().unwrap(),
-            "env.attack"
-        );
-        assert_eq!(default_value, 5.0);
-        assert_eq!(min_value, 0.0);
-        assert_eq!(max_value, 500.0);
+        assert!(!result);
 
         std::fs::remove_file(path).ok();
     }
