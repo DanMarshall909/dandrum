@@ -1427,58 +1427,6 @@ fn validation_rejects_event_feedback_cycle_without_future_scheduling_boundary() 
     ));
 }
 
-// --- Section 3: Voice sub-synth scope and routing validation ---
-
-#[test]
-fn built_in_voice_modules_are_voice_scope() {
-    let registry = BuiltInModuleRegistry::new();
-
-    for module_type in [
-        "oscillator",
-        "gain",
-        "filter",
-        "adsr",
-        "noise",
-        "sampler",
-        "script",
-        "note_to_rate",
-    ] {
-        let definition = registry.get(module_type).unwrap_or_else(|| {
-            panic!("{module_type} should be built in");
-        });
-        assert_eq!(
-            definition.execution_scope(),
-            ExecutionScope::Voice,
-            "{module_type} should be Voice scope"
-        );
-    }
-}
-
-#[test]
-fn built_in_global_modules_are_global_scope() {
-    let registry = BuiltInModuleRegistry::new();
-
-    for module_type in [
-        "midi_input",
-        "audio_output",
-        "audio_mixer",
-        "control_mixer",
-        "lfo",
-        "audio_delay_one_sample",
-        "block_delay",
-        "control_delay",
-    ] {
-        let definition = registry.get(module_type).unwrap_or_else(|| {
-            panic!("{module_type} should be built in");
-        });
-        assert_eq!(
-            definition.execution_scope(),
-            ExecutionScope::Global,
-            "{module_type} should be Global scope"
-        );
-    }
-}
-
 #[test]
 fn voice_local_sub_synth_chain_through_mixer_validates() {
     let patch = patch::load_patch_str(

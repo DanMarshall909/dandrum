@@ -1,4 +1,4 @@
-use crate::graph::{ExecutionScope, Port, SignalType, builtin_ports};
+use crate::graph::{Port, SignalType, builtin_ports};
 use SignalType::*;
 use builtin_ports::*;
 use module_types::*;
@@ -161,7 +161,6 @@ pub struct BuiltInModuleDefinition {
     module_type: String,
     inputs: Vec<Port>,
     outputs: Vec<Port>,
-    execution_scope: ExecutionScope,
     parameters: Vec<ParameterMetadata>,
     examples: Vec<String>,
     category: ModuleCategory,
@@ -178,7 +177,6 @@ impl BuiltInModuleDefinition {
             module_type: module_type.into(),
             inputs: Vec::new(),
             outputs: Vec::new(),
-            execution_scope: ExecutionScope::Global,
             parameters: Vec::new(),
             examples: Vec::new(),
             category: ModuleCategory::Primitive,
@@ -202,16 +200,6 @@ impl BuiltInModuleDefinition {
 
     pub fn parameters(&self) -> &[ParameterMetadata] {
         &self.parameters
-    }
-
-    pub fn with_execution_scope(mut self, scope: ExecutionScope) -> Self {
-        self.execution_scope = scope;
-        self
-    }
-
-    #[cfg(test)]
-    pub fn execution_scope(&self) -> ExecutionScope {
-        self.execution_scope
     }
 
     pub fn with_input(mut self, port: Port) -> Self {
@@ -340,7 +328,6 @@ fn audio_output_definition() -> BuiltInModuleDefinition {
 
 fn oscillator_definition() -> BuiltInModuleDefinition {
     BuiltInModuleDefinition::new(OSCILLATOR)
-        .with_execution_scope(ExecutionScope::Voice)
         .with_inputs([(PITCH, Control)])
         .with_output(Port::output(AUDIO, Audio))
         .with_parameter(
@@ -371,7 +358,6 @@ fn oscillator_definition() -> BuiltInModuleDefinition {
 
 fn gain_definition() -> BuiltInModuleDefinition {
     BuiltInModuleDefinition::new(module_types::GAIN)
-        .with_execution_scope(ExecutionScope::Voice)
         .with_inputs([(AUDIO_IN, Audio), (builtin_ports::GAIN, Control)])
         .with_output(Port::output(AUDIO_OUT, Audio))
         .with_parameter(
@@ -397,7 +383,6 @@ fn control_mixer_definition() -> BuiltInModuleDefinition {
 
 fn adsr_definition() -> BuiltInModuleDefinition {
     BuiltInModuleDefinition::new(ADSR)
-        .with_execution_scope(ExecutionScope::Voice)
         .with_inputs([
             (GATE, Event),
             (ATTACK, Control),
@@ -440,7 +425,6 @@ fn lfo_definition() -> BuiltInModuleDefinition {
 
 fn filter_definition() -> BuiltInModuleDefinition {
     BuiltInModuleDefinition::new(FILTER)
-        .with_execution_scope(ExecutionScope::Voice)
         .with_inputs([
             (AUDIO_IN, Audio),
             (CUTOFF, Control),
@@ -499,7 +483,6 @@ fn control_delay_definition() -> BuiltInModuleDefinition {
 
 fn script_definition() -> BuiltInModuleDefinition {
     BuiltInModuleDefinition::new(SCRIPT)
-        .with_execution_scope(ExecutionScope::Voice)
         .with_module_category(ModuleCategory::Script)
         .with_parameter(
             ParameterMetadata::new(SCRIPT_LANGUAGE_PARAMETER, ParameterValueType::Text)
@@ -515,7 +498,6 @@ fn script_definition() -> BuiltInModuleDefinition {
 
 fn sampler_definition() -> BuiltInModuleDefinition {
     BuiltInModuleDefinition::new(SAMPLER)
-        .with_execution_scope(ExecutionScope::Voice)
         .with_inputs([
             (TRIGGER, Event),
             (RATE, Control),
@@ -554,14 +536,12 @@ fn compensation_delay_definition() -> BuiltInModuleDefinition {
 
 fn note_to_rate_definition() -> BuiltInModuleDefinition {
     BuiltInModuleDefinition::new(NOTE_TO_RATE)
-        .with_execution_scope(ExecutionScope::Voice)
         .with_inputs([(EVENTS, Event)])
         .with_output(Port::output(RATE, Control))
 }
 
 fn event_filter_definition() -> BuiltInModuleDefinition {
     BuiltInModuleDefinition::new(EVENT_FILTER)
-        .with_execution_scope(ExecutionScope::Voice)
         .with_inputs([(EVENTS_IN, Event)])
         .with_output(Port::output(EVENTS_OUT, Event))
         .with_parameter(
@@ -714,7 +694,6 @@ fn interpolation_parameter() -> ParameterMetadata {
 
 fn noise_definition() -> BuiltInModuleDefinition {
     BuiltInModuleDefinition::new(NOISE)
-        .with_execution_scope(ExecutionScope::Voice)
         .with_output(Port::output(AUDIO, Audio))
         .with_parameter(
             ParameterMetadata::new(NOISE_SEED_PARAMETER, ParameterValueType::Number)
@@ -725,7 +704,6 @@ fn noise_definition() -> BuiltInModuleDefinition {
 
 fn impulse_definition() -> BuiltInModuleDefinition {
     BuiltInModuleDefinition::new(IMPULSE)
-        .with_execution_scope(ExecutionScope::Voice)
         .with_inputs([(TRIGGER, Event)])
         .with_output(Port::output(AUDIO, Audio))
 }
@@ -735,14 +713,12 @@ fn multiply_definition() -> BuiltInModuleDefinition {
     // an audio-rate product. Control-rate multiplication is deferred until
     // polymorphic port support or a dedicated control_multiply primitive.
     BuiltInModuleDefinition::new(MULTIPLY)
-        .with_execution_scope(ExecutionScope::Global)
         .with_inputs([(AUDIO_IN, Audio), (builtin_ports::GAIN, Audio)])
         .with_output(Port::output(AUDIO_OUT, Audio))
 }
 
 fn note_to_control_definition() -> BuiltInModuleDefinition {
     BuiltInModuleDefinition::new(NOTE_TO_CONTROL)
-        .with_execution_scope(ExecutionScope::Voice)
         .with_inputs([(EVENTS, Event)])
         .with_output(Port::output("frequency", Control))
         .with_output(Port::output("pitch_ratio", Control))
@@ -753,7 +729,6 @@ fn note_to_control_definition() -> BuiltInModuleDefinition {
 
 fn envelope_follower_definition() -> BuiltInModuleDefinition {
     BuiltInModuleDefinition::new(ENVELOPE_FOLLOWER)
-        .with_execution_scope(ExecutionScope::Voice)
         .with_inputs([
             (AUDIO_IN, Audio),
             (ATTACK, Control),
@@ -774,7 +749,6 @@ fn envelope_follower_definition() -> BuiltInModuleDefinition {
 
 fn curve_mapper_definition() -> BuiltInModuleDefinition {
     BuiltInModuleDefinition::new(CURVE_MAPPER)
-        .with_execution_scope(ExecutionScope::Voice)
         .with_inputs([
             (VALUE, Control),
             (AMOUNT, Control),
@@ -837,7 +811,6 @@ fn slew_definition() -> BuiltInModuleDefinition {
     // gate is open it ramps its output toward `value` over `time_ms`; when the
     // gate is closed it snaps. Reusable for pitch slides, filter sweeps, etc.
     BuiltInModuleDefinition::new(SLEW)
-        .with_execution_scope(ExecutionScope::Voice)
         .with_inputs([(VALUE, Control), (GLIDE, Control), (TIME_MS, Control)])
         .with_output(Port::output(VALUE, Control))
         .with_parameter(
@@ -850,7 +823,6 @@ fn slew_definition() -> BuiltInModuleDefinition {
 
 fn decay_definition() -> BuiltInModuleDefinition {
     BuiltInModuleDefinition::new(module_types::DECAY)
-        .with_execution_scope(ExecutionScope::Voice)
         .with_inputs([(TRIGGER, Event), (TIME_MS, Control)])
         .with_output(Port::output(VALUE, Control))
         .with_parameter(
