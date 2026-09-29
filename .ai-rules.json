@@ -4,17 +4,17 @@
     "memory": {
       "reserveMiBPerActiveWorktree": 4096,
       "basis": "measured",
-      "observedPeakMiB": 2055,
+      "observedPeakMiB": 2070,
       "measurement": {
         "workload": "scripts/check-rust-coverage (Rust library tests and LLVM coverage)",
         "date": "2026-09-29",
         "evidence": "docs/resource-measurements/2026-09-29-rust-coverage.json",
         "durationSeconds": 60,
-        "completedRunDurationsSeconds": [60, 59, 60, 57],
+        "completedRunDurationsSeconds": [60, 59, 60, 57, 57],
         "taskConcurrency": 1,
         "minimumAvailableMiB": 17861,
         "peakTaskSwapMiB": 0,
-        "notes": "Additional completed run evidence: docs/resource-measurements/2026-09-29-rust-coverage-repeat.json, docs/resource-measurements/2026-09-29-rust-coverage-final.json, and docs/resource-measurements/2026-09-29-rust-coverage-round3.json."
+        "notes": "Additional completed run evidence: docs/resource-measurements/2026-09-29-rust-coverage-repeat.json, docs/resource-measurements/2026-09-29-rust-coverage-final.json, docs/resource-measurements/2026-09-29-rust-coverage-round3.json, and docs/resource-measurements/2026-09-29-rust-coverage-round4.json."
       }
     }
   }
