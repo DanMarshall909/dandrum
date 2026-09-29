@@ -330,6 +330,72 @@ fn malformed_yaml_shapes_fail_schema_without_panicking() {
 }
 
 #[test]
+fn unresolved_node_static_literals_keep_inferred_types() {
+    let patch = load_kernel_patch_str(
+        "ports:\n  - { name: out, direction: output, signal: audio, channels: 1 }\nmodules:\n  - { id: future, type: future_module, static: { count: 3, label: bright, sample: { kind: sample, path: hit.wav } } }\nconnections: []\n",
+    )
+    .expect("unknown node type can retain its authored static values for later resolution");
+    let args = patch.root().nodes()[0].static_args();
+    assert_eq!(args["count"], StaticArg::Literal(StaticValue::Int(3)));
+    assert_eq!(
+        args["label"],
+        StaticArg::Literal(StaticValue::String("bright".into()))
+    );
+    assert_eq!(
+        args["sample"],
+        StaticArg::Literal(StaticValue::Resource(ResourceRef::new(
+            ResourceKind::Sample,
+            "hit.wav",
+            ResourceOrigin::Document,
+        )))
+    );
+}
+
+#[test]
+fn node_static_literal_must_match_the_declared_type() {
+    let yaml = "ports:\n  - { name: out, direction: output, signal: audio, channels: 1 }\nmodules:\n  - { id: source, type: control_to_audio, static: { channels: wide } }\nconnections: []\n";
+    let error = load_kernel_patch_str(yaml).expect_err("noninteger channel count fails");
+    assert_eq!(
+        error.errors().next().unwrap().error_code(),
+        error_codes::KERNEL_DOCUMENT_PARSE_FAILED
+    );
+    assert!(error.to_string().contains("does not match declared type Int"));
+}
+
+#[test]
+fn yaml_static_expression_is_retained_for_explicit_rejection() {
+    let yaml = "ports:\n  - { name: out, direction: output, signal: audio, channels: 1 }\nmodules:\n  - { id: source, type: control_to_audio, static: { channels: '$channels + 1' } }\nconnections: []\n";
+    let patch = load_kernel_patch_str(yaml).expect("expression is parsed before graph validation");
+    assert_eq!(
+        patch.root().nodes()[0].static_args()["channels"],
+        StaticArg::Expression("$channels + 1".into())
+    );
+    let error = patch.root().flatten(patch.registry()).expect_err("arithmetic is unsupported");
+    assert!(error.to_string().contains("expression"));
+}
+
+#[test]
+fn malformed_port_reference_has_structured_parse_diagnostic() {
+    let yaml = "ports:\n  - { name: out, direction: output, signal: audio, channels: 1, maps_from: source }\nmodules:\n  - { id: source, type: control_to_audio }\nconnections: []\n";
+    let error = load_kernel_patch_str(yaml).expect_err("port reference must have module and port");
+    assert_eq!(
+        error.errors().next().unwrap().error_code(),
+        error_codes::KERNEL_DOCUMENT_PARSE_FAILED
+    );
+    assert!(error.to_string().contains("module.port"));
+}
+
+#[test]
+fn tagged_legacy_binding_is_rejected_before_schema_validation() {
+    let yaml = "ports:\n  - { name: out, direction: output, signal: audio, channels: 1 }\nmodules:\n  - id: source\n    type: control_to_audio\n    static: { channels: !tag '${channels}' }\nconnections: []\n";
+    let error = load_kernel_patch_str(yaml).expect_err("tagged legacy binding fails");
+    assert_eq!(
+        error.errors().next().unwrap().error_code(),
+        error_codes::KERNEL_DOCUMENT_LEGACY_BINDING
+    );
+}
+
+#[test]
 fn missing_kernel_patch_file_has_read_diagnostic() {
     let directory = tempfile::tempdir().expect("temporary directory");
     let path = directory.path().join("absent.yaml");
