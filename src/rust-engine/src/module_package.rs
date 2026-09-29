@@ -162,7 +162,22 @@ fn load_kernel_entry(
                 .expect("kernel parse failures always include a diagnostic"),
         )
     })?;
-    Ok((package.root().clone(), package.registry().clone()))
+    let local_names = package
+        .local_definition_names()
+        .iter()
+        .map(|name| (name.clone(), format!("{reference}::{name}")))
+        .collect::<std::collections::BTreeMap<_, _>>();
+    let root = package
+        .root()
+        .with_scoped_definition_refs(reference, &local_names);
+    let mut registry = DefinitionRegistry::new();
+    for definition in package.registry().definitions() {
+        registry = registry.with_definition(match local_names.get(definition.name()) {
+            Some(qualified) => definition.with_scoped_definition_refs(qualified, &local_names),
+            None => definition.clone(),
+        });
+    }
+    Ok((root, registry))
 }
 
 pub(crate) fn external_references(
@@ -483,6 +498,95 @@ connections: []
             .unwrap();
             assert_eq!(render(&external), inline_bytes, "{reference}");
         }
+    }
+
+    #[test]
+    fn independent_packages_keep_same_named_private_definitions_and_root_helper_distinct() {
+        use crate::graph_processor::render_kernel_offline_named;
+        use crate::patch::RenderSettings;
+        use crate::preparation::{HostBuses, prepare_kernel_graph_with_buses_and_context};
+        use crate::sample::PreparedSamplerAssets;
+
+        let directory = tempfile::tempdir().unwrap();
+        let lib_root = directory.path().join("lib");
+        for (name, value) in [("one", 0.25), ("two", -0.5)] {
+            let package = format!(
+                "ports:\n  - {{ name: audio, direction: output, signal: audio, channels: 1, maps_from: inner.audio }}\nmodule_definitions:\n  - type: helper\n    ports:\n      - {{ name: audio, direction: output, signal: audio, channels: 1, maps_from: source.out }}\n    modules:\n      - {{ id: source, type: control_to_audio, defaults: {{ in: {value} }} }}\n    connections: []\nmodules:\n  - {{ id: inner, type: helper }}\nconnections: []\n"
+            );
+            seed_kernel_package(&lib_root, "1.0.0", name, &package);
+        }
+        let patch = load_kernel_patch_str(
+            "ports:\n  - { name: one, direction: output, signal: audio, channels: 1, maps_from: first.audio }\n  - { name: two, direction: output, signal: audio, channels: 1, maps_from: second.audio }\n  - { name: root, direction: output, signal: audio, channels: 1, maps_from: local.audio }\nmodule_definitions:\n  - type: helper\n    ports:\n      - { name: audio, direction: output, signal: audio, channels: 1, maps_from: source.out }\n    modules:\n      - { id: source, type: control_to_audio, defaults: { in: 0.75 } }\n    connections: []\nmodules:\n  - { id: first, type: $LIB/1.0.0/one/one.yaml }\n  - { id: second, type: $LIB/1.0.0/two/two.yaml }\n  - { id: local, type: helper }\nconnections: []\n",
+        )
+        .unwrap();
+        let context = PreparationContext::new(directory.path(), 48_000)
+            .with_macro_roots(MacroRoots::new().with_root(LIB_MACRO, &lib_root));
+        let settings = RenderSettings {
+            sample_rate_hz: 48_000,
+            block_size_frames: 8,
+            duration_frames: 8,
+        };
+        let prepared = prepare_kernel_graph_with_buses_and_context(
+            patch.root(),
+            patch.registry(),
+            &settings,
+            &HostBuses::new()
+                .with_output("one", 1)
+                .with_output("two", 1)
+                .with_output("root", 1),
+            &context,
+        )
+        .unwrap();
+        let outputs =
+            render_kernel_offline_named(&prepared, vec![], &PreparedSamplerAssets::empty())
+                .unwrap();
+        assert_eq!(outputs[0], ("one".to_string(), vec![vec![0.25; 8]]));
+        assert_eq!(outputs[1], ("two".to_string(), vec![vec![-0.5; 8]]));
+        assert_eq!(outputs[2], ("root".to_string(), vec![vec![0.75; 8]]));
+    }
+
+    #[test]
+    fn packaged_poly_resolves_its_private_voice_definition() {
+        use crate::graph_processor::RealtimeGraphProcessor;
+        use crate::patch::RenderSettings;
+        use crate::preparation::{HostBuses, prepare_kernel_graph_with_buses_and_context};
+        use crate::sample::PreparedSamplerAssets;
+
+        let directory = tempfile::tempdir().unwrap();
+        let lib_root = directory.path().join("lib");
+        seed_kernel_package(
+            &lib_root,
+            "1.0.0",
+            "poly_voice",
+            "ports:\n  - { name: master, direction: output, signal: audio, channels: 1, maps_from: voices.audio }\nmodule_definitions:\n  - type: helper\n    ports:\n      - { name: audio, direction: output, signal: audio, channels: 1, maps_from: source.out }\n    modules:\n      - { id: source, type: control_to_audio, defaults: { in: -0.25 } }\n    connections: []\nmodules:\n  - { id: voices, type: poly, static: { definition: helper, max_voices: 1, allocation: reject-new } }\nconnections: []\n",
+        );
+        let context = PreparationContext::new(directory.path(), 48_000)
+            .with_macro_roots(MacroRoots::new().with_root(LIB_MACRO, &lib_root));
+        let package =
+            load_referenced_kernel_package("$LIB/1.0.0/poly_voice/poly_voice.yaml", &context)
+                .unwrap();
+        let prepared = prepare_kernel_graph_with_buses_and_context(
+            package.definition(),
+            package.registry(),
+            &RenderSettings {
+                sample_rate_hz: 48_000,
+                block_size_frames: 8,
+                duration_frames: 8,
+            },
+            &HostBuses::new().with_output("master", 1),
+            &context,
+        )
+        .unwrap();
+        let mut runtime = RealtimeGraphProcessor::from_compiled_patch(
+            prepared.compiled_patch().clone(),
+            48_000.0,
+            &PreparedSamplerAssets::empty(),
+            8,
+        );
+        let mut outputs = vec![vec![vec![0.0; 8]]];
+        runtime.note_on_at(60, 100, 0);
+        assert_eq!(runtime.render_root_outputs(&mut outputs), 8);
+        assert_eq!(outputs[0][0], [-0.25; 8]);
     }
 
     #[test]

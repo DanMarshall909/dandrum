@@ -64,6 +64,7 @@ pub struct KernelPatch {
     preset_surface: KernelPresetSurface,
     root: GraphDefinition,
     registry: DefinitionRegistry,
+    local_definition_names: Vec<String>,
 }
 
 impl KernelPatch {
@@ -85,6 +86,10 @@ impl KernelPatch {
 
     pub fn registry(&self) -> &DefinitionRegistry {
         &self.registry
+    }
+
+    pub(crate) fn local_definition_names(&self) -> &[String] {
+        &self.local_definition_names
     }
 
     /// Apply a compatible preset to root declarations before graph flattening.
@@ -591,6 +596,11 @@ fn load_kernel_document_str(
         preset_surface,
         root,
         registry,
+        local_definition_names: document
+            .module_definitions
+            .iter()
+            .map(|definition| definition.definition_type.clone())
+            .collect(),
     })
 }
 

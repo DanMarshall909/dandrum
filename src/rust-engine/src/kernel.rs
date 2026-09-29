@@ -733,6 +733,33 @@ impl GraphDefinition {
         self
     }
 
+    /// Give definitions private to a package unique compilation identities.
+    /// The authored names remain local to the package document; only references
+    /// to those names are rewritten when the package joins a shared registry.
+    pub(crate) fn with_scoped_definition_refs(
+        &self,
+        name: impl Into<String>,
+        local_names: &BTreeMap<String, String>,
+    ) -> Self {
+        let mut scoped = self.clone();
+        scoped.name = name.into();
+        for node in &mut scoped.nodes {
+            if let Some(qualified) = local_names.get(&node.definition_ref) {
+                node.definition_ref = qualified.clone();
+            }
+            if node.definition_ref == POLY_DEFINITION {
+                if let Some(StaticArg::Literal(StaticValue::String(wrapped))) =
+                    node.static_args.get_mut(POLY_WRAPPED_DEFINITION_PARAM)
+                {
+                    if let Some(qualified) = local_names.get(wrapped) {
+                        *wrapped = qualified.clone();
+                    }
+                }
+            }
+        }
+        scoped
+    }
+
     /// Clone a graph definition into the compilation scope supplied by a
     /// `poly` region. The injected node is an ordinary typed source once it is
     /// inside that scope, so validation, flattening, scheduling, and buffer
