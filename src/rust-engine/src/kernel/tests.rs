@@ -514,6 +514,25 @@ fn unconnected_control_input_uses_declared_default() {
 }
 
 #[test]
+fn unmapped_root_control_default_does_not_change_flattened_nodes() {
+    let root = GraphDefinition::new("root")
+        .with_port(
+            Port::input("unused", SignalType::Control, 1)
+                .with_control_default(ControlDefault::new(0.25)),
+        )
+        .with_port(
+            Port::output("audio", SignalType::Audio, 1)
+                .maps_from(PortRef::new(NodeId::new("source"), "out")),
+        )
+        .with_node(Node::new(NodeId::new("source"), "control_to_audio"));
+    let flattened = root
+        .flatten(&builtins::builtin_registry())
+        .expect("unused public control input is valid");
+    assert_eq!(flattened.nodes().len(), 1);
+    assert_eq!(flattened.root_ports()[0].name(), "unused");
+}
+
+#[test]
 fn instance_override_replaces_declared_default() {
     let registry = DefinitionRegistry::new().with_definition(gain_primitive());
     let definition = GraphDefinition::new("root")
