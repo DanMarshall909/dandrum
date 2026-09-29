@@ -94,8 +94,7 @@ pub fn load_referenced_kernel_package(
     reference: &str,
     context: &PreparationContext,
 ) -> Result<LoadedKernelPackage, ModulePackageError> {
-    let entry = module_reference::resolve(reference, context.macro_roots())?;
-    let root = validate_package_entry_path(&entry)?;
+    let (entry, root) = resolve_contained_entry(reference, context)?;
     let (definition, mut registry) = load_kernel_entry(reference, &entry, &root)?;
     registry = registry.with_definition(definition.clone());
 
@@ -104,8 +103,7 @@ pub fn load_referenced_kernel_package(
         if registry.get(&nested_reference).is_some() {
             continue;
         }
-        let nested_entry = module_reference::resolve(&nested_reference, context.macro_roots())?;
-        let nested_root = validate_package_entry_path(&nested_entry)?;
+        let (nested_entry, nested_root) = resolve_contained_entry(&nested_reference, context)?;
         let (nested, nested_registry) =
             load_kernel_entry(&nested_reference, &nested_entry, &nested_root)?;
         for inline in nested_registry.definitions() {
@@ -120,6 +118,44 @@ pub fn load_referenced_kernel_package(
         registry,
         root,
     })
+}
+
+fn resolve_contained_entry(
+    reference: &str,
+    context: &PreparationContext,
+) -> Result<(PathBuf, PathBuf), ModulePackageError> {
+    let entry = module_reference::resolve(reference, context.macro_roots())?;
+    validate_package_entry_path(&entry)?;
+    let macro_name = reference
+        .split(module_reference::REFERENCE_SEPARATOR)
+        .next()
+        .expect("validated reference has a macro name");
+    let configured_root = context
+        .macro_roots()
+        .root(macro_name)
+        .expect("resolved reference has a configured macro root");
+    let canonical_root =
+        fs::canonicalize(configured_root).map_err(|error| ModulePackageError::ReadFailed {
+            path: configured_root.to_path_buf(),
+            message: error.to_string(),
+        })?;
+    let canonical_entry =
+        fs::canonicalize(&entry).map_err(|error| ModulePackageError::ReadFailed {
+            path: entry.clone(),
+            message: error.to_string(),
+        })?;
+    if !canonical_entry.starts_with(&canonical_root) {
+        return Err(ModulePackageError::Reference(
+            ModuleReferenceError::PathEscape {
+                reference: reference.to_string(),
+            },
+        ));
+    }
+    let package_root = canonical_entry
+        .parent()
+        .expect("canonical package entry has a parent")
+        .to_path_buf();
+    Ok((canonical_entry, package_root))
 }
 
 fn validate_package_entry_path(path: &Path) -> Result<PathBuf, ModulePackageError> {
@@ -630,5 +666,64 @@ connections: []
                 "{reference}"
             );
         }
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn package_entry_symlinks_cannot_escape_the_selected_library_root() {
+        use std::os::unix::fs::symlink;
+
+        const PACKAGE: &str = "ports:\n  - { name: audio, direction: output, signal: audio, channels: 1, maps_from: source.out }\nmodules:\n  - { id: source, type: control_to_audio, defaults: { in: 0.25 } }\nconnections: []\n";
+        let directory = tempfile::tempdir().unwrap();
+        let lib_root = directory.path().join("lib");
+        let outside = directory.path().join("outside");
+        fs::create_dir_all(&lib_root).unwrap();
+        let escaped_folder = seed_kernel_package(&outside, "1.0.0", "folder", PACKAGE);
+        let escaped_file = seed_kernel_package(&outside, "1.0.0", "file", PACKAGE);
+        let version = lib_root.join("1.0.0");
+        fs::create_dir_all(version.join("file")).unwrap();
+        symlink(escaped_folder.parent().unwrap(), version.join("folder")).unwrap();
+        symlink(&escaped_file, version.join("file/file.yaml")).unwrap();
+        let context = PreparationContext::new(directory.path(), 48_000)
+            .with_macro_roots(MacroRoots::new().with_root(LIB_MACRO, &lib_root));
+
+        for reference in ["$LIB/1.0.0/folder/folder.yaml", "$LIB/1.0.0/file/file.yaml"] {
+            let error = match load_referenced_kernel_package(reference, &context) {
+                Ok(_) => panic!("{reference} escaped its selected library root"),
+                Err(error) => error,
+            };
+            assert_eq!(
+                error.to_diagnostic().error_code(),
+                crate::diagnostics::error_codes::LIBRARY_PATH_ESCAPE,
+                "{reference}"
+            );
+        }
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn package_directory_symlink_inside_library_uses_its_canonical_resource_root() {
+        use std::os::unix::fs::symlink;
+
+        let directory = tempfile::tempdir().unwrap();
+        let lib_root = directory.path().join("lib");
+        let target = seed_kernel_package(
+            &lib_root.join("contained"),
+            "1.0.0",
+            "linked",
+            "ports:\n  - { name: audio, direction: output, signal: audio, channels: 1, maps_from: source.out }\nmodules:\n  - { id: source, type: control_to_audio, defaults: { in: -0.5 } }\nconnections: []\n",
+        );
+        let version = lib_root.join("1.0.0");
+        fs::create_dir_all(&version).unwrap();
+        symlink(target.parent().unwrap(), version.join("linked")).unwrap();
+        let context = PreparationContext::new(directory.path(), 48_000)
+            .with_macro_roots(MacroRoots::new().with_root(LIB_MACRO, &lib_root));
+
+        let package = load_referenced_kernel_package("$LIB/1.0.0/linked/linked.yaml", &context)
+            .expect("a contained package symlink should load");
+        assert_eq!(
+            package.root(),
+            target.parent().unwrap().canonicalize().unwrap()
+        );
     }
 }
