@@ -29,6 +29,13 @@ add_custom_command(
 add_custom_target(dandrum-engine-rust DEPENDS ${RUST_ENGINE_LIB})
 
 add_test(
+    NAME retired-engine-ffi-symbols
+    COMMAND ${CMAKE_COMMAND}
+        -DNM=${CMAKE_NM}
+        -DRUST_ENGINE_LIB=${RUST_ENGINE_LIB}
+        -P ${CMAKE_CURRENT_SOURCE_DIR}/tests/cmake/RetiredEngineFfiSymbols.cmake)
+
+add_test(
     NAME rust-engine-tests
     COMMAND ${CMAKE_COMMAND} -E env CARGO_TARGET_DIR=${CMAKE_CURRENT_BINARY_DIR}/rust-target ${CARGO_BIN} test
     WORKING_DIRECTORY ${RUST_ENGINE_DIR})
