@@ -28,6 +28,7 @@ pub struct ModuleNode {
     module_type: String,
     inputs: Vec<Port>,
     outputs: Vec<Port>,
+    #[cfg(test)]
     execution_scope: ExecutionScope,
     params: BTreeMap<String, String>,
 }
@@ -113,6 +114,7 @@ pub enum GraphDiagnostic {
     CycleDetected {
         path: Vec<Cable>,
     },
+    #[cfg(test)]
     VoiceToGlobalDirectRouting {
         source: PortRef,
         destination: PortRef,
@@ -136,6 +138,7 @@ impl ModuleNode {
             module_type: module_type.into(),
             inputs: Vec::new(),
             outputs: Vec::new(),
+            #[cfg(test)]
             execution_scope: ExecutionScope::Global,
             params: BTreeMap::new(),
         }
@@ -150,11 +153,13 @@ impl ModuleNode {
         &self.params
     }
 
+    #[cfg(test)]
     pub fn with_execution_scope(mut self, scope: ExecutionScope) -> Self {
         self.execution_scope = scope;
         self
     }
 
+    #[cfg(test)]
     pub fn execution_scope(&self) -> ExecutionScope {
         self.execution_scope
     }
@@ -395,15 +400,18 @@ impl Graph {
                     });
                 }
 
+                #[cfg(test)]
                 let source_module = self
                     .modules
                     .iter()
                     .find(|m| m.id() == cable.source().module_id());
+                #[cfg(test)]
                 let dest_module = self
                     .modules
                     .iter()
                     .find(|m| m.id() == cable.destination().module_id());
 
+                #[cfg(test)]
                 if let (Some(source_module), Some(dest_module)) = (source_module, dest_module) {
                     if source_module.execution_scope() == ExecutionScope::Voice
                         && dest_module.execution_scope() == ExecutionScope::Global
@@ -608,6 +616,7 @@ impl fmt::Display for GraphDiagnostic {
 
                 Ok(())
             }
+            #[cfg(test)]
             Self::VoiceToGlobalDirectRouting {
                 source,
                 destination,
@@ -698,6 +707,7 @@ impl GraphDiagnostic {
                 Severity::Error,
                 "routing cycle detected",
             ),
+            #[cfg(test)]
             Self::VoiceToGlobalDirectRouting {
                 source,
                 destination,

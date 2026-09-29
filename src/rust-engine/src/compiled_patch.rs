@@ -21,7 +21,9 @@ use crate::diagnostics::{Diagnostic, Severity, error_codes};
 use crate::dynamics_processor::{ProcessorMode, Topology};
 use crate::envelope_follower::DetectionMode;
 use crate::filter::{BiquadMode, CombType};
-use crate::graph::{ExecutionScope, Graph, ModuleId, ModuleNode, SignalType, builtin_ports};
+#[cfg(test)]
+use crate::graph::ExecutionScope;
+use crate::graph::{Graph, ModuleId, ModuleNode, SignalType, builtin_ports};
 use crate::kernel::PolyAllocationPolicy;
 use crate::kernel::StaticValue;
 use crate::kernel::flatten::FlattenedGraph;
@@ -1117,6 +1119,7 @@ fn compile_internal(
 
     resolve_routing(graph, &module_indices, &mut nodes)?;
 
+    #[cfg(test)]
     let (global_node_indices, voice_node_indices) = if supplied_node_data.is_some() {
         (topological_order.clone(), Vec::new())
     } else {
@@ -1133,6 +1136,8 @@ fn compile_internal(
                 .collect::<Vec<_>>(),
         )
     };
+    #[cfg(not(test))]
+    let (global_node_indices, voice_node_indices) = (topological_order.clone(), Vec::new());
     let execution_order = global_node_indices
         .iter()
         .chain(voice_node_indices.iter())
