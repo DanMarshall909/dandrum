@@ -581,16 +581,16 @@ fn prepare_kernel_graph_with_buses_internal(
     context: Option<&PreparationContext>,
     bind_event_outputs: bool,
 ) -> Result<PreparedKernelInstrument, KernelPreparationError> {
-    let resolved_registry = match context {
+    let (resolved_root, resolved_registry) = match context {
         Some(context) => resolve_external_definitions(root, registry, context)?,
-        None => registry.clone(),
+        None => (root.clone(), registry.clone()),
     };
-    let validation = root.validate(&resolved_registry);
+    let validation = resolved_root.validate(&resolved_registry);
     if !validation.is_ok() {
         return Err(validation.diagnostics().clone().into());
     }
 
-    let flattened_graph = root
+    let flattened_graph = resolved_root
         .flatten(&resolved_registry)
         .map_err(KernelPreparationError::from)?;
     let mut host_buses = host_buses.clone();
@@ -676,14 +676,45 @@ fn resolve_external_definitions(
     root: &GraphDefinition,
     registry: &DefinitionRegistry,
     context: &PreparationContext,
-) -> Result<DefinitionRegistry, KernelPreparationError> {
-    let mut resolved = registry.clone();
+) -> Result<(GraphDefinition, DefinitionRegistry), KernelPreparationError> {
     let references = std::iter::once(root)
         .chain(registry.definitions())
         .flat_map(|definition| definition.nodes())
         .map(|node| node.definition_ref())
         .filter(|reference| crate::module_reference::is_external_reference(reference))
         .collect::<BTreeSet<_>>();
+    if references.is_empty() {
+        return Ok((root.clone(), registry.clone()));
+    }
+
+    // Package parsers include the canonical builtins in their registry. Bind
+    // caller overrides of builtin names to private identities before importing
+    // those package registries: caller nodes retain their own definitions while
+    // package nodes retain the canonical builtins they were authored against.
+    let caller_names = crate::kernel::builtins::builtin_registry()
+        .definitions()
+        .filter(|builtin| {
+            registry
+                .get(builtin.name())
+                .is_some_and(|caller| caller != *builtin)
+        })
+        .map(|builtin| {
+            (
+                builtin.name().to_string(),
+                format!("#caller::{}", builtin.name()),
+            )
+        })
+        .collect::<BTreeMap<_, _>>();
+    let resolved_root = root.with_scoped_definition_refs(root.name(), &caller_names);
+    let mut resolved = DefinitionRegistry::new();
+    for definition in registry.definitions() {
+        let name = caller_names
+            .get(definition.name())
+            .map(String::as_str)
+            .unwrap_or_else(|| definition.name());
+        resolved =
+            resolved.with_definition(definition.with_scoped_definition_refs(name, &caller_names));
+    }
     for reference in references {
         let package = crate::module_package::load_referenced_kernel_package(reference, context)
             .map_err(|error| {
@@ -693,7 +724,7 @@ fn resolve_external_definitions(
             resolved = resolved.with_definition(definition.clone());
         }
     }
-    Ok(resolved)
+    Ok((resolved_root, resolved))
 }
 
 fn resolve_flattened_resources(

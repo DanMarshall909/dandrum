@@ -631,6 +631,51 @@ connections: []
     }
 
     #[test]
+    fn package_builtin_and_private_helpers_do_not_capture_caller_builtin_override() {
+        use crate::graph_processor::render_kernel_offline_named;
+        use crate::patch::RenderSettings;
+        use crate::preparation::{HostBuses, prepare_kernel_graph_with_buses_and_context};
+        use crate::sample::PreparedSamplerAssets;
+
+        let directory = tempfile::tempdir().unwrap();
+        let lib_root = directory.path().join("lib");
+        for (name, value) in [("one", 0.25), ("two", -0.5)] {
+            let package = format!(
+                "ports:\n  - {{ name: audio, direction: output, signal: audio, channels: 1, maps_from: amplifier.audio_out }}\nmodule_definitions:\n  - type: helper\n    ports:\n      - {{ name: audio, direction: output, signal: audio, channels: 1, maps_from: source.out }}\n    modules:\n      - {{ id: source, type: control_to_audio, defaults: {{ in: {value} }} }}\n    connections: []\nmodules:\n  - {{ id: inner, type: helper }}\n  - {{ id: amplifier, type: gain }}\nconnections:\n  - {{ from: inner.audio, to: amplifier.audio_in }}\n"
+            );
+            seed_kernel_package(&lib_root, "1.0.0", name, &package);
+        }
+        let patch = load_kernel_patch_str(
+            "ports:\n  - { name: local, direction: output, signal: audio, channels: 1, maps_from: own.audio_out }\n  - { name: first, direction: output, signal: audio, channels: 1, maps_from: first_package.audio }\n  - { name: second, direction: output, signal: audio, channels: 1, maps_from: second_package.audio }\nmodule_definitions:\n  - type: gain\n    ports:\n      - { name: audio_in, direction: input, signal: audio, channels: 1, maps_to: sink.inputs }\n      - { name: audio_out, direction: output, signal: audio, channels: 1, maps_from: source.out }\n    modules:\n      - { id: sink, type: audio_mixer }\n      - { id: source, type: control_to_audio, defaults: { in: 0.75 } }\n    connections: []\nmodules:\n  - { id: own, type: gain }\n  - { id: first_package, type: $LIB/1.0.0/one/one.yaml }\n  - { id: second_package, type: $LIB/1.0.0/two/two.yaml }\nconnections: []\n",
+        )
+        .unwrap();
+        let context = PreparationContext::new(directory.path(), 48_000)
+            .with_macro_roots(MacroRoots::new().with_root(LIB_MACRO, &lib_root));
+        let settings = RenderSettings {
+            sample_rate_hz: 48_000,
+            block_size_frames: 8,
+            duration_frames: 8,
+        };
+        let prepared = prepare_kernel_graph_with_buses_and_context(
+            patch.root(),
+            patch.registry(),
+            &settings,
+            &HostBuses::new()
+                .with_output("local", 1)
+                .with_output("first", 1)
+                .with_output("second", 1),
+            &context,
+        )
+        .expect("caller and both packages prepare without changing each other's bindings");
+        let outputs =
+            render_kernel_offline_named(&prepared, vec![], &PreparedSamplerAssets::empty())
+                .expect("all three branches render");
+        assert_eq!(outputs[0], ("local".to_string(), vec![vec![0.75; 8]]));
+        assert_eq!(outputs[1], ("first".to_string(), vec![vec![0.25; 8]]));
+        assert_eq!(outputs[2], ("second".to_string(), vec![vec![-0.5; 8]]));
+    }
+
+    #[test]
     fn packaged_poly_resolves_its_private_voice_definition() {
         use crate::graph_processor::RealtimeGraphProcessor;
         use crate::patch::RenderSettings;
