@@ -71,6 +71,7 @@ pub struct SoundRender {
 
 pub(crate) enum SoundPatch {
     Kernel(crate::kernel::document::KernelPatch),
+    #[cfg(test)]
     Legacy(crate::patch::PatchDocument),
 }
 
@@ -82,11 +83,8 @@ pub(crate) struct PublicNumericTarget {
 
 impl SoundPatch {
     pub(crate) fn load(path: &Path) -> Result<Self, String> {
-        if let Ok(patch) = crate::kernel::document::load_kernel_patch_file(path) {
-            return Ok(Self::Kernel(patch));
-        }
-        crate::patch::load_patch_file(path)
-            .map(Self::Legacy)
+        crate::kernel::document::load_kernel_patch_file(path)
+            .map(Self::Kernel)
             .map_err(|error| format!("failed to load sound fixture patch: {error}"))
     }
 
@@ -107,6 +105,7 @@ impl SoundPatch {
                 let control = target.control_default();
                 (control.default(), control.min(), control.max())
             }
+            #[cfg(test)]
             Self::Legacy(patch) => {
                 let target = patch
                     .preset_surface
@@ -144,6 +143,7 @@ impl SoundPatch {
                     fixture, patch, patch_root, values,
                 )
             }
+            #[cfg(test)]
             Self::Legacy(patch) => render_sound_fixture_with_patch_and_public_numeric_values(
                 fixture, patch, patch_root, values,
             ),
@@ -293,6 +293,7 @@ fn render_sound_fixture_with_kernel_patch_and_public_numeric_values(
     })
 }
 
+#[cfg(test)]
 pub(crate) fn render_sound_fixture_with_patch_and_public_numeric_values(
     fixture: &SoundFixture,
     patch_doc: &crate::patch::PatchDocument,
@@ -1123,6 +1124,13 @@ mod tests {
             assert_eq!(actual.min, expected.min, "{name} minimum changed");
             assert_eq!(actual.max, expected.max, "{name} maximum changed");
         }
+    }
+
+    #[test]
+    fn sound_fixture_loader_rejects_archived_legacy_patch_documents() {
+        let path = Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("tests/fixtures/unify-graph-kernel/legacy/tb303-acid.yaml");
+        assert!(SoundPatch::load(&path).is_err());
     }
 
     #[test]

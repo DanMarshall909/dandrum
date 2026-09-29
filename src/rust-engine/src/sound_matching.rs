@@ -1655,52 +1655,39 @@ mod tests {
                 .contains("unknown public numeric parameter")
         );
 
-        let non_numeric_patch = std::env::temp_dir().join(format!(
-            "dandrum-match-non-numeric-{}.yaml",
+        let unbounded_patch = std::env::temp_dir().join(format!(
+            "dandrum-match-unbounded-{}.yaml",
             std::process::id()
         ));
         std::fs::write(
-            &non_numeric_patch,
+            &unbounded_patch,
             r#"
 metadata:
-  name: Non-numeric matching surface
+  name: Unbounded matching surface
 instrument:
-  id: dandrum.non-numeric-match
+  id: dandrum.unbounded-match
   preset_schema_version: 1
 preset_surface:
   parameters:
     - name: filter.cutoff
-      type: text
-      default: saw
-      maps_to: osc.waveform
-render:
-  sample_rate_hz: 48000
-  block_size_frames: 64
-  duration_frames: 144000
+      maps_to: cutoff
+ports:
+  - { name: cutoff, direction: input, signal: control, channels: 1, default: 0.4, min: 0, maps_to: source.in }
+  - { name: master, direction: output, signal: audio, channels: 2, maps_from: source.out }
 modules:
-  - id: osc
-    type: oscillator
-  - id: mixer
-    type: audio_mixer
-  - id: out
-    type: audio_output
-    inputs:
-      - { name: left, signal_type: audio }
-      - { name: right, signal_type: audio }
-connections:
-  - { from: osc.audio, to: mixer.inputs }
-  - { from: mixer.mix, to: out.left }
-  - { from: mixer.mix, to: out.right }
+  - { id: source, type: control_to_audio, static: { channels: 2 } }
+connections: []
 "#,
         )
         .unwrap();
-        let mut non_numeric = fixture.clone();
-        non_numeric.patch = non_numeric_patch;
+        let mut unbounded = fixture.clone();
+        unbounded.patch = unbounded_patch;
         assert!(
-            match_sound_fixture(&non_numeric, &reference_path, continue_search)
-                .expect_err("non-numeric matching parameter should fail")
+            match_sound_fixture(&unbounded, &reference_path, continue_search)
+                .expect_err("unbounded matching parameter should fail")
                 .contains("continuous numeric")
         );
+        std::fs::remove_file(&unbounded.patch).unwrap();
 
         let source_patch = std::fs::read_to_string(&fixture.patch).unwrap();
         let invalid_numeric_directory = tempfile::tempdir().unwrap();

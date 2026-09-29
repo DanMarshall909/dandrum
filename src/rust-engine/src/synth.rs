@@ -277,6 +277,7 @@ impl DandrumEngine {
         }
     }
 
+    #[cfg(test)]
     pub(crate) fn render_prepared_instrument_offline(
         &mut self,
         prepared: &preparation::PreparedInstrument,
