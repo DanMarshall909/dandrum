@@ -424,15 +424,16 @@ impl PreparedPolyRuntimeRegion {
                 );
                 match step.module_kind {
                     ModuleKind::Poly => {
-                        let node_id = self.child_patch.nodes()[step.module_index].id.as_str();
                         let events = step
                             .event_inputs
                             .first()
                             .and_then(|queue| self.voice_event_queues[voice].queue_ref(queue.0))
                             .map_or(&[][..], |queue| queue.events());
                         let nested = self.nested_regions[voice]
-                            .iter_mut()
-                            .find(|region| region.node_id() == node_id)
+                            .get_mut(
+                                step.poly_region_index
+                                    .expect("poly step has a region index"),
+                            )
                             .expect("compiled nested poly has a prepared runtime region");
                         nested.route_note_events(events, frames);
                         nested.render_into(

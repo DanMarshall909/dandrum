@@ -48,6 +48,7 @@ pub struct DandrumKernelInputBusView {
     pub channels: *const *const f32,
     pub channel_count: usize,
     pub frame_capacity: usize,
+    pub bus_index: usize,
 }
 
 /// Output channel pointers remain caller-owned and are written only on success.
@@ -58,17 +59,25 @@ pub struct DandrumKernelOutputBusView {
     pub channels: *const *mut f32,
     pub channel_count: usize,
     pub frame_capacity: usize,
+    pub bus_index: usize,
+}
+
+struct PreparedInputBusBinding {
+    root_index: Option<usize>,
+    channel_count: usize,
+}
+
+struct PreparedOutputBusBinding {
+    root_index: usize,
+    channel_count: usize,
 }
 
 pub struct DandrumKernelInstrument {
     prepared: preparation::PreparedKernelInstrument,
     runtime: RealtimeGraphProcessor,
     ports: Vec<PortMetadata>,
-    declared_inputs: BTreeMap<String, usize>,
-    declared_outputs: BTreeMap<String, usize>,
-    input_names: Vec<String>,
-    output_names: Vec<String>,
-    planar_output_names: Vec<String>,
+    input_bus_bindings: Vec<PreparedInputBusBinding>,
+    output_bus_bindings: Vec<PreparedOutputBusBinding>,
     input_scratch: Vec<Vec<Vec<f32>>>,
     output_scratch: Vec<Vec<Vec<f32>>>,
     public_controls: Vec<KernelPublicControl>,
@@ -119,6 +128,8 @@ pub unsafe extern "C" fn dandrum_kernel_prepare_file(
     let mut buses = preparation::HostBuses::new();
     let mut declared_inputs = BTreeMap::new();
     let mut declared_outputs = BTreeMap::new();
+    let mut declared_input_order = Vec::new();
+    let mut declared_output_order = Vec::new();
     for declaration in declared {
         let Some(name) = (unsafe { ffi_name(&declaration.name) }) else {
             return std::ptr::null_mut();
@@ -132,12 +143,14 @@ pub unsafe extern "C" fn dandrum_kernel_prepare_file(
                 .is_none() =>
             {
                 buses = buses.with_input(name, declaration.channel_count);
+                declared_input_order.push((name.to_string(), declaration.channel_count));
             }
             2 if declared_outputs
                 .insert(name.to_string(), declaration.channel_count)
                 .is_none() =>
             {
                 buses = buses.with_output(name, declaration.channel_count);
+                declared_output_order.push((name.to_string(), declaration.channel_count));
             }
             _ => return std::ptr::null_mut(),
         }
@@ -203,6 +216,34 @@ pub unsafe extern "C" fn dandrum_kernel_prepare_file(
         })
         .map(|port| port.name().to_string())
         .collect::<Vec<_>>();
+    let input_bus_bindings = declared_input_order
+        .iter()
+        .map(|(name, channel_count)| PreparedInputBusBinding {
+            root_index: input_names.iter().position(|candidate| candidate == name),
+            channel_count: *channel_count,
+        })
+        .collect::<Vec<_>>();
+    let Some(output_bus_bindings) = declared_output_order
+        .iter()
+        .map(|(name, channel_count)| {
+            planar_output_names
+                .iter()
+                .any(|candidate| candidate == name)
+                .then(|| {
+                    output_names
+                        .iter()
+                        .position(|candidate| candidate == name)
+                        .map(|root_index| PreparedOutputBusBinding {
+                            root_index,
+                            channel_count: *channel_count,
+                        })
+                })
+                .flatten()
+        })
+        .collect::<Option<Vec<_>>>()
+    else {
+        return std::ptr::null_mut();
+    };
     let scratch = |direction| {
         ports
             .iter()
@@ -244,11 +285,8 @@ pub unsafe extern "C" fn dandrum_kernel_prepare_file(
         prepared,
         runtime,
         ports,
-        declared_inputs,
-        declared_outputs,
-        input_names,
-        output_names,
-        planar_output_names,
+        input_bus_bindings,
+        output_bus_bindings,
         input_scratch,
         output_scratch,
         public_controls,
@@ -393,8 +431,8 @@ pub unsafe extern "C" fn dandrum_kernel_render(
         || frames > engine.max_block_size
         || (input_count > 0 && inputs.is_null())
         || (output_count > 0 && outputs.is_null())
-        || engine.planar_output_names.is_empty()
-        || output_count != engine.planar_output_names.len()
+        || engine.output_bus_bindings.is_empty()
+        || output_count != engine.output_bus_bindings.len()
     {
         return 0;
     }
@@ -411,15 +449,15 @@ pub unsafe extern "C" fn dandrum_kernel_render(
 
     // Validate every pointer and shape before reading inputs or writing outputs.
     for (index, view) in input_views.iter().enumerate() {
-        let Some(name) = (unsafe { ffi_name(&view.name) }) else {
+        let Some(binding) = engine.input_bus_bindings.get(view.bus_index) else {
             return 0;
         };
-        if engine.declared_inputs.get(name) != Some(&view.channel_count)
+        if binding.channel_count != view.channel_count
             || view.frame_capacity < frames
             || view.channels.is_null()
             || input_views[..index]
                 .iter()
-                .any(|prior| unsafe { ffi_name(&prior.name) } == Some(name))
+                .any(|prior| prior.bus_index == view.bus_index)
         {
             return 0;
         }
@@ -429,19 +467,15 @@ pub unsafe extern "C" fn dandrum_kernel_render(
         }
     }
     for (index, view) in output_views.iter().enumerate() {
-        let Some(name) = (unsafe { ffi_name(&view.name) }) else {
+        let Some(binding) = engine.output_bus_bindings.get(view.bus_index) else {
             return 0;
         };
-        if engine.declared_outputs.get(name) != Some(&view.channel_count)
-            || !engine
-                .planar_output_names
-                .iter()
-                .any(|expected| expected == name)
+        if binding.channel_count != view.channel_count
             || view.frame_capacity < frames
             || view.channels.is_null()
             || output_views[..index]
                 .iter()
-                .any(|prior| unsafe { ffi_name(&prior.name) } == Some(name))
+                .any(|prior| prior.bus_index == view.bus_index)
         {
             return 0;
         }
@@ -450,14 +484,6 @@ pub unsafe extern "C" fn dandrum_kernel_render(
             return 0;
         }
     }
-    if engine.planar_output_names.iter().any(|expected| {
-        !output_views
-            .iter()
-            .any(|view| unsafe { ffi_name(&view.name) } == Some(expected.as_str()))
-    }) {
-        return 0;
-    }
-
     for bus in engine.input_scratch.iter_mut() {
         for channel in bus.iter_mut() {
             channel.resize(frames, 0.0);
@@ -477,14 +503,7 @@ pub unsafe extern "C" fn dandrum_kernel_render(
         }
     }
     for view in input_views {
-        let Some(name) = (unsafe { ffi_name(&view.name) }) else {
-            unreachable!("validated input name")
-        };
-        let Some(index) = engine
-            .input_names
-            .iter()
-            .position(|candidate| candidate == name)
-        else {
+        let Some(index) = engine.input_bus_bindings[view.bus_index].root_index else {
             continue; // A declared host input without a root port is ignored.
         };
         let channels = unsafe { std::slice::from_raw_parts(view.channels, view.channel_count) };
@@ -500,14 +519,7 @@ pub unsafe extern "C" fn dandrum_kernel_render(
         return 0;
     }
     for view in output_views {
-        let Some(name) = (unsafe { ffi_name(&view.name) }) else {
-            unreachable!("validated output name")
-        };
-        let index = engine
-            .output_names
-            .iter()
-            .position(|candidate| candidate == name)
-            .expect("validated output name");
+        let index = engine.output_bus_bindings[view.bus_index].root_index;
         let channels = unsafe { std::slice::from_raw_parts(view.channels, view.channel_count) };
         for (source, destination) in engine.output_scratch[index].iter().zip(channels) {
             unsafe { std::ptr::copy_nonoverlapping(source.as_ptr(), *destination, frames) };
@@ -747,6 +759,7 @@ mod tests {
             channels: sources.as_ptr(),
             channel_count: 2,
             frame_capacity: 8,
+            bus_index: 0,
         }];
         let mut out_left = [0.0_f32; 8];
         let mut out_right = [0.0_f32; 8];
@@ -756,6 +769,7 @@ mod tests {
             channels: destinations.as_ptr(),
             channel_count: 2,
             frame_capacity: 8,
+            bus_index: 0,
         }];
         let allocations = crate::test_allocator::count_current_thread_allocations(|| {
             assert_eq!(
@@ -818,6 +832,7 @@ mod tests {
                 channels: input_channels.as_ptr(),
                 channel_count: 2,
                 frame_capacity: 8,
+                bus_index: 0,
             };
             let mut output_left = [0.0_f32; 8];
             let mut output_right = [0.0_f32; 8];
@@ -827,6 +842,7 @@ mod tests {
                 channels: output_channels.as_ptr(),
                 channel_count: 2,
                 frame_capacity: 8,
+                bus_index: 0,
             };
             assert_eq!(
                 unsafe { dandrum_kernel_render(engine, &input, 1, &output, 1, 8) },
@@ -906,6 +922,7 @@ mod tests {
             channels: destinations.as_ptr(),
             channel_count: 2,
             frame_capacity: 8,
+            bus_index: 0,
         };
         let invalid = [
             DandrumKernelOutputBusView {
@@ -945,17 +962,19 @@ mod tests {
             channels: missing_source.as_ptr(),
             channel_count: 2,
             frame_capacity: 8,
+            bus_index: 0,
         };
         assert_eq!(
             unsafe { dandrum_kernel_render(engine, &input, 1, &output, 1, 8) },
             0
         );
-        let wrong_direction_input = DandrumKernelInputBusView {
+        let unknown_input_slot = DandrumKernelInputBusView {
             name: output_name.as_ptr(),
+            bus_index: 1,
             ..input
         };
         assert_eq!(
-            unsafe { dandrum_kernel_render(engine, &wrong_direction_input, 1, &output, 1, 8) },
+            unsafe { dandrum_kernel_render(engine, &unknown_input_slot, 1, &output, 1, 8) },
             0
         );
         let duplicate_outputs = [output, output];
@@ -1012,6 +1031,7 @@ mod tests {
             channels: channels.as_ptr(),
             channel_count: 1,
             frame_capacity: 8,
+            bus_index: 0,
         };
         assert_eq!(
             unsafe { dandrum_kernel_render(engine, std::ptr::null(), 0, &output, 1, 8) },
@@ -1050,6 +1070,7 @@ mod tests {
             channels: channels.as_ptr(),
             channel_count: 1,
             frame_capacity: 8,
+            bus_index: 0,
         };
         assert_eq!(
             unsafe { dandrum_kernel_render(engine, std::ptr::null(), 0, &output, 1, 8) },
@@ -1109,6 +1130,7 @@ mod tests {
             channels: channel.as_ptr(),
             channel_count: 1,
             frame_capacity: 8,
+            bus_index: 0,
         };
         assert_eq!(
             unsafe { dandrum_kernel_render(engine, std::ptr::null(), 0, &output, 1, 8) },
@@ -1130,7 +1152,7 @@ mod tests {
     }
 
     #[test]
-    fn kernel_ffi_routes_multiple_output_views_by_name_in_any_order() {
+    fn kernel_ffi_routes_multiple_output_views_by_prepared_index_in_any_order() {
         let dir = tempfile::tempdir().unwrap();
         let path = dir.path().join("two-outputs.yaml");
         std::fs::write(
@@ -1162,16 +1184,18 @@ mod tests {
         let positive_channel = [positive.as_mut_ptr()];
         let views = [
             DandrumKernelOutputBusView {
-                name: positive_name.as_ptr(),
+                name: std::ptr::null(),
                 channels: positive_channel.as_ptr(),
                 channel_count: 1,
                 frame_capacity: 8,
+                bus_index: 1,
             },
             DandrumKernelOutputBusView {
-                name: negative_name.as_ptr(),
+                name: std::ptr::null(),
                 channels: negative_channel.as_ptr(),
                 channel_count: 1,
                 frame_capacity: 8,
+                bus_index: 0,
             },
         ];
 
@@ -1181,6 +1205,115 @@ mod tests {
         );
         assert_eq!(negative, [-0.5; 8]);
         assert_eq!(positive, [0.25; 8]);
+        negative.fill(9.0);
+        positive.fill(9.0);
+        let duplicate = [views[0], views[0]];
+        assert_eq!(
+            unsafe { dandrum_kernel_render(engine, std::ptr::null(), 0, duplicate.as_ptr(), 2, 8) },
+            0
+        );
+        assert_eq!(negative, [9.0; 8]);
+        assert_eq!(positive, [9.0; 8]);
+        let invalid = DandrumKernelOutputBusView {
+            bus_index: 2,
+            ..views[0]
+        };
+        assert_eq!(
+            unsafe { dandrum_kernel_render(engine, std::ptr::null(), 0, &invalid, 1, 8) },
+            0
+        );
+        unsafe { dandrum_kernel_destroy(engine) };
+    }
+
+    #[test]
+    fn kernel_ffi_routes_reordered_input_and_output_bus_indices() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("two-inputs.yaml");
+        std::fs::write(
+            &path,
+            "ports:\n  - { name: left_in, direction: input, signal: audio, channels: 1, maps_to: left_gain.audio_in }\n  - { name: right_in, direction: input, signal: audio, channels: 1, maps_to: right_gain.audio_in }\n  - { name: left, direction: output, signal: audio, channels: 1, maps_from: left_gain.audio_out }\n  - { name: right, direction: output, signal: audio, channels: 1, maps_from: right_gain.audio_out }\nmodules:\n  - { id: left_gain, type: gain }\n  - { id: right_gain, type: gain }\nconnections: []\n",
+        )
+        .unwrap();
+        let path = std::ffi::CString::new(path.to_str().unwrap()).unwrap();
+        let names = ["right_in", "left", "left_in", "right"]
+            .map(|name| std::ffi::CString::new(name).unwrap());
+        let declarations = [
+            DandrumKernelBusDeclaration {
+                name: names[0].as_ptr(),
+                direction: 1,
+                channel_count: 1,
+            },
+            DandrumKernelBusDeclaration {
+                name: names[1].as_ptr(),
+                direction: 2,
+                channel_count: 1,
+            },
+            DandrumKernelBusDeclaration {
+                name: names[2].as_ptr(),
+                direction: 1,
+                channel_count: 1,
+            },
+            DandrumKernelBusDeclaration {
+                name: names[3].as_ptr(),
+                direction: 2,
+                channel_count: 1,
+            },
+        ];
+        let engine = unsafe {
+            dandrum_kernel_prepare_file(path.as_ptr(), 48_000, 8, declarations.as_ptr(), 4)
+        };
+        assert!(!engine.is_null());
+        let left_input = [-0.5_f32; 8];
+        let right_input = [0.25_f32; 8];
+        let left_source = [left_input.as_ptr()];
+        let right_source = [right_input.as_ptr()];
+        let inputs = [
+            DandrumKernelInputBusView {
+                name: std::ptr::null(),
+                channels: left_source.as_ptr(),
+                channel_count: 1,
+                frame_capacity: 8,
+                bus_index: 1,
+            },
+            DandrumKernelInputBusView {
+                name: std::ptr::null(),
+                channels: right_source.as_ptr(),
+                channel_count: 1,
+                frame_capacity: 8,
+                bus_index: 0,
+            },
+        ];
+        let mut left_output = [0.0_f32; 8];
+        let mut right_output = [0.0_f32; 8];
+        let left_destination = [left_output.as_mut_ptr()];
+        let right_destination = [right_output.as_mut_ptr()];
+        let outputs = [
+            DandrumKernelOutputBusView {
+                name: std::ptr::null(),
+                channels: right_destination.as_ptr(),
+                channel_count: 1,
+                frame_capacity: 8,
+                bus_index: 1,
+            },
+            DandrumKernelOutputBusView {
+                name: std::ptr::null(),
+                channels: left_destination.as_ptr(),
+                channel_count: 1,
+                frame_capacity: 8,
+                bus_index: 0,
+            },
+        ];
+        let allocations = crate::test_allocator::count_current_thread_allocations(|| {
+            assert_eq!(
+                unsafe {
+                    dandrum_kernel_render(engine, inputs.as_ptr(), 2, outputs.as_ptr(), 2, 8)
+                },
+                8
+            );
+        });
+        assert_eq!(allocations, 0);
+        assert_eq!(left_output, left_input);
+        assert_eq!(right_output, right_input);
         unsafe { dandrum_kernel_destroy(engine) };
     }
 
@@ -1217,6 +1350,7 @@ mod tests {
             channels: channels.as_ptr(),
             channel_count: 2,
             frame_capacity: 8,
+            bus_index: 0,
         };
         assert_eq!(
             unsafe { dandrum_kernel_render(engine, std::ptr::null(), 0, &view, 1, 8) },
@@ -1258,6 +1392,7 @@ mod tests {
             channels: channels.as_ptr(),
             channel_count: 1,
             frame_capacity: 8,
+            bus_index: 0,
         };
         assert!(unsafe { dandrum_kernel_note_on_at(engine, 60, 127, 4) });
         assert_eq!(
@@ -1423,6 +1558,7 @@ mod tests {
                 channels: channels.as_ptr(),
                 channel_count: 2,
                 frame_capacity: 128,
+                bus_index: 0,
             };
             let allocations = crate::test_allocator::count_current_thread_allocations(|| {
                 assert!(unsafe {

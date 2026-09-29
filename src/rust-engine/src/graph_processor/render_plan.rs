@@ -34,6 +34,7 @@ pub(super) struct ControlDefault {
 pub(super) struct RenderStep {
     pub(super) module_index: usize,
     pub(super) module_kind: ModuleKind,
+    pub(super) poly_region_index: Option<usize>,
     pub(super) input_buffers: Box<[BufferId]>,
     pub(super) output_buffers: Box<[BufferId]>,
     pub(super) incoming_edges: Box<[CompiledEdge]>,
@@ -218,6 +219,13 @@ impl RenderPlanBuilder<'_> {
         RenderStep {
             module_index,
             module_kind: node.module_kind,
+            poly_region_index: (node.module_kind == ModuleKind::Poly).then(|| {
+                self.compiled
+                    .poly_regions()
+                    .iter()
+                    .position(|region| region.node_id() == node.id.as_str())
+                    .expect("compiled poly step has a prepared region")
+            }),
             input_buffers,
             output_buffers,
             incoming_edges,
@@ -478,6 +486,33 @@ mod tests {
                 source: EventQueueId(0),
                 destination: EventQueueId(1),
             }
+        );
+    }
+
+    #[test]
+    fn render_plan_binds_sibling_poly_steps_to_numeric_region_indices() {
+        let patch = crate::kernel::document::load_kernel_patch_str(
+            "ports:\n  - { name: left, direction: output, signal: audio, channels: 1, maps_from: left_voices.audio }\n  - { name: right, direction: output, signal: audio, channels: 1, maps_from: right_voices.audio }\nmodule_definitions:\n  - type: voice\n    ports:\n      - { name: audio, direction: output, signal: audio, channels: 1, maps_from: source.out }\n    modules:\n      - { id: source, type: control_to_audio, defaults: { in: 0.25 } }\n    connections: []\nmodules:\n  - { id: right_voices, type: poly, static: { definition: voice, max_voices: 1, allocation: reject-new } }\n  - { id: left_voices, type: poly, static: { definition: voice, max_voices: 1, allocation: reject-new } }\nconnections: []\n",
+        )
+        .expect("sibling poly patch loads");
+        let settings = RenderSettings {
+            sample_rate_hz: 48_000,
+            block_size_frames: 8,
+            duration_frames: 8,
+        };
+        let prepared = crate::preparation::prepare_kernel_patch(&patch, &settings)
+            .expect("sibling pools prepare");
+        let plan = RenderPlan::from_compiled_patch(prepared.compiled_patch(), 8, 1, 8);
+        let indices = plan
+            .global_steps
+            .iter()
+            .filter(|step| step.module_kind == ModuleKind::Poly)
+            .map(|step| step.poly_region_index)
+            .collect::<Vec<_>>();
+        assert_eq!(indices, [Some(0), Some(1)]);
+        assert_ne!(
+            prepared.compiled_patch().poly_regions()[0].node_id(),
+            prepared.compiled_patch().poly_regions()[1].node_id()
         );
     }
 

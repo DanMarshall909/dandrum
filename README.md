@@ -190,8 +190,11 @@ and `dandrum_kernel_root_port`, and report latency with
 do not use planar float views.
 
 For each render call, `dandrum_kernel_render` receives planar input and output
-views. The caller keeps bus names, channel-pointer arrays, and sample buffers
-valid through the call; the engine does not retain them. The JUCE demo and
+views. Each view's `busIndex` is its zero-based position among the matching
+direction's declarations supplied at preparation; views may arrive in any
+order. Render uses those prepared indices, so view names are informational and
+may be null. The caller keeps channel-pointer arrays and sample buffers valid
+through the call; the engine does not retain them. The JUCE demo and
 plugin bind a stereo `master` output. The plugin also binds public root control
 inputs and uses `dandrum_kernel_set_public_numeric_parameter_by_slot` to apply
 prevalidated numeric values without allocating in the audio callback. Note

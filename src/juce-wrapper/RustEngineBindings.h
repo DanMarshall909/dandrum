@@ -20,7 +20,10 @@ using DandrumCancellationCallback = bool (*) (void* context);
 // Direction: 1=input, 2=output. Signal type: 1=audio, 2=control, 3=event.
 // Bus declarations and planar views are for audio/control ports. Event root
 // ports are enumerable but have no float bus binding in this ABI.
-// Names, pointer arrays, and channel buffers must stay valid through each call.
+// Declaration names are resolved during preparation. Planar views use the
+// zero-based index among declarations of the same direction; view names are
+// informational and are not read during rendering. Pointer arrays and channel
+// buffers must stay valid through each render call.
 // Calls that render or destroy the same instrument must not overlap.
 struct DandrumKernelBusDeclaration
 {
@@ -34,6 +37,7 @@ struct DandrumKernelInputBusView
     const float* const* channels;
     std::size_t channelCount;
     std::size_t frameCapacity;
+    std::size_t busIndex { 0 };
 };
 struct DandrumKernelOutputBusView
 {
@@ -41,6 +45,7 @@ struct DandrumKernelOutputBusView
     float* const* channels;
     std::size_t channelCount;
     std::size_t frameCapacity;
+    std::size_t busIndex { 0 };
 };
 
 DandrumKernelInstrument* dandrum_kernel_prepare_file (const char* path,

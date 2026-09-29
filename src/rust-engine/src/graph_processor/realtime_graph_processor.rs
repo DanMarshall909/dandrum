@@ -832,19 +832,19 @@ impl RealtimeGraphProcessor {
                     continue;
                 }
                 ModuleKind::Poly => {
-                    let node_id = self.compiled.nodes()[step.module_index].id.as_str();
                     let events = step
                         .event_inputs
                         .first()
                         .and_then(|queue| self.prepared_event_queues.queue_ref(queue.0))
                         .map_or(&[][..], |queue| queue.events());
-                    if let Some(region) = self
+                    let region = self
                         .prepared_poly_runtime_regions
-                        .iter_mut()
-                        .find(|region| region.node_id() == node_id)
-                    {
-                        region.route_note_events(events, frames);
-                    }
+                        .get_mut(
+                            step.poly_region_index
+                                .expect("poly step has a region index"),
+                        )
+                        .expect("prepared poly region exists");
+                    region.route_note_events(events, frames);
                 }
                 _ => {}
             }
@@ -993,6 +993,7 @@ impl RealtimeGraphProcessor {
         frames
     }
 
+    #[cfg(test)]
     fn drain_and_route_poly_events(&mut self, frames: usize) -> usize {
         let event_count = self
             .pending_events
@@ -1470,24 +1471,20 @@ fn process_channel_or_poly_step(
 ) {
     clear_and_route_arena_inputs(arena, step, frames, compiled);
     if step.module_kind == ModuleKind::Poly {
-        let node_id = compiled.nodes()[step.module_index].id.as_str();
-        if let Some(region) = poly_regions
-            .iter_mut()
-            .find(|region| region.node_id() == node_id)
-        {
-            region.render_into(
-                arena,
-                &step.input_buffers,
-                &step.event_inputs,
-                event_queues,
-                &step.output_buffers,
-                frames,
-            );
-        } else {
-            for &output in step.output_buffers.iter() {
-                arena.clear(output, frames);
-            }
-        }
+        let region = poly_regions
+            .get_mut(
+                step.poly_region_index
+                    .expect("poly step has a region index"),
+            )
+            .expect("prepared poly region exists");
+        region.render_into(
+            arena,
+            &step.input_buffers,
+            &step.event_inputs,
+            event_queues,
+            &step.output_buffers,
+            frames,
+        );
     } else {
         process_channel_arena_step(arena, states, step, frames);
     }

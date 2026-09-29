@@ -267,8 +267,8 @@ mod tests {
         let folder = directory.path().join("voice");
         fs::create_dir_all(&folder).expect("create package folder");
         let mismatched = folder.join("other.yaml");
-        let error = validate_package_entry_path(&mismatched)
-            .expect_err("entry must mirror folder name");
+        let error =
+            validate_package_entry_path(&mismatched).expect_err("entry must mirror folder name");
         assert_eq!(
             error.to_diagnostic().error_code(),
             error_codes::LIBRARY_PACKAGE_NAME_MISMATCH
@@ -292,15 +292,21 @@ mod tests {
         let context = PreparationContext::new(directory.path(), 48_000)
             .with_macro_roots(MacroRoots::new().with_root(LIB_MACRO, &missing_root));
         let reference = "$LIB/1.0.0/voice/voice.yaml";
-        let error = resolve_contained_entry(reference, &context)
-            .expect_err("missing library root fails");
-        assert_eq!(error.to_diagnostic().error_code(), error_codes::LIBRARY_PACKAGE_READ_FAILED);
+        let error =
+            resolve_contained_entry(reference, &context).expect_err("missing library root fails");
+        assert_eq!(
+            error.to_diagnostic().error_code(),
+            error_codes::LIBRARY_PACKAGE_READ_FAILED
+        );
         assert!(error.to_diagnostic().message().contains("missing"));
 
         fs::create_dir_all(&missing_root).expect("create library root");
-        let error = resolve_contained_entry(reference, &context)
-            .expect_err("missing package entry fails");
-        assert_eq!(error.to_diagnostic().error_code(), error_codes::LIBRARY_PACKAGE_READ_FAILED);
+        let error =
+            resolve_contained_entry(reference, &context).expect_err("missing package entry fails");
+        assert_eq!(
+            error.to_diagnostic().error_code(),
+            error_codes::LIBRARY_PACKAGE_READ_FAILED
+        );
         assert!(error.to_diagnostic().message().contains("voice.yaml"));
     }
 

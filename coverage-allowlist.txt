@@ -57,18 +57,18 @@ allow src/rust-engine/src/kernel/flatten.rs:392 validated poly allocation policy
 # Public package references have a UTF-8 package name; the remaining lines are
 # panic branches in tests that assert the successful package/resource path.
 allow src/rust-engine/src/module_package.rs:174 validated package name is UTF-8
-allow src/rust-engine/src/module_package.rs:391 assertion panic for missing nested resource
-allow src/rust-engine/src/module_package.rs:444 assertion panic for missing typed resource
-allow src/rust-engine/src/module_package.rs:484 assertion panic for missing pinned resource
-allow src/rust-engine/src/module_package.rs:808 assertion panic for allowed path escape
+allow src/rust-engine/src/module_package.rs:397 assertion panic for missing nested resource
+allow src/rust-engine/src/module_package.rs:450 assertion panic for missing typed resource
+allow src/rust-engine/src/module_package.rs:490 assertion panic for missing pinned resource
+allow src/rust-engine/src/module_package.rs:814 assertion panic for allowed path escape
 
 # Prepared graph indices, module kinds, and intrinsic bindings are validated
 # before callback rendering; the final entry is a test-only empty fallback.
 allow src/rust-engine/src/graph_processor/polyphony.rs:394 prepared event input queue exists
-allow src/rust-engine/src/graph_processor/polyphony.rs:450 event filter state matches compiled kind
-allow src/rust-engine/src/graph_processor/polyphony.rs:495 decay or impulse kind was matched
-allow src/rust-engine/src/graph_processor/polyphony.rs:693 synthesized voice intrinsics are bound
-allow src/rust-engine/src/graph_processor/polyphony.rs:696 active voice owns a prepared arena
-allow src/rust-engine/src/graph_processor/polyphony.rs:715 synthesized gate output is bound
-allow src/rust-engine/src/graph_processor/polyphony.rs:722 gate queue exists for prepared voice
-allow src/rust-engine/src/graph_processor/polyphony.rs:866 test-only fallback without intrinsics
+allow src/rust-engine/src/graph_processor/polyphony.rs:451 event filter state matches compiled kind
+allow src/rust-engine/src/graph_processor/polyphony.rs:496 decay or impulse kind was matched
+allow src/rust-engine/src/graph_processor/polyphony.rs:694 synthesized voice intrinsics are bound
+allow src/rust-engine/src/graph_processor/polyphony.rs:697 active voice owns a prepared arena
+allow src/rust-engine/src/graph_processor/polyphony.rs:716 synthesized gate output is bound
+allow src/rust-engine/src/graph_processor/polyphony.rs:723 gate queue exists for prepared voice
+allow src/rust-engine/src/graph_processor/polyphony.rs:867 test-only fallback without intrinsics

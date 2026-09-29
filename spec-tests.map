@@ -1227,7 +1227,9 @@ AC rust-engine-architecture :: Compiled patch drives offline and realtime render
 
 AC rust-engine-architecture :: Compiled patch drives offline and realtime rendering :: Realtime render avoids port-name lookup
   fp b0aff7c7ff54
-  todo not yet mapped to a test
+  test rust:kernel_ffi_routes_reordered_input_and_output_bus_indices
+  test rust:render_plan_binds_sibling_poly_steps_to_numeric_region_indices
+  test rust:nested_poly_voices_render_through_independent_inner_pools
 
 AC rust-engine-architecture :: Compiled patch drives offline and realtime rendering :: Realtime render uses compiled render plan
   fp 518e6f5f9ce4

@@ -3138,7 +3138,9 @@ mod tests {
             .with_node(poly_node("voices", "outer", 1));
         let prepared = prepare_kernel_graph_with_buses(
             &root,
-            &builtin_registry().with_definition(inner).with_definition(outer),
+            &builtin_registry()
+                .with_definition(inner)
+                .with_definition(outer),
             &KERNEL_RENDER_SETTINGS,
             &HostBuses::new().with_output("master", 1),
         )
@@ -3438,7 +3440,9 @@ mod tests {
             &root,
             &builtin_registry().with_definition(voice),
             &KERNEL_RENDER_SETTINGS,
-            &HostBuses::new().with_input("input", 1).with_output("master", 1),
+            &HostBuses::new()
+                .with_input("input", 1)
+                .with_output("master", 1),
         )
         .expect("bound-input poly graph prepares");
         let mut runtime = runtime_for(&prepared);

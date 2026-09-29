@@ -637,8 +637,16 @@ fn a_primitive_can_replace_a_composite_without_changing_the_caller_graph() {
     let input = Port::input("audio_in", SignalType::Audio, 1);
     let output = Port::output("audio_out", SignalType::Audio, 1);
     let composite = GraphDefinition::new("voice")
-        .with_port(input.clone().maps_to(PortRef::new(NodeId::new("inner"), "audio_in")))
-        .with_port(output.clone().maps_from(PortRef::new(NodeId::new("inner"), "audio_out")))
+        .with_port(
+            input
+                .clone()
+                .maps_to(PortRef::new(NodeId::new("inner"), "audio_in")),
+        )
+        .with_port(
+            output
+                .clone()
+                .maps_from(PortRef::new(NodeId::new("inner"), "audio_out")),
+        )
         .with_node(Node::new(NodeId::new("inner"), "gain"));
     let primitive = GraphDefinition::new("voice")
         .with_latency(LatencySpec::Zero)
@@ -659,8 +667,12 @@ fn a_primitive_can_replace_a_composite_without_changing_the_caller_graph() {
         .with_definition(composite);
     let primitive_registry = DefinitionRegistry::new().with_definition(primitive);
 
-    let inline = caller.flatten(&inline_registry).expect("composite flattens");
-    let atomic = caller.flatten(&primitive_registry).expect("primitive flattens");
+    let inline = caller
+        .flatten(&inline_registry)
+        .expect("composite flattens");
+    let atomic = caller
+        .flatten(&primitive_registry)
+        .expect("primitive flattens");
     assert_eq!(inline.root_ports(), atomic.root_ports());
     assert_eq!(inline.root_input_destinations()["in"].len(), 1);
     assert_eq!(atomic.root_input_destinations()["in"].len(), 1);

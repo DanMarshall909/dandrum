@@ -277,15 +277,19 @@ fn preset_application_requires_instrument_identity_and_known_asset_target() {
         "name: missing\ninstrument: { id: test.instrument, preset_schema_version: 2 }\n",
     )
     .expect("preset loads");
-    let patch = load_kernel_patch_str(
-        &PRESET_PATCH.replace(
-            "instrument: { id: test.instrument, preset_schema_version: 2 }\n",
-            "",
-        ),
-    )
+    let patch = load_kernel_patch_str(&PRESET_PATCH.replace(
+        "instrument: { id: test.instrument, preset_schema_version: 2 }\n",
+        "",
+    ))
     .expect("patch without preset identity loads");
-    let error = patch.apply_preset(&preset).expect_err("identity is required");
-    assert!(error.to_string().contains("does not declare instrument preset identity"));
+    let error = patch
+        .apply_preset(&preset)
+        .expect_err("identity is required");
+    assert!(
+        error
+            .to_string()
+            .contains("does not declare instrument preset identity")
+    );
 
     let patch = load_kernel_patch_str(PRESET_PATCH).expect("preset patch loads");
     let unknown_asset = load_preset_str(
@@ -303,7 +307,11 @@ fn preset_surface_rejects_unknown_asset_destination_and_duplicate_parameter_name
     let missing_asset = PRESET_PATCH.replace("maps_to: sample }", "maps_to: missing }");
     let error = load_kernel_patch_str(&missing_asset)
         .expect_err("asset target must name a resource static parameter");
-    assert!(error.to_string().contains("unresolved resource static parameter missing"));
+    assert!(
+        error
+            .to_string()
+            .contains("unresolved resource static parameter missing")
+    );
 
     let duplicate_parameter = PRESET_PATCH.replace(
         "    - { name: loudness, maps_to: volume }",
@@ -311,7 +319,11 @@ fn preset_surface_rejects_unknown_asset_destination_and_duplicate_parameter_name
     );
     let error = load_kernel_patch_str(&duplicate_parameter)
         .expect_err("duplicate parameter target must fail");
-    assert!(error.to_string().contains("duplicate preset target loudness"));
+    assert!(
+        error
+            .to_string()
+            .contains("duplicate preset target loudness")
+    );
 }
 
 #[test]
@@ -370,7 +382,11 @@ fn node_static_literal_must_match_the_declared_type() {
         error.errors().next().unwrap().error_code(),
         error_codes::KERNEL_DOCUMENT_PARSE_FAILED
     );
-    assert!(error.to_string().contains("does not match declared type Int"));
+    assert!(
+        error
+            .to_string()
+            .contains("does not match declared type Int")
+    );
 }
 
 #[test]
@@ -381,7 +397,10 @@ fn yaml_static_expression_is_retained_for_explicit_rejection() {
         patch.root().nodes()[0].static_args()["channels"],
         StaticArg::Expression("$channels + 1".into())
     );
-    let error = patch.root().flatten(patch.registry()).expect_err("arithmetic is unsupported");
+    let error = patch
+        .root()
+        .flatten(patch.registry())
+        .expect_err("arithmetic is unsupported");
     assert!(error.to_string().contains("expression"));
 }
 
