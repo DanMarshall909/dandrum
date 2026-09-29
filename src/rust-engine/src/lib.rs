@@ -9,6 +9,19 @@ mod test_allocator;
 #[cfg(test)]
 mod drum_voice_authoring_tests;
 
+#[cfg(test)]
+extern crate self as dandrum_engine;
+
+#[cfg(test)]
+#[path = "legacy_tests/declarative_parameters_red_tests.rs"]
+mod legacy_declarative_parameters_red_tests;
+#[cfg(test)]
+#[path = "legacy_tests/declarative_parameters_remaining_red_tests.rs"]
+mod legacy_declarative_parameters_remaining_red_tests;
+#[cfg(test)]
+#[path = "legacy_tests/engine_patch_behaviour_tests.rs"]
+mod legacy_engine_patch_behaviour_tests;
+
 pub mod core;
 
 pub mod compiled_patch;
