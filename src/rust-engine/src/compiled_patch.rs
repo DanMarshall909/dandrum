@@ -3,8 +3,10 @@ use std::fmt;
 use std::sync::Arc;
 
 use crate::builtins::module_kind::ModuleKind;
+#[cfg(test)]
+use crate::builtins::CURVE_LINEAR;
 use crate::builtins::{
-    CURVE_LINEAR, CURVE_PARAMETER, DELAY_SAMPLES_PARAMETER, DETECTION_MODE_PARAMETER,
+    CURVE_PARAMETER, DELAY_SAMPLES_PARAMETER, DETECTION_MODE_PARAMETER,
     DETECTION_MODE_RMS, DYNAMICS_DETECTION_PARAMETER, DYNAMICS_MODE_PARAMETER,
     DYNAMICS_MODE_TRANSIENT, DYNAMICS_TOPOLOGY_FEEDBACK, DYNAMICS_TOPOLOGY_PARAMETER,
     EVENT_FILTER_NOTE_PARAMETER, EVENT_FILTER_NOTE_SELECTOR, EVENT_FILTER_SELECTOR_PARAMETER,
@@ -673,6 +675,7 @@ fn construction_from_static_values(
     })
 }
 
+#[cfg(test)]
 fn legacy_node_data(
     module_id: &str,
     kind: ModuleKind,
@@ -708,6 +711,7 @@ fn legacy_node_data(
     })
 }
 
+#[cfg(test)]
 fn is_static_construction_parameter(kind: ModuleKind, name: &str) -> bool {
     match kind {
         ModuleKind::Script => matches!(
@@ -747,6 +751,7 @@ fn is_static_construction_parameter(kind: ModuleKind, name: &str) -> bool {
     }
 }
 
+#[cfg(test)]
 fn construction_from_legacy_values(
     module_id: &str,
     kind: ModuleKind,
@@ -948,11 +953,27 @@ pub(crate) fn effective_legacy_control_default(
     }
 }
 
+#[cfg(test)]
 pub fn compile(
     graph: &Graph,
     render_settings: &RenderSettings,
 ) -> Result<CompiledPatch, CompileError> {
-    compile_internal(graph, render_settings, None, None)
+    let node_data = graph
+        .modules()
+        .iter()
+        .map(|module| {
+            let kind = ModuleKind::from_str(module.module_type()).ok_or_else(|| {
+                CompileError::UnknownModuleType {
+                    module_type: module.module_type().to_string(),
+                }
+            })?;
+            Ok((
+                module.id().as_str().to_string(),
+                legacy_node_data(module.id().as_str(), kind, module)?,
+            ))
+        })
+        .collect::<Result<BTreeMap<_, _>, _>>()?;
+    compile_internal(graph, render_settings, &node_data, None, true)
 }
 
 pub(crate) fn compile_with_node_data(
@@ -961,14 +982,15 @@ pub(crate) fn compile_with_node_data(
     node_data: &BTreeMap<String, CompiledNodeData>,
     root_outputs: &BTreeMap<String, crate::kernel::PortRef>,
 ) -> Result<CompiledPatch, CompileError> {
-    compile_internal(graph, render_settings, Some(node_data), Some(root_outputs))
+    compile_internal(graph, render_settings, node_data, Some(root_outputs), #[cfg(test)] false)
 }
 
 fn compile_internal(
     graph: &Graph,
     render_settings: &RenderSettings,
-    supplied_node_data: Option<&BTreeMap<String, CompiledNodeData>>,
+    supplied_node_data: &BTreeMap<String, CompiledNodeData>,
     root_outputs: Option<&BTreeMap<String, crate::kernel::PortRef>>,
+    #[cfg(test)] legacy_scope: bool,
 ) -> Result<CompiledPatch, CompileError> {
     let module_indices = module_indices_by_id(graph);
     let topological_order = topological_sort(graph, &module_indices)?;
@@ -1035,15 +1057,13 @@ fn compile_internal(
                 .enumerate()
                 .map(|(index, name)| (name.clone(), index))
                 .collect();
-            let data = match supplied_node_data {
-                Some(all_data) => all_data.get(module.id().as_str()).cloned().ok_or_else(|| {
-                    CompileError::InvalidConstructionData {
-                        module_id: module.id().as_str().to_string(),
-                        parameter_name: "compiled_node_data".to_string(),
-                    }
-                })?,
-                None => legacy_node_data(module.id().as_str(), kind, module)?,
-            };
+            let data = supplied_node_data
+                .get(module.id().as_str())
+                .cloned()
+                .ok_or_else(|| CompileError::InvalidConstructionData {
+                    module_id: module.id().as_str().to_string(),
+                    parameter_name: "compiled_node_data".to_string(),
+                })?;
             if let CompiledConstruction::FeedbackDelay { samples } = &data.construction {
                 if *samples < render_settings.block_size_frames as usize {
                     return Err(CompileError::InvalidConstructionData {
@@ -1120,7 +1140,7 @@ fn compile_internal(
     resolve_routing(graph, &module_indices, &mut nodes)?;
 
     #[cfg(test)]
-    let (global_node_indices, voice_node_indices) = if supplied_node_data.is_some() {
+    let (global_node_indices, voice_node_indices) = if !legacy_scope {
         (topological_order.clone(), Vec::new())
     } else {
         (
@@ -1171,7 +1191,7 @@ fn color_output_spans(
     graph: &Graph,
     module_indices: &BTreeMap<&str, usize>,
     topological_order: &[usize],
-    supplied_node_data: Option<&BTreeMap<String, CompiledNodeData>>,
+    supplied_node_data: &BTreeMap<String, CompiledNodeData>,
     root_outputs: Option<&BTreeMap<String, crate::kernel::PortRef>>,
 ) -> Result<(Vec<Vec<CompiledPortSpan>>, usize), CompileError> {
     let order_position = topological_order
@@ -1271,12 +1291,12 @@ fn color_output_spans(
 }
 
 fn data_channel_count(
-    supplied_node_data: Option<&BTreeMap<String, CompiledNodeData>>,
+    supplied_node_data: &BTreeMap<String, CompiledNodeData>,
     module: &ModuleNode,
     port_name: &str,
 ) -> usize {
     supplied_node_data
-        .and_then(|all_data| all_data.get(module.id().as_str()))
+        .get(module.id().as_str())
         .and_then(|data| data.port_channels.get(port_name))
         .copied()
         .unwrap_or(1)

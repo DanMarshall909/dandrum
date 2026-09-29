@@ -1,7 +1,9 @@
 use std::collections::{BTreeMap, HashMap};
 
 use crate::builtins::module_kind::ModuleKind;
-use crate::compiled_patch::{self, CompiledPatch};
+#[cfg(test)]
+use crate::compiled_patch;
+use crate::compiled_patch::CompiledPatch;
 use crate::graph::Graph;
 use crate::patch::VoiceAllocation;
 use crate::sample::PreparedSamplerAssets;
@@ -53,10 +55,12 @@ pub struct RealtimeGraphProcessor {
 }
 
 impl RealtimeGraphProcessor {
+    #[cfg(test)]
     pub fn new(graph: Graph, sample_rate: f32) -> Self {
         Self::new_with_sampler_assets(graph, sample_rate, &PreparedSamplerAssets::empty())
     }
 
+    #[cfg(test)]
     pub fn new_with_sampler_assets(
         graph: Graph,
         sample_rate: f32,
@@ -70,6 +74,7 @@ impl RealtimeGraphProcessor {
         )
     }
 
+    #[cfg(test)]
     pub fn polyphonic_with_sampler_assets(
         graph: Graph,
         sample_rate: f32,
@@ -85,6 +90,7 @@ impl RealtimeGraphProcessor {
         )
     }
 
+    #[cfg(test)]
     pub fn polyphonic_with_sampler_assets_and_max_block_size(
         graph: Graph,
         sample_rate: f32,

@@ -31,6 +31,7 @@ pub struct ModuleNode {
     outputs: Vec<Port>,
     #[cfg(test)]
     execution_scope: ExecutionScope,
+    #[cfg(test)]
     params: BTreeMap<String, String>,
 }
 
@@ -141,15 +142,18 @@ impl ModuleNode {
             outputs: Vec::new(),
             #[cfg(test)]
             execution_scope: ExecutionScope::Global,
+            #[cfg(test)]
             params: BTreeMap::new(),
         }
     }
 
+    #[cfg(test)]
     pub fn with_params(mut self, params: BTreeMap<String, String>) -> Self {
         self.params = params;
         self
     }
 
+    #[cfg(test)]
     pub fn params(&self) -> &BTreeMap<String, String> {
         &self.params
     }
