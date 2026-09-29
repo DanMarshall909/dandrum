@@ -43,8 +43,10 @@
 - Run mutation tests periodically (`cargo-mutants`) to catch weak or missing test coverage, especially after
   implementing path-critical DSP or control-flow behavior.
 - Before a mutation or coverage run, check free disk space and the size of existing build targets. When space is tight,
-  select changed code and focused unit tests, use `cargo mutants --copy-target false`, and clean task-generated build
-  artifacts afterward. Do not remove unrelated caches to make a test run fit.
+  select changed code and focused unit tests, use `cargo mutants --copy-target false`, and clean only disposable outputs
+  from that run afterward. Preserve reusable `build/`, Cargo target directories, and installed dependencies during
+  cleanup, even when Git ignores them. If reclaiming that space is necessary, explain the rebuild cost and get explicit
+  direction before deleting it.
 - For DSP and mixing tests, assert a known signed output value or waveform as well as relationships between renders.
   Relative comparisons alone can pass when both paths share the same incorrect transformation.
 - When testing a composed voice or graph, exercise a representative child module that produces the output or event;
