@@ -12,9 +12,10 @@ ROOT = Path(__file__).resolve().parents[1]
 MANIFEST = ROOT / "src" / "rust-engine" / "Cargo.toml"
 POLICY = ROOT / "coverage-allowlist.txt"
 
-# Coverage targets the engine library only. The `bin/*` executables (CLI, demo,
-# stepseq, render-kick) are tools around the engine, not the engine itself, and
-# are excluded so their coverage never counts toward the engine gate.
+# Coverage targets the engine library and its unit tests. Historical parity
+# assertions also live in that test build. The `bin/*` executables (CLI, demo,
+# stepseq, render-kick) are tools around the engine and do not count toward the
+# engine gate.
 NON_ENGINE_REGEX = r"(^|/)(bin/|src/rust-engine/src/bin/)"
 
 
@@ -31,7 +32,6 @@ def main() -> int:
             "--manifest-path",
             str(MANIFEST),
             "--lib",
-            "--tests",
             "--ignore-filename-regex",
             NON_ENGINE_REGEX,
             "--show-missing-lines",
