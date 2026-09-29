@@ -8,7 +8,7 @@ use crate::realtime;
 use crate::graph::{PortDirection, SignalType};
 use crate::graph_processor::RealtimeGraphProcessor;
 use crate::kernel::{ChannelCount, PortMetadata};
-use crate::patch::{RenderSettings, VoiceAllocation};
+use crate::patch::RenderSettings;
 use crate::sample::PreparedSamplerAssets;
 
 macro_rules! mut_or {
@@ -238,12 +238,10 @@ pub unsafe extern "C" fn dandrum_kernel_prepare_file(
             max: alias.control_default().max(),
         })
         .collect();
-    let runtime = RealtimeGraphProcessor::polyphonic_with_compiled_patch_and_sampler_assets_and_max_block_size(
-        prepared.graph().clone(),
+    let runtime = RealtimeGraphProcessor::from_compiled_patch(
         prepared.compiled_patch().clone(),
         sample_rate_hz as f32,
         &PreparedSamplerAssets::empty(),
-        &VoiceAllocation::default(),
         max_block_size,
     );
     if !runtime.can_render_root_buses() {

@@ -1,17 +1,23 @@
+#[cfg(test)]
 use crate::graph::builtin_ports;
 use crate::script::{ScriptEvent, ScriptExecutionContext, ScriptProcessInput, ScriptRuntime};
 use std::collections::BTreeMap;
 
+#[cfg(test)]
 use super::helpers::{
-    audio_output, lerp, log_lerp, normalized_end_position, normalized_position, set_curve_by_index,
+    audio_output, normalized_end_position, normalized_position, set_curve_by_index,
     stereo_audio_output,
 };
+use super::helpers::{lerp, log_lerp};
 use super::outputs::{BlockEvent, ModuleOutputs};
 use super::state::PerModuleState;
+#[cfg(test)]
 use crate::decay::DecayCurve;
 use crate::dynamics_processor::DynamicsProcessor;
+#[cfg(test)]
 use crate::oscillator::OSCILLATOR_BASE_HZ;
 
+#[cfg(test)]
 pub(super) struct EchoControls<'a> {
     pub(super) feedback: &'a [f32],
     pub(super) damping: &'a [f32],
@@ -22,6 +28,7 @@ pub(super) struct EchoControls<'a> {
     pub(super) ping_pong: &'a [f32],
 }
 
+#[cfg(test)]
 pub(super) struct ReverbControls<'a> {
     pub(super) decay_time: &'a [f32],
     pub(super) room_size: &'a [f32],
@@ -33,6 +40,7 @@ pub(super) struct ReverbControls<'a> {
     pub(super) stereo_width: &'a [f32],
 }
 
+#[cfg(test)]
 pub(super) fn process_oscillator(
     state: &mut PerModuleState,
     pitch_ratio: &[f32],
@@ -61,6 +69,7 @@ pub(super) fn process_oscillator(
     audio_output(builtin_ports::AUDIO, audio)
 }
 
+#[cfg(test)]
 pub(super) fn process_adsr(
     state: &mut PerModuleState,
     events_in: &[BlockEvent],
@@ -159,10 +168,12 @@ pub(super) fn adsr_time_ms(value: f32, min_ms: f32, max_ms: f32) -> f32 {
 /// Promote a `control` signal to `audio`. Both are per-sample `f32` buffers, so
 /// the promotion is a copy; the node exists to make the conversion visible in
 /// the graph rather than an implicit coercion.
+#[cfg(test)]
 pub(super) fn process_control_to_audio(control_in: Vec<f32>) -> ModuleOutputs {
     audio_output(builtin_ports::OUT, control_in)
 }
 
+#[cfg(test)]
 pub(super) fn process_compensation_delay(
     state: &mut PerModuleState,
     audio_in: Vec<f32>,
@@ -182,6 +193,7 @@ pub(super) fn process_compensation_delay(
     audio_output(builtin_ports::AUDIO_OUT, audio)
 }
 
+#[cfg(test)]
 pub(super) fn process_vca(audio_in: Vec<f32>, gain_in: Vec<f32>) -> ModuleOutputs {
     let frames = audio_in.len().min(gain_in.len());
     let mut audio = Vec::with_capacity(frames);
@@ -192,6 +204,7 @@ pub(super) fn process_vca(audio_in: Vec<f32>, gain_in: Vec<f32>) -> ModuleOutput
     audio_output(builtin_ports::AUDIO_OUT, audio)
 }
 
+#[cfg(test)]
 pub(super) fn process_sampler(
     state: &mut PerModuleState,
     events_in: &[BlockEvent],
@@ -274,6 +287,7 @@ pub(super) fn process_sampler(
     audio_output(builtin_ports::AUDIO, audio)
 }
 
+#[cfg(test)]
 pub(super) fn process_note_to_rate(
     state: &mut PerModuleState,
     events_in: &[BlockEvent],
@@ -305,6 +319,7 @@ pub(super) fn process_note_to_rate(
     outputs
 }
 
+#[cfg(test)]
 pub(super) fn process_event_filter(
     state: &mut PerModuleState,
     events_in: &[BlockEvent],
@@ -324,6 +339,7 @@ pub(super) fn process_event_filter(
     outputs
 }
 
+#[cfg(test)]
 pub(super) fn process_envelope_follower(
     state: &mut PerModuleState,
     audio_in: &[f32],
@@ -364,6 +380,7 @@ pub(super) fn process_envelope_follower(
     outputs
 }
 
+#[cfg(test)]
 pub(super) fn process_curve_mapper(
     state: &mut PerModuleState,
     value_in: &[f32],
@@ -396,6 +413,7 @@ pub(super) fn process_curve_mapper(
     outputs
 }
 
+#[cfg(test)]
 pub(super) fn process_slew(
     state: &mut PerModuleState,
     value_in: &[f32],
@@ -442,6 +460,7 @@ pub(super) fn slew_step(
     *current
 }
 
+#[cfg(test)]
 fn finite_or_zero(value: f32) -> f32 {
     if value.is_finite() { value } else { 0.0 }
 }
@@ -456,6 +475,7 @@ pub(super) fn event_matches_note(event: &BlockEvent, expected_note: Option<u8>) 
     }
 }
 
+#[cfg(test)]
 pub(super) fn process_dynamics_processor(
     state: &mut PerModuleState,
     audio_in: &[f32],
@@ -533,6 +553,7 @@ pub(super) fn dynamics_sample(
     processor.process(audio as f64, sidechain) as f32
 }
 
+#[cfg(test)]
 pub(super) fn process_filter(
     state: &mut PerModuleState,
     audio_in: &[f32],
@@ -561,6 +582,7 @@ pub(super) fn process_filter(
     audio_output(builtin_ports::AUDIO_OUT, audio_out)
 }
 
+#[cfg(test)]
 pub(super) fn process_saturator(
     state: &mut PerModuleState,
     audio_in: &[f32],
@@ -591,6 +613,7 @@ pub(super) fn process_saturator(
     audio_output(builtin_ports::AUDIO_OUT, audio_out)
 }
 
+#[cfg(test)]
 pub(super) fn process_convolution(
     state: &mut PerModuleState,
     audio_in: &[f32],
@@ -613,6 +636,7 @@ pub(super) fn process_convolution(
     audio_output(builtin_ports::AUDIO_OUT, audio_out)
 }
 
+#[cfg(test)]
 pub(super) fn process_echo(
     state: &mut PerModuleState,
     audio_in_l: &[f32],
@@ -657,6 +681,7 @@ pub(super) fn process_echo(
     stereo_audio_output(out_l, out_r)
 }
 
+#[cfg(test)]
 pub(super) fn process_reverb(
     state: &mut PerModuleState,
     audio_in_l: &[f32],
@@ -712,6 +737,7 @@ pub(super) fn process_reverb(
     stereo_audio_output(out_l, out_r)
 }
 
+#[cfg(test)]
 pub(super) fn process_frequency_splitter(
     state: &mut PerModuleState,
     audio_in: &[f32],
@@ -753,6 +779,7 @@ pub(super) fn process_frequency_splitter(
     outputs
 }
 
+#[cfg(test)]
 pub(super) fn process_spectral_processor(
     state: &mut PerModuleState,
     audio_in: &[f32],
@@ -778,6 +805,7 @@ pub(super) fn process_spectral_processor(
     audio_output(builtin_ports::AUDIO_OUT, audio_out)
 }
 
+#[cfg(test)]
 pub(super) fn process_noise(state: &mut PerModuleState, frames: usize) -> ModuleOutputs {
     let rng_state = match state {
         PerModuleState::Noise { states, .. } => &mut states[0],
@@ -800,6 +828,7 @@ pub(super) fn process_noise(state: &mut PerModuleState, frames: usize) -> Module
     audio_output(builtin_ports::AUDIO, audio)
 }
 
+#[cfg(test)]
 pub(super) fn process_decay(
     state: &mut PerModuleState,
     events: &[BlockEvent],
@@ -856,6 +885,7 @@ pub(super) fn process_decay(
     outputs
 }
 
+#[cfg(test)]
 pub(super) fn process_impulse(
     _state: &mut PerModuleState,
     events: &[BlockEvent],
@@ -871,6 +901,7 @@ pub(super) fn process_impulse(
     audio_output(builtin_ports::AUDIO, audio)
 }
 
+#[cfg(test)]
 pub(super) fn process_multiply(a: Vec<f32>, b: Vec<f32>) -> ModuleOutputs {
     let max = a.len().max(b.len());
     let mut audio = Vec::with_capacity(max);
@@ -882,6 +913,7 @@ pub(super) fn process_multiply(a: Vec<f32>, b: Vec<f32>) -> ModuleOutputs {
     audio_output(builtin_ports::AUDIO_OUT, audio)
 }
 
+#[cfg(test)]
 pub(super) fn process_note_to_control(
     state: &mut PerModuleState,
     events: &[BlockEvent],

@@ -43,6 +43,7 @@ impl BoundedEventQueue {
         &self.events
     }
 
+    #[cfg(test)]
     pub(super) fn push(&mut self, event: ScriptEvent) -> EventQueueResult<()> {
         self.push_at(event, 0)
     }
@@ -81,6 +82,7 @@ impl BoundedEventQueue {
         count
     }
 
+    #[cfg(test)]
     pub(super) fn drain_into_vec(&mut self, dest: &mut Vec<BlockEvent>) {
         dest.extend(self.events.drain(..));
     }

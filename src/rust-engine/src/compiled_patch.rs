@@ -2,19 +2,19 @@ use std::collections::{BTreeMap, VecDeque};
 use std::fmt;
 use std::sync::Arc;
 
-use crate::builtins::module_kind::ModuleKind;
 #[cfg(test)]
 use crate::builtins::CURVE_LINEAR;
+use crate::builtins::module_kind::ModuleKind;
 use crate::builtins::{
-    CURVE_PARAMETER, DELAY_SAMPLES_PARAMETER, DETECTION_MODE_PARAMETER,
-    DETECTION_MODE_RMS, DYNAMICS_DETECTION_PARAMETER, DYNAMICS_MODE_PARAMETER,
-    DYNAMICS_MODE_TRANSIENT, DYNAMICS_TOPOLOGY_FEEDBACK, DYNAMICS_TOPOLOGY_PARAMETER,
-    EVENT_FILTER_NOTE_PARAMETER, EVENT_FILTER_NOTE_SELECTOR, EVENT_FILTER_SELECTOR_PARAMETER,
-    FILTER_ALGORITHM_BIQUAD, FILTER_ALGORITHM_COMB, FILTER_ALGORITHM_PARAMETER,
-    FILTER_COMB_TYPE_PARAMETER, FILTER_MODE_HIGHPASS, FILTER_MODE_PARAMETER, FILTER_MODE_PEAKING,
-    INTERPOLATION_CUBIC, INTERPOLATION_PARAMETER, NOISE_DEFAULT_SEED, NOISE_SEED_PARAMETER,
-    SCRIPT_SOURCE_PARAMETER, SPECTRAL_DEFAULT_FFT_SIZE, SPECTRAL_FFT_SIZE_PARAMETER,
-    SPECTRAL_MODE_PARAMETER, SPECTRAL_MODE_PASSTHROUGH, STEPS_PARAMETER, WAVEFORM_PARAMETER,
+    CURVE_PARAMETER, DELAY_SAMPLES_PARAMETER, DETECTION_MODE_PARAMETER, DETECTION_MODE_RMS,
+    DYNAMICS_DETECTION_PARAMETER, DYNAMICS_MODE_PARAMETER, DYNAMICS_MODE_TRANSIENT,
+    DYNAMICS_TOPOLOGY_FEEDBACK, DYNAMICS_TOPOLOGY_PARAMETER, EVENT_FILTER_NOTE_PARAMETER,
+    EVENT_FILTER_NOTE_SELECTOR, EVENT_FILTER_SELECTOR_PARAMETER, FILTER_ALGORITHM_BIQUAD,
+    FILTER_ALGORITHM_COMB, FILTER_ALGORITHM_PARAMETER, FILTER_COMB_TYPE_PARAMETER,
+    FILTER_MODE_HIGHPASS, FILTER_MODE_PARAMETER, FILTER_MODE_PEAKING, INTERPOLATION_CUBIC,
+    INTERPOLATION_PARAMETER, NOISE_DEFAULT_SEED, NOISE_SEED_PARAMETER, SCRIPT_SOURCE_PARAMETER,
+    SPECTRAL_DEFAULT_FFT_SIZE, SPECTRAL_FFT_SIZE_PARAMETER, SPECTRAL_MODE_PARAMETER,
+    SPECTRAL_MODE_PASSTHROUGH, STEPS_PARAMETER, WAVEFORM_PARAMETER,
 };
 use crate::curve_mapper::{CurveKind, CurveMapper};
 use crate::decay::DecayCurve;
@@ -25,7 +25,9 @@ use crate::envelope_follower::DetectionMode;
 use crate::filter::{BiquadMode, CombType};
 #[cfg(test)]
 use crate::graph::ExecutionScope;
-use crate::graph::{Graph, ModuleId, ModuleNode, SignalType, builtin_ports};
+#[cfg(test)]
+use crate::graph::builtin_ports;
+use crate::graph::{Graph, ModuleId, ModuleNode, SignalType};
 use crate::kernel::PolyAllocationPolicy;
 use crate::kernel::StaticValue;
 use crate::kernel::flatten::FlattenedGraph;
@@ -889,6 +891,7 @@ fn interpolation_construction(value: Option<&str>) -> InterpolationMode {
     }
 }
 
+#[cfg(test)]
 pub(crate) fn effective_legacy_control_default(
     module_kind: ModuleKind,
     port_name: &str,
@@ -982,7 +985,14 @@ pub(crate) fn compile_with_node_data(
     node_data: &BTreeMap<String, CompiledNodeData>,
     root_outputs: &BTreeMap<String, crate::kernel::PortRef>,
 ) -> Result<CompiledPatch, CompileError> {
-    compile_internal(graph, render_settings, node_data, Some(root_outputs), #[cfg(test)] false)
+    compile_internal(
+        graph,
+        render_settings,
+        node_data,
+        Some(root_outputs),
+        #[cfg(test)]
+        false,
+    )
 }
 
 fn compile_internal(

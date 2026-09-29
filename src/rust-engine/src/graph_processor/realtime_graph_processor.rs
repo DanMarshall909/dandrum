@@ -1,22 +1,32 @@
-use std::collections::{BTreeMap, HashMap};
+use std::collections::BTreeMap;
+#[cfg(test)]
+use std::collections::HashMap;
 
 use crate::builtins::module_kind::ModuleKind;
 #[cfg(test)]
 use crate::compiled_patch;
 use crate::compiled_patch::CompiledPatch;
+#[cfg(test)]
 use crate::graph::Graph;
+#[cfg(test)]
 use crate::patch::VoiceAllocation;
 use crate::sample::PreparedSamplerAssets;
 use crate::script::ScriptEvent;
+#[cfg(test)]
 use crate::voice_allocator::VoiceAllocator;
 
 use super::arena_processing;
 use super::audio_arena::AudioArena;
+#[cfg(test)]
 use super::block::{collect_audio_output, process_block_compiled};
+#[cfg(test)]
 use super::dispatch::process_module;
 use super::event_queue::{BoundedEventQueue, PreparedEventQueues};
+#[cfg(test)]
 use super::input_provider::CompiledInputProvider;
-use super::outputs::{BlockEvent, ModuleOutputs};
+use super::outputs::BlockEvent;
+#[cfg(test)]
+use super::outputs::ModuleOutputs;
 use super::polyphony::{PreparedPolyRuntimeRegion, build_polyphonic_states_from_compiled};
 use super::process_context::ProcessContext;
 use super::render_plan::{CompiledEventEdge, RenderPlan, RenderStep};
@@ -31,25 +41,36 @@ pub struct RealtimeGraphProcessor {
     voice_allocation: VoiceAllocation,
     compiled: CompiledPatch,
     states: Vec<Vec<PerModuleState>>,
+    #[cfg(test)]
     midi_idx: Option<usize>,
+    #[cfg(test)]
     out_idx: Option<usize>,
     current_frame: u64,
     pending_events: BoundedEventQueue,
     prepared_event_queues: PreparedEventQueues,
     events_buffer: Box<[BlockEvent]>,
+    #[cfg(test)]
     allocator: VoiceAllocator,
     render_plan: RenderPlan,
     audio_arena: AudioArena,
     prepared_max_block_size: usize,
     last_render_chunk_count: usize,
     last_render_used_arena: bool,
+    #[cfg(test)]
     scratch_left: Vec<f32>,
+    #[cfg(test)]
     scratch_right: Vec<f32>,
+    #[cfg(test)]
     module_outputs: HashMap<usize, ModuleOutputs>,
+    #[cfg(test)]
     scratch_outputs: Option<HashMap<usize, ModuleOutputs>>,
+    #[cfg(test)]
     events_scratch: Vec<BlockEvent>,
+    #[cfg(test)]
     voice_event_queues: Vec<Vec<BlockEvent>>,
+    #[cfg(test)]
     voice_queues: Vec<PreparedEventQueues>,
+    #[cfg(test)]
     accum: Vec<Option<ModuleOutputs>>,
     prepared_poly_runtime_regions: Box<[PreparedPolyRuntimeRegion]>,
 }
@@ -115,6 +136,7 @@ impl RealtimeGraphProcessor {
         )
     }
 
+    #[cfg(test)]
     pub fn polyphonic_with_compiled_patch_and_sampler_assets_and_max_block_size(
         graph: Graph,
         compiled: CompiledPatch,
@@ -123,15 +145,56 @@ impl RealtimeGraphProcessor {
         voice_allocation: &VoiceAllocation,
         prepared_max_block_size: usize,
     ) -> Self {
+        Self::initialize_compiled(
+            compiled,
+            sample_rate,
+            sampler_assets,
+            voice_allocation.max_voices.max(1) as usize,
+            graph,
+            voice_allocation.clone(),
+            prepared_max_block_size,
+        )
+    }
+
+    pub fn from_compiled_patch(
+        compiled: CompiledPatch,
+        sample_rate: f32,
+        sampler_assets: &PreparedSamplerAssets,
+        prepared_max_block_size: usize,
+    ) -> Self {
+        Self::initialize_compiled(
+            compiled,
+            sample_rate,
+            sampler_assets,
+            1,
+            #[cfg(test)]
+            Graph::default(),
+            #[cfg(test)]
+            VoiceAllocation::default(),
+            prepared_max_block_size,
+        )
+    }
+
+    fn initialize_compiled(
+        compiled: CompiledPatch,
+        sample_rate: f32,
+        sampler_assets: &PreparedSamplerAssets,
+        max_voices: usize,
+        #[cfg(test)] graph: Graph,
+        #[cfg(test)] voice_allocation: VoiceAllocation,
+        prepared_max_block_size: usize,
+    ) -> Self {
+        #[cfg(test)]
         let midi_idx = compiled.midi_input_index();
+        #[cfg(test)]
         let out_idx = compiled.audio_output_index();
-        let max_voices = voice_allocation.max_voices.max(1) as usize;
         let states = build_polyphonic_states_from_compiled(
             &compiled,
             sample_rate,
             sampler_assets,
             max_voices,
         );
+        #[cfg(test)]
         let allocator = VoiceAllocator::new(
             voice_allocation.max_voices,
             voice_allocation.stealing.clone(),
@@ -144,10 +207,14 @@ impl RealtimeGraphProcessor {
             max_voices,
             prepared_max_block_size,
         );
+        #[cfg(test)]
         let uses_legacy_module_outputs =
             uses_legacy_module_outputs(&compiled, midi_idx, max_voices, &render_plan);
+        #[cfg(test)]
         let queue_count = render_plan.event_queues.queue_count;
+        #[cfg(test)]
         let queue_capacity = render_plan.event_queues.queue_capacity;
+        #[cfg(test)]
         let accum_len = compiled.nodes().len();
         let audio_arena = AudioArena::new(render_plan.audio_buffers);
         let prepared_event_queues = PreparedEventQueues::new(
@@ -179,33 +246,44 @@ impl RealtimeGraphProcessor {
             #[cfg(test)]
             sampler_assets: sampler_assets.clone(),
             #[cfg(test)]
-            voice_allocation: voice_allocation.clone(),
+            voice_allocation,
             compiled,
             states,
+            #[cfg(test)]
             midi_idx,
+            #[cfg(test)]
             out_idx,
             current_frame: 0,
             pending_events: BoundedEventQueue::with_capacity(prepared_max_block_size),
             prepared_event_queues,
             events_buffer,
+            #[cfg(test)]
             allocator,
             render_plan,
             audio_arena,
             prepared_max_block_size,
             last_render_chunk_count: 0,
             last_render_used_arena: false,
+            #[cfg(test)]
             scratch_left: Vec::with_capacity(prepared_max_block_size),
+            #[cfg(test)]
             scratch_right: Vec::with_capacity(prepared_max_block_size),
+            #[cfg(test)]
             module_outputs: HashMap::with_capacity(graph.modules().len()),
+            #[cfg(test)]
             scratch_outputs: uses_legacy_module_outputs
                 .then(|| HashMap::with_capacity(graph.modules().len())),
+            #[cfg(test)]
             events_scratch: Vec::with_capacity(prepared_max_block_size),
+            #[cfg(test)]
             voice_event_queues: (0..max_voices)
                 .map(|_| Vec::with_capacity(prepared_max_block_size))
                 .collect(),
+            #[cfg(test)]
             voice_queues: (0..max_voices)
                 .map(|_| PreparedEventQueues::new(queue_count, queue_capacity))
                 .collect(),
+            #[cfg(test)]
             accum: {
                 let mut accum = Vec::with_capacity(accum_len);
                 accum.resize_with(accum_len, || None);
@@ -248,10 +326,12 @@ impl RealtimeGraphProcessor {
         self.last_render_chunk_count
     }
 
+    #[cfg(test)]
     pub fn top_level_scratch_capacities(&self) -> (usize, usize) {
         (self.scratch_left.capacity(), self.scratch_right.capacity())
     }
 
+    #[cfg(test)]
     pub fn module_output_scratch_capacity(&self) -> usize {
         self.scratch_outputs.as_ref().map_or(0, HashMap::capacity)
     }
@@ -350,6 +430,7 @@ impl RealtimeGraphProcessor {
     pub fn reset(&mut self) {
         self.pending_events.clear();
         self.prepared_event_queues.clear_all();
+        #[cfg(test)]
         self.allocator.reset();
         for voice in &mut self.states {
             for state in voice {
@@ -360,19 +441,27 @@ impl RealtimeGraphProcessor {
             region.reset();
         }
         self.audio_arena.reset();
+        #[cfg(test)]
         for queue in &mut self.voice_event_queues {
             queue.clear();
         }
+        #[cfg(test)]
         for queues in &mut self.voice_queues {
             queues.clear_all();
         }
+        #[cfg(test)]
         self.module_outputs.clear();
+        #[cfg(test)]
         if let Some(outputs) = self.scratch_outputs.as_mut() {
             outputs.clear();
         }
+        #[cfg(test)]
         self.scratch_left.clear();
+        #[cfg(test)]
         self.scratch_right.clear();
+        #[cfg(test)]
         self.events_scratch.clear();
+        #[cfg(test)]
         self.accum.clear();
         self.current_frame = 0;
         self.last_render_chunk_count = 0;
@@ -403,6 +492,7 @@ impl RealtimeGraphProcessor {
             .is_ok()
     }
 
+    #[cfg(test)]
     pub fn render(&mut self, left: &mut [f32], right: &mut [f32]) -> usize {
         let frames = left.len().min(right.len());
         if frames == 0 {
@@ -450,52 +540,54 @@ impl RealtimeGraphProcessor {
     }
 
     fn can_render_root_buses_with_scripts(&self, allow_scripts: bool) -> bool {
-        self.allocator.max_voices() <= 1
-            && self
-                .render_plan
-                .global_steps
-                .iter()
-                .all(|step| match step.module_kind {
-                    ModuleKind::MidiInput => {
-                        step.input_buffers.is_empty()
-                            && step.output_buffers.is_empty()
-                            && step.event_outputs.len() == 1
-                    }
-                    ModuleKind::EventFilter => {
-                        step.input_buffers.is_empty()
-                            && step.output_buffers.is_empty()
-                            && step.event_inputs.len() == 1
-                            && step.event_outputs.len() == 1
-                    }
-                    ModuleKind::Adsr => {
-                        step.input_buffers.len() == 4
-                            && step.output_buffers.len() == 1
-                            && step.event_inputs.len() == 1
-                    }
-                    ModuleKind::NoteToControl => {
-                        step.input_buffers.is_empty()
-                            && step.output_buffers.len() == 4
-                            && step.event_inputs.len() == 1
-                            && step.event_outputs.len() == 1
-                    }
-                    ModuleKind::Sampler => {
-                        step.input_buffers.len() == 5
-                            && !step.output_buffers.is_empty()
-                            && step.event_inputs.len() == 1
-                    }
-                    ModuleKind::NoteToRate => {
-                        step.input_buffers.is_empty()
-                            && step.output_buffers.len() == 1
-                            && step.event_inputs.len() == 1
-                    }
-                    ModuleKind::Impulse => {
-                        step.input_buffers.is_empty()
-                            && step.output_buffers.len() == 1
-                            && step.event_inputs.len() == 1
-                    }
-                    ModuleKind::Script => allow_scripts,
-                    _ => is_channel_arena_supported(step),
-                })
+        #[cfg(test)]
+        if self.allocator.max_voices() > 1 {
+            return false;
+        }
+        self.render_plan
+            .global_steps
+            .iter()
+            .all(|step| match step.module_kind {
+                ModuleKind::MidiInput => {
+                    step.input_buffers.is_empty()
+                        && step.output_buffers.is_empty()
+                        && step.event_outputs.len() == 1
+                }
+                ModuleKind::EventFilter => {
+                    step.input_buffers.is_empty()
+                        && step.output_buffers.is_empty()
+                        && step.event_inputs.len() == 1
+                        && step.event_outputs.len() == 1
+                }
+                ModuleKind::Adsr => {
+                    step.input_buffers.len() == 4
+                        && step.output_buffers.len() == 1
+                        && step.event_inputs.len() == 1
+                }
+                ModuleKind::NoteToControl => {
+                    step.input_buffers.is_empty()
+                        && step.output_buffers.len() == 4
+                        && step.event_inputs.len() == 1
+                        && step.event_outputs.len() == 1
+                }
+                ModuleKind::Sampler => {
+                    step.input_buffers.len() == 5
+                        && !step.output_buffers.is_empty()
+                        && step.event_inputs.len() == 1
+                }
+                ModuleKind::NoteToRate => {
+                    step.input_buffers.is_empty()
+                        && step.output_buffers.len() == 1
+                        && step.event_inputs.len() == 1
+                }
+                ModuleKind::Impulse => {
+                    step.input_buffers.is_empty()
+                        && step.output_buffers.len() == 1
+                        && step.event_inputs.len() == 1
+                }
+                ModuleKind::Script => allow_scripts,
+                _ => is_channel_arena_supported(step),
+            })
     }
 
     /// Render planar root input and output buffers in their prepared root-port
@@ -735,6 +827,7 @@ impl RealtimeGraphProcessor {
         frames
     }
 
+    #[cfg(test)]
     fn render_chunk(&mut self, left: &mut [f32], right: &mut [f32]) -> usize {
         let frames = left.len().min(right.len());
         let block_start = self.current_frame;
@@ -853,6 +946,7 @@ impl RealtimeGraphProcessor {
         event_count
     }
 
+    #[cfg(test)]
     fn render_mono_global_arena(
         &mut self,
         left: &mut [f32],
@@ -900,6 +994,7 @@ impl RealtimeGraphProcessor {
         true
     }
 
+    #[cfg(test)]
     fn render_polyphonic_from_plan(
         compiled: &CompiledPatch,
         states: &mut [Vec<PerModuleState>],
@@ -1066,6 +1161,7 @@ impl RealtimeGraphProcessor {
     }
 }
 
+#[cfg(test)]
 fn prepare_voice_event_queues(
     voice_events: &mut Vec<Vec<BlockEvent>>,
     events: &[BlockEvent],
@@ -1108,10 +1204,12 @@ fn prepare_voice_event_queues(
     }
 }
 
+#[cfg(test)]
 fn has_active_voice(allocator: &VoiceAllocator) -> bool {
     (0..allocator.max_voices()).any(|i| allocator.slot(i).is_some_and(|slot| slot.active))
 }
 
+#[cfg(test)]
 fn route_voice_input_events(
     midi_input: Option<super::render_plan::EventQueueId>,
     voice_events: &mut Vec<BlockEvent>,
@@ -1126,12 +1224,14 @@ fn route_voice_input_events(
     }
 }
 
+#[cfg(test)]
 fn route_voice_event_edges(voice_queues: &mut PreparedEventQueues, step: &RenderStep) {
     for &edge in step.incoming_event_edges.iter() {
         let _ = voice_queues.route_event_edge(edge);
     }
 }
 
+#[cfg(test)]
 fn gather_step_events(
     voice_queues: &mut PreparedEventQueues,
     step: &RenderStep,
@@ -1145,12 +1245,14 @@ fn gather_step_events(
     }
 }
 
+#[cfg(test)]
 fn route_global_event_edges(global_event_queues: &mut PreparedEventQueues, step: &RenderStep) {
     for &edge in step.incoming_event_edges.iter() {
         let _ = global_event_queues.route_event_edge(edge);
     }
 }
 
+#[cfg(test)]
 fn route_step_outputs_to_event_queues(
     step: &RenderStep,
     outputs: &ModuleOutputs,
@@ -1169,6 +1271,7 @@ fn route_step_outputs_to_event_queues(
     }
 }
 
+#[cfg(test)]
 fn accumulate_voice_outputs(
     accum: &mut [Option<ModuleOutputs>],
     all_outputs: &mut HashMap<usize, ModuleOutputs>,
@@ -1197,6 +1300,7 @@ fn accumulate_voice_outputs(
     }
 }
 
+#[cfg(test)]
 fn collect_accumulated_outputs(
     accum: &mut Vec<Option<ModuleOutputs>>,
     all_outputs: &mut HashMap<usize, ModuleOutputs>,
@@ -1209,6 +1313,7 @@ fn collect_accumulated_outputs(
     }
 }
 
+#[cfg(test)]
 fn route_step_outputs_to_global_event_queues(
     step: &RenderStep,
     outputs: &ModuleOutputs,
@@ -1442,6 +1547,7 @@ fn route_prepared_event_edges(queues: &mut PreparedEventQueues, step: &RenderSte
     }
 }
 
+#[cfg(test)]
 fn is_mono_global_arena_supported(step: &RenderStep) -> bool {
     is_channel_arena_supported(step)
 }
@@ -1495,6 +1601,7 @@ pub(super) fn is_channel_arena_supported(step: &RenderStep) -> bool {
     }
 }
 
+#[cfg(test)]
 fn uses_legacy_module_outputs(
     compiled: &CompiledPatch,
     midi_idx: Option<usize>,

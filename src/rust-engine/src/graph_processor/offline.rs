@@ -9,6 +9,7 @@ use crate::core::{BlockScheduler, TimedInputEvent};
 use crate::graph::Graph;
 #[cfg(test)]
 use crate::patch::RenderSettings;
+#[cfg(test)]
 use crate::patch::VoiceAllocation;
 use crate::preparation::PreparedKernelInstrument;
 use crate::sample::PreparedSamplerAssets;
@@ -64,15 +65,12 @@ pub fn render_kernel_offline_named_with_inputs(
             return Err("offline render input bus has wrong channel or frame count");
         }
     }
-    let mut processor =
-        RealtimeGraphProcessor::polyphonic_with_compiled_patch_and_sampler_assets_and_max_block_size(
-            prepared.graph().clone(),
-            compiled.clone(),
-            settings.sample_rate_hz as f32,
-            sampler_assets,
-            &VoiceAllocation::default(),
-            settings.block_size_frames as usize,
-        );
+    let mut processor = RealtimeGraphProcessor::from_compiled_patch(
+        compiled.clone(),
+        settings.sample_rate_hz as f32,
+        sampler_assets,
+        settings.block_size_frames as usize,
+    );
     if !processor.can_render_root_buses_offline() {
         return Err("prepared graph cannot render named root buses");
     }

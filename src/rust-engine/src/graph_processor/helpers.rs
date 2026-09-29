@@ -1,6 +1,9 @@
+#[cfg(test)]
 use crate::graph::builtin_ports;
+#[cfg(test)]
 use crate::saturator::{HardClipCurve, Saturator, SinFoldCurve, SoftClipCurve, TanhCurve};
 
+#[cfg(test)]
 use super::outputs::ModuleOutputs;
 
 pub(super) fn lerp(a: f32, b: f32, t: f32) -> f32 {
@@ -20,12 +23,14 @@ pub(super) fn normalized_end_position(value: f32, sample_len: usize) -> f32 {
     (value.clamp(0.0, 1.0) * sample_len as f32).clamp(0.0, sample_len as f32)
 }
 
+#[cfg(test)]
 pub(super) fn audio_output(port_name: &str, audio: Vec<f32>) -> ModuleOutputs {
     let mut outputs = ModuleOutputs::empty();
     outputs.audio.insert(port_name.to_string(), audio);
     outputs
 }
 
+#[cfg(test)]
 pub(super) fn stereo_audio_output(left: Vec<f32>, right: Vec<f32>) -> ModuleOutputs {
     let mut outputs = ModuleOutputs::empty();
     outputs
@@ -37,6 +42,7 @@ pub(super) fn stereo_audio_output(left: Vec<f32>, right: Vec<f32>) -> ModuleOutp
     outputs
 }
 
+#[cfg(test)]
 pub(super) fn set_curve_by_index(processor: &mut Saturator, idx: usize) {
     match idx {
         0 => processor.set_curve(Box::new(TanhCurve)),

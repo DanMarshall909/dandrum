@@ -9,6 +9,7 @@ pub(crate) struct BlockEvent {
 }
 
 pub(super) struct ModuleOutputs {
+    #[cfg(test)]
     pub(super) audio: HashMap<String, Vec<f32>>,
     pub(super) control: HashMap<String, Vec<f32>>,
     pub(super) events: Vec<BlockEvent>,
@@ -18,6 +19,7 @@ pub(super) struct ModuleOutputs {
 impl ModuleOutputs {
     pub(super) fn empty() -> Self {
         Self {
+            #[cfg(test)]
             audio: HashMap::new(),
             control: HashMap::new(),
             events: Vec::new(),

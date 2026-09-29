@@ -19,6 +19,7 @@ use crate::graph::SignalType;
 use crate::oscillator::Waveform;
 use crate::reverb::Reverb;
 use crate::sample::PreparedSamplerAssets;
+#[cfg(test)]
 use crate::saturator::Saturator;
 use crate::script::{RhaiScriptRuntime, ScriptModuleState, ScriptRuntimeLimits};
 use crate::spectral::SpectralProcessor;
@@ -76,6 +77,7 @@ pub(super) enum PerModuleState {
         processors: Box<[DynamicsProcessor]>,
     },
     Saturator {
+        #[cfg(test)]
         processor: Saturator,
     },
     Convolution {
@@ -87,10 +89,12 @@ pub(super) enum PerModuleState {
     },
     Echo {
         processor: Echo,
+        #[cfg(test)]
         sample_rate: f64,
     },
     Reverb {
         processor: Reverb,
+        #[cfg(test)]
         sample_rate: f64,
     },
     FrequencySplitter {
@@ -134,6 +138,7 @@ pub(super) enum PerModuleState {
     Script {
         runtime: RhaiScriptRuntime,
         state: ScriptModuleState,
+        #[cfg(test)]
         control_inputs: Vec<String>,
     },
 }
@@ -334,6 +339,7 @@ impl PerModuleState {
                 PerModuleState::Script {
                     runtime,
                     state: ScriptModuleState::default(),
+                    #[cfg(test)]
                     control_inputs: Vec::new(),
                 }
             }
@@ -425,6 +431,7 @@ impl PerModuleState {
                 PerModuleState::DynamicsProcessor { processors }
             }
             ModuleKind::Saturator => PerModuleState::Saturator {
+                #[cfg(test)]
                 processor: Saturator::new(),
             },
             ModuleKind::Convolution => {
@@ -491,6 +498,7 @@ impl PerModuleState {
                 processor.set_interpolation(*interpolation);
                 PerModuleState::Echo {
                     processor,
+                    #[cfg(test)]
                     sample_rate: sample_rate as f64,
                 }
             }
@@ -502,6 +510,7 @@ impl PerModuleState {
                 processor.set_interpolation(*interpolation);
                 PerModuleState::Reverb {
                     processor,
+                    #[cfg(test)]
                     sample_rate: sample_rate as f64,
                 }
             }
@@ -605,6 +614,7 @@ impl PerModuleState {
             .filter(|(_, signal_type)| **signal_type == SignalType::Control)
             .map(|(name, _)| name.clone())
             .collect();
+        #[cfg(test)]
         let control_inputs: Vec<String> = node
             .input_port_names
             .iter()
@@ -631,6 +641,7 @@ impl PerModuleState {
         PerModuleState::Script {
             runtime,
             state: ScriptModuleState::default(),
+            #[cfg(test)]
             control_inputs,
         }
     }

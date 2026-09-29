@@ -44,6 +44,7 @@ pub(crate) mod synth;
 
 pub mod wav;
 
+#[cfg(test)]
 pub(crate) mod voice_allocator;
 
 pub(crate) mod fft;

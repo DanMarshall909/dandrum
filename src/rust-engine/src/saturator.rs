@@ -54,12 +54,16 @@ impl WaveshaperCurve for SinFoldCurve {
 }
 
 pub struct Saturator {
+    #[cfg(test)]
     curve: Box<dyn WaveshaperCurve>,
+    #[cfg(test)]
     drive_db: f64,
+    #[cfg(test)]
     bias: f64,
 }
 
 impl Saturator {
+    #[cfg(test)]
     pub fn new() -> Self {
         Self {
             curve: Box::new(TanhCurve),
@@ -68,18 +72,22 @@ impl Saturator {
         }
     }
 
+    #[cfg(test)]
     pub fn set_curve(&mut self, curve: Box<dyn WaveshaperCurve>) {
         self.curve = curve;
     }
 
+    #[cfg(test)]
     pub fn set_drive_db(&mut self, drive_db: f64) {
         self.drive_db = drive_db;
     }
 
+    #[cfg(test)]
     pub fn set_bias(&mut self, bias: f64) {
         self.bias = bias;
     }
 
+    #[cfg(test)]
     pub fn process(&self, input: f64) -> f64 {
         let drive_linear = 10.0_f64.powf(self.drive_db / 20.0);
         let biased = input * drive_linear + self.bias;
@@ -99,12 +107,13 @@ impl Saturator {
         }
     }
 
-    #[allow(dead_code)]
+    #[cfg(test)]
     pub fn curve_name(&self) -> &'static str {
         self.curve.name()
     }
 }
 
+#[cfg(test)]
 impl Default for Saturator {
     fn default() -> Self {
         Self::new()

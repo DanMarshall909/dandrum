@@ -126,6 +126,7 @@ impl AudioArena {
         }
     }
 
+    #[cfg(test)]
     pub(super) fn copy_to_slices(
         &self,
         left: BufferId,
