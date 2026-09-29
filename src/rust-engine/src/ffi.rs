@@ -789,6 +789,57 @@ mod tests {
     }
 
     #[test]
+    fn same_patch_prepares_and_renders_at_two_host_sample_rates() {
+        let (_directory, path) = kernel_ffi_patch();
+        let input_name = std::ffi::CString::new("input").unwrap();
+        let output_name = std::ffi::CString::new("master").unwrap();
+        let buses = [
+            DandrumKernelBusDeclaration {
+                name: input_name.as_ptr(),
+                direction: 1,
+                channel_count: 2,
+            },
+            DandrumKernelBusDeclaration {
+                name: output_name.as_ptr(),
+                direction: 2,
+                channel_count: 2,
+            },
+        ];
+        for sample_rate in [44_100, 48_000] {
+            let engine = unsafe {
+                dandrum_kernel_prepare_file(path.as_ptr(), sample_rate, 8, buses.as_ptr(), 2)
+            };
+            assert!(!engine.is_null(), "{sample_rate} Hz prepares");
+            let left = [-0.5_f32; 8];
+            let right = [0.25_f32; 8];
+            let input_channels = [left.as_ptr(), right.as_ptr()];
+            let input = DandrumKernelInputBusView {
+                name: input_name.as_ptr(),
+                channels: input_channels.as_ptr(),
+                channel_count: 2,
+                frame_capacity: 8,
+            };
+            let mut output_left = [0.0_f32; 8];
+            let mut output_right = [0.0_f32; 8];
+            let output_channels = [output_left.as_mut_ptr(), output_right.as_mut_ptr()];
+            let output = DandrumKernelOutputBusView {
+                name: output_name.as_ptr(),
+                channels: output_channels.as_ptr(),
+                channel_count: 2,
+                frame_capacity: 8,
+            };
+            assert_eq!(
+                unsafe { dandrum_kernel_render(engine, &input, 1, &output, 1, 8) },
+                8,
+                "{sample_rate} Hz renders"
+            );
+            assert_eq!(output_left, left);
+            assert_eq!(output_right, right);
+            unsafe { dandrum_kernel_destroy(engine) };
+        }
+    }
+
+    #[test]
     fn kernel_ffi_rejects_invalid_declarations_and_buffer_views_before_writing() {
         let (_dir, path) = kernel_ffi_patch();
         let input_name = std::ffi::CString::new("input").unwrap();
