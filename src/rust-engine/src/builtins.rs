@@ -264,6 +264,7 @@ impl BuiltInModuleRegistry {
     pub fn new() -> Self {
         Self::from_definitions(vec![
             midi_input_definition(),
+            #[cfg(test)]
             audio_output_definition(),
             oscillator_definition(),
             gain_definition(),
@@ -322,6 +323,7 @@ fn midi_input_definition() -> BuiltInModuleDefinition {
     BuiltInModuleDefinition::new(MIDI_INPUT).with_output(Port::output(EVENTS, Event))
 }
 
+#[cfg(test)]
 fn audio_output_definition() -> BuiltInModuleDefinition {
     BuiltInModuleDefinition::new(AUDIO_OUTPUT).with_inputs([(LEFT, Audio), (RIGHT, Audio)])
 }
