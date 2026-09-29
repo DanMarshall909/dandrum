@@ -3030,6 +3030,26 @@ mod tests {
             "{outputs:?}"
         );
 
+        runtime.reset();
+        assert_eq!(runtime.render_root_outputs(&mut outputs), frames);
+        assert_eq!(outputs[0][0], vec![0.0; frames]);
+        let outer_region = &runtime.prepared_poly_runtime_regions()[0];
+        assert_eq!(outer_region.active_voice_count(), 0);
+        assert_eq!(
+            outer_region
+                .nested_region_for_voice(0, "inner_voices")
+                .unwrap()
+                .active_voice_count(),
+            0
+        );
+        assert_eq!(
+            outer_region
+                .nested_region_for_voice(1, "inner_voices")
+                .unwrap()
+                .active_voice_count(),
+            0
+        );
+
         let done_outer = outer.with_port(
             KernelPort::output(crate::kernel::POLY_DONE_OUTPUT, SignalType::Event, 1).maps_from(
                 kernel_ref(
