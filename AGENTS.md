@@ -2,11 +2,12 @@
 
 ## Project Shape
 
-- This is currently a C++20 CMake/JUCE wrapper plus Rust engine crate; the planned headless engine core is starting
-  under `src/rust-engine/src/core.rs`.
-- Root `CMakeLists.txt` builds Rust crate `src/rust-engine/`, links it into one JUCE console target, `dandrum-drum-machine-demo`,
-  from `src/juce-wrapper/Main.cpp`, and exposes Rust tests through CTest.
-- JUCE currently owns audio/MIDI device IO; Rust owns DSP/event state behind a C FFI boundary.
+- This is a C++20 CMake/JUCE host and plugin plus a Rust engine crate. The headless graph model lives in
+  `src/rust-engine/src/kernel/`; preparation and rendering live in `preparation.rs` and `graph_processor/`.
+  `core.rs` also remains for the older engine path during migration.
+- Root `CMakeLists.txt` builds the Rust crate, the `dandrum-drum-machine-demo` JUCE console app, the `dandrum-plugin`
+  JUCE plugin, and C++ test executables. CTest runs Rust, C++, JavaScript, spec-coverage, and static checks.
+- JUCE owns audio/MIDI device IO; Rust owns DSP/event state and prepared graph execution behind a C FFI boundary.
 - `third_party/JUCE/` is vendored JUCE; do not edit it unless the task is explicitly about vendored JUCE changes.
 
 ## Build And Run
@@ -92,12 +93,9 @@
 
 ## OpenSpec Workflow
 
-- Active repo-local change: `headless-modular-instrument-engine` under `openspec/changes/`; it is spec-driven and has
-  implementation tasks still unchecked.
-- Before implementing that planned engine, read the change via
-  `openspec status --change "headless-modular-instrument-engine" --json` and
-  `openspec instructions apply --change "headless-modular-instrument-engine" --json` rather than guessing artifact
-  paths.
+- Use `openspec list --json` to identify current changes. For the selected change, read
+  `openspec status --change "<name>" --json` and `openspec instructions apply --change "<name>" --json` rather than
+  guessing artifact paths.
 - For implementation work on an OpenSpec change, follow the apply workflow: read all `contextFiles` returned by
   `openspec instructions apply`, implement the next pending task(s), verify with relevant tests/build commands, then
   update the task checkbox in the change's `tasks.md`.
@@ -112,18 +110,10 @@
 - Before archiving a change, run `scripts/check-spec-coverage`: every AC synced into the main specs by that change must
   be mapped to a real test in `spec-tests.map` (no lingering `todo` for the change's own scenarios).
 
-## Implementation Order For In-Progress Changes
-
-Three in-progress changes touch overlapping YAML patch format areas. When implementing, follow this order:
-
-1. **`add-drum-machine-container`** — adds the `drum_machine` module type to the YAML schema and event-routing expansion
-2. **`example-drum-kit`** — adds new built-in modules (noise, note_to_control, multiply, delay_line, envelope_follower)
-   and module definitions; independent of #1
-3. **`add-instrument-presets`** — wraps everything in the preset system (depends on stable YAML schema from #1)
-
 ## Architecture Constraints From Specs
 
-- The planned engine core should stay independent of CLI, GUI, plugin, and realtime audio driver/front-end code.
-- Planned patches are YAML modular graphs with explicit named typed ports; many-to-one routing requires an explicit
-  mixer/summing module.
-- Planned feedback is valid only through explicit delay or future scheduling boundaries.
+- The headless engine core stays independent of CLI, GUI, plugin, and realtime audio driver/front-end code.
+- Patches and defined modules use the same YAML graph shape with named, typed ports. Multiple cables may enter only
+  a port declared with summing multiplicity.
+- `poly` owns voice allocation inside a bounded poly region; there is no graph-wide voice scope in the unified kernel.
+- Feedback cycles require an explicit `feedback_delay` boundary; an ordinary delay effect does not legalize a cycle.
