@@ -8,8 +8,9 @@
 //! exactly as before.
 //!
 //! The reserved `latest` version alias resolves to the highest numeric version
-//! directory under the macro root, so `$LIB/latest/drum_voice/drum_voice.yaml`
-//! can move forward while pinned references remain stable.
+//! directory containing the requested package, so
+//! `$LIB/latest/drum_voice/drum_voice.yaml` can move forward while pinned
+//! references remain stable.
 //!
 //! This module owns the pure resolution layer only: detecting a reference,
 //! mapping its macro root to a configured base directory, and rejecting unknown
@@ -36,7 +37,7 @@ pub const LIB_MACRO: &str = "$LIB";
 pub const USER_LIB_MACRO: &str = "$USER_LIB";
 
 /// Reserved version path segment that resolves to the highest available version
-/// directory under the configured macro root.
+/// directory containing the requested module under the configured macro root.
 pub const LATEST_VERSION_ALIAS: &str = "latest";
 
 /// Returns `true` when a module `type` is an external macro-qualified reference.
@@ -78,7 +79,7 @@ pub enum ModuleReferenceError {
     NotAReference { module_type: String },
     /// The reference names a macro root that is not configured.
     UnknownMacro { macro_name: String },
-    /// The reference has no path after its macro root.
+    /// The reference has no valid package entry path after its macro root.
     Malformed { reference: String },
     /// The reference tries to escape its macro root (e.g. via `..` or an
     /// absolute segment).
@@ -108,7 +109,9 @@ impl ModuleReferenceError {
             Self::Malformed { reference } => Diagnostic::new(
                 error_codes::LIBRARY_MALFORMED_REFERENCE,
                 Severity::Error,
-                format!("malformed module reference {reference}: missing package path"),
+                format!(
+                    "malformed module reference {reference}: expected a versioned package entry path (or a flat $USER_LIB package entry path)"
+                ),
             ),
             Self::PathEscape { reference } => Diagnostic::new(
                 error_codes::LIBRARY_PATH_ESCAPE,
@@ -138,7 +141,7 @@ impl ModuleReferenceError {
 /// and the relative portion is joined onto it after rejecting any component that
 /// would escape the root (`..`, absolute, or drive-prefixed segments). If the
 /// first relative segment is `latest`, it is replaced with the highest numeric
-/// version directory currently present under the macro root.
+/// version directory containing the requested package entry.
 pub fn resolve(reference: &str, roots: &MacroRoots) -> Result<PathBuf, ModuleReferenceError> {
     if !is_external_reference(reference) {
         return Err(ModuleReferenceError::NotAReference {
@@ -173,6 +176,17 @@ pub fn resolve(reference: &str, roots: &MacroRoots) -> Result<PathBuf, ModuleRef
             }
         }
     }
+    let segments: Vec<_> = relative_path.iter().collect();
+    let versioned = segments.len() == 3
+        && segments[0].to_str().is_some_and(|version| {
+            version == LATEST_VERSION_ALIAS || LibraryVersion::parse(version).is_some()
+        });
+    let user_flat = macro_name == USER_LIB_MACRO && segments.len() == 2;
+    if !versioned && !user_flat {
+        return Err(ModuleReferenceError::Malformed {
+            reference: reference.to_string(),
+        });
+    }
 
     let resolved_relative = resolve_latest_alias(relative_path, root, reference)?;
     Ok(root.join(resolved_relative))
@@ -192,18 +206,14 @@ fn resolve_latest_alias(
         return Ok(relative_path.to_path_buf());
     }
 
-    let latest = latest_version_directory_name(root, reference)?;
-    let mut resolved = PathBuf::from(latest);
-    for component in components {
-        if let Component::Normal(segment) = component {
-            resolved.push(segment);
-        }
-    }
-    Ok(resolved)
+    let package_entry = components.as_path();
+    let latest = latest_version_directory_name(root, package_entry, reference)?;
+    Ok(PathBuf::from(latest).join(package_entry))
 }
 
 fn latest_version_directory_name(
     root: &Path,
+    package_entry: &Path,
     reference: &str,
 ) -> Result<String, ModuleReferenceError> {
     let entries = fs::read_dir(root).map_err(|error| ModuleReferenceError::LatestUnavailable {
@@ -232,6 +242,9 @@ fn latest_version_directory_name(
         let Some(version) = LibraryVersion::parse(&name) else {
             continue;
         };
+        if !root.join(&name).join(package_entry).is_file() {
+            continue;
+        }
 
         if latest
             .as_ref()
@@ -246,7 +259,7 @@ fn latest_version_directory_name(
         .ok_or_else(|| ModuleReferenceError::LatestUnavailable {
             reference: reference.to_string(),
             root: root.to_path_buf(),
-            message: "no numeric version directories exist".to_string(),
+            message: "no numeric version contains the requested module".to_string(),
         })
 }
 
@@ -324,10 +337,25 @@ mod tests {
     }
 
     #[test]
+    fn standard_library_reference_requires_a_version_before_the_module() {
+        let error = resolve("$LIB/drum_voice/drum_voice.yaml", &roots())
+            .expect_err("a standard library package must have a pinned version or latest");
+        assert!(matches!(error, ModuleReferenceError::Malformed { .. }));
+        assert_eq!(
+            error.to_diagnostic().error_code(),
+            error_codes::LIBRARY_MALFORMED_REFERENCE
+        );
+    }
+
+    #[test]
     fn latest_alias_resolves_to_the_highest_version_directory() {
         let root = temp_library_root("latest");
-        fs::create_dir_all(root.join("1.3.9")).expect("older version directory should be created");
-        fs::create_dir_all(root.join("1.10.0")).expect("newer version directory should be created");
+        for version in ["1.3.9", "1.10.0"] {
+            let package = root.join(version).join("drum_voice");
+            fs::create_dir_all(&package).expect("versioned package directory should be created");
+            fs::write(package.join("drum_voice.yaml"), "name: drum_voice")
+                .expect("versioned package entry should be created");
+        }
         fs::create_dir_all(root.join("latest"))
             .expect("literal latest directory should be ignored");
         fs::write(root.join("not-a-version"), "ignored").expect("file should be created");
@@ -342,6 +370,29 @@ mod tests {
                 .join("drum_voice")
                 .join("drum_voice.yaml"),
             "latest should follow the highest numeric version directory"
+        );
+    }
+
+    #[test]
+    fn latest_alias_chooses_newest_version_containing_the_requested_module() {
+        let root = temp_library_root("latest-module");
+        let older_package = root.join("1.3.9").join("drum_voice");
+        fs::create_dir_all(&older_package).expect("older requested package should be created");
+        fs::write(older_package.join("drum_voice.yaml"), "name: drum_voice")
+            .expect("older package entry should be created");
+        let newer_package = root.join("1.4.0").join("different_voice");
+        fs::create_dir_all(&newer_package).expect("newer unrelated package should be created");
+        fs::write(
+            newer_package.join("different_voice.yaml"),
+            "name: different_voice",
+        )
+        .expect("newer unrelated entry should be created");
+
+        let roots = MacroRoots::new().with_root(LIB_MACRO, &root);
+        assert_eq!(
+            resolve("$LIB/latest/drum_voice/drum_voice.yaml", &roots)
+                .expect("latest should find the newest version of this module"),
+            older_package.join("drum_voice.yaml")
         );
     }
 

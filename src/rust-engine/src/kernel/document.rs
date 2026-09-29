@@ -1,6 +1,6 @@
 //! YAML front end for the unified graph kernel.
 //!
-//! Root patches and inline composites pass through the same graph-declaration
+//! Root patches and inline defined modules pass through the same graph-declaration
 //! conversion into [`GraphDefinition`].
 
 use std::collections::{BTreeMap, BTreeSet};
@@ -312,7 +312,7 @@ struct PatchDocument {
     #[serde(default)]
     ports: Vec<PortDocument>,
     #[serde(default)]
-    module_definitions: Vec<CompositeDocument>,
+    module_definitions: Vec<DefinedModuleDocument>,
     #[serde(default)]
     modules: Vec<NodeDocument>,
     #[serde(default)]
@@ -337,7 +337,7 @@ struct PresetAliasDocument {
 
 #[derive(Clone, Debug, Deserialize)]
 #[serde(deny_unknown_fields)]
-struct CompositeDocument {
+struct DefinedModuleDocument {
     #[serde(rename = "type")]
     definition_type: String,
     implementation: Option<String>,
@@ -540,23 +540,23 @@ fn load_kernel_document_str(
         .unwrap_or(ROOT_DEFINITION_NAME);
 
     let mut registry = super::builtins::builtin_registry();
-    for composite in &document.module_definitions {
+    for defined_module in &document.module_definitions {
         registry = registry.with_definition(convert_declaration(
-            &composite.definition_type,
-            composite.implementation.as_deref(),
-            &composite.static_params,
-            &composite.ports,
+            &defined_module.definition_type,
+            defined_module.implementation.as_deref(),
+            &defined_module.static_params,
+            &defined_module.ports,
             &origin,
         )?);
     }
-    for composite in &document.module_definitions {
+    for defined_module in &document.module_definitions {
         let definition = convert_graph(
-            &composite.definition_type,
-            composite.implementation.as_deref(),
-            &composite.static_params,
-            &composite.ports,
-            &composite.modules,
-            &composite.connections,
+            &defined_module.definition_type,
+            defined_module.implementation.as_deref(),
+            &defined_module.static_params,
+            &defined_module.ports,
+            &defined_module.modules,
+            &defined_module.connections,
             &registry,
             &origin,
         )?;

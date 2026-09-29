@@ -586,6 +586,56 @@ connections: []
     }
 
     #[test]
+    fn user_library_module_edits_are_used_on_next_preparation_without_seeding() {
+        use crate::graph_processor::render_kernel_offline_named;
+        use crate::patch::RenderSettings;
+        use crate::preparation::{HostBuses, prepare_kernel_graph_with_buses_and_context};
+        use crate::sample::PreparedSamplerAssets;
+
+        let directory = tempfile::tempdir().expect("isolated mutable user library");
+        let user_root = directory.path().join("user");
+        let entry = user_root.join("voice/voice.yaml");
+        fs::create_dir_all(entry.parent().unwrap()).unwrap();
+        let definition = |value: f32| {
+            format!(
+                "ports:\n  - {{ name: audio, direction: output, signal: audio, channels: 1, maps_from: source.out }}\nmodules:\n  - {{ id: source, type: control_to_audio, defaults: {{ in: {value} }} }}\nconnections: []\n"
+            )
+        };
+        let patch = load_kernel_patch_str(
+            "ports:\n  - { name: master, direction: output, signal: audio, channels: 1, maps_from: voice.audio }\nmodules:\n  - { id: voice, type: $USER_LIB/voice/voice.yaml }\nconnections: []\n",
+        )
+        .unwrap();
+        let context = PreparationContext::new(directory.path(), 48_000).with_macro_roots(
+            MacroRoots::new().with_root(crate::module_reference::USER_LIB_MACRO, &user_root),
+        );
+        let render = || {
+            let prepared = prepare_kernel_graph_with_buses_and_context(
+                patch.root(),
+                patch.registry(),
+                &RenderSettings {
+                    sample_rate_hz: 48_000,
+                    block_size_frames: 8,
+                    duration_frames: 8,
+                },
+                &HostBuses::new().with_output("master", 1),
+                &context,
+            )
+            .expect("edited user module should prepare without seeding");
+            render_kernel_offline_named(&prepared, vec![], &PreparedSamplerAssets::empty())
+                .expect("edited user module should render")[0]
+                .1[0]
+                .clone()
+        };
+
+        fs::write(&entry, definition(0.25)).unwrap();
+        assert_eq!(render(), [0.25; 8]);
+        let edited = definition(-0.5);
+        fs::write(&entry, &edited).unwrap();
+        assert_eq!(render(), [-0.5; 8]);
+        assert_eq!(fs::read_to_string(entry).unwrap(), edited);
+    }
+
+    #[test]
     fn independent_packages_keep_same_named_private_definitions_and_root_helper_distinct() {
         use crate::graph_processor::render_kernel_offline_named;
         use crate::patch::RenderSettings;
@@ -974,6 +1024,58 @@ connections: []
                 "{reference}"
             );
         }
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn package_sample_symlink_cannot_escape_its_package_root() {
+        use crate::patch::RenderSettings;
+        use crate::preparation::{HostBuses, prepare_kernel_graph_with_buses_and_context};
+        use std::os::unix::fs::symlink;
+
+        let directory = tempfile::tempdir().expect("isolated package and outside resource");
+        let lib_root = directory.path().join("lib");
+        let entry = seed_kernel_package(
+            &lib_root,
+            "1.0.0",
+            "sample_voice",
+            include_str!("../module-library/1.0.0/sample_voice/sample_voice.yaml"),
+        );
+        let outside = directory.path().join("outside.wav");
+        crate::wav::write_wav_stereo_i16(
+            fs::File::create(&outside).unwrap(),
+            48_000,
+            &[0.25],
+            &[0.25],
+        )
+        .unwrap();
+        let sample_dir = entry.parent().unwrap().join("samples");
+        fs::create_dir_all(&sample_dir).unwrap();
+        symlink(&outside, sample_dir.join("hit.wav")).unwrap();
+        let context = PreparationContext::new(directory.path(), 48_000)
+            .with_macro_roots(MacroRoots::new().with_root(LIB_MACRO, &lib_root));
+        let package =
+            load_referenced_kernel_package("$LIB/1.0.0/sample_voice/sample_voice.yaml", &context)
+                .expect("the package entry itself should load");
+
+        let error = prepare_kernel_graph_with_buses_and_context(
+            package.definition(),
+            package.registry(),
+            &RenderSettings {
+                sample_rate_hz: 48_000,
+                block_size_frames: 8,
+                duration_frames: 8,
+            },
+            &HostBuses::new()
+                .with_output("left", 1)
+                .with_output("right", 1),
+            &context,
+        )
+        .expect_err("a package sample outside the package root must be rejected");
+        assert_eq!(
+            error.diagnostics().errors().next().unwrap().error_code(),
+            crate::diagnostics::error_codes::KERNEL_RESOURCE_PATH_ESCAPE
+        );
     }
 
     #[cfg(unix)]

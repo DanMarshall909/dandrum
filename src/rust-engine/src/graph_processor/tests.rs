@@ -3517,23 +3517,23 @@ fn compiled_render_matches_raw_for_reverb_chain() {
 
 #[test]
 fn module_echo_yaml_loads_and_validates() {
-    assert_stereo_effect_composite("examples/patches/module-echo.yaml", "delay_echo");
+    assert_stereo_effect_defined_module("examples/patches/module-echo.yaml", "delay_echo");
 }
 
 #[test]
 fn module_reverb_yaml_loads_and_validates() {
-    assert_stereo_effect_composite("examples/patches/module-reverb.yaml", "spatial_reverb");
+    assert_stereo_effect_defined_module("examples/patches/module-reverb.yaml", "spatial_reverb");
 }
 
-fn assert_stereo_effect_composite(path: &str, definition_name: &str) {
+fn assert_stereo_effect_defined_module(path: &str, definition_name: &str) {
     let Some(yaml) = read_repo_fixture(path) else {
         return;
     };
-    let patch = load_kernel_patch_str(&yaml).expect("kernel composite example loads");
+    let patch = load_kernel_patch_str(&yaml).expect("kernel defined-module example loads");
     let definition = patch
         .registry()
         .get(definition_name)
-        .expect("composite definition");
+        .expect("defined-module definition");
     let audio_ports = definition
         .ports()
         .iter()
@@ -7088,7 +7088,7 @@ fn kernel_migrated_examples_match_legacy_reference_renders() {
 }
 
 #[test]
-fn composite_voice_examples_match_legacy_render_through_master_bus() {
+fn defined_module_voice_examples_match_legacy_render_through_master_bus() {
     for (fixture, legacy_yaml) in [
         (
             "examples/patches/module-impulse-tone.yaml",
@@ -7141,6 +7141,24 @@ fn composite_voice_examples_match_legacy_render_through_master_bus() {
             );
         }
     }
+}
+
+#[test]
+fn module_rename_preserved_defined_module_render_bytes() {
+    use sha2::{Digest, Sha256};
+
+    // Both fixtures were rendered from composite-impulse-tone.yaml with the
+    // same CLI command at 913e6b9 (before) and 2ab4c2c (after the rename).
+    const BEFORE: &[u8] =
+        include_bytes!("../../tests/fixtures/module-rename/impulse-tone-before.wav");
+    const AFTER: &[u8] =
+        include_bytes!("../../tests/fixtures/module-rename/impulse-tone-after.wav");
+    assert_eq!(BEFORE, AFTER, "the rename must not change the rendered WAV");
+    assert_eq!(
+        format!("{:x}", Sha256::digest(BEFORE)),
+        "8e4dbe242ca9e265a23d69ff6ab04543cf9a725a1a1caddb78cc3904c4f33c26"
+    );
+    assert_eq!(i16::from_le_bytes([BEFORE[48], BEFORE[49]]), -106);
 }
 
 #[test]

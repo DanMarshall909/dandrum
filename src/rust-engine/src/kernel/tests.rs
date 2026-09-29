@@ -161,7 +161,8 @@ fn discovery_uses_one_port_and_static_schema_for_definition_kinds() {
     let resource_param = StaticParam::new("sample", StaticType::Resource(ResourceKind::Sample));
     let definitions = [
         GraphDefinition::new("primitive"),
-        GraphDefinition::new("composite").with_node(Node::new(NodeId::new("child"), "primitive")),
+        GraphDefinition::new("defined_module")
+            .with_node(Node::new(NodeId::new("child"), "primitive")),
         GraphDefinition::new("script").with_implementation(DefinitionImplementation::Script),
         GraphDefinition::new("$LIB/package"),
         GraphDefinition::new("root"),
@@ -177,7 +178,13 @@ fn discovery_uses_one_port_and_static_schema_for_definition_kinds() {
         );
     }
 
-    for name in ["primitive", "composite", "script", "$LIB/package", "root"] {
+    for name in [
+        "primitive",
+        "defined_module",
+        "script",
+        "$LIB/package",
+        "root",
+    ] {
         let discovered = registry.discover(name).expect("definition is discoverable");
         assert_eq!(discovered.name(), name);
         assert_eq!(discovered.ports().len(), 1);
@@ -197,6 +204,81 @@ fn discovery_uses_one_port_and_static_schema_for_definition_kinds() {
         assert_eq!(discovered.static_params()[2], resource_param);
     }
     assert!(registry.discover("missing").is_none());
+}
+
+#[test]
+fn catalogue_identifies_builtin_and_defined_modules_by_category() {
+    let defined = GraphDefinition::new("authored_voice")
+        .with_port(Port::output("audio", SignalType::Audio, 1))
+        .with_node(Node::new(
+            NodeId::new("source"),
+            crate::builtins::module_types::OSCILLATOR,
+        ));
+    let registry = builtins::builtin_registry().with_definition(defined);
+
+    let builtin = registry
+        .discover(crate::builtins::module_types::OSCILLATOR)
+        .expect("built-in oscillator is discoverable");
+    let authored = registry
+        .discover("authored_voice")
+        .expect("authored voice is discoverable");
+    assert_eq!(builtin.category(), DefinitionCategory::Primitive);
+    assert_eq!(authored.category(), DefinitionCategory::Defined);
+    assert_eq!(builtin.ports()[0].signal_type(), SignalType::Control);
+    assert_eq!(authored.ports()[0].signal_type(), SignalType::Audio);
+}
+
+#[test]
+fn ffi_symbols_and_signatures_were_unchanged_by_module_rename() {
+    use sha2::{Digest, Sha256};
+
+    const BEFORE: &str = include_str!("../../tests/fixtures/module-rename/ffi-before.txt");
+    const AFTER: &str = include_str!("../../tests/fixtures/module-rename/ffi-after.txt");
+    const SNAPSHOT_SHA256: &str =
+        "81705e48d941c8afe40760abc733773a8b1177e1c52e67fe6594eb47ab92b8ac";
+    assert_eq!(
+        BEFORE, AFTER,
+        "the rename must leave the C ABI declarations intact"
+    );
+    assert_eq!(BEFORE.lines().count(), 20);
+    assert_eq!(
+        format!("{:x}", Sha256::digest(BEFORE.as_bytes())),
+        SNAPSHOT_SHA256
+    );
+
+    // Full-history checkouts also verify the frozen inventories against their
+    // source commits. The frozen hash keeps shallow checkouts deterministic.
+    for (commit, expected) in [
+        ("913e6b99c1b9f32df4d9fe0c59825e76db42eb10", BEFORE),
+        ("2ab4c2c61f9b340589a238b356ecc6c1511d4cd2", AFTER),
+    ] {
+        let output = std::process::Command::new("git")
+            .arg("show")
+            .arg(format!("{commit}:src/rust-engine/src/ffi.rs"))
+            .current_dir(concat!(env!("CARGO_MANIFEST_DIR"), "/../.."))
+            .output();
+        if let Ok(output) = output {
+            if output.status.success() {
+                let source = String::from_utf8(output.stdout).unwrap();
+                let mut signatures = source
+                    .split("#[unsafe(no_mangle)]")
+                    .skip(1)
+                    .filter_map(|block| {
+                        let declaration = block.split('{').next()?;
+                        let start = declaration.find("pub unsafe extern \"C\" fn")?;
+                        Some(
+                            declaration[start..]
+                                .chars()
+                                .filter(|character| !character.is_whitespace())
+                                .collect::<String>(),
+                        )
+                    })
+                    .collect::<Vec<_>>();
+                signatures.sort();
+                assert_eq!(format!("{}\n", signatures.join("\n")), expected, "{commit}");
+            }
+        }
+    }
 }
 
 #[test]
@@ -338,8 +420,8 @@ fn static_argument_expression_is_rejected() {
 #[test]
 fn static_argument_name_pass_through_resolves_from_enclosing_definition() {
     let registry = DefinitionRegistry::new().with_definition(echo_primitive());
-    // A composite declares `channels` (default 4) and forwards it by name.
-    let composite = GraphDefinition::new("stereo_bank")
+    // A defined module declares `channels` (default 4) and forwards it by name.
+    let defined_module = GraphDefinition::new("stereo_bank")
         .with_static_param(
             StaticParam::new("channels", StaticType::Int).with_default(StaticValue::Int(4)),
         )
@@ -348,14 +430,14 @@ fn static_argument_name_pass_through_resolves_from_enclosing_definition() {
                 .with_static_arg("channels", StaticArg::ParamRef("channels".to_string())),
         );
 
-    let validation = composite.validate(&registry);
+    let validation = defined_module.validate(&registry);
     assert!(
         validation.is_ok(),
         "name pass-through should resolve: {:?}",
         validation.diagnostics()
     );
 
-    let ports = composite
+    let ports = defined_module
         .resolved_node_ports(&registry, &NodeId::new("e"))
         .expect("node ports resolve");
     assert_eq!(ports[0].channels(), 4);
@@ -364,12 +446,12 @@ fn static_argument_name_pass_through_resolves_from_enclosing_definition() {
 #[test]
 fn unknown_static_parameter_reference_is_rejected() {
     let registry = DefinitionRegistry::new().with_definition(echo_primitive());
-    let composite = GraphDefinition::new("bank").with_node(
+    let defined_module = GraphDefinition::new("bank").with_node(
         Node::new(NodeId::new("e"), "echo")
             .with_static_arg("channels", StaticArg::ParamRef("missing".to_string())),
     );
 
-    let validation = composite.validate(&registry);
+    let validation = defined_module.validate(&registry);
 
     assert_eq!(
         only_error_code(&validation),
@@ -644,7 +726,7 @@ fn public_input_mapping_to_missing_internal_node_is_rejected() {
 
 #[test]
 fn nested_public_mapping_to_wrong_direction_is_rejected() {
-    let composite = GraphDefinition::new("voice")
+    let defined_module = GraphDefinition::new("voice")
         .with_node(Node::new(NodeId::new("amp"), "gain"))
         .with_port(
             Port::input("level", SignalType::Control, 1)
@@ -652,7 +734,7 @@ fn nested_public_mapping_to_wrong_direction_is_rejected() {
         );
     let registry = DefinitionRegistry::new()
         .with_definition(gain_primitive())
-        .with_definition(composite);
+        .with_definition(defined_module);
     let root = GraphDefinition::new("root").with_node(Node::new(NodeId::new("voice"), "voice"));
 
     assert_eq!(
@@ -662,10 +744,10 @@ fn nested_public_mapping_to_wrong_direction_is_rejected() {
 }
 
 #[test]
-fn a_primitive_can_replace_a_composite_without_changing_the_caller_graph() {
+fn a_primitive_can_replace_a_defined_module_without_changing_the_caller_graph() {
     let input = Port::input("audio_in", SignalType::Audio, 1);
     let output = Port::output("audio_out", SignalType::Audio, 1);
-    let composite = GraphDefinition::new("voice")
+    let defined_module = GraphDefinition::new("voice")
         .with_port(
             input
                 .clone()
@@ -693,12 +775,12 @@ fn a_primitive_can_replace_a_composite_without_changing_the_caller_graph() {
         .with_node(Node::new(NodeId::new("voice"), "voice"));
     let inline_registry = DefinitionRegistry::new()
         .with_definition(gain_primitive())
-        .with_definition(composite);
+        .with_definition(defined_module);
     let primitive_registry = DefinitionRegistry::new().with_definition(primitive);
 
     let inline = caller
         .flatten(&inline_registry)
-        .expect("composite flattens");
+        .expect("defined module flattens");
     let atomic = caller
         .flatten(&primitive_registry)
         .expect("primitive flattens");

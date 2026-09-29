@@ -4,7 +4,7 @@
 //! [`crate::graph`] model. A [`GraphDefinition`] declares static parameters,
 //! public ports, internal nodes, and connections; a [`Node`] is an instance of
 //! another graph definition. Primitives are graph definitions implemented in
-//! Rust; composites are graph definitions authored in YAML. Both expose the
+//! Rust; defined modules are graph definitions authored in YAML. Both expose the
 //! same public interface (ports and static parameters) and are validated
 //! through one path.
 
@@ -19,7 +19,7 @@ use crate::graph::{PortDirection, SignalType};
 /// a routing cycle (audio or control) is legal.
 pub const FEEDBACK_DELAY_DEFINITION: &str = crate::builtins::module_types::FEEDBACK_DELAY;
 
-/// Separator between a composite instance identity and an internal node
+/// Separator between a defined-module instance identity and an internal node
 /// identity when flattening produces namespaced atomic node ids.
 pub const NAMESPACE_SEPARATOR: &str = "::";
 
@@ -94,6 +94,15 @@ pub enum DefinitionImplementation {
     #[default]
     Graph,
     Script,
+}
+
+/// Authoring category of a module definition. Both categories expose the same
+/// port and static-parameter metadata schema.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub enum DefinitionCategory {
+    Primitive,
+    #[default]
+    Defined,
 }
 
 /// Input multiplicity: whether an input port accepts a single source or
@@ -401,7 +410,7 @@ impl ControlDefault {
 
 /// A named, typed, channel-counted port on a graph definition.
 ///
-/// On a composite definition, a public input port forwards inbound signal to
+/// On a defined module, a public input port forwards inbound signal to
 /// the internal ports named in `maps_to`, and a public output port gathers from
 /// the internal ports named in `maps_from`. Primitive (atomic) ports leave both
 /// empty.
@@ -569,10 +578,10 @@ impl PortMetadata {
 }
 
 /// Discoverable interface of any graph definition, including a patch root.
-/// The representation has no primitive/composite/script/package distinction.
 #[derive(Clone, Debug, PartialEq)]
 pub struct DefinitionMetadata {
     name: String,
+    category: DefinitionCategory,
     ports: Vec<PortMetadata>,
     static_params: Vec<StaticParam>,
 }
@@ -580,6 +589,10 @@ pub struct DefinitionMetadata {
 impl DefinitionMetadata {
     pub fn name(&self) -> &str {
         &self.name
+    }
+
+    pub fn category(&self) -> DefinitionCategory {
+        self.category
     }
 
     pub fn ports(&self) -> &[PortMetadata] {
@@ -701,10 +714,11 @@ impl Connection {
 }
 
 /// A graph definition: the single recursive unit that describes primitives,
-/// composites, and complete patches alike.
+/// defined modules, and complete patches alike.
 #[derive(Clone, Debug, Default, PartialEq)]
 pub struct GraphDefinition {
     name: String,
+    category: DefinitionCategory,
     implementation: DefinitionImplementation,
     definition_scope: BTreeMap<String, String>,
     static_params: Vec<StaticParam>,
@@ -724,6 +738,11 @@ impl GraphDefinition {
 
     pub fn with_static_param(mut self, param: StaticParam) -> Self {
         self.static_params.push(param);
+        self
+    }
+
+    pub fn with_category(mut self, category: DefinitionCategory) -> Self {
+        self.category = category;
         self
     }
 
@@ -840,6 +859,7 @@ impl GraphDefinition {
     pub fn metadata(&self) -> DefinitionMetadata {
         DefinitionMetadata {
             name: self.name.clone(),
+            category: self.category,
             ports: self.ports.iter().map(PortMetadata::declared).collect(),
             static_params: self.static_params.clone(),
         }
@@ -941,7 +961,7 @@ pub enum EffectiveInput {
     Value(f64),
 }
 
-/// A registry of graph definitions (primitives and composites) available for
+/// A registry of graph definitions (primitives and defined modules) available for
 /// instantiation. Primitives are represented by their public interface
 /// (ports and static parameters) with an empty body.
 #[derive(Clone, Debug, Default)]

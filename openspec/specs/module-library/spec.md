@@ -1,4 +1,9 @@
-## ADDED Requirements
+## Purpose
+
+Specify versioned, portable module packages and library resolution.
+
+## Requirements
+
 
 ### Requirement: Module packages are self-contained versioned folders
 

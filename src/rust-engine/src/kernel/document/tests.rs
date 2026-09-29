@@ -700,10 +700,13 @@ fn complete_kernel_document_produces_root_and_inline_graph_definitions() {
     assert_eq!(root.nodes()[0].port_default_overrides()["gain"], 0.5);
     assert_eq!(root.connections().len(), 1);
 
-    let composite = patch.registry().get("amplifier").expect("inline composite");
-    assert_eq!(composite.static_params().len(), 4);
-    assert_eq!(composite.ports().len(), 2);
-    assert_eq!(composite.nodes().len(), 1);
+    let defined_module = patch
+        .registry()
+        .get("amplifier")
+        .expect("inline defined module");
+    assert_eq!(defined_module.static_params().len(), 4);
+    assert_eq!(defined_module.ports().len(), 2);
+    assert_eq!(defined_module.nodes().len(), 1);
 }
 
 #[test]
@@ -720,28 +723,31 @@ fn resource_static_parameter_requires_a_resource_kind() {
 }
 
 #[test]
-fn graph_declaration_has_patch_and_composite_symmetry() {
+fn graph_declaration_has_patch_and_defined_module_symmetry() {
     let patch = load_kernel_patch_str(COMPLETE_PATCH).expect("kernel patch should load");
-    let composite = patch.registry().get("amplifier").expect("inline composite");
+    let defined_module = patch
+        .registry()
+        .get("amplifier")
+        .expect("inline defined module");
 
     assert_eq!(
         patch.root().static_params()[0].name(),
-        composite.static_params()[0].name()
+        defined_module.static_params()[0].name()
     );
     assert_eq!(
         patch.root().static_params()[0].static_type(),
-        composite.static_params()[0].static_type()
+        defined_module.static_params()[0].static_type()
     );
     assert!(patch.root().ports()[0].control_default().is_some());
-    assert!(composite.ports()[0].control_default().is_some());
-    assert_eq!(composite.nodes()[0].definition_ref(), "gain");
+    assert!(defined_module.ports()[0].control_default().is_some());
+    assert_eq!(defined_module.nodes()[0].definition_ref(), "gain");
 }
 
 #[test]
-fn parsed_root_composite_script_and_primitive_use_the_same_discovery_schema() {
+fn parsed_root_defined_module_script_and_primitive_use_the_same_discovery_schema() {
     let patch = load_kernel_patch_str(COMPLETE_PATCH).expect("kernel patch loads");
     let root = patch.root().metadata();
-    let composite = patch.registry().discover("amplifier").unwrap();
+    let defined_module = patch.registry().discover("amplifier").unwrap();
     let primitive = patch.registry().discover("gain").unwrap();
     let scripted = load_kernel_patch_str(SCRIPT_DEFINITION_PATCH).expect("script patch loads");
     let script = scripted.registry().discover("counter").unwrap();
@@ -753,11 +759,11 @@ fn parsed_root_composite_script_and_primitive_use_the_same_discovery_schema() {
         StaticType::Resource(ResourceKind::ImpulseResponse)
     );
     assert_eq!(
-        composite.ports()[0].control_default().unwrap().unit(),
+        defined_module.ports()[0].control_default().unwrap().unit(),
         Some("linear")
     );
     assert_eq!(
-        composite.static_params()[1].allowed_values(),
+        defined_module.static_params()[1].allowed_values(),
         ["clean", "driven"]
     );
     assert_eq!(primitive.ports()[0].name(), "audio_in");
@@ -766,7 +772,7 @@ fn parsed_root_composite_script_and_primitive_use_the_same_discovery_schema() {
 }
 
 #[test]
-fn standalone_composite_shape_loads_as_a_root_patch() {
+fn standalone_defined_module_shape_loads_as_a_root_patch() {
     let yaml = r#"
 metadata: { name: amplifier }
 static_params:
@@ -778,7 +784,7 @@ modules:
   - { id: inner, type: gain }
 connections: []
 "#;
-    let patch = load_kernel_patch_str(yaml).expect("composite-shaped root should load");
+    let patch = load_kernel_patch_str(yaml).expect("defined-module-shaped root should load");
 
     assert_eq!(patch.root().name(), "amplifier");
     assert_eq!(patch.root().static_params().len(), 1);
@@ -845,6 +851,18 @@ fn legacy_instance_parameters_are_rejected_with_module_context() {
         error_codes::KERNEL_DOCUMENT_LEGACY_PARAMETERS
     );
     assert_eq!(diagnostic.module_id(), Some("amp"));
+}
+
+#[test]
+fn external_module_reference_rejects_unsupported_composite_id_field() {
+    let yaml = "ports:\n  - { name: audio, direction: output, signal: audio, channels: 1, maps_from: voice.audio }\nmodules:\n  - id: voice\n    type: $LIB/1.0.0/voice/voice.yaml\n    composite_id: voice\nconnections: []\n";
+    let diagnostics = load_kernel_patch_str(yaml)
+        .expect_err("composite_id must not become an alternative module reference field");
+    assert_eq!(
+        diagnostics.all()[0].error_code(),
+        error_codes::KERNEL_DOCUMENT_SCHEMA_FAILED
+    );
+    assert!(diagnostics.all()[0].message().contains("composite_id"));
 }
 
 #[test]

@@ -97,20 +97,22 @@ include the source composite instance/internal path where available.
 - **THEN** the diagnostic SHOULD identify the composite instance and internal module path that produced the expanded
   module
 
-### Requirement: External composite libraries are optional future extension
+### Requirement: External module libraries extend inline module definitions
 
-Composite definitions SHALL continue to support inline `module_definitions` as the canonical model for this change;
-external composite directory loading MAY be added later only as a compatible extension.
+Inline `module_definitions` SHALL remain the canonical model for defining YAML-assembled modules. In addition, the engine SHALL support loading a defined module from an external module package referenced by a macro-qualified, version-pinned file path (see the `module-library` capability). A definition loaded from an external package SHALL behave identically to an inline `module_definitions` entry after loading.
 
-#### Scenario: External composite support absent
+> Note: this requirement lives under the legacy `composite-authoring` capability folder only to preserve OpenSpec continuity while the terminology is being migrated. User-facing and implementation terminology is **module** / **defined module**.
 
-- **WHEN** external composite directories are not configured or not implemented
-- **THEN** inline composite definitions SHALL continue to work
+#### Scenario: External module reference absent
 
-#### Scenario: External composite loaded later
+- **WHEN** no external module reference is used in a patch
+- **THEN** inline `module_definitions` SHALL continue to work unchanged
 
-- **WHEN** a later implementation loads a composite definition from a configured directory
-- **THEN** it SHALL behave identically to an inline `module_definitions` entry after loading
+#### Scenario: External module loaded from a package
+
+- **WHEN** a patch references a module by a macro-qualified pinned path to an external module package
+- **THEN** the engine SHALL load that package's definition and expand it
+- **AND** it SHALL behave identically to an inline `module_definitions` entry after loading
 
 ### Requirement: Recursive composites are rejected or depth-limited
 

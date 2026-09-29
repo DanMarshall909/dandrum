@@ -145,7 +145,8 @@ fn enum_param(name: &str, default: &str, allowed_values: &[&str]) -> StaticParam
 pub fn builtin_registry() -> DefinitionRegistry {
     let mut registry = DefinitionRegistry::new();
     for definition in builtin_definitions() {
-        registry = registry.with_definition(definition);
+        registry = registry
+            .with_definition(definition.with_category(super::DefinitionCategory::Primitive));
     }
     registry
 }

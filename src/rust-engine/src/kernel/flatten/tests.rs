@@ -37,9 +37,9 @@ fn echo() -> GraphDefinition {
         ))
 }
 
-/// A composite exposing an `audio` output gathered from an internal node's
+/// A defined module exposing an `audio` output gathered from an internal node's
 /// output port.
-fn wrapping_composite(name: &str, child_type: &str, child_id: &str) -> GraphDefinition {
+fn wrapping_defined_module(name: &str, child_type: &str, child_id: &str) -> GraphDefinition {
     GraphDefinition::new(name)
         .with_port(
             Port::output("audio", SignalType::Audio, 1)
@@ -49,11 +49,11 @@ fn wrapping_composite(name: &str, child_type: &str, child_id: &str) -> GraphDefi
 }
 
 #[test]
-fn nested_composites_flatten_to_atomic_nodes_with_namespaced_ids() {
+fn nested_defined_modules_flatten_to_atomic_nodes_with_namespaced_ids() {
     let registry = DefinitionRegistry::new()
         .with_definition(oscillator())
-        .with_definition(wrapping_composite("inner", "oscillator", "osc"))
-        .with_definition(wrapping_composite("outer", "inner", "in"));
+        .with_definition(wrapping_defined_module("inner", "oscillator", "osc"))
+        .with_definition(wrapping_defined_module("outer", "inner", "in"));
     let root = GraphDefinition::new("root").with_node(Node::new(NodeId::new("o"), "outer"));
 
     let flat = root.flatten(&registry).expect("flattens");
@@ -68,8 +68,8 @@ fn boundary_ports_forward_connections_to_atomic_ports() {
     let registry = DefinitionRegistry::new()
         .with_definition(oscillator())
         .with_definition(gain())
-        .with_definition(wrapping_composite("inner", "oscillator", "osc"))
-        .with_definition(wrapping_composite("outer", "inner", "in"));
+        .with_definition(wrapping_defined_module("inner", "oscillator", "osc"))
+        .with_definition(wrapping_defined_module("outer", "inner", "in"));
     let root = GraphDefinition::new("root")
         .with_node(Node::new(NodeId::new("o"), "outer"))
         .with_node(Node::new(NodeId::new("amp"), "gain"))
@@ -93,8 +93,8 @@ fn flattening_is_deterministic_and_repeatable() {
     let registry = DefinitionRegistry::new()
         .with_definition(oscillator())
         .with_definition(gain())
-        .with_definition(wrapping_composite("inner", "oscillator", "osc"))
-        .with_definition(wrapping_composite("outer", "inner", "in"));
+        .with_definition(wrapping_defined_module("inner", "oscillator", "osc"))
+        .with_definition(wrapping_defined_module("outer", "inner", "in"));
     let root = GraphDefinition::new("root")
         .with_node(Node::new(NodeId::new("o"), "outer"))
         .with_node(Node::new(NodeId::new("amp"), "gain"))
@@ -511,9 +511,9 @@ fn matching_signal_connection_inserts_no_promotion() {
     );
 }
 
-// --- Composite input boundary -------------------------------------------
+// --- Defined-module input boundary -------------------------------------------
 
-/// A composite that forwards a public audio input to an internal gain and
+/// A defined module that forwards a public audio input to an internal gain and
 /// gathers its output back out, exercising both boundary directions.
 fn amplifier() -> GraphDefinition {
     GraphDefinition::new("amplifier")
@@ -529,7 +529,7 @@ fn amplifier() -> GraphDefinition {
 }
 
 #[test]
-fn composite_input_port_forwards_incoming_connections_to_internal_ports() {
+fn defined_module_input_port_forwards_incoming_connections_to_internal_ports() {
     let registry = DefinitionRegistry::new()
         .with_definition(oscillator())
         .with_definition(gain())
@@ -550,13 +550,13 @@ fn composite_input_port_forwards_incoming_connections_to_internal_ports() {
     assert_eq!(
         connection.destination().node().as_str(),
         "amp::g",
-        "the composite's public input forwards to the internal node it maps to"
+        "the defined module's public input forwards to the internal node it maps to"
     );
     assert_eq!(connection.destination().port(), "audio_in");
 }
 
 #[test]
-fn composite_input_mapped_to_an_unknown_internal_node_forwards_nothing() {
+fn defined_module_input_mapped_to_an_unknown_internal_node_forwards_nothing() {
     // Validation reports the dangling `maps_to` separately; flattening must not
     // wire the incoming connection to an internal node that was never expanded.
     let dangling = GraphDefinition::new("dangling").with_port(
@@ -584,7 +584,7 @@ fn composite_input_mapped_to_an_unknown_internal_node_forwards_nothing() {
 }
 
 #[test]
-fn composite_input_mapped_to_an_unknown_port_of_a_known_node_forwards_nothing() {
+fn defined_module_input_mapped_to_an_unknown_port_of_a_known_node_forwards_nothing() {
     // `g` exists, but declares no `sidechain_in`. The boundary must forward to
     // nothing rather than guess a port.
     let dangling = GraphDefinition::new("dangling")
@@ -864,7 +864,7 @@ fn named_script_definition_flattens_to_script_runtime_kind_with_declared_interfa
 // --- Flattening in the presence of invalid structure ---------------------
 
 #[test]
-fn unknown_definition_reference_inside_a_composite_is_rejected() {
+fn unknown_definition_reference_inside_a_defined_module_is_rejected() {
     let broken = GraphDefinition::new("broken").with_node(Node::new(NodeId::new("x"), "ghost"));
     let registry = DefinitionRegistry::new().with_definition(broken);
     let root = GraphDefinition::new("root").with_node(Node::new(NodeId::new("b"), "broken"));
@@ -962,7 +962,7 @@ fn recursive_definition_is_rejected() {
 
 #[test]
 fn excessive_nesting_depth_is_rejected() {
-    // Build a chain of distinct composites c0 -> c1 -> ... -> leaf, deep enough
+    // Build a chain of distinct defined modules c0 -> c1 -> ... -> leaf, deep enough
     // to exceed the flatten depth guard without any recursion.
     let mut registry = DefinitionRegistry::new().with_definition(oscillator());
     let chain_length = MAX_FLATTEN_DEPTH + 3;
@@ -972,8 +972,11 @@ fn excessive_nesting_depth_is_rejected() {
         } else {
             format!("c{}", index + 1)
         };
-        registry =
-            registry.with_definition(wrapping_composite(&format!("c{index}"), &child, "next"));
+        registry = registry.with_definition(wrapping_defined_module(
+            &format!("c{index}"),
+            &child,
+            "next",
+        ));
     }
     let root = GraphDefinition::new("root").with_node(Node::new(NodeId::new("c"), "c0"));
 
@@ -984,5 +987,11 @@ fn excessive_nesting_depth_is_rejected() {
             .errors()
             .any(|d| d.error_code() == error_codes::KERNEL_MAX_DEPTH_EXCEEDED),
         "expected max-depth diagnostic, got: {diagnostics:?}"
+    );
+    assert!(
+        diagnostics
+            .errors()
+            .any(|d| d.message().contains("defined module nesting depth")),
+        "the diagnostic should use module terminology: {diagnostics:?}"
     );
 }

@@ -79,4 +79,4 @@ Macro/version resolution and package loading happen during patch preparation, be
 ## Open Questions
 
 - Exact canonical storage location/mechanism for the seed archive and the on-disk `$LIB` extraction root — to be finalized in implementation against the host/plugin packaging.
-- Whether `$USER_LIB` references require version directories or allow a flat `<module>/<module>.yaml` form (leaning: versions optional for `$USER_LIB`, required for `$LIB`).
+- Resolved: `$USER_LIB` accepts either a flat `<module>/<module>.yaml` entry or a versioned entry. `$LIB` requires a version segment; its `latest` alias chooses the newest version containing the requested module.

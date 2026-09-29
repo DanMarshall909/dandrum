@@ -7,7 +7,7 @@
 //! package version is never observed half-written.
 
 use std::fs;
-use std::io;
+use std::io::{self, Cursor, Read, Write};
 use std::path::{Component, Path, PathBuf};
 
 use crate::diagnostics::{Diagnostic, Severity, error_codes};
@@ -23,18 +23,18 @@ pub const STANDARD_LIBRARY_CRC_FILENAME: &str = ".dandrum-library.crc";
 /// Current bundled standard-library version.
 pub const BUNDLED_STANDARD_LIBRARY_VERSION: &str = "1.0.0";
 
+const BUNDLED_SEED_ZIP: &[u8] = include_bytes!("../module-library/seed-1.0.0.zip");
+
+#[cfg(test)]
 const BUNDLED_DRUM_VOICE_PATH: &str = "drum_voice/drum_voice.yaml";
+#[cfg(test)]
 const BUNDLED_DRUM_VOICE_YAML: &[u8] =
     include_bytes!("../module-library/1.0.0/drum_voice/drum_voice.yaml");
+#[cfg(test)]
 const BUNDLED_DRUM_MACHINE_PATH: &str = "drum_machine/drum_machine.yaml";
-const BUNDLED_DRUM_MACHINE_YAML: &[u8] =
-    include_bytes!("../module-library/1.0.0/drum_machine/drum_machine.yaml");
-const BUNDLED_SAMPLE_VOICE_PATH: &str = "sample_voice/sample_voice.yaml";
+#[cfg(test)]
 const BUNDLED_SAMPLE_VOICE_YAML: &[u8] =
     include_bytes!("../module-library/1.0.0/sample_voice/sample_voice.yaml");
-const BUNDLED_SAMPLE_VOICE_WAV_PATH: &str = "sample_voice/samples/hit.wav";
-const BUNDLED_SAMPLE_VOICE_WAV: &[u8] =
-    include_bytes!("../module-library/1.0.0/sample_voice/samples/hit.wav");
 
 /// One file bundled into a seeded module-library version.
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -65,6 +65,7 @@ pub enum ModuleLibrarySeedError {
     MissingHomeDirectory,
     InvalidVersion { version: String },
     PathEscape { path: String },
+    Archive { message: String },
     Io { path: PathBuf, message: String },
 }
 
@@ -85,6 +86,11 @@ impl ModuleLibrarySeedError {
                 error_codes::LIBRARY_PATH_ESCAPE,
                 Severity::Error,
                 format!("seeded module library file path {path} escapes its version root"),
+            ),
+            Self::Archive { message } => Diagnostic::new(
+                error_codes::LIBRARY_SEED_FAILED,
+                Severity::Error,
+                format!("invalid module library seed zip: {message}"),
             ),
             Self::Io { path, message } => Diagnostic::new(
                 error_codes::LIBRARY_SEED_FAILED,
@@ -137,24 +143,7 @@ pub fn default_host_macro_roots() -> Result<MacroRoots, ModuleLibrarySeedError> 
 pub fn bundled_standard_library() -> SeededLibrary {
     SeededLibrary {
         version: BUNDLED_STANDARD_LIBRARY_VERSION.to_string(),
-        files: vec![
-            SeededLibraryFile {
-                path: BUNDLED_DRUM_VOICE_PATH.to_string(),
-                contents: BUNDLED_DRUM_VOICE_YAML.to_vec(),
-            },
-            SeededLibraryFile {
-                path: BUNDLED_DRUM_MACHINE_PATH.to_string(),
-                contents: BUNDLED_DRUM_MACHINE_YAML.to_vec(),
-            },
-            SeededLibraryFile {
-                path: BUNDLED_SAMPLE_VOICE_PATH.to_string(),
-                contents: BUNDLED_SAMPLE_VOICE_YAML.to_vec(),
-            },
-            SeededLibraryFile {
-                path: BUNDLED_SAMPLE_VOICE_WAV_PATH.to_string(),
-                contents: BUNDLED_SAMPLE_VOICE_WAV.to_vec(),
-            },
-        ],
+        files: read_seed_archive(BUNDLED_SEED_ZIP).expect("shipped seed zip must be valid"),
     }
 }
 
@@ -162,7 +151,7 @@ pub fn bundled_standard_library() -> SeededLibrary {
 pub fn seed_bundled_standard_library(
     root: impl AsRef<Path>,
 ) -> Result<SeedResult, ModuleLibrarySeedError> {
-    seed_standard_library(root, &bundled_standard_library())
+    seed_standard_library_zip(root, BUNDLED_STANDARD_LIBRARY_VERSION, BUNDLED_SEED_ZIP)
 }
 
 /// Seeds `library.version` under `root`, skipping extraction when the recorded
@@ -171,20 +160,27 @@ pub fn seed_standard_library(
     root: impl AsRef<Path>,
     library: &SeededLibrary,
 ) -> Result<SeedResult, ModuleLibrarySeedError> {
-    validate_version(&library.version)?;
-    for file in &library.files {
-        reject_file_path_escape(&file.path)?;
-    }
+    let archive = write_seed_archive(library)?;
+    seed_standard_library_zip(root, &library.version, &archive)
+}
+
+fn seed_standard_library_zip(
+    root: impl AsRef<Path>,
+    version: &str,
+    archive: &[u8],
+) -> Result<SeedResult, ModuleLibrarySeedError> {
+    validate_version(version)?;
+    let files = read_seed_archive(archive)?;
 
     let root = root.as_ref();
-    let crc = seeded_library_crc(library);
-    let version_root = root.join(&library.version);
+    let crc = !crc32_update(0xffff_ffff, archive);
+    let version_root = root.join(version);
     let manifest_path = version_root.join(STANDARD_LIBRARY_CRC_FILENAME);
 
     fs::create_dir_all(root).map_err(|error| io_error(root, error))?;
     // The lock also covers the CRC check so concurrent hosts cannot each
     // replace the same version directory after observing an old manifest.
-    let lock_path = root.join(format!(".{}.seed.lock", library.version));
+    let lock_path = root.join(format!(".{version}.seed.lock"));
     let lock_file = fs::File::options()
         .create(true)
         .write(true)
@@ -197,33 +193,33 @@ pub fn seed_standard_library(
     // A matching manifest alone cannot prove the directory is complete after
     // an interrupted or older concurrent extraction.
     if recorded_crc(&manifest_path)? == Some(crc)
-        && library
-            .files
+        && files
             .iter()
             .all(|file| version_root.join(&file.path).is_file())
     {
         return Ok(SeedResult::SkippedUnchanged {
-            version: library.version.clone(),
+            version: version.to_string(),
             crc,
         });
     }
 
-    let staging_root = root.join(format!(
-        ".{}.extracting.{}",
-        library.version,
-        std::process::id()
-    ));
+    let staging_root = root.join(format!(".{version}.extracting.{}", std::process::id()));
     if staging_root.exists() {
-        fs::remove_dir_all(&staging_root).map_err(|error| io_error(&staging_root, error))?;
+        remove_seeded_directory(&staging_root)?;
     }
     fs::create_dir_all(&staging_root).map_err(|error| io_error(&staging_root, error))?;
 
-    for file in &library.files {
+    for file in &files {
         let target = staging_root.join(&file.path);
         if let Some(parent) = target.parent() {
             fs::create_dir_all(parent).map_err(|error| io_error(parent, error))?;
         }
         fs::write(&target, &file.contents).map_err(|error| io_error(&target, error))?;
+        let mut permissions = fs::metadata(&target)
+            .map_err(|error| io_error(&target, error))?
+            .permissions();
+        permissions.set_readonly(true);
+        fs::set_permissions(&target, permissions).map_err(|error| io_error(&target, error))?;
     }
 
     let staging_manifest = staging_root.join(STANDARD_LIBRARY_CRC_FILENAME);
@@ -233,9 +229,58 @@ pub fn seed_standard_library(
     publish_version_directory(&version_root, &staging_root)?;
 
     Ok(SeedResult::Extracted {
-        version: library.version.clone(),
+        version: version.to_string(),
         crc,
     })
+}
+
+fn write_seed_archive(library: &SeededLibrary) -> Result<Vec<u8>, ModuleLibrarySeedError> {
+    validate_version(&library.version)?;
+    let mut files = library.files.clone();
+    files.sort_by(|left, right| left.path.cmp(&right.path));
+    let mut writer = zip::ZipWriter::new(Cursor::new(Vec::new()));
+    let options = zip::write::SimpleFileOptions::default()
+        .compression_method(zip::CompressionMethod::Stored)
+        .large_file(true);
+    for file in files {
+        reject_file_path_escape(&file.path)?;
+        writer
+            .start_file(&file.path, options)
+            .map_err(archive_error)?;
+        // A started ZIP64 file written to Cursor<Vec<u8>> has no fallible
+        // backing store; allocation failure aborts rather than returning I/O.
+        writer
+            .write_all(&file.contents)
+            .expect("in-memory ZIP writer cannot report an I/O error");
+    }
+    Ok(writer.finish().map_err(archive_error)?.into_inner())
+}
+
+fn read_seed_archive(archive: &[u8]) -> Result<Vec<SeededLibraryFile>, ModuleLibrarySeedError> {
+    let mut reader = zip::ZipArchive::new(Cursor::new(archive)).map_err(archive_error)?;
+    let mut files = Vec::new();
+    for index in 0..reader.len() {
+        let mut entry = reader.by_index(index).map_err(archive_error)?;
+        if entry.is_dir() {
+            continue;
+        }
+        let path = entry.name().to_string();
+        reject_file_path_escape(&path)?;
+        let mut contents = Vec::new();
+        entry
+            .read_to_end(&mut contents)
+            .map_err(|error| ModuleLibrarySeedError::Archive {
+                message: error.to_string(),
+            })?;
+        files.push(SeededLibraryFile { path, contents });
+    }
+    Ok(files)
+}
+
+fn archive_error(error: zip::result::ZipError) -> ModuleLibrarySeedError {
+    ModuleLibrarySeedError::Archive {
+        message: error.to_string(),
+    }
 }
 
 fn publish_version_directory(
@@ -247,15 +292,20 @@ fn publish_version_directory(
             .map_err(|error| io_error(version_root, error));
     }
 
-    let backup_root = version_root.with_extension(format!("replacing.{}", std::process::id()));
+    let mut backup_name = version_root
+        .file_name()
+        .expect("validated version root has a final component")
+        .to_os_string();
+    backup_name.push(format!(".replacing.{}", std::process::id()));
+    let backup_root = version_root.with_file_name(backup_name);
     if backup_root.exists() {
-        fs::remove_dir_all(&backup_root).map_err(|error| io_error(&backup_root, error))?;
+        remove_seeded_directory(&backup_root)?;
     }
 
     fs::rename(version_root, &backup_root).map_err(|error| io_error(version_root, error))?;
     match fs::rename(staging_root, version_root) {
         Ok(()) => {
-            fs::remove_dir_all(&backup_root).map_err(|error| io_error(&backup_root, error))?;
+            remove_seeded_directory(&backup_root)?;
             Ok(())
         }
         Err(error) => {
@@ -263,6 +313,40 @@ fn publish_version_directory(
             Err(io_error(version_root, error))
         }
     }
+}
+
+fn remove_seeded_directory(path: &Path) -> Result<(), ModuleLibrarySeedError> {
+    // Windows cannot delete read-only files. Only walk real directories and
+    // regular files; remove_dir_all itself unlinks symlinks without following them.
+    if !fs::symlink_metadata(path)
+        .map_err(|error| io_error(path, error))?
+        .file_type()
+        .is_symlink()
+    {
+        clear_seeded_file_readonly(path)?;
+    }
+    fs::remove_dir_all(path).map_err(|error| io_error(path, error))
+}
+
+fn clear_seeded_file_readonly(directory: &Path) -> Result<(), ModuleLibrarySeedError> {
+    for entry in fs::read_dir(directory).map_err(|error| io_error(directory, error))? {
+        let entry = entry.map_err(|error| io_error(directory, error))?;
+        let path = entry.path();
+        let file_type = entry.file_type().map_err(|error| io_error(&path, error))?;
+        if file_type.is_dir() {
+            clear_seeded_file_readonly(&path)?;
+        } else if file_type.is_file() {
+            let mut permissions = entry
+                .metadata()
+                .map_err(|error| io_error(&path, error))?
+                .permissions();
+            if permissions.readonly() {
+                permissions.set_readonly(false);
+                fs::set_permissions(&path, permissions).map_err(|error| io_error(&path, error))?;
+            }
+        }
+    }
+    Ok(())
 }
 
 fn recorded_crc(path: &Path) -> Result<Option<u32>, ModuleLibrarySeedError> {
@@ -302,18 +386,12 @@ fn reject_file_path_escape(path: &str) -> Result<(), ModuleLibrarySeedError> {
     }
 }
 
+#[cfg(test)]
 fn seeded_library_crc(library: &SeededLibrary) -> u32 {
-    let mut files = library.files.clone();
-    files.sort_by(|left, right| left.path.cmp(&right.path));
-
-    let mut crc = crc32_update(0xffff_ffff, library.version.as_bytes());
-    for file in files {
-        crc = crc32_update(crc, b"\0");
-        crc = crc32_update(crc, file.path.as_bytes());
-        crc = crc32_update(crc, b"\0");
-        crc = crc32_update(crc, &file.contents);
-    }
-    !crc
+    !crc32_update(
+        0xffff_ffff,
+        &write_seed_archive(library).expect("test seed should be valid"),
+    )
 }
 
 fn crc32_update(mut crc: u32, bytes: &[u8]) -> u32 {
@@ -401,6 +479,136 @@ mod tests {
         );
         assert!(paths.contains("sample_voice/sample_voice.yaml"));
         assert!(paths.contains("sample_voice/samples/hit.wav"));
+    }
+
+    #[test]
+    fn bundled_seed_extracts_one_zip_and_records_the_zip_crc() {
+        use std::io::Read;
+
+        let seed_zip = include_bytes!("../module-library/seed-1.0.0.zip");
+        let mut archive = zip::ZipArchive::new(std::io::Cursor::new(seed_zip.as_slice()))
+            .expect("the shipped seed is a zip archive");
+        let bundled = bundled_standard_library();
+        assert_eq!(archive.len(), bundled.files.len());
+        for file in &bundled.files {
+            let mut archived = archive
+                .by_name(&file.path)
+                .expect("each package file is in the single archive");
+            let mut contents = Vec::new();
+            archived.read_to_end(&mut contents).unwrap();
+            assert_eq!(contents, file.contents, "{}", file.path);
+            assert_eq!(
+                contents,
+                fs::read(
+                    Path::new(env!("CARGO_MANIFEST_DIR"))
+                        .join("module-library/1.0.0")
+                        .join(&file.path)
+                )
+                .unwrap(),
+                "the shipped archive must match the authored package file {}",
+                file.path
+            );
+        }
+
+        let root = tempfile::tempdir().unwrap();
+        let result = seed_bundled_standard_library(root.path()).expect("zip seed extracts");
+        let expected_crc = !crc32_update(0xffff_ffff, seed_zip);
+        assert_eq!(
+            result,
+            SeedResult::Extracted {
+                version: BUNDLED_STANDARD_LIBRARY_VERSION.to_string(),
+                crc: expected_crc,
+            }
+        );
+        assert_eq!(
+            fs::read_to_string(
+                root.path()
+                    .join("1.0.0")
+                    .join(STANDARD_LIBRARY_CRC_FILENAME)
+            )
+            .unwrap(),
+            format_crc(expected_crc)
+        );
+    }
+
+    #[test]
+    fn seed_zip_rejects_entries_escaping_the_version_root() {
+        let mut writer = zip::ZipWriter::new(Cursor::new(Vec::new()));
+        writer
+            .start_file("../outside.yaml", zip::write::SimpleFileOptions::default())
+            .unwrap();
+        writer.write_all(b"escaped").unwrap();
+        let zip = writer.finish().unwrap().into_inner();
+        let root = tempfile::tempdir().unwrap();
+
+        let error = seed_standard_library_zip(root.path(), "1.0.0", &zip)
+            .expect_err("archive traversal must fail before any version is published");
+        assert_eq!(
+            error,
+            ModuleLibrarySeedError::PathEscape {
+                path: "../outside.yaml".to_string()
+            }
+        );
+        assert!(!root.path().join("1.0.0").exists());
+    }
+
+    #[test]
+    fn malformed_seed_zip_has_a_stable_diagnostic() {
+        let root = tempfile::tempdir().unwrap();
+        let error = seed_standard_library_zip(root.path(), "1.0.0", b"not a zip")
+            .expect_err("an invalid archive must fail before extraction");
+        assert!(matches!(error, ModuleLibrarySeedError::Archive { .. }));
+        assert_eq!(
+            error.to_diagnostic().error_code(),
+            error_codes::LIBRARY_SEED_FAILED
+        );
+        assert!(!root.path().join("1.0.0").exists());
+    }
+
+    #[test]
+    fn seed_zip_ignores_directory_entries_and_extracts_files() {
+        let mut writer = zip::ZipWriter::new(Cursor::new(Vec::new()));
+        let options = zip::write::SimpleFileOptions::default();
+        writer.add_directory("drum_voice/", options).unwrap();
+        writer
+            .start_file("drum_voice/drum_voice.yaml", options)
+            .unwrap();
+        writer.write_all(b"voice\n").unwrap();
+        let archive = writer.finish().unwrap().into_inner();
+        let root = tempfile::tempdir().unwrap();
+
+        assert!(matches!(
+            seed_standard_library_zip(root.path(), "1.0.0", &archive).unwrap(),
+            SeedResult::Extracted { .. }
+        ));
+        assert_eq!(
+            fs::read(root.path().join("1.0.0/drum_voice/drum_voice.yaml")).unwrap(),
+            b"voice\n"
+        );
+    }
+
+    #[test]
+    fn corrupt_zip_entry_does_not_replace_an_existing_version() {
+        let root = tempfile::tempdir().unwrap();
+        seed_standard_library(root.path(), &library("1.0.0", b"old\n")).unwrap();
+        let mut archive = write_seed_archive(&library("1.0.0", b"new\n")).unwrap();
+        let position = archive
+            .windows(4)
+            .position(|bytes| bytes == b"new\n")
+            .expect("stored ZIP contains the module bytes");
+        archive[position] = b'X';
+
+        let error = seed_standard_library_zip(root.path(), "1.0.0", &archive)
+            .expect_err("a corrupt member must fail before replacing the version");
+        assert!(matches!(error, ModuleLibrarySeedError::Archive { .. }));
+        assert_eq!(
+            error.to_diagnostic().error_code(),
+            error_codes::LIBRARY_SEED_FAILED
+        );
+        assert_eq!(
+            fs::read(root.path().join("1.0.0/drum_voice/drum_voice.yaml")).unwrap(),
+            b"old\n"
+        );
     }
 
     #[test]
@@ -577,13 +785,70 @@ mod tests {
         }
     }
 
+    #[test]
+    fn resource_package_renders_identically_after_moving_between_library_roots() {
+        let directory = tempfile::tempdir().expect("isolated library roots");
+        let original_root = directory.path().join("original");
+        let moved_root = directory.path().join("moved");
+        seed_bundled_standard_library(&original_root).expect("resource package should seed");
+        let settings = RenderSettings {
+            sample_rate_hz: TEST_SAMPLE_RATE_HZ,
+            block_size_frames: TEST_BLOCK_SIZE_FRAMES as u32,
+            duration_frames: TEST_BLOCK_SIZE_FRAMES as u64,
+        };
+        let render = |root: &Path| {
+            let context = preparation_context(root);
+            let package = load_referenced_kernel_package(RESOURCE_PACKAGE_REFERENCE, &context)
+                .expect("resource package should load from either library root");
+            assert_eq!(
+                package.root(),
+                root.join("1.0.0/sample_voice").canonicalize().unwrap()
+            );
+            let prepared = prepare_kernel_graph_with_buses_and_context(
+                package.definition(),
+                package.registry(),
+                &settings,
+                &HostBuses::new()
+                    .with_output("left", 1)
+                    .with_output("right", 1),
+                &context,
+            )
+            .expect("package-relative sample should prepare after relocation");
+            let mut runtime = RealtimeGraphProcessor::polyphonic_with_compiled_patch_and_sampler_assets_and_max_block_size(
+                prepared.graph().clone(),
+                prepared.compiled_patch().clone(),
+                TEST_SAMPLE_RATE_HZ as f32,
+                &PreparedSamplerAssets::empty(),
+                &VoiceAllocation::default(),
+                TEST_BLOCK_SIZE_FRAMES,
+            );
+            runtime.note_on(60, 100);
+            let mut outputs = vec![vec![vec![0.0; TEST_BLOCK_SIZE_FRAMES]]; 2];
+            assert_eq!(
+                runtime.render_root_outputs(&mut outputs),
+                TEST_BLOCK_SIZE_FRAMES
+            );
+            outputs
+        };
+
+        let original = render(&original_root);
+        assert!((original[0][0][0] - 0.25).abs() < 0.0001);
+        fs::create_dir_all(moved_root.join("1.0.0")).unwrap();
+        fs::rename(
+            original_root.join("1.0.0/sample_voice"),
+            moved_root.join("1.0.0/sample_voice"),
+        )
+        .expect("move the same package with its co-located sample");
+        assert_eq!(render(&moved_root), original);
+    }
+
     fn preparation_context(root: &Path) -> PreparationContext {
         PreparationContext::new(root, TEST_SAMPLE_RATE_HZ)
             .with_macro_roots(MacroRoots::new().with_root(LIB_MACRO, root))
     }
 
     #[test]
-    fn unchanged_crc_skips_extraction_and_preserves_existing_files() {
+    fn unchanged_crc_skips_extraction_of_readonly_seeded_files() {
         let root = temp_root("unchanged");
         let seeded = library("1.0.0", b"first\n");
 
@@ -592,8 +857,10 @@ mod tests {
             .join("1.0.0")
             .join("drum_voice")
             .join("drum_voice.yaml");
-        fs::write(&file_path, b"user-visible existing bytes\n")
-            .expect("test should be able to mutate the seeded file");
+        assert!(
+            fs::metadata(&file_path).unwrap().permissions().readonly(),
+            "standard library package files should be read-only"
+        );
 
         let second = seed_standard_library(&root, &seeded).expect("same seed should skip");
 
@@ -607,8 +874,8 @@ mod tests {
         );
         assert_eq!(
             fs::read(&file_path).expect("file should remain readable"),
-            b"user-visible existing bytes\n",
-            "skipping extraction should leave the existing version directory untouched"
+            b"first\n",
+            "skipping extraction should leave the seeded contents untouched"
         );
     }
 
@@ -657,6 +924,122 @@ mod tests {
         assert!(
             !root.join("1.0.0").join("stale.txt").exists(),
             "replacing one version should not retain stale files inside that version"
+        );
+    }
+
+    #[test]
+    fn replacing_another_patch_version_preserves_a_pending_backup() {
+        let root = tempfile::tempdir().unwrap();
+        seed_standard_library(root.path(), &library("1.0.0", b"old first\n")).unwrap();
+        seed_standard_library(root.path(), &library("1.0.1", b"old second\n")).unwrap();
+        // An interrupted first-version replacement may leave this backup.
+        // The second version must never delete it while publishing its own update.
+        let pending_first_backup = root
+            .path()
+            .join(format!("1.0.replacing.{}", std::process::id()));
+        fs::create_dir(&pending_first_backup).unwrap();
+        fs::write(pending_first_backup.join("preserved.yaml"), b"first backup").unwrap();
+
+        seed_standard_library(root.path(), &library("1.0.1", b"new second\n")).unwrap();
+        assert_eq!(
+            fs::read(pending_first_backup.join("preserved.yaml")).unwrap(),
+            b"first backup"
+        );
+        assert_eq!(
+            fs::read(root.path().join("1.0.0/drum_voice/drum_voice.yaml")).unwrap(),
+            b"old first\n"
+        );
+        assert_eq!(
+            fs::read(root.path().join("1.0.1/drum_voice/drum_voice.yaml")).unwrap(),
+            b"new second\n"
+        );
+    }
+
+    #[test]
+    fn stale_readonly_backup_is_removed_before_replacing_its_version() {
+        let root = tempfile::tempdir().unwrap();
+        seed_standard_library(root.path(), &library("1.0.0", b"old\n")).unwrap();
+        let backup = root
+            .path()
+            .join(format!("1.0.0.replacing.{}", std::process::id()));
+        fs::create_dir_all(&backup).unwrap();
+        let stale = backup.join("stale.yaml");
+        fs::write(&stale, b"stale").unwrap();
+        let mut permissions = fs::metadata(&stale).unwrap().permissions();
+        permissions.set_readonly(true);
+        fs::set_permissions(&stale, permissions).unwrap();
+
+        seed_standard_library(root.path(), &library("1.0.0", b"new\n")).unwrap();
+        assert!(!backup.exists());
+        assert_eq!(
+            fs::read(root.path().join("1.0.0/drum_voice/drum_voice.yaml")).unwrap(),
+            b"new\n"
+        );
+    }
+
+    #[test]
+    fn stale_readonly_staging_files_are_removed_before_reseeding() {
+        let root = tempfile::tempdir().unwrap();
+        let staging = root
+            .path()
+            .join(format!(".1.0.0.extracting.{}", std::process::id()));
+        fs::create_dir_all(&staging).unwrap();
+        let stale = staging.join("stale.yaml");
+        fs::write(&stale, b"old staging contents").unwrap();
+        let mut permissions = fs::metadata(&stale).unwrap().permissions();
+        permissions.set_readonly(true);
+        fs::set_permissions(&stale, permissions).unwrap();
+
+        assert!(matches!(
+            seed_standard_library(root.path(), &library("1.0.0", b"new\n")).unwrap(),
+            SeedResult::Extracted { .. }
+        ));
+        assert!(!staging.exists());
+        assert_eq!(
+            fs::read(root.path().join("1.0.0/drum_voice/drum_voice.yaml")).unwrap(),
+            b"new\n"
+        );
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn staging_cleanup_does_not_follow_resource_symlinks() {
+        use std::os::unix::fs::symlink;
+
+        let root = tempfile::tempdir().unwrap();
+        let outside = root.path().join("outside.yaml");
+        fs::write(&outside, b"outside must survive").unwrap();
+        let mut permissions = fs::metadata(&outside).unwrap().permissions();
+        permissions.set_readonly(true);
+        fs::set_permissions(&outside, permissions).unwrap();
+        let staging = root
+            .path()
+            .join(format!(".1.0.0.extracting.{}", std::process::id()));
+        fs::create_dir_all(&staging).unwrap();
+        symlink(&outside, staging.join("linked.yaml")).unwrap();
+
+        seed_standard_library(root.path(), &library("1.0.0", b"new\n")).unwrap();
+        assert_eq!(fs::read(&outside).unwrap(), b"outside must survive");
+        assert!(fs::metadata(&outside).unwrap().permissions().readonly());
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn seeded_cleanup_unlinks_a_directory_symlink_without_touching_its_target() {
+        use std::os::unix::fs::symlink;
+
+        let root = tempfile::tempdir().unwrap();
+        let outside = root.path().join("outside");
+        fs::create_dir(&outside).unwrap();
+        fs::write(outside.join("preserved.yaml"), b"outside").unwrap();
+        let link = root.path().join("stale-backup");
+        symlink(&outside, &link).unwrap();
+
+        remove_seeded_directory(&link).unwrap();
+        assert!(!link.exists());
+        assert_eq!(
+            fs::read(outside.join("preserved.yaml")).unwrap(),
+            b"outside"
         );
     }
 

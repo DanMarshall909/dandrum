@@ -1,10 +1,10 @@
 //! Recursive flattening of a kernel graph definition into a flat graph of
 //! atomic (Rust primitive) nodes (see `unify-graph-kernel` §2.1, §2.2).
 //!
-//! Composite nodes are expanded until only atomic nodes remain. Public ports of
-//! a composite forward to/gather from internal ports via each port's
+//! Defined modules are expanded until only atomic nodes remain. Public ports of
+//! a defined module forward to/gather from internal ports via each port's
 //! `maps_to`/`maps_from`, so the flattened connections join atomic ports
-//! directly. Node identities are namespaced by their composite instance path,
+//! directly. Node identities are namespaced by their defined-module instance path,
 //! making expansion deterministic.
 //!
 //! Expansion is cached: a definition is structurally expanded once per distinct
@@ -29,7 +29,7 @@ use super::{
     ResolvedPort, StaticValue,
 };
 
-/// Maximum composite nesting depth before flattening bails out. Guards against
+/// Maximum defined-module nesting depth before flattening bails out. Guards against
 /// pathologically deep (non-recursive) definition chains.
 pub const MAX_FLATTEN_DEPTH: usize = 64;
 
@@ -301,7 +301,7 @@ impl Compiler<'_> {
                 error_codes::KERNEL_MAX_DEPTH_EXCEEDED,
                 Severity::Error,
                 format!(
-                    "definition '{}' exceeds the maximum composite nesting depth of {MAX_FLATTEN_DEPTH}",
+                    "definition '{}' exceeds the maximum defined module nesting depth of {MAX_FLATTEN_DEPTH}",
                     definition.name()
                 ),
             ));

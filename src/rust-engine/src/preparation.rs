@@ -3971,7 +3971,7 @@ connections:
                 .with_output("right", 1),
             &context,
         )
-        .expect("resource-backed composite instances should prepare");
+        .expect("resource-backed defined-module instances should prepare");
         let first = prepared
             .compiled_patch()
             .nodes()

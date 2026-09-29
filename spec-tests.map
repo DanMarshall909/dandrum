@@ -272,19 +272,19 @@ AC composite-authoring :: Composite parameter exposure :: Undeclared composite p
 
 AC composite-authoring :: Composite port mapping :: Public input maps to internal input
   fp 223acba865f7
-  test rust:composite_input_port_forwards_incoming_connections_to_internal_ports
+  test rust:defined_module_input_port_forwards_incoming_connections_to_internal_ports
 
 AC composite-authoring :: Composite port mapping :: Public output maps from internal output
   fp e2423aad9394
   test rust:boundary_ports_forward_connections_to_atomic_ports
 
-AC composite-authoring :: External composite libraries are optional future extension :: External composite loaded later
-  fp 901c8f5c6747
-  todo not yet mapped to a test
+AC composite-authoring :: External module libraries extend inline module definitions :: External module loaded from a package
+  fp b0ea2d4c90ab
+  test rust:external_library_and_user_modules_render_identically_to_inline_definition
 
-AC composite-authoring :: External composite libraries are optional future extension :: External composite support absent
-  fp 7b7f0674731a
-  todo not yet mapped to a test
+AC composite-authoring :: External module libraries extend inline module definitions :: External module reference absent
+  fp 8b5f0a7cfa33
+  test rust:external_library_and_user_modules_render_identically_to_inline_definition
 
 AC composite-authoring :: Inline composite module definitions :: Composite definition declared inline
   fp f09100add35e
@@ -1004,6 +1004,65 @@ AC modular-routing-graph :: Signal compatibility validation :: Incompatible sign
   fp 3b0cd91dc5c3
   test rust:event_ports_never_convert_to_audio
 
+AC module-authoring :: Defined modules use module terminology, not composite terminology :: Defined vs primitive modules are distinguished by category
+  fp 256cc79541bd
+  test rust:catalogue_identifies_builtin_and_defined_modules_by_category
+
+AC module-authoring :: Defined modules use module terminology, not composite terminology :: Public YAML terminology is unchanged
+  fp 46c7c580085c
+  test rust:external_library_and_user_modules_render_identically_to_inline_definition
+
+AC module-authoring :: The composite-to-module rename preserves behaviour :: FFI symbols are unchanged
+  fp f75b85ad7f36
+  test rust:ffi_symbols_and_signatures_were_unchanged_by_module_rename
+
+AC module-authoring :: The composite-to-module rename preserves behaviour :: Rendered output is unchanged
+  fp 999802357a0b
+  test rust:module_rename_preserved_defined_module_render_bytes
+
+AC module-library :: Library uses a version-first layout with a `latest` alias :: Pinned version is reproducible
+  fp 2204fa44f20b
+  test rust:pinned_resource_package_prepares_and_renders_its_package_relative_sample
+
+AC module-library :: Library uses a version-first layout with a `latest` alias :: `latest` follows the newest version
+  fp 8414f6c31e70
+  test rust:latest_alias_chooses_newest_version_containing_the_requested_module
+
+AC module-library :: Module packages are self-contained versioned folders :: Module package with co-located resources
+  fp 89f7e3426ab3
+  test rust:resource_package_renders_identically_after_moving_between_library_roots
+
+AC module-library :: Modules are referenced by a macro-qualified pinned file path :: External module reference is expanded
+  fp 217f24bba312
+  test rust:external_library_and_user_modules_render_identically_to_inline_definition
+
+AC module-library :: Modules are referenced by a macro-qualified pinned file path :: Reference escaping the library or package root is rejected
+  fp 3223252aa021
+  test rust:external_reference_errors_are_reported_during_preparation
+  test rust:package_sample_symlink_cannot_escape_its_package_root
+
+AC module-library :: Modules are referenced by a macro-qualified pinned file path :: Unknown macro is a hard error
+  fp dd0ef8f015b0
+  test rust:external_reference_errors_are_reported_during_preparation
+
+AC module-library :: The standard library `$LIB` is immutable and seeded from a CRC-tracked zip :: First run extracts the seed
+  fp 90edfe15bdbc
+  test rust:bundled_seed_extracts_one_zip_and_records_the_zip_crc
+
+AC module-library :: The standard library `$LIB` is immutable and seeded from a CRC-tracked zip :: Re-seed preserves existing versions
+  fp a8849904be91
+  test rust:reseeding_newer_versions_is_additive_and_latest_follows_newest_version
+  test rust:pinned_resource_package_prepares_and_renders_its_package_relative_sample
+
+AC module-library :: The standard library `$LIB` is immutable and seeded from a CRC-tracked zip :: Unchanged seed skips extraction
+  fp a856f0eca05b
+  test rust:unchanged_crc_skips_extraction_of_readonly_seeded_files
+
+AC module-library :: The user library `$USER_LIB` is mutable :: User module is referenced
+  fp f92f4d8ade44
+  test rust:external_library_and_user_modules_render_identically_to_inline_definition
+  test rust:user_library_module_edits_are_used_on_next_preparation_without_seeding
+
 AC plugin-integration :: Audio processing remains realtime safe :: Host calls processBlock
   fp 87ab7d33cbc7
   todo not yet mapped to a test
@@ -1654,13 +1713,17 @@ AC yaml-patch-format :: Composite parameter declarations in YAML :: Composite de
   fp 941bb6227450
   todo not yet mapped to a test
 
-AC yaml-patch-format :: Composite references use existing module definition semantics :: Composite module declaration
-  fp cff8e74ad959
-  todo not yet mapped to a test
+AC yaml-patch-format :: Defined-module references use existing module definition semantics :: External module reference by macro path
+  fp e66208a22e09
+  test rust:external_library_and_user_modules_render_identically_to_inline_definition
 
-AC yaml-patch-format :: Composite references use existing module definition semantics :: Unsupported composite_id syntax
-  fp cee5b369fd74
-  todo not yet mapped to a test
+AC yaml-patch-format :: Defined-module references use existing module definition semantics :: Inline defined-module declaration
+  fp 22b83084a986
+  test rust:external_library_and_user_modules_render_identically_to_inline_definition
+
+AC yaml-patch-format :: Defined-module references use existing module definition semantics :: Unsupported composite_id syntax
+  fp 4ba16f778beb
+  test rust:external_module_reference_rejects_unsupported_composite_id_field
 
 AC yaml-patch-format :: Event-routing YAML rejects hidden signal-chain fields :: YAML rejects hidden audio fields
   fp d3f46065d0a0

@@ -29,11 +29,11 @@ modules:
     type: $LIB/1.0.0/drum_voice/drum_voice.yaml
 ```
 
-`$LIB` is the immutable standard library. The bundled `1.0.0` release includes `drum_voice` and `drum_machine`; preparation checks its CRC and extracts it when needed. By default it lives at `<home>/.dandrum/lib`. Set `DANDRUM_MODULE_LIBRARY_ROOT` to use another directory. The engine never seeds it from the audio callback.
+`$LIB` is the read-only standard library. The bundled `1.0.0` release includes `drum_voice` and `drum_machine` in one seed zip; preparation checks the zip's CRC and extracts it when needed. By default it lives at `<home>/.dandrum/lib`. Set `DANDRUM_MODULE_LIBRARY_ROOT` to use another directory. The engine never seeds it from the audio callback.
 
 `$USER_LIB` is a mutable directory for your packages. It defaults to `<home>/.dandrum/modules`; set `DANDRUM_USER_LIBRARY_ROOT` to override it. A user package can be referenced as `type: $USER_LIB/my_kit/my_kit.yaml`. The engine does not seed or replace files there.
 
-Pin a version such as `1.0.0` when a patch must reproduce the same package. `$LIB/latest/drum_voice/drum_voice.yaml` resolves to the newest numeric version found locally, so it can change after a library upgrade. Unknown macros and paths containing `..` are preparation errors.
+Pin a version such as `1.0.0` when a patch must reproduce the same package. `$LIB/latest/drum_voice/drum_voice.yaml` resolves to the newest numeric version containing `drum_voice`, so it can change after a library upgrade. Unknown macros and paths containing `..` are preparation errors.
 
 ## Resources and note voices
 

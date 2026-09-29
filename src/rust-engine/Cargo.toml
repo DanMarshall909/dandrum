@@ -17,6 +17,7 @@ rustfft = "6"
 num-complex = "0.4"
 crossterm = "0.29.0"
 rhai = { version = "1", default-features = false, features = ["std", "sync"] }
+zip = { version = "8.6.0", default-features = false }
 
 [profile.release]
 codegen-units = 1
