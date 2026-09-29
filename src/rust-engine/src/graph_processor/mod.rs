@@ -15,10 +15,11 @@ mod render_plan;
 mod state;
 
 use self::input_provider::ModuleInputProvider;
+pub use self::offline::{render_kernel_offline_named, render_kernel_offline_named_with_inputs};
+#[cfg(test)]
 pub use self::offline::{
-    render_kernel_offline_named, render_kernel_offline_named_with_inputs, render_offline,
-    render_offline_compiled, render_offline_polyphonic, render_offline_with_sampler_assets,
-    render_offline_with_sampler_assets_polyphonic,
+    render_offline, render_offline_compiled, render_offline_polyphonic,
+    render_offline_with_sampler_assets, render_offline_with_sampler_assets_polyphonic,
 };
 use self::outputs::BlockEvent;
 use self::outputs::ModuleOutputs;

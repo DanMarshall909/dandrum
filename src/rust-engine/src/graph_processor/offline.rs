@@ -1,18 +1,29 @@
-use std::collections::{BTreeMap, HashMap};
+use std::collections::BTreeMap;
+#[cfg(test)]
+use std::collections::HashMap;
 
+#[cfg(test)]
 use crate::compiled_patch::CompiledPatch;
 use crate::core::{BlockScheduler, TimedInputEvent};
+#[cfg(test)]
 use crate::graph::Graph;
-use crate::patch::{RenderSettings, VoiceAllocation};
+#[cfg(test)]
+use crate::patch::RenderSettings;
+use crate::patch::VoiceAllocation;
 use crate::preparation::PreparedKernelInstrument;
 use crate::sample::PreparedSamplerAssets;
 use crate::script::ScriptEvent;
+#[cfg(test)]
 use crate::voice_allocator::VoiceAllocator;
 
 use super::RealtimeGraphProcessor;
+#[cfg(test)]
 use super::block::{process_block_compiled, process_block_compiled_polyphonic};
+#[cfg(test)]
 use super::outputs::{BlockEvent, ModuleOutputs};
+#[cfg(test)]
 use super::polyphony::build_polyphonic_states_from_compiled;
+#[cfg(test)]
 use super::state::PerModuleState;
 
 /// Render each named root audio/control output as planar channels, in root-port order.
@@ -123,6 +134,7 @@ pub fn render_kernel_offline_named_with_inputs(
     Ok(rendered)
 }
 
+#[cfg(test)]
 pub fn render_offline_compiled(
     compiled: &CompiledPatch,
     events: Vec<TimedInputEvent>,
@@ -177,6 +189,7 @@ pub fn render_offline_compiled(
     (left_buf, right_buf)
 }
 
+#[cfg(test)]
 pub fn render_offline(
     graph: &Graph,
     settings: &RenderSettings,
@@ -185,6 +198,7 @@ pub fn render_offline(
     render_offline_with_sampler_assets(graph, settings, events, &PreparedSamplerAssets::empty())
 }
 
+#[cfg(test)]
 pub fn render_offline_with_sampler_assets(
     graph: &Graph,
     settings: &RenderSettings,
@@ -197,6 +211,7 @@ pub fn render_offline_with_sampler_assets(
     render_offline_compiled(&compiled, events, sampler_assets)
 }
 
+#[cfg(test)]
 pub fn render_offline_polyphonic(
     graph: &Graph,
     settings: &RenderSettings,
@@ -212,6 +227,7 @@ pub fn render_offline_polyphonic(
     )
 }
 
+#[cfg(test)]
 pub fn render_offline_with_sampler_assets_polyphonic(
     graph: &Graph,
     settings: &RenderSettings,

@@ -3,7 +3,9 @@ use std::collections::HashMap;
 use crate::builtins::module_kind::ModuleKind;
 use crate::compiled_patch::CompiledPatch;
 use crate::graph::builtin_ports;
+#[cfg(test)]
 use crate::script::ScriptEvent;
+#[cfg(test)]
 use crate::voice_allocator::VoiceAllocator;
 
 use super::dispatch::process_module;
@@ -101,6 +103,7 @@ pub(super) fn process_block_compiled(
     collect_audio_output(all_outputs, out_idx, frames, left_out, right_out);
 }
 
+#[cfg(test)]
 pub(super) fn process_block_compiled_polyphonic(
     compiled: &CompiledPatch,
     states: &mut [Vec<PerModuleState>],
