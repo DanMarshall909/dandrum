@@ -59,7 +59,7 @@ Source: [snapshot loading and state restoration](../src/juce-plugin/PluginProces
 - Detailed Rust preparation errors are retained, but processor load failures replace them with generic messages and do not query `dandrum_engine_last_error_message`.
 - That retained error is process-global, so it is not associated with a particular plugin instance or load result.
 
-Sources: [diagnostic load wrapper](../src/rust-engine/src/ffi_status.rs), [FFI loading and descriptors](../src/rust-engine/src/ffi.rs), [C++ metadata and preset handling](../src/juce-plugin/PluginProcessor.cpp).
+Sources: [FFI loading and descriptors](../src/rust-engine/src/ffi.rs), [C++ metadata and preset handling](../src/juce-plugin/PluginProcessor.cpp). The diagnostic load wrapper described in this historical review was removed during the graph kernel migration.
 
 **Recommended change:** expose the existing Rust preparation result through an owned FFI handle. Obtain validated metadata, identity, asset resolution, and diagnostics from that same snapshot, then create the runtime from it. Reuse Rust's preset parser and validation boundary. Preserve the separation between immutable definitions and mutable public values.
 

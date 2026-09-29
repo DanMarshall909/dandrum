@@ -1,8 +1,7 @@
 //! YAML front end for the unified graph kernel.
 //!
-//! This remains additive while the legacy [`crate::patch::PatchDocument`]
-//! drives preparation. Both root patches and inline composites pass through the
-//! same graph-declaration conversion into [`GraphDefinition`].
+//! Root patches and inline composites pass through the same graph-declaration
+//! conversion into [`GraphDefinition`].
 
 use std::collections::{BTreeMap, BTreeSet};
 use std::fs;
