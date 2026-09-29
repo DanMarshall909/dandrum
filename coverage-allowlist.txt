@@ -9,5 +9,66 @@
 # run scripts/check-rust-coverage, then add tests until it is fully covered.
 
 strict src/rust-engine/src/voice_allocator.rs
-strict src/rust-engine/src/graph_composite.rs
-strict src/rust-engine/src/patch_composite.rs
+strict src/rust-engine/src/graph_processor/polyphony.rs
+strict src/rust-engine/src/kernel/builtins.rs
+strict src/rust-engine/src/kernel/document.rs
+strict src/rust-engine/src/kernel/flatten.rs
+strict src/rust-engine/src/kernel/latency.rs
+strict src/rust-engine/src/module_package.rs
+
+# The checked-in schema is compiled into the binary. Its construction failure
+# can occur only if that source asset is corrupted at build time.
+allow src/rust-engine/src/kernel/document.rs:622 embedded schema validator failure
+allow src/rust-engine/src/kernel/document.rs:624 embedded schema validator failure
+allow src/rust-engine/src/kernel/document.rs:625 embedded schema validator failure
+allow src/rust-engine/src/kernel/document.rs:627 embedded schema validator failure
+
+# The external schema rejects blank preset target names before alias resolution.
+allow src/rust-engine/src/kernel/document.rs:659 schema rejects blank parameter alias
+allow src/rust-engine/src/kernel/document.rs:661 schema rejects blank parameter alias
+allow src/rust-engine/src/kernel/document.rs:664 schema rejects blank parameter alias
+allow src/rust-engine/src/kernel/document.rs:701 schema rejects blank asset alias
+allow src/rust-engine/src/kernel/document.rs:703 schema rejects blank asset alias
+allow src/rust-engine/src/kernel/document.rs:706 schema rejects blank asset alias
+
+# The resource arm is entered only after matching StaticType::Resource.
+allow src/rust-engine/src/kernel/document.rs:722 resource type was already matched
+
+# Legacy binding syntax is rejected by the earlier YAML-shape pass.
+allow src/rust-engine/src/kernel/document.rs:1045 earlier legacy binding validation
+allow src/rust-engine/src/kernel/document.rs:1046 earlier legacy binding validation
+allow src/rust-engine/src/kernel/document.rs:1047 earlier legacy binding validation
+allow src/rust-engine/src/kernel/document.rs:1048 earlier legacy binding validation
+allow src/rust-engine/src/kernel/document.rs:1049 earlier legacy binding validation
+allow src/rust-engine/src/kernel/document.rs:1050 earlier legacy binding validation
+allow src/rust-engine/src/kernel/document.rs:1051 earlier legacy binding validation
+allow src/rust-engine/src/kernel/document.rs:1052 earlier legacy binding validation
+
+# Declared root inputs always have an interface entry, including empty targets.
+allow src/rust-engine/src/kernel/flatten.rs:222 declared root input has interface entry
+
+# Poly static arguments and synthesized ports are checked before flattening.
+allow src/rust-engine/src/kernel/flatten.rs:375 validated poly port resolution
+allow src/rust-engine/src/kernel/flatten.rs:379 validated poly definition argument
+allow src/rust-engine/src/kernel/flatten.rs:384 validated positive poly voice count
+allow src/rust-engine/src/kernel/flatten.rs:386 validated poly voice count type
+allow src/rust-engine/src/kernel/flatten.rs:392 validated poly allocation policy
+
+# Public package references have a UTF-8 package name; the remaining lines are
+# panic branches in tests that assert the successful package/resource path.
+allow src/rust-engine/src/module_package.rs:174 validated package name is UTF-8
+allow src/rust-engine/src/module_package.rs:391 assertion panic for missing nested resource
+allow src/rust-engine/src/module_package.rs:444 assertion panic for missing typed resource
+allow src/rust-engine/src/module_package.rs:484 assertion panic for missing pinned resource
+allow src/rust-engine/src/module_package.rs:808 assertion panic for allowed path escape
+
+# Prepared graph indices, module kinds, and intrinsic bindings are validated
+# before callback rendering; the final entry is a test-only empty fallback.
+allow src/rust-engine/src/graph_processor/polyphony.rs:394 prepared event input queue exists
+allow src/rust-engine/src/graph_processor/polyphony.rs:450 event filter state matches compiled kind
+allow src/rust-engine/src/graph_processor/polyphony.rs:495 decay or impulse kind was matched
+allow src/rust-engine/src/graph_processor/polyphony.rs:693 synthesized voice intrinsics are bound
+allow src/rust-engine/src/graph_processor/polyphony.rs:696 active voice owns a prepared arena
+allow src/rust-engine/src/graph_processor/polyphony.rs:715 synthesized gate output is bound
+allow src/rust-engine/src/graph_processor/polyphony.rs:722 gate queue exists for prepared voice
+allow src/rust-engine/src/graph_processor/polyphony.rs:866 test-only fallback without intrinsics
