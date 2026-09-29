@@ -272,6 +272,45 @@ fn kernel_preset_rejects_identity_unknown_targets_and_incompatible_values() {
 }
 
 #[test]
+fn preset_application_requires_instrument_identity_and_known_asset_target() {
+    let preset = load_preset_str(
+        "name: missing\ninstrument: { id: test.instrument, preset_schema_version: 2 }\n",
+    )
+    .expect("preset loads");
+    let patch = load_kernel_patch_str(
+        &PRESET_PATCH.replace(
+            "instrument: { id: test.instrument, preset_schema_version: 2 }\n",
+            "",
+        ),
+    )
+    .expect("patch without preset identity loads");
+    let error = patch.apply_preset(&preset).expect_err("identity is required");
+    assert!(error.to_string().contains("does not declare instrument preset identity"));
+
+    let patch = load_kernel_patch_str(PRESET_PATCH).expect("preset patch loads");
+    let unknown_asset = load_preset_str(
+        "name: unknown\ninstrument: { id: test.instrument, preset_schema_version: 2 }\nassets: { other: alternate.wav }\n",
+    )
+    .expect("preset loads");
+    let error = patch
+        .apply_preset(&unknown_asset)
+        .expect_err("unknown asset target fails");
+    assert!(error.to_string().contains("unknown preset target other"));
+}
+
+#[test]
+fn missing_kernel_patch_file_has_read_diagnostic() {
+    let directory = tempfile::tempdir().expect("temporary directory");
+    let path = directory.path().join("absent.yaml");
+    let error = load_kernel_patch_file(&path).expect_err("missing patch fails");
+    assert_eq!(
+        error.errors().next().unwrap().error_code(),
+        error_codes::KERNEL_DOCUMENT_READ_FAILED
+    );
+    assert!(error.to_string().contains("absent.yaml"));
+}
+
+#[test]
 fn kernel_preset_compatibility_diagnostics_identify_expected_and_actual_identity() {
     let patch = load_kernel_patch_str(PRESET_PATCH).expect("preset patch loads");
     for (yaml, expected, actual) in [
