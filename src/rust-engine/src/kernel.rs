@@ -196,6 +196,12 @@ pub enum StaticValue {
     Int(i64),
     Enum(String),
     String(String),
+    /// An authored string and the definition name it denotes in its lexical scope.
+    /// Only a consumer expecting a definition reference uses `resolved`.
+    ScopedString {
+        authored: String,
+        resolved: String,
+    },
     Resource(ResourceRef),
 }
 
@@ -205,8 +211,15 @@ impl StaticValue {
         match self {
             Self::Int(_) => StaticType::Int,
             Self::Enum(_) => StaticType::Enum,
-            Self::String(_) => StaticType::String,
+            Self::String(_) | Self::ScopedString { .. } => StaticType::String,
             Self::Resource(reference) => StaticType::Resource(reference.kind()),
+        }
+    }
+
+    fn without_definition_scope(&self) -> Self {
+        match self {
+            Self::ScopedString { authored, .. } => Self::String(authored.clone()),
+            value => value.clone(),
         }
     }
 }
@@ -693,6 +706,7 @@ impl Connection {
 pub struct GraphDefinition {
     name: String,
     implementation: DefinitionImplementation,
+    definition_scope: BTreeMap<String, String>,
     static_params: Vec<StaticParam>,
     ports: Vec<Port>,
     nodes: Vec<Node>,
@@ -743,6 +757,7 @@ impl GraphDefinition {
     ) -> Self {
         let mut scoped = self.clone();
         scoped.name = name.into();
+        scoped.definition_scope.extend(local_names.clone());
         for node in &mut scoped.nodes {
             if let Some(qualified) = local_names.get(&node.definition_ref) {
                 node.definition_ref = qualified.clone();
@@ -1015,6 +1030,20 @@ fn retired_audio_output_diagnostic(owner: &GraphDefinition, node: &Node) -> Diag
 }
 
 impl GraphDefinition {
+    fn scope_static_value(&self, value: &StaticValue) -> StaticValue {
+        match value {
+            StaticValue::String(authored) => StaticValue::ScopedString {
+                authored: authored.clone(),
+                resolved: self
+                    .definition_scope
+                    .get(authored)
+                    .cloned()
+                    .unwrap_or_else(|| authored.clone()),
+            },
+            value => value.clone(),
+        }
+    }
+
     /// Resolve this definition's own static parameters to concrete values using
     /// their declared defaults. This is the enclosing context against which
     /// node `ParamRef` arguments resolve during validation.
@@ -1024,7 +1053,7 @@ impl GraphDefinition {
             .filter_map(|param| {
                 param
                     .default()
-                    .map(|v| (param.name().to_string(), v.clone()))
+                    .map(|v| (param.name().to_string(), self.scope_static_value(v)))
             })
             .collect()
     }
@@ -1063,7 +1092,7 @@ impl GraphDefinition {
         let mut resolved = BTreeMap::new();
         for param in referenced.static_params() {
             let value = match node.static_args().get(param.name()) {
-                Some(StaticArg::Literal(value)) => Some(value.clone()),
+                Some(StaticArg::Literal(value)) => Some(self.scope_static_value(value)),
                 Some(StaticArg::ParamRef(referenced_param)) => {
                     match enclosing.get(referenced_param) {
                         Some(value) => Some(value.clone()),
@@ -1102,7 +1131,7 @@ impl GraphDefinition {
                     None
                 }
                 None => match param.default() {
-                    Some(value) => Some(value.clone()),
+                    Some(value) => Some(referenced.scope_static_value(value)),
                     None => {
                         diagnostics.push(
                             Diagnostic::new(
@@ -1124,6 +1153,16 @@ impl GraphDefinition {
             };
 
             if let Some(value) = value {
+                let value = if referenced.name() == POLY_DEFINITION
+                    && param.name() == POLY_WRAPPED_DEFINITION_PARAM
+                {
+                    match value {
+                        StaticValue::ScopedString { resolved, .. } => StaticValue::String(resolved),
+                        value => value,
+                    }
+                } else {
+                    value
+                };
                 if let (StaticType::Resource(expected_kind), StaticType::Resource(actual_kind)) =
                     (param.static_type(), value.static_type())
                     && expected_kind != actual_kind

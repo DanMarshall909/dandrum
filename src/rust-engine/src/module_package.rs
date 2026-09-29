@@ -735,6 +735,100 @@ connections: []
     }
 
     #[test]
+    fn packaged_poly_static_pass_through_preserves_the_definition_owner() {
+        use crate::graph_processor::RealtimeGraphProcessor;
+        use crate::kernel::document::load_kernel_patch_str;
+        use crate::patch::RenderSettings;
+        use crate::preparation::prepare_kernel_patch_with_context;
+        use crate::sample::PreparedSamplerAssets;
+
+        const PACKAGE: &str = r#"
+static_params:
+  - { name: voice_type, type: string, default: helper }
+ports:
+  - { name: audio, direction: output, signal: audio, channels: 1, maps_from: layer.audio }
+module_definitions:
+  - type: helper
+    ports:
+      - { name: audio, direction: output, signal: audio, channels: 1, maps_from: source.out }
+    modules:
+      - { id: source, type: control_to_audio, defaults: { in: -0.25 } }
+    connections: []
+  - type: layer
+    static_params:
+      - { name: selected, type: string, default: helper }
+    ports:
+      - { name: audio, direction: output, signal: audio, channels: 1, maps_from: voices.audio }
+    modules:
+      - { id: voices, type: poly, static: { definition: $selected, max_voices: 1, allocation: reject-new } }
+    connections: []
+modules:
+  - { id: layer, type: layer, static: { selected: $voice_type } }
+connections: []
+"#;
+        const CALLER: &str = r#"
+static_params:
+  - { name: caller_voice, type: string, default: helper }
+ports:
+  - { name: package_default, direction: output, signal: audio, channels: 1, maps_from: original.audio }
+  - { name: caller_pass_through, direction: output, signal: audio, channels: 1, maps_from: chosen.audio }
+  - { name: caller_literal, direction: output, signal: audio, channels: 1, maps_from: literal.audio }
+module_definitions:
+  - type: helper
+    ports:
+      - { name: audio, direction: output, signal: audio, channels: 1, maps_from: source.out }
+    modules:
+      - { id: source, type: control_to_audio, defaults: { in: 0.75 } }
+    connections: []
+modules:
+  - { id: original, type: $LIB/1.0.0/poly_param/poly_param.yaml }
+  - { id: chosen, type: $LIB/1.0.0/poly_param/poly_param.yaml, static: { voice_type: $caller_voice } }
+  - { id: literal, type: $LIB/1.0.0/poly_param/poly_param.yaml, static: { voice_type: helper } }
+connections: []
+"#;
+        let directory = tempfile::tempdir().unwrap();
+        let lib_root = directory.path().join("lib");
+        seed_kernel_package(&lib_root, "1.0.0", "poly_param", PACKAGE);
+        let context = PreparationContext::new(directory.path(), 48_000)
+            .with_macro_roots(MacroRoots::new().with_root(LIB_MACRO, &lib_root));
+        let settings = RenderSettings {
+            sample_rate_hz: 48_000,
+            block_size_frames: 8,
+            duration_frames: 8,
+        };
+
+        let inline = load_kernel_patch_str(PACKAGE).unwrap();
+        let inline_prepared = prepare_kernel_patch_with_context(&inline, &settings, &context)
+            .expect("the inline parameterized voice prepares");
+        let mut inline_runtime = RealtimeGraphProcessor::from_compiled_patch(
+            inline_prepared.compiled_patch().clone(),
+            48_000.0,
+            &PreparedSamplerAssets::empty(),
+            8,
+        );
+        let mut inline_output = vec![vec![vec![0.0; 8]]];
+        inline_runtime.note_on_at(60, 100, 0);
+        assert_eq!(inline_runtime.render_root_outputs(&mut inline_output), 8);
+        assert_eq!(inline_output[0][0], [-0.25; 8]);
+
+        let caller = load_kernel_patch_str(CALLER).unwrap();
+        let prepared = prepare_kernel_patch_with_context(&caller, &settings, &context)
+            .expect("package defaults and caller overrides prepare together");
+        let mut runtime = RealtimeGraphProcessor::from_compiled_patch(
+            prepared.compiled_patch().clone(),
+            48_000.0,
+            &PreparedSamplerAssets::empty(),
+            8,
+        );
+        let mut outputs = vec![vec![vec![0.0; 8]]; 3];
+        runtime.note_on_at(60, 100, 0);
+        assert_eq!(runtime.render_root_outputs(&mut outputs), 8);
+        assert_eq!(outputs[0][0], inline_output[0][0]);
+        assert_eq!(outputs[1][0], [0.75; 8]);
+        assert_eq!(outputs[2][0], [0.75; 8]);
+    }
+
+    #[test]
     fn caller_resource_override_keeps_document_origin_through_package_pass_through() {
         use crate::graph_processor::render_kernel_offline_named;
         use crate::patch::RenderSettings;

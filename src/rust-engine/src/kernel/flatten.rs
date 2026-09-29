@@ -683,7 +683,10 @@ impl GraphDefinition {
                         crate::builtins::module_types::SCRIPT.to_string()
                     }
                 },
-                static_args: static_args.clone(),
+                static_args: static_args
+                    .iter()
+                    .map(|(name, value)| (name.clone(), value.without_definition_scope()))
+                    .collect(),
                 port_defaults: declared_control_defaults(&ports),
                 ports,
                 latency: self.latency().resolve(static_args),
@@ -765,9 +768,17 @@ fn cache_key(name: &str, static_args: &BTreeMap<String, StaticValue>) -> String 
                 key.push_str("enum:");
                 key.push_str(text);
             }
-            StaticValue::String(text) => {
+            StaticValue::String(authored) | StaticValue::ScopedString { authored, .. } => {
                 key.push_str("string:");
-                key.push_str(text);
+                key.push_str(&authored.len().to_string());
+                key.push(':');
+                key.push_str(authored);
+                if let StaticValue::ScopedString { resolved, .. } = value {
+                    key.push_str("->");
+                    key.push_str(&resolved.len().to_string());
+                    key.push(':');
+                    key.push_str(resolved);
+                }
             }
             StaticValue::Resource(reference) => {
                 key.push_str("res:");

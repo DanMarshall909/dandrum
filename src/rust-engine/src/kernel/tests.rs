@@ -219,6 +219,27 @@ fn string_static_parameter_preserves_inline_script_source() {
 }
 
 #[test]
+fn private_definition_names_do_not_rewrite_unrelated_string_parameters() {
+    let script = GraphDefinition::new("script")
+        .with_static_param(
+            StaticParam::new("source", StaticType::String)
+                .with_default(StaticValue::String("helper".to_string())),
+        )
+        .with_scoped_definition_refs(
+            "script",
+            &BTreeMap::from([("helper".to_string(), "package::helper".to_string())]),
+        );
+    let registry = DefinitionRegistry::new().with_definition(script);
+    let root = GraphDefinition::new("root").with_node(Node::new(NodeId::new("script"), "script"));
+
+    let flat = root.flatten(&registry).expect("string source resolves");
+    assert_eq!(
+        flat.nodes()[0].static_args().get("source"),
+        Some(&StaticValue::String("helper".to_string()))
+    );
+}
+
+#[test]
 fn connection_targeting_a_static_parameter_is_rejected_as_not_a_port() {
     let registry = DefinitionRegistry::new()
         .with_definition(echo_primitive())
