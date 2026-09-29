@@ -10,11 +10,11 @@
         "date": "2026-09-29",
         "evidence": "docs/resource-measurements/2026-09-29-rust-coverage.json",
         "durationSeconds": 60,
-        "completedRunDurationsSeconds": [60, 59],
+        "completedRunDurationsSeconds": [60, 59, 60],
         "taskConcurrency": 1,
-        "minimumAvailableMiB": 19360,
+        "minimumAvailableMiB": 17861,
         "peakTaskSwapMiB": 0,
-        "notes": "Additional completed run evidence: docs/resource-measurements/2026-09-29-rust-coverage-repeat.json."
+        "notes": "Additional completed run evidence: docs/resource-measurements/2026-09-29-rust-coverage-repeat.json and docs/resource-measurements/2026-09-29-rust-coverage-final.json."
       }
     }
   }
