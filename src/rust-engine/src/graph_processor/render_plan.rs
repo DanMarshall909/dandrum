@@ -65,6 +65,7 @@ pub(super) struct AudioOutputBinding {
 
 #[derive(Clone, Debug, PartialEq)]
 pub(super) struct RenderPlan {
+    #[cfg(test)]
     pub(super) voice_steps: Box<[RenderStep]>,
     pub(super) global_steps: Box<[RenderStep]>,
     pub(super) audio_buffers: AudioBufferPlan,
@@ -109,6 +110,7 @@ impl RenderPlan {
         event_queue_capacity: usize,
     ) -> Self {
         let builder = RenderPlanBuilder::new(compiled);
+        #[cfg(test)]
         let voice_steps = compiled
             .voice_node_indices()
             .iter()
@@ -116,8 +118,11 @@ impl RenderPlan {
             .map(|module_index| builder.step(module_index))
             .collect::<Vec<_>>()
             .into_boxed_slice();
-        let global_steps = compiled
-            .global_node_indices()
+        #[cfg(test)]
+        let global_indices = compiled.global_node_indices();
+        #[cfg(not(test))]
+        let global_indices = compiled.execution_order();
+        let global_steps = global_indices
             .iter()
             .copied()
             .map(|module_index| builder.step(module_index))
@@ -125,6 +130,7 @@ impl RenderPlan {
             .into_boxed_slice();
 
         Self {
+            #[cfg(test)]
             voice_steps,
             global_steps,
             audio_buffers: AudioBufferPlan {

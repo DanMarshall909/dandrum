@@ -45,7 +45,9 @@ pub struct CompiledPatch {
     nodes: Vec<CompiledNode>,
     topological_order: Vec<ExecutionStep>,
     execution_order: Vec<ExecutionStep>,
+    #[cfg(test)]
     voice_node_indices: Vec<usize>,
+    #[cfg(test)]
     global_node_indices: Vec<usize>,
     midi_input_index: Option<usize>,
     #[cfg(test)]
@@ -1167,19 +1169,22 @@ fn compile_internal(
                 .collect::<Vec<_>>(),
         )
     };
-    #[cfg(not(test))]
-    let (global_node_indices, voice_node_indices) = (topological_order.clone(), Vec::new());
+    #[cfg(test)]
     let execution_order = global_node_indices
         .iter()
         .chain(voice_node_indices.iter())
         .copied()
         .collect();
+    #[cfg(not(test))]
+    let execution_order = topological_order.clone();
 
     Ok(CompiledPatch {
         nodes,
         topological_order,
         execution_order,
+        #[cfg(test)]
         voice_node_indices,
+        #[cfg(test)]
         global_node_indices,
         midi_input_index: graph
             .modules()
@@ -1327,10 +1332,12 @@ impl CompiledPatch {
         &self.execution_order
     }
 
+    #[cfg(test)]
     pub fn voice_node_indices(&self) -> &[usize] {
         &self.voice_node_indices
     }
 
+    #[cfg(test)]
     pub fn global_node_indices(&self) -> &[usize] {
         &self.global_node_indices
     }
