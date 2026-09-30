@@ -427,6 +427,7 @@ mod tests {
     use super::*;
     use crate::graph::{PortDirection, SignalType};
     use crate::graph_processor::RealtimeGraphProcessor;
+    use crate::kernel::{GraphDefinition, Node, NodeId, Port, PortRef};
     use crate::module_package::load_referenced_kernel_package;
     use crate::module_reference::{self, LIB_MACRO, MacroRoots};
     use crate::patch::{RenderSettings, VoiceAllocation};
@@ -783,6 +784,61 @@ mod tests {
             );
             assert_eq!(outputs[0], outputs[1]);
         }
+    }
+
+    #[test]
+    fn repeated_package_resource_references_share_immutable_sample_data() {
+        let library_root = temp_root("shared-package-sample");
+        seed_bundled_standard_library(&library_root).expect("sample package should seed");
+        let context = preparation_context(&library_root);
+        let package = load_referenced_kernel_package(RESOURCE_PACKAGE_REFERENCE, &context)
+            .expect("package should load");
+        let root = GraphDefinition::new("root")
+            .with_port(
+                Port::output("first", SignalType::Audio, 1)
+                    .maps_from(PortRef::new(NodeId::new("a"), "left")),
+            )
+            .with_port(
+                Port::output("second", SignalType::Audio, 1)
+                    .maps_from(PortRef::new(NodeId::new("b"), "left")),
+            )
+            .with_node(Node::new(NodeId::new("a"), RESOURCE_PACKAGE_REFERENCE))
+            .with_node(Node::new(NodeId::new("b"), RESOURCE_PACKAGE_REFERENCE));
+        let settings = RenderSettings {
+            sample_rate_hz: TEST_SAMPLE_RATE_HZ,
+            block_size_frames: TEST_BLOCK_SIZE_FRAMES as u32,
+            duration_frames: TEST_BLOCK_SIZE_FRAMES as u64,
+        };
+        let prepared = prepare_kernel_graph_with_buses_and_context(
+            &root,
+            package.registry(),
+            &settings,
+            &HostBuses::new()
+                .with_output("first", 1)
+                .with_output("second", 1),
+            &context,
+        )
+        .expect("two package instances prepare");
+        let sample = |id: &str| {
+            prepared
+                .compiled_patch()
+                .nodes()
+                .iter()
+                .find(|node| node.id.as_str() == id)
+                .and_then(|node| node.resources.sample.as_ref())
+                .expect("compiled sampler has package resource")
+        };
+        let first = sample("a::player");
+        let second = sample("b::player");
+        assert_eq!(
+            package.root(),
+            library_root
+                .join("1.0.0/sample_voice")
+                .canonicalize()
+                .unwrap()
+        );
+        assert!((first.frames()[0] - 0.25).abs() < 0.0001);
+        assert!(first.shares_data_with(second));
     }
 
     #[test]

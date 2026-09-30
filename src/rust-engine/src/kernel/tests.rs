@@ -229,6 +229,25 @@ fn catalogue_identifies_builtin_and_defined_modules_by_category() {
 }
 
 #[test]
+fn catalogue_enumerates_builtin_and_defined_module_names_deterministically() {
+    let registry = builtins::builtin_registry()
+        .with_definition(GraphDefinition::new("z_author_voice"))
+        .with_definition(GraphDefinition::new("a_author_voice"));
+    let names = registry
+        .definitions()
+        .map(|definition| definition.name().to_string())
+        .collect::<Vec<_>>();
+    let mut sorted = names.clone();
+    sorted.sort();
+
+    assert_eq!(names, sorted);
+    assert!(names.contains(&"a_author_voice".to_string()));
+    assert!(names.contains(&"z_author_voice".to_string()));
+    assert!(names.contains(&crate::builtins::module_types::OSCILLATOR.to_string()));
+    assert_eq!(names.len(), registry.definitions().count());
+}
+
+#[test]
 fn ffi_symbols_and_signatures_were_unchanged_by_module_rename() {
     use sha2::{Digest, Sha256};
 

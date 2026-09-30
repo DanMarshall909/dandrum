@@ -1,89 +1,83 @@
 ## Purpose
 
-Specify the initial built-in module registry, port declarations, parameter declarations, and delay boundary metadata.
+Specify the built-in module registry, typed ports, static parameters, and prepared DSP state.
 
 ## Requirements
 
 ### Requirement: Minimum routing and synthesis modules
 
-The engine SHALL provide built-in modules sufficient to prove event input, pitch/control mapping, sound generation,
-control routing, audio/control multiplication, mixing, explicit delay boundaries, effects, scripting, sampling, and
-audio output.
+The engine SHALL provide built-in modules sufficient to prove event input, pitch/control mapping, sound generation, control routing, audio/control multiplication, mixing, explicit feedback boundaries, polyphony, effects, scripting, and sampling. Audio output SHALL be expressed through root graph ports rather than an output module.
 
-#### Scenario: Core module registry contains existing MVP modules
-
-- **WHEN** the built-in module registry is initialized
-- **THEN** it SHALL continue to include the existing supported modules for MIDI/event input, audio output, oscillator,
-  gain/VCA, audio mixer, control mixer, ADSR envelope, LFO, filter, sampler, note-to-rate, dynamics, saturation,
-  convolution, echo, reverb, frequency splitter, spectral processor, explicit delay boundary modules, and script modules
-  where supported
-
-#### Scenario: Core module registry contains new minimal primitives
+#### Scenario: Core module registry contains kernel modules
 
 - **WHEN** the built-in module registry is initialized after this change is implemented
-- **THEN** it SHALL include `noise`, `impulse`, `multiply`, and `note_to_control` module types with typed ports and
-  parameter metadata
+- **THEN** it SHALL include the existing supported modules for MIDI/event input, oscillator, gain/VCA, audio mixer, control mixer, ADSR envelope, LFO, filter, sampler, note-to-rate, dynamics, saturation, convolution, echo, reverb, frequency splitter, spectral processor, noise, impulse, multiply, note-to-control, and script modules where supported, plus the `poly` and `feedback_delay` structural primitives
+
+#### Scenario: audio_output type is rejected
+
+- **WHEN** a patch declares a module of type `audio_output`
+- **THEN** validation SHALL fail with a diagnostic directing the author to root graph output ports
 
 ### Requirement: Built-in modules declare ports
 
-Every built-in module SHALL declare its named input and output ports with signal types and directions.
+Every built-in module SHALL declare its named input and output ports with signal type, direction, and channel count. Control input ports SHALL declare default values and range metadata where meaningful; every tunable SHALL be a control input port rather than a separate parameter.
 
 #### Scenario: VCA module exposes audio and control ports
 
 - **WHEN** the gain/VCA module type is inspected
-- **THEN** it SHALL expose an audio input, audio output, and compatible VCA/control input
+- **THEN** it SHALL expose an audio input, audio output, and a compatible control input with a declared default value
+
+#### Scenario: Tunables are ports
+
+- **WHEN** any built-in module's tunable value (e.g. filter cutoff, echo feedback) is inspected
+- **THEN** it SHALL be declared as a control input port with a default rather than as a non-connectable parameter
+
+#### Scenario: Generic builtin resolves arbitrary channel count
+
+- **WHEN** a channel-independent builtin such as gain or mixer is instantiated with six channels
+- **THEN** preparation SHALL allocate and process six channel buffers through the same logical ports
+
+#### Scenario: Intrinsically stereo builtin rejects unsupported width
+
+- **WHEN** echo or reverb is instantiated with a channel count greater than two
+- **THEN** static resolution SHALL fail with a diagnostic listing the supported mono and stereo channel counts
 
 ### Requirement: Built-in modules declare static parameters
 
-Every built-in module type that accepts static configuration SHALL declare its supported parameters in the Rust module
-registry.
+Every built-in module type that requires compile-time configuration (channel counts, maximum delay length, FFT size, resource references) SHALL declare typed static parameters in the Rust module registry, distinct from its ports.
 
-#### Scenario: Built-in parameter declarations are registered
+#### Scenario: Built-in static declarations are registered
 
 - **WHEN** the built-in module registry is initialized
-- **THEN** each configurable built-in module definition SHALL expose its static parameter declarations alongside its
-  port declarations and delay-boundary metadata
+- **THEN** each built-in definition SHALL expose its static parameter declarations alongside its port declarations
 
 #### Scenario: Built-in declaration supports authoring tools
 
 - **WHEN** a future tool or LLM authoring workflow inspects a built-in module definition
-- **THEN** the module definition SHALL expose enough parameter metadata to describe valid YAML parameter values without
-  reading module DSP implementation code
+- **THEN** the definition SHALL expose enough port and static-parameter metadata to describe valid YAML declarations without reading module DSP implementation code
+
+#### Scenario: Resource-consuming builtins declare resource kind
+
+- **WHEN** sampler and convolution definitions are inspected
+- **THEN** sampler SHALL require a `sample` resource static argument and convolution SHALL require an `impulse_response` resource static argument
 
 ### Requirement: Built-in parameter declarations are authoritative
 
-Built-in module parameter declarations SHALL be the authoritative source for validating YAML module instance parameters
-and CLI override values targeting built-in modules.
+Built-in module port and static-parameter declarations SHALL be the authoritative source for validating YAML `defaults` overrides, `static` arguments, and CLI override values targeting built-in modules.
 
-#### Scenario: Unknown built-in parameter is rejected
+#### Scenario: Unknown built-in override is rejected
 
-- **WHEN** a YAML module instance or CLI override provides a parameter not declared by the target built-in module type
+- **WHEN** a YAML module instance or CLI override provides a default override or static argument not declared by the target built-in module type
 - **THEN** validation SHALL fail with a structured diagnostic before graph preparation
 
-### Requirement: Built-in module state uses resolved parameters
+### Requirement: Built-in module state uses resolved construction values
 
-Built-in module DSP state construction SHALL consume resolved parameter values prepared before rendering rather than
-parsing raw YAML values during processing.
+Built-in DSP state construction SHALL consume resolved typed static arguments, resource handles, and effective control defaults prepared before rendering rather than parsing raw YAML values during processing.
 
-#### Scenario: DSP state is prepared from resolved parameters
+#### Scenario: DSP state is prepared from resolved values
 
 - **WHEN** a built-in module instance is prepared for offline or realtime rendering
-- **THEN** its DSP state SHALL be constructed from validated resolved parameter values
-
-### Requirement: Delay modules are cycle breakers
-
-Built-in delay modules SHALL declare whether they are valid feedback cycle boundaries and which signal types they apply
-to.
-
-#### Scenario: One-sample delay breaks audio cycle
-
-- **WHEN** validation analyzes an audio cycle containing a one-sample audio delay module
-- **THEN** the validator SHALL treat that module as a valid audio feedback boundary
-
-#### Scenario: Control delay breaks control cycle
-
-- **WHEN** validation analyzes a control cycle containing a control delay module
-- **THEN** the validator SHALL treat that module as a valid control feedback boundary
+- **THEN** its DSP state SHALL be constructed from validated typed arguments and control defaults
 
 ### Requirement: Noise generator module
 
@@ -92,7 +86,7 @@ The engine SHALL provide a `noise` module that outputs deterministic seeded nois
 #### Scenario: Noise module in registry
 
 - **WHEN** the built-in module registry is queried for `noise`
-- **THEN** it SHALL report an audio output port and parameter metadata for seed and noise mode where supported
+- **THEN** it SHALL report an audio output port and typed static metadata for its seed
 
 #### Scenario: Noise module render is reproducible
 
@@ -140,27 +134,23 @@ gate/trigger, and velocity control outputs.
 
 ### Requirement: Oscillator waveform support is explicit
 
-The oscillator module SHALL document its supported waveform behaviour through parameter metadata.
+The oscillator module SHALL document its supported waveform behaviour through typed static-parameter metadata.
 
 #### Scenario: Oscillator waveform queried
 
 - **WHEN** the oscillator module metadata is queried
-- **THEN** it SHALL report supported waveform values if waveform selection is implemented
+- **THEN** it SHALL report the allowed waveform enum values
 
 #### Scenario: Unsupported waveform rejected
 
 - **WHEN** a patch requests an unsupported oscillator waveform
 - **THEN** validation SHALL reject the patch with a structured diagnostic
 
-### Requirement: Deferred modules are not part of this built-in milestone
+### Requirement: Script-backed definitions declare their interface
 
-The engine SHALL fail validation for unavailable deferred module types rather than accepting them silently. Envelope
-follower, general delay line, FM operator, resonator, state-variable filter, wavefolder, sample-and-hold, and specialist
-drum voice modules are deferred built-ins for this change. The engine MUST report an unknown or unsupported module
-diagnostic for unavailable deferred module types.
+An author-defined script processor SHALL be declared as a named graph definition marked `implementation: script`, with explicit ports and construction-time language/source static arguments. Script node instances SHALL obtain their interface from that definition and SHALL NOT add ad-hoc instance ports.
 
-#### Scenario: Deferred module appears in a patch
+#### Scenario: Script definition has connectable declared ports
 
-- **WHEN** a patch references a deferred module type that has not been implemented
-- **THEN** validation SHALL report an unknown module type or unsupported module diagnostic rather than silently
-  accepting it
+- **WHEN** YAML declares a script-backed definition with event/control ports and inline source
+- **THEN** ordinary nodes referencing that definition SHALL validate and connect through those declared ports

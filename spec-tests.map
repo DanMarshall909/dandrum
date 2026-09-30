@@ -134,37 +134,47 @@ AC ai-graph-proposals :: Provider context excludes reference audio and secrets :
   test rust:canonical_request_contains_derived_residual_catalogue_and_sanitized_topology_only
   test rust:kernel_request_uses_root_graph_and_public_aliases_without_private_match_data
 
-AC built-in-modules :: Built-in module state uses resolved parameters :: DSP state is prepared from resolved parameters
-  fp 420cdb6d4113
-  todo not yet mapped to a test
+AC built-in-modules :: Built-in module state uses resolved construction values :: DSP state is prepared from resolved values
+  fp c6679fdc2325
+  test rust:kernel_preparation_keeps_static_construction_and_control_defaults_distinct
+
+AC built-in-modules :: Built-in modules declare ports :: Generic builtin resolves arbitrary channel count
+  fp ec78a225681c
+  test rust:generic_builtins_resolve_mono_stereo_and_six_channel_signal_ports
+  test rust:kernel_preparation_compiles_six_channel_ports_to_contiguous_spans_and_routes
+
+AC built-in-modules :: Built-in modules declare ports :: Intrinsically stereo builtin rejects unsupported width
+  fp 9741c53aa8b8
+  test rust:echo_and_reverb_reject_channel_counts_wider_than_stereo
+
+AC built-in-modules :: Built-in modules declare ports :: Tunables are ports
+  fp 7f2f69bb12f3
+  test rust:gain_declares_audio_ports_and_a_tunable_gain_control
+  test rust:adsr_tunable_controls_carry_declared_defaults_and_ranges
 
 AC built-in-modules :: Built-in modules declare ports :: VCA module exposes audio and control ports
-  fp 65f4f9a0d565
+  fp 3722530647e3
   test rust:gain_declares_audio_ports_and_a_tunable_gain_control
 
 AC built-in-modules :: Built-in modules declare static parameters :: Built-in declaration supports authoring tools
-  fp 086cdf9c149a
+  fp d80d9679e614
   test rust:discovery_uses_one_port_and_static_schema_for_definition_kinds
 
-AC built-in-modules :: Built-in modules declare static parameters :: Built-in parameter declarations are registered
-  fp 365791d5a845
-  todo not yet mapped to a test
+AC built-in-modules :: Built-in modules declare static parameters :: Built-in static declarations are registered
+  fp 5297e31446b7
+  test rust:builtins_declare_all_non_resource_construction_parameters
 
-AC built-in-modules :: Built-in parameter declarations are authoritative :: Unknown built-in parameter is rejected
-  fp 7ff9577e3dfe
-  todo not yet mapped to a test
+AC built-in-modules :: Built-in modules declare static parameters :: Resource-consuming builtins declare resource kind
+  fp d3d3bb638617
+  test rust:sampler_and_convolution_declare_typed_resource_arguments
 
-AC built-in-modules :: Deferred modules are not part of this built-in milestone :: Deferred module appears in a patch
-  fp a39b0b951807
-  todo not yet mapped to a test
-
-AC built-in-modules :: Delay modules are cycle breakers :: Control delay breaks control cycle
-  fp c6636ecb194e
-  todo not yet mapped to a test
-
-AC built-in-modules :: Delay modules are cycle breakers :: One-sample delay breaks audio cycle
-  fp 9f6e23f1e7ac
-  todo not yet mapped to a test
+AC built-in-modules :: Built-in parameter declarations are authoritative :: Unknown built-in override is rejected
+  fp 8350ac90aef1
+  test rust:builtin_static_arguments_validate_through_graph_definition
+  test rust:render_command_rejects_invalid_kernel_cli_overrides_before_writing_audio
+  test rust:kernel_cli_overrides_reject_unknown_targets_types_and_ranges
+  test rust:kernel_cli_override_validates_integer_choices_and_control_port_kind
+  test rust:kernel_cli_override_validates_builtin_control_range_boundaries
 
 AC built-in-modules :: Impulse generator module :: Impulse module in registry
   fp 4ad2685c4d0d
@@ -174,13 +184,13 @@ AC built-in-modules :: Impulse generator module :: Impulse timing follows incomi
   fp e2e28a9d1137
   todo not yet mapped to a test
 
-AC built-in-modules :: Minimum routing and synthesis modules :: Core module registry contains existing MVP modules
-  fp 5b4b5df52e94
-  todo not yet mapped to a test
+AC built-in-modules :: Minimum routing and synthesis modules :: Core module registry contains kernel modules
+  fp 5ee0e95d2270
+  test rust:registry_declares_every_builtin_and_no_others
 
-AC built-in-modules :: Minimum routing and synthesis modules :: Core module registry contains new minimal primitives
-  fp 278fc53b98d9
-  todo not yet mapped to a test
+AC built-in-modules :: Minimum routing and synthesis modules :: audio_output type is rejected
+  fp 8f4310517c8e
+  test rust:audio_output_is_not_authorable_and_diagnostic_points_to_root_ports
 
 AC built-in-modules :: Multiply module :: Multiply module in registry
   fp 264fc2337a45
@@ -191,8 +201,8 @@ AC built-in-modules :: Multiply module :: Multiply performs deterministic produc
   todo not yet mapped to a test
 
 AC built-in-modules :: Noise generator module :: Noise module in registry
-  fp 85adb8752a46
-  todo not yet mapped to a test
+  fp aec9914cfe9b
+  test rust:noise_registry_entry_exposes_audio_output_and_typed_seed
 
 AC built-in-modules :: Noise generator module :: Noise module render is reproducible
   fp f7a03debdd58
@@ -203,52 +213,58 @@ AC built-in-modules :: Note-to-control module :: Note-to-control module in regis
   todo not yet mapped to a test
 
 AC built-in-modules :: Oscillator waveform support is explicit :: Oscillator waveform queried
-  fp 2c6b3c19072e
-  todo not yet mapped to a test
+  fp cc477f15394a
+  test rust:builtins_declare_all_non_resource_construction_parameters
 
 AC built-in-modules :: Oscillator waveform support is explicit :: Unsupported waveform rejected
   fp 22401351d471
-  todo not yet mapped to a test
+  test rust:builtin_static_arguments_validate_through_graph_definition
+
+AC built-in-modules :: Script-backed definitions declare their interface :: Script definition has connectable declared ports
+  fp acae3d0e1d07
+  test rust:script_backed_definition_uses_the_ordinary_node_shape
+  test rust:script_counter_routes_events_and_keeps_named_control_outputs_separate
 
 AC capability-discovery :: Capability discovery is metadata-driven :: Discovery uses metadata
   fp 83ed837f66a6
-  todo not yet mapped to a test
+  test rust:discovery_uses_one_port_and_static_schema_for_definition_kinds
 
 AC capability-discovery :: Capability discovery is separate from rendering :: Discovery does not affect render
   fp c5cb9659aa2c
   todo not yet mapped to a test
 
-AC capability-discovery :: Composite discovery preserves source model :: Inline composite discovered
-  fp efd78c89c61d
-  todo not yet mapped to a test
+AC capability-discovery :: Composite discovery preserves source model :: Inline defined module discovered
+  fp 18792c8622a6
+  test rust:parsed_root_defined_module_script_and_primitive_use_the_same_discovery_schema
 
 AC capability-discovery :: Discovery supports future tooling but does not implement it :: Discovery returns tool-friendly metadata
-  fp cfda2c252901
-  todo not yet mapped to a test
+  fp 4bba50b93d6e
+  test rust:discovery_uses_one_port_and_static_schema_for_definition_kinds
 
 AC capability-discovery :: Module category classification :: Query module category
-  fp b4f544238ef9
-  todo not yet mapped to a test
+  fp d156bcacfe00
+  test rust:catalogue_identifies_builtin_and_defined_modules_by_category
 
-AC capability-discovery :: Module parameter metadata :: Query module parameters
-  fp a7be7dff560c
-  todo not yet mapped to a test
+AC capability-discovery :: Module port metadata :: Primitive and defined module share the schema
+  fp 07679143a96d
+  test rust:parsed_root_defined_module_script_and_primitive_use_the_same_discovery_schema
 
 AC capability-discovery :: Module port metadata :: Query module ports
-  fp a7762244efbb
+  fp cb1af853f11f
   test rust:discovery_uses_one_port_and_static_schema_for_definition_kinds
 
 AC capability-discovery :: Module type enumeration :: Enumerate module types
   fp 2afaeae32d59
-  todo not yet mapped to a test
+  test rust:catalogue_enumerates_builtin_and_defined_module_names_deterministically
 
-AC composite-authoring :: Composite asset bindings :: Composite asset binding maps to internal module
-  fp 4a0beeefb04c
-  todo not yet mapped to a test
+AC capability-discovery :: Prepared root enumeration reuses definition metadata :: Discovered root matches prepared enumeration
+  fp 5e1e0a87d637
+  test rust:prepared_discovery_reuses_root_port_metadata_and_lists_promotion_nodes
+  test rust:kernel_ffi_enumerates_prepared_ports_and_renders_named_planar_buses
 
-AC composite-authoring :: Composite asset bindings :: Missing composite asset rejected
-  fp a3211d6026d7
-  todo not yet mapped to a test
+AC capability-discovery :: Static parameter metadata :: Query static parameters
+  fp 150e216e20a1
+  test rust:discovery_uses_one_port_and_static_schema_for_definition_kinds
 
 AC composite-authoring :: Composite diagnostics map to source context :: Expanded internal port fails validation
   fp 80fd8d605d11
@@ -256,19 +272,23 @@ AC composite-authoring :: Composite diagnostics map to source context :: Expande
 
 AC composite-authoring :: Composite expansion remains deterministic :: Repeated expansion identical
   fp eddffd037187
-  todo not yet mapped to a test
+  test rust:flattening_is_deterministic_and_repeatable
 
 AC composite-authoring :: Composite module ID prefixing :: Expanded module IDs are unique
   fp 09eb79e41853
   todo not yet mapped to a test
 
-AC composite-authoring :: Composite parameter exposure :: Composite parameter maps to internal parameter
-  fp 069b91651b01
-  todo not yet mapped to a test
+AC composite-authoring :: Composite parameter exposure :: Instance overrides a public port default
+  fp 287dc53c58b5
+  test rust:instance_override_becomes_effective_atomic_default
 
-AC composite-authoring :: Composite parameter exposure :: Undeclared composite parameter rejected
-  fp 373adfde9f9b
-  todo not yet mapped to a test
+AC composite-authoring :: Composite parameter exposure :: Public control port carries a default
+  fp 4e4c2db74c85
+  test rust:root_control_default_reaches_every_mapped_atomic_input
+
+AC composite-authoring :: Composite parameter exposure :: Undeclared override rejected
+  fp 97b09d26d994
+  test rust:override_of_unknown_port_is_rejected
 
 AC composite-authoring :: Composite port mapping :: Public input maps to internal input
   fp 223acba865f7
@@ -279,20 +299,24 @@ AC composite-authoring :: Composite port mapping :: Public output maps from inte
   test rust:boundary_ports_forward_connections_to_atomic_ports
 
 AC composite-authoring :: External module libraries extend inline module definitions :: External module loaded from a package
-  fp b0ea2d4c90ab
-  test rust:external_library_and_user_modules_render_identically_to_inline_definition
+  fp 9d23205c90b7
+  test rust:packaged_kernel_definition_is_equivalent_to_inline_definition
 
 AC composite-authoring :: External module libraries extend inline module definitions :: External module reference absent
   fp 8b5f0a7cfa33
   test rust:external_library_and_user_modules_render_identically_to_inline_definition
 
-AC composite-authoring :: Inline composite module definitions :: Composite definition declared inline
-  fp f09100add35e
+AC composite-authoring :: Inline composite module definitions :: Defined module declared inline
+  fp cc878853dd1c
   test rust:complete_kernel_document_produces_root_and_inline_graph_definitions
 
-AC composite-authoring :: Inline composite module definitions :: Existing composite patches remain valid
-  fp 5e79804a9521
-  todo not yet mapped to a test
+AC composite-authoring :: Inline composite module definitions :: Defined module declares static parameters
+  fp f42d417d2022
+  test rust:complete_kernel_document_produces_root_and_inline_graph_definitions
+
+AC composite-authoring :: Patch and defined module are the same definition shape :: Patch instantiated as module
+  fp 723ddf0c81ba
+  test rust:complete_patch_definition_instantiates_as_a_module
 
 AC composite-authoring :: Recursive composites are rejected or depth-limited :: Maximum nesting depth exceeded
   fp ab14f9066f00
@@ -324,134 +348,6 @@ AC control-primitives :: Envelope follower converts audio level into smoothed co
 
 AC control-primitives :: Envelope follower converts audio level into smoothed control :: Rising input follows attack time
   fp c69ae1bb31b8
-  todo not yet mapped to a test
-
-AC declarative-parameters :: CLI parameter overrides :: CLI override replaces YAML value
-  fp f86e8d412530
-  todo not yet mapped to a test
-
-AC declarative-parameters :: CLI parameter overrides :: Repeated CLI override is deterministic
-  fp 20a647cfe0bf
-  todo not yet mapped to a test
-
-AC declarative-parameters :: CLI parameter overrides :: Unknown CLI module is rejected
-  fp e358ab20bb38
-  todo not yet mapped to a test
-
-AC declarative-parameters :: CLI parameter overrides :: Unknown CLI parameter is rejected
-  fp 39a3843fb56e
-  todo not yet mapped to a test
-
-AC declarative-parameters :: Composite public parameters :: Composite parameter declaration is validated
-  fp bfaecda6b37e
-  todo not yet mapped to a test
-
-AC declarative-parameters :: Deterministic default resolution :: Defaults are stable across loads
-  fp 8dc9a197376c
-  todo not yet mapped to a test
-
-AC declarative-parameters :: Deterministic default resolution :: Omitted optional value uses default
-  fp 91223d35d657
-  todo not yet mapped to a test
-
-AC declarative-parameters :: Deterministic resolved graph preparation :: Same resolved patch renders the same output
-  fp 8f9466738183
-  todo not yet mapped to a test
-
-AC declarative-parameters :: LLM-repairable parameter diagnostics :: Diagnostic supports repair loop
-  fp ded0f82877ec
-  todo not yet mapped to a test
-
-AC declarative-parameters :: Minimal composite parameter binding :: Binding type mismatch is rejected
-  fp d563b1693a6e
-  todo not yet mapped to a test
-
-AC declarative-parameters :: Minimal composite parameter binding :: Direct composite reference resolves
-  fp 3cdcd34e41af
-  todo not yet mapped to a test
-
-AC declarative-parameters :: Minimal composite parameter binding :: Expressions are rejected
-  fp 6b2e72c40a02
-  todo not yet mapped to a test
-
-AC declarative-parameters :: Minimal composite parameter binding :: Invalid reference is rejected
-  fp 92b2c7b502e4
-  todo not yet mapped to a test
-
-AC declarative-parameters :: Minimal composite parameter binding :: Literal binding resolves
-  fp d64f636822b5
-  todo not yet mapped to a test
-
-AC declarative-parameters :: Parameter capability discovery foundation :: Declaration exposes discovery metadata
-  fp 8ee35e6c06c5
-  todo not yet mapped to a test
-
-AC declarative-parameters :: Parameter capability discovery foundation :: Declaration supports safe authoring guidance
-  fp 4c7fd999735d
-  todo not yet mapped to a test
-
-AC declarative-parameters :: Parameter categories are distinct :: Parameter category is identified
-  fp ccf09e6224fa
-  todo not yet mapped to a test
-
-AC declarative-parameters :: Parameter value validation :: Invalid enum value is rejected
-  fp faae69208b8f
-  todo not yet mapped to a test
-
-AC declarative-parameters :: Parameter value validation :: Missing required parameter is rejected
-  fp efc698fc3023
-  todo not yet mapped to a test
-
-AC declarative-parameters :: Parameter value validation :: Number above maximum is rejected
-  fp 3100d01481d2
-  todo not yet mapped to a test
-
-AC declarative-parameters :: Parameter value validation :: Number below minimum is rejected
-  fp b7763af10530
-  todo not yet mapped to a test
-
-AC declarative-parameters :: Parameter value validation :: Unknown parameter is rejected
-  fp 4e310c077621
-  todo not yet mapped to a test
-
-AC declarative-parameters :: Parameter value validation :: Wrong parameter type is rejected
-  fp 250becc8033a
-  todo not yet mapped to a test
-
-AC declarative-parameters :: Preset-applied parameter values :: Preset-applied value overrides default
-  fp 39fcd9c80676
-  todo not yet mapped to a test
-
-AC declarative-parameters :: Realtime safety boundary :: Audio callback receives prepared state
-  fp fc0b7f3dc68d
-  todo not yet mapped to a test
-
-AC declarative-parameters :: Static scalar parameter declarations :: Parameter declaration is registered
-  fp 6ab179224d62
-  todo not yet mapped to a test
-
-AC declarative-parameters :: Structured parameter diagnostics :: Diagnostic contains stable fields
-  fp d0519fa7d8bd
-  todo not yet mapped to a test
-
-AC declarative-parameters :: Supported parameter value types :: Enum value is validated as string
-  fp bfee9ae29577
-  todo not yet mapped to a test
-
-AC declarative-parameters :: Synthetic 808 kick acceptance example :: Invalid kick value is diagnosed
-  fp f0710a626818
-  todo not yet mapped to a test
-
-AC declarative-parameters :: Synthetic 808 kick acceptance example :: Kick is tuned from CLI override
-  fp d00aed44d396
-  todo not yet mapped to a test
-
-AC declarative-parameters :: Synthetic 808 kick acceptance example :: Kick is tuned from YAML
-  fp 33a75c770a84
-  todo not yet mapped to a test
-
-AC declarative-parameters :: Synthetic 808 kick acceptance example :: Kick parameter changes affect output deterministically
-  fp 7b59d7126f6f
   todo not yet mapped to a test
 
 AC delay-line :: DelayLine SHALL reset to zero :: Reset clears buffer
@@ -486,25 +382,21 @@ AC delay-line :: DelayLine SHALL support write and fractional read :: Write then
   fp 10af1fa440af
   todo not yet mapped to a test
 
-AC drum-kit-patches :: Complete drum kit patch :: Drum kit patch has voice allocation
-  fp aa1e56a3b717
-  todo not yet mapped to a test
-
 AC drum-kit-patches :: Complete drum kit patch :: Drum kit patch loads and renders
-  fp 00248fc519d0
+  fp 6ce9b0ccd0b2
+  test rust:migrated_drum_kit_routes_each_pad_to_its_own_poly_region_and_stereo_bus
+
+AC drum-kit-patches :: Complete drum kit patch :: Drum kit polyphony uses poly nodes
+  fp 7ff4e97c3f93
   test rust:migrated_drum_kit_routes_each_pad_to_its_own_poly_region_and_stereo_bus
 
 AC drum-kit-patches :: Complete drum kit patch :: Drum kit uses generic event routing
-  fp 979197412de3
+  fp 0018f7d598ff
   test rust:migrated_drum_kit_routes_each_pad_to_its_own_poly_region_and_stereo_bus
 
-AC drum-kit-patches :: Drum kit supports multiple stereo outputs :: Drum kit exposes stereo output pairs
-  fp f880e986a9e0
-  todo not yet mapped to a test
-
-AC drum-kit-patches :: Drum kit supports multiple stereo outputs :: Voices can route to separate stereo outs
-  fp 1eee4d215118
-  todo not yet mapped to a test
+AC drum-kit-patches :: Drum kit supports multiple stereo outputs :: Drum kit exposes named output ports
+  fp f64894fdb1ed
+  test rust:migrated_drum_kit_routes_each_pad_to_its_own_poly_region_and_stereo_bus
 
 AC drum-kit-patches :: Each impulse composite responds to MIDI velocity :: Low velocity produces quieter output
   fp 4c177013d1da
@@ -579,16 +471,13 @@ AC echo :: Echo SHALL be a stereo effect with independent left/right delay times
   todo not yet mapped to a test
 
 AC echo :: Echo SHALL expose built-in module ports :: Module registration has correct ports
-  fp 81e56f6a9bd0
-  todo not yet mapped to a test
+  fp f9f7c4c9a996
+  test rust:echo_and_reverb_declare_channel_aware_ports_without_voice_scope
+  test rust:echo_and_reverb_render_mono_and_stereo_channel_spans
 
 AC echo :: Echo SHALL have a YAML composite module definition example :: Composite echo example loads without error
   fp 084ae899525e
   test rust:module_echo_yaml_loads_and_validates
-
-AC echo :: Echo SHALL process in global (non-voice) scope :: Echo is global scope
-  fp 54740311f9aa
-  todo not yet mapped to a test
 
 AC echo :: Echo SHALL support damping via OnePoleFilter in the feedback pipeline :: Damping filter darkens repeats
   fp 7ef2244bb486
@@ -658,20 +547,24 @@ AC event-routing-primitives :: Simple poly-synth dogfood uses generic routing ::
   fp e12fea3939a3
   todo not yet mapped to a test
 
-AC feedback-routing :: Audio feedback requires delay boundary :: Audio feedback through one-sample delay is valid
-  fp 5e12b434e7b3
-  todo not yet mapped to a test
+AC feedback-routing :: Audio feedback requires delay boundary :: Audio feedback through feedback_delay is valid
+  fp 2092c34276e5
+  test rust:audio_feedback_through_feedback_delay_is_valid
 
 AC feedback-routing :: Audio feedback requires delay boundary :: Instantaneous audio feedback is rejected
-  fp d3fc6bde26f3
+  fp dfcd15923fc8
   test rust:instantaneous_audio_feedback_is_rejected_naming_the_required_primitive
 
-AC feedback-routing :: Control feedback requires scheduling boundary :: Control feedback through control delay is valid
-  fp 860fa652ccf0
-  todo not yet mapped to a test
+AC feedback-routing :: Audio feedback requires delay boundary :: Ordinary delay module does not legalize a cycle
+  fp 28fcdef1f990
+  test rust:ordinary_delay_module_does_not_legalize_a_cycle
+
+AC feedback-routing :: Control feedback requires scheduling boundary :: Control feedback through feedback_delay is valid
+  fp 560b731658fe
+  test rust:control_feedback_through_feedback_delay_is_valid
 
 AC feedback-routing :: Control feedback requires scheduling boundary :: Instantaneous control feedback is rejected
-  fp 8f5291be67fc
+  fp 95c3f5724893
   test rust:instantaneous_control_feedback_is_rejected
 
 AC feedback-routing :: Event and script feedback is future scheduled :: Event feedback is queued
@@ -818,6 +711,95 @@ AC frequency-splitter :: Frequency splitter splits audio into configurable bands
   fp 20a24c66abb7
   todo not yet mapped to a test
 
+AC graph-kernel :: Channel count compatibility :: Matching channel counts connect
+  fp cef31e714263
+  test rust:matching_channel_counts_connect
+
+AC graph-kernel :: Channel count compatibility :: Mismatched channel counts are rejected
+  fp ace586808e89
+  test rust:mismatched_channel_counts_are_rejected_reporting_both_counts
+
+AC graph-kernel :: Compiled ports use channel-aware buffer spans :: Audio output cannot feed control input implicitly
+  fp 7f7f9c9339cd
+  test rust:audio_output_cannot_feed_control_input
+
+AC graph-kernel :: Compiled ports use channel-aware buffer spans :: Event ports never convert
+  fp 804ec578f94c
+  test rust:event_ports_never_convert_to_audio
+
+AC graph-kernel :: Compiled ports use channel-aware buffer spans :: Six-channel connection compiles to six physical routes
+  fp c750500de4d4
+  test rust:kernel_preparation_compiles_six_channel_ports_to_contiguous_spans_and_routes
+
+AC graph-kernel :: Control-to-audio promotion :: Control output feeds audio input
+  fp 71c005d3f0ca
+  test rust:control_to_audio_connection_inserts_a_visible_promotion_node
+  test rust:control_to_audio_promotion_carries_the_control_signal_into_the_audio_path
+  test rust:lfo_control_and_promoted_audio_follow_each_sample_across_blocks
+
+AC graph-kernel :: Patch is the root graph definition :: Patch is reusable as a module
+  fp b3e24eac25e2
+  test rust:complete_patch_definition_instantiates_as_a_module
+
+AC graph-kernel :: Patch is the root graph definition :: Patch loads as root definition
+  fp 4c8e9e5e6137
+  test rust:complete_kernel_document_produces_root_and_inline_graph_definitions
+
+AC graph-kernel :: Port model :: Control output changes within a block
+  fp c95560bf399e
+  test rust:lfo_control_and_promoted_audio_follow_each_sample_across_blocks
+
+AC graph-kernel :: Port model :: Control port declares default and range
+  fp 730ce22c2ded
+  test rust:port_carries_channel_count_and_control_default_metadata
+
+AC graph-kernel :: Port model :: Port declares channel count
+  fp 08c0055446c6
+  test rust:resolved_channel_count_flows_into_atomic_ports
+
+AC graph-kernel :: Port model :: Summing input accepts multiple sources
+  fp 9f855d29f410
+  test rust:summing_input_accepts_multiple_connections
+
+AC graph-kernel :: Recursive flattening :: Flattening is repeatable
+  fp 6880cd53f8aa
+  test rust:flattening_is_deterministic_and_repeatable
+
+AC graph-kernel :: Recursive flattening :: Nested defined modules flatten to atomic nodes
+  fp 53d89c5df423
+  test rust:nested_defined_modules_flatten_to_atomic_nodes_with_namespaced_ids
+
+AC graph-kernel :: Runtime is statically typed :: Compiled graph dispatches statically
+  fp ae71f999ce80
+  test rust:kernel_preparation_compiles_six_channel_ports_to_contiguous_spans_and_routes
+  test rust:kernel_ffi_enumerates_prepared_ports_and_renders_named_planar_buses
+  test rust:prepared_processor_executes_without_rechecking_module_kind
+  test rust:prepared_poly_child_executes_without_rechecking_module_kind
+  test rust:prepared_stateful_root_executes_without_rechecking_module_kind
+  test rust:prepared_stateful_poly_child_executes_without_rechecking_module_kind
+
+AC graph-kernel :: Unconnected inputs read defaults :: Instance override replaces default
+  fp 9410aaeb7745
+  test rust:kernel_render_uses_declared_control_default_override_and_connected_value
+  test rust:incoming_connection_takes_precedence_over_default_and_override
+
+AC graph-kernel :: Unconnected inputs read defaults :: Override of unknown port is rejected
+  fp 937f51f86fdd
+  test rust:override_of_unknown_port_is_rejected
+
+AC graph-kernel :: Unconnected inputs read defaults :: Unconnected input uses declared default
+  fp 896fe482634c
+  test rust:kernel_render_uses_declared_control_default_override_and_connected_value
+
+AC graph-kernel :: Unified graph definition model :: Defined module is replaced by a primitive without patch changes
+  fp 7a43c166e855
+  test rust:a_primitive_can_replace_a_defined_module_without_changing_the_caller_graph
+
+AC graph-kernel :: Unified graph definition model :: Primitive and defined module instantiate identically
+  fp cd8deb469980
+  test rust:parsed_root_defined_module_script_and_primitive_use_the_same_discovery_schema
+  test rust:a_primitive_can_replace_a_defined_module_without_changing_the_caller_graph
+
 AC headless-engine :: Block processing model :: Render uses block scheduler
   fp 504c3c36db02
   todo not yet mapped to a test
@@ -837,6 +819,54 @@ AC headless-engine :: Offline rendering entry point :: Render patch to WAV
 AC headless-engine :: Offline rendering entry point :: Rendering is deterministic
   fp 747cd9938709
   todo not yet mapped to a test
+
+AC host-buses :: Bus enumeration over FFI :: Host enumerates ports before binding
+  fp 6eb34046994d
+  test rust:kernel_ffi_enumerates_prepared_ports_and_renders_named_planar_buses
+
+AC host-buses :: Bus enumeration over FFI :: Render rejects insufficient channel buffers
+  fp 9aec059c5f33
+  test rust:kernel_ffi_rejects_invalid_declarations_and_buffer_views_before_writing
+
+AC host-buses :: Bus enumeration over FFI :: Stereo host binds one bus
+  fp 112ed597739f
+  test rust:kernel_ffi_enumerates_prepared_ports_and_renders_named_planar_buses
+
+AC host-buses :: Hosts declare named buses :: Host declares multiple buses
+  fp 92db04acb40c
+  test rust:kernel_ffi_routes_multiple_output_views_by_prepared_index_in_any_order
+
+AC host-buses :: Hosts declare named buses :: Non-stereo channel counts are first-class
+  fp 40a6e9081f03
+  test rust:kernel_preparation_compiles_six_channel_ports_to_contiguous_spans_and_routes
+
+AC host-buses :: Render settings are host concerns :: Render settings in patch are rejected
+  fp 2ac62f9f24e6
+  test rust:legacy_document_fields_are_rejected_with_specific_diagnostics
+
+AC host-buses :: Render settings are host concerns :: Same patch renders at two sample rates
+  fp 9a47534ac4ed
+  test rust:same_patch_prepares_and_renders_at_two_host_sample_rates
+
+AC host-buses :: Root ports bind to buses by name :: Channel mismatch fails preparation
+  fp 2e0bcc527cb7
+  test rust:named_bus_planning_validates_outputs_and_tolerates_missing_or_extra_inputs
+
+AC host-buses :: Root ports bind to buses by name :: Extra host input is ignored
+  fp 294b6e14f302
+  test rust:named_bus_planning_validates_outputs_and_tolerates_missing_or_extra_inputs
+
+AC host-buses :: Root ports bind to buses by name :: Matching bus binds
+  fp fcaff2ba75cb
+  test rust:named_bus_planning_validates_outputs_and_tolerates_missing_or_extra_inputs
+
+AC host-buses :: Root ports bind to buses by name :: Unbound root input is silent
+  fp e4d44ef27073
+  test rust:named_bus_planning_validates_outputs_and_tolerates_missing_or_extra_inputs
+
+AC host-buses :: Root ports bind to buses by name :: Unbound root output fails preparation
+  fp c0081cf2d154
+  test rust:named_bus_planning_validates_outputs_and_tolerates_missing_or_extra_inputs
 
 AC instrument-demo-configuration :: Demo configuration selects a coherent instrument experience :: Demo launches from an unrelated working directory
   fp 3801088ed6cc
@@ -877,15 +907,19 @@ AC instrument-presets :: Preset YAML document :: Preset document is loaded
   todo not yet mapped to a test
 
 AC instrument-presets :: Preset application :: Missing preset value uses default
-  fp b2066241dc1d
+  fp f1bb7243bf49
   test rust:omitted_kernel_preset_targets_keep_root_defaults
 
-AC instrument-presets :: Preset application :: Preset value reaches graph construction
-  fp 7bd1b7cce7bc
-  todo not yet mapped to a test
+AC instrument-presets :: Preset application :: Preset value reaches compilation
+  fp b79a67f7d73f
+  test rust:kernel_preset_application_changes_root_defaults_before_flattening
 
 AC instrument-presets :: Preset application :: Render with preset is deterministic
   fp 4d84fa78ccfa
+  test rust:kernel_preset_render_is_deterministic_and_uses_aliased_default
+
+AC instrument-presets :: Preset application :: Root preset default reaches mapped internal ports
+  fp c2f73936cda8
   test rust:kernel_preset_render_is_deterministic_and_uses_aliased_default
 
 AC instrument-presets :: Preset compatibility :: Compatible preset is accepted
@@ -909,11 +943,11 @@ AC instrument-presets :: Preset metadata :: Preset declares metadata
   todo not yet mapped to a test
 
 AC instrument-presets :: Preset target validation :: Preset sets declared target
-  fp e284b42bc85e
+  fp fff0a7d567bc
   test rust:kernel_preset_application_changes_root_defaults_before_flattening
 
 AC instrument-presets :: Preset target validation :: Preset sets incompatible value
-  fp 74cc25032aeb
+  fp dbffba9e6d56
   test rust:kernel_preset_rejects_identity_unknown_targets_and_incompatible_values
 
 AC instrument-presets :: Preset target validation :: Preset sets unknown target
@@ -927,6 +961,60 @@ AC instrument-presets :: Presets cannot change graph structure :: Preset cannot 
 AC instrument-presets :: Presets cannot change graph structure :: Preset declares graph data
   fp 5f3222ba8be0
   todo not yet mapped to a test
+
+AC latency-compensation :: Compiler balances parallel path latency :: Control and event edges are not audio-compensated
+  fp c9aca31260e7
+  test rust:control_edge_is_not_given_an_audio_compensation_delay
+  test rust:event_edge_is_not_given_an_audio_compensation_delay
+
+AC latency-compensation :: Compiler balances parallel path latency :: Defined module latency accumulates through flattening
+  fp 1fe70a683608
+  test rust:defined_module_latency_aligns_parent_dry_and_wet_outputs
+  test rust:delayed_poly_voice_latency_aligns_parent_dry_and_wet_outputs
+  test rust:nested_delayed_poly_voice_latency_aligns_parent_dry_and_wet_outputs
+
+AC latency-compensation :: Compiler balances parallel path latency :: Host reads total latency
+  fp 5555b10bb5ec
+  test rust:kernel_ffi_reports_nonzero_resolved_root_latency_to_host
+
+AC latency-compensation :: Compiler balances parallel path latency :: Inserted compensation is inspectable
+  fp 2c789ae985c1
+  test rust:prepared_discovery_reports_inserted_compensation_locations_and_samples
+  test rust:prepared_discovery_reports_compensation_inside_a_poly_voice
+  test rust:prepared_discovery_qualifies_compensation_inside_nested_poly_regions
+
+AC latency-compensation :: Compiler balances parallel path latency :: Multichannel compensation preserves channel layout
+  fp 23809e6f2520
+  test rust:six_channel_compensation_delay_allocates_and_preserves_each_channel
+
+AC latency-compensation :: Compiler balances parallel path latency :: Root audio outputs share reported latency
+  fp 6568380f3fe7
+  test rust:root_audio_outputs_are_compensated_to_the_reported_latency
+
+AC latency-compensation :: Compiler balances parallel path latency :: Unequal parallel paths are aligned
+  fp a6dba0a1b410
+  test rust:unequal_parallel_paths_receive_a_compensating_delay
+
+AC latency-compensation :: Existing latency-inducing builtins declare true latency :: Convolution dry/wet paths align
+  fp b12a0a6976b4
+  test rust:kernel_convolution_dry_and_wet_paths_render_time_aligned
+
+AC latency-compensation :: Existing latency-inducing builtins declare true latency :: Spectral processor declares fft-dependent latency
+  fp 33463daf1633
+  test rust:spectral_processor_declares_fft_size_minus_one_latency
+  test rust:spectral_dry_and_wet_paths_align_per_resolved_fft_size
+
+AC latency-compensation :: Latency inside feedback cycles is rejected :: Latency-bearing node in a cycle is rejected
+  fp c6a3e9222ce2
+  test rust:latency_bearing_node_in_feedback_cycle_is_rejected
+
+AC latency-compensation :: Nodes report processing latency :: Latency is available per resolved instance
+  fp 3580610dc80b
+  test rust:latency_reflects_resolved_static_argument
+
+AC latency-compensation :: Nodes report processing latency :: Primitive reports zero latency
+  fp 129b595095db
+  test rust:primitive_reports_zero_latency
 
 AC midi-drum-loop-demo :: Broad drum loop integration verification :: Integration verification covers load schedule and render
   fp 731048817dcc
@@ -988,6 +1076,18 @@ AC modular-routing-graph :: Instrument graph model :: Graph is constructed from 
   fp 18f898cb8019
   test rust:complete_kernel_document_produces_root_and_inline_graph_definitions
 
+AC modular-routing-graph :: Instrument graph model :: One validation path for all definition kinds
+  fp c1dadf90bb5f
+  test rust:a_primitive_can_replace_a_defined_module_without_changing_the_caller_graph
+
+AC modular-routing-graph :: Named typed ports :: Channel counts are validated
+  fp 2554db6caf57
+  test rust:mismatched_channel_counts_are_rejected_reporting_both_counts
+
+AC modular-routing-graph :: Named typed ports :: Multiple sources require summing multiplicity
+  fp b7f6e9560d39
+  test rust:summing_input_accepts_multiple_connections
+
 AC modular-routing-graph :: Named typed ports :: Port direction is validated
   fp 006a3a316e90
   test rust:connection_from_input_port_reports_incorrect_direction
@@ -999,6 +1099,10 @@ AC modular-routing-graph :: Named typed ports :: Port existence is validated
 AC modular-routing-graph :: Signal compatibility validation :: Compatible audio output connects to compatible audio input
   fp 139b39b33727
   test rust:matching_channel_counts_connect
+
+AC modular-routing-graph :: Signal compatibility validation :: Control output promotes to audio input
+  fp c4ccea21779a
+  test rust:control_to_audio_connection_inserts_a_visible_promotion_node
 
 AC modular-routing-graph :: Signal compatibility validation :: Incompatible signal types are rejected
   fp 3b0cd91dc5c3
@@ -1062,6 +1166,26 @@ AC module-library :: The user library `$USER_LIB` is mutable :: User module is r
   fp f92f4d8ade44
   test rust:external_library_and_user_modules_render_identically_to_inline_definition
   test rust:user_library_module_edits_are_used_on_next_preparation_without_seeding
+
+AC module-packages :: Package entries are graph definitions :: Nested packaged definition retains provenance
+  fp 127536824158
+  test rust:nested_kernel_package_references_resolve_recursively
+
+AC module-packages :: Package entries are graph definitions :: Packaged definition instantiates like an inline definition
+  fp 473d5d0a7118
+  test rust:packaged_kernel_definition_is_equivalent_to_inline_definition
+
+AC module-packages :: Package resources resolve relative to package root :: Package resource cannot escape its root
+  fp e22a5695a7c5
+  test rust:package_resource_resolution_rejects_symlink_and_parent_escapes
+
+AC module-packages :: Package resources resolve relative to package root :: Package resource symlink cannot escape its root
+  fp 7b13be9b7882
+  test rust:package_resource_resolution_rejects_symlink_and_parent_escapes
+
+AC module-packages :: Package resources resolve relative to package root :: Pinned package resource remains pinned
+  fp 7c8919e71b44
+  test rust:pinned_resource_package_prepares_and_renders_its_package_relative_sample
 
 AC plugin-integration :: Audio processing remains realtime safe :: Host calls processBlock
   fp 87ab7d33cbc7
@@ -1152,6 +1276,75 @@ AC plugin-integration :: Presets modify values only :: Incompatible preset is re
   fp 0e43222c9c92
   todo not yet mapped to a test
 
+AC poly-combinator :: Per-voice intrinsic ports :: Gate reflects note lifetime
+  fp 0e27a8b7c407
+  test rust:poly_note_off_releases_only_matching_voice_gate
+  test rust:poly_gate_release_reaches_only_the_matching_adsr_child
+
+AC poly-combinator :: Per-voice intrinsic ports :: Voice reads note and velocity
+  fp 13f06dd9df9c
+  test rust:poly_voice_oscillator_and_gain_render_own_note_and_velocity
+
+AC poly-combinator :: Poly node instantiates a wrapped definition per voice :: Poly node wraps a voice definition
+  fp c5019c47e89f
+  test rust:poly_declares_structural_static_arguments_and_note_event_input
+
+AC poly-combinator :: Poly node instantiates a wrapped definition per voice :: Poly nodes nest
+  fp 2a08e55eaed9
+  test rust:nested_poly_voices_render_through_independent_inner_pools
+
+AC poly-combinator :: Poly node instantiates a wrapped definition per voice :: Voice cannot reach outside the poly node
+  fp af636d24f325
+  test rust:poly_voice_output_reaches_root_only_through_poly_boundary
+
+AC poly-combinator :: Poly output mixing :: No hidden velocity scaling
+  fp 55f15003482a
+  test rust:poly_two_active_voices_sum_sample_wise_without_hidden_velocity_scaling
+
+AC poly-combinator :: Poly output mixing :: Two voices sum on one output
+  fp c55710b92e6b
+  test rust:poly_two_constant_voices_sum_to_a_positive_absolute_value
+  test rust:poly_two_active_voices_sum_sample_wise_without_hidden_velocity_scaling
+
+AC poly-combinator :: Voice allocation and stealing policy :: New note is rejected when stealing is disabled
+  fp ccb068c9cb6c
+  test rust:poly_reject_new_keeps_existing_voices_unchanged_at_capacity
+
+AC poly-combinator :: Voice allocation and stealing policy :: Note events route to free voices
+  fp aa90847fb77a
+  test rust:poly_note_ons_fill_distinct_free_voice_intrinsics
+
+AC poly-combinator :: Voice allocation and stealing policy :: Sibling poly nodes allocate independently
+  fp 018df1b38f91
+  test rust:sibling_poly_regions_keep_state_queues_and_different_width_mixes_independent
+
+AC poly-combinator :: Voice allocation and stealing policy :: Voice stealing at capacity
+  fp 3451e1b8d6e0
+  test rust:poly_oldest_steal_retires_and_reuses_the_longest_active_voice
+
+AC poly-combinator :: Voice completion detection :: Control done pulse within a block retires voice
+  fp a14fd378dd22
+  test rust:poly_done_control_pulse_after_first_frame_retires_and_reuses_voice
+
+AC poly-combinator :: Voice completion detection :: Explicit done retires voice
+  fp 598637cb1ee8
+  test rust:poly_done_event_retires_voice_and_clears_its_future_output
+  test rust:poly_done_control_pulse_after_first_frame_retires_and_reuses_voice
+
+AC poly-combinator :: Voice completion detection :: Retired voice output is clean
+  fp cf403a2a945c
+  test rust:poly_done_event_retires_voice_and_clears_its_future_output
+  test rust:poly_done_control_pulse_after_first_frame_retires_and_reuses_voice
+
+AC poly-combinator :: Voice completion detection :: Silence tracking retires voice
+  fp ace9dc3b52fe
+  test rust:poly_without_done_retires_after_ten_milliseconds_of_released_silence
+
+AC poly-combinator :: Voice instances are preallocated :: Full polyphony renders without allocation
+  fp 98265c00545f
+  test rust:full_capacity_poly_activation_mix_and_done_retirement_do_not_allocate
+  test rust:full_capacity_poly_stealing_and_rejection_render_without_allocation
+
 AC primitive-decision-framework :: Composite eligibility :: Instrument voice expressible as composite
   fp bef5f5926071
   todo not yet mapped to a test
@@ -1225,16 +1418,13 @@ AC primitive-decision-framework :: Script eligibility :: Event/control behaviour
   todo not yet mapped to a test
 
 AC reverb :: Reverb SHALL expose built-in module ports :: Module registration has correct ports
-  fp d37a8b7026d6
-  todo not yet mapped to a test
+  fp cc8c159c776f
+  test rust:echo_and_reverb_declare_channel_aware_ports_without_voice_scope
+  test rust:echo_and_reverb_render_mono_and_stereo_channel_spans
 
 AC reverb :: Reverb SHALL have a YAML composite module definition example :: Composite reverb example loads without error
   fp 36f6158d9bea
   test rust:module_reverb_yaml_loads_and_validates
-
-AC reverb :: Reverb SHALL process in global (non-voice) scope :: Reverb is global scope
-  fp bdfb2033aac7
-  todo not yet mapped to a test
 
 AC reverb :: Reverb SHALL support configurable decay time (RT60) :: Long decay produces sustained tail
   fp 192c2a1d0419
@@ -1277,25 +1467,24 @@ AC reverb :: Reverb SHALL use Schroeder/Moorer topology :: Impulse response has 
   todo not yet mapped to a test
 
 AC rust-engine-architecture :: Compiled patch drives offline and realtime rendering :: Event routing uses typed event edges
-  fp 70a53ab145f9
+  fp 23bec7886733
   test rust:render_plan_resolves_event_edges_to_event_queue_ids
 
 AC rust-engine-architecture :: Compiled patch drives offline and realtime rendering :: Offline render uses compiled patch
-  fp 341ee2b01c77
+  fp 763a9cd041f0
   test rust:kernel_compensation_aligns_impulses_and_preserves_offline_realtime_parity
 
 AC rust-engine-architecture :: Compiled patch drives offline and realtime rendering :: Realtime render avoids port-name lookup
-  fp b0aff7c7ff54
+  fp dcebb41092cf
   test rust:kernel_ffi_routes_reordered_input_and_output_bus_indices
   test rust:render_plan_binds_sibling_poly_steps_to_numeric_region_indices
-  test rust:nested_poly_voices_render_through_independent_inner_pools
 
 AC rust-engine-architecture :: Compiled patch drives offline and realtime rendering :: Realtime render uses compiled render plan
-  fp 518e6f5f9ce4
+  fp db5dd1bb1892
   test rust:full_capacity_poly_activation_mix_and_done_retirement_do_not_allocate
 
 AC rust-engine-architecture :: Compiled patch drives offline and realtime rendering :: Shared compilation preserves parity
-  fp 408c58a09a9e
+  fp 370a33e02385
   test rust:kernel_compensation_aligns_impulses_and_preserves_offline_realtime_parity
 
 AC rust-engine-architecture :: DSP algorithms are independent from graph concerns :: DSP can be tested without graph setup
@@ -1315,27 +1504,32 @@ AC rust-engine-architecture :: FFI boundary delegates to safe Rust APIs :: Inval
   todo not yet mapped to a test
 
 AC rust-engine-architecture :: Patch preparation pipeline :: Invalid patch fails before runtime creation
-  fp 602d77c96dcb
+  fp 0a2a9c0aa061
   test rust:unknown_static_and_default_names_are_reported_by_kernel_validation
 
+AC rust-engine-architecture :: Patch preparation pipeline :: Multichannel ports compile to channel spans
+  fp 5040c4a5717a
+  test rust:kernel_preparation_compiles_six_channel_ports_to_contiguous_spans_and_routes
+
+AC rust-engine-architecture :: Patch preparation pipeline :: Repeated expansion is cached
+  fp 8ac568882e78
+  test rust:repeated_identical_instances_reuse_one_expansion
+
 AC rust-engine-architecture :: Patch preparation pipeline :: Valid patch produces prepared runtime
-  fp 099dd428ce32
+  fp 3fa4b76cec0e
   test rust:kernel_preparation_maps_shared_resources_to_namespaced_compiled_nodes
 
 AC rust-engine-architecture :: Polyphonic realtime rendering uses prepared storage :: Inactive voices do not leak stale output
-  fp 513da6044e60
+  fp 1a2964da90d6
   test rust:poly_done_event_retires_voice_and_clears_its_future_output
-  test rust:full_capacity_poly_activation_mix_and_done_retirement_do_not_allocate
 
 AC rust-engine-architecture :: Polyphonic realtime rendering uses prepared storage :: Voice event routing uses prepared queues
-  fp 74aee0e24f3d
+  fp b27dd1650efa
   test rust:prepared_poly_note_routing_performs_no_realtime_allocations
-  test rust:full_capacity_poly_stealing_and_rejection_render_without_allocation
 
 AC rust-engine-architecture :: Polyphonic realtime rendering uses prepared storage :: Voice outputs accumulate into prepared buffers
-  fp 598da39f1cac
+  fp 43a85e77afae
   test rust:full_capacity_poly_activation_mix_and_done_retirement_do_not_allocate
-  test rust:full_capacity_poly_stealing_and_rejection_render_without_allocation
 
 AC rust-engine-architecture :: Public API boundary :: Crate root exposes facade APIs
   fp 02d4009ccbb0
@@ -1366,8 +1560,8 @@ AC rust-engine-architecture :: Realtime render path preallocates required resour
   todo not yet mapped to a test
 
 AC rust-engine-architecture :: Realtime render path preallocates required resources :: Prepared runtime records capacity
-  fp fe845923ff89
-  todo not yet mapped to a test
+  fp 7e118c6a48f3
+  test rust:full_capacity_poly_activation_mix_and_done_retirement_do_not_allocate
 
 AC rust-engine-architecture :: Realtime render path preallocates required resources :: Prepared-size realtime render does not allocate
   fp 7ce147fdaca8
@@ -1378,8 +1572,8 @@ AC rust-engine-architecture :: Realtime render path preallocates required resour
   todo not yet mapped to a test
 
 AC rust-engine-architecture :: Runtime dispatch uses typed module kinds :: Module kind is resolved during preparation
-  fp 039c987a62ea
-  todo not yet mapped to a test
+  fp 7408f176d940
+  test rust:named_script_definition_prepares_typed_construction_for_each_instance
 
 AC rust-engine-architecture :: Runtime dispatch uses typed module kinds :: Module writes into prepared outputs
   fp ab5c631db31b
@@ -1441,8 +1635,12 @@ AC script-modules :: Script failures are deterministic and non-fatal :: Runtime 
   fp 2fd7f858a0dc
   todo not yet mapped to a test
 
+AC script-modules :: Script modules are graph modules :: Repeated script instances share one interface definition
+  fp 17da778d83bf
+  test rust:named_script_definition_prepares_typed_construction_for_each_instance
+
 AC script-modules :: Script modules are graph modules :: Script module participates in routing
-  fp b13cddd55112
+  fp 3f6134618c8f
   test rust:script_counter_routes_events_and_keeps_named_control_outputs_separate
 
 AC script-modules :: Script modules process events and control signals :: Script transforms MIDI event to control output
@@ -1641,6 +1839,69 @@ AC state-reset :: Voice-scoped module state SHALL be reset on note retrigger :: 
   test rust:stolen_filter_voice_starts_with_the_same_onset_as_a_fresh_voice
   test rust:stolen_kernel_poly_filter_voice_matches_a_fresh_onset
 
+AC static-parameters :: Expansion caching is keyed by static arguments :: Distinct static arguments expand separately
+  fp 37fdb62d750f
+  test rust:distinct_static_arguments_expand_separately
+
+AC static-parameters :: Expansion caching is keyed by static arguments :: Repeated instantiation reuses expansion
+  fp 8afe15bcb801
+  test rust:repeated_identical_instances_reuse_one_expansion
+  test rust:kernel_preparation_maps_shared_resources_to_namespaced_compiled_nodes
+
+AC static-parameters :: No static expression language :: Arithmetic expression is rejected
+  fp 2f2c9c8da486
+  test rust:static_argument_expression_is_rejected
+
+AC static-parameters :: No static expression language :: Name pass-through is accepted
+  fp 3d398d94c1c2
+  test rust:static_argument_name_pass_through_resolves_from_enclosing_definition
+
+AC static-parameters :: Resource static parameters resolve in preparation context :: Caller override retains caller origin through pass-through
+  fp 805ee5cc5723
+  test rust:caller_resource_override_keeps_document_origin_through_package_pass_through
+
+AC static-parameters :: Resource static parameters resolve in preparation context :: Package-relative resource resolves
+  fp 02caee173517
+  test rust:package_resource_defaults_and_literals_retain_concrete_origins
+  test rust:repeated_package_resource_references_share_immutable_sample_data
+
+AC static-parameters :: Resource static parameters resolve in preparation context :: Shared resource data has disjoint runtime state
+  fp ce00ff848cba
+  test rust:kernel_preparation_maps_shared_resources_to_namespaced_compiled_nodes
+
+AC static-parameters :: Resource static parameters resolve in preparation context :: Wrong resource kind is rejected
+  fp bfb334ed770a
+  test rust:convolution_rejects_a_sample_resource_before_preparation
+
+AC static-parameters :: Static argument resolution :: Missing required static argument rejected
+  fp 26bd719866d4
+  test rust:missing_required_static_argument_is_rejected
+
+AC static-parameters :: Static argument resolution :: Static argument type mismatch rejected
+  fp 6cbb657bb2af
+  test rust:static_argument_type_mismatch_is_rejected
+
+AC static-parameters :: Static parameter declarations :: Definition declares static parameter
+  fp b653c5b0d4e6
+  test rust:static_parameter_declaration_is_preserved_for_resolution_and_discovery
+
+AC static-parameters :: Static parameter declarations :: Inline script source is a static string
+  fp 595337d538f1
+  test rust:string_static_parameter_preserves_inline_script_source
+
+AC static-parameters :: Static parameter declarations :: Resource declaration and literal retain kind
+  fp 31460e1f7da2
+  test rust:resource_static_parameter_requires_a_resource_kind
+  test rust:complete_kernel_document_produces_root_and_inline_graph_definitions
+
+AC static-parameters :: Static parameter declarations :: Static parameter is not a port
+  fp 97093506c618
+  test rust:connection_targeting_a_static_parameter_is_rejected_as_not_a_port
+
+AC static-parameters :: Static parameters resolve port channel counts :: One definition serves mono and stereo
+  fp 3e252c3ca1e0
+  test rust:one_definition_serves_mono_and_stereo_via_static_channel_count
+
 AC validation-diagnostics :: Diagnostic severity levels :: Error severity prevents render
   fp 9073e5cebd3a
   todo not yet mapped to a test
@@ -1693,33 +1954,13 @@ AC vca-control-routing :: VCA/control signal compatibility :: Compatible VCA out
   fp d05de223aa0e
   todo not yet mapped to a test
 
-AC yaml-patch-format :: Asset validation extension :: Asset declared in patch
-  fp 9f348cf1b633
-  todo not yet mapped to a test
-
-AC yaml-patch-format :: Asset validation extension :: Missing asset produces diagnostic
-  fp 4b54521ae986
-  todo not yet mapped to a test
-
-AC yaml-patch-format :: Composite parameter bindings in YAML :: Composite binds public parameter to internal module
-  fp 8dbe0cb7c1cf
-  todo not yet mapped to a test
-
-AC yaml-patch-format :: Composite parameter bindings in YAML :: Unsupported binding expression is rejected
-  fp 4bd9c5fe669e
-  todo not yet mapped to a test
-
-AC yaml-patch-format :: Composite parameter declarations in YAML :: Composite declares public parameters
-  fp 941bb6227450
-  todo not yet mapped to a test
-
 AC yaml-patch-format :: Defined-module references use existing module definition semantics :: External module reference by macro path
-  fp e66208a22e09
-  test rust:external_library_and_user_modules_render_identically_to_inline_definition
+  fp 5db508b14806
+  test rust:packaged_kernel_definition_is_equivalent_to_inline_definition
 
 AC yaml-patch-format :: Defined-module references use existing module definition semantics :: Inline defined-module declaration
-  fp 22b83084a986
-  test rust:external_library_and_user_modules_render_identically_to_inline_definition
+  fp ea08a1fefd2f
+  test rust:complete_kernel_document_produces_root_and_inline_graph_definitions
 
 AC yaml-patch-format :: Defined-module references use existing module definition semantics :: Unsupported composite_id syntax
   fp 4ba16f778beb
@@ -1741,10 +1982,6 @@ AC yaml-patch-format :: Event-routing module YAML :: YAML declares event filter
   fp aca0590474f0
   todo not yet mapped to a test
 
-AC yaml-patch-format :: Existing patch sections remain canonical :: Existing patch remains valid
-  fp 936558b46d15
-  todo not yet mapped to a test
-
 AC yaml-patch-format :: Instrument preset identity :: Patch declares preset-compatible identity
   fp de76d082aca6
   todo not yet mapped to a test
@@ -1761,73 +1998,103 @@ AC yaml-patch-format :: Metadata extension is compatible :: Optional metadata ex
   fp 3e6dd336f140
   todo not yet mapped to a test
 
-AC yaml-patch-format :: Module instance parameters :: Module instance declares parameters
-  fp 64043cdd0d8e
-  todo not yet mapped to a test
+AC yaml-patch-format :: Module instance parameters :: Module instance overrides port defaults
+  fp 131fb4ecadcf
+  test rust:instance_override_becomes_effective_atomic_default
+
+AC yaml-patch-format :: Module instance parameters :: Module instance supplies static arguments
+  fp 146c0ab90127
+  test rust:complete_kernel_document_produces_root_and_inline_graph_definitions
+
+AC yaml-patch-format :: Module instance parameters :: Unknown static or default name rejected
+  fp f893b0300cd3
+  test rust:unknown_static_and_default_names_are_reported_by_kernel_validation
 
 AC yaml-patch-format :: Modules and connections are separate declarations :: Patch declares modules and connections
   fp 2e5c2dc79ce8
   todo not yet mapped to a test
 
-AC yaml-patch-format :: Parameter values are parsed deterministically :: Unparseable value is rejected
-  fp 692b1607d146
-  todo not yet mapped to a test
-
-AC yaml-patch-format :: Patch-level parameter bindings are compatible :: Patch parameter binding target missing
-  fp 14c725b4aa8c
-  todo not yet mapped to a test
-
-AC yaml-patch-format :: Patch-level parameter bindings are compatible :: Patch parameter binds to module parameter
-  fp 68ccbb21102f
-  todo not yet mapped to a test
-
-AC yaml-patch-format :: Preset surface is explicit :: Internal parameter is not automatically presettable
-  fp cc05d7a7a18c
-  todo not yet mapped to a test
+AC yaml-patch-format :: Preset surface is explicit :: Internal port is not automatically presettable
+  fp 2a37506146aa
+  test rust:kernel_preset_rejects_identity_unknown_targets_and_incompatible_values
 
 AC yaml-patch-format :: Preset surface is explicit :: Public target hides internal path
   fp a1ac3435ba89
-  todo not yet mapped to a test
+  test rust:kernel_preset_surface_preserves_aliased_root_metadata
+  test rust:kernel_preset_rejects_identity_unknown_targets_and_incompatible_values
 
-AC yaml-patch-format :: Presets are parameter sets, not new graph semantics :: Preset applies parameter values
-  fp 4ef6eaeb6a6e
-  todo not yet mapped to a test
+AC yaml-patch-format :: Presets alter declared values, not graph structure :: Preset applies declared aliases
+  fp e76ab4c0ae60
+  test rust:kernel_preset_application_changes_root_defaults_before_flattening
 
-AC yaml-patch-format :: Presets are parameter sets, not new graph semantics :: Preset cannot hide graph changes
-  fp a779c8ca255e
-  todo not yet mapped to a test
+AC yaml-patch-format :: Presets alter declared values, not graph structure :: Preset cannot hide graph changes
+  fp dd6b33cf2cfd
+  test rust:kernel_preset_rejects_identity_unknown_targets_and_incompatible_values
+  test rust:kernel_preset_asset_passes_through_root_static_parameter_to_node
 
 AC yaml-patch-format :: Public preset surface :: Duplicate preset targets are rejected
   fp 9bf583fa46a6
   test rust:kernel_preset_surface_rejects_duplicate_or_unresolved_aliases
 
 AC yaml-patch-format :: Public preset surface :: Patch declares preset asset target
-  fp 5b67c31db7fa
+  fp a02b82c206b1
   test rust:kernel_preset_surface_preserves_aliased_root_metadata
 
 AC yaml-patch-format :: Public preset surface :: Patch declares preset parameter target
-  fp 3e07e66539e6
+  fp 4601c776b9a7
   test rust:kernel_preset_surface_preserves_aliased_root_metadata
 
 AC yaml-patch-format :: Public preset surface :: Preset target maps to missing destination
-  fp 3a5c8260c2dd
+  fp e594190ec25f
   test rust:kernel_preset_surface_rejects_duplicate_or_unresolved_aliases
 
-AC yaml-patch-format :: Resolved YAML patch preparation :: Resolved patch contains concrete parameters
-  fp 0f52c085ce8d
-  todo not yet mapped to a test
+AC yaml-patch-format :: Resolved YAML patch preparation :: Resolved patch contains concrete values
+  fp 2f28579b0706
+  test rust:kernel_preparation_keeps_static_construction_and_control_defaults_distinct
+  test rust:render_command_applies_cli_control_override_to_kernel_patch
+  test rust:render_command_applies_typed_static_cli_override_to_kernel_patch
+  test rust:render_command_cli_override_takes_precedence_over_mapped_root_default
+  test rust:render_command_loads_cli_resource_relative_to_patch_directory
+  test rust:render_command_applies_cli_override_to_external_package_instance
+  test rust:kernel_cli_overrides_resolve_against_declared_static_and_control_types
+  test rust:kernel_cli_override_changes_only_the_targeted_root_control_default
+  test rust:kernel_cli_override_rejects_shared_root_control_without_mutating_patch
+  test rust:kernel_cli_override_uses_only_the_matching_external_definition
+  test rust:kernel_cli_override_validates_mapped_root_control_range_boundaries
+
+AC yaml-patch-format :: Root port declarations :: Patch declares named output ports
+  fp eecdcb07ad3e
+  test rust:complete_kernel_document_produces_root_and_inline_graph_definitions
+
+AC yaml-patch-format :: Root port declarations :: Patch without root output ports is rejected
+  fp 45cc51ff95bb
+  test rust:patch_without_root_output_has_structured_diagnostic
 
 AC yaml-patch-format :: Script and custom port declarations :: Script ports are declared in YAML
-  fp bf218f2f5d4f
-  todo not yet mapped to a test
+  fp 9bb07ffe5975
+  test rust:script_backed_definition_uses_the_ordinary_node_shape
+  test rust:script_counter_routes_events_and_keeps_named_control_outputs_separate
+
+AC yaml-patch-format :: Script-backed module definitions :: Script definition preserves the unified node shape
+  fp 7f3dbcee61cf
+  test rust:named_script_definition_prepares_typed_construction_for_each_instance
 
 AC yaml-patch-format :: Stable module identifiers :: Duplicate module identifiers are rejected
   fp 64fdfb814765
   todo not yet mapped to a test
 
+AC yaml-patch-format :: Static arguments and defaults are parsed deterministically :: Unparseable value is rejected
+  fp ccd532f178ef
+  test rust:node_static_literal_must_match_the_declared_type
+  test rust:yaml_control_default_must_parse_as_a_number
+
 AC yaml-patch-format :: YAML patch document :: Non-YAML patch is rejected
   fp 28b8a5dfa0fb
   test rust:unsupported_file_format_has_structured_diagnostic
+
+AC yaml-patch-format :: YAML patch document :: Render settings are rejected
+  fp 727e883fcbd6
+  test rust:legacy_document_fields_are_rejected_with_specific_diagnostics
 
 AC yaml-patch-format :: YAML patch document :: YAML patch is loaded
   fp 77f32c949040

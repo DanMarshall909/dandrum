@@ -92,6 +92,156 @@ impl KernelPatch {
         &self.local_definition_names
     }
 
+    /// Resolve a command-line value against the node's declared interface before preparation.
+    pub fn apply_cli_override(
+        &mut self,
+        module_id: &str,
+        parameter_name: &str,
+        raw_value: &str,
+        external_definition: Option<&GraphDefinition>,
+    ) -> Result<(), Diagnostics> {
+        let invalid = |message: String| {
+            let mut diagnostics = Diagnostics::new();
+            diagnostics.push(
+                Diagnostic::new(
+                    error_codes::VALIDATION_INVALID_VALUE,
+                    Severity::Error,
+                    message,
+                )
+                .with_module_id(module_id)
+                .with_port_name(parameter_name),
+            );
+            diagnostics
+        };
+        let Some(node) = self
+            .root
+            .nodes
+            .iter_mut()
+            .find(|node| node.id.as_str() == module_id)
+        else {
+            return Err(invalid(format!(
+                "unknown CLI override module '{module_id}'"
+            )));
+        };
+        let Some(definition) = self.registry.get(node.definition_ref()).or_else(|| {
+            external_definition.filter(|definition| definition.name() == node.definition_ref())
+        }) else {
+            return Err(invalid(format!(
+                "unknown definition '{}' for CLI override module '{module_id}'",
+                node.definition_ref()
+            )));
+        };
+
+        if let Some(param) = definition
+            .static_params()
+            .iter()
+            .find(|param| param.name() == parameter_name)
+        {
+            let static_value = match param.static_type() {
+                StaticType::Int => match raw_value.parse::<i64>() {
+                    Ok(number) => StaticValue::Int(number),
+                    Err(_) => {
+                        return Err(invalid(format!(
+                            "CLI override '{module_id}.{parameter_name}' has an incompatible type"
+                        )));
+                    }
+                },
+                StaticType::Enum => StaticValue::Enum(raw_value.to_string()),
+                StaticType::String => StaticValue::String(raw_value.to_string()),
+                StaticType::Resource(kind) => StaticValue::Resource(ResourceRef::new(
+                    kind,
+                    raw_value,
+                    ResourceOrigin::Document,
+                )),
+            };
+            let allowed = param.allowed_values();
+            let allowed_match = match &static_value {
+                StaticValue::Int(number) => allowed.iter().any(|item| item == &number.to_string()),
+                StaticValue::Enum(text) => allowed.iter().any(|item| item == text),
+                _ => true,
+            };
+            if !allowed.is_empty() && !allowed_match {
+                return Err(invalid(format!(
+                    "CLI override '{module_id}.{parameter_name}' has an unsupported value"
+                )));
+            }
+            node.static_args
+                .insert(parameter_name.to_string(), StaticArg::Literal(static_value));
+            return Ok(());
+        }
+
+        if let Some(port) = definition
+            .ports()
+            .iter()
+            .find(|port| port.name() == parameter_name)
+        {
+            if port.direction() != PortDirection::Input || port.signal_type() != SignalType::Control
+            {
+                return Err(invalid(format!(
+                    "CLI override '{module_id}.{parameter_name}' does not target a control input"
+                )));
+            }
+            let number = match raw_value.parse::<f64>() {
+                Ok(number) => number,
+                Err(_) => {
+                    return Err(invalid(format!(
+                        "CLI override '{module_id}.{parameter_name}' has an incompatible type"
+                    )));
+                }
+            };
+            if !number.is_finite()
+                || port.control_default().is_some_and(|default| {
+                    default.min().is_some_and(|min| number < min)
+                        || default.max().is_some_and(|max| number > max)
+                })
+            {
+                return Err(invalid(format!(
+                    "CLI override '{module_id}.{parameter_name}' is outside its declared range"
+                )));
+            }
+            for root_port in &self.root.ports {
+                let mapped_target = root_port.maps_to.iter().any(|target| {
+                    target.node().as_str() == module_id && target.port() == parameter_name
+                });
+                if root_port.control_default.is_some()
+                    && mapped_target
+                    && root_port.maps_to.len() > 1
+                {
+                    return Err(invalid(format!(
+                        "CLI override '{module_id}.{parameter_name}' is ambiguous because root control '{}' maps to multiple inputs",
+                        root_port.name()
+                    )));
+                }
+                if mapped_target
+                    && root_port.control_default.as_ref().is_some_and(|default| {
+                        default.min().is_some_and(|min| number < min)
+                            || default.max().is_some_and(|max| number > max)
+                    })
+                {
+                    return Err(invalid(format!(
+                        "CLI override '{module_id}.{parameter_name}' is outside its mapped root control range"
+                    )));
+                }
+            }
+            node.port_default_overrides
+                .insert(parameter_name.to_string(), number);
+            for root_port in &mut self.root.ports {
+                if root_port.maps_to.iter().any(|target| {
+                    target.node().as_str() == module_id && target.port() == parameter_name
+                }) {
+                    if let Some(default) = root_port.control_default.as_mut() {
+                        default.default = number;
+                    }
+                }
+            }
+            return Ok(());
+        }
+
+        Err(invalid(format!(
+            "unknown CLI override target '{module_id}.{parameter_name}'"
+        )))
+    }
+
     /// Apply a compatible preset to root declarations before graph flattening.
     pub fn apply_preset(&self, preset: &PresetDocument) -> Result<Self, Diagnostics> {
         let mut diagnostics = Diagnostics::new();

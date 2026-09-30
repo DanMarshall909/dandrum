@@ -7748,19 +7748,22 @@ fn cowbell_preserves_legacy_preset_renders_on_master_bus() {
 }
 
 #[test]
-fn lfo_and_control_mixer_render_a_summed_control_bus_across_blocks() {
+fn lfo_control_and_promoted_audio_follow_each_sample_across_blocks() {
     let patch = load_kernel_patch_str(
         r#"
 metadata: { name: lfo_control_mix }
 ports:
   - { name: modulation, direction: output, signal: control, channels: 1, maps_from: mix.sum }
+  - { name: audible, direction: output, signal: audio, channels: 1, maps_from: audio.mix }
 modules:
   - { id: moving, type: lfo, defaults: { rate: 12000 } }
   - { id: steady, type: lfo, defaults: { rate: 0 } }
   - { id: mix, type: control_mixer }
+  - { id: audio, type: audio_mixer }
 connections:
   - { from: moving.value, to: mix.inputs }
   - { from: steady.value, to: mix.inputs }
+  - { from: mix.sum, to: audio.inputs }
 "#,
     )
     .expect("kernel modulation patch loads");
@@ -7772,17 +7775,21 @@ connections:
     let prepared = prepare_kernel_patch(&patch, &settings).expect("LFO and control mixer prepare");
     let buses = render_kernel_offline_named(&prepared, Vec::new(), &PreparedSamplerAssets::empty())
         .expect("control mix renders");
-    assert_eq!(buses.len(), 1);
+    assert_eq!(buses.len(), 2);
     assert_eq!(buses[0].0, "modulation");
     assert_eq!(buses[0].1.len(), 1);
+    assert_eq!(buses[1].0, "audible");
+    assert_eq!(buses[1].1.len(), 1);
     for (frame, expected) in [1.0, 1.5, 1.0, 0.5, 1.0, 1.5, 1.0, 0.5]
         .into_iter()
         .enumerate()
     {
-        assert!(
-            (buses[0].1[0][frame] - expected).abs() < 1.0e-6,
-            "frame {frame} should sum both LFO values without clipping"
-        );
+        for (name, channels) in &buses {
+            assert!(
+                (channels[0][frame] - expected).abs() < 1.0e-6,
+                "{name} frame {frame} should retain the per-sample control value"
+            );
+        }
     }
 }
 

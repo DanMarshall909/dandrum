@@ -11,10 +11,8 @@ use crate::script::ScriptEvent;
 use super::audio_arena::AudioArena;
 use super::event_queue::PreparedEventQueues;
 use super::outputs::BlockEvent;
-use super::process_context::ProcessContext;
-use super::render_plan::{
-    AudioBufferPlan, BufferId, CompiledEventEdge, EventQueueId, RenderPlan, RenderStep,
-};
+use super::render_plan::{AudioBufferPlan, BufferId, EventQueueId, RenderPlan, RenderStep};
+#[cfg(test)]
 use super::state::PerModuleState;
 
 /// Linear peak amplitude below which a released voice counts as silent.
@@ -73,6 +71,7 @@ enum DoneBinding {
 
 pub struct PreparedPolyRuntimeRegion {
     node_id: String,
+    #[cfg(test)]
     states: Box<[Box<[PerModuleState]>]>,
     child_module_kinds: Box<[ModuleKind]>,
     voice_arenas: Box<[AudioArena]>,
@@ -89,6 +88,8 @@ pub struct PreparedPolyRuntimeRegion {
     silence_hold_frames: usize,
     release_timeout_frames: usize,
     child_render_plan: RenderPlan,
+    prepared_step_executors:
+        Box<[Box<[Box<dyn super::realtime_graph_processor::PreparedStepExecutor>]>]>,
     child_patch: Box<CompiledPatch>,
     forwarded_buffer_inputs: Box<[ForwardedBufferInput]>,
     forwarded_event_inputs: Box<[ForwardedEventInput]>,
@@ -98,9 +99,15 @@ pub struct PreparedPolyRuntimeRegion {
 impl PreparedPolyRuntimeRegion {
     pub(super) fn reset(&mut self) {
         self.retire_all_voices();
+        #[cfg(test)]
         for voice in self.states.iter_mut() {
             for state in voice.iter_mut() {
                 state.reset_all();
+            }
+        }
+        for voice in self.prepared_step_executors.iter_mut() {
+            for executor in voice.iter_mut() {
+                executor.reset_all();
             }
         }
         for arena in self.voice_arenas.iter_mut() {
@@ -124,6 +131,7 @@ impl PreparedPolyRuntimeRegion {
         sample_rate: f32,
         sampler_assets: &PreparedSamplerAssets,
     ) -> Self {
+        #[cfg(test)]
         let states = build_polyphonic_states_from_compiled(
             compiled.child_patch(),
             sample_rate,
@@ -198,6 +206,17 @@ impl PreparedPolyRuntimeRegion {
             1,
             compiled.event_queue_capacity(),
         );
+        let prepared_step_executors = (0..compiled.max_voices())
+            .map(|_| {
+                super::realtime_graph_processor::bind_prepared_step_executors(
+                    compiled.child_patch(),
+                    &child_render_plan,
+                    sample_rate,
+                    sampler_assets,
+                )
+            })
+            .collect::<Vec<_>>()
+            .into_boxed_slice();
         let intrinsic_bindings =
             voice_intrinsic_bindings(compiled.child_patch(), &child_render_plan);
         let done_binding = voice_done_binding(compiled, &child_render_plan);
@@ -296,6 +315,7 @@ impl PreparedPolyRuntimeRegion {
 
         Self {
             node_id: compiled.node_id().to_string(),
+            #[cfg(test)]
             states,
             child_module_kinds,
             voice_arenas,
@@ -313,6 +333,7 @@ impl PreparedPolyRuntimeRegion {
             release_timeout_frames: ((sample_rate * RELEASE_TIMEOUT_SECONDS).ceil() as usize)
                 .max(1),
             child_render_plan,
+            prepared_step_executors,
             child_patch: Box::new(compiled.child_patch().clone()),
             forwarded_buffer_inputs,
             forwarded_event_inputs,
@@ -348,6 +369,21 @@ impl PreparedPolyRuntimeRegion {
         }
     }
 
+    #[cfg(test)]
+    pub(super) fn replace_child_step_kind_for_test(
+        &mut self,
+        original: ModuleKind,
+        replacement: ModuleKind,
+    ) {
+        let step = self
+            .child_render_plan
+            .global_steps
+            .iter_mut()
+            .find(|step| step.module_kind == original)
+            .expect("test names a prepared child step");
+        step.module_kind = replacement;
+    }
+
     pub(super) fn render_into(
         &mut self,
         parent_arena: &mut AudioArena,
@@ -364,18 +400,12 @@ impl PreparedPolyRuntimeRegion {
             parent_arena.clear(buffer, frames);
         }
 
-        debug_assert!(
-            self.child_render_plan
-                .global_steps
-                .iter()
-                .all(is_poly_child_arena_supported)
-        );
-
         for voice in 0..self.slots.len() {
             if !self.slots[voice].active {
                 continue;
             }
             let arena = &mut self.voice_arenas[voice];
+            #[cfg(test)]
             let states = &mut self.states[voice];
             for binding in self.forwarded_buffer_inputs.iter().copied() {
                 for channel in 0..binding.child_span.channel_count {
@@ -405,149 +435,41 @@ impl PreparedPolyRuntimeRegion {
             let mut audio_audible = false;
             let mut control_done = false;
             let release_start = self.slots[voice].release_offset_pending.min(frames);
+            let mut step_context = super::realtime_graph_processor::PreparedStepContext {
+                arena: &mut *arena,
+                #[cfg(test)]
+                states: &mut *states,
+                #[cfg(not(test))]
+                states: &mut [],
+                poly_regions: &mut self.nested_regions[voice],
+                event_queues: &mut self.voice_event_queues[voice],
+                compiled: &self.child_patch,
+                frames,
+                block_start_frame: self.block_start_frame,
+            };
             for (step_index, step) in self.child_render_plan.global_steps.iter().enumerate() {
-                for edge in step.incoming_event_edges.iter().copied() {
-                    let _ = self.voice_event_queues[voice].route_event_edge(edge);
-                }
-                super::realtime_graph_processor::clear_and_route_arena_inputs(
-                    arena,
+                super::realtime_graph_processor::execute_bound_prepared_step(
+                    &mut step_context,
                     step,
-                    frames,
-                    // Control defaults are owned by the child compiled patch.
-                    // The render plan's slot ids index this exact patch.
-                    //
-                    // Keeping this as a shared immutable borrow is the Rust
-                    // equivalent of sharing readonly construction metadata
-                    // across voice instances while their DSP state stays
-                    // disjoint.
-                    &self.child_patch,
+                    self.prepared_step_executors[voice][step_index].as_mut(),
                 );
-                match step.module_kind {
-                    ModuleKind::Poly => {
-                        let events = step
-                            .event_inputs
-                            .first()
-                            .and_then(|queue| self.voice_event_queues[voice].queue_ref(queue.0))
-                            .map_or(&[][..], |queue| queue.events());
-                        let nested = self.nested_regions[voice]
-                            .get_mut(
-                                step.poly_region_index
-                                    .expect("poly step has a region index"),
-                            )
-                            .expect("compiled nested poly has a prepared runtime region");
-                        nested.route_note_events(events, frames);
-                        nested.render_into(
-                            arena,
-                            &step.input_buffers,
-                            &step.event_inputs,
-                            &self.voice_event_queues[voice],
-                            &step.output_buffers,
-                            frames,
-                        );
-                    }
-                    ModuleKind::EventFilter => {
-                        let PerModuleState::EventFilter { note } = &states[step.module_index]
-                        else {
-                            unreachable!()
-                        };
-                        let edge = CompiledEventEdge {
-                            source: step.event_inputs[0],
-                            destination: step.event_outputs[0],
-                        };
-                        let _ =
-                            self.voice_event_queues[voice].route_filtered_event_edge(edge, *note);
-                    }
-                    ModuleKind::Adsr => {
-                        let events = self.voice_event_queues[voice]
-                            .queue_ref(step.event_inputs[0].0)
-                            .map_or(&[][..], |queue| queue.events());
-                        let mut context = ProcessContext::new(
-                            arena,
-                            &step.input_buffers,
-                            &step.output_buffers,
-                            frames,
-                        );
-                        super::arena_processing::process_adsr(
-                            &mut states[step.module_index],
-                            &mut context,
-                            events,
-                            self.block_start_frame,
-                        );
-                    }
-                    ModuleKind::Decay | ModuleKind::Impulse => {
-                        let events = self.voice_event_queues[voice]
-                            .queue_ref(step.event_inputs[0].0)
-                            .map_or(&[][..], |queue| queue.events());
-                        let mut context = ProcessContext::new(
-                            arena,
-                            &step.input_buffers,
-                            &step.output_buffers,
-                            frames,
-                        );
-                        match step.module_kind {
-                            ModuleKind::Decay => super::arena_processing::process_decay(
-                                &mut states[step.module_index],
-                                &mut context,
-                                events,
-                            ),
-                            ModuleKind::Impulse => {
-                                super::arena_processing::process_impulse(&mut context, events)
-                            }
-                            _ => unreachable!(),
-                        }
-                    }
-                    ModuleKind::Sampler => {
-                        let events = self.voice_event_queues[voice]
-                            .queue_ref(step.event_inputs[0].0)
-                            .map_or(&[][..], |queue| queue.events());
-                        let mut context = ProcessContext::new(
-                            arena,
-                            &step.input_buffers,
-                            &step.output_buffers,
-                            frames,
-                        );
-                        super::arena_processing::process_sampler(
-                            &mut states[step.module_index],
-                            &mut context,
-                            events,
-                        );
-                    }
-                    ModuleKind::NoteToControl => {
-                        let (input, output) = self.voice_event_queues[voice]
-                            .queue_pair(step.event_inputs[0], step.event_outputs[0])
-                            .expect("compiled note_to_control queues are distinct and valid");
-                        let mut context = ProcessContext::new(
-                            arena,
-                            &step.input_buffers,
-                            &step.output_buffers,
-                            frames,
-                        );
-                        super::arena_processing::process_note_to_control(
-                            &mut states[step.module_index],
-                            &mut context,
-                            input.events(),
-                            output,
-                        );
-                    }
-                    _ => super::realtime_graph_processor::process_channel_arena_step(
-                        arena, states, step, frames,
-                    ),
-                }
                 if let Some(DoneBinding::Control {
                     buffer,
                     producer_step,
                 }) = self.done_binding
                 {
                     if step_index == producer_step {
-                        control_done = arena.sample(buffer, 0) > 0.0;
+                        control_done = (0..frames)
+                            .any(|frame| step_context.arena.sample(buffer, frame) > 0.0);
                     }
                 }
             }
 
-            super::realtime_graph_processor::capture_feedback_delays(
+            super::realtime_graph_processor::capture_bound_feedback_delays(
                 arena,
-                states,
                 &self.child_render_plan.global_steps,
+                &self.child_render_plan.feedback_step_indices,
+                &mut self.prepared_step_executors[voice],
                 frames,
                 &self.child_patch,
             );
@@ -638,8 +560,12 @@ impl PreparedPolyRuntimeRegion {
             );
         }
 
+        #[cfg(test)]
         for state in self.states[voice].iter_mut() {
             state.reset_voice();
+        }
+        for executor in self.prepared_step_executors[voice].iter_mut() {
+            executor.reset_voice();
         }
         for region in self.nested_regions[voice].iter_mut() {
             region.reset();
@@ -730,11 +656,13 @@ impl PreparedPolyRuntimeRegion {
     }
 
     pub fn voice_count(&self) -> usize {
-        self.states.len()
+        self.slots.len()
     }
 
     pub fn states_per_voice(&self) -> usize {
-        self.states.first().map_or(0, |states| states.len())
+        self.prepared_step_executors
+            .first()
+            .map_or(0, |executors| executors.len())
     }
 
     pub fn child_module_kinds(&self) -> &[ModuleKind] {
@@ -742,10 +670,15 @@ impl PreparedPolyRuntimeRegion {
     }
 
     pub fn state_instance_address(&self, voice: usize, child_node: usize) -> Option<usize> {
-        self.states
+        let step_index = self
+            .child_render_plan
+            .global_steps
+            .iter()
+            .position(|step| step.module_index == child_node)?;
+        self.prepared_step_executors
             .get(voice)?
-            .get(child_node)
-            .map(|state| std::ptr::from_ref(state).addr())
+            .get(step_index)
+            .map(|executor| std::ptr::from_ref(executor.as_ref()).cast::<()>().addr())
     }
 
     pub fn voice_arena_count(&self) -> usize {
@@ -997,6 +930,7 @@ fn voice_intrinsic_bindings(
     })
 }
 
+#[cfg(test)]
 pub(super) fn build_polyphonic_states_from_compiled(
     compiled: &CompiledPatch,
     sample_rate: f32,

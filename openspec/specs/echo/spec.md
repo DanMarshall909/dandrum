@@ -79,24 +79,13 @@ The echo effect SHALL provide independent wet and dry gain control (0.0–1.0). 
 
 ### Requirement: Echo SHALL expose built-in module ports
 
-The echo SHALL be registered as a built-in module with: Audio input L+R, Audio output L+R, Control input `time_left_ms`,
-`time_right_ms`, `feedback`, `damping_cutoff`, `wet`, `dry`, Event input (for BPM clock), and parameters for
-`sync_division`, `ping_pong` (bool).
+The `echo` primitive SHALL expose one channel-aware `audio_in` input and `audio_out` output, each resolving to one or two channels through a static `channels` argument. It SHALL expose control input ports `time_left_ms`, `time_right_ms`, `feedback`, `damping_cutoff`, `wet`, `dry`, `sync_division`, and `ping_pong`. It SHALL NOT require a separate BPM-clock event port.
 
 #### Scenario: Module registration has correct ports
 
-- **WHEN** built-in module registry is queried for `echo`
-- **THEN** the port definitions SHALL match the specification above
-
-### Requirement: Echo SHALL process in global (non-voice) scope
-
-The echo effect SHALL be a global-scope module — it processes summed mix, not per-voice. Voice-scoped delay/echo modules
-SHALL NOT be supported in this change.
-
-#### Scenario: Echo is global scope
-
-- **WHEN** a patch contains an echo module after a voice-scoped oscillator chain
-- **THEN** the echo SHALL process the summed output of all voices
+- **WHEN** the kernel built-in registry is queried for `echo`
+- **THEN** it SHALL report one channel-aware audio input/output pair and the declared control input ports
+- **AND** the same definition SHALL prepare and render with one or two audio channels
 
 ### Requirement: Echo SHALL have a YAML composite module definition example
 

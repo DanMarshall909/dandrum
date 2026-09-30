@@ -64,6 +64,34 @@ fn nested_defined_modules_flatten_to_atomic_nodes_with_namespaced_ids() {
 }
 
 #[test]
+fn complete_patch_definition_instantiates_as_a_module() {
+    let document = crate::kernel::document::load_kernel_patch_str(
+        "metadata: { name: standalone_patch }\nports:\n  - { name: audio, direction: output, signal: audio, channels: 1, maps_from: osc.audio }\nmodules:\n  - { id: osc, type: oscillator }\nconnections: []\n",
+    )
+    .expect("complete patch document loads");
+    let registry =
+        crate::kernel::builtins::builtin_registry().with_definition(document.root().clone());
+    let root = GraphDefinition::new("root")
+        .with_port(
+            Port::output("audio", SignalType::Audio, 1)
+                .maps_from(PortRef::new(NodeId::new("voice"), "audio")),
+        )
+        .with_node(Node::new(NodeId::new("voice"), "standalone_patch"));
+
+    assert!(document.root().validate(&registry).is_ok());
+    assert!(root.validate(&registry).is_ok());
+    let flat = root
+        .flatten(&registry)
+        .expect("patch used as module flattens");
+    assert_eq!(flat.nodes().len(), 1);
+    assert_eq!(flat.nodes()[0].id().as_str(), "voice::osc");
+    assert_eq!(
+        flat.root_output_sources().get("audio"),
+        Some(&vec![PortRef::new(NodeId::new("voice::osc"), "audio")])
+    );
+}
+
+#[test]
 fn boundary_ports_forward_connections_to_atomic_ports() {
     let registry = DefinitionRegistry::new()
         .with_definition(oscillator())
@@ -789,6 +817,52 @@ fn flattening_preserves_poly_as_an_explicit_structural_region() {
         boundary.ports()[0].name(),
         crate::kernel::POLY_NOTE_EVENTS_INPUT
     );
+}
+
+#[test]
+fn poly_voice_output_reaches_root_only_through_poly_boundary() {
+    let voice = wrapping_defined_module("voice", "oscillator", "osc");
+    let registry = crate::kernel::builtins::builtin_registry()
+        .with_definition(oscillator())
+        .with_definition(voice);
+    let root = GraphDefinition::new("root")
+        .with_port(
+            Port::output("audio", SignalType::Audio, 1)
+                .maps_from(PortRef::new(NodeId::new("voices"), "audio")),
+        )
+        .with_node(
+            Node::new(NodeId::new("voices"), crate::kernel::POLY_DEFINITION)
+                .with_static_arg(
+                    crate::kernel::POLY_WRAPPED_DEFINITION_PARAM,
+                    StaticArg::Literal(StaticValue::String("voice".to_string())),
+                )
+                .with_static_arg(
+                    crate::kernel::POLY_MAX_VOICES_PARAM,
+                    StaticArg::Literal(StaticValue::Int(2)),
+                )
+                .with_static_arg(
+                    crate::kernel::POLY_ALLOCATION_PARAM,
+                    StaticArg::Literal(StaticValue::Enum(
+                        crate::kernel::POLY_ALLOCATION_OLDEST_STEAL.to_string(),
+                    )),
+                ),
+        );
+
+    let flat = root.flatten(&registry).expect("poly graph flattens");
+    assert_eq!(flat.poly_regions().len(), 1);
+    assert_eq!(
+        flat.root_output_sources().get("audio"),
+        Some(&vec![PortRef::new(NodeId::new("voices"), "audio")])
+    );
+    assert!(
+        flat.nodes()
+            .iter()
+            .all(|node| !node.id().as_str().starts_with("voices::"))
+    );
+    assert!(flat.connections().iter().all(|edge| {
+        !edge.source().node().as_str().starts_with("voices::")
+            && !edge.destination().node().as_str().starts_with("voices::")
+    }));
 }
 
 #[test]

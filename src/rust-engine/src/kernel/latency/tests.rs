@@ -290,6 +290,45 @@ fn control_edge_is_not_given_an_audio_compensation_delay() {
 }
 
 #[test]
+fn event_edge_is_not_given_an_audio_compensation_delay() {
+    let event_source = GraphDefinition::new("event_source").with_port(Port::output(
+        "events",
+        SignalType::Event,
+        1,
+    ));
+    let triggered = GraphDefinition::new("triggered")
+        .with_port(Port::input("audio_in", SignalType::Audio, 1))
+        .with_port(Port::input("events", SignalType::Event, 1))
+        .with_port(Port::output("audio_out", SignalType::Audio, 1));
+    let registry = DefinitionRegistry::new()
+        .with_definition(source())
+        .with_definition(event_source)
+        .with_definition(delayed("proc", 64))
+        .with_definition(triggered);
+    let root = GraphDefinition::new("root")
+        .with_port(root_output("target", "audio_out"))
+        .with_node(Node::new(NodeId::new("osc"), "source"))
+        .with_node(Node::new(NodeId::new("wet"), "proc"))
+        .with_node(Node::new(NodeId::new("events"), "event_source"))
+        .with_node(Node::new(NodeId::new("target"), "triggered"))
+        .with_connection(cable("osc", "audio", "wet", "audio_in"))
+        .with_connection(cable("wet", "audio_out", "target", "audio_in"))
+        .with_connection(cable("events", "events", "target", "events"));
+
+    let plan = root
+        .flatten(&registry)
+        .expect("flattens")
+        .balance_latency()
+        .expect("balances");
+
+    assert!(
+        plan.compensations().is_empty(),
+        "an event edge is not delayed to match an audio input"
+    );
+    assert_eq!(plan.root_latency(), 64);
+}
+
+#[test]
 fn balance_latency_rejects_remaining_non_feedback_cycle_instead_of_returning_default_plan() {
     // A zero-latency cycle with no feedback_delay: no latency offender, but the
     // graph is not a DAG. balance_latency must reject, not return a plan built

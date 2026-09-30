@@ -95,6 +95,73 @@ fn registry_declares_every_builtin_and_no_others() {
 }
 
 #[test]
+fn noise_registry_entry_exposes_audio_output_and_typed_seed() {
+    let registry = builtin_registry();
+    let noise = registry.get(names::NOISE).expect("noise builtin declared");
+    let output = port_of(noise, "audio", PortDirection::Output);
+    assert_eq!(output.signal_type(), SignalType::Audio);
+    assert_eq!(output.channels(), &ChannelCount::param("channels"));
+    let seed = static_param_of(noise, NOISE_SEED_PARAMETER);
+    assert_eq!(seed.static_type(), StaticType::Int);
+    assert_eq!(
+        seed.default(),
+        Some(&StaticValue::Int(NOISE_DEFAULT_SEED as i64))
+    );
+}
+
+#[test]
+fn echo_and_reverb_declare_channel_aware_ports_without_voice_scope() {
+    let registry = builtin_registry();
+    for (name, controls) in [
+        (
+            names::ECHO,
+            &[
+                ports::TIME_LEFT_MS,
+                ports::TIME_RIGHT_MS,
+                ports::FEEDBACK,
+                ports::DAMPING_CUTOFF,
+                ports::WET,
+                ports::DRY,
+                ports::SYNC_DIVISION,
+                ports::PING_PONG,
+            ][..],
+        ),
+        (
+            names::REVERB,
+            &[
+                ports::DECAY_TIME,
+                ports::ROOM_SIZE,
+                ports::PRE_DELAY,
+                ports::DAMPING,
+                ports::DIFFUSION,
+                ports::STEREO_WIDTH,
+                ports::WET,
+                ports::DRY,
+            ][..],
+        ),
+    ] {
+        let definition = registry.get(name).expect("effect builtin declared");
+        let input = port_of(definition, ports::AUDIO_IN, PortDirection::Input);
+        let output = port_of(definition, ports::AUDIO_OUT, PortDirection::Output);
+        assert_eq!(input.signal_type(), SignalType::Audio);
+        assert_eq!(output.signal_type(), SignalType::Audio);
+        assert_eq!(input.channels(), &ChannelCount::param("channels"));
+        assert_eq!(output.channels(), &ChannelCount::param("channels"));
+        for control in controls {
+            assert_eq!(
+                port_of(definition, control, PortDirection::Input).signal_type(),
+                SignalType::Control
+            );
+        }
+        assert_eq!(
+            static_param_of(definition, "channels").default(),
+            Some(&StaticValue::Int(2))
+        );
+        assert_eq!(definition.ports().len(), controls.len() + 2);
+    }
+}
+
+#[test]
 fn poly_declares_structural_static_arguments_and_note_event_input() {
     let registry = builtin_registry();
     let poly = registry.get(POLY_DEFINITION).expect("poly declared");
@@ -678,6 +745,15 @@ fn builtin_static_arguments_validate_through_graph_definition() {
             expected_code
         );
     }
+
+    let yaml = "ports:\n  - { name: out, direction: output, signal: audio, channels: 1, maps_from: amp.audio_out }\nmodules:\n  - { id: amp, type: gain, defaults: { unknown_gain: 0.5 } }\nconnections: []\n";
+    let patch = crate::kernel::document::load_kernel_patch_str(yaml)
+        .expect("unknown default parses before validation");
+    let validation = patch.root().validate(patch.registry());
+    assert_eq!(
+        validation.diagnostics().all()[0].error_code(),
+        error_codes::KERNEL_OVERRIDE_UNKNOWN_PORT
+    );
 }
 
 // --- 3.3 Input multiplicity declarations ----------------------------------

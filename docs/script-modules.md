@@ -1,6 +1,6 @@
 # Script Modules
 
-Rhai script modules are for block-rate event and scalar-control policy: note routing, velocity mapping, probability, and small bits of persistent numeric state.
+Rhai script modules run once per processing block for event and scalar-control policy: note routing, velocity mapping, probability, and small bits of persistent numeric state. A script's scalar control output fills the per-sample control buffer with the same value for that block; other control sources may change every sample.
 
 Scripts are not audio DSP modules. They cannot declare audio ports, do not receive audio buffers, and must not implement oscillators, filters, convolution, sample-by-sample processing, or other audio-rate behaviour.
 

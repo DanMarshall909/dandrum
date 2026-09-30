@@ -25,7 +25,7 @@ Internal Rust types may keep existing names such as `ModuleNode` where they alre
 Dandrum uses three signal types:
 
 - `audio` — audio-rate sample streams.
-- `control` — continuous modulation/control signals.
+- `control` — per-sample modulation/control signals; constant sources may repeat one value across a block.
 - `event` — note, trigger, and other discrete events.
 
 Use **control signal** in documentation. Avoid **CV** unless explicitly comparing Dandrum to modular synthesizer terminology.
@@ -36,7 +36,7 @@ Use these responsibility boundaries:
 
 - **Primitive**: tested Rust module for realtime-safe DSP/control behaviour.
 - **Defined module**: reusable YAML graph built from primitives and other defined modules.
-- **Script module**: event/control-rate policy logic only.
+- **Script module**: block-scheduled event/control policy logic only.
 - **Patch**: complete instrument/effect graph that can be validated and rendered.
 - **Preset**: named parameter values applied to a compatible patch or module surface.
 

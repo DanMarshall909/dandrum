@@ -1,14 +1,12 @@
 ## Purpose
 
-Specify the YAML patch document shape used to declare instruments, modules, ports, assets, render settings, and
-connections.
+Specify the YAML root graph document shape for definitions, ports, static arguments, preset aliases, and connections.
 
 ## Requirements
 
 ### Requirement: YAML patch document
 
-Patch files SHALL be human-readable YAML documents that define an instrument's metadata, modules, connections, assets,
-and render-relevant settings.
+Patch files SHALL be human-readable YAML documents that declare a root graph definition: metadata and instrument identity, static parameters, public input/output ports, preset aliases, module definitions, module instances, and connections. Render settings SHALL NOT appear in patch documents.
 
 #### Scenario: YAML patch is loaded
 
@@ -19,6 +17,11 @@ and render-relevant settings.
 
 - **WHEN** the engine is asked to load a patch file whose format is not supported
 - **THEN** it SHALL reject the file with an error that identifies the unsupported patch format
+
+#### Scenario: Render settings are rejected
+
+- **WHEN** a patch document declares a `render` section
+- **THEN** validation SHALL fail with a diagnostic explaining that sample rate, block size, and duration are host or render-invocation settings
 
 ### Requirement: Modules and connections are separate declarations
 
@@ -38,26 +41,6 @@ Every module in a patch SHALL have a stable unique identifier used by connection
 - **WHEN** a YAML patch declares two modules with the same `id`
 - **THEN** validation SHALL fail and report the duplicated module identifier
 
-### Requirement: Existing patch sections remain canonical
-
-The YAML patch format SHALL preserve the existing top-level patch shape unless a separate migration spec explicitly
-changes it.
-
-The canonical patch sections are:
-
-- `metadata`
-- `render`
-- `assets`
-- `module_definitions`
-- `modules`
-- `connections`
-- `voice_allocation`
-
-#### Scenario: Existing patch remains valid
-
-- **WHEN** a patch valid under the current schema is loaded after this change
-- **THEN** it SHALL remain valid unless it relies on behaviour explicitly deprecated by a separate migration spec
-
 ### Requirement: Metadata extension is compatible
 
 The existing `metadata` section MAY be extended with optional authoring or validation metadata, but the change SHALL NOT
@@ -73,99 +56,48 @@ introduce a second metadata concept.
 - **WHEN** a patch contains supported optional metadata extension fields
 - **THEN** the engine SHALL parse and preserve them for tooling or diagnostics where applicable
 
-### Requirement: Asset validation extension
-
-The existing `assets` section SHALL remain the canonical way to declare external resources. This change MAY add
-validation metadata such as expected kind, fallback path, checksum, or authoring hint if those fields are explicitly
-specified.
-
-#### Scenario: Asset declared in patch
-
-- **WHEN** a patch declares an asset entry
-- **THEN** the engine SHALL validate the asset ID, kind, path, and any supported validation metadata
-
-#### Scenario: Missing asset produces diagnostic
-
-- **WHEN** an asset file referenced by a patch cannot be resolved
-- **THEN** loading or preparation SHALL fail with a structured diagnostic containing the asset ID and expected path
-
 ### Requirement: Script and custom port declarations
 
-The YAML patch format SHALL support script modules with declared input and output ports.
+The YAML patch format SHALL support named script-backed definitions with declared input and output ports.
 
 #### Scenario: Script ports are declared in YAML
 
-- **WHEN** a script module declares custom input and output ports in the YAML patch
+- **WHEN** a script-backed definition declares input and output ports in the YAML patch
 - **THEN** those ports SHALL be available for connection validation and graph construction
 
 ### Requirement: Module instance parameters
 
-YAML module instances SHALL support a `parameters` mapping that provides static parameter values for the module
-instance.
+YAML module instances SHALL support a `static` mapping supplying static arguments for the referenced definition and a `defaults` mapping overriding control input port defaults. There SHALL be no other per-instance value mechanism.
 
-#### Scenario: Module instance declares parameters
+#### Scenario: Module instance supplies static arguments
 
-- **WHEN** a YAML patch declares a module with `parameters`
-- **THEN** patch loading SHALL preserve those values for validation against the module type's parameter declarations
-  before graph preparation
+- **WHEN** a YAML module declares `static: { channels: 2 }` for a definition with a `channels` static parameter
+- **THEN** patch loading SHALL preserve the arguments for compile-time resolution
 
-### Requirement: Patch-level parameter bindings are compatible
+#### Scenario: Module instance overrides port defaults
 
-The YAML patch format SHALL allow compatible patch-level `parameters` where implemented, and those parameters SHALL NOT
-conflict with existing module-level parameters or composite parameter bindings.
+- **WHEN** a YAML module declares `defaults: { cutoff_hz: 800 }` for a definition with a `cutoff_hz` control input port
+- **THEN** patch loading SHALL preserve the override for validation against the port's declared type and range
 
-#### Scenario: Patch parameter binds to module parameter
+#### Scenario: Unknown static or default name rejected
 
-- **WHEN** a patch declares a patch-level parameter that maps to a module parameter or composite parameter
-- **THEN** external code SHALL be able to set the patch-level parameter without knowing the internal module ID
-
-#### Scenario: Patch parameter binding target missing
-
-- **WHEN** a patch-level parameter binding references a missing module, composite, or parameter
-- **THEN** validation SHALL report a structured diagnostic
-
-### Requirement: Composite parameter declarations in YAML
-
-YAML composite module definitions SHALL support public parameter declarations with scalar type, default value, optional
-minimum value, optional maximum value, optional enum values, optional unit, optional description, and required flag.
-
-#### Scenario: Composite declares public parameters
-
-- **WHEN** a YAML patch declares a composite module definition with public `parameters`
-- **THEN** patch loading SHALL preserve the public parameter declarations for composite instance validation and binding
-  resolution
-
-### Requirement: Composite parameter bindings in YAML
-
-YAML composite module definitions SHALL support binding internal module parameters to literal scalar values or direct
-public parameter references of the form `${name}`.
-
-#### Scenario: Composite binds public parameter to internal module
-
-- **WHEN** a composite internal module parameter is set to `${decay_ms}`
-- **THEN** patch loading SHALL preserve that binding so it can resolve to the composite instance's `decay_ms` value
-  before graph preparation
-
-#### Scenario: Unsupported binding expression is rejected
-
-- **WHEN** a YAML composite binding contains arithmetic, functions, conditionals, script execution, arbitrary
-  module-state references, or runtime mutation syntax
-- **THEN** validation SHALL reject the patch before graph preparation
+- **WHEN** a `static` or `defaults` entry names something the referenced definition does not declare
+- **THEN** validation SHALL fail with a structured diagnostic before graph preparation
 
 ### Requirement: Defined-module references use existing module definition semantics
 
-Defined-module instances SHALL use the existing `module_definitions` mechanism. A module instance references a defined module either by setting its `type` to an inline defined-module type, or by setting its `type` to a macro-qualified, version-pinned path to an external module package's entry YAML file (see the `module-library` capability). A `type` beginning with a `$` macro SHALL be treated as an external module reference; any other `type` SHALL be treated as a built-in type name or an inline defined-module type as before.
+Defined-module instances SHALL reference either an inline `module_definitions` type or a macro-qualified, version-pinned external package entry YAML file (see `module-library`). Both resolve to ordinary graph definitions before recursive flattening. A `type` beginning with a `$` macro SHALL be treated as an external module reference.
 
 #### Scenario: Inline defined-module declaration
 
 - **WHEN** a patch declares a module whose `type` matches an inline `module_definitions` entry
-- **THEN** the engine SHALL expand the referenced defined module into its constituent internal modules and connections
+- **THEN** the engine SHALL resolve that graph definition and flatten its internal nodes and connections
 
 #### Scenario: External module reference by macro path
 
 - **WHEN** a patch declares a module whose `type` is a macro-qualified pinned path such as `$LIB/1.3.9/drum_voice/drum_voice.yaml`
 - **THEN** the engine SHALL load the referenced external module package
-- **AND** expand it identically to an inline `module_definitions` entry
+- **AND** flatten it identically to the same definition authored inline
 
 #### Scenario: Unsupported composite_id syntax
 
@@ -174,22 +106,20 @@ Defined-module instances SHALL use the existing `module_definitions` mechanism. 
 
 ### Requirement: Resolved YAML patch preparation
 
-YAML patch loading SHALL resolve defaults, preset-applied values, CLI overrides, and composite bindings into a
-deterministic resolved patch or graph preparation model before rendering.
+YAML patch loading SHALL resolve port defaults, instance overrides, preset-applied values, and CLI overrides into a deterministic resolved graph — concrete static arguments and effective port defaults for every node — before compilation.
 
-#### Scenario: Resolved patch contains concrete parameters
+#### Scenario: Resolved patch contains concrete values
 
-- **WHEN** a YAML patch with module parameters and composite parameter bindings is prepared for rendering
-- **THEN** the prepared graph SHALL contain concrete validated parameter values for every module instance that requires
-  static parameters
+- **WHEN** a YAML patch with defaults, overrides, and preset values is prepared for rendering
+- **THEN** the prepared graph SHALL contain a concrete validated effective default for every control input port and a resolved value for every static parameter
 
-### Requirement: Parameter values are parsed deterministically
+### Requirement: Static arguments and defaults are parsed deterministically
 
-YAML parameter values SHALL be parsed deterministically according to the declared target parameter type.
+YAML `static` arguments and `defaults` overrides SHALL be parsed deterministically according to their declared static or control-port types.
 
 #### Scenario: Unparseable value is rejected
 
-- **WHEN** a YAML parameter value cannot be parsed deterministically as the target declaration's type
+- **WHEN** a YAML static argument or control default cannot be parsed as its declaration's type
 - **THEN** validation SHALL fail with a structured diagnostic before graph preparation
 
 ### Requirement: Event-routing module YAML
@@ -220,20 +150,19 @@ Event-routing modules SHALL reject embedded signal-chain, sample, sequencing, tr
 - **WHEN** an event-routing module declares `pattern`, `patterns`, `steps`, `tempo`, `transport`, or `clock` configuration
 - **THEN** validation SHALL fail with a diagnostic explaining that sequencing must be modeled by explicit external modules
 
-### Requirement: Presets are parameter sets, not new graph semantics
+### Requirement: Presets alter declared values, not graph structure
 
-The YAML patch format SHALL support presets as named parameter sets when presets are implemented. Presets SHALL NOT add
-hidden modules, hidden connections, hidden assets, or hidden realtime behaviour.
+Presets SHALL apply values only through declared root-port or resource-static aliases. They SHALL NOT add hidden modules, connections, resources, or realtime behavior.
 
-#### Scenario: Preset applies parameter values
+#### Scenario: Preset applies declared aliases
 
 - **WHEN** a patch references or selects a preset
-- **THEN** the preset SHALL apply documented parameter values to existing patch, module, or composite parameters
+- **THEN** the preset SHALL replace only the effective defaults or resource arguments of its declared aliases
 
 #### Scenario: Preset cannot hide graph changes
 
-- **WHEN** a preset attempts to add modules, connections, or assets
-- **THEN** validation SHALL reject the preset unless a separate spec explicitly defines graph-altering presets
+- **WHEN** a preset attempts to add modules, connections, or a resource selection outside its declared public asset aliases
+- **THEN** validation SHALL reject the structural change or unknown asset target; selecting a declared resource alias SHALL remain valid
 
 ### Requirement: Instrument preset identity
 
@@ -251,18 +180,17 @@ Patch YAML SHALL declare a stable instrument ID and preset schema version when i
 
 ### Requirement: Public preset surface
 
-Patch YAML SHALL declare the public preset surface for an instrument as stable named targets with value types, default
-values, and optional validation constraints.
+Patch YAML SHALL declare the public preset surface as stable named aliases onto root graph ports (for values) and resource static parameters (for assets), preserving value types, defaults, and constraints from the aliased declarations.
 
 #### Scenario: Patch declares preset parameter target
 
-- **WHEN** a YAML patch declares a preset target mapped to a public module or composite parameter
-- **THEN** patch loading SHALL preserve the target name, value type, default value, constraints, and mapped destination
+- **WHEN** a YAML patch declares a preset target aliasing a root graph control port
+- **THEN** patch loading SHALL preserve the target name and the aliased port's type, default, and constraints
 
 #### Scenario: Patch declares preset asset target
 
-- **WHEN** a YAML patch declares a preset target mapped to a public asset binding
-- **THEN** patch loading SHALL preserve the target name, allowed asset kind, default asset value, and mapped destination
+- **WHEN** a YAML patch declares a preset target aliasing a resource static parameter
+- **THEN** patch loading SHALL preserve the target name, allowed asset kind, default, and aliased destination
 
 #### Scenario: Duplicate preset targets are rejected
 
@@ -271,22 +199,43 @@ values, and optional validation constraints.
 
 #### Scenario: Preset target maps to missing destination
 
-- **WHEN** a YAML patch declares a preset target whose mapped module, composite parameter, or asset binding does not
-  exist
+- **WHEN** a YAML patch declares a preset target whose aliased port or static parameter does not exist
 - **THEN** validation SHALL fail with a diagnostic identifying the unresolved preset target destination
 
 ### Requirement: Preset surface is explicit
 
-Patch YAML SHALL NOT expose internal module parameters or asset bindings to presets unless they are declared in the
-public preset surface.
+Patch YAML SHALL NOT expose internal control ports or resource static arguments to presets unless aliased in the public preset surface.
 
-#### Scenario: Internal parameter is not automatically presettable
+#### Scenario: Internal port is not automatically presettable
 
-- **WHEN** a patch contains an internal module parameter that is not declared as a preset target
-- **THEN** external preset validation SHALL reject attempts to set that parameter
+- **WHEN** a patch contains an internal control port that is not aliased as a preset target
+- **THEN** external preset validation SHALL reject attempts to set that port
 
 #### Scenario: Public target hides internal path
 
 - **WHEN** a preset sets a declared public target
 - **THEN** diagnostics and preset files SHALL refer to the public target name rather than requiring the internal module
   path
+
+### Requirement: Script-backed module definitions
+
+Patch YAML SHALL allow a named module definition to select the Rust script implementation while declaring explicit public ports and string static arguments for language and source. Script instances SHALL use the ordinary `type`, `static`, and `defaults` node shape.
+
+#### Scenario: Script definition preserves the unified node shape
+
+- **WHEN** a patch declares a script-backed definition and instantiates it more than once
+- **THEN** each instance SHALL use the definition's declared ports with no instance-level `inputs` or `outputs` fields
+
+### Requirement: Root port declarations
+
+Patch YAML SHALL declare the root graph's public input and output ports — name, signal type, channel count, and defaults for control inputs — as the instrument's external interface. Audio output SHALL be expressed only through root output ports.
+
+#### Scenario: Patch declares named output ports
+
+- **WHEN** a patch declares a 2-channel audio output port `master` mapped from internal module outputs
+- **THEN** loading SHALL expose `master` as a bindable root port with two channels
+
+#### Scenario: Patch without root output ports is rejected
+
+- **WHEN** a patch declares no root output ports
+- **THEN** validation SHALL fail with a diagnostic explaining the instrument has no observable output

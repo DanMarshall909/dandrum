@@ -10,6 +10,7 @@ use super::helpers::{
 };
 use super::helpers::{lerp, log_lerp};
 use super::outputs::{BlockEvent, ModuleOutputs};
+#[cfg(test)]
 use super::state::PerModuleState;
 #[cfg(test)]
 use crate::decay::DecayCurve;
@@ -1019,6 +1020,7 @@ pub(super) fn process_note_to_control(
     outputs
 }
 
+#[cfg(test)]
 pub(super) fn process_script(
     state: &mut PerModuleState,
     events_in: &[BlockEvent],
@@ -1033,7 +1035,16 @@ pub(super) fn process_script(
     else {
         unreachable!();
     };
+    process_script_state(runtime, script_state, events_in, control_inputs, frames)
+}
 
+pub(super) fn process_script_state(
+    runtime: &mut crate::script::RhaiScriptRuntime,
+    script_state: &mut crate::script::ScriptModuleState,
+    events_in: &[BlockEvent],
+    control_inputs: BTreeMap<String, f32>,
+    frames: usize,
+) -> ModuleOutputs {
     let input = ScriptProcessInput::new(
         events_in.iter().map(|event| event.event.clone()).collect(),
         control_inputs,

@@ -23,7 +23,10 @@ pub(super) fn process_noise(state: &mut PerModuleState, context: &mut ProcessCon
         PerModuleState::Noise { states, .. } => states,
         _ => unreachable!(),
     };
+    process_noise_states(rng_states, context);
+}
 
+pub(super) fn process_noise_states(rng_states: &mut [u32], context: &mut ProcessContext<'_>) {
     for (channel, rng_state) in rng_states.iter_mut().enumerate() {
         for frame in 0..context.frames() {
             let mut x = *rng_state;
@@ -52,6 +55,16 @@ pub(super) fn process_sampler(
     else {
         unreachable!()
     };
+    process_sampler_state(sample, position, active, context, events);
+}
+
+pub(super) fn process_sampler_state(
+    sample: &Option<crate::compiled_patch::SampleResourceHandle>,
+    position: &mut f32,
+    active: &mut bool,
+    context: &mut ProcessContext<'_>,
+    events: &[BlockEvent],
+) {
     let frames = sample.as_ref().map_or(&[][..], |sample| sample.frames());
     if frames.is_empty() {
         for frame in 0..context.frames() {
@@ -116,6 +129,14 @@ pub(super) fn process_note_to_rate(
     let PerModuleState::NoteToRate { rate } = state else {
         unreachable!()
     };
+    process_note_to_rate_state(rate, context, events);
+}
+
+pub(super) fn process_note_to_rate_state(
+    rate: &mut f32,
+    context: &mut ProcessContext<'_>,
+    events: &[BlockEvent],
+) {
     for frame in 0..context.frames() {
         for event in events {
             if event.frame_offset as usize == frame {
@@ -147,7 +168,31 @@ pub(super) fn process_note_to_control(
     else {
         unreachable!()
     };
+    process_note_to_control_state(
+        gate_active,
+        current_note,
+        current_velocity,
+        current_frequency,
+        current_pitch_ratio,
+        current_slide,
+        context,
+        events,
+        gate_output,
+    );
+}
 
+#[allow(clippy::too_many_arguments)]
+pub(super) fn process_note_to_control_state(
+    gate_active: &mut bool,
+    current_note: &mut Option<u8>,
+    current_velocity: &mut f32,
+    current_frequency: &mut f32,
+    current_pitch_ratio: &mut f32,
+    current_slide: &mut bool,
+    context: &mut ProcessContext<'_>,
+    events: &[BlockEvent],
+    gate_output: &mut BoundedEventQueue,
+) {
     for frame in 0..context.frames() {
         for event in events {
             if event.frame_offset as usize != frame {
@@ -220,7 +265,27 @@ pub(super) fn process_decay(
     else {
         unreachable!()
     };
+    process_decay_state(
+        level,
+        triggered,
+        elapsed_frames,
+        *sample_rate,
+        *curve,
+        context,
+        events,
+    );
+}
 
+#[allow(clippy::too_many_arguments)]
+pub(super) fn process_decay_state(
+    level: &mut f32,
+    triggered: &mut bool,
+    elapsed_frames: &mut u64,
+    sample_rate: f32,
+    curve: DecayCurve,
+    context: &mut ProcessContext<'_>,
+    events: &[BlockEvent],
+) {
     for frame in 0..context.frames() {
         for event in events {
             if event.frame_offset as usize == frame
@@ -233,9 +298,9 @@ pub(super) fn process_decay(
         }
         if *triggered {
             let time_ms = context.input_sample(0, frame, 100.0);
-            let decay_frames = (*sample_rate * time_ms / 1000.0).max(1.0);
+            let decay_frames = (sample_rate * time_ms / 1000.0).max(1.0);
             let t = *elapsed_frames as f32 / decay_frames;
-            *level = match curve {
+            *level = match &curve {
                 DecayCurve::Linear => (1.0 - t).max(0.0),
                 DecayCurve::Exponential => (-4.0 * t).exp(),
             };
@@ -258,6 +323,13 @@ pub(super) fn process_spectral_processor(
     let PerModuleState::SpectralProcessor { processor } = state else {
         unreachable!()
     };
+    process_spectral_processor_state(processor, context);
+}
+
+pub(super) fn process_spectral_processor_state(
+    processor: &mut crate::spectral::SpectralProcessor,
+    context: &mut ProcessContext<'_>,
+) {
     for frame in 0..context.frames() {
         let audio = context.input_sample(0, frame, 0.0);
         let threshold_db = context.input_sample(1, frame, 0.0) as f64 * 80.0 - 40.0;
@@ -315,7 +387,15 @@ pub(super) fn process_oscillator(state: &mut PerModuleState, context: &mut Proce
         } => (phase, *sample_rate, *waveform),
         _ => unreachable!(),
     };
+    process_oscillator_state(phase, sample_rate, waveform, context);
+}
 
+pub(super) fn process_oscillator_state(
+    phase: &mut f32,
+    sample_rate: f32,
+    waveform: crate::oscillator::Waveform,
+    context: &mut ProcessContext<'_>,
+) {
     for frame in 0..context.frames() {
         let pitch_ratio = context.input_sample(0, frame, 1.0);
         let output = waveform.sample(*phase);
@@ -337,13 +417,21 @@ pub(super) fn process_lfo(state: &mut PerModuleState, context: &mut ProcessConte
     let PerModuleState::Lfo { phase, sample_rate } = state else {
         unreachable!()
     };
+    process_lfo_state(phase, *sample_rate, context);
+}
+
+pub(super) fn process_lfo_state(
+    phase: &mut f32,
+    sample_rate: f32,
+    context: &mut ProcessContext<'_>,
+) {
     for frame in 0..context.frames() {
         let rate = context.input_sample(0, frame, 1.0).max(0.0);
         let value = 0.5 + 0.5 * (*phase * std::f32::consts::TAU).sin();
         context
             .set_output_sample(0, frame, value)
             .expect("LFO output is present in a supported arena step");
-        *phase = (*phase + rate / *sample_rate).rem_euclid(1.0);
+        *phase = (*phase + rate / sample_rate).rem_euclid(1.0);
     }
 }
 
@@ -355,11 +443,19 @@ pub(super) fn process_slew(state: &mut PerModuleState, context: &mut ProcessCont
     else {
         unreachable!()
     };
+    process_slew_state(current, *sample_rate, context);
+}
+
+pub(super) fn process_slew_state(
+    current: &mut f32,
+    sample_rate: f32,
+    context: &mut ProcessContext<'_>,
+) {
     for frame in 0..context.frames() {
         let target = context.input_sample(0, frame, 0.0);
         let glide = context.input_sample(1, frame, 0.0);
         let time_ms = context.input_sample(2, frame, 60.0);
-        let value = super::processing::slew_step(current, *sample_rate, target, glide, time_ms);
+        let value = super::processing::slew_step(current, sample_rate, target, glide, time_ms);
         context
             .set_output_sample(0, frame, value)
             .expect("slew output is present in a supported arena step");
@@ -370,6 +466,13 @@ pub(super) fn process_dynamics(state: &mut PerModuleState, context: &mut Process
     let PerModuleState::DynamicsProcessor { processors, .. } = state else {
         unreachable!()
     };
+    process_dynamics_processors(processors, context);
+}
+
+pub(super) fn process_dynamics_processors(
+    processors: &mut [crate::dynamics_processor::DynamicsProcessor],
+    context: &mut ProcessContext<'_>,
+) {
     let channels = context.output_count();
     for frame in 0..context.frames() {
         let sidechain = context.input_sample(channels, frame, 0.0);
@@ -425,6 +528,29 @@ pub(super) fn process_adsr(
     else {
         unreachable!()
     };
+    process_adsr_state(
+        level,
+        gate_active,
+        release_start_frame,
+        release_start_level,
+        *sample_rate,
+        context,
+        events,
+        block_start_frame,
+    );
+}
+
+#[allow(clippy::too_many_arguments)]
+pub(super) fn process_adsr_state(
+    level: &mut f32,
+    gate_active: &mut bool,
+    release_start_frame: &mut u64,
+    release_start_level: &mut f32,
+    sample_rate: f32,
+    context: &mut ProcessContext<'_>,
+    events: &[BlockEvent],
+    block_start_frame: u64,
+) {
     let mut final_level = *level;
 
     for frame in 0..context.frames() {
@@ -452,9 +578,9 @@ pub(super) fn process_adsr(
         let sustain = context.input_sample(2, frame, 0.7).clamp(0.0, 1.0);
         let release_ms =
             super::processing::adsr_time_ms(context.input_sample(3, frame, 200.0), 10.0, 3000.0);
-        let attack_frames = (*sample_rate * attack_ms / 1000.0) as u64;
-        let decay_frames = (*sample_rate * decay_ms / 1000.0) as u64;
-        let release_frames = (*sample_rate * release_ms / 1000.0) as u64;
+        let attack_frames = (sample_rate * attack_ms / 1000.0) as u64;
+        let decay_frames = (sample_rate * decay_ms / 1000.0) as u64;
+        let release_frames = (sample_rate * release_ms / 1000.0) as u64;
 
         final_level = if *gate_active {
             let lifetime = absolute_frame - *release_start_frame;
@@ -489,7 +615,14 @@ pub(super) fn process_envelope_follower(
         PerModuleState::EnvelopeFollower { detector, mode } => (detector, *mode),
         _ => unreachable!(),
     };
+    process_envelope_follower_state(detector, mode, context);
+}
 
+pub(super) fn process_envelope_follower_state(
+    detector: &mut crate::envelope_follower::EnvelopeFollower,
+    mode: crate::envelope_follower::DetectionMode,
+    context: &mut ProcessContext<'_>,
+) {
     detector.set_mode(mode);
     for frame in 0..context.frames() {
         let attack_ms = context.input_sample(1, frame, 5.0).max(0.0) as f64;
@@ -520,7 +653,13 @@ pub(super) fn process_curve_mapper(state: &mut PerModuleState, context: &mut Pro
         PerModuleState::CurveMapper { mapper } => mapper,
         _ => unreachable!(),
     };
+    process_curve_mapper_state(mapper, context);
+}
 
+pub(super) fn process_curve_mapper_state(
+    mapper: &mut crate::curve_mapper::CurveMapper,
+    context: &mut ProcessContext<'_>,
+) {
     for frame in 0..context.frames() {
         let output = mapper.process(
             context.input_sample(0, frame, 0.0),
@@ -544,7 +683,14 @@ pub(super) fn process_filter(state: &mut PerModuleState, context: &mut ProcessCo
         } => (filters, *sample_rate),
         _ => unreachable!(),
     };
+    process_filter_states(filters, sample_rate, context);
+}
 
+pub(super) fn process_filter_states(
+    filters: &mut [Box<dyn crate::filter::FilterAlgorithm>],
+    sample_rate: f64,
+    context: &mut ProcessContext<'_>,
+) {
     let channels = filters.len();
     for (channel, filter) in filters.iter_mut().enumerate() {
         for frame in 0..context.frames() {
@@ -601,6 +747,14 @@ pub(super) fn process_compensation_delay(
     let PerModuleState::CompensationDelay { samples, positions } = state else {
         unreachable!()
     };
+    process_compensation_delay_states(samples, positions, context);
+}
+
+pub(super) fn process_compensation_delay_states(
+    samples: &mut [Box<[f32]>],
+    positions: &mut [usize],
+    context: &mut ProcessContext<'_>,
+) {
     for channel in 0..context.output_count() {
         for frame in 0..context.frames() {
             let position = positions[channel];
@@ -619,6 +773,14 @@ pub(super) fn emit_feedback_delay(state: &PerModuleState, context: &mut ProcessC
     let PerModuleState::FeedbackDelay { samples, position } = state else {
         unreachable!()
     };
+    emit_feedback_delay_parts(samples, *position, context);
+}
+
+pub(super) fn emit_feedback_delay_parts(
+    samples: &[Box<[f32]>],
+    position: usize,
+    context: &mut ProcessContext<'_>,
+) {
     for (channel, ring) in samples.iter().enumerate() {
         for frame in 0..context.frames() {
             context
@@ -629,10 +791,11 @@ pub(super) fn emit_feedback_delay(state: &PerModuleState, context: &mut ProcessC
 }
 
 /// Capture the just-computed feedback tap after all forward nodes have run.
-pub(super) fn capture_feedback_delay(state: &mut PerModuleState, context: &ProcessContext<'_>) {
-    let PerModuleState::FeedbackDelay { samples, position } = state else {
-        unreachable!()
-    };
+pub(super) fn capture_feedback_delay_parts(
+    samples: &mut [Box<[f32]>],
+    position: &mut usize,
+    context: &ProcessContext<'_>,
+) {
     let start = *position;
     for (channel, ring) in samples.iter_mut().enumerate() {
         for frame in 0..context.frames() {
@@ -646,6 +809,13 @@ pub(super) fn process_convolution(state: &mut PerModuleState, context: &mut Proc
     let PerModuleState::Convolution { processors } = state else {
         unreachable!()
     };
+    process_convolution_processors(processors, context);
+}
+
+pub(super) fn process_convolution_processors(
+    processors: &mut [crate::convolution::Convolution],
+    context: &mut ProcessContext<'_>,
+) {
     let channels = processors.len();
     for (channel, processor) in processors.iter_mut().enumerate() {
         for frame in 0..context.frames() {
@@ -667,12 +837,23 @@ pub(super) fn process_frequency_splitter(
     else {
         unreachable!()
     };
+    process_frequency_splitter_states(filters, *sample_rate, context);
+}
+
+pub(super) fn process_frequency_splitter_states(
+    filters: &mut [(
+        crate::crossover::LinkwitzRiley4,
+        crate::crossover::LinkwitzRiley4,
+    )],
+    sample_rate: f64,
+    context: &mut ProcessContext<'_>,
+) {
     let channels = filters.len();
     for (channel, (first, second)) in filters.iter_mut().enumerate() {
         for frame in 0..context.frames() {
             let hz = (context.input_sample(channels, frame, 0.2) as f64 * 16000.0 + 40.0)
                 .clamp(40.0, 20000.0);
-            let norm = (hz / *sample_rate).clamp(0.0, 0.49);
+            let norm = (hz / sample_rate).clamp(0.0, 0.49);
             first.set_crossover(norm);
             second.set_crossover((norm * 4.0).clamp(0.0, 0.49));
             let (low, rest) = first.process(context.input_sample(channel, frame, 0.0));
@@ -692,6 +873,13 @@ pub(super) fn process_echo(state: &mut PerModuleState, context: &mut ProcessCont
     let PerModuleState::Echo { processor, .. } = state else {
         unreachable!()
     };
+    process_echo_state(processor, context);
+}
+
+pub(super) fn process_echo_state(
+    processor: &mut crate::echo::Echo,
+    context: &mut ProcessContext<'_>,
+) {
     let channels = context.output_count();
     let time_left_input = channels;
     let time_right_input = time_left_input + 1;
@@ -741,6 +929,13 @@ pub(super) fn process_reverb(state: &mut PerModuleState, context: &mut ProcessCo
     let PerModuleState::Reverb { processor, .. } = state else {
         unreachable!()
     };
+    process_reverb_state(processor, context);
+}
+
+pub(super) fn process_reverb_state(
+    processor: &mut crate::reverb::Reverb,
+    context: &mut ProcessContext<'_>,
+) {
     let channels = context.output_count();
     let decay_input = channels;
     let room_size_input = decay_input + 1;

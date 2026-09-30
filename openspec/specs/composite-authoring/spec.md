@@ -1,30 +1,26 @@
 ## Purpose
 
-Specify composite module definitions for reusable instrument and effect graphs.
+Specify defined modules for reusable instrument and effect graphs.
 
 ## Requirements
 
 ### Requirement: Inline composite module definitions
 
-The YAML patch format SHALL continue to support reusable composite definitions through the existing top-level
-`module_definitions` section.
+The YAML patch format SHALL support reusable defined modules through the top-level `module_definitions` section. A defined module SHALL be a full graph definition — static parameters, public ports, internal modules, internal connections — exposing the same interface shape as a Rust primitive.
 
-#### Scenario: Composite definition declared inline
+#### Scenario: Defined module declared inline
 
-- **WHEN** a YAML patch declares a `module_definitions` entry with a `type`, public inputs, public outputs, internal
-  modules, and internal connections
-- **THEN** patches SHALL be able to instantiate that composite by declaring a module whose `type` matches the composite
-  definition type
+- **WHEN** a YAML patch declares a `module_definitions` entry with a `type`, public inputs, public outputs, internal modules, and internal connections
+- **THEN** patches SHALL be able to instantiate that defined module by declaring a module whose `type` matches the defined module type
 
-#### Scenario: Existing composite patches remain valid
+#### Scenario: Defined module declares static parameters
 
-- **WHEN** an existing patch uses inline `module_definitions`
-- **THEN** this change SHALL NOT require conversion to a separate `type: composite` or `composite_id` syntax
+- **WHEN** a defined module declares static parameters used in its port channel counts or internal static arguments
+- **THEN** instances SHALL supply static arguments resolved before expansion
 
 ### Requirement: Composite expansion remains deterministic
 
-Composite expansion SHALL produce an identical flat graph for the same patch, composite definitions, parameter values,
-and asset bindings.
+Defined module expansion SHALL produce an identical flat graph for the same definitions, resolved static arguments, control defaults, and resource origins.
 
 #### Scenario: Repeated expansion identical
 
@@ -58,32 +54,21 @@ Composite definitions SHALL map public inputs and outputs to internal module por
 
 ### Requirement: Composite parameter exposure
 
-Composite definitions SHALL expose internal module parameters only through declared `parameters` binding declarations when
-such bindings are present.
+Defined module definitions SHALL expose tunable values as public control input ports with default values. Instantiating graphs tune a defined module by overriding port defaults or connecting cables to those ports; there SHALL be no separate parameter-binding concept.
 
-#### Scenario: Composite parameter maps to internal parameter
+#### Scenario: Public control port carries a default
 
-- **WHEN** a patch sets a parameter on a composite instance
-- **THEN** the value SHALL be applied only to declared composite parameter bindings
+- **WHEN** a defined module declares a public control input port with a default value mapped to internal ports
+- **THEN** an instance with no override and no incoming cable SHALL render using that default
 
-#### Scenario: Undeclared composite parameter rejected
+#### Scenario: Instance overrides a public port default
 
-- **WHEN** a patch sets a parameter that is not declared by the composite definition
-- **THEN** validation SHALL report a structured diagnostic
+- **WHEN** a module instance overrides a defined module's public control port default
+- **THEN** expansion SHALL apply the override to the mapped internal ports
 
-### Requirement: Composite asset bindings
+#### Scenario: Undeclared override rejected
 
-Composite definitions SHALL expose asset bindings only through declared `asset_bindings` declarations when such bindings
-are present.
-
-#### Scenario: Composite asset binding maps to internal module
-
-- **WHEN** a composite instance sets an asset binding
-- **THEN** the binding SHALL resolve to a declared asset and apply to the mapped internal module parameter or asset slot
-
-#### Scenario: Missing composite asset rejected
-
-- **WHEN** a composite instance references an asset ID that does not exist
+- **WHEN** a module instance overrides a port the defined module does not declare
 - **THEN** validation SHALL report a structured diagnostic
 
 ### Requirement: Composite diagnostics map to source context
@@ -99,7 +84,7 @@ include the source composite instance/internal path where available.
 
 ### Requirement: External module libraries extend inline module definitions
 
-Inline `module_definitions` SHALL remain the canonical model for defining YAML-assembled modules. In addition, the engine SHALL support loading a defined module from an external module package referenced by a macro-qualified, version-pinned file path (see the `module-library` capability). A definition loaded from an external package SHALL behave identically to an inline `module_definitions` entry after loading.
+Inline `module_definitions` and external module packages SHALL both provide graph definitions to the same kernel parser and recursive flattening path. External packages SHALL be referenced by macro-qualified, version-pinned file paths (see the `module-library` capability).
 
 > Note: this requirement lives under the legacy `composite-authoring` capability folder only to preserve OpenSpec continuity while the terminology is being migrated. User-facing and implementation terminology is **module** / **defined module**.
 
@@ -111,8 +96,8 @@ Inline `module_definitions` SHALL remain the canonical model for defining YAML-a
 #### Scenario: External module loaded from a package
 
 - **WHEN** a patch references a module by a macro-qualified pinned path to an external module package
-- **THEN** the engine SHALL load that package's definition and expand it
-- **AND** it SHALL behave identically to an inline `module_definitions` entry after loading
+- **THEN** the engine SHALL load that package's graph definition and flatten it
+- **AND** it SHALL behave identically to the same definition authored inline
 
 ### Requirement: Recursive composites are rejected or depth-limited
 
@@ -127,3 +112,12 @@ Composite recursion SHALL NOT produce infinite expansion.
 
 - **WHEN** composite nesting exceeds an implementation-defined maximum depth
 - **THEN** expansion SHALL fail with a structured diagnostic
+
+### Requirement: Patch and defined module are the same definition shape
+
+Any patch document SHALL be usable as a defined module, and any defined module with bindable ports SHALL be loadable as a root patch. There SHALL be no structural distinction between the two.
+
+#### Scenario: Patch instantiated as module
+
+- **WHEN** a graph definition instantiates a complete patch document as a node
+- **THEN** expansion SHALL treat the patch's public ports as the node's ports with no conversion step

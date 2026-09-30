@@ -1,7 +1,7 @@
 use std::path::PathBuf;
 
 use crate::core::TimedInputEvent;
-use crate::patch::{self, ParameterValue};
+use crate::patch;
 use crate::sample::PreparedSamplerAssets;
 use crate::script::ScriptEvent;
 
@@ -81,16 +81,11 @@ fn render_with_events(
             .expect("parsed render arguments always include an offline duration"),
     };
 
-    let kernel_patch = match crate::kernel::document::load_kernel_patch_file(&render_args.patch) {
+    let mut kernel_patch = match crate::kernel::document::load_kernel_patch_file(&render_args.patch)
+    {
         Ok(kernel_patch) => kernel_patch,
         Err(diagnostics) => return error(format!("failed to render patch: {diagnostics}")),
     };
-    if !render_args.overrides.is_empty() {
-        return error(
-            "failed to render patch: --set is not yet supported for kernel patch documents"
-                .to_string(),
-        );
-    }
     let preset = match render_args.preset.as_ref() {
         Some(path) => match patch::load_preset_file(path) {
             Ok(preset) => Some(preset),
@@ -100,19 +95,22 @@ fn render_with_events(
         },
         None => None,
     };
-
+    if let Some(preset) = preset.as_ref() {
+        kernel_patch = match kernel_patch.apply_preset(preset) {
+            Ok(patch) => patch,
+            Err(diagnostics) => return error(format!("failed to render patch: {diagnostics}")),
+        };
+    }
     let references =
         crate::module_package::external_references(kernel_patch.root(), kernel_patch.registry());
-    let prepared = if references.is_empty() {
-        match preset.as_ref() {
-            Some(preset) => crate::preparation::prepare_kernel_patch_with_preset(
-                &kernel_patch,
-                preset,
-                &settings,
-            ),
-            None => crate::preparation::prepare_kernel_patch(&kernel_patch, &settings),
-        }
-    } else {
+    let mut context = crate::preparation::PreparationContext::new(
+        render_args
+            .patch
+            .parent()
+            .unwrap_or_else(|| std::path::Path::new(".")),
+        settings.sample_rate_hz,
+    );
+    if !references.is_empty() {
         let roots = match crate::module_library::default_host_macro_roots() {
             Ok(roots) => roots,
             Err(seed_error) => {
@@ -122,28 +120,40 @@ fn render_with_events(
                 ));
             }
         };
-        let context = crate::preparation::PreparationContext::new(
-            render_args
-                .patch
-                .parent()
-                .unwrap_or_else(|| std::path::Path::new(".")),
-            settings.sample_rate_hz,
-        )
-        .with_macro_roots(roots);
-        match preset.as_ref() {
-            Some(preset) => crate::preparation::prepare_kernel_patch_with_preset_and_context(
-                &kernel_patch,
-                preset,
-                &settings,
-                &context,
-            ),
-            None => crate::preparation::prepare_kernel_patch_with_context(
-                &kernel_patch,
-                &settings,
-                &context,
-            ),
+        context = context.with_macro_roots(roots);
+    }
+    for override_value in &render_args.overrides {
+        let referenced_type = kernel_patch
+            .root()
+            .nodes()
+            .iter()
+            .find(|node| node.id().as_str() == override_value.module_id)
+            .map(|node| node.definition_ref().to_string());
+        let package = match referenced_type.as_deref() {
+            Some(reference) if crate::module_reference::is_external_reference(reference) => {
+                match crate::module_package::load_referenced_kernel_package(reference, &context) {
+                    Ok(package) => Some(package),
+                    Err(load_error) => {
+                        return error(format!(
+                            "failed to render patch: {}",
+                            load_error.to_diagnostic()
+                        ));
+                    }
+                }
+            }
+            _ => None,
+        };
+        if let Err(diagnostics) = kernel_patch.apply_cli_override(
+            &override_value.module_id,
+            &override_value.parameter_name,
+            &override_value.raw_value,
+            package.as_ref().map(|package| package.definition()),
+        ) {
+            return error(format!("failed to render patch: {diagnostics}"));
         }
-    };
+    }
+    let prepared =
+        crate::preparation::prepare_kernel_patch_with_context(&kernel_patch, &settings, &context);
     let prepared = match prepared {
         Ok(prepared) => prepared,
         Err(prepare_error) => {
@@ -375,7 +385,7 @@ struct RenderArgs {
 struct CliParameterOverride {
     module_id: String,
     parameter_name: String,
-    value: ParameterValue,
+    raw_value: String,
 }
 
 fn parse_cli_override(input: &str) -> Result<CliParameterOverride, String> {
@@ -392,19 +402,8 @@ fn parse_cli_override(input: &str) -> Result<CliParameterOverride, String> {
     Ok(CliParameterOverride {
         module_id: module_id.to_string(),
         parameter_name: parameter_name.to_string(),
-        value: parse_cli_parameter_value(raw_value),
+        raw_value: raw_value.to_string(),
     })
-}
-
-fn parse_cli_parameter_value(raw_value: &str) -> ParameterValue {
-    match raw_value {
-        "true" => ParameterValue::Boolean(true),
-        "false" => ParameterValue::Boolean(false),
-        _ => raw_value
-            .parse::<f64>()
-            .map(ParameterValue::Number)
-            .unwrap_or_else(|_| ParameterValue::Text(raw_value.to_string())),
-    }
 }
 
 fn single_note_sequence(sample_rate: u32) -> Vec<TimedInputEvent> {
@@ -540,7 +539,7 @@ mod tests {
 
         assert_eq!(parsed.module_id, "kick");
         assert_eq!(parsed.parameter_name, "tune_hz");
-        assert_eq!(parsed.value, ParameterValue::Number(48.0));
+        assert_eq!(parsed.raw_value, "48");
     }
 
     #[test]
@@ -548,8 +547,8 @@ mod tests {
         let boolean = parse_cli_override("kick.click=true").expect("bool override should parse");
         let text = parse_cli_override("filt.algorithm=biquad").expect("text override should parse");
 
-        assert_eq!(boolean.value, ParameterValue::Boolean(true));
-        assert_eq!(text.value, ParameterValue::Text("biquad".to_string()));
+        assert_eq!(boolean.raw_value, "true");
+        assert_eq!(text.raw_value, "biquad");
     }
 
     #[test]
@@ -577,8 +576,245 @@ mod tests {
 
         assert_eq!(args.overrides.len(), 2);
         assert_eq!(args.preset, None);
-        assert_eq!(args.overrides[0].value, ParameterValue::Number(48.0));
-        assert_eq!(args.overrides[1].value, ParameterValue::Number(52.0));
+        assert_eq!(args.overrides[0].raw_value, "48");
+        assert_eq!(args.overrides[1].raw_value, "52");
+    }
+
+    #[test]
+    fn render_command_applies_cli_control_override_to_kernel_patch() {
+        let output = temp_wav_path("kernel-cli-control", "output");
+        let patch = output.with_extension("yaml");
+        fs::write(
+            &patch,
+            "ports:\n  - { name: master, direction: output, signal: audio, channels: 1, maps_from: source.out }\nmodules:\n  - { id: source, type: control_to_audio, defaults: { in: 0.25 } }\nconnections: []\n",
+        )
+        .unwrap();
+
+        let result = run([
+            "dandrum-cli".to_string(),
+            "render".to_string(),
+            patch.to_string_lossy().to_string(),
+            OUTPUT_FLAG.to_string(),
+            output.to_string_lossy().to_string(),
+            DURATION_FRAMES_FLAG.to_string(),
+            "4".to_string(),
+            SET_FLAG.to_string(),
+            "source.in=-0.5".to_string(),
+        ]);
+
+        assert_eq!(result.exit_code, 0, "{}", result.stderr);
+        let wav = fs::read(&output).unwrap();
+        for frame in 0..4 {
+            let start = WAV_HEADER_BYTES + frame * 2;
+            assert_eq!(i16::from_le_bytes([wav[start], wav[start + 1]]), -16_384);
+        }
+        let _ = fs::remove_file(patch);
+        let _ = fs::remove_file(output);
+    }
+
+    #[test]
+    fn render_command_cli_override_takes_precedence_over_mapped_root_default() {
+        let directory = tempfile::tempdir().unwrap();
+        let patch = directory.path().join("mapped.yaml");
+        let output = directory.path().join("mapped.wav");
+        fs::write(
+            &patch,
+            "ports:\n  - { name: volume, direction: input, signal: control, channels: 1, default: 0.75, min: 0, max: 1, maps_to: amp.gain }\n  - { name: master, direction: output, signal: audio, channels: 1, maps_from: amp.audio_out }\nmodules:\n  - { id: source, type: control_to_audio, defaults: { in: 1 } }\n  - { id: amp, type: gain }\nconnections:\n  - { from: source.out, to: amp.audio_in }\n",
+        )
+        .unwrap();
+        let result = run([
+            "dandrum-cli".to_string(),
+            "render".to_string(),
+            patch.to_string_lossy().to_string(),
+            OUTPUT_FLAG.to_string(),
+            output.to_string_lossy().to_string(),
+            DURATION_FRAMES_FLAG.to_string(),
+            "4".to_string(),
+            SET_FLAG.to_string(),
+            "amp.gain=0.2".to_string(),
+        ]);
+        assert_eq!(result.exit_code, 0, "{}", result.stderr);
+        let wav = fs::read(output).unwrap();
+        assert_eq!(
+            i16::from_le_bytes([wav[WAV_HEADER_BYTES], wav[WAV_HEADER_BYTES + 1]]),
+            6553
+        );
+    }
+
+    #[test]
+    fn render_command_rejects_cli_override_of_shared_root_control_destination() {
+        let directory = tempfile::tempdir().unwrap();
+        let patch = directory.path().join("shared.yaml");
+        let output = directory.path().join("shared.wav");
+        fs::write(
+            &patch,
+            "ports:\n  - { name: volume, direction: input, signal: control, channels: 1, default: 0.75, min: 0, max: 1, maps_to: [left.gain, right.gain] }\n  - { name: master, direction: output, signal: audio, channels: 1, maps_from: mixer.mix }\nmodules:\n  - { id: source, type: control_to_audio, defaults: { in: 1 } }\n  - { id: left, type: gain }\n  - { id: right, type: gain }\n  - { id: mixer, type: audio_mixer }\nconnections:\n  - { from: source.out, to: left.audio_in }\n  - { from: source.out, to: right.audio_in }\n  - { from: left.audio_out, to: mixer.inputs }\n  - { from: right.audio_out, to: mixer.inputs }\n",
+        )
+        .unwrap();
+        let result = run([
+            "dandrum-cli".to_string(),
+            "render".to_string(),
+            patch.to_string_lossy().to_string(),
+            OUTPUT_FLAG.to_string(),
+            output.to_string_lossy().to_string(),
+            DURATION_FRAMES_FLAG.to_string(),
+            "4".to_string(),
+            SET_FLAG.to_string(),
+            "left.gain=0.2".to_string(),
+        ]);
+        assert_eq!(result.exit_code, 2, "{}", result.stderr);
+        assert!(
+            result
+                .stderr
+                .contains("root control 'volume' maps to multiple inputs")
+        );
+        assert!(!output.exists());
+    }
+
+    #[test]
+    fn render_command_loads_cli_resource_relative_to_patch_directory() {
+        let directory = tempfile::tempdir().unwrap();
+        let sample = directory.path().join("123");
+        let patch = directory.path().join("sampler.yaml");
+        let output = directory.path().join("sampler.wav");
+        let mut file = fs::File::create(&sample).unwrap();
+        crate::wav::write_wav_channels_i16(&mut file, 48_000, &[&[-0.5, -0.25]]).unwrap();
+        fs::write(
+            &patch,
+            "ports:\n  - { name: master, direction: output, signal: audio, channels: 1, maps_from: sampler.audio }\nmodules:\n  - { id: midi, type: midi_input }\n  - { id: sampler, type: sampler, static: { sample: { kind: sample, path: old.wav } } }\nconnections:\n  - { from: midi.events, to: sampler.trigger }\n",
+        )
+        .unwrap();
+        let result = run([
+            "dandrum-cli".to_string(),
+            "render".to_string(),
+            patch.to_string_lossy().to_string(),
+            OUTPUT_FLAG.to_string(),
+            output.to_string_lossy().to_string(),
+            DURATION_FRAMES_FLAG.to_string(),
+            "2".to_string(),
+            SET_FLAG.to_string(),
+            "sampler.sample=123".to_string(),
+        ]);
+        assert_eq!(result.exit_code, 0, "{}", result.stderr);
+        let wav = fs::read(output).unwrap();
+        assert_eq!(
+            i16::from_le_bytes([wav[WAV_HEADER_BYTES], wav[WAV_HEADER_BYTES + 1]]),
+            -16_384
+        );
+    }
+
+    #[test]
+    fn render_command_applies_cli_override_to_external_package_instance() {
+        let user_root = crate::module_library::default_user_library_root().unwrap();
+        fs::create_dir_all(&user_root).unwrap();
+        let package_dir = tempfile::Builder::new()
+            .prefix("dandrum-cli-package-")
+            .tempdir_in(&user_root)
+            .unwrap();
+        let package_name = package_dir.path().file_name().unwrap().to_string_lossy();
+        let package_path = package_dir.path().join(format!("{package_name}.yaml"));
+        fs::write(
+            package_path,
+            "ports:\n  - { name: level, direction: input, signal: control, channels: 1, default: 0.25, min: -1, max: 1, maps_to: source.in }\n  - { name: audio, direction: output, signal: audio, channels: 1, maps_from: source.out }\nmodules:\n  - { id: source, type: control_to_audio }\nconnections: []\n",
+        )
+        .unwrap();
+        let directory = tempfile::tempdir().unwrap();
+        let patch = directory.path().join("package.yaml");
+        let output = directory.path().join("package.wav");
+        fs::write(
+            &patch,
+            format!("ports:\n  - {{ name: master, direction: output, signal: audio, channels: 1, maps_from: voice.audio }}\nmodules:\n  - {{ id: voice, type: $USER_LIB/{package_name}/{package_name}.yaml }}\nconnections: []\n"),
+        )
+        .unwrap();
+        let result = run([
+            "dandrum-cli".to_string(),
+            "render".to_string(),
+            patch.to_string_lossy().to_string(),
+            OUTPUT_FLAG.to_string(),
+            output.to_string_lossy().to_string(),
+            DURATION_FRAMES_FLAG.to_string(),
+            "4".to_string(),
+            SET_FLAG.to_string(),
+            "voice.level=-0.5".to_string(),
+        ]);
+        assert_eq!(result.exit_code, 0, "{}", result.stderr);
+        let wav = fs::read(output).unwrap();
+        assert_eq!(
+            i16::from_le_bytes([wav[WAV_HEADER_BYTES], wav[WAV_HEADER_BYTES + 1]]),
+            -16_384
+        );
+    }
+
+    #[test]
+    fn render_command_applies_typed_static_cli_override_to_kernel_patch() {
+        let output = temp_wav_path("kernel-cli-static", "output");
+        let patch = output.with_extension("yaml");
+        fs::write(
+            &patch,
+            "ports:\n  - { name: master, direction: output, signal: audio, channels: 1, maps_from: osc.audio }\nmodules:\n  - { id: osc, type: oscillator }\nconnections: []\n",
+        )
+        .unwrap();
+
+        let result = run([
+            "dandrum-cli".to_string(),
+            "render".to_string(),
+            patch.to_string_lossy().to_string(),
+            OUTPUT_FLAG.to_string(),
+            output.to_string_lossy().to_string(),
+            DURATION_FRAMES_FLAG.to_string(),
+            "4".to_string(),
+            SET_FLAG.to_string(),
+            "osc.waveform=sine".to_string(),
+        ]);
+
+        assert_eq!(result.exit_code, 0, "{}", result.stderr);
+        let wav = fs::read(&output).unwrap();
+        assert_eq!(
+            i16::from_le_bytes([wav[WAV_HEADER_BYTES], wav[WAV_HEADER_BYTES + 1]]),
+            0
+        );
+        assert_ne!(
+            i16::from_le_bytes([wav[WAV_HEADER_BYTES + 2], wav[WAV_HEADER_BYTES + 3]]),
+            0
+        );
+        let _ = fs::remove_file(patch);
+        let _ = fs::remove_file(output);
+    }
+
+    #[test]
+    fn render_command_rejects_invalid_kernel_cli_overrides_before_writing_audio() {
+        let output = temp_wav_path("kernel-cli-invalid", "output");
+        let patch = output.with_extension("yaml");
+        fs::write(
+            &patch,
+            "ports:\n  - { name: master, direction: output, signal: audio, channels: 1, maps_from: amp.audio_out }\nmodules:\n  - { id: source, type: control_to_audio, defaults: { in: -0.25 } }\n  - { id: amp, type: gain }\nconnections:\n  - { from: source.out, to: amp.audio_in }\n",
+        )
+        .unwrap();
+
+        for target in [
+            "amp.unknown=1",
+            "amp.gain=bogus",
+            "amp.gain=9",
+            "source.channels=bogus",
+        ] {
+            let _ = fs::remove_file(&output);
+            let result = run([
+                "dandrum-cli".to_string(),
+                "render".to_string(),
+                patch.to_string_lossy().to_string(),
+                OUTPUT_FLAG.to_string(),
+                output.to_string_lossy().to_string(),
+                DURATION_FRAMES_FLAG.to_string(),
+                "4".to_string(),
+                SET_FLAG.to_string(),
+                target.to_string(),
+            ]);
+            assert_eq!(result.exit_code, 2, "{target}: {}", result.stderr);
+            assert!(result.stderr.contains("amp") || result.stderr.contains("source"));
+            assert!(!output.exists(), "{target} must fail before WAV creation");
+        }
+
+        let _ = fs::remove_file(patch);
     }
 
     #[test]

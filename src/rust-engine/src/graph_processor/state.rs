@@ -145,6 +145,7 @@ pub(super) enum PerModuleState {
 }
 
 impl PerModuleState {
+    #[cfg(test)]
     pub(super) fn reset_voice(&mut self) {
         match self {
             Self::Adsr {
@@ -256,6 +257,7 @@ impl PerModuleState {
         }
     }
 
+    #[cfg(test)]
     pub(super) fn reset_all(&mut self) {
         self.reset_voice();
         if let Self::Oscillator { phase, .. } = self {

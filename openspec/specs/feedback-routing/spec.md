@@ -15,31 +15,35 @@ The graph validator SHALL detect routing cycles before rendering starts.
 
 ### Requirement: Audio feedback requires delay boundary
 
-Audio-rate feedback cycles SHALL be valid only when every cycle contains an explicit audio delay-bearing boundary.
+Audio-rate feedback cycles SHALL be valid only when every cycle passes through an explicit `feedback_delay` primitive with a declared delay amount. Implicit delay-boundary attributes on other modules SHALL NOT satisfy the cycle rule.
 
-#### Scenario: Audio feedback through one-sample delay is valid
+#### Scenario: Audio feedback through feedback_delay is valid
 
-- **WHEN** an audio feedback cycle includes a one-sample delay module
-- **THEN** graph validation SHALL accept the cycle
+- **WHEN** an audio feedback cycle includes a `feedback_delay` node
+- **THEN** graph validation SHALL accept the cycle and scheduling SHALL cut the cycle at that node
 
 #### Scenario: Instantaneous audio feedback is rejected
 
-- **WHEN** an audio feedback cycle contains no delay-bearing module
-- **THEN** graph validation SHALL fail before rendering starts
+- **WHEN** an audio feedback cycle contains no `feedback_delay` node
+- **THEN** graph validation SHALL fail before rendering starts, naming the cycle path and the required primitive
+
+#### Scenario: Ordinary delay module does not legalize a cycle
+
+- **WHEN** an audio feedback cycle passes through a delay-bearing effect module but no `feedback_delay` node
+- **THEN** graph validation SHALL fail with the cycle diagnostic
 
 ### Requirement: Control feedback requires scheduling boundary
 
-Control/VCA feedback cycles SHALL be valid only when the cycle contains a control delay, smoothing stage, or explicit
-tick/block boundary.
+Control feedback cycles SHALL be valid only when every cycle passes through an explicit `feedback_delay` primitive; the delay is at least one processing block of control samples.
 
-#### Scenario: Control feedback through control delay is valid
+#### Scenario: Control feedback through feedback_delay is valid
 
-- **WHEN** a control output feeds back to an upstream control input through a control delay module
-- **THEN** graph validation SHALL accept the cycle
+- **WHEN** a control output feeds back to an upstream control input through a `feedback_delay` node
+- **THEN** graph validation SHALL accept the cycle and deliver the fed-back value on a later block
 
 #### Scenario: Instantaneous control feedback is rejected
 
-- **WHEN** a control feedback cycle contains no control delay, smoothing stage, or tick/block boundary
+- **WHEN** a control feedback cycle contains no `feedback_delay` node
 - **THEN** graph validation SHALL fail before rendering starts
 
 ### Requirement: Event and script feedback is future scheduled

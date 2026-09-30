@@ -30,10 +30,11 @@ pub(super) struct ControlDefault {
     pub(super) slot: ControlSlotId,
 }
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug)]
 pub(super) struct RenderStep {
     pub(super) module_index: usize,
     pub(super) module_kind: ModuleKind,
+    pub(super) processor: super::realtime_graph_processor::PreparedStepProcessor,
     pub(super) poly_region_index: Option<usize>,
     pub(super) input_buffers: Box<[BufferId]>,
     pub(super) output_buffers: Box<[BufferId]>,
@@ -64,11 +65,12 @@ pub(super) struct AudioOutputBinding {
     pub(super) right: BufferId,
 }
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug)]
 pub(super) struct RenderPlan {
     #[cfg(test)]
     pub(super) voice_steps: Box<[RenderStep]>,
     pub(super) global_steps: Box<[RenderStep]>,
+    pub(super) feedback_step_indices: Box<[usize]>,
     pub(super) audio_buffers: AudioBufferPlan,
     pub(super) event_queues: EventQueuePlan,
     pub(super) midi_input: Option<EventQueueId>,
@@ -90,6 +92,7 @@ impl RenderPlan {
         Self {
             voice_steps: Box::new([]),
             global_steps: Box::new([]),
+            feedback_step_indices: Box::new([]),
             audio_buffers: AudioBufferPlan {
                 buffer_count: 0,
                 max_block_frames,
@@ -129,11 +132,20 @@ impl RenderPlan {
             .map(|module_index| builder.step(module_index))
             .collect::<Vec<_>>()
             .into_boxed_slice();
+        let feedback_step_indices = global_steps
+            .iter()
+            .enumerate()
+            .filter_map(|(index, step)| {
+                (step.module_kind == ModuleKind::FeedbackDelay).then_some(index)
+            })
+            .collect::<Vec<_>>()
+            .into_boxed_slice();
 
         Self {
             #[cfg(test)]
             voice_steps,
             global_steps,
+            feedback_step_indices,
             audio_buffers: AudioBufferPlan {
                 buffer_count: compiled.total_output_buffer_count() + builder.input_buffer_count,
                 max_block_frames,
@@ -219,6 +231,7 @@ impl RenderPlanBuilder<'_> {
         RenderStep {
             module_index,
             module_kind: node.module_kind,
+            processor: super::realtime_graph_processor::resolve_step_processor(node.module_kind),
             poly_region_index: (node.module_kind == ModuleKind::Poly).then(|| {
                 self.compiled
                     .poly_regions()

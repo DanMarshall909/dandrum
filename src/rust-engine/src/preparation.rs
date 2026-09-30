@@ -291,6 +291,7 @@ pub(crate) struct PreparedInstrument {
 pub struct PreparedKernelInstrument {
     flattened_graph: FlattenedGraph,
     latency_plan: LatencyPlan,
+    compensation_metadata: Vec<PreparedCompensationMetadata>,
     graph: Graph,
     compiled_patch: CompiledPatch,
 }
@@ -300,6 +301,39 @@ pub struct PreparedNodeMetadata {
     id: String,
     definition: String,
     ports: Vec<PortMetadata>,
+}
+
+/// A compiler-inserted audio delay exposed for prepared-graph inspection.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct PreparedCompensationMetadata {
+    region_path: Option<String>,
+    source: crate::kernel::PortRef,
+    destination: Option<crate::kernel::PortRef>,
+    root_port: Option<String>,
+    samples: u32,
+}
+
+impl PreparedCompensationMetadata {
+    /// The containing poly region, or `None` for the root graph.
+    pub fn region_path(&self) -> Option<&str> {
+        self.region_path.as_deref()
+    }
+
+    pub fn source(&self) -> &crate::kernel::PortRef {
+        &self.source
+    }
+
+    pub fn destination(&self) -> Option<&crate::kernel::PortRef> {
+        self.destination.as_ref()
+    }
+
+    pub fn root_port(&self) -> Option<&str> {
+        self.root_port.as_deref()
+    }
+
+    pub fn samples(&self) -> u32 {
+        self.samples
+    }
 }
 
 impl PreparedNodeMetadata {
@@ -353,6 +387,38 @@ impl PreparedKernelInstrument {
         collect_prepared_node_metadata(&self.flattened_graph, &self.compiled_patch, "", &mut nodes);
         nodes
     }
+
+    /// Reports where audio compensation was inserted during preparation.
+    pub fn compensation_metadata(&self) -> &[PreparedCompensationMetadata] {
+        &self.compensation_metadata
+    }
+}
+
+fn append_compensation_metadata(
+    plan: &LatencyPlan,
+    region_path: Option<&str>,
+    reports: &mut Vec<PreparedCompensationMetadata>,
+) {
+    reports.extend(
+        plan.compensations()
+            .iter()
+            .map(|compensation| PreparedCompensationMetadata {
+                region_path: region_path.map(str::to_string),
+                source: compensation.connection().source().clone(),
+                destination: Some(compensation.connection().destination().clone()),
+                root_port: None,
+                samples: compensation.samples(),
+            }),
+    );
+    reports.extend(plan.root_compensations().iter().map(|compensation| {
+        PreparedCompensationMetadata {
+            region_path: region_path.map(str::to_string),
+            source: compensation.source().clone(),
+            destination: None,
+            root_port: Some(compensation.root_port().to_string()),
+            samples: compensation.samples(),
+        }
+    }));
 }
 
 fn collect_prepared_node_metadata(
@@ -607,6 +673,8 @@ fn prepare_kernel_graph_with_buses_internal(
     validate_host_buses(&flattened_graph, &host_buses)?;
     let latency_plan =
         balance_poly_latencies(&mut flattened_graph, &resolved_registry, &mut Vec::new())?;
+    let mut compensation_metadata = Vec::new();
+    append_compensation_metadata(&latency_plan, None, &mut compensation_metadata);
     let mut resource_resolver = context.map(ResourceResolver::new);
     let resources = match resource_resolver.as_mut() {
         Some(resolver) => resolve_flattened_resources(&flattened_graph, resolver)?,
@@ -660,12 +728,14 @@ fn prepare_kernel_graph_with_buses_internal(
         render_settings,
         resource_resolver.as_mut(),
         &compiled_patch,
+        &mut compensation_metadata,
     )?;
     compiled_patch.set_poly_regions(poly_regions);
 
     Ok(PreparedKernelInstrument {
         flattened_graph,
         latency_plan,
+        compensation_metadata,
         graph: lowered.graph,
         compiled_patch,
     })
@@ -851,6 +921,7 @@ fn compile_poly_regions(
     render_settings: &RenderSettings,
     resource_resolver: Option<&mut ResourceResolver<'_>>,
     parent: &CompiledPatch,
+    compensation_metadata: &mut Vec<PreparedCompensationMetadata>,
 ) -> Result<Vec<CompiledPolyRegion>, KernelPreparationError> {
     compile_poly_regions_with_path(
         flattened,
@@ -859,6 +930,8 @@ fn compile_poly_regions(
         resource_resolver,
         parent,
         &mut Vec::new(),
+        "",
+        compensation_metadata,
     )
 }
 
@@ -869,6 +942,8 @@ fn compile_poly_regions_with_path(
     mut resource_resolver: Option<&mut ResourceResolver<'_>>,
     parent: &CompiledPatch,
     path: &mut Vec<String>,
+    location_prefix: &str,
+    compensation_metadata: &mut Vec<PreparedCompensationMetadata>,
 ) -> Result<Vec<CompiledPolyRegion>, KernelPreparationError> {
     let mut compiled_regions = Vec::with_capacity(flattened.poly_regions().len());
     for region in flattened.poly_regions() {
@@ -885,6 +960,8 @@ fn compile_poly_regions_with_path(
             .flatten(registry)
             .map_err(KernelPreparationError::from)?;
         let latency_plan = balance_poly_latencies(&mut child_flattened, registry, path)?;
+        let region_path = format!("{location_prefix}{}", region.node_id().as_str());
+        append_compensation_metadata(&latency_plan, Some(&region_path), compensation_metadata);
         let resources = match resource_resolver.as_deref_mut() {
             Some(resolver) => resolve_flattened_resources(&child_flattened, resolver)?,
             None => BTreeMap::new(),
@@ -987,6 +1064,8 @@ fn compile_poly_regions_with_path(
             resource_resolver.as_deref_mut(),
             &child_patch,
             path,
+            &format!("{region_path}::"),
+            compensation_metadata,
         )?;
         path.pop();
         child_patch.set_poly_regions(nested_regions);
@@ -2353,6 +2432,66 @@ mod tests {
     }
 
     #[test]
+    fn poly_voice_oscillator_and_gain_render_own_note_and_velocity() {
+        let voice = GraphDefinition::new("pitched_velocity_voice")
+            .with_port(
+                KernelPort::output("audio", SignalType::Audio, 1)
+                    .maps_from(kernel_ref("gain", builtin_ports::AUDIO_OUT)),
+            )
+            .with_node(
+                Node::new(NodeId::new("oscillator"), module_types::OSCILLATOR).with_static_arg(
+                    crate::builtins::WAVEFORM_PARAMETER,
+                    StaticArg::Literal(StaticValue::Enum(
+                        crate::builtins::WAVEFORM_SINE.to_string(),
+                    )),
+                ),
+            )
+            .with_node(Node::new(NodeId::new("gain"), module_types::GAIN))
+            .with_connection(Connection::new(
+                kernel_ref(
+                    crate::kernel::VOICE_INTRINSIC_NODE,
+                    crate::kernel::VOICE_NOTE_OUTPUT,
+                ),
+                kernel_ref("oscillator", builtin_ports::PITCH),
+            ))
+            .with_connection(Connection::new(
+                kernel_ref("oscillator", builtin_ports::AUDIO),
+                kernel_ref("gain", builtin_ports::AUDIO_IN),
+            ))
+            .with_connection(Connection::new(
+                kernel_ref(
+                    crate::kernel::VOICE_INTRINSIC_NODE,
+                    crate::kernel::VOICE_VELOCITY_OUTPUT,
+                ),
+                kernel_ref("gain", builtin_ports::GAIN),
+            ));
+        let prepared = prepare_audio_poly(voice, 2);
+        let render = |notes: &[(u8, u8)]| {
+            let mut runtime = runtime_for(&prepared);
+            for &(note, velocity) in notes {
+                runtime.note_on(note, velocity);
+            }
+            let mut left = [0.0; 8];
+            let mut right = [0.0; 8];
+            assert_eq!(
+                render_two_mono_root_ports(&mut runtime, &mut left, &mut right),
+                8
+            );
+            assert_eq!(left, right);
+            left
+        };
+
+        let base = render(&[(60, 127)]);
+        let octave = render(&[(72, 127)]);
+        let soft = render(&[(60, 64)]);
+        let layered = render(&[(60, 64), (72, 127)]);
+        assert!((base[1] - 0.02879395).abs() < 0.00001);
+        assert!((octave[1] - 0.05756403).abs() < 0.00001);
+        assert!((soft[1] - base[1] * (64.0 / 127.0)).abs() < 0.00001);
+        assert!((layered[1] - (soft[1] + octave[1])).abs() < 0.00001);
+    }
+
+    #[test]
     fn poly_two_constant_voices_sum_to_a_positive_absolute_value() {
         let prepared = prepare_audio_poly(constant_voice("constant_voice", 0.25), 2);
         let mut runtime = runtime_for(&prepared);
@@ -2643,6 +2782,74 @@ mod tests {
     }
 
     #[test]
+    fn poly_gate_release_reaches_only_the_matching_adsr_child() {
+        let voice = GraphDefinition::new("enveloped_voice")
+            .with_port(
+                KernelPort::output("audio", SignalType::Audio, 1)
+                    .maps_from(kernel_ref("gain", builtin_ports::AUDIO_OUT)),
+            )
+            .with_node(
+                Node::new(NodeId::new("constant"), module_types::CONTROL_TO_AUDIO)
+                    .with_default_override(builtin_ports::IN, 0.25),
+            )
+            .with_node(
+                Node::new(NodeId::new("envelope"), module_types::ADSR)
+                    .with_default_override(builtin_ports::ATTACK, 0.0)
+                    .with_default_override(builtin_ports::SUSTAIN, 0.5)
+                    .with_default_override(builtin_ports::RELEASE, 0.0),
+            )
+            .with_node(Node::new(NodeId::new("gain"), module_types::GAIN))
+            .with_connection(Connection::new(
+                kernel_ref("constant", builtin_ports::OUT),
+                kernel_ref("gain", builtin_ports::AUDIO_IN),
+            ))
+            .with_connection(Connection::new(
+                kernel_ref("envelope", builtin_ports::VALUE),
+                kernel_ref("gain", builtin_ports::GAIN),
+            ))
+            .with_connection(Connection::new(
+                kernel_ref(
+                    crate::kernel::VOICE_INTRINSIC_NODE,
+                    crate::kernel::VOICE_GATE_OUTPUT,
+                ),
+                kernel_ref("envelope", builtin_ports::GATE),
+            ));
+        let prepared = prepare_audio_poly(voice, 2);
+        let mut runtime = runtime_for(&prepared);
+        let frames = KERNEL_RENDER_SETTINGS.block_size_frames as usize;
+        let mut left = vec![0.0; frames];
+        let mut right = vec![0.0; frames];
+
+        runtime.note_on(60, 100);
+        runtime.note_on(64, 100);
+        for _ in 0..200 {
+            assert_eq!(
+                render_two_mono_root_ports(&mut runtime, &mut left, &mut right),
+                frames
+            );
+        }
+        assert!(left.iter().all(|sample| *sample == 0.25));
+
+        runtime.note_off(60);
+        assert_eq!(
+            render_two_mono_root_ports(&mut runtime, &mut left, &mut right),
+            frames
+        );
+        assert!(left.iter().any(|sample| *sample > 0.125));
+        for _ in 0..120 {
+            assert_eq!(
+                render_two_mono_root_ports(&mut runtime, &mut left, &mut right),
+                frames
+            );
+        }
+        assert!(left.iter().all(|sample| *sample == 0.125));
+        assert_eq!(
+            runtime.prepared_poly_runtime_regions()[0].active_voice_count(),
+            1
+        );
+    }
+
+    #[test]
     fn poly_done_control_retires_only_when_signalled() {
         let voice = noise_voice("control_done_voice", 1, 1234)
             .with_port(
@@ -2690,6 +2897,53 @@ mod tests {
         );
         assert!(left.iter().all(|sample| *sample == 0.0));
         assert!(right.iter().all(|sample| *sample == 0.0));
+    }
+
+    #[test]
+    fn poly_done_control_pulse_after_first_frame_retires_and_reuses_voice() {
+        // At 12 kHz in a 48 kHz render, the LFO starts at 0.5 and reaches 1.0
+        // on frame 1. The offset makes `done` zero at frame 0 and positive later.
+        let voice = constant_voice("pulsed_done_voice", -0.25)
+            .with_port(
+                KernelPort::output(crate::kernel::POLY_DONE_OUTPUT, SignalType::Control, 1)
+                    .maps_from(kernel_ref("mapper", builtin_ports::VALUE)),
+            )
+            .with_node(
+                Node::new(NodeId::new("lfo"), module_types::LFO)
+                    .with_default_override(builtin_ports::RATE, 12_000.0),
+            )
+            .with_node(
+                Node::new(NodeId::new("mapper"), module_types::CURVE_MAPPER)
+                    .with_default_override(builtin_ports::OFFSET, -0.5),
+            )
+            .with_connection(Connection::new(
+                kernel_ref("lfo", builtin_ports::VALUE),
+                kernel_ref("mapper", builtin_ports::VALUE),
+            ));
+        let prepared = prepare_audio_poly(voice, 1);
+        let mut runtime = runtime_for(&prepared);
+        let frames = KERNEL_RENDER_SETTINGS.block_size_frames as usize;
+        let mut left = vec![0.0; frames];
+        let mut right = vec![0.0; frames];
+
+        runtime.note_on(60, 100);
+        assert_eq!(
+            render_two_mono_root_ports(&mut runtime, &mut left, &mut right),
+            frames
+        );
+        assert_eq!(left, vec![-0.25; frames]);
+        assert_eq!(right, left);
+        assert_eq!(runtime.prepared_poly_runtime_regions()[0].active_voice_count(), 0);
+
+        render_two_mono_root_ports(&mut runtime, &mut left, &mut right);
+        assert_eq!(left, vec![0.0; frames]);
+        assert_eq!(right, left);
+
+        runtime.note_on(61, 100);
+        render_two_mono_root_ports(&mut runtime, &mut left, &mut right);
+        assert_eq!(left, vec![-0.25; frames]);
+        assert_eq!(right, left);
+        assert_eq!(runtime.prepared_poly_runtime_regions()[0].active_voice_count(), 0);
     }
 
     #[test]
@@ -3903,8 +4157,8 @@ connections:
         crate::wav::write_wav_stereo_i16(
             fs::File::create(root_dir.join("hit.wav")).unwrap(),
             48_000,
-            &[0.25],
-            &[0.25],
+            &[0.25, 0.5, 0.75],
+            &[0.25, 0.5, 0.75],
         )
         .unwrap();
         let sample_ref = || {
@@ -3944,6 +4198,19 @@ connections:
             )
             .with_node(Node::new(NodeId::new("midi"), module_types::MIDI_INPUT))
             .with_node(
+                Node::new(NodeId::new("first_filter"), module_types::EVENT_FILTER).with_static_arg(
+                    crate::builtins::EVENT_FILTER_NOTE_PARAMETER,
+                    StaticArg::Literal(StaticValue::Int(60)),
+                ),
+            )
+            .with_node(
+                Node::new(NodeId::new("second_filter"), module_types::EVENT_FILTER)
+                    .with_static_arg(
+                        crate::builtins::EVENT_FILTER_NOTE_PARAMETER,
+                        StaticArg::Literal(StaticValue::Int(61)),
+                    ),
+            )
+            .with_node(
                 Node::new(NodeId::new("first"), "sample_layer")
                     .with_static_arg(crate::kernel::builtins::SAMPLE_RESOURCE_PARAM, sample_ref()),
             )
@@ -3953,10 +4220,18 @@ connections:
             )
             .with_connection(Connection::new(
                 kernel_ref("midi", builtin_ports::EVENTS),
-                kernel_ref("first", "trigger"),
+                kernel_ref("first_filter", builtin_ports::EVENTS_IN),
             ))
             .with_connection(Connection::new(
                 kernel_ref("midi", builtin_ports::EVENTS),
+                kernel_ref("second_filter", builtin_ports::EVENTS_IN),
+            ))
+            .with_connection(Connection::new(
+                kernel_ref("first_filter", builtin_ports::EVENTS_OUT),
+                kernel_ref("first", "trigger"),
+            ))
+            .with_connection(Connection::new(
+                kernel_ref("second_filter", builtin_ports::EVENTS_OUT),
                 kernel_ref("second", "trigger"),
             ));
         let registry = builtin_registry().with_definition(layer);
@@ -3994,7 +4269,7 @@ connections:
             .unwrap();
 
         assert!(first.shares_data_with(second));
-        assert_eq!(first.frames().len(), 1);
+        assert_eq!(first.frames().len(), 3);
 
         let mut runtime = RealtimeGraphProcessor::polyphonic_with_compiled_patch_and_sampler_assets_and_max_block_size(
             prepared.graph().clone(),
@@ -4004,15 +4279,23 @@ connections:
             &crate::patch::VoiceAllocation::default(),
             8,
         );
-        runtime.note_on(60, 100);
+        runtime.note_on_at(60, 100, 0);
+        runtime.note_on_at(61, 100, 2);
         let mut left = [0.0; 8];
         let mut right = [0.0; 8];
         assert_eq!(
             render_two_mono_root_ports(&mut runtime, &mut left, &mut right),
             8
         );
-        assert!(left[0].abs() > f32::EPSILON);
-        assert_eq!(left, right, "sampler playback positions remain disjoint");
+        assert!((left[0] - 0.25).abs() < 0.0001);
+        assert!((left[1] - 0.5).abs() < 0.0001);
+        assert!((left[2] - 0.75).abs() < 0.0001);
+        assert_eq!(left[3], 0.0);
+        assert_eq!(right[0], 0.0);
+        assert_eq!(right[1], 0.0);
+        assert!((right[2] - 0.25).abs() < 0.0001);
+        assert!((right[3] - 0.5).abs() < 0.0001);
+        assert!((right[4] - 0.75).abs() < 0.0001);
     }
 
     #[test]
@@ -4088,6 +4371,46 @@ connections:
             error.errors().next().unwrap().error_code(),
             diagnostics::error_codes::KERNEL_RESOURCE_PATH_ESCAPE
         );
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn package_resource_resolution_rejects_symlink_and_parent_escapes() {
+        let document_root = resource_test_dir("package-document");
+        let package_root = resource_test_dir("package-root");
+        let outside = resource_test_dir("package-outside");
+        fs::create_dir_all(&document_root).unwrap();
+        fs::create_dir_all(&package_root).unwrap();
+        fs::create_dir_all(&outside).unwrap();
+        let outside_wav = outside.join("outside.wav");
+        crate::wav::write_wav_stereo_i16(
+            fs::File::create(&outside_wav).unwrap(),
+            48_000,
+            &[0.25],
+            &[0.25],
+        )
+        .unwrap();
+        std::os::unix::fs::symlink(&outside_wav, package_root.join("linked.wav")).unwrap();
+        let context = PreparationContext::new(&document_root, 48_000);
+        let mut resolver = ResourceResolver::new(&context);
+
+        for path in [
+            PathBuf::from("linked.wav"),
+            PathBuf::from("../outside.wav"),
+            outside_wav,
+        ] {
+            let error = resolver
+                .resolve(&ResourceRef::new(
+                    ResourceKind::Sample,
+                    path,
+                    ResourceOrigin::Package(package_root.clone()),
+                ))
+                .expect_err("package resource must stay under its canonical root");
+            assert_eq!(
+                error.errors().next().unwrap().error_code(),
+                diagnostics::error_codes::KERNEL_RESOURCE_PATH_ESCAPE
+            );
+        }
     }
 
     fn resource_test_dir(name: &str) -> PathBuf {
@@ -4690,6 +5013,8 @@ connections:
             .find(|node| node.id.as_str() == "gain")
             .expect("gain should compile");
 
+        assert_eq!(source.module_kind, ModuleKind::Noise);
+        assert_eq!(gain.module_kind, ModuleKind::Gain);
         assert_eq!(source.output_port_spans[0].channel_count, 6);
         assert_eq!(gain.input_port_spans[0].channel_count, 6);
         assert_eq!(gain.input_routes[0].len(), 6);
@@ -4721,6 +5046,59 @@ connections:
             channel.iter().any(|sample| sample.abs() > f32::EPSILON)
                 && channel.iter().all(|sample| sample.abs() <= 0.5)
         }));
+    }
+
+    #[test]
+    fn kernel_render_uses_declared_control_default_override_and_connected_value() {
+        let render_first = |override_gain: Option<f64>, connect_control: bool| {
+            let mut gain = Node::new(NodeId::new("amp"), module_types::GAIN);
+            if let Some(value) = override_gain {
+                gain = gain.with_default_override(builtin_ports::GAIN, value);
+            }
+            let mut root = GraphDefinition::new("root")
+                .with_port(
+                    KernelPort::input("input", SignalType::Audio, 1)
+                        .maps_to(kernel_ref("amp", builtin_ports::AUDIO_IN)),
+                )
+                .with_port(
+                    KernelPort::output("master", SignalType::Audio, 1)
+                        .maps_from(kernel_ref("amp", builtin_ports::AUDIO_OUT)),
+                )
+                .with_node(gain);
+            if connect_control {
+                root = root
+                    .with_node(Node::new(NodeId::new("modulation"), module_types::LFO))
+                    .with_connection(Connection::new(
+                        kernel_ref("modulation", builtin_ports::VALUE),
+                        kernel_ref("amp", builtin_ports::GAIN),
+                    ));
+            }
+            let prepared = prepare_kernel_graph_with_buses(
+                &root,
+                &builtin_registry(),
+                &KERNEL_RENDER_SETTINGS,
+                &HostBuses::new()
+                    .with_input("input", 1)
+                    .with_output("master", 1),
+            )
+            .expect("gain patch prepares");
+            let mut runtime = RealtimeGraphProcessor::polyphonic_with_compiled_patch_and_sampler_assets_and_max_block_size(
+                prepared.graph().clone(),
+                prepared.compiled_patch().clone(),
+                KERNEL_RENDER_SETTINGS.sample_rate_hz as f32,
+                &PreparedSamplerAssets::empty(),
+                &crate::patch::VoiceAllocation::default(),
+                8,
+            );
+            let inputs = vec![vec![vec![-0.5; 8]]];
+            let mut outputs = vec![vec![vec![0.0; 8]]];
+            assert_eq!(runtime.render_root_buses(&inputs, &mut outputs), 8);
+            outputs[0][0][0]
+        };
+
+        assert_eq!(render_first(None, false), -0.5);
+        assert_eq!(render_first(Some(0.25), false), -0.125);
+        assert_eq!(render_first(Some(0.25), true), -0.25);
     }
 
     #[test]
@@ -5015,6 +5393,134 @@ connections:
                     .is_none()
         }));
         assert_eq!(prepared.compiled_patch().audio_output_index(), None);
+    }
+
+    #[test]
+    fn prepared_discovery_reports_inserted_compensation_locations_and_samples() {
+        let (root, registry) = latency_test_graph();
+        let prepared = prepare_kernel_graph(&root, &registry, &KERNEL_RENDER_SETTINGS)
+            .expect("latency graph prepares");
+
+        let reports = prepared.compensation_metadata();
+        assert_eq!(reports.len(), 2);
+        assert_eq!(reports[0].region_path(), None);
+        assert_eq!(reports[0].source().node().as_str(), "impulse");
+        assert_eq!(reports[0].source().port(), builtin_ports::AUDIO);
+        assert_eq!(reports[0].destination().unwrap().node().as_str(), "mix");
+        assert_eq!(
+            reports[0].destination().unwrap().port(),
+            builtin_ports::INPUTS
+        );
+        assert_eq!(reports[0].root_port(), None);
+        assert_eq!(reports[0].samples(), 1);
+        assert_eq!(reports[1].source().node().as_str(), "impulse");
+        assert_eq!(reports[1].destination(), None);
+        assert_eq!(reports[1].root_port(), Some("right"));
+        assert_eq!(reports[1].samples(), 1);
+    }
+
+    fn compensated_poly_voice() -> GraphDefinition {
+        GraphDefinition::new("delayed_voice")
+            .with_port(
+                KernelPort::output("audio", SignalType::Audio, 1)
+                    .maps_from(kernel_ref("mix", builtin_ports::MIX)),
+            )
+            .with_node(
+                Node::new(NodeId::new("constant"), module_types::CONTROL_TO_AUDIO)
+                    .with_default_override(builtin_ports::IN, 0.25),
+            )
+            .with_node(
+                Node::new(NodeId::new("wet"), module_types::COMPENSATION_DELAY).with_static_arg(
+                    DELAY_SAMPLES_PARAMETER,
+                    StaticArg::Literal(StaticValue::Int(1)),
+                ),
+            )
+            .with_node(Node::new(NodeId::new("mix"), module_types::AUDIO_MIXER))
+            .with_connection(Connection::new(
+                kernel_ref("constant", builtin_ports::OUT),
+                kernel_ref("wet", builtin_ports::AUDIO_IN),
+            ))
+            .with_connection(Connection::new(
+                kernel_ref("constant", builtin_ports::OUT),
+                kernel_ref("mix", builtin_ports::INPUTS),
+            ))
+            .with_connection(Connection::new(
+                kernel_ref("wet", builtin_ports::AUDIO_OUT),
+                kernel_ref("mix", builtin_ports::INPUTS),
+            ))
+    }
+
+    #[test]
+    fn prepared_discovery_reports_compensation_inside_a_poly_voice() {
+        let prepared = prepare_audio_poly(compensated_poly_voice(), 1);
+
+        let reports = prepared.compensation_metadata();
+        assert_eq!(reports.len(), 1);
+        assert_eq!(reports[0].region_path(), Some("voices"));
+        assert_eq!(reports[0].source().node().as_str(), "constant");
+        assert_eq!(reports[0].destination().unwrap().node().as_str(), "mix");
+        assert_eq!(reports[0].samples(), 1);
+
+        let mut runtime = runtime_for(&prepared);
+        runtime.note_on(60, 100);
+        let frames = KERNEL_RENDER_SETTINGS.block_size_frames as usize;
+        let mut left = vec![0.0; frames];
+        let mut right = vec![0.0; frames];
+        assert_eq!(
+            render_two_mono_root_ports(&mut runtime, &mut left, &mut right),
+            frames
+        );
+        assert_eq!(left[0], 0.0);
+        assert_eq!(left[1], 0.5);
+        assert_eq!(right[1], 0.5);
+    }
+
+    #[test]
+    fn prepared_discovery_qualifies_compensation_inside_nested_poly_regions() {
+        let outer = GraphDefinition::new("outer_voice")
+            .with_port(
+                KernelPort::output("audio", SignalType::Audio, 1)
+                    .maps_from(kernel_ref("inner_voices", "audio")),
+            )
+            .with_node(poly_node("inner_voices", "delayed_voice", 1))
+            .with_connection(Connection::new(
+                kernel_ref(
+                    crate::kernel::VOICE_INTRINSIC_NODE,
+                    crate::kernel::VOICE_GATE_OUTPUT,
+                ),
+                kernel_ref("inner_voices", "notes"),
+            ));
+        let root = GraphDefinition::new("root")
+            .with_port(
+                KernelPort::output("master", SignalType::Audio, 1)
+                    .maps_from(kernel_ref("voices", "audio")),
+            )
+            .with_node(poly_node("voices", "outer_voice", 1));
+        let registry = builtin_registry()
+            .with_definition(compensated_poly_voice())
+            .with_definition(outer);
+        let prepared = prepare_kernel_graph_with_buses(
+            &root,
+            &registry,
+            &KERNEL_RENDER_SETTINGS,
+            &HostBuses::new().with_output("master", 1),
+        )
+        .expect("nested compensated poly graph prepares");
+
+        let reports = prepared.compensation_metadata();
+        assert_eq!(reports.len(), 1);
+        assert_eq!(reports[0].region_path(), Some("voices::inner_voices"));
+        assert_eq!(reports[0].source().node().as_str(), "constant");
+        assert_eq!(reports[0].destination().unwrap().node().as_str(), "mix");
+        assert_eq!(reports[0].samples(), 1);
+
+        let mut runtime = runtime_for(&prepared);
+        runtime.note_on(60, 100);
+        let frames = KERNEL_RENDER_SETTINGS.block_size_frames as usize;
+        let mut outputs = vec![vec![vec![0.0; frames]]];
+        assert_eq!(runtime.render_root_outputs(&mut outputs), frames);
+        assert_eq!(outputs[0][0][0], 0.0);
+        assert_eq!(outputs[0][0][1], 0.5);
     }
 
     #[test]
@@ -5322,6 +5828,58 @@ connections:
             voice.name(),
             &builtin_registry().with_definition(voice.clone()),
         );
+    }
+
+    #[test]
+    fn defined_module_latency_aligns_parent_dry_and_wet_outputs() {
+        let delayed = GraphDefinition::new("delayed_module")
+            .with_port(
+                KernelPort::input("audio_in", SignalType::Audio, 1)
+                    .maps_to(kernel_ref("delay", builtin_ports::AUDIO_IN)),
+            )
+            .with_port(
+                KernelPort::output("audio", SignalType::Audio, 1)
+                    .maps_from(kernel_ref("delay", builtin_ports::AUDIO_OUT)),
+            )
+            .with_node(
+                Node::new(NodeId::new("delay"), module_types::COMPENSATION_DELAY).with_static_arg(
+                    DELAY_SAMPLES_PARAMETER,
+                    StaticArg::Literal(StaticValue::Int(3)),
+                ),
+            );
+        let root = GraphDefinition::new("root")
+            .with_port(
+                KernelPort::output("dry", SignalType::Audio, 1)
+                    .maps_from(kernel_ref("source", builtin_ports::OUT)),
+            )
+            .with_port(
+                KernelPort::output("wet", SignalType::Audio, 1)
+                    .maps_from(kernel_ref("wet_module", "audio")),
+            )
+            .with_node(
+                Node::new(NodeId::new("source"), module_types::CONTROL_TO_AUDIO)
+                    .with_default_override(builtin_ports::IN, 0.25),
+            )
+            .with_node(Node::new(NodeId::new("wet_module"), "delayed_module"))
+            .with_connection(Connection::new(
+                kernel_ref("source", builtin_ports::OUT),
+                kernel_ref("wet_module", "audio_in"),
+            ));
+        let prepared = prepare_kernel_graph_with_buses(
+            &root,
+            &builtin_registry().with_definition(delayed),
+            &KERNEL_RENDER_SETTINGS,
+            &HostBuses::new().with_output("dry", 1).with_output("wet", 1),
+        )
+        .expect("delayed defined module prepares");
+        assert_eq!(prepared.total_latency_samples(), 3);
+        assert_eq!(prepared.latency_plan().root_compensations().len(), 1);
+
+        let mut runtime = runtime_for(&prepared);
+        let mut outputs = vec![vec![vec![0.0; 8]]; 2];
+        assert_eq!(runtime.render_root_outputs(&mut outputs), 8);
+        assert_eq!(outputs[0][0], [0.0, 0.0, 0.0, 0.25, 0.25, 0.25, 0.25, 0.25]);
+        assert_eq!(outputs[1][0], [0.0, 0.0, 0.0, 0.25, 0.25, 0.25, 0.25, 0.25]);
     }
 
     #[test]

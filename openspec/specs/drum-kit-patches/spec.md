@@ -57,36 +57,30 @@ event, via the internal velocity VCA pattern.
 
 ### Requirement: Complete drum kit patch
 
-A `drum-kit` example patch SHALL exist that instantiates multiple `impulse_*` composites routed to different MIDI notes
-through generic event-routing modules, with shared `midi_input` and `audio_output` modules.
+A `drum-kit` example patch SHALL exist that instantiates multiple `impulse_*` defined modules routed to different MIDI notes through generic event-routing modules, with per-pad polyphony expressed through `poly` nodes and output through named root ports.
 
 The patch SHALL NOT require a `drum_machine`, `drum_pad`, or drum-specific Rust primitive.
 
 #### Scenario: Drum kit patch loads and renders
 
 - **WHEN** the drum-kit patch is loaded, prepared, and rendered with MIDI events
-- **THEN** rendering SHALL complete without error and produce audio on the master output
+- **THEN** rendering SHALL complete without error and produce audio on the root `master` output port
 
 #### Scenario: Drum kit uses generic event routing
 
 - **WHEN** the drum-kit patch is inspected
-- **THEN** note-to-voice routing SHALL be expressed through generic event-routing modules and explicit connections
+- **THEN** note-to-voice routing SHALL be expressed through generic event-routing modules, `poly` nodes, and explicit connections
 
-#### Scenario: Drum kit patch has voice allocation
+#### Scenario: Drum kit polyphony uses poly nodes
 
-- **WHEN** the drum-kit patch metadata is inspected
-- **THEN** `voice_allocation` SHALL be present and `max_voices` SHALL be at least the number of voice instances
+- **WHEN** the drum-kit patch is inspected
+- **THEN** voice instantiation SHALL be declared through `poly` nodes with explicit `max_voices`, with no `voice_allocation` section
 
 ### Requirement: Drum kit supports multiple stereo outputs
 
-The `drum-kit` example patch SHALL support multiple stereo output pairs so individual drum voices or voice groups can be routed to separate stereo outs in addition to the main mix.
+The `drum-kit` example patch SHALL declare multiple named 2-channel root output ports so individual drum voices or voice groups can be routed to separate host buses in addition to the main mix.
 
-#### Scenario: Drum kit exposes stereo output pairs
+#### Scenario: Drum kit exposes named output ports
 
-- **WHEN** the drum-kit patch is inspected
-- **THEN** it SHALL expose a main stereo output pair plus at least one additional named stereo output pair
-
-#### Scenario: Voices can route to separate stereo outs
-
-- **WHEN** the drum-kit patch is wired for multi-output routing
-- **THEN** selected voice instances or groups SHALL be connectable to distinct stereo output pairs without requiring a drum-specific primitive
+- **WHEN** the drum-kit patch's root ports are inspected
+- **THEN** it SHALL declare a 2-channel `master` output port and at least one additional named 2-channel output port fed by a voice group

@@ -803,6 +803,38 @@ mod tests {
     }
 
     #[test]
+    fn kernel_ffi_reports_nonzero_resolved_root_latency_to_host() {
+        let directory = tempfile::tempdir().unwrap();
+        let path = directory.path().join("latency.yaml");
+        std::fs::write(
+            &path,
+            "metadata: { name: latency }\nports:\n  - { name: input, direction: input, signal: audio, channels: 1, maps_to: wet.audio_in }\n  - { name: master, direction: output, signal: audio, channels: 1, maps_from: wet.audio_out }\nmodules:\n  - { id: wet, type: spectral_processor, static: { fft_size: 512, mode: passthrough } }\nconnections: []\n",
+        )
+        .unwrap();
+        let path = std::ffi::CString::new(path.to_str().unwrap()).unwrap();
+        let input = std::ffi::CString::new("input").unwrap();
+        let master = std::ffi::CString::new("master").unwrap();
+        let buses = [
+            DandrumKernelBusDeclaration {
+                name: input.as_ptr(),
+                direction: 1,
+                channel_count: 1,
+            },
+            DandrumKernelBusDeclaration {
+                name: master.as_ptr(),
+                direction: 2,
+                channel_count: 1,
+            },
+        ];
+
+        let engine =
+            unsafe { dandrum_kernel_prepare_file(path.as_ptr(), 48_000, 64, buses.as_ptr(), 2) };
+        assert!(!engine.is_null());
+        assert_eq!(unsafe { dandrum_kernel_total_latency_samples(engine) }, 511);
+        unsafe { dandrum_kernel_destroy(engine) };
+    }
+
+    #[test]
     fn same_patch_prepares_and_renders_at_two_host_sample_rates() {
         let (_directory, path) = kernel_ffi_patch();
         let input_name = std::ffi::CString::new("input").unwrap();

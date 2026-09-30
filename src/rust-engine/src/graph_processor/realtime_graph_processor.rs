@@ -27,7 +27,9 @@ use super::input_provider::CompiledInputProvider;
 use super::outputs::BlockEvent;
 #[cfg(test)]
 use super::outputs::ModuleOutputs;
-use super::polyphony::{PreparedPolyRuntimeRegion, build_polyphonic_states_from_compiled};
+use super::polyphony::PreparedPolyRuntimeRegion;
+#[cfg(test)]
+use super::polyphony::build_polyphonic_states_from_compiled;
 use super::process_context::ProcessContext;
 use super::render_plan::{CompiledEventEdge, RenderPlan, RenderStep};
 use super::state::PerModuleState;
@@ -40,6 +42,7 @@ pub struct RealtimeGraphProcessor {
     #[cfg(test)]
     voice_allocation: VoiceAllocation,
     compiled: CompiledPatch,
+    #[cfg(test)]
     states: Vec<Vec<PerModuleState>>,
     #[cfg(test)]
     midi_idx: Option<usize>,
@@ -52,6 +55,9 @@ pub struct RealtimeGraphProcessor {
     #[cfg(test)]
     allocator: VoiceAllocator,
     render_plan: RenderPlan,
+    prepared_step_executors: Box<[Box<dyn PreparedStepExecutor>]>,
+    can_render_root_buses: bool,
+    can_render_root_buses_offline: bool,
     audio_arena: AudioArena,
     prepared_max_block_size: usize,
     last_render_chunk_count: usize,
@@ -188,6 +194,7 @@ impl RealtimeGraphProcessor {
         let midi_idx = compiled.midi_input_index();
         #[cfg(test)]
         let out_idx = compiled.audio_output_index();
+        #[cfg(test)]
         let states = build_polyphonic_states_from_compiled(
             &compiled,
             sample_rate,
@@ -207,6 +214,12 @@ impl RealtimeGraphProcessor {
             max_voices,
             prepared_max_block_size,
         );
+        let prepared_step_executors =
+            bind_prepared_step_executors(&compiled, &render_plan, sample_rate, sampler_assets);
+        let can_render_root_buses =
+            render_plan_supports_root_buses(&render_plan, false, max_voices);
+        let can_render_root_buses_offline =
+            render_plan_supports_root_buses(&render_plan, true, max_voices);
         #[cfg(test)]
         let uses_legacy_module_outputs =
             uses_legacy_module_outputs(&compiled, midi_idx, max_voices, &render_plan);
@@ -248,6 +261,7 @@ impl RealtimeGraphProcessor {
             #[cfg(test)]
             voice_allocation,
             compiled,
+            #[cfg(test)]
             states,
             #[cfg(test)]
             midi_idx,
@@ -260,6 +274,9 @@ impl RealtimeGraphProcessor {
             #[cfg(test)]
             allocator,
             render_plan,
+            prepared_step_executors,
+            can_render_root_buses,
+            can_render_root_buses_offline,
             audio_arena,
             prepared_max_block_size,
             last_render_chunk_count: 0,
@@ -345,7 +362,7 @@ impl RealtimeGraphProcessor {
     }
 
     pub fn prepared_voice_count(&self) -> usize {
-        self.states.len()
+        self.render_plan.audio_buffers.max_voices
     }
 
     pub fn set_numeric_parameter_by_target(
@@ -432,10 +449,14 @@ impl RealtimeGraphProcessor {
         self.prepared_event_queues.clear_all();
         #[cfg(test)]
         self.allocator.reset();
+        #[cfg(test)]
         for voice in &mut self.states {
             for state in voice {
                 state.reset_all();
             }
+        }
+        for executor in self.prepared_step_executors.iter_mut() {
+            executor.reset_all();
         }
         for region in self.prepared_poly_runtime_regions.iter_mut() {
             region.reset();
@@ -540,54 +561,11 @@ impl RealtimeGraphProcessor {
     }
 
     fn can_render_root_buses_with_scripts(&self, allow_scripts: bool) -> bool {
-        #[cfg(test)]
-        if self.allocator.max_voices() > 1 {
-            return false;
+        if allow_scripts {
+            self.can_render_root_buses_offline
+        } else {
+            self.can_render_root_buses
         }
-        self.render_plan
-            .global_steps
-            .iter()
-            .all(|step| match step.module_kind {
-                ModuleKind::MidiInput => {
-                    step.input_buffers.is_empty()
-                        && step.output_buffers.is_empty()
-                        && step.event_outputs.len() == 1
-                }
-                ModuleKind::EventFilter => {
-                    step.input_buffers.is_empty()
-                        && step.output_buffers.is_empty()
-                        && step.event_inputs.len() == 1
-                        && step.event_outputs.len() == 1
-                }
-                ModuleKind::Adsr => {
-                    step.input_buffers.len() == 4
-                        && step.output_buffers.len() == 1
-                        && step.event_inputs.len() == 1
-                }
-                ModuleKind::NoteToControl => {
-                    step.input_buffers.is_empty()
-                        && step.output_buffers.len() == 4
-                        && step.event_inputs.len() == 1
-                        && step.event_outputs.len() == 1
-                }
-                ModuleKind::Sampler => {
-                    step.input_buffers.len() == 5
-                        && !step.output_buffers.is_empty()
-                        && step.event_inputs.len() == 1
-                }
-                ModuleKind::NoteToRate => {
-                    step.input_buffers.is_empty()
-                        && step.output_buffers.len() == 1
-                        && step.event_inputs.len() == 1
-                }
-                ModuleKind::Impulse => {
-                    step.input_buffers.is_empty()
-                        && step.output_buffers.len() == 1
-                        && step.event_inputs.len() == 1
-                }
-                ModuleKind::Script => allow_scripts,
-                _ => is_channel_arena_supported(step),
-            })
     }
 
     /// Render planar root input and output buffers in their prepared root-port
@@ -668,26 +646,19 @@ impl RealtimeGraphProcessor {
             region.begin_block(frames, self.current_frame);
         }
         self.prepared_event_queues.clear_all();
-        if let Some(midi_step) = self
-            .render_plan
-            .global_steps
-            .iter()
-            .find(|step| step.module_kind == ModuleKind::MidiInput)
-        {
-            for &queue in midi_step.event_outputs.iter() {
-                let destination = self
-                    .prepared_event_queues
-                    .queue_mut(queue.0)
-                    .expect("compiled MIDI output has a prepared event queue");
-                for event in &self.events_buffer[..event_count] {
-                    if !segment_poly_events || event.frame_offset as usize == segment_start {
-                        let offset = if segment_poly_events {
-                            0
-                        } else {
-                            event.frame_offset
-                        };
-                        let _ = destination.push_at(event.event.clone(), offset);
-                    }
+        if let Some(queue) = self.render_plan.midi_input {
+            let destination = self
+                .prepared_event_queues
+                .queue_mut(queue.0)
+                .expect("compiled MIDI output has a prepared event queue");
+            for event in &self.events_buffer[..event_count] {
+                if !segment_poly_events || event.frame_offset as usize == segment_start {
+                    let offset = if segment_poly_events {
+                        0
+                    } else {
+                        event.frame_offset
+                    };
+                    let _ = destination.push_at(event.event.clone(), offset);
                 }
             }
         } else {
@@ -726,142 +697,31 @@ impl RealtimeGraphProcessor {
             }
         }
 
-        for step in self.render_plan.global_steps.iter() {
-            route_prepared_event_edges(&mut self.prepared_event_queues, step);
-            match step.module_kind {
-                ModuleKind::MidiInput => continue,
-                ModuleKind::EventFilter => {
-                    let PerModuleState::EventFilter { note } = &self.states[0][step.module_index]
-                    else {
-                        unreachable!()
-                    };
-                    let edge = CompiledEventEdge {
-                        source: step.event_inputs[0],
-                        destination: step.event_outputs[0],
-                    };
-                    let _ = self
-                        .prepared_event_queues
-                        .route_filtered_event_edge(edge, *note);
-                    continue;
-                }
-                ModuleKind::Adsr => {
-                    clear_and_route_arena_inputs(
-                        &mut self.audio_arena,
-                        step,
-                        frames,
-                        &self.compiled,
-                    );
-                    let events = self
-                        .prepared_event_queues
-                        .queue_ref(step.event_inputs[0].0)
-                        .map_or(&[][..], |queue| queue.events());
-                    let mut context = ProcessContext::new(
-                        &mut self.audio_arena,
-                        &step.input_buffers,
-                        &step.output_buffers,
-                        frames,
-                    );
-                    arena_processing::process_adsr(
-                        &mut self.states[0][step.module_index],
-                        &mut context,
-                        events,
-                        self.current_frame,
-                    );
-                    continue;
-                }
-                ModuleKind::NoteToControl => {
-                    let (input, output) = self
-                        .prepared_event_queues
-                        .queue_pair(step.event_inputs[0], step.event_outputs[0])
-                        .expect("compiled note_to_control queues are distinct and valid");
-                    let mut context = ProcessContext::new(
-                        &mut self.audio_arena,
-                        &step.input_buffers,
-                        &step.output_buffers,
-                        frames,
-                    );
-                    arena_processing::process_note_to_control(
-                        &mut self.states[0][step.module_index],
-                        &mut context,
-                        input.events(),
-                        output,
-                    );
-                    continue;
-                }
-                ModuleKind::Sampler | ModuleKind::NoteToRate | ModuleKind::Impulse => {
-                    clear_and_route_arena_inputs(
-                        &mut self.audio_arena,
-                        step,
-                        frames,
-                        &self.compiled,
-                    );
-                    let events = self
-                        .prepared_event_queues
-                        .queue_ref(step.event_inputs[0].0)
-                        .map_or(&[][..], |queue| queue.events());
-                    let mut context = ProcessContext::new(
-                        &mut self.audio_arena,
-                        &step.input_buffers,
-                        &step.output_buffers,
-                        frames,
-                    );
-                    let state = &mut self.states[0][step.module_index];
-                    match step.module_kind {
-                        ModuleKind::Sampler => {
-                            arena_processing::process_sampler(state, &mut context, events)
-                        }
-                        ModuleKind::NoteToRate => {
-                            arena_processing::process_note_to_rate(state, &mut context, events)
-                        }
-                        ModuleKind::Impulse => {
-                            arena_processing::process_impulse(&mut context, events)
-                        }
-                        _ => unreachable!(),
-                    }
-                    continue;
-                }
-                ModuleKind::Script => {
-                    process_offline_script_step(
-                        &mut self.audio_arena,
-                        &mut self.states[0],
-                        &mut self.prepared_event_queues,
-                        step,
-                        frames,
-                        &self.compiled,
-                    );
-                    continue;
-                }
-                ModuleKind::Poly => {
-                    let events = step
-                        .event_inputs
-                        .first()
-                        .and_then(|queue| self.prepared_event_queues.queue_ref(queue.0))
-                        .map_or(&[][..], |queue| queue.events());
-                    let region = self
-                        .prepared_poly_runtime_regions
-                        .get_mut(
-                            step.poly_region_index
-                                .expect("poly step has a region index"),
-                        )
-                        .expect("prepared poly region exists");
-                    region.route_note_events(events, frames);
-                }
-                _ => {}
-            }
-            process_channel_or_poly_step(
-                &mut self.audio_arena,
-                &mut self.states[0],
-                &mut self.prepared_poly_runtime_regions,
-                &self.prepared_event_queues,
-                step,
-                frames,
-                &self.compiled,
-            );
+        let mut step_context = PreparedStepContext {
+            arena: &mut self.audio_arena,
+            #[cfg(test)]
+            states: &mut self.states[0],
+            #[cfg(not(test))]
+            states: &mut [],
+            poly_regions: &mut self.prepared_poly_runtime_regions,
+            event_queues: &mut self.prepared_event_queues,
+            compiled: &self.compiled,
+            frames,
+            block_start_frame: self.current_frame,
+        };
+        for (step, executor) in self
+            .render_plan
+            .global_steps
+            .iter()
+            .zip(self.prepared_step_executors.iter_mut())
+        {
+            execute_bound_prepared_step(&mut step_context, step, executor.as_mut());
         }
-        capture_feedback_delays(
+        capture_bound_feedback_delays(
             &mut self.audio_arena,
-            &mut self.states[0],
             &self.render_plan.global_steps,
+            &self.render_plan.feedback_step_indices,
+            &mut self.prepared_step_executors,
             frames,
             &self.compiled,
         );
@@ -1026,22 +886,17 @@ impl RealtimeGraphProcessor {
         }
 
         let steps = self.render_plan.global_steps.as_ref();
-        let arena = &mut self.audio_arena;
-        let states = &mut self.states[0];
-        let compiled = &self.compiled;
-        let poly_regions = &mut self.prepared_poly_runtime_regions;
-        let event_queues = &mut self.prepared_event_queues;
+        let mut context = PreparedStepContext {
+            arena: &mut self.audio_arena,
+            states: &mut self.states[0],
+            poly_regions: &mut self.prepared_poly_runtime_regions,
+            event_queues: &mut self.prepared_event_queues,
+            compiled: &self.compiled,
+            frames,
+            block_start_frame: self.current_frame - frames as u64,
+        };
         for step in steps {
-            route_prepared_event_edges(event_queues, step);
-            process_channel_or_poly_step(
-                arena,
-                states,
-                poly_regions,
-                event_queues,
-                step,
-                frames,
-                compiled,
-            );
+            execute_prepared_step(&mut context, step);
         }
 
         let output = self
@@ -1200,6 +1055,14 @@ impl RealtimeGraphProcessor {
         if !self.pending_events.is_empty() {
             return false;
         }
+        if self
+            .prepared_step_executors
+            .iter()
+            .any(|executor| executor.is_active())
+        {
+            return false;
+        }
+        #[cfg(test)]
         for voice_state in &self.states {
             for state in voice_state {
                 if let PerModuleState::Adsr {
@@ -1389,13 +1252,13 @@ fn route_step_outputs_to_global_event_queues(
 
 fn process_offline_script_step(
     arena: &mut AudioArena,
-    states: &mut [PerModuleState],
+    runtime: &mut crate::script::RhaiScriptRuntime,
+    script_state: &mut crate::script::ScriptModuleState,
     event_queues: &mut PreparedEventQueues,
     step: &RenderStep,
     frames: usize,
     compiled: &CompiledPatch,
 ) {
-    clear_and_route_arena_inputs(arena, step, frames, compiled);
     let node = &compiled.nodes()[step.module_index];
     let mut controls = BTreeMap::new();
     let mut input_buffer = 0;
@@ -1418,12 +1281,8 @@ fn process_offline_script_step(
             events.extend_from_slice(queue.events());
         }
     }
-    let rendered = super::processing::process_script(
-        &mut states[step.module_index],
-        &events,
-        controls,
-        frames,
-    );
+    let rendered =
+        super::processing::process_script_state(runtime, script_state, &events, controls, frames);
     let mut output_buffer = 0;
     let mut event_output = 0;
     for (name, span) in node
@@ -1460,34 +1319,1120 @@ fn process_offline_script_step(
     }
 }
 
-fn process_channel_or_poly_step(
-    arena: &mut AudioArena,
-    states: &mut [PerModuleState],
-    poly_regions: &mut [PreparedPolyRuntimeRegion],
-    event_queues: &PreparedEventQueues,
+pub(super) struct PreparedStepContext<'a> {
+    pub(super) arena: &'a mut AudioArena,
+    pub(super) states: &'a mut [PerModuleState],
+    pub(super) poly_regions: &'a mut [PreparedPolyRuntimeRegion],
+    pub(super) event_queues: &'a mut PreparedEventQueues,
+    pub(super) compiled: &'a CompiledPatch,
+    pub(super) frames: usize,
+    pub(super) block_start_frame: u64,
+}
+
+pub(super) type PreparedStepProcessor = fn(&mut PreparedStepContext<'_>, &RenderStep);
+
+#[cfg(test)]
+pub(super) fn execute_prepared_step(context: &mut PreparedStepContext<'_>, step: &RenderStep) {
+    route_prepared_event_edges(context.event_queues, step);
+    clear_and_route_arena_inputs(context.arena, step, context.frames, context.compiled);
+    (step.processor)(context, step);
+}
+
+pub(super) trait PreparedStepExecutor {
+    fn execute(&mut self, context: &mut PreparedStepContext<'_>, step: &RenderStep);
+    fn capture(&mut self, _: &ProcessContext<'_>) {}
+    fn reset_voice(&mut self) {}
+    fn is_active(&self) -> bool {
+        false
+    }
+    fn reset_all(&mut self) {
+        self.reset_voice();
+    }
+}
+
+struct GenericStepExecutor(PreparedStepProcessor);
+
+impl PreparedStepExecutor for GenericStepExecutor {
+    fn execute(&mut self, context: &mut PreparedStepContext<'_>, step: &RenderStep) {
+        (self.0)(context, step);
+    }
+}
+
+struct FeedbackDelayStepExecutor {
+    samples: Box<[Box<[f32]>]>,
+    position: usize,
+}
+
+impl PreparedStepExecutor for FeedbackDelayStepExecutor {
+    fn execute(&mut self, context: &mut PreparedStepContext<'_>, step: &RenderStep) {
+        let mut process_context = ProcessContext::new(
+            context.arena,
+            &step.input_buffers,
+            &step.output_buffers,
+            context.frames,
+        );
+        arena_processing::emit_feedback_delay_parts(
+            &self.samples,
+            self.position,
+            &mut process_context,
+        );
+    }
+
+    fn capture(&mut self, context: &ProcessContext<'_>) {
+        arena_processing::capture_feedback_delay_parts(
+            &mut self.samples,
+            &mut self.position,
+            context,
+        );
+    }
+
+    fn reset_voice(&mut self) {
+        for channel in self.samples.iter_mut() {
+            channel.fill(0.0);
+        }
+        self.position = 0;
+    }
+}
+
+struct NoiseStepExecutor {
+    states: Box<[u32]>,
+    initial_seed: u32,
+}
+
+impl PreparedStepExecutor for NoiseStepExecutor {
+    fn execute(&mut self, context: &mut PreparedStepContext<'_>, step: &RenderStep) {
+        let mut process_context = ProcessContext::new(
+            context.arena,
+            &step.input_buffers,
+            &step.output_buffers,
+            context.frames,
+        );
+        arena_processing::process_noise_states(&mut self.states, &mut process_context);
+    }
+
+    fn reset_voice(&mut self) {
+        for (channel, state) in self.states.iter_mut().enumerate() {
+            *state = self.initial_seed.wrapping_add(channel as u32);
+        }
+    }
+}
+
+struct OscillatorStepExecutor {
+    phase: f32,
+    sample_rate: f32,
+    waveform: crate::oscillator::Waveform,
+}
+
+struct LfoStepExecutor {
+    phase: f32,
+    sample_rate: f32,
+}
+
+impl PreparedStepExecutor for LfoStepExecutor {
+    fn execute(&mut self, context: &mut PreparedStepContext<'_>, step: &RenderStep) {
+        let mut process_context = ProcessContext::new(
+            context.arena,
+            &step.input_buffers,
+            &step.output_buffers,
+            context.frames,
+        );
+        arena_processing::process_lfo_state(
+            &mut self.phase,
+            self.sample_rate,
+            &mut process_context,
+        );
+    }
+
+    fn reset_voice(&mut self) {
+        self.phase = 0.0;
+    }
+}
+
+struct SlewStepExecutor {
+    current: f32,
+    sample_rate: f32,
+}
+
+impl PreparedStepExecutor for SlewStepExecutor {
+    fn execute(&mut self, context: &mut PreparedStepContext<'_>, step: &RenderStep) {
+        let mut process_context = ProcessContext::new(
+            context.arena,
+            &step.input_buffers,
+            &step.output_buffers,
+            context.frames,
+        );
+        arena_processing::process_slew_state(
+            &mut self.current,
+            self.sample_rate,
+            &mut process_context,
+        );
+    }
+
+    fn reset_voice(&mut self) {
+        self.current = 0.0;
+    }
+}
+
+struct DynamicsStepExecutor {
+    processors: Box<[crate::dynamics_processor::DynamicsProcessor]>,
+}
+
+impl PreparedStepExecutor for DynamicsStepExecutor {
+    fn execute(&mut self, context: &mut PreparedStepContext<'_>, step: &RenderStep) {
+        let mut process_context = ProcessContext::new(
+            context.arena,
+            &step.input_buffers,
+            &step.output_buffers,
+            context.frames,
+        );
+        arena_processing::process_dynamics_processors(&mut self.processors, &mut process_context);
+    }
+
+    fn reset_voice(&mut self) {
+        for processor in self.processors.iter_mut() {
+            processor.reset();
+        }
+    }
+}
+
+struct SpectralStepExecutor {
+    processor: crate::spectral::SpectralProcessor,
+}
+
+struct SamplerStepExecutor {
+    sample: Option<crate::compiled_patch::SampleResourceHandle>,
+    position: f32,
+    active: bool,
+}
+
+impl PreparedStepExecutor for SamplerStepExecutor {
+    fn execute(&mut self, context: &mut PreparedStepContext<'_>, step: &RenderStep) {
+        let events = context
+            .event_queues
+            .queue_ref(step.event_inputs[0].0)
+            .map_or(&[][..], |queue| queue.events());
+        let mut process_context = ProcessContext::new(
+            context.arena,
+            &step.input_buffers,
+            &step.output_buffers,
+            context.frames,
+        );
+        arena_processing::process_sampler_state(
+            &self.sample,
+            &mut self.position,
+            &mut self.active,
+            &mut process_context,
+            events,
+        );
+    }
+
+    fn reset_voice(&mut self) {
+        self.position = 0.0;
+        self.active = false;
+    }
+
+    fn is_active(&self) -> bool {
+        self.active
+    }
+}
+
+struct NoteToRateStepExecutor {
+    rate: f32,
+}
+
+impl PreparedStepExecutor for NoteToRateStepExecutor {
+    fn execute(&mut self, context: &mut PreparedStepContext<'_>, step: &RenderStep) {
+        let events = context
+            .event_queues
+            .queue_ref(step.event_inputs[0].0)
+            .map_or(&[][..], |queue| queue.events());
+        let mut process_context = ProcessContext::new(
+            context.arena,
+            &step.input_buffers,
+            &step.output_buffers,
+            context.frames,
+        );
+        arena_processing::process_note_to_rate_state(&mut self.rate, &mut process_context, events);
+    }
+
+    fn reset_voice(&mut self) {
+        self.rate = 1.0;
+    }
+}
+
+struct EventFilterStepExecutor {
+    note: Option<u8>,
+}
+
+impl PreparedStepExecutor for EventFilterStepExecutor {
+    fn execute(&mut self, context: &mut PreparedStepContext<'_>, step: &RenderStep) {
+        let edge = CompiledEventEdge {
+            source: step.event_inputs[0],
+            destination: step.event_outputs[0],
+        };
+        let _ = context
+            .event_queues
+            .route_filtered_event_edge(edge, self.note);
+    }
+}
+
+struct EnvelopeFollowerStepExecutor {
+    detector: crate::envelope_follower::EnvelopeFollower,
+    mode: crate::envelope_follower::DetectionMode,
+}
+
+impl PreparedStepExecutor for EnvelopeFollowerStepExecutor {
+    fn execute(&mut self, context: &mut PreparedStepContext<'_>, step: &RenderStep) {
+        let mut process_context = ProcessContext::new(
+            context.arena,
+            &step.input_buffers,
+            &step.output_buffers,
+            context.frames,
+        );
+        arena_processing::process_envelope_follower_state(
+            &mut self.detector,
+            self.mode,
+            &mut process_context,
+        );
+    }
+
+    fn reset_voice(&mut self) {
+        self.detector.reset();
+    }
+}
+
+struct CurveMapperStepExecutor {
+    mapper: crate::curve_mapper::CurveMapper,
+}
+
+impl PreparedStepExecutor for CurveMapperStepExecutor {
+    fn execute(&mut self, context: &mut PreparedStepContext<'_>, step: &RenderStep) {
+        let mut process_context = ProcessContext::new(
+            context.arena,
+            &step.input_buffers,
+            &step.output_buffers,
+            context.frames,
+        );
+        arena_processing::process_curve_mapper_state(&mut self.mapper, &mut process_context);
+    }
+}
+
+struct FilterStepExecutor {
+    filters: Box<[Box<dyn crate::filter::FilterAlgorithm>]>,
+    sample_rate: f64,
+}
+
+impl PreparedStepExecutor for FilterStepExecutor {
+    fn execute(&mut self, context: &mut PreparedStepContext<'_>, step: &RenderStep) {
+        let mut process_context = ProcessContext::new(
+            context.arena,
+            &step.input_buffers,
+            &step.output_buffers,
+            context.frames,
+        );
+        arena_processing::process_filter_states(
+            &mut self.filters,
+            self.sample_rate,
+            &mut process_context,
+        );
+    }
+
+    fn reset_voice(&mut self) {
+        for filter in self.filters.iter_mut() {
+            filter.reset();
+        }
+    }
+}
+
+struct CompensationDelayStepExecutor {
+    samples: Box<[Box<[f32]>]>,
+    positions: Box<[usize]>,
+}
+
+impl PreparedStepExecutor for CompensationDelayStepExecutor {
+    fn execute(&mut self, context: &mut PreparedStepContext<'_>, step: &RenderStep) {
+        let mut process_context = ProcessContext::new(
+            context.arena,
+            &step.input_buffers,
+            &step.output_buffers,
+            context.frames,
+        );
+        arena_processing::process_compensation_delay_states(
+            &mut self.samples,
+            &mut self.positions,
+            &mut process_context,
+        );
+    }
+
+    fn reset_voice(&mut self) {
+        for channel in self.samples.iter_mut() {
+            channel.fill(0.0);
+        }
+        self.positions.fill(0);
+    }
+}
+
+struct ConvolutionStepExecutor {
+    processors: Box<[crate::convolution::Convolution]>,
+}
+
+impl PreparedStepExecutor for ConvolutionStepExecutor {
+    fn execute(&mut self, context: &mut PreparedStepContext<'_>, step: &RenderStep) {
+        let mut process_context = ProcessContext::new(
+            context.arena,
+            &step.input_buffers,
+            &step.output_buffers,
+            context.frames,
+        );
+        arena_processing::process_convolution_processors(
+            &mut self.processors,
+            &mut process_context,
+        );
+    }
+
+    fn reset_voice(&mut self) {
+        for processor in self.processors.iter_mut() {
+            processor.reset();
+        }
+    }
+}
+
+struct FrequencySplitterStepExecutor {
+    filters: Box<
+        [(
+            crate::crossover::LinkwitzRiley4,
+            crate::crossover::LinkwitzRiley4,
+        )],
+    >,
+    sample_rate: f64,
+}
+
+impl PreparedStepExecutor for FrequencySplitterStepExecutor {
+    fn execute(&mut self, context: &mut PreparedStepContext<'_>, step: &RenderStep) {
+        let mut process_context = ProcessContext::new(
+            context.arena,
+            &step.input_buffers,
+            &step.output_buffers,
+            context.frames,
+        );
+        arena_processing::process_frequency_splitter_states(
+            &mut self.filters,
+            self.sample_rate,
+            &mut process_context,
+        );
+    }
+
+    fn reset_voice(&mut self) {
+        for (low, high) in self.filters.iter_mut() {
+            low.reset();
+            high.reset();
+        }
+    }
+}
+
+struct EchoStepExecutor {
+    processor: crate::echo::Echo,
+}
+
+impl PreparedStepExecutor for EchoStepExecutor {
+    fn execute(&mut self, context: &mut PreparedStepContext<'_>, step: &RenderStep) {
+        let mut process_context = ProcessContext::new(
+            context.arena,
+            &step.input_buffers,
+            &step.output_buffers,
+            context.frames,
+        );
+        arena_processing::process_echo_state(&mut self.processor, &mut process_context);
+    }
+
+    fn reset_voice(&mut self) {
+        self.processor.reset();
+    }
+}
+
+struct ReverbStepExecutor {
+    processor: crate::reverb::Reverb,
+}
+
+struct AdsrStepExecutor {
+    level: f32,
+    gate_active: bool,
+    release_start_frame: u64,
+    release_start_level: f32,
+    sample_rate: f32,
+}
+
+impl PreparedStepExecutor for AdsrStepExecutor {
+    fn execute(&mut self, context: &mut PreparedStepContext<'_>, step: &RenderStep) {
+        let events = context
+            .event_queues
+            .queue_ref(step.event_inputs[0].0)
+            .map_or(&[][..], |queue| queue.events());
+        let mut process_context = ProcessContext::new(
+            context.arena,
+            &step.input_buffers,
+            &step.output_buffers,
+            context.frames,
+        );
+        arena_processing::process_adsr_state(
+            &mut self.level,
+            &mut self.gate_active,
+            &mut self.release_start_frame,
+            &mut self.release_start_level,
+            self.sample_rate,
+            &mut process_context,
+            events,
+            context.block_start_frame,
+        );
+    }
+
+    fn reset_voice(&mut self) {
+        self.level = 0.0;
+        self.gate_active = false;
+        self.release_start_frame = 0;
+        self.release_start_level = 0.0;
+    }
+
+    fn is_active(&self) -> bool {
+        self.gate_active || self.level > 0.001
+    }
+}
+
+struct NoteToControlStepExecutor {
+    gate_active: bool,
+    current_note: Option<u8>,
+    current_velocity: f32,
+    current_frequency: f32,
+    current_pitch_ratio: f32,
+    current_slide: bool,
+}
+
+impl PreparedStepExecutor for NoteToControlStepExecutor {
+    fn execute(&mut self, context: &mut PreparedStepContext<'_>, step: &RenderStep) {
+        let (input, output) = context
+            .event_queues
+            .queue_pair(step.event_inputs[0], step.event_outputs[0])
+            .expect("compiled note_to_control queues are distinct and valid");
+        let mut process_context = ProcessContext::new(
+            context.arena,
+            &step.input_buffers,
+            &step.output_buffers,
+            context.frames,
+        );
+        arena_processing::process_note_to_control_state(
+            &mut self.gate_active,
+            &mut self.current_note,
+            &mut self.current_velocity,
+            &mut self.current_frequency,
+            &mut self.current_pitch_ratio,
+            &mut self.current_slide,
+            &mut process_context,
+            input.events(),
+            output,
+        );
+    }
+
+    fn reset_voice(&mut self) {
+        self.gate_active = false;
+        self.current_note = None;
+        self.current_velocity = 0.0;
+        self.current_frequency = 0.0;
+        self.current_pitch_ratio = 0.0;
+        self.current_slide = false;
+    }
+}
+
+struct DecayStepExecutor {
+    level: f32,
+    triggered: bool,
+    elapsed_frames: u64,
+    sample_rate: f32,
+    curve: crate::decay::DecayCurve,
+}
+
+struct ScriptStepExecutor {
+    runtime: crate::script::RhaiScriptRuntime,
+    state: crate::script::ScriptModuleState,
+}
+
+impl PreparedStepExecutor for ScriptStepExecutor {
+    fn execute(&mut self, context: &mut PreparedStepContext<'_>, step: &RenderStep) {
+        process_offline_script_step(
+            context.arena,
+            &mut self.runtime,
+            &mut self.state,
+            context.event_queues,
+            step,
+            context.frames,
+            context.compiled,
+        );
+    }
+
+    fn reset_voice(&mut self) {
+        self.state = crate::script::ScriptModuleState::default();
+    }
+}
+
+impl PreparedStepExecutor for DecayStepExecutor {
+    fn execute(&mut self, context: &mut PreparedStepContext<'_>, step: &RenderStep) {
+        let events = context
+            .event_queues
+            .queue_ref(step.event_inputs[0].0)
+            .map_or(&[][..], |queue| queue.events());
+        let mut process_context = ProcessContext::new(
+            context.arena,
+            &step.input_buffers,
+            &step.output_buffers,
+            context.frames,
+        );
+        arena_processing::process_decay_state(
+            &mut self.level,
+            &mut self.triggered,
+            &mut self.elapsed_frames,
+            self.sample_rate,
+            self.curve,
+            &mut process_context,
+            events,
+        );
+    }
+
+    fn reset_voice(&mut self) {
+        self.level = 0.0;
+        self.triggered = false;
+        self.elapsed_frames = 0;
+    }
+}
+
+impl PreparedStepExecutor for ReverbStepExecutor {
+    fn execute(&mut self, context: &mut PreparedStepContext<'_>, step: &RenderStep) {
+        let mut process_context = ProcessContext::new(
+            context.arena,
+            &step.input_buffers,
+            &step.output_buffers,
+            context.frames,
+        );
+        arena_processing::process_reverb_state(&mut self.processor, &mut process_context);
+    }
+
+    fn reset_voice(&mut self) {
+        self.processor.reset();
+    }
+}
+
+impl PreparedStepExecutor for SpectralStepExecutor {
+    fn execute(&mut self, context: &mut PreparedStepContext<'_>, step: &RenderStep) {
+        let mut process_context = ProcessContext::new(
+            context.arena,
+            &step.input_buffers,
+            &step.output_buffers,
+            context.frames,
+        );
+        arena_processing::process_spectral_processor_state(
+            &mut self.processor,
+            &mut process_context,
+        );
+    }
+
+    fn reset_voice(&mut self) {
+        self.processor.reset();
+    }
+}
+
+impl PreparedStepExecutor for OscillatorStepExecutor {
+    fn execute(&mut self, context: &mut PreparedStepContext<'_>, step: &RenderStep) {
+        let mut process_context = ProcessContext::new(
+            context.arena,
+            &step.input_buffers,
+            &step.output_buffers,
+            context.frames,
+        );
+        arena_processing::process_oscillator_state(
+            &mut self.phase,
+            self.sample_rate,
+            self.waveform,
+            &mut process_context,
+        );
+    }
+
+    fn reset_all(&mut self) {
+        self.phase = 0.0;
+    }
+}
+
+pub(super) fn bind_prepared_step_executors(
+    compiled: &CompiledPatch,
+    plan: &RenderPlan,
+    sample_rate: f32,
+    sampler_assets: &PreparedSamplerAssets,
+) -> Box<[Box<dyn PreparedStepExecutor>]> {
+    plan.global_steps
+        .iter()
+        .map(|step| {
+            // Legacy delay kinds are rejected by preparation. Keep their
+            // diagnostic callable available to tests that construct a plan.
+            if matches!(
+                step.module_kind,
+                ModuleKind::AudioDelayOneSample | ModuleKind::BlockDelay | ModuleKind::ControlDelay
+            ) {
+                return Box::new(GenericStepExecutor(step.processor))
+                    as Box<dyn PreparedStepExecutor>;
+            }
+            // This exhaustive state match runs during preparation. Each arm
+            // moves concrete state into one executor, so render blocks never
+            // inspect the state enum.
+            let state = PerModuleState::new_compiled(
+                &compiled.nodes()[step.module_index],
+                sample_rate,
+                sampler_assets,
+            );
+            let executor: Box<dyn PreparedStepExecutor> = match state {
+                PerModuleState::FeedbackDelay { samples, position } => {
+                    Box::new(FeedbackDelayStepExecutor { samples, position })
+                }
+                PerModuleState::Noise {
+                    states,
+                    initial_seed,
+                } => Box::new(NoiseStepExecutor {
+                    states,
+                    initial_seed,
+                }),
+                PerModuleState::Oscillator {
+                    phase,
+                    sample_rate,
+                    waveform,
+                } => Box::new(OscillatorStepExecutor {
+                    phase,
+                    sample_rate,
+                    waveform,
+                }),
+                PerModuleState::Lfo { phase, sample_rate } => {
+                    Box::new(LfoStepExecutor { phase, sample_rate })
+                }
+                PerModuleState::Slew {
+                    current,
+                    sample_rate,
+                } => Box::new(SlewStepExecutor {
+                    current,
+                    sample_rate,
+                }),
+                PerModuleState::DynamicsProcessor { processors } => {
+                    Box::new(DynamicsStepExecutor { processors })
+                }
+                PerModuleState::SpectralProcessor { processor } => {
+                    Box::new(SpectralStepExecutor { processor })
+                }
+                PerModuleState::Sampler {
+                    sample,
+                    position,
+                    active,
+                } => Box::new(SamplerStepExecutor {
+                    sample,
+                    position,
+                    active,
+                }),
+                PerModuleState::NoteToRate { rate } => Box::new(NoteToRateStepExecutor { rate }),
+                PerModuleState::EventFilter { note } => Box::new(EventFilterStepExecutor { note }),
+                PerModuleState::EnvelopeFollower { detector, mode } => {
+                    Box::new(EnvelopeFollowerStepExecutor { detector, mode })
+                }
+                PerModuleState::CurveMapper { mapper } => {
+                    Box::new(CurveMapperStepExecutor { mapper })
+                }
+                PerModuleState::Filter {
+                    filters,
+                    sample_rate,
+                } => Box::new(FilterStepExecutor {
+                    filters,
+                    sample_rate,
+                }),
+                PerModuleState::CompensationDelay { samples, positions } => {
+                    Box::new(CompensationDelayStepExecutor { samples, positions })
+                }
+                PerModuleState::Convolution { processors } => {
+                    Box::new(ConvolutionStepExecutor { processors })
+                }
+                PerModuleState::FrequencySplitter {
+                    filters,
+                    sample_rate,
+                } => Box::new(FrequencySplitterStepExecutor {
+                    filters,
+                    sample_rate,
+                }),
+                PerModuleState::Echo { processor, .. } => Box::new(EchoStepExecutor { processor }),
+                PerModuleState::Reverb { processor, .. } => {
+                    Box::new(ReverbStepExecutor { processor })
+                }
+                PerModuleState::Adsr {
+                    level,
+                    gate_active,
+                    release_start_frame,
+                    release_start_level,
+                    sample_rate,
+                } => Box::new(AdsrStepExecutor {
+                    level,
+                    gate_active,
+                    release_start_frame,
+                    release_start_level,
+                    sample_rate,
+                }),
+                PerModuleState::NoteToControl {
+                    gate_active,
+                    current_note,
+                    current_velocity,
+                    current_frequency,
+                    current_pitch_ratio,
+                    current_slide,
+                } => Box::new(NoteToControlStepExecutor {
+                    gate_active,
+                    current_note,
+                    current_velocity,
+                    current_frequency,
+                    current_pitch_ratio,
+                    current_slide,
+                }),
+                PerModuleState::Decay {
+                    level,
+                    triggered,
+                    elapsed_frames,
+                    sample_rate,
+                    curve,
+                } => Box::new(DecayStepExecutor {
+                    level,
+                    triggered,
+                    elapsed_frames,
+                    sample_rate,
+                    curve,
+                }),
+                PerModuleState::Script { runtime, state, .. } => {
+                    Box::new(ScriptStepExecutor { runtime, state })
+                }
+                PerModuleState::Vca
+                | PerModuleState::ControlToAudio
+                | PerModuleState::Poly
+                | PerModuleState::VoiceIntrinsics
+                | PerModuleState::MidiInput
+                | PerModuleState::AudioMixer
+                | PerModuleState::Saturator { .. }
+                | PerModuleState::Impulse
+                | PerModuleState::Multiply => Box::new(GenericStepExecutor(step.processor)),
+                #[cfg(test)]
+                PerModuleState::AudioOutput => Box::new(GenericStepExecutor(step.processor)),
+            };
+            executor
+        })
+        .collect::<Vec<_>>()
+        .into_boxed_slice()
+}
+
+pub(super) fn execute_bound_prepared_step(
+    context: &mut PreparedStepContext<'_>,
     step: &RenderStep,
+    executor: &mut dyn PreparedStepExecutor,
+) {
+    route_prepared_event_edges(context.event_queues, step);
+    clear_and_route_arena_inputs(context.arena, step, context.frames, context.compiled);
+    executor.execute(context, step);
+}
+
+pub(super) fn capture_bound_feedback_delays(
+    arena: &mut AudioArena,
+    steps: &[RenderStep],
+    feedback_step_indices: &[usize],
+    executors: &mut [Box<dyn PreparedStepExecutor>],
     frames: usize,
     compiled: &CompiledPatch,
 ) {
-    clear_and_route_arena_inputs(arena, step, frames, compiled);
-    if step.module_kind == ModuleKind::Poly {
-        let region = poly_regions
-            .get_mut(
-                step.poly_region_index
-                    .expect("poly step has a region index"),
-            )
-            .expect("prepared poly region exists");
-        region.render_into(
-            arena,
-            &step.input_buffers,
-            &step.event_inputs,
-            event_queues,
-            &step.output_buffers,
-            frames,
-        );
-    } else {
-        process_channel_arena_step(arena, states, step, frames);
+    for &step_index in feedback_step_indices {
+        let step = &steps[step_index];
+        clear_and_route_arena_inputs(arena, step, frames, compiled);
+        let context = ProcessContext::new(arena, &step.input_buffers, &step.output_buffers, frames);
+        executors[step_index].capture(&context);
     }
+}
+
+/// The only module-kind dispatch for a kernel render step happens while its
+/// render plan is built, before the callback can execute it.
+pub(super) fn resolve_step_processor(kind: ModuleKind) -> PreparedStepProcessor {
+    match kind {
+        ModuleKind::MidiInput | ModuleKind::VoiceIntrinsics => execute_noop_step,
+        #[cfg(test)]
+        ModuleKind::AudioOutput => execute_noop_step,
+        ModuleKind::AudioMixer | ModuleKind::ControlMixer => execute_mixer_step,
+        ModuleKind::Noise => execute_noise_step,
+        ModuleKind::Oscillator => execute_oscillator_step,
+        ModuleKind::Lfo => execute_lfo_step,
+        ModuleKind::Slew => execute_slew_step,
+        ModuleKind::DynamicsProcessor => execute_dynamics_step,
+        ModuleKind::Gain | ModuleKind::Multiply => execute_gain_step,
+        ModuleKind::ControlToAudio => execute_control_to_audio_step,
+        ModuleKind::CompensationDelay => execute_compensation_delay_step,
+        ModuleKind::FeedbackDelay => execute_feedback_delay_step,
+        ModuleKind::Convolution => execute_convolution_step,
+        ModuleKind::SpectralProcessor => execute_spectral_step,
+        ModuleKind::FrequencySplitter => execute_splitter_step,
+        ModuleKind::EnvelopeFollower => execute_envelope_follower_step,
+        ModuleKind::CurveMapper => execute_curve_mapper_step,
+        ModuleKind::Filter => execute_filter_step,
+        ModuleKind::Saturator => execute_saturator_step,
+        ModuleKind::Echo => execute_echo_step,
+        ModuleKind::Reverb => execute_reverb_step,
+        ModuleKind::EventFilter => execute_event_filter_step,
+        ModuleKind::Adsr => execute_adsr_step,
+        ModuleKind::NoteToControl => execute_note_to_control_step,
+        ModuleKind::Sampler => execute_sampler_step,
+        ModuleKind::NoteToRate => execute_note_to_rate_step,
+        ModuleKind::Impulse => execute_impulse_step,
+        ModuleKind::Decay => execute_decay_step,
+        ModuleKind::Script => execute_script_step,
+        ModuleKind::Poly => execute_poly_step,
+        ModuleKind::AudioDelayOneSample | ModuleKind::BlockDelay | ModuleKind::ControlDelay => {
+            execute_unsupported_step
+        }
+    }
+}
+
+macro_rules! stateful_step_processor {
+    ($name:ident, $processor:path) => {
+        fn $name(context: &mut PreparedStepContext<'_>, step: &RenderStep) {
+            let mut process_context = ProcessContext::new(
+                context.arena,
+                &step.input_buffers,
+                &step.output_buffers,
+                context.frames,
+            );
+            $processor(&mut context.states[step.module_index], &mut process_context);
+        }
+    };
+}
+
+macro_rules! stateless_step_processor {
+    ($name:ident, $processor:path) => {
+        fn $name(context: &mut PreparedStepContext<'_>, step: &RenderStep) {
+            let mut process_context = ProcessContext::new(
+                context.arena,
+                &step.input_buffers,
+                &step.output_buffers,
+                context.frames,
+            );
+            $processor(&mut process_context);
+        }
+    };
+}
+
+stateful_step_processor!(execute_noise_step, arena_processing::process_noise);
+stateful_step_processor!(
+    execute_oscillator_step,
+    arena_processing::process_oscillator
+);
+stateful_step_processor!(execute_lfo_step, arena_processing::process_lfo);
+stateful_step_processor!(execute_slew_step, arena_processing::process_slew);
+stateful_step_processor!(execute_dynamics_step, arena_processing::process_dynamics);
+stateful_step_processor!(
+    execute_compensation_delay_step,
+    arena_processing::process_compensation_delay
+);
+stateful_step_processor!(
+    execute_convolution_step,
+    arena_processing::process_convolution
+);
+stateful_step_processor!(
+    execute_spectral_step,
+    arena_processing::process_spectral_processor
+);
+stateful_step_processor!(
+    execute_splitter_step,
+    arena_processing::process_frequency_splitter
+);
+stateful_step_processor!(
+    execute_envelope_follower_step,
+    arena_processing::process_envelope_follower
+);
+stateful_step_processor!(
+    execute_curve_mapper_step,
+    arena_processing::process_curve_mapper
+);
+stateful_step_processor!(execute_filter_step, arena_processing::process_filter);
+stateful_step_processor!(execute_echo_step, arena_processing::process_echo);
+stateful_step_processor!(execute_reverb_step, arena_processing::process_reverb);
+stateless_step_processor!(execute_mixer_step, arena_processing::process_audio_mixer);
+stateless_step_processor!(execute_gain_step, arena_processing::process_gain);
+stateless_step_processor!(
+    execute_control_to_audio_step,
+    arena_processing::process_control_to_audio
+);
+stateless_step_processor!(execute_saturator_step, arena_processing::process_saturator);
+
+fn execute_noop_step(_: &mut PreparedStepContext<'_>, _: &RenderStep) {}
+
+fn execute_unsupported_step(_: &mut PreparedStepContext<'_>, step: &RenderStep) {
+    panic!("unsupported kernel render step: {:?}", step.module_kind);
+}
+
+fn execute_feedback_delay_step(context: &mut PreparedStepContext<'_>, step: &RenderStep) {
+    let mut process_context = ProcessContext::new(
+        context.arena,
+        &step.input_buffers,
+        &step.output_buffers,
+        context.frames,
+    );
+    arena_processing::emit_feedback_delay(&context.states[step.module_index], &mut process_context);
+}
+
+fn execute_event_filter_step(context: &mut PreparedStepContext<'_>, step: &RenderStep) {
+    let PerModuleState::EventFilter { note } = &context.states[step.module_index] else {
+        unreachable!()
+    };
+    let edge = CompiledEventEdge {
+        source: step.event_inputs[0],
+        destination: step.event_outputs[0],
+    };
+    let _ = context.event_queues.route_filtered_event_edge(edge, *note);
+}
+
+fn execute_adsr_step(context: &mut PreparedStepContext<'_>, step: &RenderStep) {
+    let events = context
+        .event_queues
+        .queue_ref(step.event_inputs[0].0)
+        .map_or(&[][..], |queue| queue.events());
+    let mut process_context = ProcessContext::new(
+        context.arena,
+        &step.input_buffers,
+        &step.output_buffers,
+        context.frames,
+    );
+    arena_processing::process_adsr(
+        &mut context.states[step.module_index],
+        &mut process_context,
+        events,
+        context.block_start_frame,
+    );
+}
+
+fn execute_note_to_control_step(context: &mut PreparedStepContext<'_>, step: &RenderStep) {
+    let (input, output) = context
+        .event_queues
+        .queue_pair(step.event_inputs[0], step.event_outputs[0])
+        .expect("compiled note_to_control queues are distinct and valid");
+    let mut process_context = ProcessContext::new(
+        context.arena,
+        &step.input_buffers,
+        &step.output_buffers,
+        context.frames,
+    );
+    arena_processing::process_note_to_control(
+        &mut context.states[step.module_index],
+        &mut process_context,
+        input.events(),
+        output,
+    );
+}
+
+fn execute_sampler_step(context: &mut PreparedStepContext<'_>, step: &RenderStep) {
+    let events = context
+        .event_queues
+        .queue_ref(step.event_inputs[0].0)
+        .map_or(&[][..], |queue| queue.events());
+    let mut process_context = ProcessContext::new(
+        context.arena,
+        &step.input_buffers,
+        &step.output_buffers,
+        context.frames,
+    );
+    arena_processing::process_sampler(
+        &mut context.states[step.module_index],
+        &mut process_context,
+        events,
+    );
+}
+
+fn execute_note_to_rate_step(context: &mut PreparedStepContext<'_>, step: &RenderStep) {
+    let events = context
+        .event_queues
+        .queue_ref(step.event_inputs[0].0)
+        .map_or(&[][..], |queue| queue.events());
+    let mut process_context = ProcessContext::new(
+        context.arena,
+        &step.input_buffers,
+        &step.output_buffers,
+        context.frames,
+    );
+    arena_processing::process_note_to_rate(
+        &mut context.states[step.module_index],
+        &mut process_context,
+        events,
+    );
+}
+
+fn execute_impulse_step(context: &mut PreparedStepContext<'_>, step: &RenderStep) {
+    let events = context
+        .event_queues
+        .queue_ref(step.event_inputs[0].0)
+        .map_or(&[][..], |queue| queue.events());
+    let mut process_context = ProcessContext::new(
+        context.arena,
+        &step.input_buffers,
+        &step.output_buffers,
+        context.frames,
+    );
+    arena_processing::process_impulse(&mut process_context, events);
+}
+
+fn execute_decay_step(context: &mut PreparedStepContext<'_>, step: &RenderStep) {
+    let events = context
+        .event_queues
+        .queue_ref(step.event_inputs[0].0)
+        .map_or(&[][..], |queue| queue.events());
+    let mut process_context = ProcessContext::new(
+        context.arena,
+        &step.input_buffers,
+        &step.output_buffers,
+        context.frames,
+    );
+    arena_processing::process_decay(
+        &mut context.states[step.module_index],
+        &mut process_context,
+        events,
+    );
+}
+
+fn execute_script_step(context: &mut PreparedStepContext<'_>, step: &RenderStep) {
+    let PerModuleState::Script { runtime, state, .. } = &mut context.states[step.module_index]
+    else {
+        unreachable!()
+    };
+    process_offline_script_step(
+        context.arena,
+        runtime,
+        state,
+        context.event_queues,
+        step,
+        context.frames,
+        context.compiled,
+    );
+}
+
+fn execute_poly_step(context: &mut PreparedStepContext<'_>, step: &RenderStep) {
+    let events = step
+        .event_inputs
+        .first()
+        .and_then(|queue| context.event_queues.queue_ref(queue.0))
+        .map_or(&[][..], |queue| queue.events());
+    let region = context
+        .poly_regions
+        .get_mut(
+            step.poly_region_index
+                .expect("poly step has a region index"),
+        )
+        .expect("prepared poly region exists");
+    region.route_note_events(events, context.frames);
+    region.render_into(
+        context.arena,
+        &step.input_buffers,
+        &step.event_inputs,
+        context.event_queues,
+        &step.output_buffers,
+        context.frames,
+    );
 }
 
 pub(super) fn clear_and_route_arena_inputs(
@@ -1510,98 +2455,64 @@ pub(super) fn clear_and_route_arena_inputs(
     }
 }
 
-pub(super) fn capture_feedback_delays(
-    arena: &mut AudioArena,
-    states: &mut [PerModuleState],
-    steps: &[RenderStep],
-    frames: usize,
-    compiled: &CompiledPatch,
-) {
-    for step in steps
-        .iter()
-        .filter(|step| step.module_kind == ModuleKind::FeedbackDelay)
-    {
-        clear_and_route_arena_inputs(arena, step, frames, compiled);
-        let context = ProcessContext::new(arena, &step.input_buffers, &step.output_buffers, frames);
-        arena_processing::capture_feedback_delay(&mut states[step.module_index], &context);
-    }
-}
-
-pub(super) fn process_channel_arena_step(
-    arena: &mut AudioArena,
-    states: &mut [PerModuleState],
-    step: &RenderStep,
-    frames: usize,
-) {
-    let mut context = ProcessContext::new(arena, &step.input_buffers, &step.output_buffers, frames);
-
-    match step.module_kind {
-        ModuleKind::AudioMixer | ModuleKind::ControlMixer => {
-            arena_processing::process_audio_mixer(&mut context)
-        }
-        ModuleKind::Noise => {
-            arena_processing::process_noise(&mut states[step.module_index], &mut context)
-        }
-        ModuleKind::Oscillator => {
-            arena_processing::process_oscillator(&mut states[step.module_index], &mut context)
-        }
-        ModuleKind::Lfo => {
-            arena_processing::process_lfo(&mut states[step.module_index], &mut context)
-        }
-        ModuleKind::Slew => {
-            arena_processing::process_slew(&mut states[step.module_index], &mut context)
-        }
-        ModuleKind::DynamicsProcessor => {
-            arena_processing::process_dynamics(&mut states[step.module_index], &mut context)
-        }
-        ModuleKind::Gain | ModuleKind::Multiply => arena_processing::process_gain(&mut context),
-        ModuleKind::ControlToAudio => arena_processing::process_control_to_audio(&mut context),
-        ModuleKind::CompensationDelay => arena_processing::process_compensation_delay(
-            &mut states[step.module_index],
-            &mut context,
-        ),
-        ModuleKind::FeedbackDelay => {
-            arena_processing::emit_feedback_delay(&states[step.module_index], &mut context)
-        }
-        ModuleKind::Convolution => {
-            arena_processing::process_convolution(&mut states[step.module_index], &mut context)
-        }
-        ModuleKind::SpectralProcessor => arena_processing::process_spectral_processor(
-            &mut states[step.module_index],
-            &mut context,
-        ),
-        ModuleKind::FrequencySplitter => arena_processing::process_frequency_splitter(
-            &mut states[step.module_index],
-            &mut context,
-        ),
-        ModuleKind::EnvelopeFollower => arena_processing::process_envelope_follower(
-            &mut states[step.module_index],
-            &mut context,
-        ),
-        ModuleKind::CurveMapper => {
-            arena_processing::process_curve_mapper(&mut states[step.module_index], &mut context)
-        }
-        ModuleKind::Filter => {
-            arena_processing::process_filter(&mut states[step.module_index], &mut context)
-        }
-        ModuleKind::Saturator => arena_processing::process_saturator(&mut context),
-        ModuleKind::Echo => {
-            arena_processing::process_echo(&mut states[step.module_index], &mut context)
-        }
-        ModuleKind::Reverb => {
-            arena_processing::process_reverb(&mut states[step.module_index], &mut context)
-        }
-        ModuleKind::Poly | ModuleKind::VoiceIntrinsics => {}
-        #[cfg(test)]
-        ModuleKind::AudioOutput => {}
-        _ => unreachable!(),
-    }
-}
-
 fn route_prepared_event_edges(queues: &mut PreparedEventQueues, step: &RenderStep) {
     for edge in step.incoming_event_edges.iter().copied() {
         let _ = queues.route_event_edge(edge);
     }
+}
+
+fn render_plan_supports_root_buses(
+    render_plan: &RenderPlan,
+    allow_scripts: bool,
+    max_voices: usize,
+) -> bool {
+    if cfg!(test) && max_voices > 1 {
+        return false;
+    }
+    render_plan
+        .global_steps
+        .iter()
+        .all(|step| match step.module_kind {
+            ModuleKind::MidiInput => {
+                step.input_buffers.is_empty()
+                    && step.output_buffers.is_empty()
+                    && step.event_outputs.len() == 1
+            }
+            ModuleKind::EventFilter => {
+                step.input_buffers.is_empty()
+                    && step.output_buffers.is_empty()
+                    && step.event_inputs.len() == 1
+                    && step.event_outputs.len() == 1
+            }
+            ModuleKind::Adsr => {
+                step.input_buffers.len() == 4
+                    && step.output_buffers.len() == 1
+                    && step.event_inputs.len() == 1
+            }
+            ModuleKind::NoteToControl => {
+                step.input_buffers.is_empty()
+                    && step.output_buffers.len() == 4
+                    && step.event_inputs.len() == 1
+                    && step.event_outputs.len() == 1
+            }
+            ModuleKind::Sampler => {
+                step.input_buffers.len() == 5
+                    && !step.output_buffers.is_empty()
+                    && step.event_inputs.len() == 1
+            }
+            ModuleKind::NoteToRate => {
+                step.input_buffers.is_empty()
+                    && step.output_buffers.len() == 1
+                    && step.event_inputs.len() == 1
+            }
+            ModuleKind::Impulse => {
+                step.input_buffers.is_empty()
+                    && step.output_buffers.len() == 1
+                    && step.event_inputs.len() == 1
+            }
+            ModuleKind::Script => allow_scripts,
+            _ => is_channel_arena_supported(step),
+        })
 }
 
 #[cfg(test)]
@@ -1674,4 +2585,190 @@ fn uses_legacy_module_outputs(
                 .global_steps
                 .iter()
                 .any(|step| !is_mono_global_arena_supported(step)))
+}
+
+#[cfg(test)]
+mod prepared_dispatch_tests {
+    use super::*;
+    use crate::kernel::document::load_kernel_patch_str;
+    use crate::patch::RenderSettings;
+
+    #[test]
+    fn prepared_processor_executes_without_rechecking_module_kind() {
+        let patch = load_kernel_patch_str(
+            "ports:\n  - { name: master, direction: output, signal: audio, channels: 1, maps_from: source.out }\nmodules:\n  - { id: source, type: control_to_audio, defaults: { in: 0.25 } }\nconnections: []\n",
+        )
+        .expect("constant patch loads");
+        let settings = RenderSettings {
+            sample_rate_hz: 48_000,
+            block_size_frames: 8,
+            duration_frames: 8,
+        };
+        let prepared = crate::preparation::prepare_kernel_patch(&patch, &settings)
+            .expect("constant patch prepares");
+        let mut runtime = RealtimeGraphProcessor::from_compiled_patch(
+            prepared.compiled_patch().clone(),
+            48_000.0,
+            &PreparedSamplerAssets::empty(),
+            8,
+        );
+        assert_eq!(runtime.render_plan.global_steps.len(), 1);
+        assert_eq!(
+            runtime.render_plan.global_steps[0].module_kind,
+            ModuleKind::ControlToAudio
+        );
+
+        // After plan construction, the kind is metadata: the prepared callable
+        // must remain the render path's sole processor selection.
+        runtime.render_plan.global_steps[0].module_kind = ModuleKind::AudioDelayOneSample;
+        let mut output = vec![vec![vec![0.0; 8]]];
+        assert_eq!(runtime.render_root_outputs(&mut output), 8);
+        assert_eq!(output[0][0], [0.25; 8]);
+    }
+
+    #[test]
+    fn prepared_poly_child_executes_without_rechecking_module_kind() {
+        let patch = load_kernel_patch_str(
+            "ports:\n  - { name: master, direction: output, signal: audio, channels: 1, maps_from: voices.audio }\nmodule_definitions:\n  - type: hit_voice\n    ports:\n      - { name: audio, direction: output, signal: audio, channels: 1, maps_from: hit.audio }\n    modules:\n      - { id: hit, type: impulse }\n    connections:\n      - { from: voice.gate, to: hit.trigger }\nmodules:\n  - { id: midi, type: midi_input }\n  - { id: voices, type: poly, static: { definition: hit_voice, max_voices: 1, allocation: reject-new } }\nconnections:\n  - { from: midi.events, to: voices.notes }\n",
+        )
+        .expect("poly impulse patch loads");
+        let settings = RenderSettings {
+            sample_rate_hz: 48_000,
+            block_size_frames: 4,
+            duration_frames: 4,
+        };
+        let prepared = crate::preparation::prepare_kernel_patch(&patch, &settings)
+            .expect("poly impulse patch prepares");
+        let mut runtime = RealtimeGraphProcessor::from_compiled_patch(
+            prepared.compiled_patch().clone(),
+            48_000.0,
+            &PreparedSamplerAssets::empty(),
+            4,
+        );
+        runtime.prepared_poly_runtime_regions[0]
+            .replace_child_step_kind_for_test(ModuleKind::Impulse, ModuleKind::AudioDelayOneSample);
+        runtime.note_on(60, 100);
+        let mut output = vec![vec![vec![0.0; 4]]];
+        assert_eq!(runtime.render_root_outputs(&mut output), 4);
+        assert_eq!(output[0][0], [1.0, 0.0, 0.0, 0.0]);
+    }
+
+    #[test]
+    fn prepared_stateful_root_executes_without_rechecking_module_kind() {
+        let patch = load_kernel_patch_str(
+            "ports:\n  - { name: master, direction: output, signal: audio, channels: 1, maps_from: delay.audio_out }\nmodules:\n  - { id: source, type: control_to_audio, defaults: { in: -0.25 } }\n  - { id: delay, type: feedback_delay, static: { delay_samples: 8 } }\nconnections:\n  - { from: source.out, to: delay.audio_in }\n",
+        )
+        .expect("delayed constant patch loads");
+        let settings = RenderSettings {
+            sample_rate_hz: 48_000,
+            block_size_frames: 8,
+            duration_frames: 16,
+        };
+        let prepared = crate::preparation::prepare_kernel_patch(&patch, &settings)
+            .expect("delayed constant patch prepares");
+        let mut runtime = RealtimeGraphProcessor::from_compiled_patch(
+            prepared.compiled_patch().clone(),
+            48_000.0,
+            &PreparedSamplerAssets::empty(),
+            8,
+        );
+        let delay = runtime
+            .render_plan
+            .global_steps
+            .iter_mut()
+            .find(|step| step.module_kind == ModuleKind::FeedbackDelay)
+            .expect("prepared delay step");
+        delay.module_kind = ModuleKind::AudioDelayOneSample;
+        let mut output = vec![vec![vec![0.0; 8]]];
+        assert_eq!(runtime.render_root_outputs(&mut output), 8);
+        assert_eq!(output[0][0], [0.0; 8]);
+        assert_eq!(runtime.render_root_outputs(&mut output), 8);
+        assert_eq!(output[0][0], [-0.25; 8]);
+    }
+
+    #[test]
+    fn prepared_stateful_poly_child_executes_without_rechecking_module_kind() {
+        let patch = load_kernel_patch_str(
+            r#"
+ports:
+  - { name: master, direction: output, signal: audio, channels: 1, maps_from: voices.audio }
+module_definitions:
+  - type: echo_voice
+    ports:
+      - { name: audio, direction: output, signal: audio, channels: 1, maps_from: sum.mix }
+    modules:
+      - { id: hit, type: impulse }
+      - { id: sum, type: audio_mixer }
+      - { id: feedback, type: feedback_delay, static: { delay_samples: 4 } }
+      - { id: half, type: gain, defaults: { gain: 0.5 } }
+    connections:
+      - { from: voice.gate, to: hit.trigger }
+      - { from: hit.audio, to: sum.inputs }
+      - { from: sum.mix, to: feedback.audio_in }
+      - { from: feedback.audio_out, to: half.audio_in }
+      - { from: half.audio_out, to: sum.inputs }
+modules:
+  - { id: midi, type: midi_input }
+  - { id: voices, type: poly, static: { definition: echo_voice, max_voices: 1, allocation: reject-new } }
+connections:
+  - { from: midi.events, to: voices.notes }
+"#,
+        )
+        .expect("poly feedback patch loads");
+        let settings = RenderSettings {
+            sample_rate_hz: 48_000,
+            block_size_frames: 4,
+            duration_frames: 12,
+        };
+        let prepared = crate::preparation::prepare_kernel_patch(&patch, &settings)
+            .expect("poly feedback patch prepares");
+        let mut runtime = RealtimeGraphProcessor::from_compiled_patch(
+            prepared.compiled_patch().clone(),
+            48_000.0,
+            &PreparedSamplerAssets::empty(),
+            4,
+        );
+        runtime.prepared_poly_runtime_regions[0].replace_child_step_kind_for_test(
+            ModuleKind::FeedbackDelay,
+            ModuleKind::AudioDelayOneSample,
+        );
+        runtime.note_on(60, 100);
+        let mut output = vec![vec![vec![0.0; 4]]];
+        let mut samples = Vec::new();
+        for _ in 0..3 {
+            assert_eq!(runtime.render_root_outputs(&mut output), 4);
+            samples.extend_from_slice(&output[0][0]);
+        }
+        assert_eq!(
+            samples,
+            [1.0, 0.0, 0.0, 0.0, 0.5, 0.0, 0.0, 0.0, 0.25, 0.0, 0.0, 0.0]
+        );
+    }
+
+    #[test]
+    fn prepared_splitter_processor_reconstructs_a_signed_constant() {
+        let patch = load_kernel_patch_str(
+            "ports:\n  - { name: low, direction: output, signal: audio, channels: 1, maps_from: splitter.low }\n  - { name: mid, direction: output, signal: audio, channels: 1, maps_from: splitter.mid }\n  - { name: high, direction: output, signal: audio, channels: 1, maps_from: splitter.high }\nmodules:\n  - { id: source, type: control_to_audio, defaults: { in: -0.25 } }\n  - { id: splitter, type: frequency_splitter }\nconnections:\n  - { from: source.out, to: splitter.audio_in }\n",
+        )
+        .expect("splitter patch loads");
+        let settings = RenderSettings {
+            sample_rate_hz: 48_000,
+            block_size_frames: 128,
+            duration_frames: 12_800,
+        };
+        let prepared = crate::preparation::prepare_kernel_patch(&patch, &settings)
+            .expect("splitter patch prepares");
+        let mut runtime = RealtimeGraphProcessor::from_compiled_patch(
+            prepared.compiled_patch().clone(),
+            48_000.0,
+            &PreparedSamplerAssets::empty(),
+            128,
+        );
+        let mut outputs = vec![vec![vec![0.0; 128]]; 3];
+        for _ in 0..100 {
+            assert_eq!(runtime.render_root_outputs(&mut outputs), 128);
+        }
+        let reconstructed = outputs.iter().map(|bus| bus[0][127]).sum::<f32>();
+        assert!((reconstructed + 0.25).abs() < 0.005, "{reconstructed}");
+    }
 }

@@ -4,9 +4,9 @@ use crate::diagnostics::error_codes;
 use crate::graph::{PortDirection, SignalType};
 use crate::graph_processor::render_kernel_offline_named;
 use crate::kernel::{
-    ChannelCount, DefinitionImplementation, POLY_ALLOCATION_OLDEST_STEAL, POLY_DEFINITION,
-    POLY_NOTE_EVENTS_INPUT, ResourceKind, ResourceOrigin, ResourceRef, StaticArg, StaticType,
-    StaticValue,
+    ChannelCount, ControlDefault, DefinitionImplementation, GraphDefinition,
+    POLY_ALLOCATION_OLDEST_STEAL, POLY_DEFINITION, POLY_NOTE_EVENTS_INPUT, Port, ResourceKind,
+    ResourceOrigin, ResourceRef, StaticArg, StaticType, StaticValue,
 };
 use crate::patch::RenderSettings;
 use crate::patch::load_preset_str;
@@ -100,6 +100,255 @@ connections:
   - from: amp.audio_out
     to: amp.audio_in
 "#;
+
+#[test]
+fn kernel_cli_overrides_resolve_against_declared_static_and_control_types() {
+    let mut patch = load_kernel_patch_str(COMPLETE_PATCH).expect("patch loads");
+    for (name, value) in [
+        ("channels", "1"),
+        ("mode", "clean"),
+        ("label", "123"),
+        ("impulse", "other.wav"),
+        ("gain", "0.8"),
+    ] {
+        patch
+            .apply_cli_override("amp", name, value, None)
+            .expect("declared CLI value applies");
+    }
+    let amp = patch
+        .root()
+        .nodes()
+        .iter()
+        .find(|node| node.id().as_str() == "amp")
+        .expect("amp node");
+    assert_eq!(
+        amp.static_args().get("channels"),
+        Some(&StaticArg::Literal(StaticValue::Int(1)))
+    );
+    assert_eq!(
+        amp.static_args().get("mode"),
+        Some(&StaticArg::Literal(StaticValue::Enum("clean".to_string())))
+    );
+    assert_eq!(
+        amp.static_args().get("label"),
+        Some(&StaticArg::Literal(StaticValue::String("123".to_string())))
+    );
+    assert_eq!(
+        amp.static_args().get("impulse"),
+        Some(&StaticArg::Literal(StaticValue::Resource(
+            ResourceRef::new(
+                ResourceKind::ImpulseResponse,
+                "other.wav",
+                ResourceOrigin::Document,
+            )
+        )))
+    );
+    assert_eq!(amp.port_default_overrides().get("gain"), Some(&0.8));
+    assert_eq!(
+        patch.root().ports()[0].control_default().unwrap().default(),
+        0.8
+    );
+}
+
+#[test]
+fn kernel_cli_overrides_reject_unknown_targets_types_and_ranges() {
+    let patch = load_kernel_patch_str(COMPLETE_PATCH).expect("patch loads");
+    for (module, name, value) in [
+        ("missing", "gain", "1"),
+        ("amp", "missing", "1"),
+        ("amp", "channels", "1.5"),
+        ("amp", "channels", "inf"),
+        ("amp", "channels", "9223372036854775808"),
+        ("amp", "mode", "invalid"),
+        ("amp", "mode", "true"),
+        ("amp", "gain", "true"),
+        ("amp", "gain", "3"),
+        ("amp", "gain", "1.5"),
+        ("amp", "audio_out", "1"),
+    ] {
+        let mut candidate = patch.clone();
+        let diagnostics = candidate
+            .apply_cli_override(module, name, value, None)
+            .expect_err("invalid CLI override must fail");
+        assert_eq!(diagnostics.errors().count(), 1, "{module}.{name}");
+        assert!(
+            diagnostics
+                .to_string()
+                .contains(&format!("{module}.{name}")),
+            "{module}.{name}: {diagnostics}"
+        );
+        assert_eq!(
+            candidate.root(),
+            patch.root(),
+            "failure cannot mutate patch"
+        );
+    }
+}
+
+#[test]
+fn kernel_cli_override_rejects_module_without_resolved_definition() {
+    let mut patch = load_kernel_patch_str(
+        "ports:\n  - { name: out, direction: output, signal: audio, channels: 1 }\nmodules:\n  - { id: future, type: future_module }\nconnections: []\n",
+    )
+    .expect("unresolved definition is preserved by loading");
+    let diagnostics = patch
+        .apply_cli_override("future", "count", "2", None)
+        .expect_err("override needs a resolved declaration");
+    assert!(diagnostics.to_string().contains("future_module"));
+    assert!(diagnostics.to_string().contains("future.count"));
+}
+
+#[test]
+fn kernel_cli_override_uses_only_the_matching_external_definition() {
+    let reference = "$USER_LIB/demo/demo.yaml";
+    let patch = load_kernel_patch_str(
+        "ports:\n  - { name: master, direction: output, signal: audio, channels: 1, maps_from: voice.audio }\nmodules:\n  - { id: voice, type: $USER_LIB/demo/demo.yaml }\nconnections: []\n",
+    )
+    .expect("external reference loads");
+    let level = Port::input("level", SignalType::Control, 1u32)
+        .with_control_default(ControlDefault::new(0.5).with_min(0.0).with_max(1.0));
+    let matching = GraphDefinition::new(reference).with_port(level.clone());
+    let unrelated = GraphDefinition::new("$USER_LIB/other/other.yaml").with_port(level);
+
+    let mut rejected = patch.clone();
+    let diagnostics = rejected
+        .apply_cli_override("voice", "level", "0.4", Some(&unrelated))
+        .expect_err("a declaration from another package is not authoritative");
+    assert!(diagnostics.to_string().contains(reference));
+    assert_eq!(rejected.root(), patch.root());
+
+    let mut applied = patch;
+    applied
+        .apply_cli_override("voice", "level", "0.4", Some(&matching))
+        .expect("matching package declaration accepts the override");
+    assert_eq!(
+        applied.root().nodes()[0]
+            .port_default_overrides()
+            .get("level"),
+        Some(&0.4)
+    );
+}
+
+#[test]
+fn kernel_cli_override_validates_integer_choices_and_control_port_kind() {
+    let mut reverb = load_kernel_patch_str(
+        "ports:\n  - { name: master, direction: output, signal: audio, channels: 2, maps_from: effect.audio_out }\nmodules:\n  - { id: effect, type: reverb }\nconnections: []\n",
+    )
+    .expect("reverb patch loads");
+    reverb
+        .apply_cli_override("effect", "channels", "1", None)
+        .expect("mono is a declared channel choice");
+    assert_eq!(
+        reverb.root().nodes()[0].static_args().get("channels"),
+        Some(&StaticArg::Literal(StaticValue::Int(1)))
+    );
+    let before = reverb.root().clone();
+    assert!(
+        reverb
+            .apply_cli_override("effect", "channels", "3", None)
+            .is_err()
+    );
+    assert!(
+        reverb
+            .apply_cli_override("effect", "audio_in", "1", None)
+            .is_err()
+    );
+    assert_eq!(reverb.root(), &before);
+}
+
+#[test]
+fn kernel_cli_override_validates_builtin_control_range_boundaries() {
+    let patch = load_kernel_patch_str(
+        "ports:\n  - { name: master, direction: output, signal: audio, channels: 1, maps_from: amp.audio_out }\nmodules:\n  - { id: amp, type: gain }\nconnections: []\n",
+    )
+    .expect("gain patch loads");
+    for value in ["0", "4"] {
+        let mut candidate = patch.clone();
+        candidate
+            .apply_cli_override("amp", "gain", value, None)
+            .expect("inclusive boundary is valid");
+        assert_eq!(
+            candidate.root().nodes()[0]
+                .port_default_overrides()
+                .get("gain"),
+            Some(&value.parse::<f64>().unwrap())
+        );
+    }
+    for value in ["-0.1", "4.1", "NaN"] {
+        let mut candidate = patch.clone();
+        assert!(
+            candidate
+                .apply_cli_override("amp", "gain", value, None)
+                .is_err()
+        );
+        assert_eq!(candidate.root(), patch.root());
+    }
+}
+
+#[test]
+fn kernel_cli_override_validates_mapped_root_control_range_boundaries() {
+    let patch = load_kernel_patch_str(
+        "ports:\n  - { name: level, direction: input, signal: control, channels: 1, default: 0.75, min: 0.5, max: 1, maps_to: amp.gain }\n  - { name: master, direction: output, signal: audio, channels: 1, maps_from: amp.audio_out }\nmodules:\n  - { id: amp, type: gain }\nconnections: []\n",
+    )
+    .expect("mapped root control loads");
+    for (raw, expected) in [("0.5", 0.5), ("1", 1.0)] {
+        let mut candidate = patch.clone();
+        candidate
+            .apply_cli_override("amp", "gain", raw, None)
+            .expect("root boundary is inclusive");
+        assert_eq!(
+            candidate.root().ports()[0]
+                .control_default()
+                .unwrap()
+                .default(),
+            expected
+        );
+    }
+    for raw in ["0.25", "1.25"] {
+        let mut candidate = patch.clone();
+        assert!(
+            candidate
+                .apply_cli_override("amp", "gain", raw, None)
+                .is_err()
+        );
+        assert_eq!(candidate.root(), patch.root());
+    }
+}
+
+#[test]
+fn kernel_cli_override_changes_only_the_targeted_root_control_default() {
+    let mut patch = load_kernel_patch_str(
+        "ports:\n  - { name: left_level, direction: input, signal: control, channels: 1, default: 0.75, min: 0, max: 1, maps_to: left.gain }\n  - { name: right_level, direction: input, signal: control, channels: 1, default: 0.6, min: 0.5, max: 1, maps_to: right.gain }\n  - { name: master, direction: output, signal: audio, channels: 1, maps_from: left.audio_out }\nmodules:\n  - { id: left, type: gain }\n  - { id: right, type: gain }\nconnections: []\n",
+    )
+    .expect("two independent root controls load");
+    patch
+        .apply_cli_override("left", "gain", "0.2", None)
+        .expect("one destination is unambiguous");
+    let defaults = patch
+        .root()
+        .ports()
+        .iter()
+        .filter_map(|port| {
+            port.control_default()
+                .map(|default| (port.name(), default.default()))
+        })
+        .collect::<Vec<_>>();
+    assert_eq!(defaults, [("left_level", 0.2), ("right_level", 0.6)]);
+}
+
+#[test]
+fn kernel_cli_override_rejects_shared_root_control_without_mutating_patch() {
+    let mut patch = load_kernel_patch_str(
+        "ports:\n  - { name: level, direction: input, signal: control, channels: 1, default: 0.75, min: 0, max: 1, maps_to: [left.gain, right.gain] }\n  - { name: master, direction: output, signal: audio, channels: 1, maps_from: left.audio_out }\nmodules:\n  - { id: left, type: gain }\n  - { id: right, type: gain }\nconnections: []\n",
+    )
+    .expect("shared root control loads");
+    let before = patch.root().clone();
+    let diagnostics = patch
+        .apply_cli_override("left", "gain", "0.2", None)
+        .expect_err("target-specific override cannot change both destinations");
+    assert!(diagnostics.to_string().contains("maps to multiple inputs"));
+    assert_eq!(patch.root(), &before);
+}
 
 const PRESET_PATCH: &str = r#"
 metadata: { name: preset_test }
@@ -251,6 +500,10 @@ fn kernel_preset_rejects_identity_unknown_targets_and_incompatible_values() {
             "unknown preset target other",
         ),
         (
+            "name: internal\ninstrument: { id: test.instrument, preset_schema_version: 2 }\nvalues: { 'amp.gain': 0.5 }\n",
+            "unknown preset target amp.gain",
+        ),
+        (
             "name: type\ninstrument: { id: test.instrument, preset_schema_version: 2 }\nvalues: { loudness: loud }\n",
             "incompatible type or range",
         ),
@@ -261,6 +514,14 @@ fn kernel_preset_rejects_identity_unknown_targets_and_incompatible_values() {
         (
             "name: structural\ninstrument: { id: test.instrument, preset_schema_version: 2 }\nmodules: []\n",
             "preset cannot declare structural field modules",
+        ),
+        (
+            "name: connection\ninstrument: { id: test.instrument, preset_schema_version: 2 }\nconnections: []\n",
+            "preset cannot declare structural field connections",
+        ),
+        (
+            "name: unknown-asset\ninstrument: { id: test.instrument, preset_schema_version: 2 }\nassets: { extra: other.wav }\n",
+            "unknown preset target extra",
         ),
     ] {
         let preset = load_preset_str(yaml).expect("preset YAML loads");
@@ -387,6 +648,17 @@ fn node_static_literal_must_match_the_declared_type() {
             .to_string()
             .contains("does not match declared type Int")
     );
+}
+
+#[test]
+fn yaml_control_default_must_parse_as_a_number() {
+    let yaml = "ports:\n  - { name: out, direction: output, signal: audio, channels: 1, maps_from: amp.audio_out }\nmodules:\n  - { id: amp, type: gain, defaults: { gain: loud } }\nconnections: []\n";
+    let error = load_kernel_patch_str(yaml).expect_err("nonnumeric control default fails");
+    assert_eq!(
+        error.errors().next().unwrap().error_code(),
+        error_codes::KERNEL_DOCUMENT_SCHEMA_FAILED
+    );
+    assert!(error.to_string().contains("gain"));
 }
 
 #[test]
@@ -838,6 +1110,9 @@ fn legacy_document_fields_are_rejected_with_specific_diagnostics() {
         let diagnostics = load_kernel_patch_str(&yaml).expect_err("legacy field should fail");
         assert_eq!(diagnostics.all()[0].error_code(), code);
         assert!(diagnostics.all()[0].message().contains(field));
+        if field == "render" {
+            assert!(diagnostics.all()[0].message().contains("host"));
+        }
     }
 }
 
