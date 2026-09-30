@@ -1,6 +1,6 @@
 ## 1. Specification And Validation Surface
 
-- [ ] 1.1 Define the `advanced-sampling-options` capability and its sample asset/map requirements for drum-machine, break-slicer, and modest chromatic sampling only.
+- [x] 1.1 Define the `advanced-sampling-options` capability and its sample asset/map requirements for drum-machine, break-slicer, and modest chromatic sampling only.
 - [ ] 1.2 Add or extend built-in module registry entries for `sample_player`, `sample_zone_selector`, optional thin `sample_map_player`, `sample_slicer`, and `voice_choke` behaviour.
 - [ ] 1.3 Extend YAML/schema validation to accept sample assets, regions, simple loops, explicit slices, sample maps, zones, and choke groups.
 - [ ] 1.4 Add structured diagnostics for missing files, unsupported decode formats, malformed regions, invalid loop points, invalid velocity/key ranges, invalid voice limits, and unsupported interpolation/choke modes.
