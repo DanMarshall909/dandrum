@@ -21,7 +21,8 @@ assets:
         - { id: snare_hard_a, region: drums.snare_hard_a, key_range: [38, 38], velocity_range: [64, 127], round_robin_group: hard_snare }
         - { id: snare_hard_b, region: drums.snare_hard_b, key_range: [38, 38], velocity_range: [64, 127], round_robin_group: hard_snare }
         - { id: hat_closed, region: drums.hat_closed, key_range: [42, 42], velocity_range: [1, 127], choke_group: hats }
-        - { id: hat_open, region: drums.hat_open, key_range: [46, 46], velocity_range: [1, 127], choke_group: hats }
+        - { id: hat_open, region: drums.hat_open, key_range: [46, 46], velocity_range: [1, 127], round_robin_group: open_hats, choke_group: hats }
+        - { id: hat_open_alt, region: drums.hat_open, key_range: [46, 46], velocity_range: [1, 127], round_robin_group: open_hats, choke_group: hats, gain_db: -6 }
 ports:
   - { name: pitch_ratio, direction: input, signal: control, channels: 1, default: 1, min: 0.125, max: 8, maps_to: player.pitch_ratio }
   - { name: start_offset, direction: input, signal: control, channels: 1, default: 0, min: 0, max: 1, maps_to: player.start_offset }

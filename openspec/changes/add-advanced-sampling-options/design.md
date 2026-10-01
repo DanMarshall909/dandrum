@@ -112,6 +112,8 @@ Round-robin and probability selection must be deterministic for identical render
 
 Random/probability behaviour should never depend on hashmap iteration order, thread timing, wall-clock time, filesystem order, or audio block size.
 
+Live `variation` starts at zero, which preserves the authored zone choice. Raising it rotates the selected hit among matching zones in the same round-robin and choke groups. The kit-level selector still advances its ordinary turn before the per-hit variation is applied, so host modulation changes the audible alternate without changing the deterministic sequence or a voice's choke ownership.
+
 The chopped-break example selects one of four authored slices through a public numeric `slice_index` control. It does not require sequential or random slice modes. Tempo sync and time stretch remain separate work; the example plays each slice at its source rate times the live pitch ratio.
 
 ### Prefer preloaded sources for this capability, but keep the source contract streaming-compatible

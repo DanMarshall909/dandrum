@@ -158,6 +158,125 @@ fn bundled_sampler_presets_use_public_names_and_change_rendered_audio() {
 }
 
 #[test]
+fn drum_public_pitch_start_and_variation_controls_change_selected_hits() {
+    let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
+    let path = root.join("examples/patches/advanced-drum-kit.yaml");
+    let patch = load_kernel_patch_file(&path).expect("drum kit loads");
+    let source = crate::audio_loading::load_pcm_wav(
+        &root.join("examples/patches/assets/advanced-drums.wav"),
+        48_000,
+    )
+    .expect("source loads");
+    let render = |parameter: &str, value: f32, note: u8| {
+        let preset = load_preset_str(&format!(
+            "name: Modulated Drum\ninstrument: {{ id: dandrum.advanced-drum-kit, preset_schema_version: 1 }}\nvalues:\n  drums.{parameter}: {value}\n"
+        )).expect("public preset parses");
+        let applied = patch.apply_preset(&preset).expect("public preset applies");
+        let settings = RenderSettings {
+            sample_rate_hz: 48_000,
+            block_size_frames: 4,
+            duration_frames: 4,
+        };
+        let prepared = prepare_kernel_patch_with_context(
+            &applied,
+            &settings,
+            &PreparationContext::new(path.parent().unwrap(), 48_000),
+        )
+        .expect("modulated kit prepares");
+        render_kernel_offline_named(
+            &prepared,
+            vec![TimedInputEvent::new(
+                0,
+                ScriptEvent::NoteOn {
+                    note,
+                    velocity: 100,
+                },
+            )],
+            &PreparedSamplerAssets::empty(),
+        )
+        .expect("modulated kit renders")[0]
+            .1[0]
+            .clone()
+    };
+
+    let pitched = render("pitch_ratio", 2.0, 36);
+    assert_eq!(pitched[0], -0.5);
+    assert_eq!(pitched[1], source.frames()[2]);
+    let started = render("start_offset", 0.5, 36);
+    let expected = (source.frames()[5999] + source.frames()[6000]) * 0.5;
+    assert!((started[0] - expected).abs() < 0.00001);
+    assert_ne!(started[0], -0.5);
+
+    assert_eq!(render("variation", 0.0, 38)[0], -0.375);
+    assert_eq!(render("variation", 1.0, 38)[0], -0.4375);
+
+    let preset = load_preset_str("name: Alternate Hats\ninstrument: { id: dandrum.advanced-drum-kit, preset_schema_version: 1 }\nvalues: { drums.variation: 1 }\n")
+        .expect("variation preset parses");
+    let varied = patch.apply_preset(&preset).expect("variation applies");
+    let settings = RenderSettings {
+        sample_rate_hz: 48_000,
+        block_size_frames: 4,
+        duration_frames: 4,
+    };
+    let prepared = prepare_kernel_patch_with_context(
+        &varied,
+        &settings,
+        &PreparationContext::new(path.parent().unwrap(), 48_000),
+    )
+    .expect("varied hats prepare");
+    let hats = render_kernel_offline_named(
+        &prepared,
+        vec![
+            TimedInputEvent::new(
+                0,
+                ScriptEvent::NoteOn {
+                    note: 46,
+                    velocity: 100,
+                },
+            ),
+            TimedInputEvent::new(
+                2,
+                ScriptEvent::NoteOn {
+                    note: 42,
+                    velocity: 100,
+                },
+            ),
+        ],
+        &PreparedSamplerAssets::empty(),
+    )
+    .expect("varied hats render");
+    let alternate_open = -0.0625 * 10.0_f32.powf(-6.0 / 20.0);
+    assert!((hats[0].1[0][0] - alternate_open).abs() < 0.000001);
+    assert_eq!(hats[0].1[0][2], -0.125);
+
+    let prepared = prepare_kernel_patch_with_context(
+        &patch,
+        &settings,
+        &PreparationContext::new(path.parent().unwrap(), 48_000),
+    )
+    .expect("unmodulated kit prepares");
+    let mut runtime = RealtimeGraphProcessor::polyphonic_with_compiled_patch_and_sampler_assets_and_max_block_size(
+        prepared.graph().clone(), prepared.compiled_patch().clone(), 48_000.0,
+        &PreparedSamplerAssets::empty(), &crate::patch::VoiceAllocation::default(), 4,
+    );
+    let variation_slot = runtime
+        .parameter_slot_index("player", "variation")
+        .expect("live variation slot");
+    let mut output = vec![vec![vec![0.0; 4]; 2]];
+    runtime.note_on(38, 100);
+    assert_eq!(runtime.render_root_outputs(&mut output), 4);
+    assert_eq!(output[0][0][0], -0.375);
+    runtime.reset();
+    assert!(runtime.set_parameter_slot(variation_slot, 1.0));
+    let allocations = crate::test_allocator::count_current_thread_allocations(|| {
+        runtime.note_on(38, 100);
+        assert_eq!(runtime.render_root_outputs(&mut output), 4);
+    });
+    assert_eq!(allocations, 0);
+    assert_eq!(output[0][0][0], -0.4375);
+}
+
+#[test]
 fn bundled_chromatic_and_hat_examples_follow_root_note_and_choke_group() {
     let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
     let examples = root.join("examples/patches");

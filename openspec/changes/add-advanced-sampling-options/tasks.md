@@ -74,7 +74,7 @@
 
 ## 9. Sampler VST3 Example And External Modulation
 
-- [ ] 9.1 Add a drum sampler patch with named public pitch, start, level, pan, and variation controls that affect rendered audio while it runs.
+- [x] 9.1 Add a drum sampler patch with named public pitch, start, level, pan, and variation controls that affect rendered audio while it runs.
 - [ ] 9.2 Provide a sampler-focused VST3 example that loads the drum patch and its redistributable reference samples by default.
 - [ ] 9.3 Prove JUCE host parameter automation reaches the corresponding Rust sampler controls and changes rendered audio without replacing the instrument.
 - [ ] 9.4 Document MIDI drum-note mapping, host modulation setup, sample asset location, and the preparation-only choices that require reload.

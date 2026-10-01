@@ -165,6 +165,11 @@ A sample map SHALL contain at least one zone that references a prepared region a
 - **WHEN** the same note-event stream is rendered twice with the same sample map and selection seed
 - **THEN** round-robin or weighted selection SHALL produce the same region sequence across both renders and across equivalent block splits
 
+#### Scenario: Live variation chooses a compatible alternate
+
+- **WHEN** a drum-map hit has multiple matching alternates in the same round-robin and choke groups and the public variation control rises above zero
+- **THEN** playback SHALL select a later compatible alternate without changing the kit-level turn order or choke ownership
+
 #### Scenario: Source declaration order does not change weighted hits
 
 - **WHEN** the same weighted drum map is prepared with its sample sources declared in a different order

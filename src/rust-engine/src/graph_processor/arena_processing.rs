@@ -425,6 +425,13 @@ pub(super) fn process_sample_map_player_state(
                     });
                 choice_cursor += 1;
                 if let Some(index) = chosen {
+                    let index = sample_zone_with_variation(
+                        zones,
+                        index,
+                        note,
+                        velocity,
+                        context.input_sample(4, frame, 0.0),
+                    );
                     *selected_zone = Some(index);
                     let region = &zones[index].region;
                     let root_ratio = region.root_note.map_or(1.0, |root| {
@@ -509,6 +516,40 @@ pub(super) fn process_sample_map_player_state(
                 .expect("sample map output channel is prepared");
         }
     }
+}
+
+fn sample_zone_with_variation(
+    zones: &[crate::compiled_patch::CompiledSampleZone],
+    selected: usize,
+    note: u8,
+    velocity: u8,
+    variation: f32,
+) -> usize {
+    if !variation.is_finite() || variation <= 0.0 {
+        return selected;
+    }
+    let chosen = &zones[selected];
+    let eligible = |zone: &crate::compiled_patch::CompiledSampleZone| {
+        zone.round_robin_group == chosen.round_robin_group
+            && zone.choke_group == chosen.choke_group
+            && (zone.key_range[0]..=zone.key_range[1]).contains(&note)
+            && (zone.velocity_range[0]..=zone.velocity_range[1]).contains(&velocity)
+    };
+    let count = zones.iter().filter(|zone| eligible(zone)).count();
+    if count <= 1 {
+        return selected;
+    }
+    let current = zones[..selected]
+        .iter()
+        .filter(|zone| eligible(zone))
+        .count();
+    let offset = (variation.clamp(0.0, 1.0) * (count - 1) as f32).round() as usize;
+    zones
+        .iter()
+        .enumerate()
+        .filter(|(_, zone)| eligible(zone))
+        .nth((current + offset) % count)
+        .map_or(selected, |(index, _)| index)
 }
 
 pub(super) fn select_sample_map_zone(
