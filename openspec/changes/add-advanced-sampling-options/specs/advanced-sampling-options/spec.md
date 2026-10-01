@@ -1,5 +1,24 @@
 ## ADDED Requirements
 
+### Requirement: Invalid sampling declarations fail before rendering
+
+Preparation SHALL report structured diagnostics for missing or unreadable sample files, unsupported decode formats, invalid region and loop boundaries, descending key or velocity ranges, and sample voice limits outside the supported bound. Unknown interpolation and choke modes SHALL fail validation instead of silently choosing another mode.
+
+#### Scenario: Sample file cannot be used
+
+- **WHEN** a declared sample source is absent or has an unsupported audio format
+- **THEN** preparation SHALL fail with a diagnostic identifying the source and the file failure
+
+#### Scenario: Invalid drum playback metadata cannot render
+
+- **WHEN** a region or loop is malformed, a zone has a descending range, or a sample map player requests an invalid voice limit
+- **THEN** preparation SHALL fail with a diagnostic for the relevant declaration
+
+#### Scenario: Unsupported sampling mode cannot render
+
+- **WHEN** a player declares an unknown interpolation or choke mode
+- **THEN** validation SHALL fail with a structured diagnostic before rendering
+
 ### Requirement: Prepared sample assets serve the first three sampling families
 
 The engine SHALL support reusable, file-backed sample sources and sample maps as prepared assets for drum-machine hits and layers, explicit break slices, and modest chromatic playback. A sample source SHALL have a stable ID and a resource path; a sample map SHALL have a stable ID and SHALL reference prepared regions by ID. Preparation SHALL resolve each source using the same patch or package resource-root and provenance rules as other sample resources, decode it into engine-owned audio, and retain its sample rate, channel count, and frame count before rendering. These assets SHALL NOT require file access or decoding on the audio thread.

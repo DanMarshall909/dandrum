@@ -4,6 +4,7 @@ use std::path::{Component, Path, PathBuf};
 use std::sync::Arc;
 
 use crate::builtins::module_kind::ModuleKind;
+use crate::builtins::module_types;
 use crate::compiled_patch::{
     self, CompileError, CompiledNodeData, CompiledPatch, CompiledPolyOutputAccumulator,
     CompiledPolyRegion, CompiledPolyVoiceStorage, CompiledPortSpan, CompiledResourceHandles,
@@ -11,12 +12,12 @@ use crate::compiled_patch::{
 };
 use crate::diagnostics::{self, Diagnostic, Severity};
 use crate::graph::{Cable, Graph, ModuleId, ModuleNode, PortDirection, PortRef, SignalType};
-use crate::kernel::document::KernelPatch;
+use crate::kernel::document::{KernelPatch, SampleAssets, SampleMap, SampleSource};
 use crate::kernel::flatten::{FlattenedGraph, FlattenedPolyRegion};
 use crate::kernel::latency::LatencyPlan;
 use crate::kernel::{
     DefinitionRegistry, GraphDefinition, PortMetadata, ResourceKind, ResourceOrigin, ResourceRef,
-    StaticValue,
+    StaticArg, StaticValue,
 };
 use crate::module_reference::MacroRoots;
 #[cfg(test)]
@@ -63,7 +64,7 @@ impl PreparationContext {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct ResolvedResource {
     kind: ResourceKind,
     canonical_path: PathBuf,
@@ -289,11 +290,48 @@ pub(crate) struct PreparedInstrument {
 /// compiled spans while legacy callers continue to use the adapter.
 #[derive(Clone, Debug, PartialEq)]
 pub struct PreparedKernelInstrument {
+    sample_assets: PreparedSampleAssets,
     flattened_graph: FlattenedGraph,
     latency_plan: LatencyPlan,
     compensation_metadata: Vec<PreparedCompensationMetadata>,
     graph: Graph,
     compiled_patch: CompiledPatch,
+}
+
+#[derive(Clone, Debug, Default, PartialEq)]
+pub struct PreparedSampleAssets {
+    sources: Vec<PreparedSampleSource>,
+    maps: Vec<SampleMap>,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct PreparedSampleSource {
+    declaration: SampleSource,
+    resource: ResolvedResource,
+}
+
+impl PreparedSampleAssets {
+    pub fn sources(&self) -> &[PreparedSampleSource] {
+        &self.sources
+    }
+
+    pub fn maps(&self) -> &[SampleMap] {
+        &self.maps
+    }
+}
+
+impl PreparedSampleSource {
+    pub fn id(&self) -> &str {
+        &self.declaration.id
+    }
+
+    pub fn sample(&self) -> &LoadedSample {
+        self.resource.sample()
+    }
+
+    pub fn declaration(&self) -> &SampleSource {
+        &self.declaration
+    }
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -351,6 +389,10 @@ impl PreparedNodeMetadata {
 }
 
 impl PreparedKernelInstrument {
+    pub fn sample_assets(&self) -> &PreparedSampleAssets {
+        &self.sample_assets
+    }
+
     pub fn flattened_graph(&self) -> &FlattenedGraph {
         &self.flattened_graph
     }
@@ -518,6 +560,16 @@ pub fn prepare_kernel_patch(
     patch: &KernelPatch,
     render_settings: &RenderSettings,
 ) -> Result<PreparedKernelInstrument, KernelPreparationError> {
+    if !patch.sample_assets().sample_sources.is_empty()
+        || !patch.sample_assets().sample_maps.is_empty()
+    {
+        return Err(sample_preparation_error(
+            diagnostics::error_codes::KERNEL_SAMPLE_CONTEXT_REQUIRED,
+            "sample assets require a preparation context with a document root",
+        ));
+    }
+    validate_sample_declarations(patch.sample_assets())?;
+    validate_sample_module_options(patch)?;
     prepare_kernel_graph(patch.root(), patch.registry(), render_settings)
 }
 
@@ -549,14 +601,177 @@ pub fn prepare_kernel_patch_with_context(
     render_settings: &RenderSettings,
     context: &PreparationContext,
 ) -> Result<PreparedKernelInstrument, KernelPreparationError> {
+    validate_sample_declarations(patch.sample_assets())?;
+    validate_sample_module_options(patch)?;
+    let sample_assets = prepare_sample_assets(patch.sample_assets(), context)?;
     let buses = default_kernel_output_buses(patch.root());
-    prepare_kernel_graph_with_buses_and_context(
+    let mut prepared = prepare_kernel_graph_with_buses_and_context(
         patch.root(),
         patch.registry(),
         render_settings,
         &buses,
         context,
-    )
+    )?;
+    prepared.sample_assets = sample_assets;
+    Ok(prepared)
+}
+
+fn sample_preparation_error(
+    code: &'static str,
+    message: impl Into<String>,
+) -> KernelPreparationError {
+    diagnostics::Diagnostics::from(Diagnostic::new(code, Severity::Error, message.into())).into()
+}
+
+fn validate_sample_module_options(patch: &KernelPatch) -> Result<(), KernelPreparationError> {
+    for node in patch.root().nodes() {
+        if node.definition_ref() == module_types::SAMPLE_MAP_PLAYER {
+            if let Some(StaticArg::Literal(StaticValue::Int(max_voices))) =
+                node.static_args().get("max_voices")
+            {
+                if !(1..=128).contains(max_voices) {
+                    return Err(sample_preparation_error(
+                        diagnostics::error_codes::KERNEL_SAMPLE_INVALID_VOICE_LIMIT,
+                        format!(
+                            "sample_map_player '{}' max_voices must be 1..=128",
+                            node.id().as_str()
+                        ),
+                    ));
+                }
+            }
+        }
+    }
+    Ok(())
+}
+
+fn validate_sample_declarations(assets: &SampleAssets) -> Result<(), KernelPreparationError> {
+    for source in &assets.sample_sources {
+        for region in &source.regions {
+            if region.start_frame >= region.end_frame {
+                return Err(sample_preparation_error(
+                    diagnostics::error_codes::KERNEL_SAMPLE_INVALID_REGION,
+                    format!(
+                        "sample source '{}' region '{}' must have end_frame after start_frame",
+                        source.id, region.id
+                    ),
+                ));
+            }
+            if region.pan.is_some_and(|pan| !(-1.0..=1.0).contains(&pan))
+                || region.fade_in_ms.is_some_and(|fade| fade < 0.0)
+                || region.fade_out_ms.is_some_and(|fade| fade < 0.0)
+            {
+                return Err(sample_preparation_error(
+                    diagnostics::error_codes::KERNEL_SAMPLE_INVALID_REGION,
+                    format!(
+                        "sample source '{}' region '{}' has invalid pan or fade values",
+                        source.id, region.id
+                    ),
+                ));
+            }
+            if let Some(loop_settings) = &region.loop_settings {
+                if loop_settings.mode != "forward" {
+                    return Err(sample_preparation_error(
+                        diagnostics::error_codes::KERNEL_SAMPLE_UNSUPPORTED_MODE,
+                        format!(
+                            "sample source '{}' region '{}' does not support loop mode '{}'",
+                            source.id, region.id, loop_settings.mode
+                        ),
+                    ));
+                }
+                if loop_settings.start_frame < region.start_frame
+                    || loop_settings.start_frame >= loop_settings.end_frame
+                    || loop_settings.end_frame > region.end_frame
+                    || loop_settings.crossfade_ms.is_some_and(|fade| fade < 0.0)
+                {
+                    return Err(sample_preparation_error(
+                        diagnostics::error_codes::KERNEL_SAMPLE_INVALID_LOOP,
+                        format!(
+                            "sample source '{}' region '{}' has loop points outside its playback window",
+                            source.id, region.id
+                        ),
+                    ));
+                }
+            }
+        }
+    }
+    for map in &assets.sample_maps {
+        for zone in &map.zones {
+            if zone.key_range[0] > zone.key_range[1]
+                || zone.velocity_range[0] > zone.velocity_range[1]
+            {
+                return Err(sample_preparation_error(
+                    diagnostics::error_codes::KERNEL_SAMPLE_INVALID_ZONE,
+                    format!(
+                        "sample map '{}' has a zone with a descending key or velocity range",
+                        map.id
+                    ),
+                ));
+            }
+        }
+    }
+    Ok(())
+}
+
+fn prepare_sample_assets(
+    assets: &SampleAssets,
+    context: &PreparationContext,
+) -> Result<PreparedSampleAssets, KernelPreparationError> {
+    let mut resolver = ResourceResolver::new(context);
+    let mut sources = Vec::with_capacity(assets.sample_sources.len());
+    for declaration in &assets.sample_sources {
+        let resource = resolver
+            .resolve(&declaration.resource)
+            .map_err(|diagnostics| {
+                if diagnostics.errors().any(|diagnostic| {
+                    diagnostic.error_code() == diagnostics::error_codes::KERNEL_RESOURCE_PATH_ESCAPE
+                }) {
+                    return KernelPreparationError::from(diagnostics);
+                }
+                let origin_root = match declaration.resource.origin() {
+                    ResourceOrigin::Document => context.document_root(),
+                    ResourceOrigin::Package(root) => root,
+                };
+                let path = origin_root.join(declaration.resource.path());
+                let code = if !path.exists() {
+                    diagnostics::error_codes::KERNEL_SAMPLE_MISSING_FILE
+                } else if diagnostics
+                    .errors()
+                    .any(|diagnostic| diagnostic.message().contains("unsupported format"))
+                {
+                    diagnostics::error_codes::KERNEL_SAMPLE_UNSUPPORTED_FORMAT
+                } else {
+                    diagnostics::error_codes::KERNEL_RESOURCE_LOAD_FAILED
+                };
+                sample_preparation_error(
+                    code,
+                    format!(
+                        "sample source '{}' at {}: {diagnostics}",
+                        declaration.id,
+                        path.display()
+                    ),
+                )
+            })?;
+        let frame_count = resource.sample().frames().len() as u64;
+        for region in &declaration.regions {
+            if region.end_frame > frame_count {
+                return Err(sample_preparation_error(
+                    diagnostics::error_codes::KERNEL_SAMPLE_INVALID_REGION,
+                    format!(
+                        "sample source '{}' region '{}' ends at frame {}, beyond source length {}",
+                        declaration.id, region.id, region.end_frame, frame_count
+                    ),
+                ));
+            }
+        }
+        sources.push(PreparedSampleSource {
+            declaration: declaration.clone(),
+            resource,
+        });
+    }
+    Ok(PreparedSampleAssets {
+        sources,
+        maps: assets.sample_maps.clone(),
+    })
 }
 
 /// Validate, flatten, latency-balance, lower, and compile a kernel root using
@@ -733,6 +948,7 @@ fn prepare_kernel_graph_with_buses_internal(
     compiled_patch.set_poly_regions(poly_regions);
 
     Ok(PreparedKernelInstrument {
+        sample_assets: PreparedSampleAssets::default(),
         flattened_graph,
         latency_plan,
         compensation_metadata,

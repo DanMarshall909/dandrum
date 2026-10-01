@@ -82,6 +82,14 @@ pub mod error_codes {
     pub const KERNEL_RESOURCE_KIND_MISMATCH: &str = "kernel.resource_kind_mismatch";
     pub const KERNEL_RESOURCE_PATH_ESCAPE: &str = "kernel.resource_path_escape";
     pub const KERNEL_RESOURCE_LOAD_FAILED: &str = "kernel.resource_load_failed";
+    pub const KERNEL_SAMPLE_MISSING_FILE: &str = "kernel.sample.missing_file";
+    pub const KERNEL_SAMPLE_CONTEXT_REQUIRED: &str = "kernel.sample.context_required";
+    pub const KERNEL_SAMPLE_UNSUPPORTED_FORMAT: &str = "kernel.sample.unsupported_format";
+    pub const KERNEL_SAMPLE_INVALID_REGION: &str = "kernel.sample.invalid_region";
+    pub const KERNEL_SAMPLE_INVALID_LOOP: &str = "kernel.sample.invalid_loop";
+    pub const KERNEL_SAMPLE_INVALID_ZONE: &str = "kernel.sample.invalid_zone";
+    pub const KERNEL_SAMPLE_INVALID_VOICE_LIMIT: &str = "kernel.sample.invalid_voice_limit";
+    pub const KERNEL_SAMPLE_UNSUPPORTED_MODE: &str = "kernel.sample.unsupported_mode";
     pub const KERNEL_STATIC_ARGUMENT_EXPRESSION: &str = "kernel.static_argument_expression";
     pub const KERNEL_UNKNOWN_STATIC_PARAM_REFERENCE: &str = "kernel.unknown_static_param_reference";
     pub const KERNEL_CHANNEL_COUNT_MISMATCH: &str = "kernel.channel_count_mismatch";

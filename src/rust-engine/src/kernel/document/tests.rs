@@ -11,7 +11,7 @@ use crate::kernel::{
 use crate::patch::RenderSettings;
 use crate::patch::load_preset_str;
 use crate::preparation::{
-    PreparationContext, prepare_kernel_patch_with_preset,
+    PreparationContext, prepare_kernel_patch_with_context, prepare_kernel_patch_with_preset,
     prepare_kernel_patch_with_preset_and_context,
 };
 use crate::sample::PreparedSamplerAssets;
@@ -264,6 +264,288 @@ fn unknown_sampling_asset_fields_fail_schema_validation() {
             error_codes::KERNEL_DOCUMENT_SCHEMA_FAILED
         );
         assert!(diagnostic.message().contains("unknown_sampling_field"));
+    }
+}
+
+#[test]
+fn sample_asset_preparation_reports_invalid_region_loop_and_drum_zone_ranges() {
+    let directory = tempfile::tempdir().expect("temporary sample root");
+    let context = PreparationContext::new(directory.path(), 48_000);
+    let settings = RenderSettings {
+        sample_rate_hz: 48_000,
+        block_size_frames: 16,
+        duration_frames: 16,
+    };
+    for (target, replacement, code) in [
+        (
+            "end_frame: 96000",
+            "end_frame: 0",
+            error_codes::KERNEL_SAMPLE_INVALID_REGION,
+        ),
+        (
+            "end_frame: 48000, crossfade_ms: 5",
+            "end_frame: 24000, crossfade_ms: 5",
+            error_codes::KERNEL_SAMPLE_INVALID_LOOP,
+        ),
+        (
+            "key_range: [36, 36]",
+            "key_range: [37, 36]",
+            error_codes::KERNEL_SAMPLE_INVALID_ZONE,
+        ),
+        (
+            "velocity_range: [1, 70]",
+            "velocity_range: [70, 1]",
+            error_codes::KERNEL_SAMPLE_INVALID_ZONE,
+        ),
+    ] {
+        let invalid = SAMPLE_ASSET_PATCH.replacen(target, replacement, 1);
+        let patch = load_kernel_patch_str(&invalid).expect("shape is valid");
+        let error = prepare_kernel_patch_with_context(&patch, &settings, &context)
+            .expect_err("invalid sample declaration must fail preparation");
+        assert_eq!(
+            error.diagnostics().errors().next().unwrap().error_code(),
+            code
+        );
+    }
+}
+
+#[test]
+fn sample_asset_preparation_reports_missing_file_with_source_identity() {
+    let directory = tempfile::tempdir().expect("temporary sample root");
+    let context = PreparationContext::new(directory.path(), 48_000);
+    let patch = load_kernel_patch_str(SAMPLE_ASSET_PATCH).expect("sample declaration loads");
+    let settings = RenderSettings {
+        sample_rate_hz: 48_000,
+        block_size_frames: 16,
+        duration_frames: 16,
+    };
+
+    let error = prepare_kernel_patch_with_context(&patch, &settings, &context)
+        .expect_err("missing sample must fail preparation");
+    let diagnostic = error.diagnostics().errors().next().unwrap();
+    assert_eq!(
+        diagnostic.error_code(),
+        error_codes::KERNEL_SAMPLE_MISSING_FILE
+    );
+    assert!(diagnostic.message().contains("break"));
+    assert!(diagnostic.message().contains("samples/break.wav"));
+}
+
+#[test]
+fn prepared_drum_source_keeps_decoded_frames_regions_and_map_metadata() {
+    let directory = tempfile::tempdir().expect("temporary sample root");
+    fs::create_dir(directory.path().join("samples")).expect("sample directory");
+    let frames = vec![0.25; 96_000];
+    crate::wav::write_wav_stereo_i16(
+        fs::File::create(directory.path().join("samples/break.wav")).expect("sample file"),
+        48_000,
+        &frames,
+        &frames,
+    )
+    .expect("write sample");
+    let context = PreparationContext::new(directory.path(), 48_000);
+    let settings = RenderSettings {
+        sample_rate_hz: 48_000,
+        block_size_frames: 16,
+        duration_frames: 16,
+    };
+    let patch = load_kernel_patch_str(SAMPLE_ASSET_PATCH).expect("sample declaration loads");
+
+    let prepared = prepare_kernel_patch_with_context(&patch, &settings, &context)
+        .expect("valid drum assets prepare");
+    let source = &prepared.sample_assets().sources()[0];
+    assert_eq!(source.id(), "break");
+    assert_eq!(source.sample().sample_rate_hz(), 48_000);
+    assert_eq!(source.sample().frames().len(), 96_000);
+    assert!((source.sample().frames()[0] - 0.25).abs() < 0.0001);
+    assert_eq!(source.declaration().regions[0].end_frame, 96_000);
+    assert_eq!(prepared.sample_assets().maps()[0].zones.len(), 2);
+}
+
+#[test]
+fn sample_source_rejects_unsupported_decode_format_and_out_of_bounds_region() {
+    let directory = tempfile::tempdir().expect("temporary sample root");
+    fs::create_dir(directory.path().join("samples")).expect("sample directory");
+    let path = directory.path().join("samples/break.wav");
+    fs::write(&path, b"not a WAV file").expect("write invalid sample");
+    let context = PreparationContext::new(directory.path(), 48_000);
+    let settings = RenderSettings {
+        sample_rate_hz: 48_000,
+        block_size_frames: 16,
+        duration_frames: 16,
+    };
+    let patch = load_kernel_patch_str(SAMPLE_ASSET_PATCH).expect("sample declaration loads");
+
+    let error = prepare_kernel_patch_with_context(&patch, &settings, &context)
+        .expect_err("unsupported sample must fail preparation");
+    assert_eq!(
+        error.diagnostics().errors().next().unwrap().error_code(),
+        error_codes::KERNEL_SAMPLE_UNSUPPORTED_FORMAT
+    );
+
+    let frames = vec![0.25; 95_999];
+    crate::wav::write_wav_stereo_i16(fs::File::create(&path).unwrap(), 48_000, &frames, &frames)
+        .expect("write valid short sample");
+    let error = prepare_kernel_patch_with_context(&patch, &settings, &context)
+        .expect_err("region beyond sample must fail preparation");
+    assert_eq!(
+        error.diagnostics().errors().next().unwrap().error_code(),
+        error_codes::KERNEL_SAMPLE_INVALID_REGION
+    );
+}
+
+#[test]
+fn sample_source_reports_sample_rate_mismatch_as_load_failure() {
+    let directory = tempfile::tempdir().expect("temporary sample root");
+    fs::create_dir(directory.path().join("samples")).expect("sample directory");
+    let path = directory.path().join("samples/break.wav");
+    crate::wav::write_wav_stereo_i16(fs::File::create(&path).unwrap(), 44_100, &[0.5], &[0.5])
+        .expect("write sample at another rate");
+    let patch = load_kernel_patch_str(SAMPLE_ASSET_PATCH).expect("sample declaration loads");
+    let context = PreparationContext::new(directory.path(), 48_000);
+    let settings = RenderSettings {
+        sample_rate_hz: 48_000,
+        block_size_frames: 16,
+        duration_frames: 16,
+    };
+
+    let result = prepare_kernel_patch_with_context(&patch, &settings, &context);
+    let error = match result {
+        Ok(_) => panic!("sample rate mismatch must fail preparation"),
+        Err(error) => error,
+    };
+    let diagnostic = error.diagnostics().errors().next().unwrap();
+    assert_eq!(
+        diagnostic.error_code(),
+        error_codes::KERNEL_RESOURCE_LOAD_FAILED
+    );
+    assert!(diagnostic.message().contains("break"));
+    assert!(diagnostic.message().contains("sample-rate mismatch"));
+}
+
+#[test]
+fn sample_assets_require_a_resource_context_and_reject_path_escape() {
+    let patch = load_kernel_patch_str(SAMPLE_ASSET_PATCH).expect("sample declaration loads");
+    let settings = RenderSettings {
+        sample_rate_hz: 48_000,
+        block_size_frames: 16,
+        duration_frames: 16,
+    };
+    let error = crate::preparation::prepare_kernel_patch(&patch, &settings)
+        .expect_err("sample declarations need a document root");
+    assert_eq!(
+        error.diagnostics().errors().next().unwrap().error_code(),
+        error_codes::KERNEL_SAMPLE_CONTEXT_REQUIRED
+    );
+
+    let escaped = SAMPLE_ASSET_PATCH.replace("samples/break.wav", "../outside.wav");
+    let patch = load_kernel_patch_str(&escaped).expect("path shape loads");
+    let directory = tempfile::tempdir().expect("temporary resource root");
+    let context = PreparationContext::new(directory.path(), 48_000);
+    let error = prepare_kernel_patch_with_context(&patch, &settings, &context)
+        .expect_err("escaping path must fail preparation");
+    assert_eq!(
+        error.diagnostics().errors().next().unwrap().error_code(),
+        error_codes::KERNEL_RESOURCE_PATH_ESCAPE
+    );
+}
+
+#[test]
+fn sample_asset_preparation_rejects_unsupported_loop_and_invalid_region_values() {
+    let directory = tempfile::tempdir().expect("temporary sample root");
+    let context = PreparationContext::new(directory.path(), 48_000);
+    let settings = RenderSettings {
+        sample_rate_hz: 48_000,
+        block_size_frames: 16,
+        duration_frames: 16,
+    };
+    for (target, replacement, code) in [
+        (
+            "mode: forward",
+            "mode: ping_pong",
+            error_codes::KERNEL_SAMPLE_UNSUPPORTED_MODE,
+        ),
+        (
+            "pan: 0.25",
+            "pan: 2",
+            error_codes::KERNEL_SAMPLE_INVALID_REGION,
+        ),
+        (
+            "fade_in_ms: 2",
+            "fade_in_ms: -1",
+            error_codes::KERNEL_SAMPLE_INVALID_REGION,
+        ),
+        (
+            "crossfade_ms: 5",
+            "crossfade_ms: -5",
+            error_codes::KERNEL_SAMPLE_INVALID_LOOP,
+        ),
+    ] {
+        let invalid = SAMPLE_ASSET_PATCH.replacen(target, replacement, 1);
+        let patch = load_kernel_patch_str(&invalid).expect("shape is valid");
+        let result = prepare_kernel_patch_with_context(&patch, &settings, &context);
+        let error = match result {
+            Ok(_) => panic!("invalid {target} must fail preparation"),
+            Err(error) => error,
+        };
+        assert_eq!(
+            error.diagnostics().errors().next().unwrap().error_code(),
+            code
+        );
+    }
+}
+
+#[test]
+fn drum_map_player_rejects_unbounded_or_zero_voice_limits() {
+    let settings = RenderSettings {
+        sample_rate_hz: 48_000,
+        block_size_frames: 16,
+        duration_frames: 16,
+    };
+    for limit in [0, 4096] {
+        let yaml = format!(
+            "metadata: {{ name: drum_map }}\nports:\n  - {{ name: audio_out, direction: output, signal: audio, channels: 2, maps_from: player.audio }}\nmodules:\n  - {{ id: player, type: sample_map_player, static: {{ sample_map: kit, max_voices: {limit} }} }}\n"
+        );
+        let patch = load_kernel_patch_str(&yaml).expect("sampler graph loads");
+        let result = crate::preparation::prepare_kernel_patch(&patch, &settings);
+        let error = match result {
+            Ok(_) => panic!("invalid voice limit {limit} must fail"),
+            Err(error) => error,
+        };
+        assert_eq!(
+            error.diagnostics().errors().next().unwrap().error_code(),
+            error_codes::KERNEL_SAMPLE_INVALID_VOICE_LIMIT
+        );
+    }
+}
+
+#[test]
+fn sample_modules_reject_unsupported_interpolation_and_choke_modes() {
+    let settings = RenderSettings {
+        sample_rate_hz: 48_000,
+        block_size_frames: 16,
+        duration_frames: 16,
+    };
+    for (kind, static_args) in [
+        (
+            "sample_player",
+            "source: break, region: full, interpolation: sinc",
+        ),
+        ("sample_map_player", "sample_map: kit, choke_mode: teleport"),
+    ] {
+        let yaml = format!(
+            "metadata: {{ name: invalid_sample_mode }}\nports:\n  - {{ name: audio_out, direction: output, signal: audio, channels: 2, maps_from: player.audio }}\nmodules:\n  - {{ id: player, type: {kind}, static: {{ {static_args} }} }}\n"
+        );
+        let patch = load_kernel_patch_str(&yaml).expect("sampler graph shape loads");
+        let result = crate::preparation::prepare_kernel_patch(&patch, &settings);
+        let error = match result {
+            Ok(_) => panic!("unsupported {kind} mode must fail"),
+            Err(error) => error,
+        };
+        assert_eq!(
+            error.diagnostics().errors().next().unwrap().error_code(),
+            error_codes::KERNEL_STATIC_ARGUMENT_INVALID_ENUM_VALUE
+        );
     }
 }
 
