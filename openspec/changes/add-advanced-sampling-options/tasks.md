@@ -19,7 +19,7 @@
 ## 3. Primitive Playback Rendering
 
 - [x] 3.1 Implement or extend `sample_player` one-shot region playback.
-- [ ] 3.2 Implement gated playback where release/stop behaviour is externally observable.
+- [x] 3.2 Implement gated playback where release/stop behaviour is externally observable.
 - [ ] 3.3 Implement simple looped playback with validated loop start/end and optional crossfade.
 - [ ] 3.4 Implement pitch-ratio playback using deterministic interpolation.
 - [ ] 3.5 Implement reverse playback from prepared region metadata.

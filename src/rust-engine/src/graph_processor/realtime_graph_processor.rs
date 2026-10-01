@@ -1539,6 +1539,7 @@ impl PreparedStepExecutor for SamplerStepExecutor {
 struct SamplePlayerStepExecutor {
     sample: Option<crate::compiled_patch::SampleResourceHandle>,
     region: crate::kernel::document::SampleRegion,
+    mode: String,
     position: f64,
     active: bool,
 }
@@ -1549,6 +1550,10 @@ impl PreparedStepExecutor for SamplePlayerStepExecutor {
             .event_queues
             .queue_ref(step.event_inputs[0].0)
             .map_or(&[][..], |queue| queue.events());
+        let gate_events = context
+            .event_queues
+            .queue_ref(step.event_inputs[1].0)
+            .map_or(&[][..], |queue| queue.events());
         let mut process_context = ProcessContext::new(
             context.arena,
             &step.input_buffers,
@@ -1558,10 +1563,12 @@ impl PreparedStepExecutor for SamplePlayerStepExecutor {
         arena_processing::process_sample_player_state(
             &self.sample,
             &self.region,
+            &self.mode,
             &mut self.position,
             &mut self.active,
             &mut process_context,
             events,
+            gate_events,
         );
     }
 
@@ -2072,11 +2079,13 @@ pub(super) fn bind_prepared_step_executors(
                 PerModuleState::SamplePlayer {
                     sample,
                     region,
+                    mode,
                     position,
                     active,
                 } => Box::new(SamplePlayerStepExecutor {
                     sample,
                     region,
+                    mode,
                     position,
                     active,
                 }),
@@ -2401,6 +2410,10 @@ fn execute_sample_player_step(context: &mut PreparedStepContext<'_>, step: &Rend
         .event_queues
         .queue_ref(step.event_inputs[0].0)
         .map_or(&[][..], |queue| queue.events());
+    let gate_events = context
+        .event_queues
+        .queue_ref(step.event_inputs[1].0)
+        .map_or(&[][..], |queue| queue.events());
     let mut process_context = ProcessContext::new(
         context.arena,
         &step.input_buffers,
@@ -2411,6 +2424,7 @@ fn execute_sample_player_step(context: &mut PreparedStepContext<'_>, step: &Rend
         &mut context.states[step.module_index],
         &mut process_context,
         events,
+        gate_events,
     );
 }
 

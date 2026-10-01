@@ -78,6 +78,7 @@ pub(super) enum PerModuleState {
     SamplePlayer {
         sample: Option<SampleResourceHandle>,
         region: SampleRegion,
+        mode: String,
         position: f64,
         active: bool,
     },
@@ -429,12 +430,13 @@ impl PerModuleState {
                 active: false,
             },
             ModuleKind::SamplePlayer => {
-                let CompiledConstruction::SamplePlayer { region, .. } = construction else {
+                let CompiledConstruction::SamplePlayer { region, mode } = construction else {
                     panic!("sample_player module {module_id} has mismatched construction data")
                 };
                 PerModuleState::SamplePlayer {
                     sample: resources.sample.clone(),
                     region: region.clone(),
+                    mode: mode.clone(),
                     position: 0.0,
                     active: false,
                 }

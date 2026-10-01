@@ -124,10 +124,12 @@ pub(super) fn process_sampler_state(
 pub(super) fn process_sample_player_state(
     sample: &Option<crate::compiled_patch::SampleResourceHandle>,
     region: &crate::kernel::document::SampleRegion,
+    mode: &str,
     position: &mut f64,
     active: &mut bool,
     context: &mut ProcessContext<'_>,
     events: &[BlockEvent],
+    gate_events: &[BlockEvent],
 ) {
     let frames = sample.as_ref().map_or(&[][..], |sample| sample.frames());
     for frame in 0..context.frames() {
@@ -137,6 +139,14 @@ pub(super) fn process_sample_player_state(
         }) {
             *position = region.start_frame as f64;
             *active = true;
+        }
+        if mode == "gated"
+            && gate_events.iter().any(|event| {
+                event.frame_offset as usize == frame
+                    && matches!(event.event, ScriptEvent::NoteOff { .. })
+            })
+        {
+            *active = false;
         }
         let output = if *active {
             let index = *position as usize;
@@ -166,17 +176,28 @@ pub(super) fn process_sample_player(
     state: &mut PerModuleState,
     context: &mut ProcessContext<'_>,
     events: &[BlockEvent],
+    gate_events: &[BlockEvent],
 ) {
     let PerModuleState::SamplePlayer {
         sample,
         region,
+        mode,
         position,
         active,
     } = state
     else {
         unreachable!()
     };
-    process_sample_player_state(sample, region, position, active, context, events);
+    process_sample_player_state(
+        sample,
+        region,
+        mode,
+        position,
+        active,
+        context,
+        events,
+        gate_events,
+    );
 }
 
 pub(super) fn process_note_to_rate(

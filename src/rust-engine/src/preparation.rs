@@ -1785,7 +1785,7 @@ fn lower_kernel_graph(
                 Some(StaticValue::Enum(value)) => value.as_str(),
                 _ => "one_shot",
             };
-            if mode != "one_shot" {
+            if mode != "one_shot" && mode != "gated" {
                 return Err(sample_preparation_error(
                     diagnostics::error_codes::KERNEL_SAMPLE_UNSUPPORTED_MODE,
                     format!(

@@ -637,6 +637,86 @@ connections:
 }
 
 #[test]
+fn gated_sample_player_stops_on_note_off_at_its_frame_and_can_retrigger() {
+    let directory = tempfile::tempdir().expect("temporary sample root");
+    crate::wav::write_wav_stereo_i16(
+        fs::File::create(directory.path().join("hit.wav")).expect("sample file"),
+        48_000,
+        &[0.25, -0.5, 0.75, -0.25],
+        &[0.25, -0.5, 0.75, -0.25],
+    )
+    .expect("write sample");
+    let yaml = r#"
+metadata: { name: gated_region }
+assets:
+  sample_sources:
+    - id: hit
+      path: hit.wav
+      regions: [{ id: body, start_frame: 0, end_frame: 4 }]
+ports:
+  - { name: audio_out, direction: output, signal: audio, channels: 1, maps_from: player.audio }
+modules:
+  - { id: midi, type: midi_input }
+  - { id: player, type: sample_player, static: { source: hit, region: body, channels: 1, mode: gated } }
+connections:
+  - { from: midi.events, to: player.trigger }
+  - { from: midi.events, to: player.gate }
+"#;
+    let patch = load_kernel_patch_str(yaml).expect("gated patch loads");
+    let settings = RenderSettings {
+        sample_rate_hz: 48_000,
+        block_size_frames: 6,
+        duration_frames: 6,
+    };
+    let context = PreparationContext::new(directory.path(), 48_000);
+    let prepared = prepare_kernel_patch_with_context(&patch, &settings, &context)
+        .expect("gated sample player prepares");
+    let events = vec![
+        TimedInputEvent::new(
+            0,
+            ScriptEvent::NoteOn {
+                note: 60,
+                velocity: 100,
+            },
+        ),
+        TimedInputEvent::new(2, ScriptEvent::NoteOff { note: 60 }),
+        TimedInputEvent::new(
+            4,
+            ScriptEvent::NoteOn {
+                note: 60,
+                velocity: 100,
+            },
+        ),
+        TimedInputEvent::new(5, ScriptEvent::NoteOff { note: 60 }),
+    ];
+    let rendered =
+        render_kernel_offline_named(&prepared, events.clone(), &PreparedSamplerAssets::empty())
+            .expect("gated region renders");
+    assert_eq!(
+        rendered[0].1[0],
+        vec![8191.0 / 32768.0, -0.5, 0.0, 0.0, 8191.0 / 32768.0, 0.0]
+    );
+
+    let one_shot = load_kernel_patch_str(&yaml.replace("mode: gated", "mode: one_shot"))
+        .expect("one-shot patch loads");
+    let prepared = prepare_kernel_patch_with_context(&one_shot, &settings, &context)
+        .expect("one-shot sample player prepares");
+    let rendered = render_kernel_offline_named(&prepared, events, &PreparedSamplerAssets::empty())
+        .expect("one-shot region renders");
+    assert_eq!(
+        rendered[0].1[0],
+        vec![
+            8191.0 / 32768.0,
+            -0.5,
+            24575.0 / 32768.0,
+            -0.25,
+            8191.0 / 32768.0,
+            -0.5
+        ]
+    );
+}
+
+#[test]
 fn poly_region_renders_sample_player_child_with_independent_voices() {
     let directory = tempfile::tempdir().expect("temporary sample root");
     crate::wav::write_wav_stereo_i16(
