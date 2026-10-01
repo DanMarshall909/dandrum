@@ -87,9 +87,22 @@ struct HostListener final : juce::AudioProcessorListener
         ++changeCount;
     }
     void audioProcessorChanged (juce::AudioProcessor*, const ChangeDetails&) override {}
+    void audioProcessorParameterChangeGestureBegin (juce::AudioProcessor*, int index) override
+    {
+        lastGestureIndex = index;
+        ++beginCount;
+    }
+    void audioProcessorParameterChangeGestureEnd (juce::AudioProcessor*, int index) override
+    {
+        lastGestureIndex = index;
+        ++endCount;
+    }
     int changeCount = 0;
     int lastIndex = -1;
     float lastValue = -1.0f;
+    int beginCount = 0;
+    int endCount = 0;
+    int lastGestureIndex = -1;
 };
 
 juce::var findParameter (const juce::var& snapshot, const juce::String& id)
@@ -154,9 +167,16 @@ int main()
                      && listener.changeCount == 1 && listener.lastIndex == parameterIndex
                      && std::abs (listener.lastValue - 0.37f) < 0.00001f,
                  "setParameter failed to notify the stable host slot");
+        require (listener.beginCount == 1 && listener.endCount == 1
+                     && listener.lastGestureIndex == parameterIndex,
+                 "current setParameter call did not bracket its own host gesture");
+        require (PluginEditorBridgeTestProbe::invoke (editor, "setParameter",
+                     { juce::var ("kick.tune_hz"), juce::var (0.38) }).isVoid()
+                     && listener.beginCount == 2 && listener.endCount == 2,
+                 "current bridge did not create a separate gesture for each parameter update");
         snapshot = PluginEditorBridgeTestProbe::invoke (editor, "getParameters");
         require (std::abs (static_cast<float> (findParameter (snapshot, "kick.tune_hz")
-                                                  .getProperty ("value", {})) - 0.37f) < 0.00001f,
+                                                  .getProperty ("value", {})) - 0.38f) < 0.00001f,
                  "getParameters did not reflect the value set through the bridge");
 
         require (PluginEditorBridgeTestProbe::invoke (editor, "noteOn", { 36 })

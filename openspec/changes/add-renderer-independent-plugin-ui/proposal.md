@@ -12,6 +12,7 @@ Dandrum needs the downloaded design system to support both a production WebView 
 - Preserve external authoring and explicit reload for structural changes. The design package's drag-to-edit zones and add/remove/reroute controls are reference interactions, not authorization to add graph authoring to the plugin.
 - Add bounded asynchronous meter/activity/cursor telemetry, prepared waveform and spectrogram analysis, and a subscribed live analysis stream. Drop visual history on overload while preserving audio, note-release safety, and latched clip state.
 - Package production web assets and redistributable fonts locally; retain native parameter identity, automation, state, and MIDI behaviour across editor choices.
+- Replace the existing TB-303 example page with the supplied React panel, binding its playable keyboard and supported controls to the same authoritative command surface. Present pattern/transport controls as unavailable until the patch supplies those capabilities.
 
 ## Capabilities
 
@@ -35,8 +36,9 @@ None. These additive capabilities preserve `plugin-integration`'s existing publi
 
 ## Baseline And Design Evidence
 
-- Approved placement: `docs/renderer-independent-plugin-ui` is a dependent specification branch based on the sampling revision below, not a merge into `main`. PR #4 is explicitly deferred for this task in the shared Git deferral ledger; this proposal does not change or close it. Recheck the active-work gate before later implementation.
+- Implementation baseline rechecked on 2026-10-02: `main` and `origin/main` both resolve to `0b9981917d710586f75832a024ec7eea5ab37a4f`, which contains sampling revision `3b313a7` and this proposal. PR #4 is merged, and GitHub reports no open PRs. The clean implementation worktree is `/tmp/dandrum-react-plugin-editors` on `work/react-plugin-editors-2026-10-02`; the original sampling worktree remains at `3b313a7`. A post-fetch status snapshot remained clean. Recheck upstream and worktrees before publication.
 - Prepared against published sampling revision `3b313a78680f305d10b84cf56dd6c35a6f4752e8` on `work/advanced-sampling-options-2026-10-01`. That revision archives `add-advanced-sampling-options`; this proposal follows it without reopening its completed tasks. Its reported validation is historical evidence, not verification of this new UI.
 - Design input: `Dandrum Design System (1).zip`, SHA-256 `f42e8cb34db9120807577a00af830dd41bcce8ea06c3f7aa9355f2593276b887`. This revision adds the three display components; its native handoff and original sampler mockups are unchanged. Import a reviewed repository-local reference copy during implementation.
+- TB-303 design input: `/home/dan/Downloads/tb303-react.zip`, SHA-256 `30e47b38d24a23f62b9b54a4d24ca651cb8a562294e280c8a46abbb079b187a0`, also checked out at `/home/dan/code/tb303-react` revision `dd05982`. Its panel is a standalone visual demo; default step lights, transport state, knob values and key toggles are not engine state and must be replaced or disabled during integration.
 - The current kit uses soft snare velocities 1-63 and hard velocities 64-127, with shared and per-pad controls. The export's 1-95/96-127 mock split and patch-wide-only assumption must not override loaded metadata.
 - Source references: [sampler behaviour](https://github.com/DanMarshall909/dandrum/blob/3b313a78680f305d10b84cf56dd6c35a6f4752e8/docs/advanced-sampler.md), [plugin contract](https://github.com/DanMarshall909/dandrum/blob/3b313a78680f305d10b84cf56dd6c35a6f4752e8/openspec/specs/plugin-integration/spec.md), and [named buses](https://github.com/DanMarshall909/dandrum/blob/3b313a78680f305d10b84cf56dd6c35a6f4752e8/openspec/specs/host-buses/spec.md).

@@ -55,6 +55,13 @@ The editors SHALL present KeyMap, LayerStack and OutputBusses views from prepare
 - **THEN** its key map SHALL display snare velocities 1-63 and 64-127, actual alternates and choke relationships, and actual shared and per-pad controls
 - **AND** it SHALL NOT substitute the export's 1-95/96-127 split or treat every control as patch-wide
 
+#### Scenario: TB-303 example uses its prepared control surface
+
+- **WHEN** the TB-303 example opens through the React WebView
+- **THEN** its seven live public controls and playable notes SHALL address the prepared patch and stable host slots
+- **AND** waveform selection, pattern editing and transport SHALL be unavailable unless matching prepared capabilities are supplied
+- **AND** displayed control values SHALL follow authoritative host changes and instrument reloads rather than demo defaults
+
 #### Scenario: A source type or layer description is unavailable
 
 - **WHEN** the loaded instrument does not expose a synth, nested-patch layer, module chain or other requested display capability

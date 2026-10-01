@@ -88,6 +88,8 @@ Separate common UI services, native components, and web transport/resources into
 
 Both configurations keep the existing instrument/plugin identity and state schema. Package and test them independently; simultaneous installation of variants with the same plugin identity is not a supported selection mechanism. The initial proof needs build-time renderer selection, not hot-switching an editor during playback.
 
+The supplied TB-303 React panel is an additional web client of the same asset and command path. Its seven prepared public controls bind by ID; the playable keyboard sends editor note events. The source mock's tuning, waveform, tempo, sequencer, transport, programmed steps and moving lights are presentation examples, not prepared capabilities. Replace the demo knob defaults with authoritative values, show fixed saw-wave preparation as read-only if exposed, and leave unsupported editing unavailable. No browser timer may claim to schedule audio steps or report host-driven playback without an observed transport/event capability.
+
 ## Risks / Trade-offs
 
 - Host/OS scheduling and shared CPU/GPU resources can still cause contention -> bound resource use and report callback timing/deadline evidence under explicit workloads; avoid absolute scheduling promises.
