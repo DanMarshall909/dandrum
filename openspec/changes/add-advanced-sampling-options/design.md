@@ -80,6 +80,8 @@ For this change, `sample_map_player` is a prepared convenience surface over `sam
 
 The `quietest` policy compares each active voice's audio peak from the last completed block. Equal peaks choose the oldest voice, including hits that arrive before either voice has rendered audio. A one-voice map uses its playback state directly; `reject_new` ignores retriggers while that sample is active.
 
+Prepared host and poly event queues reserve space for at least 128 events even when an audio block is one frame long. This keeps simultaneous drum chords from depending on block size; overflow beyond the prepared bound remains explicit and allocation-free.
+
 ### Metadata should be useful, not decorative
 
 Source metadata should support real patch behaviour:

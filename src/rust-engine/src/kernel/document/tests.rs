@@ -1528,7 +1528,7 @@ connections:
             },
         ),
     ];
-    for block_size_frames in [2, 4] {
+    for block_size_frames in [1, 2, 4] {
         let settings = RenderSettings {
             sample_rate_hz: 48_000,
             block_size_frames,
@@ -1953,6 +1953,33 @@ connections:
     assert_eq!(repeated[0].1[0][4], open + kick - 0.5);
     assert_eq!(repeated[0].1[0][5], open + kick - 0.25);
     assert_eq!(repeated[0].1[0][7], open + kick);
+
+    let short_prepared = prepare_kernel_patch_with_context(
+        &patch,
+        &RenderSettings {
+            block_size_frames: 1,
+            duration_frames: 1,
+            ..settings
+        },
+        &PreparationContext::new(directory.path(), 48_000),
+    )
+    .expect("one-frame drum kit prepares");
+    let mut short_runtime = RealtimeGraphProcessor::polyphonic_with_compiled_patch_and_sampler_assets_and_max_block_size(
+        short_prepared.graph().clone(), short_prepared.compiled_patch().clone(), 48_000.0,
+        &PreparedSamplerAssets::empty(), &crate::patch::VoiceAllocation::default(), 1,
+    );
+    let mut short_output = vec![vec![vec![0.0; 1]]];
+    for _ in 0..3 {
+        short_runtime.reset();
+        let allocations = crate::test_allocator::count_current_thread_allocations(|| {
+            short_runtime.note_on_at(46, 100, 0);
+            short_runtime.note_on_at(36, 100, 0);
+            short_runtime.note_on_at(42, 100, 0);
+            assert_eq!(short_runtime.render_root_outputs(&mut short_output), 1);
+        });
+        assert_eq!(allocations, 0);
+        assert_eq!(short_output[0][0][0], -0.25 + kick);
+    }
 }
 
 #[test]

@@ -1389,7 +1389,7 @@ mod tests {
             8
         );
         assert_eq!(left, [0.25; 8]);
-        for _ in 0..8 {
+        for _ in 0..crate::graph_processor::prepared_event_capacity(8) {
             assert!(unsafe { dandrum_kernel_note_on_at(engine, 60, 100, 0) });
         }
         assert!(!unsafe { dandrum_kernel_note_on_at(engine, 60, 100, 0) });

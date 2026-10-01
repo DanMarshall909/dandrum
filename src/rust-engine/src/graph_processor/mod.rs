@@ -17,6 +17,12 @@ mod realtime_graph_processor;
 mod render_plan;
 mod state;
 
+/// A short host block may still contain a full drum chord at one sample.
+/// Reserve this many events in every prepared queue before audio rendering.
+pub(crate) fn prepared_event_capacity(block_frames: usize) -> usize {
+    block_frames.max(128)
+}
+
 #[cfg(test)]
 use self::input_provider::ModuleInputProvider;
 pub use self::offline::{render_kernel_offline_named, render_kernel_offline_named_with_inputs};

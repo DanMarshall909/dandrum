@@ -208,11 +208,12 @@ impl RealtimeGraphProcessor {
         );
 
         let prepared_max_block_size = prepared_max_block_size.max(1);
+        let prepared_event_capacity = super::prepared_event_capacity(prepared_max_block_size);
         let render_plan = RenderPlan::from_compiled_patch(
             &compiled,
             prepared_max_block_size,
             max_voices,
-            prepared_max_block_size,
+            prepared_event_capacity,
         );
         let prepared_step_executors =
             bind_prepared_step_executors(&compiled, &render_plan, sample_rate, sampler_assets);
@@ -249,7 +250,7 @@ impl RealtimeGraphProcessor {
                     velocity: 0,
                 },
             };
-            prepared_max_block_size
+            prepared_event_capacity
         ]
         .into_boxed_slice();
 
@@ -268,7 +269,7 @@ impl RealtimeGraphProcessor {
             #[cfg(test)]
             out_idx,
             current_frame: 0,
-            pending_events: BoundedEventQueue::with_capacity(prepared_max_block_size),
+            pending_events: BoundedEventQueue::with_capacity(prepared_event_capacity),
             prepared_event_queues,
             events_buffer,
             #[cfg(test)]

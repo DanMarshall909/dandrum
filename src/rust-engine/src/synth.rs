@@ -651,7 +651,8 @@ connections:
 
             // Fill the queue with harmless note-offs. The last event must fit
             // and trigger the sample at its specified offset.
-            for _ in 1..block_size {
+            let event_capacity = crate::graph_processor::prepared_event_capacity(block_size);
+            for _ in 1..event_capacity {
                 engine.note_off(127);
             }
             engine.note_on_at(60, 100, (block_size - 1) as u32);
@@ -663,10 +664,10 @@ connections:
             );
 
             engine.prepare_realtime(sample_rate, block_size);
-            for _ in 0..block_size {
+            for _ in 0..event_capacity {
                 engine.note_off(127);
             }
-            engine.note_on(60, 100); // Drop-newest policy at the new capacity.
+            engine.note_on(60, 100); // Drop-newest policy at the prepared capacity.
             assert_eq!(
                 render_stereo(&mut engine, block_size),
                 (vec![0.0; block_size], vec![0.0; block_size])

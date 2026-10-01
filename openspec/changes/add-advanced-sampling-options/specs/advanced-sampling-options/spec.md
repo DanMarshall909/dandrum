@@ -67,6 +67,11 @@ A sample source SHALL support named regions with start and end frame positions i
 - **WHEN** overlapping drum hits select round-robin or seeded weighted zones on separate voices
 - **THEN** the selected sequence SHALL advance at kit level and remain the same across equivalent audio block sizes
 
+#### Scenario: Simultaneous drum hits survive a one-frame host block
+
+- **WHEN** multiple drum notes arrive at the same frame in a one-frame host block
+- **THEN** prepared event queues SHALL retain the bounded chord, render the signed sum of its selected voices, and perform no heap allocation while routing and rendering it
+
 #### Scenario: Drum voice stealing follows the configured policy
 
 - **WHEN** a drum map has no free voice and receives another hit with `oldest`, `quietest`, or `reject_new` selected

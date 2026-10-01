@@ -1561,7 +1561,9 @@ fn compile_poly_regions_with_path(
         path.pop();
         child_patch.set_poly_regions(nested_regions);
 
-        let event_queue_capacity = (render_settings.block_size_frames as usize).saturating_mul(2);
+        let event_queue_capacity = crate::graph_processor::prepared_event_capacity(
+            (render_settings.block_size_frames as usize).saturating_mul(2),
+        );
         if let Some((child_id, module_type)) = crate::graph_processor::first_unrenderable_poly_child(
             &child_patch,
             render_settings.block_size_frames as usize,
@@ -2862,7 +2864,9 @@ mod tests {
         assert_eq!(region.voices()[2].event_queue_range(), 2..3);
         assert_eq!(
             region.event_queue_capacity(),
-            (KERNEL_RENDER_SETTINGS.block_size_frames as usize) * 2
+            crate::graph_processor::prepared_event_capacity(
+                (KERNEL_RENDER_SETTINGS.block_size_frames as usize) * 2
+            )
         );
         assert_eq!(region.output_accumulators().len(), 1);
         assert_eq!(region.output_accumulators()[0].name(), "audio");
@@ -2997,7 +3001,10 @@ mod tests {
         render_one_block(&mut runtime);
 
         let region = &runtime.prepared_poly_runtime_regions()[0];
-        assert_eq!(region.event_queue_capacity(), usize::from(block_events) * 2);
+        assert_eq!(
+            region.event_queue_capacity(),
+            crate::graph_processor::prepared_event_capacity(usize::from(block_events) * 2)
+        );
         assert_eq!(
             region.voice_gate_events(0).len(),
             usize::from(block_events) * 2 - 1
@@ -3264,10 +3271,7 @@ mod tests {
             "the first quiet window cannot count across the loud block"
         );
         render_one_block(&mut runtime);
-        assert_eq!(
-            runtime.prepared_poly_runtime_regions()[0].active_voice_count(),
-            0
-        );
+        assert_eq!(runtime.prepared_poly_runtime_regions()[0].active_voice_count(), 0);
     }
 
     #[test]
@@ -3292,10 +3296,7 @@ mod tests {
             frames
         );
         assert!(left.iter().any(|sample| sample.abs() > 0.001));
-        assert_eq!(
-            runtime.prepared_poly_runtime_regions()[0].active_voice_count(),
-            0
-        );
+        assert_eq!(runtime.prepared_poly_runtime_regions()[0].active_voice_count(), 0);
 
         left.fill(f32::NAN);
         right.fill(f32::NAN);
@@ -3614,7 +3615,10 @@ mod tests {
         );
         assert_eq!(left, vec![-0.25; frames]);
         assert_eq!(right, left);
-        assert_eq!(runtime.prepared_poly_runtime_regions()[0].active_voice_count(), 0);
+        assert_eq!(
+            runtime.prepared_poly_runtime_regions()[0].active_voice_count(),
+            0
+        );
 
         render_two_mono_root_ports(&mut runtime, &mut left, &mut right);
         assert_eq!(left, vec![0.0; frames]);
@@ -3624,7 +3628,10 @@ mod tests {
         render_two_mono_root_ports(&mut runtime, &mut left, &mut right);
         assert_eq!(left, vec![-0.25; frames]);
         assert_eq!(right, left);
-        assert_eq!(runtime.prepared_poly_runtime_regions()[0].active_voice_count(), 0);
+        assert_eq!(
+            runtime.prepared_poly_runtime_regions()[0].active_voice_count(),
+            0
+        );
     }
 
     #[test]
@@ -4668,7 +4675,9 @@ mod tests {
         assert_eq!(region.event_queues_per_voice(), 1);
         assert_eq!(
             region.event_queue_capacity(),
-            (KERNEL_RENDER_SETTINGS.block_size_frames as usize) * 2
+            crate::graph_processor::prepared_event_capacity(
+                (KERNEL_RENDER_SETTINGS.block_size_frames as usize) * 2
+            )
         );
         assert_eq!(region.output_accumulator_buffer_count(), 1);
     }
