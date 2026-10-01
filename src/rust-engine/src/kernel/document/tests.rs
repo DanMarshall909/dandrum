@@ -816,6 +816,49 @@ connections:
         ]
     );
 
+    let reversed = yaml.replace(
+        "          end_frame: 8\n",
+        "          end_frame: 8\n          reverse: true\n",
+    );
+    assert_eq!(
+        render(&reversed),
+        vec![
+            pcm(0.875),
+            pcm(-0.75),
+            pcm(-0.5),
+            pcm(-0.25),
+            pcm(0.75),
+            pcm(0.5),
+            pcm(0.875),
+            pcm(-0.75),
+            pcm(-0.5),
+            pcm(-0.25),
+            0.0,
+            0.0,
+        ]
+    );
+    let reversed_crossfaded = crossfaded.replace(
+        "          end_frame: 8\n",
+        "          end_frame: 8\n          reverse: true\n",
+    );
+    assert_eq!(
+        render(&reversed_crossfaded),
+        vec![
+            pcm(0.875),
+            pcm(-0.75),
+            pcm(-0.5),
+            pcm(-0.25),
+            (pcm(0.75) + pcm(0.875)) * 0.5,
+            pcm(-0.75),
+            pcm(-0.5),
+            pcm(-0.25),
+            (pcm(0.75) + pcm(0.875)) * 0.5,
+            pcm(-0.75),
+            0.0,
+            0.0,
+        ]
+    );
+
     let no_loop = yaml.replace(
         "          loop: { mode: forward, start_frame: 2, end_frame: 8 }\n",
         "",
@@ -895,6 +938,59 @@ connections:
     assert_eq!(cubic_audio[1], top * 0.5625);
     assert_eq!(cubic_audio[2], top);
     assert!(cubic_audio[1] > top * 0.5);
+}
+
+#[test]
+fn reversed_sample_region_starts_at_its_last_frame_and_stops_at_its_first() {
+    let directory = tempfile::tempdir().expect("temporary sample root");
+    let values = [0.125, -0.25, 0.5, -0.75, 0.875];
+    crate::wav::write_wav_stereo_i16(
+        fs::File::create(directory.path().join("hit.wav")).expect("sample file"),
+        48_000,
+        &values,
+        &values,
+    )
+    .expect("write sample");
+    let yaml = r#"
+metadata: { name: reverse_region }
+assets:
+  sample_sources:
+    - id: hit
+      path: hit.wav
+      regions: [{ id: body, start_frame: 1, end_frame: 4, reverse: true }]
+ports:
+  - { name: audio_out, direction: output, signal: audio, channels: 1, maps_from: player.audio }
+modules:
+  - { id: midi, type: midi_input }
+  - { id: player, type: sample_player, static: { source: hit, region: body, channels: 1 } }
+connections:
+  - { from: midi.events, to: player.trigger }
+"#;
+    let patch = load_kernel_patch_str(yaml).expect("reverse patch loads");
+    let settings = RenderSettings {
+        sample_rate_hz: 48_000,
+        block_size_frames: 6,
+        duration_frames: 6,
+    };
+    let context = PreparationContext::new(directory.path(), 48_000);
+    let prepared = prepare_kernel_patch_with_context(&patch, &settings, &context)
+        .expect("reverse patch prepares");
+    let rendered = render_kernel_offline_named(
+        &prepared,
+        vec![TimedInputEvent::new(
+            0,
+            ScriptEvent::NoteOn {
+                note: 36,
+                velocity: 100,
+            },
+        )],
+        &PreparedSamplerAssets::empty(),
+    )
+    .expect("reverse region renders");
+    assert_eq!(
+        rendered[0].1[0],
+        vec![-0.75, 16383.0 / 32768.0, -0.25, 0.0, 0.0, 0.0]
+    );
 }
 
 #[test]

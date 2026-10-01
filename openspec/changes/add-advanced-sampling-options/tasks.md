@@ -22,7 +22,7 @@
 - [x] 3.2 Implement gated playback where release/stop behaviour is externally observable.
 - [x] 3.3 Implement simple looped playback with validated loop start/end and optional crossfade.
 - [x] 3.4 Implement pitch-ratio playback using deterministic interpolation.
-- [ ] 3.5 Implement reverse playback from prepared region metadata.
+- [x] 3.5 Implement reverse playback from prepared region metadata.
 - [ ] 3.6 Implement fade-in and fade-out at region boundaries.
 - [ ] 3.7 Verify oversized block splitting produces identical output to equivalent smaller blocks.
 

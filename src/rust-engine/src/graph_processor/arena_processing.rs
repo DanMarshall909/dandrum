@@ -151,7 +151,11 @@ pub(super) fn process_sample_player_state(
             event.frame_offset as usize == frame
                 && matches!(event.event, ScriptEvent::NoteOn { .. })
         }) {
-            *position = region.start_frame as f64;
+            *position = if region.reverse {
+                (region.end_frame - 1) as f64
+            } else {
+                region.start_frame as f64
+            };
             *active = true;
         }
         if mode != "one_shot"
@@ -164,12 +168,30 @@ pub(super) fn process_sample_player_state(
         }
         let output = if *active {
             let index = *position as usize;
-            if index < region.end_frame as usize && index < frames.len() {
+            if *position >= region.start_frame as f64
+                && *position < region.end_frame as f64
+                && index < frames.len()
+            {
                 let value = if let Some(loop_settings) = loop_settings {
                     let fade_start = loop_settings.end_frame as usize - crossfade_frames;
-                    if crossfade_frames > 0 && index >= fade_start {
-                        let fade_position = *position - fade_start as f64;
-                        let head_position = loop_settings.start_frame as f64 + fade_position;
+                    let in_crossfade = crossfade_frames > 0
+                        && if region.reverse {
+                            *position < (loop_settings.start_frame + crossfade_frames as u64) as f64
+                        } else {
+                            index >= fade_start
+                        };
+                    if in_crossfade {
+                        let fade_position = if region.reverse {
+                            (loop_settings.start_frame + crossfade_frames as u64 - 1) as f64
+                                - *position
+                        } else {
+                            *position - fade_start as f64
+                        };
+                        let head_position = if region.reverse {
+                            (loop_settings.end_frame - 1) as f64 - fade_position
+                        } else {
+                            loop_settings.start_frame as f64 + fade_position
+                        };
                         let head =
                             sample_interpolated(frames, head_position, region, interpolation);
                         let tail = sample_interpolated(frames, *position, region, interpolation);
@@ -188,16 +210,30 @@ pub(super) fn process_sample_player_state(
                 } else {
                     1.0
                 };
-                *position += f64::from(ratio);
+                *position += if region.reverse {
+                    -f64::from(ratio)
+                } else {
+                    f64::from(ratio)
+                };
                 if let Some(loop_settings) = loop_settings {
-                    if *position >= loop_settings.end_frame as f64 {
+                    if region.reverse && *position < loop_settings.start_frame as f64 {
+                        let wrap_length = (loop_settings.end_frame
+                            - loop_settings.start_frame
+                            - crossfade_frames as u64)
+                            as f64;
+                        *position = loop_settings.start_frame as f64
+                            + (*position - loop_settings.start_frame as f64)
+                                .rem_euclid(wrap_length);
+                    } else if !region.reverse && *position >= loop_settings.end_frame as f64 {
                         let wrap_start =
                             (loop_settings.start_frame + crossfade_frames as u64) as f64;
                         let wrap_length = loop_settings.end_frame as f64 - wrap_start;
                         *position = wrap_start
                             + (*position - loop_settings.end_frame as f64).rem_euclid(wrap_length);
                     }
-                } else if *position >= region.end_frame as f64 {
+                } else if (region.reverse && *position < region.start_frame as f64)
+                    || (!region.reverse && *position >= region.end_frame as f64)
+                {
                     *active = false;
                 }
                 value
