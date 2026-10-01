@@ -9,12 +9,13 @@ use crate::compiled_patch::{
     self, CompileError, CompiledConstruction, CompiledNodeData, CompiledPatch,
     CompiledPolyOutputAccumulator, CompiledPolyRegion, CompiledPolyVoiceStorage, CompiledPortSpan,
     CompiledResourceHandles, CompiledRootPort, CompiledSampleZone, ImpulseResponseResourceHandle,
-    RootBusPlan, SampleChokeMode, SampleInterpolation, SampleResourceHandle, SampleSelectionMode,
+    RootBusPlan, SampleChokeMode, SampleInterpolation, SampleMapKeyLookup, SampleResourceHandle,
+    SampleSelectionMode,
 };
 use crate::diagnostics::{self, Diagnostic, Severity};
 use crate::graph::{Cable, Graph, ModuleId, ModuleNode, PortDirection, PortRef, SignalType};
 use crate::kernel::document::{
-    KernelPatch, SampleAssets, SampleMap, SampleSlice, SampleSource, SampleZone,
+    KernelPatch, SampleAssets, SampleMap, SampleRegion, SampleSlice, SampleSource, SampleZone,
 };
 use crate::kernel::flatten::{FlattenedGraph, FlattenedPolyRegion};
 use crate::kernel::latency::LatencyPlan;
@@ -335,11 +336,13 @@ pub struct PreparedSampleSource {
 pub struct PreparedSampleMap {
     declaration: SampleMap,
     zones: Vec<PreparedSampleZone>,
+    key_candidates: SampleMapKeyLookup,
 }
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct PreparedSampleZone {
     declaration: SampleZone,
+    effective_region: SampleRegion,
     source_index: usize,
     region_index: usize,
 }
@@ -372,11 +375,19 @@ impl PreparedSampleMap {
     pub fn zones(&self) -> &[PreparedSampleZone] {
         &self.zones
     }
+
+    pub fn candidate_zone_indices(&self, note: u8) -> &[usize] {
+        crate::compiled_patch::sample_map_candidates_for_note(&self.key_candidates, note)
+    }
 }
 
 impl PreparedSampleZone {
     pub fn declaration(&self) -> &SampleZone {
         &self.declaration
+    }
+
+    pub fn effective_region(&self) -> &SampleRegion {
+        &self.effective_region
     }
 
     pub fn source_index(&self) -> usize {
@@ -995,8 +1006,50 @@ fn prepare_sample_assets(
                     ),
                 ));
             }
+            let source = &sources[source_index];
+            let mut effective_region = source.declaration.regions[region_index].clone();
+            if let Some(window) = &zone.region_override {
+                if window.start_frame < effective_region.start_frame
+                    || window.start_frame >= window.end_frame
+                    || window.end_frame > effective_region.end_frame
+                    || effective_region
+                        .loop_settings
+                        .as_ref()
+                        .is_some_and(|loop_settings| {
+                            loop_settings.start_frame < window.start_frame
+                                || loop_settings.end_frame > window.end_frame
+                        })
+                {
+                    return Err(sample_preparation_error(
+                        diagnostics::error_codes::KERNEL_SAMPLE_INVALID_ZONE,
+                        format!(
+                            "sample map '{}' zone '{}' has a region window outside '{}' or its loop",
+                            map.id,
+                            zone.id.as_deref().unwrap_or(&zone.region),
+                            zone.region
+                        ),
+                    ));
+                }
+                let frames_per_ms = f64::from(source.sample().sample_rate_hz()) / 1_000.0;
+                let fade_frames = (effective_region.fade_in_ms.unwrap_or(0.0)
+                    + effective_region.fade_out_ms.unwrap_or(0.0))
+                    * frames_per_ms;
+                if fade_frames > (window.end_frame - window.start_frame) as f64 {
+                    return Err(sample_preparation_error(
+                        diagnostics::error_codes::KERNEL_SAMPLE_INVALID_ZONE,
+                        format!(
+                            "sample map '{}' zone '{}' has a region window shorter than its inherited fades",
+                            map.id,
+                            zone.id.as_deref().unwrap_or(&zone.region)
+                        ),
+                    ));
+                }
+                effective_region.start_frame = window.start_frame;
+                effective_region.end_frame = window.end_frame;
+            }
             zones.push(PreparedSampleZone {
                 declaration: zone.clone(),
+                effective_region,
                 source_index,
                 region_index,
             });
@@ -1010,9 +1063,22 @@ fn prepare_sample_assets(
                 format!("duplicate sample map id '{}'", map.id),
             ));
         }
+        let key_candidates: [Box<[usize]>; 128] = std::array::from_fn(|note| {
+            zones
+                .iter()
+                .enumerate()
+                .filter(|(_, zone)| {
+                    zone.declaration.key_range[0] <= note as u8
+                        && note as u8 <= zone.declaration.key_range[1]
+                })
+                .map(|(index, _)| index)
+                .collect::<Vec<_>>()
+                .into_boxed_slice()
+        });
         prepared_maps.push(PreparedSampleMap {
             declaration: map.clone(),
             zones,
+            key_candidates: Arc::new(key_candidates),
         });
     }
     Ok(PreparedSampleAssets {
@@ -1089,20 +1155,21 @@ pub fn prepare_kernel_graph_with_buses_and_context(
 /// A planar host discovers event root outputs but cannot bind them to float
 /// buffers. Bind those outputs internally after package resolution and flattening.
 pub(crate) fn prepare_kernel_graph_for_planar_ffi(
-    root: &GraphDefinition,
-    registry: &DefinitionRegistry,
+    patch: &KernelPatch,
     render_settings: &RenderSettings,
     host_buses: &HostBuses,
     context: &PreparationContext,
 ) -> Result<PreparedKernelInstrument, KernelPreparationError> {
+    validate_sample_declarations(patch.sample_assets())?;
+    validate_sample_module_options(patch)?;
     prepare_kernel_graph_with_buses_internal(
-        root,
-        registry,
+        patch.root(),
+        patch.registry(),
         render_settings,
         host_buses,
         Some(context),
         true,
-        None,
+        Some(patch.sample_assets()),
     )
 }
 
@@ -1964,6 +2031,7 @@ fn lower_kernel_graph(
                 .iter()
                 .map(|zone| {
                     let source = &sample_assets.sources()[zone.source_index()];
+                    let region = zone.effective_region();
                     let round_robin_group =
                         zone.declaration().round_robin_group.as_ref().map(|name| {
                             if let Some(index) = groups.get(name) {
@@ -1985,29 +2053,36 @@ fn lower_kernel_graph(
                     });
                     CompiledSampleZone {
                         sample: SampleResourceHandle::from_shared(source.resource.shared_sample()),
-                        region: source.declaration().regions[zone.region_index()].clone(),
+                        region: region.clone(),
                         key_range: zone.declaration().key_range,
                         velocity_range: zone.declaration().velocity_range,
                         round_robin_group,
                         choke_group,
+                        control_group: zone
+                            .declaration()
+                            .control_group
+                            .map(|group| (group - 1) as usize),
                         weight: zone.declaration().weight.unwrap_or(1),
                         gain: 10.0_f64.powf(
-                            (source.declaration().regions[zone.region_index()]
-                                .gain_db
-                                .unwrap_or(0.0)
+                            (region.gain_db.unwrap_or(0.0)
                                 + zone.declaration().gain_db.unwrap_or(0.0))
                                 / 20.0,
                         ) as f32,
-                        pan: (source.declaration().regions[zone.region_index()]
-                            .pan
-                            .unwrap_or(0.0)
-                            + zone.declaration().pan.unwrap_or(0.0))
-                        .clamp(-1.0, 1.0) as f32,
+                        pan: (region.pan.unwrap_or(0.0) + zone.declaration().pan.unwrap_or(0.0))
+                            .clamp(-1.0, 1.0) as f32,
                         pitch_ratio: 2.0_f64
                             .powf(zone.declaration().pitch_semitones.unwrap_or(0.0) / 12.0)
                             as f32,
                         playback_rate_scale: source.sample().sample_rate_hz() as f32
                             / host_sample_rate_hz as f32,
+                        fade_in_frames: (region.fade_in_ms.unwrap_or(0.0)
+                            * f64::from(source.sample().sample_rate_hz())
+                            / 1000.0)
+                            .round() as usize,
+                        fade_out_frames: (region.fade_out_ms.unwrap_or(0.0)
+                            * f64::from(source.sample().sample_rate_hz())
+                            / 1000.0)
+                            .round() as usize,
                     }
                 })
                 .collect::<Vec<_>>()
@@ -2019,6 +2094,7 @@ fn lower_kernel_graph(
             };
             data.construction = CompiledConstruction::SampleMapPlayer {
                 zones,
+                key_candidates: Arc::clone(&map.key_candidates),
                 selection_mode,
                 group_count: groups.len(),
                 selection_seed: map.selection_seed(),
@@ -3342,7 +3418,10 @@ mod tests {
             "the first quiet window cannot count across the loud block"
         );
         render_one_block(&mut runtime);
-        assert_eq!(runtime.prepared_poly_runtime_regions()[0].active_voice_count(), 0);
+        assert_eq!(
+            runtime.prepared_poly_runtime_regions()[0].active_voice_count(),
+            0
+        );
     }
 
     #[test]
@@ -3367,7 +3446,10 @@ mod tests {
             frames
         );
         assert!(left.iter().any(|sample| sample.abs() > 0.001));
-        assert_eq!(runtime.prepared_poly_runtime_regions()[0].active_voice_count(), 0);
+        assert_eq!(
+            runtime.prepared_poly_runtime_regions()[0].active_voice_count(),
+            0
+        );
 
         left.fill(f32::NAN);
         right.fill(f32::NAN);

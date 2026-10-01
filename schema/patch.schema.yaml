@@ -162,6 +162,7 @@ $defs:
     properties:
       id: { $ref: '#/$defs/name' }
       region: { $ref: '#/$defs/name' }
+      region_override: { $ref: '#/$defs/sampleRegionOverride' }
       key_range:
         type: array
         prefixItems:
@@ -178,10 +179,18 @@ $defs:
         maxItems: 2
       round_robin_group: { $ref: '#/$defs/name' }
       choke_group: { $ref: '#/$defs/name' }
+      control_group: { type: integer, minimum: 1, maximum: 8 }
       weight: { type: integer, minimum: 1 }
       gain_db: { type: number }
       pan: { type: number }
       pitch_semitones: { type: number }
+  sampleRegionOverride:
+    type: object
+    required: [start_frame, end_frame]
+    additionalProperties: false
+    properties:
+      start_frame: { type: integer, minimum: 0 }
+      end_frame: { type: integer, minimum: 0 }
   staticParam:
     type: object
     required: [name, type]

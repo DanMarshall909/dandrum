@@ -132,6 +132,50 @@ target_link_libraries(dandrum-plugin
     PRIVATE dandrum_engine juce::juce_audio_basics juce::juce_audio_processors juce::juce_audio_utils juce::juce_gui_extra
     PUBLIC juce::juce_recommended_config_flags juce::juce_recommended_lto_flags juce::juce_recommended_warning_flags)
 
+juce_add_binary_data(dandrum-sampler-resources
+    NAMESPACE SamplerBinaryData
+    HEADER_NAME SamplerBinaryData.h
+    SOURCES
+        examples/patches/advanced-drum-kit.yaml
+        examples/patches/assets/advanced-drums.wav)
+
+juce_add_plugin(dandrum-sampler-plugin
+    PLUGIN_MANUFACTURER_CODE Dndr
+    PLUGIN_CODE Dnsm
+    FORMATS AU VST3 Standalone
+    IS_SYNTH TRUE
+    NEEDS_MIDI_INPUT TRUE
+    NEEDS_MIDI_OUTPUT FALSE
+    NEEDS_WEBVIEW2 TRUE
+    NEEDS_WEB_BROWSER TRUE
+    PRODUCT_NAME "Dandrum Sampler")
+target_sources(dandrum-sampler-plugin PRIVATE
+    src/juce-plugin/InstrumentDemoConfiguration.cpp
+    src/juce-plugin/InstrumentFileWatcher.cpp
+    src/juce-plugin/InstrumentHostWebBridge.cpp
+    src/juce-plugin/PluginEditor.cpp
+    src/juce-plugin/PluginProcessor.cpp
+    src/juce-plugin/SoundLabController.cpp)
+target_include_directories(dandrum-sampler-plugin PRIVATE src/juce-wrapper)
+target_compile_definitions(dandrum-sampler-plugin PRIVATE
+    DANDRUM_SOURCE_ROOT="${CMAKE_CURRENT_SOURCE_DIR}"
+    DANDRUM_DEFAULT_SAMPLER_PLUGIN=1
+    DANDRUM_EMBED_SAMPLER_ASSETS=1
+    JUCE_USE_CURL=0
+    JUCE_WEB_BROWSER=1
+    JUCE_USE_WIN_WEBVIEW2=1)
+target_link_libraries(dandrum-sampler-plugin
+    PRIVATE dandrum_engine dandrum-sampler-resources juce::juce_audio_basics juce::juce_audio_processors juce::juce_audio_utils juce::juce_gui_extra
+    PUBLIC juce::juce_recommended_config_flags juce::juce_recommended_lto_flags juce::juce_recommended_warning_flags)
+
+add_executable(dandrum-sampler-plugin-host-test tests/cpp/PluginSamplerHostTest.cpp)
+target_include_directories(dandrum-sampler-plugin-host-test PRIVATE src/juce-wrapper src/juce-plugin)
+target_compile_definitions(dandrum-sampler-plugin-host-test PRIVATE JUCE_USE_CURL=0 JUCE_WEB_BROWSER=1 JUCE_USE_WIN_WEBVIEW2=1)
+target_link_libraries(dandrum-sampler-plugin-host-test
+    PRIVATE dandrum-sampler-plugin dandrum_engine juce::juce_audio_basics juce::juce_audio_processors juce::juce_audio_utils juce::juce_gui_extra
+    PUBLIC juce::juce_recommended_config_flags juce::juce_recommended_lto_flags juce::juce_recommended_warning_flags)
+add_test(NAME cxx-sampler-plugin-host COMMAND dandrum-sampler-plugin-host-test)
+
 add_executable(dandrum-plugin-construction-test tests/cpp/PluginConstructionTest.cpp)
 target_include_directories(dandrum-plugin-construction-test PRIVATE src/juce-wrapper src/juce-plugin)
 target_compile_definitions(dandrum-plugin-construction-test PRIVATE JUCE_USE_CURL=0 JUCE_WEB_BROWSER=1 JUCE_USE_WIN_WEBVIEW2=1)
@@ -204,6 +248,10 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
             ${CMAKE_CURRENT_BINARY_DIR}/dandrum-plugin_artefacts/JuceLibraryCode)
         target_link_libraries(${plugin_test_target} PRIVATE juce::pkgconfig_JUCE_BROWSER_LINUX_DEPS)
     endforeach()
+    target_include_directories(dandrum-sampler-plugin-host-test PRIVATE
+        ${CMAKE_CURRENT_BINARY_DIR}/dandrum-sampler-plugin_artefacts/JuceLibraryCode
+        ${CMAKE_CURRENT_BINARY_DIR}/dandrum-plugin_artefacts/JuceLibraryCode)
+    target_link_libraries(dandrum-sampler-plugin-host-test PRIVATE juce::pkgconfig_JUCE_BROWSER_LINUX_DEPS)
 endif()
 
 add_executable(dandrum-drum-loop-pattern-test tests/cpp/DrumLoopPatternTest.cpp)

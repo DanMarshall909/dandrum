@@ -3,8 +3,8 @@ use crate::builtins::module_kind::ModuleKind;
 use crate::compiled_patch::CompiledNodeData;
 use crate::compiled_patch::{
     CompiledConstruction, CompiledFilterAlgorithm, CompiledNode, CompiledResourceHandles,
-    CompiledSampleZone, CompiledScriptLanguage, SampleInterpolation, SampleResourceHandle,
-    SampleSelectionMode,
+    CompiledSampleZone, CompiledScriptLanguage, SampleInterpolation, SampleMapKeyLookup,
+    SampleResourceHandle, SampleSelectionMode,
 };
 use crate::convolution::Convolution;
 use crate::crossover::LinkwitzRiley4;
@@ -95,6 +95,7 @@ pub(super) enum PerModuleState {
     },
     SampleMapPlayer {
         zones: Box<[CompiledSampleZone]>,
+        key_candidates: SampleMapKeyLookup,
         selection_mode: SampleSelectionMode,
         reject_new_while_active: bool,
         round_robin_counters: Box<[usize]>,
@@ -519,6 +520,7 @@ impl PerModuleState {
             ModuleKind::SampleMapPlayer => {
                 let CompiledConstruction::SampleMapPlayer {
                     zones,
+                    key_candidates,
                     selection_mode,
                     group_count,
                     selection_seed,
@@ -529,6 +531,7 @@ impl PerModuleState {
                 };
                 PerModuleState::SampleMapPlayer {
                     zones: zones.clone(),
+                    key_candidates: key_candidates.clone(),
                     selection_mode: *selection_mode,
                     reject_new_while_active: *reject_new_while_active,
                     round_robin_counters: vec![0; *group_count].into_boxed_slice(),

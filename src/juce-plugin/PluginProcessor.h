@@ -208,7 +208,8 @@ private:
 
     static juce::String publicSlotParameterId (int slotIndex);
     static std::vector<PublicParameterDescriptor> loadPublicParameterDescriptors (const std::string& patchPath);
-    static juce::AudioProcessorValueTreeState::ParameterLayout createParameterLayout();
+    static juce::AudioProcessorValueTreeState::ParameterLayout createParameterLayout (
+        const InstrumentDemoConfiguration& initialConfiguration);
     static bool readInstrumentIdentity (const juce::String& yaml, juce::String& instrumentId, int& schemaVersion);
     static ParsedPreset parsePresetFile (const juce::File& presetFile);
     static float clampToDescriptorRange (const PublicParameterDescriptor& descriptor, float value) noexcept;

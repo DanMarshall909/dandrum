@@ -167,9 +167,9 @@ fn drum_public_pitch_start_and_variation_controls_change_selected_hits() {
         48_000,
     )
     .expect("source loads");
-    let render = |parameter: &str, value: f32, note: u8| {
+    let render_values = |values: &str, note: u8| {
         let preset = load_preset_str(&format!(
-            "name: Modulated Drum\ninstrument: {{ id: dandrum.advanced-drum-kit, preset_schema_version: 1 }}\nvalues:\n  drums.{parameter}: {value}\n"
+            "name: Modulated Drum\ninstrument: {{ id: dandrum.advanced-drum-kit, preset_schema_version: 1 }}\nvalues:\n{values}\n"
         )).expect("public preset parses");
         let applied = patch.apply_preset(&preset).expect("public preset applies");
         let settings = RenderSettings {
@@ -198,6 +198,9 @@ fn drum_public_pitch_start_and_variation_controls_change_selected_hits() {
             .1[0]
             .clone()
     };
+    let render = |parameter: &str, value: f32, note: u8| {
+        render_values(&format!("  drums.{parameter}: {value}"), note)
+    };
 
     let pitched = render("pitch_ratio", 2.0, 36);
     assert_eq!(pitched[0], -0.5);
@@ -206,9 +209,26 @@ fn drum_public_pitch_start_and_variation_controls_change_selected_hits() {
     let expected = (source.frames()[5999] + source.frames()[6000]) * 0.5;
     assert!((started[0] - expected).abs() < 0.00001);
     assert_ne!(started[0], -0.5);
+    assert_eq!(render("kick.pitch_ratio", 2.0, 36)[1], source.frames()[2]);
+    assert!((render("kick.start_offset", 0.5, 36)[0] - expected).abs() < 0.00001);
+    assert_eq!(render("kick.level", 0.5, 36)[0], -0.25);
+    assert_eq!(render("kick.pan", 1.0, 36)[0], 0.0);
+    assert!(
+        (render_values(
+            "  drums.start_offset: 0.125\n  drums.kick.start_offset: 0.375",
+            36
+        )[0] - expected)
+            .abs()
+            < 0.00001
+    );
 
     assert_eq!(render("variation", 0.0, 38)[0], -0.375);
     assert_eq!(render("variation", 1.0, 38)[0], -0.4375);
+    assert_eq!(render("snare.variation", 1.0, 38)[0], -0.4375);
+    assert_eq!(
+        render_values("  drums.variation: 0.25\n  drums.snare.variation: 0.75", 38)[0],
+        -0.4375
+    );
 
     let preset = load_preset_str("name: Alternate Hats\ninstrument: { id: dandrum.advanced-drum-kit, preset_schema_version: 1 }\nvalues: { drums.variation: 1 }\n")
         .expect("variation preset parses");
@@ -374,6 +394,224 @@ fn prepared_sampling_examples_keep_source_pitch_at_common_host_rates() {
             );
         }
     }
+}
+
+#[test]
+fn drum_map_pitch_extremes_keep_signed_waveform_and_duration_across_host_rates() {
+    let directory = tempfile::tempdir().expect("temporary sample root");
+    let mut values = vec![-0.5; 16];
+    values[1] = 0.5;
+    values[8] = -0.25;
+    values[9] = 0.25;
+    crate::wav::write_wav_stereo_i16(
+        fs::File::create(directory.path().join("hit.wav")).expect("sample file"),
+        48_000,
+        &values,
+        &values,
+    )
+    .expect("write sample");
+    for (host_rate, musical_pitch, duration) in [(96_000, 0.125, 258), (44_100, 8.0, 4)] {
+        let yaml = format!(
+            r#"
+metadata: {{ name: map_cross_rate_pitch }}
+assets:
+  sample_sources:
+    - id: hit
+      path: hit.wav
+      regions: [{{ id: body, start_frame: 0, end_frame: 16 }}]
+  sample_maps:
+    - id: kit
+      zones: [{{ region: hit.body, key_range: [36, 36], velocity_range: [1, 127] }}]
+ports:
+  - {{ name: master, direction: output, signal: audio, channels: 1, maps_from: player.audio }}
+modules:
+  - {{ id: midi, type: midi_input }}
+  - {{ id: player, type: sample_map_player, static: {{ sample_map: kit, max_voices: 1, channels: 1 }}, defaults: {{ pitch_ratio: {musical_pitch} }} }}
+connections:
+  - {{ from: midi.events, to: player.note }}
+"#
+        );
+        let patch = load_kernel_patch_str(&yaml).expect("drum map loads");
+        let settings = RenderSettings {
+            sample_rate_hz: host_rate,
+            block_size_frames: 64,
+            duration_frames: duration,
+        };
+        let prepared = prepare_kernel_patch_with_context(
+            &patch,
+            &settings,
+            &PreparationContext::new(directory.path(), host_rate),
+        )
+        .expect("drum map prepares");
+        let rendered = render_kernel_offline_named(
+            &prepared,
+            vec![TimedInputEvent::new(
+                0,
+                ScriptEvent::NoteOn {
+                    note: 36,
+                    velocity: 100,
+                },
+            )],
+            &PreparedSamplerAssets::empty(),
+        )
+        .expect("drum map renders");
+        let audio = &rendered[0].1[0];
+        let cursor_step = musical_pitch as f64 * 48_000.0 / f64::from(host_rate);
+        let position = cursor_step;
+        let base = position.floor() as usize;
+        let fraction = (position - base as f64) as f32;
+        let expected_second = values[base] + fraction * (values[base + 1] - values[base]);
+        assert!((audio[0] + 0.5).abs() < 0.00001);
+        assert!(
+            (audio[1] - expected_second).abs() < 0.0001,
+            "host rate {host_rate}"
+        );
+        let sounding_frames = (16.0 / cursor_step).ceil() as usize;
+        assert_ne!(audio[sounding_frames - 1], 0.0, "host rate {host_rate}");
+        assert_eq!(audio[sounding_frames], 0.0, "host rate {host_rate}");
+    }
+}
+
+#[test]
+fn drum_variation_skips_other_groups_and_velocity_layers_at_partial_amount() {
+    let directory = tempfile::tempdir().expect("temporary sample root");
+    let values = [-0.5, -0.4375, -0.375, -0.3125, -0.25, -0.1875, -0.125];
+    crate::wav::write_wav_stereo_i16(
+        fs::File::create(directory.path().join("hits.wav")).expect("sample file"),
+        48_000,
+        &values,
+        &values,
+    )
+    .expect("write sample");
+    for (variation, expected) in [(0.0, -0.5), (0.5, -0.1875), (1.0, -0.125)] {
+        let yaml = format!(
+            r#"
+metadata: {{ name: compatible_variation }}
+assets:
+  sample_sources:
+    - id: hits
+      path: hits.wav
+      regions:
+        - {{ id: a, start_frame: 0, end_frame: 1 }}
+        - {{ id: other_round_robin, start_frame: 1, end_frame: 2 }}
+        - {{ id: other_choke, start_frame: 2, end_frame: 3 }}
+        - {{ id: other_control, start_frame: 3, end_frame: 4 }}
+        - {{ id: other_velocity, start_frame: 4, end_frame: 5 }}
+        - {{ id: b, start_frame: 5, end_frame: 6 }}
+        - {{ id: c, start_frame: 6, end_frame: 7 }}
+  sample_maps:
+    - id: kit
+      selection_mode: first_match
+      zones:
+        - {{ region: hits.a, key_range: [36, 36], velocity_range: [71, 127], round_robin_group: main, choke_group: hats, control_group: 1 }}
+        - {{ region: hits.other_round_robin, key_range: [36, 36], velocity_range: [71, 127], round_robin_group: other, choke_group: hats, control_group: 1 }}
+        - {{ region: hits.other_choke, key_range: [36, 36], velocity_range: [71, 127], round_robin_group: main, choke_group: other, control_group: 1 }}
+        - {{ region: hits.other_control, key_range: [36, 36], velocity_range: [71, 127], round_robin_group: main, choke_group: hats, control_group: 2 }}
+        - {{ region: hits.other_velocity, key_range: [36, 36], velocity_range: [1, 70], round_robin_group: main, choke_group: hats, control_group: 1 }}
+        - {{ region: hits.b, key_range: [36, 36], velocity_range: [71, 127], round_robin_group: main, choke_group: hats, control_group: 1 }}
+        - {{ region: hits.c, key_range: [36, 36], velocity_range: [71, 127], round_robin_group: main, choke_group: hats, control_group: 1 }}
+ports:
+  - {{ name: master, direction: output, signal: audio, channels: 1, maps_from: player.audio }}
+modules:
+  - {{ id: midi, type: midi_input }}
+  - {{ id: player, type: sample_map_player, static: {{ sample_map: kit, max_voices: 1, channels: 1 }}, defaults: {{ variation: {variation} }} }}
+connections:
+  - {{ from: midi.events, to: player.note }}
+"#
+        );
+        let patch = load_kernel_patch_str(&yaml).expect("variation map loads");
+        let settings = RenderSettings {
+            sample_rate_hz: 48_000,
+            block_size_frames: 2,
+            duration_frames: 2,
+        };
+        let prepared = prepare_kernel_patch_with_context(
+            &patch,
+            &settings,
+            &PreparationContext::new(directory.path(), 48_000),
+        )
+        .expect("variation map prepares");
+        let rendered = render_kernel_offline_named(
+            &prepared,
+            vec![TimedInputEvent::new(
+                0,
+                ScriptEvent::NoteOn {
+                    note: 36,
+                    velocity: 100,
+                },
+            )],
+            &PreparedSamplerAssets::empty(),
+        )
+        .expect("variation map renders");
+        assert_eq!(rendered[0].1[0], [expected, 0.0], "variation {variation}");
+    }
+}
+
+#[test]
+fn drum_round_robin_skips_other_groups_in_prepared_key_candidates() {
+    let directory = tempfile::tempdir().expect("temporary sample root");
+    let values = [-0.5, -0.375, -0.25];
+    crate::wav::write_wav_stereo_i16(
+        fs::File::create(directory.path().join("hits.wav")).expect("sample file"),
+        48_000,
+        &values,
+        &values,
+    )
+    .expect("write sample");
+    let patch = load_kernel_patch_str(r#"
+metadata: { name: keyed_round_robin }
+assets:
+  sample_sources:
+    - id: hits
+      path: hits.wav
+      regions:
+        - { id: a, start_frame: 0, end_frame: 1 }
+        - { id: other, start_frame: 1, end_frame: 2 }
+        - { id: b, start_frame: 2, end_frame: 3 }
+  sample_maps:
+    - id: kit
+      selection_mode: round_robin
+      zones:
+        - { region: hits.a, key_range: [36, 36], velocity_range: [1, 127], round_robin_group: main }
+        - { region: hits.other, key_range: [36, 36], velocity_range: [1, 127], round_robin_group: other }
+        - { region: hits.b, key_range: [36, 36], velocity_range: [1, 127], round_robin_group: main }
+ports:
+  - { name: master, direction: output, signal: audio, channels: 1, maps_from: player.audio }
+modules:
+  - { id: midi, type: midi_input }
+  - { id: player, type: sample_map_player, static: { sample_map: kit, max_voices: 1, channels: 1 } }
+connections:
+  - { from: midi.events, to: player.note }
+"#).expect("round-robin map loads");
+    let settings = RenderSettings {
+        sample_rate_hz: 48_000,
+        block_size_frames: 8,
+        duration_frames: 8,
+    };
+    let prepared = prepare_kernel_patch_with_context(
+        &patch,
+        &settings,
+        &PreparationContext::new(directory.path(), 48_000),
+    )
+    .expect("round-robin map prepares");
+    let events = [0, 2, 4, 6]
+        .into_iter()
+        .map(|frame| {
+            TimedInputEvent::new(
+                frame,
+                ScriptEvent::NoteOn {
+                    note: 36,
+                    velocity: 100,
+                },
+            )
+        })
+        .collect();
+    let rendered = render_kernel_offline_named(&prepared, events, &PreparedSamplerAssets::empty())
+        .expect("round-robin map renders");
+    assert_eq!(
+        rendered[0].1[0],
+        [-0.5, 0.0, -0.25, 0.0, -0.5, 0.0, -0.25, 0.0]
+    );
 }
 
 #[test]
@@ -937,6 +1175,9 @@ fn prepared_drum_source_keeps_decoded_frames_regions_and_map_metadata() {
 
     let prepared = prepare_kernel_patch_with_context(&patch, &settings, &context)
         .expect("valid drum assets prepare");
+    drop(patch);
+    fs::remove_file(directory.path().join("samples/break.wav"))
+        .expect("prepared sample no longer needs its source file");
     let source = &prepared.sample_assets().sources()[0];
     assert_eq!(source.id(), "break");
     assert_eq!(source.sample().sample_rate_hz(), 48_000);
@@ -944,8 +1185,40 @@ fn prepared_drum_source_keeps_decoded_frames_regions_and_map_metadata() {
     assert_eq!(source.sample().frame_count(), 96_000);
     assert_eq!(source.sample().frames().len(), 96_000);
     assert!((source.sample().frames()[0] - 0.25).abs() < 0.0001);
+    assert_eq!(source.declaration().regions[0].id, "full");
+    assert_eq!(source.declaration().regions[0].start_frame, 0);
     assert_eq!(source.declaration().regions[0].end_frame, 96_000);
+    let loop_settings = source.declaration().regions[0]
+        .loop_settings
+        .as_ref()
+        .expect("prepared loop");
+    assert_eq!(loop_settings.mode, "forward");
+    assert_eq!(
+        (loop_settings.start_frame, loop_settings.end_frame),
+        (24_000, 48_000)
+    );
+    assert_eq!(
+        source.slice(0).map(|slice| slice.id.as_str()),
+        Some("beat_1")
+    );
+    assert_eq!(
+        source
+            .slice(1)
+            .map(|slice| (slice.start_frame, slice.end_frame)),
+        Some((24_000, 48_000))
+    );
     assert_eq!(prepared.sample_assets().maps()[0].zones.len(), 2);
+    let map = prepared
+        .sample_assets()
+        .map_by_id("kit")
+        .expect("prepared map");
+    assert_eq!(map.selection_seed(), 7);
+    assert_eq!(map.selection_mode(), Some("round_robin"));
+    assert_eq!(map.zones()[0].declaration().region, "break.full");
+    assert_eq!(map.zones()[0].declaration().key_range, [36, 36]);
+    assert_eq!(map.zones()[0].declaration().velocity_range, [1, 70]);
+    assert_eq!(map.zones()[0].source_index(), 0);
+    assert_eq!(map.zones()[0].region_index(), 0);
 }
 
 #[test]
@@ -982,6 +1255,142 @@ fn prepared_drum_map_resolves_zone_regions_in_authored_order() {
     assert_eq!(map.zones()[0].declaration().id.as_deref(), Some("soft"));
     assert_eq!(map.zones()[1].declaration().id.as_deref(), Some("loud"));
     assert!(prepared.sample_assets().map_by_id("missing").is_none());
+}
+
+#[test]
+fn prepared_drum_map_indexes_key_candidates_in_authored_order() {
+    let directory = tempfile::tempdir().expect("temporary sample root");
+    fs::create_dir(directory.path().join("samples")).expect("sample directory");
+    let frames = vec![0.25; 96_000];
+    crate::wav::write_wav_stereo_i16(
+        fs::File::create(directory.path().join("samples/break.wav")).expect("sample file"),
+        48_000,
+        &frames,
+        &frames,
+    )
+    .expect("write sample");
+    let yaml = SAMPLE_ASSET_PATCH.replace(
+        "key_range: [36, 36], velocity_range: [71, 127]",
+        "key_range: [36, 38], velocity_range: [71, 127]",
+    );
+    let patch = load_kernel_patch_str(&yaml).expect("sample map loads");
+    let settings = RenderSettings {
+        sample_rate_hz: 48_000,
+        block_size_frames: 16,
+        duration_frames: 16,
+    };
+    let prepared = prepare_kernel_patch_with_context(
+        &patch,
+        &settings,
+        &PreparationContext::new(directory.path(), 48_000),
+    )
+    .expect("map prepares");
+    let map = prepared
+        .sample_assets()
+        .map_by_id("kit")
+        .expect("prepared map");
+    assert!(map.candidate_zone_indices(35).is_empty());
+    assert_eq!(map.candidate_zone_indices(36), &[0, 1]);
+    assert_eq!(map.candidate_zone_indices(37), &[1]);
+    assert_eq!(map.candidate_zone_indices(38), &[1]);
+    assert!(map.candidate_zone_indices(39).is_empty());
+}
+
+#[test]
+fn out_of_range_rust_notes_leave_direct_and_poly_drum_maps_safe() {
+    let directory = tempfile::tempdir().expect("temporary sample root");
+    let values = [-0.5, -0.25];
+    crate::wav::write_wav_stereo_i16(
+        fs::File::create(directory.path().join("hit.wav")).expect("sample file"),
+        48_000,
+        &values,
+        &values,
+    )
+    .expect("write sample");
+    for max_voices in [1, 2] {
+        let yaml = format!(
+            r#"
+metadata: {{ name: out_of_range_note }}
+assets:
+  sample_sources:
+    - id: hit
+      path: hit.wav
+      regions: [{{ id: body, start_frame: 0, end_frame: 2 }}]
+  sample_maps:
+    - id: kit
+      zones: [{{ region: hit.body, key_range: [36, 36], velocity_range: [1, 127] }}]
+ports:
+  - {{ name: master, direction: output, signal: audio, channels: 1, maps_from: player.audio }}
+modules:
+  - {{ id: midi, type: midi_input }}
+  - {{ id: player, type: sample_map_player, static: {{ sample_map: kit, max_voices: {max_voices}, channels: 1 }} }}
+connections:
+  - {{ from: midi.events, to: player.note }}
+"#
+        );
+        let patch = load_kernel_patch_str(&yaml).expect("drum map loads");
+        let settings = RenderSettings {
+            sample_rate_hz: 48_000,
+            block_size_frames: 5,
+            duration_frames: 5,
+        };
+        let prepared = prepare_kernel_patch_with_context(
+            &patch,
+            &settings,
+            &PreparationContext::new(directory.path(), 48_000),
+        )
+        .expect("drum map prepares");
+        let map = prepared
+            .sample_assets()
+            .map_by_id("kit")
+            .expect("prepared map");
+        assert!(map.candidate_zone_indices(128).is_empty());
+        assert!(map.candidate_zone_indices(255).is_empty());
+        let mut runtime = RealtimeGraphProcessor::polyphonic_with_compiled_patch_and_sampler_assets_and_max_block_size(
+            prepared.graph().clone(),
+            prepared.compiled_patch().clone(),
+            48_000.0,
+            &PreparedSamplerAssets::empty(),
+            &crate::patch::VoiceAllocation::default(),
+            5,
+        );
+        assert!(!runtime.try_note_on_at(200, 100, 0));
+        assert!(!runtime.try_note_off_at(200, 0));
+        assert!(runtime.try_note_on_at(127, 100, 0));
+        let rendered = render_kernel_offline_named(
+            &prepared,
+            vec![
+                TimedInputEvent::new(
+                    0,
+                    ScriptEvent::NoteOn {
+                        note: 200,
+                        velocity: 100,
+                    },
+                ),
+                TimedInputEvent::new(
+                    2,
+                    ScriptEvent::NoteOn {
+                        note: 36,
+                        velocity: 100,
+                    },
+                ),
+                TimedInputEvent::new(
+                    3,
+                    ScriptEvent::NoteOn {
+                        note: 255,
+                        velocity: 100,
+                    },
+                ),
+            ],
+            &PreparedSamplerAssets::empty(),
+        )
+        .expect("out-of-range note cannot panic during rendering");
+        assert_eq!(
+            rendered[0].1[0],
+            [0.0, 0.0, -0.5, -0.25, 0.0],
+            "{max_voices} voices"
+        );
+    }
 }
 
 #[test]
@@ -1140,6 +1549,296 @@ connections:
         assert_eq!(
             error.diagnostics().errors().next().unwrap().error_code(),
             error_codes::KERNEL_SAMPLE_INVALID_REGION
+        );
+    }
+}
+
+#[test]
+fn sample_player_uses_region_gain_pan_and_live_start_level_pan() {
+    let directory = tempfile::tempdir().expect("temporary sample root");
+    let values = [-0.5, -0.25, 0.25, 0.5];
+    crate::wav::write_wav_stereo_i16(
+        fs::File::create(directory.path().join("hit.wav")).expect("sample file"),
+        48_000,
+        &values,
+        &values,
+    )
+    .expect("write sample");
+    let patch = load_kernel_patch_str(
+        r#"
+metadata: { name: live_sample_region_mix }
+assets:
+  sample_sources:
+    - id: hit
+      path: hit.wav
+      regions: [{ id: body, start_frame: 0, end_frame: 4, gain_db: -6, pan: -0.25 }]
+ports:
+  - { name: start_offset, direction: input, signal: control, channels: 1, default: 0, min: 0, max: 1, maps_to: player.start_offset }
+  - { name: level, direction: input, signal: control, channels: 1, default: 1, min: 0, max: 4, maps_to: player.level }
+  - { name: pan, direction: input, signal: control, channels: 1, default: 0, min: -1, max: 1, maps_to: player.pan }
+  - { name: audio_out, direction: output, signal: audio, channels: 2, maps_from: player.audio }
+modules:
+  - { id: midi, type: midi_input }
+  - { id: player, type: sample_player, static: { source: hit, region: body, channels: 2 } }
+connections:
+  - { from: midi.events, to: player.trigger }
+"#,
+    )
+    .expect("sample region patch loads");
+    let settings = RenderSettings {
+        sample_rate_hz: 48_000,
+        block_size_frames: 2,
+        duration_frames: 2,
+    };
+    let prepared = prepare_kernel_patch_with_context(
+        &patch,
+        &settings,
+        &PreparationContext::new(directory.path(), 48_000),
+    )
+    .expect("sample region patch prepares");
+    let mut runtime = RealtimeGraphProcessor::polyphonic_with_compiled_patch_and_sampler_assets_and_max_block_size(
+        prepared.graph().clone(), prepared.compiled_patch().clone(), 48_000.0,
+        &PreparedSamplerAssets::empty(), &crate::patch::VoiceAllocation::default(), 2,
+    );
+    let gain = 10.0_f32.powf(-6.0 / 20.0);
+    let mut output = vec![vec![vec![0.0; 2]; 2]];
+    runtime.note_on(60, 100);
+    assert_eq!(runtime.render_root_outputs(&mut output), 2);
+    assert!((output[0][0][0] - -0.5 * gain).abs() < 0.00001);
+    assert!((output[0][1][0] - -0.5 * gain * 0.75).abs() < 0.00001);
+
+    let level_slot = runtime.parameter_slot_index("player", "level").unwrap();
+    let pan_slot = runtime.parameter_slot_index("player", "pan").unwrap();
+    assert!(runtime.set_parameter_slot(level_slot, 0.5));
+    assert!(runtime.set_parameter_slot(pan_slot, 0.75));
+    assert_eq!(runtime.render_root_outputs(&mut output), 2);
+    let third = 8191.0 / 32768.0;
+    assert!((output[0][0][0] - third * gain * 0.5 * 0.5).abs() < 0.00001);
+    assert!((output[0][1][0] - third * gain * 0.5).abs() < 0.00001);
+
+    let start_slot = runtime
+        .parameter_slot_index("player", "start_offset")
+        .unwrap();
+    assert!(runtime.set_parameter_slot(start_slot, 1.0));
+    runtime.note_on(60, 100);
+    assert_eq!(runtime.render_root_outputs(&mut output), 2);
+    let last = 16383.0 / 32768.0;
+    assert!((output[0][0][0] - last * gain * 0.5 * 0.5).abs() < 0.00001);
+    assert!((output[0][1][0] - last * gain * 0.5).abs() < 0.00001);
+    assert_eq!(output[0][0][1], 0.0);
+}
+
+#[test]
+fn sample_player_start_offset_stays_inside_nonzero_region_in_both_directions() {
+    let directory = tempfile::tempdir().expect("temporary sample root");
+    let values = [-0.5, -0.25, 0.25, 0.5];
+    crate::wav::write_wav_stereo_i16(
+        fs::File::create(directory.path().join("hit.wav")).expect("sample file"),
+        48_000,
+        &values,
+        &values,
+    )
+    .expect("write sample");
+    let yaml = r#"
+metadata: { name: offset_inside_region }
+assets:
+  sample_sources:
+    - id: hit
+      path: hit.wav
+      regions: [{ id: body, start_frame: 1, end_frame: 4, reverse: false }]
+ports:
+  - { name: start_offset, direction: input, signal: control, channels: 1, default: 0.5, min: 0, max: 1, maps_to: player.start_offset }
+  - { name: audio_out, direction: output, signal: audio, channels: 1, maps_from: player.audio }
+modules:
+  - { id: midi, type: midi_input }
+  - { id: player, type: sample_player, static: { source: hit, region: body, channels: 1 } }
+connections:
+  - { from: midi.events, to: player.trigger }
+"#;
+    let settings = RenderSettings {
+        sample_rate_hz: 48_000,
+        block_size_frames: 4,
+        duration_frames: 4,
+    };
+    let render = |document: &str| {
+        let patch = load_kernel_patch_str(document).expect("offset patch loads");
+        let prepared = prepare_kernel_patch_with_context(
+            &patch,
+            &settings,
+            &PreparationContext::new(directory.path(), 48_000),
+        )
+        .expect("offset patch prepares");
+        render_kernel_offline_named(
+            &prepared,
+            vec![TimedInputEvent::new(
+                0,
+                ScriptEvent::NoteOn {
+                    note: 36,
+                    velocity: 100,
+                },
+            )],
+            &PreparedSamplerAssets::empty(),
+        )
+        .expect("offset patch renders")[0]
+            .1[0]
+            .clone()
+    };
+    assert_eq!(
+        render(yaml),
+        vec![8191.0 / 32768.0, 16383.0 / 32768.0, 0.0, 0.0]
+    );
+    assert_eq!(
+        render(&yaml.replace("reverse: false", "reverse: true")),
+        vec![8191.0 / 32768.0, -0.25, 0.0, 0.0]
+    );
+}
+
+#[test]
+fn drum_map_player_applies_prepared_region_fades() {
+    let directory = tempfile::tempdir().expect("temporary sample root");
+    let values = vec![-0.5; 96];
+    crate::wav::write_wav_stereo_i16(
+        fs::File::create(directory.path().join("hat.wav")).expect("sample file"),
+        48_000,
+        &values,
+        &values,
+    )
+    .expect("write sample");
+    let patch = load_kernel_patch_str(
+        r#"
+metadata: { name: faded_drum_region }
+assets:
+  sample_sources:
+    - id: hats
+      path: hat.wav
+      regions: [{ id: open, start_frame: 0, end_frame: 96, fade_in_ms: 1, fade_out_ms: 1 }]
+  sample_maps:
+    - id: kit
+      zones: [{ id: open, region: hats.open, key_range: [46, 46], velocity_range: [1, 127] }]
+ports:
+  - { name: audio_out, direction: output, signal: audio, channels: 1, maps_from: player.audio }
+modules:
+  - { id: midi, type: midi_input }
+  - { id: player, type: sample_map_player, static: { sample_map: kit, channels: 1, max_voices: 1 } }
+connections:
+  - { from: midi.events, to: player.note }
+"#,
+    )
+    .expect("faded drum patch loads");
+    let settings = RenderSettings {
+        sample_rate_hz: 48_000,
+        block_size_frames: 96,
+        duration_frames: 96,
+    };
+    let prepared = prepare_kernel_patch_with_context(
+        &patch,
+        &settings,
+        &PreparationContext::new(directory.path(), 48_000),
+    )
+    .expect("faded drum patch prepares");
+    let rendered = render_kernel_offline_named(
+        &prepared,
+        vec![TimedInputEvent::new(
+            0,
+            ScriptEvent::NoteOn {
+                note: 46,
+                velocity: 100,
+            },
+        )],
+        &PreparedSamplerAssets::empty(),
+    )
+    .expect("faded drum renders");
+    let audio = &rendered[0].1[0];
+    assert_eq!(audio[0], 0.0);
+    assert!((audio[24] - -0.5 * 24.0 / 47.0).abs() < 0.00001);
+    assert_eq!(audio[48], -0.5);
+    assert_eq!(audio[95], 0.0);
+}
+
+#[test]
+fn drum_control_groups_modulate_simultaneous_pads_independently() {
+    let directory = tempfile::tempdir().expect("temporary sample root");
+    let values = [-0.5, -0.5, 0.25, 0.25];
+    crate::wav::write_wav_stereo_i16(
+        fs::File::create(directory.path().join("hits.wav")).expect("sample file"),
+        48_000,
+        &values,
+        &values,
+    )
+    .expect("write sample");
+    let patch = load_kernel_patch_str(
+        r#"
+metadata: { name: independent_drum_controls }
+assets:
+  sample_sources:
+    - id: hits
+      path: hits.wav
+      regions:
+        - { id: kick, start_frame: 0, end_frame: 2 }
+        - { id: snare, start_frame: 2, end_frame: 4 }
+  sample_maps:
+    - id: kit
+      zones:
+        - { region: hits.kick, key_range: [36, 36], velocity_range: [1, 127], control_group: 1 }
+        - { region: hits.snare, key_range: [38, 38], velocity_range: [1, 127], control_group: 2 }
+ports:
+  - { name: kick_level, direction: input, signal: control, channels: 1, default: 0.5, min: 0, max: 4, maps_to: player.group_1_level }
+  - { name: snare_pan, direction: input, signal: control, channels: 1, default: 1, min: -1, max: 1, maps_to: player.group_2_pan }
+  - { name: audio_out, direction: output, signal: audio, channels: 2, maps_from: player.audio }
+modules:
+  - { id: midi, type: midi_input }
+  - { id: player, type: sample_map_player, static: { sample_map: kit, max_voices: 2, channels: 2 } }
+connections:
+  - { from: midi.events, to: player.note }
+"#,
+    )
+    .expect("drum control group patch loads");
+    let settings = RenderSettings {
+        sample_rate_hz: 48_000,
+        block_size_frames: 2,
+        duration_frames: 2,
+    };
+    let prepared = prepare_kernel_patch_with_context(
+        &patch,
+        &settings,
+        &PreparationContext::new(directory.path(), 48_000),
+    )
+    .expect("drum control group patch prepares");
+    let rendered = render_kernel_offline_named(
+        &prepared,
+        vec![
+            TimedInputEvent::new(
+                0,
+                ScriptEvent::NoteOn {
+                    note: 36,
+                    velocity: 100,
+                },
+            ),
+            TimedInputEvent::new(
+                0,
+                ScriptEvent::NoteOn {
+                    note: 38,
+                    velocity: 100,
+                },
+            ),
+        ],
+        &PreparedSamplerAssets::empty(),
+    )
+    .expect("independent pads render");
+    assert_eq!(rendered[0].1[0][0], -0.25);
+    assert_eq!(rendered[0].1[1][0], -0.25 + 8191.0 / 32768.0);
+}
+
+#[test]
+fn drum_control_group_outside_prepared_port_range_is_rejected() {
+    for group in [0, 9] {
+        let yaml = format!(
+            "metadata: {{ name: invalid_drum_group }}\nassets:\n  sample_maps:\n    - id: kit\n      zones: [{{ region: hits.kick, key_range: [36, 36], velocity_range: [1, 127], control_group: {group} }}]\n"
+        );
+        let error = load_kernel_patch_str(&yaml).expect_err("control group needs a render port");
+        assert_eq!(
+            error.errors().next().unwrap().error_code(),
+            error_codes::KERNEL_DOCUMENT_SCHEMA_FAILED
         );
     }
 }
@@ -1557,6 +2256,11 @@ connections:
         render(yaml),
         vec![0.0, half * 0.5, half, half, half * 0.5, 0.0, 0.0, 0.0]
     );
+    let one_frame_fade = yaml.replace("fade_in_ms: 0.06", "fade_in_ms: 0.020833333333333332");
+    assert_eq!(
+        render(&one_frame_fade),
+        vec![0.0, half, half, half, half * 0.5, 0.0, 0.0, 0.0]
+    );
     let reverse = yaml.replace("fade_in_ms: 0.06", "reverse: true, fade_in_ms: 0.06");
     assert_eq!(
         render(&reverse),
@@ -1744,6 +2448,82 @@ connections:
             0.0
         ]
     );
+}
+
+#[test]
+fn poly_drum_map_unmatched_key_or_velocity_keeps_sounding_voices() {
+    let directory = tempfile::tempdir().expect("temporary sample root");
+    let values = [-0.25; 8];
+    crate::wav::write_wav_stereo_i16(
+        fs::File::create(directory.path().join("hit.wav")).expect("sample file"),
+        48_000,
+        &values,
+        &values,
+    )
+    .expect("write sample");
+    let yaml = r#"
+metadata: { name: unmatched_drum_map_note }
+assets:
+  sample_sources:
+    - id: hit
+      path: hit.wav
+      regions: [{ id: body, start_frame: 0, end_frame: 8 }]
+  sample_maps:
+    - id: kit
+      zones: [{ region: hit.body, key_range: [36, 36], velocity_range: [64, 127] }]
+ports:
+  - { name: audio_out, direction: output, signal: audio, channels: 1, maps_from: player.audio }
+modules:
+  - { id: midi, type: midi_input }
+  - { id: player, type: sample_map_player, static: { sample_map: kit, max_voices: 2, channels: 1, voice_steal: oldest } }
+connections:
+  - { from: midi.events, to: player.note }
+"#;
+    let patch = load_kernel_patch_str(yaml).expect("drum map patch loads");
+    let settings = RenderSettings {
+        sample_rate_hz: 48_000,
+        block_size_frames: 8,
+        duration_frames: 8,
+    };
+    let context = PreparationContext::new(directory.path(), 48_000);
+    let prepared = prepare_kernel_patch_with_context(&patch, &settings, &context)
+        .expect("drum map patch prepares");
+    let rendered = render_kernel_offline_named(
+        &prepared,
+        vec![
+            TimedInputEvent::new(
+                0,
+                ScriptEvent::NoteOn {
+                    note: 36,
+                    velocity: 100,
+                },
+            ),
+            TimedInputEvent::new(
+                0,
+                ScriptEvent::NoteOn {
+                    note: 36,
+                    velocity: 100,
+                },
+            ),
+            TimedInputEvent::new(
+                2,
+                ScriptEvent::NoteOn {
+                    note: 41,
+                    velocity: 100,
+                },
+            ),
+            TimedInputEvent::new(
+                4,
+                ScriptEvent::NoteOn {
+                    note: 36,
+                    velocity: 40,
+                },
+            ),
+        ],
+        &PreparedSamplerAssets::empty(),
+    )
+    .expect("drum map renders");
+    assert_eq!(rendered[0].1[0], vec![-0.5; 8]);
 }
 
 #[test]
@@ -2449,10 +3229,34 @@ connections:
     let repeated = render_kernel_offline_named(
         &repeated_prepared,
         vec![
-            TimedInputEvent::new(0, ScriptEvent::NoteOn { note: 46, velocity: 100 }),
-            TimedInputEvent::new(0, ScriptEvent::NoteOn { note: 36, velocity: 100 }),
-            TimedInputEvent::new(3, ScriptEvent::NoteOn { note: 42, velocity: 100 }),
-            TimedInputEvent::new(4, ScriptEvent::NoteOn { note: 42, velocity: 100 }),
+            TimedInputEvent::new(
+                0,
+                ScriptEvent::NoteOn {
+                    note: 46,
+                    velocity: 100,
+                },
+            ),
+            TimedInputEvent::new(
+                0,
+                ScriptEvent::NoteOn {
+                    note: 36,
+                    velocity: 100,
+                },
+            ),
+            TimedInputEvent::new(
+                3,
+                ScriptEvent::NoteOn {
+                    note: 42,
+                    velocity: 100,
+                },
+            ),
+            TimedInputEvent::new(
+                4,
+                ScriptEvent::NoteOn {
+                    note: 42,
+                    velocity: 100,
+                },
+            ),
         ],
         &PreparedSamplerAssets::empty(),
     )
@@ -2872,6 +3676,108 @@ connections:
             error_codes::KERNEL_SAMPLE_INVALID_ZONE
         );
     }
+}
+
+#[test]
+fn drum_zone_region_window_overrides_only_that_zones_playback() {
+    let directory = tempfile::tempdir().expect("temporary sample root");
+    let values = [-0.5, -0.25, 0.25, 0.5];
+    crate::wav::write_wav_stereo_i16(
+        fs::File::create(directory.path().join("hit.wav")).expect("sample file"),
+        48_000,
+        &values,
+        &values,
+    )
+    .expect("write sample");
+    let yaml = r#"
+metadata: { name: zone_window }
+assets:
+  sample_sources:
+    - id: hit
+      path: hit.wav
+      regions: [{ id: body, start_frame: 0, end_frame: 4 }]
+  sample_maps:
+    - id: kit
+      zones:
+        - { region: hit.body, region_override: { start_frame: 1, end_frame: 3 }, key_range: [36, 36], velocity_range: [1, 127] }
+        - { region: hit.body, key_range: [38, 38], velocity_range: [1, 127] }
+ports:
+  - { name: master, direction: output, signal: audio, channels: 1, maps_from: player.audio }
+modules:
+  - { id: midi, type: midi_input }
+  - { id: player, type: sample_map_player, static: { sample_map: kit, max_voices: 1, channels: 1 } }
+connections:
+  - { from: midi.events, to: player.note }
+"#;
+    let patch = load_kernel_patch_str(yaml).expect("zone window loads");
+    let settings = RenderSettings {
+        sample_rate_hz: 48_000,
+        block_size_frames: 5,
+        duration_frames: 5,
+    };
+    let context = PreparationContext::new(directory.path(), 48_000);
+    let prepared = prepare_kernel_patch_with_context(&patch, &settings, &context)
+        .expect("zone window prepares");
+    assert_eq!(
+        prepared.sample_assets().sources()[0].declaration().regions[0].start_frame,
+        0
+    );
+    let rendered = render_kernel_offline_named(
+        &prepared,
+        vec![
+            TimedInputEvent::new(
+                0,
+                ScriptEvent::NoteOn {
+                    note: 36,
+                    velocity: 100,
+                },
+            ),
+            TimedInputEvent::new(
+                3,
+                ScriptEvent::NoteOn {
+                    note: 38,
+                    velocity: 100,
+                },
+            ),
+        ],
+        &PreparedSamplerAssets::empty(),
+    )
+    .expect("zone window renders");
+    assert_eq!(
+        rendered[0].1[0],
+        [-0.25, 8191.0 / 32768.0, 0.0, -0.5, -0.25]
+    );
+
+    for (replacement, code) in [
+        (
+            "start_frame: 3, end_frame: 3",
+            error_codes::KERNEL_SAMPLE_INVALID_ZONE,
+        ),
+        (
+            "start_frame: 1, end_frame: 5",
+            error_codes::KERNEL_SAMPLE_INVALID_ZONE,
+        ),
+    ] {
+        let invalid = yaml.replace("start_frame: 1, end_frame: 3", replacement);
+        let patch = load_kernel_patch_str(&invalid).expect("invalid window shape loads");
+        let error = prepare_kernel_patch_with_context(&patch, &settings, &context)
+            .expect_err("invalid window must fail preparation");
+        assert_eq!(
+            error.diagnostics().errors().next().unwrap().error_code(),
+            code
+        );
+    }
+    let looped = yaml.replace(
+        "regions: [{ id: body, start_frame: 0, end_frame: 4 }]",
+        "regions: [{ id: body, start_frame: 0, end_frame: 4, loop: { mode: forward, start_frame: 0, end_frame: 4 } }]",
+    );
+    let patch = load_kernel_patch_str(&looped).expect("looped window shape loads");
+    let error = prepare_kernel_patch_with_context(&patch, &settings, &context)
+        .expect_err("window excluding inherited loop must fail");
+    assert_eq!(
+        error.diagnostics().errors().next().unwrap().error_code(),
+        error_codes::KERNEL_SAMPLE_INVALID_ZONE
+    );
 }
 
 #[test]

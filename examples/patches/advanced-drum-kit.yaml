@@ -16,19 +16,37 @@ assets:
       selection_seed: 2026
       selection_mode: round_robin
       zones:
-        - { id: kick, region: drums.kick, key_range: [36, 36], velocity_range: [1, 127] }
-        - { id: snare_soft, region: drums.snare_soft, key_range: [38, 38], velocity_range: [1, 63] }
-        - { id: snare_hard_a, region: drums.snare_hard_a, key_range: [38, 38], velocity_range: [64, 127], round_robin_group: hard_snare }
-        - { id: snare_hard_b, region: drums.snare_hard_b, key_range: [38, 38], velocity_range: [64, 127], round_robin_group: hard_snare }
-        - { id: hat_closed, region: drums.hat_closed, key_range: [42, 42], velocity_range: [1, 127], choke_group: hats }
-        - { id: hat_open, region: drums.hat_open, key_range: [46, 46], velocity_range: [1, 127], round_robin_group: open_hats, choke_group: hats }
-        - { id: hat_open_alt, region: drums.hat_open, key_range: [46, 46], velocity_range: [1, 127], round_robin_group: open_hats, choke_group: hats, gain_db: -6 }
+        - { id: kick, region: drums.kick, key_range: [36, 36], velocity_range: [1, 127], control_group: 1 }
+        - { id: snare_soft, region: drums.snare_soft, key_range: [38, 38], velocity_range: [1, 63], control_group: 2 }
+        - { id: snare_hard_a, region: drums.snare_hard_a, key_range: [38, 38], velocity_range: [64, 127], round_robin_group: hard_snare, control_group: 2 }
+        - { id: snare_hard_b, region: drums.snare_hard_b, key_range: [38, 38], velocity_range: [64, 127], round_robin_group: hard_snare, control_group: 2 }
+        - { id: hat_closed, region: drums.hat_closed, key_range: [42, 42], velocity_range: [1, 127], choke_group: hats, control_group: 3 }
+        - { id: hat_open, region: drums.hat_open, key_range: [46, 46], velocity_range: [1, 127], round_robin_group: open_hats, choke_group: hats, control_group: 4 }
+        - { id: hat_open_alt, region: drums.hat_open, key_range: [46, 46], velocity_range: [1, 127], round_robin_group: open_hats, choke_group: hats, gain_db: -6, control_group: 4 }
 ports:
   - { name: pitch_ratio, direction: input, signal: control, channels: 1, default: 1, min: 0.125, max: 8, maps_to: player.pitch_ratio }
   - { name: start_offset, direction: input, signal: control, channels: 1, default: 0, min: 0, max: 1, maps_to: player.start_offset }
   - { name: level, direction: input, signal: control, channels: 1, default: 1, min: 0, max: 4, maps_to: player.level }
   - { name: pan, direction: input, signal: control, channels: 1, default: 0, min: -1, max: 1, maps_to: player.pan }
   - { name: variation, direction: input, signal: control, channels: 1, default: 0, min: 0, max: 1, maps_to: player.variation }
+  - { name: kick_pitch_ratio, direction: input, signal: control, channels: 1, default: 1, min: 0.125, max: 8, maps_to: player.group_1_pitch_ratio }
+  - { name: kick_start_offset, direction: input, signal: control, channels: 1, default: 0, min: 0, max: 1, maps_to: player.group_1_start_offset }
+  - { name: kick_level, direction: input, signal: control, channels: 1, default: 1, min: 0, max: 4, maps_to: player.group_1_level }
+  - { name: kick_pan, direction: input, signal: control, channels: 1, default: 0, min: -1, max: 1, maps_to: player.group_1_pan }
+  - { name: snare_pitch_ratio, direction: input, signal: control, channels: 1, default: 1, min: 0.125, max: 8, maps_to: player.group_2_pitch_ratio }
+  - { name: snare_start_offset, direction: input, signal: control, channels: 1, default: 0, min: 0, max: 1, maps_to: player.group_2_start_offset }
+  - { name: snare_level, direction: input, signal: control, channels: 1, default: 1, min: 0, max: 4, maps_to: player.group_2_level }
+  - { name: snare_pan, direction: input, signal: control, channels: 1, default: 0, min: -1, max: 1, maps_to: player.group_2_pan }
+  - { name: snare_variation, direction: input, signal: control, channels: 1, default: 0, min: 0, max: 1, maps_to: player.group_2_variation }
+  - { name: closed_hat_pitch_ratio, direction: input, signal: control, channels: 1, default: 1, min: 0.125, max: 8, maps_to: player.group_3_pitch_ratio }
+  - { name: closed_hat_start_offset, direction: input, signal: control, channels: 1, default: 0, min: 0, max: 1, maps_to: player.group_3_start_offset }
+  - { name: closed_hat_level, direction: input, signal: control, channels: 1, default: 1, min: 0, max: 4, maps_to: player.group_3_level }
+  - { name: closed_hat_pan, direction: input, signal: control, channels: 1, default: 0, min: -1, max: 1, maps_to: player.group_3_pan }
+  - { name: open_hat_pitch_ratio, direction: input, signal: control, channels: 1, default: 1, min: 0.125, max: 8, maps_to: player.group_4_pitch_ratio }
+  - { name: open_hat_start_offset, direction: input, signal: control, channels: 1, default: 0, min: 0, max: 1, maps_to: player.group_4_start_offset }
+  - { name: open_hat_level, direction: input, signal: control, channels: 1, default: 1, min: 0, max: 4, maps_to: player.group_4_level }
+  - { name: open_hat_pan, direction: input, signal: control, channels: 1, default: 0, min: -1, max: 1, maps_to: player.group_4_pan }
+  - { name: open_hat_variation, direction: input, signal: control, channels: 1, default: 0, min: 0, max: 1, maps_to: player.group_4_variation }
   - { name: master, direction: output, signal: audio, channels: 2, maps_from: player.audio }
 preset_surface:
   parameters:
@@ -37,6 +55,24 @@ preset_surface:
     - { name: drums.level, maps_to: level }
     - { name: drums.pan, maps_to: pan }
     - { name: drums.variation, maps_to: variation }
+    - { name: drums.kick.pitch_ratio, maps_to: kick_pitch_ratio }
+    - { name: drums.kick.start_offset, maps_to: kick_start_offset }
+    - { name: drums.kick.level, maps_to: kick_level }
+    - { name: drums.kick.pan, maps_to: kick_pan }
+    - { name: drums.snare.pitch_ratio, maps_to: snare_pitch_ratio }
+    - { name: drums.snare.start_offset, maps_to: snare_start_offset }
+    - { name: drums.snare.level, maps_to: snare_level }
+    - { name: drums.snare.pan, maps_to: snare_pan }
+    - { name: drums.snare.variation, maps_to: snare_variation }
+    - { name: drums.closed_hat.pitch_ratio, maps_to: closed_hat_pitch_ratio }
+    - { name: drums.closed_hat.start_offset, maps_to: closed_hat_start_offset }
+    - { name: drums.closed_hat.level, maps_to: closed_hat_level }
+    - { name: drums.closed_hat.pan, maps_to: closed_hat_pan }
+    - { name: drums.open_hat.pitch_ratio, maps_to: open_hat_pitch_ratio }
+    - { name: drums.open_hat.start_offset, maps_to: open_hat_start_offset }
+    - { name: drums.open_hat.level, maps_to: open_hat_level }
+    - { name: drums.open_hat.pan, maps_to: open_hat_pan }
+    - { name: drums.open_hat.variation, maps_to: open_hat_variation }
 modules:
   - { id: midi, type: midi_input }
   - { id: player, type: sample_map_player, static: { sample_map: kit, channels: 2, max_voices: 8, voice_steal: oldest, choke_mode: cut } }

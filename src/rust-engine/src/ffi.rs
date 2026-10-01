@@ -189,13 +189,9 @@ pub unsafe extern "C" fn dandrum_kernel_prepare_file(
         };
         context = context.with_macro_roots(roots);
     }
-    let Ok(prepared) = preparation::prepare_kernel_graph_for_planar_ffi(
-        patch.root(),
-        patch.registry(),
-        &settings,
-        &buses,
-        &context,
-    ) else {
+    let Ok(prepared) =
+        preparation::prepare_kernel_graph_for_planar_ffi(&patch, &settings, &buses, &context)
+    else {
         return std::ptr::null_mut();
     };
     let ports = prepared.root_port_metadata();
@@ -1461,6 +1457,48 @@ mod tests {
         );
         assert_eq!(samples, [1.0; 8], "the reset engine must accept a new note");
         unsafe { dandrum_kernel_destroy(engine) };
+    }
+
+    #[test]
+    fn kernel_ffi_prepares_drum_assets_and_renders_at_host_rate() {
+        let patch = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("../../examples/patches/advanced-drum-kit.yaml");
+        let path = std::ffi::CString::new(patch.to_str().unwrap()).unwrap();
+        let master = std::ffi::CString::new("master").unwrap();
+        let bus = DandrumKernelBusDeclaration {
+            name: master.as_ptr(),
+            direction: 2,
+            channel_count: 2,
+        };
+        for sample_rate in [44_100, 48_000, 96_000] {
+            let engine =
+                unsafe { dandrum_kernel_prepare_file(path.as_ptr(), sample_rate, 8, &bus, 1) };
+            assert!(
+                !engine.is_null(),
+                "drum kit must prepare at {sample_rate} Hz"
+            );
+            let mut left = [0.0_f32; 8];
+            let mut right = [0.0_f32; 8];
+            let channels = [left.as_mut_ptr(), right.as_mut_ptr()];
+            let output = DandrumKernelOutputBusView {
+                name: master.as_ptr(),
+                channels: channels.as_ptr(),
+                channel_count: 2,
+                frame_capacity: 8,
+                bus_index: 0,
+            };
+            let allocations = crate::test_allocator::count_current_thread_allocations(|| {
+                assert!(unsafe { dandrum_kernel_note_on_at(engine, 36, 100, 0) });
+                assert_eq!(
+                    unsafe { dandrum_kernel_render(engine, std::ptr::null(), 0, &output, 1, 8) },
+                    8
+                );
+            });
+            assert_eq!(allocations, 0);
+            assert_eq!(left[0], -0.5);
+            assert_eq!(right[0], -0.5);
+            unsafe { dandrum_kernel_destroy(engine) };
+        }
     }
 
     #[test]

@@ -1,7 +1,7 @@
 use crate::builtins::module_kind::ModuleKind;
 use crate::compiled_patch::{
     CompiledConstruction, CompiledPatch, CompiledPolyRegion, CompiledPortSpan, CompiledSampleZone,
-    SampleChokeMode, SampleSelectionMode,
+    SampleChokeMode, SampleMapKeyLookup, SampleSelectionMode,
 };
 use crate::graph::{PortDirection, SignalType};
 use crate::kernel::{
@@ -44,6 +44,7 @@ struct PolyVoiceSlot {
 struct SharedSampleMapSelection {
     step_index: usize,
     zones: Box<[CompiledSampleZone]>,
+    key_candidates: SampleMapKeyLookup,
     selection_mode: SampleSelectionMode,
     round_robin_counters: Box<[usize]>,
     initial_seed: u64,
@@ -93,6 +94,7 @@ pub struct PreparedPolyRuntimeRegion {
     states: Box<[Box<[PerModuleState]>]>,
     child_module_kinds: Box<[ModuleKind]>,
     auto_retire_one_shot_voice: bool,
+    generated_sample_map_voice: bool,
     voice_arenas: Box<[AudioArena]>,
     voice_event_queues: Box<[PreparedEventQueues]>,
     nested_regions: Box<[Box<[PreparedPolyRuntimeRegion]>]>,
@@ -256,6 +258,7 @@ impl PreparedPolyRuntimeRegion {
             .filter_map(|(step_index, step)| {
                 let CompiledConstruction::SampleMapPlayer {
                     zones,
+                    key_candidates,
                     selection_mode,
                     group_count,
                     selection_seed,
@@ -267,6 +270,7 @@ impl PreparedPolyRuntimeRegion {
                 Some(SharedSampleMapSelection {
                     step_index,
                     zones: zones.clone(),
+                    key_candidates: key_candidates.clone(),
                     selection_mode: *selection_mode,
                     round_robin_counters: vec![0; *group_count].into_boxed_slice(),
                     initial_seed: *selection_seed,
@@ -383,6 +387,7 @@ impl PreparedPolyRuntimeRegion {
             states,
             child_module_kinds,
             auto_retire_one_shot_voice,
+            generated_sample_map_voice: compiled.sample_map_choke().is_some(),
             voice_arenas,
             voice_event_queues,
             nested_regions,
@@ -531,8 +536,8 @@ impl PreparedPolyRuntimeRegion {
                 }) = self.done_binding
                 {
                     if step_index == producer_step {
-                        control_done = (0..frames)
-                            .any(|frame| step_context.arena.sample(buffer, frame) > 0.0);
+                        control_done =
+                            (0..frames).any(|frame| step_context.arena.sample(buffer, frame) > 0.0);
                     }
                 }
             }
@@ -634,6 +639,23 @@ impl PreparedPolyRuntimeRegion {
     }
 
     fn route_note_on(&mut self, note: u8, velocity: u8, frame_offset: u32, frames: usize) {
+        if self.generated_sample_map_voice {
+            let selection = self
+                .shared_sample_map_selections
+                .first()
+                .expect("generated sample map voice has a prepared selection");
+            let candidates = crate::compiled_patch::sample_map_candidates_for_note(
+                &selection.key_candidates,
+                note,
+            );
+            if !candidates.iter().any(|&index| {
+                let [start, end] = selection.zones[index].velocity_range;
+                velocity >= start && velocity <= end
+            }) {
+                return;
+            }
+        }
+
         let free = self.slots.iter().position(|slot| !slot.active);
         let selected = free.or_else(|| match self.allocation_policy {
             PolyAllocationPolicy::RejectNew => None,
@@ -702,10 +724,13 @@ impl PreparedPolyRuntimeRegion {
         for selection in self.shared_sample_map_selections.iter_mut() {
             let choice = super::arena_processing::select_sample_map_zone(
                 &selection.zones,
+                crate::compiled_patch::sample_map_candidates_for_note(
+                    &selection.key_candidates,
+                    note,
+                ),
                 selection.selection_mode,
                 &mut selection.round_robin_counters,
                 &mut selection.rng_state,
-                note,
                 velocity,
             );
             self.prepared_step_executors[voice][selection.step_index]
@@ -1010,7 +1035,7 @@ fn is_poly_child_arena_supported(step: &RenderStep) -> bool {
                 && step.event_inputs.len() == 1
         }
         ModuleKind::SampleMapPlayer => {
-            step.input_buffers.len() == 5
+            step.input_buffers.len() == crate::builtins::module_types::SAMPLE_MAP_CONTROL_INPUTS
                 && !step.output_buffers.is_empty()
                 && step.event_inputs.len() == 1
         }

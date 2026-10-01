@@ -503,12 +503,18 @@ impl RealtimeGraphProcessor {
     }
 
     pub fn try_note_on_at(&mut self, note: u8, velocity: u8, frame_offset: u32) -> bool {
+        if note > 127 {
+            return false;
+        }
         self.pending_events
             .push_at(ScriptEvent::NoteOn { note, velocity }, frame_offset)
             .is_ok()
     }
 
     pub fn try_note_off_at(&mut self, note: u8, frame_offset: u32) -> bool {
+        if note > 127 {
+            return false;
+        }
         self.pending_events
             .push_at(ScriptEvent::NoteOff { note }, frame_offset)
             .is_ok()
@@ -1629,6 +1635,7 @@ impl PreparedStepExecutor for SamplePlayerStepExecutor {
 
 struct SampleMapPlayerStepExecutor {
     zones: Box<[crate::compiled_patch::CompiledSampleZone]>,
+    key_candidates: crate::compiled_patch::SampleMapKeyLookup,
     selection_mode: crate::compiled_patch::SampleSelectionMode,
     reject_new_while_active: bool,
     round_robin_counters: Box<[usize]>,
@@ -1655,6 +1662,7 @@ impl PreparedStepExecutor for SampleMapPlayerStepExecutor {
         );
         arena_processing::process_sample_map_player_state(
             &self.zones,
+            &self.key_candidates,
             self.selection_mode,
             self.reject_new_while_active,
             &mut self.round_robin_counters,
@@ -2226,6 +2234,7 @@ pub(super) fn bind_prepared_step_executors(
                 }),
                 PerModuleState::SampleMapPlayer {
                     zones,
+                    key_candidates,
                     selection_mode,
                     reject_new_while_active,
                     round_robin_counters,
@@ -2237,6 +2246,7 @@ pub(super) fn bind_prepared_step_executors(
                     active,
                 } => Box::new(SampleMapPlayerStepExecutor {
                     zones,
+                    key_candidates,
                     selection_mode,
                     reject_new_while_active,
                     round_robin_counters,
@@ -2791,7 +2801,7 @@ fn render_plan_supports_root_buses(
                     && step.event_inputs.len() == 1
             }
             ModuleKind::SampleMapPlayer => {
-                step.input_buffers.len() == 5
+                step.input_buffers.len() == crate::builtins::module_types::SAMPLE_MAP_CONTROL_INPUTS
                     && !step.output_buffers.is_empty()
                     && step.event_inputs.len() == 1
             }

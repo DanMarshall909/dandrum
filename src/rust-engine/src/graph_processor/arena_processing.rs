@@ -139,6 +139,7 @@ pub(super) fn process_sample_player_state(
     let sample_rate = sample
         .as_ref()
         .map_or(0.0, |sample| f64::from(sample.sample_rate_hz()));
+    let region_gain = 10.0_f64.powf(region.gain_db.unwrap_or(0.0) / 20.0) as f32;
     let fade_in_frames = (region.fade_in_ms.unwrap_or(0.0) * sample_rate / 1000.0).round() as usize;
     let fade_out_frames =
         (region.fade_out_ms.unwrap_or(0.0) * sample_rate / 1000.0).round() as usize;
@@ -158,10 +159,18 @@ pub(super) fn process_sample_player_state(
             event.frame_offset as usize == frame
                 && matches!(event.event, ScriptEvent::NoteOn { .. })
         }) {
-            *position = if region.reverse {
-                (region.end_frame - 1) as f64
+            let start_offset = context.input_sample(1, frame, 0.0);
+            let start_offset = if start_offset.is_finite() {
+                start_offset.clamp(0.0, 1.0)
             } else {
-                region.start_frame as f64
+                0.0
+            };
+            let frame_offset =
+                f64::from(start_offset) * (region.end_frame - region.start_frame - 1) as f64;
+            *position = if region.reverse {
+                (region.end_frame - 1) as f64 - frame_offset
+            } else {
+                region.start_frame as f64 + frame_offset
             };
             *active = true;
         }
@@ -211,33 +220,8 @@ pub(super) fn process_sample_player_state(
                 } else {
                     sample_interpolated(frames, *position, region, interpolation)
                 };
-                let (from_start, to_end) = if region.reverse {
-                    (
-                        (region.end_frame - 1) as f64 - *position,
-                        *position - region.start_frame as f64,
-                    )
-                } else {
-                    (
-                        *position - region.start_frame as f64,
-                        (region.end_frame - 1) as f64 - *position,
-                    )
-                };
-                if fade_in_frames > 0 {
-                    let span = fade_in_frames.saturating_sub(1) as f64;
-                    value *= if span > 0.0 {
-                        (from_start / span).clamp(0.0, 1.0) as f32
-                    } else {
-                        0.0
-                    };
-                }
-                if fade_out_frames > 0 {
-                    let span = fade_out_frames.saturating_sub(1) as f64;
-                    value *= if span > 0.0 {
-                        (to_end / span).clamp(0.0, 1.0) as f32
-                    } else {
-                        0.0
-                    };
-                }
+                value *=
+                    sample_region_boundary_gain(region, *position, fade_in_frames, fade_out_frames);
                 let ratio = context.input_sample(0, frame, 1.0);
                 let ratio = if ratio.is_finite() {
                     ratio.clamp(0.125, 8.0)
@@ -270,7 +254,13 @@ pub(super) fn process_sample_player_state(
                 {
                     *active = false;
                 }
-                value
+                let level = context.input_sample(2, frame, 1.0);
+                let level = if level.is_finite() {
+                    level.clamp(0.0, 4.0)
+                } else {
+                    1.0
+                };
+                value * region_gain * level
             } else {
                 *active = false;
                 0.0
@@ -278,12 +268,56 @@ pub(super) fn process_sample_player_state(
         } else {
             0.0
         };
+        let live_pan = context.input_sample(3, frame, 0.0);
+        let live_pan = if live_pan.is_finite() {
+            live_pan.clamp(-1.0, 1.0)
+        } else {
+            0.0
+        };
+        let pan = (region.pan.unwrap_or(0.0) as f32 + live_pan).clamp(-1.0, 1.0);
         for channel in 0..context.output_count() {
+            let output = if context.output_count() == 2 {
+                match channel {
+                    0 => output * (1.0 - pan.max(0.0)),
+                    _ => output * (1.0 + pan.min(0.0)),
+                }
+            } else {
+                output
+            };
             context
                 .set_output_sample(channel, frame, output)
                 .expect("sample player output channel is prepared");
         }
     }
+}
+
+fn sample_region_boundary_gain(
+    region: &SampleRegion,
+    position: f64,
+    fade_in_frames: usize,
+    fade_out_frames: usize,
+) -> f32 {
+    let (from_start, to_end) = if region.reverse {
+        (
+            (region.end_frame - 1) as f64 - position,
+            position - region.start_frame as f64,
+        )
+    } else {
+        (
+            position - region.start_frame as f64,
+            (region.end_frame - 1) as f64 - position,
+        )
+    };
+    let fade = |distance: f64, frames: usize| {
+        if frames == 0 {
+            1.0
+        } else if frames == 1 {
+            if distance <= 0.0 { 0.0 } else { 1.0 }
+        } else {
+            (distance / (frames - 1) as f64).clamp(0.0, 1.0) as f32
+        }
+    };
+    fade(from_start, fade_in_frames) * fade(to_end, fade_out_frames)
 }
 
 pub(super) fn process_sample_slicer_state(
@@ -388,6 +422,7 @@ fn next_sample_selection_random(state: &mut u64) -> u64 {
 
 pub(super) fn process_sample_map_player_state(
     zones: &[crate::compiled_patch::CompiledSampleZone],
+    key_candidates: &crate::compiled_patch::SampleMapKeyLookup,
     selection_mode: SampleSelectionMode,
     reject_new_while_active: bool,
     round_robin_counters: &mut [usize],
@@ -416,21 +451,26 @@ pub(super) fn process_sample_map_player_state(
                     .unwrap_or_else(|| {
                         select_sample_map_zone(
                             zones,
+                            crate::compiled_patch::sample_map_candidates_for_note(
+                                key_candidates,
+                                note,
+                            ),
                             selection_mode,
                             round_robin_counters,
                             rng_state,
-                            note,
                             velocity,
                         )
                     });
                 choice_cursor += 1;
                 if let Some(index) = chosen {
+                    let variation = context.input_sample(4, frame, 0.0)
+                        + sample_map_group_control(context, &zones[index], frame, 4, 0.0);
                     let index = sample_zone_with_variation(
                         zones,
+                        crate::compiled_patch::sample_map_candidates_for_note(key_candidates, note),
                         index,
-                        note,
                         velocity,
-                        context.input_sample(4, frame, 0.0),
+                        variation,
                     );
                     *selected_zone = Some(index);
                     let region = &zones[index].region;
@@ -439,7 +479,8 @@ pub(super) fn process_sample_map_player_state(
                     });
                     *selected_pitch_ratio =
                         zones[index].pitch_ratio * root_ratio * zones[index].playback_rate_scale;
-                    let start_offset = context.input_sample(1, frame, 0.0);
+                    let start_offset = context.input_sample(1, frame, 0.0)
+                        + sample_map_group_control(context, &zones[index], frame, 1, 0.0);
                     let start_offset = if start_offset.is_finite() {
                         start_offset.clamp(0.0, 1.0)
                     } else {
@@ -466,19 +507,29 @@ pub(super) fn process_sample_map_player_state(
                     region,
                     SampleInterpolation::Linear,
                 );
-                let level = context.input_sample(2, frame, 1.0);
+                let sample = sample
+                    * sample_region_boundary_gain(
+                        region,
+                        *position,
+                        zone.fade_in_frames,
+                        zone.fade_out_frames,
+                    );
+                let level = context.input_sample(2, frame, 1.0)
+                    * sample_map_group_control(context, zone, frame, 2, 1.0);
                 let level = if level.is_finite() {
                     level.clamp(0.0, 4.0)
                 } else {
                     1.0
                 };
                 let sample = sample * zone.gain * level;
-                let ratio = context.input_sample(0, frame, 1.0) * *selected_pitch_ratio;
-                let ratio = if ratio.is_finite() {
-                    ratio.clamp(0.125, 8.0)
+                let musical_pitch = context.input_sample(0, frame, 1.0)
+                    * sample_map_group_control(context, zone, frame, 0, 1.0);
+                let musical_pitch = if musical_pitch.is_finite() {
+                    musical_pitch.clamp(0.125, 8.0)
                 } else {
                     1.0
                 };
+                let ratio = musical_pitch * *selected_pitch_ratio;
                 *position += if region.reverse {
                     -f64::from(ratio)
                 } else {
@@ -495,7 +546,10 @@ pub(super) fn process_sample_map_player_state(
         } else {
             0.0
         };
-        let live_pan = context.input_sample(3, frame, 0.0);
+        let live_pan = context.input_sample(3, frame, 0.0)
+            + selected_zone.map_or(0.0, |index| {
+                sample_map_group_control(context, &zones[index], frame, 3, 0.0)
+            });
         let live_pan = if live_pan.is_finite() {
             live_pan.clamp(-1.0, 1.0)
         } else {
@@ -505,8 +559,8 @@ pub(super) fn process_sample_map_player_state(
         for channel in 0..context.output_count() {
             let output = if context.output_count() == 2 {
                 match channel {
-                    0 => output * if pan > 0.0 { 1.0 - pan } else { 1.0 },
-                    _ => output * if pan < 0.0 { 1.0 + pan } else { 1.0 },
+                    0 => output * (1.0 - pan.max(0.0)),
+                    _ => output * (1.0 + pan.min(0.0)),
                 }
             } else {
                 output
@@ -518,10 +572,23 @@ pub(super) fn process_sample_map_player_state(
     }
 }
 
+fn sample_map_group_control(
+    context: &ProcessContext<'_>,
+    zone: &crate::compiled_patch::CompiledSampleZone,
+    frame: usize,
+    control: usize,
+    default: f32,
+) -> f32 {
+    zone.control_group.map_or(default, |group| {
+        let width = crate::builtins::module_types::SAMPLE_MAP_CONTROLS_PER_GROUP;
+        context.input_sample(width * (1 + group) + control, frame, default)
+    })
+}
+
 fn sample_zone_with_variation(
     zones: &[crate::compiled_patch::CompiledSampleZone],
+    key_candidates: &[usize],
     selected: usize,
-    note: u8,
     velocity: u8,
     variation: f32,
 ) -> usize {
@@ -532,75 +599,76 @@ fn sample_zone_with_variation(
     let eligible = |zone: &crate::compiled_patch::CompiledSampleZone| {
         zone.round_robin_group == chosen.round_robin_group
             && zone.choke_group == chosen.choke_group
-            && (zone.key_range[0]..=zone.key_range[1]).contains(&note)
+            && zone.control_group == chosen.control_group
             && (zone.velocity_range[0]..=zone.velocity_range[1]).contains(&velocity)
     };
-    let count = zones.iter().filter(|zone| eligible(zone)).count();
+    let count = key_candidates
+        .iter()
+        .filter(|index| eligible(&zones[**index]))
+        .count();
     if count <= 1 {
         return selected;
     }
-    let current = zones[..selected]
+    let current = key_candidates
         .iter()
-        .filter(|zone| eligible(zone))
+        .take_while(|index| **index != selected)
+        .filter(|index| eligible(&zones[**index]))
         .count();
     let offset = (variation.clamp(0.0, 1.0) * (count - 1) as f32).round() as usize;
-    zones
+    key_candidates
         .iter()
-        .enumerate()
-        .filter(|(_, zone)| eligible(zone))
+        .copied()
+        .filter(|index| eligible(&zones[*index]))
         .nth((current + offset) % count)
-        .map_or(selected, |(index, _)| index)
+        .unwrap_or(selected)
 }
 
 pub(super) fn select_sample_map_zone(
     zones: &[crate::compiled_patch::CompiledSampleZone],
+    key_candidates: &[usize],
     selection_mode: SampleSelectionMode,
     round_robin_counters: &mut [usize],
     rng_state: &mut u64,
-    note: u8,
     velocity: u8,
 ) -> Option<usize> {
-    let matches = |zone: &crate::compiled_patch::CompiledSampleZone| {
-        note >= zone.key_range[0]
-            && note <= zone.key_range[1]
-            && velocity >= zone.velocity_range[0]
-            && velocity <= zone.velocity_range[1]
+    let matches = |index: usize| {
+        velocity >= zones[index].velocity_range[0] && velocity <= zones[index].velocity_range[1]
     };
-    let first = zones.iter().position(matches)?;
+    let first = *key_candidates.iter().find(|index| matches(**index))?;
     if selection_mode == SampleSelectionMode::RandomWeighted {
-        let total_weight = zones
+        let total_weight = key_candidates
             .iter()
-            .filter(|zone| matches(zone))
-            .map(|zone| u64::from(zone.weight))
+            .copied()
+            .filter(|index| matches(*index))
+            .map(|index| u64::from(zones[index].weight))
             .sum::<u64>();
         let mut ticket = next_sample_selection_random(rng_state) % total_weight;
-        return zones
+        return key_candidates
             .iter()
-            .enumerate()
-            .filter(|(_, zone)| matches(zone))
-            .find_map(|(index, zone)| {
-                if ticket < u64::from(zone.weight) {
+            .copied()
+            .filter(|index| matches(*index))
+            .find_map(|index| {
+                if ticket < u64::from(zones[index].weight) {
                     Some(index)
                 } else {
-                    ticket -= u64::from(zone.weight);
+                    ticket -= u64::from(zones[index].weight);
                     None
                 }
             });
     }
     if selection_mode == SampleSelectionMode::RoundRobin {
         if let Some(group) = zones[first].round_robin_group {
-            let count = zones
+            let count = key_candidates
                 .iter()
-                .filter(|zone| matches(zone) && zone.round_robin_group == Some(group))
+                .filter(|index| matches(**index) && zones[**index].round_robin_group == Some(group))
                 .count();
             let turn = round_robin_counters[group] % count;
             round_robin_counters[group] = round_robin_counters[group].wrapping_add(1);
-            return zones
+            return key_candidates
                 .iter()
-                .enumerate()
-                .filter(|(_, zone)| matches(zone) && zone.round_robin_group == Some(group))
-                .nth(turn)
-                .map(|(index, _)| index);
+                .copied()
+                .filter(|index| matches(*index) && zones[*index].round_robin_group == Some(group))
+                .nth(turn);
         }
     }
     Some(first)
@@ -613,6 +681,7 @@ pub(super) fn process_sample_map_player(
 ) {
     let PerModuleState::SampleMapPlayer {
         zones,
+        key_candidates,
         selection_mode,
         reject_new_while_active,
         round_robin_counters,
@@ -628,6 +697,7 @@ pub(super) fn process_sample_map_player(
     };
     process_sample_map_player_state(
         zones,
+        key_candidates,
         *selection_mode,
         *reject_new_while_active,
         round_robin_counters,
@@ -928,6 +998,47 @@ mod sampler_tests {
     use super::super::audio_arena::AudioArena;
     use super::super::render_plan::{AudioBufferPlan, BufferId};
     use super::*;
+
+    #[test]
+    fn nonfinite_variation_keeps_the_authored_hit() {
+        let zone = crate::compiled_patch::CompiledSampleZone {
+            sample: crate::compiled_patch::SampleResourceHandle::new(
+                crate::sample::LoadedSample::new(48_000, vec![0.5]),
+            ),
+            region: SampleRegion {
+                id: "hit".to_string(),
+                start_frame: 0,
+                end_frame: 1,
+                root_note: None,
+                gain_db: None,
+                pan: None,
+                reverse: false,
+                fade_in_ms: None,
+                fade_out_ms: None,
+                loop_settings: None,
+            },
+            key_range: [36, 36],
+            velocity_range: [1, 127],
+            round_robin_group: Some(0),
+            choke_group: None,
+            control_group: None,
+            weight: 1,
+            gain: 1.0,
+            pan: 0.0,
+            pitch_ratio: 1.0,
+            playback_rate_scale: 1.0,
+            fade_in_frames: 0,
+            fade_out_frames: 0,
+        };
+        let zones = [zone.clone(), zone];
+        for variation in [f32::INFINITY, f32::NEG_INFINITY, f32::NAN] {
+            assert_eq!(
+                sample_zone_with_variation(&zones, &[0, 1], 0, 100, variation),
+                0
+            );
+        }
+        assert_eq!(sample_zone_with_variation(&zones, &[0, 1], 0, 100, 1.0), 1);
+    }
 
     #[test]
     fn sampler_without_decoded_frames_clears_its_output_span() {

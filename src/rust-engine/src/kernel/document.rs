@@ -479,14 +479,23 @@ pub struct SampleMap {
 pub struct SampleZone {
     pub id: Option<String>,
     pub region: String,
+    pub region_override: Option<SampleRegionOverride>,
     pub key_range: [u8; 2],
     pub velocity_range: [u8; 2],
     pub round_robin_group: Option<String>,
     pub choke_group: Option<String>,
+    pub control_group: Option<u8>,
     pub weight: Option<u32>,
     pub gain_db: Option<f64>,
     pub pan: Option<f64>,
     pub pitch_semitones: Option<f64>,
+}
+
+#[derive(Clone, Debug, Deserialize, PartialEq)]
+#[serde(deny_unknown_fields)]
+pub struct SampleRegionOverride {
+    pub start_frame: u64,
+    pub end_frame: u64,
 }
 
 /// Preset names mapped to typed root declarations.

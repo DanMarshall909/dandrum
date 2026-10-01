@@ -46,10 +46,15 @@ function updateParameterValues(parameters){
 
 const notes=['C','C♯','D','D♯','E','F','F♯','G','G♯','A','A♯','B','C','C♯','D','D♯','E','F','F♯'];
 const keys=document.getElementById('keys');
-notes.forEach((note,index)=>{
-  const key=document.createElement('button');key.className='key'+(note.includes('♯')?' black':'');key.textContent=note;
-  key.onpointerdown=()=>{key.classList.add('on');const fn=native('noteOn');if(fn)fn(48+index,0.9).then(handleNativeResult).catch(showError)};
-  const release=()=>{if(!key.classList.contains('on'))return;key.classList.remove('on');const fn=native('noteOff');if(fn)fn(48+index).then(handleNativeResult).catch(showError)};
+const drumNotes=(keys.dataset.drumNotes||'').split(',').filter(Boolean).map(entry=>{
+  const separator=entry.indexOf(':');
+  return{number:Number(entry.slice(0,separator)),label:entry.slice(separator+1)};
+}).filter(entry=>Number.isInteger(entry.number)&&entry.number>=0&&entry.number<=127&&entry.label);
+const playableNotes=drumNotes.length?drumNotes:notes.map((label,index)=>({number:48+index,label}));
+playableNotes.forEach(({number,label})=>{
+  const key=document.createElement('button');key.className='key'+(!drumNotes.length&&label.includes('♯')?' black':'');key.textContent=label;
+  key.onpointerdown=()=>{key.classList.add('on');const fn=native('noteOn');if(fn)fn(number,0.9).then(handleNativeResult).catch(showError)};
+  const release=()=>{if(!key.classList.contains('on'))return;key.classList.remove('on');const fn=native('noteOff');if(fn)fn(number).then(handleNativeResult).catch(showError)};
   key.onpointerup=key.onpointerleave=key.onpointercancel=release;
   keys.appendChild(key);
 });

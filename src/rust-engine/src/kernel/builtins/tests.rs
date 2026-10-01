@@ -839,6 +839,23 @@ fn sample_map_player_exposes_bounded_voices_choke_and_live_controls() {
             SignalType::Control
         );
     }
+    for group in 1..=names::SAMPLE_MAP_CONTROL_GROUPS {
+        for (name, default, min, max) in [
+            ("pitch_ratio", 1.0, 0.125, 8.0),
+            ("start_offset", 0.0, 0.0, 1.0),
+            ("level", 1.0, 0.0, 4.0),
+            ("pan", 0.0, -1.0, 1.0),
+            ("variation", 0.0, 0.0, 1.0),
+        ] {
+            let name = format!("group_{group}_{name}");
+            let control = port_of(player, &name, PortDirection::Input)
+                .control_default()
+                .expect("drum control group port has a range and default");
+            assert_eq!(control.default(), default, "default of {name}");
+            assert_eq!(control.min(), Some(min), "minimum of {name}");
+            assert_eq!(control.max(), Some(max), "maximum of {name}");
+        }
+    }
     let output = port_of(player, "audio", PortDirection::Output);
     assert_eq!(output.signal_type(), SignalType::Audio);
     assert_eq!(output.channels(), &ChannelCount::param("channels"));

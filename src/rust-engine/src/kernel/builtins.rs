@@ -300,28 +300,47 @@ fn builtin_definitions() -> Vec<GraphDefinition> {
             .with_port(tunable(ports::PITCH_RATIO, 1.0, 0.125, 8.0))
             .with_port(tunable(ports::LEVEL, 1.0, 0.0, 4.0))
             .with_port(poly_audio_out(ports::AUDIO)),
-        mono_stereo_primitive(names::SAMPLE_MAP_PLAYER)
-            .with_static_param(StaticParam::new("sample_map", StaticType::String))
-            .with_static_param(
-                StaticParam::new("max_voices", StaticType::Int).with_default(StaticValue::Int(16)),
-            )
-            .with_static_param(enum_param(
-                "voice_steal",
-                "oldest",
-                &["oldest", "quietest", "reject_new"],
-            ))
-            .with_static_param(enum_param("choke_mode", "cut", &["cut", "fade", "release"]))
-            .with_static_param(
-                StaticParam::new("choke_fade_ms", StaticType::Int)
-                    .with_default(StaticValue::Int(5)),
-            )
-            .with_port(event_in(ports::NOTE))
-            .with_port(tunable(ports::PITCH_RATIO, 1.0, 0.125, 8.0))
-            .with_port(tunable(ports::START_OFFSET, 0.0, 0.0, 1.0))
-            .with_port(tunable(ports::LEVEL, 1.0, 0.0, 4.0))
-            .with_port(tunable(ports::PAN, 0.0, -1.0, 1.0))
-            .with_port(tunable(ports::VARIATION, 0.0, 0.0, 1.0))
-            .with_port(poly_audio_out(ports::AUDIO)),
+        {
+            let mut player = mono_stereo_primitive(names::SAMPLE_MAP_PLAYER)
+                .with_static_param(StaticParam::new("sample_map", StaticType::String))
+                .with_static_param(
+                    StaticParam::new("max_voices", StaticType::Int)
+                        .with_default(StaticValue::Int(16)),
+                )
+                .with_static_param(enum_param(
+                    "voice_steal",
+                    "oldest",
+                    &["oldest", "quietest", "reject_new"],
+                ))
+                .with_static_param(enum_param("choke_mode", "cut", &["cut", "fade", "release"]))
+                .with_static_param(
+                    StaticParam::new("choke_fade_ms", StaticType::Int)
+                        .with_default(StaticValue::Int(5)),
+                )
+                .with_port(event_in(ports::NOTE))
+                .with_port(tunable(ports::PITCH_RATIO, 1.0, 0.125, 8.0))
+                .with_port(tunable(ports::START_OFFSET, 0.0, 0.0, 1.0))
+                .with_port(tunable(ports::LEVEL, 1.0, 0.0, 4.0))
+                .with_port(tunable(ports::PAN, 0.0, -1.0, 1.0))
+                .with_port(tunable(ports::VARIATION, 0.0, 0.0, 1.0));
+            for group in 1..=names::SAMPLE_MAP_CONTROL_GROUPS {
+                for (control, default, min, max) in [
+                    (ports::PITCH_RATIO, 1.0, 0.125, 8.0),
+                    (ports::START_OFFSET, 0.0, 0.0, 1.0),
+                    (ports::LEVEL, 1.0, 0.0, 4.0),
+                    (ports::PAN, 0.0, -1.0, 1.0),
+                    (ports::VARIATION, 0.0, 0.0, 1.0),
+                ] {
+                    player = player.with_port(tunable(
+                        &format!("group_{group}_{control}"),
+                        default,
+                        min,
+                        max,
+                    ));
+                }
+            }
+            player.with_port(poly_audio_out(ports::AUDIO))
+        },
         primitive(names::NOTE_TO_RATE)
             .with_port(event_in(ports::EVENTS))
             .with_port(control_out(ports::RATE)),

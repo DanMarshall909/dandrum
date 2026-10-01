@@ -89,3 +89,28 @@ assert.equal(elements.error.textContent, 'Unknown public parameter');
 events.parameterValuesChanged([]);
 assert.equal(elements.controls.children.length, 1);
 assert.equal(elements.controls.children[0].textContent, 'NO PUBLIC PARAMETERS');
+
+const drumElements = Object.fromEntries(['controls', 'keys', 'error'].map(id => [id, new Element()]));
+drumElements.keys.dataset.drumNotes = '36:Kick,38:Snare,42:Closed Hat,46:Open Hat';
+const drumDocument = {
+  getElementById: id => drumElements[id],
+  createElement: tag => new Element(tag),
+};
+const drumCalls = [];
+const drumBackend = {
+  getNativeFunction: name => (...arguments_) => {
+    drumCalls.push([name, ...arguments_]);
+    return Promise.resolve(name === 'getParameters' ? [] : undefined);
+  },
+  addEventListener: () => {},
+};
+vm.runInNewContext(script, {document: drumDocument, window: {__JUCE__: {backend: drumBackend}}});
+await new Promise(resolve => setImmediate(resolve));
+assert.deepEqual(drumElements.keys.children.map(key => key.textContent),
+                 ['Kick', 'Snare', 'Closed Hat', 'Open Hat']);
+drumElements.keys.children[2].onpointerdown();
+await new Promise(resolve => setImmediate(resolve));
+assert.deepEqual(drumCalls.at(-1), ['noteOn', 42, 0.9]);
+drumElements.keys.children[2].onpointerup();
+await new Promise(resolve => setImmediate(resolve));
+assert.deepEqual(drumCalls.at(-1), ['noteOff', 42]);

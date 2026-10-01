@@ -16,6 +16,10 @@ pub const SAMPLE_PLAYER: &str = "sample_player";
 pub const SAMPLE_ZONE_SELECTOR: &str = "sample_zone_selector";
 pub const SAMPLE_SLICER: &str = "sample_slicer";
 pub const SAMPLE_MAP_PLAYER: &str = "sample_map_player";
+pub const SAMPLE_MAP_CONTROL_GROUPS: usize = 8;
+pub const SAMPLE_MAP_CONTROLS_PER_GROUP: usize = 5;
+pub const SAMPLE_MAP_CONTROL_INPUTS: usize =
+    SAMPLE_MAP_CONTROLS_PER_GROUP * (1 + SAMPLE_MAP_CONTROL_GROUPS);
 pub const NOTE_TO_RATE: &str = "note_to_rate";
 pub const DYNAMICS_PROCESSOR: &str = "dynamics-processor";
 pub const SATURATOR: &str = "saturator";

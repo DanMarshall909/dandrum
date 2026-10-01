@@ -51,6 +51,26 @@ int leadingSpaces (const juce::String& line)
     return count;
 }
 
+void readInlineInstrumentFields (const juce::String& value, juce::String& instrumentId,
+                                 int& schemaVersion)
+{
+    const auto text = value.trim();
+    if (! text.startsWithChar ('{') || ! text.endsWithChar ('}'))
+        return;
+
+    const auto fields = juce::StringArray::fromTokens (text.substring (1, text.length() - 1),
+                                                        ",", "\"'");
+    for (const auto& field : fields)
+    {
+        const auto key = field.upToFirstOccurrenceOf (":", false, false).trim();
+        const auto fieldValue = stripYamlQuotes (field.fromFirstOccurrenceOf (":", false, false));
+        if (key == "id")
+            instrumentId = fieldValue;
+        else if (key == "preset_schema_version")
+            schemaVersion = fieldValue.getIntValue();
+    }
+}
+
 bool parseDouble (const juce::String& text, double& value)
 {
     const auto raw = text.trim().toStdString();
@@ -83,13 +103,14 @@ bool isStructuralPresetField (const juce::String& key)
     return structuralFields.contains (key);
 }
 
-juce::File writeStateRestoreInstrumentFile (const juce::String& yamlText)
+juce::File writeStateRestoreInstrumentFile (const juce::String& yamlText,
+                                            const juce::File& assetRoot)
 {
-    auto file = juce::File::getSpecialLocation (juce::File::tempDirectory)
-                    .getChildFile ("dandrum_restored_instrument_"
-                                   + juce::String (juce::Random::getSystemRandom().nextInt())
-                                   + ".yaml");
-    file.replaceWithText (yamlText);
+    const auto root = assetRoot.isDirectory()
+                          ? assetRoot : juce::File::getSpecialLocation (juce::File::tempDirectory);
+    auto file = root.getNonexistentChildFile (".dandrum_restored_instrument_", ".yaml", false);
+    if (! file.replaceWithText (yamlText))
+        return {};
     return file;
 }
 
@@ -166,15 +187,20 @@ std::vector<DandrumAudioProcessor::PublicParameterDescriptor> DandrumAudioProces
     return descriptors;
 }
 
-juce::AudioProcessorValueTreeState::ParameterLayout DandrumAudioProcessor::createParameterLayout()
+juce::AudioProcessorValueTreeState::ParameterLayout DandrumAudioProcessor::createParameterLayout (
+    const InstrumentDemoConfiguration& initialConfiguration)
 {
     juce::AudioProcessorValueTreeState::ParameterLayout layout;
+    const auto initialDescriptors = loadPublicParameterDescriptors (initialConfiguration.instrumentPath.string());
 
     for (int slotIndex = 0; slotIndex < kPublicParameterSlotCount; ++slotIndex)
     {
+        const auto name = static_cast<std::size_t> (slotIndex) < initialDescriptors.size()
+                              ? initialDescriptors[static_cast<std::size_t> (slotIndex)].name
+                              : "Public Parameter Slot " + juce::String (slotIndex + 1);
         layout.add (std::make_unique<juce::AudioParameterFloat> (
             juce::ParameterID { publicSlotParameterId (slotIndex), 1 },
-            "Public Parameter Slot " + juce::String (slotIndex + 1),
+            name,
             juce::NormalisableRange<float> (0.0f, 1.0f),
             0.0f));
     }
@@ -204,6 +230,13 @@ bool DandrumAudioProcessor::readInstrumentIdentity (const juce::String& yaml, ju
 
         const auto key = trimmed.upToFirstOccurrenceOf (":", false, false).trim();
         const auto value = stripYamlQuotes (trimmed.fromFirstOccurrenceOf (":", false, false));
+
+        if (indent == 0 && key == "instrument")
+        {
+            section = key;
+            readInlineInstrumentFields (value, instrumentId, schemaVersion);
+            continue;
+        }
 
         if (section == "instrument" && indent >= 2)
         {
@@ -254,6 +287,8 @@ DandrumAudioProcessor::ParsedPreset DandrumAudioProcessor::parsePresetFile (cons
             section = key;
             if (key == "name" && value.isNotEmpty())
                 preset.name = value;
+            else if (key == "instrument")
+                readInlineInstrumentFields (value, preset.instrumentId, preset.presetSchemaVersion);
             continue;
         }
 
@@ -316,7 +351,7 @@ DandrumAudioProcessor::DandrumAudioProcessor (InstrumentDemoConfiguration demo)
                                  .withInput ("Input", juce::AudioChannelSet::stereo(), true)
                                  .withOutput ("Output", juce::AudioChannelSet::stereo(), true)),
       configuration (std::move (demo)),
-      parameters (*this, nullptr, "DandrumState", createParameterLayout())
+      parameters (*this, nullptr, "DandrumState", createParameterLayout (configuration))
 {
     parameterSlots.resize (kPublicParameterSlotCount);
     for (int slotIndex = 0; slotIndex < kPublicParameterSlotCount; ++slotIndex)
@@ -791,12 +826,23 @@ void DandrumAudioProcessor::setStateInformation (const void* data, int sizeInByt
 
     const auto instrumentYaml = state.getProperty ("instrument_yaml").toString();
     const juce::File sourceHint (state.getProperty ("instrument_path").toString());
+    const auto savedInstrumentId = state.getProperty ("instrument_id").toString();
     juce::File restoreFile;
 
     DandrumKernelInstrument* candidateKernel = nullptr;
     if (instrumentYaml.isNotEmpty())
     {
-        restoreFile = writeStateRestoreInstrumentFile (instrumentYaml);
+        const auto assetRoot = sourceHint.existsAsFile()
+                                   ? sourceHint.getParentDirectory()
+                                   : (savedInstrumentId == juce::String (configuration.instrumentId)
+                                          ? juce::File (juce::String (configuration.instrumentPath.string())).getParentDirectory()
+                                          : juce::File());
+        restoreFile = writeStateRestoreInstrumentFile (instrumentYaml, assetRoot);
+        if (! restoreFile.existsAsFile())
+        {
+            lastLoadError = "Could not stage embedded instrument from plugin state";
+            return;
+        }
         const auto sampleRate = getSampleRate() > 0.0 ? getSampleRate() : 44100.0;
         const auto blockSize = getBlockSize() > 0 ? getBlockSize() : 512;
         const auto restorePath = restoreFile.getFullPathName().toStdString();
@@ -1115,5 +1161,9 @@ bool DandrumAudioProcessor::loadPresetFromFile (const juce::File& presetFile)
 
 juce::AudioProcessor* JUCE_CALLTYPE createPluginFilter()
 {
+#if defined(DANDRUM_DEFAULT_SAMPLER_PLUGIN)
+    return new DandrumAudioProcessor (InstrumentDemoConfiguration::sampler());
+#else
     return new DandrumAudioProcessor();
+#endif
 }

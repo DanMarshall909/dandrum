@@ -17,4 +17,5 @@ struct InstrumentDemoConfiguration
 
     static InstrumentDemoConfiguration tb303();
     static InstrumentDemoConfiguration kick();
+    static InstrumentDemoConfiguration sampler();
 };

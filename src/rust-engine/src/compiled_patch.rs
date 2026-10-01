@@ -265,6 +265,7 @@ pub enum CompiledConstruction {
     },
     SampleMapPlayer {
         zones: Box<[CompiledSampleZone]>,
+        key_candidates: SampleMapKeyLookup,
         selection_mode: SampleSelectionMode,
         group_count: usize,
         selection_seed: u64,
@@ -346,11 +347,23 @@ pub struct CompiledSampleZone {
     pub velocity_range: [u8; 2],
     pub round_robin_group: Option<usize>,
     pub choke_group: Option<usize>,
+    pub control_group: Option<usize>,
     pub weight: u32,
     pub gain: f32,
     pub pan: f32,
     pub pitch_ratio: f32,
     pub playback_rate_scale: f32,
+    pub fade_in_frames: usize,
+    pub fade_out_frames: usize,
+}
+
+/// Authored zone indices grouped by MIDI key during preparation.
+pub type SampleMapKeyLookup = Arc<[Box<[usize]>; 128]>;
+
+pub fn sample_map_candidates_for_note(lookup: &SampleMapKeyLookup, note: u8) -> &[usize] {
+    lookup
+        .get(usize::from(note))
+        .map_or(&[], |indices| indices.as_ref())
 }
 
 #[derive(Clone, Debug, PartialEq)]

@@ -62,6 +62,29 @@ int main()
         return 1;
     }
 
+    const auto samplerConfig = InstrumentDemoConfiguration::sampler();
+    DandrumAudioProcessor sampler (samplerConfig);
+    if (! sampler.isInstrumentLoaded()
+        || sampler.currentInstrumentFile().getFullPathName().toStdString() != samplerConfig.instrumentPath
+        || samplerConfig.title != "Dandrum Drum Sampler"
+        || samplerConfig.indexHtml.find ("data-drum-notes") == std::string::npos
+        || samplerConfig.soundLabFixturePath.has_value()
+        || samplerConfig.matchSourcePath.has_value()
+        || ! sampler.hasPublicParameter ("drums.pitch_ratio")
+        || ! sampler.hasPublicParameter ("drums.start_offset")
+        || ! sampler.hasPublicParameter ("drums.level")
+        || ! sampler.hasPublicParameter ("drums.pan")
+        || ! sampler.hasPublicParameter ("drums.variation")
+        || ! sampler.hasPublicParameter ("drums.kick.level")
+        || ! sampler.hasPublicParameter ("drums.snare.pan")
+        || ! sampler.hasPublicParameter ("drums.closed_hat.pitch_ratio")
+        || ! sampler.hasPublicParameter ("drums.open_hat.variation"))
+    {
+        std::cerr << "drum sampler demo did not load its sample kit and per-pad live controls: "
+                  << sampler.getLastLoadError() << " at " << samplerConfig.instrumentPath << '\n';
+        return 1;
+    }
+
     constexpr int blockSize = 128;
     kick.setPlayConfigDetails (0, 2, 48000.0, blockSize);
     kick.prepareToPlay (48000.0, blockSize);
