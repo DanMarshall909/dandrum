@@ -1,0 +1,12 @@
+name: Quiet Left Drum Kit
+instrument: { id: dandrum.advanced-drum-kit, preset_schema_version: 1 }
+values:
+  drums.pitch_ratio: 1
+  drums.start_offset: 0
+  drums.level: 0.5
+  drums.pan: -1
+  drums.variation: 0
+metadata:
+  author: Dandrum
+  category: drums
+  description: Lower level and pan the advanced drum kit left.

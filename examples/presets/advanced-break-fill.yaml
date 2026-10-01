@@ -1,0 +1,10 @@
+name: Break Fill
+instrument: { id: dandrum.advanced-break-slicer, preset_schema_version: 1 }
+values:
+  break.slice_index: 3
+  break.pitch_ratio: 1
+  break.level: 1
+metadata:
+  author: Dandrum
+  category: break
+  description: Select the fourth explicit break slice.

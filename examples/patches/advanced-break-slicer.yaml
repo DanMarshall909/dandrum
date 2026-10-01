@@ -1,0 +1,26 @@
+metadata: { name: Chopped Break Slicer }
+instrument: { id: dandrum.advanced-break-slicer, preset_schema_version: 1 }
+assets:
+  sample_sources:
+    - id: break
+      path: assets/advanced-break.wav
+      slices:
+        - { id: kick, start_frame: 0, end_frame: 6000 }
+        - { id: hat, start_frame: 6000, end_frame: 12000 }
+        - { id: snare, start_frame: 12000, end_frame: 18000 }
+        - { id: fill, start_frame: 18000, end_frame: 24000 }
+ports:
+  - { name: slice_index, direction: input, signal: control, channels: 1, default: 0, min: 0, max: 3, maps_to: slicer.slice_index }
+  - { name: pitch_ratio, direction: input, signal: control, channels: 1, default: 1, min: 0.125, max: 8, maps_to: slicer.pitch_ratio }
+  - { name: level, direction: input, signal: control, channels: 1, default: 1, min: 0, max: 4, maps_to: slicer.level }
+  - { name: master, direction: output, signal: audio, channels: 2, maps_from: slicer.audio }
+preset_surface:
+  parameters:
+    - { name: break.slice_index, maps_to: slice_index }
+    - { name: break.pitch_ratio, maps_to: pitch_ratio }
+    - { name: break.level, maps_to: level }
+modules:
+  - { id: midi, type: midi_input }
+  - { id: slicer, type: sample_slicer, static: { source: break, slice_table: break, channels: 2 } }
+connections:
+  - { from: midi.events, to: slicer.trigger }

@@ -47,18 +47,18 @@
 ## 6. Slice Playback
 
 - [x] 6.1 Implement explicit slice-table playback by numeric slice index.
-- [ ] 6.2 Support sequential and deterministic random slice selection only if required by examples.
-- [ ] 6.3 Add a chopped-break example using explicit slice metadata.
-- [ ] 6.4 Defer tempo-sync/time-stretch behaviour to a separate creative or streaming spec.
+- [x] 6.2 Support sequential and deterministic random slice selection only if required by examples.
+- [x] 6.3 Add a chopped-break example using explicit slice metadata.
+- [x] 6.4 Defer tempo-sync/time-stretch behaviour to a separate creative or streaming spec.
 
 ## 7. Patch And Preset Examples
 
-- [ ] 7.1 Add a minimal one-shot sample patch.
-- [ ] 7.2 Add a layered electronic drum patch using velocity layers and round-robin alternates.
-- [ ] 7.3 Add an open/closed hi-hat patch proving choke groups.
-- [ ] 7.4 Add a modest chromatic sample playback patch using root note and pitch ratio.
-- [ ] 7.5 Add a sliced break patch using explicit slice metadata.
-- [ ] 7.6 Add preset surfaces exposing musical controls without exposing internal module IDs.
+- [x] 7.1 Add a minimal one-shot sample patch.
+- [x] 7.2 Add a layered electronic drum patch using velocity layers and round-robin alternates.
+- [x] 7.3 Add an open/closed hi-hat patch proving choke groups.
+- [x] 7.4 Add a modest chromatic sample playback patch using root note and pitch ratio.
+- [x] 7.5 Add a sliced break patch using explicit slice metadata.
+- [x] 7.6 Add preset surfaces exposing musical controls without exposing internal module IDs.
 
 ## 8. Verification
 
@@ -71,3 +71,11 @@
 - [x] 8.7 Add slice tests proving trigger/index behaviour.
 - [ ] 8.8 Add tests or instrumentation proving the steady-state render path performs no heap allocation.
 - [ ] 8.9 Run `openspec validate add-advanced-sampling-options --strict` and fix validation errors.
+
+## 9. Sampler VST3 Example And External Modulation
+
+- [ ] 9.1 Add a drum sampler patch with named public pitch, start, level, pan, and variation controls that affect rendered audio while it runs.
+- [ ] 9.2 Provide a sampler-focused VST3 example that loads the drum patch and its redistributable reference samples by default.
+- [ ] 9.3 Prove JUCE host parameter automation reaches the corresponding Rust sampler controls and changes rendered audio without replacing the instrument.
+- [ ] 9.4 Document MIDI drum-note mapping, host modulation setup, sample asset location, and the preparation-only choices that require reload.
+- [ ] 9.5 Play prepared samples at the correct pitch and duration across common host sample rates without decoding or resampling on the audio thread.

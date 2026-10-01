@@ -22,6 +22,189 @@ use crate::script::ScriptEvent;
 use super::{load_kernel_definition_str, load_kernel_patch_file, load_kernel_patch_str};
 
 #[test]
+fn bundled_advanced_sampling_examples_prepare_and_emit_signed_stereo_hits() {
+    let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
+    for (name, note, first_sample) in [
+        ("advanced-one-shot.yaml", 36, -0.5),
+        ("advanced-drum-kit.yaml", 36, -0.5),
+        ("advanced-hats.yaml", 46, -0.0625),
+        ("advanced-chromatic.yaml", 60, -0.5),
+        ("advanced-break-slicer.yaml", 60, -0.5),
+    ] {
+        let path = root.join("examples/patches").join(name);
+        let patch = load_kernel_patch_file(&path).expect("example loads");
+        let settings = RenderSettings {
+            sample_rate_hz: 48_000,
+            block_size_frames: 4,
+            duration_frames: 4,
+        };
+        let prepared = prepare_kernel_patch_with_context(
+            &patch,
+            &settings,
+            &PreparationContext::new(path.parent().unwrap(), 48_000),
+        )
+        .expect(name);
+        let rendered = render_kernel_offline_named(
+            &prepared,
+            vec![TimedInputEvent::new(
+                0,
+                ScriptEvent::NoteOn {
+                    note,
+                    velocity: 100,
+                },
+            )],
+            &PreparedSamplerAssets::empty(),
+        )
+        .expect("example renders");
+        assert_eq!(rendered[0].0, "master");
+        assert_eq!(rendered[0].1.len(), 2);
+        assert_eq!(rendered[0].1[0][0], first_sample, "{name} left");
+        assert_eq!(rendered[0].1[1][0], first_sample, "{name} right");
+    }
+}
+
+#[test]
+fn bundled_drum_kit_selects_velocity_layers_alternates_and_hat_choke() {
+    let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
+    let path = root.join("examples/patches/advanced-drum-kit.yaml");
+    let patch = load_kernel_patch_file(&path).expect("drum kit loads");
+    let settings = RenderSettings {
+        sample_rate_hz: 48_000,
+        block_size_frames: 4,
+        duration_frames: 12,
+    };
+    let prepared = prepare_kernel_patch_with_context(
+        &patch,
+        &settings,
+        &PreparationContext::new(path.parent().unwrap(), 48_000),
+    )
+    .expect("drum kit prepares");
+    let render = |events| {
+        render_kernel_offline_named(&prepared, events, &PreparedSamplerAssets::empty())
+            .expect("drum kit renders")[0]
+            .1[0]
+            .clone()
+    };
+    let hit =
+        |frame, note, velocity| TimedInputEvent::new(frame, ScriptEvent::NoteOn { note, velocity });
+
+    let soft = render(vec![hit(0, 38, 40)]);
+    let hard = render(vec![hit(0, 38, 100)]);
+    assert_eq!(soft[0], -0.25);
+    assert_eq!(hard[0], -0.375);
+    let two_hard = render(vec![hit(0, 38, 100), hit(4, 38, 100)]);
+    assert_eq!(two_hard[4] - hard[4], -0.4375);
+
+    let hats = render(vec![hit(0, 46, 100), hit(4, 42, 100)]);
+    assert_eq!(hats[0], -0.0625);
+    assert_eq!(hats[4], -0.125);
+    let with_kick = render(vec![hit(0, 46, 100), hit(0, 36, 100), hit(4, 42, 100)]);
+    let kick = render(vec![hit(0, 36, 100)]);
+    assert_eq!(with_kick[4], kick[4] - 0.125);
+}
+
+#[test]
+fn bundled_sampler_presets_use_public_names_and_change_rendered_audio() {
+    let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
+    let cases = [
+        (
+            "advanced-drum-kit.yaml",
+            "advanced-drum-kit-quiet-left.yaml",
+            36,
+            -0.25,
+            0.0,
+        ),
+        (
+            "advanced-break-slicer.yaml",
+            "advanced-break-fill.yaml",
+            60,
+            0.5,
+            0.5,
+        ),
+    ];
+    for (patch_name, preset_name, note, left, right) in cases {
+        let path = root.join("examples/patches").join(patch_name);
+        let patch = load_kernel_patch_file(&path).expect("sample patch loads");
+        let preset_yaml = fs::read_to_string(root.join("examples/presets").join(preset_name))
+            .expect("preset file");
+        let preset = load_preset_str(&preset_yaml).expect("preset parses");
+        let applied = patch.apply_preset(&preset).expect("public preset applies");
+        let settings = RenderSettings {
+            sample_rate_hz: 48_000,
+            block_size_frames: 4,
+            duration_frames: 4,
+        };
+        let prepared = prepare_kernel_patch_with_context(
+            &applied,
+            &settings,
+            &PreparationContext::new(path.parent().unwrap(), 48_000),
+        )
+        .expect("preset patch prepares");
+        let rendered = render_kernel_offline_named(
+            &prepared,
+            vec![TimedInputEvent::new(
+                0,
+                ScriptEvent::NoteOn {
+                    note,
+                    velocity: 100,
+                },
+            )],
+            &PreparedSamplerAssets::empty(),
+        )
+        .expect("preset patch renders");
+        assert_eq!(rendered[0].1[0][0], left, "{preset_name} left");
+        assert_eq!(rendered[0].1[1][0], right, "{preset_name} right");
+    }
+}
+
+#[test]
+fn bundled_chromatic_and_hat_examples_follow_root_note_and_choke_group() {
+    let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
+    let examples = root.join("examples/patches");
+    let settings = RenderSettings {
+        sample_rate_hz: 48_000,
+        block_size_frames: 4,
+        duration_frames: 8,
+    };
+    let render = |name: &str, events| {
+        let path = examples.join(name);
+        let patch = load_kernel_patch_file(&path).expect("example loads");
+        let prepared = prepare_kernel_patch_with_context(
+            &patch,
+            &settings,
+            &PreparationContext::new(path.parent().unwrap(), 48_000),
+        )
+        .expect("example prepares");
+        render_kernel_offline_named(&prepared, events, &PreparedSamplerAssets::empty())
+            .expect("example renders")[0]
+            .1[0]
+            .clone()
+    };
+    let hit = |frame, note| {
+        TimedInputEvent::new(
+            frame,
+            ScriptEvent::NoteOn {
+                note,
+                velocity: 100,
+            },
+        )
+    };
+    let root_note = render("advanced-chromatic.yaml", vec![hit(0, 60)]);
+    let octave = render("advanced-chromatic.yaml", vec![hit(0, 72)]);
+    let tone =
+        crate::audio_loading::load_pcm_wav(&examples.join("assets/advanced-tone.wav"), 48_000)
+            .expect("reference tone");
+    assert_eq!(root_note[0], -0.5);
+    assert_eq!(octave[0], -0.5);
+    assert_eq!(root_note[1], tone.frames()[1]);
+    assert_eq!(octave[1], tone.frames()[2]);
+
+    let hats = render("advanced-hats.yaml", vec![hit(0, 46), hit(4, 42)]);
+    assert_eq!(hats[0], -0.0625);
+    assert_eq!(hats[4], -0.125);
+}
+
+#[test]
 fn break_slicer_plays_the_requested_numeric_slice_and_retriggers_it() {
     let directory = tempfile::tempdir().expect("temporary sample root");
     let values = [-0.5, -0.25, 0.25, 0.5];

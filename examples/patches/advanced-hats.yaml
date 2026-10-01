@@ -1,0 +1,21 @@
+metadata: { name: Open and Closed Hats }
+assets:
+  sample_sources:
+    - id: drums
+      path: assets/advanced-drums.wav
+      regions:
+        - { id: hat_closed, start_frame: 36000, end_frame: 39000 }
+        - { id: hat_open, start_frame: 39000, end_frame: 51000 }
+  sample_maps:
+    - id: hats
+      selection_mode: first_match
+      zones:
+        - { id: closed, region: drums.hat_closed, key_range: [42, 42], velocity_range: [1, 127], choke_group: hats }
+        - { id: open, region: drums.hat_open, key_range: [46, 46], velocity_range: [1, 127], choke_group: hats }
+ports:
+  - { name: master, direction: output, signal: audio, channels: 2, maps_from: player.audio }
+modules:
+  - { id: midi, type: midi_input }
+  - { id: player, type: sample_map_player, static: { sample_map: hats, channels: 2, max_voices: 2, choke_mode: cut } }
+connections:
+  - { from: midi.events, to: player.note }

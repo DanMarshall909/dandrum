@@ -1,0 +1,43 @@
+metadata: { name: Advanced Drum Kit }
+instrument: { id: dandrum.advanced-drum-kit, preset_schema_version: 1 }
+assets:
+  sample_sources:
+    - id: drums
+      path: assets/advanced-drums.wav
+      regions:
+        - { id: kick, start_frame: 0, end_frame: 12000 }
+        - { id: snare_soft, start_frame: 12000, end_frame: 20000 }
+        - { id: snare_hard_a, start_frame: 20000, end_frame: 28000 }
+        - { id: snare_hard_b, start_frame: 28000, end_frame: 36000 }
+        - { id: hat_closed, start_frame: 36000, end_frame: 39000 }
+        - { id: hat_open, start_frame: 39000, end_frame: 51000 }
+  sample_maps:
+    - id: kit
+      selection_seed: 2026
+      selection_mode: round_robin
+      zones:
+        - { id: kick, region: drums.kick, key_range: [36, 36], velocity_range: [1, 127] }
+        - { id: snare_soft, region: drums.snare_soft, key_range: [38, 38], velocity_range: [1, 63] }
+        - { id: snare_hard_a, region: drums.snare_hard_a, key_range: [38, 38], velocity_range: [64, 127], round_robin_group: hard_snare }
+        - { id: snare_hard_b, region: drums.snare_hard_b, key_range: [38, 38], velocity_range: [64, 127], round_robin_group: hard_snare }
+        - { id: hat_closed, region: drums.hat_closed, key_range: [42, 42], velocity_range: [1, 127], choke_group: hats }
+        - { id: hat_open, region: drums.hat_open, key_range: [46, 46], velocity_range: [1, 127], choke_group: hats }
+ports:
+  - { name: pitch_ratio, direction: input, signal: control, channels: 1, default: 1, min: 0.125, max: 8, maps_to: player.pitch_ratio }
+  - { name: start_offset, direction: input, signal: control, channels: 1, default: 0, min: 0, max: 1, maps_to: player.start_offset }
+  - { name: level, direction: input, signal: control, channels: 1, default: 1, min: 0, max: 4, maps_to: player.level }
+  - { name: pan, direction: input, signal: control, channels: 1, default: 0, min: -1, max: 1, maps_to: player.pan }
+  - { name: variation, direction: input, signal: control, channels: 1, default: 0, min: 0, max: 1, maps_to: player.variation }
+  - { name: master, direction: output, signal: audio, channels: 2, maps_from: player.audio }
+preset_surface:
+  parameters:
+    - { name: drums.pitch_ratio, maps_to: pitch_ratio }
+    - { name: drums.start_offset, maps_to: start_offset }
+    - { name: drums.level, maps_to: level }
+    - { name: drums.pan, maps_to: pan }
+    - { name: drums.variation, maps_to: variation }
+modules:
+  - { id: midi, type: midi_input }
+  - { id: player, type: sample_map_player, static: { sample_map: kit, channels: 2, max_voices: 8, voice_steal: oldest, choke_mode: cut } }
+connections:
+  - { from: midi.events, to: player.note }

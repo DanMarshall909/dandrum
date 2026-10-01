@@ -1,0 +1,14 @@
+metadata: { name: Prepared One-Shot }
+assets:
+  sample_sources:
+    - id: drums
+      path: assets/advanced-drums.wav
+      regions:
+        - { id: kick, start_frame: 0, end_frame: 12000 }
+ports:
+  - { name: master, direction: output, signal: audio, channels: 2, maps_from: player.audio }
+modules:
+  - { id: midi, type: midi_input }
+  - { id: player, type: sample_player, static: { source: drums, region: kick, channels: 2 } }
+connections:
+  - { from: midi.events, to: player.trigger }

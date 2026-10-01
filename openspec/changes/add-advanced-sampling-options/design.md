@@ -112,6 +112,8 @@ Round-robin and probability selection must be deterministic for identical render
 
 Random/probability behaviour should never depend on hashmap iteration order, thread timing, wall-clock time, filesystem order, or audio block size.
 
+The chopped-break example selects one of four authored slices through a public numeric `slice_index` control. It does not require sequential or random slice modes. Tempo sync and time stretch remain separate work; the example plays each slice at its source rate times the live pitch ratio.
+
 ### Prefer preloaded sources for this capability, but keep the source contract streaming-compatible
 
 This capability should preload decoded sample buffers into memory during preparation. Disk streaming is deliberately out of scope because it has a different realtime contract, buffering model, failure mode, and plugin/session portability concern.

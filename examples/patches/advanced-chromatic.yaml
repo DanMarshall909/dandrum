@@ -1,0 +1,26 @@
+metadata: { name: Chromatic Sample Instrument }
+instrument: { id: dandrum.advanced-chromatic, preset_schema_version: 1 }
+assets:
+  sample_sources:
+    - id: tone
+      path: assets/advanced-tone.wav
+      regions:
+        - { id: body, start_frame: 0, end_frame: 12000, root_note: 60 }
+  sample_maps:
+    - id: keys
+      selection_mode: first_match
+      zones:
+        - { id: tone, region: tone.body, key_range: [48, 72], velocity_range: [1, 127] }
+ports:
+  - { name: pitch_ratio, direction: input, signal: control, channels: 1, default: 1, min: 0.125, max: 8, maps_to: player.pitch_ratio }
+  - { name: level, direction: input, signal: control, channels: 1, default: 1, min: 0, max: 4, maps_to: player.level }
+  - { name: master, direction: output, signal: audio, channels: 2, maps_from: player.audio }
+preset_surface:
+  parameters:
+    - { name: tone.pitch_ratio, maps_to: pitch_ratio }
+    - { name: tone.level, maps_to: level }
+modules:
+  - { id: midi, type: midi_input }
+  - { id: player, type: sample_map_player, static: { sample_map: keys, channels: 2, max_voices: 4 } }
+connections:
+  - { from: midi.events, to: player.note }
