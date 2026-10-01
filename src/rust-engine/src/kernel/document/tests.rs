@@ -1551,6 +1551,168 @@ connections:
 }
 
 #[test]
+fn drum_map_voice_steal_uses_oldest_quietest_or_reject_new_policy() {
+    let directory = tempfile::tempdir().expect("temporary sample root");
+    let mut values = vec![0.5; 8];
+    values.extend(vec![0.125; 8]);
+    values.extend(vec![-0.5; 8]);
+    crate::wav::write_wav_stereo_i16(
+        fs::File::create(directory.path().join("hits.wav")).expect("sample file"),
+        48_000,
+        &values,
+        &values,
+    )
+    .expect("write sample");
+    let yaml = r#"
+metadata: { name: drum_voice_stealing }
+assets:
+  sample_sources:
+    - id: hits
+      path: hits.wav
+      regions:
+        - { id: loud, start_frame: 0, end_frame: 8 }
+        - { id: quiet, start_frame: 8, end_frame: 16 }
+        - { id: new, start_frame: 16, end_frame: 24 }
+  sample_maps:
+    - id: kit
+      zones:
+        - { region: hits.loud, key_range: [36, 36], velocity_range: [1, 127] }
+        - { region: hits.quiet, key_range: [38, 38], velocity_range: [1, 127] }
+        - { region: hits.new, key_range: [40, 40], velocity_range: [1, 127] }
+ports:
+  - { name: audio_out, direction: output, signal: audio, channels: 1, maps_from: player.audio }
+modules:
+  - { id: midi, type: midi_input }
+  - { id: player, type: sample_map_player, static: { sample_map: kit, max_voices: 2, voice_steal: POLICY, channels: 1 } }
+connections:
+  - { from: midi.events, to: player.note }
+"#;
+    let settings = RenderSettings {
+        sample_rate_hz: 48_000,
+        block_size_frames: 2,
+        duration_frames: 4,
+    };
+    let loud = 16383.0 / 32768.0;
+    let quiet = 4095.0 / 32768.0;
+    for (policy, third_hit) in [
+        ("oldest", quiet - 0.5),
+        ("quietest", loud - 0.5),
+        ("reject_new", loud + quiet),
+    ] {
+        let patch =
+            load_kernel_patch_str(&yaml.replace("POLICY", policy)).expect("voice policy kit loads");
+        let prepared = prepare_kernel_patch_with_context(
+            &patch,
+            &settings,
+            &PreparationContext::new(directory.path(), 48_000),
+        )
+        .expect("voice policy kit prepares");
+        let rendered = render_kernel_offline_named(
+            &prepared,
+            vec![
+                TimedInputEvent::new(
+                    0,
+                    ScriptEvent::NoteOn {
+                        note: 36,
+                        velocity: 100,
+                    },
+                ),
+                TimedInputEvent::new(
+                    0,
+                    ScriptEvent::NoteOn {
+                        note: 38,
+                        velocity: 100,
+                    },
+                ),
+                TimedInputEvent::new(
+                    2,
+                    ScriptEvent::NoteOn {
+                        note: 40,
+                        velocity: 100,
+                    },
+                ),
+            ],
+            &PreparedSamplerAssets::empty(),
+        )
+        .expect("voice policy kit renders");
+        assert_eq!(
+            rendered[0].1[0],
+            vec![loud + quiet, loud + quiet, third_hit, third_hit]
+        );
+    }
+    let quietest_patch = load_kernel_patch_str(&yaml.replace("POLICY", "quietest"))
+        .expect("quietest kit loads");
+    let quietest_prepared = prepare_kernel_patch_with_context(
+        &quietest_patch,
+        &RenderSettings {
+            block_size_frames: 4,
+            ..settings
+        },
+        &PreparationContext::new(directory.path(), 48_000),
+    )
+    .expect("quietest kit prepares");
+    let tied = render_kernel_offline_named(
+        &quietest_prepared,
+        vec![
+            TimedInputEvent::new(0, ScriptEvent::NoteOn { note: 36, velocity: 100 }),
+            TimedInputEvent::new(0, ScriptEvent::NoteOn { note: 38, velocity: 100 }),
+            TimedInputEvent::new(0, ScriptEvent::NoteOn { note: 40, velocity: 100 }),
+        ],
+        &PreparedSamplerAssets::empty(),
+    )
+    .expect("equal peak voices render");
+    assert_eq!(tied[0].1[0], vec![quiet - 0.5; 4]);
+
+    let mono_patch = load_kernel_patch_str(
+        &yaml
+            .replace("max_voices: 2", "max_voices: 1")
+            .replace("POLICY", "reject_new"),
+    )
+    .expect("single-voice reject-new kit loads");
+    let mono_prepared = prepare_kernel_patch_with_context(
+        &mono_patch,
+        &RenderSettings {
+            duration_frames: 10,
+            ..settings
+        },
+        &PreparationContext::new(directory.path(), 48_000),
+    )
+    .expect("single-voice reject-new kit prepares");
+    let mono_rendered = render_kernel_offline_named(
+        &mono_prepared,
+        vec![
+            TimedInputEvent::new(
+                0,
+                ScriptEvent::NoteOn {
+                    note: 36,
+                    velocity: 100,
+                },
+            ),
+            TimedInputEvent::new(
+                2,
+                ScriptEvent::NoteOn {
+                    note: 40,
+                    velocity: 100,
+                },
+            ),
+            TimedInputEvent::new(
+                8,
+                ScriptEvent::NoteOn {
+                    note: 40,
+                    velocity: 100,
+                },
+            ),
+        ],
+        &PreparedSamplerAssets::empty(),
+    )
+    .expect("single-voice reject-new kit renders");
+    assert_eq!(
+        mono_rendered[0].1[0],
+        [vec![loud; 8], vec![-0.5; 2]].concat()
+    );
+}
+
+#[test]
 fn drum_map_round_robin_counters_are_repeatable_and_independent_per_group() {
     let directory = tempfile::tempdir().expect("temporary sample root");
     let values = [-0.5, 0.25, -0.75, 0.5];

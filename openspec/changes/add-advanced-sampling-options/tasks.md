@@ -39,7 +39,7 @@
 ## 5. Voice And Choke Behaviour
 
 - [x] 5.1 Implement bounded `max_voices` handling for sample playback modules.
-- [ ] 5.2 Implement configured voice stealing: `oldest`, `quietest`, or `reject_new` where supported.
+- [x] 5.2 Implement configured voice stealing: `oldest`, `quietest`, or `reject_new` where supported.
 - [ ] 5.3 Implement exclusive/choke groups for mutually exclusive articulations.
 - [ ] 5.4 Make choke behaviour sample-accurate within a block using event frame offsets.
 - [ ] 5.5 Support `cut`, `fade`, or `release` choke modes where implemented; reject unsupported modes during preparation.

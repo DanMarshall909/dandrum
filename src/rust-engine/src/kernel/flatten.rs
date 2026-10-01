@@ -25,10 +25,11 @@ use crate::graph::{PortDirection, SignalType};
 use super::{
     CONTROL_TO_AUDIO_DEFINITION, Connection, DefinitionImplementation, DefinitionRegistry,
     GraphDefinition, Multiplicity, NAMESPACE_SEPARATOR, Node, NodeId, POLY_ALLOCATION_OLDEST_STEAL,
-    POLY_ALLOCATION_PARAM, POLY_ALLOCATION_REJECT_NEW, POLY_DEFINITION, POLY_MAX_VOICES_PARAM,
-    POLY_NOTE_EVENTS_INPUT, POLY_WRAPPED_DEFINITION_PARAM, PROMOTION_INPUT_PORT,
-    PROMOTION_NODE_PREFIX, PROMOTION_OUTPUT_PORT, PolyAllocationPolicy, Port, PortRef,
-    PromotionStep, ResolvedPort, StaticArg, StaticValue, VOICE_GATE_OUTPUT, VOICE_INTRINSIC_NODE,
+    POLY_ALLOCATION_PARAM, POLY_ALLOCATION_QUIETEST_STEAL, POLY_ALLOCATION_REJECT_NEW,
+    POLY_DEFINITION, POLY_MAX_VOICES_PARAM, POLY_NOTE_EVENTS_INPUT, POLY_WRAPPED_DEFINITION_PARAM,
+    PROMOTION_INPUT_PORT, PROMOTION_NODE_PREFIX, PROMOTION_OUTPUT_PORT, PolyAllocationPolicy, Port,
+    PortRef, PromotionStep, ResolvedPort, StaticArg, StaticValue, VOICE_GATE_OUTPUT,
+    VOICE_INTRINSIC_NODE,
 };
 
 /// Maximum defined-module nesting depth before flattening bails out. Guards against
@@ -148,20 +149,6 @@ impl FlattenedGraph {
                     .with_module_id(node.id.as_str()),
                 ));
             }
-            if matches!(node.static_args.get("voice_steal"), Some(StaticValue::Enum(value)) if value == "quietest")
-            {
-                return Err(Diagnostics::from(
-                    Diagnostic::new(
-                        error_codes::KERNEL_SAMPLE_UNSUPPORTED_MODE,
-                        Severity::Error,
-                        format!(
-                            "sample_map_player '{}' does not yet support quietest voice stealing",
-                            node.id.as_str()
-                        ),
-                    )
-                    .with_module_id(node.id.as_str()),
-                ));
-            }
             if max_voices <= 1 {
                 continue;
             }
@@ -177,6 +164,10 @@ impl FlattenedGraph {
                 Some(StaticValue::Enum(value)) if value == "reject_new" => {
                     (POLY_ALLOCATION_REJECT_NEW, PolyAllocationPolicy::RejectNew)
                 }
+                Some(StaticValue::Enum(value)) if value == "quietest" => (
+                    POLY_ALLOCATION_QUIETEST_STEAL,
+                    PolyAllocationPolicy::QuietestSteal,
+                ),
                 _ => (
                     POLY_ALLOCATION_OLDEST_STEAL,
                     PolyAllocationPolicy::OldestSteal,

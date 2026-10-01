@@ -324,6 +324,7 @@ fn next_sample_selection_random(state: &mut u64) -> u64 {
 pub(super) fn process_sample_map_player_state(
     zones: &[crate::compiled_patch::CompiledSampleZone],
     selection_mode: SampleSelectionMode,
+    reject_new_while_active: bool,
     round_robin_counters: &mut [usize],
     rng_state: &mut u64,
     queued_choices: Option<&[Option<usize>]>,
@@ -341,6 +342,10 @@ pub(super) fn process_sample_map_player_state(
                 continue;
             }
             if let ScriptEvent::NoteOn { note, velocity } = event.event {
+                if reject_new_while_active && *active {
+                    choice_cursor += 1;
+                    continue;
+                }
                 let chosen = queued_choices
                     .and_then(|choices| choices.get(choice_cursor).copied())
                     .unwrap_or_else(|| {
@@ -502,6 +507,7 @@ pub(super) fn process_sample_map_player(
     let PerModuleState::SampleMapPlayer {
         zones,
         selection_mode,
+        reject_new_while_active,
         round_robin_counters,
         rng_state,
         selected_zone,
@@ -516,6 +522,7 @@ pub(super) fn process_sample_map_player(
     process_sample_map_player_state(
         zones,
         *selection_mode,
+        *reject_new_while_active,
         round_robin_counters,
         rng_state,
         None,

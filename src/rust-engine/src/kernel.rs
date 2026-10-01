@@ -47,6 +47,7 @@ pub const POLY_MAX_VOICES_PARAM: &str = "max_voices";
 /// Static argument selecting the voice allocation policy.
 pub const POLY_ALLOCATION_PARAM: &str = "allocation";
 pub const POLY_ALLOCATION_OLDEST_STEAL: &str = "oldest-steal";
+pub const POLY_ALLOCATION_QUIETEST_STEAL: &str = "quietest-steal";
 pub const POLY_ALLOCATION_REJECT_NEW: &str = "reject-new";
 /// Event input receiving note-on and note-off events for allocation.
 pub const POLY_NOTE_EVENTS_INPUT: &str = "notes";
@@ -69,6 +70,7 @@ pub const VOICE_GATE_OUTPUT: &str = "gate";
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum PolyAllocationPolicy {
     OldestSteal,
+    QuietestSteal,
     RejectNew,
 }
 
@@ -77,6 +79,9 @@ impl PolyAllocationPolicy {
         match value {
             StaticValue::Enum(value) if value == POLY_ALLOCATION_OLDEST_STEAL => {
                 Some(Self::OldestSteal)
+            }
+            StaticValue::Enum(value) if value == POLY_ALLOCATION_QUIETEST_STEAL => {
+                Some(Self::QuietestSteal)
             }
             StaticValue::Enum(value) if value == POLY_ALLOCATION_REJECT_NEW => {
                 Some(Self::RejectNew)

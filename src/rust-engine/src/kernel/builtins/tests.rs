@@ -180,7 +180,11 @@ fn poly_declares_structural_static_arguments_and_note_event_input() {
     );
     assert_eq!(
         static_param_of(poly, POLY_ALLOCATION_PARAM).allowed_values(),
-        [POLY_ALLOCATION_OLDEST_STEAL, POLY_ALLOCATION_REJECT_NEW]
+        [
+            POLY_ALLOCATION_OLDEST_STEAL,
+            POLY_ALLOCATION_QUIETEST_STEAL,
+            POLY_ALLOCATION_REJECT_NEW,
+        ]
     );
     let notes = port_of(poly, POLY_NOTE_EVENTS_INPUT, PortDirection::Input);
     assert_eq!(notes.signal_type(), SignalType::Event);

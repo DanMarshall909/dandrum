@@ -257,6 +257,7 @@ pub enum CompiledConstruction {
         selection_mode: SampleSelectionMode,
         group_count: usize,
         selection_seed: u64,
+        reject_new_while_active: bool,
     },
     CompensationDelay {
         samples: usize,

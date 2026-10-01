@@ -1930,6 +1930,10 @@ fn lower_kernel_graph(
                 selection_mode,
                 group_count: groups.len(),
                 selection_seed: map.selection_seed(),
+                reject_new_while_active: matches!(
+                    node.static_args().get("voice_steal"),
+                    Some(StaticValue::Enum(value)) if value == "reject_new"
+                ),
             };
         }
         data.port_channels.extend(

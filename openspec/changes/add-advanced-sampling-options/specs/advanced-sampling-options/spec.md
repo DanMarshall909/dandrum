@@ -67,6 +67,11 @@ A sample source SHALL support named regions with start and end frame positions i
 - **WHEN** overlapping drum hits select round-robin or seeded weighted zones on separate voices
 - **THEN** the selected sequence SHALL advance at kit level and remain the same across equivalent audio block sizes
 
+#### Scenario: Drum voice stealing follows the configured policy
+
+- **WHEN** a drum map has no free voice and receives another hit with `oldest`, `quietest`, or `reject_new` selected
+- **THEN** it SHALL respectively replace the oldest voice, replace the voice with the lowest measured audio peak, or preserve both voices; a single-voice map with `reject_new` SHALL accept another hit after its current sample finishes
+
 #### Scenario: Gated region stops on release
 
 - **WHEN** a `sample_player` in gated mode receives a note-off event at a frame inside a block

@@ -25,7 +25,7 @@ const RELEASE_SILENCE_SECONDS: f32 = 0.010;
 /// A released voice without `done` is retired by this deadline even if audible.
 const RELEASE_TIMEOUT_SECONDS: f32 = 5.0;
 
-#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, Default, PartialEq)]
 struct PolyVoiceSlot {
     active: bool,
     gate_held: bool,
@@ -35,6 +35,7 @@ struct PolyVoiceSlot {
     quiet_frames_after_release: usize,
     released_frames: usize,
     release_offset_pending: usize,
+    last_peak: f32,
 }
 
 struct SharedSampleMapSelection {
@@ -250,6 +251,7 @@ impl PreparedPolyRuntimeRegion {
                     selection_mode,
                     group_count,
                     selection_seed,
+                    ..
                 } = &compiled.child_patch().nodes()[step.module_index].construction
                 else {
                     return None;
@@ -488,6 +490,7 @@ impl PreparedPolyRuntimeRegion {
                 }
             }
             let mut audio_audible = false;
+            let mut peak = 0.0_f32;
             let mut control_done = false;
             let release_start = self.slots[voice].release_offset_pending.min(frames);
             let mut step_context = super::realtime_graph_processor::PreparedStepContext {
@@ -535,6 +538,9 @@ impl PreparedPolyRuntimeRegion {
                     let destination = BufferId(binding.accumulator_start + channel);
                     for frame in 0..frames {
                         let sample = arena.sample(source, frame);
+                        if binding.signal_type == SignalType::Audio {
+                            peak = peak.max(sample.abs());
+                        }
                         audio_audible |= frame >= release_start
                             && binding.signal_type == SignalType::Audio
                             && sample.abs() > RELEASE_SILENCE_THRESHOLD;
@@ -543,6 +549,7 @@ impl PreparedPolyRuntimeRegion {
                     }
                 }
             }
+            self.slots[voice].last_peak = peak;
             let done = match self.done_binding {
                 Some(DoneBinding::Event(queue)) => self.voice_event_queues[voice]
                     .queue_ref(queue.0)
@@ -604,6 +611,17 @@ impl PreparedPolyRuntimeRegion {
                 .filter(|(_, slot)| slot.active)
                 .min_by_key(|(_, slot)| slot.allocation_order)
                 .map(|(index, _)| index),
+            PolyAllocationPolicy::QuietestSteal => self
+                .slots
+                .iter()
+                .enumerate()
+                .filter(|(_, slot)| slot.active)
+                .min_by(|(_, left), (_, right)| {
+                    left.last_peak
+                        .total_cmp(&right.last_peak)
+                        .then_with(|| left.allocation_order.cmp(&right.allocation_order))
+                })
+                .map(|(index, _)| index),
         });
         let Some(voice) = selected else { return };
 
@@ -641,6 +659,7 @@ impl PreparedPolyRuntimeRegion {
             quiet_frames_after_release: 0,
             released_frames: 0,
             release_offset_pending: 0,
+            last_peak: 0.0,
         };
         self.write_intrinsic_controls(voice, frames);
         self.push_gate_event(voice, ScriptEvent::NoteOn { note, velocity }, frame_offset);

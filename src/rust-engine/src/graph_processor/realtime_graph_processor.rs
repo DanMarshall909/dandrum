@@ -1583,6 +1583,7 @@ impl PreparedStepExecutor for SamplePlayerStepExecutor {
 struct SampleMapPlayerStepExecutor {
     zones: Box<[crate::compiled_patch::CompiledSampleZone]>,
     selection_mode: crate::compiled_patch::SampleSelectionMode,
+    reject_new_while_active: bool,
     round_robin_counters: Box<[usize]>,
     initial_seed: u64,
     rng_state: u64,
@@ -1608,6 +1609,7 @@ impl PreparedStepExecutor for SampleMapPlayerStepExecutor {
         arena_processing::process_sample_map_player_state(
             &self.zones,
             self.selection_mode,
+            self.reject_new_while_active,
             &mut self.round_robin_counters,
             &mut self.rng_state,
             (!self.queued_choices.is_empty()).then_some(self.queued_choices.as_slice()),
@@ -2161,6 +2163,7 @@ pub(super) fn bind_prepared_step_executors(
                 PerModuleState::SampleMapPlayer {
                     zones,
                     selection_mode,
+                    reject_new_while_active,
                     round_robin_counters,
                     initial_seed,
                     rng_state,
@@ -2171,6 +2174,7 @@ pub(super) fn bind_prepared_step_executors(
                 } => Box::new(SampleMapPlayerStepExecutor {
                     zones,
                     selection_mode,
+                    reject_new_while_active,
                     round_robin_counters,
                     initial_seed,
                     rng_state,

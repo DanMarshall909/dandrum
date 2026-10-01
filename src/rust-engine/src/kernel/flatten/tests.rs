@@ -59,17 +59,9 @@ fn prepared_map_poly_rewrites_direct_note_input_and_avoids_generated_name_collis
 }
 
 #[test]
-fn prepared_map_poly_rejects_invalid_limit_and_unimplemented_stealing_mode() {
+fn prepared_map_poly_rejects_invalid_limit() {
     let registry = crate::kernel::builtins::builtin_registry();
-    for (max_voices, voice_steal, code) in [
-        (0, "oldest", error_codes::KERNEL_SAMPLE_INVALID_VOICE_LIMIT),
-        (
-            129,
-            "oldest",
-            error_codes::KERNEL_SAMPLE_INVALID_VOICE_LIMIT,
-        ),
-        (2, "quietest", error_codes::KERNEL_SAMPLE_UNSUPPORTED_MODE),
-    ] {
+    for max_voices in [0, 129] {
         let root = GraphDefinition::new("root").with_node(
             Node::new(NodeId::new("player"), module_types::SAMPLE_MAP_PLAYER)
                 .with_static_arg(
@@ -82,14 +74,17 @@ fn prepared_map_poly_rejects_invalid_limit_and_unimplemented_stealing_mode() {
                 )
                 .with_static_arg(
                     "voice_steal",
-                    StaticArg::Literal(StaticValue::Enum(voice_steal.into())),
+                    StaticArg::Literal(StaticValue::Enum("oldest".into())),
                 ),
         );
         let mut flat = root.flatten(&registry).expect("map flattens");
         let error = flat
             .expand_sample_map_poly_regions(&mut registry.clone())
             .expect_err("unsupported map options fail");
-        assert_eq!(error.errors().next().unwrap().error_code(), code);
+        assert_eq!(
+            error.errors().next().unwrap().error_code(),
+            error_codes::KERNEL_SAMPLE_INVALID_VOICE_LIMIT
+        );
     }
 }
 

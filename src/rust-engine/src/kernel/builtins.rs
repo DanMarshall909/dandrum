@@ -46,10 +46,10 @@ use crate::graph::builtin_ports as ports;
 
 use super::{
     ChannelCount, ControlDefault, DefinitionRegistry, GraphDefinition, LatencySpec, Multiplicity,
-    POLY_ALLOCATION_OLDEST_STEAL, POLY_ALLOCATION_PARAM, POLY_ALLOCATION_REJECT_NEW,
-    POLY_DEFINITION, POLY_MAX_VOICES_PARAM, POLY_NOTE_EVENTS_INPUT, POLY_WRAPPED_DEFINITION_PARAM,
-    Port, ResourceKind, StaticParam, StaticType, StaticValue, VOICE_GATE_OUTPUT,
-    VOICE_INTRINSIC_DEFINITION, VOICE_NOTE_OUTPUT, VOICE_VELOCITY_OUTPUT,
+    POLY_ALLOCATION_OLDEST_STEAL, POLY_ALLOCATION_PARAM, POLY_ALLOCATION_QUIETEST_STEAL,
+    POLY_ALLOCATION_REJECT_NEW, POLY_DEFINITION, POLY_MAX_VOICES_PARAM, POLY_NOTE_EVENTS_INPUT,
+    POLY_WRAPPED_DEFINITION_PARAM, Port, ResourceKind, StaticParam, StaticType, StaticValue,
+    VOICE_GATE_OUTPUT, VOICE_INTRINSIC_DEFINITION, VOICE_NOTE_OUTPUT, VOICE_VELOCITY_OUTPUT,
 };
 
 const MONO: u32 = 1;
@@ -504,6 +504,7 @@ fn builtin_definitions() -> Vec<GraphDefinition> {
             .with_static_param(
                 StaticParam::new(POLY_ALLOCATION_PARAM, StaticType::Enum).with_allowed_values([
                     POLY_ALLOCATION_OLDEST_STEAL,
+                    POLY_ALLOCATION_QUIETEST_STEAL,
                     POLY_ALLOCATION_REJECT_NEW,
                 ]),
             )
