@@ -3,7 +3,7 @@ use crate::builtins::module_kind::ModuleKind;
 use crate::compiled_patch::CompiledNodeData;
 use crate::compiled_patch::{
     CompiledConstruction, CompiledFilterAlgorithm, CompiledNode, CompiledResourceHandles,
-    CompiledScriptLanguage, SampleInterpolation, SampleResourceHandle,
+    CompiledSampleZone, CompiledScriptLanguage, SampleInterpolation, SampleResourceHandle,
 };
 use crate::convolution::Convolution;
 use crate::crossover::LinkwitzRiley4;
@@ -80,6 +80,12 @@ pub(super) enum PerModuleState {
         region: SampleRegion,
         mode: String,
         interpolation: SampleInterpolation,
+        position: f64,
+        active: bool,
+    },
+    SampleMapPlayer {
+        zones: Box<[CompiledSampleZone]>,
+        selected_zone: Option<usize>,
         position: f64,
         active: bool,
     },
@@ -193,6 +199,16 @@ impl PerModuleState {
             Self::SamplePlayer {
                 position, active, ..
             } => {
+                *position = 0.0;
+                *active = false;
+            }
+            Self::SampleMapPlayer {
+                selected_zone,
+                position,
+                active,
+                ..
+            } => {
+                *selected_zone = None;
                 *position = 0.0;
                 *active = false;
             }
@@ -444,6 +460,17 @@ impl PerModuleState {
                     region: region.clone(),
                     mode: mode.clone(),
                     interpolation: *interpolation,
+                    position: 0.0,
+                    active: false,
+                }
+            }
+            ModuleKind::SampleMapPlayer => {
+                let CompiledConstruction::SampleMapPlayer { zones } = construction else {
+                    panic!("sample_map_player module {module_id} has mismatched construction data")
+                };
+                PerModuleState::SampleMapPlayer {
+                    zones: zones.clone(),
+                    selected_zone: None,
                     position: 0.0,
                     active: false,
                 }

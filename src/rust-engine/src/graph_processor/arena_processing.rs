@@ -313,6 +313,94 @@ fn sample_interpolated(
         + 2.0 * a)
 }
 
+pub(super) fn process_sample_map_player_state(
+    zones: &[crate::compiled_patch::CompiledSampleZone],
+    selected_zone: &mut Option<usize>,
+    position: &mut f64,
+    active: &mut bool,
+    context: &mut ProcessContext<'_>,
+    events: &[BlockEvent],
+) {
+    for frame in 0..context.frames() {
+        for event in events {
+            if event.frame_offset as usize != frame {
+                continue;
+            }
+            if let ScriptEvent::NoteOn { note, velocity } = event.event {
+                if let Some(index) = zones.iter().position(|zone| {
+                    note >= zone.key_range[0]
+                        && note <= zone.key_range[1]
+                        && velocity >= zone.velocity_range[0]
+                        && velocity <= zone.velocity_range[1]
+                }) {
+                    *selected_zone = Some(index);
+                    let region = &zones[index].region;
+                    *position = if region.reverse {
+                        (region.end_frame - 1) as f64
+                    } else {
+                        region.start_frame as f64
+                    };
+                    *active = true;
+                }
+            }
+        }
+        let output = if *active {
+            let zone = &zones[selected_zone.expect("active map player has a selected zone")];
+            let region = &zone.region;
+            if *position >= region.start_frame as f64 && *position < region.end_frame as f64 {
+                let sample = sample_interpolated(
+                    zone.sample.frames(),
+                    *position,
+                    region,
+                    SampleInterpolation::Linear,
+                );
+                let ratio = context.input_sample(0, frame, 1.0);
+                let ratio = if ratio.is_finite() {
+                    ratio.clamp(0.125, 8.0)
+                } else {
+                    1.0
+                };
+                *position += if region.reverse {
+                    -f64::from(ratio)
+                } else {
+                    f64::from(ratio)
+                };
+                if *position < region.start_frame as f64 || *position >= region.end_frame as f64 {
+                    *active = false;
+                }
+                sample
+            } else {
+                *active = false;
+                0.0
+            }
+        } else {
+            0.0
+        };
+        for channel in 0..context.output_count() {
+            context
+                .set_output_sample(channel, frame, output)
+                .expect("sample map output channel is prepared");
+        }
+    }
+}
+
+pub(super) fn process_sample_map_player(
+    state: &mut PerModuleState,
+    context: &mut ProcessContext<'_>,
+    events: &[BlockEvent],
+) {
+    let PerModuleState::SampleMapPlayer {
+        zones,
+        selected_zone,
+        position,
+        active,
+    } = state
+    else {
+        unreachable!()
+    };
+    process_sample_map_player_state(zones, selected_zone, position, active, context, events);
+}
+
 pub(super) fn process_sample_player(
     state: &mut PerModuleState,
     context: &mut ProcessContext<'_>,

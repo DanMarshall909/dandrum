@@ -1578,6 +1578,46 @@ impl PreparedStepExecutor for SamplePlayerStepExecutor {
     }
 }
 
+struct SampleMapPlayerStepExecutor {
+    zones: Box<[crate::compiled_patch::CompiledSampleZone]>,
+    selected_zone: Option<usize>,
+    position: f64,
+    active: bool,
+}
+
+impl PreparedStepExecutor for SampleMapPlayerStepExecutor {
+    fn execute(&mut self, context: &mut PreparedStepContext<'_>, step: &RenderStep) {
+        let events = context
+            .event_queues
+            .queue_ref(step.event_inputs[0].0)
+            .map_or(&[][..], |queue| queue.events());
+        let mut process_context = ProcessContext::new(
+            context.arena,
+            &step.input_buffers,
+            &step.output_buffers,
+            context.frames,
+        );
+        arena_processing::process_sample_map_player_state(
+            &self.zones,
+            &mut self.selected_zone,
+            &mut self.position,
+            &mut self.active,
+            &mut process_context,
+            events,
+        );
+    }
+
+    fn reset_voice(&mut self) {
+        self.selected_zone = None;
+        self.position = 0.0;
+        self.active = false;
+    }
+
+    fn is_active(&self) -> bool {
+        self.active
+    }
+}
+
 struct NoteToRateStepExecutor {
     rate: f32,
 }
@@ -2087,6 +2127,17 @@ pub(super) fn bind_prepared_step_executors(
                     position,
                     active,
                 }),
+                PerModuleState::SampleMapPlayer {
+                    zones,
+                    selected_zone,
+                    position,
+                    active,
+                } => Box::new(SampleMapPlayerStepExecutor {
+                    zones,
+                    selected_zone,
+                    position,
+                    active,
+                }),
                 PerModuleState::NoteToRate { rate } => Box::new(NoteToRateStepExecutor { rate }),
                 PerModuleState::EventFilter { note } => Box::new(EventFilterStepExecutor { note }),
                 PerModuleState::EnvelopeFollower { detector, mode } => {
@@ -2238,6 +2289,7 @@ pub(super) fn resolve_step_processor(kind: ModuleKind) -> PreparedStepProcessor 
         ModuleKind::NoteToControl => execute_note_to_control_step,
         ModuleKind::Sampler => execute_sampler_step,
         ModuleKind::SamplePlayer => execute_sample_player_step,
+        ModuleKind::SampleMapPlayer => execute_sample_map_player_step,
         ModuleKind::NoteToRate => execute_note_to_rate_step,
         ModuleKind::Impulse => execute_impulse_step,
         ModuleKind::Decay => execute_decay_step,
@@ -2426,6 +2478,24 @@ fn execute_sample_player_step(context: &mut PreparedStepContext<'_>, step: &Rend
     );
 }
 
+fn execute_sample_map_player_step(context: &mut PreparedStepContext<'_>, step: &RenderStep) {
+    let events = context
+        .event_queues
+        .queue_ref(step.event_inputs[0].0)
+        .map_or(&[][..], |queue| queue.events());
+    let mut process_context = ProcessContext::new(
+        context.arena,
+        &step.input_buffers,
+        &step.output_buffers,
+        context.frames,
+    );
+    arena_processing::process_sample_map_player(
+        &mut context.states[step.module_index],
+        &mut process_context,
+        events,
+    );
+}
+
 fn execute_note_to_rate_step(context: &mut PreparedStepContext<'_>, step: &RenderStep) {
     let events = context
         .event_queues
@@ -2585,6 +2655,11 @@ fn render_plan_supports_root_buses(
                 step.input_buffers.len() == 4
                     && !step.output_buffers.is_empty()
                     && step.event_inputs.len() == 2
+            }
+            ModuleKind::SampleMapPlayer => {
+                step.input_buffers.len() == 5
+                    && !step.output_buffers.is_empty()
+                    && step.event_inputs.len() == 1
             }
             ModuleKind::NoteToRate => {
                 step.input_buffers.is_empty()

@@ -8,8 +8,8 @@ use crate::builtins::module_types;
 use crate::compiled_patch::{
     self, CompileError, CompiledConstruction, CompiledNodeData, CompiledPatch,
     CompiledPolyOutputAccumulator, CompiledPolyRegion, CompiledPolyVoiceStorage, CompiledPortSpan,
-    CompiledResourceHandles, CompiledRootPort, ImpulseResponseResourceHandle, RootBusPlan,
-    SampleInterpolation, SampleResourceHandle,
+    CompiledResourceHandles, CompiledRootPort, CompiledSampleZone, ImpulseResponseResourceHandle,
+    RootBusPlan, SampleInterpolation, SampleResourceHandle,
 };
 use crate::diagnostics::{self, Diagnostic, Severity};
 use crate::graph::{Cable, Graph, ModuleId, ModuleNode, PortDirection, PortRef, SignalType};
@@ -1818,6 +1818,61 @@ fn lower_kernel_graph(
                 mode: mode.to_string(),
                 interpolation,
             };
+        }
+        if kind == ModuleKind::SampleMapPlayer {
+            let map_id = match node.static_args().get("sample_map") {
+                Some(StaticValue::String(value)) => value.as_str(),
+                _ => "",
+            };
+            let map = sample_assets.map_by_id(map_id).ok_or_else(|| {
+                sample_preparation_error(
+                    diagnostics::error_codes::KERNEL_SAMPLE_INVALID_ZONE,
+                    format!(
+                        "sample_map_player '{}' references unknown map '{map_id}'",
+                        node.id().as_str()
+                    ),
+                )
+            })?;
+            if map
+                .selection_mode()
+                .is_some_and(|mode| mode != "first_match")
+            {
+                return Err(sample_preparation_error(
+                    diagnostics::error_codes::KERNEL_SAMPLE_UNSUPPORTED_MODE,
+                    format!(
+                        "sample_map_player '{}' does not yet support map selection mode",
+                        node.id().as_str()
+                    ),
+                ));
+            }
+            let max_voices = match node.static_args().get("max_voices") {
+                Some(StaticValue::Int(value)) => *value,
+                _ => 16,
+            };
+            if max_voices != 1 {
+                return Err(sample_preparation_error(
+                    diagnostics::error_codes::KERNEL_SAMPLE_UNSUPPORTED_MODE,
+                    format!(
+                        "sample_map_player '{}' does not yet support multiple voices",
+                        node.id().as_str()
+                    ),
+                ));
+            }
+            let zones = map
+                .zones()
+                .iter()
+                .map(|zone| {
+                    let source = &sample_assets.sources()[zone.source_index()];
+                    CompiledSampleZone {
+                        sample: SampleResourceHandle::from_shared(source.resource.shared_sample()),
+                        region: source.declaration().regions[zone.region_index()].clone(),
+                        key_range: zone.declaration().key_range,
+                        velocity_range: zone.declaration().velocity_range,
+                    }
+                })
+                .collect::<Vec<_>>()
+                .into_boxed_slice();
+            data.construction = CompiledConstruction::SampleMapPlayer { zones };
         }
         data.port_channels.extend(
             node.ports()

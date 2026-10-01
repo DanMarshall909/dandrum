@@ -96,6 +96,11 @@ A sample map SHALL contain at least one zone that references a prepared region a
 - **WHEN** a drum map references declared sample regions by ID
 - **THEN** preparation SHALL retain authored zone order and resolve every zone to stable source and region indices
 
+#### Scenario: Drum key range selects a hit
+
+- **WHEN** a note-on falls inside a zone's inclusive key range
+- **THEN** the map player SHALL trigger that zone's prepared region, while a note outside all key ranges SHALL leave the current playback unchanged
+
 #### Scenario: Velocity layers choose different regions
 
 - **WHEN** two zones for the same drum note cover separate velocity ranges

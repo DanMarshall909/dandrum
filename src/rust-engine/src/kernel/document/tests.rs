@@ -1144,6 +1144,191 @@ connections:
 }
 
 #[test]
+fn drum_sample_map_selects_key_and_velocity_regions_from_note_events() {
+    let directory = tempfile::tempdir().expect("temporary sample root");
+    let values = [-0.5, -0.25, 0.25, 0.5, -0.75, -0.5];
+    crate::wav::write_wav_stereo_i16(
+        fs::File::create(directory.path().join("hits.wav")).expect("sample file"),
+        48_000,
+        &values,
+        &values,
+    )
+    .expect("write sample");
+    let yaml = r#"
+metadata: { name: drum_map_selection }
+assets:
+  sample_sources:
+    - id: hits
+      path: hits.wav
+      regions:
+        - { id: soft_kick, start_frame: 0, end_frame: 2 }
+        - { id: hard_kick, start_frame: 2, end_frame: 4 }
+        - { id: snare, start_frame: 4, end_frame: 6 }
+  sample_maps:
+    - id: kit
+      selection_mode: first_match
+      zones:
+        - { id: soft, region: hits.soft_kick, key_range: [36, 36], velocity_range: [1, 63] }
+        - { id: hard, region: hits.hard_kick, key_range: [36, 36], velocity_range: [64, 127] }
+        - { id: snare, region: hits.snare, key_range: [38, 40], velocity_range: [1, 127] }
+ports:
+  - { name: audio_out, direction: output, signal: audio, channels: 1, maps_from: player.audio }
+modules:
+  - { id: midi, type: midi_input }
+  - { id: player, type: sample_map_player, static: { sample_map: kit, max_voices: 1, channels: 1 } }
+connections:
+  - { from: midi.events, to: player.note }
+"#;
+    let patch = load_kernel_patch_str(yaml).expect("drum map patch loads");
+    let settings = RenderSettings {
+        sample_rate_hz: 48_000,
+        block_size_frames: 9,
+        duration_frames: 9,
+    };
+    let context = PreparationContext::new(directory.path(), 48_000);
+    let prepared = prepare_kernel_patch_with_context(&patch, &settings, &context)
+        .expect("drum map patch prepares");
+    let rendered = render_kernel_offline_named(
+        &prepared,
+        vec![
+            TimedInputEvent::new(
+                0,
+                ScriptEvent::NoteOn {
+                    note: 36,
+                    velocity: 40,
+                },
+            ),
+            TimedInputEvent::new(
+                3,
+                ScriptEvent::NoteOn {
+                    note: 36,
+                    velocity: 100,
+                },
+            ),
+            TimedInputEvent::new(
+                6,
+                ScriptEvent::NoteOn {
+                    note: 39,
+                    velocity: 90,
+                },
+            ),
+            TimedInputEvent::new(
+                7,
+                ScriptEvent::NoteOn {
+                    note: 41,
+                    velocity: 90,
+                },
+            ),
+        ],
+        &PreparedSamplerAssets::empty(),
+    )
+    .expect("drum map renders");
+    assert_eq!(
+        rendered[0].1[0],
+        vec![
+            -0.5,
+            -0.25,
+            0.0,
+            8191.0 / 32768.0,
+            16383.0 / 32768.0,
+            0.0,
+            -0.75,
+            -0.5,
+            0.0
+        ]
+    );
+}
+
+#[test]
+fn poly_drum_map_player_renders_two_selected_hits_and_retires_released_voices() {
+    let directory = tempfile::tempdir().expect("temporary sample root");
+    let values = [-0.5, -0.25, 0.25, 0.5];
+    crate::wav::write_wav_stereo_i16(
+        fs::File::create(directory.path().join("hits.wav")).expect("sample file"),
+        48_000,
+        &values,
+        &values,
+    )
+    .expect("write sample");
+    let yaml = r#"
+metadata: { name: poly_drum_map }
+assets:
+  sample_sources:
+    - id: hits
+      path: hits.wav
+      regions:
+        - { id: kick, start_frame: 0, end_frame: 2 }
+        - { id: snare, start_frame: 2, end_frame: 4 }
+  sample_maps:
+    - id: kit
+      selection_mode: first_match
+      zones:
+        - { region: hits.kick, key_range: [36, 36], velocity_range: [1, 127] }
+        - { region: hits.snare, key_range: [38, 38], velocity_range: [1, 127] }
+ports:
+  - { name: audio_out, direction: output, signal: audio, channels: 1, maps_from: voices.audio }
+module_definitions:
+  - type: sample_voice
+    ports:
+      - { name: audio, direction: output, signal: audio, channels: 1, maps_from: player.audio }
+    modules:
+      - { id: player, type: sample_map_player, static: { sample_map: kit, max_voices: 1, channels: 1 } }
+    connections:
+      - { from: voice.gate, to: player.note }
+modules:
+  - { id: midi, type: midi_input }
+  - { id: voices, type: poly, static: { definition: sample_voice, max_voices: 2, allocation: reject-new } }
+connections:
+  - { from: midi.events, to: voices.notes }
+"#;
+    let patch = load_kernel_patch_str(yaml).expect("poly kit patch loads");
+    let settings = RenderSettings {
+        sample_rate_hz: 48_000,
+        block_size_frames: 8,
+        duration_frames: 8,
+    };
+    let context = PreparationContext::new(directory.path(), 48_000);
+    let prepared = prepare_kernel_patch_with_context(&patch, &settings, &context)
+        .expect("poly kit patch prepares");
+    let mut runtime = RealtimeGraphProcessor::polyphonic_with_compiled_patch_and_sampler_assets_and_max_block_size(
+        prepared.graph().clone(), prepared.compiled_patch().clone(), 48_000.0,
+        &PreparedSamplerAssets::empty(), &crate::patch::VoiceAllocation::default(), 8,
+    );
+    runtime.note_on_at(36, 100, 0);
+    runtime.note_on_at(38, 100, 0);
+    runtime.note_off_at(36, 2);
+    runtime.note_off_at(38, 2);
+    let mut output = vec![vec![vec![0.0; 8]]];
+    assert_eq!(runtime.render_root_outputs(&mut output), 8);
+    assert_eq!(
+        output[0][0],
+        vec![
+            -0.5 + 8191.0 / 32768.0,
+            -0.25 + 16383.0 / 32768.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+        ]
+    );
+    assert!(
+        runtime.prepared_poly_runtime_regions()[0]
+            .voice_gate_events(0)
+            .iter()
+            .any(|event| matches!(event.event, ScriptEvent::NoteOff { .. }))
+    );
+    let mut quiet = vec![vec![vec![0.0; 512]]];
+    assert_eq!(runtime.render_root_outputs(&mut quiet), 512);
+    assert!(quiet[0][0].iter().all(|sample| *sample == 0.0));
+    assert_eq!(
+        runtime.prepared_poly_runtime_regions()[0].active_voice_count(),
+        0
+    );
+}
+
+#[test]
 fn poly_region_renders_sample_player_child_with_independent_voices() {
     let directory = tempfile::tempdir().expect("temporary sample root");
     crate::wav::write_wav_stereo_i16(

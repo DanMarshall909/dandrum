@@ -252,6 +252,9 @@ pub enum CompiledConstruction {
         mode: String,
         interpolation: SampleInterpolation,
     },
+    SampleMapPlayer {
+        zones: Box<[CompiledSampleZone]>,
+    },
     CompensationDelay {
         samples: usize,
     },
@@ -304,6 +307,14 @@ pub enum SampleInterpolation {
     Nearest,
     Linear,
     Cubic,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct CompiledSampleZone {
+    pub sample: SampleResourceHandle,
+    pub region: SampleRegion,
+    pub key_range: [u8; 2],
+    pub velocity_range: [u8; 2],
 }
 
 #[derive(Clone, Debug, PartialEq)]

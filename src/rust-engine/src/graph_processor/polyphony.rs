@@ -839,6 +839,11 @@ fn is_poly_child_arena_supported(step: &RenderStep) -> bool {
                 && !step.output_buffers.is_empty()
                 && step.event_inputs.len() == 2
         }
+        ModuleKind::SampleMapPlayer => {
+            step.input_buffers.len() == 5
+                && !step.output_buffers.is_empty()
+                && step.event_inputs.len() == 1
+        }
         ModuleKind::NoteToControl => {
             step.input_buffers.is_empty()
                 && step.output_buffers.len() == 4
