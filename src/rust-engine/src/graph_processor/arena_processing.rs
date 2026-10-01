@@ -313,10 +313,19 @@ fn sample_interpolated(
         + 2.0 * a)
 }
 
+fn next_sample_selection_random(state: &mut u64) -> u64 {
+    *state = state.wrapping_add(0x9e37_79b9_7f4a_7c15);
+    let mut value = *state;
+    value = (value ^ (value >> 30)).wrapping_mul(0xbf58_476d_1ce4_e5b9);
+    value = (value ^ (value >> 27)).wrapping_mul(0x94d0_49bb_1331_11eb);
+    value ^ (value >> 31)
+}
+
 pub(super) fn process_sample_map_player_state(
     zones: &[crate::compiled_patch::CompiledSampleZone],
     selection_mode: SampleSelectionMode,
     round_robin_counters: &mut [usize],
+    rng_state: &mut u64,
     selected_zone: &mut Option<usize>,
     position: &mut f64,
     active: &mut bool,
@@ -337,6 +346,27 @@ pub(super) fn process_sample_map_player_state(
                 };
                 let first = zones.iter().position(matches);
                 let chosen = first.map(|first| {
+                    if selection_mode == SampleSelectionMode::RandomWeighted {
+                        let total_weight = zones
+                            .iter()
+                            .filter(|zone| matches(zone))
+                            .map(|zone| u64::from(zone.weight))
+                            .sum::<u64>();
+                        let mut ticket = next_sample_selection_random(rng_state) % total_weight;
+                        return zones
+                            .iter()
+                            .enumerate()
+                            .filter(|(_, zone)| matches(zone))
+                            .find_map(|(index, zone)| {
+                                if ticket < u64::from(zone.weight) {
+                                    Some(index)
+                                } else {
+                                    ticket -= u64::from(zone.weight);
+                                    None
+                                }
+                            })
+                            .expect("positive weighted zones contain the sampled ticket");
+                    }
                     if selection_mode == SampleSelectionMode::RoundRobin {
                         if let Some(group) = zones[first].round_robin_group {
                             let count = zones
@@ -422,9 +452,11 @@ pub(super) fn process_sample_map_player(
         zones,
         selection_mode,
         round_robin_counters,
+        rng_state,
         selected_zone,
         position,
         active,
+        ..
     } = state
     else {
         unreachable!()
@@ -433,6 +465,7 @@ pub(super) fn process_sample_map_player(
         zones,
         *selection_mode,
         round_robin_counters,
+        rng_state,
         selected_zone,
         position,
         active,

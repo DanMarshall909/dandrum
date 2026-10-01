@@ -256,6 +256,7 @@ pub enum CompiledConstruction {
         zones: Box<[CompiledSampleZone]>,
         selection_mode: SampleSelectionMode,
         group_count: usize,
+        selection_seed: u64,
     },
     CompensationDelay {
         samples: usize,
@@ -315,6 +316,7 @@ pub enum SampleInterpolation {
 pub enum SampleSelectionMode {
     FirstMatch,
     RoundRobin,
+    RandomWeighted,
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -324,6 +326,7 @@ pub struct CompiledSampleZone {
     pub key_range: [u8; 2],
     pub velocity_range: [u8; 2],
     pub round_robin_group: Option<usize>,
+    pub weight: u32,
 }
 
 #[derive(Clone, Debug, PartialEq)]

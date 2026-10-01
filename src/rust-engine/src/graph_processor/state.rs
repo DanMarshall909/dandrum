@@ -88,6 +88,8 @@ pub(super) enum PerModuleState {
         zones: Box<[CompiledSampleZone]>,
         selection_mode: SampleSelectionMode,
         round_robin_counters: Box<[usize]>,
+        initial_seed: u64,
+        rng_state: u64,
         selected_zone: Option<usize>,
         position: f64,
         active: bool,
@@ -207,12 +209,15 @@ impl PerModuleState {
             }
             Self::SampleMapPlayer {
                 round_robin_counters,
+                initial_seed,
+                rng_state,
                 selected_zone,
                 position,
                 active,
                 ..
             } => {
                 round_robin_counters.fill(0);
+                *rng_state = *initial_seed;
                 *selected_zone = None;
                 *position = 0.0;
                 *active = false;
@@ -474,6 +479,7 @@ impl PerModuleState {
                     zones,
                     selection_mode,
                     group_count,
+                    selection_seed,
                 } = construction
                 else {
                     panic!("sample_map_player module {module_id} has mismatched construction data")
@@ -482,6 +488,8 @@ impl PerModuleState {
                     zones: zones.clone(),
                     selection_mode: *selection_mode,
                     round_robin_counters: vec![0; *group_count].into_boxed_slice(),
+                    initial_seed: *selection_seed,
+                    rng_state: *selection_seed,
                     selected_zone: None,
                     position: 0.0,
                     active: false,

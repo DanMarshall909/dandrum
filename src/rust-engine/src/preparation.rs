@@ -1833,10 +1833,9 @@ fn lower_kernel_graph(
                     ),
                 )
             })?;
-            if map
-                .selection_mode()
-                .is_some_and(|mode| mode != "first_match" && mode != "round_robin")
-            {
+            if map.selection_mode().is_some_and(|mode| {
+                mode != "first_match" && mode != "round_robin" && mode != "random_weighted"
+            }) {
                 return Err(sample_preparation_error(
                     diagnostics::error_codes::KERNEL_SAMPLE_UNSUPPORTED_MODE,
                     format!(
@@ -1880,19 +1879,21 @@ fn lower_kernel_graph(
                         key_range: zone.declaration().key_range,
                         velocity_range: zone.declaration().velocity_range,
                         round_robin_group,
+                        weight: zone.declaration().weight.unwrap_or(1),
                     }
                 })
                 .collect::<Vec<_>>()
                 .into_boxed_slice();
-            let selection_mode = if map.selection_mode() == Some("round_robin") {
-                SampleSelectionMode::RoundRobin
-            } else {
-                SampleSelectionMode::FirstMatch
+            let selection_mode = match map.selection_mode() {
+                Some("round_robin") => SampleSelectionMode::RoundRobin,
+                Some("random_weighted") => SampleSelectionMode::RandomWeighted,
+                _ => SampleSelectionMode::FirstMatch,
             };
             data.construction = CompiledConstruction::SampleMapPlayer {
                 zones,
                 selection_mode,
                 group_count: groups.len(),
+                selection_seed: map.selection_seed(),
             };
         }
         data.port_channels.extend(

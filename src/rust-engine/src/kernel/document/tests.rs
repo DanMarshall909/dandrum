@@ -1425,6 +1425,83 @@ connections:
 }
 
 #[test]
+fn seeded_weighted_drum_map_repeats_its_signed_hit_sequence() {
+    let directory = tempfile::tempdir().expect("temporary sample root");
+    let values = [-0.5, 0.5];
+    crate::wav::write_wav_stereo_i16(
+        fs::File::create(directory.path().join("hits.wav")).expect("sample file"),
+        48_000,
+        &values,
+        &values,
+    )
+    .expect("write sample");
+    let yaml = r#"
+metadata: { name: weighted_drums }
+assets:
+  sample_sources:
+    - id: hits
+      path: hits.wav
+      regions:
+        - { id: rare, start_frame: 0, end_frame: 1 }
+        - { id: common, start_frame: 1, end_frame: 2 }
+  sample_maps:
+    - id: kit
+      selection_mode: random_weighted
+      selection_seed: 123
+      zones:
+        - { region: hits.rare, key_range: [36, 36], velocity_range: [1, 127], weight: 1 }
+        - { region: hits.common, key_range: [36, 36], velocity_range: [1, 127], weight: 3 }
+ports:
+  - { name: audio_out, direction: output, signal: audio, channels: 1, maps_from: player.audio }
+modules:
+  - { id: midi, type: midi_input }
+  - { id: player, type: sample_map_player, static: { sample_map: kit, max_voices: 1, channels: 1 } }
+connections:
+  - { from: midi.events, to: player.note }
+"#;
+    let patch = load_kernel_patch_str(yaml).expect("weighted kit loads");
+    let settings = RenderSettings {
+        sample_rate_hz: 48_000,
+        block_size_frames: 8,
+        duration_frames: 8,
+    };
+    let context = PreparationContext::new(directory.path(), 48_000);
+    let prepared = prepare_kernel_patch_with_context(&patch, &settings, &context)
+        .expect("weighted kit prepares");
+    let events = (0..8)
+        .map(|frame| {
+            TimedInputEvent::new(
+                frame,
+                ScriptEvent::NoteOn {
+                    note: 36,
+                    velocity: 100,
+                },
+            )
+        })
+        .collect::<Vec<_>>();
+    let first =
+        render_kernel_offline_named(&prepared, events.clone(), &PreparedSamplerAssets::empty())
+            .expect("first weighted render");
+    let second = render_kernel_offline_named(&prepared, events, &PreparedSamplerAssets::empty())
+        .expect("second weighted render");
+    assert_eq!(first, second);
+    let common = 16383.0 / 32768.0;
+    assert_eq!(
+        first[0].1[0],
+        vec![common, -0.5, -0.5, common, common, -0.5, common, common]
+    );
+
+    let error = match load_kernel_patch_str(&yaml.replace("weight: 3", "weight: 0")) {
+        Ok(_) => panic!("zero-weight zone must fail schema validation"),
+        Err(error) => error,
+    };
+    assert_eq!(
+        error.errors().next().unwrap().error_code(),
+        error_codes::KERNEL_DOCUMENT_SCHEMA_FAILED
+    );
+}
+
+#[test]
 fn poly_region_renders_sample_player_child_with_independent_voices() {
     let directory = tempfile::tempdir().expect("temporary sample root");
     crate::wav::write_wav_stereo_i16(
