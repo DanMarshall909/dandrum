@@ -11,7 +11,7 @@
 
 - [x] 2.1 Resolve sample paths relative to the patch/module package root using the existing asset resolution rules.
 - [x] 2.2 Decode supported sample formats off the audio thread into engine-owned buffers.
-- [ ] 2.3 Validate region start/end frames, root note, gain, pan, reverse, fades, simple loop points, and loop crossfades.
+- [x] 2.3 Validate region start/end frames, root note, gain, pan, reverse, fades, simple loop points, and loop crossfades.
 - [ ] 2.4 Prepare sample maps into deterministic render-time lookup structures.
 - [ ] 2.5 Prepare slice tables from explicit metadata; defer transient auto-detection unless it can be done entirely during preparation.
 - [ ] 2.6 Allocate all voice state, scratch buffers, and lookup tables required for steady-state rendering.

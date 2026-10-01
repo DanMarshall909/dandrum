@@ -35,7 +35,7 @@ The engine SHALL support reusable, file-backed sample sources and sample maps as
 
 ### Requirement: Sample regions describe bounded playback windows
 
-A sample source SHALL support named regions with start and end frame positions inside the decoded source. The region declaration SHALL accept optional root note, gain, pan, reverse playback, fade-in, fade-out, and simple loop settings with start/end positions and optional crossfade. Preparation SHALL reject empty or out-of-bounds regions and loop or fade values that cannot fit within the region. A player SHALL use the prepared region metadata without changing the source asset.
+A sample source SHALL support named regions with start and end frame positions inside the decoded source. The region declaration SHALL accept optional root note, gain, pan, reverse playback, fade-in, fade-out, and simple loop settings with start/end positions and optional crossfade. Gain SHALL be within -96..=24 dB and pan within -1..=1. Preparation SHALL reject empty or out-of-bounds regions, combined fades longer than the region, and loop crossfades longer than half the loop window. A player SHALL use the prepared region metadata without changing the source asset.
 
 #### Scenario: Chromatic region carries its root note
 

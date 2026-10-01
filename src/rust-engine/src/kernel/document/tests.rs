@@ -568,6 +568,125 @@ fn sample_asset_preparation_rejects_unsupported_loop_and_invalid_region_values()
 }
 
 #[test]
+fn sample_region_rejects_fades_crossfades_and_gain_outside_prepared_bounds() {
+    let directory = tempfile::tempdir().expect("temporary sample root");
+    fs::create_dir(directory.path().join("samples")).expect("sample directory");
+    let frames = vec![0.25; 96_000];
+    crate::wav::write_wav_stereo_i16(
+        fs::File::create(directory.path().join("samples/break.wav")).unwrap(),
+        48_000,
+        &frames,
+        &frames,
+    )
+    .expect("write sample");
+    let context = PreparationContext::new(directory.path(), 48_000);
+    let settings = RenderSettings {
+        sample_rate_hz: 48_000,
+        block_size_frames: 16,
+        duration_frames: 16,
+    };
+    for (target, replacement, code) in [
+        (
+            "fade_in_ms: 2",
+            "fade_in_ms: 3000",
+            error_codes::KERNEL_SAMPLE_INVALID_REGION,
+        ),
+        (
+            "fade_out_ms: 3",
+            "fade_out_ms: 3000",
+            error_codes::KERNEL_SAMPLE_INVALID_REGION,
+        ),
+        (
+            "fade_in_ms: 2",
+            "fade_in_ms: 1000",
+            error_codes::KERNEL_SAMPLE_INVALID_REGION,
+        ),
+        (
+            "crossfade_ms: 5",
+            "crossfade_ms: 300",
+            error_codes::KERNEL_SAMPLE_INVALID_LOOP,
+        ),
+        (
+            "gain_db: -3",
+            "gain_db: 100",
+            error_codes::KERNEL_SAMPLE_INVALID_REGION,
+        ),
+    ] {
+        let invalid = if target == "fade_in_ms: 2" && replacement == "fade_in_ms: 1000" {
+            SAMPLE_ASSET_PATCH
+                .replace(target, replacement)
+                .replace("fade_out_ms: 3", "fade_out_ms: 1500")
+        } else {
+            SAMPLE_ASSET_PATCH.replacen(target, replacement, 1)
+        };
+        let patch = load_kernel_patch_str(&invalid).expect("region declaration loads");
+        let result = prepare_kernel_patch_with_context(&patch, &settings, &context);
+        let error = match result {
+            Ok(_) => panic!("invalid region metadata {replacement} must fail"),
+            Err(error) => error,
+        };
+        assert_eq!(
+            error.diagnostics().errors().next().unwrap().error_code(),
+            code
+        );
+    }
+}
+
+#[test]
+fn sample_region_rejects_invalid_root_note_and_reverse_shape() {
+    for (target, replacement) in [
+        ("root_note: 60", "root_note: 128"),
+        ("reverse: false", "reverse: sometimes"),
+    ] {
+        let invalid = SAMPLE_ASSET_PATCH.replacen(target, replacement, 1);
+        let result = load_kernel_patch_str(&invalid);
+        let error = match result {
+            Ok(_) => panic!("invalid {target} must fail"),
+            Err(error) => error,
+        };
+        assert_eq!(
+            error.errors().next().unwrap().error_code(),
+            error_codes::KERNEL_DOCUMENT_SCHEMA_FAILED
+        );
+    }
+}
+
+#[test]
+fn sample_region_accepts_fades_that_fit_exactly_and_half_loop_crossfade() {
+    let directory = tempfile::tempdir().expect("temporary sample root");
+    fs::create_dir(directory.path().join("samples")).expect("sample directory");
+    let frames = vec![0.25; 96_000];
+    crate::wav::write_wav_stereo_i16(
+        fs::File::create(directory.path().join("samples/break.wav")).unwrap(),
+        48_000,
+        &frames,
+        &frames,
+    )
+    .expect("write sample");
+    let yaml = SAMPLE_ASSET_PATCH
+        .replace("fade_in_ms: 2", "fade_in_ms: 1000")
+        .replace("fade_out_ms: 3", "fade_out_ms: 1000")
+        .replace("crossfade_ms: 5", "crossfade_ms: 250");
+    let patch = load_kernel_patch_str(&yaml).expect("boundary region loads");
+    let settings = RenderSettings {
+        sample_rate_hz: 48_000,
+        block_size_frames: 16,
+        duration_frames: 16,
+    };
+    let context = PreparationContext::new(directory.path(), 48_000);
+
+    let prepared = prepare_kernel_patch_with_context(&patch, &settings, &context)
+        .expect("fades exactly within windows should prepare");
+    let region = &prepared.sample_assets().sources()[0].declaration().regions[0];
+    assert_eq!(region.fade_in_ms, Some(1000.0));
+    assert_eq!(region.fade_out_ms, Some(1000.0));
+    assert_eq!(
+        region.loop_settings.as_ref().unwrap().crossfade_ms,
+        Some(250.0)
+    );
+}
+
+#[test]
 fn drum_map_player_rejects_unbounded_or_zero_voice_limits() {
     let settings = RenderSettings {
         sample_rate_hz: 48_000,

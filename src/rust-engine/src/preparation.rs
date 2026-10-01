@@ -657,13 +657,16 @@ fn validate_sample_declarations(assets: &SampleAssets) -> Result<(), KernelPrepa
                 ));
             }
             if region.pan.is_some_and(|pan| !(-1.0..=1.0).contains(&pan))
+                || region
+                    .gain_db
+                    .is_some_and(|gain| !(-96.0..=24.0).contains(&gain))
                 || region.fade_in_ms.is_some_and(|fade| fade < 0.0)
                 || region.fade_out_ms.is_some_and(|fade| fade < 0.0)
             {
                 return Err(sample_preparation_error(
                     diagnostics::error_codes::KERNEL_SAMPLE_INVALID_REGION,
                     format!(
-                        "sample source '{}' region '{}' has invalid pan or fade values",
+                        "sample source '{}' region '{}' has invalid gain, pan, or fade values",
                         source.id, region.id
                     ),
                 ));
@@ -752,6 +755,7 @@ fn prepare_sample_assets(
                 )
             })?;
         let frame_count = resource.sample().frames().len() as u64;
+        let frames_per_ms = resource.sample().sample_rate_hz() as f64 / 1000.0;
         for region in &declaration.regions {
             if region.end_frame > frame_count {
                 return Err(sample_preparation_error(
@@ -761,6 +765,32 @@ fn prepare_sample_assets(
                         declaration.id, region.id, region.end_frame, frame_count
                     ),
                 ));
+            }
+            let region_frames = (region.end_frame - region.start_frame) as f64;
+            let fade_in_frames = region.fade_in_ms.unwrap_or(0.0) * frames_per_ms;
+            let fade_out_frames = region.fade_out_ms.unwrap_or(0.0) * frames_per_ms;
+            if fade_in_frames + fade_out_frames > region_frames {
+                return Err(sample_preparation_error(
+                    diagnostics::error_codes::KERNEL_SAMPLE_INVALID_REGION,
+                    format!(
+                        "sample source '{}' region '{}' fades exceed its {}-frame window",
+                        declaration.id,
+                        region.id,
+                        region.end_frame - region.start_frame
+                    ),
+                ));
+            }
+            if let Some(loop_settings) = &region.loop_settings {
+                let loop_frames = (loop_settings.end_frame - loop_settings.start_frame) as f64;
+                if loop_settings.crossfade_ms.unwrap_or(0.0) * frames_per_ms > loop_frames * 0.5 {
+                    return Err(sample_preparation_error(
+                        diagnostics::error_codes::KERNEL_SAMPLE_INVALID_LOOP,
+                        format!(
+                            "sample source '{}' region '{}' loop crossfade exceeds half the loop window",
+                            declaration.id, region.id
+                        ),
+                    ));
+                }
             }
         }
         sources.push(PreparedSampleSource {
