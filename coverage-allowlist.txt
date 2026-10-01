@@ -56,11 +56,11 @@ allow src/rust-engine/src/kernel/flatten.rs:403 validated poly allocation policy
 
 # Public package references have a UTF-8 package name; the remaining lines are
 # panic branches in tests that assert the successful package/resource path.
-allow src/rust-engine/src/module_package.rs:174 validated package name is UTF-8
-allow src/rust-engine/src/module_package.rs:397 assertion panic for missing nested resource
-allow src/rust-engine/src/module_package.rs:450 assertion panic for missing typed resource
-allow src/rust-engine/src/module_package.rs:490 assertion panic for missing pinned resource
-allow src/rust-engine/src/module_package.rs:1018 assertion panic for allowed path escape
+allow src/rust-engine/src/module_package.rs:185 validated package name is UTF-8
+allow src/rust-engine/src/module_package.rs:456 assertion panic for missing nested resource
+allow src/rust-engine/src/module_package.rs:509 assertion panic for missing typed resource
+allow src/rust-engine/src/module_package.rs:549 assertion panic for missing pinned resource
+allow src/rust-engine/src/module_package.rs:1077 assertion panic for allowed path escape
 
 # Prepared graph indices, module kinds, and intrinsic bindings are validated
 # before callback rendering; the final entry is a test-only empty fallback.

@@ -603,17 +603,16 @@ pub fn prepare_kernel_patch_with_context(
 ) -> Result<PreparedKernelInstrument, KernelPreparationError> {
     validate_sample_declarations(patch.sample_assets())?;
     validate_sample_module_options(patch)?;
-    let sample_assets = prepare_sample_assets(patch.sample_assets(), context)?;
     let buses = default_kernel_output_buses(patch.root());
-    let mut prepared = prepare_kernel_graph_with_buses_and_context(
+    prepare_kernel_graph_with_buses_internal(
         patch.root(),
         patch.registry(),
         render_settings,
         &buses,
-        context,
-    )?;
-    prepared.sample_assets = sample_assets;
-    Ok(prepared)
+        Some(context),
+        false,
+        Some(patch.sample_assets()),
+    )
 }
 
 fn sample_preparation_error(
@@ -815,6 +814,7 @@ pub fn prepare_kernel_graph_with_buses(
         host_buses,
         None,
         false,
+        None,
     )
 }
 
@@ -832,6 +832,7 @@ pub fn prepare_kernel_graph_with_buses_and_context(
         host_buses,
         Some(context),
         false,
+        None,
     )
 }
 
@@ -851,6 +852,7 @@ pub(crate) fn prepare_kernel_graph_for_planar_ffi(
         host_buses,
         Some(context),
         true,
+        None,
     )
 }
 
@@ -861,10 +863,21 @@ fn prepare_kernel_graph_with_buses_internal(
     host_buses: &HostBuses,
     context: Option<&PreparationContext>,
     bind_event_outputs: bool,
+    authored_assets: Option<&SampleAssets>,
 ) -> Result<PreparedKernelInstrument, KernelPreparationError> {
-    let (resolved_root, resolved_registry) = match context {
+    let (resolved_root, resolved_registry, package_assets) = match context {
         Some(context) => resolve_external_definitions(root, registry, context)?,
-        None => (root.clone(), registry.clone()),
+        None => (root.clone(), registry.clone(), SampleAssets::default()),
+    };
+    let mut declarations = authored_assets.cloned().unwrap_or_default();
+    declarations
+        .sample_sources
+        .extend(package_assets.sample_sources);
+    declarations.sample_maps.extend(package_assets.sample_maps);
+    validate_sample_declarations(&declarations)?;
+    let sample_assets = match context {
+        Some(context) => prepare_sample_assets(&declarations, context)?,
+        None => PreparedSampleAssets::default(),
     };
     let validation = resolved_root.validate(&resolved_registry);
     if !validation.is_ok() {
@@ -948,7 +961,7 @@ fn prepare_kernel_graph_with_buses_internal(
     compiled_patch.set_poly_regions(poly_regions);
 
     Ok(PreparedKernelInstrument {
-        sample_assets: PreparedSampleAssets::default(),
+        sample_assets,
         flattened_graph,
         latency_plan,
         compensation_metadata,
@@ -961,7 +974,7 @@ fn resolve_external_definitions(
     root: &GraphDefinition,
     registry: &DefinitionRegistry,
     context: &PreparationContext,
-) -> Result<(GraphDefinition, DefinitionRegistry), KernelPreparationError> {
+) -> Result<(GraphDefinition, DefinitionRegistry, SampleAssets), KernelPreparationError> {
     let references = std::iter::once(root)
         .chain(registry.definitions())
         .flat_map(|definition| definition.nodes())
@@ -969,7 +982,7 @@ fn resolve_external_definitions(
         .filter(|reference| crate::module_reference::is_external_reference(reference))
         .collect::<BTreeSet<_>>();
     if references.is_empty() {
-        return Ok((root.clone(), registry.clone()));
+        return Ok((root.clone(), registry.clone(), SampleAssets::default()));
     }
 
     let packages = references
@@ -1028,12 +1041,19 @@ fn resolve_external_definitions(
         resolved =
             resolved.with_definition(definition.with_scoped_definition_refs(name, &caller_names));
     }
+    let mut sample_assets = SampleAssets::default();
     for package in packages {
+        sample_assets
+            .sample_sources
+            .extend(package.sample_assets().sample_sources.iter().cloned());
+        sample_assets
+            .sample_maps
+            .extend(package.sample_assets().sample_maps.iter().cloned());
         for definition in package.registry().definitions() {
             resolved = resolved.with_definition(definition.clone());
         }
     }
-    Ok((resolved_root, resolved))
+    Ok((resolved_root, resolved, sample_assets))
 }
 
 /// Resolve nested voice latency before balancing the enclosing graph. A poly

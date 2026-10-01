@@ -229,6 +229,39 @@ fn packaged_sample_source_retains_its_package_version_root() {
 }
 
 #[test]
+fn packaged_sample_source_prepares_from_its_version_root() {
+    let package = tempfile::tempdir().expect("package root");
+    let document = tempfile::tempdir().expect("separate document root");
+    fs::create_dir(package.path().join("samples")).expect("package sample directory");
+    let frames = vec![0.375; 96_000];
+    crate::wav::write_wav_stereo_i16(
+        fs::File::create(package.path().join("samples/break.wav")).expect("package sample"),
+        48_000,
+        &frames,
+        &frames,
+    )
+    .expect("write package sample");
+    let patch = load_kernel_definition_str(
+        SAMPLE_ASSET_PATCH,
+        "packaged_sample",
+        ResourceOrigin::Package(package.path().to_path_buf()),
+    )
+    .expect("packaged declaration loads");
+    let context = PreparationContext::new(document.path(), 48_000);
+    let settings = RenderSettings {
+        sample_rate_hz: 48_000,
+        block_size_frames: 16,
+        duration_frames: 16,
+    };
+
+    let prepared = prepare_kernel_patch_with_context(&patch, &settings, &context)
+        .expect("sample resolves under package root");
+    let source = &prepared.sample_assets().sources()[0];
+    assert_eq!(source.id(), "break");
+    assert!((source.sample().frames()[0] - 0.375).abs() < 0.0001);
+}
+
+#[test]
 fn unknown_sampling_asset_fields_fail_schema_validation() {
     for (target, replacement) in [
         (

@@ -11,7 +11,7 @@ use std::fs;
 use std::path::{Path, PathBuf};
 
 use crate::diagnostics::{Diagnostic, Severity, error_codes};
-use crate::kernel::document::load_kernel_definition_str;
+use crate::kernel::document::{SampleAssets, load_kernel_definition_str};
 use crate::kernel::{DefinitionRegistry, GraphDefinition, ResourceOrigin};
 use crate::module_reference::{self, ModuleReferenceError};
 use crate::preparation::PreparationContext;
@@ -25,6 +25,7 @@ pub const PACKAGE_ENTRY_EXTENSION: &str = "yaml";
 pub struct LoadedKernelPackage {
     definition: GraphDefinition,
     registry: DefinitionRegistry,
+    sample_assets: SampleAssets,
     root: PathBuf,
 }
 
@@ -35,6 +36,10 @@ impl LoadedKernelPackage {
 
     pub fn registry(&self) -> &DefinitionRegistry {
         &self.registry
+    }
+
+    pub fn sample_assets(&self) -> &SampleAssets {
+        &self.sample_assets
     }
 
     pub fn root(&self) -> &Path {
@@ -95,7 +100,8 @@ pub fn load_referenced_kernel_package(
     context: &PreparationContext,
 ) -> Result<LoadedKernelPackage, ModulePackageError> {
     let (entry, root) = resolve_contained_entry(reference, context)?;
-    let (definition, mut registry) = load_kernel_entry(reference, &entry, &root)?;
+    let (definition, mut registry, mut sample_assets) =
+        load_kernel_entry(reference, &entry, &root)?;
     registry = registry.with_definition(definition.clone());
 
     let mut references = external_references(&definition, &registry);
@@ -104,8 +110,12 @@ pub fn load_referenced_kernel_package(
             continue;
         }
         let (nested_entry, nested_root) = resolve_contained_entry(&nested_reference, context)?;
-        let (nested, nested_registry) =
+        let (nested, nested_registry, nested_assets) =
             load_kernel_entry(&nested_reference, &nested_entry, &nested_root)?;
+        sample_assets
+            .sample_sources
+            .extend(nested_assets.sample_sources);
+        sample_assets.sample_maps.extend(nested_assets.sample_maps);
         for inline in nested_registry.definitions() {
             registry = registry.with_definition(inline.clone());
         }
@@ -116,6 +126,7 @@ pub fn load_referenced_kernel_package(
     Ok(LoadedKernelPackage {
         definition,
         registry,
+        sample_assets,
         root,
     })
 }
@@ -179,7 +190,7 @@ fn load_kernel_entry(
     reference: &str,
     entry: &Path,
     root: &Path,
-) -> Result<(GraphDefinition, DefinitionRegistry), ModulePackageError> {
+) -> Result<(GraphDefinition, DefinitionRegistry, SampleAssets), ModulePackageError> {
     let yaml = fs::read_to_string(entry).map_err(|error| ModulePackageError::ReadFailed {
         path: entry.to_path_buf(),
         message: error.to_string(),
@@ -213,7 +224,7 @@ fn load_kernel_entry(
             None => definition.clone(),
         });
     }
-    Ok((root, registry))
+    Ok((root, registry, package.sample_assets().clone()))
 }
 
 pub(crate) fn external_references(
@@ -347,6 +358,54 @@ connections: []
                 .flatten(inline.registry())
                 .expect("inline definition should flatten")
         );
+    }
+
+    #[test]
+    fn imported_package_sample_assets_resolve_beneath_the_version_root() {
+        use crate::patch::RenderSettings;
+        use crate::preparation::prepare_kernel_patch_with_context;
+
+        let library = tempfile::tempdir().expect("library root");
+        let document = tempfile::tempdir().expect("document root");
+        let definition = r#"
+assets:
+  sample_sources:
+    - id: hit
+      path: samples/hit.wav
+      regions: [{ id: full, start_frame: 0, end_frame: 4 }]
+ports:
+  - { name: audio, direction: output, signal: audio, channels: 1, maps_from: osc.audio }
+modules:
+  - { id: osc, type: oscillator }
+"#;
+        let entry = seed_kernel_package(library.path(), "1.0.0", "kit", definition);
+        let package_root = entry.parent().unwrap();
+        fs::create_dir(package_root.join("samples")).expect("sample directory");
+        crate::wav::write_wav_stereo_i16(
+            fs::File::create(package_root.join("samples/hit.wav")).expect("sample file"),
+            48_000,
+            &[0.5; 4],
+            &[0.5; 4],
+        )
+        .expect("write sample");
+        let patch = load_kernel_patch_str(
+            "metadata: { name: package_sample_caller }\nports:\n  - { name: master, direction: output, signal: audio, channels: 1, maps_from: kit.audio }\nmodules:\n  - { id: kit, type: '$LIB/1.0.0/kit/kit.yaml' }\n",
+        )
+        .expect("caller loads");
+        let context = PreparationContext::new(document.path(), 48_000)
+            .with_macro_roots(MacroRoots::new().with_root(LIB_MACRO, library.path()));
+        let settings = RenderSettings {
+            sample_rate_hz: 48_000,
+            block_size_frames: 4,
+            duration_frames: 4,
+        };
+
+        let prepared = prepare_kernel_patch_with_context(&patch, &settings, &context)
+            .expect("package assets prepare");
+        let sources = prepared.sample_assets().sources();
+        assert_eq!(sources.len(), 1);
+        assert_eq!(sources[0].id(), "hit");
+        assert!((sources[0].sample().frames()[0] - 0.5).abs() < 0.0001);
     }
 
     #[test]
