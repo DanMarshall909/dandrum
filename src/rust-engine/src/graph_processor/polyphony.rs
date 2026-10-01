@@ -92,7 +92,7 @@ pub struct PreparedPolyRuntimeRegion {
     #[cfg(test)]
     states: Box<[Box<[PerModuleState]>]>,
     child_module_kinds: Box<[ModuleKind]>,
-    auto_retire_map_voice: bool,
+    auto_retire_one_shot_voice: bool,
     voice_arenas: Box<[AudioArena]>,
     voice_event_queues: Box<[PreparedEventQueues]>,
     nested_regions: Box<[Box<[PreparedPolyRuntimeRegion]>]>,
@@ -173,11 +173,14 @@ impl PreparedPolyRuntimeRegion {
             .map(|node| node.module_kind)
             .collect::<Vec<_>>()
             .into_boxed_slice();
-        let auto_retire_map_voice = child_module_kinds
+        let mut child_kinds = child_module_kinds
             .iter()
             .filter(|kind| **kind != ModuleKind::VoiceIntrinsics)
-            .copied()
-            .eq([ModuleKind::SampleMapPlayer]);
+            .copied();
+        let auto_retire_one_shot_voice = matches!(
+            child_kinds.next(),
+            Some(ModuleKind::SampleMapPlayer | ModuleKind::SampleSlicer)
+        ) && child_kinds.next().is_none();
         let audio_buffers_per_voice = compiled
             .voices()
             .first()
@@ -379,7 +382,7 @@ impl PreparedPolyRuntimeRegion {
             #[cfg(test)]
             states,
             child_module_kinds,
-            auto_retire_map_voice,
+            auto_retire_one_shot_voice,
             voice_arenas,
             voice_event_queues,
             nested_regions,
@@ -583,7 +586,7 @@ impl PreparedPolyRuntimeRegion {
                 Some(DoneBinding::Control { .. }) => control_done,
                 None => false,
             };
-            let one_shot_finished = self.auto_retire_map_voice
+            let one_shot_finished = self.auto_retire_one_shot_voice
                 && self.prepared_step_executors[voice]
                     .iter()
                     .all(|executor| !executor.is_active());
@@ -1000,6 +1003,11 @@ fn is_poly_child_arena_supported(step: &RenderStep) -> bool {
             step.input_buffers.len() == 4
                 && !step.output_buffers.is_empty()
                 && step.event_inputs.len() == 2
+        }
+        ModuleKind::SampleSlicer => {
+            step.input_buffers.len() == 3
+                && !step.output_buffers.is_empty()
+                && step.event_inputs.len() == 1
         }
         ModuleKind::SampleMapPlayer => {
             step.input_buffers.len() == 5

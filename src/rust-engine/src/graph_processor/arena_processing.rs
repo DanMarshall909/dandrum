@@ -5,7 +5,7 @@ use super::process_context::ProcessContext;
 use super::state::PerModuleState;
 use crate::compiled_patch::{SampleInterpolation, SampleSelectionMode};
 use crate::decay::DecayCurve;
-use crate::kernel::document::SampleRegion;
+use crate::kernel::document::{SampleRegion, SampleSlice};
 use crate::oscillator::OSCILLATOR_BASE_HZ;
 use crate::saturator::Saturator;
 use crate::script::ScriptEvent;
@@ -281,6 +281,67 @@ pub(super) fn process_sample_player_state(
             context
                 .set_output_sample(channel, frame, output)
                 .expect("sample player output channel is prepared");
+        }
+    }
+}
+
+pub(super) fn process_sample_slicer_state(
+    sample: &Option<crate::compiled_patch::SampleResourceHandle>,
+    slices: &[SampleSlice],
+    selected_slice: &mut usize,
+    position: &mut f64,
+    active: &mut bool,
+    context: &mut ProcessContext<'_>,
+    events: &[BlockEvent],
+) {
+    let frames = sample.as_ref().map_or(&[][..], |sample| sample.frames());
+    for frame in 0..context.frames() {
+        if events.iter().any(|event| {
+            event.frame_offset as usize == frame
+                && matches!(event.event, ScriptEvent::NoteOn { .. })
+        }) {
+            let index = context.input_sample(0, frame, 0.0);
+            if index.is_finite() && index >= 0.0 && index.fract() == 0.0 {
+                if let Some(slice) = slices.get(index as usize) {
+                    *selected_slice = index as usize;
+                    *position = slice.start_frame as f64;
+                    *active = true;
+                } else {
+                    *active = false;
+                }
+            } else {
+                *active = false;
+            }
+        }
+        let output = if *active {
+            let slice = &slices[*selected_slice];
+            if *position < slice.end_frame as f64 {
+                let first = slice.start_frame as usize;
+                let last = slice.end_frame as usize - 1;
+                let base = (*position as usize).clamp(first, last);
+                let fraction = (*position - base as f64) as f32;
+                let value = frames[base] + fraction * (frames[(base + 1).min(last)] - frames[base]);
+                let ratio = context.input_sample(1, frame, 1.0);
+                *position += f64::from(if ratio.is_finite() {
+                    ratio.clamp(0.125, 8.0)
+                } else {
+                    1.0
+                });
+                if *position >= slice.end_frame as f64 {
+                    *active = false;
+                }
+                value * context.input_sample(2, frame, 1.0)
+            } else {
+                *active = false;
+                0.0
+            }
+        } else {
+            0.0
+        };
+        for channel in 0..context.output_count() {
+            context
+                .set_output_sample(channel, frame, output)
+                .expect("sample slicer output channel is prepared");
         }
     }
 }
@@ -562,6 +623,32 @@ pub(super) fn process_sample_player(
         context,
         events,
         gate_events,
+    );
+}
+
+pub(super) fn process_sample_slicer(
+    state: &mut PerModuleState,
+    context: &mut ProcessContext<'_>,
+    events: &[BlockEvent],
+) {
+    let PerModuleState::SampleSlicer {
+        sample,
+        slices,
+        selected_slice,
+        position,
+        active,
+    } = state
+    else {
+        unreachable!()
+    };
+    process_sample_slicer_state(
+        sample,
+        slices,
+        selected_slice,
+        position,
+        active,
+        context,
+        events,
     );
 }
 

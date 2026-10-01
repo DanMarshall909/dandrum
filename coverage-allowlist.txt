@@ -69,9 +69,9 @@ allow src/rust-engine/src/module_package.rs:1077 assertion panic for allowed pat
 
 # Prepared graph indices, module kinds, and intrinsic bindings are validated
 # before callback rendering; the final entry is a test-only empty fallback.
-allow src/rust-engine/src/graph_processor/polyphony.rs:492 prepared parent event input queue exists
-allow src/rust-engine/src/graph_processor/polyphony.rs:782 synthesized voice intrinsics are bound
-allow src/rust-engine/src/graph_processor/polyphony.rs:785 active voice owns a prepared arena
-allow src/rust-engine/src/graph_processor/polyphony.rs:804 synthesized gate output is bound
-allow src/rust-engine/src/graph_processor/polyphony.rs:811 gate queue exists for prepared voice
-allow src/rust-engine/src/graph_processor/polyphony.rs:962 test-only fallback without intrinsics
+allow src/rust-engine/src/graph_processor/polyphony.rs:495 prepared parent event input queue exists
+allow src/rust-engine/src/graph_processor/polyphony.rs:785 synthesized voice intrinsics are bound
+allow src/rust-engine/src/graph_processor/polyphony.rs:788 active voice owns a prepared arena
+allow src/rust-engine/src/graph_processor/polyphony.rs:807 synthesized gate output is bound
+allow src/rust-engine/src/graph_processor/polyphony.rs:814 gate queue exists for prepared voice
+allow src/rust-engine/src/graph_processor/polyphony.rs:965 test-only fallback without intrinsics

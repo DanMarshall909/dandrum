@@ -30,7 +30,7 @@ use crate::graph::builtin_ports;
 use crate::graph::{Graph, ModuleId, ModuleNode, SignalType};
 use crate::kernel::PolyAllocationPolicy;
 use crate::kernel::StaticValue;
-use crate::kernel::document::SampleRegion;
+use crate::kernel::document::{SampleRegion, SampleSlice};
 use crate::kernel::flatten::FlattenedGraph;
 use crate::oscillator::Waveform;
 use crate::patch::RenderSettings;
@@ -257,6 +257,9 @@ pub enum CompiledConstruction {
         region: SampleRegion,
         mode: String,
         interpolation: SampleInterpolation,
+    },
+    SampleSlicer {
+        slices: Box<[SampleSlice]>,
     },
     SampleMapPlayer {
         zones: Box<[CompiledSampleZone]>,

@@ -18,6 +18,7 @@ pub enum ModuleKind {
     Script,
     Sampler,
     SamplePlayer,
+    SampleSlicer,
     SampleMapPlayer,
     NoteToRate,
     DynamicsProcessor,
@@ -63,6 +64,7 @@ impl ModuleKind {
             module_types::SCRIPT => Some(Self::Script),
             module_types::SAMPLER => Some(Self::Sampler),
             module_types::SAMPLE_PLAYER => Some(Self::SamplePlayer),
+            module_types::SAMPLE_SLICER => Some(Self::SampleSlicer),
             module_types::SAMPLE_MAP_PLAYER => Some(Self::SampleMapPlayer),
             module_types::NOTE_TO_RATE => Some(Self::NoteToRate),
             module_types::DYNAMICS_PROCESSOR => Some(Self::DynamicsProcessor),
@@ -107,6 +109,7 @@ impl ModuleKind {
                 | Self::Filter
                 | Self::Sampler
                 | Self::SamplePlayer
+                | Self::SampleSlicer
                 | Self::SampleMapPlayer
                 | Self::NoteToRate
                 | Self::DynamicsProcessor

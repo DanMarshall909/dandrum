@@ -1850,6 +1850,44 @@ fn lower_kernel_graph(
                 interpolation,
             };
         }
+        if kind == ModuleKind::SampleSlicer {
+            let source_id = match node.static_args().get("source") {
+                Some(StaticValue::String(value)) => value.as_str(),
+                _ => "",
+            };
+            let table_id = match node.static_args().get("slice_table") {
+                Some(StaticValue::String(value)) => value.as_str(),
+                _ => "",
+            };
+            let source = sample_assets
+                .sources()
+                .iter()
+                .find(|source| source.id() == source_id)
+                .ok_or_else(|| {
+                    sample_preparation_error(
+                        diagnostics::error_codes::KERNEL_SAMPLE_INVALID_SLICE,
+                        format!(
+                            "sample_slicer '{}' references unknown source '{source_id}'",
+                            node.id().as_str()
+                        ),
+                    )
+                })?;
+            if table_id != source_id || source.declaration().slices.is_empty() {
+                return Err(sample_preparation_error(
+                    diagnostics::error_codes::KERNEL_SAMPLE_INVALID_SLICE,
+                    format!(
+                        "sample_slicer '{}' requires the nonempty slice table of source '{source_id}'",
+                        node.id().as_str()
+                    ),
+                ));
+            }
+            data.resources.sample = Some(SampleResourceHandle::from_shared(
+                source.resource.shared_sample(),
+            ));
+            data.construction = CompiledConstruction::SampleSlicer {
+                slices: source.declaration().slices.clone().into_boxed_slice(),
+            };
+        }
         if kind == ModuleKind::SampleMapPlayer {
             let map_id = match node.static_args().get("sample_map") {
                 Some(StaticValue::String(value)) => value.as_str(),

@@ -1542,6 +1542,48 @@ struct SamplePlayerStepExecutor {
     active: bool,
 }
 
+struct SampleSlicerStepExecutor {
+    sample: Option<crate::compiled_patch::SampleResourceHandle>,
+    slices: Box<[crate::kernel::document::SampleSlice]>,
+    selected_slice: usize,
+    position: f64,
+    active: bool,
+}
+
+impl PreparedStepExecutor for SampleSlicerStepExecutor {
+    fn execute(&mut self, context: &mut PreparedStepContext<'_>, step: &RenderStep) {
+        let events = context
+            .event_queues
+            .queue_ref(step.event_inputs[0].0)
+            .map_or(&[][..], |queue| queue.events());
+        let mut process_context = ProcessContext::new(
+            context.arena,
+            &step.input_buffers,
+            &step.output_buffers,
+            context.frames,
+        );
+        arena_processing::process_sample_slicer_state(
+            &self.sample,
+            &self.slices,
+            &mut self.selected_slice,
+            &mut self.position,
+            &mut self.active,
+            &mut process_context,
+            events,
+        );
+    }
+
+    fn reset_voice(&mut self) {
+        self.selected_slice = 0;
+        self.position = 0.0;
+        self.active = false;
+    }
+
+    fn is_active(&self) -> bool {
+        self.active
+    }
+}
+
 impl PreparedStepExecutor for SamplePlayerStepExecutor {
     fn execute(&mut self, context: &mut PreparedStepContext<'_>, step: &RenderStep) {
         let events = context
@@ -2161,6 +2203,19 @@ pub(super) fn bind_prepared_step_executors(
                     position,
                     active,
                 }),
+                PerModuleState::SampleSlicer {
+                    sample,
+                    slices,
+                    selected_slice,
+                    position,
+                    active,
+                } => Box::new(SampleSlicerStepExecutor {
+                    sample,
+                    slices,
+                    selected_slice,
+                    position,
+                    active,
+                }),
                 PerModuleState::SampleMapPlayer {
                     zones,
                     selection_mode,
@@ -2336,6 +2391,7 @@ pub(super) fn resolve_step_processor(kind: ModuleKind) -> PreparedStepProcessor 
         ModuleKind::NoteToControl => execute_note_to_control_step,
         ModuleKind::Sampler => execute_sampler_step,
         ModuleKind::SamplePlayer => execute_sample_player_step,
+        ModuleKind::SampleSlicer => execute_sample_slicer_step,
         ModuleKind::SampleMapPlayer => execute_sample_map_player_step,
         ModuleKind::NoteToRate => execute_note_to_rate_step,
         ModuleKind::Impulse => execute_impulse_step,
@@ -2525,6 +2581,24 @@ fn execute_sample_player_step(context: &mut PreparedStepContext<'_>, step: &Rend
     );
 }
 
+fn execute_sample_slicer_step(context: &mut PreparedStepContext<'_>, step: &RenderStep) {
+    let events = context
+        .event_queues
+        .queue_ref(step.event_inputs[0].0)
+        .map_or(&[][..], |queue| queue.events());
+    let mut process_context = ProcessContext::new(
+        context.arena,
+        &step.input_buffers,
+        &step.output_buffers,
+        context.frames,
+    );
+    arena_processing::process_sample_slicer(
+        &mut context.states[step.module_index],
+        &mut process_context,
+        events,
+    );
+}
+
 fn execute_sample_map_player_step(context: &mut PreparedStepContext<'_>, step: &RenderStep) {
     let events = context
         .event_queues
@@ -2702,6 +2776,11 @@ fn render_plan_supports_root_buses(
                 step.input_buffers.len() == 4
                     && !step.output_buffers.is_empty()
                     && step.event_inputs.len() == 2
+            }
+            ModuleKind::SampleSlicer => {
+                step.input_buffers.len() == 3
+                    && !step.output_buffers.is_empty()
+                    && step.event_inputs.len() == 1
             }
             ModuleKind::SampleMapPlayer => {
                 step.input_buffers.len() == 5

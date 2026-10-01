@@ -21,6 +21,84 @@ use crate::script::ScriptEvent;
 
 use super::{load_kernel_definition_str, load_kernel_patch_file, load_kernel_patch_str};
 
+#[test]
+fn break_slicer_plays_the_requested_numeric_slice_and_retriggers_it() {
+    let directory = tempfile::tempdir().expect("temporary sample root");
+    let values = [-0.5, -0.25, 0.25, 0.5];
+    crate::wav::write_wav_stereo_i16(
+        fs::File::create(directory.path().join("break.wav")).expect("sample file"),
+        48_000,
+        &values,
+        &values,
+    )
+    .expect("write sample");
+    let yaml = r#"
+metadata: { name: break_slicer }
+assets:
+  sample_sources:
+    - id: break
+      path: break.wav
+      slices:
+        - { id: tail, start_frame: 2, end_frame: 4 }
+        - { id: head, start_frame: 0, end_frame: 2 }
+ports:
+  - { name: master, direction: output, signal: audio, channels: 1, maps_from: slicer.audio }
+modules:
+  - { id: midi, type: midi_input }
+  - { id: slicer, type: sample_slicer, static: { source: break, slice_table: break, channels: 1 }, defaults: { slice_index: 1 } }
+connections:
+  - { from: midi.events, to: slicer.trigger }
+"#;
+    let patch = load_kernel_patch_str(yaml).expect("break patch loads");
+    let settings = RenderSettings {
+        sample_rate_hz: 48_000,
+        block_size_frames: 2,
+        duration_frames: 6,
+    };
+    let prepared = prepare_kernel_patch_with_context(
+        &patch,
+        &settings,
+        &PreparationContext::new(directory.path(), 48_000),
+    )
+    .expect("break slicer prepares");
+    let mut runtime = RealtimeGraphProcessor::polyphonic_with_compiled_patch_and_sampler_assets_and_max_block_size(
+        prepared.graph().clone(), prepared.compiled_patch().clone(), 48_000.0,
+        &PreparedSamplerAssets::empty(), &crate::patch::VoiceAllocation::default(), 2,
+    );
+    let index_slot = runtime
+        .parameter_slot_index("slicer", "slice_index")
+        .expect("live index slot");
+    let mut output = vec![vec![vec![0.0; 2]]];
+    runtime.note_on(60, 100);
+    assert_eq!(runtime.render_root_outputs(&mut output), 2);
+    assert_eq!(output[0][0], [-0.5, -0.25]);
+    assert_eq!(runtime.render_root_outputs(&mut output), 2);
+    assert_eq!(output[0][0], [0.0, 0.0]);
+    assert!(runtime.set_parameter_slot(index_slot, 0.0));
+    runtime.note_on(60, 100);
+    assert_eq!(runtime.render_root_outputs(&mut output), 2);
+    assert_eq!(output[0][0], [8191.0 / 32768.0, 16383.0 / 32768.0]);
+    assert!(runtime.set_parameter_slot(index_slot, 2.0));
+    runtime.note_on(60, 100);
+    assert_eq!(runtime.render_root_outputs(&mut output), 2);
+    assert_eq!(output[0][0], [0.0, 0.0]);
+
+    for (invalid, message) in [
+        (yaml.replace("slice_table: break", "slice_table: absent"), "slice table"),
+        (yaml.replace("source: break", "source: absent"), "source"),
+        (yaml.replace("slices:\n        - { id: tail, start_frame: 2, end_frame: 4 }\n        - { id: head, start_frame: 0, end_frame: 2 }", "slices: []"), "empty table"),
+    ] {
+        let invalid_patch = load_kernel_patch_str(&invalid).expect("invalid player patch still parses");
+        let failure = prepare_kernel_patch_with_context(
+            &invalid_patch,
+            &settings,
+            &PreparationContext::new(directory.path(), 48_000),
+        )
+        .expect_err(message);
+        assert_eq!(failure.diagnostics().errors().next().unwrap().error_code(), error_codes::KERNEL_SAMPLE_INVALID_SLICE);
+    }
+}
+
 const COMPLETE_PATCH: &str = r#"
 metadata:
   name: reusable_voice
@@ -2508,6 +2586,88 @@ connections:
     assert_eq!(
         rendered[0].1[0],
         vec![-1.0, 16382.0 / 32768.0, 0.0, 0.0, 0.0]
+    );
+}
+
+#[test]
+fn poly_region_renders_sample_slicer_child_and_recycles_finished_voices() {
+    let directory = tempfile::tempdir().expect("temporary sample root");
+    let values = [-0.5, 0.25];
+    crate::wav::write_wav_stereo_i16(
+        fs::File::create(directory.path().join("break.wav")).expect("sample file"),
+        48_000,
+        &values,
+        &values,
+    )
+    .expect("write sample");
+    let patch = load_kernel_patch_str(
+        r#"
+metadata: { name: poly_break_slice }
+assets:
+  sample_sources:
+    - id: break
+      path: break.wav
+      slices: [{ id: hit, start_frame: 0, end_frame: 2 }]
+ports:
+  - { name: audio_out, direction: output, signal: audio, channels: 1, maps_from: voices.audio }
+module_definitions:
+  - type: slice_voice
+    ports:
+      - { name: audio, direction: output, signal: audio, channels: 1, maps_from: slicer.audio }
+    modules:
+      - { id: slicer, type: sample_slicer, static: { source: break, slice_table: break, channels: 1 } }
+    connections:
+      - { from: voice.gate, to: slicer.trigger }
+modules:
+  - { id: midi, type: midi_input }
+  - { id: voices, type: poly, static: { definition: slice_voice, max_voices: 2, allocation: reject-new } }
+connections:
+  - { from: midi.events, to: voices.notes }
+"#,
+    )
+    .expect("poly break patch loads");
+    let settings = RenderSettings {
+        sample_rate_hz: 48_000,
+        block_size_frames: 2,
+        duration_frames: 6,
+    };
+    let prepared = prepare_kernel_patch_with_context(
+        &patch,
+        &settings,
+        &PreparationContext::new(directory.path(), 48_000),
+    )
+    .expect("poly slicer prepares");
+    let rendered = render_kernel_offline_named(
+        &prepared,
+        vec![
+            TimedInputEvent::new(
+                0,
+                ScriptEvent::NoteOn {
+                    note: 36,
+                    velocity: 100,
+                },
+            ),
+            TimedInputEvent::new(
+                0,
+                ScriptEvent::NoteOn {
+                    note: 38,
+                    velocity: 100,
+                },
+            ),
+            TimedInputEvent::new(
+                4,
+                ScriptEvent::NoteOn {
+                    note: 36,
+                    velocity: 100,
+                },
+            ),
+        ],
+        &PreparedSamplerAssets::empty(),
+    )
+    .expect("poly slice voices render");
+    assert_eq!(
+        rendered[0].1[0],
+        vec![-1.0, 16382.0 / 32768.0, 0.0, 0.0, -0.5, 8191.0 / 32768.0]
     );
 }
 

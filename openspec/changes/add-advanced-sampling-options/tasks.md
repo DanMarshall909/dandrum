@@ -46,7 +46,7 @@
 
 ## 6. Slice Playback
 
-- [ ] 6.1 Implement explicit slice-table playback by numeric slice index.
+- [x] 6.1 Implement explicit slice-table playback by numeric slice index.
 - [ ] 6.2 Support sequential and deterministic random slice selection only if required by examples.
 - [ ] 6.3 Add a chopped-break example using explicit slice metadata.
 - [ ] 6.4 Defer tempo-sync/time-stretch behaviour to a separate creative or streaming spec.
@@ -68,6 +68,6 @@
 - [ ] 8.4 Add render tests proving one-shot, gated, simple-looped, reverse, pitch-ratio, fade, and crossfade behaviour.
 - [ ] 8.5 Add selection tests proving velocity/key matching, round-robin order, weighted random determinism, and block-size independence.
 - [ ] 8.6 Add choke tests proving sample-accurate mutually exclusive playback.
-- [ ] 8.7 Add slice tests proving trigger/index behaviour.
+- [x] 8.7 Add slice tests proving trigger/index behaviour.
 - [ ] 8.8 Add tests or instrumentation proving the steady-state render path performs no heap allocation.
 - [ ] 8.9 Run `openspec validate add-advanced-sampling-options --strict` and fix validation errors.

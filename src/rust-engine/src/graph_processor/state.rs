@@ -17,7 +17,7 @@ use crate::filter::{BiquadFilter, BiquadMode, CombFilter, FilterAlgorithm, MoogL
 #[cfg(test)]
 use crate::graph::ModuleNode;
 use crate::graph::SignalType;
-use crate::kernel::document::SampleRegion;
+use crate::kernel::document::{SampleRegion, SampleSlice};
 use crate::oscillator::Waveform;
 use crate::reverb::Reverb;
 use crate::sample::PreparedSamplerAssets;
@@ -81,6 +81,13 @@ pub(super) enum PerModuleState {
         region: SampleRegion,
         mode: String,
         interpolation: SampleInterpolation,
+        position: f64,
+        active: bool,
+    },
+    SampleSlicer {
+        sample: Option<SampleResourceHandle>,
+        slices: Box<[SampleSlice]>,
+        selected_slice: usize,
         position: f64,
         active: bool,
     },
@@ -206,6 +213,16 @@ impl PerModuleState {
             Self::SamplePlayer {
                 position, active, ..
             } => {
+                *position = 0.0;
+                *active = false;
+            }
+            Self::SampleSlicer {
+                selected_slice,
+                position,
+                active,
+                ..
+            } => {
+                *selected_slice = 0;
                 *position = 0.0;
                 *active = false;
             }
@@ -474,6 +491,18 @@ impl PerModuleState {
                     region: region.clone(),
                     mode: mode.clone(),
                     interpolation: *interpolation,
+                    position: 0.0,
+                    active: false,
+                }
+            }
+            ModuleKind::SampleSlicer => {
+                let CompiledConstruction::SampleSlicer { slices } = construction else {
+                    panic!("sample_slicer module {module_id} has mismatched construction data")
+                };
+                PerModuleState::SampleSlicer {
+                    sample: resources.sample.clone(),
+                    slices: slices.clone(),
+                    selected_slice: 0,
                     position: 0.0,
                     active: false,
                 }
