@@ -268,6 +268,43 @@ fn unknown_sampling_asset_fields_fail_schema_validation() {
 }
 
 #[test]
+fn streaming_granular_and_workstation_sample_declarations_are_deferred() {
+    for (target, replacement) in [
+        (
+            "path: samples/break.wav",
+            "path: samples/break.wav\n      streaming: true",
+        ),
+        (
+            "path: samples/break.wav",
+            "path: samples/break.wav\n      grain_size_ms: 25",
+        ),
+        (
+            "path: samples/break.wav",
+            "path: samples/break.wav\n      time_stretch: beat_sync",
+        ),
+        (
+            "id: soft, region: break.full",
+            "id: soft, keyswitch: 24, region: break.full",
+        ),
+        (
+            "id: soft, region: break.full",
+            "id: soft, release_trigger: true, region: break.full",
+        ),
+    ] {
+        let invalid = SAMPLE_ASSET_PATCH.replacen(target, replacement, 1);
+        let result = load_kernel_patch_str(&invalid);
+        let error = match result {
+            Ok(_) => panic!("out-of-scope sampling field must fail schema validation"),
+            Err(error) => error,
+        };
+        assert_eq!(
+            error.errors().next().unwrap().error_code(),
+            error_codes::KERNEL_DOCUMENT_SCHEMA_FAILED
+        );
+    }
+}
+
+#[test]
 fn sample_asset_preparation_reports_invalid_region_loop_and_drum_zone_ranges() {
     let directory = tempfile::tempdir().expect("temporary sample root");
     let context = PreparationContext::new(directory.path(), 48_000);

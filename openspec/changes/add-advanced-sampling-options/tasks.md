@@ -4,8 +4,8 @@
 - [x] 1.2 Add or extend built-in module registry entries for `sample_player`, `sample_zone_selector`, optional thin `sample_map_player`, `sample_slicer`, and `voice_choke` behaviour.
 - [x] 1.3 Extend YAML/schema validation to accept sample assets, regions, simple loops, explicit slices, sample maps, zones, and choke groups.
 - [x] 1.4 Add structured diagnostics for missing files, unsupported decode formats, malformed regions, invalid loop points, invalid velocity/key ranges, invalid voice limits, and unsupported interpolation/choke modes.
-- [ ] 1.5 Confirm naming follows the project module terminology and does not reintroduce composite-specific user-facing names.
-- [ ] 1.6 Reject or defer workstation-sampler, creative/granular/time-stretch, and streaming-specific declarations to their separate specs.
+- [x] 1.5 Confirm naming follows the project module terminology and does not reintroduce composite-specific user-facing names.
+- [x] 1.6 Reject or defer workstation-sampler, creative/granular/time-stretch, and streaming-specific declarations to their separate specs.
 
 ## 2. Sample Asset Preparation
 
