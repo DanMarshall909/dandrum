@@ -18,31 +18,31 @@ strict src/rust-engine/src/module_package.rs
 
 # The checked-in schema is compiled into the binary. Its construction failure
 # can occur only if that source asset is corrupted at build time.
-allow src/rust-engine/src/kernel/document.rs:772 embedded schema validator failure
-allow src/rust-engine/src/kernel/document.rs:774 embedded schema validator failure
-allow src/rust-engine/src/kernel/document.rs:775 embedded schema validator failure
-allow src/rust-engine/src/kernel/document.rs:777 embedded schema validator failure
+allow src/rust-engine/src/kernel/document.rs:924 embedded schema validator failure
+allow src/rust-engine/src/kernel/document.rs:926 embedded schema validator failure
+allow src/rust-engine/src/kernel/document.rs:927 embedded schema validator failure
+allow src/rust-engine/src/kernel/document.rs:929 embedded schema validator failure
 
 # The external schema rejects blank preset target names before alias resolution.
-allow src/rust-engine/src/kernel/document.rs:809 schema rejects blank parameter alias
-allow src/rust-engine/src/kernel/document.rs:811 schema rejects blank parameter alias
-allow src/rust-engine/src/kernel/document.rs:814 schema rejects blank parameter alias
-allow src/rust-engine/src/kernel/document.rs:851 schema rejects blank asset alias
-allow src/rust-engine/src/kernel/document.rs:853 schema rejects blank asset alias
-allow src/rust-engine/src/kernel/document.rs:856 schema rejects blank asset alias
+allow src/rust-engine/src/kernel/document.rs:961 schema rejects blank parameter alias
+allow src/rust-engine/src/kernel/document.rs:963 schema rejects blank parameter alias
+allow src/rust-engine/src/kernel/document.rs:966 schema rejects blank parameter alias
+allow src/rust-engine/src/kernel/document.rs:1003 schema rejects blank asset alias
+allow src/rust-engine/src/kernel/document.rs:1005 schema rejects blank asset alias
+allow src/rust-engine/src/kernel/document.rs:1008 schema rejects blank asset alias
 
 # The resource arm is entered only after matching StaticType::Resource.
-allow src/rust-engine/src/kernel/document.rs:872 resource type was already matched
+allow src/rust-engine/src/kernel/document.rs:1024 resource type was already matched
 
 # Legacy binding syntax is rejected by the earlier YAML-shape pass.
-allow src/rust-engine/src/kernel/document.rs:1195 earlier legacy binding validation
-allow src/rust-engine/src/kernel/document.rs:1196 earlier legacy binding validation
-allow src/rust-engine/src/kernel/document.rs:1197 earlier legacy binding validation
-allow src/rust-engine/src/kernel/document.rs:1198 earlier legacy binding validation
-allow src/rust-engine/src/kernel/document.rs:1199 earlier legacy binding validation
-allow src/rust-engine/src/kernel/document.rs:1200 earlier legacy binding validation
-allow src/rust-engine/src/kernel/document.rs:1201 earlier legacy binding validation
-allow src/rust-engine/src/kernel/document.rs:1202 earlier legacy binding validation
+allow src/rust-engine/src/kernel/document.rs:1347 earlier legacy binding validation
+allow src/rust-engine/src/kernel/document.rs:1348 earlier legacy binding validation
+allow src/rust-engine/src/kernel/document.rs:1349 earlier legacy binding validation
+allow src/rust-engine/src/kernel/document.rs:1350 earlier legacy binding validation
+allow src/rust-engine/src/kernel/document.rs:1351 earlier legacy binding validation
+allow src/rust-engine/src/kernel/document.rs:1352 earlier legacy binding validation
+allow src/rust-engine/src/kernel/document.rs:1353 earlier legacy binding validation
+allow src/rust-engine/src/kernel/document.rs:1354 earlier legacy binding validation
 
 # Declared root inputs always have an interface entry, including empty targets.
 allow src/rust-engine/src/kernel/flatten.rs:233 declared root input has interface entry

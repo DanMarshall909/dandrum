@@ -8,6 +8,7 @@ properties:
   metadata: { $ref: '#/$defs/metadata' }
   instrument: { $ref: '#/$defs/instrumentIdentity' }
   preset_surface: { $ref: '#/$defs/presetSurface' }
+  assets: { $ref: '#/$defs/sampleAssets' }
   static_params:
     type: array
     items: { $ref: '#/$defs/staticParam' }
@@ -58,6 +59,128 @@ $defs:
     properties:
       name: { $ref: '#/$defs/name' }
       maps_to: { $ref: '#/$defs/name' }
+  sampleAssets:
+    type: object
+    additionalProperties: false
+    properties:
+      sample_sources:
+        type: array
+        items: { $ref: '#/$defs/sampleSource' }
+      sample_maps:
+        type: array
+        items: { $ref: '#/$defs/sampleMap' }
+  sampleSource:
+    type: object
+    required: [id, path]
+    additionalProperties: false
+    properties:
+      id: { $ref: '#/$defs/name' }
+      path: { $ref: '#/$defs/name' }
+      regions:
+        type: array
+        items: { $ref: '#/$defs/sampleRegion' }
+      slices:
+        type: array
+        items: { $ref: '#/$defs/sampleSlice' }
+      cues:
+        type: array
+        items: { $ref: '#/$defs/sampleCue' }
+      analysis: { $ref: '#/$defs/sampleAnalysis' }
+  sampleRegion:
+    type: object
+    required: [id, start_frame, end_frame]
+    additionalProperties: false
+    properties:
+      id: { $ref: '#/$defs/name' }
+      start_frame: { type: integer, minimum: 0 }
+      end_frame: { type: integer, minimum: 0 }
+      root_note: { type: integer, minimum: 0, maximum: 127 }
+      gain_db: { type: number }
+      pan: { type: number }
+      reverse: { type: boolean }
+      fade_in_ms: { type: number }
+      fade_out_ms: { type: number }
+      loop: { $ref: '#/$defs/sampleLoop' }
+  sampleLoop:
+    type: object
+    required: [mode, start_frame, end_frame]
+    additionalProperties: false
+    properties:
+      mode: { type: string }
+      start_frame: { type: integer, minimum: 0 }
+      end_frame: { type: integer, minimum: 0 }
+      crossfade_ms: { type: number }
+  sampleSlice:
+    type: object
+    required: [id, start_frame, end_frame]
+    additionalProperties: false
+    properties:
+      id: { $ref: '#/$defs/name' }
+      start_frame: { type: integer, minimum: 0 }
+      end_frame: { type: integer, minimum: 0 }
+  sampleCue:
+    type: object
+    required: [id, frame]
+    additionalProperties: false
+    properties:
+      id: { $ref: '#/$defs/name' }
+      frame: { type: integer, minimum: 0 }
+  sampleAnalysis:
+    type: object
+    additionalProperties: false
+    properties:
+      tempo_bpm: { type: number }
+      confidence: { type: number }
+      beat_grid: { $ref: '#/$defs/sampleBeatGrid' }
+  sampleBeatGrid:
+    type: object
+    additionalProperties: false
+    properties:
+      unit: { type: string, enum: [frames] }
+      beats:
+        type: array
+        items: { type: integer, minimum: 0 }
+      downbeats:
+        type: array
+        items: { type: integer, minimum: 0 }
+  sampleMap:
+    type: object
+    required: [id, zones]
+    additionalProperties: false
+    properties:
+      id: { $ref: '#/$defs/name' }
+      selection_seed: { type: integer, minimum: 0 }
+      selection_mode: { type: string }
+      zones:
+        type: array
+        items: { $ref: '#/$defs/sampleZone' }
+  sampleZone:
+    type: object
+    required: [region, key_range, velocity_range]
+    additionalProperties: false
+    properties:
+      id: { $ref: '#/$defs/name' }
+      region: { $ref: '#/$defs/name' }
+      key_range:
+        type: array
+        prefixItems:
+          - { type: integer, minimum: 0, maximum: 127 }
+          - { type: integer, minimum: 0, maximum: 127 }
+        minItems: 2
+        maxItems: 2
+      velocity_range:
+        type: array
+        prefixItems:
+          - { type: integer, minimum: 1, maximum: 127 }
+          - { type: integer, minimum: 1, maximum: 127 }
+        minItems: 2
+        maxItems: 2
+      round_robin_group: { $ref: '#/$defs/name' }
+      choke_group: { $ref: '#/$defs/name' }
+      weight: { type: integer, minimum: 1 }
+      gain_db: { type: number }
+      pan: { type: number }
+      pitch_semitones: { type: number }
   staticParam:
     type: object
     required: [name, type]

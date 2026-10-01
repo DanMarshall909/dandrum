@@ -16,7 +16,7 @@ use crate::preparation::{
 };
 use crate::sample::PreparedSamplerAssets;
 
-use super::{load_kernel_patch_file, load_kernel_patch_str};
+use super::{load_kernel_definition_str, load_kernel_patch_file, load_kernel_patch_str};
 
 const COMPLETE_PATCH: &str = r#"
 metadata:
@@ -100,6 +100,172 @@ connections:
   - from: amp.audio_out
     to: amp.audio_in
 "#;
+
+const SAMPLE_ASSET_PATCH: &str = r#"
+metadata: { name: sample_asset_patch }
+assets:
+  sample_sources:
+    - id: break
+      path: samples/break.wav
+      regions:
+        - id: full
+          start_frame: 0
+          end_frame: 96000
+          root_note: 60
+          gain_db: -3
+          pan: 0.25
+          reverse: false
+          fade_in_ms: 2
+          fade_out_ms: 3
+          loop: { mode: forward, start_frame: 24000, end_frame: 48000, crossfade_ms: 5 }
+      slices:
+        - { id: beat_1, start_frame: 0, end_frame: 24000 }
+        - { id: beat_2, start_frame: 24000, end_frame: 48000 }
+      cues:
+        - { id: downbeat, frame: 0 }
+      analysis:
+        tempo_bpm: 120
+        confidence: 0.95
+        beat_grid: { unit: frames, beats: [0, 24000, 48000], downbeats: [0, 48000] }
+  sample_maps:
+    - id: kit
+      selection_seed: 7
+      selection_mode: round_robin
+      zones:
+        - { id: soft, region: break.full, key_range: [36, 36], velocity_range: [1, 70], round_robin_group: kick, choke_group: hats, weight: 2 }
+        - { id: loud, region: break.full, key_range: [36, 36], velocity_range: [71, 127], round_robin_group: kick, choke_group: hats, weight: 3 }
+ports:
+  - { name: audio_out, direction: output, signal: audio, channels: 1, maps_from: osc.audio }
+modules:
+  - { id: osc, type: oscillator }
+"#;
+
+#[test]
+fn kernel_patch_accepts_sample_sources_regions_slices_maps_and_choke_metadata() {
+    let patch = load_kernel_patch_str(SAMPLE_ASSET_PATCH).expect("sample assets should load");
+    assert_eq!(patch.root().name(), "sample_asset_patch");
+    let assets = patch.sample_assets();
+    assert_eq!(assets.sample_sources.len(), 1);
+    let source = &assets.sample_sources[0];
+    assert_eq!(source.id, "break");
+    assert_eq!(source.resource.kind(), ResourceKind::Sample);
+    assert_eq!(source.resource.path().to_str(), Some("samples/break.wav"));
+    assert_eq!(source.resource.origin(), &ResourceOrigin::Document);
+    assert_eq!(source.regions.len(), 1);
+    let region = &source.regions[0];
+    assert_eq!(region.id, "full");
+    assert_eq!((region.start_frame, region.end_frame), (0, 96_000));
+    assert_eq!(region.root_note, Some(60));
+    assert_eq!(region.gain_db, Some(-3.0));
+    assert_eq!(region.pan, Some(0.25));
+    assert!(!region.reverse);
+    assert_eq!(
+        (region.fade_in_ms, region.fade_out_ms),
+        (Some(2.0), Some(3.0))
+    );
+    let loop_settings = region.loop_settings.as_ref().expect("loop settings");
+    assert_eq!(loop_settings.mode, "forward");
+    assert_eq!(
+        (loop_settings.start_frame, loop_settings.end_frame),
+        (24_000, 48_000)
+    );
+    assert_eq!(loop_settings.crossfade_ms, Some(5.0));
+    assert_eq!(
+        source
+            .slices
+            .iter()
+            .map(|slice| slice.id.as_str())
+            .collect::<Vec<_>>(),
+        vec!["beat_1", "beat_2"]
+    );
+    assert_eq!(
+        (source.slices[1].start_frame, source.slices[1].end_frame),
+        (24_000, 48_000)
+    );
+    assert_eq!(
+        (source.cues[0].id.as_str(), source.cues[0].frame),
+        ("downbeat", 0)
+    );
+    let analysis = source.analysis.as_ref().expect("analysis metadata");
+    assert_eq!(
+        (analysis.tempo_bpm, analysis.confidence),
+        (Some(120.0), Some(0.95))
+    );
+    let grid = analysis.beat_grid.as_ref().expect("explicit beat grid");
+    assert_eq!(grid.unit.as_deref(), Some("frames"));
+    assert_eq!(grid.beats, vec![0, 24_000, 48_000]);
+    assert_eq!(grid.downbeats, vec![0, 48_000]);
+
+    assert_eq!(assets.sample_maps.len(), 1);
+    let map = &assets.sample_maps[0];
+    assert_eq!(map.id, "kit");
+    assert_eq!(map.selection_seed, 7);
+    assert_eq!(map.selection_mode.as_deref(), Some("round_robin"));
+    assert_eq!(map.zones.len(), 2);
+    assert_eq!(map.zones[0].id.as_deref(), Some("soft"));
+    assert_eq!(map.zones[0].region, "break.full");
+    assert_eq!(map.zones[0].key_range, [36, 36]);
+    assert_eq!(map.zones[0].velocity_range, [1, 70]);
+    assert_eq!(map.zones[0].round_robin_group.as_deref(), Some("kick"));
+    assert_eq!(map.zones[0].choke_group.as_deref(), Some("hats"));
+    assert_eq!(map.zones[0].weight, Some(2));
+    assert_eq!(map.zones[1].velocity_range, [71, 127]);
+}
+
+#[test]
+fn packaged_sample_source_retains_its_package_version_root() {
+    let package_root = std::path::PathBuf::from("/library/1.2.3");
+    let patch = load_kernel_definition_str(
+        SAMPLE_ASSET_PATCH,
+        "packaged_sample",
+        ResourceOrigin::Package(package_root.clone()),
+    )
+    .expect("packaged sample declaration should load");
+
+    assert_eq!(
+        patch.sample_assets().sample_sources[0].resource.origin(),
+        &ResourceOrigin::Package(package_root)
+    );
+}
+
+#[test]
+fn unknown_sampling_asset_fields_fail_schema_validation() {
+    for (target, replacement) in [
+        (
+            "path: samples/break.wav",
+            "path: samples/break.wav\n      unknown_sampling_field: 1",
+        ),
+        (
+            "root_note: 60",
+            "root_note: 60\n          unknown_sampling_field: 1",
+        ),
+        (
+            "{ id: beat_1, start_frame: 0, end_frame: 24000 }",
+            "{ id: beat_1, start_frame: 0, end_frame: 24000, unknown_sampling_field: 1 }",
+        ),
+        (
+            "selection_mode: round_robin",
+            "selection_mode: round_robin\n      unknown_sampling_field: 1",
+        ),
+        (
+            "id: soft, region: break.full",
+            "id: soft, unknown_sampling_field: 1, region: break.full",
+        ),
+    ] {
+        let invalid = SAMPLE_ASSET_PATCH.replacen(target, replacement, 1);
+        assert_ne!(
+            invalid, SAMPLE_ASSET_PATCH,
+            "test fixture substitution must apply"
+        );
+        let error = load_kernel_patch_str(&invalid).expect_err("unknown asset key must fail");
+        let diagnostic = error.errors().next().expect("schema diagnostic");
+        assert_eq!(
+            diagnostic.error_code(),
+            error_codes::KERNEL_DOCUMENT_SCHEMA_FAILED
+        );
+        assert!(diagnostic.message().contains("unknown_sampling_field"));
+    }
+}
 
 #[test]
 fn kernel_cli_overrides_resolve_against_declared_static_and_control_types() {

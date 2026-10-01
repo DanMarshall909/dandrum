@@ -62,6 +62,7 @@ pub struct KernelPatch {
     metadata: KernelPatchMetadata,
     instrument: Option<InstrumentIdentity>,
     preset_surface: KernelPresetSurface,
+    sample_assets: SampleAssets,
     root: GraphDefinition,
     registry: DefinitionRegistry,
     local_definition_names: Vec<String>,
@@ -74,6 +75,10 @@ impl KernelPatch {
 
     pub fn preset_surface(&self) -> &KernelPresetSurface {
         &self.preset_surface
+    }
+
+    pub fn sample_assets(&self) -> &SampleAssets {
+        &self.sample_assets
     }
 
     pub fn metadata(&self) -> &KernelPatchMetadata {
@@ -383,6 +388,107 @@ impl KernelPatch {
     }
 }
 
+/// Authored sample declarations, retained without decoding until preparation.
+#[derive(Clone, Debug, Default, PartialEq)]
+pub struct SampleAssets {
+    pub sample_sources: Vec<SampleSource>,
+    pub sample_maps: Vec<SampleMap>,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct SampleSource {
+    pub id: String,
+    pub resource: ResourceRef,
+    pub regions: Vec<SampleRegion>,
+    pub slices: Vec<SampleSlice>,
+    pub cues: Vec<SampleCue>,
+    pub analysis: Option<SampleAnalysis>,
+}
+
+#[derive(Clone, Debug, Deserialize, PartialEq)]
+#[serde(deny_unknown_fields)]
+pub struct SampleRegion {
+    pub id: String,
+    pub start_frame: u64,
+    pub end_frame: u64,
+    pub root_note: Option<u8>,
+    pub gain_db: Option<f64>,
+    pub pan: Option<f64>,
+    #[serde(default)]
+    pub reverse: bool,
+    pub fade_in_ms: Option<f64>,
+    pub fade_out_ms: Option<f64>,
+    #[serde(rename = "loop")]
+    pub loop_settings: Option<SampleLoop>,
+}
+
+#[derive(Clone, Debug, Deserialize, PartialEq)]
+#[serde(deny_unknown_fields)]
+pub struct SampleLoop {
+    pub mode: String,
+    pub start_frame: u64,
+    pub end_frame: u64,
+    pub crossfade_ms: Option<f64>,
+}
+
+#[derive(Clone, Debug, Deserialize, PartialEq)]
+#[serde(deny_unknown_fields)]
+pub struct SampleSlice {
+    pub id: String,
+    pub start_frame: u64,
+    pub end_frame: u64,
+}
+
+#[derive(Clone, Debug, Deserialize, PartialEq)]
+#[serde(deny_unknown_fields)]
+pub struct SampleCue {
+    pub id: String,
+    pub frame: u64,
+}
+
+#[derive(Clone, Debug, Deserialize, PartialEq)]
+#[serde(deny_unknown_fields)]
+pub struct SampleAnalysis {
+    pub tempo_bpm: Option<f64>,
+    pub confidence: Option<f64>,
+    pub beat_grid: Option<SampleBeatGrid>,
+}
+
+#[derive(Clone, Debug, Deserialize, PartialEq)]
+#[serde(deny_unknown_fields)]
+pub struct SampleBeatGrid {
+    pub unit: Option<String>,
+    #[serde(default)]
+    pub beats: Vec<u64>,
+    #[serde(default)]
+    pub downbeats: Vec<u64>,
+}
+
+#[derive(Clone, Debug, Deserialize, PartialEq)]
+#[serde(deny_unknown_fields)]
+pub struct SampleMap {
+    pub id: String,
+    #[serde(default)]
+    pub selection_seed: u64,
+    pub selection_mode: Option<String>,
+    pub zones: Vec<SampleZone>,
+}
+
+#[derive(Clone, Debug, Deserialize, PartialEq)]
+#[serde(deny_unknown_fields)]
+pub struct SampleZone {
+    pub id: Option<String>,
+    pub region: String,
+    pub key_range: [u8; 2],
+    pub velocity_range: [u8; 2],
+    pub round_robin_group: Option<String>,
+    pub choke_group: Option<String>,
+    pub weight: Option<u32>,
+    pub gain_db: Option<f64>,
+    pub pan: Option<f64>,
+    pub pitch_semitones: Option<f64>,
+}
+
 /// Preset names mapped to typed root declarations.
 #[derive(Clone, Debug, Default)]
 pub struct KernelPresetSurface {
@@ -458,6 +564,8 @@ struct PatchDocument {
     #[serde(default)]
     preset_surface: PresetSurfaceDocument,
     #[serde(default)]
+    assets: SampleAssetsDocument,
+    #[serde(default)]
     static_params: Vec<StaticParamDocument>,
     #[serde(default)]
     ports: Vec<PortDocument>,
@@ -467,6 +575,49 @@ struct PatchDocument {
     modules: Vec<NodeDocument>,
     #[serde(default)]
     connections: Vec<ConnectionDocument>,
+}
+
+#[derive(Clone, Debug, Default, Deserialize)]
+#[serde(deny_unknown_fields)]
+struct SampleAssetsDocument {
+    #[serde(default)]
+    sample_sources: Vec<SampleSourceDocument>,
+    #[serde(default)]
+    sample_maps: Vec<SampleMap>,
+}
+
+impl SampleAssetsDocument {
+    fn into_kernel(self, origin: &ResourceOrigin) -> SampleAssets {
+        SampleAssets {
+            sample_sources: self
+                .sample_sources
+                .into_iter()
+                .map(|source| SampleSource {
+                    id: source.id,
+                    resource: ResourceRef::new(ResourceKind::Sample, source.path, origin.clone()),
+                    regions: source.regions,
+                    slices: source.slices,
+                    cues: source.cues,
+                    analysis: source.analysis,
+                })
+                .collect(),
+            sample_maps: self.sample_maps,
+        }
+    }
+}
+
+#[derive(Clone, Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
+struct SampleSourceDocument {
+    id: String,
+    path: String,
+    #[serde(default)]
+    regions: Vec<SampleRegion>,
+    #[serde(default)]
+    slices: Vec<SampleSlice>,
+    #[serde(default)]
+    cues: Vec<SampleCue>,
+    analysis: Option<SampleAnalysis>,
 }
 
 #[derive(Clone, Debug, Default, Deserialize)]
@@ -744,6 +895,7 @@ fn load_kernel_document_str(
         metadata,
         instrument: document.instrument,
         preset_surface,
+        sample_assets: document.assets.into_kernel(&origin),
         root,
         registry,
         local_definition_names: document
