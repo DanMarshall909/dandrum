@@ -128,6 +128,7 @@ pub(super) fn process_sample_player_state(
     region: &SampleRegion,
     mode: &str,
     interpolation: SampleInterpolation,
+    playback_rate_scale: f32,
     position: &mut f64,
     active: &mut bool,
     context: &mut ProcessContext<'_>,
@@ -244,9 +245,9 @@ pub(super) fn process_sample_player_state(
                     1.0
                 };
                 *position += if region.reverse {
-                    -f64::from(ratio)
+                    -f64::from(ratio * playback_rate_scale)
                 } else {
-                    f64::from(ratio)
+                    f64::from(ratio * playback_rate_scale)
                 };
                 if let Some(loop_settings) = loop_settings {
                     if region.reverse && *position < loop_settings.start_frame as f64 {
@@ -288,6 +289,7 @@ pub(super) fn process_sample_player_state(
 pub(super) fn process_sample_slicer_state(
     sample: &Option<crate::compiled_patch::SampleResourceHandle>,
     slices: &[SampleSlice],
+    playback_rate_scale: f32,
     selected_slice: &mut usize,
     position: &mut f64,
     active: &mut bool,
@@ -322,11 +324,13 @@ pub(super) fn process_sample_slicer_state(
                 let fraction = (*position - base as f64) as f32;
                 let value = frames[base] + fraction * (frames[(base + 1).min(last)] - frames[base]);
                 let ratio = context.input_sample(1, frame, 1.0);
-                *position += f64::from(if ratio.is_finite() {
-                    ratio.clamp(0.125, 8.0)
-                } else {
-                    1.0
-                });
+                *position += f64::from(
+                    if ratio.is_finite() {
+                        ratio.clamp(0.125, 8.0)
+                    } else {
+                        1.0
+                    } * playback_rate_scale,
+                );
                 if *position >= slice.end_frame as f64 {
                     *active = false;
                 }
@@ -426,7 +430,8 @@ pub(super) fn process_sample_map_player_state(
                     let root_ratio = region.root_note.map_or(1.0, |root| {
                         2.0_f32.powf((f32::from(note) - f32::from(root)) / 12.0)
                     });
-                    *selected_pitch_ratio = zones[index].pitch_ratio * root_ratio;
+                    *selected_pitch_ratio =
+                        zones[index].pitch_ratio * root_ratio * zones[index].playback_rate_scale;
                     let start_offset = context.input_sample(1, frame, 0.0);
                     let start_offset = if start_offset.is_finite() {
                         start_offset.clamp(0.0, 1.0)
@@ -607,6 +612,7 @@ pub(super) fn process_sample_player(
         region,
         mode,
         interpolation,
+        playback_rate_scale,
         position,
         active,
     } = state
@@ -618,6 +624,7 @@ pub(super) fn process_sample_player(
         region,
         mode,
         *interpolation,
+        *playback_rate_scale,
         position,
         active,
         context,
@@ -634,6 +641,7 @@ pub(super) fn process_sample_slicer(
     let PerModuleState::SampleSlicer {
         sample,
         slices,
+        playback_rate_scale,
         selected_slice,
         position,
         active,
@@ -644,6 +652,7 @@ pub(super) fn process_sample_slicer(
     process_sample_slicer_state(
         sample,
         slices,
+        *playback_rate_scale,
         selected_slice,
         position,
         active,

@@ -205,6 +205,133 @@ fn bundled_chromatic_and_hat_examples_follow_root_note_and_choke_group() {
 }
 
 #[test]
+fn prepared_sampling_examples_keep_source_pitch_at_common_host_rates() {
+    let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
+    for (patch_name, asset_name, note) in [
+        ("advanced-one-shot.yaml", "advanced-drums.wav", 36),
+        ("advanced-drum-kit.yaml", "advanced-drums.wav", 36),
+        ("advanced-break-slicer.yaml", "advanced-break.wav", 60),
+    ] {
+        let patch_path = root.join("examples/patches").join(patch_name);
+        let patch = load_kernel_patch_file(&patch_path).expect("sample patch loads");
+        let source = crate::audio_loading::load_pcm_wav(
+            &root.join("examples/patches/assets").join(asset_name),
+            48_000,
+        )
+        .expect("48 kHz source loads");
+        for host_rate in [44_100, 96_000] {
+            let settings = RenderSettings {
+                sample_rate_hz: host_rate,
+                block_size_frames: 4,
+                duration_frames: 4,
+            };
+            let prepared = prepare_kernel_patch_with_context(
+                &patch,
+                &settings,
+                &PreparationContext::new(patch_path.parent().unwrap(), host_rate),
+            )
+            .expect("source prepares at host rate");
+            let rendered = render_kernel_offline_named(
+                &prepared,
+                vec![TimedInputEvent::new(
+                    0,
+                    ScriptEvent::NoteOn {
+                        note,
+                        velocity: 100,
+                    },
+                )],
+                &PreparedSamplerAssets::empty(),
+            )
+            .expect("cross-rate source renders");
+            let position = 48_000.0 / f64::from(host_rate);
+            let base = position.floor() as usize;
+            let fraction = (position - base as f64) as f32;
+            let expected = source.frames()[base]
+                + fraction * (source.frames()[base + 1] - source.frames()[base]);
+            assert_eq!(rendered[0].1[0][0], -0.5, "{patch_name} at {host_rate}");
+            assert!(
+                (rendered[0].1[0][1] - expected).abs() < 0.00001,
+                "{patch_name} at {host_rate}"
+            );
+        }
+    }
+}
+
+#[test]
+fn host_rate_changes_sample_duration_without_changing_source_frame_bounds() {
+    let directory = tempfile::tempdir().expect("temporary sample root");
+    let values = [-0.5, -0.25, 0.25, 0.5];
+    crate::wav::write_wav_stereo_i16(
+        fs::File::create(directory.path().join("hit.wav")).expect("sample file"),
+        48_000,
+        &values,
+        &values,
+    )
+    .expect("write sample");
+    let patch = load_kernel_patch_str(
+        r#"
+metadata: { name: rate_scaled_region }
+assets:
+  sample_sources:
+    - id: hit
+      path: hit.wav
+      regions: [{ id: body, start_frame: 0, end_frame: 4 }]
+ports:
+  - { name: master, direction: output, signal: audio, channels: 1, maps_from: player.audio }
+modules:
+  - { id: midi, type: midi_input }
+  - { id: player, type: sample_player, static: { source: hit, region: body, channels: 1 } }
+connections:
+  - { from: midi.events, to: player.trigger }
+"#,
+    )
+    .expect("sample patch loads");
+    let settings = RenderSettings {
+        sample_rate_hz: 96_000,
+        block_size_frames: 3,
+        duration_frames: 9,
+    };
+    let prepared = prepare_kernel_patch_with_context(
+        &patch,
+        &settings,
+        &PreparationContext::new(directory.path(), 96_000),
+    )
+    .expect("48 kHz source prepares for 96 kHz host");
+    assert_eq!(
+        prepared.sample_assets().sources()[0]
+            .sample()
+            .sample_rate_hz(),
+        48_000
+    );
+    let rendered = render_kernel_offline_named(
+        &prepared,
+        vec![TimedInputEvent::new(
+            0,
+            ScriptEvent::NoteOn {
+                note: 60,
+                velocity: 100,
+            },
+        )],
+        &PreparedSamplerAssets::empty(),
+    )
+    .expect("sample renders at host rate");
+    assert_eq!(
+        rendered[0].1[0],
+        vec![
+            -0.5,
+            -0.375,
+            -0.25,
+            -0.000015258789,
+            8191.0 / 32768.0,
+            0.37496948,
+            16383.0 / 32768.0,
+            16383.0 / 32768.0,
+            0.0
+        ]
+    );
+}
+
+#[test]
 fn break_slicer_plays_the_requested_numeric_slice_and_retriggers_it() {
     let directory = tempfile::tempdir().expect("temporary sample root");
     let values = [-0.5, -0.25, 0.25, 0.5];
@@ -3087,13 +3214,30 @@ fn sample_source_rejects_unsupported_decode_format_and_out_of_bounds_region() {
 }
 
 #[test]
-fn sample_source_reports_sample_rate_mismatch_as_load_failure() {
+fn sample_source_retains_its_rate_when_host_rate_differs() {
     let directory = tempfile::tempdir().expect("temporary sample root");
     fs::create_dir(directory.path().join("samples")).expect("sample directory");
     let path = directory.path().join("samples/break.wav");
     crate::wav::write_wav_stereo_i16(fs::File::create(&path).unwrap(), 44_100, &[0.5], &[0.5])
         .expect("write sample at another rate");
-    let patch = load_kernel_patch_str(SAMPLE_ASSET_PATCH).expect("sample declaration loads");
+    let patch = load_kernel_patch_str(
+        r#"
+metadata: { name: source_rate }
+assets:
+  sample_sources:
+    - id: break
+      path: samples/break.wav
+      regions: [{ id: hit, start_frame: 0, end_frame: 1 }]
+ports:
+  - { name: master, direction: output, signal: audio, channels: 1, maps_from: player.audio }
+modules:
+  - { id: midi, type: midi_input }
+  - { id: player, type: sample_player, static: { source: break, region: hit, channels: 1 } }
+connections:
+  - { from: midi.events, to: player.trigger }
+"#,
+    )
+    .expect("sample declaration loads");
     let context = PreparationContext::new(directory.path(), 48_000);
     let settings = RenderSettings {
         sample_rate_hz: 48_000,
@@ -3101,18 +3245,29 @@ fn sample_source_reports_sample_rate_mismatch_as_load_failure() {
         duration_frames: 16,
     };
 
-    let result = prepare_kernel_patch_with_context(&patch, &settings, &context);
-    let error = match result {
-        Ok(_) => panic!("sample rate mismatch must fail preparation"),
-        Err(error) => error,
-    };
-    let diagnostic = error.diagnostics().errors().next().unwrap();
+    let prepared = prepare_kernel_patch_with_context(&patch, &settings, &context)
+        .expect("different source rate prepares");
     assert_eq!(
-        diagnostic.error_code(),
-        error_codes::KERNEL_RESOURCE_LOAD_FAILED
+        prepared.sample_assets().sources()[0]
+            .sample()
+            .sample_rate_hz(),
+        44_100
     );
-    assert!(diagnostic.message().contains("break"));
-    assert!(diagnostic.message().contains("sample-rate mismatch"));
+    let rendered = render_kernel_offline_named(
+        &prepared,
+        vec![TimedInputEvent::new(
+            0,
+            ScriptEvent::NoteOn {
+                note: 60,
+                velocity: 100,
+            },
+        )],
+        &PreparedSamplerAssets::empty(),
+    )
+    .expect("source renders at host rate");
+    assert_eq!(rendered[0].1[0][0], 16383.0 / 32768.0);
+    assert_eq!(rendered[0].1[0][1], 16383.0 / 32768.0);
+    assert_eq!(rendered[0].1[0][2], 0.0);
 }
 
 #[test]

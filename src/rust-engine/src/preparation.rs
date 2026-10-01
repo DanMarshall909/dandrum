@@ -99,7 +99,7 @@ impl ResolvedResource {
 
 pub struct ResourceResolver<'a> {
     context: &'a PreparationContext,
-    loaded: BTreeMap<(PathBuf, u32), Arc<LoadedSample>>,
+    loaded: BTreeMap<(PathBuf, u32, bool), Arc<LoadedSample>>,
 }
 
 impl<'a> ResourceResolver<'a> {
@@ -117,6 +117,14 @@ impl<'a> ResourceResolver<'a> {
     pub fn resolve(
         &mut self,
         reference: &ResourceRef,
+    ) -> Result<ResolvedResource, diagnostics::Diagnostics> {
+        self.resolve_with_rate_policy(reference, true)
+    }
+
+    fn resolve_with_rate_policy(
+        &mut self,
+        reference: &ResourceRef,
+        require_matching_rate: bool,
     ) -> Result<ResolvedResource, diagnostics::Diagnostics> {
         if reference.path().is_absolute()
             || reference
@@ -150,13 +158,20 @@ impl<'a> ResourceResolver<'a> {
             return Err(resource_path_escape(reference, Some(&canonical_path)));
         }
 
-        let key = (canonical_path.clone(), self.context.sample_rate_hz());
+        let key = (
+            canonical_path.clone(),
+            self.context.sample_rate_hz(),
+            require_matching_rate,
+        );
         let sample = if let Some(sample) = self.loaded.get(&key) {
             Arc::clone(sample)
         } else {
-            let loaded =
+            let loaded = if require_matching_rate {
                 crate::audio_loading::load_pcm_wav(&canonical_path, self.context.sample_rate_hz())
-                    .map_err(|message| resource_load_failed(reference, &canonical_path, message))?;
+            } else {
+                crate::audio_loading::load_pcm_wav_any_rate(&canonical_path)
+            }
+            .map_err(|message| resource_load_failed(reference, &canonical_path, message))?;
             let sample = Arc::new(LoadedSample::with_source_channels(
                 loaded.sample_rate_hz(),
                 loaded.source_channel_count(),
@@ -787,7 +802,7 @@ fn prepare_sample_assets(
     let mut sources = Vec::with_capacity(assets.sample_sources.len());
     for declaration in &assets.sample_sources {
         let resource = resolver
-            .resolve(&declaration.resource)
+            .resolve_with_rate_policy(&declaration.resource, false)
             .map_err(|diagnostics| {
                 if diagnostics.errors().any(|diagnostic| {
                     diagnostic.error_code() == diagnostics::error_codes::KERNEL_RESOURCE_PATH_ESCAPE
@@ -1149,7 +1164,13 @@ fn prepare_kernel_graph_with_buses_internal(
         Some(resolver) => resolve_flattened_resources(&flattened_graph, resolver)?,
         None => BTreeMap::new(),
     };
-    let lowered = lower_kernel_graph(&flattened_graph, &latency_plan, &resources, &sample_assets)?;
+    let lowered = lower_kernel_graph(
+        &flattened_graph,
+        &latency_plan,
+        &resources,
+        &sample_assets,
+        render_settings.sample_rate_hz,
+    )?;
     lowered
         .graph
         .validate()
@@ -1455,8 +1476,13 @@ fn compile_poly_regions_with_path(
             Some(resolver) => resolve_flattened_resources(&child_flattened, resolver)?,
             None => BTreeMap::new(),
         };
-        let lowered =
-            lower_kernel_graph(&child_flattened, &latency_plan, &resources, sample_assets)?;
+        let lowered = lower_kernel_graph(
+            &child_flattened,
+            &latency_plan,
+            &resources,
+            sample_assets,
+            render_settings.sample_rate_hz,
+        )?;
         lowered
             .graph
             .validate()
@@ -1731,6 +1757,7 @@ fn lower_kernel_graph(
     latency_plan: &LatencyPlan,
     resources: &BTreeMap<String, CompiledResourceHandles>,
     sample_assets: &PreparedSampleAssets,
+    host_sample_rate_hz: u32,
 ) -> Result<LoweredKernelGraph, KernelPreparationError> {
     use crate::graph::builtin_ports;
 
@@ -1848,6 +1875,8 @@ fn lower_kernel_graph(
                 region: region.clone(),
                 mode: mode.to_string(),
                 interpolation,
+                playback_rate_scale: source.sample().sample_rate_hz() as f32
+                    / host_sample_rate_hz as f32,
             };
         }
         if kind == ModuleKind::SampleSlicer {
@@ -1886,6 +1915,8 @@ fn lower_kernel_graph(
             ));
             data.construction = CompiledConstruction::SampleSlicer {
                 slices: source.declaration().slices.clone().into_boxed_slice(),
+                playback_rate_scale: source.sample().sample_rate_hz() as f32
+                    / host_sample_rate_hz as f32,
             };
         }
         if kind == ModuleKind::SampleMapPlayer {
@@ -1975,6 +2006,8 @@ fn lower_kernel_graph(
                         pitch_ratio: 2.0_f64
                             .powf(zone.declaration().pitch_semitones.unwrap_or(0.0) / 12.0)
                             as f32,
+                        playback_rate_scale: source.sample().sample_rate_hz() as f32
+                            / host_sample_rate_hz as f32,
                     }
                 })
                 .collect::<Vec<_>>()

@@ -47,7 +47,19 @@ pub fn load_pcm_wav(path: &Path, expected_sample_rate_hz: u32) -> Result<LoadedA
     decode_pcm_wav(&bytes, expected_sample_rate_hz)
 }
 
+pub fn load_pcm_wav_any_rate(path: &Path) -> Result<LoadedAudio, String> {
+    let bytes = fs::read(path).map_err(|error| format!("failed to read file: {error}"))?;
+    decode_pcm_wav_with_expected_rate(&bytes, None)
+}
+
 pub fn decode_pcm_wav(bytes: &[u8], expected_sample_rate_hz: u32) -> Result<LoadedAudio, String> {
+    decode_pcm_wav_with_expected_rate(bytes, Some(expected_sample_rate_hz))
+}
+
+fn decode_pcm_wav_with_expected_rate(
+    bytes: &[u8],
+    expected_sample_rate_hz: Option<u32>,
+) -> Result<LoadedAudio, String> {
     if bytes.len() < 44 || &bytes[0..4] != b"RIFF" || &bytes[8..12] != b"WAVE" {
         return Err("unsupported format; expected PCM WAV".to_string());
     }
@@ -98,10 +110,16 @@ pub fn decode_pcm_wav(bytes: &[u8], expected_sample_rate_hz: u32) -> Result<Load
         bits_per_sample.ok_or_else(|| "unsupported format; missing fmt chunk".to_string())?;
     let data = data.ok_or_else(|| "unsupported format; missing data chunk".to_string())?;
 
-    if sample_rate != expected_sample_rate_hz {
-        return Err(format!(
-            "sample-rate mismatch: asset is {sample_rate} Hz, render is {expected_sample_rate_hz} Hz"
-        ));
+    if sample_rate == 0 {
+        return Err("unsupported format; sample rate must be positive".to_string());
+    }
+
+    if let Some(expected_sample_rate_hz) = expected_sample_rate_hz {
+        if sample_rate != expected_sample_rate_hz {
+            return Err(format!(
+                "sample-rate mismatch: asset is {sample_rate} Hz, render is {expected_sample_rate_hz} Hz"
+            ));
+        }
     }
     if channels == 0 || channels > 2 || bits_per_sample != 16 {
         return Err("unsupported format; expected mono/stereo 16-bit PCM WAV".to_string());
@@ -169,6 +187,25 @@ mod tests {
         assert_eq!(audio.frames().len(), 2);
         assert!((audio.frames()[0] - 0.25).abs() < 0.0001);
         assert!((audio.frames()[1] + 0.5).abs() < 0.0001);
+    }
+
+    #[test]
+    fn any_rate_sample_load_retains_source_rate_and_rejects_zero_rate() {
+        let dir = unique_temp_dir("any_rate_sample_load");
+        fs::create_dir_all(&dir).expect("temp dir should be created");
+        let path = dir.join("hit.wav");
+        write_wav_stereo_i16(fs::File::create(&path).unwrap(), 48_000, &[-0.5], &[-0.5])
+            .expect("wav should write");
+        let loaded = load_pcm_wav_any_rate(&path).expect("source keeps its own sample rate");
+        assert_eq!(loaded.sample_rate_hz(), 48_000);
+        assert_eq!(loaded.frames(), &[-0.5]);
+
+        let mut invalid = fs::read(path).expect("wav bytes");
+        invalid[24..28].copy_from_slice(&0_u32.to_le_bytes());
+        assert_eq!(
+            decode_pcm_wav_with_expected_rate(&invalid, None).unwrap_err(),
+            "unsupported format; sample rate must be positive"
+        );
     }
 
     #[test]

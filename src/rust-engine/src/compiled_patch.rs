@@ -257,9 +257,11 @@ pub enum CompiledConstruction {
         region: SampleRegion,
         mode: String,
         interpolation: SampleInterpolation,
+        playback_rate_scale: f32,
     },
     SampleSlicer {
         slices: Box<[SampleSlice]>,
+        playback_rate_scale: f32,
     },
     SampleMapPlayer {
         zones: Box<[CompiledSampleZone]>,
@@ -348,6 +350,7 @@ pub struct CompiledSampleZone {
     pub gain: f32,
     pub pan: f32,
     pub pitch_ratio: f32,
+    pub playback_rate_scale: f32,
 }
 
 #[derive(Clone, Debug, PartialEq)]

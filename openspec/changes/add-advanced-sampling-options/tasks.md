@@ -78,4 +78,4 @@
 - [ ] 9.2 Provide a sampler-focused VST3 example that loads the drum patch and its redistributable reference samples by default.
 - [ ] 9.3 Prove JUCE host parameter automation reaches the corresponding Rust sampler controls and changes rendered audio without replacing the instrument.
 - [ ] 9.4 Document MIDI drum-note mapping, host modulation setup, sample asset location, and the preparation-only choices that require reload.
-- [ ] 9.5 Play prepared samples at the correct pitch and duration across common host sample rates without decoding or resampling on the audio thread.
+- [x] 9.5 Play prepared samples at the correct pitch and duration across common host sample rates without file IO, decoding, or allocation on the audio thread.

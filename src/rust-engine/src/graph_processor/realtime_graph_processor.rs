@@ -1538,6 +1538,7 @@ struct SamplePlayerStepExecutor {
     region: crate::kernel::document::SampleRegion,
     mode: String,
     interpolation: crate::compiled_patch::SampleInterpolation,
+    playback_rate_scale: f32,
     position: f64,
     active: bool,
 }
@@ -1545,6 +1546,7 @@ struct SamplePlayerStepExecutor {
 struct SampleSlicerStepExecutor {
     sample: Option<crate::compiled_patch::SampleResourceHandle>,
     slices: Box<[crate::kernel::document::SampleSlice]>,
+    playback_rate_scale: f32,
     selected_slice: usize,
     position: f64,
     active: bool,
@@ -1565,6 +1567,7 @@ impl PreparedStepExecutor for SampleSlicerStepExecutor {
         arena_processing::process_sample_slicer_state(
             &self.sample,
             &self.slices,
+            self.playback_rate_scale,
             &mut self.selected_slice,
             &mut self.position,
             &mut self.active,
@@ -1605,6 +1608,7 @@ impl PreparedStepExecutor for SamplePlayerStepExecutor {
             &self.region,
             &self.mode,
             self.interpolation,
+            self.playback_rate_scale,
             &mut self.position,
             &mut self.active,
             &mut process_context,
@@ -2193,6 +2197,7 @@ pub(super) fn bind_prepared_step_executors(
                     region,
                     mode,
                     interpolation,
+                    playback_rate_scale,
                     position,
                     active,
                 } => Box::new(SamplePlayerStepExecutor {
@@ -2200,18 +2205,21 @@ pub(super) fn bind_prepared_step_executors(
                     region,
                     mode,
                     interpolation,
+                    playback_rate_scale,
                     position,
                     active,
                 }),
                 PerModuleState::SampleSlicer {
                     sample,
                     slices,
+                    playback_rate_scale,
                     selected_slice,
                     position,
                     active,
                 } => Box::new(SampleSlicerStepExecutor {
                     sample,
                     slices,
+                    playback_rate_scale,
                     selected_slice,
                     position,
                     active,

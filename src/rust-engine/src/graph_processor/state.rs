@@ -81,12 +81,14 @@ pub(super) enum PerModuleState {
         region: SampleRegion,
         mode: String,
         interpolation: SampleInterpolation,
+        playback_rate_scale: f32,
         position: f64,
         active: bool,
     },
     SampleSlicer {
         sample: Option<SampleResourceHandle>,
         slices: Box<[SampleSlice]>,
+        playback_rate_scale: f32,
         selected_slice: usize,
         position: f64,
         active: bool,
@@ -482,6 +484,7 @@ impl PerModuleState {
                     region,
                     mode,
                     interpolation,
+                    playback_rate_scale,
                 } = construction
                 else {
                     panic!("sample_player module {module_id} has mismatched construction data")
@@ -491,17 +494,23 @@ impl PerModuleState {
                     region: region.clone(),
                     mode: mode.clone(),
                     interpolation: *interpolation,
+                    playback_rate_scale: *playback_rate_scale,
                     position: 0.0,
                     active: false,
                 }
             }
             ModuleKind::SampleSlicer => {
-                let CompiledConstruction::SampleSlicer { slices } = construction else {
+                let CompiledConstruction::SampleSlicer {
+                    slices,
+                    playback_rate_scale,
+                } = construction
+                else {
                     panic!("sample_slicer module {module_id} has mismatched construction data")
                 };
                 PerModuleState::SampleSlicer {
                     sample: resources.sample.clone(),
                     slices: slices.clone(),
+                    playback_rate_scale: *playback_rate_scale,
                     selected_slice: 0,
                     position: 0.0,
                     active: false,
