@@ -30,7 +30,7 @@
 
 - [x] 4.1 Implement key-range selection from incoming note events.
 - [x] 4.2 Implement velocity-range selection from incoming note events.
-- [ ] 4.3 Implement deterministic round-robin selection per group.
+- [x] 4.3 Implement deterministic round-robin selection per group.
 - [ ] 4.4 Implement deterministic weighted/probability selection where enabled.
 - [ ] 4.5 Implement per-zone gain, pan, pitch offset, and region override metadata.
 - [ ] 4.6 Ensure selection is independent of hashmap iteration order, filesystem order, wall-clock time, and audio block size.

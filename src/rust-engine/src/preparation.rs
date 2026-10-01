@@ -9,7 +9,7 @@ use crate::compiled_patch::{
     self, CompileError, CompiledConstruction, CompiledNodeData, CompiledPatch,
     CompiledPolyOutputAccumulator, CompiledPolyRegion, CompiledPolyVoiceStorage, CompiledPortSpan,
     CompiledResourceHandles, CompiledRootPort, CompiledSampleZone, ImpulseResponseResourceHandle,
-    RootBusPlan, SampleInterpolation, SampleResourceHandle,
+    RootBusPlan, SampleInterpolation, SampleResourceHandle, SampleSelectionMode,
 };
 use crate::diagnostics::{self, Diagnostic, Severity};
 use crate::graph::{Cable, Graph, ModuleId, ModuleNode, PortDirection, PortRef, SignalType};
@@ -1835,7 +1835,7 @@ fn lower_kernel_graph(
             })?;
             if map
                 .selection_mode()
-                .is_some_and(|mode| mode != "first_match")
+                .is_some_and(|mode| mode != "first_match" && mode != "round_robin")
             {
                 return Err(sample_preparation_error(
                     diagnostics::error_codes::KERNEL_SAMPLE_UNSUPPORTED_MODE,
@@ -1858,21 +1858,42 @@ fn lower_kernel_graph(
                     ),
                 ));
             }
+            let mut groups = BTreeMap::new();
             let zones = map
                 .zones()
                 .iter()
                 .map(|zone| {
                     let source = &sample_assets.sources()[zone.source_index()];
+                    let round_robin_group =
+                        zone.declaration().round_robin_group.as_ref().map(|name| {
+                            if let Some(index) = groups.get(name) {
+                                *index
+                            } else {
+                                let index = groups.len();
+                                groups.insert(name.clone(), index);
+                                index
+                            }
+                        });
                     CompiledSampleZone {
                         sample: SampleResourceHandle::from_shared(source.resource.shared_sample()),
                         region: source.declaration().regions[zone.region_index()].clone(),
                         key_range: zone.declaration().key_range,
                         velocity_range: zone.declaration().velocity_range,
+                        round_robin_group,
                     }
                 })
                 .collect::<Vec<_>>()
                 .into_boxed_slice();
-            data.construction = CompiledConstruction::SampleMapPlayer { zones };
+            let selection_mode = if map.selection_mode() == Some("round_robin") {
+                SampleSelectionMode::RoundRobin
+            } else {
+                SampleSelectionMode::FirstMatch
+            };
+            data.construction = CompiledConstruction::SampleMapPlayer {
+                zones,
+                selection_mode,
+                group_count: groups.len(),
+            };
         }
         data.port_channels.extend(
             node.ports()

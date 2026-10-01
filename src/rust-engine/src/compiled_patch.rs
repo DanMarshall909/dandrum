@@ -254,6 +254,8 @@ pub enum CompiledConstruction {
     },
     SampleMapPlayer {
         zones: Box<[CompiledSampleZone]>,
+        selection_mode: SampleSelectionMode,
+        group_count: usize,
     },
     CompensationDelay {
         samples: usize,
@@ -309,12 +311,19 @@ pub enum SampleInterpolation {
     Cubic,
 }
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum SampleSelectionMode {
+    FirstMatch,
+    RoundRobin,
+}
+
 #[derive(Clone, Debug, PartialEq)]
 pub struct CompiledSampleZone {
     pub sample: SampleResourceHandle,
     pub region: SampleRegion,
     pub key_range: [u8; 2],
     pub velocity_range: [u8; 2],
+    pub round_robin_group: Option<usize>,
 }
 
 #[derive(Clone, Debug, PartialEq)]

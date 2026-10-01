@@ -1580,6 +1580,8 @@ impl PreparedStepExecutor for SamplePlayerStepExecutor {
 
 struct SampleMapPlayerStepExecutor {
     zones: Box<[crate::compiled_patch::CompiledSampleZone]>,
+    selection_mode: crate::compiled_patch::SampleSelectionMode,
+    round_robin_counters: Box<[usize]>,
     selected_zone: Option<usize>,
     position: f64,
     active: bool,
@@ -1599,6 +1601,8 @@ impl PreparedStepExecutor for SampleMapPlayerStepExecutor {
         );
         arena_processing::process_sample_map_player_state(
             &self.zones,
+            self.selection_mode,
+            &mut self.round_robin_counters,
             &mut self.selected_zone,
             &mut self.position,
             &mut self.active,
@@ -1608,6 +1612,7 @@ impl PreparedStepExecutor for SampleMapPlayerStepExecutor {
     }
 
     fn reset_voice(&mut self) {
+        self.round_robin_counters.fill(0);
         self.selected_zone = None;
         self.position = 0.0;
         self.active = false;
@@ -2129,11 +2134,15 @@ pub(super) fn bind_prepared_step_executors(
                 }),
                 PerModuleState::SampleMapPlayer {
                     zones,
+                    selection_mode,
+                    round_robin_counters,
                     selected_zone,
                     position,
                     active,
                 } => Box::new(SampleMapPlayerStepExecutor {
                     zones,
+                    selection_mode,
+                    round_robin_counters,
                     selected_zone,
                     position,
                     active,

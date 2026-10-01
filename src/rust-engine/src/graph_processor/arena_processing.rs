@@ -3,7 +3,7 @@ use super::helpers::{normalized_end_position, normalized_position};
 use super::outputs::BlockEvent;
 use super::process_context::ProcessContext;
 use super::state::PerModuleState;
-use crate::compiled_patch::SampleInterpolation;
+use crate::compiled_patch::{SampleInterpolation, SampleSelectionMode};
 use crate::decay::DecayCurve;
 use crate::kernel::document::SampleRegion;
 use crate::oscillator::OSCILLATOR_BASE_HZ;
@@ -315,6 +315,8 @@ fn sample_interpolated(
 
 pub(super) fn process_sample_map_player_state(
     zones: &[crate::compiled_patch::CompiledSampleZone],
+    selection_mode: SampleSelectionMode,
+    round_robin_counters: &mut [usize],
     selected_zone: &mut Option<usize>,
     position: &mut f64,
     active: &mut bool,
@@ -327,12 +329,39 @@ pub(super) fn process_sample_map_player_state(
                 continue;
             }
             if let ScriptEvent::NoteOn { note, velocity } = event.event {
-                if let Some(index) = zones.iter().position(|zone| {
+                let matches = |zone: &crate::compiled_patch::CompiledSampleZone| {
                     note >= zone.key_range[0]
                         && note <= zone.key_range[1]
                         && velocity >= zone.velocity_range[0]
                         && velocity <= zone.velocity_range[1]
-                }) {
+                };
+                let first = zones.iter().position(matches);
+                let chosen = first.map(|first| {
+                    if selection_mode == SampleSelectionMode::RoundRobin {
+                        if let Some(group) = zones[first].round_robin_group {
+                            let count = zones
+                                .iter()
+                                .filter(|zone| {
+                                    matches(zone) && zone.round_robin_group == Some(group)
+                                })
+                                .count();
+                            let turn = round_robin_counters[group] % count;
+                            round_robin_counters[group] =
+                                round_robin_counters[group].wrapping_add(1);
+                            return zones
+                                .iter()
+                                .enumerate()
+                                .filter(|(_, zone)| {
+                                    matches(zone) && zone.round_robin_group == Some(group)
+                                })
+                                .nth(turn)
+                                .expect("matching round-robin group has a selected zone")
+                                .0;
+                        }
+                    }
+                    first
+                });
+                if let Some(index) = chosen {
                     *selected_zone = Some(index);
                     let region = &zones[index].region;
                     *position = if region.reverse {
@@ -391,6 +420,8 @@ pub(super) fn process_sample_map_player(
 ) {
     let PerModuleState::SampleMapPlayer {
         zones,
+        selection_mode,
+        round_robin_counters,
         selected_zone,
         position,
         active,
@@ -398,7 +429,16 @@ pub(super) fn process_sample_map_player(
     else {
         unreachable!()
     };
-    process_sample_map_player_state(zones, selected_zone, position, active, context, events);
+    process_sample_map_player_state(
+        zones,
+        *selection_mode,
+        round_robin_counters,
+        selected_zone,
+        position,
+        active,
+        context,
+        events,
+    );
 }
 
 pub(super) fn process_sample_player(

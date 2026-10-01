@@ -4,6 +4,7 @@ use crate::compiled_patch::CompiledNodeData;
 use crate::compiled_patch::{
     CompiledConstruction, CompiledFilterAlgorithm, CompiledNode, CompiledResourceHandles,
     CompiledSampleZone, CompiledScriptLanguage, SampleInterpolation, SampleResourceHandle,
+    SampleSelectionMode,
 };
 use crate::convolution::Convolution;
 use crate::crossover::LinkwitzRiley4;
@@ -85,6 +86,8 @@ pub(super) enum PerModuleState {
     },
     SampleMapPlayer {
         zones: Box<[CompiledSampleZone]>,
+        selection_mode: SampleSelectionMode,
+        round_robin_counters: Box<[usize]>,
         selected_zone: Option<usize>,
         position: f64,
         active: bool,
@@ -203,11 +206,13 @@ impl PerModuleState {
                 *active = false;
             }
             Self::SampleMapPlayer {
+                round_robin_counters,
                 selected_zone,
                 position,
                 active,
                 ..
             } => {
+                round_robin_counters.fill(0);
                 *selected_zone = None;
                 *position = 0.0;
                 *active = false;
@@ -465,11 +470,18 @@ impl PerModuleState {
                 }
             }
             ModuleKind::SampleMapPlayer => {
-                let CompiledConstruction::SampleMapPlayer { zones } = construction else {
+                let CompiledConstruction::SampleMapPlayer {
+                    zones,
+                    selection_mode,
+                    group_count,
+                } = construction
+                else {
                     panic!("sample_map_player module {module_id} has mismatched construction data")
                 };
                 PerModuleState::SampleMapPlayer {
                     zones: zones.clone(),
+                    selection_mode: *selection_mode,
+                    round_robin_counters: vec![0; *group_count].into_boxed_slice(),
                     selected_zone: None,
                     position: 0.0,
                     active: false,

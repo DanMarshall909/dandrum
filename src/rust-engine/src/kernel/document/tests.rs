@@ -1329,6 +1329,102 @@ connections:
 }
 
 #[test]
+fn drum_map_round_robin_counters_are_repeatable_and_independent_per_group() {
+    let directory = tempfile::tempdir().expect("temporary sample root");
+    let values = [-0.5, 0.25, -0.75, 0.5];
+    crate::wav::write_wav_stereo_i16(
+        fs::File::create(directory.path().join("hits.wav")).expect("sample file"),
+        48_000,
+        &values,
+        &values,
+    )
+    .expect("write sample");
+    let yaml = r#"
+metadata: { name: round_robin_drums }
+assets:
+  sample_sources:
+    - id: hits
+      path: hits.wav
+      regions:
+        - { id: kick_a, start_frame: 0, end_frame: 1 }
+        - { id: kick_b, start_frame: 1, end_frame: 2 }
+        - { id: snare_a, start_frame: 2, end_frame: 3 }
+        - { id: snare_b, start_frame: 3, end_frame: 4 }
+  sample_maps:
+    - id: kit
+      selection_mode: round_robin
+      zones:
+        - { region: hits.kick_a, key_range: [36, 36], velocity_range: [1, 127], round_robin_group: kick }
+        - { region: hits.kick_b, key_range: [36, 36], velocity_range: [1, 127], round_robin_group: kick }
+        - { region: hits.snare_a, key_range: [38, 38], velocity_range: [1, 127], round_robin_group: snare }
+        - { region: hits.snare_b, key_range: [38, 38], velocity_range: [1, 127], round_robin_group: snare }
+ports:
+  - { name: audio_out, direction: output, signal: audio, channels: 1, maps_from: player.audio }
+modules:
+  - { id: midi, type: midi_input }
+  - { id: player, type: sample_map_player, static: { sample_map: kit, max_voices: 1, channels: 1 } }
+connections:
+  - { from: midi.events, to: player.note }
+"#;
+    let patch = load_kernel_patch_str(yaml).expect("round-robin kit loads");
+    let settings = RenderSettings {
+        sample_rate_hz: 48_000,
+        block_size_frames: 5,
+        duration_frames: 5,
+    };
+    let context = PreparationContext::new(directory.path(), 48_000);
+    let prepared = prepare_kernel_patch_with_context(&patch, &settings, &context)
+        .expect("round-robin kit prepares");
+    let events = vec![
+        TimedInputEvent::new(
+            0,
+            ScriptEvent::NoteOn {
+                note: 36,
+                velocity: 100,
+            },
+        ),
+        TimedInputEvent::new(
+            1,
+            ScriptEvent::NoteOn {
+                note: 38,
+                velocity: 100,
+            },
+        ),
+        TimedInputEvent::new(
+            2,
+            ScriptEvent::NoteOn {
+                note: 36,
+                velocity: 100,
+            },
+        ),
+        TimedInputEvent::new(
+            3,
+            ScriptEvent::NoteOn {
+                note: 38,
+                velocity: 100,
+            },
+        ),
+        TimedInputEvent::new(
+            4,
+            ScriptEvent::NoteOn {
+                note: 36,
+                velocity: 100,
+            },
+        ),
+    ];
+    let first =
+        render_kernel_offline_named(&prepared, events.clone(), &PreparedSamplerAssets::empty())
+            .expect("first round-robin render");
+    let second = render_kernel_offline_named(&prepared, events, &PreparedSamplerAssets::empty())
+        .expect("second round-robin render");
+    assert_eq!(first, second);
+    assert_eq!(
+        first[0].1[0],
+        vec![-0.5, -0.75, 8191.0 / 32768.0, 16383.0 / 32768.0, -0.5]
+    );
+}
+
+#[test]
 fn poly_region_renders_sample_player_child_with_independent_voices() {
     let directory = tempfile::tempdir().expect("temporary sample root");
     crate::wav::write_wav_stereo_i16(
