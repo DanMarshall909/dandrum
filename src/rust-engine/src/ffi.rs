@@ -81,7 +81,131 @@ pub struct DandrumKernelInstrument {
     input_scratch: Vec<Vec<Vec<f32>>>,
     output_scratch: Vec<Vec<Vec<f32>>>,
     public_controls: Vec<KernelPublicControl>,
+    ui_control_groups: Vec<Option<u8>>,
     max_block_size: usize,
+}
+
+/// Owns only copied preparation metadata. It deliberately excludes decoded PCM
+/// so readers can outlive an engine replacement without retaining audio assets.
+pub struct DandrumKernelUiSnapshot {
+    sources: Vec<KernelUiSource>,
+    maps: Vec<KernelUiMap>,
+    public_control_groups: Vec<Option<u8>>,
+}
+
+struct KernelUiSource {
+    declaration: crate::kernel::document::SampleSource,
+    sample_rate_hz: u32,
+    channel_count: u16,
+    frame_count: u64,
+}
+
+struct KernelUiMap {
+    declaration: crate::kernel::document::SampleMap,
+    zones: Vec<KernelUiZone>,
+}
+
+struct KernelUiZone {
+    declaration: crate::kernel::document::SampleZone,
+    effective_region: crate::kernel::document::SampleRegion,
+    source_index: usize,
+    region_index: usize,
+}
+
+/// UTF-8 bytes owned by a DandrumKernelUiSnapshot, valid until it is destroyed.
+#[repr(C)]
+#[derive(Clone, Copy)]
+pub struct DandrumKernelStringView {
+    pub data: *const c_char,
+    pub size: usize,
+}
+
+#[repr(C)]
+pub struct DandrumKernelUiSource {
+    pub id: DandrumKernelStringView,
+    pub sample_rate_hz: u32,
+    pub channel_count: u16,
+    pub frame_count: u64,
+}
+
+#[repr(C)]
+pub struct DandrumKernelUiRegion {
+    pub id: DandrumKernelStringView,
+    pub start_frame: u64,
+    pub end_frame: u64,
+    pub root_note: i32,
+    pub has_gain_db: bool,
+    pub gain_db: f64,
+    pub has_pan: bool,
+    pub pan: f64,
+    pub reverse: bool,
+    pub fade_in_ms: f64,
+    pub fade_out_ms: f64,
+    pub has_loop: bool,
+    pub loop_mode: DandrumKernelStringView,
+    pub loop_start_frame: u64,
+    pub loop_end_frame: u64,
+    pub loop_crossfade_ms: f64,
+}
+
+#[repr(C)]
+pub struct DandrumKernelUiSlice {
+    pub id: DandrumKernelStringView,
+    pub start_frame: u64,
+    pub end_frame: u64,
+}
+
+#[repr(C)]
+pub struct DandrumKernelUiMap {
+    pub id: DandrumKernelStringView,
+    pub selection_mode: DandrumKernelStringView,
+    pub selection_seed: u64,
+}
+
+#[repr(C)]
+pub struct DandrumKernelUiZone {
+    pub id: DandrumKernelStringView,
+    pub source_index: usize,
+    pub region_index: usize,
+    pub start_frame: u64,
+    pub end_frame: u64,
+    pub key_low: u8,
+    pub key_high: u8,
+    pub velocity_low: u8,
+    pub velocity_high: u8,
+    pub round_robin_group: DandrumKernelStringView,
+    pub choke_group: DandrumKernelStringView,
+    pub control_group: i32,
+    pub weight: u32,
+    pub has_gain_db: bool,
+    pub gain_db: f64,
+    pub has_pan: bool,
+    pub pan: f64,
+    pub has_pitch_semitones: bool,
+    pub pitch_semitones: f64,
+}
+
+fn ui_string_view(value: &str) -> DandrumKernelStringView {
+    DandrumKernelStringView {
+        data: value.as_ptr().cast(),
+        size: value.len(),
+    }
+}
+
+fn sample_control_group(root: &crate::kernel::GraphDefinition, port_name: &str) -> Option<u8> {
+    let port = root.ports().iter().find(|port| port.name() == port_name)?;
+    let [target] = port.internal_targets() else {
+        return None;
+    };
+    let node = root
+        .nodes()
+        .iter()
+        .find(|node| node.id() == target.node())?;
+    if node.definition_ref() != "sample_map_player" {
+        return None;
+    }
+    let (group, _) = target.port().strip_prefix("group_")?.split_once('_')?;
+    group.parse::<u8>().ok().filter(|group| *group > 0)
 }
 
 struct KernelPublicControl {
@@ -268,6 +392,12 @@ pub unsafe extern "C" fn dandrum_kernel_prepare_file(
             max: alias.control_default().max(),
         })
         .collect();
+    let ui_control_groups = patch
+        .preset_surface()
+        .parameters()
+        .iter()
+        .map(|alias| sample_control_group(patch.root(), alias.port_name()))
+        .collect();
     let runtime = RealtimeGraphProcessor::from_compiled_patch(
         prepared.compiled_patch().clone(),
         sample_rate_hz as f32,
@@ -286,6 +416,7 @@ pub unsafe extern "C" fn dandrum_kernel_prepare_file(
         input_scratch,
         output_scratch,
         public_controls,
+        ui_control_groups,
         max_block_size,
     }))
 }
@@ -317,6 +448,279 @@ pub unsafe extern "C" fn dandrum_kernel_destroy(engine: *mut DandrumKernelInstru
     if !engine.is_null() {
         drop(unsafe { Box::from_raw(engine) });
     }
+}
+
+/// Call away from the audio callback while the engine is protected against
+/// replacement. The returned copy has no pointers into the engine or PCM.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn dandrum_kernel_ui_snapshot_create(
+    engine: *const DandrumKernelInstrument,
+) -> *mut DandrumKernelUiSnapshot {
+    ref_or!(engine, engine, std::ptr::null_mut());
+    let assets = engine.prepared.sample_assets();
+    let sources = assets
+        .sources()
+        .iter()
+        .map(|source| KernelUiSource {
+            declaration: source.declaration().clone(),
+            sample_rate_hz: source.sample().sample_rate_hz(),
+            channel_count: source.sample().source_channel_count(),
+            frame_count: source.sample().frame_count() as u64,
+        })
+        .collect();
+    let maps = assets
+        .maps()
+        .iter()
+        .map(|declaration| {
+            let prepared = assets
+                .map_by_id(&declaration.id)
+                .expect("prepared map is indexed by its declaration ID");
+            KernelUiMap {
+                declaration: declaration.clone(),
+                zones: prepared
+                    .zones()
+                    .iter()
+                    .map(|zone| KernelUiZone {
+                        declaration: zone.declaration().clone(),
+                        effective_region: zone.effective_region().clone(),
+                        source_index: zone.source_index(),
+                        region_index: zone.region_index(),
+                    })
+                    .collect(),
+            }
+        })
+        .collect();
+    Box::into_raw(Box::new(DandrumKernelUiSnapshot {
+        sources,
+        maps,
+        public_control_groups: engine.ui_control_groups.clone(),
+    }))
+}
+
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn dandrum_kernel_ui_snapshot_destroy(
+    snapshot: *mut DandrumKernelUiSnapshot,
+) {
+    if !snapshot.is_null() {
+        drop(unsafe { Box::from_raw(snapshot) });
+    }
+}
+
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn dandrum_kernel_ui_source_count(
+    snapshot: *const DandrumKernelUiSnapshot,
+) -> usize {
+    ref_or!(snapshot, snapshot, 0);
+    snapshot.sources.len()
+}
+
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn dandrum_kernel_ui_source(
+    snapshot: *const DandrumKernelUiSnapshot,
+    index: usize,
+    output: *mut DandrumKernelUiSource,
+) -> bool {
+    ref_or!(snapshot, snapshot, false);
+    mut_or!(output, output, false);
+    let Some(source) = snapshot.sources.get(index) else {
+        return false;
+    };
+    *output = DandrumKernelUiSource {
+        id: ui_string_view(&source.declaration.id),
+        sample_rate_hz: source.sample_rate_hz,
+        channel_count: source.channel_count,
+        frame_count: source.frame_count,
+    };
+    true
+}
+
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn dandrum_kernel_ui_region_count(
+    snapshot: *const DandrumKernelUiSnapshot,
+    source_index: usize,
+) -> usize {
+    ref_or!(snapshot, snapshot, 0);
+    snapshot
+        .sources
+        .get(source_index)
+        .map_or(0, |source| source.declaration.regions.len())
+}
+
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn dandrum_kernel_ui_region(
+    snapshot: *const DandrumKernelUiSnapshot,
+    source_index: usize,
+    region_index: usize,
+    output: *mut DandrumKernelUiRegion,
+) -> bool {
+    ref_or!(snapshot, snapshot, false);
+    mut_or!(output, output, false);
+    let Some(region) = snapshot
+        .sources
+        .get(source_index)
+        .and_then(|source| source.declaration.regions.get(region_index))
+    else {
+        return false;
+    };
+    let loop_settings = region.loop_settings.as_ref();
+    *output = DandrumKernelUiRegion {
+        id: ui_string_view(&region.id),
+        start_frame: region.start_frame,
+        end_frame: region.end_frame,
+        root_note: region.root_note.map_or(-1, i32::from),
+        has_gain_db: region.gain_db.is_some(),
+        gain_db: region.gain_db.unwrap_or(0.0),
+        has_pan: region.pan.is_some(),
+        pan: region.pan.unwrap_or(0.0),
+        reverse: region.reverse,
+        fade_in_ms: region.fade_in_ms.unwrap_or(0.0),
+        fade_out_ms: region.fade_out_ms.unwrap_or(0.0),
+        has_loop: loop_settings.is_some(),
+        loop_mode: ui_string_view(loop_settings.map_or("", |settings| &settings.mode)),
+        loop_start_frame: loop_settings.map_or(0, |settings| settings.start_frame),
+        loop_end_frame: loop_settings.map_or(0, |settings| settings.end_frame),
+        loop_crossfade_ms: loop_settings
+            .and_then(|settings| settings.crossfade_ms)
+            .unwrap_or(0.0),
+    };
+    true
+}
+
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn dandrum_kernel_ui_slice_count(
+    snapshot: *const DandrumKernelUiSnapshot,
+    source_index: usize,
+) -> usize {
+    ref_or!(snapshot, snapshot, 0);
+    snapshot
+        .sources
+        .get(source_index)
+        .map_or(0, |source| source.declaration.slices.len())
+}
+
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn dandrum_kernel_ui_slice(
+    snapshot: *const DandrumKernelUiSnapshot,
+    source_index: usize,
+    slice_index: usize,
+    output: *mut DandrumKernelUiSlice,
+) -> bool {
+    ref_or!(snapshot, snapshot, false);
+    mut_or!(output, output, false);
+    let Some(slice) = snapshot
+        .sources
+        .get(source_index)
+        .and_then(|source| source.declaration.slices.get(slice_index))
+    else {
+        return false;
+    };
+    *output = DandrumKernelUiSlice {
+        id: ui_string_view(&slice.id),
+        start_frame: slice.start_frame,
+        end_frame: slice.end_frame,
+    };
+    true
+}
+
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn dandrum_kernel_ui_map_count(
+    snapshot: *const DandrumKernelUiSnapshot,
+) -> usize {
+    ref_or!(snapshot, snapshot, 0);
+    snapshot.maps.len()
+}
+
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn dandrum_kernel_ui_map(
+    snapshot: *const DandrumKernelUiSnapshot,
+    index: usize,
+    output: *mut DandrumKernelUiMap,
+) -> bool {
+    ref_or!(snapshot, snapshot, false);
+    mut_or!(output, output, false);
+    let Some(map) = snapshot.maps.get(index) else {
+        return false;
+    };
+    *output = DandrumKernelUiMap {
+        id: ui_string_view(&map.declaration.id),
+        selection_mode: ui_string_view(
+            map.declaration
+                .selection_mode
+                .as_deref()
+                .unwrap_or("first_match"),
+        ),
+        selection_seed: map.declaration.selection_seed,
+    };
+    true
+}
+
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn dandrum_kernel_ui_zone_count(
+    snapshot: *const DandrumKernelUiSnapshot,
+    map_index: usize,
+) -> usize {
+    ref_or!(snapshot, snapshot, 0);
+    snapshot
+        .maps
+        .get(map_index)
+        .map_or(0, |map| map.zones.len())
+}
+
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn dandrum_kernel_ui_zone(
+    snapshot: *const DandrumKernelUiSnapshot,
+    map_index: usize,
+    zone_index: usize,
+    output: *mut DandrumKernelUiZone,
+) -> bool {
+    ref_or!(snapshot, snapshot, false);
+    mut_or!(output, output, false);
+    let Some(zone) = snapshot
+        .maps
+        .get(map_index)
+        .and_then(|map| map.zones.get(zone_index))
+    else {
+        return false;
+    };
+    *output = DandrumKernelUiZone {
+        id: ui_string_view(zone.declaration.id.as_deref().unwrap_or("")),
+        source_index: zone.source_index,
+        region_index: zone.region_index,
+        start_frame: zone.effective_region.start_frame,
+        end_frame: zone.effective_region.end_frame,
+        key_low: zone.declaration.key_range[0],
+        key_high: zone.declaration.key_range[1],
+        velocity_low: zone.declaration.velocity_range[0],
+        velocity_high: zone.declaration.velocity_range[1],
+        round_robin_group: ui_string_view(
+            zone.declaration.round_robin_group.as_deref().unwrap_or(""),
+        ),
+        choke_group: ui_string_view(zone.declaration.choke_group.as_deref().unwrap_or("")),
+        control_group: zone.declaration.control_group.map_or(-1, i32::from),
+        weight: zone.declaration.weight.unwrap_or(1),
+        has_gain_db: zone.declaration.gain_db.is_some(),
+        gain_db: zone.declaration.gain_db.unwrap_or(0.0),
+        has_pan: zone.declaration.pan.is_some(),
+        pan: zone.declaration.pan.unwrap_or(0.0),
+        has_pitch_semitones: zone.declaration.pitch_semitones.is_some(),
+        pitch_semitones: zone.declaration.pitch_semitones.unwrap_or(0.0),
+    };
+    true
+}
+
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn dandrum_kernel_ui_public_control_group(
+    snapshot: *const DandrumKernelUiSnapshot,
+    index: usize,
+    output: *mut i32,
+) -> bool {
+    ref_or!(snapshot, snapshot, false);
+    mut_or!(output, output, false);
+    let Some(group) = snapshot.public_control_groups.get(index) else {
+        return false;
+    };
+    *output = group.map_or(0, i32::from);
+    true
 }
 
 #[unsafe(no_mangle)]
@@ -1499,6 +1903,239 @@ mod tests {
             assert_eq!(right[0], -0.5);
             unsafe { dandrum_kernel_destroy(engine) };
         }
+    }
+
+    fn ui_text(view: DandrumKernelStringView) -> String {
+        if view.size == 0 {
+            return String::new();
+        }
+        let bytes = unsafe { std::slice::from_raw_parts(view.data.cast::<u8>(), view.size) };
+        std::str::from_utf8(bytes).unwrap().to_owned()
+    }
+
+    #[test]
+    fn prepared_ui_snapshot_retains_drum_mapping_after_engine_release() {
+        let patch = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("../../examples/patches/advanced-drum-kit.yaml");
+        let path = std::ffi::CString::new(patch.to_str().unwrap()).unwrap();
+        let master = std::ffi::CString::new("master").unwrap();
+        let bus = DandrumKernelBusDeclaration {
+            name: master.as_ptr(),
+            direction: 2,
+            channel_count: 2,
+        };
+        let engine = unsafe { dandrum_kernel_prepare_file(path.as_ptr(), 96_000, 8, &bus, 1) };
+        assert!(!engine.is_null());
+        let snapshot = unsafe { dandrum_kernel_ui_snapshot_create(engine) };
+        assert!(!snapshot.is_null());
+        unsafe { dandrum_kernel_destroy(engine) };
+
+        assert_eq!(unsafe { dandrum_kernel_ui_source_count(snapshot) }, 1);
+        let mut source = std::mem::MaybeUninit::<DandrumKernelUiSource>::uninit();
+        assert!(unsafe { dandrum_kernel_ui_source(snapshot, 0, source.as_mut_ptr()) });
+        let source = unsafe { source.assume_init() };
+        assert_eq!(ui_text(source.id), "drums");
+        assert_eq!(source.sample_rate_hz, 48_000);
+        assert_eq!(source.channel_count, 1);
+        assert_eq!(source.frame_count, 51_000);
+
+        assert_eq!(unsafe { dandrum_kernel_ui_region_count(snapshot, 0) }, 6);
+        let mut region = std::mem::MaybeUninit::<DandrumKernelUiRegion>::uninit();
+        assert!(unsafe { dandrum_kernel_ui_region(snapshot, 0, 2, region.as_mut_ptr()) });
+        let region = unsafe { region.assume_init() };
+        assert_eq!(ui_text(region.id), "snare_hard_a");
+        assert_eq!((region.start_frame, region.end_frame), (20_000, 28_000));
+
+        assert_eq!(unsafe { dandrum_kernel_ui_map_count(snapshot) }, 1);
+        let mut map = std::mem::MaybeUninit::<DandrumKernelUiMap>::uninit();
+        assert!(unsafe { dandrum_kernel_ui_map(snapshot, 0, map.as_mut_ptr()) });
+        let map = unsafe { map.assume_init() };
+        assert_eq!(ui_text(map.id), "kit");
+        assert_eq!(ui_text(map.selection_mode), "round_robin");
+        assert_eq!(unsafe { dandrum_kernel_ui_zone_count(snapshot, 0) }, 7);
+
+        let mut soft = std::mem::MaybeUninit::<DandrumKernelUiZone>::uninit();
+        let mut hard_a = std::mem::MaybeUninit::<DandrumKernelUiZone>::uninit();
+        let mut hard_b = std::mem::MaybeUninit::<DandrumKernelUiZone>::uninit();
+        assert!(unsafe { dandrum_kernel_ui_zone(snapshot, 0, 1, soft.as_mut_ptr()) });
+        assert!(unsafe { dandrum_kernel_ui_zone(snapshot, 0, 2, hard_a.as_mut_ptr()) });
+        assert!(unsafe { dandrum_kernel_ui_zone(snapshot, 0, 3, hard_b.as_mut_ptr()) });
+        let soft = unsafe { soft.assume_init() };
+        let hard_a = unsafe { hard_a.assume_init() };
+        let hard_b = unsafe { hard_b.assume_init() };
+        assert_eq!(
+            (
+                soft.key_low,
+                soft.key_high,
+                soft.velocity_low,
+                soft.velocity_high
+            ),
+            (38, 38, 1, 63)
+        );
+        assert_eq!(
+            (
+                hard_a.key_low,
+                hard_a.key_high,
+                hard_a.velocity_low,
+                hard_a.velocity_high
+            ),
+            (38, 38, 64, 127)
+        );
+        assert_eq!(ui_text(hard_a.round_robin_group), "hard_snare");
+        assert_eq!(ui_text(hard_b.round_robin_group), "hard_snare");
+        assert_eq!(
+            (
+                soft.control_group,
+                hard_a.control_group,
+                hard_b.control_group
+            ),
+            (2, 2, 2)
+        );
+        assert_eq!((hard_a.source_index, hard_a.region_index), (0, 2));
+        assert_eq!((hard_a.start_frame, hard_a.end_frame), (20_000, 28_000));
+
+        let mut group = -1;
+        assert!(unsafe { dandrum_kernel_ui_public_control_group(snapshot, 0, &mut group) });
+        assert_eq!(group, 0, "shared pitch control must be instrument-scoped");
+        assert!(unsafe { dandrum_kernel_ui_public_control_group(snapshot, 5, &mut group) });
+        assert_eq!(group, 1, "kick pitch control must address group 1");
+        assert!(unsafe { dandrum_kernel_ui_public_control_group(snapshot, 9, &mut group) });
+        assert_eq!(group, 2, "snare pitch control must address group 2");
+        assert!(!unsafe { dandrum_kernel_ui_public_control_group(snapshot, 23, &mut group) });
+
+        let mut absent = std::mem::MaybeUninit::<DandrumKernelUiSource>::uninit();
+        assert!(!unsafe { dandrum_kernel_ui_source(snapshot, 1, absent.as_mut_ptr()) });
+        let mut absent_region = std::mem::MaybeUninit::<DandrumKernelUiRegion>::uninit();
+        let mut absent_slice = std::mem::MaybeUninit::<DandrumKernelUiSlice>::uninit();
+        let mut absent_map = std::mem::MaybeUninit::<DandrumKernelUiMap>::uninit();
+        let mut absent_zone = std::mem::MaybeUninit::<DandrumKernelUiZone>::uninit();
+        assert!(!unsafe { dandrum_kernel_ui_region(snapshot, 0, 6, absent_region.as_mut_ptr()) });
+        assert!(!unsafe { dandrum_kernel_ui_slice(snapshot, 0, 0, absent_slice.as_mut_ptr()) });
+        assert!(!unsafe { dandrum_kernel_ui_map(snapshot, 1, absent_map.as_mut_ptr()) });
+        assert!(!unsafe { dandrum_kernel_ui_zone(snapshot, 0, 7, absent_zone.as_mut_ptr()) });
+        assert_eq!(
+            unsafe { dandrum_kernel_ui_source_count(std::ptr::null()) },
+            0
+        );
+        assert_eq!(unsafe { dandrum_kernel_ui_map_count(std::ptr::null()) }, 0);
+        assert!(!unsafe {
+            dandrum_kernel_ui_public_control_group(snapshot, 0, std::ptr::null_mut())
+        });
+        assert!(unsafe { dandrum_kernel_ui_snapshot_create(std::ptr::null()) }.is_null());
+        unsafe { dandrum_kernel_ui_snapshot_destroy(snapshot) };
+        unsafe { dandrum_kernel_ui_snapshot_destroy(std::ptr::null_mut()) };
+    }
+
+    #[test]
+    fn prepared_ui_snapshot_preserves_loops_slices_and_effective_zone_bounds() {
+        let directory = tempfile::tempdir().unwrap();
+        let bundled = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("../../examples/patches/assets/advanced-drums.wav");
+        std::fs::copy(bundled, directory.path().join("drums.wav")).unwrap();
+        let patch = directory.path().join("metadata.yaml");
+        std::fs::write(
+            &patch,
+            r#"metadata: { name: metadata }
+assets:
+  sample_sources:
+    - id: source
+      path: drums.wav
+      regions:
+        - id: body
+          start_frame: 0
+          end_frame: 2000
+          root_note: 60
+          gain_db: -3
+          pan: 0.25
+          reverse: true
+          fade_in_ms: 1
+          fade_out_ms: 2
+          loop: { mode: forward, start_frame: 200, end_frame: 1800, crossfade_ms: 1 }
+      slices:
+        - { id: transient, start_frame: 100, end_frame: 300 }
+  sample_maps:
+    - id: kit
+      zones:
+        - id: hit
+          region: source.body
+          region_override: { start_frame: 100, end_frame: 1900 }
+          key_range: [60, 60]
+          velocity_range: [1, 127]
+          choke_group: hats
+          control_group: 2
+          weight: 3
+          gain_db: -6
+          pan: 0.5
+          pitch_semitones: 2
+ports:
+  - { name: master, direction: output, signal: audio, channels: 1, maps_from: osc.audio }
+modules:
+  - { id: osc, type: oscillator }
+"#,
+        )
+        .unwrap();
+        let path = std::ffi::CString::new(patch.to_str().unwrap()).unwrap();
+        let master = std::ffi::CString::new("master").unwrap();
+        let bus = DandrumKernelBusDeclaration {
+            name: master.as_ptr(),
+            direction: 2,
+            channel_count: 1,
+        };
+        let engine = unsafe { dandrum_kernel_prepare_file(path.as_ptr(), 48_000, 8, &bus, 1) };
+        assert!(!engine.is_null());
+        let snapshot = unsafe { dandrum_kernel_ui_snapshot_create(engine) };
+        assert!(!snapshot.is_null());
+        unsafe { dandrum_kernel_destroy(engine) };
+
+        std::fs::remove_file(&patch).unwrap();
+        std::fs::remove_file(directory.path().join("drums.wav")).unwrap();
+
+        let mut region = std::mem::MaybeUninit::<DandrumKernelUiRegion>::uninit();
+        assert!(unsafe { dandrum_kernel_ui_region(snapshot, 0, 0, region.as_mut_ptr()) });
+        let region = unsafe { region.assume_init() };
+        assert_eq!(ui_text(region.id), "body");
+        assert_eq!((region.root_note, region.reverse), (60, true));
+        assert!(region.has_gain_db && region.has_pan && region.has_loop);
+        assert_eq!((region.gain_db, region.pan), (-3.0, 0.25));
+        assert_eq!((region.fade_in_ms, region.fade_out_ms), (1.0, 2.0));
+        assert_eq!(ui_text(region.loop_mode), "forward");
+        assert_eq!(
+            (region.loop_start_frame, region.loop_end_frame),
+            (200, 1800)
+        );
+        assert_eq!(region.loop_crossfade_ms, 1.0);
+
+        assert_eq!(unsafe { dandrum_kernel_ui_slice_count(snapshot, 0) }, 1);
+        let mut slice = std::mem::MaybeUninit::<DandrumKernelUiSlice>::uninit();
+        assert!(unsafe { dandrum_kernel_ui_slice(snapshot, 0, 0, slice.as_mut_ptr()) });
+        let slice = unsafe { slice.assume_init() };
+        assert_eq!(ui_text(slice.id), "transient");
+        assert_eq!((slice.start_frame, slice.end_frame), (100, 300));
+
+        let mut map = std::mem::MaybeUninit::<DandrumKernelUiMap>::uninit();
+        assert!(unsafe { dandrum_kernel_ui_map(snapshot, 0, map.as_mut_ptr()) });
+        let map = unsafe { map.assume_init() };
+        assert_eq!(ui_text(map.selection_mode), "first_match");
+        let mut zone = std::mem::MaybeUninit::<DandrumKernelUiZone>::uninit();
+        assert!(unsafe { dandrum_kernel_ui_zone(snapshot, 0, 0, zone.as_mut_ptr()) });
+        let zone = unsafe { zone.assume_init() };
+        assert_eq!(ui_text(zone.id), "hit");
+        assert_eq!(ui_text(zone.choke_group), "hats");
+        assert_eq!((zone.start_frame, zone.end_frame), (100, 1900));
+        assert_eq!((zone.control_group, zone.weight), (2, 3));
+        assert!(zone.has_gain_db && zone.has_pan && zone.has_pitch_semitones);
+        assert_eq!(
+            (zone.gain_db, zone.pan, zone.pitch_semitones),
+            (-6.0, 0.5, 2.0)
+        );
+
+        assert_eq!(unsafe { dandrum_kernel_ui_region_count(snapshot, 1) }, 0);
+        assert_eq!(unsafe { dandrum_kernel_ui_slice_count(snapshot, 1) }, 0);
+        assert_eq!(unsafe { dandrum_kernel_ui_zone_count(snapshot, 1) }, 0);
+        assert!(!unsafe { dandrum_kernel_ui_region(snapshot, 0, 1, std::ptr::null_mut()) });
+        assert!(!unsafe { dandrum_kernel_ui_slice(snapshot, 0, 1, std::ptr::null_mut()) });
+        assert!(!unsafe { dandrum_kernel_ui_zone(snapshot, 0, 1, std::ptr::null_mut()) });
+        unsafe { dandrum_kernel_ui_snapshot_destroy(snapshot) };
     }
 
     #[test]

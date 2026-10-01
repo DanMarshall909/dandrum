@@ -4,11 +4,14 @@
 #include <cmath>
 #include <cstddef>
 #include <array>
+#include <atomic>
 #include <filesystem>
 #include <fstream>
+#include <future>
 #include <iostream>
 #include <memory>
 #include <string>
+#include <thread>
 
 namespace
 {
@@ -71,6 +74,58 @@ bool kernelBusSmoke()
     rightOut.fill (0.0f);
     return dandrum_kernel_render (instrument.get(), &input, 1, &output, 1, 8) == 8
         && leftOut == leftIn && rightOut == rightIn;
+}
+
+bool preparedMetadataSmoke()
+{
+    const auto root = std::filesystem::path (__FILE__).parent_path().parent_path().parent_path();
+    const auto patch = root / "examples/patches/advanced-drum-kit.yaml";
+    const DandrumKernelBusDeclaration master { "master", 2, 2 };
+    std::unique_ptr<DandrumKernelInstrument, decltype (&dandrum_kernel_destroy)> engine (
+        dandrum_kernel_prepare_file (patch.string().c_str(), 96000, 8, &master, 1),
+        &dandrum_kernel_destroy);
+    if (! engine)
+        return false;
+    std::unique_ptr<DandrumKernelUiSnapshot, decltype (&dandrum_kernel_ui_snapshot_destroy)> snapshot (
+        dandrum_kernel_ui_snapshot_create (engine.get()), &dandrum_kernel_ui_snapshot_destroy);
+    std::unique_ptr<DandrumKernelUiSnapshot, decltype (&dandrum_kernel_ui_snapshot_destroy)> stalledSnapshot (
+        dandrum_kernel_ui_snapshot_create (engine.get()), &dandrum_kernel_ui_snapshot_destroy);
+    std::promise<void> resumeReader;
+    auto resume = resumeReader.get_future();
+    std::atomic<bool> retainedValueWasValid { false };
+    std::thread reader ([owned = std::move (stalledSnapshot),
+                         resume = std::move (resume), &retainedValueWasValid] () mutable
+    {
+        resume.wait();
+        DandrumKernelUiRegion region {};
+        retainedValueWasValid.store (owned
+            && dandrum_kernel_ui_region (owned.get(), 0, 2, &region)
+            && std::string (region.id.data, region.id.size) == "snare_hard_a",
+            std::memory_order_relaxed);
+    });
+    engine.reset();
+    resumeReader.set_value();
+    reader.join();
+    if (! retainedValueWasValid.load (std::memory_order_relaxed)
+        || ! snapshot || dandrum_kernel_ui_source_count (snapshot.get()) != 1)
+        return false;
+    DandrumKernelUiSource source {};
+    DandrumKernelUiMap map {};
+    DandrumKernelUiZone soft {}, hard {};
+    std::int32_t sharedGroup = -1, snareGroup = -1;
+    const auto text = [] (DandrumKernelStringView value) { return std::string (value.data, value.size); };
+    return dandrum_kernel_ui_source (snapshot.get(), 0, &source)
+        && text (source.id) == "drums" && source.sampleRateHz == 48000
+        && source.frameCount == 51000
+        && dandrum_kernel_ui_map (snapshot.get(), 0, &map)
+        && text (map.selectionMode) == "round_robin"
+        && dandrum_kernel_ui_zone (snapshot.get(), 0, 1, &soft)
+        && dandrum_kernel_ui_zone (snapshot.get(), 0, 2, &hard)
+        && soft.velocityHigh == 63 && hard.velocityLow == 64
+        && hard.regionIndex == 2 && hard.controlGroup == 2
+        && dandrum_kernel_ui_public_control_group (snapshot.get(), 0, &sharedGroup)
+        && dandrum_kernel_ui_public_control_group (snapshot.get(), 9, &snareGroup)
+        && sharedGroup == 0 && snareGroup == 2;
 }
 } // namespace
 
@@ -144,6 +199,12 @@ int main()
     if (! kernelBusSmoke())
     {
         std::cerr << "kernel named-bus FFI smoke failed\n";
+        return 1;
+    }
+
+    if (! preparedMetadataSmoke())
+    {
+        std::cerr << "prepared metadata FFI smoke failed\n";
         return 1;
     }
 

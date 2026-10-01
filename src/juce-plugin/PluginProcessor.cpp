@@ -11,6 +11,7 @@
 #include <memory>
 #include <set>
 #include <string>
+#include <utility>
 #include <vector>
 
 namespace
@@ -18,6 +19,11 @@ namespace
 bool sameBitPattern (float a, float b) noexcept
 {
     return std::bit_cast<std::uint32_t> (a) == std::bit_cast<std::uint32_t> (b);
+}
+
+std::string copyUiText (DandrumKernelStringView view)
+{
+    return view.size == 0 ? std::string() : std::string (view.data, view.size);
 }
 
 juce::String stripYamlQuotes (juce::String value)
@@ -401,6 +407,7 @@ bool DandrumAudioProcessor::loadDefaultInstrument()
 
 void DandrumAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
 {
+    const std::lock_guard<std::mutex> reloadLock (reloadMutex);
     if (! instrumentLoaded)
         return;
 
@@ -973,6 +980,148 @@ DandrumAudioProcessor::getPublicParameterSnapshot() const
         values.push_back ({ slot.descriptor.id, slot.descriptor.name, parameter->getValue() });
     }
     return values;
+}
+
+std::optional<InstrumentUiDocument> DandrumAudioProcessor::getPreparedUiDocument() const
+{
+    std::unique_ptr<DandrumKernelUiSnapshot, decltype (&dandrum_kernel_ui_snapshot_destroy)> snapshot (
+        nullptr, &dandrum_kernel_ui_snapshot_destroy);
+    InstrumentUiDocument document;
+    {
+        const std::lock_guard<std::mutex> reloadLock (reloadMutex);
+        auto* activeKernel = kernel.load (std::memory_order_acquire);
+        if (! instrumentLoaded || activeKernel == nullptr)
+            return std::nullopt;
+
+        // Only this copy and the parameter snapshot need the engine/reload lock.
+        snapshot.reset (dandrum_kernel_ui_snapshot_create (activeKernel));
+        if (! snapshot)
+            return std::nullopt;
+
+        document.generation = parameterSurfaceGeneration.load (std::memory_order_relaxed);
+        document.instrumentId = loadedInstrument.instrumentId.toStdString();
+        document.parameters.reserve (parameterSlots.size());
+        for (std::size_t index = 0; index < parameterSlots.size(); ++index)
+        {
+            const auto& slot = parameterSlots[index];
+            if (! slot.active)
+                continue;
+            std::int32_t group = 0;
+            if (! dandrum_kernel_ui_public_control_group (snapshot.get(), index, &group))
+                return std::nullopt;
+            const auto* parameter = parameters.getParameter (slot.slotParameterId);
+            if (parameter == nullptr)
+                return std::nullopt;
+            InstrumentUiDocument::Parameter value;
+            value.id = slot.descriptor.id.toStdString();
+            value.name = slot.descriptor.name.toStdString();
+            value.normalisedValue = parameter->getValue();
+            value.minValue = slot.descriptor.minValue;
+            value.maxValue = slot.descriptor.maxValue;
+            if (group > 0)
+            {
+                value.scope = InstrumentUiDocument::ControlScope::sampleGroup;
+                value.controlGroup = group;
+            }
+            document.parameters.push_back (std::move (value));
+        }
+    }
+
+    const auto sourceCount = dandrum_kernel_ui_source_count (snapshot.get());
+    document.sources.reserve (sourceCount);
+    for (std::size_t sourceIndex = 0; sourceIndex < sourceCount; ++sourceIndex)
+    {
+        DandrumKernelUiSource sourceView {};
+        if (! dandrum_kernel_ui_source (snapshot.get(), sourceIndex, &sourceView))
+            return std::nullopt;
+        InstrumentUiDocument::Source source;
+        source.id = copyUiText (sourceView.id);
+        source.sampleRateHz = sourceView.sampleRateHz;
+        source.channelCount = sourceView.channelCount;
+        source.frameCount = sourceView.frameCount;
+        const auto regionCount = dandrum_kernel_ui_region_count (snapshot.get(), sourceIndex);
+        source.regions.reserve (regionCount);
+        for (std::size_t regionIndex = 0; regionIndex < regionCount; ++regionIndex)
+        {
+            DandrumKernelUiRegion regionView {};
+            if (! dandrum_kernel_ui_region (snapshot.get(), sourceIndex, regionIndex, &regionView))
+                return std::nullopt;
+            InstrumentUiDocument::Region region;
+            region.id = copyUiText (regionView.id);
+            region.startFrame = regionView.startFrame;
+            region.endFrame = regionView.endFrame;
+            if (regionView.rootNote >= 0)
+                region.rootNote = regionView.rootNote;
+            if (regionView.hasGainDb)
+                region.gainDb = regionView.gainDb;
+            if (regionView.hasPan)
+                region.pan = regionView.pan;
+            region.reverse = regionView.reverse;
+            region.fadeInMs = regionView.fadeInMs;
+            region.fadeOutMs = regionView.fadeOutMs;
+            if (regionView.hasLoop)
+                region.loop = InstrumentUiDocument::RegionLoop {
+                    copyUiText (regionView.loopMode), regionView.loopStartFrame,
+                    regionView.loopEndFrame, regionView.loopCrossfadeMs };
+            source.regions.push_back (std::move (region));
+        }
+        const auto sliceCount = dandrum_kernel_ui_slice_count (snapshot.get(), sourceIndex);
+        source.slices.reserve (sliceCount);
+        for (std::size_t sliceIndex = 0; sliceIndex < sliceCount; ++sliceIndex)
+        {
+            DandrumKernelUiSlice sliceView {};
+            if (! dandrum_kernel_ui_slice (snapshot.get(), sourceIndex, sliceIndex, &sliceView))
+                return std::nullopt;
+            source.slices.push_back ({ copyUiText (sliceView.id), sliceView.startFrame, sliceView.endFrame });
+        }
+        document.sources.push_back (std::move (source));
+    }
+
+    const auto mapCount = dandrum_kernel_ui_map_count (snapshot.get());
+    document.maps.reserve (mapCount);
+    for (std::size_t mapIndex = 0; mapIndex < mapCount; ++mapIndex)
+    {
+        DandrumKernelUiMap mapView {};
+        if (! dandrum_kernel_ui_map (snapshot.get(), mapIndex, &mapView))
+            return std::nullopt;
+        InstrumentUiDocument::Map map;
+        map.id = copyUiText (mapView.id);
+        map.selectionMode = copyUiText (mapView.selectionMode);
+        map.selectionSeed = mapView.selectionSeed;
+        const auto zoneCount = dandrum_kernel_ui_zone_count (snapshot.get(), mapIndex);
+        map.zones.reserve (zoneCount);
+        for (std::size_t zoneIndex = 0; zoneIndex < zoneCount; ++zoneIndex)
+        {
+            DandrumKernelUiZone zoneView {};
+            if (! dandrum_kernel_ui_zone (snapshot.get(), mapIndex, zoneIndex, &zoneView))
+                return std::nullopt;
+            InstrumentUiDocument::Zone zone;
+            zone.id = copyUiText (zoneView.id);
+            zone.sourceIndex = zoneView.sourceIndex;
+            zone.regionIndex = zoneView.regionIndex;
+            zone.startFrame = zoneView.startFrame;
+            zone.endFrame = zoneView.endFrame;
+            zone.keyLow = zoneView.keyLow;
+            zone.keyHigh = zoneView.keyHigh;
+            zone.velocityLow = zoneView.velocityLow;
+            zone.velocityHigh = zoneView.velocityHigh;
+            zone.roundRobinGroup = copyUiText (zoneView.roundRobinGroup);
+            zone.chokeGroup = copyUiText (zoneView.chokeGroup);
+            if (zoneView.controlGroup > 0)
+                zone.controlGroup = zoneView.controlGroup;
+            zone.weight = zoneView.weight;
+            if (zoneView.hasGainDb)
+                zone.gainDb = zoneView.gainDb;
+            if (zoneView.hasPan)
+                zone.pan = zoneView.pan;
+            if (zoneView.hasPitchSemitones)
+                zone.pitchSemitones = zoneView.pitchSemitones;
+            map.zones.push_back (std::move (zone));
+        }
+        document.maps.push_back (std::move (map));
+    }
+    document.capabilities.sampleKeyMap = ! document.maps.empty();
+    return document;
 }
 
 std::uint32_t DandrumAudioProcessor::getParameterSurfaceGeneration() const noexcept

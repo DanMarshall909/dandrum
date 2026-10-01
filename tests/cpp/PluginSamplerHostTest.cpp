@@ -1,10 +1,13 @@
 #include "PluginProcessor.h"
 
+#include <algorithm>
 #include <array>
+#include <atomic>
 #include <cmath>
 #include <filesystem>
 #include <iostream>
 #include <memory>
+#include <thread>
 
 namespace
 {
@@ -100,6 +103,82 @@ int main()
             std::cerr << "sampler VST host parameter is not named for its public control: " << id << '\n';
             return 1;
         }
+    }
+    const auto preparedUi = sampler->getPreparedUiDocument();
+    if (! preparedUi || preparedUi->instrumentId != "dandrum.advanced-drum-kit"
+        || preparedUi->sources.size() != 1 || preparedUi->maps.size() != 1
+        || preparedUi->sources[0].id != "drums"
+        || preparedUi->sources[0].sampleRateHz != 48000
+        || preparedUi->sources[0].frameCount != 51000
+        || preparedUi->sources[0].regions.size() != 6
+        || preparedUi->maps[0].selectionMode != "round_robin"
+        || preparedUi->maps[0].zones.size() != 7
+        || preparedUi->maps[0].zones[1].velocityHigh != 63
+        || preparedUi->maps[0].zones[2].velocityLow != 64
+        || preparedUi->maps[0].zones[2].roundRobinGroup != "hard_snare"
+        || preparedUi->maps[0].zones[2].controlGroup != 2
+        || ! preparedUi->capabilities.sampleKeyMap
+        || preparedUi->capabilities.synthLayer
+        || preparedUi->capabilities.patternSequencer)
+    {
+        std::cerr << "prepared sampler UI document lost actual kit metadata or capabilities\n";
+        return 1;
+    }
+    const auto shared = std::find_if (preparedUi->parameters.begin(), preparedUi->parameters.end(),
+        [] (const auto& parameter) { return parameter.id == "drums.pitch_ratio"; });
+    const auto snareControl = std::find_if (preparedUi->parameters.begin(), preparedUi->parameters.end(),
+        [] (const auto& parameter) { return parameter.id == "drums.snare.pitch_ratio"; });
+    if (preparedUi->parameters.size() != 23
+        || shared == preparedUi->parameters.end() || snareControl == preparedUi->parameters.end()
+        || shared->scope != InstrumentUiDocument::ControlScope::instrument
+        || snareControl->scope != InstrumentUiDocument::ControlScope::sampleGroup
+        || snareControl->controlGroup != 2)
+    {
+        std::cerr << "prepared sampler UI document lost shared/per-pad parameter scope\n";
+        return 1;
+    }
+    auto reloadReader = makeSampler();
+    const auto oldDocument = reloadReader->getPreparedUiDocument();
+    const auto oldGeneration = oldDocument ? oldDocument->generation : 0;
+    const auto tb303 = juce::File (juce::String (
+        InstrumentDemoConfiguration::tb303().instrumentPath.string()));
+    if (! oldDocument || ! reloadReader->reloadInstrumentFromFile (tb303))
+        return 1;
+    const auto replacementUi = reloadReader->getPreparedUiDocument();
+    if (! replacementUi || replacementUi->generation == oldGeneration
+        || replacementUi->instrumentId != "dandrum.tb303-acid"
+        || ! replacementUi->sources.empty() || ! replacementUi->maps.empty()
+        || replacementUi->parameters.size() != 7
+        || ! std::all_of (replacementUi->parameters.begin(), replacementUi->parameters.end(),
+            [] (const auto& parameter) {
+                return parameter.scope == InstrumentUiDocument::ControlScope::instrument;
+            })
+        || oldDocument->sources[0].regions[2].id != "snare_hard_a"
+        || oldDocument->maps[0].zones[2].velocityLow != 64)
+    {
+        std::cerr << "UI document did not remain owned across instrument reload\n";
+        return 1;
+    }
+    auto reprepareReader = makeSampler();
+    std::atomic<bool> malformedDocument { false };
+    std::thread observer ([&]
+    {
+        for (int attempt = 0; attempt < 64; ++attempt)
+        {
+            const auto document = reprepareReader->getPreparedUiDocument();
+            if (! document || document->sources.size() != 1 || document->maps.size() != 1
+                || document->sources[0].regions.size() != 6
+                || document->maps[0].zones[2].velocityLow != 64)
+                malformedDocument.store (true, std::memory_order_relaxed);
+        }
+    });
+    for (int attempt = 0; attempt < 8; ++attempt)
+        reprepareReader->prepareToPlay (attempt % 2 == 0 ? 44100.0 : 96000.0, blockSize);
+    observer.join();
+    if (malformedDocument.load (std::memory_order_relaxed))
+    {
+        std::cerr << "prepared UI reader observed an incomplete host reprepare\n";
+        return 1;
     }
     const auto kick = hit (*sampler, 36);
     if (! near (kick[0], -0.5f) || ! near (kick[1], -0.5f))

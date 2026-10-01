@@ -6,6 +6,7 @@
 extern "C"
 {
 struct DandrumKernelInstrument;
+struct DandrumKernelUiSnapshot;
 struct DandrumRealtimeEventQueue;
 struct DandrumSoundFixtureRender;
 struct DandrumSoundMatch;
@@ -48,12 +49,103 @@ struct DandrumKernelOutputBusView
     std::size_t busIndex { 0 };
 };
 
+// Views are UTF-8 and point into an independently owned UI snapshot. They
+// remain valid after the engine is destroyed, until the snapshot is destroyed.
+struct DandrumKernelStringView
+{
+    const char* data;
+    std::size_t size;
+};
+struct DandrumKernelUiSource
+{
+    DandrumKernelStringView id;
+    std::uint32_t sampleRateHz;
+    std::uint16_t channelCount;
+    std::uint64_t frameCount;
+};
+struct DandrumKernelUiRegion
+{
+    DandrumKernelStringView id;
+    std::uint64_t startFrame;
+    std::uint64_t endFrame;
+    std::int32_t rootNote;
+    bool hasGainDb;
+    double gainDb;
+    bool hasPan;
+    double pan;
+    bool reverse;
+    double fadeInMs;
+    double fadeOutMs;
+    bool hasLoop;
+    DandrumKernelStringView loopMode;
+    std::uint64_t loopStartFrame;
+    std::uint64_t loopEndFrame;
+    double loopCrossfadeMs;
+};
+struct DandrumKernelUiSlice
+{
+    DandrumKernelStringView id;
+    std::uint64_t startFrame;
+    std::uint64_t endFrame;
+};
+struct DandrumKernelUiMap
+{
+    DandrumKernelStringView id;
+    DandrumKernelStringView selectionMode;
+    std::uint64_t selectionSeed;
+};
+struct DandrumKernelUiZone
+{
+    DandrumKernelStringView id;
+    std::size_t sourceIndex;
+    std::size_t regionIndex;
+    std::uint64_t startFrame;
+    std::uint64_t endFrame;
+    std::uint8_t keyLow;
+    std::uint8_t keyHigh;
+    std::uint8_t velocityLow;
+    std::uint8_t velocityHigh;
+    DandrumKernelStringView roundRobinGroup;
+    DandrumKernelStringView chokeGroup;
+    std::int32_t controlGroup;
+    std::uint32_t weight;
+    bool hasGainDb;
+    double gainDb;
+    bool hasPan;
+    double pan;
+    bool hasPitchSemitones;
+    double pitchSemitones;
+};
+
 DandrumKernelInstrument* dandrum_kernel_prepare_file (const char* path,
                                                        std::uint32_t sampleRateHz,
                                                        std::size_t maxBlockSize,
                                                        const DandrumKernelBusDeclaration* buses,
                                                        std::size_t busCount);
 void dandrum_kernel_destroy (DandrumKernelInstrument* instrument);
+// Create only while the engine pointer is protected against replacement. The
+// snapshot copies metadata, never decoded audio, and is used off the callback.
+DandrumKernelUiSnapshot* dandrum_kernel_ui_snapshot_create (const DandrumKernelInstrument* instrument);
+void dandrum_kernel_ui_snapshot_destroy (DandrumKernelUiSnapshot* snapshot);
+std::size_t dandrum_kernel_ui_source_count (const DandrumKernelUiSnapshot* snapshot);
+bool dandrum_kernel_ui_source (const DandrumKernelUiSnapshot* snapshot, std::size_t index,
+                               DandrumKernelUiSource* output);
+std::size_t dandrum_kernel_ui_region_count (const DandrumKernelUiSnapshot* snapshot, std::size_t sourceIndex);
+bool dandrum_kernel_ui_region (const DandrumKernelUiSnapshot* snapshot, std::size_t sourceIndex,
+                               std::size_t regionIndex, DandrumKernelUiRegion* output);
+std::size_t dandrum_kernel_ui_slice_count (const DandrumKernelUiSnapshot* snapshot, std::size_t sourceIndex);
+bool dandrum_kernel_ui_slice (const DandrumKernelUiSnapshot* snapshot, std::size_t sourceIndex,
+                              std::size_t sliceIndex, DandrumKernelUiSlice* output);
+std::size_t dandrum_kernel_ui_map_count (const DandrumKernelUiSnapshot* snapshot);
+bool dandrum_kernel_ui_map (const DandrumKernelUiSnapshot* snapshot, std::size_t mapIndex,
+                            DandrumKernelUiMap* output);
+std::size_t dandrum_kernel_ui_zone_count (const DandrumKernelUiSnapshot* snapshot, std::size_t mapIndex);
+bool dandrum_kernel_ui_zone (const DandrumKernelUiSnapshot* snapshot, std::size_t mapIndex,
+                             std::size_t zoneIndex, DandrumKernelUiZone* output);
+// Slot order matches prepared public controls; 0 is instrument scope, positive
+// values identify sample-map control groups. Returns false for an invalid slot.
+bool dandrum_kernel_ui_public_control_group (const DandrumKernelUiSnapshot* snapshot,
+                                              std::size_t index, std::int32_t* output);
 std::size_t dandrum_kernel_root_port_count (const DandrumKernelInstrument* instrument);
 bool dandrum_kernel_root_port (const DandrumKernelInstrument* instrument,
                                std::size_t index,

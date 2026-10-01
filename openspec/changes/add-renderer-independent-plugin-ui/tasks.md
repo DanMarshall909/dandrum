@@ -5,10 +5,12 @@
 - [x] 1.3 Characterize current shared/per-pad parameters, host gestures, note admission and reload behaviour with focused C++/JavaScript tests; record a known signed sampler render and current coverage before production changes.
 - [ ] 1.4 Specify native KeyMap, LayerStack and OutputBusses dimensions, focus, read-only interactions and capability states; review the delivered native handoff against the new JSX/type references and existing external-authoring contract.
 
+The sampler export required for 1.2 and 1.4 is not present in the current Downloads folder. Source-independent metadata and command work in section 2 can proceed while that input is located; the renderer component tasks remain dependent on its verified import.
+
 ## 2. Shared State And Commands
 
-- [ ] 2.1 Add typed prepared UI documents and scoped capabilities; tests must prove actual 63/64 snare boundaries, parameter scopes, zone-selection semantics and absent capability reporting.
-- [ ] 2.2 Add the minimum read-only metadata access needed across FFI using retained/copy ownership off audio; lifetime tests must survive reload, released source inputs and a stalled reader without touching freed storage.
+- [x] 2.1 Add typed prepared UI documents and scoped capabilities; tests must prove actual 63/64 snare boundaries, parameter scopes, zone-selection semantics and absent capability reporting.
+- [x] 2.2 Add the minimum read-only metadata access needed across FFI using retained/copy ownership off audio; lifetime tests must survive reload, released source inputs and a stalled reader without touching freed storage.
 - [ ] 2.3 Extract shared host command handling with generation and finite-value validation; run the same accepted/rejected command contract tests through native and Web adapters.
 - [ ] 2.4 Implement begin/update/end gestures and timer-observed parameter updates; tests must prove one drag equals one host gesture, keyboard/typed entry works, stale echoes are ignored and listeners do not post messages from audio.
 - [ ] 2.5 Add bounded editor note-release/session cleanup semantics; saturation tests must prove queued note-on plus release/disconnect cannot leave a gated note active or affect unrelated host MIDI.

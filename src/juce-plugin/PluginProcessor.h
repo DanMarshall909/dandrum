@@ -5,6 +5,7 @@
 #include <cstdint>
 #include <map>
 #include <mutex>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -12,6 +13,7 @@
 
 #include "InstrumentFileWatcher.h"
 #include "InstrumentDemoConfiguration.h"
+#include "InstrumentUiDocument.h"
 #include "RustEngineBindings.h"
 
 class DandrumAudioProcessor final : public juce::AudioProcessor
@@ -61,6 +63,7 @@ public:
     juce::String getPublicParameterDisplayName (juce::StringRef parameterId) const;
     juce::StringArray getActivePublicParameterIds() const;
     std::vector<PublicParameterSnapshotEntry> getPublicParameterSnapshot() const;
+    std::optional<InstrumentUiDocument> getPreparedUiDocument() const;
     std::uint32_t getParameterSurfaceGeneration() const noexcept;
 
     /// Enqueues a web-editor keyboard event for delivery by processBlock.
@@ -252,10 +255,8 @@ private:
     std::atomic<std::size_t> droppedMidiEventCount { 0 };
     std::array<EditorMidiEvent, kEditorMidiQueueCapacity> editorMidiEvents {};
     juce::AbstractFifo editorMidiFifo { kEditorMidiQueueCapacity };
-    // Serializes reloadInstrumentFromFile()/setStateInformation() replacement
-    // work against itself: without this, overlapping reloads can each capture
-    // the other's just-published engine as their own "previous" and destroy it
-    // while it is still in use.
+    // Serializes engine replacement, reprepare, and UI metadata snapshots.
+    // Readers copy retained metadata before a previous engine is destroyed.
     mutable std::mutex reloadMutex;
     // Watches the loaded instrument file for external edits and reloads it
     // through the standard replacement transaction. Declared last so it is
