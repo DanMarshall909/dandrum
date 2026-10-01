@@ -1585,6 +1585,7 @@ struct SampleMapPlayerStepExecutor {
     initial_seed: u64,
     rng_state: u64,
     selected_zone: Option<usize>,
+    selected_pitch_ratio: f32,
     position: f64,
     active: bool,
 }
@@ -1607,6 +1608,7 @@ impl PreparedStepExecutor for SampleMapPlayerStepExecutor {
             &mut self.round_robin_counters,
             &mut self.rng_state,
             &mut self.selected_zone,
+            &mut self.selected_pitch_ratio,
             &mut self.position,
             &mut self.active,
             &mut process_context,
@@ -1618,6 +1620,7 @@ impl PreparedStepExecutor for SampleMapPlayerStepExecutor {
         self.round_robin_counters.fill(0);
         self.rng_state = self.initial_seed;
         self.selected_zone = None;
+        self.selected_pitch_ratio = 1.0;
         self.position = 0.0;
         self.active = false;
     }
@@ -2143,6 +2146,7 @@ pub(super) fn bind_prepared_step_executors(
                     initial_seed,
                     rng_state,
                     selected_zone,
+                    selected_pitch_ratio,
                     position,
                     active,
                 } => Box::new(SampleMapPlayerStepExecutor {
@@ -2152,6 +2156,7 @@ pub(super) fn bind_prepared_step_executors(
                     initial_seed,
                     rng_state,
                     selected_zone,
+                    selected_pitch_ratio,
                     position,
                     active,
                 }),

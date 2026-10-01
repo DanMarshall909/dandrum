@@ -327,6 +327,7 @@ pub(super) fn process_sample_map_player_state(
     round_robin_counters: &mut [usize],
     rng_state: &mut u64,
     selected_zone: &mut Option<usize>,
+    selected_pitch_ratio: &mut f32,
     position: &mut f64,
     active: &mut bool,
     context: &mut ProcessContext<'_>,
@@ -394,10 +395,22 @@ pub(super) fn process_sample_map_player_state(
                 if let Some(index) = chosen {
                     *selected_zone = Some(index);
                     let region = &zones[index].region;
-                    *position = if region.reverse {
-                        (region.end_frame - 1) as f64
+                    let root_ratio = region.root_note.map_or(1.0, |root| {
+                        2.0_f32.powf((f32::from(note) - f32::from(root)) / 12.0)
+                    });
+                    *selected_pitch_ratio = zones[index].pitch_ratio * root_ratio;
+                    let start_offset = context.input_sample(1, frame, 0.0);
+                    let start_offset = if start_offset.is_finite() {
+                        start_offset.clamp(0.0, 1.0)
                     } else {
-                        region.start_frame as f64
+                        0.0
+                    };
+                    let frame_offset = f64::from(start_offset)
+                        * (region.end_frame - region.start_frame - 1) as f64;
+                    *position = if region.reverse {
+                        (region.end_frame - 1) as f64 - frame_offset
+                    } else {
+                        region.start_frame as f64 + frame_offset
                     };
                     *active = true;
                 }
@@ -413,7 +426,14 @@ pub(super) fn process_sample_map_player_state(
                     region,
                     SampleInterpolation::Linear,
                 );
-                let ratio = context.input_sample(0, frame, 1.0);
+                let level = context.input_sample(2, frame, 1.0);
+                let level = if level.is_finite() {
+                    level.clamp(0.0, 4.0)
+                } else {
+                    1.0
+                };
+                let sample = sample * zone.gain * level;
+                let ratio = context.input_sample(0, frame, 1.0) * *selected_pitch_ratio;
                 let ratio = if ratio.is_finite() {
                     ratio.clamp(0.125, 8.0)
                 } else {
@@ -435,7 +455,22 @@ pub(super) fn process_sample_map_player_state(
         } else {
             0.0
         };
+        let live_pan = context.input_sample(3, frame, 0.0);
+        let live_pan = if live_pan.is_finite() {
+            live_pan.clamp(-1.0, 1.0)
+        } else {
+            0.0
+        };
+        let pan = (selected_zone.map_or(0.0, |index| zones[index].pan) + live_pan).clamp(-1.0, 1.0);
         for channel in 0..context.output_count() {
+            let output = if context.output_count() == 2 {
+                match channel {
+                    0 => output * if pan > 0.0 { 1.0 - pan } else { 1.0 },
+                    _ => output * if pan < 0.0 { 1.0 + pan } else { 1.0 },
+                }
+            } else {
+                output
+            };
             context
                 .set_output_sample(channel, frame, output)
                 .expect("sample map output channel is prepared");
@@ -454,6 +489,7 @@ pub(super) fn process_sample_map_player(
         round_robin_counters,
         rng_state,
         selected_zone,
+        selected_pitch_ratio,
         position,
         active,
         ..
@@ -467,6 +503,7 @@ pub(super) fn process_sample_map_player(
         round_robin_counters,
         rng_state,
         selected_zone,
+        selected_pitch_ratio,
         position,
         active,
         context,

@@ -89,7 +89,7 @@ A sample source SHALL support named regions with start and end frame positions i
 
 ### Requirement: Sample maps select prepared regions
 
-A sample map SHALL contain at least one zone that references a prepared region and declares MIDI key ranges within `0..=127` and velocity ranges within `1..=127`. Zone declarations SHALL accept optional per-zone gain, pan, pitch offset, region overrides, round-robin groups, positive relative weights, and exclusive/choke groups. Preparation SHALL resolve zones to stable source and region indices in authored order and build a keyed map lookup before rendering. For a matching note and velocity, selection SHALL follow the map's declared mode and seed with a stable zone order; it SHALL be repeatable for the same event stream regardless of audio block size, file order, or map storage iteration order. Schema validation SHALL reject zero weights. Preparation SHALL reject invalid ranges, unresolved region references, duplicate IDs, and ambiguous overlapping zones without a declared tie-breaking mode.
+A sample map SHALL contain at least one zone that references a prepared region and declares MIDI key ranges within `0..=127` and velocity ranges within `1..=127`. Zone declarations SHALL accept optional per-zone gain, pan, pitch offset, region overrides, round-robin groups, positive relative weights, and exclusive/choke groups. Zone gain SHALL be within -96..=24 dB, pan within -1..=1, and pitch offset within -48..=48 semitones. Preparation SHALL resolve zones to stable source and region indices in authored order and build a keyed map lookup before rendering. For a matching note and velocity, selection SHALL follow the map's declared mode and seed with a stable zone order; it SHALL be repeatable for the same event stream regardless of audio block size, file order, or map storage iteration order. Schema validation SHALL reject zero weights. Preparation SHALL reject invalid ranges or numeric modifiers, unresolved region references, duplicate IDs, and ambiguous overlapping zones without a declared tie-breaking mode.
 
 #### Scenario: Drum map resolves its zones before rendering
 
@@ -105,6 +105,16 @@ A sample map SHALL contain at least one zone that references a prepared region a
 
 - **WHEN** two zones for the same drum note cover separate velocity ranges
 - **THEN** each matching note event SHALL select the region for its velocity range
+
+#### Scenario: Zone modifiers shape the selected hit
+
+- **WHEN** a zone selects a prepared region with per-zone gain, pan, and pitch offset
+- **THEN** the rendered hit SHALL use that region, combine region and zone gain and pan, and advance its source cursor by the zone pitch offset
+
+#### Scenario: Invalid zone modifiers are rejected
+
+- **WHEN** a zone declares gain, pan, or pitch offset outside the supported bounds
+- **THEN** preparation SHALL reject the zone before rendering
 
 #### Scenario: Round-robin selection is repeatable
 

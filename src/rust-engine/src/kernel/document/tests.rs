@@ -1502,6 +1502,95 @@ connections:
 }
 
 #[test]
+fn drum_zone_region_gain_pan_and_pitch_offset_shape_stereo_hits() {
+    let directory = tempfile::tempdir().expect("temporary sample root");
+    let values = [0.5, 0.25, -0.5, 0.75];
+    crate::wav::write_wav_stereo_i16(
+        fs::File::create(directory.path().join("hits.wav")).expect("sample file"),
+        48_000,
+        &values,
+        &values,
+    )
+    .expect("write sample");
+    let yaml = r#"
+metadata: { name: zone_performance }
+assets:
+  sample_sources:
+    - id: hits
+      path: hits.wav
+      regions:
+        - { id: kick, start_frame: 0, end_frame: 2, gain_db: -6.020599913279624, pan: -0.5 }
+        - { id: snare, start_frame: 2, end_frame: 4 }
+  sample_maps:
+    - id: kit
+      zones:
+        - { region: hits.kick, key_range: [36, 36], velocity_range: [1, 127], gain_db: -6.020599913279624, pan: -0.5, pitch_semitones: 12 }
+        - { region: hits.snare, key_range: [38, 38], velocity_range: [1, 127], pan: 1 }
+ports:
+  - { name: audio_out, direction: output, signal: audio, channels: 2, maps_from: player.audio }
+modules:
+  - { id: midi, type: midi_input }
+  - { id: player, type: sample_map_player, static: { sample_map: kit, max_voices: 1, channels: 2 } }
+connections:
+  - { from: midi.events, to: player.note }
+"#;
+    let patch = load_kernel_patch_str(yaml).expect("zone performance patch loads");
+    let settings = RenderSettings {
+        sample_rate_hz: 48_000,
+        block_size_frames: 5,
+        duration_frames: 5,
+    };
+    let context = PreparationContext::new(directory.path(), 48_000);
+    let prepared = prepare_kernel_patch_with_context(&patch, &settings, &context)
+        .expect("zone performance patch prepares");
+    let rendered = render_kernel_offline_named(
+        &prepared,
+        vec![
+            TimedInputEvent::new(
+                0,
+                ScriptEvent::NoteOn {
+                    note: 36,
+                    velocity: 100,
+                },
+            ),
+            TimedInputEvent::new(
+                2,
+                ScriptEvent::NoteOn {
+                    note: 38,
+                    velocity: 100,
+                },
+            ),
+        ],
+        &PreparedSamplerAssets::empty(),
+    )
+    .expect("zone performance patch renders");
+    let left = &rendered[0].1[0];
+    let right = &rendered[0].1[1];
+    assert!((left[0] - 16383.0 / 32768.0 * 0.25).abs() < 1.0e-6);
+    assert_eq!(left[1..], [0.0, 0.0, 0.0, 0.0]);
+    assert_eq!(right, &vec![0.0, 0.0, -0.5, 24575.0 / 32768.0, 0.0]);
+
+    for invalid in [
+        yaml.replace("pitch_semitones: 12", "pitch_semitones: 49"),
+        yaml.replace("pan: 1 }", "pan: 2 }"),
+        yaml.replace(
+            "velocity_range: [1, 127], gain_db: -6.020599913279624, pan: -0.5",
+            "velocity_range: [1, 127], gain_db: 25, pan: -0.5",
+        ),
+    ] {
+        let patch = load_kernel_patch_str(&invalid).expect("invalid zone numeric shape loads");
+        let error = match prepare_kernel_patch_with_context(&patch, &settings, &context) {
+            Ok(_) => panic!("out-of-range zone control must fail preparation"),
+            Err(error) => error,
+        };
+        assert_eq!(
+            error.diagnostics().errors().next().unwrap().error_code(),
+            error_codes::KERNEL_SAMPLE_INVALID_ZONE
+        );
+    }
+}
+
+#[test]
 fn poly_region_renders_sample_player_child_with_independent_voices() {
     let directory = tempfile::tempdir().expect("temporary sample root");
     crate::wav::write_wav_stereo_i16(

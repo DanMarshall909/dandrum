@@ -327,6 +327,9 @@ pub struct CompiledSampleZone {
     pub velocity_range: [u8; 2],
     pub round_robin_group: Option<usize>,
     pub weight: u32,
+    pub gain: f32,
+    pub pan: f32,
+    pub pitch_ratio: f32,
 }
 
 #[derive(Clone, Debug, PartialEq)]

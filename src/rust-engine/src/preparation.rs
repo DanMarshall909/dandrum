@@ -758,11 +758,18 @@ fn validate_sample_declarations(assets: &SampleAssets) -> Result<(), KernelPrepa
         for zone in &map.zones {
             if zone.key_range[0] > zone.key_range[1]
                 || zone.velocity_range[0] > zone.velocity_range[1]
+                || zone
+                    .gain_db
+                    .is_some_and(|gain| !(-96.0..=24.0).contains(&gain))
+                || zone.pan.is_some_and(|pan| !(-1.0..=1.0).contains(&pan))
+                || zone
+                    .pitch_semitones
+                    .is_some_and(|pitch| !(-48.0..=48.0).contains(&pitch))
             {
                 return Err(sample_preparation_error(
                     diagnostics::error_codes::KERNEL_SAMPLE_INVALID_ZONE,
                     format!(
-                        "sample map '{}' has a zone with a descending key or velocity range",
+                        "sample map '{}' has a zone with an invalid key, velocity, gain, pan, or pitch value",
                         map.id
                     ),
                 ));
@@ -1880,6 +1887,21 @@ fn lower_kernel_graph(
                         velocity_range: zone.declaration().velocity_range,
                         round_robin_group,
                         weight: zone.declaration().weight.unwrap_or(1),
+                        gain: 10.0_f64.powf(
+                            (source.declaration().regions[zone.region_index()]
+                                .gain_db
+                                .unwrap_or(0.0)
+                                + zone.declaration().gain_db.unwrap_or(0.0))
+                                / 20.0,
+                        ) as f32,
+                        pan: (source.declaration().regions[zone.region_index()]
+                            .pan
+                            .unwrap_or(0.0)
+                            + zone.declaration().pan.unwrap_or(0.0))
+                        .clamp(-1.0, 1.0) as f32,
+                        pitch_ratio: 2.0_f64
+                            .powf(zone.declaration().pitch_semitones.unwrap_or(0.0) / 12.0)
+                            as f32,
                     }
                 })
                 .collect::<Vec<_>>()
