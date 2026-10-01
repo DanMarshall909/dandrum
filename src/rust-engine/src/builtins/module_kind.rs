@@ -17,6 +17,7 @@ pub enum ModuleKind {
     ControlDelay,
     Script,
     Sampler,
+    SamplePlayer,
     NoteToRate,
     DynamicsProcessor,
     Saturator,
@@ -60,6 +61,7 @@ impl ModuleKind {
             module_types::CONTROL_DELAY => Some(Self::ControlDelay),
             module_types::SCRIPT => Some(Self::Script),
             module_types::SAMPLER => Some(Self::Sampler),
+            module_types::SAMPLE_PLAYER => Some(Self::SamplePlayer),
             module_types::NOTE_TO_RATE => Some(Self::NoteToRate),
             module_types::DYNAMICS_PROCESSOR => Some(Self::DynamicsProcessor),
             module_types::SATURATOR => Some(Self::Saturator),
@@ -102,6 +104,7 @@ impl ModuleKind {
                 | Self::Lfo
                 | Self::Filter
                 | Self::Sampler
+                | Self::SamplePlayer
                 | Self::NoteToRate
                 | Self::DynamicsProcessor
                 | Self::Saturator

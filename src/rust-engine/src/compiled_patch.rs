@@ -30,6 +30,7 @@ use crate::graph::builtin_ports;
 use crate::graph::{Graph, ModuleId, ModuleNode, SignalType};
 use crate::kernel::PolyAllocationPolicy;
 use crate::kernel::StaticValue;
+use crate::kernel::document::SampleRegion;
 use crate::kernel::flatten::FlattenedGraph;
 use crate::oscillator::Waveform;
 use crate::patch::RenderSettings;
@@ -236,7 +237,7 @@ pub enum CompiledFilterAlgorithm {
     Comb(CombType),
 }
 
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq)]
 pub enum CompiledConstruction {
     None,
     Script {
@@ -245,6 +246,10 @@ pub enum CompiledConstruction {
     },
     Oscillator {
         waveform: Waveform,
+    },
+    SamplePlayer {
+        region: SampleRegion,
+        mode: String,
     },
     CompensationDelay {
         samples: usize,

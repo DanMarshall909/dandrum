@@ -16,6 +16,7 @@ use crate::filter::{BiquadFilter, BiquadMode, CombFilter, FilterAlgorithm, MoogL
 #[cfg(test)]
 use crate::graph::ModuleNode;
 use crate::graph::SignalType;
+use crate::kernel::document::SampleRegion;
 use crate::oscillator::Waveform;
 use crate::reverb::Reverb;
 use crate::sample::PreparedSamplerAssets;
@@ -72,6 +73,12 @@ pub(super) enum PerModuleState {
     Sampler {
         sample: Option<SampleResourceHandle>,
         position: f32,
+        active: bool,
+    },
+    SamplePlayer {
+        sample: Option<SampleResourceHandle>,
+        region: SampleRegion,
+        position: f64,
         active: bool,
     },
     DynamicsProcessor {
@@ -176,6 +183,12 @@ impl PerModuleState {
             }
             Self::NoteToRate { rate } => *rate = 1.0,
             Self::Sampler {
+                position, active, ..
+            } => {
+                *position = 0.0;
+                *active = false;
+            }
+            Self::SamplePlayer {
                 position, active, ..
             } => {
                 *position = 0.0;
@@ -415,6 +428,17 @@ impl PerModuleState {
                 position: 0.0,
                 active: false,
             },
+            ModuleKind::SamplePlayer => {
+                let CompiledConstruction::SamplePlayer { region, .. } = construction else {
+                    panic!("sample_player module {module_id} has mismatched construction data")
+                };
+                PerModuleState::SamplePlayer {
+                    sample: resources.sample.clone(),
+                    region: region.clone(),
+                    position: 0.0,
+                    active: false,
+                }
+            }
             ModuleKind::DynamicsProcessor => {
                 let CompiledConstruction::Dynamics {
                     mode,

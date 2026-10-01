@@ -121,6 +121,64 @@ pub(super) fn process_sampler_state(
     }
 }
 
+pub(super) fn process_sample_player_state(
+    sample: &Option<crate::compiled_patch::SampleResourceHandle>,
+    region: &crate::kernel::document::SampleRegion,
+    position: &mut f64,
+    active: &mut bool,
+    context: &mut ProcessContext<'_>,
+    events: &[BlockEvent],
+) {
+    let frames = sample.as_ref().map_or(&[][..], |sample| sample.frames());
+    for frame in 0..context.frames() {
+        if events.iter().any(|event| {
+            event.frame_offset as usize == frame
+                && matches!(event.event, ScriptEvent::NoteOn { .. })
+        }) {
+            *position = region.start_frame as f64;
+            *active = true;
+        }
+        let output = if *active {
+            let index = *position as usize;
+            if index < region.end_frame as usize && index < frames.len() {
+                *position += 1.0;
+                let value = frames[index];
+                if *position >= region.end_frame as f64 {
+                    *active = false;
+                }
+                value
+            } else {
+                *active = false;
+                0.0
+            }
+        } else {
+            0.0
+        };
+        for channel in 0..context.output_count() {
+            context
+                .set_output_sample(channel, frame, output)
+                .expect("sample player output channel is prepared");
+        }
+    }
+}
+
+pub(super) fn process_sample_player(
+    state: &mut PerModuleState,
+    context: &mut ProcessContext<'_>,
+    events: &[BlockEvent],
+) {
+    let PerModuleState::SamplePlayer {
+        sample,
+        region,
+        position,
+        active,
+    } = state
+    else {
+        unreachable!()
+    };
+    process_sample_player_state(sample, region, position, active, context, events);
+}
+
 pub(super) fn process_note_to_rate(
     state: &mut PerModuleState,
     context: &mut ProcessContext<'_>,

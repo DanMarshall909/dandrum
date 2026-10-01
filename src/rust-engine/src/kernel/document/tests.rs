@@ -1,5 +1,6 @@
 use std::fs;
 
+use crate::core::TimedInputEvent;
 use crate::diagnostics::error_codes;
 use crate::graph::{PortDirection, SignalType};
 use crate::graph_processor::render_kernel_offline_named;
@@ -15,6 +16,7 @@ use crate::preparation::{
     prepare_kernel_patch_with_preset_and_context,
 };
 use crate::sample::PreparedSamplerAssets;
+use crate::script::ScriptEvent;
 
 use super::{load_kernel_definition_str, load_kernel_patch_file, load_kernel_patch_str};
 
@@ -514,6 +516,193 @@ fn prepared_break_slices_keep_explicit_numeric_order() {
         (24_000, 48_000)
     );
     assert!(source.slice(2).is_none());
+}
+
+#[test]
+fn prepared_sample_player_renders_one_shot_region_and_then_stops() {
+    let directory = tempfile::tempdir().expect("temporary sample root");
+    crate::wav::write_wav_stereo_i16(
+        fs::File::create(directory.path().join("hit.wav")).expect("sample file"),
+        48_000,
+        &[0.25, -0.5, 0.75, -0.25],
+        &[0.25, -0.5, 0.75, -0.25],
+    )
+    .expect("write sample");
+    let yaml = r#"
+metadata: { name: one_shot_region }
+assets:
+  sample_sources:
+    - id: hit
+      path: hit.wav
+      regions: [{ id: body, start_frame: 1, end_frame: 3 }]
+ports:
+  - { name: audio_out, direction: output, signal: audio, channels: 1, maps_from: player.audio }
+modules:
+  - { id: midi, type: midi_input }
+  - { id: player, type: sample_player, static: { source: hit, region: body, channels: 1 } }
+connections:
+  - { from: midi.events, to: player.trigger }
+"#;
+    let patch = load_kernel_patch_str(yaml).expect("one-shot patch loads");
+    let settings = RenderSettings {
+        sample_rate_hz: 48_000,
+        block_size_frames: 6,
+        duration_frames: 6,
+    };
+    let context = PreparationContext::new(directory.path(), 48_000);
+    let prepared = prepare_kernel_patch_with_context(&patch, &settings, &context)
+        .expect("sample player prepares");
+
+    let rendered = render_kernel_offline_named(
+        &prepared,
+        vec![TimedInputEvent::new(
+            0,
+            ScriptEvent::NoteOn {
+                note: 60,
+                velocity: 100,
+            },
+        )],
+        &PreparedSamplerAssets::empty(),
+    )
+    .expect("one-shot renders");
+    assert_eq!(rendered[0].0, "audio_out");
+    assert_eq!(
+        rendered[0].1[0],
+        vec![-0.5, 24575.0 / 32768.0, 0.0, 0.0, 0.0, 0.0]
+    );
+
+    let delayed = render_kernel_offline_named(
+        &prepared,
+        vec![TimedInputEvent::new(
+            2,
+            ScriptEvent::NoteOn {
+                note: 60,
+                velocity: 100,
+            },
+        )],
+        &PreparedSamplerAssets::empty(),
+    )
+    .expect("offset trigger renders");
+    assert_eq!(
+        delayed[0].1[0],
+        vec![0.0, 0.0, -0.5, 24575.0 / 32768.0, 0.0, 0.0]
+    );
+
+    let retriggered = render_kernel_offline_named(
+        &prepared,
+        vec![
+            TimedInputEvent::new(
+                0,
+                ScriptEvent::NoteOn {
+                    note: 60,
+                    velocity: 100,
+                },
+            ),
+            TimedInputEvent::new(
+                3,
+                ScriptEvent::NoteOn {
+                    note: 60,
+                    velocity: 100,
+                },
+            ),
+        ],
+        &PreparedSamplerAssets::empty(),
+    )
+    .expect("retrigger renders");
+    assert_eq!(
+        retriggered[0].1[0],
+        vec![-0.5, 24575.0 / 32768.0, 0.0, -0.5, 24575.0 / 32768.0, 0.0]
+    );
+
+    let silent = render_kernel_offline_named(&prepared, vec![], &PreparedSamplerAssets::empty())
+        .expect("untriggered player renders silence");
+    assert_eq!(silent[0].1[0], vec![0.0; 6]);
+
+    for invalid_static in [
+        "source: absent, region: body",
+        "source: hit, region: absent",
+    ] {
+        let invalid = yaml.replace("source: hit, region: body", invalid_static);
+        let patch = load_kernel_patch_str(&invalid).expect("invalid reference shape loads");
+        let result = prepare_kernel_patch_with_context(&patch, &settings, &context);
+        let error = match result {
+            Ok(_) => panic!("unknown sample binding must fail preparation"),
+            Err(error) => error,
+        };
+        assert_eq!(
+            error.diagnostics().errors().next().unwrap().error_code(),
+            error_codes::KERNEL_SAMPLE_INVALID_REGION
+        );
+    }
+}
+
+#[test]
+fn poly_region_renders_sample_player_child_with_independent_voices() {
+    let directory = tempfile::tempdir().expect("temporary sample root");
+    crate::wav::write_wav_stereo_i16(
+        fs::File::create(directory.path().join("hit.wav")).expect("sample file"),
+        48_000,
+        &[-0.5, 0.25, 0.0, 0.0],
+        &[-0.5, 0.25, 0.0, 0.0],
+    )
+    .expect("write sample");
+    let yaml = r#"
+metadata: { name: poly_sample_region }
+assets:
+  sample_sources:
+    - id: hit
+      path: hit.wav
+      regions: [{ id: body, start_frame: 0, end_frame: 2 }]
+ports:
+  - { name: audio_out, direction: output, signal: audio, channels: 1, maps_from: voices.audio }
+module_definitions:
+  - type: sample_voice
+    ports:
+      - { name: audio, direction: output, signal: audio, channels: 1, maps_from: player.audio }
+    modules:
+      - { id: player, type: sample_player, static: { source: hit, region: body, channels: 1 } }
+    connections:
+      - { from: voice.gate, to: player.trigger }
+modules:
+  - { id: midi, type: midi_input }
+  - { id: voices, type: poly, static: { definition: sample_voice, max_voices: 2, allocation: reject-new } }
+connections:
+  - { from: midi.events, to: voices.notes }
+"#;
+    let patch = load_kernel_patch_str(yaml).expect("poly sample patch loads");
+    let settings = RenderSettings {
+        sample_rate_hz: 48_000,
+        block_size_frames: 5,
+        duration_frames: 5,
+    };
+    let context = PreparationContext::new(directory.path(), 48_000);
+    let prepared = prepare_kernel_patch_with_context(&patch, &settings, &context)
+        .expect("poly sample voice prepares");
+    let rendered = render_kernel_offline_named(
+        &prepared,
+        vec![
+            TimedInputEvent::new(
+                0,
+                ScriptEvent::NoteOn {
+                    note: 36,
+                    velocity: 100,
+                },
+            ),
+            TimedInputEvent::new(
+                0,
+                ScriptEvent::NoteOn {
+                    note: 38,
+                    velocity: 100,
+                },
+            ),
+        ],
+        &PreparedSamplerAssets::empty(),
+    )
+    .expect("poly sample voices render");
+    assert_eq!(
+        rendered[0].1[0],
+        vec![-1.0, 16382.0 / 32768.0, 0.0, 0.0, 0.0]
+    );
 }
 
 #[test]

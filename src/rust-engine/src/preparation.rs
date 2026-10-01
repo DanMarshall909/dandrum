@@ -6,9 +6,10 @@ use std::sync::Arc;
 use crate::builtins::module_kind::ModuleKind;
 use crate::builtins::module_types;
 use crate::compiled_patch::{
-    self, CompileError, CompiledNodeData, CompiledPatch, CompiledPolyOutputAccumulator,
-    CompiledPolyRegion, CompiledPolyVoiceStorage, CompiledPortSpan, CompiledResourceHandles,
-    CompiledRootPort, ImpulseResponseResourceHandle, RootBusPlan, SampleResourceHandle,
+    self, CompileError, CompiledConstruction, CompiledNodeData, CompiledPatch,
+    CompiledPolyOutputAccumulator, CompiledPolyRegion, CompiledPolyVoiceStorage, CompiledPortSpan,
+    CompiledResourceHandles, CompiledRootPort, ImpulseResponseResourceHandle, RootBusPlan,
+    SampleResourceHandle,
 };
 use crate::diagnostics::{self, Diagnostic, Severity};
 use crate::graph::{Cable, Graph, ModuleId, ModuleNode, PortDirection, PortRef, SignalType};
@@ -1135,7 +1136,7 @@ fn prepare_kernel_graph_with_buses_internal(
         Some(resolver) => resolve_flattened_resources(&flattened_graph, resolver)?,
         None => BTreeMap::new(),
     };
-    let lowered = lower_kernel_graph(&flattened_graph, &latency_plan, &resources)?;
+    let lowered = lower_kernel_graph(&flattened_graph, &latency_plan, &resources, &sample_assets)?;
     lowered
         .graph
         .validate()
@@ -1183,6 +1184,7 @@ fn prepare_kernel_graph_with_buses_internal(
         render_settings,
         resource_resolver.as_mut(),
         &compiled_patch,
+        &sample_assets,
         &mut compensation_metadata,
     )?;
     compiled_patch.set_poly_regions(poly_regions);
@@ -1384,6 +1386,7 @@ fn compile_poly_regions(
     render_settings: &RenderSettings,
     resource_resolver: Option<&mut ResourceResolver<'_>>,
     parent: &CompiledPatch,
+    sample_assets: &PreparedSampleAssets,
     compensation_metadata: &mut Vec<PreparedCompensationMetadata>,
 ) -> Result<Vec<CompiledPolyRegion>, KernelPreparationError> {
     compile_poly_regions_with_path(
@@ -1392,6 +1395,7 @@ fn compile_poly_regions(
         render_settings,
         resource_resolver,
         parent,
+        sample_assets,
         &mut Vec::new(),
         "",
         compensation_metadata,
@@ -1404,6 +1408,7 @@ fn compile_poly_regions_with_path(
     render_settings: &RenderSettings,
     mut resource_resolver: Option<&mut ResourceResolver<'_>>,
     parent: &CompiledPatch,
+    sample_assets: &PreparedSampleAssets,
     path: &mut Vec<String>,
     location_prefix: &str,
     compensation_metadata: &mut Vec<PreparedCompensationMetadata>,
@@ -1429,7 +1434,8 @@ fn compile_poly_regions_with_path(
             Some(resolver) => resolve_flattened_resources(&child_flattened, resolver)?,
             None => BTreeMap::new(),
         };
-        let lowered = lower_kernel_graph(&child_flattened, &latency_plan, &resources)?;
+        let lowered =
+            lower_kernel_graph(&child_flattened, &latency_plan, &resources, sample_assets)?;
         lowered
             .graph
             .validate()
@@ -1526,6 +1532,7 @@ fn compile_poly_regions_with_path(
             render_settings,
             resource_resolver.as_deref_mut(),
             &child_patch,
+            sample_assets,
             path,
             &format!("{region_path}::"),
             compensation_metadata,
@@ -1692,6 +1699,7 @@ fn lower_kernel_graph(
     flattened: &FlattenedGraph,
     latency_plan: &LatencyPlan,
     resources: &BTreeMap<String, CompiledResourceHandles>,
+    sample_assets: &PreparedSampleAssets,
 ) -> Result<LoweredKernelGraph, KernelPreparationError> {
     use crate::graph::builtin_ports;
 
@@ -1737,6 +1745,63 @@ fn lower_kernel_graph(
             .get(node.id().as_str())
             .cloned()
             .unwrap_or_default();
+        if kind == ModuleKind::SamplePlayer {
+            let source_id = match node.static_args().get("source") {
+                Some(StaticValue::String(value)) => value.as_str(),
+                _ => "",
+            };
+            let region_id = match node.static_args().get("region") {
+                Some(StaticValue::String(value)) => value.as_str(),
+                _ => "",
+            };
+            let source = sample_assets
+                .sources()
+                .iter()
+                .find(|source| source.id() == source_id)
+                .ok_or_else(|| {
+                    sample_preparation_error(
+                        diagnostics::error_codes::KERNEL_SAMPLE_INVALID_REGION,
+                        format!(
+                            "sample_player '{}' references unknown source '{source_id}'",
+                            node.id().as_str()
+                        ),
+                    )
+                })?;
+            let region = source
+                .declaration()
+                .regions
+                .iter()
+                .find(|region| region.id == region_id)
+                .ok_or_else(|| {
+                    sample_preparation_error(
+                        diagnostics::error_codes::KERNEL_SAMPLE_INVALID_REGION,
+                        format!(
+                            "sample_player '{}' references unknown region '{region_id}'",
+                            node.id().as_str()
+                        ),
+                    )
+                })?;
+            let mode = match node.static_args().get("mode") {
+                Some(StaticValue::Enum(value)) => value.as_str(),
+                _ => "one_shot",
+            };
+            if mode != "one_shot" {
+                return Err(sample_preparation_error(
+                    diagnostics::error_codes::KERNEL_SAMPLE_UNSUPPORTED_MODE,
+                    format!(
+                        "sample_player '{}' does not yet support mode '{mode}'",
+                        node.id().as_str()
+                    ),
+                ));
+            }
+            data.resources.sample = Some(SampleResourceHandle::from_shared(
+                source.resource.shared_sample(),
+            ));
+            data.construction = CompiledConstruction::SamplePlayer {
+                region: region.clone(),
+                mode: mode.to_string(),
+            };
+        }
         data.port_channels.extend(
             node.ports()
                 .iter()
