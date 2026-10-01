@@ -1272,7 +1272,7 @@ module_definitions:
     ports:
       - { name: audio, direction: output, signal: audio, channels: 1, maps_from: player.audio }
     modules:
-      - { id: player, type: sample_map_player, static: { sample_map: kit, max_voices: 1, channels: 1 } }
+      - { id: player, type: sample_map_player, static: { sample_map: kit, max_voices: 2, channels: 1 } }
     connections:
       - { from: voice.gate, to: player.note }
 modules:
@@ -1290,6 +1290,13 @@ connections:
     let context = PreparationContext::new(directory.path(), 48_000);
     let prepared = prepare_kernel_patch_with_context(&patch, &settings, &context)
         .expect("poly kit patch prepares");
+    assert_eq!(
+        prepared.compiled_patch().poly_regions()[0]
+            .child_patch()
+            .poly_regions()[0]
+            .max_voices(),
+        2
+    );
     let mut runtime = RealtimeGraphProcessor::polyphonic_with_compiled_patch_and_sampler_assets_and_max_block_size(
         prepared.graph().clone(), prepared.compiled_patch().clone(), 48_000.0,
         &PreparedSamplerAssets::empty(), &crate::patch::VoiceAllocation::default(), 8,
@@ -1326,6 +1333,221 @@ connections:
         runtime.prepared_poly_runtime_regions()[0].active_voice_count(),
         0
     );
+}
+
+#[test]
+fn drum_map_max_voices_overlaps_hits_through_a_bounded_poly_region() {
+    let directory = tempfile::tempdir().expect("temporary sample root");
+    let values = [-0.5, -0.25, 0.25, 0.5];
+    crate::wav::write_wav_stereo_i16(
+        fs::File::create(directory.path().join("hits.wav")).expect("sample file"),
+        48_000,
+        &values,
+        &values,
+    )
+    .expect("write sample");
+    let yaml = r#"
+metadata: { name: bounded_drum_map }
+assets:
+  sample_sources:
+    - id: hits
+      path: hits.wav
+      regions:
+        - { id: kick, start_frame: 0, end_frame: 2 }
+        - { id: snare, start_frame: 2, end_frame: 4 }
+  sample_maps:
+    - id: kit
+      zones:
+        - { region: hits.kick, key_range: [36, 36], velocity_range: [1, 127] }
+        - { region: hits.snare, key_range: [38, 38], velocity_range: [1, 127] }
+ports:
+  - { name: audio_out, direction: output, signal: audio, channels: 1, maps_from: player.audio }
+modules:
+  - { id: midi, type: midi_input }
+  - { id: player, type: sample_map_player, static: { sample_map: kit, max_voices: 2, channels: 1 } }
+connections:
+  - { from: midi.events, to: player.note }
+"#;
+    let patch = load_kernel_patch_str(yaml).expect("bounded drum map loads");
+    let settings = RenderSettings {
+        sample_rate_hz: 48_000,
+        block_size_frames: 4,
+        duration_frames: 4,
+    };
+    let prepared = prepare_kernel_patch_with_context(
+        &patch,
+        &settings,
+        &PreparationContext::new(directory.path(), 48_000),
+    )
+    .expect("bounded drum map prepares");
+    assert_eq!(prepared.compiled_patch().poly_regions().len(), 1);
+    assert_eq!(prepared.compiled_patch().poly_regions()[0].max_voices(), 2);
+    let default_patch = load_kernel_patch_str(&yaml.replace("max_voices: 2, ", ""))
+        .expect("default voice count patch loads");
+    let default_prepared = prepare_kernel_patch_with_context(
+        &default_patch,
+        &settings,
+        &PreparationContext::new(directory.path(), 48_000),
+    )
+    .expect("default voice count prepares");
+    assert_eq!(
+        default_prepared.compiled_patch().poly_regions()[0].max_voices(),
+        16
+    );
+    let rendered = render_kernel_offline_named(
+        &prepared,
+        vec![
+            TimedInputEvent::new(
+                0,
+                ScriptEvent::NoteOn {
+                    note: 36,
+                    velocity: 100,
+                },
+            ),
+            TimedInputEvent::new(
+                0,
+                ScriptEvent::NoteOn {
+                    note: 38,
+                    velocity: 100,
+                },
+            ),
+        ],
+        &PreparedSamplerAssets::empty(),
+    )
+    .expect("overlapping hits render");
+    assert_eq!(
+        rendered[0].1[0],
+        vec![-0.5 + 8191.0 / 32768.0, -0.25 + 16383.0 / 32768.0, 0.0, 0.0,]
+    );
+
+    let reject_patch = load_kernel_patch_str(&yaml.replace(
+        "max_voices: 2, channels: 1",
+        "max_voices: 2, voice_steal: reject_new, channels: 1",
+    ))
+    .expect("reject-new kit loads");
+    let recycle_settings = RenderSettings {
+        block_size_frames: 2,
+        duration_frames: 6,
+        ..settings
+    };
+    let recycle_prepared = prepare_kernel_patch_with_context(
+        &reject_patch,
+        &recycle_settings,
+        &PreparationContext::new(directory.path(), 48_000),
+    )
+    .expect("reject-new kit prepares");
+    let recycled = render_kernel_offline_named(
+        &recycle_prepared,
+        vec![
+            TimedInputEvent::new(
+                0,
+                ScriptEvent::NoteOn {
+                    note: 36,
+                    velocity: 100,
+                },
+            ),
+            TimedInputEvent::new(
+                0,
+                ScriptEvent::NoteOn {
+                    note: 38,
+                    velocity: 100,
+                },
+            ),
+            TimedInputEvent::new(
+                4,
+                ScriptEvent::NoteOn {
+                    note: 36,
+                    velocity: 100,
+                },
+            ),
+        ],
+        &PreparedSamplerAssets::empty(),
+    )
+    .expect("finished one-shots recycle their voices");
+    assert_eq!(
+        recycled[0].1[0],
+        vec![
+            -0.5 + 8191.0 / 32768.0,
+            -0.25 + 16383.0 / 32768.0,
+            0.0,
+            0.0,
+            -0.5,
+            -0.25,
+        ]
+    );
+}
+
+#[test]
+fn overlapping_drum_voices_share_round_robin_order() {
+    let directory = tempfile::tempdir().expect("temporary sample root");
+    let values = [-0.5, -0.25, 0.25, 0.5];
+    crate::wav::write_wav_stereo_i16(
+        fs::File::create(directory.path().join("hits.wav")).expect("sample file"),
+        48_000,
+        &values,
+        &values,
+    )
+    .expect("write sample");
+    let yaml = r#"
+metadata: { name: shared_drum_round_robin }
+assets:
+  sample_sources:
+    - id: hits
+      path: hits.wav
+      regions:
+        - { id: a, start_frame: 0, end_frame: 2 }
+        - { id: b, start_frame: 2, end_frame: 4 }
+  sample_maps:
+    - id: kit
+      selection_mode: round_robin
+      zones:
+        - { region: hits.a, key_range: [36, 36], velocity_range: [1, 127], round_robin_group: kick }
+        - { region: hits.b, key_range: [36, 36], velocity_range: [1, 127], round_robin_group: kick }
+ports:
+  - { name: audio_out, direction: output, signal: audio, channels: 1, maps_from: player.audio }
+modules:
+  - { id: midi, type: midi_input }
+  - { id: player, type: sample_map_player, static: { sample_map: kit, max_voices: 2, channels: 1 } }
+connections:
+  - { from: midi.events, to: player.note }
+"#;
+    let patch = load_kernel_patch_str(yaml).expect("drum map loads");
+    let events = vec![
+        TimedInputEvent::new(
+            0,
+            ScriptEvent::NoteOn {
+                note: 36,
+                velocity: 100,
+            },
+        ),
+        TimedInputEvent::new(
+            0,
+            ScriptEvent::NoteOn {
+                note: 36,
+                velocity: 100,
+            },
+        ),
+    ];
+    for block_size_frames in [2, 4] {
+        let settings = RenderSettings {
+            sample_rate_hz: 48_000,
+            block_size_frames,
+            duration_frames: 4,
+        };
+        let prepared = prepare_kernel_patch_with_context(
+            &patch,
+            &settings,
+            &PreparationContext::new(directory.path(), 48_000),
+        )
+        .expect("drum map prepares");
+        let rendered =
+            render_kernel_offline_named(&prepared, events.clone(), &PreparedSamplerAssets::empty())
+                .expect("overlapping round robin hits render");
+        assert_eq!(
+            rendered[0].1[0],
+            vec![-0.5 + 8191.0 / 32768.0, -0.25 + 16383.0 / 32768.0, 0.0, 0.0]
+        );
+    }
 }
 
 #[test]
@@ -1482,14 +1704,33 @@ connections:
     let first =
         render_kernel_offline_named(&prepared, events.clone(), &PreparedSamplerAssets::empty())
             .expect("first weighted render");
-    let second = render_kernel_offline_named(&prepared, events, &PreparedSamplerAssets::empty())
-        .expect("second weighted render");
+    let second =
+        render_kernel_offline_named(&prepared, events.clone(), &PreparedSamplerAssets::empty())
+            .expect("second weighted render");
     assert_eq!(first, second);
     let common = 16383.0 / 32768.0;
     assert_eq!(
         first[0].1[0],
         vec![common, -0.5, -0.5, common, common, -0.5, common, common]
     );
+    let poly_patch = load_kernel_patch_str(&yaml.replace("max_voices: 1", "max_voices: 2"))
+        .expect("poly weighted kit loads");
+    for block_size_frames in [8, 3, 1] {
+        let poly_settings = RenderSettings {
+            block_size_frames,
+            ..settings.clone()
+        };
+        let poly_prepared =
+            prepare_kernel_patch_with_context(&poly_patch, &poly_settings, &context)
+                .expect("poly weighted kit prepares");
+        let poly_rendered = render_kernel_offline_named(
+            &poly_prepared,
+            events.clone(),
+            &PreparedSamplerAssets::empty(),
+        )
+        .expect("poly weighted kit renders");
+        assert_eq!(poly_rendered[0].1[0], first[0].1[0]);
+    }
 
     let error = match load_kernel_patch_str(&yaml.replace("weight: 3", "weight: 0")) {
         Ok(_) => panic!("zero-weight zone must fail schema validation"),

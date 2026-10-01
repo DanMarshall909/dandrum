@@ -18,15 +18,17 @@
 
 use std::collections::{BTreeMap, BTreeSet};
 
+use crate::builtins::module_types;
 use crate::diagnostics::{Diagnostic, Diagnostics, Severity, error_codes};
 use crate::graph::{PortDirection, SignalType};
 
 use super::{
     CONTROL_TO_AUDIO_DEFINITION, Connection, DefinitionImplementation, DefinitionRegistry,
-    GraphDefinition, Multiplicity, NAMESPACE_SEPARATOR, Node, NodeId, POLY_ALLOCATION_PARAM,
-    POLY_DEFINITION, POLY_MAX_VOICES_PARAM, POLY_WRAPPED_DEFINITION_PARAM, PROMOTION_INPUT_PORT,
-    PROMOTION_NODE_PREFIX, PROMOTION_OUTPUT_PORT, PolyAllocationPolicy, PortRef, PromotionStep,
-    ResolvedPort, StaticValue,
+    GraphDefinition, Multiplicity, NAMESPACE_SEPARATOR, Node, NodeId, POLY_ALLOCATION_OLDEST_STEAL,
+    POLY_ALLOCATION_PARAM, POLY_ALLOCATION_REJECT_NEW, POLY_DEFINITION, POLY_MAX_VOICES_PARAM,
+    POLY_NOTE_EVENTS_INPUT, POLY_WRAPPED_DEFINITION_PARAM, PROMOTION_INPUT_PORT,
+    PROMOTION_NODE_PREFIX, PROMOTION_OUTPUT_PORT, PolyAllocationPolicy, Port, PortRef,
+    PromotionStep, ResolvedPort, StaticArg, StaticValue, VOICE_GATE_OUTPUT, VOICE_INTRINSIC_NODE,
 };
 
 /// Maximum defined-module nesting depth before flattening bails out. Guards against
@@ -118,6 +120,154 @@ impl FlattenedPolyRegion {
 }
 
 impl FlattenedGraph {
+    /// Turn a prepared map player's voice count into the existing structural
+    /// `poly` region. Its child remains a one-voice map player; voice allocation
+    /// and summing therefore use the same path as authored poly instruments.
+    pub(crate) fn expand_sample_map_poly_regions(
+        &mut self,
+        registry: &mut DefinitionRegistry,
+    ) -> Result<(), Diagnostics> {
+        for node in &mut self.nodes {
+            if node.definition != module_types::SAMPLE_MAP_PLAYER {
+                continue;
+            }
+            let max_voices = match node.static_args.get("max_voices") {
+                Some(StaticValue::Int(value)) => *value,
+                _ => unreachable!("validated map player has an integer max_voices default"),
+            };
+            if !(1..=128).contains(&max_voices) {
+                return Err(Diagnostics::from(
+                    Diagnostic::new(
+                        error_codes::KERNEL_SAMPLE_INVALID_VOICE_LIMIT,
+                        Severity::Error,
+                        format!(
+                            "sample_map_player '{}' max_voices must be 1..=128",
+                            node.id.as_str()
+                        ),
+                    )
+                    .with_module_id(node.id.as_str()),
+                ));
+            }
+            if matches!(node.static_args.get("voice_steal"), Some(StaticValue::Enum(value)) if value == "quietest")
+            {
+                return Err(Diagnostics::from(
+                    Diagnostic::new(
+                        error_codes::KERNEL_SAMPLE_UNSUPPORTED_MODE,
+                        Severity::Error,
+                        format!(
+                            "sample_map_player '{}' does not yet support quietest voice stealing",
+                            node.id.as_str()
+                        ),
+                    )
+                    .with_module_id(node.id.as_str()),
+                ));
+            }
+            if max_voices <= 1 {
+                continue;
+            }
+            let mut index = registry.definitions().count();
+            let wrapped_name = loop {
+                let name = format!("__prepared_sample_map_voice_{index}");
+                if registry.get(&name).is_none() {
+                    break name;
+                }
+                index += 1;
+            };
+            let voice_steal = match node.static_args.get("voice_steal") {
+                Some(StaticValue::Enum(value)) if value == "reject_new" => {
+                    (POLY_ALLOCATION_REJECT_NEW, PolyAllocationPolicy::RejectNew)
+                }
+                _ => (
+                    POLY_ALLOCATION_OLDEST_STEAL,
+                    PolyAllocationPolicy::OldestSteal,
+                ),
+            };
+            let mut player = Node::new(NodeId::new("player"), module_types::SAMPLE_MAP_PLAYER);
+            for (name, value) in &node.static_args {
+                player = player.with_static_arg(
+                    name,
+                    StaticArg::Literal(if name == "max_voices" {
+                        StaticValue::Int(1)
+                    } else {
+                        value.clone()
+                    }),
+                );
+            }
+            let mut voice = GraphDefinition::new(&wrapped_name).with_node(player);
+            for resolved in &node.ports {
+                if resolved.name() == "note" {
+                    continue;
+                }
+                let target = PortRef::new(NodeId::new("player"), resolved.name());
+                let mut port = match resolved.direction() {
+                    PortDirection::Input => {
+                        Port::input(resolved.name(), resolved.signal_type(), resolved.channels())
+                            .maps_to(target)
+                    }
+                    PortDirection::Output => {
+                        Port::output(resolved.name(), resolved.signal_type(), resolved.channels())
+                            .maps_from(target)
+                    }
+                };
+                if let Some(default) = resolved.control_default() {
+                    port = port.with_control_default(default.clone());
+                }
+                voice = voice.with_port(port.with_multiplicity(resolved.multiplicity()));
+            }
+            voice = voice.with_connection(Connection::new(
+                PortRef::new(NodeId::new(VOICE_INTRINSIC_NODE), VOICE_GATE_OUTPUT),
+                PortRef::new(NodeId::new("player"), "note"),
+            ));
+            *registry = std::mem::take(registry).with_definition(voice);
+            let id = node.id.clone();
+            self.poly_regions.push(FlattenedPolyRegion {
+                node_id: id.clone(),
+                wrapped_definition: wrapped_name.clone(),
+                max_voices: max_voices as usize,
+                allocation_policy: voice_steal.1,
+            });
+            node.definition = POLY_DEFINITION.to_string();
+            node.static_args = BTreeMap::from([
+                (
+                    POLY_WRAPPED_DEFINITION_PARAM.to_string(),
+                    StaticValue::String(wrapped_name),
+                ),
+                (
+                    POLY_MAX_VOICES_PARAM.to_string(),
+                    StaticValue::Int(max_voices),
+                ),
+                (
+                    POLY_ALLOCATION_PARAM.to_string(),
+                    StaticValue::Enum(voice_steal.0.to_string()),
+                ),
+            ]);
+            let note = node
+                .ports
+                .iter_mut()
+                .find(|port| port.name == "note")
+                .expect("map player has a note port");
+            note.name = POLY_NOTE_EVENTS_INPUT.to_string();
+            for connection in &mut self.connections {
+                if connection.destination().node() == &id
+                    && connection.destination().port() == "note"
+                {
+                    *connection = Connection::new(
+                        connection.source().clone(),
+                        PortRef::new(id.clone(), POLY_NOTE_EVENTS_INPUT),
+                    );
+                }
+            }
+            for destinations in self.root_input_destinations.values_mut() {
+                for destination in destinations {
+                    if destination.node() == &id && destination.port() == "note" {
+                        *destination = PortRef::new(id.clone(), POLY_NOTE_EVENTS_INPUT);
+                    }
+                }
+            }
+        }
+        Ok(())
+    }
+
     pub fn nodes(&self) -> &[AtomicNode] {
         &self.nodes
     }

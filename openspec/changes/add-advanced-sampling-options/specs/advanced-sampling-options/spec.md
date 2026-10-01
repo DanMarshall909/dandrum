@@ -57,6 +57,16 @@ A sample source SHALL support named regions with start and end frame positions i
 - **WHEN** a bounded `poly` region routes simultaneous drum notes to a `sample_player` child
 - **THEN** each allocated voice SHALL render its own one-shot instance and the voice outputs SHALL sum
 
+#### Scenario: Drum map voice count uses bounded polyphony
+
+- **WHEN** a drum map player declares two voices and receives overlapping hits for different zones
+- **THEN** preparation SHALL create one bounded poly region with two voices, render the sum of both selected hits, and recycle each voice when its one-shot region finishes; omitting the voice count SHALL use the declared default of sixteen
+
+#### Scenario: Overlapping drum voices share alternate selection
+
+- **WHEN** overlapping drum hits select round-robin or seeded weighted zones on separate voices
+- **THEN** the selected sequence SHALL advance at kit level and remain the same across equivalent audio block sizes
+
 #### Scenario: Gated region stops on release
 
 - **WHEN** a `sample_player` in gated mode receives a note-off event at a frame inside a block

@@ -1,5 +1,8 @@
 use crate::builtins::module_kind::ModuleKind;
-use crate::compiled_patch::{CompiledPatch, CompiledPolyRegion, CompiledPortSpan};
+use crate::compiled_patch::{
+    CompiledConstruction, CompiledPatch, CompiledPolyRegion, CompiledPortSpan, CompiledSampleZone,
+    SampleSelectionMode,
+};
 use crate::graph::{PortDirection, SignalType};
 use crate::kernel::{
     POLY_DONE_OUTPUT, PolyAllocationPolicy, VOICE_GATE_OUTPUT, VOICE_NOTE_OUTPUT,
@@ -32,6 +35,15 @@ struct PolyVoiceSlot {
     quiet_frames_after_release: usize,
     released_frames: usize,
     release_offset_pending: usize,
+}
+
+struct SharedSampleMapSelection {
+    step_index: usize,
+    zones: Box<[CompiledSampleZone]>,
+    selection_mode: SampleSelectionMode,
+    round_robin_counters: Box<[usize]>,
+    initial_seed: u64,
+    rng_state: u64,
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -74,6 +86,7 @@ pub struct PreparedPolyRuntimeRegion {
     #[cfg(test)]
     states: Box<[Box<[PerModuleState]>]>,
     child_module_kinds: Box<[ModuleKind]>,
+    auto_retire_map_voice: bool,
     voice_arenas: Box<[AudioArena]>,
     voice_event_queues: Box<[PreparedEventQueues]>,
     nested_regions: Box<[Box<[PreparedPolyRuntimeRegion]>]>,
@@ -90,6 +103,7 @@ pub struct PreparedPolyRuntimeRegion {
     child_render_plan: RenderPlan,
     prepared_step_executors:
         Box<[Box<[Box<dyn super::realtime_graph_processor::PreparedStepExecutor>]>]>,
+    shared_sample_map_selections: Box<[SharedSampleMapSelection]>,
     child_patch: Box<CompiledPatch>,
     forwarded_buffer_inputs: Box<[ForwardedBufferInput]>,
     forwarded_event_inputs: Box<[ForwardedEventInput]>,
@@ -109,6 +123,10 @@ impl PreparedPolyRuntimeRegion {
             for executor in voice.iter_mut() {
                 executor.reset_all();
             }
+        }
+        for selection in self.shared_sample_map_selections.iter_mut() {
+            selection.round_robin_counters.fill(0);
+            selection.rng_state = selection.initial_seed;
         }
         for arena in self.voice_arenas.iter_mut() {
             arena.reset();
@@ -149,6 +167,11 @@ impl PreparedPolyRuntimeRegion {
             .map(|node| node.module_kind)
             .collect::<Vec<_>>()
             .into_boxed_slice();
+        let auto_retire_map_voice = child_module_kinds
+            .iter()
+            .filter(|kind| **kind != ModuleKind::VoiceIntrinsics)
+            .copied()
+            .eq([ModuleKind::SampleMapPlayer]);
         let audio_buffers_per_voice = compiled
             .voices()
             .first()
@@ -214,6 +237,31 @@ impl PreparedPolyRuntimeRegion {
                     sample_rate,
                     sampler_assets,
                 )
+            })
+            .collect::<Vec<_>>()
+            .into_boxed_slice();
+        let shared_sample_map_selections = child_render_plan
+            .global_steps
+            .iter()
+            .enumerate()
+            .filter_map(|(step_index, step)| {
+                let CompiledConstruction::SampleMapPlayer {
+                    zones,
+                    selection_mode,
+                    group_count,
+                    selection_seed,
+                } = &compiled.child_patch().nodes()[step.module_index].construction
+                else {
+                    return None;
+                };
+                Some(SharedSampleMapSelection {
+                    step_index,
+                    zones: zones.clone(),
+                    selection_mode: *selection_mode,
+                    round_robin_counters: vec![0; *group_count].into_boxed_slice(),
+                    initial_seed: *selection_seed,
+                    rng_state: *selection_seed,
+                })
             })
             .collect::<Vec<_>>()
             .into_boxed_slice();
@@ -318,6 +366,7 @@ impl PreparedPolyRuntimeRegion {
             #[cfg(test)]
             states,
             child_module_kinds,
+            auto_retire_map_voice,
             voice_arenas,
             voice_event_queues,
             nested_regions,
@@ -334,6 +383,7 @@ impl PreparedPolyRuntimeRegion {
                 .max(1),
             child_render_plan,
             prepared_step_executors,
+            shared_sample_map_selections,
             child_patch: Box::new(compiled.child_patch().clone()),
             forwarded_buffer_inputs,
             forwarded_event_inputs,
@@ -343,6 +393,11 @@ impl PreparedPolyRuntimeRegion {
 
     pub(super) fn begin_block(&mut self, frames: usize, block_start_frame: u64) {
         self.block_start_frame = block_start_frame;
+        for voice in self.prepared_step_executors.iter_mut() {
+            for executor in voice.iter_mut() {
+                executor.begin_block();
+            }
+        }
         for queues in &mut self.voice_event_queues {
             queues.clear_all();
         }
@@ -495,7 +550,11 @@ impl PreparedPolyRuntimeRegion {
                 Some(DoneBinding::Control { .. }) => control_done,
                 None => false,
             };
-            if done {
+            let one_shot_finished = self.auto_retire_map_voice
+                && self.prepared_step_executors[voice]
+                    .iter()
+                    .all(|executor| !executor.is_active());
+            if done || one_shot_finished {
                 self.slots[voice].active = false;
                 for region in self.nested_regions[voice].iter_mut() {
                     region.retire_all_voices();
@@ -585,6 +644,18 @@ impl PreparedPolyRuntimeRegion {
         };
         self.write_intrinsic_controls(voice, frames);
         self.push_gate_event(voice, ScriptEvent::NoteOn { note, velocity }, frame_offset);
+        for selection in self.shared_sample_map_selections.iter_mut() {
+            let choice = super::arena_processing::select_sample_map_zone(
+                &selection.zones,
+                selection.selection_mode,
+                &mut selection.round_robin_counters,
+                &mut selection.rng_state,
+                note,
+                velocity,
+            );
+            self.prepared_step_executors[voice][selection.step_index]
+                .queue_sample_zone_choice(choice);
+        }
     }
 
     fn route_note_off(&mut self, note: u8, frame_offset: u32) {

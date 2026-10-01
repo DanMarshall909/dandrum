@@ -1100,7 +1100,7 @@ fn prepare_kernel_graph_with_buses_internal(
     bind_event_outputs: bool,
     authored_assets: Option<&SampleAssets>,
 ) -> Result<PreparedKernelInstrument, KernelPreparationError> {
-    let (resolved_root, resolved_registry, package_assets) = match context {
+    let (resolved_root, mut resolved_registry, package_assets) = match context {
         Some(context) => resolve_external_definitions(root, registry, context)?,
         None => (root.clone(), registry.clone(), SampleAssets::default()),
     };
@@ -1122,6 +1122,9 @@ fn prepare_kernel_graph_with_buses_internal(
     let mut flattened_graph = resolved_root
         .flatten(&resolved_registry)
         .map_err(KernelPreparationError::from)?;
+    flattened_graph
+        .expand_sample_map_poly_regions(&mut resolved_registry)
+        .map_err(KernelPreparationError::from)?;
     let mut host_buses = host_buses.clone();
     if bind_event_outputs {
         for port in flattened_graph.root_ports() {
@@ -1134,8 +1137,11 @@ fn prepare_kernel_graph_with_buses_internal(
         }
     }
     validate_host_buses(&flattened_graph, &host_buses)?;
-    let latency_plan =
-        balance_poly_latencies(&mut flattened_graph, &resolved_registry, &mut Vec::new())?;
+    let latency_plan = balance_poly_latencies(
+        &mut flattened_graph,
+        &mut resolved_registry,
+        &mut Vec::new(),
+    )?;
     let mut compensation_metadata = Vec::new();
     append_compensation_metadata(&latency_plan, None, &mut compensation_metadata);
     let mut resource_resolver = context.map(ResourceResolver::new);
@@ -1187,7 +1193,7 @@ fn prepare_kernel_graph_with_buses_internal(
     ));
     let poly_regions = compile_poly_regions(
         &flattened_graph,
-        &resolved_registry,
+        &mut resolved_registry,
         render_settings,
         resource_resolver.as_mut(),
         &compiled_patch,
@@ -1297,7 +1303,7 @@ fn resolve_external_definitions(
 /// real latency to every parent path and feedback cycle containing that node.
 fn balance_poly_latencies(
     flattened: &mut FlattenedGraph,
-    registry: &DefinitionRegistry,
+    registry: &mut DefinitionRegistry,
     path: &mut Vec<String>,
 ) -> Result<LatencyPlan, KernelPreparationError> {
     for region in flattened.poly_regions().to_vec() {
@@ -1306,13 +1312,17 @@ fn balance_poly_latencies(
         path.push(wrapped_name.to_string());
         let wrapped = registry
             .get(wrapped_name)
-            .expect("validated poly region references an existing definition");
+            .expect("validated poly region references an existing definition")
+            .clone();
         let mut voice_scope_diagnostics = diagnostics::Diagnostics::new();
         let scoped_voice = wrapped
             .with_voice_intrinsics(&mut voice_scope_diagnostics)
             .ok_or_else(|| KernelPreparationError::from(voice_scope_diagnostics.clone()))?;
         let mut child = scoped_voice
             .flatten(registry)
+            .map_err(KernelPreparationError::from)?;
+        child
+            .expand_sample_map_poly_regions(registry)
             .map_err(KernelPreparationError::from)?;
         let child_plan = balance_poly_latencies(&mut child, registry, path)?;
         path.pop();
@@ -1389,7 +1399,7 @@ fn resolve_flattened_resources(
 
 fn compile_poly_regions(
     flattened: &FlattenedGraph,
-    registry: &DefinitionRegistry,
+    registry: &mut DefinitionRegistry,
     render_settings: &RenderSettings,
     resource_resolver: Option<&mut ResourceResolver<'_>>,
     parent: &CompiledPatch,
@@ -1411,7 +1421,7 @@ fn compile_poly_regions(
 
 fn compile_poly_regions_with_path(
     flattened: &FlattenedGraph,
-    registry: &DefinitionRegistry,
+    registry: &mut DefinitionRegistry,
     render_settings: &RenderSettings,
     mut resource_resolver: Option<&mut ResourceResolver<'_>>,
     parent: &CompiledPatch,
@@ -1426,13 +1436,17 @@ fn compile_poly_regions_with_path(
         path.push(region.wrapped_definition().to_string());
         let wrapped = registry
             .get(region.wrapped_definition())
-            .expect("validated poly region references an existing definition");
+            .expect("validated poly region references an existing definition")
+            .clone();
         let mut voice_scope_diagnostics = diagnostics::Diagnostics::new();
         let scoped_voice = wrapped
             .with_voice_intrinsics(&mut voice_scope_diagnostics)
             .ok_or_else(|| KernelPreparationError::from(voice_scope_diagnostics.clone()))?;
         let mut child_flattened = scoped_voice
             .flatten(registry)
+            .map_err(KernelPreparationError::from)?;
+        child_flattened
+            .expand_sample_map_poly_regions(registry)
             .map_err(KernelPreparationError::from)?;
         let latency_plan = balance_poly_latencies(&mut child_flattened, registry, path)?;
         let region_path = format!("{location_prefix}{}", region.node_id().as_str());

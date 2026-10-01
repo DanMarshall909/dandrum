@@ -1335,6 +1335,8 @@ pub(super) fn execute_prepared_step(context: &mut PreparedStepContext<'_>, step:
 pub(super) trait PreparedStepExecutor {
     fn execute(&mut self, context: &mut PreparedStepContext<'_>, step: &RenderStep);
     fn capture(&mut self, _: &ProcessContext<'_>) {}
+    fn begin_block(&mut self) {}
+    fn queue_sample_zone_choice(&mut self, _: Option<usize>) {}
     fn reset_voice(&mut self) {}
     fn is_active(&self) -> bool {
         false
@@ -1588,6 +1590,7 @@ struct SampleMapPlayerStepExecutor {
     selected_pitch_ratio: f32,
     position: f64,
     active: bool,
+    queued_choices: Vec<Option<usize>>,
 }
 
 impl PreparedStepExecutor for SampleMapPlayerStepExecutor {
@@ -1607,6 +1610,7 @@ impl PreparedStepExecutor for SampleMapPlayerStepExecutor {
             self.selection_mode,
             &mut self.round_robin_counters,
             &mut self.rng_state,
+            (!self.queued_choices.is_empty()).then_some(self.queued_choices.as_slice()),
             &mut self.selected_zone,
             &mut self.selected_pitch_ratio,
             &mut self.position,
@@ -1614,6 +1618,16 @@ impl PreparedStepExecutor for SampleMapPlayerStepExecutor {
             &mut process_context,
             events,
         );
+    }
+
+    fn begin_block(&mut self) {
+        self.queued_choices.clear();
+    }
+
+    fn queue_sample_zone_choice(&mut self, choice: Option<usize>) {
+        if self.queued_choices.len() < self.queued_choices.capacity() {
+            self.queued_choices.push(choice);
+        }
     }
 
     fn reset_voice(&mut self) {
@@ -1627,6 +1641,11 @@ impl PreparedStepExecutor for SampleMapPlayerStepExecutor {
 
     fn is_active(&self) -> bool {
         self.active
+    }
+
+    fn reset_all(&mut self) {
+        self.reset_voice();
+        self.queued_choices.clear();
     }
 }
 
@@ -2159,6 +2178,7 @@ pub(super) fn bind_prepared_step_executors(
                     selected_pitch_ratio,
                     position,
                     active,
+                    queued_choices: Vec::with_capacity(plan.event_queues.queue_capacity),
                 }),
                 PerModuleState::NoteToRate { rate } => Box::new(NoteToRateStepExecutor { rate }),
                 PerModuleState::EventFilter { note } => Box::new(EventFilterStepExecutor { note }),

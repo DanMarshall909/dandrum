@@ -45,14 +45,17 @@ allow src/rust-engine/src/kernel/document.rs:1353 earlier legacy binding validat
 allow src/rust-engine/src/kernel/document.rs:1354 earlier legacy binding validation
 
 # Declared root inputs always have an interface entry, including empty targets.
-allow src/rust-engine/src/kernel/flatten.rs:233 declared root input has interface entry
+allow src/rust-engine/src/kernel/flatten.rs:383 declared root input has interface entry
+
+# A validated built-in map player always has an integer max_voices default.
+allow src/rust-engine/src/kernel/flatten.rs:136 validated map player voice count is present
 
 # Poly static arguments and synthesized ports are checked before flattening.
-allow src/rust-engine/src/kernel/flatten.rs:386 validated poly port resolution
-allow src/rust-engine/src/kernel/flatten.rs:390 validated poly definition argument
-allow src/rust-engine/src/kernel/flatten.rs:395 validated positive poly voice count
-allow src/rust-engine/src/kernel/flatten.rs:397 validated poly voice count type
-allow src/rust-engine/src/kernel/flatten.rs:403 validated poly allocation policy
+allow src/rust-engine/src/kernel/flatten.rs:536 validated poly port resolution
+allow src/rust-engine/src/kernel/flatten.rs:540 validated poly definition argument
+allow src/rust-engine/src/kernel/flatten.rs:545 validated positive poly voice count
+allow src/rust-engine/src/kernel/flatten.rs:547 validated poly voice count type
+allow src/rust-engine/src/kernel/flatten.rs:553 validated poly allocation policy
 
 # Public package references have a UTF-8 package name; the remaining lines are
 # panic branches in tests that assert the successful package/resource path.
@@ -64,9 +67,9 @@ allow src/rust-engine/src/module_package.rs:1077 assertion panic for allowed pat
 
 # Prepared graph indices, module kinds, and intrinsic bindings are validated
 # before callback rendering; the final entry is a test-only empty fallback.
-allow src/rust-engine/src/graph_processor/polyphony.rs:424 prepared parent event input queue exists
-allow src/rust-engine/src/graph_processor/polyphony.rs:620 synthesized voice intrinsics are bound
-allow src/rust-engine/src/graph_processor/polyphony.rs:623 active voice owns a prepared arena
-allow src/rust-engine/src/graph_processor/polyphony.rs:642 synthesized gate output is bound
-allow src/rust-engine/src/graph_processor/polyphony.rs:649 gate queue exists for prepared voice
-allow src/rust-engine/src/graph_processor/polyphony.rs:800 test-only fallback without intrinsics
+allow src/rust-engine/src/graph_processor/polyphony.rs:479 prepared parent event input queue exists
+allow src/rust-engine/src/graph_processor/polyphony.rs:691 synthesized voice intrinsics are bound
+allow src/rust-engine/src/graph_processor/polyphony.rs:694 active voice owns a prepared arena
+allow src/rust-engine/src/graph_processor/polyphony.rs:713 synthesized gate output is bound
+allow src/rust-engine/src/graph_processor/polyphony.rs:720 gate queue exists for prepared voice
+allow src/rust-engine/src/graph_processor/polyphony.rs:871 test-only fallback without intrinsics

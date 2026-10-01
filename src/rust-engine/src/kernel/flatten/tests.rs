@@ -10,6 +10,89 @@ fn oscillator() -> GraphDefinition {
     GraphDefinition::new("oscillator").with_port(Port::output("audio", SignalType::Audio, 1))
 }
 
+#[test]
+fn prepared_map_poly_rewrites_direct_note_input_and_avoids_generated_name_collision() {
+    let base = crate::kernel::builtins::builtin_registry();
+    let collision = format!(
+        "__prepared_sample_map_voice_{}",
+        base.definitions().count() + 1
+    );
+    let mut registry = base.with_definition(GraphDefinition::new(&collision));
+    let root = GraphDefinition::new("root")
+        .with_port(
+            Port::input("trigger", SignalType::Event, 1)
+                .maps_to(PortRef::new(NodeId::new("player"), "note")),
+        )
+        .with_port(
+            Port::output("audio", SignalType::Audio, 1)
+                .maps_from(PortRef::new(NodeId::new("player"), "audio")),
+        )
+        .with_node(
+            Node::new(NodeId::new("player"), module_types::SAMPLE_MAP_PLAYER)
+                .with_static_arg(
+                    "sample_map",
+                    StaticArg::Literal(StaticValue::String("kit".into())),
+                )
+                .with_static_arg("channels", StaticArg::Literal(StaticValue::Int(1)))
+                .with_static_arg("max_voices", StaticArg::Literal(StaticValue::Int(2)))
+                .with_static_arg(
+                    "voice_steal",
+                    StaticArg::Literal(StaticValue::Enum("reject_new".into())),
+                ),
+        );
+    let mut flat = root.flatten(&registry).expect("map flattens");
+    flat.expand_sample_map_poly_regions(&mut registry)
+        .expect("bounded map expands");
+    let region = &flat.poly_regions()[0];
+    assert_eq!(region.max_voices(), 2);
+    assert_eq!(region.allocation_policy(), PolyAllocationPolicy::RejectNew);
+    assert_ne!(region.wrapped_definition(), collision);
+    assert!(registry.get(region.wrapped_definition()).is_some());
+    assert_eq!(flat.nodes()[0].definition(), POLY_DEFINITION);
+    assert_eq!(
+        flat.root_input_destinations().get("trigger"),
+        Some(&vec![PortRef::new(
+            NodeId::new("player"),
+            POLY_NOTE_EVENTS_INPUT
+        )])
+    );
+}
+
+#[test]
+fn prepared_map_poly_rejects_invalid_limit_and_unimplemented_stealing_mode() {
+    let registry = crate::kernel::builtins::builtin_registry();
+    for (max_voices, voice_steal, code) in [
+        (0, "oldest", error_codes::KERNEL_SAMPLE_INVALID_VOICE_LIMIT),
+        (
+            129,
+            "oldest",
+            error_codes::KERNEL_SAMPLE_INVALID_VOICE_LIMIT,
+        ),
+        (2, "quietest", error_codes::KERNEL_SAMPLE_UNSUPPORTED_MODE),
+    ] {
+        let root = GraphDefinition::new("root").with_node(
+            Node::new(NodeId::new("player"), module_types::SAMPLE_MAP_PLAYER)
+                .with_static_arg(
+                    "sample_map",
+                    StaticArg::Literal(StaticValue::String("kit".into())),
+                )
+                .with_static_arg(
+                    "max_voices",
+                    StaticArg::Literal(StaticValue::Int(max_voices)),
+                )
+                .with_static_arg(
+                    "voice_steal",
+                    StaticArg::Literal(StaticValue::Enum(voice_steal.into())),
+                ),
+        );
+        let mut flat = root.flatten(&registry).expect("map flattens");
+        let error = flat
+            .expand_sample_map_poly_regions(&mut registry.clone())
+            .expect_err("unsupported map options fail");
+        assert_eq!(error.errors().next().unwrap().error_code(), code);
+    }
+}
+
 fn gain() -> GraphDefinition {
     GraphDefinition::new("gain")
         .with_port(Port::input("audio_in", SignalType::Audio, 1))

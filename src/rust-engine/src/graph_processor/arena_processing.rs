@@ -326,6 +326,7 @@ pub(super) fn process_sample_map_player_state(
     selection_mode: SampleSelectionMode,
     round_robin_counters: &mut [usize],
     rng_state: &mut u64,
+    queued_choices: Option<&[Option<usize>]>,
     selected_zone: &mut Option<usize>,
     selected_pitch_ratio: &mut f32,
     position: &mut f64,
@@ -333,65 +334,26 @@ pub(super) fn process_sample_map_player_state(
     context: &mut ProcessContext<'_>,
     events: &[BlockEvent],
 ) {
+    let mut choice_cursor = 0;
     for frame in 0..context.frames() {
         for event in events {
             if event.frame_offset as usize != frame {
                 continue;
             }
             if let ScriptEvent::NoteOn { note, velocity } = event.event {
-                let matches = |zone: &crate::compiled_patch::CompiledSampleZone| {
-                    note >= zone.key_range[0]
-                        && note <= zone.key_range[1]
-                        && velocity >= zone.velocity_range[0]
-                        && velocity <= zone.velocity_range[1]
-                };
-                let first = zones.iter().position(matches);
-                let chosen = first.map(|first| {
-                    if selection_mode == SampleSelectionMode::RandomWeighted {
-                        let total_weight = zones
-                            .iter()
-                            .filter(|zone| matches(zone))
-                            .map(|zone| u64::from(zone.weight))
-                            .sum::<u64>();
-                        let mut ticket = next_sample_selection_random(rng_state) % total_weight;
-                        return zones
-                            .iter()
-                            .enumerate()
-                            .filter(|(_, zone)| matches(zone))
-                            .find_map(|(index, zone)| {
-                                if ticket < u64::from(zone.weight) {
-                                    Some(index)
-                                } else {
-                                    ticket -= u64::from(zone.weight);
-                                    None
-                                }
-                            })
-                            .expect("positive weighted zones contain the sampled ticket");
-                    }
-                    if selection_mode == SampleSelectionMode::RoundRobin {
-                        if let Some(group) = zones[first].round_robin_group {
-                            let count = zones
-                                .iter()
-                                .filter(|zone| {
-                                    matches(zone) && zone.round_robin_group == Some(group)
-                                })
-                                .count();
-                            let turn = round_robin_counters[group] % count;
-                            round_robin_counters[group] =
-                                round_robin_counters[group].wrapping_add(1);
-                            return zones
-                                .iter()
-                                .enumerate()
-                                .filter(|(_, zone)| {
-                                    matches(zone) && zone.round_robin_group == Some(group)
-                                })
-                                .nth(turn)
-                                .expect("matching round-robin group has a selected zone")
-                                .0;
-                        }
-                    }
-                    first
-                });
+                let chosen = queued_choices
+                    .and_then(|choices| choices.get(choice_cursor).copied())
+                    .unwrap_or_else(|| {
+                        select_sample_map_zone(
+                            zones,
+                            selection_mode,
+                            round_robin_counters,
+                            rng_state,
+                            note,
+                            velocity,
+                        )
+                    });
+                choice_cursor += 1;
                 if let Some(index) = chosen {
                     *selected_zone = Some(index);
                     let region = &zones[index].region;
@@ -478,6 +440,60 @@ pub(super) fn process_sample_map_player_state(
     }
 }
 
+pub(super) fn select_sample_map_zone(
+    zones: &[crate::compiled_patch::CompiledSampleZone],
+    selection_mode: SampleSelectionMode,
+    round_robin_counters: &mut [usize],
+    rng_state: &mut u64,
+    note: u8,
+    velocity: u8,
+) -> Option<usize> {
+    let matches = |zone: &crate::compiled_patch::CompiledSampleZone| {
+        note >= zone.key_range[0]
+            && note <= zone.key_range[1]
+            && velocity >= zone.velocity_range[0]
+            && velocity <= zone.velocity_range[1]
+    };
+    let first = zones.iter().position(matches)?;
+    if selection_mode == SampleSelectionMode::RandomWeighted {
+        let total_weight = zones
+            .iter()
+            .filter(|zone| matches(zone))
+            .map(|zone| u64::from(zone.weight))
+            .sum::<u64>();
+        let mut ticket = next_sample_selection_random(rng_state) % total_weight;
+        return zones
+            .iter()
+            .enumerate()
+            .filter(|(_, zone)| matches(zone))
+            .find_map(|(index, zone)| {
+                if ticket < u64::from(zone.weight) {
+                    Some(index)
+                } else {
+                    ticket -= u64::from(zone.weight);
+                    None
+                }
+            });
+    }
+    if selection_mode == SampleSelectionMode::RoundRobin {
+        if let Some(group) = zones[first].round_robin_group {
+            let count = zones
+                .iter()
+                .filter(|zone| matches(zone) && zone.round_robin_group == Some(group))
+                .count();
+            let turn = round_robin_counters[group] % count;
+            round_robin_counters[group] = round_robin_counters[group].wrapping_add(1);
+            return zones
+                .iter()
+                .enumerate()
+                .filter(|(_, zone)| matches(zone) && zone.round_robin_group == Some(group))
+                .nth(turn)
+                .map(|(index, _)| index);
+        }
+    }
+    Some(first)
+}
+
 pub(super) fn process_sample_map_player(
     state: &mut PerModuleState,
     context: &mut ProcessContext<'_>,
@@ -502,6 +518,7 @@ pub(super) fn process_sample_map_player(
         *selection_mode,
         round_robin_counters,
         rng_state,
+        None,
         selected_zone,
         selected_pitch_ratio,
         position,
