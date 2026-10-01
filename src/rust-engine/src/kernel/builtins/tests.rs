@@ -818,6 +818,14 @@ fn sample_map_player_exposes_bounded_voices_choke_and_live_controls() {
         &["cut", "fade", "release"]
     );
     assert_eq!(
+        static_param_of(player, "choke_fade_ms").static_type(),
+        StaticType::Int
+    );
+    assert_eq!(
+        static_param_of(player, "choke_fade_ms").default(),
+        Some(&StaticValue::Int(5))
+    );
+    assert_eq!(
         static_param_of(player, "channels").static_type(),
         StaticType::Int
     );

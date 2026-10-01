@@ -1,7 +1,7 @@
 use crate::builtins::module_kind::ModuleKind;
 use crate::compiled_patch::{
     CompiledConstruction, CompiledPatch, CompiledPolyRegion, CompiledPortSpan, CompiledSampleZone,
-    SampleSelectionMode,
+    SampleChokeMode, SampleSelectionMode,
 };
 use crate::graph::{PortDirection, SignalType};
 use crate::kernel::{
@@ -36,6 +36,9 @@ struct PolyVoiceSlot {
     released_frames: usize,
     release_offset_pending: usize,
     last_peak: f32,
+    choke_group: Option<(usize, usize)>,
+    choke_start_frame: Option<u64>,
+    choke_fade_frames: u64,
 }
 
 struct SharedSampleMapSelection {
@@ -45,6 +48,8 @@ struct SharedSampleMapSelection {
     round_robin_counters: Box<[usize]>,
     initial_seed: u64,
     rng_state: u64,
+    choke_mode: SampleChokeMode,
+    choke_fade_frames: u64,
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -263,6 +268,12 @@ impl PreparedPolyRuntimeRegion {
                     round_robin_counters: vec![0; *group_count].into_boxed_slice(),
                     initial_seed: *selection_seed,
                     rng_state: *selection_seed,
+                    choke_mode: compiled
+                        .sample_map_choke()
+                        .map_or(SampleChokeMode::Cut, |(mode, _)| mode),
+                    choke_fade_frames: compiled.sample_map_choke().map_or(0, |(_, fade_ms)| {
+                        ((fade_ms as f32 * sample_rate / 1_000.0).round() as u64).max(1)
+                    }),
                 })
             })
             .collect::<Vec<_>>()
@@ -537,7 +548,22 @@ impl PreparedPolyRuntimeRegion {
                     let source = BufferId(binding.voice_span.first_buffer + channel);
                     let destination = BufferId(binding.accumulator_start + channel);
                     for frame in 0..frames {
-                        let sample = arena.sample(source, frame);
+                        let now = self.block_start_frame.saturating_add(frame as u64);
+                        let choke_gain = match self.slots[voice].choke_start_frame {
+                            None => 1.0,
+                            Some(start) if now < start => 1.0,
+                            Some(_) if self.slots[voice].choke_fade_frames == 0 => 0.0,
+                            Some(start) => {
+                                let elapsed = now - start;
+                                let fade_frames = self.slots[voice].choke_fade_frames;
+                                if elapsed >= fade_frames {
+                                    0.0
+                                } else {
+                                    1.0 - elapsed as f32 / fade_frames as f32
+                                }
+                            }
+                        };
+                        let sample = arena.sample(source, frame) * choke_gain;
                         if binding.signal_type == SignalType::Audio {
                             peak = peak.max(sample.abs());
                         }
@@ -561,7 +587,11 @@ impl PreparedPolyRuntimeRegion {
                 && self.prepared_step_executors[voice]
                     .iter()
                     .all(|executor| !executor.is_active());
-            if done || one_shot_finished {
+            let choke_finished = self.slots[voice].choke_start_frame.is_some_and(|start| {
+                self.block_start_frame.saturating_add(frames as u64)
+                    >= start.saturating_add(self.slots[voice].choke_fade_frames)
+            });
+            if done || one_shot_finished || choke_finished {
                 self.slots[voice].active = false;
                 for region in self.nested_regions[voice].iter_mut() {
                     region.retire_all_voices();
@@ -660,6 +690,9 @@ impl PreparedPolyRuntimeRegion {
             released_frames: 0,
             release_offset_pending: 0,
             last_peak: 0.0,
+            choke_group: None,
+            choke_start_frame: None,
+            choke_fade_frames: 0,
         };
         self.write_intrinsic_controls(voice, frames);
         self.push_gate_event(voice, ScriptEvent::NoteOn { note, velocity }, frame_offset);
@@ -674,6 +707,45 @@ impl PreparedPolyRuntimeRegion {
             );
             self.prepared_step_executors[voice][selection.step_index]
                 .queue_sample_zone_choice(choice);
+            let group = choice.and_then(|index| selection.zones[index].choke_group);
+            if let Some(group) = group {
+                let key = (selection.step_index, group);
+                for other in 0..self.slots.len() {
+                    if other == voice
+                        || !self.slots[other].active
+                        || self.slots[other].choke_group != Some(key)
+                    {
+                        continue;
+                    }
+                    if self.slots[other].gate_held {
+                        if selection.choke_mode != SampleChokeMode::Release {
+                            self.slots[other].choke_start_frame = Some(
+                                self.block_start_frame
+                                    .saturating_add(u64::from(frame_offset)),
+                            );
+                            self.slots[other].choke_fade_frames =
+                                if selection.choke_mode == SampleChokeMode::Fade {
+                                    selection.choke_fade_frames
+                                } else {
+                                    0
+                                };
+                        }
+                        if let Some(bindings) = self.intrinsic_bindings {
+                            let queue = self.voice_event_queues[other]
+                                .queue_mut(bindings.gate.0)
+                                .expect("prepared choke voice has a gate queue");
+                            let _ = queue.push_at(
+                                ScriptEvent::NoteOff {
+                                    note: self.slots[other].note,
+                                },
+                                frame_offset,
+                            );
+                        }
+                    }
+                    self.slots[other].gate_held = false;
+                }
+                self.slots[voice].choke_group = Some(key);
+            }
         }
     }
 

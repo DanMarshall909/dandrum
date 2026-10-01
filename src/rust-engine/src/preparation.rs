@@ -9,7 +9,7 @@ use crate::compiled_patch::{
     self, CompileError, CompiledConstruction, CompiledNodeData, CompiledPatch,
     CompiledPolyOutputAccumulator, CompiledPolyRegion, CompiledPolyVoiceStorage, CompiledPortSpan,
     CompiledResourceHandles, CompiledRootPort, CompiledSampleZone, ImpulseResponseResourceHandle,
-    RootBusPlan, SampleInterpolation, SampleResourceHandle, SampleSelectionMode,
+    RootBusPlan, SampleChokeMode, SampleInterpolation, SampleResourceHandle, SampleSelectionMode,
 };
 use crate::diagnostics::{self, Diagnostic, Severity};
 use crate::graph::{Cable, Graph, ModuleId, ModuleNode, PortDirection, PortRef, SignalType};
@@ -1649,6 +1649,14 @@ fn compile_poly_regions_with_path(
             region.node_id().as_str(),
             region.max_voices(),
             region.allocation_policy(),
+            region.sample_map_choke().map(|(mode, fade_ms)| {
+                let mode = match mode {
+                    "fade" => SampleChokeMode::Fade,
+                    "release" => SampleChokeMode::Release,
+                    _ => SampleChokeMode::Cut,
+                };
+                (mode, fade_ms)
+            }),
             child_flattened,
             child_patch,
             voices,
@@ -1879,6 +1887,7 @@ fn lower_kernel_graph(
                 ));
             }
             let mut groups = BTreeMap::new();
+            let mut choke_groups = BTreeMap::new();
             let zones = map
                 .zones()
                 .iter()
@@ -1894,12 +1903,22 @@ fn lower_kernel_graph(
                                 index
                             }
                         });
+                    let choke_group = zone.declaration().choke_group.as_ref().map(|name| {
+                        if let Some(index) = choke_groups.get(name) {
+                            *index
+                        } else {
+                            let index = choke_groups.len();
+                            choke_groups.insert(name.clone(), index);
+                            index
+                        }
+                    });
                     CompiledSampleZone {
                         sample: SampleResourceHandle::from_shared(source.resource.shared_sample()),
                         region: source.declaration().regions[zone.region_index()].clone(),
                         key_range: zone.declaration().key_range,
                         velocity_range: zone.declaration().velocity_range,
                         round_robin_group,
+                        choke_group,
                         weight: zone.declaration().weight.unwrap_or(1),
                         gain: 10.0_f64.powf(
                             (source.declaration().regions[zone.region_index()]

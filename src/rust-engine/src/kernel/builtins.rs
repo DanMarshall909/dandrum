@@ -311,6 +311,10 @@ fn builtin_definitions() -> Vec<GraphDefinition> {
                 &["oldest", "quietest", "reject_new"],
             ))
             .with_static_param(enum_param("choke_mode", "cut", &["cut", "fade", "release"]))
+            .with_static_param(
+                StaticParam::new("choke_fade_ms", StaticType::Int)
+                    .with_default(StaticValue::Int(5)),
+            )
             .with_port(event_in(ports::NOTE))
             .with_port(tunable(ports::PITCH_RATIO, 1.0, 0.125, 8.0))
             .with_port(tunable(ports::START_OFFSET, 0.0, 0.0, 1.0))

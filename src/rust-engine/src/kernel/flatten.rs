@@ -100,6 +100,7 @@ pub struct FlattenedPolyRegion {
     wrapped_definition: String,
     max_voices: usize,
     allocation_policy: PolyAllocationPolicy,
+    sample_map_choke: Option<(String, u32)>,
 }
 
 impl FlattenedPolyRegion {
@@ -117,6 +118,12 @@ impl FlattenedPolyRegion {
 
     pub fn allocation_policy(&self) -> PolyAllocationPolicy {
         self.allocation_policy
+    }
+
+    pub fn sample_map_choke(&self) -> Option<(&str, u32)> {
+        self.sample_map_choke
+            .as_ref()
+            .map(|(mode, fade_ms)| (mode.as_str(), *fade_ms))
     }
 }
 
@@ -149,6 +156,24 @@ impl FlattenedGraph {
                     .with_module_id(node.id.as_str()),
                 ));
             }
+            let choke_mode = match node.static_args.get("choke_mode") {
+                Some(StaticValue::Enum(value)) => value.as_str(),
+                _ => "cut",
+            };
+            let choke_fade_ms = match node.static_args.get("choke_fade_ms") {
+                Some(StaticValue::Int(value)) => *value,
+                _ => 5,
+            };
+            if !(1..=1_000).contains(&choke_fade_ms) || (max_voices == 1 && choke_mode != "cut") {
+                return Err(Diagnostics::from(
+                    Diagnostic::new(
+                        error_codes::KERNEL_SAMPLE_UNSUPPORTED_MODE,
+                        Severity::Error,
+                        format!("sample_map_player '{}' requires a 1..=1000 ms choke fade and at least two voices for fade or release", node.id.as_str()),
+                    )
+                    .with_module_id(node.id.as_str()),
+                ));
+            }
             if max_voices <= 1 {
                 continue;
             }
@@ -177,10 +202,10 @@ impl FlattenedGraph {
             for (name, value) in &node.static_args {
                 player = player.with_static_arg(
                     name,
-                    StaticArg::Literal(if name == "max_voices" {
-                        StaticValue::Int(1)
-                    } else {
-                        value.clone()
+                    StaticArg::Literal(match name.as_str() {
+                        "max_voices" => StaticValue::Int(1),
+                        "choke_mode" => StaticValue::Enum("cut".to_string()),
+                        _ => value.clone(),
                     }),
                 );
             }
@@ -216,6 +241,7 @@ impl FlattenedGraph {
                 wrapped_definition: wrapped_name.clone(),
                 max_voices: max_voices as usize,
                 allocation_policy: voice_steal.1,
+                sample_map_choke: Some((choke_mode.to_string(), choke_fade_ms as u32)),
             });
             node.definition = POLY_DEFINITION.to_string();
             node.static_args = BTreeMap::from([
@@ -558,6 +584,7 @@ impl Compiler<'_> {
                     wrapped_definition,
                     max_voices,
                     allocation_policy,
+                    sample_map_choke: None,
                 });
                 child_interfaces.insert(node.id().clone(), atomic_interface(node.id(), &ports));
                 continue;
@@ -742,6 +769,7 @@ fn instantiate(
             wrapped_definition: region.wrapped_definition.clone(),
             max_voices: region.max_voices,
             allocation_policy: region.allocation_policy,
+            sample_map_choke: region.sample_map_choke.clone(),
         })
         .collect();
 

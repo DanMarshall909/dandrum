@@ -66,6 +66,7 @@ pub struct CompiledPolyRegion {
     node_id: String,
     max_voices: usize,
     allocation_policy: PolyAllocationPolicy,
+    sample_map_choke: Option<(SampleChokeMode, u32)>,
     flattened_voice: FlattenedGraph,
     child_patch: Box<CompiledPatch>,
     child_schedule: Box<[ExecutionStep]>,
@@ -93,6 +94,7 @@ impl CompiledPolyRegion {
         node_id: impl Into<String>,
         max_voices: usize,
         allocation_policy: PolyAllocationPolicy,
+        sample_map_choke: Option<(SampleChokeMode, u32)>,
         flattened_voice: FlattenedGraph,
         child_patch: CompiledPatch,
         voices: Vec<CompiledPolyVoiceStorage>,
@@ -104,6 +106,7 @@ impl CompiledPolyRegion {
             node_id: node_id.into(),
             max_voices,
             allocation_policy,
+            sample_map_choke,
             flattened_voice,
             child_patch: Box::new(child_patch),
             child_schedule,
@@ -121,6 +124,9 @@ impl CompiledPolyRegion {
     }
     pub fn allocation_policy(&self) -> PolyAllocationPolicy {
         self.allocation_policy
+    }
+    pub fn sample_map_choke(&self) -> Option<(SampleChokeMode, u32)> {
+        self.sample_map_choke
     }
     pub fn flattened_voice(&self) -> &FlattenedGraph {
         &self.flattened_voice
@@ -320,6 +326,13 @@ pub enum SampleSelectionMode {
     RandomWeighted,
 }
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum SampleChokeMode {
+    Cut,
+    Fade,
+    Release,
+}
+
 #[derive(Clone, Debug, PartialEq)]
 pub struct CompiledSampleZone {
     pub sample: SampleResourceHandle,
@@ -327,6 +340,7 @@ pub struct CompiledSampleZone {
     pub key_range: [u8; 2],
     pub velocity_range: [u8; 2],
     pub round_robin_group: Option<usize>,
+    pub choke_group: Option<usize>,
     pub weight: u32,
     pub gain: f32,
     pub pan: f32,

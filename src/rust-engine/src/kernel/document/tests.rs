@@ -1640,8 +1640,8 @@ connections:
             vec![loud + quiet, loud + quiet, third_hit, third_hit]
         );
     }
-    let quietest_patch = load_kernel_patch_str(&yaml.replace("POLICY", "quietest"))
-        .expect("quietest kit loads");
+    let quietest_patch =
+        load_kernel_patch_str(&yaml.replace("POLICY", "quietest")).expect("quietest kit loads");
     let quietest_prepared = prepare_kernel_patch_with_context(
         &quietest_patch,
         &RenderSettings {
@@ -1654,9 +1654,27 @@ connections:
     let tied = render_kernel_offline_named(
         &quietest_prepared,
         vec![
-            TimedInputEvent::new(0, ScriptEvent::NoteOn { note: 36, velocity: 100 }),
-            TimedInputEvent::new(0, ScriptEvent::NoteOn { note: 38, velocity: 100 }),
-            TimedInputEvent::new(0, ScriptEvent::NoteOn { note: 40, velocity: 100 }),
+            TimedInputEvent::new(
+                0,
+                ScriptEvent::NoteOn {
+                    note: 36,
+                    velocity: 100,
+                },
+            ),
+            TimedInputEvent::new(
+                0,
+                ScriptEvent::NoteOn {
+                    note: 38,
+                    velocity: 100,
+                },
+            ),
+            TimedInputEvent::new(
+                0,
+                ScriptEvent::NoteOn {
+                    note: 40,
+                    velocity: 100,
+                },
+            ),
         ],
         &PreparedSamplerAssets::empty(),
     )
@@ -1710,6 +1728,335 @@ connections:
         mono_rendered[0].1[0],
         [vec![loud; 8], vec![-0.5; 2]].concat()
     );
+}
+
+#[test]
+fn closed_hat_cuts_open_hat_at_its_event_frame_without_choking_kick() {
+    let directory = tempfile::tempdir().expect("temporary sample root");
+    let mut values = vec![0.5; 8];
+    values.extend(vec![-0.25; 2]);
+    values.extend(vec![0.125; 8]);
+    crate::wav::write_wav_stereo_i16(
+        fs::File::create(directory.path().join("kit.wav")).expect("sample file"),
+        48_000,
+        &values,
+        &values,
+    )
+    .expect("write sample");
+    let yaml = r#"
+metadata: { name: choked_hats }
+assets:
+  sample_sources:
+    - id: kit
+      path: kit.wav
+      regions:
+        - { id: open, start_frame: 0, end_frame: 8 }
+        - { id: closed, start_frame: 8, end_frame: 10 }
+        - { id: kick, start_frame: 10, end_frame: 18 }
+  sample_maps:
+    - id: drums
+      zones:
+        - { region: kit.open, key_range: [46, 46], velocity_range: [1, 127], choke_group: hats }
+        - { region: kit.closed, key_range: [42, 42], velocity_range: [1, 127], choke_group: hats }
+        - { region: kit.kick, key_range: [36, 36], velocity_range: [1, 127] }
+ports:
+  - { name: audio_out, direction: output, signal: audio, channels: 1, maps_from: player.audio }
+modules:
+  - { id: midi, type: midi_input }
+  - { id: player, type: sample_map_player, static: { sample_map: drums, max_voices: 3, choke_mode: cut, channels: 1 } }
+connections:
+  - { from: midi.events, to: player.note }
+"#;
+    let patch = load_kernel_patch_str(yaml).expect("hat kit loads");
+    let settings = RenderSettings {
+        sample_rate_hz: 48_000,
+        block_size_frames: 8,
+        duration_frames: 8,
+    };
+    let prepared = prepare_kernel_patch_with_context(
+        &patch,
+        &settings,
+        &PreparationContext::new(directory.path(), 48_000),
+    )
+    .expect("hat kit prepares");
+    let rendered = render_kernel_offline_named(
+        &prepared,
+        vec![
+            TimedInputEvent::new(
+                0,
+                ScriptEvent::NoteOn {
+                    note: 46,
+                    velocity: 100,
+                },
+            ),
+            TimedInputEvent::new(
+                0,
+                ScriptEvent::NoteOn {
+                    note: 36,
+                    velocity: 100,
+                },
+            ),
+            TimedInputEvent::new(
+                3,
+                ScriptEvent::NoteOn {
+                    note: 42,
+                    velocity: 100,
+                },
+            ),
+        ],
+        &PreparedSamplerAssets::empty(),
+    )
+    .expect("hat kit renders");
+    let open = 16383.0 / 32768.0;
+    let kick = 4095.0 / 32768.0;
+    assert_eq!(
+        rendered[0].1[0],
+        vec![
+            open + kick,
+            open + kick,
+            open + kick,
+            -0.25 + kick,
+            -0.25 + kick,
+            kick,
+            kick,
+            kick,
+        ]
+    );
+    let split_prepared = prepare_kernel_patch_with_context(
+        &patch,
+        &RenderSettings {
+            block_size_frames: 2,
+            ..settings
+        },
+        &PreparationContext::new(directory.path(), 48_000),
+    )
+    .expect("split hat kit prepares");
+    let split = render_kernel_offline_named(
+        &split_prepared,
+        vec![
+            TimedInputEvent::new(
+                0,
+                ScriptEvent::NoteOn {
+                    note: 46,
+                    velocity: 100,
+                },
+            ),
+            TimedInputEvent::new(
+                0,
+                ScriptEvent::NoteOn {
+                    note: 36,
+                    velocity: 100,
+                },
+            ),
+            TimedInputEvent::new(
+                3,
+                ScriptEvent::NoteOn {
+                    note: 42,
+                    velocity: 100,
+                },
+            ),
+        ],
+        &PreparedSamplerAssets::empty(),
+    )
+    .expect("split hat kit renders");
+    assert_eq!(split[0].1[0], rendered[0].1[0]);
+
+    let release_patch =
+        load_kernel_patch_str(&yaml.replace("choke_mode: cut", "choke_mode: release"))
+            .expect("release-mode hat kit loads");
+    let release_prepared = prepare_kernel_patch_with_context(
+        &release_patch,
+        &settings,
+        &PreparationContext::new(directory.path(), 48_000),
+    )
+    .expect("release-mode hat kit prepares");
+    let released = render_kernel_offline_named(
+        &release_prepared,
+        vec![
+            TimedInputEvent::new(
+                0,
+                ScriptEvent::NoteOn {
+                    note: 46,
+                    velocity: 100,
+                },
+            ),
+            TimedInputEvent::new(
+                0,
+                ScriptEvent::NoteOn {
+                    note: 36,
+                    velocity: 100,
+                },
+            ),
+            TimedInputEvent::new(
+                3,
+                ScriptEvent::NoteOn {
+                    note: 42,
+                    velocity: 100,
+                },
+            ),
+        ],
+        &PreparedSamplerAssets::empty(),
+    )
+    .expect("release-mode hat kit renders");
+    assert_eq!(
+        released[0].1[0],
+        vec![
+            open + kick,
+            open + kick,
+            open + kick,
+            open - 0.25 + kick,
+            open - 0.25 + kick,
+            open + kick,
+            open + kick,
+            open + kick,
+        ]
+    );
+    let mut runtime = RealtimeGraphProcessor::polyphonic_with_compiled_patch_and_sampler_assets_and_max_block_size(
+        release_prepared.graph().clone(), release_prepared.compiled_patch().clone(), 48_000.0,
+        &PreparedSamplerAssets::empty(), &crate::patch::VoiceAllocation::default(), 8,
+    );
+    runtime.note_on_at(46, 100, 0);
+    runtime.note_on_at(36, 100, 0);
+    runtime.note_on_at(42, 100, 3);
+    let mut output = vec![vec![vec![0.0; 8]]];
+    assert_eq!(runtime.render_root_outputs(&mut output), 8);
+    assert_eq!(output[0][0], released[0].1[0]);
+    assert!(
+        runtime.prepared_poly_runtime_regions()[0]
+            .voice_gate_events(0)
+            .iter()
+            .any(|event| event.event == ScriptEvent::NoteOff { note: 46 })
+    );
+    let repeated_patch = load_kernel_patch_str(
+        &yaml
+            .replace("choke_mode: cut", "choke_mode: release")
+            .replace("max_voices: 3", "max_voices: 4"),
+    )
+    .expect("repeated release kit loads");
+    let repeated_prepared = prepare_kernel_patch_with_context(
+        &repeated_patch,
+        &settings,
+        &PreparationContext::new(directory.path(), 48_000),
+    )
+    .expect("repeated release kit prepares");
+    let repeated = render_kernel_offline_named(
+        &repeated_prepared,
+        vec![
+            TimedInputEvent::new(0, ScriptEvent::NoteOn { note: 46, velocity: 100 }),
+            TimedInputEvent::new(0, ScriptEvent::NoteOn { note: 36, velocity: 100 }),
+            TimedInputEvent::new(3, ScriptEvent::NoteOn { note: 42, velocity: 100 }),
+            TimedInputEvent::new(4, ScriptEvent::NoteOn { note: 42, velocity: 100 }),
+        ],
+        &PreparedSamplerAssets::empty(),
+    )
+    .expect("repeated release kit renders");
+    assert_eq!(repeated[0].1[0][4], open + kick - 0.5);
+    assert_eq!(repeated[0].1[0][5], open + kick - 0.25);
+    assert_eq!(repeated[0].1[0][7], open + kick);
+}
+
+#[test]
+fn hat_choke_fade_spans_blocks_and_retires_at_its_end() {
+    let directory = tempfile::tempdir().expect("temporary sample root");
+    let mut values = vec![0.5; 96];
+    values.extend(vec![-0.25; 2]);
+    crate::wav::write_wav_stereo_i16(
+        fs::File::create(directory.path().join("hats.wav")).expect("sample file"),
+        48_000,
+        &values,
+        &values,
+    )
+    .expect("write sample");
+    let yaml = r#"
+metadata: { name: fading_hats }
+assets:
+  sample_sources:
+    - id: hats
+      path: hats.wav
+      regions:
+        - { id: open, start_frame: 0, end_frame: 96 }
+        - { id: closed, start_frame: 96, end_frame: 98 }
+  sample_maps:
+    - id: kit
+      zones:
+        - { region: hats.open, key_range: [46, 46], velocity_range: [1, 127], choke_group: hats }
+        - { region: hats.closed, key_range: [42, 42], velocity_range: [1, 127], choke_group: hats }
+ports:
+  - { name: audio_out, direction: output, signal: audio, channels: 1, maps_from: player.audio }
+modules:
+  - { id: midi, type: midi_input }
+  - { id: player, type: sample_map_player, static: { sample_map: kit, max_voices: 2, choke_mode: fade, choke_fade_ms: 1, channels: 1 } }
+connections:
+  - { from: midi.events, to: player.note }
+"#;
+    let patch = load_kernel_patch_str(yaml).expect("fade kit loads");
+    let open = 16383.0_f32 / 32768.0;
+    for block_size_frames in [64, 16] {
+        let prepared = prepare_kernel_patch_with_context(
+            &patch,
+            &RenderSettings {
+                sample_rate_hz: 48_000,
+                block_size_frames,
+                duration_frames: 64,
+            },
+            &PreparationContext::new(directory.path(), 48_000),
+        )
+        .expect("fade kit prepares");
+        let rendered = render_kernel_offline_named(
+            &prepared,
+            vec![
+                TimedInputEvent::new(
+                    0,
+                    ScriptEvent::NoteOn {
+                        note: 46,
+                        velocity: 100,
+                    },
+                ),
+                TimedInputEvent::new(
+                    8,
+                    ScriptEvent::NoteOn {
+                        note: 42,
+                        velocity: 100,
+                    },
+                ),
+            ],
+            &PreparedSamplerAssets::empty(),
+        )
+        .expect("fade kit renders");
+        let samples = &rendered[0].1[0];
+        assert_eq!(samples[7], open);
+        assert_eq!(samples[8], open - 0.25);
+        assert_eq!(samples[9], open * (1.0 - 1.0 / 48.0) - 0.25);
+        assert_eq!(samples[32], open * 0.5);
+        assert_eq!(samples[55], open * (1.0 - 47.0 / 48.0));
+        assert_eq!(samples[56], 0.0);
+        assert_eq!(samples[63], 0.0);
+    }
+    for invalid_yaml in [
+        yaml.replace("choke_fade_ms: 1", "choke_fade_ms: 0"),
+        yaml.replace("choke_fade_ms: 1", "choke_fade_ms: 1001"),
+        yaml.replace("max_voices: 2", "max_voices: 1"),
+        yaml.replace("max_voices: 2", "max_voices: 1")
+            .replace("choke_mode: fade", "choke_mode: release"),
+    ] {
+        let invalid = load_kernel_patch_str(&invalid_yaml).expect("invalid choke graph loads");
+        let error = match prepare_kernel_patch_with_context(
+            &invalid,
+            &RenderSettings {
+                sample_rate_hz: 48_000,
+                block_size_frames: 64,
+                duration_frames: 64,
+            },
+            &PreparationContext::new(directory.path(), 48_000),
+        ) {
+            Ok(_) => panic!("invalid choke options must fail preparation"),
+            Err(error) => error,
+        };
+        assert_eq!(
+            error.diagnostics().errors().next().unwrap().error_code(),
+            error_codes::KERNEL_SAMPLE_UNSUPPORTED_MODE
+        );
+    }
 }
 
 #[test]

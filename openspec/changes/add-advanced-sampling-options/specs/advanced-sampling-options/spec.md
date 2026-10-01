@@ -72,6 +72,30 @@ A sample source SHALL support named regions with start and end frame positions i
 - **WHEN** a drum map has no free voice and receives another hit with `oldest`, `quietest`, or `reject_new` selected
 - **THEN** it SHALL respectively replace the oldest voice, replace the voice with the lowest measured audio peak, or preserve both voices; a single-voice map with `reject_new` SHALL accept another hit after its current sample finishes
 
+### Requirement: Choke groups control overlapping drum articulations
+
+Zones MAY declare a named choke group. A newly selected zone SHALL affect active voices in the same group only. A prepared `sample_map_player` SHALL support sample-accurate `cut`, bounded `fade`, and `release` modes when at least two voices are available. `release` SHALL send a gate release while allowing a one-shot sample to finish naturally. Preparation SHALL reject fade durations outside 1..=1000 milliseconds and fade or release on a single-voice map.
+
+#### Scenario: Closed hat cuts its open articulation
+
+- **WHEN** a closed hat in the same choke group starts partway through a block while an unrelated kick and open hat are sounding
+- **THEN** the open hat SHALL be silent starting at the closed hat event frame, the kick SHALL continue, and equivalent block splits SHALL render the same signed samples
+
+#### Scenario: Hat choke fades across blocks
+
+- **WHEN** fade choke starts on a sustained open hat with a configured one-millisecond fade
+- **THEN** the old voice SHALL ramp from its current level to silence over the prepared frame count and retire at the fade end across audio block boundaries
+
+#### Scenario: Hat choke releases a one-shot tail
+
+- **WHEN** release choke starts a closed hat while an open hat one-shot is playing
+- **THEN** the open hat SHALL receive gate release and continue its one-shot tail until the prepared region ends
+
+#### Scenario: Unsupported choke configuration is rejected
+
+- **WHEN** a fade duration is outside 1..=1000 milliseconds or fade or release is selected for one voice
+- **THEN** preparation SHALL reject the map player before rendering with a structured unsupported-mode diagnostic
+
 #### Scenario: Gated region stops on release
 
 - **WHEN** a `sample_player` in gated mode receives a note-off event at a frame inside a block

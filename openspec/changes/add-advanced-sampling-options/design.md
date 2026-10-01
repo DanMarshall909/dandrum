@@ -268,7 +268,9 @@ Outputs:
 Static parameters:
 
 - `sample_map` — prepared sample map ID.
-- `selection_mode`, `selection_seed`, `max_voices`, `voice_steal`, `choke_group`, `choke_mode`.
+- `selection_mode`, `selection_seed`, `max_voices`, `voice_steal`, `choke_group`, `choke_mode`, `choke_fade_ms`.
+
+`choke_fade_ms` is an integer from 1 to 1000, prepared as a frame count at the render sample rate. A choke decision belongs to the kit-level `poly` region. `cut` masks the old voice at the new hit's frame, `fade` scales it linearly to zero, and `release` sends a gate release while a one-shot sample completes. Fade and release require at least two voices so the incoming hit can overlap the outgoing voice.
 
 ### `sample_slicer`
 
