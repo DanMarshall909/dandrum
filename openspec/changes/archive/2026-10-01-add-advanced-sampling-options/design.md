@@ -43,6 +43,8 @@ Patch YAML should declare sample sources, sample regions, explicit slices, cue p
 
 The render path should not read files, decode formats, scan slices, run beat detection, allocate vectors, build maps, or recover from malformed metadata.
 
+The prepared instrument owns typed source declarations, decoded audio, and resolved map zones. Those types retain source and region IDs, decoded sample rates and frame counts, region bounds and loops, ordered slices, and map selection metadata independently of a plugin editor or WebView renderer. References returned by the engine's prepared-asset accessors are valid only while that prepared instrument lives. A future UI integration must take an owned snapshot or use an explicit lifetime-safe handle before an instrument reload can replace and destroy the active engine. This change does not add visualization analysis or browser transport for those values.
+
 ### Keep the primitive set small
 
 The first useful set should be:
@@ -81,6 +83,10 @@ For this change, `sample_map_player` is a prepared convenience surface over `sam
 The `quietest` policy compares each active voice's audio peak from the last completed block. Equal peaks choose the oldest voice, including hits that arrive before either voice has rendered audio. A one-voice map uses its playback state directly; `reject_new` ignores retriggers while that sample is active.
 
 Prepared host and poly event queues reserve space for at least 128 events even when an audio block is one frame long. This keeps simultaneous drum chords from depending on block size; overflow beyond the prepared bound remains explicit and allocation-free.
+
+Sample-map zones may name one of eight prepared control groups. A group's pitch and level multiply the shared kit controls; start offset, pan, and variation add to them and are bounded to the playback ranges. Group pitch, level, and pan read live values for an active voice, while start offset and variation are chosen at note-on. Zones without a group use only the shared controls. Alternates selected by variation remain in the chosen zone's control group, so one pad's modulation cannot select another pad's region. Groups are metadata on zones within the same map player, which keeps shared voice allocation, round-robin order, and hi-hat choke policy intact.
+
+Preparation builds a key-indexed candidate list from the authored zones. Render-time selection and variation inspect only the candidates for the incoming MIDI key, then apply velocity and group rules in authored order. A zone may narrow its referenced region with an explicit start/end frame window; preparation rejects windows outside the source region or incompatible with its loop and fades, and keeps the source region unchanged. Live pitch controls are bounded in musical units before multiplication by the prepared source-to-host sample-rate factor and the zone/root pitch offsets.
 
 ### Metadata should be useful, not decorative
 
@@ -264,8 +270,11 @@ Inputs:
 
 - `note` (`event` or note-event stream) — incoming note event with note number and velocity.
 - `pitch_ratio` (`control`, optional) — additional pitch modulation.
-- `level` (`control`, optional) — global gain.
-- `variation` (`control`, optional).
+- `start_offset` (`control`, optional) — start position for the next hit.
+- `level` (`control`, optional) — shared gain.
+- `pan` (`control`, optional) — shared stereo placement.
+- `variation` (`control`, optional) — shared alternate selection.
+- `group_1_*` through `group_8_*` (`control`, optional) — independent pitch, start, level, pan, and variation for zones assigned to that group.
 
 Outputs:
 

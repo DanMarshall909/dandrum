@@ -62,20 +62,22 @@
 
 ## 8. Verification
 
-- [ ] 8.1 Add registry tests proving each sampling primitive exposes the expected ports and parameters.
-- [ ] 8.2 Add preparation tests proving valid sample assets/maps are accepted.
-- [ ] 8.3 Add preparation tests proving malformed files, regions, loops, zones, and choke declarations fail with structured diagnostics.
-- [ ] 8.4 Add render tests proving one-shot, gated, simple-looped, reverse, pitch-ratio, fade, and crossfade behaviour.
-- [ ] 8.5 Add selection tests proving velocity/key matching, round-robin order, weighted random determinism, and block-size independence.
-- [ ] 8.6 Add choke tests proving sample-accurate mutually exclusive playback.
+- [x] 8.1 Add registry tests proving each sampling primitive exposes the expected ports and parameters.
+- [x] 8.2 Add preparation tests proving valid sample assets/maps are accepted.
+- [x] 8.3 Add preparation tests proving malformed files, regions, loops, zones, and choke declarations fail with structured diagnostics.
+- [x] 8.4 Add render tests proving one-shot, gated, simple-looped, reverse, pitch-ratio, fade, and crossfade behaviour.
+- [x] 8.5 Add selection tests proving velocity/key matching, round-robin order, weighted random determinism, and block-size independence.
+- [x] 8.6 Add choke tests proving sample-accurate mutually exclusive playback.
 - [x] 8.7 Add slice tests proving trigger/index behaviour.
-- [ ] 8.8 Add tests or instrumentation proving the steady-state render path performs no heap allocation.
-- [ ] 8.9 Run `openspec validate add-advanced-sampling-options --strict` and fix validation errors.
+- [x] 8.8 Add tests or instrumentation proving the steady-state render path performs no heap allocation.
+- [x] 8.9 Run `openspec validate add-advanced-sampling-options --strict` and fix validation errors.
 
 ## 9. Sampler VST3 Example And External Modulation
 
 - [x] 9.1 Add a drum sampler patch with named public pitch, start, level, pan, and variation controls that affect rendered audio while it runs.
-- [ ] 9.2 Provide a sampler-focused VST3 example that loads the drum patch and its redistributable reference samples by default.
-- [ ] 9.3 Prove JUCE host parameter automation reaches the corresponding Rust sampler controls and changes rendered audio without replacing the instrument.
-- [ ] 9.4 Document MIDI drum-note mapping, host modulation setup, sample asset location, and the preparation-only choices that require reload.
+- [x] 9.2 Provide a sampler-focused VST3 example that loads the drum patch and its redistributable reference samples by default.
+- [x] 9.3 Prove JUCE host parameter automation reaches the corresponding Rust sampler controls and changes rendered audio without replacing the instrument.
+- [x] 9.4 Document MIDI drum-note mapping, host modulation setup, sample asset location, and the preparation-only choices that require reload.
 - [x] 9.5 Play prepared samples at the correct pitch and duration across common host sample rates without file IO, decoding, or allocation on the audio thread.
+- [x] 9.6 Expose per-pad host controls for kick, snare, closed hat, and open hat while retaining shared kit voice and choke behavior.
+- [x] 9.7 Verify the prepared instrument owns typed sample identities, decoded rate and bounds, loops, slices, and map metadata after source input is released; document the reload lifetime boundary for future UI access while deferring visualization analysis and browser transport.

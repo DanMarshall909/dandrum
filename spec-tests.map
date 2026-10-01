@@ -100,6 +100,198 @@ AC acceptance-examples :: TB-303 acid acceptance example sustains an evolving fi
   fp 8c5f933cabaa
   test rust:tb303_acid_held_note_retains_mid_decay_brightness
 
+AC advanced-sampling-options :: Choke groups control overlapping drum articulations :: Closed hat cuts its open articulation
+  fp c0255fa35ff5
+  test rust:closed_hat_cuts_open_hat_at_its_event_frame_without_choking_kick
+
+AC advanced-sampling-options :: Choke groups control overlapping drum articulations :: Drum map respects region fades
+  fp 0e7cbd05d45f
+  test rust:drum_map_player_applies_prepared_region_fades
+
+AC advanced-sampling-options :: Choke groups control overlapping drum articulations :: Gated region stops on release
+  fp a8d47c0ea23e
+  test rust:gated_sample_player_stops_on_note_off_at_its_frame_and_can_retrigger
+
+AC advanced-sampling-options :: Choke groups control overlapping drum articulations :: Hat choke fades across blocks
+  fp e161753c61ee
+  test rust:hat_choke_fade_spans_blocks_and_retires_at_its_end
+
+AC advanced-sampling-options :: Choke groups control overlapping drum articulations :: Hat choke releases a one-shot tail
+  fp b1135bf2e4bb
+  test rust:closed_hat_cuts_open_hat_at_its_event_frame_without_choking_kick
+
+AC advanced-sampling-options :: Choke groups control overlapping drum articulations :: Looped region wraps and crossfades
+  fp 58909a833c12
+  test rust:looped_sample_player_wraps_and_crossfades_until_gate_release
+
+AC advanced-sampling-options :: Choke groups control overlapping drum articulations :: Oversized host block preserves sample playback
+  fp 63a6f92a3d5c
+  test rust:sample_player_oversized_root_render_matches_prepared_small_blocks
+
+AC advanced-sampling-options :: Choke groups control overlapping drum articulations :: Pitch ratio reads the control signal during playback
+  fp df23c4cece27
+  test rust:pitched_sample_player_uses_declared_interpolation_at_fractional_positions
+
+AC advanced-sampling-options :: Choke groups control overlapping drum articulations :: Region fades scale boundary samples
+  fp 6319430b8646
+  test rust:sample_region_fades_scale_the_signed_boundary_frames
+
+AC advanced-sampling-options :: Choke groups control overlapping drum articulations :: Reversed region plays toward its first frame
+  fp ecf918cdc64b
+  test rust:reversed_sample_region_starts_at_its_last_frame_and_stops_at_its_first
+
+AC advanced-sampling-options :: Choke groups control overlapping drum articulations :: Unsupported choke configuration is rejected
+  fp 26c09c9e4fce
+  test rust:sample_modules_reject_unsupported_interpolation_and_choke_modes
+
+AC advanced-sampling-options :: Explicit slices and optional timing metadata remain prepared assets :: Break patch selects a declared slice
+  fp 66006a2d25b2
+  test rust:break_slicer_plays_the_requested_numeric_slice_and_retriggers_it
+
+AC advanced-sampling-options :: Explicit slices and optional timing metadata remain prepared assets :: Explicit slice indices remain stable
+  fp fc3e52e83a21
+  test rust:prepared_break_slices_keep_explicit_numeric_order
+
+AC advanced-sampling-options :: Explicit slices and optional timing metadata remain prepared assets :: Slice beyond source length is rejected
+  fp e53117afcc7c
+  test rust:invalid_explicit_slice_cue_and_beat_markers_fail_preparation
+
+AC advanced-sampling-options :: Invalid sampling declarations fail before rendering :: Invalid drum playback metadata cannot render
+  fp 6aaa779ed566
+  test rust:sample_asset_preparation_reports_invalid_region_loop_and_drum_zone_ranges
+  test rust:drum_map_player_rejects_unbounded_or_zero_voice_limits
+
+AC advanced-sampling-options :: Invalid sampling declarations fail before rendering :: Sample file cannot be used
+  fp 69a39cedeaaf
+  test rust:sample_asset_preparation_reports_missing_file_with_source_identity
+  test rust:sample_source_rejects_unsupported_decode_format_and_out_of_bounds_region
+
+AC advanced-sampling-options :: Invalid sampling declarations fail before rendering :: Unsupported sampling mode cannot render
+  fp 3f0852c6e9a8
+  test rust:sample_modules_reject_unsupported_interpolation_and_choke_modes
+
+AC advanced-sampling-options :: Prepared sample assets serve the first three sampling families :: Drum patch reuses a prepared source
+  fp a6dc8d54c40e
+  test rust:prepared_drum_source_keeps_decoded_frames_regions_and_map_metadata
+
+AC advanced-sampling-options :: Prepared sample assets serve the first three sampling families :: Package sample path keeps its provenance
+  fp 98b9c977b389
+  test rust:packaged_sample_source_prepares_from_its_version_root
+  test rust:sample_assets_require_a_resource_context_and_reject_path_escape
+
+AC advanced-sampling-options :: Prepared sample assets serve the first three sampling families :: Prepared metadata remains owned after source input is released
+  fp 1fbe4f3e2d2d
+  test rust:prepared_drum_source_keeps_decoded_frames_regions_and_map_metadata
+
+AC advanced-sampling-options :: Sample maps select prepared regions :: Control group outside the supported range is rejected
+  fp 3409e52365ba
+  test rust:drum_control_group_outside_prepared_port_range_is_rejected
+
+AC advanced-sampling-options :: Sample maps select prepared regions :: Drum control groups keep pads independent
+  fp b09e30730f96
+  test rust:drum_control_groups_modulate_simultaneous_pads_independently
+  test cpp:tests/cpp/PluginSamplerHostTest.cpp
+
+AC advanced-sampling-options :: Sample maps select prepared regions :: Drum key range selects a hit
+  fp 4a22c7b98f96
+  test rust:drum_sample_map_selects_key_and_velocity_regions_from_note_events
+  test rust:poly_drum_map_unmatched_key_or_velocity_keeps_sounding_voices
+  test rust:out_of_range_rust_notes_leave_direct_and_poly_drum_maps_safe
+
+AC advanced-sampling-options :: Sample maps select prepared regions :: Drum map prepares key-indexed candidates
+  fp 70c80453f1c0
+  test rust:prepared_drum_map_indexes_key_candidates_in_authored_order
+  test rust:drum_sample_map_selects_key_and_velocity_regions_from_note_events
+  test rust:drum_round_robin_skips_other_groups_in_prepared_key_candidates
+
+AC advanced-sampling-options :: Sample maps select prepared regions :: Drum map resolves its zones before rendering
+  fp 010edb7d537b
+  test rust:prepared_drum_map_resolves_zone_regions_in_authored_order
+
+AC advanced-sampling-options :: Sample maps select prepared regions :: Invalid zone modifiers are rejected
+  fp b1d7509ab85a
+  test rust:drum_zone_region_gain_pan_and_pitch_offset_shape_stereo_hits
+
+AC advanced-sampling-options :: Sample maps select prepared regions :: Invalid zone reference is rejected
+  fp ff3fd362dfcb
+  test rust:sample_map_rejects_missing_region_ambiguous_overlap_and_unknown_selection_mode
+
+AC advanced-sampling-options :: Sample maps select prepared regions :: Invalid zone region window is rejected
+  fp 2fe83061eca7
+  test rust:drum_zone_region_window_overrides_only_that_zones_playback
+
+AC advanced-sampling-options :: Sample maps select prepared regions :: Live variation chooses a compatible alternate
+  fp 482dce77bec9
+  test rust:drum_public_pitch_start_and_variation_controls_change_selected_hits
+  test rust:drum_variation_skips_other_groups_and_velocity_layers_at_partial_amount
+
+AC advanced-sampling-options :: Sample maps select prepared regions :: Out-of-range Rust note leaves prepared maps safe
+  fp d55e075c0949
+  test rust:out_of_range_rust_notes_leave_direct_and_poly_drum_maps_safe
+
+AC advanced-sampling-options :: Sample maps select prepared regions :: Round-robin selection is repeatable
+  fp 5b68a1124d25
+  test rust:drum_map_round_robin_counters_are_repeatable_and_independent_per_group
+  test rust:seeded_weighted_drum_map_repeats_its_signed_hit_sequence
+  test rust:drum_round_robin_skips_other_groups_in_prepared_key_candidates
+
+AC advanced-sampling-options :: Sample maps select prepared regions :: Source declaration order does not change weighted hits
+  fp e33791467860
+  test rust:weighted_drum_selection_ignores_block_and_source_declaration_order
+
+AC advanced-sampling-options :: Sample maps select prepared regions :: Velocity layers choose different regions
+  fp a3522486483a
+  test rust:drum_sample_map_selects_key_and_velocity_regions_from_note_events
+
+AC advanced-sampling-options :: Sample maps select prepared regions :: Zero-weight zone is rejected
+  fp 6a9ce9760cd9
+  test rust:seeded_weighted_drum_map_repeats_its_signed_hit_sequence
+
+AC advanced-sampling-options :: Sample maps select prepared regions :: Zone modifiers shape the selected hit
+  fp 05583ad23b16
+  test rust:drum_zone_region_gain_pan_and_pitch_offset_shape_stereo_hits
+
+AC advanced-sampling-options :: Sample maps select prepared regions :: Zone region window overrides its source region
+  fp 81ac1fcd3e48
+  test rust:drum_zone_region_window_overrides_only_that_zones_playback
+
+AC advanced-sampling-options :: Sample regions describe bounded playback windows :: Chromatic region carries its root note
+  fp 247f4e0e580c
+  test rust:bundled_chromatic_and_hat_examples_follow_root_note_and_choke_group
+
+AC advanced-sampling-options :: Sample regions describe bounded playback windows :: Drum map voice count uses bounded polyphony
+  fp 6732cada68a0
+  test rust:poly_drum_map_player_renders_two_selected_hits_and_retires_released_voices
+  test rust:drum_map_max_voices_overlaps_hits_through_a_bounded_poly_region
+
+AC advanced-sampling-options :: Sample regions describe bounded playback windows :: Drum sample voices play independently
+  fp 89551763f40f
+  test rust:poly_region_renders_sample_player_child_with_independent_voices
+
+AC advanced-sampling-options :: Sample regions describe bounded playback windows :: Drum voice stealing follows the configured policy
+  fp e4db6a84073a
+  test rust:drum_map_voice_steal_uses_oldest_quietest_or_reject_new_policy
+
+AC advanced-sampling-options :: Sample regions describe bounded playback windows :: Invalid region cannot reach rendering
+  fp 714e62e98e28
+  test rust:sample_source_rejects_unsupported_decode_format_and_out_of_bounds_region
+
+AC advanced-sampling-options :: Sample regions describe bounded playback windows :: One-shot region plays from a trigger
+  fp 63ec903b9ec7
+  test rust:prepared_sample_player_renders_one_shot_region_and_then_stops
+
+AC advanced-sampling-options :: Sample regions describe bounded playback windows :: Overlapping drum voices share alternate selection
+  fp f071556f05cf
+  test rust:overlapping_drum_voices_share_round_robin_order
+
+AC advanced-sampling-options :: Sample regions describe bounded playback windows :: Region mix and live controls shape a hit
+  fp 344b8707a1c0
+  test rust:sample_player_uses_region_gain_pan_and_live_start_level_pan
+
+AC advanced-sampling-options :: Sample regions describe bounded playback windows :: Simultaneous drum hits survive a one-frame host block
+  fp b00c0b5e95e6
+  test rust:closed_hat_cuts_open_hat_at_its_event_frame_without_choking_kick
+
 AC ai-graph-proposals :: AI work remains outside realtime processing :: Realtime source remains provider-free
   fp 7f8c1814d1b5
   test cpp:tests/cmake/RealtimeCallbackSafety.cmake
@@ -133,6 +325,22 @@ AC ai-graph-proposals :: Provider context excludes reference audio and secrets :
   fp 30dd56163049
   test rust:canonical_request_contains_derived_residual_catalogue_and_sanitized_topology_only
   test rust:kernel_request_uses_root_graph_and_public_aliases_without_private_match_data
+
+AC built-in-modules :: Advanced sampling primitives declare connectable registry surfaces :: Map player declares bounded voice and choke options
+  fp ddc32dc06200
+  test rust:sample_map_player_exposes_bounded_voices_choke_and_live_controls
+
+AC built-in-modules :: Advanced sampling primitives declare connectable registry surfaces :: Map selection surface is discoverable
+  fp 65c7073b8d9a
+  test rust:sample_zone_selector_exposes_map_and_selected_zone_events
+
+AC built-in-modules :: Advanced sampling primitives declare connectable registry surfaces :: Region player surface is discoverable
+  fp 2c5eca9570e6
+  test rust:sample_player_exposes_prepared_region_and_live_playback_controls
+
+AC built-in-modules :: Advanced sampling primitives declare connectable registry surfaces :: Slice player surface is discoverable
+  fp 6ac869a6e767
+  test rust:sample_slicer_exposes_prepared_slices_and_live_index
 
 AC built-in-modules :: Built-in module state uses resolved construction values :: DSP state is prepared from resolved values
   fp c6679fdc2325
@@ -1276,6 +1484,32 @@ AC plugin-integration :: Presets modify values only :: Incompatible preset is re
   fp 0e43222c9c92
   todo not yet mapped to a test
 
+AC plugin-integration :: Sampler example exposes host-modulatable musical controls :: Host modulation addresses a single drum pad
+  fp 32d54c6b341b
+  test cpp:tests/cpp/PluginSamplerHostTest.cpp
+
+AC plugin-integration :: Sampler example exposes host-modulatable musical controls :: Host modulation changes a playing drum sound
+  fp ffa54e8de071
+  test cpp:tests/cpp/PluginSamplerHostTest.cpp
+
+AC plugin-integration :: Sampler example exposes host-modulatable musical controls :: Host sample rate differs from the source file
+  fp 04605046fc0d
+  test rust:kernel_ffi_prepares_drum_assets_and_renders_at_host_rate
+  test rust:host_rate_changes_sample_duration_without_changing_source_frame_bounds
+
+AC plugin-integration :: Sampler example exposes host-modulatable musical controls :: Modulated drum pitch respects source and host rates
+  fp 38e890bbbf7d
+  test rust:drum_map_pitch_extremes_keep_signed_waveform_and_duration_across_host_rates
+
+AC plugin-integration :: Sampler example exposes host-modulatable musical controls :: Sampler VST3 loads a playable drum kit
+  fp 484c6ef633d3
+  test cpp:tests/cpp/PluginSamplerHostTest.cpp
+
+AC plugin-integration :: Sampler example exposes host-modulatable musical controls :: Sampler structure stays prepared
+  fp 5cdfe5c62e1a
+  test cpp:tests/cpp/PluginSamplerHostTest.cpp
+  test rust:bundled_drum_kit_selects_velocity_layers_alternates_and_hat_choke
+
 AC poly-combinator :: Per-voice intrinsic ports :: Gate reflects note lifetime
   fp 0e27a8b7c407
   test rust:poly_note_off_releases_only_matching_voice_gate
@@ -2069,6 +2303,26 @@ AC yaml-patch-format :: Root port declarations :: Patch declares named output po
 AC yaml-patch-format :: Root port declarations :: Patch without root output ports is rejected
   fp 45cc51ff95bb
   test rust:patch_without_root_output_has_structured_diagnostic
+
+AC yaml-patch-format :: Sample assets are declared beside the root graph :: Empty sample map is rejected
+  fp 508ff33a247e
+  test rust:sample_map_requires_at_least_one_zone
+
+AC yaml-patch-format :: Sample assets are declared beside the root graph :: Other sampling families are deferred
+  fp b3e5a86332fd
+  test rust:streaming_granular_and_workstation_sample_declarations_are_deferred
+
+AC yaml-patch-format :: Sample assets are declared beside the root graph :: Packaged source keeps its resource origin
+  fp a10343ee2438
+  test rust:packaged_sample_source_retains_its_package_version_root
+
+AC yaml-patch-format :: Sample assets are declared beside the root graph :: Patch declares source and map assets
+  fp 719a0c4aef3e
+  test rust:kernel_patch_accepts_sample_sources_regions_slices_maps_and_choke_metadata
+
+AC yaml-patch-format :: Sample assets are declared beside the root graph :: Unknown sampling field fails schema validation
+  fp 6ca9044ca22e
+  test rust:unknown_sampling_asset_fields_fail_schema_validation
 
 AC yaml-patch-format :: Script and custom port declarations :: Script ports are declared in YAML
   fp 9bb07ffe5975

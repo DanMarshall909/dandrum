@@ -28,6 +28,11 @@ The engine SHALL support reusable, file-backed sample sources and sample maps as
 - **WHEN** a drum patch declares a sample source and regions used by multiple hits
 - **THEN** preparation SHALL resolve and decode that source before rendering and SHALL make its regions available by stable ID
 
+#### Scenario: Prepared metadata remains owned after source input is released
+
+- **WHEN** a patch with regions, loops, slices, and a sample map has been prepared and its authored patch and source file are released
+- **THEN** the prepared instrument SHALL still own typed source and region identities, decoded sample rate and frame count, frame bounds, loop and slice declarations, and map zone and selection metadata without a UI renderer
+
 #### Scenario: Package sample path keeps its provenance
 
 - **WHEN** a defined module from a pinned package declares a relative sample source path
@@ -51,6 +56,11 @@ A sample source SHALL support named regions with start and end frame positions i
 
 - **WHEN** a `sample_player` receives a note trigger for a prepared region in one-shot mode
 - **THEN** it SHALL start at the region's first frame, emit its signed samples through the region end, and then remain silent until retriggered
+
+#### Scenario: Region mix and live controls shape a hit
+
+- **WHEN** a `sample_player` plays a region with gain and pan metadata while start offset, level, and pan controls change
+- **THEN** the trigger SHALL start at the selected source frame and the signed stereo samples SHALL reflect region gain and pan together with the live controls
 
 #### Scenario: Drum sample voices play independently
 
@@ -126,6 +136,11 @@ Zones MAY declare a named choke group. A newly selected zone SHALL affect active
 - **WHEN** a prepared region declares fade-in and fade-out durations
 - **THEN** playback SHALL scale the signed samples at its beginning and end according to those durations, including when the region is reversed
 
+#### Scenario: Drum map respects region fades
+
+- **WHEN** a drum map selects a prepared region with fade-in and fade-out durations
+- **THEN** its signed hit SHALL use those boundary fades while playing the selected region
+
 #### Scenario: Oversized host block preserves sample playback
 
 - **WHEN** a host requests a root-bus render longer than the prepared maximum block size while sample triggers and releases occur inside it
@@ -133,17 +148,27 @@ Zones MAY declare a named choke group. A newly selected zone SHALL affect active
 
 ### Requirement: Sample maps select prepared regions
 
-A sample map SHALL contain at least one zone that references a prepared region and declares MIDI key ranges within `0..=127` and velocity ranges within `1..=127`. Zone declarations SHALL accept optional per-zone gain, pan, pitch offset, region overrides, round-robin groups, positive relative weights, and exclusive/choke groups. Zone gain SHALL be within -96..=24 dB, pan within -1..=1, and pitch offset within -48..=48 semitones. Preparation SHALL resolve zones to stable source and region indices in authored order and build a keyed map lookup before rendering. For a matching note and velocity, selection SHALL follow the map's declared mode and seed with a stable zone order; it SHALL be repeatable for the same event stream regardless of audio block size, file order, or map storage iteration order. Schema validation SHALL reject zero weights. Preparation SHALL reject invalid ranges or numeric modifiers, unresolved region references, duplicate IDs, and ambiguous overlapping zones without a declared tie-breaking mode.
+A sample map SHALL contain at least one zone that references a prepared region and declares MIDI key ranges within `0..=127` and velocity ranges within `1..=127`. Zone declarations SHALL accept optional per-zone gain, pan, pitch offset, region-window overrides, round-robin groups, positive relative weights, exclusive/choke groups, and control groups numbered 1 through 8. A region-window override SHALL declare both start and end frames inside its referenced region; any inherited loop and fades SHALL remain valid in the narrowed window. A control group SHALL select independent live pitch, start, level, pan, and variation ports for its zones; ungrouped zones SHALL retain the shared controls. Zone gain SHALL be within -96..=24 dB, pan within -1..=1, and pitch offset within -48..=48 semitones. Preparation SHALL resolve zones to stable source and region indices in authored order and build a key-indexed candidate lookup before rendering. For a matching note and velocity, selection SHALL follow the map's declared mode and seed with a stable zone order; it SHALL be repeatable for the same event stream regardless of audio block size, file order, or map storage iteration order. Schema validation SHALL reject zero weights. Preparation SHALL reject invalid ranges or numeric modifiers, unresolved region references, duplicate IDs, and ambiguous overlapping zones without a declared tie-breaking mode.
 
 #### Scenario: Drum map resolves its zones before rendering
 
 - **WHEN** a drum map references declared sample regions by ID
 - **THEN** preparation SHALL retain authored zone order and resolve every zone to stable source and region indices
 
+#### Scenario: Drum map prepares key-indexed candidates
+
+- **WHEN** a sample map has zones for different and overlapping MIDI key ranges
+- **THEN** preparation SHALL expose each key's candidate zone indices in authored order and rendering SHALL select from those candidates
+
 #### Scenario: Drum key range selects a hit
 
 - **WHEN** a note-on falls inside a zone's inclusive key range
 - **THEN** the map player SHALL trigger that zone's prepared region, while a note outside all key ranges SHALL leave the current playback unchanged
+
+#### Scenario: Out-of-range Rust note leaves prepared maps safe
+
+- **WHEN** the public Rust runtime or an instrument graph receives a note value above the 0..=127 MIDI range
+- **THEN** it SHALL reject or ignore that note without indexing outside prepared key candidates or interrupting a valid hit; prepared map metadata lookup SHALL return no candidates
 
 #### Scenario: Velocity layers choose different regions
 
@@ -154,6 +179,16 @@ A sample map SHALL contain at least one zone that references a prepared region a
 
 - **WHEN** a zone selects a prepared region with per-zone gain, pan, and pitch offset
 - **THEN** the rendered hit SHALL use that region, combine region and zone gain and pan, and advance its source cursor by the zone pitch offset
+
+#### Scenario: Zone region window overrides its source region
+
+- **WHEN** a zone narrows its referenced region with a valid start and end frame override
+- **THEN** playback SHALL use the zone window without changing the source region or another zone that references it
+
+#### Scenario: Invalid zone region window is rejected
+
+- **WHEN** a zone's overridden frame window is empty, outside its referenced region, or excludes an inherited loop
+- **THEN** preparation SHALL reject that zone before rendering
 
 #### Scenario: Invalid zone modifiers are rejected
 
@@ -169,6 +204,16 @@ A sample map SHALL contain at least one zone that references a prepared region a
 
 - **WHEN** a drum-map hit has multiple matching alternates in the same round-robin and choke groups and the public variation control rises above zero
 - **THEN** playback SHALL select a later compatible alternate without changing the kit-level turn order or choke ownership
+
+#### Scenario: Drum control groups keep pads independent
+
+- **WHEN** simultaneously triggered sample-map zones belong to different prepared control groups
+- **THEN** each zone SHALL use its own live pitch, start, level, pan, and variation controls while retaining shared voice allocation and choke behavior
+
+#### Scenario: Control group outside the supported range is rejected
+
+- **WHEN** a sample-map zone declares a control group outside 1 through 8
+- **THEN** schema validation SHALL reject the zone before rendering
 
 #### Scenario: Source declaration order does not change weighted hits
 
