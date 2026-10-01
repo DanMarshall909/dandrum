@@ -12,7 +12,7 @@ use crate::compiled_patch::{
 };
 use crate::diagnostics::{self, Diagnostic, Severity};
 use crate::graph::{Cable, Graph, ModuleId, ModuleNode, PortDirection, PortRef, SignalType};
-use crate::kernel::document::{KernelPatch, SampleAssets, SampleMap, SampleSource};
+use crate::kernel::document::{KernelPatch, SampleAssets, SampleMap, SampleSource, SampleZone};
 use crate::kernel::flatten::{FlattenedGraph, FlattenedPolyRegion};
 use crate::kernel::latency::LatencyPlan;
 use crate::kernel::{
@@ -303,12 +303,27 @@ pub struct PreparedKernelInstrument {
 pub struct PreparedSampleAssets {
     sources: Vec<PreparedSampleSource>,
     maps: Vec<SampleMap>,
+    prepared_maps: Vec<PreparedSampleMap>,
+    map_indices: BTreeMap<String, usize>,
 }
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct PreparedSampleSource {
     declaration: SampleSource,
     resource: ResolvedResource,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct PreparedSampleMap {
+    declaration: SampleMap,
+    zones: Vec<PreparedSampleZone>,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct PreparedSampleZone {
+    declaration: SampleZone,
+    source_index: usize,
+    region_index: usize,
 }
 
 impl PreparedSampleAssets {
@@ -318,6 +333,40 @@ impl PreparedSampleAssets {
 
     pub fn maps(&self) -> &[SampleMap] {
         &self.maps
+    }
+
+    pub fn map_by_id(&self, id: &str) -> Option<&PreparedSampleMap> {
+        self.map_indices
+            .get(id)
+            .and_then(|index| self.prepared_maps.get(*index))
+    }
+}
+
+impl PreparedSampleMap {
+    pub fn selection_seed(&self) -> u64 {
+        self.declaration.selection_seed
+    }
+
+    pub fn selection_mode(&self) -> Option<&str> {
+        self.declaration.selection_mode.as_deref()
+    }
+
+    pub fn zones(&self) -> &[PreparedSampleZone] {
+        &self.zones
+    }
+}
+
+impl PreparedSampleZone {
+    pub fn declaration(&self) -> &SampleZone {
+        &self.declaration
+    }
+
+    pub fn source_index(&self) -> usize {
+        self.source_index
+    }
+
+    pub fn region_index(&self) -> usize {
+        self.region_index
     }
 }
 
@@ -798,9 +847,87 @@ fn prepare_sample_assets(
             resource,
         });
     }
+    let mut regions = BTreeMap::new();
+    for (source_index, source) in sources.iter().enumerate() {
+        for (region_index, region) in source.declaration.regions.iter().enumerate() {
+            let qualified = format!("{}.{}", source.id(), region.id);
+            if regions
+                .insert(qualified.clone(), (source_index, region_index))
+                .is_some()
+            {
+                return Err(sample_preparation_error(
+                    diagnostics::error_codes::KERNEL_SAMPLE_INVALID_REGION,
+                    format!("duplicate prepared sample region '{qualified}'"),
+                ));
+            }
+        }
+    }
+    let mut prepared_maps = Vec::with_capacity(assets.sample_maps.len());
+    let mut map_indices = BTreeMap::new();
+    for map in &assets.sample_maps {
+        if map.selection_mode.as_deref().is_some_and(|mode| {
+            !matches!(
+                mode,
+                "first_match" | "round_robin" | "random_weighted" | "round_robin_then_random"
+            )
+        }) {
+            return Err(sample_preparation_error(
+                diagnostics::error_codes::KERNEL_SAMPLE_UNSUPPORTED_MODE,
+                format!("sample map '{}' has unsupported selection mode", map.id),
+            ));
+        }
+        let mut zones: Vec<PreparedSampleZone> = Vec::with_capacity(map.zones.len());
+        for zone in &map.zones {
+            let Some(&(source_index, region_index)) = regions.get(&zone.region) else {
+                return Err(sample_preparation_error(
+                    diagnostics::error_codes::KERNEL_SAMPLE_INVALID_ZONE,
+                    format!(
+                        "sample map '{}' zone references unknown region '{}'",
+                        map.id, zone.region
+                    ),
+                ));
+            };
+            if map.selection_mode.is_none()
+                && zones.iter().any(|prior| {
+                    zone.key_range[0] <= prior.declaration.key_range[1]
+                        && prior.declaration.key_range[0] <= zone.key_range[1]
+                        && zone.velocity_range[0] <= prior.declaration.velocity_range[1]
+                        && prior.declaration.velocity_range[0] <= zone.velocity_range[1]
+                })
+            {
+                return Err(sample_preparation_error(
+                    diagnostics::error_codes::KERNEL_SAMPLE_INVALID_ZONE,
+                    format!(
+                        "sample map '{}' has overlapping zones without a selection mode",
+                        map.id
+                    ),
+                ));
+            }
+            zones.push(PreparedSampleZone {
+                declaration: zone.clone(),
+                source_index,
+                region_index,
+            });
+        }
+        if map_indices
+            .insert(map.id.clone(), prepared_maps.len())
+            .is_some()
+        {
+            return Err(sample_preparation_error(
+                diagnostics::error_codes::KERNEL_SAMPLE_INVALID_ZONE,
+                format!("duplicate sample map id '{}'", map.id),
+            ));
+        }
+        prepared_maps.push(PreparedSampleMap {
+            declaration: map.clone(),
+            zones,
+        });
+    }
     Ok(PreparedSampleAssets {
         sources,
         maps: assets.sample_maps.clone(),
+        prepared_maps,
+        map_indices,
     })
 }
 

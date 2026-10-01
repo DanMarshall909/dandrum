@@ -49,7 +49,12 @@ A sample source SHALL support named regions with start and end frame positions i
 
 ### Requirement: Sample maps select prepared regions
 
-A sample map SHALL contain zones that reference prepared regions and declare MIDI key ranges within `0..=127` and velocity ranges within `1..=127`. Zone declarations SHALL accept optional per-zone gain, pan, pitch offset, region overrides, round-robin groups, relative weights, and exclusive/choke groups. For a matching note and velocity, selection SHALL follow the map's declared mode and seed with a stable zone order; it SHALL be repeatable for the same event stream regardless of audio block size, file order, or map storage iteration order. Preparation SHALL reject invalid ranges, unresolved region references, and ambiguous overlapping zones without a declared tie-breaking mode.
+A sample map SHALL contain at least one zone that references a prepared region and declares MIDI key ranges within `0..=127` and velocity ranges within `1..=127`. Zone declarations SHALL accept optional per-zone gain, pan, pitch offset, region overrides, round-robin groups, relative weights, and exclusive/choke groups. Preparation SHALL resolve zones to stable source and region indices in authored order and build a keyed map lookup before rendering. For a matching note and velocity, selection SHALL follow the map's declared mode and seed with a stable zone order; it SHALL be repeatable for the same event stream regardless of audio block size, file order, or map storage iteration order. Preparation SHALL reject invalid ranges, unresolved region references, duplicate IDs, and ambiguous overlapping zones without a declared tie-breaking mode.
+
+#### Scenario: Drum map resolves its zones before rendering
+
+- **WHEN** a drum map references declared sample regions by ID
+- **THEN** preparation SHALL retain authored zone order and resolve every zone to stable source and region indices
 
 #### Scenario: Velocity layers choose different regions
 

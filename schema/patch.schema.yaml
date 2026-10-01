@@ -153,6 +153,7 @@ $defs:
       selection_mode: { type: string }
       zones:
         type: array
+        minItems: 1
         items: { $ref: '#/$defs/sampleZone' }
   sampleZone:
     type: object

@@ -23,3 +23,8 @@ Patch and defined-module YAML SHALL accept an `assets` section containing `sampl
 
 - **WHEN** a source or zone declares streaming, granular, time-stretch, keyswitch, or release-trigger settings
 - **THEN** patch loading SHALL reject those declarations rather than silently accepting unsupported workstation or creative sampling behaviour
+
+#### Scenario: Empty sample map is rejected
+
+- **WHEN** a sample map declares no zones
+- **THEN** schema validation SHALL reject the map before preparation

@@ -435,6 +435,158 @@ fn prepared_drum_source_keeps_decoded_frames_regions_and_map_metadata() {
 }
 
 #[test]
+fn prepared_drum_map_resolves_zone_regions_in_authored_order() {
+    let directory = tempfile::tempdir().expect("temporary sample root");
+    fs::create_dir(directory.path().join("samples")).expect("sample directory");
+    let frames = vec![0.25; 96_000];
+    crate::wav::write_wav_stereo_i16(
+        fs::File::create(directory.path().join("samples/break.wav")).unwrap(),
+        48_000,
+        &frames,
+        &frames,
+    )
+    .expect("write sample");
+    let patch = load_kernel_patch_str(SAMPLE_ASSET_PATCH).expect("sample declaration loads");
+    let context = PreparationContext::new(directory.path(), 48_000);
+    let settings = RenderSettings {
+        sample_rate_hz: 48_000,
+        block_size_frames: 16,
+        duration_frames: 16,
+    };
+
+    let prepared =
+        prepare_kernel_patch_with_context(&patch, &settings, &context).expect("drum map prepares");
+    let map = prepared
+        .sample_assets()
+        .map_by_id("kit")
+        .expect("prepared map");
+    assert_eq!(map.selection_seed(), 7);
+    assert_eq!(map.selection_mode(), Some("round_robin"));
+    assert_eq!(map.zones().len(), 2);
+    assert_eq!(map.zones()[0].source_index(), 0);
+    assert_eq!(map.zones()[0].region_index(), 0);
+    assert_eq!(map.zones()[0].declaration().id.as_deref(), Some("soft"));
+    assert_eq!(map.zones()[1].declaration().id.as_deref(), Some("loud"));
+    assert!(prepared.sample_assets().map_by_id("missing").is_none());
+}
+
+#[test]
+fn sample_map_rejects_missing_region_ambiguous_overlap_and_unknown_selection_mode() {
+    let directory = tempfile::tempdir().expect("temporary sample root");
+    fs::create_dir(directory.path().join("samples")).expect("sample directory");
+    let frames = vec![0.25; 96_000];
+    crate::wav::write_wav_stereo_i16(
+        fs::File::create(directory.path().join("samples/break.wav")).unwrap(),
+        48_000,
+        &frames,
+        &frames,
+    )
+    .expect("write sample");
+    let context = PreparationContext::new(directory.path(), 48_000);
+    let settings = RenderSettings {
+        sample_rate_hz: 48_000,
+        block_size_frames: 16,
+        duration_frames: 16,
+    };
+    for (yaml, code) in [
+        (
+            SAMPLE_ASSET_PATCH.replacen("region: break.full", "region: break.missing", 1),
+            error_codes::KERNEL_SAMPLE_INVALID_ZONE,
+        ),
+        (
+            SAMPLE_ASSET_PATCH
+                .replace("      selection_mode: round_robin\n", "")
+                .replace("velocity_range: [71, 127]", "velocity_range: [1, 70]"),
+            error_codes::KERNEL_SAMPLE_INVALID_ZONE,
+        ),
+        (
+            SAMPLE_ASSET_PATCH.replace("selection_mode: round_robin", "selection_mode: shuffle"),
+            error_codes::KERNEL_SAMPLE_UNSUPPORTED_MODE,
+        ),
+    ] {
+        let patch = load_kernel_patch_str(&yaml).expect("map shape loads");
+        let result = prepare_kernel_patch_with_context(&patch, &settings, &context);
+        let error = match result {
+            Ok(_) => panic!("invalid map must fail preparation"),
+            Err(error) => error,
+        };
+        assert_eq!(
+            error.diagnostics().errors().next().unwrap().error_code(),
+            code
+        );
+    }
+}
+
+#[test]
+fn prepared_map_accepts_explicit_first_match_overlap_and_rejects_duplicate_ids() {
+    let directory = tempfile::tempdir().expect("temporary sample root");
+    fs::create_dir(directory.path().join("samples")).expect("sample directory");
+    let frames = vec![0.25; 96_000];
+    crate::wav::write_wav_stereo_i16(
+        fs::File::create(directory.path().join("samples/break.wav")).unwrap(),
+        48_000,
+        &frames,
+        &frames,
+    )
+    .expect("write sample");
+    let context = PreparationContext::new(directory.path(), 48_000);
+    let settings = RenderSettings {
+        sample_rate_hz: 48_000,
+        block_size_frames: 16,
+        duration_frames: 16,
+    };
+    let first_match = SAMPLE_ASSET_PATCH
+        .replace("selection_mode: round_robin", "selection_mode: first_match")
+        .replace("velocity_range: [71, 127]", "velocity_range: [1, 70]");
+    let patch = load_kernel_patch_str(&first_match).expect("explicit overlap loads");
+    let prepared = prepare_kernel_patch_with_context(&patch, &settings, &context)
+        .expect("first_match resolves overlapping zones in authored order");
+    let map = prepared.sample_assets().map_by_id("kit").unwrap();
+    assert_eq!(map.zones()[0].declaration().id.as_deref(), Some("soft"));
+    assert_eq!(map.zones()[1].declaration().id.as_deref(), Some("loud"));
+
+    for (yaml, code) in [
+        (
+            SAMPLE_ASSET_PATCH.replace(
+                "      slices:\n",
+                "        - { id: full, start_frame: 0, end_frame: 100 }\n      slices:\n",
+            ),
+            error_codes::KERNEL_SAMPLE_INVALID_REGION,
+        ),
+        (
+            SAMPLE_ASSET_PATCH.replace(
+                "ports:\n",
+                "    - id: kit\n      zones: [{ region: break.full, key_range: [36, 36], velocity_range: [1, 127] }]\nports:\n",
+            ),
+            error_codes::KERNEL_SAMPLE_INVALID_ZONE,
+        ),
+    ] {
+        let patch = load_kernel_patch_str(&yaml).expect("duplicate identifier shape loads");
+        let result = prepare_kernel_patch_with_context(&patch, &settings, &context);
+        let error = match result {
+            Ok(_) => panic!("duplicate sample identifier must fail"),
+            Err(error) => error,
+        };
+        assert_eq!(error.diagnostics().errors().next().unwrap().error_code(), code);
+        assert!(error.diagnostics().errors().next().unwrap().message().contains("duplicate"));
+    }
+}
+
+#[test]
+fn sample_map_requires_at_least_one_zone() {
+    let yaml = "metadata: { name: empty_map }\nassets: { sample_maps: [{ id: kit, zones: [] }] }\nports:\n  - { name: audio_out, direction: output, signal: audio, channels: 1, maps_from: osc.audio }\nmodules:\n  - { id: osc, type: oscillator }\n";
+    let result = load_kernel_patch_str(yaml);
+    let error = match result {
+        Ok(_) => panic!("empty sample map must fail schema validation"),
+        Err(error) => error,
+    };
+    assert_eq!(
+        error.errors().next().unwrap().error_code(),
+        error_codes::KERNEL_DOCUMENT_SCHEMA_FAILED
+    );
+}
+
+#[test]
 fn sample_source_rejects_unsupported_decode_format_and_out_of_bounds_region() {
     let directory = tempfile::tempdir().expect("temporary sample root");
     fs::create_dir(directory.path().join("samples")).expect("sample directory");
