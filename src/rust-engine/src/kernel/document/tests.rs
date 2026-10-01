@@ -426,6 +426,8 @@ fn prepared_drum_source_keeps_decoded_frames_regions_and_map_metadata() {
     let source = &prepared.sample_assets().sources()[0];
     assert_eq!(source.id(), "break");
     assert_eq!(source.sample().sample_rate_hz(), 48_000);
+    assert_eq!(source.sample().source_channel_count(), 2);
+    assert_eq!(source.sample().frame_count(), 96_000);
     assert_eq!(source.sample().frames().len(), 96_000);
     assert!((source.sample().frames()[0] - 0.25).abs() < 0.0001);
     assert_eq!(source.declaration().regions[0].end_frame, 96_000);

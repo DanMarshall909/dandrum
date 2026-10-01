@@ -4,6 +4,7 @@ use std::path::Path;
 #[derive(Clone, Debug, PartialEq)]
 pub struct LoadedAudio {
     sample_rate_hz: u32,
+    source_channel_count: u16,
     frames: Vec<f32>,
 }
 
@@ -11,12 +12,29 @@ impl LoadedAudio {
     pub fn new(sample_rate_hz: u32, frames: Vec<f32>) -> Self {
         Self {
             sample_rate_hz,
+            source_channel_count: 1,
+            frames,
+        }
+    }
+
+    pub fn with_source_channels(
+        sample_rate_hz: u32,
+        source_channel_count: u16,
+        frames: Vec<f32>,
+    ) -> Self {
+        Self {
+            sample_rate_hz,
+            source_channel_count,
             frames,
         }
     }
 
     pub fn sample_rate_hz(&self) -> u32 {
         self.sample_rate_hz
+    }
+
+    pub fn source_channel_count(&self) -> u16 {
+        self.source_channel_count
     }
 
     pub fn frames(&self) -> &[f32] {
@@ -106,7 +124,15 @@ pub fn decode_pcm_wav(bytes: &[u8], expected_sample_rate_hz: u32) -> Result<Load
         frames.push(sample);
     }
 
-    Ok(LoadedAudio::new(sample_rate, frames))
+    if channels == 1 {
+        Ok(LoadedAudio::new(sample_rate, frames))
+    } else {
+        Ok(LoadedAudio::with_source_channels(
+            sample_rate,
+            channels,
+            frames,
+        ))
+    }
 }
 
 #[cfg(test)]
@@ -127,6 +153,7 @@ mod tests {
         let audio = load_pcm_wav(&wav_path, 48_000).expect("wav should load");
 
         assert_eq!(audio.sample_rate_hz(), 48_000);
+        assert_eq!(audio.source_channel_count(), 2);
         assert!((audio.frames()[0] - 0.5).abs() < 0.0001);
     }
 
@@ -157,6 +184,7 @@ mod tests {
         mono[40..44].copy_from_slice(&2_u32.to_le_bytes());
         mono.truncate(46);
         let decoded_mono = decode_pcm_wav(&mono, 48_000).unwrap();
+        assert_eq!(decoded_mono.source_channel_count(), 1);
         assert_eq!(decoded_mono.frames().len(), 1);
         assert!((decoded_mono.frames()[0] - 0.25).abs() < 0.0001);
 

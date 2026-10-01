@@ -10,6 +10,7 @@ use crate::patch::{AssetKind, ParameterValue, PatchDocument};
 #[derive(Clone, Debug, PartialEq)]
 pub struct LoadedSample {
     sample_rate_hz: u32,
+    source_channel_count: u16,
     frames: Vec<f32>,
 }
 
@@ -79,12 +80,33 @@ impl LoadedSample {
     pub fn new(sample_rate_hz: u32, frames: Vec<f32>) -> Self {
         Self {
             sample_rate_hz,
+            source_channel_count: 1,
+            frames,
+        }
+    }
+
+    pub fn with_source_channels(
+        sample_rate_hz: u32,
+        source_channel_count: u16,
+        frames: Vec<f32>,
+    ) -> Self {
+        Self {
+            sample_rate_hz,
+            source_channel_count,
             frames,
         }
     }
 
     pub fn sample_rate_hz(&self) -> u32 {
         self.sample_rate_hz
+    }
+
+    pub fn source_channel_count(&self) -> u16 {
+        self.source_channel_count
+    }
+
+    pub fn frame_count(&self) -> usize {
+        self.frames.len()
     }
 
     pub fn frames(&self) -> &[f32] {
@@ -132,8 +154,9 @@ impl std::error::Error for SampleLoadError {}
 #[cfg(test)]
 fn load_pcm_wav(path: &Path, expected_sample_rate_hz: u32) -> Result<LoadedSample, String> {
     let loaded = crate::audio_loading::load_pcm_wav(path, expected_sample_rate_hz)?;
-    Ok(LoadedSample::new(
+    Ok(LoadedSample::with_source_channels(
         loaded.sample_rate_hz(),
+        loaded.source_channel_count(),
         loaded.frames().to_vec(),
     ))
 }
