@@ -6,8 +6,21 @@ inline constexpr auto script = R"JS(
 const native=name=>(window.__JUCE__&&window.__JUCE__.backend&&window.__JUCE__.backend.getNativeFunction)
   ?window.__JUCE__.backend.getNativeFunction(name):null;
 const showError=error=>document.getElementById('error').textContent=String(error||'');
-const handleNativeResult=result=>showError(result||'');
-const send=(id,value)=>{const fn=native('setParameter');if(fn)fn(id,value).then(handleNativeResult).catch(showError)};
+let currentGeneration=0,lastAdmittedSequence=0,pendingWrites=0;
+const handleNativeResult=result=>{
+  if(typeof result==='string'){showError(result);requestState();return}
+  if(result&&result.status==='accepted'&&result.generation===currentGeneration)
+    lastAdmittedSequence=Math.max(lastAdmittedSequence,Number(result.sequence)||0);
+  showError('');
+};
+const submit=(command,...args)=>{
+  const fn=native(command);if(!fn)return;
+  const write=command==='setParameter';if(write)pendingWrites++;
+  fn(...args).then(result=>{if(write)pendingWrites=Math.max(0,pendingWrites-1);handleNativeResult(result)})
+    .catch(error=>{if(write)pendingWrites=Math.max(0,pendingWrites-1);showError(error);requestState()});
+};
+const send=(id,value)=>submit('setParameter',id,value,currentGeneration);
+const gesture=(command,id)=>submit(command,id,currentGeneration);
 const clamp=value=>Math.max(0,Math.min(1,Number(value)||0));
 const knobModels=new Map();
 const controls=document.getElementById('controls');
@@ -18,15 +31,39 @@ function knob(parameter){
   const face=document.createElement('div');face.className='knob';face.tabIndex=0;
   const indicator=document.createElement('i');face.appendChild(indicator);wrap.appendChild(face);
   const label=document.createElement('div');label.className='label';label.textContent=parameter.name||parameter.id;
-  element.append(wrap,label);
+  const entry=document.createElement('input');entry.className='value-entry';entry.type='number';
+  entry.min='0';entry.max='1';entry.step='0.01';entry.ariaLabel=`${label.textContent} normalized value`;
+  element.append(wrap,label,entry);
   let value=clamp(parameter.value);
-  const draw=()=>indicator.style.transform=`rotate(${-135+value*270}deg)`;
-  const setValue=next=>{value=clamp(next);draw()};draw();
+  const draw=()=>{indicator.style.transform=`rotate(${-135+value*270}deg)`;entry.value=value.toFixed(3)};
+  let dragging=false;
+  const setLocal=next=>{value=clamp(next);draw()};
+  const setValue=next=>{if(!dragging)setLocal(next)};draw();
+  face.onkeydown=event=>{
+    let next=value;
+    switch(event.key){
+      case'ArrowUp':case'ArrowRight':next+=0.01;break;
+      case'ArrowDown':case'ArrowLeft':next-=0.01;break;
+      case'PageUp':next+=0.1;break;
+      case'PageDown':next-=0.1;break;
+      case'Home':next=0;break;
+      case'End':next=1;break;
+      default:return;
+    }
+    event.preventDefault();setLocal(next);send(parameter.id,value);
+  };
+  entry.onchange=()=>{
+    const typed=Number(entry.value);
+    if(entry.value.trim()===''||!Number.isFinite(typed)||typed<0||typed>1){draw();return}
+    setLocal(typed);send(parameter.id,value);
+  };
   face.onpointerdown=event=>{
     face.setPointerCapture(event.pointerId);
+    dragging=true;
+    gesture('beginGesture',parameter.id);
     const startY=event.clientY,startValue=value;
-    face.onpointermove=move=>{setValue(startValue+(startY-move.clientY)/170);send(parameter.id,value)};
-    const end=()=>{face.onpointermove=null;face.onpointerup=null;face.onpointercancel=null};
+    face.onpointermove=move=>{setLocal(startValue+(startY-move.clientY)/170);send(parameter.id,value)};
+    const end=()=>{dragging=false;face.onpointermove=null;face.onpointerup=null;face.onpointercancel=null;gesture('endGesture',parameter.id)};
     face.onpointerup=end;face.onpointercancel=end;
   };
   return{element,setValue};
@@ -44,6 +81,20 @@ function updateParameterValues(parameters){
   for(const parameter of incoming)knobModels.get(parameter.id).setValue(parameter.value);
 }
 
+function applyState(state){
+  if(!state||!Array.isArray(state.parameters)||!Number.isInteger(state.generation)
+     ||!Number.isInteger(state.sequence))return;
+  if(state.generation<currentGeneration)return;
+  if(state.generation>currentGeneration){
+    currentGeneration=state.generation;lastAdmittedSequence=state.sequence;pendingWrites=0;
+    renderParameters(state.parameters);return;
+  }
+  if(state.sequence<lastAdmittedSequence||pendingWrites>0)return;
+  updateParameterValues(state.parameters);
+}
+
+function requestState(){const get=native('getParameterState');if(get)get().then(applyState).catch(showError)}
+
 const notes=['C','C♯','D','D♯','E','F','F♯','G','G♯','A','A♯','B','C','C♯','D','D♯','E','F','F♯'];
 const keys=document.getElementById('keys');
 const drumNotes=(keys.dataset.drumNotes||'').split(',').filter(Boolean).map(entry=>{
@@ -59,8 +110,8 @@ playableNotes.forEach(({number,label})=>{
   keys.appendChild(key);
 });
 
-const get=native('getParameters');if(get)get().then(renderParameters).catch(showError);else renderParameters([]);
+requestState();
 if(window.__JUCE__&&window.__JUCE__.backend)
-  window.__JUCE__.backend.addEventListener('parameterValuesChanged',updateParameterValues);
+  window.__JUCE__.backend.addEventListener('parameterStateChanged',applyState);
 )JS";
 }

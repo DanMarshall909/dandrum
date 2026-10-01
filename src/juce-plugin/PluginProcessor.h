@@ -15,6 +15,7 @@
 #include "InstrumentDemoConfiguration.h"
 #include "InstrumentUiCommands.h"
 #include "InstrumentUiDocument.h"
+#include "InstrumentUiParameterState.h"
 #include "RustEngineBindings.h"
 
 class DandrumAudioProcessor final : public juce::AudioProcessor, private InstrumentUiCommandHost
@@ -65,6 +66,7 @@ public:
     juce::StringArray getActivePublicParameterIds() const;
     std::vector<PublicParameterSnapshotEntry> getPublicParameterSnapshot() const;
     std::optional<InstrumentUiDocument> getPreparedUiDocument() const;
+    InstrumentUiParameterState getUiParameterState() const;
     std::uint32_t getParameterSurfaceGeneration() const noexcept;
     InstrumentUiCommandService& uiCommands() noexcept;
 
@@ -147,7 +149,11 @@ public:
 private:
     std::uint32_t uiCommandGeneration() const noexcept override;
     InstrumentUiCommandStatus applyUiParameter (
-        std::uint32_t generation, const std::string& id, float normalisedValue) override;
+        std::uint32_t generation, const std::string& id, float normalisedValue,
+        bool withinGesture) override;
+    InstrumentUiGestureAdmission beginUiGesture (
+        std::uint32_t generation, const std::string& id) override;
+    void endUiGesture (std::size_t hostSlot) override;
 
     static constexpr std::intptr_t kNoEngineSlot = -1;
     static constexpr int kPublicParameterSlotCount = 64;

@@ -15,9 +15,10 @@ class InstrumentHostWebBridge final
 public:
     using NativeFunctionEntry = std::pair<juce::Identifier, juce::WebBrowserComponent::NativeFunction>;
     explicit InstrumentHostWebBridge (DandrumAudioProcessor& processorToUse);
+    ~InstrumentHostWebBridge();
 
     static const char* bootstrapScript() noexcept;
-    std::array<NativeFunctionEntry, 4> nativeFunctions();
+    std::array<NativeFunctionEntry, 7> nativeFunctions();
     juce::WebBrowserComponent::Options addNativeFunctions (
         juce::WebBrowserComponent::Options options);
     std::optional<juce::WebBrowserComponent::Resource> provideResource (
@@ -26,17 +27,25 @@ public:
 
     void setParameterFromWeb (const juce::Array<juce::var>& arguments,
                               juce::WebBrowserComponent::NativeFunctionCompletion completion);
+    void beginGestureFromWeb (const juce::Array<juce::var>& arguments,
+                              juce::WebBrowserComponent::NativeFunctionCompletion completion);
+    void endGestureFromWeb (const juce::Array<juce::var>& arguments,
+                            juce::WebBrowserComponent::NativeFunctionCompletion completion);
     void getParametersForWeb (const juce::Array<juce::var>& arguments,
                               juce::WebBrowserComponent::NativeFunctionCompletion completion) const;
+    void getParameterStateForWeb (const juce::Array<juce::var>& arguments,
+                                  juce::WebBrowserComponent::NativeFunctionCompletion completion) const;
     void noteOnFromWeb (const juce::Array<juce::var>& arguments,
                         juce::WebBrowserComponent::NativeFunctionCompletion completion);
     void noteOffFromWeb (const juce::Array<juce::var>& arguments,
                          juce::WebBrowserComponent::NativeFunctionCompletion completion);
     juce::var parameterSnapshotForWeb() const;
+    juce::var parameterStateForWeb() const;
 
     std::uint32_t lastSeenSurfaceGeneration() const noexcept;
 
 private:
     DandrumAudioProcessor& processor;
     std::uint32_t lastSeenParameterSurfaceGeneration;
+    std::uint64_t sessionId;
 };

@@ -1,5 +1,6 @@
 #include "PluginEditor.h"
 
+#include <algorithm>
 #include <array>
 #include <atomic>
 #include <chrono>
@@ -146,7 +147,9 @@ int main()
         processor.addListener (&listener);
         DandrumAudioProcessorEditor editor (processor);
 
-        for (const auto* command : { "getParameters", "setParameter", "noteOn", "noteOff",
+        for (const auto* command : { "getParameters", "getParameterState", "setParameter",
+                                     "beginGesture", "endGesture",
+                                     "noteOn", "noteOff",
                                      "renderSoundLab", "chooseSoundLabReference", "matchSoundLab",
                                      "cancelSoundLab", "acceptSoundLabMatch", "requestGraphProposal",
                                      "getSoundLabAnalysis" })
@@ -256,6 +259,108 @@ int main()
                      "native rejection advanced the shared command sequence");
         require (listener.changeCount == changesAfterAdmission,
                  "rejected native command changed the host slot");
+        const auto admittedSequence = processor.uiCommands().lastAdmittedSequence();
+        processor.removeListener (&listener);
+        std::thread hostAutomation ([parameter] { parameter->setValueNotifyingHost (0.42f); });
+        hostAutomation.join();
+        processor.addListener (&listener);
+        const auto observed = processor.getUiParameterState();
+        const auto webObserved = PluginEditorBridgeTestProbe::invoke (editor, "getParameterState");
+        const auto* webValues = webObserved.getProperty ("parameters", {}).getArray();
+        require (observed.generation == commandGeneration
+                     && observed.admittedCommandSequence == admittedSequence
+                     && std::any_of (observed.parameters.begin(), observed.parameters.end(), [] (const auto& value) {
+                         return value.id == "kick.tune_hz"
+                             && std::abs (value.normalisedValue - 0.42f) < 0.00001f;
+                     })
+                     && static_cast<juce::int64> (webObserved.getProperty ("sequence", {}))
+                            == static_cast<juce::int64> (admittedSequence)
+                     && webValues != nullptr
+                     && std::abs (static_cast<float> (findParameter (
+                         webObserved.getProperty ("parameters", {}), "kick.tune_hz")
+                         .getProperty ("value", {})) - 0.42f) < 0.00001f,
+                 "timer-observed host automation did not reach native and Web parameter state");
+
+        const auto nativeSession = processor.uiCommands().createSession();
+        const auto beginsBeforeDrag = listener.beginCount;
+        const auto endsBeforeDrag = listener.endCount;
+        require (processor.uiCommands().beginGesture (
+                     { commandGeneration, "missing.id", nativeSession }).status
+                     == InstrumentUiCommandStatus::unknownControl,
+                 "native gesture accepted an unknown public control");
+        const auto nativeBegin = processor.uiCommands().beginGesture (
+            { commandGeneration, "kick.tune_hz", nativeSession });
+        require (processor.uiCommands().beginGesture (
+                     { commandGeneration, "kick.tune_hz", nativeSession }).status
+                     == InstrumentUiCommandStatus::gestureActive
+                     && processor.uiCommands().setParameter (
+                         { commandGeneration, "kick.decay_ms", 0.5, nativeSession }).status
+                            == InstrumentUiCommandStatus::gestureActive
+                     && processor.uiCommands().endGesture (
+                         { commandGeneration, "kick.decay_ms", nativeSession }).status
+                            == InstrumentUiCommandStatus::unknownControl,
+                 "a second control entered an active editor gesture");
+        const auto nativeDragA = processor.uiCommands().setParameter (
+            { commandGeneration, "kick.tune_hz", 0.45, nativeSession });
+        const auto nativeDragB = processor.uiCommands().setParameter (
+            { commandGeneration, "kick.tune_hz", 0.55, nativeSession });
+        const auto nativeEnd = processor.uiCommands().endGesture (
+            { commandGeneration, "kick.tune_hz", nativeSession });
+        require (nativeBegin.status == InstrumentUiCommandStatus::accepted
+                     && nativeDragA.status == InstrumentUiCommandStatus::accepted
+                     && nativeDragB.status == InstrumentUiCommandStatus::accepted
+                     && nativeEnd.status == InstrumentUiCommandStatus::accepted
+                     && listener.beginCount == beginsBeforeDrag + 1
+                     && listener.endCount == endsBeforeDrag + 1
+                     && std::abs (parameter->getValue() - 0.55f) < 0.00001f,
+                 "native continuous drag did not preserve one host gesture");
+        const auto beginsBeforeWebDrag = listener.beginCount;
+        const auto endsBeforeWebDrag = listener.endCount;
+        const auto webBegin = PluginEditorBridgeTestProbe::invoke (editor, "beginGesture",
+            { juce::var ("kick.tune_hz"), juce::var (static_cast<int> (commandGeneration)) });
+        require (PluginEditorBridgeTestProbe::invoke (editor, "beginGesture",
+                     { juce::var ("kick.tune_hz"),
+                       juce::var (static_cast<int> (commandGeneration)) })
+                     .toString().contains ("active"),
+                 "Web adapter admitted a duplicate gesture");
+        const auto webDragA = PluginEditorBridgeTestProbe::invoke (editor, "setParameter",
+            { juce::var ("kick.tune_hz"), juce::var (0.60),
+              juce::var (static_cast<int> (commandGeneration)) });
+        const auto webDragB = PluginEditorBridgeTestProbe::invoke (editor, "setParameter",
+            { juce::var ("kick.tune_hz"), juce::var (0.70),
+              juce::var (static_cast<int> (commandGeneration)) });
+        const auto webEnd = PluginEditorBridgeTestProbe::invoke (editor, "endGesture",
+            { juce::var ("kick.tune_hz"), juce::var (static_cast<int> (commandGeneration)) });
+        require (webBegin.getProperty ("status", {}).toString() == "accepted"
+                     && webDragA.getProperty ("status", {}).toString() == "accepted"
+                     && webDragB.getProperty ("status", {}).toString() == "accepted"
+                     && webEnd.getProperty ("status", {}).toString() == "accepted"
+                     && listener.beginCount == beginsBeforeWebDrag + 1
+                     && listener.endCount == endsBeforeWebDrag + 1
+                     && std::abs (parameter->getValue() - 0.70f) < 0.00001f,
+                 "Web continuous drag did not preserve one host gesture");
+        require (PluginEditorBridgeTestProbe::invoke (editor, "endGesture",
+                     { juce::var ("kick.tune_hz"),
+                       juce::var (static_cast<int> (commandGeneration)) })
+                     .toString().contains ("No active gesture"),
+                 "Web adapter accepted a duplicate gesture end");
+        require (processor.uiCommands().endGesture (
+                     { commandGeneration, "kick.tune_hz", nativeSession }).status
+                     == InstrumentUiCommandStatus::noGesture,
+                 "duplicate gesture end was accepted");
+        const auto beginsBeforeClose = listener.beginCount;
+        const auto endsBeforeClose = listener.endCount;
+        {
+            DandrumAudioProcessorEditor closingEditor (processor);
+            require (PluginEditorBridgeTestProbe::invoke (closingEditor, "beginGesture",
+                         { juce::var ("kick.tune_hz"),
+                           juce::var (static_cast<int> (commandGeneration)) })
+                         .getProperty ("status", {}).toString() == "accepted",
+                     "editor could not begin a gesture before closing");
+        }
+        require (listener.beginCount == beginsBeforeClose + 1
+                     && listener.endCount == endsBeforeClose + 1,
+                 "editor teardown left an open host gesture");
 
         require (PluginEditorBridgeTestProbe::invoke (editor, "noteOn", { 36 })
                      .toString().contains ("expects"),
@@ -277,18 +382,36 @@ int main()
                  "full MIDI queue did not report a dropped note-off");
 
         const auto previousGeneration = processor.getParameterSurfaceGeneration();
+        const auto reloadSession = processor.uiCommands().createSession();
+        require (processor.uiCommands().beginGesture (
+                     { previousGeneration, "kick.tune_hz", reloadSession }).status
+                     == InstrumentUiCommandStatus::accepted,
+                 "could not begin the gesture used to test reload cleanup");
+        require (PluginEditorBridgeTestProbe::invoke (editor, "beginGesture",
+                     { juce::var ("kick.decay_ms"),
+                       juce::var (static_cast<int> (previousGeneration)) })
+                     .getProperty ("status", {}).toString() == "accepted",
+                 "Web editor could not begin the gesture used to test refresh cleanup");
+        const auto endsBeforeReload = listener.endCount;
         const auto tb303 = juce::File (juce::String (
             InstrumentDemoConfiguration::tb303().instrumentPath.string()));
         require (processor.reloadInstrumentFromFile (tb303),
                  "could not reload distinct instrument for browser refresh test");
         require (processor.getParameterSurfaceGeneration() != previousGeneration,
                  "replacement did not advance public surface generation");
+        require (processor.uiCommands().endGesture (
+                     { previousGeneration, "kick.tune_hz", reloadSession }).status
+                     == InstrumentUiCommandStatus::staleGeneration
+                     && listener.endCount == endsBeforeReload + 1,
+                 "gesture did not close its original stable host slot after reload");
         require (PluginEditorBridgeTestProbe::invoke (editor, "setParameter",
                      { juce::var (processor.getActivePublicParameterIds()[0]), juce::var (0.9),
                        juce::var (static_cast<int> (previousGeneration)) })
                      .toString().contains ("stale"),
                  "delayed browser command from the old instrument changed a replacement slot");
         PluginEditorBridgeTestProbe::refresh (editor);
+        require (listener.endCount == endsBeforeReload + 2,
+                 "browser refresh did not end its old-generation host gesture");
         require (PluginEditorBridgeTestProbe::seenSurfaceGeneration (editor)
                      == processor.getParameterSurfaceGeneration(),
                  "browser refresh did not consume the new public surface generation");

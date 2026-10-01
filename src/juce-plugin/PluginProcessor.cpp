@@ -1124,6 +1124,24 @@ std::optional<InstrumentUiDocument> DandrumAudioProcessor::getPreparedUiDocument
     return document;
 }
 
+InstrumentUiParameterState DandrumAudioProcessor::getUiParameterState() const
+{
+    const std::lock_guard<std::recursive_mutex> reloadLock (reloadMutex);
+    InstrumentUiParameterState state;
+    state.generation = getParameterSurfaceGeneration();
+    state.admittedCommandSequence = uiCommandService.lastAdmittedSequence();
+    state.parameters.reserve (parameterSlots.size());
+    for (const auto& slot : parameterSlots)
+    {
+        if (! slot.active)
+            continue;
+        const auto* parameter = parameters.getParameter (slot.slotParameterId);
+        state.parameters.push_back ({ slot.descriptor.id.toStdString(),
+                                      slot.descriptor.name.toStdString(), parameter->getValue() });
+    }
+    return state;
+}
+
 std::uint32_t DandrumAudioProcessor::getParameterSurfaceGeneration() const noexcept
 {
     return parameterSurfaceGeneration.load (std::memory_order_relaxed);
@@ -1140,7 +1158,8 @@ std::uint32_t DandrumAudioProcessor::uiCommandGeneration() const noexcept
 }
 
 InstrumentUiCommandStatus DandrumAudioProcessor::applyUiParameter (
-    std::uint32_t generation, const std::string& id, float normalisedValue)
+    std::uint32_t generation, const std::string& id, float normalisedValue,
+    bool withinGesture)
 {
     // Keep generation, public-ID lookup, and host admission in one reload epoch.
     // The recursive lock permits synchronous host listeners to inspect state.
@@ -1151,10 +1170,37 @@ InstrumentUiCommandStatus DandrumAudioProcessor::applyUiParameter (
     if (parameter == nullptr)
         return InstrumentUiCommandStatus::unknownControl;
 
-    parameter->beginChangeGesture();
+    if (! withinGesture)
+        parameter->beginChangeGesture();
     parameter->setValueNotifyingHost (normalisedValue);
-    parameter->endChangeGesture();
+    if (! withinGesture)
+        parameter->endChangeGesture();
     return InstrumentUiCommandStatus::accepted;
+}
+
+InstrumentUiGestureAdmission DandrumAudioProcessor::beginUiGesture (
+    std::uint32_t generation, const std::string& id)
+{
+    const std::lock_guard<std::recursive_mutex> reloadLock (reloadMutex);
+    if (generation != getParameterSurfaceGeneration())
+        return { InstrumentUiCommandStatus::staleGeneration };
+    const auto requestedId = juce::String::fromUTF8 (id.data(), static_cast<int> (id.size()));
+    for (std::size_t index = 0; index < parameterSlots.size(); ++index)
+    {
+        const auto& slot = parameterSlots[index];
+        if (! slot.active || slot.descriptor.id != requestedId)
+            continue;
+        parameters.getParameter (slot.slotParameterId)->beginChangeGesture();
+        return { InstrumentUiCommandStatus::accepted, index };
+    }
+    return { InstrumentUiCommandStatus::unknownControl };
+}
+
+void DandrumAudioProcessor::endUiGesture (std::size_t hostSlot)
+{
+    const std::lock_guard<std::recursive_mutex> reloadLock (reloadMutex);
+    if (hostSlot < parameterSlots.size())
+        parameters.getParameter (parameterSlots[hostSlot].slotParameterId)->endChangeGesture();
 }
 
 const juce::File& DandrumAudioProcessor::currentInstrumentFile() const noexcept

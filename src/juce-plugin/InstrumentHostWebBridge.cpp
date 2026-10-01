@@ -39,12 +39,61 @@ constexpr auto nativeFunctionBootstrap = R"JS(
   };
 })();
 )JS";
+
+bool isNumeric (const juce::var& value)
+{
+    return value.isInt() || value.isInt64() || value.isDouble();
+}
+
+std::optional<std::uint32_t> parseGeneration (const juce::var& value)
+{
+    if (! isNumeric (value))
+        return std::nullopt;
+    const auto requested = static_cast<double> (value);
+    if (! std::isfinite (requested) || requested < 0.0
+        || requested > std::numeric_limits<std::uint32_t>::max()
+        || std::floor (requested) < requested)
+        return std::nullopt;
+    return static_cast<std::uint32_t> (requested);
+}
+
+juce::var commandReplyForWeb (InstrumentUiCommandReply reply, const juce::String& publicId)
+{
+    switch (reply.status)
+    {
+        case InstrumentUiCommandStatus::accepted:
+        {
+            auto result = std::make_unique<juce::DynamicObject>();
+            result->setProperty ("status", "accepted");
+            result->setProperty ("generation", static_cast<juce::int64> (reply.generation));
+            result->setProperty ("sequence", static_cast<juce::int64> (reply.sequence));
+            return juce::var (result.release());
+        }
+        case InstrumentUiCommandStatus::staleGeneration:
+            return juce::var ("Rejected stale instrument generation");
+        case InstrumentUiCommandStatus::invalidValue:
+            return juce::var ("Parameter value must be finite and in range 0..1");
+        case InstrumentUiCommandStatus::unknownControl:
+            return juce::var ("Unknown public parameter: " + publicId);
+        case InstrumentUiCommandStatus::gestureActive:
+            return juce::var ("Another gesture is active for this editor session");
+        case InstrumentUiCommandStatus::noGesture:
+            return juce::var ("No active gesture for this editor session");
+    }
+    return juce::var ("Unknown UI command result");
+}
 }
 
 InstrumentHostWebBridge::InstrumentHostWebBridge (DandrumAudioProcessor& processorToUse)
     : processor (processorToUse),
-      lastSeenParameterSurfaceGeneration (processorToUse.getParameterSurfaceGeneration())
+      lastSeenParameterSurfaceGeneration (processorToUse.getParameterSurfaceGeneration()),
+      sessionId (processorToUse.uiCommands().createSession())
 {
+}
+
+InstrumentHostWebBridge::~InstrumentHostWebBridge()
+{
+    processor.uiCommands().closeSession (sessionId);
 }
 
 const char* InstrumentHostWebBridge::bootstrapScript() noexcept
@@ -52,7 +101,7 @@ const char* InstrumentHostWebBridge::bootstrapScript() noexcept
     return nativeFunctionBootstrap;
 }
 
-std::array<InstrumentHostWebBridge::NativeFunctionEntry, 4>
+std::array<InstrumentHostWebBridge::NativeFunctionEntry, 7>
 InstrumentHostWebBridge::nativeFunctions()
 {
     return {{
@@ -62,11 +111,29 @@ InstrumentHostWebBridge::nativeFunctions()
           {
               setParameterFromWeb (arguments, std::move (completion));
           } },
+        { "beginGesture",
+          [this] (const juce::Array<juce::var>& arguments,
+                  juce::WebBrowserComponent::NativeFunctionCompletion completion)
+          {
+              beginGestureFromWeb (arguments, std::move (completion));
+          } },
+        { "endGesture",
+          [this] (const juce::Array<juce::var>& arguments,
+                  juce::WebBrowserComponent::NativeFunctionCompletion completion)
+          {
+              endGestureFromWeb (arguments, std::move (completion));
+          } },
         { "getParameters",
           [this] (const juce::Array<juce::var>& arguments,
                   juce::WebBrowserComponent::NativeFunctionCompletion completion)
           {
               getParametersForWeb (arguments, std::move (completion));
+          } },
+        { "getParameterState",
+          [this] (const juce::Array<juce::var>& arguments,
+                  juce::WebBrowserComponent::NativeFunctionCompletion completion)
+          {
+              getParameterStateForWeb (arguments, std::move (completion));
           } },
         { "noteOn",
           [this] (const juce::Array<juce::var>& arguments,
@@ -111,12 +178,16 @@ bool InstrumentHostWebBridge::publishParameterUpdates (juce::WebBrowserComponent
     const auto generation = processor.getParameterSurfaceGeneration();
     if (generation != lastSeenParameterSurfaceGeneration)
     {
+        processor.uiCommands().closeSession (sessionId);
         lastSeenParameterSurfaceGeneration = generation;
         browser.refresh();
         return true;
     }
 
-    browser.emitEventIfBrowserIsVisible ("parameterValuesChanged", parameterSnapshotForWeb());
+    auto state = parameterStateForWeb();
+    browser.emitEventIfBrowserIsVisible ("parameterStateChanged", state);
+    browser.emitEventIfBrowserIsVisible ("parameterValuesChanged",
+                                        state.getProperty ("parameters", {}));
     return false;
 }
 
@@ -130,11 +201,7 @@ void InstrumentHostWebBridge::setParameterFromWeb (
         return;
     }
 
-    const auto numeric = [] (const juce::var& value)
-    {
-        return value.isInt() || value.isInt64() || value.isDouble();
-    };
-    if (! numeric (arguments[1]))
+    if (! isNumeric (arguments[1]))
     {
         completion (juce::var ("Parameter value must be a finite number in range 0..1"));
         return;
@@ -144,48 +211,69 @@ void InstrumentHostWebBridge::setParameterFromWeb (
     auto generation = processor.getParameterSurfaceGeneration();
     if (hasGeneration)
     {
-        if (! numeric (arguments[2]))
+        const auto requested = parseGeneration (arguments[2]);
+        if (! requested)
         {
             completion (juce::var ("Invalid instrument generation"));
             return;
         }
-        const auto requested = static_cast<double> (arguments[2]);
-        if (! std::isfinite (requested) || requested < 0.0
-            || requested > std::numeric_limits<std::uint32_t>::max()
-            || std::floor (requested) < requested)
-        {
-            completion (juce::var ("Invalid instrument generation"));
-            return;
-        }
-        generation = static_cast<std::uint32_t> (requested);
+        generation = *requested;
     }
 
     const auto reply = processor.uiCommands().setParameter (
-        { generation, publicId.toStdString(), static_cast<double> (arguments[1]) });
-    switch (reply.status)
+        { generation, publicId.toStdString(), static_cast<double> (arguments[1]), sessionId });
+    completion (! hasGeneration && reply.status == InstrumentUiCommandStatus::accepted
+        ? juce::var() : commandReplyForWeb (reply, publicId));
+}
+
+void InstrumentHostWebBridge::beginGestureFromWeb (
+    const juce::Array<juce::var>& arguments,
+    juce::WebBrowserComponent::NativeFunctionCompletion completion)
+{
+    if (arguments.isEmpty())
     {
-        case InstrumentUiCommandStatus::accepted:
-            if (hasGeneration)
-            {
-                auto result = std::make_unique<juce::DynamicObject>();
-                result->setProperty ("status", "accepted");
-                result->setProperty ("generation", static_cast<juce::int64> (reply.generation));
-                result->setProperty ("sequence", static_cast<juce::int64> (reply.sequence));
-                completion (juce::var (result.release()));
-            }
-            else
-                completion (juce::var());
-            return;
-        case InstrumentUiCommandStatus::staleGeneration:
-            completion (juce::var ("Rejected stale instrument generation"));
-            return;
-        case InstrumentUiCommandStatus::invalidValue:
-            completion (juce::var ("Parameter value must be finite and in range 0..1"));
-            return;
-        case InstrumentUiCommandStatus::unknownControl:
-            completion (juce::var ("Unknown public parameter: " + publicId));
-            return;
+        completion (juce::var ("beginGesture expects a parameter id"));
+        return;
     }
+    const auto publicId = arguments[0].toString();
+    auto generation = processor.getParameterSurfaceGeneration();
+    if (arguments.size() >= 2)
+    {
+        const auto requested = parseGeneration (arguments[1]);
+        if (! requested)
+        {
+            completion (juce::var ("Invalid instrument generation"));
+            return;
+        }
+        generation = *requested;
+    }
+    completion (commandReplyForWeb (processor.uiCommands().beginGesture (
+        { generation, publicId.toStdString(), sessionId }), publicId));
+}
+
+void InstrumentHostWebBridge::endGestureFromWeb (
+    const juce::Array<juce::var>& arguments,
+    juce::WebBrowserComponent::NativeFunctionCompletion completion)
+{
+    if (arguments.isEmpty())
+    {
+        completion (juce::var ("endGesture expects a parameter id"));
+        return;
+    }
+    const auto publicId = arguments[0].toString();
+    auto generation = processor.getParameterSurfaceGeneration();
+    if (arguments.size() >= 2)
+    {
+        const auto requested = parseGeneration (arguments[1]);
+        if (! requested)
+        {
+            completion (juce::var ("Invalid instrument generation"));
+            return;
+        }
+        generation = *requested;
+    }
+    completion (commandReplyForWeb (processor.uiCommands().endGesture (
+        { generation, publicId.toStdString(), sessionId }), publicId));
 }
 
 void InstrumentHostWebBridge::getParametersForWeb (
@@ -193,6 +281,13 @@ void InstrumentHostWebBridge::getParametersForWeb (
     juce::WebBrowserComponent::NativeFunctionCompletion completion) const
 {
     completion (parameterSnapshotForWeb());
+}
+
+void InstrumentHostWebBridge::getParameterStateForWeb (
+    const juce::Array<juce::var>&,
+    juce::WebBrowserComponent::NativeFunctionCompletion completion) const
+{
+    completion (parameterStateForWeb());
 }
 
 void InstrumentHostWebBridge::noteOnFromWeb (
@@ -246,6 +341,25 @@ juce::var InstrumentHostWebBridge::parameterSnapshotForWeb() const
         result.add (juce::var (object.release()));
     }
     return juce::var (result);
+}
+
+juce::var InstrumentHostWebBridge::parameterStateForWeb() const
+{
+    const auto state = processor.getUiParameterState();
+    auto result = std::make_unique<juce::DynamicObject>();
+    result->setProperty ("generation", static_cast<juce::int64> (state.generation));
+    result->setProperty ("sequence", static_cast<juce::int64> (state.admittedCommandSequence));
+    juce::Array<juce::var> values;
+    for (const auto& parameter : state.parameters)
+    {
+        auto item = std::make_unique<juce::DynamicObject>();
+        item->setProperty ("id", juce::String (parameter.id));
+        item->setProperty ("name", juce::String (parameter.name));
+        item->setProperty ("value", parameter.normalisedValue);
+        values.add (juce::var (item.release()));
+    }
+    result->setProperty ("parameters", juce::var (values));
+    return juce::var (result.release());
 }
 
 std::uint32_t InstrumentHostWebBridge::lastSeenSurfaceGeneration() const noexcept

@@ -68,9 +68,10 @@ const listeners = {};
 const backend = {
   getNativeFunction: name => (...args) => {
     calls.push([name, ...args]);
-    if (name === 'getParameters')
-      return Promise.resolve([{id: 'filter.cutoff', name: 'Cutoff', value: 0.5},
-                              {id: 'filter.resonance', name: 'Resonance', value: 0.25}]);
+    if (name === 'getParameterState')
+      return Promise.resolve({generation: 1, sequence: 0,
+        parameters: [{id: 'filter.cutoff', name: 'Cutoff', value: 0.5},
+                     {id: 'filter.resonance', name: 'Resonance', value: 0.25}]});
     if (name === 'getSoundLabAnalysis') return Promise.resolve({state: 'idle', generation: 0});
     return Promise.resolve();
   },
@@ -196,5 +197,6 @@ await new Promise(resolve => setImmediate(resolve));
 assert.equal(calls.at(-1)[0], 'acceptSoundLabMatch');
 assert.match(elements.soundLabMeta.textContent, /accepted into the active instrument controls/);
 
-listeners.parameterValuesChanged([{id: 'filter.cutoff', name: 'Cutoff', value: 0.75}]);
+listeners.parameterStateChanged({generation: 1, sequence: 0,
+  parameters: [{id: 'filter.cutoff', name: 'Cutoff', value: 0.75}]});
 assert.equal(elements.controls.children.length, 1);
