@@ -1,6 +1,10 @@
 #include "PluginEditor.h"
 #include "SoundLabWebUi.h"
 
+#if defined(DANDRUM_EMBED_TB303_REACT)
+#include "Tb303ReactBinaryData.h"
+#endif
+
 #include <cstring>
 #include <string>
 #include <string_view>
@@ -15,6 +19,39 @@ std::vector<std::byte> toBytes (const char* text)
     std::memcpy (bytes.data(), text, length);
     return bytes;
 }
+
+#if defined(DANDRUM_EMBED_TB303_REACT)
+std::optional<juce::WebBrowserComponent::Resource> tb303ReactResource (const juce::String& path)
+{
+    const char* name = nullptr;
+    const char* mime = nullptr;
+    if (path == "/" || path == "/index.html")
+    {
+        name = "index_html";
+        mime = "text/html";
+    }
+    else if (path == "/app.js")
+    {
+        name = "app_js";
+        mime = "text/javascript";
+    }
+    else if (path == "/app.css")
+    {
+        name = "app_css";
+        mime = "text/css";
+    }
+    if (name == nullptr)
+        return std::nullopt;
+
+    int size = 0;
+    const auto* data = Tb303ReactBinaryData::getNamedResource (name, size);
+    if (data == nullptr || size <= 0)
+        return std::nullopt;
+    std::vector<std::byte> bytes (static_cast<std::size_t> (size));
+    std::memcpy (bytes.data(), data, bytes.size());
+    return juce::WebBrowserComponent::Resource { std::move (bytes), mime };
+}
+#endif
 
 void replaceMarker (std::string& page, std::string_view marker, std::string_view replacement)
 {
@@ -164,6 +201,11 @@ juce::WebBrowserComponent::Options DandrumAudioProcessorEditor::createBrowserOpt
 std::optional<juce::WebBrowserComponent::Resource>
 DandrumAudioProcessorEditor::provideResource (const juce::String& path) const
 {
+#if defined(DANDRUM_EMBED_TB303_REACT)
+    if (processor.demoConfiguration().instrumentId == "dandrum.tb303-acid")
+        if (auto resource = tb303ReactResource (path))
+            return resource;
+#endif
     const bool soundLabEnabled = soundLabController != nullptr
                                  && processor.isSoundLabInstrumentCompatible();
     if (path == "/sound-lab-ui.js" && soundLabEnabled)

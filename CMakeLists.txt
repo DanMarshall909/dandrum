@@ -115,6 +115,14 @@ juce_add_plugin(dandrum-plugin
     NEEDS_WEB_BROWSER TRUE
     PRODUCT_NAME "Dandrum")
 
+juce_add_binary_data(dandrum-tb303-react-resources
+    NAMESPACE Tb303ReactBinaryData
+    HEADER_NAME Tb303ReactBinaryData.h
+    SOURCES
+        web/tb303/dist/index.html
+        web/tb303/dist/app.js
+        web/tb303/dist/app.css)
+
 target_sources(dandrum-plugin PRIVATE
     src/juce-plugin/InstrumentDemoConfiguration.cpp
     src/juce-plugin/InstrumentFileWatcher.cpp
@@ -125,11 +133,12 @@ target_sources(dandrum-plugin PRIVATE
 target_include_directories(dandrum-plugin PRIVATE src/juce-wrapper)
 target_compile_definitions(dandrum-plugin PRIVATE
     DANDRUM_SOURCE_ROOT="${CMAKE_CURRENT_SOURCE_DIR}"
+    DANDRUM_EMBED_TB303_REACT=1
     JUCE_USE_CURL=0
     JUCE_WEB_BROWSER=1
     JUCE_USE_WIN_WEBVIEW2=1)
 target_link_libraries(dandrum-plugin
-    PRIVATE dandrum_engine juce::juce_audio_basics juce::juce_audio_processors juce::juce_audio_utils juce::juce_gui_extra
+    PRIVATE dandrum_engine dandrum-tb303-react-resources juce::juce_audio_basics juce::juce_audio_processors juce::juce_audio_utils juce::juce_gui_extra
     PUBLIC juce::juce_recommended_config_flags juce::juce_recommended_lto_flags juce::juce_recommended_warning_flags)
 
 juce_add_binary_data(dandrum-sampler-resources
@@ -224,6 +233,7 @@ if(NOT DANDRUM_NODE_EXECUTABLE OR NOT EXISTS "${DANDRUM_NODE_EXECUTABLE}")
 endif()
 add_test(NAME shared-instrument-ui COMMAND ${DANDRUM_NODE_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/tests/js/SharedInstrumentUiTest.mjs)
 add_test(NAME tb303-page COMMAND ${DANDRUM_NODE_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/tests/js/Tb303PageTest.mjs)
+add_test(NAME tb303-react-model COMMAND ${DANDRUM_NODE_EXECUTABLE} --test ${CMAKE_CURRENT_SOURCE_DIR}/web/tb303/src/model.test.mjs)
 add_test(NAME native-function-bootstrap COMMAND ${DANDRUM_NODE_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/tests/js/NativeFunctionBootstrapTest.mjs)
 
 add_executable(dandrum-plugin-file-watch-reload-test tests/cpp/PluginFileWatchReloadTest.cpp)

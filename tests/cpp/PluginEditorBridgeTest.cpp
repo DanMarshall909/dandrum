@@ -505,6 +505,38 @@ int main()
                      && std::abs (static_cast<double> (kickAnalysis.getProperty ("duration_seconds", {})) - 1.0) < 0.001,
                  "second demo Sound Lab did not use its own one-second kick fixture");
 
+        DandrumAudioProcessor acid (InstrumentDemoConfiguration::tb303());
+        acid.setPlayConfigDetails (0, 2, 48000.0, 64);
+        acid.prepareToPlay (48000.0, 64);
+        DandrumAudioProcessorEditor acidEditor (acid);
+        const auto acidPage = PluginEditorBridgeTestProbe::resource (acidEditor, "/index.html");
+        const auto acidScript = PluginEditorBridgeTestProbe::resource (acidEditor, "/app.js");
+        const auto acidStyles = PluginEditorBridgeTestProbe::resource (acidEditor, "/app.css");
+        const auto acidPageText = acidPage.has_value()
+            ? std::string (reinterpret_cast<const char*> (acidPage->data.data()), acidPage->data.size())
+            : std::string();
+        require (acidPage && acidPage->mimeType == "text/html"
+                     && acidPageText.find ("id=\"root\"") != std::string::npos
+                     && acidPageText.find ("/app.js") != std::string::npos
+                     && acidPageText.find ("/app.css") != std::string::npos
+                     && acidPageText.find ("http://") == std::string::npos
+                     && acidPageText.find ("https://") == std::string::npos
+                     && acidScript && acidScript->mimeType == "text/javascript"
+                     && ! acidScript->data.empty()
+                     && acidStyles && acidStyles->mimeType == "text/css"
+                     && ! acidStyles->data.empty(),
+                 "TB-303 React assets were not packaged for offline WebView serving");
+        const auto acidState = PluginEditorBridgeTestProbe::invoke (acidEditor, "getParameterState");
+        const auto acidValues = acidState.getProperty ("parameters", {});
+        const auto* acidParameters = acidValues.getArray();
+        require (acidParameters != nullptr && acidParameters->size() == 7,
+                 "TB-303 React panel did not receive seven live public controls");
+        for (const auto* id : { "filter.cutoff", "filter.resonance",
+                                "filter.envelope_modulation", "filter.decay_ms",
+                                "accent.brightness", "amp.release_ms", "slide.time_ms" })
+            require (findParameter (acidValues, id).isObject(),
+                     std::string ("TB-303 public control missing from host state: ") + id);
+
         const auto referenceFile = juce::File::getSpecialLocation (juce::File::tempDirectory)
                                        .getNonexistentChildFile ("dandrum_kick_match_reference", ".wav");
         struct ReferenceFileGuard
