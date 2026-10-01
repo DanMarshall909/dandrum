@@ -717,6 +717,121 @@ connections:
 }
 
 #[test]
+fn looped_sample_player_wraps_and_crossfades_until_gate_release() {
+    let directory = tempfile::tempdir().expect("temporary sample root");
+    let values = [0.0, 0.25, 0.5, 0.75, -0.25, -0.5, -0.75, 0.875];
+    crate::wav::write_wav_stereo_i16(
+        fs::File::create(directory.path().join("loop.wav")).expect("sample file"),
+        48_000,
+        &values,
+        &values,
+    )
+    .expect("write sample");
+    let yaml = r#"
+metadata: { name: looped_region }
+assets:
+  sample_sources:
+    - id: loop_sample
+      path: loop.wav
+      regions:
+        - id: body
+          start_frame: 0
+          end_frame: 8
+          loop: { mode: forward, start_frame: 2, end_frame: 8 }
+ports:
+  - { name: audio_out, direction: output, signal: audio, channels: 1, maps_from: player.audio }
+modules:
+  - { id: midi, type: midi_input }
+  - { id: player, type: sample_player, static: { source: loop_sample, region: body, mode: looped, channels: 1 } }
+connections:
+  - { from: midi.events, to: player.trigger }
+  - { from: midi.events, to: player.gate }
+"#;
+    let settings = RenderSettings {
+        sample_rate_hz: 48_000,
+        block_size_frames: 12,
+        duration_frames: 12,
+    };
+    let context = PreparationContext::new(directory.path(), 48_000);
+    let render = |document: &str| {
+        let patch = load_kernel_patch_str(document).expect("loop patch loads");
+        let prepared = prepare_kernel_patch_with_context(&patch, &settings, &context)
+            .expect("loop patch prepares");
+        render_kernel_offline_named(
+            &prepared,
+            vec![
+                TimedInputEvent::new(
+                    0,
+                    ScriptEvent::NoteOn {
+                        note: 60,
+                        velocity: 100,
+                    },
+                ),
+                TimedInputEvent::new(10, ScriptEvent::NoteOff { note: 60 }),
+            ],
+            &PreparedSamplerAssets::empty(),
+        )
+        .expect("loop patch renders")[0]
+            .1[0]
+            .clone()
+    };
+    let pcm = |value: f32| -> f32 {
+        let scale = if value < 0.0 { 32768.0 } else { 32767.0 };
+        (value * scale) as i16 as f32 / 32768.0
+    };
+    assert_eq!(
+        render(yaml),
+        vec![
+            0.0,
+            pcm(0.25),
+            pcm(0.5),
+            pcm(0.75),
+            pcm(-0.25),
+            pcm(-0.5),
+            pcm(-0.75),
+            pcm(0.875),
+            pcm(0.5),
+            pcm(0.75),
+            0.0,
+            0.0,
+        ]
+    );
+
+    let crossfaded = yaml.replace("end_frame: 8 }", "end_frame: 8, crossfade_ms: 0.04 }");
+    assert_eq!(
+        render(&crossfaded),
+        vec![
+            0.0,
+            pcm(0.25),
+            pcm(0.5),
+            pcm(0.75),
+            pcm(-0.25),
+            pcm(-0.5),
+            (pcm(-0.75) + pcm(0.5)) * 0.5,
+            pcm(0.75),
+            pcm(-0.25),
+            pcm(-0.5),
+            0.0,
+            0.0,
+        ]
+    );
+
+    let no_loop = yaml.replace(
+        "          loop: { mode: forward, start_frame: 2, end_frame: 8 }\n",
+        "",
+    );
+    let patch = load_kernel_patch_str(&no_loop).expect("missing loop shape loads");
+    let error = match prepare_kernel_patch_with_context(&patch, &settings, &context) {
+        Ok(_) => panic!("looped mode requires prepared loop points"),
+        Err(error) => error,
+    };
+    assert_eq!(
+        error.diagnostics().errors().next().unwrap().error_code(),
+        error_codes::KERNEL_SAMPLE_INVALID_LOOP
+    );
+}
+
+#[test]
 fn poly_region_renders_sample_player_child_with_independent_voices() {
     let directory = tempfile::tempdir().expect("temporary sample root");
     crate::wav::write_wav_stereo_i16(

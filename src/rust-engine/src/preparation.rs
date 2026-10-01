@@ -1785,11 +1785,20 @@ fn lower_kernel_graph(
                 Some(StaticValue::Enum(value)) => value.as_str(),
                 _ => "one_shot",
             };
-            if mode != "one_shot" && mode != "gated" {
+            if mode != "one_shot" && mode != "gated" && mode != "looped" {
                 return Err(sample_preparation_error(
                     diagnostics::error_codes::KERNEL_SAMPLE_UNSUPPORTED_MODE,
                     format!(
                         "sample_player '{}' does not yet support mode '{mode}'",
+                        node.id().as_str()
+                    ),
+                ));
+            }
+            if mode == "looped" && region.loop_settings.is_none() {
+                return Err(sample_preparation_error(
+                    diagnostics::error_codes::KERNEL_SAMPLE_INVALID_LOOP,
+                    format!(
+                        "sample_player '{}' requires loop points for looped mode",
                         node.id().as_str()
                     ),
                 ));

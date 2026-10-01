@@ -132,6 +132,17 @@ pub(super) fn process_sample_player_state(
     gate_events: &[BlockEvent],
 ) {
     let frames = sample.as_ref().map_or(&[][..], |sample| sample.frames());
+    let loop_settings = if mode == "looped" {
+        region.loop_settings.as_ref()
+    } else {
+        None
+    };
+    let crossfade_frames = loop_settings.map_or(0, |loop_settings| {
+        let rate = sample.as_ref().map_or(0, |sample| sample.sample_rate_hz());
+        let requested = loop_settings.crossfade_ms.unwrap_or(0.0) * f64::from(rate) / 1000.0;
+        (requested.round() as usize)
+            .min(((loop_settings.end_frame - loop_settings.start_frame) / 2) as usize)
+    });
     for frame in 0..context.frames() {
         if events.iter().any(|event| {
             event.frame_offset as usize == frame
@@ -140,7 +151,7 @@ pub(super) fn process_sample_player_state(
             *position = region.start_frame as f64;
             *active = true;
         }
-        if mode == "gated"
+        if mode != "one_shot"
             && gate_events.iter().any(|event| {
                 event.frame_offset as usize == frame
                     && matches!(event.event, ScriptEvent::NoteOff { .. })
@@ -151,9 +162,25 @@ pub(super) fn process_sample_player_state(
         let output = if *active {
             let index = *position as usize;
             if index < region.end_frame as usize && index < frames.len() {
+                let value = if let Some(loop_settings) = loop_settings {
+                    let fade_start = loop_settings.end_frame as usize - crossfade_frames;
+                    if crossfade_frames > 0 && index >= fade_start {
+                        let fade_index = index - fade_start;
+                        let head = frames[loop_settings.start_frame as usize + fade_index];
+                        let weight = (fade_index + 1) as f32 / crossfade_frames as f32;
+                        frames[index] * (1.0 - weight) + head * weight
+                    } else {
+                        frames[index]
+                    }
+                } else {
+                    frames[index]
+                };
                 *position += 1.0;
-                let value = frames[index];
-                if *position >= region.end_frame as f64 {
+                if let Some(loop_settings) = loop_settings {
+                    if *position >= loop_settings.end_frame as f64 {
+                        *position = (loop_settings.start_frame + crossfade_frames as u64) as f64;
+                    }
+                } else if *position >= region.end_frame as f64 {
                     *active = false;
                 }
                 value

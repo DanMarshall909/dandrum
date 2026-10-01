@@ -62,6 +62,11 @@ A sample source SHALL support named regions with start and end frame positions i
 - **WHEN** a `sample_player` in gated mode receives a note-off event at a frame inside a block
 - **THEN** its output SHALL be silent starting at that frame and a later note-on SHALL restart from the region's first frame
 
+#### Scenario: Looped region wraps and crossfades
+
+- **WHEN** a `sample_player` in looped mode reaches its prepared loop end, with or without a declared crossfade
+- **THEN** playback SHALL wrap to the prepared loop start, blend the overlap when present, and stop at the gate release frame
+
 ### Requirement: Sample maps select prepared regions
 
 A sample map SHALL contain at least one zone that references a prepared region and declares MIDI key ranges within `0..=127` and velocity ranges within `1..=127`. Zone declarations SHALL accept optional per-zone gain, pan, pitch offset, region overrides, round-robin groups, relative weights, and exclusive/choke groups. Preparation SHALL resolve zones to stable source and region indices in authored order and build a keyed map lookup before rendering. For a matching note and velocity, selection SHALL follow the map's declared mode and seed with a stable zone order; it SHALL be repeatable for the same event stream regardless of audio block size, file order, or map storage iteration order. Preparation SHALL reject invalid ranges, unresolved region references, duplicate IDs, and ambiguous overlapping zones without a declared tie-breaking mode.
