@@ -88,6 +88,8 @@ pub mod error_codes {
     pub const KERNEL_SAMPLE_INVALID_REGION: &str = "kernel.sample.invalid_region";
     pub const KERNEL_SAMPLE_INVALID_LOOP: &str = "kernel.sample.invalid_loop";
     pub const KERNEL_SAMPLE_INVALID_ZONE: &str = "kernel.sample.invalid_zone";
+    pub const KERNEL_SAMPLE_INVALID_SLICE: &str = "kernel.sample.invalid_slice";
+    pub const KERNEL_SAMPLE_INVALID_TIMING: &str = "kernel.sample.invalid_timing";
     pub const KERNEL_SAMPLE_INVALID_VOICE_LIMIT: &str = "kernel.sample.invalid_voice_limit";
     pub const KERNEL_SAMPLE_UNSUPPORTED_MODE: &str = "kernel.sample.unsupported_mode";
     pub const KERNEL_STATIC_ARGUMENT_EXPRESSION: &str = "kernel.static_argument_expression";

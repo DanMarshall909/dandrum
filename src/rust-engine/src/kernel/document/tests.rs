@@ -316,6 +316,10 @@ fn streaming_granular_and_workstation_sample_declarations_are_deferred() {
             "path: samples/break.wav\n      time_stretch: beat_sync",
         ),
         (
+            "path: samples/break.wav",
+            "path: samples/break.wav\n      auto_detect_slices: transient",
+        ),
+        (
             "id: soft, region: break.full",
             "id: soft, keyswitch: 24, region: break.full",
         ),
@@ -468,6 +472,132 @@ fn prepared_drum_map_resolves_zone_regions_in_authored_order() {
     assert_eq!(map.zones()[0].declaration().id.as_deref(), Some("soft"));
     assert_eq!(map.zones()[1].declaration().id.as_deref(), Some("loud"));
     assert!(prepared.sample_assets().map_by_id("missing").is_none());
+}
+
+#[test]
+fn prepared_break_slices_keep_explicit_numeric_order() {
+    let directory = tempfile::tempdir().expect("temporary sample root");
+    fs::create_dir(directory.path().join("samples")).expect("sample directory");
+    let frames = vec![0.25; 96_000];
+    crate::wav::write_wav_stereo_i16(
+        fs::File::create(directory.path().join("samples/break.wav")).unwrap(),
+        48_000,
+        &frames,
+        &frames,
+    )
+    .expect("write sample");
+    let patch = load_kernel_patch_str(SAMPLE_ASSET_PATCH).expect("break declaration loads");
+    let context = PreparationContext::new(directory.path(), 48_000);
+    let settings = RenderSettings {
+        sample_rate_hz: 48_000,
+        block_size_frames: 16,
+        duration_frames: 16,
+    };
+
+    let prepared = prepare_kernel_patch_with_context(&patch, &settings, &context)
+        .expect("explicit slices prepare");
+    let source = &prepared.sample_assets().sources()[0];
+    assert_eq!(source.slice(0).unwrap().id, "beat_1");
+    assert_eq!(
+        (
+            source.slice(0).unwrap().start_frame,
+            source.slice(0).unwrap().end_frame
+        ),
+        (0, 24_000)
+    );
+    assert_eq!(source.slice(1).unwrap().id, "beat_2");
+    assert_eq!(
+        (
+            source.slice(1).unwrap().start_frame,
+            source.slice(1).unwrap().end_frame
+        ),
+        (24_000, 48_000)
+    );
+    assert!(source.slice(2).is_none());
+}
+
+#[test]
+fn invalid_explicit_slice_cue_and_beat_markers_fail_preparation() {
+    let directory = tempfile::tempdir().expect("temporary sample root");
+    fs::create_dir(directory.path().join("samples")).expect("sample directory");
+    let frames = vec![0.25; 96_000];
+    crate::wav::write_wav_stereo_i16(
+        fs::File::create(directory.path().join("samples/break.wav")).unwrap(),
+        48_000,
+        &frames,
+        &frames,
+    )
+    .expect("write sample");
+    let context = PreparationContext::new(directory.path(), 48_000);
+    let settings = RenderSettings {
+        sample_rate_hz: 48_000,
+        block_size_frames: 16,
+        duration_frames: 16,
+    };
+    for (target, replacement, code) in [
+        (
+            "id: beat_1, start_frame: 0, end_frame: 24000",
+            "id: beat_1, start_frame: 0, end_frame: 96001",
+            error_codes::KERNEL_SAMPLE_INVALID_SLICE,
+        ),
+        (
+            "id: beat_1, start_frame: 0, end_frame: 24000",
+            "id: beat_1, start_frame: 24000, end_frame: 24000",
+            error_codes::KERNEL_SAMPLE_INVALID_SLICE,
+        ),
+        (
+            "id: beat_2, start_frame: 24000",
+            "id: beat_1, start_frame: 24000",
+            error_codes::KERNEL_SAMPLE_INVALID_SLICE,
+        ),
+        (
+            "id: downbeat, frame: 0",
+            "id: downbeat, frame: 96000",
+            error_codes::KERNEL_SAMPLE_INVALID_TIMING,
+        ),
+        (
+            "beats: [0, 24000, 48000]",
+            "beats: [0, 96000]",
+            error_codes::KERNEL_SAMPLE_INVALID_TIMING,
+        ),
+        (
+            "beats: [0, 24000, 48000]",
+            "beats: [24000, 0]",
+            error_codes::KERNEL_SAMPLE_INVALID_TIMING,
+        ),
+        (
+            "downbeats: [0, 48000]",
+            "downbeats: [0, 48001]",
+            error_codes::KERNEL_SAMPLE_INVALID_TIMING,
+        ),
+        (
+            "tempo_bpm: 120",
+            "tempo_bpm: 0",
+            error_codes::KERNEL_SAMPLE_INVALID_TIMING,
+        ),
+        (
+            "confidence: 0.95",
+            "confidence: 1.5",
+            error_codes::KERNEL_SAMPLE_INVALID_TIMING,
+        ),
+        (
+            "- { id: downbeat, frame: 0 }",
+            "- { id: downbeat, frame: 0 }\n        - { id: downbeat, frame: 1 }",
+            error_codes::KERNEL_SAMPLE_INVALID_TIMING,
+        ),
+    ] {
+        let invalid = SAMPLE_ASSET_PATCH.replacen(target, replacement, 1);
+        let patch = load_kernel_patch_str(&invalid).expect("marker shape loads");
+        let result = prepare_kernel_patch_with_context(&patch, &settings, &context);
+        let error = match result {
+            Ok(_) => panic!("invalid explicit marker {replacement} must fail"),
+            Err(error) => error,
+        };
+        assert_eq!(
+            error.diagnostics().errors().next().unwrap().error_code(),
+            code
+        );
+    }
 }
 
 #[test]

@@ -12,7 +12,9 @@ use crate::compiled_patch::{
 };
 use crate::diagnostics::{self, Diagnostic, Severity};
 use crate::graph::{Cable, Graph, ModuleId, ModuleNode, PortDirection, PortRef, SignalType};
-use crate::kernel::document::{KernelPatch, SampleAssets, SampleMap, SampleSource, SampleZone};
+use crate::kernel::document::{
+    KernelPatch, SampleAssets, SampleMap, SampleSlice, SampleSource, SampleZone,
+};
 use crate::kernel::flatten::{FlattenedGraph, FlattenedPolyRegion};
 use crate::kernel::latency::LatencyPlan;
 use crate::kernel::{
@@ -381,6 +383,11 @@ impl PreparedSampleSource {
 
     pub fn declaration(&self) -> &SampleSource {
         &self.declaration
+    }
+
+    /// Slice numbers follow the authored table order and need no render-time search.
+    pub fn slice(&self, index: usize) -> Option<&SampleSlice> {
+        self.declaration.slices.get(index)
     }
 }
 
@@ -837,6 +844,68 @@ fn prepare_sample_assets(
                         format!(
                             "sample source '{}' region '{}' loop crossfade exceeds half the loop window",
                             declaration.id, region.id
+                        ),
+                    ));
+                }
+            }
+        }
+        let mut slice_ids = BTreeSet::new();
+        for slice in &declaration.slices {
+            if slice.start_frame >= slice.end_frame
+                || slice.end_frame > frame_count
+                || !slice_ids.insert(slice.id.as_str())
+            {
+                return Err(sample_preparation_error(
+                    diagnostics::error_codes::KERNEL_SAMPLE_INVALID_SLICE,
+                    format!(
+                        "sample source '{}' has invalid or duplicate slice '{}'",
+                        declaration.id, slice.id
+                    ),
+                ));
+            }
+        }
+        let mut cue_ids = BTreeSet::new();
+        if declaration
+            .cues
+            .iter()
+            .any(|cue| cue.frame >= frame_count || !cue_ids.insert(cue.id.as_str()))
+        {
+            return Err(sample_preparation_error(
+                diagnostics::error_codes::KERNEL_SAMPLE_INVALID_TIMING,
+                format!(
+                    "sample source '{}' has a duplicate or out-of-bounds cue",
+                    declaration.id
+                ),
+            ));
+        }
+        if let Some(analysis) = &declaration.analysis {
+            if analysis.tempo_bpm.is_some_and(|tempo| tempo <= 0.0)
+                || analysis
+                    .confidence
+                    .is_some_and(|confidence| !(0.0..=1.0).contains(&confidence))
+            {
+                return Err(sample_preparation_error(
+                    diagnostics::error_codes::KERNEL_SAMPLE_INVALID_TIMING,
+                    format!(
+                        "sample source '{}' has invalid tempo or analysis confidence",
+                        declaration.id
+                    ),
+                ));
+            }
+            if let Some(grid) = &analysis.beat_grid {
+                if [&grid.beats, &grid.downbeats].into_iter().any(|markers| {
+                    markers.iter().any(|frame| *frame >= frame_count)
+                        || markers.windows(2).any(|pair| pair[0] >= pair[1])
+                }) || grid
+                    .downbeats
+                    .iter()
+                    .any(|frame| grid.beats.binary_search(frame).is_err())
+                {
+                    return Err(sample_preparation_error(
+                        diagnostics::error_codes::KERNEL_SAMPLE_INVALID_TIMING,
+                        format!(
+                            "sample source '{}' has an invalid explicit beat grid",
+                            declaration.id
                         ),
                     ));
                 }

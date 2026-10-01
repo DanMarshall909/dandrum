@@ -73,7 +73,12 @@ A sample map SHALL contain at least one zone that references a prepared region a
 
 ### Requirement: Explicit slices and optional timing metadata remain prepared assets
 
-A sample source SHALL support an explicit, ordered slice table whose entries name bounded source-frame ranges for break-slicer playback. The source declaration SHALL accept optional cue points and an explicit beat grid with source-frame positions. Preparation SHALL validate slice, cue, and beat positions against the decoded source and SHALL make the prepared values available to playback or metadata consumers. Automatic transient or beat detection SHALL NOT be required to use an explicit slice table.
+A sample source SHALL support an explicit, ordered slice table whose entries name bounded source-frame ranges for break-slicer playback. A numeric slice index SHALL address that authored table directly, starting at zero. The source declaration SHALL accept optional cue points and an explicit beat grid with source-frame positions. Preparation SHALL validate slice, cue, and beat positions against the decoded source and SHALL make the prepared values available to playback or metadata consumers. Downbeats SHALL identify beats in the same grid. Automatic transient or beat detection SHALL NOT be required to use an explicit slice table.
+
+#### Scenario: Explicit slice indices remain stable
+
+- **WHEN** a source declares multiple named slices in order
+- **THEN** preparation SHALL retain that order as a stable zero-based slice table
 
 #### Scenario: Break patch selects a declared slice
 
