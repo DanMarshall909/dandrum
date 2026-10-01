@@ -135,6 +135,12 @@ pub(super) fn process_sample_player_state(
     gate_events: &[BlockEvent],
 ) {
     let frames = sample.as_ref().map_or(&[][..], |sample| sample.frames());
+    let sample_rate = sample
+        .as_ref()
+        .map_or(0.0, |sample| f64::from(sample.sample_rate_hz()));
+    let fade_in_frames = (region.fade_in_ms.unwrap_or(0.0) * sample_rate / 1000.0).round() as usize;
+    let fade_out_frames =
+        (region.fade_out_ms.unwrap_or(0.0) * sample_rate / 1000.0).round() as usize;
     let loop_settings = if mode == "looped" {
         region.loop_settings.as_ref()
     } else {
@@ -172,7 +178,7 @@ pub(super) fn process_sample_player_state(
                 && *position < region.end_frame as f64
                 && index < frames.len()
             {
-                let value = if let Some(loop_settings) = loop_settings {
+                let mut value = if let Some(loop_settings) = loop_settings {
                     let fade_start = loop_settings.end_frame as usize - crossfade_frames;
                     let in_crossfade = crossfade_frames > 0
                         && if region.reverse {
@@ -204,6 +210,33 @@ pub(super) fn process_sample_player_state(
                 } else {
                     sample_interpolated(frames, *position, region, interpolation)
                 };
+                let (from_start, to_end) = if region.reverse {
+                    (
+                        (region.end_frame - 1) as f64 - *position,
+                        *position - region.start_frame as f64,
+                    )
+                } else {
+                    (
+                        *position - region.start_frame as f64,
+                        (region.end_frame - 1) as f64 - *position,
+                    )
+                };
+                if fade_in_frames > 0 {
+                    let span = fade_in_frames.saturating_sub(1) as f64;
+                    value *= if span > 0.0 {
+                        (from_start / span).clamp(0.0, 1.0) as f32
+                    } else {
+                        0.0
+                    };
+                }
+                if fade_out_frames > 0 {
+                    let span = fade_out_frames.saturating_sub(1) as f64;
+                    value *= if span > 0.0 {
+                        (to_end / span).clamp(0.0, 1.0) as f32
+                    } else {
+                        0.0
+                    };
+                }
                 let ratio = context.input_sample(0, frame, 1.0);
                 let ratio = if ratio.is_finite() {
                     ratio.clamp(0.125, 8.0)

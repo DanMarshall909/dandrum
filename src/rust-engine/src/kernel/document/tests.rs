@@ -994,6 +994,74 @@ connections:
 }
 
 #[test]
+fn sample_region_fades_scale_the_signed_boundary_frames() {
+    let directory = tempfile::tempdir().expect("temporary sample root");
+    let values = [0.0, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.0];
+    crate::wav::write_wav_stereo_i16(
+        fs::File::create(directory.path().join("hit.wav")).expect("sample file"),
+        48_000,
+        &values,
+        &values,
+    )
+    .expect("write sample");
+    let yaml = r#"
+metadata: { name: faded_region }
+assets:
+  sample_sources:
+    - id: hit
+      path: hit.wav
+      regions: [{ id: body, start_frame: 1, end_frame: 7, fade_in_ms: 0.06, fade_out_ms: 0.06 }]
+ports:
+  - { name: audio_out, direction: output, signal: audio, channels: 1, maps_from: player.audio }
+modules:
+  - { id: midi, type: midi_input }
+  - { id: player, type: sample_player, static: { source: hit, region: body, channels: 1 } }
+connections:
+  - { from: midi.events, to: player.trigger }
+"#;
+    let settings = RenderSettings {
+        sample_rate_hz: 48_000,
+        block_size_frames: 8,
+        duration_frames: 8,
+    };
+    let context = PreparationContext::new(directory.path(), 48_000);
+    let render = |document: &str| {
+        let patch = load_kernel_patch_str(document).expect("fade patch loads");
+        let prepared = prepare_kernel_patch_with_context(&patch, &settings, &context)
+            .expect("fade patch prepares");
+        render_kernel_offline_named(
+            &prepared,
+            vec![TimedInputEvent::new(
+                0,
+                ScriptEvent::NoteOn {
+                    note: 36,
+                    velocity: 100,
+                },
+            )],
+            &PreparedSamplerAssets::empty(),
+        )
+        .expect("fade patch renders")[0]
+            .1[0]
+            .clone()
+    };
+    let half = 16383.0 / 32768.0;
+    assert_eq!(
+        render(yaml),
+        vec![0.0, half * 0.5, half, half, half * 0.5, 0.0, 0.0, 0.0]
+    );
+    let reverse = yaml.replace("fade_in_ms: 0.06", "reverse: true, fade_in_ms: 0.06");
+    assert_eq!(
+        render(&reverse),
+        vec![0.0, half * 0.5, half, half, half * 0.5, 0.0, 0.0, 0.0]
+    );
+    let plain = yaml.replace(", fade_in_ms: 0.06, fade_out_ms: 0.06", "");
+    assert_eq!(
+        render(&plain),
+        vec![half, half, half, half, half, half, 0.0, 0.0]
+    );
+}
+
+#[test]
 fn poly_region_renders_sample_player_child_with_independent_voices() {
     let directory = tempfile::tempdir().expect("temporary sample root");
     crate::wav::write_wav_stereo_i16(
