@@ -407,7 +407,7 @@ bool DandrumAudioProcessor::loadDefaultInstrument()
 
 void DandrumAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
 {
-    const std::lock_guard<std::mutex> reloadLock (reloadMutex);
+    const std::lock_guard<std::recursive_mutex> reloadLock (reloadMutex);
     if (! instrumentLoaded)
         return;
 
@@ -864,7 +864,7 @@ void DandrumAudioProcessor::setStateInformation (const void* data, int sizeInByt
         }
     }
 
-    const std::lock_guard<std::mutex> reloadLock (reloadMutex);
+    const std::lock_guard<std::recursive_mutex> reloadLock (reloadMutex);
     parameters.replaceState (state);
 
     if (candidateKernel != nullptr)
@@ -967,7 +967,7 @@ juce::StringArray DandrumAudioProcessor::getActivePublicParameterIds() const
 std::vector<DandrumAudioProcessor::PublicParameterSnapshotEntry>
 DandrumAudioProcessor::getPublicParameterSnapshot() const
 {
-    const std::lock_guard<std::mutex> reloadLock (reloadMutex);
+    const std::lock_guard<std::recursive_mutex> reloadLock (reloadMutex);
     std::vector<PublicParameterSnapshotEntry> values;
     values.reserve (parameterSlots.size());
     for (const auto& slot : parameterSlots)
@@ -988,7 +988,7 @@ std::optional<InstrumentUiDocument> DandrumAudioProcessor::getPreparedUiDocument
         nullptr, &dandrum_kernel_ui_snapshot_destroy);
     InstrumentUiDocument document;
     {
-        const std::lock_guard<std::mutex> reloadLock (reloadMutex);
+        const std::lock_guard<std::recursive_mutex> reloadLock (reloadMutex);
         auto* activeKernel = kernel.load (std::memory_order_acquire);
         if (! instrumentLoaded || activeKernel == nullptr)
             return std::nullopt;
@@ -1129,6 +1129,34 @@ std::uint32_t DandrumAudioProcessor::getParameterSurfaceGeneration() const noexc
     return parameterSurfaceGeneration.load (std::memory_order_relaxed);
 }
 
+InstrumentUiCommandService& DandrumAudioProcessor::uiCommands() noexcept
+{
+    return uiCommandService;
+}
+
+std::uint32_t DandrumAudioProcessor::uiCommandGeneration() const noexcept
+{
+    return getParameterSurfaceGeneration();
+}
+
+InstrumentUiCommandStatus DandrumAudioProcessor::applyUiParameter (
+    std::uint32_t generation, const std::string& id, float normalisedValue)
+{
+    // Keep generation, public-ID lookup, and host admission in one reload epoch.
+    // The recursive lock permits synchronous host listeners to inspect state.
+    const std::lock_guard<std::recursive_mutex> reloadLock (reloadMutex);
+    if (generation != getParameterSurfaceGeneration())
+        return InstrumentUiCommandStatus::staleGeneration;
+    auto* parameter = getParameterForPublicId (juce::String::fromUTF8 (id.data(), static_cast<int> (id.size())));
+    if (parameter == nullptr)
+        return InstrumentUiCommandStatus::unknownControl;
+
+    parameter->beginChangeGesture();
+    parameter->setValueNotifyingHost (normalisedValue);
+    parameter->endChangeGesture();
+    return InstrumentUiCommandStatus::accepted;
+}
+
 const juce::File& DandrumAudioProcessor::currentInstrumentFile() const noexcept
 {
     return loadedInstrument.sourceFile;
@@ -1136,7 +1164,7 @@ const juce::File& DandrumAudioProcessor::currentInstrumentFile() const noexcept
 
 bool DandrumAudioProcessor::isSoundLabInstrumentCompatible() const
 {
-    const std::lock_guard<std::mutex> reloadLock (reloadMutex);
+    const std::lock_guard<std::recursive_mutex> reloadLock (reloadMutex);
     return instrumentLoaded
            && configuration.soundLabFixturePath.has_value()
            && configuration.matchSourcePath.has_value()
@@ -1183,7 +1211,7 @@ std::size_t DandrumAudioProcessor::getDroppedMidiEventCount() const noexcept
 
 bool DandrumAudioProcessor::reloadInstrumentFromFile (const juce::File& yamlFile)
 {
-    const std::lock_guard<std::mutex> reloadLock (reloadMutex);
+    const std::lock_guard<std::recursive_mutex> reloadLock (reloadMutex);
     const auto yamlText = yamlFile.loadFileAsString();
     loadedPreset = {};
     const auto reloaded = replaceActiveEngineFromFile (yamlFile, yamlFile, yamlText, true, false, &lastReloadWarning);
@@ -1196,7 +1224,7 @@ bool DandrumAudioProcessor::reloadInstrumentFromFile (const juce::File& yamlFile
 bool DandrumAudioProcessor::reloadInstrumentFromYaml (const juce::String& yamlText,
                                                       const juce::File& sourceHint)
 {
-    const std::lock_guard<std::mutex> reloadLock (reloadMutex);
+    const std::lock_guard<std::recursive_mutex> reloadLock (reloadMutex);
     const auto parent = sourceHint.getParentDirectory();
     if (! parent.isDirectory())
     {

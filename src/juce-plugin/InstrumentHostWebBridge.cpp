@@ -2,7 +2,9 @@
 
 #include "SharedInstrumentUi.h"
 
+#include <cmath>
 #include <cstring>
+#include <limits>
 #include <memory>
 #include <string>
 #include <utility>
@@ -128,19 +130,62 @@ void InstrumentHostWebBridge::setParameterFromWeb (
         return;
     }
 
-    const auto publicId = arguments[0].toString();
-    auto* parameter = processor.getParameterForPublicId (publicId);
-    if (parameter == nullptr)
+    const auto numeric = [] (const juce::var& value)
     {
-        completion (juce::var ("Unknown public parameter: " + publicId));
+        return value.isInt() || value.isInt64() || value.isDouble();
+    };
+    if (! numeric (arguments[1]))
+    {
+        completion (juce::var ("Parameter value must be a finite number in range 0..1"));
         return;
     }
+    const auto publicId = arguments[0].toString();
+    const auto hasGeneration = arguments.size() >= 3;
+    auto generation = processor.getParameterSurfaceGeneration();
+    if (hasGeneration)
+    {
+        if (! numeric (arguments[2]))
+        {
+            completion (juce::var ("Invalid instrument generation"));
+            return;
+        }
+        const auto requested = static_cast<double> (arguments[2]);
+        if (! std::isfinite (requested) || requested < 0.0
+            || requested > std::numeric_limits<std::uint32_t>::max()
+            || std::floor (requested) < requested)
+        {
+            completion (juce::var ("Invalid instrument generation"));
+            return;
+        }
+        generation = static_cast<std::uint32_t> (requested);
+    }
 
-    const auto normalised = juce::jlimit (0.0f, 1.0f, static_cast<float> (arguments[1]));
-    parameter->beginChangeGesture();
-    parameter->setValueNotifyingHost (normalised);
-    parameter->endChangeGesture();
-    completion (juce::var());
+    const auto reply = processor.uiCommands().setParameter (
+        { generation, publicId.toStdString(), static_cast<double> (arguments[1]) });
+    switch (reply.status)
+    {
+        case InstrumentUiCommandStatus::accepted:
+            if (hasGeneration)
+            {
+                auto result = std::make_unique<juce::DynamicObject>();
+                result->setProperty ("status", "accepted");
+                result->setProperty ("generation", static_cast<juce::int64> (reply.generation));
+                result->setProperty ("sequence", static_cast<juce::int64> (reply.sequence));
+                completion (juce::var (result.release()));
+            }
+            else
+                completion (juce::var());
+            return;
+        case InstrumentUiCommandStatus::staleGeneration:
+            completion (juce::var ("Rejected stale instrument generation"));
+            return;
+        case InstrumentUiCommandStatus::invalidValue:
+            completion (juce::var ("Parameter value must be finite and in range 0..1"));
+            return;
+        case InstrumentUiCommandStatus::unknownControl:
+            completion (juce::var ("Unknown public parameter: " + publicId));
+            return;
+    }
 }
 
 void InstrumentHostWebBridge::getParametersForWeb (

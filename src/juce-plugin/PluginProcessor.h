@@ -13,10 +13,11 @@
 
 #include "InstrumentFileWatcher.h"
 #include "InstrumentDemoConfiguration.h"
+#include "InstrumentUiCommands.h"
 #include "InstrumentUiDocument.h"
 #include "RustEngineBindings.h"
 
-class DandrumAudioProcessor final : public juce::AudioProcessor
+class DandrumAudioProcessor final : public juce::AudioProcessor, private InstrumentUiCommandHost
 {
 public:
     struct PublicParameterSnapshotEntry
@@ -65,6 +66,7 @@ public:
     std::vector<PublicParameterSnapshotEntry> getPublicParameterSnapshot() const;
     std::optional<InstrumentUiDocument> getPreparedUiDocument() const;
     std::uint32_t getParameterSurfaceGeneration() const noexcept;
+    InstrumentUiCommandService& uiCommands() noexcept;
 
     /// Enqueues a web-editor keyboard event for delivery by processBlock.
     /// The message thread never calls the Rust engine directly.
@@ -143,6 +145,10 @@ public:
     std::size_t getDroppedMidiEventCount() const noexcept;
 
 private:
+    std::uint32_t uiCommandGeneration() const noexcept override;
+    InstrumentUiCommandStatus applyUiParameter (
+        std::uint32_t generation, const std::string& id, float normalisedValue) override;
+
     static constexpr std::intptr_t kNoEngineSlot = -1;
     static constexpr int kPublicParameterSlotCount = 64;
     static constexpr int kPluginStateSchemaVersion = 1;
@@ -257,7 +263,9 @@ private:
     juce::AbstractFifo editorMidiFifo { kEditorMidiQueueCapacity };
     // Serializes engine replacement, reprepare, and UI metadata snapshots.
     // Readers copy retained metadata before a previous engine is destroyed.
-    mutable std::mutex reloadMutex;
+    // Host notifications may re-enter snapshot readers on the same thread.
+    mutable std::recursive_mutex reloadMutex;
+    InstrumentUiCommandService uiCommandService { *this };
     // Watches the loaded instrument file for external edits and reloads it
     // through the standard replacement transaction. Declared last so it is
     // destroyed (and its timer stopped) before the members its callback uses.

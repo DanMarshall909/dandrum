@@ -1,10 +1,12 @@
 #include "PluginEditor.h"
 
+#include <array>
 #include <atomic>
 #include <chrono>
 #include <cmath>
 #include <csignal>
 #include <iostream>
+#include <limits>
 #include <memory>
 #include <stdexcept>
 #include <string>
@@ -105,6 +107,18 @@ struct HostListener final : juce::AudioProcessorListener
     int lastGestureIndex = -1;
 };
 
+struct SnapshotListener final : juce::AudioProcessorListener
+{
+    explicit SnapshotListener (DandrumAudioProcessor& source) : processor (source) {}
+    void audioProcessorParameterChanged (juce::AudioProcessor*, int, float) override
+    {
+        sawDocument = processor.getPreparedUiDocument().has_value();
+    }
+    void audioProcessorChanged (juce::AudioProcessor*, const ChangeDetails&) override {}
+    DandrumAudioProcessor& processor;
+    bool sawDocument = false;
+};
+
 juce::var findParameter (const juce::var& snapshot, const juce::String& id)
 {
     const auto* items = snapshot.getArray();
@@ -174,10 +188,74 @@ int main()
                      { juce::var ("kick.tune_hz"), juce::var (0.38) }).isVoid()
                      && listener.beginCount == 2 && listener.endCount == 2,
                  "current bridge did not create a separate gesture for each parameter update");
+        const auto commandGeneration = processor.getParameterSurfaceGeneration();
+        const auto acceptedChanges = listener.changeCount;
+        require (PluginEditorBridgeTestProbe::invoke (editor, "setParameter",
+                     { juce::var ("kick.tune_hz"), juce::var (0.8),
+                       juce::var (static_cast<int> (commandGeneration - 1)) })
+                     .toString().contains ("stale"),
+                 "browser command accepted an obsolete instrument generation");
+        require (PluginEditorBridgeTestProbe::invoke (editor, "setParameter",
+                     { juce::var ("kick.tune_hz"),
+                       juce::var (std::numeric_limits<double>::quiet_NaN()),
+                       juce::var (static_cast<int> (commandGeneration)) })
+                     .toString().contains ("finite"),
+                 "browser command accepted a non-finite parameter value");
+        require (PluginEditorBridgeTestProbe::invoke (editor, "setParameter",
+                     { juce::var ("kick.tune_hz"), juce::var (1.25),
+                       juce::var (static_cast<int> (commandGeneration)) })
+                     .toString().contains ("range"),
+                 "browser command clamped an out-of-range parameter value");
+        require (PluginEditorBridgeTestProbe::invoke (editor, "setParameter",
+                     { juce::var ("kick.tune_hz"), juce::var ("0.5"),
+                       juce::var (static_cast<int> (commandGeneration)) })
+                     .toString().contains ("finite")
+                     && PluginEditorBridgeTestProbe::invoke (editor, "setParameter",
+                         { juce::var ("kick.tune_hz"), juce::var (0.5), juce::var (1.25) })
+                         .toString().contains ("generation"),
+                 "browser command accepted a coercible value or fractional generation");
+        require (listener.changeCount == acceptedChanges
+                     && std::abs (parameter->getValue() - 0.38f) < 0.00001f,
+                 "rejected browser commands changed the host slot");
         snapshot = PluginEditorBridgeTestProbe::invoke (editor, "getParameters");
         require (std::abs (static_cast<float> (findParameter (snapshot, "kick.tune_hz")
                                                   .getProperty ("value", {})) - 0.38f) < 0.00001f,
                  "getParameters did not reflect the value set through the bridge");
+        SnapshotListener reentrant (processor);
+        processor.addListener (&reentrant);
+        const auto nativeResult = processor.uiCommands().setParameter (
+            { commandGeneration, "kick.tune_hz", 0.39 });
+        const auto webResult = PluginEditorBridgeTestProbe::invoke (editor, "setParameter",
+            { juce::var ("kick.tune_hz"), juce::var (0.40),
+              juce::var (static_cast<int> (commandGeneration)) });
+        require (nativeResult.status == InstrumentUiCommandStatus::accepted
+                     && webResult.getProperty ("status", {}).toString() == "accepted"
+                     && static_cast<juce::int64> (webResult.getProperty ("sequence", {}))
+                            == static_cast<juce::int64> (nativeResult.sequence + 1)
+                     && listener.lastIndex == parameterIndex
+                     && std::abs (parameter->getValue() - 0.40f) < 0.00001f,
+                 "native and Web commands did not share the host slot and admission sequence");
+        processor.removeListener (&reentrant);
+        require (reentrant.sawDocument,
+                 "synchronous host listener could not read a document during parameter admission");
+        const auto changesAfterAdmission = listener.changeCount;
+        const std::array rejectedResults {
+                 processor.uiCommands().setParameter ({ commandGeneration - 1, "kick.tune_hz", 0.5 }),
+                 processor.uiCommands().setParameter ({ commandGeneration, "kick.tune_hz",
+                     std::numeric_limits<double>::infinity() }),
+                 processor.uiCommands().setParameter ({ commandGeneration, "kick.tune_hz", -0.1 }),
+                 processor.uiCommands().setParameter ({ commandGeneration, "missing.id", 0.5 }) };
+        const std::array expectedStatuses {
+            InstrumentUiCommandStatus::staleGeneration,
+            InstrumentUiCommandStatus::invalidValue,
+            InstrumentUiCommandStatus::invalidValue,
+            InstrumentUiCommandStatus::unknownControl };
+        for (std::size_t index = 0; index < rejectedResults.size(); ++index)
+            require (rejectedResults[index].status == expectedStatuses[index]
+                         && rejectedResults[index].sequence == nativeResult.sequence + 1,
+                     "native rejection advanced the shared command sequence");
+        require (listener.changeCount == changesAfterAdmission,
+                 "rejected native command changed the host slot");
 
         require (PluginEditorBridgeTestProbe::invoke (editor, "noteOn", { 36 })
                      .toString().contains ("expects"),
@@ -205,6 +283,11 @@ int main()
                  "could not reload distinct instrument for browser refresh test");
         require (processor.getParameterSurfaceGeneration() != previousGeneration,
                  "replacement did not advance public surface generation");
+        require (PluginEditorBridgeTestProbe::invoke (editor, "setParameter",
+                     { juce::var (processor.getActivePublicParameterIds()[0]), juce::var (0.9),
+                       juce::var (static_cast<int> (previousGeneration)) })
+                     .toString().contains ("stale"),
+                 "delayed browser command from the old instrument changed a replacement slot");
         PluginEditorBridgeTestProbe::refresh (editor);
         require (PluginEditorBridgeTestProbe::seenSurfaceGeneration (editor)
                      == processor.getParameterSurfaceGeneration(),
