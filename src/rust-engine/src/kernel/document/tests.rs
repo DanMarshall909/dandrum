@@ -3,6 +3,7 @@ use std::fs;
 use crate::core::TimedInputEvent;
 use crate::diagnostics::error_codes;
 use crate::graph::{PortDirection, SignalType};
+use crate::graph_processor::RealtimeGraphProcessor;
 use crate::graph_processor::render_kernel_offline_named;
 use crate::kernel::{
     ChannelCount, ControlDefault, DefinitionImplementation, GraphDefinition,
@@ -1058,6 +1059,87 @@ connections:
     assert_eq!(
         render(&plain),
         vec![half, half, half, half, half, half, 0.0, 0.0]
+    );
+}
+
+#[test]
+fn sample_player_oversized_root_render_matches_prepared_small_blocks() {
+    let directory = tempfile::tempdir().expect("temporary sample root");
+    let values = [-0.5, 0.25, 0.5, -0.25, 0.75, -0.75, 0.125, -0.125];
+    crate::wav::write_wav_stereo_i16(
+        fs::File::create(directory.path().join("hit.wav")).expect("sample file"),
+        48_000,
+        &values,
+        &values,
+    )
+    .expect("write sample");
+    let yaml = r#"
+metadata: { name: split_sample_render }
+assets:
+  sample_sources:
+    - id: hit
+      path: hit.wav
+      regions: [{ id: body, start_frame: 0, end_frame: 8 }]
+ports:
+  - { name: audio_out, direction: output, signal: audio, channels: 1, maps_from: player.audio }
+modules:
+  - { id: midi, type: midi_input }
+  - { id: player, type: sample_player, static: { source: hit, region: body, channels: 1, mode: gated } }
+connections:
+  - { from: midi.events, to: player.trigger }
+  - { from: midi.events, to: player.gate }
+"#;
+    let patch = load_kernel_patch_str(yaml).expect("sample patch loads");
+    let settings = RenderSettings {
+        sample_rate_hz: 48_000,
+        block_size_frames: 3,
+        duration_frames: 10,
+    };
+    let context = PreparationContext::new(directory.path(), 48_000);
+    let prepared = prepare_kernel_patch_with_context(&patch, &settings, &context)
+        .expect("sample patch prepares");
+    let runtime = || {
+        RealtimeGraphProcessor::polyphonic_with_compiled_patch_and_sampler_assets_and_max_block_size(
+            prepared.graph().clone(),
+            prepared.compiled_patch().clone(),
+            48_000.0,
+            &PreparedSamplerAssets::empty(),
+            &crate::patch::VoiceAllocation::default(),
+            3,
+        )
+    };
+    let mut oversized = runtime();
+    oversized.note_on_at(36, 100, 2);
+    oversized.note_off_at(36, 7);
+    let mut large_output = vec![vec![vec![0.0; 10]]];
+    assert_eq!(oversized.render_root_outputs(&mut large_output), 10);
+
+    let mut small = runtime();
+    small.note_on_at(36, 100, 2);
+    let mut small_samples = Vec::new();
+    for chunk in [3, 3, 3, 1] {
+        if small_samples.len() == 6 {
+            small.note_off_at(36, 1);
+        }
+        let mut output = vec![vec![vec![0.0; chunk]]];
+        assert_eq!(small.render_root_outputs(&mut output), chunk);
+        small_samples.extend(output.remove(0).remove(0));
+    }
+    assert_eq!(large_output[0][0], small_samples);
+    assert_eq!(
+        large_output[0][0],
+        vec![
+            0.0,
+            0.0,
+            -0.5,
+            8191.0 / 32768.0,
+            16383.0 / 32768.0,
+            -0.25,
+            24575.0 / 32768.0,
+            0.0,
+            0.0,
+            0.0
+        ]
     );
 }
 

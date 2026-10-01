@@ -599,9 +599,7 @@ impl RealtimeGraphProcessor {
         else {
             return 0;
         };
-        if frames > self.prepared_max_block_size
-            || !self.can_render_root_buses_with_scripts(allow_scripts)
-        {
+        if !self.can_render_root_buses_with_scripts(allow_scripts) {
             return 0;
         }
         let event_count = self
@@ -609,8 +607,9 @@ impl RealtimeGraphProcessor {
             .drain_into_buffer(&mut self.events_buffer);
         let segment_poly_events = !self.prepared_poly_runtime_regions.is_empty() && event_count > 0;
         let mut segment_start = 0;
+        let mut chunks = 0;
         while segment_start < frames {
-            let segment_end = if segment_poly_events {
+            let next_event = if segment_poly_events {
                 self.events_buffer[..event_count]
                     .iter()
                     .map(|event| event.frame_offset as usize)
@@ -620,16 +619,18 @@ impl RealtimeGraphProcessor {
             } else {
                 frames
             };
+            let segment_end = next_event.min(segment_start + self.prepared_max_block_size);
             self.render_root_bus_segment(
                 inputs,
                 outputs,
                 segment_start,
                 segment_end - segment_start,
                 event_count,
-                segment_poly_events,
             );
             segment_start = segment_end;
+            chunks += 1;
         }
+        self.last_render_chunk_count = chunks;
         frames
     }
 
@@ -640,7 +641,6 @@ impl RealtimeGraphProcessor {
         segment_start: usize,
         frames: usize,
         event_count: usize,
-        segment_poly_events: bool,
     ) {
         for region in self.prepared_poly_runtime_regions.iter_mut() {
             region.begin_block(frames, self.current_frame);
@@ -652,24 +652,18 @@ impl RealtimeGraphProcessor {
                 .queue_mut(queue.0)
                 .expect("compiled MIDI output has a prepared event queue");
             for event in &self.events_buffer[..event_count] {
-                if !segment_poly_events || event.frame_offset as usize == segment_start {
-                    let offset = if segment_poly_events {
-                        0
-                    } else {
-                        event.frame_offset
-                    };
-                    let _ = destination.push_at(event.event.clone(), offset);
+                let event_frame = event.frame_offset as usize;
+                if event_frame >= segment_start && event_frame < segment_start + frames {
+                    let _ = destination
+                        .push_at(event.event.clone(), (event_frame - segment_start) as u32);
                 }
             }
         } else {
             for event in &self.events_buffer[..event_count] {
-                if !segment_poly_events || event.frame_offset as usize == segment_start {
+                let event_frame = event.frame_offset as usize;
+                if event_frame >= segment_start && event_frame < segment_start + frames {
                     let routed = BlockEvent {
-                        frame_offset: if segment_poly_events {
-                            0
-                        } else {
-                            event.frame_offset
-                        },
+                        frame_offset: (event_frame - segment_start) as u32,
                         event: event.event.clone(),
                     };
                     for region in self.prepared_poly_runtime_regions.iter_mut() {

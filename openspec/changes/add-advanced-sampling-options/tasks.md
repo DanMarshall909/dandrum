@@ -24,7 +24,7 @@
 - [x] 3.4 Implement pitch-ratio playback using deterministic interpolation.
 - [x] 3.5 Implement reverse playback from prepared region metadata.
 - [x] 3.6 Implement fade-in and fade-out at region boundaries.
-- [ ] 3.7 Verify oversized block splitting produces identical output to equivalent smaller blocks.
+- [x] 3.7 Verify oversized block splitting produces identical output to equivalent smaller blocks.
 
 ## 4. Primitive Zone Selection
 

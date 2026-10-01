@@ -82,6 +82,11 @@ A sample source SHALL support named regions with start and end frame positions i
 - **WHEN** a prepared region declares fade-in and fade-out durations
 - **THEN** playback SHALL scale the signed samples at its beginning and end according to those durations, including when the region is reversed
 
+#### Scenario: Oversized host block preserves sample playback
+
+- **WHEN** a host requests a root-bus render longer than the prepared maximum block size while sample triggers and releases occur inside it
+- **THEN** the renderer SHALL split the work into prepared-size segments and emit the same samples as equivalent smaller host calls
+
 ### Requirement: Sample maps select prepared regions
 
 A sample map SHALL contain at least one zone that references a prepared region and declares MIDI key ranges within `0..=127` and velocity ranges within `1..=127`. Zone declarations SHALL accept optional per-zone gain, pan, pitch offset, region overrides, round-robin groups, relative weights, and exclusive/choke groups. Preparation SHALL resolve zones to stable source and region indices in authored order and build a keyed map lookup before rendering. For a matching note and velocity, selection SHALL follow the map's declared mode and seed with a stable zone order; it SHALL be repeatable for the same event stream regardless of audio block size, file order, or map storage iteration order. Preparation SHALL reject invalid ranges, unresolved region references, duplicate IDs, and ambiguous overlapping zones without a declared tie-breaking mode.
