@@ -253,6 +253,71 @@ fn builtin_definitions() -> Vec<GraphDefinition> {
             .with_port(control_in(ports::LOOP_START))
             .with_port(control_in(ports::LOOP_END))
             .with_port(poly_audio_out(ports::AUDIO)),
+        mono_stereo_primitive(names::SAMPLE_PLAYER)
+            .with_static_param(StaticParam::new("source", StaticType::String))
+            .with_static_param(StaticParam::new("region", StaticType::String))
+            .with_static_param(enum_param(
+                "mode",
+                "one_shot",
+                &["one_shot", "gated", "looped"],
+            ))
+            .with_static_param(enum_param(
+                INTERPOLATION_PARAMETER,
+                INTERPOLATION_LINEAR,
+                &["nearest", INTERPOLATION_LINEAR, INTERPOLATION_CUBIC],
+            ))
+            .with_port(event_in(ports::TRIGGER))
+            .with_port(event_in(ports::GATE))
+            .with_port(tunable(ports::PITCH_RATIO, 1.0, 0.125, 8.0))
+            .with_port(tunable(ports::START_OFFSET, 0.0, 0.0, 1.0))
+            .with_port(tunable(ports::LEVEL, 1.0, 0.0, 4.0))
+            .with_port(tunable(ports::PAN, 0.0, -1.0, 1.0))
+            .with_port(poly_audio_out(ports::AUDIO)),
+        primitive(names::SAMPLE_ZONE_SELECTOR)
+            .with_static_param(StaticParam::new("sample_map", StaticType::String))
+            .with_static_param(enum_param(
+                "selection_mode",
+                "first_match",
+                &[
+                    "first_match",
+                    "round_robin",
+                    "random_weighted",
+                    "round_robin_then_random",
+                ],
+            ))
+            .with_static_param(
+                StaticParam::new("selection_seed", StaticType::Int)
+                    .with_default(StaticValue::Int(0)),
+            )
+            .with_port(event_in(ports::NOTE))
+            .with_port(tunable(ports::VARIATION, 0.0, 0.0, 1.0))
+            .with_port(event_out(ports::SELECTED_ZONE)),
+        mono_stereo_primitive(names::SAMPLE_SLICER)
+            .with_static_param(StaticParam::new("source", StaticType::String))
+            .with_static_param(StaticParam::new("slice_table", StaticType::String))
+            .with_port(event_in(ports::TRIGGER))
+            .with_port(defaulted(ports::SLICE_INDEX, 0.0))
+            .with_port(tunable(ports::PITCH_RATIO, 1.0, 0.125, 8.0))
+            .with_port(tunable(ports::LEVEL, 1.0, 0.0, 4.0))
+            .with_port(poly_audio_out(ports::AUDIO)),
+        mono_stereo_primitive(names::SAMPLE_MAP_PLAYER)
+            .with_static_param(StaticParam::new("sample_map", StaticType::String))
+            .with_static_param(
+                StaticParam::new("max_voices", StaticType::Int).with_default(StaticValue::Int(16)),
+            )
+            .with_static_param(enum_param(
+                "voice_steal",
+                "oldest",
+                &["oldest", "quietest", "reject_new"],
+            ))
+            .with_static_param(enum_param("choke_mode", "cut", &["cut", "fade", "release"]))
+            .with_port(event_in(ports::NOTE))
+            .with_port(tunable(ports::PITCH_RATIO, 1.0, 0.125, 8.0))
+            .with_port(tunable(ports::START_OFFSET, 0.0, 0.0, 1.0))
+            .with_port(tunable(ports::LEVEL, 1.0, 0.0, 4.0))
+            .with_port(tunable(ports::PAN, 0.0, -1.0, 1.0))
+            .with_port(tunable(ports::VARIATION, 0.0, 0.0, 1.0))
+            .with_port(poly_audio_out(ports::AUDIO)),
         primitive(names::NOTE_TO_RATE)
             .with_port(event_in(ports::EVENTS))
             .with_port(control_out(ports::RATE)),

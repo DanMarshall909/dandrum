@@ -25,7 +25,7 @@ use crate::kernel::{
 };
 
 /// Every builtin the kernel registry must declare.
-const EXPECTED: [&str; 35] = [
+const EXPECTED: [&str; 39] = [
     names::MIDI_INPUT,
     names::OSCILLATOR,
     names::GAIN,
@@ -40,6 +40,10 @@ const EXPECTED: [&str; 35] = [
     names::CONTROL_DELAY,
     names::SCRIPT,
     names::SAMPLER,
+    names::SAMPLE_PLAYER,
+    names::SAMPLE_ZONE_SELECTOR,
+    names::SAMPLE_SLICER,
+    names::SAMPLE_MAP_PLAYER,
     names::NOTE_TO_RATE,
     names::DYNAMICS_PROCESSOR,
     names::SATURATOR,
@@ -661,6 +665,171 @@ fn sampler_and_convolution_declare_typed_resource_arguments() {
         StaticType::Resource(ResourceKind::ImpulseResponse)
     );
     assert_eq!(impulse_response.default(), None);
+}
+
+#[test]
+fn sample_player_exposes_prepared_region_and_live_playback_controls() {
+    let registry = builtin_registry();
+    let player = registry
+        .get("sample_player")
+        .expect("sample_player should be discoverable");
+
+    assert_eq!(
+        static_param_of(player, "source").static_type(),
+        StaticType::String
+    );
+    assert_eq!(
+        static_param_of(player, "region").static_type(),
+        StaticType::String
+    );
+    assert_eq!(
+        static_param_of(player, "mode").static_type(),
+        StaticType::Enum
+    );
+    assert_eq!(
+        static_param_of(player, "mode").allowed_values(),
+        &["one_shot", "gated", "looped"]
+    );
+    assert_eq!(
+        static_param_of(player, "interpolation").static_type(),
+        StaticType::Enum
+    );
+    assert_eq!(
+        static_param_of(player, "channels").static_type(),
+        StaticType::Int
+    );
+    for name in ["trigger", "gate"] {
+        assert_eq!(
+            port_of(player, name, PortDirection::Input).signal_type(),
+            SignalType::Event
+        );
+    }
+    for name in ["pitch_ratio", "start_offset", "level", "pan"] {
+        assert_eq!(
+            port_of(player, name, PortDirection::Input).signal_type(),
+            SignalType::Control
+        );
+    }
+    let output = port_of(player, "audio", PortDirection::Output);
+    assert_eq!(output.signal_type(), SignalType::Audio);
+    assert_eq!(output.channels(), &ChannelCount::param("channels"));
+}
+
+#[test]
+fn sample_zone_selector_exposes_map_and_selected_zone_events() {
+    let registry = builtin_registry();
+    let selector = registry
+        .get("sample_zone_selector")
+        .expect("sample_zone_selector should be discoverable");
+
+    assert_eq!(
+        static_param_of(selector, "sample_map").static_type(),
+        StaticType::String
+    );
+    assert_eq!(
+        static_param_of(selector, "selection_mode").static_type(),
+        StaticType::Enum
+    );
+    assert_eq!(
+        static_param_of(selector, "selection_seed").static_type(),
+        StaticType::Int
+    );
+    assert_eq!(
+        port_of(selector, "note", PortDirection::Input).signal_type(),
+        SignalType::Event
+    );
+    assert_eq!(
+        port_of(selector, "variation", PortDirection::Input).signal_type(),
+        SignalType::Control
+    );
+    assert_eq!(
+        port_of(selector, "selected_zone", PortDirection::Output).signal_type(),
+        SignalType::Event
+    );
+}
+
+#[test]
+fn sample_slicer_exposes_prepared_slices_and_live_index() {
+    let registry = builtin_registry();
+    let slicer = registry
+        .get("sample_slicer")
+        .expect("sample_slicer should be discoverable");
+
+    assert_eq!(
+        static_param_of(slicer, "source").static_type(),
+        StaticType::String
+    );
+    assert_eq!(
+        static_param_of(slicer, "slice_table").static_type(),
+        StaticType::String
+    );
+    assert_eq!(
+        static_param_of(slicer, "channels").static_type(),
+        StaticType::Int
+    );
+    assert_eq!(
+        port_of(slicer, "trigger", PortDirection::Input).signal_type(),
+        SignalType::Event
+    );
+    for name in ["slice_index", "pitch_ratio", "level"] {
+        assert_eq!(
+            port_of(slicer, name, PortDirection::Input).signal_type(),
+            SignalType::Control
+        );
+    }
+    let output = port_of(slicer, "audio", PortDirection::Output);
+    assert_eq!(output.signal_type(), SignalType::Audio);
+    assert_eq!(output.channels(), &ChannelCount::param("channels"));
+}
+
+#[test]
+fn sample_map_player_exposes_bounded_voices_choke_and_live_controls() {
+    let registry = builtin_registry();
+    let player = registry
+        .get("sample_map_player")
+        .expect("sample_map_player should be discoverable");
+
+    assert_eq!(
+        static_param_of(player, "sample_map").static_type(),
+        StaticType::String
+    );
+    assert_eq!(
+        static_param_of(player, "max_voices").static_type(),
+        StaticType::Int
+    );
+    assert_eq!(
+        static_param_of(player, "voice_steal").static_type(),
+        StaticType::Enum
+    );
+    assert_eq!(
+        static_param_of(player, "voice_steal").allowed_values(),
+        &["oldest", "quietest", "reject_new"]
+    );
+    assert_eq!(
+        static_param_of(player, "choke_mode").static_type(),
+        StaticType::Enum
+    );
+    assert_eq!(
+        static_param_of(player, "choke_mode").allowed_values(),
+        &["cut", "fade", "release"]
+    );
+    assert_eq!(
+        static_param_of(player, "channels").static_type(),
+        StaticType::Int
+    );
+    assert_eq!(
+        port_of(player, "note", PortDirection::Input).signal_type(),
+        SignalType::Event
+    );
+    for name in ["pitch_ratio", "start_offset", "level", "pan", "variation"] {
+        assert_eq!(
+            port_of(player, name, PortDirection::Input).signal_type(),
+            SignalType::Control
+        );
+    }
+    let output = port_of(player, "audio", PortDirection::Output);
+    assert_eq!(output.signal_type(), SignalType::Audio);
+    assert_eq!(output.channels(), &ChannelCount::param("channels"));
 }
 
 #[test]

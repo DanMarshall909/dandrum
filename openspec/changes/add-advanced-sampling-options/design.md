@@ -74,6 +74,8 @@ note event + velocity
 
 A `sample_map_player` may exist as a convenience module, but the underlying implementation should still be factored as selector + player + voice/choke behaviour. This avoids a single expanding sampler module that gradually absorbs unrelated workstation-sampler features.
 
+For this change, `sample_map_player` is a prepared convenience surface over `sample_zone_selector`, `sample_player`, voice-choke event policy, and a bounded `poly` region. It does not own a second voice allocator. Its `max_voices` and stealing arguments configure that poly region; zone and choke metadata are prepared before rendering. The existing `sampler` name remains available for older patches while its playback code is reused by the new player.
+
 ### Metadata should be useful, not decorative
 
 Source metadata should support real patch behaviour:
