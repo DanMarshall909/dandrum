@@ -1591,6 +1591,81 @@ connections:
 }
 
 #[test]
+fn weighted_drum_selection_ignores_block_and_source_declaration_order() {
+    let directory = tempfile::tempdir().expect("temporary sample root");
+    for (file, value) in [("rare.wav", -0.5), ("common.wav", 0.5)] {
+        crate::wav::write_wav_stereo_i16(
+            fs::File::create(directory.path().join(file)).expect("sample file"),
+            48_000,
+            &[value],
+            &[value],
+        )
+        .expect("write sample");
+    }
+    let source_a = "    - id: rare\n      path: rare.wav\n      regions: [{ id: hit, start_frame: 0, end_frame: 1 }]\n";
+    let source_b = "    - id: common\n      path: common.wav\n      regions: [{ id: hit, start_frame: 0, end_frame: 1 }]\n";
+    let yaml = format!(
+        r#"
+metadata: {{ name: stable_weighted_kit }}
+assets:
+  sample_sources:
+{source_a}{source_b}  sample_maps:
+    - id: kit
+      selection_mode: random_weighted
+      selection_seed: 123
+      zones:
+        - {{ region: rare.hit, key_range: [36, 36], velocity_range: [1, 127], weight: 1 }}
+        - {{ region: common.hit, key_range: [36, 36], velocity_range: [1, 127], weight: 3 }}
+ports:
+  - {{ name: audio_out, direction: output, signal: audio, channels: 1, maps_from: player.audio }}
+modules:
+  - {{ id: midi, type: midi_input }}
+  - {{ id: player, type: sample_map_player, static: {{ sample_map: kit, max_voices: 1, channels: 1 }} }}
+connections:
+  - {{ from: midi.events, to: player.note }}
+"#
+    );
+    let reordered = yaml.replace(
+        &format!("{source_a}{source_b}"),
+        &format!("{source_b}{source_a}"),
+    );
+    let events = (0..8)
+        .map(|frame| {
+            TimedInputEvent::new(
+                frame,
+                ScriptEvent::NoteOn {
+                    note: 36,
+                    velocity: 100,
+                },
+            )
+        })
+        .collect::<Vec<_>>();
+    let context = PreparationContext::new(directory.path(), 48_000);
+    let mut results = Vec::new();
+    for (document, block_size) in [(&yaml, 8), (&yaml, 3), (&reordered, 1)] {
+        let patch = load_kernel_patch_str(document).expect("stable kit loads");
+        let settings = RenderSettings {
+            sample_rate_hz: 48_000,
+            block_size_frames: block_size,
+            duration_frames: 8,
+        };
+        let prepared = prepare_kernel_patch_with_context(&patch, &settings, &context)
+            .expect("stable kit prepares");
+        let rendered =
+            render_kernel_offline_named(&prepared, events.clone(), &PreparedSamplerAssets::empty())
+                .expect("stable kit renders");
+        results.push(rendered[0].1[0].clone());
+    }
+    assert_eq!(results[0], results[1]);
+    assert_eq!(results[0], results[2]);
+    let common = 16383.0 / 32768.0;
+    assert_eq!(
+        results[0],
+        vec![common, -0.5, -0.5, common, common, -0.5, common, common]
+    );
+}
+
+#[test]
 fn poly_region_renders_sample_player_child_with_independent_voices() {
     let directory = tempfile::tempdir().expect("temporary sample root");
     crate::wav::write_wav_stereo_i16(

@@ -121,6 +121,11 @@ A sample map SHALL contain at least one zone that references a prepared region a
 - **WHEN** the same note-event stream is rendered twice with the same sample map and selection seed
 - **THEN** round-robin or weighted selection SHALL produce the same region sequence across both renders and across equivalent block splits
 
+#### Scenario: Source declaration order does not change weighted hits
+
+- **WHEN** the same weighted drum map is prepared with its sample sources declared in a different order
+- **THEN** equivalent note events SHALL select the same signed hit sequence at different audio block sizes
+
 #### Scenario: Zero-weight zone is rejected
 
 - **WHEN** a sample-map zone declares zero relative weight

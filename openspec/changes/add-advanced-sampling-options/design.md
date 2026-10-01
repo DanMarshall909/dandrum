@@ -74,6 +74,8 @@ note event + velocity
 
 A `sample_map_player` may exist as a convenience module, but the underlying implementation should still be factored as selector + player + voice/choke behaviour. This avoids a single expanding sampler module that gradually absorbs unrelated workstation-sampler features.
 
+For this version, prepared zone selection runs inside `sample_map_player`. The registry describes the intended `sample_zone_selector` ports, but a standalone selector is deferred until the event model can carry a typed selected-zone message. Encoding a zone index as a note event would make ordinary note routing ambiguous. A `poly` region remains responsible for allocating voices; `sample_map_player` selects the prepared region played by each voice. The bounded voice integration must keep round-robin and seeded selection state at kit level across those voices.
+
 For this change, `sample_map_player` is a prepared convenience surface over `sample_zone_selector`, `sample_player`, voice-choke event policy, and a bounded `poly` region. It does not own a second voice allocator. Its `max_voices` and stealing arguments configure that poly region; zone and choke metadata are prepared before rendering. The existing `sampler` name remains available for older patches while its playback code is reused by the new player.
 
 ### Metadata should be useful, not decorative
