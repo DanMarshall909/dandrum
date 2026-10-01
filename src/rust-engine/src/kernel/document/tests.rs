@@ -832,6 +832,72 @@ connections:
 }
 
 #[test]
+fn pitched_sample_player_uses_declared_interpolation_at_fractional_positions() {
+    let directory = tempfile::tempdir().expect("temporary sample root");
+    let values = [0.0, 1.0, 0.0, -1.0];
+    crate::wav::write_wav_stereo_i16(
+        fs::File::create(directory.path().join("wave.wav")).expect("sample file"),
+        48_000,
+        &values,
+        &values,
+    )
+    .expect("write sample");
+    let yaml = r#"
+metadata: { name: pitched_region }
+assets:
+  sample_sources:
+    - id: wave
+      path: wave.wav
+      regions: [{ id: body, start_frame: 0, end_frame: 4 }]
+ports:
+  - { name: audio_out, direction: output, signal: audio, channels: 1, maps_from: player.audio }
+modules:
+  - { id: midi, type: midi_input }
+  - { id: player, type: sample_player, static: { source: wave, region: body, channels: 1, interpolation: linear }, defaults: { pitch_ratio: 0.5 } }
+connections:
+  - { from: midi.events, to: player.trigger }
+"#;
+    let settings = RenderSettings {
+        sample_rate_hz: 48_000,
+        block_size_frames: 7,
+        duration_frames: 7,
+    };
+    let context = PreparationContext::new(directory.path(), 48_000);
+    let render = |document: &str| {
+        let patch = load_kernel_patch_str(document).expect("pitched patch loads");
+        let prepared = prepare_kernel_patch_with_context(&patch, &settings, &context)
+            .expect("pitched patch prepares");
+        render_kernel_offline_named(
+            &prepared,
+            vec![TimedInputEvent::new(
+                0,
+                ScriptEvent::NoteOn {
+                    note: 60,
+                    velocity: 100,
+                },
+            )],
+            &PreparedSamplerAssets::empty(),
+        )
+        .expect("pitched patch renders")[0]
+            .1[0]
+            .clone()
+    };
+    let top = 32767.0 / 32768.0;
+    assert_eq!(
+        render(yaml),
+        vec![0.0, top * 0.5, top, top * 0.5, 0.0, -0.5, -1.0]
+    );
+    let nearest = yaml.replace("interpolation: linear", "interpolation: nearest");
+    assert_eq!(render(&nearest), vec![0.0, top, top, 0.0, 0.0, -1.0, -1.0]);
+    let cubic = yaml.replace("interpolation: linear", "interpolation: cubic");
+    let cubic_audio = render(&cubic);
+    assert_eq!(cubic_audio[0], 0.0);
+    assert_eq!(cubic_audio[1], top * 0.5625);
+    assert_eq!(cubic_audio[2], top);
+    assert!(cubic_audio[1] > top * 0.5);
+}
+
+#[test]
 fn poly_region_renders_sample_player_child_with_independent_voices() {
     let directory = tempfile::tempdir().expect("temporary sample root");
     crate::wav::write_wav_stereo_i16(

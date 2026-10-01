@@ -250,6 +250,7 @@ pub enum CompiledConstruction {
     SamplePlayer {
         region: SampleRegion,
         mode: String,
+        interpolation: SampleInterpolation,
     },
     CompensationDelay {
         samples: usize,
@@ -296,6 +297,13 @@ pub enum CompiledConstruction {
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum CompiledScriptLanguage {
     Rhai,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum SampleInterpolation {
+    Nearest,
+    Linear,
+    Cubic,
 }
 
 #[derive(Clone, Debug, PartialEq)]

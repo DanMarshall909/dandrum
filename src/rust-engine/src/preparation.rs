@@ -9,7 +9,7 @@ use crate::compiled_patch::{
     self, CompileError, CompiledConstruction, CompiledNodeData, CompiledPatch,
     CompiledPolyOutputAccumulator, CompiledPolyRegion, CompiledPolyVoiceStorage, CompiledPortSpan,
     CompiledResourceHandles, CompiledRootPort, ImpulseResponseResourceHandle, RootBusPlan,
-    SampleResourceHandle,
+    SampleInterpolation, SampleResourceHandle,
 };
 use crate::diagnostics::{self, Diagnostic, Severity};
 use crate::graph::{Cable, Graph, ModuleId, ModuleNode, PortDirection, PortRef, SignalType};
@@ -1806,9 +1806,17 @@ fn lower_kernel_graph(
             data.resources.sample = Some(SampleResourceHandle::from_shared(
                 source.resource.shared_sample(),
             ));
+            let interpolation = match node.static_args().get("interpolation") {
+                Some(StaticValue::Enum(value)) if value == "nearest" => {
+                    SampleInterpolation::Nearest
+                }
+                Some(StaticValue::Enum(value)) if value == "cubic" => SampleInterpolation::Cubic,
+                _ => SampleInterpolation::Linear,
+            };
             data.construction = CompiledConstruction::SamplePlayer {
                 region: region.clone(),
                 mode: mode.to_string(),
+                interpolation,
             };
         }
         data.port_channels.extend(

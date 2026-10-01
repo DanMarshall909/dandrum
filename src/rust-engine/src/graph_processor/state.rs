@@ -3,7 +3,7 @@ use crate::builtins::module_kind::ModuleKind;
 use crate::compiled_patch::CompiledNodeData;
 use crate::compiled_patch::{
     CompiledConstruction, CompiledFilterAlgorithm, CompiledNode, CompiledResourceHandles,
-    CompiledScriptLanguage, SampleResourceHandle,
+    CompiledScriptLanguage, SampleInterpolation, SampleResourceHandle,
 };
 use crate::convolution::Convolution;
 use crate::crossover::LinkwitzRiley4;
@@ -79,6 +79,7 @@ pub(super) enum PerModuleState {
         sample: Option<SampleResourceHandle>,
         region: SampleRegion,
         mode: String,
+        interpolation: SampleInterpolation,
         position: f64,
         active: bool,
     },
@@ -430,13 +431,19 @@ impl PerModuleState {
                 active: false,
             },
             ModuleKind::SamplePlayer => {
-                let CompiledConstruction::SamplePlayer { region, mode } = construction else {
+                let CompiledConstruction::SamplePlayer {
+                    region,
+                    mode,
+                    interpolation,
+                } = construction
+                else {
                     panic!("sample_player module {module_id} has mismatched construction data")
                 };
                 PerModuleState::SamplePlayer {
                     sample: resources.sample.clone(),
                     region: region.clone(),
                     mode: mode.clone(),
+                    interpolation: *interpolation,
                     position: 0.0,
                     active: false,
                 }

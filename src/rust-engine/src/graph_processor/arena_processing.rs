@@ -3,7 +3,9 @@ use super::helpers::{normalized_end_position, normalized_position};
 use super::outputs::BlockEvent;
 use super::process_context::ProcessContext;
 use super::state::PerModuleState;
+use crate::compiled_patch::SampleInterpolation;
 use crate::decay::DecayCurve;
+use crate::kernel::document::SampleRegion;
 use crate::oscillator::OSCILLATOR_BASE_HZ;
 use crate::saturator::Saturator;
 use crate::script::ScriptEvent;
@@ -123,8 +125,9 @@ pub(super) fn process_sampler_state(
 
 pub(super) fn process_sample_player_state(
     sample: &Option<crate::compiled_patch::SampleResourceHandle>,
-    region: &crate::kernel::document::SampleRegion,
+    region: &SampleRegion,
     mode: &str,
+    interpolation: SampleInterpolation,
     position: &mut f64,
     active: &mut bool,
     context: &mut ProcessContext<'_>,
@@ -165,20 +168,34 @@ pub(super) fn process_sample_player_state(
                 let value = if let Some(loop_settings) = loop_settings {
                     let fade_start = loop_settings.end_frame as usize - crossfade_frames;
                     if crossfade_frames > 0 && index >= fade_start {
-                        let fade_index = index - fade_start;
-                        let head = frames[loop_settings.start_frame as usize + fade_index];
-                        let weight = (fade_index + 1) as f32 / crossfade_frames as f32;
-                        frames[index] * (1.0 - weight) + head * weight
+                        let fade_position = *position - fade_start as f64;
+                        let head_position = loop_settings.start_frame as f64 + fade_position;
+                        let head =
+                            sample_interpolated(frames, head_position, region, interpolation);
+                        let tail = sample_interpolated(frames, *position, region, interpolation);
+                        let weight =
+                            ((fade_position + 1.0) / crossfade_frames as f64).min(1.0) as f32;
+                        tail * (1.0 - weight) + head * weight
                     } else {
-                        frames[index]
+                        sample_interpolated(frames, *position, region, interpolation)
                     }
                 } else {
-                    frames[index]
+                    sample_interpolated(frames, *position, region, interpolation)
                 };
-                *position += 1.0;
+                let ratio = context.input_sample(0, frame, 1.0);
+                let ratio = if ratio.is_finite() {
+                    ratio.clamp(0.125, 8.0)
+                } else {
+                    1.0
+                };
+                *position += f64::from(ratio);
                 if let Some(loop_settings) = loop_settings {
                     if *position >= loop_settings.end_frame as f64 {
-                        *position = (loop_settings.start_frame + crossfade_frames as u64) as f64;
+                        let wrap_start =
+                            (loop_settings.start_frame + crossfade_frames as u64) as f64;
+                        let wrap_length = loop_settings.end_frame as f64 - wrap_start;
+                        *position = wrap_start
+                            + (*position - loop_settings.end_frame as f64).rem_euclid(wrap_length);
                     }
                 } else if *position >= region.end_frame as f64 {
                     *active = false;
@@ -199,6 +216,34 @@ pub(super) fn process_sample_player_state(
     }
 }
 
+fn sample_interpolated(
+    frames: &[f32],
+    position: f64,
+    region: &SampleRegion,
+    interpolation: SampleInterpolation,
+) -> f32 {
+    let first = region.start_frame as usize;
+    let last = region.end_frame as usize - 1;
+    if interpolation == SampleInterpolation::Nearest {
+        return frames[(position.round() as usize).clamp(first, last)];
+    }
+    let base = (position.floor() as usize).clamp(first, last);
+    let fraction = (position - base as f64) as f32;
+    let a = frames[base];
+    let b = frames[(base + 1).min(last)];
+    if interpolation == SampleInterpolation::Linear {
+        return a + fraction * (b - a);
+    }
+    let before = frames[base.saturating_sub(1).max(first)];
+    let after = frames[(base + 2).min(last)];
+    let f2 = fraction * fraction;
+    let f3 = f2 * fraction;
+    0.5 * ((3.0 * (a - b) + after - before) * f3
+        + (2.0 * before + 4.0 * b - 5.0 * a - after) * f2
+        + (b - before) * fraction
+        + 2.0 * a)
+}
+
 pub(super) fn process_sample_player(
     state: &mut PerModuleState,
     context: &mut ProcessContext<'_>,
@@ -209,6 +254,7 @@ pub(super) fn process_sample_player(
         sample,
         region,
         mode,
+        interpolation,
         position,
         active,
     } = state
@@ -219,6 +265,7 @@ pub(super) fn process_sample_player(
         sample,
         region,
         mode,
+        *interpolation,
         position,
         active,
         context,
