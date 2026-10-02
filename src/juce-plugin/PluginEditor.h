@@ -47,9 +47,9 @@ private:
 
     DandrumAudioProcessor& processor;
     InstrumentHostWebBridge hostBridge;
-    // Declared before the browser so it outlives browser-owned native callbacks.
-    std::unique_ptr<SoundLabController> soundLabController;
-    juce::File soundLabReferenceFile;
+    // Processor ownership keeps jobs and reference selection across editor restarts.
+    SoundLabController* soundLabController;
+    juce::File& soundLabReferenceFile;
     std::unique_ptr<juce::FileChooser> soundLabFileChooser;
     juce::WebBrowserComponent browser;
     std::uint64_t lastSeenSoundLabGeneration = static_cast<std::uint64_t> (-1);

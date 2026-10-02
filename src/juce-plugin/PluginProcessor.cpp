@@ -5,6 +5,7 @@
 #include <array>
 #include <bit>
 #include <cctype>
+#include <chrono>
 #include <cstdint>
 #include <cstdlib>
 #include <map>
@@ -370,6 +371,9 @@ DandrumAudioProcessor::DandrumAudioProcessor (InstrumentDemoConfiguration demo)
     if (instrumentLoaded)
         preparePublicParameterSlots (loadPublicParameterDescriptors (configuration.instrumentPath.string()), nullptr, false);
 
+    if (configuration.soundLabFixturePath)
+        soundLabController = std::make_unique<SoundLabController>();
+
     instrumentFileWatcher.onReload ([this] (const juce::File& changedFile) { reloadInstrumentFromFile (changedFile); });
     if (instrumentLoaded && loadedInstrument.sourceFile.existsAsFile())
         instrumentFileWatcher.watchFile (loadedInstrument.sourceFile);
@@ -377,6 +381,14 @@ DandrumAudioProcessor::DandrumAudioProcessor (InstrumentDemoConfiguration demo)
 
 DandrumAudioProcessor::~DandrumAudioProcessor()
 {
+    soundLabController.reset();
+    if (pendingUiReload.valid())
+    {
+        // Join preparation before destroying the active engine; an abandoned
+        // result still owns its candidate until the future is consumed.
+        try { pendingUiReload.get(); }
+        catch (const std::exception&) {}
+    }
     dandrum_kernel_destroy (kernel.load (std::memory_order_relaxed));
 }
 
@@ -478,6 +490,18 @@ bool DandrumAudioProcessor::replaceActiveEngineFromFile (const juce::File& yamlF
         return false;
     }
 
+    const auto descriptors = loadPublicParameterDescriptors (path);
+    installPreparedEngine (candidateKernel, sourceHint, yamlText, descriptors,
+                           preferCurrentSlotValues, reloadWarning);
+    return true;
+}
+
+void DandrumAudioProcessor::installPreparedEngine (
+    DandrumKernelInstrument* candidateKernel, const juce::File& sourceHint,
+    const juce::String& yamlText,
+    const std::vector<PublicParameterDescriptor>& descriptors,
+    bool preferCurrentSlotValues, juce::String* reloadWarning)
+{
     juce::String instrumentId;
     int schemaVersion = 0;
     readInstrumentIdentity (yamlText, instrumentId, schemaVersion);
@@ -494,7 +518,7 @@ bool DandrumAudioProcessor::replaceActiveEngineFromFile (const juce::File& yamlF
     loadedInstrument.yamlContent = yamlText;
     loadedInstrument.instrumentId = instrumentId;
     loadedInstrument.presetSchemaVersion = schemaVersion;
-    preparePublicParameterSlots (yamlFile, reloadWarning, preferCurrentSlotValues);
+    preparePublicParameterSlots (descriptors, reloadWarning, preferCurrentSlotValues);
 
     juce::Thread::sleep (5);
 
@@ -503,8 +527,6 @@ bool DandrumAudioProcessor::replaceActiveEngineFromFile (const juce::File& yamlF
     setMuted (false);
     suspendProcessing (false);
     replacementState.store (static_cast<int> (ReplacementState::Running), std::memory_order_relaxed);
-
-    return true;
 }
 
 void DandrumAudioProcessor::preparePublicParameterSlots (const juce::File& instrumentFile,
@@ -1280,6 +1302,16 @@ InstrumentUiCommandService& DandrumAudioProcessor::uiCommands() noexcept
     return uiCommandService;
 }
 
+SoundLabController* DandrumAudioProcessor::getSoundLabController() noexcept
+{
+    return soundLabController.get();
+}
+
+juce::File& DandrumAudioProcessor::getSoundLabReferenceFile() noexcept
+{
+    return soundLabReferenceFile;
+}
+
 std::uint32_t DandrumAudioProcessor::uiCommandGeneration() const noexcept
 {
     return getParameterSurfaceGeneration();
@@ -1393,6 +1425,116 @@ bool DandrumAudioProcessor::reloadInstrumentFromFile (const juce::File& yamlFile
         instrumentFileWatcher.watchFile (yamlFile);
 
     return reloaded;
+}
+
+std::optional<std::uint64_t> DandrumAudioProcessor::requestInstrumentReloadJob (
+    const juce::File& yamlFile, std::uint32_t expectedGeneration)
+{
+    const std::lock_guard<std::recursive_mutex> reloadLock (reloadMutex);
+    if (expectedGeneration != getParameterSurfaceGeneration()
+        || getSampleRate() <= 0.0 || pendingUiReload.valid())
+        return std::nullopt;
+
+    const auto sampleRate = static_cast<std::uint32_t> (juce::jmax (1.0, getSampleRate()));
+    const auto preparedBlockSize = static_cast<std::size_t> (juce::jmax (1, getBlockSize()));
+    const auto jobId = nextUiJobId++;
+    uiJobHistory.push_back ({ jobId, UiJobState::running, expectedGeneration, {} });
+    while (uiJobHistory.size() > 16)
+        uiJobHistory.pop_front();
+
+    try
+    {
+        pendingUiReload = std::async (std::launch::async,
+            [yamlFile, sampleRate, preparedBlockSize]
+            {
+                PreparedUiReload prepared;
+                prepared.file = yamlFile;
+                prepared.sampleRate = sampleRate;
+                prepared.blockSize = preparedBlockSize;
+                if (! yamlFile.existsAsFile())
+                {
+                    prepared.error = "Instrument file does not exist: " + yamlFile.getFullPathName();
+                    return prepared;
+                }
+                prepared.yaml = yamlFile.loadFileAsString();
+                const auto path = yamlFile.getFullPathName().toStdString();
+                prepared.candidate.reset (prepareKernelWithPublicControls (
+                    path, sampleRate, preparedBlockSize));
+                if (prepared.candidate == nullptr)
+                    prepared.error = "Failed to load instrument: " + yamlFile.getFullPathName();
+                else
+                    prepared.descriptors = loadPublicParameterDescriptors (path);
+                return prepared;
+            });
+    }
+    catch (const std::exception& error)
+    {
+        uiJobHistory.back().state = UiJobState::failed;
+        uiJobHistory.back().error = juce::String (error.what());
+        return jobId;
+    }
+
+    pendingUiReloadId = jobId;
+    return jobId;
+}
+
+void DandrumAudioProcessor::pollInstrumentUiJobs()
+{
+    if (! pendingUiReload.valid()
+        || pendingUiReload.wait_for (std::chrono::seconds (0)) != std::future_status::ready)
+        return;
+
+    const auto jobId = std::exchange (pendingUiReloadId, 0);
+    const auto job = std::find_if (uiJobHistory.begin(), uiJobHistory.end(),
+        [jobId] (const UiJobStatus& item) { return item.id == jobId; });
+    if (job == uiJobHistory.end())
+        return;
+
+    PreparedUiReload prepared;
+    try
+    {
+        prepared = pendingUiReload.get();
+    }
+    catch (const std::exception& error)
+    {
+        job->state = UiJobState::failed;
+        job->error = juce::String (error.what());
+        return;
+    }
+
+    const std::lock_guard<std::recursive_mutex> reloadLock (reloadMutex);
+    if (job->generation != getParameterSurfaceGeneration()
+        || static_cast<std::uint32_t> (juce::jmax (1.0, getSampleRate()))
+             != prepared.sampleRate
+        || static_cast<std::size_t> (juce::jmax (1, getBlockSize()))
+             != prepared.blockSize)
+    {
+        job->state = UiJobState::stale;
+        job->error = "Instrument changed while reload was preparing";
+        return;
+    }
+    if (prepared.candidate == nullptr)
+    {
+        job->state = UiJobState::failed;
+        job->error = prepared.error;
+        return;
+    }
+
+    loadedPreset = {};
+    installPreparedEngine (prepared.candidate.release(), prepared.file,
+                           prepared.yaml, prepared.descriptors, false, &lastReloadWarning);
+    instrumentFileWatcher.watchFile (prepared.file);
+    job->state = UiJobState::completed;
+    job->generation = getParameterSurfaceGeneration();
+}
+
+std::optional<DandrumAudioProcessor::UiJobStatus>
+DandrumAudioProcessor::getInstrumentUiJobStatus (std::uint64_t jobId)
+{
+    pollInstrumentUiJobs();
+    const auto job = std::find_if (uiJobHistory.begin(), uiJobHistory.end(),
+        [jobId] (const UiJobStatus& item) { return item.id == jobId; });
+    return job != uiJobHistory.end() ? std::optional<UiJobStatus> (*job) : std::nullopt;
 }
 
 bool DandrumAudioProcessor::reloadInstrumentFromYaml (const juce::String& yamlText,

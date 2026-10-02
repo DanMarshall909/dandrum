@@ -6,6 +6,7 @@
 #endif
 
 #include <cstring>
+#include <cmath>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -82,14 +83,24 @@ bool hasExpectedSoundLabGeneration (const juce::String& path,
     return path.substring (markerIndex + marker.length())
            == juce::String (static_cast<juce::int64> (generation));
 }
+
+juce::var acceptedAnalysisJob (const SoundLabController::Snapshot& snapshot)
+{
+    auto result = std::make_unique<juce::DynamicObject>();
+    result->setProperty ("status", "accepted");
+    result->setProperty ("job_id", static_cast<juce::int64> (snapshot.jobId));
+    result->setProperty ("instrument_generation",
+                         static_cast<juce::int64> (snapshot.instrumentGeneration));
+    return juce::var (result.release());
+}
 }
 
 DandrumAudioProcessorEditor::DandrumAudioProcessorEditor (DandrumAudioProcessor& processorToUse)
     : juce::AudioProcessorEditor (&processorToUse),
       processor (processorToUse),
       hostBridge (processorToUse),
-      soundLabController (processorToUse.demoConfiguration().soundLabFixturePath
-                              ? std::make_unique<SoundLabController>() : nullptr),
+      soundLabController (processorToUse.getSoundLabController()),
+      soundLabReferenceFile (processorToUse.getSoundLabReferenceFile()),
       browser (createBrowserOptions())
 {
     addAndMakeVisible (browser);
@@ -223,6 +234,7 @@ DandrumAudioProcessorEditor::provideResource (const juce::String& path) const
     {
         const auto snapshot = soundLabController->snapshot();
         if (! hasExpectedSoundLabGeneration (path, snapshot.generation)
+            || snapshot.instrumentGeneration != processor.getParameterSurfaceGeneration()
             || snapshot.state != SoundLabController::State::ready || snapshot.data == nullptr)
             return std::nullopt;
 
@@ -236,6 +248,7 @@ DandrumAudioProcessorEditor::provideResource (const juce::String& path) const
     {
         const auto snapshot = soundLabController->snapshot();
         if (! hasExpectedSoundLabGeneration (path, snapshot.generation)
+            || snapshot.instrumentGeneration != processor.getParameterSurfaceGeneration()
             || snapshot.match == nullptr)
             return std::nullopt;
 
@@ -260,13 +273,13 @@ void DandrumAudioProcessorEditor::renderSoundLabFromWeb (
         return;
     }
     const auto& fixture = processor.demoConfiguration().soundLabFixturePath;
-    if (! soundLabController->startRender (*fixture))
+    if (! soundLabController->startRender (*fixture, processor.getParameterSurfaceGeneration()))
     {
         completion (juce::var ("Sound Lab is already rendering"));
         return;
     }
 
-    completion (juce::var());
+    completion (acceptedAnalysisJob (soundLabController->snapshot()));
 }
 
 void DandrumAudioProcessorEditor::chooseSoundLabReferenceFromWeb (
@@ -329,12 +342,13 @@ void DandrumAudioProcessorEditor::matchSoundLabFromWeb (
         return;
     }
     if (! soundLabController->startMatch (*fixture,
-                                         soundLabReferenceFile.getFullPathName().toStdString()))
+                                         soundLabReferenceFile.getFullPathName().toStdString(),
+                                         processor.getParameterSurfaceGeneration()))
     {
         completion (juce::var ("Sound Lab already has offline work in progress"));
         return;
     }
-    completion (juce::var());
+    completion (acceptedAnalysisJob (soundLabController->snapshot()));
 }
 
 void DandrumAudioProcessorEditor::cancelSoundLabFromWeb (
@@ -360,6 +374,12 @@ void DandrumAudioProcessorEditor::acceptSoundLabMatchFromWeb (
         return;
     }
     const auto snapshot = soundLabController->snapshot();
+    if (snapshot.jobId != 0
+        && snapshot.instrumentGeneration != processor.getParameterSurfaceGeneration())
+    {
+        completion (juce::var ("Rejected stale analysis job"));
+        return;
+    }
     if (snapshot.match == nullptr)
     {
         completion (juce::var (
@@ -407,23 +427,43 @@ void DandrumAudioProcessorEditor::requestGraphProposalFromWeb (
         completion (juce::var ("Sound Lab fixture does not match the active instrument"));
         return;
     }
+    const auto analysis = soundLabController->snapshot();
+    if (analysis.jobId != 0
+        && analysis.instrumentGeneration != processor.getParameterSurfaceGeneration())
+    {
+        completion (juce::var ("Rejected stale analysis job"));
+        return;
+    }
     if (! soundLabController->startProposal())
     {
         completion (juce::var (
             "A completed match is required, and Sound Lab must not already be busy"));
         return;
     }
-    completion (juce::var());
+    completion (acceptedAnalysisJob (soundLabController->snapshot()));
 }
 
 void DandrumAudioProcessorEditor::getSoundLabAnalysisForWeb (
-    const juce::Array<juce::var>&,
+    const juce::Array<juce::var>& arguments,
     juce::WebBrowserComponent::NativeFunctionCompletion completion) const
 {
     if (! processor.isSoundLabInstrumentCompatible())
     {
         completion (juce::var ("Sound Lab fixture does not match the active instrument"));
         return;
+    }
+    if (! arguments.isEmpty())
+    {
+        const auto& jobId = arguments[0];
+        const auto number = static_cast<double> (jobId);
+        if (! (jobId.isInt() || jobId.isInt64() || jobId.isDouble())
+            || ! std::isfinite (number) || number < 1.0
+            || number > 9007199254740991.0 || std::floor (number) < number
+            || static_cast<std::uint64_t> (number) != soundLabController->snapshot().jobId)
+        {
+            completion (juce::var ("Unknown analysis job ID"));
+            return;
+        }
     }
     completion (soundLabSnapshotForWeb());
 }
@@ -433,6 +473,15 @@ juce::var DandrumAudioProcessorEditor::soundLabSnapshotForWeb() const
     const auto snapshot = soundLabController->snapshot();
     auto report = std::make_unique<juce::DynamicObject>();
     report->setProperty ("generation", static_cast<juce::int64> (snapshot.generation));
+    report->setProperty ("job_id", static_cast<juce::int64> (snapshot.jobId));
+    report->setProperty ("instrument_generation",
+                         static_cast<juce::int64> (snapshot.instrumentGeneration));
+    if (snapshot.jobId != 0 && snapshot.state != SoundLabController::State::idle
+        && snapshot.instrumentGeneration != processor.getParameterSurfaceGeneration())
+    {
+        report->setProperty ("state", "stale");
+        return juce::var (report.release());
+    }
 
     switch (snapshot.state)
     {
@@ -566,6 +615,7 @@ juce::var DandrumAudioProcessorEditor::soundLabSnapshotForWeb() const
 
 void DandrumAudioProcessorEditor::timerCallback()
 {
+    processor.pollInstrumentUiJobs();
     hostBridge.expireNoteSession (juce::Time::getMillisecondCounterHiRes());
     if (hostBridge.publishParameterUpdates (browser))
         return;

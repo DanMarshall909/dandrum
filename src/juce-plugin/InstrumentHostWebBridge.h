@@ -18,7 +18,7 @@ public:
     ~InstrumentHostWebBridge();
 
     static const char* bootstrapScript() noexcept;
-    std::array<NativeFunctionEntry, 8> nativeFunctions();
+    std::array<NativeFunctionEntry, 10> nativeFunctions();
     juce::WebBrowserComponent::Options addNativeFunctions (
         juce::WebBrowserComponent::Options options);
     std::optional<juce::WebBrowserComponent::Resource> provideResource (
@@ -41,6 +41,10 @@ public:
                          juce::WebBrowserComponent::NativeFunctionCompletion completion);
     void noteHeartbeatFromWeb (const juce::Array<juce::var>& arguments,
                                juce::WebBrowserComponent::NativeFunctionCompletion completion);
+    void reloadInstrumentFromWeb (const juce::Array<juce::var>& arguments,
+                                  juce::WebBrowserComponent::NativeFunctionCompletion completion);
+    void getUiJobStatusFromWeb (const juce::Array<juce::var>& arguments,
+                                juce::WebBrowserComponent::NativeFunctionCompletion completion);
     bool expireNoteSession (double nowMilliseconds) noexcept;
     juce::var parameterSnapshotForWeb() const;
     juce::var parameterStateForWeb() const;

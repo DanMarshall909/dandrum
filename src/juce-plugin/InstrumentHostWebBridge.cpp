@@ -77,6 +77,17 @@ std::optional<float> parseMidiVelocity (const juce::var& value)
     return static_cast<float> (velocity);
 }
 
+std::optional<std::uint64_t> parseJobId (const juce::var& value)
+{
+    if (! isNumeric (value))
+        return std::nullopt;
+    const auto number = static_cast<double> (value);
+    if (! std::isfinite (number) || number < 1.0 || number > 9007199254740991.0
+        || std::floor (number) < number)
+        return std::nullopt;
+    return static_cast<std::uint64_t> (number);
+}
+
 juce::var commandReplyForWeb (InstrumentUiCommandReply reply, const juce::String& publicId)
 {
     switch (reply.status)
@@ -122,7 +133,7 @@ const char* InstrumentHostWebBridge::bootstrapScript() noexcept
     return nativeFunctionBootstrap;
 }
 
-std::array<InstrumentHostWebBridge::NativeFunctionEntry, 8>
+std::array<InstrumentHostWebBridge::NativeFunctionEntry, 10>
 InstrumentHostWebBridge::nativeFunctions()
 {
     return {{
@@ -173,6 +184,18 @@ InstrumentHostWebBridge::nativeFunctions()
                   juce::WebBrowserComponent::NativeFunctionCompletion completion)
           {
               noteHeartbeatFromWeb (arguments, std::move (completion));
+          } },
+        { "reloadInstrument",
+          [this] (const juce::Array<juce::var>& arguments,
+                  juce::WebBrowserComponent::NativeFunctionCompletion completion)
+          {
+              reloadInstrumentFromWeb (arguments, std::move (completion));
+          } },
+        { "getUiJobStatus",
+          [this] (const juce::Array<juce::var>& arguments,
+                  juce::WebBrowserComponent::NativeFunctionCompletion completion)
+          {
+              getUiJobStatusFromWeb (arguments, std::move (completion));
           } }
     }};
 }
@@ -406,6 +429,78 @@ void InstrumentHostWebBridge::noteHeartbeatFromWeb (
     if (noteSessionActive)
         lastNoteHeartbeatMilliseconds = juce::Time::getMillisecondCounterHiRes();
     completion (juce::var());
+}
+
+void InstrumentHostWebBridge::reloadInstrumentFromWeb (
+    const juce::Array<juce::var>& arguments,
+    juce::WebBrowserComponent::NativeFunctionCompletion completion)
+{
+    if (arguments.size() != 2 || ! arguments[0].isString()
+        || arguments[0].toString().isEmpty()
+        || ! juce::File::isAbsolutePath (arguments[0].toString()))
+    {
+        completion (juce::var ("reloadInstrument requires an absolute instrument path and generation"));
+        return;
+    }
+    const auto generation = parseGeneration (arguments[1]);
+    if (! generation)
+    {
+        completion (juce::var ("reloadInstrument requires a valid instrument generation"));
+        return;
+    }
+    if (*generation != processor.getParameterSurfaceGeneration())
+    {
+        completion (juce::var ("Rejected stale instrument generation"));
+        return;
+    }
+
+    const auto jobId = processor.requestInstrumentReloadJob (
+        juce::File (arguments[0].toString()), *generation);
+    if (! jobId)
+    {
+        completion (juce::var ("Instrument reload is unavailable or already running"));
+        return;
+    }
+    auto reply = std::make_unique<juce::DynamicObject>();
+    reply->setProperty ("status", "accepted");
+    reply->setProperty ("job_id", static_cast<juce::int64> (*jobId));
+    reply->setProperty ("generation", static_cast<juce::int64> (*generation));
+    completion (juce::var (reply.release()));
+}
+
+void InstrumentHostWebBridge::getUiJobStatusFromWeb (
+    const juce::Array<juce::var>& arguments,
+    juce::WebBrowserComponent::NativeFunctionCompletion completion)
+{
+    if (arguments.size() != 1)
+    {
+        completion (juce::var ("getUiJobStatus requires a job ID"));
+        return;
+    }
+    const auto jobId = parseJobId (arguments[0]);
+    if (! jobId)
+    {
+        completion (juce::var ("getUiJobStatus requires a valid job ID"));
+        return;
+    }
+    const auto status = processor.getInstrumentUiJobStatus (*jobId);
+    if (! status)
+    {
+        completion (juce::var ("Unknown UI job ID"));
+        return;
+    }
+    auto reply = std::make_unique<juce::DynamicObject>();
+    reply->setProperty ("job_id", static_cast<juce::int64> (status->id));
+    reply->setProperty ("generation", static_cast<juce::int64> (status->generation));
+    switch (status->state)
+    {
+        case DandrumAudioProcessor::UiJobState::running: reply->setProperty ("state", "running"); break;
+        case DandrumAudioProcessor::UiJobState::completed: reply->setProperty ("state", "completed"); break;
+        case DandrumAudioProcessor::UiJobState::failed: reply->setProperty ("state", "failed"); break;
+        case DandrumAudioProcessor::UiJobState::stale: reply->setProperty ("state", "stale"); break;
+    }
+    reply->setProperty ("error", status->error);
+    completion (juce::var (reply.release()));
 }
 
 bool InstrumentHostWebBridge::expireNoteSession (double nowMilliseconds) noexcept

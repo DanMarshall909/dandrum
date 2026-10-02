@@ -79,12 +79,15 @@ void SoundLabController::fail (std::string error)
     currentGeneration.fetch_add (1, std::memory_order_release);
 }
 
-bool SoundLabController::startRender (const std::filesystem::path& fixturePath)
+bool SoundLabController::startRender (const std::filesystem::path& fixturePath,
+                                      std::uint32_t instrumentGeneration)
 {
     if (! tryBeginWork (State::rendering))
         return false;
 
     clearResults();
+    currentJobId.fetch_add (1, std::memory_order_release);
+    currentInstrumentGeneration.store (instrumentGeneration, std::memory_order_release);
     currentGeneration.fetch_add (1, std::memory_order_release);
     worker = std::jthread (
         [this, fixturePath] (std::stop_token stopToken) {
@@ -94,12 +97,15 @@ bool SoundLabController::startRender (const std::filesystem::path& fixturePath)
 }
 
 bool SoundLabController::startMatch (const std::filesystem::path& fixturePath,
-                                     const std::filesystem::path& referencePath)
+                                     const std::filesystem::path& referencePath,
+                                     std::uint32_t instrumentGeneration)
 {
     if (! tryBeginWork (State::matching))
         return false;
 
     clearResults();
+    currentJobId.fetch_add (1, std::memory_order_release);
+    currentInstrumentGeneration.store (instrumentGeneration, std::memory_order_release);
     currentGeneration.fetch_add (1, std::memory_order_release);
     worker = std::jthread (
         [this, fixturePath, referencePath] (std::stop_token stopToken) {
@@ -123,6 +129,7 @@ bool SoundLabController::startProposal()
         completedProposalData.reset();
         lastError.clear();
     }
+    currentJobId.fetch_add (1, std::memory_order_release);
     currentGeneration.fetch_add (1, std::memory_order_release);
     worker = std::jthread (
         [this, matched = std::move (matched)] (std::stop_token stopToken) {
@@ -164,6 +171,8 @@ SoundLabController::Snapshot SoundLabController::snapshot() const
     return {
         currentState.load (std::memory_order_acquire),
         currentGeneration.load (std::memory_order_acquire),
+        currentJobId.load (std::memory_order_acquire),
+        currentInstrumentGeneration.load (std::memory_order_acquire),
         completedData,
         completedMatchData,
         completedProposalData,

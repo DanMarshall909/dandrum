@@ -489,7 +489,8 @@ int main()
                  "editor failed to serve its configured page");
         require (! PluginEditorBridgeTestProbe::resource (editor, "/sound-lab.wav?generation=0"),
                  "editor served Sound Lab audio before a render");
-        require (PluginEditorBridgeTestProbe::invoke (editor, "renderSoundLab").isVoid(),
+        require (PluginEditorBridgeTestProbe::invoke (editor, "renderSoundLab")
+                     .getProperty ("status", {}).toString() == "accepted",
                  "Sound Lab render command failed to start");
         require (PluginEditorBridgeTestProbe::invoke (editor, "renderSoundLab")
                      .toString().contains ("already rendering"),
@@ -539,7 +540,8 @@ int main()
         require (findParameter (kickParameters, "kick.tune_hz").isObject()
                      && ! findParameter (kickParameters, "filter.cutoff").isObject(),
                  "second demo did not expose kick metadata through the same bridge");
-        require (PluginEditorBridgeTestProbe::invoke (kickEditor, "renderSoundLab").isVoid(),
+        require (PluginEditorBridgeTestProbe::invoke (kickEditor, "renderSoundLab")
+                     .getProperty ("status", {}).toString() == "accepted",
                  "second demo could not start its configured Sound Lab render");
         juce::var kickAnalysis;
         for (int i = 0; i < 400; ++i)
@@ -603,7 +605,8 @@ int main()
                                                        reference.data->wavBytes.size()),
                  "could not write the configured kick reference WAV");
         PluginEditorBridgeTestProbe::setReferenceFile (kickEditor, referenceFile);
-        require (PluginEditorBridgeTestProbe::invoke (kickEditor, "matchSoundLab").isVoid(),
+        require (PluginEditorBridgeTestProbe::invoke (kickEditor, "matchSoundLab")
+                     .getProperty ("status", {}).toString() == "accepted",
                  "configured kick Sound Lab did not start matching");
         juce::var matched;
         for (int i = 0; i < 400; ++i)
@@ -623,7 +626,7 @@ int main()
                      && ! PluginEditorBridgeTestProbe::resource (
                          kickEditor, "/sound-lab-candidate.wav?generation=0"),
                  "matched Sound Lab audio did not honor its generation");
-        const auto matchedPatch = PluginEditorBridgeTestProbe::matchedPatch (kickEditor);
+        auto matchedPatch = PluginEditorBridgeTestProbe::matchedPatch (kickEditor);
         require (kick.reloadInstrumentFromFile (tb303),
                  "could not replace the active instrument before match rejection");
         require (PluginEditorBridgeTestProbe::invoke (kickEditor, "acceptSoundLabMatch")
@@ -651,7 +654,22 @@ int main()
         require (kick.reloadInstrumentFromFile (juce::File (juce::String (
                      InstrumentDemoConfiguration::kick().instrumentPath.string()))),
                  "could not restore the configured kick before match acceptance");
+        require (PluginEditorBridgeTestProbe::invoke (kickEditor, "acceptSoundLabMatch")
+                     .toString().contains ("stale"),
+                 "an old match remained actionable after restoring the same instrument");
+        require (PluginEditorBridgeTestProbe::invoke (kickEditor, "matchSoundLab")
+                     .getProperty ("status", {}).toString() == "accepted",
+                 "could not start a fresh match after instrument reload");
+        for (int i = 0; i < 400; ++i)
+        {
+            matched = PluginEditorBridgeTestProbe::invoke (kickEditor, "getSoundLabAnalysis");
+            if (matched.getProperty ("state", {}).toString() != "matching")
+                break;
+            std::this_thread::sleep_for (std::chrono::milliseconds (25));
+        }
+        matchedPatch = PluginEditorBridgeTestProbe::matchedPatch (kickEditor);
         require (matchedPatch.isNotEmpty()
+                     && matched.getProperty ("state", {}).toString() == "matched"
                      && PluginEditorBridgeTestProbe::invoke (kickEditor, "acceptSoundLabMatch").isVoid()
                      && kick.currentInstrumentYaml() == matchedPatch
                      && kick.currentInstrumentFile().getFullPathName().toStdString()
@@ -726,6 +744,116 @@ int main()
         reloader.join();
         require (reloadsSucceeded.load() && coherent,
                  "editor parameter snapshots mixed two instrument surfaces during reload");
+
+        DandrumAudioProcessor uiJobs (InstrumentDemoConfiguration::kick());
+        uiJobs.setPlayConfigDetails (0, 2, 48000.0, 64);
+        uiJobs.prepareToPlay (48000.0, 64);
+        const auto uiGeneration = uiJobs.getParameterSurfaceGeneration();
+        juce::int64 failedJobId = 0;
+        {
+            DandrumAudioProcessorEditor firstEditor (uiJobs);
+            require (PluginEditorBridgeTestProbe::invoke (firstEditor,
+                         "reloadInstrument", { juce::var ("relative.yaml"),
+                                                juce::var (static_cast<int> (uiGeneration)) })
+                         .toString().contains ("absolute"),
+                     "Web reload accepted a relative path");
+            const auto accepted = PluginEditorBridgeTestProbe::invoke (firstEditor,
+                "reloadInstrument", { juce::var ("/nonexistent/dandrum-ui-job.yaml"),
+                                       juce::var (static_cast<int> (uiGeneration)) });
+            require (accepted.getProperty ("status", {}).toString() == "accepted",
+                     "Web reload did not acknowledge the job before preparation");
+            failedJobId = static_cast<juce::int64> (accepted.getProperty ("job_id", {}));
+            require (failedJobId > 0, "Web reload did not return a job ID");
+            require (PluginEditorBridgeTestProbe::invoke (firstEditor,
+                         "reloadInstrument", { juce::var (tb303.getFullPathName()),
+                                                juce::var (static_cast<int> (uiGeneration)) })
+                         .toString().contains ("already running"),
+                     "Web reload admitted two concurrent jobs");
+        }
+        {
+            DandrumAudioProcessorEditor reopened (uiJobs);
+            require (PluginEditorBridgeTestProbe::invoke (
+                         reopened, "getUiJobStatus", { juce::var (-1) })
+                         .toString().contains ("valid job ID")
+                         && PluginEditorBridgeTestProbe::invoke (
+                             reopened, "getUiJobStatus", { juce::var (9999) })
+                             .toString().contains ("Unknown UI job"),
+                     "Web job status did not reject invalid or unknown IDs");
+            juce::var failedJob;
+            for (int attempt = 0; attempt < 200; ++attempt)
+            {
+                failedJob = PluginEditorBridgeTestProbe::invoke (
+                    reopened, "getUiJobStatus", { juce::var (failedJobId) });
+                if (failedJob.getProperty ("state", {}).toString() != "running")
+                    break;
+                std::this_thread::sleep_for (std::chrono::milliseconds (5));
+            }
+            require (failedJob.getProperty ("state", {}).toString() == "failed"
+                         && uiJobs.getParameterSurfaceGeneration() == uiGeneration,
+                     "reopened editor could not recover failure without replacing the instrument");
+            const auto successful = PluginEditorBridgeTestProbe::invoke (reopened,
+                "reloadInstrument", { juce::var (tb303.getFullPathName()),
+                                       juce::var (static_cast<int> (uiGeneration)) });
+            const auto successfulJobId = successful.getProperty ("job_id", {});
+            require (successful.getProperty ("status", {}).toString() == "accepted",
+                     "Web reload did not accept the valid replacement");
+            juce::var completedJob;
+            for (int attempt = 0; attempt < 200; ++attempt)
+            {
+                completedJob = PluginEditorBridgeTestProbe::invoke (
+                    reopened, "getUiJobStatus", { successfulJobId });
+                if (completedJob.getProperty ("state", {}).toString() != "running")
+                    break;
+                std::this_thread::sleep_for (std::chrono::milliseconds (5));
+            }
+            require (completedJob.getProperty ("state", {}).toString() == "completed"
+                         && uiJobs.hasPublicParameter ("filter.cutoff"),
+                     "Web reload job did not install the prepared instrument");
+            const auto stale = PluginEditorBridgeTestProbe::invoke (reopened,
+                "reloadInstrument", { juce::var (tb303.getFullPathName()),
+                                       juce::var (static_cast<int> (uiGeneration)) });
+            require (stale.toString().contains ("stale"),
+                     "Web reload admitted an obsolete instrument generation");
+        }
+
+        DandrumAudioProcessor durableAnalysis (InstrumentDemoConfiguration::kick());
+        durableAnalysis.setPlayConfigDetails (0, 2, 48000.0, 64);
+        durableAnalysis.prepareToPlay (48000.0, 64);
+        juce::int64 analysisJobId = 0;
+        {
+            DandrumAudioProcessorEditor firstAnalysisEditor (durableAnalysis);
+            const auto accepted = PluginEditorBridgeTestProbe::invoke (
+                firstAnalysisEditor, "renderSoundLab");
+            require (accepted.getProperty ("status", {}).toString() == "accepted",
+                     "analysis did not return an accepted job before completion");
+            analysisJobId = static_cast<juce::int64> (accepted.getProperty ("job_id", {}));
+        }
+        {
+            DandrumAudioProcessorEditor reopened (durableAnalysis);
+            juce::var result;
+            for (int attempt = 0; attempt < 200; ++attempt)
+            {
+                result = PluginEditorBridgeTestProbe::invoke (
+                    reopened, "getSoundLabAnalysis",
+                    { juce::var (static_cast<double> (analysisJobId)) });
+                if (result.getProperty ("state", {}).toString() != "rendering")
+                    break;
+                std::this_thread::sleep_for (std::chrono::milliseconds (5));
+            }
+            require (result.getProperty ("state", {}).toString() == "ready"
+                         && static_cast<juce::int64> (result.getProperty ("job_id", {})) == analysisJobId,
+                     "analysis job status did not survive editor reconnection");
+            require (PluginEditorBridgeTestProbe::invoke (
+                         reopened, "getSoundLabAnalysis", { juce::var (analysisJobId + 1) })
+                         .toString().contains ("Unknown analysis job"),
+                     "analysis accepted an unrelated job ID");
+            require (durableAnalysis.reloadInstrumentFromFile (
+                         juce::File (juce::String (InstrumentDemoConfiguration::kick().instrumentPath.string()))),
+                     "could not reload while testing stale analysis status");
+            result = PluginEditorBridgeTestProbe::invoke (reopened, "getSoundLabAnalysis");
+            require (result.getProperty ("state", {}).toString() == "stale",
+                     "analysis result from an older instrument generation remained actionable");
+        }
         processor.removeListener (&listener);
         processor.releaseResources();
         kick.releaseResources();

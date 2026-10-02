@@ -3,7 +3,10 @@
 #include <array>
 #include <atomic>
 #include <cstdint>
+#include <deque>
+#include <future>
 #include <map>
+#include <memory>
 #include <mutex>
 #include <optional>
 #include <string>
@@ -17,6 +20,8 @@
 #include "InstrumentUiDocument.h"
 #include "InstrumentUiParameterState.h"
 #include "RustEngineBindings.h"
+
+class SoundLabController;
 
 class DandrumAudioProcessor final : public juce::AudioProcessor, private InstrumentUiCommandHost
 {
@@ -69,6 +74,25 @@ public:
     InstrumentUiParameterState getUiParameterState() const;
     std::uint32_t getParameterSurfaceGeneration() const noexcept;
     InstrumentUiCommandService& uiCommands() noexcept;
+    SoundLabController* getSoundLabController() noexcept;
+    juce::File& getSoundLabReferenceFile() noexcept;
+
+    enum class UiJobState { running, completed, failed, stale };
+    struct UiJobStatus
+    {
+        std::uint64_t id = 0;
+        UiJobState state = UiJobState::running;
+        std::uint32_t generation = 0;
+        juce::String error;
+    };
+
+    /// Admit one off-audio instrument reload without waiting for preparation.
+    /// Querying status on the message thread installs a prepared candidate;
+    /// terminal records outlive editor sessions for this processor instance.
+    std::optional<std::uint64_t> requestInstrumentReloadJob (
+        const juce::File& yamlFile, std::uint32_t expectedGeneration);
+    std::optional<UiJobStatus> getInstrumentUiJobStatus (std::uint64_t jobId);
+    void pollInstrumentUiJobs();
 
     /// Publishes bounded, per-note editor intent for delivery by processBlock.
     /// The message thread never calls the Rust engine directly. Session 0 is
@@ -215,6 +239,18 @@ private:
         juce::String error;
     };
 
+    struct PreparedUiReload
+    {
+        juce::File file;
+        juce::String yaml;
+        std::uint32_t sampleRate = 0;
+        std::size_t blockSize = 0;
+        std::vector<PublicParameterDescriptor> descriptors;
+        std::unique_ptr<DandrumKernelInstrument, decltype (&dandrum_kernel_destroy)> candidate {
+            nullptr, &dandrum_kernel_destroy };
+        juce::String error;
+    };
+
     static juce::String publicSlotParameterId (int slotIndex);
     static std::vector<PublicParameterDescriptor> loadPublicParameterDescriptors (const std::string& patchPath);
     static juce::AudioProcessorValueTreeState::ParameterLayout createParameterLayout (
@@ -232,6 +268,12 @@ private:
                                       bool requirePreparedHost,
                                       bool preferCurrentSlotValues,
                                       juce::String* reloadWarning);
+    void installPreparedEngine (DandrumKernelInstrument* candidateKernel,
+                                const juce::File& sourceHint,
+                                const juce::String& yamlText,
+                                const std::vector<PublicParameterDescriptor>& descriptors,
+                                bool preferCurrentSlotValues,
+                                juce::String* reloadWarning);
     void renderSilence (juce::AudioBuffer<float>& buffer) const;
     void preparePublicParameterSlots (const juce::File& instrumentFile,
                                       juce::String* droppedParametersWarning,
@@ -282,6 +324,14 @@ private:
     // Host notifications may re-enter snapshot readers on the same thread.
     mutable std::recursive_mutex reloadMutex;
     InstrumentUiCommandService uiCommandService { *this };
+    std::unique_ptr<SoundLabController> soundLabController;
+    juce::File soundLabReferenceFile;
+    // Admission, status queries and commit run on the message thread. The
+    // future owns the prepared engine until that thread accepts or rejects it.
+    std::future<PreparedUiReload> pendingUiReload;
+    std::uint64_t pendingUiReloadId = 0;
+    std::uint64_t nextUiJobId = 1;
+    std::deque<UiJobStatus> uiJobHistory;
     // Watches the loaded instrument file for external edits and reloads it
     // through the standard replacement transaction. Declared last so it is
     // destroyed (and its timer stopped) before the members its callback uses.

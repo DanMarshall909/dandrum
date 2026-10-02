@@ -94,6 +94,8 @@ public:
     {
         State state = State::idle;
         std::uint64_t generation = 0;
+        std::uint64_t jobId = 0;
+        std::uint32_t instrumentGeneration = 0;
         std::shared_ptr<const RenderData> data;
         std::shared_ptr<const MatchData> match;
         std::shared_ptr<const ProposalData> proposal;
@@ -106,9 +108,11 @@ public:
     SoundLabController() = default;
     ~SoundLabController() = default;
 
-    bool startRender (const std::filesystem::path& fixturePath);
+    bool startRender (const std::filesystem::path& fixturePath,
+                      std::uint32_t instrumentGeneration = 0);
     bool startMatch (const std::filesystem::path& fixturePath,
-                     const std::filesystem::path& referencePath);
+                     const std::filesystem::path& referencePath,
+                     std::uint32_t instrumentGeneration = 0);
     bool startProposal();
     bool discardResults();
     void cancelCurrentWork();
@@ -141,6 +145,8 @@ private:
 
     std::atomic<State> currentState { State::idle };
     std::atomic<std::uint64_t> currentGeneration { 0 };
+    std::atomic<std::uint64_t> currentJobId { 0 };
+    std::atomic<std::uint32_t> currentInstrumentGeneration { 0 };
     std::atomic<std::size_t> matchCompletedEvaluations { 0 };
     std::atomic<std::size_t> matchMaxEvaluations { 0 };
     std::atomic<double> matchBestScore { 0.0 };

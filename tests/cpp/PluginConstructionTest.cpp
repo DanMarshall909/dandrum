@@ -1080,6 +1080,86 @@ int main()
 
     failedReloadProcessor->releaseResources();
 
+    // UI reload accepts work before preparing it, and its terminal status
+    // remains queryable after the requesting editor has gone away.
+    {
+        DandrumAudioProcessor jobs (InstrumentDemoConfiguration::kick());
+        jobs.setPlayConfigDetails (0, 2, 48000.0, blockSize);
+        jobs.prepareToPlay (48000.0, blockSize);
+        const auto initialGeneration = jobs.getParameterSurfaceGeneration();
+        const auto failedId = jobs.requestInstrumentReloadJob (missingFile, initialGeneration);
+        if (! failedId || jobs.getParameterSurfaceGeneration() != initialGeneration)
+        {
+            std::cerr << "UI reload did not accept immediately without changing the instrument\n";
+            return 1;
+        }
+        auto failedStatus = jobs.getInstrumentUiJobStatus (*failedId);
+        for (int attempt = 0; attempt < 200
+             && failedStatus && failedStatus->state == DandrumAudioProcessor::UiJobState::running;
+             ++attempt)
+        {
+            std::this_thread::sleep_for (std::chrono::milliseconds (5));
+            failedStatus = jobs.getInstrumentUiJobStatus (*failedId);
+        }
+        if (! failedStatus || failedStatus->state != DandrumAudioProcessor::UiJobState::failed
+            || failedStatus->error.isEmpty()
+            || jobs.getParameterSurfaceGeneration() != initialGeneration)
+        {
+            std::cerr << "failed UI reload did not preserve the old instrument and queryable error\n";
+            return 1;
+        }
+
+        const auto successfulId = jobs.requestInstrumentReloadJob (
+            juce::File (juce::String (InstrumentDemoConfiguration::tb303().instrumentPath.string())),
+            initialGeneration);
+        if (! successfulId || *successfulId == *failedId)
+        {
+            std::cerr << "second UI reload did not receive a distinct job ID\n";
+            return 1;
+        }
+        auto completedStatus = jobs.getInstrumentUiJobStatus (*successfulId);
+        for (int attempt = 0; attempt < 200
+             && completedStatus && completedStatus->state == DandrumAudioProcessor::UiJobState::running;
+             ++attempt)
+        {
+            std::this_thread::sleep_for (std::chrono::milliseconds (5));
+            completedStatus = jobs.getInstrumentUiJobStatus (*successfulId);
+        }
+        if (! completedStatus || completedStatus->state != DandrumAudioProcessor::UiJobState::completed
+            || completedStatus->generation != jobs.getParameterSurfaceGeneration()
+            || completedStatus->generation == initialGeneration
+            || ! jobs.hasPublicParameter ("filter.cutoff")
+            || ! jobs.getInstrumentUiJobStatus (*failedId)
+            || jobs.requestInstrumentReloadJob (missingFile, initialGeneration))
+        {
+            std::cerr << "UI reload status, replacement or stale-generation rejection failed\n";
+            return 1;
+        }
+
+        const auto currentGeneration = jobs.getParameterSurfaceGeneration();
+        const auto staleId = jobs.requestInstrumentReloadJob (defaultPatchFile(), currentGeneration);
+        if (! staleId || ! jobs.reloadInstrumentFromFile (
+                juce::File (juce::String (InstrumentDemoConfiguration::tb303().instrumentPath.string()))))
+        {
+            std::cerr << "could not arrange a replacement while a UI job prepared\n";
+            return 1;
+        }
+        auto staleStatus = jobs.getInstrumentUiJobStatus (*staleId);
+        for (int attempt = 0; attempt < 200
+             && staleStatus && staleStatus->state == DandrumAudioProcessor::UiJobState::running;
+             ++attempt)
+        {
+            std::this_thread::sleep_for (std::chrono::milliseconds (5));
+            staleStatus = jobs.getInstrumentUiJobStatus (*staleId);
+        }
+        if (! staleStatus || staleStatus->state != DandrumAudioProcessor::UiJobState::stale
+            || ! jobs.hasPublicParameter ("filter.cutoff"))
+        {
+            std::cerr << "a stale prepared UI job replaced a newer instrument\n";
+            return 1;
+        }
+    }
+
     // writeModifiedKickPatch must fail loudly (an invalid File) rather than
     // silently writing an unmodified copy when the target line isn't found,
     // so a future drift in the bundled patch can't silently defang the
