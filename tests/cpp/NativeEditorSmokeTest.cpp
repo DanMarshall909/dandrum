@@ -240,7 +240,13 @@ int main()
                 std::cerr << "native waveform reload fixture failed\n";
                 return 1;
             }
-            juce::Timer::callPendingTimersSynchronously();
+            const auto waveformDeadline = juce::Time::getMillisecondCounterHiRes() + 1500.0;
+            while (waveform->getName() != "NO PREPARED SAMPLE"
+                   && juce::Time::getMillisecondCounterHiRes() < waveformDeadline)
+            {
+                juce::Thread::sleep (20);
+                juce::Timer::callPendingTimersSynchronously();
+            }
             if (waveform->getName() != "NO PREPARED SAMPLE")
             {
                 std::cerr << "native editor retained a stale sampler waveform after reload\n";
