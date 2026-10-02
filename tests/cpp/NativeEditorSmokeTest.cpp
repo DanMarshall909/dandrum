@@ -36,6 +36,8 @@ int main()
              InstrumentDemoConfiguration::sampler() })
     {
         DandrumAudioProcessor processor (configuration);
+        processor.setPlayConfigDetails (0, 2, 48000.0, 64);
+        processor.prepareToPlay (48000.0, 64);
         if (! processor.isInstrumentLoaded() || ! processor.hasEditor())
         {
             std::cerr << "native plugin failed to load its configured instrument\n";
@@ -60,6 +62,62 @@ int main()
             || meter->findChildWithID ("clip-right") == nullptr)
         {
             std::cerr << "native editor omitted a visible stereo master meter\n";
+            return 1;
+        }
+        auto* waveform = editor->findChildWithID ("prepared-waveform");
+        if (waveform == nullptr || ! waveform->isVisible()
+            || waveform->getWidth() < 300 || waveform->getHeight() < 100)
+        {
+            std::cerr << "native editor omitted the prepared waveform panel\n";
+            return 1;
+        }
+        if (configuration.instrumentId == "dandrum.advanced-drum-kit")
+        {
+            const auto deadline = juce::Time::getMillisecondCounterHiRes() + 1500.0;
+            while (! waveform->getName().startsWith ("Prepared waveform:")
+                   && juce::Time::getMillisecondCounterHiRes() < deadline)
+            {
+                juce::Thread::sleep (10);
+                juce::Timer::callPendingTimersSynchronously();
+            }
+            const auto waveformImage = editor->createComponentSnapshot (editor->getLocalBounds());
+            bool drewEnvelope = false;
+            const auto bounds = waveform->getBounds();
+            for (int y = bounds.getY() + 50; y < bounds.getBottom() - 20; ++y)
+                for (int x = bounds.getX() + 16; x < bounds.getRight() - 16; ++x)
+                    if (waveformImage.getPixelAt (x, y) == juce::Colour (0xff7ce0aa))
+                        drewEnvelope = true;
+            if (! waveform->getName().startsWith ("Prepared waveform:") || ! drewEnvelope)
+            {
+                std::cerr << "native sampler did not draw prepared signed PCM\n";
+                return 1;
+            }
+            if (const auto* output = std::getenv ("DANDRUM_NATIVE_SAMPLER_SNAPSHOT"))
+            {
+                auto stream = juce::File (output).createOutputStream();
+                juce::PNGImageFormat png;
+                if (stream == nullptr || ! png.writeImageToStream (waveformImage, *stream))
+                    return 1;
+            }
+            editor->setSize (1200, 800);
+            const auto largeImage = editor->createComponentSnapshot (editor->getLocalBounds());
+            const auto largeBounds = waveform->getBounds();
+            bool drewLargeEnvelope = false;
+            for (int y = largeBounds.getY() + 50; y < largeBounds.getBottom() - 20; ++y)
+                for (int x = largeBounds.getX() + 16; x < largeBounds.getRight() - 16; ++x)
+                    if (largeImage.getPixelAt (x, y) == juce::Colour (0xff7ce0aa))
+                        drewLargeEnvelope = true;
+            if (largeBounds.getWidth() < 900 || largeBounds.getHeight() < 400
+                || ! drewLargeEnvelope)
+            {
+                std::cerr << "native sampler waveform did not survive full-size layout\n";
+                return 1;
+            }
+            editor->setSize (820, 560);
+        }
+        else if (waveform->getName() != "NO PREPARED SAMPLE")
+        {
+            std::cerr << "native TB-303 claimed an unavailable sample waveform\n";
             return 1;
         }
         InstrumentUiMeterDelivery::Packet packet;
@@ -166,6 +224,22 @@ int main()
                       << " snapshot=" << hostParameter->getValue()
                       << "\n";
             return 1;
+        }
+        if (configuration.instrumentId == "dandrum.advanced-drum-kit")
+        {
+            const auto replacement = juce::File (juce::String (
+                InstrumentDemoConfiguration::tb303().instrumentPath.string()));
+            if (! processor.reloadInstrumentFromFile (replacement))
+            {
+                std::cerr << "native waveform reload fixture failed\n";
+                return 1;
+            }
+            juce::Timer::callPendingTimersSynchronously();
+            if (waveform->getName() != "NO PREPARED SAMPLE")
+            {
+                std::cerr << "native editor retained a stale sampler waveform after reload\n";
+                return 1;
+            }
         }
         knob->onDragStart();
         editor.reset();

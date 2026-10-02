@@ -1,5 +1,6 @@
 #include "NativeMasterMeter.h"
 #include "PluginProcessor.h"
+#include "InstrumentUiWaveformGeometry.h"
 
 #include <juce_gui_basics/juce_gui_basics.h>
 
@@ -7,6 +8,8 @@
 #include <array>
 #include <cstddef>
 #include <cstdint>
+#include <memory>
+#include <optional>
 #include <string>
 
 NativeMasterMeter::NativeMasterMeter (DandrumAudioProcessor& hostProcessor)
@@ -115,6 +118,133 @@ void NativeMasterMeter::updateClipButtons()
 
 namespace
 {
+class NativePreparedWaveform final : public juce::Component
+{
+public:
+    NativePreparedWaveform()
+    {
+        setComponentID ("prepared-waveform");
+        clear();
+    }
+
+    void clear()
+    {
+        source.reset();
+        region.reset();
+        geometry.reset();
+        result.reset();
+        setName ("NO PREPARED SAMPLE");
+        repaint();
+    }
+
+    void setPreparedRegion (const InstrumentUiDocument::Source& preparedSource,
+                            const InstrumentUiDocument::Region& preparedRegion)
+    {
+        // Copies survive a processor reload; the view never borrows engine metadata.
+        source = preparedSource;
+        region = preparedRegion;
+        result.reset();
+        updateGeometry();
+        setName ("PREPARING WAVEFORM");
+        repaint();
+    }
+
+    void setResult (std::shared_ptr<const InstrumentUiWaveformService::Result> ready)
+    {
+        if (! source || ! region || ! ready || ready->sourceId != source->id
+            || ready->regionId != region->id || ready->sampleRateHz != source->sampleRateHz
+            || ready->startFrame != region->startFrame || ready->endFrame != region->endFrame)
+            return;
+        result = std::move (ready);
+        setName ("Prepared waveform: " + juce::String (source->id) + "."
+                 + juce::String (region->id));
+        repaint();
+    }
+
+    void setUnavailable()
+    {
+        result.reset();
+        setName ("WAVEFORM UNAVAILABLE");
+        repaint();
+    }
+
+    void resized() override { updateGeometry(); }
+
+    void paint (juce::Graphics& graphics) override
+    {
+        graphics.setColour (juce::Colour (0xff232a27));
+        graphics.fillRoundedRectangle (getLocalBounds().toFloat(), 10.0f);
+        graphics.setColour (juce::Colour (0xff66796d));
+        graphics.drawRoundedRectangle (getLocalBounds().toFloat().reduced (0.5f), 10.0f, 1.0f);
+        graphics.setColour (juce::Colour (0xffdce9de));
+        graphics.setFont (juce::FontOptions (14.0f).withStyle ("bold"));
+        graphics.drawText ("PREPARED SAMPLE", 16, 12, getWidth() - 32, 22,
+                           juce::Justification::centredLeft);
+        graphics.setColour (juce::Colour (0xff9eafa2));
+        graphics.setFont (juce::FontOptions (11.0f));
+        graphics.drawText (getName(), 16, 32, getWidth() - 32, 18,
+                           juce::Justification::centredLeft);
+
+        const auto plot = plotBounds();
+        graphics.setColour (juce::Colour (0xff111916));
+        graphics.fillRect (plot);
+        if (! geometry)
+            return;
+
+        graphics.setColour (juce::Colour (0xff414d45));
+        graphics.fillRect (plot.getX(), plot.getCentreY(), plot.getWidth(), 1);
+        if (result)
+        {
+            graphics.setColour (juce::Colour (0xff7ce0aa));
+            for (const auto& bucket : result->buckets)
+                if (const auto x = geometry->bucketX (bucket.startFrame, bucket.endFrame))
+                {
+                    const auto column = plot.getX() + static_cast<int> (*x);
+                    const auto high = plot.getY() + static_cast<int> (geometry->sampleY (bucket.maximum));
+                    const auto low = plot.getY() + static_cast<int> (geometry->sampleY (bucket.minimum));
+                    graphics.fillRect (column, high, 1, std::max (2, low - high + 1));
+                }
+        }
+        for (const auto& marker : geometry->markers())
+        {
+            const auto color = marker.kind == InstrumentUiWaveformGeometry::MarkerKind::loopStart
+                                   || marker.kind == InstrumentUiWaveformGeometry::MarkerKind::loopEnd
+                ? 0xffe2bf72 : marker.kind == InstrumentUiWaveformGeometry::MarkerKind::sliceStart
+                                   || marker.kind == InstrumentUiWaveformGeometry::MarkerKind::sliceEnd
+                ? 0xffab9ee9 : 0xff8da79a;
+            graphics.setColour (juce::Colour (color));
+            const auto x = plot.getX() + static_cast<int> (marker.x);
+            graphics.fillRect (x, plot.getY(), 1, plot.getHeight());
+        }
+        graphics.setColour (juce::Colour (0xff9eafa2));
+        graphics.drawText (juce::String (source->sampleRateHz) + " Hz · "
+                               + juce::String (geometry->durationSeconds(), 3) + " s",
+                           16, getHeight() - 22, getWidth() - 32, 18,
+                           juce::Justification::centredLeft);
+    }
+
+private:
+    juce::Rectangle<int> plotBounds() const
+    {
+        return { 16, 52, std::max (1, getWidth() - 32), std::max (1, getHeight() - 76) };
+    }
+
+    void updateGeometry()
+    {
+        const auto plot = plotBounds();
+        geometry = source && region
+            ? InstrumentUiWaveformGeometry::fromPrepared (
+                  *source, *region, plot.getWidth(), plot.getHeight())
+            : std::nullopt;
+        repaint();
+    }
+
+    std::optional<InstrumentUiDocument::Source> source;
+    std::optional<InstrumentUiDocument::Region> region;
+    std::optional<InstrumentUiWaveformGeometry> geometry;
+    std::shared_ptr<const InstrumentUiWaveformService::Result> result;
+};
+
 class DandrumNativeEditor final : public juce::AudioProcessorEditor,
                                   private juce::Timer
 {
@@ -166,12 +296,14 @@ public:
         refreshPrimaryKnob();
 
         addAndMakeVisible (meter);
+        addAndMakeVisible (waveform);
         meterGeneration = processor.getParameterSurfaceGeneration();
         processor.subscribeMeter (meterSession, meterGeneration);
         processor.setMeterSessionVisible (meterSession, false);
         setResizable (true, true);
         setResizeLimits (620, 420, 1600, 1100);
         setSize (820, 560);
+        refreshWaveform();
         startTimerHz (30);
     }
 
@@ -195,11 +327,13 @@ public:
         meter.setBounds (24, 118, getWidth() - 48, 160);
         primaryLabel.setBounds (24, 302, 152, 26);
         primaryKnob.setBounds (24, 328, 152, 158);
+        waveform.setBounds (200, 302, getWidth() - 224, getHeight() - 326);
     }
 
     void timerCallback() override
     {
         refreshPrimaryKnob();
+        refreshWaveform();
         const auto generation = processor.getParameterSurfaceGeneration();
         if (generation != meterGeneration)
         {
@@ -222,6 +356,49 @@ public:
 
 private:
     enum class DragState { idle, active, rejected };
+
+    void refreshWaveform()
+    {
+        const auto generation = processor.getParameterSurfaceGeneration();
+        if (generation != waveformGeneration)
+        {
+            if (waveformJob)
+                processor.cancelPreparedWaveformJob (*waveformJob);
+            waveformJob.reset();
+            waveformGeneration = generation;
+            waveform.clear();
+            const auto document = processor.getPreparedUiDocument();
+            if (document && document->capabilities.preparedWaveform)
+                for (const auto& source : document->sources)
+                    if (! source.regions.empty())
+                    {
+                        const auto& region = source.regions.front();
+                        waveform.setPreparedRegion (source, region);
+                        waveformJob = processor.requestPreparedWaveform (
+                            generation, source.id, region.id, 0,
+                            static_cast<std::size_t> (std::min<std::uint64_t> (
+                                512, region.endFrame - region.startFrame)), meterSession);
+                        if (! waveformJob)
+                            waveform.setUnavailable();
+                        break;
+                    }
+        }
+        if (waveformJob)
+            if (const auto status = processor.getPreparedWaveformJobStatus (*waveformJob))
+            {
+                if (status->state == InstrumentUiWaveformService::State::ready
+                    && status->generation == waveformGeneration)
+                {
+                    waveform.setResult (status->result);
+                    waveformJob.reset();
+                }
+                else if (status->state != InstrumentUiWaveformService::State::running)
+                {
+                    waveform.setUnavailable();
+                    waveformJob.reset();
+                }
+            }
+    }
 
     void refreshPrimaryKnob()
     {
@@ -286,6 +463,8 @@ private:
     DandrumAudioProcessor& processor;
     std::uint64_t meterSession = 0;
     std::uint32_t meterGeneration = 0;
+    std::uint32_t waveformGeneration = 0;
+    std::optional<std::uint64_t> waveformJob;
     std::uint32_t primaryGeneration = 0;
     std::uint32_t dragGeneration = 0;
     std::string primaryId;
@@ -296,6 +475,7 @@ private:
     juce::Label primaryLabel;
     juce::Slider primaryKnob;
     NativeMasterMeter meter;
+    NativePreparedWaveform waveform;
 };
 }
 
