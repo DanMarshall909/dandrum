@@ -4,16 +4,32 @@ Copy the prompt below into Claude Design. It asks for a reusable JUCE design sys
 
 ---
 
-Design **Dandrum Advanced Sampler**, a desktop **JUCE C++ VST3 instrument**, and a reusable **Dandrum JUCE UI design system** that can serve later drum machine, synthesizer, and effects plugins. Produce an original visual language. You may take inspiration from Bitwig's clear, immediate approach to modulation, but do not copy its visual design, icons, layout, or branding.
+Design **Das Sampler** (formerly Dandrum Advanced Sampler), a desktop **JUCE C++ VST3 instrument**, and a reusable **Dandrum JUCE UI design system** that can serve later drum machine, synthesizer, and effects plugins. Produce an original visual language. You may take inspiration from Bitwig's clear, immediate approach to modulation, but do not copy its visual design, icons, layout, or branding.
+
+## Current design reference
+
+Use the reviewed [Dandrum design system](design-system/README.md) and its
+[component references](design-system/reference/readme.md) as the visual baseline.
+Call the first product view **Das Sampler**. Use warm brown flat surfaces, cream
+text and ember selection/action accents; Barlow Semi Condensed labels, Barlow
+titles and JetBrains Mono values; pointer-free knobs with a 270-degree value arc
+and editable values on hover, focus or drag. Panels collapse to summaries, and
+prepared-detail groups use rollouts. Preserve the 1200 x 800 and 820 x 560 layouts,
+visible keyboard focus and restrained playback feedback.
+
+The export is illustrative. Use actual prepared metadata, shared and per-pad host
+parameters, and the maintained kit's snare velocities **1–63 / 64–127**. Apply the
+maintained guide's adaptation rules when the exported mock data or original JUCE
+handoff disagrees with these requirements.
 
 ## Product and sampler behavior
 
 The sampler is intended for playable drum kits, chopped breaks, and modest chromatic instruments. Its engine prepares sample assets and patch structure before playback. The design should make these musical capabilities understandable:
 
 - Play prepared sample regions as one-shots, gated sounds, simple loops, reversed regions, or pitched sounds, with region fades and optional loop crossfades.
-- Map sample regions by MIDI key and velocity. Support velocity layers, deterministic round-robin and weighted alternates, bounded voices, voice stealing, and exclusive choke groups.
+- Map sample regions by MIDI key and velocity. Support velocity layers (soft snare 1–63, hard snare 64–127), deterministic round-robin and weighted alternates, bounded voices, voice stealing, and exclusive choke groups.
 - Trigger explicit slices of a prepared break using a slice index or mapped MIDI notes.
-- Expose **pitch ratio, start offset, level, pan, and variation** as prominent live controls. These public parameters should be easy for a DAW to automate or modulate externally. Variation chooses among compatible hit alternates without changing the prepared sample map.
+- Expose **pitch ratio, start offset, level, pan, and variation** as prominent live controls. These public parameters should be easy for a DAW to automate or modulate externally. Show their actual shared or per-pad scope. Variation chooses among compatible hit alternates without changing the prepared sample map.
 - Keep sample source files, sample maps, voice limits, region and loop definitions, and choke policy as prepared settings. Changing these requires an explicit patch reload; do not portray them as continuously automatable controls.
 
 Use the reference drum kit as concrete content. MIDI note **36** plays kick, **38** plays snare with soft and hard velocity layers, **42** plays closed hat, and **46** plays open hat. The hard snare and open hat have alternates; the hats share a choke group. Show these four mapped sounds within a 4 × 4 pad grid, with the remaining pads clearly empty or available for future mappings. Do not invent additional loaded samples.
@@ -32,6 +48,21 @@ Create a high-fidelity main window around **1200 × 800 px**, plus one compact l
 6. Patch load status, missing-asset feedback, and an explicit **Reload Patch** action.
 
 Provide a second mockup state with a modulation context menu open on a live control. Show how the same component language could be reused on a synthesizer or effects plugin without designing those complete products.
+
+## Key maps, layers and outputs
+
+Use the reusable **KeyMap**, **LayerStack** and **OutputBusses** components where
+prepared metadata and host capabilities support them. Show key/velocity zones,
+source identity, declared selection or layering semantics, module chains, sends
+and actual named output buses with their channel counts. An overlapping zone or
+round-robin alternate does not by itself imply simultaneous layering. Show
+unavailable capabilities explicitly rather than inventing synth/patch layers or
+fixed output pairs.
+
+Keep zone bounds, module order and structural routing read-only in the plugin.
+Selection, audition and supported public parameter changes remain available.
+Do not expose the reference components' add/remove/reorder/reroute interactions
+as plugin authoring; structural changes require external patch editing and reload.
 
 ## Implicit modulation interaction
 
@@ -59,10 +90,12 @@ Design for a JUCE plugin editor, where live values and visual feedback change du
 
 1. The main sampler mockup, compact variant, modulation context-menu state, and reusable component sheet.
 2. A token table and component specifications precise enough to implement in C++.
-3. A suggested mapping between shared JUCE `LookAndFeel` drawing, reusable custom `Component` classes, and static assets. Parameter-bound controls should be compatible with ordinary JUCE plugin parameter attachment patterns.
+3. A suggested mapping between shared JUCE `LookAndFeel` drawing, reusable custom `Component` classes, and static assets. Parameter-bound controls must preserve host gesture semantics through the shared command service and timer-observed updates; audio-originated notifications must not post messages.
 4. An asset manifest with descriptive filenames, intended pixel or vector dimensions, states, and where each asset is used.
 5. Individually exportable **SVG icons** with simple paths JUCE can load reliably. Supply transparent PNG assets at **1× and 2×** only where raster imagery is genuinely needed. Use consistent view boxes and name assets systematically.
 6. A short implementation guide describing what JUCE should draw dynamically: waveforms, playback cursor, markers, values, labels, knob and slider positions, pad activity, meters, focus, and modulation ranges. Do not bake changing content into image assets.
+
+Obtain redistributable font binaries and license notices for local packaging; the reference export includes neither. Treat its CDN scripts, Google Fonts and runtime Babel as preview dependencies. Production WebView assets must be compiled ahead of time and packaged locally.
 
 Prefer scalable vector icons and JUCE-drawn controls over large background images. Avoid embedded fonts, CSS dependencies, complex SVG filters, proprietary imagery, and image assets that contain parameter values or labels. Keep the design feasible for efficient real-time visual updates in a plugin editor. Provide assets in a form that can be handed directly to a JUCE developer, not only as a flattened mockup.
 

@@ -1,0 +1,58 @@
+<!-- @dsCard group="Components" viewport="1000x760" name="Routing" subtitle="Layer sends, FX busses and multi-output busses" -->
+<!doctype html><html><head><meta charset="utf-8"><link rel="stylesheet" href="../../styles.css">
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="../../_ds_bundle.js"></script>
+<script src="../../tools/dev-bundle-fallback.js"></script>
+<style>body{margin:0;background:var(--surface-panel);padding:16px}a{color:var(--text-secondary)}a:hover{color:var(--text-primary)}</style>
+</head><body><div id="root"></div>
+<script type="text/babel">
+const NS = window.DandrumDesignSystem_3c2eab;
+['LayerStack', 'OutputBusses'].forEach((name) => {
+  const x = new XMLHttpRequest(); x.open('GET', name + '.jsx', false); x.send();
+  const src = x.responseText.replace(/^import .*$/mg, '').replace(/export function/g, 'function');
+  const code = Babel.transform(src, { presets: ['react'] }).code;
+  NS[name] = new Function('React', 'NS', 'with (NS) {' + code + '\n;return ' + name + ';}')(React, NS);
+});
+const { LayerStack, OutputBusses } = NS;
+const FX = [{ id: 'rev', name: 'Room reverb', letter: 'A' }, { id: 'par', name: 'Parallel comp', letter: 'B' }];
+const OUTS = [{ id: 'main', name: 'Main', note: '1/2' }, { id: 'kick', name: 'Kick', note: '3/4' }, { id: 'fx', name: 'FX returns', note: '5/6' }];
+const LAYERS = [
+  { id: 'sub', name: 'Kick sub', source: 'Synth', detail: 'Sine · 48 Hz · pitch env 120 ms', level: -3, output: 'kick', sends: { par: -12 },
+    modules: [{ id: 'f', type: 'Filter', value: 'LP 120 Hz' }] },
+  { id: 'top', name: 'Kick mid-high', source: 'Sample', detail: 'kick_top.wav', level: -6, output: 'kick', sends: { rev: -18, par: -9 },
+    modules: [{ id: 'f', type: 'Filter', value: 'HP 120 Hz' }, { id: 'g', type: 'Gain', value: '+2.0 dB' }] },
+];
+const BUSSES = [
+  { id: 'rev', name: 'Room reverb', source: 'FX bus', detail: 'Send A', level: -8, output: 'fx',
+    modules: [{ id: 'r', type: 'Reverb', value: 'Room 0.8 s' }, { id: 'f', type: 'Filter', value: 'HP 300 Hz' }] },
+  { id: 'par', name: 'Parallel comp', source: 'FX bus', detail: 'Send B', level: -10, output: 'main',
+    modules: [{ id: 'c', type: 'Compress', value: '8:1 · −24 dB' }, { id: 's', type: 'Saturate', value: 'Drive 30%' }] },
+];
+const OTHER_TO_MAIN = ['Snare', 'Closed Hat', 'Open Hat'];
+const OUT_BUSSES = [
+  { id: 'main', name: 'Main', main: true, channels: '1/2', levels: [-14, -15] },
+  { id: 'kick', name: 'Kick', channels: '3/4', levels: [-8, -8.5], level: -1.5 },
+  { id: 'fx', name: 'FX returns', channels: '5/6', levels: [-22, -21] },
+];
+const H = { font: '600 11px var(--font-ui)', letterSpacing: '.08em', textTransform: 'uppercase', color: 'var(--text-tertiary)' };
+function App() {
+  const [layers, setLayers] = React.useState(LAYERS);
+  const [busses, setBusses] = React.useState(BUSSES);
+  const [outs, setOuts] = React.useState(OUT_BUSSES);
+  const withFeeds = outs.map((o) => ({ ...o, feeds: [
+    ...(o.id === 'main' ? OTHER_TO_MAIN : []),
+    ...layers.filter((l) => (l.output || 'main') === o.id).map((l) => l.name),
+    ...busses.filter((b) => (b.output || 'main') === o.id).map((b) => b.name),
+  ] }));
+  const outMenu = outs.map((o) => ({ id: o.id, name: o.name, note: o.channels }));
+  return <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+    <LayerStack subtitle="Kick · 36 C2" layers={layers} onChange={setLayers} fxBusses={FX} outputs={outMenu} />
+    <LayerStack title="FX busses" countLabel={`${busses.length} busses · fed by sends`} layers={busses} onChange={setBusses} outputs={outMenu} />
+    <OutputBusses busses={withFeeds} onChange={(next) => setOuts(next.map(({ feeds, ...b }) => b))} />
+    <span style={{ ...H, textTransform: 'none', letterSpacing: 0, font: '400 11px var(--font-value)' }}>Layer → modules → sends → FX bus → output bus → plugin output pair</span>
+  </div>;
+}
+ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+</script></body></html>

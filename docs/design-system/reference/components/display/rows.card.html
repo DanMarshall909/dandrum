@@ -1,0 +1,28 @@
+<!-- @dsCard group="Components" viewport="700x240" name="Rows & labels" subtitle="List rows, prepared property rows, parameter label/value read-outs" -->
+<!doctype html><html><head><meta charset="utf-8"><link rel="stylesheet" href="../../styles.css">
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="../../_ds_bundle.js"></script>
+<script src="../../tools/dev-bundle-fallback.js"></script>
+<style>body{margin:0;background:var(--surface-panel);padding:16px}.lbl{font:600 11px var(--font-ui);letter-spacing:.08em;text-transform:uppercase;color:var(--text-tertiary)}.row{display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap}.col{display:flex;flex-direction:column;gap:6px;align-items:center}.stack{display:flex;flex-direction:column;gap:14px}</style>
+</head><body><div id="root"></div>
+<script type="text/babel">
+const NS = window.DandrumDesignSystem_3c2eab;
+const S = ({t, children, a}) => <div className="col" style={{alignItems:a||'center'}}>{children}<span className="lbl">{t}</span></div>;
+const { ListRow, PropertyRow, ParamLabel } = NS;function App(){ 
+const [sel,setSel]=React.useState(1);
+const rows=[['Snare soft','vel 1–95','layer 1'],['Snare hard · alt A','vel 96–127','w 1.0'],['Snare hard · alt B','vel 96–127','w 0.6']];
+return <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:24}}>
+  <div className="stack" style={{gap:2}}>
+    {rows.map((r,i)=><ListRow key={i} label={r[0]} detail={r[1]} value={r[2]} selected={sel===i} active={i===1} onClick={()=>setSel(i)} />)}
+    <ListRow label="Disabled row" detail="missing" disabled />
+    <ListRow compact label="Compact row" value="22px" />
+  </div>
+  <div className="stack">
+    <div><PropertyRow label="Key range" value="38" prepared /><PropertyRow label="Voice limit" value="8" prepared /><PropertyRow label="Steal" value="Oldest" prepared /><PropertyRow label="Pitch" value="1.000" unit="×" /></div>
+    <div className="row" style={{gap:24}}><ParamLabel label="Pitch" value="1.000" unit="×" /><ParamLabel label="Level" value="−1.9" unit="dB" hostAutomated /><ParamLabel label="Var" value="2/2" size="lg" /></div>
+  </div>
+</div>; }
+ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+</script></body></html>

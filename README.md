@@ -22,6 +22,10 @@ $HOME/.local/bin/cmake --build build
 This uses JUCE as the wrapper/host side. The current binary links a Rust static library from `src/rust-engine/` and
 calls it from the JUCE audio callback.
 
+## UI design
+
+The current [Dandrum design system](docs/design-system/README.md) includes the reviewed Das Sampler mockups, component references, tokens, SVG assets and JUCE handoff. See the [renderer-independent UI plan](openspec/changes/add-renderer-independent-plugin-ui/design.md) for the native/WebView architecture and implementation tasks.
+
 ## Engine Development
 
 The headless engine core is implemented in Rust under `src/rust-engine/`. The `core` module is the frontend-independent

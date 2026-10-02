@@ -1,0 +1,73 @@
+<!-- @dsCard group="Components" viewport="700x250" name="Pad cells" subtitle="Pad states: idle, hit, selected, layers, alternates, choke, empty, missing" -->
+<!doctype html><html><head><meta charset="utf-8"><link rel="stylesheet" href="../../styles.css">
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="../../_ds_bundle.js"></script>
+<script src="../../tools/dev-bundle-fallback.js"></script>
+<style>body{margin:0;background:var(--surface-panel);padding:16px}.lbl{font:600 11px var(--font-ui);letter-spacing:.08em;text-transform:uppercase;color:var(--text-tertiary)}.row{display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap}.col{display:flex;flex-direction:column;gap:6px;align-items:center}.stack{display:flex;flex-direction:column;gap:14px}</style>
+</head><body><div id="root"></div>
+<script type="text/babel" src="../../tools/tweaks-panel.jsx"></script>
+<script type="text/babel">
+const NS = window.DandrumDesignSystem_3c2eab;
+const S = ({t, children, a}) => <div className="col" style={{alignItems:a||'center'}}>{children}<span className="lbl">{t}</span></div>;
+const { PadCell } = NS;
+const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
+  "palette": "warm70s",
+  "accent": "#E8622A",
+  "tintedPads": true
+}/*EDITMODE-END*/;
+const WARM_70S = {
+  '--dd-ink-0': '#1A120C', '--dd-ink-1': '#22180F', '--dd-ink-2': '#2B1F14', '--dd-ink-3': '#36271A', '--dd-ink-4': '#44311F', '--dd-ink-5': '#523C27', '--dd-ink-6': '#634A31',
+  '--dd-line-1': '#3A2A1B', '--dd-line-2': '#4D3824', '--dd-line-3': '#6E5235',
+  '--dd-paper-1': '#F3E6CC', '--dd-paper-2': '#D2BE9A', '--dd-paper-3': '#A88F6B', '--dd-paper-4': '#77634A',
+  '--dd-error': '#E0453A', '--text-on-accent': '#1E120A',
+};
+const PAD_TINTS = { 36: '#5A3A1E', 38: '#4E4220', 42: '#3E4524', 46: '#3E4524' };
+function usePalette(t) {
+  React.useEffect(() => {
+    const root = document.documentElement.style;
+    Object.keys(WARM_70S).forEach((k) => root.removeProperty(k));
+    ['--dd-vermilion', '--dd-vermilion-hi', '--dd-vermilion-lo'].forEach((k) => root.removeProperty(k));
+    if (t.palette === 'warm70s') {
+      Object.entries(WARM_70S).forEach(([k, v]) => root.setProperty(k, v));
+      root.setProperty('--dd-vermilion', t.accent);
+      root.setProperty('--dd-vermilion-hi', `color-mix(in oklch, ${t.accent} 80%, white)`);
+      root.setProperty('--dd-vermilion-lo', `color-mix(in oklch, ${t.accent} 75%, black)`);
+    }
+  }, [t.palette, t.accent]);
+}
+function App(){
+const [t, setTweak] = useTweaks(TWEAK_DEFAULTS);
+usePalette(t);
+const tint = (n) => t.palette === 'warm70s' && t.tintedPads && PAD_TINTS[n] ? { background: PAD_TINTS[n] } : undefined;
+const PadCellT = (p) => <PadCell {...p} style={tint(p.note)} />;
+return <>
+<TweaksPanel>
+  <TweakSection label="Palette" />
+  <TweakRadio label="Theme" value={t.palette} options={[{ value: 'graphite', label: 'Graphite' }, { value: 'warm70s', label: 'Warm 70s' }]} onChange={(v) => setTweak('palette', v)} />
+  <TweakColor label="Selection accent" value={t.accent} options={['#E8622A', '#E3A72F', '#9AA83A', '#C8553D']} onChange={(v) => setTweak('accent', v)} />
+  <TweakToggle label="Tint mapped pads" value={t.tintedPads} onChange={(v) => setTweak('tintedPads', v)} />
+</TweaksPanel>
+<PadsBody PadCell={PadCellT} />
+</>; }
+function PadsBody({ PadCell }){
+return <div className="stack">
+ <div className="row">
+  <S t="Idle"><PadCell note={36} name="Kick" velocity={0.6} /></S>
+  <S t="Hit · selected"><PadCell note={36} name="Kick" velocity={0.92} level={0.85} selected /></S>
+  <S t="Layers 2/2"><PadCell note={38} name="Snare" layers={2} activeLayer={1} alternates={2} activeAlternate={1} velocity={0.95} level={0.5} /></S>
+  <S t="Choke · alt"><PadCell note={46} name="Open Hat" chokeGroup={1} alternates={2} activeAlternate={0} velocity={0.7} /></S>
+  <S t="Choked"><PadCell note={46} name="Open Hat" chokeGroup={1} alternates={2} choked velocity={0.7} /></S>
+  <S t="Missing file"><PadCell note={46} name="Open Hat" missing chokeGroup={1} /></S>
+  <S t="Empty"><PadCell note={39} mapped={false} /></S>
+ </div>
+ <div className="row">
+  <S t="Compact 52"><PadCell compact note={36} name="Kick" velocity={0.6} selected /></S>
+  <S t=" "><PadCell compact note={42} name="Cl Hat" chokeGroup={1} level={0.6} velocity={0.5} /></S>
+  <S t="Focused"><PadCell compact note={38} name="Snare" focused alternates={2} /></S>
+  <S t="Empty"><PadCell compact note={40} mapped={false} /></S>
+ </div>
+</div>; }
+ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+</script></body></html>

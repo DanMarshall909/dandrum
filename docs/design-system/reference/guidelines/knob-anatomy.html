@@ -1,0 +1,47 @@
+<!-- @dsCard group="Brand" viewport="700x520" name="Knob anatomy" subtitle="Values live in an editable hover popup; thin/thick arcs; combined mod; peak/trough; clip" -->
+<!doctype html><html><head><meta charset="utf-8"><link rel="stylesheet" href="../styles.css">
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="../_ds_bundle.js"></script>
+<script src="../tools/dev-bundle-fallback.js"></script>
+<style>body{margin:0;background:var(--surface-panel);padding:16px;font-family:var(--font-ui);color:var(--text-primary)}.lbl{font:600 11px var(--font-ui);letter-spacing:.08em;text-transform:uppercase;color:var(--text-tertiary);text-align:center}</style>
+</head><body><div id="root"></div>
+<script type="text/babel">
+const { Knob } = window.DandrumDesignSystem_3c2eab;
+const mods = (liveA, liveB) => [{ slot: 'A', depth: 0.22, live: liveA ? 0.7 : undefined }, { slot: 'B', depth: -0.16, live: liveB ? 0.4 : undefined }];
+const Big = ({ t, ...p }) => <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}><div style={{ zoom: 1.35 }}><Knob showLabel={false} size="lg" value={0.55} valueText=" " {...p} /></div><span className="lbl">{t}</span></div>;
+function App() {
+  const [v, setV] = React.useState(0.5);
+  return <div style={{ display: 'flex', gap: 20, alignItems: 'flex-start' }}>
+    <div style={{ display: 'grid', gridTemplateColumns: 'auto auto', gap: '10px 14px' }}>
+      <Big t="At rest" modulations={mods(false, false)} />
+      <Big t="Value dragged" modulations={mods(false, false)} active />
+      <Big t="Source A live" modulations={mods(true, false)} peak={0.67} trough={0.55} peakText="67" troughText="55" />
+      <Big t="Editing B depth" modulations={mods(false, false)} activeSlot="B" />
+    </div>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 10, flex: 1, minWidth: 0 }}>
+      <ol style={{ margin: 0, paddingLeft: 18, fontSize: 12.5, lineHeight: 1.5, color: 'var(--text-secondary)' }}>
+        <li><b style={{ color: 'var(--text-primary)' }}>Mod rings</b> — outer band, ≤2 rings, 1px. Only the ring whose source is live, or whose depth is being edited, goes 2px.</li>
+        <li><b style={{ color: 'var(--text-primary)' }}>Track + value arc</b> — the only position indicator (no pointer line). Both 1.5px at rest; only the value arc goes 3px (4 at lg) while dragged, nudged or host-written. The track never thickens. Layout reserves the thick width, so nothing shifts.</li>
+        <li><b style={{ color: 'var(--text-primary)' }}>Cap</b> — plain disc, 1px top highlight, 1.5px drop. Darkens while dragging.</li>
+        <li><b style={{ color: 'var(--text-primary)' }}>Value popup</b> — no numbers on the panel. Hover, focus, drag or nudge opens an editable popup: click the value (or press Enter) to type, Enter commits, Esc cancels. It also lists peak/trough and every modulation source with its depth.</li>
+        <li><b style={{ color: 'var(--text-primary)' }}>Peak / trough</b> — ticks on the inner arc (outward = highest, inward = lowest modulated value since reset); numbers in the popup, click to reset.</li>
+        <li><b style={{ color: 'var(--text-primary)' }}>Clip warning</b> — red cap on the track end + CLIP tag, which stays on the panel (it's a warning). Hollow: the range passes the limit. Solid: pinned at the limit now.</li>
+        <li><b style={{ color: 'var(--text-primary)' }}>Combined modulation</b> — inner arc in the cap: faint = total range of all sources; bright = base → effective value; dot = effective value. One source uses its slot colour, several use Paper 1.</li>
+      </ol>
+      <div style={{ display: 'flex', alignItems: 'flex-start', gap: 6 }}>
+        <Knob label="Range clips" value={0.82} valueText="82" unit="%" modulations={[{ slot: 'A', depth: 0.3 }]} />
+        
+        <Knob label="Low clip" value={0.15} valueText="15" unit="%" modulations={[{ slot: 'B', depth: -0.25, live: 0.3 }]} peak={0.15} trough={0.07} peakText="15" troughText="7" />
+        <div style={{ height: 190 }}><Knob label="Popup (hovered)" popupOpen value={0.82} valueText="82" unit="%" modulations={[{ slot: 'A', depth: 0.3, live: 0.9, source: 'Velocity' }, { slot: 'B', depth: -0.1, source: 'Random per hit' }]} active peak={1} trough={0.74} peakText="100" troughText="74" /></div>
+      </div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+        <Knob label="Try it" value={v} onChange={setV} valueText={Math.round(v * 100) + '%'} modulations={[{ slot: 'A', depth: 0.25 }]} />
+        <span style={{ fontSize: 12, color: 'var(--text-tertiary)' }}>Hover to see and type the value. Drag, scroll or use arrows — only the value arc thickens while changing.</span>
+      </div>
+    </div>
+  </div>;
+}
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script></body></html>

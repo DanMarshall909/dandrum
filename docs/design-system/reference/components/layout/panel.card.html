@@ -1,0 +1,27 @@
+<!-- @dsCard group="Components" viewport="700x300" name="Panel & section heading" subtitle="Collapsible panels, rollouts with summaries, minimal scrollbar" -->
+<!doctype html><html><head><meta charset="utf-8"><link rel="stylesheet" href="../../styles.css">
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="../../_ds_bundle.js"></script>
+<script src="../../tools/dev-bundle-fallback.js"></script>
+<style>body{margin:0;background:var(--surface-panel);padding:16px}.lbl{font:600 11px var(--font-ui);letter-spacing:.08em;text-transform:uppercase;color:var(--text-tertiary)}.row{display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap}.col{display:flex;flex-direction:column;gap:6px;align-items:center}.stack{display:flex;flex-direction:column;gap:14px}</style>
+</head><body><div id="root"></div>
+<script type="text/babel">
+const NS = window.DandrumDesignSystem_3c2eab;
+const S = ({t, children, a}) => <div className="col" style={{alignItems:a||'center'}}>{children}<span className="lbl">{t}</span></div>;
+const { Panel, Rollout, SectionHeading, IconButton, PropertyRow, Knob } = NS;function App(){ 
+return <div style={{display:'grid',gridTemplateColumns:'1.2fr 1fr',gap:4,background:'var(--surface-window)',padding:4,borderRadius:8}}>
+  <Panel title="Live controls" actions={<IconButton icon="more" label="More" variant="ghost" size="sm" />}>
+    <div className="row" style={{gap:4}}><Knob label="Pitch" bipolar value={0.5} valueText="1.000×" /><Knob label="Level" value={0.8} valueText="−1.9 dB" /><Knob label="Pan" bipolar value={0.5} valueText="C" /></div>
+  </Panel>
+  <Panel title="Pad details" tag="Prepared" prepared style={{height:200}} bodyStyle={{overflowY:'auto',paddingTop:6}}>
+    <Rollout title="Mapping" prepared summary="Snare · 38 D2 · One-shot"><PropertyRow label="Sound" value="Snare" prepared compact /><PropertyRow label="Key" value="38 · D2" prepared compact /></Rollout>
+    <Rollout title="Voices & choke" prepared summary="8 voices · Oldest · no choke"><PropertyRow label="Voice limit" value="8" prepared compact /><PropertyRow label="Steal" value="Oldest" prepared compact /><PropertyRow label="Choke" value="None" prepared compact /></Rollout>
+    <Rollout title="Layers & alternates" prepared defaultCollapsed summary="3 regions · 2 layers · Round-robin"><PropertyRow label="Soft" value="vel 1–95" prepared compact /></Rollout>
+  </Panel>
+  <Panel title="Output" defaultCollapsed summary="−6.0 dB · C" />
+  <Panel title="Collapsible: off" collapsible={false}><span style={{font:'500 12px var(--font-ui)',color:'var(--text-tertiary)'}}>Use only for the window header/status bar.</span></Panel>
+</div>; }
+ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+</script></body></html>

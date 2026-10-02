@@ -1,0 +1,77 @@
+:root {
+  /* ---- Base: charcoal / graphite ramp ---- */
+  --dd-ink-0: #130F0C;   /* window chrome, deepest wells */
+  --dd-ink-1: #1A1511;   /* editor background */
+  --dd-ink-2: #211B16;   /* panel surface */
+  --dd-ink-3: #2A231D;   /* panel header / raised section */
+  --dd-ink-4: #342B23;   /* control well, field, pad face */
+  --dd-ink-5: #41362C;   /* hover face, knob cap */
+  --dd-ink-6: #524437;   /* pressed face, knob track */
+  --dd-line-1: #2F271F;  /* hairline divider */
+  --dd-line-2: #42372C;  /* control outline */
+  --dd-line-3: #5F4F40;  /* emphasised outline */
+
+  --dd-paper-1: #F2E6D3; /* primary text, value arc */
+  --dd-paper-2: #CBB9A0; /* secondary text, labels */
+  --dd-paper-3: #A8957D; /* tertiary text, units */
+  --dd-paper-4: #706252; /* disabled text */
+
+  /* ---- Accent: Dandrum ember — faded orange (selection + primary action). Token names keep "vermilion" for compatibility. ---- */
+  --dd-vermilion: #E08A4E;
+  --dd-vermilion-hi: #EAA170;
+  --dd-vermilion-lo: #B0662F;
+  --dd-vermilion-wash: #3A2618;
+
+  /* ---- Modulation slots: colour + glyph + letter ---- */
+  --dd-mod-a: #3FD0C9;   /* teal   · circle   · A */
+  --dd-mod-b: #A98BFF;   /* lilac  · triangle · B */
+  --dd-mod-c: #8EDB5A;   /* lime   · square   · C */
+  --dd-mod-d: #FF85BE;   /* pink   · diamond  · D */
+  --dd-mod-wash: #1F2E29; /* eligible-destination tint during assignment */
+
+  /* ---- Host (DAW-owned automation / external modulation) ---- */
+  --dd-host: #5B9DFF;
+  --dd-host-wash: #1D2330;
+
+  /* ---- Status ---- */
+  --dd-ok: #5FD38A;
+  --dd-warn: #E9C15A;
+  --dd-error: #F0545E;
+  --dd-ok-wash: #1B2719;
+  --dd-warn-wash: #2F2814;
+  --dd-error-wash: #34181A;
+
+  --dd-cap-hover: #4A3D31; /* knob cap / slider thumb hover */
+  --dd-pad-hover: #3A3027; /* pad face hover */
+  --dd-scrim: rgba(19,15,12,0.45); /* outside-region dim */
+
+  /* ---- Semantic aliases ---- */
+  --surface-window: var(--dd-ink-1);
+  --surface-panel: var(--dd-ink-2);
+  --surface-panel-header: var(--dd-ink-3);
+  --surface-well: var(--dd-ink-0);
+  --surface-control: var(--dd-ink-4);
+  --surface-control-hover: var(--dd-ink-5);
+  --surface-control-pressed: var(--dd-ink-6);
+  --surface-menu: var(--dd-ink-3);
+  --surface-prepared: var(--dd-ink-2);
+
+  --text-primary: var(--dd-paper-1);
+  --text-secondary: var(--dd-paper-2);
+  --text-tertiary: var(--dd-paper-3);
+  --text-disabled: var(--dd-paper-4);
+  --text-on-accent: #1E1209;
+
+  --border-hairline: var(--dd-line-1);
+  --border-control: var(--dd-line-2);
+  --border-strong: var(--dd-line-3);
+
+  --color-selected: var(--dd-vermilion);
+  --color-action: var(--dd-vermilion);
+  --color-focus: var(--dd-paper-1);
+  --color-value: var(--dd-paper-1);
+  --color-track: var(--dd-ink-6);
+  --color-cursor: var(--dd-paper-1);
+  --color-waveform: #9E8F7D;
+  --color-waveform-region: #E6D6BE;
+}
