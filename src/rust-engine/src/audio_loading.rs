@@ -1,20 +1,19 @@
+use sha2::{Digest, Sha256};
 use std::fs;
 use std::path::Path;
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct LoadedAudio {
-    sample_rate_hz: u32,
-    source_channel_count: u16,
-    frames: Vec<f32>,
+    pub(crate) sample_rate_hz: u32,
+    pub(crate) source_channel_count: u16,
+    pub(crate) frames: Vec<f32>,
+    pub(crate) source_pcm: Option<Vec<i16>>,
+    pub(crate) content_revision: [u8; 32],
 }
 
 impl LoadedAudio {
     pub fn new(sample_rate_hz: u32, frames: Vec<f32>) -> Self {
-        Self {
-            sample_rate_hz,
-            source_channel_count: 1,
-            frames,
-        }
+        Self::with_source_channels(sample_rate_hz, 1, frames)
     }
 
     pub fn with_source_channels(
@@ -22,10 +21,18 @@ impl LoadedAudio {
         source_channel_count: u16,
         frames: Vec<f32>,
     ) -> Self {
+        let mut hasher = Sha256::new();
+        hasher.update(sample_rate_hz.to_le_bytes());
+        hasher.update(source_channel_count.to_le_bytes());
+        for frame in &frames {
+            hasher.update(frame.to_bits().to_le_bytes());
+        }
         Self {
             sample_rate_hz,
             source_channel_count,
             frames,
+            source_pcm: None,
+            content_revision: hasher.finalize().into(),
         }
     }
 
@@ -33,6 +40,7 @@ impl LoadedAudio {
         self.sample_rate_hz
     }
 
+    #[cfg(test)]
     pub fn source_channel_count(&self) -> u16 {
         self.source_channel_count
     }
@@ -40,6 +48,43 @@ impl LoadedAudio {
     pub fn frames(&self) -> &[f32] {
         &self.frames
     }
+
+    #[cfg(test)]
+    pub fn source_sample(&self, channel: u16, frame: usize) -> Option<f32> {
+        source_sample(
+            &self.frames,
+            self.source_channel_count,
+            self.source_pcm.as_deref(),
+            channel,
+            frame,
+        )
+    }
+
+    #[cfg(test)]
+    pub fn content_revision(&self) -> &[u8; 32] {
+        &self.content_revision
+    }
+}
+
+pub(crate) fn source_sample(
+    frames: &[f32],
+    channel_count: u16,
+    source_pcm: Option<&[i16]>,
+    channel: u16,
+    frame: usize,
+) -> Option<f32> {
+    if channel >= channel_count || frame >= frames.len() {
+        return None;
+    }
+    if channel_count == 1 {
+        return frames.get(frame).copied();
+    }
+    let index = frame
+        .checked_mul(usize::from(channel_count))?
+        .checked_add(usize::from(channel))?;
+    source_pcm?
+        .get(index)
+        .map(|sample| f32::from(*sample) / 32768.0)
 }
 
 pub fn load_pcm_wav(path: &Path, expected_sample_rate_hz: u32) -> Result<LoadedAudio, String> {
@@ -131,10 +176,14 @@ fn decode_pcm_wav_with_expected_rate(
     }
 
     let mut frames = Vec::with_capacity(data.len() / frame_bytes);
+    let mut source_pcm = (channels == 2).then(|| Vec::with_capacity(data.len() / 2));
     for frame in data.chunks_exact(frame_bytes) {
-        let left = i16::from_le_bytes(frame[0..2].try_into().unwrap()) as f32 / 32768.0;
+        let left_pcm = i16::from_le_bytes(frame[0..2].try_into().unwrap());
+        let left = f32::from(left_pcm) / 32768.0;
         let sample = if channels == 2 {
-            let right = i16::from_le_bytes(frame[2..4].try_into().unwrap()) as f32 / 32768.0;
+            let right_pcm = i16::from_le_bytes(frame[2..4].try_into().unwrap());
+            let right = f32::from(right_pcm) / 32768.0;
+            source_pcm.as_mut().unwrap().extend([left_pcm, right_pcm]);
             (left + right) * 0.5
         } else {
             left
@@ -142,15 +191,13 @@ fn decode_pcm_wav_with_expected_rate(
         frames.push(sample);
     }
 
-    if channels == 1 {
-        Ok(LoadedAudio::new(sample_rate, frames))
-    } else {
-        Ok(LoadedAudio::with_source_channels(
-            sample_rate,
-            channels,
-            frames,
-        ))
-    }
+    Ok(LoadedAudio {
+        sample_rate_hz: sample_rate,
+        source_channel_count: channels,
+        frames,
+        source_pcm,
+        content_revision: Sha256::digest(bytes).into(),
+    })
 }
 
 #[cfg(test)]
@@ -187,6 +234,40 @@ mod tests {
         assert_eq!(audio.frames().len(), 2);
         assert!((audio.frames()[0] - 0.25).abs() < 0.0001);
         assert!((audio.frames()[1] + 0.5).abs() < 0.0001);
+    }
+
+    #[test]
+    fn stereo_source_samples_remain_distinct_from_the_playback_mix() {
+        let mut bytes = Vec::new();
+        write_wav_stereo_i16(&mut bytes, 48_000, &[-0.75, 0.5], &[0.5, -0.25])
+            .expect("stereo WAV should write");
+        let audio = decode_pcm_wav(&bytes, 48_000).expect("stereo WAV should decode");
+
+        for (actual, expected) in audio.frames().iter().zip([-0.125, 0.125]) {
+            assert!((actual - expected).abs() < 0.00004);
+        }
+        for ((channel, frame), expected) in [
+            ((0, 0), -0.75),
+            ((1, 0), 0.5),
+            ((0, 1), 0.5),
+            ((1, 1), -0.25),
+        ] {
+            assert!((audio.source_sample(channel, frame).unwrap() - expected).abs() < 0.00004);
+        }
+        assert_eq!(audio.source_sample(2, 0), None);
+        assert_eq!(audio.source_sample(0, 2), None);
+    }
+
+    #[test]
+    fn content_revision_changes_when_the_same_source_bytes_change() {
+        let mut first = Vec::new();
+        let mut second = Vec::new();
+        write_wav_stereo_i16(&mut first, 48_000, &[-0.75], &[0.5]).unwrap();
+        write_wav_stereo_i16(&mut second, 48_000, &[-0.5], &[0.5]).unwrap();
+
+        let first = decode_pcm_wav(&first, 48_000).unwrap();
+        let second = decode_pcm_wav(&second, 48_000).unwrap();
+        assert_ne!(first.content_revision(), second.content_revision());
     }
 
     #[test]

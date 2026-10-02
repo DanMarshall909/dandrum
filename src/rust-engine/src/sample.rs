@@ -12,6 +12,8 @@ pub struct LoadedSample {
     sample_rate_hz: u32,
     source_channel_count: u16,
     frames: Vec<f32>,
+    source_pcm: Option<Vec<i16>>,
+    content_revision: [u8; 32],
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -78,11 +80,10 @@ pub fn prepare_sampler_assets(
 
 impl LoadedSample {
     pub fn new(sample_rate_hz: u32, frames: Vec<f32>) -> Self {
-        Self {
+        Self::from_loaded_audio(crate::audio_loading::LoadedAudio::new(
             sample_rate_hz,
-            source_channel_count: 1,
             frames,
-        }
+        ))
     }
 
     pub fn with_source_channels(
@@ -90,10 +91,20 @@ impl LoadedSample {
         source_channel_count: u16,
         frames: Vec<f32>,
     ) -> Self {
-        Self {
+        Self::from_loaded_audio(crate::audio_loading::LoadedAudio::with_source_channels(
             sample_rate_hz,
             source_channel_count,
             frames,
+        ))
+    }
+
+    pub(crate) fn from_loaded_audio(audio: crate::audio_loading::LoadedAudio) -> Self {
+        Self {
+            sample_rate_hz: audio.sample_rate_hz,
+            source_channel_count: audio.source_channel_count,
+            frames: audio.frames,
+            source_pcm: audio.source_pcm,
+            content_revision: audio.content_revision,
         }
     }
 
@@ -111,6 +122,20 @@ impl LoadedSample {
 
     pub fn frames(&self) -> &[f32] {
         &self.frames
+    }
+
+    pub fn source_sample(&self, channel: u16, frame: usize) -> Option<f32> {
+        crate::audio_loading::source_sample(
+            &self.frames,
+            self.source_channel_count,
+            self.source_pcm.as_deref(),
+            channel,
+            frame,
+        )
+    }
+
+    pub fn content_revision(&self) -> &[u8; 32] {
+        &self.content_revision
     }
 }
 
@@ -154,11 +179,7 @@ impl std::error::Error for SampleLoadError {}
 #[cfg(test)]
 fn load_pcm_wav(path: &Path, expected_sample_rate_hz: u32) -> Result<LoadedSample, String> {
     let loaded = crate::audio_loading::load_pcm_wav(path, expected_sample_rate_hz)?;
-    Ok(LoadedSample::with_source_channels(
-        loaded.sample_rate_hz(),
-        loaded.source_channel_count(),
-        loaded.frames().to_vec(),
-    ))
+    Ok(LoadedSample::from_loaded_audio(loaded))
 }
 
 #[cfg(test)]

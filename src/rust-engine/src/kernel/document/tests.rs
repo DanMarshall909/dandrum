@@ -1157,12 +1157,13 @@ fn sample_asset_preparation_reports_missing_file_with_source_identity() {
 fn prepared_drum_source_keeps_decoded_frames_regions_and_map_metadata() {
     let directory = tempfile::tempdir().expect("temporary sample root");
     fs::create_dir(directory.path().join("samples")).expect("sample directory");
-    let frames = vec![0.25; 96_000];
+    let left = vec![0.5; 96_000];
+    let right = vec![0.0; 96_000];
     crate::wav::write_wav_stereo_i16(
         fs::File::create(directory.path().join("samples/break.wav")).expect("sample file"),
         48_000,
-        &frames,
-        &frames,
+        &left,
+        &right,
     )
     .expect("write sample");
     let context = PreparationContext::new(directory.path(), 48_000);
@@ -1185,6 +1186,8 @@ fn prepared_drum_source_keeps_decoded_frames_regions_and_map_metadata() {
     assert_eq!(source.sample().frame_count(), 96_000);
     assert_eq!(source.sample().frames().len(), 96_000);
     assert!((source.sample().frames()[0] - 0.25).abs() < 0.0001);
+    assert!((source.sample().source_sample(0, 0).unwrap() - 0.5).abs() < 0.0001);
+    assert_eq!(source.sample().source_sample(1, 0), Some(0.0));
     assert_eq!(source.declaration().regions[0].id, "full");
     assert_eq!(source.declaration().regions[0].start_frame, 0);
     assert_eq!(source.declaration().regions[0].end_frame, 96_000);
@@ -1219,6 +1222,45 @@ fn prepared_drum_source_keeps_decoded_frames_regions_and_map_metadata() {
     assert_eq!(map.zones()[0].declaration().velocity_range, [1, 70]);
     assert_eq!(map.zones()[0].source_index(), 0);
     assert_eq!(map.zones()[0].region_index(), 0);
+}
+
+#[test]
+fn prepared_source_revision_and_channels_survive_same_path_replacement() {
+    let directory = tempfile::tempdir().expect("temporary sample root");
+    fs::create_dir(directory.path().join("samples")).expect("sample directory");
+    let path = directory.path().join("samples/break.wav");
+    let write_source = |left: f32, right: f32| {
+        crate::wav::write_wav_stereo_i16(
+            fs::File::create(&path).expect("sample file"),
+            48_000,
+            &vec![left; 96_000],
+            &vec![right; 96_000],
+        )
+        .expect("write sample");
+    };
+    let patch = load_kernel_patch_str(SAMPLE_ASSET_PATCH).expect("sample declaration loads");
+    let context = PreparationContext::new(directory.path(), 48_000);
+    let settings = RenderSettings {
+        sample_rate_hz: 48_000,
+        block_size_frames: 16,
+        duration_frames: 16,
+    };
+
+    write_source(-0.75, 0.5);
+    let old = prepare_kernel_patch_with_context(&patch, &settings, &context)
+        .expect("first source prepares");
+    write_source(0.25, -0.25);
+    let replacement = prepare_kernel_patch_with_context(&patch, &settings, &context)
+        .expect("replacement source prepares");
+    fs::remove_file(&path).expect("prepared data owns its PCM");
+
+    let old_sample = old.sample_assets().sources()[0].sample();
+    let new_sample = replacement.sample_assets().sources()[0].sample();
+    assert_ne!(old_sample.content_revision(), new_sample.content_revision());
+    assert!((old_sample.source_sample(0, 0).unwrap() + 0.75).abs() < 0.0001);
+    assert!((old_sample.source_sample(1, 0).unwrap() - 0.5).abs() < 0.0001);
+    assert!((new_sample.source_sample(0, 0).unwrap() - 0.25).abs() < 0.0001);
+    assert!((new_sample.source_sample(1, 0).unwrap() + 0.25).abs() < 0.0001);
 }
 
 #[test]

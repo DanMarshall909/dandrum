@@ -173,11 +173,7 @@ impl<'a> ResourceResolver<'a> {
                 crate::audio_loading::load_pcm_wav_any_rate(&canonical_path)
             }
             .map_err(|message| resource_load_failed(reference, &canonical_path, message))?;
-            let sample = Arc::new(LoadedSample::with_source_channels(
-                loaded.sample_rate_hz(),
-                loaded.source_channel_count(),
-                loaded.frames().to_vec(),
-            ));
+            let sample = Arc::new(LoadedSample::from_loaded_audio(loaded));
             self.loaded.insert(key, Arc::clone(&sample));
             sample
         };
