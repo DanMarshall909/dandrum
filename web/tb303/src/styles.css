@@ -64,7 +64,7 @@ button { font: inherit; }
 
 .model { color: #be3029; }
 
-.computer-controlled, .bass-line, .section-label, .knob-label, .toggle-label,
+.computer-controlled, .bass-line, .section-label, .toggle-label,
 .keyboard-labels, footer {
   font-size: 12px;
   font-weight: 800;
@@ -86,7 +86,7 @@ button { font: inherit; }
 }
 
 .waveform-section { align-content: center; gap: 9px; }
-.section-label, .knob-label { text-align: center; }
+.section-label { text-align: center; }
 .wave-icons { display: flex; gap: 8px; }
 
 .wave-button {
@@ -108,56 +108,7 @@ button { font: inherit; }
 .wave-button.selected { color: #b52d27; background: #85847c; border-color: #51433f; transform: translateY(1px); box-shadow: inset 0 2px 5px rgba(0, 0, 0, .6); }
 
 .knob-bank { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); align-items: center; }
-.knob-control { display: grid; justify-items: center; gap: 3px; }
-
-.knob-scale {
-  position: relative;
-  width: 84px;
-  height: 76px;
-  display: grid;
-  place-items: center;
-}
-
-.knob-tick {
-  position: absolute;
-  top: 0;
-  left: calc(50% - .5px);
-  width: 1px;
-  height: 5px;
-  background: #33332f;
-  transform-origin: .5px 38px;
-}
-
-.knob {
-  position: relative;
-  width: 54px;
-  height: 54px;
-  border: 1px solid #111;
-  border-radius: 50%;
-  cursor: ns-resize;
-  touch-action: none;
-  background: radial-gradient(circle at 37% 30%, #6b6b67 0, #3b3b38 34%, #1d1d1b 74%);
-  box-shadow: inset 1px 1px 3px rgba(255, 255, 255, .18), 0 2px 3px rgba(0, 0, 0, .45);
-}
-
-.knob:focus-visible { outline: 2px solid #c5352d; outline-offset: 2px; }
-.knob::after { content: ""; position: absolute; inset: 7px; border: 1px solid rgba(255, 255, 255, .1); border-radius: 50%; }
-
-.knob-indicator {
-  position: absolute;
-  left: 50%;
-  top: 5px;
-  width: 2px;
-  height: 22px;
-  margin-left: -1px;
-  transform-origin: 50% 22px;
-  background: #e6e5db;
-}
-
-.knob-control.small .knob-scale { width: 70px; height: 62px; }
-.knob-control.small .knob { width: 45px; height: 45px; }
-.knob-control.small .knob-tick { transform-origin: .5px 31px; }
-.knob-control.small .knob-indicator { height: 18px; transform-origin: 50% 19px; }
+.knob-control { display: grid; justify-items: center; gap: 3px; background: var(--surface-panel); border-radius: var(--radius-2); }
 
 .middle-panel { display: grid; grid-template-columns: 230px minmax(0, 1fr); min-height: 194px; border-bottom: 1px solid rgba(50, 50, 47, .3); }
 
@@ -271,10 +222,6 @@ footer .footer-centre { position: absolute; left: 50%; transform: translateX(-50
 .sequencer button:disabled, .key:disabled { cursor: default; }
 .mode-buttons button:disabled, .run-controls button:disabled, .sequencer button:disabled { opacity: .55; }
 .key:disabled { opacity: .8; }
-.knob[aria-disabled="true"] { cursor: default; opacity: .45; }
-.knob-value { width: 64px; padding: 2px; border: 1px solid #65645e; border-radius: 2px;
-  color: #252521; background: #d5d4ca; font: 11px var(--font-value); text-align: center; }
-.knob-control.small .knob-value { width: 55px; }
 .host-error { color: #ffaaa3; margin: 0; font-size: 13px; }
 
 .master-meter { width: 318px; padding: 5px 9px;

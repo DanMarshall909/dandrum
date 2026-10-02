@@ -6,7 +6,7 @@ button:focus-visible,input:focus-visible{outline:2px solid #7ce0aa;outline-offse
 .sampler{max-width:1280px;margin:auto;padding:20px;display:grid;gap:16px}
 .top{display:flex;justify-content:space-between;align-items:end;gap:18px;padding:0 2px 16px;border-bottom:1px solid #66796d}
 .top h1{font-family:var(--font-display);font-size:clamp(28px,4vw,48px);line-height:1;margin:6px 0}
-.control-value,.generation{font-family:var(--font-value)}
+.generation{font-family:var(--font-value)}
 .top p{margin:0;color:#9eafa2;font-size:12px}
 .top .eyebrow{color:#7ce0aa;font-size:11px;font-weight:800;letter-spacing:2px}
 .generation{padding:6px 9px;border:1px solid #66796d;border-radius:4px;color:#a9c1b0;font-size:11px;white-space:nowrap}
@@ -21,10 +21,7 @@ button:focus-visible,input:focus-visible{outline:2px solid #7ce0aa;outline-offse
 .details{margin:12px 0 0;color:#adc6b4;font-size:11px}
 .lower{display:grid;grid-template-columns:minmax(260px,1fr) minmax(300px,1.25fr);gap:16px}
 .left-column,.right-column{min-width:0;display:grid;align-content:start;gap:16px}
-.control-list{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px}
-.control{display:grid;grid-template-columns:minmax(0,1fr) 58px;gap:4px 9px;align-items:center;padding:8px;border-radius:5px;background:#1b221e}
-.control span{grid-column:1/-1;color:#dce9de;font-size:11px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.control input[type=range]{width:100%;accent-color:#7ce0aa}.control-value{min-width:0;width:58px;padding:3px;border:1px solid #66796d;border-radius:3px;color:#dce9de;background:#111916;font-size:11px;text-align:center}
+.control-list{display:grid;grid-template-columns:repeat(auto-fit,minmax(90px,1fr));gap:10px}
 .meter-row{display:grid;grid-template-columns:14px minmax(0,1fr) 43px;gap:8px;align-items:center;margin-top:10px;font-size:11px}
 .meter-track{position:relative;height:16px;border-radius:3px;background:#111916;overflow:hidden}
 .meter-peak,.meter-rms{position:absolute;left:0;background:#3b9576;height:100%}.meter-rms{top:5px;height:6px;background:#7ce0aa}

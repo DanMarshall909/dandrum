@@ -52,16 +52,6 @@ export function visibleParameters(document, pad) {
         && parameter.controlGroup === pad.controlGroup));
 }
 
-export function normalizedDraft(draft, cancelled) {
-  if (cancelled || typeof draft !== 'string' || !draft.trim()) return null;
-  const value = Number(draft);
-  return Number.isFinite(value) && value >= 0 && value <= 1 ? value : null;
-}
-
-export function needsDocumentRefresh(stateGeneration, documentGeneration) {
-  return Number.isInteger(stateGeneration) && stateGeneration > documentGeneration;
-}
-
 export function padReleaseHandlers(release) {
   return {
     onPointerUp: release,

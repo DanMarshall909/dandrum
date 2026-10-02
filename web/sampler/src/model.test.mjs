@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { preparedPads, visibleParameters, selectedRegion, normalizedDraft,
-  needsDocumentRefresh, padReleaseHandlers, auditionFocusRelease } from './model.mjs';
+import { preparedPads, visibleParameters, selectedRegion,
+  padReleaseHandlers, auditionFocusRelease } from './model.mjs';
 import { createNoteAudition } from '../../tb303/src/note-audition.mjs';
 
 const document = {
@@ -64,20 +64,6 @@ test('absent maps and invalid source links remain unavailable', () => {
   assert.equal(selectedRegion(document, {
     ...preparedPads(document)[0], sourceIndex: 99,
   }), null);
-});
-
-test('typed normalized entry commits finite values and Escape cancels it', () => {
-  assert.equal(normalizedDraft('0.901', false), 0.901);
-  assert.equal(normalizedDraft('0.901', true), null);
-  assert.equal(normalizedDraft('', false), null);
-  assert.equal(normalizedDraft('NaN', false), null);
-  assert.equal(normalizedDraft('1.1', false), null);
-});
-
-test('parameter changes reuse the prepared document until the instrument generation changes', () => {
-  assert.equal(needsDocumentRefresh(3, 3), false);
-  assert.equal(needsDocumentRefresh(2, 3), false);
-  assert.equal(needsDocumentRefresh(4, 3), true);
 });
 
 test('pad blur and window focus loss release editor notes and clear pressed feedback', async () => {

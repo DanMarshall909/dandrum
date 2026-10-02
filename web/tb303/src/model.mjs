@@ -17,12 +17,6 @@ export const preparedCapabilities = Object.freeze({
   noteAudition: true,
 });
 
-export function displayValue(state, id) {
-  const entry = state?.parameters?.find(parameter => parameter.id === id);
-  return typeof entry?.value === 'number' && Number.isFinite(entry.value)
-    ? entry.value : null;
-}
-
 export function acceptState(current, incoming, lastAdmittedSequence = 0) {
   if (!incoming || !Number.isInteger(incoming.generation)
       || !Number.isInteger(incoming.sequence) || !Array.isArray(incoming.parameters))

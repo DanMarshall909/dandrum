@@ -1,7 +1,11 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
-import { acceptState, controls, displayValue, preparedCapabilities } from "./model.mjs";
+import { acceptState, controls, preparedCapabilities } from "./model.mjs";
 import { createNoteAudition } from "./note-audition.mjs";
+import { createHostKnob } from "../../shared/host-knob.mjs";
+import { admittedParameter } from "../../shared/parameter-value.mjs";
+import { createPreparedParameterDocument } from "../../shared/prepared-parameter-document.mjs";
+import "../../shared/host-knob.css";
 import { createMeterTransport } from "../../shared/meter-transport.mjs";
 import { meterView } from "../../shared/meter-view.mjs";
 import "./styles.css";
@@ -12,6 +16,8 @@ import "../../shared/design-icons.css";
 
 type Parameter = { id: string; name?: string; value: number };
 type HostState = { generation: number; sequence: number; parameters: Parameter[] };
+type PreparedDocument = { generation: number; parameters: { id: string; name: string;
+  minValue: number; maxValue: number; normalisedDefaultValue: number }[] };
 type NativeBackend = {
   getNativeFunction: (name: string) => (...args: unknown[]) => Promise<unknown>;
   addEventListener: (name: string, listener: (state: HostState) => void) => void;
@@ -23,7 +29,7 @@ declare global {
 }
 
 const native = (name: string) => window.__JUCE__?.backend?.getNativeFunction(name);
-const clamp = (value: number) => Math.max(0, Math.min(1, value));
+const HostKnob = createHostKnob(React);
 const chromaticNames = ["C", "C♯", "D", "D♯", "E", "F", "F♯", "G", "G♯", "A", "A♯", "B"];
 const blackPitches = new Set([1, 3, 6, 8, 10]);
 const keyboardKeys = Array.from({ length: 20 }, (_, semitone) => ({
@@ -37,6 +43,15 @@ const whiteKeyCount = keyboardKeys.filter(key => key.kind === "white").length;
 function useHostParameters() {
   const [state, setState] = useState<HostState | null>(null);
   const [error, setError] = useState("");
+  const [document, setDocument] = useState<PreparedDocument | null>(null);
+  const documents = useMemo(() => createPreparedParameterDocument(async () => {
+    const get = native("getPreparedDocument");
+    if (!get) throw new Error("Prepared parameter metadata is unavailable.");
+    const reply = await get();
+    if (typeof reply === "string") throw new Error(reply);
+    return reply;
+  }, (next: PreparedDocument) => setDocument(next),
+    (reason: unknown) => setError(String(reason))), []);
   const current = useRef<HostState | null>(null);
   const admitted = useRef(0);
   const pendingWrites = useRef(0);
@@ -52,6 +67,7 @@ function useHostParameters() {
     if (next !== current.current) {
       current.current = next;
       setState(next);
+      if (next) void documents.acceptGeneration(next.generation);
     }
   };
 
@@ -68,139 +84,37 @@ function useHostParameters() {
     }
     backend.addEventListener("parameterStateChanged", applyState);
     void requestState().catch(reason => setError(String(reason)));
-    return () => backend.removeEventListener?.("parameterStateChanged", applyState);
+    return () => {
+      backend.removeEventListener?.("parameterStateChanged", applyState);
+      documents.close();
+    };
   }, []);
 
-  const command = async (name: string, id: string, value?: number, requestedGeneration?: number) => {
-    const generation = requestedGeneration ?? current.current?.generation;
+  const command = async (name: string, ...args: unknown[]) => {
     const call = native(name);
-    if (!call || generation === undefined) return;
+    if (!call) throw new Error(`Host command ${name} is unavailable`);
     const write = name === "setParameter";
     if (write) pendingWrites.current++;
     try {
-      const result = await (write ? call(id, value, generation) : call(id, generation));
+      const result = await call(...args);
       if (typeof result === "string") throw new Error(result);
       const reply = result as { status?: string; generation?: number; sequence?: number } | null;
+      if (reply?.status && reply.status !== "accepted")
+        throw new Error(`Host rejected ${name}: ${reply.status}`);
       if (reply?.status === "accepted" && reply.generation === current.current?.generation)
         admitted.current = Math.max(admitted.current, reply.sequence ?? 0);
-      setError("");
+      if (name !== "endGesture") setError("");
+      return result;
     } catch (reason) {
       setError(String(reason));
+      throw reason;
     } finally {
       if (write) pendingWrites.current = Math.max(0, pendingWrites.current - 1);
-      void requestState().catch(reason => setError(String(reason)));
+      await requestState().catch(reason => setError(String(reason)));
     }
   };
 
-  return { state, error, command, reportError: (reason: unknown) => setError(String(reason)) };
-}
-
-type KnobProps = {
-  id: string;
-  label: string;
-  value: number | null;
-  generation: number | null;
-  size?: "small" | "large";
-  command: (name: string, id: string, value?: number, generation?: number) => Promise<void>;
-};
-
-function Knob({ id, label, value, generation, size = "large", command }: KnobProps) {
-  const drag = useRef<{ pointer: number; startY: number; startValue: number; generation: number; latest: number | null } | null>(null);
-  const pumpPromise = useRef<Promise<void> | null>(null);
-  const beginPromise = useRef<Promise<void> | null>(null);
-  const finishing = useRef(false);
-  const editGeneration = useRef<number | null>(null);
-  const cancelEdit = useRef(false);
-  const [editing, setEditing] = useState(false);
-  const [draft, setDraft] = useState("");
-  const angle = -135 + (value ?? 0) * 270;
-
-  const commitDraft = () => {
-    const next = Number(draft);
-    setEditing(false);
-    if (!cancelEdit.current && editGeneration.current === generation
-        && draft.trim() !== "" && Number.isFinite(next) && next >= 0 && next <= 1)
-      void command("setParameter", id, next, generation ?? undefined);
-  };
-
-  const pump = () => {
-    if (pumpPromise.current) return pumpPromise.current;
-    pumpPromise.current = (async () => {
-      await beginPromise.current;
-      while (drag.current?.latest != null) {
-        const next = drag.current.latest;
-        drag.current.latest = null;
-        await command("setParameter", id, next, drag.current?.generation);
-      }
-    })().finally(() => { pumpPromise.current = null; });
-    return pumpPromise.current;
-  };
-
-  const finish = async () => {
-    if (!drag.current || finishing.current) return;
-    finishing.current = true;
-    try {
-      await pump();
-      await command("endGesture", id, undefined, drag.current.generation);
-    } finally {
-      drag.current = null;
-      finishing.current = false;
-    }
-  };
-
-  return (
-    <div className={`knob-control ${size}`}>
-      <div className="knob-scale">
-        {Array.from({ length: 7 }).map((_, index) => (
-          <span className="knob-tick" key={index} style={{ transform: `rotate(${-135 + index * 45}deg)` }} />
-        ))}
-        <div className="knob" role="slider" tabIndex={value === null ? -1 : 0}
-          aria-label={label} aria-valuemin={0} aria-valuemax={1}
-          aria-valuenow={value ?? undefined} aria-disabled={value === null}
-          onPointerDown={event => {
-            if (value === null || generation === null) return;
-            event.currentTarget.setPointerCapture(event.pointerId);
-            drag.current = { pointer: event.pointerId, startY: event.clientY,
-              startValue: value, generation, latest: null };
-            beginPromise.current = command("beginGesture", id, undefined, generation);
-          }}
-          onPointerMove={event => {
-            if (!drag.current || drag.current.pointer !== event.pointerId) return;
-            drag.current.latest = clamp(drag.current.startValue + (drag.current.startY - event.clientY) / 170);
-            void pump();
-          }}
-          onPointerUp={() => { void finish(); }}
-          onPointerCancel={() => { void finish(); }}
-          onKeyDown={event => {
-            if (value === null) return;
-            const delta = event.key === "ArrowUp" || event.key === "ArrowRight" ? 0.01
-              : event.key === "ArrowDown" || event.key === "ArrowLeft" ? -0.01
-              : event.key === "PageUp" ? 0.1 : event.key === "PageDown" ? -0.1 : null;
-            const next = event.key === "Home" ? 0 : event.key === "End" ? 1
-              : delta === null ? null : clamp(value + delta);
-            if (next === null) return;
-            event.preventDefault();
-            void command("setParameter", id, next);
-          }}>
-          <span className="knob-indicator" style={{ transform: `rotate(${angle}deg)` }} />
-        </div>
-      </div>
-      <div className="knob-label">{label}</div>
-      <input className="knob-value" type="number" min="0" max="1" step="0.001"
-        aria-label={`${label} normalized value`} disabled={value === null}
-        value={editing ? draft : value === null ? "" : value.toFixed(3)}
-        onFocus={() => {
-          setEditing(true); setDraft(value === null ? "" : value.toFixed(3));
-          editGeneration.current = generation; cancelEdit.current = false;
-        }}
-        onChange={event => setDraft(event.target.value)}
-        onBlur={commitDraft}
-        onKeyDown={event => {
-          if (event.key === "Enter") event.currentTarget.blur();
-          if (event.key === "Escape") { cancelEdit.current = true; event.currentTarget.blur(); }
-        }} />
-    </div>
-  );
+  return { state, document, error, command, reportError: (reason: unknown) => setError(String(reason)) };
 }
 
 function MasterMeter({ generation }: { generation: number | null }) {
@@ -284,7 +198,7 @@ function App() {
   const machine = useRef<HTMLElement>(null);
   const [scale, setScale] = useState(1);
   const [panelHeight, setPanelHeight] = useState(690);
-  const { state, error, command, reportError } = useHostParameters();
+  const { state, document: preparedDocument, error, command, reportError } = useHostParameters();
   const [activeKeys, setActiveKeys] = useState<number[]>([]);
   const lastAuditionGeneration = useRef<number | null>(null);
   const auditionAvailable = preparedCapabilities.noteAudition
@@ -305,8 +219,11 @@ function App() {
     void audition.release(note);
   };
   const knob = (position: string) => controls.filter(control => control.position === position)
-    .map(control => <Knob key={control.id} {...control}
-      value={displayValue(state, control.id)} generation={state?.generation ?? null} command={command} />);
+    .map(control => <div className="knob-control" key={control.id}>
+      <HostKnob key={`${control.id}:${state?.generation}`} label={control.label}
+        size={position === "program" ? 36 : 64}
+        parameter={admittedParameter(state, preparedDocument, control.id)}
+        command={command} onError={reportError} /></div>);
 
   useEffect(() => {
     if (!frame.current) return;
@@ -367,9 +284,7 @@ function App() {
         <section className="middle-panel">
           <div className="left-program">
             <div className="mode-buttons"><button disabled>TRACK</button><button disabled>PATTERN</button></div>
-            {controls.filter(control => control.position === "program").map(control =>
-              <Knob key={control.id} {...control} size="small" value={displayValue(state, control.id)}
-                generation={state?.generation ?? null} command={command} />)}
+            {knob("program")}
             <div className="run-controls"><button className="run-button" disabled>RUN / STOP</button><button className="tap-button" disabled>TAP</button></div>
           </div>
           <div className="sequencer" aria-label="Pattern editor unavailable">

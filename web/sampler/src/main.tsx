@@ -1,8 +1,11 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
-import { preparedPads, selectedRegion, visibleParameters, normalizedDraft,
-  needsDocumentRefresh, padReleaseHandlers, auditionFocusRelease } from './model.mjs';
-import { createParameterGesture } from './parameter-gesture.mjs';
+import { preparedPads, selectedRegion, visibleParameters,
+  padReleaseHandlers, auditionFocusRelease } from './model.mjs';
+import { createHostKnob } from '../../shared/host-knob.mjs';
+import { admittedParameter } from '../../shared/parameter-value.mjs';
+import { createPreparedParameterDocument } from '../../shared/prepared-parameter-document.mjs';
+import '../../shared/host-knob.css';
 import { createNoteAudition } from '../../tb303/src/note-audition.mjs';
 import { createMeterTransport } from '../../shared/meter-transport.mjs';
 import { meterView } from '../../shared/meter-view.mjs';
@@ -16,7 +19,8 @@ import '../../shared/design-icons.css';
 
 type HostParameter = { id: string; name: string; value: number };
 type HostState = { generation: number; sequence: number; parameters: HostParameter[] };
-type PreparedParameter = { id: string; name: string; scope: string; controlGroup?: number };
+type PreparedParameter = { id: string; name: string; scope: string; controlGroup?: number;
+  minValue: number; maxValue: number; normalisedDefaultValue: number };
 type PreparedRegion = { id: string };
 type PreparedSource = { id: string; sampleRateHz: number; regions: PreparedRegion[] };
 type PreparedDocument = {
@@ -47,44 +51,29 @@ async function invoke(name: string, ...args: unknown[]): Promise<any> {
   return reply;
 }
 
+const HostKnob = createHostKnob(React);
+
 function useHost() {
   const [state, setState] = useState<HostState | null>(null);
   const [document, setDocument] = useState<PreparedDocument | null>(null);
   const [error, setError] = useState('');
-  const latestGeneration = useRef(0);
-  const documentGeneration = useRef(-1);
-  const documentRequest = useRef<Promise<void> | null>(null);
+  const documents = useMemo(() => createPreparedParameterDocument(
+    () => invoke('getPreparedDocument'),
+    (next: PreparedDocument) => setDocument(next),
+    (reason: unknown) => setError(String(reason))), []);
 
   const acceptState = (next: HostState) => {
     if (!next || !Number.isInteger(next.generation) || !Array.isArray(next.parameters))
       return;
-    latestGeneration.current = Math.max(latestGeneration.current, next.generation);
+    void documents.acceptGeneration(next.generation);
     setState(current => current && (next.generation < current.generation
       || (next.generation === current.generation && next.sequence < current.sequence))
       ? current : next);
   };
-  const refreshDocument = (): Promise<void> => {
-    if (documentRequest.current) return documentRequest.current;
-    const requestedGeneration = latestGeneration.current;
-    const request = invoke('getPreparedDocument').then((next: PreparedDocument | null) => {
-      if (next && Number.isInteger(next.generation)
-          && next.generation >= latestGeneration.current) {
-        documentGeneration.current = next.generation;
-        setDocument(current => current && current.generation > next.generation ? current : next);
-      }
-    }).finally(() => {
-      documentRequest.current = null;
-      if (latestGeneration.current > requestedGeneration
-          && needsDocumentRefresh(latestGeneration.current, documentGeneration.current))
-        void refreshDocument().catch(reason => setError(String(reason)));
-    });
-    documentRequest.current = request;
-    return request;
-  };
   const refresh = async () => {
     const next = await invoke('getParameterState') as HostState;
     acceptState(next);
-    await refreshDocument();
+    await documents.acceptGeneration(next.generation);
   };
 
   useEffect(() => {
@@ -93,14 +82,13 @@ function useHost() {
       setError('Open this panel in the Dandrum plugin host.');
       return;
     }
-    const changed = (next: HostState) => {
-      acceptState(next);
-      if (needsDocumentRefresh(latestGeneration.current, documentGeneration.current))
-        void refreshDocument().catch(reason => setError(String(reason)));
-    };
+    const changed = acceptState;
     backend.addEventListener('parameterStateChanged', changed);
     void refresh().catch(reason => setError(String(reason)));
-    return () => backend.removeEventListener?.('parameterStateChanged', changed);
+    return () => {
+      backend.removeEventListener?.('parameterStateChanged', changed);
+      documents.close();
+    };
   }, []);
 
   const command = async (name: string, ...args: unknown[]) => {
@@ -108,7 +96,7 @@ function useHost() {
       const reply = await invoke(name, ...args);
       if (reply?.status && reply.status !== 'accepted')
         throw new Error(`Host rejected ${name}: ${reply.status}`);
-      setError('');
+      if (name !== 'endGesture') setError('');
       if (name === 'setParameter')
         acceptState(await invoke('getParameterState') as HostState);
       return reply;
@@ -121,82 +109,6 @@ function useHost() {
     }
   };
   return { state, document, error, command, reportError: (reason: unknown) => setError(String(reason)) };
-}
-
-type SliderProps = {
-  descriptor: PreparedParameter;
-  value: number;
-  generation: number;
-  command: (name: string, ...args: unknown[]) => Promise<any>;
-};
-
-function HostSlider({ descriptor, value, generation, command }: SliderProps) {
-  const [local, setLocal] = useState(value);
-  const [draft, setDraft] = useState(value.toFixed(3));
-  const dragging = useRef(false);
-  const cancelDraft = useRef(false);
-  const authoritative = useRef(value);
-  authoritative.current = value;
-  const gesture = useMemo(() => createParameterGesture(
-    (name: string, next: number | undefined, editGeneration: number) =>
-      command(name, descriptor.id, ...(next === undefined ? [] : [next]), editGeneration),
-    () => {
-      const current = authoritative.current;
-      setLocal(current);
-      setDraft(current.toFixed(3));
-    }), [descriptor.id, generation]);
-  useEffect(() => () => { void gesture.end(); }, [gesture]);
-  useEffect(() => {
-    if (!dragging.current) {
-      setLocal(value);
-      setDraft(value.toFixed(3));
-    }
-  }, [value, generation]);
-  const finish = () => {
-    if (!dragging.current) return;
-    dragging.current = false;
-    void gesture.end();
-  };
-  const commitDraft = () => {
-    const next = normalizedDraft(draft, cancelDraft.current);
-    cancelDraft.current = false;
-    if (next !== null) {
-      setLocal(next);
-      gesture.commit(next, generation);
-    } else setDraft(value.toFixed(3));
-  };
-  return <label className="control">
-    <span>{descriptor.name || descriptor.id}</span>
-    <input type="range" min="0" max="1" step="0.001" value={local}
-      aria-label={descriptor.name || descriptor.id}
-      onPointerDown={event => {
-        if (!dragging.current) {
-          event.currentTarget.setPointerCapture(event.pointerId);
-          dragging.current = true;
-          gesture.begin(generation);
-        }
-      }}
-      onChange={event => {
-        const next = Number(event.currentTarget.value);
-        setLocal(next);
-        setDraft(next.toFixed(3));
-        gesture.change(next, generation);
-      }}
-      onPointerUp={finish} onPointerCancel={finish} onBlur={finish} />
-    <input className="control-value" type="number" min="0" max="1" step="0.001"
-      value={draft} aria-label={`${descriptor.name || descriptor.id} normalized value`}
-      onFocus={() => { cancelDraft.current = false; }}
-      onChange={event => setDraft(event.currentTarget.value)}
-      onBlur={commitDraft}
-      onKeyDown={event => {
-        if (event.key === 'Enter') event.currentTarget.blur();
-        if (event.key === 'Escape') {
-          cancelDraft.current = true;
-          setDraft(value.toFixed(3));
-          event.currentTarget.blur();
-        }
-      }} />
-  </label>;
 }
 
 function MasterMeter({ generation, reportError }: {
@@ -353,10 +265,10 @@ function SamplerApp() {
           <section className="panel controls" aria-label="Host modulatable controls">
             <div className="section-heading"><h2><svg {...iconProps('host')} />Public controls</h2>
               <span>{parameters.length} SHARED / SELECTED PAD</span></div>
-            <div className="control-list">{parameters.map(descriptor => <HostSlider
-              key={`${descriptor.id}:${state.generation}`} descriptor={descriptor}
-              value={state.parameters.find(parameter => parameter.id === descriptor.id)?.value
-                ?? 0} generation={state.generation} command={command} />)}</div>
+            <div className="control-list">{parameters.map(descriptor => <HostKnob
+              key={`${descriptor.id}:${state.generation}`} label={descriptor.name || descriptor.id}
+              parameter={admittedParameter(state, document, descriptor.id)}
+              command={command} onError={reportError} />)}</div>
           </section>
           <MasterMeter generation={document.generation} reportError={reportError} />
         </div>

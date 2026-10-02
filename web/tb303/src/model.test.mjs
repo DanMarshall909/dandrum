@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { acceptState, controls, displayValue, preparedCapabilities } from './model.mjs';
+import { acceptState, controls, preparedCapabilities } from './model.mjs';
 
 test('the panel binds exactly the seven prepared TB-303 public controls', () => {
   assert.deepEqual(controls.map(control => control.id).sort(), [
@@ -24,11 +24,4 @@ test('older host messages cannot replace a newer value, but reload can', () => {
   assert.equal(acceptState(current, reload, 8), reload);
   const hostAutomation = {...old, sequence: 7};
   assert.equal(acceptState(current, hostAutomation), hostAutomation);
-});
-
-test('a knob displays only an authoritative host value', () => {
-  assert.equal(displayValue(null, 'filter.cutoff'), null);
-  assert.equal(displayValue({generation: 1, sequence: 0, parameters: []}, 'filter.cutoff'), null);
-  assert.equal(displayValue({generation: 1, sequence: 0,
-    parameters: [{id: 'filter.cutoff', value: 0.42}]}, 'filter.cutoff'), 0.42);
 });
