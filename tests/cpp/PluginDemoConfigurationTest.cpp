@@ -38,10 +38,9 @@ int main()
         || tb303.soundLabFixturePath->filename() != "tb303-acid-poc.yaml"
         || ! tb303.matchSourcePath.has_value()
         || *tb303.matchSourcePath != expected.getFullPathName().toStdString()
-        || tb303.title != "Dandrum TB-303"
-        || tb303.indexHtml.find ("TB-303") == std::string::npos)
+        || tb303.title != "Dandrum TB-303")
     {
-        std::cerr << "TB-303 demo configuration does not select a coherent patch, fixture, source, title and page\n";
+        std::cerr << "TB-303 demo configuration does not select a coherent patch, fixture, source and title\n";
         return 1;
     }
 
@@ -55,8 +54,7 @@ int main()
         || kickConfig.soundLabFixturePath->filename() != "synthetic-808-kick-poc.yaml"
         || ! kickConfig.matchSourcePath.has_value()
         || *kickConfig.matchSourcePath != kickConfig.instrumentPath
-        || kickConfig.title == tb303.title
-        || kickConfig.indexHtml == tb303.indexHtml)
+        || kickConfig.title == tb303.title)
     {
         std::cerr << "second demo configuration did not select a distinct kick experience\n";
         return 1;
@@ -67,7 +65,6 @@ int main()
     if (! sampler.isInstrumentLoaded()
         || sampler.currentInstrumentFile().getFullPathName().toStdString() != samplerConfig.instrumentPath
         || samplerConfig.title != "Dandrum Drum Sampler"
-        || samplerConfig.indexHtml.find ("data-drum-notes") == std::string::npos
         || samplerConfig.soundLabFixturePath.has_value()
         || samplerConfig.matchSourcePath.has_value()
         || ! sampler.hasPublicParameter ("drums.pitch_ratio")

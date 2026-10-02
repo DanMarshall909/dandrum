@@ -527,8 +527,7 @@ int main()
                      && kickPageText.find ("<span>KICK</span>") != std::string::npos
                      && kickPageText.find ("/shared-instrument-ui.js") != std::string::npos
                      && kickPageText.find ("soundLabStatus") != std::string::npos
-                     && kickPageText.find ("/sound-lab-ui.js") != std::string::npos
-                     && kickPageText != InstrumentDemoConfiguration::tb303().indexHtml,
+                     && kickPageText.find ("/sound-lab-ui.js") != std::string::npos,
                  "second demo did not serve a distinct page through the same resource provider");
         require (PluginEditorBridgeTestProbe::resource (kickEditor, "/sound-lab-ui.js").has_value(),
                  "configured kick demo did not serve shared Sound Lab behavior");
@@ -716,6 +715,22 @@ int main()
         require (! PluginEditorBridgeTestProbe::resource (plainEditor, "/sound-lab.wav?generation=0"),
                  "fixture-free demo exposed a Sound Lab audio resource");
         plain.releaseResources();
+
+        auto customConfiguration = InstrumentDemoConfiguration::kick();
+        customConfiguration.instrumentId = "dandrum.custom-instrument";
+        customConfiguration.title = "Dandrum Custom Instrument";
+        customConfiguration.soundLabFixturePath.reset();
+        customConfiguration.matchSourcePath.reset();
+        DandrumAudioProcessor custom (customConfiguration);
+        DandrumAudioProcessorEditor customEditor (custom);
+        const auto customPage = PluginEditorBridgeTestProbe::resource (customEditor, "/index.html");
+        const auto customPageText = customPage.has_value()
+            ? std::string (reinterpret_cast<const char*> (customPage->data.data()), customPage->data.size())
+            : std::string();
+        require (customPageText.find ("id=\"controls\"") != std::string::npos
+                     && customPageText.find ("id=\"keys\"") != std::string::npos
+                     && customPageText.find ("/shared-instrument-ui.js") != std::string::npos,
+                 "unknown instrument identity left the Web editor without a generic page");
 
         DandrumAudioProcessor changing (InstrumentDemoConfiguration::kick());
         changing.setPlayConfigDetails (0, 2, 48000.0, 64);

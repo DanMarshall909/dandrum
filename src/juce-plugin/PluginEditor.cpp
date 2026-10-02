@@ -1,5 +1,9 @@
 #include "PluginEditor.h"
+#include "GenericWebUi.h"
+#include "KickWebUi.h"
+#include "SamplerWebUi.h"
 #include "SoundLabWebUi.h"
+#include "Tb303WebUi.h"
 
 #if defined(DANDRUM_EMBED_TB303_REACT)
 #include "Tb303ReactBinaryData.h"
@@ -70,6 +74,17 @@ std::string composePage (std::string page, bool soundLabEnabled)
     replaceMarker (page, "<!--sound-lab-script-->",
                    soundLabEnabled ? "<script src=\"/sound-lab-ui.js\"></script>" : "");
     return page;
+}
+
+std::string pageForInstrument (const std::string& instrumentId)
+{
+    if (instrumentId == "dandrum.tb303-acid")
+        return Tb303WebUi::indexHtml;
+    if (instrumentId == "dandrum.synthetic-808-kick")
+        return KickWebUi::indexHtml;
+    if (instrumentId == "dandrum.advanced-drum-kit")
+        return SamplerWebUi::indexHtml;
+    return GenericWebUi::indexHtml;
 }
 
 bool hasExpectedSoundLabGeneration (const juce::String& path,
@@ -224,7 +239,8 @@ DandrumAudioProcessorEditor::provideResource (const juce::String& path) const
             toBytes (SoundLabWebUi::script), "text/javascript" };
 
     if (auto shared = hostBridge.provideResource (
-            path, composePage (processor.demoConfiguration().indexHtml, soundLabEnabled)))
+            path, composePage (pageForInstrument (
+                     processor.demoConfiguration().instrumentId), soundLabEnabled)))
         return shared;
 
     if (! soundLabEnabled)

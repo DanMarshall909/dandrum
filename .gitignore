@@ -1,4 +1,5 @@
 build/
+build-native/
 .tools/
 .idea/
 src/rust-engine/target/

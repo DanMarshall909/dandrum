@@ -133,7 +133,17 @@ The same CMake build produces the JUCE standalone plugin at
 ./build/dandrum-plugin_artefacts/Standalone/Dandrum
 ```
 
-The shipped `Dandrum` demo opens the TB-303 patch. The separate [drum sampler VST3 example](docs/advanced-sampler.md) opens a prepared sample kit with MIDI drum pads, shared host controls, and separate host controls for each pad. `InstrumentDemoConfiguration::kick()` selects a second 808 kick patch, fixture, and page through the same processor and WebView bridge; the C++ demo-configuration and editor-bridge tests construct that variant. To add another developer demo, supply its patch and optional Sound Lab fixture/source in `InstrumentDemoConfiguration`, then supply an HTML page with `controls`, `keys`, and `error` elements. Load `/shared-instrument-ui.js` for metadata-driven controls and playable notes. A Sound Lab-enabled page places `<!--sound-lab-panel-->`, `/*sound-lab-style*/`, and `<!--sound-lab-script-->` markers where the shared feature should appear. The editor fills those markers only while the active instrument matches the configured Sound Lab source and ID.
+The shipped `Dandrum` demo opens the TB-303 patch with its embedded React panel. The separate [drum sampler VST3 example](docs/advanced-sampler.md) opens a prepared sample kit with MIDI drum pads, shared host controls, and separate host controls for each pad. `InstrumentDemoConfiguration::kick()` selects a second 808 kick patch and optional Sound Lab fixture/source through the same processor. The Web adapter chooses the fallback kick and sampler pages by instrument ID; HTML is not part of the instrument configuration. Fallback pages load `/shared-instrument-ui.js` for metadata-driven controls and playable notes. A Sound Lab-enabled page places `<!--sound-lab-panel-->`, `/*sound-lab-style*/`, and `<!--sound-lab-script-->` markers where the shared feature should appear. The editor fills those markers only while the active instrument matches the configured Sound Lab source and ID.
+
+To build and run the native editor without Node or WebView/WebKit dependencies:
+
+```sh
+$HOME/.local/bin/cmake -S . -B build-native -DDANDRUM_NATIVE_ONLY=ON
+$HOME/.local/bin/cmake --build build-native --target dandrum-native-editor-smoke-test dandrum-plugin_VST3 dandrum-sampler-plugin_VST3
+ctest --test-dir build-native -R native-editor-smoke --output-on-failure
+```
+
+The native editor target currently verifies processor ownership, instrument identity and editor construction. Parameter editing and prepared sample views are subsequent UI tasks.
 
 Developer builds of the original `Dandrum` demo resolve maintained patches and fixtures from the CMake source checkout, even when the process starts elsewhere. The sampler VST3 embeds its default patch and synthetic WAV, then stages them before playback. Other developer demo assets are not packaged for installation. The executable browser, bridge, processor, and Rust checks run through `ctest --test-dir build --output-on-failure`.
 

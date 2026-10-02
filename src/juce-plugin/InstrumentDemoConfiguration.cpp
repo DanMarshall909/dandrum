@@ -1,9 +1,5 @@
 #include "InstrumentDemoConfiguration.h"
 
-#include "KickWebUi.h"
-#include "SamplerWebUi.h"
-#include "Tb303WebUi.h"
-
 #if defined(DANDRUM_EMBED_SAMPLER_ASSETS)
 #include <cstring>
 #include <juce_core/juce_core.h>
@@ -44,7 +40,6 @@ InstrumentDemoConfiguration InstrumentDemoConfiguration::tb303()
              fixture,
              patch,
              "Dandrum TB-303",
-             Tb303WebUi::indexHtml,
              "dandrum.tb303-acid" };
 }
 
@@ -56,7 +51,6 @@ InstrumentDemoConfiguration InstrumentDemoConfiguration::kick()
              fixture,
              patch,
              "Dandrum 808 Kick",
-             KickWebUi::indexHtml,
              "dandrum.synthetic-808-kick" };
 }
 
@@ -78,6 +72,5 @@ InstrumentDemoConfiguration InstrumentDemoConfiguration::sampler()
              std::nullopt,
              std::nullopt,
              "Dandrum Drum Sampler",
-             SamplerWebUi::indexHtml,
              "dandrum.advanced-drum-kit" };
 }

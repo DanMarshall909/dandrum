@@ -1,5 +1,5 @@
 #include "PluginProcessor.h"
-#include "PluginEditor.h"
+#include "SoundLabController.h"
 
 #include <algorithm>
 #include <array>
@@ -901,11 +901,6 @@ void DandrumAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce
     }
 }
 
-juce::AudioProcessorEditor* DandrumAudioProcessor::createEditor()
-{
-    return new DandrumAudioProcessorEditor (*this);
-}
-
 bool DandrumAudioProcessor::hasEditor() const
 {
     return true;
@@ -1650,13 +1645,4 @@ bool DandrumAudioProcessor::loadPresetFromFile (const juce::File& presetFile)
     loadedPreset.name = preset.name;
     loadedPreset.yamlContent = preset.yamlContent;
     return true;
-}
-
-juce::AudioProcessor* JUCE_CALLTYPE createPluginFilter()
-{
-#if defined(DANDRUM_DEFAULT_SAMPLER_PLUGIN)
-    return new DandrumAudioProcessor (InstrumentDemoConfiguration::sampler());
-#else
-    return new DandrumAudioProcessor();
-#endif
 }

@@ -12,7 +12,6 @@ struct InstrumentDemoConfiguration
     std::optional<std::filesystem::path> soundLabFixturePath;
     std::optional<std::filesystem::path> matchSourcePath;
     std::string title;
-    std::string indexHtml;
     std::string instrumentId;
 
     static InstrumentDemoConfiguration tb303();
