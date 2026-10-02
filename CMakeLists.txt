@@ -88,6 +88,10 @@ target_include_directories(dandrum-sound-lab-controller-test PRIVATE src/juce-wr
 target_link_libraries(dandrum-sound-lab-controller-test PRIVATE dandrum_engine dl pthread m)
 add_test(NAME sound-lab-controller COMMAND dandrum-sound-lab-controller-test)
 
+add_executable(dandrum-plugin-meter-capture-test tests/cpp/PluginMeterCaptureTest.cpp)
+target_include_directories(dandrum-plugin-meter-capture-test PRIVATE src/juce-plugin)
+add_test(NAME cxx-plugin-meter-capture COMMAND dandrum-plugin-meter-capture-test)
+
 add_subdirectory(third_party/JUCE)
 
 juce_add_console_app(dandrum-drum-machine-demo PRODUCT_NAME "Dandrum Drum Machine Demo")

@@ -1,15 +1,22 @@
 #include "PluginProcessor.h"
 #include "DefaultPatch.h"
 
+#include <atomic>
 #include <cmath>
+#include <cstdlib>
+#include <cstring>
 #include <iterator>
 #include <iostream>
 #include <memory>
+#include <new>
 #include <thread>
 #include <vector>
 
 namespace
 {
+std::atomic<bool> countAudioAllocations { false };
+std::atomic<std::size_t> audioAllocationCount { 0 };
+
 bool bufferIsFinite (const juce::AudioBuffer<float>& buffer)
 {
     for (int channel = 0; channel < buffer.getNumChannels(); ++channel)
@@ -467,6 +474,21 @@ bool preparationPreservesRestoredInstrumentAndHostSlots()
 }
 } // namespace
 
+void* operator new (std::size_t size)
+{
+    if (countAudioAllocations.load (std::memory_order_relaxed))
+        audioAllocationCount.fetch_add (1, std::memory_order_relaxed);
+    if (auto* memory = std::malloc (size == 0 ? 1 : size))
+        return memory;
+    throw std::bad_alloc();
+}
+
+void* operator new[] (std::size_t size) { return ::operator new (size); }
+void operator delete (void* memory) noexcept { std::free (memory); }
+void operator delete (void* memory, std::size_t) noexcept { std::free (memory); }
+void operator delete[] (void* memory) noexcept { std::free (memory); }
+void operator delete[] (void* memory, std::size_t) noexcept { std::free (memory); }
+
 int main()
 {
     constexpr int blockSize = 64;
@@ -514,6 +536,88 @@ int main()
     if (! nearlyEqual (kernelBuffer.getSample (0, 0), -0.5f, 0.00001f))
     {
         std::cerr << "plugin kernel reload did not change master output\n";
+        return 1;
+    }
+    DandrumAudioProcessor meterReference (kernelConfiguration);
+    meterReference.setPlayConfigDetails (0, 2, 48000.0, blockSize);
+    meterReference.prepareToPlay (48000.0, blockSize);
+    juce::AudioBuffer<float> referenceBuffer (2, blockSize);
+    referenceBuffer.clear();
+    meterReference.processBlock (referenceBuffer, kernelMidi);
+    kernelProcessor.setMeterCaptureEnabled (true);
+    kernelBuffer.clear();
+    countAudioAllocations.store (true, std::memory_order_relaxed);
+    kernelProcessor.processBlock (kernelBuffer, kernelMidi);
+    countAudioAllocations.store (false, std::memory_order_relaxed);
+    if (audioAllocationCount.load (std::memory_order_relaxed) != 0)
+    {
+        std::cerr << "meter-enabled audio callback allocated memory\n";
+        return 1;
+    }
+    for (int channel = 0; channel < 2; ++channel)
+    {
+        for (int sample = 0; sample < blockSize; ++sample)
+            if (! nearlyEqual (kernelBuffer.getSample (channel, sample),
+                                channel == 0 ? -0.5f : 0.0f, 0.00001f))
+            {
+                std::cerr << "meter capture changed known signed PCM at channel " << channel
+                          << " frame " << sample << ": "
+                          << kernelBuffer.getSample (channel, sample) << '\n';
+                return 1;
+            }
+        if (std::memcmp (kernelBuffer.getReadPointer (channel),
+                         referenceBuffer.getReadPointer (channel),
+                         static_cast<std::size_t> (blockSize) * sizeof (float)) != 0)
+        {
+            std::cerr << "meter capture changed rendered PCM bytes\n";
+            return 1;
+        }
+    }
+    InstrumentUiMeterCapture::Frame meterFrame;
+    if (! kernelProcessor.popMeterFrame (meterFrame)
+        || meterFrame.generation != kernelProcessor.getParameterSurfaceGeneration()
+        || meterFrame.sampleCount != blockSize || meterFrame.samplePosition != blockSize
+        || ! nearlyEqual (meterFrame.peak[0], 0.5f, 0.000001f)
+        || ! nearlyEqual (meterFrame.peak[1], 0.0f, 0.000001f)
+        || std::abs (meterFrame.energy[0] - 16.0) > 0.000001
+        || std::abs (meterFrame.energy[1]) > 0.000001)
+    {
+        std::cerr << "processor did not publish its signed master meter frame\n";
+        return 1;
+    }
+    for (std::size_t block = 0; block < InstrumentUiMeterCapture::capacity + 100; ++block)
+    {
+        kernelBuffer.clear();
+        if (block == InstrumentUiMeterCapture::capacity + 99)
+            countAudioAllocations.store (true, std::memory_order_relaxed);
+        kernelProcessor.processBlock (kernelBuffer, kernelMidi);
+        countAudioAllocations.store (false, std::memory_order_relaxed);
+        if (! nearlyEqual (kernelBuffer.getSample (0, 0), -0.5f, 0.00001f))
+        {
+            std::cerr << "stalled meter consumer changed audio output\n";
+            return 1;
+        }
+    }
+    if (kernelProcessor.getDroppedMeterFrameCount() != 100
+        || audioAllocationCount.load (std::memory_order_relaxed) != 0)
+    {
+        std::cerr << "full meter queue changed callback bounds or loss accounting\n";
+        return 1;
+    }
+    for (std::size_t frame = 0; frame < InstrumentUiMeterCapture::capacity; ++frame)
+        if (! kernelProcessor.popMeterFrame (meterFrame))
+            return 1;
+    kernelProcessor.setMuted (true);
+    kernelProcessor.processBlock (kernelBuffer, kernelMidi);
+    kernelProcessor.setMuted (false);
+    if (! kernelProcessor.popMeterFrame (meterFrame)
+        || ! nearlyEqual (kernelBuffer.getSample (0, 0), 0.0f, 0.000001f)
+        || ! nearlyEqual (meterFrame.peak[0], 0.0f, 0.000001f)
+        || ! nearlyEqual (meterFrame.peak[1], 0.0f, 0.000001f)
+        || std::abs (meterFrame.energy[0]) > 0.000001
+        || std::abs (meterFrame.energy[1]) > 0.000001)
+    {
+        std::cerr << "muted processor did not publish a silent meter frame\n";
         return 1;
     }
     const auto legacyPatch = juce::File (juce::String (DANDRUM_SOURCE_ROOT))

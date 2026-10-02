@@ -18,6 +18,7 @@
 #include "InstrumentDemoConfiguration.h"
 #include "InstrumentUiCommands.h"
 #include "InstrumentUiDocument.h"
+#include "InstrumentUiMeterCapture.h"
 #include "InstrumentUiParameterState.h"
 #include "RustEngineBindings.h"
 
@@ -172,6 +173,12 @@ public:
     /// message-thread-to-audio-thread queue was full.
     std::size_t getDroppedMidiEventCount() const noexcept;
 
+    /// One processor-owned, stereo master capture stream. The UI aggregation
+    /// service is its sole off-audio consumer; editors never own queue storage.
+    void setMeterCaptureEnabled (bool enabled) noexcept;
+    bool popMeterFrame (InstrumentUiMeterCapture::Frame& frame) noexcept;
+    std::uint64_t getDroppedMeterFrameCount() const noexcept;
+
 private:
     std::uint32_t uiCommandGeneration() const noexcept override;
     InstrumentUiCommandStatus applyUiParameter (
@@ -319,6 +326,8 @@ private:
     std::array<bool, 128> audioHostNoteHeld {};
     std::array<bool, 128> audioHostReleasePending {};
     DandrumKernelInstrument* lastAudioKernel = nullptr;
+    DandrumKernelInstrument* lastMeterKernel = nullptr;
+    InstrumentUiMeterCapture meterCapture;
     // Serializes engine replacement, reprepare, and UI metadata snapshots.
     // Readers copy retained metadata before a previous engine is destroyed.
     // Host notifications may re-enter snapshot readers on the same thread.

@@ -810,11 +810,20 @@ void DandrumAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce
         buffer.clear (channel, 0, numSamples);
 
     auto* activeKernel = kernel.load (std::memory_order_acquire);
+    if (activeKernel != lastMeterKernel)
+    {
+        lastMeterKernel = activeKernel;
+        meterCapture.beginStream();
+    }
 
     if (activeKernel == nullptr || ! instrumentLoaded || isMuted()
         || numSamples <= 0 || buffer.getNumChannels() <= 0)
     {
         renderSilence (buffer);
+        if (numSamples > 0 && buffer.getNumChannels() >= 2)
+            meterCapture.capture (buffer.getReadPointer (0), buffer.getReadPointer (1),
+                                  static_cast<std::size_t> (numSamples),
+                                  parameterSurfaceGeneration.load (std::memory_order_relaxed));
         return;
     }
 
@@ -899,6 +908,24 @@ void DandrumAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce
             break;
         blockStart += frames;
     }
+    meterCapture.capture (buffer.getReadPointer (0), buffer.getReadPointer (1),
+                          static_cast<std::size_t> (numSamples),
+                          parameterSurfaceGeneration.load (std::memory_order_relaxed));
+}
+
+void DandrumAudioProcessor::setMeterCaptureEnabled (bool enabled) noexcept
+{
+    meterCapture.setEnabled (enabled);
+}
+
+bool DandrumAudioProcessor::popMeterFrame (InstrumentUiMeterCapture::Frame& frame) noexcept
+{
+    return meterCapture.pop (frame);
+}
+
+std::uint64_t DandrumAudioProcessor::getDroppedMeterFrameCount() const noexcept
+{
+    return meterCapture.lostFrames();
 }
 
 bool DandrumAudioProcessor::hasEditor() const

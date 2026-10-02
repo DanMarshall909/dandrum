@@ -25,7 +25,7 @@ The sampler export required for 1.2 and 1.4 is not present in the current Downlo
 
 ## 4. Meter Telemetry Vertical Slice
 
-- [ ] 4.1 Prepare bounded master/output meter capture with a single consumer per queue; saturation and callback instrumentation must prove bounded memory/work, no forbidden callback operations and unchanged signed PCM.
+- [x] 4.1 Prepare bounded master/output meter capture with a single consumer per queue; saturation and callback instrumentation must prove bounded memory/work, no forbidden callback operations and unchanged signed PCM.
 - [ ] 4.2 Implement sample-weighted peak/RMS aggregation and independent clip latching; tests must cover signed stereo, unequal blocks, silence, dropped history and generation/reset races.
 - [ ] 4.3 Add subscription lifetime, sequence/generation handling and bounded Web acknowledgements; tests must prove hidden/stalled/reopened editors cannot grow browser message queues or block audio.
 - [ ] 4.4 Render the same meter data in native and WebView components; deterministic view-model tests and actual runtime inspection must verify levels, clipping, visibility and timing-based decay.
