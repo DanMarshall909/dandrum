@@ -9,6 +9,10 @@
 #include "Tb303ReactBinaryData.h"
 #endif
 
+#if defined(DANDRUM_EMBED_SAMPLER_REACT)
+#include "SamplerReactBinaryData.h"
+#endif
+
 #include <cstring>
 #include <cmath>
 #include <string>
@@ -50,6 +54,39 @@ std::optional<juce::WebBrowserComponent::Resource> tb303ReactResource (const juc
 
     int size = 0;
     const auto* data = Tb303ReactBinaryData::getNamedResource (name, size);
+    if (data == nullptr || size <= 0)
+        return std::nullopt;
+    std::vector<std::byte> bytes (static_cast<std::size_t> (size));
+    std::memcpy (bytes.data(), data, bytes.size());
+    return juce::WebBrowserComponent::Resource { std::move (bytes), mime };
+}
+#endif
+
+#if defined(DANDRUM_EMBED_SAMPLER_REACT)
+std::optional<juce::WebBrowserComponent::Resource> samplerReactResource (const juce::String& path)
+{
+    const char* name = nullptr;
+    const char* mime = nullptr;
+    if (path == "/" || path == "/index.html")
+    {
+        name = "index_html";
+        mime = "text/html";
+    }
+    else if (path == "/app.js")
+    {
+        name = "app_js";
+        mime = "text/javascript";
+    }
+    else if (path == "/app.css")
+    {
+        name = "app_css";
+        mime = "text/css";
+    }
+    if (name == nullptr)
+        return std::nullopt;
+
+    int size = 0;
+    const auto* data = SamplerReactBinaryData::getNamedResource (name, size);
     if (data == nullptr || size <= 0)
         return std::nullopt;
     std::vector<std::byte> bytes (static_cast<std::size_t> (size));
@@ -227,6 +264,11 @@ juce::WebBrowserComponent::Options DandrumAudioProcessorEditor::createBrowserOpt
 std::optional<juce::WebBrowserComponent::Resource>
 DandrumAudioProcessorEditor::provideResource (const juce::String& path) const
 {
+#if defined(DANDRUM_EMBED_SAMPLER_REACT)
+    if (processor.demoConfiguration().instrumentId == "dandrum.advanced-drum-kit")
+        if (auto resource = samplerReactResource (path))
+            return resource;
+#endif
 #if defined(DANDRUM_EMBED_TB303_REACT)
     if (processor.demoConfiguration().instrumentId == "dandrum.tb303-acid")
         if (auto resource = tb303ReactResource (path))

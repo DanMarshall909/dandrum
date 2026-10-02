@@ -23,6 +23,8 @@ The sampler export required for 1.2 and 1.4 is not present in the current Downlo
 - [ ] 3.3 Build the production web asset pipeline and embedded resource serving; verify packaged assets work offline outside the source checkout, with no CDN scripts, runtime Babel or development server.
 - [ ] 3.4 Implement one design-system knob in each renderer against shared commands; tests must prove identical host gestures, authoritative values, slot identity and known signed audio for identical schedules.
 
+Progress on 3.3: the sampler now has a compiled React WebView app with checked-in, embedded HTML/JS/CSS. The C++ editor bridge test proves the sampler plugin serves those assets without external URLs, and a browser preview at 1200×800 and 820×560 exercised its host-backed pad and slider commands. Final offline packaging with the supplied design icons/fonts and a checkout-independent runtime inspection remain open.
+
 ## 4. Meter Telemetry Vertical Slice
 
 - [x] 4.1 Prepare bounded master/output meter capture with a single consumer per queue; saturation and callback instrumentation must prove bounded memory/work, no forbidden callback operations and unchanged signed PCM.
@@ -61,6 +63,11 @@ Progress on 5.3: the Web bridge exposes bounded prepared waveform requests and e
 - [x] 7.6 Adapt the supplied TB-303 React panel to the shared asset and command path; tests must prove all seven actual public controls, host-backed note audition, authoritative reload updates and explicit unavailability of unsupported waveform, pattern and transport editing.
 
 Progress toward 7.1–7.3: the Web bridge now supplies the same copied prepared document used by the native side, including scoped controls, source/region/slice frames, map/zone selection metadata and capabilities. Browser frame and seed values are decimal strings to retain their full 64-bit values. The renderer components still require the separate design-system export.
+
+Progress on 7.1 and 7.5: the sampler React host app groups prepared round-robin alternatives without claiming simultaneous layers, displays the actual 1–63/64–127 snare ranges and per-pad control scopes, sends note audition through the shared command bridge, and mounts the prepared Canvas waveform and master meter. A mock-host Chromium run inspected 1200×800 and 820×560 layouts and exercised a pad note on/off, a complete slider gesture, typed Escape cancellation, and rejection reconciliation. Native KeyMap, observed host-playback feedback, final design components, and plugin-host runtime inspection remain open.
+
+The sampler input controller now coalesces continuous pointer and keyboard values while a host write is pending, retains the last value before ending a gesture, and wraps typed/keyboard edits in begin/end boundaries. Focused Node tests cover host stalls and rejection cleanup with 100% source-line coverage for the new controller. Prepared-document requests are coalesced and only refreshed when the instrument generation advances.
+Review repairs added successive-drag, keyboard-after-release and typed-during-close regressions, registered the gesture suite in CTest, and connected pad/window blur to note release. A Chromium mock-host DOM run observed note-on/note-off pairs for both pad blur and window blur and cleared pressed feedback; actual plugin-host WebView focus behaviour remains to inspect.
 
 ## 8. Integration And Evidence
 

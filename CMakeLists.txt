@@ -190,6 +190,15 @@ if(NOT DANDRUM_NATIVE_ONLY)
             web/tb303/dist/app.css)
     target_link_libraries(dandrum-plugin PRIVATE dandrum-tb303-react-resources)
     target_compile_definitions(dandrum-plugin PRIVATE DANDRUM_EMBED_TB303_REACT=1)
+    juce_add_binary_data(dandrum-sampler-react-resources
+        NAMESPACE SamplerReactBinaryData
+        HEADER_NAME SamplerReactBinaryData.h
+        SOURCES
+            web/sampler/dist/index.html
+            web/sampler/dist/app.js
+            web/sampler/dist/app.css)
+    target_link_libraries(dandrum-plugin PRIVATE dandrum-sampler-react-resources)
+    target_compile_definitions(dandrum-plugin PRIVATE DANDRUM_EMBED_SAMPLER_REACT=1)
 endif()
 target_include_directories(dandrum-plugin PRIVATE src/juce-wrapper)
 target_compile_definitions(dandrum-plugin PRIVATE
@@ -233,6 +242,10 @@ target_link_libraries(dandrum-sampler-plugin
     PRIVATE dandrum_engine dandrum-sampler-resources dandrum-plugin-ui-common ${DANDRUM_EDITOR_ADAPTER}
         juce::juce_audio_basics juce::juce_audio_processors juce::juce_audio_utils
     PUBLIC juce::juce_recommended_config_flags juce::juce_recommended_lto_flags juce::juce_recommended_warning_flags)
+if(NOT DANDRUM_NATIVE_ONLY)
+    target_link_libraries(dandrum-sampler-plugin PRIVATE dandrum-sampler-react-resources)
+    target_compile_definitions(dandrum-sampler-plugin PRIVATE DANDRUM_EMBED_SAMPLER_REACT=1)
+endif()
 
 if(DANDRUM_NATIVE_ONLY)
     add_executable(dandrum-native-editor-smoke-test tests/cpp/NativeEditorSmokeTest.cpp)
@@ -311,6 +324,8 @@ if(NOT DANDRUM_NATIVE_ONLY)
     add_test(NAME meter-web-view COMMAND ${DANDRUM_NODE_EXECUTABLE} --test ${CMAKE_CURRENT_SOURCE_DIR}/web/shared/meter-view.test.mjs)
     add_test(NAME prepared-waveform-web-view COMMAND ${DANDRUM_NODE_EXECUTABLE} --test ${CMAKE_CURRENT_SOURCE_DIR}/web/shared/prepared-waveform.test.mjs)
     add_test(NAME prepared-waveform-web-transport COMMAND ${DANDRUM_NODE_EXECUTABLE} --test ${CMAKE_CURRENT_SOURCE_DIR}/web/shared/waveform-transport.test.mjs)
+    add_test(NAME sampler-react-model COMMAND ${DANDRUM_NODE_EXECUTABLE} --test ${CMAKE_CURRENT_SOURCE_DIR}/web/sampler/src/model.test.mjs)
+    add_test(NAME sampler-react-gestures COMMAND ${DANDRUM_NODE_EXECUTABLE} --test ${CMAKE_CURRENT_SOURCE_DIR}/web/sampler/src/parameter-gesture.test.mjs)
 
     add_executable(dandrum-plugin-file-watch-reload-test tests/cpp/PluginFileWatchReloadTest.cpp)
     target_include_directories(dandrum-plugin-file-watch-reload-test PRIVATE src/juce-wrapper src/juce-plugin)

@@ -672,6 +672,27 @@ int main()
         samplerWeb.prepareToPlay (48000.0, 64);
         require (samplerWeb.isInstrumentLoaded(), "sampler Web document fixture did not prepare");
         DandrumAudioProcessorEditor samplerEditor (samplerWeb);
+        const auto samplerPage = PluginEditorBridgeTestProbe::resource (samplerEditor, "/index.html");
+        const auto samplerScript = PluginEditorBridgeTestProbe::resource (samplerEditor, "/app.js");
+        const auto samplerStyles = PluginEditorBridgeTestProbe::resource (samplerEditor, "/app.css");
+        const auto samplerPageText = samplerPage
+            ? std::string (reinterpret_cast<const char*> (samplerPage->data.data()),
+                           samplerPage->data.size()) : std::string();
+        const auto samplerScriptText = samplerScript
+            ? std::string (reinterpret_cast<const char*> (samplerScript->data.data()),
+                           samplerScript->data.size()) : std::string();
+        require (samplerPage && samplerPage->mimeType == "text/html"
+                     && samplerPageText.find ("id=\"root\"") != std::string::npos
+                     && samplerPageText.find ("/app.js") != std::string::npos
+                     && samplerPageText.find ("/app.css") != std::string::npos
+                     && samplerPageText.find ("http://") == std::string::npos
+                     && samplerPageText.find ("https://") == std::string::npos
+                     && samplerScript && samplerScript->mimeType == "text/javascript"
+                     && samplerScriptText.find ("Prepared key map") != std::string::npos
+                     && samplerScriptText.find ("getPreparedDocument") != std::string::npos
+                     && samplerStyles && samplerStyles->mimeType == "text/css"
+                     && ! samplerStyles->data.empty(),
+                 "sampler React assets were not packaged for offline WebView serving");
         const auto samplerDocument = PluginEditorBridgeTestProbe::invoke (
             samplerEditor, "getPreparedDocument");
         const auto samplerSources = samplerDocument.getProperty ("sources", {});
