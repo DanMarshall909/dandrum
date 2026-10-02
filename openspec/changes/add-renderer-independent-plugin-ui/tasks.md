@@ -88,7 +88,7 @@ Verification: `cxx-plugin-meter-display` checks elapsed-time peak/RMS decay, ide
 
 - [x] 5.1 Add asynchronous per-channel min/max reduction and content-keyed cache admission; tests must prove the -0.75/0.5 extrema fixture, narrow transients, region boundaries and same-path content invalidation.
 - [x] 5.2 Add job cancellation and safe source retention through reload/editor teardown; tests must prove stale results cannot replace current data and audio never joins or frees worker resources.
-- [ ] 5.3 Render the same envelope and prepared overlays in native JUCE and Canvas; verify source/host rate distinctions and matching marker coordinates at both target sizes before expanding the full UI.
+- [x] 5.3 Render the same envelope and prepared overlays in native JUCE and Canvas; verify source/host rate distinctions and matching marker coordinates at both target sizes before expanding the full UI.
 
 Verification for 5.1: Rust `sample` and FFI tests prove signed extrema, channel separation, narrow transients and source-frame offsets; `cxx-sampler-plugin-host` proves prepared region bounds and signed kick extrema; `cxx-plugin-waveform-service` proves asynchronous completion, duplicate work sharing, bounded queue/history/cache and same-path content invalidation. The new C++ service reached 100% source-line coverage in a focused gcov run. Native CTest passed 17/17 and Web CTest passed 29/29. Cancellation and renderer display remain tracked by 5.2 and 5.3.
 
@@ -115,6 +115,21 @@ not prove DAW timing, complete callback allocation safety, task 5.3 renderer
 coordinates or section 9's structural engine ownership handoff.
 
 Progress on 5.3: the Web bridge exposes bounded prepared waveform requests and exact numeric job results (source-frame buckets, source sample rate and content revision). A copied coordinate model places signed buckets and prepared fade/loop/slice markers at full and compact widths using the source rate; the focused C++ geometry test reached 100% source-line coverage. The native editor paints the prepared numeric envelope and markers at 820×560 and 1200×800, and its smoke test verifies visible PCM and clears the waveform after a reload to a sample-free instrument. A renderer-neutral Web Canvas painter now consumes the same prepared document/job fields, with 100% JavaScript source-line coverage for signed extrema, source-rate timing, 64-bit frame offsets, markers at both sizes, stale-result rejection and edge clipping. React mounting, runtime Canvas inspection and cross-renderer comparison remain open.
+
+Completion of 5.3 (2026-10-03): `native-waveform-parity` and
+`web-waveform-parity` compile one literal stereo fixture and bitmap oracle in
+both modes. The original sampler factory, processor, editors and Web transport
+remain intact. All 512 real buckets retain exact signed extrema and source
+bounds; actual JUCE and mounted React Canvas pixels prove four signed quarters
+and ten region/fade/loop/slice columns at 1200×800 and 820×560. A 48 kHz source
+in a 44.1 kHz host proves source-rate fade timing and the 0.256 s duration.
+The test first rejected JUCE's truncated slice-end position, then passed after
+its four pixel coordinates adopted Canvas's rounding rule; focused gcov
+executes all four changed lines. Full builds pass, with final CTest 22/22 native
+and 45/45 Web without skips. [Renderer evidence](../../../docs/design-system/waveform-parity.md)
+records the inspected plots, composite build receipts and Linux/1x limits.
+Full reference styling, other display scales, spectral views, live cursors and
+structural rebuilding remain their respective pending tasks.
 
 ## 6. Spectral And Live Analysis
 

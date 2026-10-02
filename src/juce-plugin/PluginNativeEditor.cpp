@@ -680,9 +680,9 @@ public:
             for (const auto& bucket : result->buckets)
                 if (const auto x = geometry->bucketX (bucket.startFrame, bucket.endFrame))
                 {
-                    const auto column = plot.getX() + static_cast<int> (*x);
-                    const auto high = plot.getY() + static_cast<int> (geometry->sampleY (bucket.maximum));
-                    const auto low = plot.getY() + static_cast<int> (geometry->sampleY (bucket.minimum));
+                    const auto column = plot.getX() + static_cast<int> (std::lround (*x));
+                    const auto high = plot.getY() + static_cast<int> (std::lround (geometry->sampleY (bucket.maximum)));
+                    const auto low = plot.getY() + static_cast<int> (std::lround (geometry->sampleY (bucket.minimum)));
                     graphics.fillRect (column, high, 1, std::max (2, low - high + 1));
                 }
         }
@@ -694,7 +694,7 @@ public:
                                    || marker.kind == InstrumentUiWaveformGeometry::MarkerKind::sliceEnd
                 ? 0xffab9ee9 : 0xff8da79a;
             graphics.setColour (juce::Colour (color));
-            const auto x = std::clamp (plot.getX() + static_cast<int> (marker.x),
+            const auto x = std::clamp (plot.getX() + static_cast<int> (std::lround (marker.x)),
                                        plot.getX(), plot.getRight() - 1);
             graphics.fillRect (x, plot.getY(), 1, plot.getHeight());
         }
