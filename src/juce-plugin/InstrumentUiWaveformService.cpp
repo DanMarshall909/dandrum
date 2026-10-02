@@ -112,11 +112,21 @@ bool InstrumentUiWaveformService::cancel (std::uint64_t jobId)
 }
 
 std::optional<InstrumentUiWaveformService::Snapshot>
-InstrumentUiWaveformService::status (std::uint64_t jobId) const
+InstrumentUiWaveformService::status (
+    std::uint64_t jobId, std::optional<std::uint32_t> visibleGeneration) const
 {
     const std::scoped_lock lock (mutex);
     if (const auto found = statuses.find (jobId); found != statuses.end())
-        return found->second;
+    {
+        auto snapshot = found->second;
+        if (visibleGeneration && snapshot.generation != *visibleGeneration
+            && snapshot.state != State::cancelled)
+        {
+            snapshot.state = State::stale;
+            snapshot.result.reset();
+        }
+        return snapshot;
+    }
     return std::nullopt;
 }
 

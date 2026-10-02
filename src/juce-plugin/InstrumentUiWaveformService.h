@@ -72,7 +72,8 @@ public:
                                           std::uint64_t startFrame, std::uint64_t endFrame,
                                           std::size_t bucketCount);
     bool cancel (std::uint64_t jobId);
-    std::optional<Snapshot> status (std::uint64_t jobId) const;
+    std::optional<Snapshot> status (
+        std::uint64_t jobId, std::optional<std::uint32_t> visibleGeneration = std::nullopt) const;
 
 private:
     struct Key

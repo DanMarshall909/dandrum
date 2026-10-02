@@ -83,7 +83,7 @@ extract_function_body(
     "${plugin_processor_source}"
     "void DandrumAudioProcessor::processBlock")
 
-if (plugin_process_block_body MATCHES "ScopedLock|CriticalSection|std::cout|std::cerr|new |malloc|dandrum_engine_load_patch|dandrum_engine_prepare|dandrum_engine_create|dandrum_engine_destroy|SoundLab|sound_fixture|sound_workbench|sound_match|reference|Sha256|optimizer|graph_proposal|provider|codex|std::process|write_wav|fft")
+if (plugin_process_block_body MATCHES "ScopedLock|CriticalSection|std::cout|std::cerr|new |malloc|dandrum_engine_load_patch|dandrum_engine_prepare|dandrum_engine_create|dandrum_engine_destroy|SoundLab|sound_fixture|sound_workbench|sound_match|reference|Sha256|optimizer|graph_proposal|provider|codex|std::process|write_wav|fft|waveformService|InstrumentUiWaveformService|requestPreparedWaveform|cancelPreparedWaveformJob|std::jthread|\\.join\\(")
     message(FATAL_ERROR "DandrumAudioProcessor::processBlock contains callback-unsafe locking, allocation, console IO, engine lifecycle/loading, matching, provider, or offline Sound Lab work")
 endif()
 

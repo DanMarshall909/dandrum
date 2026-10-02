@@ -132,6 +132,10 @@ int main()
                      && ready.result->buckets[0].minimum == -0.5f
                      && ready.result->buckets[0].maximum == -0.5f,
                  "worker lost source identity, rate or known signed samples");
+        const auto oldVisibleResult = service.status (*first, 2);
+        require (oldVisibleResult && oldVisibleResult->state == Service::State::stale
+                     && ! oldVisibleResult->result,
+                 "an old ready waveform remained visible during reload publication");
         const auto cached = service.request (1, sourceFrom (engine), "full", 0, 0, 1, 1);
         require (cached.has_value() && service.status (*cached)->state == Service::State::ready
                      && reductions == 1,
@@ -265,6 +269,44 @@ int main()
         historyGuard.open();
         waitForReady (fullHistory, *historyActive);
 
+        std::promise<void> cancelEntered;
+        std::promise<void> cancelRelease;
+        std::promise<void> cancelFinished;
+        const auto cancelResume = cancelRelease.get_future().share();
+        std::atomic<int> cancelReductions { 0 };
+        Service activeCancel ([&] (const DandrumKernelWaveformSource* source, std::uint16_t channel,
+                                   std::uint64_t start, std::uint64_t end,
+                                   DandrumKernelWaveformBucket* buckets, std::size_t count)
+        {
+            if (++cancelReductions == 1)
+            {
+                cancelEntered.set_value();
+                cancelResume.wait();
+            }
+            const auto reduced = dandrum_kernel_waveform_reduce (
+                source, channel, start, end, buckets, count);
+            cancelFinished.set_value();
+            return reduced;
+        });
+        PromiseRelease cancelGuard (cancelRelease);
+        activeCancel.setGeneration (1);
+        const auto cancelledActive = activeCancel.request (
+            1, sourceFrom (replacement), "cancelled", 0, 0, 1, 1);
+        require (cancelledActive.has_value()
+                     && cancelEntered.get_future().wait_for (std::chrono::seconds (2))
+                            == std::future_status::ready,
+                 "active cancellation fixture did not enter the worker");
+        require (activeCancel.cancel (*cancelledActive)
+                     && ! activeCancel.cancel (*cancelledActive)
+                     && activeCancel.status (*cancelledActive)->state == Service::State::cancelled,
+                 "active analysis did not cancel immediately and exactly once");
+        cancelGuard.open();
+        require (cancelFinished.get_future().wait_for (std::chrono::seconds (2))
+                     == std::future_status::ready,
+                 "cancelled worker failed to finish its retained read");
+        require (activeCancel.status (*cancelledActive)->state == Service::State::cancelled,
+                 "cancelled worker replaced its terminal status");
+
         std::promise<void> entered;
         std::promise<void> release;
         std::promise<void> reductionFinished;
@@ -301,6 +343,9 @@ int main()
                      "bounded queue rejected an admitted request");
         require (! stalled.request (7, sourceFrom (replacement), "overflow", 0, 0, 1, 1),
                  "bounded queue admitted work past its limit");
+        require (stalled.status (*active, 8)->state == Service::State::stale
+                     && stalled.status (*queued, 8)->state == Service::State::cancelled,
+                 "visible generation retired a cancelled job or exposed an old worker");
         replacement.reset();
         stalled.setGeneration (8);
         require (stalled.status (*active)->state == Service::State::stale

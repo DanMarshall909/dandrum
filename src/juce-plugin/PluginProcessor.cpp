@@ -1434,13 +1434,7 @@ std::optional<InstrumentUiWaveformService::Snapshot>
 DandrumAudioProcessor::getPreparedWaveformJobStatus (std::uint64_t jobId) const
 {
     const std::lock_guard<std::recursive_mutex> reloadLock (reloadMutex);
-    auto result = waveformService.status (jobId);
-    if (result && result->generation != getParameterSurfaceGeneration())
-    {
-        result->state = InstrumentUiWaveformService::State::stale;
-        result->result.reset();
-    }
-    return result;
+    return waveformService.status (jobId, getParameterSurfaceGeneration());
 }
 
 bool DandrumAudioProcessor::cancelPreparedWaveformJob (std::uint64_t jobId)
