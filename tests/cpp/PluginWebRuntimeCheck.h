@@ -2,6 +2,7 @@
 
 #include "PluginEditor.h"
 
+#include <algorithm>
 #include <cstdlib>
 #include <functional>
 #include <iostream>
@@ -59,9 +60,16 @@ constexpr auto runtimeScript = R"JS(
                 loaded:result.length === 1 && result[0].status === 'loaded'};
       }));
       const state = await native('getParameterState')();
+      const inspectIcons = () => [...document.querySelectorAll('svg[data-dd-icon]')].map(svg => {
+        const bounds = svg.getBBox(), rect = svg.getBoundingClientRect();
+        return {name:svg.dataset.ddIcon, size:Number(svg.getAttribute('width')),
+                viewBox:svg.getAttribute('viewBox'), hidden:svg.getAttribute('aria-hidden'),
+                focusable:svg.getAttribute('focusable'), stroke:getComputedStyle(svg).stroke,
+                visible:rect.width > 0 && rect.height > 0 && bounds.width > 0 && bounds.height > 0};
+      });
       await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
       await report('fonts', {
-        fonts, parameters: state.parameters.map(p => p.id),
+        fonts, icons: inspectIcons(), parameters: state.parameters.map(p => p.id),
         errors: [...document.querySelectorAll('[role=alert]')].map(e => e.textContent),
         family: getComputedStyle(document.querySelector('main')).fontFamily,
         valueFamily: getComputedStyle(document.querySelector('.control-value,.knob-value')).fontFamily,
@@ -86,6 +94,7 @@ constexpr auto runtimeScript = R"JS(
       // Let ResizeObserver and React commit the layout at the new viewport size.
       await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
       await report('compact', {
+        icons: inspectIcons(),
         hintClear: sampler || document.querySelector('.hint').getBoundingClientRect().top + 0.5
                              >= document.querySelector('.machine').getBoundingClientRect().bottom,
         width: document.documentElement.clientWidth,
@@ -137,6 +146,7 @@ public:
             }
             else if (phase == Phase::compact && name == "compact")
             {
+                acceptIcons (data);
                 require (static_cast<int> (data.getProperty ("width", {})) > 0
                              && static_cast<int> (data.getProperty ("width", {})) <= 820
                              && static_cast<int> (data.getProperty ("scrollWidth", {}))
@@ -193,6 +203,7 @@ private:
     }
     void acceptFonts (const juce::var& data)
     {
+        acceptIcons (data);
         const auto fontList = data.getProperty ("fonts", {});
         const auto* fonts = fontList.getArray();
         require (fonts != nullptr && fonts->size() == 8, "WebKit did not enumerate eight font faces");
@@ -213,6 +224,28 @@ private:
                      && static_cast<int> (data.getProperty ("width", {})) <= 1200
                      && static_cast<int> (data.getProperty ("scrollWidth", {}))
                          <= static_cast<int> (data.getProperty ("width", {})), "Full-size page overflows horizontally");
+    }
+    void acceptIcons (const juce::var& data)
+    {
+        const auto iconList = data.getProperty ("icons", {});
+        const auto* icons = iconList.getArray();
+        require (icons != nullptr, "Packaged design icons were not reported");
+        const auto expected = sampler ? juce::StringArray { "keyboard", "host", "level", "alternate", "choke", "lock" }
+                                      : juce::StringArray { "keyboard", "midi", "level" };
+        for (const auto& name : expected)
+        {
+            const auto found = std::find_if (icons->begin(), icons->end(), [&name] (const juce::var& icon)
+            { return icon.getProperty ("name", {}).toString() == name; });
+            require (found != icons->end(), "Missing packaged design icon: " + name);
+        }
+        for (const auto& icon : *icons)
+            require (static_cast<bool> (icon.getProperty ("visible", {}))
+                         && static_cast<int> (icon.getProperty ("size", {})) >= 12
+                         && icon.getProperty ("viewBox", {}).toString() == "0 0 24 24"
+                         && icon.getProperty ("hidden", {}).toString() == "true"
+                         && icon.getProperty ("focusable", {}).toString() == "false"
+                         && icon.getProperty ("stroke", {}).toString() != "none",
+                     "Invisible or inaccessible decorative icon: " + icon.getProperty ("name", {}).toString());
     }
 };
 

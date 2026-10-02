@@ -11,6 +11,8 @@ import { preparedWaveformView, paintPreparedWaveform } from '../../shared/prepar
 import './styles.css';
 import '../../shared/design-tokens.css';
 import '../../shared/design-fonts.css';
+import { iconProps } from '../../shared/design-icons.mjs';
+import '../../shared/design-icons.css';
 
 type HostParameter = { id: string; name: string; value: number };
 type HostState = { generation: number; sequence: number; parameters: HostParameter[] };
@@ -215,7 +217,7 @@ function MasterMeter({ generation, reportError }: {
     };
   }, [generation]);
   return <section className="panel meter" aria-label="Master output meter">
-    <div className="section-heading"><h2>Master output</h2>
+    <div className="section-heading"><h2><svg {...iconProps('level')} />Master output</h2>
       <span>{display.valid ? display.complete ? 'LIVE' : 'HISTORY GAP' : 'WAITING FOR AUDIO'}</span></div>
     {display.channels.map((channel, index) => <div className="meter-row" key={channel.name}>
       <strong>{channel.name}</strong>
@@ -325,10 +327,10 @@ function SamplerApp() {
     <header className="top"><div><p className="eyebrow">DANDRUM · PREPARED INSTRUMENT</p>
       <h1>Drum Sampler</h1><p>{current ? document.instrumentId : 'Loading prepared instrument…'}</p></div>
       <span className="generation">{current ? `GEN ${document.generation}` : 'WAITING'}</span></header>
-    {error && <p className="error" role="alert">{error}</p>}
+    {error && <p className="error" role="alert"><svg {...iconProps('error')} />{error}</p>}
     {current && <>
       <section className="panel keymap" aria-label="Prepared key map">
-        <div className="section-heading"><h2>Key map</h2><span>PREPARED · READ ONLY</span></div>
+        <div className="section-heading"><h2><svg {...iconProps('keyboard')} />Key map</h2><span>PREPARED · READ ONLY</span></div>
         <div className="pads">{pads.map(pad => <button key={pad.id}
           className={`pad ${selected?.id === pad.id ? 'selected' : ''} ${pressed.includes(pad.id) ? 'pressed' : ''}`}
           aria-label={`${pad.label}, MIDI ${pad.keyLow}, velocity ${pad.velocityLow} to ${pad.velocityHigh}`}
@@ -340,8 +342,8 @@ function SamplerApp() {
           <strong>{pad.label}</strong>
           <small>NOTE {pad.keyLow}{pad.keyHigh !== pad.keyLow ? `–${pad.keyHigh}` : ''}
             {' · '}VEL {pad.velocityLow}–{pad.velocityHigh}</small>
-          {pad.zoneIds.length > 1 && <small>{pad.zoneIds.length} round robin alternatives</small>}
-          {pad.chokeGroup && <small>CHOKE {pad.chokeGroup}</small>}
+          {pad.zoneIds.length > 1 && <small><svg {...iconProps('alternate', { size: 12 })} />{pad.zoneIds.length} round robin alternatives</small>}
+          {pad.chokeGroup && <small><svg {...iconProps('choke', { size: 12 })} />CHOKE {pad.chokeGroup}</small>}
         </button>)}</div>
         {selected && <p className="details">{selected.selectionMode} selection · {selected.zoneIds.join(', ')}
           {selected.controlGroup != null ? ` · control group ${selected.controlGroup}` : ''}</p>}
@@ -349,7 +351,7 @@ function SamplerApp() {
       <div className="lower">
         <div className="left-column">
           <section className="panel controls" aria-label="Host modulatable controls">
-            <div className="section-heading"><h2>Public controls</h2>
+            <div className="section-heading"><h2><svg {...iconProps('host')} />Public controls</h2>
               <span>{parameters.length} SHARED / SELECTED PAD</span></div>
             <div className="control-list">{parameters.map(descriptor => <HostSlider
               key={`${descriptor.id}:${state.generation}`} descriptor={descriptor}
@@ -364,7 +366,7 @@ function SamplerApp() {
                 regionId={region.regionId} reportError={reportError} />
             : <section className="panel">Prepared waveform unavailable</section>}
           <section className="panel availability" aria-label="Prepared capabilities">
-            <div className="section-heading"><h2>Structure</h2><span>INSPECT ONLY</span></div>
+            <div className="section-heading"><h2><svg {...iconProps('lock')} />Structure</h2><span>INSPECT ONLY</span></div>
             <p>Source and region assignments are prepared outside the plugin.</p>
             <p>Layer details: {document.capabilities.synthLayer || document.capabilities.nestedPatchLayer
               || document.capabilities.moduleChain ? 'Available where prepared' : 'Unavailable'}</p>

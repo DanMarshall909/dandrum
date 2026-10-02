@@ -7,6 +7,8 @@ import { meterView } from "../../shared/meter-view.mjs";
 import "./styles.css";
 import "../../shared/design-tokens.css";
 import "../../shared/design-fonts.css";
+import { iconProps } from "../../shared/design-icons.mjs";
+import "../../shared/design-icons.css";
 
 type Parameter = { id: string; name?: string; value: number };
 type HostState = { generation: number; sequence: number; parameters: Parameter[] };
@@ -259,7 +261,7 @@ function MasterMeter({ generation }: { generation: number | null }) {
   };
 
   return <section className="master-meter" aria-label="Master output meter">
-    <header className="meter-heading"><strong>MASTER OUTPUT</strong>
+    <header className="meter-heading"><strong><svg {...iconProps('level', { size: 14 })} />MASTER OUTPUT</strong>
       <span>{meterError || (!view.valid ? "WAITING FOR AUDIO" : view.complete ? "LIVE" : "HISTORY GAP")}</span>
     </header>
     {view.channels.map((channel, index) => <div className="meter-row" key={channel.name}>
@@ -381,7 +383,7 @@ function App() {
           </div>
         </section>
         <section className="keyboard-panel" aria-label="Note audition">
-          <div className="keyboard-labels"><span>NOTE AUDITION</span><span>HOST MIDI INPUT ACTIVE</span></div>
+          <div className="keyboard-labels"><span><svg {...iconProps('keyboard', { size: 14 })} />NOTE AUDITION</span><span><svg {...iconProps('midi', { size: 14 })} />HOST MIDI INPUT ACTIVE</span></div>
           <div className="keyboard">
             <div className="white-keys" style={{ gridTemplateColumns: `repeat(${whiteKeyCount}, 1fr)` }}>
               {keyboardKeys.filter(key => key.kind === "white").map(key =>
@@ -420,7 +422,7 @@ function App() {
       </section>
     </div>
     <p className="hint">Drag a knob or use arrow keys. Values follow the host.</p>
-    {error && <p className="host-error" role="alert">{error}</p>}
+    {error && <p className="host-error" role="alert"><svg {...iconProps('error')} />{error}</p>}
   </main>;
 }
 

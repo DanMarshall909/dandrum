@@ -14,6 +14,20 @@ if(DANDRUM_NATIVE_ONLY)
 else()
     set(DANDRUM_BROWSER_ENABLED TRUE)
     set(DANDRUM_EDITOR_ADAPTER dandrum-plugin-web-adapter)
+    find_program(DANDRUM_NODE_EXECUTABLE node)
+    if(NOT DANDRUM_NODE_EXECUTABLE OR NOT EXISTS "${DANDRUM_NODE_EXECUTABLE}")
+        message(FATAL_ERROR "Node.js is required to run the WebView page and native bridge tests")
+    endif()
+    execute_process(
+        COMMAND "${DANDRUM_NODE_EXECUTABLE}" -e
+            "const appRequire = require('node:module').createRequire(process.argv[1]); appRequire('react'); appRequire('react-dom/server');"
+            "${CMAKE_CURRENT_SOURCE_DIR}/web/sampler/package.json"
+        RESULT_VARIABLE DANDRUM_REACT_TEST_SETUP_RESULT
+        OUTPUT_QUIET ERROR_QUIET)
+    if(NOT DANDRUM_REACT_TEST_SETUP_RESULT EQUAL 0)
+        message(FATAL_ERROR
+            "React rendering test dependencies are unavailable. Run npm ci --prefix web/sampler from the repository root, then configure again.")
+    endif()
 endif()
 
 set(RUST_ENGINE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/src/rust-engine)
@@ -316,10 +330,6 @@ add_test(NAME rust-coverage-gate
             -p test_rust_coverage_gate.py)
 
 if(NOT DANDRUM_NATIVE_ONLY)
-    find_program(DANDRUM_NODE_EXECUTABLE node)
-    if(NOT DANDRUM_NODE_EXECUTABLE OR NOT EXISTS "${DANDRUM_NODE_EXECUTABLE}")
-        message(FATAL_ERROR "Node.js is required to run the WebView page and native bridge tests")
-    endif()
     add_test(NAME shared-instrument-ui COMMAND ${DANDRUM_NODE_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/tests/js/SharedInstrumentUiTest.mjs)
     add_test(NAME tb303-page COMMAND ${DANDRUM_NODE_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/tests/js/Tb303PageTest.mjs)
     add_test(NAME tb303-react-model COMMAND ${DANDRUM_NODE_EXECUTABLE} --test ${CMAKE_CURRENT_SOURCE_DIR}/web/tb303/src/model.test.mjs)
@@ -334,6 +344,7 @@ if(NOT DANDRUM_NATIVE_ONLY)
     add_test(NAME design-token-generation COMMAND ${DANDRUM_NODE_EXECUTABLE} --test ${CMAKE_CURRENT_SOURCE_DIR}/tests/js/DesignTokensTest.mjs)
     add_test(NAME design-tokens-current COMMAND ${DANDRUM_NODE_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/scripts/generate-ui-tokens.mjs --check)
     add_test(NAME react-asset-packaging COMMAND ${DANDRUM_NODE_EXECUTABLE} --test ${CMAKE_CURRENT_SOURCE_DIR}/tests/js/ReactAssetsTest.mjs)
+    add_test(NAME design-icon-rendering COMMAND ${DANDRUM_NODE_EXECUTABLE} --test ${CMAKE_CURRENT_SOURCE_DIR}/tests/js/DesignIconsTest.mjs)
 
     add_executable(dandrum-plugin-file-watch-reload-test tests/cpp/PluginFileWatchReloadTest.cpp)
     target_include_directories(dandrum-plugin-file-watch-reload-test PRIVATE src/juce-wrapper src/juce-plugin)

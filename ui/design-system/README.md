@@ -45,5 +45,7 @@ import `web/shared/design-fonts.css`; Vite inlines the eight TTF files into
 `app.css` and retains the three original notices in `app.js`. The embedded
 resource provider still serves only HTML, JavaScript and CSS.
 [Packaging evidence](../../docs/design-system/react-font-packaging.md) covers
-offline Linux WebKit loading and typography. Native font embedding and supplied
-SVG icon integration remain pending; task 3.3 is not yet complete.
+offline Linux WebKit loading and typography. The React apps also compile the
+supplied icon geometry through `web/shared/design-icons.mjs`. Native font/icon
+embedding and the original production editor's offline opening remain pending;
+task 3.3 is not yet complete.

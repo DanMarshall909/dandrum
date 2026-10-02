@@ -13,7 +13,11 @@ Native Linux dependencies for JUCE:
 sudo apt install -y libasound2-dev libx11-dev libxext-dev libxinerama-dev libxrandr-dev libxcursor-dev libxrender-dev libfreetype6-dev libfontconfig1-dev libgl1-mesa-dev libcurl4-openssl-dev
 ```
 
+The default WebView build also requires Node.js and npm. Install the React test
+dependencies from the checked-in lockfile before configuring:
+
 ```bash
+npm ci --prefix web/sampler
 $HOME/.local/bin/cmake -S . -B build
 $HOME/.local/bin/cmake --build build
 ./build/dandrum-drum-machine-demo_artefacts/dandrum-drum-machine-demo
@@ -118,10 +122,13 @@ the same settings and promoting useful observations into regression tests.
 
 CMake exposes the same Rust tests through CTest for CI:
 
-Node.js is required when configuring the CMake project because CTest also runs
-the WebView control, page, and native bridge JavaScript checks.
+The default WebView configuration requires Node.js and the sampler package's
+locked dependencies because CTest runs the JavaScript checks and renders the
+shared icons with React. CMake checks these dependencies before configuring
+JUCE. The native-only configuration does not require Node.js or npm packages.
 
 ```bash
+npm ci --prefix web/sampler
 $HOME/.local/bin/cmake -S . -B build
 $HOME/.local/bin/cmake --build build
 ctest --test-dir build

@@ -16,6 +16,11 @@ const expectedFonts = Object.fromEntries([
   ? [['Medium', 500], ['SemiBold', 600]] : [['Medium', 500], ['SemiBold', 600], ['Bold', 700]])
   .map(([style, weight]) => [`${family}:${weight}`,
     provenance.files[`${directory}/${directory}-${style}.ttf`].sha256])));
+const iconRoot = path.join(root, 'docs/design-system/reference/assets/icons');
+const packagedIcons = {
+  sampler: ['keyboard', 'host', 'level', 'alternate', 'choke', 'lock', 'error'],
+  tb303: ['keyboard', 'midi', 'level', 'error'],
+};
 
 for (const app of ['sampler', 'tb303']) {
   const dist = path.join(root, 'web', app, 'dist');
@@ -50,5 +55,15 @@ for (const app of ['sampler', 'tb303']) {
     const links = [...html.matchAll(/(?:src|href)=["']([^"']+)["']/g)].map(([, value]) => value).sort();
     assert.deepEqual(links, ['/app.css', '/app.js']);
     assert.doesNotMatch(html + js, /unpkg\.com|cdn\.jsdelivr\.net|cdnjs\.cloudflare\.com|babel(?:\.min)?\.js/);
+  });
+  test(`${app} packages the supplied stroke icons with its executable assets`, () => {
+    const js = readFileSync(path.join(dist, 'app.js'), 'utf8');
+    assert.ok(js.includes('data-dd-icon'), `${app} has no packaged design icons`);
+    for (const name of packagedIcons[app]) {
+      const svg = readFileSync(path.join(iconRoot, `dd-icon-${name}.svg`), 'utf8')
+        .replace(/<metadata>[\s\S]*?<\/metadata>/g, '');
+      for (const [, geometry] of svg.matchAll(/\bd="([^"]+)"/g))
+        assert.ok(js.includes(geometry), `${app} packaged ${name} icon is missing supplied geometry ${geometry}`);
+    }
   });
 }
