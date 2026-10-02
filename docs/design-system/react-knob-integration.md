@@ -1,10 +1,11 @@
 # React knob integration
 
-This is the Web portion of OpenSpec task 3.4 in
+This records Web and native progress on OpenSpec task 3.4 in
 [add-renderer-independent-plugin-ui](../../openspec/changes/add-renderer-independent-plugin-ui/tasks.md).
 The sampler and TB-303 use one adaptation of the preserved
 [Knob reference](reference/components/controls/Knob.jsx). Task 3.4 remains open:
-native reference drawing and equivalent signed-audio schedules are pending.
+equivalent signed-audio schedules through the actual Web and native renderers
+are pending.
 
 ## Current behavior
 
@@ -98,9 +99,65 @@ baseline spec coverage pass; delta specs remain unsynced. Detailed logs, RED
 runs, source hashes, fault results, browser coverage and original-editor captures
 are retained at `/tmp/dandrum-knob-react-evidence` for completion review.
 
+## Native primary control
+
+The native editor's primary public control now uses the reference's 64-pixel
+pointer-free cap, 270-degree arc, generated colors, whole-cell focus rim and
+actual-value popup. Caption and value text use embedded Barlow Semi Condensed
+SemiBold and JetBrains Mono Medium; both OFL notices are embedded alongside them.
+The rest of the native layout remains in task 7.5.
+
+The control owns copies of its prepared range, default and generation. Reload
+cancels old drafts and captured drags. Missing, zero-width and non-finite actual
+ranges disable editing. Typed entry, keyboard, wheel and loaded reset use the
+shared host command service, with the same steps as React. A continuous drag
+uses one host gesture at 200 pixels per full range, or 800 with Shift. Release,
+focus loss and editor closure close it once. Release reconciles host automation
+that arrived while the local drag was displayed.
+
+Enter, Escape and blur finish their current entry synchronously. A delayed JUCE
+text message cannot finish a subsequently reopened draft. Callback copies and
+`Component::SafePointer` checks stop continuations if a synchronous host listener
+closes the editor. The shared service remembers closure during a pending begin
+and retires gesture ownership before notifying the host of an end.
+
+The existing 30 Hz observer expires the 250 ms pointer handoff grace and 600 ms
+nudge display without a new timer or worker. Only the active value arc thickens.
+Popup clicks and entry cannot become drag, wheel or reset commands.
+
+`native-editor-smoke` drives the actual native virtual input handlers and JUCE
+message queue against a real processor. It checks stable host slots, balanced
+gestures, actual text/typefaces, cap/arc pixels and every signed stereo sample
+of the prepared knob fixture. It includes malformed/unchanged/rounded entry,
+host updates during drafts and drags, reload, closure and timed popup states.
+Six real host-listener cases close the editor during begin, change, end, typed
+completion, focus loss and reload; they assert every event's original host slot,
+balanced gestures, literal signed PCM and replacement-editor recovery. A focused
+AddressSanitizer run caught the original use-after-free and passes after repair;
+only the owned native editor and test are instrumented, with leak checking off.
+The fast `cxx-plugin-ui-command` test independently checks reentrant session
+closure. Native CTest passes 19/19. Focused copied-source faults reject eight
+native control defects and three service ownership defects by named assertions.
+Both native and Web standalone/VST3 builds pass; the current Web CTest run
+passes 43/43, including the two original WebKit editor runtime checks.
+
+Merged coverage executes 332 of 336 new font/knob source lines; four defensive
+returns after JUCE focus/visibility operations remain unexecuted. The isolated
+service test executes all 48 measured begin/end/close lines; its parameter-write
+method is not instantiated in that isolated run. Full module and exhaustive
+branch coverage are not claimed; no production module is extracted.
+
+The maintained test's events are synthetic. A separate X11 XTest probe drives
+physical button/motion and Shift input through the original native editor,
+including a captured drag beyond the cell and host automation while held. It
+checks the same stable host slot and every signed PCM sample, and captures the
+focused popup at 820×560 and 1200×800. These JUCE applications do not prove DAW
+transport behavior. Focused coverage and verification evidence is retained at
+`/tmp/dandrum-knob-native-evidence`.
+
 ## Remaining scope
 
-Task 3.4 needs native drawing/interactions and identical signed-audio schedules.
+Task 3.4 still needs identical signed-audio schedules in both actual renderers.
 Prepared waveform/spectral displays, KeyMap/LayerStack/OutputBusses adaptation,
 full and compact design fidelity, callback/stress evidence and automatic
 structural rebuilding retain their own unchecked tasks. This slice makes no

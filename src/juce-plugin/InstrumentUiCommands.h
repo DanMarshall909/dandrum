@@ -86,25 +86,34 @@ public:
         return { status, host.uiCommandGeneration(), lastAdmittedSequence() };
     }
 
-    InstrumentUiCommandReply beginGesture (const InstrumentUiGestureRequest& request)
+    InstrumentUiCommandReply beginGesture (InstrumentUiGestureRequest request)
     {
         const auto generation = host.uiCommandGeneration();
         if (request.generation != generation)
             return { InstrumentUiCommandStatus::staleGeneration, generation, lastAdmittedSequence() };
-        if (request.sessionId == 0 || gestures.contains (request.sessionId))
+        if (request.sessionId == 0 || gestures.contains (request.sessionId)
+            || pendingBegins.contains (request.sessionId))
             return { InstrumentUiCommandStatus::gestureActive, generation, lastAdmittedSequence() };
 
+        // A synchronous host listener may close the editor before begin returns
+        // its host slot. Remember that closure and balance the admitted begin.
+        pendingBegins.emplace (request.sessionId, false);
         const auto admission = host.beginUiGesture (generation, request.id);
+        const auto closed = pendingBegins.at (request.sessionId);
+        pendingBegins.erase (request.sessionId);
         if (admission.status == InstrumentUiCommandStatus::accepted)
         {
-            gestures.emplace (request.sessionId,
-                              ActiveGesture { generation, request.id, admission.hostSlot });
             ++sequence;
+            if (closed)
+                host.endUiGesture (admission.hostSlot);
+            else
+                gestures.emplace (request.sessionId,
+                                  ActiveGesture { generation, request.id, admission.hostSlot });
         }
         return { admission.status, host.uiCommandGeneration(), lastAdmittedSequence() };
     }
 
-    InstrumentUiCommandReply endGesture (const InstrumentUiGestureRequest& request)
+    InstrumentUiCommandReply endGesture (InstrumentUiGestureRequest request)
     {
         const auto active = gestures.find (request.sessionId);
         if (active == gestures.end())
@@ -114,8 +123,10 @@ public:
 
         const auto stale = request.generation != active->second.generation
             || request.generation != host.uiCommandGeneration();
-        host.endUiGesture (active->second.hostSlot);
+        const auto hostSlot = active->second.hostSlot;
+        // Relinquish ownership before host listeners can close this session again.
         gestures.erase (active);
+        host.endUiGesture (hostSlot);
         if (stale)
             return { InstrumentUiCommandStatus::staleGeneration, host.uiCommandGeneration(), lastAdmittedSequence() };
         ++sequence;
@@ -124,11 +135,14 @@ public:
 
     void closeSession (std::uint64_t sessionId)
     {
+        if (const auto pending = pendingBegins.find (sessionId); pending != pendingBegins.end())
+            pending->second = true;
         const auto active = gestures.find (sessionId);
         if (active == gestures.end())
             return;
-        host.endUiGesture (active->second.hostSlot);
+        const auto hostSlot = active->second.hostSlot;
         gestures.erase (active);
+        host.endUiGesture (hostSlot);
         ++sequence;
     }
 
@@ -143,5 +157,6 @@ private:
     InstrumentUiCommandHost& host;
     std::atomic<std::uint64_t> sequence { 0 };
     std::uint64_t nextSessionId = 0;
+    std::map<std::uint64_t, bool> pendingBegins;
     std::map<std::uint64_t, ActiveGesture> gestures;
 };

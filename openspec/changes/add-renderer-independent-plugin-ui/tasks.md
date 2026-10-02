@@ -53,6 +53,18 @@ copies using a fixed 0.5, the host-slot default or the current live value fail
 their named reset assertions, and healthy reruns pass. No Rust, FFI, asset or
 host parameter layout change is included.
 
+Native progress on 3.4 (2026-10-03): the primary control uses the supplied
+64-pixel cap/arc, embedded caption/value faces, actual-value popup and the React
+input mappings. Tests prove loaded defaults, precision-preserving entry,
+automation reconciliation, unavailable ranges, reload and gesture closure.
+Synchronous host-listener teardown is protected by component lifetime checks
+and shared gesture ownership handoff; focused ASan catches the original defect
+and passes the repair. Native CTest passes 19/19. The
+[knob integration record](../../../docs/design-system/react-knob-integration.md)
+states coverage gaps, eleven focused faults, physical input evidence and limits.
+Identical signed-audio schedules through both actual renderers remain pending,
+so task 3.4 stays unchecked. No structural runtime completion is claimed.
+
 ## 4. Meter Telemetry Vertical Slice
 
 - [x] 4.1 Prepare bounded master/output meter capture with a single consumer per queue; saturation and callback instrumentation must prove bounded memory/work, no forbidden callback operations and unchanged signed PCM.

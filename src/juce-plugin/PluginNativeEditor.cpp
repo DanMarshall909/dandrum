@@ -1,6 +1,8 @@
 #include "NativeMasterMeter.h"
 #include "PluginProcessor.h"
 #include "InstrumentUiWaveformGeometry.h"
+#include "DesignTokens.h"
+#include "NativeKnobFontBinaryData.h"
 
 #include <juce_gui_basics/juce_gui_basics.h>
 
@@ -8,6 +10,8 @@
 #include <array>
 #include <cstddef>
 #include <cstdint>
+#include <cmath>
+#include <charconv>
 #include <memory>
 #include <optional>
 #include <string>
@@ -118,6 +122,483 @@ void NativeMasterMeter::updateClipButtons()
 
 namespace
 {
+juce::Font nativeKnobFont (bool value, float height)
+{
+    static const auto uiFace = juce::Typeface::createSystemTypefaceFor (
+        NativeKnobFontBinaryData::BarlowSemiCondensedSemiBold_ttf,
+        NativeKnobFontBinaryData::BarlowSemiCondensedSemiBold_ttfSize);
+    static const auto valueFace = juce::Typeface::createSystemTypefaceFor (
+        NativeKnobFontBinaryData::JetBrainsMonoMedium_ttf,
+        NativeKnobFontBinaryData::JetBrainsMonoMedium_ttfSize);
+    return juce::FontOptions (value ? valueFace : uiFace).withHeight (height);
+}
+
+class NativeKnobReadout final : public juce::TextButton
+{
+public:
+    void paint (juce::Graphics& graphics) override
+    {
+        namespace tokens = dandrum::ui::tokens;
+        const auto bounds = getLocalBounds().toFloat().reduced (0.5f);
+        graphics.setColour (juce::Colour (tokens::dd_ink_2));
+        graphics.fillRoundedRectangle (bounds, tokens::radius_1);
+        graphics.setColour (juce::Colour (tokens::border_control));
+        graphics.drawRoundedRectangle (bounds, tokens::radius_1, 1.0f);
+        graphics.setColour (juce::Colour (tokens::text_primary));
+        graphics.setFont (nativeKnobFont (true, tokens::type_value));
+        graphics.drawText (getButtonText(), getLocalBounds().reduced (6, 0),
+                           juce::Justification::centredLeft, true);
+    }
+};
+
+class NativeKnobValueEditor final : public juce::TextEditor
+{
+public:
+    std::function<void()> onCommit;
+    std::function<void()> onCancel;
+    std::function<void()> onBlur;
+
+    bool keyPressed (const juce::KeyPress& key) override
+    {
+        if (key.getKeyCode() == juce::KeyPress::returnKey)
+        {
+            const auto callback = onCommit;
+            if (callback)
+                callback();
+            return true;
+        }
+        if (key.getKeyCode() == juce::KeyPress::escapeKey)
+        {
+            const auto callback = onCancel;
+            if (callback)
+                callback();
+            return true;
+        }
+        return juce::TextEditor::keyPressed (key);
+    }
+
+    void focusLost (FocusChangeType cause) override
+    {
+        // Keep caret/undo cleanup, but never queue a host completion for a later entry.
+        juce::TextEditor::focusLost (cause);
+        const auto callback = onBlur;
+        if (callback)
+            callback();
+    }
+};
+
+class NativeHostKnob final : public juce::Slider
+{
+public:
+    NativeHostKnob()
+    {
+        setRange (0.0, 1.0);
+        setSliderStyle (juce::Slider::RotaryVerticalDrag);
+        setTextBoxStyle (juce::Slider::NoTextBox, false, 0, 0);
+        setWantsKeyboardFocus (true);
+        caption.setComponentID ("primary-knob-label");
+        caption.setJustificationType (juce::Justification::centred);
+        caption.setColour (juce::Label::textColourId,
+                           juce::Colour (dandrum::ui::tokens::text_secondary));
+        caption.setFont (nativeKnobFont (false, 12.0f));
+        caption.setInterceptsMouseClicks (false, false);
+        addAndMakeVisible (caption);
+        readout.setComponentID ("primary-knob-readout");
+        readout.setTooltip ("Click to type an actual value");
+        readout.onClick = [this] { startEditing(); };
+        readout.addMouseListener (this, true);
+        addChildComponent (readout);
+        valueEditor.setComponentID ("primary-knob-value-editor");
+        valueEditor.setFont (nativeKnobFont (true, dandrum::ui::tokens::type_value));
+        valueEditor.setColour (juce::TextEditor::backgroundColourId,
+                               juce::Colour (dandrum::ui::tokens::dd_ink_2));
+        valueEditor.setColour (juce::TextEditor::textColourId,
+                               juce::Colour (dandrum::ui::tokens::text_primary));
+        valueEditor.setColour (juce::TextEditor::outlineColourId,
+                               juce::Colour (dandrum::ui::tokens::dd_paper_2));
+        valueEditor.setColour (juce::TextEditor::focusedOutlineColourId,
+                               juce::Colour (dandrum::ui::tokens::dd_paper_2));
+        valueEditor.onCommit = [this] { finishEditing (false, true); };
+        valueEditor.onCancel = [this] { finishEditing (true, true); };
+        valueEditor.onBlur = [this] { finishEditing (false, false); };
+        valueEditor.addMouseListener (this, true);
+        addChildComponent (valueEditor);
+    }
+
+    ~NativeHostKnob() override
+    {
+        // The child editor must not commit its draft while members are destroyed.
+        valueEditor.onCommit = {};
+        valueEditor.onCancel = {};
+        valueEditor.onBlur = {};
+        readout.removeMouseListener (this);
+        valueEditor.removeMouseListener (this);
+    }
+
+    void setPreparedParameter (std::optional<InstrumentUiDocument::Parameter> next,
+                               std::uint32_t generation)
+    {
+        // These are owned copies. A reload cannot invalidate range/default data.
+        if (next && (! std::isfinite (next->minValue) || ! std::isfinite (next->maxValue)
+                     || next->maxValue <= next->minValue))
+            next.reset();
+        edit.reset();
+        drag.reset();
+        nudgeUntil = 0.0;
+        popupHoldUntil = 0.0;
+        valueEditor.setVisible (false);
+        prepared = std::move (next);
+        preparedGeneration = generation;
+        setEnabled (prepared.has_value());
+        updatePopup();
+    }
+
+    void observeValue (double value)
+    {
+        authoritative = value;
+        if (! edit && ! drag)
+            setValue (value, juce::dontSendNotification);
+        updatePopup();
+    }
+
+    bool keyPressed (const juce::KeyPress& key) override
+    {
+        if (! prepared)
+            return false;
+        if (key.getKeyCode() == juce::KeyPress::returnKey)
+        {
+            startEditing();
+            return true;
+        }
+        if (edit)
+            return false;
+        const auto step = key.getModifiers().isShiftDown() ? 0.01 : 0.05;
+        double next = getValue();
+        const auto code = key.getKeyCode();
+        if (code == juce::KeyPress::upKey || code == juce::KeyPress::rightKey)
+            next += step;
+        else if (code == juce::KeyPress::downKey || code == juce::KeyPress::leftKey)
+            next -= step;
+        else if (code == juce::KeyPress::homeKey)
+            next = 0.0;
+        else if (code == juce::KeyPress::endKey)
+            next = 1.0;
+        else if (code == juce::KeyPress::deleteKey || code == juce::KeyPress::backspaceKey)
+            next = prepared->normalisedDefaultValue;
+        else
+            return false;
+        commitValue (next);
+        return true;
+    }
+
+    void mouseDoubleClick (const juce::MouseEvent& event) override
+    {
+        if (prepared && ! edit && ! isPopupEvent (event)
+            && event.mods.isLeftButtonDown())
+            commitValue (prepared->normalisedDefaultValue);
+    }
+
+    void mouseWheelMove (const juce::MouseEvent& event,
+                         const juce::MouseWheelDetails& wheel) override
+    {
+        if (! prepared || edit || isPopupEvent (event)
+            || ! (wheel.deltaY > 0.0f || wheel.deltaY < 0.0f))
+            return;
+        const auto step = event.mods.isShiftDown() ? 0.01 : 0.02;
+        commitValue (getValue() + (wheel.deltaY > 0.0f ? step : -step));
+    }
+
+    void mouseDown (const juce::MouseEvent& event) override
+    {
+        if (! prepared || edit || drag || isPopupEvent (event)
+            || ! event.mods.isLeftButtonDown())
+            return;
+        juce::Component::SafePointer<NativeHostKnob> safeThis (this);
+        grabKeyboardFocus();
+        if (safeThis == nullptr)
+            return;
+        drag = Drag { event.position.y, getValue() };
+        const auto callback = onDragStart;
+        if (callback)
+            callback();
+        if (safeThis != nullptr)
+            safeThis->updatePopup();
+    }
+
+    void mouseDrag (const juce::MouseEvent& event) override
+    {
+        if (! drag || event.originalComponent != this)
+            return;
+        const auto distance = event.mods.isShiftDown() ? 800.0 : 200.0;
+        commitValue (drag->value + (drag->y - event.position.y) / distance, false);
+    }
+
+    void mouseUp (const juce::MouseEvent&) override { finishDrag(); }
+
+    void mouseEnter (const juce::MouseEvent& event) override
+    {
+        if (event.eventComponent == this)
+            hovered = true;
+        else
+            popupHovered = true;
+        popupHoldUntil = 0.0;
+        updatePopup();
+    }
+
+    void mouseExit (const juce::MouseEvent& event) override
+    {
+        if (event.eventComponent == this)
+            hovered = false;
+        else
+            popupHovered = false;
+        popupHoldUntil = juce::Time::getMillisecondCounterHiRes() + 250.0;
+        updatePopup();
+    }
+
+    void focusGained (FocusChangeType) override { updatePopup(); }
+    void focusLost (FocusChangeType) override
+    {
+        juce::Component::SafePointer<NativeHostKnob> safeThis (this);
+        if (! hasKeyboardFocus (true))
+            finishDrag();
+        if (safeThis != nullptr)
+            safeThis->updatePopup();
+    }
+    void focusOfChildComponentChanged (FocusChangeType) override
+    {
+        juce::Component::SafePointer<NativeHostKnob> safeThis (this);
+        if (! hasKeyboardFocus (true))
+            finishDrag();
+        if (safeThis != nullptr)
+            safeThis->updatePopup();
+    }
+
+    void startEditing()
+    {
+        if (! prepared || edit)
+            return;
+        edit = Edit { *prepared, preparedGeneration, actualText (getValue()) };
+        valueEditor.setText (edit->initial, false);
+        juce::Component::SafePointer<NativeHostKnob> safeThis (this);
+        updatePopup();
+        if (safeThis == nullptr)
+            return;
+        valueEditor.grabKeyboardFocus();
+        if (safeThis != nullptr)
+            safeThis->valueEditor.selectAll();
+    }
+
+    void setCaption (const juce::String& text)
+    {
+        caption.setText (text.toUpperCase(), juce::dontSendNotification);
+        caption.setTooltip (text);
+        setName (text);
+    }
+
+    void resized() override
+    {
+        caption.setBounds (6, 6, getWidth() - 12, 14);
+        readout.setBounds ((getWidth() - 104) / 2 + 6, 118, 92, 24);
+        valueEditor.setBounds (readout.getBounds());
+    }
+
+    void paint (juce::Graphics& graphics) override
+    {
+        namespace tokens = dandrum::ui::tokens;
+        const float size = tokens::knob_lg;
+        const float cx = static_cast<float> (getWidth()) / 2.0f;
+        const float cy = 25.0f + size / 2.0f;
+        const float trackMax = 4.0f, trackMin = 1.5f;
+        const float rTrack = size / 2.0f - 6.5f - trackMax / 2.0f;
+        const float rCap = rTrack - trackMax / 2.0f - 2.5f;
+        const auto drawArc = [&] (float radius, float from, float to,
+                                 juce::Colour colour, float width)
+        {
+            juce::Path path;
+            path.addCentredArc (cx, cy, radius, radius, 0.0f,
+                                juce::degreesToRadians (from), juce::degreesToRadians (to), true);
+            graphics.setColour (colour);
+            graphics.strokePath (path, juce::PathStrokeType (
+                width, juce::PathStrokeType::curved, juce::PathStrokeType::rounded));
+        };
+        drawArc (rTrack, -135.0f, 135.0f,
+                 juce::Colour (isEnabled() ? tokens::color_track : tokens::dd_ink_4), trackMin);
+        if (isEnabled())
+            drawArc (rTrack, -135.0f, -135.0f + static_cast<float> (getValue()) * 270.0f,
+                     juce::Colour (tokens::color_value),
+                     drag || nudgeUntil > juce::Time::getMillisecondCounterHiRes() ? trackMax : trackMin);
+        const auto point = [&] (float radius)
+        {
+            const auto angle = juce::degreesToRadians (-135.0f);
+            return juce::Point<float> { cx + radius * std::sin (angle),
+                                        cy - radius * std::cos (angle) };
+        };
+        graphics.setColour (juce::Colour (tokens::dd_paper_3).withAlpha (isEnabled() ? 1.0f : 0.4f));
+        graphics.drawLine ({ point (rTrack + trackMin / 2.0f + 1.0f),
+                            point (rTrack + trackMin / 2.0f + 4.0f) }, 1.5f);
+        graphics.setColour (juce::Colours::black.withAlpha (0.45f));
+        graphics.fillEllipse (cx - rCap, cy - rCap + 1.5f, rCap * 2.0f, rCap * 2.0f);
+        graphics.setColour (juce::Colour (! isEnabled() ? tokens::dd_ink_4
+            : drag ? tokens::dd_ink_6
+            : hovered ? tokens::dd_cap_hover : tokens::dd_ink_5));
+        graphics.fillEllipse (cx - rCap, cy - rCap, rCap * 2.0f, rCap * 2.0f);
+        graphics.setColour (juce::Colour (tokens::dd_line_3).withAlpha (isEnabled() ? 0.6f : 0.3f));
+        graphics.drawEllipse (cx - rCap, cy - rCap, rCap * 2.0f, rCap * 2.0f, 1.0f);
+        drawArc (rCap - 1.0f, -60.0f, 60.0f, juce::Colours::white.withAlpha (0.09f), 1.0f);
+        if (hasKeyboardFocus (true))
+        {
+            graphics.setColour (juce::Colour (tokens::color_focus));
+            graphics.drawRoundedRectangle (
+                juce::Rectangle<float> { 2.0f, 2.0f, static_cast<float> (getWidth()) - 4.0f, 110.0f },
+                tokens::radius_2, 2.0f);
+        }
+        if (popupVisible)
+        {
+            const auto bounds = popupBounds();
+            graphics.setColour (juce::Colour (tokens::dd_ink_0));
+            graphics.fillRoundedRectangle (bounds, tokens::radius_2);
+            graphics.setColour (juce::Colour (tokens::border_strong));
+            graphics.drawRoundedRectangle (bounds.reduced (0.5f), tokens::radius_2, 1.0f);
+            juce::Path arrow;
+            arrow.startNewSubPath (cx - 4.0f, 112.0f);
+            arrow.lineTo (cx, 108.0f);
+            arrow.lineTo (cx + 4.0f, 112.0f);
+            graphics.setColour (juce::Colour (tokens::dd_ink_0));
+            graphics.fillPath (arrow);
+            graphics.setColour (juce::Colour (tokens::border_strong));
+            graphics.strokePath (arrow, juce::PathStrokeType (1.0f));
+        }
+    }
+
+private:
+    juce::Rectangle<float> popupBounds() const
+    {
+        return { static_cast<float> ((getWidth() - 104) / 2), 112.0f, 104.0f, 38.0f };
+    }
+
+    bool isPopupEvent (const juce::MouseEvent& event) const
+    {
+        return event.originalComponent != this
+            || (popupVisible && popupBounds().contains (event.position));
+    }
+
+    struct Drag { float y; double value; };
+
+    void finishDrag()
+    {
+        if (! drag)
+            return;
+        drag.reset();
+        juce::Component::SafePointer<NativeHostKnob> safeThis (this);
+        const auto callback = onDragEnd;
+        if (callback)
+            callback();
+        if (safeThis != nullptr)
+            safeThis->updatePopup();
+    }
+
+    void commitValue (double next, bool nudge = true)
+    {
+        if (nudge)
+            nudgeUntil = juce::Time::getMillisecondCounterHiRes() + 600.0;
+        setValue (std::clamp (next, 0.0, 1.0), juce::dontSendNotification);
+        juce::Component::SafePointer<NativeHostKnob> safeThis (this);
+        const auto callback = onValueChange;
+        if (callback)
+            callback();
+        if (safeThis == nullptr)
+            return;
+        authoritative = getValue();
+        updatePopup();
+    }
+
+    struct Edit
+    {
+        InstrumentUiDocument::Parameter parameter;
+        std::uint32_t generation;
+        juce::String initial;
+    };
+
+    juce::String actualText (double value) const
+    {
+        if (! prepared)
+            return {};
+        const double actual = prepared->minValue
+            + value * (static_cast<double> (prepared->maxValue) - prepared->minValue);
+        std::array<char, 64> buffer {};
+        const auto result = std::to_chars (buffer.data(), buffer.data() + buffer.size(),
+                                           actual, std::chars_format::general, 6);
+        return juce::String::fromUTF8 (buffer.data(), static_cast<int> (result.ptr - buffer.data()));
+    }
+
+    void updatePopup()
+    {
+        const auto now = juce::Time::getMillisecondCounterHiRes();
+        popupVisible = prepared && (edit.has_value() || drag.has_value() || hasKeyboardFocus (true)
+            || hovered || popupHovered || popupHoldUntil > now || nudgeUntil > now);
+        if (! edit)
+            readout.setButtonText (actualText (getValue()));
+        juce::Component::SafePointer<NativeHostKnob> safeThis (this);
+        readout.setVisible (popupVisible && ! edit);
+        if (safeThis == nullptr)
+            return;
+        valueEditor.setVisible (popupVisible && edit.has_value());
+        if (safeThis != nullptr)
+            safeThis->repaint();
+    }
+
+    void finishEditing (bool cancelled, bool returnFocus)
+    {
+        if (! edit)
+            return;
+        const auto captured = *edit;
+        const auto text = valueEditor.getText();
+        edit.reset();
+        juce::Component::SafePointer<NativeHostKnob> safeThis (this);
+        valueEditor.setVisible (false);
+        if (safeThis == nullptr)
+            return;
+        std::optional<double> next;
+        if (! cancelled && prepared && captured.generation == preparedGeneration
+            && captured.parameter.id == prepared->id && text != captured.initial)
+        {
+            auto decimal = text.trim().replaceCharacter (0x2212, '-').toStdString();
+            if (decimal.size() > 1 && decimal.front() == '+' && decimal[1] != '-')
+                decimal.erase (0, 1);
+            double actual = 0.0;
+            const auto result = std::from_chars (decimal.data(), decimal.data() + decimal.size(), actual);
+            if (result.ec == std::errc {} && result.ptr == decimal.data() + decimal.size()
+                && std::isfinite (actual) && actual >= captured.parameter.minValue
+                && actual <= captured.parameter.maxValue)
+                next = (actual - captured.parameter.minValue)
+                    / (static_cast<double> (captured.parameter.maxValue) - captured.parameter.minValue);
+        }
+        if (next)
+            commitValue (*next);
+        else
+            setValue (authoritative, juce::dontSendNotification);
+        if (safeThis == nullptr)
+            return;
+        updatePopup();
+        if (safeThis != nullptr && returnFocus)
+            grabKeyboardFocus();
+    }
+
+    juce::Label caption;
+    NativeKnobReadout readout;
+    NativeKnobValueEditor valueEditor;
+    std::optional<InstrumentUiDocument::Parameter> prepared;
+    std::optional<Edit> edit;
+    std::optional<Drag> drag;
+    std::uint32_t preparedGeneration = 0;
+    double authoritative = 0.0;
+    bool popupVisible = false;
+    bool hovered = false;
+    bool popupHovered = false;
+    double popupHoldUntil = 0.0;
+    double nudgeUntil = 0.0;
+};
+
 class NativePreparedWaveform final : public juce::Component
 {
 public:
@@ -271,29 +752,16 @@ public:
         addAndMakeVisible (summary);
 
         primaryKnob.setComponentID ("primary-knob-slider");
-        primaryKnob.setSliderStyle (juce::Slider::RotaryHorizontalVerticalDrag);
-        primaryKnob.setTextBoxStyle (juce::Slider::TextBoxBelow, false, 76, 24);
-        primaryKnob.setRange (0.0, 1.0);
-        primaryKnob.setNumDecimalPlacesToDisplay (3);
-        primaryKnob.setColour (juce::Slider::rotarySliderFillColourId,
-                               juce::Colour (0xff7ce0aa));
-        primaryKnob.setColour (juce::Slider::rotarySliderOutlineColourId,
-                               juce::Colour (0xff414d45));
-        primaryKnob.setColour (juce::Slider::thumbColourId,
-                               juce::Colour (0xffdce9de));
-        primaryKnob.setWantsKeyboardFocus (true);
         primaryKnob.onDragStart = [this] { beginPrimaryGesture(); };
         primaryKnob.onValueChange = [this] { writePrimaryValue(); };
         primaryKnob.onDragEnd = [this]
         {
+            juce::Component::SafePointer<DandrumNativeEditor> safeThis (this);
             endPrimaryGesture();
-            refreshPrimaryKnob();
+            if (safeThis != nullptr)
+                safeThis->refreshPrimaryKnob();
         };
         addAndMakeVisible (primaryKnob);
-        primaryLabel.setComponentID ("primary-knob-label");
-        primaryLabel.setJustificationType (juce::Justification::centred);
-        primaryLabel.setColour (juce::Label::textColourId, juce::Colour (0xffdce9de));
-        addAndMakeVisible (primaryLabel);
         refreshPrimaryKnob();
 
         addAndMakeVisible (meter);
@@ -311,6 +779,9 @@ public:
     ~DandrumNativeEditor() override
     {
         stopTimer();
+        primaryKnob.onDragStart = {};
+        primaryKnob.onValueChange = {};
+        primaryKnob.onDragEnd = {};
         processor.cancelPreparedWaveformSession (meterSession);
         processor.unsubscribeMeter (meterSession);
         processor.uiCommands().closeSession (meterSession);
@@ -326,14 +797,16 @@ public:
         title.setBounds (24, 20, getWidth() - 48, 38);
         summary.setBounds (24, 70, getWidth() - 48, 24);
         meter.setBounds (24, 118, getWidth() - 48, 160);
-        primaryLabel.setBounds (24, 302, 152, 26);
-        primaryKnob.setBounds (24, 328, 152, 158);
+        primaryKnob.setBounds (24, 302, 152, 184);
         waveform.setBounds (200, 302, getWidth() - 224, getHeight() - 326);
     }
 
     void timerCallback() override
     {
+        juce::Component::SafePointer<DandrumNativeEditor> safeThis (this);
         refreshPrimaryKnob();
+        if (safeThis == nullptr)
+            return;
         refreshWaveform();
         const auto generation = processor.getParameterSurfaceGeneration();
         if (generation != meterGeneration)
@@ -410,31 +883,33 @@ private:
         const auto* selected = state.parameters.empty() ? nullptr
             : preferred != state.parameters.end() ? &*preferred : &state.parameters.front();
         const auto id = selected != nullptr ? selected->id : std::string {};
-        if (state.generation != primaryGeneration || id != primaryId)
+        if (! primaryBindingKnown || state.generation != primaryGeneration || id != primaryId)
         {
+            juce::Component::SafePointer<DandrumNativeEditor> safeThis (this);
             endPrimaryGesture();
+            if (safeThis == nullptr)
+                return;
+            primaryBindingKnown = true;
             primaryGeneration = state.generation;
             primaryId = id;
             const auto label = selected != nullptr
                 ? juce::String (selected->id == "amp.release_ms" ? "RELEASE"
                     : selected->name.empty() ? selected->id : selected->name)
                 : juce::String ("NO PUBLIC CONTROL");
-            primaryLabel.setText (label, juce::dontSendNotification);
-            primaryKnob.setName (label);
-            primaryKnob.setEnabled (selected != nullptr);
-            primaryKnob.setDoubleClickReturnValue (false, 0.0);
+            primaryKnob.setCaption (label);
+            std::optional<InstrumentUiDocument::Parameter> descriptor;
             if (const auto document = processor.getPreparedUiDocument();
                 document && document->generation == primaryGeneration)
                 for (const auto& parameter : document->parameters)
                     if (parameter.id == primaryId)
                     {
-                        primaryKnob.setDoubleClickReturnValue (
-                            true, parameter.normalisedDefaultValue);
+                        descriptor = parameter;
                         break;
                     }
+            primaryKnob.setPreparedParameter (std::move (descriptor), primaryGeneration);
         }
         if (selected != nullptr && dragState == DragState::idle)
-            primaryKnob.setValue (selected->normalisedValue, juce::dontSendNotification);
+            primaryKnob.observeValue (selected->normalisedValue);
     }
 
     void beginPrimaryGesture()
@@ -444,31 +919,36 @@ private:
         dragState = DragState::rejected;
         dragGeneration = primaryGeneration;
         dragId = primaryId;
-        if (processor.uiCommands().beginGesture (
-                { dragGeneration, dragId, meterSession }).status
-            == InstrumentUiCommandStatus::accepted)
-            dragState = DragState::active;
+        juce::Component::SafePointer<DandrumNativeEditor> safeThis (this);
+        const auto reply = processor.uiCommands().beginGesture (
+            { dragGeneration, dragId, meterSession });
+        if (safeThis != nullptr && reply.status == InstrumentUiCommandStatus::accepted)
+            safeThis->dragState = DragState::active;
     }
 
     void writePrimaryValue()
     {
         if (primaryId.empty() || dragState == DragState::rejected)
             return;
+        juce::Component::SafePointer<DandrumNativeEditor> safeThis (this);
         const auto reply = processor.uiCommands().setParameter (
             { primaryGeneration, primaryId, primaryKnob.getValue(),
               dragState == DragState::active ? meterSession : 0 });
-        if (reply.status != InstrumentUiCommandStatus::accepted)
+        if (safeThis != nullptr && reply.status != InstrumentUiCommandStatus::accepted)
         {
             endPrimaryGesture();
-            refreshPrimaryKnob();
+            if (safeThis != nullptr)
+                safeThis->refreshPrimaryKnob();
         }
     }
 
     void endPrimaryGesture()
     {
-        if (dragState == DragState::active)
-            processor.uiCommands().endGesture ({ dragGeneration, dragId, meterSession });
+        const auto active = dragState == DragState::active;
+        const InstrumentUiGestureRequest request { dragGeneration, dragId, meterSession };
         dragState = DragState::idle;
+        if (active)
+            processor.uiCommands().endGesture (request);
     }
 
     DandrumAudioProcessor& processor;
@@ -480,11 +960,11 @@ private:
     std::uint32_t dragGeneration = 0;
     std::string primaryId;
     std::string dragId;
+    bool primaryBindingKnown = false;
     DragState dragState = DragState::idle;
     juce::Label title;
     juce::Label summary;
-    juce::Label primaryLabel;
-    juce::Slider primaryKnob;
+    NativeHostKnob primaryKnob;
     NativeMasterMeter meter;
     NativePreparedWaveform waveform;
 };

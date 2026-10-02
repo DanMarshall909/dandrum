@@ -102,6 +102,10 @@ target_include_directories(dandrum-sound-lab-controller-test PRIVATE src/juce-wr
 target_link_libraries(dandrum-sound-lab-controller-test PRIVATE dandrum_engine dl pthread m)
 add_test(NAME sound-lab-controller COMMAND dandrum-sound-lab-controller-test)
 
+add_executable(dandrum-plugin-ui-command-test tests/cpp/PluginUiCommandTest.cpp)
+target_include_directories(dandrum-plugin-ui-command-test PRIVATE src/juce-plugin)
+add_test(NAME cxx-plugin-ui-command COMMAND dandrum-plugin-ui-command-test)
+
 add_executable(dandrum-plugin-meter-capture-test tests/cpp/PluginMeterCaptureTest.cpp)
 target_include_directories(dandrum-plugin-meter-capture-test PRIVATE src/juce-plugin)
 add_test(NAME cxx-plugin-meter-capture COMMAND dandrum-plugin-meter-capture-test)
@@ -174,7 +178,16 @@ target_link_libraries(dandrum-plugin-web-adapter INTERFACE juce::juce_gui_extra)
 add_library(dandrum-plugin-native-editor INTERFACE)
 target_sources(dandrum-plugin-native-editor INTERFACE
     ${CMAKE_CURRENT_SOURCE_DIR}/src/juce-plugin/PluginNativeEditor.cpp)
-target_link_libraries(dandrum-plugin-native-editor INTERFACE juce::juce_gui_basics)
+juce_add_binary_data(dandrum-native-knob-fonts
+    NAMESPACE NativeKnobFontBinaryData
+    HEADER_NAME NativeKnobFontBinaryData.h
+    SOURCES
+        ui/design-system/fonts/BarlowSemiCondensed/BarlowSemiCondensed-SemiBold.ttf
+        ui/design-system/fonts/JetBrainsMono/JetBrainsMono-Medium.ttf
+        ui/design-system/fonts/BarlowSemiCondensed/OFL.txt
+        ui/design-system/fonts/JetBrainsMono/OFL.txt)
+target_link_libraries(dandrum-plugin-native-editor INTERFACE
+    juce::juce_gui_basics dandrum-native-knob-fonts)
 
 juce_add_binary_data(dandrum-tb303-instrument-resources
     NAMESPACE Tb303InstrumentBinaryData
@@ -264,7 +277,8 @@ endif()
 if(DANDRUM_NATIVE_ONLY)
     add_executable(dandrum-native-editor-smoke-test tests/cpp/NativeEditorSmokeTest.cpp)
     target_include_directories(dandrum-native-editor-smoke-test PRIVATE src/juce-wrapper src/juce-plugin)
-    target_compile_definitions(dandrum-native-editor-smoke-test PRIVATE JUCE_USE_CURL=0 JUCE_WEB_BROWSER=0)
+    target_compile_definitions(dandrum-native-editor-smoke-test PRIVATE
+        JUCE_USE_CURL=0 JUCE_WEB_BROWSER=0 JUCE_MODAL_LOOPS_PERMITTED=1)
     target_link_libraries(dandrum-native-editor-smoke-test
         PRIVATE dandrum-plugin dandrum_engine juce::juce_audio_basics juce::juce_audio_processors
             juce::juce_audio_utils juce::juce_gui_basics
