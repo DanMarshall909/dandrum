@@ -5,6 +5,8 @@ import { createNoteAudition } from "./note-audition.mjs";
 import { createMeterTransport } from "../../shared/meter-transport.mjs";
 import { meterView } from "../../shared/meter-view.mjs";
 import "./styles.css";
+import "../../shared/design-tokens.css";
+import "../../shared/design-fonts.css";
 
 type Parameter = { id: string; name?: string; value: number };
 type HostState = { generation: number; sequence: number; parameters: Parameter[] };
@@ -277,7 +279,9 @@ function MasterMeter({ generation }: { generation: number | null }) {
 
 function App() {
   const frame = useRef<HTMLDivElement>(null);
+  const machine = useRef<HTMLElement>(null);
   const [scale, setScale] = useState(1);
+  const [panelHeight, setPanelHeight] = useState(690);
   const { state, error, command, reportError } = useHostParameters();
   const [activeKeys, setActiveKeys] = useState<number[]>([]);
   const lastAuditionGeneration = useRef<number | null>(null);
@@ -304,10 +308,14 @@ function App() {
 
   useEffect(() => {
     if (!frame.current) return;
-    const update = () => setScale(Math.min(1.12, frame.current!.clientWidth / 1120));
+    const update = () => {
+      setScale(Math.min(1.12, frame.current!.clientWidth / 1120));
+      if (machine.current) setPanelHeight(machine.current.offsetHeight);
+    };
     update();
     const observer = new ResizeObserver(update);
     observer.observe(frame.current);
+    if (machine.current) observer.observe(machine.current);
     return () => observer.disconnect();
   }, []);
 
@@ -335,8 +343,8 @@ function App() {
   }, [state?.generation, audition]);
 
   return <main className="stage">
-    <div className="machine-frame" ref={frame} style={{ height: `${690 * scale}px` }}>
-      <section className="machine" aria-label="Dandrum TB-303 bass synthesizer" style={{ transform: `scale(${scale})` }}>
+    <div className="machine-frame" ref={frame} style={{ height: `${panelHeight * scale}px` }}>
+      <section className="machine" ref={machine} aria-label="Dandrum TB-303 bass synthesizer" style={{ transform: `scale(${scale})` }}>
         <div className="top-shadow" />
         <header className="brand-row">
           <div className="brand"><span className="roland">DANDRUM</span><span className="computer-controlled">BASS SYNTHESIZER</span></div>

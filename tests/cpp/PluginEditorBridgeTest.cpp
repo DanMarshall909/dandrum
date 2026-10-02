@@ -1,4 +1,5 @@
 #include "PluginEditor.h"
+#include "PluginWebRuntimeCheck.h"
 
 #include <algorithm>
 #include <array>
@@ -16,6 +17,14 @@
 
 struct PluginEditorBridgeTestProbe
 {
+    static juce::WebBrowserComponent::Options runtimeOptions (DandrumAudioProcessorEditor& editor)
+    {
+        return editor.createBrowserOptions();
+    }
+    static void publishRuntimeUpdates (DandrumAudioProcessorEditor& editor, juce::WebBrowserComponent& browser)
+    {
+        editor.hostBridge.publishParameterUpdates (browser);
+    }
     static juce::var invoke (DandrumAudioProcessorEditor& editor,
                              const juce::String& command,
                              const juce::Array<juce::var>& arguments = {})
@@ -142,11 +151,15 @@ juce::var findParameter (const juce::var& snapshot, const juce::String& id)
 }
 }
 
-int main()
+int main (int argc, char** argv)
 {
    #if JUCE_LINUX
     std::signal (SIGPIPE, SIG_IGN);
    #endif
+
+    if (argc >= 2 && (juce::String (argv[1]) == "--web-runtime"
+                     || juce::String (argv[1]) == "--juce-gtkwebkitfork-child"))
+        return packagedWebRuntime::main<false, PluginEditorBridgeTestProbe> (argc, argv);
 
     try
     {

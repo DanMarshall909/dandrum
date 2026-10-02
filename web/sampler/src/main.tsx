@@ -9,6 +9,8 @@ import { meterView } from '../../shared/meter-view.mjs';
 import { createWaveformTransport } from '../../shared/waveform-transport.mjs';
 import { preparedWaveformView, paintPreparedWaveform } from '../../shared/prepared-waveform.mjs';
 import './styles.css';
+import '../../shared/design-tokens.css';
+import '../../shared/design-fonts.css';
 
 type HostParameter = { id: string; name: string; value: number };
 type HostState = { generation: number; sequence: number; parameters: HostParameter[] };

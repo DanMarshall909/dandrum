@@ -20,6 +20,7 @@ tooling is retained as supplied and was not executed during import.
 - [Native component specifications](reference/handoff/component-specs.md)
 - [Prepared KeyMap, LayerStack and OutputBusses specifications](native-display-specs.md)
 - [Maintained production tokens and font provenance](../../ui/design-system/README.md)
+- [Compiled React font packaging and WebKit verification](react-font-packaging.md)
 - [CSS tokens](reference/tokens/colors.css) and [C++ token reference](reference/handoff/DandrumTokens.h)
 - [Asset manifest](reference/handoff/asset-manifest.md) and [SVG icons](reference/assets/icons/manifest.json)
 - [Main sampler](reference/ui_kits/das-sampler/index.html), [compact sampler](reference/ui_kits/das-sampler/compact.html), [slices](reference/ui_kits/das-sampler/slices.html), [modulation menu](reference/ui_kits/das-sampler/modulation-menu.html), [missing sample](reference/ui_kits/das-sampler/missing-asset.html) and [component reuse](reference/ui_kits/das-sampler/reuse.html)
@@ -88,14 +89,16 @@ python3 -m http.server 8080 --directory docs/design-system/reference
 ```
 
 The reference export includes no font binaries or licenses. Pinned unmodified
-font files and license notices are now retained under
-[ui/design-system/fonts](../../ui/design-system/fonts/); production renderers
-still need to package them locally with compiled executable assets. The imported
+font files and license notices are retained under
+[ui/design-system/fonts](../../ui/design-system/fonts/). The sampler and TB-303
+React bundles now embed all eight font faces and retain the original notices.
+[Font packaging verification](react-font-packaging.md) records the offline
+WebKit checks; native font packaging remains pending. The imported
 CSS/C++ sheets remain reference outputs. The maintained production generator and
 source live in [ui/design-system](../../ui/design-system/README.md), and the
 [prepared display specifications](native-display-specs.md) supplement the
-original native handoff. Renderer adaptations and offline runtime verification
-remain implementation tasks in the UI plan.
+original native handoff. Supplied SVG icon integration, component adaptations
+and full plugin/DAW runtime verification remain implementation tasks in the UI plan.
 
 This import was checked for ZIP integrity, byte identity and local HTML asset
 links. It does not establish rendered preview quality, native build success or

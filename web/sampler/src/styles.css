@@ -1,11 +1,12 @@
-:root{font-family:Inter,Arial,sans-serif;color:#e4eee6;background:#171a18;font-synthesis:none}
+:root{font-family:var(--font-ui);color:#e4eee6;background:#171a18;font-synthesis:none}
 *{box-sizing:border-box}
 body{margin:0;min-width:320px;background:#171a18}
 button,input{font:inherit}
 button:focus-visible,input:focus-visible{outline:2px solid #7ce0aa;outline-offset:2px}
 .sampler{max-width:1280px;margin:auto;padding:20px;display:grid;gap:16px}
 .top{display:flex;justify-content:space-between;align-items:end;gap:18px;padding:0 2px 16px;border-bottom:1px solid #66796d}
-.top h1{font-size:clamp(28px,4vw,48px);line-height:1;margin:6px 0}
+.top h1{font-family:var(--font-display);font-size:clamp(28px,4vw,48px);line-height:1;margin:6px 0}
+.control-value,.generation{font-family:var(--font-value)}
 .top p{margin:0;color:#9eafa2;font-size:12px}
 .top .eyebrow{color:#7ce0aa;font-size:11px;font-weight:800;letter-spacing:2px}
 .generation{padding:6px 9px;border:1px solid #66796d;border-radius:4px;color:#a9c1b0;font-size:11px;white-space:nowrap}

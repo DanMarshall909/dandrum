@@ -1,14 +1,28 @@
 #include "PluginProcessor.h"
+#include "PluginWebRuntimeCheck.h"
 
 #include <algorithm>
 #include <array>
 #include <atomic>
 #include <chrono>
+#include <csignal>
 #include <cmath>
 #include <filesystem>
 #include <iostream>
 #include <memory>
 #include <thread>
+
+struct PluginEditorBridgeTestProbe
+{
+    static juce::WebBrowserComponent::Options runtimeOptions (DandrumAudioProcessorEditor& editor)
+    {
+        return editor.createBrowserOptions();
+    }
+    static void publishRuntimeUpdates (DandrumAudioProcessorEditor& editor, juce::WebBrowserComponent& browser)
+    {
+        editor.hostBridge.publishParameterUpdates (browser);
+    }
+};
 
 namespace
 {
@@ -75,8 +89,16 @@ bool modulatedHit (const char* id, float normalised, int note,
 }
 }
 
-int main()
+int main (int argc, char** argv)
 {
+    if (argc >= 2 && (juce::String (argv[1]) == "--web-runtime"
+                     || juce::String (argv[1]) == "--juce-gtkwebkitfork-child"))
+    {
+       #if JUCE_LINUX
+        std::signal (SIGPIPE, SIG_IGN);
+       #endif
+        return packagedWebRuntime::main<true, PluginEditorBridgeTestProbe> (argc, argv);
+    }
     auto sampler = makeSampler();
     const auto packagedRoot = juce::File::getSpecialLocation (juce::File::userApplicationDataDirectory)
                                   .getChildFile ("Dandrum/Sampler Example");

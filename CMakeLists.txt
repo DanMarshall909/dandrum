@@ -291,6 +291,11 @@ if(NOT DANDRUM_NATIVE_ONLY)
         PUBLIC juce::juce_recommended_config_flags juce::juce_recommended_lto_flags juce::juce_recommended_warning_flags)
     add_test(NAME cxx-plugin-editor-bridge COMMAND dandrum-plugin-editor-bridge-test)
 
+    add_test(NAME tb303-web-runtime COMMAND dandrum-plugin-editor-bridge-test --web-runtime)
+    add_test(NAME sampler-web-runtime COMMAND dandrum-sampler-plugin-host-test --web-runtime)
+    set_tests_properties(tb303-web-runtime sampler-web-runtime PROPERTIES
+        LABELS "runtime" SKIP_RETURN_CODE 77 TIMEOUT 90 RUN_SERIAL TRUE)
+
     add_executable(dandrum-plugin-demo-configuration-test tests/cpp/PluginDemoConfigurationTest.cpp)
     target_include_directories(dandrum-plugin-demo-configuration-test PRIVATE src/juce-wrapper src/juce-plugin)
     target_compile_definitions(dandrum-plugin-demo-configuration-test PRIVATE JUCE_USE_CURL=0 JUCE_WEB_BROWSER=1 JUCE_USE_WIN_WEBVIEW2=1)
@@ -328,6 +333,7 @@ if(NOT DANDRUM_NATIVE_ONLY)
     add_test(NAME sampler-react-gestures COMMAND ${DANDRUM_NODE_EXECUTABLE} --test ${CMAKE_CURRENT_SOURCE_DIR}/web/sampler/src/parameter-gesture.test.mjs)
     add_test(NAME design-token-generation COMMAND ${DANDRUM_NODE_EXECUTABLE} --test ${CMAKE_CURRENT_SOURCE_DIR}/tests/js/DesignTokensTest.mjs)
     add_test(NAME design-tokens-current COMMAND ${DANDRUM_NODE_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/scripts/generate-ui-tokens.mjs --check)
+    add_test(NAME react-asset-packaging COMMAND ${DANDRUM_NODE_EXECUTABLE} --test ${CMAKE_CURRENT_SOURCE_DIR}/tests/js/ReactAssetsTest.mjs)
 
     add_executable(dandrum-plugin-file-watch-reload-test tests/cpp/PluginFileWatchReloadTest.cpp)
     target_include_directories(dandrum-plugin-file-watch-reload-test PRIVATE src/juce-wrapper src/juce-plugin)
