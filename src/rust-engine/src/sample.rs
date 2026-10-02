@@ -16,6 +16,16 @@ pub struct LoadedSample {
     content_revision: [u8; 32],
 }
 
+pub const MAX_WAVEFORM_BUCKETS: usize = 4096;
+
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct WaveformBucket {
+    pub start_frame: u64,
+    pub end_frame: u64,
+    pub minimum: f32,
+    pub maximum: f32,
+}
+
 #[derive(Clone, Debug, PartialEq)]
 pub struct PreparedSamplerAssets {
     samples_by_module: BTreeMap<String, LoadedSample>,
@@ -137,6 +147,50 @@ impl LoadedSample {
     pub fn content_revision(&self) -> &[u8; 32] {
         &self.content_revision
     }
+
+    pub fn reduce_waveform(
+        &self,
+        channel: u16,
+        start_frame: u64,
+        end_frame: u64,
+        bucket_count: usize,
+    ) -> Option<Vec<WaveformBucket>> {
+        let start = usize::try_from(start_frame).ok()?;
+        let end = usize::try_from(end_frame).ok()?;
+        if channel >= self.source_channel_count
+            || start >= end
+            || end > self.frames.len()
+            || bucket_count == 0
+            || bucket_count > MAX_WAVEFORM_BUCKETS
+            || bucket_count > end - start
+        {
+            return None;
+        }
+        let span = end - start;
+        let mut buckets = Vec::with_capacity(bucket_count);
+        for index in 0..bucket_count {
+            let begin = start + (index as u128 * span as u128 / bucket_count as u128) as usize;
+            let finish =
+                start + ((index + 1) as u128 * span as u128 / bucket_count as u128) as usize;
+            let mut minimum = f32::INFINITY;
+            let mut maximum = f32::NEG_INFINITY;
+            for frame in begin..finish {
+                let value = self.source_sample(channel, frame)?;
+                if !value.is_finite() {
+                    return None;
+                }
+                minimum = minimum.min(value);
+                maximum = maximum.max(value);
+            }
+            buckets.push(WaveformBucket {
+                start_frame: begin as u64,
+                end_frame: finish as u64,
+                minimum,
+                maximum,
+            });
+        }
+        Some(buckets)
+    }
 }
 
 impl PreparedSamplerAssets {
@@ -191,6 +245,41 @@ mod tests {
     use crate::wav::write_wav_stereo_i16;
     use std::fs;
     use std::path::PathBuf;
+
+    #[test]
+    fn waveform_reduction_preserves_narrow_signed_transients_and_source_offsets() {
+        let sample = LoadedSample::new(48_000, vec![0.0, -0.75, 0.5, 0.0, 0.25]);
+        let whole = sample.reduce_waveform(0, 0, 4, 1).unwrap();
+        assert_eq!((whole[0].start_frame, whole[0].end_frame), (0, 4));
+        assert_eq!((whole[0].minimum, whole[0].maximum), (-0.75, 0.5));
+
+        let selected = sample.reduce_waveform(0, 1, 5, 2).unwrap();
+        assert_eq!((selected[0].start_frame, selected[0].end_frame), (1, 3));
+        assert_eq!((selected[0].minimum, selected[0].maximum), (-0.75, 0.5));
+        assert_eq!((selected[1].start_frame, selected[1].end_frame), (3, 5));
+        assert_eq!((selected[1].minimum, selected[1].maximum), (0.0, 0.25));
+    }
+
+    #[test]
+    fn waveform_reduction_rejects_invalid_or_nonfinite_requests() {
+        let sample = LoadedSample::new(48_000, vec![0.0, f32::NAN]);
+        assert!(sample.reduce_waveform(0, 0, 2, 1).is_none());
+        assert!(sample.reduce_waveform(0, 0, 1, 0).is_none());
+        assert!(sample.reduce_waveform(0, 0, 1, 2).is_none());
+        assert!(sample.reduce_waveform(1, 0, 1, 1).is_none());
+        assert!(sample.reduce_waveform(0, 1, 1, 1).is_none());
+        assert!(sample.reduce_waveform(0, 0, 3, 1).is_none());
+        let long = LoadedSample::new(48_000, vec![0.0; MAX_WAVEFORM_BUCKETS + 1]);
+        assert!(
+            long.reduce_waveform(
+                0,
+                0,
+                (MAX_WAVEFORM_BUCKETS + 1) as u64,
+                MAX_WAVEFORM_BUCKETS + 1
+            )
+            .is_none()
+        );
+    }
 
     #[test]
     fn loads_readable_pcm_wav_sample_asset() {

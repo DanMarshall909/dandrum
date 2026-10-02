@@ -404,6 +404,10 @@ impl PreparedSampleSource {
         self.resource.sample()
     }
 
+    pub(crate) fn retained_sample(&self) -> Arc<LoadedSample> {
+        self.resource.shared_sample()
+    }
+
     pub fn declaration(&self) -> &SampleSource {
         &self.declaration
     }

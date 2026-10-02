@@ -7,6 +7,7 @@ extern "C"
 {
 struct DandrumKernelInstrument;
 struct DandrumKernelUiSnapshot;
+struct DandrumKernelWaveformSource;
 struct DandrumRealtimeEventQueue;
 struct DandrumSoundFixtureRender;
 struct DandrumSoundMatch;
@@ -49,8 +50,8 @@ struct DandrumKernelOutputBusView
     std::size_t busIndex { 0 };
 };
 
-// Views are UTF-8 and point into an independently owned UI snapshot. They
-// remain valid after the engine is destroyed, until the snapshot is destroyed.
+// Views are UTF-8 and point into an independently owned UI snapshot or
+// waveform source handle. They remain valid until that owner is destroyed.
 struct DandrumKernelStringView
 {
     const char* data;
@@ -62,6 +63,21 @@ struct DandrumKernelUiSource
     std::uint32_t sampleRateHz;
     std::uint16_t channelCount;
     std::uint64_t frameCount;
+};
+struct DandrumKernelWaveformSourceInfo
+{
+    DandrumKernelStringView sourceId;
+    std::uint32_t sampleRateHz;
+    std::uint16_t channelCount;
+    std::uint64_t frameCount;
+    std::uint8_t contentRevision[32];
+};
+struct DandrumKernelWaveformBucket
+{
+    std::uint64_t startFrame;
+    std::uint64_t endFrame;
+    float minimum;
+    float maximum;
 };
 struct DandrumKernelUiRegion
 {
@@ -127,6 +143,18 @@ void dandrum_kernel_destroy (DandrumKernelInstrument* instrument);
 // snapshot copies metadata, never decoded audio, and is used off the callback.
 DandrumKernelUiSnapshot* dandrum_kernel_ui_snapshot_create (const DandrumKernelInstrument* instrument);
 void dandrum_kernel_ui_snapshot_destroy (DandrumKernelUiSnapshot* snapshot);
+// Create while the engine is protected against replacement. The retained
+// source is independent of the engine and must be reduced/destroyed off audio.
+DandrumKernelWaveformSource* dandrum_kernel_waveform_source_create (
+    const DandrumKernelInstrument* instrument, std::size_t sourceIndex);
+void dandrum_kernel_waveform_source_destroy (DandrumKernelWaveformSource* source);
+bool dandrum_kernel_waveform_source_info (const DandrumKernelWaveformSource* source,
+                                         DandrumKernelWaveformSourceInfo* output);
+// output must hold bucketCount elements; invalid requests leave it untouched.
+bool dandrum_kernel_waveform_reduce (const DandrumKernelWaveformSource* source,
+                                    std::uint16_t channel, std::uint64_t startFrame,
+                                    std::uint64_t endFrame, DandrumKernelWaveformBucket* output,
+                                    std::size_t bucketCount);
 std::size_t dandrum_kernel_ui_source_count (const DandrumKernelUiSnapshot* snapshot);
 bool dandrum_kernel_ui_source (const DandrumKernelUiSnapshot* snapshot, std::size_t index,
                                DandrumKernelUiSource* output);

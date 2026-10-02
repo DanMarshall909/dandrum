@@ -1,6 +1,7 @@
 use std::collections::BTreeMap;
 use std::ffi::{CStr, c_char};
 use std::path::PathBuf;
+use std::sync::Arc;
 
 use crate::preparation;
 use crate::realtime;
@@ -9,7 +10,7 @@ use crate::graph::{PortDirection, SignalType};
 use crate::graph_processor::RealtimeGraphProcessor;
 use crate::kernel::{ChannelCount, PortMetadata};
 use crate::patch::RenderSettings;
-use crate::sample::PreparedSamplerAssets;
+use crate::sample::{LoadedSample, PreparedSamplerAssets};
 
 macro_rules! mut_or {
     ($ptr:expr, $binding:ident, $ret:expr) => {
@@ -93,6 +94,13 @@ pub struct DandrumKernelUiSnapshot {
     public_control_groups: Vec<Option<u8>>,
 }
 
+/// Retains one prepared source independently of an instrument replacement.
+/// Create, reduce and destroy only away from the audio callback.
+pub struct DandrumKernelWaveformSource {
+    source_id: String,
+    sample: Arc<LoadedSample>,
+}
+
 struct KernelUiSource {
     declaration: crate::kernel::document::SampleSource,
     sample_rate_hz: u32,
@@ -112,7 +120,7 @@ struct KernelUiZone {
     region_index: usize,
 }
 
-/// UTF-8 bytes owned by a DandrumKernelUiSnapshot, valid until it is destroyed.
+/// UTF-8 bytes owned by the returned snapshot or waveform source handle.
 #[repr(C)]
 #[derive(Clone, Copy)]
 pub struct DandrumKernelStringView {
@@ -126,6 +134,24 @@ pub struct DandrumKernelUiSource {
     pub sample_rate_hz: u32,
     pub channel_count: u16,
     pub frame_count: u64,
+}
+
+#[repr(C)]
+pub struct DandrumKernelWaveformSourceInfo {
+    pub source_id: DandrumKernelStringView,
+    pub sample_rate_hz: u32,
+    pub channel_count: u16,
+    pub frame_count: u64,
+    pub content_revision: [u8; 32],
+}
+
+#[repr(C)]
+#[derive(Clone, Copy, Default)]
+pub struct DandrumKernelWaveformBucket {
+    pub start_frame: u64,
+    pub end_frame: u64,
+    pub minimum: f32,
+    pub maximum: f32,
 }
 
 #[repr(C)]
@@ -504,6 +530,84 @@ pub unsafe extern "C" fn dandrum_kernel_ui_snapshot_destroy(
     if !snapshot.is_null() {
         drop(unsafe { Box::from_raw(snapshot) });
     }
+}
+
+/// The caller protects `engine` against replacement during this off-audio call.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn dandrum_kernel_waveform_source_create(
+    engine: *const DandrumKernelInstrument,
+    source_index: usize,
+) -> *mut DandrumKernelWaveformSource {
+    ref_or!(engine, engine, std::ptr::null_mut());
+    let Some(source) = engine.prepared.sample_assets().sources().get(source_index) else {
+        return std::ptr::null_mut();
+    };
+    Box::into_raw(Box::new(DandrumKernelWaveformSource {
+        source_id: source.id().to_owned(),
+        sample: source.retained_sample(),
+    }))
+}
+
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn dandrum_kernel_waveform_source_destroy(
+    source: *mut DandrumKernelWaveformSource,
+) {
+    if !source.is_null() {
+        drop(unsafe { Box::from_raw(source) });
+    }
+}
+
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn dandrum_kernel_waveform_source_info(
+    source: *const DandrumKernelWaveformSource,
+    output: *mut DandrumKernelWaveformSourceInfo,
+) -> bool {
+    ref_or!(source, source, false);
+    mut_or!(output, output, false);
+    *output = DandrumKernelWaveformSourceInfo {
+        source_id: ui_string_view(&source.source_id),
+        sample_rate_hz: source.sample.sample_rate_hz(),
+        channel_count: source.sample.source_channel_count(),
+        frame_count: source.sample.frame_count() as u64,
+        content_revision: *source.sample.content_revision(),
+    };
+    true
+}
+
+/// `output` must point to `bucket_count` writable elements. Invalid requests
+/// leave the caller buffer untouched.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn dandrum_kernel_waveform_reduce(
+    source: *const DandrumKernelWaveformSource,
+    channel: u16,
+    start_frame: u64,
+    end_frame: u64,
+    output: *mut DandrumKernelWaveformBucket,
+    bucket_count: usize,
+) -> bool {
+    ref_or!(source, source, false);
+    if output.is_null() {
+        return false;
+    }
+    let Some(buckets) =
+        source
+            .sample
+            .reduce_waveform(channel, start_frame, end_frame, bucket_count)
+    else {
+        return false;
+    };
+    for (destination, bucket) in unsafe { std::slice::from_raw_parts_mut(output, bucket_count) }
+        .iter_mut()
+        .zip(buckets)
+    {
+        *destination = DandrumKernelWaveformBucket {
+            start_frame: bucket.start_frame,
+            end_frame: bucket.end_frame,
+            minimum: bucket.minimum,
+            maximum: bucket.maximum,
+        };
+    }
+    true
 }
 
 #[unsafe(no_mangle)]
@@ -2136,6 +2240,75 @@ modules:
         assert!(!unsafe { dandrum_kernel_ui_slice(snapshot, 0, 1, std::ptr::null_mut()) });
         assert!(!unsafe { dandrum_kernel_ui_zone(snapshot, 0, 1, std::ptr::null_mut()) });
         unsafe { dandrum_kernel_ui_snapshot_destroy(snapshot) };
+    }
+
+    #[test]
+    fn retained_waveform_source_reduces_signed_channels_after_engine_release() {
+        let directory = tempfile::tempdir().unwrap();
+        let wav = directory.path().join("source.wav");
+        crate::wav::write_wav_stereo_i16(
+            std::fs::File::create(&wav).unwrap(),
+            48_000,
+            &[0.0, -0.75, 0.5, 0.0],
+            &[0.0, 0.25, -0.25, 0.0],
+        )
+        .unwrap();
+        let patch = directory.path().join("waveform.yaml");
+        std::fs::write(&patch, "metadata: { name: waveform }\nassets:\n  sample_sources:\n    - id: source\n      path: source.wav\n      regions:\n        - { id: full, start_frame: 0, end_frame: 4 }\nports:\n  - { name: master, direction: output, signal: audio, channels: 1, maps_from: osc.audio }\nmodules:\n  - { id: osc, type: oscillator }\n").unwrap();
+        let path = std::ffi::CString::new(patch.to_str().unwrap()).unwrap();
+        let master = std::ffi::CString::new("master").unwrap();
+        let bus = DandrumKernelBusDeclaration {
+            name: master.as_ptr(),
+            direction: 2,
+            channel_count: 1,
+        };
+        let engine = unsafe { dandrum_kernel_prepare_file(path.as_ptr(), 48_000, 8, &bus, 1) };
+        assert!(!engine.is_null());
+        assert!(unsafe { dandrum_kernel_waveform_source_create(engine, 1) }.is_null());
+        let source = unsafe { dandrum_kernel_waveform_source_create(engine, 0) };
+        assert!(!source.is_null());
+        unsafe { dandrum_kernel_destroy(engine) };
+        std::fs::remove_file(wav).unwrap();
+
+        let mut info = std::mem::MaybeUninit::<DandrumKernelWaveformSourceInfo>::uninit();
+        assert!(unsafe { dandrum_kernel_waveform_source_info(source, info.as_mut_ptr()) });
+        let info = unsafe { info.assume_init() };
+        assert_eq!(ui_text(info.source_id), "source");
+        assert_eq!(
+            (info.sample_rate_hz, info.channel_count, info.frame_count),
+            (48_000, 2, 4)
+        );
+        assert_ne!(info.content_revision, [0; 32]);
+
+        let mut bucket = [DandrumKernelWaveformBucket::default(); 1];
+        assert!(unsafe { dandrum_kernel_waveform_reduce(source, 0, 0, 4, bucket.as_mut_ptr(), 1) });
+        assert_eq!((bucket[0].start_frame, bucket[0].end_frame), (0, 4));
+        assert!((bucket[0].minimum + 0.75).abs() < 0.0001);
+        assert!((bucket[0].maximum - 0.5).abs() < 0.0001);
+        assert!(unsafe { dandrum_kernel_waveform_reduce(source, 1, 0, 4, bucket.as_mut_ptr(), 1) });
+        assert!((bucket[0].minimum + 0.25).abs() < 0.0001);
+        assert!((bucket[0].maximum - 0.25).abs() < 0.0001);
+        let mut split = [DandrumKernelWaveformBucket::default(); 2];
+        assert!(unsafe { dandrum_kernel_waveform_reduce(source, 0, 0, 4, split.as_mut_ptr(), 2) });
+        assert_eq!((split[0].start_frame, split[0].end_frame), (0, 2));
+        assert_eq!((split[1].start_frame, split[1].end_frame), (2, 4));
+        assert!((split[0].minimum + 0.75).abs() < 0.0001);
+        assert_eq!(split[0].maximum, 0.0);
+        assert_eq!(split[1].minimum, 0.0);
+        assert!((split[1].maximum - 0.5).abs() < 0.0001);
+        let prior = (bucket[0].minimum, bucket[0].maximum);
+        assert!(!unsafe {
+            dandrum_kernel_waveform_reduce(source, 2, 0, 4, bucket.as_mut_ptr(), 1)
+        });
+        assert!(!unsafe {
+            dandrum_kernel_waveform_reduce(source, 0, 0, 5, bucket.as_mut_ptr(), 1)
+        });
+        assert!(!unsafe {
+            dandrum_kernel_waveform_reduce(source, 0, 0, 4, std::ptr::null_mut(), 1)
+        });
+        assert_eq!((bucket[0].minimum, bucket[0].maximum), prior);
+        unsafe { dandrum_kernel_waveform_source_destroy(source) };
+        unsafe { dandrum_kernel_waveform_source_destroy(std::ptr::null_mut()) };
     }
 
     #[test]

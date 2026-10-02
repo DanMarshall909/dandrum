@@ -90,6 +90,11 @@ bool preparedMetadataSmoke()
         dandrum_kernel_ui_snapshot_create (engine.get()), &dandrum_kernel_ui_snapshot_destroy);
     std::unique_ptr<DandrumKernelUiSnapshot, decltype (&dandrum_kernel_ui_snapshot_destroy)> stalledSnapshot (
         dandrum_kernel_ui_snapshot_create (engine.get()), &dandrum_kernel_ui_snapshot_destroy);
+    std::unique_ptr<DandrumKernelWaveformSource, decltype (&dandrum_kernel_waveform_source_destroy)> waveform (
+        dandrum_kernel_waveform_source_create (engine.get(), 0),
+        &dandrum_kernel_waveform_source_destroy);
+    if (! waveform || dandrum_kernel_waveform_source_create (engine.get(), 1) != nullptr)
+        return false;
     std::promise<void> resumeReader;
     auto resume = resumeReader.get_future();
     std::atomic<bool> retainedValueWasValid { false };
@@ -108,6 +113,16 @@ bool preparedMetadataSmoke()
     reader.join();
     if (! retainedValueWasValid.load (std::memory_order_relaxed)
         || ! snapshot || dandrum_kernel_ui_source_count (snapshot.get()) != 1)
+        return false;
+    DandrumKernelWaveformSourceInfo waveformInfo {};
+    DandrumKernelWaveformBucket waveformBucket {};
+    if (! dandrum_kernel_waveform_source_info (waveform.get(), &waveformInfo)
+        || std::string (waveformInfo.sourceId.data, waveformInfo.sourceId.size) != "drums"
+        || waveformInfo.sampleRateHz != 48000 || waveformInfo.channelCount != 1
+        || waveformInfo.frameCount != 51000
+        || ! dandrum_kernel_waveform_reduce (waveform.get(), 0, 0, 1, &waveformBucket, 1)
+        || waveformBucket.startFrame != 0 || waveformBucket.endFrame != 1
+        || waveformBucket.minimum != -0.5f || waveformBucket.maximum != -0.5f)
         return false;
     DandrumKernelUiSource source {};
     DandrumKernelUiMap map {};
