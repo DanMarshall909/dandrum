@@ -310,6 +310,7 @@ if(NOT DANDRUM_NATIVE_ONLY)
     add_test(NAME meter-web-transport COMMAND ${DANDRUM_NODE_EXECUTABLE} --test ${CMAKE_CURRENT_SOURCE_DIR}/web/shared/meter-transport.test.mjs)
     add_test(NAME meter-web-view COMMAND ${DANDRUM_NODE_EXECUTABLE} --test ${CMAKE_CURRENT_SOURCE_DIR}/web/shared/meter-view.test.mjs)
     add_test(NAME prepared-waveform-web-view COMMAND ${DANDRUM_NODE_EXECUTABLE} --test ${CMAKE_CURRENT_SOURCE_DIR}/web/shared/prepared-waveform.test.mjs)
+    add_test(NAME prepared-waveform-web-transport COMMAND ${DANDRUM_NODE_EXECUTABLE} --test ${CMAKE_CURRENT_SOURCE_DIR}/web/shared/waveform-transport.test.mjs)
 
     add_executable(dandrum-plugin-file-watch-reload-test tests/cpp/PluginFileWatchReloadTest.cpp)
     target_include_directories(dandrum-plugin-file-watch-reload-test PRIVATE src/juce-wrapper src/juce-plugin)
