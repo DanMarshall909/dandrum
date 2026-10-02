@@ -67,12 +67,12 @@ compiled apps contain their required supplied geometry.
 
 ## Runtime evidence — Linux WebKit
 
-`tb303-web-runtime` and `sampler-web-runtime` instantiate actual processors and
-reuse the production editor's embedded resource provider and native function
-options. A separate visible test browser reports through an added test-only
-native function. The fixture publishes shared bridge parameter updates to that
-browser. This checks the compiled app and adapter; it does not exercise the
-original editor widget's complete lifecycle or a DAW.
+`tb303-web-runtime` and `sampler-web-runtime` use the shipped
+`createPluginFilter()` and `createEditor()` factories, show the original editor
+on the desktop and observe its existing browser. The production resource
+provider, native functions, ownership and 12 Hz timer remain in use. The test
+adds a page-local observation mailbox and polls it with one evaluation in flight;
+it does not create another browser or manually publish parameter updates.
 
 Each check:
 
@@ -81,19 +81,29 @@ Each check:
 - Verifies the UI/value font families and absence of alert errors.
 - Verifies visible supplied icons with the expected identities, view box,
   declared size, stroke, decorative accessibility and no keyboard focus.
-- Observes a processor parameter change to 0.37 in the rendered control.
-- Checks horizontal bounds at 1200×800 and 820×560 after React layout settles.
+- Starts with a distinct host value of 0.21, observes 0.37 at full size and
+  observes a fresh 0.63 update at compact size through the production timer.
+- Resizes the original editor and checks the exact 1200×800 and 820×560 viewport
+  dimensions plus horizontal bounds after React layout settles.
 - Checks that the compact TB-303 panel leaves its hint visible below it.
 
-The hint check failed with the fixed 690-pixel frame. The frame now measures
+The earlier hint check failed with the fixed 690-pixel frame. The frame now measures
 the panel's intrinsic height through its existing resize observer, including
 changes caused by font loading. The regression and subsequent screenshots pass.
 
-Two copied ELF executables also passed with both source checkouts hidden by
+The original-editor check was calibrated by temporarily stopping its production
+timer. Fonts and icons still loaded, then the named full-size host-update
+assertion failed. Restoring the source byte for byte, rebuilding and running the
+normal check passed. This demonstrates that the test depends on the real editor
+publication path; it is not a fix for missing production behavior.
+
+Two copied ELF executables using these original editors also passed with both source checkouts hidden by
 private bind mounts, fresh redirected application-data directories, and no
 network connectivity in a private network namespace. Their SHA-256 values
 matched the built executables before launch. The font load reports, zero exits,
-and screenshots were retained together. No development server was used.
+and full/compact screenshots were retained together. Both editors display the
+0.63 host value. The sampler still scrolls vertically; final component/layout
+adaptation remains pending. No development server was used.
 
 Full Web CTest passed **40/40**, including both runtime checks without skips.
 Native-only CTest passed **18/18** with browser support disabled and its Node
@@ -110,14 +120,21 @@ __EGL_VENDOR_LIBRARY_FILENAMES=/usr/share/glvnd/egl_vendor.d/50_mesa.json \
 ctest --test-dir build -L runtime --output-on-failure
 ```
 
+The Linux build uses system compiler/linker tools ahead of Homebrew in `PATH`.
+A verification command using Homebrew's linker failed to resolve system shared
+library dependencies; using `/usr/bin:/bin` first restored the successful build.
+
 Vendored Linux JUCE also truncates Unicode JSON in its IPC framing: it counts
 characters before copying UTF-8 bytes. An early evaluation diagnostic containing
-Unicode UI text was dropped and shifted its callback FIFO. The final harness
-uses ASCII report fields and native Promise IDs. Vendored JUCE was not changed;
+Unicode UI text was dropped and shifted its callback FIFO. The observation
+harness now returns synchronous JSON strings with every non-ASCII UTF-16 code
+unit escaped, and every evaluation has a completion callback. Vendored JUCE was not changed;
 Unicode bridge support remains an unresolved limitation.
 
-This evidence covers Linux WebKit font/icon loading and the shared parameter
-adapter. The original production editor's offline opening remains to verify
-before task 3.3 is closed. Native font/icon embedding, other WebView platforms, DAW audio/transport,
-meter delivery, note focus, reload ownership, supplied component fidelity and
-automatic structural rebuilding still require their owning implementation gates.
+This evidence covers offline opening of both original production editors,
+Linux WebKit font/icon loading and live host updates at both sizes. The factories
+run inside a JUCE test application; this does not load a VST3 bundle inside a DAW
+or prove the complete host/editor lifecycle. Native font/icon embedding, other
+WebView platforms, DAW audio/transport, meter delivery, note focus, reload
+ownership, supplied component fidelity and automatic structural rebuilding
+still require their owning implementation gates.

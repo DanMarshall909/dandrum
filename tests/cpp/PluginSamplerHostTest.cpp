@@ -14,13 +14,9 @@
 
 struct PluginEditorBridgeTestProbe
 {
-    static juce::WebBrowserComponent::Options runtimeOptions (DandrumAudioProcessorEditor& editor)
+    static juce::WebBrowserComponent& runtimeBrowser (DandrumAudioProcessorEditor& editor)
     {
-        return editor.createBrowserOptions();
-    }
-    static void publishRuntimeUpdates (DandrumAudioProcessorEditor& editor, juce::WebBrowserComponent& browser)
-    {
-        editor.hostBridge.publishParameterUpdates (browser);
+        return editor.browser;
     }
 };
 

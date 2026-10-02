@@ -4,7 +4,6 @@
 
 #include <algorithm>
 #include <cstdlib>
-#include <functional>
 #include <iostream>
 #include <memory>
 #include <stdexcept>
@@ -29,25 +28,30 @@ inline void require (bool condition, const juce::String& message)
     if (! condition) throw std::runtime_error (message.toStdString());
 }
 
-// Report through the native integration used by the production apps.
-// Unicode evaluation results can be truncated by vendored Linux JUCE's IPC
-// framing and misalign its callback FIFO. This report uses ASCII fields and
-// native Promise IDs. Full plugin and DAW lifecycle checks remain separate.
+// Observe the original production browser without replacing its Options or
+// native functions. Return ASCII JSON strings because Unicode evaluation
+// results can be truncated by vendored Linux JUCE's IPC character framing.
 constexpr auto runtimeScript = R"JS(
 (() => {
+  if (window.__dandrumPackagedRuntime) return;
+  window.__dandrumPackagedRuntime = [];
   const delay = () => new Promise(resolve => setTimeout(resolve, 25));
-  const waitFor = async predicate => {
+  const waitFor = async (predicate, failure) => {
     const deadline = Date.now() + 15000;
     while (!predicate()) {
-      if (Date.now() > deadline) throw Error('Runtime readiness timed out');
+      if (Date.now() > deadline) throw Error(failure);
       await delay();
     }
   };
+  const report = async (name, data) => {
+    if (window.__dandrumPackagedRuntime.length >= 4) throw Error('Runtime report capacity exceeded');
+    window.__dandrumPackagedRuntime.push([name, data]);
+  };
   const run = async () => {
     const native = window.__JUCE__.backend.getNativeFunction;
-    const report = native('reportPackagedRuntime');
     try {
-      await waitFor(() => document.querySelector('.control-value:not(:disabled),.knob-value:not(:disabled)'));
+      await waitFor(() => document.querySelector('.control-value:not(:disabled),.knob-value:not(:disabled)'),
+                    'Production editor controls did not become ready');
       const sampler = !!document.querySelector('.sampler');
       await document.fonts.ready;
       const faces = [
@@ -74,6 +78,7 @@ constexpr auto runtimeScript = R"JS(
         family: getComputedStyle(document.querySelector('main')).fontFamily,
         valueFamily: getComputedStyle(document.querySelector('.control-value,.knob-value')).fontFamily,
         resources: performance.getEntriesByType('resource').map(r => r.name.startsWith('data:') ? 'data:font' : r.name),
+        viewportWidth: innerWidth, viewportHeight: innerHeight,
         width: document.documentElement.clientWidth,
         scrollWidth: document.documentElement.scrollWidth,
         layout: ['html','body','.stage','.machine-frame','.machine'].map(selector => {
@@ -88,18 +93,25 @@ constexpr auto runtimeScript = R"JS(
       await waitFor(() => {
         const e = document.querySelector(selector);
         return e && Math.abs(Number(e.value ?? e.getAttribute('aria-valuenow')) - 0.37) < 0.001;
-      });
+      }, 'Production editor did not display the full-size host update');
       await report('hostValue', {});
-      await waitFor(() => document.documentElement.clientWidth > 0 && document.documentElement.clientWidth <= 820);
+      await waitFor(() => innerWidth === 820 && innerHeight === 560,
+                    'Production editor did not resize to the compact viewport');
       // Let ResizeObserver and React commit the layout at the new viewport size.
       await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
       await report('compact', {
         icons: inspectIcons(),
+        viewportWidth: innerWidth, viewportHeight: innerHeight,
         hintClear: sampler || document.querySelector('.hint').getBoundingClientRect().top + 0.5
                              >= document.querySelector('.machine').getBoundingClientRect().bottom,
         width: document.documentElement.clientWidth,
         scrollWidth: document.documentElement.scrollWidth
       });
+      await waitFor(() => {
+        const e = document.querySelector(selector);
+        return e && Math.abs(Number(e.value ?? e.getAttribute('aria-valuenow')) - 0.63) < 0.001;
+      }, 'Production editor did not display the compact host update');
+      await report('compactHostValue', {});
     } catch (error) { await report('error', {message:String(error)}); }
   };
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', run, {once:true});
@@ -107,22 +119,22 @@ constexpr auto runtimeScript = R"JS(
 })();
 )JS";
 
-class Check final : private juce::Timer
+class Check final : private juce::Timer, public std::enable_shared_from_this<Check>
 {
 public:
     Check (DandrumAudioProcessor& host, bool isSampler) : processor (host), sampler (isSampler) {}
-    void start (juce::WebBrowserComponent& view, std::function<void()> publish)
+    void start (juce::WebBrowserComponent& view, juce::AudioProcessorEditor& owner)
     {
         browser = &view;
-        pump = std::move (publish);
+        editor = &owner;
         startTimer (50);
     }
     void cancel() { finished = true; stopTimer(); }
     int result = 1;
 
-    void report (const juce::Array<juce::var>& args, juce::WebBrowserComponent::NativeFunctionCompletion completion)
+    void report (const juce::Array<juce::var>& args)
     {
-        if (finished) { completion (false); return; }
+        if (finished) return;
         try
         {
             require (args.size() == 2 && args[0].isString() && args[1].isObject(), "Invalid runtime report");
@@ -141,20 +153,31 @@ public:
             }
             else if (phase == Phase::hostValue && name == "hostValue")
             {
-                browser->setSize (820, 560);
+                editor->setSize (820, 560);
                 phase = Phase::compact;
             }
             else if (phase == Phase::compact && name == "compact")
             {
                 acceptIcons (data);
+                require (static_cast<int> (data.getProperty ("viewportWidth", {})) == 820
+                             && static_cast<int> (data.getProperty ("viewportHeight", {})) == 560,
+                         "Original editor compact viewport is not 820 by 560");
                 require (static_cast<int> (data.getProperty ("width", {})) > 0
                              && static_cast<int> (data.getProperty ("width", {})) <= 820
                              && static_cast<int> (data.getProperty ("scrollWidth", {}))
                                  <= static_cast<int> (data.getProperty ("width", {})), "Compact page overflows horizontally");
                 require (static_cast<bool> (data.getProperty ("hintClear", {})), "Compact panel overlaps its hint");
-                std::cout << (sampler ? "SAMPLER" : "TB303") << " WebKit asset/adapter runtime: "
-                          << juce::JSON::toString (fontReport, true) << std::endl;
-                completion (true);
+                compactReport = data;
+                processor.getParameterForPublicId (sampler ? "drums.pitch_ratio" : "filter.cutoff")
+                    ->setValueNotifyingHost (0.63f);
+                phase = Phase::compactHostValue;
+            }
+            else if (phase == Phase::compactHostValue && name == "compactHostValue")
+            {
+                std::cout << (sampler ? "SAMPLER" : "TB303") << " WebKit production-editor runtime: "
+                          << juce::JSON::toString (fontReport, true)
+                          << " compact: " << juce::JSON::toString (compactReport, true)
+                          << " host updates: 0.37, 0.63" << std::endl;
                 if (const auto* preview = std::getenv ("DANDRUM_WEB_RUNTIME_PREVIEW"))
                     if (juce::String (preview) == "1")
                     {
@@ -166,21 +189,22 @@ public:
                 return;
             }
             else throw std::runtime_error ("Unexpected runtime report phase");
-            completion (true);
         }
-        catch (const std::exception& error) { completion (false); finish (false, error.what()); }
+        catch (const std::exception& error) { finish (false, error.what()); }
     }
 
 private:
-    enum class Phase { fonts, hostValue, compact, preview };
+    enum class Phase { fonts, hostValue, compact, compactHostValue, preview };
     DandrumAudioProcessor& processor;
     juce::WebBrowserComponent* browser = nullptr;
-    std::function<void()> pump;
+    juce::AudioProcessorEditor* editor = nullptr;
     bool sampler;
     bool finished = false;
+    bool evaluationPending = false;
     Phase phase = Phase::fonts;
     double deadline = juce::Time::getMillisecondCounterHiRes() + 20000.0;
     juce::var fontReport;
+    juce::var compactReport;
 
     void finish (bool success, const juce::String& error = {})
     {
@@ -199,11 +223,36 @@ private:
             else finish (false, "WebKit timed out in phase " + juce::String (static_cast<int> (phase)));
             return;
         }
-        pump();
+        if (evaluationPending || phase == Phase::preview) return;
+        evaluationPending = true;
+        const auto script = juce::String ("(() => { if (!document.querySelector('main')) return ''; ")
+            + runtimeScript
+            + "const report = window.__dandrumPackagedRuntime.shift(); "
+              "return report ? JSON.stringify(report).replace(/[\\u007f-\\uffff]/g, "
+              "c => '\\\\u' + c.charCodeAt(0).toString(16).padStart(4, '0')) : ''; })()";
+        browser->evaluateJavascript (script, [weak = weak_from_this()] (auto evaluation)
+        {
+            const auto active = weak.lock();
+            if (! active || active->finished) return;
+            active->evaluationPending = false;
+            if (const auto* error = evaluation.getError())
+                active->finish (false, "Original editor observation failed: " + error->message);
+            else if (const auto* value = evaluation.getResult(); value != nullptr && value->isString())
+            {
+                if (value->toString().isEmpty()) return;
+                const auto report = juce::JSON::parse (value->toString());
+                if (const auto* arguments = report.getArray()) active->report (*arguments);
+                else active->finish (false, "Invalid original editor observation report");
+            }
+            else active->finish (false, "Original editor observation returned no string");
+        });
     }
     void acceptFonts (const juce::var& data)
     {
         acceptIcons (data);
+        require (static_cast<int> (data.getProperty ("viewportWidth", {})) == 1200
+                     && static_cast<int> (data.getProperty ("viewportHeight", {})) == 800,
+                 "Original editor full viewport is not 1200 by 800");
         const auto fontList = data.getProperty ("fonts", {});
         const auto* fonts = fontList.getArray();
         require (fonts != nullptr && fonts->size() == 8, "WebKit did not enumerate eight font faces");
@@ -257,46 +306,40 @@ public:
     const juce::String getApplicationVersion() override { return "1"; }
     void initialise (const juce::String&) override
     {
-        if constexpr (Sampler)
+        std::unique_ptr<juce::AudioProcessor> plugin (createPluginFilter());
+        if (auto* host = dynamic_cast<DandrumAudioProcessor*> (plugin.get()))
         {
-            std::unique_ptr<juce::AudioProcessor> plugin (createPluginFilter());
-            if (auto* host = dynamic_cast<DandrumAudioProcessor*> (plugin.get())) { plugin.release(); processor.reset (host); }
+            plugin.release();
+            processor.reset (host);
         }
-        else processor = std::make_unique<DandrumAudioProcessor> (InstrumentDemoConfiguration::tb303());
         if (processor == nullptr) { setApplicationReturnValue (1); quit(); return; }
         processor->setPlayConfigDetails (0, 2, 48000.0, 64);
         processor->prepareToPlay (48000.0, 64);
         if (! processor->isInstrumentLoaded()) { setApplicationReturnValue (1); quit(); return; }
-        editor = std::make_unique<DandrumAudioProcessorEditor> (*processor);
+        auto* parameter = processor->getParameterForPublicId (Sampler ? "drums.pitch_ratio" : "filter.cutoff");
+        require (parameter != nullptr, "Production editor fixture has no expected parameter");
+        parameter->setValueNotifyingHost (0.21f);
+        editor.reset (processor->createEditor());
+        auto* webEditor = dynamic_cast<DandrumAudioProcessorEditor*> (editor.get());
+        require (webEditor != nullptr, "Plugin factory did not create the production WebView editor");
         check = std::make_shared<Check> (*processor, Sampler);
-        auto options = Probe::runtimeOptions (*editor)
-            .withUserScript (runtimeScript)
-            .withNativeFunction ("reportPackagedRuntime", [weak = std::weak_ptr<Check> (check)] (const auto& args, auto completion)
-            {
-                if (const auto active = weak.lock()) active->report (args, std::move (completion));
-                else completion (false);
-            });
-        browser = std::make_unique<juce::WebBrowserComponent> (options);
-        browser->setName (Sampler ? "Dandrum Sampler" : "Dandrum TB-303");
-        browser->setSize (1200, 800);
-        browser->addToDesktop (juce::ComponentPeer::windowHasTitleBar);
-        browser->setTopLeftPosition (30, 30);
-        browser->setVisible (true);
-        browser->goToURL (juce::WebBrowserComponent::getResourceProviderRoot());
-        check->start (*browser, [this] { Probe::publishRuntimeUpdates (*editor, *browser); });
+        editor->setName (Sampler ? "Dandrum Sampler" : "Dandrum TB-303");
+        editor->setSize (1200, 800);
+        editor->addToDesktop (juce::ComponentPeer::windowHasTitleBar);
+        editor->setTopLeftPosition (30, 30);
+        editor->setVisible (true);
+        check->start (Probe::runtimeBrowser (*webEditor), *editor);
     }
     void shutdown() override
     {
         if (check) { setApplicationReturnValue (check->result); check->cancel(); }
-        browser.reset();
         check.reset();
         editor.reset();
         processor.reset();
     }
 private:
     std::unique_ptr<DandrumAudioProcessor> processor;
-    std::unique_ptr<DandrumAudioProcessorEditor> editor;
-    std::unique_ptr<juce::WebBrowserComponent> browser;
+    std::unique_ptr<juce::AudioProcessorEditor> editor;
     std::shared_ptr<Check> check;
 };
 

@@ -47,5 +47,6 @@ resource provider still serves only HTML, JavaScript and CSS.
 [Packaging evidence](../../docs/design-system/react-font-packaging.md) covers
 offline Linux WebKit loading and typography. The React apps also compile the
 supplied icon geometry through `web/shared/design-icons.mjs`. Native font/icon
-embedding and the original production editor's offline opening remain pending;
-task 3.3 is not yet complete.
+embedding remains pending. Both original production editors now pass offline
+factory/runtime checks at full and compact sizes with their normal host-update
+timer; see the packaging evidence for the test boundary and platform limits.

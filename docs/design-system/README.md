@@ -98,8 +98,9 @@ CSS/C++ sheets remain reference outputs. The maintained production generator and
 source live in [ui/design-system](../../ui/design-system/README.md), and the
 [prepared display specifications](native-display-specs.md) supplement the
 original native handoff. Supplied stroke icons are now compiled into both React
-apps; native font/icon use, component adaptations and the original production
-editor's offline and DAW runtime verification remain implementation tasks in the UI plan.
+apps. Both original production editors pass offline factory/runtime checks with
+live host updates at full and compact sizes. Native font/icon use, component
+adaptations and DAW runtime verification remain implementation tasks in the UI plan.
 
 This import was checked for ZIP integrity, byte identity and local HTML asset
 links. It does not establish rendered preview quality, native build success or
