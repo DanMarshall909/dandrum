@@ -92,6 +92,10 @@ add_executable(dandrum-plugin-meter-capture-test tests/cpp/PluginMeterCaptureTes
 target_include_directories(dandrum-plugin-meter-capture-test PRIVATE src/juce-plugin)
 add_test(NAME cxx-plugin-meter-capture COMMAND dandrum-plugin-meter-capture-test)
 
+add_executable(dandrum-plugin-meter-aggregation-test tests/cpp/PluginMeterAggregationTest.cpp)
+target_include_directories(dandrum-plugin-meter-aggregation-test PRIVATE src/juce-plugin)
+add_test(NAME cxx-plugin-meter-aggregation COMMAND dandrum-plugin-meter-aggregation-test)
+
 add_subdirectory(third_party/JUCE)
 
 juce_add_console_app(dandrum-drum-machine-demo PRODUCT_NAME "Dandrum Drum Machine Demo")

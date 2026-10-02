@@ -178,6 +178,9 @@ public:
     void setMeterCaptureEnabled (bool enabled) noexcept;
     bool popMeterFrame (InstrumentUiMeterCapture::Frame& frame) noexcept;
     std::uint64_t getDroppedMeterFrameCount() const noexcept;
+    InstrumentUiMeterCapture::ClipSnapshot getMeterClipSnapshot() const noexcept;
+    bool acknowledgeMeterClip (std::size_t channel, std::uint32_t generation,
+                               std::uint64_t ticket) noexcept;
 
 private:
     std::uint32_t uiCommandGeneration() const noexcept override;

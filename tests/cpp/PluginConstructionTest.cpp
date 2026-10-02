@@ -585,6 +585,15 @@ int main()
         std::cerr << "processor did not publish its signed master meter frame\n";
         return 1;
     }
+    const auto processorClip = kernelProcessor.getMeterClipSnapshot();
+    if (! processorClip.valid
+        || processorClip.generation != kernelProcessor.getParameterSurfaceGeneration()
+        || processorClip.latched[0] || processorClip.latched[1]
+        || kernelProcessor.acknowledgeMeterClip (0, processorClip.generation, 0))
+    {
+        std::cerr << "processor did not expose its generation-scoped clip state\n";
+        return 1;
+    }
     for (std::size_t block = 0; block < InstrumentUiMeterCapture::capacity + 100; ++block)
     {
         kernelBuffer.clear();

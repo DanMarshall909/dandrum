@@ -928,6 +928,17 @@ std::uint64_t DandrumAudioProcessor::getDroppedMeterFrameCount() const noexcept
     return meterCapture.lostFrames();
 }
 
+InstrumentUiMeterCapture::ClipSnapshot DandrumAudioProcessor::getMeterClipSnapshot() const noexcept
+{
+    return meterCapture.clipSnapshot();
+}
+
+bool DandrumAudioProcessor::acknowledgeMeterClip (
+    std::size_t channel, std::uint32_t generation, std::uint64_t ticket) noexcept
+{
+    return meterCapture.acknowledgeClip (channel, generation, ticket);
+}
+
 bool DandrumAudioProcessor::hasEditor() const
 {
     return true;
