@@ -42,7 +42,7 @@ Verification for 5.1: Rust `sample` and FFI tests prove signed extrema, channel 
 
 Progress on 5.2: waveform requests retain an editor session ID. Closing native or Web editor sessions cancels their active and queued requests without waiting for the worker; the focused worker test keeps one reduction stalled and proves another session continues. The Web bridge test now requests a waveform from an editor, checks another editor cannot cancel it, then closes the owner and queries its terminal status. Native renderer-initiated teardown remains to be verified when its waveform view requests jobs.
 
-Progress on 5.3: the Web bridge now exposes bounded prepared waveform requests and exact numeric job results (source-frame buckets, source sample rate and content revision) for a future Canvas view. Native and Canvas drawing and marker-coordinate comparison remain open.
+Progress on 5.3: the Web bridge exposes bounded prepared waveform requests and exact numeric job results (source-frame buckets, source sample rate and content revision) for a future Canvas view. A copied coordinate model now places signed buckets and prepared fade/loop/slice markers at full and compact widths using the source rate; the focused C++ geometry test reached 100% source-line coverage. Native and Canvas drawing and cross-renderer comparison remain open.
 
 ## 6. Spectral And Live Analysis
 

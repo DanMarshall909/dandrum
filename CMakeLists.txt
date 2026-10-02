@@ -112,6 +112,11 @@ target_include_directories(dandrum-plugin-waveform-service-test PRIVATE
 target_link_libraries(dandrum-plugin-waveform-service-test PRIVATE dandrum_engine dl pthread m)
 add_test(NAME cxx-plugin-waveform-service COMMAND dandrum-plugin-waveform-service-test)
 
+add_executable(dandrum-plugin-waveform-geometry-test
+    tests/cpp/PluginWaveformGeometryTest.cpp)
+target_include_directories(dandrum-plugin-waveform-geometry-test PRIVATE src/juce-plugin)
+add_test(NAME cxx-plugin-waveform-geometry COMMAND dandrum-plugin-waveform-geometry-test)
+
 add_subdirectory(third_party/JUCE)
 
 juce_add_console_app(dandrum-drum-machine-demo PRODUCT_NAME "Dandrum Drum Machine Demo")
