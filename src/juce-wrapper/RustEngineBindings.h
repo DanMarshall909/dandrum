@@ -150,6 +150,12 @@ DandrumKernelWaveformSource* dandrum_kernel_waveform_source_create (
 void dandrum_kernel_waveform_source_destroy (DandrumKernelWaveformSource* source);
 bool dandrum_kernel_waveform_source_info (const DandrumKernelWaveformSource* source,
                                          DandrumKernelWaveformSourceInfo* output);
+// Off-audio contiguous source-channel copy for analysis. output holds frameCount
+// floats; invalid requests leave it untouched. Ownership stays with the retained
+// source (including when the instrument or its original file no longer exists).
+bool dandrum_kernel_prepared_source_copy_channel (const DandrumKernelWaveformSource* source,
+                                                 std::uint16_t channel, std::uint64_t startFrame,
+                                                 float* output, std::size_t frameCount);
 // output must hold bucketCount elements; invalid requests leave it untouched.
 bool dandrum_kernel_waveform_reduce (const DandrumKernelWaveformSource* source,
                                     std::uint16_t channel, std::uint64_t startFrame,

@@ -610,6 +610,38 @@ pub unsafe extern "C" fn dandrum_kernel_waveform_reduce(
     true
 }
 
+/// Copies contiguous, selected-channel source frames off the audio thread.
+/// `output` holds `frame_count` writable floats; invalid requests leave it untouched.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn dandrum_kernel_prepared_source_copy_channel(
+    source: *const DandrumKernelWaveformSource,
+    channel: u16,
+    start_frame: u64,
+    output: *mut f32,
+    frame_count: usize,
+) -> bool {
+    ref_or!(source, source, false);
+    if output.is_null()
+        || channel >= source.sample.source_channel_count()
+        || frame_count == 0
+        || start_frame >= source.sample.frame_count() as u64
+        || frame_count > source.sample.frame_count() - start_frame as usize
+    {
+        return false;
+    }
+    // Collect before touching the caller's buffer so a malformed source cannot
+    // publish a partial window. The retained Arc owns the sample across reload.
+    let start = start_frame as usize; // The validated bound fits this platform's usize.
+    let Some(samples) = (start..start + frame_count)
+        .map(|frame| source.sample.source_sample(channel, frame))
+        .collect::<Option<Vec<_>>>()
+    else {
+        return false;
+    };
+    unsafe { std::ptr::copy_nonoverlapping(samples.as_ptr(), output, frame_count) };
+    true
+}
+
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn dandrum_kernel_ui_source_count(
     snapshot: *const DandrumKernelUiSnapshot,
@@ -2280,6 +2312,44 @@ modules:
         );
         assert_ne!(info.content_revision, [0; 32]);
 
+        let mut channel = [9.0; 4];
+        assert!(unsafe {
+            dandrum_kernel_prepared_source_copy_channel(source, 0, 0, channel.as_mut_ptr(), 4)
+        });
+        // WAV encoding uses 32767 for positive floats, decoding divides by 32768.
+        assert_eq!(channel, [0.0, -0.75, 16383.0 / 32768.0, 0.0]);
+        assert!(unsafe {
+            dandrum_kernel_prepared_source_copy_channel(source, 1, 1, channel.as_mut_ptr(), 2)
+        });
+        assert_eq!(channel, [8191.0 / 32768.0, -0.25, 16383.0 / 32768.0, 0.0]);
+        let prior_channel = channel;
+        for (selected, start, count) in
+            [(2, 0, 4), (0, 4, 1), (0, 3, 2), (0, u64::MAX, 1), (0, 0, 0)]
+        {
+            assert!(!unsafe {
+                dandrum_kernel_prepared_source_copy_channel(
+                    source,
+                    selected,
+                    start,
+                    channel.as_mut_ptr(),
+                    count,
+                )
+            });
+            assert_eq!(channel, prior_channel);
+        }
+        assert!(!unsafe {
+            dandrum_kernel_prepared_source_copy_channel(source, 0, 0, std::ptr::null_mut(), 4)
+        });
+        assert!(!unsafe {
+            dandrum_kernel_prepared_source_copy_channel(
+                std::ptr::null(),
+                0,
+                0,
+                channel.as_mut_ptr(),
+                4,
+            )
+        });
+
         let mut bucket = [DandrumKernelWaveformBucket::default(); 1];
         assert!(unsafe { dandrum_kernel_waveform_reduce(source, 0, 0, 4, bucket.as_mut_ptr(), 1) });
         assert_eq!((bucket[0].start_frame, bucket[0].end_frame), (0, 4));
@@ -2309,6 +2379,31 @@ modules:
         assert_eq!((bucket[0].minimum, bucket[0].maximum), prior);
         unsafe { dandrum_kernel_waveform_source_destroy(source) };
         unsafe { dandrum_kernel_waveform_source_destroy(std::ptr::null_mut()) };
+    }
+
+    #[test]
+    fn prepared_channel_copy_preserves_mono_and_rejects_incomplete_storage_atomically() {
+        let mono = DandrumKernelWaveformSource {
+            source_id: "mono".into(),
+            sample: Arc::new(LoadedSample::new(44_100, vec![-0.75, 0.5, -0.125])),
+        };
+        let mut output = [7.0; 2];
+        assert!(unsafe {
+            dandrum_kernel_prepared_source_copy_channel(&mono, 0, 1, output.as_mut_ptr(), 2)
+        });
+        assert_eq!(output, [0.5, -0.125]);
+        let incomplete = DandrumKernelWaveformSource {
+            source_id: "incomplete".into(),
+            sample: Arc::new(LoadedSample::with_source_channels(
+                48_000,
+                2,
+                vec![0.5, -0.25],
+            )),
+        };
+        assert!(!unsafe {
+            dandrum_kernel_prepared_source_copy_channel(&incomplete, 1, 0, output.as_mut_ptr(), 2)
+        });
+        assert_eq!(output, [0.5, -0.125]);
     }
 
     #[test]

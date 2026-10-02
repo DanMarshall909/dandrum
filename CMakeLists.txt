@@ -137,6 +137,14 @@ add_test(NAME cxx-plugin-waveform-geometry COMMAND dandrum-plugin-waveform-geome
 
 add_subdirectory(third_party/JUCE)
 
+add_executable(dandrum-plugin-spectral-service-test
+    tests/cpp/PluginSpectralServiceTest.cpp
+    src/juce-plugin/InstrumentUiSpectralService.cpp)
+target_include_directories(dandrum-plugin-spectral-service-test PRIVATE src/juce-wrapper src/juce-plugin)
+target_compile_definitions(dandrum-plugin-spectral-service-test PRIVATE JUCE_USE_CURL=0 JUCE_WEB_BROWSER=0)
+target_link_libraries(dandrum-plugin-spectral-service-test PRIVATE dandrum_engine juce::juce_dsp dl pthread m)
+add_test(NAME cxx-plugin-spectral-service COMMAND dandrum-plugin-spectral-service-test)
+
 juce_add_console_app(dandrum-drum-machine-demo PRODUCT_NAME "Dandrum Drum Machine Demo")
 target_sources(dandrum-drum-machine-demo PRIVATE
     src/juce-wrapper/Cli.cpp
@@ -164,9 +172,11 @@ target_sources(dandrum-plugin-ui-common INTERFACE
     ${CMAKE_CURRENT_SOURCE_DIR}/src/juce-plugin/InstrumentDemoConfiguration.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/juce-plugin/InstrumentFileWatcher.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/juce-plugin/InstrumentUiWaveformService.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/juce-plugin/InstrumentUiSpectralService.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/juce-plugin/PluginFactory.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/juce-plugin/PluginProcessor.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/juce-plugin/SoundLabController.cpp)
+target_link_libraries(dandrum-plugin-ui-common INTERFACE juce::juce_dsp)
 
 add_library(dandrum-plugin-web-adapter INTERFACE)
 target_sources(dandrum-plugin-web-adapter INTERFACE
@@ -305,6 +315,23 @@ if(DANDRUM_NATIVE_ONLY)
     endif()
 endif()
 
+if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+    add_executable(dandrum-plugin-spectral-job-test tests/cpp/PluginSpectralJobTest.cpp)
+    target_include_directories(dandrum-plugin-spectral-job-test PRIVATE src/juce-wrapper src/juce-plugin)
+    target_compile_definitions(dandrum-plugin-spectral-job-test PRIVATE
+        JUCE_USE_CURL=0 JUCE_WEB_BROWSER=$<NOT:$<BOOL:${DANDRUM_NATIVE_ONLY}>>
+        JUCE_USE_WIN_WEBVIEW2=$<NOT:$<BOOL:${DANDRUM_NATIVE_ONLY}>>)
+    target_link_libraries(dandrum-plugin-spectral-job-test PRIVATE
+        dandrum-sampler-plugin dandrum_engine juce::juce_audio_basics juce::juce_audio_processors
+        juce::juce_audio_utils juce::juce_dsp
+        PUBLIC juce::juce_recommended_config_flags juce::juce_recommended_lto_flags juce::juce_recommended_warning_flags)
+    target_link_options(dandrum-plugin-spectral-job-test PRIVATE
+        "LINKER:--wrap=dandrum_kernel_prepared_source_copy_channel"
+        "LINKER:--wrap=dandrum_kernel_waveform_source_destroy")
+    add_test(NAME cxx-plugin-spectral-job COMMAND dandrum-plugin-spectral-job-test)
+    set_tests_properties(cxx-plugin-spectral-job PROPERTIES LABELS "runtime" TIMEOUT 30 RUN_SERIAL TRUE)
+endif()
+
 add_executable(dandrum-plugin-knob-parity-test tests/cpp/PluginKnobParityTest.cpp)
 target_include_directories(dandrum-plugin-knob-parity-test PRIVATE src/juce-wrapper src/juce-plugin)
 target_compile_definitions(dandrum-plugin-knob-parity-test PRIVATE
@@ -433,6 +460,7 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Linux" AND NOT DANDRUM_NATIVE_ONLY)
     foreach(plugin_test_target
             dandrum-plugin-knob-parity-test
             dandrum-plugin-waveform-parity-test
+            dandrum-plugin-spectral-job-test
             dandrum-plugin-construction-test
             dandrum-plugin-host-parameter-surface-test
             dandrum-plugin-editor-bridge-test

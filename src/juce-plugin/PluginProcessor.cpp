@@ -616,6 +616,7 @@ void DandrumAudioProcessor::preparePublicParameterSlots (const std::vector<Publi
     clearEditorNoteIntentForReload();
     const auto generation = parameterSurfaceGeneration.fetch_add (1, std::memory_order_relaxed) + 1;
     waveformService.setGeneration (generation);
+    spectralService.setGeneration (generation);
 }
 
 void DandrumAudioProcessor::setSlotNormalisedValue (int slotIndex, float normalisedValue)
@@ -1449,6 +1450,53 @@ bool DandrumAudioProcessor::cancelPreparedWaveformJob (std::uint64_t jobId)
 void DandrumAudioProcessor::cancelPreparedWaveformSession (std::uint64_t sessionId)
 {
     waveformService.cancelSession (sessionId);
+}
+
+std::optional<std::uint64_t> DandrumAudioProcessor::requestPreparedSpectrum (
+    std::uint32_t expectedGeneration, const std::string& sourceId,
+    const std::string& regionId, std::uint16_t channel, std::uint64_t sessionId)
+{
+    InstrumentUiSpectralService::Source retainedSource;
+    std::uint64_t startFrame = 0;
+    std::uint64_t endFrame = 0;
+    {
+        const std::lock_guard<std::recursive_mutex> reloadLock (reloadMutex);
+        if (expectedGeneration != getParameterSurfaceGeneration())
+            return std::nullopt;
+        const auto document = getPreparedUiDocument();
+        if (! document)
+            return std::nullopt;
+        const auto source = std::find_if (document->sources.begin(), document->sources.end(),
+            [&sourceId] (const auto& value) { return value.id == sourceId; });
+        if (source == document->sources.end())
+            return std::nullopt;
+        const auto region = std::find_if (source->regions.begin(), source->regions.end(),
+            [&regionId] (const auto& value) { return value.id == regionId; });
+        if (region == source->regions.end())
+            return std::nullopt;
+        startFrame = region->startFrame;
+        endFrame = region->endFrame;
+        const auto sourceIndex = static_cast<std::size_t> (
+            std::distance (document->sources.begin(), source));
+        retainedSource.reset (dandrum_kernel_waveform_source_create (
+            kernel.load (std::memory_order_acquire), sourceIndex));
+    }
+    return spectralService.request (expectedGeneration, std::move (retainedSource),
+                                    regionId, channel, startFrame, endFrame, sessionId);
+}
+std::optional<InstrumentUiSpectralService::Snapshot>
+DandrumAudioProcessor::getPreparedSpectrumJobStatus (std::uint64_t jobId) const
+{
+    const std::lock_guard<std::recursive_mutex> reloadLock (reloadMutex);
+    return spectralService.status (jobId, getParameterSurfaceGeneration());
+}
+bool DandrumAudioProcessor::cancelPreparedSpectrumJob (std::uint64_t jobId)
+{
+    return spectralService.cancel (jobId);
+}
+void DandrumAudioProcessor::cancelPreparedSpectrumSession (std::uint64_t sessionId)
+{
+    spectralService.cancelSession (sessionId);
 }
 
 InstrumentUiParameterState DandrumAudioProcessor::getUiParameterState() const

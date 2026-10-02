@@ -133,10 +133,30 @@ structural rebuilding remain their respective pending tasks.
 
 ## 6. Spectral And Live Analysis
 
-- [ ] 6.1 Implement shared static spectral jobs with declared FFT/window/hop/scaling/floor and numeric results; tests must prove a known bin-centred sine, finite silence floor, deterministic results and cache reuse.
+- [x] 6.1 Implement shared static spectral jobs with declared FFT/window/hop/scaling/floor and numeric results; tests must prove a known bin-centred sine, finite silence floor, deterministic results and cache reuse.
 - [ ] 6.2 Add native and Web spectral views consuming the same result; runtime inspection must verify time/frequency labels and overlays without transferring a browser-specific image as the shared contract.
 - [ ] 6.3 Add subscribed live scope and spectral capture with fixed memory and tap/channel limits; tests must prove queue overflow cannot block audio and discontinuities reset partial FFT windows.
 - [ ] 6.4 Bound worker count, backlog, cache bytes and column publication; tests must prove stalled consumers, cancelled jobs and hidden views retain bounded resources and recover with current sample coordinates.
+
+Task 6.1 completion evidence (2026-10-03): the shared C++ worker supplies
+periodic-Hann 1024-point, one-sided peak dBFS spectra with a -120 dBFS floor,
+selected source channels, explicit source-frame windows, source-rate frequency
+bins and a declared bounded hop. The sole Rust addition copies contiguous PCM
+from an independently retained prepared source; analysis stays outside Rust.
+`cxx-plugin-spectral-service` proves absolute sine/window/endpoint/tail scaling,
+silent floor, determinism, content-aware caching, bounded admission/history,
+failure retry, session cancellation and reload retirement. The original sampler
+factory's `cxx-plugin-spectral-job` proves source-index selection and retained
+worker reads/cleanup while callbacks produce known signed audio. Both build
+configurations pass: native CTest 24/24, Web CTest 47/47, without skips; Rust
+tests, strict validation and the existing main-spec coverage gate pass.
+Source coverage reaches all 173 new service executable lines, all 37 new
+processor method/publication lines, and all new FFI function regions. Nine
+manual service faults and four manual FFI faults are rejected; no exhaustive
+mutation or whole-processor coverage claim is made. See
+`docs/design-system/static-spectral-analysis.md` for settings, ownership and
+verification limits. Spectral drawing/live analysis (6.2-6.4), callback profiling
+and automatic structural rebuild runtime remain pending.
 
 ## 7. Capability-Aware Sampler Composition
 

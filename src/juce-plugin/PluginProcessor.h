@@ -22,6 +22,7 @@
 #include "InstrumentUiMeterDelivery.h"
 #include "InstrumentUiParameterState.h"
 #include "InstrumentUiWaveformService.h"
+#include "InstrumentUiSpectralService.h"
 #include "RustEngineBindings.h"
 
 class SoundLabController;
@@ -85,6 +86,13 @@ public:
         getPreparedWaveformJobStatus (std::uint64_t jobId) const;
     bool cancelPreparedWaveformJob (std::uint64_t jobId);
     void cancelPreparedWaveformSession (std::uint64_t sessionId);
+    std::optional<std::uint64_t> requestPreparedSpectrum (
+        std::uint32_t expectedGeneration, const std::string& sourceId,
+        const std::string& regionId, std::uint16_t channel, std::uint64_t sessionId = 0);
+    std::optional<InstrumentUiSpectralService::Snapshot>
+        getPreparedSpectrumJobStatus (std::uint64_t jobId) const;
+    bool cancelPreparedSpectrumJob (std::uint64_t jobId);
+    void cancelPreparedSpectrumSession (std::uint64_t sessionId);
     std::uint32_t getParameterSurfaceGeneration() const noexcept;
     InstrumentUiCommandService& uiCommands() noexcept;
     SoundLabController* getSoundLabController() noexcept;
@@ -366,6 +374,7 @@ private:
     // Host notifications may re-enter snapshot readers on the same thread.
     mutable std::recursive_mutex reloadMutex;
     InstrumentUiWaveformService waveformService;
+    InstrumentUiSpectralService spectralService;
     InstrumentUiCommandService uiCommandService { *this };
     std::unique_ptr<SoundLabController> soundLabController;
     juce::File soundLabReferenceFile;
