@@ -104,6 +104,14 @@ add_executable(dandrum-plugin-meter-display-test tests/cpp/PluginMeterDisplayTes
 target_include_directories(dandrum-plugin-meter-display-test PRIVATE src/juce-plugin)
 add_test(NAME cxx-plugin-meter-display COMMAND dandrum-plugin-meter-display-test)
 
+add_executable(dandrum-plugin-waveform-service-test
+    tests/cpp/PluginWaveformServiceTest.cpp
+    src/juce-plugin/InstrumentUiWaveformService.cpp)
+target_include_directories(dandrum-plugin-waveform-service-test PRIVATE
+    src/juce-wrapper src/juce-plugin)
+target_link_libraries(dandrum-plugin-waveform-service-test PRIVATE dandrum_engine dl pthread m)
+add_test(NAME cxx-plugin-waveform-service COMMAND dandrum-plugin-waveform-service-test)
+
 add_subdirectory(third_party/JUCE)
 
 juce_add_console_app(dandrum-drum-machine-demo PRODUCT_NAME "Dandrum Drum Machine Demo")
@@ -132,6 +140,7 @@ add_library(dandrum-plugin-ui-common INTERFACE)
 target_sources(dandrum-plugin-ui-common INTERFACE
     ${CMAKE_CURRENT_SOURCE_DIR}/src/juce-plugin/InstrumentDemoConfiguration.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/juce-plugin/InstrumentFileWatcher.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/juce-plugin/InstrumentUiWaveformService.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/juce-plugin/PluginFactory.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/juce-plugin/PluginProcessor.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/juce-plugin/SoundLabController.cpp)

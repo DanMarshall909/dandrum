@@ -21,6 +21,7 @@
 #include "InstrumentUiMeterCapture.h"
 #include "InstrumentUiMeterDelivery.h"
 #include "InstrumentUiParameterState.h"
+#include "InstrumentUiWaveformService.h"
 #include "RustEngineBindings.h"
 
 class SoundLabController;
@@ -74,6 +75,14 @@ public:
     std::vector<PublicParameterSnapshotEntry> getPublicParameterSnapshot() const;
     std::optional<InstrumentUiDocument> getPreparedUiDocument() const;
     InstrumentUiParameterState getUiParameterState() const;
+    /// Message-thread request for a prepared, read-only region. Reduction and
+    /// cache work run on a worker holding its own retained source lifetime.
+    std::optional<std::uint64_t> requestPreparedWaveform (
+        std::uint32_t expectedGeneration, const std::string& sourceId,
+        const std::string& regionId, std::uint16_t channel, std::size_t bucketCount);
+    std::optional<InstrumentUiWaveformService::Snapshot>
+        getPreparedWaveformJobStatus (std::uint64_t jobId) const;
+    bool cancelPreparedWaveformJob (std::uint64_t jobId);
     std::uint32_t getParameterSurfaceGeneration() const noexcept;
     InstrumentUiCommandService& uiCommands() noexcept;
     SoundLabController* getSoundLabController() noexcept;
@@ -354,6 +363,7 @@ private:
     // Readers copy retained metadata before a previous engine is destroyed.
     // Host notifications may re-enter snapshot readers on the same thread.
     mutable std::recursive_mutex reloadMutex;
+    InstrumentUiWaveformService waveformService;
     InstrumentUiCommandService uiCommandService { *this };
     std::unique_ptr<SoundLabController> soundLabController;
     juce::File soundLabReferenceFile;

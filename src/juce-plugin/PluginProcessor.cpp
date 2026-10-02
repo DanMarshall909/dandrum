@@ -614,7 +614,8 @@ void DandrumAudioProcessor::preparePublicParameterSlots (const std::vector<Publi
     }
 
     clearEditorNoteIntentForReload();
-    parameterSurfaceGeneration.fetch_add (1, std::memory_order_relaxed);
+    const auto generation = parameterSurfaceGeneration.fetch_add (1, std::memory_order_relaxed) + 1;
+    waveformService.setGeneration (generation);
 }
 
 void DandrumAudioProcessor::setSlotNormalisedValue (int slotIndex, float normalisedValue)
@@ -1392,7 +1393,59 @@ std::optional<InstrumentUiDocument> DandrumAudioProcessor::getPreparedUiDocument
         document.maps.push_back (std::move (map));
     }
     document.capabilities.sampleKeyMap = ! document.maps.empty();
+    document.capabilities.preparedWaveform = ! document.sources.empty();
     return document;
+}
+
+std::optional<std::uint64_t> DandrumAudioProcessor::requestPreparedWaveform (
+    std::uint32_t expectedGeneration, const std::string& sourceId,
+    const std::string& regionId, std::uint16_t channel, std::size_t bucketCount)
+{
+    InstrumentUiWaveformService::Source retainedSource;
+    std::uint64_t startFrame = 0;
+    std::uint64_t endFrame = 0;
+    {
+        const std::lock_guard<std::recursive_mutex> reloadLock (reloadMutex);
+        if (expectedGeneration != getParameterSurfaceGeneration())
+            return std::nullopt;
+        const auto document = getPreparedUiDocument();
+        if (! document)
+            return std::nullopt;
+        const auto source = std::find_if (document->sources.begin(), document->sources.end(),
+            [&sourceId] (const auto& value) { return value.id == sourceId; });
+        if (source == document->sources.end())
+            return std::nullopt;
+        const auto region = std::find_if (source->regions.begin(), source->regions.end(),
+            [&regionId] (const auto& value) { return value.id == regionId; });
+        if (region == source->regions.end())
+            return std::nullopt;
+        startFrame = region->startFrame;
+        endFrame = region->endFrame;
+        const auto sourceIndex = static_cast<std::size_t> (
+            std::distance (document->sources.begin(), source));
+        retainedSource.reset (dandrum_kernel_waveform_source_create (
+            kernel.load (std::memory_order_acquire), sourceIndex));
+    }
+    return waveformService.request (expectedGeneration, std::move (retainedSource),
+                                    regionId, channel, startFrame, endFrame, bucketCount);
+}
+
+std::optional<InstrumentUiWaveformService::Snapshot>
+DandrumAudioProcessor::getPreparedWaveformJobStatus (std::uint64_t jobId) const
+{
+    const std::lock_guard<std::recursive_mutex> reloadLock (reloadMutex);
+    auto result = waveformService.status (jobId);
+    if (result && result->generation != getParameterSurfaceGeneration())
+    {
+        result->state = InstrumentUiWaveformService::State::stale;
+        result->result.reset();
+    }
+    return result;
+}
+
+bool DandrumAudioProcessor::cancelPreparedWaveformJob (std::uint64_t jobId)
+{
+    return waveformService.cancel (jobId);
 }
 
 InstrumentUiParameterState DandrumAudioProcessor::getUiParameterState() const

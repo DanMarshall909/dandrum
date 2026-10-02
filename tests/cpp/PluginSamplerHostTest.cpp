@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <array>
 #include <atomic>
+#include <chrono>
 #include <cmath>
 #include <filesystem>
 #include <iostream>
@@ -118,6 +119,7 @@ int main()
         || preparedUi->maps[0].zones[2].roundRobinGroup != "hard_snare"
         || preparedUi->maps[0].zones[2].controlGroup != 2
         || ! preparedUi->capabilities.sampleKeyMap
+        || ! preparedUi->capabilities.preparedWaveform
         || preparedUi->capabilities.synthLayer
         || preparedUi->capabilities.patternSequencer)
     {
@@ -137,17 +139,63 @@ int main()
         std::cerr << "prepared sampler UI document lost shared/per-pad parameter scope\n";
         return 1;
     }
+    const auto waveformJob = sampler->requestPreparedWaveform (
+        preparedUi->generation, "drums", "kick", 0, 16);
+    if (! waveformJob
+        || sampler->requestPreparedWaveform (preparedUi->generation, "drums", "missing", 0, 16)
+        || sampler->requestPreparedWaveform (preparedUi->generation, "missing", "kick", 0, 16)
+        || sampler->requestPreparedWaveform (preparedUi->generation, "drums", "kick", 1, 16)
+        || sampler->requestPreparedWaveform (preparedUi->generation - 1, "drums", "kick", 0, 16))
+    {
+        std::cerr << "prepared waveform admission ignored source, region, channel or generation\n";
+        return 1;
+    }
+    auto waveformStatus = sampler->getPreparedWaveformJobStatus (*waveformJob);
+    for (int attempt = 0; attempt < 200
+         && waveformStatus && waveformStatus->state == InstrumentUiWaveformService::State::running;
+         ++attempt)
+    {
+        std::this_thread::sleep_for (std::chrono::milliseconds (5));
+        waveformStatus = sampler->getPreparedWaveformJobStatus (*waveformJob);
+    }
+    if (! waveformStatus || waveformStatus->state != InstrumentUiWaveformService::State::ready
+        || ! waveformStatus->result || waveformStatus->result->sourceId != "drums"
+        || waveformStatus->result->regionId != "kick"
+        || waveformStatus->result->sampleRateHz != 48000
+        || waveformStatus->result->startFrame != 0 || waveformStatus->result->endFrame != 12000
+        || waveformStatus->result->buckets.size() != 16
+        || waveformStatus->result->buckets.front().startFrame != 0
+        || waveformStatus->result->buckets.back().endFrame != 12000)
+    {
+        std::cerr << "prepared waveform job lost its source-frame coordinates or rate\n";
+        return 1;
+    }
+    const auto lowest = std::min_element (waveformStatus->result->buckets.begin(),
+                                          waveformStatus->result->buckets.end(),
+        [] (const auto& a, const auto& b) { return a.minimum < b.minimum; });
+    const auto highest = std::max_element (waveformStatus->result->buckets.begin(),
+                                           waveformStatus->result->buckets.end(),
+        [] (const auto& a, const auto& b) { return a.maximum < b.maximum; });
+    if (! near (lowest->minimum, -0.69995117f)
+        || ! near (highest->maximum, 0.80514526f))
+    {
+        std::cerr << "prepared waveform lost known signed kick extrema\n";
+        return 1;
+    }
     auto reloadReader = makeSampler();
     const auto oldDocument = reloadReader->getPreparedUiDocument();
     const auto oldGeneration = oldDocument ? oldDocument->generation : 0;
+    const auto oldWaveformJob = reloadReader->requestPreparedWaveform (
+        oldGeneration, "drums", "kick", 0, 16);
     const auto tb303 = juce::File (juce::String (
         InstrumentDemoConfiguration::tb303().instrumentPath.string()));
-    if (! oldDocument || ! reloadReader->reloadInstrumentFromFile (tb303))
+    if (! oldDocument || ! oldWaveformJob || ! reloadReader->reloadInstrumentFromFile (tb303))
         return 1;
     const auto replacementUi = reloadReader->getPreparedUiDocument();
     if (! replacementUi || replacementUi->generation == oldGeneration
         || replacementUi->instrumentId != "dandrum.tb303-acid"
         || ! replacementUi->sources.empty() || ! replacementUi->maps.empty()
+        || replacementUi->capabilities.preparedWaveform
         || replacementUi->parameters.size() != 7
         || ! std::all_of (replacementUi->parameters.begin(), replacementUi->parameters.end(),
             [] (const auto& parameter) {
@@ -157,6 +205,14 @@ int main()
         || oldDocument->maps[0].zones[2].velocityLow != 64)
     {
         std::cerr << "UI document did not remain owned across instrument reload\n";
+        return 1;
+    }
+    const auto retiredWaveform = reloadReader->getPreparedWaveformJobStatus (*oldWaveformJob);
+    if (! retiredWaveform || retiredWaveform->state != InstrumentUiWaveformService::State::stale
+        || reloadReader->requestPreparedWaveform (replacementUi->generation,
+                                                   "drums", "kick", 0, 16))
+    {
+        std::cerr << "reload left old waveform data actionable\n";
         return 1;
     }
     auto reprepareReader = makeSampler();

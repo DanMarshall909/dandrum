@@ -34,9 +34,11 @@ Verification: `cxx-plugin-meter-display` checks elapsed-time peak/RMS decay, ide
 
 ## 5. Prepared Waveform Vertical Slice
 
-- [ ] 5.1 Add asynchronous per-channel min/max reduction and content-keyed cache admission; tests must prove the -0.75/0.5 extrema fixture, narrow transients, region boundaries and same-path content invalidation.
+- [x] 5.1 Add asynchronous per-channel min/max reduction and content-keyed cache admission; tests must prove the -0.75/0.5 extrema fixture, narrow transients, region boundaries and same-path content invalidation.
 - [ ] 5.2 Add job cancellation and safe source retention through reload/editor teardown; tests must prove stale results cannot replace current data and audio never joins or frees worker resources.
 - [ ] 5.3 Render the same envelope and prepared overlays in native JUCE and Canvas; verify source/host rate distinctions and matching marker coordinates at both target sizes before expanding the full UI.
+
+Verification for 5.1: Rust `sample` and FFI tests prove signed extrema, channel separation, narrow transients and source-frame offsets; `cxx-sampler-plugin-host` proves prepared region bounds and signed kick extrema; `cxx-plugin-waveform-service` proves asynchronous completion, duplicate work sharing, bounded queue/history/cache and same-path content invalidation. The new C++ service reached 100% source-line coverage in a focused gcov run. Native CTest passed 17/17 and Web CTest passed 29/29. Cancellation and renderer display remain tracked by 5.2 and 5.3.
 
 ## 6. Spectral And Live Analysis
 
