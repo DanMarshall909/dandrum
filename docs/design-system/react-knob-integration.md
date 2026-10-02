@@ -3,9 +3,8 @@
 This records Web and native progress on OpenSpec task 3.4 in
 [add-renderer-independent-plugin-ui](../../openspec/changes/add-renderer-independent-plugin-ui/tasks.md).
 The sampler and TB-303 use one adaptation of the preserved
-[Knob reference](reference/components/controls/Knob.jsx). Task 3.4 remains open:
-equivalent signed-audio schedules through the actual Web and native renderers
-are pending.
+[Knob reference](reference/components/controls/Knob.jsx). Task 3.4 now has paired
+host and signed-audio evidence through both actual renderers.
 
 ## Current behavior
 
@@ -155,9 +154,37 @@ focused popup at 820×560 and 1200×800. These JUCE applications do not prove DA
 transport behavior. Focused coverage and verification evidence is retained at
 `/tmp/dandrum-knob-native-evidence`.
 
+## Paired renderer schedule
+
+[PluginKnobParityTest.cpp](../../tests/cpp/PluginKnobParityTest.cpp) compiles into
+the native-only and Web configurations as `native-knob-parity` and
+`web-knob-parity`. Both start with the original sampler factory and load the
+same signed gain fixture with a distinguishable prepared reset value of 0.25.
+They use the actual native handlers/TextEditor and shipped React DOM handlers;
+the Web observer does not replace browser options, native functions or the
+normal host observer.
+
+One literal schedule covers a two-update drag, typed zero, keyboard, fine wheel,
+loaded reset, cancellation and host automation. Each action waits for its host
+notifications and displayed state, then renders exactly 64 frames at 48 kHz.
+The Web driver waits for C++'s acknowledgement of that render before advancing.
+Both assert the same ordered five begin/end gestures and seven value changes,
+the original slot-zero parameter object and unchanged instrument generation.
+All 704 stereo frames (1,408 channel samples) match independent f32 expectations exactly;
+display precision is checked separately. Signed examples include -0.5, +0.5,
+zero and the f32 results near +0.1, +0.08 and +0.68.
+
+For each actual renderer, a copied fixture whose source input changes from 1 to
+0.5 fails the signed-PCM assertion at channel zero/frame 128. Restoring it passes.
+This calibrates the audio oracle, without claiming production mutation coverage.
+Full builds pass and current CTest passes native 20/20 and Web 44/44 without
+skips. Exact traces, fixture faults and commands are retained at
+`/tmp/dandrum-knob-parity-evidence`. No production code changes in this proof
+slice; the earlier implementation coverage gaps remain as recorded above.
+These runtime actions are synthetic and do not prove DAW loading or transport.
+
 ## Remaining scope
 
-Task 3.4 still needs identical signed-audio schedules in both actual renderers.
 Prepared waveform/spectral displays, KeyMap/LayerStack/OutputBusses adaptation,
 full and compact design fidelity, callback/stress evidence and automatic
 structural rebuilding retain their own unchecked tasks. This slice makes no

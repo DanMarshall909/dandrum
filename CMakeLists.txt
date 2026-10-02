@@ -286,6 +286,24 @@ if(DANDRUM_NATIVE_ONLY)
     add_test(NAME native-editor-smoke COMMAND dandrum-native-editor-smoke-test)
 endif()
 
+add_executable(dandrum-plugin-knob-parity-test tests/cpp/PluginKnobParityTest.cpp)
+target_include_directories(dandrum-plugin-knob-parity-test PRIVATE src/juce-wrapper src/juce-plugin)
+target_compile_definitions(dandrum-plugin-knob-parity-test PRIVATE
+    JUCE_USE_CURL=0 JUCE_WEB_BROWSER=$<NOT:$<BOOL:${DANDRUM_NATIVE_ONLY}>>
+    JUCE_USE_WIN_WEBVIEW2=$<NOT:$<BOOL:${DANDRUM_NATIVE_ONLY}>>)
+target_link_libraries(dandrum-plugin-knob-parity-test PRIVATE
+    dandrum-sampler-plugin dandrum_engine juce::juce_audio_basics juce::juce_audio_processors
+    juce::juce_audio_utils juce::juce_gui_basics
+    juce::juce_recommended_config_flags juce::juce_recommended_lto_flags juce::juce_recommended_warning_flags)
+if(DANDRUM_NATIVE_ONLY)
+    add_test(NAME native-knob-parity COMMAND dandrum-plugin-knob-parity-test)
+    set_tests_properties(native-knob-parity PROPERTIES LABELS "runtime" SKIP_RETURN_CODE 77 TIMEOUT 60 RUN_SERIAL TRUE)
+else()
+    target_link_libraries(dandrum-plugin-knob-parity-test PRIVATE juce::juce_gui_extra)
+    add_test(NAME web-knob-parity COMMAND dandrum-plugin-knob-parity-test)
+    set_tests_properties(web-knob-parity PROPERTIES LABELS "runtime" SKIP_RETURN_CODE 77 TIMEOUT 60 RUN_SERIAL TRUE)
+endif()
+
 if(NOT DANDRUM_NATIVE_ONLY)
     add_executable(dandrum-sampler-plugin-host-test tests/cpp/PluginSamplerHostTest.cpp)
     target_include_directories(dandrum-sampler-plugin-host-test PRIVATE src/juce-wrapper src/juce-plugin)
@@ -376,6 +394,7 @@ endif()
 # Linux WebKit/GTK usage requirements requested by NEEDS_WEB_BROWSER.
 if(CMAKE_SYSTEM_NAME STREQUAL "Linux" AND NOT DANDRUM_NATIVE_ONLY)
     foreach(plugin_test_target
+            dandrum-plugin-knob-parity-test
             dandrum-plugin-construction-test
             dandrum-plugin-host-parameter-surface-test
             dandrum-plugin-editor-bridge-test

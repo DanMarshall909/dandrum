@@ -21,7 +21,7 @@ The design reference was imported on main at `d02ee1b` and is now available in `
 - [x] 3.1 Split common UI, native editor and Web adapter build targets; verify a native-only configure/build/run with browser support disabled and without Node or WebView/WebKit dependencies.
 - [x] 3.2 Introduce one maintained token source and CSS/C++ generation; verify corresponding semantic values and document font licensing/provenance.
 - [x] 3.3 Build the production web asset pipeline and embedded resource serving; verify packaged assets work offline outside the source checkout, with no CDN scripts, runtime Babel or development server.
-- [ ] 3.4 Implement one design-system knob in each renderer against shared commands; tests must prove identical host gestures, authoritative values, slot identity and known signed audio for identical schedules.
+- [x] 3.4 Implement one design-system knob in each renderer against shared commands; tests must prove identical host gestures, authoritative values, slot identity and known signed audio for identical schedules.
 
 Web progress on 3.4 (2026-10-03): both React apps now use one reference-derived knob, admitted actual ranges and loaded defaults, typed popup values, pointer/keyboard/wheel gestures and generation-safe metadata requests. Original factory/WebKit tests verify eleven balanced gestures on the stable host slot, actual-range readouts and host updates at both sizes. The sampler additionally proves release reconciliation after automation while held; a deterministic component end/write barrier proves an older closure cannot overwrite newer local input. Copied complete executables pass with hidden checkouts, fresh application data and no network route. Full Web CTest passes 42/42 and native-only CTest passes 18/18. Focused policy suites execute all V8 ranges; the real React component lane executes all 42 knob functions, with three defensive null fallback fragments still uncovered. Seven copied-source faults are rejected by named assertions. [Knob integration evidence](../../../docs/design-system/react-knob-integration.md) records test boundaries and remaining scope. Native drawing and equivalent signed-audio schedules remain pending, so 3.4 stays unchecked. No structural runtime completion is claimed.
 
@@ -62,8 +62,18 @@ and shared gesture ownership handoff; focused ASan catches the original defect
 and passes the repair. Native CTest passes 19/19. The
 [knob integration record](../../../docs/design-system/react-knob-integration.md)
 states coverage gaps, eleven focused faults, physical input evidence and limits.
-Identical signed-audio schedules through both actual renderers remain pending,
-so task 3.4 stays unchecked. No structural runtime completion is claimed.
+The paired signed-audio proof was pending at this increment. No structural
+runtime completion is claimed.
+
+Paired completion of 3.4 (2026-10-03): `native-knob-parity` and
+`web-knob-parity` compile one schedule with eleven points into both original sampler
+factory paths. Real native/TextEditor and shipped React handlers produce the
+same ordered host events, authoritative values, stable slot/object and exact
+signed stereo PCM at 64-frame boundaries. A wrong signed-source fixture fails
+the named frame-128 assertion in both renderers; healthy recovery passes.
+Full native/Web builds pass and CTest passes 20/20 and 44/44 without skips.
+The integration record retains synthetic-input/DAW limits and earlier coverage
+gaps. Structural runtime and other tasks remain pending.
 
 ## 4. Meter Telemetry Vertical Slice
 
