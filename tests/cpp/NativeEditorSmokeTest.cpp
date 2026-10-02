@@ -92,6 +92,12 @@ int main()
                 std::cerr << "native sampler did not draw prepared signed PCM\n";
                 return 1;
             }
+            if (waveformImage.getPixelAt (bounds.getRight() - 17, bounds.getY() + 60)
+                != juce::Colour (0xff8da79a))
+            {
+                std::cerr << "native sampler clipped the prepared region end marker\n";
+                return 1;
+            }
             if (const auto* output = std::getenv ("DANDRUM_NATIVE_SAMPLER_SNAPSHOT"))
             {
                 auto stream = juce::File (output).createOutputStream();

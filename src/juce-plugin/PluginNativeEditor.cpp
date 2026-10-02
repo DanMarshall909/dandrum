@@ -213,7 +213,8 @@ public:
                                    || marker.kind == InstrumentUiWaveformGeometry::MarkerKind::sliceEnd
                 ? 0xffab9ee9 : 0xff8da79a;
             graphics.setColour (juce::Colour (color));
-            const auto x = plot.getX() + static_cast<int> (marker.x);
+            const auto x = std::clamp (plot.getX() + static_cast<int> (marker.x),
+                                       plot.getX(), plot.getRight() - 1);
             graphics.fillRect (x, plot.getY(), 1, plot.getHeight());
         }
         graphics.setColour (juce::Colour (0xff9eafa2));
