@@ -1,0 +1,16 @@
+metadata:
+  name: Plugin UI Knob Fixture
+instrument:
+  id: dandrum.plugin-ui-knob-fixture
+  preset_schema_version: 1
+ports:
+  - { name: level, direction: input, signal: control, channels: 1, default: 0, min: -1, max: 1, maps_to: amp.gain }
+  - { name: master, direction: output, signal: audio, channels: 2, maps_from: amp.audio_out }
+preset_surface:
+  parameters:
+    - { name: fixture.level, maps_to: level }
+modules:
+  - { id: source, type: control_to_audio, static: { channels: 2 }, defaults: { in: 1 } }
+  - { id: amp, type: gain, static: { channels: 2 } }
+connections:
+  - { from: source.out, to: amp.audio_in }

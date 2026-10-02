@@ -933,6 +933,69 @@ int main()
             require (result.getProperty ("state", {}).toString() == "stale",
                      "analysis result from an older instrument generation remained actionable");
         }
+
+        auto signedConfiguration = InstrumentDemoConfiguration::kick();
+        signedConfiguration.instrumentPath = juce::File (juce::String (DANDRUM_SOURCE_ROOT))
+            .getChildFile ("tests/fixtures/plugin-ui-knob.yaml")
+            .getFullPathName().toStdString();
+        signedConfiguration.soundLabFixturePath.reset();
+        signedConfiguration.matchSourcePath.reset();
+        DandrumAudioProcessor signedProcessor (signedConfiguration);
+        signedProcessor.setPlayConfigDetails (0, 2, 48000.0, 64);
+        signedProcessor.prepareToPlay (48000.0, 64);
+        require (signedProcessor.isInstrumentLoaded(),
+                 "Web signed knob fixture did not prepare");
+        HostListener signedListener;
+        signedProcessor.addListener (&signedListener);
+        DandrumAudioProcessorEditor signedEditor (signedProcessor);
+        const auto signedGeneration = signedProcessor.getParameterSurfaceGeneration();
+        const auto expectedSlot = signedProcessor.getParameters().indexOf (
+            signedProcessor.getParameterForPublicId ("fixture.level"));
+        require (expectedSlot >= 0, "Web signed knob fixture has no stable host slot");
+        require (PluginEditorBridgeTestProbe::invoke (
+                     signedEditor, "beginGesture",
+                     { juce::var ("fixture.level"),
+                       juce::var (static_cast<int> (signedGeneration)) })
+                     .getProperty ("status", {}).toString() == "accepted",
+                 "Web signed knob gesture did not begin");
+        juce::AudioBuffer<float> signedOutput (2, 64);
+        juce::MidiBuffer signedMidi;
+        const auto renderSigned = [&] (float expectedLeft)
+        {
+            signedOutput.clear();
+            signedProcessor.processBlock (signedOutput, signedMidi);
+            for (int channel = 0; channel < 2; ++channel)
+                for (int frame = 0; frame < signedOutput.getNumSamples(); ++frame)
+                    if (std::abs (signedOutput.getSample (channel, frame)
+                                   - (channel == 0 ? expectedLeft : 0.0f)) > 0.00001f)
+                        return false;
+            return true;
+        };
+        require (PluginEditorBridgeTestProbe::invoke (
+                     signedEditor, "setParameter",
+                     { juce::var ("fixture.level"), juce::var (0.25),
+                       juce::var (static_cast<int> (signedGeneration)) })
+                     .getProperty ("status", {}).toString() == "accepted"
+                     && renderSigned (-0.5f),
+                 "Web knob did not render signed left -0.5/right 0 output");
+        require (PluginEditorBridgeTestProbe::invoke (
+                     signedEditor, "setParameter",
+                     { juce::var ("fixture.level"), juce::var (0.75),
+                       juce::var (static_cast<int> (signedGeneration)) })
+                     .getProperty ("status", {}).toString() == "accepted"
+                     && renderSigned (0.5f),
+                 "Web knob did not render signed left +0.5/right 0 output");
+        require (PluginEditorBridgeTestProbe::invoke (
+                     signedEditor, "endGesture",
+                     { juce::var ("fixture.level"),
+                       juce::var (static_cast<int> (signedGeneration)) })
+                     .getProperty ("status", {}).toString() == "accepted"
+                     && signedListener.beginCount == 1 && signedListener.endCount == 1
+                     && signedListener.lastGestureIndex == expectedSlot,
+                 "Web signed knob schedule did not preserve the public host slot and one gesture");
+        signedProcessor.removeListener (&signedListener);
+        signedProcessor.releaseResources();
+
         processor.removeListener (&listener);
         processor.releaseResources();
         kick.releaseResources();

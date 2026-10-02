@@ -7,6 +7,7 @@
 #include <array>
 #include <cstddef>
 #include <cstdint>
+#include <string>
 
 NativeMasterMeter::NativeMasterMeter (DandrumAudioProcessor& hostProcessor)
     : processor (hostProcessor)
@@ -137,6 +138,33 @@ public:
         summary.setJustificationType (juce::Justification::centredLeft);
         summary.setColour (juce::Label::textColourId, juce::Colour (0xffaab5ad));
         addAndMakeVisible (summary);
+
+        primaryKnob.setComponentID ("primary-knob-slider");
+        primaryKnob.setSliderStyle (juce::Slider::RotaryHorizontalVerticalDrag);
+        primaryKnob.setTextBoxStyle (juce::Slider::TextBoxBelow, false, 76, 24);
+        primaryKnob.setRange (0.0, 1.0);
+        primaryKnob.setNumDecimalPlacesToDisplay (3);
+        primaryKnob.setColour (juce::Slider::rotarySliderFillColourId,
+                               juce::Colour (0xff7ce0aa));
+        primaryKnob.setColour (juce::Slider::rotarySliderOutlineColourId,
+                               juce::Colour (0xff414d45));
+        primaryKnob.setColour (juce::Slider::thumbColourId,
+                               juce::Colour (0xffdce9de));
+        primaryKnob.setWantsKeyboardFocus (true);
+        primaryKnob.onDragStart = [this] { beginPrimaryGesture(); };
+        primaryKnob.onValueChange = [this] { writePrimaryValue(); };
+        primaryKnob.onDragEnd = [this]
+        {
+            endPrimaryGesture();
+            refreshPrimaryKnob();
+        };
+        addAndMakeVisible (primaryKnob);
+        primaryLabel.setComponentID ("primary-knob-label");
+        primaryLabel.setJustificationType (juce::Justification::centred);
+        primaryLabel.setColour (juce::Label::textColourId, juce::Colour (0xffdce9de));
+        addAndMakeVisible (primaryLabel);
+        refreshPrimaryKnob();
+
         addAndMakeVisible (meter);
         meterGeneration = processor.getParameterSurfaceGeneration();
         processor.subscribeMeter (meterSession, meterGeneration);
@@ -164,10 +192,13 @@ public:
         title.setBounds (24, 20, getWidth() - 48, 38);
         summary.setBounds (24, 70, getWidth() - 48, 24);
         meter.setBounds (24, 118, getWidth() - 48, 160);
+        primaryLabel.setBounds (24, 302, 152, 26);
+        primaryKnob.setBounds (24, 328, 152, 158);
     }
 
     void timerCallback() override
     {
+        refreshPrimaryKnob();
         const auto generation = processor.getParameterSurfaceGeneration();
         if (generation != meterGeneration)
         {
@@ -189,11 +220,80 @@ public:
     }
 
 private:
+    enum class DragState { idle, active, rejected };
+
+    void refreshPrimaryKnob()
+    {
+        const auto state = processor.getUiParameterState();
+        const auto preferred = std::find_if (
+            state.parameters.begin(), state.parameters.end(), [] (const auto& value)
+            { return value.id == "amp.release_ms"; });
+        const auto* selected = state.parameters.empty() ? nullptr
+            : preferred != state.parameters.end() ? &*preferred : &state.parameters.front();
+        const auto id = selected != nullptr ? selected->id : std::string {};
+        if (state.generation != primaryGeneration || id != primaryId)
+        {
+            endPrimaryGesture();
+            primaryGeneration = state.generation;
+            primaryId = id;
+            const auto label = selected != nullptr
+                ? juce::String (selected->id == "amp.release_ms" ? "RELEASE"
+                    : selected->name.empty() ? selected->id : selected->name)
+                : juce::String ("NO PUBLIC CONTROL");
+            primaryLabel.setText (label, juce::dontSendNotification);
+            primaryKnob.setName (label);
+            primaryKnob.setEnabled (selected != nullptr);
+        }
+        if (selected != nullptr && dragState == DragState::idle)
+            primaryKnob.setValue (selected->normalisedValue, juce::dontSendNotification);
+    }
+
+    void beginPrimaryGesture()
+    {
+        if (primaryId.empty() || dragState != DragState::idle)
+            return;
+        dragState = DragState::rejected;
+        dragGeneration = primaryGeneration;
+        dragId = primaryId;
+        if (processor.uiCommands().beginGesture (
+                { dragGeneration, dragId, meterSession }).status
+            == InstrumentUiCommandStatus::accepted)
+            dragState = DragState::active;
+    }
+
+    void writePrimaryValue()
+    {
+        if (primaryId.empty() || dragState == DragState::rejected)
+            return;
+        const auto reply = processor.uiCommands().setParameter (
+            { primaryGeneration, primaryId, primaryKnob.getValue(),
+              dragState == DragState::active ? meterSession : 0 });
+        if (reply.status != InstrumentUiCommandStatus::accepted)
+        {
+            endPrimaryGesture();
+            refreshPrimaryKnob();
+        }
+    }
+
+    void endPrimaryGesture()
+    {
+        if (dragState == DragState::active)
+            processor.uiCommands().endGesture ({ dragGeneration, dragId, meterSession });
+        dragState = DragState::idle;
+    }
+
     DandrumAudioProcessor& processor;
     std::uint64_t meterSession = 0;
     std::uint32_t meterGeneration = 0;
+    std::uint32_t primaryGeneration = 0;
+    std::uint32_t dragGeneration = 0;
+    std::string primaryId;
+    std::string dragId;
+    DragState dragState = DragState::idle;
     juce::Label title;
     juce::Label summary;
+    juce::Label primaryLabel;
+    juce::Slider primaryKnob;
     NativeMasterMeter meter;
 };
 }
