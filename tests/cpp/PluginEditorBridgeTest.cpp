@@ -6,6 +6,7 @@
 #include <chrono>
 #include <cmath>
 #include <csignal>
+#include <fstream>
 #include <iostream>
 #include <limits>
 #include <memory>
@@ -156,7 +157,7 @@ int main()
         processor.addListener (&listener);
         DandrumAudioProcessorEditor editor (processor);
 
-        for (const auto* command : { "getParameters", "getParameterState", "setParameter",
+        for (const auto* command : { "getParameters", "getParameterState", "getPreparedDocument", "setParameter",
                                      "beginGesture", "endGesture",
                                      "noteOn", "noteOff",
                                      "subscribeMeter", "setMeterVisible", "getMeterPacket",
@@ -649,6 +650,154 @@ int main()
                                 "accent.brightness", "amp.release_ms", "slide.time_ms" })
             require (findParameter (acidValues, id).isObject(),
                      std::string ("TB-303 public control missing from host state: ") + id);
+        const auto acidDocument = PluginEditorBridgeTestProbe::invoke (
+            acidEditor, "getPreparedDocument");
+        const auto acidSources = acidDocument.getProperty ("sources", {});
+        require (acidDocument.isObject()
+                     && acidDocument.getProperty ("instrumentId", {}).toString()
+                            == "dandrum.tb303-acid"
+                     && acidSources.getArray() != nullptr && acidSources.getArray()->isEmpty()
+                     && ! static_cast<bool> (acidDocument.getProperty ("capabilities", {})
+                           .getProperty ("preparedWaveform", {})),
+                 "TB-303 Web document invented prepared sample content");
+
+        DandrumAudioProcessor samplerWeb (InstrumentDemoConfiguration::sampler());
+        samplerWeb.setPlayConfigDetails (0, 2, 48000.0, 64);
+        samplerWeb.prepareToPlay (48000.0, 64);
+        require (samplerWeb.isInstrumentLoaded(), "sampler Web document fixture did not prepare");
+        DandrumAudioProcessorEditor samplerEditor (samplerWeb);
+        const auto samplerDocument = PluginEditorBridgeTestProbe::invoke (
+            samplerEditor, "getPreparedDocument");
+        const auto samplerSources = samplerDocument.getProperty ("sources", {});
+        const auto samplerMaps = samplerDocument.getProperty ("maps", {});
+        const auto samplerParameters = samplerDocument.getProperty ("parameters", {});
+        require (samplerDocument.isObject()
+                     && static_cast<int> (samplerDocument.getProperty ("generation", {}))
+                            == static_cast<int> (samplerWeb.getParameterSurfaceGeneration())
+                     && samplerDocument.getProperty ("instrumentId", {}).toString()
+                            == "dandrum.advanced-drum-kit"
+                     && samplerSources.getArray() != nullptr && samplerSources.getArray()->size() == 1
+                     && samplerMaps.getArray() != nullptr && samplerMaps.getArray()->size() == 1
+                     && samplerParameters.getArray() != nullptr
+                     && samplerParameters.getArray()->size() == 23
+                     && static_cast<bool> (samplerDocument.getProperty ("capabilities", {})
+                           .getProperty ("preparedWaveform", {})),
+                 "Web document lost prepared sampler identity, controls or capabilities");
+        const auto source = samplerSources.getArray()->getReference (0);
+        const auto regions = source.getProperty ("regions", {});
+        const auto map = samplerMaps.getArray()->getReference (0);
+        const auto zones = map.getProperty ("zones", {});
+        const auto soft = findParameter (zones, "snare_soft");
+        const auto hard = findParameter (zones, "snare_hard_a");
+        const auto snareParameter = findParameter (samplerParameters, "drums.snare.pitch_ratio");
+        require (source.getProperty ("id", {}).toString() == "drums"
+                     && static_cast<int> (source.getProperty ("sampleRateHz", {})) == 48000
+                     && source.getProperty ("frameCount", {}).toString() == "51000"
+                     && regions.getArray() != nullptr && regions.getArray()->size() == 6
+                     && regions.getArray()->getReference (0).getProperty ("startFrame", {}).toString() == "0"
+                     && regions.getArray()->getReference (0).getProperty ("endFrame", {}).toString() == "12000"
+                     && map.getProperty ("selectionMode", {}).toString() == "round_robin"
+                     && map.getProperty ("selectionSeed", {}).toString() == "2026"
+                     && static_cast<int> (soft.getProperty ("velocityHigh", {})) == 63
+                     && static_cast<int> (hard.getProperty ("velocityLow", {})) == 64
+                     && hard.getProperty ("roundRobinGroup", {}).toString() == "hard_snare"
+                     && static_cast<int> (hard.getProperty ("controlGroup", {})) == 2
+                     && snareParameter.getProperty ("scope", {}).toString() == "sampleGroup"
+                     && static_cast<int> (snareParameter.getProperty ("controlGroup", {})) == 2,
+                 "Web document did not preserve source frames, selection semantics or scoped controls");
+
+        auto slicerConfiguration = InstrumentDemoConfiguration::sampler();
+        slicerConfiguration.instrumentPath = juce::File (juce::String (DANDRUM_SOURCE_ROOT))
+            .getChildFile ("examples/patches/advanced-break-slicer.yaml")
+            .getFullPathName().toStdString();
+        DandrumAudioProcessor slicerWeb (slicerConfiguration);
+        slicerWeb.setPlayConfigDetails (0, 2, 44100.0, 64);
+        slicerWeb.prepareToPlay (44100.0, 64);
+        require (slicerWeb.isInstrumentLoaded(), "slice Web document fixture did not prepare");
+        DandrumAudioProcessorEditor slicerEditor (slicerWeb);
+        const auto sliceDocument = PluginEditorBridgeTestProbe::invoke (
+            slicerEditor, "getPreparedDocument");
+        const auto sliceSources = sliceDocument.getProperty ("sources", {});
+        const auto slices = sliceSources.getArray()->getReference (0).getProperty ("slices", {});
+        require (slices.getArray() != nullptr && slices.getArray()->size() == 4
+                     && slices.getArray()->getReference (1).getProperty ("id", {}).toString() == "hat"
+                     && slices.getArray()->getReference (1).getProperty ("startFrame", {}).toString() == "6000"
+                     && slices.getArray()->getReference (1).getProperty ("endFrame", {}).toString() == "12000",
+                 "Web document lost prepared slice identities and frame coordinates");
+
+        const auto sourceRoot = std::filesystem::path (DANDRUM_SOURCE_ROOT);
+        const auto documentFixture = std::filesystem::temp_directory_path()
+            / ("dandrum-web-document-" + std::to_string (
+                std::chrono::steady_clock::now().time_since_epoch().count()));
+        std::filesystem::create_directories (documentFixture / "assets");
+        struct DocumentFixtureGuard
+        {
+            std::filesystem::path path;
+            ~DocumentFixtureGuard() { std::filesystem::remove_all (path); }
+        } documentFixtureGuard { documentFixture };
+        std::filesystem::copy_file (sourceRoot / "examples/patches/assets/advanced-drums.wav",
+                                    documentFixture / "assets/advanced-drums.wav");
+        auto detailedYaml = juce::File (juce::String (
+            (sourceRoot / "examples/patches/advanced-drum-kit.yaml").string())).loadFileAsString();
+        detailedYaml = detailedYaml.replace (
+            "{ id: kick, start_frame: 0, end_frame: 12000 }",
+            "{ id: kick, start_frame: 0, end_frame: 12000, root_note: 60, gain_db: -3, pan: 0.25, fade_in_ms: 2, fade_out_ms: 3, loop: { mode: forward, start_frame: 100, end_frame: 10000, crossfade_ms: 1 } }");
+        detailedYaml = detailedYaml.replace ("selection_seed: 2026",
+                                             "selection_seed: 9007199254740993");
+        detailedYaml = detailedYaml.replace (
+            "id: kick, region: drums.kick, key_range: [36, 36], velocity_range: [1, 127], control_group: 1",
+            "id: kick, region: drums.kick, key_range: [36, 36], velocity_range: [1, 127], control_group: 1, weight: 2, gain_db: -6, pan: -0.5, pitch_semitones: 12");
+        require (juce::File (juce::String ((documentFixture / "instrument.yaml").string()))
+                     .replaceWithText (detailedYaml),
+                 "could not write prepared document metadata fixture");
+        auto detailedConfiguration = InstrumentDemoConfiguration::sampler();
+        detailedConfiguration.instrumentPath = (documentFixture / "instrument.yaml").string();
+        DandrumAudioProcessor detailedWeb (detailedConfiguration);
+        detailedWeb.setPlayConfigDetails (0, 2, 48000.0, 64);
+        detailedWeb.prepareToPlay (48000.0, 64);
+        require (detailedWeb.isInstrumentLoaded(),
+                 "prepared document metadata fixture did not prepare");
+        DandrumAudioProcessorEditor detailedEditor (detailedWeb);
+        const auto detailedDocument = PluginEditorBridgeTestProbe::invoke (
+            detailedEditor, "getPreparedDocument");
+        const auto detailedSources = detailedDocument.getProperty ("sources", {});
+        const auto detailedRegions = detailedSources.getArray()->getReference (0)
+            .getProperty ("regions", {});
+        const auto detailedRegion = detailedRegions.getArray()->getReference (0);
+        const auto detailedLoop = detailedRegion.getProperty ("loop", {});
+        const auto detailedMaps = detailedDocument.getProperty ("maps", {});
+        const auto detailedMap = detailedMaps.getArray()->getReference (0);
+        const auto detailedZones = detailedMap.getProperty ("zones", {});
+        const auto detailedKick = findParameter (detailedZones, "kick");
+        require (detailedMap.getProperty ("selectionSeed", {}).toString()
+                            == "9007199254740993"
+                     && static_cast<int> (detailedRegion.getProperty ("rootNote", {})) == 60
+                     && std::abs (static_cast<double> (detailedRegion.getProperty ("gainDb", {})) + 3.0) < 0.0001
+                     && std::abs (static_cast<double> (detailedRegion.getProperty ("pan", {})) - 0.25) < 0.0001
+                     && std::abs (static_cast<double> (detailedRegion.getProperty ("fadeInMs", {})) - 2.0) < 0.0001
+                     && std::abs (static_cast<double> (detailedRegion.getProperty ("fadeOutMs", {})) - 3.0) < 0.0001
+                     && detailedLoop.getProperty ("mode", {}).toString() == "forward"
+                     && detailedLoop.getProperty ("startFrame", {}).toString() == "100"
+                     && detailedLoop.getProperty ("endFrame", {}).toString() == "10000"
+                     && std::abs (static_cast<double> (detailedLoop.getProperty ("crossfadeMs", {})) - 1.0) < 0.0001
+                     && static_cast<int> (detailedKick.getProperty ("weight", {})) == 2
+                     && std::abs (static_cast<double> (detailedKick.getProperty ("gainDb", {})) + 6.0) < 0.0001
+                     && std::abs (static_cast<double> (detailedKick.getProperty ("pan", {})) + 0.5) < 0.0001
+                     && std::abs (static_cast<double> (detailedKick.getProperty ("pitchSemitones", {})) - 12.0) < 0.0001,
+                 "Web document lost loop, fade, optional zone data or a 64-bit map seed");
+        const auto samplerGeneration = samplerWeb.getParameterSurfaceGeneration();
+        require (samplerWeb.reloadInstrumentFromFile (tb303),
+                 "could not reload sampler Web document to TB-303");
+        const auto replacementDocument = PluginEditorBridgeTestProbe::invoke (
+            samplerEditor, "getPreparedDocument");
+        const auto replacementSources = replacementDocument.getProperty ("sources", {});
+        require (static_cast<int> (replacementDocument.getProperty ("generation", {}))
+                            > static_cast<int> (samplerGeneration)
+                     && replacementDocument.getProperty ("instrumentId", {}).toString()
+                            == "dandrum.tb303-acid"
+                     && replacementSources.getArray() != nullptr
+                     && replacementSources.getArray()->isEmpty(),
+                 "Web document did not replace sampler facts after instrument reload");
 
         const auto referenceFile = juce::File::getSpecialLocation (juce::File::tempDirectory)
                                        .getNonexistentChildFile ("dandrum_kick_match_reference", ".wav");

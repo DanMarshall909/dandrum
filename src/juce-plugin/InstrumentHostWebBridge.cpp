@@ -136,6 +136,140 @@ juce::var meterPacketForWeb (const InstrumentUiMeterDelivery::Packet& packet)
     return juce::var (result.release());
 }
 
+juce::var preparedDocumentForWeb (const InstrumentUiDocument& document)
+{
+    juce::var result (new juce::DynamicObject());
+    auto* root = result.getDynamicObject();
+    root->setProperty ("generation", static_cast<juce::int64> (document.generation));
+    root->setProperty ("instrumentId", juce::String (document.instrumentId));
+
+    juce::Array<juce::var> parameters;
+    for (const auto& parameter : document.parameters)
+    {
+        juce::var item (new juce::DynamicObject());
+        auto* value = item.getDynamicObject();
+        value->setProperty ("id", juce::String (parameter.id));
+        value->setProperty ("name", juce::String (parameter.name));
+        value->setProperty ("normalisedValue", parameter.normalisedValue);
+        value->setProperty ("minValue", parameter.minValue);
+        value->setProperty ("maxValue", parameter.maxValue);
+        value->setProperty ("scope", parameter.scope == InstrumentUiDocument::ControlScope::instrument
+                                      ? "instrument" : "sampleGroup");
+        if (parameter.controlGroup)
+            value->setProperty ("controlGroup", *parameter.controlGroup);
+        parameters.add (item);
+    }
+    root->setProperty ("parameters", juce::var (parameters));
+
+    juce::Array<juce::var> sources;
+    for (const auto& source : document.sources)
+    {
+        juce::var item (new juce::DynamicObject());
+        auto* value = item.getDynamicObject();
+        value->setProperty ("id", juce::String (source.id));
+        value->setProperty ("sampleRateHz", static_cast<juce::int64> (source.sampleRateHz));
+        value->setProperty ("channelCount", static_cast<int> (source.channelCount));
+        value->setProperty ("frameCount", juce::String (std::to_string (source.frameCount)));
+        juce::Array<juce::var> regions;
+        for (const auto& region : source.regions)
+        {
+            juce::var regionItem (new juce::DynamicObject());
+            auto* regionValue = regionItem.getDynamicObject();
+            regionValue->setProperty ("id", juce::String (region.id));
+            regionValue->setProperty ("startFrame", juce::String (std::to_string (region.startFrame)));
+            regionValue->setProperty ("endFrame", juce::String (std::to_string (region.endFrame)));
+            regionValue->setProperty ("reverse", region.reverse);
+            regionValue->setProperty ("fadeInMs", region.fadeInMs);
+            regionValue->setProperty ("fadeOutMs", region.fadeOutMs);
+            if (region.rootNote)
+                regionValue->setProperty ("rootNote", *region.rootNote);
+            if (region.gainDb)
+                regionValue->setProperty ("gainDb", *region.gainDb);
+            if (region.pan)
+                regionValue->setProperty ("pan", *region.pan);
+            if (region.loop)
+            {
+                juce::var loop (new juce::DynamicObject());
+                auto* loopValue = loop.getDynamicObject();
+                loopValue->setProperty ("mode", juce::String (region.loop->mode));
+                loopValue->setProperty ("startFrame", juce::String (
+                    std::to_string (region.loop->startFrame)));
+                loopValue->setProperty ("endFrame", juce::String (
+                    std::to_string (region.loop->endFrame)));
+                loopValue->setProperty ("crossfadeMs", region.loop->crossfadeMs);
+                regionValue->setProperty ("loop", loop);
+            }
+            regions.add (regionItem);
+        }
+        value->setProperty ("regions", juce::var (regions));
+        juce::Array<juce::var> slices;
+        for (const auto& slice : source.slices)
+        {
+            juce::var sliceItem (new juce::DynamicObject());
+            auto* sliceValue = sliceItem.getDynamicObject();
+            sliceValue->setProperty ("id", juce::String (slice.id));
+            sliceValue->setProperty ("startFrame", juce::String (std::to_string (slice.startFrame)));
+            sliceValue->setProperty ("endFrame", juce::String (std::to_string (slice.endFrame)));
+            slices.add (sliceItem);
+        }
+        value->setProperty ("slices", juce::var (slices));
+        sources.add (item);
+    }
+    root->setProperty ("sources", juce::var (sources));
+
+    juce::Array<juce::var> maps;
+    for (const auto& map : document.maps)
+    {
+        juce::var item (new juce::DynamicObject());
+        auto* value = item.getDynamicObject();
+        value->setProperty ("id", juce::String (map.id));
+        value->setProperty ("selectionMode", juce::String (map.selectionMode));
+        value->setProperty ("selectionSeed", juce::String (std::to_string (map.selectionSeed)));
+        juce::Array<juce::var> zones;
+        for (const auto& zone : map.zones)
+        {
+            juce::var zoneItem (new juce::DynamicObject());
+            auto* zoneValue = zoneItem.getDynamicObject();
+            zoneValue->setProperty ("id", juce::String (zone.id));
+            zoneValue->setProperty ("sourceIndex", static_cast<juce::int64> (zone.sourceIndex));
+            zoneValue->setProperty ("regionIndex", static_cast<juce::int64> (zone.regionIndex));
+            zoneValue->setProperty ("startFrame", juce::String (std::to_string (zone.startFrame)));
+            zoneValue->setProperty ("endFrame", juce::String (std::to_string (zone.endFrame)));
+            zoneValue->setProperty ("keyLow", static_cast<int> (zone.keyLow));
+            zoneValue->setProperty ("keyHigh", static_cast<int> (zone.keyHigh));
+            zoneValue->setProperty ("velocityLow", static_cast<int> (zone.velocityLow));
+            zoneValue->setProperty ("velocityHigh", static_cast<int> (zone.velocityHigh));
+            zoneValue->setProperty ("roundRobinGroup", juce::String (zone.roundRobinGroup));
+            zoneValue->setProperty ("chokeGroup", juce::String (zone.chokeGroup));
+            zoneValue->setProperty ("weight", static_cast<juce::int64> (zone.weight));
+            if (zone.controlGroup)
+                zoneValue->setProperty ("controlGroup", *zone.controlGroup);
+            if (zone.gainDb)
+                zoneValue->setProperty ("gainDb", *zone.gainDb);
+            if (zone.pan)
+                zoneValue->setProperty ("pan", *zone.pan);
+            if (zone.pitchSemitones)
+                zoneValue->setProperty ("pitchSemitones", *zone.pitchSemitones);
+            zones.add (zoneItem);
+        }
+        value->setProperty ("zones", juce::var (zones));
+        maps.add (item);
+    }
+    root->setProperty ("maps", juce::var (maps));
+
+    juce::var capabilities (new juce::DynamicObject());
+    auto* supported = capabilities.getDynamicObject();
+    supported->setProperty ("sampleKeyMap", document.capabilities.sampleKeyMap);
+    supported->setProperty ("preparedWaveform", document.capabilities.preparedWaveform);
+    supported->setProperty ("synthLayer", document.capabilities.synthLayer);
+    supported->setProperty ("nestedPatchLayer", document.capabilities.nestedPatchLayer);
+    supported->setProperty ("moduleChain", document.capabilities.moduleChain);
+    supported->setProperty ("patternSequencer", document.capabilities.patternSequencer);
+    supported->setProperty ("hostTransport", document.capabilities.hostTransport);
+    root->setProperty ("capabilities", capabilities);
+    return result;
+}
+
 juce::var commandReplyForWeb (InstrumentUiCommandReply reply, const juce::String& publicId)
 {
     switch (reply.status)
@@ -183,7 +317,7 @@ const char* InstrumentHostWebBridge::bootstrapScript() noexcept
     return nativeFunctionBootstrap;
 }
 
-std::array<InstrumentHostWebBridge::NativeFunctionEntry, 15>
+std::array<InstrumentHostWebBridge::NativeFunctionEntry, 16>
 InstrumentHostWebBridge::nativeFunctions()
 {
     return {{
@@ -216,6 +350,12 @@ InstrumentHostWebBridge::nativeFunctions()
                   juce::WebBrowserComponent::NativeFunctionCompletion completion)
           {
               getParameterStateForWeb (arguments, std::move (completion));
+          } },
+        { "getPreparedDocument",
+          [this] (const juce::Array<juce::var>& arguments,
+                  juce::WebBrowserComponent::NativeFunctionCompletion completion)
+          {
+              getPreparedDocumentForWeb (arguments, std::move (completion));
           } },
         { "noteOn",
           [this] (const juce::Array<juce::var>& arguments,
@@ -420,6 +560,14 @@ void InstrumentHostWebBridge::getParameterStateForWeb (
     juce::WebBrowserComponent::NativeFunctionCompletion completion) const
 {
     completion (parameterStateForWeb());
+}
+
+void InstrumentHostWebBridge::getPreparedDocumentForWeb (
+    const juce::Array<juce::var>&,
+    juce::WebBrowserComponent::NativeFunctionCompletion completion) const
+{
+    const auto document = processor.getPreparedUiDocument();
+    completion (document ? preparedDocumentForWeb (*document) : juce::var {});
 }
 
 void InstrumentHostWebBridge::noteOnFromWeb (

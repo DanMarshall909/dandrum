@@ -58,6 +58,8 @@ Progress on 5.2: waveform requests now retain an editor session ID. Closing nati
 - [ ] 7.5 Compose full/compact native and web layouts with keyboard/focus/value entry; inspect actual runtimes at 1200x800, 820x560 and common display scales, recording any platform-specific differences.
 - [x] 7.6 Adapt the supplied TB-303 React panel to the shared asset and command path; tests must prove all seven actual public controls, host-backed note audition, authoritative reload updates and explicit unavailability of unsupported waveform, pattern and transport editing.
 
+Progress toward 7.1–7.3: the Web bridge now supplies the same copied prepared document used by the native side, including scoped controls, source/region/slice frames, map/zone selection metadata and capabilities. Browser frame and seed values are decimal strings to retain their full 64-bit values. The renderer components still require the separate design-system export.
+
 ## 8. Integration And Evidence
 
 - [ ] 8.1 Run relevant Rust, C++, JavaScript and packaging checks plus CMake/CTest in the task worktree; record focused and full results separately and do not claim runtime proof from compilation.
