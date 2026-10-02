@@ -159,11 +159,66 @@ int main()
         for (const auto* command : { "getParameters", "getParameterState", "setParameter",
                                      "beginGesture", "endGesture",
                                      "noteOn", "noteOff",
+                                     "subscribeMeter", "setMeterVisible", "getMeterPacket",
+                                     "ackMeterPacket",
                                      "renderSoundLab", "chooseSoundLabReference", "matchSoundLab",
                                      "cancelSoundLab", "acceptSoundLabMatch", "requestGraphProposal",
                                      "getSoundLabAnalysis" })
             require (PluginEditorBridgeTestProbe::hasCommand (editor, command),
                      std::string ("configured editor did not register ") + command);
+
+        const auto meterGeneration = processor.getParameterSurfaceGeneration();
+        require (static_cast<bool> (PluginEditorBridgeTestProbe::invoke (
+                     editor, "subscribeMeter", { static_cast<int> (meterGeneration) })),
+                 "web meter subscription was rejected");
+        juce::AudioBuffer<float> meterBuffer (2, 64);
+        juce::MidiBuffer emptyMidi;
+        processor.processBlock (meterBuffer, emptyMidi);
+        PluginEditorBridgeTestProbe::refresh (editor);
+        const auto meterPacket = PluginEditorBridgeTestProbe::invoke (editor, "getMeterPacket");
+        require (meterPacket.isObject()
+                     && static_cast<int> (meterPacket.getProperty ("generation", {}))
+                            == static_cast<int> (meterGeneration)
+                     && static_cast<int> (meterPacket.getProperty ("observed_samples", {})) == 64
+                     && meterPacket.getProperty ("sequence", {}).isString()
+                     && meterPacket.getProperty ("stream_id", {}).isString()
+                     && meterPacket.getProperty ("end_sample", {}).isString()
+                     && meterPacket.getProperty ("peak", {}).getArray() != nullptr
+                     && meterPacket.getProperty ("rms", {}).getArray() != nullptr
+                     && meterPacket.getProperty ("clipped", {}).getArray() != nullptr,
+                 "web meter packet lost generation, interval or exact sequence");
+        require (PluginEditorBridgeTestProbe::invoke (editor, "getMeterPacket").isVoid(),
+                 "web meter sent a second unacknowledged packet");
+        require (! static_cast<bool> (PluginEditorBridgeTestProbe::invoke (
+                     editor, "ackMeterPacket", { "bad", static_cast<int> (meterGeneration) })),
+                 "malformed web meter acknowledgement was accepted");
+        require (! static_cast<bool> (PluginEditorBridgeTestProbe::invoke (
+                     editor, "ackMeterPacket", { 9007199254740993.0,
+                                                  static_cast<int> (meterGeneration) })),
+                 "floating-point meter sequence was accepted with lost precision");
+        require (! static_cast<bool> (PluginEditorBridgeTestProbe::invoke (
+                     editor, "ackMeterPacket",
+                     { meterPacket.getProperty ("sequence", {}),
+                       static_cast<int> (meterGeneration + 1) })),
+                 "stale web meter generation acknowledged a packet");
+        require (static_cast<bool> (PluginEditorBridgeTestProbe::invoke (
+                     editor, "ackMeterPacket",
+                     { meterPacket.getProperty ("sequence", {}), static_cast<int> (meterGeneration) })),
+                 "web meter acknowledgement failed");
+        require (static_cast<bool> (PluginEditorBridgeTestProbe::invoke (
+                     editor, "setMeterVisible", { false, static_cast<int> (meterGeneration) })),
+                 "web meter hide was rejected");
+        processor.processBlock (meterBuffer, emptyMidi);
+        PluginEditorBridgeTestProbe::refresh (editor);
+        require (PluginEditorBridgeTestProbe::invoke (editor, "getMeterPacket").isVoid(),
+                 "hidden web meter retained a visual packet");
+        require (static_cast<bool> (PluginEditorBridgeTestProbe::invoke (
+                     editor, "setMeterVisible", { true, static_cast<int> (meterGeneration) })),
+                 "web meter reopen was rejected");
+        processor.processBlock (meterBuffer, emptyMidi);
+        PluginEditorBridgeTestProbe::refresh (editor);
+        require (PluginEditorBridgeTestProbe::invoke (editor, "getMeterPacket").isObject(),
+                 "reopened web meter did not receive current data");
 
         auto snapshot = PluginEditorBridgeTestProbe::invoke (editor, "getParameters");
         const auto defaultIds = processor.getActivePublicParameterIds();

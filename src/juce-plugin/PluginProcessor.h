@@ -19,6 +19,7 @@
 #include "InstrumentUiCommands.h"
 #include "InstrumentUiDocument.h"
 #include "InstrumentUiMeterCapture.h"
+#include "InstrumentUiMeterDelivery.h"
 #include "InstrumentUiParameterState.h"
 #include "RustEngineBindings.h"
 
@@ -175,14 +176,27 @@ public:
 
     /// One processor-owned, stereo master capture stream. The UI aggregation
     /// service is its sole off-audio consumer; editors never own queue storage.
-    void setMeterCaptureEnabled (bool enabled) noexcept;
-    bool popMeterFrame (InstrumentUiMeterCapture::Frame& frame) noexcept;
     std::uint64_t getDroppedMeterFrameCount() const noexcept;
     InstrumentUiMeterCapture::ClipSnapshot getMeterClipSnapshot() const noexcept;
     bool acknowledgeMeterClip (std::size_t channel, std::uint32_t generation,
                                std::uint64_t ticket) noexcept;
+    /// Message-thread only. Capture storage remains processor-owned when an
+    /// editor closes; the fixed session table gates unnecessary visual work.
+    bool subscribeMeter (std::uint64_t sessionId, std::uint32_t generation) noexcept;
+    bool unsubscribeMeter (std::uint64_t sessionId) noexcept;
+    bool setMeterSessionVisible (std::uint64_t sessionId, bool visible) noexcept;
+    void pollMeterDelivery() noexcept;
+    std::optional<InstrumentUiMeterDelivery::Packet> takeMeterPacket (
+        std::uint64_t sessionId) noexcept;
+    bool acknowledgeMeterPacket (std::uint64_t sessionId, std::uint32_t generation,
+                                 std::uint64_t sequence) noexcept;
 
 private:
+    friend struct PluginConstructionTestProbe;
+    /// Test-only direct inspection; subscription delivery is the production
+    /// queue consumer and excludes this diagnostic path while active.
+    void setMeterCaptureEnabled (bool enabled) noexcept;
+    bool popMeterFrame (InstrumentUiMeterCapture::Frame& frame) noexcept;
     std::uint32_t uiCommandGeneration() const noexcept override;
     InstrumentUiCommandStatus applyUiParameter (
         std::uint32_t generation, const std::string& id, float normalisedValue,
@@ -331,6 +345,10 @@ private:
     DandrumKernelInstrument* lastAudioKernel = nullptr;
     DandrumKernelInstrument* lastMeterKernel = nullptr;
     InstrumentUiMeterCapture meterCapture;
+    InstrumentUiMeterAggregation meterAggregation;
+    InstrumentUiMeterDelivery meterDelivery;
+
+    void refreshMeterCaptureSubscription (bool wasInactive) noexcept;
     // Serializes engine replacement, reprepare, and UI metadata snapshots.
     // Readers copy retained metadata before a previous engine is destroyed.
     // Host notifications may re-enter snapshot readers on the same thread.

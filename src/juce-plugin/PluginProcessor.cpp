@@ -920,6 +920,8 @@ void DandrumAudioProcessor::setMeterCaptureEnabled (bool enabled) noexcept
 
 bool DandrumAudioProcessor::popMeterFrame (InstrumentUiMeterCapture::Frame& frame) noexcept
 {
+    if (meterDelivery.visibleCount() != 0)
+        return false;
     return meterCapture.pop (frame);
 }
 
@@ -937,6 +939,86 @@ bool DandrumAudioProcessor::acknowledgeMeterClip (
     std::size_t channel, std::uint32_t generation, std::uint64_t ticket) noexcept
 {
     return meterCapture.acknowledgeClip (channel, generation, ticket);
+}
+
+void DandrumAudioProcessor::refreshMeterCaptureSubscription (bool wasInactive) noexcept
+{
+    const bool active = meterDelivery.visibleCount() != 0;
+    if (wasInactive && active)
+    {
+        InstrumentUiMeterCapture::Frame stale;
+        for (std::size_t n = 0; n < InstrumentUiMeterCapture::capacity
+                              && meterCapture.pop (stale); ++n) {}
+        meterAggregation.observeLostFrames (meterCapture.lostFrames());
+        meterAggregation.resetWindow();
+    }
+    meterCapture.setEnabled (active);
+}
+
+bool DandrumAudioProcessor::subscribeMeter (
+    std::uint64_t sessionId, std::uint32_t generation) noexcept
+{
+    const auto currentGeneration = getParameterSurfaceGeneration();
+    meterDelivery.retireOtherGenerations (currentGeneration);
+    if (generation != currentGeneration)
+        return false;
+    const bool wasInactive = meterDelivery.visibleCount() == 0;
+    const bool accepted = meterDelivery.subscribe (sessionId, generation);
+    refreshMeterCaptureSubscription (wasInactive);
+    return accepted;
+}
+
+bool DandrumAudioProcessor::unsubscribeMeter (std::uint64_t sessionId) noexcept
+{
+    const bool removed = meterDelivery.unsubscribe (sessionId);
+    refreshMeterCaptureSubscription (false);
+    return removed;
+}
+
+bool DandrumAudioProcessor::setMeterSessionVisible (
+    std::uint64_t sessionId, bool visible) noexcept
+{
+    const bool wasInactive = meterDelivery.visibleCount() == 0;
+    const bool found = meterDelivery.setVisible (sessionId, visible);
+    refreshMeterCaptureSubscription (wasInactive);
+    return found;
+}
+
+void DandrumAudioProcessor::pollMeterDelivery() noexcept
+{
+    meterDelivery.retireOtherGenerations (getParameterSurfaceGeneration());
+    refreshMeterCaptureSubscription (false);
+    meterAggregation.resetWindow();
+    InstrumentUiMeterCapture::Frame frame;
+    bool observed = false;
+    for (std::size_t n = 0; n < InstrumentUiMeterCapture::capacity
+                          && meterCapture.pop (frame); ++n)
+    {
+        if (meterDelivery.visibleCount() != 0)
+        {
+            meterAggregation.append (frame);
+            observed = true;
+        }
+    }
+    meterAggregation.observeLostFrames (meterCapture.lostFrames());
+    if (! observed)
+        return;
+    InstrumentUiMeterDelivery::Packet packet;
+    packet.meter = meterAggregation.snapshot();
+    packet.clip = meterCapture.clipSnapshot();
+    meterDelivery.publish (packet);
+}
+
+std::optional<InstrumentUiMeterDelivery::Packet>
+DandrumAudioProcessor::takeMeterPacket (std::uint64_t sessionId) noexcept
+{
+    return meterDelivery.take (sessionId);
+}
+
+bool DandrumAudioProcessor::acknowledgeMeterPacket (
+    std::uint64_t sessionId, std::uint32_t generation, std::uint64_t sequence) noexcept
+{
+    return meterDelivery.acknowledge (sessionId, generation, sequence);
 }
 
 bool DandrumAudioProcessor::hasEditor() const

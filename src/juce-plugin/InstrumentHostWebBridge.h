@@ -18,7 +18,7 @@ public:
     ~InstrumentHostWebBridge();
 
     static const char* bootstrapScript() noexcept;
-    std::array<NativeFunctionEntry, 10> nativeFunctions();
+    std::array<NativeFunctionEntry, 14> nativeFunctions();
     juce::WebBrowserComponent::Options addNativeFunctions (
         juce::WebBrowserComponent::Options options);
     std::optional<juce::WebBrowserComponent::Resource> provideResource (
@@ -44,6 +44,14 @@ public:
     void reloadInstrumentFromWeb (const juce::Array<juce::var>& arguments,
                                   juce::WebBrowserComponent::NativeFunctionCompletion completion);
     void getUiJobStatusFromWeb (const juce::Array<juce::var>& arguments,
+                                juce::WebBrowserComponent::NativeFunctionCompletion completion);
+    void subscribeMeterFromWeb (const juce::Array<juce::var>& arguments,
+                                juce::WebBrowserComponent::NativeFunctionCompletion completion);
+    void setMeterVisibleFromWeb (const juce::Array<juce::var>& arguments,
+                                 juce::WebBrowserComponent::NativeFunctionCompletion completion);
+    void getMeterPacketForWeb (const juce::Array<juce::var>& arguments,
+                               juce::WebBrowserComponent::NativeFunctionCompletion completion);
+    void ackMeterPacketFromWeb (const juce::Array<juce::var>& arguments,
                                 juce::WebBrowserComponent::NativeFunctionCompletion completion);
     bool expireNoteSession (double nowMilliseconds) noexcept;
     juce::var parameterSnapshotForWeb() const;

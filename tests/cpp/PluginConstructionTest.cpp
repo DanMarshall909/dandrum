@@ -12,6 +12,20 @@
 #include <thread>
 #include <vector>
 
+struct PluginConstructionTestProbe
+{
+    static void setMeterCaptureEnabled (DandrumAudioProcessor& processor, bool enabled)
+    {
+        processor.setMeterCaptureEnabled (enabled);
+    }
+
+    static bool popMeterFrame (DandrumAudioProcessor& processor,
+                               InstrumentUiMeterCapture::Frame& frame)
+    {
+        return processor.popMeterFrame (frame);
+    }
+};
+
 namespace
 {
 std::atomic<bool> countAudioAllocations { false };
@@ -544,7 +558,7 @@ int main()
     juce::AudioBuffer<float> referenceBuffer (2, blockSize);
     referenceBuffer.clear();
     meterReference.processBlock (referenceBuffer, kernelMidi);
-    kernelProcessor.setMeterCaptureEnabled (true);
+    PluginConstructionTestProbe::setMeterCaptureEnabled (kernelProcessor, true);
     kernelBuffer.clear();
     countAudioAllocations.store (true, std::memory_order_relaxed);
     kernelProcessor.processBlock (kernelBuffer, kernelMidi);
@@ -574,7 +588,7 @@ int main()
         }
     }
     InstrumentUiMeterCapture::Frame meterFrame;
-    if (! kernelProcessor.popMeterFrame (meterFrame)
+    if (! PluginConstructionTestProbe::popMeterFrame (kernelProcessor, meterFrame)
         || meterFrame.generation != kernelProcessor.getParameterSurfaceGeneration()
         || meterFrame.sampleCount != blockSize || meterFrame.samplePosition != blockSize
         || ! nearlyEqual (meterFrame.peak[0], 0.5f, 0.000001f)
@@ -614,12 +628,12 @@ int main()
         return 1;
     }
     for (std::size_t frame = 0; frame < InstrumentUiMeterCapture::capacity; ++frame)
-        if (! kernelProcessor.popMeterFrame (meterFrame))
+        if (! PluginConstructionTestProbe::popMeterFrame (kernelProcessor, meterFrame))
             return 1;
     kernelProcessor.setMuted (true);
     kernelProcessor.processBlock (kernelBuffer, kernelMidi);
     kernelProcessor.setMuted (false);
-    if (! kernelProcessor.popMeterFrame (meterFrame)
+    if (! PluginConstructionTestProbe::popMeterFrame (kernelProcessor, meterFrame)
         || ! nearlyEqual (kernelBuffer.getSample (0, 0), 0.0f, 0.000001f)
         || ! nearlyEqual (meterFrame.peak[0], 0.0f, 0.000001f)
         || ! nearlyEqual (meterFrame.peak[1], 0.0f, 0.000001f)
@@ -627,6 +641,67 @@ int main()
         || std::abs (meterFrame.energy[1]) > 0.000001)
     {
         std::cerr << "muted processor did not publish a silent meter frame\n";
+        return 1;
+    }
+    PluginConstructionTestProbe::setMeterCaptureEnabled (kernelProcessor, false);
+    const auto meterGeneration = kernelProcessor.getParameterSurfaceGeneration();
+    if (! kernelProcessor.subscribeMeter (77, meterGeneration)
+        || kernelProcessor.subscribeMeter (77, meterGeneration)
+        || kernelProcessor.subscribeMeter (78, meterGeneration + 1))
+    {
+        std::cerr << "processor admitted duplicate or stale meter subscription\n";
+        return 1;
+    }
+    kernelProcessor.processBlock (kernelBuffer, kernelMidi);
+    if (PluginConstructionTestProbe::popMeterFrame (kernelProcessor, meterFrame))
+    {
+        std::cerr << "direct meter consumer stole a subscribed frame\n";
+        return 1;
+    }
+    kernelProcessor.pollMeterDelivery();
+    const auto delivered = kernelProcessor.takeMeterPacket (77);
+    if (! delivered || ! delivered->meter.complete
+        || delivered->meter.generation != meterGeneration
+        || delivered->meter.observedSamples != blockSize
+        || ! nearlyEqual (static_cast<float> (delivered->meter.peak[0]), 0.5f, 0.000001f)
+        || ! nearlyEqual (static_cast<float> (delivered->meter.rms[0]), 0.5f, 0.000001f)
+        || delivered->clip.latched[0])
+    {
+        std::cerr << "processor meter subscription missed signed output\n";
+        return 1;
+    }
+    for (std::size_t block = 0; block < InstrumentUiMeterCapture::capacity + 5; ++block)
+        kernelProcessor.processBlock (kernelBuffer, kernelMidi);
+    kernelProcessor.pollMeterDelivery();
+    if (kernelProcessor.takeMeterPacket (77)
+        || ! kernelProcessor.acknowledgeMeterPacket (77, meterGeneration, delivered->sequence))
+    {
+        std::cerr << "unacknowledged meter packet did not bound delivery\n";
+        return 1;
+    }
+    const auto resumedMeter = kernelProcessor.takeMeterPacket (77);
+    if (! resumedMeter || resumedMeter->meter.complete
+        || resumedMeter->meter.endSample <= delivered->meter.endSample)
+    {
+        std::cerr << "meter delivery hid dropped history or replayed stale data\n";
+        return 1;
+    }
+    if (! kernelProcessor.setMeterSessionVisible (77, false))
+        return 1;
+    kernelProcessor.processBlock (kernelBuffer, kernelMidi);
+    kernelProcessor.pollMeterDelivery();
+    if (kernelProcessor.takeMeterPacket (77)
+        || ! kernelProcessor.setMeterSessionVisible (77, true))
+    {
+        std::cerr << "hidden meter session retained visual delivery\n";
+        return 1;
+    }
+    kernelProcessor.processBlock (kernelBuffer, kernelMidi);
+    kernelProcessor.pollMeterDelivery();
+    if (! kernelProcessor.takeMeterPacket (77)
+        || ! kernelProcessor.unsubscribeMeter (77))
+    {
+        std::cerr << "reopened meter session did not recover cleanly\n";
         return 1;
     }
     const auto legacyPatch = juce::File (juce::String (DANDRUM_SOURCE_ROOT))
@@ -657,10 +732,24 @@ int main()
         std::cerr << "plugin did not restore embedded kernel master output\n";
         return 1;
     }
+    const auto beforeMeterReload = kernelProcessor.getParameterSurfaceGeneration();
+    if (! kernelProcessor.subscribeMeter (77, beforeMeterReload))
+        return 1;
     if (! kernelProcessor.reloadInstrumentFromFile (defaultPatchFile())
         || ! kernelProcessor.hasPublicParameter ("kick.tune_hz"))
     {
         std::cerr << "plugin did not switch back to the default kick patch\n";
+        return 1;
+    }
+    kernelProcessor.pollMeterDelivery();
+    const auto afterMeterReload = kernelProcessor.getParameterSurfaceGeneration();
+    if (afterMeterReload == beforeMeterReload
+        || kernelProcessor.takeMeterPacket (77)
+        || kernelProcessor.subscribeMeter (77, beforeMeterReload)
+        || ! kernelProcessor.subscribeMeter (77, afterMeterReload)
+        || ! kernelProcessor.unsubscribeMeter (77))
+    {
+        std::cerr << "meter session survived an instrument generation change\n";
         return 1;
     }
     kernelFile.deleteFile();

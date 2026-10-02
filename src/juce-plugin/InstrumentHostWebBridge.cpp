@@ -2,6 +2,7 @@
 
 #include "SharedInstrumentUi.h"
 
+#include <charconv>
 #include <cmath>
 #include <cstring>
 #include <limits>
@@ -88,6 +89,44 @@ std::optional<std::uint64_t> parseJobId (const juce::var& value)
     return static_cast<std::uint64_t> (number);
 }
 
+std::optional<std::uint64_t> parseMeterSequence (const juce::var& value)
+{
+    if (! value.isString())
+        return std::nullopt;
+    const auto digits = value.toString().toStdString();
+    std::uint64_t sequence = 0;
+    const auto [end, error] = std::from_chars (digits.data(), digits.data() + digits.size(),
+                                               sequence);
+    if (error != std::errc {} || end != digits.data() + digits.size() || sequence == 0)
+        return std::nullopt;
+    return sequence;
+}
+
+juce::var meterPacketForWeb (const InstrumentUiMeterDelivery::Packet& packet)
+{
+    auto result = std::make_unique<juce::DynamicObject>();
+    result->setProperty ("sequence", juce::String (std::to_string (packet.sequence)));
+    result->setProperty ("generation", static_cast<juce::int64> (packet.meter.generation));
+    result->setProperty ("stream_id", juce::String (std::to_string (packet.meter.streamId)));
+    result->setProperty ("first_sample", juce::String (std::to_string (packet.meter.firstSample)));
+    result->setProperty ("end_sample", juce::String (std::to_string (packet.meter.endSample)));
+    result->setProperty ("observed_samples", static_cast<juce::int64> (packet.meter.observedSamples));
+    result->setProperty ("complete", packet.meter.complete);
+    juce::Array<juce::var> peak, rms, clipped, clipTicket;
+    for (std::size_t channel = 0; channel < InstrumentUiMeterCapture::channelCount; ++channel)
+    {
+        peak.add (packet.meter.peak[channel]);
+        rms.add (packet.meter.rms[channel]);
+        clipped.add (packet.clip.latched[channel]);
+        clipTicket.add (juce::String (std::to_string (packet.clip.ticket[channel])));
+    }
+    result->setProperty ("peak", juce::var (peak));
+    result->setProperty ("rms", juce::var (rms));
+    result->setProperty ("clipped", juce::var (clipped));
+    result->setProperty ("clip_ticket", juce::var (clipTicket));
+    return juce::var (result.release());
+}
+
 juce::var commandReplyForWeb (InstrumentUiCommandReply reply, const juce::String& publicId)
 {
     switch (reply.status)
@@ -124,6 +163,7 @@ InstrumentHostWebBridge::InstrumentHostWebBridge (DandrumAudioProcessor& process
 
 InstrumentHostWebBridge::~InstrumentHostWebBridge()
 {
+    processor.unsubscribeMeter (sessionId);
     processor.closeEditorNoteSession (sessionId);
     processor.uiCommands().closeSession (sessionId);
 }
@@ -133,7 +173,7 @@ const char* InstrumentHostWebBridge::bootstrapScript() noexcept
     return nativeFunctionBootstrap;
 }
 
-std::array<InstrumentHostWebBridge::NativeFunctionEntry, 10>
+std::array<InstrumentHostWebBridge::NativeFunctionEntry, 14>
 InstrumentHostWebBridge::nativeFunctions()
 {
     return {{
@@ -196,6 +236,30 @@ InstrumentHostWebBridge::nativeFunctions()
                   juce::WebBrowserComponent::NativeFunctionCompletion completion)
           {
               getUiJobStatusFromWeb (arguments, std::move (completion));
+          } },
+        { "subscribeMeter",
+          [this] (const juce::Array<juce::var>& arguments,
+                  juce::WebBrowserComponent::NativeFunctionCompletion completion)
+          {
+              subscribeMeterFromWeb (arguments, std::move (completion));
+          } },
+        { "setMeterVisible",
+          [this] (const juce::Array<juce::var>& arguments,
+                  juce::WebBrowserComponent::NativeFunctionCompletion completion)
+          {
+              setMeterVisibleFromWeb (arguments, std::move (completion));
+          } },
+        { "getMeterPacket",
+          [this] (const juce::Array<juce::var>& arguments,
+                  juce::WebBrowserComponent::NativeFunctionCompletion completion)
+          {
+              getMeterPacketForWeb (arguments, std::move (completion));
+          } },
+        { "ackMeterPacket",
+          [this] (const juce::Array<juce::var>& arguments,
+                  juce::WebBrowserComponent::NativeFunctionCompletion completion)
+          {
+              ackMeterPacketFromWeb (arguments, std::move (completion));
           } }
     }};
 }
@@ -228,6 +292,7 @@ bool InstrumentHostWebBridge::publishParameterUpdates (juce::WebBrowserComponent
     const auto generation = processor.getParameterSurfaceGeneration();
     if (generation != lastSeenParameterSurfaceGeneration)
     {
+        processor.unsubscribeMeter (sessionId);
         processor.uiCommands().closeSession (sessionId);
         lastSeenParameterSurfaceGeneration = generation;
         browser.refresh();
@@ -501,6 +566,48 @@ void InstrumentHostWebBridge::getUiJobStatusFromWeb (
     }
     reply->setProperty ("error", status->error);
     completion (juce::var (reply.release()));
+}
+
+void InstrumentHostWebBridge::subscribeMeterFromWeb (
+    const juce::Array<juce::var>& arguments,
+    juce::WebBrowserComponent::NativeFunctionCompletion completion)
+{
+    const auto generation = arguments.isEmpty() ? std::nullopt : parseGeneration (arguments[0]);
+    completion (juce::var (generation.has_value()
+                           && processor.subscribeMeter (sessionId, *generation)));
+}
+
+void InstrumentHostWebBridge::setMeterVisibleFromWeb (
+    const juce::Array<juce::var>& arguments,
+    juce::WebBrowserComponent::NativeFunctionCompletion completion)
+{
+    const auto generation = arguments.size() < 2 ? std::nullopt : parseGeneration (arguments[1]);
+    completion (juce::var (generation.has_value()
+                           && *generation == processor.getParameterSurfaceGeneration()
+                           && arguments[0].isBool()
+                           && processor.setMeterSessionVisible (sessionId,
+                                                                static_cast<bool> (arguments[0]))));
+}
+
+void InstrumentHostWebBridge::getMeterPacketForWeb (
+    const juce::Array<juce::var>&,
+    juce::WebBrowserComponent::NativeFunctionCompletion completion)
+{
+    if (const auto packet = processor.takeMeterPacket (sessionId))
+        completion (meterPacketForWeb (*packet));
+    else
+        completion (juce::var());
+}
+
+void InstrumentHostWebBridge::ackMeterPacketFromWeb (
+    const juce::Array<juce::var>& arguments,
+    juce::WebBrowserComponent::NativeFunctionCompletion completion)
+{
+    const auto sequence = arguments.isEmpty() ? std::nullopt : parseMeterSequence (arguments[0]);
+    const auto generation = arguments.size() < 2 ? std::nullopt : parseGeneration (arguments[1]);
+    completion (juce::var (sequence.has_value() && generation.has_value()
+                           && processor.acknowledgeMeterPacket (
+                               sessionId, *generation, *sequence)));
 }
 
 bool InstrumentHostWebBridge::expireNoteSession (double nowMilliseconds) noexcept

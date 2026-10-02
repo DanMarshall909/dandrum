@@ -96,6 +96,10 @@ add_executable(dandrum-plugin-meter-aggregation-test tests/cpp/PluginMeterAggreg
 target_include_directories(dandrum-plugin-meter-aggregation-test PRIVATE src/juce-plugin)
 add_test(NAME cxx-plugin-meter-aggregation COMMAND dandrum-plugin-meter-aggregation-test)
 
+add_executable(dandrum-plugin-meter-delivery-test tests/cpp/PluginMeterDeliveryTest.cpp)
+target_include_directories(dandrum-plugin-meter-delivery-test PRIVATE src/juce-plugin)
+add_test(NAME cxx-plugin-meter-delivery COMMAND dandrum-plugin-meter-delivery-test)
+
 add_subdirectory(third_party/JUCE)
 
 juce_add_console_app(dandrum-drum-machine-demo PRODUCT_NAME "Dandrum Drum Machine Demo")
@@ -285,6 +289,7 @@ if(NOT DANDRUM_NATIVE_ONLY)
     add_test(NAME tb303-react-model COMMAND ${DANDRUM_NODE_EXECUTABLE} --test ${CMAKE_CURRENT_SOURCE_DIR}/web/tb303/src/model.test.mjs)
     add_test(NAME tb303-react-audition COMMAND ${DANDRUM_NODE_EXECUTABLE} --test ${CMAKE_CURRENT_SOURCE_DIR}/web/tb303/src/note-audition.test.mjs)
     add_test(NAME native-function-bootstrap COMMAND ${DANDRUM_NODE_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/tests/js/NativeFunctionBootstrapTest.mjs)
+    add_test(NAME meter-web-transport COMMAND ${DANDRUM_NODE_EXECUTABLE} --test ${CMAKE_CURRENT_SOURCE_DIR}/web/shared/meter-transport.test.mjs)
 
     add_executable(dandrum-plugin-file-watch-reload-test tests/cpp/PluginFileWatchReloadTest.cpp)
     target_include_directories(dandrum-plugin-file-watch-reload-test PRIVATE src/juce-wrapper src/juce-plugin)
