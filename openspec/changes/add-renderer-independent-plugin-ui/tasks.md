@@ -40,6 +40,8 @@ Verification: `cxx-plugin-meter-display` checks elapsed-time peak/RMS decay, ide
 
 Verification for 5.1: Rust `sample` and FFI tests prove signed extrema, channel separation, narrow transients and source-frame offsets; `cxx-sampler-plugin-host` proves prepared region bounds and signed kick extrema; `cxx-plugin-waveform-service` proves asynchronous completion, duplicate work sharing, bounded queue/history/cache and same-path content invalidation. The new C++ service reached 100% source-line coverage in a focused gcov run. Native CTest passed 17/17 and Web CTest passed 29/29. Cancellation and renderer display remain tracked by 5.2 and 5.3.
 
+Progress on 5.2: waveform requests now retain an editor session ID. Closing native or Web editor sessions cancels their active and queued requests without waiting for the worker; the focused worker test keeps one reduction stalled and proves another session continues. Actual renderer-initiated teardown remains to be verified when the waveform views request jobs.
+
 ## 6. Spectral And Live Analysis
 
 - [ ] 6.1 Implement shared static spectral jobs with declared FFT/window/hop/scaling/floor and numeric results; tests must prove a known bin-centred sine, finite silence floor, deterministic results and cache reuse.

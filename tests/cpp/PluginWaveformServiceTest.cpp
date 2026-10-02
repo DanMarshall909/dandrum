@@ -269,6 +269,50 @@ int main()
         historyGuard.open();
         waitForReady (fullHistory, *historyActive);
 
+        std::promise<void> sessionEntered;
+        std::promise<void> sessionRelease;
+        const auto sessionResume = sessionRelease.get_future().share();
+        std::atomic<int> sessionReductions { 0 };
+        Service sessions ([&] (const DandrumKernelWaveformSource* source, std::uint16_t channel,
+                              std::uint64_t start, std::uint64_t end,
+                              DandrumKernelWaveformBucket* buckets, std::size_t count)
+        {
+            if (++sessionReductions == 1)
+            {
+                sessionEntered.set_value();
+                sessionResume.wait();
+            }
+            return dandrum_kernel_waveform_reduce (source, channel, start, end, buckets, count);
+        });
+        PromiseRelease sessionGuard (sessionRelease);
+        sessions.setGeneration (1);
+        const auto closingActive = sessions.request (
+            1, sourceFrom (replacement), "owner-active", 0, 0, 1, 1, 17);
+        require (closingActive.has_value()
+                     && sessionEntered.get_future().wait_for (std::chrono::seconds (2))
+                            == std::future_status::ready,
+                 "editor teardown fixture did not enter the worker");
+        const auto closingQueued = sessions.request (
+            1, sourceFrom (replacement), "owner-queued", 0, 0, 1, 1, 17);
+        const auto otherEditor = sessions.request (
+            1, sourceFrom (replacement), "other-editor", 0, 0, 1, 1, 18);
+        require (closingQueued.has_value() && otherEditor.has_value(),
+                 "editor teardown fixture could not queue independent sessions");
+        sessions.cancelSession (0);
+        require (sessions.status (*closingActive)->state == Service::State::running,
+                 "anonymous cancellation affected an editor-owned job");
+        sessions.cancelSession (17);
+        require (sessions.status (*closingActive)->state == Service::State::cancelled
+                     && sessions.status (*closingActive)->sessionId == 17
+                     && sessions.status (*closingQueued)->state == Service::State::cancelled
+                     && sessions.status (*otherEditor)->state == Service::State::running,
+                 "closing one editor waited for analysis or cancelled another editor");
+        sessionGuard.open();
+        waitForReady (sessions, *otherEditor);
+        require (sessions.status (*closingActive)->state == Service::State::cancelled
+                     && sessionReductions == 2,
+                 "closed editor work resumed or replaced its cancelled status");
+
         std::promise<void> cancelEntered;
         std::promise<void> cancelRelease;
         std::promise<void> cancelFinished;

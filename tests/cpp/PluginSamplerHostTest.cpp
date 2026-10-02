@@ -182,6 +182,18 @@ int main()
         std::cerr << "prepared waveform lost known signed kick extrema\n";
         return 1;
     }
+    const auto waveformSession = sampler->uiCommands().createSession();
+    const auto sessionWaveform = sampler->requestPreparedWaveform (
+        preparedUi->generation, "drums", "kick", 0, 16, waveformSession);
+    const auto ownedStatus = sessionWaveform
+        ? sampler->getPreparedWaveformJobStatus (*sessionWaveform) : std::nullopt;
+    if (! ownedStatus || ownedStatus->sessionId != waveformSession)
+    {
+        std::cerr << "prepared waveform request lost its editor session owner\n";
+        return 1;
+    }
+    sampler->cancelPreparedWaveformSession (waveformSession);
+    sampler->uiCommands().closeSession (waveformSession);
     auto reloadReader = makeSampler();
     const auto oldDocument = reloadReader->getPreparedUiDocument();
     const auto oldGeneration = oldDocument ? oldDocument->generation : 0;

@@ -172,6 +172,7 @@ InstrumentHostWebBridge::InstrumentHostWebBridge (DandrumAudioProcessor& process
 
 InstrumentHostWebBridge::~InstrumentHostWebBridge()
 {
+    processor.cancelPreparedWaveformSession (sessionId);
     processor.unsubscribeMeter (sessionId);
     processor.closeEditorNoteSession (sessionId);
     processor.uiCommands().closeSession (sessionId);
@@ -307,6 +308,7 @@ bool InstrumentHostWebBridge::publishParameterUpdates (juce::WebBrowserComponent
     const auto generation = processor.getParameterSurfaceGeneration();
     if (generation != lastSeenParameterSurfaceGeneration)
     {
+        processor.cancelPreparedWaveformSession (sessionId);
         processor.unsubscribeMeter (sessionId);
         processor.uiCommands().closeSession (sessionId);
         lastSeenParameterSurfaceGeneration = generation;

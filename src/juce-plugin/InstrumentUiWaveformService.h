@@ -57,6 +57,7 @@ public:
     struct Snapshot
     {
         std::uint64_t jobId = 0;
+        std::uint64_t sessionId = 0;
         std::uint32_t generation = 0;
         State state = State::running;
         std::shared_ptr<const Result> result;
@@ -70,8 +71,10 @@ public:
     std::optional<std::uint64_t> request (std::uint32_t generation, Source source,
                                           std::string regionId, std::uint16_t channel,
                                           std::uint64_t startFrame, std::uint64_t endFrame,
-                                          std::size_t bucketCount);
+                                          std::size_t bucketCount,
+                                          std::uint64_t sessionId = 0);
     bool cancel (std::uint64_t jobId);
+    void cancelSession (std::uint64_t sessionId);
     std::optional<Snapshot> status (
         std::uint64_t jobId, std::optional<std::uint32_t> visibleGeneration = std::nullopt) const;
 

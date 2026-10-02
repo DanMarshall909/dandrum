@@ -1399,7 +1399,8 @@ std::optional<InstrumentUiDocument> DandrumAudioProcessor::getPreparedUiDocument
 
 std::optional<std::uint64_t> DandrumAudioProcessor::requestPreparedWaveform (
     std::uint32_t expectedGeneration, const std::string& sourceId,
-    const std::string& regionId, std::uint16_t channel, std::size_t bucketCount)
+    const std::string& regionId, std::uint16_t channel, std::size_t bucketCount,
+    std::uint64_t sessionId)
 {
     InstrumentUiWaveformService::Source retainedSource;
     std::uint64_t startFrame = 0;
@@ -1427,7 +1428,8 @@ std::optional<std::uint64_t> DandrumAudioProcessor::requestPreparedWaveform (
             kernel.load (std::memory_order_acquire), sourceIndex));
     }
     return waveformService.request (expectedGeneration, std::move (retainedSource),
-                                    regionId, channel, startFrame, endFrame, bucketCount);
+                                    regionId, channel, startFrame, endFrame, bucketCount,
+                                    sessionId);
 }
 
 std::optional<InstrumentUiWaveformService::Snapshot>
@@ -1440,6 +1442,11 @@ DandrumAudioProcessor::getPreparedWaveformJobStatus (std::uint64_t jobId) const
 bool DandrumAudioProcessor::cancelPreparedWaveformJob (std::uint64_t jobId)
 {
     return waveformService.cancel (jobId);
+}
+
+void DandrumAudioProcessor::cancelPreparedWaveformSession (std::uint64_t sessionId)
+{
+    waveformService.cancelSession (sessionId);
 }
 
 InstrumentUiParameterState DandrumAudioProcessor::getUiParameterState() const

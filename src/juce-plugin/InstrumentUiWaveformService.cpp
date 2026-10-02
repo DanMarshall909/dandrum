@@ -54,7 +54,7 @@ void InstrumentUiWaveformService::makeStatusRoom()
 std::optional<std::uint64_t> InstrumentUiWaveformService::request (
     std::uint32_t generation, Source source, std::string regionId,
     std::uint16_t channel, std::uint64_t startFrame, std::uint64_t endFrame,
-    std::size_t bucketCount)
+    std::size_t bucketCount, std::uint64_t sessionId)
 {
     DandrumKernelWaveformSourceInfo info {};
     if (! source || ! dandrum_kernel_waveform_source_info (source.get(), &info)
@@ -84,6 +84,7 @@ std::optional<std::uint64_t> InstrumentUiWaveformService::request (
     const auto id = nextJobId++;
     Snapshot snapshot;
     snapshot.jobId = id;
+    snapshot.sessionId = sessionId;
     snapshot.generation = generation;
     if (cached != cache.end())
     {
@@ -109,6 +110,20 @@ bool InstrumentUiWaveformService::cancel (std::uint64_t jobId)
     found->second.state = State::cancelled;
     std::erase_if (pending, [jobId] (const Job& job) { return job.id == jobId; });
     return true;
+}
+
+void InstrumentUiWaveformService::cancelSession (std::uint64_t sessionId)
+{
+    if (sessionId == 0)
+        return;
+    const std::scoped_lock lock (mutex);
+    for (auto& [id, snapshot] : statuses)
+        if (snapshot.sessionId == sessionId && snapshot.state == State::running)
+            snapshot.state = State::cancelled;
+    std::erase_if (pending, [this, sessionId] (const Job& job)
+    {
+        return statuses.at (job.id).sessionId == sessionId;
+    });
 }
 
 std::optional<InstrumentUiWaveformService::Snapshot>

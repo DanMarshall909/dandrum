@@ -79,10 +79,12 @@ public:
     /// cache work run on a worker holding its own retained source lifetime.
     std::optional<std::uint64_t> requestPreparedWaveform (
         std::uint32_t expectedGeneration, const std::string& sourceId,
-        const std::string& regionId, std::uint16_t channel, std::size_t bucketCount);
+        const std::string& regionId, std::uint16_t channel, std::size_t bucketCount,
+        std::uint64_t sessionId = 0);
     std::optional<InstrumentUiWaveformService::Snapshot>
         getPreparedWaveformJobStatus (std::uint64_t jobId) const;
     bool cancelPreparedWaveformJob (std::uint64_t jobId);
+    void cancelPreparedWaveformSession (std::uint64_t sessionId);
     std::uint32_t getParameterSurfaceGeneration() const noexcept;
     InstrumentUiCommandService& uiCommands() noexcept;
     SoundLabController* getSoundLabController() noexcept;

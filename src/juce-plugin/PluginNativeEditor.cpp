@@ -178,6 +178,7 @@ public:
     ~DandrumNativeEditor() override
     {
         stopTimer();
+        processor.cancelPreparedWaveformSession (meterSession);
         processor.unsubscribeMeter (meterSession);
         processor.uiCommands().closeSession (meterSession);
     }
