@@ -1288,6 +1288,8 @@ std::optional<InstrumentUiDocument> DandrumAudioProcessor::getPreparedUiDocument
             value.id = slot.descriptor.id.toStdString();
             value.name = slot.descriptor.name.toStdString();
             value.normalisedValue = parameter->getValue();
+            value.normalisedDefaultValue = normalisePublicValue (
+                slot.descriptor, slot.descriptor.defaultValue);
             value.minValue = slot.descriptor.minValue;
             value.maxValue = slot.descriptor.maxValue;
             if (group > 0)

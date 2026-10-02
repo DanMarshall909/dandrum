@@ -151,6 +151,7 @@ juce::var preparedDocumentForWeb (const InstrumentUiDocument& document)
         value->setProperty ("id", juce::String (parameter.id));
         value->setProperty ("name", juce::String (parameter.name));
         value->setProperty ("normalisedValue", parameter.normalisedValue);
+        value->setProperty ("normalisedDefaultValue", parameter.normalisedDefaultValue);
         value->setProperty ("minValue", parameter.minValue);
         value->setProperty ("maxValue", parameter.maxValue);
         value->setProperty ("scope", parameter.scope == InstrumentUiDocument::ControlScope::instrument

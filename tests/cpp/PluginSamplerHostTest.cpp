@@ -151,6 +151,7 @@ int main (int argc, char** argv)
     if (preparedUi->parameters.size() != 23
         || shared == preparedUi->parameters.end() || snareControl == preparedUi->parameters.end()
         || shared->scope != InstrumentUiDocument::ControlScope::instrument
+        || std::abs (shared->normalisedDefaultValue - 1.0f / 9.0f) > 0.00001f
         || snareControl->scope != InstrumentUiDocument::ControlScope::sampleGroup
         || snareControl->controlGroup != 2)
     {
@@ -235,6 +236,15 @@ int main (int argc, char** argv)
         || oldDocument->maps[0].zones[2].velocityLow != 64)
     {
         std::cerr << "UI document did not remain owned across instrument reload\n";
+        return 1;
+    }
+    const auto cutoff = std::find_if (replacementUi->parameters.begin(), replacementUi->parameters.end(),
+        [] (const auto& parameter) { return parameter.id == "filter.cutoff"; });
+    if (std::abs (oldDocument->parameters.front().normalisedDefaultValue - 1.0f / 9.0f) > 0.00001f
+        || cutoff == replacementUi->parameters.end()
+        || std::abs (cutoff->normalisedDefaultValue - (0.4f - 0.02f) / (0.9f - 0.02f)) > 0.00001f)
+    {
+        std::cerr << "owned UI reset defaults did not survive sampler-to-synth reload\n";
         return 1;
     }
     const auto retiredWaveform = reloadReader->getPreparedWaveformJobStatus (*oldWaveformJob);

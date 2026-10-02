@@ -31,6 +31,26 @@ Icon progress on 3.3 at `147eaa4`: both React apps use the supplied stroke icons
 
 Completion of 3.3 (2026-10-03): the two runtime checks now use the shipped processor and editor factories and show the original editor/browser, with no extra browser, native report function or manual host-state publication. They verify all eight fonts, supplied icons, actual 7/23 controls and exact full/compact viewport dimensions. Starting with a host value of 0.21, they observe 0.37 at full size and a fresh 0.63 update at compact size through the normal editor timer. Temporarily stopping that timer leaves fonts loaded but fails the named full-size host-update assertion; restoring the source byte for byte and rebuilding passes. Copied complete executables passed outside both hidden checkouts, with fresh redirected application data and no network route; full/compact screenshots were inspected. Web CTest passes 40/40 without skips and native-only CTest passes 18/18. [Packaging evidence](../../../docs/design-system/react-font-packaging.md) states that these are original factory/editor checks in a JUCE test application, not VST3 loading inside a DAW or complete lifecycle/stress proof. Tasks 3.4, 7.5 and 8 retain their own component, layout, host and timing gates. No structural runtime implementation is claimed.
 
+Reset progress on 3.4 (2026-10-03): copied prepared parameters and their Web
+serialization now include `normalisedDefaultValue`, derived from the loaded
+descriptor's default and range independently of the current value. The native
+primary control uses it for double-click reset through the existing host gesture
+path. `cxx-plugin-editor-bridge` checks declared kick, cutoff and sample-group
+defaults and proves ordinary edits do not overwrite them; `cxx-sampler-plugin-host`
+checks ownership across sampler-to-synth reload. `native-editor-smoke` dispatches
+the real control's double-click handler, checks one gesture and the stable slot,
+and asserts signed output at defaults 0.5 and 0.2 after a reload. Retained
+documents keep their old default, and unavailable instruments cannot reset.
+Fixed host-slot defaults and objects remain unchanged. This is the reset binding
+prerequisite: faithful knob geometry, typography, popup/value entry, complete
+input mappings, Web reset interaction and renderer parity remain open, so 3.4
+remains unchecked. Full Web/native builds pass, with CTest 40/40 and 18/18
+without skips. Focused gcov runs execute all 12 added executable C++ source
+lines; this is not whole-module or exhaustive branch coverage. Separate source
+copies using a fixed 0.5, the host-slot default or the current live value fail
+their named reset assertions, and healthy reruns pass. No Rust, FFI, asset or
+host parameter layout change is included.
+
 ## 4. Meter Telemetry Vertical Slice
 
 - [x] 4.1 Prepare bounded master/output meter capture with a single consumer per queue; saturation and callback instrumentation must prove bounded memory/work, no forbidden callback operations and unchanged signed PCM.

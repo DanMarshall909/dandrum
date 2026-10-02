@@ -27,6 +27,15 @@ struct HostGestureListener final : juce::AudioProcessorListener
     int ends = 0;
     int lastSlot = -1;
 };
+
+void doubleClick (juce::Slider& knob)
+{
+    const auto now = juce::Time::getCurrentTime();
+    knob.mouseDoubleClick (juce::MouseEvent (
+        juce::Desktop::getInstance().getMainMouseSource(), { 32.0f, 32.0f },
+        juce::ModifierKeys::leftButtonModifier, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f,
+        &knob, &knob, now, { 32.0f, 32.0f }, now, 2, false));
+}
 }
 
 int main()
@@ -267,6 +276,29 @@ int main()
     fixtureConfiguration.instrumentPath = juce::File (juce::String (DANDRUM_SOURCE_ROOT))
         .getChildFile ("tests/fixtures/plugin-ui-knob.yaml").getFullPathName().toStdString();
     DandrumAudioProcessor fixtureProcessor (fixtureConfiguration);
+    {
+        juce::TemporaryFile missing (".yaml");
+        auto unavailableConfiguration = fixtureConfiguration;
+        unavailableConfiguration.instrumentPath = missing.getFile().getFullPathName().toStdString();
+        DandrumAudioProcessor unavailableProcessor (unavailableConfiguration);
+        if (unavailableProcessor.isInstrumentLoaded() || unavailableProcessor.getPreparedUiDocument())
+            return 1;
+        HostGestureListener listener;
+        unavailableProcessor.addListener (&listener);
+        std::unique_ptr<juce::AudioProcessorEditor> unavailable (unavailableProcessor.createEditor());
+        auto* knob = dynamic_cast<juce::Slider*> (unavailable->findChildWithID ("primary-knob-slider"));
+        if (knob == nullptr) return 1;
+        knob->setValue (0.75, juce::dontSendNotification);
+        doubleClick (*knob);
+        if (std::abs (knob->getValue() - 0.75) > 0.00001
+            || listener.begins != 0 || listener.ends != 0)
+        {
+            std::cerr << "native reset used a default without a prepared instrument\n";
+            return 1;
+        }
+        unavailable.reset();
+        unavailableProcessor.removeListener (&listener);
+    }
     fixtureProcessor.setPlayConfigDetails (0, 2, 48000.0, 64);
     fixtureProcessor.prepareToPlay (48000.0, 64);
     if (! fixtureProcessor.isInstrumentLoaded())
@@ -314,6 +346,54 @@ int main()
     if (fixtureListener.begins != 1 || fixtureListener.ends != 1)
     {
         std::cerr << "signed native knob schedule did not preserve one host gesture\n";
+        return 1;
+    }
+    auto* fixtureParameter = fixtureProcessor.getParameterForPublicId ("fixture.level");
+    if (fixtureParameter == nullptr)
+    {
+        std::cerr << "reset fixture has no public host parameter\n";
+        return 1;
+    }
+    const auto fixtureSlot = fixtureProcessor.getParameters().indexOf (fixtureParameter);
+    doubleClick (*fixtureKnob);
+    if (std::abs (fixtureKnob->getValue() - 0.5) > 0.00001
+        || std::abs (fixtureParameter->getValue() - 0.5f) > 0.00001f
+        || std::abs (fixtureParameter->getDefaultValue()) > 0.00001f
+        || fixtureListener.begins != 2 || fixtureListener.ends != 2
+        || fixtureListener.lastSlot != fixtureSlot || ! renders (0.0f, 0.0f))
+    {
+        std::cerr << "native double-click did not reset the loaded control through its stable host slot\n";
+        return 1;
+    }
+    const auto retained = fixtureProcessor.getPreparedUiDocument();
+    juce::TemporaryFile replacement (".yaml");
+    const auto yaml = juce::File (juce::String (fixtureConfiguration.instrumentPath.string())).loadFileAsString();
+    if (! retained || ! yaml.contains ("default: 0, min: -1")
+        || ! replacement.getFile().replaceWithText (
+            yaml.replace ("default: 0, min: -1", "default: -0.6, min: -1"))
+        || ! fixtureProcessor.reloadInstrumentFromFile (replacement.getFile()))
+    {
+        std::cerr << "reset-default reload fixture did not prepare\n";
+        return 1;
+    }
+    fixtureParameter->setValueNotifyingHost (0.8f);
+    const auto deadline = juce::Time::getMillisecondCounterHiRes() + 1500.0;
+    while (std::abs (fixtureKnob->getValue() - 0.8) > 0.00001
+           && juce::Time::getMillisecondCounterHiRes() < deadline)
+    {
+        juce::Thread::sleep (20);
+        juce::Timer::callPendingTimersSynchronously();
+    }
+    doubleClick (*fixtureKnob);
+    if (fixtureProcessor.getParameterForPublicId ("fixture.level") != fixtureParameter
+        || fixtureProcessor.getParameters().indexOf (fixtureParameter) != fixtureSlot
+        || std::abs (fixtureKnob->getValue() - 0.2) > 0.00001
+        || std::abs (fixtureParameter->getValue() - 0.2f) > 0.00001f
+        || std::abs (retained->parameters.front().normalisedDefaultValue - 0.5f) > 0.00001f
+        || fixtureListener.begins != 3 || fixtureListener.ends != 3
+        || fixtureListener.lastSlot != fixtureSlot || ! renders (-0.6f, 0.0f))
+    {
+        std::cerr << "native reset retained the previous instrument's default after reload\n";
         return 1;
     }
     fixtureEditor.reset();

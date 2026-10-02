@@ -62,6 +62,16 @@ Keep one maintained semantic token source and generate CSS and a C++ token heade
 | Knob / Slider | Public ID, normalized/actual value, range, units, scope | One complete host gesture; keyboard and typed entry |
 | Waveform / spectrum | Numeric analysis plus frame/rate/settings metadata | Inspect cached data, overlay observed cursor |
 
+Knob reset uses the loaded instrument's normalized default copied into the
+prepared parameter descriptor. It must not infer the reference component's
+`0.5` or use JUCE's fixed host-slot default: those slots retain their original
+`0.0` default for the processor lifetime. Copy and normalize the declared
+default while holding the existing off-audio metadata ownership boundary,
+retain the document generation, and send reset through the ordinary shared
+parameter gesture. Reload replaces the reset metadata; retained documents keep
+their old values safely. A control without prepared reset metadata must not
+offer reset. Do not infer units or modulation assignments from this field.
+
 Enable a structural interaction only when its typed command and instrument capability are implemented; otherwise keep it read-only. Audit LayerStack/OutputBusses callbacks individually; a single exported prop is not proof that every action is gated. A reference component must not silently mutate local configuration. Supported changes enter the automatic rebuild transaction below. Live gain, mute, bypass and sends require actual public bindings; arbitrary module internals do not become host controls merely because the reference displays them.
 
 ### Structural edits automatically mute, rebuild and resume

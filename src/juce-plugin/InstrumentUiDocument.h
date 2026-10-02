@@ -17,6 +17,8 @@ struct InstrumentUiDocument
         std::string id;
         std::string name;
         float normalisedValue = 0.0f;
+        // Loaded instrument default, independently of the fixed host slot default.
+        float normalisedDefaultValue = 0.0f;
         float minValue = 0.0f;
         float maxValue = 1.0f;
         ControlScope scope = ControlScope::instrument;

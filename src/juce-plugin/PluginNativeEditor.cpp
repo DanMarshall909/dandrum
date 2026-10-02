@@ -422,6 +422,16 @@ private:
             primaryLabel.setText (label, juce::dontSendNotification);
             primaryKnob.setName (label);
             primaryKnob.setEnabled (selected != nullptr);
+            primaryKnob.setDoubleClickReturnValue (false, 0.0);
+            if (const auto document = processor.getPreparedUiDocument();
+                document && document->generation == primaryGeneration)
+                for (const auto& parameter : document->parameters)
+                    if (parameter.id == primaryId)
+                    {
+                        primaryKnob.setDoubleClickReturnValue (
+                            true, parameter.normalisedDefaultValue);
+                        break;
+                    }
         }
         if (selected != nullptr && dragState == DragState::idle)
             primaryKnob.setValue (selected->normalisedValue, juce::dontSendNotification);

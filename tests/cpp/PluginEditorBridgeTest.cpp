@@ -253,6 +253,23 @@ int main (int argc, char** argv)
                      "parameter snapshot lost public identity or display name");
         }
 
+        const auto kickDocument = PluginEditorBridgeTestProbe::invoke (editor, "getPreparedDocument");
+        const auto kickDefaults = kickDocument.getProperty ("parameters", {});
+        for (const auto& [id, expected] : std::array {
+                 std::pair { "kick.tune_hz", 0.28f },
+                 std::pair { "kick.decay_ms", 600.0f / 1950.0f },
+                 std::pair { "kick.punch", 0.7f },
+                 std::pair { "kick.click", 1.0f } })
+        {
+            const auto prepared = findParameter (kickDefaults, id);
+            require (prepared.getProperty ("normalisedDefaultValue", {}).isDouble()
+                         && std::abs (static_cast<float> (prepared.getProperty (
+                             "normalisedDefaultValue", {})) - expected) < 0.00001f,
+                     std::string ("prepared reset default does not match loaded kick control: ") + id);
+            require (std::abs (processor.getParameterForPublicId (id)->getDefaultValue()) < 0.00001f,
+                     "UI reset metadata changed the stable host slot's default");
+        }
+
         require (PluginEditorBridgeTestProbe::invoke (editor, "setParameter", { "kick.tune_hz" })
                      .toString().contains ("expects"),
                  "setParameter accepted missing value");
@@ -308,6 +325,13 @@ int main (int argc, char** argv)
         require (std::abs (static_cast<float> (findParameter (snapshot, "kick.tune_hz")
                                                   .getProperty ("value", {})) - 0.38f) < 0.00001f,
                  "getParameters did not reflect the value set through the bridge");
+        const auto editedControl = findParameter (PluginEditorBridgeTestProbe::invoke (
+            editor, "getPreparedDocument").getProperty ("parameters", {}), "kick.tune_hz");
+        require (std::abs (static_cast<float> (editedControl.getProperty (
+                     "normalisedValue", -1000.0)) - 0.38f) < 0.00001f
+                     && std::abs (static_cast<float> (editedControl.getProperty (
+                         "normalisedDefaultValue", -1000.0)) - 0.28f) < 0.00001f,
+                 "live parameter editing overwrote the prepared reset default");
         SnapshotListener reentrant (processor);
         processor.addListener (&reentrant);
         const auto nativeResult = processor.uiCommands().setParameter (
@@ -675,6 +699,11 @@ int main (int argc, char** argv)
                            static_cast<int> (acid.getParameterSurfaceGeneration()) })
                          .toString().contains ("unavailable"),
                  "TB-303 Web document invented prepared sample content");
+        require (std::abs (static_cast<float> (findParameter (
+                     acidDocument.getProperty ("parameters", {}), "filter.cutoff")
+                     .getProperty ("normalisedDefaultValue", -1000.0))
+                     - (0.4f - 0.02f) / (0.9f - 0.02f)) < 0.00001f,
+                 "TB-303 reset default ignored the prepared cutoff range");
 
         DandrumAudioProcessor samplerWeb (InstrumentDemoConfiguration::sampler());
         samplerWeb.setPlayConfigDetails (0, 2, 48000.0, 64);
@@ -726,6 +755,9 @@ int main (int argc, char** argv)
         const auto soft = findParameter (zones, "snare_soft");
         const auto hard = findParameter (zones, "snare_hard_a");
         const auto snareParameter = findParameter (samplerParameters, "drums.snare.pitch_ratio");
+        require (std::abs (static_cast<float> (snareParameter.getProperty (
+                     "normalisedDefaultValue", -1000.0)) - 1.0f / 9.0f) < 0.00001f,
+                 "sample-group reset default ignored the prepared pitch range");
         require (source.getProperty ("id", {}).toString() == "drums"
                      && static_cast<int> (source.getProperty ("sampleRateHz", {})) == 48000
                      && source.getProperty ("frameCount", {}).toString() == "51000"
