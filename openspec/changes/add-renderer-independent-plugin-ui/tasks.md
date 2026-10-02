@@ -3,7 +3,7 @@
 - [x] 1.1 Resolve the active-work gate and choose the integrated sampling base or explicit dependency on `3b313a7`; verify worktrees, upstreams, PRs and the repeated status snapshot before repository mutations.
 - [x] 1.2 Import the reviewed design-system revision with its SHA-256 and provenance; verify archive integrity, local reference links and any installed skill frontmatter without executing bundled development tooling.
 - [x] 1.3 Characterize current shared/per-pad parameters, host gestures, note admission and reload behaviour with focused C++/JavaScript tests; record a known signed sampler render and current coverage before production changes.
-- [x] 1.4 Specify native KeyMap, LayerStack and OutputBusses dimensions, focus, read-only interactions and capability states; review the delivered native handoff against the new JSX/type references and existing external-authoring contract.
+- [x] 1.4 Specify native KeyMap, LayerStack and OutputBusses dimensions, focus, inspection interactions and capability states; review the delivered native handoff against the new JSX/type references. The original external-only boundary is superseded by the automatic structural rebuild specification; implementation is tracked in section 9.
 
 The design reference was imported on main at `d02ee1b` and is now available in `docs/design-system/reference/`. All 161 reference files match the recorded SHA-256 values. Native component specifications and production adaptations remain separate implementation tasks.
 
@@ -23,7 +23,7 @@ The design reference was imported on main at `d02ee1b` and is now available in `
 - [ ] 3.3 Build the production web asset pipeline and embedded resource serving; verify packaged assets work offline outside the source checkout, with no CDN scripts, runtime Babel or development server.
 - [ ] 3.4 Implement one design-system knob in each renderer against shared commands; tests must prove identical host gestures, authoritative values, slot identity and known signed audio for identical schedules.
 
-Verification for 1.4 and 3.2: `docs/design-system/native-display-specs.md` records source dimensions, focus, release behavior, read-only boundaries and absent capability states for the three displays. It explicitly addresses local mutation still present in reference LayerStack/OutputBusses and the reference KeyMap's simulated playback flashes. `ui/design-system/tokens.json` generates all 146 CSS/C++ values from one maintained source. `design-token-generation` changes colour/spacing tokens and alias chains, compiles fixture and production C++ headers, checks deterministic output and invalid-source preservation, and verifies pinned unmodified font/license hashes. `design-tokens-current` was calibrated through CTest by changing a native colour: it rejected `DesignTokens.h` by name; restoring it passed. The generator's focused V8 run covered all 89 executable source lines. Full Web CTest passed 36/36. Font embedding, renderer use of the generated tokens, actual component adaptation and offline runtime inspection remain open.
+Verification for 1.4 and 3.2: `docs/design-system/native-display-specs.md` records source dimensions, focus, release behavior, capability boundaries and absent capability states for the three displays. It explicitly addresses local mutation still present in reference LayerStack/OutputBusses and the reference KeyMap's simulated playback flashes. `ui/design-system/tokens.json` generates all 146 CSS/C++ values from one maintained source. `design-token-generation` changes colour/spacing tokens and alias chains, compiles fixture and production C++ headers, checks deterministic output and invalid-source preservation, and verifies pinned unmodified font/license hashes. `design-tokens-current` was calibrated through CTest by changing a native colour: it rejected `DesignTokens.h` by name; restoring it passed. The generator's focused V8 run covered all 89 executable source lines. Full Web CTest passed 36/36. Font embedding, renderer use of the generated tokens, actual component adaptation and offline runtime inspection remain open. That evidence does not prove automatic structural rebuild behavior.
 
 Progress on 3.3: the sampler now has a compiled React WebView app with checked-in, embedded HTML/JS/CSS. The C++ editor bridge test proves the sampler plugin serves those assets without external URLs, and a browser preview at 1200×800 and 820×560 exercised its host-backed pad and slider commands. Final offline packaging with the supplied design icons/fonts and a checkout-independent runtime inspection remain open.
 
@@ -57,9 +57,9 @@ Progress on 5.3: the Web bridge exposes bounded prepared waveform requests and e
 
 ## 7. Capability-Aware Sampler Composition
 
-- [ ] 7.1 Implement prepared KeyMap inspection/audition in both renderers; tests must prove actual velocity ranges, alternate/layer distinction, read-only boundaries and host-driven note feedback.
-- [ ] 7.2 Implement supported LayerStack inspection and public parameter bindings; tests must reject implicit module addition/removal/reordering and keep undeclared internals unavailable.
-- [ ] 7.3 Implement actual bus/channel enumeration and OutputBusses display; tests must cover stereo-only and non-stereo named layouts without invented output pairs or structural routing changes.
+- [ ] 7.1 Implement prepared KeyMap inspection/audition in both renderers; tests must prove actual velocity ranges, alternate/layer distinction, capability-gated structural commands with automatic rebuilding, and host-driven note feedback.
+- [ ] 7.2 Implement supported LayerStack inspection and public parameter bindings; tests must route supported structural changes through section 9's transaction, reject unsupported local mutation and keep undeclared internals unavailable.
+- [ ] 7.3 Implement actual bus/channel enumeration and OutputBusses display; tests must cover stereo-only and non-stereo named layouts without invented output pairs, and route supported internal structural routing edits through automatic rebuilding.
 - [ ] 7.4 Add capability-backed pad/alternate/cursor feedback with preallocated bounded taps; tests must observe real host and editor note playback, generation changes and missing capabilities without simulated audio state.
 - [ ] 7.5 Compose full/compact native and web layouts with keyboard/focus/value entry; inspect actual runtimes at 1200x800, 820x560 and common display scales, recording any platform-specific differences.
 - [x] 7.6 Adapt the supplied TB-303 React panel to the shared asset and command path; tests must prove all seven actual public controls, host-backed note audition, authoritative reload updates and explicit unavailability of unsupported waveform, pattern and transport editing.
@@ -79,3 +79,22 @@ Review repairs added successive-drag, keyboard-after-release and typed-during-cl
 - [ ] 8.4 Review coverage and refactoring opportunities after behaviour is specified; newly extracted modules require full coverage, and changed critical paths receive focused mutation testing after checking disk/build-output sizes.
 - [ ] 8.5 Map every new scenario to a proving test in `spec-tests.map` when syncing main specs; review fingerprints explicitly, run `scripts/check-spec-coverage`, and pass strict OpenSpec validation before archive.
 - [ ] 8.6 Inspect the final diff and repeated repository inventory; preserve other work, commit verified logical slices with Why/What/Verification/Constraints bodies, and publish or integrate only under the applicable authorization.
+
+## 9. Automatic Structural Rebuilding
+
+Contract and acceptance cases: [structural-authoring-acceptance-tests.md](structural-authoring-acceptance-tests.md) and [plugin-structural-authoring](specs/plugin-structural-authoring/spec.md). This section is newly specified work; existing reload tests do not complete it. Follow RED → GREEN → coverage/refactor for each behavior before connecting structural controls.
+
+- [ ] 9.1 Characterize current reload/muting/host-slot behavior, then write executable edit-admission and stalled-worker tests first; prove immediate muting before validation, exact-zero callbacks and asynchronous acceptance without Apply or confirmation.
+- [ ] 9.2 Implement and instrument the explicit engine ownership handoff; prove an in-flight reader retains valid storage, later callbacks access no engine, a no-callback host period cannot strand rebuilding, and preparation/destruction/cleanup occur off audio without fixed-delay assumptions.
+- [ ] 9.3 Implement one processor-owned rebuild at a time and serialize engine ownership with reload, file watching, state restore and host preparation; tests must reject concurrent structural requests as busy without queued edits, survive editor closure/reconnect, and reclaim worker resources safely at processor shutdown.
+- [ ] 9.4 Implement automatic candidate activation and failure recovery; tests must cover validation, missing assets, compilation, worker startup and activation failures, known signed audio from the recovered configuration, unchanged working generation on failure, visible errors and automatic control re-enabling.
+- [ ] 9.5 Preserve existing host parameter objects, IDs, count/order, slots and automation bindings; test success/failure/repeated rebuilds and rejection of incompatible exposed surfaces. Ordinary parameters must remain live without rebuilding, and values changed during preparation must reach either resumed engine.
+- [ ] 9.6 Connect only supported structural controls in both renderers; tests must prove automatic edit submission, rebuilding/disabled states, recovery reconciliation and no draft/Apply/confirmation/unapplied workflow. Keep unsupported reference callbacks inert.
+- [ ] 9.7 Verify real DAW transport continuity and independent instances, then map every structural acceptance scenario to executable tests when syncing specs; run focused callback safety/coverage/mutation and full relevant gates before claiming implementation complete.
+
+Specification verification (2026-10-02): strict OpenSpec validation passes; the
+13 acceptance test descriptions cover all 14 new structural scenarios. Local
+links in the 11 changed documents resolve. `scripts/check-spec-coverage` passes
+for the unchanged implemented baseline (559 scenarios, 320 mapped, 239 existing
+todos). No structural runtime tests have been implemented or run by this
+specification update, and no new baseline scenarios or fingerprints were synced.

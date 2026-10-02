@@ -42,8 +42,10 @@ tooling is retained as supplied and was not executed during import.
 | Feedback | Dynamic waveforms, activity, meters and markers; no baked labels, textures or background imagery |
 
 For example, a prepared snare zone displays `vel 1–63`; its live level can display
-`−3.0 dB`. The zone bounds require external patch editing and Reload Patch, while
-level changes use the declared host parameter.
+`−3.0 dB`. A supported zone-bound edit automatically mutes this plugin, rebuilds
+off audio and resumes; level changes use the declared live host parameter.
+Automatic structural editing is specified in the UI proposal and remains pending
+implementation, so current unsupported controls stay read-only.
 
 ## Adaptation rules
 
@@ -58,8 +60,15 @@ engine contract. They take precedence over suggestions in the preserved referenc
   named host buses and channel counts. Hide or explain unavailable capabilities;
   do not fabricate the export's fixed output pairs or module chains.
 - Zone bounds, module order, structural routing, voice limits and choke policy
-  remain prepared settings. Disable structural edit callbacks; enable a live
-  control only when it has a valid public parameter binding.
+  remain prepared settings. A supported structural edit uses the shared automatic
+  mute/rebuild/resume transaction, with one rebuild and structural controls
+  disabled until completion. Failure resumes the last working configuration and
+  displays the error. No draft, Apply or confirmation workflow. Keep unsupported
+  callbacks inert; a live control still requires a valid public parameter binding.
+- Rebuild preparation, ownership handoff and cleanup stay outside the callback.
+  Audio returns silence while rebuilding, the DAW transport continues, and host
+  parameter/automation identities remain stable. Voices, held notes and tails
+  may reset; ordinary parameter changes remain live without rebuilding.
 - In-plugin modulation assignment remains a proposed interaction. Host automation
   is DAW-owned; the editor cannot claim to inspect or edit arbitrary DAW sources.
 - Use the pointer-free knob described by the current brand rules. The original

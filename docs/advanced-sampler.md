@@ -41,3 +41,10 @@ In Bitwig Studio, open the plug-in's parameter list and search for a pad control
 The JUCE processor reads host parameter values at the start of each audio block and passes changes to the running Rust engine. The engine keeps pad control values separate even when notes overlap, while the kit still manages voices and hi-hat choking together.
 
 The patch's source files, regions, sample map, velocity layers, round-robin groups, voice limit, and choke mode are preparation-time structure. Edit a copy of the patch and explicitly reload that file to change them; host modulation changes only the public playback controls. The source patch in `examples/patches/` remains the maintained example for development. Sample assets referenced by a custom patch must be placed relative to that patch's location so preparation can resolve them. The staged files are the bundled default and may be replaced by a later plug-in build.
+
+The [UI proposal](../openspec/changes/add-renderer-independent-plugin-ui/proposal.md)
+now specifies supported in-plugin structural edits with automatic mute, off-audio
+rebuild and resume, including recovery to the working configuration on failure.
+That workflow has no draft or Apply step and preserves live host parameter
+bindings. Runtime implementation remains pending; the external-edit/reload path
+above describes the current sampler.

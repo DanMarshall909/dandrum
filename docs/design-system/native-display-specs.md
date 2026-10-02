@@ -4,6 +4,8 @@ Implementation contract for `KeyMap`, `LayerStack` and `OutputBusses`, supplemen
 the preserved [component handoff](reference/handoff/component-specs.md) and
 [maintained adaptation rules](README.md). Dimensions are logical pixels at 100%.
 These are specifications; the component implementations remain OpenSpec tasks 7.1–7.3.
+Supported structural editing additionally depends on the automatic rebuild tasks
+in [the UI plan](../../openspec/changes/add-renderer-independent-plugin-ui/tasks.md).
 
 ## Common presentation and lifetime
 
@@ -23,6 +25,16 @@ parameter. Every live control identifies its declared parameter and generation.
 Empty, unavailable and preparing states are distinct. Missing capability means
 "Unavailable for this instrument", not an empty but editable authoring surface.
 Do not fabricate mappings, sources, module chains, route feeds or output pairs.
+
+Supported structural edits immediately enter the shared automatic
+mute/rebuild/resume transaction. There is no draft, Apply, confirmation or
+unapplied-changes state. Show "Rebuilding…" and disable structural controls in
+all editors while the one job runs. Leave ordinary bound parameters live. Success
+automatically shows the new prepared document; failure resumes the working
+document, re-enables controls and displays the error. The DAW transport continues;
+engine preparation, ownership handoff and cleanup remain off audio. Keep each
+unsupported structural action read-only until its command and engine capability
+exist. See the [acceptance tests](../../openspec/changes/add-renderer-independent-plugin-ui/structural-authoring-acceptance-tests.md).
 
 ## KeyMap
 
@@ -44,9 +56,10 @@ Reference: [JSX](reference/components/display/KeyMap.jsx) and
   mapped key at a velocity inside the selected zone. The piano supports pointer
   audition and keyboard release. Escape, lost pointer capture, focus loss,
   hide/close and reload release editor notes through the shared session service.
-- Prepared mode never changes key, velocity or root bounds: no drag handles,
-  resize cursor, arrow nudge, Shift resize or `onChange` structural callback.
-  Arrows may navigate selection without altering a zone.
+- Without a supported structural capability, expose no drag/resize/nudge callbacks;
+  arrows navigate selection without altering a zone. Supported bound changes
+  submit a typed edit and automatically rebuild; never retain locally changed
+  bounds awaiting Apply. Structural handles are disabled during rebuilding.
 - Local press/hover describes input intent. Playback highlights/alternate and
   cursor indicators require observed host/editor telemetry; hide them with an
   explicit capability state if absent. Remove the reference's timed local flash.
@@ -65,8 +78,10 @@ Reference: [JSX](reference/components/display/LayerStack.jsx) and
   controls. Module blocks appear only when module-chain metadata is supplied.
 - Enter/Space opens the focused source/module details; Escape closes them and
   restores focus. Selection is possible even when the data is read-only.
-- Add/remove/reorder controls are absent. Gain, bypass, mute, sends and output
-  menus are absent or read-only unless individually backed by a public binding.
+- Add/remove/reorder controls require individual supported structural commands
+  and automatically rebuild. Keep them absent or read-only otherwise. Gain,
+  bypass, mute and sends require a public live binding; an internal output route
+  requires a supported structural command.
   Omitting `onChange` is insufficient: the reference mutates local state for
   bypass, level and mute even with `editable=false`. Production must gate those
   handlers and expose no unsupported mutable state.
@@ -89,9 +104,11 @@ Reference: [JSX](reference/components/display/OutputBusses.jsx) and
   Do not use the export's default 1/2…15/16 channel-options list or assume stereo.
 - Feeds appear only when routing metadata exists; otherwise say "Feed details
   unavailable". An absent feed list does not establish "Nothing routed".
-- Channels/routes are prepared and read-only. Remove the reference's channel
-  menu and local mute/level mutation unless an actual public binding authorizes
-  that control. Tab focuses inspection and any supported clip acknowledgements.
+- Channels/routes remain prepared. A supported internal route change automatically
+  rebuilds against the actual host bus layout; unavailable routing stays read-only.
+  Remove the reference's invented channel choices and local mute/level mutation
+  unless a real command or public binding authorizes that control. Tab focuses
+  inspection, supported controls and clip acknowledgements.
 - Measurements identify bus, channel and generation. Waiting/unavailable/gapped
   measurements differ from silence. Clip acknowledgements use shared bounded
   commands and affect only the measured channel/generation. Never simulate levels.

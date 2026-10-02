@@ -8,9 +8,9 @@ The revised export broadens the visual vocabulary to key maps, layered synth/sam
 
 ## Goals / Non-Goals
 
-**Goals:** implement a browser-independent C++ presentation boundary, two proven renderer paths, asynchronous analysis and bounded telemetry, with evidence that visualization cannot make audio wait on consumers. Preserve current sampler automation identities and external authoring.
+**Goals:** implement a browser-independent C++ presentation boundary, two proven renderer paths, asynchronous analysis and bounded telemetry, with evidence that visualization cannot make audio wait on consumers. Support automatic muted structural rebuilds while preserving current sampler automation identities, live parameter bindings and external authoring.
 
-**Non-Goals:** introduce graph authoring inside the DAW editor, add in-plugin modulation assignment, implement missing synth/patch layering or host routing features implicitly, replace the sampling primitives, or guarantee scheduling against arbitrary operating-system contention. Hosts own plugin callback scheduling; this design controls dependency, resource and callback-work bounds.
+**Non-Goals:** add a general YAML/graph editor, draft/Apply workflow, seamless engine transitions, overlapping engine rendering, state migration, background live preview, in-plugin modulation assignment, implicit synth/patch layering or host routing features, replacement sampling primitives, or guaranteed scheduling against arbitrary operating-system contention. Hosts own plugin callback scheduling; this design controls dependency, resource and callback-work bounds.
 
 ## Decisions
 
@@ -42,7 +42,7 @@ Processor-owned realtime storage remains valid independently of any editor. Each
 
 Prepared documents describe stable source/region/zone IDs, actual control groups, parameter descriptors, supported source/layer/routing metadata and actual host bus/channel layout. Documents and replies carry instrument generation; a renderer session ID distinguishes a reopened editor within that generation. Live frames additionally carry stream ID, sequence, audio sample position and validity/gap flags.
 
-Example command names are `beginGesture`, `setParameter`, `endGesture`, `noteOn`, `noteOff`, `reloadInstrument`, `requestWaveform`, and `requestSpectrogram`. Native calls enter the same service directly on the message thread; browser requests add transport identifiers. Validate finite normalized values and capabilities. An accepted parameter write means the host value was admitted, not that an audio block has processed it. Reload/analysis return job IDs and publish durable terminal states queryable after reconnect.
+Example command names are `beginGesture`, `setParameter`, `endGesture`, `noteOn`, `noteOff`, `editStructure`, `reloadInstrument`, `requestWaveform`, and `requestSpectrogram`. Native calls enter the same service directly on the message thread; browser requests add transport identifiers. Validate finite normalized values and capabilities. An accepted parameter write means the host value was admitted, not that an audio block has processed it. Structural edits/reload/analysis return job IDs and publish durable terminal states queryable after reconnect.
 
 Coalesce continuous pointer values while retaining their final value and gesture boundaries. Parameter notifications update authoritative state without emitting another command. Track admitted command sequence and generation to prevent delayed echoes from undoing a newer local edit. Rejection reconciles the optimistic display to authoritative state. Timeouts/disconnects clear bounded browser promises; do not automatically retry non-idempotent note or job requests.
 
@@ -56,13 +56,31 @@ Keep one maintained semantic token source and generate CSS and a C++ token heade
 
 | View | Shared data | Runtime interaction |
 | --- | --- | --- |
-| KeyMap | Actual key/velocity ranges, source identity, selection/layering mode, root note | Select and audition; prepared bounds are read-only |
-| LayerStack | Supported prepared source/chain descriptors and public control bindings | Inspect; edit only parameters with valid bindings |
-| OutputBusses | Actual named host bindings, channel counts, feeds when available | Inspect routing and per-channel meters; no fabricated output pairs |
+| KeyMap | Actual key/velocity ranges, source identity, selection/layering mode, root note | Select/audition; supported structural edits automatically rebuild |
+| LayerStack | Supported prepared source/chain descriptors and public control bindings | Inspect; live bound parameters; supported structural edits automatically rebuild |
+| OutputBusses | Actual named host bindings, channel counts, feeds when available | Inspect/meters; supported internal route edits automatically rebuild; no fabricated output pairs |
 | Knob / Slider | Public ID, normalized/actual value, range, units, scope | One complete host gesture; keyboard and typed entry |
 | Waveform / spectrum | Numeric analysis plus frame/rate/settings metadata | Inspect cached data, overlay observed cursor |
 
-Use `editable=false` for prepared KeyMap interactions. Audit LayerStack/OutputBusses callbacks individually; a single exported prop is not proof that every structural action is disabled. Do not expose arbitrary module internals as controls. In-plugin topology changes remain prohibited by `plugin-integration`; a future external authoring product requires a separate change.
+Enable a structural interaction only when its typed command and instrument capability are implemented; otherwise keep it read-only. Audit LayerStack/OutputBusses callbacks individually; a single exported prop is not proof that every action is gated. A reference component must not silently mutate local configuration. Supported changes enter the automatic rebuild transaction below. Live gain, mute, bypass and sends require actual public bindings; arbitrary module internals do not become host controls merely because the reference displays them.
+
+### Structural edits automatically mute, rebuild and resume
+
+**Decision:** structural edits take effect automatically through one processor-owned replacement job. There is no separate authoring draft, Apply button, confirmation or collection of unapplied changes. This user decision supersedes this proposal's previous external-only restriction. External file authoring remains possible; each installed prepared definition is still immutable.
+
+1. **Admit and mute:** the shared command service checks the edit's generation, supported operation and absence of another rebuild. Immediately close the plugin's atomic audio-access gate and mute its output before beginning configuration validation or preparation. Return the job identity and publish rebuilding state; disable structural controls in every open editor. Unknown/stale/unsupported commands are rejected without changing the working configuration.
+2. **Quiesce safely:** a preallocated callback reader guard and explicit acknowledgement prevent engine retirement until any callback that already acquired the old engine has left it. A callback beginning after gate closure clears every plugin output and returns without acquiring an engine. The coordinator may wait off audio for an existing reader; audio never waits for the coordinator, a lock or a worker. The handoff must work when the host stops issuing callbacks. A mute flag, `suspendProcessing`, pointer exchange or fixed sleep alone does not prove quiescence.
+3. **Validate and rebuild off audio:** retain the last working configuration and its dormant engine under coordinator ownership. Validate the edited configuration, resolve assets, compile and prepare the candidate on a worker. Only one rebuild executes; another structural request is rejected as busy rather than queued for later application. Partial candidates, temporary resources and retained assets are reclaimed off audio.
+4. **Activate and resume:** off audio, verify that generation and host preparation settings still match and that the existing public host surface is compatible. Reconcile current public parameter values, transfer the prepared candidate to the callback ownership slot, publish its owned prepared document and new generation, reopen the gate and unmute automatically. Retire the previous engine off audio after reader safety is established. Voices, held notes, queued audition and effect tails may reset; do not replay notes accumulated while muted.
+5. **Recover on failure:** validation, asset loading, compilation, worker startup or activation failure restores access to the last working engine and configuration, retains its displayed generation, unmutes and re-enables structural controls automatically. Publish a persistent job error to either renderer and reconcile displays to the working configuration. Clean failed candidates off audio. No failure waits for user confirmation or leaves a hidden pending edit or a permanent mute.
+
+The DAW transport keeps running. Muting affects only this plugin instance; it does not request host stop/pause or suspend other instruments. Blocks started after edit admission return silence throughout quiescing, validation and preparation. An already running block may finish before acknowledgement; the coordinator cannot reclaim or mutate its engine during that interval.
+
+The first implementation accepts only edits compatible with the existing exposed public surface. Preserve host parameter objects, IDs, count/order, slot assignments and automation bindings; reject a structural edit that adds/removes/renames/reorders exposed parameters or changes their host ranges. Internal structures may change only through supported engine capabilities. Ordinary cutoff, volume and other exposed changes continue on normal live bindings without a rebuild or mute. During a rebuild, retain the latest host values and install them in whichever engine resumes; do not overwrite automation arriving during preparation with an earlier snapshot.
+
+The rebuild coordinator outlives editor sessions. Closing/reopening an editor cannot strand a rebuild or leave output muted; a new editor queries processor-owned status. Serialize ownership changes with explicit reload, file-watcher replacement, state restoration and host preparation; those paths must not independently retire an engine that the coordinator retains. Reload uses the same muted preparation/handoff path. Processor shutdown waits for and reclaims worker/engine resources off the audio callback. Copied prepared documents and retained analysis samples remain safe, and obsolete generation results cannot replace the activated document.
+
+The current reload path prepares before installation and uses a fixed delay before old-engine destruction. Its existing tests are baseline evidence, not proof of this new handoff or immediate-muted-rebuild contract. [Structural acceptance tests](structural-authoring-acceptance-tests.md) define the additional behavioral oracles and required executable regressions.
 
 The maintained kit's snare split is 63/64 and its controls include per-pad scopes. Use those live descriptors in acceptance fixtures. Never replace them with the export's 95/96 demo split, artificial layering, hardcoded module chains, simulated activity or claimed host modulation sources.
 
@@ -84,7 +102,7 @@ waveforms, labels, activity and meter values are never baked into assets.
 Keep the supplied HTML/CDN/Babel previews as design references. They are not the
 production asset pipeline. The imported CSS and C++ token outputs do not complete
 the planned shared generator, and the new display views still require native
-component specifications. Engine metadata and the capability/external-authoring
+component specifications. Engine metadata and the capability/automatic-rebuild
 rules above determine which interactions a production editor can expose.
 
 ### Telemetry has explicit work and memory bounds
@@ -116,7 +134,9 @@ The supplied TB-303 React panel is an additional web client of the same asset an
 ## Risks / Trade-offs
 
 - Host/OS scheduling and shared CPU/GPU resources can still cause contention -> bound resource use and report callback timing/deadline evidence under explicit workloads; avoid absolute scheduling promises.
-- Rich mockups imply engine features not yet available -> capability-gate views and retain prepared/external-authoring semantics.
+- Rich mockups imply engine features not yet available -> capability-gate views and route supported structural edits through automatic replacement, preserving immutable prepared metadata.
+- Immediate mute interrupts this plugin briefly -> allow voices/notes/tails to reset; keep the DAW running and automatically restore the working configuration on failure.
+- Muting can hide an unsafe ownership race -> require an acknowledged callback handoff and off-audio cleanup; reject fixed-delay assumptions in acceptance tests.
 - UI consumers can stall for arbitrary time -> bounded publication, independent clip/release state, reconnect snapshots and generation checks.
 - Retained samples and spectral caches consume memory -> bound jobs/cache bytes and reclaim/cancel off audio; test reload and teardown while jobs are stalled.
 - Pixel-identical renderers are expensive -> share semantic tokens and behaviour; verify readable, faithful full/compact layouts on each real runtime.
@@ -129,8 +149,9 @@ The supplied TB-303 React panel is an additional web client of the same asset an
 3. Implement typed shared state/commands and native-only build separation; prove one knob in native and web against identical host behaviour.
 4. Add bounded metering and a real meter in both views, then prepared waveform data and both waveform renderers. Verify these three controls before expanding the sampler layout.
 5. Add static spectral analysis, then subscribed live capture/analysis with gap handling and backpressure tests.
-6. Compose the revised capability-aware KeyMap/LayerStack/OutputBusses views, preserving controls that the existing sampler exposes. Add native handoff details and offline packaging.
-7. Run focused and full integration gates, record stress/visual evidence, map every new scenario to a proving test, then sync/archive through OpenSpec only after implementation is complete. Every implementation task remains unchecked in this proposal.
+6. Specify structural acceptance tests first, then implement the acknowledged audio gate, one-worker rebuild/recovery and stable public-surface checks. Connect only supported structural controls in native and WebView to this transaction.
+7. Compose the revised capability-aware KeyMap/LayerStack/OutputBusses views, preserving controls that the existing sampler exposes. Add native handoff details and offline packaging.
+8. Run focused and full integration gates, record stress/visual evidence, map every new scenario to a proving test, then sync/archive through OpenSpec only after implementation is complete. Task checkboxes distinguish verified slices from pending implementation; the automatic structural rebuild tasks remain unchecked.
 
 Rollback selects the previously verified editor build while preserving instrument identity and persisted state. Reverting presentation must not require reverting completed sampling-engine functionality.
 
@@ -139,3 +160,5 @@ Rollback selects the previously verified editor build while preserving instrumen
 For deterministic functional tests, replay the same timed parameter/MIDI schedule with telemetry enabled, disabled and consumers stalled; compare to known signed samples as well as full-output equality. Test full queues, stale jobs, variable blocks, generation reuse/reconnect, editor closure during a note and gesture, source-content changes at the same path, and clip acknowledgement races.
 
 For runtime evidence, test native and web separately at 1200x800 and 820x560 logical sizes, common display scaling, 44.1/48/96 kHz and small/normal/oversized blocks. Record baseline and enabled callback distributions, maximum duration, observable missed deadlines, capture losses, worker utilization and cache memory. Include multiple instances, analysis cancellation, resizing and repeated hide/open. Timing acceptance covers only the documented tested environment. Builds and deterministic PCM parity do not establish runtime visual or scheduling quality.
+
+Structural acceptance must hold a real preparation job at a deterministic barrier while callbacks run, assert exact zero in prefilled output buffers, and instrument forbidden callback work and engine access/destruction. Hold an already-entered engine reader separately to prove ownership cannot be retired early. Use known signed PCM after successful activation and after each recovery path, and verify host slot identities and latest automation values. Test editor closure, no-callback periods, repeated jobs and independent plugin instances. DAW transport continuity needs a real host run in addition to processor tests.

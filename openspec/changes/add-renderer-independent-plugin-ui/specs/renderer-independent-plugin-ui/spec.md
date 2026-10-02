@@ -73,15 +73,29 @@ The editors SHALL present KeyMap, LayerStack and OutputBusses views from prepare
 - **THEN** the output view SHALL enumerate those actual bindings and per-channel measurements
 - **AND** it SHALL NOT offer the mockup's fixed 1/2 through 15/16 output list as available host routing
 
-### Requirement: Prepared structure remains externally authored
+### Requirement: Structural interactions use automatic replacement
 
-Plugin editors SHALL display source assignments, zone bounds, module order, structural routes, voice limits and choke policies as prepared data. Structural authoring SHALL remain external and take effect through explicit reload. Live gain, send, mute, bypass or other controls SHALL be enabled only when they have a supported public parameter binding; a display label alone SHALL NOT make a value live.
+Plugin editors SHALL display source assignments, zone bounds, module order, structural routes, voice limits and choke policies from the active prepared document. Supported structural edits SHALL use the shared automatic mute/rebuild/resume transaction specified by `plugin-structural-authoring`. Unsupported structural interactions SHALL remain read-only or unavailable. Live gain, send, mute, bypass or other controls SHALL be enabled only when they have a supported public parameter binding; a display label alone SHALL NOT make a value live.
 
-#### Scenario: Prepared component interactions are restricted
+#### Scenario: Supported structural interaction rebuilds automatically
+
+- **WHEN** a user makes a supported zone, source, module-order or internal-routing edit in either editor
+- **THEN** the edit SHALL automatically start the shared muted rebuild transaction
+- **AND** the editor SHALL NOT require a draft mode, Apply button or confirmation
+- **AND** the resulting prepared document or recovered working document SHALL be authoritative in both renderers
+
+#### Scenario: Unsupported prepared component interactions are restricted
 
 - **WHEN** a user selects a zone or opens a layer or output panel
 - **THEN** inspection, audition and supported public parameter controls SHALL be available
-- **AND** zone dragging, module addition/removal/reordering and structural rerouting SHALL NOT modify or author the running patch
+- **AND** an unsupported structural interaction SHALL NOT mutate local configuration or the running patch
+
+#### Scenario: Rebuilding disables structural controls only
+
+- **WHEN** a structural rebuild is running
+- **THEN** both renderers SHALL disable structural controls and show rebuilding state
+- **AND** ordinary bound public parameters SHALL remain available through their live bindings
+- **AND** success or failure SHALL automatically restore the supported structural controls and show any failure error
 
 ### Requirement: The design system supports both renderers
 

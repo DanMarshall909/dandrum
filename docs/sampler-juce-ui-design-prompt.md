@@ -30,7 +30,7 @@ The sampler is intended for playable drum kits, chopped breaks, and modest chrom
 - Map sample regions by MIDI key and velocity. Support velocity layers (soft snare 1–63, hard snare 64–127), deterministic round-robin and weighted alternates, bounded voices, voice stealing, and exclusive choke groups.
 - Trigger explicit slices of a prepared break using a slice index or mapped MIDI notes.
 - Expose **pitch ratio, start offset, level, pan, and variation** as prominent live controls. These public parameters should be easy for a DAW to automate or modulate externally. Show their actual shared or per-pad scope. Variation chooses among compatible hit alternates without changing the prepared sample map.
-- Keep sample source files, sample maps, voice limits, region and loop definitions, and choke policy as prepared settings. Changing these requires an explicit patch reload; do not portray them as continuously automatable controls.
+- Keep sample source files, sample maps, voice limits, region and loop definitions, and choke policy as prepared settings. Supported structural edits automatically mute this plugin, safely hand off engine ownership, validate/rebuild off audio and resume. Do not portray them as continuously automatable controls or add draft/Apply/confirmation workflows.
 
 Use the reference drum kit as concrete content. MIDI note **36** plays kick, **38** plays snare with soft and hard velocity layers, **42** plays closed hat, and **46** plays open hat. The hard snare and open hat have alternates; the hats share a choke group. Show these four mapped sounds within a 4 × 4 pad grid, with the remaining pads clearly empty or available for future mappings. Do not invent additional loaded samples.
 
@@ -41,11 +41,11 @@ Use user-facing names such as **patch**, **preset**, **module**, **control**, **
 Create a high-fidelity main window around **1200 × 800 px**, plus one compact layout demonstrating how it remains usable at a smaller plugin size. Include:
 
 1. A 4 × 4 playable pad grid with note labels, selected-pad state, velocity response, alternate activity, and a visible closed/open hat choke relationship.
-2. A large waveform for the selected sample region. Show a playback cursor, prepared region bounds, fades, loop points where relevant, and explicit slice markers in a Slices view. Markers are visualizations of prepared data, not an in-plugin waveform editor.
+2. A large waveform for the selected sample region. Show a playback cursor, prepared region bounds, fades, loop points where relevant, and explicit slice markers in a Slices view. Markers visualize prepared data; enable a structural marker edit only with a supported automatic rebuild command.
 3. A clear live-control area for pitch ratio, start offset, level, pan, and variation, with current values and subtle feedback when the host changes a parameter.
-4. Selected-pad details showing key and velocity ranges, layers, alternates, region gain/pan/pitch, voice limit, stealing policy, and choke behavior. Distinguish read-only prepared settings from live controls.
+4. Selected-pad details showing key and velocity ranges, layers, alternates, region gain/pan/pitch, voice limit, stealing policy, and choke behavior. Distinguish prepared structural settings from live controls, and explain unavailable edits.
 5. A Slices tab or alternate view with a numeric slice-index control and a clear selected-slice state. Make it clear when this view belongs to a sliced-break patch rather than implying the reference drum kit contains a break sample.
-6. Patch load status, missing-asset feedback, and an explicit **Reload Patch** action.
+6. Patch load status, missing-asset feedback, and **Rebuilding…** state for automatic structural edits. Temporarily disable structural controls during the one rebuild; automatically resume and re-enable them on success or failure, with errors visible. A manual Reload Patch action may remain for external file edits, but is never required after a supported in-plugin edit.
 
 Provide a second mockup state with a modulation context menu open on a live control. Show how the same component language could be reused on a synthesizer or effects plugin without designing those complete products.
 
@@ -59,10 +59,16 @@ round-robin alternate does not by itself imply simultaneous layering. Show
 unavailable capabilities explicitly rather than inventing synth/patch layers or
 fixed output pairs.
 
-Keep zone bounds, module order and structural routing read-only in the plugin.
-Selection, audition and supported public parameter changes remain available.
-Do not expose the reference components' add/remove/reorder/reroute interactions
-as plugin authoring; structural changes require external patch editing and reload.
+Enable zone-bound, module-order and internal-routing edits only when their
+structural commands are supported. Each admitted edit immediately mutes this
+plugin and automatically rebuilds off audio, then resumes the edited or last
+working configuration. Keep the DAW running and host automation identities
+stable. Structural controls are disabled while rebuilding; ordinary public
+parameters remain live without rebuilding. Voices, held notes and tails may
+reset. No draft mode, Apply, confirmation, seamless transition, overlapping
+engines or background live preview is required. Unsupported reference callbacks
+remain read-only. This is the accepted design contract, not a claim that runtime
+structural editing is already implemented.
 
 ## Implicit modulation interaction
 

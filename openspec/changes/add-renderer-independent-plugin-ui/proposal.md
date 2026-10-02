@@ -9,7 +9,9 @@ Dandrum needs the downloaded design system to support both a production WebView 
 - Prove both renderer paths with the same parameter knob, meter, and prepared-waveform fixtures. Provide a native-only build with browser support disabled and no frontend build prerequisite.
 - Adopt the revised Dandrum design system, including `KeyMap`, `LayerStack`, and `OutputBusses`, with one token source generating CSS and C++ constants.
 - Present the loaded instrument's actual zones, control groups, source types, module chains, and host buses. Capability-gate data or operations absent from the prepared instrument or host.
-- Preserve external authoring and explicit reload for structural changes. The design package's drag-to-edit zones and add/remove/reroute controls are reference interactions, not authorization to add graph authoring to the plugin.
+- Support capability-backed structural editing with automatic mute, rebuild and resume. An admitted edit immediately mutes this plugin, closes engine access to audio, validates and prepares off audio, then activates and unmutes automatically. No draft mode, Apply button, confirmation or unapplied-changes workflow.
+- Run one structural rebuild at a time and disable structural controls until it finishes. Retain the last working configuration for failure recovery; voices, held notes and effect tails may reset. The DAW transport and other plugin instances continue running.
+- Keep ordinary public parameter changes on their live bindings. Preserve existing host parameter objects, IDs, slots and automation bindings across structural rebuilds; reject incompatible public-surface changes without replacing the working configuration.
 - Add bounded asynchronous meter/activity/cursor telemetry, prepared waveform and spectrogram analysis, and a subscribed live analysis stream. Drop visual history on overload while preserving audio, note-release safety, and latched clip state.
 - Package production web assets and redistributable fonts locally; retain native parameter identity, automation, state, and MIDI behaviour across editor choices.
 - Replace the existing TB-303 example page with the supplied React panel, binding its playable keyboard and supported controls to the same authoritative command surface. Present pattern/transport controls as unavailable until the patch supplies those capabilities.
@@ -21,17 +23,20 @@ Dandrum needs the downloaded design system to support both a production WebView 
 - `renderer-independent-plugin-ui`: Typed shared state/commands, renderer parity, independent builds, design tokens, and capability-aware presentation of the revised design system.
 - `plugin-visual-telemetry`: Bounded publication, measured meter semantics, pad/cursor feedback, backpressure, lifetimes, and audio-priority verification.
 - `plugin-analysis-display`: Shared prepared waveform and spectral analysis, optional subscribed live capture, neutral result formats, caching, cancellation, and stale-result rejection.
+- `plugin-structural-authoring`: Automatic structural edit admission, callback-safe ownership handoff, off-thread rebuild/cleanup, single-job UI state and recovery to the last working configuration.
 
 ### Modified Capabilities
 
-None. These additive capabilities preserve `plugin-integration`'s existing public-parameter and external-authoring requirements and consume the existing `advanced-sampling-options` and `host-buses` contracts.
+- `plugin-integration`: Permit supported structural edits inside the editor through automatic instrument replacement, while keeping each active prepared definition immutable and preserving existing host parameter and automation identities. This supersedes the external-only authoring restriction for supported edits. External authoring remains available.
+
+The change consumes the existing `advanced-sampling-options` and `host-buses` contracts without adding implicit layering, synthesis or host bus capabilities.
 
 ## Impact
 
-- C++: split shared commands/state from `InstrumentHostWebBridge`, make editor selection independent of `InstrumentDemoConfiguration::indexHtml`, add a native JUCE component path, and scope workers/caches/subscriptions outside the callback.
+- C++: split shared commands/state from `InstrumentHostWebBridge`, make editor selection independent of `InstrumentDemoConfiguration::indexHtml`, add a native JUCE component path, and scope workers/caches/subscriptions outside the callback. Add a processor-owned structural rebuild coordinator and an acknowledged callback ownership handoff; muting or a fixed sleep is not proof that an engine is safe to reclaim.
 - Web: introduce a production frontend build and thin transport adapter; adapt the supplied component sources to typed commands and authoritative snapshots.
 - Rust/FFI: reuse prepared source, region, slice, zone and control-group metadata; add only covered read-only metadata access or bounded capture seams required by the UI.
-- Build/tests: separate common, native, and browser targets; run renderer contract tests, deterministic DSP/analysis tests, callback-safety checks, packaging checks, and runtime stress/visual inspection.
+- Build/tests: separate common, native, and browser targets; run renderer contract tests, deterministic DSP/analysis tests, callback-safety checks, packaging checks, and runtime stress/visual inspection. Structural acceptance cases are specified in [structural-authoring-acceptance-tests.md](structural-authoring-acceptance-tests.md); runtime implementation and executable regressions remain unchecked tasks.
 - Existing instrument and host parameter IDs and persisted DSP state remain compatible. Editor choice is presentation configuration, not a new instrument identity.
 
 ## Baseline And Design Evidence
