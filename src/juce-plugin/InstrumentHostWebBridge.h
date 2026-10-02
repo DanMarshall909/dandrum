@@ -18,7 +18,7 @@ public:
     ~InstrumentHostWebBridge();
 
     static const char* bootstrapScript() noexcept;
-    std::array<NativeFunctionEntry, 7> nativeFunctions();
+    std::array<NativeFunctionEntry, 8> nativeFunctions();
     juce::WebBrowserComponent::Options addNativeFunctions (
         juce::WebBrowserComponent::Options options);
     std::optional<juce::WebBrowserComponent::Resource> provideResource (
@@ -39,6 +39,9 @@ public:
                         juce::WebBrowserComponent::NativeFunctionCompletion completion);
     void noteOffFromWeb (const juce::Array<juce::var>& arguments,
                          juce::WebBrowserComponent::NativeFunctionCompletion completion);
+    void noteHeartbeatFromWeb (const juce::Array<juce::var>& arguments,
+                               juce::WebBrowserComponent::NativeFunctionCompletion completion);
+    bool expireNoteSession (double nowMilliseconds) noexcept;
     juce::var parameterSnapshotForWeb() const;
     juce::var parameterStateForWeb() const;
 
@@ -48,4 +51,6 @@ private:
     DandrumAudioProcessor& processor;
     std::uint32_t lastSeenParameterSurfaceGeneration;
     std::uint64_t sessionId;
+    double lastNoteHeartbeatMilliseconds = 0.0;
+    bool noteSessionActive = false;
 };

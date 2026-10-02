@@ -654,15 +654,198 @@ int main()
     editorMidiProcessor->processBlock (editorMidiBuffer, noHostMidi);
     editorMidiProcessor->releaseResources();
 
-    auto boundedQueueProcessor = std::make_unique<DandrumAudioProcessor> (InstrumentDemoConfiguration::kick());
-    bool queueRejectedEvent = false;
-    for (int event = 0; event < 256; ++event)
-        queueRejectedEvent = ! boundedQueueProcessor->enqueueEditorNoteOn (36, 0.8f)
-                             || queueRejectedEvent;
-
-    if (! queueRejectedEvent || boundedQueueProcessor->getDroppedMidiEventCount() == 0)
+    // A short drum-pad tap may begin and end between two audio callbacks. It
+    // must still render one bounded onset, then release on the next callback.
+    constexpr int tapBlockSize = 512;
+    auto tapProcessor = std::make_unique<DandrumAudioProcessor> (InstrumentDemoConfiguration::tb303());
+    tapProcessor->setPlayConfigDetails (0, 2, 48000.0, tapBlockSize);
+    tapProcessor->prepareToPlay (48000.0, tapBlockSize);
+    juce::AudioBuffer<float> tapBlock (2, tapBlockSize);
+    if (! tapProcessor->enqueueEditorNoteOn (60, 0.8f, 90)
+        || ! tapProcessor->enqueueEditorNoteOff (60, 90))
+        return 1;
+    tapProcessor->processBlock (tapBlock, noHostMidi);
+    if (! bufferHasSignal (tapBlock))
     {
-        std::cerr << "web-editor MIDI queue did not bound and report overflow\n";
+        std::cerr << "sub-block editor tap produced no audio onset\n";
+        return 1;
+    }
+    for (int block = 0; block < 48; ++block)
+        tapProcessor->processBlock (tapBlock, noHostMidi);
+    if (tailRms (tapBlock, 0) > 0.00001f)
+    {
+        std::cerr << "sub-block editor tap did not release its note\n";
+        return 1;
+    }
+
+    // Repeated editor input must collapse to bounded per-note intent. Closing
+    // the editor releases a note even if the producer runs far ahead of audio.
+    auto releaseProcessor = std::make_unique<DandrumAudioProcessor> (InstrumentDemoConfiguration::tb303());
+    releaseProcessor->setPlayConfigDetails (0, 2, 48000.0, blockSize);
+    releaseProcessor->prepareToPlay (48000.0, blockSize);
+    constexpr std::uint64_t editorSession = 91;
+    if (! releaseProcessor->enqueueEditorNoteOn (60, 0.8f, editorSession))
+        return 1;
+    juce::AudioBuffer<float> releaseBlock (2, blockSize);
+    releaseProcessor->processBlock (releaseBlock, noHostMidi);
+    if (! bufferHasSignal (releaseBlock))
+    {
+        std::cerr << "editor session note produced no signed audio\n";
+        return 1;
+    }
+    if (releaseProcessor->enqueueEditorNoteOn (60, 0.8f, editorSession + 1))
+    {
+        std::cerr << "second editor stole a note owned by the first session\n";
+        return 1;
+    }
+    releaseProcessor->closeEditorNoteSession (editorSession + 1);
+    releaseProcessor->processBlock (releaseBlock, noHostMidi);
+    if (! bufferHasSignal (releaseBlock))
+    {
+        std::cerr << "closing an unrelated editor released the active note\n";
+        return 1;
+    }
+    for (int event = 0; event < 256; ++event)
+        if (! releaseProcessor->enqueueEditorNoteOn (60, 0.8f, editorSession))
+        {
+            std::cerr << "bounded editor note intent rejected same-session updates\n";
+            return 1;
+        }
+    releaseProcessor->closeEditorNoteSession (editorSession);
+    for (int block = 0; block < 240; ++block)
+        releaseProcessor->processBlock (releaseBlock, noHostMidi);
+    if (tailRms (releaseBlock, 0) > 0.00001f)
+    {
+        std::cerr << "closing an editor left its gated note audible\n";
+        return 1;
+    }
+
+    // A browser note at a pitch already held by host MIDI must not change the
+    // host-owned voice, including when the browser subsequently releases it.
+    auto hostOnly = std::make_unique<DandrumAudioProcessor> (InstrumentDemoConfiguration::tb303());
+    auto hostAndEditor = std::make_unique<DandrumAudioProcessor> (InstrumentDemoConfiguration::tb303());
+    for (auto* instrument : { hostOnly.get(), hostAndEditor.get() })
+    {
+        instrument->setPlayConfigDetails (0, 2, 48000.0, blockSize);
+        instrument->prepareToPlay (48000.0, blockSize);
+    }
+    juce::MidiBuffer hostOn;
+    hostOn.addEvent (juce::MidiMessage::noteOn (1, (juce::uint8) 60, (juce::uint8) 100), 0);
+    juce::AudioBuffer<float> hostReference (2, blockSize), hostMixed (2, blockSize);
+    hostOnly->processBlock (hostReference, hostOn);
+    hostAndEditor->processBlock (hostMixed, hostOn);
+    constexpr std::uint64_t secondSession = 92;
+    if (! hostAndEditor->enqueueEditorNoteOn (60, 0.9f, secondSession)
+        || ! hostAndEditor->enqueueEditorNoteOff (60, secondSession))
+    {
+        std::cerr << "editor note admission failed while host held the same pitch\n";
+        return 1;
+    }
+    for (int block = 0; block < 8; ++block)
+    {
+        hostOnly->processBlock (hostReference, noHostMidi);
+        hostAndEditor->processBlock (hostMixed, noHostMidi);
+        for (int channel = 0; channel < 2; ++channel)
+            for (int frame = 0; frame < blockSize; ++frame)
+                if (! nearlyEqual (hostReference.getSample (channel, frame),
+                                   hostMixed.getSample (channel, frame), 0.00001f))
+                {
+                    std::cerr << "editor note release changed unrelated host MIDI audio\n";
+                    return 1;
+                }
+    }
+    if (! bufferHasSignal (hostReference))
+    {
+        std::cerr << "host isolation comparison had no signed reference audio\n";
+        return 1;
+    }
+
+    auto editorThenHost = std::make_unique<DandrumAudioProcessor> (InstrumentDemoConfiguration::tb303());
+    editorThenHost->setPlayConfigDetails (0, 2, 48000.0, blockSize);
+    editorThenHost->prepareToPlay (48000.0, blockSize);
+    constexpr std::uint64_t thirdSession = 93;
+    if (! editorThenHost->enqueueEditorNoteOn (60, 0.9f, thirdSession))
+        return 1;
+    editorThenHost->processBlock (hostMixed, noHostMidi);
+    editorThenHost->processBlock (hostMixed, hostOn);
+    if (! editorThenHost->enqueueEditorNoteOff (60, thirdSession))
+        return 1;
+    for (int block = 0; block < 100; ++block)
+        editorThenHost->processBlock (hostMixed, noHostMidi);
+    if (tailRms (hostMixed, 0) < 0.0001f)
+    {
+        std::cerr << "editor release cut off a later host note at the same pitch\n";
+        return 1;
+    }
+    juce::MidiBuffer hostOff;
+    hostOff.addEvent (juce::MidiMessage::noteOff (1, 60), 0);
+    editorThenHost->processBlock (hostMixed, hostOff);
+    for (int block = 0; block < 240; ++block)
+        editorThenHost->processBlock (hostMixed, noHostMidi);
+    if (tailRms (hostMixed, 0) > 0.00001f)
+    {
+        std::cerr << "host note did not release after editor overlap\n";
+        return 1;
+    }
+
+    // Host MIDI keeps its existing event capacity when editor audition is
+    // active. The final host note changes pitch; losing it changes PCM.
+    auto burstHostOnly = std::make_unique<DandrumAudioProcessor> (InstrumentDemoConfiguration::tb303());
+    auto burstWithEditor = std::make_unique<DandrumAudioProcessor> (InstrumentDemoConfiguration::tb303());
+    for (auto* instrument : { burstHostOnly.get(), burstWithEditor.get() })
+    {
+        instrument->setPlayConfigDetails (0, 2, 48000.0, blockSize);
+        instrument->prepareToPlay (48000.0, blockSize);
+    }
+    constexpr std::uint64_t burstEditorSession = 94;
+    if (! burstWithEditor->enqueueEditorNoteOn (60, 0.8f, burstEditorSession))
+        return 1;
+    juce::MidiBuffer hostBurst;
+    for (int event = 0; event < 127; ++event)
+        hostBurst.addEvent (juce::MidiMessage::noteOn (
+                                1, (juce::uint8) 36, (juce::uint8) 64), 0);
+    hostBurst.addEvent (juce::MidiMessage::noteOn (1, (juce::uint8) 48, (juce::uint8) 127), 0);
+    burstHostOnly->processBlock (hostReference, hostBurst);
+    burstWithEditor->processBlock (hostMixed, hostBurst);
+    burstWithEditor->closeEditorNoteSession (burstEditorSession);
+    for (int block = 0; block < 8; ++block)
+    {
+        burstHostOnly->processBlock (hostReference, noHostMidi);
+        burstWithEditor->processBlock (hostMixed, noHostMidi);
+        for (int channel = 0; channel < 2; ++channel)
+            for (int frame = 0; frame < blockSize; ++frame)
+                if (! nearlyEqual (hostReference.getSample (channel, frame),
+                                   hostMixed.getSample (channel, frame), 0.00001f))
+                {
+                    std::cerr << "editor audition displaced saturated host MIDI\n";
+                    return 1;
+                }
+    }
+    if (! bufferHasSignal (hostReference))
+    {
+        std::cerr << "host saturation comparison rendered no signed audio\n";
+        return 1;
+    }
+
+    auto releaseDuringBurst = std::make_unique<DandrumAudioProcessor> (InstrumentDemoConfiguration::tb303());
+    releaseDuringBurst->setPlayConfigDetails (0, 2, 48000.0, blockSize);
+    releaseDuringBurst->prepareToPlay (48000.0, blockSize);
+    constexpr std::uint64_t saturatedReleaseSession = 95;
+    if (! releaseDuringBurst->enqueueEditorNoteOn (60, 0.8f, saturatedReleaseSession))
+        return 1;
+    releaseDuringBurst->processBlock (hostMixed, noHostMidi);
+    if (! releaseDuringBurst->enqueueEditorNoteOff (60, saturatedReleaseSession))
+        return 1;
+    releaseDuringBurst->processBlock (hostMixed, hostBurst);
+    juce::MidiBuffer releaseBurstHost;
+    releaseBurstHost.addEvent (juce::MidiMessage::noteOff (1, 36), 0);
+    releaseBurstHost.addEvent (juce::MidiMessage::noteOff (1, 48), 0);
+    releaseDuringBurst->processBlock (hostMixed, releaseBurstHost);
+    for (int block = 0; block < 240; ++block)
+        releaseDuringBurst->processBlock (hostMixed, noHostMidi);
+    if (tailRms (hostMixed, 0) > 0.00001f)
+    {
+        std::cerr << "editor release was lost when host MIDI filled the event queue\n";
         return 1;
     }
 

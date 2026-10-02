@@ -10,5 +10,5 @@
     "noEmit": true,
     "strict": true
   },
-  "include": ["src/main.tsx", "src/model.mjs"]
+  "include": ["src/main.tsx", "src/model.mjs", "src/note-audition.mjs"]
 }

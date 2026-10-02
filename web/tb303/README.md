@@ -12,6 +12,7 @@ editing. The checked-in `dist/` files are embedded by CMake, so building the
 plugin from a source release does not require a development server or Node.
 
 The prepared TB-303 patch exposes seven public controls. The saw waveform is
-fixed. Pattern editing and transport are unavailable, and the keyboard remains
-disabled until editor note release and host MIDI ownership are safe under queue
-saturation. Host MIDI input continues to play the instrument.
+fixed. Pattern editing and transport are unavailable. The keyboard sends real
+host note commands; per-note intent, session close and a missed-heartbeat
+timeout protect note release when the browser stalls or closes. Host MIDI input
+continues to play the instrument independently.

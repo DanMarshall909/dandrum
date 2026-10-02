@@ -70,10 +70,12 @@ public:
     std::uint32_t getParameterSurfaceGeneration() const noexcept;
     InstrumentUiCommandService& uiCommands() noexcept;
 
-    /// Enqueues a web-editor keyboard event for delivery by processBlock.
-    /// The message thread never calls the Rust engine directly.
-    bool enqueueEditorNoteOn (int noteNumber, float velocity) noexcept;
-    bool enqueueEditorNoteOff (int noteNumber) noexcept;
+    /// Publishes bounded, per-note editor intent for delivery by processBlock.
+    /// The message thread never calls the Rust engine directly. Session 0 is
+    /// reserved for existing direct callers; each Web editor uses its own ID.
+    bool enqueueEditorNoteOn (int noteNumber, float velocity, std::uint64_t sessionId = 0) noexcept;
+    bool enqueueEditorNoteOff (int noteNumber, std::uint64_t sessionId = 0) noexcept;
+    void closeEditorNoteSession (std::uint64_t sessionId) noexcept;
 
     /// Silences audio output during an explicit instrument-replacement
     /// transaction. Safe to call from any thread; processBlock reads this
@@ -158,7 +160,6 @@ private:
     static constexpr std::intptr_t kNoEngineSlot = -1;
     static constexpr int kPublicParameterSlotCount = 64;
     static constexpr int kPluginStateSchemaVersion = 1;
-    static constexpr int kEditorMidiQueueCapacity = 128;
 
     enum class ReplacementState : int
     {
@@ -184,13 +185,6 @@ private:
         const std::atomic<float>* rawValue = nullptr;
         std::intptr_t kernelSlotIndex = kNoEngineSlot;
         float lastAppliedNormalisedValue = 0.0f;
-    };
-
-    struct EditorMidiEvent
-    {
-        bool noteOn = false;
-        std::uint8_t note = 0;
-        std::uint8_t velocity = 0;
     };
 
     /// The plugin's explicit concept of "the currently loaded immutable
@@ -248,8 +242,11 @@ private:
     void applyChangedParameters (DandrumKernelInstrument* activeKernel) noexcept;
     void applySlotToKernel (ParameterSlot& slot, float normalisedValue, DandrumKernelInstrument* activeKernel) noexcept;
     void setSlotNormalisedValue (int slotIndex, float normalisedValue);
-    bool enqueueEditorMidiEvent (EditorMidiEvent event) noexcept;
-    void deliverEditorKernelMidiEvents (DandrumKernelInstrument* activeKernel) noexcept;
+    void publishEditorNoteIntent (std::uint8_t note, std::uint8_t velocity) noexcept;
+    void deliverEditorNoteIntent (
+        DandrumKernelInstrument* activeKernel,
+        const std::array<bool, 128>& hostTouchedNotes) noexcept;
+    void clearEditorNoteIntentForReload() noexcept;
 
     const InstrumentDemoConfiguration configuration;
     juce::AudioProcessorValueTreeState parameters;
@@ -265,8 +262,21 @@ private:
     std::atomic<int> replacementState { static_cast<int> (ReplacementState::Running) };
     std::atomic<std::uint32_t> parameterSurfaceGeneration { 0 };
     std::atomic<std::size_t> droppedMidiEventCount { 0 };
-    std::array<EditorMidiEvent, kEditorMidiQueueCapacity> editorMidiEvents {};
-    juce::AbstractFifo editorMidiFifo { kEditorMidiQueueCapacity };
+    // One admission writer and one audio reader. The upper 48 bits count note
+    // onsets, then one byte retains their velocity and the low byte is desired
+    // gate velocity. An on/off pair between callbacks still carries an onset.
+    static_assert (std::atomic<std::uint64_t>::is_always_lock_free);
+    // Reload may run off the message thread; only admission/teardown takes
+    // this lock. The audio callback reads atomic intent without locking.
+    std::mutex editorNoteCommandMutex;
+    std::array<std::atomic<std::uint64_t>, 128> editorNoteIntent {};
+    std::array<std::optional<std::uint64_t>, 128> editorNoteOwner {};
+    std::array<std::uint64_t, 128> lastAudioEditorOnSequence {};
+    std::array<bool, 128> audioEditorNoteHeld {};
+    std::array<bool, 128> audioEditorTransientRelease {};
+    std::array<bool, 128> audioHostNoteHeld {};
+    std::array<bool, 128> audioHostReleasePending {};
+    DandrumKernelInstrument* lastAudioKernel = nullptr;
     // Serializes engine replacement, reprepare, and UI metadata snapshots.
     // Readers copy retained metadata before a previous engine is destroyed.
     // Host notifications may re-enter snapshot readers on the same thread.

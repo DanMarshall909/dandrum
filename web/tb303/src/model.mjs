@@ -14,6 +14,7 @@ export const preparedCapabilities = Object.freeze({
   waveformEditing: false,
   patternEditing: false,
   transport: false,
+  noteAudition: true,
 });
 
 export function displayValue(state, id) {

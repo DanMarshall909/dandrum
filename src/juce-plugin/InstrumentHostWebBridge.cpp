@@ -57,6 +57,26 @@ std::optional<std::uint32_t> parseGeneration (const juce::var& value)
     return static_cast<std::uint32_t> (requested);
 }
 
+std::optional<int> parseMidiNote (const juce::var& value)
+{
+    if (! isNumeric (value))
+        return std::nullopt;
+    const auto note = static_cast<double> (value);
+    if (! std::isfinite (note) || note < 0.0 || note > 127.0 || std::floor (note) < note)
+        return std::nullopt;
+    return static_cast<int> (note);
+}
+
+std::optional<float> parseMidiVelocity (const juce::var& value)
+{
+    if (! isNumeric (value))
+        return std::nullopt;
+    const auto velocity = static_cast<double> (value);
+    if (! std::isfinite (velocity) || velocity <= 0.0 || velocity > 1.0)
+        return std::nullopt;
+    return static_cast<float> (velocity);
+}
+
 juce::var commandReplyForWeb (InstrumentUiCommandReply reply, const juce::String& publicId)
 {
     switch (reply.status)
@@ -93,6 +113,7 @@ InstrumentHostWebBridge::InstrumentHostWebBridge (DandrumAudioProcessor& process
 
 InstrumentHostWebBridge::~InstrumentHostWebBridge()
 {
+    processor.closeEditorNoteSession (sessionId);
     processor.uiCommands().closeSession (sessionId);
 }
 
@@ -101,7 +122,7 @@ const char* InstrumentHostWebBridge::bootstrapScript() noexcept
     return nativeFunctionBootstrap;
 }
 
-std::array<InstrumentHostWebBridge::NativeFunctionEntry, 7>
+std::array<InstrumentHostWebBridge::NativeFunctionEntry, 8>
 InstrumentHostWebBridge::nativeFunctions()
 {
     return {{
@@ -146,6 +167,12 @@ InstrumentHostWebBridge::nativeFunctions()
                   juce::WebBrowserComponent::NativeFunctionCompletion completion)
           {
               noteOffFromWeb (arguments, std::move (completion));
+          } },
+        { "noteHeartbeat",
+          [this] (const juce::Array<juce::var>& arguments,
+                  juce::WebBrowserComponent::NativeFunctionCompletion completion)
+          {
+              noteHeartbeatFromWeb (arguments, std::move (completion));
           } }
     }};
 }
@@ -300,13 +327,35 @@ void InstrumentHostWebBridge::noteOnFromWeb (
         return;
     }
 
-    if (! processor.enqueueEditorNoteOn (static_cast<int> (arguments[0]),
-                                         static_cast<float> (arguments[1])))
+    const auto note = parseMidiNote (arguments[0]);
+    const auto velocity = parseMidiVelocity (arguments[1]);
+    if (! note || ! velocity)
     {
-        completion (juce::var ("Editor MIDI queue is full; note-on was dropped"));
+        completion (juce::var ("noteOn requires a valid MIDI note and velocity"));
+        return;
+    }
+    if (arguments.size() >= 3)
+    {
+        const auto generation = parseGeneration (arguments[2]);
+        if (! generation)
+        {
+            completion (juce::var ("noteOn requires a valid instrument generation"));
+            return;
+        }
+        if (*generation != processor.getParameterSurfaceGeneration())
+        {
+            completion (juce::var ("Rejected stale instrument generation"));
+            return;
+        }
+    }
+    if (! processor.enqueueEditorNoteOn (*note, *velocity, sessionId))
+    {
+        completion (juce::var ("This note is held by another editor session"));
         return;
     }
 
+    noteSessionActive = true;
+    lastNoteHeartbeatMilliseconds = juce::Time::getMillisecondCounterHiRes();
     completion (juce::var());
 }
 
@@ -320,13 +369,54 @@ void InstrumentHostWebBridge::noteOffFromWeb (
         return;
     }
 
-    if (! processor.enqueueEditorNoteOff (static_cast<int> (arguments[0])))
+    const auto note = parseMidiNote (arguments[0]);
+    if (! note)
     {
-        completion (juce::var ("Editor MIDI queue is full; note-off was dropped"));
+        completion (juce::var ("noteOff requires a valid MIDI note"));
+        return;
+    }
+    if (arguments.size() >= 2)
+    {
+        const auto generation = parseGeneration (arguments[1]);
+        if (! generation)
+        {
+            completion (juce::var ("noteOff requires a valid instrument generation"));
+            return;
+        }
+        if (*generation != processor.getParameterSurfaceGeneration())
+        {
+            completion (juce::var ("Rejected stale instrument generation"));
+            return;
+        }
+    }
+    if (! processor.enqueueEditorNoteOff (*note, sessionId))
+    {
+        completion (juce::var ("This note is held by another editor session"));
         return;
     }
 
+    lastNoteHeartbeatMilliseconds = juce::Time::getMillisecondCounterHiRes();
     completion (juce::var());
+}
+
+void InstrumentHostWebBridge::noteHeartbeatFromWeb (
+    const juce::Array<juce::var>&,
+    juce::WebBrowserComponent::NativeFunctionCompletion completion)
+{
+    if (noteSessionActive)
+        lastNoteHeartbeatMilliseconds = juce::Time::getMillisecondCounterHiRes();
+    completion (juce::var());
+}
+
+bool InstrumentHostWebBridge::expireNoteSession (double nowMilliseconds) noexcept
+{
+    constexpr double timeoutMilliseconds = 2000.0;
+    if (! noteSessionActive
+        || nowMilliseconds - lastNoteHeartbeatMilliseconds < timeoutMilliseconds)
+        return false;
+    processor.closeEditorNoteSession (sessionId);
+    noteSessionActive = false;
+    return true;
 }
 
 juce::var InstrumentHostWebBridge::parameterSnapshotForWeb() const

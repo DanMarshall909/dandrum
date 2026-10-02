@@ -591,6 +591,7 @@ void DandrumAudioProcessor::preparePublicParameterSlots (const std::vector<Publi
         }
     }
 
+    clearEditorNoteIntentForReload();
     parameterSurfaceGeneration.fetch_add (1, std::memory_order_relaxed);
 }
 
@@ -648,50 +649,133 @@ bool DandrumAudioProcessor::isMuted() const noexcept
     return muted.load (std::memory_order_relaxed);
 }
 
-bool DandrumAudioProcessor::enqueueEditorMidiEvent (EditorMidiEvent event) noexcept
+void DandrumAudioProcessor::publishEditorNoteIntent (std::uint8_t note, std::uint8_t velocity) noexcept
 {
-    const auto scope = editorMidiFifo.write (1);
-    if (scope.blockSize1 == 0)
+    auto& state = editorNoteIntent[note];
+    const auto previous = state.load (std::memory_order_relaxed);
+    if (velocity == 0)
+        state.store (previous & ~std::uint64_t (0xff), std::memory_order_release);
+    else
+        state.store (((previous >> 16) + 1) << 16
+                         | (std::uint64_t (velocity) << 8) | velocity,
+                     std::memory_order_release);
+}
+
+bool DandrumAudioProcessor::enqueueEditorNoteOn (
+    int noteNumber, float velocity, std::uint64_t sessionId) noexcept
+{
+    const std::lock_guard<std::mutex> noteLock (editorNoteCommandMutex);
+    const auto note = static_cast<std::uint8_t> (juce::jlimit (0, 127, noteNumber));
+    const auto midiVelocity = static_cast<std::uint8_t> (
+        juce::roundToInt (juce::jlimit (1.0f / 127.0f, 1.0f, velocity) * 127.0f));
+    auto& owner = editorNoteOwner[note];
+    if (owner && *owner != sessionId)
     {
         droppedMidiEventCount.fetch_add (1, std::memory_order_relaxed);
         return false;
     }
-
-    editorMidiEvents[static_cast<std::size_t> (scope.startIndex1)] = event;
+    owner = sessionId;
+    publishEditorNoteIntent (note, midiVelocity);
     return true;
 }
 
-bool DandrumAudioProcessor::enqueueEditorNoteOn (int noteNumber, float velocity) noexcept
+bool DandrumAudioProcessor::enqueueEditorNoteOff (
+    int noteNumber, std::uint64_t sessionId) noexcept
 {
+    const std::lock_guard<std::mutex> noteLock (editorNoteCommandMutex);
     const auto note = static_cast<std::uint8_t> (juce::jlimit (0, 127, noteNumber));
-    const auto midiVelocity = static_cast<std::uint8_t> (
-        juce::roundToInt (juce::jlimit (0.0f, 1.0f, velocity) * 127.0f));
-    return enqueueEditorMidiEvent ({ true, note, midiVelocity });
+    auto& owner = editorNoteOwner[note];
+    if (! owner)
+        return true;
+    if (*owner != sessionId)
+        return false;
+    owner.reset();
+    publishEditorNoteIntent (note, 0);
+    return true;
 }
 
-bool DandrumAudioProcessor::enqueueEditorNoteOff (int noteNumber) noexcept
+void DandrumAudioProcessor::closeEditorNoteSession (std::uint64_t sessionId) noexcept
 {
-    const auto note = static_cast<std::uint8_t> (juce::jlimit (0, 127, noteNumber));
-    return enqueueEditorMidiEvent ({ false, note, 0 });
-}
-
-void DandrumAudioProcessor::deliverEditorKernelMidiEvents (DandrumKernelInstrument* activeKernel) noexcept
-{
-    const auto scope = editorMidiFifo.read (editorMidiFifo.getNumReady());
-    const auto deliverBlock = [this, activeKernel] (int startIndex, int eventCount)
+    const std::lock_guard<std::mutex> noteLock (editorNoteCommandMutex);
+    for (std::size_t note = 0; note < editorNoteOwner.size(); ++note)
     {
-        for (int offset = 0; offset < eventCount; ++offset)
+        if (editorNoteOwner[note] == sessionId)
         {
-            const auto& event = editorMidiEvents[static_cast<std::size_t> (startIndex + offset)];
-            if (event.noteOn)
-                dandrum_kernel_note_on_at (activeKernel, event.note, event.velocity, 0);
-            else
-                dandrum_kernel_note_off_at (activeKernel, event.note, 0);
+            editorNoteOwner[note].reset();
+            auto& state = editorNoteIntent[note];
+            const auto previous = state.load (std::memory_order_relaxed);
+            // Disconnect cancels an onset that audio has not seen yet. An
+            // ordinary note-off preserves it for short drum-pad taps.
+            state.store (previous & ~std::uint64_t (0xffff), std::memory_order_release);
         }
-    };
+    }
+}
 
-    deliverBlock (scope.startIndex1, scope.blockSize1);
-    deliverBlock (scope.startIndex2, scope.blockSize2);
+void DandrumAudioProcessor::clearEditorNoteIntentForReload() noexcept
+{
+    const std::lock_guard<std::mutex> noteLock (editorNoteCommandMutex);
+    for (std::size_t note = 0; note < editorNoteOwner.size(); ++note)
+    {
+        editorNoteOwner[note].reset();
+        editorNoteIntent[note].store (0, std::memory_order_release);
+    }
+}
+
+void DandrumAudioProcessor::deliverEditorNoteIntent (
+    DandrumKernelInstrument* activeKernel,
+    const std::array<bool, 128>& hostTouchedNotes) noexcept
+{
+    for (std::size_t note = 0; note < editorNoteIntent.size(); ++note)
+    {
+        const auto intent = editorNoteIntent[note].load (std::memory_order_acquire);
+        const auto midiNote = static_cast<std::uint8_t> (note);
+        const auto onSequence = intent >> 16;
+        const auto onVelocity = static_cast<std::uint8_t> ((intent >> 8) & 0xff);
+        const auto desiredVelocity = static_cast<std::uint8_t> (intent & 0xff);
+
+        if (audioEditorTransientRelease[note])
+        {
+            if (audioEditorNoteHeld[note])
+            {
+                if (! dandrum_kernel_note_off_at (activeKernel, midiNote, 0))
+                    continue;
+                audioEditorNoteHeld[note] = false;
+            }
+            audioEditorTransientRelease[note] = false;
+        }
+
+        if (onSequence != lastAudioEditorOnSequence[note])
+        {
+            if (audioEditorNoteHeld[note])
+            {
+                if (! dandrum_kernel_note_off_at (activeKernel, midiNote, 0))
+                    continue;
+                audioEditorNoteHeld[note] = false;
+            }
+            if (onVelocity == 0 || hostTouchedNotes[note] || audioHostNoteHeld[note])
+            {
+                lastAudioEditorOnSequence[note] = onSequence;
+                continue;
+            }
+            if (dandrum_kernel_note_on_at (activeKernel, midiNote, onVelocity, 0))
+            {
+                lastAudioEditorOnSequence[note] = onSequence;
+                audioEditorNoteHeld[note] = true;
+                audioEditorTransientRelease[note] = desiredVelocity == 0;
+            }
+        }
+        else if (desiredVelocity == 0 && audioEditorNoteHeld[note])
+        {
+            if (dandrum_kernel_note_off_at (activeKernel, midiNote, 0))
+                audioEditorNoteHeld[note] = false;
+        }
+        else if (desiredVelocity != 0 && ! audioEditorNoteHeld[note]
+                 && ! audioHostNoteHeld[note] && ! hostTouchedNotes[note])
+        {
+            if (dandrum_kernel_note_on_at (activeKernel, midiNote, desiredVelocity, 0))
+                audioEditorNoteHeld[note] = true;
+        }
+    }
 }
 
 void DandrumAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::MidiBuffer& midiMessages)
@@ -716,13 +800,32 @@ void DandrumAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce
     if (buffer.getNumChannels() < 2)
         return;
 
+    if (activeKernel != lastAudioKernel)
+    {
+        lastAudioKernel = activeKernel;
+        lastAudioEditorOnSequence.fill (0);
+        audioEditorNoteHeld.fill (false);
+        audioEditorTransientRelease.fill (false);
+        audioHostNoteHeld.fill (false);
+        audioHostReleasePending.fill (false);
+    }
     applyChangedParameters (activeKernel);
-    deliverEditorKernelMidiEvents (activeKernel);
     const auto preparedBlockSize = static_cast<std::size_t> (juce::jmax (1, getBlockSize()));
     for (std::size_t blockStart = 0; blockStart < static_cast<std::size_t> (numSamples);)
     {
         const auto frames = std::min (preparedBlockSize,
                                       static_cast<std::size_t> (numSamples) - blockStart);
+        std::array<bool, 128> hostTouchedNotes {};
+        for (std::size_t note = 0; note < audioHostReleasePending.size(); ++note)
+        {
+            if (audioHostReleasePending[note]
+                && dandrum_kernel_note_off_at (
+                    activeKernel, static_cast<unsigned char> (note), 0))
+            {
+                audioHostReleasePending[note] = false;
+                audioHostNoteHeld[note] = false;
+            }
+        }
         for (const auto metadata : midiMessages)
         {
             const auto message = metadata.getMessage();
@@ -733,14 +836,39 @@ void DandrumAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce
 
             const auto localOffset = frameOffset - blockStart;
             if (message.isNoteOn())
-                dandrum_kernel_note_on_at (activeKernel,
-                                           static_cast<unsigned char> (message.getNoteNumber()),
-                                           message.getVelocity(), localOffset);
+            {
+                const auto note = static_cast<std::size_t> (message.getNoteNumber());
+                hostTouchedNotes[note] = true;
+                if (audioEditorNoteHeld[note])
+                {
+                    if (dandrum_kernel_note_off_at (
+                            activeKernel, static_cast<unsigned char> (note), localOffset))
+                        audioEditorNoteHeld[note] = false;
+                }
+                if (dandrum_kernel_note_on_at (activeKernel,
+                        static_cast<unsigned char> (note), message.getVelocity(), localOffset))
+                    audioHostNoteHeld[note] = true;
+            }
             else if (message.isNoteOff())
-                dandrum_kernel_note_off_at (activeKernel,
-                                            static_cast<unsigned char> (message.getNoteNumber()),
-                                            localOffset);
+            {
+                const auto note = static_cast<std::size_t> (message.getNoteNumber());
+                hostTouchedNotes[note] = true;
+                if (audioHostNoteHeld[note])
+                {
+                    if (dandrum_kernel_note_off_at (
+                            activeKernel, static_cast<unsigned char> (note), localOffset))
+                        audioHostNoteHeld[note] = false;
+                    else
+                        audioHostReleasePending[note] = true;
+                }
+                else if (! audioEditorNoteHeld[note])
+                    dandrum_kernel_note_off_at (
+                        activeKernel, static_cast<unsigned char> (note), localOffset);
+            }
         }
+
+        if (blockStart == 0)
+            deliverEditorNoteIntent (activeKernel, hostTouchedNotes);
 
         float* channels[] { buffer.getWritePointer (0, static_cast<int> (blockStart)),
                             buffer.getWritePointer (1, static_cast<int> (blockStart)) };

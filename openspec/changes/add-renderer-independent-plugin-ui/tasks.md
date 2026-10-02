@@ -13,7 +13,7 @@ The sampler export required for 1.2 and 1.4 is not present in the current Downlo
 - [x] 2.2 Add the minimum read-only metadata access needed across FFI using retained/copy ownership off audio; lifetime tests must survive reload, released source inputs and a stalled reader without touching freed storage.
 - [x] 2.3 Extract shared host command handling with generation and finite-value validation; run the same accepted/rejected command contract tests through native and Web adapters.
 - [x] 2.4 Implement begin/update/end gestures and timer-observed parameter updates; tests must prove one drag equals one host gesture, keyboard/typed entry works, stale echoes are ignored and listeners do not post messages from audio.
-- [ ] 2.5 Add bounded editor note-release/session cleanup semantics; saturation tests must prove queued note-on plus release/disconnect cannot leave a gated note active or affect unrelated host MIDI.
+- [x] 2.5 Add bounded editor note-release/session cleanup semantics; saturation tests must prove queued note-on plus release/disconnect cannot leave a gated note active or affect unrelated host MIDI.
 - [ ] 2.6 Expose accepted job IDs and queryable reload/analysis status; tests must prove early acceptance, failed reload preservation, reconnect recovery and stale-job rejection.
 
 ## 3. Two Renderer Foundations

@@ -11,6 +11,7 @@ test('the panel binds exactly the seven prepared TB-303 public controls', () => 
   assert.equal(preparedCapabilities.waveformEditing, false);
   assert.equal(preparedCapabilities.patternEditing, false);
   assert.equal(preparedCapabilities.transport, false);
+  assert.equal(preparedCapabilities.noteAudition, true);
 });
 
 test('older host messages cannot replace a newer value, but reload can', () => {
@@ -21,6 +22,8 @@ test('older host messages cannot replace a newer value, but reload can', () => {
   assert.equal(acceptState(current, {...old, generation: 2, sequence: 100}), current);
   const reload = {...old, generation: 4, sequence: 0};
   assert.equal(acceptState(current, reload, 8), reload);
+  const hostAutomation = {...old, sequence: 7};
+  assert.equal(acceptState(current, hostAutomation), hostAutomation);
 });
 
 test('a knob displays only an authoritative host value', () => {

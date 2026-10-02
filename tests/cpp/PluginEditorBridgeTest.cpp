@@ -39,6 +39,15 @@ struct PluginEditorBridgeTestProbe
     }
 
     static void refresh (DandrumAudioProcessorEditor& editor) { editor.timerCallback(); }
+    static bool expireNotesAfterDisconnect (DandrumAudioProcessorEditor& editor)
+    {
+        return editor.hostBridge.expireNoteSession (std::numeric_limits<double>::max());
+    }
+    static bool expireNotesBeforeDeadline (DandrumAudioProcessorEditor& editor)
+    {
+        return editor.hostBridge.expireNoteSession (
+            juce::Time::getMillisecondCounterHiRes() + 1000.0);
+    }
 
     static bool publishUnchangedSurface (DandrumAudioProcessorEditor& editor)
     {
@@ -368,18 +377,57 @@ int main()
         require (PluginEditorBridgeTestProbe::invoke (editor, "noteOff")
                      .toString().contains ("expects"),
                  "noteOff accepted missing note");
+        require (PluginEditorBridgeTestProbe::invoke (editor, "noteOn", { -1, 0.8 })
+                     .toString().contains ("valid")
+                     && PluginEditorBridgeTestProbe::invoke (editor, "noteOn",
+                         { 36, std::numeric_limits<double>::quiet_NaN() })
+                            .toString().contains ("valid")
+                     && PluginEditorBridgeTestProbe::invoke (editor, "noteOn", { 36, 1.5 })
+                            .toString().contains ("valid")
+                     && PluginEditorBridgeTestProbe::invoke (editor, "noteOff", { "36" })
+                            .toString().contains ("valid"),
+                 "browser note commands accepted invalid MIDI inputs");
+        require (PluginEditorBridgeTestProbe::invoke (editor, "noteOn",
+                     { 36, 0.8, static_cast<int> (commandGeneration - 1) })
+                         .toString().contains ("stale")
+                     && PluginEditorBridgeTestProbe::invoke (editor, "noteOff",
+                         { 36, static_cast<int> (commandGeneration - 1) })
+                            .toString().contains ("stale"),
+                 "browser note commands accepted an obsolete instrument generation");
         require (PluginEditorBridgeTestProbe::invoke (editor, "noteOn", { 36, 0.8 }).isVoid()
                      && PluginEditorBridgeTestProbe::invoke (editor, "noteOff", { 36 }).isVoid(),
-                 "playable keyboard commands did not enter the MIDI queue");
-        bool rejected = false;
+                 "playable keyboard commands did not publish note intent");
         for (int i = 0; i < 256; ++i)
-            rejected = PluginEditorBridgeTestProbe::invoke (editor, "noteOn", { 36, 0.8 })
-                           .toString().contains ("queue is full") || rejected;
-        require (rejected && processor.getDroppedMidiEventCount() > 0,
-                 "full MIDI queue was not reported to the browser");
-        require (PluginEditorBridgeTestProbe::invoke (editor, "noteOff", { 36 })
-                     .toString().contains ("queue is full"),
-                 "full MIDI queue did not report a dropped note-off");
+            require (PluginEditorBridgeTestProbe::invoke (editor, "noteOn", { 36, 0.8 }).isVoid(),
+                     "bounded editor note intent rejected a same-session update");
+        require (PluginEditorBridgeTestProbe::invoke (editor, "noteOff", { 36 }).isVoid()
+                     && processor.getDroppedMidiEventCount() == 0,
+                 "editor note release was lost under producer pressure");
+        {
+            DandrumAudioProcessorEditor closingNoteEditor (processor);
+            require (PluginEditorBridgeTestProbe::invoke (
+                         closingNoteEditor, "noteOn", { 36, 0.8 }).isVoid(),
+                     "second editor could not admit its note");
+        }
+        juce::AudioBuffer<float> afterEditorClose (2, 64);
+        juce::MidiBuffer noHostNotes;
+        processor.processBlock (afterEditorClose, noHostNotes);
+        for (int channel = 0; channel < afterEditorClose.getNumChannels(); ++channel)
+            for (int frame = 0; frame < afterEditorClose.getNumSamples(); ++frame)
+                require (std::abs (afterEditorClose.getSample (channel, frame)) < 0.000001f,
+                         "closed editor left a note queued for the audio callback");
+        require (PluginEditorBridgeTestProbe::hasCommand (editor, "noteHeartbeat"),
+                 "browser note session has no keepalive command");
+        require (PluginEditorBridgeTestProbe::invoke (editor, "noteOn", { 36, 0.8 }).isVoid()
+                     && PluginEditorBridgeTestProbe::invoke (editor, "noteHeartbeat").isVoid()
+                     && ! PluginEditorBridgeTestProbe::expireNotesBeforeDeadline (editor)
+                     && PluginEditorBridgeTestProbe::expireNotesAfterDisconnect (editor),
+                 "stalled browser note session did not expire");
+        processor.processBlock (afterEditorClose, noHostNotes);
+        for (int channel = 0; channel < afterEditorClose.getNumChannels(); ++channel)
+            for (int frame = 0; frame < afterEditorClose.getNumSamples(); ++frame)
+                require (std::abs (afterEditorClose.getSample (channel, frame)) < 0.000001f,
+                         "stalled browser left its note gated after expiry");
 
         const auto previousGeneration = processor.getParameterSurfaceGeneration();
         const auto reloadSession = processor.uiCommands().createSession();

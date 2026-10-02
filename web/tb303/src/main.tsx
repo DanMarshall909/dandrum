@@ -1,6 +1,7 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
 import { acceptState, controls, displayValue, preparedCapabilities } from "./model.mjs";
+import { createNoteAudition } from "./note-audition.mjs";
 import "./styles.css";
 
 type Parameter = { id: string; name?: string; value: number };
@@ -20,6 +21,7 @@ const clamp = (value: number) => Math.max(0, Math.min(1, value));
 const chromaticNames = ["C", "C♯", "D", "D♯", "E", "F", "F♯", "G", "G♯", "A", "A♯", "B"];
 const blackPitches = new Set([1, 3, 6, 8, 10]);
 const keyboardKeys = Array.from({ length: 20 }, (_, semitone) => ({
+  number: 48 + semitone,
   name: chromaticNames[semitone % 12],
   kind: blackPitches.has(semitone % 12) ? "black" : "white",
   whiteIndex: Array.from({ length: semitone }).filter((_, index) => !blackPitches.has(index % 12)).length,
@@ -84,7 +86,7 @@ function useHostParameters() {
     }
   };
 
-  return { state, error, command };
+  return { state, error, command, reportError: (reason: unknown) => setError(String(reason)) };
 }
 
 type KnobProps = {
@@ -198,7 +200,26 @@ function Knob({ id, label, value, generation, size = "large", command }: KnobPro
 function App() {
   const frame = useRef<HTMLDivElement>(null);
   const [scale, setScale] = useState(1);
-  const { state, error, command } = useHostParameters();
+  const { state, error, command, reportError } = useHostParameters();
+  const [activeKeys, setActiveKeys] = useState<number[]>([]);
+  const lastAuditionGeneration = useRef<number | null>(null);
+  const auditionAvailable = preparedCapabilities.noteAudition
+    && Boolean(window.__JUCE__?.backend) && state !== null;
+  const audition = useMemo(() => createNoteAudition(async (name: string, ...args: unknown[]) => {
+    const call = native(name);
+    if (!call) throw new Error("Note audition requires the Dandrum plugin host.");
+    const result = await call(...args);
+    if (typeof result === "string") throw new Error(result);
+  }, reportError), []);
+  const pressKey = (note: number) => {
+    if (!state) return;
+    setActiveKeys(current => current.includes(note) ? current : [...current, note]);
+    void audition.press(note, 0.9, state.generation);
+  };
+  const releaseKey = (note: number) => {
+    setActiveKeys(current => current.filter(active => active !== note));
+    void audition.release(note);
+  };
   const knob = (position: string) => controls.filter(control => control.position === position)
     .map(control => <Knob key={control.id} {...control}
       value={displayValue(state, control.id)} generation={state?.generation ?? null} command={command} />);
@@ -211,6 +232,29 @@ function App() {
     observer.observe(frame.current);
     return () => observer.disconnect();
   }, []);
+
+  useEffect(() => {
+    const keepAlive = window.setInterval(() => { void audition.keepAlive(); }, 500);
+    const releaseAll = () => { void audition.releaseAll(); setActiveKeys([]); };
+    const releaseWhenHidden = () => { if (document.hidden) releaseAll(); };
+    window.addEventListener("pagehide", releaseAll);
+    document.addEventListener("visibilitychange", releaseWhenHidden);
+    return () => {
+      window.clearInterval(keepAlive);
+      window.removeEventListener("pagehide", releaseAll);
+      document.removeEventListener("visibilitychange", releaseWhenHidden);
+      void audition.releaseAll();
+    };
+  }, [audition]);
+
+  useEffect(() => {
+    if (state && lastAuditionGeneration.current !== null
+        && state.generation !== lastAuditionGeneration.current) {
+      void audition.releaseAll();
+      setActiveKeys([]);
+    }
+    lastAuditionGeneration.current = state?.generation ?? null;
+  }, [state?.generation, audition]);
 
   return <main className="stage">
     <div className="machine-frame" ref={frame} style={{ height: `${650 * scale}px` }}>
@@ -250,17 +294,37 @@ function App() {
             <span className="availability">{preparedCapabilities.patternEditing || preparedCapabilities.transport ? "" : "PATTERN AND TRANSPORT UNAVAILABLE"}</span>
           </div>
         </section>
-        <section className="keyboard-panel" aria-label="Note audition unavailable">
-          <div className="keyboard-labels"><span>NOTE AUDITION UNAVAILABLE</span><span>HOST MIDI INPUT REMAINS ACTIVE</span></div>
+        <section className="keyboard-panel" aria-label="Note audition">
+          <div className="keyboard-labels"><span>NOTE AUDITION</span><span>HOST MIDI INPUT ACTIVE</span></div>
           <div className="keyboard">
             <div className="white-keys" style={{ gridTemplateColumns: `repeat(${whiteKeyCount}, 1fr)` }}>
-              {keyboardKeys.filter(key => key.kind === "white").map((key, index) =>
-                <button key={index} className="key white" disabled><span className="key-label">{key.name}</span></button>)}
+              {keyboardKeys.filter(key => key.kind === "white").map(key =>
+                <button key={key.number} className={`key white ${activeKeys.includes(key.number) ? "active" : ""}`}
+                  disabled={!auditionAvailable} aria-label={`${key.name} MIDI note ${key.number}`}
+                  onPointerDown={event => { event.currentTarget.setPointerCapture(event.pointerId); pressKey(key.number); }}
+                  onPointerUp={() => releaseKey(key.number)} onPointerCancel={() => releaseKey(key.number)}
+                  onPointerLeave={() => releaseKey(key.number)}
+                  onKeyDown={event => {
+                    if (event.key === " " || event.key === "Enter") { event.preventDefault(); pressKey(key.number); }
+                  }}
+                  onKeyUp={event => {
+                    if (event.key === " " || event.key === "Enter") { event.preventDefault(); releaseKey(key.number); }
+                  }}><span className="key-led" /><span className="key-label">{key.name}</span></button>)}
             </div>
-            <div className="black-keys">{keyboardKeys.filter(key => key.kind === "black").map((key, index) =>
-              <button key={index} className="key black" disabled
-                style={{ left: `${(key.whiteIndex / whiteKeyCount) * 100}%`, width: `calc(100% / ${whiteKeyCount * 1.6})` }}>
-                <span className="key-label">{key.name}</span></button>)}</div>
+            <div className="black-keys">{keyboardKeys.filter(key => key.kind === "black").map(key =>
+              <button key={key.number} className={`key black ${activeKeys.includes(key.number) ? "active" : ""}`}
+                disabled={!auditionAvailable} aria-label={`${key.name} MIDI note ${key.number}`}
+                style={{ left: `${(key.whiteIndex / whiteKeyCount) * 100}%`, width: `calc(100% / ${whiteKeyCount * 1.6})` }}
+                onPointerDown={event => { event.currentTarget.setPointerCapture(event.pointerId); pressKey(key.number); }}
+                onPointerUp={() => releaseKey(key.number)} onPointerCancel={() => releaseKey(key.number)}
+                onPointerLeave={() => releaseKey(key.number)}
+                onKeyDown={event => {
+                  if (event.key === " " || event.key === "Enter") { event.preventDefault(); pressKey(key.number); }
+                }}
+                onKeyUp={event => {
+                  if (event.key === " " || event.key === "Enter") { event.preventDefault(); releaseKey(key.number); }
+                }}>
+                <span className="key-led" /><span className="key-label">{key.name}</span></button>)}</div>
           </div>
         </section>
         <footer><div className="footer-centre"><span>DANDRUM</span><strong>TB-303</strong></div></footer>
