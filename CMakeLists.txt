@@ -284,6 +284,25 @@ if(DANDRUM_NATIVE_ONLY)
             juce::juce_audio_utils juce::juce_gui_basics
         PUBLIC juce::juce_recommended_config_flags juce::juce_recommended_lto_flags juce::juce_recommended_warning_flags)
     add_test(NAME native-editor-smoke COMMAND dandrum-native-editor-smoke-test)
+    if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+        # Link wrappers hold the real Rust reduction at a deterministic barrier
+        # without adding test hooks to the processor or either editor.
+        add_executable(dandrum-native-waveform-lifetime-test tests/cpp/NativeWaveformLifetimeTest.cpp)
+        target_include_directories(dandrum-native-waveform-lifetime-test PRIVATE src/juce-wrapper src/juce-plugin)
+        target_compile_definitions(dandrum-native-waveform-lifetime-test PRIVATE
+            JUCE_USE_CURL=0 JUCE_WEB_BROWSER=0 JUCE_MODAL_LOOPS_PERMITTED=1)
+        target_link_libraries(dandrum-native-waveform-lifetime-test PRIVATE
+            dandrum-sampler-plugin dandrum_engine juce::juce_audio_basics juce::juce_audio_processors
+            juce::juce_audio_utils juce::juce_gui_basics
+            juce::juce_recommended_config_flags juce::juce_recommended_lto_flags juce::juce_recommended_warning_flags)
+        target_link_options(dandrum-native-waveform-lifetime-test PRIVATE
+            "LINKER:--wrap=dandrum_kernel_waveform_reduce"
+            "LINKER:--wrap=dandrum_kernel_waveform_source_destroy"
+            "LINKER:--wrap=dandrum_kernel_destroy")
+        add_test(NAME native-waveform-lifetime COMMAND dandrum-native-waveform-lifetime-test)
+        set_tests_properties(native-waveform-lifetime PROPERTIES
+            LABELS "runtime" SKIP_RETURN_CODE 77 TIMEOUT 30 RUN_SERIAL TRUE)
+    endif()
 endif()
 
 add_executable(dandrum-plugin-knob-parity-test tests/cpp/PluginKnobParityTest.cpp)
