@@ -18,6 +18,8 @@ tooling is retained as supplied and was not executed during import.
 - [Brand, interaction and component overview](reference/readme.md)
 - [JUCE implementation guide](reference/handoff/juce-implementation.md)
 - [Native component specifications](reference/handoff/component-specs.md)
+- [Prepared KeyMap, LayerStack and OutputBusses specifications](native-display-specs.md)
+- [Maintained production tokens and font provenance](../../ui/design-system/README.md)
 - [CSS tokens](reference/tokens/colors.css) and [C++ token reference](reference/handoff/DandrumTokens.h)
 - [Asset manifest](reference/handoff/asset-manifest.md) and [SVG icons](reference/assets/icons/manifest.json)
 - [Main sampler](reference/ui_kits/das-sampler/index.html), [compact sampler](reference/ui_kits/das-sampler/compact.html), [slices](reference/ui_kits/das-sampler/slices.html), [modulation menu](reference/ui_kits/das-sampler/modulation-menu.html), [missing sample](reference/ui_kits/das-sampler/missing-asset.html) and [component reuse](reference/ui_kits/das-sampler/reuse.html)
@@ -76,12 +78,15 @@ python3 -m http.server 8080 --directory docs/design-system/reference
 # Open http://localhost:8080/ui_kits/das-sampler/index.html
 ```
 
-No font binaries or font licenses are included. Production work must obtain the
-redistributable font files and license notices, build executable web assets ahead
-of time and package all resources locally. The CSS and C++ tokens are reference
-outputs; a maintained generator is still required. New display components have
-JSX/type references but still need native component specifications. These remain
-unchecked implementation tasks in the UI plan.
+The reference export includes no font binaries or licenses. Pinned unmodified
+font files and license notices are now retained under
+[ui/design-system/fonts](../../ui/design-system/fonts/); production renderers
+still need to package them locally with compiled executable assets. The imported
+CSS/C++ sheets remain reference outputs. The maintained production generator and
+source live in [ui/design-system](../../ui/design-system/README.md), and the
+[prepared display specifications](native-display-specs.md) supplement the
+original native handoff. Renderer adaptations and offline runtime verification
+remain implementation tasks in the UI plan.
 
 This import was checked for ZIP integrity, byte identity and local HTML asset
 links. It does not establish rendered preview quality, native build success or

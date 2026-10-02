@@ -326,6 +326,8 @@ if(NOT DANDRUM_NATIVE_ONLY)
     add_test(NAME prepared-waveform-web-transport COMMAND ${DANDRUM_NODE_EXECUTABLE} --test ${CMAKE_CURRENT_SOURCE_DIR}/web/shared/waveform-transport.test.mjs)
     add_test(NAME sampler-react-model COMMAND ${DANDRUM_NODE_EXECUTABLE} --test ${CMAKE_CURRENT_SOURCE_DIR}/web/sampler/src/model.test.mjs)
     add_test(NAME sampler-react-gestures COMMAND ${DANDRUM_NODE_EXECUTABLE} --test ${CMAKE_CURRENT_SOURCE_DIR}/web/sampler/src/parameter-gesture.test.mjs)
+    add_test(NAME design-token-generation COMMAND ${DANDRUM_NODE_EXECUTABLE} --test ${CMAKE_CURRENT_SOURCE_DIR}/tests/js/DesignTokensTest.mjs)
+    add_test(NAME design-tokens-current COMMAND ${DANDRUM_NODE_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/scripts/generate-ui-tokens.mjs --check)
 
     add_executable(dandrum-plugin-file-watch-reload-test tests/cpp/PluginFileWatchReloadTest.cpp)
     target_include_directories(dandrum-plugin-file-watch-reload-test PRIVATE src/juce-wrapper src/juce-plugin)

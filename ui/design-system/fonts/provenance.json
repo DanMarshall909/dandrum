@@ -1,0 +1,61 @@
+{
+  "schemaVersion": 1,
+  "retrievedOn": "2026-10-02",
+  "files": {
+    "Barlow/Barlow-Bold.ttf": {
+      "url": "https://raw.githubusercontent.com/google/fonts/9710da1eacb3be272583c3224dcb70f9da6eadbb/ofl/barlow/Barlow-Bold.ttf",
+      "sha256": "84e6a4d61e7c3e21f3c50ea6a4f7e5303a3467864c038be6ea3759bab8d547f9",
+      "bytes": 108220
+    },
+    "Barlow/Barlow-Medium.ttf": {
+      "url": "https://raw.githubusercontent.com/google/fonts/9710da1eacb3be272583c3224dcb70f9da6eadbb/ofl/barlow/Barlow-Medium.ttf",
+      "sha256": "f8906f762cb73dca441da034bc363b2d8e2e68bc10d5c05e58717646c20cc4b4",
+      "bytes": 103536
+    },
+    "Barlow/Barlow-SemiBold.ttf": {
+      "url": "https://raw.githubusercontent.com/google/fonts/9710da1eacb3be272583c3224dcb70f9da6eadbb/ofl/barlow/Barlow-SemiBold.ttf",
+      "sha256": "86577cb32f8abe3673db53ca0f4221e6856751a4f6730c867e00f720f8bb1fc5",
+      "bytes": 108348
+    },
+    "Barlow/OFL.txt": {
+      "url": "https://raw.githubusercontent.com/google/fonts/9710da1eacb3be272583c3224dcb70f9da6eadbb/ofl/barlow/OFL.txt",
+      "sha256": "186d750eb496a4c17a76385f82be6aea2ac1cf2de074a811d63786cf374ea73f",
+      "bytes": 4377
+    },
+    "BarlowSemiCondensed/BarlowSemiCondensed-Bold.ttf": {
+      "url": "https://raw.githubusercontent.com/google/fonts/9710da1eacb3be272583c3224dcb70f9da6eadbb/ofl/barlowsemicondensed/BarlowSemiCondensed-Bold.ttf",
+      "sha256": "5bd6757e459a110da81b44532f0f43058e2dab2401688abca84f2fdbde193cbb",
+      "bytes": 111772
+    },
+    "BarlowSemiCondensed/BarlowSemiCondensed-Medium.ttf": {
+      "url": "https://raw.githubusercontent.com/google/fonts/9710da1eacb3be272583c3224dcb70f9da6eadbb/ofl/barlowsemicondensed/BarlowSemiCondensed-Medium.ttf",
+      "sha256": "4998b693a190b76f2b11315844345a8546c1e2e6a320905507a9eed04edf8b48",
+      "bytes": 105560
+    },
+    "BarlowSemiCondensed/BarlowSemiCondensed-SemiBold.ttf": {
+      "url": "https://raw.githubusercontent.com/google/fonts/9710da1eacb3be272583c3224dcb70f9da6eadbb/ofl/barlowsemicondensed/BarlowSemiCondensed-SemiBold.ttf",
+      "sha256": "bd299f4bc5b44d30be8d42e9bad3a5df7d66af1cd55d0ed72a8b8916360a1424",
+      "bytes": 109772
+    },
+    "BarlowSemiCondensed/OFL.txt": {
+      "url": "https://raw.githubusercontent.com/google/fonts/9710da1eacb3be272583c3224dcb70f9da6eadbb/ofl/barlowsemicondensed/OFL.txt",
+      "sha256": "186d750eb496a4c17a76385f82be6aea2ac1cf2de074a811d63786cf374ea73f",
+      "bytes": 4377
+    },
+    "JetBrainsMono/JetBrainsMono-Medium.ttf": {
+      "url": "https://raw.githubusercontent.com/JetBrains/JetBrainsMono/19371302b95d218af43299bce79ddbddd0bc364d/fonts/ttf/JetBrainsMono-Medium.ttf",
+      "sha256": "d16e6dc99672734698d629705f617c79f6eb6040f5113efe3a145204dc988109",
+      "bytes": 270316
+    },
+    "JetBrainsMono/JetBrainsMono-SemiBold.ttf": {
+      "url": "https://raw.githubusercontent.com/JetBrains/JetBrainsMono/19371302b95d218af43299bce79ddbddd0bc364d/fonts/ttf/JetBrainsMono-SemiBold.ttf",
+      "sha256": "12d4b18fe6e1af528e4bea69cb0997aeff22f9e52fccffcf66342dd88aa32ab8",
+      "bytes": 273504
+    },
+    "JetBrainsMono/OFL.txt": {
+      "url": "https://raw.githubusercontent.com/JetBrains/JetBrainsMono/19371302b95d218af43299bce79ddbddd0bc364d/OFL.txt",
+      "sha256": "a76abf002c49097d146e86740a3105a5d00450b1592e820a1109a8c5680cd697",
+      "bytes": 4399
+    }
+  }
+}

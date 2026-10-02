@@ -3,7 +3,7 @@
 - [x] 1.1 Resolve the active-work gate and choose the integrated sampling base or explicit dependency on `3b313a7`; verify worktrees, upstreams, PRs and the repeated status snapshot before repository mutations.
 - [x] 1.2 Import the reviewed design-system revision with its SHA-256 and provenance; verify archive integrity, local reference links and any installed skill frontmatter without executing bundled development tooling.
 - [x] 1.3 Characterize current shared/per-pad parameters, host gestures, note admission and reload behaviour with focused C++/JavaScript tests; record a known signed sampler render and current coverage before production changes.
-- [ ] 1.4 Specify native KeyMap, LayerStack and OutputBusses dimensions, focus, read-only interactions and capability states; review the delivered native handoff against the new JSX/type references and existing external-authoring contract.
+- [x] 1.4 Specify native KeyMap, LayerStack and OutputBusses dimensions, focus, read-only interactions and capability states; review the delivered native handoff against the new JSX/type references and existing external-authoring contract.
 
 The design reference was imported on main at `d02ee1b` and is now available in `docs/design-system/reference/`. All 161 reference files match the recorded SHA-256 values. Native component specifications and production adaptations remain separate implementation tasks.
 
@@ -19,9 +19,11 @@ The design reference was imported on main at `d02ee1b` and is now available in `
 ## 3. Two Renderer Foundations
 
 - [x] 3.1 Split common UI, native editor and Web adapter build targets; verify a native-only configure/build/run with browser support disabled and without Node or WebView/WebKit dependencies.
-- [ ] 3.2 Introduce one maintained token source and CSS/C++ generation; verify corresponding semantic values and document font licensing/provenance.
+- [x] 3.2 Introduce one maintained token source and CSS/C++ generation; verify corresponding semantic values and document font licensing/provenance.
 - [ ] 3.3 Build the production web asset pipeline and embedded resource serving; verify packaged assets work offline outside the source checkout, with no CDN scripts, runtime Babel or development server.
 - [ ] 3.4 Implement one design-system knob in each renderer against shared commands; tests must prove identical host gestures, authoritative values, slot identity and known signed audio for identical schedules.
+
+Verification for 1.4 and 3.2: `docs/design-system/native-display-specs.md` records source dimensions, focus, release behavior, read-only boundaries and absent capability states for the three displays. It explicitly addresses local mutation still present in reference LayerStack/OutputBusses and the reference KeyMap's simulated playback flashes. `ui/design-system/tokens.json` generates all 146 CSS/C++ values from one maintained source. `design-token-generation` changes colour/spacing tokens and alias chains, compiles fixture and production C++ headers, checks deterministic output and invalid-source preservation, and verifies pinned unmodified font/license hashes. `design-tokens-current` was calibrated through CTest by changing a native colour: it rejected `DesignTokens.h` by name; restoring it passed. The generator's focused V8 run covered all 89 executable source lines. Full Web CTest passed 36/36. Font embedding, renderer use of the generated tokens, actual component adaptation and offline runtime inspection remain open.
 
 Progress on 3.3: the sampler now has a compiled React WebView app with checked-in, embedded HTML/JS/CSS. The C++ editor bridge test proves the sampler plugin serves those assets without external URLs, and a browser preview at 1200×800 and 820×560 exercised its host-backed pad and slider commands. Final offline packaging with the supplied design icons/fonts and a checkout-independent runtime inspection remain open.
 
