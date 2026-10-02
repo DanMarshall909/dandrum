@@ -28,7 +28,9 @@ The sampler export required for 1.2 and 1.4 is not present in the current Downlo
 - [x] 4.1 Prepare bounded master/output meter capture with a single consumer per queue; saturation and callback instrumentation must prove bounded memory/work, no forbidden callback operations and unchanged signed PCM.
 - [x] 4.2 Implement sample-weighted peak/RMS aggregation and independent clip latching; tests must cover signed stereo, unequal blocks, silence, dropped history and generation/reset races.
 - [x] 4.3 Add subscription lifetime, sequence/generation handling and bounded Web acknowledgements; tests must prove hidden/stalled/reopened editors cannot grow browser message queues or block audio.
-- [ ] 4.4 Render the same meter data in native and WebView components; deterministic view-model tests and actual runtime inspection must verify levels, clipping, visibility and timing-based decay.
+- [x] 4.4 Render the same meter data in native and WebView components; deterministic view-model tests and actual runtime inspection must verify levels, clipping, visibility and timing-based decay.
+
+Verification: `cxx-plugin-meter-display` checks elapsed-time peak/RMS decay, identity resets and clip state; `cxx-plugin-construction` checks processor delivery during audio and after callbacks stop; `native-editor-smoke` checks visible JUCE peak/RMS pixels and independent clip controls. The packaged React panel was rendered in Chromium at 1200×800 and 820×560 with a representative host packet: both sizes kept the meter in view without page overflow, showed 65% peak/42% RMS on the left and a latched right clip. The same view model and browser transport passed their Node tests. The native JUCE snapshot was inspected at 820×560 with 0.5/0.4 left peak/RMS, 0.25/0.125 right peak/RMS and a right clip latch.
 
 ## 5. Prepared Waveform Vertical Slice
 

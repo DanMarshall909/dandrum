@@ -1,6 +1,7 @@
 #pragma once
 
 #include "InstrumentUiMeterAggregation.h"
+#include "InstrumentUiMeterDisplay.h"
 
 #include <array>
 #include <cstddef>
@@ -19,6 +20,7 @@ public:
         std::uint64_t sequence = 0;
         InstrumentUiMeterAggregation::Snapshot meter;
         InstrumentUiMeterCapture::ClipSnapshot clip;
+        InstrumentUiMeterDisplay::Snapshot display;
     };
 
     bool subscribe (std::uint64_t id, std::uint32_t generation) noexcept

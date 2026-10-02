@@ -665,22 +665,37 @@ int main()
         || delivered->meter.observedSamples != blockSize
         || ! nearlyEqual (static_cast<float> (delivered->meter.peak[0]), 0.5f, 0.000001f)
         || ! nearlyEqual (static_cast<float> (delivered->meter.rms[0]), 0.5f, 0.000001f)
+        || ! delivered->display.valid
+        || ! nearlyEqual (static_cast<float> (delivered->display.peak[0]), 0.5f, 0.000001f)
+        || ! nearlyEqual (static_cast<float> (delivered->display.rms[0]), 0.5f, 0.000001f)
         || delivered->clip.latched[0])
     {
         std::cerr << "processor meter subscription missed signed output\n";
+        return 1;
+    }
+    if (! kernelProcessor.acknowledgeMeterPacket (77, meterGeneration, delivered->sequence))
+        return 1;
+    juce::Thread::sleep (30);
+    kernelProcessor.pollMeterDelivery();
+    const auto idleMeter = kernelProcessor.takeMeterPacket (77);
+    if (! idleMeter || idleMeter->meter.observedSamples != 0
+        || ! idleMeter->display.valid || idleMeter->display.complete
+        || idleMeter->display.peak[0] >= delivered->display.peak[0])
+    {
+        std::cerr << "idle processor meter did not publish elapsed-time decay\n";
         return 1;
     }
     for (std::size_t block = 0; block < InstrumentUiMeterCapture::capacity + 5; ++block)
         kernelProcessor.processBlock (kernelBuffer, kernelMidi);
     kernelProcessor.pollMeterDelivery();
     if (kernelProcessor.takeMeterPacket (77)
-        || ! kernelProcessor.acknowledgeMeterPacket (77, meterGeneration, delivered->sequence))
+        || ! kernelProcessor.acknowledgeMeterPacket (77, meterGeneration, idleMeter->sequence))
     {
         std::cerr << "unacknowledged meter packet did not bound delivery\n";
         return 1;
     }
     const auto resumedMeter = kernelProcessor.takeMeterPacket (77);
-    if (! resumedMeter || resumedMeter->meter.complete
+    if (! resumedMeter || resumedMeter->meter.complete || resumedMeter->display.complete
         || resumedMeter->meter.endSample <= delivered->meter.endSample)
     {
         std::cerr << "meter delivery hid dropped history or replayed stale data\n";

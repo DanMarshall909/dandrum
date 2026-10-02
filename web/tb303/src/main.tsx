@@ -2,6 +2,8 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
 import { acceptState, controls, displayValue, preparedCapabilities } from "./model.mjs";
 import { createNoteAudition } from "./note-audition.mjs";
+import { createMeterTransport } from "../../shared/meter-transport.mjs";
+import { meterView } from "../../shared/meter-view.mjs";
 import "./styles.css";
 
 type Parameter = { id: string; name?: string; value: number };
@@ -197,6 +199,82 @@ function Knob({ id, label, value, generation, size = "large", command }: KnobPro
   );
 }
 
+function MasterMeter({ generation }: { generation: number | null }) {
+  const [view, setView] = useState(() => meterView(null));
+  const [meterError, setMeterError] = useState("");
+
+  useEffect(() => {
+    if (generation === null || !window.__JUCE__?.backend) return;
+    let active = true;
+    setView(meterView(null));
+    const invoke = async (name: string, ...args: unknown[]) => {
+      const call = native(name);
+      if (!call) throw new Error(`Meter command ${name} is unavailable`);
+      return call(...args);
+    };
+    const transport = createMeterTransport(invoke, (packet: Record<string, unknown>) => {
+      if (active) {
+        setView(meterView(packet));
+        setMeterError("");
+      }
+    });
+    const visible = () => {
+      void transport.setVisible(!document.hidden).catch((reason: unknown) => {
+        if (active) setMeterError(String(reason));
+      });
+    };
+    visible();
+    void transport.start(generation).then((accepted: unknown) => {
+      if (active && !accepted) setMeterError("Master meter unavailable");
+    }).catch((reason: unknown) => { if (active) setMeterError(String(reason)); });
+    const timer = window.setInterval(() => {
+      void transport.tick().catch((reason: unknown) => {
+        if (active) setMeterError(String(reason));
+      });
+    }, 1000 / 30);
+    document.addEventListener("visibilitychange", visible);
+    const hide = () => { void transport.setVisible(false).catch(() => {}); };
+    window.addEventListener("pagehide", hide);
+    return () => {
+      active = false;
+      window.clearInterval(timer);
+      document.removeEventListener("visibilitychange", visible);
+      window.removeEventListener("pagehide", hide);
+    };
+  }, [generation]);
+
+  const acknowledge = async (channel: number, ticket: string) => {
+    if (generation === null || ticket === "0") return;
+    try {
+      const accepted = await native("ackMeterClip")?.(channel, generation, ticket);
+      if (accepted === true)
+        setView(current => ({ ...current, channels: current.channels.map((entry, index) =>
+          index === channel && current.generation === generation && entry.ticket === ticket
+            ? { ...entry, clipped: false } : entry) }));
+    } catch (reason) {
+      setMeterError(String(reason));
+    }
+  };
+
+  return <section className="master-meter" aria-label="Master output meter">
+    <header className="meter-heading"><strong>MASTER OUTPUT</strong>
+      <span>{meterError || (!view.valid ? "WAITING FOR AUDIO" : view.complete ? "LIVE" : "HISTORY GAP")}</span>
+    </header>
+    {view.channels.map((channel, index) => <div className="meter-row" key={channel.name}>
+      <span className="meter-channel">{channel.name}</span>
+      <div className="meter-track" role="meter" aria-label={`${channel.name} peak level`}
+        aria-valuemin={0} aria-valuemax={1} aria-valuenow={channel.peak}>
+        <span className="meter-peak" style={{ width: `${channel.peak * 100}%` }} />
+        <span className="meter-rms" style={{ width: `${channel.rms * 100}%` }} />
+      </div>
+      <button className={`meter-clip ${channel.clipped ? "latched" : ""}`}
+        disabled={!channel.clipped || channel.ticket === "0"}
+        aria-label={`Clear ${channel.name} clip`}
+        onClick={() => { void acknowledge(index, channel.ticket); }}>CLIP</button>
+    </div>)}
+  </section>;
+}
+
 function App() {
   const frame = useRef<HTMLDivElement>(null);
   const [scale, setScale] = useState(1);
@@ -257,7 +335,7 @@ function App() {
   }, [state?.generation, audition]);
 
   return <main className="stage">
-    <div className="machine-frame" ref={frame} style={{ height: `${650 * scale}px` }}>
+    <div className="machine-frame" ref={frame} style={{ height: `${690 * scale}px` }}>
       <section className="machine" aria-label="Dandrum TB-303 bass synthesizer" style={{ transform: `scale(${scale})` }}>
         <div className="top-shadow" />
         <header className="brand-row">
@@ -327,7 +405,10 @@ function App() {
                 <span className="key-led" /><span className="key-label">{key.name}</span></button>)}</div>
           </div>
         </section>
-        <footer><div className="footer-centre"><span>DANDRUM</span><strong>TB-303</strong></div></footer>
+        <footer>
+          <div className="footer-centre"><span>DANDRUM</span><strong>TB-303</strong></div>
+          <MasterMeter generation={state?.generation ?? null} />
+        </footer>
       </section>
     </div>
     <p className="hint">Drag a knob or use arrow keys. Values follow the host.</p>

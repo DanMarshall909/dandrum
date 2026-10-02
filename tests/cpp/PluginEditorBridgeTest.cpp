@@ -160,7 +160,7 @@ int main()
                                      "beginGesture", "endGesture",
                                      "noteOn", "noteOff",
                                      "subscribeMeter", "setMeterVisible", "getMeterPacket",
-                                     "ackMeterPacket",
+                                     "ackMeterPacket", "ackMeterClip",
                                      "renderSoundLab", "chooseSoundLabReference", "matchSoundLab",
                                      "cancelSoundLab", "acceptSoundLabMatch", "requestGraphProposal",
                                      "getSoundLabAnalysis" })
@@ -187,11 +187,20 @@ int main()
                      && meterPacket.getProperty ("rms", {}).getArray() != nullptr
                      && meterPacket.getProperty ("clipped", {}).getArray() != nullptr,
                  "web meter packet lost generation, interval or exact sequence");
+        require (meterPacket.getProperty ("display_peak", {}).getArray() != nullptr
+                     && meterPacket.getProperty ("display_rms", {}).getArray() != nullptr
+                     && meterPacket.getProperty ("display_clipped", {}).getArray() != nullptr
+                     && meterPacket.getProperty ("display_complete", {}).isBool()
+                     && meterPacket.getProperty ("display_valid", {}).isBool(),
+                 "web meter packet omitted shared display values");
         require (PluginEditorBridgeTestProbe::invoke (editor, "getMeterPacket").isVoid(),
                  "web meter sent a second unacknowledged packet");
         require (! static_cast<bool> (PluginEditorBridgeTestProbe::invoke (
                      editor, "ackMeterPacket", { "bad", static_cast<int> (meterGeneration) })),
                  "malformed web meter acknowledgement was accepted");
+        require (! static_cast<bool> (PluginEditorBridgeTestProbe::invoke (
+                     editor, "ackMeterClip", { 0, static_cast<int> (meterGeneration), "0" })),
+                 "web meter accepted acknowledgement without a clip occurrence");
         require (! static_cast<bool> (PluginEditorBridgeTestProbe::invoke (
                      editor, "ackMeterPacket", { 9007199254740993.0,
                                                   static_cast<int> (meterGeneration) })),

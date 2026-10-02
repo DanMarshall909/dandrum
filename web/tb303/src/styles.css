@@ -260,9 +260,11 @@ button { font: inherit; }
 .key-led { position: absolute; top: 7px; left: 50%; transform: translateX(-50%); }
 .key-label { position: absolute; bottom: 7px; left: 50%; transform: translateX(-50%); }
 
-footer { display: flex; align-items: center; justify-content: center; min-height: 34px; padding: 13px 5px 0; font-size: 9px; }
+footer { position: relative; display: flex; align-items: center; justify-content: flex-end;
+  min-height: 74px; padding: 7px 5px 0; font-size: 9px; }
 .footer-centre { display: grid; justify-items: center; gap: 0; }
 .footer-centre strong { font-size: 11px; }
+footer .footer-centre { position: absolute; left: 50%; transform: translateX(-50%); }
 .hint { margin: 0; color: #bdbdb8; font-size: 14px; letter-spacing: .2px; }
 .availability { color: #5d3531; font-size: 10px; font-weight: 800; letter-spacing: .5px; text-align: center; }
 .wave-button:disabled, .mode-buttons button:disabled, .run-controls button:disabled,
@@ -274,6 +276,22 @@ footer { display: flex; align-items: center; justify-content: center; min-height
   color: #252521; background: #d5d4ca; font: 11px Arial, sans-serif; text-align: center; }
 .knob-control.small .knob-value { width: 55px; }
 .host-error { color: #ffaaa3; margin: 0; font-size: 13px; }
+
+.master-meter { width: 318px; padding: 5px 9px;
+  border: 1px solid #607466; border-radius: 5px; background: #232a27; color: #dce9de; }
+.meter-heading { display: flex; justify-content: space-between; gap: 8px; margin-bottom: 2px;
+  font-size: 9px; letter-spacing: .6px; }
+.meter-heading span { color: #9eafa2; font-size: 9px; }
+.meter-row { display: grid; grid-template-columns: 14px minmax(0, 1fr) 42px;
+  gap: 6px; align-items: center; min-height: 17px; }
+.meter-channel { font-size: 10px; font-weight: 800; }
+.meter-track { position: relative; height: 10px; overflow: hidden; border-radius: 3px; background: #111916; }
+.meter-peak, .meter-rms { position: absolute; left: 0; top: 0; height: 100%;
+  border-radius: 3px; background: #3b9576; }
+.meter-rms { top: 3px; height: 4px; background: #7ce0aa; }
+.meter-clip { height: 15px; border: 0; border-radius: 2px; background: #414d45;
+  color: #9eafa2; font-size: 8px; font-weight: 800; }
+.meter-clip.latched { background: #d25245; color: white; cursor: pointer; }
 
 @media (max-width: 980px) {
   .stage { display: block; padding: 24px 16px; }

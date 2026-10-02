@@ -346,6 +346,7 @@ private:
     DandrumKernelInstrument* lastMeterKernel = nullptr;
     InstrumentUiMeterCapture meterCapture;
     InstrumentUiMeterAggregation meterAggregation;
+    InstrumentUiMeterDisplay meterDisplay;
     InstrumentUiMeterDelivery meterDelivery;
 
     void refreshMeterCaptureSubscription (bool wasInactive) noexcept;

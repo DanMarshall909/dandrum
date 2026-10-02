@@ -952,6 +952,8 @@ void DandrumAudioProcessor::refreshMeterCaptureSubscription (bool wasInactive) n
         meterAggregation.observeLostFrames (meterCapture.lostFrames());
         meterAggregation.resetWindow();
     }
+    if (! active)
+        meterDisplay.reset();
     meterCapture.setEnabled (active);
 }
 
@@ -1001,11 +1003,15 @@ void DandrumAudioProcessor::pollMeterDelivery() noexcept
         }
     }
     meterAggregation.observeLostFrames (meterCapture.lostFrames());
-    if (! observed)
+    if (! observed && ! meterDisplay.snapshot().valid)
         return;
     InstrumentUiMeterDelivery::Packet packet;
     packet.meter = meterAggregation.snapshot();
     packet.clip = meterCapture.clipSnapshot();
+    if (! meterDisplay.ingest (packet.meter, packet.clip,
+                               juce::Time::getMillisecondCounterHiRes()))
+        return;
+    packet.display = meterDisplay.snapshot();
     meterDelivery.publish (packet);
 }
 
