@@ -89,7 +89,7 @@ std::optional<std::uint64_t> parseJobId (const juce::var& value)
     return static_cast<std::uint64_t> (number);
 }
 
-std::optional<std::uint64_t> parseMeterSequence (const juce::var& value)
+std::optional<std::uint64_t> parsePositiveDecimalId (const juce::var& value)
 {
     if (! value.isString())
         return std::nullopt;
@@ -270,6 +270,58 @@ juce::var preparedDocumentForWeb (const InstrumentUiDocument& document)
     return result;
 }
 
+juce::var waveformStatusForWeb (const InstrumentUiWaveformService::Snapshot& snapshot)
+{
+    juce::var reply (new juce::DynamicObject());
+    auto* value = reply.getDynamicObject();
+    value->setProperty ("job_id", juce::String (std::to_string (snapshot.jobId)));
+    value->setProperty ("generation", static_cast<juce::int64> (snapshot.generation));
+    switch (snapshot.state)
+    {
+        case InstrumentUiWaveformService::State::running: value->setProperty ("state", "running"); break;
+        case InstrumentUiWaveformService::State::ready: value->setProperty ("state", "ready"); break;
+        case InstrumentUiWaveformService::State::failed: value->setProperty ("state", "failed"); break;
+        case InstrumentUiWaveformService::State::cancelled: value->setProperty ("state", "cancelled"); break;
+        case InstrumentUiWaveformService::State::stale: value->setProperty ("state", "stale"); break;
+    }
+    value->setProperty ("error", juce::String (snapshot.error));
+    if (snapshot.result)
+    {
+        const auto& waveform = *snapshot.result;
+        juce::var data (new juce::DynamicObject());
+        auto* result = data.getDynamicObject();
+        result->setProperty ("sourceId", juce::String (waveform.sourceId));
+        result->setProperty ("regionId", juce::String (waveform.regionId));
+        result->setProperty ("sampleRateHz", static_cast<juce::int64> (waveform.sampleRateHz));
+        result->setProperty ("channel", static_cast<int> (waveform.channel));
+        result->setProperty ("startFrame", juce::String (std::to_string (waveform.startFrame)));
+        result->setProperty ("endFrame", juce::String (std::to_string (waveform.endFrame)));
+        constexpr char hexDigits[] = "0123456789abcdef";
+        std::string revision;
+        revision.reserve (waveform.contentRevision.size() * 2);
+        for (const auto byte : waveform.contentRevision)
+        {
+            revision.push_back (hexDigits[byte >> 4]);
+            revision.push_back (hexDigits[byte & 0x0f]);
+        }
+        result->setProperty ("contentRevision", juce::String (revision));
+        juce::Array<juce::var> buckets;
+        for (const auto& bucket : waveform.buckets)
+        {
+            juce::var item (new juce::DynamicObject());
+            auto* extrema = item.getDynamicObject();
+            extrema->setProperty ("startFrame", juce::String (std::to_string (bucket.startFrame)));
+            extrema->setProperty ("endFrame", juce::String (std::to_string (bucket.endFrame)));
+            extrema->setProperty ("minimum", bucket.minimum);
+            extrema->setProperty ("maximum", bucket.maximum);
+            buckets.add (item);
+        }
+        result->setProperty ("buckets", juce::var (buckets));
+        value->setProperty ("result", data);
+    }
+    return reply;
+}
+
 juce::var commandReplyForWeb (InstrumentUiCommandReply reply, const juce::String& publicId)
 {
     switch (reply.status)
@@ -317,7 +369,7 @@ const char* InstrumentHostWebBridge::bootstrapScript() noexcept
     return nativeFunctionBootstrap;
 }
 
-std::array<InstrumentHostWebBridge::NativeFunctionEntry, 16>
+std::array<InstrumentHostWebBridge::NativeFunctionEntry, 19>
 InstrumentHostWebBridge::nativeFunctions()
 {
     return {{
@@ -356,6 +408,24 @@ InstrumentHostWebBridge::nativeFunctions()
                   juce::WebBrowserComponent::NativeFunctionCompletion completion)
           {
               getPreparedDocumentForWeb (arguments, std::move (completion));
+          } },
+        { "requestWaveform",
+          [this] (const juce::Array<juce::var>& arguments,
+                  juce::WebBrowserComponent::NativeFunctionCompletion completion)
+          {
+              requestWaveformFromWeb (arguments, std::move (completion));
+          } },
+        { "getWaveformJobStatus",
+          [this] (const juce::Array<juce::var>& arguments,
+                  juce::WebBrowserComponent::NativeFunctionCompletion completion)
+          {
+              getWaveformJobStatusFromWeb (arguments, std::move (completion));
+          } },
+        { "cancelWaveform",
+          [this] (const juce::Array<juce::var>& arguments,
+                  juce::WebBrowserComponent::NativeFunctionCompletion completion)
+          {
+              cancelWaveformFromWeb (arguments, std::move (completion));
           } },
         { "noteOn",
           [this] (const juce::Array<juce::var>& arguments,
@@ -570,6 +640,84 @@ void InstrumentHostWebBridge::getPreparedDocumentForWeb (
     completion (document ? preparedDocumentForWeb (*document) : juce::var {});
 }
 
+void InstrumentHostWebBridge::requestWaveformFromWeb (
+    const juce::Array<juce::var>& arguments,
+    juce::WebBrowserComponent::NativeFunctionCompletion completion)
+{
+    if (arguments.size() != 5 || ! arguments[0].isString() || ! arguments[1].isString()
+        || arguments[0].toString().isEmpty() || arguments[1].toString().isEmpty())
+    {
+        completion (juce::var ("requestWaveform expects source ID, region ID, channel, bucket count and generation"));
+        return;
+    }
+    const auto channel = parseGeneration (arguments[2]);
+    const auto bucketCount = parseGeneration (arguments[3]);
+    const auto generation = parseGeneration (arguments[4]);
+    if (! channel || *channel > std::numeric_limits<std::uint16_t>::max()
+        || ! bucketCount || *bucketCount == 0
+        || *bucketCount > InstrumentUiWaveformService::maxBuckets)
+    {
+        completion (juce::var ("requestWaveform requires a valid channel and bucket count"));
+        return;
+    }
+    if (! generation)
+    {
+        completion (juce::var ("requestWaveform requires a valid instrument generation"));
+        return;
+    }
+    if (*generation != processor.getParameterSurfaceGeneration())
+    {
+        completion (juce::var ("Rejected stale instrument generation"));
+        return;
+    }
+    const auto jobId = processor.requestPreparedWaveform (
+        *generation, arguments[0].toString().toStdString(),
+        arguments[1].toString().toStdString(), static_cast<std::uint16_t> (*channel),
+        *bucketCount, sessionId);
+    if (! jobId)
+    {
+        completion (juce::var ("Waveform request unavailable for this prepared region"));
+        return;
+    }
+    juce::var reply (new juce::DynamicObject());
+    reply.getDynamicObject()->setProperty ("status", "accepted");
+    reply.getDynamicObject()->setProperty ("job_id", juce::String (std::to_string (*jobId)));
+    reply.getDynamicObject()->setProperty ("generation", static_cast<juce::int64> (*generation));
+    completion (reply);
+}
+
+void InstrumentHostWebBridge::getWaveformJobStatusFromWeb (
+    const juce::Array<juce::var>& arguments,
+    juce::WebBrowserComponent::NativeFunctionCompletion completion) const
+{
+    if (arguments.size() != 1)
+    {
+        completion (juce::var ("getWaveformJobStatus requires a job ID"));
+        return;
+    }
+    const auto jobId = parsePositiveDecimalId (arguments[0]);
+    if (! jobId)
+    {
+        completion (juce::var ("getWaveformJobStatus requires a valid decimal job ID"));
+        return;
+    }
+    const auto status = processor.getPreparedWaveformJobStatus (*jobId);
+    completion (status ? waveformStatusForWeb (*status)
+                       : juce::var ("Unknown waveform job ID"));
+}
+
+void InstrumentHostWebBridge::cancelWaveformFromWeb (
+    const juce::Array<juce::var>& arguments,
+    juce::WebBrowserComponent::NativeFunctionCompletion completion)
+{
+    const auto jobId = arguments.size() == 1
+        ? parsePositiveDecimalId (arguments[0]) : std::nullopt;
+    const auto status = jobId ? processor.getPreparedWaveformJobStatus (*jobId)
+                              : std::nullopt;
+    completion (status && status->sessionId == sessionId
+                && processor.cancelPreparedWaveformJob (*jobId));
+}
+
 void InstrumentHostWebBridge::noteOnFromWeb (
     const juce::Array<juce::var>& arguments,
     juce::WebBrowserComponent::NativeFunctionCompletion completion)
@@ -768,7 +916,7 @@ void InstrumentHostWebBridge::ackMeterPacketFromWeb (
     const juce::Array<juce::var>& arguments,
     juce::WebBrowserComponent::NativeFunctionCompletion completion)
 {
-    const auto sequence = arguments.isEmpty() ? std::nullopt : parseMeterSequence (arguments[0]);
+    const auto sequence = arguments.isEmpty() ? std::nullopt : parsePositiveDecimalId (arguments[0]);
     const auto generation = arguments.size() < 2 ? std::nullopt : parseGeneration (arguments[1]);
     completion (juce::var (sequence.has_value() && generation.has_value()
                            && processor.acknowledgeMeterPacket (
@@ -781,7 +929,7 @@ void InstrumentHostWebBridge::ackMeterClipFromWeb (
 {
     const auto channel = arguments.isEmpty() ? std::nullopt : parseGeneration (arguments[0]);
     const auto generation = arguments.size() < 2 ? std::nullopt : parseGeneration (arguments[1]);
-    const auto ticket = arguments.size() < 3 ? std::nullopt : parseMeterSequence (arguments[2]);
+    const auto ticket = arguments.size() < 3 ? std::nullopt : parsePositiveDecimalId (arguments[2]);
     completion (juce::var (channel.has_value() && *channel < InstrumentUiMeterCapture::channelCount
                            && generation.has_value() && ticket.has_value()
                            && processor.acknowledgeMeterClip (*channel, *generation, *ticket)));

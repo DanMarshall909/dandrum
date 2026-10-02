@@ -159,6 +159,7 @@ int main()
 
         for (const auto* command : { "getParameters", "getParameterState", "getPreparedDocument", "setParameter",
                                      "beginGesture", "endGesture",
+                                     "requestWaveform", "getWaveformJobStatus", "cancelWaveform",
                                      "noteOn", "noteOff",
                                      "subscribeMeter", "setMeterVisible", "getMeterPacket",
                                      "ackMeterPacket", "ackMeterClip",
@@ -658,7 +659,12 @@ int main()
                             == "dandrum.tb303-acid"
                      && acidSources.getArray() != nullptr && acidSources.getArray()->isEmpty()
                      && ! static_cast<bool> (acidDocument.getProperty ("capabilities", {})
-                           .getProperty ("preparedWaveform", {})),
+                           .getProperty ("preparedWaveform", {}))
+                     && PluginEditorBridgeTestProbe::invoke (
+                         acidEditor, "requestWaveform",
+                         { "drums", "kick", 0, 16,
+                           static_cast<int> (acid.getParameterSurfaceGeneration()) })
+                         .toString().contains ("unavailable"),
                  "TB-303 Web document invented prepared sample content");
 
         DandrumAudioProcessor samplerWeb (InstrumentDemoConfiguration::sampler());
@@ -705,6 +711,91 @@ int main()
                      && snareParameter.getProperty ("scope", {}).toString() == "sampleGroup"
                      && static_cast<int> (snareParameter.getProperty ("controlGroup", {})) == 2,
                  "Web document did not preserve source frames, selection semantics or scoped controls");
+        const auto samplerGeneration = samplerWeb.getParameterSurfaceGeneration();
+        require (PluginEditorBridgeTestProbe::invoke (
+                     samplerEditor, "requestWaveform",
+                     { "drums", "kick", 0, 0, static_cast<int> (samplerGeneration) })
+                         .toString().contains ("bucket")
+                     && PluginEditorBridgeTestProbe::invoke (
+                         samplerEditor, "requestWaveform",
+                         { "drums", "missing", 0, 16, static_cast<int> (samplerGeneration) })
+                         .toString().contains ("unavailable")
+                     && PluginEditorBridgeTestProbe::invoke (
+                         samplerEditor, "requestWaveform",
+                         { "drums", "kick", 0, 16, static_cast<int> (samplerGeneration - 1) })
+                         .toString().contains ("stale"),
+                 "Web waveform admission accepted invalid buckets, region or generation");
+        const auto waveformAccepted = PluginEditorBridgeTestProbe::invoke (
+            samplerEditor, "requestWaveform",
+            { "drums", "kick", 0, 16, static_cast<int> (samplerGeneration) });
+        const auto waveformId = waveformAccepted.getProperty ("job_id", {}).toString();
+        require (waveformAccepted.getProperty ("status", {}).toString() == "accepted"
+                     && waveformAccepted.getProperty ("job_id", {}).isString()
+                     && waveformId.isNotEmpty(),
+                 "Web waveform request did not return an exact accepted job ID");
+        juce::var waveformStatus;
+        for (int attempt = 0; attempt < 200; ++attempt)
+        {
+            waveformStatus = PluginEditorBridgeTestProbe::invoke (
+                samplerEditor, "getWaveformJobStatus", { waveformId });
+            if (waveformStatus.getProperty ("state", {}).toString() != "running")
+                break;
+            std::this_thread::sleep_for (std::chrono::milliseconds (5));
+        }
+        const auto waveform = waveformStatus.getProperty ("result", {});
+        const auto waveformBuckets = waveform.getProperty ("buckets", {});
+        float minimum = 1.0f;
+        float maximum = -1.0f;
+        if (const auto* buckets = waveformBuckets.getArray())
+            for (const auto& bucket : *buckets)
+            {
+                minimum = std::min (minimum, static_cast<float> (bucket.getProperty ("minimum", {})));
+                maximum = std::max (maximum, static_cast<float> (bucket.getProperty ("maximum", {})));
+            }
+        require (waveformStatus.getProperty ("state", {}).toString() == "ready"
+                     && waveformStatus.getProperty ("job_id", {}).toString() == waveformId
+                     && waveform.getProperty ("sourceId", {}).toString() == "drums"
+                     && waveform.getProperty ("regionId", {}).toString() == "kick"
+                     && static_cast<int> (waveform.getProperty ("sampleRateHz", {})) == 48000
+                     && waveform.getProperty ("startFrame", {}).toString() == "0"
+                     && waveform.getProperty ("endFrame", {}).toString() == "12000"
+                     && waveform.getProperty ("contentRevision", {}).toString().length() == 64
+                     && waveformBuckets.getArray() != nullptr
+                     && waveformBuckets.getArray()->size() == 16
+                     && waveformBuckets.getArray()->getReference (0)
+                            .getProperty ("startFrame", {}).toString() == "0"
+                     && waveformBuckets.getArray()->getLast()
+                            .getProperty ("endFrame", {}).toString() == "12000"
+                     && std::abs (minimum + 0.69995117f) < 0.0001f
+                     && std::abs (maximum - 0.80514526f) < 0.0001f,
+                 "Web waveform job lost source coordinates, content identity or signed extrema");
+        require (PluginEditorBridgeTestProbe::invoke (
+                     samplerEditor, "getWaveformJobStatus", { "999999" })
+                         .toString().contains ("Unknown")
+                     && PluginEditorBridgeTestProbe::invoke (
+                         samplerEditor, "getWaveformJobStatus", { 1.5 })
+                         .toString().contains ("valid")
+                     && ! static_cast<bool> (PluginEditorBridgeTestProbe::invoke (
+                         samplerEditor, "cancelWaveform", { waveformId })),
+                 "Web waveform status or cancellation accepted an invalid or finished job");
+        juce::String closedEditorJob;
+        {
+            DandrumAudioProcessorEditor closingEditor (samplerWeb);
+            const auto accepted = PluginEditorBridgeTestProbe::invoke (
+                closingEditor, "requestWaveform",
+                { "drums", "hat_open", 0, 512, static_cast<int> (samplerGeneration) });
+            closedEditorJob = accepted.getProperty ("job_id", {}).toString();
+            require (accepted.getProperty ("status", {}).toString() == "accepted"
+                         && closedEditorJob.isNotEmpty()
+                         && ! static_cast<bool> (PluginEditorBridgeTestProbe::invoke (
+                             samplerEditor, "cancelWaveform", { closedEditorJob })),
+                     "one Web editor cancelled another editor's waveform request");
+        }
+        const auto closedEditorStatus = PluginEditorBridgeTestProbe::invoke (
+            samplerEditor, "getWaveformJobStatus", { closedEditorJob });
+        require (closedEditorStatus.getProperty ("state", {}).toString() == "cancelled"
+                     || closedEditorStatus.getProperty ("state", {}).toString() == "ready",
+                 "closing a Web editor lost its queryable waveform terminal status");
 
         auto slicerConfiguration = InstrumentDemoConfiguration::sampler();
         slicerConfiguration.instrumentPath = juce::File (juce::String (DANDRUM_SOURCE_ROOT))
@@ -785,7 +876,6 @@ int main()
                      && std::abs (static_cast<double> (detailedKick.getProperty ("pan", {})) + 0.5) < 0.0001
                      && std::abs (static_cast<double> (detailedKick.getProperty ("pitchSemitones", {})) - 12.0) < 0.0001,
                  "Web document lost loop, fade, optional zone data or a 64-bit map seed");
-        const auto samplerGeneration = samplerWeb.getParameterSurfaceGeneration();
         require (samplerWeb.reloadInstrumentFromFile (tb303),
                  "could not reload sampler Web document to TB-303");
         const auto replacementDocument = PluginEditorBridgeTestProbe::invoke (
@@ -798,6 +888,11 @@ int main()
                      && replacementSources.getArray() != nullptr
                      && replacementSources.getArray()->isEmpty(),
                  "Web document did not replace sampler facts after instrument reload");
+        const auto staleWaveform = PluginEditorBridgeTestProbe::invoke (
+            samplerEditor, "getWaveformJobStatus", { waveformId });
+        require (staleWaveform.getProperty ("state", {}).toString() == "stale"
+                     && staleWaveform.getProperty ("result", {}).isVoid(),
+                 "Web waveform reply kept previous instrument PCM visible after reload");
 
         const auto referenceFile = juce::File::getSpecialLocation (juce::File::tempDirectory)
                                        .getNonexistentChildFile ("dandrum_kick_match_reference", ".wav");

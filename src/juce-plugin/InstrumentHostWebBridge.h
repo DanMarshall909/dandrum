@@ -18,7 +18,7 @@ public:
     ~InstrumentHostWebBridge();
 
     static const char* bootstrapScript() noexcept;
-    std::array<NativeFunctionEntry, 16> nativeFunctions();
+    std::array<NativeFunctionEntry, 19> nativeFunctions();
     juce::WebBrowserComponent::Options addNativeFunctions (
         juce::WebBrowserComponent::Options options);
     std::optional<juce::WebBrowserComponent::Resource> provideResource (
@@ -37,6 +37,12 @@ public:
                                   juce::WebBrowserComponent::NativeFunctionCompletion completion) const;
     void getPreparedDocumentForWeb (const juce::Array<juce::var>& arguments,
                                     juce::WebBrowserComponent::NativeFunctionCompletion completion) const;
+    void requestWaveformFromWeb (const juce::Array<juce::var>& arguments,
+                                 juce::WebBrowserComponent::NativeFunctionCompletion completion);
+    void getWaveformJobStatusFromWeb (const juce::Array<juce::var>& arguments,
+                                     juce::WebBrowserComponent::NativeFunctionCompletion completion) const;
+    void cancelWaveformFromWeb (const juce::Array<juce::var>& arguments,
+                                juce::WebBrowserComponent::NativeFunctionCompletion completion);
     void noteOnFromWeb (const juce::Array<juce::var>& arguments,
                         juce::WebBrowserComponent::NativeFunctionCompletion completion);
     void noteOffFromWeb (const juce::Array<juce::var>& arguments,
