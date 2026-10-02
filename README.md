@@ -145,7 +145,7 @@ ctest --test-dir build-native -R native-editor-smoke --output-on-failure
 
 The native editor target currently verifies processor ownership, instrument identity and editor construction. Parameter editing and prepared sample views are subsequent UI tasks.
 
-Developer builds of the original `Dandrum` demo resolve maintained patches and fixtures from the CMake source checkout, even when the process starts elsewhere. The sampler VST3 embeds its default patch and synthetic WAV, then stages them before playback. Other developer demo assets are not packaged for installation. The executable browser, bridge, processor, and Rust checks run through `ctest --test-dir build --output-on-failure`.
+The `Dandrum` TB-303 plugin embeds its default patch and Sound Lab fixture, then stages them in the user's application data directory before loading, so its instrument and React panel work outside the source checkout. The sampler VST3 likewise embeds its default patch and synthetic WAV. The optional 808 kick developer demo still resolves its patch and fixture from the CMake source checkout. The executable browser, bridge, processor, and Rust checks run through `ctest --test-dir build --output-on-failure`.
 
 ## Realtime Callback Contract
 

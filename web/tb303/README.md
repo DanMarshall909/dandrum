@@ -8,11 +8,16 @@ The source layout and styling are retained while the mock state is replaced by
 the Dandrum host parameter bridge.
 
 Run `npm ci`, `npm run test`, `npm run typecheck`, and `npm run build` here after
-editing. The checked-in `dist/` files are embedded by CMake, so building the
-plugin from a source release does not require a development server or Node.
+editing. The checked-in `dist/` files are embedded by CMake, so the running
+plugin needs no development server or Node. The default CMake configuration
+still uses Node for frontend tests.
 
 The prepared TB-303 patch exposes seven public controls. The saw waveform is
 fixed. Pattern editing and transport are unavailable. The keyboard sends real
 host note commands; per-note intent, session close and a missed-heartbeat
 timeout protect note release when the browser stalls or closes. Host MIDI input
 continues to play the instrument independently.
+
+The plugin also embeds and stages the TB-303 patch and its Sound Lab fixture in
+the user's application data directory. The panel, patch and fixture can load
+without the source checkout or an internet connection.

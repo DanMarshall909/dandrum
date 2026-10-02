@@ -21,8 +21,10 @@ bool hasAudio (const juce::AudioBuffer<float>& buffer)
 int main()
 {
     DandrumAudioProcessor processor;
-    const auto expected = juce::File (juce::String (
-        InstrumentDemoConfiguration::tb303().instrumentPath.string()));
+    const auto assetRoot = juce::File::getSpecialLocation (juce::File::userApplicationDataDirectory)
+                               .getChildFile ("Dandrum/TB-303 Example");
+    const auto expected = assetRoot.getChildFile ("patches/tb303-acid.yaml");
+    const auto expectedFixture = assetRoot.getChildFile ("sound-design/tb303-acid-poc.yaml");
     if (! processor.isInstrumentLoaded()
         || processor.currentInstrumentFile() != expected
         || ! processor.hasPublicParameter ("filter.cutoff")
@@ -35,9 +37,17 @@ int main()
     const auto& tb303 = processor.demoConfiguration();
     if (tb303.instrumentPath != expected.getFullPathName().toStdString()
         || ! tb303.soundLabFixturePath.has_value()
-        || tb303.soundLabFixturePath->filename() != "tb303-acid-poc.yaml"
+        || *tb303.soundLabFixturePath != std::filesystem::path (expectedFixture.getFullPathName().toStdString())
         || ! tb303.matchSourcePath.has_value()
         || *tb303.matchSourcePath != expected.getFullPathName().toStdString()
+        || ! expected.existsAsFile()
+        || ! expectedFixture.existsAsFile()
+        || expected.loadFileAsString()
+               != juce::File (juce::String (std::filesystem::path (DANDRUM_SOURCE_ROOT)
+                   .append ("examples/patches/tb303-acid.yaml").string())).loadFileAsString()
+        || expectedFixture.loadFileAsString()
+               != juce::File (juce::String (std::filesystem::path (DANDRUM_SOURCE_ROOT)
+                   .append ("examples/sound-design/tb303-acid-poc.yaml").string())).loadFileAsString()
         || tb303.title != "Dandrum TB-303")
     {
         std::cerr << "TB-303 demo configuration does not select a coherent patch, fixture, source and title\n";

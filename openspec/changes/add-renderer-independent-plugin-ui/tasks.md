@@ -50,7 +50,7 @@ The sampler export required for 1.2 and 1.4 is not present in the current Downlo
 - [ ] 7.3 Implement actual bus/channel enumeration and OutputBusses display; tests must cover stereo-only and non-stereo named layouts without invented output pairs or structural routing changes.
 - [ ] 7.4 Add capability-backed pad/alternate/cursor feedback with preallocated bounded taps; tests must observe real host and editor note playback, generation changes and missing capabilities without simulated audio state.
 - [ ] 7.5 Compose full/compact native and web layouts with keyboard/focus/value entry; inspect actual runtimes at 1200x800, 820x560 and common display scales, recording any platform-specific differences.
-- [ ] 7.6 Adapt the supplied TB-303 React panel to the shared asset and command path; tests must prove all seven actual public controls, host-backed note audition, authoritative reload updates and explicit unavailability of unsupported waveform, pattern and transport editing.
+- [x] 7.6 Adapt the supplied TB-303 React panel to the shared asset and command path; tests must prove all seven actual public controls, host-backed note audition, authoritative reload updates and explicit unavailability of unsupported waveform, pattern and transport editing.
 
 ## 8. Integration And Evidence
 

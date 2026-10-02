@@ -132,6 +132,13 @@ target_sources(dandrum-plugin-native-editor INTERFACE
     ${CMAKE_CURRENT_SOURCE_DIR}/src/juce-plugin/PluginNativeEditor.cpp)
 target_link_libraries(dandrum-plugin-native-editor INTERFACE juce::juce_gui_basics)
 
+juce_add_binary_data(dandrum-tb303-instrument-resources
+    NAMESPACE Tb303InstrumentBinaryData
+    HEADER_NAME Tb303InstrumentBinaryData.h
+    SOURCES
+        examples/patches/tb303-acid.yaml
+        examples/sound-design/tb303-acid-poc.yaml)
+
 juce_add_plugin(dandrum-plugin
     PLUGIN_MANUFACTURER_CODE Dndr
     PLUGIN_CODE Dndm
@@ -157,11 +164,13 @@ endif()
 target_include_directories(dandrum-plugin PRIVATE src/juce-wrapper)
 target_compile_definitions(dandrum-plugin PRIVATE
     DANDRUM_SOURCE_ROOT="${CMAKE_CURRENT_SOURCE_DIR}"
+    DANDRUM_EMBED_TB303_ASSETS=1
     JUCE_USE_CURL=0
     JUCE_WEB_BROWSER=$<BOOL:${DANDRUM_BROWSER_ENABLED}>
     JUCE_USE_WIN_WEBVIEW2=$<BOOL:${DANDRUM_BROWSER_ENABLED}>)
 target_link_libraries(dandrum-plugin
-    PRIVATE dandrum_engine dandrum-plugin-ui-common ${DANDRUM_EDITOR_ADAPTER}
+    PRIVATE dandrum_engine dandrum-tb303-instrument-resources
+        dandrum-plugin-ui-common ${DANDRUM_EDITOR_ADAPTER}
         juce::juce_audio_basics juce::juce_audio_processors juce::juce_audio_utils
     PUBLIC juce::juce_recommended_config_flags juce::juce_recommended_lto_flags juce::juce_recommended_warning_flags)
 
