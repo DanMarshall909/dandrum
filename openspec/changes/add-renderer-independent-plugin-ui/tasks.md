@@ -1,11 +1,11 @@
 ## 1. Baseline And Design Reference
 
 - [x] 1.1 Resolve the active-work gate and choose the integrated sampling base or explicit dependency on `3b313a7`; verify worktrees, upstreams, PRs and the repeated status snapshot before repository mutations.
-- [ ] 1.2 Import the reviewed design-system revision with its SHA-256 and provenance; verify archive integrity, local reference links and any installed skill frontmatter without executing bundled development tooling.
+- [x] 1.2 Import the reviewed design-system revision with its SHA-256 and provenance; verify archive integrity, local reference links and any installed skill frontmatter without executing bundled development tooling.
 - [x] 1.3 Characterize current shared/per-pad parameters, host gestures, note admission and reload behaviour with focused C++/JavaScript tests; record a known signed sampler render and current coverage before production changes.
 - [ ] 1.4 Specify native KeyMap, LayerStack and OutputBusses dimensions, focus, read-only interactions and capability states; review the delivered native handoff against the new JSX/type references and existing external-authoring contract.
 
-The sampler export required for 1.2 and 1.4 is not present in the current Downloads folder. Source-independent metadata and command work in section 2 can proceed while that input is located; the renderer component tasks remain dependent on its verified import.
+The design reference was imported on main at `d02ee1b` and is now available in `docs/design-system/reference/`. All 161 reference files match the recorded SHA-256 values. Native component specifications and production adaptations remain separate implementation tasks.
 
 ## 2. Shared State And Commands
 
@@ -62,7 +62,7 @@ Progress on 5.3: the Web bridge exposes bounded prepared waveform requests and e
 - [ ] 7.5 Compose full/compact native and web layouts with keyboard/focus/value entry; inspect actual runtimes at 1200x800, 820x560 and common display scales, recording any platform-specific differences.
 - [x] 7.6 Adapt the supplied TB-303 React panel to the shared asset and command path; tests must prove all seven actual public controls, host-backed note audition, authoritative reload updates and explicit unavailability of unsupported waveform, pattern and transport editing.
 
-Progress toward 7.1–7.3: the Web bridge now supplies the same copied prepared document used by the native side, including scoped controls, source/region/slice frames, map/zone selection metadata and capabilities. Browser frame and seed values are decimal strings to retain their full 64-bit values. The renderer components still require the separate design-system export.
+Progress toward 7.1–7.3: the Web bridge now supplies the same copied prepared document used by the native side, including scoped controls, source/region/slice frames, map/zone selection metadata and capabilities. Browser frame and seed values are decimal strings to retain their full 64-bit values. The renderer components can now use the imported design-system reference; their production adaptation remains open.
 
 Progress on 7.1 and 7.5: the sampler React host app groups prepared round-robin alternatives without claiming simultaneous layers, displays the actual 1–63/64–127 snare ranges and per-pad control scopes, sends note audition through the shared command bridge, and mounts the prepared Canvas waveform and master meter. A mock-host Chromium run inspected 1200×800 and 820×560 layouts and exercised a pad note on/off, a complete slider gesture, typed Escape cancellation, and rejection reconciliation. Native KeyMap, observed host-playback feedback, final design components, and plugin-host runtime inspection remain open.
 

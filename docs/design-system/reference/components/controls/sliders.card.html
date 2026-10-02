@@ -1,0 +1,30 @@
+<!-- @dsCard group="Components" viewport="700x330" name="Sliders" subtitle="Horizontal and vertical sliders with modulation overlays" -->
+<!doctype html><html><head><meta charset="utf-8"><link rel="stylesheet" href="../../styles.css">
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="../../_ds_bundle.js"></script>
+<script src="../../tools/dev-bundle-fallback.js"></script>
+<style>body{margin:0;background:var(--surface-panel);padding:16px}.lbl{font:600 11px var(--font-ui);letter-spacing:.08em;text-transform:uppercase;color:var(--text-tertiary)}.row{display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap}.col{display:flex;flex-direction:column;gap:6px;align-items:center}.stack{display:flex;flex-direction:column;gap:14px}</style>
+</head><body><div id="root"></div>
+<script type="text/babel">
+const NS = window.DandrumDesignSystem_3c2eab;
+const S = ({t, children, a}) => <div className="col" style={{alignItems:a||'center'}}>{children}<span className="lbl">{t}</span></div>;
+const { Slider } = NS;function App(){ 
+const [v,setV]=React.useState(0.7);
+return <div style={{display:'flex',gap:28}}>
+ <div className="stack">
+  <S t="Default" a="flex-start"><Slider label="Level" value={v} onChange={setV} valueText={(v*24-24+6).toFixed(1)+' dB'} /></S>
+  <S t="Modulated · 2 sources" a="flex-start"><Slider label="Level" value={0.6} valueText="−4.3 dB" modulations={[{slot:'A',depth:0.25,live:0.5},{slot:'C',depth:-0.2}]} /></S>
+  <S t="Bipolar · host-automated" a="flex-start"><Slider label="Pan" bipolar value={0.35} valueText="L30" hostAutomated /></S>
+  <S t="Assigning · compact" a="flex-start"><Slider label="Xfade" value={0.3} valueText="30%" assigning compact /></S>
+ </div>
+ <div className="row" style={{alignItems:'flex-start'}}>
+  <S t="Vertical"><Slider orientation="vertical" label="Send" value={0.55} valueText="−6.2" /></S>
+  <S t="Modulated"><Slider orientation="vertical" label="Send" value={0.4} valueText="−9.0" modulations={[{slot:'B',depth:0.3,live:0.8}]} /></S>
+  <S t="Focused"><Slider orientation="vertical" label="Send" value={0.4} valueText="−9.0" focused /></S>
+  <S t="Disabled"><Slider orientation="vertical" label="Send" value={0.4} valueText="−9.0" disabled /></S>
+ </div>
+</div>; }
+ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+</script></body></html>

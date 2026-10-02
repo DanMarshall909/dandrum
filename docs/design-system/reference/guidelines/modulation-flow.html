@@ -1,0 +1,25 @@
+<!-- @dsCard group="Modulation" viewport="700x380" name="Assignment flow" subtitle="Right-click → Assign modulation… → source → click more targets → Esc" -->
+<!doctype html><html><head><meta charset="utf-8"><link rel="stylesheet" href="../styles.css">
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="../_ds_bundle.js"></script>
+<script src="../tools/dev-bundle-fallback.js"></script>
+<style>body{margin:0;background:var(--surface-panel);padding:16px;font-family:var(--font-ui);color:var(--text-primary)}.lbl{font:600 11px var(--font-ui);letter-spacing:.08em;text-transform:uppercase;color:var(--text-tertiary)}.h{font:500 11px var(--font-ui);color:var(--text-tertiary);line-height:1.3}table{border-collapse:collapse;width:100%}td,th{text-align:left;padding:5px 6px;font-size:12px;border-bottom:1px solid var(--border-hairline);vertical-align:top}th{font-weight:600;color:var(--text-tertiary);text-transform:uppercase;letter-spacing:.06em;font-size:11px}code{font:500 12px var(--font-value);color:var(--text-secondary)}</style>
+</head><body><div id="root"></div>
+<script type="text/babel">
+const NS = window.DandrumDesignSystem_3c2eab;
+
+const { Knob, ContextMenu, ModIndicator, Tooltip } = NS;
+const Step = ({n,t,children}) => <div style={{display:'flex',flexDirection:'column',gap:8,alignItems:'flex-start'}}><div style={{display:'flex',gap:6,alignItems:'baseline'}}><span style={{font:'600 13px var(--font-value)',color:'var(--dd-vermilion)'}}>{n}</span><span className="lbl" style={{color:'var(--text-secondary)'}}>{t}</span></div>{children}</div>;
+function App(){ return <div style={{display:'grid',gridTemplateColumns:'190px 180px 1fr',gap:18}}>
+ <Step n="1" t="Open the menu"><ContextMenu width={190} title="Level · 0.0 dB" items={[{header:'In-plugin modulation'},{note:'No assignments yet.'},{label:'Assign modulation…',icon:'modulate',submenu:true},{separator:true},{label:'Reset to default',icon:'reset'}]} /><span className="h">Right-click, Shift+F10, Menu key, or M on a focused control.</span></Step>
+ <Step n="2" t="Pick a source"><ContextMenu width={180} title="Assign · Level" items={[{label:'Back',icon:'chevron-left'},{separator:true},{label:'Velocity',shortcut:'A'},{label:'Random per hit',shortcut:'B'},{label:'Mod wheel',shortcut:'C'},{label:'Aftertouch',shortcut:'D'}]} /></Step>
+ <Step n="3" t="Targets highlight · click to add">
+  <div style={{display:'flex',gap:2}}><Knob label="Level" value={0.8} valueText="0.0" modulations={[{slot:'A',depth:0.25}]} /><Knob label="Pan" bipolar value={0.5} valueText="C" assigning /><Knob label="Pitch" bipolar value={0.5} valueText="1.000×" assigning /></div>
+  <span className="h">Status bar: “Assigning Velocity — click highlighted controls · Esc to finish”. New assignments start at +25%.</span>
+  <Tooltip title="Level" value="0.0 dB"><div style={{display:'flex',gap:4}}><ModIndicator slot="A" source="Velocity" depth={0.25} compact active /></div><span>Hover / focus reveals source and depth</span></Tooltip>
+ </Step>
+</div>; }
+ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+</script></body></html>

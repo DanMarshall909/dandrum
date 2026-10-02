@@ -1,0 +1,15 @@
+<!-- @dsCard group="Modulation" viewport="700x330" name="Interaction model" subtitle="One gesture vocabulary for every control" -->
+<!doctype html><html><head><meta charset="utf-8"><link rel="stylesheet" href="../styles.css">
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="../_ds_bundle.js"></script>
+<script src="../tools/dev-bundle-fallback.js"></script>
+<style>body{margin:0;background:var(--surface-panel);padding:16px;font-family:var(--font-ui);color:var(--text-primary)}.lbl{font:600 11px var(--font-ui);letter-spacing:.08em;text-transform:uppercase;color:var(--text-tertiary)}.h{font:500 11px var(--font-ui);color:var(--text-tertiary);line-height:1.3}table{border-collapse:collapse;width:100%}td,th{text-align:left;padding:5px 6px;font-size:12px;border-bottom:1px solid var(--border-hairline);vertical-align:top}th{font-weight:600;color:var(--text-tertiary);text-transform:uppercase;letter-spacing:.06em;font-size:11px}code{font:500 12px var(--font-value);color:var(--text-secondary)}</style>
+</head><body><div id="root"></div>
+<script type="text/babel">
+const NS = window.DandrumDesignSystem_3c2eab;
+
+function App(){ const r=[['Drag','Vertical: knob, field, v-slider. Horizontal: h-slider. 200px = full range.','Shift = 4× finer. Cursor hides; value shown in tooltip.'],['Double-click','Reset to default','Pads: none (avoid accidental resets while playing)'],['Click value / Enter','Type a value','Accepts units: "−3 dB", "1.5x", "L20". Esc cancels.'],['Wheel','±1 step (Shift: fine)','Only when the pointer is over the control'],['Arrow keys','±5% (Shift ±1%); Home / End = min / max','Delete / Backspace = reset to default'],['Right-click · Shift+F10 · Menu · M','Context menu (modulation, reset, type value)','Same menu for mouse and keyboard; opens under the control'],['Tab / Shift+Tab','Moves focus panel by panel, left→right, top→bottom','Focus ring 2px Paper 1 with 2px gap'],['Hover 500 ms / focus','Tooltip: name, value, modulation chips','Instant on keyboard focus; hidden while dragging'],['Esc','Close menu · finish assignment','—']]; return <table><tr><th>Input</th><th>Effect</th><th>Notes</th></tr>{r.map(x=><tr key={x[0]}><td><code>{x[0]}</code></td><td>{x[1]}</td><td style={{color:'var(--text-secondary)'}}>{x[2]}</td></tr>)}</table>; }
+ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+</script></body></html>

@@ -1,0 +1,89 @@
+<!-- @dsCard group="Components" viewport="900x1040" name="Key map" subtitle="Key/velocity assignment for synths, samples and patches; layered kick with inline module chains" -->
+<!doctype html><html><head><meta charset="utf-8"><link rel="stylesheet" href="../../styles.css">
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="../../_ds_bundle.js"></script>
+<script src="../../tools/dev-bundle-fallback.js"></script>
+<style>body{margin:0;background:var(--surface-panel);padding:16px}a{color:var(--text-secondary)}a:hover{color:var(--text-primary)}.stack{display:flex;flex-direction:column;gap:24px}</style>
+</head><body><div id="root"></div>
+<script type="text/babel">
+const NS = window.DandrumDesignSystem_3c2eab;
+['KeyMap', 'LayerStack'].forEach((name) => {
+  const x = new XMLHttpRequest(); x.open('GET', name + '.jsx', false); x.send();
+  const src = x.responseText.replace(/^import .*$/mg, '').replace(/export function/g, 'function');
+  const code = Babel.transform(src, { presets: ['react'] }).code;
+  NS[name] = new Function('React', 'NS', 'with (NS) {' + code + '\n;return ' + name + ';}')(React, NS);
+});
+const { KeyMap, LayerStack } = NS;
+const KICK_KIT = [
+  { id: 'sub', name: 'Kick sub', source: 'Synth', lo: 36, hi: 36, velLo: 1, velHi: 127, root: 36 },
+  { id: 'top', name: 'Kick mid-high', source: 'Sample', lo: 36, hi: 36, velLo: 1, velHi: 127 },
+  { id: 'sn', name: 'Snare', source: 'Sample', lo: 38, hi: 38, velLo: 1, velHi: 127 },
+  { id: 'ch', name: 'Closed Hat', source: 'Sample', lo: 42, hi: 42, velLo: 1, velHi: 127 },
+  { id: 'oh', name: 'Open Hat', source: 'Sample', lo: 46, hi: 46, velLo: 1, velHi: 127 },
+];
+const FILTER = (mode, cut) => ({ type: 'Filter', params: [
+  { id: 'mode', label: 'Mode', value: mode, options: ['LP', 'HP', 'BP'], summary: true },
+  { id: 'cut', label: 'Cutoff', value: cut, min: 20, max: 20000, default: 1000, unit: 'Hz', log: true, summary: true },
+  { id: 'res', label: 'Reso', value: 10, min: 0, max: 100, default: 0, unit: '%' },
+  { id: 'slope', label: 'Slope', value: '24 dB', options: ['12 dB', '24 dB'] },
+] });
+const KICK_LAYERS = [
+  { id: 'sub', name: 'Kick sub', source: 'Synth', detail: 'Sine · 48 Hz · pitch env 120 ms', level: -3,
+    params: [
+      { id: 'wave', label: 'Wave', value: 'Sine', options: ['Sine', 'Triangle'] },
+      { id: 'freq', label: 'Pitch', value: 48, min: 20, max: 200, default: 48, unit: 'Hz', log: true },
+      { id: 'penv', label: 'Pitch env', value: 120, min: 0, max: 500, default: 80, unit: 'ms' },
+      { id: 'pamt', label: 'Env amt', value: 60, min: 0, max: 100, default: 50, unit: '%' },
+      { id: 'decay', label: 'Decay', value: 380, min: 20, max: 2000, default: 300, unit: 'ms', log: true },
+    ],
+    modules: [{ id: 'f', ...FILTER('LP', 120) }, { id: 's', type: 'Saturate', params: [
+      { id: 'drive', label: 'Drive', value: 18, min: 0, max: 100, default: 0, unit: '%', summary: true },
+      { id: 'mix', label: 'Mix', value: 100, min: 0, max: 100, default: 100, unit: '%' },
+    ] }] },
+  { id: 'top', name: 'Kick mid-high', source: 'Sample', detail: 'kick_top.wav', level: -6,
+    waveform: { kind: 'kick', label: 'kick_top.wav', showDisplayToggle: false },
+    params: [
+      { id: 'mode', label: 'Play', value: 'One-shot', options: ['One-shot', 'Gated'] },
+      { id: 'start', label: 'Start', value: 0, min: 0, max: 100, default: 0, unit: '%' },
+      { id: 'pitch', label: 'Pitch', value: 0, min: -24, max: 24, default: 0, unit: 'st', bipolar: true },
+      { id: 'fade', label: 'Fade out', value: 40, min: 0, max: 500, default: 20, unit: 'ms' },
+    ],
+    modules: [{ id: 'f', ...FILTER('HP', 120) }, { id: 'g', type: 'Gain', params: [
+      { id: 'gain', label: 'Gain', value: 2, min: -24, max: 24, default: 0, unit: 'dB', bipolar: true, summary: true },
+    ] }] },
+];
+function LayeredKick() {
+  const [sel, setSel] = React.useState('sub');
+  const [layers, setLayers] = React.useState(KICK_LAYERS);
+  const isKick = sel === 'sub' || sel === 'top';
+  return <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+    <KeyMap title="Layered kick · drum kit" zones={KICK_KIT} selectedId={sel} onSelect={setSel} lowNote={33} highNote={50} gridHeight={110} />
+    {isKick && <LayerStack subtitle="Kick · 36 C2" layers={layers} selectedId={sel} onSelect={setSel} onChange={setLayers} />}
+  </div>;
+}
+const SPLIT = [
+  { id: 'kick', name: '808 Kick', source: 'Patch', lo: 24, hi: 35, velLo: 1, velHi: 127, root: 24 },
+  { id: 'bass', name: 'TB-303 Bass', source: 'Patch', lo: 36, hi: 59, velLo: 1, velHi: 127, root: 48 },
+  { id: 'ss', name: 'Strings soft', source: 'Sample', lo: 60, hi: 84, velLo: 1, velHi: 95, root: 60 },
+  { id: 'sh', name: 'Strings hard', source: 'Sample', lo: 60, hi: 84, velLo: 96, velHi: 127, root: 60 },
+  { id: 'kit', name: 'Drum kit', source: 'Kit', lo: 85, hi: 96, velLo: 1, velHi: 127 },
+];
+const KIT = [
+  { id: 'k', name: 'Kick', lo: 36, hi: 36, velLo: 1, velHi: 127 },
+  { id: 'ss', name: 'Snare soft', lo: 38, hi: 38, velLo: 1, velHi: 95 },
+  { id: 'sh', name: 'Snare hard', lo: 38, hi: 38, velLo: 96, velHi: 127 },
+  { id: 'ch', name: 'Closed Hat', lo: 42, hi: 42, velLo: 1, velHi: 127 },
+  { id: 'oh', name: 'Open Hat', lo: 46, hi: 46, velLo: 1, velHi: 127 },
+];
+function App() {
+  const [zones, setZones] = React.useState(SPLIT);
+  return <div className="stack">
+    <KeyMap title="Key map · patches and samples" zones={zones} onChange={setZones} lowNote={24} highNote={96} gridHeight={150} />
+    <LayeredKick />
+    <KeyMap title="Reference kit · prepared" editable={false} zones={KIT} lowNote={33} highNote={50} gridHeight={90} />
+  </div>;
+}
+ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+</script></body></html>

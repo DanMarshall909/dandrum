@@ -1,0 +1,45 @@
+<!-- @dsCard group="Das Sampler" viewport="1000x360" name="Reuse: synth & effect panels" subtitle="Same components on a future synth filter and an echo effect — illustrative, not products" -->
+<!doctype html><html><head><meta charset="utf-8"><title>Dandrum component reuse</title><link rel="stylesheet" href="../../styles.css">
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="../../_ds_bundle.js"></script>
+<script src="../../tools/dev-bundle-fallback.js"></script>
+<style>body{margin:0;background:var(--surface-window);padding:16px}</style>
+</head><body><div id="root"></div>
+<script type="text/babel">
+const { Panel, Knob, Slider, SegmentedControl, Switch, Meter, SectionHeading } = window.DandrumDesignSystem_3c2eab;
+function App() {
+  const [mode, setMode] = React.useState('lp');
+  const [sync, setSync] = React.useState('1/8');
+  const [v, setV] = React.useState({ cut: 0.55, res: 0.3, drive: 0.2, env: 0.6, time: 0.4, fb: 0.45, mix: 0.3, tone: 0.6 });
+  const set = (k) => (x) => setV((o) => ({ ...o, [k]: x }));
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 8, maxWidth: 968 }}>
+      <div style={{ font: '500 12px var(--font-ui)', color: 'var(--text-tertiary)' }}>Illustrative only — shows the component language on other Dandrum plugin types. These are not designed products.</div>
+      <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1.1fr) minmax(0,1fr)', gap: 4 }}>
+        <Panel title="Filter" tag="Synth · example" actions={<SegmentedControl compact value={mode} onChange={setMode} options={[{ id: 'lp', label: 'LP' }, { id: 'bp', label: 'BP' }, { id: 'hp', label: 'HP' }]} />}>
+          <div style={{ display: 'flex', alignItems: 'flex-start', gap: 4 }}>
+            <Knob size="lg" label="Cutoff" value={v.cut} onChange={set('cut')} valueText={Math.round(20 * Math.pow(1000, v.cut)) + ''} unit="Hz" modulations={[{ slot: 'A', depth: 0.22, live: 0.5 }, { slot: 'C', depth: -0.1 }]} />
+            <Knob size="lg" label="Resonance" value={v.res} onChange={set('res')} valueText={Math.round(v.res * 100) + ''} unit="%" />
+            <Knob label="Drive" value={v.drive} onChange={set('drive')} valueText={(v.drive * 24).toFixed(1)} unit="dB" hostAutomated />
+            <Knob label="Env amt" bipolar value={v.env} onChange={set('env')} valueText={Math.round((v.env - 0.5) * 200) + ''} unit="%" modulations={[{ slot: 'B', depth: 0.15 }]} />
+          </div>
+        </Panel>
+        <Panel title="Echo" tag="Effect · example" actions={<Switch compact label="Sync" on />}>
+          <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              <SegmentedControl compact value={sync} onChange={setSync} options={['1/4', '1/8', '1/8d', '1/16']} />
+              <Slider label="Feedback" value={v.fb} onChange={set('fb')} valueText={Math.round(v.fb * 100) + '%'} modulations={[{ slot: 'A', depth: 0.2 }]} />
+              <Slider label="Tone" bipolar value={v.tone} onChange={set('tone')} valueText={v.tone > 0.5 ? 'Bright' : 'Dark'} />
+            </div>
+            <Knob label="Mix" value={v.mix} onChange={set('mix')} valueText={Math.round(v.mix * 100) + ''} unit="%" />
+            <Meter levels={[-14, -16]} peak={[-9, -10]} label="OUT" />
+          </div>
+        </Panel>
+      </div>
+    </div>
+  );
+}
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script></body></html>

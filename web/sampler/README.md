@@ -11,8 +11,7 @@ editing. CMake embeds the checked-in `dist/` assets. The packaged plugin needs
 no development server, runtime compiler, or CDN.
 
 The visual `KeyMap`, `LayerStack`, and `OutputBusses` components named in
-`openspec/changes/add-renderer-independent-plugin-ui/design.md` live in the
-separate `Dandrum Design System (1).zip` export. This app currently supplies
+`openspec/changes/add-renderer-independent-plugin-ui/design.md` are preserved in
+`docs/design-system/reference/`. This app currently supplies
 the React host integration and capability-aware fallback presentation. Replace
-its presentation components with the verified export when that archive is
-available; retain the tested prepared-data and command lifetimes.
+its presentation components with the verified export from that imported reference; retain the tested prepared-data and command lifetimes.

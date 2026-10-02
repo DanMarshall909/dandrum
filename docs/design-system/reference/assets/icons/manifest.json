@@ -1,0 +1,145 @@
+{
+ "viewBox": "0 0 24 24",
+ "stroke": "#EEEBE3",
+ "strokeWidth": 1.5,
+ "sizes": [
+  12,
+  14,
+  16,
+  20
+ ],
+ "icons": [
+  {
+   "name": "reload",
+   "file": "dd-icon-reload.svg"
+  },
+  {
+   "name": "warning",
+   "file": "dd-icon-warning.svg"
+  },
+  {
+   "name": "error",
+   "file": "dd-icon-error.svg"
+  },
+  {
+   "name": "ok",
+   "file": "dd-icon-ok.svg"
+  },
+  {
+   "name": "info",
+   "file": "dd-icon-info.svg"
+  },
+  {
+   "name": "lock",
+   "file": "dd-icon-lock.svg"
+  },
+  {
+   "name": "chevron-down",
+   "file": "dd-icon-chevron-down.svg"
+  },
+  {
+   "name": "chevron-right",
+   "file": "dd-icon-chevron-right.svg"
+  },
+  {
+   "name": "chevron-left",
+   "file": "dd-icon-chevron-left.svg"
+  },
+  {
+   "name": "close",
+   "file": "dd-icon-close.svg"
+  },
+  {
+   "name": "plus",
+   "file": "dd-icon-plus.svg"
+  },
+  {
+   "name": "minus",
+   "file": "dd-icon-minus.svg"
+  },
+  {
+   "name": "more",
+   "file": "dd-icon-more.svg"
+  },
+  {
+   "name": "modulate",
+   "file": "dd-icon-modulate.svg"
+  },
+  {
+   "name": "host",
+   "file": "dd-icon-host.svg"
+  },
+  {
+   "name": "choke",
+   "file": "dd-icon-choke.svg"
+  },
+  {
+   "name": "alternate",
+   "file": "dd-icon-alternate.svg"
+  },
+  {
+   "name": "layers",
+   "file": "dd-icon-layers.svg"
+  },
+  {
+   "name": "reverse",
+   "file": "dd-icon-reverse.svg"
+  },
+  {
+   "name": "loop",
+   "file": "dd-icon-loop.svg"
+  },
+  {
+   "name": "one-shot",
+   "file": "dd-icon-one-shot.svg"
+  },
+  {
+   "name": "gate",
+   "file": "dd-icon-gate.svg"
+  },
+  {
+   "name": "slice",
+   "file": "dd-icon-slice.svg"
+  },
+  {
+   "name": "keyboard",
+   "file": "dd-icon-keyboard.svg"
+  },
+  {
+   "name": "folder",
+   "file": "dd-icon-folder.svg"
+  },
+  {
+   "name": "file-missing",
+   "file": "dd-icon-file-missing.svg"
+  },
+  {
+   "name": "reset",
+   "file": "dd-icon-reset.svg"
+  },
+  {
+   "name": "midi",
+   "file": "dd-icon-midi.svg"
+  },
+  {
+   "name": "pan",
+   "file": "dd-icon-pan.svg"
+  },
+  {
+   "name": "pitch",
+   "file": "dd-icon-pitch.svg"
+  },
+  {
+   "name": "level",
+   "file": "dd-icon-level.svg"
+  },
+  {
+   "name": "variation",
+   "file": "dd-icon-variation.svg"
+  },
+  {
+   "name": "settings",
+   "file": "dd-icon-settings.svg"
+  }
+ ]
+}

@@ -1,5 +1,7 @@
 ## Context
 
+The reviewed design export is preserved in [docs/design-system/reference](../../../docs/design-system/reference/). Its [maintained guide](../../../docs/design-system/README.md) records visual decisions, provenance and adaptation rules. The sampling and original UI proposal histories are integrated into main at `0b99819`; this refresh updates design references without implementing a renderer.
+
 See [proposal.md](proposal.md) for scope and pinned evidence. The fetched sampler revision owns prepared sample metadata independently of source inputs and already supports shared/per-pad host controls. Its plugin UI is still embedded HTML with a browser-specific bridge and editor lifetime. No renderer-independent UI change exists at that revision, so this proposal introduces a separate follow-on change rather than altering the archived engine contract.
 
 The revised export broadens the visual vocabulary to key maps, layered synth/sample/patch sources, module chains, sends and outputs. Those displays do not establish new engine capabilities. In particular, a sample map's round-robin alternatives are not simultaneous source layers, and arbitrary patch layering is not implied by drawing overlapping rectangles.
@@ -63,6 +65,27 @@ Keep one maintained semantic token source and generate CSS and a C++ token heade
 Use `editable=false` for prepared KeyMap interactions. Audit LayerStack/OutputBusses callbacks individually; a single exported prop is not proof that every structural action is disabled. Do not expose arbitrary module internals as controls. In-plugin topology changes remain prohibited by `plugin-integration`; a future external authoring product requires a separate change.
 
 The maintained kit's snare split is 63/64 and its controls include per-pad scopes. Use those live descriptors in acceptance fixtures. Never replace them with the export's 95/96 demo split, artificial layering, hardcoded module chains, simulated activity or claimed host modulation sources.
+
+### Concrete visual direction comes from the reviewed export
+
+Use warm brown surfaces (`#130F0C` through `#524437`), cream primary text
+(`#F2E6D3`) and the ember selection/action accent (`#E08A4E`). Preserve existing
+`vermilion` token identifiers. Barlow Semi Condensed labels, Barlow titles and
+JetBrains Mono values follow the supplied typography; obtain font binaries and
+license notices before production packaging because neither is in the export.
+
+Knobs have a pointer-free cap, a 270-degree value arc and an editable value popup
+on hover, focus or drag. Resolve the old handoff's pointer/permanent-label examples
+in favour of these current brand rules. Use collapsible panels, prepared-detail
+rollouts, a 2-pixel cream focus ring with a 2-pixel gap, and the supplied 1200 x 800
+and 820 x 560 layouts. Flat fills and dynamic drawing supply the interface;
+waveforms, labels, activity and meter values are never baked into assets.
+
+Keep the supplied HTML/CDN/Babel previews as design references. They are not the
+production asset pipeline. The imported CSS and C++ token outputs do not complete
+the planned shared generator, and the new display views still require native
+component specifications. Engine metadata and the capability/external-authoring
+rules above determine which interactions a production editor can expose.
 
 ### Telemetry has explicit work and memory bounds
 
