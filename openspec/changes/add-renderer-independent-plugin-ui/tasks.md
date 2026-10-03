@@ -195,6 +195,20 @@ record retains failed runs and evidence limits. Worker/session/backlog,
 processor and live-renderer integration remain pending; 6.3 stays unchecked.
 No callback timing or automatic structural runtime completion is claimed.
 
+Task 6.3 worker progress (2026-10-03): one actual off-audio worker consumes
+copied PCM and owns four fixed session slots, each with one outstanding plus
+one replaceable latest packet. Tests prove signed measurements, acknowledgement
+identities, visibility/reload retirement, bounded recent backlog, overflow
+recovery, generation/selection races, gap retention and stop-aware teardown.
+Final focused coverage executes 139/139 implementation records; ten copied
+faults fail named assertions after repairing an initially surviving channel-union
+fault. Full builds pass, with CTest 29/29 native and 54/54 Web without skips.
+The live analysis record distinguishes component evidence from pending processor
+capture, shared commands/adapters, actual live views, engine-output parity,
+callback instrumentation and timing. The service is linked only to its registered
+test target. Tasks 6.3/6.4 stay unchecked; no structural runtime completion is
+claimed.
+
 ## 7. Capability-Aware Sampler Composition
 
 - [ ] 7.1 Implement prepared KeyMap inspection/audition in both renderers; tests must prove actual velocity ranges, alternate/layer distinction, capability-gated structural commands with automatic rebuilding, and host-driven note feedback.

@@ -157,6 +157,17 @@ discard partial accumulation. The first complete result after a reset declares
 a gap; subsequent results resume the hop. This numeric prerequisite does not
 establish worker delivery, processor integration or live renderer completion.
 
+The initial live service has one polling worker, four editor slots and one
+outstanding plus one replaceable latest packet per slot. Active polling uses
+10 ms intervals. Each iteration drains at most 64 chunks through the sole
+consumer and retains a recent suffix of at most 2048 input frames, permitting
+at most eight window measurements including existing overlap. Trimming resets
+partial accumulation and its gap survives packet coalescing. Producer overflow
+discards the queued obsolete batch before fresh contiguous capture resumes.
+Worker admission and publication both validate the current generation and
+selection; session changes may occur while analysis is held. Hidden/closed
+demand disables capture without moving producer indexes or reclaiming storage.
+
 ### Make editor choice a build boundary
 
 Separate common UI services, native components, and web transport/resources into build targets. Use an editor factory/configuration value independent of instrument data; remove compulsory HTML from the neutral demo description. A native-only build disables browser features and requires neither WebView SDKs/WebKit nor Node. The web configuration compiles React/CSS/fonts/icons ahead of time and embeds local assets via the resource provider. No production CDN scripts, runtime Babel or development server.

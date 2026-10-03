@@ -163,6 +163,16 @@ target_compile_definitions(dandrum-plugin-live-analysis-test PRIVATE JUCE_USE_CU
 target_link_libraries(dandrum-plugin-live-analysis-test PRIVATE juce::juce_dsp dl pthread m)
 add_test(NAME cxx-plugin-live-analysis COMMAND dandrum-plugin-live-analysis-test)
 
+add_executable(dandrum-plugin-live-service-test
+    tests/cpp/PluginLiveServiceTest.cpp
+    src/juce-plugin/InstrumentUiLiveService.cpp
+    src/juce-plugin/InstrumentUiLiveAnalysis.cpp
+    src/juce-plugin/InstrumentUiSpectrumAnalysis.cpp)
+target_include_directories(dandrum-plugin-live-service-test PRIVATE src/juce-plugin)
+target_compile_definitions(dandrum-plugin-live-service-test PRIVATE JUCE_USE_CURL=0 JUCE_WEB_BROWSER=0)
+target_link_libraries(dandrum-plugin-live-service-test PRIVATE juce::juce_dsp dl pthread m)
+add_test(NAME cxx-plugin-live-service COMMAND dandrum-plugin-live-service-test)
+
 juce_add_console_app(dandrum-drum-machine-demo PRODUCT_NAME "Dandrum Drum Machine Demo")
 target_sources(dandrum-drum-machine-demo PRIVATE
     src/juce-wrapper/Cli.cpp

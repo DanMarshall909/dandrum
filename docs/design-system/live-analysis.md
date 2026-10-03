@@ -4,12 +4,12 @@ Task 6.3 remains in progress. Its capture foundation is
 `InstrumentUiLiveCapture`: a processor-owned queue for one master-output tap,
 at most two selected channels, 64 chunks and at most 256 frames per chunk.
 The queue owns copied PCM; no frame retains a pointer to a host buffer, engine
-or editor. This foundation is not yet connected to `processBlock`, an analysis
-worker or either renderer's subscriptions.
+or editor. The scheduled service described below now connects this queue to
+an analysis worker. Processor output and renderer subscriptions remain pending.
 
 ## Capture contract
 
-One audio producer writes the queue and one future analysis worker consumes it.
+One audio producer writes the queue and one analysis worker consumes it.
 One off-audio controller writes the requested channel mask. Zero disables
 capture, while unsupported mask bits are rejected without changing selection.
 The callback-facing method performs fixed-storage copies and lock-free atomic
@@ -28,7 +28,7 @@ stream's time origin. Channel selection changes reset continuity.
 
 The atomic selection revision also changes when hide/show occurs entirely
 between callbacks. Queued frames retain the revision under which they were
-captured, allowing the future worker to discard obsolete data without resetting
+captured, allowing the worker to discard obsolete data without resetting
 queue storage concurrently with audio.
 
 ## Behavioral evidence
@@ -64,7 +64,7 @@ sampler/303 renderer regressions. Strict OpenSpec validation and the unchanged
 main-spec coverage gate pass; no delta scenario is synced or marked complete.
 
 Raw commands, revisions, input hashes, RED/GREEN logs, gcov and copied faults
-are retained in `/tmp/dandrum-live-analysis-evidence`. Scope/FFT processing,
+are retained in `/tmp/dandrum-live-analysis-evidence`. At that increment, scope/FFT processing,
 gap-window resets, session delivery, processor integration, actual renderer
 consumption, signed engine-output parity and callback timing remain pending.
 This component test does not prove those system-level outcomes. Full task 6.3,
@@ -120,8 +120,66 @@ strict OpenSpec validation and the unchanged main-spec coverage gate pass.
 Commands, input hashes, failed and successful runs, gcov and copied faults are
 retained in `/tmp/dandrum-live-worker-evidence`.
 
-Task 6.3 stays unchecked. The analyzer is an unwired prerequisite: the sole
+At the numeric increment, the analyzer was an unwired prerequisite: the sole
 analysis worker, bounded session delivery, backlog policy, subscriptions,
 processor capture and actual live renderer consumers remain pending. Neither
 component tests nor the prepared-spectrum runtime prove signed engine-output
 parity, live callback safety, stress timing or automatic structural rebuilding.
+
+## Scheduled worker and bounded delivery
+
+`InstrumentUiLiveService` owns one analysis worker and four fixed session slots.
+Only the audio producer calls `capture` and `beginStream`; the latter requires
+a safe preparation boundary. All subscription, status and delivery operations
+are off audio. Visible sessions contribute their selected-channel union;
+hidden or closed sessions stop contributing demand. Generation changes retire
+sessions and their pending results. Result packets own their numeric arrays.
+
+Each session permits one unacknowledged packet and one replaceable latest
+packet. Acknowledgements must match session, generation and sequence. Slow
+consumers therefore retain at most eight pending payloads across four sessions,
+and resume at current coordinates instead of replaying every earlier window.
+This service bound does not yet prove bounded browser transport queues.
+
+The worker polls every 10 ms while subscribed and waits when there is no demand.
+Each batch drains at most 64 chunks and keeps at most 2048 recent input frames,
+with at most eight FFT measurements including previous overlap. Trimming resets
+partial accumulation; its gap survives coalescing within a batch and across
+unsent packets. Detected producer overflow discards queued obsolete history.
+Fresh data must then fill a complete contiguous window. Generation and selection
+are checked after a potentially stalled batch admission, and the demand revision
+is checked again before publication. Queue storage is never reset by the worker.
+
+`cxx-plugin-live-service` runs the real capture, FFT and scheduled worker. It
+asserts signed scope extrema, independent stereo dBFS/frequency values, owned
+retained packets, current frame bounds after stalls, bounded subscription and
+work admission, overflow recovery, hide/show between callbacks, generation
+changes before analysis and after completed FFT, and retained gaps. One-frame
+chunks separately prove complete-window accumulation without padding; that test
+does not establish sustained realtime throughput for one-frame host callbacks.
+Stop-aware barriers hold the actual worker. Off-audio destruction stops and
+joins it before reclaiming its queue and sessions.
+
+The successfully compiled initial stub failed subscription admission. The
+unbounded implementation later failed the backlog-gap assertion before the
+bounded behavior was implemented. Final focused GCC 11 gcov executes **139/139**
+service implementation source records; the declarative header emits no source
+record. Ten copied faults compile and fail named behavioral assertions. An
+earlier channel-union fault survived because a later stereo subscription hid
+it; the independent two-subscriber assertion now rejects that fault. Failed
+runs and original fixtures remain alongside the repaired evidence. These are
+execution coverage and focused fault calibration, not exhaustive branch or
+mutation coverage.
+
+The service is registered in CTest for both configurations and currently linked
+only to its component test. Actual processor capture, shared commands/adapters,
+native/Web live views, signed engine-output parity, callback instrumentation and
+timing remain pending. Task 6.3 and the broader resource/stress and structural
+runtime tasks stay unchecked. Raw commands, input hashes, coverage and faults
+are retained in `/tmp/dandrum-live-service-evidence`.
+
+Both complete builds pass. Final CTest passes **29/29 native** and **54/54 Web**,
+without skips, including existing sampler and 303 runtime regressions. Strict
+OpenSpec validation and the unchanged main-spec coverage gate pass. These wider
+regressions do not turn this standalone service into processor or live-view
+integration proof.
