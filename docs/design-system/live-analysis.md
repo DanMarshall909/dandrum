@@ -223,7 +223,69 @@ Both complete builds pass; CTest passes **30/30 native** and **55/55 Web** witho
 skips. This proves normal processor capture and held-worker independence. The
 fixture constructs the real processor directly; original native/Web live-view
 factory parity, shared adapters and bounded browser delivery remain pending.
-Concurrent reload/reprepare identity and safe reader retirement also remain
-pending: the existing fixed-delay engine reclamation is not an ownership proof.
-The acknowledged handoff in task 9.2 precedes that concurrent integration test.
+At that increment, concurrent reload/reprepare identity and safe reader
+retirement remained pending: fixed-delay reclamation was not an ownership proof.
+The handoff increment below supplies a prerequisite for the concurrent identity
+test; that live identity integration is still pending.
 Tasks 6.3/6.4, structural runtime and the full sampler/303 goal remain incomplete.
+
+## Acknowledged engine handoff
+
+Existing engine installation, host reprepare and state restoration now close a
+lock-free callback reader gate. A callback uses one bounded atomic acquisition;
+after closure, it clears every output and returns before reading the engine or
+slot storage. A reader acquired before closure retains access through its whole
+callback. The replacement thread waits for the acknowledged count, changes the
+engine/slots and destroys the retired engine off audio, then reopens admission.
+The processor destructor also closes admission before engine cleanup. Hosts
+must still stop issuing callbacks before deleting the processor object.
+
+Linux registered baseline and held-reader tests use the actual processor and
+Rust engine. The maintained gain fixture produces literal `+0.25` before
+replacement and `-0.5` afterward, with the same public host object and count.
+The held test stalls return from an actual completed render. Reload, reprepare
+and state restoration remain pending while that reader is held; later
+1/64/512/2048-frame callbacks clear four sentinel-filled lanes to bit-exact zero
+without entering the renderer. Explicit reader release allows exactly one
+retirement and resumed signed audio. Quiescent replacement finishes without
+further callbacks. The original held-reader regression failed before production
+changes because the old engine was retired while its reader was held.
+
+The test's deliberate held-render sleep only controls the observation schedule;
+it does not measure real-time performance. Thread-local instrumentation covers
+C++ `new`, directly linked mutex acquisition and FFI preparation/destruction,
+with zero observed callback operations on the healthy paths. It does not cover
+every Rust allocation, OS operation or DSP branch. The callback count is an
+ownership mechanism, not permission for concurrent DSP callbacks on one
+processor. Normal host callback serialization remains required.
+
+Final focused gcov executes **36/36 changed executable processor records**;
+whole-processor and exhaustive branch coverage are not claimed. A copied healthy
+processor passes, while nine compiled/linked faults fail named assertions:
+fixed-delay retirement, missing handoff in each of the three replacement paths,
+failure to reopen admission, failure to restore mute, and actual callback
+allocation, direct mutex acquisition and FFI destruction calls. The three
+callback faults produce positive corresponding counters. Unsafe retirement
+faults fail at the real destruction request before freeing borrowed storage.
+An initial null-pointer observer error was corrected and the entire matrix
+rerun; that failed calibration is retained and not credited as a fault kill.
+Commands, input hashes, RED/GREEN/refactor runs, raw gcov, copied sources and
+fault evidence are retained in `/tmp/dandrum-engine-handoff-evidence`.
+
+Both complete builds pass, with **32/32 native** and **57/57 Web** CTest cases
+passing without skips. The Web final build uses serial execution after a
+parallel repeat hit duplicate JUCE Linux subprocess-helper generation; the
+failure and successful full retry are retained. Strict OpenSpec, unchanged
+main-spec coverage mapping and local document links pass. Existing sampler/303
+runtime regressions remain separate from the pending structural UI and live
+view integration proof.
+
+This is partial task 9.2 evidence. Reload still prepares before installation;
+the processor-owned structural admission, one-job coordinator, immediate mute
+before validation, editor-independent completion, failure recovery and host
+surface compatibility checks remain pending. Existing off-audio preset writes
+and reentrant engine writers also need the later serialization/live-binding
+work; this increment does not make every engine operation concurrency-safe.
+Shutdown with pending structural work and concurrent live generation identity
+are not covered by these held-reader cases. No structural acceptance case or
+task is marked complete, and no delta spec is synced.

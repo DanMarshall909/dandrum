@@ -6,10 +6,11 @@ resumes the edited or last working configuration. No draft, Apply, confirmation
 or unapplied-changes workflow is involved. The DAW transport continues.
 
 These are acceptance test specifications for the pending implementation in
-[tasks.md, section 9](tasks.md). They are not passing executable tests. Existing
-reload tests do not prove immediate muting, acknowledged ownership or automatic
-structural editing. Implement each case through RED → GREEN before claiming it
-complete, and map proving tests in `spec-tests.map` when syncing these delta specs.
+[tasks.md, section 9](tasks.md). None of S1–S13 is complete. The ownership
+prerequisite below has executable evidence; existing reload tests alone do not
+prove immediate muting or automatic structural editing. Implement each case
+through RED → GREEN before claiming it complete, and map proving tests in
+`spec-tests.map` when syncing these delta specs.
 
 ## Fixtures and observation
 
@@ -188,4 +189,24 @@ admission/rejection and Web transport, and
 `tests/cpp/NativeEditorSmokeTest.cpp` plus the real WebView runtime for UI state.
 Extract a focused structural-rebuild suite if concurrency setup would obscure
 the existing suites; register it with CTest before claiming executable coverage.
-Current test names and coverage remain baseline evidence only.
+
+### Ownership prerequisite implemented separately
+
+Linux CTest cases `cxx-plugin-engine-handoff-baseline` and
+`cxx-plugin-engine-handoff` use the real processor and Rust engine. They cover
+normal reload, host reprepare and state restore, before structural commands are
+connected. The held-reader test calls the actual renderer, then stalls its
+return beyond the former five-millisecond delay. Replacement must wait off
+audio and must not request destruction of that engine. Later 1/64/512/2048-frame
+callbacks clear four sentinel-filled lanes to exact zero, without engine render
+entry or observed C++ allocation, directly linked mutex acquisition, or FFI
+preparation/destruction. Explicit reader release allows exactly one retirement;
+resumed output changes from literal `+0.25` to `-0.5` and retains the fixture's
+host parameter object/count. Quiescent replacement needs no further callback.
+
+These tests supply part of S3/S4's ownership evidence. They do not submit a
+structural edit, hold structural validation, prove autonomous jobs or recovery,
+cover every allocator/OS operation, load a DAW, or complete S3/S4. The test's
+held-render sleep is a deterministic observation seam, not production handoff
+or audio timing evidence. Focused coverage and deliberate retirement and
+callback faults are recorded in [live-analysis.md](../../../docs/design-system/live-analysis.md).

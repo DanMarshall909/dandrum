@@ -90,7 +90,7 @@ The first implementation accepts only edits compatible with the existing exposed
 
 The rebuild coordinator outlives editor sessions. Closing/reopening an editor cannot strand a rebuild or leave output muted; a new editor queries processor-owned status. Serialize ownership changes with explicit reload, file-watcher replacement, state restoration and host preparation; those paths must not independently retire an engine that the coordinator retains. Reload uses the same muted preparation/handoff path. Processor shutdown waits for and reclaims worker/engine resources off the audio callback. Copied prepared documents and retained analysis samples remain safe, and obsolete generation results cannot replace the activated document.
 
-The current reload path prepares before installation and uses a fixed delay before old-engine destruction. Its existing tests are baseline evidence, not proof of this new handoff or immediate-muted-rebuild contract. [Structural acceptance tests](structural-authoring-acceptance-tests.md) define the additional behavioral oracles and required executable regressions.
+The reload path still prepares before installation. Engine installation, host reprepare and state restoration now close a lock-free callback reader gate and wait off audio for existing readers before changing engine/slot storage or retiring the old engine. Their former fixed-delay retirement is removed. Registered processor tests hold a real completed render while these operations wait, then verify silent later callbacks and signed resumed output. This is ownership-handoff evidence; immediate muting before structural validation, autonomous job completion, recovery and renderer commands remain pending. [Structural acceptance tests](structural-authoring-acceptance-tests.md) distinguish this partial evidence from the additional required regressions.
 
 The maintained kit's snare split is 63/64 and its controls include per-pad scopes. Use those live descriptors in acceptance fixtures. Never replace them with the export's 95/96 demo split, artificial layering, hardcoded module chains, simulated activity or claimed host modulation sources.
 
@@ -174,9 +174,9 @@ controls and numeric delivery are off audio; ordinary host automation retains
 its normal binding. Processor-fixture tests cover actual rates, signed PCM,
 window coordinates and independence from a stalled worker. Shared adapters,
 live renderer consumers and bounded browser transport remain pending. Concurrent
-reload/reprepare identity must use the acknowledged engine handoff specified
-above; pointer exchange plus the existing fixed delay is not proof of reader
-safety. See the [live analysis evidence](../../../docs/design-system/live-analysis.md)
+reload/reprepare identity still needs its own integration test using the
+acknowledged handoff above. The former pointer exchange plus fixed delay was
+not proof of reader safety. See the [live analysis evidence](../../../docs/design-system/live-analysis.md)
 for the measured callback boundaries and outstanding integration gates.
 
 ### Make editor choice a build boundary

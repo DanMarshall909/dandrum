@@ -12,6 +12,7 @@
 #include <memory>
 #include <set>
 #include <string>
+#include <thread>
 #include <utility>
 #include <vector>
 
@@ -384,8 +385,50 @@ DandrumAudioProcessor::DandrumAudioProcessor (
         instrumentFileWatcher.watchFile (loadedInstrument.sourceFile);
 }
 
+DandrumAudioProcessor::EngineReaderGuard::EngineReaderGuard (std::atomic<std::uint32_t>& state)
+    : access (state)
+{
+    auto observed = access.load (std::memory_order_relaxed);
+    acquired = (observed & engineAccessClosed) == 0
+        && access.compare_exchange_strong (observed, observed + 1,
+                                           std::memory_order_acquire, std::memory_order_relaxed);
+}
+DandrumAudioProcessor::EngineReaderGuard::~EngineReaderGuard()
+{
+    if (acquired) access.fetch_sub (1, std::memory_order_release);
+}
+void DandrumAudioProcessor::waitForEngineReaders() const
+{
+    // The closed bit prevents new acquisitions. The count, rather than a
+    // elapsed delay or another callback, acknowledges every previous reader.
+    while (engineAccess.load (std::memory_order_acquire) != engineAccessClosed)
+        std::this_thread::sleep_for (std::chrono::milliseconds (1));
+}
+DandrumAudioProcessor::EngineAccessPause::EngineAccessPause (DandrumAudioProcessor& processor)
+    : owner (processor)
+{
+    ownsGate = (owner.engineAccess.fetch_or (engineAccessClosed, std::memory_order_acq_rel)
+                & engineAccessClosed) == 0;
+    if (ownsGate)
+    {
+        previousMute = owner.isMuted();
+        owner.setMuted (true);
+        owner.waitForEngineReaders();
+    }
+}
+DandrumAudioProcessor::EngineAccessPause::~EngineAccessPause()
+{
+    if (ownsGate)
+    {
+        owner.setMuted (previousMute);
+        owner.engineAccess.store (0, std::memory_order_release);
+    }
+}
+
 DandrumAudioProcessor::~DandrumAudioProcessor()
 {
+    engineAccess.fetch_or (engineAccessClosed, std::memory_order_acq_rel);
+    waitForEngineReaders();
     soundLabController.reset();
     if (pendingUiReload.valid())
     {
@@ -428,6 +471,7 @@ void DandrumAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBloc
     if (! instrumentLoaded)
         return;
 
+    const EngineAccessPause handoff (*this);
     const auto blockSize = static_cast<std::size_t> (juce::jmax (1, samplesPerBlock));
     if (auto* activeKernel = kernel.load (std::memory_order_relaxed))
     {
@@ -512,8 +556,7 @@ void DandrumAudioProcessor::installPreparedEngine (
     readInstrumentIdentity (yamlText, instrumentId, schemaVersion);
 
     replacementState.store (static_cast<int> (ReplacementState::Muted), std::memory_order_relaxed);
-    suspendProcessing (true);
-    setMuted (true);
+    const EngineAccessPause handoff (*this);
 
     auto* previousKernel = kernel.exchange (candidateKernel, std::memory_order_acq_rel);
 
@@ -525,12 +568,7 @@ void DandrumAudioProcessor::installPreparedEngine (
     loadedInstrument.presetSchemaVersion = schemaVersion;
     preparePublicParameterSlots (descriptors, reloadWarning, preferCurrentSlotValues);
 
-    juce::Thread::sleep (5);
-
     dandrum_kernel_destroy (previousKernel);
-
-    setMuted (false);
-    suspendProcessing (false);
     replacementState.store (static_cast<int> (ReplacementState::Running), std::memory_order_relaxed);
 }
 
@@ -811,6 +849,12 @@ void DandrumAudioProcessor::deliverEditorNoteIntent (
 void DandrumAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::MidiBuffer& midiMessages)
 {
     juce::ScopedNoDenormals noDenormals;
+    const EngineReaderGuard reader (engineAccess);
+    if (! reader.acquired)
+    {
+        renderSilence (buffer);
+        return;
+    }
 
     const auto numSamples = buffer.getNumSamples();
     const auto liveGeneration = parameterSurfaceGeneration.load (std::memory_order_relaxed);
@@ -1166,12 +1210,11 @@ void DandrumAudioProcessor::setStateInformation (const void* data, int sizeInByt
     }
 
     const std::lock_guard<std::recursive_mutex> reloadLock (reloadMutex);
+    const EngineAccessPause handoff (*this);
     parameters.replaceState (state);
 
     if (candidateKernel != nullptr)
     {
-        suspendProcessing (true);
-        setMuted (true);
         auto* previousKernel = kernel.exchange (candidateKernel, std::memory_order_acq_rel);
 
         juce::String instrumentId;
@@ -1185,11 +1228,7 @@ void DandrumAudioProcessor::setStateInformation (const void* data, int sizeInByt
         preparePublicParameterSlots (restoreFile, &lastReloadWarning, true);
         restoreFile.deleteFile();
 
-        juce::Thread::sleep (5);
         dandrum_kernel_destroy (previousKernel);
-
-        setMuted (false);
-        suspendProcessing (false);
     }
     else if (instrumentLoaded)
     {

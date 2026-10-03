@@ -190,7 +190,7 @@ public:
     const juce::String& getLastReloadWarning() const noexcept;
 
     /// Current explicit replacement transaction phase for the editor/status
-    /// surface. The audio callback only reads the atomic mute flag.
+    /// surface. Audio acquires a bounded reader guard before engine access.
     juce::String replacementTransactionState() const;
 
     /// Number of web-editor MIDI events rejected because the fixed-capacity
@@ -224,6 +224,31 @@ public:
     InstrumentUiLiveService::Statistics getLiveAnalysisStatistics() const;
 
 private:
+    static constexpr std::uint32_t engineAccessClosed = 1U << 31;
+    static_assert (std::atomic<std::uint32_t>::is_always_lock_free);
+    // A successful bounded acquisition pins engine and slot storage for the
+    // whole callback. Releasing this guard only decrements an atomic count.
+    struct EngineReaderGuard final
+    {
+        explicit EngineReaderGuard (std::atomic<std::uint32_t>&);
+        ~EngineReaderGuard();
+        EngineReaderGuard (const EngineReaderGuard&) = delete;
+        EngineReaderGuard& operator= (const EngineReaderGuard&) = delete;
+        std::atomic<std::uint32_t>& access;
+        bool acquired = false;
+    };
+    // Off audio and under reloadMutex. Nested pauses cannot reopen an outer
+    // pause; only its owner publishes access again after mutation/cleanup.
+    struct EngineAccessPause final
+    {
+        explicit EngineAccessPause (DandrumAudioProcessor&);
+        ~EngineAccessPause();
+        EngineAccessPause (const EngineAccessPause&) = delete;
+        EngineAccessPause& operator= (const EngineAccessPause&) = delete;
+        DandrumAudioProcessor& owner;
+        bool ownsGate = false, previousMute = false;
+    };
+    void waitForEngineReaders() const;
     friend struct PluginConstructionTestProbe;
     /// Test-only direct inspection; subscription delivery is the production
     /// queue consumer and excludes this diagnostic path while active.
@@ -349,6 +374,7 @@ private:
     const InstrumentDemoConfiguration configuration;
     juce::AudioProcessorValueTreeState parameters;
     std::atomic<DandrumKernelInstrument*> kernel { nullptr };
+    std::atomic<std::uint32_t> engineAccess { 0 };
     bool instrumentLoaded = false;
     juce::String lastLoadError;
     juce::String lastPresetError;

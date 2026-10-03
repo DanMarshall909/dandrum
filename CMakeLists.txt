@@ -402,6 +402,27 @@ endif()
 add_test(NAME cxx-plugin-live-processor COMMAND dandrum-plugin-live-processor-test)
 set_tests_properties(cxx-plugin-live-processor PROPERTIES TIMEOUT 15)
 
+if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+    add_executable(dandrum-plugin-engine-handoff-test tests/cpp/PluginEngineHandoffTest.cpp)
+    target_include_directories(dandrum-plugin-engine-handoff-test PRIVATE src/juce-wrapper src/juce-plugin)
+    target_compile_definitions(dandrum-plugin-engine-handoff-test PRIVATE
+        DANDRUM_SOURCE_ROOT="${CMAKE_CURRENT_SOURCE_DIR}" JUCE_USE_CURL=0
+        JUCE_WEB_BROWSER=$<NOT:$<BOOL:${DANDRUM_NATIVE_ONLY}>>
+        JUCE_USE_WIN_WEBVIEW2=$<NOT:$<BOOL:${DANDRUM_NATIVE_ONLY}>>)
+    target_link_libraries(dandrum-plugin-engine-handoff-test PRIVATE
+        dandrum-sampler-plugin dandrum_engine juce::juce_audio_utils
+        juce::juce_recommended_config_flags juce::juce_recommended_warning_flags)
+    if(NOT DANDRUM_NATIVE_ONLY)
+        target_link_libraries(dandrum-plugin-engine-handoff-test PRIVATE juce::juce_gui_extra)
+    endif()
+    target_link_options(dandrum-plugin-engine-handoff-test PRIVATE
+        "LINKER:--wrap=dandrum_kernel_render" "LINKER:--wrap=dandrum_kernel_destroy"
+        "LINKER:--wrap=dandrum_kernel_prepare_file" "LINKER:--wrap=pthread_mutex_lock")
+    add_test(NAME cxx-plugin-engine-handoff-baseline COMMAND dandrum-plugin-engine-handoff-test)
+    add_test(NAME cxx-plugin-engine-handoff COMMAND dandrum-plugin-engine-handoff-test --hold)
+    set_tests_properties(cxx-plugin-engine-handoff-baseline cxx-plugin-engine-handoff PROPERTIES TIMEOUT 15)
+endif()
+
 add_executable(dandrum-plugin-waveform-parity-test tests/cpp/PluginWaveformParityTest.cpp)
 target_include_directories(dandrum-plugin-waveform-parity-test PRIVATE src/juce-wrapper src/juce-plugin)
 target_compile_definitions(dandrum-plugin-waveform-parity-test PRIVATE
@@ -539,6 +560,7 @@ endif()
 if(CMAKE_SYSTEM_NAME STREQUAL "Linux" AND NOT DANDRUM_NATIVE_ONLY)
     foreach(plugin_test_target
             dandrum-plugin-live-processor-test
+            dandrum-plugin-engine-handoff-test
             dandrum-plugin-knob-parity-test
             dandrum-plugin-waveform-parity-test
             dandrum-plugin-spectral-parity-test

@@ -265,3 +265,19 @@ links in the 11 changed documents resolve. `scripts/check-spec-coverage` passes
 for the unchanged implemented baseline (559 scenarios, 320 mapped, 239 existing
 todos). No structural runtime tests have been implemented or run by this
 specification update, and no new baseline scenarios or fingerprints were synced.
+
+Task 9.2 ownership progress (2026-10-03): engine installation, host reprepare
+and state restoration now use a bounded lock-free callback reader guard.
+Off-audio replacement closes admission and waits for acknowledged reader
+release before changing engine/slot storage and retiring the old engine;
+the two fixed retirement sleeps are removed. Registered baseline/held-reader
+tests use the real processor and engine, literal signed output and host object
+identity, silent later callbacks at 1/64/512/2048 frames, actual retirement
+observation and focused callback guards. No future callback is required for
+quiescent replacement. The original held-reader test failed on premature
+retirement before implementation. This advances the S3/S4 prerequisite;
+immediate structural admission, autonomous rebuilding, recovery, renderer
+commands, shutdown during pending structural work and concurrent live identity
+remain pending. Section 9 and tasks 6.3/6.4 remain unchecked. The
+[live analysis record](../../../docs/design-system/live-analysis.md) states
+the measured evidence and limits.
