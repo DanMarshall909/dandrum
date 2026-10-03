@@ -30,3 +30,19 @@ button:focus-visible,input:focus-visible{outline:2px solid #7ce0aa;outline-offse
 .availability p{margin:7px 0;color:#adc6b4;font-size:12px;line-height:1.4}
 .error{margin:0;color:#ffaaa3;font-size:12px}
 @media(max-width:760px){.sampler{padding:12px;gap:12px}.lower{grid-template-columns:1fr}.panel{padding:12px}.pads{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+.sample-display{position:relative}
+.sample-plot{position:relative}
+.sample-display-controls{position:absolute;right:6px;bottom:6px;display:flex;gap:1px;padding:1px;border-radius:3px;background:var(--dd-ink-0);border:1px solid var(--border-hairline)}
+.sample-display-controls button{height:18px;padding:0 6px;border:0;border-radius:2px;background:transparent;color:var(--text-tertiary);font-size:10px;font-weight:600;text-transform:uppercase;cursor:pointer}
+.sample-display-controls button[aria-pressed=true]{background:var(--dd-ink-5);color:var(--text-primary)}
+.sample-display-controls button:focus-visible,.spectral-retry:focus-visible{outline-color:var(--color-focus)}
+.spectrogram{background:var(--dd-ink-2);border-color:var(--border-control);color:var(--text-primary)}
+.spectrogram .section-heading span{color:var(--text-secondary)}
+.spectral-plot{position:relative;padding-left:48px}
+.spectral-plot canvas{display:block;width:100%;height:128px;background:var(--dd-ink-0)}
+.frequency-max,.frequency-min{position:absolute;left:0;font:10px var(--font-value);color:var(--text-secondary)}
+.frequency-max{top:0}.frequency-min{bottom:0}
+.spectral-time-axis{display:flex;justify-content:space-between;min-height:18px;margin:3px 0 0 48px;font:10px var(--font-value);color:var(--text-secondary)}
+.spectral-settings{margin:6px 0 0;font:9px var(--font-value);line-height:1.4;color:var(--text-secondary)}
+.spectral-retry{margin-top:6px;background:var(--dd-ink-5);color:var(--text-primary);border:1px solid var(--border-control);border-radius:3px;cursor:pointer}

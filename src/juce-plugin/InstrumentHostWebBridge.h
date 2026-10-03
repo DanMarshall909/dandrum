@@ -18,7 +18,7 @@ public:
     ~InstrumentHostWebBridge();
 
     static const char* bootstrapScript() noexcept;
-    std::array<NativeFunctionEntry, 19> nativeFunctions();
+    std::array<NativeFunctionEntry, 22> nativeFunctions();
     juce::WebBrowserComponent::Options addNativeFunctions (
         juce::WebBrowserComponent::Options options);
     std::optional<juce::WebBrowserComponent::Resource> provideResource (
@@ -43,6 +43,14 @@ public:
                                      juce::WebBrowserComponent::NativeFunctionCompletion completion) const;
     void cancelWaveformFromWeb (const juce::Array<juce::var>& arguments,
                                 juce::WebBrowserComponent::NativeFunctionCompletion completion);
+    // Every ready reply carries at most 16 columns; images stay in the renderer.
+    static constexpr std::size_t spectralColumnsPerPage = 16;
+    void requestSpectrogramFromWeb (const juce::Array<juce::var>& arguments,
+                                    juce::WebBrowserComponent::NativeFunctionCompletion completion);
+    void getSpectrogramJobStatusFromWeb (const juce::Array<juce::var>& arguments,
+                                        juce::WebBrowserComponent::NativeFunctionCompletion completion) const;
+    void cancelSpectrogramFromWeb (const juce::Array<juce::var>& arguments,
+                                   juce::WebBrowserComponent::NativeFunctionCompletion completion);
     void noteOnFromWeb (const juce::Array<juce::var>& arguments,
                         juce::WebBrowserComponent::NativeFunctionCompletion completion);
     void noteOffFromWeb (const juce::Array<juce::var>& arguments,

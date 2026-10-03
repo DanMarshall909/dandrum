@@ -271,6 +271,82 @@ juce::var preparedDocumentForWeb (const InstrumentUiDocument& document)
     return result;
 }
 
+juce::String contentRevisionForWeb (const std::array<std::uint8_t, 32>& bytes)
+{
+    constexpr char digits[] = "0123456789abcdef";
+    std::string revision;
+    revision.reserve (bytes.size() * 2);
+    for (const auto byte : bytes)
+    {
+        revision.push_back (digits[byte >> 4]);
+        revision.push_back (digits[byte & 0x0f]);
+    }
+    return juce::String (revision);
+}
+
+juce::var spectralStatusForWeb (const InstrumentUiSpectralService::Snapshot& snapshot,
+                                std::size_t columnOffset)
+{
+    if (snapshot.result && columnOffset >= snapshot.result->columns.size())
+        return juce::var ("Spectrogram column offset is outside the result");
+    juce::var reply (new juce::DynamicObject());
+    auto* value = reply.getDynamicObject();
+    value->setProperty ("job_id", juce::String (std::to_string (snapshot.jobId)));
+    value->setProperty ("generation", static_cast<juce::int64> (snapshot.generation));
+    switch (snapshot.state)
+    {
+        case InstrumentUiSpectralService::State::running: value->setProperty ("state", "running"); break;
+        case InstrumentUiSpectralService::State::ready: value->setProperty ("state", "ready"); break;
+        case InstrumentUiSpectralService::State::failed: value->setProperty ("state", "failed"); break;
+        case InstrumentUiSpectralService::State::cancelled: value->setProperty ("state", "cancelled"); break;
+        case InstrumentUiSpectralService::State::stale: value->setProperty ("state", "stale"); break;
+    }
+    value->setProperty ("error", juce::String (snapshot.error));
+    if (snapshot.result)
+    {
+        const auto& spectrum = *snapshot.result;
+        juce::var data (new juce::DynamicObject());
+        auto* result = data.getDynamicObject();
+        result->setProperty ("sourceId", juce::String (spectrum.sourceId));
+        result->setProperty ("regionId", juce::String (spectrum.regionId));
+        result->setProperty ("sampleRateHz", static_cast<juce::int64> (spectrum.sampleRateHz));
+        result->setProperty ("channel", static_cast<int> (spectrum.channel));
+        result->setProperty ("startFrame", juce::String (std::to_string (spectrum.startFrame)));
+        result->setProperty ("endFrame", juce::String (std::to_string (spectrum.endFrame)));
+        result->setProperty ("contentRevision", contentRevisionForWeb (spectrum.contentRevision));
+        juce::var settings (new juce::DynamicObject());
+        auto* declared = settings.getDynamicObject();
+        declared->setProperty ("window", "periodicHann");
+        declared->setProperty ("scaling", "oneSidedPeakDbFS");
+        declared->setProperty ("channelPolicy", "selectedChannel");
+        declared->setProperty ("fftSize", static_cast<int> (spectrum.settings.fftSize));
+        declared->setProperty ("hopFrames", juce::String (std::to_string (spectrum.settings.hopFrames)));
+        declared->setProperty ("floorDbFS", spectrum.settings.floorDbFS);
+        result->setProperty ("settings", settings);
+        juce::Array<juce::var> frequency;
+        for (const auto hz : spectrum.frequencyHz) frequency.add (hz);
+        result->setProperty ("frequencyHz", juce::var (frequency));
+        result->setProperty ("columnOffset", static_cast<int> (columnOffset));
+        result->setProperty ("totalColumns", static_cast<int> (spectrum.columns.size()));
+        juce::Array<juce::var> columns;
+        const auto end = std::min (spectrum.columns.size(), columnOffset + InstrumentHostWebBridge::spectralColumnsPerPage);
+        for (auto index = columnOffset; index < end; ++index)
+        {
+            const auto& column = spectrum.columns[index];
+            juce::var item (new juce::DynamicObject());
+            item.getDynamicObject()->setProperty ("startFrame", juce::String (std::to_string (column.startFrame)));
+            item.getDynamicObject()->setProperty ("endFrame", juce::String (std::to_string (column.endFrame)));
+            juce::Array<juce::var> bins;
+            for (const auto db : column.magnitudeDbFS) bins.add (db);
+            item.getDynamicObject()->setProperty ("magnitudeDbFS", juce::var (bins));
+            columns.add (item);
+        }
+        result->setProperty ("columns", juce::var (columns));
+        value->setProperty ("result", data);
+    }
+    return reply;
+}
+
 juce::var waveformStatusForWeb (const InstrumentUiWaveformService::Snapshot& snapshot)
 {
     juce::var reply (new juce::DynamicObject());
@@ -297,15 +373,7 @@ juce::var waveformStatusForWeb (const InstrumentUiWaveformService::Snapshot& sna
         result->setProperty ("channel", static_cast<int> (waveform.channel));
         result->setProperty ("startFrame", juce::String (std::to_string (waveform.startFrame)));
         result->setProperty ("endFrame", juce::String (std::to_string (waveform.endFrame)));
-        constexpr char hexDigits[] = "0123456789abcdef";
-        std::string revision;
-        revision.reserve (waveform.contentRevision.size() * 2);
-        for (const auto byte : waveform.contentRevision)
-        {
-            revision.push_back (hexDigits[byte >> 4]);
-            revision.push_back (hexDigits[byte & 0x0f]);
-        }
-        result->setProperty ("contentRevision", juce::String (revision));
+        result->setProperty ("contentRevision", contentRevisionForWeb (waveform.contentRevision));
         juce::Array<juce::var> buckets;
         for (const auto& bucket : waveform.buckets)
         {
@@ -360,6 +428,7 @@ InstrumentHostWebBridge::InstrumentHostWebBridge (DandrumAudioProcessor& process
 InstrumentHostWebBridge::~InstrumentHostWebBridge()
 {
     processor.cancelPreparedWaveformSession (sessionId);
+    processor.cancelPreparedSpectrumSession (sessionId);
     processor.unsubscribeMeter (sessionId);
     processor.closeEditorNoteSession (sessionId);
     processor.uiCommands().closeSession (sessionId);
@@ -370,7 +439,7 @@ const char* InstrumentHostWebBridge::bootstrapScript() noexcept
     return nativeFunctionBootstrap;
 }
 
-std::array<InstrumentHostWebBridge::NativeFunctionEntry, 19>
+std::array<InstrumentHostWebBridge::NativeFunctionEntry, 22>
 InstrumentHostWebBridge::nativeFunctions()
 {
     return {{
@@ -428,6 +497,15 @@ InstrumentHostWebBridge::nativeFunctions()
           {
               cancelWaveformFromWeb (arguments, std::move (completion));
           } },
+        { "requestSpectrogram", [this] (const juce::Array<juce::var>& arguments,
+              juce::WebBrowserComponent::NativeFunctionCompletion completion)
+          { requestSpectrogramFromWeb (arguments, std::move (completion)); } },
+        { "getSpectrogramJobStatus", [this] (const juce::Array<juce::var>& arguments,
+              juce::WebBrowserComponent::NativeFunctionCompletion completion)
+          { getSpectrogramJobStatusFromWeb (arguments, std::move (completion)); } },
+        { "cancelSpectrogram", [this] (const juce::Array<juce::var>& arguments,
+              juce::WebBrowserComponent::NativeFunctionCompletion completion)
+          { cancelSpectrogramFromWeb (arguments, std::move (completion)); } },
         { "noteOn",
           [this] (const juce::Array<juce::var>& arguments,
                   juce::WebBrowserComponent::NativeFunctionCompletion completion)
@@ -520,6 +598,7 @@ bool InstrumentHostWebBridge::publishParameterUpdates (juce::WebBrowserComponent
     if (generation != lastSeenParameterSurfaceGeneration)
     {
         processor.cancelPreparedWaveformSession (sessionId);
+        processor.cancelPreparedSpectrumSession (sessionId);
         processor.unsubscribeMeter (sessionId);
         processor.uiCommands().closeSession (sessionId);
         lastSeenParameterSurfaceGeneration = generation;
@@ -717,6 +796,66 @@ void InstrumentHostWebBridge::cancelWaveformFromWeb (
                               : std::nullopt;
     completion (status && status->sessionId == sessionId
                 && processor.cancelPreparedWaveformJob (*jobId));
+}
+
+void InstrumentHostWebBridge::requestSpectrogramFromWeb (
+    const juce::Array<juce::var>& arguments,
+    juce::WebBrowserComponent::NativeFunctionCompletion completion)
+{
+    if (arguments.size() != 4 || ! arguments[0].isString() || ! arguments[1].isString()
+        || arguments[0].toString().isEmpty() || arguments[1].toString().isEmpty())
+    {
+        completion (juce::var ("requestSpectrogram expects source ID, region ID, channel and generation"));
+        return;
+    }
+    const auto channel = parseGeneration (arguments[2]);
+    const auto generation = parseGeneration (arguments[3]);
+    if (! channel || *channel > std::numeric_limits<std::uint16_t>::max() || ! generation)
+    {
+        completion (juce::var ("requestSpectrogram requires a valid channel and generation"));
+        return;
+    }
+    if (*generation != processor.getParameterSurfaceGeneration())
+    {
+        completion (juce::var ("Rejected stale instrument generation"));
+        return;
+    }
+    const auto job = processor.requestPreparedSpectrum (*generation, arguments[0].toString().toStdString(),
+        arguments[1].toString().toStdString(), static_cast<std::uint16_t> (*channel), sessionId);
+    if (! job)
+    {
+        completion (juce::var ("Spectrogram request unavailable for this prepared region"));
+        return;
+    }
+    juce::var reply (new juce::DynamicObject());
+    reply.getDynamicObject()->setProperty ("status", "accepted");
+    reply.getDynamicObject()->setProperty ("job_id", juce::String (std::to_string (*job)));
+    reply.getDynamicObject()->setProperty ("generation", static_cast<juce::int64> (*generation));
+    completion (reply);
+}
+
+void InstrumentHostWebBridge::getSpectrogramJobStatusFromWeb (
+    const juce::Array<juce::var>& arguments,
+    juce::WebBrowserComponent::NativeFunctionCompletion completion) const
+{
+    const auto id = arguments.size() == 2 ? parsePositiveDecimalId (arguments[0]) : std::nullopt;
+    const auto offset = arguments.size() == 2 ? parseGeneration (arguments[1]) : std::nullopt;
+    if (! id || ! offset || *offset >= InstrumentUiSpectralService::maxColumns)
+    {
+        completion (juce::var ("getSpectrogramJobStatus requires a valid job ID and column offset"));
+        return;
+    }
+    const auto status = processor.getPreparedSpectrumJobStatus (*id);
+    completion (status ? spectralStatusForWeb (*status, *offset) : juce::var ("Unknown spectrogram job ID"));
+}
+
+void InstrumentHostWebBridge::cancelSpectrogramFromWeb (
+    const juce::Array<juce::var>& arguments,
+    juce::WebBrowserComponent::NativeFunctionCompletion completion)
+{
+    const auto id = arguments.size() == 1 ? parsePositiveDecimalId (arguments[0]) : std::nullopt;
+    const auto status = id ? processor.getPreparedSpectrumJobStatus (*id) : std::nullopt;
+    completion (status && status->sessionId == sessionId && processor.cancelPreparedSpectrumJob (*id));
 }
 
 void InstrumentHostWebBridge::noteOnFromWeb (

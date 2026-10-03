@@ -135,6 +135,10 @@ add_executable(dandrum-plugin-waveform-geometry-test
 target_include_directories(dandrum-plugin-waveform-geometry-test PRIVATE src/juce-plugin)
 add_test(NAME cxx-plugin-waveform-geometry COMMAND dandrum-plugin-waveform-geometry-test)
 
+add_executable(dandrum-plugin-spectral-geometry-test tests/cpp/PluginSpectralGeometryTest.cpp)
+target_include_directories(dandrum-plugin-spectral-geometry-test PRIVATE src/juce-wrapper src/juce-plugin)
+add_test(NAME cxx-plugin-spectral-geometry COMMAND dandrum-plugin-spectral-geometry-test)
+
 add_subdirectory(third_party/JUCE)
 
 add_executable(dandrum-plugin-spectral-service-test
@@ -368,6 +372,28 @@ else()
     set_tests_properties(web-waveform-parity PROPERTIES LABELS "runtime" SKIP_RETURN_CODE 77 TIMEOUT 60 RUN_SERIAL TRUE)
 endif()
 
+add_executable(dandrum-plugin-spectral-parity-test tests/cpp/PluginSpectralParityTest.cpp)
+target_include_directories(dandrum-plugin-spectral-parity-test PRIVATE src/juce-wrapper src/juce-plugin)
+target_compile_definitions(dandrum-plugin-spectral-parity-test PRIVATE
+    JUCE_USE_CURL=0 JUCE_WEB_BROWSER=$<NOT:$<BOOL:${DANDRUM_NATIVE_ONLY}>>
+    JUCE_USE_WIN_WEBVIEW2=$<NOT:$<BOOL:${DANDRUM_NATIVE_ONLY}>>)
+target_link_libraries(dandrum-plugin-spectral-parity-test PRIVATE
+    dandrum-sampler-plugin dandrum_engine juce::juce_audio_basics juce::juce_audio_processors
+    juce::juce_audio_utils juce::juce_gui_basics
+    juce::juce_recommended_config_flags juce::juce_recommended_lto_flags juce::juce_recommended_warning_flags)
+if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+    target_link_options(dandrum-plugin-spectral-parity-test PRIVATE
+        "LINKER:--wrap=dandrum_kernel_prepared_source_copy_channel")
+endif()
+if(DANDRUM_NATIVE_ONLY)
+    add_test(NAME native-spectral-parity COMMAND dandrum-plugin-spectral-parity-test)
+    set_tests_properties(native-spectral-parity PROPERTIES LABELS "runtime" SKIP_RETURN_CODE 77 TIMEOUT 60 RUN_SERIAL TRUE)
+else()
+    target_link_libraries(dandrum-plugin-spectral-parity-test PRIVATE juce::juce_gui_extra)
+    add_test(NAME web-spectral-parity COMMAND dandrum-plugin-spectral-parity-test)
+    set_tests_properties(web-spectral-parity PROPERTIES LABELS "runtime" SKIP_RETURN_CODE 77 TIMEOUT 60 RUN_SERIAL TRUE)
+endif()
+
 if(NOT DANDRUM_NATIVE_ONLY)
     add_executable(dandrum-sampler-plugin-host-test tests/cpp/PluginSamplerHostTest.cpp)
     target_include_directories(dandrum-sampler-plugin-host-test PRIVATE src/juce-wrapper src/juce-plugin)
@@ -400,6 +426,10 @@ if(NOT DANDRUM_NATIVE_ONLY)
         PRIVATE dandrum-plugin dandrum_engine juce::juce_audio_basics juce::juce_audio_processors juce::juce_audio_utils juce::juce_gui_extra
         PUBLIC juce::juce_recommended_config_flags juce::juce_recommended_lto_flags juce::juce_recommended_warning_flags)
     add_test(NAME cxx-plugin-editor-bridge COMMAND dandrum-plugin-editor-bridge-test)
+    if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+        target_link_options(dandrum-plugin-editor-bridge-test PRIVATE
+            "LINKER:--wrap=dandrum_kernel_prepared_source_copy_channel")
+    endif()
 
     add_test(NAME tb303-web-runtime COMMAND dandrum-plugin-editor-bridge-test --web-runtime)
     add_test(NAME sampler-web-runtime COMMAND dandrum-sampler-plugin-host-test --web-runtime)
@@ -435,6 +465,8 @@ if(NOT DANDRUM_NATIVE_ONLY)
     add_test(NAME meter-web-view COMMAND ${DANDRUM_NODE_EXECUTABLE} --test ${CMAKE_CURRENT_SOURCE_DIR}/web/shared/meter-view.test.mjs)
     add_test(NAME prepared-waveform-web-view COMMAND ${DANDRUM_NODE_EXECUTABLE} --test ${CMAKE_CURRENT_SOURCE_DIR}/web/shared/prepared-waveform.test.mjs)
     add_test(NAME prepared-waveform-web-transport COMMAND ${DANDRUM_NODE_EXECUTABLE} --test ${CMAKE_CURRENT_SOURCE_DIR}/web/shared/waveform-transport.test.mjs)
+    add_test(NAME prepared-spectral-web-view COMMAND ${DANDRUM_NODE_EXECUTABLE} --test ${CMAKE_CURRENT_SOURCE_DIR}/web/shared/prepared-spectrum.test.mjs)
+    add_test(NAME prepared-spectral-web-transport COMMAND ${DANDRUM_NODE_EXECUTABLE} --test ${CMAKE_CURRENT_SOURCE_DIR}/web/shared/spectrum-transport.test.mjs)
     add_test(NAME sampler-react-model COMMAND ${DANDRUM_NODE_EXECUTABLE} --test ${CMAKE_CURRENT_SOURCE_DIR}/web/sampler/src/model.test.mjs)
     add_test(NAME sampler-react-gestures COMMAND ${DANDRUM_NODE_EXECUTABLE} --test ${CMAKE_CURRENT_SOURCE_DIR}/web/sampler/src/parameter-gesture.test.mjs)
     add_test(NAME knob-parameter-values COMMAND ${DANDRUM_NODE_EXECUTABLE} --test ${CMAKE_CURRENT_SOURCE_DIR}/web/shared/parameter-value.test.mjs)
@@ -460,6 +492,7 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Linux" AND NOT DANDRUM_NATIVE_ONLY)
     foreach(plugin_test_target
             dandrum-plugin-knob-parity-test
             dandrum-plugin-waveform-parity-test
+            dandrum-plugin-spectral-parity-test
             dandrum-plugin-spectral-job-test
             dandrum-plugin-construction-test
             dandrum-plugin-host-parameter-surface-test

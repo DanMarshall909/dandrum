@@ -1,6 +1,7 @@
 #include "NativeMasterMeter.h"
 #include "PluginProcessor.h"
 #include "InstrumentUiWaveformGeometry.h"
+#include "InstrumentUiSpectralGeometry.h"
 #include "DesignTokens.h"
 #include "NativeKnobFontBinaryData.h"
 
@@ -727,6 +728,144 @@ private:
     std::shared_ptr<const InstrumentUiWaveformService::Result> result;
 };
 
+class NativePreparedSpectrum final : public juce::Component
+{
+public:
+    NativePreparedSpectrum()
+    {
+        setComponentID ("prepared-spectrum");
+        const std::array ids { "spectral-frequency-min", "spectral-frequency-max",
+                              "spectral-time-start", "spectral-time-end", "spectral-settings" };
+        for (std::size_t i = 0; i < labels.size(); ++i)
+        {
+            labels[i].setComponentID (ids[i]);
+            labels[i].setFont (nativeKnobFont (true, 10.0f));
+            labels[i].setColour (juce::Label::textColourId, juce::Colour (dandrum::ui::tokens::text_secondary));
+            labels[i].setBorderSize (juce::BorderSize<int> (0));
+            addAndMakeVisible (labels[i]);
+        }
+        labels[1].setJustificationType (juce::Justification::centredLeft);
+        labels[3].setJustificationType (juce::Justification::centredRight);
+        clear();
+    }
+    void clear()
+    {
+        source.reset(); region.reset(); result.reset(); geometry.reset(); image = {};
+        for (auto& label : labels) label.setText ({}, juce::dontSendNotification);
+        setName ("NO PREPARED SAMPLE"); repaint();
+    }
+    void setPreparedRegion (const InstrumentUiDocument::Source& preparedSource,
+                            const InstrumentUiDocument::Region& preparedRegion)
+    {
+        clear(); source = preparedSource; region = preparedRegion;
+        setName ("PREPARING SPECTRUM");
+    }
+    void setUnavailable (const std::string& error)
+    {
+        result.reset(); geometry.reset(); image = {};
+        setName ("SPECTRUM UNAVAILABLE: " + juce::String (error)); repaint();
+    }
+    void setResult (std::shared_ptr<const InstrumentUiSpectralService::Result> ready)
+    {
+        result = std::move (ready); updateImage();
+        if (geometry)
+            setName ("Prepared spectrum: " + juce::String (source->id) + "." + juce::String (region->id));
+        else
+            setUnavailable ("Incoherent prepared spectral data");
+    }
+    void resized() override
+    {
+        const auto plot = plotBounds();
+        labels[0].setBounds (16, plot.getBottom() - 16, 46, 16);
+        labels[1].setBounds (16, plot.getY(), 46, 16);
+        labels[2].setBounds (plot.getX(), plot.getBottom() + 2, 120, 18);
+        labels[3].setBounds (plot.getRight() - 120, plot.getBottom() + 2, 120, 18);
+        labels[4].setBounds (16, getHeight() - 27, std::max (1, getWidth() - 32), 18);
+        updateImage();
+    }
+    void paint (juce::Graphics& graphics) override
+    {
+        namespace tokens = dandrum::ui::tokens;
+        graphics.setColour (juce::Colour (tokens::dd_ink_2));
+        graphics.fillRoundedRectangle (getLocalBounds().toFloat(), 10.0f);
+        graphics.setColour (juce::Colour (tokens::border_control));
+        graphics.drawRoundedRectangle (getLocalBounds().toFloat().reduced (0.5f), 10.0f, 1.0f);
+        graphics.setColour (juce::Colour (tokens::text_primary));
+        graphics.setFont (nativeKnobFont (false, 14.0f));
+        graphics.drawText ("PREPARED SPECTRUM", 16, 10, getWidth() - 32, 20, juce::Justification::centredLeft);
+        graphics.setColour (juce::Colour (tokens::text_secondary));
+        graphics.setFont (nativeKnobFont (false, 11.0f));
+        graphics.drawText (getName(), 16, 30, getWidth() - 32, 18, juce::Justification::centredLeft);
+        const auto plot = plotBounds();
+        graphics.setColour (juce::Colour (tokens::dd_ink_0)); graphics.fillRect (plot);
+        if (image.isValid()) graphics.drawImageAt (image, plot.getX(), plot.getY());
+    }
+private:
+    juce::Rectangle<int> plotBounds() const
+    { return { 64, 52, std::max (1, getWidth() - 80), std::max (1, getHeight() - 110) }; }
+    static juce::Colour colour (float db, float floor)
+    {
+        namespace tokens = dandrum::ui::tokens;
+        constexpr std::array ramp { tokens::dd_ink_0, tokens::dd_ink_5, tokens::dd_vermilion_lo,
+                                    tokens::dd_vermilion, tokens::dd_paper_1 };
+        const auto level = std::clamp ((double (db) - floor) / -floor, 0.0, 1.0) * (ramp.size() - 1);
+        const auto index = static_cast<std::size_t> (std::floor (level));
+        const auto fraction = level - index;
+        const juce::Colour low (ramp[index]), high (ramp[std::min (index + 1, ramp.size() - 1)]);
+        const auto mix = [fraction] (juce::uint8 a, juce::uint8 b)
+        { return static_cast<juce::uint8> (std::lround (a + (double (b) - a) * fraction)); };
+        return juce::Colour::fromRGB (mix (low.getRed(), high.getRed()), mix (low.getGreen(), high.getGreen()),
+                                      mix (low.getBlue(), high.getBlue()));
+    }
+    void updateImage()
+    {
+        const auto plot = plotBounds();
+        geometry = source && region && result ? InstrumentUiSpectralGeometry::fromPrepared (
+            *source, *region, *result, plot.getWidth(), plot.getHeight()) : std::nullopt;
+        image = {};
+        if (! geometry) return;
+        image = juce::Image (juce::Image::RGB, plot.getWidth(), plot.getHeight(), true);
+        juce::Graphics pixels (image);
+        for (const auto& column : result->columns)
+        {
+            const auto left = static_cast<int> (std::lround (geometry->columnX (column.startFrame)));
+            const auto span = result->endFrame - column.startFrame;
+            const auto right = static_cast<int> (std::lround (geometry->columnX (
+                column.startFrame + std::min (span, result->settings.hopFrames))));
+            for (int row = 0; row < plot.getHeight(); ++row)
+            {
+                pixels.setColour (colour (geometry->rowMagnitude (column, row), result->settings.floorDbFS));
+                pixels.fillRect (left, row, std::max (1, right - left), 1);
+            }
+        }
+        for (const auto& marker : geometry->markers())
+        {
+            using Kind = InstrumentUiWaveformGeometry::MarkerKind;
+            pixels.setColour (juce::Colour (marker.kind == Kind::loopStart || marker.kind == Kind::loopEnd
+                ? 0xffe2bf72 : marker.kind == Kind::sliceStart || marker.kind == Kind::sliceEnd ? 0xffab9ee9 : 0xff8da79a));
+            pixels.fillRect (std::clamp (static_cast<int> (std::lround (marker.x)), 0, plot.getWidth() - 1), 0, 1, plot.getHeight());
+        }
+        labels[0].setText (juce::String (std::lround (result->frequencyHz[1])) + " Hz", juce::dontSendNotification);
+        labels[1].setText (juce::String (result->frequencyHz.back() / 1000.0, 0) + " kHz", juce::dontSendNotification);
+        labels[2].setText (juce::String (geometry->startSeconds(), 3) + " s", juce::dontSendNotification);
+        labels[3].setText (juce::String (geometry->endSeconds(), 3) + " s", juce::dontSendNotification);
+        const auto separator = juce::String::fromUTF8 (" · ");
+        labels[4].setText ("Hann" + separator + "FFT " + juce::String (static_cast<int> (result->settings.fftSize))
+            + separator + "hop " + juce::String (std::to_string (result->settings.hopFrames))
+            + separator + juce::String (result->settings.floorDbFS, 0) + "..0 dBFS" + separator + "ch "
+            + juce::String (result->channel + 1) + separator + juce::String (result->sampleRateHz) + " Hz"
+            + separator + "DC omitted",
+            juce::dontSendNotification);
+        repaint();
+    }
+    std::optional<InstrumentUiDocument::Source> source;
+    std::optional<InstrumentUiDocument::Region> region;
+    std::shared_ptr<const InstrumentUiSpectralService::Result> result;
+    std::optional<InstrumentUiSpectralGeometry> geometry;
+    juce::Image image;
+    std::array<juce::Label, 5> labels;
+};
+
 class DandrumNativeEditor final : public juce::AudioProcessorEditor,
                                   private juce::Timer
 {
@@ -766,6 +905,13 @@ public:
 
         addAndMakeVisible (meter);
         addAndMakeVisible (waveform);
+        addChildComponent (spectrum);
+        waveToggle.setButtonText ("Wave"); spectralToggle.setButtonText ("Spectral");
+        waveToggle.setComponentID ("sample-display-wave"); spectralToggle.setComponentID ("sample-display-spectral");
+        waveToggle.onClick = [this] { setSpectralDisplay (false); };
+        spectralToggle.onClick = [this] { setSpectralDisplay (true); };
+        addAndMakeVisible (waveToggle); addAndMakeVisible (spectralToggle);
+        waveToggle.setToggleState (true, juce::dontSendNotification);
         meterGeneration = processor.getParameterSurfaceGeneration();
         processor.subscribeMeter (meterSession, meterGeneration);
         processor.setMeterSessionVisible (meterSession, false);
@@ -783,6 +929,7 @@ public:
         primaryKnob.onValueChange = {};
         primaryKnob.onDragEnd = {};
         processor.cancelPreparedWaveformSession (meterSession);
+        processor.cancelPreparedSpectrumSession (meterSession);
         processor.unsubscribeMeter (meterSession);
         processor.uiCommands().closeSession (meterSession);
     }
@@ -799,6 +946,9 @@ public:
         meter.setBounds (24, 118, getWidth() - 48, 160);
         primaryKnob.setBounds (24, 302, 152, 184);
         waveform.setBounds (200, 302, getWidth() - 224, getHeight() - 326);
+        spectrum.setBounds (waveform.getBounds());
+        waveToggle.setBounds (getWidth() - 176, getHeight() - (showSpectral ? 108 : 74), 64, 20);
+        spectralToggle.setBounds (getWidth() - 108, getHeight() - (showSpectral ? 108 : 74), 68, 20);
     }
 
     void timerCallback() override
@@ -808,6 +958,7 @@ public:
         if (safeThis == nullptr)
             return;
         refreshWaveform();
+        refreshSpectrum();
         const auto generation = processor.getParameterSurfaceGeneration();
         if (generation != meterGeneration)
         {
@@ -831,6 +982,45 @@ public:
 private:
     enum class DragState { idle, active, rejected };
 
+    void setSpectralDisplay (bool enabled)
+    {
+        if (spectralJob) processor.cancelPreparedSpectrumJob (*spectralJob);
+        spectralJob.reset(); spectralRequested = false; showSpectral = enabled;
+        waveform.setVisible (! enabled); spectrum.setVisible (enabled);
+        waveToggle.setToggleState (! enabled, juce::dontSendNotification);
+        spectralToggle.setToggleState (enabled, juce::dontSendNotification);
+        resized();
+        refreshSpectrum();
+    }
+    void refreshSpectrum()
+    {
+        if (! showSpectral || ! isShowing())
+        {
+            if (spectralJob) processor.cancelPreparedSpectrumJob (*spectralJob);
+            spectralJob.reset(); spectralRequested = false;
+            return;
+        }
+        if (! spectralRequested && spectralSelection)
+        {
+            spectralRequested = true;
+            spectralJob = processor.requestPreparedSpectrum (waveformGeneration,
+                spectralSelection->first, spectralSelection->second, 0, meterSession);
+            if (! spectralJob) spectrum.setUnavailable ("Request not admitted; click Spectral to retry");
+        }
+        if (spectralJob)
+        {
+            const auto status = processor.getPreparedSpectrumJobStatus (*spectralJob);
+            if (status && status->state != InstrumentUiSpectralService::State::running)
+            {
+                if (status->state == InstrumentUiSpectralService::State::ready && status->generation == waveformGeneration)
+                    spectrum.setResult (status->result);
+                else
+                    spectrum.setUnavailable (status->error.empty() ? "Request retired; click Spectral to retry" : status->error);
+                spectralJob.reset();
+            }
+        }
+    }
+
     void refreshWaveform()
     {
         const auto generation = processor.getParameterSurfaceGeneration();
@@ -841,6 +1031,8 @@ private:
             waveformJob.reset();
             waveformGeneration = generation;
             waveform.clear();
+            if (spectralJob) processor.cancelPreparedSpectrumJob (*spectralJob);
+            spectralJob.reset(); spectralSelection.reset(); spectralRequested = false; spectrum.clear();
             const auto document = processor.getPreparedUiDocument();
             if (document && document->capabilities.preparedWaveform)
                 for (const auto& source : document->sources)
@@ -848,6 +1040,8 @@ private:
                     {
                         const auto& region = source.regions.front();
                         waveform.setPreparedRegion (source, region);
+                        spectrum.setPreparedRegion (source, region);
+                        spectralSelection = std::pair { source.id, region.id };
                         waveformJob = processor.requestPreparedWaveform (
                             generation, source.id, region.id, 0,
                             static_cast<std::size_t> (std::min<std::uint64_t> (
@@ -967,6 +1161,11 @@ private:
     NativeHostKnob primaryKnob;
     NativeMasterMeter meter;
     NativePreparedWaveform waveform;
+    NativePreparedSpectrum spectrum;
+    juce::TextButton waveToggle, spectralToggle;
+    bool showSpectral = false, spectralRequested = false;
+    std::optional<std::pair<std::string, std::string>> spectralSelection;
+    std::optional<std::uint64_t> spectralJob;
 };
 }
 

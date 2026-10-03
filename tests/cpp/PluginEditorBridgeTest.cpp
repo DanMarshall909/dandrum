@@ -3,6 +3,7 @@
 
 #include <algorithm>
 #include <array>
+#include <bit>
 #include <atomic>
 #include <chrono>
 #include <cmath>
@@ -14,6 +15,21 @@
 #include <stdexcept>
 #include <string>
 #include <thread>
+
+#if JUCE_LINUX
+// Exercise the documented bool read-failure boundary through the real worker
+// and bridge; successful calls still read the independently retained Rust PCM.
+static std::atomic<bool> rejectSpectralRead { false };
+extern "C" bool __real_dandrum_kernel_prepared_source_copy_channel (
+    const DandrumKernelWaveformSource*, std::uint16_t, std::uint64_t, float*, std::size_t);
+extern "C" bool __wrap_dandrum_kernel_prepared_source_copy_channel (
+    const DandrumKernelWaveformSource* source, std::uint16_t channel,
+    std::uint64_t start, float* output, std::size_t count)
+{
+    return ! rejectSpectralRead.load()
+        && __real_dandrum_kernel_prepared_source_copy_channel (source, channel, start, output, count);
+}
+#endif
 
 struct PluginEditorBridgeTestProbe
 {
@@ -169,6 +185,7 @@ int main (int argc, char** argv)
         for (const auto* command : { "getParameters", "getParameterState", "getPreparedDocument", "setParameter",
                                      "beginGesture", "endGesture",
                                      "requestWaveform", "getWaveformJobStatus", "cancelWaveform",
+                                     "requestSpectrogram", "getSpectrogramJobStatus", "cancelSpectrogram",
                                      "noteOn", "noteOff",
                                      "subscribeMeter", "setMeterVisible", "getMeterPacket",
                                      "ackMeterPacket", "ackMeterClip",
@@ -840,6 +857,94 @@ int main (int argc, char** argv)
                      && ! static_cast<bool> (PluginEditorBridgeTestProbe::invoke (
                          samplerEditor, "cancelWaveform", { waveformId })),
                  "Web waveform status or cancellation accepted an invalid or finished job");
+        const auto requestSpectrum = [&] (const juce::Array<juce::var>& args)
+        { return PluginEditorBridgeTestProbe::invoke (samplerEditor, "requestSpectrogram", args); };
+        for (const auto& args : std::vector<juce::Array<juce::var>> {
+                 {}, { "drums", "kick", -1, static_cast<int> (samplerGeneration) },
+                 { "drums", "kick", 65536, static_cast<int> (samplerGeneration) },
+                 { "drums", "kick", 0, 1.5 }, { "drums", "missing", 0, static_cast<int> (samplerGeneration) },
+                 { "drums", "kick", 0, static_cast<int> (samplerGeneration - 1) } })
+            require (requestSpectrum (args).isString(), "Web spectral admission accepted invalid input");
+        const auto spectralAccepted = requestSpectrum ({ "drums", "kick", 0, static_cast<int> (samplerGeneration) });
+        const auto spectralId = spectralAccepted.getProperty ("job_id", {}).toString();
+        require (spectralAccepted.getProperty ("status", {}).toString() == "accepted" && spectralId.isNotEmpty(),
+                 "Web spectral request did not return acceptance");
+        juce::var spectralStatus;
+        for (int attempt = 0; attempt < 200; ++attempt)
+        {
+            spectralStatus = PluginEditorBridgeTestProbe::invoke (samplerEditor, "getSpectrogramJobStatus", { spectralId, 0 });
+            if (spectralStatus.getProperty ("state", {}).toString() != "running") break;
+            std::this_thread::sleep_for (std::chrono::milliseconds (5));
+        }
+        const auto typedSpectrum = samplerWeb.getPreparedSpectrumJobStatus (std::stoull (spectralId.toStdString()));
+        require (typedSpectrum && typedSpectrum->result && spectralStatus.getProperty ("state", {}).toString() == "ready",
+                 "Web spectral job did not become ready");
+        const auto spectralData = spectralStatus.getProperty ("result", {});
+        const auto settings = spectralData.getProperty ("settings", {});
+        const auto frequencies = spectralData.getProperty ("frequencyHz", {});
+        require (spectralData.getProperty ("sourceId", {}).toString() == "drums"
+                     && spectralData.getProperty ("regionId", {}).toString() == "kick"
+                     && spectralData.getProperty ("startFrame", {}).toString() == "0"
+                     && spectralData.getProperty ("endFrame", {}).toString() == "12000"
+                     && static_cast<int> (spectralData.getProperty ("sampleRateHz", {})) == 48000
+                     && static_cast<int> (spectralData.getProperty ("channel", {})) == 0
+                     && spectralData.getProperty ("contentRevision", {}).toString().length() == 64
+                     && settings.getProperty ("window", {}).toString() == "periodicHann"
+                     && settings.getProperty ("scaling", {}).toString() == "oneSidedPeakDbFS"
+                     && settings.getProperty ("channelPolicy", {}).toString() == "selectedChannel"
+                     && static_cast<int> (settings.getProperty ("fftSize", {})) == 1024
+                     && settings.getProperty ("hopFrames", {}).toString() == "256"
+                     && std::abs (static_cast<double> (settings.getProperty ("floorDbFS", {})) + 120.0) < 0.000001
+                     && frequencies.getArray() && frequencies.getArray()->size() == 513
+                     && std::abs (static_cast<double> ((*frequencies.getArray())[64]) - 3000.0) < 0.000001
+                     && std::abs (static_cast<double> (frequencies.getArray()->getLast()) - 24000.0) < 0.000001,
+                 "Web spectral metadata lost declared source coordinates or FFT settings");
+        std::size_t transferred = 0;
+        for (int offset = 0; offset < 47; offset += 16)
+        {
+            const auto page = PluginEditorBridgeTestProbe::invoke (samplerEditor, "getSpectrogramJobStatus", { spectralId, offset })
+                                  .getProperty ("result", {});
+            const auto columns = page.getProperty ("columns", {});
+            require (static_cast<int> (page.getProperty ("columnOffset", {})) == offset
+                         && static_cast<int> (page.getProperty ("totalColumns", {})) == 47
+                         && columns.getArray() && columns.getArray()->size() == std::min (16, 47 - offset),
+                     "Web spectral numeric publication exceeded or lost its bounded page");
+            for (const auto& column : *columns.getArray())
+            {
+                const auto& expected = typedSpectrum->result->columns[transferred++];
+                const auto magnitude = column.getProperty ("magnitudeDbFS", {});
+                require (column.getProperty ("startFrame", {}).toString() == juce::String (std::to_string (expected.startFrame))
+                             && column.getProperty ("endFrame", {}).toString() == juce::String (std::to_string (expected.endFrame))
+                             && magnitude.getArray() && magnitude.getArray()->size() == 513,
+                         "Web spectral page lost exact column coordinates or bin count");
+                for (int bin = 0; bin < 513; ++bin)
+                    require (std::bit_cast<std::uint32_t> (static_cast<float> ((*magnitude.getArray())[bin]))
+                                 == std::bit_cast<std::uint32_t> (expected.magnitudeDbFS[static_cast<std::size_t> (bin)]),
+                             "Web spectral page changed a shared numeric magnitude");
+            }
+        }
+        require (transferred == 47, "Web spectral pages lost columns");
+        for (const auto& args : std::vector<juce::Array<juce::var>> {
+                 {}, { spectralId }, { "999999", 0 }, { 1.5, 0 }, { spectralId, -1 },
+                 { spectralId, 1.5 }, { spectralId, 47 }, { spectralId, 1025 } })
+            require (PluginEditorBridgeTestProbe::invoke (samplerEditor, "getSpectrogramJobStatus", args).isString(),
+                     "Web spectral status accepted invalid page coordinates");
+        require (! static_cast<bool> (PluginEditorBridgeTestProbe::invoke (samplerEditor, "cancelSpectrogram", { spectralId })),
+                 "Web cancelled a finished spectral job");
+        juce::String closedSpectralJob;
+        {
+            DandrumAudioProcessorEditor closingEditor (samplerWeb);
+            const auto accepted = PluginEditorBridgeTestProbe::invoke (closingEditor, "requestSpectrogram",
+                { "drums", "hat_open", 0, static_cast<int> (samplerGeneration) });
+            closedSpectralJob = accepted.getProperty ("job_id", {}).toString();
+            require (accepted.getProperty ("status", {}).toString() == "accepted"
+                         && ! static_cast<bool> (PluginEditorBridgeTestProbe::invoke (samplerEditor, "cancelSpectrogram", { closedSpectralJob })),
+                     "one Web editor cancelled another spectral job");
+        }
+        const auto closedSpectrum = PluginEditorBridgeTestProbe::invoke (samplerEditor, "getSpectrogramJobStatus", { closedSpectralJob, 0 });
+        require (closedSpectrum.getProperty ("state", {}).toString() == "cancelled"
+                     || closedSpectrum.getProperty ("state", {}).toString() == "ready", "closed Web spectral job lost terminal status");
+
         juce::String closedEditorJob;
         {
             DandrumAudioProcessorEditor closingEditor (samplerWeb);
@@ -911,6 +1016,24 @@ int main (int argc, char** argv)
         require (detailedWeb.isInstrumentLoaded(),
                  "prepared document metadata fixture did not prepare");
         DandrumAudioProcessorEditor detailedEditor (detailedWeb);
+       #if JUCE_LINUX
+        rejectSpectralRead.store (true);
+        struct RestoreSpectralReader { ~RestoreSpectralReader() { rejectSpectralRead.store (false); } } restoreReader;
+        const auto failedAdmission = PluginEditorBridgeTestProbe::invoke (detailedEditor, "requestSpectrogram",
+            { "drums", "kick", 0, static_cast<int> (detailedWeb.getParameterSurfaceGeneration()) });
+        const auto failedId = failedAdmission.getProperty ("job_id", {}).toString();
+        juce::var failedSpectrum;
+        for (int attempt = 0; attempt < 200; ++attempt)
+        {
+            failedSpectrum = PluginEditorBridgeTestProbe::invoke (detailedEditor, "getSpectrogramJobStatus", { failedId, 0 });
+            if (failedSpectrum.getProperty ("state", {}).toString() != "running") break;
+            std::this_thread::sleep_for (std::chrono::milliseconds (5));
+        }
+        require (failedSpectrum.getProperty ("state", {}).toString() == "failed"
+                     && failedSpectrum.getProperty ("error", {}).toString().isNotEmpty()
+                     && failedSpectrum.getProperty ("result", {}).isVoid(), "spectral read failure did not cross the Web status boundary");
+        rejectSpectralRead.store (false);
+       #endif
         const auto detailedDocument = PluginEditorBridgeTestProbe::invoke (
             detailedEditor, "getPreparedDocument");
         const auto detailedSources = detailedDocument.getProperty ("sources", {});
@@ -950,6 +1073,9 @@ int main (int argc, char** argv)
                      && replacementSources.getArray() != nullptr
                      && replacementSources.getArray()->isEmpty(),
                  "Web document did not replace sampler facts after instrument reload");
+        const auto staleSpectrum = PluginEditorBridgeTestProbe::invoke (samplerEditor, "getSpectrogramJobStatus", { spectralId, 0 });
+        require (staleSpectrum.getProperty ("state", {}).toString() == "stale"
+                     && staleSpectrum.getProperty ("result", {}).isVoid(), "Web spectral result survived instrument replacement");
         const auto staleWaveform = PluginEditorBridgeTestProbe::invoke (
             samplerEditor, "getWaveformJobStatus", { waveformId });
         require (staleWaveform.getProperty ("state", {}).toString() == "stale"

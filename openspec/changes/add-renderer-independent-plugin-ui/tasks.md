@@ -134,7 +134,7 @@ structural rebuilding remain their respective pending tasks.
 ## 6. Spectral And Live Analysis
 
 - [x] 6.1 Implement shared static spectral jobs with declared FFT/window/hop/scaling/floor and numeric results; tests must prove a known bin-centred sine, finite silence floor, deterministic results and cache reuse.
-- [ ] 6.2 Add native and Web spectral views consuming the same result; runtime inspection must verify time/frequency labels and overlays without transferring a browser-specific image as the shared contract.
+- [x] 6.2 Add native and Web spectral views consuming the same result; runtime inspection must verify time/frequency labels and overlays without transferring a browser-specific image as the shared contract.
 - [ ] 6.3 Add subscribed live scope and spectral capture with fixed memory and tap/channel limits; tests must prove queue overflow cannot block audio and discontinuities reset partial FFT windows.
 - [ ] 6.4 Bound worker count, backlog, cache bytes and column publication; tests must prove stalled consumers, cancelled jobs and hidden views retain bounded resources and recover with current sample coordinates.
 
@@ -157,6 +157,19 @@ mutation or whole-processor coverage claim is made. See
 `docs/design-system/static-spectral-analysis.md` for settings, ownership and
 verification limits. Spectral drawing/live analysis (6.2-6.4), callback profiling
 and automatic structural rebuild runtime remain pending.
+
+Task 6.2 verification (2026-10-03): both original sampler editor paths paint
+the shared numeric spectrum with source-rate logarithmic frequency/time axes,
+finite floor and ten prepared overlays at 1200×800 and 820×560. Actual runtime
+tests prove Wave/Spectral switching, hide/show, real PCM-read failure and retry,
+and clearing after reload to the sample-free 303. Bridge tests compare exact
+numeric pages; bounded browser assembly rejects partial/stale/incoherent data.
+Full builds pass, with CTest 26/26 native and 51/51 Web without skips, sampler
+typecheck/assets and strict validation. The
+[spectral view record](../../../docs/design-system/spectral-views.md) states
+changed-line/branch coverage limits, eleven focused faults and Linux/1x runtime
+limits. No Rust, engine preparation, host parameter identity, live capture,
+final layout or automatic structural runtime change is included.
 
 ## 7. Capability-Aware Sampler Composition
 
