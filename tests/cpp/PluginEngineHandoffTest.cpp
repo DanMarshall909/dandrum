@@ -2,8 +2,10 @@
 
 #include <bit>
 #include <chrono>
+#include <cmath>
 #include <cstdlib>
 #include <filesystem>
+#include <functional>
 #include <future>
 #include <iostream>
 #include <new>
@@ -33,6 +35,7 @@ struct Barrier
     std::atomic<bool> armed { false }, entered { false }, released { false };
     std::atomic<DandrumKernelInstrument*> engine { nullptr };
     std::atomic<unsigned> prematureDestroy { 0 }, watchedDestroy { 0 };
+    std::function<void()> beforeRetirement; // off audio, while the gate remains closed
 };
 std::atomic<Barrier*> recording { nullptr };
 struct Record
@@ -94,8 +97,26 @@ void render (DandrumAudioProcessor& processor, float expected, int frames = 64, 
                 == std::bit_cast<std::uint32_t> (c == 0 ? expected : 0.0f),
                 "Handoff changed known signed output or failed to clear every lane");
 }
+InstrumentUiLiveService::Packet packet (DandrumAudioProcessor& processor)
+{
+    std::optional<InstrumentUiLiveService::Packet> result;
+    await ([&] { result = processor.takeLiveAnalysisPacket (71); return result.has_value(); },
+        "Handoff did not publish a complete live window");
+    return *result;
+}
+void assertLiveSignal (const InstrumentUiLiveService::Packet& value, float expected)
+{
+    for (const auto& bucket : value.analysis.channel[0].scope)
+        require (std::bit_cast<std::uint32_t> (bucket.minimum) == std::bit_cast<std::uint32_t> (expected)
+            && std::bit_cast<std::uint32_t> (bucket.maximum) == std::bit_cast<std::uint32_t> (expected),
+            "Handoff live window mixed old and replacement signed samples");
+    const auto expectedDb = 20.0 * std::log10 (std::abs (expected));
+    require (std::abs (value.analysis.channel[0].magnitudeDbFS[0] - expectedDb) < 0.0002
+        && std::abs (value.analysis.channel[1].magnitudeDbFS[0] + 120) < 0.0002,
+        "Handoff live spectrum lost literal DC amplitude or silent right channel");
+}
 enum class Operation { reload, prepare, restore };
-void exercise (Operation operation, bool hold)
+void exercise (Operation operation, bool hold, bool live = false)
 {
     Fixture fixture;
     juce::MemoryBlock saved;
@@ -109,25 +130,65 @@ void exercise (Operation operation, bool hold)
     auto* identity = processor.getParameterForPublicId ("fixture.level");
     require (identity != nullptr, "Handoff lost public host control");
     const auto count = processor.getParameters().size();
+    const auto generation = processor.getParameterSurfaceGeneration();
+    std::optional<InstrumentUiLiveService::Packet> retained;
+    if (live)
+    {
+        require (processor.subscribeLiveAnalysis (71, generation, 3), "Handoff rejected current live subscription");
+        render (processor, 0.25f, 1024);
+        retained = packet (processor);
+        require (retained->analysis.generation == generation && retained->analysis.sampleRateHz == 48000
+            && retained->analysis.startFrame == 64 && retained->analysis.endFrame == 1088,
+            "Old handoff packet lost original generation/rate/coordinates");
+        assertLiveSignal (*retained, 0.25f);
+        require (processor.acknowledgeLiveAnalysisPacket (71, generation, retained->sequence),
+            "Handoff rejected original live acknowledgement");
+        // Start the held old half-window without the baseline FFT's 768-frame
+        // overlap; otherwise its valid later old windows can remain pending.
+        require (processor.setLiveAnalysisVisible (71, false) && processor.setLiveAnalysisVisible (71, true),
+            "Handoff could not reset baseline live demand");
+    }
     if (operation == Operation::prepare)
         require (fixture.original.replaceWithText (fixture.edited.loadFileAsString()), "Reprepare fixture failed");
     auto replace = [&]
     {
         if (operation == Operation::reload) return processor.reloadInstrumentFromFile (fixture.edited);
-        if (operation == Operation::prepare) processor.prepareToPlay (48000, 64);
+        if (operation == Operation::prepare)
+        {
+            const auto rate = live ? 96000.0 : 48000.0;
+            processor.setRateAndBufferSizeDetails (rate, 64);
+            processor.prepareToPlay (rate, 64);
+        }
         else processor.setStateInformation (saved.getData(), static_cast<int> (saved.getSize()));
         return processor.isInstrumentLoaded();
     };
     if (hold)
     {
         Barrier barrier;
+        std::optional<InstrumentUiLiveService::Packet> oldCompleted;
+        if (live && operation == Operation::prepare)
+            barrier.beforeRetirement = [&]
+            {
+                // Read the real old window before reprepare reopens audio.
+                // Host details already say 96kHz, but these samples were
+                // rendered by the held 48kHz engine.
+                oldCompleted = packet (processor);
+                require (oldCompleted->analysis.generation == generation
+                    && oldCompleted->analysis.sampleRateHz == 48000
+                    && oldCompleted->analysis.startFrame == 1088 && oldCompleted->analysis.endFrame == 2112,
+                    "Held old live window was relabelled with replacement rate or coordinates");
+                assertLiveSignal (*oldCompleted, 0.25f);
+                require (processor.acknowledgeLiveAnalysisPacket (71, generation, oldCompleted->sequence),
+                    "Handoff rejected held old live acknowledgement");
+            };
         Record record (barrier);
         std::future<void> audio;
         std::future<bool> controller;
         // Release before future destructors wait, including an assertion failure.
         Release release { barrier };
         barrier.armed = true;
-        audio = std::async (std::launch::async, [&] { render (processor, 0.25f); });
+        const auto heldFrames = live ? (operation == Operation::prepare ? 1024 : 512) : 64;
+        audio = std::async (std::launch::async, [&] { render (processor, 0.25f, heldFrames); });
         await ([&] { return barrier.entered.load(); }, "Actual callback never reached held completed render");
         controller = std::async (std::launch::async, replace);
         await ([&] { return processor.isMuted() || barrier.watchedDestroy != 0
@@ -149,11 +210,51 @@ void exercise (Operation operation, bool hold)
             "Acknowledged handoff did not finish replacement");
         require (barrier.prematureDestroy == 0 && barrier.watchedDestroy == 1,
             "Engine retirement was not exactly once after reader release");
+        require (! live || operation != Operation::prepare || oldCompleted.has_value(),
+            "Handoff failed to observe the held old window before reopening audio");
     }
     else require (replace(), "Quiescent engine replacement failed");
     require (! processor.isMuted() && processor.getParameterForPublicId ("fixture.level") == identity
         && processor.getParameters().size() == count, "Handoff stranded mute or changed host identity");
-    render (processor, -0.5f);
+    if (! live) { render (processor, -0.5f); return; }
+
+    const auto resumedGeneration = processor.getParameterSurfaceGeneration();
+    if (operation == Operation::prepare)
+        require (resumedGeneration == generation, "Host reprepare changed the public control generation");
+    else
+    {
+        require (resumedGeneration == generation + 1 && ! processor.takeLiveAnalysisPacket (71)
+            && ! processor.acknowledgeLiveAnalysisPacket (71, generation, retained->sequence)
+            && ! processor.subscribeLiveAnalysis (71, generation, 3)
+            && processor.subscribeLiveAnalysis (71, resumedGeneration, 3),
+            "Replacement retained obsolete live session generation");
+    }
+    render (processor, -0.5f, 512);
+    // Four baseline chunks, held old chunks, then two replacement chunks.
+    // Wait for the sole real worker, not an elapsed guess about accumulation.
+    const auto consumed = operation == Operation::prepare ? 10U : 8U;
+    await ([&] { return processor.getLiveAnalysisStatistics().consumedChunks >= consumed; },
+        "Handoff worker did not consume the first replacement half-window");
+    require (! processor.takeLiveAnalysisPacket (71), "Handoff spliced an old partial window into new capture");
+    render (processor, -0.5f, 512);
+    const auto resumed = packet (processor);
+    const auto rate = operation == Operation::prepare ? 96000U : 48000U;
+    require (resumed.analysis.generation == resumedGeneration && resumed.analysis.sampleRateHz == rate
+        && resumed.analysis.streamId != retained->analysis.streamId
+        && resumed.analysis.startFrame == 0 && resumed.analysis.endFrame == 1024 && resumed.analysis.gap,
+        "Replacement live window lost current generation/rate/stream/frame origin");
+    require (std::bit_cast<std::uint64_t> (resumed.analysis.frequencyHz[64])
+        == std::bit_cast<std::uint64_t> (rate / 16.0),
+        "Replacement live frequency coordinates used the previous engine rate");
+    assertLiveSignal (resumed, -0.5f);
+    require (retained->analysis.generation == generation && retained->analysis.sampleRateHz == 48000
+        && retained->analysis.startFrame == 64 && retained->analysis.endFrame == 1088,
+        "Replacement mutated retained old live packet identity");
+    assertLiveSignal (*retained, 0.25f);
+    require (processor.acknowledgeLiveAnalysisPacket (71, resumedGeneration, resumed.sequence)
+        && processor.unsubscribeLiveAnalysis (71), "Handoff stranded current live delivery");
+    std::cout << "LIVE_HANDOFF operation=" << static_cast<int> (operation)
+              << " generation=" << resumedGeneration << " rate=" << rate << " PASS\n";
 }
 }
 
@@ -203,6 +304,7 @@ extern "C" void __wrap_dandrum_kernel_destroy (DandrumKernelInstrument* engine)
             std::cerr << "Replacement requested engine destruction while its actual callback reader was held\n";
             std::_Exit (1);
         }
+        if (barrier->beforeRetirement) barrier->beforeRetirement();
         ++barrier->watchedDestroy;
     }
     __real_dandrum_kernel_destroy (engine);
@@ -218,10 +320,11 @@ extern "C" DandrumKernelInstrument* __wrap_dandrum_kernel_prepare_file (const ch
 int main (int argc, char** argv)
 {
     juce::ScopedJuceInitialiser_GUI gui;
-    const bool hold = argc == 2 && std::string (argv[1]) == "--hold";
+    const bool live = argc == 2 && std::string (argv[1]) == "--live";
+    const bool hold = live || (argc == 2 && std::string (argv[1]) == "--hold");
     try
     {
-        for (auto operation : { Operation::reload, Operation::prepare, Operation::restore }) exercise (operation, hold);
+        for (auto operation : { Operation::reload, Operation::prepare, Operation::restore }) exercise (operation, hold, live);
         std::cout << "HANDOFF_CALLBACK cpp_new=" << callbackAllocation << " locks=" << callbackLock
                   << " engine_lifecycle=" << callbackLifecycle << '\n';
         require (callbackAllocation == 0 && callbackLock == 0 && callbackLifecycle == 0,
@@ -233,5 +336,5 @@ int main (int argc, char** argv)
                   << " engine_lifecycle=" << callbackLifecycle << '\n' << error.what() << '\n';
         return 1;
     }
-    std::cout << "ENGINE_HANDOFF " << (hold ? "held reader" : "quiescent baseline") << " PASS\n";
+    std::cout << "ENGINE_HANDOFF " << (live ? "live identity" : hold ? "held reader" : "quiescent baseline") << " PASS\n";
 }

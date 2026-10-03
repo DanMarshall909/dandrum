@@ -5,7 +5,8 @@ Task 6.3 remains in progress. Its capture foundation is
 at most two selected channels, 64 chunks and at most 256 frames per chunk.
 The queue owns copied PCM; no frame retains a pointer to a host buffer, engine
 or editor. The scheduled service described below now connects this queue to
-an analysis worker. Processor output and renderer subscriptions remain pending.
+an analysis worker. The processor capture connection and acknowledged handoff are verified below;
+shared renderer subscriptions and actual live views remain pending.
 
 ## Capture contract
 
@@ -226,7 +227,7 @@ factory parity, shared adapters and bounded browser delivery remain pending.
 At that increment, concurrent reload/reprepare identity and safe reader
 retirement remained pending: fixed-delay reclamation was not an ownership proof.
 The handoff increment below supplies a prerequisite for the concurrent identity
-test; that live identity integration is still pending.
+test; the live identity integration section below now records that regression.
 Tasks 6.3/6.4, structural runtime and the full sampler/303 goal remain incomplete.
 
 ## Acknowledged engine handoff
@@ -286,6 +287,53 @@ before validation, editor-independent completion, failure recovery and host
 surface compatibility checks remain pending. Existing off-audio preset writes
 and reentrant engine writers also need the later serialization/live-binding
 work; this increment does not make every engine operation concurrency-safe.
-Shutdown with pending structural work and concurrent live generation identity
-are not covered by these held-reader cases. No structural acceptance case or
+Shutdown with pending structural work is not covered by these held-reader cases.
+Concurrent live identity is covered by the additional integration below. No structural acceptance case or
 task is marked complete, and no delta spec is synced.
+
+## Live identity during engine replacement
+
+`cxx-plugin-live-handoff` extends the same real processor/engine fixture with an
+active live worker. Reload, host reprepare and state restore hold an old render
+while replacement waits at the acknowledged gate. Later sentinel-filled
+1/64/512/2048-frame callbacks still return exact zero without engine access.
+Retained old packets keep literal `+0.25`, their 48 kHz rate, generation and
+captured output-stream frame coordinates after replacement. Host parameter
+object/count stay stable.
+
+Host reprepare requests 96 kHz after the held callback took its block metadata.
+An off-audio retirement observer reads the actual completed old window while
+admission remains closed: it must still report `+0.25` at 48 kHz. Reprepare keeps
+the public generation; reload/state restore advance it and reject obsolete
+subscriptions/acknowledgements. Each replacement starts a new live stream at
+frame zero. A first 512-frame half-window produces no packet; another 512 frames
+produce one gapped `0..1024` window of literal `-0.5` with the current generation,
+rate and frequency coordinates. Old partial/overlap data cannot join that window.
+
+The initial fixture failed because baseline FFT overlap completed valid old
+windows; that is a setup/oracle correction, not evidence of splicing. The final
+fixture resets demand after acknowledging baseline, while the reprepare case
+separately observes and acknowledges a complete old window before reopening.
+Actual callback guards observe zero C++ allocation, direct mutex acquisition
+and FFI preparation/destruction. These are Linux observation boundaries, not
+all Rust allocations, OS calls, DAW scheduling or callback timing.
+
+The production handoff/capture code is unchanged from `54f8b4f`. GCC 11 gcov
+executes the same 36/36 H1 guard records with the additional live schedule;
+whole-processor/branch coverage is unclaimed. Five compiled/linked copied
+processor faults fail named assertions: lost stream reset, fixed rate, late
+old-block rate relabelling, swapped capture channels and fixed-delay retirement.
+The healthy copy passes. Sources, failed setup, commands, gcov and faults are
+retained in `/tmp/dandrum-live-identity-evidence`.
+
+This proves the controlled three replacement schedules, not arbitrary racing
+host setters, failed reprepare labels, pointer reuse across several replacements
+without callbacks, or every engine writer. Shared commands/adapters, actual live
+views, browser delivery and the automatic structural coordinator/recovery remain
+pending. Tasks 6.3/6.4 and section 9 remain unchecked; no delta spec is synced.
+
+Final complete builds pass (native 8.619 s, Web serial 668.216 s), including
+Standalone and VST3 targets. Final CTest passes **33/33 native** and **58/58 Web**
+without skips; the sampler/303 original runtime regressions retain their own
+scope. Strict OpenSpec, unchanged main-spec map and local document links pass.
+All warm builds, dependencies and raw failed/successful evidence are retained.

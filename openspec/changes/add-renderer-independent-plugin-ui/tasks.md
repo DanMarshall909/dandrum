@@ -222,6 +222,17 @@ identity awaits task 9.2's safe ownership handoff; the existing fixed delay is
 not its proof. Shared adapters, actual live views and browser delivery remain
 pending, so 6.3/6.4 and structural runtime remain unchecked.
 
+Task 6.3 live identity progress (2026-10-03): the registered live-handoff
+regression exercises actual reload, 48-to-96 kHz host reprepare and state
+restore with a held render and subscribed worker. Old packets retain their
+identity; replacement windows require complete contiguous new PCM and reset
+frame origin/stream. Stable host objects and signed `+0.25`/`-0.5` outputs are
+asserted. The handoff/capture production code is unchanged from `54f8b4f`; the
+[live analysis record](../../../docs/design-system/live-analysis.md) records
+coverage, five calibrated faults, setup correction and controlled-host limits.
+Shared adapters, actual live views and browser delivery remain pending; tasks
+6.3/6.4 and automatic structural runtime stay unchecked.
+
 ## 7. Capability-Aware Sampler Composition
 
 - [ ] 7.1 Implement prepared KeyMap inspection/audition in both renderers; tests must prove actual velocity ranges, alternate/layer distinction, capability-gated structural commands with automatic rebuilding, and host-driven note feedback.
@@ -277,7 +288,7 @@ observation and focused callback guards. No future callback is required for
 quiescent replacement. The original held-reader test failed on premature
 retirement before implementation. This advances the S3/S4 prerequisite;
 immediate structural admission, autonomous rebuilding, recovery, renderer
-commands, shutdown during pending structural work and concurrent live identity
-remain pending. Section 9 and tasks 6.3/6.4 remain unchecked. The
+commands and shutdown during pending structural work remain pending.
+The additional live-identity regression is recorded under task 6.3 above. Section 9 and tasks 6.3/6.4 remain unchecked. The
 [live analysis record](../../../docs/design-system/live-analysis.md) states
 the measured evidence and limits.

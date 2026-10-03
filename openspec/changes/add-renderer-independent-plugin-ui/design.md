@@ -173,10 +173,14 @@ master stereo PCM, including muted zero output, through its fixed queue. Session
 controls and numeric delivery are off audio; ordinary host automation retains
 its normal binding. Processor-fixture tests cover actual rates, signed PCM,
 window coordinates and independence from a stalled worker. Shared adapters,
-live renderer consumers and bounded browser transport remain pending. Concurrent
-reload/reprepare identity still needs its own integration test using the
-acknowledged handoff above. The former pointer exchange plus fixed delay was
-not proof of reader safety. See the [live analysis evidence](../../../docs/design-system/live-analysis.md)
+live renderer consumers and bounded browser transport remain pending.
+Registered live-handoff tests now exercise concurrent reload, host reprepare
+and state restore through the acknowledged gate: old packets retain their rate
+and signed samples, and a fresh complete replacement window has current
+generation/rate/stream and frame-zero coordinates. This controlled schedule
+does not prove every host setter or engine writer. The former pointer exchange
+plus fixed delay was not proof of reader safety. See the
+[live analysis evidence](../../../docs/design-system/live-analysis.md)
 for the measured callback boundaries and outstanding integration gates.
 
 ### Make editor choice a build boundary
