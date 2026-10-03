@@ -110,6 +110,10 @@ add_executable(dandrum-plugin-meter-capture-test tests/cpp/PluginMeterCaptureTes
 target_include_directories(dandrum-plugin-meter-capture-test PRIVATE src/juce-plugin)
 add_test(NAME cxx-plugin-meter-capture COMMAND dandrum-plugin-meter-capture-test)
 
+add_executable(dandrum-plugin-live-capture-test tests/cpp/PluginLiveCaptureTest.cpp)
+target_include_directories(dandrum-plugin-live-capture-test PRIVATE src/juce-plugin)
+add_test(NAME cxx-plugin-live-capture COMMAND dandrum-plugin-live-capture-test)
+
 add_executable(dandrum-plugin-meter-aggregation-test tests/cpp/PluginMeterAggregationTest.cpp)
 target_include_directories(dandrum-plugin-meter-aggregation-test PRIVATE src/juce-plugin)
 add_test(NAME cxx-plugin-meter-aggregation COMMAND dandrum-plugin-meter-aggregation-test)

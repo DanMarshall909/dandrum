@@ -171,6 +171,16 @@ changed-line/branch coverage limits, eleven focused faults and Linux/1x runtime
 limits. No Rust, engine preparation, host parameter identity, live capture,
 final layout or automatic structural runtime change is included.
 
+Task 6.3 capture progress (2026-10-03): the fixed master-output PCM queue
+preserves full-rate signed selected channels in 64×256-frame chunks. Component
+tests prove copied ownership, bounded losses, explicit gaps, current resumed
+coordinates and rapid hide/show selection revisions; all 51 new executable
+header records run, and seven copied faults fail named assertions. The
+[live analysis record](../../../docs/design-system/live-analysis.md) distinguishes
+this foundation from pending worker, scope/FFT, processor and subscription
+integration. Task 6.3 stays unchecked; no actual callback, renderer or timing
+completion is claimed by this increment.
+
 ## 7. Capability-Aware Sampler Composition
 
 - [ ] 7.1 Implement prepared KeyMap inspection/audition in both renderers; tests must prove actual velocity ranges, alternate/layer distinction, capability-gated structural commands with automatic rebuilding, and host-driven note feedback.

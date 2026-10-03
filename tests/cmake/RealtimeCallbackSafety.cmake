@@ -87,11 +87,15 @@ if (plugin_process_block_body MATCHES "ScopedLock|CriticalSection|std::cout|std:
     message(FATAL_ERROR "DandrumAudioProcessor::processBlock contains callback-unsafe locking, allocation, console IO, engine lifecycle/loading, matching, provider, or offline Sound Lab work")
 endif()
 
-read_source_relative(meter_capture_source "src/juce-plugin/InstrumentUiMeterCapture.h")
-string(REGEX REPLACE "//[^\n]*" "" meter_capture_code "${meter_capture_source}")
-if (meter_capture_code MATCHES "std::vector|std::mutex|condition_variable|new |malloc|make_unique|make_shared|WaitableEvent|callAsync|triggerAsyncUpdate|MessageManager|std::thread|std::future")
-    message(FATAL_ERROR "InstrumentUiMeterCapture contains allocation, locking, message posting or worker execution")
-endif()
+foreach(capture_path
+        "src/juce-plugin/InstrumentUiMeterCapture.h"
+        "src/juce-plugin/InstrumentUiLiveCapture.h")
+    read_source_relative(capture_source "${capture_path}")
+    string(REGEX REPLACE "//[^\n]*" "" capture_code "${capture_source}")
+    if (capture_code MATCHES "std::vector|std::mutex|condition_variable|new |malloc|make_unique|make_shared|WaitableEvent|callAsync|triggerAsyncUpdate|MessageManager|std::thread|std::future")
+        message(FATAL_ERROR "${capture_path} contains allocation, locking, message posting or worker execution")
+    endif()
+endforeach()
 
 set(rust_offline_operation_pattern
     "codex_cli_provider|graph_proposal|sound_matching|sound_workbench|match_sound_fixture|std::process|Command::new|std::fs|fs::(read|write|File|OpenOptions)|File::(open|create)|sha2|Sha256|rustfft|FftPlanner|deterministic_bounded_search|optimizer|reference_wav|load_pcm_wav|decode_pcm_wav|write_wav|fft")

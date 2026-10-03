@@ -133,6 +133,19 @@ Static spectrogram jobs initially use a Hann window, a documented power-of-two F
 
 Live scope capture can publish signed min/max envelopes. FFT input instead requires contiguous sample windows; do not FFT min/max envelopes or simply retain every Nth sample. Initially capture the subscribed mono/selected channel at full analysis rate; any subsequent downsampling requires anti-alias filtering and a declared effective sample rate. Include sample positions and gap flags. On loss, discard a partial FFT window rather than concatenate nonadjacent samples. Workers limit backlog and publish bounded numeric column batches. Canvas is the initial web drawing backend; adopt WebGL only if measurements warrant it.
 
+The first live capture uses one actual master-output tap with at most two
+selected channels. Processor-owned storage holds 64 chunks of at most 256 full-rate
+frames per channel. The callback advances sample time even when capture is
+disabled, copies only subscribed channels, rejects new chunks when full and
+marks the next admitted chunk as discontinuous. Selection changes and a new
+prepared stream also reset analysis continuity. Frames copy PCM rather than
+retaining host-buffer pointers; they carry generation, stream, sequence, sample
+position, actual engine rate, selected-channel mask and a selection revision.
+The worker rejects queued data from an earlier selection, including hide/show
+that occurs wholly between callbacks. Non-finite PCM is
+validated by the off-audio worker before scope/FFT analysis. Storage is never
+reclaimed or reset by an editor or worker while audio may use it.
+
 ### Make editor choice a build boundary
 
 Separate common UI services, native components, and web transport/resources into build targets. Use an editor factory/configuration value independent of instrument data; remove compulsory HTML from the neutral demo description. A native-only build disables browser features and requires neither WebView SDKs/WebKit nor Node. The web configuration compiles React/CSS/fonts/icons ahead of time and embeds local assets via the resource provider. No production CDN scripts, runtime Babel or development server.
