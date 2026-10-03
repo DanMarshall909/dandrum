@@ -13,12 +13,14 @@ juce::Component* find (juce::Component& parent, const juce::String& id)
 class Application final : public juce::JUCEApplication, private juce::Timer
 {
 public:
+    explicit Application (bool runStallCheck = false) : stallCheck (runStallCheck) {}
     const juce::String getApplicationName() override { return "Dandrum Live Renderer Check"; }
     const juce::String getApplicationVersion() override { return "1"; }
     void initialise (const juce::String&) override
     {
         try
         {
+            deadline = juce::Time::getMillisecondCounterHiRes() + (stallCheck ? 70000 : 25000);
             directory = juce::File::getSpecialLocation (juce::File::tempDirectory)
                 .getNonexistentChildFile ("dandrum-live-renderer", {}, false);
             require (directory.createDirectory().wasOk(), "Cannot create live renderer fixture");
@@ -80,21 +82,30 @@ private:
     std::array<std::uint64_t, 4> occupiedSessions {};
     std::int64_t processedFrames = 0, minimumStartFrame = 0;
     bool finished = false;
-    double deadline = juce::Time::getMillisecondCounterHiRes() + 25000;
+    const bool stallCheck;
+    float expectedAudio = 0.5f;
+    double deadline = 0;
    #if JUCE_WEB_BROWSER
     juce::WebBrowserComponent* browser = nullptr;
     bool evaluating = false, observedRejectedReply = false;
+    // Five schedules: packet, acknowledgement, hide, reload, close/reopen.
+    int stallPhase = 0, stallStep = 0;
+    double heldSince = 0;
+    std::uint64_t analyzedBeforeHold = 0, hiddenAnalyzed = 0;
+    bool hiddenSettled = false;
+    juce::String frozenDisplayFrame;
    #endif
     void setLevel (float normalised)
     {
         auto* parameter = processor->getParameterForPublicId ("fixture.level");
         require (parameter, "Live renderer host parameter is absent");
         parameter->setValueNotifyingHost (normalised);
+        expectedAudio = normalised * 2 - 1;
     }
     bool compact() const { return stage == 3 || stage == 5; }
     bool spectral() const { return stage == 4 || stage == 5; }
     int channel() const { return stage == 1 ? 1 : 0; }
-    float amplitude() const { return stage == 1 ? 0.0f : stage < 2 || stage >= 6 ? 0.5f : -0.5f; }
+    float amplitude() const { return stage == 1 ? 0.0f : expectedAudio; }
     void releaseSlots()
     {
         for (auto& session : occupiedSessions)
@@ -155,7 +166,11 @@ private:
             require (png.writeImageToStream (image, stream)
                 && file.replaceWithData (stream.getData(), stream.getDataSize()), "Cannot retain actual live plot");
         }
-        if (++stage > 8) { finish (true); return; }
+        if (++stage > 8)
+        {
+            if (! stallCheck) finish (true);
+            return;
+        }
         if (stage == 7) minimumStartFrame = processedFrames;
         editor->setSize (compact() ? 820 : 1200, compact() ? 560 : 800);
         if (stage == 2) { setLevel (0.25f); minimumStartFrame = processedFrames; }
@@ -186,12 +201,17 @@ private:
             require (juce::Time::getMillisecondCounterHiRes() < deadline, "Actual live renderer timed out");
            #endif
             juce::AudioBuffer<float> audio (2, 64); juce::MidiBuffer midi;
-            for (int i = 0; i < 16; ++i) { audio.clear(); processor->processBlock (audio, midi); }
+            for (int i = 0; i < 16; ++i)
+            {
+                audio.clear(); processor->processBlock (audio, midi);
+                for (int frame = 0; frame < 64; ++frame)
+                    require (std::bit_cast<std::uint32_t> (audio.getSample (0, frame)) == std::bit_cast<std::uint32_t> (expectedAudio)
+                        && std::abs (audio.getSample (1, frame)) < 0.000001f,
+                        "Real engine did not render literal signed fixture output");
+            }
             processedFrames += 1024;
-            require (std::bit_cast<std::uint32_t> (audio.getSample (0, 63))
-                    == std::bit_cast<std::uint32_t> (stage < 2 || stage >= 6 ? 0.5f : -0.5f)
-                && std::abs (audio.getSample (1, 63)) < 0.000001f, "Real engine did not render literal signed fixture output");
            #if JUCE_WEB_BROWSER
+            if (stallCheck && stage > 8) { pollStall(); return; }
             pollWeb();
            #else
             if (stage == -1)
@@ -260,6 +280,202 @@ private:
         catch (const std::exception& error) { finish (false, error.what()); }
     }
    #if JUCE_WEB_BROWSER
+    bool currentStallPlot (const juce::var& result)
+    {
+        if (! static_cast<bool> (result["ready"]) || result["generation"].toString() != juce::String (generation)
+            || result["start"].toString().getLargeIntValue() < minimumStartFrame) return false;
+        require (result["end"].toString().getLargeIntValue() - result["start"].toString().getLargeIntValue() == 1024
+            && static_cast<bool> (result["settings"]), "Stalled browser recovery lost current measurement coordinates or settings");
+        juce::MemoryOutputStream bytes;
+        require (juce::Base64::convertFromBase64 (bytes, result["png"].toString().fromFirstOccurrenceOf (",", false, false)),
+                 "Cannot decode stalled browser's original Canvas");
+        const auto image = juce::ImageFileFormat::loadFrom (bytes.getData(), bytes.getDataSize());
+        require (image.isValid(), "Stalled browser's original Canvas is invalid");
+        verifyPixels (image);
+        return true;
+    }
+    void nextStallPhase()
+    {
+        std::cout << "LIVE_STALL phase=" << stallPhase << " current_frames=" << processedFrames << " PASS\n";
+        ++stallPhase; stallStep = 0; frozenDisplayFrame.clear(); hiddenSettled = false;
+    }
+    void pollStall()
+    {
+        // The original audio/editor/worker remain active. Only actual Promise
+        // replies are delayed at the browser edge; values and requests are intact.
+        require (PluginConstructionTestProbe::live (*processor).pendingPayloads() <= 2,
+                 "Stalled browser exceeded one native outstanding plus one replaceable latest packet");
+        if (stallPhase == 4 && stallStep == 2)
+        {
+            editor.reset(); browser = nullptr;
+            require (PluginConstructionTestProbe::live (*processor).selectedChannels() == 0
+                && PluginConstructionTestProbe::live (*processor).pendingPayloads() == 0,
+                "Closing a stalled original editor leaked live demand or payloads");
+            minimumStartFrame = processedFrames; stallStep = 3; return;
+        }
+        if (stallPhase == 4 && stallStep == 3 && ! editor)
+        {
+            if (processedFrames < minimumStartFrame + 4096) return;
+            require (PluginConstructionTestProbe::live (*processor).selectedChannels() == 0,
+                     "Closed stalled editor reactivated capture");
+            editor.reset (processor->createEditor());
+            require (editor != nullptr, "Stalled editor failed to reopen through original factory");
+            editor->setSize (820, 560); editor->addToDesktop (juce::ComponentPeer::windowHasTitleBar); editor->setVisible (true);
+            browser = &PluginEditorBridgeTestProbe::runtimeBrowser (*dynamic_cast<DandrumAudioProcessorEditor*> (editor.get()));
+            minimumStartFrame = processedFrames;
+        }
+        if (evaluating || ! browser) return;
+        const auto command = stallStep == 2 && stallPhase < 3 ? "release"
+            : stallPhase == 2 && stallStep == 1 ? "hide" : "inspect";
+        const auto jsPhase = stallPhase == 4 && stallStep >= 3 ? 5 : stallPhase;
+        const auto script = juce::String (R"JS((() => {
+          if (!document.querySelector('.sampler .lower')) return '';
+          if (!window.__liveStall) {
+            const backend = window.__JUCE__?.backend;
+            if (!backend) return '';
+            const s = window.__liveStall = {phase:-1,armed:null,held:null,release:null,gets:0,acks:0,maxPacketBytes:0,reloadedPage:false};
+            const get = backend.getNativeFunction.bind(backend);
+            backend.getNativeFunction = name => {
+              const original = get(name);
+              if (!['getLiveAnalysisPacket','ackLiveAnalysisPacket'].includes(name)) return original;
+              return (...args) => {
+                if (name === 'getLiveAnalysisPacket') ++s.gets; else ++s.acks;
+                return original(...args).then(reply => {
+                  if (name === 'getLiveAnalysisPacket' && reply)
+                    s.maxPacketBytes = Math.max(s.maxPacketBytes,new TextEncoder().encode(JSON.stringify(reply)).length);
+                  const kind = name === 'getLiveAnalysisPacket' ? 'packet' : 'ack';
+                  if (s.armed !== kind || !reply) return reply;
+                  s.armed = null;
+                  if (s.held) throw new Error('Two real live replies were retained');
+                  s.held = {kind,generation:args[kind === 'packet' ? 0 : 1],sequence:kind === 'packet' ? reply.sequence : args[0],
+                    start:kind === 'packet' ? reply.startFrame : null, end:kind === 'packet' ? reply.endFrame : null,
+                    gets:s.gets,acks:s.acks};
+                  return new Promise(resolve => { s.release = () => {s.held=null;s.release=null;resolve(reply);}; });
+                });
+              };
+            };
+          }
+          const s = window.__liveStall, phase = )JS") + juce::String (jsPhase) + R"JS(;
+          if (s.phase !== phase) {
+            if (s.held) return 'ERROR: Stalled test advanced while retaining a reply';
+            s.phase=phase;
+            // The original bridge refreshes the whole document on reload.
+            // A new page must resume without recreating the discarded hold.
+            s.reloadedPage=phase === 3 && )JS" + juce::String (stallStep >= 2 ? "true" : "false") + R"JS(;
+            s.armed=s.reloadedPage ? null : phase === 1 ? 'ack' : phase < 5 ? 'packet' : null;
+          }
+          const command = ')JS" + command + R"JS(';
+          if (command === 'release' && s.release) s.release();
+          // Optional calibration drives one extra real registered request,
+          // leaving production assets and the original controller unchanged.
+          if ()JS" + juce::String (stallPhase == 0 && stallStep == 1
+              && std::getenv ("DANDRUM_LIVE_STALL_EXTRA_REQUEST") != nullptr ? "true" : "false") + R"JS()
+            void window.__JUCE__.backend.getNativeFunction('getLiveAnalysisPacket')()JS" + juce::String (generation) + R"JS();
+          const mode = document.querySelector('[data-sample-display="' + (command === 'hide' ? 'wave' : 'scope') + '"]');
+          if (!mode) return 'ERROR: Stalled original editor has no display control';
+          if (mode.getAttribute('aria-pressed') !== 'true') mode.click();
+          const panel=document.querySelector('.live-analysis'), canvas=panel?.querySelector('canvas');
+          return JSON.stringify({held:s.held,gets:s.gets,acks:s.acks,maxPacketBytes:s.maxPacketBytes,reloadedPage:s.reloadedPage,
+            hidden:!panel,ready:!!canvas && !!panel.dataset.startFrame,
+            generation:panel?.dataset.generation,start:panel?.dataset.startFrame,end:panel?.dataset.endFrame,
+            settings:!!panel && panel.textContent.includes('96000 Hz') && panel.textContent.includes('FFT 1024')
+              && panel.textContent.includes('hop 256') && panel.textContent.includes('-120..0 dBFS'),
+            png:canvas?.toDataURL('image/png')});
+        })())JS";
+        evaluating = true;
+        browser->evaluateJavascript (script, [this] (juce::WebBrowserComponent::EvaluationResult evaluation)
+        {
+            evaluating = false;
+            if (finished) return;
+            try
+            {
+                require (! evaluation.getError(), "Original stalled browser observation failed");
+                const auto* value = evaluation.getResult();
+                if (! value || value->isVoid() || value->isUndefined() || value->toString().isEmpty()) return;
+                require (! value->toString().startsWith ("ERROR: "), value->toString());
+                const auto result = juce::JSON::parse (value->toString());
+                require (result.isObject(), "Original stalled browser returned no measurement");
+                if (stallStep == 0)
+                {
+                    if (! result["held"].isObject()) return;
+                    require (result["held"]["generation"].toString().getIntValue() == static_cast<int> (generation),
+                             "Stall observer did not retain an actual current reply");
+                    if (stallPhase != 1)
+                        require (result["held"]["end"].toString().getLargeIntValue()
+                            - result["held"]["start"].toString().getLargeIntValue() == 1024,
+                            "Stall observer retained a partial packet");
+                    heldSince = juce::Time::getMillisecondCounterHiRes();
+                    analyzedBeforeHold = processor->getLiveAnalysisStatistics().analyzedWindows;
+                    frozenDisplayFrame = result["start"].toString();
+                    if (stallPhase == 0) setLevel (0.25f);
+                    if (stallPhase == 1) setLevel (0.75f);
+                    stallStep = 1; return;
+                }
+                if (stallStep == 1)
+                {
+                    require (result["held"].isObject()
+                        && result["gets"].toString() == result["held"]["gets"].toString()
+                        && result["acks"].toString() == result["held"]["acks"].toString(),
+                        "Stalled packaged React controller issued another packet request or acknowledgement");
+                    const auto elapsed = juce::Time::getMillisecondCounterHiRes() - heldSince;
+                    if (stallPhase < 2)
+                    {
+                        require (result["start"].toString() == frozenDisplayFrame,
+                                 "Stalled packaged React display advanced without its actual reply");
+                        if (elapsed < 5000) return;
+                        require (processor->getLiveAnalysisStatistics().analyzedWindows > analyzedBeforeHold + 100
+                            && PluginConstructionTestProbe::live (*processor).pendingPayloads() == (stallPhase == 0 ? 2U : 1U),
+                            "Stalled reply did not exercise sustained analysis with bounded coalescing");
+                    }
+                    else if (stallPhase == 2)
+                    {
+                        if (! static_cast<bool> (result["hidden"])) return;
+                        require (PluginConstructionTestProbe::live (*processor).selectedChannels() == 0
+                            && PluginConstructionTestProbe::live (*processor).pendingPayloads() == 0,
+                            "Hidden stalled packaged view retained capture demand or payloads");
+                        if (elapsed < 500) return;
+                        const auto analyzed = processor->getLiveAnalysisStatistics().analyzedWindows;
+                        if (! hiddenSettled) { hiddenAnalyzed = analyzed; hiddenSettled = true; }
+                        require (analyzed == hiddenAnalyzed, "Hidden stalled packaged view continued analysis");
+                        if (elapsed < 5000) return;
+                    }
+                    else if (elapsed < 2000) return;
+                    std::cout << "LIVE_STALL held_phase=" << stallPhase << " milliseconds=" << elapsed
+                              << " max_observed_packet_bytes=" << result["maxPacketBytes"].toString() << '\n';
+                    minimumStartFrame = processedFrames; stallStep = 2;
+                    if (stallPhase == 3)
+                    {
+                        require (processor->reloadInstrumentFromFile (patch()), "Reload during real pending reply failed");
+                        generation = processor->getParameterSurfaceGeneration(); setLevel (0.75f);
+                        processedFrames = minimumStartFrame = 0;
+                    }
+                    return;
+                }
+                if (stallPhase == 4 && stallStep == 3)
+                {
+                    if (currentStallPlot (result))
+                    {
+                        std::cout << "LIVE_STALL original_editor_reopened current_generation=" << generation << " PASS\n";
+                        finish (true);
+                    }
+                    return;
+                }
+                if (stallPhase == 3 && stallStep == 2)
+                {
+                    if (! currentStallPlot (result)) return;
+                    require (! result["held"].isObject() && static_cast<bool> (result["reloadedPage"]),
+                             "Reload did not retire the old page and its held reply");
+                    nextStallPhase(); return;
+                }
+                if ((stallStep == 2 || stallStep == 3) && currentStallPlot (result))
+                {
+                    require (! result["held"].isObject(), "Stalled browser recovery retained its old reply");
+                    nextStallPhase();
+                }
+            }
+            catch (const std::exception& error) { finish (false, error.what()); }
+        });
+    }
     void pollWeb()
     {
         if (evaluating) return;

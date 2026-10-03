@@ -413,3 +413,96 @@ Web test build passes; the refreshed full native build also passes. Final CTest
 passes **34/34 native** (24.086 s) and **62/62 Web** (51.731 s), without skips.
 Strict OpenSpec, unchanged main-spec map and document links pass. Warm builds,
 dependencies and failed/successful evidence are retained.
+
+## Sustained consumer and original-browser reply stalls
+
+The C13/C14 verification increment advances tasks 6.3/6.4 without changing
+production C++, Rust, React, assets or engine behaviour. It extends the real
+service component test and registers `web-live-stalled-replies` in CTest.
+
+`cxx-plugin-live-service` now takes four real packets, keeps all four consumers
+unacknowledged, and processes sixteen subsequent 2048-frame batches. Every
+batch checks the eight retained delivery positions, rejected additional takes,
+capture loss and the eight-window work limit. An ordinary C++ `new` interceptor
+observes zero allocations during warmed capture/analysis/publication, and the
+worker observer sees one persistent off-caller thread. Recovery asserts the
+current `32768..33792` window, literal -0.5/+0.25 channels and unchanged +0.5
+older copies. Hiding all consumers clears demand and delivery; resumption after
+16384 inactive frames requires the gapped `50176..51200` window.
+
+| Measured or declared boundary | Value and scope |
+| --- | --- |
+| Live subscribers | Four fixed slots |
+| Retained delivery positions | Four outstanding consumer copies plus four replaceable latest values |
+| Service object | 205864 bytes with GCC 11/Linux; excludes worker stack and separately allocated FFT state |
+| Typed packet | 14472 bytes on that build |
+| Warmed ordinary C++ allocation | Zero observed `new`/`new[]` calls; direct malloc, aligned allocation and process RSS are not measured |
+| Component work | 130 observed windows including warmup and resumed capture; at most eight per checked batch |
+| Browser live request | One occupied request through acknowledgement, including delayed native Promise replies |
+| Browser packet size | Largest observed serialized fixture packet was 27778 bytes; this is a measurement, not a universal byte quota |
+
+The service's outstanding position records an acknowledgement identity; its
+packet has already been copied to the consumer. The table does not count an
+additional outstanding packet array inside the service. Fixed object sizes do
+not measure total processor/browser memory or prepared cache retention.
+
+The browser lane uses the original sampler processor/editor factories, compiled
+engine and packaged React/WebKit page. A test observer forwards the original
+registered requests unchanged and delays one actual reply. It never supplies
+sample values, packets, host state or replacement drawing code. While the host
+fixture continues 64-frame processing at its prepared 96 kHz rate, every left
+sample equals literal +0.5 or -0.5 and the right remains silent. These are
+controlled callbacks in a JUCE application, not a DAW scheduling benchmark.
+
+| Schedule | Required original-consumer outcome |
+| --- | --- |
+| Packet reply held for five seconds | No additional get or acknowledgement; old plot stays fixed; worker continues and retains at most two delivery positions; fresh negative scope follows release |
+| Acknowledgement reply held for five seconds | No additional get or acknowledgement; native acknowledgement has completed and only latest remains; fresh positive scope follows release |
+| Hide while a packet reply is held | Wave removes the live panel, native demand/payloads become zero and settled analysis stops; release/show produces current coordinates |
+| Reload while a packet reply is held | The existing bridge refreshes the document, discarding the old page and Promise; the new page displays current generation, complete windows, actual settings and signed pixels |
+| Close while a packet reply is held | Original editor destruction clears native demand/payloads; reopening through the original factory displays current data after intervening callbacks |
+
+Each recovery is checked against the original Canvas pixels, current generation,
+a complete 1024-frame span and actual 96 kHz/Hann/FFT/hop/floor labels. The test
+also runs the existing full/compact scope/spectrum and admission schedules.
+CTest marks this distinct 24-second lane `runtime;stress`, runs it serially,
+requires a display and disables AT-SPI with `NO_AT_BRIDGE=1`. Accessibility is
+outside this lane. Five-second holds measure delayed operation replies, not a
+frozen JavaScript event loop or arbitrary renderer stalls.
+
+The current complete component suite executes all 139 live-service GCC gcov
+records; exhaustive branch, JUCE and browser coverage is unclaimed. Three
+compiled, linked copied component faults fail the new named assertions after
+a healthy baseline: per-publication allocation, lost acknowledgement gating and
+obsolete latest-packet retention. Mutation selection includes only the service
+component case, with no end-to-end tests. Separately, a test-only calibration
+submits an extra actual registered browser request: the original-consumer lane
+fails its named request-count assertion in three seconds. Production sources
+and assets are unchanged by that calibration; it is not a product mutation run.
+
+Retained failures include a null-buffer fixture crash confirmed by ASan, a C++
+raw-string compile error, the first calibration driver's unmatched source
+fragment, and a browser test timeout. The timeout exposed a harness assumption
+that reload retained its JavaScript page; the actual bridge refreshes it. The
+harness now requires retirement and fresh-page recovery. A bounded diagnostic
+also hit an unavailable AT-SPI registry. The repaired component fixture passes
+ASan. The component loop was reduced from 64 to 16 batches to keep ordinary
+feedback below a second while retaining repeated four-consumer coalescing.
+No production refactor is needed for these characterized schedules. Raw commands,
+sources, linkage maps, coverage, setup failures and healthy/calibrated runs are
+retained in `/tmp/dandrum-live-stall-evidence`.
+
+Tasks 6.3/6.4 and section 9 remain unchecked. Prepared cache byte accounting,
+broader combined resource workloads, event-loop stalls, callback duration/CPU/RSS
+and DAW hosting remain separate open evidence. This increment does not finish
+the sampler/303 layouts, automatic structural rebuilding or the overall goal.
+The live pull/acknowledgement bound also does not bound other host-state events;
+the existing `publishParameterUpdates` push path needs its own event-loop-stall
+check before claiming bounded browser publication as a whole.
+
+Final complete builds pass, including Standalone/VST3 (native 7.616 s, serial
+Web 670.151 s). CTest passes **34/34 native** (26.893 s) and **63/63 Web**
+(71.8 s), with no skips. The normal browser stress run passes in 24.87 s after
+the extra-request calibration is disabled; its earlier healthy owning run
+also passes. Strict OpenSpec and the unchanged main-spec map remain finalization
+gates. No baseline scenarios/fingerprints are synchronized by this increment.

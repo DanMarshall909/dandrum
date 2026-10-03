@@ -250,6 +250,25 @@ long-duration browser lifecycle/React stalls and callback timing remain pending;
 6.3/6.4 and section 9 stay unchecked. No structural runtime, complete sampler/303
 redesign, DAW hosting or spec synchronization is claimed.
 
+Task 6.3/6.4 sustained-consumer verification (2026-10-03): the actual live
+service now has a four-consumer repeated stall regression with zero observed
+ordinary C++ new calls after warmup, eight delivery positions, bounded batch
+work and current signed recovery. The original packaged Web editor's registered
+stress lane holds real packet/acknowledgement replies for five seconds, then
+proves hide/show, reload document retirement and close/reopen recovery while
+literal signed PCM continues. Three copied component faults fail named
+assertions; a separate extra original browser request calibrates its request
+counter. No production source or asset changes are included. The
+[live analysis record](../../../docs/design-system/live-analysis.md) specifies
+fixed-storage measurements, coverage, retained setup/harness failures and the
+AT-SPI/delayed-Promise limits. Prepared cache byte accounting, broader resource
+workloads, event-loop stalls and callback timing remain pending; 6.3/6.4 and
+section 9 stay unchecked.
+
+This verification slice passes complete native/Web builds, including
+Standalone/VST3, and CTest **34/34 native** and **63/63 Web**, with no skips.
+It leaves task checkboxes and implemented-baseline scenario mapping unchanged.
+
 ## 7. Capability-Aware Sampler Composition
 
 - [ ] 7.1 Implement prepared KeyMap inspection/audition in both renderers; tests must prove actual velocity ranges, alternate/layer distinction, capability-gated structural commands with automatic rebuilding, and host-driven note feedback.

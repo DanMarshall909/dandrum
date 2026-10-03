@@ -4,9 +4,29 @@
 #include <chrono>
 #include <cmath>
 #include <condition_variable>
+#include <cstdlib>
 #include <iostream>
+#include <new>
 #include <numbers>
 #include <stdexcept>
+
+namespace resourceProbe
+{
+std::atomic<bool> counting { false };
+std::atomic<std::size_t> allocations { 0 };
+}
+
+void* operator new (std::size_t size)
+{
+    if (resourceProbe::counting) ++resourceProbe::allocations;
+    if (auto* result = std::malloc (size ? size : 1)) return result;
+    throw std::bad_alloc();
+}
+void* operator new[] (std::size_t size) { return ::operator new (size); }
+void operator delete (void* memory) noexcept { std::free (memory); }
+void operator delete (void* memory, std::size_t) noexcept { std::free (memory); }
+void operator delete[] (void* memory) noexcept { std::free (memory); }
+void operator delete[] (void* memory, std::size_t) noexcept { std::free (memory); }
 
 namespace
 {
@@ -312,11 +332,85 @@ void tinyChunks()
     near (packet->analysis.channel[0].magnitudeDbFS[64], -6.020599913, 0.0002,
         "Tiny-chunk worker corrupted contiguous spectral input");
 }
+
+void sustainedStalledConsumers()
+{
+    std::atomic<std::thread::id> workerId {};
+    std::atomic<bool> changedWorker { false };
+    Service service ([&] (std::stop_token)
+    {
+        auto empty = std::thread::id {};
+        const auto current = std::this_thread::get_id();
+        if (! workerId.compare_exchange_strong (empty, current) && empty != current)
+            changedWorker = true;
+    });
+    service.setGeneration (7); service.beginStream();
+    for (const auto session : { 11U, 22U, 33U, 44U })
+        require (service.subscribe (session, 7, 3), "Sustained live fixture could not admit four sessions");
+    std::array<float, 2048> left, right;
+    left.fill (0.5f); right.fill (0.25f);
+    service.capture (left.data(), right.data(), 1024, 7, 96000);
+    await ([&] { return service.statistics().consumedChunks == 4; }, "Sustained live fixture did not warm its worker");
+    std::array<Service::Packet, 4> held;
+    for (std::size_t n = 0; n < held.size(); ++n)
+    {
+        const auto packet = service.take ((n + 1) * 11);
+        require (packet.has_value(), "Sustained live fixture has no real outstanding packet");
+        held[n] = *packet;
+    }
+    require (workerId != std::this_thread::get_id(), "Sustained analysis ran on the caller");
+    left.fill (-0.5f);
+    resourceProbe::allocations = 0; resourceProbe::counting = true;
+    for (unsigned batch = 0; batch < 16; ++batch)
+    {
+        const auto before = service.statistics();
+        service.capture (left.data(), right.data(), left.size(), 7, 96000);
+        await ([&] { return service.statistics().consumedChunks == before.consumedChunks + 8; },
+               "Sustained live worker did not drain the bounded batch");
+        const auto after = service.statistics();
+        require (service.pendingPayloads() == 8 && after.droppedCaptureChunks == 0
+            && after.discardedChunks == 0 && after.analyzedWindows - before.analyzedWindows <= Service::maxWindowsPerBatch,
+            "Sustained stalled consumers exceeded retained packet or per-batch work limits");
+        for (const auto session : { 11U, 22U, 33U, 44U })
+            require (! service.take (session), "Sustained stalled consumer received an unacknowledged backlog");
+    }
+    resourceProbe::counting = false;
+    require (resourceProbe::allocations == 0 && ! changedWorker,
+             "Sustained live publication used ordinary C++ new or changed worker threads after warmup");
+    for (std::size_t n = 0; n < held.size(); ++n)
+    {
+        require (held[n].analysis.endFrame == 1024 && held[n].analysis.channel[0].scope[0].minimum == 0.5f,
+                 "Sustained worker changed a retained old packet");
+        require (service.acknowledge ((n + 1) * 11, 7, held[n].sequence), "Sustained live recovery rejected its exact acknowledgement");
+        const auto latest = service.take ((n + 1) * 11);
+        require (latest && latest->analysis.startFrame == 32768 && latest->analysis.endFrame == 33792
+            && latest->analysis.channel[0].scope[0].minimum == -0.5f
+            && latest->analysis.channel[1].scope[0].maximum == 0.25f,
+            "Sustained live recovery replayed history or lost signed channels");
+        require (service.setVisible ((n + 1) * 11, false), "Sustained live consumer failed to hide");
+    }
+    require (service.selectedChannels() == 0 && service.pendingPayloads() == 0,
+             "Hidden sustained consumers retained capture demand or payloads");
+    const auto inactive = service.statistics();
+    service.capture (nullptr, nullptr, 16384, 7, 96000);
+    require (service.statistics().consumedChunks == inactive.consumedChunks
+        && service.statistics().analyzedWindows == inactive.analyzedWindows,
+        "Hidden sustained stream performed unnecessary analysis");
+    require (service.setVisible (11, true), "Sustained live stream failed to resume");
+    service.capture (left.data(), right.data(), 1024, 7, 96000);
+    std::optional<Service::Packet> resumed;
+    await ([&] { resumed = service.take (11); return resumed.has_value(); }, "Sustained live stream missed its resumed window");
+    require (resumed->analysis.startFrame == 50176 && resumed->analysis.endFrame == 51200 && resumed->analysis.gap,
+             "Sustained hidden recovery lost current coordinates or gap");
+    std::cout << "LIVE_RESOURCE sessions=4 stalled_batches=16 analyzed_windows=" << service.statistics().analyzedWindows
+              << " service_bytes=" << sizeof (Service) << " packet_bytes=" << sizeof (Service::Packet)
+              << " peak_pending_payloads=8 steady_cpp_new=" << resourceProbe::allocations << " PASS\n";
+}
 }
 int main()
 {
     try { workerAndDelivery(); stoppableTeardown(); boundedBacklog(); overflowRecovery();
-          selectionAndGenerationRaces(); completedResultRace(); gapSurvivesCoalescing(); tinyChunks(); }
+          selectionAndGenerationRaces(); completedResultRace(); gapSurvivesCoalescing(); tinyChunks(); sustainedStalledConsumers(); }
     catch (const std::exception& error) { std::cerr << error.what() << '\n'; return 1; }
     std::cout << "LIVE_SERVICE actual worker and bounded delivery PASS\n";
 }

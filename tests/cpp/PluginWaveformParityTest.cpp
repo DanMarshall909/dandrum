@@ -12,6 +12,12 @@ struct PluginEditorBridgeTestProbe
 };
 #endif
 
+struct PluginConstructionTestProbe
+{
+    static const InstrumentUiLiveService& live (const DandrumAudioProcessor& processor)
+    { return processor.liveService; }
+};
+
 #include <array>
 #include <bit>
 #include <cmath>
@@ -404,6 +410,11 @@ int main (int argc, char** argv)
         return 77;
     }
     std::signal (SIGPIPE, SIG_IGN);
+   #endif
+   #if JUCE_WEB_BROWSER
+    if (argc == 2 && juce::String (argv[1]) == "--live-stall")
+        juce::JUCEApplicationBase::createInstance = []() -> juce::JUCEApplicationBase* { return new liveRendererCheck::Application (true); };
+    else
    #endif
     if (argc == 2 && juce::String (argv[1]) == "--live")
         juce::JUCEApplicationBase::createInstance = []() -> juce::JUCEApplicationBase* { return new liveRendererCheck::Application(); };
