@@ -323,6 +323,19 @@ private:
         // Observe the original React mount, native transport and Canvas. No
         // substitute page, injected peaks, helper rendering or mock host.
         const auto script = juce::String (R"JS((() => {
+          if (!window.__waveformPaintObservation) {
+            window.__waveformPaintObservation = new MutationObserver(() => {
+              const panel = document.querySelector('.waveform'), canvas = panel?.querySelector('canvas');
+              if (!canvas || !panel.textContent.includes('48000 Hz \u00b7 0.256 s')
+                  || canvas.width < 200 || canvas.width !== Math.round(canvas.clientWidth * devicePixelRatio)) return;
+              window.__waveformPaintChecks = (window.__waveformPaintChecks || 0) + 1;
+              const pixel = canvas.getContext('2d').getImageData(0, 1, 1, 1).data;
+              if (pixel[0] !== 141 || pixel[1] !== 167 || pixel[2] !== 154 || pixel[3] !== 255)
+                window.__waveformPaintFailure = 'Web waveform labels committed before prepared Canvas paint';
+            });
+            window.__waveformPaintObservation.observe(document.body, {subtree:true,childList:true,characterData:true});
+          }
+          if (window.__waveformPaintFailure) return 'ERROR: ' + window.__waveformPaintFailure;
           const panel = document.querySelector('.waveform'), canvas = panel?.querySelector('canvas');
           if (!canvas || !panel.textContent.includes('48000 Hz \u00b7 0.256 s')) return '';
           const r = canvas.getBoundingClientRect();
@@ -330,6 +343,7 @@ private:
             + " || innerHeight !== " + juce::String (compact ? 560 : 800)
             + R"JS( || canvas.width !== Math.round(r.width * devicePixelRatio)) return '';
           return JSON.stringify({png:canvas.toDataURL('image/png'),ratio:devicePixelRatio,
+            paintChecks:window.__waveformPaintChecks || 0,
             width:r.width,height:r.height,left:r.left,right:r.right,top:r.top,bottom:r.bottom,
             viewportWidth:innerWidth,viewportHeight:innerHeight});
         })())JS";
@@ -353,9 +367,12 @@ private:
                 require (value->isString(), "Original browser returned an invalid waveform observation");
                 if (value->toString().isEmpty())
                     return;
+                require (! value->toString().startsWith ("ERROR: "), value->toString());
                 const auto result = juce::JSON::parse (value->toString());
                 require (result.isObject() && std::abs (static_cast<double> (result["ratio"]) - 1.0) < 0.00001,
                          "Waveform pixel parity lane requires documented 1x display scaling");
+                require (static_cast<int> (result["paintChecks"]) > 0,
+                         "Waveform paint observer never checked actual ready labels");
                 require (static_cast<double> (result["left"]) >= 0.0
                              && static_cast<double> (result["right"]) <= static_cast<double> (result["viewportWidth"])
                              && static_cast<double> (result["top"]) >= 0.0

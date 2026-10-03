@@ -68,5 +68,36 @@ This slice does not verify Windows/macOS, DAW loading, audio deadlines or other
 display scales. Full supplied `WaveformPanel` styling/layout, spectral views and
 real playback cursor feedback remain later tasks. Rust, FFI, engine preparation,
 parameter identities and analysis service production code are unchanged.
-Section 9's automatic muted structural rebuild remains pending; the existing
-fixed-delay reload is not a safe structural ownership handoff.
+At that parity increment, section 9's automatic muted structural rebuild and
+acknowledged handoff were pending. The later [live-analysis record](live-analysis.md)
+describes the handoff prerequisite; automatic structural rebuilding is still open.
+
+## Coherent ready labels and Canvas paint
+
+A later full Web regression rejected the region-start marker while the ready
+heading was already visible. A read-only `MutationObserver` in the original
+WebKit runtime then reproducibly rejected `Web waveform labels committed before
+prepared Canvas paint`. Its positive observation count proves it checked an
+actual ready DOM commit, while all existing numeric, signed-quarter and ten-marker
+pixel assertions remain. It does not draw, substitute the editor or inject data.
+
+`PreparedWaveform` now draws in `useLayoutEffect`, matching the existing spectrum
+commit boundary. The original packaged editor passes the observer and both plot
+sizes after the canonical TypeScript/Vite build and CMake resource embedding.
+Transport, analysis, resize subscription, numeric data and host identity are
+unchanged; no delay or weaker pixel oracle was introduced. The changed hook is
+executed at this browser boundary; whole TSX/function/branch coverage is not claimed.
+The original passive-hook failure calibrates this regression. No new module is
+extracted, and the existing Canvas model tests remain unchanged.
+
+Commands, original TSX/bundle, RED/GREEN logs, final source/lock/asset hashes and
+the observer test are retained in `/tmp/dandrum-live-identity-evidence`. An early
+attempt to run during linking was BAD_COMMAND and is retained as setup failure,
+not RED. The successful RED ran after the same build handle completed. This
+remains Linux WebKit/Xvfb at 1x, with no DAW or timing claim.
+
+Final complete builds pass (native 8.619 s, Web serial 668.216 s), including
+Standalone and VST3 targets. Final CTest passes **33/33 native** and **58/58 Web**
+without skips; the sampler/303 original runtime regressions retain their own
+scope. Strict OpenSpec, unchanged main-spec map and local document links pass.
+All warm builds, dependencies and raw failed/successful evidence are retained.

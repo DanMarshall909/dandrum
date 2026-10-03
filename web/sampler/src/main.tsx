@@ -177,7 +177,7 @@ function PreparedWaveform({ document, sourceId, regionId, reportError, controls 
   }, []);
   const view = useMemo(() => preparedWaveformView(document, sourceId, regionId,
     status, width, 180), [document, sourceId, regionId, status, width]);
-  useEffect(() => {
+  useLayoutEffect(() => {
     const element = canvas.current;
     const context = element?.getContext('2d');
     if (!element || !context) return;
