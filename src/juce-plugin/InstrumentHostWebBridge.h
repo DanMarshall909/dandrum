@@ -18,7 +18,7 @@ public:
     ~InstrumentHostWebBridge();
 
     static const char* bootstrapScript() noexcept;
-    std::array<NativeFunctionEntry, 22> nativeFunctions();
+    std::array<NativeFunctionEntry, 27> nativeFunctions();
     juce::WebBrowserComponent::Options addNativeFunctions (
         juce::WebBrowserComponent::Options options);
     std::optional<juce::WebBrowserComponent::Resource> provideResource (
@@ -71,6 +71,16 @@ public:
                                 juce::WebBrowserComponent::NativeFunctionCompletion completion);
     void ackMeterClipFromWeb (const juce::Array<juce::var>& arguments,
                              juce::WebBrowserComponent::NativeFunctionCompletion completion);
+    void subscribeLiveAnalysisFromWeb (const juce::Array<juce::var>&,
+                                      juce::WebBrowserComponent::NativeFunctionCompletion);
+    void setLiveAnalysisVisibleFromWeb (const juce::Array<juce::var>&,
+                                       juce::WebBrowserComponent::NativeFunctionCompletion);
+    void getLiveAnalysisPacketForWeb (const juce::Array<juce::var>&,
+                                     juce::WebBrowserComponent::NativeFunctionCompletion);
+    void ackLiveAnalysisPacketFromWeb (const juce::Array<juce::var>&,
+                                      juce::WebBrowserComponent::NativeFunctionCompletion);
+    void unsubscribeLiveAnalysisFromWeb (const juce::Array<juce::var>&,
+                                        juce::WebBrowserComponent::NativeFunctionCompletion);
     bool expireNoteSession (double nowMilliseconds) noexcept;
     juce::var parameterSnapshotForWeb() const;
     juce::var parameterStateForWeb() const;

@@ -866,6 +866,101 @@ private:
     std::array<juce::Label, 5> labels;
 };
 
+class NativeLiveAnalysis final : public juce::Component
+{
+public:
+    NativeLiveAnalysis()
+    {
+        setComponentID ("live-analysis");
+        for (auto* label : { &heading, &frames, &settings })
+        {
+            label->setColour (juce::Label::textColourId, juce::Colour (0xffcccccc));
+            label->setFont (juce::FontOptions (10.0f)); addAndMakeVisible (*label);
+        }
+        heading.setFont (juce::FontOptions (13.0f));
+        frames.setComponentID ("live-analysis-frames"); settings.setComponentID ("live-analysis-settings"); clear();
+    }
+    void setMode (bool spectral) { spectrum = spectral; update(); }
+    void setChannel (std::size_t selected) { channel = selected; update(); }
+    void setPacket (const InstrumentUiLiveService::Packet& next) { packet = next; update(); }
+    void clear() { packet.reset(); update(); }
+    void setUnavailable()
+    {
+        clear(); setName ("Live analysis unavailable");
+        frames.setText ("Live analysis unavailable; choose a display to retry", juce::dontSendNotification);
+    }
+    void resized() override
+    {
+        heading.setBounds (16, 12, getWidth() - 116, 24);
+        frames.setBounds (16, getHeight() - 60, getWidth() - 32, 18);
+        settings.setBounds (16, getHeight() - 42, getWidth() - 32, 18);
+    }
+    void paint (juce::Graphics& graphics) override
+    {
+        graphics.fillAll (juce::Colour (0xff232323));
+        const juce::Rectangle<int> plot (16, 52, getWidth() - 32, std::max (1, getHeight() - 116));
+        graphics.setColour (juce::Colour (0xff161616)); graphics.fillRect (plot);
+        if (! packet) return;
+        const auto& data = packet->analysis.channel[channel];
+        const auto width = static_cast<double> (plot.getWidth()), height = static_cast<double> (plot.getHeight());
+        juce::Graphics::ScopedSaveState state (graphics);
+        graphics.reduceClipRegion (plot); graphics.setOrigin (plot.getPosition());
+        graphics.setColour (juce::Colour (0xff444444));
+        graphics.fillRect (0, static_cast<int> (std::lround (height / 2)), plot.getWidth(), 1);
+        graphics.setColour (juce::Colour (0xfff6aa69));
+        if (! spectrum)
+        {
+            for (std::size_t i = 0; i < data.scope.size(); ++i)
+            {
+                const auto& bucket = data.scope[i];
+                const auto top = static_cast<int> (std::lround ((1 - std::clamp (static_cast<double> (bucket.maximum), -1.0, 1.0)) * height / 2));
+                const auto bottom = static_cast<int> (std::lround ((1 - std::clamp (static_cast<double> (bucket.minimum), -1.0, 1.0)) * height / 2));
+                graphics.fillRect (static_cast<int> (std::lround ((static_cast<double> (i) + 0.5) / 128 * width)),
+                                   top, 1, std::max (2, bottom - top + 1));
+            }
+        }
+        else
+        {
+            juce::Path path;
+            for (std::size_t i = 1; i < data.magnitudeDbFS.size(); ++i)
+            {
+                const auto x = static_cast<float> (std::log (static_cast<double> (i)) / std::log (512.0) * width);
+                const auto y = static_cast<float> (-std::clamp (static_cast<double> (data.magnitudeDbFS[i]), -120.0, 0.0) / 120 * height);
+                if (i == 1) path.startNewSubPath (x, y); else path.lineTo (x, y);
+            }
+            graphics.strokePath (path, juce::PathStrokeType (1.0f));
+        }
+    }
+private:
+    void update()
+    {
+        const auto mode = juce::String (spectrum ? "spectrum" : "scope");
+        heading.setText ("MASTER " + mode.toUpperCase() + (packet && packet->analysis.gap ? " · HISTORY GAP" : ""),
+                         juce::dontSendNotification);
+        if (packet)
+        {
+            const auto& data = packet->analysis;
+            const auto bounds = juce::String (std::to_string (data.startFrame)) + ".." + juce::String (std::to_string (data.endFrame));
+            setName ("Live " + mode + " GEN " + juce::String (data.generation) + " ch " + juce::String (channel + 1) + " frames " + bounds);
+            frames.setText ("Output frames " + bounds + " · " + juce::String (data.sampleRateHz) + " Hz · "
+                + juce::String (1024.0 * 1000 / data.sampleRateHz, 3) + " ms · " + (channel == 0 ? "L" : "R"), juce::dontSendNotification);
+            settings.setText ("Hann · FFT 1024 · hop 256 · -120..0 dBFS · " + (spectrum
+                ? juce::String (static_cast<double> (data.sampleRateHz) / 1024, 2) + ".." + juce::String (data.sampleRateHz / 2) + " Hz · DC omitted"
+                : juce::String ("signed -1..+1")), juce::dontSendNotification);
+        }
+        else
+        {
+            setName ("Waiting for live audio"); frames.setText ("Waiting for current output audio", juce::dontSendNotification);
+            settings.setText ({}, juce::dontSendNotification);
+        }
+        repaint();
+    }
+    std::optional<InstrumentUiLiveService::Packet> packet;
+    std::size_t channel = 0;
+    bool spectrum = false;
+    juce::Label heading, frames, settings;
+};
+
 class DandrumNativeEditor final : public juce::AudioProcessorEditor,
                                   private juce::Timer
 {
@@ -906,6 +1001,18 @@ public:
         addAndMakeVisible (meter);
         addAndMakeVisible (waveform);
         addChildComponent (spectrum);
+        addChildComponent (live);
+        scopeToggle.setButtonText ("Scope"); liveSpectrumToggle.setButtonText ("Live FFT");
+        scopeToggle.setComponentID ("sample-display-scope"); liveSpectrumToggle.setComponentID ("sample-display-live-spectrum");
+        scopeToggle.onClick = [this] { setLiveDisplay (false); };
+        liveSpectrumToggle.onClick = [this] { setLiveDisplay (true); };
+        addAndMakeVisible (scopeToggle); addAndMakeVisible (liveSpectrumToggle);
+        leftChannel.setButtonText ("L"); rightChannel.setButtonText ("R");
+        leftChannel.setComponentID ("live-channel-l"); rightChannel.setComponentID ("live-channel-r");
+        leftChannel.onClick = [this] { selectLiveChannel (0); };
+        rightChannel.onClick = [this] { selectLiveChannel (1); };
+        addChildComponent (leftChannel); addChildComponent (rightChannel);
+        selectLiveChannel (0);
         waveToggle.setButtonText ("Wave"); spectralToggle.setButtonText ("Spectral");
         waveToggle.setComponentID ("sample-display-wave"); spectralToggle.setComponentID ("sample-display-spectral");
         waveToggle.onClick = [this] { setSpectralDisplay (false); };
@@ -931,6 +1038,7 @@ public:
         processor.cancelPreparedWaveformSession (meterSession);
         processor.cancelPreparedSpectrumSession (meterSession);
         processor.unsubscribeMeter (meterSession);
+        processor.unsubscribeLiveAnalysis (meterSession);
         processor.uiCommands().closeSession (meterSession);
     }
 
@@ -947,8 +1055,14 @@ public:
         primaryKnob.setBounds (24, 302, 152, 184);
         waveform.setBounds (200, 302, getWidth() - 224, getHeight() - 326);
         spectrum.setBounds (waveform.getBounds());
-        waveToggle.setBounds (getWidth() - 176, getHeight() - (showSpectral ? 108 : 74), 64, 20);
-        spectralToggle.setBounds (getWidth() - 108, getHeight() - (showSpectral ? 108 : 74), 68, 20);
+        live.setBounds (waveform.getBounds());
+        const auto toggleY = getHeight() - (showLive ? 44 : showSpectral ? 108 : 74);
+        waveToggle.setBounds (getWidth() - 176, toggleY, 64, 20);
+        spectralToggle.setBounds (getWidth() - 108, toggleY, 68, 20);
+        scopeToggle.setBounds (getWidth() - 328, toggleY, 64, 20);
+        liveSpectrumToggle.setBounds (getWidth() - 260, toggleY, 80, 20);
+        leftChannel.setBounds (getWidth() - 100, 318, 28, 20);
+        rightChannel.setBounds (getWidth() - 68, 318, 28, 20);
     }
 
     void timerCallback() override
@@ -959,6 +1073,7 @@ public:
             return;
         refreshWaveform();
         refreshSpectrum();
+        refreshLive();
         const auto generation = processor.getParameterSurfaceGeneration();
         if (generation != meterGeneration)
         {
@@ -984,6 +1099,9 @@ private:
 
     void setSpectralDisplay (bool enabled)
     {
+        showLive = false; live.setVisible (false); leftChannel.setVisible (false); rightChannel.setVisible (false);
+        scopeToggle.setToggleState (false, juce::dontSendNotification);
+        liveSpectrumToggle.setToggleState (false, juce::dontSendNotification);
         if (spectralJob) processor.cancelPreparedSpectrumJob (*spectralJob);
         spectralJob.reset(); spectralRequested = false; showSpectral = enabled;
         waveform.setVisible (! enabled); spectrum.setVisible (enabled);
@@ -991,6 +1109,51 @@ private:
         spectralToggle.setToggleState (enabled, juce::dontSendNotification);
         resized();
         refreshSpectrum();
+        refreshLive();
+    }
+    void selectLiveChannel (std::size_t channel)
+    {
+        live.setChannel (channel);
+        leftChannel.setToggleState (channel == 0, juce::dontSendNotification);
+        rightChannel.setToggleState (channel == 1, juce::dontSendNotification);
+    }
+    void setLiveDisplay (bool spectral)
+    {
+        setSpectralDisplay (false); showLive = true; liveAttempted = false;
+        waveform.setVisible (false); live.setMode (spectral); live.setVisible (true);
+        leftChannel.setVisible (true); rightChannel.setVisible (true);
+        waveToggle.setToggleState (false, juce::dontSendNotification);
+        scopeToggle.setToggleState (! spectral, juce::dontSendNotification);
+        liveSpectrumToggle.setToggleState (spectral, juce::dontSendNotification);
+        resized(); refreshLive();
+    }
+    void refreshLive()
+    {
+        const auto generation = processor.getParameterSurfaceGeneration();
+        if (liveGeneration != generation)
+        {
+            processor.unsubscribeLiveAnalysis (meterSession); liveGeneration = generation;
+            liveSubscribed = liveAttempted = liveVisible = false; live.clear();
+        }
+        const auto visible = showLive && isShowing();
+        if (visible && ! liveSubscribed && ! liveAttempted)
+        {
+            liveAttempted = true;
+            liveSubscribed = processor.subscribeLiveAnalysis (meterSession, generation, 3);
+            liveVisible = liveSubscribed;
+            if (! liveSubscribed) live.setUnavailable();
+        }
+        if (! liveSubscribed) return;
+        if (visible != liveVisible)
+        {
+            processor.setLiveAnalysisVisible (meterSession, visible); liveVisible = visible; live.clear();
+        }
+        if (! visible) return;
+        if (const auto packet = processor.takeLiveAnalysisPacket (meterSession))
+        {
+            live.setPacket (*packet);
+            processor.acknowledgeLiveAnalysisPacket (meterSession, packet->analysis.generation, packet->sequence);
+        }
     }
     void refreshSpectrum()
     {
@@ -1162,7 +1325,11 @@ private:
     NativeMasterMeter meter;
     NativePreparedWaveform waveform;
     NativePreparedSpectrum spectrum;
+    NativeLiveAnalysis live;
     juce::TextButton waveToggle, spectralToggle;
+    juce::TextButton scopeToggle, liveSpectrumToggle, leftChannel, rightChannel;
+    std::uint32_t liveGeneration = 0;
+    bool showLive = false, liveSubscribed = false, liveAttempted = false, liveVisible = false;
     bool showSpectral = false, spectralRequested = false;
     std::optional<std::pair<std::string, std::string>> spectralSelection;
     std::optional<std::uint64_t> spectralJob;

@@ -13,6 +13,8 @@ import { createSpectrumTransport } from '../../shared/spectrum-transport.mjs';
 import { preparedSpectrumView, paintPreparedSpectrum } from '../../shared/prepared-spectrum.mjs';
 import { createWaveformTransport } from '../../shared/waveform-transport.mjs';
 import { preparedWaveformView, paintPreparedWaveform } from '../../shared/prepared-waveform.mjs';
+import { createLiveAnalysisTransport } from '../../shared/live-analysis-transport.mjs';
+import { liveAnalysisView, paintLiveAnalysis } from '../../shared/live-analysis-view.mjs';
 import './styles.css';
 import '../../shared/design-tokens.css';
 import '../../shared/design-fonts.css';
@@ -270,10 +272,103 @@ function PreparedSpectrum({ document, sourceId, regionId, reportError, controls 
   </section>;
 }
 
+function useLiveAnalysis(generation: number | undefined, active: boolean, reportError: (reason: unknown) => void) {
+  const [packet, setPacket] = useState<any>(null);
+  const [unavailable, setUnavailable] = useState('');
+  const transport = useRef<ReturnType<typeof createLiveAnalysisTransport> | null>(null);
+  const activeNow = useRef(active); activeNow.current = active;
+  const setVisible = async (stream: ReturnType<typeof createLiveAnalysisTransport>, owner: number, shown: boolean) => {
+    await stream.setVisible(shown);
+    if (shown && transport.current === stream && activeNow.current && !window.document.hidden) {
+      const admitted = await stream.start(owner, 3);
+      if (transport.current !== stream || !activeNow.current) return;
+      setUnavailable(admitted ? '' : 'Live analysis unavailable; choose a display to retry');
+    }
+  };
+  useEffect(() => {
+    setPacket(null); setUnavailable('');
+    if (!generation) return;
+    const stream = createLiveAnalysisTransport(invoke, (next: any) => {
+      if (!liveAnalysisView(next, 0, 1, 1, 'scope')) throw new Error('Invalid live audio measurement');
+      setPacket(next);
+    });
+    transport.current = stream;
+    const visible = () => {
+      const shown = activeNow.current && !window.document.hidden;
+      if (!shown) setPacket(null);
+      void setVisible(stream, generation, shown).catch(reportError);
+    };
+    const hide = () => { setPacket(null); void stream.setVisible(false).catch(reportError); };
+    visible();
+    const timer = window.setInterval(() => void stream.tick().catch(reportError), 1000 / 30);
+    window.document.addEventListener('visibilitychange', visible);
+    window.addEventListener('pagehide', hide); window.addEventListener('pageshow', visible);
+    return () => {
+      window.clearInterval(timer); transport.current = null;
+      window.document.removeEventListener('visibilitychange', visible);
+      window.removeEventListener('pagehide', hide); window.removeEventListener('pageshow', visible);
+      void stream.close().catch(reportError);
+    };
+  }, [generation]);
+  useEffect(() => {
+    const stream = transport.current;
+    const shown = active && !window.document.hidden;
+    if (!shown) { setPacket(null); setUnavailable(''); }
+    if (stream && generation)
+      void setVisible(stream, generation, shown).catch(reportError);
+  }, [active, generation]);
+  return { packet: packet?.generation === generation ? packet : null, unavailable };
+}
+
+function LiveAnalysisPanel({ packet, unavailable, mode, controls }: {
+  packet: any; unavailable: string; mode: 'scope' | 'spectrum'; controls: React.ReactNode;
+}) {
+  const canvas = useRef<HTMLCanvasElement>(null);
+  const [width, setWidth] = useState(1);
+  const [channel, setChannel] = useState(0);
+  useLayoutEffect(() => {
+    const element = canvas.current!;
+    const resize = () => setWidth(Math.max(1, Math.round(element.clientWidth)));
+    const observer = new ResizeObserver(resize); observer.observe(element); resize();
+    return () => observer.disconnect();
+  }, []);
+  const view = useMemo(() => liveAnalysisView(packet, channel, width, 160, mode), [packet, channel, width, mode]);
+  useLayoutEffect(() => {
+    const element = canvas.current!;
+    const ratio = window.devicePixelRatio;
+    element.width = Math.round(width * ratio); element.height = Math.round(160 * ratio);
+    const context = element.getContext('2d');
+    if (!context) return;
+    context.scale(ratio, ratio);
+    context.fillStyle = '#161616'; context.fillRect(0, 0, width, 160);
+    paintLiveAnalysis(context, view);
+  }, [view, width]);
+  return <section className="panel live-analysis" aria-label={`Live master ${mode}`}
+    data-generation={view?.generation} data-mode={view?.mode} data-channel={view?.channel}
+    data-start-frame={view?.startFrame} data-end-frame={view?.endFrame}>
+    <div className="section-heading"><h2>Master {mode}</h2>
+      <span>{view ? view.gap ? 'HISTORY GAP' : 'LIVE' : unavailable ? 'UNAVAILABLE' : 'WAITING FOR AUDIO'}</span>
+      <div className="live-channels" role="group" aria-label="Master output channel">
+        {[0, 1].map(index => <button key={index} data-live-channel={index} aria-pressed={channel === index}
+          onClick={() => setChannel(index)}>{index === 0 ? 'L' : 'R'}</button>)}
+      </div>
+    </div>
+    <div className="sample-plot"><canvas ref={canvas} aria-label={`Live ${mode}, channel ${channel === 0 ? 'L' : 'R'}`} />{controls}</div>
+    <div className="live-axis"><span>{mode === 'scope' ? 'signed −1..+1' : `${view?.minimumHz ?? '—'} Hz · DC omitted`}</span>
+      <span>{mode === 'scope' ? `${view?.durationMs.toFixed(3) ?? '—'} ms` : `${view?.maximumHz ?? '—'} Hz · −120..0 dBFS`}</span></div>
+    {unavailable && <p role="status" className="spectral-settings">{unavailable}</p>}
+    <p className="spectral-settings">{view ? `Output frames ${view.startFrame}..${view.endFrame} · ${view.sampleRateHz} Hz · ` : ''}
+      Hann · FFT 1024 · hop 256 · -120..0 dBFS</p>
+  </section>;
+}
+
 function SamplerApp() {
   const { state, document, error, command, reportError } = useHost();
   const pads = useMemo(() => preparedPads(document), [document]);
-  const [sampleDisplay, setSampleDisplay] = useState<'wave' | 'spectral'>('wave');
+  const [sampleDisplay, setSampleDisplay] = useState<'wave' | 'spectral' | 'scope' | 'live-spectrum'>('wave');
+  const current = state && document && state.generation === document.generation;
+  const live = useLiveAnalysis(document?.generation,
+    Boolean(current && (sampleDisplay === 'scope' || sampleDisplay === 'live-spectrum')), reportError);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const selected = pads.find(pad => pad.id === selectedId) ?? pads[0] ?? null;
   const region = selectedRegion(document, selected);
@@ -310,10 +405,11 @@ function SamplerApp() {
     setPressed(current => current.filter(id => id !== pad.id));
     void audition.release(pad.keyLow);
   };
-  const current = state && document && state.generation === document.generation;
   const displayControls = <div className="sample-display-controls" role="group" aria-label="Sample display">
     <button data-sample-display="wave" aria-pressed={sampleDisplay === 'wave'} onClick={() => setSampleDisplay('wave')}>Wave</button>
     <button data-sample-display="spectral" aria-pressed={sampleDisplay === 'spectral'} onClick={() => setSampleDisplay('spectral')}>Spectral</button>
+    <button data-sample-display="scope" aria-pressed={sampleDisplay === 'scope'} onClick={() => setSampleDisplay('scope')}>Scope</button>
+    <button data-sample-display="live-spectrum" aria-pressed={sampleDisplay === 'live-spectrum'} onClick={() => setSampleDisplay('live-spectrum')}>Live FFT</button>
   </div>;
   return <main className="sampler">
     <header className="top"><div><p className="eyebrow">DANDRUM · PREPARED INSTRUMENT</p>
@@ -353,13 +449,15 @@ function SamplerApp() {
           <MasterMeter generation={document.generation} reportError={reportError} />
         </div>
         <div className="right-column">
-          {region && document.capabilities.preparedWaveform
+          {sampleDisplay === 'scope' || sampleDisplay === 'live-spectrum'
+            ? <LiveAnalysisPanel {...live} mode={sampleDisplay === 'scope' ? 'scope' : 'spectrum'} controls={displayControls} />
+            : region && document.capabilities.preparedWaveform
             ? <div className="sample-display">
                 {sampleDisplay === 'wave'
                   ? <PreparedWaveform document={document} sourceId={region.sourceId} regionId={region.regionId} reportError={reportError} controls={displayControls} />
                   : <PreparedSpectrum document={document} sourceId={region.sourceId} regionId={region.regionId} reportError={reportError} controls={displayControls} />}
               </div>
-            : <section className="panel">Prepared sample analysis unavailable</section>}
+            : <section className="panel sample-display unavailable-analysis">Prepared sample analysis unavailable{displayControls}</section>}
           <section className="panel availability" aria-label="Prepared capabilities">
             <div className="section-heading"><h2><svg {...iconProps('lock')} />Structure</h2><span>INSPECT ONLY</span></div>
             <p>Source and region assignments are prepared outside the plugin.</p>

@@ -233,6 +233,23 @@ coverage, five calibrated faults, setup correction and controlled-host limits.
 Shared adapters, actual live views and browser delivery remain pending; tasks
 6.3/6.4 and automatic structural runtime stay unchecked.
 
+Task 6.3/6.4 renderer progress (2026-10-03): registered Web commands now consume
+real processor-owned packets; one browser controller bounds requests through
+acknowledgement and releases obsolete/hidden demand. Native and sampler React
+Scope/Live FFT render independent signed L/R output, actual rate/settings and
+output-stream frame bounds. Original factory/editor tests prove full/compact
+plots, reload, hidden resumption and explicit four-slot admission rejection with
+recovery. Focused coverage executes 99/99 changed bridge and 124/124 changed
+native records; both new shared JS modules execute all V8 lines/functions/
+branches. Twenty-two copied faults fail named assertions after healthy baselines;
+failed harness runs, a survivor and the Web admission-test timing correction are
+retained. Final builds include Standalone/VST3; CTest passes 34/34 native and
+62/62 Web without skips. The [live analysis record](../../../docs/design-system/live-analysis.md)
+defines the controlled runtime/protocol boundaries. Consolidated resource/stress,
+long-duration browser lifecycle/React stalls and callback timing remain pending;
+6.3/6.4 and section 9 stay unchecked. No structural runtime, complete sampler/303
+redesign, DAW hosting or spec synchronization is claimed.
+
 ## 7. Capability-Aware Sampler Composition
 
 - [ ] 7.1 Implement prepared KeyMap inspection/audition in both renderers; tests must prove actual velocity ranges, alternate/layer distinction, capability-gated structural commands with automatic rebuilding, and host-driven note feedback.

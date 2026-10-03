@@ -136,6 +136,64 @@ juce::var meterPacketForWeb (const InstrumentUiMeterDelivery::Packet& packet)
     return juce::var (result.release());
 }
 
+juce::var spectrumSettingsForWeb (const InstrumentUiSpectrumAnalysis::Settings& settings)
+{
+    auto result = std::make_unique<juce::DynamicObject>();
+    auto* declared = result.get();
+    declared->setProperty ("window", "periodicHann");
+    declared->setProperty ("scaling", "oneSidedPeakDbFS");
+    declared->setProperty ("channelPolicy", "selectedChannel");
+    declared->setProperty ("fftSize", static_cast<int> (settings.fftSize));
+    declared->setProperty ("hopFrames", juce::String (std::to_string (settings.hopFrames)));
+    declared->setProperty ("floorDbFS", settings.floorDbFS);
+    return juce::var (result.release());
+}
+
+juce::var livePacketForWeb (const InstrumentUiLiveService::Packet& packet)
+{
+    const auto& analysis = packet.analysis;
+    juce::var reply (new juce::DynamicObject());
+    auto* result = reply.getDynamicObject();
+    result->setProperty ("sequence", juce::String (std::to_string (packet.sequence)));
+    result->setProperty ("generation", static_cast<juce::int64> (analysis.generation));
+    result->setProperty ("bus", "master");
+    result->setProperty ("sampleRateHz", static_cast<juce::int64> (analysis.sampleRateHz));
+    result->setProperty ("streamId", juce::String (std::to_string (analysis.streamId)));
+    result->setProperty ("selectionId", juce::String (std::to_string (analysis.selectionId)));
+    result->setProperty ("captureSequence", juce::String (std::to_string (analysis.sequence)));
+    result->setProperty ("startFrame", juce::String (std::to_string (analysis.startFrame)));
+    result->setProperty ("endFrame", juce::String (std::to_string (analysis.endFrame)));
+    result->setProperty ("gap", analysis.gap);
+    result->setProperty ("channelMask", static_cast<int> (analysis.channels));
+    result->setProperty ("settings", spectrumSettingsForWeb (analysis.settings));
+    juce::Array<juce::var> frequencies, channels;
+    for (const auto hz : analysis.frequencyHz) frequencies.add (hz);
+    result->setProperty ("frequencyHz", juce::var (frequencies));
+    for (std::size_t channel = 0; channel < InstrumentUiLiveCapture::channelCount; ++channel)
+    {
+        if ((analysis.channels & (1U << channel)) == 0) continue;
+        juce::var data (new juce::DynamicObject());
+        auto* value = data.getDynamicObject();
+        value->setProperty ("channel", static_cast<int> (channel));
+        juce::Array<juce::var> scope, magnitudes;
+        for (const auto& bucket : analysis.channel[channel].scope)
+        {
+            juce::var item (new juce::DynamicObject());
+            item.getDynamicObject()->setProperty ("startFrame", juce::String (std::to_string (bucket.startFrame)));
+            item.getDynamicObject()->setProperty ("endFrame", juce::String (std::to_string (bucket.endFrame)));
+            item.getDynamicObject()->setProperty ("minimum", bucket.minimum);
+            item.getDynamicObject()->setProperty ("maximum", bucket.maximum);
+            scope.add (item);
+        }
+        for (const auto db : analysis.channel[channel].magnitudeDbFS) magnitudes.add (db);
+        value->setProperty ("scope", juce::var (scope));
+        value->setProperty ("magnitudeDbFS", juce::var (magnitudes));
+        channels.add (data);
+    }
+    result->setProperty ("channels", juce::var (channels));
+    return reply;
+}
+
 juce::var preparedDocumentForWeb (const InstrumentUiDocument& document)
 {
     juce::var result (new juce::DynamicObject());
@@ -314,15 +372,7 @@ juce::var spectralStatusForWeb (const InstrumentUiSpectralService::Snapshot& sna
         result->setProperty ("startFrame", juce::String (std::to_string (spectrum.startFrame)));
         result->setProperty ("endFrame", juce::String (std::to_string (spectrum.endFrame)));
         result->setProperty ("contentRevision", contentRevisionForWeb (spectrum.contentRevision));
-        juce::var settings (new juce::DynamicObject());
-        auto* declared = settings.getDynamicObject();
-        declared->setProperty ("window", "periodicHann");
-        declared->setProperty ("scaling", "oneSidedPeakDbFS");
-        declared->setProperty ("channelPolicy", "selectedChannel");
-        declared->setProperty ("fftSize", static_cast<int> (spectrum.settings.fftSize));
-        declared->setProperty ("hopFrames", juce::String (std::to_string (spectrum.settings.hopFrames)));
-        declared->setProperty ("floorDbFS", spectrum.settings.floorDbFS);
-        result->setProperty ("settings", settings);
+        result->setProperty ("settings", spectrumSettingsForWeb (spectrum.settings));
         juce::Array<juce::var> frequency;
         for (const auto hz : spectrum.frequencyHz) frequency.add (hz);
         result->setProperty ("frequencyHz", juce::var (frequency));
@@ -430,6 +480,7 @@ InstrumentHostWebBridge::~InstrumentHostWebBridge()
     processor.cancelPreparedWaveformSession (sessionId);
     processor.cancelPreparedSpectrumSession (sessionId);
     processor.unsubscribeMeter (sessionId);
+    processor.unsubscribeLiveAnalysis (sessionId);
     processor.closeEditorNoteSession (sessionId);
     processor.uiCommands().closeSession (sessionId);
 }
@@ -439,7 +490,7 @@ const char* InstrumentHostWebBridge::bootstrapScript() noexcept
     return nativeFunctionBootstrap;
 }
 
-std::array<InstrumentHostWebBridge::NativeFunctionEntry, 22>
+std::array<InstrumentHostWebBridge::NativeFunctionEntry, 27>
 InstrumentHostWebBridge::nativeFunctions()
 {
     return {{
@@ -560,6 +611,21 @@ InstrumentHostWebBridge::nativeFunctions()
           {
               ackMeterPacketFromWeb (arguments, std::move (completion));
           } },
+        { "subscribeLiveAnalysis", [this] (const juce::Array<juce::var>& arguments,
+              juce::WebBrowserComponent::NativeFunctionCompletion completion)
+          { subscribeLiveAnalysisFromWeb (arguments, std::move (completion)); } },
+        { "setLiveAnalysisVisible", [this] (const juce::Array<juce::var>& arguments,
+              juce::WebBrowserComponent::NativeFunctionCompletion completion)
+          { setLiveAnalysisVisibleFromWeb (arguments, std::move (completion)); } },
+        { "getLiveAnalysisPacket", [this] (const juce::Array<juce::var>& arguments,
+              juce::WebBrowserComponent::NativeFunctionCompletion completion)
+          { getLiveAnalysisPacketForWeb (arguments, std::move (completion)); } },
+        { "ackLiveAnalysisPacket", [this] (const juce::Array<juce::var>& arguments,
+              juce::WebBrowserComponent::NativeFunctionCompletion completion)
+          { ackLiveAnalysisPacketFromWeb (arguments, std::move (completion)); } },
+        { "unsubscribeLiveAnalysis", [this] (const juce::Array<juce::var>& arguments,
+              juce::WebBrowserComponent::NativeFunctionCompletion completion)
+          { unsubscribeLiveAnalysisFromWeb (arguments, std::move (completion)); } },
         { "ackMeterClip",
           [this] (const juce::Array<juce::var>& arguments,
                   juce::WebBrowserComponent::NativeFunctionCompletion completion)
@@ -600,6 +666,7 @@ bool InstrumentHostWebBridge::publishParameterUpdates (juce::WebBrowserComponent
         processor.cancelPreparedWaveformSession (sessionId);
         processor.cancelPreparedSpectrumSession (sessionId);
         processor.unsubscribeMeter (sessionId);
+        processor.unsubscribeLiveAnalysis (sessionId);
         processor.uiCommands().closeSession (sessionId);
         lastSeenParameterSurfaceGeneration = generation;
         browser.refresh();
@@ -1073,6 +1140,58 @@ void InstrumentHostWebBridge::ackMeterClipFromWeb (
     completion (juce::var (channel.has_value() && *channel < InstrumentUiMeterCapture::channelCount
                            && generation.has_value() && ticket.has_value()
                            && processor.acknowledgeMeterClip (*channel, *generation, *ticket)));
+}
+
+void InstrumentHostWebBridge::subscribeLiveAnalysisFromWeb (
+    const juce::Array<juce::var>& arguments,
+    juce::WebBrowserComponent::NativeFunctionCompletion completion)
+{
+    const auto generation = arguments.isEmpty() ? std::nullopt : parseGeneration (arguments[0]);
+    const auto mask = arguments.size() < 2 ? std::nullopt : parseGeneration (arguments[1]);
+    completion (juce::var (generation && mask && *mask > 0 && *mask < 4
+        && processor.subscribeLiveAnalysis (sessionId, *generation, static_cast<std::uint8_t> (*mask))));
+}
+
+void InstrumentHostWebBridge::setLiveAnalysisVisibleFromWeb (
+    const juce::Array<juce::var>& arguments,
+    juce::WebBrowserComponent::NativeFunctionCompletion completion)
+{
+    const auto generation = arguments.size() < 2 ? std::nullopt : parseGeneration (arguments[1]);
+    completion (juce::var (generation && *generation == processor.getParameterSurfaceGeneration()
+        && arguments[0].isBool() && processor.setLiveAnalysisVisible (sessionId, static_cast<bool> (arguments[0]))));
+}
+
+void InstrumentHostWebBridge::getLiveAnalysisPacketForWeb (
+    const juce::Array<juce::var>& arguments,
+    juce::WebBrowserComponent::NativeFunctionCompletion completion)
+{
+    const auto generation = arguments.isEmpty() ? std::nullopt : parseGeneration (arguments[0]);
+    if (generation && *generation == processor.getParameterSurfaceGeneration())
+        if (const auto packet = processor.takeLiveAnalysisPacket (sessionId))
+        {
+            completion (livePacketForWeb (*packet));
+            return;
+        }
+    completion (juce::var());
+}
+
+void InstrumentHostWebBridge::ackLiveAnalysisPacketFromWeb (
+    const juce::Array<juce::var>& arguments,
+    juce::WebBrowserComponent::NativeFunctionCompletion completion)
+{
+    const auto sequence = arguments.isEmpty() ? std::nullopt : parsePositiveDecimalId (arguments[0]);
+    const auto generation = arguments.size() < 2 ? std::nullopt : parseGeneration (arguments[1]);
+    completion (juce::var (generation && sequence
+        && processor.acknowledgeLiveAnalysisPacket (sessionId, *generation, *sequence)));
+}
+
+void InstrumentHostWebBridge::unsubscribeLiveAnalysisFromWeb (
+    const juce::Array<juce::var>& arguments,
+    juce::WebBrowserComponent::NativeFunctionCompletion completion)
+{
+    const auto generation = arguments.isEmpty() ? std::nullopt : parseGeneration (arguments[0]);
+    completion (juce::var (generation && *generation == processor.getParameterSurfaceGeneration()
+        && processor.unsubscribeLiveAnalysis (sessionId)));
 }
 
 bool InstrumentHostWebBridge::expireNoteSession (double nowMilliseconds) noexcept

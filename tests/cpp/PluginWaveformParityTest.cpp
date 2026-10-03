@@ -393,6 +393,8 @@ private:
 };
 }
 
+#include "PluginLiveRendererCheck.h"
+
 int main (int argc, char** argv)
 {
    #if JUCE_LINUX
@@ -403,6 +405,9 @@ int main (int argc, char** argv)
     }
     std::signal (SIGPIPE, SIG_IGN);
    #endif
-    juce::JUCEApplicationBase::createInstance = []() -> juce::JUCEApplicationBase* { return new Application(); };
+    if (argc == 2 && juce::String (argv[1]) == "--live")
+        juce::JUCEApplicationBase::createInstance = []() -> juce::JUCEApplicationBase* { return new liveRendererCheck::Application(); };
+    else
+        juce::JUCEApplicationBase::createInstance = []() -> juce::JUCEApplicationBase* { return new Application(); };
     return juce::JUCEApplicationBase::main (argc, const_cast<const char**> (argv));
 }

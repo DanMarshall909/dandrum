@@ -1,5 +1,6 @@
 #include "PluginEditor.h"
 #include "PluginWebRuntimeCheck.h"
+#include "PluginLiveBridgeCheck.h"
 
 #include <algorithm>
 #include <array>
@@ -165,6 +166,10 @@ juce::var findParameter (const juce::var& snapshot, const juce::String& id)
 
 int main (int argc, char** argv)
 {
+    if (argc >= 2 && juce::String (argv[1]) == "--live-bridge")
+        return liveBridgeCheck::run (false);
+    if (argc >= 2 && juce::String (argv[1]) == "--live-bridge-baseline")
+        return liveBridgeCheck::run (true);
    #if JUCE_LINUX
     std::signal (SIGPIPE, SIG_IGN);
    #endif

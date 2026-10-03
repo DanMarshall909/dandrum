@@ -337,3 +337,79 @@ Standalone and VST3 targets. Final CTest passes **33/33 native** and **58/58 Web
 without skips; the sampler/303 original runtime regressions retain their own
 scope. Strict OpenSpec, unchanged main-spec map and local document links pass.
 All warm builds, dependencies and raw failed/successful evidence are retained.
+
+
+## Live master displays and browser commands
+
+The sampler now offers **Scope** and **Live FFT** alongside prepared Wave and
+Spectral. Both native and React views consume actual master-output PCM through
+the processor-owned live service. L/R selects an independent captured channel;
+it does not mix channels or change the instrument. A signed scope uses 128
+buckets over one complete 1024-frame output window. The spectrum uses the
+shared periodic Hann, 1024-point FFT, 256-frame hop and one-sided peak-dBFS
+measurement with a -120 dBFS floor. Its frequency axis is logarithmic and omits
+DC. Labels distinguish output-stream frames/rate from prepared sample frames.
+These are bounded current-window displays; no live spectrogram history is added.
+
+Five registered Web commands subscribe, set visibility, take, acknowledge and
+unsubscribe. Every 64-bit identity/position crosses as a decimal string. The
+bridge emits only selected channels and fixed-size numeric arrays, with no
+engine/host-buffer pointers. Bridge destruction and generation changes release
+subscriptions. One browser controller per bridge session owns both live display
+modes, permits one request through acknowledgement, coalesces visibility and
+rejects obsolete replies. It closes admitted demand without waiting for delayed
+Promise replies. Native components retain an owned typed packet copy; React
+validates coherent copied measurements before deriving plot coordinates.
+
+`cxx-plugin-live-bridge` exercises the real registered closures, Rust engine and
+worker with literal +0.5/-0.5 left, silent right, 96 kHz, 6000 Hz bin coordinates
+and exact stream windows. It proves acknowledgement backpressure, malformed and
+stale rejection, hidden resumption and eight bridge lifetimes without leaking
+the four subscription slots. This is an in-process command lane, not a browser
+substitute. `live-analysis-web-transport` separately controls Promise delivery,
+including stalled requests/acknowledgements, hide/show, closure, stale packets
+and renderer errors. `live-analysis-web-view` asserts exact large frame IDs,
+signed channel geometry, host-rate frequency, malformed measurement rejection
+and paint-adapter output.
+
+`native-live-renderer` and `web-live-renderer` use the shipped sampler processor
+and editor factories. The original native component or packaged React/WebKit
+Canvas renders actual engine output at 1200x800 and 820x560. Independent pixel
+oracles assert positive/negative half-scale PCM, silent right-channel scope,
+and the known Hann bin-1 magnitude of constant half-scale audio at 96 kHz.
+Actual rate/settings labels and output-frame bounds are checked. Reload requires
+a current-generation view; switching to Wave hides live analysis, then returning
+to Scope requires newly captured frame bounds. Occupying all four real service
+slots shows explicit unavailable state, and releasing them permits recovery.
+No peak injection, replacement browser or manually published host state is used.
+
+Focused GCC 11 gcov executes 99/99 changed bridge records and 124/124 changed
+native editor records; whole-module/exhaustive branch coverage is unclaimed.
+Node 18.20.8 V8 executes all lines, functions and branches of both new shared
+JavaScript modules; this does not measure the complete React component. Seven
+compiled bridge faults, six transport faults, six geometry faults and three
+compiled native drawing faults fail named assertions after healthy baselines.
+These calibrated faults are not exhaustive mutation analysis. The first copied
+bridge build had an include-path setup failure. A transport fault initially
+cancelled pending tests, and a rounded-boundary geometry fault initially
+survived. Both test gaps were repaired and rerun; a later geometry driver also
+needed the correct rejecting test name. Failed and successful runs, copied
+sources, hashes, coverage and actual plot captures remain in
+`/tmp/dandrum-live-ui-evidence`.
+
+This increment changes the UI/command adapter, not Rust or processor DSP and
+ownership handoff. It proves the listed controlled application schedules, not
+DAW/VST3 loading, callback timing, all browser lifecycle races, long-duration
+React stalls or complete resource/stress profiling. Tasks 6.3/6.4 remain
+unchecked pending their consolidated resource and runtime evidence. Structural
+admission, automatic rebuild/recovery, renderer structural controls and section
+9 remain pending. No delta spec is synced or archived, and the sampler/303 goal
+remains active. Full builds pass, including Standalone and VST3 (native 88.685 s, serial
+Web 680.847 s). An admission-test timing flaw caused the first Web suite to fail
+61/62: startup frame counts could expire before browser reply delivery. The test
+now passively records the original native subscribe Promise reply without
+changing its value, and waits for the resulting React state. A repaired owning
+Web test build passes; the refreshed full native build also passes. Final CTest
+passes **34/34 native** (24.086 s) and **62/62 Web** (51.731 s), without skips.
+Strict OpenSpec, unchanged main-spec map and document links pass. Warm builds,
+dependencies and failed/successful evidence are retained.
