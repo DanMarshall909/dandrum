@@ -181,6 +181,20 @@ this foundation from pending worker, scope/FFT, processor and subscription
 integration. Task 6.3 stays unchecked; no actual callback, renderer or timing
 completion is claimed by this increment.
 
+Task 6.3 numeric progress (2026-10-03): a worker-owned accumulator now emits
+complete 1024-frame windows with 128 signed scope buckets and shared periodic
+Hann/256-hop/one-sided peak-dBFS spectra. Tests prove literal stereo levels,
+frame/frequency coordinates, unequal chunks, finite overrange PCM and recovery
+after nine continuity changes and ten invalid-frame cases. The prepared service
+uses the same covered measurement while retaining its padded-tail contract.
+Focused coverage executes 78/78 new numeric records; fourteen copied faults
+fail named assertions. An encountered prepared Canvas paint race is fixed and
+proved by a read-only observer in the original packaged Web runtime. Complete
+builds pass, with CTest 28/28 native and 53/53 Web without skips. The live analysis
+record retains failed runs and evidence limits. Worker/session/backlog,
+processor and live-renderer integration remain pending; 6.3 stays unchecked.
+No callback timing or automatic structural runtime completion is claimed.
+
 ## 7. Capability-Aware Sampler Composition
 
 - [ ] 7.1 Implement prepared KeyMap inspection/audition in both renderers; tests must prove actual velocity ranges, alternate/layer distinction, capability-gated structural commands with automatic rebuilding, and host-driven note feedback.

@@ -451,6 +451,19 @@ private:
           try {
           const phase = __PHASE__;
           if (document.querySelector('.generation')?.textContent !== 'GEN __GENERATION__') return '';
+          if (!window.__spectralPaintObservation) {
+            window.__spectralPaintObservation = new MutationObserver(() => {
+              const panel = document.querySelector('.spectrogram'), canvas = panel?.querySelector('canvas');
+              if (!canvas || !panel.textContent.includes('48000 Hz \u00b7 0.256 s')
+                  || panel.querySelector('[data-spectral-label="time-start"]')?.textContent !== '0.016 s'
+                  || canvas.width < 200 || canvas.width !== Math.round(canvas.clientWidth * devicePixelRatio)) return;
+              const pixel = canvas.getContext('2d').getImageData(0, 1, 1, 1).data;
+              if (pixel[0] !== 141 || pixel[1] !== 167 || pixel[2] !== 154 || pixel[3] !== 255)
+                window.__spectralPaintFailure = 'Web spectral labels committed before prepared Canvas paint';
+            });
+            window.__spectralPaintObservation.observe(document.body, {subtree:true,childList:true,characterData:true});
+          }
+          if (window.__spectralPaintFailure) throw new Error(window.__spectralPaintFailure);
           const report = extra => JSON.stringify({phase, viewportWidth:innerWidth,viewportHeight:innerHeight,...extra});
           if (phase === 7) {
             if (document.querySelector('.spectrogram,.waveform')

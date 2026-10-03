@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { preparedPads, selectedRegion, visibleParameters,
   padReleaseHandlers, auditionFocusRelease } from './model.mjs';
@@ -236,7 +236,7 @@ function PreparedSpectrum({ document, sourceId, regionId, reportError, controls 
   }, []);
   const view = useMemo(() => preparedSpectrumView(document, sourceId, regionId, status, width, height),
     [document, sourceId, regionId, status, width]);
-  useEffect(() => {
+  useLayoutEffect(() => {
     const element = canvas.current, context = element?.getContext('2d');
     if (!element || !context) return;
     const ratio = window.devicePixelRatio || 1;

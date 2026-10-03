@@ -1,6 +1,7 @@
 #pragma once
 
 #include "InstrumentUiWaveformService.h"
+#include "InstrumentUiSpectrumAnalysis.h"
 
 // Prepared spectral analysis belongs to the UI service layer, never the audio
 // render dependency chain. Jobs own an independently retained source.
@@ -10,30 +11,21 @@ public:
     using Source = InstrumentUiWaveformService::Source;
     using Reader = std::function<bool (const DandrumKernelWaveformSource*, std::uint16_t,
                                        std::uint64_t, float*, std::size_t)>;
-    static constexpr std::size_t fftSize = 1024;
-    static constexpr std::size_t binCount = fftSize / 2 + 1;
-    static constexpr std::uint64_t baseHopFrames = 256;
+    static constexpr std::size_t fftSize = InstrumentUiSpectrumAnalysis::fftSize;
+    static constexpr std::size_t binCount = InstrumentUiSpectrumAnalysis::binCount;
+    static constexpr std::uint64_t baseHopFrames = InstrumentUiSpectrumAnalysis::hopFrames;
     static constexpr std::size_t maxColumns = 1024;
     static constexpr std::size_t maxPending = 4;
     static constexpr std::size_t maxHistory = 16;
     static constexpr std::size_t maxCacheEntries = 4;
-    static constexpr float floorDbFS = -120.0f;
+    static constexpr float floorDbFS = InstrumentUiSpectrumAnalysis::floorDbFS;
 
-    enum class Window { periodicHann };
-    enum class Scaling { oneSidedPeakDbFS };
-    enum class ChannelPolicy { selectedChannel };
+    using Window = InstrumentUiSpectrumAnalysis::Window;
+    using Scaling = InstrumentUiSpectrumAnalysis::Scaling;
+    using ChannelPolicy = InstrumentUiSpectrumAnalysis::ChannelPolicy;
     enum class State { running, ready, failed, cancelled, stale };
 
-    struct Settings
-    {
-        Window window = Window::periodicHann;
-        Scaling scaling = Scaling::oneSidedPeakDbFS;
-        ChannelPolicy channelPolicy = ChannelPolicy::selectedChannel;
-        std::size_t fftSize = InstrumentUiSpectralService::fftSize;
-        std::uint64_t hopFrames = baseHopFrames;
-        float floorDbFS = InstrumentUiSpectralService::floorDbFS;
-        auto operator<=> (const Settings&) const = default;
-    };
+    using Settings = InstrumentUiSpectrumAnalysis::Settings;
 
     struct Column
     {

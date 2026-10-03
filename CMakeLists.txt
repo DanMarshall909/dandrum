@@ -147,11 +147,21 @@ add_subdirectory(third_party/JUCE)
 
 add_executable(dandrum-plugin-spectral-service-test
     tests/cpp/PluginSpectralServiceTest.cpp
-    src/juce-plugin/InstrumentUiSpectralService.cpp)
+    src/juce-plugin/InstrumentUiSpectralService.cpp
+    src/juce-plugin/InstrumentUiSpectrumAnalysis.cpp)
 target_include_directories(dandrum-plugin-spectral-service-test PRIVATE src/juce-wrapper src/juce-plugin)
 target_compile_definitions(dandrum-plugin-spectral-service-test PRIVATE JUCE_USE_CURL=0 JUCE_WEB_BROWSER=0)
 target_link_libraries(dandrum-plugin-spectral-service-test PRIVATE dandrum_engine juce::juce_dsp dl pthread m)
 add_test(NAME cxx-plugin-spectral-service COMMAND dandrum-plugin-spectral-service-test)
+
+add_executable(dandrum-plugin-live-analysis-test
+    tests/cpp/PluginLiveAnalysisTest.cpp
+    src/juce-plugin/InstrumentUiLiveAnalysis.cpp
+    src/juce-plugin/InstrumentUiSpectrumAnalysis.cpp)
+target_include_directories(dandrum-plugin-live-analysis-test PRIVATE src/juce-plugin)
+target_compile_definitions(dandrum-plugin-live-analysis-test PRIVATE JUCE_USE_CURL=0 JUCE_WEB_BROWSER=0)
+target_link_libraries(dandrum-plugin-live-analysis-test PRIVATE juce::juce_dsp dl pthread m)
+add_test(NAME cxx-plugin-live-analysis COMMAND dandrum-plugin-live-analysis-test)
 
 juce_add_console_app(dandrum-drum-machine-demo PRODUCT_NAME "Dandrum Drum Machine Demo")
 target_sources(dandrum-drum-machine-demo PRIVATE
@@ -181,6 +191,7 @@ target_sources(dandrum-plugin-ui-common INTERFACE
     ${CMAKE_CURRENT_SOURCE_DIR}/src/juce-plugin/InstrumentFileWatcher.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/juce-plugin/InstrumentUiWaveformService.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/juce-plugin/InstrumentUiSpectralService.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/juce-plugin/InstrumentUiSpectrumAnalysis.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/juce-plugin/PluginFactory.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/juce-plugin/PluginProcessor.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/juce-plugin/SoundLabController.cpp)

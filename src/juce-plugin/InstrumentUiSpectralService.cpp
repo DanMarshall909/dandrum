@@ -3,11 +3,6 @@
 #include <algorithm>
 #include <cassert>
 #include <utility>
-#include <cmath>
-#include <bit>
-#include <numbers>
-#include <numeric>
-#include <juce_dsp/juce_dsp.h>
 
 InstrumentUiSpectralService::InstrumentUiSpectralService (Reader copy)
     : reader (copy ? std::move (copy)
@@ -166,12 +161,7 @@ InstrumentUiSpectralService::analyze (const Job& job) const
     result->settings = job.key.settings;
     for (std::size_t bin = 0; bin < binCount; ++bin)
         result->frequencyHz[bin] = static_cast<double> (bin) * job.key.sampleRateHz / fftSize;
-    std::array<float, fftSize> window;
-    for (std::size_t n = 0; n < fftSize; ++n)
-        window[n] = static_cast<float> (0.5 * (1.0 - std::cos (
-            2.0 * std::numbers::pi * static_cast<double> (n) / fftSize)));
-    const auto windowSum = std::accumulate (window.begin(), window.end(), 0.0);
-    juce::dsp::FFT fft (std::countr_zero (fftSize));
+    InstrumentUiSpectrumAnalysis spectrum;
     const auto span = job.key.endFrame - job.key.startFrame;
     const auto count = 1 + (span - 1) / job.key.settings.hopFrames;
     result->columns.reserve (static_cast<std::size_t> (count));
@@ -182,22 +172,11 @@ InstrumentUiSpectralService::analyze (const Job& job) const
         const auto validFrames = static_cast<std::size_t> (
             std::min<std::uint64_t> (fftSize, job.key.endFrame - column.startFrame));
         column.endFrame = column.startFrame + validFrames;
-        std::array<float, fftSize * 2> data {};
+        std::array<float, fftSize> data {};
         if (! reader (job.source.get(), job.key.channel, column.startFrame, data.data(), validFrames))
             return {};
-        for (std::size_t n = 0; n < validFrames; ++n)
-        {
-            if (! std::isfinite (data[n])) return {};
-            data[n] *= window[n];
-        }
-        fft.performFrequencyOnlyForwardTransform (data.data(), true);
-        for (std::size_t bin = 0; bin < binCount; ++bin)
-        {
-            const auto amplitude = data[bin] * (bin == 0 || bin == fftSize / 2 ? 1.0 : 2.0) / windowSum;
-            column.magnitudeDbFS[bin] = amplitude > 0.0
-                ? static_cast<float> (std::max<double> (floorDbFS, 20.0 * std::log10 (amplitude)))
-                : floorDbFS;
-        }
+        if (! spectrum.analyze (std::span<const float> (data.data(), validFrames), column.magnitudeDbFS))
+            return {};
         result->columns.push_back (std::move (column));
     }
     return result;

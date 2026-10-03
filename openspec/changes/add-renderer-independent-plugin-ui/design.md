@@ -146,6 +146,17 @@ that occurs wholly between callbacks. Non-finite PCM is
 validated by the off-audio worker before scope/FFT analysis. Storage is never
 reclaimed or reset by an editor or worker while audio may use it.
 
+The shared numeric measurement uses a 1024-point periodic Hann window,
+256-frame hop, 513 one-sided peak-dBFS bins and a -120 dBFS floor. DC and
+Nyquist retain their single-sided endpoint scale. Live scope results contain
+128 signed min/max buckets, each covering eight original stream frames.
+Each result owns its arrays and declares captured rate, frequency coordinates,
+window bounds and identities. Prepared tails may be zero-padded; live results
+require a full contiguous window. Invalid selected PCM and continuity changes
+discard partial accumulation. The first complete result after a reset declares
+a gap; subsequent results resume the hop. This numeric prerequisite does not
+establish worker delivery, processor integration or live renderer completion.
+
 ### Make editor choice a build boundary
 
 Separate common UI services, native components, and web transport/resources into build targets. Use an editor factory/configuration value independent of instrument data; remove compulsory HTML from the neutral demo description. A native-only build disables browser features and requires neither WebView SDKs/WebKit nor Node. The web configuration compiles React/CSS/fonts/icons ahead of time and embeds local assets via the resource provider. No production CDN scripts, runtime Babel or development server.

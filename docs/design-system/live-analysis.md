@@ -58,7 +58,7 @@ the extended guard rejects it by the live header's name, while the real capture
 passes through CTest. This source guard complements the allocation checks and
 does not substitute for later callback instrumentation.
 
-Both complete build configurations pass. Final CTest passes **27/27 native**
+At the capture increment, both complete build configurations passed. CTest passed **27/27 native**
 and **52/52 Web** without skips, including the new capture test and existing
 sampler/303 renderer regressions. Strict OpenSpec validation and the unchanged
 main-spec coverage gate pass; no delta scenario is synced or marked complete.
@@ -69,3 +69,59 @@ gap-window resets, session delivery, processor integration, actual renderer
 consumption, signed engine-output parity and callback timing remain pending.
 This component test does not prove those system-level outcomes. Full task 6.3,
 resource/stress work and automatic structural rebuilding remain unchecked.
+
+## Contiguous numeric analysis
+
+`InstrumentUiLiveAnalysis` now accumulates copied capture chunks off audio. Each
+result owns a complete 1024-frame window, 128 signed min/max buckets of eight
+frames per selected channel, and 513 spectral magnitudes. Windows advance by
+256 frames. Frequency coordinates use the captured sample rate; scope bounds
+and window coordinates use the original stream's frame positions.
+
+The live and prepared services share `InstrumentUiSpectrumAnalysis`: a
+1024-point periodic Hann window, one-sided peak dBFS normalization and a -120
+dBFS floor. DC and Nyquist are not doubled. Prepared tails retain their existing
+zero-padding contract; live analysis emits only complete contiguous windows.
+Finite overrange PCM is scaled before the float FFT and restored in double,
+preventing overflow without changing the measurement convention.
+
+An explicit gap, unexpected sequence or position, changed generation, rate,
+stream or selection discards the partial window. Invalid frames or non-finite
+selected PCM do the same; unselected PCM is ignored. The first recovered result
+requires 1024 contiguous frames and declares a gap. Later results resume the
+256-frame hop. Reset affects only worker-owned accumulation, not queue storage.
+
+`cxx-plugin-live-analysis` proves independent stereo sine peaks at -6.0206 and
+-12.0412 dBFS, literal signed extrema, silence, endpoint scaling, padded prepared
+tails, unequal capture chunks, retained result ownership and selected-channel
+behavior. Nine discontinuity cases and ten malformed-frame cases exercise
+reset and recovery; post-gap spectra reject the discarded pre-gap tone.
+Float-maximum DC, Nyquist and interior sine inputs produce finite known dBFS.
+
+Before extraction, focused gcov executed all **42/42** records at the prepared
+service's numeric boundary. After implementation and refactoring it executes
+**78/78** new numeric records: 52 live implementation, three identity comparison
+and 23 shared spectrum records. Both headers are compiler dependencies; the
+declarative spectrum header emits no executable record. Fourteen separate
+copied-source faults compile and fail named assertions; the healthy copy passes.
+This is execution coverage and focused fault calibration, not exhaustive branch
+or mutation coverage, and not callback timing evidence.
+
+The full Web suite exposed a prepared-spectrum paint race: ready labels could
+commit before a passive React effect painted their Canvas. A read-only observer
+in the original packaged Web runtime failed a literal marker-pixel assertion
+before the draw hook moved to `useLayoutEffect`, then passed after the canonical
+Vite build and asset embedding. Existing full/compact pixels and lifecycle
+checks remain. The generated sampler bundle accompanies its source change.
+
+Both complete build configurations pass with this increment. Final CTest passes
+**28/28 native** and **53/53 Web**, without skips. TypeScript, Vite packaging,
+strict OpenSpec validation and the unchanged main-spec coverage gate pass.
+Commands, input hashes, failed and successful runs, gcov and copied faults are
+retained in `/tmp/dandrum-live-worker-evidence`.
+
+Task 6.3 stays unchecked. The analyzer is an unwired prerequisite: the sole
+analysis worker, bounded session delivery, backlog policy, subscriptions,
+processor capture and actual live renderer consumers remain pending. Neither
+component tests nor the prepared-spectrum runtime prove signed engine-output
+parity, live callback safety, stress timing or automatic structural rebuilding.
