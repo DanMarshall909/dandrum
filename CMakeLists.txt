@@ -502,6 +502,7 @@ if(NOT DANDRUM_NATIVE_ONLY)
         PRIVATE dandrum-plugin dandrum_engine juce::juce_audio_basics juce::juce_audio_processors juce::juce_audio_utils juce::juce_gui_extra
         PUBLIC juce::juce_recommended_config_flags juce::juce_recommended_lto_flags juce::juce_recommended_warning_flags)
     add_test(NAME cxx-plugin-editor-bridge COMMAND dandrum-plugin-editor-bridge-test)
+    add_test(NAME cxx-plugin-parameter-publication COMMAND dandrum-plugin-editor-bridge-test --parameter-publication)
     add_test(NAME cxx-plugin-live-bridge COMMAND dandrum-plugin-editor-bridge-test --live-bridge)
     set_tests_properties(cxx-plugin-live-bridge PROPERTIES TIMEOUT 15)
     if(CMAKE_SYSTEM_NAME STREQUAL "Linux")

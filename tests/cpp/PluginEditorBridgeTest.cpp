@@ -1,6 +1,7 @@
 #include "PluginEditor.h"
 #include "PluginWebRuntimeCheck.h"
 #include "PluginLiveBridgeCheck.h"
+#include "PluginParameterPublicationCheck.h"
 
 #include <algorithm>
 #include <array>
@@ -173,6 +174,9 @@ int main (int argc, char** argv)
    #if JUCE_LINUX
     std::signal (SIGPIPE, SIG_IGN);
    #endif
+
+    if (argc >= 2 && juce::String (argv[1]) == "--parameter-publication")
+        return parameterPublicationCheck::run<PluginEditorBridgeTestProbe>();
 
     if (argc >= 2 && (juce::String (argv[1]) == "--web-runtime"
                      || juce::String (argv[1]) == "--juce-gtkwebkitfork-child"))

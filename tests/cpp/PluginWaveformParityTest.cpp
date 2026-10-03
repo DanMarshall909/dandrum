@@ -9,6 +9,8 @@ struct PluginEditorBridgeTestProbe
     {
         return editor.browser;
     }
+    static juce::var parameterState (DandrumAudioProcessorEditor& editor)
+    { return editor.hostBridge.parameterStateForWeb(); }
 };
 #endif
 

@@ -3,6 +3,7 @@
 #include "SharedInstrumentUi.h"
 
 #include <charconv>
+#include <atomic>
 #include <cmath>
 #include <cstring>
 #include <limits>
@@ -13,6 +14,10 @@
 
 namespace
 {
+// Tickets cannot be mistaken for another editor's or retired document's
+// publication. This counter is used off audio, only by the browser adapter.
+std::atomic<std::uint64_t> nextParameterPublication { 0 };
+
 std::vector<std::byte> toBytes (const char* value)
 {
     const auto length = std::char_traits<char>::length (value);
@@ -26,18 +31,24 @@ constexpr auto nativeFunctionBootstrap = R"JS(
   const backend = window.__JUCE__.backend;
   let nextPromiseId = 0;
   const pending = new Map();
+  const acknowledgeState = state => {
+    if (typeof state?.publication === 'string' && Number.isInteger(state.generation))
+      void backend.getNativeFunction('ackParameterState')(state.publication, state.generation);
+  };
   backend.addEventListener('__juce__complete', ({ promiseId, result }) => {
     const entry = pending.get(promiseId);
     if (!entry) return;
     pending.delete(promiseId);
+    if (entry.name === 'getParameterState') acknowledgeState(result);
     entry.resolve(result);
   });
   backend.getNativeFunction = name => (...params) => {
     const resultId = nextPromiseId++;
-    const promise = new Promise((resolve, reject) => pending.set(resultId, { resolve, reject }));
+    const promise = new Promise((resolve, reject) => pending.set(resultId, { resolve, reject, name }));
     backend.emitEvent('__juce__invoke', { name, params, resultId });
     return promise;
   };
+  backend.addEventListener('parameterStateChanged', acknowledgeState);
 })();
 )JS";
 
@@ -490,7 +501,7 @@ const char* InstrumentHostWebBridge::bootstrapScript() noexcept
     return nativeFunctionBootstrap;
 }
 
-std::array<InstrumentHostWebBridge::NativeFunctionEntry, 27>
+std::array<InstrumentHostWebBridge::NativeFunctionEntry, 28>
 InstrumentHostWebBridge::nativeFunctions()
 {
     return {{
@@ -523,6 +534,19 @@ InstrumentHostWebBridge::nativeFunctions()
                   juce::WebBrowserComponent::NativeFunctionCompletion completion)
           {
               getParameterStateForWeb (arguments, std::move (completion));
+          } },
+        { "ackParameterState",
+          [this] (const juce::Array<juce::var>& arguments,
+                  juce::WebBrowserComponent::NativeFunctionCompletion completion)
+          {
+              const auto ticket = arguments.size() >= 2 ? parsePositiveDecimalId (arguments[0]) : std::nullopt;
+              const auto generation = arguments.size() >= 2 ? parseGeneration (arguments[1]) : std::nullopt;
+              const auto accepted = ticket && generation
+                  && *generation == processor.getParameterSurfaceGeneration()
+                  && *generation == parameterPublicationGeneration
+                  && *ticket == pendingParameterPublication;
+              if (accepted) pendingParameterPublication = 0;
+              completion (accepted);
           } },
         { "getPreparedDocument",
           [this] (const juce::Array<juce::var>& arguments,
@@ -663,6 +687,7 @@ bool InstrumentHostWebBridge::publishParameterUpdates (juce::WebBrowserComponent
     const auto generation = processor.getParameterSurfaceGeneration();
     if (generation != lastSeenParameterSurfaceGeneration)
     {
+        pendingParameterPublication = 0;
         processor.cancelPreparedWaveformSession (sessionId);
         processor.cancelPreparedSpectrumSession (sessionId);
         processor.unsubscribeMeter (sessionId);
@@ -673,10 +698,11 @@ bool InstrumentHostWebBridge::publishParameterUpdates (juce::WebBrowserComponent
         return true;
     }
 
-    auto state = parameterStateForWeb();
-    browser.emitEventIfBrowserIsVisible ("parameterStateChanged", state);
-    browser.emitEventIfBrowserIsVisible ("parameterValuesChanged",
-                                        state.getProperty ("parameters", {}));
+    if (pendingParameterPublication != 0 || !browser.isShowing())
+        return false;
+    pendingParameterPublication = nextParameterPublication.fetch_add (1, std::memory_order_relaxed) + 1;
+    parameterPublicationGeneration = generation;
+    browser.emitEventIfBrowserIsVisible ("parameterStateChanged", parameterStateForWeb());
     return false;
 }
 
@@ -1225,6 +1251,8 @@ juce::var InstrumentHostWebBridge::parameterStateForWeb() const
     auto result = std::make_unique<juce::DynamicObject>();
     result->setProperty ("generation", static_cast<juce::int64> (state.generation));
     result->setProperty ("sequence", static_cast<juce::int64> (state.admittedCommandSequence));
+    if (pendingParameterPublication != 0 && state.generation == parameterPublicationGeneration)
+        result->setProperty ("publication", juce::String (std::to_string (pendingParameterPublication)));
     juce::Array<juce::var> values;
     for (const auto& parameter : state.parameters)
     {

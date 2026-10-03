@@ -94,6 +94,9 @@ private:
     std::uint64_t analyzedBeforeHold = 0, hiddenAnalyzed = 0;
     bool hiddenSettled = false;
     juce::String frozenDisplayFrame;
+    int parameterFreezeStep = 0, parameterFreezeTicks = 0;
+    bool parameterFreezeObserved = false, parameterFreezeDone = false;
+    juce::String frozenParameterTicket;
    #endif
     void setLevel (float normalised)
     {
@@ -200,6 +203,31 @@ private:
            #else
             require (juce::Time::getMillisecondCounterHiRes() < deadline, "Actual live renderer timed out");
            #endif
+           #if JUCE_WEB_BROWSER
+            if (stallCheck && stage > 8 && parameterFreezeStep == 1)
+            {
+                // The original registered setParameter request is the marker
+                // emitted immediately before JavaScript enters its busy loop.
+                if (!parameterFreezeObserved && std::bit_cast<std::uint32_t> (
+                        processor->getParameterForPublicId ("fixture.level")->getValue()) == 0x3e000000U)
+                    parameterFreezeObserved = true;
+                if (parameterFreezeObserved)
+                {
+                    ++parameterFreezeTicks;
+                    setLevel (parameterFreezeTicks < 32 ? 0.625f : 0.25f);
+                    if (parameterFreezeTicks > 4)
+                    {
+                        const auto state = PluginEditorBridgeTestProbe::parameterState (
+                            *dynamic_cast<DandrumAudioProcessorEditor*> (editor.get()));
+                        require (state["publication"].isString(), "Frozen JavaScript has no bounded host-state publication");
+                        const auto ticket = state["publication"].toString();
+                        if (frozenParameterTicket.isEmpty()) frozenParameterTicket = ticket;
+                        require (ticket == frozenParameterTicket,
+                                 "Frozen JavaScript admitted additional host-state publications");
+                    }
+                }
+            }
+           #endif
             juce::AudioBuffer<float> audio (2, 64); juce::MidiBuffer midi;
             for (int i = 0; i < 16; ++i)
             {
@@ -301,6 +329,7 @@ private:
     }
     void pollStall()
     {
+        if (!parameterFreezeDone) { pollParameterFreeze(); return; }
         // The original audio/editor/worker remain active. Only actual Promise
         // replies are delayed at the browser edge; values and requests are intact.
         require (PluginConstructionTestProbe::live (*processor).pendingPayloads() <= 2,
@@ -472,6 +501,66 @@ private:
                     require (! result["held"].isObject(), "Stalled browser recovery retained its old reply");
                     nextStallPhase();
                 }
+            }
+            catch (const std::exception& error) { finish (false, error.what()); }
+        });
+    }
+    void pollParameterFreeze()
+    {
+        if (evaluating) return;
+        const auto script = parameterFreezeStep == 0 ? juce::String (R"JS((() => {
+          if (!document.querySelector('[data-parameter-id="fixture.level"]')) return '';
+          const backend=window.__JUCE__.backend;
+          const s=window.__parameterFreeze={obsolete:0,current:0,legacy:0};
+          s.receive=state => { const value=state.parameters.find(p=>p.id==='fixture.level')?.value;
+            if (value===0.25) ++s.current; else ++s.obsolete; };
+          s.old=()=>++s.legacy;
+          backend.addEventListener('parameterStateChanged',s.receive);
+          backend.addEventListener('parameterValuesChanged',s.old);
+          void backend.getNativeFunction('setParameter')('fixture.level',0.125,)JS")
+            + juce::String (generation) + R"JS();
+          const start=performance.now();
+          while (performance.now()-start<2000) {} // Actual JavaScript event-loop stall.
+          return JSON.stringify({elapsed:performance.now()-start});
+        })())JS" : juce::String (R"JS((() => {
+          const s=window.__parameterFreeze, panel=document.querySelector('.live-analysis'), canvas=panel?.querySelector('canvas');
+          const knob=document.querySelector('[data-parameter-id="fixture.level"]');
+          return JSON.stringify({obsolete:s.obsolete,current:s.current,legacy:s.legacy,
+            value:knob?.getAttribute('aria-valuenow'),ready:!!canvas && !!panel.dataset.startFrame,
+            generation:panel?.dataset.generation,start:panel?.dataset.startFrame,end:panel?.dataset.endFrame,
+            settings:!!panel && panel.textContent.includes('96000 Hz') && panel.textContent.includes('FFT 1024')
+              && panel.textContent.includes('hop 256') && panel.textContent.includes('-120..0 dBFS'),
+            png:canvas?.toDataURL('image/png')});
+        })())JS");
+        if (parameterFreezeStep == 0) parameterFreezeStep = 1;
+        evaluating = true;
+        browser->evaluateJavascript (script, [this] (auto evaluation)
+        {
+            evaluating = false;
+            if (finished) return;
+            try
+            {
+                require (!evaluation.getError(), "Original parameter-freeze observation failed");
+                const auto* value = evaluation.getResult();
+                if (!value || value->toString().isEmpty()) { parameterFreezeStep = 0; return; }
+                const auto result = juce::JSON::parse (value->toString());
+                if (parameterFreezeStep == 1)
+                {
+                    require (static_cast<double> (result["elapsed"]) >= 2000
+                        && parameterFreezeObserved && parameterFreezeTicks >= 40 && frozenParameterTicket.isNotEmpty(),
+                        "Parameter freeze did not stall actual JavaScript while native signed callbacks continued");
+                    parameterFreezeStep = 2; setLevel (0.25f); minimumStartFrame = processedFrames; return;
+                }
+                require (static_cast<int> (result["obsolete"]) <= 1 && static_cast<int> (result["legacy"]) == 0,
+                         "Frozen JavaScript accumulated obsolete or duplicate parameter-state events");
+                if (result["value"].toString() != "0.25" || static_cast<int> (result["current"]) == 0
+                    || !currentStallPlot (result)) return;
+                std::cout << "PARAMETER_FREEZE native_ticks=" << parameterFreezeTicks
+                          << " obsolete_events=" << result["obsolete"].toString()
+                          << " current_knob=0.25 signed_scope=-0.5 PASS\n";
+                browser->evaluateJavascript ("window.__JUCE__.backend.removeEventListener('parameterStateChanged',window.__parameterFreeze.receive);"
+                    "window.__JUCE__.backend.removeEventListener('parameterValuesChanged',window.__parameterFreeze.old)", {});
+                parameterFreezeDone = true; setLevel (0.75f);
             }
             catch (const std::exception& error) { finish (false, error.what()); }
         });

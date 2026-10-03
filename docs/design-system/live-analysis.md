@@ -496,9 +496,9 @@ Tasks 6.3/6.4 and section 9 remain unchecked. Prepared cache byte accounting,
 broader combined resource workloads, event-loop stalls, callback duration/CPU/RSS
 and DAW hosting remain separate open evidence. This increment does not finish
 the sampler/303 layouts, automatic structural rebuilding or the overall goal.
-The live pull/acknowledgement bound also does not bound other host-state events;
-the existing `publishParameterUpdates` push path needs its own event-loop-stall
-check before claiming bounded browser publication as a whole.
+At the C13/C14 increment, the live pull/acknowledgement bound did not bound
+the existing `publishParameterUpdates` host-state pushes. C15 below addresses
+that separate path; neither increment proves total browser memory bounds.
 
 Final complete builds pass, including Standalone/VST3 (native 7.616 s, serial
 Web 670.151 s). CTest passes **34/34 native** (26.893 s) and **63/63 Web**
@@ -506,3 +506,59 @@ Web 670.151 s). CTest passes **34/34 native** (26.893 s) and **63/63 Web**
 the extra-request calibration is disabled; its earlier healthy owning run
 also passes. Strict OpenSpec and the unchanged main-spec map remain finalization
 gates. No baseline scenarios/fingerprints are synchronized by this increment.
+
+## Host parameter state during an actual event-loop stall
+
+C15 bounds the original Web bridge's timer notifications to one unacknowledged
+snapshot per editor document. A unique decimal-string `publication` ticket and
+generation identify the delivery; `sequence` still means admitted UI commands.
+The next admitted snapshot reads current host values. Intermediate host states
+are not retained as queued payloads, and ordinary parameters keep their normal
+live audio bindings. No Rust, DSP, prepared metadata or React asset changes are
+included.
+
+The shared bootstrap acknowledges receipt of `parameterStateChanged` and of
+current `getParameterState` replies carrying an outstanding ticket. This also
+allows a current-state query to release a missed notification. It does not
+promise React painting has completed. Hidden parent editors suppress timer
+publication; reload retires the outstanding ticket before the existing document
+refresh. The unused duplicate `parameterValuesChanged` push is removed: all
+current production consumers use `parameterStateChanged`.
+
+`cxx-plugin-parameter-publication` uses the original processor/editor and
+registered commands. It covers 128 stalled update attempts, exact/duplicate/
+malformed/stale acknowledgements, two simultaneously outstanding editor
+deliveries, hidden ancestors and reload. The latest normalized 0.75 value
+renders literal **+0.5 left / zero right**, without changing host object identity,
+count or generation. The new fast contract runs in about 0.18 s.
+
+The original `web-live-stalled-replies` lane now also stops the actual WebKit
+JavaScript event loop for two seconds. Its normal registered parameter request
+marks entry; the native test timer continues rendering 16×64-frame engine
+blocks per tick and changes host values. The owning run observes **79 native
+ticks**, one obsolete state event, current knob value **0.25** and the actual
+current Scope at **-0.5** after resumption. The five previous delayed-reply,
+hide/reload/close/reopen schedules still pass. These are controlled processor
+calls in the original packaged editor, not DAW scheduling or timing evidence.
+
+Before implementation, Node, fast bridge and original browser tests each fail
+their named missing-acknowledgement/publication assertions. An initial SIGPIPE
+was a test dispatch setup error before the existing Linux signal guard; it is
+retained and is not credited as RED. Current focused gcov executes **19/19 new
+C++ records**; V8 executes all seven bootstrap functions and all reported block
+ranges. This does not claim whole-bridge or exhaustive branch coverage.
+Four copied C++ faults and two copied bootstrap faults fail their component
+assertions after healthy baselines, with actual source diffs/linkage retained.
+End-to-end tests are excluded from these fault runs.
+
+Raw sources, commands, coverage, fault calibration and setup/RED/GREEN runs are
+retained in `/tmp/dandrum-host-state-evidence`. Production remains in the bridge;
+no new reusable production abstraction is needed. The fast contract is isolated
+from unrelated Sound Lab work, while the original browser remains its boundary
+test. Prepared cache byte accounting, broader resource workloads, callback
+timing, final sampler layouts and automatic structural rebuilding remain open.
+
+Complete native/Web builds, including Standalone and VST3, pass. Final CTest
+passes **34/34 native** (23.89 s) and **64/64 Web** (69.16 s), with no skips.
+The final full-suite browser stall lane passes in 25.31 s. Strict OpenSpec,
+the unchanged main-spec map and whitespace remain finalization gates.

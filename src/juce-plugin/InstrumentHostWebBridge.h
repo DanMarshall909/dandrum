@@ -18,7 +18,7 @@ public:
     ~InstrumentHostWebBridge();
 
     static const char* bootstrapScript() noexcept;
-    std::array<NativeFunctionEntry, 27> nativeFunctions();
+    std::array<NativeFunctionEntry, 28> nativeFunctions();
     juce::WebBrowserComponent::Options addNativeFunctions (
         juce::WebBrowserComponent::Options options);
     std::optional<juce::WebBrowserComponent::Resource> provideResource (
@@ -91,6 +91,10 @@ private:
     DandrumAudioProcessor& processor;
     std::uint32_t lastSeenParameterSurfaceGeneration;
     std::uint64_t sessionId;
+    // At most one timer snapshot is queued for this document. Current values
+    // are read after acknowledgement rather than storing intervening states.
+    std::uint64_t pendingParameterPublication = 0;
+    std::uint32_t parameterPublicationGeneration = 0;
     double lastNoteHeartbeatMilliseconds = 0.0;
     bool noteSessionActive = false;
 };

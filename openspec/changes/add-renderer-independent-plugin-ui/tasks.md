@@ -269,6 +269,22 @@ This verification slice passes complete native/Web builds, including
 Standalone/VST3, and CTest **34/34 native** and **63/63 Web**, with no skips.
 It leaves task checkboxes and implemented-baseline scenario mapping unchanged.
 
+Task 6.4 host-state progress (2026-10-03): the Web bridge now bounds timer
+parameter notifications to one unacknowledged delivery per document. The shared
+bootstrap acknowledges actual state receipt and current-state query replies;
+hidden ancestors suppress publication and reload retires its ticket. Fast
+registered-command tests prove repeated stalls, editor isolation, exact/stale
+acknowledgements, current values and unchanged signed live audio. The original
+packaged WebKit lane stops its actual JavaScript event loop for two seconds,
+then observes one obsolete event and current knob/Scope recovery while native
+processor calls continue. Focused coverage executes 19/19 new C++ records and
+all bootstrap V8 functions/ranges; six copied component faults fail assertions.
+The [live analysis record](../../../docs/design-system/live-analysis.md) retains
+RED/setup evidence and states receive-acknowledgement and controlled-host limits.
+Complete native/Web builds include Standalone/VST3; CTest passes **34/34 native**
+and **64/64 Web**, with no skips. Tasks 6.3/6.4 and section 9 remain unchecked;
+cache accounting, full layouts and structural jobs stay open.
+
 ## 7. Capability-Aware Sampler Composition
 
 - [ ] 7.1 Implement prepared KeyMap inspection/audition in both renderers; tests must prove actual velocity ranges, alternate/layer distinction, capability-gated structural commands with automatic rebuilding, and host-driven note feedback.
