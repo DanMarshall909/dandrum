@@ -202,6 +202,8 @@ target_sources(dandrum-plugin-ui-common INTERFACE
     ${CMAKE_CURRENT_SOURCE_DIR}/src/juce-plugin/InstrumentUiWaveformService.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/juce-plugin/InstrumentUiSpectralService.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/juce-plugin/InstrumentUiSpectrumAnalysis.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/juce-plugin/InstrumentUiLiveAnalysis.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/juce-plugin/InstrumentUiLiveService.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/juce-plugin/PluginFactory.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/juce-plugin/PluginProcessor.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/juce-plugin/SoundLabController.cpp)
@@ -379,6 +381,27 @@ else()
     set_tests_properties(web-knob-parity PROPERTIES LABELS "runtime" SKIP_RETURN_CODE 77 TIMEOUT 60 RUN_SERIAL TRUE)
 endif()
 
+add_executable(dandrum-plugin-live-processor-test tests/cpp/PluginLiveProcessorTest.cpp)
+target_include_directories(dandrum-plugin-live-processor-test PRIVATE src/juce-wrapper src/juce-plugin)
+target_compile_definitions(dandrum-plugin-live-processor-test PRIVATE
+    DANDRUM_SOURCE_ROOT="${CMAKE_CURRENT_SOURCE_DIR}"
+    JUCE_USE_CURL=0 JUCE_WEB_BROWSER=$<NOT:$<BOOL:${DANDRUM_NATIVE_ONLY}>>
+    JUCE_USE_WIN_WEBVIEW2=$<NOT:$<BOOL:${DANDRUM_NATIVE_ONLY}>>)
+target_link_libraries(dandrum-plugin-live-processor-test PRIVATE
+    dandrum-sampler-plugin dandrum_engine juce::juce_audio_utils juce::juce_dsp
+    juce::juce_recommended_config_flags juce::juce_recommended_warning_flags)
+if(NOT DANDRUM_NATIVE_ONLY)
+    target_link_libraries(dandrum-plugin-live-processor-test PRIVATE juce::juce_gui_extra)
+endif()
+if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+    target_link_options(dandrum-plugin-live-processor-test PRIVATE
+        "LINKER:--wrap=pthread_mutex_lock" "LINKER:--wrap=_ZNSt6thread4joinEv"
+        "LINKER:--wrap=_ZNK4juce3dsp3FFT36performFrequencyOnlyForwardTransformEPfb"
+        "LINKER:--wrap=dandrum_kernel_destroy" "LINKER:--wrap=dandrum_kernel_prepare_file")
+endif()
+add_test(NAME cxx-plugin-live-processor COMMAND dandrum-plugin-live-processor-test)
+set_tests_properties(cxx-plugin-live-processor PROPERTIES TIMEOUT 15)
+
 add_executable(dandrum-plugin-waveform-parity-test tests/cpp/PluginWaveformParityTest.cpp)
 target_include_directories(dandrum-plugin-waveform-parity-test PRIVATE src/juce-wrapper src/juce-plugin)
 target_compile_definitions(dandrum-plugin-waveform-parity-test PRIVATE
@@ -515,6 +538,7 @@ endif()
 # Linux WebKit/GTK usage requirements requested by NEEDS_WEB_BROWSER.
 if(CMAKE_SYSTEM_NAME STREQUAL "Linux" AND NOT DANDRUM_NATIVE_ONLY)
     foreach(plugin_test_target
+            dandrum-plugin-live-processor-test
             dandrum-plugin-knob-parity-test
             dandrum-plugin-waveform-parity-test
             dandrum-plugin-spectral-parity-test

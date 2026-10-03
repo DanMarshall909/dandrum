@@ -354,11 +354,16 @@ float DandrumAudioProcessor::denormalisePublicValue (const PublicParameterDescri
 }
 
 DandrumAudioProcessor::DandrumAudioProcessor (InstrumentDemoConfiguration demo)
+    : DandrumAudioProcessor (std::move (demo), {}) {}
+
+DandrumAudioProcessor::DandrumAudioProcessor (
+    InstrumentDemoConfiguration demo, InstrumentUiLiveService::BeforeBatch observeLiveWorker)
     : juce::AudioProcessor (BusesProperties()
                                  .withInput ("Input", juce::AudioChannelSet::stereo(), true)
                                  .withOutput ("Output", juce::AudioChannelSet::stereo(), true)),
       configuration (std::move (demo)),
-      parameters (*this, nullptr, "DandrumState", createParameterLayout (configuration))
+      parameters (*this, nullptr, "DandrumState", createParameterLayout (configuration)),
+      liveService (std::move (observeLiveWorker))
 {
     parameterSlots.resize (kPublicParameterSlotCount);
     for (int slotIndex = 0; slotIndex < kPublicParameterSlotCount; ++slotIndex)
@@ -617,6 +622,7 @@ void DandrumAudioProcessor::preparePublicParameterSlots (const std::vector<Publi
     const auto generation = parameterSurfaceGeneration.fetch_add (1, std::memory_order_relaxed) + 1;
     waveformService.setGeneration (generation);
     spectralService.setGeneration (generation);
+    liveService.setGeneration (generation);
 }
 
 void DandrumAudioProcessor::setSlotNormalisedValue (int slotIndex, float normalisedValue)
@@ -807,6 +813,8 @@ void DandrumAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce
     juce::ScopedNoDenormals noDenormals;
 
     const auto numSamples = buffer.getNumSamples();
+    const auto liveGeneration = parameterSurfaceGeneration.load (std::memory_order_relaxed);
+    const auto liveRate = static_cast<std::uint32_t> (juce::jmax (1.0, getSampleRate()));
 
     for (auto channel = 2; channel < buffer.getNumChannels(); ++channel)
         buffer.clear (channel, 0, numSamples);
@@ -816,6 +824,7 @@ void DandrumAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce
     {
         lastMeterKernel = activeKernel;
         meterCapture.beginStream();
+        liveService.beginStream();
     }
 
     if (activeKernel == nullptr || ! instrumentLoaded || isMuted()
@@ -823,9 +832,13 @@ void DandrumAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce
     {
         renderSilence (buffer);
         if (numSamples > 0 && buffer.getNumChannels() >= 2)
+        {
             meterCapture.capture (buffer.getReadPointer (0), buffer.getReadPointer (1),
                                   static_cast<std::size_t> (numSamples),
                                   parameterSurfaceGeneration.load (std::memory_order_relaxed));
+            liveService.capture (buffer.getReadPointer (0), buffer.getReadPointer (1),
+                                 static_cast<std::size_t> (numSamples), liveGeneration, liveRate);
+        }
         return;
     }
 
@@ -913,7 +926,22 @@ void DandrumAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce
     meterCapture.capture (buffer.getReadPointer (0), buffer.getReadPointer (1),
                           static_cast<std::size_t> (numSamples),
                           parameterSurfaceGeneration.load (std::memory_order_relaxed));
+    liveService.capture (buffer.getReadPointer (0), buffer.getReadPointer (1),
+                         static_cast<std::size_t> (numSamples), liveGeneration, liveRate);
 }
+
+bool DandrumAudioProcessor::subscribeLiveAnalysis (std::uint64_t session, std::uint32_t generation, std::uint8_t channels)
+{ return liveService.subscribe (session, generation, channels); }
+bool DandrumAudioProcessor::unsubscribeLiveAnalysis (std::uint64_t session)
+{ return liveService.unsubscribe (session); }
+bool DandrumAudioProcessor::setLiveAnalysisVisible (std::uint64_t session, bool visible)
+{ return liveService.setVisible (session, visible); }
+std::optional<InstrumentUiLiveService::Packet> DandrumAudioProcessor::takeLiveAnalysisPacket (std::uint64_t session)
+{ return liveService.take (session); }
+bool DandrumAudioProcessor::acknowledgeLiveAnalysisPacket (std::uint64_t session, std::uint32_t generation, std::uint64_t sequence)
+{ return liveService.acknowledge (session, generation, sequence); }
+InstrumentUiLiveService::Statistics DandrumAudioProcessor::getLiveAnalysisStatistics() const
+{ return liveService.statistics(); }
 
 void DandrumAudioProcessor::setMeterCaptureEnabled (bool enabled) noexcept
 {

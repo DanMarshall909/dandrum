@@ -168,6 +168,17 @@ Worker admission and publication both validate the current generation and
 selection; session changes may occur while analysis is held. Hidden/closed
 demand disables capture without moving producer indexes or reclaiming storage.
 
+The processor owns the live service in both builds and captures actual rendered
+master stereo PCM, including muted zero output, through its fixed queue. Session
+controls and numeric delivery are off audio; ordinary host automation retains
+its normal binding. Processor-fixture tests cover actual rates, signed PCM,
+window coordinates and independence from a stalled worker. Shared adapters,
+live renderer consumers and bounded browser transport remain pending. Concurrent
+reload/reprepare identity must use the acknowledged engine handoff specified
+above; pointer exchange plus the existing fixed delay is not proof of reader
+safety. See the [live analysis evidence](../../../docs/design-system/live-analysis.md)
+for the measured callback boundaries and outstanding integration gates.
+
 ### Make editor choice a build boundary
 
 Separate common UI services, native components, and web transport/resources into build targets. Use an editor factory/configuration value independent of instrument data; remove compulsory HTML from the neutral demo description. A native-only build disables browser features and requires neither WebView SDKs/WebKit nor Node. The web configuration compiles React/CSS/fonts/icons ahead of time and embeds local assets via the resource provider. No production CDN scripts, runtime Babel or development server.

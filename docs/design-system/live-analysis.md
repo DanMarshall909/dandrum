@@ -171,8 +171,8 @@ runs and original fixtures remain alongside the repaired evidence. These are
 execution coverage and focused fault calibration, not exhaustive branch or
 mutation coverage.
 
-The service is registered in CTest for both configurations and currently linked
-only to its component test. Actual processor capture, shared commands/adapters,
+At the worker increment, the service was registered in CTest for both
+configurations and linked only to its component test. Actual processor capture, shared commands/adapters,
 native/Web live views, signed engine-output parity, callback instrumentation and
 timing remain pending. Task 6.3 and the broader resource/stress and structural
 runtime tasks stay unchecked. Raw commands, input hashes, coverage and faults
@@ -183,3 +183,47 @@ without skips, including existing sampler and 303 runtime regressions. Strict
 OpenSpec validation and the unchanged main-spec coverage gate pass. These wider
 regressions do not turn this standalone service into processor or live-view
 integration proof.
+
+## Processor capture connection
+
+The processor now owns the live service and links it into both plugin builds.
+Its off-audio session API returns owned numeric packets; the audio callback only
+copies the rendered master stereo output into the fixed queue. Disabled demand
+still advances sample coordinates. Muted callbacks capture their actual zero
+output. Existing host parameter objects and ordinary automation remain live.
+
+`cxx-plugin-live-processor` uses the real processor and Rust engine with the
+maintained `plugin-ui-knob.yaml` fixture. At 44.1, 48 and 96 kHz it asserts
+bit-exact signed output, cleared extra lanes, actual window coordinates/rate,
+known signed scope and DC dBFS values, hide/show freshness, muted zero output,
+and stable host control identity after live parameter changes. A stop-aware
+barrier holds the actual analysis worker while 72 audio blocks complete, causing
+exactly eight rejected chunks in the fixed 64-chunk queue. Recovery discards
+obsolete history and requires a fresh complete window at current coordinates.
+
+Thread-local Linux linker instrumentation observes C++ `new`, directly linked
+mutex acquisition, `std::thread::join`, JUCE FFT and engine preparation/destruction.
+Real off-audio joins and FFT calls calibrate the observation boundaries. The
+healthy schedule reports zero observed callback operations; separate copied
+processor faults deliberately invoke each forbidden operation and fail with
+positive counters. Channel swaps, an invented rate and a subscription-time
+stream reset also fail named behavioral assertions. This is eight focused
+faults, not exhaustive mutation, Rust allocator coverage, every OS call, callback
+timing or DAW loading evidence.
+
+The compiled admission stub failed before implementation. Focused GCC 11 gcov
+executes **24/24 changed processor source records**; the unchanged processor is
+not fully covered. A signed-zero expectation and test interception alignment
+were repaired without changing the engine. Initial missing-include, browser
+build and FFT-link setup failures are retained and not credited as behavioral
+REDs or fault kills. Raw commands, inputs, coverage and faults are retained in
+`/tmp/dandrum-live-processor-evidence`.
+
+Both complete builds pass; CTest passes **30/30 native** and **55/55 Web** without
+skips. This proves normal processor capture and held-worker independence. The
+fixture constructs the real processor directly; original native/Web live-view
+factory parity, shared adapters and bounded browser delivery remain pending.
+Concurrent reload/reprepare identity and safe reader retirement also remain
+pending: the existing fixed-delay engine reclamation is not an ownership proof.
+The acknowledged handoff in task 9.2 precedes that concurrent integration test.
+Tasks 6.3/6.4, structural runtime and the full sampler/303 goal remain incomplete.

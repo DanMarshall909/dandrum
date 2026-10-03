@@ -23,6 +23,7 @@
 #include "InstrumentUiParameterState.h"
 #include "InstrumentUiWaveformService.h"
 #include "InstrumentUiSpectralService.h"
+#include "InstrumentUiLiveService.h"
 #include "RustEngineBindings.h"
 
 class SoundLabController;
@@ -39,6 +40,9 @@ public:
 
     explicit DandrumAudioProcessor (
         InstrumentDemoConfiguration configuration = InstrumentDemoConfiguration::tb303());
+    // Optional off-audio worker observation; must honor stop and not throw.
+    DandrumAudioProcessor (InstrumentDemoConfiguration,
+                          InstrumentUiLiveService::BeforeBatch observeLiveWorker);
     ~DandrumAudioProcessor() override;
 
     using juce::AudioProcessor::processBlock;
@@ -210,6 +214,15 @@ public:
     bool acknowledgeMeterPacket (std::uint64_t sessionId, std::uint32_t generation,
                                  std::uint64_t sequence) noexcept;
 
+    // Off-audio live-analysis sessions. PCM and worker storage belong to this
+    // processor; editors receive only owned numeric packet values.
+    bool subscribeLiveAnalysis (std::uint64_t, std::uint32_t, std::uint8_t);
+    bool unsubscribeLiveAnalysis (std::uint64_t);
+    bool setLiveAnalysisVisible (std::uint64_t, bool);
+    std::optional<InstrumentUiLiveService::Packet> takeLiveAnalysisPacket (std::uint64_t);
+    bool acknowledgeLiveAnalysisPacket (std::uint64_t, std::uint32_t, std::uint64_t);
+    InstrumentUiLiveService::Statistics getLiveAnalysisStatistics() const;
+
 private:
     friend struct PluginConstructionTestProbe;
     /// Test-only direct inspection; subscription delivery is the production
@@ -367,6 +380,7 @@ private:
     InstrumentUiMeterAggregation meterAggregation;
     InstrumentUiMeterDisplay meterDisplay;
     InstrumentUiMeterDelivery meterDelivery;
+    InstrumentUiLiveService liveService;
 
     void refreshMeterCaptureSubscription (bool wasInactive) noexcept;
     // Serializes engine replacement, reprepare, and UI metadata snapshots.

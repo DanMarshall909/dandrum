@@ -205,9 +205,22 @@ faults fail named assertions after repairing an initially surviving channel-unio
 fault. Full builds pass, with CTest 29/29 native and 54/54 Web without skips.
 The live analysis record distinguishes component evidence from pending processor
 capture, shared commands/adapters, actual live views, engine-output parity,
-callback instrumentation and timing. The service is linked only to its registered
+callback instrumentation and timing. At that increment the service was linked only to its registered
 test target. Tasks 6.3/6.4 stay unchecked; no structural runtime completion is
 claimed.
+
+Task 6.3 processor progress (2026-10-03): both plugin builds now own the live
+service. The real processor/engine fixture proves exact signed capture at
+44.1/48/96 kHz, live host identity, current hide/show and muted coordinates,
+and bounded overflow while the actual worker is held. Linux callback guards
+observe zero C++ allocation, directly linked locks, joins, FFT and kernel
+lifecycle calls; eight copied faults fail their named assertions. Focused gcov
+executes 24/24 changed processor records, not the whole module. Both builds
+pass; CTest passes 30/30 native and 55/55 Web without skips. The live analysis
+record states the instrumentation and factory/DAW limits. Concurrent reload
+identity awaits task 9.2's safe ownership handoff; the existing fixed delay is
+not its proof. Shared adapters, actual live views and browser delivery remain
+pending, so 6.3/6.4 and structural runtime remain unchecked.
 
 ## 7. Capability-Aware Sampler Composition
 
