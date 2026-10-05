@@ -358,7 +358,7 @@ private:
             : stallPhase == 2 && stallStep == 1 ? "hide" : "inspect";
         const auto jsPhase = stallPhase == 4 && stallStep >= 3 ? 5 : stallPhase;
         const auto script = juce::String (R"JS((() => {
-          if (!document.querySelector('.sampler .lower')) return '';
+          if (!document.querySelector('.sampler [aria-label="Sample display"]')) return '';
           if (!window.__liveStall) {
             const backend = window.__JUCE__?.backend;
             if (!backend) return '';
@@ -569,7 +569,7 @@ private:
     {
         if (evaluating) return;
         const auto script = juce::String (R"JS((() => {
-          if (!document.querySelector('.sampler .lower')) return '';
+          if (!document.querySelector('.sampler [aria-label="Sample display"]')) return '';
           if (!window.__liveReplyObserver) {
             const backend = window.__JUCE__?.backend;
             if (!backend) return '';

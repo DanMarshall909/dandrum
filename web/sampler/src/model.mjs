@@ -16,6 +16,7 @@ export function preparedPads(document) {
       }
       const pad = {
         id: `${map.id}:${zone.id}`,
+        mapId: map.id,
         label: (zone.roundRobinGroup || zone.id).replaceAll('_', ' '),
         zoneIds: [zone.id],
         sourceIndex: zone.sourceIndex,
@@ -38,18 +39,63 @@ export function preparedPads(document) {
   return pads;
 }
 
-export function selectedRegion(document, pad) {
-  if (!pad) return null;
-  const source = document?.sources?.[pad.sourceIndex];
-  const region = source?.regions?.[pad.regionIndex];
+function selectedTarget(document, pad, zoneId) {
+  if (zoneId === undefined) return pad;
+  if (!pad?.zoneIds.includes(zoneId)) return null;
+  return document?.maps?.find(map => map.id === pad.mapId)
+    ?.zones.find(zone => zone.id === zoneId) ?? null;
+}
+
+export function selectedRegion(document, pad, zoneId) {
+  const target = selectedTarget(document, pad, zoneId);
+  if (!target) return null;
+  const source = document?.sources?.[target.sourceIndex];
+  const region = source?.regions?.[target.regionIndex];
   return source && region ? { sourceId: source.id, regionId: region.id } : null;
 }
 
-export function visibleParameters(document, pad) {
+export function visibleParameters(document, pad, zoneId) {
+  const target = selectedTarget(document, pad, zoneId);
   return (document?.parameters ?? []).filter(parameter =>
     parameter.scope === 'instrument'
-    || (pad?.controlGroup != null && parameter.scope === 'sampleGroup'
-        && parameter.controlGroup === pad.controlGroup));
+    || (target?.controlGroup != null && parameter.scope === 'sampleGroup'
+        && parameter.controlGroup === target.controlGroup));
+}
+
+const noteNames = ['C', 'C♯', 'D', 'D♯', 'E', 'F', 'F♯', 'G', 'G♯', 'A', 'A♯', 'B'];
+const blackNotes = [1, 3, 6, 8, 10];
+const whiteIndex = { 0: 0, 2: 1, 4: 2, 5: 3, 7: 4, 9: 5, 11: 6 };
+
+// Adapt the supplied KeyMap's semitone grid and aligned piano to prepared
+// ranges. Alternatives share a rectangle; overlap does not establish layering.
+export function keyMapLayout(pads, availableWidth, zoom = 1, compact = false) {
+  if (pads.length === 0) return null;
+  const lowNote = Math.min(...pads.map(pad => pad.keyLow));
+  const highNote = Math.max(...pads.map(pad => pad.keyHigh));
+  const count = highNote - lowNote + 1;
+  const keyWidth = (Math.max(31, availableWidth) - 30) / count * Math.max(1, Math.min(8, zoom));
+  const gridHeight = compact ? 100 : 140;
+  const keyboardHeight = compact ? 40 : 56;
+  const name = note => noteNames[note % 12] + (Math.floor(note / 12) - 1);
+  const notes = Array.from({ length: count }, (_, index) => {
+    const note = lowNote + index;
+    return { note, name: name(note), black: blackNotes.includes(note % 12),
+      left: index * keyWidth, width: keyWidth };
+  });
+  const whiteKeys = [];
+  for (let note = Math.max(0, lowNote - 1); note <= Math.min(127, highNote + 1); note++) {
+    if (blackNotes.includes(note % 12)) continue;
+    whiteKeys.push({ note, name: name(note),
+      left: (Math.floor(note / 12) * 12 + whiteIndex[note % 12] * 12 / 7 - lowNote) * keyWidth,
+      width: 12 / 7 * keyWidth });
+  }
+  return { lowNote, highNote, keyWidth, gridHeight, keyboardHeight,
+    width: count * keyWidth, notes, whiteKeys,
+    zones: pads.map(pad => ({ id: pad.id,
+      left: (pad.keyLow - lowNote) * keyWidth,
+      top: (127 - pad.velocityHigh) / 127 * gridHeight,
+      width: (pad.keyHigh - pad.keyLow + 1) * keyWidth,
+      height: (pad.velocityHigh - pad.velocityLow + 1) / 127 * gridHeight })) };
 }
 
 export function padReleaseHandlers(release) {

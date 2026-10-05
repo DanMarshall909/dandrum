@@ -22,6 +22,20 @@ const packagedIcons = {
   tb303: ['keyboard', 'midi', 'level', 'error'],
 };
 
+test('JUCE runtime observer scripts remain ASCII across the Linux IPC boundary', () => {
+  const directory = path.join(root, 'tests/cpp');
+  let scripts = 0;
+  for (const name of readdirSync(directory).filter(name => /\.(?:cpp|h)$/.test(name))) {
+    const source = readFileSync(path.join(directory, name), 'utf8');
+    for (const [raw] of source.matchAll(/R"JS\([\s\S]*?\)JS"/g)) {
+      scripts++;
+      assert.ok(!/[^\x00-\x7f]/.test(raw),
+        `${name}: runtime observer script must use JavaScript Unicode escapes`);
+    }
+  }
+  assert.ok(scripts > 0, 'No runtime observer scripts were checked');
+});
+
 for (const app of ['sampler', 'tb303']) {
   const dist = path.join(root, 'web', app, 'dist');
   test(`${app} packages all declared fonts into locally served CSS`, () => {

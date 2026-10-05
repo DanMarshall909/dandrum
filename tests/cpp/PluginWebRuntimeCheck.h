@@ -29,8 +29,8 @@ inline void require (bool condition, const juce::String& message)
 }
 
 // Observe the original production browser without replacing its Options or
-// native functions. Return ASCII JSON strings because Unicode evaluation
-// results can be truncated by vendored Linux JUCE's IPC character framing.
+// native functions. Keep scripts and returned JSON ASCII because Unicode can
+// be truncated by vendored Linux JUCE's IPC character framing.
 constexpr auto runtimeScript = R"JS(
 (() => {
   if (window.__dandrumPackagedRuntime) return;
@@ -53,6 +53,100 @@ constexpr auto runtimeScript = R"JS(
       await waitFor(() => document.querySelector('.dd-knob[aria-disabled="false"]'),
                     'Production editor controls did not become ready');
       const sampler = !!document.querySelector('.sampler');
+      if (window.__dandrumInspectionReloadBefore != null) {
+        const state = await native('getParameterState')();
+        if (!sampler || state.generation <= window.__dandrumInspectionReloadBefore
+            || document.querySelector('[aria-label="Prepared sample waveform"] h2')?.textContent !== 'drums.kick'
+            || document.querySelector('[aria-label="Sample alternatives"]')
+            || document.querySelector('.dd-piano-key[aria-pressed="true"]')
+            || document.querySelector('[role=alert]'))
+          throw Error('Reload did not retire the previous KeyMap selection and audition');
+        await report('inspectionReloaded', {generation:state.generation, region:'drums.kick'});
+        return;
+      }
+      const inspectKeyMap = () => {
+        const map = document.querySelector('.dd-key-map');
+        if (!map) throw Error('Supplied KeyMap grid and piano are missing from the sampler');
+        const grid = map.querySelector('.dd-key-map-grid');
+        const keys = map.querySelector('.dd-key-map-piano');
+        const compact = innerWidth <= 900;
+        if (Math.abs(grid.getBoundingClientRect().height - (compact ? 100 : 140)) > 0.5
+            || Math.abs(keys.getBoundingClientRect().height - (compact ? 40 : 56)) > 0.5)
+          throw Error('KeyMap grid and piano do not use the supplied full/compact dimensions');
+        if (map.dataset.lowNote !== '36' || map.dataset.highNote !== '46'
+            || map.querySelectorAll('.dd-key-zone').length !== 5)
+          throw Error('KeyMap does not fit the actual prepared notes or grouped alternatives');
+        const soft = map.querySelector('[data-pad-id="kit:snare_soft"]');
+        const hard = map.querySelector('[data-pad-id="kit:snare_hard_a"]');
+        const top = Number.parseFloat(soft.style.top);
+        if (soft.dataset.velocityLow !== '1' || soft.dataset.velocityHigh !== '63'
+            || hard.dataset.velocityLow !== '64' || hard.dataset.velocityHigh !== '127'
+            || Math.abs(top - 64 / 127 * (compact ? 100 : 140)) > 0.01
+            || Math.abs(Number.parseFloat(hard.style.height) - top) > 0.01)
+          throw Error('KeyMap does not draw the actual inclusive 63/64 snare split');
+        for (const zoom of map.querySelectorAll('.dd-key-map-zoom button')) {
+          const size = zoom.getBoundingClientRect();
+          if (size.width < 24 || size.height < 24) throw Error('KeyMap zoom target is smaller than24pixels');
+        }
+        return {lowNote:36, highNote:46, zones:5, gridHeight:compact ? 100 : 140,
+                keyboardHeight:compact ? 40 : 56, snareBoundary:top};
+      };
+      const keyMap = sampler ? inspectKeyMap() : null;
+      const inspectAlternatives = async () => {
+        const pads = [...document.querySelectorAll('button.pad')];
+        const hard = pads.find(pad => pad.textContent.includes('hard snare'));
+        const kick = pads.find(pad => pad.textContent.includes('kick'));
+        if (!hard || !kick) throw Error('Prepared sampler zones are missing');
+        const hostBefore = await native('getParameterState')();
+        hard.click();
+        const waveform = () => document.querySelector('[aria-label="Prepared sample waveform"] h2')?.textContent;
+        await waitFor(() => waveform() === 'drums.snare_hard_a',
+                      'Selecting a zone did not inspect its prepared region');
+        const group = document.querySelector('[aria-label="Sample alternatives"]');
+        if (!group) throw Error('Prepared round-robin alternatives cannot be selected');
+        const choices = [...group.querySelectorAll('button')];
+        if (choices.length !== 2 || choices[0].dataset.zoneId !== 'snare_hard_a'
+            || choices[1].dataset.zoneId !== 'snare_hard_b')
+          throw Error('Alternatives do not retain their prepared zone identities');
+        choices[1].click();
+        await waitFor(() => waveform() === 'drums.snare_hard_b'
+                       && choices[1].getAttribute('aria-pressed') === 'true',
+                      'Selecting alternative B did not inspect its actual prepared region');
+        await waitFor(() => document.querySelector('[aria-label="Prepared sample waveform"] .section-heading span')
+                         ?.textContent === '48000 Hz \u00b7 0.167 s',
+                      'The chosen alternative did not receive its validated prepared waveform');
+        const controls = [...document.querySelectorAll('.control-list .dd-knob')]
+          .map(knob => knob.getAttribute('aria-label'));
+        if (controls.length !== 10 || !controls.includes('drums.snare.pitch_ratio')
+            || controls.some(id => id.startsWith('drums.kick.') || id.startsWith('drums.open_hat.')))
+          throw Error('Alternative inspection shows the wrong declared public control scope');
+        choices[0].click();
+        await waitFor(() => waveform() === 'drums.snare_hard_a'
+                       && choices[0].getAttribute('aria-pressed') === 'true',
+                      'Alternative inspection did not return to member A');
+        const hostAfter = await native('getParameterState')();
+        if (JSON.stringify(hostBefore.parameters) !== JSON.stringify(hostAfter.parameters)
+            || hostBefore.generation !== hostAfter.generation)
+          throw Error('Inspection changed the working instrument or host parameter values');
+        kick.click();
+        await waitFor(() => waveform() === 'drums.kick'
+                       && !document.querySelector('[aria-label="Sample alternatives"]'),
+                      'Selecting a single zone retained the previous alternative inspection');
+        return {members: choices.map(choice => choice.dataset.zoneId), inspected: 'drums.snare_hard_b', controls};
+      };
+      const alternatives = sampler ? await inspectAlternatives() : null;
+      if (sampler) {
+        const key = document.querySelector('.dd-piano-key[data-note="36"]');
+        key.focus();
+        key.dispatchEvent(new KeyboardEvent('keydown', {key:'Enter',bubbles:true,cancelable:true}));
+        await native('getParameterState')();
+        await report('keyMapAudition', {});
+        await waitFor(() => window.__dandrumKeyMapAuditionObserved,
+                      'KeyMap piano audition did not reach the actual audio callback');
+        key.dispatchEvent(new KeyboardEvent('keyup', {key:'Enter',bubbles:true,cancelable:true}));
+        await waitFor(() => key.getAttribute('aria-pressed') === 'false',
+                      'KeyMap piano key-up retained local held state');
+      }
       const control = document.querySelector(sampler
         ? '[role=slider][aria-label="drums.pitch_ratio"]'
         : '[role=slider][aria-label="CUT OFF FREQ"]');
@@ -88,7 +182,7 @@ constexpr auto runtimeScript = R"JS(
       });
       await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
       await report('fonts', {
-        fonts, icons: inspectIcons(), parameters: state.parameters.map(p => p.id),
+        fonts, alternatives, keyMap, icons: inspectIcons(), parameters: state.parameters.map(p => p.id),
         errors: [...document.querySelectorAll('[role=alert]')].map(e => e.textContent),
         family: getComputedStyle(document.querySelector('main')).fontFamily,
         valueFamily: getComputedStyle(control.querySelector('[data-dd-knob-value]')).fontFamily,
@@ -113,11 +207,13 @@ constexpr auto runtimeScript = R"JS(
       await waitFor(() => innerWidth === 820 && innerHeight === 560,
                     'Production editor did not resize to the compact viewport');
       // Observe ResizeObserver/React completion instead of assuming a frame count.
-      await waitFor(() => sampler ||
+      await waitFor(() => sampler ? document.querySelector('.dd-key-map')?.dataset.compact === 'true' :
         Math.abs(document.querySelector('.machine').getBoundingClientRect().width
           - document.querySelector('.machine-frame').getBoundingClientRect().width) < 3,
         'Production panel did not finish scaling to the compact viewport');
       await report('compact', {
+        alternatives: sampler ? await inspectAlternatives() : null,
+        keyMap: sampler ? inspectKeyMap() : null,
         icons: inspectIcons(),
         viewportWidth: innerWidth, viewportHeight: innerHeight,
         hintClear: sampler || document.querySelector('.hint').getBoundingClientRect().top + 0.5
@@ -222,6 +318,18 @@ constexpr auto runtimeScript = R"JS(
       await assertHostValue(0.84, 'release reconciles automation received during hold');
       window.__JUCE__.backend.removeEventListener?.('parameterStateChanged', hostEcho);
       await report('interactions', {value:0.84, gestures:12});
+      const beforeReload = await native('getParameterState')();
+      const hard = [...document.querySelectorAll('button.pad')].find(pad => pad.textContent.includes('hard snare'));
+      hard.click();
+      await waitFor(() => document.querySelector('[data-zone-id="snare_hard_b"]'), 'Reload selection fixture is missing');
+      document.querySelector('[data-zone-id="snare_hard_b"]').click();
+      await waitFor(() => document.querySelector('[aria-label="Prepared sample waveform"] h2')?.textContent
+                      === 'drums.snare_hard_b', 'Reload fixture did not select member B');
+      const heldKey = document.querySelector('.dd-piano-key[data-note="36"]');
+      heldKey.focus();
+      heldKey.dispatchEvent(new KeyboardEvent('keydown', {key:'Enter',bubbles:true,cancelable:true}));
+      await native('getParameterState')();
+      await report('inspectionReloadReady', {generation:beforeReload.generation});
     } catch (error) { await report('error', {message:String(error)}); }
   };
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', run, {once:true});
@@ -256,7 +364,19 @@ public:
             const auto name = args[0].toString();
             const auto& data = args[1];
             require (name != "error", data.getProperty ("message", {}).toString());
-            if (phase == Phase::fonts && name == "fonts")
+            if (phase == Phase::fonts && name == "keyMapAudition")
+            {
+                require (sampler, "KeyMap audition report came from the synth");
+                juce::AudioBuffer<float> audio (2, 64);
+                audio.clear();
+                juce::MidiBuffer noMidi;
+                processor.processBlock (audio, noMidi);
+                require (std::abs (audio.getSample (0, 0) + 0.5f) < 0.00001f
+                             && std::abs (audio.getSample (1, 0) + 0.5f) < 0.00001f,
+                         "KeyMap piano did not render known signed bundled kick -0.5 on both channels");
+                keyMapAuditionObserved = true;
+            }
+            else if (phase == Phase::fonts && name == "fonts")
             {
                 fontReport = data;
                 std::cout << "Font load report: " << juce::JSON::toString (data, true) << std::endl;
@@ -319,15 +439,27 @@ public:
                           << " compact: " << juce::JSON::toString (compactReport, true)
                           << " host updates: 0.37, 0.63; balanced gestures: " << beginCount
                           << "; final value: " << parameter->getValue() << std::endl;
-                if (const auto* preview = std::getenv ("DANDRUM_WEB_RUNTIME_PREVIEW"))
-                    if (juce::String (preview) == "1")
-                    {
-                        phase = Phase::preview;
-                        deadline = juce::Time::getMillisecondCounterHiRes() + 15000.0;
-                        return;
-                    }
-                finish (true);
+                if (sampler) phase = Phase::inspectionReloadReady;
+                else complete();
                 return;
+            }
+            else if (phase == Phase::inspectionReloadReady && name == "inspectionReloadReady")
+            {
+                inspectionReloadBefore = processor.getParameterSurfaceGeneration();
+                require (static_cast<int> (data.getProperty ("generation", {})) == static_cast<int> (inspectionReloadBefore),
+                         "Inspection reload fixture used the wrong working generation");
+                phase = Phase::inspectionReload;
+                require (processor.requestInstrumentReloadJob (processor.currentInstrumentFile(), inspectionReloadBefore).has_value(),
+                         "Real sampler inspection reload was not admitted");
+            }
+            else if (phase == Phase::inspectionReload && name == "inspectionReloaded")
+            {
+                require (static_cast<int> (data.getProperty ("generation", {})) > static_cast<int> (inspectionReloadBefore)
+                             && parameter == processor.getParameterForPublicId ("drums.pitch_ratio"),
+                         "Inspection reload did not publish a new generation with its stable host parameter");
+                std::cout << "SAMPLER KeyMap known signed audition -0.5/-0.5; retired selection on reload: "
+                          << juce::JSON::toString (data, true) << std::endl;
+                complete();
             }
             else throw std::runtime_error ("Unexpected runtime report phase");
         }
@@ -335,7 +467,7 @@ public:
     }
 
 private:
-    enum class Phase { fonts, hostValue, compact, compactHostValue, interactions, preview };
+    enum class Phase { fonts, hostValue, compact, compactHostValue, interactions, inspectionReloadReady, inspectionReload, preview };
     DandrumAudioProcessor& processor;
     juce::WebBrowserComponent* browser = nullptr;
     juce::AudioProcessorEditor* editor = nullptr;
@@ -349,6 +481,20 @@ private:
     juce::AudioProcessorParameter* parameter = nullptr;
     int beginCount = 0, endCount = 0;
     bool gestureOpen = false, validGestureSlots = true;
+    bool keyMapAuditionObserved = false;
+    std::uint32_t inspectionReloadBefore = 0;
+
+    void complete()
+    {
+        if (const auto* preview = std::getenv ("DANDRUM_WEB_RUNTIME_PREVIEW"))
+            if (juce::String (preview) == "1")
+            {
+                phase = Phase::preview;
+                deadline = juce::Time::getMillisecondCounterHiRes() + 15000.0;
+                return;
+            }
+        finish (true);
+    }
 
     void audioProcessorParameterChanged (juce::AudioProcessor*, int, float) override {}
     void audioProcessorChanged (juce::AudioProcessor*, const ChangeDetails&) override {}
@@ -385,6 +531,9 @@ private:
         if (evaluationPending || phase == Phase::preview) return;
         evaluationPending = true;
         const auto script = juce::String ("(() => { if (!document.querySelector('main')) return ''; ")
+            + "window.__dandrumKeyMapAuditionObserved = " + (keyMapAuditionObserved ? "true; " : "false; ")
+            + "window.__dandrumInspectionReloadBefore = "
+            + (phase == Phase::inspectionReload ? juce::String (inspectionReloadBefore) : juce::String ("null")) + "; "
             + "window.__dandrumKnobGestures = {begins:" + juce::String (beginCount)
             + ",ends:" + juce::String (endCount) + "}; "
             + runtimeScript

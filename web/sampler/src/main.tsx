@@ -3,6 +3,8 @@ import { createRoot } from 'react-dom/client';
 import { preparedPads, selectedRegion, visibleParameters,
   padReleaseHandlers, auditionFocusRelease } from './model.mjs';
 import { createHostKnob } from '../../shared/host-knob.mjs';
+import { createKeyMap } from './key-map.mjs';
+import './key-map.css';
 import { admittedParameter } from '../../shared/parameter-value.mjs';
 import { createPreparedParameterDocument } from '../../shared/prepared-parameter-document.mjs';
 import '../../shared/host-knob.css';
@@ -56,6 +58,7 @@ async function invoke(name: string, ...args: unknown[]): Promise<any> {
 }
 
 const HostKnob = createHostKnob(React);
+const PreparedKeyMap = createKeyMap(React);
 
 function useHost() {
   const [state, setState] = useState<HostState | null>(null);
@@ -369,15 +372,21 @@ function SamplerApp() {
   const current = state && document && state.generation === document.generation;
   const live = useLiveAnalysis(document?.generation,
     Boolean(current && (sampleDisplay === 'scope' || sampleDisplay === 'live-spectrum')), reportError);
-  const [selectedId, setSelectedId] = useState<string | null>(null);
-  const selected = pads.find(pad => pad.id === selectedId) ?? pads[0] ?? null;
-  const region = selectedRegion(document, selected);
-  const parameters = visibleParameters(document, selected) as PreparedParameter[];
+  const [selection, setSelection] = useState<{
+    generation: number; padId: string; zoneId: string;
+  } | null>(null);
+  const selected = pads.find(pad => selection?.generation === document?.generation
+    && pad.id === selection?.padId) ?? pads[0] ?? null;
+  const selectedZoneId = selection?.generation === document?.generation
+    && selection?.padId === selected?.id ? selection?.zoneId : selected?.zoneIds[0];
+  const region = selectedRegion(document, selected, selectedZoneId);
+  const parameters = visibleParameters(document, selected, selectedZoneId) as PreparedParameter[];
   const audition = useMemo(() => createNoteAudition(invoke, reportError), []);
   const [pressed, setPressed] = useState<string[]>([]);
   useEffect(() => {
     void audition.releaseAll();
     setPressed([]);
+    setSelection(null);
   }, [document?.generation]);
   useEffect(() => {
     const heartbeat = window.setInterval(() => void audition.keepAlive(), 500);
@@ -395,9 +404,12 @@ function SamplerApp() {
     };
   }, [audition]);
 
+  const select = (pad: typeof pads[number], zoneId = pad.zoneIds[0]) => {
+    if (document) setSelection({ generation: document.generation, padId: pad.id, zoneId });
+  };
   const press = (pad: typeof pads[number]) => {
     if (!document) return;
-    setSelectedId(pad.id);
+    select(pad);
     setPressed(current => current.includes(pad.id) ? current : [...current, pad.id]);
     void audition.press(pad.keyLow, pad.velocity, document.generation);
   };
@@ -416,15 +428,22 @@ function SamplerApp() {
       <h1>Drum Sampler</h1><p>{current ? document.instrumentId : 'Loading prepared instrument…'}</p></div>
       <span className="generation">{current ? `GEN ${document.generation}` : 'WAITING'}</span></header>
     {error && <p className="error" role="alert"><svg {...iconProps('error')} />{error}</p>}
-    {current && <>
+    {current && <div className="editor-content">
+      <div className="map-column">
       <section className="panel keymap" aria-label="Prepared key map">
         <div className="section-heading"><h2><svg {...iconProps('keyboard')} />Key map</h2><span>PREPARED · READ ONLY</span></div>
+        {document.capabilities.sampleKeyMap
+          ? <PreparedKeyMap key={document.generation} pads={pads} selectedId={selected?.id}
+              onSelect={select}
+              onNoteOn={(note: number, velocity: number) => void audition.press(note, velocity, document.generation)}
+              onNoteOff={(note: number) => void audition.release(note)} />
+          : <p className="details">Key map unavailable for this instrument</p>}
         <div className="pads">{pads.map(pad => <button key={pad.id}
           className={`pad ${selected?.id === pad.id ? 'selected' : ''} ${pressed.includes(pad.id) ? 'pressed' : ''}`}
           aria-label={`${pad.label}, MIDI ${pad.keyLow}, velocity ${pad.velocityLow} to ${pad.velocityHigh}`}
           onPointerDown={event => { event.currentTarget.setPointerCapture(event.pointerId); press(pad); }}
           {...padReleaseHandlers(() => release(pad))}
-          onClick={() => setSelectedId(pad.id)}
+          onClick={() => select(pad)}
           onKeyDown={event => { if (!event.repeat && (event.key === ' ' || event.key === 'Enter')) {
             event.preventDefault(); press(pad); } }}>
           <strong>{pad.label}</strong>
@@ -433,22 +452,27 @@ function SamplerApp() {
           {pad.zoneIds.length > 1 && <small><svg {...iconProps('alternate', { size: 12 })} />{pad.zoneIds.length} round robin alternatives</small>}
           {pad.chokeGroup && <small><svg {...iconProps('choke', { size: 12 })} />CHOKE {pad.chokeGroup}</small>}
         </button>)}</div>
-        {selected && <p className="details">{selected.selectionMode} selection · {selected.zoneIds.join(', ')}
-          {selected.controlGroup != null ? ` · control group ${selected.controlGroup}` : ''}</p>}
+        {selected && <>
+          <p className="details">{selected.selectionMode} selection · {selectedZoneId}</p>
+          {selected.zoneIds.length > 1 && <div className="alternatives" role="group" aria-label="Sample alternatives">
+            <span>Inspect alternative</span>
+            {selected.zoneIds.map(zoneId => <button key={zoneId} data-zone-id={zoneId}
+              aria-pressed={selectedZoneId === zoneId} onClick={() => select(selected, zoneId)}>
+              {zoneId.replaceAll('_', ' ')}
+            </button>)}
+            <small>Audition follows {selected.selectionMode.replaceAll('_', ' ')} selection.</small>
+          </div>}
+        </>}
       </section>
-      <div className="lower">
-        <div className="left-column">
-          <section className="panel controls" aria-label="Host modulatable controls">
-            <div className="section-heading"><h2><svg {...iconProps('host')} />Public controls</h2>
-              <span>{parameters.length} SHARED / SELECTED PAD</span></div>
-            <div className="control-list">{parameters.map(descriptor => <HostKnob
-              key={`${descriptor.id}:${state.generation}`} label={descriptor.name || descriptor.id}
-              parameter={admittedParameter(state, document, descriptor.id)}
-              command={command} onError={reportError} />)}</div>
-          </section>
-          <MasterMeter generation={document.generation} reportError={reportError} />
-        </div>
-        <div className="right-column">
+        <section className="panel availability" aria-label="Prepared capabilities">
+          <div className="section-heading"><h2><svg {...iconProps('lock')} />Structure</h2><span>INSPECT ONLY</span></div>
+          <p>Source and region assignments are prepared outside the plugin.</p>
+          <p>Layer details: {document.capabilities.synthLayer || document.capabilities.nestedPatchLayer
+            || document.capabilities.moduleChain ? 'Available where prepared' : 'Unavailable'}</p>
+          <p>Output bus details unavailable.</p>
+        </section>
+      </div>
+      <div className="instrument-column">
           {sampleDisplay === 'scope' || sampleDisplay === 'live-spectrum'
             ? <LiveAnalysisPanel {...live} mode={sampleDisplay === 'scope' ? 'scope' : 'spectrum'} controls={displayControls} />
             : region && document.capabilities.preparedWaveform
@@ -458,16 +482,17 @@ function SamplerApp() {
                   : <PreparedSpectrum document={document} sourceId={region.sourceId} regionId={region.regionId} reportError={reportError} controls={displayControls} />}
               </div>
             : <section className="panel sample-display unavailable-analysis">Prepared sample analysis unavailable{displayControls}</section>}
-          <section className="panel availability" aria-label="Prepared capabilities">
-            <div className="section-heading"><h2><svg {...iconProps('lock')} />Structure</h2><span>INSPECT ONLY</span></div>
-            <p>Source and region assignments are prepared outside the plugin.</p>
-            <p>Layer details: {document.capabilities.synthLayer || document.capabilities.nestedPatchLayer
-              || document.capabilities.moduleChain ? 'Available where prepared' : 'Unavailable'}</p>
-            <p>Output bus details unavailable.</p>
+          <section className="panel controls" aria-label="Host modulatable controls">
+            <div className="section-heading"><h2><svg {...iconProps('host')} />Public controls</h2>
+              <span>{parameters.length} SHARED / SELECTED PAD</span></div>
+            <div className="control-list">{parameters.map(descriptor => <HostKnob
+              key={`${descriptor.id}:${state.generation}`} label={descriptor.name || descriptor.id}
+              parameter={admittedParameter(state, document, descriptor.id)}
+              command={command} onError={reportError} />)}</div>
           </section>
-        </div>
+          <MasterMeter generation={document.generation} reportError={reportError} />
       </div>
-    </>}
+    </div>}
   </main>;
 }
 
