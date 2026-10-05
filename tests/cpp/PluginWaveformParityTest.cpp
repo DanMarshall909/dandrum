@@ -18,6 +18,8 @@ struct PluginConstructionTestProbe
 {
     static const InstrumentUiLiveService& live (const DandrumAudioProcessor& processor)
     { return processor.liveService; }
+    static bool meterVisible (const DandrumAudioProcessor& processor)
+    { return processor.meterDelivery.visibleCount() != 0; }
 };
 
 #include <array>
@@ -402,6 +404,9 @@ private:
 }
 
 #include "PluginLiveRendererCheck.h"
+#if ! JUCE_WEB_BROWSER
+ #include "NativeOutputBusesRuntimeCheck.h"
+#endif
 
 int main (int argc, char** argv)
 {
@@ -412,6 +417,11 @@ int main (int argc, char** argv)
         return 77;
     }
     std::signal (SIGPIPE, SIG_IGN);
+   #endif
+   #if ! JUCE_WEB_BROWSER
+    if (argc == 2 && juce::String (argv[1]) == "--output-buses")
+        juce::JUCEApplicationBase::createInstance = []() -> juce::JUCEApplicationBase* { return new outputBusRuntimeCheck::Application(); };
+    else
    #endif
    #if JUCE_WEB_BROWSER
     if (argc == 2 && juce::String (argv[1]) == "--live-stall")

@@ -218,7 +218,8 @@ target_link_libraries(dandrum-plugin-web-adapter INTERFACE juce::juce_gui_extra)
 
 add_library(dandrum-plugin-native-editor INTERFACE)
 target_sources(dandrum-plugin-native-editor INTERFACE
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/juce-plugin/PluginNativeEditor.cpp)
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/juce-plugin/PluginNativeEditor.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/juce-plugin/NativeOutputBuses.cpp)
 juce_add_binary_data(dandrum-native-knob-fonts
     NAMESPACE NativeKnobFontBinaryData
     HEADER_NAME NativeKnobFontBinaryData.h
@@ -330,7 +331,17 @@ if(DANDRUM_NATIVE_ONLY)
             juce::juce_audio_utils juce::juce_gui_basics
         PUBLIC juce::juce_recommended_config_flags juce::juce_recommended_lto_flags juce::juce_recommended_warning_flags)
     add_test(NAME native-editor-smoke COMMAND dandrum-native-editor-smoke-test)
+    add_test(NAME native-meter-characterization COMMAND dandrum-native-editor-smoke-test --meter-characterization)
+    add_test(NAME native-output-buses COMMAND dandrum-native-editor-smoke-test --output-buses)
     if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+        target_compile_definitions(dandrum-native-editor-smoke-test PRIVATE
+            DANDRUM_TEST_OUTPUT_RELOAD_INTERLEAVING=1)
+        target_link_options(dandrum-native-editor-smoke-test PRIVATE
+            "LINKER:--wrap=_ZNK21DandrumAudioProcessor21getPreparedUiDocumentEv")
+        add_test(NAME native-output-reload-interleaving
+            COMMAND dandrum-native-editor-smoke-test --output-reload-interleaving)
+        set_tests_properties(native-output-reload-interleaving PROPERTIES
+            LABELS "runtime" TIMEOUT 15 RUN_SERIAL TRUE)
         # Link wrappers hold the real Rust reduction at a deterministic barrier
         # without adding test hooks to the processor or either editor.
         add_executable(dandrum-native-waveform-lifetime-test tests/cpp/NativeWaveformLifetimeTest.cpp)
@@ -448,6 +459,8 @@ target_link_libraries(dandrum-plugin-waveform-parity-test PRIVATE
 if(DANDRUM_NATIVE_ONLY)
     add_test(NAME native-waveform-parity COMMAND dandrum-plugin-waveform-parity-test)
     add_test(NAME native-live-renderer COMMAND dandrum-plugin-waveform-parity-test --live)
+    add_test(NAME native-output-buses-runtime COMMAND dandrum-plugin-waveform-parity-test --output-buses)
+    set_tests_properties(native-output-buses-runtime PROPERTIES LABELS "runtime" SKIP_RETURN_CODE 77 TIMEOUT 15 RUN_SERIAL TRUE)
     set_tests_properties(native-live-renderer PROPERTIES LABELS "runtime" SKIP_RETURN_CODE 77 TIMEOUT 60 RUN_SERIAL TRUE)
     set_tests_properties(native-waveform-parity PROPERTIES LABELS "runtime" SKIP_RETURN_CODE 77 TIMEOUT 60 RUN_SERIAL TRUE)
 else()

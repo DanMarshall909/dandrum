@@ -1,9 +1,9 @@
-#include "NativeMasterMeter.h"
+#include "NativeOutputBuses.h"
 #include "PluginProcessor.h"
 #include "InstrumentUiWaveformGeometry.h"
 #include "InstrumentUiSpectralGeometry.h"
 #include "DesignTokens.h"
-#include "NativeKnobFontBinaryData.h"
+#include "NativeUiFonts.h"
 
 #include <juce_gui_basics/juce_gui_basics.h>
 
@@ -17,122 +17,8 @@
 #include <optional>
 #include <string>
 
-NativeMasterMeter::NativeMasterMeter (DandrumAudioProcessor& hostProcessor)
-    : processor (hostProcessor)
-{
-    setComponentID ("master-meter");
-    leftClip.setComponentID ("clip-left");
-    rightClip.setComponentID ("clip-right");
-    leftClip.setButtonText ("CLIP");
-    rightClip.setButtonText ("CLIP");
-    addAndMakeVisible (leftClip);
-    addAndMakeVisible (rightClip);
-    leftClip.onClick = [this] { acknowledge (0); };
-    rightClip.onClick = [this] { acknowledge (1); };
-    updateClipButtons();
-}
-
-void NativeMasterMeter::setPacket (const InstrumentUiMeterDelivery::Packet& packet)
-{
-    display = packet.display;
-    clip = packet.clip;
-    updateClipButtons();
-    repaint();
-}
-
-void NativeMasterMeter::clear()
-{
-    display = {};
-    clip = {};
-    updateClipButtons();
-    repaint();
-}
-
-void NativeMasterMeter::paint (juce::Graphics& graphics)
-{
-    graphics.setColour (juce::Colour (0xff232a27));
-    graphics.fillRoundedRectangle (getLocalBounds().toFloat(), 10.0f);
-    graphics.setColour (juce::Colour (0xff66796d));
-    graphics.drawRoundedRectangle (getLocalBounds().toFloat().reduced (0.5f), 10.0f, 1.0f);
-    graphics.setColour (juce::Colour (0xffdce9de));
-    graphics.setFont (juce::FontOptions (14.0f).withStyle ("bold"));
-    graphics.drawText ("MASTER OUTPUT", 20, 12, getWidth() - 40, 24,
-                       juce::Justification::centredLeft);
-    graphics.setColour (juce::Colour (0xff9eafa2));
-    graphics.setFont (juce::FontOptions (11.0f));
-    graphics.drawText (! display.valid ? "WAITING FOR AUDIO"
-                       : display.complete ? "LIVE" : "HISTORY GAP",
-                       getWidth() - 170, 14, 145, 20, juce::Justification::centredRight);
-
-    for (std::size_t channel = 0; channel < 2; ++channel)
-    {
-        const auto y = 51 + static_cast<int> (channel) * 53;
-        graphics.setColour (juce::Colour (0xffdce9de));
-        graphics.setFont (juce::FontOptions (16.0f).withStyle ("bold"));
-        graphics.drawText (channel == 0 ? "L" : "R", 24, y - 3, 30, 26,
-                           juce::Justification::centredLeft);
-
-        const juce::Rectangle<float> track (64.0f, static_cast<float> (y),
-                                             static_cast<float> (getWidth() - 158), 19.0f);
-        graphics.setColour (juce::Colour (0xff111916));
-        graphics.fillRoundedRectangle (track, 4.0f);
-        const auto peak = display.valid ? std::clamp (display.peak[channel], 0.0, 1.0) : 0.0;
-        const auto rms = display.valid ? std::clamp (display.rms[channel], 0.0, 1.0) : 0.0;
-        graphics.setColour (juce::Colour (0xff3b9576));
-        graphics.fillRoundedRectangle (track.withWidth (track.getWidth()
-                                                         * static_cast<float> (peak)), 4.0f);
-        graphics.setColour (juce::Colour (0xff7ce0aa));
-        graphics.fillRoundedRectangle (track.withWidth (track.getWidth()
-                                                         * static_cast<float> (rms))
-                                             .withHeight (8.0f).translated (0.0f, 5.5f), 3.0f);
-    }
-}
-
-void NativeMasterMeter::resized()
-{
-    leftClip.setBounds (getWidth() - 82, 46, 60, 29);
-    rightClip.setBounds (getWidth() - 82, 99, 60, 29);
-}
-
-void NativeMasterMeter::acknowledge (std::size_t channel)
-{
-    if (! clip.valid || ! clip.latched[channel])
-        return;
-    if (processor.acknowledgeMeterClip (channel, clip.generation, clip.ticket[channel]))
-    {
-        clip.latched[channel] = false;
-        display.clipped[channel] = false;
-        updateClipButtons();
-        repaint();
-    }
-}
-
-void NativeMasterMeter::updateClipButtons()
-{
-    const std::array<juce::TextButton*, 2> buttons { &leftClip, &rightClip };
-    for (std::size_t channel = 0; channel < buttons.size(); ++channel)
-    {
-        const bool latched = clip.valid && clip.latched[channel];
-        buttons[channel]->setEnabled (latched);
-        buttons[channel]->setColour (juce::TextButton::buttonColourId,
-                                     juce::Colour (latched ? 0xffd25245 : 0xff414d45));
-        buttons[channel]->setColour (juce::TextButton::textColourOffId,
-                                     juce::Colour (latched ? 0xffffffff : 0xff9eafa2));
-    }
-}
-
 namespace
 {
-juce::Font nativeKnobFont (bool value, float height)
-{
-    static const auto uiFace = juce::Typeface::createSystemTypefaceFor (
-        NativeKnobFontBinaryData::BarlowSemiCondensedSemiBold_ttf,
-        NativeKnobFontBinaryData::BarlowSemiCondensedSemiBold_ttfSize);
-    static const auto valueFace = juce::Typeface::createSystemTypefaceFor (
-        NativeKnobFontBinaryData::JetBrainsMonoMedium_ttf,
-        NativeKnobFontBinaryData::JetBrainsMonoMedium_ttfSize);
-    return juce::FontOptions (value ? valueFace : uiFace).withHeight (height);
-}
 
 class NativeKnobReadout final : public juce::TextButton
 {
@@ -146,7 +32,7 @@ public:
         graphics.setColour (juce::Colour (tokens::border_control));
         graphics.drawRoundedRectangle (bounds, tokens::radius_1, 1.0f);
         graphics.setColour (juce::Colour (tokens::text_primary));
-        graphics.setFont (nativeKnobFont (true, tokens::type_value));
+        graphics.setFont (dandrum::ui::nativeFont (true, tokens::type_value));
         graphics.drawText (getButtonText(), getLocalBounds().reduced (6, 0),
                            juce::Justification::centredLeft, true);
     }
@@ -201,7 +87,7 @@ public:
         caption.setJustificationType (juce::Justification::centred);
         caption.setColour (juce::Label::textColourId,
                            juce::Colour (dandrum::ui::tokens::text_secondary));
-        caption.setFont (nativeKnobFont (false, 12.0f));
+        caption.setFont (dandrum::ui::nativeFont (false, 12.0f));
         caption.setInterceptsMouseClicks (false, false);
         addAndMakeVisible (caption);
         readout.setComponentID ("primary-knob-readout");
@@ -210,7 +96,7 @@ public:
         readout.addMouseListener (this, true);
         addChildComponent (readout);
         valueEditor.setComponentID ("primary-knob-value-editor");
-        valueEditor.setFont (nativeKnobFont (true, dandrum::ui::tokens::type_value));
+        valueEditor.setFont (dandrum::ui::nativeFont (true, dandrum::ui::tokens::type_value));
         valueEditor.setColour (juce::TextEditor::backgroundColourId,
                                juce::Colour (dandrum::ui::tokens::dd_ink_2));
         valueEditor.setColour (juce::TextEditor::textColourId,
@@ -739,7 +625,7 @@ public:
         for (std::size_t i = 0; i < labels.size(); ++i)
         {
             labels[i].setComponentID (ids[i]);
-            labels[i].setFont (nativeKnobFont (true, 10.0f));
+            labels[i].setFont (dandrum::ui::nativeFont (true, 10.0f));
             labels[i].setColour (juce::Label::textColourId, juce::Colour (dandrum::ui::tokens::text_secondary));
             labels[i].setBorderSize (juce::BorderSize<int> (0));
             addAndMakeVisible (labels[i]);
@@ -791,10 +677,10 @@ public:
         graphics.setColour (juce::Colour (tokens::border_control));
         graphics.drawRoundedRectangle (getLocalBounds().toFloat().reduced (0.5f), 10.0f, 1.0f);
         graphics.setColour (juce::Colour (tokens::text_primary));
-        graphics.setFont (nativeKnobFont (false, 14.0f));
+        graphics.setFont (dandrum::ui::nativeFont (false, 14.0f));
         graphics.drawText ("PREPARED SPECTRUM", 16, 10, getWidth() - 32, 20, juce::Justification::centredLeft);
         graphics.setColour (juce::Colour (tokens::text_secondary));
-        graphics.setFont (nativeKnobFont (false, 11.0f));
+        graphics.setFont (dandrum::ui::nativeFont (false, 11.0f));
         graphics.drawText (getName(), 16, 30, getWidth() - 32, 18, juce::Justification::centredLeft);
         const auto plot = plotBounds();
         graphics.setColour (juce::Colour (tokens::dd_ink_0)); graphics.fillRect (plot);
@@ -1019,8 +905,7 @@ public:
         spectralToggle.onClick = [this] { setSpectralDisplay (true); };
         addAndMakeVisible (waveToggle); addAndMakeVisible (spectralToggle);
         waveToggle.setToggleState (true, juce::dontSendNotification);
-        meterGeneration = processor.getParameterSurfaceGeneration();
-        processor.subscribeMeter (meterSession, meterGeneration);
+        refreshMeterDocument();
         processor.setMeterSessionVisible (meterSession, false);
         setResizable (true, true);
         setResizeLimits (620, 420, 1600, 1100);
@@ -1051,7 +936,7 @@ public:
     {
         title.setBounds (24, 20, getWidth() - 48, 38);
         summary.setBounds (24, 70, getWidth() - 48, 24);
-        meter.setBounds (24, 118, getWidth() - 48, 160);
+        meter.setBounds (24, 118, getWidth() - 48, 176);
         primaryKnob.setBounds (24, 302, 152, 184);
         waveform.setBounds (200, 302, getWidth() - 224, getHeight() - 326);
         spectrum.setBounds (waveform.getBounds());
@@ -1074,14 +959,7 @@ public:
         refreshWaveform();
         refreshSpectrum();
         refreshLive();
-        const auto generation = processor.getParameterSurfaceGeneration();
-        if (generation != meterGeneration)
-        {
-            processor.unsubscribeMeter (meterSession);
-            meterGeneration = generation;
-            processor.subscribeMeter (meterSession, meterGeneration);
-            meter.clear();
-        }
+        refreshMeterDocument();
         processor.setMeterSessionVisible (meterSession, isShowing());
         if (! isShowing())
             return;
@@ -1096,6 +974,25 @@ public:
 
 private:
     enum class DragState { idle, active, rejected };
+
+    void refreshMeterDocument()
+    {
+        if (processor.getParameterSurfaceGeneration() == meterGeneration)
+            return;
+        const auto document = processor.getPreparedUiDocument();
+        processor.unsubscribeMeter (meterSession);
+        meterGeneration = 0;
+        if (! document)
+        {
+            meter.setDocument ({});
+            return;
+        }
+        // Rows and subscription use the same owned snapshot. If activation
+        // overtakes the copy, rejected admission leaves the next timer to retry.
+        meter.setDocument (*document);
+        if (processor.subscribeMeter (meterSession, document->generation))
+            meterGeneration = document->generation;
+    }
 
     void setSpectralDisplay (bool enabled)
     {
@@ -1322,7 +1219,7 @@ private:
     juce::Label title;
     juce::Label summary;
     NativeHostKnob primaryKnob;
-    NativeMasterMeter meter;
+    NativeOutputBuses meter;
     NativePreparedWaveform waveform;
     NativePreparedSpectrum spectrum;
     NativeLiveAnalysis live;
