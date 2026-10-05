@@ -62,6 +62,11 @@ constexpr auto runtimeScript = R"JS(
             || document.querySelector('.dd-piano-key[aria-pressed="true"]')
             || document.querySelector('[role=alert]'))
           throw Error('Reload did not retire the previous KeyMap selection and audition');
+        await waitFor(() => document.querySelector('[data-output-bus="output:0"]')?.dataset.generation
+                           === String(state.generation), 'Reload retained previous output binding generation');
+        const output = document.querySelector('[aria-label="Output buses"]');
+        if (output.querySelector('[role=meter]') || !output.textContent.includes('WAITING FOR AUDIO'))
+          throw Error('Reload displayed retired output measurements as current audio');
         await report('inspectionReloaded', {generation:state.generation, region:'drums.kick'});
         return;
       }
@@ -157,6 +162,8 @@ constexpr auto runtimeScript = R"JS(
         return {members: choices.map(choice => choice.dataset.zoneId), inspected: 'drums.snare_hard_b', controls};
       };
       const alternatives = sampler ? await inspectAlternatives() : null;
+      if (sampler && !document.querySelector('[aria-label="Output buses"]'))
+        throw Error('Prepared OutputBusses display is missing from the original editor');
       if (sampler) {
         const key = document.querySelector('.dd-piano-key[data-note="36"]');
         key.focus();
@@ -168,6 +175,43 @@ constexpr auto runtimeScript = R"JS(
         key.dispatchEvent(new KeyboardEvent('keyup', {key:'Enter',bubbles:true,cancelable:true}));
         await waitFor(() => key.getAttribute('aria-pressed') === 'false',
                       'KeyMap piano key-up retained local held state');
+      }
+      let outputs = null;
+      if (sampler) {
+        const panel = document.querySelector('[aria-label="Output buses"]');
+        const documentState = await native('getPreparedDocument')();
+        const rows = [...panel.querySelectorAll('[data-output-bus]')];
+        if (rows.length !== 1 || rows[0].dataset.outputBus !== 'output:0'
+            || !rows[0].textContent.includes('Output')
+            || !rows[0].textContent.includes('2 channels')
+            || !rows[0].textContent.includes('L/R')
+            || !rows[0].textContent.includes('Feed details unavailable')
+            || panel.querySelector('input,select,[aria-label^="Mute"]')
+            || panel.textContent.includes('15/16'))
+          throw Error('Output view does not enumerate the actual restricted host layout');
+        await waitFor(() => panel.querySelectorAll('[role=meter]').length === 2,
+                      'Actual sampler audio did not reach output channel meters');
+        const meters = [...panel.querySelectorAll('[role=meter]')];
+        outputs = meters.map((meter, channel) => {
+          const peak = Number(meter.getAttribute('aria-valuenow'));
+          const rms = Number(meter.dataset.rms);
+          const expected = window.__dandrumExpectedOutputMeters[channel];
+          if (meter.dataset.channelIndex !== String(channel)
+              || meter.dataset.meterBus !== 'master'
+              || meter.dataset.generation !== String(documentState.generation)
+              || Math.abs(peak - expected.peak) > 0.00001
+              || Math.abs(rms - expected.rms) > 0.00001)
+            throw Error('Output meter lost actual signed PCM levels or bus/channel/generation identity');
+          const bounds = meter.getBoundingClientRect();
+          if (bounds.width !== 120 || bounds.height !== 4)
+            throw Error('Output channel meter does not use the supplied120by4dimensions');
+          return {channel,peak,rms,generation:documentState.generation};
+        });
+        for (const button of panel.querySelectorAll('button')) {
+          const bounds = button.getBoundingClientRect();
+          if (bounds.width < 24 || bounds.height < 24)
+            throw Error('Output clip target is smaller than24pixels');
+        }
       }
       const control = document.querySelector(sampler
         ? '[role=slider][aria-label="drums.pitch_ratio"]'
@@ -204,7 +248,7 @@ constexpr auto runtimeScript = R"JS(
       });
       await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
       await report('fonts', {
-        fonts, alternatives, keyMap, icons: inspectIcons(), parameters: state.parameters.map(p => p.id),
+        fonts, alternatives, keyMap, outputs, icons: inspectIcons(), parameters: state.parameters.map(p => p.id),
         errors: [...document.querySelectorAll('[role=alert]')].map(e => e.textContent),
         family: getComputedStyle(document.querySelector('main')).fontFamily,
         valueFamily: getComputedStyle(control.querySelector('[data-dd-knob-value]')).fontFamily,
@@ -399,6 +443,18 @@ public:
                              && std::abs (audio.getSample (1, 0) + 0.5f) < 0.00001f,
                          "KeyMap piano did not render known signed bundled kick -0.5 on both channels");
                 keyMapAuditionObserved = true;
+                for (std::size_t channel = 0; channel < expectedOutputPeak.size(); ++channel)
+                {
+                    double sumSquares = 0.0;
+                    expectedOutputPeak[channel] = 0.0;
+                    for (int frame = 0; frame < audio.getNumSamples(); ++frame)
+                    {
+                        const auto sample = static_cast<double> (audio.getSample (static_cast<int> (channel), frame));
+                        expectedOutputPeak[channel] = std::max (expectedOutputPeak[channel], std::abs (sample));
+                        sumSquares += sample * sample;
+                    }
+                    expectedOutputRms[channel] = std::sqrt (sumSquares / audio.getNumSamples());
+                }
             }
             else if (phase == Phase::fonts && name == "fonts")
             {
@@ -503,6 +559,7 @@ private:
     juce::var fontReport;
     juce::var compactReport;
     juce::AudioProcessorParameter* parameter = nullptr;
+    std::array<double, 2> expectedOutputPeak {}, expectedOutputRms {};
     int beginCount = 0, endCount = 0;
     bool gestureOpen = false, validGestureSlots = true;
     bool keyMapAuditionObserved = false;
@@ -555,6 +612,10 @@ private:
         if (evaluationPending || phase == Phase::preview) return;
         evaluationPending = true;
         const auto script = juce::String ("(() => { if (!document.querySelector('main')) return ''; ")
+            + "window.__dandrumExpectedOutputMeters = [{peak:" + juce::String (expectedOutputPeak[0], 17)
+            + ",rms:" + juce::String (expectedOutputRms[0], 17)
+            + "},{peak:" + juce::String (expectedOutputPeak[1], 17)
+            + ",rms:" + juce::String (expectedOutputRms[1], 17) + "}]; "
             + "window.__dandrumKeyMapAuditionObserved = " + (keyMapAuditionObserved ? "true; " : "false; ")
             + "window.__dandrumInspectionReloadBefore = "
             + (phase == Phase::inspectionReload ? juce::String (inspectionReloadBefore) : juce::String ("null")) + "; "

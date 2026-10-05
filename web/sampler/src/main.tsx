@@ -5,8 +5,10 @@ import { preparedPads, selectedRegion, visibleParameters,
 import { createHostKnob } from '../../shared/host-knob.mjs';
 import { createKeyMap } from './key-map.mjs';
 import { createLayerStack } from './layer-stack.mjs';
+import { createOutputBuses, acknowledgeOutputClip } from './output-buses.mjs';
 import './key-map.css';
 import './layer-stack.css';
+import './output-buses.css';
 import { admittedParameter } from '../../shared/parameter-value.mjs';
 import { createPreparedParameterDocument } from '../../shared/prepared-parameter-document.mjs';
 import '../../shared/host-knob.css';
@@ -31,11 +33,14 @@ type PreparedParameter = { id: string; name: string; scope: string; controlGroup
   minValue: number; maxValue: number; normalisedDefaultValue: number };
 type PreparedRegion = { id: string };
 type PreparedSource = { id: string; sampleRateHz: number; regions: PreparedRegion[] };
+type PreparedOutputBus = { id: string; name: string; main: boolean;
+  channels: string[]; meterBusId: string };
 type PreparedDocument = {
   generation: number;
   instrumentId: string;
   sources: PreparedSource[];
   maps: unknown[];
+  outputBuses: PreparedOutputBus[];
   parameters: PreparedParameter[];
   capabilities: { sampleKeyMap: boolean; preparedWaveform: boolean;
     synthLayer: boolean; nestedPatchLayer: boolean; moduleChain: boolean };
@@ -62,6 +67,7 @@ async function invoke(name: string, ...args: unknown[]): Promise<any> {
 const HostKnob = createHostKnob(React);
 const PreparedKeyMap = createKeyMap(React);
 const PreparedLayerStack = createLayerStack(React);
+const PreparedOutputBuses = createOutputBuses(React);
 
 function useHost() {
   const [state, setState] = useState<HostState | null>(null);
@@ -121,9 +127,10 @@ function useHost() {
   return { state, document, error, command, reportError: (reason: unknown) => setError(String(reason)) };
 }
 
-function MasterMeter({ generation, reportError }: {
-  generation: number; reportError: (reason: unknown) => void;
+function OutputBusPanel({ document, reportError }: {
+  document: PreparedDocument; reportError: (reason: unknown) => void;
 }) {
+  const generation = document.generation;
   const [display, setDisplay] = useState(() => meterView(null));
   useEffect(() => {
     const transport = createMeterTransport(invoke, (packet: any) => setDisplay(meterView(packet)));
@@ -138,24 +145,11 @@ function MasterMeter({ generation, reportError }: {
       void transport.setVisible(false).catch(reportError);
     };
   }, [generation]);
-  return <section className="panel meter" aria-label="Master output meter">
-    <div className="section-heading"><h2><svg {...iconProps('level')} />Master output</h2>
-      <span>{display.valid ? display.complete ? 'LIVE' : 'HISTORY GAP' : 'WAITING FOR AUDIO'}</span></div>
-    {display.channels.map((channel, index) => <div className="meter-row" key={channel.name}>
-      <strong>{channel.name}</strong>
-      <div className="meter-track" role="meter" aria-label={`${channel.name} peak level`}
-        aria-valuemin={0} aria-valuemax={1} aria-valuenow={channel.peak}>
-        <i className="meter-peak" style={{ width: `${channel.peak * 100}%` }} />
-        <i className="meter-rms" style={{ width: `${channel.rms * 100}%` }} />
-      </div>
-      <button className={channel.clipped ? 'clip latched' : 'clip'}
-        disabled={!channel.clipped || channel.ticket === '0'}
-        onClick={() => void invoke('ackMeterClip', index, generation, channel.ticket)
-          .then(() => setDisplay(current => ({ ...current, channels: current.channels.map(
-            (item, position) => position === index ? { ...item, clipped: false } : item) })))
-          .catch(reportError)}>CLIP</button>
-    </div>)}
-  </section>;
+  return <PreparedOutputBuses buses={document.outputBuses} generation={generation} meter={display}
+    headerIcon={<svg {...iconProps('level')} />}
+    onAcknowledge={(_busId: string, channel: number, observedGeneration: number, ticket: string) =>
+      void acknowledgeOutputClip(invoke, setDisplay, channel, observedGeneration, ticket)
+        .catch(reportError)} />;
 }
 
 function PreparedWaveform({ document, sourceId, regionId, reportError, controls }: {
@@ -488,7 +482,7 @@ function SamplerApp() {
               parameter={admittedParameter(state, document, descriptor.id)}
               command={command} onError={reportError} />)}</div>
           </section>
-          <MasterMeter generation={document.generation} reportError={reportError} />
+          <OutputBusPanel document={document} reportError={reportError} />
       </div>
     </div>}
   </main>;

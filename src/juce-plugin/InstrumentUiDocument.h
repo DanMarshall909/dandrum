@@ -103,10 +103,21 @@ struct InstrumentUiDocument
         bool hostTransport = false;
     };
 
+    struct OutputBus
+    {
+        std::string id;
+        std::string name;
+        std::vector<std::string> channels;
+        bool main = false;
+        // Empty means no measurement binding; routing feeds are not yet supplied.
+        std::string meterBusId;
+    };
+
     std::uint32_t generation = 0;
     std::string instrumentId;
     std::vector<Parameter> parameters;
     std::vector<Source> sources;
     std::vector<Map> maps;
+    std::vector<OutputBus> outputBuses;
     Capabilities capabilities;
 };

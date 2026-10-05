@@ -327,6 +327,23 @@ juce::var preparedDocumentForWeb (const InstrumentUiDocument& document)
     }
     root->setProperty ("maps", juce::var (maps));
 
+    juce::Array<juce::var> outputBuses;
+    for (const auto& bus : document.outputBuses)
+    {
+        juce::var item (new juce::DynamicObject());
+        auto* value = item.getDynamicObject();
+        value->setProperty ("id", juce::String (bus.id));
+        value->setProperty ("name", juce::String (bus.name));
+        value->setProperty ("main", bus.main);
+        value->setProperty ("meterBusId", juce::String (bus.meterBusId));
+        juce::Array<juce::var> channels;
+        for (const auto& channel : bus.channels)
+            channels.add (juce::String (channel));
+        value->setProperty ("channels", juce::var (channels));
+        outputBuses.add (item);
+    }
+    root->setProperty ("outputBuses", juce::var (outputBuses));
+
     juce::var capabilities (new juce::DynamicObject());
     auto* supported = capabilities.getDynamicObject();
     supported->setProperty ("sampleKeyMap", document.capabilities.sampleKeyMap);

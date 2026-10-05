@@ -1,5 +1,6 @@
 #include "PluginProcessor.h"
 #include "PluginWebRuntimeCheck.h"
+#include "InstrumentUiOutputBuses.h"
 
 #include <algorithm>
 #include <array>
@@ -23,6 +24,81 @@ struct PluginEditorBridgeTestProbe
 namespace
 {
 constexpr int blockSize = 16;
+
+class LayoutProcessor final : public juce::AudioProcessor
+{
+public:
+    using Properties = BusesProperties;
+    using AudioProcessor::processBlock;
+    explicit LayoutProcessor (const BusesProperties& buses) : AudioProcessor (buses) {}
+    const juce::String getName() const override { return "Layout fixture"; }
+    void prepareToPlay (double, int) override {}
+    void releaseResources() override {}
+    void processBlock (juce::AudioBuffer<float>&, juce::MidiBuffer&) override {}
+    bool acceptsMidi() const override { return false; }
+    bool producesMidi() const override { return false; }
+    double getTailLengthSeconds() const override { return 0; }
+    bool hasEditor() const override { return false; }
+    juce::AudioProcessorEditor* createEditor() override { return nullptr; }
+    int getNumPrograms() override { return 1; }
+    int getCurrentProgram() override { return 0; }
+    void setCurrentProgram (int) override {}
+    const juce::String getProgramName (int) override { return {}; }
+    void changeProgramName (int, const juce::String&) override {}
+    void getStateInformation (juce::MemoryBlock&) override {}
+    void setStateInformation (const void*, int) override {}
+};
+
+bool outputBusMetadata()
+{
+    using Properties = LayoutProcessor::Properties;
+    LayoutProcessor empty (Properties {});
+    if (! captureInstrumentUiOutputBuses (empty).empty())
+    {
+        std::cerr << "no host outputs must not invent a stereo bus\n";
+        return false;
+    }
+    std::vector<InstrumentUiDocument::OutputBus> retained;
+    {
+        LayoutProcessor varied (Properties {}
+            .withInput ("Ignored input", juce::AudioChannelSet::stereo())
+            .withOutput ("Mono monitor", juce::AudioChannelSet::mono())
+            .withOutput ("Stereo auxiliary", juce::AudioChannelSet::stereo())
+            .withOutput ("Surround room", juce::AudioChannelSet::create5point1())
+            .withOutput ("Disabled cue", juce::AudioChannelSet::stereo(), false)
+            .withOutput ("Discrete sends", juce::AudioChannelSet::discreteChannels (4)));
+        retained = captureInstrumentUiOutputBuses (varied, "master");
+    }
+    const std::vector<std::string> surround { "L", "R", "C", "Lfe", "Ls", "Rs" };
+    if (retained.size() != 5
+        || retained[0].id != "output:0" || retained[0].name != "Mono monitor"
+        || retained[0].channels != std::vector<std::string> { "C" } || ! retained[0].main
+        || ! retained[0].meterBusId.empty()
+        || retained[1].id != "output:1" || retained[1].name != "Stereo auxiliary"
+        || retained[1].channels != std::vector<std::string> { "L", "R" } || retained[1].main
+        || ! retained[1].meterBusId.empty()
+        || retained[2].name != "Surround room" || retained[2].channels != surround
+        || ! retained[2].meterBusId.empty()
+        || retained[3].name != "Disabled cue" || ! retained[3].channels.empty()
+        || retained[4].name != "Discrete sends"
+        || retained[4].channels != std::vector<std::string> { "1", "2", "3", "4" })
+    {
+        std::cerr << "owned output metadata must retain actual named mono, surround, disabled and discrete layouts after processor destruction\n";
+        return false;
+    }
+    LayoutProcessor stereo (Properties {}.withOutput ("Main mix", juce::AudioChannelSet::stereo()));
+    const auto withoutTap = captureInstrumentUiOutputBuses (stereo);
+    const auto withTap = captureInstrumentUiOutputBuses (stereo, "master");
+    if (withoutTap.size() != 1 || ! withoutTap[0].meterBusId.empty()
+        || withTap.size() != 1 || withTap[0].name != "Main mix"
+        || withTap[0].channels != std::vector<std::string> { "L", "R" }
+        || withTap[0].meterBusId != "master")
+    {
+        std::cerr << "only an explicitly bound stereo main output may use the master meter\n";
+        return false;
+    }
+    return true;
+}
 
 std::unique_ptr<DandrumAudioProcessor> makeSampler()
 {
@@ -87,6 +163,8 @@ bool modulatedHit (const char* id, float normalised, int note,
 
 int main (int argc, char** argv)
 {
+    if (argc >= 2 && juce::String (argv[1]) == "--output-bus-metadata")
+        return outputBusMetadata() ? 0 : 1;
     if (argc >= 2 && (juce::String (argv[1]) == "--web-runtime"
                      || juce::String (argv[1]) == "--juce-gtkwebkitfork-child"))
     {
@@ -143,6 +221,45 @@ int main (int argc, char** argv)
     {
         std::cerr << "prepared sampler UI document lost actual kit metadata or capabilities\n";
         return 1;
+    }
+    if (preparedUi->outputBuses.size() != 1 || preparedUi->outputBuses[0].name != "Output"
+        || preparedUi->outputBuses[0].channels != std::vector<std::string> { "L", "R" }
+        || preparedUi->outputBuses[0].meterBusId != "master")
+    {
+        std::cerr << "prepared sampler document must copy its real host output and master meter binding\n";
+        return 1;
+    }
+    auto hostLayout = sampler->getBusesLayout();
+    hostLayout.outputBuses.set (0, juce::AudioChannelSet::mono());
+    if (sampler->setBusesLayout (hostLayout))
+    {
+        std::cerr << "current sampler must reject unsupported mono output negotiation\n";
+        return 1;
+    }
+    hostLayout.outputBuses.set (0, juce::AudioChannelSet::create5point1());
+    if (sampler->setBusesLayout (hostLayout))
+    {
+        std::cerr << "current sampler must reject unsupported surround output negotiation\n";
+        return 1;
+    }
+    hostLayout.outputBuses.set (0, juce::AudioChannelSet::stereo());
+    for (const auto& input : { juce::AudioChannelSet::stereo(), juce::AudioChannelSet::disabled() })
+    {
+        hostLayout.inputBuses.set (0, input);
+        if (! sampler->setBusesLayout (hostLayout))
+        {
+            std::cerr << "supported input negotiation must preserve the sampler output binding\n";
+            return 1;
+        }
+        const auto current = sampler->getPreparedUiDocument();
+        if (! current || current->generation != preparedUi->generation || current->outputBuses.size() != 1
+            || current->outputBuses[0].name != "Output"
+            || current->outputBuses[0].channels != std::vector<std::string> { "L", "R" }
+            || current->outputBuses[0].meterBusId != "master")
+        {
+            std::cerr << "prepared output metadata must remain actual across supported host input negotiation\n";
+            return 1;
+        }
     }
     const auto shared = std::find_if (preparedUi->parameters.begin(), preparedUi->parameters.end(),
         [] (const auto& parameter) { return parameter.id == "drums.pitch_ratio"; });

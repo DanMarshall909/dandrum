@@ -384,6 +384,9 @@ private:
     void clearEditorNoteIntentForReload() noexcept;
 
     const InstrumentDemoConfiguration configuration;
+    // The supported main output remains stereo; input negotiation cannot change
+    // it. Capture once before host use so UI readers never access JUCE bus storage.
+    const std::vector<InstrumentUiDocument::OutputBus> hostOutputBuses;
     juce::AudioProcessorValueTreeState parameters;
     std::atomic<DandrumKernelInstrument*> kernel { nullptr };
     std::atomic<std::uint32_t> engineAccess { 0 };

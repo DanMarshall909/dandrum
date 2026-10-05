@@ -762,6 +762,20 @@ int main (int argc, char** argv)
         const auto samplerSources = samplerDocument.getProperty ("sources", {});
         const auto samplerMaps = samplerDocument.getProperty ("maps", {});
         const auto samplerParameters = samplerDocument.getProperty ("parameters", {});
+        const auto outputBuses = samplerDocument.getProperty ("outputBuses", {});
+        require (outputBuses.isArray() && outputBuses.size() == 1,
+                 "prepared Web document does not enumerate its actual host output bus");
+        const auto outputBus = outputBuses[0];
+        const auto outputChannels = outputBus.getProperty ("channels", {});
+        require (outputBus.getProperty ("id", {}).toString() == "output:0"
+                     && outputBus.getProperty ("name", {}).toString() == "Output"
+                     && static_cast<bool> (outputBus.getProperty ("main", {}))
+                     && outputChannels.isArray() && outputChannels.size() == 2
+                     && outputChannels[0].toString() == "L"
+                     && outputChannels[1].toString() == "R"
+                     && outputBus.getProperty ("meterBusId", {}).toString() == "master"
+                     && ! outputBus.hasProperty ("feeds"),
+                 "prepared Web output binding lost actual channel names or invented routing metadata");
         require (samplerDocument.isObject()
                      && static_cast<int> (samplerDocument.getProperty ("generation", {}))
                             == static_cast<int> (samplerWeb.getParameterSurfaceGeneration())

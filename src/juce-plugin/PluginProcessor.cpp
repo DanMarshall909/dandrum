@@ -1,4 +1,5 @@
 #include "PluginProcessor.h"
+#include "InstrumentUiOutputBuses.h"
 #include "SoundLabController.h"
 
 #include <algorithm>
@@ -494,6 +495,7 @@ DandrumAudioProcessor::DandrumAudioProcessor (
                                  .withInput ("Input", juce::AudioChannelSet::stereo(), true)
                                  .withOutput ("Output", juce::AudioChannelSet::stereo(), true)),
       configuration (std::move (demo)),
+      hostOutputBuses (captureInstrumentUiOutputBuses (*this, "master")),
       parameters (*this, nullptr, "DandrumState", createParameterLayout (configuration)),
       liveService (std::move (observeLiveWorker)),
       beforeUiReloadPreparation (std::move (beforeReloadPreparation))
@@ -1511,6 +1513,8 @@ std::optional<InstrumentUiDocument> DandrumAudioProcessor::getPreparedUiDocument
 
         document.generation = parameterSurfaceGeneration.load (std::memory_order_relaxed);
         document.instrumentId = loadedInstrument.instrumentId.toStdString();
+        // processBlock maps the prepared master bus to the stereo main output.
+        document.outputBuses = hostOutputBuses;
         document.parameters.reserve (parameterSlots.size());
         for (std::size_t index = 0; index < parameterSlots.size(); ++index)
         {

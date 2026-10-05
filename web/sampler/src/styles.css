@@ -28,10 +28,6 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--color-focus);ou
 .alternatives button:focus-visible{outline-color:var(--color-focus)}
 .alternatives small{flex-basis:100%;font-size:11px}
 .control-list{display:grid;grid-template-columns:repeat(auto-fit,minmax(90px,1fr));gap:10px}
-.meter-row{display:grid;grid-template-columns:14px minmax(0,1fr) 43px;gap:8px;align-items:center;margin-top:10px;font-size:11px}
-.meter-track{position:relative;height:16px;border-radius:3px;background:var(--surface-well);overflow:hidden}
-.meter-peak,.meter-rms{position:absolute;left:0;background:var(--dd-vermilion-lo);height:100%}.meter-rms{top:5px;height:6px;background:var(--dd-vermilion-hi)}
-.clip{border:0;border-radius:3px;color:var(--text-tertiary);background:var(--surface-control);font-size:11px;padding:4px}.clip.latched{color:var(--text-on-accent);background:var(--color-action);cursor:pointer}
 .waveform canvas{display:block;width:100%;height:180px;background:var(--surface-well)}
 .availability p{margin:7px 0;color:var(--text-secondary);font-size:11px;line-height:1.4}
 .error{flex:none;margin:0;padding:4px 8px;color:var(--color-action);font-size:12px}
