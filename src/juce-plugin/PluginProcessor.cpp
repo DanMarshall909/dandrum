@@ -23,6 +23,138 @@ bool sameBitPattern (float a, float b) noexcept
     return std::bit_cast<std::uint32_t> (a) == std::bit_cast<std::uint32_t> (b);
 }
 
+// Fixed normalized host slots retain their value and host-write revision in one
+// atomic word. Notifications cannot identify writes: a listener may throw
+// before APVTS sees them, or recursively write the very same candidate value.
+class PublicSlotParameter final : public juce::RangedAudioParameter
+{
+public:
+    using RangedAudioParameter::RangedAudioParameter;
+    const juce::NormalisableRange<float>& getNormalisableRange() const override { return range; }
+    float getValue() const override { return valueOf (state.load (std::memory_order_acquire)); }
+    float getDefaultValue() const override { return 0.0f; }
+    int getNumSteps() const override { return AudioProcessorParameterWithID::getNumSteps(); }
+    juce::String getText (float value, int length) const override
+    {
+        const juce::String text (convertFrom0to1 (value), 7);
+        return length > 0 ? text.substring (0, length) : text;
+    }
+    float getValueForText (const juce::String& text) const override
+    { return convertTo0to1 (text.getFloatValue()); }
+
+    std::uint64_t snapshot() const noexcept { return state.load (std::memory_order_acquire); }
+    float workingValue (std::uint64_t captured) const noexcept
+    {
+        const auto current = snapshot();
+        return valueOf ((current >> 32) == (captured >> 32) ? captured : current);
+    }
+    void setValue (float value) override
+    {
+        // Consume the token before notifications; recursive host writes are
+        // ordinary writes even when they occur on the rebuilding thread.
+        const auto ownWrite = reloadWrite.parameter == this;
+        const auto revision = reloadWrite.revision;
+        if (ownWrite) reloadWrite = {};
+        const auto bits = std::bit_cast<std::uint32_t> (convertTo0to1 (convertFrom0to1 (value)));
+        auto previous = state.load (std::memory_order_acquire);
+        do
+        {
+            if (ownWrite && (previous >> 32) != revision) return;
+        }
+        while (!state.compare_exchange_weak (previous,
+                    ((ownWrite ? revision : (previous >> 32) + 1) << 32) | bits,
+                    std::memory_order_acq_rel, std::memory_order_acquire));
+    }
+    void setReloadValue (float value, std::uint64_t captured)
+    {
+        const auto previous = std::exchange (reloadWrite, ReloadWrite { this, captured >> 32 });
+        struct RestoreToken
+        {
+            ReloadWrite previous;
+            ~RestoreToken() { reloadWrite = previous; }
+        } restore { previous };
+        setValue (value);
+        sendValueChangedMessageToListeners (getValue());
+    }
+    void restore (std::uint64_t captured, std::atomic<float>& raw) noexcept
+    {
+        auto current = state.load (std::memory_order_acquire);
+        while ((current >> 32) == (captured >> 32)
+            && !state.compare_exchange_weak (current, captured,
+                    std::memory_order_acq_rel, std::memory_order_acquire)) {}
+        // Recovery must not call the listener which just failed. Mirror the
+        // authoritative value, retrying if automation races this repair.
+        do
+        {
+            current = state.load (std::memory_order_acquire);
+            raw.store (valueOf (current), std::memory_order_release);
+        }
+        while (state.load (std::memory_order_acquire) != current);
+    }
+
+private:
+    struct ReloadWrite { PublicSlotParameter* parameter = nullptr; std::uint64_t revision = 0; };
+    static thread_local ReloadWrite reloadWrite;
+    static float valueOf (std::uint64_t value) noexcept
+    { return std::bit_cast<float> (static_cast<std::uint32_t> (value)); }
+    const juce::NormalisableRange<float> range { 0.0f, 1.0f };
+    std::atomic<std::uint64_t> state { 0 };
+    static_assert (std::atomic<std::uint64_t>::is_always_lock_free);
+};
+thread_local PublicSlotParameter::ReloadWrite PublicSlotParameter::reloadWrite;
+
+class ReloadHostValues
+{
+public:
+    ReloadHostValues (juce::AudioProcessorValueTreeState& parameters,
+                      const juce::Array<juce::AudioProcessorParameter*>& hostParameters)
+    {
+        values.reserve (static_cast<std::size_t> (hostParameters.size()));
+        for (auto* host : hostParameters)
+        {
+            auto& parameter = static_cast<PublicSlotParameter&> (*host);
+            values.push_back ({ &parameter, parameter.snapshot(), parameters.getRawParameterValue (parameter.paramID) });
+        }
+        previous = std::exchange (active, this);
+    }
+    ReloadHostValues (const ReloadHostValues&) = delete;
+    ReloadHostValues& operator= (const ReloadHostValues&) = delete;
+    ~ReloadHostValues()
+    {
+        if (!committed)
+            for (const auto& value : values) value.parameter->restore (value.captured, *value.raw);
+        active = previous;
+    }
+    void commit() noexcept { committed = true; }
+    static float read (const PublicSlotParameter& parameter) noexcept
+    {
+        if (active != nullptr)
+            for (const auto& captured : active->values)
+                if (captured.parameter == &parameter)
+                    return parameter.workingValue (captured.captured);
+        return parameter.getValue();
+    }
+    static void write (PublicSlotParameter& parameter, float value)
+    {
+        if (active != nullptr)
+            for (const auto& captured : active->values)
+                if (captured.parameter == &parameter)
+                {
+                    parameter.setReloadValue (value, captured.captured);
+                    return;
+                }
+        parameter.setValueNotifyingHost (value);
+    }
+
+private:
+    struct Value { PublicSlotParameter* parameter; std::uint64_t captured; std::atomic<float>* raw; };
+    std::vector<Value> values;
+    ReloadHostValues* previous = nullptr;
+    bool committed = false;
+    static thread_local ReloadHostValues* active;
+};
+thread_local ReloadHostValues* ReloadHostValues::active = nullptr;
+
 std::string copyUiText (DandrumKernelStringView view)
 {
     return view.size == 0 ? std::string() : std::string (view.data, view.size);
@@ -206,11 +338,9 @@ juce::AudioProcessorValueTreeState::ParameterLayout DandrumAudioProcessor::creat
         const auto name = static_cast<std::size_t> (slotIndex) < initialDescriptors.size()
                               ? initialDescriptors[static_cast<std::size_t> (slotIndex)].name
                               : "Public Parameter Slot " + juce::String (slotIndex + 1);
-        layout.add (std::make_unique<juce::AudioParameterFloat> (
+        layout.add (std::make_unique<PublicSlotParameter> (
             juce::ParameterID { publicSlotParameterId (slotIndex), 1 },
-            name,
-            juce::NormalisableRange<float> (0.0f, 1.0f),
-            0.0f));
+            name));
     }
 
     return layout;
@@ -358,13 +488,15 @@ DandrumAudioProcessor::DandrumAudioProcessor (InstrumentDemoConfiguration demo)
     : DandrumAudioProcessor (std::move (demo), {}) {}
 
 DandrumAudioProcessor::DandrumAudioProcessor (
-    InstrumentDemoConfiguration demo, InstrumentUiLiveService::BeforeBatch observeLiveWorker)
+    InstrumentDemoConfiguration demo, InstrumentUiLiveService::BeforeBatch observeLiveWorker,
+    std::function<void()> beforeReloadPreparation)
     : juce::AudioProcessor (BusesProperties()
                                  .withInput ("Input", juce::AudioChannelSet::stereo(), true)
                                  .withOutput ("Output", juce::AudioChannelSet::stereo(), true)),
       configuration (std::move (demo)),
       parameters (*this, nullptr, "DandrumState", createParameterLayout (configuration)),
-      liveService (std::move (observeLiveWorker))
+      liveService (std::move (observeLiveWorker)),
+      beforeUiReloadPreparation (std::move (beforeReloadPreparation))
 {
     parameterSlots.resize (kPublicParameterSlotCount);
     for (int slotIndex = 0; slotIndex < kPublicParameterSlotCount; ++slotIndex)
@@ -413,29 +545,38 @@ DandrumAudioProcessor::EngineAccessPause::EngineAccessPause (DandrumAudioProcess
     {
         previousMute = owner.isMuted();
         owner.setMuted (true);
-        owner.waitForEngineReaders();
     }
+    // An outer asynchronous reload may already own the gate. A synchronous
+    // replacement nested under it still must acknowledge existing readers.
+    owner.waitForEngineReaders();
 }
 DandrumAudioProcessor::EngineAccessPause::~EngineAccessPause()
 {
     if (ownsGate)
     {
-        owner.setMuted (previousMute);
         owner.engineAccess.store (0, std::memory_order_release);
+        owner.setMuted (previousMute);
     }
 }
 
 DandrumAudioProcessor::~DandrumAudioProcessor()
 {
-    engineAccess.fetch_or (engineAccessClosed, std::memory_order_acq_rel);
+    instrumentFileWatcher.stopWatching();
+    {
+        const std::lock_guard<std::recursive_mutex> lock (reloadMutex);
+        uiReloadShuttingDown = true;
+        engineAccess.fetch_or (engineAccessClosed, std::memory_order_acq_rel);
+        setMuted (true);
+    }
     waitForEngineReaders();
     soundLabController.reset();
     if (pendingUiReload.valid())
     {
-        // Join preparation before destroying the active engine; an abandoned
-        // result still owns its candidate until the future is consumed.
-        try { pendingUiReload.get(); }
-        catch (const std::exception&) {}
+        // The worker observes shutdown under reloadMutex and cannot reopen the
+        // gate. Joining and final engine cleanup remain off the audio callback.
+        // Teardown needs completion, not the result already recorded by the
+        // coordinator. wait() never rethrows a stored worker exception.
+        pendingUiReload.wait();
     }
     dandrum_kernel_destroy (kernel.load (std::memory_order_relaxed));
 }
@@ -468,7 +609,7 @@ bool DandrumAudioProcessor::loadDefaultInstrument()
 void DandrumAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
 {
     const std::lock_guard<std::recursive_mutex> reloadLock (reloadMutex);
-    if (! instrumentLoaded)
+    if (engineActivationInProgress || ! instrumentLoaded)
         return;
 
     const EngineAccessPause handoff (*this);
@@ -557,16 +698,21 @@ void DandrumAudioProcessor::installPreparedEngine (
 
     replacementState.store (static_cast<int> (ReplacementState::Muted), std::memory_order_relaxed);
     const EngineAccessPause handoff (*this);
+    const juce::ScopedValueSetter<bool> activating (engineActivationInProgress, true);
+    LoadedInstrument candidateInstrument { sourceHint, yamlText, instrumentId, schemaVersion };
+    CandidateParameterBindings bindings { candidateKernel, parameterSlots };
+    juce::String candidateWarning;
+    // Notifications may re-enter readers or fail. Only the candidate's bindings
+    // and DSP receive preparation writes; committed metadata stays available.
+    preparePublicParameterSlots (descriptors, &candidateWarning, preferCurrentSlotValues, &bindings);
 
     auto* previousKernel = kernel.exchange (candidateKernel, std::memory_order_acq_rel);
-
+    std::swap (loadedInstrument, candidateInstrument);
+    parameterSlots.swap (bindings.slots);
     instrumentLoaded = true;
     lastLoadError.clear();
-    loadedInstrument.sourceFile = sourceHint;
-    loadedInstrument.yamlContent = yamlText;
-    loadedInstrument.instrumentId = instrumentId;
-    loadedInstrument.presetSchemaVersion = schemaVersion;
-    preparePublicParameterSlots (descriptors, reloadWarning, preferCurrentSlotValues);
+    if (reloadWarning != nullptr) *reloadWarning = std::move (candidateWarning);
+    publishParameterSurface();
 
     dandrum_kernel_destroy (previousKernel);
     replacementState.store (static_cast<int> (ReplacementState::Running), std::memory_order_relaxed);
@@ -583,14 +729,16 @@ void DandrumAudioProcessor::preparePublicParameterSlots (const juce::File& instr
 
 void DandrumAudioProcessor::preparePublicParameterSlots (const std::vector<PublicParameterDescriptor>& descriptors,
                                                           juce::String* droppedParametersWarning,
-                                                          bool preferCurrentSlotValues)
+                                                          bool preferCurrentSlotValues,
+                                                          CandidateParameterBindings* candidate)
 {
     if (droppedParametersWarning != nullptr)
         droppedParametersWarning->clear();
 
-    auto* activeKernel = kernel.load (std::memory_order_relaxed);
-    if (activeKernel == nullptr || ! instrumentLoaded)
+    auto* activeKernel = candidate != nullptr ? candidate->kernel : kernel.load (std::memory_order_relaxed);
+    if (activeKernel == nullptr || (candidate == nullptr && ! instrumentLoaded))
         return;
+    auto& slots = candidate != nullptr ? candidate->slots : parameterSlots;
 
     std::map<juce::String, float> carriedValuesByPublicId;
     juce::StringArray oldPublicIds;
@@ -607,7 +755,7 @@ void DandrumAudioProcessor::preparePublicParameterSlots (const std::vector<Publi
     std::set<juce::String> newPublicIds;
     juce::StringArray droppedParameterIds;
 
-    for (auto& slot : parameterSlots)
+    for (auto& slot : slots)
     {
         slot.active = false;
         slot.descriptor = {};
@@ -618,7 +766,7 @@ void DandrumAudioProcessor::preparePublicParameterSlots (const std::vector<Publi
     const auto activeCount = juce::jmin (static_cast<int> (descriptors.size()), kPublicParameterSlotCount);
     for (int slotIndex = 0; slotIndex < activeCount; ++slotIndex)
     {
-        auto& slot = parameterSlots[slotIndex];
+        auto& slot = slots[slotIndex];
         slot.active = true;
         slot.descriptor = descriptors[static_cast<std::size_t> (slotIndex)];
         newPublicIds.insert (slot.descriptor.id);
@@ -633,8 +781,9 @@ void DandrumAudioProcessor::preparePublicParameterSlots (const std::vector<Publi
         setSlotNormalisedValue (slotIndex, normalisedValue);
 
         slot.kernelSlotIndex = slotIndex;
-        applySlotToKernel (slot, normalisedValue, activeKernel);
-        slot.lastAppliedNormalisedValue = normalisedValue;
+        const auto latestValue = parameters.getParameter (slot.slotParameterId)->getValue();
+        applySlotToKernel (slot, latestValue, activeKernel);
+        slot.lastAppliedNormalisedValue = latestValue;
     }
 
     for (const auto& publicId : oldPublicIds)
@@ -656,6 +805,11 @@ void DandrumAudioProcessor::preparePublicParameterSlots (const std::vector<Publi
         }
     }
 
+    if (candidate == nullptr) publishParameterSurface();
+}
+
+void DandrumAudioProcessor::publishParameterSurface()
+{
     clearEditorNoteIntentForReload();
     const auto generation = parameterSurfaceGeneration.fetch_add (1, std::memory_order_relaxed) + 1;
     waveformService.setGeneration (generation);
@@ -673,7 +827,7 @@ void DandrumAudioProcessor::setSlotNormalisedValue (int slotIndex, float normali
         return;
 
     const auto value = juce::jlimit (0.0f, 1.0f, normalisedValue);
-    parameter->setValueNotifyingHost (value);
+    ReloadHostValues::write (static_cast<PublicSlotParameter&> (*parameter), value);
 }
 
 void DandrumAudioProcessor::applySlotToKernel (ParameterSlot& slot,
@@ -1140,6 +1294,7 @@ void DandrumAudioProcessor::setCurrentProgram (int) {}
 
 const juce::String DandrumAudioProcessor::getProgramName (int)
 {
+    const std::lock_guard<std::recursive_mutex> reloadLock (reloadMutex);
     return loadedPreset.name;
 }
 
@@ -1147,7 +1302,15 @@ void DandrumAudioProcessor::changeProgramName (int, const juce::String&) {}
 
 void DandrumAudioProcessor::getStateInformation (juce::MemoryBlock& destData)
 {
+    const std::lock_guard<std::recursive_mutex> reloadLock (reloadMutex);
     auto state = parameters.copyState();
+    // A throwing host listener can prevent APVTS from marking its ValueTree
+    // dirty. Serialize each fixed slot's authority, not that stale mirror.
+    for (auto* host : getParameters())
+    {
+        auto& parameter = static_cast<PublicSlotParameter&> (*host);
+        state.getChildWithProperty ("id", parameter.paramID).setProperty ("value", ReloadHostValues::read (parameter), nullptr);
+    }
     state.setProperty ("dandrum_schema_version", kPluginStateSchemaVersion, nullptr);
     state.setProperty ("instrument_path", loadedInstrument.sourceFile.getFullPathName(), nullptr);
     state.setProperty ("instrument_yaml", loadedInstrument.yamlContent, nullptr);
@@ -1164,6 +1327,8 @@ void DandrumAudioProcessor::getStateInformation (juce::MemoryBlock& destData)
 
 void DandrumAudioProcessor::setStateInformation (const void* data, int sizeInBytes)
 {
+    const std::lock_guard<std::recursive_mutex> reloadLock (reloadMutex);
+    if (engineActivationInProgress) return;
     std::unique_ptr<juce::XmlElement> xml (getXmlFromBinary (data, sizeInBytes));
     if (xml == nullptr || ! xml->hasTagName (parameters.state.getType()))
         return;
@@ -1209,7 +1374,6 @@ void DandrumAudioProcessor::setStateInformation (const void* data, int sizeInByt
         }
     }
 
-    const std::lock_guard<std::recursive_mutex> reloadLock (reloadMutex);
     const EngineAccessPause handoff (*this);
     parameters.replaceState (state);
 
@@ -1249,18 +1413,21 @@ void DandrumAudioProcessor::setStateInformation (const void* data, int sizeInByt
         instrumentFileWatcher.stopWatching();
 }
 
-bool DandrumAudioProcessor::isInstrumentLoaded() const noexcept
+bool DandrumAudioProcessor::isInstrumentLoaded() const
 {
+    const std::lock_guard<std::recursive_mutex> reloadLock (reloadMutex);
     return instrumentLoaded;
 }
 
-const juce::String& DandrumAudioProcessor::getLastLoadError() const noexcept
+juce::String DandrumAudioProcessor::getLastLoadError() const
 {
+    const std::lock_guard<std::recursive_mutex> reloadLock (reloadMutex);
     return lastLoadError;
 }
 
-const juce::String& DandrumAudioProcessor::getLastPresetError() const noexcept
+juce::String DandrumAudioProcessor::getLastPresetError() const
 {
+    const std::lock_guard<std::recursive_mutex> reloadLock (reloadMutex);
     return lastPresetError;
 }
 
@@ -1276,6 +1443,7 @@ bool DandrumAudioProcessor::hasPublicParameter (juce::StringRef parameterId) con
 
 juce::RangedAudioParameter* DandrumAudioProcessor::getParameterForPublicId (juce::StringRef parameterId) const
 {
+    const std::lock_guard<std::recursive_mutex> reloadLock (reloadMutex);
     for (const auto& slot : parameterSlots)
     {
         if (slot.active && slot.descriptor.id == parameterId)
@@ -1287,6 +1455,7 @@ juce::RangedAudioParameter* DandrumAudioProcessor::getParameterForPublicId (juce
 
 juce::String DandrumAudioProcessor::getPublicParameterDisplayName (juce::StringRef parameterId) const
 {
+    const std::lock_guard<std::recursive_mutex> reloadLock (reloadMutex);
     for (const auto& slot : parameterSlots)
         if (slot.active && slot.descriptor.id == parameterId)
             return slot.descriptor.name.isNotEmpty() ? slot.descriptor.name : slot.descriptor.id;
@@ -1296,6 +1465,7 @@ juce::String DandrumAudioProcessor::getPublicParameterDisplayName (juce::StringR
 
 juce::StringArray DandrumAudioProcessor::getActivePublicParameterIds() const
 {
+    const std::lock_guard<std::recursive_mutex> reloadLock (reloadMutex);
     juce::StringArray ids;
     for (const auto& slot : parameterSlots)
         if (slot.active)
@@ -1317,7 +1487,8 @@ DandrumAudioProcessor::getPublicParameterSnapshot() const
 
         // Every slot has a fixed JUCE parameter object for the processor lifetime.
         const auto* parameter = parameters.getParameter (slot.slotParameterId);
-        values.push_back ({ slot.descriptor.id, slot.descriptor.name, parameter->getValue() });
+        values.push_back ({ slot.descriptor.id, slot.descriptor.name,
+            ReloadHostValues::read (static_cast<const PublicSlotParameter&> (*parameter)) });
     }
     return values;
 }
@@ -1355,7 +1526,7 @@ std::optional<InstrumentUiDocument> DandrumAudioProcessor::getPreparedUiDocument
             InstrumentUiDocument::Parameter value;
             value.id = slot.descriptor.id.toStdString();
             value.name = slot.descriptor.name.toStdString();
-            value.normalisedValue = parameter->getValue();
+            value.normalisedValue = ReloadHostValues::read (static_cast<const PublicSlotParameter&> (*parameter));
             value.normalisedDefaultValue = normalisePublicValue (
                 slot.descriptor, slot.descriptor.defaultValue);
             value.minValue = slot.descriptor.minValue;
@@ -1655,8 +1826,9 @@ void DandrumAudioProcessor::endUiGesture (std::size_t hostSlot)
         parameters.getParameter (parameterSlots[hostSlot].slotParameterId)->endChangeGesture();
 }
 
-const juce::File& DandrumAudioProcessor::currentInstrumentFile() const noexcept
+juce::File DandrumAudioProcessor::currentInstrumentFile() const
 {
+    const std::lock_guard<std::recursive_mutex> reloadLock (reloadMutex);
     return loadedInstrument.sourceFile;
 }
 
@@ -1670,23 +1842,27 @@ bool DandrumAudioProcessor::isSoundLabInstrumentCompatible() const
            && loadedInstrument.instrumentId == juce::String (configuration.instrumentId);
 }
 
-const juce::String& DandrumAudioProcessor::currentInstrumentYaml() const noexcept
+juce::String DandrumAudioProcessor::currentInstrumentYaml() const
 {
+    const std::lock_guard<std::recursive_mutex> reloadLock (reloadMutex);
     return loadedInstrument.yamlContent;
 }
 
-const juce::String& DandrumAudioProcessor::currentPresetName() const noexcept
+juce::String DandrumAudioProcessor::currentPresetName() const
 {
+    const std::lock_guard<std::recursive_mutex> reloadLock (reloadMutex);
     return loadedPreset.name;
 }
 
-const juce::String& DandrumAudioProcessor::currentPresetYaml() const noexcept
+juce::String DandrumAudioProcessor::currentPresetYaml() const
 {
+    const std::lock_guard<std::recursive_mutex> reloadLock (reloadMutex);
     return loadedPreset.yamlContent;
 }
 
-const juce::String& DandrumAudioProcessor::getLastReloadWarning() const noexcept
+juce::String DandrumAudioProcessor::getLastReloadWarning() const
 {
+    const std::lock_guard<std::recursive_mutex> reloadLock (reloadMutex);
     return lastReloadWarning;
 }
 
@@ -1710,6 +1886,7 @@ std::size_t DandrumAudioProcessor::getDroppedMidiEventCount() const noexcept
 bool DandrumAudioProcessor::reloadInstrumentFromFile (const juce::File& yamlFile)
 {
     const std::lock_guard<std::recursive_mutex> reloadLock (reloadMutex);
+    if (engineActivationInProgress) return false;
     const auto yamlText = yamlFile.loadFileAsString();
     loadedPreset = {};
     const auto reloaded = replaceActiveEngineFromFile (yamlFile, yamlFile, yamlText, true, false, &lastReloadWarning);
@@ -1724,106 +1901,151 @@ std::optional<std::uint64_t> DandrumAudioProcessor::requestInstrumentReloadJob (
 {
     const std::lock_guard<std::recursive_mutex> reloadLock (reloadMutex);
     if (expectedGeneration != getParameterSurfaceGeneration()
-        || getSampleRate() <= 0.0 || pendingUiReload.valid())
+        || getSampleRate() <= 0.0 || uiReloadActive || uiReloadShuttingDown)
         return std::nullopt;
 
+    // A terminal worker has no further processor locks to acquire. Reap it
+    // before replacing the future; never join a running preparation on admission.
+    if (pendingUiReload.valid()) pendingUiReload.get();
     const auto sampleRate = static_cast<std::uint32_t> (juce::jmax (1.0, getSampleRate()));
     const auto preparedBlockSize = static_cast<std::size_t> (juce::jmax (1, getBlockSize()));
     const auto jobId = nextUiJobId++;
     uiJobHistory.push_back ({ jobId, UiJobState::running, expectedGeneration, {} });
-    while (uiJobHistory.size() > 16)
-        uiJobHistory.pop_front();
+    while (uiJobHistory.size() > 16) uiJobHistory.pop_front();
 
+    const auto previousMute = isMuted();
+    uiReloadActive = true;
+    engineAccess.fetch_or (engineAccessClosed, std::memory_order_acq_rel);
+    setMuted (true);
     try
     {
         pendingUiReload = std::async (std::launch::async,
-            [yamlFile, sampleRate, preparedBlockSize]
+            [this, jobId, yamlFile, expectedGeneration, sampleRate, preparedBlockSize, previousMute]
             {
-                PreparedUiReload prepared;
-                prepared.file = yamlFile;
-                prepared.sampleRate = sampleRate;
-                prepared.blockSize = preparedBlockSize;
-                if (! yamlFile.existsAsFile())
-                {
-                    prepared.error = "Instrument file does not exist: " + yamlFile.getFullPathName();
-                    return prepared;
-                }
-                prepared.yaml = yamlFile.loadFileAsString();
-                const auto path = yamlFile.getFullPathName().toStdString();
-                prepared.candidate.reset (prepareKernelWithPublicControls (
-                    path, sampleRate, preparedBlockSize));
-                if (prepared.candidate == nullptr)
-                    prepared.error = "Failed to load instrument: " + yamlFile.getFullPathName();
-                else
-                    prepared.descriptors = loadPublicParameterDescriptors (path);
-                return prepared;
+                runInstrumentReloadJob (jobId, yamlFile, expectedGeneration,
+                                        sampleRate, preparedBlockSize, previousMute);
             });
     }
     catch (const std::exception& error)
     {
-        uiJobHistory.back().state = UiJobState::failed;
-        uiJobHistory.back().error = juce::String (error.what());
-        return jobId;
+        finishInstrumentReloadJob ({ jobId, UiJobState::failed, expectedGeneration,
+                                     juce::String (error.what()) }, previousMute);
     }
-
-    pendingUiReloadId = jobId;
     return jobId;
 }
 
-void DandrumAudioProcessor::pollInstrumentUiJobs()
+void DandrumAudioProcessor::runInstrumentReloadJob (
+    std::uint64_t jobId, const juce::File& yamlFile, std::uint32_t expectedGeneration,
+    std::uint32_t sampleRate, std::size_t preparedBlockSize, bool previousMute)
 {
-    if (! pendingUiReload.valid()
-        || pendingUiReload.wait_for (std::chrono::seconds (0)) != std::future_status::ready)
-        return;
-
-    const auto jobId = std::exchange (pendingUiReloadId, 0);
-    const auto job = std::find_if (uiJobHistory.begin(), uiJobHistory.end(),
-        [jobId] (const UiJobStatus& item) { return item.id == jobId; });
-    if (job == uiJobHistory.end())
-        return;
-
+    UiJobStatus outcome { jobId, UiJobState::failed, expectedGeneration, {} };
     PreparedUiReload prepared;
     try
     {
-        prepared = pendingUiReload.get();
+        // Admission has closed new readers. The worker, never the caller or
+        // audio callback, acknowledges any already-entered reader before work.
+        waitForEngineReaders();
+        if (beforeUiReloadPreparation) beforeUiReloadPreparation();
+        if (!yamlFile.existsAsFile())
+            prepared.error = "Instrument file does not exist: " + yamlFile.getFullPathName();
+        else
+        {
+            prepared.yaml = yamlFile.loadFileAsString();
+            const auto path = yamlFile.getFullPathName().toStdString();
+            prepared.candidate.reset (prepareKernelWithPublicControls (path, sampleRate, preparedBlockSize));
+            if (prepared.candidate == nullptr)
+                prepared.error = "Failed to load instrument: " + yamlFile.getFullPathName();
+            else
+                prepared.descriptors = loadPublicParameterDescriptors (path);
+        }
+
+        const std::lock_guard<std::recursive_mutex> reloadLock (reloadMutex);
+        if (uiReloadShuttingDown)
+            outcome.error = "Processor closed while reload was preparing";
+        else if (expectedGeneration != getParameterSurfaceGeneration()
+            || static_cast<std::uint32_t> (juce::jmax (1.0, getSampleRate())) != sampleRate
+            || static_cast<std::size_t> (juce::jmax (1, getBlockSize())) != preparedBlockSize)
+        {
+            outcome.state = UiJobState::stale;
+            outcome.error = "Instrument changed while reload was preparing";
+        }
+        else if (prepared.candidate == nullptr)
+            outcome.error = prepared.error;
+        else
+        {
+            // Keep the working engine and metadata until the activation call
+            // commits. Host notifications can throw while slots are updated.
+            auto workingInstrument = loadedInstrument;
+            auto workingSlots = parameterSlots;
+            const auto workingError = lastLoadError;
+            const auto workingWarning = lastReloadWarning;
+            const auto workingLoaded = instrumentLoaded;
+            auto* workingKernel = kernel.load (std::memory_order_relaxed);
+            ReloadHostValues hostValues (parameters, getParameters());
+            try
+            {
+                installPreparedEngine (prepared.candidate.get(), yamlFile,
+                                       prepared.yaml, prepared.descriptors, false, &lastReloadWarning);
+            }
+            catch (...)
+            {
+                kernel.store (workingKernel, std::memory_order_release);
+                loadedInstrument = std::move (workingInstrument);
+                parameterSlots.swap (workingSlots);
+                instrumentLoaded = workingLoaded;
+                lastLoadError = workingError;
+                lastReloadWarning = workingWarning;
+                parameterSurfaceGeneration.store (expectedGeneration, std::memory_order_relaxed);
+                waveformService.setGeneration (expectedGeneration);
+                spectralService.setGeneration (expectedGeneration);
+                liveService.setGeneration (expectedGeneration);
+                replacementState.store (static_cast<int> (ReplacementState::Failed), std::memory_order_relaxed);
+                throw;
+            }
+            static_cast<void> (prepared.candidate.release());
+            hostValues.commit();
+            loadedPreset = {};
+            outcome.state = UiJobState::completed;
+            outcome.generation = getParameterSurfaceGeneration();
+            // Watching is ancillary to an already committed activation. An
+            // observation error remains queryable without misreporting rollback.
+            instrumentFileWatcher.watchFile (yamlFile);
+        }
     }
     catch (const std::exception& error)
     {
-        job->state = UiJobState::failed;
-        job->error = juce::String (error.what());
-        return;
+        outcome.error = juce::String (error.what());
     }
+    catch (...)
+    {
+        outcome.error = "Unexpected exception while reloading instrument";
+    }
+    // Failed/stale candidates and their assets are retired on this worker
+    // before unmuting or admitting another job.
+    prepared.candidate.reset();
+    finishInstrumentReloadJob (std::move (outcome), previousMute);
+}
 
+void DandrumAudioProcessor::finishInstrumentReloadJob (UiJobStatus outcome, bool previousMute)
+{
     const std::lock_guard<std::recursive_mutex> reloadLock (reloadMutex);
-    if (job->generation != getParameterSurfaceGeneration()
-        || static_cast<std::uint32_t> (juce::jmax (1.0, getSampleRate()))
-             != prepared.sampleRate
-        || static_cast<std::size_t> (juce::jmax (1, getBlockSize()))
-             != prepared.blockSize)
+    // One active job and bounded terminal history: no later job can append
+    // until this job publishes its terminal record under the same lock.
+    uiJobHistory.back() = std::move (outcome);
+    uiReloadActive = false;
+    if (!uiReloadShuttingDown)
     {
-        job->state = UiJobState::stale;
-        job->error = "Instrument changed while reload was preparing";
-        return;
+        // Startup can fail before the worker acknowledges existing readers.
+        // Reopen admission without erasing their outstanding ownership count.
+        engineAccess.fetch_and (~engineAccessClosed, std::memory_order_release);
+        setMuted (previousMute);
     }
-    if (prepared.candidate == nullptr)
-    {
-        job->state = UiJobState::failed;
-        job->error = prepared.error;
-        return;
-    }
-
-    loadedPreset = {};
-    installPreparedEngine (prepared.candidate.release(), prepared.file,
-                           prepared.yaml, prepared.descriptors, false, &lastReloadWarning);
-    instrumentFileWatcher.watchFile (prepared.file);
-    job->state = UiJobState::completed;
-    job->generation = getParameterSurfaceGeneration();
 }
 
 std::optional<DandrumAudioProcessor::UiJobStatus>
 DandrumAudioProcessor::getInstrumentUiJobStatus (std::uint64_t jobId)
 {
-    pollInstrumentUiJobs();
+    const std::lock_guard<std::recursive_mutex> reloadLock (reloadMutex);
     const auto job = std::find_if (uiJobHistory.begin(), uiJobHistory.end(),
         [jobId] (const UiJobStatus& item) { return item.id == jobId; });
     return job != uiJobHistory.end() ? std::optional<UiJobStatus> (*job) : std::nullopt;
@@ -1833,6 +2055,7 @@ bool DandrumAudioProcessor::reloadInstrumentFromYaml (const juce::String& yamlTe
                                                       const juce::File& sourceHint)
 {
     const std::lock_guard<std::recursive_mutex> reloadLock (reloadMutex);
+    if (engineActivationInProgress) return false;
     const auto parent = sourceHint.getParentDirectory();
     if (! parent.isDirectory())
     {
@@ -1871,8 +2094,9 @@ bool DandrumAudioProcessor::isFileWatchEnabled() const noexcept
     return instrumentFileWatcher.isEnabled();
 }
 
-const juce::File& DandrumAudioProcessor::watchedInstrumentFile() const noexcept
+juce::File DandrumAudioProcessor::watchedInstrumentFile() const
 {
+    const std::lock_guard<std::recursive_mutex> reloadLock (reloadMutex);
     return instrumentFileWatcher.watchedFile();
 }
 
@@ -1883,6 +2107,8 @@ void DandrumAudioProcessor::pollInstrumentFileForChanges()
 
 bool DandrumAudioProcessor::loadPresetFromFile (const juce::File& presetFile)
 {
+    const std::lock_guard<std::recursive_mutex> reloadLock (reloadMutex);
+    if (engineActivationInProgress) return false;
     lastPresetError.clear();
 
     if (! instrumentLoaded)

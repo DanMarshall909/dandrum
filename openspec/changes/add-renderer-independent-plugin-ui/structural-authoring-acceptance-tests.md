@@ -7,8 +7,8 @@ or unapplied-changes workflow is involved. The DAW transport continues.
 
 These are acceptance test specifications for the pending implementation in
 [tasks.md, section 9](tasks.md). None of S1–S13 is complete. The ownership
-prerequisite below has executable evidence; existing reload tests alone do not
-prove immediate muting or automatic structural editing. Implement each case
+and automatic reload prerequisites below have executable evidence; these reload
+tests alone do not prove typed automatic structural editing. Implement each case
 through RED → GREEN before claiming it complete, and map proving tests in
 `spec-tests.map` when syncing these delta specs.
 
@@ -210,3 +210,31 @@ cover every allocator/OS operation, load a DAW, or complete S3/S4. The test's
 held-render sleep is a deterministic observation seam, not production handoff
 or audio timing evidence. Focused coverage and deliberate retirement and
 callback faults are recorded in [live-analysis.md](../../../docs/design-system/live-analysis.md).
+
+### Automatic reload prerequisite implemented separately
+
+The registered `cxx-plugin-automatic-reload` and
+`cxx-plugin-reload-job-contracts` lanes extend the real processor fixture with
+admission mute before actual validation, autonomous completion without further
+callbacks/editor polling, exact-zero stalled callbacks, held-reader startup
+failure, obsolete generation/host settings, throwing activation recovery and
+pending-worker shutdown. Signed audio and stable host object identity are
+asserted; a held activation notification proves coherent working metadata after
+failure. The original Web bridge lane holds the admitted worker and proves
+running/failed status across close/reopen. The
+[reload record](../../../docs/design-system/automatic-reload.md) retains focused
+current coverage, historical ASan/23 calibrated component faults, two current
+replacement-phase faults and full build/test results.
+
+These regressions advance prerequisites of S1–S4/S6–S8/S10–S11 through the
+existing reload command. They do not submit a supported typed structural edit,
+complete renderer disabled/error reconciliation, reject incompatible structural
+surfaces, prove gated-note backlog reset or establish DAW transport continuity.
+None of S1–S13 or section 9 is marked complete.
+
+Review repair regressions additionally prove partial host/raw/saved-value recovery
+with recursive/concurrent/same-value automation, synchronous retained working
+metadata and state, rejection of recursive ownership mutation, non-standard
+exception recovery, terminal failed/running replacement status, and next-valid
+activation. These remain prerequisites through
+the reload command; they do not complete typed structural acceptance cases.

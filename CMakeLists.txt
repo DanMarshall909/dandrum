@@ -314,6 +314,11 @@ if(NOT DANDRUM_NATIVE_ONLY)
     target_link_libraries(dandrum-sampler-plugin PRIVATE dandrum-sampler-react-resources)
     target_compile_definitions(dandrum-sampler-plugin PRIVATE DANDRUM_EMBED_SAMPLER_REACT=1)
 endif()
+if(CMAKE_SYSTEM_NAME STREQUAL "Linux" AND DANDRUM_BROWSER_ENABLED)
+    # Both JUCE plugin targets generate the shared browser helper in the first
+    # target's directory. Serialize them so parallel Make cannot rename it twice.
+    add_dependencies(dandrum-sampler-plugin dandrum-plugin)
+endif()
 
 if(DANDRUM_NATIVE_ONLY)
     add_executable(dandrum-native-editor-smoke-test tests/cpp/NativeEditorSmokeTest.cpp)
@@ -418,10 +423,17 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
     target_link_options(dandrum-plugin-engine-handoff-test PRIVATE
         "LINKER:--wrap=dandrum_kernel_render" "LINKER:--wrap=dandrum_kernel_destroy"
         "LINKER:--wrap=dandrum_kernel_prepare_file" "LINKER:--wrap=pthread_mutex_lock")
+    target_link_options(dandrum-plugin-engine-handoff-test PRIVATE
+        "LINKER:--wrap=_ZNSt6thread15_M_start_threadESt10unique_ptrINS_6_StateESt14default_deleteIS1_EEPFvvE"
+        "LINKER:--wrap=_ZNSt6thread4joinEv")
     add_test(NAME cxx-plugin-engine-handoff-baseline COMMAND dandrum-plugin-engine-handoff-test)
     add_test(NAME cxx-plugin-engine-handoff COMMAND dandrum-plugin-engine-handoff-test --hold)
     add_test(NAME cxx-plugin-live-handoff COMMAND dandrum-plugin-engine-handoff-test --live)
+    add_test(NAME cxx-plugin-automatic-reload COMMAND dandrum-plugin-engine-handoff-test --automatic-job)
+    add_test(NAME cxx-plugin-reload-job-contracts COMMAND dandrum-plugin-engine-handoff-test --job-baseline)
     set_tests_properties(cxx-plugin-engine-handoff-baseline cxx-plugin-engine-handoff cxx-plugin-live-handoff PROPERTIES TIMEOUT 15)
+    set_tests_properties(cxx-plugin-automatic-reload PROPERTIES TIMEOUT 15)
+    set_tests_properties(cxx-plugin-reload-job-contracts PROPERTIES TIMEOUT 15)
 endif()
 
 add_executable(dandrum-plugin-waveform-parity-test tests/cpp/PluginWaveformParityTest.cpp)

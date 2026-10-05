@@ -5,6 +5,7 @@
 #include <cstdint>
 #include <deque>
 #include <future>
+#include <functional>
 #include <map>
 #include <memory>
 #include <mutex>
@@ -42,7 +43,8 @@ public:
         InstrumentDemoConfiguration configuration = InstrumentDemoConfiguration::tb303());
     // Optional off-audio worker observation; must honor stop and not throw.
     DandrumAudioProcessor (InstrumentDemoConfiguration,
-                          InstrumentUiLiveService::BeforeBatch observeLiveWorker);
+                          InstrumentUiLiveService::BeforeBatch observeLiveWorker,
+                          std::function<void()> beforeReloadPreparation = {});
     ~DandrumAudioProcessor() override;
 
     using juce::AudioProcessor::processBlock;
@@ -69,9 +71,11 @@ public:
     void getStateInformation (juce::MemoryBlock& destData) override;
     void setStateInformation (const void* data, int sizeInBytes) override;
 
-    bool isInstrumentLoaded() const noexcept;
-    const juce::String& getLastLoadError() const noexcept;
-    const juce::String& getLastPresetError() const noexcept;
+    // Off-audio configuration queries return owned values under reloadMutex.
+    // A caller must not retain references into a replaceable configuration.
+    bool isInstrumentLoaded() const;
+    juce::String getLastLoadError() const;
+    juce::String getLastPresetError() const;
     const InstrumentDemoConfiguration& demoConfiguration() const noexcept;
     bool hasPublicParameter (juce::StringRef parameterId) const;
     juce::RangedAudioParameter* getParameterForPublicId (juce::StringRef parameterId) const;
@@ -112,12 +116,12 @@ public:
     };
 
     /// Admit one off-audio instrument reload without waiting for preparation.
-    /// Querying status on the message thread installs a prepared candidate;
-    /// terminal records outlive editor sessions for this processor instance.
+    /// Admission closes audio access immediately. The processor worker prepares,
+    /// activates or recovers without an editor/status query driving completion.
+    /// Terminal records outlive editor sessions for this processor instance.
     std::optional<std::uint64_t> requestInstrumentReloadJob (
         const juce::File& yamlFile, std::uint32_t expectedGeneration);
     std::optional<UiJobStatus> getInstrumentUiJobStatus (std::uint64_t jobId);
-    void pollInstrumentUiJobs();
 
     /// Publishes bounded, per-note editor intent for delivery by processBlock.
     /// The message thread never calls the Rust engine directly. Session 0 is
@@ -158,7 +162,7 @@ public:
     bool isFileWatchEnabled() const noexcept;
 
     /// The instrument file currently being watched for external edits, if any.
-    const juce::File& watchedInstrumentFile() const noexcept;
+    juce::File watchedInstrumentFile() const;
 
     /// Polls the watched instrument file once for a stable external change,
     /// reloading through the standard replacement transaction if one is found.
@@ -174,20 +178,20 @@ public:
 
     /// The currently loaded instrument's source file, if loaded from one. This
     /// is only a restore hint; plugin state embeds the YAML content too.
-    const juce::File& currentInstrumentFile() const noexcept;
+    juce::File currentInstrumentFile() const;
     bool isSoundLabInstrumentCompatible() const;
 
     /// The currently loaded instrument's YAML content, captured at load time
     /// so it can be embedded in plugin state without depending on the source
     /// file still existing at the original path.
-    const juce::String& currentInstrumentYaml() const noexcept;
+    juce::String currentInstrumentYaml() const;
 
-    const juce::String& currentPresetName() const noexcept;
-    const juce::String& currentPresetYaml() const noexcept;
+    juce::String currentPresetName() const;
+    juce::String currentPresetYaml() const;
 
     /// Non-empty after a reload that dropped previously-live public parameters
     /// or exceeded the fixed host slot budget.
-    const juce::String& getLastReloadWarning() const noexcept;
+    juce::String getLastReloadWarning() const;
 
     /// Current explicit replacement transaction phase for the editor/status
     /// surface. Audio acquires a bounded reader guard before engine access.
@@ -291,6 +295,11 @@ private:
         std::intptr_t kernelSlotIndex = kNoEngineSlot;
         float lastAppliedNormalisedValue = 0.0f;
     };
+    struct CandidateParameterBindings
+    {
+        DandrumKernelInstrument* kernel;
+        std::vector<ParameterSlot> slots;
+    };
 
     /// The plugin's explicit concept of "the currently loaded immutable
     /// instrument definition" — distinct from the mutable public parameter
@@ -322,10 +331,7 @@ private:
 
     struct PreparedUiReload
     {
-        juce::File file;
         juce::String yaml;
-        std::uint32_t sampleRate = 0;
-        std::size_t blockSize = 0;
         std::vector<PublicParameterDescriptor> descriptors;
         std::unique_ptr<DandrumKernelInstrument, decltype (&dandrum_kernel_destroy)> candidate {
             nullptr, &dandrum_kernel_destroy };
@@ -355,13 +361,19 @@ private:
                                 const std::vector<PublicParameterDescriptor>& descriptors,
                                 bool preferCurrentSlotValues,
                                 juce::String* reloadWarning);
+    void runInstrumentReloadJob (std::uint64_t, const juce::File&,
+                                 std::uint32_t generation, std::uint32_t sampleRate,
+                                 std::size_t preparedBlockSize, bool previousMute);
+    void finishInstrumentReloadJob (UiJobStatus, bool previousMute);
     void renderSilence (juce::AudioBuffer<float>& buffer) const;
     void preparePublicParameterSlots (const juce::File& instrumentFile,
                                       juce::String* droppedParametersWarning,
                                       bool preferCurrentSlotValues);
     void preparePublicParameterSlots (const std::vector<PublicParameterDescriptor>& descriptors,
                                       juce::String* droppedParametersWarning,
-                                      bool preferCurrentSlotValues);
+                                      bool preferCurrentSlotValues,
+                                      CandidateParameterBindings* candidate = nullptr);
+    void publishParameterSurface();
     void applyChangedParameters (DandrumKernelInstrument* activeKernel) noexcept;
     void applySlotToKernel (ParameterSlot& slot, float normalisedValue, DandrumKernelInstrument* activeKernel) noexcept;
     void setSlotNormalisedValue (int slotIndex, float normalisedValue);
@@ -413,15 +425,20 @@ private:
     // Readers copy retained metadata before a previous engine is destroyed.
     // Host notifications may re-enter snapshot readers on the same thread.
     mutable std::recursive_mutex reloadMutex;
+    bool engineActivationInProgress = false; // protected by reloadMutex, including recursive notifications
     InstrumentUiWaveformService waveformService;
     InstrumentUiSpectralService spectralService;
     InstrumentUiCommandService uiCommandService { *this };
     std::unique_ptr<SoundLabController> soundLabController;
     juce::File soundLabReferenceFile;
-    // Admission, status queries and commit run on the message thread. The
-    // future owns the prepared engine until that thread accepts or rejects it.
-    std::future<PreparedUiReload> pendingUiReload;
-    std::uint64_t pendingUiReloadId = 0;
+    // Admission/status use reloadMutex; this processor-owned worker also
+    // serializes activation there. Its completion is independent of editors.
+    std::future<void> pendingUiReload;
+    // Optional off-audio observation barrier, owned until the worker is joined.
+    // This is also the pre-validation boundary used by lifecycle tests.
+    std::function<void()> beforeUiReloadPreparation;
+    bool uiReloadActive = false;
+    bool uiReloadShuttingDown = false;
     std::uint64_t nextUiJobId = 1;
     std::deque<UiJobStatus> uiJobHistory;
     // Watches the loaded instrument file for external edits and reloads it

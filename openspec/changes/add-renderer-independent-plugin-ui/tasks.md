@@ -344,3 +344,41 @@ commands and shutdown during pending structural work remain pending.
 The additional live-identity regression is recorded under task 6.3 above. Section 9 and tasks 6.3/6.4 remain unchecked. The
 [live analysis record](../../../docs/design-system/live-analysis.md) states
 the measured evidence and limits.
+
+Tasks 9.1–9.4 reload progress (2026-10-03): asynchronous instrument reload now
+mutes/closes audio admission before validation and completes on its
+processor-owned worker without editor/status polling. Registered component
+tests prove exact-zero callbacks, held-reader acknowledgement, known signed
+success/recovery, current host values, startup/activation failure, obsolete
+generation/settings and worker shutdown. Configuration readers return owned
+snapshots under the replacement lock. The original Web editor test retains
+running/failed job recovery across close/reopen using a held worker, rather than
+a timing assumption. Focused gcov executes 213/213 changed processor records;
+owned C++ ASan and 23 copied component faults have separate retained evidence.
+The [reload record](../../../docs/design-system/automatic-reload.md) specifies
+scope and limits. Typed structural commands, strict compatible surfaces,
+renderer disabled/error states, all replacement coordination, note resets and
+DAW continuity remain pending. Complete native/Web builds include Standalone/VST3;
+CTest passes **36/36 native** and **66/66 Web**, with no skips. Strict validation
+and the unchanged main-spec coverage gate pass. No section 9 checkbox or baseline mapping is
+completed by this foundation.
+
+Review repairs (2026-10-04): partial range-change activation failures now restore
+host/raw/saved values while retaining ordinary automation, including identical
+values. Candidate metadata/bindings stay staged through notifications; synchronous
+readers retain working snapshots and recursive ownership changes are rejected.
+Integer/custom exceptions finalize terminal recovery and safe teardown. The
+registered owning suite proves signed recovery and subsequent valid activation.
+Complete native/Web builds and CTest 36/36 and 66/66 pass without skips; the
+Linux browser targets now serialize shared JUCE helper generation after a real
+parallel build race. All section 9 tasks remain unchecked.
+
+Replacement-status repair (2026-10-05): the existing standard/integer/custom
+activation-failure fixture now asserts `failed` after automatic signed recovery
+and `running` after the next successful rebuild. An owning RED exposed the stale
+`muted` phase; rollback now terminates that phase. Current focused gcov executes
+214/214 changed processor records and two current copied phase faults fail their
+named assertions. Previous ASan and 23-fault runs remain historical evidence for
+the round2 candidate. Complete native/Web builds and CTest **36/36** and **66/66**
+pass without skips, including the established file-watch phase contract.
+All section 9 tasks and the broader sampler/303 goal remain pending.

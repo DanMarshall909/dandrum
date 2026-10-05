@@ -1265,7 +1265,17 @@ int main (int argc, char** argv)
         require (reloadsSucceeded.load() && coherent,
                  "editor parameter snapshots mixed two instrument surfaces during reload");
 
-        DandrumAudioProcessor uiJobs (InstrumentDemoConfiguration::kick());
+        std::atomic<bool> holdFirstReload { true }, releaseFirstReload { false };
+        DandrumAudioProcessor uiJobs (InstrumentDemoConfiguration::kick(), {}, [&]
+        {
+            if (holdFirstReload.exchange (false))
+                while (!releaseFirstReload.load()) std::this_thread::sleep_for (std::chrono::milliseconds (1));
+        });
+        struct ReleaseHeldReload
+        {
+            std::atomic<bool>& released;
+            ~ReleaseHeldReload() { released = true; }
+        } releaseHeldReload { releaseFirstReload };
         uiJobs.setPlayConfigDetails (0, 2, 48000.0, 64);
         uiJobs.prepareToPlay (48000.0, 64);
         const auto uiGeneration = uiJobs.getParameterSurfaceGeneration();
@@ -1292,6 +1302,10 @@ int main (int argc, char** argv)
         }
         {
             DandrumAudioProcessorEditor reopened (uiJobs);
+            require (uiJobs.isMuted() && PluginEditorBridgeTestProbe::invoke (
+                         reopened, "getUiJobStatus", { juce::var (failedJobId) })["state"].toString() == "running",
+                     "Closing/reopening an editor stranded its pending processor-owned rebuild");
+            releaseFirstReload = true;
             require (PluginEditorBridgeTestProbe::invoke (
                          reopened, "getUiJobStatus", { juce::var (-1) })
                          .toString().contains ("valid job ID")

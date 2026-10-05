@@ -673,7 +673,6 @@ juce::var DandrumAudioProcessorEditor::soundLabSnapshotForWeb() const
 
 void DandrumAudioProcessorEditor::timerCallback()
 {
-    processor.pollInstrumentUiJobs();
     processor.pollMeterDelivery();
     hostBridge.expireNoteSession (juce::Time::getMillisecondCounterHiRes());
     if (hostBridge.publishParameterUpdates (browser))

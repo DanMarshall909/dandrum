@@ -1353,28 +1353,11 @@ int main()
             return 1;
         }
 
-        const auto currentGeneration = jobs.getParameterSurfaceGeneration();
-        const auto staleId = jobs.requestInstrumentReloadJob (defaultPatchFile(), currentGeneration);
-        if (! staleId || ! jobs.reloadInstrumentFromFile (
-                juce::File (juce::String (InstrumentDemoConfiguration::tb303().instrumentPath.string()))))
-        {
-            std::cerr << "could not arrange a replacement while a UI job prepared\n";
-            return 1;
-        }
-        auto staleStatus = jobs.getInstrumentUiJobStatus (*staleId);
-        for (int attempt = 0; attempt < 200
-             && staleStatus && staleStatus->state == DandrumAudioProcessor::UiJobState::running;
-             ++attempt)
-        {
-            std::this_thread::sleep_for (std::chrono::milliseconds (5));
-            staleStatus = jobs.getInstrumentUiJobStatus (*staleId);
-        }
-        if (! staleStatus || staleStatus->state != DandrumAudioProcessor::UiJobState::stale
-            || ! jobs.hasPublicParameter ("filter.cutoff"))
-        {
-            std::cerr << "a stale prepared UI job replaced a newer instrument\n";
-            return 1;
-        }
+        // cxx-plugin-reload-job-contracts holds actual preparation while a
+        // newer replacement runs. That deterministic lane proves stale-job
+        // rejection; immediate sequential calls can legitimately finish first
+        // now that activation no longer waits for an editor status query.
+
     }
 
     // writeModifiedKickPatch must fail loudly (an invalid File) rather than
