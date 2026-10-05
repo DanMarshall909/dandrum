@@ -46,12 +46,16 @@ function selectedTarget(document, pad, zoneId) {
     ?.zones.find(zone => zone.id === zoneId) ?? null;
 }
 
+export function preparedSource(document, pad, zoneId) {
+  const zone = selectedTarget(document, pad, zoneId);
+  const source = document?.sources?.[zone?.sourceIndex];
+  const region = source?.regions?.[zone?.regionIndex];
+  return zone && source && region ? { zone, source, region } : null;
+}
+
 export function selectedRegion(document, pad, zoneId) {
-  const target = selectedTarget(document, pad, zoneId);
-  if (!target) return null;
-  const source = document?.sources?.[target.sourceIndex];
-  const region = source?.regions?.[target.regionIndex];
-  return source && region ? { sourceId: source.id, regionId: region.id } : null;
+  const assignment = preparedSource(document, pad, zoneId);
+  return assignment ? { sourceId: assignment.source.id, regionId: assignment.region.id } : null;
 }
 
 export function visibleParameters(document, pad, zoneId) {

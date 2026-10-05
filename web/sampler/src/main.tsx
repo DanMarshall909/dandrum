@@ -4,7 +4,9 @@ import { preparedPads, selectedRegion, visibleParameters,
   padReleaseHandlers, auditionFocusRelease } from './model.mjs';
 import { createHostKnob } from '../../shared/host-knob.mjs';
 import { createKeyMap } from './key-map.mjs';
+import { createLayerStack } from './layer-stack.mjs';
 import './key-map.css';
+import './layer-stack.css';
 import { admittedParameter } from '../../shared/parameter-value.mjs';
 import { createPreparedParameterDocument } from '../../shared/prepared-parameter-document.mjs';
 import '../../shared/host-knob.css';
@@ -59,6 +61,7 @@ async function invoke(name: string, ...args: unknown[]): Promise<any> {
 
 const HostKnob = createHostKnob(React);
 const PreparedKeyMap = createKeyMap(React);
+const PreparedLayerStack = createLayerStack(React);
 
 function useHost() {
   const [state, setState] = useState<HostState | null>(null);
@@ -464,13 +467,8 @@ function SamplerApp() {
           </div>}
         </>}
       </section>
-        <section className="panel availability" aria-label="Prepared capabilities">
-          <div className="section-heading"><h2><svg {...iconProps('lock')} />Structure</h2><span>INSPECT ONLY</span></div>
-          <p>Source and region assignments are prepared outside the plugin.</p>
-          <p>Layer details: {document.capabilities.synthLayer || document.capabilities.nestedPatchLayer
-            || document.capabilities.moduleChain ? 'Available where prepared' : 'Unavailable'}</p>
-          <p>Output bus details unavailable.</p>
-        </section>
+        <PreparedLayerStack key={document.generation} document={document} pad={selected}
+          selectedZoneId={selectedZoneId} onSelect={select} readOnlyIcon={<svg {...iconProps('lock')} />} />
       </div>
       <div className="instrument-column">
           {sampleDisplay === 'scope' || sampleDisplay === 'live-spectrum'
@@ -482,7 +480,7 @@ function SamplerApp() {
                   : <PreparedSpectrum document={document} sourceId={region.sourceId} regionId={region.regionId} reportError={reportError} controls={displayControls} />}
               </div>
             : <section className="panel sample-display unavailable-analysis">Prepared sample analysis unavailable{displayControls}</section>}
-          <section className="panel controls" aria-label="Host modulatable controls">
+          <section className="panel controls" id="sampler-public-controls" aria-label="Host modulatable controls">
             <div className="section-heading"><h2><svg {...iconProps('host')} />Public controls</h2>
               <span>{parameters.length} SHARED / SELECTED PAD</span></div>
             <div className="control-list">{parameters.map(descriptor => <HostKnob

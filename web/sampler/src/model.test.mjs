@@ -87,6 +87,8 @@ test('selecting a round-robin alternative inspects its actual region and control
 });
 
 test('absent maps and invalid source links remain unavailable', () => {
+  assert.equal(selectedRegion(null, null), null);
+  assert.deepEqual(visibleParameters(null, null), []);
   assert.deepEqual(preparedPads({ maps: [] }), []);
   assert.equal(selectedRegion(document, null), null);
   assert.equal(selectedRegion(document, {

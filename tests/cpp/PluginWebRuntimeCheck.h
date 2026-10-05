@@ -58,6 +58,7 @@ constexpr auto runtimeScript = R"JS(
         if (!sampler || state.generation <= window.__dandrumInspectionReloadBefore
             || document.querySelector('[aria-label="Prepared sample waveform"] h2')?.textContent !== 'drums.kick'
             || document.querySelector('[aria-label="Sample alternatives"]')
+            || document.querySelector('[aria-label="Prepared source details"]')
             || document.querySelector('.dd-piano-key[aria-pressed="true"]')
             || document.querySelector('[role=alert]'))
           throw Error('Reload did not retire the previous KeyMap selection and audition');
@@ -102,19 +103,40 @@ constexpr auto runtimeScript = R"JS(
         const waveform = () => document.querySelector('[aria-label="Prepared sample waveform"] h2')?.textContent;
         await waitFor(() => waveform() === 'drums.snare_hard_a',
                       'Selecting a zone did not inspect its prepared region');
+        const stack = document.querySelector('[aria-label="Prepared sources"]');
+        if (!stack) throw Error('Prepared LayerStack source inspection is missing');
+        const sourceChoices = [...stack.querySelectorAll('[data-source-zone]')];
+        if (sourceChoices.length !== 2
+            || sourceChoices[0].dataset.sourceZone !== 'snare_hard_a'
+            || sourceChoices[1].dataset.sourceZone !== 'snare_hard_b'
+            || !stack.textContent.includes('Alternatives')
+            || stack.textContent.includes('all trigger'))
+          throw Error('Source rows do not retain actual round-robin alternative semantics');
         const group = document.querySelector('[aria-label="Sample alternatives"]');
         if (!group) throw Error('Prepared round-robin alternatives cannot be selected');
         const choices = [...group.querySelectorAll('button')];
         if (choices.length !== 2 || choices[0].dataset.zoneId !== 'snare_hard_a'
             || choices[1].dataset.zoneId !== 'snare_hard_b')
           throw Error('Alternatives do not retain their prepared zone identities');
-        choices[1].click();
+        sourceChoices[1].click();
         await waitFor(() => waveform() === 'drums.snare_hard_b'
                        && choices[1].getAttribute('aria-pressed') === 'true',
                       'Selecting alternative B did not inspect its actual prepared region');
         await waitFor(() => document.querySelector('[aria-label="Prepared sample waveform"] .section-heading span')
                          ?.textContent === '48000 Hz \u00b7 0.167 s',
                       'The chosen alternative did not receive its validated prepared waveform');
+        const sourceDetails = stack.querySelector('[aria-label="Prepared source details"]');
+        if (!sourceDetails || sourceDetails.dataset.sourceId !== 'drums'
+            || sourceDetails.dataset.regionId !== 'snare_hard_b'
+            || sourceDetails.dataset.generation !== String(hostBefore.generation)
+            || sourceDetails.dataset.regionStart !== '28000'
+            || sourceDetails.dataset.regionEnd !== '36000'
+            || !sourceDetails.textContent.includes('48000 Hz')
+            || !sourceDetails.textContent.includes('1 channel')
+            || !sourceDetails.textContent.includes('51000 frames'))
+          throw Error('Source inspection lost literal prepared asset or region facts');
+        if (stack.querySelector('input,select,[aria-label^="Mute"],[aria-label^="Bypass"],[aria-label^="Add module"]'))
+          throw Error('Read-only prepared sources expose unsupported mutable controls');
         const controls = [...document.querySelectorAll('.control-list .dd-knob')]
           .map(knob => knob.getAttribute('aria-label'));
         if (controls.length !== 10 || !controls.includes('drums.snare.pitch_ratio')
@@ -321,10 +343,12 @@ constexpr auto runtimeScript = R"JS(
       const beforeReload = await native('getParameterState')();
       const hard = [...document.querySelectorAll('button.pad')].find(pad => pad.textContent.includes('hard snare'));
       hard.click();
-      await waitFor(() => document.querySelector('[data-zone-id="snare_hard_b"]'), 'Reload selection fixture is missing');
-      document.querySelector('[data-zone-id="snare_hard_b"]').click();
+      await waitFor(() => document.querySelector('[data-source-zone="snare_hard_b"]'), 'Reload selection fixture is missing');
+      document.querySelector('[data-source-zone="snare_hard_b"]').click();
       await waitFor(() => document.querySelector('[aria-label="Prepared sample waveform"] h2')?.textContent
-                      === 'drums.snare_hard_b', 'Reload fixture did not select member B');
+                      === 'drums.snare_hard_b'
+                      && document.querySelector('[aria-label="Prepared source details"]')?.dataset.regionId === 'snare_hard_b',
+                    'Reload fixture did not open member B source inspection');
       const heldKey = document.querySelector('.dd-piano-key[data-note="36"]');
       heldKey.focus();
       heldKey.dispatchEvent(new KeyboardEvent('keydown', {key:'Enter',bubbles:true,cancelable:true}));
