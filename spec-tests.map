@@ -5,7 +5,7 @@
 #
 #   AC <capability> :: <Requirement> :: <Scenario>
 #     fp   <fingerprint>   recorded hash of the scenario text
-#     test <id>            rust:<fn_name>, cpp:<path>, or js:<path> (repeatable)
+#     test <id>            rust:<fn_name>, cpp:<path>, js:<path>, or py:<path> (repeatable)
 #     todo <reason>        ratchet backlog until a real test is mapped
 #
 # When a scenario is edited its fingerprint drifts and the check fails: review
@@ -2354,3 +2354,31 @@ AC yaml-patch-format :: YAML patch document :: YAML patch is loaded
   fp 77f32c949040
   test rust:yaml_and_yml_files_load_through_public_file_surface
   test rust:kernel_loader_checks_external_schema_before_constructing_a_graph
+
+AC demo-launcher :: Discoverable named demos :: List and usage errors
+  fp 8f485f61fd69
+  test py:tests/python/test_demo_launcher.py
+
+AC demo-launcher :: Maintain the demo inventory :: Detect missing registrations
+  fp 871b7a34894f
+  test py:tests/python/test_demo_inventory.py
+
+AC demo-launcher :: Prepare and launch demos :: Launch embedded React apps and browser previews
+  fp 4d6fc28c985c
+  test py:tests/python/test_demo_launcher.py
+  test py:tests/python/test_demo_launcher_boundaries.py
+
+AC demo-launcher :: Prepare and launch demos :: Launch native standalone apps
+  fp 55fbdee0c43c
+  test py:tests/python/test_demo_launcher.py
+  test py:tests/python/test_demo_launcher_boundaries.py
+
+AC demo-launcher :: Report operational failures :: Failure and interruption
+  fp 1a0db20fe09b
+  test py:tests/python/test_demo_launcher.py
+  test py:tests/python/test_demo_launcher_boundaries.py
+
+AC demo-launcher :: Resolve demo checkouts :: Resolve and report source availability
+  fp 88bc1d7ac7fb
+  test py:tests/python/test_demo_launcher.py
+  test py:tests/python/test_demo_launcher_boundaries.py

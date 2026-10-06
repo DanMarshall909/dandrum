@@ -1,0 +1,10 @@
+#!/usr/bin/env python3
+"""Launch a maintained Dandrum demo; run without arguments to list demos."""
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent / "scripts"))
+sys.dont_write_bytecode = True
+from demo_launcher import main
+
+sys.exit(main(sys.argv[1:]))
