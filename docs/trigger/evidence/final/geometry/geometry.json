@@ -1,0 +1,206 @@
+{
+  "result": [
+    {
+      "size": "Min",
+      "page": "sample",
+      "width": 820,
+      "height": 560,
+      "overflow": [],
+      "smallText": []
+    },
+    {
+      "size": "Min",
+      "page": "slices",
+      "width": 820,
+      "height": 560,
+      "overflow": [],
+      "smallText": []
+    },
+    {
+      "size": "Min",
+      "page": "mapping",
+      "width": 820,
+      "height": 560,
+      "overflow": [],
+      "smallText": []
+    },
+    {
+      "size": "Min",
+      "page": "layers",
+      "width": 820,
+      "height": 560,
+      "overflow": [],
+      "smallText": []
+    },
+    {
+      "size": "Min",
+      "page": "voice",
+      "width": 820,
+      "height": 560,
+      "overflow": [],
+      "smallText": []
+    },
+    {
+      "size": "Min",
+      "page": "mod",
+      "width": 820,
+      "height": 560,
+      "overflow": [],
+      "smallText": []
+    },
+    {
+      "size": "Min",
+      "page": "routing",
+      "width": 820,
+      "height": 560,
+      "overflow": [],
+      "smallText": []
+    },
+    {
+      "size": "Min",
+      "page": "fx",
+      "width": 820,
+      "height": 560,
+      "overflow": [],
+      "smallText": []
+    },
+    {
+      "size": "Default",
+      "page": "sample",
+      "width": 1200,
+      "height": 800,
+      "overflow": [],
+      "smallText": []
+    },
+    {
+      "size": "Default",
+      "page": "slices",
+      "width": 1200,
+      "height": 800,
+      "overflow": [],
+      "smallText": []
+    },
+    {
+      "size": "Default",
+      "page": "mapping",
+      "width": 1200,
+      "height": 800,
+      "overflow": [],
+      "smallText": []
+    },
+    {
+      "size": "Default",
+      "page": "layers",
+      "width": 1200,
+      "height": 800,
+      "overflow": [],
+      "smallText": []
+    },
+    {
+      "size": "Default",
+      "page": "voice",
+      "width": 1200,
+      "height": 800,
+      "overflow": [],
+      "smallText": []
+    },
+    {
+      "size": "Default",
+      "page": "mod",
+      "width": 1200,
+      "height": 800,
+      "overflow": [],
+      "smallText": []
+    },
+    {
+      "size": "Default",
+      "page": "routing",
+      "width": 1200,
+      "height": 800,
+      "overflow": [],
+      "smallText": []
+    },
+    {
+      "size": "Default",
+      "page": "fx",
+      "width": 1200,
+      "height": 800,
+      "overflow": [],
+      "smallText": []
+    },
+    {
+      "size": "Expanded",
+      "page": "sample",
+      "width": 1600,
+      "height": 1000,
+      "overflow": [],
+      "smallText": []
+    },
+    {
+      "size": "Expanded",
+      "page": "slices",
+      "width": 1600,
+      "height": 1000,
+      "overflow": [],
+      "smallText": []
+    },
+    {
+      "size": "Expanded",
+      "page": "mapping",
+      "width": 1600,
+      "height": 1000,
+      "overflow": [],
+      "smallText": []
+    },
+    {
+      "size": "Expanded",
+      "page": "layers",
+      "width": 1600,
+      "height": 1000,
+      "overflow": [],
+      "smallText": []
+    },
+    {
+      "size": "Expanded",
+      "page": "voice",
+      "width": 1600,
+      "height": 1000,
+      "overflow": [],
+      "smallText": []
+    },
+    {
+      "size": "Expanded",
+      "page": "mod",
+      "width": 1600,
+      "height": 1000,
+      "overflow": [],
+      "smallText": []
+    },
+    {
+      "size": "Expanded",
+      "page": "routing",
+      "width": 1600,
+      "height": 1000,
+      "overflow": [],
+      "smallText": []
+    },
+    {
+      "size": "Expanded",
+      "page": "fx",
+      "width": 1600,
+      "height": 1000,
+      "overflow": [],
+      "smallText": []
+    },
+    {
+      "size": "Compact",
+      "box": {
+        "x": 450,
+        "y": 16,
+        "width": 900,
+        "height": 126
+      }
+    }
+  ],
+  "errors": []
+}

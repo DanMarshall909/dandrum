@@ -1,0 +1,257 @@
+-- The C compiler identification is GNU 11.4.0
+-- The CXX compiler identification is GNU 11.4.0
+-- Detecting C compiler ABI info
+-- Detecting C compiler ABI info - done
+-- Check for working C compiler: /usr/bin/cc - skipped
+-- Detecting C compile features
+-- Detecting C compile features - done
+-- Detecting CXX compiler ABI info
+-- Detecting CXX compiler ABI info - done
+-- Check for working CXX compiler: /usr/bin/c++ - skipped
+-- Detecting CXX compile features
+-- Detecting CXX compile features - done
+-- Found PkgConfig: /usr/bin/pkg-config (found version "0.29.2")
+-- Checking for module 'alsa'
+--   Found alsa, version 1.2.8
+-- Checking for modules 'freetype2;fontconfig'
+--   Found freetype2, version 24.1.18
+--   Found fontconfig, version 2.13.1
+-- Checking for module 'gl'
+--   Found gl, version 1.2
+-- Checking for module 'libcurl'
+--   Found libcurl, version 7.81.0
+-- Checking for modules 'webkit2gtk-4.1;gtk+-x11-3.0'
+--   Found webkit2gtk-4.1, version 2.50.4
+--   Found gtk+-x11-3.0, version 3.24.33
+-- Configuring juceaide
+-- Building juceaide
+CMake Error at third_party/JUCE/extras/Build/juceaide/CMakeLists.txt:157 (message):
+  Failed to build juceaide
+
+  [ 9%] Building CXX object
+  extras/Build/juceaide/CMakeFiles/juceaide.dir/Main.cpp.o
+
+  [ 18%] Building CXX object
+  extras/Build/juceaide/CMakeFiles/juceaide.dir/__/juce_build_tools/juce_build_tools.cpp.o
+
+
+  [ 27%] Building CXX object
+  extras/Build/juceaide/CMakeFiles/juceaide.dir/__/__/__/modules/juce_gui_basics/juce_gui_basics.cpp.o
+
+
+  [ 36%] Building CXX object
+  extras/Build/juceaide/CMakeFiles/juceaide.dir/__/__/__/modules/juce_graphics/juce_graphics.cpp.o
+
+
+  [ 45%] Building CXX object
+  extras/Build/juceaide/CMakeFiles/juceaide.dir/__/__/__/modules/juce_graphics/juce_graphics_Harfbuzz.cpp.o
+
+
+  [ 54%] Building C object
+  extras/Build/juceaide/CMakeFiles/juceaide.dir/__/__/__/modules/juce_graphics/juce_graphics_Sheenbidi.c.o
+
+
+  [ 63%] Building CXX object
+  extras/Build/juceaide/CMakeFiles/juceaide.dir/__/__/__/modules/juce_events/juce_events.cpp.o
+
+
+  [ 72%] Building CXX object
+  extras/Build/juceaide/CMakeFiles/juceaide.dir/__/__/__/modules/juce_core/juce_core.cpp.o
+
+
+  [ 81%] Building CXX object
+  extras/Build/juceaide/CMakeFiles/juceaide.dir/__/__/__/modules/juce_core/juce_core_CompilationTime.cpp.o
+
+
+  [ 90%] Building CXX object
+  extras/Build/juceaide/CMakeFiles/juceaide.dir/__/__/__/modules/juce_data_structures/juce_data_structures.cpp.o
+
+
+  [100%] Linking CXX executable juceaide_artefacts/Debug/juceaide
+
+  /home/linuxbrew/.linuxbrew/Cellar/binutils/2.46.1/bin/ld: warning:
+  libexpat.so.1, needed by /usr/lib/x86_64-linux-gnu/libfontconfig.so, not
+  found (try using -rpath or -rpath-link)
+
+  /home/linuxbrew/.linuxbrew/Cellar/binutils/2.46.1/bin/ld: warning:
+  libuuid.so.1, needed by /usr/lib/x86_64-linux-gnu/libfontconfig.so, not
+  found (try using -rpath or -rpath-link)
+
+  /home/linuxbrew/.linuxbrew/Cellar/binutils/2.46.1/bin/ld: warning:
+  libpng16.so.16, needed by /usr/lib/x86_64-linux-gnu/libfreetype.so, not
+  found (try using -rpath or -rpath-link)
+
+  /home/linuxbrew/.linuxbrew/Cellar/binutils/2.46.1/bin/ld: warning:
+  libbrotlidec.so.1, needed by /usr/lib/x86_64-linux-gnu/libfreetype.so, not
+  found (try using -rpath or -rpath-link)
+
+  /home/linuxbrew/.linuxbrew/Cellar/binutils/2.46.1/bin/ld:
+  /usr/lib/x86_64-linux-gnu/libfontconfig.so: undefined reference to
+  `XML_SetUserData'
+
+  /home/linuxbrew/.linuxbrew/Cellar/binutils/2.46.1/bin/ld:
+  /usr/lib/x86_64-linux-gnu/libfreetype.so: undefined reference to
+  `png_set_interlace_handling@PNG16_0'
+
+  /home/linuxbrew/.linuxbrew/Cellar/binutils/2.46.1/bin/ld:
+  /usr/lib/x86_64-linux-gnu/libfreetype.so: undefined reference to
+  `png_get_io_ptr@PNG16_0'
+
+  /home/linuxbrew/.linuxbrew/Cellar/binutils/2.46.1/bin/ld:
+  /usr/lib/x86_64-linux-gnu/libfreetype.so: undefined reference to
+  `png_set_longjmp_fn@PNG16_0'
+
+  /home/linuxbrew/.linuxbrew/Cellar/binutils/2.46.1/bin/ld:
+  /usr/lib/x86_64-linux-gnu/libfreetype.so: undefined reference to
+  `png_set_gray_to_rgb@PNG16_0'
+
+  /home/linuxbrew/.linuxbrew/Cellar/binutils/2.46.1/bin/ld:
+  /usr/lib/x86_64-linux-gnu/libfreetype.so: undefined reference to
+  `png_set_read_user_transform_fn@PNG16_0'
+
+  /home/linuxbrew/.linuxbrew/Cellar/binutils/2.46.1/bin/ld:
+  /usr/lib/x86_64-linux-gnu/libfontconfig.so: undefined reference to
+  `uuid_generate_random@UUID_1.0'
+
+  /home/linuxbrew/.linuxbrew/Cellar/binutils/2.46.1/bin/ld:
+  /usr/lib/x86_64-linux-gnu/libfreetype.so: undefined reference to
+  `png_get_valid@PNG16_0'
+
+  /home/linuxbrew/.linuxbrew/Cellar/binutils/2.46.1/bin/ld:
+  /usr/lib/x86_64-linux-gnu/libfreetype.so: undefined reference to
+  `png_get_error_ptr@PNG16_0'
+
+  /home/linuxbrew/.linuxbrew/Cellar/binutils/2.46.1/bin/ld:
+  /usr/lib/x86_64-linux-gnu/libfreetype.so: undefined reference to
+  `png_destroy_read_struct@PNG16_0'
+
+  /home/linuxbrew/.linuxbrew/Cellar/binutils/2.46.1/bin/ld:
+  /usr/lib/x86_64-linux-gnu/libfreetype.so: undefined reference to
+  `png_set_palette_to_rgb@PNG16_0'
+
+  /home/linuxbrew/.linuxbrew/Cellar/binutils/2.46.1/bin/ld:
+  /usr/lib/x86_64-linux-gnu/libfreetype.so: undefined reference to
+  `BrotliDecoderDecompress'
+
+  /home/linuxbrew/.linuxbrew/Cellar/binutils/2.46.1/bin/ld:
+  /usr/lib/x86_64-linux-gnu/libfontconfig.so: undefined reference to
+  `XML_SetCharacterDataHandler'
+
+  /home/linuxbrew/.linuxbrew/Cellar/binutils/2.46.1/bin/ld:
+  /usr/lib/x86_64-linux-gnu/libfontconfig.so: undefined reference to
+  `XML_ParseBuffer'
+
+  /home/linuxbrew/.linuxbrew/Cellar/binutils/2.46.1/bin/ld:
+  /usr/lib/x86_64-linux-gnu/libfontconfig.so: undefined reference to
+  `XML_ErrorString'
+
+  /home/linuxbrew/.linuxbrew/Cellar/binutils/2.46.1/bin/ld:
+  /usr/lib/x86_64-linux-gnu/libfreetype.so: undefined reference to
+  `png_set_packing@PNG16_0'
+
+  /home/linuxbrew/.linuxbrew/Cellar/binutils/2.46.1/bin/ld:
+  /usr/lib/x86_64-linux-gnu/libfreetype.so: undefined reference to
+  `png_read_end@PNG16_0'
+
+  /home/linuxbrew/.linuxbrew/Cellar/binutils/2.46.1/bin/ld:
+  /usr/lib/x86_64-linux-gnu/libfreetype.so: undefined reference to
+  `png_set_read_fn@PNG16_0'
+
+  /home/linuxbrew/.linuxbrew/Cellar/binutils/2.46.1/bin/ld:
+  /usr/lib/x86_64-linux-gnu/libfreetype.so: undefined reference to
+  `png_set_expand_gray_1_2_4_to_8@PNG16_0'
+
+  /home/linuxbrew/.linuxbrew/Cellar/binutils/2.46.1/bin/ld:
+  /usr/lib/x86_64-linux-gnu/libfreetype.so: undefined reference to
+  `png_error@PNG16_0'
+
+  /home/linuxbrew/.linuxbrew/Cellar/binutils/2.46.1/bin/ld:
+  /usr/lib/x86_64-linux-gnu/libfontconfig.so: undefined reference to
+  `uuid_copy@UUID_1.0'
+
+  /home/linuxbrew/.linuxbrew/Cellar/binutils/2.46.1/bin/ld:
+  /usr/lib/x86_64-linux-gnu/libfreetype.so: undefined reference to
+  `png_set_strip_16@PNG16_0'
+
+  /home/linuxbrew/.linuxbrew/Cellar/binutils/2.46.1/bin/ld:
+  /usr/lib/x86_64-linux-gnu/libfontconfig.so: undefined reference to
+  `uuid_parse@UUID_1.0'
+
+  /home/linuxbrew/.linuxbrew/Cellar/binutils/2.46.1/bin/ld:
+  /usr/lib/x86_64-linux-gnu/libfontconfig.so: undefined reference to
+  `XML_ParserFree'
+
+  /home/linuxbrew/.linuxbrew/Cellar/binutils/2.46.1/bin/ld:
+  /usr/lib/x86_64-linux-gnu/libfreetype.so: undefined reference to
+  `png_create_read_struct@PNG16_0'
+
+  /home/linuxbrew/.linuxbrew/Cellar/binutils/2.46.1/bin/ld:
+  /usr/lib/x86_64-linux-gnu/libfreetype.so: undefined reference to
+  `png_set_tRNS_to_alpha@PNG16_0'
+
+  /home/linuxbrew/.linuxbrew/Cellar/binutils/2.46.1/bin/ld:
+  /usr/lib/x86_64-linux-gnu/libfontconfig.so: undefined reference to
+  `XML_ParserCreate'
+
+  /home/linuxbrew/.linuxbrew/Cellar/binutils/2.46.1/bin/ld:
+  /usr/lib/x86_64-linux-gnu/libfreetype.so: undefined reference to
+  `png_set_filler@PNG16_0'
+
+  /home/linuxbrew/.linuxbrew/Cellar/binutils/2.46.1/bin/ld:
+  /usr/lib/x86_64-linux-gnu/libfreetype.so: undefined reference to
+  `png_get_IHDR@PNG16_0'
+
+  /home/linuxbrew/.linuxbrew/Cellar/binutils/2.46.1/bin/ld:
+  /usr/lib/x86_64-linux-gnu/libfontconfig.so: undefined reference to
+  `XML_GetErrorCode'
+
+  /home/linuxbrew/.linuxbrew/Cellar/binutils/2.46.1/bin/ld:
+  /usr/lib/x86_64-linux-gnu/libfontconfig.so: undefined reference to
+  `XML_GetCurrentLineNumber'
+
+  /home/linuxbrew/.linuxbrew/Cellar/binutils/2.46.1/bin/ld:
+  /usr/lib/x86_64-linux-gnu/libfontconfig.so: undefined reference to
+  `XML_SetElementHandler'
+
+  /home/linuxbrew/.linuxbrew/Cellar/binutils/2.46.1/bin/ld:
+  /usr/lib/x86_64-linux-gnu/libfontconfig.so: undefined reference to
+  `XML_GetBuffer'
+
+  /home/linuxbrew/.linuxbrew/Cellar/binutils/2.46.1/bin/ld:
+  /usr/lib/x86_64-linux-gnu/libfontconfig.so: undefined reference to
+  `XML_SetDoctypeDeclHandler'
+
+  /home/linuxbrew/.linuxbrew/Cellar/binutils/2.46.1/bin/ld:
+  /usr/lib/x86_64-linux-gnu/libfreetype.so: undefined reference to
+  `png_create_info_struct@PNG16_0'
+
+  /home/linuxbrew/.linuxbrew/Cellar/binutils/2.46.1/bin/ld:
+  /usr/lib/x86_64-linux-gnu/libfontconfig.so: undefined reference to
+  `uuid_unparse@UUID_1.0'
+
+  /home/linuxbrew/.linuxbrew/Cellar/binutils/2.46.1/bin/ld:
+  /usr/lib/x86_64-linux-gnu/libfreetype.so: undefined reference to
+  `png_read_update_info@PNG16_0'
+
+  /home/linuxbrew/.linuxbrew/Cellar/binutils/2.46.1/bin/ld:
+  /usr/lib/x86_64-linux-gnu/libfreetype.so: undefined reference to
+  `png_read_image@PNG16_0'
+
+  /home/linuxbrew/.linuxbrew/Cellar/binutils/2.46.1/bin/ld:
+  /usr/lib/x86_64-linux-gnu/libfreetype.so: undefined reference to
+  `png_read_info@PNG16_0'
+
+  collect2: error: ld returned 1 exit status
+
+  gmake[2]: ***
+  [extras/Build/juceaide/CMakeFiles/juceaide.dir/build.make:243:
+  extras/Build/juceaide/juceaide_artefacts/Debug/juceaide] Error 1
+
+  gmake[1]: *** [CMakeFiles/Makefile2:131:
+  extras/Build/juceaide/CMakeFiles/juceaide.dir/all] Error 2
+
+  gmake: *** [Makefile:136: all] Error 2
+
+
+
+-- Configuring incomplete, errors occurred!

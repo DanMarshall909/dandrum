@@ -1,0 +1,21 @@
+:root {
+  --radius-0: 0px;
+  --radius-1: 2px;   /* fields, tags, waveform well */
+  --radius-2: 4px;   /* buttons, pads, menus */
+  --radius-3: 6px;   /* panels */
+  --radius-round: 999px;
+
+  --stroke-hairline: 1px;
+  --stroke-control: 1.5px;  /* outlines, icon strokes */
+  --stroke-focus: 2px;      /* focus ring, offset 2px */
+  --stroke-track: 3px;      /* knob track + value arc at 48px */
+  --stroke-track-lg: 4px;   /* knob track at 64px */
+  --stroke-mod: 2px;        /* modulation range arc */
+  --stroke-pointer: 3px;    /* knob pointer */
+
+  /* Only two shadows exist. Both render as a single offset fill in JUCE (DropShadow). */
+  --shadow-cap: 0 2px 3px rgba(0,0,0,0.55);         /* knob caps, pads — tactile lift */
+  --shadow-float: 0 8px 20px rgba(0,0,0,0.5);       /* menus, tooltips */
+  --inset-well: inset 0 1px 0 rgba(0,0,0,0.45);     /* recessed wells */
+  --highlight-cap: inset 0 1px 0 rgba(255,255,255,0.08); /* @kind shadow */ /* 1px top edge on caps */
+}

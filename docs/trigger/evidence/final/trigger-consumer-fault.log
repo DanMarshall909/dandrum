@@ -1,0 +1,1 @@
+{"baseline":"pass","fault":"undeclared adapter log","diagnostic":"Property 'log' does not exist on type 'EngineAdapter'.","restored":"pass","sourceChanged":false}

@@ -1,0 +1,242 @@
+[
+  {
+    "id": "01",
+    "label": "Empty",
+    "box": {
+      "x": 300,
+      "y": 16,
+      "width": 1200,
+      "height": 800
+    }
+  },
+  {
+    "id": "02",
+    "label": "Loaded with browser",
+    "box": {
+      "x": 300,
+      "y": 16,
+      "width": 1200,
+      "height": 800
+    }
+  },
+  {
+    "id": "03",
+    "label": "Sample editing",
+    "box": {
+      "x": 300,
+      "y": 16,
+      "width": 1200,
+      "height": 800
+    }
+  },
+  {
+    "id": "04",
+    "label": "Loop editing",
+    "box": {
+      "x": 300,
+      "y": 16,
+      "width": 1200,
+      "height": 800
+    }
+  },
+  {
+    "id": "05",
+    "label": "Slice editing",
+    "box": {
+      "x": 300,
+      "y": 16,
+      "width": 1200,
+      "height": 800
+    }
+  },
+  {
+    "id": "18",
+    "label": "Analysis running",
+    "box": {
+      "x": 300,
+      "y": 16,
+      "width": 1200,
+      "height": 800
+    }
+  },
+  {
+    "id": "06",
+    "label": "Transient analysis done",
+    "box": {
+      "x": 300,
+      "y": 16,
+      "width": 1200,
+      "height": 800
+    }
+  },
+  {
+    "id": "19",
+    "label": "Analysis failed",
+    "box": {
+      "x": 300,
+      "y": 16,
+      "width": 1200,
+      "height": 800
+    }
+  },
+  {
+    "id": "07",
+    "label": "Key map",
+    "box": {
+      "x": 300,
+      "y": 16,
+      "width": 1200,
+      "height": 800
+    }
+  },
+  {
+    "id": "08",
+    "label": "Velocity layers",
+    "box": {
+      "x": 300,
+      "y": 16,
+      "width": 1200,
+      "height": 800
+    }
+  },
+  {
+    "id": "09",
+    "label": "Round robin",
+    "box": {
+      "x": 300,
+      "y": 16,
+      "width": 1200,
+      "height": 800
+    }
+  },
+  {
+    "id": "10",
+    "label": "Voice shaping",
+    "box": {
+      "x": 300,
+      "y": 16,
+      "width": 1200,
+      "height": 800
+    }
+  },
+  {
+    "id": "11",
+    "label": "Modulation",
+    "box": {
+      "x": 300,
+      "y": 16,
+      "width": 1200,
+      "height": 800
+    }
+  },
+  {
+    "id": "12",
+    "label": "Macro editing",
+    "box": {
+      "x": 300,
+      "y": 16,
+      "width": 1200,
+      "height": 800
+    }
+  },
+  {
+    "id": "13",
+    "label": "Routing",
+    "box": {
+      "x": 300,
+      "y": 16,
+      "width": 1200,
+      "height": 800
+    }
+  },
+  {
+    "id": "14",
+    "label": "Effects",
+    "box": {
+      "x": 300,
+      "y": 16,
+      "width": 1200,
+      "height": 800
+    }
+  },
+  {
+    "id": "15",
+    "label": "Missing asset",
+    "box": {
+      "x": 300,
+      "y": 16,
+      "width": 1200,
+      "height": 800
+    }
+  },
+  {
+    "id": "17",
+    "label": "Loading",
+    "box": {
+      "x": 300,
+      "y": 16,
+      "width": 1200,
+      "height": 800
+    }
+  },
+  {
+    "id": "16",
+    "label": "Unsupported import",
+    "box": {
+      "x": 300,
+      "y": 16,
+      "width": 1200,
+      "height": 800
+    }
+  },
+  {
+    "id": "20",
+    "label": "Min",
+    "box": {
+      "x": 490,
+      "y": 16,
+      "width": 820,
+      "height": 560
+    }
+  },
+  {
+    "id": "21",
+    "label": "Default",
+    "box": {
+      "x": 300,
+      "y": 16,
+      "width": 1200,
+      "height": 800
+    }
+  },
+  {
+    "id": "22",
+    "label": "Expanded",
+    "box": {
+      "x": 100,
+      "y": 16,
+      "width": 1600,
+      "height": 1000
+    }
+  },
+  {
+    "id": "23",
+    "label": "Multi-file drop",
+    "box": {
+      "x": 100,
+      "y": 16,
+      "width": 1600,
+      "height": 1000
+    }
+  },
+  {
+    "id": "24",
+    "label": "Compact",
+    "box": {
+      "x": 450,
+      "y": 16,
+      "width": 900,
+      "height": 126
+    }
+  }
+]

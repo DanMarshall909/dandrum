@@ -1,0 +1,2 @@
+import React from 'react';
+export function DragLayer({dragging,hint}){return dragging?<div aria-live="polite" style={{position:'absolute',bottom:34,left:'50%',transform:'translateX(-50%)',maxWidth:'80%',padding:'5px 10px',border:'1px solid var(--dd-vermilion)',borderRadius:4,background:'var(--dd-ink-0)',color:'var(--dd-paper-1)',font:'500 12px var(--font-ui)',pointerEvents:'none',zIndex:20}}>{hint}</div>:null;}

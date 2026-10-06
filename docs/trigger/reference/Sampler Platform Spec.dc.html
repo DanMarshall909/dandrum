@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="_ds/dandrum-design-system-3c2eabed-50f8-48be-a226-2fe7d8a388d3/tokens/fonts.css">
+<link rel="stylesheet" href="_ds/dandrum-design-system-3c2eabed-50f8-48be-a226-2fe7d8a388d3/tokens/colors.css">
+<link rel="stylesheet" href="_ds/dandrum-design-system-3c2eabed-50f8-48be-a226-2fe7d8a388d3/tokens/typography.css">
+<link rel="stylesheet" href="_ds/dandrum-design-system-3c2eabed-50f8-48be-a226-2fe7d8a388d3/tokens/spacing.css">
+<link rel="stylesheet" href="_ds/dandrum-design-system-3c2eabed-50f8-48be-a226-2fe7d8a388d3/tokens/shape.css">
+<link rel="stylesheet" href="_ds/dandrum-design-system-3c2eabed-50f8-48be-a226-2fe7d8a388d3/tokens/sizing.css">
+<link rel="stylesheet" href="_ds/dandrum-design-system-3c2eabed-50f8-48be-a226-2fe7d8a388d3/tokens/base.css">
+<link rel="stylesheet" href="_ds/dandrum-design-system-3c2eabed-50f8-48be-a226-2fe7d8a388d3/styles.css">
+<script src="_ds/dandrum-design-system-3c2eabed-50f8-48be-a226-2fe7d8a388d3/_ds_bundle.js"></script>
+<style>body{margin:0;background:var(--dd-ink-1);color:var(--dd-paper-1);font-family:var(--font-ui)}a{color:var(--dd-vermilion);text-decoration:none}a:hover{color:var(--dd-vermilion-hi)}code{font-family:var(--font-value);font-size:12px;color:var(--dd-paper-1)}</style>
+</helmet>
+<div style="max-width:1120px;margin:0 auto;padding:40px 24px 80px;display:flex;flex-direction:column;gap:48px;font:500 14px/1.5 var(--font-ui);color:var(--dd-paper-2)">
+
+<header style="display:flex;flex-direction:column;gap:12px">
+  <div style="display:flex;align-items:center;gap:8px"><span style="font:700 24px var(--font-display);color:var(--dd-paper-1)">dandrum</span><span style="width:7px;height:7px;border-radius:7px;background:var(--dd-vermilion)"></span><span style="font:700 13px var(--font-ui);letter-spacing:.1em;text-transform:uppercase;color:var(--dd-paper-2)">Instrument platform · Trigger spec</span></div>
+  <p style="margin:0;max-width:760px;font:500 16px/1.5 var(--font-ui);color:var(--dd-paper-1);text-wrap:pretty">A Dandrum instrument is a curated composition of reusable engine primitives behind a purpose-built panel. Trigger, the advanced sampler, is the first instrument built this way. This document defines the model, the components, the interactions and the engine/UI contract. Screens live in <a href="Advanced Sampler.dc.html">Trigger mockup</a> (23 states; toggle “Engine contract annotations” to see the mapping on every control).</p>
+  <nav style="display:flex;flex-wrap:wrap;gap:4px 16px;font:600 13px var(--font-ui)">
+    <a href="#s0">0 Assumptions</a><a href="#s1">1 System model</a><a href="#s2">2 Screens</a><a href="#s3">3 Components</a><a href="#s4">4 Interactions</a><a href="#s5">5 Responsive</a><a href="#s6">6 Capability map</a><a href="#s7">7 Generality</a><a href="#s8">8 Handoff</a>
+  </nav>
+</header>
+
+<section id="s0" style="display:flex;flex-direction:column;gap:12px">
+  <h2 style="margin:0;font:700 13px var(--font-ui);letter-spacing:.1em;text-transform:uppercase;color:var(--dd-paper-1)">0 · Assumptions and decisions</h2>
+  <ul style="margin:0;padding-left:18px;display:flex;flex-direction:column;gap:6px;max-width:860px">
+    <li>The Dandrum Design System is authoritative. All colours, type, radii, spacing, knobs, pads, KeyMap, LayerStack, OutputBusses and WaveformPanel come from it unchanged; additions are listed in section 3.</li>
+    <li>The demo patch “Felt Kit” deliberately combines all three use cases in one instrument: Keys (chromatic, 5 roots × 2 velocity layers), Drums (per-note sounds, velocity layer containing a round-robin group, hats in choke group 1) and Break (8 slices on C1–G1). One KeyMap shows all three because they are the same Trigger Rules.</li>
+    <li>The existing system’s “prepared vs live” split is kept: prepared structure (regions, mapping, selectors, voice policy) is edited here and committed on mouse-up; the engine re-prepares asynchronously and the status shows “Preparing…”. Live parameters change in real time and are host-automatable.</li>
+    <li>Mod slots A–D (colour + glyph) stay limited to four. They are assigned to the first four non-default modulators in a patch. Further modulators use a neutral hollow square and their name; every route row still carries text, so nothing relies on colour.</li>
+    <li>The terms Selector, Trigger Rule, Voice Template, Binding never appear in the default UI. They appear in “Edit template…”, in the annotation overlay and in this document.</li>
+    <li>No new engine APIs are defined. Section 6 classifies capabilities by concept only.</li>
+  </ul>
+</section>
+
+<section id="s1" style="display:flex;flex-direction:column;gap:16px">
+  <h2 style="margin:0;font:700 13px var(--font-ui);letter-spacing:.1em;text-transform:uppercase;color:var(--dd-paper-1)">1 · Instrument-system model</h2>
+  <p style="margin:0;max-width:820px">Orchestration and semantics are generic. DSP primitives stay explicit. The diagram reads top to bottom for audio and left to right for control. Boxes with an ember edge are the only parts the sampler contributes; everything else is shared platform.</p>
+  <div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,2.2fr) minmax(0,1fr);gap:12px;padding:16px;background:var(--dd-ink-0);border:1px solid var(--dd-line-1);border-radius:6px">
+    <div style="display:flex;flex-direction:column;gap:8px">
+      <span style="font:600 11px var(--font-ui);letter-spacing:.06em;text-transform:uppercase;color:var(--dd-paper-3)">Control in</span>
+      <sc-for list="{{ ctrlIn }}" as="b" hint-placeholder-count="4">
+        <div style="padding:8px 10px;background:var(--dd-ink-3);border:1px solid var(--dd-line-2);border-radius:4px"><div style="font:600 13px var(--font-ui);color:var(--dd-paper-1)">{{ b.t }}</div><div style="font:500 12px/1.35 var(--font-ui);color:var(--dd-paper-3)">{{ b.d }}</div></div>
+      </sc-for>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:6px">
+      <span style="font:600 11px var(--font-ui);letter-spacing:.06em;text-transform:uppercase;color:var(--dd-paper-3)">Note path → audio</span>
+      <sc-for list="{{ spine }}" as="b" hint-placeholder-count="8">
+        <div style="display:flex;flex-direction:column;align-items:stretch;gap:6px">
+          <div style="padding:8px 10px;background:var(--dd-ink-3);border:1px solid {{ b.bd }};border-radius:4px;display:flex;gap:12px;align-items:baseline;flex-wrap:wrap"><span style="font:600 13px var(--font-ui);color:var(--dd-paper-1);min-width:130px">{{ b.t }}</span><span style="font:500 12px/1.35 var(--font-ui);color:var(--dd-paper-3);flex:1;min-width:200px">{{ b.d }}</span><span style="font:500 11px var(--font-value);color:var(--dd-paper-2)">{{ b.ui }}</span></div>
+          <sc-if value="{{ b.arrow }}" hint-placeholder-val="{{ true }}"><span style="align-self:center;font:500 12px var(--font-value);color:var(--dd-paper-4)">↓</span></sc-if>
+        </div>
+      </sc-for>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:8px">
+      <span style="font:600 11px var(--font-ui);letter-spacing:.06em;text-transform:uppercase;color:var(--dd-paper-3)">Services</span>
+      <sc-for list="{{ services }}" as="b" hint-placeholder-count="4">
+        <div style="padding:8px 10px;background:var(--dd-ink-3);border:1px dashed var(--dd-line-3);border-radius:4px"><div style="font:600 13px var(--font-ui);color:var(--dd-paper-1)">{{ b.t }}</div><div style="font:500 12px/1.35 var(--font-ui);color:var(--dd-paper-3)">{{ b.d }}</div></div>
+      </sc-for>
+    </div>
+  </div>
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:12px">
+    <sc-for list="{{ graphs }}" as="g" hint-placeholder-count="4">
+      <div style="padding:12px;background:var(--dd-ink-2);border:1px solid var(--dd-line-1);border-radius:6px;display:flex;flex-direction:column;gap:6px">
+        <span style="font:700 12px var(--font-ui);letter-spacing:.1em;text-transform:uppercase;color:var(--dd-paper-2)">{{ g.t }}</span>
+        <pre style="margin:0;font:500 12px/1.5 var(--font-value);color:var(--dd-paper-1);white-space:pre-wrap">{{ g.code }}</pre>
+      </div>
+    </sc-for>
+  </div>
+  <div style="display:flex;flex-direction:column;border:1px solid var(--dd-line-1);border-radius:6px;overflow:hidden">
+    <div style="display:grid;grid-template-columns:150px minmax(0,1.6fr) minmax(0,1fr);gap:12px;padding:8px 12px;background:var(--dd-ink-3);font:600 11px var(--font-ui);letter-spacing:.06em;text-transform:uppercase;color:var(--dd-paper-3)"><span>Concept</span><span>Definition</span><span>What the musician sees</span></div>
+    <sc-for list="{{ glossary }}" as="r" hint-placeholder-count="18">
+      <div style="display:grid;grid-template-columns:150px minmax(0,1.6fr) minmax(0,1fr);gap:12px;padding:7px 12px;border-top:1px solid var(--dd-line-1);font:500 13px/1.4 var(--font-ui)"><span style="color:var(--dd-paper-1);font-weight:600">{{ r.c }}</span><span>{{ r.d }}</span><span style="color:var(--dd-paper-1)">{{ r.m }}</span></div>
+    </sc-for>
+  </div>
+</section>
+
+<section id="s2" style="display:flex;flex-direction:column;gap:12px">
+  <h2 style="margin:0;font:700 13px var(--font-ui);letter-spacing:.1em;text-transform:uppercase;color:var(--dd-paper-1)">2 · Screens</h2>
+  <p style="margin:0;max-width:820px">All states are rendered in <a href="Advanced Sampler.dc.html">Trigger mockup</a>. The window anatomy is constant across pages, so a musician learns it once:</p>
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:8px">
+    <sc-for list="{{ anatomy }}" as="a" hint-placeholder-count="7">
+      <div style="padding:10px 12px;background:var(--dd-ink-2);border:1px solid var(--dd-line-1);border-radius:4px"><div style="display:flex;justify-content:space-between;gap:8px"><span style="font:600 13px var(--font-ui);color:var(--dd-paper-1)">{{ a.t }}</span><span style="font:500 11px var(--font-value);color:var(--dd-paper-3)">{{ a.s }}</span></div><div style="font:500 12px/1.4 var(--font-ui);color:var(--dd-paper-3)">{{ a.d }}</div></div>
+    </sc-for>
+  </div>
+</section>
+
+<section id="s3" style="display:flex;flex-direction:column;gap:16px">
+  <h2 style="margin:0;font:700 13px var(--font-ui);letter-spacing:.1em;text-transform:uppercase;color:var(--dd-paper-1)">3 · Component inventory</h2>
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(480px,1fr));gap:12px">
+    <sc-for list="{{ inventory }}" as="g" hint-placeholder-count="4">
+      <div style="background:var(--dd-ink-2);border:1px solid var(--dd-line-1);border-radius:6px;overflow:hidden">
+        <div style="padding:8px 12px;background:var(--dd-ink-3);border-bottom:1px solid var(--dd-line-1);display:flex;justify-content:space-between"><span style="font:700 12px var(--font-ui);letter-spacing:.1em;text-transform:uppercase;color:var(--dd-paper-2)">{{ g.t }}</span><span style="font:500 11px var(--font-value);color:var(--dd-paper-3)">{{ g.n }}</span></div>
+        <sc-for list="{{ g.items }}" as="i" hint-placeholder-count="8">
+          <div style="display:grid;grid-template-columns:150px minmax(0,1fr);gap:12px;padding:6px 12px;border-top:1px solid var(--dd-line-1);font:500 13px/1.4 var(--font-ui)"><code>{{ i.n }}</code><span>{{ i.d }}</span></div>
+        </sc-for>
+      </div>
+    </sc-for>
+  </div>
+</section>
+
+<section id="s4" style="display:flex;flex-direction:column;gap:16px">
+  <h2 style="margin:0;font:700 13px var(--font-ui);letter-spacing:.1em;text-transform:uppercase;color:var(--dd-paper-1)">4 · Interaction specification</h2>
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:12px">
+    <sc-for list="{{ interactions }}" as="g" hint-placeholder-count="8">
+      <div style="padding:12px 14px;background:var(--dd-ink-2);border:1px solid var(--dd-line-1);border-radius:6px;display:flex;flex-direction:column;gap:6px">
+        <span style="font:700 12px var(--font-ui);letter-spacing:.1em;text-transform:uppercase;color:var(--dd-paper-2)">{{ g.t }}</span>
+        <sc-for list="{{ g.items }}" as="i" hint-placeholder-count="5">
+          <div style="display:grid;grid-template-columns:120px minmax(0,1fr);gap:10px;font:500 13px/1.4 var(--font-ui)"><span style="color:var(--dd-paper-1);font-weight:600">{{ i.k }}</span><span>{{ i.v }}</span></div>
+        </sc-for>
+      </div>
+    </sc-for>
+  </div>
+  <div style="display:flex;flex-direction:column;border:1px solid var(--dd-line-1);border-radius:6px;overflow:hidden">
+    <div style="padding:8px 12px;background:var(--dd-ink-3);font:700 12px var(--font-ui);letter-spacing:.1em;text-transform:uppercase;color:var(--dd-paper-2)">Drag and drop · the drop preview always names the result before release</div>
+    <div style="display:grid;grid-template-columns:150px 150px minmax(0,1fr) minmax(0,1fr);gap:12px;padding:6px 12px;background:var(--dd-ink-2);font:600 11px var(--font-ui);letter-spacing:.06em;text-transform:uppercase;color:var(--dd-paper-3)"><span>Drag</span><span>Onto</span><span>Default (label shown)</span><span>Modifier</span></div>
+    <sc-for list="{{ dnd }}" as="r" hint-placeholder-count="12">
+      <div style="display:grid;grid-template-columns:150px 150px minmax(0,1fr) minmax(0,1fr);gap:12px;padding:7px 12px;border-top:1px solid var(--dd-line-1);font:500 13px/1.4 var(--font-ui)"><span style="color:var(--dd-paper-1)">{{ r.a }}</span><span style="color:var(--dd-paper-1)">{{ r.b }}</span><span>{{ r.c }}</span><span>{{ r.d }}</span></div>
+    </sc-for>
+    <div style="padding:8px 12px;border-top:1px solid var(--dd-line-1);font:500 12px/1.4 var(--font-ui);color:var(--dd-paper-3)">Drop-target feedback: eligible targets get the 1px ember outline + vermilion-wash fill; the label chip (Replace / Add layer / Map / Move / Duplicate) follows the pointer. Ineligible targets show nothing. Unsupported files show a dashed warn outline and “Not supported” before release, and a warn banner after.</div>
+  </div>
+</section>
+
+<section id="s5" style="display:flex;flex-direction:column;gap:12px">
+  <h2 style="margin:0;font:700 13px var(--font-ui);letter-spacing:.1em;text-transform:uppercase;color:var(--dd-paper-1)">5 · Responsive specification</h2>
+  <p style="margin:0;max-width:820px">Three snap sizes; the host can drag freely between them and the layout uses the nearest lower rule. The workspace always keeps at least 60% of the width. Nothing is scaled; text stays at token sizes. Previews: states 20–22.</p>
+  <div style="display:flex;flex-direction:column;border:1px solid var(--dd-line-1);border-radius:6px;overflow:hidden">
+    <div style="display:grid;grid-template-columns:140px repeat(3,minmax(0,1fr));gap:12px;padding:8px 12px;background:var(--dd-ink-3);font:600 11px var(--font-ui);letter-spacing:.06em;text-transform:uppercase;color:var(--dd-paper-3)"><span>Region</span><span>Minimum 820 × 560</span><span>Default 1200 × 800</span><span>Expanded 1600 × 1000</span></div>
+    <sc-for list="{{ responsive }}" as="r" hint-placeholder-count="10">
+      <div style="display:grid;grid-template-columns:140px repeat(3,minmax(0,1fr));gap:12px;padding:7px 12px;border-top:1px solid var(--dd-line-1);font:500 13px/1.4 var(--font-ui)"><span style="color:var(--dd-paper-1);font-weight:600">{{ r.r }}</span><span>{{ r.a }}</span><span>{{ r.b }}</span><span>{{ r.c }}</span></div>
+    </sc-for>
+  </div>
+</section>
+
+<section id="s6" style="display:flex;flex-direction:column;gap:12px">
+  <h2 style="margin:0;font:700 13px var(--font-ui);letter-spacing:.1em;text-transform:uppercase;color:var(--dd-paper-1)">6 · Engine / UI capability mapping</h2>
+  <p style="margin:0;max-width:820px">Every visible feature, classified by the generic concept that backs it. “Sampler-only” marks the few things that exist because this is a sampler.</p>
+  <div style="display:flex;flex-direction:column;border:1px solid var(--dd-line-1);border-radius:6px;overflow:hidden">
+    <div style="display:grid;grid-template-columns:minmax(0,1fr) 170px minmax(0,1.4fr);gap:12px;padding:8px 12px;background:var(--dd-ink-3);font:600 11px var(--font-ui);letter-spacing:.06em;text-transform:uppercase;color:var(--dd-paper-3)"><span>UI feature</span><span>Concept</span><span>Backed by</span></div>
+    <sc-for list="{{ capmap }}" as="r" hint-placeholder-count="40">
+      <sc-if value="{{ r.h }}" hint-placeholder-val="{{ false }}"><div style="padding:10px 12px 4px;border-top:1px solid var(--dd-line-1);font:700 12px var(--font-ui);letter-spacing:.1em;text-transform:uppercase;color:var(--dd-paper-2);background:var(--dd-ink-2)">{{ r.f }}</div></sc-if>
+      <sc-if value="{{ r.row }}" hint-placeholder-val="{{ true }}">
+        <div style="display:grid;grid-template-columns:minmax(0,1fr) 170px minmax(0,1.4fr);gap:12px;padding:6px 12px;border-top:1px solid var(--dd-line-1);font:500 13px/1.4 var(--font-ui)"><span style="color:var(--dd-paper-1)">{{ r.f }}</span><span style="font:500 12px var(--font-value);color:{{ r.cc }}">{{ r.c }}</span><span>{{ r.n }}</span></div>
+      </sc-if>
+    </sc-for>
+  </div>
+</section>
+
+<section id="s7" style="display:flex;flex-direction:column;gap:12px">
+  <h2 style="margin:0;font:700 13px var(--font-ui);letter-spacing:.1em;text-transform:uppercase;color:var(--dd-paper-1)">7 · Generality review</h2>
+  <p style="margin:0;max-width:820px">Each instrument below is described as what it replaces. Everything not listed is reused as-is: header, tree, inspector, parameter controls, envelopes, LFOs, modulation table, macros, routing, processors, voice policy, telemetry, responsive rules.</p>
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:12px">
+    <sc-for list="{{ generality }}" as="g" hint-placeholder-count="5">
+      <div style="padding:12px 14px;background:var(--dd-ink-2);border:1px solid var(--dd-line-1);border-radius:6px;display:flex;flex-direction:column;gap:8px">
+        <span style="font:700 12px var(--font-ui);letter-spacing:.1em;text-transform:uppercase;color:var(--dd-paper-2)">{{ g.t }}</span>
+        <pre style="margin:0;font:500 12px/1.5 var(--font-value);color:var(--dd-paper-1);white-space:pre-wrap">{{ g.code }}</pre>
+        <div style="font:500 13px/1.4 var(--font-ui)"><span style="color:var(--dd-paper-1);font-weight:600">Replaces: </span>{{ g.rep }}</div>
+        <div style="font:500 13px/1.4 var(--font-ui)"><span style="color:var(--dd-paper-1);font-weight:600">Pages: </span>{{ g.pages }}</div>
+        <div style="font:500 13px/1.4 var(--font-ui);color:var(--dd-paper-3)">{{ g.gap }}</div>
+      </div>
+    </sc-for>
+  </div>
+  <div style="padding:12px 14px;background:var(--dd-ink-2);border:1px solid var(--dd-line-1);border-radius:6px;display:flex;flex-direction:column;gap:6px">
+    <span style="font:700 12px var(--font-ui);letter-spacing:.1em;text-transform:uppercase;color:var(--dd-paper-2)">What is sampler-only</span>
+    <span style="font:500 13px/1.45 var(--font-ui)">The AssetPlayer module and its parameters; the default sampler Voice Template; the curated page set (Sample, Slices) and their copy; the “Map by root” heuristic that reads note names from file names. Slices, loops, round robin, choke groups, velocity layers and per-slice outputs are not sampler-only: they are Asset Regions, Playback Policy, Selector policy, Voice Policy, Trigger Rules and Connections.</span>
+  </div>
+</section>
+
+<section id="s8" style="display:flex;flex-direction:column;gap:16px">
+  <h2 style="margin:0;font:700 13px var(--font-ui);letter-spacing:.1em;text-transform:uppercase;color:var(--dd-paper-1)">8 · Implementation handoff</h2>
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:12px">
+    <sc-for list="{{ handoff }}" as="g" hint-placeholder-count="6">
+      <div style="padding:12px 14px;background:var(--dd-ink-2);border:1px solid var(--dd-line-1);border-radius:6px;display:flex;flex-direction:column;gap:6px">
+        <span style="font:700 12px var(--font-ui);letter-spacing:.1em;text-transform:uppercase;color:var(--dd-paper-2)">{{ g.t }}</span>
+        <sc-for list="{{ g.items }}" as="i" hint-placeholder-count="6">
+          <div style="display:grid;grid-template-columns:140px minmax(0,1fr);gap:10px;font:500 13px/1.4 var(--font-ui)"><code>{{ i.k }}</code><span>{{ i.v }}</span></div>
+        </sc-for>
+      </div>
+    </sc-for>
+  </div>
+  <div style="padding:12px 14px;background:var(--dd-ink-2);border:1px solid var(--dd-line-1);border-radius:6px;display:flex;flex-direction:column;gap:6px">
+    <span style="font:700 12px var(--font-ui);letter-spacing:.1em;text-transform:uppercase;color:var(--dd-paper-2)">Component tree</span>
+    <pre style="margin:0;font:500 12px/1.55 var(--font-value);color:var(--dd-paper-1);white-space:pre-wrap">{{ tree }}</pre>
+  </div>
+</section>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  renderVals() {
+    const L = (s) => s.split('\n').filter(Boolean).map((l) => { const [k, ...v] = l.split(' :: '); return { k: k.trim(), v: v.join(' :: ').trim() }; });
+    const spine = [
+      { t: 'Event', d: 'MIDI note on/off, velocity, CC, aftertouch, bend, transport, internal triggers.', ui: 'keyboard · pads', bd: 'var(--dd-line-2)' },
+      { t: 'Trigger Rules', d: 'When note ∈ range and velocity ∈ range (and optional conditions), activate a target.', ui: 'Mapping · KeyMap', bd: 'var(--dd-line-2)' },
+      { t: 'Selector', d: 'Chooses among candidates: all, velocity, sequential, round robin, alternate, random, weighted, conditional.', ui: 'Layers', bd: 'var(--dd-line-2)' },
+      { t: 'Voice Policy', d: 'Poly/mono/legato, limit, steal order, exclusive groups, self-choke, max-N, retrigger, release.', ui: 'Voice › Voices', bd: 'var(--dd-line-2)' },
+      { t: 'Voice Template', d: 'Graph instantiated per voice. Sampler default: AssetPlayer → Filter → Gain.', ui: 'Voice', bd: 'var(--dd-vermilion)' },
+      { t: 'Group', d: 'Hierarchy node with common gain, pan, processing, routing, modulation and trigger behaviour.', ui: 'Instrument tree', bd: 'var(--dd-line-2)' },
+      { t: 'Connections + Processors', d: 'Explicit graph edges; inserts and sends are ordinary DSP Modules.', ui: 'Effects · Routing', bd: 'var(--dd-line-2)' },
+      { t: 'Bus → plugin output', d: 'Named busses (Main, Drums, Snare, FX) mapped to output pairs.', ui: 'Routing', bd: 'var(--dd-line-2)', arrow: false },
+    ].map((b) => Object.assign({ arrow: true }, b));
+    return {
+      ctrlIn: [
+        { t: 'Modulators', d: 'Envelope, LFO, Velocity, Key track, Aftertouch, Bend, CC, Macro, Random, Constant.' },
+        { t: 'Modulation Routes', d: 'Modulator → amount, polarity, curve, range → Parameter. Per-voice or global scope.' },
+        { t: 'Bindings', d: 'MIDI CC, Macro, Host automation → Parameter. Direct control, not modulation.' },
+        { t: 'Parameters', d: 'id, name, value, default, range, unit, curve, step, automatable, modulatable, read-only, reset.' },
+      ],
+      spine,
+      services: [
+        { t: 'Assets', d: 'Samples, IRs, wavetables. Identity, source, embedded/external, cached, missing, relinked.' },
+        { t: 'Asset Regions', d: 'Start/end on an Asset. Slices, trims, loops, previews, analysis ranges.' },
+        { t: 'Playback Policy', d: 'Once, gated, loop, ping-pong, sustain loop, reverse, crossfade, retrigger.' },
+        { t: 'Analysis', d: 'Async, never on the audio thread: peaks, zero crossings, transients, pitch, tempo, loudness, loops.' },
+        { t: 'Telemetry', d: 'Active voices, notes, zone, candidate, RR position, playhead, mod values, meters. Throttled to 30 Hz.' },
+      ],
+      graphs: [
+        { t: 'Sampler voice (default template)', code: 'Note gate → Envelope (ADSR) ─┐\nVelocity ────────────────────┤ routes\n                             ↓\nAssetPlayer → Filter → Gain → Voice out\n   ↑ Asset + Region + Playback Policy\nVoice out → Group → Bus("Main")' },
+        { t: 'Subtractive synth', code: 'Osc 1 ─┐\nOsc 2 ─┼→ Filter → Gain\nNoise ─┘\nEnvelope → Gain · Envelope → Cutoff\nLFO → Pitch' },
+        { t: 'Hybrid', code: 'AssetPlayer ─┐\n             ├→ Processor → Filter → Gain\nOscillator ──┘' },
+        { t: 'Drum pad', code: 'Note 38 → Selector(velocity)\n  ├ soft → AssetPlayer\n  └ hard → Selector(round robin) ×3\nVoice Policy: exclusive group 1 (hats)' },
+      ],
+      glossary: [
+        { c: 'Event', d: 'Anything entering or occurring in the system.', m: 'Notes, pads, knobs moving' },
+        { c: 'Trigger Rule', d: 'Condition → target. Note and velocity ranges, keyswitches, conditions.', m: 'Zone, key range, velocity range, slice note' },
+        { c: 'Selector', d: 'Policy choosing among candidates for one trigger context.', m: 'Layers: Stack, Velocity, Round robin, Alternate, Random, Weighted' },
+        { c: 'Voice Template', d: 'Reusable per-voice graph of Modules.', m: 'Voice page sections: Source, Pitch, Filter, Amplitude' },
+        { c: 'Voice Policy', d: 'Allocation, stealing, exclusivity, retrigger.', m: 'Voices panel; Choke group (drums); Mono (synths)' },
+        { c: 'DSP Module', d: 'Explicit primitive: AssetPlayer, Oscillator, Filter, Gain, Delay, Convolution…', m: 'Section or processor block by name' },
+        { c: 'Parameter', d: 'First-class value with metadata driving its control.', m: 'Every knob, slider, field' },
+        { c: 'Modulator', d: 'Control-signal generator. ADSR is a configuration of Envelope.', m: 'Amp envelope, Filter envelope, LFO 1…' },
+        { c: 'Modulation Route', d: 'Modulator → transform → Parameter.', m: 'Rings on knobs; rows on Modulation page' },
+        { c: 'Binding', d: 'Direct external control of a Parameter.', m: 'MIDI learn, macro destination, host automation (blue)' },
+        { c: 'Asset', d: 'Reusable media resource with state.', m: 'Sample file, impulse response' },
+        { c: 'Asset Region', d: 'Range within an Asset.', m: 'Start/end, slice, loop' },
+        { c: 'Playback Policy', d: 'How a region plays.', m: 'Once · Gated · Loop · Ping-pong · Sustain loop · Reverse' },
+        { c: 'Group', d: 'Hierarchy with shared settings.', m: 'Keys, Drums, Snare, Hard' },
+        { c: 'Connection', d: 'Graph edge for audio or control.', m: 'Output menu, send knob' },
+        { c: 'Bus', d: 'Named reusable summing point.', m: 'Main, Drums, Snare, Reverb' },
+        { c: 'Analysis', d: 'Async asset service producing reusable results.', m: 'Detect transients, suggested loops, detected pitch' },
+        { c: 'Telemetry', d: 'Realtime readback to the UI.', m: 'Voices count, playhead, Last/Next, live bars' },
+      ],
+      anatomy: [
+        { t: 'Instrument header', s: '44 px', d: 'Wordmark, product, patch menu, status, voices, size, meter.' },
+        { t: 'Page tabs', s: '34 px', d: 'Sample · Slices · Mapping · Layers · Voice · Modulation · Routing · Effects. Badges show counts. Browser toggle at right.' },
+        { t: 'Instrument tree / Browser', s: '208 px', d: 'Group hierarchy; clicking a node selects it and opens its natural page. Swaps with the sample browser.' },
+        { t: 'Workspace', s: '≥ 60%', d: 'The current page. Scrolls vertically; never horizontally except zoomed waveform/KeyMap.' },
+        { t: 'Inspector', s: '272 px', d: 'Breadcrumb, type tag, title, properties of the one current selection. Never changes meaning silently.' },
+        { t: 'Macro strip', s: '52 px', d: '8 macros, name + destination count. Host-automated macros tint blue.' },
+        { t: 'Status bar', s: '26 px', d: 'Context hint for the page, size; assignment mode message when assigning.' },
+      ],
+      inventory: [
+        { t: 'Existing components reused as-is', n: '22', items: L(`Knob :: All rotary parameters. Hover popup, rings, host tint unchanged.
+Slider · NumericField :: Amounts, sensitivity, region times, notes (formatted 60 C4).
+Toggle · Switch :: Binary settings; route enable.
+Button · IconButton :: Actions; one primary per view (Apply, Locate file…).
+Tabs · SegmentedControl :: Page tabs; playback mode, filter type, envelope shape, divide mode.
+MenuButton · ContextMenu :: Patch, asset picker, bus picker; Assign modulation… menu.
+KeyMap :: Mapping page and Expanded overview.
+LayerStack :: Group inserts and FX busses on Effects.
+OutputBusses :: Routing page bus list.
+WaveformPanel :: Base of WaveformEditor and Overview.
+Meter · ListRow · PropertyRow · ParamLabel :: Header meter, tree, browser, inspector rows.
+ModIndicator · ModGlyph :: Inspector source chips, route rows.
+StatusMessage · Tooltip · EmptyState :: Status, banners, analysis progress, empty sampler.
+Panel · Rollout · SectionHeading · Icon :: Panel chrome, collapsible inspector groups.`) .map((x) => ({ n: x.k, d: x.v })) },
+        { t: 'Existing components extended', n: '7', items: L(`KeyMap :: + multi-select (Shift/Ctrl), drop targets with action chip, overlap hatching, group filter, Alt-drag duplicate.
+WaveformPanel :: → WaveformEditor: draggable markers/regions, layers on/off, zoom/scroll, analysis lanes below the well.
+Knob :: + neutral modulator glyph beyond slots A–D; +N chip opens the parameter’s route list.
+ModIndicator :: + neutral (no slot) variant and locked default route.
+PropertyRow :: + Mixed value for multi-selection; editable variant (double-click to type).
+ListRow :: + indent level and disclosure for tree use.
+Tabs :: + count badge, icon-only form at minimum size.`).map((x) => ({ n: x.k, d: x.v })) },
+        { t: 'New design-system components', n: '20', items: L(`InstrumentHeader :: Header bar parameterised by product name.
+InstrumentTree :: Group hierarchy with telemetry dot on the playing node.
+Inspector · Breadcrumb · TypeTag :: Selection-bound panel; title + type always visible.
+WaveformOverview :: Minimap with draggable viewport rectangle.
+AnalysisLane :: Ticks/curves from an Analysis result under any waveform; running/failed states.
+Marker · Region :: Primitive overlays for the WaveformEditor.
+EnvelopeEditor :: Generic multistage envelope with handles and live position.
+LFOEditor :: Shape, rate/sync, phase, fade, retrigger, preview curve.
+SelectorEditor :: Mode bar + description + VelocityLane or cycle sequence + CandidateRow list.
+VelocityLane :: 1–127 strip of candidate ranges with last-hit marker.
+CandidateRow :: Order handle, name, file, velocity, weight bar, M/S, gain, pan, tune, output.
+ModulationTable · ModulationRoute :: Source → amount bar → polarity → curve → destination → live → on.
+ModSourceList :: Modulators with route count and live level.
+MacroStrip · MacroControl :: 8 macros; macro inspector lists destinations with ranges.
+RoutingTable · BusPicker :: Source rows with Inherit/override output and send knobs.
+AssetBrowser · AssetPicker :: Search, filter, recent, favourites, preview, missing rows.
+MissingAssetState :: Banner + inspector actions; waveform missing hatch.
+DragTarget · DropChooser :: Action chip during drag; inline multi-file mapping choice.
+VoiceTemplateStrip :: Read-only chain summary with Edit template…
+VoicePolicyPanel :: Poly/mono/legato, limit, steal, same note, exclusive group, glide.`).map((x) => ({ n: x.k, d: x.v })) },
+        { t: 'Sampler-specific compositions', n: '6', items: L(`SamplePage :: AssetPicker + Playback seg + Overview + WaveformEditor + region/pitch/output knobs + metadata.
+SlicesPage :: WaveformEditor (slice layer) + AnalysisLane(transients) + slice list.
+MappingPage :: KeyMap + mapping actions + drop rules strip.
+LayersPage :: SelectorEditor bound to the selected trigger context.
+VoicePage(sampler) :: Curated Source/Pitch/Filter/Amplitude over the default template.
+SamplerTemplate :: Default graph + default routes; the only sampler-only engine asset.`).map((x) => ({ n: x.k, d: x.v })) },
+      ],
+      interactions: [
+        { t: 'Selection', items: L(`Single :: Click selects; the inspector title, type tag and breadcrumb change together. Selection is ember (1px ring or 2px left edge + wash).
+Multi :: Shift = range, Ctrl/Cmd = toggle. Inspector shows “N slices” with Mixed values.
+Scope :: Selection is per page; switching tabs restores that page’s last selection. Tree selection drives the workspace.
+Clearing :: Esc clears to the parent (zone → group → instrument). Never to nothing.`) },
+        { t: 'Parameter editing', items: L(`Drag :: Vertical drag, 200 px = full range. Shift = fine (×0.1).
+Type :: Double-click or Enter opens the value field; accepts units (2.4k, −6 dB, C4).
+Keys :: ↑/↓ step, Shift fine, PgUp/PgDn ×10, Home/End min/max.
+Reset :: Alt-click or Delete in the popup resets to default.
+States :: Disabled = Paper 4, no popup. Read-only/prepared = dashed outline. Host = blue tint, fades 400 ms.`) },
+        { t: 'Keyboard', items: L(`Pages :: Ctrl+1…8 switch tabs. Tab moves through controls in reading order.
+Workspace :: ←/→ previous/next slice, zone or candidate. Space auditions the selection.
+Edit :: Delete removes, Ctrl+D duplicates, Ctrl+Z/Y undo/redo, M opens Assign modulation… on a focused control.
+Focus :: 2 px Paper 1 ring with 2 px gap, on every focusable element.`) },
+        { t: 'Hover and focus', items: L(`Faces :: One step lighter on hover; one darker + 1 px down on press.
+Knob popup :: Opens on hover after 300 ms, on focus immediately; lists value, peak/trough, sources.
+Tooltips :: Every IconButton; 500 ms delay; show shortcut.
+Telemetry :: Live indicators update at 30 Hz with decay; no blinking. Playing tree node gets a small paper dot.`) },
+        { t: 'Context menus', items: L(`Parameter :: Assign modulation… · Learn MIDI · Map to macro… · Reset · Copy value.
+Zone / slice :: Audition · Replace sample… · Duplicate · Split at key · Delete.
+Candidate :: Audition · Replace… · Move to new layer · Remove.
+Route :: Bypass · Invert · Change source… · Change destination… · Delete.`) },
+        { t: 'Modulation', items: L(`Contextual :: Rings on the control (≤2 + chip). Popup lists all sources with depth sliders.
+Assign :: Menu → pick source → eligible controls tint mod-wash; click to add; Esc ends.
+Drag-to-modulate :: Drag a source row from Modulation onto any knob; label “Add route”.
+Overview :: Table grouped by source or destination; drag amount bar, Alt-drag inverts.
+Defaults :: Amp envelope → Amp gain is locked (lock icon): amount editable, not removable.`) },
+        { t: 'Routing', items: L(`Normal :: Each row has an output menu (Inherit · Main · busses · New bus…) and two send knobs.
+Inherit :: Children follow the parent group; overrides are written in full text.
+Graph :: “Show graph” opens the read-only connection view; editing stays in rows.
+Busses :: Rename, map to output pair, mute, level on the right.`) },
+        { t: 'Waveform editing', items: L(`Click :: Set playhead/audition point. Click a slice selects it.
+Drag :: Empty area = selection. Marker = move (snaps to zero crossings unless Alt). Region edge = resize.
+Double-click :: On a marker = numeric entry. On empty area = add marker.
+Wheel :: Scroll in time; Ctrl/Cmd = zoom at pointer; Shift = vertical gain zoom.
+Context :: Add marker · Delete · Set loop from selection · Set start/end · Detect here.`) },
+      ],
+      dnd: [
+        ['Sample file', 'Empty instrument', 'Create sound across keyboard (root from file name or C4)', '—'],
+        ['Sample file', 'Waveform', 'Replace sample, keep region and settings', 'Shift: Add as layer'],
+        ['Sample file', 'KeyMap empty keys', 'Map at key, root = key', 'Drag vertical = velocity span'],
+        ['Several files', 'Empty / KeyMap', 'Inline DropChooser: One per key · By root + velocity · Stack · Round robin', 'Release outside choices = suggestion'],
+        ['Sample file', 'Existing zone', 'Replace zone sample', 'Shift: Add layer on same keys'],
+        ['Slice row / region', 'KeyMap', 'Map slice at key', 'Alt: Duplicate mapping'],
+        ['Zone', 'Another key', 'Move zone', 'Alt: Duplicate'],
+        ['Candidate row', 'Candidate list', 'Reorder (insertion line)', 'Onto another trigger: Move'],
+        ['Processor block', 'Chain', 'Reorder', 'Alt: Duplicate · onto another chain: Move'],
+        ['Mod source row', 'Any modulatable control', 'Add route at +25%', 'Alt: −25%'],
+        ['Sample file', 'Layers list', 'Add candidate', '—'],
+        ['Unsupported file', 'Anywhere', 'Warn outline + “Not supported”; banner after drop', '—'],
+      ].map(([a, b, c, d]) => ({ a, b, c, d })),
+      responsive: [
+        ['Header', '38 px; product name hidden; patch 150 px; short status', '44 px; full', '44 px; full'],
+        ['Tabs', 'Text only, “Mod”', 'Icon + text + badge', 'Icon + text + badge'],
+        ['Tree', '36 px icon rail (Tree, Browser, Key map); opens as overlay', '208 px', '248 px'],
+        ['Browser', 'Overlay over the rail', 'Replaces tree', 'Replaces tree'],
+        ['Workspace', 'Waveform 150 px, metadata trimmed to 3', 'Waveform 250 px', 'Waveform 340 px + read-only KeyMap overview below'],
+        ['Voice', '2 columns; envelopes stacked', '2 × 2 sections; envelopes + Voices in a row', '4 sections in one row; taller envelopes'],
+        ['Modulation', 'Sources list hidden (filter menu instead)', 'Sources 200 px + table', 'Same, more rows visible'],
+        ['Inspector', '232 px; rows compact', '272 px', '320 px; extra analysis rows'],
+        ['Macros', '28 px one-line summary; expands on click', '8 knobs with destination counts', 'Same'],
+        ['Status bar', 'Hint truncates first', 'Full', 'Full'],
+      ].map(([r, a, b, c]) => ({ r, a, b, c })),
+      capmap: (() => {
+        const rows = [];
+        const H = (f) => rows.push({ h: true, f });
+        const R = (f, c, n) => rows.push({ row: true, f, c, n, cc: c === 'Sampler-only' ? 'var(--dd-vermilion)' : c === 'Editor-only' ? 'var(--dd-paper-3)' : 'var(--dd-paper-1)' });
+        H('Sample');
+        R('Sample selector', 'Asset', 'Asset binding on the AssetPlayer module');
+        R('Start / End', 'Asset Region', 'Region of the bound Asset; live Start offset is a Parameter');
+        R('Once / Gated / Loop / Ping-pong / Sustain loop', 'Playback Policy', 'Policy object on the AssetPlayer');
+        R('Reverse', 'Playback Policy', 'Direction flag');
+        R('Loop start / end / crossfade', 'Asset Region', 'Loop region + policy crossfade');
+        R('Suggested loops', 'Analysis', 'Loop-point analysis output');
+        R('Tune / Fine / Gain / Pan', 'Parameter', 'AssetPlayer pitch, Gain module');
+        R('Root', 'Parameter', 'AssetPlayer pitch reference; default from Analysis pitch estimate');
+        R('Waveform peaks, pitch, loudness', 'Analysis', 'Async asset service');
+        R('Playhead', 'Telemetry', 'Per-voice region position, newest voice');
+        H('Slices');
+        R('Slice', 'Asset Region', 'One region per slice + one Trigger Rule per mapped note');
+        R('Detect transients', 'Analysis', 'Transient analysis; result previewed in AnalysisLane, applied as regions');
+        R('Even / grid division', 'Editor-only', 'Computes regions; grid uses tempo Analysis or host tempo Event');
+        R('Map sequentially', 'Trigger Rule', 'Batch creation of single-key rules from a start note');
+        R('Per-slice play mode', 'Playback Policy', 'Policy per region');
+        R('Choke group', 'Voice Policy', 'Exclusive group membership');
+        R('Per-slice output', 'Connection', 'Voice output → named Bus');
+        H('Mapping and layers');
+        R('Zone (key × velocity)', 'Trigger Rule', 'Note range + velocity range → target');
+        R('Velocity crossfade', 'Trigger Rule', 'Overlapping ranges + gain curve');
+        R('Stack / Velocity / RR / Alternate / Random / Weighted', 'Selector', 'Selector policy');
+        R('Weight', 'Selector', 'Candidate weight');
+        R('Last / Next', 'Telemetry', 'Selector position per note');
+        R('Restart cycle', 'Selector', 'Reset condition (never, transport Event, bar)');
+        R('Map by root (file names)', 'Sampler-only', 'Editor heuristic producing Trigger Rules');
+        H('Voice');
+        R('Voice sections', 'Voice Template', 'Curated view over template modules');
+        R('Filter type / cutoff / reso / drive', 'Module + Parameter', 'Filter module');
+        R('Amp envelope', 'Modulator', 'Envelope configured as ADSR');
+        R('Envelope → Gain', 'Modulation Route', 'Default, locked route');
+        R('Velocity sensitivity', 'Modulation Route', 'Velocity → Gain amount');
+        R('Key tracking', 'Modulation Route', 'Key track → Filter cutoff');
+        R('Poly / Mono / Legato, limit, steal', 'Voice Policy', 'Allocator settings');
+        R('Voices 6 / 32', 'Telemetry', 'Active voice count');
+        H('Control');
+        R('Modulation table row', 'Modulation Route', 'Source, amount, polarity, curve, range, enable');
+        R('LFO / Random / Aftertouch / Bend', 'Modulator', 'Generic primitives');
+        R('Macro knob', 'Parameter', 'Macro value parameter, host-automatable');
+        R('Macro destinations', 'Binding', 'Macro → Parameter with per-destination range');
+        R('MIDI learn', 'Binding', 'CC → Parameter');
+        R('Blue host tint', 'Binding + Telemetry', 'Host automation binding active');
+        H('Routing and processing');
+        R('Output menu', 'Connection', 'Node output → Bus; Inherit = no own connection');
+        R('Send knob', 'Connection', 'Gain on a send edge to an FX bus');
+        R('Output busses', 'Bus', 'Named busses → plugin output pairs');
+        R('Group inserts / FX chains', 'Module + Connection', 'Ordinary processors in series');
+        R('Groups in tree', 'Group', 'Hierarchy with shared settings');
+        H('Assets and state');
+        R('Missing / relink', 'Asset', 'Asset state; relink rebinds identity');
+        R('Unsupported file', 'Asset', 'Decoder capability check before binding');
+        R('Loading progress', 'Asset + Telemetry', 'Async load progress');
+        R('Analysis running / failed', 'Analysis', 'Job state; failure leaves regions unchanged');
+        R('Selection, zoom, scroll, page', 'Editor-only', 'Never sent to the engine');
+        return rows;
+      })(),
+      generality: [
+        { t: 'Subtractive synth', code: 'Osc 1 + Osc 2 + Noise → Filter → Gain\nEnvelope → Gain · Envelope → Cutoff · LFO → Pitch', rep: 'Source modules and the Voice page Source section (oscillator controls instead of sample controls).', pages: 'Voice, Modulation, Routing, Effects, Macros unchanged. Mapping reused for splits. Sample/Slices/Layers hidden.', gap: 'Needs an OscillatorSection composition; no platform change.' },
+        { t: 'Drum machine', code: 'Note → Selector(velocity | RR) → AssetPlayer\nVoice Policy: exclusive groups', rep: 'Mapping page becomes the existing PadGrid view over the same Trigger Rules.', pages: 'Layers, Voice, Routing (per-pad outputs), Effects, Macros unchanged.', gap: 'PadGrid already exists in the system; it reads the same rules as KeyMap.' },
+        { t: 'Hybrid', code: 'AssetPlayer ─┐\n             ├→ Processor → Filter → Gain\nOscillator ──┘', rep: 'Voice page shows two Source sections side by side; template has a Mixer module.', pages: 'Everything else unchanged.', gap: 'Requires a Mixer module and a two-source Voice layout rule (Source sections stack at min size).' },
+        { t: 'FM instrument', code: 'Operators 1–6 (FM module) → Gain\nEnvelope per operator → operator level', rep: 'Source section replaced by an Algorithm/operator panel built from Knob + EnvelopeEditor.', pages: 'Parameters, modulation, voice policy, presets, routing, macros, automation unchanged.', gap: 'Per-operator envelopes are just more Envelope modulators; the Modulation table needs grouping by module (supported: Group by Destination).' },
+        { t: 'Effects', code: 'Audio in → Processor chain → Bus', rep: 'No Trigger Rules, Selector or Voice Template.', pages: 'Effects (LayerStack), Modulation (LFO, envelope follower), Macros, Routing reused.', gap: 'Adds envelope follower and transport modulators to the modulator list.' },
+      ],
+      handoff: [
+        { t: 'Window dimensions', items: L(`min :: 820 × 560; tree rail 36, inspector 232, header 38
+default :: 1200 × 800; tree 208, inspector 272, header 44
+expanded :: 1600 × 1000; tree 248, inspector 320
+fixed rows :: tabs 34, macro strip 52 (28 min), status 26
+gutters :: window seam 4, panel padding 12, control gap 8, group gap 16`) },
+        { t: 'Tokens used', items: L(`surfaces :: --dd-ink-0 wells/chrome, -1 window, -2 panels, -3 headers, -4 controls, -5 hover
+text :: --dd-paper-1 primary, -2 secondary, -3 tertiary, -4 disabled
+selection :: --dd-vermilion ring/edge, --dd-vermilion-wash fill
+modulation :: --dd-mod-a…d with ModGlyph; --dd-mod-wash assignment tint
+host / status :: --dd-host; --dd-ok/warn/error + washes
+type :: --font-ui 11–15, --font-value for every number, --font-display wordmark`) },
+        { t: 'Row and control sizes', items: L(`tree / list row :: 26 (22 compact)
+table row :: 26–30; header row 26, caps 11 +0.06em
+knob :: sm 36 in sections, xs 28 in tables/macros, md 48 for featured
+field :: 22–26 high; mono value; unit tertiary
+hit target :: ≥ 24 px; 28 px for icon buttons at default size`) },
+        { t: 'States per component', items: L(`all controls :: default, hover, pressed, focus, disabled, read-only, host-automated, modulated, assigning
+rows :: default, hover, selected, multi-selected, playing (telemetry), muted, missing
+async :: idle, running (busy + progress), done (result preview), failed (error + unchanged)
+asset :: loaded, loading, cached, missing, relinked, unsupported`) },
+        { t: 'Data per page', items: L(`Sample :: Asset (meta, state), Region, Playback Policy, peaks, analysis, playhead
+Slices :: Regions[], rule per region, policies, transient result + job state
+Mapping :: Trigger Rules[] with group, target, root; overlaps
+Layers :: Selector (policy, reset), candidates[], position telemetry
+Voice :: Template modules + params, Envelope configs, Voice Policy
+Modulation :: Modulators[], Routes[], live values
+Routing :: Nodes[] with connection + sends, Busses[]`) },
+        { t: 'Engine capabilities required', items: L(`Parameter metadata :: range, unit, curve, step, default, flags for every exposed param
+Async preparation :: commit structural edits off the audio thread; report preparing/ready
+Analysis jobs :: start, progress, cancel, result, failure reason
+Telemetry stream :: voices, notes, selector position, playhead, mod values, meters at ≤ 30 Hz
+Asset service :: decode check, load progress, missing detection, relink, cache
+Undo :: every edit as a reversible command (editor-side)`) },
+      ],
+      tree: `AdvancedSampler
+├─ InstrumentHeader (MenuButton patch · StatusMessage inline · voices · SegmentedControl size · Meter)
+├─ Tabs (8 pages) + Browser toggle
+├─ StatusMessage banner (missing | unsupported)
+├─ Body grid [tree | workspace | inspector]
+│  ├─ InstrumentTree (ListRow×n) | AssetBrowser | rail (min)
+│  ├─ Workspace
+│  │  ├─ SamplePage   → AssetPicker, SegmentedControl, WaveformOverview, WaveformEditor, Knob groups, NumericField(root)
+│  │  ├─ SlicesPage   → toolbar, WaveformEditor(slices), AnalysisLane, slice table
+│  │  ├─ MappingPage  → KeyMap, actions, drop rules
+│  │  ├─ LayersPage   → SelectorEditor (mode bar, VelocityLane | sequence, CandidateRow×n)
+│  │  ├─ VoicePage    → VoiceTemplateStrip, sections×4, EnvelopeEditor×2, VoicePolicyPanel
+│  │  ├─ ModPage      → ModSourceList, ModulationTable, contextual Knob
+│  │  ├─ RoutingPage  → RoutingTable (BusPicker, send Knobs), OutputBusses
+│  │  └─ EffectsPage  → LayerStack(group inserts), LayerStack(FX busses)
+│  └─ Inspector (Breadcrumb, TypeTag, PropertyRow | ModIndicator | Knob rows)
+├─ MacroStrip (MacroControl×8)
+└─ StatusBar (hint · size)`,
+    };
+  }
+}
+</script>
+</body>
+</html>

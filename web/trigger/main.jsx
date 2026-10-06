@@ -1,0 +1,13 @@
+import React from 'react';
+import {createRoot} from 'react-dom/client';
+import {TriggerController} from './TriggerController.jsx';
+import {MockEngine} from './engine/mock-engine.mjs';
+import {Store} from './engine/store.mjs';
+import './components/design-system/styles.css';
+import './components/source-hover.css';
+import './styles.css';
+const engine=new MockEngine();
+const store=new Store(engine,{diagnostics:engine});
+const root=createRoot(document.getElementById('root'));
+root.render(<div className="preview"><TriggerController store={store}/></div>);
+if(import.meta.hot)import.meta.hot.dispose(()=>{root.unmount();store.close();engine.close();});

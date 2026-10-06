@@ -1,0 +1,405 @@
+
+> dandrum-trigger@0.1.0 test:coverage
+> node --experimental-test-coverage --test tests/*.test.mjs
+
+TAP version 13
+# Subtest: subtree deletion and structural undo restore sounds, mapping and order without restoring unrelated live controls
+ok 1 - subtree deletion and structural undo restore sounds, mapping and order without restoring unrelated live controls
+  ---
+  duration_ms: 66.356841
+  type: 'test'
+  ...
+# Subtest: regions and slice edits keep valid ranges and undo restores removed mapping
+ok 2 - regions and slice edits keep valid ranges and undo restores removed mapping
+  ---
+  duration_ms: 85.669381
+  type: 'test'
+  ...
+# Subtest: selectors, modulation, macro bindings and processors accept edits and enforce fixed-route safety
+ok 3 - selectors, modulation, macro bindings and processors accept edits and enforce fixed-route safety
+  ---
+  duration_ms: 95.921608
+  type: 'test'
+  ...
+# Subtest: asset loading, analysis failure/cancellation and silent voices report their real mock state
+ok 4 - asset loading, analysis failure/cancellation and silent voices report their real mock state
+  ---
+  duration_ms: 30.945529
+  type: 'test'
+  ...
+# Subtest: component convention guard names oversized files, engine imports and broken JSX instead of treating setup errors as failures
+ok 5 - component convention guard names oversized files, engine imports and broken JSX instead of treating setup errors as failures
+  ---
+  duration_ms: 1403.441921
+  type: 'test'
+  ...
+# Subtest: the declared adapter alone supports edit, undo, redo and telemetry subscription
+ok 6 - the declared adapter alone supports edit, undo, redo and telemetry subscription
+  ---
+  duration_ms: 25.603602
+  type: 'test'
+  ...
+# Subtest: mock diagnostics are explicitly injected separately from the adapter
+ok 7 - mock diagnostics are explicitly injected separately from the adapter
+  ---
+  duration_ms: 3.585398
+  type: 'test'
+  ...
+# Subtest: typed parameter values retain their displayed units and canonical centres
+ok 8 - typed parameter values retain their displayed units and canonical centres
+  ---
+  duration_ms: 2.154987
+  type: 'test'
+  ...
+# Subtest: modulator percentage entries remain percentages while time and rate entries use seconds and hertz
+ok 9 - modulator percentage entries remain percentages while time and rate entries use seconds and hertz
+  ---
+  duration_ms: 6.060522
+  type: 'test'
+  ...
+# Subtest: an operation undo preserves other fields within the same module, node, macro and candidate
+ok 10 - an operation undo preserves other fields within the same module, node, macro and candidate
+  ---
+  duration_ms: 110.888156
+  type: 'test'
+  ...
+# Subtest: envelope handles coincide with the drawn corners and point edits change the actual shape
+ok 11 - envelope handles coincide with the drawn corners and point edits change the actual shape
+  ---
+  duration_ms: 142.866108
+  type: 'test'
+  ...
+# Subtest: Space and source assignment use the displayed default selection, including nested alternates and patch sources
+ok 12 - Space and source assignment use the displayed default selection, including nested alternates and patch sources
+  ---
+  duration_ms: 85.709551
+  type: 'test'
+  ...
+# Subtest: catalog text, shape and value controls bind to individual stories and model callbacks log without logging render reads
+ok 13 - catalog text, shape and value controls bind to individual stories and model callbacks log without logging render reads
+  ---
+  duration_ms: 73.001579
+  type: 'test'
+  ...
+# Subtest: zero-crossing snap chooses a signed fixture crossing rather than a rounded time grid
+ok 14 - zero-crossing snap chooses a signed fixture crossing rather than a rounded time grid
+  ---
+  duration_ms: 5.378537
+  type: 'test'
+  ...
+# Subtest: undoing a candidate reorder retains unrelated current candidate values
+ok 15 - undoing a candidate reorder retains unrelated current candidate values
+  ---
+  duration_ms: 20.444534
+  type: 'test'
+  ...
+# Subtest: envelope millisecond, second, decibel and percentage fields preserve canonical values
+ok 16 - envelope millisecond, second, decibel and percentage fields preserve canonical values
+  ---
+  duration_ms: 0.400097
+  type: 'test'
+  ...
+# Subtest: Empty startup loads the complete Felt Kit behind preparing and ready events
+ok 17 - Empty startup loads the complete Felt Kit behind preparing and ready events
+  ---
+  duration_ms: 10.575935
+  type: 'test'
+  ...
+# Subtest: a knob gesture is one named reversible command and redo preserves its final value
+ok 18 - a knob gesture is one named reversible command and redo preserves its final value
+  ---
+  duration_ms: 63.21084
+  type: 'test'
+  ...
+# Subtest: explicit pitch, MIDI, dynamic, velocity and RR tokens are interpreted without treating unrelated digits as notes
+ok 19 - explicit pitch, MIDI, dynamic, velocity and RR tokens are interpreted without treating unrelated digits as notes
+  ---
+  duration_ms: 4.229585
+  type: 'test'
+  ...
+# Subtest: import sequential is one reversible operation and retains file sources
+ok 20 - import sequential is one reversible operation and retains file sources
+  ---
+  duration_ms: 34.333438
+  type: 'test'
+  ...
+# Subtest: import root-velocity is one reversible operation and retains file sources
+ok 21 - import root-velocity is one reversible operation and retains file sources
+  ---
+  duration_ms: 19.718988
+  type: 'test'
+  ...
+# Subtest: import stack is one reversible operation and retains file sources
+ok 22 - import stack is one reversible operation and retains file sources
+  ---
+  duration_ms: 17.882339
+  type: 'test'
+  ...
+# Subtest: import rr is one reversible operation and retains file sources
+ok 23 - import rr is one reversible operation and retains file sources
+  ---
+  duration_ms: 18.531185
+  type: 'test'
+  ...
+# Subtest: import replacement undo and redo keep the asset, region and Source history consistent
+ok 24 - import replacement undo and redo keep the asset, region and Source history consistent
+  ---
+  duration_ms: 34.04332
+  type: 'test'
+  ...
+# Subtest: mapping deletion, paste and neighbour edits change accepted rules and undo preserves unrelated parameters
+ok 25 - mapping deletion, paste and neighbour edits change accepted rules and undo preserves unrelated parameters
+  ---
+  duration_ms: 78.491115
+  type: 'test'
+  ...
+# Subtest: replace paste trims note and velocity rectangles without removing non-overlapping velocity layers
+ok 26 - replace paste trims note and velocity rectangles without removing non-overlapping velocity layers
+  ---
+  duration_ms: 20.668532
+  type: 'test'
+  ...
+# Subtest: Lush and a selected nested candidate preview their own source without triggering neighbouring rules
+ok 27 - Lush and a selected nested candidate preview their own source without triggering neighbouring rules
+  ---
+  duration_ms: 62.551024
+  type: 'test'
+  ...
+# Subtest: Voice module inspector and knob share Cutoff, including undo in either direction and added module sections
+ok 28 - Voice module inspector and knob share Cutoff, including undo in either direction and added module sections
+  ---
+  duration_ms: 133.762755
+  type: 'test'
+  ...
+# Subtest: Mapping toolbar and inspector edit real bounds, duplication, sequential mapping and safe empty selection
+ok 29 - Mapping toolbar and inspector edit real bounds, duplication, sequential mapping and safe empty selection
+  ---
+  duration_ms: 148.791552
+  type: 'test'
+  ...
+# Subtest: Picked modulator inspector edits its own route; selected slice Space auditions its actual region
+ok 30 - Picked modulator inspector edits its own route; selected slice Space auditions its actual region
+  ---
+  duration_ms: 26.902374
+  type: 'test'
+  ...
+# Subtest: Source assignment creates usable regions and sound rules; candidate file imports join the specified selector and undo preserves it
+ok 31 - Source assignment creates usable regions and sound rules; candidate file imports join the specified selector and undo preserves it
+  ---
+  duration_ms: 56.380472
+  type: 'test'
+  ...
+# Subtest: Grid and Even slicing produce distinct accepted boundaries, retain shared Slice history and undo restores its count
+ok 32 - Grid and Even slicing produce distinct accepted boundaries, retain shared Slice history and undo restores its count
+  ---
+  duration_ms: 28.103856
+  type: 'test'
+  ...
+# Subtest: Cancelled parameter gesture restores its starting value and removes its command; rendered peak sources preserve original assets
+ok 33 - Cancelled parameter gesture restores its starting value and removes its command; rendered peak sources preserve original assets
+  ---
+  duration_ms: 9.996208
+  type: 'test'
+  ...
+# Subtest: preparation publishes its phase while accepted data remains unchanged until ready
+ok 34 - preparation publishes its phase while accepted data remains unchanged until ready
+  ---
+  duration_ms: 15.665893
+  type: 'test'
+  ...
+# Subtest: closing during preparation cancels late publication and command history
+ok 35 - closing during preparation cancels late publication and command history
+  ---
+  duration_ms: 2.896712
+  type: 'test'
+  ...
+# Subtest: overlapping preparations publish accepted patches in request order with paired phases
+ok 36 - overlapping preparations publish accepted patches in request order with paired phases
+  ---
+  duration_ms: 7.951601
+  type: 'test'
+  ...
+# Subtest: a visible Cutoff edit enters the command history and the display follows undo and redo
+ok 37 - a visible Cutoff edit enters the command history and the display follows undo and redo
+  ---
+  duration_ms: 232.331526
+  type: 'test'
+  ...
+# Subtest: slice marker, division, mapping and bulk properties publish atomically and undo restores regions and notes
+ok 38 - slice marker, division, mapping and bulk properties publish atomically and undo restores regions and notes
+  ---
+  duration_ms: 150.286552
+  type: 'test'
+  ...
+# Subtest: history bypass changes only its owning region and collapse retains the original source with reversible operands
+ok 39 - history bypass changes only its owning region and collapse retains the original source with reversible operands
+  ---
+  duration_ms: 83.892643
+  type: 'test'
+  ...
+# Subtest: Slice history owns marker counts, preserves manual identities on bypass, and reverses count edits and deletion
+ok 40 - Slice history owns marker counts, preserves manual identities on bypass, and reverses count edits and deletion
+  ---
+  duration_ms: 95.137903
+  type: 'test'
+  ...
+# Subtest: initial slice bypass preserves the supplied nonuniform regions; edits and collapse retain coherent operation operands
+ok 41 - initial slice bypass preserves the supplied nonuniform regions; edits and collapse retain coherent operation operands
+  ---
+  duration_ms: 132.826161
+  type: 'test'
+  ...
+# Subtest: Slice operation regenerates from distinct grid/transient markers and rejects unsupported density without publishing
+ok 42 - Slice operation regenerates from distinct grid/transient markers and rejects unsupported density without publishing
+  ---
+  duration_ms: 30.936799
+  type: 'test'
+  ...
+# Subtest: newly imported slicing creates an owning source stack and count edits reject invalid mapping atomically
+ok 43 - newly imported slicing creates an owning source stack and count edits reject invalid mapping atomically
+  ---
+  duration_ms: 618.291205
+  type: 'test'
+  ...
+# Subtest: rapid changes merge through 600ms, separate gestures and controls keep their own undo
+ok 44 - rapid changes merge through 600ms, separate gestures and controls keep their own undo
+  ---
+  duration_ms: 52.774895
+  type: 'test'
+  ...
+# Subtest: a failed prepared command leaves history and patch operands available for retry
+ok 45 - a failed prepared command leaves history and patch operands available for retry
+  ---
+  duration_ms: 37.738297
+  type: 'test'
+  ...
+# Subtest: navigation and layout use one editor state without resetting the chosen size
+ok 46 - navigation and layout use one editor state without resetting the chosen size
+  ---
+  duration_ms: 135.031807
+  type: 'test'
+  ...
+# Subtest: successful replacement clears history while a failed load preserves the accepted edited patch
+ok 47 - successful replacement clears history while a failed load preserves the accepted edited patch
+  ---
+  duration_ms: 28.770782
+  type: 'test'
+  ...
+# Subtest: cancelling a gesture waits for prepared edits and restores only that gesture; separate prepared gestures do not merge
+ok 48 - cancelling a gesture waits for prepared edits and restores only that gesture; separate prepared gestures do not merge
+  ---
+  duration_ms: 83.044628
+  type: 'test'
+  ...
+# Subtest: parameter gestures queued behind preparation undo and redo their accepted values in order
+ok 49 - parameter gestures queued behind preparation undo and redo their accepted values in order
+  ---
+  duration_ms: 46.242985
+  type: 'test'
+  ...
+# Subtest: stack, per-note round robin, candidate mutes and missing fallback produce usable silent voice feedback
+ok 50 - stack, per-note round robin, candidate mutes and missing fallback produce usable silent voice feedback
+  ---
+  duration_ms: 24.984276
+  type: 'test'
+  ...
+# Subtest: replacement resets active feedback and continues updates outside the editor store
+ok 51 - replacement resets active feedback and continues updates outside the editor store
+  ---
+  duration_ms: 15.379785
+  type: 'test'
+  ...
+1..51
+# tests 51
+# suites 0
+# pass 51
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 1498.945242
+# start of coverage report
+# ---------------------------------------------------------------------------------------
+# file                           | line % | branch % | funcs % | uncovered lines
+# ---------------------------------------------------------------------------------------
+# catalog                        |        |          |         | 
+#  story-props.mjs               | 100.00 |    71.43 |   66.67 | 
+# engine                         |        |          |         | 
+#  assets-jobs.mjs               |  89.47 |    70.73 |   83.33 | 17-21 52
+#  commands.mjs                  | 100.00 |   100.00 |  100.00 | 
+#  domains                       |        |          |         | 
+#   candidates.mjs               |  86.67 |    71.05 |   73.91 | 20-23
+#   history.mjs                  |  94.03 |    73.68 |   92.86 | 47-50
+#   import-mapping.mjs           |  97.44 |    80.00 |   91.67 | 18
+#   instrument.mjs               | 100.00 |    58.57 |   90.48 | 
+#   routing.mjs                  | 100.00 |   100.00 |    0.00 | 
+#   slice-history.mjs            | 100.00 |    85.06 |   96.55 | 
+#   slices.mjs                   | 100.00 |    83.33 |   85.71 | 
+#   structure.mjs                | 100.00 |    76.79 |   91.18 | 
+#  entity-delta.mjs              | 100.00 |    93.75 |  100.00 | 
+#  filename-mapping.mjs          | 100.00 |    83.05 |  100.00 | 
+#  mock-engine.mjs               | 100.00 |    92.62 |   87.50 | 
+#  mock-wave.mjs                 | 100.00 |   100.00 |  100.00 | 
+#  operation-command.mjs         | 100.00 |    76.19 |  100.00 | 
+#  presets.mjs                   | 100.00 |    98.59 |  100.00 | 
+#  selector-sim.mjs              |  85.71 |    83.33 |   83.33 | 17-20
+#  store.mjs                     | 100.00 |    90.10 |   92.31 | 
+#  telemetry-reader.mjs          | 100.00 |   100.00 |  100.00 | 
+#  telemetry-sim.mjs             | 100.00 |    82.05 |   96.67 | 
+#  validation.mjs                | 100.00 |    78.13 |  100.00 | 
+#  voice-defaults.mjs            | 100.00 |    77.42 |  100.00 | 
+# scripts                        |        |          |         | 
+#  check-components.mjs          | 100.00 |    69.23 |  100.00 | 
+# shell                          |        |          |         | 
+#  analysis-model.mjs            |  88.89 |    23.08 |   18.18 | 3-4
+#  control-menus.mjs             |  74.42 |    18.18 |    4.76 | 4-6 14-17 22-23 35 40
+#  entity-menus.mjs              |   6.67 |    50.00 |    2.70 | 3-44
+#  envelope-geometry.mjs         | 100.00 |    62.50 |   63.64 | 
+#  envelope-values.mjs           | 100.00 |   100.00 |  100.00 | 
+#  history-model.mjs             |  65.67 |    66.67 |   45.24 | 41-55 58 60-66
+#  import-actions.mjs            |  67.44 |    33.33 |   15.38 | 4-9 12-19
+#  input-actions.mjs             |   6.38 |   100.00 |    0.00 | 4-64 66-77 79-93
+#  layers-model.mjs              |  87.72 |    61.43 |   44.19 | 25-31
+#  library-model.mjs             |  90.20 |    73.63 |   59.46 | 40-44
+#  macro-model.mjs               |  40.00 |    37.50 |    9.52 | 8-15 18-24
+#  mapping-clipboard.mjs         |  71.58 |    73.77 |   86.36 | 4-12 14-23 30-34 75-77
+#  mapping-geometry.mjs          |  59.21 |    78.72 |   71.43 | 30-33 46-51 53-61 64-75
+#  mapping-model.mjs             |  72.09 |    83.02 |   68.57 | 10-15 26-31
+#  modulation-actions.mjs        |  27.91 |   100.00 |   20.00 | 2-8 17-23 25-34 36-42
+#  modulation-model.mjs          | 100.00 |    81.90 |   66.18 | 
+#  modulator-knobs.mjs           | 100.00 |    90.48 |   50.00 | 
+#  modulator-shape.mjs           |  81.82 |    71.43 |  100.00 | 12-15
+#  parameter-units.mjs           | 100.00 |    98.75 |   91.89 | 
+#  project-reference.mjs         | 100.00 |   100.00 |  100.00 | 
+#  projections                   |        |          |         | 
+#   context-menus.mjs            | 100.00 |    25.00 |  100.00 | 
+#   frame-model.mjs              | 100.00 |    34.09 |   19.05 | 
+#   inspector-history.mjs        |  87.32 |    86.24 |   58.14 | 13 15-19 65-73 129-131
+#   layers-voice.mjs             |  94.64 |    55.17 |   80.00 | 21-23
+#   layout-tree.mjs              | 100.00 |    43.90 |   75.00 | 
+#   modulation.mjs               |  98.02 |    62.92 |   54.05 | 58-59
+#   routing-macros.mjs           | 100.00 |    82.35 |   80.00 | 
+#   sample-mapping.mjs           |  72.83 |    70.37 |   45.83 | 59-83
+#  routing-model.mjs             |  68.09 |    75.51 |   48.89 | 28-34 37-40 42-45
+#  sample-model.mjs              | 100.00 |    42.59 |   42.11 | 
+#  ShellPresenter.mjs            |  89.91 |    71.79 |   47.62 | 37-39 42-45 64-67
+#  slices-model.mjs              |  84.21 |    66.25 |   45.76 | 12 49-56
+#  voice-model.mjs               | 100.00 |    75.64 |   63.83 | 
+# tests                          |        |          |         | 
+#  adapter-operations.test.mjs   | 100.00 |   100.00 |  100.00 | 
+#  component-guard.test.mjs      | 100.00 |   100.00 |  100.00 | 
+#  contract-consumer.test.mjs    | 100.00 |    95.24 |  100.00 | 
+#  control-regressions.test.mjs  | 100.00 |   100.00 |   96.97 | 
+#  engine.test.mjs               | 100.00 |   100.00 |  100.00 | 
+#  import.test.mjs               | 100.00 |   100.00 |  100.00 | 
+#  mapping.test.mjs              | 100.00 |   100.00 |  100.00 | 
+#  model-bindings.test.mjs       | 100.00 |   100.00 |  100.00 | 
+#  preparation.test.mjs          | 100.00 |   100.00 |   87.50 | 
+#  presentation.test.mjs         | 100.00 |   100.00 |  100.00 | 
+#  slices-history.test.mjs       | 100.00 |   100.00 |  100.00 | 
+#  store-boundary.test.mjs       | 100.00 |   100.00 |  100.00 | 
+#  telemetry.test.mjs            | 100.00 |   100.00 |  100.00 | 
+# ---------------------------------------------------------------------------------------
+# all files                      |  88.37 |    77.79 |   70.94 | 
+# ---------------------------------------------------------------------------------------
+# end of coverage report

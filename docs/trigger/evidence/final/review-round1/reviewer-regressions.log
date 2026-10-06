@@ -1,0 +1,74 @@
+TAP version 13
+# Subtest: R1: undo of a queued second gesture restores the first accepted gesture
+not ok 1 - R1: undo of a queued second gesture restores the first accepted gesture
+  ---
+  duration_ms: 32.360448
+  type: 'test'
+  location: '/tmp/dandrum-trigger-final-review/reviewer-regressions.mjs:7:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    Expected values to be strictly equal:
+    
+    0.42 !== 0.5
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 0.5
+  actual: 0.42
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (file:///tmp/dandrum-trigger-final-review/reviewer-regressions.mjs:14:60)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async startSubtestAfterBootstrap (node:internal/test_runner/harness:296:3)
+  ...
+# Subtest: R2: undo file replacement restores Source history and leaves no dangling asset ID
+not ok 2 - R2: undo file replacement restores Source history and leaves no dangling asset ID
+  ---
+  duration_ms: 18.293961
+  type: 'test'
+  location: '/tmp/dandrum-trigger-final-review/reviewer-regressions.mjs:16:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    Expected values to be strictly equal:
+    
+    'asset-1' !== 'k60f'
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 'k60f'
+  actual: 'asset-1'
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (file:///tmp/dandrum-trigger-final-review/reviewer-regressions.mjs:23:9)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: R3: the declared EngineAdapter surface supports structural undo
+not ok 3 - R3: the declared EngineAdapter surface supports structural undo
+  ---
+  duration_ms: 5.905046
+  type: 'test'
+  location: '/tmp/dandrum-trigger-final-review/reviewer-regressions.mjs:25:1'
+  failureType: 'testCodeFailure'
+  error: 'engine.applyDelta is not a function'
+  code: 'ERR_TEST_FAILURE'
+  name: 'TypeError'
+  stack: |-
+    Object.undo (file:///tmp/dandrum-trigger-shell/web/trigger/engine/operation-command.mjs:32:25)
+    file:///tmp/dandrum-trigger-shell/web/trigger/engine/store.mjs:83:34
+    execute (file:///tmp/dandrum-trigger-shell/web/trigger/engine/store.mjs:57:81)
+    Store.run (file:///tmp/dandrum-trigger-shell/web/trigger/engine/store.mjs:58:72)
+    Store.undo (file:///tmp/dandrum-trigger-shell/web/trigger/engine/store.mjs:81:17)
+    TestContext.<anonymous> (file:///tmp/dandrum-trigger-final-review/reviewer-regressions.mjs:32:14)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+1..3
+# tests 3
+# suites 0
+# pass 0
+# fail 3
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 117.598531

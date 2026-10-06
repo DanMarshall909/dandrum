@@ -1,0 +1,309 @@
+{
+  "verdict": "FAIL",
+  "scope": "Complete candidate plus exact envelope",
+  "candidateManifestSHA256": "85ef576a81c38168cb35ec3713b80da28107570aea24174866144d2c57965e10",
+  "identity": {
+    "manifestSHA256": "85ef576a81c38168cb35ec3713b80da28107570aea24174866144d2c57965e10",
+    "envelopeSHA256": "0c36f534f7f358cee0d0cd47830c1efa39ac25938a053af0d0e8c64629bbc1e5",
+    "candidatePatchSHA256": "ed582c11fb369231c74ef8bbbb2c0e04c9db3ede8dd316117ba0e4c0863a8ae2",
+    "paths": 347,
+    "branch": "work/trigger-react-shell-2026-10-06",
+    "baseOID": "d02ee1b6126fa9fb579ac8380716c691a280abdb",
+    "currentOID": "d02ee1b6126fa9fb579ac8380716c691a280abdb",
+    "upstreamRef": "refs/remotes/origin/main",
+    "upstreamOID": "d02ee1b6126fa9fb579ac8380716c691a280abdb",
+    "integrationBaseOID": "d02ee1b6126fa9fb579ac8380716c691a280abdb",
+    "independentReconstruction": "Matched all path/status/mode/content/index records, staged blob bytes, canonical manifest serialization and exact cached binary patch; 20 source files match ZIP."
+  },
+  "findings": [
+    {
+      "id": "R1",
+      "priority": "P2",
+      "file": "web/trigger/engine/commands.mjs:2",
+      "symbol": "parameterCommand / Store.dispatch",
+      "tasks": [
+        "1.2",
+        "2.7"
+      ],
+      "criteria": [
+        "Empty, preset, reload and command undo",
+        "Gestures, menus and keyboard"
+      ],
+      "title": "Queued parameter commands capture stale inverse values",
+      "evidence": "reviewer-regressions.mjs test R1: while renameNode preparation is pending, queue Cutoff .5 then .8 in distinct gestures; undo returns .42 instead of .5. Both accepted edits and three undo entries are asserted first.",
+      "consequence": "Undoing one gesture also loses the preceding accepted gesture. The existing tests separately cover queued prepared commands and synchronous parameter gestures, but not their composition.",
+      "requiredOutcome": "Capture the inverse parameter operand at first execution, preserve it through redo/merge, and assert queued distinct gestures undo and redo in order. Also retain current coalescing and cancellation behavior."
+    },
+    {
+      "id": "R2",
+      "priority": "P2",
+      "file": "web/trigger/engine/operation-command.mjs:15",
+      "symbol": "scopes.importSamples",
+      "tasks": [
+        "1.2",
+        "2.1"
+      ],
+      "criteria": [
+        "Empty, preset, reload and command undo",
+        "Sample, slices and analysis",
+        "Zone and source editing"
+      ],
+      "title": "Undo of an imported replacement leaves dangling Source history",
+      "evidence": "reviewer-regressions.mjs test R2: import replacement.wav with {replace:\"k60f\"}, then undo. Region.assetId is restored to k60f and asset-1 is removed, but history src.config.asset remains asset-1. replaceRegionAsset changes history, which importSamples filters from its delta.",
+      "consequence": "An ordinary Replace sample / Undo leaves the accepted patch and its Source operation inconsistent, violating complete reversible editing.",
+      "requiredOutcome": "Include every operand changed by the composite replacement operation, including Source history, and test replacement undo/redo across assets, region and history while preserving unrelated fields."
+    },
+    {
+      "id": "R3",
+      "priority": "P2",
+      "file": "web/trigger/engine/contract.ts:29",
+      "symbol": "EngineAdapter / operationCommand.undo / Store.getLog",
+      "tasks": [
+        "1.2",
+        "3.3"
+      ],
+      "criteria": [
+        "Empty, preset, reload and command undo",
+        "Reviewable complete shell"
+      ],
+      "title": "The declared handoff adapter cannot satisfy the Store dependency",
+      "evidence": "reviewer-regressions.mjs test R3 restricts MockEngine to all declared EngineAdapter methods. Rename succeeds, structural undo throws \"engine.applyDelta is not a function\". Store also directly consumes mutable log and setMockSwitch, neither declared. engine-contract.md labels applyDelta mock-only even though all structural undo/redo unconditionally require it.",
+      "consequence": "An implementation of the published EngineAdapter cannot replace MockEngine as promised; the concrete-mock-to-interface assignment check misses dependencies used by the consumer.",
+      "requiredOutcome": "Make the actual Store/command dependency a complete typed and documented boundary (including reversible operands), and isolate or explicitly type diagnostics. Verify a contract-conforming adapter can execute edit/undo/redo without undeclared MockEngine members. No native implementation is required."
+    }
+  ],
+  "taskToImplementationMatrix": [
+    {
+      "task": "1.1",
+      "implementation": "docs/trigger/reference; vendor/design-system; tokens/fonts; final/reference",
+      "evidence": "All 20 preserved reference files match archive bytes; archive digest matches. Guard/build and captures provide evidence.",
+      "assessment": "EVIDENCED"
+    },
+    {
+      "task": "1.2",
+      "implementation": "engine/{contract,store,commands,operation-command,entity-delta,mock-engine,presets}",
+      "evidence": "engine, store-boundary, preparation, adapter-operations tests pass; R1/R2/R3 disprove complete reversible adapter boundary.",
+      "assessment": "UNMET: R1,R2,R3"
+    },
+    {
+      "task": "1.3",
+      "implementation": "TriggerController; TriggerFrame; components; shell/projections",
+      "evidence": "presentation/model-bindings and frame/shared-controls; exact geometry JSON; source/render comparison.",
+      "assessment": "EVIDENCED"
+    },
+    {
+      "task": "2.1",
+      "implementation": "sample-model; history-model; SamplePage; domains/history; import-actions",
+      "evidence": "slices-history/editing/shared-controls provide substantial coverage; imported replacement undo loses Source operand.",
+      "assessment": "UNMET: R2"
+    },
+    {
+      "task": "2.2",
+      "implementation": "slices-model; analysis-model; domains/slices; assets-jobs",
+      "evidence": "slices-history/preparation/adapter-operations and browser slices/states assert markers, progress, cancellation/failure preservation.",
+      "assessment": "EVIDENCED"
+    },
+    {
+      "task": "2.3",
+      "implementation": "mapping-{geometry,clipboard,model}; filename-mapping; import-mapping",
+      "evidence": "mapping/import/model-bindings and editing/states assert rectangle trimming, roots, policies and current model.",
+      "assessment": "EVIDENCED except composite replacement R2"
+    },
+    {
+      "task": "2.4",
+      "implementation": "layers-model; CandidateTable; VelocityCrossfade; selector-sim",
+      "evidence": "adapter-operations/telemetry/model-bindings and instrument assert policy, weights, mute/solo, reorder and feedback.",
+      "assessment": "EVIDENCED"
+    },
+    {
+      "task": "2.5",
+      "implementation": "voice-model; modulation-model/actions; macro-model; EnvelopeEditor",
+      "evidence": "control-regressions/model-bindings/adapter-operations and instrument/modulation/shared-controls assert actual values, fixed route, MIDI, templates.",
+      "assessment": "EVIDENCED"
+    },
+    {
+      "task": "2.6",
+      "implementation": "routing-model; domains/routing; ProcessorStack; RoutingGraph",
+      "evidence": "instrument/shared-controls and adapter-operations assert outputs, sends, add/bypass and exposed controls.",
+      "assessment": "EVIDENCED"
+    },
+    {
+      "task": "2.7",
+      "implementation": "ParameterKnob; control/entity menus; computer-keyboard; input-actions",
+      "evidence": "editing/runtime/modulation/shared-controls and store-boundary cover normal input, but queued gesture inverses fail.",
+      "assessment": "UNMET: R1"
+    },
+    {
+      "task": "3.1",
+      "implementation": "telemetry-sim/reader; LogDrawer; computer-keyboard",
+      "evidence": "telemetry/preparation/runtime assert independent subscriptions, release and replacement cleanup; silent simulation limits explicit.",
+      "assessment": "EVIDENCED"
+    },
+    {
+      "task": "3.2",
+      "implementation": "PresetBrowser; requestReplace; import-actions; AssetsJobs",
+      "evidence": "patch/states assert dirty confirmation, loading, recovery and 24 captures; folder OS interaction explicitly unautomated.",
+      "assessment": "EVIDENCED"
+    },
+    {
+      "task": "3.3",
+      "implementation": "catalog; contract.ts; engine-contract.md; platform-spec; feature-audit",
+      "evidence": "catalog browser sweep and story-props assertions pass, docs exist; contract omits required Store dependencies.",
+      "assessment": "UNMET: R3"
+    },
+    {
+      "task": "4.1",
+      "implementation": "tests/js/TriggerReactShellTest.mjs; CMakeLists; final evidence",
+      "evidence": "Independent complete CTest passes 82.65s, spec checks pass; new P2 findings mean fixing review findings remains required.",
+      "assessment": "UNMET: R1,R2,R3"
+    },
+    {
+      "task": "4.2",
+      "implementation": "external review packet; envelope; tasks.md",
+      "evidence": "Independent review now performed and retained; candidate has not earned final commit/spec sync/publication.",
+      "assessment": "PENDING: FAIL"
+    }
+  ],
+  "criterionToTestMatrix": [
+    {
+      "criterion": "Four editor geometries",
+      "tests": "presentation.test.mjs; browser/frame.spec.mjs; browser/shared-controls.spec.mjs; geometry/geometry.json",
+      "assertions": "Exact dimensions/rail/compact and expanded overview; narrow browser menu anchor and processor exposure.",
+      "assessment": "EVIDENCED"
+    },
+    {
+      "criterion": "Eight workspaces and all selections",
+      "tests": "model-bindings.test.mjs; browser/frame,instrument,modulation,slices,shared-controls",
+      "assertions": "Eight tabs and controls; selected modulator/slice/module, macro and history own model data.",
+      "assessment": "EVIDENCED"
+    },
+    {
+      "criterion": "Empty, preset, reload and command undo",
+      "tests": "engine,store-boundary,preparation,adapter-operations; browser/patch,shell,editing; reviewer R1/R2/R3",
+      "assertions": "Ordinary load/undo/failure paths pass; queued parameter inverse, replacement history inverse and contract boundary fail.",
+      "assessment": "UNMET: R1,R2,R3"
+    },
+    {
+      "criterion": "Sample, slices and analysis",
+      "tests": "slices-history,model-bindings,adapter-operations; browser/slices,editing,shared-controls; reviewer R2",
+      "assertions": "Markers/count/history and failure preservation asserted; composite source replacement undo incomplete.",
+      "assessment": "UNMET: R2"
+    },
+    {
+      "criterion": "Zone and source editing",
+      "tests": "mapping.test.mjs; import.test.mjs; model-bindings; browser/editing,states; reviewer R2",
+      "assertions": "Neighbour/Shift/rectangular clipboard and all four import policies have assertions; imported source replacement inverse fails.",
+      "assessment": "UNMET: R2"
+    },
+    {
+      "criterion": "Layers, voices and modulation",
+      "tests": "adapter-operations,model-bindings,control-regressions; browser/instrument,modulation,shared-controls",
+      "assertions": "Selector values, voice mode, envelope units, nested source identity, macro bindings, fixed Amp route and undo.",
+      "assessment": "EVIDENCED"
+    },
+    {
+      "criterion": "Routing and effects",
+      "tests": "adapter-operations,model-bindings; browser/instrument,shared-controls",
+      "assertions": "Known send value/output and undo; add/bypass actual processor; size exposure checks.",
+      "assessment": "EVIDENCED"
+    },
+    {
+      "criterion": "Gestures, menus and keyboard",
+      "tests": "store-boundary,control-regressions; browser/editing,modulation,runtime,shared-controls; reviewer R1",
+      "assertions": "Normal fine/typed/reset/gesture cancel and note release are covered; two queued distinct gestures restore wrong value.",
+      "assessment": "UNMET: R1"
+    },
+    {
+      "criterion": "Action-reachable states and log drawer",
+      "tests": "telemetry,preparation; browser/runtime,states",
+      "assertions": "24 ordinary action captures plus assertions of loading, failures, dimensions, host and voice feedback; no design picker.",
+      "assessment": "EVIDENCED within silent mock scope"
+    },
+    {
+      "criterion": "Reviewable complete shell",
+      "tests": "component-guard,control-regressions; browser/catalog; documents/comparison artifacts; reviewer R3",
+      "assertions": "97-entry/nine-state render sweep and prop callbacks documented; complete contract handoff not yet true.",
+      "assessment": "UNMET: R3"
+    }
+  ],
+  "reviewDimensions": [
+    {
+      "dimension": "Task and specification completion",
+      "assessment": "FAIL",
+      "reason": "Tasks are substantially implemented and scope remains standalone; R1\u2013R3 prevent 1.2/2.1/2.7/3.3/4.1 completion. Keeping 4.2 and baseline sync pending was correct."
+    },
+    {
+      "dimension": "Acceptance evidence",
+      "assessment": "FAIL",
+      "reason": "The repository lane is real and green; the three retained probes fail asserted requirements. No RED-before-implementation claim is required because the explicit shell waiver overrides ordering."
+    },
+    {
+      "dimension": "Test effectiveness",
+      "assessment": "FAIL",
+      "reason": "Existing tests assert useful known values, identity/lifecycle invariants and undo, including five named fault calibrations. Fast Node/business tests and slower browser boundary tests are sensibly split. They miss composition across queue timing and operation scope, and contract consumption. Coverage percentages are correctly limited to Node scope and do not prove completeness."
+    },
+    {
+      "dimension": "Architecture and operational safety",
+      "assessment": "FAIL",
+      "reason": "Native DSP/JUCE and unrelated worktrees remain untouched. Props/callback components, separate telemetry, cloned patch preparation and operand undo are appropriate. R3 leaves an undeclared adapter dependency; R2 violates model consistency and R1 violates inverse command correctness. No secrets, remote writes, native audio or disk persistence are introduced by this shell."
+    },
+    {
+      "dimension": "Better alternatives",
+      "assessment": "ASSESSED",
+      "reason": "Preserve the current small-module presenter/adapter design. Capture inverse values on execution; ensure composite operation scopes include all owned changed collections; make consumer dependencies explicit in the handoff interface or a separate typed diagnostics boundary. These are smaller and safer than replacing command history with global snapshots."
+    },
+    {
+      "dimension": "Reusable lessons",
+      "assessment": "RECORDED",
+      "reason": "Two evidence-based lesson candidates below are proposed to the Trigger test/contract owner, with no standing guidance change. Existing precision/clipping/audition repairs were rechecked through their named tests."
+    },
+    {
+      "dimension": "Publication soundness",
+      "assessment": "FAIL",
+      "reason": "Manifest, index, binary patch, integration identity and four envelope content hashes independently match. Finite envelope is mechanically bounded and cleanup preserves state. Semantic defects prevent authorizing its status claims, spec synchronization and publication; refresh the entire packet after repairs."
+    }
+  ],
+  "lessonCandidates": [
+    {
+      "evidence": "R1 passes separate queue and gesture suites but fails their composed state transition. R2 loses history through a composite operation scope filter.",
+      "owner": "Trigger command/store test suite",
+      "proposedChange": "Add focused cross-boundary inverse tests with pending operations and composite source replacement; assert exact owned operands plus unrelated-field preservation.",
+      "downside": "Additional cases must stay at Node layer to avoid enlarging browser feedback time.",
+      "disposition": "Candidate repair/test lesson; no standing-rule edit authorized."
+    },
+    {
+      "evidence": "R3: assigning concrete MockEngine to EngineAdapter compiles while the Store still needs undeclared applyDelta/log/setMockSwitch.",
+      "owner": "Trigger adapter contract and type-check entrypoint",
+      "proposedChange": "Check the consumer against its declared dependency and run edit/undo/redo through that contract surface.",
+      "downside": "Typing the full boundary adds DTO maintenance; keep mock diagnostics isolated rather than promising native capabilities unnecessarily.",
+      "disposition": "Candidate repair/test lesson; no global guidance change."
+    }
+  ],
+  "checks": {
+    "ctest": {
+      "exit": 0,
+      "seconds": 82.65,
+      "log": "reviewer-ctest.log"
+    },
+    "openspec": {
+      "exit": 0,
+      "log": "reviewer-openspec.log"
+    },
+    "specCoverage": {
+      "exit": 0,
+      "log": "reviewer-spec-coverage.log"
+    },
+    "independentRegressions": {
+      "exit": 1,
+      "tests": 3,
+      "failed": 3,
+      "script": "reviewer-regressions.mjs",
+      "log": "reviewer-regressions.log"
+    }
+  },
+  "limits": [
+    "CUA Chrome unavailable; UI assessment uses retained raw screenshots, inspected implementation and independently rerun browser lane.",
+    "Node coverage is not whole-application JSX coverage; OS folder chooser is unautomated and native audio/persistence/host bridge remain outside scope."
+  ],
+  "publicationAuthorized": false
+}

@@ -1,0 +1,1798 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="_ds/dandrum-design-system-3c2eabed-50f8-48be-a226-2fe7d8a388d3/tokens/fonts.css">
+<link rel="stylesheet" href="_ds/dandrum-design-system-3c2eabed-50f8-48be-a226-2fe7d8a388d3/tokens/colors.css">
+<link rel="stylesheet" href="_ds/dandrum-design-system-3c2eabed-50f8-48be-a226-2fe7d8a388d3/tokens/typography.css">
+<link rel="stylesheet" href="_ds/dandrum-design-system-3c2eabed-50f8-48be-a226-2fe7d8a388d3/tokens/spacing.css">
+<link rel="stylesheet" href="_ds/dandrum-design-system-3c2eabed-50f8-48be-a226-2fe7d8a388d3/tokens/shape.css">
+<link rel="stylesheet" href="_ds/dandrum-design-system-3c2eabed-50f8-48be-a226-2fe7d8a388d3/tokens/sizing.css">
+<link rel="stylesheet" href="_ds/dandrum-design-system-3c2eabed-50f8-48be-a226-2fe7d8a388d3/tokens/base.css">
+<link rel="stylesheet" href="_ds/dandrum-design-system-3c2eabed-50f8-48be-a226-2fe7d8a388d3/styles.css">
+<script src="_ds/dandrum-design-system-3c2eabed-50f8-48be-a226-2fe7d8a388d3/_ds_bundle.js"></script>
+<style>body{margin:0;background:#0c0907;color:var(--dd-paper-1);font-family:var(--font-ui)}a{color:var(--dd-vermilion);text-decoration:none}a:hover{color:var(--dd-vermilion-hi)}</style>
+</helmet>
+<div style="min-height:100vh;display:flex;flex-direction:column;align-items:center;gap:12px;padding:16px 16px 32px">
+
+<div style="width:100%;max-width:1600px;display:flex;flex-direction:column;gap:8px;padding:10px 12px;border:1px dashed var(--dd-line-2);border-radius:4px">
+  <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+    <span style="font:700 11px var(--font-ui);letter-spacing:.1em;text-transform:uppercase;color:var(--dd-paper-3)">Design states</span>
+    <span style="font:500 12px var(--font-ui);color:var(--dd-paper-3)">Pick a state, or use the tabs and tree inside the window.</span>
+    <div style="flex:1"></div>
+    <x-import component-from-global-scope="DandrumDesignSystem_3c2eab.Toggle" compact="{{ true }}" label="Engine contract annotations" checked="{{ ann }}" on-change="{{ toggleAnn }}" hint-size="220px,24px"></x-import>
+    <a href="Sampler Platform Spec.dc.html" style="font:600 12px var(--font-ui)">Open platform spec</a>
+  </div>
+  <div style="display:flex;flex-wrap:wrap;gap:4px">
+    <sc-for list="{{ states }}" as="s" hint-placeholder-count="23">
+      <x-import component-from-global-scope="DandrumDesignSystem_3c2eab.Button" size="sm" variant="secondary" selected="{{ s.sel }}" on-click="{{ s.go }}" hint-size="120px,24px">{{ s.label }}</x-import>
+    </sc-for>
+  </div>
+</div>
+
+<div style="width:{{ outW }}px;height:{{ outH }}px;flex:none">
+<div ref="{{ winRef }}" onContextMenu="{{ onRootCtx }}" onMouseDown="{{ onRootDown }}" onAuxClick="{{ onAux }}" data-screen-label="{{ stateLabel }}" style="width:{{ W }}px;height:{{ H }}px;transform:scale({{ scale }});transform-origin:top left;display:flex;flex-direction:column;background:var(--dd-ink-1);border:1px solid #000;box-shadow:0 20px 60px rgba(0,0,0,.5);overflow:hidden;position:relative">
+
+  <header style="height:{{ headH }}px;flex:none;display:flex;align-items:center;gap:12px;padding:0 12px;background:var(--dd-ink-0);border-bottom:1px solid var(--dd-line-1)">
+    <div style="display:flex;align-items:center;gap:8px;white-space:nowrap">
+      <span style="font:700 20px var(--font-display);letter-spacing:-.01em;color:var(--dd-paper-1)">dandrum</span>
+      <span style="width:6px;height:6px;border-radius:6px;background:var(--dd-vermilion)"></span>
+      <sc-if value="{{ notMin }}" hint-placeholder-val="{{ true }}"><span style="font:700 13px var(--font-ui);letter-spacing:.1em;text-transform:uppercase;color:var(--dd-paper-2)">Trigger</span></sc-if>
+    </div>
+    <div style="width:1px;height:20px;background:var(--dd-line-1)"></div>
+    <div style="display:flex;gap:2px">
+      <x-import component-from-global-scope="DandrumDesignSystem_3c2eab.IconButton" icon="reset" label="{{ undoTip }}" size="sm" variant="ghost" disabled="{{ noUndo }}" on-click="{{ doUndo }}" hint-size="24px,24px"></x-import>
+      <x-import component-from-global-scope="DandrumDesignSystem_3c2eab.IconButton" icon="reload" label="{{ redoTip }}" size="sm" variant="ghost" disabled="{{ noRedo }}" on-click="{{ doRedo }}" hint-size="24px,24px"></x-import>
+    </div>
+    <x-import component-from-global-scope="DandrumDesignSystem_3c2eab.MenuButton" label="Patch" value="{{ patchName }}" width="{{ patchW }}" compact="{{ isMin }}" hint-size="200px,28px"></x-import>
+    <x-import component-from-global-scope="DandrumDesignSystem_3c2eab.StatusMessage" inline="{{ true }}" compact="{{ isMin }}" kind="{{ status.kind }}" title="{{ status.title }}" hint-size="200px,24px">{{ status.text }}</x-import>
+    <div style="flex:1"></div>
+    <div style="display:flex;align-items:center;gap:6px">
+      <sc-if value="{{ ann }}" hint-placeholder-val="{{ false }}"><span style="font:500 11px/16px var(--font-value);color:var(--dd-warn);background:var(--dd-warn-wash);border:1px dashed var(--dd-warn);border-radius:2px;padding:0 5px;white-space:nowrap">Telemetry</span></sc-if>
+      <span style="font:500 12px var(--font-value);color:var(--dd-paper-3);white-space:nowrap">{{ voicesText }}</span>
+    </div>
+    <sc-if value="{{ notPerf }}" hint-placeholder-val="{{ true }}"><x-import component-from-global-scope="DandrumDesignSystem_3c2eab.SegmentedControl" compact="{{ true }}" value="{{ layout }}" on-change="{{ setLayout }}" options="{{ layoutOpts }}" hint-size="190px,22px"></x-import></sc-if>
+    <x-import component-from-global-scope="DandrumDesignSystem_3c2eab.Button" size="sm" variant="secondary" icon="{{ perfIcon }}" on-click="{{ togglePerf }}" hint-size="110px,24px">{{ perfLabel }}</x-import>
+    <x-import component-from-global-scope="DandrumDesignSystem_3c2eab.Meter" levels="{{ meterLv }}" thickness="{{ 4 }}" length="{{ 30 }}" hint-size="30px,12px"></x-import>
+  </header>
+
+  <section style="position:relative;flex:none;display:flex;align-items:center;justify-content:center;padding:{{ macroPad }};background:var(--dd-ink-2);border-bottom:1px solid var(--dd-line-1)">
+    <div style="position:absolute;left:12px;top:50%;transform:translateY(-50%);display:flex;flex-direction:column;gap:2px">
+      <span style="font:700 11px var(--font-ui);letter-spacing:.1em;text-transform:uppercase;color:var(--dd-paper-2)">Macros</span>
+      <sc-if value="{{ ann }}" hint-placeholder-val="{{ false }}"><span style="font:500 11px/16px var(--font-value);color:var(--dd-warn);background:var(--dd-warn-wash);border:1px dashed var(--dd-warn);border-radius:2px;padding:0 5px;align-self:flex-start">Binding</span></sc-if>
+    </div>
+    <div style="display:flex;justify-content:center;gap:6px">
+      <sc-for list="{{ macros }}" as="m" hint-placeholder-count="8">
+        <div data-ctx="macro|{{ m.name }}" data-reset="macro|{{ m.name }}" title="{{ m.d }} · right-click for destinations · middle-click resets" style="display:flex;justify-content:center;width:64px;border-radius:4px;background:{{ m.bg }};box-shadow:{{ m.edge }};min-width:0">
+          <x-import component-from-global-scope="DandrumDesignSystem_3c2eab.Knob" dc-props="{{ kTight }}" size="{{ macroSize }}" value="{{ m.v }}" on-change="{{ m.set }}" label="{{ m.name }}" host-automated="{{ m.host }}" disabled="{{ m.off }}" hint-size="56px,68px"></x-import>
+        </div>
+      </sc-for>
+    </div>
+  </section>
+
+  <sc-if value="{{ notPerf }}" hint-placeholder-val="{{ true }}">
+  <nav style="height:34px;flex:none;display:flex;align-items:center;gap:8px;padding:0 4px 0 0;background:var(--dd-ink-1);border-bottom:1px solid var(--dd-line-1)">
+    <x-import component-from-global-scope="DandrumDesignSystem_3c2eab.Tabs" items="{{ tabs }}" value="{{ page }}" on-change="{{ goPage }}" compact="{{ isMin }}" hint-size="640px,32px"></x-import>
+    <div style="flex:1"></div>
+    <x-import component-from-global-scope="DandrumDesignSystem_3c2eab.Button" size="sm" variant="ghost" icon="folder" selected="{{ browser }}" on-click="{{ toggleBrowser }}" hint-size="90px,24px">{{ browserLabel }}</x-import>
+  </nav>
+
+  <sc-if value="{{ banner }}" hint-placeholder-val="{{ false }}">
+    <div style="padding:4px 4px 0;flex:none;display:flex;flex-direction:column;gap:4px">
+      <sc-if value="{{ missing }}" hint-placeholder-val="{{ false }}">
+        <x-import component-from-global-scope="DandrumDesignSystem_3c2eab.StatusMessage" kind="error" compact="{{ true }}" title="Felt C4 f · sample unavailable" hint-size="100%,40px">felt_C4_f.wav was not found. Keys plays Felt C4 p for velocities 81–127 until the file is located or replaced. Other zones are unaffected.</x-import>
+      </sc-if>
+      <sc-if value="{{ unsup }}" hint-placeholder-val="{{ false }}">
+        <x-import component-from-global-scope="DandrumDesignSystem_3c2eab.StatusMessage" kind="warn" compact="{{ true }}" title="drum_take.m4a was not loaded" hint-size="100%,40px">AAC audio is not supported. Use WAV, AIFF, FLAC, MP3 or OGG. The current sample is unchanged.</x-import>
+      </sc-if>
+    </div>
+  </sc-if>
+
+  <div style="flex:1;min-height:0;display:grid;grid-template-columns:{{ gridCols }};gap:4px;padding:4px">
+
+    <aside style="min-height:0;display:flex;flex-direction:column;background:var(--dd-ink-2);border:1px solid var(--dd-line-1);border-radius:6px;overflow:hidden">
+      <sc-if value="{{ isMin }}" hint-placeholder-val="{{ false }}">
+        <div style="display:flex;flex-direction:column;align-items:center;gap:4px;padding:6px 0">
+          <x-import component-from-global-scope="DandrumDesignSystem_3c2eab.IconButton" icon="layers" label="Instrument tree" size="sm" variant="ghost" selected="{{ true }}" hint-size="24px,24px"></x-import>
+          <x-import component-from-global-scope="DandrumDesignSystem_3c2eab.IconButton" icon="folder" label="Sample browser" size="sm" variant="ghost" hint-size="24px,24px"></x-import>
+          <x-import component-from-global-scope="DandrumDesignSystem_3c2eab.IconButton" icon="keyboard" label="Key map" size="sm" variant="ghost" hint-size="24px,24px"></x-import>
+        </div>
+      </sc-if>
+      <sc-if value="{{ showTree }}" hint-placeholder-val="{{ true }}">
+        <div style="height:30px;flex:none;display:flex;align-items:center;gap:6px;padding:0 8px 0 12px;background:var(--dd-ink-3);border-bottom:1px solid var(--dd-line-1)">
+          <span style="font:700 12px var(--font-ui);letter-spacing:.1em;text-transform:uppercase;color:var(--dd-paper-2)">Instrument</span>
+          <sc-if value="{{ ann }}" hint-placeholder-val="{{ false }}"><span style="font:500 11px/16px var(--font-value);color:var(--dd-warn);background:var(--dd-warn-wash);border:1px dashed var(--dd-warn);border-radius:2px;padding:0 5px;white-space:nowrap">Group tree</span></sc-if>
+          <div style="flex:1"></div>
+          <x-import component-from-global-scope="DandrumDesignSystem_3c2eab.IconButton" icon="plus" label="Add group" size="sm" variant="ghost" hint-size="24px,24px"></x-import>
+        </div>
+        <div onDragOver="{{ onNodeOver }}" onDrop="{{ onNodeDrop }}" style="flex:1 1 0;min-height:40%;overflow:auto;padding:4px 0">
+          <sc-for list="{{ tree }}" as="r" hint-placeholder-count="14">
+            <div data-node="{{ r.id }}" data-ctx="node|{{ r.id }}" style="padding-left:{{ r.pad }}px;padding-right:4px;border-radius:3px;background:{{ r.dbg }};box-shadow:{{ r.drop }}">
+              <x-import component-from-global-scope="DandrumDesignSystem_3c2eab.ListRow" icon="{{ r.icon }}" label="{{ r.label }}" detail="{{ r.detail }}" selected="{{ r.sel }}" active="{{ r.active }}" disabled="{{ r.dim }}" on-click="{{ r.go }}" hint-size="100%,26px"></x-import>
+            </div>
+          </sc-for>
+        </div>
+        <div style="height:30px;flex:none;display:flex;align-items:center;gap:6px;padding:0 8px 0 12px;background:var(--dd-ink-3);border-top:1px solid var(--dd-line-1);border-bottom:1px solid var(--dd-line-1)">
+          <span style="font:700 12px var(--font-ui);letter-spacing:.1em;text-transform:uppercase;color:var(--dd-paper-2)">Sources</span>
+          <sc-if value="{{ ann }}" hint-placeholder-val="{{ false }}"><span style="font:500 11px/16px var(--font-value);color:var(--dd-warn);background:var(--dd-warn-wash);border:1px dashed var(--dd-warn);border-radius:2px;padding:0 5px;white-space:nowrap">Assets + Asset Regions</span></sc-if>
+          <div style="flex:1"></div>
+          <x-import component-from-global-scope="DandrumDesignSystem_3c2eab.IconButton" icon="plus" label="Add source…" size="sm" variant="ghost" on-click="{{ toggleBrowser }}" hint-size="24px,24px"></x-import>
+        </div>
+        <div style="flex:0 1 auto;max-height:26%;min-height:0;overflow:auto;padding:4px 0">
+          <sc-for list="{{ srcGroups }}" as="g" hint-placeholder-count="3">
+            <div role="button" tabindex="0" aria-expanded="{{ g.open }}" onClick="{{ g.toggle }}" style="display:flex;align-items:center;gap:6px;height:26px;padding:0 12px 0 6px;cursor:pointer;background:{{ g.hbg }}" style-hover="background:var(--dd-ink-3)">
+              <x-import component-from-global-scope="DandrumDesignSystem_3c2eab.Icon" name="{{ g.chev }}" size="{{ 12 }}" color="var(--dd-paper-3)" hint-size="12px,12px"></x-import>
+              <span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font:600 12px var(--font-ui);letter-spacing:.06em;text-transform:uppercase;color:var(--dd-paper-2)">{{ g.name }}</span>
+              <span style="flex:none;white-space:nowrap;font:500 11px var(--font-value);color:var(--dd-paper-3)">{{ g.summary }}</span>
+            </div>
+            <sc-if value="{{ g.open }}" hint-placeholder-val="{{ false }}">
+              <sc-for list="{{ g.items }}" as="i" hint-placeholder-count="3">
+                <div data-ctx="src|{{ i.name }}" draggable="true" onDragStart="{{ i.drag }}" onDragEnd="{{ endSrcDrag }}" onClick="{{ i.play }}" title="Click to preview · drag onto a pad, layer or zone" style="position:relative;display:flex;align-items:center;gap:8px;height:26px;padding:0 10px 0 24px;cursor:grab;background:{{ i.bg }};box-shadow:{{ i.edge }}" style-hover="background:var(--dd-ink-3)">
+                  <x-import component-from-global-scope="DandrumDesignSystem_3c2eab.Icon" name="{{ i.icon }}" size="{{ 14 }}" color="{{ i.ic }}" hint-size="14px,14px"></x-import>
+                  <span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font:500 13px var(--font-ui);color:var(--dd-paper-1)">{{ i.name }}</span>
+                  <span style="flex:none;font:500 11px var(--font-value);color:var(--dd-paper-3)">{{ i.detail }}</span>
+                  <sc-if value="{{ i.playing }}" hint-placeholder-val="{{ false }}"><div style="position:absolute;left:24px;right:10px;bottom:2px;height:2px;background:var(--dd-ink-4);border-radius:1px"><div style="width:{{ i.pct }}%;height:2px;background:var(--dd-paper-1);border-radius:1px"></div></div></sc-if>
+                </div>
+              </sc-for>
+            </sc-if>
+          </sc-for>
+        </div>
+        <div style="height:30px;flex:none;display:flex;align-items:center;gap:6px;padding:0 8px 0 12px;background:var(--dd-ink-3);border-top:1px solid var(--dd-line-1);border-bottom:1px solid var(--dd-line-1)">
+          <span style="font:700 12px var(--font-ui);letter-spacing:.1em;text-transform:uppercase;color:var(--dd-paper-2)">Modulators</span>
+          <sc-if value="{{ ann }}" hint-placeholder-val="{{ false }}"><span style="font:500 11px/16px var(--font-value);color:var(--dd-warn);background:var(--dd-warn-wash);border:1px dashed var(--dd-warn);border-radius:2px;padding:0 5px;white-space:nowrap">Modulators</span></sc-if>
+          <div style="flex:1"></div>
+          <x-import component-from-global-scope="DandrumDesignSystem_3c2eab.IconButton" icon="plus" label="Add modulator" size="sm" variant="ghost" hint-size="24px,24px"></x-import>
+        </div>
+        <div style="flex:0 1 auto;max-height:22%;min-height:0;overflow:auto;padding:4px 0">
+                <sc-for list="{{ modSrcs }}" as="s" hint-placeholder-count="5">
+                  <div role="button" tabindex="0" aria-expanded="{{ s.open }}" onClick="{{ s.toggle }}" style="display:flex;align-items:center;gap:6px;height:26px;padding:0 12px 0 6px;cursor:pointer;background:{{ s.hbg }}" style-hover="background:var(--dd-ink-3)">
+                    <x-import component-from-global-scope="DandrumDesignSystem_3c2eab.Icon" name="{{ s.chev }}" size="{{ 12 }}" color="var(--dd-paper-3)" hint-size="12px,12px"></x-import>
+                    <span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;font:600 12px var(--font-ui);letter-spacing:.06em;text-transform:uppercase;color:var(--dd-paper-2);white-space:nowrap">{{ s.cat }}</span>
+                    <span style="display:flex;gap:3px;align-items:center">
+                      <sc-for list="{{ s.slots }}" as="g" hint-placeholder-count="0"><x-import component-from-global-scope="DandrumDesignSystem_3c2eab.ModGlyph" slot="{{ g }}" size="{{ 8 }}" hint-size="8px,8px"></x-import></sc-for>
+                    </span>
+                    <span title="{{ s.title }}" style="flex:none;white-space:nowrap;font:500 11px var(--font-value);color:var(--dd-paper-3)">{{ s.summary }}</span>
+                  </div>
+                  <sc-if value="{{ s.open }}" hint-placeholder-val="{{ false }}">
+                  <sc-for list="{{ s.items }}" as="s" hint-placeholder-count="2">
+                  <div data-ctx="mod|{{ s.name }}" draggable="true" onDragStart="{{ s.drag }}" onDragEnd="{{ endModDrag }}" onClick="{{ s.pick }}" title="{{ s.tip }}" style="display:flex;align-items:center;gap:8px;height:26px;padding:0 12px 0 24px;cursor:grab;background:{{ s.bg }};box-shadow:{{ s.edge }}" style-hover="background:var(--dd-ink-3)">
+                    <span style="width:10px;display:flex;justify-content:center">
+                      <sc-if value="{{ s.slot }}" hint-placeholder-val="{{ false }}"><x-import component-from-global-scope="DandrumDesignSystem_3c2eab.ModGlyph" slot="{{ s.slot }}" size="{{ 9 }}" hint-size="9px,9px"></x-import></sc-if>
+                      <sc-if value="{{ s.noSlot }}" hint-placeholder-val="{{ true }}"><span style="width:7px;height:7px;border:1px solid var(--dd-paper-3);border-radius:1px"></span></sc-if>
+                    </span>
+                    <span style="flex:1;font:500 13px var(--font-ui);color:var(--dd-paper-1);white-space:nowrap">{{ s.name }}</span>
+                    <span style="font:500 11px var(--font-value);color:var(--dd-paper-3)">{{ s.n }}</span>
+                    <span style="width:24px;height:3px;background:var(--dd-ink-4);border-radius:2px"><span style="display:block;width:{{ s.live }}%;height:3px;background:var(--dd-paper-2);border-radius:2px"></span></span>
+                  </div>
+                  </sc-for>
+                  </sc-if>
+                </sc-for>
+        </div>
+        <div style="flex:none;padding:6px 12px;border-top:1px solid var(--dd-line-1);font:500 12px/1.35 var(--font-ui);color:var(--dd-paper-3)">Click to preview a source. Drag sources onto pads or zones, modulators onto controls. Right-click a control for Modulation.</div>
+      </sc-if>
+      <sc-if value="{{ showBrowser }}" hint-placeholder-val="{{ false }}">
+        <div style="height:30px;flex:none;display:flex;align-items:center;gap:6px;padding:0 8px 0 12px;background:var(--dd-ink-3);border-bottom:1px solid var(--dd-line-1)">
+          <span style="font:700 12px var(--font-ui);letter-spacing:.1em;text-transform:uppercase;color:var(--dd-paper-2)">Samples</span>
+          <sc-if value="{{ ann }}" hint-placeholder-val="{{ false }}"><span style="font:500 11px/16px var(--font-value);color:var(--dd-warn);background:var(--dd-warn-wash);border:1px dashed var(--dd-warn);border-radius:2px;padding:0 5px;white-space:nowrap">Asset service</span></sc-if>
+          <div style="flex:1"></div>
+          <x-import component-from-global-scope="DandrumDesignSystem_3c2eab.IconButton" icon="close" label="Close browser" size="sm" variant="ghost" on-click="{{ toggleBrowser }}" hint-size="24px,24px"></x-import>
+        </div>
+        <div style="padding:8px;display:flex;flex-direction:column;gap:6px;border-bottom:1px solid var(--dd-line-1)">
+          <div style="height:26px;display:flex;align-items:center;gap:6px;padding:0 8px;background:var(--dd-ink-0);border:1px solid var(--dd-line-2);border-radius:2px;font:500 13px var(--font-ui);color:var(--dd-paper-3)">Search samples</div>
+          <x-import component-from-global-scope="DandrumDesignSystem_3c2eab.SegmentedControl" compact="{{ true }}" full-width="{{ true }}" value="all" options="{{ browserFilter }}" hint-size="100%,22px"></x-import>
+        </div>
+        <div style="flex:1;min-height:0;overflow:auto;padding:4px 0">
+          <sc-for list="{{ assets }}" as="a" hint-placeholder-count="12">
+            <sc-if value="{{ a.head }}" hint-placeholder-val="{{ false }}">
+              <div style="padding:8px 12px 4px;font:600 11px var(--font-ui);letter-spacing:.06em;text-transform:uppercase;color:var(--dd-paper-3)">{{ a.label }}</div>
+            </sc-if>
+            <sc-if value="{{ a.row }}" hint-placeholder-val="{{ true }}">
+              <div style="padding:0 4px">
+                <x-import component-from-global-scope="DandrumDesignSystem_3c2eab.ListRow" icon="{{ a.icon }}" label="{{ a.label }}" value="{{ a.dur }}" selected="{{ a.sel }}" hint-size="100%,26px"></x-import>
+              </div>
+            </sc-if>
+          </sc-for>
+        </div>
+        <div style="padding:8px 12px;border-top:1px solid var(--dd-line-1);font:500 12px/1.35 var(--font-ui);color:var(--dd-paper-3)">Click to preview. Drag onto the waveform to replace, onto the key map to add a zone.</div>
+      </sc-if>
+    </aside>
+
+    <main onContextMenu="{{ onKnobCtx }}" onDragOver="{{ onKnobOver }}" onDrop="{{ onKnobDrop }}" onDragLeave="{{ onKnobLeave }}" style="min-width:0;min-height:0;overflow:auto;display:flex;flex-direction:column;gap:4px">
+
+      <!-- EMPTY -->
+      <sc-if value="{{ isEmpty }}" hint-placeholder-val="{{ false }}">
+        <div style="flex:1;min-height:360px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;border:1px dashed var(--dd-line-3);border-radius:6px;background:var(--dd-ink-0)">
+          <x-import component-from-global-scope="DandrumDesignSystem_3c2eab.EmptyState" icon="plus" title="Drop samples here" hint-size="360px,120px">One file becomes a sound across the keyboard. Several files ask how to map them.</x-import>
+          <div style="display:flex;gap:8px">
+            <x-import component-from-global-scope="DandrumDesignSystem_3c2eab.Button" variant="primary" icon="folder" on-click="{{ toggleBrowser }}" hint-size="140px,28px">Browse samples…</x-import>
+            <x-import component-from-global-scope="DandrumDesignSystem_3c2eab.Button" variant="secondary" icon="layers" hint-size="160px,28px">Load multiple…</x-import>
+          </div>
+          <span style="font:500 12px var(--font-ui);color:var(--dd-paper-3)">WAV · AIFF · FLAC · MP3 · OGG</span>
+        </div>
+      </sc-if>
+
+      <!-- MULTI DROP -->
+      <sc-if value="{{ isDrop }}" hint-placeholder-val="{{ false }}">
+        <div style="position:relative;flex:1;min-height:420px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;border:1px solid var(--dd-vermilion);border-radius:6px;background:var(--dd-vermilion-wash);padding:24px">
+          <div style="display:flex;flex-direction:column;align-items:center;gap:4px">
+            <span style="font:700 13px var(--font-ui);letter-spacing:.1em;text-transform:uppercase;color:var(--dd-paper-1)">12 files · release to map</span>
+            <span style="font:500 13px var(--font-ui);color:var(--dd-paper-2)">File names contain notes C3–B4 and dynamics p / f. Move over a choice, then release.</span>
+          </div>
+          <div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;width:100%;max-width:720px">
+            <sc-for list="{{ dropOpts }}" as="o" hint-placeholder-count="4">
+              <div style="display:flex;flex-direction:column;gap:8px;padding:12px;background:var(--dd-ink-2);border:1px solid {{ o.border }};border-radius:4px">
+                <div style="height:44px;display:grid;grid-template-columns:repeat(6,1fr);grid-template-rows:repeat(2,1fr);gap:2px;padding:4px;background:var(--dd-ink-0);border-radius:2px">
+                  <sc-for list="{{ o.cells }}" as="c" hint-placeholder-count="6"><div style="grid-column:{{ c.col }};grid-row:{{ c.row }};background:{{ c.bg }};border-radius:1px"></div></sc-for>
+                </div>
+                <div style="display:flex;align-items:center;gap:6px">
+                  <span style="font:600 13px var(--font-ui);color:var(--dd-paper-1)">{{ o.name }}</span>
+                  <sc-if value="{{ o.sug }}" hint-placeholder-val="{{ false }}"><span style="font:600 11px var(--font-ui);letter-spacing:.06em;text-transform:uppercase;color:var(--dd-vermilion)">Suggested</span></sc-if>
+                </div>
+                <span style="font:500 12px/1.35 var(--font-ui);color:var(--dd-paper-3)">{{ o.desc }}</span>
+              </div>
+            </sc-for>
+          </div>
+          <span style="font:500 12px var(--font-ui);color:var(--dd-paper-3)">Release outside the choices to use the suggestion · Esc cancels</span>
+          <sc-if value="{{ ann }}" hint-placeholder-val="{{ false }}"><span style="font:500 11px/16px var(--font-value);color:var(--dd-warn);background:var(--dd-warn-wash);border:1px dashed var(--dd-warn);border-radius:2px;padding:0 5px;white-space:nowrap">Asset × N → Trigger Rules (one per key) | Selector(velocity) | Selector(all) | Asset Regions</span></sc-if>
+        </div>
+      </sc-if>
+
+      <!-- SAMPLE -->
+      <sc-if value="{{ isSample }}" hint-placeholder-val="{{ false }}">
+        <section style="background:var(--dd-ink-2);border:1px solid var(--dd-line-1);border-radius:6px;display:flex;flex-direction:column">
+          <div style="min-height:34px;display:flex;align-items:center;flex-wrap:wrap;gap:8px;padding:4px 8px 4px 12px;background:var(--dd-ink-3);border-bottom:1px solid var(--dd-line-1);border-radius:6px 6px 0 0">
+            <span style="font:700 13px var(--font-ui);letter-spacing:.1em;text-transform:uppercase;color:var(--dd-paper-2)">Sample</span>
+            <x-import component-from-global-scope="DandrumDesignSystem_3c2eab.MenuButton" value="{{ assetName }}" compact="{{ true }}" width="{{ 180 }}" hint-size="180px,24px"></x-import>
+            <sc-if value="{{ ann }}" hint-placeholder-val="{{ false }}"><span style="font:500 11px/16px var(--font-value);color:var(--dd-warn);background:var(--dd-warn-wash);border:1px dashed var(--dd-warn);border-radius:2px;padding:0 5px;white-space:nowrap">Asset binding on AssetPlayer</span></sc-if>
+            <x-import component-from-global-scope="DandrumDesignSystem_3c2eab.IconButton" icon="chevron-right" label="Audition (Space)" size="sm" hint-size="24px,24px"></x-import>
+            <div style="flex:1"></div>
+            <x-import component-from-global-scope="DandrumDesignSystem_3c2eab.SegmentedControl" compact="{{ true }}" value="{{ playMode }}" options="{{ playOpts }}" hint-size="300px,22px"></x-import>
+            <x-import component-from-global-scope="DandrumDesignSystem_3c2eab.IconButton" icon="reverse" label="Reverse" size="sm" selected="{{ false }}" hint-size="24px,24px"></x-import>
+            <sc-if value="{{ ann }}" hint-placeholder-val="{{ false }}"><span style="font:500 11px/16px var(--font-value);color:var(--dd-warn);background:var(--dd-warn-wash);border:1px dashed var(--dd-warn);border-radius:2px;padding:0 5px;white-space:nowrap">Playback Policy</span></sc-if>
+          </div>
+          <div style="padding:8px 12px 12px;display:flex;flex-direction:column;gap:6px">
+            <div style="position:relative">
+              <x-import component-from-global-scope="DandrumDesignSystem_3c2eab.WaveformPanel" peaks="{{ pianoPeaks }}" height="{{ 28 }}" compact="{{ true }}" show-display-toggle="{{ false }}" region-start="{{ 0 }}" region-end="{{ 1 }}" hint-size="100%,28px"></x-import>
+              <div style="position:absolute;top:0;bottom:0;left:0;width:62%;border:1px solid var(--dd-paper-2);border-radius:2px;pointer-events:none"></div>
+            </div>
+            <sc-if value="{{ isLoading }}" hint-placeholder-val="{{ false }}">
+              <div style="position:relative">
+                <x-import component-from-global-scope="DandrumDesignSystem_3c2eab.WaveformPanel" peaks="{{ partialPeaks }}" height="{{ waveH }}" show-display-toggle="{{ false }}" label="felt_C4_f.wav · reading" hint-size="100%,260px"></x-import>
+                <div style="position:absolute;left:12px;bottom:12px;display:flex;flex-direction:column;gap:6px;width:280px">
+                  <x-import component-from-global-scope="DandrumDesignSystem_3c2eab.StatusMessage" kind="busy" inline="{{ true }}" title="Loading felt_C4_f.wav" hint-size="280px,24px">62% · 3.0 of 4.8 s</x-import>
+                  <div style="height:4px;background:var(--dd-ink-4);border-radius:2px"><div style="width:62%;height:4px;background:var(--dd-paper-2);border-radius:2px"></div></div>
+                </div>
+              </div>
+            </sc-if>
+            <sc-if value="{{ waveReady }}" hint-placeholder-val="{{ true }}">
+              <div onClick="{{ onWaveClick }}" title="Click to preview" style="position:relative;cursor:pointer">
+                <x-import component-from-global-scope="DandrumDesignSystem_3c2eab.WaveformPanel" peaks="{{ pianoPeaks }}" height="{{ waveH }}" region-start="{{ hRs }}" region-end="{{ hRe }}" fade-in="{{ hFi }}" fade-out="{{ hFo }}" loop-start="{{ loopS }}" loop-end="{{ loopE }}" crossfade="{{ xfade }}" cursor="{{ cursor }}" missing="{{ missing }}" label="{{ waveLabel }}" hint-size="100%,260px"></x-import>
+                <sc-if value="{{ unsup }}" hint-placeholder-val="{{ false }}"><div style="position:absolute;inset:0;border:1px dashed var(--dd-warn);border-radius:2px;pointer-events:none"></div></sc-if>
+                <sc-if value="{{ ann }}" hint-placeholder-val="{{ false }}"><span style="position:absolute;top:6px;right:8px;font:500 11px/16px var(--font-value);color:var(--dd-warn);background:var(--dd-warn-wash);border:1px dashed var(--dd-warn);border-radius:2px;padding:0 5px;white-space:nowrap">WaveformEditor · layers: peaks (Analysis), region, loop, playhead (Telemetry)</span></sc-if>
+              </div>
+            </sc-if>
+            <div style="display:flex;gap:16px;flex-wrap:wrap;font:500 12px var(--font-ui);color:var(--dd-paper-3)">
+              <sc-for list="{{ meta }}" as="m" hint-placeholder-count="6"><span>{{ m.k }} <b style="font:500 12px var(--font-value);color:var(--dd-paper-2)">{{ m.v }}</b></span></sc-for>
+            </div>
+          </div>
+        </section>
+
+        <sc-if value="{{ loop }}" hint-placeholder-val="{{ false }}">
+          <section style="background:var(--dd-ink-2);border:1px solid var(--dd-line-1);border-radius:6px">
+            <div style="height:30px;display:flex;align-items:center;gap:8px;padding:0 8px 0 12px;background:var(--dd-ink-3);border-bottom:1px solid var(--dd-line-1);border-radius:6px 6px 0 0">
+              <span style="font:700 13px var(--font-ui);letter-spacing:.1em;text-transform:uppercase;color:var(--dd-paper-2)">Loop</span>
+              <sc-if value="{{ ann }}" hint-placeholder-val="{{ false }}"><span style="font:500 11px/16px var(--font-value);color:var(--dd-warn);background:var(--dd-warn-wash);border:1px dashed var(--dd-warn);border-radius:2px;padding:0 5px;white-space:nowrap">Asset Region (loop) + Playback Policy</span></sc-if>
+              <div style="flex:1"></div>
+              <x-import component-from-global-scope="DandrumDesignSystem_3c2eab.Toggle" compact="{{ true }}" label="Snap to zero crossings" checked="{{ true }}" hint-size="170px,22px"></x-import>
+            </div>
+            <div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.3fr);gap:16px;padding:12px">
+              <div style="display:flex;flex-direction:column;gap:8px">
+                <div style="display:flex;gap:8px;flex-wrap:wrap">
+                  <x-import component-from-global-scope="DandrumDesignSystem_3c2eab.NumericField" label="Loop start" value="{{ 2.651 }}" unit="s" step="{{ 0.001 }}" width="{{ 96 }}" compact="{{ true }}" hint-size="96px,44px"></x-import>
+                  <x-import component-from-global-scope="DandrumDesignSystem_3c2eab.NumericField" label="Loop end" value="{{ 3.952 }}" unit="s" step="{{ 0.001 }}" width="{{ 96 }}" compact="{{ true }}" hint-size="96px,44px"></x-import>
+                  <x-import component-from-global-scope="DandrumDesignSystem_3c2eab.NumericField" label="Crossfade" value="{{ 120 }}" unit="ms" width="{{ 84 }}" compact="{{ true }}" hint-size="84px,44px"></x-import>
+                </div>
+                <span style="font:600 11px var(--font-ui);letter-spacing:.06em;text-transform:uppercase;color:var(--dd-paper-3)">Suggested loops · from analysis</span>
+                <div style="display:flex;gap:4px;flex-wrap:wrap">
+                  <x-import component-from-global-scope="DandrumDesignSystem_3c2eab.Button" size="sm" selected="{{ true }}" hint-size="120px,24px">2.651–3.952 s</x-import>
+                  <x-import component-from-global-scope="DandrumDesignSystem_3c2eab.Button" size="sm" hint-size="120px,24px">2.104–3.952 s</x-import>
+                  <x-import component-from-global-scope="DandrumDesignSystem_3c2eab.Button" size="sm" hint-size="120px,24px">3.010–4.420 s</x-import>
+                </div>
+              </div>
+              <div style="display:flex;flex-direction:column;gap:4px">
+                <span style="font:600 11px var(--font-ui);letter-spacing:.06em;text-transform:uppercase;color:var(--dd-paper-3)">Loop seam · end → start, ±20 ms</span>
+                <div style="position:relative;display:grid;grid-template-columns:1fr 1fr;gap:0">
+                  <x-import component-from-global-scope="DandrumDesignSystem_3c2eab.WaveformPanel" peaks="{{ seamA }}" height="{{ 56 }}" compact="{{ true }}" show-display-toggle="{{ false }}" hint-size="100%,56px"></x-import>
+                  <x-import component-from-global-scope="DandrumDesignSystem_3c2eab.WaveformPanel" peaks="{{ seamB }}" height="{{ 56 }}" compact="{{ true }}" show-display-toggle="{{ false }}" hint-size="100%,56px"></x-import>
+                  <div style="position:absolute;top:0;bottom:0;left:50%;width:1px;background:var(--dd-vermilion)"></div>
+                </div>
+              </div>
+            </div>
+          </section>
+        </sc-if>
+
+        <section style="background:var(--dd-ink-2);border:1px solid var(--dd-line-1);border-radius:6px;padding:6px 8px 8px;display:flex;flex-wrap:wrap;align-items:flex-start;gap:12px">
+          <sc-for list="{{ sampleKnobGroups }}" as="g" hint-placeholder-count="3">
+            <div style="display:flex;flex-direction:column;gap:8px">
+              <div style="display:flex;align-items:center;gap:6px">
+                <span style="font:700 12px var(--font-ui);letter-spacing:.1em;text-transform:uppercase;color:var(--dd-paper-2)">{{ g.title }}</span>
+                <sc-if value="{{ ann }}" hint-placeholder-val="{{ false }}"><span style="font:500 11px/16px var(--font-value);color:var(--dd-warn);background:var(--dd-warn-wash);border:1px dashed var(--dd-warn);border-radius:2px;padding:0 5px;white-space:nowrap">{{ g.ann }}</span></sc-if>
+              </div>
+              <div style="display:flex;gap:0">
+                <sc-for list="{{ g.knobs }}" as="k" hint-placeholder-count="3">
+                  <div data-knob="{{ k.key }}" data-reset="knob|{{ k.key }}" style="border-radius:4px;box-shadow:{{ k.ring }}"><x-import component-from-global-scope="DandrumDesignSystem_3c2eab.Knob" dc-props="{{ kTight }}" size="sm" value="{{ k.v }}" on-change="{{ k.set }}" bipolar="{{ k.bi }}" label="{{ k.label }}" value-text="{{ k.t }}" modulations="{{ k.mods }}" host-automated="{{ k.host }}" assigning="{{ assigning }}" hint-size="48px,60px"></x-import></div>
+                </sc-for>
+              </div>
+            </div>
+          </sc-for>
+          <div style="display:flex;flex-direction:column;gap:8px">
+            <span style="font:700 12px var(--font-ui);letter-spacing:.1em;text-transform:uppercase;color:var(--dd-paper-2)">Root</span>
+            <x-import component-from-global-scope="DandrumDesignSystem_3c2eab.NumericField" value="{{ 60 }}" format="{{ fmtNote }}" width="{{ 84 }}" compact="{{ true }}" hint-size="84px,26px"></x-import>
+            <span style="font:500 11px var(--font-ui);color:var(--dd-paper-3)">Detected C4 +3¢</span>
+          </div>
+        </section>
+      </sc-if>
+
+      <!-- SLICES -->
+      <sc-if value="{{ isSlices }}" hint-placeholder-val="{{ false }}">
+        <section style="background:var(--dd-ink-2);border:1px solid var(--dd-line-1);border-radius:6px">
+          <div style="min-height:34px;display:flex;align-items:center;flex-wrap:wrap;gap:6px;padding:4px 8px 4px 12px;background:var(--dd-ink-3);border-bottom:1px solid var(--dd-line-1);border-radius:6px 6px 0 0">
+            <span style="font:700 13px var(--font-ui);letter-spacing:.1em;text-transform:uppercase;color:var(--dd-paper-2)">Slices</span>
+            <span style="font:500 12px var(--font-value);color:var(--dd-paper-3)">amen_172.wav · 8</span>
+            <div style="width:1px;height:18px;background:var(--dd-line-2)"></div>
+            <x-import component-from-global-scope="DandrumDesignSystem_3c2eab.Button" size="sm" icon="slice" selected="{{ trShown }}" hint-size="130px,24px">Detect transients</x-import>
+            <sc-if value="{{ ann }}" hint-placeholder-val="{{ false }}"><span style="font:500 11px/16px var(--font-value);color:var(--dd-warn);background:var(--dd-warn-wash);border:1px dashed var(--dd-warn);border-radius:2px;padding:0 5px;white-space:nowrap">Analysis (async)</span></sc-if>
+            <x-import component-from-global-scope="DandrumDesignSystem_3c2eab.SegmentedControl" compact="{{ true }}" value="even" options="{{ divOpts }}" hint-size="120px,22px"></x-import>
+            <x-import component-from-global-scope="DandrumDesignSystem_3c2eab.NumericField" value="{{ 8 }}" width="{{ 48 }}" compact="{{ true }}" hint-size="48px,22px"></x-import>
+            <div style="flex:1"></div>
+            <x-import component-from-global-scope="DandrumDesignSystem_3c2eab.IconButton" icon="plus" label="Add marker at cursor (M)" size="sm" variant="ghost" hint-size="24px,24px"></x-import>
+            <x-import component-from-global-scope="DandrumDesignSystem_3c2eab.IconButton" icon="minus" label="Delete selected markers (Delete)" size="sm" variant="ghost" hint-size="24px,24px"></x-import>
+            <x-import component-from-global-scope="DandrumDesignSystem_3c2eab.IconButton" icon="reset" label="Clear all markers" size="sm" variant="ghost" hint-size="24px,24px"></x-import>
+            <x-import component-from-global-scope="DandrumDesignSystem_3c2eab.IconButton" icon="chevron-left" label="Previous slice (←)" size="sm" variant="ghost" hint-size="24px,24px"></x-import>
+            <x-import component-from-global-scope="DandrumDesignSystem_3c2eab.IconButton" icon="chevron-right" label="Next slice (→)" size="sm" variant="ghost" hint-size="24px,24px"></x-import>
+          </div>
+          <div style="padding:8px 12px 12px;display:flex;flex-direction:column;gap:6px">
+            <div onClick="{{ onSliceWaveClick }}" title="Click a slice to preview it" style="cursor:pointer"><x-import component-from-global-scope="DandrumDesignSystem_3c2eab.WaveformPanel" kind="break" height="{{ sliceWaveH }}" slices="{{ slices }}" selected-slice="{{ selSlice }}" cursor="{{ sliceCursor }}" label="amen_172.wav · 1.395 s · 172 BPM" hint-size="100%,200px"></x-import></div>
+            <div style="position:relative;height:28px;background:var(--dd-ink-0);border-radius:2px;border:1px solid var(--dd-line-1)">
+              <span style="position:absolute;left:8px;top:6px;font:600 11px var(--font-ui);letter-spacing:.06em;text-transform:uppercase;color:var(--dd-paper-4)">Transients</span>
+              <sc-if value="{{ trDone }}" hint-placeholder-val="{{ false }}">
+                <sc-for list="{{ transients }}" as="t" hint-placeholder-count="15">
+                  <div style="position:absolute;left:{{ t.x }}%;bottom:0;width:2px;height:{{ t.h }}px;background:{{ t.c }};border-radius:1px 1px 0 0"></div>
+                </sc-for>
+              </sc-if>
+              <sc-if value="{{ trRun }}" hint-placeholder-val="{{ false }}">
+                <div style="position:absolute;left:0;top:0;bottom:0;width:48%;background:var(--dd-ink-3)"></div>
+                <div style="position:absolute;left:48%;top:0;bottom:0;width:1px;background:var(--dd-paper-2)"></div>
+              </sc-if>
+            </div>
+            <sc-if value="{{ trDone }}" hint-placeholder-val="{{ false }}">
+              <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:6px 8px;background:var(--dd-ink-3);border-radius:4px">
+                <span style="font:500 13px var(--font-ui);color:var(--dd-paper-1)">15 transients found</span>
+                <span style="font:500 12px var(--font-ui);color:var(--dd-paper-3)">Bright ticks are above the threshold. Existing slices stay until you apply.</span>
+                <div style="flex:1"></div>
+                <x-import component-from-global-scope="DandrumDesignSystem_3c2eab.Slider" compact="{{ true }}" length="{{ 120 }}" value="{{ 0.62 }}" label="Sensitivity" value-text="62%" hint-size="200px,24px"></x-import>
+                <x-import component-from-global-scope="DandrumDesignSystem_3c2eab.Button" size="sm" variant="primary" hint-size="120px,24px">Apply as 12 slices</x-import>
+                <x-import component-from-global-scope="DandrumDesignSystem_3c2eab.Button" size="sm" variant="ghost" hint-size="60px,24px">Discard</x-import>
+              </div>
+            </sc-if>
+            <sc-if value="{{ trRun }}" hint-placeholder-val="{{ false }}">
+              <x-import component-from-global-scope="DandrumDesignSystem_3c2eab.StatusMessage" kind="busy" compact="{{ true }}" title="Detecting transients · 48%" hint-size="100%,36px">Runs in the background. You can keep editing and playing; slices change only when you apply the result.</x-import>
+            </sc-if>
+            <sc-if value="{{ trFail }}" hint-placeholder-val="{{ false }}">
+              <x-import component-from-global-scope="DandrumDesignSystem_3c2eab.StatusMessage" kind="error" compact="{{ true }}" title="Transient detection failed" hint-size="100%,36px">amen_172.wav could not be analysed (decoder stopped at 0.82 s). Existing slices are unchanged. Try again, or divide evenly or by grid.</x-import>
+            </sc-if>
+          </div>
+        </section>
+
+        <section style="background:var(--dd-ink-2);border:1px solid var(--dd-line-1);border-radius:6px">
+          <div style="min-height:30px;display:flex;align-items:center;flex-wrap:wrap;gap:8px;padding:2px 8px 2px 12px;background:var(--dd-ink-3);border-bottom:1px solid var(--dd-line-1);border-radius:6px 6px 0 0">
+            <span style="font:700 12px var(--font-ui);letter-spacing:.1em;text-transform:uppercase;color:var(--dd-paper-2)">Slice list</span>
+            <span style="font:500 12px var(--font-ui);color:var(--dd-paper-3)">2 selected</span>
+            <sc-if value="{{ ann }}" hint-placeholder-val="{{ false }}"><span style="font:500 11px/16px var(--font-value);color:var(--dd-warn);background:var(--dd-warn-wash);border:1px dashed var(--dd-warn);border-radius:2px;padding:0 5px;white-space:nowrap">Asset Region + Trigger Rule (note) per row</span></sc-if>
+            <div style="flex:1"></div>
+            <span style="font:500 12px var(--font-ui);color:var(--dd-paper-3)">Map from</span>
+            <x-import component-from-global-scope="DandrumDesignSystem_3c2eab.NumericField" value="{{ 24 }}" format="{{ fmtNote }}" width="{{ 72 }}" compact="{{ true }}" hint-size="72px,22px"></x-import>
+            <x-import component-from-global-scope="DandrumDesignSystem_3c2eab.Button" size="sm" icon="keyboard" hint-size="140px,24px">Map sequentially</x-import>
+          </div>
+          <div style="display:grid;grid-template-columns:28px minmax(80px,1.4fr) 64px minmax(90px,1fr) 56px 64px 44px 70px 54px minmax(70px,1fr);align-items:center;column-gap:8px;padding:0 12px;height:26px;font:600 11px var(--font-ui);letter-spacing:.06em;text-transform:uppercase;color:var(--dd-paper-3);border-bottom:1px solid var(--dd-line-1)">
+            <span>#</span><span>Name</span><span>Note</span><span>Range</span><span>Tune</span><span>Gain</span><span>Pan</span><span>Play</span><span>Choke</span><span>Output</span>
+          </div>
+          <sc-for list="{{ sliceRows }}" as="s" hint-placeholder-count="8">
+            <div data-ctx="slice|{{ s.n }}" draggable="true" onDragStart="{{ s.drag }}" onDragEnd="{{ endSrcDrag }}" onClick="{{ s.play }}" title="Click to preview · drag onto a pad, layer or zone" style="cursor:grab;display:grid;grid-template-columns:28px minmax(80px,1.4fr) 64px minmax(90px,1fr) 56px 64px 44px 70px 54px minmax(70px,1fr);align-items:center;column-gap:8px;padding:0 12px;height:26px;background:{{ s.bg }};box-shadow:{{ s.edge }};font:500 13px var(--font-ui);color:var(--dd-paper-1)">
+              <span style="font:500 12px var(--font-value);color:var(--dd-paper-3)">{{ s.n }}</span>
+              <span>{{ s.name }}</span>
+              <span style="font:500 12px var(--font-value)">{{ s.note }}</span>
+              <span style="font:500 12px var(--font-value);color:var(--dd-paper-2)">{{ s.range }}</span>
+              <span style="font:500 12px var(--font-value)">{{ s.tune }}</span>
+              <span style="font:500 12px var(--font-value)">{{ s.gain }}</span>
+              <span style="font:500 12px var(--font-value)">{{ s.pan }}</span>
+              <span style="color:var(--dd-paper-2)">{{ s.mode }}</span>
+              <span style="font:500 12px var(--font-value);color:var(--dd-paper-2)">{{ s.choke }}</span>
+              <span style="color:var(--dd-paper-2)">{{ s.out }}</span>
+            </div>
+          </sc-for>
+        </section>
+      </sc-if>
+
+      <!-- MAPPING -->
+      <sc-if value="{{ isMapping }}" hint-placeholder-val="{{ false }}">
+        <section style="background:var(--dd-ink-2);border:1px solid var(--dd-line-1);border-radius:6px">
+          <div style="min-height:34px;display:flex;align-items:center;flex-wrap:wrap;gap:6px;padding:4px 8px 4px 12px;background:var(--dd-ink-3);border-bottom:1px solid var(--dd-line-1);border-radius:6px 6px 0 0">
+            <span style="font:700 13px var(--font-ui);letter-spacing:.1em;text-transform:uppercase;color:var(--dd-paper-2)">Key map</span>
+            <span style="font:500 12px var(--font-ui);color:var(--dd-paper-3)">23 zones · 3 groups</span>
+            <sc-if value="{{ ann }}" hint-placeholder-val="{{ false }}"><span style="font:500 11px/16px var(--font-value);color:var(--dd-warn);background:var(--dd-warn-wash);border:1px dashed var(--dd-warn);border-radius:2px;padding:0 5px;white-space:nowrap">KeyMap = editor for note × velocity Trigger Rules</span></sc-if>
+            <div style="flex:1"></div>
+            <x-import component-from-global-scope="DandrumDesignSystem_3c2eab.Button" size="sm" variant="ghost" hint-size="110px,24px">Map by root</x-import>
+            <x-import component-from-global-scope="DandrumDesignSystem_3c2eab.Button" size="sm" variant="ghost" hint-size="110px,24px">Velocity layers</x-import>
+            <x-import component-from-global-scope="DandrumDesignSystem_3c2eab.Button" size="sm" variant="ghost" hint-size="100px,24px">Sequential</x-import>
+            <div style="width:1px;height:18px;background:var(--dd-line-2)"></div>
+            <x-import component-from-global-scope="DandrumDesignSystem_3c2eab.IconButton" icon="layers" label="Duplicate zone (Ctrl+D)" size="sm" variant="ghost" hint-size="24px,24px"></x-import>
+            <x-import component-from-global-scope="DandrumDesignSystem_3c2eab.IconButton" icon="close" label="Delete zone (Delete)" size="sm" variant="ghost" hint-size="24px,24px"></x-import>
+          </div>
+          <div ref="{{ mapRef }}" onContextMenu="{{ onMapCtx }}" onPointerMove="{{ onMapMove }}" style="padding:8px;display:flex;flex-direction:column;gap:4px">
+            <x-import component-from-global-scope="DandrumDesignSystem_3c2eab.KeyMap" zones="{{ zones }}" selected-id="{{ zoneSel }}" on-select="{{ selZone }}" on-change="{{ chZones }}" low-note="{{ 24 }}" high-note="{{ 96 }}" grid-height="{{ keymapH }}" title="Felt Kit" hint-size="100%,360px"></x-import>
+            <div style="position:relative;height:14px;margin-left:30px;background:var(--dd-ink-0);border-radius:2px">
+              <span style="position:absolute;left:-30px;top:1px;width:26px;text-align:right;font:600 9px/12px var(--font-ui);letter-spacing:.06em;text-transform:uppercase;color:var(--dd-paper-4)">XF</span>
+              <sc-for list="{{ relSegs }}" as="r" hint-placeholder-count="0">
+                <div title="{{ r.title }}" style="position:absolute;top:2px;bottom:2px;left:{{ r.l }}%;width:{{ r.w }}%;box-sizing:border-box;border-radius:1px;background:{{ r.bg }};border:{{ r.bd }}"></div>
+              </sc-for>
+            </div>
+            <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;min-height:20px;font:500 12px var(--font-ui);color:var(--dd-paper-3)">
+              <sc-for list="{{ relList }}" as="r" hint-placeholder-count="0">
+                <span style="display:flex;align-items:center;gap:6px;white-space:nowrap"><span style="width:14px;height:8px;box-sizing:border-box;border-radius:1px;background:{{ r.bg }};border:{{ r.bd }}"></span><span style="color:var(--dd-paper-2)">{{ r.kind }}</span>{{ r.text }}</span>
+              </sc-for>
+              <sc-if value="{{ noRel }}" hint-placeholder-val="{{ true }}"><span>No key crossfades or gaps. Shift-drag a zone edge to overlap or separate.</span></sc-if>
+              <div style="flex:1"></div>
+              <sc-if value="{{ dragShift }}" hint-placeholder-val="{{ false }}"><span style="font:600 11px var(--font-ui);letter-spacing:.06em;text-transform:uppercase;color:var(--dd-vermilion)">Shift · free edge</span></sc-if>
+              <sc-if value="{{ mapNote }}" hint-placeholder-val="{{ false }}"><span style="color:var(--dd-paper-1)">{{ mapNote }}</span></sc-if>
+              <sc-if value="{{ clipLabel }}" hint-placeholder-val="{{ false }}"><span style="font:500 11px var(--font-value);color:var(--dd-paper-3);border:1px solid var(--dd-line-2);border-radius:2px;padding:0 5px">Clipboard · {{ clipLabel }}</span></sc-if>
+            </div>
+            <sc-if value="{{ menuOpen }}" hint-placeholder-val="{{ false }}">
+              <div onPointerDown="{{ closeMenu }}" onContextMenu="{{ closeMenuCtx }}" style="position:fixed;inset:0;z-index:20"></div>
+              <div style="position:fixed;left:{{ menuX }}px;top:{{ menuY }}px;z-index:21">
+                <x-import component-from-global-scope="DandrumDesignSystem_3c2eab.ContextMenu" items="{{ menuItems }}" title="{{ menuTitle }}" width="{{ 260 }}" on-close="{{ closeMenu }}" hint-size="260px,240px"></x-import>
+              </div>
+            </sc-if>
+          </div>
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:1px;background:var(--dd-line-1);border-top:1px solid var(--dd-line-1);border-radius:0 0 6px 6px;overflow:hidden">
+            <sc-for list="{{ dropRules }}" as="d" hint-placeholder-count="4">
+              <div style="background:var(--dd-ink-2);padding:8px 12px;display:flex;flex-direction:column;gap:2px">
+                <span style="font:600 11px var(--font-ui);letter-spacing:.06em;text-transform:uppercase;color:var(--dd-paper-3)">{{ d.k }}</span>
+                <span style="font:500 12px/1.35 var(--font-ui);color:var(--dd-paper-2)">{{ d.v }}</span>
+              </div>
+            </sc-for>
+          </div>
+        </section>
+      </sc-if>
+
+      <!-- LAYERS -->
+      <sc-if value="{{ isLayers }}" hint-placeholder-val="{{ false }}">
+        <section style="background:var(--dd-ink-2);border:1px solid var(--dd-line-1);border-radius:6px">
+          <div style="min-height:34px;display:flex;align-items:center;flex-wrap:wrap;gap:8px;padding:4px 8px 4px 12px;background:var(--dd-ink-3);border-bottom:1px solid var(--dd-line-1);border-radius:6px 6px 0 0">
+            <span style="font:700 13px var(--font-ui);letter-spacing:.1em;text-transform:uppercase;color:var(--dd-paper-2)">Layers</span>
+            <span style="font:500 12px var(--font-value);color:var(--dd-paper-3)">{{ layerCtx }}</span>
+          </div>
+          <div style="padding:12px;display:flex;flex-direction:column;gap:12px">
+            <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+              <span style="font:600 12px var(--font-ui);letter-spacing:.06em;text-transform:uppercase;color:var(--dd-paper-2)">Play</span>
+              <div style="display:flex;gap:2px;padding:2px;background:var(--dd-ink-0);border-radius:4px">
+                <sc-for list="{{ selModes }}" as="m" hint-placeholder-count="6">
+                  <x-import component-from-global-scope="DandrumDesignSystem_3c2eab.Button" size="sm" variant="ghost" selected="{{ m.sel }}" on-click="{{ m.go }}" hint-size="90px,24px">{{ m.label }}</x-import>
+                </sc-for>
+              </div>
+              <sc-if value="{{ ann }}" hint-placeholder-val="{{ false }}"><span style="font:500 11px/16px var(--font-value);color:var(--dd-warn);background:var(--dd-warn-wash);border:1px dashed var(--dd-warn);border-radius:2px;padding:0 5px;white-space:nowrap">Selector policy</span></sc-if>
+            </div>
+            <span style="font:500 13px/1.35 var(--font-ui);color:var(--dd-paper-2)">{{ modeDesc }}</span>
+
+            <sc-if value="{{ isVel }}" hint-placeholder-val="{{ false }}">
+              <div style="display:flex;flex-direction:column;gap:6px">
+                <div onPointerDown="{{ onVelDown }}" style="position:relative;display:grid;grid-template-rows:28px 28px;gap:2px;padding:3px 0;background:var(--dd-ink-0);border-radius:2px;border:1px solid var(--dd-line-1);touch-action:none;user-select:none">
+                  <div style="position:relative">
+                    <svg viewBox="0 0 126 100" preserveAspectRatio="none" style="position:absolute;inset:0;width:100%;height:100%;overflow:visible">
+                      <defs><linearGradient id="vgHard" gradientUnits="userSpaceOnUse" x1="{{ vXa }}" y1="0" x2="{{ vXb }}" y2="0"><sc-for list="{{ vHardStops }}" as="s" hint-placeholder-count="2"><stop offset="{{ s.o }}" stop-color="#E08A4E" stop-opacity="{{ s.a }}"></stop></sc-for></linearGradient></defs>
+                      <polygon points="{{ vHardPts }}" fill="url(#vgHard)" style="stroke:#E08A4E;stroke-width:1px;vector-effect:non-scaling-stroke"></polygon>
+                    </svg>
+                    <span style="position:absolute;right:8px;top:7px;font:600 12px var(--font-ui);color:{{ vHardTc }};white-space:nowrap">{{ vHardLabel }}</span>
+                  </div>
+                  <div style="position:relative">
+                    <svg viewBox="0 0 126 100" preserveAspectRatio="none" style="position:absolute;inset:0;width:100%;height:100%;overflow:visible">
+                      <defs><linearGradient id="vgSoft" gradientUnits="userSpaceOnUse" x1="{{ vXa }}" y1="0" x2="{{ vXb }}" y2="0"><sc-for list="{{ vSoftStops }}" as="s" hint-placeholder-count="2"><stop offset="{{ s.o }}" stop-color="#6A584A" stop-opacity="{{ s.a }}"></stop></sc-for></linearGradient></defs>
+                      <polygon points="{{ vSoftPts }}" fill="url(#vgSoft)" style="stroke:#8A7560;stroke-width:1px;vector-effect:non-scaling-stroke"></polygon>
+                    </svg>
+                    <span style="position:absolute;left:8px;top:7px;font:600 12px var(--font-ui);color:var(--dd-paper-1);white-space:nowrap">{{ vSoftLabel }}</span>
+                  </div>
+                  <div style="position:absolute;top:0;bottom:0;left:{{ vBandL }}%;width:{{ vBandW }}%;box-sizing:border-box;border-left:1px dashed var(--dd-vermilion);border-right:1px dashed var(--dd-vermilion);background:{{ vBandBg }};pointer-events:none"></div>
+                  <div data-vh="l" title="Drag to set where Hard starts fading in" style="position:absolute;top:-3px;bottom:-3px;left:calc({{ vBandL }}% - 7px);width:8px;cursor:ew-resize;display:flex;align-items:center;justify-content:flex-end"><span style="width:4px;height:18px;border-radius:1px;background:var(--dd-vermilion)"></span></div>
+                  <div data-vh="r" title="Drag to set where Soft finishes fading out" style="position:absolute;top:-3px;bottom:-3px;left:calc({{ vBandR }}% - 1px);width:8px;cursor:ew-resize;display:flex;align-items:center;justify-content:flex-start"><span style="width:4px;height:18px;border-radius:1px;background:var(--dd-vermilion)"></span></div>
+                  <div data-vh="c" title="Drag to move the split" style="position:absolute;top:-3px;bottom:-3px;left:calc({{ vMid }}% - 5px);width:10px;cursor:col-resize;display:flex;justify-content:center"><span style="width:2px;height:100%;background:var(--dd-paper-1)"></span></div>
+                  <div style="position:absolute;left:{{ vLast }}%;top:0;bottom:0;width:1px;background:var(--dd-paper-3);pointer-events:none"></div>
+                </div>
+                <div style="display:flex;justify-content:space-between;font:500 11px var(--font-value);color:var(--dd-paper-3)"><span>1</span><span>{{ vAxis }}</span><span>127</span></div>
+                <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+                  <span style="font:600 12px var(--font-ui);letter-spacing:.06em;text-transform:uppercase;color:var(--dd-paper-2)">Crossfade</span>
+                  <span style="font:500 13px var(--font-value);color:var(--dd-paper-1)">{{ vXfText }}</span>
+                  <x-import component-from-global-scope="DandrumDesignSystem_3c2eab.NumericField" label="Width" value="{{ vXfW }}" unit="vel" width="{{ 72 }}" compact="{{ true }}" on-change="{{ setVelW }}" hint-size="72px,44px"></x-import>
+                  <x-import component-from-global-scope="DandrumDesignSystem_3c2eab.SegmentedControl" compact="{{ true }}" value="{{ vCurve }}" on-change="{{ setVelCurve }}" options="{{ vCurveOpts }}" hint-size="170px,22px"></x-import>
+                  <x-import component-from-global-scope="DandrumDesignSystem_3c2eab.Button" size="sm" variant="ghost" on-click="{{ velNoXf }}" disabled="{{ vNoXf }}" hint-size="100px,24px">No crossfade</x-import>
+                  <span style="flex:1;min-width:160px;font:500 12px/1.35 var(--font-ui);color:var(--dd-paper-3)">Drag the ember edges to widen the crossfade, the white line to move the split.</span>
+                </div>
+              </div>
+            </sc-if>
+            <sc-if value="{{ isRR }}" hint-placeholder-val="{{ false }}">
+              <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+                <sc-for list="{{ rrSeq }}" as="q" hint-placeholder-count="3">
+                  <div style="display:flex;align-items:center;gap:6px;height:28px;padding:0 10px;border-radius:4px;background:{{ q.bg }};border:1px solid {{ q.bd }};font:600 12px var(--font-ui);color:var(--dd-paper-1)">{{ q.label }}<span style="font:600 11px var(--font-ui);letter-spacing:.06em;text-transform:uppercase;color:{{ q.tc }}">{{ q.tag }}</span></div>
+                </sc-for>
+                <sc-if value="{{ ann }}" hint-placeholder-val="{{ false }}"><span style="font:500 11px/16px var(--font-value);color:var(--dd-warn);background:var(--dd-warn-wash);border:1px dashed var(--dd-warn);border-radius:2px;padding:0 5px;white-space:nowrap">Telemetry: selector position</span></sc-if>
+                <div style="flex:1"></div>
+                <span style="font:500 12px var(--font-ui);color:var(--dd-paper-3)">Restart cycle</span>
+                <x-import component-from-global-scope="DandrumDesignSystem_3c2eab.SegmentedControl" compact="{{ true }}" value="never" options="{{ resetOpts }}" hint-size="200px,22px"></x-import>
+              </div>
+            </sc-if>
+          </div>
+          <div style="display:grid;grid-template-columns:20px 28px minmax(120px,1.6fr) 74px 70px 24px 24px 60px 48px 52px minmax(70px,1fr);align-items:center;column-gap:8px;padding:0 12px;height:26px;font:600 11px var(--font-ui);letter-spacing:.06em;text-transform:uppercase;color:var(--dd-paper-3);border-top:1px solid var(--dd-line-1);border-bottom:1px solid var(--dd-line-1)">
+            <span></span><span>#</span><span>Sample</span><span>Velocity</span><span>{{ weightHead }}</span><span>M</span><span>S</span><span>Gain</span><span>Pan</span><span>Tune</span><span>Output</span>
+          </div>
+          <sc-for list="{{ cands }}" as="c" hint-placeholder-count="3">
+            <div style="display:grid;grid-template-columns:20px 28px minmax(120px,1.6fr) 74px 70px 24px 24px 60px 48px 52px minmax(70px,1fr);align-items:center;column-gap:8px;padding:0 12px;height:30px;background:{{ c.bg }};box-shadow:{{ c.edge }};font:500 13px var(--font-ui);color:var(--dd-paper-1)">
+              <span style="color:var(--dd-paper-4);font:700 12px var(--font-value);letter-spacing:-1px">⋮⋮</span>
+              <span style="font:500 12px var(--font-value);color:var(--dd-paper-3)">{{ c.ord }}</span>
+              <span style="display:flex;align-items:center;gap:6px;min-width:0;overflow:hidden"><span style="width:6px;height:6px;border-radius:6px;background:{{ c.dot }};flex:none"></span><span style="flex:none;white-space:nowrap">{{ c.name }}</span><span title="{{ c.file }}" style="flex:0 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;font:500 11px var(--font-value);color:var(--dd-paper-3);white-space:nowrap">{{ c.file }}</span></span>
+              <span style="font:500 12px var(--font-value);color:var(--dd-paper-2)">{{ c.vel }}</span>
+              <span style="display:flex;align-items:center;gap:4px"><span style="flex:1;height:4px;background:var(--dd-ink-4);border-radius:2px"><span style="display:block;width:{{ c.wpct }}%;height:4px;background:var(--dd-paper-2);border-radius:2px"></span></span><span style="font:500 11px var(--font-value);color:var(--dd-paper-2)">{{ c.w }}</span></span>
+              <span style="font:700 11px var(--font-ui);color:{{ c.mc }}">M</span>
+              <span style="font:700 11px var(--font-ui);color:var(--dd-paper-4)">S</span>
+              <span style="font:500 12px var(--font-value)">{{ c.gain }}</span>
+              <span style="font:500 12px var(--font-value)">{{ c.pan }}</span>
+              <span style="font:500 12px var(--font-value)">{{ c.tune }}</span>
+              <span style="color:var(--dd-paper-2)">{{ c.out }}</span>
+            </div>
+          </sc-for>
+          <div style="padding:8px 12px;display:flex;align-items:center;gap:8px;border-top:1px solid var(--dd-line-1)">
+            <x-import component-from-global-scope="DandrumDesignSystem_3c2eab.Button" size="sm" variant="ghost" icon="plus" hint-size="110px,24px">Add sample…</x-import>
+            <span style="font:500 12px var(--font-ui);color:var(--dd-paper-3)">Drag rows to reorder. Drop files here to add candidates.</span>
+          </div>
+        </section>
+      </sc-if>
+
+      <!-- VOICE -->
+      <sc-if value="{{ isVoice }}" hint-placeholder-val="{{ false }}">
+        <section style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;padding:6px 8px 6px 12px;background:var(--dd-ink-2);border:1px solid var(--dd-line-1);border-radius:6px">
+          <span style="font:700 12px var(--font-ui);letter-spacing:.1em;text-transform:uppercase;color:var(--dd-paper-2)">Voice · Keys</span>
+          <sc-if value="{{ ann }}" hint-placeholder-val="{{ false }}"><span style="font:500 11px/16px var(--font-value);color:var(--dd-warn);background:var(--dd-warn-wash);border:1px dashed var(--dd-warn);border-radius:2px;padding:0 5px;white-space:nowrap">Voice Template (curated view)</span></sc-if>
+          <div style="flex:1"></div>
+          <sc-for list="{{ chain }}" as="c" hint-placeholder-count="4">
+            <div style="display:flex;align-items:center;gap:6px">
+              <span style="height:24px;display:flex;align-items:center;padding:0 8px;border-radius:4px;background:{{ c.bg }};border:1px solid {{ c.bd }};font:600 12px var(--font-ui);color:var(--dd-paper-1)">{{ c.label }}</span>
+              <sc-if value="{{ c.arrow }}" hint-placeholder-val="{{ true }}"><span style="color:var(--dd-paper-4);font:500 12px var(--font-value)">{{ c.sep }}</span></sc-if>
+            </div>
+          </sc-for>
+          <x-import component-from-global-scope="DandrumDesignSystem_3c2eab.Button" size="sm" variant="ghost" hint-size="110px,24px">Edit template…</x-import>
+        </section>
+        <div style="display:grid;grid-template-columns:{{ voiceCols }};gap:4px">
+          <sc-for list="{{ voiceSecs }}" as="v" hint-placeholder-count="4">
+            <section style="background:var(--dd-ink-2);border:1px solid {{ v.bd }};border-radius:6px;min-width:0">
+              <div style="height:24px;display:flex;align-items:center;gap:6px;padding:0 12px;background:var(--dd-ink-3);border-bottom:1px solid var(--dd-line-1);border-radius:6px 6px 0 0">
+                <span style="font:700 12px var(--font-ui);letter-spacing:.1em;text-transform:uppercase;color:var(--dd-paper-2)">{{ v.title }}</span>
+                <span style="font:500 11px var(--font-value);color:var(--dd-paper-3)">{{ v.sub }}</span>
+              </div>
+              <sc-if value="{{ ann }}" hint-placeholder-val="{{ false }}"><div style="padding:6px 12px 0"><span style="font:500 11px/16px var(--font-value);color:var(--dd-warn);background:var(--dd-warn-wash);border:1px dashed var(--dd-warn);border-radius:2px;padding:0 5px">{{ v.ann }}</span></div></sc-if>
+              <div style="padding:4px 5px 5px;display:flex;flex-direction:column;gap:4px">
+                <sc-if value="{{ v.hasSeg }}" hint-placeholder-val="{{ false }}">
+                  <x-import component-from-global-scope="DandrumDesignSystem_3c2eab.SegmentedControl" compact="{{ true }}" full-width="{{ true }}" value="{{ v.segV }}" options="{{ v.seg }}" hint-size="100%,22px"></x-import>
+                </sc-if>
+                <div style="display:flex;flex-wrap:wrap;gap:0">
+                  <sc-for list="{{ v.knobs }}" as="k" hint-placeholder-count="4">
+                    <div data-knob="{{ k.key }}" data-reset="knob|{{ k.key }}" style="border-radius:4px;box-shadow:{{ k.ring }}"><x-import component-from-global-scope="DandrumDesignSystem_3c2eab.Knob" dc-props="{{ kTight }}" size="sm" value="{{ k.v }}" on-change="{{ k.set }}" bipolar="{{ k.bi }}" label="{{ k.label }}" value-text="{{ k.t }}" modulations="{{ k.mods }}" popup-open="{{ k.pop }}" assigning="{{ assigning }}" hint-size="48px,60px"></x-import></div>
+                  </sc-for>
+                </div>
+              </div>
+            </section>
+          </sc-for>
+        </div>
+        <div style="display:grid;grid-template-columns:{{ envCols }};gap:4px">
+          <sc-for list="{{ envs }}" as="e" hint-placeholder-count="2">
+            <section style="background:var(--dd-ink-2);border:1px solid var(--dd-line-1);border-radius:6px;min-width:0">
+              <div style="min-height:30px;display:flex;align-items:center;flex-wrap:wrap;gap:4px 6px;padding:4px 8px 4px 12px;box-sizing:border-box;overflow:hidden;background:var(--dd-ink-3);border-bottom:1px solid var(--dd-line-1);border-radius:6px 6px 0 0">
+                <span style="font:700 12px var(--font-ui);letter-spacing:.1em;text-transform:uppercase;color:var(--dd-paper-2);white-space:nowrap">{{ e.title }}</span>
+                <sc-if value="{{ e.slot }}" hint-placeholder-val="{{ false }}"><x-import component-from-global-scope="DandrumDesignSystem_3c2eab.ModGlyph" slot="A" size="{{ 9 }}" hint-size="9px,9px"></x-import></sc-if>
+                <span style="font:500 11px var(--font-value);color:var(--dd-paper-3)">{{ e.dest }}</span>
+                <div style="flex:1"></div>
+                <x-import component-from-global-scope="DandrumDesignSystem_3c2eab.SegmentedControl" compact="{{ true }}" value="adsr" options="{{ envShapes }}" hint-size="170px,22px"></x-import>
+              </div>
+              <sc-if value="{{ ann }}" hint-placeholder-val="{{ false }}"><div style="padding:6px 12px 0"><span style="font:500 11px/16px var(--font-value);color:var(--dd-warn);background:var(--dd-warn-wash);border:1px dashed var(--dd-warn);border-radius:2px;padding:0 5px">{{ e.ann }}</span></div></sc-if>
+              <div style="padding:10px 12px 12px;display:flex;flex-direction:column;gap:8px">
+                <div style="position:relative;height:{{ envH }}px;background:var(--dd-ink-0);border-radius:2px;border:1px solid var(--dd-line-1)">
+                  <svg viewBox="0 0 300 100" preserveAspectRatio="none" style="position:absolute;inset:6px 8px;width:calc(100% - 16px);height:calc(100% - 12px);overflow:visible">
+                    <polyline points="{{ e.pts }}" fill="none" stroke="#F2E6D3" style="stroke-width:1.5px;vector-effect:non-scaling-stroke"></polyline>
+                    <line x1="{{ e.sx }}" y1="0" x2="{{ e.sx }}" y2="100" stroke="#5F4F40" style="stroke-dasharray:3 3;vector-effect:non-scaling-stroke"></line>
+                  </svg>
+                  <sc-for list="{{ e.handles }}" as="h" hint-placeholder-count="4">
+                    <div style="position:absolute;left:calc(8px + (100% - 16px) * {{ h.x }});top:calc(6px + (100% - 12px) * {{ h.y }});width:9px;height:9px;margin:-5px 0 0 -5px;border-radius:9px;background:var(--dd-ink-5);border:1px solid var(--dd-paper-1)"></div>
+                  </sc-for>
+                  <div style="position:absolute;left:calc(8px + (100% - 16px) * {{ e.live }});top:6px;bottom:6px;width:1px;background:var(--dd-mod-a)"></div>
+                </div>
+                <div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px">
+                  <sc-for list="{{ e.vals }}" as="x" hint-placeholder-count="4">
+                    <div style="display:flex;flex-direction:column;gap:2px"><span style="font:600 11px var(--font-ui);letter-spacing:.06em;text-transform:uppercase;color:var(--dd-paper-3)">{{ x.k }}</span><span style="font:500 13px var(--font-value);color:var(--dd-paper-1)">{{ x.v }}</span></div>
+                  </sc-for>
+                </div>
+              </div>
+            </section>
+          </sc-for>
+          <section style="background:var(--dd-ink-2);border:1px solid var(--dd-line-1);border-radius:6px;min-width:0">
+            <div style="height:30px;display:flex;align-items:center;gap:6px;padding:0 12px;background:var(--dd-ink-3);border-bottom:1px solid var(--dd-line-1);border-radius:6px 6px 0 0">
+              <span style="font:700 12px var(--font-ui);letter-spacing:.1em;text-transform:uppercase;color:var(--dd-paper-2)">Voices</span>
+              <sc-if value="{{ ann }}" hint-placeholder-val="{{ false }}"><span style="font:500 11px/16px var(--font-value);color:var(--dd-warn);background:var(--dd-warn-wash);border:1px dashed var(--dd-warn);border-radius:2px;padding:0 5px">Voice Policy</span></sc-if>
+            </div>
+            <div style="padding:10px 12px 12px;display:flex;flex-direction:column;gap:8px">
+              <x-import component-from-global-scope="DandrumDesignSystem_3c2eab.SegmentedControl" compact="{{ true }}" full-width="{{ true }}" value="poly" options="{{ polyOpts }}" hint-size="100%,22px"></x-import>
+              <x-import component-from-global-scope="DandrumDesignSystem_3c2eab.PropertyRow" label="Voice limit" value="16" compact="{{ true }}" hint-size="100%,22px"></x-import>
+              <x-import component-from-global-scope="DandrumDesignSystem_3c2eab.PropertyRow" label="Steal" value="Oldest released" compact="{{ true }}" hint-size="100%,22px"></x-import>
+              <x-import component-from-global-scope="DandrumDesignSystem_3c2eab.PropertyRow" label="Same note" value="Retrigger" compact="{{ true }}" hint-size="100%,22px"></x-import>
+              <x-import component-from-global-scope="DandrumDesignSystem_3c2eab.PropertyRow" label="Exclusive group" value="None" compact="{{ true }}" hint-size="100%,22px"></x-import>
+              <x-import component-from-global-scope="DandrumDesignSystem_3c2eab.PropertyRow" label="Glide" value="Off" compact="{{ true }}" hint-size="100%,22px"></x-import>
+            </div>
+          </section>
+        </div>
+      </sc-if>
+
+      <!-- MODULATION -->
+      <sc-if value="{{ isMod }}" hint-placeholder-val="{{ false }}">
+        <section style="background:var(--dd-ink-2);border:1px solid var(--dd-line-1);border-radius:6px">
+          <div style="min-height:34px;display:flex;align-items:center;flex-wrap:wrap;gap:8px;padding:4px 8px 4px 12px;background:var(--dd-ink-3);border-bottom:1px solid var(--dd-line-1);border-radius:6px 6px 0 0">
+            <span style="font:700 13px var(--font-ui);letter-spacing:.1em;text-transform:uppercase;color:var(--dd-paper-2)">Modulation</span>
+            <span style="font:500 12px var(--font-ui);color:var(--dd-paper-3)">14 routes · Keys</span>
+            <sc-if value="{{ ann }}" hint-placeholder-val="{{ false }}"><span style="font:500 11px/16px var(--font-value);color:var(--dd-warn);background:var(--dd-warn-wash);border:1px dashed var(--dd-warn);border-radius:2px;padding:0 5px;white-space:nowrap">Modulation Route: Modulator → amount/transform → Parameter</span></sc-if>
+            <div style="flex:1"></div>
+            <span style="font:500 12px var(--font-ui);color:var(--dd-paper-3)">Group by</span>
+            <x-import component-from-global-scope="DandrumDesignSystem_3c2eab.SegmentedControl" compact="{{ true }}" value="src" options="{{ groupByOpts }}" hint-size="160px,22px"></x-import>
+            <x-import component-from-global-scope="DandrumDesignSystem_3c2eab.Button" size="sm" icon="plus" hint-size="100px,24px">Add route</x-import>
+          </div>
+          <div style="display:grid;grid-template-columns:{{ modCols }};min-height:0">
+            <div style="min-width:0">
+              <div style="display:grid;grid-template-columns:minmax(88px,1.2fr) minmax(56px,96px) 44px 36px 48px minmax(80px,1fr) 24px 30px;align-items:center;column-gap:6px;padding:0 12px;height:26px;font:600 11px var(--font-ui);letter-spacing:.06em;text-transform:uppercase;color:var(--dd-paper-3);border-bottom:1px solid var(--dd-line-1)">
+                <span>Source</span><span>Amount</span><span></span><span title="Polarity">Pol.</span><span>Curve</span><span>Destination</span><span>Live</span><span>On</span>
+              </div>
+              <sc-for list="{{ routeGroups }}" as="g" hint-placeholder-count="12">
+                <sc-if value="{{ g.multi }}" hint-placeholder-val="{{ false }}">
+                  <div onClick="{{ g.toggle }}" style="cursor:pointer;display:grid;grid-template-columns:minmax(88px,1.2fr) minmax(56px,96px) 44px 36px 48px minmax(80px,1fr) 24px 30px;align-items:center;column-gap:6px;padding:0 12px;height:28px;background:var(--dd-ink-3);border-top:1px solid var(--dd-line-1)" style-hover="background:var(--dd-ink-4)">
+                    <span style="display:flex;align-items:center;gap:6px;font:600 13px var(--font-ui);color:var(--dd-paper-1);white-space:nowrap;overflow:hidden">
+                      <x-import component-from-global-scope="DandrumDesignSystem_3c2eab.Icon" name="{{ g.chev }}" size="{{ 12 }}" color="var(--dd-paper-3)" hint-size="12px,12px"></x-import>
+                      <sc-if value="{{ g.slot }}" hint-placeholder-val="{{ false }}"><x-import component-from-global-scope="DandrumDesignSystem_3c2eab.ModGlyph" slot="{{ g.slot }}" size="{{ 9 }}" hint-size="9px,9px"></x-import></sc-if>
+                      <sc-if value="{{ g.noSlot }}" hint-placeholder-val="{{ true }}"><span style="width:7px;height:7px;border:1px solid var(--dd-paper-3);border-radius:1px;flex:none"></span></sc-if>
+                      {{ g.name }}
+                    </span>
+                    <span style="grid-column:2 / span 4;font:500 12px var(--font-ui);color:var(--dd-paper-3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ g.summary }}</span>
+                    <span style="display:flex;justify-content:flex-start"><x-import component-from-global-scope="DandrumDesignSystem_3c2eab.Button" size="sm" variant="ghost" icon="plus" on-click="{{ g.addDest }}" hint-size="96px,22px">Destination</x-import></span>
+                    <span style="height:3px;background:var(--dd-ink-4);border-radius:2px"><span style="display:block;width:{{ g.live }}%;height:3px;background:var(--dd-paper-2);border-radius:2px"></span></span>
+                    <span style="font:500 11px var(--font-value);color:var(--dd-paper-3);text-align:center">{{ g.count }}</span>
+                  </div>
+                </sc-if>
+                <sc-if value="{{ g.show }}" hint-placeholder-val="{{ true }}">
+                <sc-for list="{{ g.items }}" as="r" hint-placeholder-count="1">
+                <div data-ctx="route|{{ r.rk }}" onClick="{{ r.select }}" style="cursor:pointer;display:grid;grid-template-columns:minmax(88px,1.2fr) minmax(56px,96px) 44px 36px 48px minmax(80px,1fr) 24px 30px;align-items:center;column-gap:6px;padding:0 12px;height:28px;background:{{ r.bg }};box-shadow:{{ r.edge }};opacity:{{ r.op }}">
+                  <span style="display:flex;align-items:center;gap:6px;font:500 13px var(--font-ui);color:var(--dd-paper-1);white-space:nowrap;overflow:hidden;padding-left:{{ r.indent }}px">
+                    <sc-if value="{{ r.child }}" hint-placeholder-val="{{ false }}"><span style="font:500 12px var(--font-value);color:var(--dd-paper-4)">└</span></sc-if>
+                    <sc-if value="{{ r.top }}" hint-placeholder-val="{{ true }}"><span style="display:flex;align-items:center;gap:6px">
+                    <sc-if value="{{ r.slot }}" hint-placeholder-val="{{ false }}"><x-import component-from-global-scope="DandrumDesignSystem_3c2eab.ModGlyph" slot="{{ r.slot }}" size="{{ 9 }}" hint-size="9px,9px"></x-import></sc-if>
+                    <sc-if value="{{ r.noSlot }}" hint-placeholder-val="{{ true }}"><span style="width:7px;height:7px;border:1px solid var(--dd-paper-3);border-radius:1px;flex:none"></span></sc-if>
+                    {{ r.src }}
+                    <sc-if value="{{ r.fixed }}" hint-placeholder-val="{{ false }}"><x-import component-from-global-scope="DandrumDesignSystem_3c2eab.Icon" name="lock" size="{{ 12 }}" color="var(--dd-paper-3)" hint-size="12px,12px"></x-import></sc-if>
+                    </span></sc-if>
+                  </span>
+                  <span style="position:relative;height:6px;background:var(--dd-ink-0);border:1px solid var(--dd-line-2);border-radius:2px">
+                    <span style="position:absolute;left:50%;top:-3px;bottom:-3px;width:1px;background:var(--dd-line-3)"></span>
+                    <span style="position:absolute;left:{{ r.l }}%;width:{{ r.w }}%;top:0;bottom:0;background:{{ r.c }};border-radius:1px"></span>
+                  </span>
+                  <span style="font:500 12px var(--font-value);color:var(--dd-paper-1);text-align:right">{{ r.amt }}</span>
+                  <span style="font:500 12px var(--font-ui);color:var(--dd-paper-2)">{{ r.pol }}</span>
+                  <span style="font:500 12px var(--font-ui);color:var(--dd-paper-2)">{{ r.curve }}</span>
+                  <span style="font:500 13px var(--font-ui);color:var(--dd-paper-1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">→ {{ r.dest }}</span>
+                  <span style="height:3px;background:var(--dd-ink-4);border-radius:2px"><span style="display:block;width:{{ r.live }}%;height:3px;background:var(--dd-paper-2);border-radius:2px"></span></span>
+                  <x-import component-from-global-scope="DandrumDesignSystem_3c2eab.Toggle" compact="{{ true }}" checked="{{ r.on }}" hint-size="28px,16px"></x-import>
+                </div>
+                </sc-for>
+                </sc-if>
+              </sc-for>
+            </div>
+          </div>
+        </section>
+        <section style="background:var(--dd-ink-2);border:1px solid var(--dd-line-1);border-radius:6px">
+          <div style="min-height:30px;display:flex;align-items:center;flex-wrap:wrap;gap:4px 8px;padding:4px 8px 4px 12px;background:var(--dd-ink-3);border-bottom:1px solid var(--dd-line-1);border-radius:6px 6px 0 0">
+            <span style="font:700 12px var(--font-ui);letter-spacing:.1em;text-transform:uppercase;color:var(--dd-paper-2)">Modulator</span>
+            <sc-if value="{{ me.slot }}" hint-placeholder-val="{{ false }}"><x-import component-from-global-scope="DandrumDesignSystem_3c2eab.ModGlyph" slot="{{ me.slot }}" size="{{ 9 }}" hint-size="9px,9px"></x-import></sc-if>
+            <span style="font:600 13px var(--font-ui);color:var(--dd-paper-1);white-space:nowrap">{{ me.name }}</span>
+            <span style="font:500 11px var(--font-value);color:var(--dd-paper-3);white-space:nowrap">→ {{ me.dest }} · {{ me.amt }} · {{ me.pol }}</span>
+            <sc-if value="{{ ann }}" hint-placeholder-val="{{ false }}"><span style="font:500 11px/16px var(--font-value);color:var(--dd-warn);background:var(--dd-warn-wash);border:1px dashed var(--dd-warn);border-radius:2px;padding:0 5px;white-space:nowrap">Modulator editor (shape) + Route transform (amount, polarity)</span></sc-if>
+            <x-import component-from-global-scope="DandrumDesignSystem_3c2eab.Button" size="sm" variant="ghost" icon="plus" on-click="{{ me.addDest }}" hint-size="120px,22px">Add destination</x-import>
+            <div style="flex:1"></div>
+            <x-import component-from-global-scope="DandrumDesignSystem_3c2eab.SegmentedControl" compact="{{ true }}" value="{{ me.shape }}" on-change="{{ me.setShape }}" options="{{ me.shapes }}" hint-size="260px,22px"></x-import>
+          </div>
+          <div style="display:flex;flex-wrap:wrap;gap:8px 12px;padding:8px 12px 8px;align-items:center">
+            <div style="position:relative;flex:1 1 320px;min-width:240px;height:{{ meH }}px;background:var(--dd-ink-0);border:1px solid var(--dd-line-1);border-radius:2px">
+              <sc-if value="{{ me.bi }}" hint-placeholder-val="{{ false }}"><div style="position:absolute;left:8px;right:8px;top:50%;height:1px;background:var(--dd-line-2)"></div></sc-if>
+              <svg viewBox="0 0 300 100" preserveAspectRatio="none" style="position:absolute;left:8px;top:6px;width:calc(100% - 16px);height:calc(100% - 12px);overflow:visible">
+                <polyline points="{{ me.ghost }}" fill="none" style="stroke:#5F4F40;stroke-width:1px;stroke-dasharray:3 3;vector-effect:non-scaling-stroke"></polyline>
+                <polyline points="{{ me.pts }}" fill="none" style="stroke:{{ me.col }};stroke-width:1.75px;stroke-linejoin:round;vector-effect:non-scaling-stroke"></polyline>
+              </svg>
+              <div style="position:absolute;top:6px;bottom:6px;left:calc(8px + (100% - 16px) * {{ me.live }});width:1px;background:var(--dd-paper-1);opacity:.7"></div>
+              <span style="position:absolute;left:10px;top:4px;font:500 11px var(--font-value);color:var(--dd-paper-3)">{{ me.yTop }}</span>
+              <span style="position:absolute;left:10px;bottom:4px;font:500 11px var(--font-value);color:var(--dd-paper-3)">{{ me.yBot }}</span>
+              <span style="position:absolute;right:10px;bottom:4px;font:500 11px var(--font-value);color:var(--dd-paper-3)">{{ me.xLabel }}</span>
+            </div>
+            <div style="display:flex;flex-wrap:wrap;gap:0">
+              <sc-for list="{{ me.knobs }}" as="k" hint-placeholder-count="4">
+                <div data-knob="{{ k.key }}" data-reset="knob|{{ k.key }}" style="border-radius:4px;box-shadow:{{ k.ring }}"><x-import component-from-global-scope="DandrumDesignSystem_3c2eab.Knob" dc-props="{{ kTight }}" size="sm" value="{{ k.v }}" on-change="{{ k.set }}" bipolar="{{ k.bi }}" label="{{ k.label }}" value-text="{{ k.t }}" modulations="{{ k.mods }}" assigning="{{ assigning }}" hint-size="44px,56px"></x-import></div>
+              </sc-for>
+            </div>
+          </div>
+          <div style="display:flex;flex-wrap:wrap;align-items:center;gap:6px 16px;padding:0 12px 8px">
+            <sc-for list="{{ me.toggles }}" as="t" hint-placeholder-count="3">
+              <x-import component-from-global-scope="DandrumDesignSystem_3c2eab.Toggle" compact="{{ true }}" label="{{ t.label }}" checked="{{ t.on }}" hint-size="140px,22px"></x-import>
+            </sc-for>
+            <div style="flex:1"></div>
+            <span style="font:500 12px var(--font-ui);color:var(--dd-paper-3)">Dashed: full-range shape · solid: what reaches {{ me.dest }} after amount and polarity</span>
+          </div>
+        </section>
+        <section style="background:var(--dd-ink-2);border:1px solid var(--dd-line-1);border-radius:6px;padding:10px 12px;display:flex;gap:16px;align-items:center;flex-wrap:wrap">
+          <div data-knob="Cutoff" style="border-radius:4px;box-shadow:{{ cutoffRing }}"><x-import component-from-global-scope="DandrumDesignSystem_3c2eab.Knob" dc-props="{{ kTight }}" size="md" value="{{ 0.42 }}" label="Cutoff" value-text="2.40 kHz" modulations="{{ cutoffMods }}" popup-open="{{ cutoffPop }}" assigning="{{ assigning }}" hint-size="64px,80px"></x-import></div>
+          <div style="display:flex;flex-direction:column;gap:4px;max-width:420px">
+            <span style="font:700 12px var(--font-ui);letter-spacing:.1em;text-transform:uppercase;color:var(--dd-paper-2)">Contextual view</span>
+            <span style="font:500 13px/1.35 var(--font-ui);color:var(--dd-paper-2)">Every modulated control shows up to two rings and a +N chip. Hover or focus opens the value popup listing its sources. Drag a modulator from the left panel onto any control, or right-click / M for Assign modulation…</span>
+          </div>
+        </section>
+      </sc-if>
+
+      <!-- ROUTING -->
+      <sc-if value="{{ isRouting }}" hint-placeholder-val="{{ false }}">
+        <div style="display:grid;grid-template-columns:{{ routeCols }};gap:4px;align-items:start">
+          <section style="background:var(--dd-ink-2);border:1px solid var(--dd-line-1);border-radius:6px;min-width:0">
+            <div style="height:34px;display:flex;align-items:center;gap:8px;padding:0 8px 0 12px;background:var(--dd-ink-3);border-bottom:1px solid var(--dd-line-1);border-radius:6px 6px 0 0">
+              <span style="font:700 13px var(--font-ui);letter-spacing:.1em;text-transform:uppercase;color:var(--dd-paper-2)">Routing</span>
+              <sc-if value="{{ ann }}" hint-placeholder-val="{{ false }}"><span style="font:500 11px/16px var(--font-value);color:var(--dd-warn);background:var(--dd-warn-wash);border:1px dashed var(--dd-warn);border-radius:2px;padding:0 5px;white-space:nowrap">Each menu = Connection → Bus; each knob = send Connection gain</span></sc-if>
+              <div style="flex:1"></div>
+              <x-import component-from-global-scope="DandrumDesignSystem_3c2eab.Button" size="sm" variant="ghost" hint-size="90px,24px">Show graph</x-import>
+            </div>
+            <div style="display:grid;grid-template-columns:minmax(110px,1fr) 130px 40px 40px;align-items:center;column-gap:8px;padding:0 12px;height:26px;font:600 11px var(--font-ui);letter-spacing:.06em;text-transform:uppercase;color:var(--dd-paper-3);border-bottom:1px solid var(--dd-line-1)">
+              <span>Source</span><span>Output bus</span><span style="text-align:center">Reverb</span><span style="text-align:center">Delay</span>
+            </div>
+            <sc-for list="{{ routeRows }}" as="r" hint-placeholder-count="9">
+              <div style="display:grid;grid-template-columns:minmax(110px,1fr) 130px 40px 40px;align-items:center;column-gap:8px;padding:3px 12px;background:{{ r.bg }};box-shadow:{{ r.edge }}">
+                <span style="display:flex;flex-direction:column;min-width:0;padding-left:{{ r.pad }}px"><span style="font:500 13px var(--font-ui);color:var(--dd-paper-1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ r.name }}</span><span style="font:500 11px var(--font-ui);color:var(--dd-paper-3)">{{ r.kind }}</span></span>
+                <x-import component-from-global-scope="DandrumDesignSystem_3c2eab.MenuButton" value="{{ r.bus }}" compact="{{ true }}" width="{{ 130 }}" hint-size="130px,24px"></x-import>
+                <span style="display:flex;justify-content:center"><x-import component-from-global-scope="DandrumDesignSystem_3c2eab.Knob" dc-props="{{ kTight }}" size="xs" value="{{ r.sa }}" label="Send A" show-label="{{ false }}" hint-size="28px,28px"></x-import></span>
+                <span style="display:flex;justify-content:center"><x-import component-from-global-scope="DandrumDesignSystem_3c2eab.Knob" dc-props="{{ kTight }}" size="xs" value="{{ r.sb }}" label="Send B" show-label="{{ false }}" hint-size="28px,28px"></x-import></span>
+              </div>
+            </sc-for>
+            <div style="padding:8px 12px;border-top:1px solid var(--dd-line-1);font:500 12px/1.35 var(--font-ui);color:var(--dd-paper-3)">Inherit means the row follows its parent group. Setting a bus on a child overrides it; the row then shows its own bus in full text.</div>
+          </section>
+          <div style="display:flex;flex-direction:column;gap:4px;min-width:0">
+            <sc-if value="{{ ann }}" hint-placeholder-val="{{ false }}"><span style="font:500 11px/16px var(--font-value);color:var(--dd-warn);background:var(--dd-warn-wash);border:1px dashed var(--dd-warn);border-radius:2px;padding:0 5px;align-self:flex-start">Bus → plugin output Connection</span></sc-if>
+            <x-import component-from-global-scope="DandrumDesignSystem_3c2eab.OutputBusses" busses="{{ busses }}" title="Output busses" hint-size="100%,260px"></x-import>
+          </div>
+        </div>
+      </sc-if>
+
+      <!-- FX -->
+      <sc-if value="{{ isFx }}" hint-placeholder-val="{{ false }}">
+        <sc-if value="{{ ann }}" hint-placeholder-val="{{ false }}"><span style="font:500 11px/16px var(--font-value);color:var(--dd-warn);background:var(--dd-warn-wash);border:1px dashed var(--dd-warn);border-radius:2px;padding:0 5px;align-self:flex-start">Processors are ordinary DSP Modules inserted by Connection; no “sampler effect” type</span></sc-if>
+        <x-import component-from-global-scope="DandrumDesignSystem_3c2eab.LayerStack" layers="{{ insertLayers }}" selected-id="drums" title="Group inserts" subtitle="Processed left to right before the output bus" outputs="{{ outputs }}" count-label="3 groups" hint-size="100%,200px"></x-import>
+        <x-import component-from-global-scope="DandrumDesignSystem_3c2eab.LayerStack" layers="{{ fxLayers }}" title="FX busses" subtitle="Fed by sends on the Routing page" outputs="{{ outputs }}" count-label="2 busses" hint-size="100%,160px"></x-import>
+      </sc-if>
+
+      <sc-if value="{{ isExp }}" hint-placeholder-val="{{ false }}">
+        <section style="background:var(--dd-ink-2);border:1px solid var(--dd-line-1);border-radius:6px;padding:6px 8px">
+          <x-import component-from-global-scope="DandrumDesignSystem_3c2eab.KeyMap" zones="{{ zones }}" selected-id="{{ zoneSel }}" on-select="{{ selZone }}" low-note="{{ 24 }}" high-note="{{ 96 }}" grid-height="{{ 56 }}" keyboard-height="{{ 44 }}" editable="{{ false }}" title="Key map · read-only overview" hint-size="100%,140px"></x-import>
+        </section>
+      </sc-if>
+    </main>
+
+    <aside style="min-width:0;min-height:0;display:flex;flex-direction:column;background:var(--dd-ink-2);border:1px solid var(--dd-line-1);border-radius:6px;overflow:hidden">
+      <div style="flex:none;padding:8px 12px;background:var(--dd-ink-3);border-bottom:1px solid var(--dd-line-1);display:flex;flex-direction:column;gap:4px">
+        <div style="display:flex;align-items:center;gap:4px;flex-wrap:wrap;font:500 12px var(--font-ui);color:var(--dd-paper-3)">
+          <sc-for list="{{ crumbs }}" as="c" hint-placeholder-count="3">
+            <span style="display:flex;align-items:center;gap:4px"><span style="color:{{ c.c }}">{{ c.label }}</span><sc-if value="{{ c.sep }}" hint-placeholder-val="{{ true }}"><span style="color:var(--dd-paper-4)">›</span></sc-if></span>
+          </sc-for>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px">
+          <x-import component-from-global-scope="DandrumDesignSystem_3c2eab.Icon" name="{{ insp.icon }}" size="{{ 16 }}" color="var(--dd-vermilion)" hint-size="16px,16px"></x-import>
+          <span style="flex:1;font:600 15px var(--font-ui);color:var(--dd-paper-1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ insp.title }}</span>
+          <span style="font:600 11px var(--font-ui);letter-spacing:.06em;text-transform:uppercase;color:var(--dd-paper-2);border:1px solid var(--dd-line-3);border-radius:2px;padding:1px 5px">{{ insp.type }}</span>
+        </div>
+        <sc-if value="{{ ann }}" hint-placeholder-val="{{ false }}"><span style="font:500 11px/16px var(--font-value);color:var(--dd-warn);background:var(--dd-warn-wash);border:1px dashed var(--dd-warn);border-radius:2px;padding:0 5px;align-self:flex-start">{{ insp.ann }}</span></sc-if>
+      </div>
+      <sc-if value="{{ hasHist }}" hint-placeholder-val="{{ false }}">
+        <div style="flex:none;border-bottom:1px solid var(--dd-line-1);background:var(--dd-ink-2)">
+          <div style="height:28px;display:flex;align-items:center;gap:6px;padding:0 6px 0 12px">
+            <span style="font:700 12px var(--font-ui);letter-spacing:.1em;text-transform:uppercase;color:var(--dd-paper-2)">History</span>
+            <span style="font:500 11px var(--font-value);color:var(--dd-paper-3)">{{ histCount }}</span>
+            <sc-if value="{{ ann }}" hint-placeholder-val="{{ false }}"><span style="font:500 11px/16px var(--font-value);color:var(--dd-warn);background:var(--dd-warn-wash);border:1px dashed var(--dd-warn);border-radius:2px;padding:0 5px;white-space:nowrap">Non-destructive op stack</span></sc-if>
+            <div style="flex:1"></div>
+            <x-import component-from-global-scope="DandrumDesignSystem_3c2eab.IconButton" icon="plus" label="Add operation…" size="sm" variant="ghost" hint-size="24px,24px"></x-import>
+            <x-import component-from-global-scope="DandrumDesignSystem_3c2eab.IconButton" icon="layers" label="Collapse stack to a new sample" size="sm" variant="ghost" hint-size="24px,24px"></x-import>
+          </div>
+          <div style="padding:0 4px 6px;display:flex;flex-direction:column;gap:1px">
+            <sc-for list="{{ hist }}" as="o" hint-placeholder-count="4">
+              <div data-ctx="op|{{ o.id }}" role="button" tabindex="0" onClick="{{ o.select }}" style="display:flex;align-items:center;gap:6px;height:24px;padding:0 6px;border-radius:3px;cursor:pointer;background:{{ o.bg }};box-shadow:{{ o.edge }}" style-hover="background:var(--dd-ink-4)">
+                <span style="width:10px;font:700 11px var(--font-value);letter-spacing:-1px;color:var(--dd-paper-4)">{{ o.grip }}</span>
+                <div role="checkbox" aria-checked="{{ o.on }}" title="{{ o.tTip }}" onClick="{{ o.toggle }}" style="width:14px;height:14px;flex:none;box-sizing:border-box;border:1px solid var(--dd-line-3);border-radius:2px;display:flex;align-items:center;justify-content:center;background:var(--dd-ink-0);opacity:{{ o.tOp }}">
+                  <sc-if value="{{ o.on }}" hint-placeholder-val="{{ true }}"><x-import component-from-global-scope="DandrumDesignSystem_3c2eab.Icon" name="ok" size="{{ 11 }}" color="var(--dd-paper-1)" hint-size="11px,11px"></x-import></sc-if>
+                </div>
+                <x-import component-from-global-scope="DandrumDesignSystem_3c2eab.Icon" name="{{ o.icon }}" size="{{ 14 }}" color="{{ o.ic }}" hint-size="14px,14px"></x-import>
+                <span style="flex:none;font:600 13px var(--font-ui);color:{{ o.tc }}">{{ o.name }}</span>
+                <span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:right;font:500 11px var(--font-value);color:var(--dd-paper-3)">{{ o.detail }}</span>
+              </div>
+            </sc-for>
+            <div style="padding:4px 6px 0;font:500 11px/1.35 var(--font-ui);color:var(--dd-paper-3)">{{ histNote }}</div>
+          </div>
+        </div>
+      </sc-if>
+      <div style="flex:1;min-height:0;overflow:auto;padding:8px 12px 12px;display:flex;flex-direction:column;gap:2px">
+        <sc-for list="{{ insp.rows }}" as="r" hint-placeholder-count="8">
+          <sc-if value="{{ r.h }}" hint-placeholder-val="{{ false }}"><div style="padding:10px 0 4px;font:700 12px var(--font-ui);letter-spacing:.1em;text-transform:uppercase;color:var(--dd-paper-2)">{{ r.label }}</div></sc-if>
+          <sc-if value="{{ r.p }}" hint-placeholder-val="{{ true }}">
+            <x-import component-from-global-scope="DandrumDesignSystem_3c2eab.PropertyRow" label="{{ r.label }}" value="{{ r.value }}" unit="{{ r.unit }}" prepared="{{ r.ro }}" hint="{{ r.hint }}" compact="{{ true }}" hint-size="100%,24px"></x-import>
+          </sc-if>
+          <sc-if value="{{ r.m }}" hint-placeholder-val="{{ false }}">
+            <x-import component-from-global-scope="DandrumDesignSystem_3c2eab.ModIndicator" slot="{{ r.slot }}" depth="{{ r.depth }}" source="{{ r.label }}" host="{{ r.host }}" hint-size="100%,24px"></x-import>
+          </sc-if>
+          <sc-if value="{{ r.t }}" hint-placeholder-val="{{ false }}"><div style="padding:4px 0;font:500 12px/1.4 var(--font-ui);color:var(--dd-paper-3)">{{ r.label }}</div></sc-if>
+          <sc-if value="{{ r.b }}" hint-placeholder-val="{{ false }}"><div style="padding-top:6px"><x-import component-from-global-scope="DandrumDesignSystem_3c2eab.Button" size="sm" variant="{{ r.variant }}" icon="{{ r.icon }}" hint-size="140px,24px">{{ r.label }}</x-import></div></sc-if>
+          <sc-if value="{{ r.knobs }}" hint-placeholder-val="{{ false }}">
+            <div style="display:flex;flex-wrap:wrap;gap:0;padding:2px 0">
+              <sc-for list="{{ r.list }}" as="k" hint-placeholder-count="4">
+                <x-import component-from-global-scope="DandrumDesignSystem_3c2eab.Knob" dc-props="{{ kTight }}" size="sm" value="{{ k.v }}" on-change="{{ k.set }}" bipolar="{{ k.bi }}" label="{{ k.label }}" value-text="{{ k.t }}" hint-size="48px,60px"></x-import>
+              </sc-for>
+            </div>
+          </sc-if>
+        </sc-for>
+      </div>
+    </aside>
+  </div>
+
+
+  <footer style="height:26px;flex:none;display:flex;align-items:center;gap:12px;padding:0 12px;background:var(--dd-ink-0);border-top:1px solid var(--dd-line-1);font:500 12px var(--font-ui);color:var(--dd-paper-3);white-space:nowrap;overflow:hidden">
+    <span style="overflow:hidden;text-overflow:ellipsis">{{ hint }}</span>
+    <div style="flex:1"></div>
+    <span style="font:500 11px var(--font-value)">{{ sizeText }}</span>
+  </footer>
+  </sc-if>
+  <sc-if value="{{ kmenuOpen }}" hint-placeholder-val="{{ false }}">
+    <div onPointerDown="{{ closeK }}" onContextMenu="{{ closeKCtx }}" style="position:fixed;inset:0;z-index:30"></div>
+    <sc-for list="{{ kmenus }}" as="m" hint-placeholder-count="1">
+      <div style="position:fixed;left:{{ m.x }}px;top:{{ m.y }}px;z-index:31">
+        <x-import component-from-global-scope="DandrumDesignSystem_3c2eab.ContextMenu" items="{{ m.items }}" title="{{ m.title }}" width="{{ 260 }}" on-close="{{ closeK }}" hint-size="260px,200px"></x-import>
+      </div>
+    </sc-for>
+  </sc-if>
+</div>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  state = { st: (() => { try { return localStorage.getItem('dd-sampler-st'); } catch (e) { return null; } })() || 'sample', ann: false, layout: null, scale: 1, zoneSel: 'k60f', zones: null, browser: null, rrMode: null };
+  trackUndo() {
+    const KEYS = ['zones', 'added', 'removed', 'extraRoutes', 'assigned', 'histOff', 'histDel', 'kv', 'mv', 'vHardLo', 'vSoftHi', 'vCurve', 'modShape', 'routeOff', 'routeGone', 'treeHidden', 'srcHidden'];
+    const cur = {}; KEYS.forEach(k => cur[k] = this.state[k]);
+    const prev = this.prevSnap; this.prevSnap = cur;
+    if (!prev) return;
+    if (this.restoring) { this.restoring = false; return; }
+    const changed = KEYS.filter(k => prev[k] !== cur[k]);
+    if (!changed.length) return;
+    const now = Date.now();
+    this.undo = this.undo || []; this.redo = [];
+    if (!this.lastPush || now - this.lastPush > 600) { this.undo.push({ snap: prev, label: this.state.modNote || ('change to ' + changed[0]) }); if (this.undo.length > 100) this.undo.shift(); }
+    this.lastPush = now;
+  }
+  undoStep(dir) {
+    const KEYS = ['zones', 'added', 'removed', 'extraRoutes', 'assigned', 'histOff', 'histDel', 'kv', 'mv', 'vHardLo', 'vSoftHi', 'vCurve', 'modShape', 'routeOff', 'routeGone', 'treeHidden', 'srcHidden'];
+    const from = dir < 0 ? (this.undo || []) : (this.redo || []), to = dir < 0 ? (this.redo = this.redo || []) : (this.undo = this.undo || []);
+    const e = from.pop(); if (!e) return;
+    const cur = {}; KEYS.forEach(k => cur[k] = this.state[k]); to.push({ snap: cur, label: e.label });
+    this.restoring = true; this.lastPush = 0;
+    this.setState(Object.assign({}, e.snap, { modNote: (dir < 0 ? 'Undid ' : 'Redid ') + String(e.label).replace(/^(Added|Removed|Pasted|Deleted|Inserted|Copied)/, (m) => m.toLowerCase()), kmenu: null, cmenu: null, dmenu: null }));
+  }
+  resetTarget(kind, key) {
+    if (kind === 'knob') { const kv = Object.assign({}, this.state.kv || {}); kv[key] = (this.kDefaults || {})[key]; this.setState({ kv, cmenu: null, kmenu: null, modNote: 'Reset ' + key + ' to default' }); }
+    else if (kind === 'macro') { const mv = Object.assign({}, this.state.mv || {}); mv[key] = (this.mDefaults || {})[key]; this.setState({ mv, cmenu: null, modNote: 'Reset macro ' + key + ' to default' }); }
+  }
+  componentDidMount() {
+    this.mapRef = this.mapRef || React.createRef(); this.winRef = this.winRef || React.createRef();
+    this.onR = () => this.forceUpdate();
+    this.onMod = (e) => { const s = !!e.shiftKey; if (s !== this.shift) { this.shift = s; if (this.snap) this.setState({ dragShift: s }); } };
+    this.onUp = () => { if (this.snap) { this.snap = null; this.setState({ dragShift: false }); } };
+    this.onKey = (e) => {
+      this.onMod(e);
+      if (e.type === 'keydown' && e.key === 'Escape' && (this.state.kmenu || this.state.dragSrc)) { this.setState({ kmenu: null, dragSrc: null, nodeOver: null }); return; }
+      if (e.type === 'keydown' && (e.ctrlKey || e.metaKey) && !(e.target && /INPUT|TEXTAREA/.test(e.target.tagName))) {
+        const kz = e.key.toLowerCase();
+        if (kz === 'z') { e.preventDefault(); this.undoStep(e.shiftKey ? 1 : -1); return; }
+        if (kz === 'y') { e.preventDefault(); this.undoStep(1); return; }
+      }
+      if (e.type === 'keydown' && e.key === 'Escape' && (this.state.cmenu || this.state.dmenu)) { this.setState({ cmenu: null, dmenu: null }); return; }
+      if (e.type !== 'keydown' || this.curPage !== 'mapping') return;
+      const t = e.target; if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA')) return;
+      if (e.key === 'Escape' && this.state.menu) { this.setState({ menu: null }); return; }
+      const sel = this.getZones().find(z => z.id === this.state.zoneSel);
+      const mod = e.ctrlKey || e.metaKey;
+      if (mod && e.key.toLowerCase() === 'c' && sel) { e.preventDefault(); this.copyRange(sel); }
+      else if (mod && e.key.toLowerCase() === 'v' && this.state.clip) { e.preventDefault(); this.paste(this.hoverNote ?? (sel ? sel.hi + 1 : 60), e.shiftKey); }
+      else if ((e.key === 'Delete' || e.key === 'Backspace') && sel && !mod) { e.preventDefault(); this.del(sel, e.shiftKey); }
+    };
+    window.addEventListener('resize', this.onR);
+    window.addEventListener('keydown', this.onKey); window.addEventListener('keyup', this.onKey);
+    window.addEventListener('pointermove', this.onMod, true); window.addEventListener('pointerdown', this.onMod, true);
+    window.addEventListener('pointerup', this.onUp, true);
+  }
+  componentWillUnmount() {
+    window.removeEventListener('resize', this.onR);
+    window.removeEventListener('keydown', this.onKey); window.removeEventListener('keyup', this.onKey);
+    window.removeEventListener('pointermove', this.onMod, true); window.removeEventListener('pointerdown', this.onMod, true);
+    window.removeEventListener('pointerup', this.onUp, true);
+    clearInterval(this.pvT);
+  }
+  onVelDown(e) {
+    const t = e.target.closest && e.target.closest('[data-vh]'); if (!t) return;
+    e.preventDefault();
+    const mode = t.getAttribute('data-vh'), rect = e.currentTarget.getBoundingClientRect();
+    const st0 = { lo: this.state.vHardLo ?? 90, hi: this.state.vSoftHi ?? 101 };
+    const v0 = 1 + (e.clientX - rect.left) / rect.width * 126;
+    const mv = (ev) => {
+      const v = 1 + (ev.clientX - rect.left) / rect.width * 126, cl = (x, a, b) => Math.max(a, Math.min(b, Math.round(x)));
+      if (mode === 'l') this.setState({ vHardLo: cl(v, 2, st0.hi + 1) });
+      else if (mode === 'r') this.setState({ vSoftHi: cl(v, (this.state.vHardLo ?? st0.lo) - 1, 126) });
+      else { let d = Math.round(v - v0); d = Math.max(2 - st0.lo, Math.min(126 - st0.hi, d)); this.setState({ vHardLo: st0.lo + d, vSoftHi: st0.hi + d }); }
+    };
+    const up = () => { window.removeEventListener('pointermove', mv); window.removeEventListener('pointerup', up); };
+    window.addEventListener('pointermove', mv); window.addEventListener('pointerup', up);
+  }
+  modCats() { return [
+    ['env', 'Envelopes', [['Amp envelope', null, 1, 62, 'Keys · Drums · Break'], ['Filter envelope', 'A', 1, 48, 'Keys']]],
+    ['lfo', 'LFOs', [['LFO 1', 'B', 1, 70, 'Keys'], ['LFO 2', null, 1, 0, 'Keys · Drums']]],
+    ['perf', 'Performance', [['Velocity', 'C', 2, 58, 'All groups'], ['Key track', null, 1, 50, 'Keys'], ['Aftertouch', null, 1, 0, 'Keys'], ['Mod wheel', null, 1, 22, 'Keys · Break'], ['Pitch bend', null, 1, 50, 'All groups']]],
+    ['macro', 'Macros', [['Macro · Tone', 'D', 2, 56, 'Keys · Drums'], ['Macro · Space', null, 1, 32, 'All groups']]],
+    ['rand', 'Random', [['Random per note', null, 1, 34, 'Drums']]],
+  ]; }
+  winPt(e, w, hgt) {
+    const el = this.winRef && this.winRef.current; if (!el) return { x: 0, y: 0 };
+    const wr = el.getBoundingClientRect(), sc = wr.width / el.offsetWidth;
+    let x = (e.clientX - wr.left) / sc + 2, y = (e.clientY - wr.top) / sc + 2;
+    if (x + (w || 264) > el.offsetWidth) x = Math.max(4, x - (w || 264) - 4);
+    if (y + (hgt || 200) > el.offsetHeight) y = Math.max(4, el.offsetHeight - (hgt || 200) - 4);
+    return { x, y };
+  }
+  addRoute(label, src) {
+    const add = Object.assign({}, this.state.added || {}); add[label] = (add[label] || []).concat([{ slot: src.slot || undefined, depth: 0.25, source: src.name }]);
+    const rem = Object.assign({}, this.state.removed || {}); if (rem[label]) rem[label] = rem[label].filter(n => n !== src.name);
+    this.setState({ added: add, removed: rem, kmenu: null, dragMod: null, dropOver: null, modNote: 'Added route ' + src.name + ' → ' + label + ' +25% · right-click the control to edit or remove' });
+  }
+  removeRoute(label, name) {
+    const add = Object.assign({}, this.state.added || {}); if (add[label]) add[label] = add[label].filter(m => m.source !== name);
+    const rem = Object.assign({}, this.state.removed || {}); rem[label] = (rem[label] || []).concat([name]);
+    this.setState({ added: add, removed: rem, kmenu: null, editRoute: null, modNote: 'Removed route ' + name + ' → ' + label });
+  }
+  play(name, o) {
+    clearInterval(this.pvT);
+    const dur = Math.max(0.4, (o && o.dur) || 1.2), t0 = performance.now();
+    this.setState({ pv: Object.assign({ name, from: 0, to: 1, target: null }, o || {}), pvPos: 0 });
+    this.pvT = setInterval(() => { const p = (performance.now() - t0) / (dur * 1000); if (p >= 1) { clearInterval(this.pvT); this.setState({ pv: null, pvPos: 0 }); } else this.setState({ pvPos: p }); }, 40);
+  }
+  dropInfo(id, name) {
+    const m = { kick: ['Kick', 'layer'], snare: ['Snare', 'velocity layer'], snareH: ['Snare › Hard', 'alternate'], chat: ['Closed Hat', 'layer'], ohat: ['Open Hat', 'alternate'], drums: ['Drums', 'new pad'] };
+    if (m[id]) return { target: m[id][0], role: m[id][1] };
+    if (/^k\d+$/.test(id)) return { target: 'Felt ' + this.nn(+id.slice(1)), role: 'layer' };
+    return null;
+  }
+  defaultZones() {
+    const nm = this.nn.bind(this), z = [];
+    ['Kick 1','Hat 1','Snare 1','Ghost','Kick 2','Hat 2','Snare 2','Hat 3'].forEach((n, i) => z.push({ id: 'sl' + i, g: 'break', name: n, source: 'Slice', lo: 24 + i, hi: 24 + i, velLo: 1, velHi: 127, root: 24 + i }));
+    z.push({ id: 'kick', g: 'drums', name: 'Kick', source: 'Sample', lo: 36, hi: 36, velLo: 1, velHi: 127, root: 36 });
+    z.push({ id: 'snS', g: 'drums', name: 'Snare soft', source: 'Sample', lo: 38, hi: 38, velLo: 1, velHi: 95, root: 38 });
+    z.push({ id: 'snH', g: 'drums', name: 'Snare hard ×3', source: 'Sample', lo: 38, hi: 38, velLo: 96, velHi: 127, root: 38 });
+    z.push({ id: 'ch', g: 'drums', name: 'Closed Hat', source: 'Sample', lo: 42, hi: 42, velLo: 1, velHi: 127, root: 42 });
+    z.push({ id: 'oh', g: 'drums', name: 'Open Hat', source: 'Sample', lo: 46, hi: 46, velLo: 1, velHi: 127, root: 46 });
+    [[48,48,53],[55,54,59],[60,60,65],[66,66,71],[72,72,96]].forEach(([r, lo, hi]) => {
+      z.push({ id: 'k' + r + 'p', g: 'keys', name: 'Felt ' + nm(r) + ' p', source: 'Sample', lo, hi, velLo: 1, velHi: 90, root: r });
+      z.push({ id: 'k' + r + 'f', g: 'keys', name: 'Felt ' + nm(r) + ' f', source: 'Sample', lo, hi, velLo: 81, velHi: 127, root: r });
+    });
+    return z;
+  }
+  getZones() { return this.state.zones || (this._dz || (this._dz = this.defaultZones())); }
+  sameLayer(a, b) { return a.g === b.g && a.velLo === b.velLo && a.velHi === b.velHi; }
+  rangeTxt(lo, hi) { return lo === hi ? this.nn(lo) : this.nn(lo) + '–' + this.nn(hi); }
+  uid() { this._uid = (this._uid || 0) + 1; return 'z' + Date.now().toString(36) + this._uid; }
+  commit(zones, note, extra) { this.setState(Object.assign({ zones, mapNote: note || null, menu: null }, extra || {})); }
+  chZones(next, id) {
+    if (!this.snap) this.snap = this.getZones();
+    const snap = this.snap, orig = snap.find(z => z.id === id), nz = next.find(z => z.id === id);
+    if (!orig || !nz) { this.setState({ zones: next }); return; }
+    if (this.shift) { this.setState({ zones: snap.map(z => z.id === id ? nz : z), dragShift: true }); return; }
+    const L = snap.find(z => z.id !== id && this.sameLayer(z, orig) && z.hi === orig.lo - 1);
+    const R = snap.find(z => z.id !== id && this.sameLayer(z, orig) && z.lo === orig.hi + 1);
+    const dl = nz.lo - orig.lo, dh = nz.hi - orig.hi;
+    let lo = nz.lo, hi = nz.hi, root = nz.root;
+    if (dl === dh && dl !== 0) {
+      let d = dl;
+      if (L && d < 0) d = Math.max(d, L.lo + 1 - orig.lo);
+      if (R && d > 0) d = Math.min(d, R.hi - 1 - orig.hi);
+      lo = orig.lo + d; hi = orig.hi + d; if (orig.root != null) root = orig.root + d;
+    } else {
+      if (L && dl) lo = Math.max(lo, L.lo + 1);
+      if (R && dh) hi = Math.min(hi, R.hi - 1);
+    }
+    const sameVel = nz.velLo === orig.velLo && nz.velHi === orig.velHi;
+    this.setState({ dragShift: false, zones: snap.map(z => {
+      if (z.id === id) return Object.assign({}, nz, { lo, hi, root });
+      if (sameVel && L && z.id === L.id) return Object.assign({}, L, { hi: lo - 1 });
+      if (sameVel && R && z.id === R.id) return Object.assign({}, R, { lo: hi + 1 });
+      return z;
+    }) });
+  }
+  gridGeom() {
+    const wrap = this.mapRef && this.mapRef.current; if (!wrap) return null;
+    const scroll = [...wrap.querySelectorAll('div')].find(d => d.style.overflowY === 'hidden' && d.style.overflowX);
+    if (!scroll || !scroll.firstElementChild) return null;
+    const g = scroll.firstElementChild.children;
+    return { grid: g[1].getBoundingClientRect(), kb: g[5] ? g[5].getBoundingClientRect() : null };
+  }
+  pointNote(e) {
+    const G = this.gridGeom(); if (!G) return null;
+    const r = G.grid, x = e.clientX - r.left;
+    if (x < 0 || x > r.width) return null;
+    const note = Math.max(24, Math.min(96, 24 + Math.floor(x / (r.width / 73))));
+    const inGrid = e.clientY >= r.top && e.clientY <= r.bottom;
+    const inKb = G.kb && e.clientY >= G.kb.top && e.clientY <= G.kb.bottom;
+    if (!inGrid && !inKb) return null;
+    return { note, vel: inGrid ? Math.max(1, Math.min(127, 127 - Math.floor((e.clientY - r.top) / r.height * 127))) : null };
+  }
+  onMapMove(e) { const p = this.pointNote(e); if (p) this.hoverNote = p.note; }
+  onMapCtx(e) {
+    const p = this.pointNote(e); if (!p) return;
+    e.preventDefault();
+    const zones = this.getZones();
+    const hits = zones.filter(z => p.note >= z.lo && p.note <= z.hi && (p.vel == null || (p.vel >= z.velLo && p.vel <= z.velHi)));
+    const hit = hits.find(z => z.id === this.state.zoneSel) || hits[hits.length - 1] || null;
+    const wr = this.winRef.current.getBoundingClientRect(), sc = wr.width / this.winRef.current.offsetWidth;
+    let x = (e.clientX - wr.left) / sc + 2, y = (e.clientY - wr.top) / sc + 2;
+    const W = this.winRef.current.offsetWidth, H = this.winRef.current.offsetHeight;
+    if (x + 264 > W) x -= 266; if (y + 330 > H) y = Math.max(4, H - 334);
+    this.setState({ menu: { x, y, note: p.note, vel: p.vel, zid: hit && hit.id }, zoneSel: hit ? hit.id : this.state.zoneSel });
+  }
+  insertAt(z, note) {
+    const zones = this.getZones();
+    if (z.lo === z.hi) return;
+    let a, b;
+    if (note <= z.lo) { a = { lo: z.lo, hi: z.lo }; b = { lo: z.lo + 1, hi: z.hi }; }
+    else { a = { lo: note, hi: z.hi }; b = { lo: z.lo, hi: note - 1 }; }
+    const nz = { id: this.uid(), g: z.g, name: 'New zone', source: 'Empty', lo: a.lo, hi: a.hi, velLo: z.velLo, velHi: z.velHi, root: a.lo };
+    const out = zones.map(o => o.id === z.id ? Object.assign({}, o, b) : o); out.push(nz);
+    this.commit(out, 'Inserted zone ' + this.rangeTxt(nz.lo, nz.hi) + ' · ' + z.name + ' now ' + this.rangeTxt(b.lo, b.hi), { zoneSel: nz.id });
+  }
+  addInGap(note, vel) {
+    const zones = this.getZones();
+    const band = zones.filter(z => vel == null || (vel >= z.velLo && vel <= z.velHi));
+    const left = band.filter(z => z.hi < note).reduce((m, z) => Math.max(m, z.hi), 23) + 1;
+    const right = band.filter(z => z.lo > note).reduce((m, z) => Math.min(m, z.lo), 97) - 1;
+    const near = band.filter(z => z.hi === left - 1 || z.lo === right + 1)[0];
+    let lo = left, hi = right;
+    if (hi - lo > 11) { lo = note; hi = note; }
+    const nz = { id: this.uid(), g: near ? near.g : 'keys', name: 'New zone', source: 'Empty', lo, hi, velLo: near ? near.velLo : 1, velHi: near ? near.velHi : 127, root: note };
+    this.commit(zones.concat([nz]), 'Added zone ' + this.rangeTxt(lo, hi) + ' · drop a sample on it to fill it', { zoneSel: nz.id });
+  }
+  copyRange(z) {
+    const zs = this.getZones().filter(o => o.g === z.g && o.lo >= z.lo && o.hi <= z.hi);
+    this.setState({ clip: { zones: zs.map(o => Object.assign({}, o)), lo: z.lo, hi: z.hi, label: this.rangeTxt(z.lo, z.hi) + ' · ' + zs.length + (zs.length === 1 ? ' zone' : ' zones') }, menu: null, mapNote: 'Copied ' + this.rangeTxt(z.lo, z.hi) + ' (' + zs.length + (zs.length === 1 ? ' zone' : ' zones') + ', all velocity layers)' });
+  }
+  copyGroup(g) {
+    const zs = this.getZones().filter(o => o.g === g);
+    const lo = Math.min(...zs.map(o => o.lo)), hi = Math.max(...zs.map(o => o.hi));
+    const nmG = { keys: 'Keys', drums: 'Drums', break: 'Break' }[g] || g;
+    this.setState({ clip: { zones: zs.map(o => Object.assign({}, o)), lo, hi, label: nmG + ' ' + this.rangeTxt(lo, hi) + ' · ' + zs.length + ' zones' }, menu: null, mapNote: 'Copied group ' + nmG + ' (' + zs.length + ' zones)' });
+  }
+  paste(note, asLayer) {
+    const c = this.state.clip; if (!c) return;
+    let off = note - c.lo;
+    off = Math.min(off, 96 - c.hi); off = Math.max(off, 24 - c.lo);
+    const nm = this.nn.bind(this);
+    const pasted = c.zones.map(z => {
+      const root = z.root != null ? z.root + off : undefined;
+      const name = z.root != null && z.name.includes(nm(z.root)) ? z.name.replace(nm(z.root), nm(root)) : z.name + ' copy';
+      return Object.assign({}, z, { id: this.uid(), lo: z.lo + off, hi: z.hi + off, root, name });
+    });
+    let zones = this.getZones(), trimmed = 0, removed = 0;
+    if (!asLayer) {
+      const out = [];
+      zones.forEach(E => {
+        let pieces = [{ lo: E.lo, hi: E.hi }];
+        pasted.forEach(P => {
+          if (P.velLo > E.velHi || P.velHi < E.velLo) return;
+          pieces = pieces.flatMap(s => {
+            if (P.hi < s.lo || P.lo > s.hi) return [s];
+            const r = []; if (s.lo < P.lo) r.push({ lo: s.lo, hi: P.lo - 1 }); if (s.hi > P.hi) r.push({ lo: P.hi + 1, hi: s.hi }); return r;
+          });
+        });
+        if (!pieces.length) { removed++; return; }
+        if (pieces.length !== 1 || pieces[0].lo !== E.lo || pieces[0].hi !== E.hi) trimmed++;
+        pieces.forEach((s, i) => out.push(Object.assign({}, E, { id: i ? this.uid() : E.id, lo: s.lo, hi: s.hi })));
+      });
+      zones = out;
+    }
+    const tail = asLayer ? ' as a layer · overlaps crossfade' : (removed || trimmed ? ' · replaced ' + removed + ', trimmed ' + trimmed : '');
+    this.commit(zones.concat(pasted), 'Pasted ' + pasted.length + (pasted.length === 1 ? ' zone' : ' zones') + ' at ' + this.rangeTxt(c.lo + off, c.hi + off) + tail, { zoneSel: pasted[pasted.length - 1].id });
+  }
+  del(z, leaveGap) {
+    const zones = this.getZones();
+    const L = zones.find(o => o.id !== z.id && this.sameLayer(o, z) && o.hi === z.lo - 1);
+    const R = zones.find(o => o.id !== z.id && this.sameLayer(o, z) && o.lo === z.hi + 1);
+    let lh = null, rl = null;
+    if (!leaveGap) {
+      if (L && R) { lh = Math.floor((z.lo + z.hi) / 2); rl = lh + 1; }
+      else if (L) lh = z.hi; else if (R) rl = z.lo;
+    }
+    const out = zones.filter(o => o.id !== z.id).map(o => (L && o.id === L.id && lh != null) ? Object.assign({}, o, { hi: lh }) : (R && o.id === R.id && rl != null) ? Object.assign({}, o, { lo: rl }) : o);
+    const how = leaveGap ? ' · keys ' + this.rangeTxt(z.lo, z.hi) + ' are now silent' : (L || R) ? ' · neighbours filled ' + this.rangeTxt(z.lo, z.hi) : '';
+    this.commit(out, 'Deleted ' + z.name + how, { zoneSel: (L || R || out[0] || {}).id });
+  }
+  relations(zones) {
+    const segs = [], groups = {};
+    zones.forEach(z => { const k = z.g + ':' + z.velLo + '-' + z.velHi; (groups[k] = groups[k] || []).push(z); });
+    Object.values(groups).forEach(list => {
+      const s = list.slice().sort((a, b) => a.lo - b.lo || a.hi - b.hi);
+      for (let i = 0; i < s.length - 1; i++) {
+        const a = s[i], b = s[i + 1];
+        if (b.lo <= a.hi) segs.push({ kind: 'xf', lo: b.lo, hi: Math.min(a.hi, b.hi), a, b });
+        else if (b.lo > a.hi + 1 && a.g === 'keys') segs.push({ kind: 'gap', lo: a.hi + 1, hi: b.lo - 1, a, b });
+      }
+    });
+    return segs;
+  }
+  go(st) { try { localStorage.setItem('dd-sampler-st', st); } catch (e) {} this.setState({ st, cmenu: null, dmenu: null, perf: null, layout: null, browser: null, rrMode: null, kmenu: null, menu: null, editRoute: null, modInsp: false, histSel: null, modNote: null }); }
+  rng(seed) { let s = seed >>> 0; return () => { s = (s * 1664525 + 1013904223) >>> 0; return s / 4294967296; }; }
+  peaks(n, f, seed) { const r = this.rng(seed), o = []; for (let i = 0; i < n; i++) o.push(Math.min(1, f(i / n, r))); return o; }
+  nn(n) { const N = ['C','C♯','D','D♯','E','F','F♯','G','G♯','A','A♯','B']; return N[n % 12] + (Math.floor(n / 12) - 1); }
+  renderVals() { try { this.trackUndo(); return this.rv(); } catch (e) { return { hint: 'ERR ' + e.message + ' ' + (e.stack || '').split('\n').slice(0, 3).join(' | ') }; } }
+  rv() {
+    const S = [
+      ['empty','01 Empty','sample',{empty:1}], ['loaded','02 Single sample','sample',{browser:1}], ['sample','03 Sample editing','sample',{}],
+      ['loop','04 Loop editing','sample',{loop:1}], ['slices','05 Slice editing','slices',{}], ['transients','06 Transient analysis','slices',{tr:'done'}],
+      ['mapping','07 Key map','mapping',{}], ['vel','08 Velocity layers','layers',{mode:'vel'}], ['rr','09 Round robin','layers',{mode:'rr'}],
+      ['voice','10 Voice shaping','voice',{}], ['mod','11 Modulation','mod',{}], ['macro','12 Macro editing','voice',{macro:1}],
+      ['routing','13 Routing','routing',{}], ['fx','14 Effects','fx',{}], ['missing','15 Missing asset','sample',{missing:1}],
+      ['unsupported','16 Unsupported asset','sample',{unsup:1}], ['loading','17 Loading','sample',{loading:1}], ['running','18 Analysis running','slices',{tr:'run'}],
+      ['failed','19 Analysis failed','slices',{tr:'fail'}], ['min','20 Minimum 820×560','sample',{layout:'min'}], ['default','21 Default 1200×800','mapping',{layout:'default'}],
+      ['exp','22 Expanded 1600×1000','voice',{layout:'exp'}], ['drop','23 Multi-file drop','sample',{drop:1}], ['perf','24 Compact · macros only','voice',{perf:1}],
+    ];
+    const cur = S.find(s => s[0] === this.state.st) || S[2];
+    const f = cur[3], page = cur[2];
+    const layout = this.state.layout || f.layout || 'default';
+    const isMin = layout === 'min' && !(this.state.perf ?? !!f.perf), isExp = layout === 'exp' && !(this.state.perf ?? !!f.perf);
+    const perf = this.state.perf ?? !!f.perf;
+    const W = perf ? 900 : isMin ? 820 : isExp ? 1600 : 1200, H = perf ? 44 + 82 : isMin ? 560 : isExp ? 1000 : 800;
+    const avail = Math.max(320, (typeof window !== 'undefined' ? window.innerWidth : 1300) - 32);
+    const scale = Math.min(1, avail / W);
+    const browser = this.state.browser != null ? this.state.browser : !!(f.browser);
+    const empty = !!f.empty, drop = !!f.drop, missing = !!f.missing, unsup = !!f.unsup, loading = !!f.loading, loop = !!f.loop;
+    const mode = this.state.rrMode || f.mode || 'vel';
+    const tr = f.tr || null;
+    const treeW = isMin ? 36 : isExp ? 248 : 208, inspW = isMin ? 232 : isExp ? 320 : 272;
+    const pageCanon = { sample: 'sample', slices: 'slices', mapping: 'mapping', layers: 'vel', voice: 'voice', mod: 'mod', routing: 'routing', fx: 'fx' };
+    const A = (o) => o;
+
+    const pianoPeaks = this.peaks(600, (t, r) => (t < 0.004 ? t / 0.004 : 1) * (Math.exp(-t * 2.4) * 0.85 + 0.06 * Math.exp(-t * 0.6)) * (0.78 + 0.22 * r()), 11);
+    const seamA = this.peaks(80, (t, r) => 0.32 * (0.6 + 0.4 * Math.abs(Math.sin(t * 40))) * (0.85 + 0.15 * r()), 3);
+    const seamB = this.peaks(80, (t, r) => 0.34 * (0.6 + 0.4 * Math.abs(Math.sin(t * 40 + 1))) * (0.85 + 0.15 * r()), 5);
+    const partialPeaks = pianoPeaks.map((v, i) => i < 372 ? v : 0);
+
+    const nm = this.nn.bind(this);
+    const tree = [];
+    const sel = { sample: 'k60', slices: 'break', mapping: 'keys', layers: mode === 'rr' ? 'snareH' : 'snare', voice: 'keys', mod: 'keys', routing: 'inst', fx: 'drums' }[page];
+    const assigned = this.state.assigned || {}, DS = this.state.dragSrc, NO = this.state.nodeOver;
+    const T = (id, label, detail, depth, icon, go, extra) => { const elig = DS && this.dropInfo(id); T0(id, label, detail, depth, icon, go, Object.assign({ drop: elig ? (NO === id ? 'inset 0 0 0 1px var(--dd-vermilion)' : 'inset 0 0 0 1px var(--dd-line-3)') : 'none', dbg: elig && NO === id ? 'var(--dd-vermilion-wash)' : 'transparent' }, extra || {})); (assigned[id] || []).forEach((a, i) => T0(id + '_a' + i, a.name, a.role === 'new pad' ? (39 + i) + ' ' + this.nn(39 + i) : a.role === 'alternate' ? 'alt' : 'layer', depth + 1, a.kind === 'slice' ? 'slice' : 'level', go, { drop: 'none', dbg: 'transparent' })); };
+    const tHidden = this.state.treeHidden || {};
+    const T0 = (id, label, detail, depth, icon, go, extra) => tHidden[id] ? null : tree.push(Object.assign({ id, label, detail, pad: 4 + depth * 14, icon, sel: id === sel && !empty, active: false, dim: false, go: () => this.go(go) }, extra || {}));
+    if (empty || drop) { T('inst', 'Untitled', 'no sounds', 0, 'layers', 'empty'); }
+    else {
+      T('inst', 'Felt Kit', '3 groups', 0, 'layers', 'routing');
+      T('keys', 'Keys', '10 zones', 1, 'keyboard', 'mapping');
+      [[48,'Felt C3'],[55,'Felt G3'],[60,'Felt C4'],[66,'Felt F♯4'],[72,'Felt C5']].forEach(([n, l]) => T('k' + n, l, 'p · f', 2, missing && n === 60 ? 'file-missing' : 'level', 'sample', { active: n === 60 && page === 'sample' }));
+      T('drums', 'Drums', '4 sounds', 1, 'layers', 'fx');
+      T('kick', 'Kick', '36 C2', 2, 'one-shot', 'vel');
+      T('snare', 'Snare', '38 · vel', 2, 'layers', 'vel');
+      T('snareH', 'Hard', '×3', 3, 'alternate', 'rr');
+      T('chat', 'Closed Hat', '42', 2, 'choke', 'vel');
+      T('ohat', 'Open Hat', '46', 2, 'choke', 'vel');
+      T('break', 'Break', '8 slices', 1, 'slice', 'slices');
+    }
+
+    const assets = [
+      { head: true, label: 'Recent' },
+      { row: true, icon: 'level', label: 'felt_C4_f.wav', dur: '4.82 s', sel: true },
+      { row: true, icon: 'level', label: 'felt_C4_p.wav', dur: '4.61 s' },
+      { row: true, icon: 'level', label: 'amen_172.wav', dur: '1.40 s' },
+      { head: true, label: 'Felt Piano · 24 files' },
+      { row: true, icon: 'level', label: 'felt_C3_f.wav', dur: '5.10 s' },
+      { row: true, icon: 'level', label: 'felt_C3_p.wav', dur: '5.02 s' },
+      { row: true, icon: 'level', label: 'felt_G3_f.wav', dur: '4.95 s' },
+      { row: true, icon: 'file-missing', label: 'felt_G3_p.wav · missing', dur: '—' },
+      { row: true, icon: 'level', label: 'felt_F#4_f.wav', dur: '4.44 s' },
+      { head: true, label: 'Impulse responses' },
+      { row: true, icon: 'level', label: 'plate_small.wav', dur: '1.80 s' },
+      { row: true, icon: 'level', label: 'room_wood.wav', dur: '0.92 s' },
+    ];
+
+    const addedMods = this.state.added || {};
+    const removedMods = this.state.removed || {};
+    this.knobMods = {};
+    const kAll = (label, mods) => { const all = (mods || []).concat(addedMods[label] || []).filter(m => !(removedMods[label] || []).includes(m.source)); this.knobMods[label] = all; return all; };
+    const kvS = this.state.kv || {}; this.kDefaults = this.kDefaults || {}; let kCtx = '';
+    const k = (label, v, t, bi, mods, host, pop) => { const key = kCtx + label; if (this.kDefaults[key] === undefined) this.kDefaults[key] = v; const cv = kvS[key] ?? v; return { label, key, v: cv, t: kvS[key] != null && kvS[key] !== v ? Math.round(cv * 100) + '%' : t, bi: !!bi, mods: kAll(key, mods).filter(m => m.slot), host: !!host, pop: !!pop && !this.state.dragMod && !this.state.kmenu, set: (nv) => this.setState(s => ({ kv: Object.assign({}, s.kv || {}, { [key]: nv }) })), ring: (this.state.dropOver === key || (this.state.kmenu && this.state.kmenu.label === key) || this.state.flashKey === key) ? '0 0 0 1px var(--dd-vermilion)' : 'none' }; };
+    const kL = (...a) => { kCtx = 'Lush '; const r = k(...a); kCtx = ''; return r; };
+    const sampleKnobGroups = [
+      { title: 'Region', ann: 'Asset Region', knobs: [k('Start', 0.012, '0.058 s', 0, [{ slot: 'D', depth: 0.15, source: 'Aftertouch' }]), k('End', 0.94, '4.531 s'), k('Fade in', 0.04, '2 ms'), k('Fade out', 0.3, '380 ms')] },
+      { title: 'Pitch', ann: 'Parameter · AssetPlayer', knobs: [k('Tune', 0.5, '0 st', 1), k('Fine', 0.47, '−3 ct', 1)] },
+      { title: 'Output', ann: 'Parameter · Gain', knobs: [k('Gain', 0.72, '−1.5 dB'), k('Pan', 0.5, 'C', 1)] },
+    ];
+    const meta = [{ k: 'Format', v: '48 kHz · 24-bit · stereo' }, { k: 'Length', v: '4.820 s' }, { k: 'Peak', v: '−1.2 dBFS' }, { k: 'Loudness', v: '−18.4 LUFS' }, { k: 'Pitch', v: 'C4 +3¢' }, { k: 'Source', v: missing ? 'missing' : 'external · cached' }];
+
+    const sliceNames = ['Kick 1','Hat 1','Snare 1','Ghost','Kick 2','Hat 2','Snare 2','Hat 3'];
+    const sp = [0, .125, .25, .3125, .5, .625, .75, .875];
+    const slices = sp.map((pos, i) => ({ pos, name: sliceNames[i] }));
+    const len = 1.395;
+    const sliceRows = sp.map((p, i) => {
+      const s = i === 2 || i === 6;
+      return { n: i + 1, name: sliceNames[i], note: (24 + i) + ' ' + nm(24 + i), range: (p * len).toFixed(3) + '–' + ((sp[i + 1] ?? 1) * len).toFixed(3), tune: i === 3 ? '+2 st' : '0 st', gain: i === 3 ? '−6.0 dB' : '0.0 dB', pan: i === 1 || i === 5 ? 'L18' : 'C', mode: sliceNames[i].startsWith('Hat') ? 'Gated' : 'Once', choke: sliceNames[i].startsWith('Hat') ? '1' : '—', out: s ? 'Snare' : 'Inherit · Main', bg: s ? 'var(--dd-vermilion-wash)' : 'transparent', edge: s ? 'inset 2px 0 0 var(--dd-vermilion)' : 'none' };
+    });
+    const tpos = [0, .0625, .125, .1875, .25, .3125, .375, .4375, .5, .5625, .625, .6875, .75, .8125, .875];
+    const transients = tpos.map((x, i) => { const st = [1, .3, .7, .35, .95, .6, .4, .25, .9, .3, .65, .45, .95, .32, .7][i]; return { x: x * 100 + 0.3, h: Math.round(6 + st * 18), c: st > 0.4 ? 'var(--dd-paper-1)' : 'var(--dd-paper-4)' }; });
+
+    const zones = this.getZones();
+    this.curPage = page;
+    if (!this.mapRef) this.mapRef = React.createRef(); if (!this.winRef) this.winRef = React.createRef();
+    const rels = this.relations(zones);
+    const XFS = { bg: 'repeating-linear-gradient(135deg, var(--dd-vermilion) 0 2px, var(--dd-vermilion-wash) 2px 5px)', bd: '1px solid var(--dd-vermilion)' };
+    const GAPS = { bg: 'transparent', bd: '1px dashed var(--dd-warn)' };
+    const relSegs = rels.map(r => Object.assign({ l: (r.lo - 24) / 73 * 100, w: (r.hi - r.lo + 1) / 73 * 100, title: (r.kind === 'xf' ? 'Crossfade ' : 'Gap ') + this.rangeTxt(r.lo, r.hi) }, r.kind === 'xf' ? XFS : GAPS));
+    const relList = rels.slice(0, 4).map(r => Object.assign({ kind: r.kind === 'xf' ? 'Crossfade' : 'Gap', text: r.kind === 'xf' ? this.rangeTxt(r.lo, r.hi) + ' · ' + r.a.name + ' ↔ ' + r.b.name : this.rangeTxt(r.lo, r.hi) + ' · silent' }, r.kind === 'xf' ? XFS : GAPS));
+    if (rels.length > 4) relList.push({ kind: '+' + (rels.length - 4), text: 'more', bg: 'transparent', bd: '1px solid transparent' });
+    const M = this.state.menu;
+    let menuItems = [], menuTitle = '';
+    if (M) {
+      const mz = M.zid ? zones.find(z => z.id === M.zid) : null, at = nm(M.note), c = this.state.clip;
+      const pasteItems = [
+        { label: c ? 'Paste ' + c.label + ' at ' + at : 'Paste key range', shortcut: 'Ctrl+V', disabled: !c, onSelect: () => this.paste(M.note, false) },
+        { label: 'Paste as layer at ' + at, shortcut: 'Ctrl+Shift+V', disabled: !c, onSelect: () => this.paste(M.note, true) },
+      ];
+      if (mz) {
+        const gName = { keys: 'Keys', drums: 'Drums', break: 'Break' }[mz.g];
+        const n = zones.filter(o => o.g === mz.g && o.lo >= mz.lo && o.hi <= mz.hi).length;
+        menuTitle = mz.name + ' · ' + this.rangeTxt(mz.lo, mz.hi);
+        menuItems = [
+          { label: 'Insert zone at ' + at, icon: 'plus', disabled: mz.lo === mz.hi, onSelect: () => this.insertAt(mz, M.note) },
+          { separator: true },
+          { label: 'Copy key range ' + this.rangeTxt(mz.lo, mz.hi) + ' (' + n + ')', shortcut: 'Ctrl+C', onSelect: () => this.copyRange(mz) },
+          { label: 'Copy group ' + gName, onSelect: () => this.copyGroup(mz.g) },
+        ].concat(pasteItems, [
+          { separator: true },
+          { label: 'Delete zone', shortcut: 'Delete', danger: true, onSelect: () => this.del(mz, false) },
+          { label: 'Delete, leave gap', shortcut: 'Shift+Del', danger: true, onSelect: () => this.del(mz, true) },
+        ]);
+      } else {
+        menuTitle = 'Key ' + M.note + ' ' + at + (M.vel != null ? ' · vel ' + M.vel : '');
+        menuItems = [{ label: 'Add zone in empty keys', icon: 'plus', onSelect: () => this.addInGap(M.note, M.vel) }, { separator: true }].concat(pasteItems);
+      }
+      menuItems = menuItems.map(it => it.onSelect ? Object.assign({}, it, { onSelect: () => { it.onSelect(); } }) : it);
+    }
+    const dropRules = [
+      { k: 'File on a zone', v: 'Replace its sample. Shift adds as a new layer on the same keys.' },
+      { k: 'File on empty keys', v: 'New zone at that key, root = key. Drag height sets velocity range.' },
+      { k: 'Several files', v: 'Spread from the drop key. Roots from file names when found.' },
+      { k: 'Zone edges · Shift', v: 'Edges push the neighbouring zone. Shift-drag to overlap (crossfade) or leave a gap (silent).' },
+      { k: 'Right-click', v: 'Insert a zone, copy the key range, paste it at another key, delete.' },
+    ];
+
+    const modeList = [['stack','Stack'],['vel','Velocity'],['rr','Round robin'],['alt','Alternate'],['rand','Random'],['wrand','Weighted']];
+    const selModes = modeList.map(([id, label]) => ({ label, sel: id === mode, go: () => this.setState({ rrMode: id }) }));
+    const modeDescs = { stack: 'All samples play on every hit.', vel: 'One sample per hit, chosen by velocity range. Ranges may overlap to crossfade.', rr: 'One sample per hit, in order. Each note keeps its own position.', alt: 'Two samples, swapping on every hit.', rand: 'One sample per hit at random; never the same twice in a row.', wrand: 'One sample per hit at random, in proportion to each weight.' };
+    const isRRlike = ['rr','alt','rand','wrand'].includes(mode);
+    const vLo = this.state.vHardLo ?? 90, vHi = this.state.vSoftHi ?? 101, vW = Math.max(0, vHi - vLo + 1), vCurve = this.state.vCurve || 'eq';
+    const vx = (v) => (v - 1) / 126 * 100;
+    const ramp = (a, b, up) => { if (b <= a) return up ? [[a, 100], [a, 0]] : [[a, 0], [a, 100]]; const pts = []; for (let i = 0; i <= 12; i++) { const f = i / 12, g = vCurve === 'eq' ? (up ? Math.sin(f * Math.PI / 2) : Math.cos(f * Math.PI / 2)) : (up ? f : 1 - f); pts.push([a + (b - a) * f, 100 - g * 100]); } return pts; };
+    const xa = vLo - 1.5, xb = vHi - 0.5;
+    const ptsStr = (arr) => arr.map(p => p[0].toFixed(2) + ',' + p[1].toFixed(1)).join(' ');
+    const vSoftPts = ptsStr([[0, 100], [0, 0]].concat(vW ? ramp(xa, xb, false) : [[vHi - 0.5, 0], [vHi - 0.5, 100]]));
+    const vHardPts = ptsStr((vW ? ramp(xa, xb, true) : [[vLo - 1.5, 100], [vLo - 1.5, 0]]).concat([[126, 0], [126, 100]]));
+    const gSoft = Math.pow(10, -2.0 / 20), gHard = Math.pow(10, 0 / 20);
+    const gStops = (up, g) => Array.from({ length: 13 }, (_, i) => { const f = i / 12, c = !vW ? (up ? (f > 0 ? 1 : 0) : (f < 1 ? 1 : 0)) : vCurve === 'eq' ? (up ? Math.sin(f * Math.PI / 2) : Math.cos(f * Math.PI / 2)) : (up ? f : 1 - f); return { o: f.toFixed(3), a: (c * g).toFixed(3) }; });
+    const softRange = '1–' + vHi, hardRange = vLo + '–127';
+    const cands = isRRlike ? [
+      { ord: 1, name: 'Hard A', file: 'snare_hard_a.wav', vel: '96–127', w: mode === 'wrand' ? '2.0' : '33%', wpct: mode === 'wrand' ? 50 : 33, gain: '0.0 dB', pan: 'C', tune: '0 st', out: 'Inherit · Snare', mc: 'var(--dd-paper-4)', dot: 'var(--dd-paper-4)', bg: 'transparent', edge: 'none' },
+      { ord: 2, name: 'Hard B', file: 'snare_hard_b.wav', vel: '96–127', w: mode === 'wrand' ? '1.0' : '33%', wpct: mode === 'wrand' ? 25 : 33, gain: '−0.5 dB', pan: 'C', tune: '0 st', out: 'Inherit · Snare', mc: 'var(--dd-paper-4)', dot: 'var(--dd-paper-1)', bg: 'var(--dd-vermilion-wash)', edge: 'inset 2px 0 0 var(--dd-vermilion)' },
+      { ord: 3, name: 'Hard C', file: 'snare_hard_c.wav', vel: '96–127', w: mode === 'wrand' ? '1.0' : '33%', wpct: mode === 'wrand' ? 25 : 33, gain: '0.0 dB', pan: 'C', tune: '+8 ct', out: 'Inherit · Snare', mc: 'var(--dd-paper-4)', dot: 'var(--dd-paper-4)', bg: 'transparent', edge: 'none' },
+    ] : [
+      { ord: 1, name: 'Soft', file: 'snare_soft.wav', vel: softRange, w: '—', wpct: 0, gain: '−2.0 dB', pan: 'C', tune: '0 st', out: 'Inherit · Snare', mc: 'var(--dd-paper-4)', dot: 'var(--dd-paper-1)', bg: 'transparent', edge: 'none' },
+      { ord: 2, name: 'Hard', file: '3 alternates · round robin', vel: hardRange, w: '—', wpct: 0, gain: '0.0 dB', pan: 'C', tune: '0 st', out: 'Inherit · Snare', mc: 'var(--dd-paper-4)', dot: 'var(--dd-paper-4)', bg: 'var(--dd-vermilion-wash)', edge: 'inset 2px 0 0 var(--dd-vermilion)' },
+    ];
+    ((this.state.assigned || {}).snareH || []).forEach((a, i) => cands.push({ ord: 4 + i, name: a.name, file: a.kind === 'slice' ? 'amen_172.wav · slice' : a.name, vel: '96–127', w: '25%', wpct: 25, gain: '0.0 dB', pan: 'C', tune: '0 st', out: 'Inherit · Snare', mc: 'var(--dd-paper-4)', dot: 'var(--dd-paper-4)', bg: 'transparent', edge: 'none' }));
+    const rrSeq = [
+      { label: 'Hard A', tag: '', bg: 'var(--dd-ink-4)', bd: 'var(--dd-line-2)', tc: 'var(--dd-paper-3)' },
+      { label: 'Hard B', tag: 'Last', bg: 'var(--dd-ink-5)', bd: 'var(--dd-paper-2)', tc: 'var(--dd-paper-2)' },
+      { label: 'Hard C', tag: 'Next', bg: 'var(--dd-ink-4)', bd: 'var(--dd-vermilion)', tc: 'var(--dd-vermilion)' },
+    ];
+
+    const chain = [
+      { label: 'Sample player', bg: 'var(--dd-ink-4)', bd: 'var(--dd-line-2)', arrow: true, sep: '+' },
+      { label: 'Lush', bg: 'var(--dd-ink-4)', bd: 'var(--dd-line-2)', arrow: true, sep: '→' },
+      { label: 'Filter', bg: 'var(--dd-vermilion-wash)', bd: 'var(--dd-vermilion)', arrow: true, sep: '→' },
+      { label: 'Amplifier', bg: 'var(--dd-ink-4)', bd: 'var(--dd-line-2)', arrow: true, sep: '→' },
+      { label: 'Group out', bg: 'transparent', bd: 'var(--dd-line-2)', arrow: false },
+    ];
+    const cutoffMods = [{ slot: 'A', depth: 0.26, source: 'Filter envelope', live: 0.6 }, { slot: 'D', depth: 0.12, source: 'Macro · Tone' }, { slot: 'C', depth: 0.08, source: 'Velocity' }];
+    const voiceSecs = [
+      { title: 'Source', sub: 'Sample player', ann: 'Module · AssetPlayer', bd: 'var(--dd-line-1)', hasSeg: true, segV: 'once', seg: [{ id: 'once', label: 'Once' }, { id: 'gated', label: 'Gated' }, { id: 'loop', label: 'Loop' }], knobs: [k('Start', 0.012, '0.058 s', 0, [{ slot: 'D', depth: 0.15, source: 'Aftertouch' }]), k('Gain', 0.72, '−1.5 dB')] },
+      { title: 'Source', sub: 'Lush · Dandrum synth', ann: 'Module · Patch (another Dandrum instrument as a source)', bd: 'var(--dd-line-1)', hasSeg: true, segV: 'note', seg: [{ id: 'note', label: 'Follows notes' }, { id: 'drone', label: 'Drone' }], knobs: [kL('Level', 0.55, '−6.0 dB'), kL('Pan', 0.5, 'C', 1), kL('Tune', 0.5, '0 st', 1), kL('Detune', 0.34, '34%', 0, [{ slot: 'B', depth: 0.1, source: 'LFO 1' }]), kL('Brightness', 0.6, '60%', 0, [{ slot: 'D', depth: 0.18, source: 'Macro · Tone' }]), kL('Width', 0.7, '70%')] },
+      { title: 'Pitch', sub: '', ann: 'Parameters · AssetPlayer pitch', bd: 'var(--dd-line-1)', hasSeg: false, knobs: [k('Tune', 0.5, '0 st', 1, [{ slot: 'B', depth: 0.05, source: 'LFO 1' }]), k('Fine', 0.47, '−3 ct', 1), k('Key track', 1, '100%'), k('Bend', 0.17, '±2 st')] },
+      { title: 'Filter', sub: 'Ladder 24 dB', ann: 'Module · Filter', bd: 'var(--dd-vermilion)', hasSeg: true, segV: 'lp', seg: [{ id: 'lp', label: 'LP' }, { id: 'bp', label: 'BP' }, { id: 'hp', label: 'HP' }, { id: 'nt', label: 'Notch' }], knobs: [k('Cutoff', 0.42, '2.40 kHz', 0, cutoffMods), k('Reso', 0.22, '22%'), k('Drive', 0.1, '1.5 dB', 0, []), k('Key trk', 0.5, '50%'), k('Env amt', 0.71, '+42%', 1)] },
+      { title: 'Amplitude', sub: '', ann: 'Module · Gain', bd: 'var(--dd-line-1)', hasSeg: false, knobs: [k('Level', 0.62, '−0.8 dB', 0, [{ slot: 'C', depth: 0.2, source: 'Velocity' }]), k('Pan', 0.5, 'C', 1, []), k('Vel sens', 0.3, '30%')] },
+    ];
+    const envH = isMin ? 44 : isExp ? 72 : 56;
+    const envs = [
+      { title: 'Amp envelope', slot: false, dest: '→ Amp gain', ann: 'Envelope modulator → Route (fixed) → Gain', pts: '0,100 6,0 60,32 220,32 300,100', sx: 220, handles: [{ x: 0.02, y: 0 }, { x: 0.2, y: 0.32 }, { x: 0.733, y: 0.32 }, { x: 1, y: 1 }], live: 0.42, vals: [{ k: 'Attack', v: '12 ms' }, { k: 'Decay', v: '380 ms' }, { k: 'Sustain', v: '−6.0 dB' }, { k: 'Release', v: '1.20 s' }] },
+      { title: 'Filter envelope', slot: true, dest: '→ Cutoff +42%', ann: 'Envelope modulator → Route → Filter cutoff', pts: '0,100 2,0 40,70 220,70 260,100', sx: 220, handles: [{ x: 0.007, y: 0 }, { x: 0.133, y: 0.7 }, { x: 0.733, y: 0.7 }, { x: 0.867, y: 1 }], live: 0.42, vals: [{ k: 'Attack', v: '1 ms' }, { k: 'Decay', v: '240 ms' }, { k: 'Sustain', v: '30%' }, { k: 'Release', v: '420 ms' }] },
+    ];
+
+    const R = (src, slot, amt, amtT, pol, curve, dest, live, on, fixed) => ({ src, slot, noSlot: !slot, amt: amtT, pol, curve, dest, live, on, fixed: !!fixed, a: amt });
+    const rl = [
+      R('Amp envelope', null, 1, '100%', 'Uni', 'Exp', 'Amp gain', 62, true, true),
+      R('Filter envelope', 'A', 0.42, '+42%', 'Uni', 'Linear', 'Filter cutoff', 48, true),
+      R('LFO 1', 'B', 0.05, '±5 ct', 'Bi', 'Linear', 'Pitch', 70, true),
+      R('LFO 2', null, 0.18, '+18%', 'Bi', 'Linear', 'Filter drive', 0, false),
+      R('Velocity', 'C', 0.3, '+30%', 'Uni', 'Exp', 'Amp gain', 58, true),
+      R('Velocity', 'C', 0.15, '+15%', 'Uni', 'Linear', 'Filter cutoff', 58, true),
+      R('Key track', null, 0.5, '+50%', 'Bi', 'Linear', 'Filter cutoff', 50, true),
+      R('Aftertouch', null, 0.15, '+15%', 'Uni', 'Linear', 'Sample start', 0, true),
+      R('Mod wheel · CC 1', null, 1, '+100%', 'Uni', 'Linear', 'LFO 1 depth', 22, true),
+      R('Pitch bend', null, 1, '±2 st', 'Bi', 'Linear', 'Pitch', 50, true),
+      R('Random per note', null, -0.12, '±12%', 'Bi', 'Linear', 'Pan', 34, true),
+      R('Macro · Tone', 'D', 0.2, '+20%', 'Uni', 'Linear', 'Filter cutoff', 56, true),
+      R('Macro · Tone', 'D', -0.1, '−10%', 'Uni', 'Linear', 'Filter resonance', 56, true),
+      R('Macro · Space', null, 0.6, '+60%', 'Uni', 'S-curve', 'Send · Reverb', 32, true),
+    ];
+    const destOf = { Cutoff: 'Filter cutoff', Level: 'Amp gain', Start: 'Sample start', Tune: 'Pitch', Reso: 'Filter resonance', Drive: 'Filter drive' };
+    Object.entries(this.state.removed || {}).forEach(([lab, arr]) => { for (let i = rl.length - 1; i >= 0; i--) if ((destOf[lab] || lab) === rl[i].dest && arr.includes(rl[i].src)) rl.splice(i, 1); });
+    (this.state.extraRoutes || []).forEach(x => rl.push(R(x.src, x.slot || null, 0.25, '+25%', 'Uni', 'Linear', x.dest, 0, true)));
+    const gone = this.state.routeGone || {};
+    for (let i = rl.length - 1; i >= 0; i--) if (gone[rl[i].src + '|' + rl[i].dest]) rl.splice(i, 1);
+    Object.entries(this.state.added || {}).forEach(([lab, arr]) => arr.forEach(m => rl.push(R(m.source, m.slot || null, 0.25, '+25%', 'Uni', 'Linear', destOf[lab] || lab, 0, true))));
+    const colorOf = (s) => s ? 'var(--dd-mod-' + s.toLowerCase() + ')' : 'var(--dd-paper-3)';
+    let lastSrc = null;
+    const routes = rl.map((r, i) => {
+      const a = Math.max(-1, Math.min(1, r.a)), l = a >= 0 ? 50 : 50 + a * 50, w = Math.abs(a) * 50;
+      const head = r.src !== lastSrc && false; lastSrc = r.src;
+      const s = i === (this.state.modRoute ?? 1);
+      r.rk = r.src + '|' + r.dest; if ((this.state.routeOff || {})[r.rk]) { r.on = false; }
+      return Object.assign(r, { op: r.on ? 1 : 0.5, select: () => this.setState({ modRoute: i, modInsp: false, editRoute: null }), l, w, c: colorOf(r.slot), op: r.on ? 1 : 0.5, head, bg: s ? 'var(--dd-vermilion-wash)' : 'transparent', edge: s ? 'inset 2px 0 0 var(--dd-vermilion)' : 'none' });
+    });
+    const rOpen = this.state.routeOpen || {};
+    const order = [], bySrc = {};
+    routes.forEach((r, i) => { if (!bySrc[r.src]) { bySrc[r.src] = []; order.push(r.src); } bySrc[r.src].push(r); });
+    const routeGroups = order.map(src => {
+      const items = bySrc[src], multi = items.length > 1, open = rOpen[src] !== false;
+      items.forEach((r, j) => { r.child = multi; r.top = !multi; r.indent = multi ? 22 : 0; });
+      return { name: src, multi, show: !multi || open, chev: open ? 'chevron-down' : 'chevron-right', slot: items[0].slot, noSlot: !items[0].slot, count: items.length,
+        summary: items.map(r => r.dest + ' ' + r.amt).join(' · '), live: items[0].live, items,
+        toggle: () => this.setState({ routeOpen: Object.assign({}, rOpen, { [src]: !open }) }),
+        addDest: (e) => { e.stopPropagation(); const p = this.winPt(e, 264, 300); this.setState({ dmenu: { x: p.x, y: p.y, src, slot: items[0].slot } }); } };
+    });
+    const selR = routes[Math.min(this.state.modRoute ?? 1, routes.length - 1)] || routes[0];
+    const shapeSt = this.state.modShape || {};
+    const isLfo = /^LFO/.test(selR.src), isEnv = /envelope/.test(selR.src), isRand = /Random/.test(selR.src);
+    const meShapes = isLfo ? [{ id: 'sine', label: 'Sine' }, { id: 'tri', label: 'Tri' }, { id: 'saw', label: 'Saw' }, { id: 'sq', label: 'Square' }, { id: 'sh', label: 'S&H' }]
+      : isEnv ? [{ id: 'adsr', label: 'ADSR' }, { id: 'ahdsr', label: 'AHDSR' }, { id: 'multi', label: 'Multi' }]
+      : isRand ? [{ id: 'step', label: 'Steps' }, { id: 'smooth', label: 'Smooth' }]
+      : [{ id: 'lin', label: 'Linear' }, { id: 'exp', label: 'Exp' }, { id: 'log', label: 'Log' }, { id: 's', label: 'S-curve' }];
+    const meShape = shapeSt[selR.src] || (isLfo ? (selR.src === 'LFO 2' ? 'tri' : 'sine') : isEnv ? 'adsr' : isRand ? 'step' : ({ Exp: 'exp', 'S-curve': 's' }[selR.curve] || 'lin'));
+    const fnOf = (sh) => {
+      if (isLfo) return (t) => { const p = (t * 2) % 1; return sh === 'sine' ? Math.sin(p * 2 * Math.PI) : sh === 'tri' ? 1 - 4 * Math.abs(p - 0.5) : sh === 'saw' ? 1 - 2 * p : sh === 'sq' ? (p < 0.5 ? 1 : -1) : [0.6, -0.3, 0.9, -0.8, 0.2, -0.5, 0.75, -0.1][Math.floor(t * 8) % 8]; };
+      if (isEnv) { const A = selR.src === 'Amp envelope' ? 0.04 : 0.01, D = 0.2, S = selR.src === 'Amp envelope' ? 0.5 : 0.3, R = 0.25, rel = 0.72; return (t) => t < A ? t / A : t < A + D ? 1 - (1 - S) * (t - A) / D : t < rel ? S : t < rel + R ? S * (1 - (t - rel) / R) : 0; }
+      if (isRand) return (t) => { const v = [0.3, -0.7, 0.55, 0.1, -0.4, 0.85, -0.2, 0.6, -0.9, 0.25][Math.floor(t * 10) % 10]; if (sh === 'step') return v; const n = [0.3, -0.7, 0.55, 0.1, -0.4, 0.85, -0.2, 0.6, -0.9, 0.25, 0.3][Math.floor(t * 10) + 1] ?? v; const f = (t * 10) % 1; return v + (n - v) * (0.5 - 0.5 * Math.cos(f * Math.PI)); };
+      return (t) => sh === 'exp' ? t * t : sh === 'log' ? Math.sqrt(t) : sh === 's' ? t * t * (3 - 2 * t) : t;
+    };
+    const meBi = selR.pol === 'Bi';
+    const fn = fnOf(meShape), N = (isLfo && meShape === 'sq') || meShape === 'step' || meShape === 'sh' ? 400 : 120;
+    const toY = (v, amt) => meBi ? 50 - v * 50 * amt : 100 - Math.max(0, meBi ? v : (isLfo || isRand ? (v + 1) / 2 : v)) * 100 * amt;
+    const mkPts = (amt) => Array.from({ length: N + 1 }, (_, i) => { const t = i / N; return (t * 300).toFixed(1) + ',' + toY(fn(t), amt).toFixed(1); }).join(' ');
+    const amtAbs = Math.min(1, Math.abs(selR.a));
+    const kM = (label, v, t, bi) => k(label, v, t, bi);
+    const me = {
+      name: selR.src, dest: rl.filter(r => r.src === selR.src).length > 1 ? rl.filter(r => r.src === selR.src).map(r => r.dest).join(', ') : selR.dest,
+      addDest: (e) => { const p = this.winPt(e, 264, 300); this.setState({ dmenu: { x: p.x, y: p.y, src: selR.src, slot: selR.slot } }); }, amt: selR.amt, pol: meBi ? 'bipolar' : 'unipolar', slot: selR.slot, bi: meBi,
+      col: selR.slot ? 'var(--dd-mod-' + selR.slot.toLowerCase() + ')' : 'var(--dd-paper-2)',
+      shapes: meShapes, shape: meShape, setShape: (v) => this.setState({ modShape: Object.assign({}, shapeSt, { [selR.src]: v }) }),
+      ghost: mkPts(1), pts: mkPts(Math.max(0.04, amtAbs)), live: isEnv ? 0.42 : isLfo ? 0.31 : (selR.live || 40) / 100,
+      yTop: meBi ? '+' + Math.round(amtAbs * 100) + '%' : '100%', yBot: meBi ? '−' + Math.round(amtAbs * 100) + '%' : '0', 
+      xLabel: isLfo ? '2 cycles · 2.40 Hz' : isEnv ? 'time · note on → release' : isRand ? 'per note' : ({ Velocity: 'velocity 1–127', 'Key track': 'key C-1–G9', Aftertouch: 'pressure 0–127', 'Mod wheel · CC 1': 'CC 1 0–127', 'Pitch bend': 'bend −8192–8191' }[selR.src] || 'macro 0–100%'),
+      knobs: isLfo ? [kM('Rate', 0.45, '2.40 Hz'), kM('Phase', 0, '0°'), kM('Fade in', 0.2, '120 ms'), kM('Smooth', 0, '0%'), kM('Amount', amtAbs, selR.amt, meBi)]
+        : isEnv ? [kM('Attack', 0.15, selR.src === 'Amp envelope' ? '12 ms' : '1 ms'), kM('Decay', 0.4, '380 ms'), kM('Sustain', selR.src === 'Amp envelope' ? 0.5 : 0.3, selR.src === 'Amp envelope' ? '−6.0 dB' : '30%'), kM('Release', 0.5, '1.20 s'), kM('Amount', amtAbs, selR.amt)]
+        : isRand ? [kM('Smooth', meShape === 'smooth' ? 0.6 : 0, meShape === 'smooth' ? '60%' : '0%'), kM('Amount', amtAbs, selR.amt, meBi)]
+        : [kM('In low', 0, '0%'), kM('In high', 1, '100%'), kM('Smooth', 0.1, '10 ms'), kM('Amount', amtAbs, selR.amt, meBi)],
+      toggles: isLfo ? [{ label: 'Tempo sync', on: false }, { label: 'Retrigger on note', on: true }, { label: 'Per voice', on: selR.src === 'LFO 1' }]
+        : isEnv ? [{ label: 'Retrigger', on: true }, { label: 'Velocity scales level', on: selR.src === 'Amp envelope' }, { label: 'Loop', on: false }]
+        : isRand ? [{ label: 'New value per note', on: true }, { label: 'Per voice', on: true }]
+        : [{ label: 'Invert', on: false }, { label: 'Per voice', on: !/Macro|Mod wheel|Pitch/.test(selR.src) }],
+    };
+    this.selRoute = selR;
+    const srcCats = this.modCats();
+    const openCats = this.state.openCats || {};
+    const modSrcs = srcCats.map(([id, cat, list]) => {
+      const open = !!openCats[id];
+      const routesN = list.reduce((s, x) => s + x[2], 0);
+      const selIn = list.some(x => x[0] === (this.state.pickedMod || 'Filter envelope'));
+      return {
+        cat, open, chev: open ? 'chevron-down' : 'chevron-right',
+        slots: list.map(x => x[1]).filter(Boolean),
+        summary: list.length + ' · ' + routesN, title: list.length + ' sources · ' + routesN + (routesN === 1 ? ' route' : ' routes'),
+        hbg: selIn && !open ? 'var(--dd-vermilion-wash)' : 'transparent',
+        toggle: () => this.setState(s => ({ openCats: Object.assign({}, s.openCats || {}, { [id]: !open }) })),
+        items: list.map(([name, slot, n, live, scope]) => { const extra = Object.values(this.state.added || {}).reduce((c, arr) => c + arr.filter(m => m.source === name).length, 0); n = n + extra; const sel = name === (this.state.pickedMod || 'Filter envelope'); return { name, slot, noSlot: !slot, n, live, drag: (e) => { try { e.dataTransfer.setData('text/plain', name); e.dataTransfer.effectAllowed = 'link'; } catch (x) {} this.setState({ dragMod: { name, slot }, modNote: null }); }, tip: 'Applied to ' + scope + ' · click for details · drag onto a control to add a route', pick: () => this.setState({ pickedMod: name, modInsp: true, editRoute: null }), bg: sel ? 'var(--dd-vermilion-wash)' : 'transparent', edge: sel ? 'inset 2px 0 0 var(--dd-vermilion)' : 'none' }; }),
+      };
+    });
+
+    const routeRows = [
+      ['Felt Kit', 'Instrument', 'Main 1/2', 0.0, 0.0, 0],
+      ['Keys', 'Group', 'Inherit · Main', 0.35, 0.1, 1],
+      ['Drums', 'Group', 'Drums 3/4', 0.12, 0.0, 1],
+      ['Kick', 'Sound · note 36', 'Inherit · Drums', 0, 0, 2],
+      ['Snare', 'Sound · note 38', 'Snare 5/6', 0.3, 0.18, 2],
+      ['Closed Hat', 'Sound · note 42', 'Inherit · Drums', 0, 0, 2],
+      ['Open Hat', 'Sound · note 46', 'Inherit · Drums', 0, 0.2, 2],
+      ['Break', 'Group', 'Inherit · Main', 0.15, 0, 1],
+      ['Snare 1 · slice 3', 'Slice · note 26', 'Snare 5/6', 0, 0, 2],
+    ].map(([name, kind, bus, sa, sb, d], i) => ({ name, kind, bus, sa, sb, pad: d * 14, bg: i === 4 ? 'var(--dd-vermilion-wash)' : 'transparent', edge: i === 4 ? 'inset 2px 0 0 var(--dd-vermilion)' : 'none' }));
+    const busses = [
+      { id: 'main', name: 'Main', channels: '1/2', main: true, feeds: ['Keys', 'Break', 'Reverb', 'Delay'], levels: [-14, -15], level: 0 },
+      { id: 'drums', name: 'Drums', channels: '3/4', feeds: ['Kick', 'Closed Hat', 'Open Hat'], levels: [-10, -10], level: -1.5 },
+      { id: 'snare', name: 'Snare', channels: '5/6', feeds: ['Snare', 'Snare 1 · slice 3'], levels: [-12, -12.5], level: 0 },
+    ];
+    const outputs = [{ id: 'main', name: 'Main', note: '1/2' }, { id: 'drums', name: 'Drums', note: '3/4' }, { id: 'snare', name: 'Snare', note: '5/6' }];
+    const P = (id, label, value, min, max, unit, extra) => Object.assign({ id, label, value, min, max, unit }, extra || {});
+    const insertLayers = [
+      { id: 'drums', name: 'Drums', source: 'Group', detail: 'Kick · Snare · Hats', output: 'drums', level: -1.5, modules: [
+        { id: 'eq', type: 'EQ', params: [P('lo', 'Low', 2, -12, 12, 'dB', { bipolar: true, summary: true }), P('hi', 'High', 1.5, -12, 12, 'dB', { bipolar: true })] },
+        { id: 'comp', type: 'Compressor', params: [P('thr', 'Threshold', -18, -60, 0, 'dB', { summary: true }), P('ratio', 'Ratio', 4, 1, 20, ':1', { summary: true }), P('att', 'Attack', 10, 0.1, 100, 'ms'), P('rel', 'Release', 120, 10, 1000, 'ms')] },
+        { id: 'sat', type: 'Saturate', params: [P('drv', 'Drive', 30, 0, 100, '%', { summary: true }), P('mix', 'Mix', 60, 0, 100, '%')] },
+      ] },
+      { id: 'keys', name: 'Keys', source: 'Group', detail: 'Felt C3–C5 · 10 zones', output: 'main', level: 0, modules: [
+        { id: 'eq2', type: 'EQ', params: [P('lo', 'Low', -1.5, -12, 12, 'dB', { bipolar: true, summary: true })] },
+      ] },
+      { id: 'brk', name: 'Break', source: 'Group', detail: 'amen_172.wav · 8 slices', output: 'main', level: -3, modules: [
+        { id: 'crush', type: 'Bitcrush', params: [P('bits', 'Bits', 12, 1, 24, 'bit', { summary: true })], bypassed: true },
+      ] },
+    ];
+    const fxLayers = [
+      { id: 'rev', name: 'Reverb', source: 'FX bus', detail: 'Send A · plate_small.wav', output: 'main', level: -4, modules: [
+        { id: 'conv', type: 'Convolution', params: [P('pre', 'Predelay', 12, 0, 200, 'ms', { summary: true }), P('mix', 'Mix', 100, 0, 100, '%')] },
+        { id: 'eqr', type: 'EQ', params: [P('hp', 'Low cut', 180, 20, 1000, 'Hz', { log: true, summary: true })] },
+      ] },
+      { id: 'dly', name: 'Delay', source: 'FX bus', detail: 'Send B · 1/8 dotted', output: 'main', level: -8, modules: [
+        { id: 'delay', type: 'Delay', params: [P('time', 'Time', 261, 1, 2000, 'ms', { summary: true }), P('fb', 'Feedback', 35, 0, 100, '%')] },
+        { id: 'flt', type: 'Filter', params: [P('cut', 'Cutoff', 3200, 20, 20000, 'Hz', { log: true, summary: true })] },
+      ] },
+    ];
+
+    const macroSel = !!f.macro;
+    const macros = [['Tone', 0.56, '3 destinations'], ['Body', 0.4, '2 destinations'], ['Space', 0.32, 'Host automated', 1], ['Drive', 0.18, '2 destinations'], ['Snap', 0.64, '1 destination'], ['Width', 0.5, '1 destination'], ['Macro 7', 0, 'Unassigned', 0, 1], ['Macro 8', 0, 'Unassigned', 0, 1]].map(([name, v0, d, host, off], i) => {
+      const s = macroSel && i === 0;
+      this.mDefaults = this.mDefaults || {}; if (this.mDefaults[name] === undefined) this.mDefaults[name] = v0;
+      const v = (this.state.mv || {})[name] ?? v0;
+      return { name, v, d, set: (nv) => this.setState(st => ({ mv: Object.assign({}, st.mv || {}, { [name]: nv }) })), host: !!host, off: !!off, c: off ? 'var(--dd-paper-4)' : 'var(--dd-paper-1)', bg: s ? 'var(--dd-vermilion-wash)' : 'transparent', edge: s ? 'inset 0 0 0 1px var(--dd-vermilion)' : 'none' };
+    });
+
+    const pr = (label, value, unit, ro, hint) => ({ p: true, label, value, unit: unit || '', ro: !!ro, hint: hint || '' });
+    const hd = (label) => ({ h: true, label });
+    const tx = (label) => ({ t: true, label });
+    const bt = (label, icon, variant) => ({ b: true, label, icon: icon || undefined, variant: variant || 'secondary' });
+    const md = (label, slot, depth, host) => ({ m: true, label, slot, depth, host: !!host });
+    const kn = (list) => ({ knobs: true, list });
+    let insp, crumbs;
+    const C = (...a) => a.map((label, i) => ({ label, sep: i < a.length - 1, c: i === a.length - 1 ? 'var(--dd-paper-1)' : 'var(--dd-paper-3)' }));
+    if (empty || drop) {
+      crumbs = C('Untitled'); insp = { icon: 'layers', title: 'Untitled', type: 'Instrument', ann: 'Editor-only state: selection = instrument', rows: [hd('Instrument'), pr('Sounds', 'None'), pr('Voice limit', '32'), pr('Output', 'Main 1/2'), tx('Nothing is selected yet. Drop or browse a sample; the inspector then shows whatever you select in the workspace or tree.')] };
+    } else if (macroSel) {
+      crumbs = C('Felt Kit', 'Macros', 'Tone'); insp = { icon: 'variation', title: 'Tone', type: 'Macro 1', ann: 'Macro value Parameter + Bindings (MIDI CC, host) + Routes', rows: [
+        pr('Value', '56', '%'), pr('MIDI', 'CC 74 · ch 1'), md('Host automation · Macro 1', null, 0, true), bt('Learn MIDI', 'midi'),
+        hd('Destinations · 3'), md('Filter cutoff · 20–80%', 'D', 0.6), md('Filter resonance · 40–30%', 'D', -0.1), md('Send · Reverb · 0–25%', 'D', 0.25),
+        tx('Each destination has its own range; drag past its start to invert. Bipolar macros map 50% to each destination’s current value.'),
+        bt('Add destination…', 'plus'), hd('Macro'), pr('Mode', 'Unipolar'), pr('Name', 'Tone')] };
+    } else if (page === 'sample') {
+      crumbs = C('Felt Kit', 'Keys', 'Felt C4 f'); insp = { icon: missing ? 'file-missing' : 'level', title: 'felt_C4_f.wav', type: 'Sample', ann: 'Asset (identity, state) + Asset Region', rows: missing ? [
+        hd('Sample'), pr('State', 'Missing'), pr('Last seen', 'Felt Piano folder', '', true), pr('Used by', '1 zone'), tx('Playback falls back to the soft layer for these keys. Locate the file or pick a replacement; the zone keeps its region and settings.'),
+        bt('Locate file…', 'folder', 'primary'), bt('Search folder…', 'folder'), bt('Replace with…', 'reload'),
+      ] : [
+        hd('Sample'), pr('State', loading ? 'Loading · 62%' : 'Loaded · cached'), pr('Format', '48 kHz · 24-bit'), pr('Channels', 'Stereo'), pr('Used by', '1 zone'),
+        hd('Region'), pr('Start', '0.058', 's'), pr('End', '4.531', 's'), pr('Loop', loop ? '2.651–3.952 s' : 'Off'), pr('Root', '60 C4'),
+        hd('Analysis'), pr('Pitch', 'C4 +3¢', '', true), pr('Loudness', '−18.4 LUFS', '', true), pr('Zero crossings', 'Ready', '', true),
+        bt('Replace…', 'folder'),
+      ] };
+    } else if (page === 'slices') {
+      crumbs = C('Felt Kit', 'Break', '2 slices'); insp = { icon: 'slice', title: 'Snare 1, Snare 2', type: '2 slices', ann: 'Bulk edit over 2 Asset Regions + their Trigger Rules', rows: [
+        hd('Playback'), pr('Notes', '26, 30'), pr('Play', 'Once'), pr('Tune', '0', 'st'), pr('Gain', '0.0', 'dB'), pr('Pan', 'Mixed', '', false, 'C · L4'),
+        hd('Voice'), pr('Choke group', 'None'), pr('Output', 'Snare 5/6'), pr('Envelope', 'Group default'),
+        tx('Values shared by all selected slices show normally; differing values show Mixed. Editing a Mixed value sets all.'),
+      ] };
+    } else if (page === 'mapping') {
+      const z = zones.find(x => x.id === this.state.zoneSel) || zones.find(x => x.id === 'k60f') || zones[0];
+      const zr = rels.filter(r => r.a.id === z.id || r.b.id === z.id);
+      const zx = zr.filter(r => r.kind === 'xf').map(r => this.rangeTxt(r.lo, r.hi) + ' ↔ ' + (r.a.id === z.id ? r.b : r.a).name);
+      const zg = zr.filter(r => r.kind === 'gap').map(r => this.rangeTxt(r.lo, r.hi));
+      crumbs = C('Felt Kit', 'Keys', z.name); insp = { icon: 'keyboard', title: z.name, type: 'Zone', ann: 'Trigger Rule (note, velocity) → Asset binding', rows: [
+        hd('Keys'), pr('Low', z.lo + ' ' + nm(z.lo)), pr('High', z.hi + ' ' + nm(z.hi)), pr('Root', (z.root ?? z.lo) + ' ' + nm(z.root ?? z.lo)),
+        hd('Velocity'), pr('Low', String(z.velLo)), pr('High', String(z.velHi)), pr('Vel crossfade', z.velLo === 81 ? '81–90' : 'Off'), hd('Neighbours'), pr('Key crossfade', zx.length ? zx.join(', ') : 'None'), pr('Gap', zg.length ? zg.join(', ') + ' silent' : 'None'), pr('Edge drag', 'Pushes neighbour', '', true, 'Hold Shift to overlap or leave a gap'),
+        hd('Sample'), pr('File', z.source === 'Slice' ? 'amen_172.wav' : (z.name.replace(/ /g, '_').toLowerCase() + '.wav')), pr('Overlaps', z.velLo === 81 ? 'Felt ' + nm(z.root) + ' p' : 'None'), bt('Replace sample…', 'folder'),
+      ] };
+    } else if (page === 'layers') {
+      crumbs = isRRlike ? C('Felt Kit', 'Drums', 'Snare', 'Hard', 'Hard B') : C('Felt Kit', 'Drums', 'Snare', 'Hard'); insp = isRRlike ? { icon: 'alternate', title: 'Hard B', type: 'Alternate', ann: 'Selector candidate (weight, order) → Asset binding', rows: [
+        hd('Sample'), pr('File', 'snare_hard_b.wav'), pr('Gain', '−0.5', 'dB'), pr('Tune', '0', 'st'), pr('Pan', 'C'), hd('Selection'), pr('Order', '2 of 3'), pr('Weight', mode === 'wrand' ? '1.0' : 'Equal'), pr('Plays', '128 of 384 hits', '', true),
+      ] } : { icon: 'layers', title: 'Hard', type: 'Layer', ann: 'Selector candidate that is itself a Group (round robin)', rows: [
+        hd('Trigger'), pr('Note', '38 D2'), pr('Velocity', hardRange), pr('Crossfade', vW ? vLo + '–' + vHi + ' · ' + (vCurve === 'eq' ? 'equal power' : 'linear') : 'Off'), hd('Contents'), pr('Play', 'Round robin'), pr('Alternates', '3'), pr('Gain', '0.0', 'dB'), bt('Open alternates', 'chevron-right'),
+      ] };
+    } else if (page === 'voice') {
+      crumbs = C('Felt Kit', 'Keys', 'Voice', 'Filter'); insp = { icon: 'settings', title: 'Filter', type: 'Module', ann: 'Module params + incoming Modulation Routes', rows: [
+        hd('Cutoff · 2.40 kHz'), md('Filter envelope', 'A', 0.42), md('Velocity', 'C', 0.15), md('Macro · Tone', 'D', 0.2), md('Key track', null, 0.5), bt('Assign modulation…', 'modulate'),
+        hd('Module'), pr('Type', 'Ladder'), pr('Slope', '24', 'dB/oct'), pr('Position', '2 of 3 in voice'), pr('Bypass', 'Off'),
+      ] };
+    } else if (page === 'mod') {
+      const sr = this.selRoute;
+      if (sr && sr.src !== 'Filter envelope') { crumbs = C('Felt Kit', 'Keys', 'Modulation', sr.src + ' → ' + sr.dest); insp = { icon: 'modulate', title: sr.src + ' → ' + sr.dest, type: 'Route', ann: 'Modulation Route', rows: [hd('Route'), md(sr.src, sr.slot, sr.a), pr('Destination', sr.dest), pr('Amount', sr.amt), pr('Polarity', sr.pol === 'Bi' ? 'Bipolar' : 'Unipolar'), pr('Curve', sr.curve), pr('Scope', 'Per voice'), hd('Source · ' + sr.src), pr('Shape', me.shapes.find(s => s.id === me.shape).label), pr('Used by', rl.filter(x => x.src === sr.src).length + ' route(s)')] }; } else
+      crumbs = C('Felt Kit', 'Keys', 'Modulation', 'Filter envelope → Cutoff'), insp = { icon: 'modulate', title: 'Filter env → Cutoff', type: 'Route', ann: 'Modulation Route', rows: [
+        hd('Route'), md('Filter envelope', 'A', 0.42), pr('Destination', 'Filter cutoff'), pr('Amount', '+42', '%'), pr('Polarity', 'Unipolar'), pr('Curve', 'Linear'), pr('Range', '0–100', '%'), pr('Scope', 'Per voice'),
+        hd('Source · Filter envelope'), pr('Shape', 'ADSR'), pr('Trigger', 'Note gate'), pr('Used by', '1 route'), bt('Edit envelope', 'chevron-right'),
+      ] };
+    } else if (page === 'routing') {
+      crumbs = C('Felt Kit', 'Routing', 'Snare'); insp = { icon: 'level', title: 'Snare', type: 'Sound', ann: 'Connection to Bus + send Connections', rows: [
+        hd('Output'), pr('Bus', 'Snare'), pr('Plugin output', '5/6'), pr('Inherited from', 'Overrides Drums'), hd('Sends'), pr('Reverb', '−10.5', 'dB'), pr('Delay', '−15.0', 'dB'), pr('Send point', 'Post fader'),
+      ] };
+    } else {
+      crumbs = C('Felt Kit', 'Drums', 'Inserts', 'Compressor'); insp = { icon: 'settings', title: 'Compressor', type: 'Processor', ann: 'Module (Compressor) in the Drums group chain', rows: [
+        kn([k('Threshold', 0.7, '−18 dB'), k('Ratio', 0.18, '4:1'), k('Attack', 0.2, '10 ms'), k('Release', 0.3, '120 ms'), k('Makeup', 0.5, '+3 dB'), k('Mix', 1, '100%')]),
+        hd('Gain reduction'), pr('Now', '−4.2', 'dB', true), pr('Detector', 'Peak'), pr('Sidechain', 'Self'), bt('Bypass', 'reset'),
+      ] };
+    }
+
+    const isSampleish = page === 'sample' && !empty && !drop;
+    const PV = this.state.pv, pvPos = this.state.pvPos || 0;
+    const openSrc = Object.assign({}, this.state.openSrc || {});
+    const activeSrc = page === 'sample' ? 'felt' : page === 'slices' ? 'amen' : page === 'layers' ? 'drum' : null;
+    const srcDefs = [
+      ['felt', 'Felt Piano', [['felt_C3_p.wav', '5.02 s', 'level'], ['felt_C3_f.wav', '5.10 s', 'level'], ['felt_G3_p.wav', 'missing', 'file-missing'], ['felt_G3_f.wav', '4.95 s', 'level'], ['felt_C4_p.wav', '4.61 s', 'level'], ['felt_C4_f.wav', '4.82 s', missing ? 'file-missing' : 'level'], ['felt_F#4_p.wav', '4.40 s', 'level'], ['felt_F#4_f.wav', '4.44 s', 'level'], ['felt_C5_p.wav', '4.10 s', 'level'], ['felt_C5_f.wav', '4.15 s', 'level']]],
+      ['drum', 'Drum samples', [['kick.wav', '0.42 s', 'one-shot'], ['snare_soft.wav', '0.38 s', 'one-shot'], ['snare_hard_a.wav', '0.41 s', 'one-shot'], ['snare_hard_b.wav', '0.40 s', 'one-shot'], ['snare_hard_c.wav', '0.43 s', 'one-shot'], ['hat_closed.wav', '0.09 s', 'one-shot'], ['hat_open_a.wav', '0.62 s', 'one-shot']]],
+      ['amen', 'amen_172.wav', sliceNames.map((n, i) => [n, 'slice ' + (i + 1), 'slice'])],
+      ['patch', 'Dandrum patches', [['Lush', 'synth', 'variation']]],
+    ];
+    const playSlice = (i) => { const a = sp[i], b = sp[i + 1] ?? 1; this.setState({ selSlice: i }); this.play(sliceNames[i], { target: 'break', from: a, to: b, dur: (b - a) * 1.395 * 2 }); };
+    const dragS = (name, kind) => (e) => { try { e.dataTransfer.setData('text/plain', name); e.dataTransfer.effectAllowed = 'copy'; } catch (x) {} this.setState({ dragSrc: { name, kind }, nodeOver: null, modNote: null }); };
+    const srcGroups = srcDefs.map(([id, name, list]) => ({
+      name, open: !!openSrc[id], hbg: id === activeSrc && !openSrc[id] ? 'var(--dd-vermilion-wash)' : 'transparent', chev: openSrc[id] ? 'chevron-down' : 'chevron-right', summary: list.length + (id === 'amen' ? ' slices' : ''),
+      toggle: () => this.setState(s => ({ openSrc: Object.assign({}, s.openSrc || {}, { [id]: !openSrc[id] }) })),
+      items: list.filter(([n]) => !(this.state.srcHidden || {})[n]).map(([n, d, icon], i) => {
+        const playing = !!(PV && PV.name === n), sel = id === 'amen' ? (page === 'slices' && (this.state.selSlice ?? 2) === i) : (page === 'sample' && n === 'felt_C4_f.wav');
+        return { name: n, detail: d, icon, ic: icon === 'file-missing' ? 'var(--dd-error)' : 'var(--dd-paper-3)', playing, pct: playing ? Math.round(pvPos * 100) : 0,
+          bg: sel ? 'var(--dd-vermilion-wash)' : 'transparent', edge: sel ? 'inset 2px 0 0 var(--dd-vermilion)' : 'none',
+          drag: dragS(n, id === 'amen' ? 'slice' : 'sample'),
+          play: () => id === 'amen' ? playSlice(i) : icon === 'file-missing' ? this.setState({ modNote: n + ' is missing and cannot be previewed' }) : this.play(n, n === 'felt_C4_f.wav' ? { target: 'sample', from: 0.012, to: 0.94, dur: 3 } : { dur: id === 'drum' ? 0.6 : 2.4 }) };
+      }),
+    }));
+    sliceRows.forEach((r, i) => { r.drag = dragS(sliceNames[i], 'slice'); r.play = () => playSlice(i); if ((this.state.selSlice ?? null) != null) { const s = i === this.state.selSlice; r.bg = s ? 'var(--dd-vermilion-wash)' : 'transparent'; r.edge = s ? 'inset 2px 0 0 var(--dd-vermilion)' : 'none'; } });
+
+    const hOff = this.state.histOff || {}, hSel = this.state.histSel || null;
+    let histDefs = [];
+    if (page === 'sample' && isSampleish) histDefs = [
+      ...(loop ? [['loop', 'Loop', 'loop', '2.651–3.952 s · 120 ms', [hd('Loop'), pr('Start', '2.651', 's'), pr('End', '3.952', 's'), pr('Crossfade', '120', 'ms'), pr('Mode', 'Sustain loop')]]] : []),
+      ['fade', 'Fade', 'level', 'in 2 ms · out 380 ms', [hd('Fade'), pr('In', '2', 'ms'), pr('In curve', 'Exponential'), pr('Out', '380', 'ms'), pr('Out curve', 'Linear')]],
+      ['norm', 'Normalize', 'variation', '−1.0 dBFS', [hd('Normalize'), pr('Target', '−1.0', 'dBFS'), pr('Mode', 'Peak'), pr('Gain applied', '+0.2', 'dB', true)]],
+      ['trim', 'Trim', 'slice', '0.058–4.531 s', [hd('Trim'), pr('Start', '0.058', 's'), pr('End', '4.531', 's'), pr('Snap', 'Zero crossings'), tx('Drag the region edges on the waveform to change it.')]],
+      ['src', 'Source', 'folder', 'felt_C4_f.wav', [hd('Source'), pr('File', 'felt_C4_f.wav'), pr('Format', '48 kHz · 24-bit'), pr('Length', '4.820', 's'), bt('Replace…', 'folder')]],
+    ];
+    if (page === 'slices') histDefs = [
+      ['slice', 'Slice', 'slice', '8 · even', [hd('Slice'), pr('Method', 'Even'), pr('Count', '8'), pr('Snap', 'Zero crossings'), bt('Detect transients', 'slice')]],
+      ['trim', 'Trim', 'slice', '0.000–1.395 s', [hd('Trim'), pr('Start', '0.000', 's'), pr('End', '1.395', 's')]],
+      ['src', 'Source', 'folder', 'amen_172.wav', [hd('Source'), pr('File', 'amen_172.wav'), pr('Tempo', '172', 'BPM', true), pr('Length', '1.395', 's')]],
+    ];
+    if (hOff.norm === undefined && !this.state.histOff) hOff.norm = true;
+    histDefs = histDefs.filter(d => !(this.state.histDel || {})[d[0]]);
+    const hist = histDefs.map(([id, name, icon, detail], i) => {
+      const base = id === 'src', on = base || !hOff[id], sel = hSel === id;
+      return { id, name, detail, icon, on, grip: base ? '' : '⋮⋮', tOp: base ? 0.4 : 1, tTip: base ? 'The source is always on' : on ? 'Turn off' : 'Turn on',
+        ic: on ? 'var(--dd-paper-2)' : 'var(--dd-paper-4)', tc: on ? 'var(--dd-paper-1)' : 'var(--dd-paper-4)',
+        bg: sel ? 'var(--dd-vermilion-wash)' : 'transparent', edge: sel ? 'inset 2px 0 0 var(--dd-vermilion)' : 'none',
+        select: () => this.setState({ histSel: sel ? null : id, modInsp: false, editRoute: null }),
+        toggle: (e) => { e.stopPropagation(); if (base) return; this.setState(s => ({ histOff: Object.assign({ norm: true }, s.histOff || {}, { [id]: on }) })); } };
+    });
+    const hOn = (id) => !histDefs.some(d => d[0] === id) || !hOff[id];
+    if (hSel && histDefs.some(d => d[0] === hSel)) { const d = histDefs.find(x => x[0] === hSel); insp = Object.assign({}, insp, { title: d[1], type: 'Operation', icon: d[2], rows: d[4].concat([tx(hOn(hSel) ? 'Operations apply bottom to top. The source file is never changed.' : 'This operation is off and is skipped.')]) }); crumbs = crumbs.concat([]).slice(0, -1).concat([{ label: crumbs[crumbs.length - 1].label, sep: true, c: 'var(--dd-paper-3)' }, { label: d[1], sep: false, c: 'var(--dd-paper-1)' }]); }
+
+    const flatMods = this.modCats().flatMap(c => c[2]);
+    if (this.state.editRoute) {
+      const er = this.state.editRoute, m = (this.knobMods[er.label] || []).find(x => x.source === er.source) || {}, fm = flatMods.find(x => x[0] === er.source);
+      crumbs = C('Felt Kit', 'Modulation', er.source + ' → ' + er.label);
+      insp = { icon: 'modulate', title: er.source + ' → ' + er.label, type: 'Route', ann: 'Modulation Route', rows: [hd('Route'), md(er.source, m.slot || null, m.depth || 0.25), pr('Destination', er.label), pr('Amount', (m.depth >= 0 ? '+' : '') + Math.round((m.depth || 0.25) * 100), '%'), pr('Polarity', 'Unipolar'), pr('Curve', 'Linear'), pr('Scope', 'Per voice'), hd('Source'), pr('Applied to', fm ? fm[4] : '—'), tx('Right-click the control again to remove this route or add another.')] };
+    } else if (this.state.modInsp && this.state.pickedMod) {
+      const nmM = this.state.pickedMod, fm = flatMods.find(x => x[0] === nmM) || [nmM, null, 0, 0, '—'];
+      const used = rl.filter(r => r.src === nmM);
+      crumbs = C('Felt Kit', 'Modulators', nmM);
+      insp = { icon: 'modulate', title: nmM, type: 'Modulator', ann: 'Modulator (patch-level, shared across groups)', rows: [
+        hd('Applied to'), pr('Groups', fm[4]), pr('Scope', /Velocity|Random|envelope|Key/.test(nmM) ? 'Per voice' : 'Global'),
+        tx('A modulator belongs to the patch, so one envelope or LFO can drive controls in Keys, Drums and Break at once. Each route sets its own amount.'),
+        hd('Routes · ' + used.length)].concat(used.map(r => md(r.dest + ' · ' + r.amt, r.slot, r.a)), [bt('Apply to group…', 'layers'), bt('Edit ' + nmM.toLowerCase(), 'settings')]) };
+    }
+
+    const KM = this.state.kmenu; const kmenus = [];
+    if (KM) {
+      const cur = this.knobMods[KM.label] || [], close = () => this.setState({ kmenu: null });
+      const Wn = this.winRef && this.winRef.current ? this.winRef.current.offsetWidth : W, Hn = this.winRef && this.winRef.current ? this.winRef.current.offsetHeight : H;
+      const dx = KM.x + 262 * 3 > Wn ? -262 : 262;
+      const fit = (y, n) => Math.max(4, Math.min(y, Hn - (n * 26 + 44)));
+      const setPath = (p) => this.setState({ kmenu: Object.assign({}, KM, { path: p }) });
+      kmenus.push({ x: KM.x, y: KM.y, title: KM.label, items: [
+        { label: 'Modulation', icon: 'modulate', submenu: true, shortcut: cur.length ? String(cur.length) : '', onSelect: () => setPath(['mod']) },
+        { label: 'Learn MIDI', icon: 'midi', onSelect: close }, { label: 'Map to macro…', icon: 'variation', onSelect: close },
+        { separator: true }, { label: 'Reset to default', icon: 'reset', shortcut: 'Middle-click', onSelect: () => this.resetTarget('knob', KM.label) } ] });
+      if (KM.path && KM.path[0] === 'mod') {
+        const m1 = [{ label: 'Add', icon: 'plus', submenu: true, onSelect: () => setPath(['mod', 'add']) }];
+        if (cur.length) m1.push({ separator: true }, { header: 'On ' + KM.label });
+        cur.forEach(m => m1.push({ label: m.source + '  ' + (m.depth >= 0 ? '+' : '−') + Math.abs(Math.round(m.depth * 100)) + '%', submenu: true, onSelect: () => setPath(['mod', m.source]) }));
+        const y1 = fit(KM.y + 30, m1.length); kmenus.push({ x: KM.x + dx, y: y1, title: 'Modulation', items: m1 });
+        if (KM.path[1] === 'add') {
+          const have = cur.map(m => m.source);
+          const m2 = this.modCats().flatMap(([cid, cat, list], ci) => (ci ? [{ separator: true }] : []).concat([{ header: cat }], list.map(x => ({ label: x[0], disabled: have.includes(x[0]), shortcut: have.includes(x[0]) ? 'added' : '', onSelect: () => this.addRoute(KM.label, { name: x[0], slot: x[1] }) }))));
+          kmenus.push({ x: KM.x + dx * 2, y: fit(y1 + 30, m2.length), title: 'Add modulation · ' + KM.label, items: m2 });
+        } else if (KM.path[1]) {
+          const nm2 = KM.path[1], idx = cur.findIndex(m => m.source === nm2);
+          kmenus.push({ x: KM.x + dx * 2, y: fit(y1 + 30 + 26 * (idx + 2) + 10, 5), title: nm2 + ' → ' + KM.label, items: [
+            { label: 'Edit', icon: 'settings', onSelect: () => this.setState({ kmenu: null, editRoute: { label: KM.label, source: nm2 }, modInsp: false, histSel: null }) },
+            { label: 'Invert', icon: 'reverse', onSelect: close }, { label: 'Bypass', onSelect: close }, { separator: true },
+            { label: 'Remove', icon: 'close', danger: true, shortcut: 'Delete', onSelect: () => this.removeRoute(KM.label, nm2) } ] });
+        }
+      }
+    }
+    const CM = this.state.cmenu;
+    if (CM) {
+      const close = () => this.setState({ cmenu: null }), [type, key] = [CM.type, CM.key];
+      const destMap = { Tone: [['Filter cutoff', 'voice', 'Cutoff'], ['Filter resonance', 'voice', 'Reso'], ['Send · Reverb', 'routing', null]], Body: [['Amp level', 'voice', 'Level'], ['Lush width', 'voice', 'Lush Width']], Space: [['Send · Reverb', 'routing', null], ['Send · Delay', 'routing', null]], Drive: [['Filter drive', 'voice', 'Drive'], ['Saturate drive', 'fx', null]], Snap: [['Amp envelope attack', 'mod', 'Attack']], Width: [['Lush width', 'voice', 'Lush Width']] };
+      const goTo = (st, fk, label) => { this.go(st); setTimeout(() => this.setState({ flashKey: fk, modNote: 'Showing ' + label }), 0); clearTimeout(this.flashT); this.flashT = setTimeout(() => this.setState({ flashKey: null }), 1800); };
+      let title = key, items = [];
+      if (type === 'macro') {
+        const ds = destMap[key] || [];
+        items = (ds.length ? [{ header: 'Go to destination' }] : [{ header: 'No destinations' }]).concat(ds.map(([lab, st, fk]) => ({ label: lab, icon: 'chevron-right', onSelect: () => goTo(st, fk, lab) })), [
+          { separator: true }, { label: 'Add destination…', icon: 'plus', onSelect: close }, { label: 'Learn MIDI', icon: 'midi', onSelect: close }, { label: 'Rename…', onSelect: close },
+          { separator: true }, { label: 'Reset to default', icon: 'reset', shortcut: 'Middle-click', onSelect: () => this.resetTarget('macro', key) }]);
+      } else if (type === 'node') {
+        const row = tree.find(r => r.id === key); title = row ? row.label : key;
+        items = [{ label: 'Open', icon: 'chevron-right', onSelect: () => { close(); row && row.go(); } }, { label: 'Audition', icon: 'level', onSelect: () => { close(); this.play(title, { dur: 0.8 }); } }, { label: 'Rename…', onSelect: close }, { label: 'Duplicate', shortcut: 'Ctrl+D', onSelect: close },
+          { separator: true }, { label: 'Delete', icon: 'close', danger: true, shortcut: 'Delete', disabled: key === 'inst', onSelect: () => this.setState({ cmenu: null, treeHidden: Object.assign({}, this.state.treeHidden || {}, { [key]: true }), modNote: 'Deleted ' + title + ' · Ctrl+Z to undo' }) }];
+      } else if (type === 'src') {
+        items = [{ label: 'Preview', icon: 'level', shortcut: 'Click', onSelect: () => { close(); this.play(key, { dur: 1.2 }); } }, { label: 'Show in browser', icon: 'folder', onSelect: () => this.setState({ cmenu: null, browser: true }) }, { label: 'Replace…', icon: 'reload', onSelect: close }, { label: 'Detect transients', icon: 'slice', onSelect: close },
+          { separator: true }, { label: 'Remove from patch', icon: 'close', danger: true, onSelect: () => this.setState({ cmenu: null, srcHidden: Object.assign({}, this.state.srcHidden || {}, { [key]: true }), modNote: 'Removed ' + key + ' from patch · Ctrl+Z to undo' }) }];
+      } else if (type === 'mod') {
+        items = [{ label: 'Edit', icon: 'settings', onSelect: () => this.setState({ cmenu: null, pickedMod: key, modInsp: true }) }, { label: 'Add destination…', icon: 'plus', onSelect: () => this.setState({ cmenu: null, dmenu: { x: CM.x, y: CM.y, src: key, slot: (this.modCats().flatMap(c => c[2]).find(x => x[0] === key) || [])[1] } }) }, { label: 'Show routes', icon: 'modulate', onSelect: () => { close(); this.go('mod'); } }, { label: 'Rename…', onSelect: close },
+          { separator: true }, { label: 'Delete modulator', icon: 'close', danger: true, disabled: key === 'Amp envelope', onSelect: close }];
+      } else if (type === 'route') {
+        const [src, dest] = key.split('|'); title = src + ' → ' + dest; const off = !!(this.state.routeOff || {})[key];
+        items = [{ label: 'Edit', icon: 'settings', onSelect: () => { const i = routes.findIndex(r => r.rk === key); this.setState({ cmenu: null, modRoute: i }); } }, { label: off ? 'Enable' : 'Bypass', checked: off, onSelect: () => this.setState({ cmenu: null, routeOff: Object.assign({}, this.state.routeOff || {}, { [key]: !off }), modNote: (off ? 'Enabled ' : 'Bypassed ') + title }) }, { label: 'Invert', icon: 'reverse', onSelect: close }, { label: 'Go to ' + dest, icon: 'chevron-right', onSelect: () => { close(); this.go('voice'); } },
+          { separator: true }, { label: 'Remove route', icon: 'close', danger: true, shortcut: 'Delete', disabled: src === 'Amp envelope', onSelect: () => this.setState({ cmenu: null, routeGone: Object.assign({}, this.state.routeGone || {}, { [key]: true }), modNote: 'Removed route ' + title + ' · Ctrl+Z to undo' }) }];
+      } else if (type === 'slice') {
+        const i = +key - 1; title = sliceNames[i] + ' · slice ' + key;
+        items = [{ label: 'Preview', icon: 'level', shortcut: 'Click', onSelect: () => { close(); playSlice(i); } }, { label: 'Map to key…', icon: 'keyboard', onSelect: close }, { label: 'Split at cursor', icon: 'slice', onSelect: close }, { label: 'Merge with next', onSelect: close },
+          { separator: true }, { label: 'Delete slice', icon: 'close', danger: true, onSelect: close }];
+      } else if (type === 'op') {
+        const d = histDefs.find(x => x[0] === key); title = d ? d[1] : key; const isSrc = key === 'src', off = !!(this.state.histOff || { norm: true })[key];
+        items = [{ label: 'Edit', icon: 'settings', onSelect: () => this.setState({ cmenu: null, histSel: key }) }, { label: off ? 'Turn on' : 'Turn off', disabled: isSrc, onSelect: () => this.setState(s => ({ cmenu: null, histOff: Object.assign({ norm: true }, s.histOff || {}, { [key]: !off }) })) }, { label: 'Collapse to here', icon: 'layers', disabled: isSrc, onSelect: close },
+          { separator: true }, { label: 'Delete operation', icon: 'close', danger: true, disabled: isSrc, onSelect: () => this.setState({ cmenu: null, histDel: Object.assign({}, this.state.histDel || {}, { [key]: true }), histSel: null, modNote: 'Deleted ' + title + ' · Ctrl+Z to undo' }) }];
+      }
+      const Hn = this.winRef && this.winRef.current ? this.winRef.current.offsetHeight : H;
+      kmenus.push({ x: CM.x, y: Math.max(4, Math.min(CM.y, Hn - (items.length * 26 + 44))), title, items });
+    }
+    const DM = this.state.dmenu;
+    if (DM) {
+      const have = rl.filter(r => r.src === DM.src).map(r => r.dest);
+      const groupsD = [['Voice · Keys', ['Filter cutoff', 'Filter resonance', 'Filter drive', 'Pitch', 'Amp gain', 'Pan', 'Sample start']], ['Lush', ['Lush level', 'Lush detune', 'Lush brightness', 'Lush width']], ['Sends', ['Send · Reverb', 'Send · Delay']], ['Modulators', ['LFO 1 rate', 'LFO 1 depth', 'Filter env amount']]];
+      const items = groupsD.flatMap(([gn, list], gi) => (gi ? [{ separator: true }] : []).concat([{ header: gn }], list.map(d => ({ label: d, disabled: have.includes(d), shortcut: have.includes(d) ? 'added' : '', onSelect: () => this.setState({ dmenu: null, extraRoutes: (this.state.extraRoutes || []).concat([{ src: DM.src, slot: DM.slot, dest: d }]), routeOpen: Object.assign({}, this.state.routeOpen || {}, { [DM.src]: true }), modNote: 'Added destination ' + d + ' to ' + DM.src + ' at +25%' }) }))));
+      const Hn = this.winRef && this.winRef.current ? this.winRef.current.offsetHeight : H;
+      kmenus.push({ x: DM.x, y: Math.max(4, Math.min(DM.y, Hn - (items.length * 24 + 40))), title: 'Add destination · ' + DM.src, items });
+    }
+    const status = empty || drop ? { kind: 'info', title: 'Empty', text: 'Drop or browse samples' } : loading ? { kind: 'busy', title: 'Loading', text: 'felt_C4_f.wav' } : missing ? { kind: 'error', title: '1 file missing', text: 'felt_C4_f.wav' } : tr === 'run' ? { kind: 'busy', title: 'Analysing', text: 'amen_172.wav' } : tr === 'fail' ? { kind: 'warn', title: 'Analysis failed', text: 'amen_172.wav' } : { kind: 'ok', title: 'Ready', text: isMin ? '' : '23 zones · 31 samples' };
+
+    const hints = { sample: 'Drag markers to edit · double-click a value to type · Ctrl+wheel zooms · Space auditions', slices: 'Click to select · Shift/Ctrl adds · drag a marker to move it · M adds · Delete removes · ← → step', mapping: 'Edges push neighbours · Shift-drag to overlap (crossfade) or gap · right-click to insert, copy, paste, delete · Ctrl+C / Ctrl+V', layers: 'Drag rows to reorder · drop files to add · click M/S to mute or solo', voice: 'Right-click or M on a control to assign modulation · double-click resets', mod: 'Drag the amount bar · Alt-drag inverts · Delete removes the selected route', routing: 'Inherit follows the parent group · set a bus to override', fx: 'Drag modules to reorder · dot bypasses · + adds a processor' };
+    const tabs = [
+      { id: 'sample', label: 'Sample', icon: 'level' }, { id: 'slices', label: 'Slices', icon: 'slice', badge: '8' }, { id: 'mapping', label: 'Mapping', icon: 'keyboard' },
+      { id: 'layers', label: 'Layers', icon: 'layers' }, { id: 'voice', label: 'Voice', icon: 'settings' }, { id: 'mod', label: isMin ? 'Mod' : 'Modulation', icon: 'modulate', badge: '14' },
+      { id: 'routing', label: 'Routing', icon: 'pan' }, { id: 'fx', label: 'Effects', icon: 'variation' },
+    ].map(t => isMin ? { id: t.id, label: t.label, badge: t.badge } : t);
+    const showBrowser = browser && !isMin;
+    const isSample = page === 'sample' && !empty && !drop;
+
+    return {
+      states: S.map(s => ({ label: s[1], sel: s[0] === cur[0], go: () => this.go(s[0]) })),
+      stateLabel: cur[1], ann: this.state.ann, toggleAnn: (v) => this.setState({ ann: v }),
+      W, H, scale, outW: Math.round(W * scale), outH: Math.round(H * scale),
+      layout, isMin, notMin: !isMin, isExp, headH: isMin ? 38 : 44, patchW: isMin ? 150 : 220,
+      layoutOpts: [{ id: 'min', label: 'Min', title: '820 × 560' }, { id: 'default', label: 'Default', title: '1200 × 800' }, { id: 'exp', label: 'Expanded', title: '1600 × 1000' }],
+      setLayout: (v) => this.setState({ layout: v }),
+      patchName: empty || drop ? 'Untitled' : 'Felt Kit', status, voicesText: empty || drop ? 'Voices 0 / 32' : 'Voices 6 / 32',
+      meterLv: empty ? [-90, -90] : [-14, -15],
+      tabs, page, goPage: (id) => this.go(pageCanon[id]),
+      browser, browserLabel: isMin ? '' : 'Browser', toggleBrowser: () => this.setState({ browser: !browser }),
+      banner: missing || unsup, missing, unsup,
+      gridCols: treeW + 'px minmax(0,1fr) ' + inspW + 'px',
+      showTree: !isMin && !showBrowser, showBrowser, tree, assets, browserFilter: [{ id: 'all', label: 'All' }, { id: 'smp', label: 'Samples' }, { id: 'ir', label: 'IRs' }, { id: 'fav', label: 'Favourites' }],
+      isEmpty: empty, isDrop: drop,
+      dropOpts: [
+        { name: 'One per key', sug: false, desc: 'Each file on its own key from C3 upward.', border: 'var(--dd-line-2)', cells: [1,2,3,4,5,6].map(c => ({ col: c, row: '1 / 3', bg: 'var(--dd-ink-5)' })) },
+        { name: 'By root + velocity', sug: true, desc: '6 roots × p / f. Keys between roots filled; p below f.', border: 'var(--dd-vermilion)', cells: [1,3,5].flatMap(c => [{ col: c + ' / span 2', row: 1, bg: 'var(--dd-vermilion-lo)' }, { col: c + ' / span 2', row: 2, bg: 'var(--dd-ink-6)' }]) },
+        { name: 'Stack', sug: false, desc: 'All files play together on every key.', border: 'var(--dd-line-2)', cells: [1,2].map(r => ({ col: '1 / 7', row: r, bg: 'var(--dd-ink-5)' })) },
+        { name: 'Round robin', sug: false, desc: 'One key; files cycle per hit.', border: 'var(--dd-line-2)', cells: [{ col: '3 / 5', row: '1 / 3', bg: 'var(--dd-ink-5)' }] },
+      ],
+      isSample, isLoading: isSample && loading, waveReady: isSample && !loading, loop,
+      assetName: 'felt_C4_f.wav', playMode: loop ? 'sus' : 'once',
+      playOpts: [{ id: 'once', label: 'Once' }, { id: 'gated', label: 'Gated' }, { id: 'loop', label: 'Loop' }, { id: 'pp', label: 'Ping-pong' }, { id: 'sus', label: 'Sustain loop' }],
+      pianoPeaks, partialPeaks, seamA, seamB, waveH: isMin ? 150 : isExp ? 340 : loop ? 190 : 250,
+      loopS: loop ? 0.55 : undefined, loopE: loop ? 0.82 : undefined, xfade: loop ? 0.025 : undefined, cursor: PV && PV.target === 'sample' ? PV.from + (PV.to - PV.from) * pvPos : 0.31,
+      waveLabel: 'felt_C4_f.wav · 4.820 s', meta: isMin ? meta.slice(0, 3) : meta, sampleKnobGroups, fmtNote: (v) => Math.round(v) + ' ' + nm(Math.round(v)),
+      isSlices: page === 'slices', slices, sliceRows, transients, trShown: tr === 'done', trDone: tr === 'done', trRun: tr === 'run', trFail: tr === 'fail',
+      sliceWaveH: isMin ? 120 : isExp ? 260 : 190, divOpts: [{ id: 'even', label: 'Even' }, { id: 'grid', label: 'Grid' }],
+      isMapping: page === 'mapping', zones, zoneSel: this.state.zoneSel, selZone: (id) => this.setState({ zoneSel: id }), chZones: (z, id) => this.chZones(z, id), mapRef: this.mapRef, winRef: this.winRef, onMapCtx: (e) => this.onMapCtx(e), onMapMove: (e) => this.onMapMove(e),
+      relSegs, relList, noRel: !rels.length, dragShift: !!this.state.dragShift, mapNote: this.state.mapNote || '', clipLabel: this.state.clip ? this.state.clip.label : '',
+      menuOpen: !!M, menuX: M ? M.x : 0, menuY: M ? M.y : 0, menuItems, menuTitle, closeMenu: () => this.setState({ menu: null }), closeMenuCtx: (e) => { e.preventDefault(); this.setState({ menu: null }); }, keymapH: isMin ? 180 : isExp ? 420 : 300, dropRules,
+      isLayers: page === 'layers', layerCtx: isRRlike ? 'Snare › Hard · note 38 D2 · vel 96–127' : 'Snare · note 38 D2 · vel 1–127', selModes, modeDesc: modeDescs[mode], isVel: mode === 'vel', vSoftStops: gStops(false, gSoft), vHardStops: gStops(true, gHard), vHardTc: gHard > 0.6 ? 'var(--dd-ink-0)' : 'var(--dd-paper-1)', vXa: vW ? xa : vLo - 1.5, vXb: vW ? xb : vLo - 1.4, onVelDown: (e) => this.onVelDown(e), vSoftPts, vHardPts,
+      vSoftLabel: 'Soft · ' + softRange, vHardLabel: 'Hard · ' + hardRange,
+      vBandL: vx(vLo - 0.5), vBandR: vx(Math.max(vLo - 0.5, vHi + 0.5)), vBandW: Math.max(0, vx(vHi + 0.5) - vx(vLo - 0.5)), vMid: vx((vLo + vHi) / 2), vBandBg: vW ? 'var(--dd-vermilion-wash)' : 'transparent', vLast: vx(74),
+      vAxis: 'last hit vel 74 · ' + (74 >= vLo && 74 <= vHi ? 'both layers' : 74 < vLo ? 'Soft' : 'Hard'),
+      vXfText: vW ? vLo + '–' + vHi + ' · ' + vW + ' steps' : 'Off · hard split at ' + vLo, vXfW: vW, vNoXf: !vW,
+      setVelW: (n) => { const w = Math.max(0, Math.min(60, Math.round(n || 0))), mid = (vLo + vHi) / 2; const lo = Math.max(2, Math.round(mid - (w - 1) / 2)); this.setState({ vHardLo: lo, vSoftHi: Math.min(126, lo + w - 1) }); },
+      velNoXf: () => { const mid = Math.round((vLo + vHi) / 2); this.setState({ vHardLo: mid + 1, vSoftHi: mid }); },
+      vCurve, setVelCurve: (v) => this.setState({ vCurve: v }), vCurveOpts: [{ id: 'eq', label: 'Equal power' }, { id: 'lin', label: 'Linear' }], isRR: isRRlike, cands, rrSeq, weightHead: mode === 'wrand' ? 'Weight' : 'Share',
+      resetOpts: [{ id: 'never', label: 'Never' }, { id: 'transport', label: 'On play' }, { id: 'bar', label: 'Each bar' }],
+      isVoice: page === 'voice', chain, voiceSecs, voiceCols: isMin ? 'repeat(2,minmax(0,1fr))' : isExp ? 'repeat(5,minmax(0,1fr))' : 'repeat(3,minmax(0,1fr))', envs, envH,
+      envCols: isMin ? 'minmax(0,1fr)' : 'minmax(0,1fr) minmax(0,1fr) 200px',
+      envShapes: [{ id: 'adsr', label: 'ADSR' }, { id: 'ahdsr', label: 'AHDSR' }, { id: 'multi', label: 'Multi' }],
+      polyOpts: [{ id: 'poly', label: 'Poly' }, { id: 'mono', label: 'Mono' }, { id: 'legato', label: 'Legato' }],
+      isMod: page === 'mod', routes, modSrcs, cutoffMods: (this.knobMods.Cutoff || cutoffMods).filter(m => m.slot), modCols: 'minmax(0,1fr)',
+      assigning: !!this.state.dragMod, endModDrag: () => this.setState({ dragMod: null, dropOver: null }),
+      onKnobOver: (e) => { if (!this.state.dragMod) return; const t = e.target.closest && e.target.closest('[data-knob]'); if (t) { e.preventDefault(); e.dataTransfer.dropEffect = 'link'; } const lab = t ? t.getAttribute('data-knob') : null; if (lab !== this.state.dropOver) this.setState({ dropOver: lab }); },
+      onKnobLeave: (e) => { if (this.state.dropOver && !(e.relatedTarget && e.relatedTarget.closest && e.relatedTarget.closest('[data-knob]'))) this.setState({ dropOver: null }); },
+      onKnobDrop: (e) => { const d = this.state.dragMod; const t = e.target.closest && e.target.closest('[data-knob]'); if (!d || !t) return; e.preventDefault(); const lab = t.getAttribute('data-knob'); const add = Object.assign({}, this.state.added || {}); add[lab] = (add[lab] || []).concat([{ slot: d.slot || undefined, depth: 0.25, source: d.name }]); this.setState({ added: add, dragMod: null, dropOver: null, modNote: 'Added route ' + d.name + ' → ' + lab + ' +25% · drag the ring or open the popup to set depth' }); },
+      cutoffRing: this.state.dropOver === 'Cutoff' ? '0 0 0 1px var(--dd-vermilion)' : 'none', cutoffPop: !this.state.dragMod, groupByOpts: [{ id: 'src', label: 'Source' }, { id: 'dst', label: 'Destination' }],
+      isRouting: page === 'routing', routeRows, busses, outputs, routeCols: isExp ? 'minmax(0,1fr) minmax(600px,1.2fr)' : 'minmax(0,1fr)',
+      isFx: page === 'fx', insertLayers, fxLayers,
+      kTight: { style: { padding: '1px 1px', gap: 1, minWidth: 0, '--type-label': '10px', '--type-micro': '10px' } },
+      me, meH: isMin ? 64 : isExp ? 110 : 84,
+      notPerf: !perf, perfLabel: perf ? 'Open editor' : 'Collapse', perfIcon: perf ? 'chevron-down' : 'chevron-right', togglePerf: () => this.setState({ perf: !perf, kmenu: null, menu: null }), macroSize: isMin && !perf ? 'sm' : 'md',
+      crumbs, insp, macros, srcGroups, hist, hasHist: hist.length > 0, histCount: hist.filter(o => o.on).length + ' of ' + hist.length, histNote: hSel ? 'Click the operation again to show the result.' : 'Bottom to top. Uncheck to bypass, drag ⋮⋮ to reorder, click to edit.',
+      hRs: hOn('trim') ? 0.012 : 0, hRe: hOn('trim') ? 0.94 : 1, hFi: hOn('fade') ? 0.004 : 0, hFo: hOn('fade') ? 0.08 : 0,
+      onWaveClick: () => this.play('felt_C4_f.wav', { target: 'sample', from: hOn('trim') ? 0.012 : 0, to: hOn('trim') ? 0.94 : 1, dur: 3 }),
+      onSliceWaveClick: (e) => { const r = e.currentTarget.getBoundingClientRect(), pos = (e.clientX - r.left) / r.width; let i = 0; sp.forEach((p, j) => { if (pos >= p) i = j; }); playSlice(i); },
+      selSlice: this.state.selSlice ?? 2, sliceCursor: PV && PV.target === 'break' ? PV.from + (PV.to - PV.from) * pvPos : 0.29,
+      endSrcDrag: () => this.setState({ dragSrc: null, nodeOver: null }),
+      onNodeOver: (e) => { const d = this.state.dragSrc; if (!d) return; const t = e.target.closest && e.target.closest('[data-node]'); const id = t ? t.getAttribute('data-node') : null; const ok = id && this.dropInfo(id); if (ok) { e.preventDefault(); e.dataTransfer.dropEffect = 'copy'; } if ((ok ? id : null) !== this.state.nodeOver) this.setState({ nodeOver: ok ? id : null }); },
+      onNodeDrop: (e) => { const d = this.state.dragSrc; const t = e.target.closest && e.target.closest('[data-node]'); if (!d || !t) return; const id = t.getAttribute('data-node'), info = this.dropInfo(id); if (!info) return; e.preventDefault(); const as = Object.assign({}, this.state.assigned || {}); as[id] = (as[id] || []).concat([{ name: d.name, kind: d.kind, role: info.role }]); this.setState({ assigned: as, dragSrc: null, nodeOver: null, modNote: 'Added ' + d.name + (d.kind === 'slice' ? ' (slice of amen_172.wav)' : '') + ' to ' + info.target + ' as ' + info.role }); },
+      kmenuOpen: !!(KM || DM || CM),
+      onRootCtx: (e) => { if (e.defaultPrevented) return; const t = e.target.closest && e.target.closest('[data-ctx]'); if (!t) return; e.preventDefault(); const [type, key] = t.getAttribute('data-ctx').split(/\|(.*)/s); const p = this.winPt(e, 264, 220); this.setState({ cmenu: { x: p.x, y: p.y, type, key }, kmenu: null, dmenu: null }); },
+      onRootDown: (e) => { if (e.button !== 1) return; const t = e.target.closest && e.target.closest('[data-reset]'); if (!t) return; e.preventDefault(); e.stopPropagation(); const [kind, key] = t.getAttribute('data-reset').split(/\|(.*)/s); this.resetTarget(kind, key); },
+      onAux: (e) => { if (e.button === 1) e.preventDefault(); },
+      noUndo: !(this.undo && this.undo.length), noRedo: !(this.redo && this.redo.length), doUndo: () => this.undoStep(-1), doRedo: () => this.undoStep(1),
+      undoTip: this.undo && this.undo.length ? 'Undo ' + String(this.undo[this.undo.length - 1].label).slice(0, 60) + ' (Ctrl+Z)' : 'Nothing to undo', redoTip: this.redo && this.redo.length ? 'Redo (Ctrl+Shift+Z)' : 'Nothing to redo', kmenus, routeGroups, closeK: () => this.setState({ kmenu: null, dmenu: null, cmenu: null }), closeKCtx: (e) => { e.preventDefault(); this.setState({ kmenu: null, dmenu: null, cmenu: null }); },
+      onKnobCtx: (e) => { const t = e.target.closest && e.target.closest('[data-knob]'); if (!t) return; e.preventDefault(); const p = this.winPt(e, 264, 160); this.setState({ kmenu: { x: p.x, y: p.y, label: t.getAttribute('data-knob'), path: [] } }); }, macroGap: isMin ? 8 : 12, macroPad: '8px 8px 2px', hint: this.state.dragSrc ? 'Drop ' + this.state.dragSrc.name + ' on a pad, layer or zone' + (this.state.nodeOver ? ' · ' + (this.dropInfo(this.state.nodeOver).role === 'new pad' ? 'new pad in Drums' : 'add to ' + this.dropInfo(this.state.nodeOver).target + ' as ' + this.dropInfo(this.state.nodeOver).role) : '') + ' · Esc cancels' : PV ? 'Previewing ' + PV.name : this.state.dragMod ? 'Assigning ' + this.state.dragMod.name + ' · drop on a highlighted control to add a route · Esc cancels' : this.state.modNote ? this.state.modNote : empty || drop ? 'Drop files anywhere in the window · Ctrl+O browses' : hints[page],
+      sizeText: W + ' × ' + H + (scale < 1 ? ' · preview ' + Math.round(scale * 100) + '%' : ''),
+    };
+  }
+}
+</script>
+</body>
+</html>
