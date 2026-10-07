@@ -1,0 +1,11 @@
+[
+  {"name":"tb303","description":"TB-303 standalone — embedded editor, real Rust audio","kind":"native","source":"CMakeLists.txt","target":"dandrum-plugin_Standalone","artifact":"dandrum-plugin_artefacts/Standalone/Dandrum"},
+  {"name":"sampler","description":"Drum sampler standalone — embedded editor, real Rust audio","kind":"native","source":"CMakeLists.txt","target":"dandrum-sampler-plugin_Standalone","artifact":"dandrum-sampler-plugin_artefacts/Standalone/Dandrum Sampler"},
+  {"name":"drums","description":"MIDI drum-machine console — real Rust audio","kind":"native","source":"CMakeLists.txt","target":"dandrum-drum-machine-demo","artifact":"dandrum-drum-machine-demo_artefacts/dandrum-drum-machine-demo"},
+  {"name":"react303","description":"React TB-303 standalone — embedded WebView, real Rust audio","kind":"native","source":"web/tb303/package.json","target":"dandrum-plugin_Standalone","artifact":"dandrum-plugin_artefacts/Standalone/Dandrum","react":true},
+  {"name":"react-sampler","description":"React sampler standalone — embedded WebView, real Rust audio","kind":"native","source":"web/sampler/package.json","target":"dandrum-sampler-plugin_Standalone","artifact":"dandrum-sampler-plugin_artefacts/Standalone/Dandrum Sampler","react":true},
+  {"name":"tb303-web","description":"React TB-303 browser preview — requires JUCE host bridge for audio","kind":"web","source":"web/tb303/package.json"},
+  {"name":"sampler-web","description":"React sampler browser preview — requires JUCE host bridge for audio","kind":"web","source":"web/sampler/package.json"},
+  {"name":"trigger","description":"Trigger React shell — browser preview, silent mock engine","kind":"web","source":"web/trigger/package.json"},
+  {"name":"instruments","description":"Instrument design prototype — browser preview, visual mock","kind":"web","source":"web/instrument-prototype/package.json"}
+]

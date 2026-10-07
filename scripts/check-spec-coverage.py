@@ -20,6 +20,7 @@ Test id forms:
   rust:<fn_name>           a Rust `fn <fn_name>` under a #[test]/#[cfg(test)]
   cpp:<path>               a C++ test source file (whole-file main() test)
   js:<path>                a JavaScript page/bridge test under tests/
+  py:<path>                a Python behavior test under tests/python/
 
 Usage:
   check-spec-coverage.py                    verify (CI mode)
@@ -163,7 +164,7 @@ def write_map(path: Path, acs: dict[AcKey, str], existing: dict[AcKey, AcBlock])
         "#",
         "#   AC <capability> :: <Requirement> :: <Scenario>",
         "#     fp   <fingerprint>   recorded hash of the scenario text",
-        "#     test <id>            rust:<fn_name>, cpp:<path>, or js:<path> (repeatable)",
+        "#     test <id>            rust:<fn_name>, cpp:<path>, js:<path>, or py:<path> (repeatable)",
         "#     todo <reason>        ratchet backlog until a real test is mapped",
         "#",
         "# When a scenario is edited its fingerprint drifts and the check fails: review",
@@ -210,6 +211,9 @@ def test_exists(test_id: str, rust_fns: set[str]) -> bool:
     if kind == "js":
         path = ROOT / value
         return path.is_relative_to(CPP_TESTS) and path.suffix in {".js", ".mjs"} and path.is_file()
+    if kind == "py":
+        path = (ROOT / value).resolve()
+        return path.is_relative_to(ROOT / "tests/python") and path.suffix == ".py" and path.is_file()
     return False
 
 

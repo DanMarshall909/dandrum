@@ -2,6 +2,29 @@
 
 Headless-first OSS virtual instrument experiment.
 
+## Launch demos
+
+From this repository, run `./demo` or `./demo --list` to see demo names, descriptions and source checkouts. Launch one with:
+
+```bash
+./demo tb303                          # embedded standalone, real audio
+./demo react303                       # embedded React standalone, real audio
+./demo sampler                        # embedded sampler standalone, real audio
+./demo drums --list-midi-inputs
+./demo drums --midi-input 0
+./demo trigger -- --port 8324          # silent React shell in a browser
+```
+
+The launcher uses this checkout first, then registered Dandrum Git worktrees in pathname order. It prints the selected checkout, builds only the requested native target, and installs locked npm dependencies when missing or older than the package lock. Demos absent from all those checkouts are listed as unavailable. Native demos need the CMake/Cargo/JUCE prerequisites below; React previews also need a Node version supported by their package and npm.
+
+Embedded WebView demos also need GTK3 and WebKitGTK development packages on Linux.
+
+Native launches preserve the configured CMake build type. With a multi-config generator they choose Release if available, otherwise the first configured type, and run the executable from that configuration.
+
+`react303` and `react-sampler` embed React in JUCE and use the Rust engine. They use an isolated `build/demo-webview/` configuration so an existing native-only build keeps its settings. `tb303-web` and `sampler-web` are browser panel previews that require the JUCE host bridge for audio. `trigger` uses a silent mock engine; `instruments` is a visual design prototype. Browser demos stay in the foreground and print their URL; open that URL in your browser. Ctrl+C stops the demo. Existing dev servers keep running; pass another `--port` if necessary.
+
+Maintain demo registrations in [scripts/demos.json](scripts/demos.json) whenever a demo is added, renamed, moved or removed. Update launch tests and relevant documentation in the same change. CTest's `demo-launcher-inventory` check rejects unregistered standalone JUCE targets, incorrect native artifact paths and unregistered local React dev packages. Run `python3 -m unittest discover -s tests/python -p 'test_demo_*.py'` for focused launcher checks.
+
 ## First Sound
 
 The first milestone is deliberately tiny: prove the JUCE wrapper can open the default audio device while Rust owns the

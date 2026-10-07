@@ -560,6 +560,19 @@ add_test(NAME rust-coverage-gate
             -s ${CMAKE_CURRENT_SOURCE_DIR}/tests/python
             -p test_rust_coverage_gate.py)
 
+add_test(NAME demo-launcher
+    COMMAND ${CMAKE_COMMAND} -E env PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover
+            -s ${CMAKE_CURRENT_SOURCE_DIR}/tests/python
+            -p test_demo_launcher.py)
+add_test(NAME demo-launcher-inventory
+    COMMAND ${CMAKE_COMMAND} -E env PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover
+            -s ${CMAKE_CURRENT_SOURCE_DIR}/tests/python
+            -p test_demo_inventory.py)
+add_test(NAME demo-launcher-boundaries
+    COMMAND ${CMAKE_COMMAND} -E env PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover
+            -s ${CMAKE_CURRENT_SOURCE_DIR}/tests/python
+            -p test_demo_launcher_boundaries.py)
+
 if(NOT DANDRUM_NATIVE_ONLY)
     add_test(NAME shared-instrument-ui COMMAND ${DANDRUM_NODE_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/tests/js/SharedInstrumentUiTest.mjs)
     add_test(NAME tb303-page COMMAND ${DANDRUM_NODE_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/tests/js/Tb303PageTest.mjs)

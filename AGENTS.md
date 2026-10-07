@@ -12,6 +12,11 @@
 
 ## Build And Run
 
+- Use `./demo` to list maintained demos and `./demo <name>` to prepare and launch one. Whenever adding, renaming,
+  moving or removing a launchable demo, update `scripts/demos.json`, relevant launcher tests and README documentation
+  in the same change. Keep real-engine embedded apps and silent/browser previews clearly labeled. Verify CTest's
+  `demo-launcher`, `demo-launcher-inventory` and `demo-launcher-boundaries` checks; the inventory guard enforces native
+  target/artifact and React dev-package registration.
 - Configure/build/run with the README commands: `$HOME/.local/bin/cmake -S . -B build`,
   `$HOME/.local/bin/cmake --build build`, `./build/dandrum-drum-machine-demo_artefacts/dandrum-drum-machine-demo`.
 - MIDI input commands: `./build/dandrum-drum-machine-demo_artefacts/dandrum-drum-machine-demo --list-midi-inputs`,
