@@ -10,6 +10,8 @@ From this repository, run `./demo` or `./demo --list` to see demo names, descrip
 ./demo tb303                          # embedded standalone, real audio
 ./demo react303                       # embedded React standalone, real audio
 ./demo sampler                        # embedded sampler standalone, real audio
+./demo filter-slint                   # experimental native Slint filter effect
+./demo filter-jive                    # experimental native JIVE filter effect
 ./demo drums --list-midi-inputs
 ./demo drums --midi-input 0
 ./demo trigger -- --port 8324          # silent React shell in a browser
@@ -23,9 +25,11 @@ Native launches preserve the configured CMake build type. With a multi-config ge
 
 `react303` and `react-sampler` embed React in JUCE and use the Rust engine. They use an isolated `build/demo-webview/` configuration so an existing native-only build keeps its settings. `tb303-web` and `sampler-web` are browser panel previews that require the JUCE host bridge for audio. `trigger` uses a silent mock engine; `instruments` is a visual design prototype. Browser demos stay in the foreground and print their URL; open that URL in your browser. Ctrl+C stops the demo. Existing dev servers keep running; pass another `--port` if necessary.
 
+`filter-slint` and `filter-jive` are [experimental stereo filter effects](spikes/filter-ui/README.md) with native framework UIs and real Rust audio. They process stereo input and can use an optional audition-generated test signal. The launcher enables their opt-in dependencies in an isolated Release/native-only `build/filter-ui-spikes/` configuration and skips npm preparation. These experiments do not migrate the production instrument UIs.
+
 See the [React editor performance measurements](docs/resource-measurements/2026-10-07-react-ui-performance/README.md) for CPU, memory and control latency before and after optimization, including platform and verification limits.
 
-Maintain demo registrations in [scripts/demos.json](scripts/demos.json) whenever a demo is added, renamed, moved or removed. Update launch tests and relevant documentation in the same change. CTest's `demo-launcher-inventory` check rejects unregistered standalone JUCE targets, incorrect native artifact paths and unregistered local React dev packages. Run `python3 -m unittest discover -s tests/python -p 'test_demo_*.py'` for focused launcher checks.
+Maintain demo registrations in [scripts/demos.json](scripts/demos.json) whenever a demo is added, renamed, moved or removed. Native entries can set `nativeOnly`, `buildDirectory`, and `cmakeOptions` (CMake definitions without the `-D` prefix); omitted fields preserve the normal build and React settings. Update launch tests and relevant documentation in the same change. CTest's `demo-launcher-inventory` check rejects unregistered standalone JUCE targets, incorrect native artifact paths and unregistered local React dev packages. Run `python3 -m unittest discover -s tests/python -p 'test_demo_*.py'` for focused launcher checks.
 
 ## First Sound
 

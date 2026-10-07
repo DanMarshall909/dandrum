@@ -63,17 +63,20 @@ def launch(demo, root, args):
         run(["npm", "run", "dev", "--", *args], package)
         return
     sampler = root / "web/sampler/package.json"
-    if sampler.is_file():
+    if sampler.is_file() and not demo.get("nativeOnly"):
         prepare_package(sampler.parent)
-    build = root / ("build/demo-webview" if demo.get("react") else "build")
+    build = root / demo.get("buildDirectory", "build/demo-webview" if demo.get("react") else "build")
     local_cmake = Path.home() / ".local/bin/cmake"
     cmake = str(local_cmake) if local_cmake.is_file() else "cmake"
     env = dict(os.environ)
     if sys.platform.startswith("linux"):
         env["PATH"] = "/usr/bin:/bin:" + env.get("PATH", "")
     configure = [cmake, "-S", root, "-B", build]
-    if demo.get("react"):
+    if demo.get("nativeOnly"):
+        configure.append("-DDANDRUM_NATIVE_ONLY=ON")
+    elif demo.get("react"):
         configure.append("-DDANDRUM_NATIVE_ONLY=OFF")
+    configure.extend(f"-D{option}" for option in demo.get("cmakeOptions", []))
     run(configure, root, env)
     configuration = build_configuration(build)
     run([cmake, "--build", build, "--target", demo["target"], "--config", configuration or "Release"], root, env)
