@@ -1,3 +1,5 @@
+import { createKnobFace } from './knob-face.mjs';
+import { acceptedKnobWrite, knobSnapshotValue, createKnobCommand } from './knob-reconciliation.mjs';
 import { createParameterGesture } from '../sampler/src/parameter-gesture.mjs';
 import { formatActualValue, parseActualValue, dragValue, keyValue, wheelValue } from './parameter-value.mjs';
 
@@ -7,16 +9,7 @@ import { formatActualValue, parseActualValue, dragValue, keyValue, wheelValue } 
 export function createHostKnob(React) {
   const { useEffect, useMemo, useRef, useState } = React;
   const h = React.createElement;
-  const point = (c, r, degrees) => {
-    const angle = (degrees - 90) * Math.PI / 180;
-    return [c + r * Math.cos(angle), c + r * Math.sin(angle)];
-  };
-  const arc = (c, r, from, to) => {
-    if (Math.abs(to - from) < 0.01) return '';
-    const a = Math.min(from, to), b = Math.max(from, to);
-    const [x0, y0] = point(c, r, a), [x1, y1] = point(c, r, b);
-    return `M${x0.toFixed(2)} ${y0.toFixed(2)}A${r} ${r} 0 ${b - a > 180 ? 1 : 0} 1 ${x1.toFixed(2)} ${y1.toFixed(2)}`;
-  };
+  const KnobFace = createKnobFace(React);
 
   return function HostKnob({ parameter, label, size = 48, command, onError }) {
     const disabled = parameter === null;
@@ -34,19 +27,24 @@ export function createHostKnob(React) {
     const edit = useRef(null);
     const closeTimer = useRef(null);
     const nudgeTimer = useRef(null);
+    const lastWrite = useRef(null);
+    const pendingCommit = useRef(null);
     const authoritative = useRef(parameter);
     authoritative.current = parameter;
     const gesture = useMemo(() => createParameterGesture(
-      (name, value, generation) => command(name, parameter.id,
-        ...(value === undefined ? [] : [value]), generation),
-      reason => {
-        setLocal(authoritative.current?.value ?? 0);
-        onError(reason);
-      }), [parameter?.id, parameter?.generation]);
+      createKnobCommand((name, value, generation) => command(name, parameter.id,
+        ...(value === undefined ? [] : [value]), generation), () => interaction.current,
+      (reply, value) => { lastWrite.current = acceptedKnobWrite(lastWrite.current, reply, value); },
+      owner => {
+        if (owner === interaction.current && !pendingCommit.current)
+          setLocal(knobSnapshotValue(authoritative.current, lastWrite.current));
+      }), onError, () => interaction.current), [parameter?.id, parameter?.generation]);
 
     useEffect(() => () => { void gesture.end(); }, [gesture]);
     useEffect(() => {
       ++interaction.current;
+      lastWrite.current = null;
+      pendingCommit.current = null;
       drag.current = null;
       edit.current = null;
       setDragging(false);
@@ -54,8 +52,9 @@ export function createHostKnob(React) {
       setLocal(parameter?.value ?? 0);
     }, [parameter?.id, parameter?.generation]);
     useEffect(() => {
-      if (!drag.current && !edit.current) setLocal(parameter?.value ?? 0);
-    }, [parameter?.value]);
+      if (!drag.current && !edit.current && !pendingCommit.current)
+        setLocal(knobSnapshotValue(parameter, lastWrite.current));
+    }, [parameter?.value, parameter?.sequence]);
     useEffect(() => () => {
       clearTimeout(closeTimer.current);
       clearTimeout(nudgeTimer.current);
@@ -76,10 +75,17 @@ export function createHostKnob(React) {
     };
     const commit = next => {
       if (disabled || next === null) return;
-      ++interaction.current;
+      const owner = ++interaction.current;
+      pendingCommit.current = owner;
       setLocal(next);
       nudge();
       gesture.commit(next, parameter.generation);
+      void gesture.flush().then(() => {
+        if (pendingCommit.current !== owner) return;
+        pendingCommit.current = null;
+        if (interaction.current === owner && !drag.current && !edit.current)
+          setLocal(knobSnapshotValue(authoritative.current, lastWrite.current));
+      });
     };
     const finishDrag = () => {
       if (!drag.current) return;
@@ -87,10 +93,10 @@ export function createHostKnob(React) {
       drag.current = null;
       setDragging(false);
       void gesture.end().then(() => {
-        // Host automation may have changed while local dragging hid its echo.
-        // A later key, wheel, draft or drag owns the display once it starts.
+        // A later interaction owns the display; otherwise retain the latest
+        // accepted write until the host snapshot covers its admission sequence.
         if (interaction.current === releasedInteraction && !drag.current && !edit.current)
-          setLocal(authoritative.current?.value ?? 0);
+          setLocal(knobSnapshotValue(authoritative.current, lastWrite.current));
       });
     };
     const startEdit = () => {
@@ -112,7 +118,7 @@ export function createHostKnob(React) {
       const next = !cancelled && matches && draft !== captured.initial
         ? parseActualValue(draft, captured.parameter) : null;
       if (next !== null) commit(next);
-      else setLocal(authoritative.current?.value ?? 0);
+      else if (!pendingCommit.current) setLocal(knobSnapshotValue(authoritative.current, lastWrite.current));
       if (returnFocus) root.current?.focus();
     };
 
@@ -130,13 +136,6 @@ export function createHostKnob(React) {
       return () => element.removeEventListener('wheel', wheel);
     }, [disabled, local, parameter?.generation, gesture]);
 
-    const c = size / 2;
-    const trackMax = size >= 60 ? 4 : size >= 44 ? 3 : 2.5;
-    const trackMin = size >= 44 ? 1.5 : 1.25;
-    const rTrack = c - (size >= 44 ? 6.5 : 5) - trackMax / 2;
-    const rCap = rTrack - trackMax / 2 - (size >= 44 ? 2.5 : 2);
-    const [x0, y0] = point(c, rTrack + trackMin / 2 + 1, -135);
-    const [x1, y1] = point(c, rTrack + trackMin / 2 + (size >= 44 ? 4 : 3), -135);
     const active = !disabled && (dragging || nudged);
     const popup = !disabled && (popupHover || focused || dragging || nudged || editing);
     const title = label || parameter?.name || parameter?.id;
@@ -189,18 +188,7 @@ export function createHostKnob(React) {
       },
     },
     h('div', { className: 'dd-knob-label', title }, title),
-    h('svg', { width: size, height: size, viewBox: `0 0 ${size} ${size}`, 'aria-hidden': true },
-      h('path', { d: arc(c, rTrack, -135, 135), fill: 'none',
-        stroke: disabled ? 'var(--dd-ink-4)' : 'var(--color-track)', strokeWidth: trackMin, strokeLinecap: 'round' }),
-      !disabled && h('path', { 'data-dd-knob-part': 'value-arc', d: arc(c, rTrack, -135, -135 + local * 270),
-        fill: 'none', stroke: 'var(--color-value)', strokeWidth: active ? trackMax : trackMin, strokeLinecap: 'round' }),
-      h('line', { x1: x0, y1: y0, x2: x1, y2: y1, stroke: 'var(--dd-paper-3)',
-        strokeWidth: 1.5, strokeLinecap: 'round', opacity: disabled ? 0.4 : 1 }),
-      h('circle', { cx: c, cy: c + 1.5, r: rCap, fill: 'rgba(0,0,0,0.45)' }),
-      h('circle', { 'data-dd-knob-part': 'cap', cx: c, cy: c, r: rCap,
-        fill: disabled ? 'var(--dd-ink-4)' : dragging ? 'var(--dd-ink-6)' : hovered ? 'var(--dd-cap-hover)' : 'var(--dd-ink-5)',
-        stroke: 'var(--dd-line-3)', strokeWidth: 1, strokeOpacity: disabled ? 0.3 : 0.6 }),
-      h('path', { d: arc(c, rCap - 1, -60, 60), fill: 'none', stroke: 'rgba(255,255,255,0.09)', strokeWidth: 1 })),
+    h(KnobFace, { size, value: local, disabled, active, dragging, hovered }),
     h('div', { className: 'dd-knob-warning-space', 'aria-hidden': true }),
     popup && h('div', { className: 'dd-knob-popup', role: 'dialog', 'aria-label': `${title} value`,
       onMouseEnter: holdPopup, onMouseLeave: leavePopup,

@@ -1,0 +1,98 @@
+TAP version 13
+# Subtest: accepted drag remains visible on release while reads stall, then automation stays authoritative
+ok 1 - accepted drag remains visible on release while reads stall, then automation stays authoritative
+  ---
+  duration_ms: 44.768733
+  type: 'test'
+  ...
+# Subtest: rejected drag restores host value and reports the rejection without waiting for a read
+ok 2 - rejected drag restores host value and reports the rejection without waiting for a read
+  ---
+  duration_ms: 14.764805
+  type: 'test'
+  ...
+# Subtest: automation observed while dragging reconciles on release
+ok 3 - automation observed while dragging reconciles on release
+  ---
+  duration_ms: 10.773291
+  type: 'test'
+  ...
+# Subtest: later keyboard interaction retains its display during previous gesture closure
+ok 4 - later keyboard interaction retains its display during previous gesture closure
+  ---
+  duration_ms: 12.747028
+  type: 'test'
+  ...
+# Subtest: an interim snapshot cannot roll back a later accepted move on release
+ok 5 - an interim snapshot cannot roll back a later accepted move on release
+  ---
+  duration_ms: 12.565289
+  type: 'test'
+  ...
+# Subtest: cancelled, unchanged and invalid typed edits preserve an accepted drag while reads stall
+ok 6 - cancelled, unchanged and invalid typed edits preserve an accepted drag while reads stall
+  ---
+  duration_ms: 25.189488
+  type: 'test'
+  ...
+# Subtest: an accepted default reset survives opening and closing an unchanged value editor
+ok 7 - an accepted default reset survives opening and closing an unchanged value editor
+  ---
+  duration_ms: 14.773815
+  type: 'test'
+  ...
+# Subtest: a rejected earlier closure cannot restore the display owned by a later drag
+ok 8 - a rejected earlier closure cannot restore the display owned by a later drag
+  ---
+  duration_ms: 10.902789
+  type: 'test'
+  ...
+# Subtest: only accepted valid value writes advance knob admission
+ok 9 - only accepted valid value writes advance knob admission
+  ---
+  duration_ms: 2.418204
+  type: 'test'
+  ...
+# Subtest: snapshots cover the latest admitted write before reconciling its display
+ok 10 - snapshots cover the latest admitted write before reconciling its display
+  ---
+  duration_ms: 0.191669
+  type: 'test'
+  ...
+# Subtest: value replies retain admission and late failures retain their submitting interaction
+ok 11 - value replies retain admission and late failures retain their submitting interaction
+  ---
+  duration_ms: 0.858785
+  type: 'test'
+  ...
+1..11
+# tests 11
+# suites 0
+# pass 11
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 593.927356
+# start of coverage report
+# ---------------------------------------------------------------------------------------
+# file                               | line % | branch % | funcs % | uncovered lines
+# ---------------------------------------------------------------------------------------
+# web                                |        |          |         |
+#  sampler                           |        |          |         |
+#   src                              |        |          |         |
+#    host-knob-admission.test.mjs    | 100.00 |   100.00 |  100.00 |
+#    parameter-gesture.mjs           |  97.17 |    67.39 |  100.00 | 74-76
+#  shared                            |        |          |         |
+#   host-knob.mjs                    |  96.67 |    91.58 |   77.50 | 64-65 68-69 131-133
+#   host-parameters.mjs              | 100.00 |    80.00 |  100.00 |
+#   knob-face.mjs                    | 100.00 |    75.86 |  100.00 |
+#   knob-reconciliation.mjs          | 100.00 |   100.00 |  100.00 |
+#   knob-reconciliation.test.mjs     | 100.00 |   100.00 |  100.00 |
+#   parameter-controller.mjs         |  94.12 |    69.77 |   80.00 | 11-13 26
+#   parameter-value.mjs              |  91.23 |    72.92 |   90.91 | 31 34 52 56-57
+#   prepared-parameter-document.mjs  |  94.74 |    60.00 |   85.71 | 20-21
+# ---------------------------------------------------------------------------------------
+# all files                          |  97.21 |    83.33 |   91.16 |
+# ---------------------------------------------------------------------------------------
+# end of coverage report

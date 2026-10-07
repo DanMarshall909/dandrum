@@ -10,13 +10,14 @@ import './key-map.css';
 import './layer-stack.css';
 import './output-buses.css';
 import { admittedParameter } from '../../shared/parameter-value.mjs';
-import { createPreparedParameterDocument } from '../../shared/prepared-parameter-document.mjs';
+import { createHostParameters } from '../../shared/host-parameters.mjs';
 import '../../shared/host-knob.css';
 import { createNoteAudition } from '../../tb303/src/note-audition.mjs';
 import { createMeterTransport } from '../../shared/meter-transport.mjs';
 import { meterView } from '../../shared/meter-view.mjs';
 import { createSpectrumTransport } from '../../shared/spectrum-transport.mjs';
 import { preparedSpectrumView, paintPreparedSpectrum } from '../../shared/prepared-spectrum.mjs';
+import { createPreparedPolling } from '../../shared/prepared-polling.mjs';
 import { createWaveformTransport } from '../../shared/waveform-transport.mjs';
 import { preparedWaveformView, paintPreparedWaveform } from '../../shared/prepared-waveform.mjs';
 import { createLiveAnalysisTransport } from '../../shared/live-analysis-transport.mjs';
@@ -69,63 +70,7 @@ const PreparedKeyMap = createKeyMap(React);
 const PreparedLayerStack = createLayerStack(React);
 const PreparedOutputBuses = createOutputBuses(React);
 
-function useHost() {
-  const [state, setState] = useState<HostState | null>(null);
-  const [document, setDocument] = useState<PreparedDocument | null>(null);
-  const [error, setError] = useState('');
-  const documents = useMemo(() => createPreparedParameterDocument(
-    () => invoke('getPreparedDocument'),
-    (next: PreparedDocument) => setDocument(next),
-    (reason: unknown) => setError(String(reason))), []);
-
-  const acceptState = (next: HostState) => {
-    if (!next || !Number.isInteger(next.generation) || !Array.isArray(next.parameters))
-      return;
-    void documents.acceptGeneration(next.generation);
-    setState(current => current && (next.generation < current.generation
-      || (next.generation === current.generation && next.sequence < current.sequence))
-      ? current : next);
-  };
-  const refresh = async () => {
-    const next = await invoke('getParameterState') as HostState;
-    acceptState(next);
-    await documents.acceptGeneration(next.generation);
-  };
-
-  useEffect(() => {
-    const backend = window.__JUCE__?.backend;
-    if (!backend) {
-      setError('Open this panel in the Dandrum plugin host.');
-      return;
-    }
-    const changed = acceptState;
-    backend.addEventListener('parameterStateChanged', changed);
-    void refresh().catch(reason => setError(String(reason)));
-    return () => {
-      backend.removeEventListener?.('parameterStateChanged', changed);
-      documents.close();
-    };
-  }, []);
-
-  const command = async (name: string, ...args: unknown[]) => {
-    try {
-      const reply = await invoke(name, ...args);
-      if (reply?.status && reply.status !== 'accepted')
-        throw new Error(`Host rejected ${name}: ${reply.status}`);
-      if (name !== 'endGesture') setError('');
-      if (name === 'setParameter')
-        acceptState(await invoke('getParameterState') as HostState);
-      return reply;
-    } catch (reason) {
-      setError(String(reason));
-      if (name === 'setParameter')
-        void invoke('getParameterState').then(next => acceptState(next as HostState))
-          .catch(() => {});
-      throw reason;
-    }
-  };
-  return { state, document, error, command, reportError: (reason: unknown) => setError(String(reason)) };
-}
+const useHost = createHostParameters(React);
 
 function OutputBusPanel({ document, reportError }: {
   document: PreparedDocument; reportError: (reason: unknown) => void;
@@ -133,7 +78,7 @@ function OutputBusPanel({ document, reportError }: {
   const generation = document.generation;
   const [display, setDisplay] = useState(() => meterView(null));
   useEffect(() => {
-    const transport = createMeterTransport(invoke, (packet: any) => setDisplay(meterView(packet)));
+    const transport = createMeterTransport(invoke, (packet: any) => setDisplay((current: any) => meterView(packet, current)));
     const visible = () => void transport.setVisible(!window.document.hidden).catch(reportError);
     visible();
     void transport.start(generation).catch(reportError);
@@ -161,12 +106,11 @@ function PreparedWaveform({ document, sourceId, regionId, reportError, controls 
   const [width, setWidth] = useState(1);
   useEffect(() => {
     setStatus(null);
-    const transport = createWaveformTransport(invoke, (packet: { status: WaveStatus }) =>
-      setStatus(packet.status));
+    const transport = createPreparedPolling((onState: (packet: any) => void) => createWaveformTransport(invoke, onState),
+      (packet: { status: WaveStatus }) => setStatus(packet.status), reportError, window);
     void transport.select({ sourceId, regionId, channel: 0, buckets: 512,
       generation: document.generation }).catch(reportError);
-    const timer = window.setInterval(() => void transport.poll().catch(reportError), 1000 / 30);
-    return () => { window.clearInterval(timer); void transport.close().catch(reportError); };
+    return () => { void transport.close().catch(reportError); };
   }, [document.generation, sourceId, regionId]);
   useEffect(() => {
     const element = canvas.current;
@@ -212,21 +156,21 @@ function PreparedSpectrum({ document, sourceId, regionId, reportError, controls 
   const [attempt, setAttempt] = useState(0);
   const height = 128;
   useEffect(() => {
-    let transport: ReturnType<typeof createSpectrumTransport> | null = null;
+    let transport: ReturnType<typeof createPreparedPolling> | null = null;
     const visible = () => {
       if (window.document.hidden) {
-        void transport?.close(); transport = null; setStatus(null);
+        void transport?.close().catch(reportError); transport = null; setStatus(null);
       } else if (!transport) {
-        transport = createSpectrumTransport(invoke, (packet: { status: WaveStatus }) => setStatus(packet.status));
+        transport = createPreparedPolling((onState: (packet: any) => void) => createSpectrumTransport(invoke, onState),
+          (packet: { status: WaveStatus }) => setStatus(packet.status), reportError, window);
         void transport.select({ sourceId, regionId, channel: 0, generation: document.generation }).catch(reportError);
       }
     };
     setStatus(null); visible();
-    const timer = window.setInterval(() => void transport?.poll().catch(reportError), 1000 / 30);
     window.document.addEventListener('visibilitychange', visible);
     return () => {
-      window.clearInterval(timer); window.document.removeEventListener('visibilitychange', visible);
-      void transport?.close(); transport = null;
+      window.document.removeEventListener('visibilitychange', visible);
+      void transport?.close().catch(reportError); transport = null;
     };
   }, [document.generation, sourceId, regionId, attempt]);
   useEffect(() => {
@@ -363,7 +307,7 @@ function LiveAnalysisPanel({ packet, unavailable, mode, controls }: {
 }
 
 function SamplerApp() {
-  const { state, document, error, command, reportError } = useHost();
+  const { state, document, error, command, reportError } = useHost(window.__JUCE__?.backend);
   const pads = useMemo(() => preparedPads(document), [document]);
   const [sampleDisplay, setSampleDisplay] = useState<'wave' | 'spectral' | 'scope' | 'live-spectrum'>('wave');
   const current = state && document && state.generation === document.generation;

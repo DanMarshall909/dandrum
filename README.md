@@ -23,6 +23,8 @@ Native launches preserve the configured CMake build type. With a multi-config ge
 
 `react303` and `react-sampler` embed React in JUCE and use the Rust engine. They use an isolated `build/demo-webview/` configuration so an existing native-only build keeps its settings. `tb303-web` and `sampler-web` are browser panel previews that require the JUCE host bridge for audio. `trigger` uses a silent mock engine; `instruments` is a visual design prototype. Browser demos stay in the foreground and print their URL; open that URL in your browser. Ctrl+C stops the demo. Existing dev servers keep running; pass another `--port` if necessary.
 
+See the [React editor performance measurements](docs/resource-measurements/2026-10-07-react-ui-performance/README.md) for CPU, memory and control latency before and after optimization, including platform and verification limits.
+
 Maintain demo registrations in [scripts/demos.json](scripts/demos.json) whenever a demo is added, renamed, moved or removed. Update launch tests and relevant documentation in the same change. CTest's `demo-launcher-inventory` check rejects unregistered standalone JUCE targets, incorrect native artifact paths and unregistered local React dev packages. Run `python3 -m unittest discover -s tests/python -p 'test_demo_*.py'` for focused launcher checks.
 
 ## First Sound

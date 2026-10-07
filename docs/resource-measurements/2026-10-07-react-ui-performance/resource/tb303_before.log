@@ -1,0 +1,12 @@
+PHASE engine_only dandrum.tb303-acid unscaled=0
+libEGL warning: DRI3 error: Could not get DRI3 device
+libEGL warning: Activate DRI3 at Xorg or build mesa with DRI2
+libEGL warning: DRI3 error: Could not get DRI3 device
+libEGL warning: Activate DRI3 at Xorg or build mesa with DRI2
+PHASE loading dandrum.tb303-acid unscaled=0
+PHASE editor_idle dandrum.tb303-acid unscaled=0
+PHASE editor_active dandrum.tb303-acid unscaled=0
+EXERCISE {"events":105,"writes":19,"rejected":0,"closed":true}
+PHASE settling dandrum.tb303-acid unscaled=0
+PHASE editor_closed dandrum.tb303-acid unscaled=0
+RESULT {"blocks":16747,"signal_blocks":4182}

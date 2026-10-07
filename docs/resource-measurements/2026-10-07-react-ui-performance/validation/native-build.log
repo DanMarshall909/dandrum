@@ -1,0 +1,134 @@
+[  0%] Generating juce_binarydata_dandrum-sampler-react-resources/JuceLibraryCode/BinaryData1.cpp, juce_binarydata_dandrum-sampler-react-resources/JuceLibraryCode/BinaryData2.cpp, juce_binarydata_dandrum-sampler-react-resources/JuceLibraryCode/BinaryData3.cpp, juce_binarydata_dandrum-sampler-react-resources/JuceLibraryCode/SamplerReactBinaryData.h
+[  5%] Built target dandrum-engine-rust
+[ 11%] Generating juce_binarydata_dandrum-tb303-instrument-resources/JuceLibraryCode/BinaryData1.cpp, juce_binarydata_dandrum-tb303-instrument-resources/JuceLibraryCode/BinaryData2.cpp, juce_binarydata_dandrum-tb303-instrument-resources/JuceLibraryCode/Tb303InstrumentBinaryData.h
+[ 11%] Generating juce_binarydata_dandrum-tb303-instrument-resources/JuceLibraryCode/BinaryData1.cpp, juce_binarydata_dandrum-tb303-instrument-resources/JuceLibraryCode/BinaryData2.cpp, juce_binarydata_dandrum-tb303-instrument-resources/JuceLibraryCode/Tb303InstrumentBinaryData.h
+[ 11%] Built target dandrum-tb303-instrument-resources
+[ 11%] Built target juce_linux_subprocess_helper
+[ 17%] Generating juce_binarydata_dandrum-tb303-react-resources/JuceLibraryCode/BinaryData1.cpp, juce_binarydata_dandrum-tb303-react-resources/JuceLibraryCode/BinaryData2.cpp, juce_binarydata_dandrum-tb303-react-resources/JuceLibraryCode/BinaryData3.cpp, juce_binarydata_dandrum-tb303-react-resources/JuceLibraryCode/Tb303ReactBinaryData.h
+[ 17%] Building CXX object CMakeFiles/dandrum-sampler-react-resources.dir/juce_binarydata_dandrum-sampler-react-resources/JuceLibraryCode/BinaryData1.cpp.o
+[ 17%] Building CXX object CMakeFiles/dandrum-sampler-react-resources.dir/juce_binarydata_dandrum-sampler-react-resources/JuceLibraryCode/BinaryData2.cpp.o
+[ 17%] Building CXX object CMakeFiles/dandrum-tb303-react-resources.dir/juce_binarydata_dandrum-tb303-react-resources/JuceLibraryCode/BinaryData1.cpp.o
+[ 17%] Building CXX object CMakeFiles/dandrum-tb303-react-resources.dir/juce_binarydata_dandrum-tb303-react-resources/JuceLibraryCode/BinaryData2.cpp.o
+[ 23%] Building CXX object CMakeFiles/dandrum-sampler-react-resources.dir/juce_binarydata_dandrum-sampler-react-resources/JuceLibraryCode/BinaryData3.cpp.o
+[ 23%] Building CXX object CMakeFiles/dandrum-tb303-react-resources.dir/juce_binarydata_dandrum-tb303-react-resources/JuceLibraryCode/BinaryData3.cpp.o
+[ 23%] Linking CXX static library libdandrum-sampler-react-resources.a
+[ 23%] Built target dandrum-sampler-react-resources
+[ 29%] Linking CXX static library libdandrum-tb303-react-resources.a
+[ 29%] Built target dandrum-tb303-react-resources
+[ 29%] Building CXX object CMakeFiles/dandrum-plugin.dir/src/juce-plugin/PluginEditor.cpp.o
+[ 29%] Linking CXX static library dandrum-plugin_artefacts/libDandrum_SharedCode.a
+[ 76%] Built target dandrum-plugin
+[ 76%] Linking CXX executable dandrum-plugin-editor-bridge-test
+[100%] Built target dandrum-plugin-editor-bridge-test
+[  0%] Generating juce_binarydata_dandrum-sampler-resources/JuceLibraryCode/BinaryData1.cpp, juce_binarydata_dandrum-sampler-resources/JuceLibraryCode/BinaryData2.cpp, juce_binarydata_dandrum-sampler-resources/JuceLibraryCode/SamplerBinaryData.h
+[  3%] Built target dandrum-engine-rust
+[  7%] Built target dandrum-sampler-react-resources
+[ 11%] Generating juce_binarydata_dandrum-tb303-instrument-resources/JuceLibraryCode/BinaryData1.cpp, juce_binarydata_dandrum-tb303-instrument-resources/JuceLibraryCode/BinaryData2.cpp, juce_binarydata_dandrum-tb303-instrument-resources/JuceLibraryCode/Tb303InstrumentBinaryData.h
+[ 11%] Generating juce_binarydata_dandrum-sampler-resources/JuceLibraryCode/BinaryData1.cpp, juce_binarydata_dandrum-sampler-resources/JuceLibraryCode/BinaryData2.cpp, juce_binarydata_dandrum-sampler-resources/JuceLibraryCode/SamplerBinaryData.h
+[ 11%] Generating juce_binarydata_dandrum-tb303-instrument-resources/JuceLibraryCode/BinaryData1.cpp, juce_binarydata_dandrum-tb303-instrument-resources/JuceLibraryCode/BinaryData2.cpp, juce_binarydata_dandrum-tb303-instrument-resources/JuceLibraryCode/Tb303InstrumentBinaryData.h
+[ 11%] Built target dandrum-tb303-instrument-resources
+[ 15%] Built target dandrum-sampler-resources
+[ 15%] Built target juce_linux_subprocess_helper
+[ 23%] Built target dandrum-tb303-react-resources
+[ 53%] Built target dandrum-plugin
+[ 53%] Building CXX object CMakeFiles/dandrum-sampler-plugin.dir/src/juce-plugin/PluginEditor.cpp.o
+[ 53%] Linking CXX static library "dandrum-sampler-plugin_artefacts/libDandrum Sampler_SharedCode.a"
+[ 84%] Built target dandrum-sampler-plugin
+[ 84%] Linking CXX executable dandrum-sampler-plugin-host-test
+[100%] Built target dandrum-sampler-plugin-host-test
+[  6%] Built target dandrum-sampler-react-resources
+[ 13%] Built target dandrum-engine-rust
+[ 20%] Generating juce_binarydata_dandrum-tb303-instrument-resources/JuceLibraryCode/BinaryData1.cpp, juce_binarydata_dandrum-tb303-instrument-resources/JuceLibraryCode/BinaryData2.cpp, juce_binarydata_dandrum-tb303-instrument-resources/JuceLibraryCode/Tb303InstrumentBinaryData.h
+[ 20%] Built target juce_linux_subprocess_helper
+[ 33%] Built target dandrum-tb303-react-resources
+[ 33%] Generating juce_binarydata_dandrum-tb303-instrument-resources/JuceLibraryCode/BinaryData1.cpp, juce_binarydata_dandrum-tb303-instrument-resources/JuceLibraryCode/BinaryData2.cpp, juce_binarydata_dandrum-tb303-instrument-resources/JuceLibraryCode/Tb303InstrumentBinaryData.h
+[ 33%] Built target dandrum-tb303-instrument-resources
+[ 86%] Built target dandrum-plugin
+[ 86%] Linking CXX executable dandrum-plugin_artefacts/Standalone/Dandrum
+[100%] Built target dandrum-plugin_Standalone
+[  0%] Generating juce_binarydata_dandrum-sampler-resources/JuceLibraryCode/BinaryData1.cpp, juce_binarydata_dandrum-sampler-resources/JuceLibraryCode/BinaryData2.cpp, juce_binarydata_dandrum-sampler-resources/JuceLibraryCode/SamplerBinaryData.h
+[  4%] Built target dandrum-engine-rust
+[  4%] Generating juce_binarydata_dandrum-sampler-resources/JuceLibraryCode/BinaryData1.cpp, juce_binarydata_dandrum-sampler-resources/JuceLibraryCode/BinaryData2.cpp, juce_binarydata_dandrum-sampler-resources/JuceLibraryCode/SamplerBinaryData.h
+[  8%] Built target dandrum-sampler-react-resources
+[ 12%] Generating juce_binarydata_dandrum-tb303-instrument-resources/JuceLibraryCode/BinaryData1.cpp, juce_binarydata_dandrum-tb303-instrument-resources/JuceLibraryCode/BinaryData2.cpp, juce_binarydata_dandrum-tb303-instrument-resources/JuceLibraryCode/Tb303InstrumentBinaryData.h
+[ 16%] Built target dandrum-sampler-resources
+[ 16%] Generating juce_binarydata_dandrum-tb303-instrument-resources/JuceLibraryCode/BinaryData1.cpp, juce_binarydata_dandrum-tb303-instrument-resources/JuceLibraryCode/BinaryData2.cpp, juce_binarydata_dandrum-tb303-instrument-resources/JuceLibraryCode/Tb303InstrumentBinaryData.h
+[ 16%] Built target dandrum-tb303-instrument-resources
+[ 16%] Built target juce_linux_subprocess_helper
+[ 25%] Built target dandrum-tb303-react-resources
+[ 58%] Built target dandrum-plugin
+[ 91%] Built target dandrum-sampler-plugin
+[ 91%] Linking CXX executable "dandrum-sampler-plugin_artefacts/Standalone/Dandrum Sampler"
+[100%] Built target dandrum-sampler-plugin_Standalone
+[  6%] Built target dandrum-sampler-react-resources
+[ 12%] Built target dandrum-engine-rust
+[ 18%] Generating juce_binarydata_dandrum-tb303-instrument-resources/JuceLibraryCode/BinaryData1.cpp, juce_binarydata_dandrum-tb303-instrument-resources/JuceLibraryCode/BinaryData2.cpp, juce_binarydata_dandrum-tb303-instrument-resources/JuceLibraryCode/Tb303InstrumentBinaryData.h
+[ 18%] Built target juce_linux_subprocess_helper
+[ 18%] Generating juce_binarydata_dandrum-tb303-instrument-resources/JuceLibraryCode/BinaryData1.cpp, juce_binarydata_dandrum-tb303-instrument-resources/JuceLibraryCode/BinaryData2.cpp, juce_binarydata_dandrum-tb303-instrument-resources/JuceLibraryCode/Tb303InstrumentBinaryData.h
+[ 31%] Built target dandrum-tb303-react-resources
+[ 31%] Built target dandrum-tb303-instrument-resources
+[ 37%] Built target juce_vst3_helper
+[ 87%] Built target dandrum-plugin
+[ 87%] Linking CXX shared module dandrum-plugin_artefacts/VST3/Dandrum.vst3/Contents/x86_64-linux/Dandrum.so
+removing moduleinfo.json
+creating /tmp/dandrum-frontend-performance/build/demo-webview/dandrum-plugin_artefacts//VST3/Dandrum.vst3/Contents/Resources/moduleinfo.json
+[100%] Built target dandrum-plugin_VST3
+[  0%] Generating juce_binarydata_dandrum-sampler-resources/JuceLibraryCode/BinaryData1.cpp, juce_binarydata_dandrum-sampler-resources/JuceLibraryCode/BinaryData2.cpp, juce_binarydata_dandrum-sampler-resources/JuceLibraryCode/SamplerBinaryData.h
+[  3%] Built target dandrum-engine-rust
+[  7%] Built target dandrum-sampler-react-resources
+[ 11%] Generating juce_binarydata_dandrum-tb303-instrument-resources/JuceLibraryCode/BinaryData1.cpp, juce_binarydata_dandrum-tb303-instrument-resources/JuceLibraryCode/BinaryData2.cpp, juce_binarydata_dandrum-tb303-instrument-resources/JuceLibraryCode/Tb303InstrumentBinaryData.h
+[ 11%] Generating juce_binarydata_dandrum-sampler-resources/JuceLibraryCode/BinaryData1.cpp, juce_binarydata_dandrum-sampler-resources/JuceLibraryCode/BinaryData2.cpp, juce_binarydata_dandrum-sampler-resources/JuceLibraryCode/SamplerBinaryData.h
+[ 11%] Generating juce_binarydata_dandrum-tb303-instrument-resources/JuceLibraryCode/BinaryData1.cpp, juce_binarydata_dandrum-tb303-instrument-resources/JuceLibraryCode/BinaryData2.cpp, juce_binarydata_dandrum-tb303-instrument-resources/JuceLibraryCode/Tb303InstrumentBinaryData.h
+[ 11%] Built target dandrum-tb303-instrument-resources
+[ 15%] Built target dandrum-sampler-resources
+[ 15%] Built target juce_linux_subprocess_helper
+[ 23%] Built target dandrum-tb303-react-resources
+[ 26%] Built target juce_vst3_helper
+[ 57%] Built target dandrum-plugin
+[ 88%] Built target dandrum-sampler-plugin
+[ 92%] Linking CXX shared module "dandrum-sampler-plugin_artefacts/VST3/Dandrum Sampler.vst3/Contents/x86_64-linux/Dandrum Sampler.so"
+removing moduleinfo.json
+creating /tmp/dandrum-frontend-performance/build/demo-webview/dandrum-sampler-plugin_artefacts//VST3/Dandrum Sampler.vst3/Contents/Resources/moduleinfo.json
+[100%] Built target dandrum-sampler-plugin_VST3
+[  0%] Generating juce_binarydata_dandrum-sampler-resources/JuceLibraryCode/BinaryData1.cpp, juce_binarydata_dandrum-sampler-resources/JuceLibraryCode/BinaryData2.cpp, juce_binarydata_dandrum-sampler-resources/JuceLibraryCode/SamplerBinaryData.h
+[  3%] Built target dandrum-engine-rust
+[  7%] Built target dandrum-sampler-react-resources
+[ 11%] Generating juce_binarydata_dandrum-tb303-instrument-resources/JuceLibraryCode/BinaryData1.cpp, juce_binarydata_dandrum-tb303-instrument-resources/JuceLibraryCode/BinaryData2.cpp, juce_binarydata_dandrum-tb303-instrument-resources/JuceLibraryCode/Tb303InstrumentBinaryData.h
+[ 11%] Generating juce_binarydata_dandrum-sampler-resources/JuceLibraryCode/BinaryData1.cpp, juce_binarydata_dandrum-sampler-resources/JuceLibraryCode/BinaryData2.cpp, juce_binarydata_dandrum-sampler-resources/JuceLibraryCode/SamplerBinaryData.h
+[ 11%] Generating juce_binarydata_dandrum-tb303-instrument-resources/JuceLibraryCode/BinaryData1.cpp, juce_binarydata_dandrum-tb303-instrument-resources/JuceLibraryCode/BinaryData2.cpp, juce_binarydata_dandrum-tb303-instrument-resources/JuceLibraryCode/Tb303InstrumentBinaryData.h
+[ 11%] Built target dandrum-tb303-instrument-resources
+[ 15%] Built target dandrum-sampler-resources
+[ 15%] Built target juce_linux_subprocess_helper
+[ 23%] Built target dandrum-tb303-react-resources
+[ 53%] Built target dandrum-plugin
+[ 84%] Built target dandrum-sampler-plugin
+[ 84%] Linking CXX executable dandrum-plugin-knob-parity-test
+[100%] Built target dandrum-plugin-knob-parity-test
+[  0%] Generating juce_binarydata_dandrum-sampler-resources/JuceLibraryCode/BinaryData1.cpp, juce_binarydata_dandrum-sampler-resources/JuceLibraryCode/BinaryData2.cpp, juce_binarydata_dandrum-sampler-resources/JuceLibraryCode/SamplerBinaryData.h
+[  3%] Built target dandrum-engine-rust
+[  7%] Built target dandrum-sampler-react-resources
+[ 11%] Generating juce_binarydata_dandrum-tb303-instrument-resources/JuceLibraryCode/BinaryData1.cpp, juce_binarydata_dandrum-tb303-instrument-resources/JuceLibraryCode/BinaryData2.cpp, juce_binarydata_dandrum-tb303-instrument-resources/JuceLibraryCode/Tb303InstrumentBinaryData.h
+[ 11%] Generating juce_binarydata_dandrum-sampler-resources/JuceLibraryCode/BinaryData1.cpp, juce_binarydata_dandrum-sampler-resources/JuceLibraryCode/BinaryData2.cpp, juce_binarydata_dandrum-sampler-resources/JuceLibraryCode/SamplerBinaryData.h
+[ 11%] Generating juce_binarydata_dandrum-tb303-instrument-resources/JuceLibraryCode/BinaryData1.cpp, juce_binarydata_dandrum-tb303-instrument-resources/JuceLibraryCode/BinaryData2.cpp, juce_binarydata_dandrum-tb303-instrument-resources/JuceLibraryCode/Tb303InstrumentBinaryData.h
+[ 11%] Built target dandrum-tb303-instrument-resources
+[ 15%] Built target dandrum-sampler-resources
+[ 15%] Built target juce_linux_subprocess_helper
+[ 23%] Built target dandrum-tb303-react-resources
+[ 53%] Built target dandrum-plugin
+[ 84%] Built target dandrum-sampler-plugin
+[ 84%] Linking CXX executable dandrum-plugin-waveform-parity-test
+[100%] Built target dandrum-plugin-waveform-parity-test
+[  0%] Generating juce_binarydata_dandrum-sampler-resources/JuceLibraryCode/BinaryData1.cpp, juce_binarydata_dandrum-sampler-resources/JuceLibraryCode/BinaryData2.cpp, juce_binarydata_dandrum-sampler-resources/JuceLibraryCode/SamplerBinaryData.h
+[  3%] Built target dandrum-engine-rust
+[  7%] Built target dandrum-sampler-react-resources
+[ 11%] Generating juce_binarydata_dandrum-tb303-instrument-resources/JuceLibraryCode/BinaryData1.cpp, juce_binarydata_dandrum-tb303-instrument-resources/JuceLibraryCode/BinaryData2.cpp, juce_binarydata_dandrum-tb303-instrument-resources/JuceLibraryCode/Tb303InstrumentBinaryData.h
+[ 11%] Generating juce_binarydata_dandrum-sampler-resources/JuceLibraryCode/BinaryData1.cpp, juce_binarydata_dandrum-sampler-resources/JuceLibraryCode/BinaryData2.cpp, juce_binarydata_dandrum-sampler-resources/JuceLibraryCode/SamplerBinaryData.h
+[ 11%] Generating juce_binarydata_dandrum-tb303-instrument-resources/JuceLibraryCode/BinaryData1.cpp, juce_binarydata_dandrum-tb303-instrument-resources/JuceLibraryCode/BinaryData2.cpp, juce_binarydata_dandrum-tb303-instrument-resources/JuceLibraryCode/Tb303InstrumentBinaryData.h
+[ 14%] Built target dandrum-sampler-resources
+[ 14%] Built target dandrum-tb303-instrument-resources
+[ 14%] Built target juce_linux_subprocess_helper
+[ 22%] Built target dandrum-tb303-react-resources
+[ 51%] Built target dandrum-plugin
+[ 81%] Built target dandrum-sampler-plugin
+[ 85%] Linking CXX executable dandrum-plugin-spectral-parity-test
+[100%] Built target dandrum-plugin-spectral-parity-test

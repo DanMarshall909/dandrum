@@ -17,13 +17,4 @@ export const preparedCapabilities = Object.freeze({
   noteAudition: true,
 });
 
-export function acceptState(current, incoming, lastAdmittedSequence = 0) {
-  if (!incoming || !Number.isInteger(incoming.generation)
-      || !Number.isInteger(incoming.sequence) || !Array.isArray(incoming.parameters))
-    return current;
-  if (current && (incoming.generation < current.generation
-      || (incoming.generation === current.generation
-          && incoming.sequence < Math.max(current.sequence, lastAdmittedSequence))))
-    return current;
-  return incoming;
-}
+export { acceptParameterState as acceptState } from '../../shared/parameter-controller.mjs';

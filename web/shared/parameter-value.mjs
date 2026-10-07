@@ -6,7 +6,7 @@ export function admittedParameter(state, document, id) {
   const descriptor = document.parameters?.find(parameter => parameter.id === id);
   const live = state.parameters?.find(parameter => parameter.id === id);
   if (!descriptor || !live || actualValue(live.value, descriptor) === null) return null;
-  return { ...descriptor, value: live.value, generation: state.generation };
+  return { ...descriptor, value: live.value, generation: state.generation, sequence: state.sequence };
 }
 
 function validRange(parameter) {

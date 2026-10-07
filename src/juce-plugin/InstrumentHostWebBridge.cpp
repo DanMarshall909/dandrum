@@ -705,6 +705,7 @@ bool InstrumentHostWebBridge::publishParameterUpdates (juce::WebBrowserComponent
     if (generation != lastSeenParameterSurfaceGeneration)
     {
         pendingParameterPublication = 0;
+        lastPublishedParameterState.reset();
         processor.cancelPreparedWaveformSession (sessionId);
         processor.cancelPreparedSpectrumSession (sessionId);
         processor.unsubscribeMeter (sessionId);
@@ -715,11 +716,20 @@ bool InstrumentHostWebBridge::publishParameterUpdates (juce::WebBrowserComponent
         return true;
     }
 
-    if (pendingParameterPublication != 0 || !browser.isShowing())
+    if (!browser.isShowing())
+    {
+        lastPublishedParameterState.reset();
+        return false;
+    }
+    if (pendingParameterPublication != 0)
+        return false;
+    const auto state = processor.getUiParameterState();
+    if (state.generation != generation || (lastPublishedParameterState && *lastPublishedParameterState == state))
         return false;
     pendingParameterPublication = nextParameterPublication.fetch_add (1, std::memory_order_relaxed) + 1;
-    parameterPublicationGeneration = generation;
-    browser.emitEventIfBrowserIsVisible ("parameterStateChanged", parameterStateForWeb());
+    parameterPublicationGeneration = state.generation;
+    lastPublishedParameterState = state;
+    browser.emitEventIfBrowserIsVisible ("parameterStateChanged", parameterStateForWeb (state));
     return false;
 }
 
@@ -1264,7 +1274,11 @@ juce::var InstrumentHostWebBridge::parameterSnapshotForWeb() const
 
 juce::var InstrumentHostWebBridge::parameterStateForWeb() const
 {
-    const auto state = processor.getUiParameterState();
+    return parameterStateForWeb (processor.getUiParameterState());
+}
+
+juce::var InstrumentHostWebBridge::parameterStateForWeb (const InstrumentUiParameterState& state) const
+{
     auto result = std::make_unique<juce::DynamicObject>();
     result->setProperty ("generation", static_cast<juce::int64> (state.generation));
     result->setProperty ("sequence", static_cast<juce::int64> (state.admittedCommandSequence));

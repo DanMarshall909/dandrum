@@ -1,0 +1,321 @@
+TAP version 13
+# Subtest: accepted drag remains visible on release while reads stall, then automation stays authoritative
+ok 1 - accepted drag remains visible on release while reads stall, then automation stays authoritative
+  ---
+  duration_ms: 50.960949
+  type: 'test'
+  ...
+# Subtest: rejected drag restores host value and reports the rejection without waiting for a read
+ok 2 - rejected drag restores host value and reports the rejection without waiting for a read
+  ---
+  duration_ms: 12.913076
+  type: 'test'
+  ...
+# Subtest: automation observed while dragging reconciles on release
+ok 3 - automation observed while dragging reconciles on release
+  ---
+  duration_ms: 13.628322
+  type: 'test'
+  ...
+# Subtest: later keyboard interaction retains its display during previous gesture closure
+ok 4 - later keyboard interaction retains its display during previous gesture closure
+  ---
+  duration_ms: 11.274607
+  type: 'test'
+  ...
+# Subtest: an interim snapshot cannot roll back a later accepted move on release
+ok 5 - an interim snapshot cannot roll back a later accepted move on release
+  ---
+  duration_ms: 11.930223
+  type: 'test'
+  ...
+# Subtest: cancelled, unchanged and invalid typed edits preserve an accepted drag while reads stall
+ok 6 - cancelled, unchanged and invalid typed edits preserve an accepted drag while reads stall
+  ---
+  duration_ms: 23.937595
+  type: 'test'
+  ...
+# Subtest: an accepted default reset survives opening and closing an unchanged value editor
+ok 7 - an accepted default reset survives opening and closing an unchanged value editor
+  ---
+  duration_ms: 11.659324
+  type: 'test'
+  ...
+# Subtest: a rejected earlier closure cannot restore the display owned by a later drag
+ok 8 - a rejected earlier closure cannot restore the display owned by a later drag
+  ---
+  duration_ms: 9.617408
+  type: 'test'
+  ...
+# Subtest: queued older closure rejection cannot reclaim a later active drag
+not ok 9 - queued older closure rejection cannot reclaim a later active drag
+  ---
+  duration_ms: 13.074065
+  type: 'test'
+  location: '/tmp/dandrum-frontend-performance/web/sampler/src/host-knob-admission.test.mjs:136:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    queued retired rejection stole the later drag display
+
+    0.75 !== 0.85
+
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 0.85
+  actual: 0.75
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (file:///tmp/dandrum-frontend-performance/web/sampler/src/host-knob-admission.test.mjs:145:10)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: pointer drag admits one gesture and retains the latest value while the host stalls
+ok 10 - pointer drag admits one gesture and retains the latest value while the host stalls
+  ---
+  duration_ms: 5.174997
+  type: 'test'
+  ...
+# Subtest: keyboard and typed values each get host gesture boundaries
+ok 11 - keyboard and typed values each get host gesture boundaries
+  ---
+  duration_ms: 0.551576
+  type: 'test'
+  ...
+# Subtest: non-pointer edits retain only the latest pending value under backpressure
+ok 12 - non-pointer edits retain only the latest pending value under backpressure
+  ---
+  duration_ms: 1.108832
+  type: 'test'
+  ...
+# Subtest: a rejected value reports failure and still closes its gesture
+ok 13 - a rejected value reports failure and still closes its gesture
+  ---
+  duration_ms: 0.315098
+  type: 'test'
+  ...
+# Subtest: flush observes an active pointer write
+ok 14 - flush observes an active pointer write
+  ---
+  duration_ms: 1.44867
+  type: 'test'
+  ...
+# Subtest: a second drag waits for the closing gesture and keeps its own final value
+ok 15 - a second drag waits for the closing gesture and keeps its own final value
+  ---
+  duration_ms: 0.578256
+  type: 'test'
+  ...
+# Subtest: typed entry during pointer closure waits for its own gesture boundary
+ok 16 - typed entry during pointer closure waits for its own gesture boundary
+  ---
+  duration_ms: 0.987514
+  type: 'test'
+  ...
+# Subtest: keyboard slider change during pointer closure retains its own host gesture
+ok 17 - keyboard slider change during pointer closure retains its own host gesture
+  ---
+  duration_ms: 0.529707
+  type: 'test'
+  ...
+# Subtest: queued and coalesced gestures retain origin ownership before prior writes complete
+not ok 18 - queued and coalesced gestures retain origin ownership before prior writes complete
+  ---
+  duration_ms: 2.036887
+  type: 'test'
+  location: '/tmp/dandrum-frontend-performance/web/sampler/src/parameter-gesture.test.mjs:169:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    Expected values to be strictly deep-equal:
+    + actual - expected
+
+      [
+        [
+          'beginGesture',
+          undefined,
+          2,
+    -     1
+        ],
+        [
+          'setParameter',
+          0.25,
+          2,
+    -     2
+        ],
+        [
+          'endGesture',
+          undefined,
+          2,
+    -     3
+        ],
+        [
+          'beginGesture',
+          undefined,
+          2,
+    -     4
+        ],
+        [
+          'setParameter',
+          0.9,
+          2,
+    -     6
+        ],
+        [
+          'endGesture',
+          undefined,
+          2,
+    -     7
+        ],
+        [
+          'beginGesture',
+          undefined,
+          2,
+    -     8
+        ],
+        [
+          'setParameter',
+          0.2,
+          2,
+    -     8
+        ],
+        [
+          'endGesture',
+          undefined,
+          2,
+    -     8
+        ]
+      ]
+
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+    0:
+      0: 'beginGesture'
+      2: 2
+      3: 1
+    1:
+      0: 'setParameter'
+      1: 0.25
+      2: 2
+      3: 2
+    2:
+      0: 'endGesture'
+      2: 2
+      3: 3
+    3:
+      0: 'beginGesture'
+      2: 2
+      3: 4
+    4:
+      0: 'setParameter'
+      1: 0.9
+      2: 2
+      3: 6
+    5:
+      0: 'endGesture'
+      2: 2
+      3: 7
+    6:
+      0: 'beginGesture'
+      2: 2
+      3: 8
+    7:
+      0: 'setParameter'
+      1: 0.2
+      2: 2
+      3: 8
+    8:
+      0: 'endGesture'
+      2: 2
+      3: 8
+  actual:
+    0:
+      0: 'beginGesture'
+      2: 2
+    1:
+      0: 'setParameter'
+      1: 0.25
+      2: 2
+    2:
+      0: 'endGesture'
+      2: 2
+    3:
+      0: 'beginGesture'
+      2: 2
+    4:
+      0: 'setParameter'
+      1: 0.9
+      2: 2
+    5:
+      0: 'endGesture'
+      2: 2
+    6:
+      0: 'beginGesture'
+      2: 2
+    7:
+      0: 'setParameter'
+      1: 0.2
+      2: 2
+    8:
+      0: 'endGesture'
+      2: 2
+  operator: 'deepStrictEqual'
+  stack: |-
+    TestContext.<anonymous> (file:///tmp/dandrum-frontend-performance/web/sampler/src/parameter-gesture.test.mjs:184:10)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: only accepted valid value writes advance knob admission
+ok 19 - only accepted valid value writes advance knob admission
+  ---
+  duration_ms: 1.132083
+  type: 'test'
+  ...
+# Subtest: snapshots cover the latest admitted write before reconciling its display
+ok 20 - snapshots cover the latest admitted write before reconciling its display
+  ---
+  duration_ms: 0.148739
+  type: 'test'
+  ...
+# Subtest: value replies retain admission and late failures retain their submitting interaction
+ok 21 - value replies retain admission and late failures retain their submitting interaction
+  ---
+  duration_ms: 1.159672
+  type: 'test'
+  ...
+# Subtest: queued command failures retain their originating owner without passing it to the host
+not ok 22 - queued command failures retain their originating owner without passing it to the host
+  ---
+  duration_ms: 0.925884
+  type: 'test'
+  location: '/tmp/dandrum-frontend-performance/web/shared/knob-reconciliation.test.mjs:46:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    Expected values to be strictly deep-equal:
+    + actual - expected
+
+      [
+    +   9
+    -   3
+      ]
+
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+    0: 3
+  actual:
+    0: 9
+  operator: 'deepStrictEqual'
+  stack: |-
+    TestContext.<anonymous> (file:///tmp/dandrum-frontend-performance/web/shared/knob-reconciliation.test.mjs:51:10)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+1..22
+# tests 22
+# suites 0
+# pass 19
+# fail 3
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 542.050706

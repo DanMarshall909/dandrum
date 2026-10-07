@@ -88,3 +88,18 @@ test('a renderer error still acknowledges the consumed packet', async () => {
   assert.deepEqual(calls.at(-1), ['ackMeterPacket', '57', 3]);
   assert.equal(transport.inFlight(), false);
 });
+
+test('identical meter displays still acknowledge every packet sequence', async () => {
+  const { meterView } = await import('./meter-view.mjs');
+  let display = meterView(null), sequence = 0; const acknowledgements = [], displays = [];
+  const transport = createMeterTransport(async (name, ...args) => {
+    if (name === 'getMeterPacket') return { sequence: String(++sequence), generation: 7,
+      display_valid: true, display_peak: [0.5, 0.25] };
+    if (name === 'ackMeterPacket') acknowledgements.push(args);
+    return true;
+  }, packet => { display = meterView(packet, display); displays.push(display); });
+  await transport.start(7); await transport.tick(); await transport.tick();
+  assert.equal(displays[0], displays[1]);
+  assert.deepEqual(acknowledgements, [['1', 7], ['2', 7]]);
+  await transport.setVisible(false);
+});

@@ -1,0 +1,100 @@
+TAP version 13
+# Subtest: accepted drag remains visible on release while reads stall, then automation stays authoritative
+ok 1 - accepted drag remains visible on release while reads stall, then automation stays authoritative
+  ---
+  duration_ms: 46.575788
+  type: 'test'
+  ...
+# Subtest: rejected drag restores host value and reports the rejection without waiting for a read
+ok 2 - rejected drag restores host value and reports the rejection without waiting for a read
+  ---
+  duration_ms: 14.79506
+  type: 'test'
+  ...
+# Subtest: automation observed while dragging reconciles on release
+ok 3 - automation observed while dragging reconciles on release
+  ---
+  duration_ms: 8.971686
+  type: 'test'
+  ...
+# Subtest: later keyboard interaction retains its display during previous gesture closure
+not ok 4 - later keyboard interaction retains its display during previous gesture closure
+  ---
+  duration_ms: 10.161088
+  type: 'test'
+  location: '/tmp/dandrum-frontend-performance/web/sampler/src/host-knob-admission.test.mjs:74:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    an older snapshot stole the queued keyboard display
+
+    0.75 !== 0.8
+
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 0.8
+  actual: 0.75
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (file:///tmp/dandrum-frontend-performance/web/sampler/src/host-knob-admission.test.mjs:79:37)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: an interim snapshot cannot roll back a later accepted move on release
+ok 5 - an interim snapshot cannot roll back a later accepted move on release
+  ---
+  duration_ms: 10.798484
+  type: 'test'
+  ...
+# Subtest: cancelled, unchanged and invalid typed edits preserve an accepted drag while reads stall
+not ok 6 - cancelled, unchanged and invalid typed edits preserve an accepted drag while reads stall
+  ---
+  duration_ms: 11.57474
+  type: 'test'
+  location: '/tmp/dandrum-frontend-performance/web/sampler/src/host-knob-admission.test.mjs:98:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    Escape rolled back the accepted drag
+
+    0.5 !== 0.75
+
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 0.75
+  actual: 0.5
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (file:///tmp/dandrum-frontend-performance/web/sampler/src/host-knob-admission.test.mjs:112:12)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: an accepted default reset survives opening and closing an unchanged value editor
+not ok 7 - an accepted default reset survives opening and closing an unchanged value editor
+  ---
+  duration_ms: 10.490886
+  type: 'test'
+  location: '/tmp/dandrum-frontend-performance/web/sampler/src/host-knob-admission.test.mjs:116:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    Expected values to be strictly equal:
+
+    0.5 !== 0.25
+
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 0.25
+  actual: 0.5
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (file:///tmp/dandrum-frontend-performance/web/sampler/src/host-knob-admission.test.mjs:121:10)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+1..7
+# tests 7
+# suites 0
+# pass 4
+# fail 3
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 509.800418

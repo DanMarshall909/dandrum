@@ -1,0 +1,29 @@
+--- /tmp/dandrum-frontend-performance/tests/cpp/PluginKnobParityTest.cpp	2026-10-07 14:24:13.498188136 +1000
++++ /tmp/dandrum-performance-pointer-diagnostic.cpp	2026-10-07 15:18:48.297840747 +1000
+@@ -162,7 +162,7 @@
+             require (processor->isInstrumentLoaded()
+                          && processor->demoConfiguration().instrumentId == "dandrum.advanced-drum-kit",
+                      "Parity did not start with the original sampler factory");
+-            const auto fixture = std::filesystem::path (__FILE__).parent_path().parent_path()
++            const auto fixture = std::filesystem::path ("/tmp/dandrum-frontend-performance/tests")
+                                      / "fixtures/plugin-ui-knob.yaml";
+             const auto yaml = juce::File (juce::String (fixture.string())).loadFileAsString();
+             require (yaml.contains ("default: 0, min: -1")
+@@ -393,7 +393,7 @@
+             + script + "const s=window.__dandrumParity; s.actions=" + juce::JSON::toString (actions, true)
+             + "; s.ack=" + juce::String (static_cast<int> (index) - 1)
+             + "; const k=document.querySelector('[data-parameter-id=\"fixture.level\"]');"
+-              "return JSON.stringify({step:s.step,ready:s.ready,error:s.error,"
++              "return JSON.stringify({step:s.step,ready:s.ready,error:s.error,pointer:s.pointer,"
+               "displayed:Number(k?.getAttribute('aria-valuenow')),actual:Number(k?.getAttribute('aria-valuetext'))}); })()";
+         evaluating = true;
+         juce::Component::SafePointer<juce::AudioProcessorEditor> alive (editor.get());
+@@ -411,7 +411,7 @@
+                     return;
+                 const auto state = juce::JSON::parse (result->toString());
+                 require (state.isObject(), "Original browser returned an invalid parity report");
+-                require (! state.hasProperty ("error"), state.getProperty ("error", {}).toString());
++                require (! state.hasProperty ("error"), state.getProperty ("error", {}).toString() + " diagnostic=" + juce::JSON::toString(state, true));
+                 const auto ready = state.getProperty ("ready", {});
+                 if (ready.isObject() && ! pointerMoved)
+                 {

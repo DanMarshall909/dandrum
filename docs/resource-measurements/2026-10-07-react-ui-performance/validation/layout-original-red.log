@@ -1,0 +1,5 @@
+libEGL warning: DRI3 error: Could not get DRI3 device
+libEGL warning: Activate DRI3 at Xorg or build mesa with DRI2
+libEGL warning: DRI3 error: Could not get DRI3 device
+libEGL warning: Activate DRI3 at Xorg or build mesa with DRI2
+React layout failed: {"width": 760, "fit": true, "unscaled": false, "noOverflow": true, "readable": false}

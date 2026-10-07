@@ -2382,3 +2382,39 @@ AC demo-launcher :: Resolve demo checkouts :: Resolve and report source availabi
   fp 88bc1d7ac7fb
   test py:tests/python/test_demo_launcher.py
   test py:tests/python/test_demo_launcher_boundaries.py
+
+AC react-plugin-efficiency :: Responsive TB-303 layout :: Native widths retain readable controls
+  fp 3c6b07234ab2
+  test cpp:tests/cpp/PluginEditorBridgeTest.cpp
+
+AC react-plugin-efficiency :: Bounded asynchronous parameter refresh :: Writes progress while reads stall
+  fp 1fd4dbb71db0
+  test js:tests/js/ReactPluginEfficiencyTest.mjs
+
+AC react-plugin-efficiency :: Bounded asynchronous parameter refresh :: Accepted drag stays visible while snapshots catch up
+  fp d992ec86cae7
+  test js:tests/js/ReactPluginEfficiencyTest.mjs
+
+AC react-plugin-efficiency :: Bounded asynchronous parameter refresh :: Rejection and reload remain authoritative
+  fp 3a92783e911b
+  test js:tests/js/ReactPluginEfficiencyTest.mjs
+
+AC react-plugin-efficiency :: Suppress unchanged parameter work :: Idle state does not publish repeatedly
+  fp d2f130a897e3
+  test cpp:tests/cpp/PluginEditorBridgeTest.cpp
+
+AC react-plugin-efficiency :: Suppress unchanged parameter work :: Equal sequence automation updates the display
+  fp 842a7b7031a3
+  test js:tests/js/ReactPluginEfficiencyTest.mjs
+
+AC react-plugin-efficiency :: Suppress unchanged meter reconciliation :: Equal meters still acknowledge packets
+  fp bb9db960da7d
+  test js:tests/js/ReactPluginEfficiencyTest.mjs
+
+AC react-plugin-efficiency :: Suppress unchanged meter reconciliation :: Changed measurement and clip state update
+  fp a85c62f07b22
+  test js:tests/js/ReactPluginEfficiencyTest.mjs
+
+AC react-plugin-efficiency :: Retire completed prepared timers :: Prepared completion retires polling
+  fp 31932d5dbae8
+  test js:tests/js/ReactPluginEfficiencyTest.mjs

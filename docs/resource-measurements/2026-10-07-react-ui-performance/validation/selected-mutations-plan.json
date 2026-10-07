@@ -1,0 +1,219 @@
+[
+  {
+    "module": "web/shared/knob-reconciliation.mjs",
+    "before": "parameter.sequence < write.sequence",
+    "after": "false",
+    "mutation": "knob interim snapshot",
+    "test": "web/shared/knob-reconciliation.test.mjs"
+  },
+  {
+    "module": "web/shared/knob-reconciliation.mjs",
+    "before": "reply.generation < current.generation",
+    "after": "false",
+    "mutation": "knob retired generation",
+    "test": "web/shared/knob-reconciliation.test.mjs"
+  },
+  {
+    "module": "web/shared/parameter-controller.mjs",
+    "before": "incoming.generation < current.generation",
+    "after": "false",
+    "mutation": "old generation",
+    "test": "web/shared/parameter-controller.test.mjs"
+  },
+  {
+    "module": "web/shared/parameter-controller.mjs",
+    "before": "incoming.sequence < Math.max(current.sequence, admittedSequence)",
+    "after": "false",
+    "mutation": "admitted sequence",
+    "test": "web/shared/parameter-controller.test.mjs"
+  },
+  {
+    "module": "web/shared/parameter-controller.mjs",
+    "before": "parameter.value === previous.value",
+    "after": "true",
+    "mutation": "automation value",
+    "test": "web/shared/parameter-controller.test.mjs"
+  },
+  {
+    "module": "web/shared/parameter-controller.mjs",
+    "before": "parameter.name === previous.name",
+    "after": "true",
+    "mutation": "metadata name",
+    "test": "web/shared/parameter-controller.test.mjs"
+  },
+  {
+    "module": "web/shared/parameter-controller.mjs",
+    "before": "parameter.id === previous.id",
+    "after": "true",
+    "mutation": "parameter identity",
+    "test": "web/shared/parameter-controller.test.mjs"
+  },
+  {
+    "module": "web/shared/parameter-controller.mjs",
+    "before": "dirty = true; return pending",
+    "after": "return pending",
+    "mutation": "replacement refresh",
+    "test": "web/shared/parameter-controller.test.mjs"
+  },
+  {
+    "module": "web/shared/parameter-controller.mjs",
+    "before": "else if (writes > 0) return",
+    "after": "else if (false) return",
+    "mutation": "pending write filter",
+    "test": "web/shared/parameter-controller.test.mjs"
+  },
+  {
+    "module": "web/shared/parameter-controller.mjs",
+    "before": "void refresh();\n        }",
+    "after": "await refresh();\n        }",
+    "mutation": "read gates command",
+    "test": "web/shared/parameter-controller.test.mjs"
+  },
+  {
+    "module": "web/shared/meter-view.mjs",
+    "before": "previous.peak === channel.peak",
+    "after": "true",
+    "mutation": "peak update",
+    "test": "web/shared/meter-view.test.mjs"
+  },
+  {
+    "module": "web/shared/meter-view.mjs",
+    "before": "previous.rms === channel.rms",
+    "after": "true",
+    "mutation": "RMS update",
+    "test": "web/shared/meter-view.test.mjs"
+  },
+  {
+    "module": "web/shared/meter-view.mjs",
+    "before": "previous.ticket === channel.ticket",
+    "after": "true",
+    "mutation": "clip ticket",
+    "test": "web/shared/meter-view.test.mjs"
+  },
+  {
+    "module": "web/shared/meter-view.mjs",
+    "before": "previous.clipped === channel.clipped",
+    "after": "true",
+    "mutation": "clip latch",
+    "test": "web/shared/meter-view.test.mjs"
+  },
+  {
+    "module": "web/shared/meter-view.mjs",
+    "before": "current.complete === next.complete",
+    "after": "true",
+    "mutation": "history validity",
+    "test": "web/shared/meter-view.test.mjs"
+  },
+  {
+    "module": "web/shared/prepared-polling.mjs",
+    "before": "['ready', 'failed', 'cancelled', 'stale']",
+    "after": "['failed', 'cancelled', 'stale']",
+    "mutation": "ready retirement",
+    "test": "web/shared/prepared-polling.test.mjs"
+  },
+  {
+    "module": "web/shared/prepared-polling.mjs",
+    "before": "if (accepted === false) stop();",
+    "after": "if (false) stop();",
+    "mutation": "admission retirement",
+    "test": "web/shared/prepared-polling.test.mjs"
+  },
+  {
+    "module": "web/shared/prepared-polling.mjs",
+    "before": "closed = true; stop();",
+    "after": "closed = true;",
+    "mutation": "close retirement",
+    "test": "web/shared/prepared-polling.test.mjs"
+  },
+  {
+    "module": "web/shared/host-knob.mjs",
+    "before": "else if (!pendingCommit.current) setLocal(knobSnapshotValue(authoritative.current, lastWrite.current));",
+    "after": "else setLocal(authoritative.current?.value ?? 0);",
+    "mutation": "cancelled accepted edit",
+    "test": "web/sampler/src/host-knob-admission.test.mjs"
+  },
+  {
+    "module": "web/shared/host-knob.mjs",
+    "before": "if (!drag.current && !edit.current && !pendingCommit.current)",
+    "after": "if (!drag.current && !edit.current)",
+    "mutation": "pending interaction ownership",
+    "test": "web/sampler/src/host-knob-admission.test.mjs"
+  },
+  {
+    "module": "web/shared/panel-height.mjs",
+    "before": "if (closed) return;",
+    "after": "if (false) return;",
+    "mutation": "retired panel sizing",
+    "test": "web/shared/panel-height.test.mjs"
+  },
+  {
+    "module": "web/shared/panel-height.mjs",
+    "before": "if (frame.style.height !== height) frame.style.height = height;",
+    "after": "frame.style.height = height;",
+    "mutation": "unchanged panel sizing",
+    "test": "web/shared/panel-height.test.mjs"
+  },
+  {
+    "module": "web/shared/parameter-controller.mjs",
+    "before": "incoming.generation < current.generation",
+    "after": "false",
+    "mutation": "acceptance entry propagates child failure",
+    "test": "tests/js/ReactPluginEfficiencyTest.mjs"
+  },
+  {
+    "module": "web/shared/host-knob.mjs",
+    "before": "owner === interaction.current && !pendingCommit.current",
+    "after": "!pendingCommit.current",
+    "mutation": "retired rejection ownership",
+    "test": "web/sampler/src/host-knob-admission.test.mjs"
+  },
+  {
+    "module": "web/shared/knob-reconciliation.mjs",
+    "before": "restore(submittedBy)",
+    "after": "restore(owner())",
+    "mutation": "late failure owner capture",
+    "test": "web/shared/knob-reconciliation.test.mjs"
+  },
+  {
+    "module": "web/shared/host-knob.mjs",
+    "before": "}), onError, () => interaction.current)",
+    "after": "}), onError)",
+    "mutation": "serializer ownership integration",
+    "test": "web/sampler/src/host-knob-admission.test.mjs"
+  },
+  {
+    "module": "web/sampler/src/parameter-gesture.mjs",
+    "before": "invoke('endGesture', undefined, current.generation, owner)",
+    "after": "invoke('endGesture', undefined, current.generation, captureOwner())",
+    "mutation": "queued closure origin captured too late",
+    "test": "web/sampler/src/parameter-gesture.test.mjs"
+  },
+  {
+    "module": "web/sampler/src/parameter-gesture.mjs",
+    "before": "drag.pending = { value, owner: captureOwner() };",
+    "after": "drag.pending = { value, owner: undefined };",
+    "mutation": "coalesced pointer ownership",
+    "test": "web/sampler/src/parameter-gesture.test.mjs"
+  },
+  {
+    "module": "web/sampler/src/parameter-gesture.mjs",
+    "before": "const { value, generation, owner } = discretePending;",
+    "after": "const { value, generation } = discretePending; const owner = undefined;",
+    "mutation": "queued discrete ownership",
+    "test": "web/sampler/src/parameter-gesture.test.mjs"
+  },
+  {
+    "module": "web/sampler/src/parameter-gesture.mjs",
+    "before": "try { await invoke('beginGesture', undefined, generation, owner); return true; }",
+    "after": "try { await invoke('beginGesture', undefined, generation, captureOwner()); return true; }",
+    "mutation": "queued drag begin origin captured too late",
+    "test": "web/sampler/src/parameter-gesture.test.mjs"
+  },
+  {
+    "module": "web/shared/knob-reconciliation.mjs",
+    "before": "return async (name, value, generation, submittedBy = owner()) => {",
+    "after": "return async (name, value, generation, submittedBy = owner()) => { submittedBy = owner();",
+    "mutation": "origin owner ignored by adapter",
+    "test": "web/shared/knob-reconciliation.test.mjs"
+  }
+]

@@ -1,0 +1,98 @@
+Internal ctest changing into directory: /tmp/dandrum-frontend-performance/build/demo-webview
+Test project /tmp/dandrum-frontend-performance/build/demo-webview
+      Start 29: web-waveform-parity
+ 1/44 Test #29: web-waveform-parity ..................   Passed    4.27 sec
+      Start 30: web-live-renderer
+ 2/44 Test #30: web-live-renderer ....................   Passed    6.91 sec
+      Start 31: web-live-stalled-replies
+ 3/44 Test #31: web-live-stalled-replies .............   Passed   34.78 sec
+      Start 32: web-spectral-parity
+ 4/44 Test #32: web-spectral-parity ..................   Passed    9.24 sec
+      Start 33: cxx-sampler-plugin-host
+ 5/44 Test #33: cxx-sampler-plugin-host ..............   Passed    1.25 sec
+      Start 37: cxx-plugin-editor-bridge
+ 6/44 Test #37: cxx-plugin-editor-bridge .............   Passed    2.43 sec
+      Start 38: cxx-plugin-parameter-publication
+ 7/44 Test #38: cxx-plugin-parameter-publication .....   Passed    0.22 sec
+      Start 40: tb303-react-layout
+ 8/44 Test #40: tb303-react-layout ...................   Passed    4.61 sec
+      Start 41: tb303-web-runtime
+ 9/44 Test #41: tb303-web-runtime ....................   Passed    5.79 sec
+      Start 44: spec-coverage-map
+10/44 Test #44: spec-coverage-map ....................   Passed    0.04 sec
+      Start 46: demo-launcher
+11/44 Test #46: demo-launcher ........................   Passed    0.29 sec
+      Start 47: demo-launcher-inventory
+12/44 Test #47: demo-launcher-inventory ..............   Passed    0.05 sec
+      Start 48: demo-launcher-boundaries
+13/44 Test #48: demo-launcher-boundaries .............   Passed    2.16 sec
+      Start 49: mutation-hook
+14/44 Test #49: mutation-hook ........................   Passed    0.30 sec
+      Start 50: shared-instrument-ui
+15/44 Test #50: shared-instrument-ui .................   Passed    0.04 sec
+      Start 52: tb303-react-model
+16/44 Test #52: tb303-react-model ....................   Passed    0.09 sec
+      Start 53: tb303-react-audition
+17/44 Test #53: tb303-react-audition .................   Passed    0.09 sec
+      Start 54: native-function-bootstrap
+18/44 Test #54: native-function-bootstrap ............   Passed    0.03 sec
+      Start 55: meter-web-transport
+19/44 Test #55: meter-web-transport ..................   Passed    0.10 sec
+      Start 56: live-analysis-web-transport
+20/44 Test #56: live-analysis-web-transport ..........   Passed    0.10 sec
+      Start 57: live-analysis-web-view
+21/44 Test #57: live-analysis-web-view ...............   Passed    0.11 sec
+      Start 58: meter-web-view
+22/44 Test #58: meter-web-view .......................   Passed    0.08 sec
+      Start 59: prepared-waveform-web-view
+23/44 Test #59: prepared-waveform-web-view ...........   Passed    0.09 sec
+      Start 60: prepared-waveform-web-transport
+24/44 Test #60: prepared-waveform-web-transport ......   Passed    0.10 sec
+      Start 61: prepared-spectral-web-view
+25/44 Test #61: prepared-spectral-web-view ...........   Passed    0.10 sec
+      Start 62: prepared-spectral-web-transport
+26/44 Test #62: prepared-spectral-web-transport ......   Passed    0.10 sec
+      Start 63: sampler-react-model
+27/44 Test #63: sampler-react-model ..................   Passed    0.08 sec
+      Start 64: sampler-react-key-map
+28/44 Test #64: sampler-react-key-map ................   Passed    0.13 sec
+      Start 65: sampler-react-key-map-interactions
+29/44 Test #65: sampler-react-key-map-interactions ...   Passed    0.73 sec
+      Start 66: sampler-react-layer-stack
+30/44 Test #66: sampler-react-layer-stack ............   Passed    0.59 sec
+      Start 67: sampler-react-output-buses
+31/44 Test #67: sampler-react-output-buses ...........   Passed    0.55 sec
+      Start 68: sampler-react-gestures
+32/44 Test #68: sampler-react-gestures ...............   Passed    0.10 sec
+      Start 69: knob-parameter-values
+33/44 Test #69: knob-parameter-values ................   Passed    0.09 sec
+      Start 70: shared-parameter-controller
+34/44 Test #70: shared-parameter-controller ..........   Passed    0.09 sec
+      Start 71: knob-snapshot-reconciliation
+35/44 Test #71: knob-snapshot-reconciliation .........   Passed    0.09 sec
+      Start 72: shared-knob-admission
+36/44 Test #72: shared-knob-admission ................   Passed    0.58 sec
+      Start 73: shared-host-parameters
+37/44 Test #73: shared-host-parameters ...............   Passed    0.42 sec
+      Start 74: react-plugin-efficiency
+38/44 Test #74: react-plugin-efficiency ..............   Passed    0.69 sec
+      Start 75: prepared-job-polling
+39/44 Test #75: prepared-job-polling .................   Passed    0.09 sec
+      Start 76: prepared-parameter-document
+40/44 Test #76: prepared-parameter-document ..........   Passed    0.09 sec
+      Start 77: design-token-generation
+41/44 Test #77: design-token-generation ..............   Passed    1.19 sec
+      Start 78: design-tokens-current
+42/44 Test #78: design-tokens-current ................   Passed    0.03 sec
+      Start 79: react-asset-packaging
+43/44 Test #79: react-asset-packaging ................   Passed    0.11 sec
+      Start 80: design-icon-rendering
+44/44 Test #80: design-icon-rendering ................   Passed    0.13 sec
+
+100% tests passed, 0 tests failed out of 44
+
+Label Time Summary:
+runtime    =  65.60 sec*proc (6 tests)
+stress     =  34.78 sec*proc (1 test)
+
+Total Test time (real) =  79.18 sec

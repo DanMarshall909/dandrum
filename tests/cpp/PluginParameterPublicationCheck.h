@@ -81,6 +81,16 @@ int run()
                 && std::bit_cast<std::uint32_t> (audio.getSample (1, frame)) == 0U,
                    "Stalled host-state publication changed signed live audio");
         check (ack (second, generation), "Could not release publication before hiding");
+        for (int tick = 0; tick < 128; ++tick) publish();
+        check (state()["publication"].isVoid(), "Unchanged acknowledged state published repeatedly");
+        parameter->setValueNotifyingHost (0.5f);
+        publish();
+        const auto automated = state();
+        check (automated["publication"].isString()
+            && automated["sequence"] == latest["sequence"]
+            && std::abs (static_cast<double> (automated["parameters"].getArray()->getReference (0)["value"]) - 0.5) < 1e-6,
+            "Equal-sequence host automation did not publish changed values");
+        check (ack (automated["publication"], generation), "Could not acknowledge automated snapshot");
         editor.setVisible (false);
         for (int tick = 0; tick < 128; ++tick) publish();
         check (state()["publication"].isVoid(), "Hidden browser started parameter publications");

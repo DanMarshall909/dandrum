@@ -1,10 +1,11 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
-import { acceptState, controls, preparedCapabilities } from "./model.mjs";
+import { controls, preparedCapabilities } from "./model.mjs";
 import { createNoteAudition } from "./note-audition.mjs";
 import { createHostKnob } from "../../shared/host-knob.mjs";
 import { admittedParameter } from "../../shared/parameter-value.mjs";
-import { createPreparedParameterDocument } from "../../shared/prepared-parameter-document.mjs";
+import { createHostParameters } from "../../shared/host-parameters.mjs";
+import { observePanelHeight } from "../../shared/panel-height.mjs";
 import "../../shared/host-knob.css";
 import { createMeterTransport } from "../../shared/meter-transport.mjs";
 import { meterView } from "../../shared/meter-view.mjs";
@@ -40,82 +41,7 @@ const keyboardKeys = Array.from({ length: 20 }, (_, semitone) => ({
 }));
 const whiteKeyCount = keyboardKeys.filter(key => key.kind === "white").length;
 
-function useHostParameters() {
-  const [state, setState] = useState<HostState | null>(null);
-  const [error, setError] = useState("");
-  const [document, setDocument] = useState<PreparedDocument | null>(null);
-  const documents = useMemo(() => createPreparedParameterDocument(async () => {
-    const get = native("getPreparedDocument");
-    if (!get) throw new Error("Prepared parameter metadata is unavailable.");
-    const reply = await get();
-    if (typeof reply === "string") throw new Error(reply);
-    return reply;
-  }, (next: PreparedDocument) => setDocument(next),
-    (reason: unknown) => setError(String(reason))), []);
-  const current = useRef<HostState | null>(null);
-  const admitted = useRef(0);
-  const pendingWrites = useRef(0);
-
-  const applyState = (incoming: HostState) => {
-    if (current.current && incoming?.generation > current.current.generation) {
-      admitted.current = 0;
-      pendingWrites.current = 0;
-    } else if (pendingWrites.current > 0) {
-      return;
-    }
-    const next = acceptState(current.current, incoming, admitted.current);
-    if (next !== current.current) {
-      current.current = next;
-      setState(next);
-      if (next) void documents.acceptGeneration(next.generation);
-    }
-  };
-
-  const requestState = async () => {
-    const get = native("getParameterState");
-    if (get) applyState(await get() as HostState);
-  };
-
-  useEffect(() => {
-    const backend = window.__JUCE__?.backend;
-    if (!backend) {
-      setError("This panel requires the Dandrum plugin host.");
-      return;
-    }
-    backend.addEventListener("parameterStateChanged", applyState);
-    void requestState().catch(reason => setError(String(reason)));
-    return () => {
-      backend.removeEventListener?.("parameterStateChanged", applyState);
-      documents.close();
-    };
-  }, []);
-
-  const command = async (name: string, ...args: unknown[]) => {
-    const call = native(name);
-    if (!call) throw new Error(`Host command ${name} is unavailable`);
-    const write = name === "setParameter";
-    if (write) pendingWrites.current++;
-    try {
-      const result = await call(...args);
-      if (typeof result === "string") throw new Error(result);
-      const reply = result as { status?: string; generation?: number; sequence?: number } | null;
-      if (reply?.status && reply.status !== "accepted")
-        throw new Error(`Host rejected ${name}: ${reply.status}`);
-      if (reply?.status === "accepted" && reply.generation === current.current?.generation)
-        admitted.current = Math.max(admitted.current, reply.sequence ?? 0);
-      if (name !== "endGesture") setError("");
-      return result;
-    } catch (reason) {
-      setError(String(reason));
-      throw reason;
-    } finally {
-      if (write) pendingWrites.current = Math.max(0, pendingWrites.current - 1);
-      await requestState().catch(reason => setError(String(reason)));
-    }
-  };
-
-  return { state, document, error, command, reportError: (reason: unknown) => setError(String(reason)) };
-}
+const useHostParameters = createHostParameters(React);
 
 function MasterMeter({ generation }: { generation: number | null }) {
   const [view, setView] = useState(() => meterView(null));
@@ -132,7 +58,7 @@ function MasterMeter({ generation }: { generation: number | null }) {
     };
     const transport = createMeterTransport(invoke, (packet: Record<string, unknown>) => {
       if (active) {
-        setView(meterView(packet));
+        setView((current: any) => meterView(packet, current));
         setMeterError("");
       }
     });
@@ -194,11 +120,10 @@ function MasterMeter({ generation }: { generation: number | null }) {
 }
 
 function App() {
+  const panel = useRef<HTMLElement>(null);
   const frame = useRef<HTMLDivElement>(null);
-  const machine = useRef<HTMLElement>(null);
-  const [scale, setScale] = useState(1);
-  const [panelHeight, setPanelHeight] = useState(690);
-  const { state, document: preparedDocument, error, command, reportError } = useHostParameters();
+  useEffect(() => observePanelHeight(panel.current, frame.current), []);
+  const { state, document: preparedDocument, error, command, reportError } = useHostParameters(window.__JUCE__?.backend);
   const [activeKeys, setActiveKeys] = useState<number[]>([]);
   const lastAuditionGeneration = useRef<number | null>(null);
   const auditionAvailable = preparedCapabilities.noteAudition
@@ -226,19 +151,6 @@ function App() {
         command={command} onError={reportError} /></div>);
 
   useEffect(() => {
-    if (!frame.current) return;
-    const update = () => {
-      setScale(Math.min(1.12, frame.current!.clientWidth / 1120));
-      if (machine.current) setPanelHeight(machine.current.offsetHeight);
-    };
-    update();
-    const observer = new ResizeObserver(update);
-    observer.observe(frame.current);
-    if (machine.current) observer.observe(machine.current);
-    return () => observer.disconnect();
-  }, []);
-
-  useEffect(() => {
     const keepAlive = window.setInterval(() => { void audition.keepAlive(); }, 500);
     const releaseAll = () => { void audition.releaseAll(); setActiveKeys([]); };
     const releaseWhenHidden = () => { if (document.hidden) releaseAll(); };
@@ -262,8 +174,8 @@ function App() {
   }, [state?.generation, audition]);
 
   return <main className="stage">
-    <div className="machine-frame" ref={frame} style={{ height: `${panelHeight * scale}px` }}>
-      <section className="machine" ref={machine} aria-label="Dandrum TB-303 bass synthesizer" style={{ transform: `scale(${scale})` }}>
+    <div className="machine-frame" ref={frame}>
+      <section className="machine" ref={panel} aria-label="Dandrum TB-303 bass synthesizer">
         <div className="top-shadow" />
         <header className="brand-row">
           <div className="brand"><span className="roland">DANDRUM</span><span className="computer-controlled">BASS SYNTHESIZER</span></div>

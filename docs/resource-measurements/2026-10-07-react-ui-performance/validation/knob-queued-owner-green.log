@@ -1,0 +1,142 @@
+TAP version 13
+# Subtest: accepted drag remains visible on release while reads stall, then automation stays authoritative
+ok 1 - accepted drag remains visible on release while reads stall, then automation stays authoritative
+  ---
+  duration_ms: 49.933985
+  type: 'test'
+  ...
+# Subtest: rejected drag restores host value and reports the rejection without waiting for a read
+ok 2 - rejected drag restores host value and reports the rejection without waiting for a read
+  ---
+  duration_ms: 12.703397
+  type: 'test'
+  ...
+# Subtest: automation observed while dragging reconciles on release
+ok 3 - automation observed while dragging reconciles on release
+  ---
+  duration_ms: 11.858033
+  type: 'test'
+  ...
+# Subtest: later keyboard interaction retains its display during previous gesture closure
+ok 4 - later keyboard interaction retains its display during previous gesture closure
+  ---
+  duration_ms: 14.520876
+  type: 'test'
+  ...
+# Subtest: an interim snapshot cannot roll back a later accepted move on release
+ok 5 - an interim snapshot cannot roll back a later accepted move on release
+  ---
+  duration_ms: 12.29804
+  type: 'test'
+  ...
+# Subtest: cancelled, unchanged and invalid typed edits preserve an accepted drag while reads stall
+ok 6 - cancelled, unchanged and invalid typed edits preserve an accepted drag while reads stall
+  ---
+  duration_ms: 23.581537
+  type: 'test'
+  ...
+# Subtest: an accepted default reset survives opening and closing an unchanged value editor
+ok 7 - an accepted default reset survives opening and closing an unchanged value editor
+  ---
+  duration_ms: 11.887532
+  type: 'test'
+  ...
+# Subtest: a rejected earlier closure cannot restore the display owned by a later drag
+ok 8 - a rejected earlier closure cannot restore the display owned by a later drag
+  ---
+  duration_ms: 9.441949
+  type: 'test'
+  ...
+# Subtest: queued older closure rejection cannot reclaim a later active drag
+ok 9 - queued older closure rejection cannot reclaim a later active drag
+  ---
+  duration_ms: 9.978475
+  type: 'test'
+  ...
+# Subtest: pointer drag admits one gesture and retains the latest value while the host stalls
+ok 10 - pointer drag admits one gesture and retains the latest value while the host stalls
+  ---
+  duration_ms: 4.957607
+  type: 'test'
+  ...
+# Subtest: keyboard and typed values each get host gesture boundaries
+ok 11 - keyboard and typed values each get host gesture boundaries
+  ---
+  duration_ms: 0.441627
+  type: 'test'
+  ...
+# Subtest: non-pointer edits retain only the latest pending value under backpressure
+ok 12 - non-pointer edits retain only the latest pending value under backpressure
+  ---
+  duration_ms: 0.843775
+  type: 'test'
+  ...
+# Subtest: a rejected value reports failure and still closes its gesture
+ok 13 - a rejected value reports failure and still closes its gesture
+  ---
+  duration_ms: 0.285919
+  type: 'test'
+  ...
+# Subtest: flush observes an active pointer write
+ok 14 - flush observes an active pointer write
+  ---
+  duration_ms: 1.59034
+  type: 'test'
+  ...
+# Subtest: a second drag waits for the closing gesture and keeps its own final value
+ok 15 - a second drag waits for the closing gesture and keeps its own final value
+  ---
+  duration_ms: 0.579686
+  type: 'test'
+  ...
+# Subtest: typed entry during pointer closure waits for its own gesture boundary
+ok 16 - typed entry during pointer closure waits for its own gesture boundary
+  ---
+  duration_ms: 0.847684
+  type: 'test'
+  ...
+# Subtest: keyboard slider change during pointer closure retains its own host gesture
+ok 17 - keyboard slider change during pointer closure retains its own host gesture
+  ---
+  duration_ms: 0.498597
+  type: 'test'
+  ...
+# Subtest: queued and coalesced gestures retain origin ownership before prior writes complete
+ok 18 - queued and coalesced gestures retain origin ownership before prior writes complete
+  ---
+  duration_ms: 0.721205
+  type: 'test'
+  ...
+# Subtest: only accepted valid value writes advance knob admission
+ok 19 - only accepted valid value writes advance knob admission
+  ---
+  duration_ms: 1.342852
+  type: 'test'
+  ...
+# Subtest: snapshots cover the latest admitted write before reconciling its display
+ok 20 - snapshots cover the latest admitted write before reconciling its display
+  ---
+  duration_ms: 0.153469
+  type: 'test'
+  ...
+# Subtest: value replies retain admission and late failures retain their submitting interaction
+ok 21 - value replies retain admission and late failures retain their submitting interaction
+  ---
+  duration_ms: 1.259282
+  type: 'test'
+  ...
+# Subtest: queued command failures retain their originating owner without passing it to the host
+ok 22 - queued command failures retain their originating owner without passing it to the host
+  ---
+  duration_ms: 0.238929
+  type: 'test'
+  ...
+1..22
+# tests 22
+# suites 0
+# pass 22
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 528.088596

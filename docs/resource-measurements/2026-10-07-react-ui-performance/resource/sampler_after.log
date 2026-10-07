@@ -1,0 +1,12 @@
+PHASE engine_only dandrum.advanced-drum-kit unscaled=0
+libEGL warning: DRI3 error: Could not get DRI3 device
+libEGL warning: Activate DRI3 at Xorg or build mesa with DRI2
+libEGL warning: DRI3 error: Could not get DRI3 device
+libEGL warning: Activate DRI3 at Xorg or build mesa with DRI2
+PHASE loading dandrum.advanced-drum-kit unscaled=0
+PHASE editor_idle dandrum.advanced-drum-kit unscaled=0
+PHASE editor_active dandrum.advanced-drum-kit unscaled=0
+EXERCISE {"events":297,"writes":297,"rejected":0,"closed":true}
+PHASE settling dandrum.advanced-drum-kit unscaled=0
+PHASE editor_closed dandrum.advanced-drum-kit unscaled=0
+RESULT {"blocks":16696,"signal_blocks":4158}

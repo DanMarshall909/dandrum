@@ -93,6 +93,8 @@ private:
     std::uint64_t sessionId;
     // At most one timer snapshot is queued for this document. Current values
     // are read after acknowledgement rather than storing intervening states.
+    std::optional<InstrumentUiParameterState> lastPublishedParameterState;
+    juce::var parameterStateForWeb (const InstrumentUiParameterState& state) const;
     std::uint64_t pendingParameterPublication = 0;
     std::uint32_t parameterPublicationGeneration = 0;
     double lastNoteHeartbeatMilliseconds = 0.0;

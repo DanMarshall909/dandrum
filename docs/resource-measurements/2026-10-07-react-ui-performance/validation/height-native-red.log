@@ -1,0 +1,21 @@
+Internal ctest changing into directory: /tmp/dandrum-frontend-performance/build/demo-webview
+Test project /tmp/dandrum-frontend-performance/build/demo-webview
+    Start 40: tb303-react-layout
+1/1 Test #40: tb303-react-layout ...............***Failed    4.32 sec
+libEGL warning: DRI3 error: Could not get DRI3 device
+libEGL warning: Activate DRI3 at Xorg or build mesa with DRI2
+libEGL warning: DRI3 error: Could not get DRI3 device
+libEGL warning: Activate DRI3 at Xorg or build mesa with DRI2
+React layout failed: {"width": 760, "fit": true, "unscaled": true, "stableHeight": false, "noOverflow": true, "readable": true}
+
+
+0% tests passed, 1 tests failed out of 1
+
+Label Time Summary:
+runtime    =   4.32 sec*proc (1 test)
+
+Total Test time (real) =   4.32 sec
+
+The following tests FAILED:
+	 40 - tb303-react-layout (Failed)
+Errors while running CTest

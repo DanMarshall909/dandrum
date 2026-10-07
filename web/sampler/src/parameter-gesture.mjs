@@ -1,28 +1,32 @@
 // One in-flight host write and one replacement value per control. The host
 // receives the last value before each gesture ends, even if it stalls mid-drag.
-export function createParameterGesture(command, onRejected) {
+export function createParameterGesture(command, onRejected, captureOwner = () => undefined) {
   let drag = null;
   let discretePending = null;
   let discreteWorker = null;
 
   const report = reason => onRejected(reason);
+  // Capture ownership when work is queued, before any preceding gesture waits.
+  // Unowned callers retain their three-argument command contract.
+  const invoke = (name, value, generation, owner) => command(name, value, generation,
+    ...(owner === undefined ? [] : [owner]));
   const runDiscrete = () => {
     if (discreteWorker) return discreteWorker;
     const previousDrag = drag?.closed;
     discreteWorker = (async () => {
       if (previousDrag) await previousDrag;
       while (discretePending) {
-        const { value, generation } = discretePending;
+        const { value, generation, owner } = discretePending;
         discretePending = null;
         let begun = false;
         try {
-          await command('beginGesture', undefined, generation);
+          await invoke('beginGesture', undefined, generation, owner);
           begun = true;
-          await command('setParameter', value, generation);
+          await invoke('setParameter', value, generation, owner);
         } catch (reason) { report(reason); }
         finally {
           if (begun) {
-            try { await command('endGesture', undefined, generation); }
+            try { await invoke('endGesture', undefined, generation, owner); }
             catch (reason) { report(reason); }
           }
         }
@@ -39,9 +43,9 @@ export function createParameterGesture(command, onRejected) {
     current.pump = (async () => {
       if (!await current.begun) { current.pending = null; return; }
       while (current.pending !== null) {
-        const value = current.pending;
+        const { value, owner } = current.pending;
         current.pending = null;
-        try { await command('setParameter', value, current.generation); }
+        try { await invoke('setParameter', value, current.generation, owner); }
         catch (reason) { report(reason); current.pending = null; return; }
       }
     })().finally(() => { current.pump = null; });
@@ -51,6 +55,7 @@ export function createParameterGesture(command, onRejected) {
   return {
     begin(generation) {
       if (drag && !drag.ending) return;
+      const owner = captureOwner();
       const previousDrag = drag?.closed;
       const previous = discreteWorker;
       let close;
@@ -60,7 +65,7 @@ export function createParameterGesture(command, onRejected) {
         begun: (async () => {
           if (previousDrag) await previousDrag;
           if (previous) await previous;
-          try { await command('beginGesture', undefined, generation); return true; }
+          try { await invoke('beginGesture', undefined, generation, owner); return true; }
           catch (reason) { report(reason); return false; }
         })(),
       };
@@ -68,27 +73,28 @@ export function createParameterGesture(command, onRejected) {
     },
     change(value, generation) {
       if (drag && !drag.ending) {
-        drag.pending = value;
+        drag.pending = { value, owner: captureOwner() };
         void pumpDrag(drag);
       } else {
-        discretePending = { value, generation };
+        discretePending = { value, generation, owner: captureOwner() };
         void runDiscrete();
       }
     },
     commit(value, generation) {
-      discretePending = { value, generation };
+      discretePending = { value, generation, owner: captureOwner() };
       void runDiscrete();
     },
     async end() {
       if (!drag) return;
       const current = drag;
       if (current.ending) return current.ending;
+      const owner = captureOwner();
       current.ending = (async () => {
         try {
           if (current.pump) await current.pump;
           else if (current.pending !== null) await pumpDrag(current);
           if (await current.begun) {
-            try { await command('endGesture', undefined, current.generation); }
+            try { await invoke('endGesture', undefined, current.generation, owner); }
             catch (reason) { report(reason); }
           }
         } finally {

@@ -164,3 +164,27 @@ test('keyboard slider change during pointer closure retains its own host gesture
     ['beginGesture', undefined], ['setParameter', 0.8], ['endGesture', undefined],
   ]);
 });
+
+
+test('queued and coalesced gestures retain origin ownership before prior writes complete', async () => {
+  const calls = [], stalled = deferred(); let owner = 1;
+  const gesture = createParameterGesture(async (...args) => {
+    calls.push(args);
+    if (args[0] === 'setParameter' && args[1] === 0.25) await stalled.promise;
+  }, () => {}, () => owner);
+  gesture.begin(2); owner = 2; gesture.change(0.25, 2); await tick();
+  owner = 3; const firstEnd = gesture.end();
+  owner = 4; gesture.begin(2);
+  owner = 5; gesture.change(0.7, 2);
+  owner = 6; gesture.change(0.9, 2);
+  owner = 7; const secondEnd = gesture.end();
+  owner = 8; gesture.commit(0.2, 2);
+  owner = 9; stalled.resolve();
+  await Promise.all([firstEnd, secondEnd]); await gesture.flush();
+  assert.deepEqual(calls, [
+    ['beginGesture', undefined, 2, 1], ['setParameter', 0.25, 2, 2],
+    ['endGesture', undefined, 2, 3], ['beginGesture', undefined, 2, 4],
+    ['setParameter', 0.9, 2, 6], ['endGesture', undefined, 2, 7],
+    ['beginGesture', undefined, 2, 8], ['setParameter', 0.2, 2, 8], ['endGesture', undefined, 2, 8],
+  ]);
+});

@@ -1,0 +1,116 @@
+{
+  "candidate_integration_commit": "84f023c6ba8e712e9a8287744ebe5c1548447fdc",
+  "working_directory": "/tmp/dandrum-frontend-performance",
+  "commands": [
+    {
+      "command": "npm --prefix web/tb303 run typecheck; npm --prefix web/sampler run typecheck",
+      "exit_codes": [
+        0,
+        0
+      ],
+      "evidence": "typecheck.log"
+    },
+    {
+      "command": "npm --prefix web/tb303 run build; npm --prefix web/sampler run build",
+      "exit_codes": [
+        0,
+        0
+      ],
+      "evidence": "assets.log"
+    },
+    {
+      "command": "PATH=/usr/bin:/bin:$PATH /home/dan/.local/bin/cmake --build build/demo-webview --target dandrum-plugin-editor-bridge-test dandrum-sampler-plugin-host-test dandrum-plugin_Standalone dandrum-sampler-plugin_Standalone dandrum-plugin_VST3 dandrum-sampler-plugin_VST3 dandrum-plugin-knob-parity-test dandrum-plugin-waveform-parity-test dandrum-plugin-spectral-parity-test -j 2",
+      "exit_code": 0,
+      "evidence": "native-build.log"
+    },
+    {
+      "command": "node --test web/shared/*.test.mjs web/tb303/src/*.test.mjs web/sampler/src/*.test.mjs tests/js/*.mjs",
+      "exit_code": 0,
+      "passed": 149,
+      "evidence": "javascript.log"
+    },
+    {
+      "command": "DISPLAY=:10 PATH=/usr/bin:/bin:$PATH ctest --test-dir build/demo-webview -R '(react|web-|knob|prepared-parameter-document|prepared-job|demo-launcher|mutation-hook|spec-coverage|design|shared-|native-function|cxx-plugin-(editor-bridge|parameter-publication)|cxx-sampler-plugin-host)' --output-on-failure -E '^(sampler-web-runtime|web-knob-parity)$'",
+      "exit_code": 0,
+      "passed": 44,
+      "evidence": "ctest.log"
+    },
+    {
+      "command": "DISPLAY=:10 PATH=/usr/bin:/bin:$PATH ctest --test-dir build/demo-webview -R '^(sampler-web-runtime|web-knob-parity)$' --output-on-failure",
+      "exit_code": 8,
+      "failed": 2,
+      "evidence": "pointer-candidate.log"
+    },
+    {
+      "command": "python3 docs/resource-measurements/2026-10-07-react-ui-performance/validation/selected-mutation-pilot.py /tmp/dandrum-frontend-performance",
+      "exit_code": 0,
+      "faults_caught": 31,
+      "evidence": "selected-mutation-pilot.log"
+    },
+    {
+      "command": "openspec validate optimize-react-plugin-ui --strict",
+      "exit_code": 0,
+      "evidence": "openspec.log"
+    },
+    {
+      "command": "scripts/check-spec-coverage",
+      "exit_code": 0,
+      "mapped": 326,
+      "backlog": 239,
+      "evidence": "spec-baseline.log"
+    },
+    {
+      "command": "python3 /tmp/dandrum-optimized-audit-20261007/build_probes.py",
+      "exit_code": 0,
+      "evidence": "probe-build.log",
+      "working_directory": "/tmp/dandrum-frontend-performance"
+    },
+    {
+      "command": "python3 /tmp/dandrum-optimized-audit-20261007/resource/measure.py",
+      "exit_code": 0,
+      "evidence": "resource-rerun.log",
+      "working_directory": "/tmp/dandrum-frontend-performance"
+    },
+    {
+      "command": "python3 /tmp/dandrum-optimized-audit-20261007/latency/run.py",
+      "exit_code": 0,
+      "evidence": "latency-rerun.log",
+      "working_directory": "/tmp/dandrum-frontend-performance"
+    },
+    {
+      "command": "python3 /tmp/dandrum-optimized-audit-20261007/calibrate.py",
+      "exit_code": 0,
+      "evidence": "calibration.log",
+      "working_directory": "/tmp/dandrum-frontend-performance"
+    }
+  ],
+  "coverage_command": "node --test --experimental-test-coverage web/shared/parameter-controller.test.mjs web/shared/knob-reconciliation.test.mjs web/shared/meter-view.test.mjs web/shared/parameter-value.test.mjs web/shared/prepared-parameter-document.test.mjs web/shared/prepared-polling.test.mjs web/shared/panel-height.test.mjs web/sampler/src/host-parameters.test.mjs web/sampler/src/host-knob-admission.test.mjs web/sampler/src/host-knob-face.test.mjs web/sampler/src/parameter-gesture.test.mjs",
+  "coverage_exit_code": 0,
+  "previous_completion_review": {
+    "verdict": "FAIL",
+    "finding": "F1: an earlier rejected gesture closure reclaimed a later drag display",
+    "genuine_red": "knob-late-rejection-red.log",
+    "repaired_green": "knob-late-rejection-green.log",
+    "regression_test": "web/sampler/src/host-knob-admission.test.mjs: a rejected earlier closure cannot restore the display owned by a later drag",
+    "fault_checks": [
+      "retired rejection ownership",
+      "late failure owner capture"
+    ],
+    "queued_origin_followup": {
+      "verdict": "FAIL",
+      "finding": "F1: old closure captured a newer owner after waiting for its first value write",
+      "genuine_red": "knob-queued-owner-red.log",
+      "repaired_green": "knob-queued-owner-green.log",
+      "regression_test": "web/sampler/src/host-knob-admission.test.mjs: queued older closure rejection cannot reclaim a later active drag",
+      "serializer_contract_test": "web/sampler/src/parameter-gesture.test.mjs: queued and coalesced gestures retain origin ownership before prior writes complete",
+      "fault_checks": [
+        "serializer ownership integration",
+        "queued closure origin captured too late",
+        "coalesced pointer ownership",
+        "queued discrete ownership",
+        "queued drag begin origin captured too late",
+        "origin owner ignored by adapter"
+      ]
+    }
+  }
+}

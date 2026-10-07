@@ -1,0 +1,192 @@
+TAP version 13
+# Subtest: stalled browser requests and acknowledgements retain one in-flight meter packet
+ok 1 - stalled browser requests and acknowledgements retain one in-flight meter packet
+  ---
+  duration_ms: 7.675091
+  type: 'test'
+  ...
+# Subtest: hidden, reopened and stale-generation browser states remain bounded
+ok 2 - hidden, reopened and stale-generation browser states remain bounded
+  ---
+  duration_ms: 2.537574
+  type: 'test'
+  ...
+# Subtest: a renderer error still acknowledges the consumed packet
+ok 3 - a renderer error still acknowledges the consumed packet
+  ---
+  duration_ms: 0.444777
+  type: 'test'
+  ...
+# Subtest: identical meter displays still acknowledge every packet sequence
+not ok 4 - identical meter displays still acknowledge every packet sequence
+  ---
+  duration_ms: 1.658299
+  type: 'test'
+  location: '/tmp/dandrum-frontend-performance/web/shared/meter-transport.test.mjs:92:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    Values have same structure but are not reference-equal:
+
+    {
+      channels: [
+        {
+          clipped: false,
+          name: 'L',
+          peak: 0.5,
+          rms: 0,
+          ticket: '0'
+        },
+        {
+          clipped: false,
+          name: 'R',
+          peak: 0.25,
+          rms: 0,
+          ticket: '0'
+        }
+      ],
+      complete: false,
+      generation: 7,
+      valid: true
+    }
+
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+    generation: 7
+    complete: false
+    valid: true
+    channels:
+      0:
+        name: 'L'
+        peak: 0.5
+        rms: 0
+        clipped: false
+        ticket: '0'
+      1:
+        name: 'R'
+        peak: 0.25
+        rms: 0
+        clipped: false
+        ticket: '0'
+  actual:
+    generation: 7
+    complete: false
+    valid: true
+    channels:
+      0:
+        name: 'L'
+        peak: 0.5
+        rms: 0
+        clipped: false
+        ticket: '0'
+      1:
+        name: 'R'
+        peak: 0.25
+        rms: 0
+        clipped: false
+        ticket: '0'
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (file:///tmp/dandrum-frontend-performance/web/shared/meter-transport.test.mjs:102:10)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: stereo meter uses host display levels, clip latches and incomplete state
+ok 5 - stereo meter uses host display levels, clip latches and incomplete state
+  ---
+  duration_ms: 1.149083
+  type: 'test'
+  ...
+# Subtest: absent or malformed meter packets show safe empty bars
+ok 6 - absent or malformed meter packets show safe empty bars
+  ---
+  duration_ms: 0.231509
+  type: 'test'
+  ...
+# Subtest: equal normalized meters retain current display identity and changed fields update
+not ok 7 - equal normalized meters retain current display identity and changed fields update
+  ---
+  duration_ms: 1.55371
+  type: 'test'
+  location: '/tmp/dandrum-frontend-performance/web/shared/meter-view.test.mjs:41:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    Values have same structure but are not reference-equal:
+
+    {
+      channels: [
+        {
+          clipped: true,
+          name: 'L',
+          peak: 0.5,
+          rms: 0.2,
+          ticket: '12'
+        },
+        {
+          clipped: false,
+          name: 'R',
+          peak: 0.25,
+          rms: 0.1,
+          ticket: '0'
+        }
+      ],
+      complete: true,
+      generation: 2,
+      valid: true
+    }
+
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+    generation: 2
+    complete: true
+    valid: true
+    channels:
+      0:
+        name: 'L'
+        peak: 0.5
+        rms: 0.2
+        clipped: true
+        ticket: '12'
+      1:
+        name: 'R'
+        peak: 0.25
+        rms: 0.1
+        clipped: false
+        ticket: '0'
+  actual:
+    generation: 2
+    complete: true
+    valid: true
+    channels:
+      0:
+        name: 'L'
+        peak: 0.5
+        rms: 0.2
+        clipped: true
+        ticket: '12'
+      1:
+        name: 'R'
+        peak: 0.25
+        rms: 0.1
+        clipped: false
+        ticket: '0'
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (file:///tmp/dandrum-frontend-performance/web/shared/meter-view.test.mjs:46:10)
+    Test.runInAsyncScope (node:async_hooks:214:14)
+    Test.run (node:internal/test_runner/test:1047:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:744:18)
+    Test.postRun (node:internal/test_runner/test:1173:19)
+    Test.run (node:internal/test_runner/test:1101:12)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+1..7
+# tests 7
+# suites 0
+# pass 5
+# fail 2
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 59.529614

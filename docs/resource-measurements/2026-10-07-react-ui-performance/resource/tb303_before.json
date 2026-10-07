@@ -1,0 +1,3546 @@
+{
+  "label": "tb303_before",
+  "argv": [
+    "/tmp/dandrum-resource-audit-20261007/probe",
+    "tb303"
+  ],
+  "exit_code": 0,
+  "summary": {
+    "engine_only": {
+      "samples": 10,
+      "cpu_mean_one_core": 2.1857861313320273,
+      "cpu_p95_one_core": 3.970078438093251,
+      "pss_mean_mib": 16.7900390625,
+      "pss_max_mib": 16.7900390625,
+      "rss_sum_mean_mib": 21.171875,
+      "private_mean_mib": 16.7578125,
+      "process_names": [
+        "probe"
+      ],
+      "max_processes": 1
+    },
+    "editor_idle": {
+      "samples": 13,
+      "cpu_mean_one_core": 103.05784695484162,
+      "cpu_p95_one_core": 114.97381478645055,
+      "pss_mean_mib": 277.48046875,
+      "pss_max_mib": 302.541015625,
+      "rss_sum_mean_mib": 526.6174879807693,
+      "private_mean_mib": 218.39393028846155,
+      "process_names": [
+        "WebKitNetworkPr",
+        "WebKitWebProces",
+        "probe"
+      ],
+      "max_processes": 4
+    },
+    "editor_active": {
+      "samples": 16,
+      "cpu_mean_one_core": 106.88786424689732,
+      "cpu_p95_one_core": 109.61628072916793,
+      "pss_mean_mib": 288.90447998046875,
+      "pss_max_mib": 295.056640625,
+      "rss_sum_mean_mib": 538.511962890625,
+      "private_mean_mib": 229.804931640625,
+      "process_names": [
+        "WebKitNetworkPr",
+        "WebKitWebProces",
+        "probe"
+      ],
+      "max_processes": 4
+    },
+    "editor_closed": {
+      "samples": 10,
+      "cpu_mean_one_core": 2.3749729076455943,
+      "cpu_p95_one_core": 3.9541924919484224,
+      "pss_mean_mib": 63.31142578125,
+      "pss_max_mib": 63.3134765625,
+      "rss_sum_mean_mib": 83.13671875,
+      "private_mean_mib": 62.625,
+      "process_names": [
+        "probe"
+      ],
+      "max_processes": 1
+    }
+  },
+  "reports": [
+    "EXERCISE {\"events\":105,\"writes\":19,\"rejected\":0,\"closed\":true}",
+    "RESULT {\"blocks\":16747,\"signal_blocks\":4182}"
+  ],
+  "samples": [
+    {
+      "time_s": 0.0004218269605189562,
+      "phase": "starting",
+      "phase_s": 0.0004218269605189562,
+      "cpu_percent_one_core": 0.0,
+      "pss_mib": 0.388671875,
+      "rss_sum_mib": 0.86328125,
+      "private_mib": 0.38671875,
+      "swap_pss_mib": 0.0,
+      "processes": [
+        {
+          "pid": 2708022,
+          "start": 119716239,
+          "ticks": 0,
+          "name": "probe",
+          "pss_kib": 398,
+          "rss_kib": 884,
+          "private_kib": 396,
+          "swap_pss_kib": 0
+        }
+      ]
+    },
+    {
+      "time_s": 0.5035977149382234,
+      "phase": "engine_only",
+      "phase_s": 0.4867016749922186,
+      "cpu_percent_one_core": 3.974753257828244,
+      "pss_mib": 16.7900390625,
+      "rss_sum_mib": 21.171875,
+      "private_mib": 16.7578125,
+      "swap_pss_mib": 0.0,
+      "processes": [
+        {
+          "pid": 2708022,
+          "start": 119716239,
+          "ticks": 2,
+          "name": "probe",
+          "pss_kib": 17193,
+          "rss_kib": 21680,
+          "private_kib": 17160,
+          "swap_pss_kib": 0
+        }
+      ]
+    },
+    {
+      "time_s": 1.0064425258897245,
+      "phase": "engine_only",
+      "phase_s": 0.9895464859437197,
+      "cpu_percent_one_core": 1.9886851335062279,
+      "pss_mib": 16.7900390625,
+      "rss_sum_mib": 21.171875,
+      "private_mib": 16.7578125,
+      "swap_pss_mib": 0.0,
+      "processes": [
+        {
+          "pid": 2708022,
+          "start": 119716239,
+          "ticks": 3,
+          "name": "probe",
+          "pss_kib": 17193,
+          "rss_kib": 21680,
+          "private_kib": 17160,
+          "swap_pss_kib": 0
+        }
+      ]
+    },
+    {
+      "time_s": 1.5101310999598354,
+      "phase": "engine_only",
+      "phase_s": 1.4932350600138307,
+      "cpu_percent_one_core": 1.9853537512661643,
+      "pss_mib": 16.7900390625,
+      "rss_sum_mib": 21.171875,
+      "private_mib": 16.7578125,
+      "swap_pss_mib": 0.0,
+      "processes": [
+        {
+          "pid": 2708022,
+          "start": 119716239,
+          "ticks": 4,
+          "name": "probe",
+          "pss_kib": 17193,
+          "rss_kib": 21680,
+          "private_kib": 17160,
+          "swap_pss_kib": 0
+        }
+      ]
+    },
+    {
+      "time_s": 2.013824155088514,
+      "phase": "engine_only",
+      "phase_s": 1.9969281151425093,
+      "cpu_percent_one_core": 3.970672177501155,
+      "pss_mib": 16.7900390625,
+      "rss_sum_mib": 21.171875,
+      "private_mib": 16.7578125,
+      "swap_pss_mib": 0.0,
+      "processes": [
+        {
+          "pid": 2708022,
+          "start": 119716239,
+          "ticks": 6,
+          "name": "probe",
+          "pss_kib": 17193,
+          "rss_kib": 21680,
+          "private_kib": 17160,
+          "swap_pss_kib": 0
+        }
+      ]
+    },
+    {
+      "time_s": 2.5174172010738403,
+      "phase": "engine_only",
+      "phase_s": 2.5005211611278355,
+      "cpu_percent_one_core": 1.9857303590112287,
+      "pss_mib": 16.7900390625,
+      "rss_sum_mib": 21.171875,
+      "private_mib": 16.7578125,
+      "swap_pss_mib": 0.0,
+      "processes": [
+        {
+          "pid": 2708022,
+          "start": 119716239,
+          "ticks": 7,
+          "name": "probe",
+          "pss_kib": 17193,
+          "rss_kib": 21680,
+          "private_kib": 17160,
+          "swap_pss_kib": 0
+        }
+      ]
+    },
+    {
+      "time_s": 3.021101576043293,
+      "phase": "engine_only",
+      "phase_s": 3.004205536097288,
+      "cpu_percent_one_core": 1.9853703027032512,
+      "pss_mib": 16.7900390625,
+      "rss_sum_mib": 21.171875,
+      "private_mib": 16.7578125,
+      "swap_pss_mib": 0.0,
+      "processes": [
+        {
+          "pid": 2708022,
+          "start": 119716239,
+          "ticks": 8,
+          "name": "probe",
+          "pss_kib": 17193,
+          "rss_kib": 21680,
+          "private_kib": 17160,
+          "swap_pss_kib": 0
+        }
+      ]
+    },
+    {
+      "time_s": 3.5232395310886204,
+      "phase": "engine_only",
+      "phase_s": 3.5063434911426157,
+      "cpu_percent_one_core": 1.991484590942206,
+      "pss_mib": 16.7900390625,
+      "rss_sum_mib": 21.171875,
+      "private_mib": 16.7578125,
+      "swap_pss_mib": 0.0,
+      "processes": [
+        {
+          "pid": 2708022,
+          "start": 119716239,
+          "ticks": 9,
+          "name": "probe",
+          "pss_kib": 17193,
+          "rss_kib": 21680,
+          "private_kib": 17160,
+          "swap_pss_kib": 0
+        }
+      ]
+    },
+    {
+      "time_s": 4.026187560055405,
+      "phase": "engine_only",
+      "phase_s": 4.0092915201094,
+      "cpu_percent_one_core": 1.9882770035987987,
+      "pss_mib": 16.7900390625,
+      "rss_sum_mib": 21.171875,
+      "private_mib": 16.7578125,
+      "swap_pss_mib": 0.0,
+      "processes": [
+        {
+          "pid": 2708022,
+          "start": 119716239,
+          "ticks": 10,
+          "name": "probe",
+          "pss_kib": 17193,
+          "rss_kib": 21680,
+          "private_kib": 17160,
+          "swap_pss_kib": 0
+        }
+      ]
+    },
+    {
+      "time_s": 4.529898504959419,
+      "phase": "engine_only",
+      "phase_s": 4.513002465013415,
+      "cpu_percent_one_core": 1.9852655776430603,
+      "pss_mib": 16.7900390625,
+      "rss_sum_mib": 21.171875,
+      "private_mib": 16.7578125,
+      "swap_pss_mib": 0.0,
+      "processes": [
+        {
+          "pid": 2708022,
+          "start": 119716239,
+          "ticks": 11,
+          "name": "probe",
+          "pss_kib": 17193,
+          "rss_kib": 21680,
+          "private_kib": 17160,
+          "swap_pss_kib": 0
+        }
+      ]
+    },
+    {
+      "time_s": 5.033624819014221,
+      "phase": "engine_only",
+      "phase_s": 5.016728779068217,
+      "cpu_percent_one_core": 3.9704100107472513,
+      "pss_mib": 16.7900390625,
+      "rss_sum_mib": 21.171875,
+      "private_mib": 16.7578125,
+      "swap_pss_mib": 0.0,
+      "processes": [
+        {
+          "pid": 2708022,
+          "start": 119716239,
+          "ticks": 13,
+          "name": "probe",
+          "pss_kib": 17193,
+          "rss_kib": 21680,
+          "private_kib": 17160,
+          "swap_pss_kib": 0
+        }
+      ]
+    },
+    {
+      "time_s": 5.536399409873411,
+      "phase": "engine_only",
+      "phase_s": 5.519503369927406,
+      "cpu_percent_one_core": 0.0,
+      "pss_mib": 16.7900390625,
+      "rss_sum_mib": 21.171875,
+      "private_mib": 16.7578125,
+      "swap_pss_mib": 0.0,
+      "processes": [
+        {
+          "pid": 2708022,
+          "start": 119716239,
+          "ticks": 13,
+          "name": "probe",
+          "pss_kib": 17193,
+          "rss_kib": 21680,
+          "private_kib": 17160,
+          "swap_pss_kib": 0
+        }
+      ]
+    },
+    {
+      "time_s": 6.040167794097215,
+      "phase": "engine_only",
+      "phase_s": 6.02327175415121,
+      "cpu_percent_one_core": 3.970078438093251,
+      "pss_mib": 16.7900390625,
+      "rss_sum_mib": 21.171875,
+      "private_mib": 16.7578125,
+      "swap_pss_mib": 0.0,
+      "processes": [
+        {
+          "pid": 2708022,
+          "start": 119716239,
+          "ticks": 15,
+          "name": "probe",
+          "pss_kib": 17193,
+          "rss_kib": 21680,
+          "private_kib": 17160,
+          "swap_pss_kib": 0
+        }
+      ]
+    },
+    {
+      "time_s": 6.542223650030792,
+      "phase": "engine_only",
+      "phase_s": 6.525327610084787,
+      "cpu_percent_one_core": 1.9918102501573098,
+      "pss_mib": 16.7900390625,
+      "rss_sum_mib": 21.171875,
+      "private_mib": 16.7578125,
+      "swap_pss_mib": 0.0,
+      "processes": [
+        {
+          "pid": 2708022,
+          "start": 119716239,
+          "ticks": 16,
+          "name": "probe",
+          "pss_kib": 17193,
+          "rss_kib": 21680,
+          "private_kib": 17160,
+          "swap_pss_kib": 0
+        }
+      ]
+    },
+    {
+      "time_s": 7.0448789820075035,
+      "phase": "engine_only",
+      "phase_s": 7.027982942061499,
+      "cpu_percent_one_core": 1.9894347804239156,
+      "pss_mib": 16.7900390625,
+      "rss_sum_mib": 21.171875,
+      "private_mib": 16.7578125,
+      "swap_pss_mib": 0.0,
+      "processes": [
+        {
+          "pid": 2708022,
+          "start": 119716239,
+          "ticks": 17,
+          "name": "probe",
+          "pss_kib": 17193,
+          "rss_kib": 21680,
+          "private_kib": 17160,
+          "swap_pss_kib": 0
+        }
+      ]
+    },
+    {
+      "time_s": 7.548497586976737,
+      "phase": "engine_only",
+      "phase_s": 7.531601547030732,
+      "cpu_percent_one_core": 1.985629581856078,
+      "pss_mib": 16.7900390625,
+      "rss_sum_mib": 21.171875,
+      "private_mib": 16.7578125,
+      "swap_pss_mib": 0.0,
+      "processes": [
+        {
+          "pid": 2708022,
+          "start": 119716239,
+          "ticks": 18,
+          "name": "probe",
+          "pss_kib": 17193,
+          "rss_kib": 21680,
+          "private_kib": 17160,
+          "swap_pss_kib": 0
+        }
+      ]
+    },
+    {
+      "time_s": 8.051497576059774,
+      "phase": "engine_only",
+      "phase_s": 8.034601536113769,
+      "cpu_percent_one_core": 5.964214841175177,
+      "pss_mib": 16.7900390625,
+      "rss_sum_mib": 21.171875,
+      "private_mib": 16.7578125,
+      "swap_pss_mib": 0.0,
+      "processes": [
+        {
+          "pid": 2708022,
+          "start": 119716239,
+          "ticks": 21,
+          "name": "probe",
+          "pss_kib": 17193,
+          "rss_kib": 21680,
+          "private_kib": 17160,
+          "swap_pss_kib": 0
+        }
+      ]
+    },
+    {
+      "time_s": 8.568745052907616,
+      "phase": "loading",
+      "phase_s": 0.1987099580001086,
+      "cpu_percent_one_core": 21.26641596598034,
+      "pss_mib": 190.845703125,
+      "rss_sum_mib": 434.9296875,
+      "private_mib": 134.390625,
+      "swap_pss_mib": 0.0,
+      "processes": [
+        {
+          "pid": 2708022,
+          "start": 119716239,
+          "ticks": 32,
+          "name": "probe",
+          "pss_kib": 32793,
+          "rss_kib": 64060,
+          "private_kib": 26312,
+          "swap_pss_kib": 0
+        },
+        {
+          "pid": 2708761,
+          "start": 119717053,
+          "ticks": 23,
+          "name": "probe",
+          "pss_kib": 70791,
+          "rss_kib": 168848,
+          "private_kib": 44788,
+          "swap_pss_kib": 0
+        },
+        {
+          "pid": 2708828,
+          "start": 119717075,
+          "ticks": 4,
+          "name": "WebKitNetworkPr",
+          "pss_kib": 16365,
+          "rss_kib": 52164,
+          "private_kib": 9696,
+          "swap_pss_kib": 0
+        },
+        {
+          "pid": 2708829,
+          "start": 119717075,
+          "ticks": 12,
+          "name": "WebKitWebProces",
+          "pss_kib": 75477,
+          "rss_kib": 160296,
+          "private_kib": 56820,
+          "swap_pss_kib": 0
+        }
+      ]
+    },
+    {
+      "time_s": 9.087779667926952,
+      "phase": "loading",
+      "phase_s": 0.7177445730194449,
+      "cpu_percent_one_core": 144.49903306970367,
+      "pss_mib": 250.9873046875,
+      "rss_sum_mib": 497.28515625,
+      "private_mib": 194.22265625,
+      "swap_pss_mib": 0.0,
+      "processes": [
+        {
+          "pid": 2708022,
+          "start": 119716239,
+          "ticks": 84,
+          "name": "probe",
+          "pss_kib": 65612,
+          "rss_kib": 96880,
+          "private_kib": 59132,
+          "swap_pss_kib": 0
+        },
+        {
+          "pid": 2708761,
+          "start": 119717053,
+          "ticks": 40,
+          "name": "probe",
+          "pss_kib": 74804,
+          "rss_kib": 172968,
+          "private_kib": 48776,
+          "swap_pss_kib": 0
+        },
+        {
+          "pid": 2708828,
+          "start": 119717075,
+          "ticks": 4,
+          "name": "WebKitNetworkPr",
+          "pss_kib": 16311,
+          "rss_kib": 52148,
+          "private_kib": 9616,
+          "swap_pss_kib": 0
+        },
+        {
+          "pid": 2708829,
+          "start": 119717075,
+          "ticks": 18,
+          "name": "WebKitWebProces",
+          "pss_kib": 100284,
+          "rss_kib": 187224,
+          "private_kib": 81360,
+          "swap_pss_kib": 0
+        }
+      ]
+    },
+    {
+      "time_s": 9.609192316886038,
+      "phase": "loading",
+      "phase_s": 1.2391572219785303,
+      "cpu_percent_one_core": 109.31840666656463,
+      "pss_mib": 261.9208984375,
+      "rss_sum_mib": 508.21875,
+      "private_mib": 205.15625,
+      "swap_pss_mib": 0.0,
+      "processes": [
+        {
+          "pid": 2708022,
+          "start": 119716239,
+          "ticks": 130,
+          "name": "probe",
+          "pss_kib": 57704,
+          "rss_kib": 88972,
+          "private_kib": 51224,
+          "swap_pss_kib": 0
+        },
+        {
+          "pid": 2708761,
+          "start": 119717053,
+          "ticks": 51,
+          "name": "probe",
+          "pss_kib": 95000,
+          "rss_kib": 193164,
+          "private_kib": 68972,
+          "swap_pss_kib": 0
+        },
+        {
+          "pid": 2708828,
+          "start": 119717075,
+          "ticks": 4,
+          "name": "WebKitNetworkPr",
+          "pss_kib": 16303,
+          "rss_kib": 52140,
+          "private_kib": 9608,
+          "swap_pss_kib": 0
+        },
+        {
+          "pid": 2708829,
+          "start": 119717075,
+          "ticks": 18,
+          "name": "WebKitWebProces",
+          "pss_kib": 99200,
+          "rss_kib": 186140,
+          "private_kib": 80276,
+          "swap_pss_kib": 0
+        }
+      ]
+    },
+    {
+      "time_s": 10.132434325059876,
+      "phase": "loading",
+      "phase_s": 1.7623992301523685,
+      "cpu_percent_one_core": 105.11388447566539,
+      "pss_mib": 306.5029296875,
+      "rss_sum_mib": 552.80078125,
+      "private_mib": 249.73828125,
+      "swap_pss_mib": 0.0,
+      "processes": [
+        {
+          "pid": 2708022,
+          "start": 119716239,
+          "ticks": 132,
+          "name": "probe",
+          "pss_kib": 57704,
+          "rss_kib": 88972,
+          "private_kib": 51224,
+          "swap_pss_kib": 0
+        },
+        {
+          "pid": 2708761,
+          "start": 119717053,
+          "ticks": 103,
+          "name": "probe",
+          "pss_kib": 140124,
+          "rss_kib": 238288,
+          "private_kib": 114096,
+          "swap_pss_kib": 0
+        },
+        {
+          "pid": 2708828,
+          "start": 119717075,
+          "ticks": 4,
+          "name": "WebKitNetworkPr",
+          "pss_kib": 16303,
+          "rss_kib": 52140,
+          "private_kib": 9608,
+          "swap_pss_kib": 0
+        },
+        {
+          "pid": 2708829,
+          "start": 119717075,
+          "ticks": 19,
+          "name": "WebKitWebProces",
+          "pss_kib": 99728,
+          "rss_kib": 186668,
+          "private_kib": 80804,
+          "swap_pss_kib": 0
+        }
+      ]
+    },
+    {
+      "time_s": 10.653147029923275,
+      "phase": "loading",
+      "phase_s": 2.283111935015768,
+      "cpu_percent_one_core": 111.38579769282829,
+      "pss_mib": 266.986328125,
+      "rss_sum_mib": 513.8125,
+      "private_mib": 210.03515625,
+      "swap_pss_mib": 0.0,
+      "processes": [
+        {
+          "pid": 2708022,
+          "start": 119716239,
+          "ticks": 134,
+          "name": "probe",
+          "pss_kib": 57704,
+          "rss_kib": 88972,
+          "private_kib": 51224,
+          "swap_pss_kib": 0
+        },
+        {
+          "pid": 2708761,
+          "start": 119717053,
+          "ticks": 143,
+          "name": "probe",
+          "pss_kib": 74292,
+          "rss_kib": 172504,
+          "private_kib": 48232,
+          "swap_pss_kib": 0
+        },
+        {
+          "pid": 2708828,
+          "start": 119717075,
+          "ticks": 4,
+          "name": "WebKitNetworkPr",
+          "pss_kib": 16307,
+          "rss_kib": 52144,
+          "private_kib": 9612,
+          "swap_pss_kib": 0
+        },
+        {
+          "pid": 2708829,
+          "start": 119717075,
+          "ticks": 35,
+          "name": "WebKitWebProces",
+          "pss_kib": 125091,
+          "rss_kib": 212524,
+          "private_kib": 106008,
+          "swap_pss_kib": 0
+        }
+      ]
+    },
+    {
+      "time_s": 11.173358036903664,
+      "phase": "editor_idle",
+      "phase_s": 0.26864877296611667,
+      "cpu_percent_one_core": 115.3378133005591,
+      "pss_mib": 276.69140625,
+      "rss_sum_mib": 525.765625,
+      "private_mib": 217.609375,
+      "swap_pss_mib": 0.0,
+      "processes": [
+        {
+          "pid": 2708022,
+          "start": 119716239,
+          "ticks": 136,
+          "name": "probe",
+          "pss_kib": 57704,
+          "rss_kib": 88972,
+          "private_kib": 51224,
+          "swap_pss_kib": 0
+        },
+        {
+          "pid": 2708761,
+          "start": 119717053,
+          "ticks": 145,
+          "name": "probe",
+          "pss_kib": 75910,
+          "rss_kib": 176204,
+          "private_kib": 47768,
+          "swap_pss_kib": 0
+        },
+        {
+          "pid": 2708828,
+          "start": 119717075,
+          "ticks": 4,
+          "name": "WebKitNetworkPr",
+          "pss_kib": 16371,
+          "rss_kib": 52208,
+          "private_kib": 9676,
+          "swap_pss_kib": 0
+        },
+        {
+          "pid": 2708829,
+          "start": 119717075,
+          "ticks": 91,
+          "name": "WebKitWebProces",
+          "pss_kib": 133347,
+          "rss_kib": 221000,
+          "private_kib": 114164,
+          "swap_pss_kib": 0
+        }
+      ]
+    },
+    {
+      "time_s": 11.694994414923713,
+      "phase": "editor_idle",
+      "phase_s": 0.7902851509861648,
+      "cpu_percent_one_core": 111.18856437917157,
+      "pss_mib": 270.54296875,
+      "rss_sum_mib": 519.6171875,
+      "private_mib": 211.4609375,
+      "swap_pss_mib": 0.0,
+      "processes": [
+        {
+          "pid": 2708022,
+          "start": 119716239,
+          "ticks": 138,
+          "name": "probe",
+          "pss_kib": 53724,
+          "rss_kib": 84992,
+          "private_kib": 47244,
+          "swap_pss_kib": 0
+        },
+        {
+          "pid": 2708761,
+          "start": 119717053,
+          "ticks": 146,
+          "name": "probe",
+          "pss_kib": 75898,
+          "rss_kib": 176192,
+          "private_kib": 47756,
+          "swap_pss_kib": 0
+        },
+        {
+          "pid": 2708828,
+          "start": 119717075,
+          "ticks": 4,
+          "name": "WebKitNetworkPr",
+          "pss_kib": 16387,
+          "rss_kib": 52224,
+          "private_kib": 9692,
+          "swap_pss_kib": 0
+        },
+        {
+          "pid": 2708829,
+          "start": 119717075,
+          "ticks": 146,
+          "name": "WebKitWebProces",
+          "pss_kib": 131027,
+          "rss_kib": 218680,
+          "private_kib": 111844,
+          "swap_pss_kib": 0
+        }
+      ]
+    },
+    {
+      "time_s": 12.217178090009838,
+      "phase": "editor_idle",
+      "phase_s": 1.3124688260722905,
+      "cpu_percent_one_core": 105.32692350240295,
+      "pss_mib": 269.734375,
+      "rss_sum_mib": 518.80859375,
+      "private_mib": 210.65234375,
+      "swap_pss_mib": 0.0,
+      "processes": [
+        {
+          "pid": 2708022,
+          "start": 119716239,
+          "ticks": 141,
+          "name": "probe",
+          "pss_kib": 53724,
+          "rss_kib": 84992,
+          "private_kib": 47244,
+          "swap_pss_kib": 0
+        },
+        {
+          "pid": 2708761,
+          "start": 119717053,
+          "ticks": 147,
+          "name": "probe",
+          "pss_kib": 75918,
+          "rss_kib": 176212,
+          "private_kib": 47776,
+          "swap_pss_kib": 0
+        },
+        {
+          "pid": 2708828,
+          "start": 119717075,
+          "ticks": 4,
+          "name": "WebKitNetworkPr",
+          "pss_kib": 16371,
+          "rss_kib": 52208,
+          "private_kib": 9676,
+          "swap_pss_kib": 0
+        },
+        {
+          "pid": 2708829,
+          "start": 119717075,
+          "ticks": 197,
+          "name": "WebKitWebProces",
+          "pss_kib": 130195,
+          "rss_kib": 217848,
+          "private_kib": 111012,
+          "swap_pss_kib": 0
+        }
+      ]
+    },
+    {
+      "time_s": 12.738526880042627,
+      "phase": "editor_idle",
+      "phase_s": 1.8338176161050797,
+      "cpu_percent_one_core": 95.90508495637893,
+      "pss_mib": 270.40625,
+      "rss_sum_mib": 519.48046875,
+      "private_mib": 211.32421875,
+      "swap_pss_mib": 0.0,
+      "processes": [
+        {
+          "pid": 2708022,
+          "start": 119716239,
+          "ticks": 143,
+          "name": "probe",
+          "pss_kib": 53724,
+          "rss_kib": 84992,
+          "private_kib": 47244,
+          "swap_pss_kib": 0
+        },
+        {
+          "pid": 2708761,
+          "start": 119717053,
+          "ticks": 148,
+          "name": "probe",
+          "pss_kib": 75930,
+          "rss_kib": 176224,
+          "private_kib": 47788,
+          "swap_pss_kib": 0
+        },
+        {
+          "pid": 2708828,
+          "start": 119717075,
+          "ticks": 4,
+          "name": "WebKitNetworkPr",
+          "pss_kib": 16359,
+          "rss_kib": 52196,
+          "private_kib": 9664,
+          "swap_pss_kib": 0
+        },
+        {
+          "pid": 2708829,
+          "start": 119717075,
+          "ticks": 244,
+          "name": "WebKitWebProces",
+          "pss_kib": 130883,
+          "rss_kib": 218536,
+          "private_kib": 111700,
+          "swap_pss_kib": 0
+        }
+      ]
+    },
+    {
+      "time_s": 13.25887321587652,
+      "phase": "editor_idle",
+      "phase_s": 2.354163951938972,
+      "cpu_percent_one_core": 105.69883212852564,
+      "pss_mib": 270.33984375,
+      "rss_sum_mib": 519.4140625,
+      "private_mib": 211.2578125,
+      "swap_pss_mib": 0.0,
+      "processes": [
+        {
+          "pid": 2708022,
+          "start": 119716239,
+          "ticks": 145,
+          "name": "probe",
+          "pss_kib": 53724,
+          "rss_kib": 84992,
+          "private_kib": 47244,
+          "swap_pss_kib": 0
+        },
+        {
+          "pid": 2708761,
+          "start": 119717053,
+          "ticks": 150,
+          "name": "probe",
+          "pss_kib": 75930,
+          "rss_kib": 176224,
+          "private_kib": 47788,
+          "swap_pss_kib": 0
+        },
+        {
+          "pid": 2708828,
+          "start": 119717075,
+          "ticks": 4,
+          "name": "WebKitNetworkPr",
+          "pss_kib": 16359,
+          "rss_kib": 52196,
+          "private_kib": 9664,
+          "swap_pss_kib": 0
+        },
+        {
+          "pid": 2708829,
+          "start": 119717075,
+          "ticks": 295,
+          "name": "WebKitWebProces",
+          "pss_kib": 130815,
+          "rss_kib": 218468,
+          "private_kib": 111632,
+          "swap_pss_kib": 0
+        }
+      ]
+    },
+    {
+      "time_s": 13.780450224876404,
+      "phase": "editor_idle",
+      "phase_s": 2.875740960938856,
+      "cpu_percent_one_core": 99.69764599039593,
+      "pss_mib": 271.90234375,
+      "rss_sum_mib": 521.0390625,
+      "private_mib": 212.8203125,
+      "swap_pss_mib": 0.0,
+      "processes": [
+        {
+          "pid": 2708022,
+          "start": 119716239,
+          "ticks": 147,
+          "name": "probe",
+          "pss_kib": 53724,
+          "rss_kib": 84992,
+          "private_kib": 47244,
+          "swap_pss_kib": 0
+        },
+        {
+          "pid": 2708761,
+          "start": 119717053,
+          "ticks": 150,
+          "name": "probe",
+          "pss_kib": 75943,
+          "rss_kib": 176248,
+          "private_kib": 47812,
+          "swap_pss_kib": 0
+        },
+        {
+          "pid": 2708828,
+          "start": 119717075,
+          "ticks": 4,
+          "name": "WebKitNetworkPr",
+          "pss_kib": 16380,
+          "rss_kib": 52260,
+          "private_kib": 9664,
+          "swap_pss_kib": 0
+        },
+        {
+          "pid": 2708829,
+          "start": 119717075,
+          "ticks": 345,
+          "name": "WebKitWebProces",
+          "pss_kib": 132381,
+          "rss_kib": 220044,
+          "private_kib": 113208,
+          "swap_pss_kib": 0
+        }
+      ]
+    },
+    {
+      "time_s": 14.302308181067929,
+      "phase": "editor_idle",
+      "phase_s": 3.397598917130381,
+      "cpu_percent_one_core": 114.97381478645055,
+      "pss_mib": 271.5390625,
+      "rss_sum_mib": 520.67578125,
+      "private_mib": 212.45703125,
+      "swap_pss_mib": 0.0,
+      "processes": [
+        {
+          "pid": 2708022,
+          "start": 119716239,
+          "ticks": 151,
+          "name": "probe",
+          "pss_kib": 53724,
+          "rss_kib": 84992,
+          "private_kib": 47244,
+          "swap_pss_kib": 0
+        },
+        {
+          "pid": 2708761,
+          "start": 119717053,
+          "ticks": 151,
+          "name": "probe",
+          "pss_kib": 75951,
+          "rss_kib": 176256,
+          "private_kib": 47820,
+          "swap_pss_kib": 0
+        },
+        {
+          "pid": 2708828,
+          "start": 119717075,
+          "ticks": 4,
+          "name": "WebKitNetworkPr",
+          "pss_kib": 16388,
+          "rss_kib": 52268,
+          "private_kib": 9672,
+          "swap_pss_kib": 0
+        },
+        {
+          "pid": 2708829,
+          "start": 119717075,
+          "ticks": 400,
+          "name": "WebKitWebProces",
+          "pss_kib": 131993,
+          "rss_kib": 219656,
+          "private_kib": 112820,
+          "swap_pss_kib": 0
+        }
+      ]
+    },
+    {
+      "time_s": 14.822114120936021,
+      "phase": "editor_idle",
+      "phase_s": 3.9174048569984734,
+      "cpu_percent_one_core": 103.88492292662757,
+      "pss_mib": 273.048828125,
+      "rss_sum_mib": 522.1796875,
+      "private_mib": 213.9609375,
+      "swap_pss_mib": 0.0,
+      "processes": [
+        {
+          "pid": 2708022,
+          "start": 119716239,
+          "ticks": 153,
+          "name": "probe",
+          "pss_kib": 53725,
+          "rss_kib": 84992,
+          "private_kib": 47244,
+          "swap_pss_kib": 0
+        },
+        {
+          "pid": 2708761,
+          "start": 119717053,
+          "ticks": 153,
+          "name": "probe",
+          "pss_kib": 75958,
+          "rss_kib": 176260,
+          "private_kib": 47824,
+          "swap_pss_kib": 0
+        },
+        {
+          "pid": 2708828,
+          "start": 119717075,
+          "ticks": 4,
+          "name": "WebKitNetworkPr",
+          "pss_kib": 16396,
+          "rss_kib": 52276,
+          "private_kib": 9680,
+          "swap_pss_kib": 0
+        },
+        {
+          "pid": 2708829,
+          "start": 119717075,
+          "ticks": 450,
+          "name": "WebKitWebProces",
+          "pss_kib": 133523,
+          "rss_kib": 221184,
+          "private_kib": 114348,
+          "swap_pss_kib": 0
+        }
+      ]
+    },
+    {
+      "time_s": 15.34414231707342,
+      "phase": "editor_idle",
+      "phase_s": 4.439433053135872,
+      "cpu_percent_one_core": 97.69587232521198,
+      "pss_mib": 274.416015625,
+      "rss_sum_mib": 523.546875,
+      "private_mib": 215.328125,
+      "swap_pss_mib": 0.0,
+      "processes": [
+        {
+          "pid": 2708022,
+          "start": 119716239,
+          "ticks": 155,
+          "name": "probe",
+          "pss_kib": 53725,
+          "rss_kib": 84992,
+          "private_kib": 47244,
+          "swap_pss_kib": 0
+        },
+        {
+          "pid": 2708761,
+          "start": 119717053,
+          "ticks": 154,
+          "name": "probe",
+          "pss_kib": 75958,
+          "rss_kib": 176260,
+          "private_kib": 47824,
+          "swap_pss_kib": 0
+        },
+        {
+          "pid": 2708828,
+          "start": 119717075,
+          "ticks": 4,
+          "name": "WebKitNetworkPr",
+          "pss_kib": 16380,
+          "rss_kib": 52260,
+          "private_kib": 9664,
+          "swap_pss_kib": 0
+        },
+        {
+          "pid": 2708829,
+          "start": 119717075,
+          "ticks": 498,
+          "name": "WebKitWebProces",
+          "pss_kib": 134939,
+          "rss_kib": 222600,
+          "private_kib": 115764,
+          "swap_pss_kib": 0
+        }
+      ]
+    },
+    {
+      "time_s": 15.866422280902043,
+      "phase": "editor_idle",
+      "phase_s": 4.961713016964495,
+      "cpu_percent_one_core": 95.73409562463436,
+      "pss_mib": 272.380859375,
+      "rss_sum_mib": 521.51171875,
+      "private_mib": 213.29296875,
+      "swap_pss_mib": 0.0,
+      "processes": [
+        {
+          "pid": 2708022,
+          "start": 119716239,
+          "ticks": 157,
+          "name": "probe",
+          "pss_kib": 53725,
+          "rss_kib": 84992,
+          "private_kib": 47244,
+          "swap_pss_kib": 0
+        },
+        {
+          "pid": 2708761,
+          "start": 119717053,
+          "ticks": 155,
+          "name": "probe",
+          "pss_kib": 75958,
+          "rss_kib": 176260,
+          "private_kib": 47824,
+          "swap_pss_kib": 0
+        },
+        {
+          "pid": 2708828,
+          "start": 119717075,
+          "ticks": 4,
+          "name": "WebKitNetworkPr",
+          "pss_kib": 16380,
+          "rss_kib": 52260,
+          "private_kib": 9664,
+          "swap_pss_kib": 0
+        },
+        {
+          "pid": 2708829,
+          "start": 119717075,
+          "ticks": 545,
+          "name": "WebKitWebProces",
+          "pss_kib": 132855,
+          "rss_kib": 220516,
+          "private_kib": 113680,
+          "swap_pss_kib": 0
+        }
+      ]
+    },
+    {
+      "time_s": 16.387772490968928,
+      "phase": "editor_idle",
+      "phase_s": 5.48306322703138,
+      "cpu_percent_one_core": 90.15053430969233,
+      "pss_mib": 273.908203125,
+      "rss_sum_mib": 523.0390625,
+      "private_mib": 214.8203125,
+      "swap_pss_mib": 0.0,
+      "processes": [
+        {
+          "pid": 2708022,
+          "start": 119716239,
+          "ticks": 159,
+          "name": "probe",
+          "pss_kib": 53725,
+          "rss_kib": 84992,
+          "private_kib": 47244,
+          "swap_pss_kib": 0
+        },
+        {
+          "pid": 2708761,
+          "start": 119717053,
+          "ticks": 156,
+          "name": "probe",
+          "pss_kib": 75958,
+          "rss_kib": 176260,
+          "private_kib": 47824,
+          "swap_pss_kib": 0
+        },
+        {
+          "pid": 2708828,
+          "start": 119717075,
+          "ticks": 4,
+          "name": "WebKitNetworkPr",
+          "pss_kib": 16380,
+          "rss_kib": 52260,
+          "private_kib": 9664,
+          "swap_pss_kib": 0
+        },
+        {
+          "pid": 2708829,
+          "start": 119717075,
+          "ticks": 589,
+          "name": "WebKitWebProces",
+          "pss_kib": 134419,
+          "rss_kib": 222080,
+          "private_kib": 115244,
+          "swap_pss_kib": 0
+        }
+      ]
+    },
+    {
+      "time_s": 16.908504755003378,
+      "phase": "editor_idle",
+      "phase_s": 6.00379549106583,
+      "cpu_percent_one_core": 107.54086863397274,
+      "pss_mib": 272.740234375,
+      "rss_sum_mib": 521.87109375,
+      "private_mib": 213.65234375,
+      "swap_pss_mib": 0.0,
+      "processes": [
+        {
+          "pid": 2708022,
+          "start": 119716239,
+          "ticks": 162,
+          "name": "probe",
+          "pss_kib": 53725,
+          "rss_kib": 84992,
+          "private_kib": 47244,
+          "swap_pss_kib": 0
+        },
+        {
+          "pid": 2708761,
+          "start": 119717053,
+          "ticks": 157,
+          "name": "probe",
+          "pss_kib": 75958,
+          "rss_kib": 176260,
+          "private_kib": 47824,
+          "swap_pss_kib": 0
+        },
+        {
+          "pid": 2708828,
+          "start": 119717075,
+          "ticks": 4,
+          "name": "WebKitNetworkPr",
+          "pss_kib": 16380,
+          "rss_kib": 52260,
+          "private_kib": 9664,
+          "swap_pss_kib": 0
+        },
+        {
+          "pid": 2708829,
+          "start": 119717075,
+          "ticks": 641,
+          "name": "WebKitWebProces",
+          "pss_kib": 133223,
+          "rss_kib": 220884,
+          "private_kib": 114048,
+          "swap_pss_kib": 0
+        }
+      ]
+    },
+    {
+      "time_s": 17.432784395990893,
+      "phase": "editor_idle",
+      "phase_s": 6.528075132053345,
+      "cpu_percent_one_core": 110.62798450604177,
+      "pss_mib": 273.626953125,
+      "rss_sum_mib": 522.7578125,
+      "private_mib": 214.5390625,
+      "swap_pss_mib": 0.0,
+      "processes": [
+        {
+          "pid": 2708022,
+          "start": 119716239,
+          "ticks": 164,
+          "name": "probe",
+          "pss_kib": 53725,
+          "rss_kib": 84992,
+          "private_kib": 47244,
+          "swap_pss_kib": 0
+        },
+        {
+          "pid": 2708761,
+          "start": 119717053,
+          "ticks": 159,
+          "name": "probe",
+          "pss_kib": 75942,
+          "rss_kib": 176244,
+          "private_kib": 47808,
+          "swap_pss_kib": 0
+        },
+        {
+          "pid": 2708828,
+          "start": 119717075,
+          "ticks": 4,
+          "name": "WebKitNetworkPr",
+          "pss_kib": 16380,
+          "rss_kib": 52260,
+          "private_kib": 9664,
+          "swap_pss_kib": 0
+        },
+        {
+          "pid": 2708829,
+          "start": 119717075,
+          "ticks": 695,
+          "name": "WebKitWebProces",
+          "pss_kib": 134147,
+          "rss_kib": 221808,
+          "private_kib": 114972,
+          "swap_pss_kib": 0
+        }
+      ]
+    },
+    {
+      "time_s": 17.95565806608647,
+      "phase": "editor_idle",
+      "phase_s": 7.050948802148923,
+      "cpu_percent_one_core": 126.22551827468314,
+      "pss_mib": 302.541015625,
+      "rss_sum_mib": 551.671875,
+      "private_mib": 243.453125,
+      "swap_pss_mib": 0.0,
+      "processes": [
+        {
+          "pid": 2708022,
+          "start": 119716239,
+          "ticks": 167,
+          "name": "probe",
+          "pss_kib": 53725,
+          "rss_kib": 84992,
+          "private_kib": 47244,
+          "swap_pss_kib": 0
+        },
+        {
+          "pid": 2708761,
+          "start": 119717053,
+          "ticks": 159,
+          "name": "probe",
+          "pss_kib": 75966,
+          "rss_kib": 176268,
+          "private_kib": 47832,
+          "swap_pss_kib": 0
+        },
+        {
+          "pid": 2708828,
+          "start": 119717075,
+          "ticks": 6,
+          "name": "WebKitNetworkPr",
+          "pss_kib": 16380,
+          "rss_kib": 52260,
+          "private_kib": 9664,
+          "swap_pss_kib": 0
+        },
+        {
+          "pid": 2708829,
+          "start": 119717075,
+          "ticks": 756,
+          "name": "WebKitWebProces",
+          "pss_kib": 163731,
+          "rss_kib": 251392,
+          "private_kib": 144556,
+          "swap_pss_kib": 0
+        }
+      ]
+    },
+    {
+      "time_s": 18.478442736901343,
+      "phase": "editor_idle",
+      "phase_s": 7.573733472963795,
+      "cpu_percent_one_core": 101.38017229424145,
+      "pss_mib": 282.951171875,
+      "rss_sum_mib": 532.08203125,
+      "private_mib": 223.86328125,
+      "swap_pss_mib": 0.0,
+      "processes": [
+        {
+          "pid": 2708022,
+          "start": 119716239,
+          "ticks": 169,
+          "name": "probe",
+          "pss_kib": 53725,
+          "rss_kib": 84992,
+          "private_kib": 47244,
+          "swap_pss_kib": 0
+        },
+        {
+          "pid": 2708761,
+          "start": 119717053,
+          "ticks": 161,
+          "name": "probe",
+          "pss_kib": 75966,
+          "rss_kib": 176268,
+          "private_kib": 47832,
+          "swap_pss_kib": 0
+        },
+        {
+          "pid": 2708828,
+          "start": 119717075,
+          "ticks": 6,
+          "name": "WebKitNetworkPr",
+          "pss_kib": 16380,
+          "rss_kib": 52260,
+          "private_kib": 9664,
+          "swap_pss_kib": 0
+        },
+        {
+          "pid": 2708829,
+          "start": 119717075,
+          "ticks": 805,
+          "name": "WebKitWebProces",
+          "pss_kib": 143671,
+          "rss_kib": 231332,
+          "private_kib": 124496,
+          "swap_pss_kib": 0
+        }
+      ]
+    },
+    {
+      "time_s": 18.9994551690761,
+      "phase": "editor_idle",
+      "phase_s": 8.094745905138552,
+      "cpu_percent_one_core": 94.04765985231711,
+      "pss_mib": 278.416015625,
+      "rss_sum_mib": 527.609375,
+      "private_mib": 219.328125,
+      "swap_pss_mib": 0.0,
+      "processes": [
+        {
+          "pid": 2708022,
+          "start": 119716239,
+          "ticks": 171,
+          "name": "probe",
+          "pss_kib": 53729,
+          "rss_kib": 84996,
+          "private_kib": 47248,
+          "swap_pss_kib": 0
+        },
+        {
+          "pid": 2708761,
+          "start": 119717053,
+          "ticks": 162,
+          "name": "probe",
+          "pss_kib": 75987,
+          "rss_kib": 176332,
+          "private_kib": 47832,
+          "swap_pss_kib": 0
+        },
+        {
+          "pid": 2708828,
+          "start": 119717075,
+          "ticks": 6,
+          "name": "WebKitNetworkPr",
+          "pss_kib": 16370,
+          "rss_kib": 52260,
+          "private_kib": 9664,
+          "swap_pss_kib": 0
+        },
+        {
+          "pid": 2708829,
+          "start": 119717075,
+          "ticks": 851,
+          "name": "WebKitWebProces",
+          "pss_kib": 139012,
+          "rss_kib": 226684,
+          "private_kib": 119848,
+          "swap_pss_kib": 0
+        }
+      ]
+    },
+    {
+      "time_s": 19.52066126000136,
+      "phase": "editor_idle",
+      "phase_s": 8.615951996063814,
+      "cpu_percent_one_core": 92.09408876014648,
+      "pss_mib": 289.435546875,
+      "rss_sum_mib": 538.62890625,
+      "private_mib": 230.34765625,
+      "swap_pss_mib": 0.0,
+      "processes": [
+        {
+          "pid": 2708022,
+          "start": 119716239,
+          "ticks": 174,
+          "name": "probe",
+          "pss_kib": 53729,
+          "rss_kib": 84996,
+          "private_kib": 47248,
+          "swap_pss_kib": 0
+        },
+        {
+          "pid": 2708761,
+          "start": 119717053,
+          "ticks": 163,
+          "name": "probe",
+          "pss_kib": 75991,
+          "rss_kib": 176336,
+          "private_kib": 47836,
+          "swap_pss_kib": 0
+        },
+        {
+          "pid": 2708828,
+          "start": 119717075,
+          "ticks": 6,
+          "name": "WebKitNetworkPr",
+          "pss_kib": 16370,
+          "rss_kib": 52260,
+          "private_kib": 9664,
+          "swap_pss_kib": 0
+        },
+        {
+          "pid": 2708829,
+          "start": 119717075,
+          "ticks": 895,
+          "name": "WebKitWebProces",
+          "pss_kib": 150292,
+          "rss_kib": 237964,
+          "private_kib": 131128,
+          "swap_pss_kib": 0
+        }
+      ]
+    },
+    {
+      "time_s": 20.04181798105128,
+      "phase": "editor_idle",
+      "phase_s": 9.137108717113733,
+      "cpu_percent_one_core": 99.77804736978362,
+      "pss_mib": 279.244140625,
+      "rss_sum_mib": 528.4375,
+      "private_mib": 220.15625,
+      "swap_pss_mib": 0.0,
+      "processes": [
+        {
+          "pid": 2708022,
+          "start": 119716239,
+          "ticks": 176,
+          "name": "probe",
+          "pss_kib": 53729,
+          "rss_kib": 84996,
+          "private_kib": 47248,
+          "swap_pss_kib": 0
+        },
+        {
+          "pid": 2708761,
+          "start": 119717053,
+          "ticks": 164,
+          "name": "probe",
+          "pss_kib": 75983,
+          "rss_kib": 176328,
+          "private_kib": 47828,
+          "swap_pss_kib": 0
+        },
+        {
+          "pid": 2708828,
+          "start": 119717075,
+          "ticks": 6,
+          "name": "WebKitNetworkPr",
+          "pss_kib": 16370,
+          "rss_kib": 52260,
+          "private_kib": 9664,
+          "swap_pss_kib": 0
+        },
+        {
+          "pid": 2708829,
+          "start": 119717075,
+          "ticks": 944,
+          "name": "WebKitWebProces",
+          "pss_kib": 139864,
+          "rss_kib": 227536,
+          "private_kib": 120700,
+          "swap_pss_kib": 0
+        }
+      ]
+    },
+    {
+      "time_s": 20.56466889195144,
+      "phase": "editor_idle",
+      "phase_s": 9.659959628013894,
+      "cpu_percent_one_core": 105.19251062470148,
+      "pss_mib": 277.779296875,
+      "rss_sum_mib": 526.97265625,
+      "private_mib": 218.69140625,
+      "swap_pss_mib": 0.0,
+      "processes": [
+        {
+          "pid": 2708022,
+          "start": 119716239,
+          "ticks": 178,
+          "name": "probe",
+          "pss_kib": 53729,
+          "rss_kib": 84996,
+          "private_kib": 47248,
+          "swap_pss_kib": 0
+        },
+        {
+          "pid": 2708761,
+          "start": 119717053,
+          "ticks": 165,
+          "name": "probe",
+          "pss_kib": 75995,
+          "rss_kib": 176340,
+          "private_kib": 47840,
+          "swap_pss_kib": 0
+        },
+        {
+          "pid": 2708828,
+          "start": 119717075,
+          "ticks": 6,
+          "name": "WebKitNetworkPr",
+          "pss_kib": 16370,
+          "rss_kib": 52260,
+          "private_kib": 9664,
+          "swap_pss_kib": 0
+        },
+        {
+          "pid": 2708829,
+          "start": 119717075,
+          "ticks": 996,
+          "name": "WebKitWebProces",
+          "pss_kib": 138352,
+          "rss_kib": 226024,
+          "private_kib": 119188,
+          "swap_pss_kib": 0
+        }
+      ]
+    },
+    {
+      "time_s": 21.086916476022452,
+      "phase": "editor_active",
+      "phase_s": 0.1007501850835979,
+      "cpu_percent_one_core": 109.1436355830986,
+      "pss_mib": 283.779296875,
+      "rss_sum_mib": 533.11328125,
+      "private_mib": 224.6796875,
+      "swap_pss_mib": 0.0,
+      "processes": [
+        {
+          "pid": 2708022,
+          "start": 119716239,
+          "ticks": 179,
+          "name": "probe",
+          "pss_kib": 53729,
+          "rss_kib": 84996,
+          "private_kib": 47248,
+          "swap_pss_kib": 0
+        },
+        {
+          "pid": 2708761,
+          "start": 119717053,
+          "ticks": 166,
+          "name": "probe",
+          "pss_kib": 75999,
+          "rss_kib": 176344,
+          "private_kib": 47844,
+          "swap_pss_kib": 0
+        },
+        {
+          "pid": 2708828,
+          "start": 119717075,
+          "ticks": 6,
+          "name": "WebKitNetworkPr",
+          "pss_kib": 16370,
+          "rss_kib": 52260,
+          "private_kib": 9664,
+          "swap_pss_kib": 0
+        },
+        {
+          "pid": 2708829,
+          "start": 119717075,
+          "ticks": 1051,
+          "name": "WebKitWebProces",
+          "pss_kib": 144492,
+          "rss_kib": 232308,
+          "private_kib": 125316,
+          "swap_pss_kib": 0
+        }
+      ]
+    },
+    {
+      "time_s": 21.610934098018333,
+      "phase": "editor_active",
+      "phase_s": 0.6247678070794791,
+      "cpu_percent_one_core": 114.49996618715163,
+      "pss_mib": 283.884765625,
+      "rss_sum_mib": 533.21875,
+      "private_mib": 224.78515625,
+      "swap_pss_mib": 0.0,
+      "processes": [
+        {
+          "pid": 2708022,
+          "start": 119716239,
+          "ticks": 182,
+          "name": "probe",
+          "pss_kib": 53729,
+          "rss_kib": 84996,
+          "private_kib": 47248,
+          "swap_pss_kib": 0
+        },
+        {
+          "pid": 2708761,
+          "start": 119717053,
+          "ticks": 168,
+          "name": "probe",
+          "pss_kib": 75995,
+          "rss_kib": 176340,
+          "private_kib": 47840,
+          "swap_pss_kib": 0
+        },
+        {
+          "pid": 2708828,
+          "start": 119717075,
+          "ticks": 6,
+          "name": "WebKitNetworkPr",
+          "pss_kib": 16370,
+          "rss_kib": 52260,
+          "private_kib": 9664,
+          "swap_pss_kib": 0
+        },
+        {
+          "pid": 2708829,
+          "start": 119717075,
+          "ticks": 1106,
+          "name": "WebKitWebProces",
+          "pss_kib": 144604,
+          "rss_kib": 232420,
+          "private_kib": 125428,
+          "swap_pss_kib": 0
+        }
+      ]
+    },
+    {
+      "time_s": 22.133024533977732,
+      "phase": "editor_active",
+      "phase_s": 1.1468582430388778,
+      "cpu_percent_one_core": 105.34573363507691,
+      "pss_mib": 282.251953125,
+      "rss_sum_mib": 531.5859375,
+      "private_mib": 223.15234375,
+      "swap_pss_mib": 0.0,
+      "processes": [
+        {
+          "pid": 2708022,
+          "start": 119716239,
+          "ticks": 184,
+          "name": "probe",
+          "pss_kib": 53729,
+          "rss_kib": 84996,
+          "private_kib": 47248,
+          "swap_pss_kib": 0
+        },
+        {
+          "pid": 2708761,
+          "start": 119717053,
+          "ticks": 168,
+          "name": "probe",
+          "pss_kib": 76011,
+          "rss_kib": 176356,
+          "private_kib": 47856,
+          "swap_pss_kib": 0
+        },
+        {
+          "pid": 2708828,
+          "start": 119717075,
+          "ticks": 6,
+          "name": "WebKitNetworkPr",
+          "pss_kib": 16370,
+          "rss_kib": 52260,
+          "private_kib": 9664,
+          "swap_pss_kib": 0
+        },
+        {
+          "pid": 2708829,
+          "start": 119717075,
+          "ticks": 1159,
+          "name": "WebKitWebProces",
+          "pss_kib": 142916,
+          "rss_kib": 230732,
+          "private_kib": 123740,
+          "swap_pss_kib": 0
+        }
+      ]
+    },
+    {
+      "time_s": 22.655141388997436,
+      "phase": "editor_active",
+      "phase_s": 1.6689750980585814,
+      "cpu_percent_one_core": 109.17096326616185,
+      "pss_mib": 281.923828125,
+      "rss_sum_mib": 531.2578125,
+      "private_mib": 222.82421875,
+      "swap_pss_mib": 0.0,
+      "processes": [
+        {
+          "pid": 2708022,
+          "start": 119716239,
+          "ticks": 186,
+          "name": "probe",
+          "pss_kib": 53729,
+          "rss_kib": 84996,
+          "private_kib": 47248,
+          "swap_pss_kib": 0
+        },
+        {
+          "pid": 2708761,
+          "start": 119717053,
+          "ticks": 170,
+          "name": "probe",
+          "pss_kib": 76015,
+          "rss_kib": 176360,
+          "private_kib": 47860,
+          "swap_pss_kib": 0
+        },
+        {
+          "pid": 2708828,
+          "start": 119717075,
+          "ticks": 6,
+          "name": "WebKitNetworkPr",
+          "pss_kib": 16370,
+          "rss_kib": 52260,
+          "private_kib": 9664,
+          "swap_pss_kib": 0
+        },
+        {
+          "pid": 2708829,
+          "start": 119717075,
+          "ticks": 1212,
+          "name": "WebKitWebProces",
+          "pss_kib": 142576,
+          "rss_kib": 230392,
+          "private_kib": 123400,
+          "swap_pss_kib": 0
+        }
+      ]
+    },
+    {
+      "time_s": 23.177191084017977,
+      "phase": "editor_active",
+      "phase_s": 2.191024793079123,
+      "cpu_percent_one_core": 109.18500775631556,
+      "pss_mib": 282.705078125,
+      "rss_sum_mib": 532.0390625,
+      "private_mib": 223.60546875,
+      "swap_pss_mib": 0.0,
+      "processes": [
+        {
+          "pid": 2708022,
+          "start": 119716239,
+          "ticks": 189,
+          "name": "probe",
+          "pss_kib": 53733,
+          "rss_kib": 85000,
+          "private_kib": 47252,
+          "swap_pss_kib": 0
+        },
+        {
+          "pid": 2708761,
+          "start": 119717053,
+          "ticks": 171,
+          "name": "probe",
+          "pss_kib": 76019,
+          "rss_kib": 176364,
+          "private_kib": 47864,
+          "swap_pss_kib": 0
+        },
+        {
+          "pid": 2708828,
+          "start": 119717075,
+          "ticks": 6,
+          "name": "WebKitNetworkPr",
+          "pss_kib": 16370,
+          "rss_kib": 52260,
+          "private_kib": 9664,
+          "swap_pss_kib": 0
+        },
+        {
+          "pid": 2708829,
+          "start": 119717075,
+          "ticks": 1265,
+          "name": "WebKitWebProces",
+          "pss_kib": 143368,
+          "rss_kib": 231184,
+          "private_kib": 124192,
+          "swap_pss_kib": 0
+        }
+      ]
+    },
+    {
+      "time_s": 23.698720952961594,
+      "phase": "editor_active",
+      "phase_s": 2.7125546620227396,
+      "cpu_percent_one_core": 107.37640034583374,
+      "pss_mib": 283.474609375,
+      "rss_sum_mib": 532.80859375,
+      "private_mib": 224.375,
+      "swap_pss_mib": 0.0,
+      "processes": [
+        {
+          "pid": 2708022,
+          "start": 119716239,
+          "ticks": 191,
+          "name": "probe",
+          "pss_kib": 53733,
+          "rss_kib": 85000,
+          "private_kib": 47252,
+          "swap_pss_kib": 0
+        },
+        {
+          "pid": 2708761,
+          "start": 119717053,
+          "ticks": 172,
+          "name": "probe",
+          "pss_kib": 76019,
+          "rss_kib": 176364,
+          "private_kib": 47864,
+          "swap_pss_kib": 0
+        },
+        {
+          "pid": 2708828,
+          "start": 119717075,
+          "ticks": 6,
+          "name": "WebKitNetworkPr",
+          "pss_kib": 16370,
+          "rss_kib": 52260,
+          "private_kib": 9664,
+          "swap_pss_kib": 0
+        },
+        {
+          "pid": 2708829,
+          "start": 119717075,
+          "ticks": 1318,
+          "name": "WebKitWebProces",
+          "pss_kib": 144156,
+          "rss_kib": 231972,
+          "private_kib": 124980,
+          "swap_pss_kib": 0
+        }
+      ]
+    },
+    {
+      "time_s": 24.22064096899703,
+      "phase": "editor_active",
+      "phase_s": 3.2344746780581772,
+      "cpu_percent_one_core": 105.38013164888005,
+      "pss_mib": 284.357421875,
+      "rss_sum_mib": 534.00390625,
+      "private_mib": 225.2578125,
+      "swap_pss_mib": 0.0,
+      "processes": [
+        {
+          "pid": 2708022,
+          "start": 119716239,
+          "ticks": 193,
+          "name": "probe",
+          "pss_kib": 53733,
+          "rss_kib": 85000,
+          "private_kib": 47252,
+          "swap_pss_kib": 0
+        },
+        {
+          "pid": 2708761,
+          "start": 119717053,
+          "ticks": 172,
+          "name": "probe",
+          "pss_kib": 76007,
+          "rss_kib": 176352,
+          "private_kib": 47852,
+          "swap_pss_kib": 0
+        },
+        {
+          "pid": 2708828,
+          "start": 119717075,
+          "ticks": 6,
+          "name": "WebKitNetworkPr",
+          "pss_kib": 16370,
+          "rss_kib": 52452,
+          "private_kib": 9664,
+          "swap_pss_kib": 0
+        },
+        {
+          "pid": 2708829,
+          "start": 119717075,
+          "ticks": 1371,
+          "name": "WebKitWebProces",
+          "pss_kib": 145072,
+          "rss_kib": 233016,
+          "private_kib": 125896,
+          "swap_pss_kib": 0
+        }
+      ]
+    },
+    {
+      "time_s": 24.74682165798731,
+      "phase": "editor_active",
+      "phase_s": 3.7606553670484573,
+      "cpu_percent_one_core": 106.42731892624526,
+      "pss_mib": 284.392578125,
+      "rss_sum_mib": 534.0390625,
+      "private_mib": 225.29296875,
+      "swap_pss_mib": 0.0,
+      "processes": [
+        {
+          "pid": 2708022,
+          "start": 119716239,
+          "ticks": 195,
+          "name": "probe",
+          "pss_kib": 53733,
+          "rss_kib": 85000,
+          "private_kib": 47252,
+          "swap_pss_kib": 0
+        },
+        {
+          "pid": 2708761,
+          "start": 119717053,
+          "ticks": 173,
+          "name": "probe",
+          "pss_kib": 76011,
+          "rss_kib": 176356,
+          "private_kib": 47856,
+          "swap_pss_kib": 0
+        },
+        {
+          "pid": 2708828,
+          "start": 119717075,
+          "ticks": 6,
+          "name": "WebKitNetworkPr",
+          "pss_kib": 16370,
+          "rss_kib": 52452,
+          "private_kib": 9664,
+          "swap_pss_kib": 0
+        },
+        {
+          "pid": 2708829,
+          "start": 119717075,
+          "ticks": 1424,
+          "name": "WebKitWebProces",
+          "pss_kib": 145104,
+          "rss_kib": 233048,
+          "private_kib": 125928,
+          "swap_pss_kib": 0
+        }
+      ]
+    },
+    {
+      "time_s": 25.2692770708818,
+      "phase": "editor_active",
+      "phase_s": 4.283110779942945,
+      "cpu_percent_one_core": 105.27214120587078,
+      "pss_mib": 285.611328125,
+      "rss_sum_mib": 535.2578125,
+      "private_mib": 226.51171875,
+      "swap_pss_mib": 0.0,
+      "processes": [
+        {
+          "pid": 2708022,
+          "start": 119716239,
+          "ticks": 197,
+          "name": "probe",
+          "pss_kib": 53733,
+          "rss_kib": 85000,
+          "private_kib": 47252,
+          "swap_pss_kib": 0
+        },
+        {
+          "pid": 2708761,
+          "start": 119717053,
+          "ticks": 174,
+          "name": "probe",
+          "pss_kib": 76011,
+          "rss_kib": 176356,
+          "private_kib": 47856,
+          "swap_pss_kib": 0
+        },
+        {
+          "pid": 2708828,
+          "start": 119717075,
+          "ticks": 6,
+          "name": "WebKitNetworkPr",
+          "pss_kib": 16370,
+          "rss_kib": 52452,
+          "private_kib": 9664,
+          "swap_pss_kib": 0
+        },
+        {
+          "pid": 2708829,
+          "start": 119717075,
+          "ticks": 1476,
+          "name": "WebKitWebProces",
+          "pss_kib": 146352,
+          "rss_kib": 234296,
+          "private_kib": 127176,
+          "swap_pss_kib": 0
+        }
+      ]
+    },
+    {
+      "time_s": 25.79197747190483,
+      "phase": "editor_active",
+      "phase_s": 4.805811180965975,
+      "cpu_percent_one_core": 109.04908411862606,
+      "pss_mib": 286.6142578125,
+      "rss_sum_mib": 536.26171875,
+      "private_mib": 227.515625,
+      "swap_pss_mib": 0.0,
+      "processes": [
+        {
+          "pid": 2708022,
+          "start": 119716239,
+          "ticks": 200,
+          "name": "probe",
+          "pss_kib": 53732,
+          "rss_kib": 85000,
+          "private_kib": 47252,
+          "swap_pss_kib": 0
+        },
+        {
+          "pid": 2708761,
+          "start": 119717053,
+          "ticks": 175,
+          "name": "probe",
+          "pss_kib": 76027,
+          "rss_kib": 176372,
+          "private_kib": 47872,
+          "swap_pss_kib": 0
+        },
+        {
+          "pid": 2708828,
+          "start": 119717075,
+          "ticks": 6,
+          "name": "WebKitNetworkPr",
+          "pss_kib": 16370,
+          "rss_kib": 52452,
+          "private_kib": 9664,
+          "swap_pss_kib": 0
+        },
+        {
+          "pid": 2708829,
+          "start": 119717075,
+          "ticks": 1529,
+          "name": "WebKitWebProces",
+          "pss_kib": 147364,
+          "rss_kib": 235308,
+          "private_kib": 128188,
+          "swap_pss_kib": 0
+        }
+      ]
+    },
+    {
+      "time_s": 26.314229415962473,
+      "phase": "editor_active",
+      "phase_s": 5.328063125023618,
+      "cpu_percent_one_core": 107.22793976582884,
+      "pss_mib": 287.642578125,
+      "rss_sum_mib": 537.2890625,
+      "private_mib": 228.54296875,
+      "swap_pss_mib": 0.0,
+      "processes": [
+        {
+          "pid": 2708022,
+          "start": 119716239,
+          "ticks": 202,
+          "name": "probe",
+          "pss_kib": 53733,
+          "rss_kib": 85000,
+          "private_kib": 47252,
+          "swap_pss_kib": 0
+        },
+        {
+          "pid": 2708761,
+          "start": 119717053,
+          "ticks": 176,
+          "name": "probe",
+          "pss_kib": 76027,
+          "rss_kib": 176372,
+          "private_kib": 47872,
+          "swap_pss_kib": 0
+        },
+        {
+          "pid": 2708828,
+          "start": 119717075,
+          "ticks": 6,
+          "name": "WebKitNetworkPr",
+          "pss_kib": 16370,
+          "rss_kib": 52452,
+          "private_kib": 9664,
+          "swap_pss_kib": 0
+        },
+        {
+          "pid": 2708829,
+          "start": 119717075,
+          "ticks": 1582,
+          "name": "WebKitWebProces",
+          "pss_kib": 148416,
+          "rss_kib": 236360,
+          "private_kib": 129240,
+          "swap_pss_kib": 0
+        }
+      ]
+    },
+    {
+      "time_s": 26.836136202095076,
+      "phase": "editor_active",
+      "phase_s": 5.849969911156222,
+      "cpu_percent_one_core": 105.38280294754748,
+      "pss_mib": 288.427734375,
+      "rss_sum_mib": 538.07421875,
+      "private_mib": 229.328125,
+      "swap_pss_mib": 0.0,
+      "processes": [
+        {
+          "pid": 2708022,
+          "start": 119716239,
+          "ticks": 204,
+          "name": "probe",
+          "pss_kib": 53733,
+          "rss_kib": 85000,
+          "private_kib": 47252,
+          "swap_pss_kib": 0
+        },
+        {
+          "pid": 2708761,
+          "start": 119717053,
+          "ticks": 177,
+          "name": "probe",
+          "pss_kib": 76035,
+          "rss_kib": 176380,
+          "private_kib": 47880,
+          "swap_pss_kib": 0
+        },
+        {
+          "pid": 2708828,
+          "start": 119717075,
+          "ticks": 6,
+          "name": "WebKitNetworkPr",
+          "pss_kib": 16370,
+          "rss_kib": 52452,
+          "private_kib": 9664,
+          "swap_pss_kib": 0
+        },
+        {
+          "pid": 2708829,
+          "start": 119717075,
+          "ticks": 1634,
+          "name": "WebKitWebProces",
+          "pss_kib": 149212,
+          "rss_kib": 237156,
+          "private_kib": 130036,
+          "swap_pss_kib": 0
+        }
+      ]
+    },
+    {
+      "time_s": 27.356938025914133,
+      "phase": "editor_active",
+      "phase_s": 6.370771734975278,
+      "cpu_percent_one_core": 105.60638900356237,
+      "pss_mib": 289.150390625,
+      "rss_sum_mib": 538.796875,
+      "private_mib": 230.05078125,
+      "swap_pss_mib": 0.0,
+      "processes": [
+        {
+          "pid": 2708022,
+          "start": 119716239,
+          "ticks": 206,
+          "name": "probe",
+          "pss_kib": 53733,
+          "rss_kib": 85000,
+          "private_kib": 47252,
+          "swap_pss_kib": 0
+        },
+        {
+          "pid": 2708761,
+          "start": 119717053,
+          "ticks": 177,
+          "name": "probe",
+          "pss_kib": 76027,
+          "rss_kib": 176372,
+          "private_kib": 47872,
+          "swap_pss_kib": 0
+        },
+        {
+          "pid": 2708828,
+          "start": 119717075,
+          "ticks": 6,
+          "name": "WebKitNetworkPr",
+          "pss_kib": 16370,
+          "rss_kib": 52452,
+          "private_kib": 9664,
+          "swap_pss_kib": 0
+        },
+        {
+          "pid": 2708829,
+          "start": 119717075,
+          "ticks": 1687,
+          "name": "WebKitWebProces",
+          "pss_kib": 149960,
+          "rss_kib": 237904,
+          "private_kib": 130784,
+          "swap_pss_kib": 0
+        }
+      ]
+    },
+    {
+      "time_s": 27.878062086878344,
+      "phase": "editor_active",
+      "phase_s": 6.89189579593949,
+      "cpu_percent_one_core": 109.3789449954307,
+      "pss_mib": 290.681640625,
+      "rss_sum_mib": 540.328125,
+      "private_mib": 231.58203125,
+      "swap_pss_mib": 0.0,
+      "processes": [
+        {
+          "pid": 2708022,
+          "start": 119716239,
+          "ticks": 209,
+          "name": "probe",
+          "pss_kib": 53733,
+          "rss_kib": 85000,
+          "private_kib": 47252,
+          "swap_pss_kib": 0
+        },
+        {
+          "pid": 2708761,
+          "start": 119717053,
+          "ticks": 178,
+          "name": "probe",
+          "pss_kib": 76043,
+          "rss_kib": 176388,
+          "private_kib": 47888,
+          "swap_pss_kib": 0
+        },
+        {
+          "pid": 2708828,
+          "start": 119717075,
+          "ticks": 6,
+          "name": "WebKitNetworkPr",
+          "pss_kib": 16370,
+          "rss_kib": 52452,
+          "private_kib": 9664,
+          "swap_pss_kib": 0
+        },
+        {
+          "pid": 2708829,
+          "start": 119717075,
+          "ticks": 1740,
+          "name": "WebKitWebProces",
+          "pss_kib": 151512,
+          "rss_kib": 239456,
+          "private_kib": 132336,
+          "swap_pss_kib": 0
+        }
+      ]
+    },
+    {
+      "time_s": 28.40169597300701,
+      "phase": "editor_active",
+      "phase_s": 7.415529682068154,
+      "cpu_percent_one_core": 110.76441295426135,
+      "pss_mib": 291.291015625,
+      "rss_sum_mib": 540.9375,
+      "private_mib": 232.19140625,
+      "swap_pss_mib": 0.0,
+      "processes": [
+        {
+          "pid": 2708022,
+          "start": 119716239,
+          "ticks": 211,
+          "name": "probe",
+          "pss_kib": 53737,
+          "rss_kib": 85004,
+          "private_kib": 47256,
+          "swap_pss_kib": 0
+        },
+        {
+          "pid": 2708761,
+          "start": 119717053,
+          "ticks": 180,
+          "name": "probe",
+          "pss_kib": 76043,
+          "rss_kib": 176388,
+          "private_kib": 47888,
+          "swap_pss_kib": 0
+        },
+        {
+          "pid": 2708828,
+          "start": 119717075,
+          "ticks": 6,
+          "name": "WebKitNetworkPr",
+          "pss_kib": 16370,
+          "rss_kib": 52452,
+          "private_kib": 9664,
+          "swap_pss_kib": 0
+        },
+        {
+          "pid": 2708829,
+          "start": 119717075,
+          "ticks": 1794,
+          "name": "WebKitWebProces",
+          "pss_kib": 152132,
+          "rss_kib": 240076,
+          "private_kib": 132956,
+          "swap_pss_kib": 0
+        }
+      ]
+    },
+    {
+      "time_s": 28.923240220872685,
+      "phase": "editor_active",
+      "phase_s": 7.937073929933831,
+      "cpu_percent_one_core": 101.62129141849934,
+      "pss_mib": 291.904296875,
+      "rss_sum_mib": 541.55078125,
+      "private_mib": 232.8046875,
+      "swap_pss_mib": 0.0,
+      "processes": [
+        {
+          "pid": 2708022,
+          "start": 119716239,
+          "ticks": 212,
+          "name": "probe",
+          "pss_kib": 53737,
+          "rss_kib": 85004,
+          "private_kib": 47256,
+          "swap_pss_kib": 0
+        },
+        {
+          "pid": 2708761,
+          "start": 119717053,
+          "ticks": 180,
+          "name": "probe",
+          "pss_kib": 76039,
+          "rss_kib": 176384,
+          "private_kib": 47884,
+          "swap_pss_kib": 0
+        },
+        {
+          "pid": 2708828,
+          "start": 119717075,
+          "ticks": 6,
+          "name": "WebKitNetworkPr",
+          "pss_kib": 16370,
+          "rss_kib": 52452,
+          "private_kib": 9664,
+          "swap_pss_kib": 0
+        },
+        {
+          "pid": 2708829,
+          "start": 119717075,
+          "ticks": 1846,
+          "name": "WebKitWebProces",
+          "pss_kib": 152764,
+          "rss_kib": 240708,
+          "private_kib": 133588,
+          "swap_pss_kib": 0
+        }
+      ]
+    },
+    {
+      "time_s": 29.446596507914364,
+      "phase": "editor_active",
+      "phase_s": 8.46043021697551,
+      "cpu_percent_one_core": 108.91242048929593,
+      "pss_mib": 292.775390625,
+      "rss_sum_mib": 542.421875,
+      "private_mib": 233.67578125,
+      "swap_pss_mib": 0.0,
+      "processes": [
+        {
+          "pid": 2708022,
+          "start": 119716239,
+          "ticks": 214,
+          "name": "probe",
+          "pss_kib": 53737,
+          "rss_kib": 85004,
+          "private_kib": 47256,
+          "swap_pss_kib": 0
+        },
+        {
+          "pid": 2708761,
+          "start": 119717053,
+          "ticks": 181,
+          "name": "probe",
+          "pss_kib": 76051,
+          "rss_kib": 176396,
+          "private_kib": 47896,
+          "swap_pss_kib": 0
+        },
+        {
+          "pid": 2708828,
+          "start": 119717075,
+          "ticks": 6,
+          "name": "WebKitNetworkPr",
+          "pss_kib": 16370,
+          "rss_kib": 52452,
+          "private_kib": 9664,
+          "swap_pss_kib": 0
+        },
+        {
+          "pid": 2708829,
+          "start": 119717075,
+          "ticks": 1900,
+          "name": "WebKitWebProces",
+          "pss_kib": 153644,
+          "rss_kib": 241588,
+          "private_kib": 134468,
+          "swap_pss_kib": 0
+        }
+      ]
+    },
+    {
+      "time_s": 29.96808464708738,
+      "phase": "editor_active",
+      "phase_s": 8.981918356148526,
+      "cpu_percent_one_core": 105.46740351030775,
+      "pss_mib": 293.587890625,
+      "rss_sum_mib": 543.234375,
+      "private_mib": 234.48828125,
+      "swap_pss_mib": 0.0,
+      "processes": [
+        {
+          "pid": 2708022,
+          "start": 119716239,
+          "ticks": 216,
+          "name": "probe",
+          "pss_kib": 53737,
+          "rss_kib": 85004,
+          "private_kib": 47256,
+          "swap_pss_kib": 0
+        },
+        {
+          "pid": 2708761,
+          "start": 119717053,
+          "ticks": 182,
+          "name": "probe",
+          "pss_kib": 76051,
+          "rss_kib": 176396,
+          "private_kib": 47896,
+          "swap_pss_kib": 0
+        },
+        {
+          "pid": 2708828,
+          "start": 119717075,
+          "ticks": 6,
+          "name": "WebKitNetworkPr",
+          "pss_kib": 16370,
+          "rss_kib": 52452,
+          "private_kib": 9664,
+          "swap_pss_kib": 0
+        },
+        {
+          "pid": 2708829,
+          "start": 119717075,
+          "ticks": 1952,
+          "name": "WebKitWebProces",
+          "pss_kib": 154476,
+          "rss_kib": 242420,
+          "private_kib": 135300,
+          "swap_pss_kib": 0
+        }
+      ]
+    },
+    {
+      "time_s": 30.488080396084115,
+      "phase": "editor_active",
+      "phase_s": 9.50191410514526,
+      "cpu_percent_one_core": 109.61628072916793,
+      "pss_mib": 295.056640625,
+      "rss_sum_mib": 544.703125,
+      "private_mib": 235.95703125,
+      "swap_pss_mib": 0.0,
+      "processes": [
+        {
+          "pid": 2708022,
+          "start": 119716239,
+          "ticks": 219,
+          "name": "probe",
+          "pss_kib": 53737,
+          "rss_kib": 85004,
+          "private_kib": 47256,
+          "swap_pss_kib": 0
+        },
+        {
+          "pid": 2708761,
+          "start": 119717053,
+          "ticks": 182,
+          "name": "probe",
+          "pss_kib": 76055,
+          "rss_kib": 176400,
+          "private_kib": 47900,
+          "swap_pss_kib": 0
+        },
+        {
+          "pid": 2708828,
+          "start": 119717075,
+          "ticks": 6,
+          "name": "WebKitNetworkPr",
+          "pss_kib": 16370,
+          "rss_kib": 52452,
+          "private_kib": 9664,
+          "swap_pss_kib": 0
+        },
+        {
+          "pid": 2708829,
+          "start": 119717075,
+          "ticks": 2006,
+          "name": "WebKitWebProces",
+          "pss_kib": 155976,
+          "rss_kib": 243920,
+          "private_kib": 136800,
+          "swap_pss_kib": 0
+        }
+      ]
+    },
+    {
+      "time_s": 31.009628755040467,
+      "phase": "editor_active",
+      "phase_s": 10.023462464101613,
+      "cpu_percent_one_core": 103.53785813468399,
+      "pss_mib": 294.798828125,
+      "rss_sum_mib": 544.4453125,
+      "private_mib": 235.69921875,
+      "swap_pss_mib": 0.0,
+      "processes": [
+        {
+          "pid": 2708022,
+          "start": 119716239,
+          "ticks": 220,
+          "name": "probe",
+          "pss_kib": 53737,
+          "rss_kib": 85004,
+          "private_kib": 47256,
+          "swap_pss_kib": 0
+        },
+        {
+          "pid": 2708761,
+          "start": 119717053,
+          "ticks": 184,
+          "name": "probe",
+          "pss_kib": 76043,
+          "rss_kib": 176388,
+          "private_kib": 47888,
+          "swap_pss_kib": 0
+        },
+        {
+          "pid": 2708828,
+          "start": 119717075,
+          "ticks": 6,
+          "name": "WebKitNetworkPr",
+          "pss_kib": 16370,
+          "rss_kib": 52452,
+          "private_kib": 9664,
+          "swap_pss_kib": 0
+        },
+        {
+          "pid": 2708829,
+          "start": 119717075,
+          "ticks": 2057,
+          "name": "WebKitWebProces",
+          "pss_kib": 155724,
+          "rss_kib": 243668,
+          "private_kib": 136548,
+          "swap_pss_kib": 0
+        }
+      ]
+    },
+    {
+      "time_s": 31.529761622892693,
+      "phase": "editor_active",
+      "phase_s": 10.543595331953838,
+      "cpu_percent_one_core": 109.58738338411288,
+      "pss_mib": 295.849609375,
+      "rss_sum_mib": 545.49609375,
+      "private_mib": 236.75,
+      "swap_pss_mib": 0.0,
+      "processes": [
+        {
+          "pid": 2708022,
+          "start": 119716239,
+          "ticks": 223,
+          "name": "probe",
+          "pss_kib": 53737,
+          "rss_kib": 85004,
+          "private_kib": 47256,
+          "swap_pss_kib": 0
+        },
+        {
+          "pid": 2708761,
+          "start": 119717053,
+          "ticks": 184,
+          "name": "probe",
+          "pss_kib": 76063,
+          "rss_kib": 176408,
+          "private_kib": 47908,
+          "swap_pss_kib": 0
+        },
+        {
+          "pid": 2708828,
+          "start": 119717075,
+          "ticks": 6,
+          "name": "WebKitNetworkPr",
+          "pss_kib": 16370,
+          "rss_kib": 52452,
+          "private_kib": 9664,
+          "swap_pss_kib": 0
+        },
+        {
+          "pid": 2708829,
+          "start": 119717075,
+          "ticks": 2111,
+          "name": "WebKitWebProces",
+          "pss_kib": 156780,
+          "rss_kib": 244724,
+          "private_kib": 137604,
+          "swap_pss_kib": 0
+        }
+      ]
+    },
+    {
+      "time_s": 32.052461803890765,
+      "phase": "editor_active",
+      "phase_s": 11.06629551295191,
+      "cpu_percent_one_core": 107.13598738969358,
+      "pss_mib": 287.693359375,
+      "rss_sum_mib": 537.33984375,
+      "private_mib": 228.59375,
+      "swap_pss_mib": 0.0,
+      "processes": [
+        {
+          "pid": 2708022,
+          "start": 119716239,
+          "ticks": 225,
+          "name": "probe",
+          "pss_kib": 53737,
+          "rss_kib": 85004,
+          "private_kib": 47256,
+          "swap_pss_kib": 0
+        },
+        {
+          "pid": 2708761,
+          "start": 119717053,
+          "ticks": 185,
+          "name": "probe",
+          "pss_kib": 76059,
+          "rss_kib": 176404,
+          "private_kib": 47904,
+          "swap_pss_kib": 0
+        },
+        {
+          "pid": 2708828,
+          "start": 119717075,
+          "ticks": 7,
+          "name": "WebKitNetworkPr",
+          "pss_kib": 16378,
+          "rss_kib": 52460,
+          "private_kib": 9672,
+          "swap_pss_kib": 0
+        },
+        {
+          "pid": 2708829,
+          "start": 119717075,
+          "ticks": 2163,
+          "name": "WebKitWebProces",
+          "pss_kib": 148424,
+          "rss_kib": 236368,
+          "private_kib": 129248,
+          "swap_pss_kib": 0
+        }
+      ]
+    },
+    {
+      "time_s": 32.57419657194987,
+      "phase": "settling",
+      "phase_s": 0.46894411090761423,
+      "cpu_percent_one_core": 95.83413462362117,
+      "pss_mib": 285.662109375,
+      "rss_sum_mib": 535.37109375,
+      "private_mib": 226.5,
+      "swap_pss_mib": 0.0,
+      "processes": [
+        {
+          "pid": 2708022,
+          "start": 119716239,
+          "ticks": 227,
+          "name": "probe",
+          "pss_kib": 53737,
+          "rss_kib": 85004,
+          "private_kib": 47256,
+          "swap_pss_kib": 0
+        },
+        {
+          "pid": 2708761,
+          "start": 119717053,
+          "ticks": 187,
+          "name": "probe",
+          "pss_kib": 76103,
+          "rss_kib": 176480,
+          "private_kib": 47916,
+          "swap_pss_kib": 0
+        },
+        {
+          "pid": 2708828,
+          "start": 119717075,
+          "ticks": 7,
+          "name": "WebKitNetworkPr",
+          "pss_kib": 16386,
+          "rss_kib": 52468,
+          "private_kib": 9680,
+          "swap_pss_kib": 0
+        },
+        {
+          "pid": 2708829,
+          "start": 119717075,
+          "ticks": 2209,
+          "name": "WebKitWebProces",
+          "pss_kib": 146292,
+          "rss_kib": 234268,
+          "private_kib": 127084,
+          "swap_pss_kib": 0
+        }
+      ]
+    },
+    {
+      "time_s": 33.096464466070756,
+      "phase": "settling",
+      "phase_s": 0.9912120050285012,
+      "cpu_percent_one_core": 93.82158189616419,
+      "pss_mib": 282.599609375,
+      "rss_sum_mib": 532.30859375,
+      "private_mib": 223.4375,
+      "swap_pss_mib": 0.0,
+      "processes": [
+        {
+          "pid": 2708022,
+          "start": 119716239,
+          "ticks": 230,
+          "name": "probe",
+          "pss_kib": 53737,
+          "rss_kib": 85004,
+          "private_kib": 47256,
+          "swap_pss_kib": 0
+        },
+        {
+          "pid": 2708761,
+          "start": 119717053,
+          "ticks": 187,
+          "name": "probe",
+          "pss_kib": 76095,
+          "rss_kib": 176472,
+          "private_kib": 47908,
+          "swap_pss_kib": 0
+        },
+        {
+          "pid": 2708828,
+          "start": 119717075,
+          "ticks": 7,
+          "name": "WebKitNetworkPr",
+          "pss_kib": 16378,
+          "rss_kib": 52460,
+          "private_kib": 9672,
+          "swap_pss_kib": 0
+        },
+        {
+          "pid": 2708829,
+          "start": 119717075,
+          "ticks": 2255,
+          "name": "WebKitWebProces",
+          "pss_kib": 143172,
+          "rss_kib": 231148,
+          "private_kib": 123964,
+          "swap_pss_kib": 0
+        }
+      ]
+    },
+    {
+      "time_s": 33.61763237696141,
+      "phase": "settling",
+      "phase_s": 1.5123799159191549,
+      "cpu_percent_one_core": 95.93837025489948,
+      "pss_mib": 283.029296875,
+      "rss_sum_mib": 532.73828125,
+      "private_mib": 223.8671875,
+      "swap_pss_mib": 0.0,
+      "processes": [
+        {
+          "pid": 2708022,
+          "start": 119716239,
+          "ticks": 231,
+          "name": "probe",
+          "pss_kib": 53737,
+          "rss_kib": 85004,
+          "private_kib": 47256,
+          "swap_pss_kib": 0
+        },
+        {
+          "pid": 2708761,
+          "start": 119717053,
+          "ticks": 188,
+          "name": "probe",
+          "pss_kib": 76103,
+          "rss_kib": 176480,
+          "private_kib": 47916,
+          "swap_pss_kib": 0
+        },
+        {
+          "pid": 2708828,
+          "start": 119717075,
+          "ticks": 7,
+          "name": "WebKitNetworkPr",
+          "pss_kib": 16386,
+          "rss_kib": 52468,
+          "private_kib": 9680,
+          "swap_pss_kib": 0
+        },
+        {
+          "pid": 2708829,
+          "start": 119717075,
+          "ticks": 2303,
+          "name": "WebKitWebProces",
+          "pss_kib": 143596,
+          "rss_kib": 231572,
+          "private_kib": 124388,
+          "swap_pss_kib": 0
+        }
+      ]
+    },
+    {
+      "time_s": 34.139375703874975,
+      "phase": "settling",
+      "phase_s": 2.0341232428327203,
+      "cpu_percent_one_core": 88.1659575257406,
+      "pss_mib": 282.583984375,
+      "rss_sum_mib": 532.1328125,
+      "private_mib": 223.36328125,
+      "swap_pss_mib": 0.0,
+      "processes": [
+        {
+          "pid": 2708022,
+          "start": 119716239,
+          "ticks": 233,
+          "name": "probe",
+          "pss_kib": 53739,
+          "rss_kib": 85004,
+          "private_kib": 47256,
+          "swap_pss_kib": 0
+        },
+        {
+          "pid": 2708761,
+          "start": 119717053,
+          "ticks": 190,
+          "name": "probe",
+          "pss_kib": 76243,
+          "rss_kib": 176484,
+          "private_kib": 48024,
+          "swap_pss_kib": 0
+        },
+        {
+          "pid": 2708828,
+          "start": 119717075,
+          "ticks": 7,
+          "name": "WebKitNetworkPr",
+          "pss_kib": 16387,
+          "rss_kib": 52468,
+          "private_kib": 9680,
+          "swap_pss_kib": 0
+        },
+        {
+          "pid": 2708829,
+          "start": 119717075,
+          "ticks": 2345,
+          "name": "WebKitWebProces",
+          "pss_kib": 142997,
+          "rss_kib": 230948,
+          "private_kib": 123764,
+          "swap_pss_kib": 0
+        }
+      ]
+    },
+    {
+      "time_s": 34.66051682597026,
+      "phase": "settling",
+      "phase_s": 2.555264364928007,
+      "cpu_percent_one_core": 97.8621679190287,
+      "pss_mib": 283.146484375,
+      "rss_sum_mib": 532.6953125,
+      "private_mib": 223.92578125,
+      "swap_pss_mib": 0.0,
+      "processes": [
+        {
+          "pid": 2708022,
+          "start": 119716239,
+          "ticks": 236,
+          "name": "probe",
+          "pss_kib": 53739,
+          "rss_kib": 85004,
+          "private_kib": 47256,
+          "swap_pss_kib": 0
+        },
+        {
+          "pid": 2708761,
+          "start": 119717053,
+          "ticks": 190,
+          "name": "probe",
+          "pss_kib": 76247,
+          "rss_kib": 176488,
+          "private_kib": 48028,
+          "swap_pss_kib": 0
+        },
+        {
+          "pid": 2708828,
+          "start": 119717075,
+          "ticks": 8,
+          "name": "WebKitNetworkPr",
+          "pss_kib": 16387,
+          "rss_kib": 52468,
+          "private_kib": 9680,
+          "swap_pss_kib": 0
+        },
+        {
+          "pid": 2708829,
+          "start": 119717075,
+          "ticks": 2392,
+          "name": "WebKitWebProces",
+          "pss_kib": 143569,
+          "rss_kib": 231520,
+          "private_kib": 124336,
+          "swap_pss_kib": 0
+        }
+      ]
+    },
+    {
+      "time_s": 35.1826599300839,
+      "phase": "settling",
+      "phase_s": 3.0774074690416455,
+      "cpu_percent_one_core": 107.25029126844936,
+      "pss_mib": 277.841796875,
+      "rss_sum_mib": 507.09765625,
+      "private_mib": 224.26953125,
+      "swap_pss_mib": 0.0,
+      "processes": [
+        {
+          "pid": 2708022,
+          "start": 119716239,
+          "ticks": 238,
+          "name": "probe",
+          "pss_kib": 54346,
+          "rss_kib": 85132,
+          "private_kib": 47256,
+          "swap_pss_kib": 0
+        },
+        {
+          "pid": 2708761,
+          "start": 119717053,
+          "ticks": 191,
+          "name": "probe",
+          "pss_kib": 64677,
+          "rss_kib": 150652,
+          "private_kib": 43292,
+          "swap_pss_kib": 0
+        },
+        {
+          "pid": 2708828,
+          "start": 119717075,
+          "ticks": 8,
+          "name": "WebKitNetworkPr",
+          "pss_kib": 18072,
+          "rss_kib": 52460,
+          "private_kib": 9828,
+          "swap_pss_kib": 0
+        },
+        {
+          "pid": 2708829,
+          "start": 119717075,
+          "ticks": 2445,
+          "name": "WebKitWebProces",
+          "pss_kib": 147415,
+          "rss_kib": 231024,
+          "private_kib": 129276,
+          "swap_pss_kib": 0
+        }
+      ]
+    },
+    {
+      "time_s": 35.687724275980145,
+      "phase": "settling",
+      "phase_s": 3.5824718149378896,
+      "cpu_percent_one_core": 1.979945739835358,
+      "pss_mib": 63.310546875,
+      "rss_sum_mib": 83.13671875,
+      "private_mib": 62.625,
+      "swap_pss_mib": 0.0,
+      "processes": [
+        {
+          "pid": 2708022,
+          "start": 119716239,
+          "ticks": 239,
+          "name": "probe",
+          "pss_kib": 64830,
+          "rss_kib": 85132,
+          "private_kib": 64128,
+          "swap_pss_kib": 0
+        }
+      ]
+    },
+    {
+      "time_s": 36.19396754493937,
+      "phase": "settling",
+      "phase_s": 4.088715083897114,
+      "cpu_percent_one_core": 1.9753349057971294,
+      "pss_mib": 63.310546875,
+      "rss_sum_mib": 83.13671875,
+      "private_mib": 62.625,
+      "swap_pss_mib": 0.0,
+      "processes": [
+        {
+          "pid": 2708022,
+          "start": 119716239,
+          "ticks": 240,
+          "name": "probe",
+          "pss_kib": 64830,
+          "rss_kib": 85132,
+          "private_kib": 64128,
+          "swap_pss_kib": 0
+        }
+      ]
+    },
+    {
+      "time_s": 36.698183556087315,
+      "phase": "editor_closed",
+      "phase_s": 0.03077685018070042,
+      "cpu_percent_one_core": 1.9832769644171055,
+      "pss_mib": 63.310546875,
+      "rss_sum_mib": 83.13671875,
+      "private_mib": 62.625,
+      "swap_pss_mib": 0.0,
+      "processes": [
+        {
+          "pid": 2708022,
+          "start": 119716239,
+          "ticks": 241,
+          "name": "probe",
+          "pss_kib": 64830,
+          "rss_kib": 85132,
+          "private_kib": 64128,
+          "swap_pss_kib": 0
+        }
+      ]
+    },
+    {
+      "time_s": 37.203558980021626,
+      "phase": "editor_closed",
+      "phase_s": 0.5361522741150111,
+      "cpu_percent_one_core": 3.95745401394897,
+      "pss_mib": 63.310546875,
+      "rss_sum_mib": 83.13671875,
+      "private_mib": 62.625,
+      "swap_pss_mib": 0.0,
+      "processes": [
+        {
+          "pid": 2708022,
+          "start": 119716239,
+          "ticks": 243,
+          "name": "probe",
+          "pss_kib": 64830,
+          "rss_kib": 85132,
+          "private_kib": 64128,
+          "swap_pss_kib": 0
+        }
+      ]
+    },
+    {
+      "time_s": 37.70855195587501,
+      "phase": "editor_closed",
+      "phase_s": 1.0411452499683946,
+      "cpu_percent_one_core": 1.9802255631578005,
+      "pss_mib": 63.310546875,
+      "rss_sum_mib": 83.13671875,
+      "private_mib": 62.625,
+      "swap_pss_mib": 0.0,
+      "processes": [
+        {
+          "pid": 2708022,
+          "start": 119716239,
+          "ticks": 244,
+          "name": "probe",
+          "pss_kib": 64830,
+          "rss_kib": 85132,
+          "private_kib": 64128,
+          "swap_pss_kib": 0
+        }
+      ]
+    },
+    {
+      "time_s": 38.21420930791646,
+      "phase": "editor_closed",
+      "phase_s": 1.5468026020098478,
+      "cpu_percent_one_core": 1.977623772229898,
+      "pss_mib": 63.310546875,
+      "rss_sum_mib": 83.13671875,
+      "private_mib": 62.625,
+      "swap_pss_mib": 0.0,
+      "processes": [
+        {
+          "pid": 2708022,
+          "start": 119716239,
+          "ticks": 245,
+          "name": "probe",
+          "pss_kib": 64830,
+          "rss_kib": 85132,
+          "private_kib": 64128,
+          "swap_pss_kib": 0
+        }
+      ]
+    },
+    {
+      "time_s": 38.71946629299782,
+      "phase": "editor_closed",
+      "phase_s": 2.0520595870912075,
+      "cpu_percent_one_core": 1.9791908464936383,
+      "pss_mib": 63.310546875,
+      "rss_sum_mib": 83.13671875,
+      "private_mib": 62.625,
+      "swap_pss_mib": 0.0,
+      "processes": [
+        {
+          "pid": 2708022,
+          "start": 119716239,
+          "ticks": 246,
+          "name": "probe",
+          "pss_kib": 64830,
+          "rss_kib": 85132,
+          "private_kib": 64128,
+          "swap_pss_kib": 0
+        }
+      ]
+    },
+    {
+      "time_s": 39.22425250103697,
+      "phase": "editor_closed",
+      "phase_s": 2.556845795130357,
+      "cpu_percent_one_core": 1.9810366925128888,
+      "pss_mib": 63.310546875,
+      "rss_sum_mib": 83.13671875,
+      "private_mib": 62.625,
+      "swap_pss_mib": 0.0,
+      "processes": [
+        {
+          "pid": 2708022,
+          "start": 119716239,
+          "ticks": 247,
+          "name": "probe",
+          "pss_kib": 64830,
+          "rss_kib": 85132,
+          "private_kib": 64128,
+          "swap_pss_kib": 0
+        }
+      ]
+    },
+    {
+      "time_s": 39.729237247025594,
+      "phase": "editor_closed",
+      "phase_s": 3.0618305411189795,
+      "cpu_percent_one_core": 1.9802578353971325,
+      "pss_mib": 63.310546875,
+      "rss_sum_mib": 83.13671875,
+      "private_mib": 62.625,
+      "swap_pss_mib": 0.0,
+      "processes": [
+        {
+          "pid": 2708022,
+          "start": 119716239,
+          "ticks": 248,
+          "name": "probe",
+          "pss_kib": 64830,
+          "rss_kib": 85132,
+          "private_kib": 64128,
+          "swap_pss_kib": 0
+        }
+      ]
+    },
+    {
+      "time_s": 40.234111663885415,
+      "phase": "editor_closed",
+      "phase_s": 3.5667049579788,
+      "cpu_percent_one_core": 1.9806905769155903,
+      "pss_mib": 63.310546875,
+      "rss_sum_mib": 83.13671875,
+      "private_mib": 62.625,
+      "swap_pss_mib": 0.0,
+      "processes": [
+        {
+          "pid": 2708022,
+          "start": 119716239,
+          "ticks": 249,
+          "name": "probe",
+          "pss_kib": 64830,
+          "rss_kib": 85132,
+          "private_kib": 64128,
+          "swap_pss_kib": 0
+        }
+      ]
+    },
+    {
+      "time_s": 40.7391827700194,
+      "phase": "editor_closed",
+      "phase_s": 4.0717760641127825,
+      "cpu_percent_one_core": 3.959838477613191,
+      "pss_mib": 63.310546875,
+      "rss_sum_mib": 83.13671875,
+      "private_mib": 62.625,
+      "swap_pss_mib": 0.0,
+      "processes": [
+        {
+          "pid": 2708022,
+          "start": 119716239,
+          "ticks": 251,
+          "name": "probe",
+          "pss_kib": 64830,
+          "rss_kib": 85132,
+          "private_kib": 64128,
+          "swap_pss_kib": 0
+        }
+      ]
+    },
+    {
+      "time_s": 41.244367704959586,
+      "phase": "editor_closed",
+      "phase_s": 4.576960999052972,
+      "cpu_percent_one_core": 1.9794731213004086,
+      "pss_mib": 63.310546875,
+      "rss_sum_mib": 83.13671875,
+      "private_mib": 62.625,
+      "swap_pss_mib": 0.0,
+      "processes": [
+        {
+          "pid": 2708022,
+          "start": 119716239,
+          "ticks": 252,
+          "name": "probe",
+          "pss_kib": 64830,
+          "rss_kib": 85132,
+          "private_kib": 64128,
+          "swap_pss_kib": 0
+        }
+      ]
+    },
+    {
+      "time_s": 41.74993090797216,
+      "phase": "editor_closed",
+      "phase_s": 5.082524202065542,
+      "cpu_percent_one_core": 1.9779920572564598,
+      "pss_mib": 63.310546875,
+      "rss_sum_mib": 83.13671875,
+      "private_mib": 62.625,
+      "swap_pss_mib": 0.0,
+      "processes": [
+        {
+          "pid": 2708022,
+          "start": 119716239,
+          "ticks": 253,
+          "name": "probe",
+          "pss_kib": 64830,
+          "rss_kib": 85132,
+          "private_kib": 64128,
+          "swap_pss_kib": 0
+        }
+      ]
+    },
+    {
+      "time_s": 42.255724729038775,
+      "phase": "editor_closed",
+      "phase_s": 5.58831802313216,
+      "cpu_percent_one_core": 1.9770901864542356,
+      "pss_mib": 63.3134765625,
+      "rss_sum_mib": 83.13671875,
+      "private_mib": 62.625,
+      "swap_pss_mib": 0.0,
+      "processes": [
+        {
+          "pid": 2708022,
+          "start": 119716239,
+          "ticks": 254,
+          "name": "probe",
+          "pss_kib": 64833,
+          "rss_kib": 85132,
+          "private_kib": 64128,
+          "swap_pss_kib": 0
+        }
+      ]
+    },
+    {
+      "time_s": 42.76151699991897,
+      "phase": "editor_closed",
+      "phase_s": 6.094110294012353,
+      "cpu_percent_one_core": 3.9541924919484224,
+      "pss_mib": 63.3134765625,
+      "rss_sum_mib": 83.13671875,
+      "private_mib": 62.625,
+      "swap_pss_mib": 0.0,
+      "processes": [
+        {
+          "pid": 2708022,
+          "start": 119716239,
+          "ticks": 256,
+          "name": "probe",
+          "pss_kib": 64833,
+          "rss_kib": 85132,
+          "private_kib": 64128,
+          "swap_pss_kib": 0
+        }
+      ]
+    },
+    {
+      "time_s": 43.26657597604208,
+      "phase": "editor_closed",
+      "phase_s": 6.599169270135462,
+      "cpu_percent_one_core": 1.9799667905639744,
+      "pss_mib": 63.3134765625,
+      "rss_sum_mib": 83.13671875,
+      "private_mib": 62.625,
+      "swap_pss_mib": 0.0,
+      "processes": [
+        {
+          "pid": 2708022,
+          "start": 119716239,
+          "ticks": 257,
+          "name": "probe",
+          "pss_kib": 64833,
+          "rss_kib": 85132,
+          "private_kib": 64128,
+          "swap_pss_kib": 0
+        }
+      ]
+    },
+    {
+      "time_s": 43.7721141690854,
+      "phase": "editor_closed",
+      "phase_s": 7.104707463178784,
+      "cpu_percent_one_core": 1.9780899124159872,
+      "pss_mib": 63.3134765625,
+      "rss_sum_mib": 83.13671875,
+      "private_mib": 62.625,
+      "swap_pss_mib": 0.0,
+      "processes": [
+        {
+          "pid": 2708022,
+          "start": 119716239,
+          "ticks": 258,
+          "name": "probe",
+          "pss_kib": 64833,
+          "rss_kib": 85132,
+          "private_kib": 64128,
+          "swap_pss_kib": 0
+        }
+      ]
+    },
+    {
+      "time_s": 44.27635147003457,
+      "phase": "editor_closed",
+      "phase_s": 7.608944764127955,
+      "cpu_percent_one_core": 3.966386453828823,
+      "pss_mib": 63.3134765625,
+      "rss_sum_mib": 83.13671875,
+      "private_mib": 62.625,
+      "swap_pss_mib": 0.0,
+      "processes": [
+        {
+          "pid": 2708022,
+          "start": 119716239,
+          "ticks": 260,
+          "name": "probe",
+          "pss_kib": 64833,
+          "rss_kib": 85132,
+          "private_kib": 64128,
+          "swap_pss_kib": 0
+        }
+      ]
+    }
+  ]
+}

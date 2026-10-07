@@ -1,0 +1,188 @@
+[
+  {
+    "module": "web/shared/knob-reconciliation.mjs",
+    "mutation": "knob interim snapshot",
+    "result": "caught",
+    "failure": "not ok 2 - snapshots cover the latest admitted write before reconciling its display\n  failureType: 'testCodeFailure'\n  error: |-"
+  },
+  {
+    "module": "web/shared/knob-reconciliation.mjs",
+    "mutation": "knob retired generation",
+    "result": "caught",
+    "failure": "not ok 1 - only accepted valid value writes advance knob admission\n  failureType: 'testCodeFailure'\n  error: |-"
+  },
+  {
+    "module": "web/shared/parameter-controller.mjs",
+    "mutation": "old generation",
+    "result": "caught",
+    "failure": "not ok 1 - equal snapshots retain identity while automation, metadata and ordering remain authoritative\n  failureType: 'testCodeFailure'\n  error: |-\nnot ok 3 - rejection recovers authoritative state and stale replies cannot restore old generations\n  failureType: 'testCodeFailure'\n  error: |-"
+  },
+  {
+    "module": "web/shared/parameter-controller.mjs",
+    "mutation": "admitted sequence",
+    "result": "caught",
+    "failure": "not ok 1 - equal snapshots retain identity while automation, metadata and ordering remain authoritative\n  failureType: 'testCodeFailure'\n  error: |-\nnot ok 4 - admitted sequences reject stale reads, errors are reported, and closing ignores late results\n  failureType: 'testCodeFailure'\n  error: |-"
+  },
+  {
+    "module": "web/shared/parameter-controller.mjs",
+    "mutation": "automation value",
+    "result": "caught",
+    "failure": "not ok 1 - equal snapshots retain identity while automation, metadata and ordering remain authoritative\n  failureType: 'testCodeFailure'\n  error: |-"
+  },
+  {
+    "module": "web/shared/parameter-controller.mjs",
+    "mutation": "metadata name",
+    "result": "caught",
+    "failure": "not ok 1 - equal snapshots retain identity while automation, metadata and ordering remain authoritative\n  failureType: 'testCodeFailure'\n  error: |-"
+  },
+  {
+    "module": "web/shared/parameter-controller.mjs",
+    "mutation": "parameter identity",
+    "result": "caught",
+    "failure": "not ok 1 - equal snapshots retain identity while automation, metadata and ordering remain authoritative\n  failureType: 'testCodeFailure'\n  error: |-"
+  },
+  {
+    "module": "web/shared/parameter-controller.mjs",
+    "mutation": "replacement refresh",
+    "result": "caught",
+    "failure": "not ok 2 - writes progress while reads stall, with one read and one replacement refresh\n  failureType: 'testCodeFailure'\n  error: |-"
+  },
+  {
+    "module": "web/shared/parameter-controller.mjs",
+    "mutation": "pending write filter",
+    "result": "caught",
+    "failure": "not ok 3 - rejection recovers authoritative state and stale replies cannot restore old generations\n  failureType: 'testCodeFailure'\n  error: |-"
+  },
+  {
+    "module": "web/shared/parameter-controller.mjs",
+    "mutation": "read gates command",
+    "result": "caught",
+    "failure": "not ok 2 - writes progress while reads stall, with one read and one replacement refresh\n  failureType: 'cancelledByParent'\n  error: 'Promise resolution is still pending but the event loop has already resolved'\nnot ok 3 - rejection recovers authoritative state and stale replies cannot restore old generations\n  failureType: 'cancelledByParent'\n  error: 'Promise resolution is still pending but the event loop has already resolved'\nnot ok 4 - admitted sequences reject stale reads, errors are reported, and closing ignores late results\n  failureType: 'cancelledByParent'\n  error: 'Promise resolution is still pending but the event loop has already resolved'\nnot ok 5 - accepted commands can omit sequence and closed controllers ignore errors from pending work\n  failureType: 'cancelledByParent'\n  error: 'Promise resolution is still pending but the event loop has already resolved'"
+  },
+  {
+    "module": "web/shared/meter-view.mjs",
+    "mutation": "peak update",
+    "result": "caught",
+    "failure": "not ok 3 - equal normalized meters retain current display identity and changed fields update\n  failureType: 'testCodeFailure'\n  error: |-"
+  },
+  {
+    "module": "web/shared/meter-view.mjs",
+    "mutation": "RMS update",
+    "result": "caught",
+    "failure": "not ok 3 - equal normalized meters retain current display identity and changed fields update\n  failureType: 'testCodeFailure'\n  error: |-"
+  },
+  {
+    "module": "web/shared/meter-view.mjs",
+    "mutation": "clip ticket",
+    "result": "caught",
+    "failure": "not ok 3 - equal normalized meters retain current display identity and changed fields update\n  failureType: 'testCodeFailure'\n  error: |-"
+  },
+  {
+    "module": "web/shared/meter-view.mjs",
+    "mutation": "clip latch",
+    "result": "caught",
+    "failure": "not ok 3 - equal normalized meters retain current display identity and changed fields update\n  failureType: 'testCodeFailure'\n  error: |-"
+  },
+  {
+    "module": "web/shared/meter-view.mjs",
+    "mutation": "history validity",
+    "result": "caught",
+    "failure": "not ok 3 - equal normalized meters retain current display identity and changed fields update\n  failureType: 'testCodeFailure'\n  error: |-"
+  },
+  {
+    "module": "web/shared/prepared-polling.mjs",
+    "mutation": "ready retirement",
+    "result": "caught",
+    "failure": "not ok 1 - terminal results retire timers while partial readiness keeps polling\n  failureType: 'testCodeFailure'\n  error: |-\nnot ok 4 - actual waveform transport keeps its timer after admission and retires on ready\n  failureType: 'testCodeFailure'\n  error: |-\nnot ok 5 - actual spectrum transport keeps polling through partial ready pages\n  failureType: 'testCodeFailure'\n  error: |-"
+  },
+  {
+    "module": "web/shared/prepared-polling.mjs",
+    "mutation": "admission retirement",
+    "result": "caught",
+    "failure": "not ok 2 - failure, admission rejection and close remove timers and ignore late states\n  failureType: 'testCodeFailure'\n  error: |-"
+  },
+  {
+    "module": "web/shared/prepared-polling.mjs",
+    "mutation": "close retirement",
+    "result": "caught",
+    "failure": "not ok 3 - new polling owner restarts selection after visibility restoration or retry\n  failureType: 'testCodeFailure'\n  error: |-"
+  },
+  {
+    "module": "web/shared/host-knob.mjs",
+    "mutation": "cancelled accepted edit",
+    "result": "caught",
+    "failure": "not ok 6 - cancelled, unchanged and invalid typed edits preserve an accepted drag while reads stall\n  failureType: 'testCodeFailure'\n  error: |-\nnot ok 7 - an accepted default reset survives opening and closing an unchanged value editor\n  failureType: 'testCodeFailure'\n  error: |-"
+  },
+  {
+    "module": "web/shared/host-knob.mjs",
+    "mutation": "pending interaction ownership",
+    "result": "caught",
+    "failure": "not ok 4 - later keyboard interaction retains its display during previous gesture closure\n  failureType: 'testCodeFailure'\n  error: |-"
+  },
+  {
+    "module": "web/shared/panel-height.mjs",
+    "mutation": "retired panel sizing",
+    "result": "caught",
+    "failure": "not ok 1 - frame tracks the unscaled panel height only when its geometry changes\n  failureType: 'testCodeFailure'\n  error: |-"
+  },
+  {
+    "module": "web/shared/panel-height.mjs",
+    "mutation": "unchanged panel sizing",
+    "result": "caught",
+    "failure": "not ok 1 - frame tracks the unscaled panel height only when its geometry changes\n  failureType: 'testCodeFailure'\n  error: |-"
+  },
+  {
+    "module": "web/shared/parameter-controller.mjs",
+    "mutation": "acceptance entry propagates child failure",
+    "result": "caught",
+    "failure": "not ok 1 - React efficiency acceptance suites pass with their own browser documents\n  failureType: 'testCodeFailure'\n  error: |-\n    not ok 25 - equal snapshots retain identity while automation, metadata and ordering remain authoritative\n      failureType: 'testCodeFailure'\n      error: |-\n    not ok 27 - rejection recovers authoritative state and stale replies cannot restore old generations\n      failureType: 'testCodeFailure'\n      error: |-"
+  },
+  {
+    "module": "web/shared/host-knob.mjs",
+    "mutation": "retired rejection ownership",
+    "result": "caught",
+    "failure": "not ok 8 - a rejected earlier closure cannot restore the display owned by a later drag\n  failureType: 'testCodeFailure'\n  error: |-\nnot ok 9 - queued older closure rejection cannot reclaim a later active drag\n  failureType: 'testCodeFailure'\n  error: |-"
+  },
+  {
+    "module": "web/shared/knob-reconciliation.mjs",
+    "mutation": "late failure owner capture",
+    "result": "caught",
+    "failure": "not ok 3 - value replies retain admission and late failures retain their submitting interaction\n  failureType: 'testCodeFailure'\n  error: |-\nnot ok 4 - queued command failures retain their originating owner without passing it to the host\n  failureType: 'testCodeFailure'\n  error: |-"
+  },
+  {
+    "module": "web/shared/host-knob.mjs",
+    "mutation": "serializer ownership integration",
+    "result": "caught",
+    "failure": "not ok 9 - queued older closure rejection cannot reclaim a later active drag\n  failureType: 'testCodeFailure'\n  error: |-"
+  },
+  {
+    "module": "web/sampler/src/parameter-gesture.mjs",
+    "mutation": "queued closure origin captured too late",
+    "result": "caught",
+    "failure": "not ok 9 - queued and coalesced gestures retain origin ownership before prior writes complete\n  failureType: 'testCodeFailure'\n  error: |-"
+  },
+  {
+    "module": "web/sampler/src/parameter-gesture.mjs",
+    "mutation": "coalesced pointer ownership",
+    "result": "caught",
+    "failure": "not ok 9 - queued and coalesced gestures retain origin ownership before prior writes complete\n  failureType: 'testCodeFailure'\n  error: |-"
+  },
+  {
+    "module": "web/sampler/src/parameter-gesture.mjs",
+    "mutation": "queued discrete ownership",
+    "result": "caught",
+    "failure": "not ok 9 - queued and coalesced gestures retain origin ownership before prior writes complete\n  failureType: 'testCodeFailure'\n  error: |-"
+  },
+  {
+    "module": "web/sampler/src/parameter-gesture.mjs",
+    "mutation": "queued drag begin origin captured too late",
+    "result": "caught",
+    "failure": "not ok 9 - queued and coalesced gestures retain origin ownership before prior writes complete\n  failureType: 'testCodeFailure'\n  error: |-"
+  },
+  {
+    "module": "web/shared/knob-reconciliation.mjs",
+    "mutation": "origin owner ignored by adapter",
+    "result": "caught",
+    "failure": "not ok 4 - queued command failures retain their originating owner without passing it to the host\n  failureType: 'testCodeFailure'\n  error: |-"
+  }
+]

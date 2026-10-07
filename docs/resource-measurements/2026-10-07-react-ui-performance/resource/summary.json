@@ -1,0 +1,258 @@
+{
+  "tb303_before": {
+    "summary": {
+      "engine_only": {
+        "samples": 10,
+        "cpu_mean_one_core": 2.1857861313320273,
+        "cpu_p95_one_core": 3.970078438093251,
+        "pss_mean_mib": 16.7900390625,
+        "pss_max_mib": 16.7900390625,
+        "rss_sum_mean_mib": 21.171875,
+        "private_mean_mib": 16.7578125,
+        "process_names": [
+          "probe"
+        ],
+        "max_processes": 1
+      },
+      "editor_idle": {
+        "samples": 13,
+        "cpu_mean_one_core": 103.05784695484162,
+        "cpu_p95_one_core": 114.97381478645055,
+        "pss_mean_mib": 277.48046875,
+        "pss_max_mib": 302.541015625,
+        "rss_sum_mean_mib": 526.6174879807693,
+        "private_mean_mib": 218.39393028846155,
+        "process_names": [
+          "WebKitNetworkPr",
+          "WebKitWebProces",
+          "probe"
+        ],
+        "max_processes": 4
+      },
+      "editor_active": {
+        "samples": 16,
+        "cpu_mean_one_core": 106.88786424689732,
+        "cpu_p95_one_core": 109.61628072916793,
+        "pss_mean_mib": 288.90447998046875,
+        "pss_max_mib": 295.056640625,
+        "rss_sum_mean_mib": 538.511962890625,
+        "private_mean_mib": 229.804931640625,
+        "process_names": [
+          "WebKitNetworkPr",
+          "WebKitWebProces",
+          "probe"
+        ],
+        "max_processes": 4
+      },
+      "editor_closed": {
+        "samples": 10,
+        "cpu_mean_one_core": 2.3749729076455943,
+        "cpu_p95_one_core": 3.9541924919484224,
+        "pss_mean_mib": 63.31142578125,
+        "pss_max_mib": 63.3134765625,
+        "rss_sum_mean_mib": 83.13671875,
+        "private_mean_mib": 62.625,
+        "process_names": [
+          "probe"
+        ],
+        "max_processes": 1
+      }
+    },
+    "reports": [
+      "EXERCISE {\"events\":105,\"writes\":19,\"rejected\":0,\"closed\":true}",
+      "RESULT {\"blocks\":16747,\"signal_blocks\":4182}"
+    ]
+  },
+  "tb303_after": {
+    "summary": {
+      "engine_only": {
+        "samples": 10,
+        "cpu_mean_one_core": 2.3832359098904052,
+        "cpu_p95_one_core": 3.9707494433340162,
+        "pss_mean_mib": 17.1513671875,
+        "pss_max_mib": 17.1513671875,
+        "rss_sum_mean_mib": 21.55078125,
+        "private_mean_mib": 17.1171875,
+        "process_names": [
+          "probe"
+        ],
+        "max_processes": 1
+      },
+      "editor_idle": {
+        "samples": 13,
+        "cpu_mean_one_core": 6.364750630415444,
+        "cpu_p95_one_core": 9.614582019059958,
+        "pss_mean_mib": 266.4557542067308,
+        "pss_max_mib": 267.490234375,
+        "rss_sum_mean_mib": 515.6676682692307,
+        "private_mean_mib": 207.20372596153845,
+        "process_names": [
+          "WebKitNetworkPr",
+          "WebKitWebProces",
+          "probe"
+        ],
+        "max_processes": 4
+      },
+      "editor_active": {
+        "samples": 15,
+        "cpu_mean_one_core": 42.5051228590209,
+        "cpu_p95_one_core": 53.55100337390099,
+        "pss_mean_mib": 295.53619791666665,
+        "pss_max_mib": 311.3134765625,
+        "rss_sum_mean_mib": 545.3794270833333,
+        "private_mean_mib": 236.07734375,
+        "process_names": [
+          "WebKitNetworkPr",
+          "WebKitWebProces",
+          "probe"
+        ],
+        "max_processes": 4
+      },
+      "editor_closed": {
+        "samples": 10,
+        "cpu_mean_one_core": 2.37445340850561,
+        "cpu_p95_one_core": 3.9544958452705274,
+        "pss_mean_mib": 64.126953125,
+        "pss_max_mib": 64.126953125,
+        "rss_sum_mean_mib": 83.875,
+        "private_mean_mib": 63.44140625,
+        "process_names": [
+          "probe"
+        ],
+        "max_processes": 1
+      }
+    },
+    "reports": [
+      "EXERCISE {\"events\":296,\"writes\":296,\"rejected\":0,\"closed\":true}",
+      "RESULT {\"blocks\":16683,\"signal_blocks\":4127}"
+    ]
+  },
+  "sampler_before": {
+    "summary": {
+      "engine_only": {
+        "samples": 10,
+        "cpu_mean_one_core": 0.595707322050528,
+        "cpu_p95_one_core": 1.9849585994078716,
+        "pss_mean_mib": 19.314453125,
+        "pss_max_mib": 19.314453125,
+        "rss_sum_mean_mib": 23.7421875,
+        "private_mean_mib": 19.28125,
+        "process_names": [
+          "probe"
+        ],
+        "max_processes": 1
+      },
+      "editor_idle": {
+        "samples": 14,
+        "cpu_mean_one_core": 33.92434953347658,
+        "cpu_p95_one_core": 38.250984659535526,
+        "pss_mean_mib": 297.65625,
+        "pss_max_mib": 328.255859375,
+        "rss_sum_mean_mib": 546.1116071428571,
+        "private_mean_mib": 238.93973214285714,
+        "process_names": [
+          "WebKitNetworkPr",
+          "WebKitWebProces",
+          "probe"
+        ],
+        "max_processes": 4
+      },
+      "editor_active": {
+        "samples": 15,
+        "cpu_mean_one_core": 97.09812791991075,
+        "cpu_p95_one_core": 106.80062983331369,
+        "pss_mean_mib": 310.00546875,
+        "pss_max_mib": 323.142578125,
+        "rss_sum_mean_mib": 558.7940104166667,
+        "private_mean_mib": 251.28880208333334,
+        "process_names": [
+          "WebKitNetworkPr",
+          "WebKitWebProces",
+          "probe"
+        ],
+        "max_processes": 4
+      },
+      "editor_closed": {
+        "samples": 9,
+        "cpu_mean_one_core": 0.43861999523373885,
+        "cpu_p95_one_core": 1.9731973658938633,
+        "pss_mean_mib": 88.28125,
+        "pss_max_mib": 88.28125,
+        "rss_sum_mean_mib": 107.9765625,
+        "private_mean_mib": 87.60112847222223,
+        "process_names": [
+          "probe"
+        ],
+        "max_processes": 1
+      }
+    },
+    "reports": [
+      "EXERCISE {\"events\":297,\"writes\":297,\"rejected\":0,\"closed\":true}",
+      "RESULT {\"blocks\":16587,\"signal_blocks\":4158}"
+    ]
+  },
+  "sampler_after": {
+    "summary": {
+      "engine_only": {
+        "samples": 10,
+        "cpu_mean_one_core": 0.7950855203626633,
+        "cpu_p95_one_core": 1.9885798209144345,
+        "pss_mean_mib": 18.912109375,
+        "pss_max_mib": 18.912109375,
+        "rss_sum_mean_mib": 23.28515625,
+        "private_mean_mib": 18.87890625,
+        "process_names": [
+          "probe"
+        ],
+        "max_processes": 1
+      },
+      "editor_idle": {
+        "samples": 14,
+        "cpu_mean_one_core": 4.945780057748315,
+        "cpu_p95_one_core": 7.6966458467600525,
+        "pss_mean_mib": 255.13811383928572,
+        "pss_max_mib": 256.31640625,
+        "rss_sum_mean_mib": 502.21595982142856,
+        "private_mean_mib": 196.390625,
+        "process_names": [
+          "WebKitNetworkPr",
+          "WebKitWebProces",
+          "probe"
+        ],
+        "max_processes": 4
+      },
+      "editor_active": {
+        "samples": 16,
+        "cpu_mean_one_core": 92.4263973903148,
+        "cpu_p95_one_core": 97.71011705223187,
+        "pss_mean_mib": 287.655029296875,
+        "pss_max_mib": 315.0791015625,
+        "rss_sum_mean_mib": 535.052490234375,
+        "private_mean_mib": 228.900146484375,
+        "process_names": [
+          "WebKitNetworkPr",
+          "WebKitWebProces",
+          "probe"
+        ],
+        "max_processes": 4
+      },
+      "editor_closed": {
+        "samples": 10,
+        "cpu_mean_one_core": 0.7915374417109979,
+        "cpu_p95_one_core": 1.9787123209509938,
+        "pss_mean_mib": 64.62890625,
+        "pss_max_mib": 64.62890625,
+        "rss_sum_mean_mib": 84.19921875,
+        "private_mean_mib": 63.9609375,
+        "process_names": [
+          "probe"
+        ],
+        "max_processes": 1
+      }
+    },
+    "reports": [
+      "EXERCISE {\"events\":297,\"writes\":297,\"rejected\":0,\"closed\":true}",
+      "RESULT {\"blocks\":16696,\"signal_blocks\":4158}"
+    ]
+  }
+}

@@ -1,0 +1,329 @@
+TAP version 13
+# Subtest: accepted drag remains visible on release while reads stall, then automation stays authoritative
+ok 1 - accepted drag remains visible on release while reads stall, then automation stays authoritative
+  ---
+  duration_ms: 59.902681
+  type: 'test'
+  ...
+# Subtest: rejected drag restores host value and reports the rejection without waiting for a read
+ok 2 - rejected drag restores host value and reports the rejection without waiting for a read
+  ---
+  duration_ms: 16.707801
+  type: 'test'
+  ...
+# Subtest: automation observed while dragging reconciles on release
+ok 3 - automation observed while dragging reconciles on release
+  ---
+  duration_ms: 18.988926
+  type: 'test'
+  ...
+# Subtest: later keyboard interaction retains its display during previous gesture closure
+ok 4 - later keyboard interaction retains its display during previous gesture closure
+  ---
+  duration_ms: 15.609198
+  type: 'test'
+  ...
+# Subtest: an interim snapshot cannot roll back a later accepted move on release
+ok 5 - an interim snapshot cannot roll back a later accepted move on release
+  ---
+  duration_ms: 14.948622
+  type: 'test'
+  ...
+# Subtest: cancelled, unchanged and invalid typed edits preserve an accepted drag while reads stall
+ok 6 - cancelled, unchanged and invalid typed edits preserve an accepted drag while reads stall
+  ---
+  duration_ms: 29.660567
+  type: 'test'
+  ...
+# Subtest: an accepted default reset survives opening and closing an unchanged value editor
+ok 7 - an accepted default reset survives opening and closing an unchanged value editor
+  ---
+  duration_ms: 15.104502
+  type: 'test'
+  ...
+# Subtest: a rejected earlier closure cannot restore the display owned by a later drag
+ok 8 - a rejected earlier closure cannot restore the display owned by a later drag
+  ---
+  duration_ms: 13.89008
+  type: 'test'
+  ...
+# Subtest: queued older closure rejection cannot reclaim a later active drag
+ok 9 - queued older closure rejection cannot reclaim a later active drag
+  ---
+  duration_ms: 12.366849
+  type: 'test'
+  ...
+# Subtest: shared knob keeps its SVG geometry, disabled colours and active feedback at every size
+ok 10 - shared knob keeps its SVG geometry, disabled colours and active feedback at every size
+  ---
+  duration_ms: 64.096163
+  type: 'test'
+  ...
+# Subtest: shared React hook renders only changed state, loads matching metadata and removes its subscription
+ok 11 - shared React hook renders only changed state, loads matching metadata and removes its subscription
+  ---
+  duration_ms: 30.412362
+  type: 'test'
+  ...
+# Subtest: shared React hook reports unavailable hosts, native errors and missing commands
+ok 12 - shared React hook reports unavailable hosts, native errors and missing commands
+  ---
+  duration_ms: 5.455054
+  type: 'test'
+  ...
+# Subtest: pointer drag admits one gesture and retains the latest value while the host stalls
+ok 13 - pointer drag admits one gesture and retains the latest value while the host stalls
+  ---
+  duration_ms: 10.489572
+  type: 'test'
+  ...
+# Subtest: keyboard and typed values each get host gesture boundaries
+ok 14 - keyboard and typed values each get host gesture boundaries
+  ---
+  duration_ms: 0.792465
+  type: 'test'
+  ...
+# Subtest: non-pointer edits retain only the latest pending value under backpressure
+ok 15 - non-pointer edits retain only the latest pending value under backpressure
+  ---
+  duration_ms: 11.124037
+  type: 'test'
+  ...
+# Subtest: a rejected value reports failure and still closes its gesture
+ok 16 - a rejected value reports failure and still closes its gesture
+  ---
+  duration_ms: 7.865509
+  type: 'test'
+  ...
+# Subtest: flush observes an active pointer write
+ok 17 - flush observes an active pointer write
+  ---
+  duration_ms: 1.950498
+  type: 'test'
+  ...
+# Subtest: a second drag waits for the closing gesture and keeps its own final value
+ok 18 - a second drag waits for the closing gesture and keeps its own final value
+  ---
+  duration_ms: 6.439868
+  type: 'test'
+  ...
+# Subtest: typed entry during pointer closure waits for its own gesture boundary
+ok 19 - typed entry during pointer closure waits for its own gesture boundary
+  ---
+  duration_ms: 1.076133
+  type: 'test'
+  ...
+# Subtest: keyboard slider change during pointer closure retains its own host gesture
+ok 20 - keyboard slider change during pointer closure retains its own host gesture
+  ---
+  duration_ms: 1.368861
+  type: 'test'
+  ...
+# Subtest: queued and coalesced gestures retain origin ownership before prior writes complete
+ok 21 - queued and coalesced gestures retain origin ownership before prior writes complete
+  ---
+  duration_ms: 4.354922
+  type: 'test'
+  ...
+# Subtest: only accepted valid value writes advance knob admission
+ok 22 - only accepted valid value writes advance knob admission
+  ---
+  duration_ms: 3.05406
+  type: 'test'
+  ...
+# Subtest: snapshots cover the latest admitted write before reconciling its display
+ok 23 - snapshots cover the latest admitted write before reconciling its display
+  ---
+  duration_ms: 0.212329
+  type: 'test'
+  ...
+# Subtest: value replies retain admission and late failures retain their submitting interaction
+ok 24 - value replies retain admission and late failures retain their submitting interaction
+  ---
+  duration_ms: 0.902804
+  type: 'test'
+  ...
+# Subtest: queued command failures retain their originating owner without passing it to the host
+ok 25 - queued command failures retain their originating owner without passing it to the host
+  ---
+  duration_ms: 0.332827
+  type: 'test'
+  ...
+# Subtest: stereo meter uses host display levels, clip latches and incomplete state
+ok 26 - stereo meter uses host display levels, clip latches and incomplete state
+  ---
+  duration_ms: 3.20192
+  type: 'test'
+  ...
+# Subtest: absent or malformed meter packets show safe empty bars
+ok 27 - absent or malformed meter packets show safe empty bars
+  ---
+  duration_ms: 3.842735
+  type: 'test'
+  ...
+# Subtest: equal normalized meters retain current display identity and changed fields update
+ok 28 - equal normalized meters retain current display identity and changed fields update
+  ---
+  duration_ms: 0.385048
+  type: 'test'
+  ...
+# Subtest: frame tracks the unscaled panel height only when its geometry changes
+ok 29 - frame tracks the unscaled panel height only when its geometry changes
+  ---
+  duration_ms: 1.47956
+  type: 'test'
+  ...
+# Subtest: equal snapshots retain identity while automation, metadata and ordering remain authoritative
+ok 30 - equal snapshots retain identity while automation, metadata and ordering remain authoritative
+  ---
+  duration_ms: 1.375031
+  type: 'test'
+  ...
+# Subtest: writes progress while reads stall, with one read and one replacement refresh
+ok 31 - writes progress while reads stall, with one read and one replacement refresh
+  ---
+  duration_ms: 3.301498
+  type: 'test'
+  ...
+# Subtest: rejection recovers authoritative state and stale replies cannot restore old generations
+ok 32 - rejection recovers authoritative state and stale replies cannot restore old generations
+  ---
+  duration_ms: 2.791382
+  type: 'test'
+  ...
+# Subtest: admitted sequences reject stale reads, errors are reported, and closing ignores late results
+ok 33 - admitted sequences reject stale reads, errors are reported, and closing ignores late results
+  ---
+  duration_ms: 0.758505
+  type: 'test'
+  ...
+# Subtest: accepted commands can omit sequence and closed controllers ignore errors from pending work
+ok 34 - accepted commands can omit sequence and closed controllers ignore errors from pending work
+  ---
+  duration_ms: 0.468137
+  type: 'test'
+  ...
+# Subtest: a typed actual value uses the admitted instrument range while commands stay normalized
+ok 35 - a typed actual value uses the admitted instrument range while commands stay normalized
+  ---
+  duration_ms: 1.535169
+  type: 'test'
+  ...
+# Subtest: obsolete or missing metadata cannot lend its range or default to a newer control
+ok 36 - obsolete or missing metadata cannot lend its range or default to a newer control
+  ---
+  duration_ms: 0.351738
+  type: 'test'
+  ...
+# Subtest: actual entry accepts complete decimal numbers and rejects malformed or out-of-range text
+ok 37 - actual entry accepts complete decimal numbers and rejects malformed or out-of-range text
+  ---
+  duration_ms: 0.333097
+  type: 'test'
+  ...
+# Subtest: knob inputs follow the supplied vertical drag, fine steps, endpoints and loaded reset
+ok 38 - knob inputs follow the supplied vertical drag, fine steps, endpoints and loaded reset
+  ---
+  duration_ms: 0.376988
+  type: 'test'
+  ...
+# Subtest: pending reload metadata cannot supply the old range or reset to the new generation
+ok 39 - pending reload metadata cannot supply the old range or reset to the new generation
+  ---
+  duration_ms: 4.339572
+  type: 'test'
+  ...
+# Subtest: a generation advance during one request coalesces and fetches current metadata afterward
+ok 40 - a generation advance during one request coalesces and fetches current metadata afterward
+  ---
+  duration_ms: 3.659446
+  type: 'test'
+  ...
+# Subtest: absent, invalid or failed metadata remains unavailable and can be refreshed without a queue
+ok 41 - absent, invalid or failed metadata remains unavailable and can be refreshed without a queue
+  ---
+  duration_ms: 0.575726
+  type: 'test'
+  ...
+# Subtest: closing an editor ignores the late metadata response and error
+ok 42 - closing an editor ignores the late metadata response and error
+  ---
+  duration_ms: 2.926131
+  type: 'test'
+  ...
+# Subtest: terminal results retire timers while partial readiness keeps polling
+ok 43 - terminal results retire timers while partial readiness keeps polling
+  ---
+  duration_ms: 1.876668
+  type: 'test'
+  ...
+# Subtest: failure, admission rejection and close remove timers and ignore late states
+ok 44 - failure, admission rejection and close remove timers and ignore late states
+  ---
+  duration_ms: 1.000513
+  type: 'test'
+  ...
+# Subtest: new polling owner restarts selection after visibility restoration or retry
+ok 45 - new polling owner restarts selection after visibility restoration or retry
+  ---
+  duration_ms: 0.363638
+  type: 'test'
+  ...
+# Subtest: actual waveform transport keeps its timer after admission and retires on ready
+ok 46 - actual waveform transport keeps its timer after admission and retires on ready
+  ---
+  duration_ms: 1.55091
+  type: 'test'
+  ...
+# Subtest: actual spectrum transport keeps polling through partial ready pages
+ok 47 - actual spectrum transport keeps polling through partial ready pages
+  ---
+  duration_ms: 7.391842
+  type: 'test'
+  ...
+1..47
+# tests 47
+# suites 0
+# pass 47
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 1043.343406
+# start of coverage report
+# ------------------------------------------------------------------------------------------------------
+# file                                    | line % | branch % | funcs % | uncovered lines
+# ------------------------------------------------------------------------------------------------------
+# web                                     |        |          |         |
+#  sampler                                |        |          |         |
+#   src                                   |        |          |         |
+#    host-knob-admission.test.mjs         | 100.00 |   100.00 |  100.00 |
+#    host-knob-face.test.mjs              | 100.00 |   100.00 |  100.00 |
+#    host-parameters.test.mjs             | 100.00 |   100.00 |  100.00 |
+#    parameter-gesture.mjs                | 100.00 |    86.44 |  100.00 |
+#    parameter-gesture.test.mjs           | 100.00 |   100.00 |   75.76 |
+#  shared                                 |        |          |         |
+#   host-knob.mjs                         |  97.62 |    91.84 |   80.49 | 68-69 131-133
+#   host-parameters.mjs                   | 100.00 |   100.00 |  100.00 |
+#   knob-face.mjs                         | 100.00 |   100.00 |  100.00 |
+#   knob-reconciliation.mjs               | 100.00 |   100.00 |  100.00 |
+#   knob-reconciliation.test.mjs          | 100.00 |   100.00 |   86.67 |
+#   meter-view.mjs                        | 100.00 |   100.00 |  100.00 |
+#   meter-view.test.mjs                   | 100.00 |   100.00 |  100.00 |
+#   panel-height.mjs                      | 100.00 |   100.00 |  100.00 |
+#   panel-height.test.mjs                 | 100.00 |   100.00 |  100.00 |
+#   parameter-controller.mjs              | 100.00 |    98.41 |  100.00 |
+#   parameter-controller.test.mjs         | 100.00 |   100.00 |   91.18 |
+#   parameter-value.mjs                   | 100.00 |   100.00 |  100.00 |
+#   parameter-value.test.mjs              | 100.00 |   100.00 |  100.00 |
+#   prepared-parameter-document.mjs       | 100.00 |   100.00 |  100.00 |
+#   prepared-parameter-document.test.mjs  | 100.00 |   100.00 |   80.95 |
+#   prepared-polling.mjs                  | 100.00 |   100.00 |  100.00 |
+#   prepared-polling.test.mjs             | 100.00 |   100.00 |   88.89 |
+#   prepared-waveform.mjs                 |  16.35 |    50.00 |   20.00 | 11 15-58 61-85 88-104
+#   spectrum-transport.mjs                |  91.87 |    51.43 |   80.00 | 30-33 65-66 110-113
+#   waveform-transport.mjs                |  81.00 |    40.91 |   88.89 | 20-23 30-33 37-40 42-44 78-81
+# ------------------------------------------------------------------------------------------------------
+# all files                               |  93.72 |    94.15 |   90.21 |
+# ------------------------------------------------------------------------------------------------------
+# end of coverage report

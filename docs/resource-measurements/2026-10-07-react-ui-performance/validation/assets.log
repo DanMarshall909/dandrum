@@ -1,0 +1,26 @@
+
+> tb303-react@1.0.0 build
+> vite build
+
+vite v6.4.3 building for production...
+transforming...
+✓ 46 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html      0.37 kB │ gzip:   0.25 kB
+dist/app.css     1,603.61 kB │ gzip: 743.20 kB
+dist/app.js        235.13 kB │ gzip:  72.46 kB
+✓ built in 1.03s
+
+> dandrum-sampler-react@1.0.0 build
+> vite build
+
+vite v6.4.3 building for production...
+transforming...
+✓ 58 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html      0.37 kB │ gzip:   0.24 kB
+dist/app.css     1,608.66 kB │ gzip: 743.44 kB
+dist/app.js        270.42 kB │ gzip:  83.26 kB
+✓ built in 1.01s

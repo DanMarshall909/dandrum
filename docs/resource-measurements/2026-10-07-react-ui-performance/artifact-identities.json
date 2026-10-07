@@ -1,0 +1,30 @@
+{
+  "resource_before_probe": {
+    "path": "/tmp/dandrum-resource-audit-20261007/probe",
+    "sha256": "5dd117f932292950e146104c4c723063791e60dc71909a231b3b45005550bb51"
+  },
+  "resource_after_probe": {
+    "path": "/tmp/dandrum-optimized-audit-20261007/resource/probe",
+    "sha256": "8b99ed4f8724db18bc7e4f00f05d6011b4549ed5d2cfe663f98e4a348dbc855e"
+  },
+  "latency_before_probe": {
+    "path": "/tmp/dandrum-latency-audit-20261007/probe",
+    "sha256": "f6491bd2b706f6904a388f29771475da19d6830e76703ee019fc1feec5368b35"
+  },
+  "latency_after_probe": {
+    "path": "/tmp/dandrum-optimized-audit-20261007/latency/probe",
+    "sha256": "a995cf78983cfe860dfeb79a1f805c66f6d1a1c157b9bf17a8a0803f80e3dbe4"
+  },
+  "tb303_app_js": {
+    "path": "/tmp/dandrum-frontend-performance/web/tb303/dist/app.js",
+    "sha256": "7a37cd48bd7a7ec5c05bdf44b10414ea9e0e7a7a478ecb0cd595be9e5f9026dd"
+  },
+  "tb303_app_css": {
+    "path": "/tmp/dandrum-frontend-performance/web/tb303/dist/app.css",
+    "sha256": "87c94324a0cf7d950c2e029f9615b6b509d8a5693ccf3493696765eccded630b"
+  },
+  "sampler_app_js": {
+    "path": "/tmp/dandrum-frontend-performance/web/sampler/dist/app.js",
+    "sha256": "eafdbceff52ee97a54a9015e3d0b164f0740aba7afa125b7e33673a29bbc99a0"
+  }
+}

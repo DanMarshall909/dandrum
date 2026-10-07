@@ -1,0 +1,905 @@
+TAP version 13
+# Subtest: every supplied design icon preserves its manifest identity and SVG geometry
+ok 1 - every supplied design icon preserves its manifest identity and SVG geometry
+  ---
+  duration_ms: 31.623474
+  type: 'test'
+  ...
+# Subtest: decorative icons inherit text colour and stay out of keyboard and accessible labels
+ok 2 - decorative icons inherit text colour and stay out of keyboard and accessible labels
+  ---
+  duration_ms: 0.457418
+  type: 'test'
+  ...
+# Subtest: a standalone icon exposes its escaped label and requested size and colour
+ok 3 - a standalone icon exposes its escaped label and requested size and colour
+  ---
+  duration_ms: 0.884994
+  type: 'test'
+  ...
+# Subtest: one source produces matching CSS and compilable C++ colour, spacing and typography values
+ok 4 - one source produces matching CSS and compilable C++ colour, spacing and typography values
+  ---
+  duration_ms: 290.490011
+  type: 'test'
+  ...
+# Subtest: changing a semantic colour and spacing updates both renderers and their alias chains
+ok 5 - changing a semantic colour and spacing updates both renderers and their alias chains
+  ---
+  duration_ms: 116.83805
+  type: 'test'
+  ...
+# Subtest: check identifies each missing or independently edited generated output without rewriting it
+ok 6 - check identifies each missing or independently edited generated output without rewriting it
+  ---
+  duration_ms: 161.782618
+  type: 'test'
+  ...
+# Subtest: invalid tokens fail with a named diagnostic and leave both outputs unchanged
+ok 7 - invalid tokens fail with a named diagnostic and leave both outputs unchanged
+  ---
+  duration_ms: 505.760971
+  type: 'test'
+  ...
+# Subtest: output is deterministic regardless of token insertion order
+ok 8 - output is deterministic regardless of token insertion order
+  ---
+  duration_ms: 53.631292
+  type: 'test'
+  ...
+# Subtest: repository outputs are current and preserve the supplied CSS semantics
+ok 9 - repository outputs are current and preserve the supplied CSS semantics
+  ---
+  duration_ms: 125.762223
+  type: 'test'
+  ...
+# Subtest: invalid CLI arguments and overlapping paths cannot overwrite the source
+ok 10 - invalid CLI arguments and overlapping paths cannot overwrite the source
+  ---
+  duration_ms: 73.212994
+  type: 'test'
+  ...
+# Subtest: locally retained font binaries and license notices match pinned upstream provenance
+ok 11 - locally retained font binaries and license notices match pinned upstream provenance
+  ---
+  duration_ms: 3.534697
+  type: 'test'
+  ...
+# Subtest: tests/js/NativeFunctionBootstrapTest.mjs
+ok 3 - tests/js/NativeFunctionBootstrapTest.mjs
+  ---
+  duration_ms: 117.267377
+  type: 'test'
+  ...
+# Subtest: JUCE runtime observer scripts remain ASCII across the Linux IPC boundary
+ok 13 - JUCE runtime observer scripts remain ASCII across the Linux IPC boundary
+  ---
+  duration_ms: 8.387285
+  type: 'test'
+  ...
+# Subtest: sampler packages all declared fonts into locally served CSS
+ok 14 - sampler packages all declared fonts into locally served CSS
+  ---
+  duration_ms: 17.069589
+  type: 'test'
+  ...
+# Subtest: sampler executable assets retain original font licenses and need only embedded routes
+ok 15 - sampler executable assets retain original font licenses and need only embedded routes
+  ---
+  duration_ms: 3.228769
+  type: 'test'
+  ...
+# Subtest: sampler packages the supplied stroke icons with its executable assets
+ok 16 - sampler packages the supplied stroke icons with its executable assets
+  ---
+  duration_ms: 2.537624
+  type: 'test'
+  ...
+# Subtest: tb303 packages all declared fonts into locally served CSS
+ok 17 - tb303 packages all declared fonts into locally served CSS
+  ---
+  duration_ms: 12.019312
+  type: 'test'
+  ...
+# Subtest: tb303 executable assets retain original font licenses and need only embedded routes
+ok 18 - tb303 executable assets retain original font licenses and need only embedded routes
+  ---
+  duration_ms: 2.003487
+  type: 'test'
+  ...
+# Subtest: tb303 packages the supplied stroke icons with its executable assets
+ok 19 - tb303 packages the supplied stroke icons with its executable assets
+  ---
+  duration_ms: 1.066962
+  type: 'test'
+  ...
+# Subtest: React efficiency acceptance suites pass with their own browser documents
+ok 20 - React efficiency acceptance suites pass with their own browser documents
+  ---
+  duration_ms: 941.919526
+  type: 'test'
+  ...
+# \# tests 34; \# pass 34; \# fail 0
+# Subtest: tests/js/SharedInstrumentUiTest.mjs
+ok 6 - tests/js/SharedInstrumentUiTest.mjs
+  ---
+  duration_ms: 118.097942
+  type: 'test'
+  ...
+# Subtest: tests/js/Tb303PageTest.mjs
+ok 7 - tests/js/Tb303PageTest.mjs
+  ---
+  duration_ms: 121.948617
+  type: 'test'
+  ...
+# Subtest: accepted drag remains visible on release while reads stall, then automation stays authoritative
+ok 23 - accepted drag remains visible on release while reads stall, then automation stays authoritative
+  ---
+  duration_ms: 59.250045
+  type: 'test'
+  ...
+# Subtest: rejected drag restores host value and reports the rejection without waiting for a read
+ok 24 - rejected drag restores host value and reports the rejection without waiting for a read
+  ---
+  duration_ms: 18.702818
+  type: 'test'
+  ...
+# Subtest: automation observed while dragging reconciles on release
+ok 25 - automation observed while dragging reconciles on release
+  ---
+  duration_ms: 11.430896
+  type: 'test'
+  ...
+# Subtest: later keyboard interaction retains its display during previous gesture closure
+ok 26 - later keyboard interaction retains its display during previous gesture closure
+  ---
+  duration_ms: 14.077309
+  type: 'test'
+  ...
+# Subtest: an interim snapshot cannot roll back a later accepted move on release
+ok 27 - an interim snapshot cannot roll back a later accepted move on release
+  ---
+  duration_ms: 11.885112
+  type: 'test'
+  ...
+# Subtest: cancelled, unchanged and invalid typed edits preserve an accepted drag while reads stall
+ok 28 - cancelled, unchanged and invalid typed edits preserve an accepted drag while reads stall
+  ---
+  duration_ms: 24.50677
+  type: 'test'
+  ...
+# Subtest: an accepted default reset survives opening and closing an unchanged value editor
+ok 29 - an accepted default reset survives opening and closing an unchanged value editor
+  ---
+  duration_ms: 12.442649
+  type: 'test'
+  ...
+# Subtest: a rejected earlier closure cannot restore the display owned by a later drag
+ok 30 - a rejected earlier closure cannot restore the display owned by a later drag
+  ---
+  duration_ms: 12.31321
+  type: 'test'
+  ...
+# Subtest: queued older closure rejection cannot reclaim a later active drag
+ok 31 - queued older closure rejection cannot reclaim a later active drag
+  ---
+  duration_ms: 9.782636
+  type: 'test'
+  ...
+# Subtest: shared knob keeps its SVG geometry, disabled colours and active feedback at every size
+ok 32 - shared knob keeps its SVG geometry, disabled colours and active feedback at every size
+  ---
+  duration_ms: 58.919707
+  type: 'test'
+  ...
+# Subtest: shared React hook renders only changed state, loads matching metadata and removes its subscription
+ok 33 - shared React hook renders only changed state, loads matching metadata and removes its subscription
+  ---
+  duration_ms: 33.143424
+  type: 'test'
+  ...
+# Subtest: shared React hook reports unavailable hosts, native errors and missing commands
+ok 34 - shared React hook reports unavailable hosts, native errors and missing commands
+  ---
+  duration_ms: 7.014475
+  type: 'test'
+  ...
+# Subtest: lost pointer capture releases the mounted audition exactly once
+ok 35 - lost pointer capture releases the mounted audition exactly once
+  ---
+  duration_ms: 83.935234
+  type: 'test'
+  ...
+# Subtest: pointer height sets bounded velocity and cancellation preserves ownership
+ok 36 - pointer height sets bounded velocity and cancellation preserves ownership
+  ---
+  duration_ms: 38.129002
+  type: 'test'
+  ...
+# Subtest: zones select and navigate without editing bounds and audition mapped velocities
+ok 37 - zones select and navigate without editing bounds and audition mapped velocities
+  ---
+  duration_ms: 55.279191
+  type: 'test'
+  ...
+# Subtest: piano keyboard replacement releases first and unrelated key-up cannot release it
+ok 38 - piano keyboard replacement releases first and unrelated key-up cannot release it
+  ---
+  duration_ms: 20.512347
+  type: 'test'
+  ...
+# Subtest: piano uses a neutral velocity when no selected zone contains the key
+ok 39 - piano uses a neutral velocity when no selected zone contains the key
+  ---
+  duration_ms: 17.298148
+  type: 'test'
+  ...
+# Subtest: a tiny velocity zone retains its accessible bounds when its visual label cannot fit
+ok 40 - a tiny velocity zone retains its accessible bounds when its visual label cannot fit
+  ---
+  duration_ms: 7.64462
+  type: 'test'
+  ...
+# Subtest: focus loss releases mounted editor audition
+ok 41 - focus loss releases mounted editor audition
+  ---
+  duration_ms: 19.875031
+  type: 'test'
+  ...
+# Subtest: window blur releases mounted editor audition
+ok 42 - window blur releases mounted editor audition
+  ---
+  duration_ms: 17.507746
+  type: 'test'
+  ...
+# Subtest: page hide releases mounted editor audition
+ok 43 - page hide releases mounted editor audition
+  ---
+  duration_ms: 14.879043
+  type: 'test'
+  ...
+# Subtest: visibility transition releases mounted editor audition
+ok 44 - visibility transition releases mounted editor audition
+  ---
+  duration_ms: 15.072623
+  type: 'test'
+  ...
+# Subtest: Escape releases mounted editor audition
+ok 45 - Escape releases mounted editor audition
+  ---
+  duration_ms: 20.380637
+  type: 'test'
+  ...
+# Subtest: generation replacement releases mounted editor audition
+ok 46 - generation replacement releases mounted editor audition
+  ---
+  duration_ms: 19.568223
+  type: 'test'
+  ...
+# Subtest: unmount releases mounted editor audition
+ok 47 - unmount releases mounted editor audition
+  ---
+  duration_ms: 13.085685
+  type: 'test'
+  ...
+# Subtest: cleanup uses current callbacks after the component rerenders
+ok 48 - cleanup uses current callbacks after the component rerenders
+  ---
+  duration_ms: 20.878044
+  type: 'test'
+  ...
+# Subtest: mounted zoom is bounded, preserves the anchor and adapts to compact width
+ok 49 - mounted zoom is bounded, preserves the anchor and adapts to compact width
+  ---
+  duration_ms: 42.258365
+  type: 'test'
+  ...
+# Subtest: key map renders real prepared ranges and grouped alternatives without issuing commands
+ok 50 - key map renders real prepared ranges and grouped alternatives without issuing commands
+  ---
+  duration_ms: 11.802043
+  type: 'test'
+  ...
+# Subtest: an empty prepared key map has an explicit empty state and disabled zoom
+ok 51 - an empty prepared key map has an explicit empty state and disabled zoom
+  ---
+  duration_ms: 2.852452
+  type: 'test'
+  ...
+# Subtest: actual source alternatives expose exact region/mapping facts and declared public bindings
+ok 52 - actual source alternatives expose exact region/mapping facts and declared public bindings
+  ---
+  duration_ms: 66.04048
+  type: 'test'
+  ...
+# Subtest: another source retains large frame identities, zero-valued metadata and its distinct scope
+ok 53 - another source retains large frame identities, zero-valued metadata and its distinct scope
+  ---
+  duration_ms: 21.035973
+  type: 'test'
+  ...
+# Subtest: keyboard opens once, Escape and close restore source focus, and unsupported editing stays absent
+ok 54 - keyboard opens once, Escape and close restore source focus, and unsupported editing stays absent
+  ---
+  duration_ms: 33.611742
+  type: 'test'
+  ...
+# Subtest: new generation or pad retires open details instead of reopening old identities
+ok 55 - new generation or pad retires open details instead of reopening old identities
+  ---
+  duration_ms: 15.819877
+  type: 'test'
+  ...
+# Subtest: absent or invalid assignments are explicitly unavailable without borrowing another map
+ok 56 - absent or invalid assignments are explicitly unavailable without borrowing another map
+  ---
+  duration_ms: 13.123355
+  type: 'test'
+  ...
+# Subtest: undeclared playback values and source kinds remain unavailable
+ok 57 - undeclared playback values and source kinds remain unavailable
+  ---
+  duration_ms: 9.952395
+  type: 'test'
+  ...
+# Subtest: a missing region link stays unavailable and same-identity rerenders keep current inspection
+ok 58 - a missing region link stays unavailable and same-identity rerenders keep current inspection
+  ---
+  duration_ms: 11.632674
+  type: 'test'
+  ...
+# Subtest: prepared pads retain real snare velocity boundaries and alternate semantics
+ok 59 - prepared pads retain real snare velocity boundaries and alternate semantics
+  ---
+  duration_ms: 7.858418
+  type: 'test'
+  ...
+# Subtest: selected region and controls come from prepared source and declared scope
+ok 60 - selected region and controls come from prepared source and declared scope
+  ---
+  duration_ms: 1.762189
+  type: 'test'
+  ...
+# Subtest: selecting a round-robin alternative inspects its actual region and control scope
+ok 61 - selecting a round-robin alternative inspects its actual region and control scope
+  ---
+  duration_ms: 0.555066
+  type: 'test'
+  ...
+# Subtest: absent maps and invalid source links remain unavailable
+ok 62 - absent maps and invalid source links remain unavailable
+  ---
+  duration_ms: 0.260248
+  type: 'test'
+  ...
+# Subtest: key map fits actual MIDI keys and draws the inclusive snare velocity split
+ok 63 - key map fits actual MIDI keys and draws the inclusive snare velocity split
+  ---
+  duration_ms: 4.037054
+  type: 'test'
+  ...
+# Subtest: key map compact sizing and bounded zoom preserve MIDI and velocity coordinates
+ok 64 - key map compact sizing and bounded zoom preserve MIDI and velocity coordinates
+  ---
+  duration_ms: 0.740245
+  type: 'test'
+  ...
+# Subtest: pad blur and window focus loss release editor notes and clear pressed feedback
+ok 65 - pad blur and window focus loss release editor notes and clear pressed feedback
+  ---
+  duration_ms: 1.022613
+  type: 'test'
+  ...
+# Subtest: actual named output layouts are inspected without fabricated routes or local edits
+ok 66 - actual named output layouts are inspected without fabricated routes or local edits
+  ---
+  duration_ms: 60.418967
+  type: 'test'
+  ...
+# Subtest: measured peak and RMS keep actual bus, channel and generation identities
+ok 67 - measured peak and RMS keep actual bus, channel and generation identities
+  ---
+  duration_ms: 23.322508
+  type: 'test'
+  ...
+# Subtest: waiting, stale generation, partial history and measured silence are distinct
+ok 68 - waiting, stale generation, partial history and measured silence are distinct
+  ---
+  duration_ms: 23.559247
+  type: 'test'
+  ...
+# Subtest: clip acknowledgement targets only the measured output channel, generation and ticket
+ok 69 - clip acknowledgement targets only the measured output channel, generation and ticket
+  ---
+  duration_ms: 13.564672
+  type: 'test'
+  ...
+# Subtest: an old acknowledgement cannot clear a newer clip or generation
+ok 70 - an old acknowledgement cannot clear a newer clip or generation
+  ---
+  duration_ms: 0.516216
+  type: 'test'
+  ...
+# Subtest: native clip replies preserve newer readings and rejected acknowledgements
+ok 71 - native clip replies preserve newer readings and rejected acknowledgements
+  ---
+  duration_ms: 0.879754
+  type: 'test'
+  ...
+# Subtest: missing acknowledgement capability and mismatched channel layouts stay unavailable
+ok 72 - missing acknowledgement capability and mismatched channel layouts stay unavailable
+  ---
+  duration_ms: 13.508402
+  type: 'test'
+  ...
+# Subtest: missing output metadata does not invent a default stereo binding
+ok 73 - missing output metadata does not invent a default stereo binding
+  ---
+  duration_ms: 2.872201
+  type: 'test'
+  ...
+# Subtest: pointer drag admits one gesture and retains the latest value while the host stalls
+ok 74 - pointer drag admits one gesture and retains the latest value while the host stalls
+  ---
+  duration_ms: 29.682147
+  type: 'test'
+  ...
+# Subtest: keyboard and typed values each get host gesture boundaries
+ok 75 - keyboard and typed values each get host gesture boundaries
+  ---
+  duration_ms: 7.71724
+  type: 'test'
+  ...
+# Subtest: non-pointer edits retain only the latest pending value under backpressure
+ok 76 - non-pointer edits retain only the latest pending value under backpressure
+  ---
+  duration_ms: 1.591829
+  type: 'test'
+  ...
+# Subtest: a rejected value reports failure and still closes its gesture
+ok 77 - a rejected value reports failure and still closes its gesture
+  ---
+  duration_ms: 0.493587
+  type: 'test'
+  ...
+# Subtest: flush observes an active pointer write
+ok 78 - flush observes an active pointer write
+  ---
+  duration_ms: 22.224416
+  type: 'test'
+  ...
+# Subtest: a second drag waits for the closing gesture and keeps its own final value
+ok 79 - a second drag waits for the closing gesture and keeps its own final value
+  ---
+  duration_ms: 1.072183
+  type: 'test'
+  ...
+# Subtest: typed entry during pointer closure waits for its own gesture boundary
+ok 80 - typed entry during pointer closure waits for its own gesture boundary
+  ---
+  duration_ms: 13.726241
+  type: 'test'
+  ...
+# Subtest: keyboard slider change during pointer closure retains its own host gesture
+ok 81 - keyboard slider change during pointer closure retains its own host gesture
+  ---
+  duration_ms: 1.096173
+  type: 'test'
+  ...
+# Subtest: queued and coalesced gestures retain origin ownership before prior writes complete
+ok 82 - queued and coalesced gestures retain origin ownership before prior writes complete
+  ---
+  duration_ms: 8.282677
+  type: 'test'
+  ...
+# Subtest: only accepted valid value writes advance knob admission
+ok 83 - only accepted valid value writes advance knob admission
+  ---
+  duration_ms: 1.723699
+  type: 'test'
+  ...
+# Subtest: snapshots cover the latest admitted write before reconciling its display
+ok 84 - snapshots cover the latest admitted write before reconciling its display
+  ---
+  duration_ms: 0.247398
+  type: 'test'
+  ...
+# Subtest: value replies retain admission and late failures retain their submitting interaction
+ok 85 - value replies retain admission and late failures retain their submitting interaction
+  ---
+  duration_ms: 2.546763
+  type: 'test'
+  ...
+# Subtest: queued command failures retain their originating owner without passing it to the host
+ok 86 - queued command failures retain their originating owner without passing it to the host
+  ---
+  duration_ms: 0.349198
+  type: 'test'
+  ...
+# Subtest: live subscription bounds requests through a stalled packet and acknowledgement
+ok 87 - live subscription bounds requests through a stalled packet and acknowledgement
+  ---
+  duration_ms: 75.730887
+  type: 'test'
+  ...
+# Subtest: hidden startup and serialized visibility keep a single newest demand
+ok 88 - hidden startup and serialized visibility keep a single newest demand
+  ---
+  duration_ms: 11.675984
+  type: 'test'
+  ...
+# Subtest: a packet requested before hide/show cannot paint after the demand changes
+ok 89 - a packet requested before hide/show cannot paint after the demand changes
+  ---
+  duration_ms: 0.438237
+  type: 'test'
+  ...
+# Subtest: closing releases admitted demand without waiting for a subscription or packet reply
+ok 90 - closing releases admitted demand without waiting for a subscription or packet reply
+  ---
+  duration_ms: 0.470127
+  type: 'test'
+  ...
+# Subtest: stale/duplicate packets and renderer failures cannot strand acknowledgement
+ok 91 - stale/duplicate packets and renderer failures cannot strand acknowledgement
+  ---
+  duration_ms: 1.038953
+  type: 'test'
+  ...
+# Subtest: closure also bypasses a pending visibility reply and stops its reconciliation
+ok 92 - closure also bypasses a pending visibility reply and stops its reconciliation
+  ---
+  duration_ms: 0.384638
+  type: 'test'
+  ...
+# Subtest: invalid admission and packet identities fail explicitly without extra calls
+ok 93 - invalid admission and packet identities fail explicitly without extra calls
+  ---
+  duration_ms: 1.214482
+  type: 'test'
+  ...
+# Subtest: live views preserve exact stream frames, selected signed channels and host-rate frequency
+ok 94 - live views preserve exact stream frames, selected signed channels and host-rate frequency
+  ---
+  duration_ms: 10.264904
+  type: 'test'
+  ...
+# Subtest: live views reject incoherent or unbounded measurements before painting
+ok 95 - live views reject incoherent or unbounded measurements before painting
+  ---
+  duration_ms: 16.133374
+  type: 'test'
+  ...
+# Subtest: live painters draw signed scope and log spectrum with labelled levels
+ok 96 - live painters draw signed scope and log spectrum with labelled levels
+  ---
+  duration_ms: 2.854502
+  type: 'test'
+  ...
+# Subtest: stalled browser requests and acknowledgements retain one in-flight meter packet
+ok 97 - stalled browser requests and acknowledgements retain one in-flight meter packet
+  ---
+  duration_ms: 39.153196
+  type: 'test'
+  ...
+# Subtest: hidden, reopened and stale-generation browser states remain bounded
+ok 98 - hidden, reopened and stale-generation browser states remain bounded
+  ---
+  duration_ms: 19.821101
+  type: 'test'
+  ...
+# Subtest: a renderer error still acknowledges the consumed packet
+ok 99 - a renderer error still acknowledges the consumed packet
+  ---
+  duration_ms: 0.701216
+  type: 'test'
+  ...
+# Subtest: identical meter displays still acknowledge every packet sequence
+ok 100 - identical meter displays still acknowledge every packet sequence
+  ---
+  duration_ms: 1.284502
+  type: 'test'
+  ...
+# Subtest: stereo meter uses host display levels, clip latches and incomplete state
+ok 101 - stereo meter uses host display levels, clip latches and incomplete state
+  ---
+  duration_ms: 1.930278
+  type: 'test'
+  ...
+# Subtest: absent or malformed meter packets show safe empty bars
+ok 102 - absent or malformed meter packets show safe empty bars
+  ---
+  duration_ms: 2.478024
+  type: 'test'
+  ...
+# Subtest: equal normalized meters retain current display identity and changed fields update
+ok 103 - equal normalized meters retain current display identity and changed fields update
+  ---
+  duration_ms: 0.528367
+  type: 'test'
+  ...
+# Subtest: frame tracks the unscaled panel height only when its geometry changes
+ok 104 - frame tracks the unscaled panel height only when its geometry changes
+  ---
+  duration_ms: 1.068414
+  type: 'test'
+  ...
+# Subtest: equal snapshots retain identity while automation, metadata and ordering remain authoritative
+ok 105 - equal snapshots retain identity while automation, metadata and ordering remain authoritative
+  ---
+  duration_ms: 1.181043
+  type: 'test'
+  ...
+# Subtest: writes progress while reads stall, with one read and one replacement refresh
+ok 106 - writes progress while reads stall, with one read and one replacement refresh
+  ---
+  duration_ms: 4.188893
+  type: 'test'
+  ...
+# Subtest: rejection recovers authoritative state and stale replies cannot restore old generations
+ok 107 - rejection recovers authoritative state and stale replies cannot restore old generations
+  ---
+  duration_ms: 0.950784
+  type: 'test'
+  ...
+# Subtest: admitted sequences reject stale reads, errors are reported, and closing ignores late results
+ok 108 - admitted sequences reject stale reads, errors are reported, and closing ignores late results
+  ---
+  duration_ms: 0.735555
+  type: 'test'
+  ...
+# Subtest: accepted commands can omit sequence and closed controllers ignore errors from pending work
+ok 109 - accepted commands can omit sequence and closed controllers ignore errors from pending work
+  ---
+  duration_ms: 0.461867
+  type: 'test'
+  ...
+# Subtest: a typed actual value uses the admitted instrument range while commands stay normalized
+ok 110 - a typed actual value uses the admitted instrument range while commands stay normalized
+  ---
+  duration_ms: 1.219022
+  type: 'test'
+  ...
+# Subtest: obsolete or missing metadata cannot lend its range or default to a newer control
+ok 111 - obsolete or missing metadata cannot lend its range or default to a newer control
+  ---
+  duration_ms: 0.299718
+  type: 'test'
+  ...
+# Subtest: actual entry accepts complete decimal numbers and rejects malformed or out-of-range text
+ok 112 - actual entry accepts complete decimal numbers and rejects malformed or out-of-range text
+  ---
+  duration_ms: 2.343725
+  type: 'test'
+  ...
+# Subtest: knob inputs follow the supplied vertical drag, fine steps, endpoints and loaded reset
+ok 113 - knob inputs follow the supplied vertical drag, fine steps, endpoints and loaded reset
+  ---
+  duration_ms: 0.471337
+  type: 'test'
+  ...
+# Subtest: pending reload metadata cannot supply the old range or reset to the new generation
+ok 114 - pending reload metadata cannot supply the old range or reset to the new generation
+  ---
+  duration_ms: 7.197343
+  type: 'test'
+  ...
+# Subtest: a generation advance during one request coalesces and fetches current metadata afterward
+ok 115 - a generation advance during one request coalesces and fetches current metadata afterward
+  ---
+  duration_ms: 2.932911
+  type: 'test'
+  ...
+# Subtest: absent, invalid or failed metadata remains unavailable and can be refreshed without a queue
+ok 116 - absent, invalid or failed metadata remains unavailable and can be refreshed without a queue
+  ---
+  duration_ms: 0.670296
+  type: 'test'
+  ...
+# Subtest: closing an editor ignores the late metadata response and error
+ok 117 - closing an editor ignores the late metadata response and error
+  ---
+  duration_ms: 4.903218
+  type: 'test'
+  ...
+# Subtest: terminal results retire timers while partial readiness keeps polling
+ok 118 - terminal results retire timers while partial readiness keeps polling
+  ---
+  duration_ms: 1.899278
+  type: 'test'
+  ...
+# Subtest: failure, admission rejection and close remove timers and ignore late states
+ok 119 - failure, admission rejection and close remove timers and ignore late states
+  ---
+  duration_ms: 2.827572
+  type: 'test'
+  ...
+# Subtest: new polling owner restarts selection after visibility restoration or retry
+ok 120 - new polling owner restarts selection after visibility restoration or retry
+  ---
+  duration_ms: 0.444067
+  type: 'test'
+  ...
+# Subtest: actual waveform transport keeps its timer after admission and retires on ready
+ok 121 - actual waveform transport keeps its timer after admission and retires on ready
+  ---
+  duration_ms: 1.825738
+  type: 'test'
+  ...
+# Subtest: actual spectrum transport keeps polling through partial ready pages
+ok 122 - actual spectrum transport keeps polling through partial ready pages
+  ---
+  duration_ms: 6.240629
+  type: 'test'
+  ...
+# Subtest: prepared spectrum uses log-frequency and exact source-frame columns at full and compact widths
+ok 123 - prepared spectrum uses log-frequency and exact source-frame columns at full and compact widths
+  ---
+  duration_ms: 8.308186
+  type: 'test'
+  ...
+# Subtest: prepared spectral palette and Canvas use declared finite dBFS with prepared overlays
+ok 124 - prepared spectral palette and Canvas use declared finite dBFS with prepared overlays
+  ---
+  duration_ms: 12.954146
+  type: 'test'
+  ...
+# Subtest: spectral view rejects obsolete and incoherent numeric data
+ok 125 - spectral view rejects obsolete and incoherent numeric data
+  ---
+  duration_ms: 1.095982
+  type: 'test'
+  ...
+# Subtest: prepared Canvas view uses exact source-frame offsets, signed extrema and source rate at both sizes
+ok 126 - prepared Canvas view uses exact source-frame offsets, signed extrema and source rate at both sizes
+  ---
+  duration_ms: 2.006727
+  type: 'test'
+  ...
+# Subtest: stale, malformed and mismatched results cannot paint an old instrument
+ok 127 - stale, malformed and mismatched results cannot paint an old instrument
+  ---
+  duration_ms: 0.312698
+  type: 'test'
+  ...
+# Subtest: Canvas can inspect either prepared source channel
+ok 128 - Canvas can inspect either prepared source channel
+  ---
+  duration_ms: 0.359098
+  type: 'test'
+  ...
+# Subtest: Canvas paints numeric envelope and prepared marker columns
+ok 129 - Canvas paints numeric envelope and prepared marker columns
+  ---
+  duration_ms: 0.447377
+  type: 'test'
+  ...
+# Subtest: bounded numeric pages assemble one coherent current spectrum
+ok 130 - bounded numeric pages assemble one coherent current spectrum
+  ---
+  duration_ms: 10.235724
+  type: 'test'
+  ...
+# Subtest: late admission coalesces selections and closure cancels accepted work
+ok 131 - late admission coalesces selections and closure cancels accepted work
+  ---
+  duration_ms: 0.875054
+  type: 'test'
+  ...
+# Subtest: closing during admission cancels the late job without publishing
+ok 132 - closing during admission cancels the late job without publishing
+  ---
+  duration_ms: 0.475927
+  type: 'test'
+  ...
+# Subtest: a stalled status request cannot multiply or overwrite a replacement selection
+ok 133 - a stalled status request cannot multiply or overwrite a replacement selection
+  ---
+  duration_ms: 2.366724
+  type: 'test'
+  ...
+# Subtest: malformed or changed pages are rejected without unbounded retained results
+ok 134 - malformed or changed pages are rejected without unbounded retained results
+  ---
+  duration_ms: 24.135373
+  type: 'test'
+  ...
+# Subtest: running, wrong-identity and interrupted polls retain no obsolete result
+ok 135 - running, wrong-identity and interrupted polls retain no obsolete result
+  ---
+  duration_ms: 3.277309
+  type: 'test'
+  ...
+# Subtest: terminal states, request failures and invalid identities allow explicit retry
+ok 136 - terminal states, request failures and invalid identities allow explicit retry
+  ---
+  duration_ms: 2.660723
+  type: 'test'
+  ...
+# Subtest: rapid region changes cancel superseded jobs and admit only the latest selection
+ok 137 - rapid region changes cancel superseded jobs and admit only the latest selection
+  ---
+  duration_ms: 2.580624
+  type: 'test'
+  ...
+# Subtest: one in-flight poll publishes only current-generation ready data
+ok 138 - one in-flight poll publishes only current-generation ready data
+  ---
+  duration_ms: 7.395102
+  type: 'test'
+  ...
+# Subtest: reload and close prevent delayed results and cancel active or late-accepted work
+ok 139 - reload and close prevent delayed results and cancel active or late-accepted work
+  ---
+  duration_ms: 0.719085
+  type: 'test'
+  ...
+# Subtest: admission errors are bounded and a later region request can retry
+ok 140 - admission errors are bounded and a later region request can retry
+  ---
+  duration_ms: 2.840351
+  type: 'test'
+  ...
+# Subtest: wrong-generation accepted jobs are cancelled instead of abandoned
+ok 141 - wrong-generation accepted jobs are cancelled instead of abandoned
+  ---
+  duration_ms: 0.344817
+  type: 'test'
+  ...
+# Subtest: terminal stale status retires an old job after host reload
+ok 142 - terminal stale status retires an old job after host reload
+  ---
+  duration_ms: 0.317738
+  type: 'test'
+  ...
+# Subtest: the panel binds exactly the seven prepared TB-303 public controls
+ok 143 - the panel binds exactly the seven prepared TB-303 public controls
+  ---
+  duration_ms: 5.739153
+  type: 'test'
+  ...
+# Subtest: older host messages cannot replace a newer value, but reload can
+ok 144 - older host messages cannot replace a newer value, but reload can
+  ---
+  duration_ms: 0.366248
+  type: 'test'
+  ...
+# Subtest: a release waits for a pending note-on and cannot be lost
+ok 145 - a release waits for a pending note-on and cannot be lost
+  ---
+  duration_ms: 1.758479
+  type: 'test'
+  ...
+# Subtest: rapid repeated presses stay bounded and page cleanup releases keys
+ok 146 - rapid repeated presses stay bounded and page cleanup releases keys
+  ---
+  duration_ms: 3.10934
+  type: 'test'
+  ...
+# Subtest: a stalled browser transport keeps at most one heartbeat in flight
+ok 147 - a stalled browser transport keeps at most one heartbeat in flight
+  ---
+  duration_ms: 1.950967
+  type: 'test'
+  ...
+# Subtest: a rejected note command reports the error and still allows cleanup
+ok 148 - a rejected note command reports the error and still allows cleanup
+  ---
+  duration_ms: 0.314928
+  type: 'test'
+  ...
+# Subtest: release retains the instrument generation from its matching press
+ok 149 - release retains the instrument generation from its matching press
+  ---
+  duration_ms: 0.284019
+  type: 'test'
+  ...
+1..149
+# tests 149
+# suites 0
+# pass 149
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 1409.791563

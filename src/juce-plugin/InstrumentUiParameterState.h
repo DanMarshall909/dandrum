@@ -13,9 +13,11 @@ struct InstrumentUiParameterState
         std::string id;
         std::string name;
         float normalisedValue = 0.0f;
+        bool operator== (const Value&) const = default;
     };
 
     std::uint32_t generation = 0;
     std::uint64_t admittedCommandSequence = 0;
     std::vector<Value> parameters;
+    bool operator== (const InstrumentUiParameterState&) const = default;
 };

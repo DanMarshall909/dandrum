@@ -1,0 +1,5 @@
+libEGL warning: DRI3 error: Could not get DRI3 device
+libEGL warning: Activate DRI3 at Xorg or build mesa with DRI2
+libEGL warning: DRI3 error: Could not get DRI3 device
+libEGL warning: Activate DRI3 at Xorg or build mesa with DRI2
+Knob parity failed: Error: Parity action timed out diagnostic={"step": -1, "ready": {"x": 532, "y": 224}, "error": "Error: Parity action timed out", "pointer": null, "displayed": 0.5, "actual": 0}

@@ -165,6 +165,8 @@ juce::var findParameter (const juce::var& snapshot, const juce::String& id)
 }
 }
 
+#include "PluginReactLayoutCheck.h"
+
 int main (int argc, char** argv)
 {
     if (argc >= 2 && juce::String (argv[1]) == "--live-bridge")
@@ -174,6 +176,9 @@ int main (int argc, char** argv)
    #if JUCE_LINUX
     std::signal (SIGPIPE, SIG_IGN);
    #endif
+
+    if (argc >= 2 && juce::String (argv[1]) == "--react-layout")
+        return reactLayoutCheck::main<PluginEditorBridgeTestProbe> (argc, argv);
 
     if (argc >= 2 && juce::String (argv[1]) == "--parameter-publication")
         return parameterPublicationCheck::run<PluginEditorBridgeTestProbe>();
