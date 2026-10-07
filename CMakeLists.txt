@@ -231,6 +231,11 @@ add_test(NAME demo-launcher-boundaries
             -s ${CMAKE_CURRENT_SOURCE_DIR}/tests/python
             -p test_demo_launcher_boundaries.py)
 
+add_test(NAME mutation-hook
+    COMMAND ${CMAKE_COMMAND} -E env PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover
+            -s ${CMAKE_CURRENT_SOURCE_DIR}/tests/python
+            -p test_mutation_hook.py)
+
 find_program(DANDRUM_NODE_EXECUTABLE node)
 if(NOT DANDRUM_NODE_EXECUTABLE OR NOT EXISTS "${DANDRUM_NODE_EXECUTABLE}")
     message(FATAL_ERROR "Node.js is required to run the WebView page and native bridge tests")

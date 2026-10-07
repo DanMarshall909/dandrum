@@ -27,8 +27,11 @@
   on missing headers such as `X11/Xlib.h`.
 - Rust unit tests: `$HOME/.cargo/bin/cargo test --manifest-path src/rust-engine/Cargo.toml`.
 - Rust mutation tests (install once with `cargo install cargo-mutants`):
-  `$HOME/.cargo/bin/cargo mutants --manifest-path src/rust-engine/Cargo.toml` (runs ~8 min; tests test quality by
-  mutating source code and checking that tests catch the mutations).
+  `$HOME/.cargo/bin/cargo mutants --manifest-path src/rust-engine/Cargo.toml`. Record scope, tool version and elapsed
+  time for the actual run; an earlier duration does not predict the current engine's full scope.
+  File selectors are crate-relative: verify a focused owner without execution using
+  `$HOME/.cargo/bin/cargo mutants --manifest-path src/rust-engine/Cargo.toml --list-files --file src/preparation.rs`.
+  A zero exit with an empty listing does not prove that the intended owner was selected.
 - CI-ready test path: configure/build with CMake, then run `ctest --test-dir build`.
 
 ## Development Practice
@@ -58,8 +61,15 @@
 - When testing a composed voice or graph, exercise a representative child module that produces the output or event;
   direct mappings from voice intrinsics prove wiring only. Assert rendered output and lifecycle behavior, and reject
   unsupported child steps during preparation instead of silently rendering silence.
-- Pre-push hook (`.githooks/pre-push`) runs `cargo test` then `cargo mutants` before every push. Skip with
-  `git push --no-verify` when needed.
+- The checked-in pre-push hook (`.githooks/pre-push`) runs `cargo test`, then mutation on changed Rust files relative
+  to the tracked upstream (last commit when no upstream exists). It runs only when Git's hook configuration installs
+  it: inspect `git config --get core.hooksPath` and the active pre-push entrypoint before claiming enforcement.
+  `DANDRUM_CARGO` can select an explicit Cargo executable for calibrated hook tests; the default remains
+  `$HOME/.cargo/bin/cargo`. Do not bypass hooks without explicit task authority.
+- For long mutation runs, follow the shared `coverage-and-mutation` workflow: retain raw logs outside model context,
+  record effective owner/test scope, outcome counts and supported setup/execution timings, and collect compact results.
+  Mark unavailable phase data explicitly. Keep focused changed-file checks distinct from required full-owner evidence;
+  independently assert DSP behavior and retain separate real host/end-to-end checks.
 - When asserting multiple ports of the same type on the same module definition, use the macros already established in
   `src/rust-engine/src/builtins/tests.rs`: `assert_control_inputs!`, `assert_audio_inputs!`, `assert_audio_outputs!`.
   These accept an unbounded list of port names after the definition, avoiding repetitive single-port calls. Define new
