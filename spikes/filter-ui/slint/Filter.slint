@@ -1,0 +1,126 @@
+import { AboutSlint } from "std-widgets.slint";
+import { FilterKnob } from "Knob.slint";
+export struct BandNode { x: float, y: float }
+export component FilterUi inherits Window {
+    in property <length> viewport-width: 1080px;
+    in property <length> viewport-height: 760px;
+    width: root.viewport-width; height: root.viewport-height; background: #11151c;
+    in property <string> response-command;
+    in property <string> input-command;
+    in property <string> output-command;
+    in property <image> history;
+    in property <[BandNode]> nodes;
+    in property <[float]> meters;
+    in property <[float]> knob-values;
+    in property <[string]> knob-labels;
+    in property <[string]> knob-texts;
+    in property <int> selected: 1;
+    in property <bool> bypassed;
+    in property <bool> auditioning;
+    in-out property <bool> about-open: false;
+    out property <float> graph-left: graph.x / 1px;
+    out property <float> graph-top: graph.y / 1px;
+    out property <float> graph-width: graph.width / 1px;
+    out property <float> graph-height: graph.height / 1px;
+    out property <float> frequency-knob-x: (frequency-knob.x + frequency-knob.width / 2) / 1px;
+    out property <float> frequency-knob-y: (frequency-knob.y + frequency-knob.height / 2) / 1px;
+    out property <float> about-button-x: (about-button.x + about-button.width / 2) / 1px;
+    out property <float> about-button-y: (about-button.y + about-button.height / 2) / 1px;
+    out property <float> about-close-x: root.width / 2px;
+    out property <float> about-close-y: root.height / 2px + 85;
+    callback node-gesture(int, int, float, float);
+    callback knob-gesture(int, int, float);
+    callback toggle(int);
+    Text { x: 28px; y: 20px; text: "DANDRUM  /  FILTER LAB"; color: #e6edf7; font-size: 22px; }
+    Text { x: 28px; y: 49px; text: "SLINT  ·  RUST AUDIO ENGINE  ·  LIVE STEREO ANALYSIS";
+        color: #91a2b9; font-size: 11px; }
+    for title[index] in ["BYPASS", "AUDITION"]: Rectangle {
+        private property <bool> active: (index == 0 && root.bypassed) || (index == 1 && root.auditioning);
+        x: parent.width - 258px + index * 116px; y: 23px; width: 104px; height: 34px;
+        border-radius: 6px; background: self.active ? #24796e : #253143;
+        Text { text: title; color: #e6edf7; font-size: 12px; horizontal-alignment: center; vertical-alignment: center; }
+        TouchArea { clicked => { root.toggle(index); } }
+    }
+    graph := Rectangle {
+        x: 54px; y: 93px; width: parent.width - 91px; height: parent.height - 450px;
+        background: #161e29; border-radius: 8px;
+        for row in 7: Rectangle {
+            y: row * (parent.height - 1px) / 6; width: parent.width; height: 1px; background: #2a3545;
+        }
+        for column in 11: Rectangle {
+            x: column * (parent.width - 1px) / 10; width: 1px; height: parent.height; background: #243040;
+        }
+        Path { width: 100%; height: 100%; viewbox-width: 1000; viewbox-height: 1000; fit: fill;
+            commands: root.input-command; stroke: #667a91; stroke-width: 1px; }
+        Path { width: 100%; height: 100%; viewbox-width: 1000; viewbox-height: 1000; fit: fill;
+            commands: root.output-command; stroke: #398f98; stroke-width: 1.5px; }
+        Path { width: 100%; height: 100%; viewbox-width: 1000; viewbox-height: 1000; fit: fill;
+            commands: root.response-command; stroke: #65daca; stroke-width: 2.5px; stroke-line-join: round; }
+        for node[index] in root.nodes: Rectangle {
+            x: node.x * parent.width - 12px; y: node.y * parent.height - 12px;
+            width: 24px; height: 24px; border-radius: 12px;
+            background: index == root.selected ? #f2c779 : #65daca; border-width: 2px; border-color: #11151c;
+            Text { text: index == 0 ? "H" : index == 1 ? "B" : "L"; color: #11151c;
+                font-size: 11px; horizontal-alignment: center; vertical-alignment: center; }
+            TouchArea {
+                pointer-event(event) => {
+                    if (event.kind == PointerEventKind.down) {
+                        root.node-gesture(index, 0, node.x, node.y);
+                    } else if (event.kind == PointerEventKind.up || event.kind == PointerEventKind.cancel) {
+                        root.node-gesture(index, 2, node.x, node.y);
+                    }
+                }
+                moved => { if (self.pressed) {
+                    root.node-gesture(index, 1,
+                        Math.clamp((self.mouse-x + parent.x + 12px) / graph.width, 0, 1),
+                        Math.clamp((self.mouse-y + parent.y + 12px) / graph.height, 0, 1));
+                } }
+            }
+        }
+    }
+    for text[index] in ["+18", "+9", "0", "−9", "−18", "−27", "−36"]: Text {
+        x: 12px; y: 87px + index * (parent.height - 450px) / 6; width: 34px; text: text; color: #91a2b9; font-size: 11px;
+    }
+    for text[index] in ["20 Hz", "63", "200", "630", "2k", "6.3k", "20k"]: Text {
+        x: 54px + index * (parent.width - 120px) / 6; y: parent.height - 350px; text: text; color: #91a2b9; font-size: 11px;
+    }
+    Text { x: 54px; y: parent.height - 323px; text: "OUTPUT SPECTROGRAM  /  TIME →"; color: #91a2b9; font-size: 11px; }
+    Image { x: 54px; y: parent.height - 300px; width: parent.width - 91px; height: 65px; source: root.history; image-fit: fill; }
+    frequency-knob := FilterKnob {
+        x: 54px; y: parent.height - 213px; width: (parent.width - 340px) / 3; height: 183px;
+        value: root.knob-values[0]; label: root.knob-labels[0]; value-text: root.knob-texts[0];
+        gesture(phase, next) => { root.knob-gesture(0, phase, next); }
+    }
+    for index in [1, 2]: FilterKnob {
+        x: 54px + index * (parent.width - 300px) / 3; y: parent.height - 213px;
+        width: (parent.width - 340px) / 3; height: 183px;
+        value: root.knob-values[index]; label: root.knob-labels[index]; value-text: root.knob-texts[index];
+        gesture(phase, next) => { root.knob-gesture(index, phase, next); }
+    }
+    Rectangle {
+        x: parent.width - 220px; y: parent.height - 213px; width: 183px; height: 183px; background: #1b2330; border-radius: 12px;
+        Text { y: 12px; width: parent.width; text: "IN L/R   ·   OUT L/R"; color: #91a2b9;
+            font-size: 11px; horizontal-alignment: center; }
+        for level[index] in root.meters: Rectangle {
+            x: 28px + index * 34px; y: 43px; width: 19px; height: 112px; background: #11151c;
+            Rectangle { y: (1 - level) * parent.height; width: parent.width; height: level * parent.height;
+                background: @linear-gradient(0deg, #65daca, #f2c779); }
+        }
+    }
+    about-button := Rectangle { x: parent.width - 157px; y: parent.height - 25px; width: 120px; height: 20px;
+        Text { text: "ABOUT SLINT"; color: #91a2b9; font-size: 11px; horizontal-alignment: center; }
+        TouchArea { clicked => { root.about-open = true; } }
+    }
+    if root.about-open: Rectangle {
+        background: #11151cee;
+        Rectangle { x: (parent.width - 440px) / 2; y: (parent.height - 240px) / 2;
+            width: 440px; height: 240px; background: #253143; border-radius: 12px;
+            AboutSlint { x: 30px; y: 30px; width: 380px; height: 140px; }
+            Rectangle { x: 170px; y: 190px; width: 100px; height: 30px; background: #24796e;
+                Text { text: "CLOSE"; color: #e6edf7; font-size: 12px;
+                    horizontal-alignment: center; vertical-alignment: center; }
+                TouchArea { clicked => { root.about-open = false; } }
+            }
+        }
+    }
+}

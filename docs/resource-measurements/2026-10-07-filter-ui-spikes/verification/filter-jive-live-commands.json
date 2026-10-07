@@ -1,0 +1,78 @@
+[
+  {
+    "command": [
+      "xdpyinfo"
+    ],
+    "exitCode": 0,
+    "log": "display.log"
+  },
+  {
+    "command": [
+      "xdotool",
+      "search",
+      "--onlyvisible",
+      "--pid",
+      "3898400"
+    ],
+    "exitCode": 1,
+    "log": "visible-search.log"
+  },
+  {
+    "command": [
+      "xdotool",
+      "search",
+      "--onlyvisible",
+      "--pid",
+      "3898400"
+    ],
+    "exitCode": 0,
+    "log": "visible-search.log"
+  },
+  {
+    "command": [
+      "xdotool",
+      "getwindowname",
+      "90177542"
+    ],
+    "exitCode": 0,
+    "log": "window-90177542-name.log"
+  },
+  {
+    "command": [
+      "xdotool",
+      "getwindowpid",
+      "90177542"
+    ],
+    "exitCode": 0,
+    "log": "window-90177542-pid.log"
+  },
+  {
+    "command": [
+      "xwininfo",
+      "-id",
+      "90177542"
+    ],
+    "exitCode": 0,
+    "log": "window-90177542-metadata.log"
+  },
+  {
+    "command": [
+      "xdotool",
+      "windowraise",
+      "90177542"
+    ],
+    "exitCode": 0,
+    "log": "raise-owned.log"
+  },
+  {
+    "command": [
+      "xwd",
+      "-id",
+      "90177542",
+      "-out",
+      "/tmp/dandrum-filter-spike-evidence/launcher-live/filter-jive/owned-window.xwd"
+    ],
+    "exitCode": 0,
+    "log": "capture-owned.log"
+  }
+]

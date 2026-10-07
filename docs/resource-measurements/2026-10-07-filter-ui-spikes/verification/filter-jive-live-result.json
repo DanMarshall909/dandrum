@@ -1,0 +1,229 @@
+{
+  "name": "filter-jive",
+  "product": "Dandrum Filter JIVE",
+  "command": [
+    "./demo",
+    "filter-jive"
+  ],
+  "cwd": "/home/dan/code/dandrum",
+  "DISPLAY": ":10",
+  "PATH": "/usr/bin:/bin",
+  "startedUtc": "2026-10-07T09:45:15Z",
+  "status": "pass",
+  "processGroup": 3897639,
+  "standalone": {
+    "pid": 3898400,
+    "ppid": 3897639,
+    "state": "S",
+    "startTicks": 121085889,
+    "exe": "/tmp/dandrum-filter-ui-spikes/build/filter-ui-spikes/dandrum-filter-jive_artefacts/Release/Standalone/Dandrum Filter JIVE",
+    "args": [
+      "/tmp/dandrum-filter-ui-spikes/build/filter-ui-spikes/dandrum-filter-jive_artefacts/Release/Standalone/Dandrum Filter JIVE"
+    ]
+  },
+  "ownedWindows": [
+    {
+      "id": 90177542,
+      "title": "Dandrum Filter JIVE",
+      "ownerPid": "3898400",
+      "metadata": "\nxwininfo: Window id: 0x5600006 \"Dandrum Filter JIVE\"\n\n  Absolute upper-left X:  419\n  Absolute upper-left Y:  131\n  Relative upper-left X:  0\n  Relative upper-left Y:  0\n  Width: 1088\n  Height: 824\n  Depth: 24\n  Visual: 0x21\n  Visual Class: TrueColor\n  Border width: 0\n  Class: InputOutput\n  Colormap: 0x5600005 (installed)\n  Bit Gravity State: ForgetGravity\n  Window Gravity State: NorthWestGravity\n  Backing Store State: NotUseful\n  Save Under State: no\n  Map State: IsViewable\n  Override Redirect State: no\n  Corners:  +419+131  -413+131  -413-125  +419-125\n  -geometry 1088x824+419+131\n\n"
+    }
+  ],
+  "window": {
+    "id": 90177542,
+    "title": "Dandrum Filter JIVE",
+    "ownerPid": 3898400,
+    "width": 1088,
+    "height": 824,
+    "viewable": true,
+    "wrapper": {
+      "border": 4,
+      "titleBar": 26,
+      "mutedInputNotice": 30
+    },
+    "sourceDerivedEditor": {
+      "width": 1080,
+      "height": 760,
+      "basis": "Vendored JUCE StandaloneFilterWindow/DocumentWindow/ResizableWindow default geometry; editor default1080x760"
+    }
+  },
+  "capture": {
+    "converted": true,
+    "png": "/tmp/dandrum-filter-spike-evidence/launcher-live/filter-jive/owned-window.png",
+    "width": 1088,
+    "height": 824
+  },
+  "gracefulClose": {
+    "method": "WM_DELETE_WINDOW client message",
+    "XSendEvent": 1
+  },
+  "launcherExitCode": 0,
+  "remainingOwnProcesses": [],
+  "seenOwnProcesses": [
+    {
+      "pid": 3897639,
+      "ppid": 3897636,
+      "state": "S",
+      "startTicks": 121085720,
+      "exe": "/usr/bin/python3.10",
+      "args": [
+        "python3",
+        "./demo",
+        "filter-jive"
+      ]
+    },
+    {
+      "pid": 3897641,
+      "ppid": 3897639,
+      "state": "R",
+      "startTicks": 121085723,
+      "exe": "/home/dan/.local/bin/cmake",
+      "args": [
+        "/home/dan/.local/bin/cmake",
+        "-S",
+        "/tmp/dandrum-filter-ui-spikes",
+        "-B",
+        "/tmp/dandrum-filter-ui-spikes/build/filter-ui-spikes",
+        "-DDANDRUM_NATIVE_ONLY=ON",
+        "-DDANDRUM_BUILD_FILTER_UI_SPIKES=ON",
+        "-DCMAKE_BUILD_TYPE=Release"
+      ]
+    },
+    {
+      "pid": 3897736,
+      "ppid": 3897641,
+      "state": "S",
+      "startTicks": 121085743,
+      "exe": "/home/dan/.local/bin/cmake",
+      "args": [
+        "/home/dan/.local/bin/cmake",
+        ".",
+        "-B/tmp/dandrum-filter-ui-spikes/build/filter-ui-spikes/third_party/JUCE/tools",
+        "-GUnix Makefiles",
+        "-DCMAKE_MAKE_PROGRAM=/usr/bin/gmake",
+        "-DCMAKE_BUILD_TYPE=Debug",
+        "-DJUCE_BUILD_HELPER_TOOLS=ON",
+        "-DCMAKE_INSTALL_PREFIX=/usr/local"
+      ]
+    },
+    {
+      "pid": 3897741,
+      "ppid": 3897736,
+      "state": "S",
+      "startTicks": 121085744,
+      "exe": "/home/dan/.local/bin/cmake",
+      "args": [
+        "/home/dan/.local/bin/cmake",
+        "-E",
+        "env",
+        "VERBOSE=1",
+        "/usr/bin/gmake",
+        "-f",
+        "Makefile",
+        "cmTC_0c291/fast"
+      ]
+    },
+    {
+      "pid": 3897742,
+      "ppid": 3897741,
+      "state": "S",
+      "startTicks": 121085744,
+      "exe": "/usr/bin/make",
+      "args": [
+        "/usr/bin/gmake",
+        "-f",
+        "Makefile",
+        "cmTC_0c291/fast"
+      ]
+    },
+    {
+      "pid": 3897745,
+      "ppid": 3897742,
+      "state": "S",
+      "startTicks": 121085744,
+      "exe": "/usr/bin/make",
+      "args": [
+        "/usr/bin/gmake",
+        "-f",
+        "CMakeFiles/cmTC_0c291.dir/build.make",
+        "CMakeFiles/cmTC_0c291.dir/build"
+      ]
+    },
+    {
+      "pid": 3898245,
+      "ppid": 3897639,
+      "state": "S",
+      "startTicks": 121085853,
+      "exe": "/home/dan/.local/bin/cmake",
+      "args": [
+        "/home/dan/.local/bin/cmake",
+        "--build",
+        "/tmp/dandrum-filter-ui-spikes/build/filter-ui-spikes",
+        "--target",
+        "dandrum-filter-jive_Standalone",
+        "--config",
+        "Release"
+      ]
+    },
+    {
+      "pid": 3898246,
+      "ppid": 3898245,
+      "state": "S",
+      "startTicks": 121085853,
+      "exe": "/usr/bin/make",
+      "args": [
+        "/usr/bin/gmake",
+        "-f",
+        "Makefile",
+        "dandrum-filter-jive_Standalone"
+      ]
+    },
+    {
+      "pid": 3898249,
+      "ppid": 3898246,
+      "state": "S",
+      "startTicks": 121085857,
+      "exe": "/usr/bin/make",
+      "args": [
+        "/usr/bin/gmake",
+        "-s",
+        "-f",
+        "CMakeFiles/Makefile2",
+        "dandrum-filter-jive_Standalone"
+      ]
+    },
+    {
+      "pid": 3898267,
+      "ppid": 3898249,
+      "state": "S",
+      "startTicks": 121085861,
+      "exe": "/usr/bin/make",
+      "args": [
+        "/usr/bin/gmake",
+        "-s",
+        "-f",
+        "CMakeFiles/Makefile2",
+        "CMakeFiles/dandrum-filter-jive_Standalone.dir/all"
+      ]
+    },
+    {
+      "pid": 3898400,
+      "ppid": 3897639,
+      "state": "S",
+      "startTicks": 121085889,
+      "exe": "/tmp/dandrum-filter-ui-spikes/build/filter-ui-spikes/dandrum-filter-jive_artefacts/Release/Standalone/Dandrum Filter JIVE",
+      "args": [
+        "/tmp/dandrum-filter-ui-spikes/build/filter-ui-spikes/dandrum-filter-jive_artefacts/Release/Standalone/Dandrum Filter JIVE"
+      ]
+    }
+  ],
+  "npmPreparationObserved": false,
+  "launchLines": [
+    "Launching filter-jive from /tmp/dandrum-filter-ui-spikes",
+    "+ /home/dan/.local/bin/cmake -S /tmp/dandrum-filter-ui-spikes -B /tmp/dandrum-filter-ui-spikes/build/filter-ui-spikes -DDANDRUM_NATIVE_ONLY=ON -DDANDRUM_BUILD_FILTER_UI_SPIKES=ON -DCMAKE_BUILD_TYPE=Release",
+    "+ /home/dan/.local/bin/cmake --build /tmp/dandrum-filter-ui-spikes/build/filter-ui-spikes --target dandrum-filter-jive_Standalone --config Release",
+    "+ '/tmp/dandrum-filter-ui-spikes/build/filter-ui-spikes/dandrum-filter-jive_artefacts/Release/Standalone/Dandrum Filter JIVE'"
+  ],
+  "audioDiagnostics": [],
+  "completedUtc": "2026-10-07T09:45:18Z"
+}

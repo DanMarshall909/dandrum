@@ -1,0 +1,399 @@
+{
+  "name": "filter-slint",
+  "product": "Dandrum Filter Slint",
+  "command": [
+    "./demo",
+    "filter-slint"
+  ],
+  "cwd": "/home/dan/code/dandrum",
+  "DISPLAY": ":10",
+  "PATH": "/usr/bin:/bin",
+  "startedUtc": "2026-10-07T09:45:39Z",
+  "status": "pass",
+  "processGroup": 3902487,
+  "standalone": {
+    "pid": 3903176,
+    "ppid": 3902487,
+    "state": "R",
+    "startTicks": 121088363,
+    "exe": "/tmp/dandrum-filter-ui-spikes/build/filter-ui-spikes/dandrum-filter-slint_artefacts/Release/Standalone/Dandrum Filter Slint",
+    "args": [
+      "/tmp/dandrum-filter-ui-spikes/build/filter-ui-spikes/dandrum-filter-slint_artefacts/Release/Standalone/Dandrum Filter Slint"
+    ]
+  },
+  "ownedWindows": [
+    {
+      "id": 90177542,
+      "title": "Dandrum Filter Slint",
+      "ownerPid": "3903176",
+      "metadata": "\nxwininfo: Window id: 0x5600006 \"Dandrum Filter Slint\"\n\n  Absolute upper-left X:  419\n  Absolute upper-left Y:  131\n  Relative upper-left X:  0\n  Relative upper-left Y:  0\n  Width: 1088\n  Height: 824\n  Depth: 24\n  Visual: 0x21\n  Visual Class: TrueColor\n  Border width: 0\n  Class: InputOutput\n  Colormap: 0x5600005 (installed)\n  Bit Gravity State: ForgetGravity\n  Window Gravity State: NorthWestGravity\n  Backing Store State: NotUseful\n  Save Under State: no\n  Map State: IsViewable\n  Override Redirect State: no\n  Corners:  +419+131  -413+131  -413-125  +419-125\n  -geometry 1088x824+419+131\n\n"
+    }
+  ],
+  "window": {
+    "id": 90177542,
+    "title": "Dandrum Filter Slint",
+    "ownerPid": 3903176,
+    "width": 1088,
+    "height": 824,
+    "viewable": true,
+    "wrapper": {
+      "border": 4,
+      "titleBar": 26,
+      "mutedInputNotice": 30
+    },
+    "sourceDerivedEditor": {
+      "width": 1080,
+      "height": 760,
+      "basis": "Vendored JUCE StandaloneFilterWindow/DocumentWindow/ResizableWindow default geometry; editor default1080x760"
+    }
+  },
+  "capture": {
+    "converted": true,
+    "png": "/tmp/dandrum-filter-spike-evidence/launcher-live/filter-slint/owned-window.png",
+    "width": 1088,
+    "height": 824
+  },
+  "gracefulClose": {
+    "method": "WM_DELETE_WINDOW client message",
+    "XSendEvent": 1
+  },
+  "launcherExitCode": 0,
+  "remainingOwnProcesses": [],
+  "seenOwnProcesses": [
+    {
+      "pid": 3902487,
+      "ppid": 3902466,
+      "state": "S",
+      "startTicks": 121088138,
+      "exe": "/usr/bin/python3.10",
+      "args": [
+        "python3",
+        "./demo",
+        "filter-slint"
+      ]
+    },
+    {
+      "pid": 3902489,
+      "ppid": 3902487,
+      "state": "R",
+      "startTicks": 121088140,
+      "exe": "/home/dan/.local/bin/cmake",
+      "args": [
+        "/home/dan/.local/bin/cmake",
+        "-S",
+        "/tmp/dandrum-filter-ui-spikes",
+        "-B",
+        "/tmp/dandrum-filter-ui-spikes/build/filter-ui-spikes",
+        "-DDANDRUM_NATIVE_ONLY=ON",
+        "-DDANDRUM_BUILD_FILTER_UI_SPIKES=ON",
+        "-DCMAKE_BUILD_TYPE=Release"
+      ]
+    },
+    {
+      "pid": 3902552,
+      "ppid": 3902489,
+      "state": "S",
+      "startTicks": 121088160,
+      "exe": "/home/dan/.local/bin/cmake",
+      "args": [
+        "/home/dan/.local/bin/cmake",
+        ".",
+        "-B/tmp/dandrum-filter-ui-spikes/build/filter-ui-spikes/third_party/JUCE/tools",
+        "-GUnix Makefiles",
+        "-DCMAKE_MAKE_PROGRAM=/usr/bin/gmake",
+        "-DCMAKE_BUILD_TYPE=Debug",
+        "-DJUCE_BUILD_HELPER_TOOLS=ON",
+        "-DCMAKE_INSTALL_PREFIX=/usr/local"
+      ]
+    },
+    {
+      "pid": 3902555,
+      "ppid": 3902552,
+      "state": "S",
+      "startTicks": 121088161,
+      "exe": "/home/dan/.local/bin/cmake",
+      "args": [
+        "/home/dan/.local/bin/cmake",
+        "-E",
+        "env",
+        "VERBOSE=1",
+        "/usr/bin/gmake",
+        "-f",
+        "Makefile",
+        "cmTC_0f3f7/fast"
+      ]
+    },
+    {
+      "pid": 3902556,
+      "ppid": 3902555,
+      "state": "S",
+      "startTicks": 121088161,
+      "exe": "/usr/bin/make",
+      "args": [
+        "/usr/bin/gmake",
+        "-f",
+        "Makefile",
+        "cmTC_0f3f7/fast"
+      ]
+    },
+    {
+      "pid": 3902557,
+      "ppid": 3902556,
+      "state": "S",
+      "startTicks": 121088161,
+      "exe": "/usr/bin/make",
+      "args": [
+        "/usr/bin/gmake",
+        "-f",
+        "CMakeFiles/cmTC_0f3f7.dir/build.make",
+        "CMakeFiles/cmTC_0f3f7.dir/build"
+      ]
+    },
+    {
+      "pid": 3902875,
+      "ppid": 3902487,
+      "state": "S",
+      "startTicks": 121088271,
+      "exe": "/home/dan/.local/bin/cmake",
+      "args": [
+        "/home/dan/.local/bin/cmake",
+        "--build",
+        "/tmp/dandrum-filter-ui-spikes/build/filter-ui-spikes",
+        "--target",
+        "dandrum-filter-slint_Standalone",
+        "--config",
+        "Release"
+      ]
+    },
+    {
+      "pid": 3902876,
+      "ppid": 3902875,
+      "state": "S",
+      "startTicks": 121088271,
+      "exe": "/usr/bin/make",
+      "args": [
+        "/usr/bin/gmake",
+        "-f",
+        "Makefile",
+        "dandrum-filter-slint_Standalone"
+      ]
+    },
+    {
+      "pid": 3902885,
+      "ppid": 3902876,
+      "state": "S",
+      "startTicks": 121088275,
+      "exe": "/usr/bin/make",
+      "args": [
+        "/usr/bin/gmake",
+        "-s",
+        "-f",
+        "CMakeFiles/Makefile2",
+        "dandrum-filter-slint_Standalone"
+      ]
+    },
+    {
+      "pid": 3902893,
+      "ppid": 3902885,
+      "state": "S",
+      "startTicks": 121088279,
+      "exe": "/usr/bin/make",
+      "args": [
+        "/usr/bin/gmake",
+        "-s",
+        "-f",
+        "CMakeFiles/Makefile2",
+        "CMakeFiles/dandrum-filter-slint_Standalone.dir/all"
+      ]
+    },
+    {
+      "pid": 3902910,
+      "ppid": 3902893,
+      "state": "S",
+      "startTicks": 121088280,
+      "exe": "/usr/bin/make",
+      "args": [
+        "/usr/bin/gmake",
+        "-s",
+        "-f",
+        "_deps/slint-build/CMakeFiles/_cargo-build_slint_cpp.dir/build.make",
+        "_deps/slint-build/CMakeFiles/_cargo-build_slint_cpp.dir/build"
+      ]
+    },
+    {
+      "pid": 3902911,
+      "ppid": 3902910,
+      "state": "S",
+      "startTicks": 121088280,
+      "exe": "/usr/bin/dash",
+      "args": [
+        "/bin/sh",
+        "-c",
+        "cd /tmp/dandrum-filter-ui-spikes/build/filter-ui-spikes/_deps/slint-src/api/cpp && /home/dan/.local/bin/cmake -E env SLINT_GENERATED_INCLUDE_DIR=/tmp/dandrum-filter-ui-spikes/build/filter-ui-spikes/_deps/slint-build/generated_include/ SLINT_NO_QT=1 CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_LINKER=/usr/bin/cc CC_x86_64-unknown-linux-gnu=/usr/bin/cc CXX_x86_64-unknown-linux-gnu=/usr/bin/c++ AR_x86_64-unknown-linux-gnu=/usr/bin/ar CORROSION_BUILD_DIR=/tmp/dandrum-filter-ui-spikes/build/filter-ui-spikes/_deps/slint-build CARGO_BUILD_RUSTC=/home/dan/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/bin/rustc /home/dan/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/bin/cargo rustc --lib --target=x86_64-unknown-linux-gnu --no-default-features --features=renderer-software,accessibility,system-tray,testing,std --package slint-cpp --crate-type=staticlib --manifest-path /tmp/dandrum-filter-ui-spikes/build/filter-ui-spikes/_deps/slint-src/api/cpp/Cargo.toml --target-dir /tmp/dandrum-filter-ui-spikes/build/filter-ui-spikes/cargo/.._424b7 --release -- -Cdefault-linker-libraries=yes"
+      ]
+    },
+    {
+      "pid": 3902912,
+      "ppid": 3902911,
+      "state": "S",
+      "startTicks": 121088280,
+      "exe": "/home/dan/.local/bin/cmake",
+      "args": [
+        "/home/dan/.local/bin/cmake",
+        "-E",
+        "env",
+        "SLINT_GENERATED_INCLUDE_DIR=/tmp/dandrum-filter-ui-spikes/build/filter-ui-spikes/_deps/slint-build/generated_include/",
+        "SLINT_NO_QT=1",
+        "CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_LINKER=/usr/bin/cc",
+        "CC_x86_64-unknown-linux-gnu=/usr/bin/cc",
+        "CXX_x86_64-unknown-linux-gnu=/usr/bin/c++",
+        "AR_x86_64-unknown-linux-gnu=/usr/bin/ar",
+        "CORROSION_BUILD_DIR=/tmp/dandrum-filter-ui-spikes/build/filter-ui-spikes/_deps/slint-build",
+        "CARGO_BUILD_RUSTC=/home/dan/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/bin/rustc",
+        "/home/dan/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/bin/cargo",
+        "rustc",
+        "--lib",
+        "--target=x86_64-unknown-linux-gnu",
+        "--no-default-features",
+        "--features=renderer-software,accessibility,system-tray,testing,std",
+        "--package",
+        "slint-cpp",
+        "--crate-type=staticlib",
+        "--manifest-path",
+        "/tmp/dandrum-filter-ui-spikes/build/filter-ui-spikes/_deps/slint-src/api/cpp/Cargo.toml",
+        "--target-dir",
+        "/tmp/dandrum-filter-ui-spikes/build/filter-ui-spikes/cargo/.._424b7",
+        "--release",
+        "--",
+        "-Cdefault-linker-libraries=yes"
+      ]
+    },
+    {
+      "pid": 3902913,
+      "ppid": 3902912,
+      "state": "D",
+      "startTicks": 121088280,
+      "exe": "/home/dan/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/bin/cargo",
+      "args": [
+        "/home/dan/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/bin/cargo",
+        "rustc",
+        "--lib",
+        "--target=x86_64-unknown-linux-gnu",
+        "--no-default-features",
+        "--features=renderer-software,accessibility,system-tray,testing,std",
+        "--package",
+        "slint-cpp",
+        "--crate-type=staticlib",
+        "--manifest-path",
+        "/tmp/dandrum-filter-ui-spikes/build/filter-ui-spikes/_deps/slint-src/api/cpp/Cargo.toml",
+        "--target-dir",
+        "/tmp/dandrum-filter-ui-spikes/build/filter-ui-spikes/cargo/.._424b7",
+        "--release",
+        "--",
+        "-Cdefault-linker-libraries=yes"
+      ]
+    },
+    {
+      "pid": 3903037,
+      "ppid": 3902893,
+      "state": "S",
+      "startTicks": 121088323,
+      "exe": "/usr/bin/make",
+      "args": [
+        "/usr/bin/gmake",
+        "-s",
+        "-f",
+        "_deps/slint-build/CMakeFiles/_cargo-build_slint-compiler.dir/build.make",
+        "_deps/slint-build/CMakeFiles/_cargo-build_slint-compiler.dir/build"
+      ]
+    },
+    {
+      "pid": 3903038,
+      "ppid": 3903037,
+      "state": "S",
+      "startTicks": 121088323,
+      "exe": "/usr/bin/dash",
+      "args": [
+        "/bin/sh",
+        "-c",
+        "cd /tmp/dandrum-filter-ui-spikes/build/filter-ui-spikes/_deps/slint-src/tools/compiler && /home/dan/.local/bin/cmake -E env CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_LINKER=/usr/bin/cc CC_x86_64-unknown-linux-gnu=/usr/bin/cc CXX_x86_64-unknown-linux-gnu=/usr/bin/c++ AR_x86_64-unknown-linux-gnu=/usr/bin/ar CORROSION_BUILD_DIR=/tmp/dandrum-filter-ui-spikes/build/filter-ui-spikes/_deps/slint-build CARGO_BUILD_RUSTC=/home/dan/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/bin/rustc /home/dan/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/bin/cargo rustc --bin=slint-compiler --target=x86_64-unknown-linux-gnu --no-default-features --features=renderer-software,image-default-formats,bundle-translations,cpp,jemalloc --package slint-compiler --manifest-path /tmp/dandrum-filter-ui-spikes/build/filter-ui-spikes/_deps/slint-src/tools/compiler/Cargo.toml --target-dir /tmp/dandrum-filter-ui-spikes/build/filter-ui-spikes/cargo/.._424b7 --release -- -Cdefault-linker-libraries=yes"
+      ]
+    },
+    {
+      "pid": 3903039,
+      "ppid": 3903038,
+      "state": "S",
+      "startTicks": 121088323,
+      "exe": "/home/dan/.local/bin/cmake",
+      "args": [
+        "/home/dan/.local/bin/cmake",
+        "-E",
+        "env",
+        "CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_LINKER=/usr/bin/cc",
+        "CC_x86_64-unknown-linux-gnu=/usr/bin/cc",
+        "CXX_x86_64-unknown-linux-gnu=/usr/bin/c++",
+        "AR_x86_64-unknown-linux-gnu=/usr/bin/ar",
+        "CORROSION_BUILD_DIR=/tmp/dandrum-filter-ui-spikes/build/filter-ui-spikes/_deps/slint-build",
+        "CARGO_BUILD_RUSTC=/home/dan/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/bin/rustc",
+        "/home/dan/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/bin/cargo",
+        "rustc",
+        "--bin=slint-compiler",
+        "--target=x86_64-unknown-linux-gnu",
+        "--no-default-features",
+        "--features=renderer-software,image-default-formats,bundle-translations,cpp,jemalloc",
+        "--package",
+        "slint-compiler",
+        "--manifest-path",
+        "/tmp/dandrum-filter-ui-spikes/build/filter-ui-spikes/_deps/slint-src/tools/compiler/Cargo.toml",
+        "--target-dir",
+        "/tmp/dandrum-filter-ui-spikes/build/filter-ui-spikes/cargo/.._424b7",
+        "--release",
+        "--",
+        "-Cdefault-linker-libraries=yes"
+      ]
+    },
+    {
+      "pid": 3903040,
+      "ppid": 3903039,
+      "state": "R",
+      "startTicks": 121088323,
+      "exe": "/home/dan/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/bin/cargo",
+      "args": [
+        "/home/dan/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/bin/cargo",
+        "rustc",
+        "--bin=slint-compiler",
+        "--target=x86_64-unknown-linux-gnu",
+        "--no-default-features",
+        "--features=renderer-software,image-default-formats,bundle-translations,cpp,jemalloc",
+        "--package",
+        "slint-compiler",
+        "--manifest-path",
+        "/tmp/dandrum-filter-ui-spikes/build/filter-ui-spikes/_deps/slint-src/tools/compiler/Cargo.toml",
+        "--target-dir",
+        "/tmp/dandrum-filter-ui-spikes/build/filter-ui-spikes/cargo/.._424b7",
+        "--release",
+        "--",
+        "-Cdefault-linker-libraries=yes"
+      ]
+    },
+    {
+      "pid": 3903176,
+      "ppid": 3902487,
+      "state": "R",
+      "startTicks": 121088363,
+      "exe": "/tmp/dandrum-filter-ui-spikes/build/filter-ui-spikes/dandrum-filter-slint_artefacts/Release/Standalone/Dandrum Filter Slint",
+      "args": [
+        "/tmp/dandrum-filter-ui-spikes/build/filter-ui-spikes/dandrum-filter-slint_artefacts/Release/Standalone/Dandrum Filter Slint"
+      ]
+    }
+  ],
+  "npmPreparationObserved": false,
+  "launchLines": [
+    "Launching filter-slint from /tmp/dandrum-filter-ui-spikes",
+    "+ /home/dan/.local/bin/cmake -S /tmp/dandrum-filter-ui-spikes -B /tmp/dandrum-filter-ui-spikes/build/filter-ui-spikes -DDANDRUM_NATIVE_ONLY=ON -DDANDRUM_BUILD_FILTER_UI_SPIKES=ON -DCMAKE_BUILD_TYPE=Release",
+    "+ /home/dan/.local/bin/cmake --build /tmp/dandrum-filter-ui-spikes/build/filter-ui-spikes --target dandrum-filter-slint_Standalone --config Release",
+    "+ '/tmp/dandrum-filter-ui-spikes/build/filter-ui-spikes/dandrum-filter-slint_artefacts/Release/Standalone/Dandrum Filter Slint'"
+  ],
+  "audioDiagnostics": [],
+  "completedUtc": "2026-10-07T09:45:42Z"
+}

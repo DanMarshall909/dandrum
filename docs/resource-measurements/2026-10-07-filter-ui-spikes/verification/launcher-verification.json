@@ -1,0 +1,60 @@
+{
+  "scope": "Optional native demo build metadata; no UI, DSP, CMake, spec or shared-rule edits",
+  "base": "38202e2",
+  "worktree": "/tmp/dandrum-filter-ui-launcher-spike",
+  "criterion": "native-filter-ui-spikes / Optional spike launch (launcher portion)",
+  "baseline": {
+    "launcherTests": 12,
+    "inventoryTests": 2,
+    "result": "PASS"
+  },
+  "red": {
+    "launcher": "missing catalog entries; ignored isolated build; unwanted npm preparation",
+    "boundary": "real npm ci attempted despite nativeOnly",
+    "logs": [
+      "red-launcher.log",
+      "red-inventory.log",
+      "red-boundary.log"
+    ]
+  },
+  "green": {
+    "command": "python3 -m unittest discover -s tests/python -p 'test_demo_*.py' -v",
+    "tests": 23,
+    "elapsedSeconds": 2.57,
+    "result": "PASS"
+  },
+  "coverage": {
+    "owner": "scripts/demo_launcher.py",
+    "tool": "Python 3.10.12 stdlib trace",
+    "lines": 114,
+    "covered": 114,
+    "branchCoverage": "not collected"
+  },
+  "faultCalibration": {
+    "faults": 5,
+    "assertionFailures": 5,
+    "detail": "fault-calibration.json"
+  },
+  "refactor": {
+    "production": "No extraction needed for six generic metadata decisions; complete launcher remains 131 lines.",
+    "tests": "Extend native fixture for source/configuration and reuse one failure scenario helper; calibrate new product paths in the existing real JUCE test."
+  },
+  "boundaries": [
+    "real CMake cache values and Release artifact",
+    "unchanged default cache",
+    "native-only bypass of actual failing npm setup",
+    "real configure failure blocks stale artifact",
+    "vendored JUCE target-file paths for both products"
+  ],
+  "remainingIntegration": "Parent must integrate root CMake targets/source README and rerun project CTest demo-launcher, demo-launcher-inventory and demo-launcher-boundaries; actual native effect execution belongs to parent integration.",
+  "commit": "cc55173",
+  "precommitHook": {
+    "entrypoint": ".githooks/pre-commit -> scripts/check-rust-coverage",
+    "tests": 1084,
+    "failures": 0,
+    "strictCoverage": "PASS",
+    "testExecutionSeconds": 45.54,
+    "compileSeconds": 33.83,
+    "publication": "not pushed"
+  }
+}

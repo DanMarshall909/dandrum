@@ -1,0 +1,37 @@
+[
+  {
+    "fault": "prepares-npm-in-native-only",
+    "test": "test_native_build_metadata_is_generic",
+    "exitCode": 1,
+    "killedByAssertion": true,
+    "durationSeconds": 0.081
+  },
+  {
+    "fault": "ignores-build-directory",
+    "test": "test_native_build_metadata_is_generic",
+    "exitCode": 1,
+    "killedByAssertion": true,
+    "durationSeconds": 0.069
+  },
+  {
+    "fault": "disables-native-only",
+    "test": "test_native_build_metadata_is_generic",
+    "exitCode": 1,
+    "killedByAssertion": true,
+    "durationSeconds": 0.079
+  },
+  {
+    "fault": "drops-cmake-options",
+    "test": "test_native_build_metadata_is_generic",
+    "exitCode": 1,
+    "killedByAssertion": true,
+    "durationSeconds": 0.081
+  },
+  {
+    "fault": "changes-react-flag",
+    "test": "test_optional_build_metadata_preserves_react",
+    "exitCode": 1,
+    "killedByAssertion": true,
+    "durationSeconds": 0.08
+  }
+]

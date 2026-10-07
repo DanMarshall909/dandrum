@@ -1,0 +1,98 @@
+...................-- The C compiler identification is GNU 11.4.0
+-- The CXX compiler identification is GNU 11.4.0
+-- Detecting C compiler ABI info
+-- Detecting C compiler ABI info - done
+-- Check for working C compiler: /usr/bin/cc - skipped
+-- Detecting C compile features
+-- Detecting C compile features - done
+-- Detecting CXX compiler ABI info
+-- Detecting CXX compiler ABI info - done
+-- Check for working CXX compiler: /usr/bin/c++ - skipped
+-- Detecting CXX compile features
+-- Detecting CXX compile features - done
+-- Found PkgConfig: /usr/bin/pkg-config (found version "0.29.2")
+-- Checking for module 'alsa'
+--   Found alsa, version 1.2.8
+-- Checking for modules 'freetype2;fontconfig'
+--   Found freetype2, version 24.1.18
+--   Found fontconfig, version 2.13.1
+-- Checking for module 'gl'
+--   Found gl, version 1.2
+-- Checking for module 'libcurl'
+--   Found libcurl, version 7.81.0
+-- Checking for modules 'webkit2gtk-4.1;gtk+-x11-3.0'
+--   Found webkit2gtk-4.1, version 2.50.4
+--   Found gtk+-x11-3.0, version 3.24.33
+-- Performing Test CMAKE_HAVE_LIBC_PTHREAD
+-- Performing Test CMAKE_HAVE_LIBC_PTHREAD - Success
+-- Found Threads: TRUE
+-- Configuring done (1.0s)
+-- Generating done (0.0s)
+-- Build files have been written to: /tmp/dandrum demo boundary 8onkdhok/source checkout/build
+-- Configuring done (0.2s)
+-- Generating done (0.0s)
+-- Build files have been written to: /tmp/dandrum demo boundary 8onkdhok/source checkout/build
+-- Configuring done (0.2s)
+-- Generating done (0.0s)
+-- Build files have been written to: /tmp/dandrum demo boundary 8onkdhok/source checkout/build
+..-- Configuring done (0.0s)
+-- Generating done (0.0s)
+-- Build files have been written to: /tmp/dandrum demo boundary y633agg0/source checkout/build
+Built target dandrum-drum-machine-demo
+-- Configuring done (0.0s)
+-- Generating done (0.0s)
+-- Build files have been written to: /tmp/dandrum demo boundary y633agg0/source checkout/build
+-- Configuring done (0.0s)
+-- Generating done (0.0s)
+-- Build files have been written to: /tmp/dandrum demo boundary y633agg0/source checkout/build
+Built target dandrum-plugin_Standalone
+-- Configuring done (0.0s)
+-- Generating done (0.0s)
+-- Build files have been written to: /tmp/dandrum demo boundary y633agg0/source checkout/build
+Built target dandrum-drum-machine-demo
+-- Configuring done (0.0s)
+-- Generating done (0.0s)
+-- Build files have been written to: /tmp/dandrum demo boundary y633agg0/source checkout/build/filter-ui-spikes
+Built target dandrum-drum-machine-demo
+CMake Error at CMakeLists.txt:18 (message):
+  injected configure failure
+
+
+-- Configuring incomplete, errors occurred!
+.
+up to date, audited 1 package in 171ms
+
+found 0 vulnerabilities
+
+> dandrum-launcher-boundary@1.0.0 dev
+> node run.cjs --port 4321 argument with spaces
+
+npm error code EUSAGE
+npm error
+npm error The `npm ci` command can only install with an existing package-lock.json or
+npm error npm-shrinkwrap.json with lockfileVersion >= 1. Run an install with npm@5 or
+npm error later to generate a package-lock.json file, then try again.
+npm error
+npm error Clean install a project
+npm error
+npm error Usage:
+npm error npm ci
+npm error
+npm error Options:
+npm error [--install-strategy <hoisted|nested|shallow|linked>] [--legacy-bundling]
+npm error [--global-style] [--omit <dev|optional|peer> [--omit <dev|optional|peer> ...]]
+npm error [--include <prod|dev|optional|peer> [--include <prod|dev|optional|peer> ...]]
+npm error [--strict-peer-deps] [--foreground-scripts] [--ignore-scripts] [--no-audit]
+npm error [--no-bin-links] [--no-fund] [--dry-run]
+npm error [-w|--workspace <workspace-name> [-w|--workspace <workspace-name> ...]]
+npm error [-ws|--workspaces] [--include-workspace-root] [--install-links]
+npm error
+npm error aliases: clean-install, ic, install-clean, isntall-clean
+npm error
+npm error Run "npm help ci" for more info
+npm error A complete log of this run can be found in: /home/dan/.npm/_logs/2026-10-07T09_05_38_893Z-debug-0.log
+.
+----------------------------------------------------------------------
+Ran 23 tests in 2.818s
+
+OK

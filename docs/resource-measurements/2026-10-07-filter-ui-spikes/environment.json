@@ -1,0 +1,43 @@
+{
+  "utc": "2026-10-07T09:30:45.676455+00:00",
+  "kernel": "7.0.11-76070011-generic",
+  "machine": "x86_64",
+  "cpu": "AMD Ryzen 9 5900X 12-Core Processor",
+  "rust": "rustc 1.96.0 (ac68faa20 2026-05-25)",
+  "cmake": "cmake version 3.30.9",
+  "juce": "8.0.6",
+  "slint": "1.18.1 / 372cf0ee5577c3dfec309a45e7b778ba4e81b734",
+  "jive": "1.2.0 / 89d5787a762e674ee8b7141031a99e6743948f05",
+  "sourceBase": "fbd19cbc88f7cf5cc3e116966ba6ca45e620d997",
+  "display": ":10 / remote X11 / scale factor 1",
+  "sourceSha256": {
+    "spikes/filter-ui/filter.yaml": "d8e99ba8a660cb533859d66242200bf8311217ea896084c4ccb2ded993c44dfd",
+    "spikes/filter-ui/jive/AnalysisPanels.h": "273904e01f18b600eacefdc9e9d0d33ed80fb42be3c86b01b441c4e8418a2b15",
+    "spikes/filter-ui/jive/JiveChecks.cpp": "8198a09ee999f0d20bb33cfa0dd1fdae95ce7cbc3f1cc533816e20d398fede64",
+    "spikes/filter-ui/jive/JiveChecks.h": "6d5c6a349a14b57feb14365fc936cc4ff6ac5dad9b348fff712166b298c56e87",
+    "spikes/filter-ui/jive/JiveEditor.cpp": "9c66a2229a2f2e823e5956719d6de38898a9afbb1a1dc864e61d0a758f826e35",
+    "spikes/filter-ui/jive/ResponseGraph.h": "62ea1a69123479a103566ae273db90e6f1bad077baf31d705950fec56b902bb5",
+    "spikes/filter-ui/jive/RotaryControl.h": "17f9c2ddc611e3095cbfecca2057cfb3b373d7fac0ebb9d62639b90e2b95f5aa",
+    "spikes/filter-ui/jive/VisualStyle.h": "529e7ee153af4456725cdd61e82026e42d41cf7dc59f27b6ff7b069deccbe007",
+    "spikes/filter-ui/shared/FilterAnalysis.cpp": "da6bdeb0f8ad94c770c4ec5d8c849a3a13be985347ebaae87a0373b2f6793150",
+    "spikes/filter-ui/shared/FilterAudio.cpp": "a57ed368b71d28d8ed3a9c427d052c955ed6ab324e3ae52c2e9b00f729dadfe0",
+    "spikes/filter-ui/shared/FilterKernel.h": "843476cb9d2906e41c0881cf48ac4f6c16434a33b36d878bedf18ae59040e065",
+    "spikes/filter-ui/shared/FilterProcessor.cpp": "b0a36690f518f9495813218988eb0a28e80d822b4cb9e8d8fd39fdc594301c57",
+    "spikes/filter-ui/shared/FilterProcessor.h": "80577574b25cc77b17e1512c48f6357487275c67b848c96c3aa40e9d166b7aaa",
+    "spikes/filter-ui/shared/FilterViewModel.cpp": "e827bca5ba70ce8a5ff7077c8dc42042f393a87095ff2ffc141672ca592a5089",
+    "spikes/filter-ui/shared/FilterViewModel.h": "13f9496749bea58a8140289c2a2c99ade454fa1ecab2d0f05b4538f95c763f58",
+    "spikes/filter-ui/shared/PluginEntry.cpp": "4c33ea14d223ea3e0dc62a0a5fa35a5502ebccdc059375871ae2703ad6734b19",
+    "spikes/filter-ui/slint/Filter.slint": "88419d94f0e164c0b565707a661df5ecc72b5eef53829a7490af8f8e6880aade",
+    "spikes/filter-ui/slint/Knob.slint": "8d23beb492fb5d37cc34504c7eadb0ef339f42bd311ccfcc28f9e1d2e2ca6fd0",
+    "spikes/filter-ui/slint/SlintChecks.cpp": "1f668011d6546432c55008a6ddf792a17476fdea643f057d9c703fe3e9f90a47",
+    "spikes/filter-ui/slint/SlintChecks.h": "a24e2d1594ba0dc4eb6395bc07e6b45e4eec70ac664e705fc619bb7ac7cfb22b",
+    "spikes/filter-ui/slint/SlintEditor.cpp": "88b3acbfa7713c11b4bb11bf6c4df1831b0439900171f823554f10207e1410f1",
+    "spikes/filter-ui/slint/SlintPlatform.h": "859543dff977a62eef96f1b54b7796fc7128a58bf15b71e1d34da0c389c7a153"
+  },
+  "artifactSha256": {
+    "build/filter-ui-spikes/dandrum-filter-jive-ui-check": "fb8a9b1a6067e7f3887141f687304c553eed508a83c861e48ebc2c27d71bd9f0",
+    "build/filter-ui-spikes/dandrum-filter-slint-ui-check": "ce4d8b5feb63b05d1699faa3a53329a12fb4c51b0b5ff3fe2a67739792dbe47f",
+    "build/filter-ui-spikes/dandrum-filter-jive_artefacts/Release/VST3/Dandrum Filter JIVE.vst3/Contents/x86_64-linux/Dandrum Filter JIVE.so": "2ad747e5cd976396593630266119f71dc5b45901ee1691be242885e0aed2dd16",
+    "build/filter-ui-spikes/dandrum-filter-slint_artefacts/Release/VST3/Dandrum Filter Slint.vst3/Contents/x86_64-linux/Dandrum Filter Slint.so": "48aa8bad3cb39fb36d6c2adcee592fe2915b6da21903e067c5bc5a39971cc596"
+  }
+}

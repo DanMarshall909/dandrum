@@ -1,0 +1,53 @@
+from pathlib import Path
+import json,os,queue,statistics,subprocess,threading,time
+ROOT=Path('/tmp/dandrum-filter-spike-evidence')
+BUILD=Path('/tmp/dandrum-filter-ui-spikes/build/filter-ui-spikes')
+HZ=os.sysconf('SC_CLK_TCK')
+def info(pid):
+ try:
+  stat=Path(f'/proc/{pid}/stat').read_text().split(') ',1)[1].split()
+  result={'ticks':int(stat[11])+int(stat[12]),'start':int(stat[19])}
+  for line in Path(f'/proc/{pid}/smaps_rollup').read_text().splitlines():
+   parts=line.split()
+   if parts[0] in ['Pss:','Rss:','Private_Clean:','Private_Dirty:','SwapPss:']:result[parts[0][:-1]]=int(parts[1])
+  return result
+ except FileNotFoundError:return None
+results=[]
+for backend in ['jive','slint']:
+ for count in [1,2]:
+  for mode in ['idle','active']:
+   label=f'{backend}-{count}-{mode}';directory=ROOT/label
+   env=dict(os.environ,DISPLAY=':10');env['PATH']='/usr/bin:/bin:'+env.get('PATH','')
+   argv=[str(BUILD/f'dandrum-filter-{backend}-ui-check'),str(directory),'--measure',mode,str(count)]
+   child=subprocess.Popen(argv,stdout=subprocess.PIPE,stderr=subprocess.STDOUT,text=True,env=env)
+   events=queue.Queue();lines=[]
+   def read():
+    for line in child.stdout:lines.append(line);events.put(line)
+   reader=threading.Thread(target=read,daemon=True);reader.start();start=time.monotonic();samples=[];previous=None;last=start;phase=None
+   try:
+    while child.poll() is None:
+     stamp=time.monotonic()
+     available_kib=next(int(line.split()[1]) for line in Path('/proc/meminfo').read_text().splitlines() if line.startswith('MemAvailable:'))
+     if available_kib<4096*1024:raise RuntimeError('4096MiB system memory reserve reached')
+     if stamp-start>90:raise RuntimeError('bounded runtime exceeded')
+     while not events.empty():
+      line=events.get_nowait()
+      if '"status":"measuring"' in line.replace(' ',''):phase=stamp
+     current=info(child.pid)
+     if current and previous and phase and 2<stamp-phase<18:
+      samples.append({'time_s':stamp-start,'available_mib':available_kib/1024,'pss_mib':current['Pss']/1024,'rss_mib':current['Rss']/1024,
+       'private_mib':(current['Private_Clean']+current['Private_Dirty'])/1024,'swap_pss_mib':current['SwapPss']/1024,
+       'cpu_one_core_percent':100*(current['ticks']-previous['ticks'])/HZ/(stamp-last)})
+     previous=current;last=stamp;time.sleep(.5)
+    child.wait();reader.join(timeout=2)
+    directory.mkdir(parents=True,exist_ok=True);(directory/'process.log').write_text(''.join(lines))
+    metrics=json.loads((directory/'metrics.json').read_text())
+    if child.returncode or metrics['status']!='pass' or len(samples)<20:raise RuntimeError(f'{label} incomplete: {child.returncode}, samples={len(samples)}')
+    summary={'label':label,'argv':argv,'exit':child.returncode,'sample_count':len(samples),'samples':samples,'metrics':metrics}
+    summary['cpu_one_core_percent_mean']=statistics.mean(s['cpu_one_core_percent'] for s in samples)
+    for field in ['pss_mib','rss_mib','private_mib','swap_pss_mib','cpu_one_core_percent']:
+     summary[field+'_median']=statistics.median(s[field] for s in samples)
+    (directory/'resources.json').write_text(json.dumps(summary,indent=2));results.append(summary)
+    (ROOT/'comparison.json').write_text(json.dumps(results,indent=2));print(label,{k:v for k,v in summary.items() if k.endswith('_median')},flush=True)
+   finally:
+    if child.poll() is None:child.terminate();child.wait(timeout=10)

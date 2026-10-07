@@ -1,0 +1,68 @@
+test_browser_dependencies_and_argument_forwarding (test_demo_launcher.DemoLauncherTest) ... ok
+test_embedded_react_uses_isolated_webview_build_and_required_dependency (test_demo_launcher.DemoLauncherTest) ... ok
+test_empty_single_config_cache_launches_default_artifact (test_demo_launcher.DemoLauncherTest) ... ok
+test_list_help_and_unknown_name (test_demo_launcher.DemoLauncherTest) ... test_missing_command_artifact_and_interruption_are_actionable (test_demo_launcher.DemoLauncherTest) ... ok
+test_missing_sources_and_git_do_not_start_preparation (test_demo_launcher.DemoLauncherTest) ... ok
+test_native_app_bundle_and_exe_artifact_paths (test_demo_launcher.DemoLauncherTest) ... ok
+test_native_availability_requires_its_target (test_demo_launcher.DemoLauncherTest) ... ok
+test_native_build_launch_and_argument_forwarding (test_demo_launcher.DemoLauncherTest) ... ok
+test_native_build_metadata_is_generic_and_skips_browser_dependencies (test_demo_launcher.DemoLauncherTest) ... FAIL
+test_native_configured_artifact_wins_over_stale_default (test_demo_launcher.DemoLauncherTest) ... ok
+test_optional_build_metadata_preserves_react_flags_and_dependency_preparation (test_demo_launcher.DemoLauncherTest) ... FAIL
+test_preparation_and_child_failures_stop_and_preserve_exit_codes (test_demo_launcher.DemoLauncherTest) ... ok
+test_resolve_local_then_sorted_compatible_worktrees (test_demo_launcher.DemoLauncherTest) ... ok
+
+======================================================================
+FAIL: test_list_help_and_unknown_name (test_demo_launcher.DemoLauncherTest) (args=())
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/tmp/dandrum-filter-ui-launcher-spike/tests/python/test_demo_launcher.py", line 37, in test_list_help_and_unknown_name
+    self.assertIn(name, output)
+AssertionError: 'filter-slint' not found in 'Usage: ./demo <name> [-- demo arguments]\n\n  tb303            TB-303 standalone — embedded editor, real Rust audio\n                    unavailable\n  sampler          Drum sampler standalone — embedded editor, real Rust audio\n                    unavailable\n  drums            MIDI drum-machine console — real Rust audio\n                    unavailable\n  react303         React TB-303 standalone — embedded WebView, real Rust audio\n                    unavailable\n  react-sampler    React sampler standalone — embedded WebView, real Rust audio\n                    unavailable\n  tb303-web        React TB-303 browser preview — requires JUCE host bridge for audio\n                    unavailable\n  sampler-web      React sampler browser preview — requires JUCE host bridge for audio\n                    unavailable\n  trigger          Trigger React shell — browser preview, silent mock engine\n                    unavailable\n  instruments      Instrument design prototype — browser preview, visual mock\n                    unavailable\n'
+
+======================================================================
+FAIL: test_list_help_and_unknown_name (test_demo_launcher.DemoLauncherTest) (args=('--list',))
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/tmp/dandrum-filter-ui-launcher-spike/tests/python/test_demo_launcher.py", line 37, in test_list_help_and_unknown_name
+    self.assertIn(name, output)
+AssertionError: 'filter-slint' not found in 'Usage: ./demo <name> [-- demo arguments]\n\n  tb303            TB-303 standalone — embedded editor, real Rust audio\n                    unavailable\n  sampler          Drum sampler standalone — embedded editor, real Rust audio\n                    unavailable\n  drums            MIDI drum-machine console — real Rust audio\n                    unavailable\n  react303         React TB-303 standalone — embedded WebView, real Rust audio\n                    unavailable\n  react-sampler    React sampler standalone — embedded WebView, real Rust audio\n                    unavailable\n  tb303-web        React TB-303 browser preview — requires JUCE host bridge for audio\n                    unavailable\n  sampler-web      React sampler browser preview — requires JUCE host bridge for audio\n                    unavailable\n  trigger          Trigger React shell — browser preview, silent mock engine\n                    unavailable\n  instruments      Instrument design prototype — browser preview, visual mock\n                    unavailable\n'
+
+======================================================================
+FAIL: test_list_help_and_unknown_name (test_demo_launcher.DemoLauncherTest) (args=('--help',))
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/tmp/dandrum-filter-ui-launcher-spike/tests/python/test_demo_launcher.py", line 37, in test_list_help_and_unknown_name
+    self.assertIn(name, output)
+AssertionError: 'filter-slint' not found in 'Usage: ./demo <name> [-- demo arguments]\n\n  tb303            TB-303 standalone — embedded editor, real Rust audio\n                    unavailable\n  sampler          Drum sampler standalone — embedded editor, real Rust audio\n                    unavailable\n  drums            MIDI drum-machine console — real Rust audio\n                    unavailable\n  react303         React TB-303 standalone — embedded WebView, real Rust audio\n                    unavailable\n  react-sampler    React sampler standalone — embedded WebView, real Rust audio\n                    unavailable\n  tb303-web        React TB-303 browser preview — requires JUCE host bridge for audio\n                    unavailable\n  sampler-web      React sampler browser preview — requires JUCE host bridge for audio\n                    unavailable\n  trigger          Trigger React shell — browser preview, silent mock engine\n                    unavailable\n  instruments      Instrument design prototype — browser preview, visual mock\n                    unavailable\n'
+
+======================================================================
+FAIL: test_list_help_and_unknown_name (test_demo_launcher.DemoLauncherTest) (args=('-h',))
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/tmp/dandrum-filter-ui-launcher-spike/tests/python/test_demo_launcher.py", line 37, in test_list_help_and_unknown_name
+    self.assertIn(name, output)
+AssertionError: 'filter-slint' not found in 'Usage: ./demo <name> [-- demo arguments]\n\n  tb303            TB-303 standalone — embedded editor, real Rust audio\n                    unavailable\n  sampler          Drum sampler standalone — embedded editor, real Rust audio\n                    unavailable\n  drums            MIDI drum-machine console — real Rust audio\n                    unavailable\n  react303         React TB-303 standalone — embedded WebView, real Rust audio\n                    unavailable\n  react-sampler    React sampler standalone — embedded WebView, real Rust audio\n                    unavailable\n  tb303-web        React TB-303 browser preview — requires JUCE host bridge for audio\n                    unavailable\n  sampler-web      React sampler browser preview — requires JUCE host bridge for audio\n                    unavailable\n  trigger          Trigger React shell — browser preview, silent mock engine\n                    unavailable\n  instruments      Instrument design prototype — browser preview, visual mock\n                    unavailable\n'
+
+======================================================================
+FAIL: test_native_build_metadata_is_generic_and_skips_browser_dependencies (test_demo_launcher.DemoLauncherTest)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/tmp/dandrum-filter-ui-launcher-spike/tests/python/test_demo_launcher.py", line 240, in test_native_build_metadata_is_generic_and_skips_browser_dependencies
+    self.assertEqual(code, 0, error)
+AssertionError: 1 != 0 : Cannot launch demo: Built dandrum-drum-machine-demo but missing artifact: /tmp/dandrum demos rylr0i9t/checkout with spaces/build/dandrum-drum-machine-demo_artefacts/Debug/dandrum-drum-machine-demo
+
+
+======================================================================
+FAIL: test_optional_build_metadata_preserves_react_flags_and_dependency_preparation (test_demo_launcher.DemoLauncherTest)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/tmp/dandrum-filter-ui-launcher-spike/tests/python/test_demo_launcher.py", line 261, in test_optional_build_metadata_preserves_react_flags_and_dependency_preparation
+    self.assertEqual(code, 0, error)
+AssertionError: 1 != 0 : Cannot launch demo: Built dandrum-plugin_Standalone but missing artifact: /tmp/dandrum demos y7hqjmur/checkout with spaces/build/demo-webview/dandrum-plugin_artefacts/Standalone/Dandrum
+
+
+----------------------------------------------------------------------
+Ran 14 tests in 0.242s
+
+FAILED (failures=6)

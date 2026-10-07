@@ -1,0 +1,24 @@
+Internal ctest changing into directory: /tmp/dandrum-filter-ui-spikes/build/filter-ui-spikes
+Test project /tmp/dandrum-filter-ui-spikes/build/filter-ui-spikes
+    Start 17: filter-spike-engine
+1/9 Test #17: filter-spike-engine ..............   Passed    0.01 sec
+    Start 18: filter-spike-processor
+2/9 Test #18: filter-spike-processor ...........   Passed    0.04 sec
+    Start 19: filter-slint-ui
+3/9 Test #19: filter-slint-ui ..................   Passed    3.16 sec
+    Start 20: filter-jive-ui
+4/9 Test #20: filter-jive-ui ...................   Passed    3.28 sec
+    Start 21: filter-slint-vst3
+5/9 Test #21: filter-slint-vst3 ................   Passed    2.96 sec
+    Start 22: filter-jive-vst3
+6/9 Test #22: filter-jive-vst3 .................   Passed    3.45 sec
+    Start 46: demo-launcher
+7/9 Test #46: demo-launcher ....................   Passed    0.42 sec
+    Start 47: demo-launcher-inventory
+8/9 Test #47: demo-launcher-inventory ..........   Passed    0.05 sec
+    Start 48: demo-launcher-boundaries
+9/9 Test #48: demo-launcher-boundaries .........   Passed    2.70 sec
+
+100% tests passed, 0 tests failed out of 9
+
+Total Test time (real) =  16.07 sec

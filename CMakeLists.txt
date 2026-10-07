@@ -8,6 +8,7 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 option(DANDRUM_ENABLE_MUTATION_CTEST "Include the long-running cargo-mutants test in CTest" OFF)
 option(DANDRUM_NATIVE_ONLY "Build the plugin with the native JUCE editor and no browser dependencies" OFF)
+option(DANDRUM_BUILD_FILTER_UI_SPIKES "Build optional Slint and JIVE filter experiments" OFF)
 if(DANDRUM_NATIVE_ONLY)
     set(DANDRUM_BROWSER_ENABLED FALSE)
     set(DANDRUM_EDITOR_ADAPTER dandrum-plugin-native-editor)
@@ -144,6 +145,25 @@ target_include_directories(dandrum-plugin-spectral-geometry-test PRIVATE src/juc
 add_test(NAME cxx-plugin-spectral-geometry COMMAND dandrum-plugin-spectral-geometry-test)
 
 add_subdirectory(third_party/JUCE)
+
+add_executable(dandrum-filter-spike-engine-test tests/cpp/FilterSpikeEngineTest.cpp)
+target_include_directories(dandrum-filter-spike-engine-test PRIVATE src/juce-wrapper)
+target_compile_definitions(dandrum-filter-spike-engine-test PRIVATE DANDRUM_SOURCE_ROOT="${CMAKE_CURRENT_SOURCE_DIR}")
+target_link_libraries(dandrum-filter-spike-engine-test PRIVATE dandrum_engine dl pthread m)
+add_test(NAME filter-spike-engine COMMAND dandrum-filter-spike-engine-test)
+
+if(DANDRUM_BUILD_FILTER_UI_SPIKES)
+    include(cmake/FilterUiDependencies.cmake)
+    juce_add_plugin(dandrum-filter-slint
+        COMPANY_NAME Dandrum PLUGIN_MANUFACTURER_CODE Dndr PLUGIN_CODE FlSl
+        FORMATS VST3 Standalone IS_SYNTH FALSE NEEDS_MIDI_INPUT FALSE NEEDS_MIDI_OUTPUT FALSE
+        PRODUCT_NAME "Dandrum Filter Slint")
+    juce_add_plugin(dandrum-filter-jive
+        COMPANY_NAME Dandrum PLUGIN_MANUFACTURER_CODE Dndr PLUGIN_CODE FlJv
+        FORMATS VST3 Standalone IS_SYNTH FALSE NEEDS_MIDI_INPUT FALSE NEEDS_MIDI_OUTPUT FALSE
+        PRODUCT_NAME "Dandrum Filter JIVE")
+    include(cmake/FilterUiTargets.cmake)
+endif()
 
 add_executable(dandrum-plugin-spectral-service-test
     tests/cpp/PluginSpectralServiceTest.cpp

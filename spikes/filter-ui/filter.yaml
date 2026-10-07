@@ -1,0 +1,28 @@
+metadata:
+  name: Filter UI Spike
+ports:
+  - {name: input, direction: input, signal: audio, channels: 2, maps_to: hp.audio_in}
+  - {name: master, direction: output, signal: audio, channels: 2, maps_from: lp.audio_out}
+  - {name: hp_frequency, direction: input, signal: control, channels: 1, default: 0.2686, maps_to: hp.cutoff}
+  - {name: hp_q, direction: input, signal: control, channels: 1, default: 0.06132, maps_to: hp.resonance}
+  - {name: bell_frequency, direction: input, signal: control, channels: 1, default: 0.6529, maps_to: bell.cutoff}
+  - {name: bell_q, direction: input, signal: control, channels: 1, default: 0.06132, maps_to: bell.resonance}
+  - {name: bell_gain, direction: input, signal: control, channels: 1, default: 0.5, maps_to: bell.gain}
+  - {name: lp_frequency, direction: input, signal: control, channels: 1, default: 1, maps_to: lp.cutoff}
+  - {name: lp_q, direction: input, signal: control, channels: 1, default: 0.06132, maps_to: lp.resonance}
+preset_surface:
+  parameters:
+    - {name: hp_frequency, maps_to: hp_frequency}
+    - {name: hp_q, maps_to: hp_q}
+    - {name: bell_frequency, maps_to: bell_frequency}
+    - {name: bell_q, maps_to: bell_q}
+    - {name: bell_gain, maps_to: bell_gain}
+    - {name: lp_frequency, maps_to: lp_frequency}
+    - {name: lp_q, maps_to: lp_q}
+modules:
+  - {id: hp, type: filter, static: {algorithm: biquad, mode: highpass, channels: 2}}
+  - {id: bell, type: filter, static: {algorithm: biquad, mode: peaking, channels: 2}}
+  - {id: lp, type: filter, static: {algorithm: biquad, mode: lowpass, channels: 2}}
+connections:
+  - {from: hp.audio_out, to: bell.audio_in}
+  - {from: bell.audio_out, to: lp.audio_in}

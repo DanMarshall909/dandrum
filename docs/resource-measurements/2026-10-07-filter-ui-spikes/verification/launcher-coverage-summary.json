@@ -1,0 +1,9 @@
+{
+  "tool": "Python 3.10.12 stdlib trace",
+  "scope": "scripts/demo_launcher.py via 16 fast launcher tests",
+  "executableLines": 114,
+  "coveredLines": 114,
+  "uncoveredLines": [],
+  "branchCoverage": "not collected",
+  "faultCalibration": "5 deliberate faults independently rejected by assertion failures"
+}

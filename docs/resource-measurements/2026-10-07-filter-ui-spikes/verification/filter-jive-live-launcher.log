@@ -1,0 +1,25 @@
+Launching filter-jive from /tmp/dandrum-filter-ui-spikes
++ /home/dan/.local/bin/cmake -S /tmp/dandrum-filter-ui-spikes -B /tmp/dandrum-filter-ui-spikes/build/filter-ui-spikes -DDANDRUM_NATIVE_ONLY=ON -DDANDRUM_BUILD_FILTER_UI_SPIKES=ON -DCMAKE_BUILD_TYPE=Release
+-- Configuring juceaide
+-- Building juceaide
+-- Exporting juceaide
+-- Testing juceaide
+-- Finished setting up juceaide
+-- Rust Toolchain: stable-x86_64-unknown-linux-gnu
+-- Rust Target: x86_64-unknown-linux-gnu
+-- Found Rust: /home/dan/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/bin/rustc (found version "1.96.0")
+-- Rust Toolchain: stable-x86_64-unknown-linux-gnu
+-- Rust Target: x86_64-unknown-linux-gnu
+-- Found Rust: /home/dan/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/bin/rustc (found suitable version "1.96.0", minimum required is "1.92")
+-- Configuring done (1.1s)
+-- Generating done (0.2s)
+-- Build files have been written to: /tmp/dandrum-filter-ui-spikes/build/filter-ui-spikes
++ /home/dan/.local/bin/cmake --build /tmp/dandrum-filter-ui-spikes/build/filter-ui-spikes --target dandrum-filter-jive_Standalone --config Release
+[  0%] Built target jive_style_sheets
+[  6%] Built target dandrum-engine-rust
+[  6%] Built target jive_components
+[  6%] Built target jive_core
+[  6%] Built target jive_layouts
+[ 93%] Built target dandrum-filter-jive
+[100%] Built target dandrum-filter-jive_Standalone
++ '/tmp/dandrum-filter-ui-spikes/build/filter-ui-spikes/dandrum-filter-jive_artefacts/Release/Standalone/Dandrum Filter JIVE'

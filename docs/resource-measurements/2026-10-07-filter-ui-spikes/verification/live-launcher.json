@@ -1,0 +1,86 @@
+{
+  "status": "pass",
+  "entrypoint": "./demo",
+  "cwd": "/home/dan/code/dandrum",
+  "display": ":10",
+  "path": "/usr/bin:/bin",
+  "sequence": [
+    "filter-jive",
+    "filter-slint"
+  ],
+  "buildDirectory": "/tmp/dandrum-filter-ui-spikes/build/filter-ui-spikes",
+  "checks": [
+    {
+      "name": "filter-jive",
+      "executable": "/tmp/dandrum-filter-ui-spikes/build/filter-ui-spikes/dandrum-filter-jive_artefacts/Release/Standalone/Dandrum Filter JIVE",
+      "window": {
+        "id": 90177542,
+        "title": "Dandrum Filter JIVE",
+        "ownerPid": 3898400,
+        "width": 1088,
+        "height": 824,
+        "viewable": true,
+        "wrapper": {
+          "border": 4,
+          "titleBar": 26,
+          "mutedInputNotice": 30
+        },
+        "sourceDerivedEditor": {
+          "width": 1080,
+          "height": 760,
+          "basis": "Vendored JUCE StandaloneFilterWindow/DocumentWindow/ResizableWindow default geometry; editor default1080x760"
+        }
+      },
+      "launcherExitCode": 0,
+      "close": {
+        "method": "WM_DELETE_WINDOW client message",
+        "XSendEvent": 1
+      },
+      "remainingOwnProcesses": [],
+      "npmPreparationObserved": false,
+      "audioDeviceDiagnostics": [],
+      "png": "/tmp/dandrum-filter-spike-evidence/launcher-live/filter-jive/owned-window.png",
+      "resultFile": "/tmp/dandrum-filter-spike-evidence/launcher-live/filter-jive/result.json"
+    },
+    {
+      "name": "filter-slint",
+      "executable": "/tmp/dandrum-filter-ui-spikes/build/filter-ui-spikes/dandrum-filter-slint_artefacts/Release/Standalone/Dandrum Filter Slint",
+      "window": {
+        "id": 90177542,
+        "title": "Dandrum Filter Slint",
+        "ownerPid": 3903176,
+        "width": 1088,
+        "height": 824,
+        "viewable": true,
+        "wrapper": {
+          "border": 4,
+          "titleBar": 26,
+          "mutedInputNotice": 30
+        },
+        "sourceDerivedEditor": {
+          "width": 1080,
+          "height": 760,
+          "basis": "Vendored JUCE StandaloneFilterWindow/DocumentWindow/ResizableWindow default geometry; editor default1080x760"
+        }
+      },
+      "launcherExitCode": 0,
+      "close": {
+        "method": "WM_DELETE_WINDOW client message",
+        "XSendEvent": 1
+      },
+      "remainingOwnProcesses": [],
+      "npmPreparationObserved": false,
+      "audioDeviceDiagnostics": [],
+      "png": "/tmp/dandrum-filter-spike-evidence/launcher-live/filter-slint/owned-window.png",
+      "resultFile": "/tmp/dandrum-filter-spike-evidence/launcher-live/filter-slint/result.json"
+    }
+  ],
+  "limitations": [
+    "Both screenshots show the normal JUCE audio-input-muted feedback-loop notification.",
+    "No audio-device failure diagnostics were emitted, but this check does not establish audible physical output or microphone input.",
+    "Editor1080x760 geometry is derived from actual1088x824 client dimensions and vendored JUCE4px borders/26px title bar/30px notification; earlier owning UI checks provide direct editor snapshot evidence.",
+    "Window captures and metadata were scoped to the actual owned Standalone PID; unrelated windows were not inspected or closed."
+  ],
+  "sourceEdits": "none",
+  "publication": "none"
+}
