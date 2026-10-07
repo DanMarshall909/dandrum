@@ -2,7 +2,7 @@
 set -euo pipefail
 
 ENGINE_DIR="$(git rev-parse --show-toplevel)/src/rust-engine"
-CARGO="$HOME/.cargo/bin/cargo"
+CARGO="${DANDRUM_CARGO:-$HOME/.cargo/bin/cargo}"
 
 echo "=== Running Rust unit tests ==="
 "$CARGO" test --manifest-path "$ENGINE_DIR/Cargo.toml"
@@ -10,15 +10,16 @@ echo "=== Running Rust unit tests ==="
 # Changed Rust source files compared to upstream
 UPSTREAM=$(git rev-parse --symbolic-full-name @{u} 2>/dev/null || true)
 if [ -n "$UPSTREAM" ]; then
-    CHANGED=$(git diff --name-only "${UPSTREAM}..HEAD" -- 'src/rust-engine/src/*.rs' || true)
+    DIFF_RANGE="${UPSTREAM}..HEAD"
 else
-    CHANGED=$(git diff --name-only 'HEAD~1..HEAD' -- 'src/rust-engine/src/*.rs' 2>/dev/null || true)
+    DIFF_RANGE='HEAD~1..HEAD'
 fi
 
 MUTANT_ARGS=()
-for f in $CHANGED; do
-    MUTANT_ARGS+=(--file "$f")
-done
+while IFS= read -r -d '' f; do
+    # cargo-mutants resolves file selectors relative to the manifest's crate.
+    MUTANT_ARGS+=(--file "${f#src/rust-engine/}")
+done < <(git diff --name-only -z "$DIFF_RANGE" -- 'src/rust-engine/src/*.rs' 2>/dev/null || true)
 
 if [ ${#MUTANT_ARGS[@]} -gt 0 ]; then
     echo ""
