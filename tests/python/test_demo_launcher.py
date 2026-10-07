@@ -33,7 +33,7 @@ class DemoLauncherTest(unittest.TestCase):
             with self.subTest(args=args):
                 code, output, error = self.invoke(*args)
                 self.assertEqual(code, 0, error)
-                for name in ["tb303", "sampler", "drums", "react303", "trigger"]:
+                for name in ["tb303", "sampler", "drums", "react303", "trigger", "filter-slint", "filter-jive"]:
                     self.assertIn(name, output)
                 self.assertIn("silent mock", output)
                 self.assertIn("embedded WebView", output)
@@ -94,11 +94,16 @@ class DemoLauncherTest(unittest.TestCase):
             self.assertEqual(code, 2)
             run.assert_not_called()
 
-    def native_fixture(self, name="drums", build="build"):
+    def native_fixture(self, name="drums", build="build", configuration=""):
         entry = next(item for item in json.loads((self.root / "scripts/demos.json").read_text()) if item["name"] == name)
         target = entry["target"].removesuffix("_Standalone")
         (self.root / "CMakeLists.txt").write_text(f'juce_add_console_app({target} PRODUCT_NAME "Demo")')
-        artifact = self.root / build / entry["artifact"]
+        source = self.root / entry["source"]
+        if not source.exists():
+            source.parent.mkdir(parents=True, exist_ok=True)
+            source.write_text("Demo source")
+        parts = Path(entry["artifact"]).parts
+        artifact = self.root / build / parts[0] / configuration / Path(*parts[1:])
         artifact.parent.mkdir(parents=True, exist_ok=True)
         artifact.write_text('#!/usr/bin/env python3\nimport json, os, sys\nfrom pathlib import Path\nPath("launched.json").write_text(json.dumps([os.getcwd(), sys.argv[1:]]))\n')
         artifact.chmod(0o755)
@@ -216,8 +221,68 @@ class DemoLauncherTest(unittest.TestCase):
         self.assertEqual(commands[1][0][1:], ["-S", str(self.root), "-B", str(self.root / "build/demo-webview"), "-DDANDRUM_NATIVE_ONLY=OFF"])
         self.assertEqual(commands[2][0][3:5], ["--target", "dandrum-plugin_Standalone"])
 
-    def test_preparation_and_child_failures_stop_and_preserve_exit_codes(self):
-        artifact = self.native_fixture()
+    def test_native_build_metadata_is_generic_and_skips_browser_dependencies(self):
+        catalog = self.root / "scripts/demos.json"
+        demos = json.loads(catalog.read_text())
+        next(demo for demo in demos if demo["name"] == "drums").update(
+            nativeOnly=True, buildDirectory="build/filter-ui-spikes",
+            cmakeOptions=["DANDRUM_BUILD_FILTER_UI_SPIKES=ON", "CMAKE_BUILD_TYPE=Release"])
+        catalog.write_text(json.dumps(demos))
+        build = self.root / "build/filter-ui-spikes"
+        artifact = self.native_fixture(build="build/filter-ui-spikes", configuration="Release")
+        (build / "CMakeCache.txt").write_text("CMAKE_BUILD_TYPE:STRING=Release\n")
+        default_cache = self.root / "build/CMakeCache.txt"
+        default_cache.write_text("CMAKE_BUILD_TYPE:STRING=Debug\n")
+        self.web_fixture("web/sampler")
+        commands = []
+        with self.recorded_tools(commands):
+            code, _, error = self.invoke("drums", "--", "--input", "source with spaces.wav")
+        self.assertEqual(code, 0, error)
+        self.assertEqual(commands[0][0][1:], ["-S", str(self.root), "-B", str(build),
+                         "-DDANDRUM_NATIVE_ONLY=ON", "-DDANDRUM_BUILD_FILTER_UI_SPIKES=ON", "-DCMAKE_BUILD_TYPE=Release"])
+        self.assertEqual(commands[1][0][1:], ["--build", str(build), "--target", "dandrum-drum-machine-demo", "--config", "Release"])
+        self.assertEqual(commands[2][0], [str(artifact), "--input", "source with spaces.wav"])
+        self.assertEqual(json.loads((self.root / "launched.json").read_text()),
+                         [str(self.root), ["--input", "source with spaces.wav"]])
+        self.assertEqual(default_cache.read_text(), "CMAKE_BUILD_TYPE:STRING=Debug\n")
+
+    def test_optional_build_metadata_preserves_react_flags_and_dependency_preparation(self):
+        catalog = self.root / "scripts/demos.json"
+        demos = json.loads(catalog.read_text())
+        next(demo for demo in demos if demo["name"] == "react303").update(
+            buildDirectory="build/custom-webview", cmakeOptions=["CMAKE_BUILD_TYPE=Debug"])
+        catalog.write_text(json.dumps(demos))
+        self.native_fixture("react303", "build/custom-webview", "Debug")
+        self.web_fixture("web/sampler")
+        (self.root / "build/custom-webview/CMakeCache.txt").write_text("CMAKE_BUILD_TYPE:STRING=Debug\n")
+        commands = []
+        with self.recorded_tools(commands):
+            code, _, error = self.invoke("react303")
+        self.assertEqual(code, 0, error)
+        self.assertEqual(commands[0][0], ["npm", "ci"])
+        self.assertEqual(commands[1][0][1:], ["-S", str(self.root), "-B", str(self.root / "build/custom-webview"),
+                         "-DDANDRUM_NATIVE_ONLY=OFF", "-DCMAKE_BUILD_TYPE=Debug"])
+        self.assertEqual(commands[2][0][-2:], ["--config", "Debug"])
+
+    def test_filter_spikes_launch_their_registered_artifacts_and_forward_arguments(self):
+        for name, product in [("filter-slint", "Dandrum Filter Slint"), ("filter-jive", "Dandrum Filter JIVE")]:
+            with self.subTest(name=name):
+                self.native_fixture(name, "build/filter-ui-spikes", "Release")
+                build = self.root / "build/filter-ui-spikes"
+                (build / "CMakeCache.txt").write_text("CMAKE_BUILD_TYPE:STRING=Release\n")
+                commands = []
+                with self.recorded_tools(commands):
+                    code, _, error = self.invoke(name, "--", "argument with spaces")
+                self.assertEqual(code, 0, error)
+                expected = build / f"dandrum-{name}_artefacts/Release/Standalone" / product
+                self.assertEqual(commands[-1][0], [str(expected), "argument with spaces"])
+                self.assertEqual(json.loads((self.root / "launched.json").read_text()),
+                                 [str(self.root), ["argument with spaces"]])
+
+    def assert_native_failures(self, name, build="build", configuration=""):
+        artifact = self.native_fixture(name, build, configuration)
+        if configuration:
+            (self.root / build / "CMakeCache.txt").write_text(f"CMAKE_BUILD_TYPE:STRING={configuration}\n")
         for fail_at, status in [("configure", 7), ("build", 8), ("app", 9), ("app", -15)]:
             commands = []
 
@@ -231,10 +296,13 @@ class DemoLauncherTest(unittest.TestCase):
                 return subprocess.CompletedProcess(command, 0)
 
             with self.subTest(stage=fail_at, status=status), patch("subprocess.run", side_effect=run):
-                code, _, error = self.invoke("drums")
+                code, _, error = self.invoke(name)
                 self.assertEqual(code, status if status > 0 else 128 - status)
                 self.assertIn("failed", error.lower())
                 self.assertEqual(len(commands), {"configure": 1, "build": 2, "app": 3}[fail_at])
+
+    def test_preparation_and_child_failures_stop_and_preserve_exit_codes(self):
+        self.assert_native_failures("drums")
         self.web_fixture()
         with patch("subprocess.run") as run:
             run.side_effect = [subprocess.CompletedProcess(["git"], 0, stdout=""), subprocess.CalledProcessError(17, ["npm", "ci"])]
@@ -242,6 +310,10 @@ class DemoLauncherTest(unittest.TestCase):
             self.assertEqual(code, 17)
             self.assertIn("npm", error)
             self.assertEqual(run.call_count, 2)
+
+    def test_native_only_failures_stop_before_launching_or_preserve_child_status(self):
+        self.web_fixture("web/sampler")
+        self.assert_native_failures("filter-slint", "build/filter-ui-spikes", "Release")
 
     def test_missing_command_artifact_and_interruption_are_actionable(self):
         artifact = self.native_fixture()
