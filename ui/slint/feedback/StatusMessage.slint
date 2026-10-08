@@ -1,0 +1,67 @@
+import { Tokens } from "../theme.slint";
+import { Icon } from "../icons.slint";
+import { Button } from "../controls/Button.slint";
+import { FeedbackSurface, StatusKind } from "FeedbackSurface.slint";
+
+export component StatusMessage inherits Rectangle {
+    in property <StatusKind> kind: StatusKind.info;
+    in property <string> title;
+    in property <string> description;
+    in property <string> action-label;
+    in property <bool> action-enabled: true;
+    in property <bool> inline;
+    in property <bool> compact;
+    callback action();
+    preferred-height: root.inline ? 26px : root.compact ? 52px : 64px;
+    min-height: root.inline ? 26px : 48px;
+    accessible-role: text;
+    accessible-label: root.title + ". " + root.description;
+    surface := FeedbackSurface {
+        kind: root.kind; inline: root.inline;
+        if root.inline : HorizontalLayout {
+            spacing: 6px;
+            Icon { y: (parent.height - self.height) / 2; name: surface.icon; tint: surface.tint; size: 14px; }
+            if root.title != "" : Text {
+                text: root.title; font-family: Tokens.font-ui; font-size: root.compact ? 12px : 13px; font-weight: 600;
+                color: Tokens.text-primary; overflow: elide; vertical-alignment: center; horizontal-stretch: 0;
+            }
+            if root.description != "" : Text {
+                text: root.description; font-family: Tokens.font-ui; font-size: root.compact ? 12px : 13px;
+                color: Tokens.text-secondary; overflow: elide; vertical-alignment: center;
+            }
+            if root.action-label != "" : Rectangle {
+                width: inline-action.preferred-width;
+                inline-action := Button {
+                    y: (parent.height - self.height) / 2; width: parent.width;
+                    text: root.action-label; enabled: root.action-enabled; compact: true;
+                    clicked => { root.action(); }
+                }
+            }
+        }
+        if !root.inline : HorizontalLayout {
+            padding-top: root.compact ? 6px : 8px; padding-bottom: root.compact ? 6px : 8px;
+            padding-left: root.compact ? 8px : 10px; padding-right: root.compact ? 8px : 10px;
+            spacing: 8px;
+            Icon { name: surface.icon; tint: surface.tint; size: 16px; }
+            VerticalLayout {
+                spacing: 2px; alignment: start; horizontal-stretch: 1;
+                if root.title != "" : Text {
+                    text: root.title; font-family: Tokens.font-ui; font-size: 13px; font-weight: 600;
+                    color: Tokens.text-primary; overflow: elide; vertical-alignment: center;
+                }
+                if root.description != "" : Text {
+                    text: root.description; font-family: Tokens.font-ui; font-size: 12px;
+                    color: Tokens.text-secondary; wrap: word-wrap; vertical-alignment: center;
+                }
+            }
+            if root.action-label != "" : Rectangle {
+                width: banner-action.preferred-width;
+                banner-action := Button {
+                    y: (parent.height - self.height) / 2; width: parent.width;
+                    text: root.action-label; enabled: root.action-enabled; compact: root.compact;
+                    clicked => { root.action(); }
+                }
+            }
+        }
+    }
+}

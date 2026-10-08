@@ -1,0 +1,30 @@
+import { ModAssignment } from "types.slint";
+
+// Logical state shared by rotary and linear views. One assignment per A–D slot.
+// Caller owns assignments and source outputs. The component owns display peaks.
+export component ModulationState inherits Rectangle {
+    in property <[ModAssignment]> assignments;
+    in property <float> base;
+    out property <int> count: min(4, root.assignments.length);
+    out property <bool> any-live: root.live-at(0) || root.live-at(1) || root.live-at(2) || root.live-at(3);
+    out property <float> low: root.base + min(0, root.depth-at(0)) + min(0, root.depth-at(1)) + min(0, root.depth-at(2)) + min(0, root.depth-at(3));
+    out property <float> high: root.base + max(0, root.depth-at(0)) + max(0, root.depth-at(1)) + max(0, root.depth-at(2)) + max(0, root.depth-at(3));
+    out property <float> effective: root.base + root.delta-at(0) + root.delta-at(1) + root.delta-at(2) + root.delta-at(3);
+    out property <float> peak;
+    out property <float> trough;
+    out property <bool> clip-low: root.low < -0.0001;
+    out property <bool> clip-high: root.high > 1.0001;
+    out property <bool> live-clip-low: root.any-live && root.effective <= 0;
+    out property <bool> live-clip-high: root.any-live && root.effective >= 1;
+    width: 0; height: 0;
+    pure function depth-at(i: int) -> float { return i < root.count ? root.assignments[i].depth.clamp(-1, 1) : 0; }
+    pure function live-at(i: int) -> bool { return i < root.count && root.assignments[i].active; }
+    pure function delta-at(i: int) -> float { return root.live-at(i) ? root.depth-at(i) * root.assignments[i].live.clamp(-1, 1) : 0; }
+    public function reset-peaks() { root.peak = root.effective.clamp(0, 1); root.trough = root.effective.clamp(0, 1); }
+    init => { root.reset-peaks(); }
+    changed effective => {
+        if root.count == 0 { root.reset-peaks(); }
+        else if root.any-live { root.peak = max(root.peak, root.effective.clamp(0, 1)); root.trough = min(root.trough, root.effective.clamp(0, 1)); }
+    }
+    changed count => { if root.count == 0 { root.reset-peaks(); } }
+}

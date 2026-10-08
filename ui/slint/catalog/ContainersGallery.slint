@@ -1,0 +1,45 @@
+import { Tokens } from "../theme.slint";
+import { Panel } from "../layout/Panel.slint";
+import { Rollout } from "../layout/Rollout.slint";
+import { PropertyRow } from "../layout/PropertyRow.slint";
+import { ListRow } from "../layout/ListRow.slint";
+import { SectionHeading } from "../layout/SectionHeading.slint";
+
+export component ContainersGallery inherits Rectangle {
+    in property <string> state;
+    private property <string> selected-source: "close";
+    callback event(string);
+    preferred-height: max(property-panel.height, source-panel.height);
+    height: root.preferred-height; vertical-stretch: 0;
+    property-panel := Panel {
+            x: 0px; y: 0px; width: (root.width - 12px) / 2;
+            height: self.collapsed ? 28px : 226px;
+            title: "Sample properties"; tag: "PREPARED"; prepared: true;
+            actions: [{ id: "reload", label: "Reload sample", icon: "reload", disabled: root.state == "disabled" }];
+            action(id) => { root.event("Header action: " + id); }
+            toggled(value) => { root.event(value ? "Sample panel collapsed" : "Sample panel expanded"); }
+            VerticalLayout {
+                spacing: 0px; alignment: start;
+                PropertyRow { label: "Source"; value: "Snare close"; prepared: true; }
+                PropertyRow { label: "Length"; value: "842"; unit: "ms"; }
+                PropertyRow { label: "Format"; value: "48 kHz · 24 bit"; }
+                Rollout {
+                    title: "Prepared detail"; summary: "1–63";
+                    PropertyRow { label: "Velocity"; value: "1–63"; }
+                }
+            }
+    }
+    source-panel := Panel {
+            x: property-panel.width + 12px; y: 0px; width: property-panel.width;
+            height: self.collapsed ? 28px : 226px;
+            title: "Sources"; summary: "2 available";
+            VerticalLayout {
+                spacing: 4px; alignment: start;
+                SectionHeading { text: "SOURCE SELECTION"; compact: true; height: 24px; }
+                ListRow { label: "Snare close"; detail: "Stereo"; icon: "one-shot"; selected: root.selected-source == "close"; active: true; disabled: root.state == "disabled"; clicked => { root.selected-source = "close"; root.event("Selected Snare close"); } }
+                ListRow { label: "Snare room"; detail: "Stereo"; icon: "one-shot"; selected: root.selected-source == "room"; disabled: root.state == "disabled"; clicked => { root.selected-source = "room"; root.event("Selected Snare room"); } }
+                ListRow { label: "Unavailable source"; icon: "file-missing"; disabled: true; }
+                Text { text: "Headers collapse; action buttons keep the panel open."; color: Tokens.text-tertiary; font-family: Tokens.font-ui; font-size: 11px; wrap: word-wrap; vertical-stretch: 0; }
+            }
+    }
+}

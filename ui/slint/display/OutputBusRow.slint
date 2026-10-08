@@ -1,0 +1,40 @@
+import { Tokens } from "../theme.slint";
+import { FocusRing } from "../foundation/FocusRing.slint";
+import { OutputBus } from "types.slint";
+import { ChannelMeter } from "ChannelMeter.slint";
+
+export component OutputBusRow inherits FocusScope {
+    in property <OutputBus> bus;
+    in property <string> generation;
+    in property <bool> compact;
+    callback selected(string); callback reset-clip(string,string,string,string);
+    private property <length> detail-height: 42px + max(1,root.bus.feeds.length) * 16px;
+    height: root.compact ? root.detail-height + max(1,root.bus.channels.length) * 26px + 12px : max(root.detail-height,max(1,root.bus.channels.length) * 26px) + 12px;
+    accessible-role: button; accessible-label: "Inspect output bus \{root.bus.name}, \{root.bus.channel-summary}";
+    accessible-action-default => { root.selected(root.bus.id); }
+    key-pressed(event) => { if event.text == Key.Return || event.text == " " { root.selected(root.bus.id); return accept; } return reject; }
+    Rectangle { width: 100%; height: 100%; border-radius: 4px; background: input.has-hover ? Tokens.dd-ink-3 : Tokens.dd-ink-2; border-width: 1px; border-color: Tokens.dd-line-1; }
+    details := Rectangle {
+        x: 8px; y: 6px; width: root.compact ? parent.width - 16px : max(84px,parent.width - 282px); height: root.detail-height;
+        Text { x: 0px; y: 0px; width: 100%; height: 18px; text: "\{root.bus.name}\{root.bus.main ? " · MAIN" : ""}"; font-family: Tokens.font-ui; font-size: 13px; font-weight: 600; color: Tokens.dd-paper-1; overflow: elide; }
+        Text { y: 20px; width: 100%; height: 16px; text: root.bus.channel-summary != "" ? root.bus.channel-summary : "\{root.bus.channels.length} supplied channels"; font-family: Tokens.font-value; font-size: 11px; color: Tokens.dd-paper-2; overflow: elide; }
+        if !root.bus.feeds-known || root.bus.feeds.length == 0 : Text { y: 40px; width: 100%; height: 16px; text: root.bus.feeds-known ? "No routed feeds" : "Feed details unavailable"; font-family: Tokens.font-ui; font-size: 11px; color: Tokens.dd-paper-3; }
+        if root.bus.feeds-known : Rectangle {
+            width: 100%; height: 100%;
+            for feed[index] in root.bus.feeds : Text { y: 40px + index * 16px; width: 100%; height: 16px; text: feed; font-family: Tokens.font-ui; font-size: 11px; color: Tokens.dd-paper-3; overflow: elide; }
+        }
+    }
+    input := TouchArea { clicked => { root.focus(); root.selected(root.bus.id); } }
+    readings := Rectangle {
+        x: root.compact ? 8px : max(100px,root.width - 266px);
+        y: root.compact ? root.detail-height + 6px : 6px;
+        width: max(0px,root.width - self.x - 8px); height: max(1,root.bus.channels.length) * 26px;
+        if root.bus.channels.length == 0 : Text { width: 100%; height: 26px; text: "Measurements unavailable"; font-family: Tokens.font-ui; font-size: 11px; color: Tokens.dd-paper-3; vertical-alignment: center; }
+        for channel[index] in root.bus.channels : ChannelMeter {
+            y: index * 26px; width: readings.width; height: 26px; channel: channel;
+            vertical: false; length: min(120px,max(40px,readings.width - 136px)); thickness: 4px;
+            reset-clip(id,ticket) => { root.reset-clip(root.bus.id,id,root.generation,ticket); }
+        }
+    }
+    FocusRing { width: 100%; height: 100%; active: root.has-focus; }
+}

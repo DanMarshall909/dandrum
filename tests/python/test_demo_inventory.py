@@ -28,6 +28,16 @@ def inventory_errors(root):
         for demo in demos:
             if demo.get("target", "").removesuffix("_Standalone") == target and demo["artifact"] != expected:
                 errors.append(f"wrong artifact for {demo['name']}: expected {expected}")
+    # Plain CMake UI executables need catalog entries too. Test/smoke programs
+    # whose declared sources live under tests/ are verification targets, not demos.
+    for body in re.findall(r"^[ \t]*add_executable\((.*?)\)", (root / "CMakeLists.txt").read_text(), re.S | re.M):
+        if not body.split():
+            continue
+        target = body.split()[0]
+        if re.search(r"\b(?:ALIAS|IMPORTED)\b|(?:^|[\s/])tests/", body):
+            continue
+        if target not in targets:
+            errors.append(f"unregistered native demo: {target}")
     sources = {demo["source"] for demo in demos if demo["kind"] == "web"}
     for manifest in sorted((root / "web").glob("*/package.json")):
         if "dev" in json.loads(manifest.read_text()).get("scripts", {}):
@@ -69,6 +79,20 @@ class DemoInventoryTest(unittest.TestCase):
         self.assertEqual(demo["buildDirectory"], "build/filter-ui-spikes")
         self.assertEqual(demo["cmakeOptions"], ["DANDRUM_BUILD_TRIGGER_SLINT=ON", "CMAKE_BUILD_TYPE=Release"])
 
+    def test_slint_library_registers_a_silent_isolated_plain_cmake_catalog(self):
+        demos = {demo["name"]: demo for demo in json.loads((ROOT / "scripts/demos.json").read_text())}
+        self.assertIn("slint-library", demos)
+        demo = demos["slint-library"]
+        self.assertIn("silent UI catalog", demo["description"])
+        self.assertEqual(demo["kind"], "native")
+        self.assertEqual(demo["source"], "ui/slint/README.md")
+        self.assertEqual(demo["target"], "dandrum-slint-catalog")
+        self.assertEqual(demo["artifact"], "slint-catalog/dandrum-slint-catalog")
+        self.assertTrue(demo["nativeOnly"])
+        self.assertEqual(demo["buildDirectory"], "build/slint-library")
+        self.assertEqual(demo["cmakeOptions"], ["DANDRUM_SLINT_LIBRARY_ONLY=ON", "CMAKE_BUILD_TYPE=Release"])
+        self.assertIsNotNone(re.search(r"add_executable\(dandrum-slint-catalog\)", (ROOT / "CMakeLists.txt").read_text()), "Root CMake must declare the catalog target")
+
     def test_guard_names_missing_native_and_browser_demos_and_wrong_artifacts(self):
         with tempfile.TemporaryDirectory(prefix="dandrum inventory ") as temporary:
             root = Path(temporary)
@@ -77,6 +101,10 @@ class DemoInventoryTest(unittest.TestCase):
             shutil.copy(ROOT / "CMakeLists.txt", root / "CMakeLists.txt")
             self.assertEqual(inventory_errors(root), [])
             original = (root / "CMakeLists.txt").read_text()
+            (root / "CMakeLists.txt").write_text(original + '\nadd_executable(new-native-demo main.cpp)\n')
+            self.assertEqual(inventory_errors(root), ["unregistered native demo: new-native-demo"])
+            (root / "CMakeLists.txt").write_text(original + '\nadd_executable(new-unit-test tests/cpp/new.cpp)\n')
+            self.assertEqual(inventory_errors(root), [])
             (root / "CMakeLists.txt").write_text(original + '\njuce_add_console_app(new-demo PRODUCT_NAME "New Demo")\n')
             self.assertEqual(inventory_errors(root), ["unregistered native demo: new-demo"])
             (root / "CMakeLists.txt").write_text(original + '\njuce_add_plugin(new-plugin\n FORMATS\n  VST3 Standalone\n PRODUCT_NAME "New Plugin")\n')

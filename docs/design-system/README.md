@@ -21,6 +21,7 @@ tooling is retained as supplied and was not executed during import.
 - [Prepared KeyMap, LayerStack and OutputBusses specifications](native-display-specs.md)
 - [Automatic muted reload implementation and remaining structural scope](automatic-reload.md)
 - [Maintained production tokens and font provenance](../../ui/design-system/README.md)
+- [Composable native Slint library and complete component catalog](../../ui/slint/README.md)
 - [Compiled React font/icon packaging and WebKit verification](react-font-packaging.md)
 - [CSS tokens](reference/tokens/colors.css) and [C++ token reference](reference/handoff/DandrumTokens.h)
 - [Asset manifest](reference/handoff/asset-manifest.md) and [SVG icons](reference/assets/icons/manifest.json)

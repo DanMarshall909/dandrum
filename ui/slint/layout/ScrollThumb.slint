@@ -1,0 +1,7 @@
+import { Tokens } from "../theme.slint";
+
+export component ScrollThumb inherits Rectangle {
+    in property <bool> active;
+    background: root.active ? Tokens.dd-paper-3 : Tokens.dd-ink-6;
+    border-radius: 3px;
+}

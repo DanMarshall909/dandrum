@@ -1,0 +1,29 @@
+import { Tokens } from "../theme.slint";
+import { MarkerFlag } from "MarkerFlag.slint";
+
+export component LoopOverlay inherits Rectangle {
+    in property <float> start;
+    in property <float> end: 1;
+    in property <float> crossfade;
+    private property <length> left: root.start.clamp(0,1) * root.width;
+    private property <length> right: root.end.clamp(root.start,1) * root.width;
+    for position in [root.left,root.right] : Rectangle {
+        x: position; y: 18px; width: 1px; height: max(0px,parent.height - 18px);
+        for index in max(0, floor((root.height - 18px) / 7px)) : Rectangle {
+            y: index * 7px; width: 1px; height: 4px; background: Tokens.dd-paper-3;
+        }
+    }
+    Rectangle { x: root.left; y: parent.height - 6px; width: max(0px,root.right - root.left); height: 6px; background: Tokens.dd-paper-3.with-alpha(0.5); }
+    if root.crossfade > 0 : Rectangle {
+        x: max(root.left, root.right - root.crossfade.clamp(0,1) * root.width);
+        y: max(0px,parent.height - 6px); width: max(0px,root.right - self.x); height: 6px;
+        background: Tokens.dd-paper-3.with-alpha(0.1); clip: true;
+        for index in max(1, floor((root.crossfade * root.width) / 8px)) : Path {
+            x: index * 8px; width: 16px; height: parent.height;
+            stroke: Tokens.dd-paper-3.with-alpha(0.3); stroke-width: 1px;
+            MoveTo { x: 0; y: 0; } LineTo { x: 16; y: parent.height / 1px; }
+        }
+    }
+    MarkerFlag { x: root.left.clamp(0px,max(0px,root.width - 26px)); y: max(0px,root.height - 24px); width: 26px; text: "◂L"; }
+    MarkerFlag { x: (root.right - 26px).clamp(0px,max(0px,root.width - 26px)); y: max(0px,root.height - 24px); width: 26px; text: "L▸"; }
+}

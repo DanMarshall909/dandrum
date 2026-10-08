@@ -1,0 +1,66 @@
+import { Tokens } from "../theme.slint";
+import { HeaderAction } from "types.slint";
+import { Icon } from "../icons.slint";
+import { IconButton } from "../controls/IconButton.slint";
+import { FocusRing } from "../foundation/FocusRing.slint";
+
+export component RolloutHeader inherits Rectangle {
+    in property <string> title;
+    in property <string> tag;
+    in property <string> summary;
+    in property <bool> prepared;
+    in property <bool> compact;
+    in property <[HeaderAction]> actions;
+    in-out property <bool> collapsed;
+    callback toggled(bool);
+    callback action(string);
+    height: root.compact ? 20px : 22px;
+    border-radius: Tokens.radius-1;
+    background: touch.has-hover ? Tokens.surface-panel-header : transparent;
+    public function toggle() { root.collapsed = !root.collapsed; root.toggled(root.collapsed); }
+    public function activate-action(index: int) {
+        if index >= 0 && index < root.actions.length && !root.actions[index].disabled {
+            root.action(root.actions[index].id);
+        }
+    }
+    HorizontalLayout {
+        padding-left: 4px; padding-right: 4px; spacing: 6px;
+        collapse := FocusScope {
+            accessible-role: button; accessible-label: root.title;
+            accessible-expanded: !root.collapsed;
+            accessible-action-default => { root.toggle(); }
+            key-pressed(event) => {
+                if event.text == Key.Return || event.text == " " { root.toggle(); return accept; }
+                if event.text == Key.LeftArrow && !root.collapsed { root.toggle(); return accept; }
+                if event.text == Key.RightArrow && root.collapsed { root.toggle(); return accept; }
+                return reject;
+            }
+            HorizontalLayout {
+                spacing: 6px;
+                Icon { y: (parent.height - self.height) / 2; name: root.collapsed ? "chevron-right" : "chevron-down"; size: 12px; }
+                Text {
+                    text: root.title; color: Tokens.text-secondary;
+                    font-family: Tokens.font-ui; font-size: 11px; font-weight: 700;
+                    letter-spacing: 1.1px; vertical-alignment: center; horizontal-stretch: 0;
+                }
+                if root.prepared : Icon { y: (parent.height - self.height) / 2; name: "lock"; size: 12px; tint: Tokens.text-tertiary; }
+                if root.tag != "" || root.prepared : Text {
+                    text: root.tag != "" ? root.tag : "Prepared"; color: Tokens.text-tertiary;
+                    font-family: Tokens.font-ui; font-size: 11px; vertical-alignment: center; horizontal-stretch: 0;
+                }
+                if root.collapsed : Text {
+                    text: root.summary; color: Tokens.text-tertiary;
+                    font-family: Tokens.font-value; font-size: 11px; overflow: elide; vertical-alignment: center;
+                }
+                if !root.collapsed : Rectangle { y: (parent.height - self.height) / 2; height: 1px; background: Tokens.border-hairline; horizontal-stretch: 1; }
+            }
+            FocusRing { active: collapse.has-focus; radius: Tokens.radius-1; }
+            touch := TouchArea { mouse-cursor: pointer; clicked => { collapse.focus(); root.toggle(); } }
+        }
+        for item[index] in root.actions : IconButton {
+            icon: item.icon; label: item.label; enabled: !item.disabled;
+            width: root.height; height: root.height; compact: true;
+            clicked => { root.activate-action(index); }
+        }
+    }
+}

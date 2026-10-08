@@ -1,0 +1,10 @@
+import { Tokens } from "../theme.slint";
+
+export component VelocityAxis inherits Rectangle {
+    width: 30px; background: Tokens.dd-ink-2;
+    for velocity in [127, 96, 64, 32, 1] : Text {
+        y: ((127 - velocity) / 126 * max(0px, parent.height - 14px));
+        width: 25px; height: 14px; horizontal-alignment: right;
+        text: "\{velocity}"; font-family: Tokens.font-value; font-size: 11px; color: Tokens.dd-paper-3;
+    }
+}

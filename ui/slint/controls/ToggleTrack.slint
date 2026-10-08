@@ -1,0 +1,20 @@
+import { Tokens } from "../theme.slint";
+export component ToggleTrack inherits Rectangle {
+    in property <bool> checked;
+    in property <bool> enabled: true;
+    in property <bool> compact;
+    in property <bool> host-automated;
+    width: root.compact ? 28px : Tokens.toggle-width;
+    height: root.compact ? 16px : Tokens.toggle-height;
+    border-radius: root.height / 2;
+    background: root.checked && root.enabled ? (root.host-automated ? Tokens.dd-host : Tokens.dd-paper-1) : Tokens.surface-well;
+    border-width: 1px;
+    border-color: root.checked && root.enabled ? transparent : Tokens.border-control;
+    Rectangle {
+        width: parent.height - 6px; height: self.width; y: 3px;
+        x: root.checked ? parent.width - self.width - 3px : 3px;
+        border-radius: self.height / 2;
+        background: root.checked && root.enabled ? Tokens.dd-ink-1 : root.enabled ? Tokens.dd-paper-3 : Tokens.dd-ink-5;
+        animate x { duration: 90ms; easing: ease-out; }
+    }
+}

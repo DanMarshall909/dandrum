@@ -1,0 +1,45 @@
+import { Tokens } from "../theme.slint";
+import { MenuEntry } from "types.slint";
+import { ModAssignment } from "../modulation/types.slint";
+import { ChoiceState } from "ChoiceState.slint";
+import { MenuRow } from "MenuRow.slint";
+import { MenuDepthRow } from "MenuDepthRow.slint";
+
+// Styled popup contents; ContextMenu supplies native right-click/menu-key behavior.
+export component MenuSurface inherits ChoiceState {
+    in property <string> title;
+    in property <[MenuEntry]> items;
+    in property <[ModAssignment]> assignments;
+    in property <bool> assignments-enabled;
+    in property <bool> take-focus;
+    callback selected(string);
+    callback depth-changed(int, float);
+    callback removed(int);
+    callback closed();
+    count: root.items.length;
+    changed items => { root.reconcile(); }
+    accepts(index) => { return !root.items[index].disabled && !root.items[index].separator; }
+    activated(index) => { root.selected(root.items[index].id); }
+    width: Tokens.menu-width;
+    preferred-height: content.preferred-height;
+    changed take-focus => { if root.take-focus { root.focus(); } }
+    init => { if root.take-focus { root.focus(); } }
+    capture-key-pressed(event) => {
+        if event.text == Key.Escape { root.closed(); return accept; }
+        return reject;
+    }
+    Rectangle { background: Tokens.surface-menu; border-radius: Tokens.radius-2; border-width: 1px; border-color: Tokens.border-strong; }
+    content := VerticalLayout {
+        padding: 4px; spacing: 0px;
+        if root.title != "" : Text { text: root.title; color: Tokens.text-tertiary; font-family: Tokens.font-ui; font-size: 11px; font-weight: 700; height: 26px; vertical-alignment: center; }
+        for item[index] in root.items : MenuRow {
+            entry: item; highlighted: root.current-index == index;
+            activated => { root.activate(index); }
+        }
+        for item[index] in root.assignments : MenuDepthRow {
+            slot: item.slot; source: item.source; depth: item.depth; disabled: !root.assignments-enabled;
+            depth-changed(value) => { root.depth-changed(item.slot, value); }
+            removed => { root.removed(item.slot); }
+        }
+    }
+}

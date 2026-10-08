@@ -1,0 +1,49 @@
+import { Tokens } from "../theme.slint";
+import { Icon } from "../icons.slint";
+import { FocusRing } from "../foundation/FocusRing.slint";
+
+export component NavigationItem inherits FocusScope {
+    in property <string> label;
+    in property <string> icon;
+    in property <string> badge;
+    in property <bool> selected;
+    in property <bool> disabled;
+    in property <bool> compact;
+    in property <bool> segmented;
+    in property <bool> host-automated;
+    in property <bool> focus-request;
+    callback activated();
+    callback navigate(int);
+    enabled: !root.disabled;
+    focus-on-tab-navigation: root.selected;
+    preferred-width: label.preferred-width + 24px + (root.icon != "" ? 22px : 0px) + (root.badge != "" ? 36px : 0px);
+    min-width: 40px;
+    accessible-role: tab; accessible-label: root.label; accessible-enabled: !root.disabled;
+    accessible-value: root.selected ? "selected" : "";
+    accessible-action-default => { if !root.disabled { root.activated(); } }
+    changed focus-request => { if root.focus-request && !root.disabled { root.focus(); } }
+    key-pressed(event) => {
+        if event.text == Key.RightArrow || event.text == Key.DownArrow { root.navigate(1); return accept; }
+        if event.text == Key.LeftArrow || event.text == Key.UpArrow { root.navigate(-1); return accept; }
+        if event.text == Key.Return || event.text == " " { root.activated(); return accept; }
+        return reject;
+    }
+    Rectangle {
+        background: root.segmented && root.selected ? Tokens.dd-ink-5 : touch.has-hover && !root.disabled ? Tokens.dd-ink-3 : transparent;
+        border-radius: Tokens.radius-1;
+        HorizontalLayout {
+            padding-left: root.compact ? 8px : 12px; padding-right: root.compact ? 8px : 12px; spacing: 6px;
+            if root.icon != "" : Icon { y: (parent.height - self.height) / 2; name: root.icon; size: 14px; tint: root.disabled ? Tokens.text-disabled : Tokens.text-secondary; }
+            label := Text {
+                text: root.label;
+                color: root.disabled ? Tokens.text-disabled : root.selected ? (root.host-automated ? Tokens.dd-host : Tokens.text-primary) : Tokens.text-tertiary;
+                font-family: Tokens.font-ui; font-size: root.compact ? 11px : 12px; font-weight: 600;
+                letter-spacing: 0.6px; overflow: elide; vertical-alignment: center; horizontal-alignment: center;
+            }
+            if root.badge != "" : Text { text: root.badge; color: Tokens.text-tertiary; font-family: Tokens.font-ui; font-size: 11px; vertical-alignment: center; }
+        }
+        if !root.segmented && root.selected : Rectangle { x: 8px; y: parent.height - 2px; width: parent.width - 16px; height: 2px; background: Tokens.color-selected; }
+    }
+    FocusRing { active: root.has-focus; }
+    touch := TouchArea { enabled: !root.disabled; mouse-cursor: pointer; clicked => { root.focus(); root.activated(); } }
+}

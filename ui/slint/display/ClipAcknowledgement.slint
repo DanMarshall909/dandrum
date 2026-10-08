@@ -1,0 +1,27 @@
+import { Tokens } from "../theme.slint";
+import { FocusRing } from "../foundation/FocusRing.slint";
+
+export component ClipAcknowledgement inherits FocusScope {
+    in property <bool> clipped;
+    in property <bool> available;
+    in property <string> label;
+    callback acknowledge();
+    width: 24px; height: 24px;
+    enabled: root.available && root.clipped;
+    accessible-role: button;
+    accessible-label: "Acknowledge clipping on \{root.label}";
+    accessible-enabled: root.enabled;
+    accessible-action-default => { if root.enabled { root.acknowledge(); } }
+    key-pressed(event) => {
+        if event.text == " " || event.text == Key.Return {
+            if root.enabled { root.acknowledge(); } return accept;
+        }
+        return reject;
+    }
+    Rectangle {
+        x: 10px; y: 10px; width: 4px; height: 4px; border-radius: 1px;
+        background: root.available && root.clipped ? Tokens.dd-error : Tokens.dd-line-2;
+    }
+    FocusRing { width: 100%; height: 100%; active: root.has-focus; }
+    TouchArea { enabled: root.enabled; clicked => { root.focus(); root.acknowledge(); } }
+}

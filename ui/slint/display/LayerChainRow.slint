@@ -1,0 +1,94 @@
+import { Tokens } from "../theme.slint";
+import { Button } from "../controls/Button.slint";
+import { IconButton } from "../controls/IconButton.slint";
+import { Toggle } from "../controls/Toggle.slint";
+import { NumericField } from "../controls/NumericField.slint";
+import { LayerRow } from "types.slint";
+import { SourceBlock } from "SourceBlock.slint";
+import { ChainConnector } from "ChainConnector.slint";
+import { ModuleChip } from "ModuleChip.slint";
+import { LayerSend } from "LayerSend.slint";
+import { ScrollViewport } from "../layout/ScrollViewport.slint";
+
+export component LayerChainRow inherits Rectangle {
+    in property <LayerRow> layer;
+    in property <string> selected-module;
+    in property <bool> selected;
+    in property <bool> rebuilding;
+    in property <bool> available: true;
+    private property <int> focus-request;
+    callback source-selected(); callback module-selected(string);
+    callback dismiss-details();
+    callback add-module(); callback remove-module(string); callback bypass-module(string,bool);
+    callback level-changed(float); callback mute-changed(bool);
+    callback level-gesture-began(); callback level-gesture-ended();
+    callback send-changed(string,float); callback output-requested();
+    callback send-gesture-began(string); callback send-gesture-ended(string);
+    changed layer => {
+        if level-input.value != root.layer.level { level-input.value = root.layer.level; }
+        if mute-input.checked != root.layer.muted { mute-input.checked = root.layer.muted; }
+    }
+    preferred-height: root.layer.sends.length > 0 ? 130px : 68px;
+    height: root.layer.sends.length > 0 ? 130px : 68px;
+    background: root.selected ? Tokens.dd-ink-3 : Tokens.dd-ink-2; border-radius: 4px;
+    public function focus-selection() {
+        if root.selected-module == "" { source.focus(); } else { root.focus-request += 1; }
+    }
+    scroll := ScrollViewport {
+        x: 6px; y: 8px; width: parent.width - 12px; height: 50px;
+        content-width: max(self.width, 210px + root.layer.modules.length * 138px + (root.layer.can-add ? 32px : 0px) + 270px);
+        content-height: 42px;
+        HorizontalLayout {
+            x: 0px; y: 0px; width: scroll.content-width; height: 38px; spacing: 0px;
+            source := SourceBlock {
+                width: 210px; name: root.layer.name; source: root.layer.source; detail: root.layer.detail;
+                selected: root.selected && root.selected-module == "";
+                clicked => { root.source-selected(); } dismiss-details => { root.dismiss-details(); }
+            }
+            for module in root.layer.modules : HorizontalLayout {
+                width: 138px; spacing: 0px;
+                ChainConnector {}
+                ModuleChip {
+                    width: 130px; module: module; selected: root.selected && root.selected-module == module.id; rebuilding: root.rebuilding; available: root.available;
+                    focus-request: root.focus-request;
+                    selected-module(id) => { root.module-selected(id); }
+                    dismiss-details => { root.dismiss-details(); }
+                    bypass(id,value) => { root.bypass-module(id,value); }
+                    remove(id) => { if !root.rebuilding { root.remove-module(id); } }
+                }
+            }
+            if root.layer.can-add : IconButton {
+                width: 28px; icon: "plus"; label: "Add module to \{root.layer.name}"; enabled: root.available && !root.rebuilding;
+                clicked => { if root.available && !root.rebuilding { root.add-module(); } }
+            }
+            Rectangle { width: 8px; }
+            level-input := NumericField {
+                width: 72px; label: "Level"; accessible-label: "\{root.layer.name} level"; unit: "dB";
+                value: root.layer.level; minimum: -60; maximum: 12; step: 0.5; read-only: !root.layer.can-level; enabled: root.available;
+                changed(value) => { if root.available && root.layer.can-level { root.level-changed(value); } }
+                gesture-began => { if root.available && root.layer.can-level { root.level-gesture-began(); } }
+                gesture-ended => { root.level-gesture-ended(); }
+            }
+            Rectangle { width: 8px; }
+            mute-input := Toggle { width: 64px; label: "Mute"; checked: root.layer.muted; enabled: root.available && root.layer.can-mute; toggled(value) => { if root.available && root.layer.can-mute { root.mute-changed(value); } } }
+            Rectangle { width: 8px; }
+            Button { width: 110px; text: root.layer.output == "" ? "Output unavailable" : root.layer.output; enabled: root.available && root.layer.can-output && !root.rebuilding; clicked => { if root.available && root.layer.can-output && !root.rebuilding { root.output-requested(); } } }
+        }
+    }
+    if root.layer.sends.length > 0 : Rectangle {
+        x: 10px; y: 68px; width: parent.width - 20px; height: 60px;
+        send-scroll := ScrollViewport {
+            x: 0px; y: 0px; width: parent.width; height: 54px;
+            content-width: max(self.width,root.layer.sends.length * 84px); content-height: 46px;
+            HorizontalLayout {
+                x: 0px; y: 0px; width: root.layer.sends.length * 84px; height: 46px; spacing: 8px;
+                for send in root.layer.sends : LayerSend {
+                    send: send; available: root.available;
+                    changed(id,value) => { root.send-changed(id,value); }
+                    gesture-began(id) => { root.send-gesture-began(id); }
+                    gesture-ended(id) => { root.send-gesture-ended(id); }
+                }
+            }
+        }
+    }
+}

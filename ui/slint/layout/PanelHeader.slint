@@ -1,0 +1,62 @@
+import { Tokens } from "../theme.slint";
+import { HeaderAction } from "types.slint";
+import { Icon } from "../icons.slint";
+import { IconButton } from "../controls/IconButton.slint";
+import { FocusRing } from "../foundation/FocusRing.slint";
+import { SectionHeading } from "SectionHeading.slint";
+
+export component PanelHeader inherits Rectangle {
+    in property <string> title;
+    in property <string> tag;
+    in property <string> summary;
+    in property <bool> prepared;
+    in property <bool> compact;
+    in property <[HeaderAction]> actions;
+    in-out property <bool> collapsed;
+    callback toggled(bool);
+    callback action(string);
+    height: root.compact ? 24px : 28px;
+    background: Tokens.surface-panel-header;
+    public function toggle() { root.collapsed = !root.collapsed; root.toggled(root.collapsed); }
+    public function activate-action(index: int) {
+        if index >= 0 && index < root.actions.length && !root.actions[index].disabled {
+            root.action(root.actions[index].id);
+        }
+    }
+    HorizontalLayout {
+        padding-left: 8px; padding-right: 4px; spacing: 6px;
+        collapse := FocusScope {
+            accessible-role: button;
+            accessible-label: root.title;
+            accessible-expanded: !root.collapsed;
+            key-pressed(event) => {
+                if event.text == Key.Return || event.text == " " { root.toggle(); return accept; }
+                if event.text == Key.LeftArrow && !root.collapsed { root.toggle(); return accept; }
+                if event.text == Key.RightArrow && root.collapsed { root.toggle(); return accept; }
+                return reject;
+            }
+            accessible-action-default => { root.toggle(); }
+            HorizontalLayout {
+                spacing: 6px;
+                Icon { y: (parent.height - self.height) / 2; name: root.collapsed ? "chevron-right" : "chevron-down"; size: 12px; }
+                SectionHeading { text: root.title; prepared: root.prepared; compact: root.compact; horizontal-stretch: 0; }
+                if root.tag != "" : Text {
+                    text: root.tag; color: Tokens.text-tertiary;
+                    font-family: Tokens.font-ui; font-size: 11px; vertical-alignment: center;
+                }
+                Text {
+                    text: root.collapsed ? root.summary : ""; color: Tokens.text-tertiary;
+                    font-family: Tokens.font-value; font-size: 11px; overflow: elide; vertical-alignment: center;
+                }
+            }
+            FocusRing { active: collapse.has-focus; }
+            TouchArea { mouse-cursor: pointer; clicked => { collapse.focus(); root.toggle(); } }
+        }
+        for item[index] in root.actions : IconButton {
+            icon: item.icon; label: item.label; enabled: !item.disabled;
+            width: 24px; height: 24px;
+            y: (parent.height - self.height) / 2;
+            clicked => { root.activate-action(index); }
+        }
+    }
+}

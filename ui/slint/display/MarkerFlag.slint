@@ -1,0 +1,20 @@
+import { Tokens } from "../theme.slint";
+
+export component MarkerFlag inherits Rectangle {
+    in property <string> text;
+    in property <bool> selected;
+    in property <bool> right-aligned;
+    in property <bool> host;
+    out property <length> natural-width: caption.preferred-width + 6px;
+    height: 16px; min-width: 24px;
+    border-radius: 2px; border-width: 1px;
+    border-color: root.host ? Tokens.dd-host : root.selected ? Tokens.dd-vermilion : Tokens.dd-line-3;
+    background: root.selected ? Tokens.dd-vermilion : Tokens.dd-ink-4;
+    caption := Text {
+        x: 3px; width: max(0px,parent.width - 6px); height: 100%;
+        text: root.text; overflow: elide; font-family: Tokens.font-value; font-size: 11px;
+        color: root.selected ? Tokens.text-on-accent : Tokens.dd-paper-2;
+        vertical-alignment: center;
+        horizontal-alignment: root.right-aligned ? right : left;
+    }
+}

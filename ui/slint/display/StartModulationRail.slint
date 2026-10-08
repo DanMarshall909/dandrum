@@ -1,0 +1,25 @@
+import { Tokens } from "../theme.slint";
+
+// A signed fraction of the selected region, drawn in source coordinates.
+// This is a view of a supplied modulation depth, never a parameter editor.
+export component StartModulationRail inherits Rectangle {
+    in property <float> region-start;
+    in property <float> region-end: 1;
+    in property <float> start-offset;
+    in property <float> depth;
+    in property <color> tint: Tokens.dd-mod-a;
+    private property <float> region-low: root.region-start.clamp(0, 1);
+    private property <float> region-high: max(root.region-low, root.region-end.clamp(0, 1));
+    out property <float> source-start: root.region-low + root.start-offset.clamp(0, 1) * (root.region-high - root.region-low);
+    private property <float> unbounded-end: root.source-start + root.depth.clamp(-1, 1) * (root.region-high - root.region-low);
+    out property <float> source-end: root.unbounded-end.clamp(root.region-low, root.region-high);
+    out property <float> lower: min(root.source-start, root.source-end);
+    out property <float> upper: max(root.source-start, root.source-end);
+    out property <bool> clipped: abs(root.source-end - root.unbounded-end) > 0.000001;
+    height: 2px;
+    rail := Rectangle {
+        x: root.lower * root.width; y: 0px;
+        width: (root.upper - root.lower) * root.width; height: 2px;
+        background: root.tint; opacity: 0.8;
+    }
+}

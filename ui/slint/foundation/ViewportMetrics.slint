@@ -1,0 +1,31 @@
+export struct OverlayBounds { x: length, y: length, width: length, height: length }
+
+// One instance per component tree. The Window supplies its logical size.
+// An optional ancestor clip uses absolute logical coordinates; zero extents
+// retain full-window placement. Keep popup content no larger than these bounds.
+export global ViewportMetrics {
+    in-out property <length> width;
+    in-out property <length> height;
+    in-out property <OverlayBounds> overlay-clip;
+
+    public pure function clamp-x(preferred: length, extent: length, margin: length) -> length {
+        let clipped = ViewportMetrics.overlay-clip.width > 0px;
+        let available = clipped ? ViewportMetrics.overlay-clip.width : ViewportMetrics.width;
+        if available <= 0px { return preferred; }
+        let origin = clipped ? ViewportMetrics.overlay-clip.x : 0px;
+        let inset = margin.clamp(0px, available / 2);
+        return preferred.clamp(origin + inset, max(origin + inset, origin + available - extent - inset));
+    }
+
+    public pure function place-y(anchor-top: length, anchor-height: length, extent: length, gap: length, margin: length) -> length {
+        let below = anchor-top + anchor-height + gap;
+        let clipped = ViewportMetrics.overlay-clip.height > 0px;
+        let available = clipped ? ViewportMetrics.overlay-clip.height : ViewportMetrics.height;
+        if available <= 0px { return below; }
+        let origin = clipped ? ViewportMetrics.overlay-clip.y : 0px;
+        let inset = margin.clamp(0px, available / 2);
+        let maximum = max(origin + inset, origin + available - extent - inset);
+        let preferred = below <= maximum ? below : anchor-top - gap - extent;
+        return preferred.clamp(origin + inset, maximum);
+    }
+}

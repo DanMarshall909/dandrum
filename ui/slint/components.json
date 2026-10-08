@@ -1,0 +1,352 @@
+{
+  "authority": "docs/design-system/README.md",
+  "publicEntry": "ui/slint/dandrum.slint",
+  "components": [
+    {
+      "name": "Button",
+      "guide": "docs/design-system/reference/components/controls/Button.d.ts",
+      "source": "ui/slint/controls/Button.slint",
+      "parts": [
+        "ui/slint/controls/ActionArea.slint",
+        "ui/slint/controls/ButtonFace.slint"
+      ],
+      "catalog": "ui/slint/catalog/ControlsPage.slint"
+    },
+    {
+      "name": "IconButton",
+      "guide": "docs/design-system/reference/components/controls/Button.d.ts",
+      "source": "ui/slint/controls/IconButton.slint",
+      "parts": [
+        "ui/slint/controls/ActionArea.slint",
+        "ui/slint/controls/ButtonFace.slint",
+        "ui/slint/icons.slint"
+      ],
+      "catalog": "ui/slint/catalog/ControlsPage.slint"
+    },
+    {
+      "name": "Knob",
+      "guide": "docs/design-system/reference/components/controls/Knob.d.ts",
+      "source": "ui/slint/controls/Knob.slint",
+      "parts": [
+        "ui/slint/controls/RangeControl.slint",
+        "ui/slint/controls/RangeGesture.slint",
+        "ui/slint/controls/RotaryFace.slint",
+        "ui/slint/controls/RotaryArc.slint",
+        "ui/slint/controls/RotaryCap.slint",
+        "ui/slint/controls/RotaryModRing.slint",
+        "ui/slint/controls/ValuePopup.slint"
+      ],
+      "catalog": "ui/slint/catalog/ControlsPage.slint"
+    },
+    {
+      "name": "NumericField",
+      "guide": "docs/design-system/reference/components/controls/NumericField.d.ts",
+      "source": "ui/slint/controls/NumericField.slint",
+      "parts": [
+        "ui/slint/controls/RangeControl.slint",
+        "ui/slint/controls/RangeGesture.slint",
+        "ui/slint/controls/ValueEditor.slint"
+      ],
+      "catalog": "ui/slint/catalog/ControlsPage.slint"
+    },
+    {
+      "name": "Slider",
+      "guide": "docs/design-system/reference/components/controls/Slider.d.ts",
+      "source": "ui/slint/controls/Slider.slint",
+      "parts": [
+        "ui/slint/controls/RangeControl.slint",
+        "ui/slint/controls/RangeGesture.slint",
+        "ui/slint/controls/SliderTrack.slint",
+        "ui/slint/controls/SliderThumb.slint",
+        "ui/slint/controls/TrackSegment.slint"
+      ],
+      "catalog": "ui/slint/catalog/ControlsPage.slint"
+    },
+    {
+      "name": "Toggle",
+      "guide": "docs/design-system/reference/components/controls/Toggle.d.ts",
+      "source": "ui/slint/controls/Toggle.slint",
+      "parts": [
+        "ui/slint/controls/ActionArea.slint",
+        "ui/slint/controls/ToggleTrack.slint"
+      ],
+      "catalog": "ui/slint/catalog/ControlsPage.slint"
+    },
+    {
+      "name": "Switch",
+      "guide": "docs/design-system/reference/components/controls/Toggle.d.ts",
+      "source": "ui/slint/controls/Switch.slint",
+      "parts": [
+        "ui/slint/controls/ActionArea.slint",
+        "ui/slint/controls/ButtonFace.slint"
+      ],
+      "catalog": "ui/slint/catalog/ControlsPage.slint"
+    },
+    {
+      "name": "ParamLabel",
+      "guide": "docs/design-system/reference/components/display/ListRow.d.ts",
+      "source": "ui/slint/controls/ParamLabel.slint",
+      "parts": [
+        "ui/slint/controls/ControlLabel.slint",
+        "ui/slint/controls/ValueReadout.slint"
+      ],
+      "catalog": "ui/slint/catalog/ControlsPage.slint"
+    },
+    {
+      "name": "ModGlyph",
+      "guide": "docs/design-system/reference/components/display/ModIndicator.d.ts",
+      "source": "ui/slint/modulation/ModGlyph.slint",
+      "parts": [
+        "ui/slint/modulation/ModPalette.slint"
+      ],
+      "catalog": "ui/slint/catalog/ControlsPage.slint"
+    },
+    {
+      "name": "ModIndicator",
+      "guide": "docs/design-system/reference/components/display/ModIndicator.d.ts",
+      "source": "ui/slint/modulation/ModIndicator.slint",
+      "parts": [
+        "ui/slint/modulation/ModGlyph.slint",
+        "ui/slint/modulation/ModPalette.slint"
+      ],
+      "catalog": "ui/slint/catalog/ControlsPage.slint"
+    },
+    {
+      "name": "Panel",
+      "guide": "docs/design-system/reference/components/layout/Panel.d.ts",
+      "source": "ui/slint/layout/Panel.slint",
+      "parts": [
+        "ui/slint/layout/PanelHeader.slint",
+        "ui/slint/foundation/FocusRing.slint"
+      ],
+      "catalog": "ui/slint/catalog/LayoutPage.slint"
+    },
+    {
+      "name": "Rollout",
+      "guide": "docs/design-system/reference/components/layout/Panel.d.ts",
+      "source": "ui/slint/layout/Rollout.slint",
+      "parts": [
+        "ui/slint/layout/RolloutHeader.slint",
+        "ui/slint/foundation/FocusRing.slint"
+      ],
+      "catalog": "ui/slint/catalog/LayoutPage.slint"
+    },
+    {
+      "name": "SectionHeading",
+      "guide": "docs/design-system/reference/components/layout/Panel.d.ts",
+      "source": "ui/slint/layout/SectionHeading.slint",
+      "parts": [
+        "ui/slint/foundation/Typography.slint",
+        "ui/slint/icons.slint"
+      ],
+      "catalog": "ui/slint/catalog/LayoutPage.slint"
+    },
+    {
+      "name": "ListRow",
+      "guide": "docs/design-system/reference/components/display/ListRow.d.ts",
+      "source": "ui/slint/layout/ListRow.slint",
+      "parts": [
+        "ui/slint/layout/RowSurface.slint",
+        "ui/slint/foundation/FocusRing.slint"
+      ],
+      "catalog": "ui/slint/catalog/LayoutPage.slint"
+    },
+    {
+      "name": "PropertyRow",
+      "guide": "docs/design-system/reference/components/display/ListRow.d.ts",
+      "source": "ui/slint/layout/PropertyRow.slint",
+      "parts": [
+        "ui/slint/layout/RowSurface.slint",
+        "ui/slint/icons.slint"
+      ],
+      "catalog": "ui/slint/catalog/LayoutPage.slint"
+    },
+    {
+      "name": "Scrollbar",
+      "guide": "docs/design-system/reference/handoff/component-specs.md",
+      "source": "ui/slint/layout/Scrollbar.slint",
+      "parts": [
+        "ui/slint/layout/ScrollThumb.slint",
+        "ui/slint/foundation/FocusRing.slint"
+      ],
+      "catalog": "ui/slint/catalog/LayoutPage.slint"
+    },
+    {
+      "name": "Tabs",
+      "guide": "docs/design-system/reference/components/navigation/Tabs.d.ts",
+      "source": "ui/slint/navigation/Tabs.slint",
+      "parts": [
+        "ui/slint/navigation/ChoiceState.slint",
+        "ui/slint/navigation/NavigationItem.slint"
+      ],
+      "catalog": "ui/slint/catalog/LayoutPage.slint"
+    },
+    {
+      "name": "SegmentedControl",
+      "guide": "docs/design-system/reference/components/navigation/Tabs.d.ts",
+      "source": "ui/slint/navigation/SegmentedControl.slint",
+      "parts": [
+        "ui/slint/navigation/Tabs.slint",
+        "ui/slint/navigation/NavigationItem.slint"
+      ],
+      "catalog": "ui/slint/catalog/LayoutPage.slint"
+    },
+    {
+      "name": "ContextMenu",
+      "guide": "docs/design-system/reference/components/navigation/ContextMenu.d.ts",
+      "source": "ui/slint/navigation/ContextMenu.slint",
+      "parts": [
+        "ui/slint/navigation/types.slint"
+      ],
+      "catalog": "ui/slint/catalog/LayoutPage.slint"
+    },
+    {
+      "name": "MenuButton",
+      "guide": "docs/design-system/reference/components/navigation/ContextMenu.d.ts",
+      "source": "ui/slint/navigation/MenuButton.slint",
+      "parts": [
+        "ui/slint/navigation/MenuSurface.slint",
+        "ui/slint/navigation/MenuRow.slint",
+        "ui/slint/navigation/MenuDepthRow.slint",
+        "ui/slint/controls/ActionArea.slint"
+      ],
+      "catalog": "ui/slint/catalog/LayoutPage.slint"
+    },
+    {
+      "name": "StatusMessage",
+      "guide": "docs/design-system/reference/components/feedback/StatusMessage.d.ts",
+      "source": "ui/slint/feedback/StatusMessage.slint",
+      "parts": [
+        "ui/slint/feedback/FeedbackSurface.slint",
+        "ui/slint/controls/Button.slint"
+      ],
+      "catalog": "ui/slint/catalog/LayoutPage.slint"
+    },
+    {
+      "name": "Tooltip",
+      "guide": "docs/design-system/reference/components/feedback/StatusMessage.d.ts",
+      "source": "ui/slint/feedback/Tooltip.slint",
+      "parts": [
+        "ui/slint/theme.slint"
+      ],
+      "catalog": "ui/slint/catalog/LayoutPage.slint"
+    },
+    {
+      "name": "EmptyState",
+      "guide": "docs/design-system/reference/components/feedback/StatusMessage.d.ts",
+      "source": "ui/slint/feedback/EmptyState.slint",
+      "parts": [
+        "ui/slint/foundation/DashedBorder.slint",
+        "ui/slint/icons.slint",
+        "ui/slint/controls/Button.slint"
+      ],
+      "catalog": "ui/slint/catalog/LayoutPage.slint"
+    },
+    {
+      "name": "Icon",
+      "guide": "docs/design-system/reference/components/icons/Icon.d.ts",
+      "source": "ui/slint/icons.slint",
+      "parts": [
+        "ui/slint/assets/icons/manifest.json"
+      ],
+      "catalog": "ui/slint/catalog/FoundationsPage.slint"
+    },
+    {
+      "name": "PadCell",
+      "guide": "docs/design-system/reference/components/display/PadCell.d.ts",
+      "source": "ui/slint/display/PadCell.slint",
+      "parts": [
+        "ui/slint/display/PadFace.slint",
+        "ui/slint/display/PadActivity.slint",
+        "ui/slint/display/VelocityBar.slint",
+        "ui/slint/display/LayerTicks.slint",
+        "ui/slint/display/AlternateDots.slint"
+      ],
+      "catalog": "ui/slint/catalog/MappingPage.slint"
+    },
+    {
+      "name": "KeyMap",
+      "guide": "docs/design-system/reference/components/display/KeyMap.d.ts",
+      "source": "ui/slint/display/KeyMap.slint",
+      "parts": [
+        "ui/slint/display/PianoKeyboard.slint",
+        "ui/slint/display/PianoKey.slint",
+        "ui/slint/display/VelocityAxis.slint",
+        "ui/slint/display/VelocityGrid.slint",
+        "ui/slint/display/ZoneRectangle.slint",
+        "ui/slint/display/ZoneHitOverlay.slint",
+        "ui/slint/layout/ScrollViewport.slint"
+      ],
+      "catalog": "ui/slint/catalog/MappingPage.slint"
+    },
+    {
+      "name": "LayerStack",
+      "guide": "docs/design-system/reference/components/display/LayerStack.d.ts",
+      "source": "ui/slint/display/LayerStack.slint",
+      "parts": [
+        "ui/slint/display/LayerChainRow.slint",
+        "ui/slint/display/SourceBlock.slint",
+        "ui/slint/display/ModuleChip.slint",
+        "ui/slint/display/LayerSend.slint",
+        "ui/slint/display/LayerDetails.slint",
+        "ui/slint/display/ChainConnector.slint",
+        "ui/slint/display/LayerParameterGrid.slint",
+        "ui/slint/display/LayerParameterControl.slint",
+        "ui/slint/display/LayerSourceWaveform.slint",
+        "ui/slint/layout/ScrollViewport.slint"
+      ],
+      "catalog": "ui/slint/catalog/RoutingPage.slint"
+    },
+    {
+      "name": "Meter",
+      "guide": "docs/design-system/reference/components/display/Meter.d.ts",
+      "source": "ui/slint/display/Meter.slint",
+      "parts": [
+        "ui/slint/display/ChannelMeter.slint",
+        "ui/slint/display/MeterTrack.slint",
+        "ui/slint/display/ClipAcknowledgement.slint"
+      ],
+      "catalog": "ui/slint/catalog/RoutingPage.slint"
+    },
+    {
+      "name": "OutputBusses",
+      "guide": "docs/design-system/reference/components/display/OutputBusses.d.ts",
+      "source": "ui/slint/display/OutputBusses.slint",
+      "parts": [
+        "ui/slint/display/OutputBusRow.slint",
+        "ui/slint/display/ChannelMeter.slint",
+        "ui/slint/layout/ScrollViewport.slint"
+      ],
+      "catalog": "ui/slint/catalog/RoutingPage.slint"
+    },
+    {
+      "name": "WaveformPanel",
+      "guide": "docs/design-system/reference/components/display/WaveformPanel.d.ts",
+      "source": "ui/slint/display/WaveformPanel.slint",
+      "parts": [
+        "ui/slint/display/WaveformTrace.slint",
+        "ui/slint/display/RegionOverlay.slint",
+        "ui/slint/display/FadeOverlay.slint",
+        "ui/slint/display/LoopOverlay.slint",
+        "ui/slint/display/SliceMarkers.slint",
+        "ui/slint/display/SliceMarker.slint",
+        "ui/slint/display/MarkerFlag.slint",
+        "ui/slint/display/PlaybackCursor.slint",
+        "ui/slint/display/Spectrogram.slint",
+        "ui/slint/display/StartModulationRail.slint"
+      ],
+      "catalog": "ui/slint/catalog/WaveformsPage.slint"
+    }
+  ],
+  "extensions": [
+    "ScrollViewport",
+    "TooltipArea",
+    "Scope",
+    "Spectrum",
+    "Spectrogram"
+  ],
+  "constants": {
+    "MOD_SLOTS": "ModPalette.tint(slot), ModPalette.letter(slot); slots 0..3 are A..D",
+    "ICON_NAMES": "IconNames.all"
+  }
+}

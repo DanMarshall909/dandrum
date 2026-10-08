@@ -1,0 +1,37 @@
+import { Tokens, ParamLabel } from "../../ui/slint/dandrum.slint";
+import { Button } from "../../ui/slint/controls/Button.slint";
+
+export component ReadoutTests inherits Window {
+    width: 820px; height: 260px; background: Tokens.surface-window;
+    out property <string> test-report: "Not run";
+    private property <int> failures;
+    private property <int> checks;
+    function require(ok: bool) { root.checks += 1; if !ok { root.failures += 1; } }
+    public function run-tests() {
+        root.checks = 0; root.failures = 0;
+        root.require(level.value == "−3.0" && level.unit == "dB");
+        root.require(level.value-color == Tokens.text-primary);
+        root.require(host.value-color == Tokens.dd-host);
+        root.require(disabled.value-color == Tokens.text-disabled);
+        root.require(small.value-font-size == 11px);
+        root.require(level.value-font-size == 13px);
+        root.require(large.value-font-size == Tokens.type-value-lg);
+        root.require(small.height < large.height);
+        root.require(label-only.height < level.height);
+        root.test-report = root.failures == 0 ? "PASS: " + root.checks + " parameter readout contracts" : "FAIL: " + root.failures + " parameter readout checks";
+    }
+    VerticalLayout {
+        padding: 20px; spacing: 20px; alignment: start;
+        run-tests-button := Button { text: "Run tests"; clicked => { root.run-tests(); } }
+        report := Text { text: root.test-report; accessible-label: root.test-report; color: Tokens.text-primary; font-size: 13px; }
+        HorizontalLayout {
+            spacing: 16px;
+            level := ParamLabel { label: "LEVEL"; value: "−3.0"; unit: "dB"; }
+            host := ParamLabel { label: "HOST"; value: "1.122"; unit: "×"; host-automated: true; align: "center"; }
+            disabled := ParamLabel { label: "DISABLED"; value: "12"; unit: "ms"; enabled: false; }
+            small := ParamLabel { label: "SMALL"; value: "C4"; size: "sm"; }
+            large := ParamLabel { label: "LARGE"; value: "48"; unit: "kHz"; size: "lg"; align: "right"; }
+            label-only := ParamLabel { label: "LABEL"; }
+        }
+    }
+}

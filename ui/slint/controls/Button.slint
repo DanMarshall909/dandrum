@@ -1,0 +1,33 @@
+import { Tokens } from "../theme.slint";
+import { Icon } from "../icons.slint";
+import { FocusRing } from "../foundation/FocusRing.slint";
+import { ActionArea } from "ActionArea.slint";
+import { ButtonFace } from "ButtonFace.slint";
+
+export component Button inherits ActionArea {
+    in property <string> text;
+    in property <string> icon;
+    in property <bool> primary;
+    in property <bool> ghost;
+    in property <bool> checked;
+    in property <bool> compact;
+    in property <bool> focused;
+    callback clicked();
+    label: root.text;
+    min-width: 48px;
+    preferred-width: content.preferred-width;
+    height: root.compact ? Tokens.button-height-sm : Tokens.button-height;
+    activated => { root.clicked(); }
+    FocusRing { active: root.enabled && (root.has-focus || root.focused); }
+    face := ButtonFace {
+        enabled: root.enabled; primary: root.primary; ghost: root.ghost; checked: root.checked;
+        hovered: root.hovered; pressed: root.down;
+        y: root.down && root.enabled ? 1px : 0px;
+        content := HorizontalLayout {
+            padding-left: root.compact ? 8px : 12px; padding-right: root.compact ? 8px : 12px;
+            spacing: Tokens.space-3; alignment: center;
+            if root.icon != "" : Icon { name: root.icon; tint: face.foreground; size: root.compact ? 14px : 16px; }
+            Text { text: root.text; color: face.foreground; font-family: Tokens.font-ui; font-size: root.compact ? Tokens.type-label : Tokens.type-body; font-weight: 600; vertical-alignment: center; }
+        }
+    }
+}

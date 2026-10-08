@@ -1,0 +1,38 @@
+import { Tokens } from "../theme.slint";
+import { Panel } from "../layout/Panel.slint";
+import { Button } from "../controls/Button.slint";
+import { Tabs } from "../navigation/Tabs.slint";
+import { SegmentedControl } from "../navigation/SegmentedControl.slint";
+import { MenuButton } from "../navigation/MenuButton.slint";
+import { MenuSurface } from "../navigation/MenuSurface.slint";
+import { ContextMenu } from "../navigation/ContextMenu.slint";
+import { LayoutFixtures } from "LayoutFixtures.slint";
+
+export component NavigationGallery inherits Rectangle {
+    in property <string> state;
+    callback event(string);
+    preferred-height: max(navigation-panel.height, menu.preferred-height);
+    height: root.preferred-height; vertical-stretch: 0;
+    navigation-panel := Panel {
+            x: 0px; y: 0px; width: root.width - 252px;
+            height: self.collapsed ? 28px : 244px;
+            title: "Navigation and choice";
+            VerticalLayout {
+                spacing: 8px; alignment: start;
+                Tabs { compact: root.width < 720px; items: LayoutFixtures.tabs; disabled: root.state == "disabled"; changed(id) => { root.event("Tab: " + id); } }
+                SegmentedControl { items: LayoutFixtures.modes; disabled: root.state == "disabled"; host-automated: root.state == "host"; changed(id) => { root.event("Playback: " + id); } }
+                MenuButton { label: "PARAMETER"; value: "Open actions"; items: LayoutFixtures.menu; disabled: root.state == "disabled"; selected(id) => { root.event("Menu action: " + id); } }
+                ContextMenu {
+                    height: 28px; items: LayoutFixtures.menu; enabled: root.state != "disabled";
+                    selected(id) => { root.event("Context action: " + id); }
+                    Button { text: "Right click for actions"; enabled: root.state != "disabled"; clicked => { root.event("Context target activated"); } }
+                }
+                Text { text: "Arrow keys skip unavailable choices. Enter selects; Escape closes menus."; color: Tokens.text-tertiary; font-family: Tokens.font-ui; font-size: 12px; wrap: word-wrap; vertical-stretch: 0; }
+            }
+    }
+    menu := MenuSurface {
+            x: root.width - self.width; y: 0px; width: 240px; height: self.preferred-height;
+            title: "PARAMETER ACTIONS"; items: LayoutFixtures.menu;
+            selected(id) => { root.event("Menu surface: " + id); }
+    }
+}

@@ -1,0 +1,50 @@
+import { Tokens } from "../theme.slint";
+import { Icon } from "../icons.slint";
+import { FocusRing } from "../foundation/FocusRing.slint";
+import { RowSurface } from "RowSurface.slint";
+
+export component ListRow inherits FocusScope {
+    in property <string> label;
+    in property <string> detail;
+    in property <string> value;
+    in property <string> icon;
+    in property <bool> selected;
+    in property <bool> active;
+    in property <bool> compact;
+    in property <bool> disabled;
+    callback clicked();
+    enabled: !root.disabled;
+    height: max(Tokens.hit-min, root.compact ? Tokens.row-height-sm : Tokens.row-height);
+    accessible-role: button; accessible-label: root.label; accessible-description: root.detail;
+    accessible-enabled: !root.disabled;
+    accessible-action-default => { root.activate(); }
+    public function activate() { if !root.disabled { root.clicked(); } }
+    key-pressed(event) => {
+        if event.text == Key.Return || event.text == " " { root.activate(); return accept; }
+        return reject;
+    }
+    RowSurface {
+        selected: root.selected; hovered: touch.has-hover; disabled: root.disabled;
+        HorizontalLayout {
+            padding-left: 8px; padding-right: 8px; spacing: 8px;
+            if root.icon != "" : Icon { name: root.icon; tint: root.disabled ? Tokens.text-disabled : Tokens.text-secondary; }
+            if root.active : Rectangle { width: 4px; height: 4px; border-radius: 2px; background: Tokens.dd-ok; }
+            Text {
+                text: root.label; color: root.disabled ? Tokens.text-disabled : Tokens.text-primary;
+                font-family: Tokens.font-ui; font-size: 13px; font-weight: 600; overflow: elide; vertical-alignment: center;
+            }
+            if root.detail != "" : Text {
+                text: root.detail; color: Tokens.text-tertiary;
+                font-family: Tokens.font-ui; font-size: 11px; overflow: elide; vertical-alignment: center;
+                horizontal-stretch: 0;
+            }
+            if root.value != "" : Text {
+                text: root.value; color: Tokens.text-secondary;
+                font-family: Tokens.font-value; font-size: 11px; overflow: elide; vertical-alignment: center;
+                horizontal-stretch: 0;
+            }
+        }
+    }
+    FocusRing { active: root.has-focus && !root.disabled; }
+    touch := TouchArea { enabled: !root.disabled; mouse-cursor: pointer; clicked => { root.focus(); root.activate(); } }
+}

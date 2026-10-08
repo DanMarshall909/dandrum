@@ -1,0 +1,90 @@
+import { Tokens } from "../theme.slint";
+import { LayerRow, LayerParameter } from "types.slint";
+import { LayerChainRow } from "LayerChainRow.slint";
+import { LayerDetails } from "LayerDetails.slint";
+import { ScrollViewport } from "../layout/ScrollViewport.slint";
+
+export component LayerStack inherits Rectangle {
+    in property <[LayerRow]> layers;
+    in-out property <string> selected-id;
+    in property <string> title: "Sources and processing";
+    in property <string> subtitle;
+    in property <string> count-label;
+    in property <string> generation;
+    in property <bool> available: true;
+    in property <bool> rebuilding;
+    private property <int> selected-index: -1;
+    private property <string> selected-module;
+    private property <bool> details-open;
+    private property <bool> coherent: root.selected-index >= 0 && root.selected-index < root.layers.length && root.layers[root.selected-index].id == root.selected-id;
+    callback source-selected(string); callback module-selected(string,string);
+    callback add-module(string); callback remove-module(string,string); callback bypass-module(string,string,bool);
+    callback level-changed(string,float); callback mute-changed(string,bool);
+    callback level-gesture-began(string); callback level-gesture-ended(string);
+    callback send-changed(string,string,float); callback output-requested(string);
+    callback send-gesture-began(string,string); callback send-gesture-ended(string,string);
+    callback parameter-changed(string,string,string,float);
+    callback parameter-option-changed(string,string,string,string);
+    callback parameter-gesture-began(string,string,string); callback parameter-gesture-ended(string,string,string);
+    callback source-display-changed(string,string); callback source-slice-selected(string,string); callback source-retry(string);
+    min-height: 90px; preferred-height: 210px; preferred-width: 420px; horizontal-stretch: 1;
+    background: Tokens.dd-ink-2;
+    changed generation => { root.details-open = false; root.selected-index = -1; root.selected-id = ""; }
+    Text { x: 0px; y: 0px; width: parent.width; height: 20px; text: "\{root.title}\{root.count-label == "" ? "" : " · " + root.count-label}"; font-family: Tokens.font-ui; font-size: 13px; font-weight: 600; color: Tokens.dd-paper-2; overflow: elide; }
+    Text { x: 0px; y: 22px; width: parent.width; height: 16px; text: root.rebuilding ? "Rebuilding…" : !root.available ? "Unavailable for this instrument" : root.subtitle; font-family: Tokens.font-ui; font-size: 11px; color: root.rebuilding ? Tokens.dd-warn : Tokens.dd-paper-3; overflow: elide; }
+    if root.layers.length == 0 : Text { y: 42px; width: 100%; height: parent.height - 42px; text: root.available ? "No prepared sources" : "Unavailable for this instrument"; font-family: Tokens.font-ui; font-size: 12px; color: Tokens.dd-paper-3; vertical-alignment: center; horizontal-alignment: center; }
+    scroller := ScrollViewport {
+        x: 0px; y: 42px; width: parent.width; height: max(0px,parent.height - 42px);
+        content-height: content.preferred-height;
+        content := VerticalLayout {
+            x: 0px; y: 0px; width: max(0px,scroller.width - 8px); spacing: 4px;
+            for layer[index] in root.layers : VerticalLayout {
+                spacing: 4px;
+                chain := LayerChainRow {
+                    layer: layer; selected: layer.id == root.selected-id; selected-module: root.selected-module; rebuilding: root.rebuilding; available: root.available;
+                    source-selected => {
+                        let was-open = root.details-open && root.coherent && root.selected-id == layer.id && root.selected-module == "";
+                        root.selected-index = index; root.selected-id = layer.id; root.selected-module = ""; root.details-open = !was-open; root.source-selected(layer.id);
+                    }
+                    module-selected(id) => {
+                        let was-open = root.details-open && root.coherent && root.selected-id == layer.id && root.selected-module == id;
+                        root.selected-index = index; root.selected-id = layer.id; root.selected-module = id; root.details-open = !was-open; root.module-selected(layer.id,id);
+                    }
+                    dismiss-details => { root.details-open = false; chain.focus-selection(); }
+                    add-module => { if root.available && !root.rebuilding { root.add-module(layer.id); } }
+                    remove-module(id) => { if root.available && !root.rebuilding { root.remove-module(layer.id,id); } }
+                    bypass-module(id,value) => { if root.available { root.bypass-module(layer.id,id,value); } }
+                    level-changed(value) => { if root.available { root.level-changed(layer.id,value); } }
+                    level-gesture-began => { if root.available { root.level-gesture-began(layer.id); } }
+                    level-gesture-ended => { root.level-gesture-ended(layer.id); }
+                    mute-changed(value) => { if root.available { root.mute-changed(layer.id,value); } }
+                    send-changed(id,value) => { if root.available { root.send-changed(layer.id,id,value); } }
+                    send-gesture-began(id) => { if root.available { root.send-gesture-began(layer.id,id); } }
+                    send-gesture-ended(id) => { root.send-gesture-ended(layer.id,id); }
+                    output-requested => { if root.available && !root.rebuilding { root.output-requested(layer.id); } }
+                }
+                if root.details-open && root.coherent && root.selected-id == layer.id && root.selected-module == "" : LayerDetails {
+                    title: layer.name; summary: layer.detail; parameters: layer.parameters; waveform: layer.waveform; available: root.available;
+                    close => { root.details-open = false; chain.focus-selection(); }
+                    parameter-changed(id,value) => { if root.available { root.parameter-changed(layer.id,"",id,value); } }
+                    option-changed(id,option) => { if root.available { root.parameter-option-changed(layer.id,"",id,option); } }
+                    gesture-began(id) => { if root.available { root.parameter-gesture-began(layer.id,"",id); } }
+                    gesture-ended(id) => { root.parameter-gesture-ended(layer.id,"",id); }
+                    display-changed(mode) => { root.source-display-changed(layer.id,mode); }
+                    slice-selected(id) => { root.source-slice-selected(layer.id,id); }
+                    retry => { if root.available { root.source-retry(layer.id); } }
+                }
+                for module in layer.modules : LayerDetails {
+                    visible: root.details-open && root.coherent && root.selected-id == layer.id && root.selected-module == module.id;
+                    height: self.visible ? self.preferred-height : 0px;
+                    title: module.title; summary: module.detail; parameters: module.parameters; available: root.available;
+                    close => { root.details-open = false; chain.focus-selection(); }
+                    parameter-changed(id,value) => { if root.available { root.parameter-changed(layer.id,module.id,id,value); } }
+                    option-changed(id,option) => { if root.available { root.parameter-option-changed(layer.id,module.id,id,option); } }
+                    gesture-began(id) => { if root.available { root.parameter-gesture-began(layer.id,module.id,id); } }
+                    gesture-ended(id) => { root.parameter-gesture-ended(layer.id,module.id,id); }
+                }
+            }
+        }
+    }
+}

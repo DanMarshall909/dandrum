@@ -1,0 +1,42 @@
+import { Tokens } from "../theme.slint";
+import { HeaderAction } from "types.slint";
+import { RolloutHeader } from "RolloutHeader.slint";
+
+export component Rollout inherits Rectangle {
+    in property <string> title;
+    in property <string> tag;
+    in property <string> summary;
+    in property <bool> prepared;
+    in property <bool> compact;
+    in property <bool> sunken;
+    in property <length> body-padding: root.compact ? 2px : 4px;
+    in property <[HeaderAction]> actions;
+    in-out property <bool> collapsed;
+    out property <length> header-height: header.height;
+    callback toggled(bool);
+    callback action(string);
+    background: root.sunken ? Tokens.surface-window : transparent;
+    border-radius: Tokens.radius-1;
+    min-height: root.header-height;
+    preferred-height: root.collapsed ? root.header-height : root.header-height + content.preferred-height;
+    max-height: root.collapsed ? root.header-height : 100000px;
+    vertical-stretch: 0;
+    public function toggle() { header.toggle(); }
+    public function activate-action(index: int) { header.activate-action(index); }
+    header := RolloutHeader {
+        x: -4px; y: 0px; width: parent.width + 8px;
+        title: root.title; tag: root.tag; summary: root.summary;
+        prepared: root.prepared; compact: root.compact; actions: root.actions;
+        collapsed <=> root.collapsed;
+        toggled(value) => { root.toggled(value); }
+        action(id) => { root.action(id); }
+    }
+    Rectangle {
+        x: 18px; y: root.header-height; width: max(0px, parent.width - 18px);
+        height: max(0px, parent.height - self.y); visible: !root.collapsed;
+        content := VerticalLayout {
+            padding-top: root.body-padding; padding-bottom: root.body-padding + 4px;
+            @children
+        }
+    }
+}

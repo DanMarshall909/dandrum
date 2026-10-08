@@ -1,0 +1,44 @@
+import { Tokens } from "../theme.slint";
+import { Panel } from "../layout/Panel.slint";
+import { Button } from "../controls/Button.slint";
+import { Tooltip } from "../feedback/Tooltip.slint";
+import { TooltipArea } from "../feedback/TooltipArea.slint";
+import { StatusKind } from "../feedback/FeedbackSurface.slint";
+import { StatusMessage } from "../feedback/StatusMessage.slint";
+import { EmptyState } from "../feedback/EmptyState.slint";
+
+export component FeedbackGallery inherits Rectangle {
+    in property <string> state;
+    callback event(string);
+    private property <length> right-width: max(240px, root.width * 0.34);
+    preferred-height: 342px;
+    height: root.preferred-height; vertical-stretch: 0;
+    Panel {
+            x: 0px; y: 0px; width: root.width - root.right-width - 12px;
+            height: self.collapsed ? 28px : root.height;
+            title: "Status and recovery";
+            VerticalLayout {
+                spacing: 8px; alignment: start;
+                StatusMessage { kind: StatusKind.ok; title: "Ready"; description: "Prepared data is available."; compact: true; height: 52px; }
+                StatusMessage { kind: StatusKind.busy; title: "Rebuilding"; description: "Automatic reload in progress."; compact: true; height: 52px; }
+                StatusMessage { kind: StatusKind.warn; title: "Unavailable capability"; description: "This structural value is prepared."; compact: true; height: 52px; }
+                StatusMessage { kind: StatusKind.error; title: "Sample unavailable"; description: "Choose a source to recover."; action-label: "Locate"; action-enabled: root.state != "disabled"; compact: true; height: 52px; action => { root.event("Locate source requested"); } }
+                StatusMessage { kind: StatusKind.info; title: "Host automation is DAW owned"; inline: true; height: 26px; }
+            }
+    }
+    VerticalLayout {
+            x: root.width - root.right-width; y: 0px; width: root.right-width; height: root.height;
+            spacing: 12px; alignment: start;
+            EmptyState {
+                icon: "folder"; title: "No source loaded"; description: "Choose a sample to display its waveform.";
+                action-label: "Choose sample"; action-enabled: root.state != "disabled"; compact: true; height: 172px;
+                action => { root.event("Choose sample requested"); }
+            }
+            Tooltip { title: "Level"; value: "−3.0 dB"; description: "Drag to adjust. Double click to reset."; width: 240px; height: self.preferred-height; }
+            TooltipArea {
+                height: 28px; title: "Audition"; description: "This catalog records the UI action.";
+                target-focused: audition.has-focus;
+                audition := Button { text: "Hover for tooltip"; enabled: root.state != "disabled"; clicked => { root.event("Tooltip target clicked"); } }
+            }
+    }
+}

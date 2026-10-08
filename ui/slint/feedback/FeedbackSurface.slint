@@ -1,0 +1,15 @@
+import { Tokens } from "../theme.slint";
+
+export enum StatusKind { ok, warn, error, info, busy }
+
+export component FeedbackSurface inherits Rectangle {
+    in property <StatusKind> kind: StatusKind.info;
+    in property <bool> inline;
+    out property <color> tint: root.kind == StatusKind.ok ? Tokens.dd-ok : root.kind == StatusKind.warn ? Tokens.dd-warn : root.kind == StatusKind.error ? Tokens.dd-error : root.kind == StatusKind.busy ? Tokens.text-secondary : Tokens.dd-host;
+    out property <string> icon: root.kind == StatusKind.ok ? "ok" : root.kind == StatusKind.warn ? "warning" : root.kind == StatusKind.error ? "error" : root.kind == StatusKind.busy ? "reload" : "info";
+    background: root.inline ? transparent : root.kind == StatusKind.ok ? Tokens.dd-ok-wash : root.kind == StatusKind.warn ? Tokens.dd-warn-wash : root.kind == StatusKind.error ? Tokens.dd-error-wash : root.kind == StatusKind.busy ? Tokens.dd-ink-3 : Tokens.dd-host-wash;
+    border-width: root.inline ? 0px : 1px;
+    border-color: root.tint;
+    border-radius: Tokens.radius-2;
+    @children
+}

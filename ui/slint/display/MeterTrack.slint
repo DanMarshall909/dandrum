@@ -1,0 +1,51 @@
+import { Tokens } from "../theme.slint";
+
+export component MeterTrack inherits Rectangle {
+    in property <float> peak: -60;
+    in property <float> rms: -60;
+    in property <float> hold: -60;
+    in property <bool> available;
+    in property <bool> vertical: true;
+    private property <float> p: ((root.peak + 60) / 63).clamp(0, 1);
+    private property <float> r: ((root.rms + 60) / 63).clamp(0, 1);
+    private property <float> h: ((root.hold + 60) / 63).clamp(0, 1);
+    background: Tokens.dd-ink-0; border-radius: 1px;
+    for segment[index] in [
+        {lo:0.0,hi:48.0 / 63.0,tint:Tokens.dd-ok},
+        {lo:48.0 / 63.0,hi:60.0 / 63.0,tint:Tokens.dd-warn},
+        {lo:60.0 / 63.0,hi:1.0,tint:Tokens.dd-error},
+    ] : Rectangle {
+        visible: root.available && root.p > segment.lo;
+        x: root.vertical ? 0px : segment.lo * root.width;
+        y: root.vertical ? (1 - min(root.p, segment.hi)) * root.height : 0px;
+        width: root.vertical ? root.width : max(0, min(root.p, segment.hi) - segment.lo) * root.width;
+        height: root.vertical ? max(0, min(root.p, segment.hi) - segment.lo) * root.height : root.height;
+        background: segment.tint.with-alpha(0.48);
+    }
+    for segment[index] in [
+        {lo:0.0,hi:48.0 / 63.0,tint:Tokens.dd-ok},
+        {lo:48.0 / 63.0,hi:60.0 / 63.0,tint:Tokens.dd-warn},
+        {lo:60.0 / 63.0,hi:1.0,tint:Tokens.dd-error},
+    ] : Rectangle {
+        visible: root.available && root.r > segment.lo;
+        x: root.vertical ? 1px : segment.lo * root.width;
+        y: root.vertical ? (1 - min(root.r, segment.hi)) * root.height : 1px;
+        width: root.vertical ? max(1px, root.width - 2px) : max(0, min(root.r, segment.hi) - segment.lo) * root.width;
+        height: root.vertical ? max(0, min(root.r, segment.hi) - segment.lo) * root.height : max(1px, root.height - 2px);
+        background: segment.tint;
+    }
+    Rectangle {
+        x: root.vertical ? 0px : root.width * 60 / 63;
+        y: root.vertical ? root.height * 3 / 63 : 0px;
+        width: root.vertical ? root.width : 1px;
+        height: root.vertical ? 1px : root.height;
+        background: Tokens.dd-paper-3;
+    }
+    if root.available : Rectangle {
+        x: root.vertical ? 0px : root.h * max(0px, root.width - 2px);
+        y: root.vertical ? (1 - root.h) * max(0px, root.height - 2px) : 0px;
+        width: root.vertical ? root.width : 2px;
+        height: root.vertical ? 2px : root.height;
+        background: Tokens.dd-paper-1;
+    }
+}

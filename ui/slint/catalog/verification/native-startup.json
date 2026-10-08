@@ -1,0 +1,14 @@
+{
+  "binary": "/workspace/scratch/2ed8c5d243c9/dandrum/build/slint-library/slint-catalog/Release/dandrum-slint-catalog",
+  "sha256": "13fe345b70a38501060e0b6072c43312f53d831ec886457f37bac1db224f9aed",
+  "backend": "winit-software",
+  "platform": "linux",
+  "status": "passed",
+  "observed_alive_seconds": 3,
+  "screenshot": "/workspace/scratch/2ed8c5d243c9/dandrum/build/slint-library-evidence/final/native/catalog-native-startup.png",
+  "size": [
+    1200,
+    800
+  ],
+  "application_log": "Error watching for xdg desktop settings: Failed to connect to address `unix:path=/run/user/0/bus`: Operation not permitted (os error 1)\n"
+}

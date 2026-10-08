@@ -1,0 +1,15 @@
+export component RotaryMarker inherits Rectangle {
+    in property <float> value;
+    in property <length> radius: 16px;
+    in property <length> diameter: 4px;
+    in property <bool> hollow;
+    in property <color> tint;
+    in property <color> backing: transparent;
+    Rectangle {
+        x: parent.width / 2 + root.radius * cos((135 + 270 * root.value.clamp(0, 1)) * 1deg) - self.width / 2;
+        y: parent.height / 2 + root.radius * sin((135 + 270 * root.value.clamp(0, 1)) * 1deg) - self.height / 2;
+        width: root.diameter; height: root.diameter; border-radius: self.width / 2;
+        background: root.hollow ? root.backing : root.tint;
+        border-color: root.tint; border-width: root.hollow ? 1.5px : 0px;
+    }
+}

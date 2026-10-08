@@ -1,0 +1,38 @@
+import { Tokens } from "../theme.slint";
+import { ViewportMetrics } from "../foundation/ViewportMetrics.slint";
+import { Tooltip } from "../feedback/Tooltip.slint";
+import { Icon } from "../icons.slint";
+import { FocusRing } from "../foundation/FocusRing.slint";
+import { ActionArea } from "ActionArea.slint";
+import { ButtonFace } from "ButtonFace.slint";
+
+export component IconButton inherits ActionArea {
+    in property <string> icon;
+    in property <bool> ghost;
+    in property <bool> checked;
+    in property <bool> compact;
+    in property <bool> focused;
+    in property <string> description;
+    in property <bool> tooltip-enabled: true;
+    private property <bool> hover-ready;
+    out property <bool> tooltip-visible: root.tooltip-enabled && root.enabled && root.label != "" && (root.has-focus || (root.hovered && root.hover-ready));
+    callback clicked();
+    width: root.compact ? Tokens.icon-button-sm : Tokens.icon-button;
+    height: root.width;
+    activated => { root.clicked(); }
+    z: root.tooltip-visible ? 100 : 0;
+    changed hovered => { if !root.hovered { root.hover-ready = false; } }
+    Timer { running: root.enabled && root.hovered && !root.hover-ready; interval: 500ms; triggered => { root.hover-ready = true; } }
+    FocusRing { active: root.enabled && (root.has-focus || root.focused); }
+    face := ButtonFace {
+        enabled: root.enabled; ghost: root.ghost; checked: root.checked; hovered: root.hovered; pressed: root.down;
+        y: root.down && root.enabled ? 1px : 0px;
+        Icon { name: root.icon; tint: face.foreground; size: root.compact ? 14px : 16px; }
+    }
+    if root.tooltip-visible : Tooltip {
+        x: ViewportMetrics.clamp-x(root.absolute-position.x, self.width, 8px) - root.absolute-position.x;
+        y: ViewportMetrics.place-y(root.absolute-position.y, root.height, self.height, 6px, 8px) - root.absolute-position.y;
+        width: 240px; height: self.preferred-height; title: root.label; description: root.description;
+    }
+
+}

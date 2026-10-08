@@ -1,0 +1,20 @@
+import { WaveSlice } from "types.slint";
+import { SliceMarker } from "SliceMarker.slint";
+
+// Separate passes make the selected label paint and receive pointer input above
+// later slice flags. A z value cannot reorder separate repeater instances.
+export component SliceMarkers inherits Rectangle {
+    in property <[WaveSlice]> slices;
+    in property <string> selected-id;
+    in property <bool> compact;
+    callback selected(string);
+    for selected-pass in [false,true] : Rectangle {
+        width: 100%; height: 100%;
+        for slice[index] in root.slices : SliceMarker {
+            visible: (slice.id == root.selected-id) == selected-pass;
+            width: 100%; height: 100%; slice: slice; ordinal: index + 1;
+            selected: slice.id == root.selected-id; compact: root.compact;
+            selected-slice(id) => { root.selected(id); }
+        }
+    }
+}

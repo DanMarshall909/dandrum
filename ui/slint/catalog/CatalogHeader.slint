@@ -1,0 +1,32 @@
+import { Tokens } from "../theme.slint";
+import { MenuButton } from "../navigation/MenuButton.slint";
+
+export component CatalogHeader inherits Rectangle {
+    in-out property <string> state: "default";
+    height: 68px;
+    background: Tokens.surface-panel;
+    HorizontalLayout {
+        padding-left: 24px; padding-right: 24px; spacing: 20px;
+        Text { text: "dandrum"; color: Tokens.text-primary; font-family: Tokens.font-display; font-size: 27px; font-weight: 600; horizontal-stretch: 0; vertical-alignment: center; }
+        Rectangle { width: 1px; Rectangle { y: (parent.height - 24px) / 2; height: 24px; background: Tokens.border-hairline; } }
+        Text { text: "DESIGN LIBRARY"; color: Tokens.text-tertiary; font-family: Tokens.font-ui; font-size: 12px; font-weight: 600; vertical-alignment: center; horizontal-stretch: 0; }
+        Rectangle { horizontal-stretch: 1; }
+        Rectangle {
+            width: 188px;
+            MenuButton {
+            y: (parent.height - self.height) / 2; width: parent.width; label: "STATE"; value: root.state;
+            items: [
+                { id: "default", label: "Default" },
+                { id: "disabled", label: "Disabled" },
+                { id: "prepared", label: "Prepared" },
+                { id: "host", label: "Host automated" },
+                { id: "empty", label: "Empty" },
+                { id: "loading", label: "Loading / rebuilding" },
+                { id: "error", label: "Error / unavailable" },
+            ];
+            selected(id) => { root.state = id; }
+            }
+        }
+    }
+    Rectangle { y: parent.height - 1px; height: 1px; background: Tokens.border-hairline; }
+}

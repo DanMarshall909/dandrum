@@ -1,0 +1,98 @@
+import { Tokens } from "../theme.slint";
+import { Button } from "../controls/Button.slint";
+import { WaveBucket, WaveSlice, SpectralCell } from "types.slint";
+import { WaveformTrace } from "WaveformTrace.slint";
+import { RegionOverlay } from "RegionOverlay.slint";
+import { FadeOverlay } from "FadeOverlay.slint";
+import { LoopOverlay } from "LoopOverlay.slint";
+import { SliceMarkers } from "SliceMarkers.slint";
+import { PlaybackCursor } from "PlaybackCursor.slint";
+import { Spectrogram } from "Spectrogram.slint";
+import { StartModulationRail } from "StartModulationRail.slint";
+
+export component WaveformPanel inherits Rectangle {
+    in property <[WaveBucket]> peaks;
+    in property <[WaveSlice]> slices;
+    in property <[SpectralCell]> spectral-cells;
+    in property <string> label;
+    in property <string> metadata;
+    in property <string> state: "empty";
+    in property <string> spectral-state: "unavailable";
+    in property <string> low-frequency-label;
+    in property <string> high-frequency-label;
+    in property <float> spectral-floor: -120;
+    in property <float> region-start;
+    in property <float> region-end: 1;
+    in property <float> fade-in;
+    in property <float> fade-out;
+    in property <bool> loop-enabled;
+    in property <float> loop-start;
+    in property <float> loop-end: 1;
+    in property <float> loop-crossfade;
+    in property <bool> cursor-visible;
+    in property <float> cursor;
+    in property <bool> start-offset-visible;
+    in property <float> start-offset;
+    in property <bool> start-modulation-enabled;
+    in property <float> start-modulation-depth;
+    in property <color> start-modulation-tint: Tokens.dd-mod-a;
+    out property <bool> start-modulation-visible: root.state == "ready" && root.slices.length == 0 && root.start-modulation-enabled && abs(root.start-modulation-depth) > 0;
+    in property <bool> host-automated;
+    in property <bool> reversed;
+    in property <bool> compact;
+    in property <bool> show-display-toggle: true;
+    in property <bool> retry-enabled: true;
+    in-out property <string> selected-slice;
+    in-out property <string> display: "wave";
+    private property <bool> retry-visible: root.state == "error" || (root.state == "ready" && root.display == "spectral" && root.spectral-state == "error");
+    callback display-changed(string); callback slice-selected(string); callback retry();
+    min-height: 120px; preferred-height: root.compact ? 150px : 250px;
+    background: Tokens.dd-ink-0; border-radius: 2px; clip: true;
+    plot := Rectangle {
+        x: 0px; y: 18px; width: parent.width; height: max(0px,parent.height - 18px);
+        if root.display == "wave" && root.state == "ready" : WaveformTrace {
+            width: 100%; height: 100%; peaks: root.peaks; region-start: root.region-start; region-end: root.region-end;
+        }
+        if root.display == "spectral" && root.state == "ready" : Spectrogram {
+            width: 100%; height: 100%; cells: root.spectral-cells; state: root.spectral-state;
+            floor-db: root.spectral-floor; low-frequency-label: root.low-frequency-label; high-frequency-label: root.high-frequency-label;
+        }
+        if root.state == "ready" : FadeOverlay { width: 100%; height: 100%; region-start: root.region-start; region-end: root.region-end; fade-in: root.fade-in; fade-out: root.fade-out; }
+        if root.cursor-visible && root.state == "ready" : PlaybackCursor { width: 100%; height: 100%; position: root.cursor; }
+        if root.start-offset-visible && root.state == "ready" && root.slices.length == 0 : PlaybackCursor { width: 100%; height: 100%; position: root.region-start + root.start-offset.clamp(0,1) * (root.region-end - root.region-start); host: root.host-automated; offset-marker: true; }
+        if root.start-modulation-visible : StartModulationRail {
+            x: 0px; y: 2px; width: parent.width;
+            region-start: root.region-start; region-end: root.region-end;
+            start-offset: root.start-offset; depth: root.start-modulation-depth; tint: root.start-modulation-tint;
+        }
+    }
+    if root.state == "ready" : RegionOverlay { width: 100%; height: 100%; start: root.region-start; end: root.region-end; show-flags: root.slices.length == 0; }
+    if root.state == "ready" && root.loop-enabled : LoopOverlay { width: 100%; height: 100%; start: root.loop-start; end: root.loop-end; crossfade: root.loop-crossfade; }
+    if root.state == "ready" : SliceMarkers {
+        width: 100%; height: 100%; slices: root.slices; selected-id: root.selected-slice; compact: root.compact;
+        selected(id) => { root.selected-slice = id; root.slice-selected(id); }
+    }
+    if root.state != "ready" : Text {
+        width: 100%; height: 100%; text: root.state == "loading" ? "Loading sample…" : root.state == "error" ? "Sample analysis failed" : root.state == "empty" ? "No sample selected" : "Sample unavailable";
+        font-family: Tokens.font-ui; font-size: 13px; color: root.state == "error" ? Tokens.dd-error : Tokens.dd-paper-3;
+        horizontal-alignment: center; vertical-alignment: center;
+    }
+    Text {
+        x: 8px; y: 38px; width: max(0px,parent.width - 16px); height: 15px;
+        text: root.label + (root.reversed ? " · reverse playback" : "");
+        font-family: Tokens.font-value; font-size: 11px; color: Tokens.dd-paper-3; horizontal-alignment: right; overflow: elide;
+    }
+    Text {
+        x: root.retry-visible ? 91px : 8px; y: max(0px,parent.height - 24px); height: 16px;
+        width: max(0px,parent.width - self.x - (root.show-display-toggle ? 163px : 8px));
+        text: root.metadata; color: Tokens.dd-paper-3; font-family: Tokens.font-value; font-size: 11px; overflow: elide;
+    }
+    if root.show-display-toggle : HorizontalLayout {
+        x: max(0px,root.width - 155px); y: max(0px,root.height - 30px); width: 149px; height: 24px; spacing: 2px;
+        Button { text: "Wave"; checked: root.display == "wave"; clicked => { root.display = "wave"; root.display-changed("wave"); } }
+        Button { text: "Spectral"; checked: root.display == "spectral"; clicked => { root.display = "spectral"; root.display-changed("spectral"); } }
+    }
+    if root.retry-visible : Button {
+        x: 8px; y: max(0px,parent.height - 32px); width: 75px; height: 24px; text: "Retry"; enabled: root.retry-enabled; clicked => { root.retry(); }
+    }
+}

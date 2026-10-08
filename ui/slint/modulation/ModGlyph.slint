@@ -1,0 +1,27 @@
+import { ModPalette } from "ModPalette.slint";
+export component ModGlyph inherits Rectangle {
+    in property <int> slot;
+    in property <length> size: 8px;
+    in property <bool> hollow;
+    in property <color> tint: ModPalette.tint(root.slot);
+    width: root.size; height: root.size;
+    if root.slot == 0 || root.slot < 0 || root.slot > 3 : Rectangle {
+        x: 1px; y: 1px; width: parent.width - 2px; height: parent.height - 2px;
+        background: root.hollow ? transparent : root.tint;
+        border-radius: self.width / 2; border-width: root.hollow ? 1.5px : 0px; border-color: root.tint;
+    }
+    if root.slot == 1 : Path {
+        viewbox-width: 10; viewbox-height: 10; width: parent.width; height: parent.height;
+        commands: "M 5 1.2 L 9 8.6 L 1 8.6 Z";
+        fill: root.hollow ? transparent : root.tint; stroke: root.hollow ? root.tint : transparent; stroke-width: 1.5px;
+    }
+    if root.slot == 2 : Rectangle {
+        x: 1px; y: 1px; width: parent.width - 2px; height: parent.height - 2px;
+        background: root.hollow ? transparent : root.tint; border-width: root.hollow ? 1.5px : 0px; border-color: root.tint;
+    }
+    if root.slot == 3 : Path {
+        viewbox-width: 10; viewbox-height: 10; width: parent.width; height: parent.height;
+        commands: "M 5 0.8 L 9.2 5 L 5 9.2 L 0.8 5 Z";
+        fill: root.hollow ? transparent : root.tint; stroke: root.hollow ? root.tint : transparent; stroke-width: 1.5px;
+    }
+}

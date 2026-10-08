@@ -1,0 +1,89 @@
+import { Tokens } from "../theme.slint";
+import { ScrollThumb } from "ScrollThumb.slint";
+import { FocusRing } from "../foundation/FocusRing.slint";
+
+export component Scrollbar inherits FocusScope {
+    in property <bool> vertical: true;
+    in property <float> viewport-size;
+    in property <float> content-size;
+    in-out property <float> position;
+    callback scrolled(float);
+    private property <float> range: max(0, root.content-size - root.viewport-size);
+    private property <length> track-size: root.vertical ? root.height : root.width;
+    private property <length> thumb-size: min(root.track-size, max(24px, root.track-size * root.viewport-size / max(1, root.content-size)));
+    private property <float> anchor;
+    private property <float> start-position;
+    private property <bool> dragging;
+    preferred-width: root.vertical ? 6px : 120px;
+    preferred-height: root.vertical ? 120px : 6px;
+    max-width: root.vertical ? 6px : 100000px;
+    max-height: root.vertical ? 100000px : 6px;
+    horizontal-stretch: root.vertical ? 0 : 1;
+    vertical-stretch: root.vertical ? 1 : 0;
+    enabled: root.range > 0;
+    visible: root.range > 0;
+    changed position => { root.clamp-position(); }
+    changed range => { root.clamp-position(); }
+    function clamp-position() {
+        let bounded = root.position.clamp(0, root.range);
+        if root.position != bounded { root.position = bounded; }
+    }
+    accessible-role: slider; accessible-label: root.vertical ? "Vertical scroll" : "Horizontal scroll";
+    accessible-value-minimum: 0; accessible-value-maximum: root.range;
+    accessible-value: "\{root.position}";
+    accessible-action-increment => { root.move-to(root.position + 24); }
+    accessible-action-decrement => { root.move-to(root.position - 24); }
+    public function move-to(value: float) {
+        if root.enabled { root.position = value.clamp(0, root.range); root.scrolled(root.position); }
+    }
+    key-pressed(event) => {
+        if event.text == Key.DownArrow || event.text == Key.RightArrow { root.move-to(root.position + 24); }
+        else if event.text == Key.UpArrow || event.text == Key.LeftArrow { root.move-to(root.position - 24); }
+        else if event.text == Key.PageDown { root.move-to(root.position + root.viewport-size); }
+        else if event.text == Key.PageUp { root.move-to(root.position - root.viewport-size); }
+        else if event.text == Key.Home { root.move-to(0); }
+        else if event.text == Key.End { root.move-to(root.range); }
+        else { return reject; }
+        return accept;
+    }
+    focus-lost(reason) => { root.dragging = false; }
+    Rectangle {
+        x: root.vertical ? (parent.width - 1px) / 2 : 0px;
+        y: root.vertical ? 0px : (parent.height - 1px) / 2;
+        width: root.vertical ? 1px : parent.width;
+        height: root.vertical ? parent.height : 1px;
+        background: Tokens.border-control;
+    }
+    thumb := ScrollThumb {
+        x: root.vertical ? 1px : (root.track-size - root.thumb-size) * root.position / max(1, root.range);
+        y: root.vertical ? (root.track-size - root.thumb-size) * root.position / max(1, root.range) : 1px;
+        width: root.vertical ? 4px : root.thumb-size;
+        height: root.vertical ? root.thumb-size : 4px;
+        active: root.dragging || touch.has-hover;
+    }
+    FocusRing { active: root.has-focus; }
+    touch := TouchArea {
+        enabled: root.enabled;
+        pointer-event(event) => {
+            if event.kind == PointerEventKind.down && event.button == PointerEventButton.left {
+                root.focus();
+                let coordinate = (root.vertical ? self.mouse-y : self.mouse-x) / 1px;
+                let start = (root.vertical ? thumb.y : thumb.x) / 1px;
+                if coordinate < start { root.move-to(root.position - root.viewport-size); }
+                else if coordinate > start + root.thumb-size / 1px { root.move-to(root.position + root.viewport-size); }
+                root.anchor = coordinate; root.start-position = root.position; root.dragging = true;
+            }
+            if event.kind == PointerEventKind.up || event.kind == PointerEventKind.cancel { root.dragging = false; }
+        }
+        moved => {
+            if root.dragging {
+                let delta = (root.vertical ? self.mouse-y : self.mouse-x) / 1px - root.anchor;
+                root.move-to(root.start-position + delta * root.range / max(1, (root.track-size - root.thumb-size) / 1px));
+            }
+        }
+        scroll-event(event) => {
+            root.move-to(root.position - (root.vertical ? event.delta-y : event.delta-x != 0px ? event.delta-x : event.delta-y) / 1px);
+            return accept;
+        }
+    }
+}

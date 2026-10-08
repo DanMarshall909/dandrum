@@ -1,0 +1,21 @@
+import { Tokens } from "../theme.slint";
+
+// Paint-only surface used by buttons, icon buttons, and instrument switches.
+export component ButtonFace inherits Rectangle {
+    in property <bool> enabled: true;
+    in property <bool> primary;
+    in property <bool> ghost;
+    in property <bool> checked;
+    in property <bool> hovered;
+    in property <bool> pressed;
+    out property <color> foreground: !root.enabled ? Tokens.text-disabled : root.primary ? Tokens.text-on-accent : root.checked && root.ghost ? Tokens.color-selected : Tokens.text-primary;
+    background: !root.enabled ? (root.ghost ? transparent : Tokens.dd-ink-3) : root.primary ? (root.pressed ? Tokens.dd-vermilion-lo : root.hovered ? Tokens.dd-vermilion-hi : Tokens.dd-vermilion) : root.pressed ? Tokens.surface-control-pressed : root.hovered ? Tokens.surface-control-hover : root.ghost ? transparent : Tokens.surface-control;
+    border-radius: Tokens.radius-2;
+    border-width: 1px;
+    border-color: root.checked ? Tokens.color-selected : root.primary || root.ghost ? transparent : Tokens.border-control;
+    Rectangle {
+        x: 1px; y: 1px; width: parent.width - 2px; height: 1px;
+        visible: root.enabled && !root.primary && !root.ghost && !root.pressed;
+        background: #FFFFFF14;
+    }
+}

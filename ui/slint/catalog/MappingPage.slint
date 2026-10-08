@@ -1,0 +1,78 @@
+import { Tokens } from "../theme.slint";
+import { Panel } from "../layout/Panel.slint";
+import { PadCell } from "../display/PadCell.slint";
+import { KeyMap } from "../display/KeyMap.slint";
+import { DisplayFixtures, PadFixture } from "DisplayFixtures.slint";
+
+export component MappingPage inherits Rectangle {
+    in property <string> state: "default";
+    callback event(string);
+    private property <int> selected-note: 36;
+    min-width: 560px; preferred-height: 1110px;
+    VerticalLayout {
+        spacing: 12px;
+        VerticalLayout {
+            spacing: 4px; vertical-stretch: 0;
+            Text { text: "Notes & velocity"; color: Tokens.text-primary; font-family: Tokens.font-display; font-size: 24px; font-weight: 600; }
+            Text { text: "Pad performance and prepared key zones, composed from small native controls."; color: Tokens.text-secondary; font-family: Tokens.font-ui; font-size: 13px; }
+        }
+        Panel {
+            title: "PAD CELLS"; summary: "76 px / 52 px · Layer ticks · Alternate dots";
+            preferred-height: 278px; vertical-stretch: 0;
+            VerticalLayout {
+                spacing: 8px;
+                for row in 2 : HorizontalLayout {
+                    spacing: 8px; alignment: start; height: 76px;
+                    for column in 4 : PadCell {
+                        private property <int> index: row * 4 + column;
+                        private property <PadFixture> data: DisplayFixtures.pads[self.index];
+                        note: self.data.note; name: self.data.name; mapped: self.data.mapped && root.state != "empty";
+                        missing: (self.data.missing || root.state == "error") && self.mapped;
+                        compact: row == 1;
+                        selected: root.selected-note == self.data.note; layers: self.data.layers; alternates: self.data.alternates;
+                        choke-group: self.mapped ? self.data.choke-group : 0; choked: self.mapped && self.data.choked;
+                        activity: root.state == "default" ? self.data.activity : 0; velocity: self.mapped && !self.missing ? self.data.velocity : 0;
+                        active-layer: self.data.selected ? 0 : -1; active-alternate: self.data.selected ? 1 : -1;
+                        enabled: root.state != "disabled" && root.state != "loading";
+                        selected-note(note) => { root.selected-note = note; root.event("Selected MIDI " + note); }
+                        triggered(note,velocity) => { root.event("Pad note on: " + note + " · velocity " + velocity); }
+                        released(note) => { root.event("Pad note off: " + note); }
+                    }
+                    Rectangle { horizontal-stretch: 1; }
+                }
+                Text { text: "Press higher for greater velocity. Hold Space or Enter to audition. Empty and missing cells remain silent."; color: Tokens.text-tertiary; font-family: Tokens.font-ui; font-size: 11px; wrap: word-wrap; }
+            }
+        }
+        Panel {
+            title: "DRUM MAP"; summary: "Prepared ranges · Velocity split 1–63 / 64–127"; prepared: true;
+            preferred-height: 360px; vertical-stretch: 0;
+            drum-map := KeyMap {
+                height: 276px; zones: root.state == "empty" ? [] : DisplayFixtures.zones; low-note: 35; high-note: 48;
+                selected-id: "snare-soft";
+                available: root.state != "disabled" && root.state != "error"; rebuilding: root.state == "loading";
+                generation: "catalog-drums-" + root.state;
+                selection-policy: "Click to select. Enter auditions the midpoint velocity. Use + / − to inspect the map.";
+                selected(id) => { root.event("Selected prepared zone: " + id); }
+                note-on(note,velocity) => { root.event("Map note on: " + note + " · velocity " + velocity); }
+                note-off(note) => { root.event("Map note off: " + note); }
+                zoom-changed(zoom) => { root.event("Drum map zoom: " + round(zoom * 100) + "%"); }
+            }
+        }
+        Panel {
+            title: "MELODIC MAP"; summary: "Root notes · Shared keyboard geometry"; prepared: true;
+            preferred-height: 316px; vertical-stretch: 0;
+            melodic-map := KeyMap {
+                height: 236px; compact: true; zones: root.state == "empty" ? [] : DisplayFixtures.melodic-zones; low-note: 48; high-note: 71;
+                selected-id: "c4-soft";
+                available: root.state != "disabled" && root.state != "error"; rebuilding: root.state == "loading";
+                generation: "catalog-keys-" + root.state;
+                selection-policy: "C4 = MIDI 60 · Selected key ranges and source roots share the zone coordinate plane.";
+                selected(id) => { root.event("Selected melodic zone: " + id); }
+                note-on(note,velocity) => { root.event("Key note on: " + note + " · velocity " + velocity); }
+                note-off(note) => { root.event("Key note off: " + note); }
+                zoom-changed(zoom) => { root.event("Melodic map zoom: " + round(zoom * 100) + "%"); }
+            }
+        }
+        Text { text: "Catalog note callbacks are visible UI events. The host owns auditioning, activity, and accepted mappings."; color: Tokens.text-tertiary; font-family: Tokens.font-ui; font-size: 11px; wrap: word-wrap; vertical-stretch: 0; }
+    }
+}

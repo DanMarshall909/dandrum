@@ -1,0 +1,7 @@
+import { Tokens } from "../theme.slint";
+export global ModPalette {
+    public pure function tint(slot: int) -> color {
+        return slot == 1 ? Tokens.dd-mod-b : slot == 2 ? Tokens.dd-mod-c : slot == 3 ? Tokens.dd-mod-d : Tokens.dd-mod-a;
+    }
+    public pure function letter(slot: int) -> string { return slot == 1 ? "B" : slot == 2 ? "C" : slot == 3 ? "D" : "A"; }
+}

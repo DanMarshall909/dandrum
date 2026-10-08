@@ -1,0 +1,29 @@
+import { Tokens } from "../theme.slint";
+import { MarkerFlag } from "MarkerFlag.slint";
+import { WaveSlice } from "types.slint";
+
+export component SliceMarker inherits Rectangle {
+    in property <WaveSlice> slice;
+    in property <int> ordinal;
+    in property <bool> selected;
+    in property <bool> compact;
+    callback selected-slice(string);
+    z: root.selected ? 1 : 0;
+    private property <length> start-x: root.slice.start.clamp(0,1) * root.width;
+    if root.selected : Rectangle {
+        x: root.start-x; width: (root.slice.end.clamp(root.slice.start,1) - root.slice.start.clamp(0,1)) * root.width;
+        height: 100%; background: Tokens.dd-vermilion.with-alpha(0.14);
+    }
+    Rectangle { x: root.start-x; y: 18px; width: root.selected ? 2px : 1px; height: max(0px,parent.height - 18px); background: root.selected ? Tokens.dd-vermilion : Tokens.dd-line-3; }
+    flag := MarkerFlag {
+        x: root.selected ? min(root.start-x,max(0px,root.width - self.width)) : root.start-x; y: 0px;
+        width: root.compact ? 24px : root.selected ? min(root.width,max(24px,self.natural-width)) : max(24px, (root.slice.end - root.slice.start) * root.width);
+        text: root.compact || root.slice.name == "" ? "\{root.ordinal}" : "\{root.ordinal} \{root.slice.name}";
+        selected: root.selected;
+    }
+    TouchArea {
+        x: root.selected ? flag.x : root.start-x; y: 0px;
+        width: root.selected ? flag.width : max(24px, (root.slice.end - root.slice.start) * root.width); height: 24px;
+        clicked => { root.selected-slice(root.slice.id); }
+    }
+}

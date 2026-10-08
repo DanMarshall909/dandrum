@@ -1,0 +1,11 @@
+import { Tokens } from "../theme.slint";
+export component ClipTag inherits Rectangle {
+    in property <bool> live;
+    width: 33px; height: 14px;
+    border-radius: Tokens.radius-1;
+    border-color: Tokens.dd-error; border-width: 1px;
+    background: root.live ? Tokens.dd-error : transparent;
+    accessible-role: text;
+    accessible-label: root.live ? "Modulation is clipped at a range limit" : "Modulation range exceeds the parameter limit";
+    Text { text: "△ CLIP"; font-family: Tokens.font-ui; font-size: 11px; font-weight: 700; color: root.live ? Tokens.surface-well : Tokens.dd-error; horizontal-alignment: center; vertical-alignment: center; }
+}

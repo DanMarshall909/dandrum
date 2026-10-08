@@ -1,0 +1,56 @@
+import { Tokens } from "../theme.slint";
+import { Panel } from "../layout/Panel.slint";
+import { Knob } from "../controls/Knob.slint";
+import { ControlFixtures } from "ControlFixtures.slint";
+
+export component KnobGallery inherits Panel {
+    in property <string> state: "default";
+    private property <bool> upper-popup: level.popup-visible || pitch.popup-visible || tune.popup-visible || mix.popup-visible || multi.popup-visible || limit.popup-visible;
+    private property <bool> lower-popup: free.popup-visible || assign.popup-visible || idle.popup-visible || live.popup-visible || host.popup-visible || focus.popup-visible || off.popup-visible;
+    out property <bool> popup-active: root.upper-popup || root.lower-popup;
+    title: "ROTARY CONTROLS"; summary: "4 sizes · 7 states · modulation and clipping";
+    preferred-height: 266px;
+    VerticalLayout {
+        spacing: 8px;
+        Rectangle {
+            height: 100px; z: root.upper-popup ? 100 : 0;
+            HorizontalLayout {
+                spacing: 16px; alignment: start;
+                level := Knob { label: "LEVEL"; enabled: root.state != "disabled"; read-only: root.state == "prepared"; host-automated: root.state == "host"; unit: "dB"; size: 64px; minimum: -60; maximum: 6; step: 0.1; default-value: -3; value <=> ControlFixtures.level;
+                    gesture-began => { ControlFixtures.begin("Level"); } changed(v) => { ControlFixtures.change("Level", v); } context-menu-requested => { ControlFixtures.action("Level modulation menu requested"); }
+                }
+                pitch := Knob { label: "PITCH"; enabled: root.state != "disabled"; read-only: root.state == "prepared"; host-automated: root.state == "host"; unit: "×"; size: 48px; minimum: 0.5; maximum: 2; step: 0.001; default-value: 1; bipolar: true; value <=> ControlFixtures.pitch;
+                    gesture-began => { ControlFixtures.begin("Pitch"); } changed(v) => { ControlFixtures.change("Pitch", v); }
+                }
+                tune := Knob { label: "TUNE"; enabled: root.state != "disabled"; read-only: root.state == "prepared"; host-automated: root.state == "host"; unit: "st"; size: 36px; minimum: -12; maximum: 12; step: 0.1; default-value: 0; bipolar: true; value <=> ControlFixtures.tune;
+                    changed(v) => { ControlFixtures.change("Tune", v); }
+                }
+                mix := Knob { label: "MIX"; enabled: root.state != "disabled"; read-only: root.state == "prepared"; host-automated: root.state == "host"; unit: "%"; size: 28px; minimum: 0; maximum: 100; step: 1; default-value: 50; value <=> ControlFixtures.mix;
+                    changed(v) => { ControlFixtures.change("Mix", v); }
+                }
+                multi := Knob { label: "MULTI"; enabled: root.state != "disabled"; read-only: root.state == "prepared"; host-automated: root.state == "host"; value: 0.5; modulations: [
+                    { slot: 0, source: "Velocity", depth: 0.25, live: 0.6, active: true },
+                    { slot: 1, source: "Random", depth: -0.15, live: 0.2, active: true },
+                    { slot: 2, source: "Envelope", depth: 0.1, live: 0.4, active: true },
+                    { slot: 3, source: "Aftertouch", depth: 0.05, live: 0, active: false }
+                ]; }
+                limit := Knob { label: "LIMIT"; enabled: root.state != "disabled"; read-only: root.state == "prepared"; host-automated: root.state == "host"; value: 0.8; modulations: [{ slot: 3, source: "Aftertouch", depth: 0.4, live: 1, active: true }]; }
+            }
+        }
+        Text { text: "64 / 48 / 36 / 28 px · Pointer-free caps · Two visible rings; all sources contribute"; color: Tokens.text-tertiary; font-family: Tokens.font-ui; font-size: 11px; wrap: word-wrap; }
+        Rectangle { height: 1px; background: Tokens.border-hairline; }
+        Rectangle {
+            height: 72px; z: root.lower-popup ? 100 : 0;
+            HorizontalLayout {
+                spacing: 14px; alignment: start;
+                free := Knob { label: "FREE"; size: 36px; value: 0.35; }
+                assign := Knob { label: "ASSIGN"; size: 36px; value: 0.35; assigning: true; }
+                idle := Knob { label: "IDLE"; size: 36px; value: 0.35; modulations: [{ slot: 0, source: "Velocity", depth: 0.3, live: 0, active: false }]; }
+                live := Knob { label: "LIVE"; size: 36px; value: 0.35; modulations: [{ slot: 0, source: "Velocity", depth: 0.3, live: 0.65, active: true }]; }
+                host := Knob { label: "HOST"; size: 36px; value: 0.35; host-automated: true; }
+                focus := Knob { label: "FOCUS"; size: 36px; value: 0.35; focused: true; }
+                off := Knob { label: "OFF"; size: 36px; value: 0.35; enabled: false; }
+            }
+        }
+    }
+}

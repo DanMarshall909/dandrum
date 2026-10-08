@@ -1,0 +1,19 @@
+import { PageHeading } from "PageHeading.slint";
+import { ContainersGallery } from "ContainersGallery.slint";
+import { NavigationGallery } from "NavigationGallery.slint";
+import { FeedbackGallery } from "FeedbackGallery.slint";
+
+export component LayoutPage inherits Rectangle {
+    in property <string> state: "default";
+    callback event(string);
+    min-width: 560px;
+    preferred-height: heading.preferred-height + containers.height + navigation.height + feedback.height + 36px;
+    height: root.preferred-height;
+    VerticalLayout {
+        spacing: 12px; alignment: start;
+        heading := PageHeading { title: "Structure and feedback"; description: "Composed panels, navigation, menus and recovery states."; }
+        containers := ContainersGallery { state: root.state; event(message) => { root.event(message); } }
+        navigation := NavigationGallery { state: root.state; event(message) => { root.event(message); } }
+        feedback := FeedbackGallery { state: root.state; event(message) => { root.event(message); } }
+    }
+}

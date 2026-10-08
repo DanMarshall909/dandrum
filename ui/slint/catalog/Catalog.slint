@@ -1,0 +1,69 @@
+import { Tokens, ValueCodec, ParsedValue, ViewportMetrics, ScrollViewport } from "../dandrum.slint";
+import { OverlayBounds } from "../foundation/ViewportMetrics.slint";
+import { CatalogHeader } from "CatalogHeader.slint";
+import { CatalogSidebar } from "CatalogSidebar.slint";
+import { ControlsPage } from "ControlsPage.slint";
+import { MappingPage } from "MappingPage.slint";
+import { WaveformsPage } from "WaveformsPage.slint";
+import { RoutingPage } from "RoutingPage.slint";
+import { LayoutPage } from "LayoutPage.slint";
+import { FoundationsPage } from "FoundationsPage.slint";
+
+export { ValueCodec, ParsedValue }
+
+export component CatalogWindow inherits Window {
+    in property <float> viewport-width: 1200;
+    in property <float> viewport-height: 800;
+    in-out property <string> page-id: "controls";
+    in-out property <string> state: "default";
+    out property <string> last-event: "Interactive UI catalog · no audio engine connected";
+    private property <OverlayBounds> content-clip: {
+        x: viewport.absolute-position.x, y: viewport.absolute-position.y,
+        width: viewport.viewport-width, height: viewport.viewport-height
+    };
+    title: "DanDrum · Slint design library";
+    preferred-width: root.viewport-width * 1px; preferred-height: root.viewport-height * 1px;
+    min-width: 820px; min-height: 560px;
+    background: Tokens.surface-window;
+    default-font-family: Tokens.font-ui; default-font-size: 13px;
+    init => { ViewportMetrics.width = root.width; ViewportMetrics.height = root.height; ViewportMetrics.overlay-clip = root.content-clip; }
+    changed content-clip => { ViewportMetrics.overlay-clip = root.content-clip; }
+    changed width => { ViewportMetrics.width = root.width; }
+    changed height => { ViewportMetrics.height = root.height; }
+    changed page-id => { viewport.offset-y = 0px; root.last-event = "Page: " + root.page-id; }
+    changed state => { root.last-event = "Showing " + root.state + " state where applicable"; }
+    VerticalLayout {
+        spacing: 0px;
+        CatalogHeader { state <=> root.state; }
+        HorizontalLayout {
+            spacing: 0px;
+            CatalogSidebar { page-id <=> root.page-id; }
+            Rectangle {
+                viewport := ScrollViewport {
+                    x: 20px; y: 20px; width: parent.width - 32px; height: parent.height - 40px;
+                    content-height: page-layout.preferred-height;
+                    page-layout := VerticalLayout {
+                        // Reserve one gutter when wrapped text contributes to
+                        // content height; this avoids a size/overflow binding cycle.
+                        x: 0px; y: 0px; width: viewport.width - 8px;
+                        height: self.preferred-height; spacing: 0px;
+                        if root.page-id == "controls" : ControlsPage { state: root.state; event(message) => { root.last-event = message; } }
+                        if root.page-id == "mapping" : MappingPage { state: root.state; event(message) => { root.last-event = message; } }
+                        if root.page-id == "waveforms" : WaveformsPage { state: root.state; event(message) => { root.last-event = message; } }
+                        if root.page-id == "routing" : RoutingPage { state: root.state; event(message) => { root.last-event = message; } }
+                        if root.page-id == "layout" : LayoutPage { state: root.state; event(message) => { root.last-event = message; } }
+                        if root.page-id == "foundations" : FoundationsPage { state: root.state; event(message) => { root.last-event = message; } }
+                    }
+                }
+            }
+        }
+        Rectangle {
+            height: 30px; background: Tokens.surface-panel;
+            HorizontalLayout {
+                padding-left: 20px; padding-right: 20px; spacing: 16px;
+                Text { text: root.last-event; color: Tokens.text-secondary; font-family: Tokens.font-value; font-size: 11px; vertical-alignment: center; overflow: elide; accessible-label: "Catalog event: " + root.last-event; }
+                Text { text: "SLINT 1.18.1"; color: Tokens.text-tertiary; font-family: Tokens.font-ui; font-size: 11px; vertical-alignment: center; horizontal-stretch: 0; }
+            }
+        }
+    }
+}

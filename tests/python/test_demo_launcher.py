@@ -83,6 +83,39 @@ class DemoLauncherTest(unittest.TestCase):
             self.assertEqual(code, 0, error)
             self.assertEqual(output.count(str(self.root)), 1)
 
+    def test_direct_cmake_executable_is_discovered_without_juce(self):
+        source = self.root / "ui/slint/README.md"
+        source.parent.mkdir(parents=True)
+        source.write_text("Silent UI catalog")
+        demo = {"kind": "native", "source": "ui/slint/README.md", "target": "dandrum-slint-catalog"}
+        cmake = self.root / "CMakeLists.txt"
+        cmake.write_text("add_executable(dandrum-slint-catalog)\n")
+        self.assertEqual(launcher.source_for(demo, [self.root]), self.root)
+        cmake.write_text("add_executable(dandrum-slint-catalog main.cpp)\n")
+        self.assertEqual(launcher.source_for(demo, [self.root]), self.root)
+        for declaration in ["add_executable(other main.cpp)", "# add_executable(dandrum-slint-catalog main.cpp)"]:
+            cmake.write_text(declaration + "\n")
+            self.assertIsNone(launcher.source_for(demo, [self.root]))
+
+    def test_slint_catalog_uses_isolated_native_build_and_forwards_arguments(self):
+        artifact = self.native_fixture("slint-library", "build/slint-library", "Release")
+        (self.root / "CMakeLists.txt").write_text("add_executable(dandrum-slint-catalog)\n")
+        build = self.root / "build/slint-library"
+        (build / "CMakeCache.txt").write_text("CMAKE_BUILD_TYPE:STRING=Release\n")
+        default_cache = self.root / "build/CMakeCache.txt"
+        default_cache.write_text("CMAKE_BUILD_TYPE:STRING=Debug\n")
+        self.web_fixture("web/sampler")
+        commands = []
+        with self.recorded_tools(commands):
+            code, _, error = self.invoke("slint-library", "--", "argument with spaces")
+        self.assertEqual(code, 0, error)
+        self.assertEqual(commands[0][0][1:], ["-S", str(self.root), "-B", str(build),
+                         "-DDANDRUM_NATIVE_ONLY=ON", "-DDANDRUM_SLINT_LIBRARY_ONLY=ON", "-DCMAKE_BUILD_TYPE=Release"])
+        self.assertEqual(commands[1][0][1:], ["--build", str(build), "--target", "dandrum-slint-catalog", "--config", "Release"])
+        self.assertEqual(commands[2][0], [str(artifact), "argument with spaces"])
+        self.assertEqual(default_cache.read_text(), "CMAKE_BUILD_TYPE:STRING=Debug\n")
+        self.assertFalse((self.root / "web/sampler/node_modules").exists())
+
     def test_missing_sources_and_git_do_not_start_preparation(self):
         with patch("subprocess.run", side_effect=FileNotFoundError("git")) as run:
             code, _, error = self.invoke("trigger")

@@ -1,0 +1,52 @@
+import { Tokens } from "../theme.slint";
+
+// Paint + text editing only. Parsing/range/host gestures live in RangeControl.
+export component ValueEditor inherits FocusScope {
+    in property <string> value-text;
+    in property <string> unit;
+    in property <string> label;
+    in property <bool> editing;
+    in property <bool> invalid;
+    in property <bool> host-automated;
+    in property <bool> read-only;
+    in property <bool> compact;
+    callback edit-requested();
+    callback submitted(string);
+    callback cancelled();
+    out property <bool> hovered: touch.has-hover;
+    height: root.compact ? 22px : Tokens.field-height;
+    min-width: 48px;
+    enabled: !root.read-only;
+    focus-on-tab-navigation: false;
+    public function focus-editor() { editor.text = root.value-text; editor.focus(); editor.select-all(); }
+    init => { if root.editing { root.focus-editor(); } }
+    changed editing => { if root.editing { root.focus-editor(); } }
+    capture-key-pressed(event) => {
+        if root.editing && event.text == Key.Escape { root.cancelled(); return accept; }
+        return reject;
+    }
+    Rectangle {
+        background: root.read-only ? transparent : Tokens.surface-well;
+        border-radius: Tokens.radius-1; border-width: root.read-only ? 0px : 1px;
+        border-color: root.invalid ? Tokens.dd-error : root.editing ? Tokens.dd-paper-2 : root.hovered ? Tokens.border-strong : Tokens.border-control;
+        HorizontalLayout {
+            padding-left: 6px; padding-right: 6px; spacing: 4px;
+            Text { visible: !root.editing; text: root.value-text; color: root.read-only ? Tokens.text-secondary : root.host-automated ? Tokens.dd-host : Tokens.text-primary; font-family: Tokens.font-value; font-size: root.compact ? Tokens.type-micro : Tokens.type-value; vertical-alignment: center; }
+            if root.unit != "" && root.unit != "pan" && !root.editing : Text { text: root.unit; color: Tokens.text-tertiary; font-family: Tokens.font-ui; font-size: Tokens.type-micro; vertical-alignment: center; }
+        }
+    }
+    editor := TextInput {
+        x: 6px; y: 0; width: parent.width - 12px; height: parent.height;
+        visible: root.editing; enabled: root.editing && !root.read-only;
+        single-line: true; color: Tokens.text-primary; font-family: Tokens.font-value; font-size: Tokens.type-value;
+        vertical-alignment: center; selection-background-color: Tokens.dd-paper-1; selection-foreground-color: Tokens.surface-well;
+        accessible-label: root.label + " value";
+        accepted => { root.submitted(self.text); }
+        changed has-focus => { if !self.has-focus && root.editing { root.cancelled(); } }
+    }
+    touch := TouchArea {
+        enabled: !root.read-only && !root.editing;
+        mouse-cursor: text;
+        clicked => { root.edit-requested(); }
+    }
+}

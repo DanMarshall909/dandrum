@@ -1,0 +1,98 @@
+import { Tokens } from "../../ui/slint/theme.slint";
+import { ViewportMetrics } from "../../ui/slint/foundation/ViewportMetrics.slint";
+import { Button } from "../../ui/slint/controls/Button.slint";
+import { LayerDetails } from "../../ui/slint/display/LayerDetails.slint";
+import { LayerParameterControl } from "../../ui/slint/display/LayerParameterControl.slint";
+import { LayerWaveform } from "../../ui/slint/display/types.slint";
+
+export component LayerDetailsTests inherits Window {
+    width: 700px; height: 670px; background: Tokens.surface-window;
+    init => { ViewportMetrics.width = root.width; ViewportMetrics.height = root.height; }
+    changed width => { ViewportMetrics.width = root.width; }
+    changed height => { ViewportMetrics.height = root.height; }
+    out property <string> report: "READY: Run tests";
+    private property <int> checks;
+    private property <int> failures;
+    private property <int> numbers;
+    private property <int> choices;
+    private property <int> begins;
+    private property <int> ends;
+    private property <int> closes;
+    private property <float> last-number;
+    private property <string> last-choice;
+    property <LayerWaveform> supplied-wave: {
+        supplied: true, state: "ready", label: "Supplied source", metadata: "Copied source extrema",
+        peaks: [{minimum:-0.75,maximum:0.5},{minimum:-0.25,maximum:0.75},{minimum:-0.5,maximum:0.25}],
+        region-start: 0.1, region-end: 0.9, start-offset-visible: true, start-offset: 0.25,
+    };
+    function check(ok: bool, description: string) {
+        root.checks += 1;
+        if !ok { root.failures += 1; root.report += description + "; "; }
+    }
+    callback run-tests();
+    run-tests => {
+        root.report = ""; root.checks = 0; root.failures = 0;
+        numeric.available = true; options.available = true;
+        numeric.set-number(-3); options.choose-option(0);
+        root.numbers = 0; root.choices = 0; root.begins = 0; root.ends = 0;
+        numeric.set-number(200);
+        root.check(root.numbers == 1 && root.last-number == 6, "numeric layer values clamp in actual units");
+        root.check(root.begins == 1 && root.ends == 1, "numeric layer change pairs its gesture callbacks");
+        numeric.available = false; numeric.set-number(-12);
+        root.check(root.numbers == 1, "unavailable layer rejects numeric changes");
+        numeric.available = true; prepared.set-number(-12);
+        root.check(root.numbers == 1, "prepared parameter rejects numeric changes");
+        options.choose-option(1);
+        root.check(root.choices == 1 && root.last-choice == "high-pass", "enum choice emits its supplied option id");
+        options.choose-option(2); options.choose-option(-1); options.choose-option(100);
+        root.check(root.choices == 1, "unavailable and invalid enum choices emit nothing");
+        options.available = false; options.choose-option(0);
+        root.check(root.choices == 1, "unavailable layer rejects enum changes");
+        options.available = true; locked-options.choose-option(1);
+        root.check(root.choices == 1, "prepared enum rejects choice changes");
+        root.check(!empty.waveform-visible, "missing source data creates no waveform");
+        root.check(details.waveform-visible && details.waveform.peaks.length == 3, "supplied source waveform uses its copied data");
+        root.report = root.failures == 0 ? "PASS: \{root.checks} layer detail capability and model checks" : "FAIL: " + root.report;
+    }
+    VerticalLayout {
+        padding: 14px; spacing: 10px;
+        run-tests-button := Button { text: "Run tests"; clicked => { root.run-tests(); } }
+        report := Text { text: root.report; accessible-label: root.report; color: Tokens.text-primary; font-size: 13px; }
+        host-refresh-button := Button {
+            text: "Refresh supplied parameter model";
+            clicked => { numeric.parameter.value = -9; options.parameter.option-index = 0; }
+        }
+        event-report := Text { text: "Numbers: \{root.numbers}; choices: \{root.choices}; value: \{root.last-number}; option: \{root.last-choice}; close: \{root.closes}; begins: \{root.begins}; ends: \{root.ends}"; accessible-label: self.text; color: Tokens.text-secondary; font-size: 11px; }
+        HorizontalLayout {
+            height: 118px; spacing: 12px;
+            numeric := LayerParameterControl {
+                parameter: {id:"gain",label:"GAIN",value:-3,minimum:-60,maximum:6,step:0.1,default-value:0,unit:"dB",available:true};
+                // The fixture host accepts the request before later publishing a new value.
+                numeric-changed(value) => { root.numbers += 1; root.last-number = value; numeric.parameter.value = value; }
+                gesture-began => { root.begins += 1; } gesture-ended => { root.ends += 1; }
+            }
+            options := LayerParameterControl {
+                parameter: {id:"mode",label:"FILTER MODE",option-index:0,available:true,
+                    options:[{id:"low-pass",label:"LP"},{id:"high-pass",label:"HP"},{id:"band-pass",label:"BP",disabled:true}]};
+                option-changed(id) => { root.choices += 1; root.last-choice = id; options.parameter.option-index = id == "high-pass" ? 1 : 0; }
+            }
+            prepared := LayerParameterControl {
+                parameter: {id:"pitch",label:"PITCH",value:1,minimum:0.5,maximum:2,step:0.001,unit:"×",available:false};
+                numeric-changed(value) => { root.numbers += 1; }
+            }
+        }
+        details := LayerDetails {
+            title: "Source editor"; summary: "Prepared source snapshot with supplied waveform";
+            waveform: root.supplied-wave;
+            parameters: [{id:"start",label:"START",value:25,minimum:0,maximum:100,step:1,default-value:0,unit:"%",available:false},
+                {id:"playback",label:"PLAYBACK",available:false,option-index:0,options:[{id:"one-shot",label:"ONE SHOT"},{id:"gate",label:"GATE"}]}];
+            close => { root.closes += 1; }
+        }
+        empty := LayerDetails { title: "Prepared module"; summary: "No invented controls or source display"; close => { root.closes += 1; } }
+    }
+    locked-options := LayerParameterControl {
+        visible: false; width: 200px;
+        parameter: {id:"shape",label:"Shape",available:false,options:[{id:"sine",label:"SINE"},{id:"noise",label:"NOISE"}]};
+        option-changed(id) => { root.choices += 1; }
+    }
+}

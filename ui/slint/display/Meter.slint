@@ -1,0 +1,36 @@
+import { Tokens } from "../theme.slint";
+import { MeterChannel } from "types.slint";
+import { ChannelMeter } from "ChannelMeter.slint";
+
+export component Meter inherits Rectangle {
+    in property <[MeterChannel]> channels;
+    in property <bool> vertical: true;
+    in property <length> length: 96px;
+    in property <length> thickness: 6px;
+    in property <bool> show-labels: true;
+    callback reset-clip(string, string);
+    width: root.vertical ? max(1, root.channels.length) * max(26px, root.thickness + (root.show-labels ? 28px : 0px))
+        : root.length + 28px + (root.show-labels ? 144px : 0px);
+    height: root.vertical ? root.length + 24px + (root.show-labels ? 18px : 0px) : max(1, root.channels.length) * 26px;
+    if root.channels.length == 0 : Text {
+        text: "Measurements unavailable"; color: Tokens.dd-paper-3;
+        font-family: Tokens.font-ui; font-size: 11px;
+        wrap: word-wrap; vertical-alignment: center;
+    }
+    if root.vertical : HorizontalLayout {
+        spacing: 2px;
+        for channel in root.channels : ChannelMeter {
+            channel: channel; length: root.length; thickness: root.thickness;
+            vertical: true; show-labels: root.show-labels;
+            reset-clip(id, ticket) => { root.reset-clip(id, ticket); }
+        }
+    }
+    if !root.vertical : VerticalLayout {
+        spacing: 0px;
+        for channel in root.channels : ChannelMeter {
+            channel: channel; length: root.length; thickness: root.thickness;
+            vertical: false; show-labels: root.show-labels;
+            reset-clip(id, ticket) => { root.reset-clip(id, ticket); }
+        }
+    }
+}

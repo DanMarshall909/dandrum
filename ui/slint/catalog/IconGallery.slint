@@ -1,0 +1,22 @@
+import { Tokens } from "../theme.slint";
+import { Icon, IconNames } from "../icons.slint";
+import { Panel } from "../layout/Panel.slint";
+
+export component IconGallery inherits Panel {
+    title: "Original stroke icons"; summary: "33 SVG assets";
+    preferred-height: 452px;
+    VerticalLayout {
+        spacing: 2px;
+        for row in 11 : HorizontalLayout {
+            spacing: 8px;
+            for column in 3 : Rectangle {
+                height: 32px;
+                HorizontalLayout {
+                    spacing: 10px; padding-left: 8px;
+                    Icon { name: IconNames.all[row * 3 + column]; size: 16px; }
+                    Text { text: IconNames.all[row * 3 + column]; color: Tokens.text-secondary; font-family: Tokens.font-ui; font-size: 12px; vertical-alignment: center; overflow: elide; }
+                }
+            }
+        }
+    }
+}

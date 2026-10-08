@@ -1,0 +1,40 @@
+import { Tokens } from "../theme.slint";
+import { HeaderAction } from "types.slint";
+import { PanelHeader } from "PanelHeader.slint";
+
+export component Panel inherits Rectangle {
+    in property <string> title;
+    in property <string> tag;
+    in property <string> summary;
+    in property <bool> prepared;
+    in property <bool> compact;
+    in property <bool> sunken;
+    in property <length> body-padding: root.compact ? Tokens.pad-panel-compact : Tokens.pad-panel;
+    in property <[HeaderAction]> actions;
+    in-out property <bool> collapsed;
+    callback toggled(bool);
+    callback action(string);
+    background: root.sunken ? Tokens.surface-window : Tokens.surface-panel;
+    border-color: Tokens.border-hairline; border-width: 1px;
+    border-radius: Tokens.radius-3;
+    min-height: header.height;
+    preferred-height: root.collapsed ? header.height : max(80px, header.height + content.preferred-height);
+    max-height: root.collapsed ? header.height : 100000px;
+    vertical-stretch: root.collapsed ? 0 : 1;
+    public function toggle() { header.toggle(); }
+    public function activate-action(index: int) { header.activate-action(index); }
+    header := PanelHeader {
+        x: 1px; y: 1px; width: parent.width - 2px;
+        title: root.title; tag: root.tag; summary: root.summary;
+        prepared: root.prepared; compact: root.compact; actions: root.actions;
+        collapsed <=> root.collapsed;
+        toggled(value) => { root.toggled(value); }
+        action(id) => { root.action(id); }
+    }
+    body := Rectangle {
+        x: 1px; y: header.height + 1px; width: parent.width - 2px;
+        height: max(0px, parent.height - self.y - 1px);
+        visible: !root.collapsed;
+        content := VerticalLayout { padding: root.body-padding; @children }
+    }
+}

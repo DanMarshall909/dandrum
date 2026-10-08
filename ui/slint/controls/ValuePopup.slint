@@ -1,0 +1,64 @@
+import { Tokens } from "../theme.slint";
+import { ValueCodec } from "ValueCodec.slint";
+import { ValueEditor } from "ValueEditor.slint";
+import { ModAssignment } from "../modulation/types.slint";
+import { ModIndicator } from "../modulation/ModIndicator.slint";
+import { ClipTag } from "../modulation/ClipTag.slint";
+
+// Shared floating popup body. This is an overlay, outside normal control layout.
+export component ValuePopup inherits Rectangle {
+    in property <bool> above;
+    in property <length> anchor-x: root.width / 2;
+    private property <length> arrow-inset: min(12px, root.width / 2);
+    in property <string> label;
+    in property <string> value-text;
+    in property <string> unit;
+    in property <bool> editing;
+    in property <bool> invalid;
+    in property <bool> host-automated;
+    in property <bool> show-peaks;
+    in property <float> peak;
+    in property <float> trough;
+    in property <bool> clipped;
+    in property <bool> live-clipped;
+    in property <[ModAssignment]> modulations;
+    callback edit-requested();
+    callback submitted(string);
+    callback cancelled();
+    callback reset-peaks();
+    callback hover-changed(bool);
+    background: Tokens.surface-well; border-color: Tokens.border-strong; border-width: 1px; border-radius: Tokens.radius-2;
+    drop-shadow-color: #00000080; drop-shadow-blur: 20px; drop-shadow-offset-y: 8px;
+    accessible-role: groupbox; accessible-label: root.label + " value popup";
+    hover := TouchArea { enabled: true; changed has-hover => { root.hover-changed(self.has-hover); } }
+    arrow := Rectangle {
+        x: root.anchor-x.clamp(root.arrow-inset, root.width - root.arrow-inset) - 4px;
+        y: root.above ? parent.height - 4px : -4px; width: 8px; height: 8px;
+        Rectangle { background: Tokens.surface-well; transform-rotation: 45deg; border-width: 1px; border-color: Tokens.border-strong; }
+    }
+    VerticalLayout {
+        padding: 6px; spacing: 5px;
+        ValueEditor {
+            value-text: root.value-text; label: root.label; unit: root.unit; editing: root.editing; invalid: root.invalid; host-automated: root.host-automated;
+            changed hovered => { root.hover-changed(self.hovered); }
+            edit-requested => { root.edit-requested(); }
+            submitted(text) => { root.submitted(text); }
+            cancelled => { root.cancelled(); }
+        }
+        if root.show-peaks || root.clipped : HorizontalLayout {
+            spacing: 6px;
+            if root.show-peaks : FocusScope {
+                min-width: peaks.preferred-width; height: 18px;
+                accessible-role: button; accessible-label: "Reset peak and trough";
+                accessible-action-default => { root.reset-peaks(); }
+                key-pressed(event) => { if event.text == " " || event.text == Key.Return { root.reset-peaks(); return accept; } return reject; }
+                peaks := Text { text: "▴\{ValueCodec.format(root.peak, root.unit)} ▾\{ValueCodec.format(root.trough, root.unit)}"; font-family: Tokens.font-value; font-size: 11px; color: Tokens.text-tertiary; vertical-alignment: center; }
+                TouchArea { mouse-cursor: pointer; clicked => { root.reset-peaks(); } }
+            }
+            if root.clipped : ClipTag { live: root.live-clipped; }
+        }
+        if root.modulations.length > 0 : Rectangle { height: 1px; background: Tokens.border-hairline; }
+        for assignment in root.modulations : ModIndicator { slot: assignment.slot; source: assignment.source; depth: assignment.depth; active: assignment.active; compact: true; }
+        if root.host-automated : Text { text: "Host automation · DAW owned"; font-family: Tokens.font-ui; font-size: 11px; color: Tokens.dd-host; wrap: word-wrap; }
+    }
+}

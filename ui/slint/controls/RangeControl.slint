@@ -1,0 +1,119 @@
+import { ValueCodec } from "ValueCodec.slint";
+
+// Shared actual-range behavior. Only user actions emit callbacks; host property
+// updates never echo back. Hosts attach begin/update/end to their own parameter API.
+export component RangeControl inherits FocusScope {
+    in-out property <float> value: 0.5;
+    in property <float> minimum: 0;
+    in property <float> maximum: 1;
+    in property <float> step: 0.01;
+    in property <float> default-value: 0.5;
+    in property <string> label;
+    in property <string> unit;
+    in property <string> value-text: ValueCodec.format(root.value, root.unit);
+    in property <bool> read-only;
+    in property <bool> focused;
+    in property <bool> host-automated;
+    out property <bool> host-active: root.host-automated || root.host-recent;
+    private property <bool> host-recent;
+    in property <float> keyboard-step: (root.maximum - root.minimum) * 0.05;
+    in property <float> fine-keyboard-step: (root.maximum - root.minimum) * 0.01;
+    in property <float> wheel-step: max(root.step, (root.maximum - root.minimum) * 0.02);
+    in property <float> fine-wheel-step: max(root.step, (root.maximum - root.minimum) * 0.01);
+    out property <bool> interactive: root.enabled && !root.read-only && root.maximum > root.minimum;
+    out property <float> normalized-value: root.maximum > root.minimum ? ((root.value - root.minimum) / (root.maximum - root.minimum)).clamp(0, 1) : 0;
+    out property <bool> gesture-active;
+    out property <bool> editing;
+    out property <bool> edit-invalid;
+    out property <bool> nudged;
+    private property <float> gesture-start;
+    callback changed(float);
+    callback gesture-began();
+    callback gesture-ended();
+    callback context-menu-requested();
+    callback standard-menu-requested();
+    callback edit-requested();
+    callback edit-closed();
+    callback dismiss-requested();
+    accessible-role: slider;
+    accessible-label: root.label;
+    accessible-enabled: root.interactive;
+    accessible-value: root.value-text;
+    accessible-value-minimum: root.minimum;
+    accessible-value-maximum: root.maximum;
+    accessible-value-step: root.step;
+    accessible-description: root.read-only ? "Prepared setting. Read only." : "Drag to change. Shift for precision. Double-click resets. Enter types a value.";
+    accessible-action-increment => { root.nudge(1, false); }
+    accessible-action-decrement => { root.nudge(-1, false); }
+    accessible-action-set-value(text) => { root.commit-text(text); }
+    focus-on-tab-navigation: root.interactive;
+    focus-on-click: root.interactive;
+    pure function limited(v: float) -> float {
+        if v <= root.minimum { return root.minimum; }
+        if v >= root.maximum { return root.maximum; }
+        let quantized = root.step > 0 ? root.minimum + round((v - root.minimum) / root.step) * root.step : v;
+        return quantized.clamp(root.minimum, max(root.minimum, root.maximum));
+    }
+    public function begin-gesture() {
+        if root.interactive && !root.gesture-active { root.gesture-start = root.value; root.gesture-active = true; root.gesture-began(); }
+    }
+    public function update-gesture(v: float) {
+        if root.interactive && root.gesture-active {
+            let next = root.limited(v);
+            if abs(next - root.value) > 0.000001 { root.value = next; root.changed(next); }
+        }
+    }
+    public function end-gesture() {
+        if root.gesture-active { root.gesture-active = false; root.gesture-ended(); }
+    }
+    public function cancel-gesture() {
+        if root.gesture-active { root.update-gesture(root.gesture-start); root.end-gesture(); }
+    }
+    public function set-value(v: float) {
+        if root.interactive && abs(root.limited(v) - root.value) > 0.000001 {
+            let already-active = root.gesture-active;
+            if !already-active { root.begin-gesture(); }
+            root.update-gesture(v);
+            if !already-active { root.end-gesture(); }
+            root.nudged = true; nudge-timer.restart();
+        }
+    }
+    public function nudge(direction: float, fine: bool) { root.set-value(root.value + direction * (fine ? root.fine-keyboard-step : root.keyboard-step)); }
+    public function wheel(direction: float, fine: bool) { root.set-value(root.value + direction * (fine ? root.fine-wheel-step : root.wheel-step)); }
+    public function reset-value() { root.set-value(root.default-value); }
+    public function host-write(v: float) {
+        root.value = v.clamp(root.minimum, max(root.minimum, root.maximum));
+        root.host-recent = true; host-timer.restart();
+    }
+    public function begin-edit() {
+        if root.interactive { root.end-gesture(); root.editing = true; root.edit-invalid = false; root.edit-requested(); }
+    }
+    public function commit-text(text: string) {
+        if root.interactive {
+            let result = ValueCodec.parse(text, root.unit);
+            if result.valid { root.set-value(result.value); root.editing = false; root.edit-invalid = false; root.edit-closed(); }
+            else { root.edit-invalid = true; }
+        }
+    }
+    public function cancel-edit() { root.editing = false; root.edit-invalid = false; root.edit-closed(); }
+    public function request-context-menu() { if root.interactive { root.context-menu-requested(); } }
+    key-pressed(event) => {
+        if !root.interactive || root.editing { return reject; }
+        if event.text == Key.UpArrow || event.text == Key.RightArrow { root.nudge(1, event.modifiers.shift); }
+        else if event.text == Key.DownArrow || event.text == Key.LeftArrow { root.nudge(-1, event.modifiers.shift); }
+        else if event.text == Key.Home { root.set-value(root.minimum); }
+        else if event.text == Key.End { root.set-value(root.maximum); }
+        else if event.text == Key.Delete || event.text == Key.Backspace { root.reset-value(); }
+        else if event.text == Key.Return { root.begin-edit(); }
+        else if event.text == Key.Escape { root.cancel-gesture(); root.dismiss-requested(); }
+        else if event.text == Key.Menu || (event.text == Key.F10 && event.modifiers.shift) { root.standard-menu-requested(); }
+        else if event.text == "m" || event.text == "M" { root.request-context-menu(); }
+        else { return reject; }
+        return accept;
+    }
+    focus-lost(reason) => { root.end-gesture(); }
+    changed interactive => { if !root.interactive { root.end-gesture(); root.cancel-edit(); } }
+    host-timer := Timer { interval: 400ms; running: false; triggered => { self.stop(); root.host-recent = false; } }
+    nudge-timer := Timer { interval: 600ms; running: false; triggered => { self.stop(); root.nudged = false; } }
+    @children
+}

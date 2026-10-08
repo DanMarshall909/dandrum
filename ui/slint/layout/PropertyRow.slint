@@ -1,0 +1,24 @@
+import { Tokens } from "../theme.slint";
+import { Icon } from "../icons.slint";
+import { RowSurface } from "RowSurface.slint";
+
+export component PropertyRow inherits Rectangle {
+    in property <string> label;
+    in property <string> value;
+    in property <string> unit;
+    in property <string> hint;
+    in property <bool> prepared;
+    in property <bool> compact;
+    height: root.compact ? 24px : 26px;
+    accessible-role: text; accessible-label: root.label + ": " + root.value + " " + root.unit;
+    accessible-description: root.hint;
+    RowSurface {
+        HorizontalLayout {
+            padding-left: 4px; padding-right: 4px; spacing: 8px;
+            if root.prepared : Icon { name: "lock"; size: 12px; tint: Tokens.text-tertiary; }
+            Text { min-width: root.compact ? 64px : 92px; text: root.label; color: Tokens.text-tertiary; font-family: Tokens.font-ui; font-size: 12px; overflow: elide; vertical-alignment: center; }
+            Text { text: root.value; color: root.prepared ? Tokens.text-secondary : Tokens.text-primary; font-family: Tokens.font-value; font-size: root.compact ? 11px : 13px; overflow: elide; horizontal-alignment: right; vertical-alignment: center; }
+            if root.unit != "" : Text { text: root.unit; color: Tokens.text-tertiary; font-family: Tokens.font-value; font-size: 11px; vertical-alignment: center; }
+        }
+    }
+}

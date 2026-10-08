@@ -1,0 +1,122 @@
+import { Tokens } from "../theme.slint";
+import { Button } from "../controls/Button.slint";
+import { KeyZone } from "types.slint";
+import { VelocityAxis } from "VelocityAxis.slint";
+import { VelocityGrid } from "VelocityGrid.slint";
+import { ZoneRectangle } from "ZoneRectangle.slint";
+import { PianoKeyboard } from "PianoKeyboard.slint";
+import { ScrollViewport } from "../layout/ScrollViewport.slint";
+
+export component KeyMap inherits FocusScope {
+    in property <[KeyZone]> zones;
+    in-out property <string> selected-id;
+    in property <int> low-note: 24;
+    in property <int> high-note: 96;
+    in-out property <float> zoom: 1;
+    in property <bool> can-edit;
+    in property <bool> rebuilding;
+    in property <bool> available: true;
+    in property <bool> compact;
+    in property <string> generation;
+    in property <string> selection-policy;
+    private property <int> selected-index: -1;
+    private property <bool> coherent-selection: root.selected-index >= 0 && root.selected-index < root.zones.length && root.zones[root.selected-index].id == root.selected-id;
+    private property <int> playing-note: -1;
+    private property <int> release-epoch;
+    private property <KeyZone> selected-zone: root.coherent-selection ? root.zones[root.selected-index] : {id:"",name:"",source:"",lo:0,hi:0,vel-lo:1,vel-hi:127,root-note:0,has-root:false};
+    callback selected(string); callback note-on(int,int); callback note-off(int);
+    callback edit-zone(KeyZone); callback zoom-changed(float);
+    min-height: root.compact ? 200px : 250px;
+    preferred-height: root.compact ? 210px : 265px;
+    public function release-note() {
+        if root.playing-note >= 0 { let note = root.playing-note; root.playing-note = -1; root.note-off(note); }
+        root.release-epoch += 1;
+    }
+    public function audition(zone: KeyZone) {
+        if root.enabled && root.available && !root.rebuilding && root.playing-note < 0 {
+            root.playing-note = zone.has-root ? zone.root-note.clamp(zone.lo, zone.hi) : zone.lo;
+            root.note-on(root.playing-note, round((zone.vel-lo + zone.vel-hi) / 2).clamp(1, 127));
+        }
+    }
+    public function request-edit(zone: KeyZone) { if root.enabled && root.can-edit && !root.rebuilding && root.available { root.edit-zone(zone); } }
+    function choose(index: int) {
+        if root.enabled && index >= 0 && index < root.zones.length { root.selected-index = index; root.selected-id = root.zones[index].id; root.selected(root.selected-id); }
+    }
+    function set-zoom(value: float) { if root.enabled { root.zoom = value.clamp(1,8); root.zoom-changed(root.zoom); } }
+    changed generation => { root.release-note(); root.selected-index = -1; root.selected-id = ""; }
+    changed rebuilding => { if root.rebuilding { root.release-note(); } }
+    changed visible => { if !root.visible { root.release-note(); } }
+    changed available => { if !root.available { root.release-note(); } }
+    changed enabled => { if !root.enabled { root.release-note(); } }
+    focus-lost(reason) => { root.release-note(); }
+    key-pressed(event) => { if event.text == Key.Escape { root.release-note(); return accept; } return reject; }
+    Rectangle { width: 100%; height: 100%; background: Tokens.dd-ink-2; border-radius: 4px; }
+    VerticalLayout {
+        spacing: 6px;
+        HorizontalLayout {
+            height: 28px; spacing: 4px;
+            Text { text: root.rebuilding ? "Rebuilding…" : !root.available ? "Unavailable for this instrument" : root.can-edit ? "KEY MAP" : "KEY MAP · PREPARED"; font-family: Tokens.font-ui; font-size: 11px; font-weight: 600; color: root.rebuilding ? Tokens.dd-warn : Tokens.dd-paper-2; vertical-alignment: center; }
+            Text { text: "\{round(root.zoom * 100)}%"; font-family: Tokens.font-value; font-size: 11px; color: Tokens.dd-paper-3; vertical-alignment: center; width: 40px; }
+            Button { width: 28px; text: "−"; enabled: root.enabled && root.zoom > 1; clicked => { root.set-zoom(root.zoom / 1.5); } }
+            Button { width: 28px; text: "+"; enabled: root.enabled && root.zoom < 8; clicked => { root.set-zoom(root.zoom * 1.5); } }
+            Button { width: 40px; text: "Fit"; enabled: root.enabled; clicked => { root.set-zoom(1); } }
+        }
+        plot := Rectangle {
+            horizontal-stretch: 1; vertical-stretch: 1;
+            VelocityAxis { x: 0px; y: 0px; height: max(0px, parent.height - (root.zoom > 1 ? 8px : 0px) - (root.compact ? 40px : 56px) - 5px); }
+            viewport := ScrollViewport {
+                x: 30px; y: 0px; width: max(0px, parent.width - 30px); height: parent.height;
+                content-width: self.width * root.zoom.clamp(1, 8);
+                content-height: max(0px,self.height - (root.zoom > 1 ? 8px : 0px));
+                // Behind child input surfaces: wheel events arrive here before
+                // Flickable scrolls, while ordinary zone/key clicks keep priority.
+                TouchArea {
+                    x: 0px; y: 0px; width: viewport.content-width; height: viewport.content-height; enabled: root.enabled;
+                    scroll-event(event) => {
+                        if event.modifiers.control || event.modifiers.meta {
+                            let delta = event.delta-y != 0px ? event.delta-y : event.delta-x;
+                            if delta != 0px { root.set-zoom(root.zoom * (delta > 0px ? 1.1 : 1 / 1.1)); }
+                            return accept;
+                        }
+                        return reject;
+                    }
+                }
+                grid := VelocityGrid {
+                    x: 0px; y: 0px; width: viewport.content-width; height: max(0px, viewport.content-height - (root.compact ? 40px : 56px) - 5px);
+                    low-note: root.low-note; high-note: root.high-note;
+                    for zone[index] in root.zones : ZoneRectangle {
+                        zone: zone; low-note: root.low-note; high-note: root.high-note;
+                        x: (zone.lo - root.low-note) * self.semitone-width;
+                        y: (127 - zone.vel-hi) / 127 * grid.height;
+                        width: (zone.hi - zone.lo + 1) * self.semitone-width;
+                        height: max(1px, (zone.vel-hi - zone.vel-lo + 1) / 127 * grid.height);
+                        semitone-width: grid.width / max(1, root.high-note - root.low-note + 1); grid-height: grid.height;
+                        selected: zone.id == root.selected-id;
+                        init => { if self.selected { root.selected-index = index; } }
+                        changed selected => { if self.selected { root.selected-index = index; } }
+                        editable: root.enabled && root.can-edit && !root.rebuilding && root.available;
+                        select => { root.choose(index); } audition => { root.audition(zone); }
+                        release-note => { root.release-note(); }
+                        navigate(direction) => { root.choose((index + direction).clamp(0,root.zones.length - 1)); }
+                        edit-zone(changed-zone) => { root.request-edit(changed-zone); }
+                    }
+                }
+                PianoKeyboard {
+                    x: 0px; y: grid.height + 5px; width: viewport.content-width; height: root.compact ? 40px : 56px;
+                    low-note: root.low-note; high-note: root.high-note; selected-zone: root.selected-zone;
+                    has-selection: root.coherent-selection; generation: root.generation; release-epoch: root.release-epoch;
+                    audition-enabled: root.enabled && root.available && !root.rebuilding;
+                    note-on(note,velocity) => {
+                        if root.playing-note >= 0 { let old = root.playing-note; root.playing-note = -1; root.note-off(old); }
+                        root.note-on(note,velocity);
+                    }
+                    note-off(note) => { root.note-off(note); }
+                }
+            }
+        }
+        Text {
+            height: 16px; text: root.zones.length == 0 ? "No prepared zones" : root.selection-policy != "" ? root.selection-policy : "Select a zone; Enter auditions inside its velocity range.";
+            color: Tokens.dd-paper-3; font-family: Tokens.font-ui; font-size: 11px; overflow: elide;
+        }
+    }
+}

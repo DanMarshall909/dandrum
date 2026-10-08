@@ -1,0 +1,53 @@
+import { Tokens, ViewportMetrics } from "../../ui/slint/dandrum.slint";
+import { StartModulationRail } from "../../ui/slint/display/StartModulationRail.slint";
+import { WaveformPanel } from "../../ui/slint/display/WaveformPanel.slint";
+import { Button } from "../../ui/slint/controls/Button.slint";
+import { AudioFixtures } from "../../ui/slint/catalog/AudioFixtures.slint";
+
+export component WaveformTests inherits Window {
+    width: 820px; height: 420px; background: Tokens.surface-window;
+    out property <string> test-report: "Not run";
+    private property <int> checks;
+    private property <int> failures;
+    function require(ok: bool) { root.checks += 1; if !ok { root.failures += 1; } }
+    public function run-tests() {
+        root.checks = 0; root.failures = 0;
+        // Independent source coordinates: region [0.2,0.8], offset25%=0.35.
+        root.require(abs(positive.source-start - 0.35) < 0.0001);
+        root.require(abs(positive.source-end - 0.65) < 0.0001);
+        root.require(!positive.clipped);
+        root.require(abs(negative.source-start - 0.35) < 0.0001);
+        root.require(abs(negative.source-end - 0.2) < 0.0001);
+        root.require(negative.clipped);
+        root.require(abs(negative.lower - 0.2) < 0.0001 && abs(negative.upper - 0.35) < 0.0001);
+        root.require(abs(over.source-end - 0.8) < 0.0001 && over.clipped);
+        root.require(abs(empty.source-start - empty.source-end) < 0.0001);
+        root.require(wave.start-modulation-visible);
+        wave.display = "spectral";
+        root.require(wave.start-modulation-visible);
+        wave.slices = [{ id: "slice", name: "Attack", start: 0.2, end: 0.8 }];
+        root.require(!wave.start-modulation-visible);
+        wave.slices = []; wave.state = "loading";
+        root.require(!wave.start-modulation-visible);
+        wave.state = "ready"; wave.start-modulation-enabled = false;
+        root.require(!wave.start-modulation-visible);
+        wave.start-modulation-enabled = true; wave.display = "wave";
+        root.test-report = root.failures == 0 ? "PASS: " + root.checks + " waveform rail contracts" : "FAIL: " + root.failures + " waveform rail checks";
+    }
+    init => { ViewportMetrics.width = root.width; ViewportMetrics.height = root.height; }
+    VerticalLayout {
+        padding: 20px; spacing: 12px;
+        run-tests-button := Button { text: "Run tests"; clicked => { root.run-tests(); } }
+        report := Text { text: root.test-report; accessible-label: root.test-report; color: Tokens.text-primary; font-size: 13px; }
+        positive := StartModulationRail { width: 600px; region-start: 0.2; region-end: 0.8; start-offset: 0.25; depth: 0.5; }
+        negative := StartModulationRail { width: 600px; region-start: 0.2; region-end: 0.8; start-offset: 0.25; depth: -0.5; tint: Tokens.dd-mod-b; }
+        over := StartModulationRail { width: 600px; region-start: 0.2; region-end: 0.8; start-offset: 0.75; depth: 0.5; }
+        empty := StartModulationRail { width: 600px; region-start: 0.6; region-end: 0.4; depth: 0.5; }
+        wave := WaveformPanel {
+            height: 220px; state: "ready"; label: "Modulated sample start";
+            peaks: AudioFixtures.peaks; spectral-cells: AudioFixtures.spectral-cells; spectral-state: "ready";
+            region-start: 0.2; region-end: 0.8; start-offset-visible: true; start-offset: 0.25;
+            start-modulation-enabled: true; start-modulation-depth: 0.5;
+        }
+    }
+}

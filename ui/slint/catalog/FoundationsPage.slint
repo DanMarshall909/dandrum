@@ -1,0 +1,25 @@
+import { Tokens } from "../theme.slint";
+import { PageHeading } from "PageHeading.slint";
+import { Panel } from "../layout/Panel.slint";
+import { PaletteGallery } from "PaletteGallery.slint";
+import { IconGallery } from "IconGallery.slint";
+
+export component FoundationsPage inherits Rectangle {
+    in property <string> state: "default";
+    callback event(string);
+    min-width: 560px;
+    preferred-height: 992px;
+    VerticalLayout {
+        spacing: 12px;
+        PageHeading { title: "Foundations"; description: "146 shared tokens, embedded typefaces and the original icon geometry."; }
+        Panel {
+            title: "Typography"; preferred-height: 168px;
+            Text { text: "dandrum / Barlow"; color: Tokens.text-primary; font-family: Tokens.font-display; font-size: 30px; font-weight: 600; }
+            Text { text: "Barlow Semi Condensed · labels and interface text"; color: Tokens.text-secondary; font-family: Tokens.font-ui; font-size: 14px; font-weight: 600; }
+            Text { text: "−3.0 dB   1.000×   L25   1–63"; color: Tokens.text-primary; font-family: Tokens.font-value; font-size: 14px; }
+            Text { text: "Minimum text 11 px · spacing 2 / 4 / 6 / 8 / 12 / 16 / 24 / 32 · radii 2 / 4 / 6"; color: Tokens.text-tertiary; font-family: Tokens.font-ui; font-size: 11px; wrap: word-wrap; }
+        }
+        PaletteGallery { }
+        IconGallery { }
+    }
+}

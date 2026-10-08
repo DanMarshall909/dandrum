@@ -1,0 +1,102 @@
+export { ValueCodec, ParsedValue } from "../../ui/slint/controls/ValueCodec.slint";
+import { Button } from "../../ui/slint/controls/Button.slint";
+import { Toggle } from "../../ui/slint/controls/Toggle.slint";
+import { Switch } from "../../ui/slint/controls/Switch.slint";
+import { NumericField } from "../../ui/slint/controls/NumericField.slint";
+import { Knob } from "../../ui/slint/controls/Knob.slint";
+import { Slider } from "../../ui/slint/controls/Slider.slint";
+
+// Behavioral contract written before component implementation. Click Run tests.
+export component ControlsTest inherits Window {
+    title: "DanDrum control behavior tests";
+    width: 820px; height: 460px; background: #211B16;
+    out property <bool> tests-passed: false;
+    out property <string> test-report: "Not run";
+    out property <int> checks;
+    out property <int> clicks;
+    out property <int> toggles;
+    out property <int> beginnings;
+    out property <int> endings;
+    out property <int> changes;
+    public function expect(result: bool, description: string) {
+        root.checks += 1;
+        if !result { root.tests-passed = false; root.test-report += "FAIL: " + description + "\n"; }
+    }
+    callback run-tests() -> bool;
+    run-tests => {
+        root.tests-passed = true; root.test-report = ""; root.checks = 0;
+        root.clicks = 0; root.toggles = 0; root.beginnings = 0; root.endings = 0; root.changes = 0;
+        action.enabled = true; action.activate();
+        root.expect(root.clicks == 1, "Enabled action fires once");
+        action.enabled = false; action.activate();
+        root.expect(root.clicks == 1, "Disabled action cannot fire"); action.enabled = true;
+        toggle.enabled = true; toggle.checked = false; toggle.activate();
+        root.expect(toggle.checked && root.toggles == 1, "Toggle changes and notifies once");
+        toggle.enabled = false; toggle.activate();
+        root.expect(toggle.checked && root.toggles == 1, "Disabled toggle does not change"); toggle.enabled = true;
+        latch.checked = false; latch.activate(); root.expect(latch.checked, "Switch latches");
+        knob.enabled = true; knob.value = 0; knob.set-value(1000);
+        root.expect(knob.value == 6, "Knob clamps to actual upper bound");
+        root.expect(root.beginnings == 1 && root.endings == 1 && root.changes == 1, "One nudge is one host gesture");
+        knob.set-value(-1000); root.expect(knob.value == -60, "Knob clamps to actual lower bound");
+        knob.set-value(-10); knob.reset-value(); root.expect(knob.value == -3, "Reset uses actual default");
+        knob.value = -10; let before-begin = root.beginnings; let before-end = root.endings;
+        knob.begin-gesture(); knob.update-gesture(-9); knob.update-gesture(-8); knob.end-gesture(); knob.end-gesture();
+        root.expect(root.beginnings == before-begin + 1 && root.endings == before-end + 1, "Drag has one begin and one end");
+        knob.enabled = false; knob.set-value(0); knob.reset-value();
+        root.expect(knob.value == -8, "Disabled range rejects programmatic user actions"); knob.enabled = true;
+        knob.read-only = true; knob.set-value(0); root.expect(knob.value == -8, "Prepared range is inert"); knob.read-only = false;
+        knob.begin-edit(); knob.commit-text("-12"); root.expect(knob.value == -12, "Typed values use the actual parameter range");
+        knob.begin-edit(); knob.commit-text("-3"); root.expect(knob.value == -3, "Negative numeric values are accepted");
+        knob.begin-edit(); knob.commit-text("garbage"); root.expect(knob.value == -3, "Invalid text cannot become zero"); knob.cancel-edit();
+        knob.begin-edit(); knob.cancel-edit(); root.expect(knob.value == -3 && !knob.editing, "Escape cancels without changing base value");
+        knob.begin-edit(); knob.commit-text("NaN"); root.expect(knob.value == -3 && knob.edit-invalid, "Nonfinite text is rejected"); knob.cancel-edit();
+        field.value = 3; field.set-value(6.7); root.expect(field.value == 7, "Numeric field snaps to declared steps");
+        field.set-value(100); root.expect(field.value == 8, "Numeric field clamps");
+        field.step = 3; field.set-value(4); field.set-value(8);
+        root.expect(field.value == 8, "Maximum stays reachable when the step does not divide the span"); field.step = 1; field.value = 8;
+        field.read-only = true; field.set-value(2); root.expect(field.value == 8, "Prepared numeric field is inert"); field.read-only = false;
+        slider.value = 50; slider.set-value(125); root.expect(slider.value == 100, "Slider clamps");
+        slider.value = 50; slider.nudge(1, true); root.expect(slider.value == 51, "Shift arrow uses one percent of actual range");
+        slider.value = 50; slider.nudge(-1, false); root.expect(slider.value == 45, "Arrow uses five percent of actual range");
+        let old-changes = root.changes; knob.value = -24;
+        root.expect(root.changes == old-changes, "Host property updates never echo a user gesture");
+        knob.host-write(-24);
+        root.expect(root.changes == old-changes && knob.host-active, "A host update sets activity without emitting a user gesture");
+        modulation-knob.value = 0.8;
+        root.expect(abs(modulation-knob.effective-value - 1) < 0.00001 && modulation-knob.clipped && modulation-knob.live-clipped, "Modulation clips effective output without changing base");
+        root.expect(modulation-knob.value == 0.8, "Modulation leaves the base parameter untouched");
+        modulation-knob.reset-peaks();
+        root.expect(modulation-knob.peak-value == 1 && modulation-knob.trough-value == 1, "Reset peaks uses current effective output");
+        root.test-report = root.tests-passed ? "PASS: \{root.checks} control behavior checks" : root.test-report;
+        return root.tests-passed;
+    }
+    VerticalLayout {
+        padding: 24px; spacing: 20px;
+        Text { text: "CONTROLS / BEHAVIOR CONTRACT"; color: #F2E6D3; font-size: 20px; }
+        HorizontalLayout {
+            spacing: 18px;
+            action := Button { text: "Action"; clicked => { root.clicks += 1; } }
+            toggle := Toggle { label: "Follow selected pad"; toggled(v) => { root.toggles += 1; } }
+            latch := Switch { label: "Reverse"; }
+            field := NumericField { label: "Slice"; minimum: 1; maximum: 8; step: 1; default-value: 1; value: 3; }
+        }
+        HorizontalLayout {
+            spacing: 24px;
+            knob := Knob {
+                label: "Level"; unit: "dB"; minimum: -60; maximum: 6; step: 0.1; default-value: -3; value: -3;
+                gesture-began => { root.beginnings += 1; } gesture-ended => { root.endings += 1; }
+                changed(v) => { root.changes += 1; }
+            }
+            Slider { label: "Send"; vertical: true; value: 0.4; }
+            slider := Slider { label: "Mix"; minimum: 0; maximum: 100; step: 1; default-value: 50; value: 50; unit: "%"; }
+            modulation-knob := Knob { label: "Modulation"; value: 0.8; modulations: [
+                {slot: 0, source: "Velocity", depth: 0.3, live: 1, active: true},
+                {slot: 1, source: "Random", depth: -0.1, live: 0, active: false}
+            ]; }
+            Knob { label: "Prepared"; value: 0.25; read-only: true; }
+        }
+        run-tests-button := Button { text: "Run tests"; primary: true; clicked => { root.run-tests(); } }
+        report := Text { text: root.test-report; color: root.tests-passed ? #5FD38A : #F2E6D3; wrap: word-wrap; }
+    }
+}

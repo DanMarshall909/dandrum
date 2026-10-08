@@ -1,0 +1,93 @@
+import { ContextMenu } from "../../ui/slint/navigation/ContextMenu.slint";
+import { MenuButton } from "../../ui/slint/navigation/MenuButton.slint";
+import { MenuSurface } from "../../ui/slint/navigation/MenuSurface.slint";
+import { TooltipArea } from "../../ui/slint/feedback/TooltipArea.slint";
+import { Button } from "../../ui/slint/controls/Button.slint";
+import { Tokens } from "../../ui/slint/theme.slint";
+import { ViewportMetrics } from "../../ui/slint/foundation/ViewportMetrics.slint";
+
+export component MenuTests inherits Window {
+    width: 820px; height: 560px; background: Tokens.surface-window;
+    init => { ViewportMetrics.width = root.width; ViewportMetrics.height = root.height; }
+    changed width => { ViewportMetrics.width = root.width; }
+    changed height => { ViewportMetrics.height = root.height; }
+    out property <string> report: "READY: Run tests";
+    private property <int> actions;
+    private property <string> last-action;
+    private property <int> target-clicks;
+    private property <int> failures;
+    private property <int> checks;
+    private property <int> lifecycle-stage;
+    private property <int> repair-events;
+    callback run-tests();
+    function check(ok: bool, message: string) { root.checks += 1; if !ok { root.failures += 1; root.report += message + "; "; } }
+    run-tests => {
+        root.report = ""; root.actions = 0; root.last-action = ""; root.target-clicks = 0; root.failures = 0; root.checks = 0;
+        surface.activate(0); root.check(root.actions == 1, "menu action delivered");
+        surface.activate(1); root.check(root.actions == 1, "disabled action rejected");
+        surface.activate(2); root.check(root.actions == 1, "separator is not an action");
+        surface.activate(-1); surface.activate(50); root.check(root.actions == 1, "invalid menu index rejected");
+        context.activate(0); root.check(root.actions == 2, "native context action delivered");
+        context.activate(1); root.check(root.actions == 2, "native disabled action rejected");
+        context.enabled = false; context.activate(0); context.enabled = true;
+        root.check(root.actions == 2, "disabled native context rejects actions");
+        root.repair-events = 0;
+        recovery-surface.items = [{id:"first",disabled:true}, {id:"second",disabled:true}];
+        recovery-surface.current-index = -1; recovery-surface.reconcile();
+        tooltip-target.enabled = true; tooltip-target.target-focused = true;
+        root.lifecycle-stage = 1;
+    }
+    Timer {
+        interval: 20ms; running: root.lifecycle-stage > 0;
+        triggered => {
+            if root.lifecycle-stage == 1 {
+                root.check(recovery-surface.current-index == -1, "all disabled menu items have no selection");
+                root.check(tooltip-target.open, "focused tooltip opens");
+                recovery-surface.items = [{id:"first",disabled:true}, {id:"second",label:"Recovered"}];
+                tooltip-target.enabled = false;
+                root.lifecycle-stage = 2;
+            } else {
+                root.check(recovery-surface.current-index == 1 && root.repair-events == 0, "same-length menu recovers silently when an item becomes enabled");
+                root.check(!tooltip-target.open, "disabling the tooltip closes its bubble");
+                tooltip-target.target-focused = false; tooltip-target.enabled = true;
+                root.lifecycle-stage = 0;
+                root.report = root.failures == 0 ? "PASS: \{root.checks} menu and lifecycle checks" : "FAIL: " + root.report;
+            }
+        }
+    }
+    recovery-surface := MenuSurface {
+        visible: false; width: 100px; height: 60px;
+        items: [{id:"first",disabled:true}, {id:"second",disabled:true}];
+        selected(id) => { root.repair-events += 1; }
+    }
+    VerticalLayout {
+        padding: 20px; spacing: 16px;
+        run-tests-button := Button { text: "Run tests"; clicked => { root.run-tests(); } }
+        test-report := Text { text: root.report; accessible-label: root.report; font-size: 13px; color: Tokens.text-primary; }
+        event-report := Text { text: "Actions: \{root.actions}; last: \{root.last-action}; target clicks: \{root.target-clicks}"; accessible-label: self.text; font-size: 13px; color: Tokens.text-secondary; }
+        menu-button := MenuButton {
+            label: "Output"; value: "Main";
+            items: [{id:"main",label:"Main"},{id:"blocked",label:"Unavailable",disabled:true},{id:"aux",label:"Aux 3–4"}];
+            selected(id) => { root.actions += 1; root.last-action = id; }
+        }
+        HorizontalLayout {
+            spacing: 24px;
+            surface := MenuSurface {
+                title: "PARAMETER";
+                items: [{id:"reset",label:"Reset to default",icon:"reset"}, {id:"blocked",label:"Unavailable",disabled:true}, {separator:true}, {id:"copy",label:"Copy value"}];
+                selected(id) => { root.actions += 1; root.last-action = id; }
+            }
+            context := ContextMenu {
+                items: [{id:"reset",label:"Reset to default"},{id:"blocked",label:"Unavailable",disabled:true}];
+                selected(id) => { root.actions += 1; root.last-action = id; }
+                context-button := Button { text: "Context target"; clicked => { root.target-clicks += 1; } }
+            }
+        }
+        tooltip-target := TooltipArea {
+            height: 28px;
+            title: "Audition"; description: "Tooltip must not capture input.";
+            hover-button := Button { text: "Hover and click"; clicked => { root.actions += 1; root.last-action = "hover"; } }
+        }
+        tooltip-report := Text { text: "Tooltip: \{tooltip-target.open ? "open" : "closed"}"; accessible-label: self.text; height: 16px; color: Tokens.text-secondary; }
+    }
+}

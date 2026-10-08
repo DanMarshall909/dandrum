@@ -1,0 +1,88 @@
+import { Tokens } from "../theme.slint";
+import { ViewportMetrics } from "../foundation/ViewportMetrics.slint";
+import { FocusRing } from "../foundation/FocusRing.slint";
+import { ModAssignment } from "../modulation/types.slint";
+import { ModulationState } from "../modulation/ModulationState.slint";
+import { RangeControl } from "RangeControl.slint";
+import { RangeGesture } from "RangeGesture.slint";
+import { ControlLabel } from "ControlLabel.slint";
+import { SliderTrack } from "SliderTrack.slint";
+import { ValuePopup } from "ValuePopup.slint";
+
+export component Slider inherits RangeControl {
+    in property <bool> vertical;
+    in property <bool> bipolar;
+    in property <bool> compact;
+    in property <length> length: root.vertical ? (root.compact ? 88px : Tokens.slider-v-height) : (root.compact ? 112px : Tokens.slider-h-width);
+    in property <bool> assigning;
+    in property <[ModAssignment]> modulations;
+    out property <float> effective-value: root.minimum + modulation.effective.clamp(0, 1) * (root.maximum - root.minimum);
+    out property <bool> clipped: modulation.clip-low || modulation.clip-high;
+    out property <bool> live-clipped: modulation.live-clip-low || modulation.live-clip-high;
+    private property <bool> fine;
+    out property <bool> popup-visible;
+    private property <length> label-height: root.label != "" ? 17px : 0px;
+    private property <length> thickness: root.compact ? 20px : 24px;
+    width: root.vertical ? 64px : max(80px, root.length);
+    height: root.label-height + (root.vertical ? root.length + 20px : root.thickness);
+    z: root.popup-visible ? 100 : 0;
+    edit-requested => { root.popup-visible = true; }
+    edit-closed => { root.popup-visible = false; if root.interactive { root.focus(); } }
+    standard-menu-requested => { if root.interactive { parameter-menu.show({x: parameter-menu.width / 2, y: parameter-menu.height}); } }
+    capture-key-pressed(event) => { root.fine = event.modifiers.shift || event.text == Key.Shift; return reject; }
+    capture-key-released(event) => { root.fine = event.modifiers.shift; return reject; }
+    modulation := ModulationState { assignments: root.modulations; base: root.normalized-value; }
+    ControlLabel { x: 0; y: 0; width: root.vertical ? parent.width : parent.width / 2; height: root.label-height; label: root.label; enabled: root.enabled; compact: root.compact; horizontal-alignment: root.vertical ? center : left; }
+    value-label := Text {
+        x: root.vertical ? 0px : parent.width / 2; y: root.vertical ? root.label-height + root.length + 3px : 0px;
+        width: root.vertical ? parent.width : parent.width / 2; height: 14px;
+        visible: root.vertical || root.label != "";
+        text: root.value-text + (root.unit != "" && root.unit != "pan" ? " " + root.unit : ""); font-family: Tokens.font-value; font-size: root.compact ? Tokens.type-micro : Tokens.type-value;
+        color: !root.enabled ? Tokens.text-disabled : root.host-active ? Tokens.dd-host : Tokens.text-primary;
+        horizontal-alignment: root.vertical ? center : right;
+        TouchArea { enabled: root.interactive; mouse-cursor: text; clicked => { root.begin-edit(); } }
+    }
+    track := SliderTrack {
+        x: root.vertical ? (parent.width - self.width) / 2 : 0px; y: root.label-height;
+        width: root.vertical ? root.thickness : root.length; height: root.vertical ? root.length : root.thickness;
+        vertical: root.vertical; bipolar: root.bipolar; value: root.normalized-value; enabled: root.enabled;
+        hovered: touch.has-hover && root.interactive; active: root.gesture-active; assigning: root.assigning && !root.read-only; host-automated: root.host-active; modulations: root.modulations;
+        FocusRing { active: root.interactive && (root.has-focus || root.focused || root.editing); }
+        parameter-menu := ContextMenuArea {
+            enabled: root.interactive;
+            Menu { title: "Parameter";
+                MenuItem { title: "Reset to default"; enabled: root.interactive; activated => { root.reset-value(); } }
+                MenuItem { title: "Type value…"; enabled: root.interactive; activated => { root.begin-edit(); } }
+                MenuItem { title: "Modulation…"; enabled: root.interactive; activated => { root.request-context-menu(); } }
+            }
+            touch := RangeGesture {
+                enabled: root.interactive; value: root.value; minimum: root.minimum; maximum: root.maximum;
+                vertical: root.vertical; jump-on-click: true; pixels-per-range: root.length - 12px; fine <=> root.fine;
+                started => { root.focus(); root.begin-gesture(); }
+                updated(v) => { root.update-gesture(v); }
+                ended => { root.end-gesture(); }
+                reset-requested => { root.reset-value(); }
+                wheeled(direction, precise) => { root.wheel(direction, precise); }
+                context-requested(x, y) => { parameter-menu.show({x: x, y: y}); }
+            }
+        }
+    }
+    popup := Rectangle {
+        visible: root.popup-visible; z: 100;
+        x: ViewportMetrics.clamp-x(root.absolute-position.x, self.width, 8px) - root.absolute-position.x;
+        y: ViewportMetrics.place-y(root.absolute-position.y, root.height, self.height, 4px, 8px) - root.absolute-position.y;
+        width: 174px;
+        height: 36px + (root.modulations.length > 0 ? 29px + root.modulations.length * 23px : 0px) + (root.host-active ? 30px : 0px);
+        ValuePopup {
+            above: popup.y < 0px;
+            anchor-x: root.width / 2 - popup.x;
+            label: root.label; value-text: root.value-text; unit: root.unit; editing: root.editing; invalid: root.edit-invalid; host-automated: root.host-active;
+            show-peaks: root.modulations.length > 0; peak: root.minimum + modulation.peak * (root.maximum - root.minimum); trough: root.minimum + modulation.trough * (root.maximum - root.minimum);
+            clipped: root.clipped; live-clipped: root.live-clipped; modulations: root.modulations;
+            edit-requested => { root.begin-edit(); }
+            submitted(text) => { root.commit-text(text); }
+            cancelled => { root.cancel-edit(); }
+            reset-peaks => { modulation.reset-peaks(); }
+        }
+    }
+}

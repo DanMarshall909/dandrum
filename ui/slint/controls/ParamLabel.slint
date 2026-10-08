@@ -1,0 +1,32 @@
+import { Tokens } from "../theme.slint";
+import { ControlLabel } from "ControlLabel.slint";
+import { ValueReadout } from "ValueReadout.slint";
+
+// Stacked, noninteractive label and value, as defined by the guide.
+export component ParamLabel inherits Rectangle {
+    in property <string> label;
+    in property <string> value;
+    in property <string> unit;
+    in property <string> align: "left";
+    in property <string> size: root.compact ? "sm" : "md";
+    in property <bool> compact;
+    in property <bool> enabled: true;
+    in property <bool> host-automated;
+    in property <bool> show-value: root.value != "" || root.unit != "";
+    out property <color> value-color: !root.enabled ? Tokens.text-disabled : root.host-automated ? Tokens.dd-host : Tokens.text-primary;
+    out property <length> value-font-size: root.size == "lg" ? Tokens.type-value-lg : root.size == "sm" ? Tokens.type-micro : Tokens.type-value;
+    height: 14px + (root.show-value ? 2px + root.value-font-size * 1.4 : 0px);
+    preferred-width: max(caption.preferred-width, readout.preferred-width);
+    accessible-role: text;
+    accessible-label: root.label + (root.show-value ? ": " + root.value + " " + root.unit : "");
+    caption := ControlLabel {
+        x: 0px; y: 0px; width: parent.width; height: 14px;
+        label: root.label; compact: root.size == "sm"; enabled: root.enabled;
+        horizontal-alignment: root.align == "center" ? center : root.align == "right" ? right : left;
+    }
+    readout := ValueReadout {
+        x: 0px; y: 16px; width: parent.width; visible: root.show-value;
+        value: root.value; unit: root.unit; align: root.align;
+        font-size: root.value-font-size; foreground: root.value-color;
+    }
+}

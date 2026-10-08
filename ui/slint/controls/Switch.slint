@@ -1,0 +1,28 @@
+import { Tokens } from "../theme.slint";
+import { FocusRing } from "../foundation/FocusRing.slint";
+import { ActionArea } from "ActionArea.slint";
+import { ButtonFace } from "ButtonFace.slint";
+
+// Instrument latching key. Shares interaction semantics with Toggle, not its shape.
+export component Switch inherits ActionArea {
+    in-out property <bool> checked;
+    in property <bool> compact;
+    in property <bool> focused;
+    callback toggled(bool);
+    min-width: root.compact ? 52px : 64px;
+    preferred-width: content.preferred-width;
+    height: root.compact ? Tokens.button-height-sm : Tokens.button-height;
+    accessible-checkable: true;
+    accessible-checked: root.checked;
+    activated => { root.checked = !root.checked; root.toggled(root.checked); }
+    FocusRing { active: root.enabled && (root.has-focus || root.focused); }
+    ButtonFace {
+        enabled: root.enabled; hovered: root.hovered; pressed: root.down;
+        y: root.down && root.enabled ? 1px : 0px;
+        content := HorizontalLayout {
+            spacing: Tokens.space-3; padding-left: 8px; padding-right: 8px; alignment: center;
+            Rectangle { width: 3px; height: root.compact ? 10px : 12px; border-radius: 1px; background: !root.enabled ? Tokens.dd-ink-6 : root.checked ? Tokens.color-selected : Tokens.surface-well; }
+            Text { text: root.label; color: !root.enabled ? Tokens.text-disabled : root.checked ? Tokens.text-primary : Tokens.text-secondary; font-family: Tokens.font-ui; font-size: root.compact ? Tokens.type-micro : Tokens.type-label; font-weight: 600; letter-spacing: Tokens.tracking-caps * self.font-size; vertical-alignment: center; }
+        }
+    }
+}

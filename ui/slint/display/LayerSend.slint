@@ -1,0 +1,20 @@
+import { Tokens } from "../theme.slint";
+import { NumericField } from "../controls/NumericField.slint";
+import { LayerSend as SendModel } from "types.slint";
+
+export component LayerSend inherits Rectangle {
+    in property <SendModel> send;
+    in property <bool> available: true;
+    callback changed(string,float);
+    callback gesture-began(string); callback gesture-ended(string);
+    changed send => { if value-input.value != root.send.value { value-input.value = root.send.value; } }
+    width: 76px; height: 46px;
+    Text { x: 0px; y: 0px; width: 100%; height: 15px; text: root.send.name; font-family: Tokens.font-ui; font-size: 11px; font-weight: 600; color: Tokens.dd-paper-3; overflow: elide; }
+    value-input := NumericField {
+        y: 19px; width: 72px; value: root.send.value; minimum: -60; maximum: 12; step: 0.5;
+        unit: "dB"; label: ""; accessible-label: "\{root.send.name} send"; read-only: !root.send.available; enabled: root.available;
+        changed(value) => { if root.available && root.send.available { root.changed(root.send.id,value); } }
+        gesture-began => { if root.available && root.send.available { root.gesture-began(root.send.id); } }
+        gesture-ended => { root.gesture-ended(root.send.id); }
+    }
+}

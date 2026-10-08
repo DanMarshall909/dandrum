@@ -1,0 +1,25 @@
+import { Tokens } from "../theme.slint";
+
+export component ValueReadout inherits Rectangle {
+    in property <string> value;
+    in property <string> unit;
+    in property <string> align: "left";
+    in property <length> font-size: Tokens.type-value;
+    in property <color> foreground: Tokens.text-primary;
+    height: root.font-size * 1.4;
+    preferred-width: content.preferred-width;
+    content := HorizontalLayout {
+        spacing: root.unit != "" ? 3px : 0px;
+        alignment: root.align == "center" ? center : root.align == "right" ? end : start;
+        value-text := Text {
+            text: root.value; color: root.foreground;
+            font-family: Tokens.font-value; font-size: root.font-size;
+            vertical-alignment: center; horizontal-stretch: 0; overflow: elide;
+        }
+        if root.unit != "" : Text {
+            text: root.unit; color: Tokens.text-tertiary;
+            font-family: Tokens.font-value; font-size: root.font-size;
+            vertical-alignment: center; horizontal-stretch: 0;
+        }
+    }
+}

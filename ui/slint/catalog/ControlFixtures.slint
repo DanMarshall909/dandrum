@@ -1,0 +1,18 @@
+// Catalog-only state. These examples never bind or write an audio parameter.
+export global ControlFixtures {
+    in-out property <float> level: -3;
+    in-out property <float> pitch: 1;
+    in-out property <float> tune: 0;
+    in-out property <float> mix: 50;
+    in-out property <float> blend: 0.2;
+    in-out property <float> send: 0.4;
+    in-out property <float> slice: 3;
+    in-out property <bool> follow: true;
+    in-out property <bool> reverse;
+    in-out property <bool> loop: true;
+    out property <string> last-event: "Hover a knob for its value. Drag, type, or use the keyboard.";
+    out property <int> gestures;
+    public function begin(name: string) { root.gestures += 1; root.last-event = "Editing " + name; }
+    public function change(name: string, value: float) { root.last-event = "\{name} → \{round(value * 1000) / 1000}"; }
+    public function action(name: string) { root.last-event = name + " · UI event"; }
+}

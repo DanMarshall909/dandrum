@@ -1,0 +1,69 @@
+import { Tokens } from "../../ui/slint/theme.slint";
+import { Button } from "../../ui/slint/controls/Button.slint";
+import { LayerChainRow } from "../../ui/slint/display/LayerChainRow.slint";
+import { LayerSend } from "../../ui/slint/display/LayerSend.slint";
+
+// These adapters persist across host model updates; no outer repeater recreates them.
+export component DisplayBindings inherits Window {
+    title: "Dandrum persistent display bindings";
+    width: 850px; height: 330px; background: Tokens.surface-window;
+    in-out property <float> binding-level: -3;
+    in-out property <float> binding-send: -12;
+    in-out property <bool> binding-muted;
+    private property <int> level-edits;
+    private property <int> send-edits;
+    private property <int> mute-edits;
+    private property <int> level-begins;
+    private property <int> level-ends;
+    private property <int> send-begins;
+    private property <int> send-ends;
+    private property <bool> tests-ran;
+    private property <bool> contract-ok;
+    public function exercise() {
+        root.contract-ok = row.layer.level == root.binding-level
+            && row.layer.muted == root.binding-muted && send.send.value == root.binding-send;
+        root.tests-ran = true;
+    }
+    VerticalLayout {
+        padding: 12px; spacing: 12px;
+        HorizontalLayout {
+            height: 28px; spacing: 8px;
+            run-tests-button := Button { width: 110px; text: "Run tests"; clicked => { root.exercise(); } }
+            report := Text {
+                color: Tokens.text-primary;
+                text: !root.tests-ran ? "Not run" : root.contract-ok ? "PASS: persistent display models" : "FAIL: persistent display models";
+            }
+            host-refresh := Button {
+                width: 130px; text: "Host refresh";
+                clicked => { root.binding-level = -18; root.binding-send = -24; root.binding-muted = false; }
+            }
+        }
+        binding-report := Text {
+            height: 24px; color: Tokens.text-primary; font-family: Tokens.font-value; font-size: 11px;
+            text: "Bound level: \{root.binding-level}; send: \{root.binding-send}; muted: \{root.binding-muted ? 1 : 0}; edits: \{root.level-edits},\{root.send-edits},\{root.mute-edits}";
+        }
+        gesture-report := Text {
+            height: 24px; color: Tokens.text-primary; font-family: Tokens.font-value; font-size: 11px;
+            text: "Level gestures: \{root.level-begins},\{root.level-ends}; send gestures: \{root.send-begins},\{root.send-ends}";
+        }
+        row := LayerChainRow {
+            layer: {id:"binding",name:"Binding layer",source:"Sample",detail:"Persistent acknowledged host model",parameters:[],modules:[],
+                sends:[],output:"Main",level:root.binding-level,muted:root.binding-muted,
+                can-level:true,can-mute:true,can-add:false,can-output:false};
+            level-changed(value) => { root.binding-level = value; root.level-edits += 1; }
+            mute-changed(value) => { root.binding-muted = value; root.mute-edits += 1; }
+            level-gesture-began => { root.level-begins += 1; }
+            level-gesture-ended => { root.level-ends += 1; }
+        }
+        send := LayerSend {
+            send: {id:"room",name:"Room",value:root.binding-send,available:true};
+            changed(id,value) => { root.binding-send = value; root.send-edits += 1; }
+            gesture-began(id) => { root.send-begins += 1; }
+            gesture-ended(id) => { root.send-ends += 1; }
+        }
+        Text {
+            height: 32px; color: Tokens.text-secondary; font-family: Tokens.font-ui; font-size: 11px;
+            text: "Edit level, send, and mute; Host refresh must silently replace all three displayed values.";
+        }
+    }
+}

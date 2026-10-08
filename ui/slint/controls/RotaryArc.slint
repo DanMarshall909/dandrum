@@ -1,0 +1,20 @@
+// Reusable 270° arc. Angles use the same geometry at 28/36/48/64 logical px.
+export component RotaryArc inherits Path {
+    in property <float> from;
+    in property <float> to: 1;
+    in property <length> radius: 16px;
+    in property <color> tint;
+    in property <length> thickness: 1.5px;
+    private property <float> a: min(root.from, root.to).clamp(0, 1);
+    private property <float> b: max(root.from, root.to).clamp(0, 1);
+    viewbox-width: root.width / 1px; viewbox-height: root.height / 1px;
+    stroke: root.tint; stroke-width: root.thickness; stroke-line-cap: round;
+    visible: root.b - root.a > 0.00001;
+    MoveTo { x: root.width / 2px + root.radius / 1px * cos((135 + 270 * root.a) * 1deg); y: root.height / 2px + root.radius / 1px * sin((135 + 270 * root.a) * 1deg); }
+    ArcTo {
+        x: root.width / 2px + root.radius / 1px * cos((135 + 270 * root.b) * 1deg);
+        y: root.height / 2px + root.radius / 1px * sin((135 + 270 * root.b) * 1deg);
+        radius-x: root.radius / 1px; radius-y: root.radius / 1px;
+        large-arc: root.b - root.a > 2 / 3; sweep: true;
+    }
+}

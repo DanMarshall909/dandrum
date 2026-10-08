@@ -1,0 +1,36 @@
+import { Tokens } from "../theme.slint";
+import { ModPalette } from "ModPalette.slint";
+import { ModGlyph } from "ModGlyph.slint";
+
+export component ModIndicator inherits Rectangle {
+    in property <int> slot;
+    in property <string> source;
+    in property <float> depth;
+    in property <bool> show-depth: true;
+    in property <bool> host;
+    in property <bool> active;
+    in property <bool> compact;
+    private property <color> tint: root.host ? Tokens.dd-host : ModPalette.tint(root.slot);
+    height: root.compact ? 18px : 20px;
+    preferred-width: content.preferred-width;
+    border-radius: Tokens.radius-1; border-width: 1px;
+    border-color: root.active ? root.tint : Tokens.border-control;
+    background: Tokens.surface-well;
+    accessible-role: text;
+    accessible-label: root.host ? "Host automation, DAW owned" : "Modulation " + ModPalette.letter(root.slot) + " " + root.source;
+    content := HorizontalLayout {
+        padding-left: 6px; padding-right: 6px; spacing: 5px; alignment: start;
+        if root.host : Path {
+            width: 10px; height: 10px; viewbox-width: 10; viewbox-height: 10;
+            commands: "M3 1 L3 4 M7 1 L7 4 M1.5 4 L8.5 4 L8.5 5.5 A3.5 3.5 0 0 1 1.5 5.5 Z";
+            stroke: root.tint; stroke-width: 1.4px;
+        }
+        if !root.host : ModGlyph { slot: root.slot; size: 9px; }
+        Text { text: root.host ? "HOST" : ModPalette.letter(root.slot); color: root.tint; font-family: Tokens.font-ui; font-size: Tokens.type-micro; font-weight: 600; vertical-alignment: center; }
+        if !root.host && root.source != "" : Text { text: root.source; color: Tokens.text-primary; font-family: Tokens.font-ui; font-size: Tokens.type-micro; vertical-alignment: center; overflow: elide; }
+        if !root.host && root.show-depth : Text {
+            text: "\{root.depth > 0 ? "+" : root.depth < 0 ? "−" : ""}\{round(abs(root.depth) * 100)}%";
+            color: root.tint; font-family: Tokens.font-value; font-size: Tokens.type-micro; vertical-alignment: center;
+        }
+    }
+}

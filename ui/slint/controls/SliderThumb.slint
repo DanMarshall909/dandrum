@@ -1,0 +1,18 @@
+import { Tokens } from "../theme.slint";
+export component SliderThumb inherits Rectangle {
+    in property <float> value;
+    in property <bool> vertical;
+    in property <bool> enabled: true;
+    in property <bool> hovered;
+    in property <bool> pressed;
+    Rectangle {
+        x: root.vertical ? (parent.width - self.width) / 2 : root.value.clamp(0, 1) * max(0px, parent.width - self.width);
+        y: root.vertical ? (1 - root.value.clamp(0, 1)) * max(0px, parent.height - self.height) : (parent.height - self.height) / 2;
+        width: root.vertical ? 16px : 12px; height: root.vertical ? 12px : 16px;
+        background: !root.enabled ? Tokens.dd-ink-4 : root.pressed ? Tokens.dd-ink-6 : root.hovered ? Tokens.dd-cap-hover : Tokens.dd-ink-5;
+        border-radius: Tokens.radius-1; border-width: 1px; border-color: Tokens.border-strong;
+        drop-shadow-color: #00000073; drop-shadow-blur: 3px; drop-shadow-offset-y: 2px;
+        Rectangle { x: 1px; y: 1px; width: parent.width - 2px; height: 1px; background: #FFFFFF14; }
+        Rectangle { width: root.vertical ? 8px : 2px; height: root.vertical ? 2px : 8px; background: root.enabled ? Tokens.dd-paper-1 : Tokens.text-disabled; border-radius: 1px; }
+    }
+}

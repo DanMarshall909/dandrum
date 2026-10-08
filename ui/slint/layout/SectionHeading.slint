@@ -1,0 +1,17 @@
+import { Tokens } from "../theme.slint";
+import { Heading } from "../foundation/Typography.slint";
+import { Icon } from "../icons.slint";
+
+export component SectionHeading inherits Rectangle {
+    in property <string> text;
+    in property <bool> prepared;
+    in property <bool> compact;
+    in property <color> tint: Tokens.text-secondary;
+    preferred-height: 24px;
+    preferred-width: heading.preferred-width + (root.prepared ? 20px : 0px);
+    HorizontalLayout {
+        spacing: Tokens.space-3;
+        if root.prepared : Icon { name: "lock"; tint: root.tint; size: 14px; }
+        heading := Heading { text: root.text; color: root.tint; font-size: root.compact ? 12px : 13px; }
+    }
+}

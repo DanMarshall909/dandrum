@@ -1,0 +1,56 @@
+import { Tokens } from "../theme.slint";
+import { FocusRing } from "../foundation/FocusRing.slint";
+import { DashedBorder } from "../foundation/DashedBorder.slint";
+import { ControlLabel } from "ControlLabel.slint";
+import { RangeControl } from "RangeControl.slint";
+import { RangeGesture } from "RangeGesture.slint";
+import { ValueEditor } from "ValueEditor.slint";
+
+export component NumericField inherits RangeControl {
+    in property <bool> compact;
+    private property <bool> fine;
+    value: 0; minimum: 0; maximum: 100; step: 1; default-value: 0;
+    keyboard-step: root.step; fine-keyboard-step: root.step * 10;
+    wheel-step: root.step; fine-wheel-step: root.step;
+    width: root.compact ? 60px : Tokens.field-width;
+    height: (root.label != "" ? 17px : 0px) + (root.compact ? 22px : Tokens.field-height);
+    accessible-role: spinbox;
+    edit-requested => { editor.focus-editor(); }
+    edit-closed => { if root.interactive { root.focus(); } }
+    standard-menu-requested => { if root.interactive { parameter-menu.show({x: parameter-menu.width / 2, y: parameter-menu.height}); } }
+    capture-key-pressed(event) => { root.fine = event.modifiers.shift || event.text == Key.Shift; return reject; }
+    capture-key-released(event) => { root.fine = event.modifiers.shift; return reject; }
+    ControlLabel { x: 0; y: 0; width: parent.width; height: 14px; visible: root.label != ""; label: root.label; compact: true; enabled: root.enabled; }
+    field := Rectangle {
+        x: 0; y: root.label != "" ? 17px : 0px; width: parent.width; height: root.compact ? 22px : Tokens.field-height;
+        FocusRing { active: root.interactive && (root.has-focus || root.focused || root.editing); }
+        editor := ValueEditor {
+            value-text: root.value-text; unit: root.unit; label: root.label;
+            editing: root.editing; invalid: root.edit-invalid; host-automated: root.host-active;
+            read-only: !root.interactive; compact: root.compact;
+            edit-requested => { root.begin-edit(); }
+            submitted(text) => { root.commit-text(text); }
+            cancelled => { root.cancel-edit(); }
+        }
+        parameter-menu := ContextMenuArea {
+            enabled: root.interactive && !root.editing;
+            Menu { title: "Parameter";
+                MenuItem { title: "Reset to default"; enabled: root.interactive; activated => { root.reset-value(); } }
+                MenuItem { title: "Type value…"; enabled: root.interactive; activated => { root.begin-edit(); } }
+                MenuItem { title: "Modulation…"; enabled: root.interactive; activated => { root.request-context-menu(); } }
+            }
+            RangeGesture {
+                enabled: root.interactive && !root.editing; value: root.value; minimum: root.minimum; maximum: root.maximum; fine <=> root.fine;
+                pixels-per-range: max(1, (root.maximum - root.minimum) / max(0.000001, root.step)) * 4px; fine-scale: 1 / 3;
+                started => { root.focus(); root.begin-gesture(); }
+                updated(v) => { root.update-gesture(v); }
+                ended => { root.end-gesture(); }
+                edit-requested => { root.begin-edit(); }
+                reset-requested => { root.cancel-edit(); root.reset-value(); }
+                wheeled(direction, precise) => { root.wheel(direction, precise); }
+                context-requested(x, y) => { parameter-menu.show({x: x, y: y}); }
+            }
+        }
+        if root.read-only : DashedBorder {}
+    }
+}

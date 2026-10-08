@@ -1,0 +1,45 @@
+import { Tokens } from "../theme.slint";
+import { LayerParameter } from "types.slint";
+import { Knob } from "../controls/Knob.slint";
+import { SegmentedControl } from "../navigation/SegmentedControl.slint";
+import { Icon } from "../icons.slint";
+
+export component LayerParameterControl inherits Rectangle {
+    in property <LayerParameter> parameter;
+    in property <bool> available: true;
+    out property <bool> is-choice: root.parameter.options.length > 0;
+    callback numeric-changed(float);
+    callback option-changed(string);
+    callback gesture-began(); callback gesture-ended(); callback close-requested();
+    preferred-width: root.is-choice ? max(100px, root.parameter.options.length * 42px + 4px) : 84px;
+    preferred-height: 112px;
+    changed parameter => {
+        if knob.value != root.parameter.value { knob.value = root.parameter.value; }
+        if choices.current-index != root.parameter.option-index { choices.current-index = root.parameter.option-index; }
+    }
+    public function set-number(value: float) { if !root.is-choice { knob.set-value(value); } }
+    public function choose-option(index: int) { if root.is-choice { choices.choose(index); } }
+    knob := Knob {
+        x: 0px; y: 0px; size: 48px; visible: !root.is-choice;
+        label: root.parameter.label; unit: root.parameter.unit; value: root.parameter.value;
+        minimum: root.parameter.minimum; maximum: root.parameter.maximum;
+        step: root.parameter.step; default-value: root.parameter.default-value; bipolar: root.parameter.bipolar;
+        enabled: root.available && !root.is-choice; read-only: !root.parameter.available;
+        value-display-always: true;
+        changed(value) => { if root.available && root.parameter.available { root.numeric-changed(value); } }
+        gesture-began => { root.gesture-began(); } gesture-ended => { root.gesture-ended(); }
+        dismiss-requested => { knob.hide-popup(); root.close-requested(); }
+    }
+    if root.is-choice : Text {
+        x: 2px; y: 0px; width: max(0px,parent.width - 20px); height: 16px;
+        text: root.parameter.label; font-family: Tokens.font-ui; font-size: 11px; font-weight: 600;
+        color: root.available ? Tokens.text-secondary : Tokens.text-disabled; letter-spacing: 0.6px; overflow: elide;
+    }
+    if root.is-choice && !root.parameter.available : Icon { x: parent.width - 14px; y: 1px; name: "lock"; size: 12px; tint: Tokens.text-tertiary; }
+    choices := SegmentedControl {
+        x: 0px; y: 23px; width: parent.width; visible: root.is-choice; compact: true;
+        items: root.parameter.options; current-index: root.parameter.option-index;
+        disabled: !root.is-choice || !root.available || !root.parameter.available;
+        changed(id) => { if root.available && root.parameter.available { root.option-changed(id); } }
+    }
+}
