@@ -605,6 +605,12 @@ add_test(NAME demo-launcher-boundaries
             -s ${CMAKE_CURRENT_SOURCE_DIR}/tests/python
             -p test_demo_launcher_boundaries.py)
 
+if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+    add_test(NAME slint-compiler-build-environment
+        COMMAND ${CMAKE_COMMAND} -E env PYTHONDONTWRITEBYTECODE=1 python3
+                ${CMAKE_CURRENT_SOURCE_DIR}/tests/python/test_slint_build_environment.py)
+endif()
+
 add_test(NAME mutation-hook
     COMMAND ${CMAKE_COMMAND} -E env PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover
             -s ${CMAKE_CURRENT_SOURCE_DIR}/tests/python

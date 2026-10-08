@@ -18,5 +18,10 @@ function(dandrum_fetch_slint)
         URL https://github.com/slint-ui/slint/archive/372cf0ee5577c3dfec309a45e7b778ba4e81b734.tar.gz
         SOURCE_SUBDIR api/cpp DOWNLOAD_EXTRACT_TIMESTAMP TRUE)
     FetchContent_MakeAvailable(Slint)
+    if(TARGET slint-compiler AND COMMAND corrosion_set_env_vars)
+        # jemalloc appends outer Make's compact flags after Cargo's jobserver flags.
+        # A bare "s" then becomes a target name. Let Cargo supply its own flags.
+        corrosion_set_env_vars(slint-compiler "MAKEFLAGS=" "MFLAGS=")
+    endif()
 endfunction()
 dandrum_fetch_slint()
