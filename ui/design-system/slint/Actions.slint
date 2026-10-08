@@ -1,0 +1,52 @@
+// Stateless user-intent controls. The host owns authoritative values.
+import { DesignTokens } from "../DesignTokens.slint";
+
+export component TriggerButton inherits Rectangle {
+    in property <string> label: "";
+    in property <bool> enabled: true;
+    in property <bool> selected: false;
+    callback activated();
+    height: DesignTokens.button-height;
+    min-width: 60px;
+    border-radius: DesignTokens.radius-2;
+    border-width: 1px;
+    border-color: selected ? DesignTokens.color-action : DesignTokens.border-control;
+    background: !enabled ? DesignTokens.surface-panel : selected ? DesignTokens.dd-vermilion-wash : hit.has-hover ? DesignTokens.surface-control-hover : DesignTokens.surface-control;
+    Text {
+        text: root.label;
+        color: !root.enabled ? DesignTokens.text-disabled : root.selected ? DesignTokens.color-action : DesignTokens.text-primary;
+        font-family: DesignTokens.font-ui;
+        font-size: DesignTokens.type-label;
+        horizontal-alignment: center;
+        vertical-alignment: center;
+    }
+    hit := TouchArea {
+        enabled: root.enabled;
+        mouse-cursor: pointer;
+        clicked => { root.activated(); }
+    }
+}
+
+export component TriggerToggle inherits Rectangle {
+    in property <bool> checked: false;
+    in property <bool> enabled: true;
+    callback toggled(bool);
+    width: DesignTokens.toggle-width;
+    height: DesignTokens.toggle-height;
+    border-radius: DesignTokens.radius-round;
+    background: !enabled ? DesignTokens.dd-ink-4 : checked ? DesignTokens.color-action : DesignTokens.color-track;
+    Rectangle {
+        width: 14px;
+        height: 14px;
+        x: root.checked ? root.width - self.width - 2px : 2px;
+        y: 2px;
+        border-radius: DesignTokens.radius-round;
+        background: root.enabled ? DesignTokens.text-primary : DesignTokens.text-disabled;
+        animate x { duration: 120ms; }
+    }
+    TouchArea {
+        enabled: root.enabled;
+        mouse-cursor: pointer;
+        clicked => { root.toggled(!root.checked); }
+    }
+}
