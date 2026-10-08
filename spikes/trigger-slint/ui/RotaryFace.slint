@@ -1,0 +1,55 @@
+import { Theme } from "Theme.slint";
+
+export component RotaryFace inherits Rectangle {
+    in property <float> value;
+    in property <bool> disabled;
+    in property <bool> hovered;
+    in property <bool> active;
+    in property <bool> focused;
+    width: 48px; height: 48px;
+    if root.focused : Rectangle {
+        x: 0; y: 0; width: 48px; height: 48px;
+        border-radius: 4px; border-width: 1px; border-color: Theme.value;
+    }
+    Path {
+        width: 48px; height: 48px; viewbox-width: 48; viewbox-height: 48;
+        stroke: root.disabled ? Theme.disabled-cap : Theme.track; stroke-width: 1.5px; stroke-line-cap: round;
+        MoveTo { x: 12.6863; y: 35.3137; }
+        ArcTo { radius-x: 16; radius-y: 16; x: 35.3137; y: 35.3137; large-arc: true; sweep: true; }
+    }
+    if !root.disabled && root.value > 0.00001 : Path {
+        width: 48px; height: 48px; viewbox-width: 48; viewbox-height: 48;
+        stroke: root.disabled ? Theme.disabled : Theme.value;
+        stroke-width: root.active && !root.disabled ? 3px : 1.5px;
+        stroke-line-cap: round;
+        MoveTo { x: 12.6863; y: 35.3137; }
+        ArcTo {
+            radius-x: 16; radius-y: 16;
+            x: 24 + 16 * cos((135 + 270 * root.value.clamp(0, 1)) * 1deg);
+            y: 24 + 16 * sin((135 + 270 * root.value.clamp(0, 1)) * 1deg);
+            large-arc: root.value > 2 / 3; sweep: true;
+        }
+    }
+    Path {
+        width: 48px; height: 48px; viewbox-width: 48; viewbox-height: 48;
+        stroke: Theme.origin-tick; stroke-width: 1.5px; stroke-line-cap: round;
+        opacity: root.disabled ? 0.4 : 1;
+        MoveTo { x: 11.4489; y: 36.5511; }
+        LineTo { x: 9.3275; y: 38.6725; }
+    }
+    Rectangle {
+        x: 12px; y: 13.5px; width: 24px; height: 24px; border-radius: 12px;
+        background: #00000073;
+    }
+    Rectangle {
+        x: 12px; y: 12px; width: 24px; height: 24px; border-radius: 12px;
+        background: root.disabled ? Theme.disabled-cap : root.active ? Theme.track : root.hovered ? Theme.cap-hover : Theme.cap;
+        border-color: root.disabled ? #5F4F404D : Theme.cap-outline; border-width: 1px;
+    }
+    Path {
+        width: 48px; height: 48px; viewbox-width: 48; viewbox-height: 48;
+        stroke: #FFFFFF17; stroke-width: 1px;
+        MoveTo { x: 14.4737; y: 18.5; }
+        ArcTo { radius-x: 11; radius-y: 11; x: 33.5263; y: 18.5; sweep: true; }
+    }
+}

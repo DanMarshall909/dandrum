@@ -1,0 +1,21 @@
+{
+  "source": "Trigger React web/trigger/public/fonts at 43c01c7",
+  "license": "SIL Open Font License 1.1; adjacent OFL notices retained",
+  "files": [
+    {
+      "path": "fonts/BarlowSemiCondensed-SemiBold.ttf",
+      "sourceFilename": "cb75439ae401f776.ttf",
+      "sha256": "cb75439ae401f77624d5b268ea25fd7556e34803fccbd2f92e937a4f3856a1da"
+    },
+    {
+      "path": "fonts/BarlowSemiCondensed-Bold.ttf",
+      "sourceFilename": "6098b66ce7d608dc.ttf",
+      "sha256": "6098b66ce7d608dcea8c6a2eeacfdeeee5416e0e0c12a2318595d3dd8c5babef"
+    },
+    {
+      "path": "fonts/JetBrainsMono-Medium.ttf",
+      "sourceFilename": "3386a05f6ece969e.ttf",
+      "sha256": "3386a05f6ece969e4537de6be894170d20558e82f7d56c8c5d332972ef172160"
+    }
+  ]
+}

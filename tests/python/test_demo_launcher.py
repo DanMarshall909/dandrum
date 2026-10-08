@@ -33,7 +33,7 @@ class DemoLauncherTest(unittest.TestCase):
             with self.subTest(args=args):
                 code, output, error = self.invoke(*args)
                 self.assertEqual(code, 0, error)
-                for name in ["tb303", "sampler", "drums", "react303", "trigger", "filter-slint", "filter-jive"]:
+                for name in ["tb303", "sampler", "drums", "react303", "trigger", "filter-slint", "filter-jive", "trigger-slint"]:
                     self.assertIn(name, output)
                 self.assertIn("silent mock", output)
                 self.assertIn("embedded WebView", output)
@@ -179,18 +179,23 @@ class DemoLauncherTest(unittest.TestCase):
         return directory
 
     def test_native_app_bundle_and_exe_artifact_paths(self):
-        for layout in ["Dandrum.app/Contents/MacOS/Dandrum", "Dandrum.exe"]:
-            with self.subTest(layout=layout):
-                artifact = self.native_fixture("tb303")
-                moved = artifact.parent / layout
-                moved.parent.mkdir(parents=True, exist_ok=True)
-                artifact.rename(moved)
-                commands = []
-                with self.recorded_tools(commands):
-                    code, _, error = self.invoke("tb303")
-                self.assertEqual(code, 0, error)
-                self.assertEqual(commands[-1][0], [str(moved)])
-                moved.unlink()
+        for name, build, product in [("tb303", "build", "Dandrum"),
+                                     ("trigger-slint", "build/filter-ui-spikes", "Dandrum Trigger Slint")]:
+            for layout in [f"{product}.app/Contents/MacOS/{product}", f"{product}.exe"]:
+                with self.subTest(name=name, layout=layout):
+                    self.assert_platform_artifact(name, build, layout)
+
+    def assert_platform_artifact(self, name, build, layout):
+        artifact = self.native_fixture(name, build)
+        moved = artifact.parent / layout
+        moved.parent.mkdir(parents=True, exist_ok=True)
+        artifact.rename(moved)
+        commands = []
+        with self.recorded_tools(commands):
+            code, _, error = self.invoke(name)
+        self.assertEqual(code, 0, error)
+        self.assertEqual(commands[-1][0], [str(moved)])
+        moved.unlink()
 
     def test_browser_dependencies_and_argument_forwarding(self):
         package = self.web_fixture()
@@ -278,6 +283,47 @@ class DemoLauncherTest(unittest.TestCase):
                 self.assertEqual(commands[-1][0], [str(expected), "argument with spaces"])
                 self.assertEqual(json.loads((self.root / "launched.json").read_text()),
                                  [str(self.root), ["argument with spaces"]])
+
+    def test_gui_preview_discovers_declaring_worktree_and_launches_isolated_artifact(self):
+        # A README alone, including one beside a different GUI target, is insufficient.
+        source = self.root / "spikes/trigger-slint/README.md"
+        source.parent.mkdir(parents=True)
+        source.write_text("Silent preview")
+        (self.root / "CMakeLists.txt").write_text('juce_add_gui_app(other PRODUCT_NAME "Other")')
+        other = Path(self.temp.name) / "preview checkout with spaces"
+        shutil.copytree(self.root, other)
+        (other / "CMakeLists.txt").write_text('juce_add_gui_app(dandrum-trigger-slint PRODUCT_NAME "Dandrum Trigger Slint")')
+        (other / "src/rust-engine").mkdir(parents=True)
+        (other / "src/rust-engine/Cargo.toml").write_text('[package]')
+        original = self.root
+        self.root = other
+        artifact = self.native_fixture("trigger-slint", "build/filter-ui-spikes", "Release")
+        (other / "CMakeLists.txt").write_text('juce_add_gui_app(dandrum-trigger-slint PRODUCT_NAME "Dandrum Trigger Slint")')
+        build = other / "build/filter-ui-spikes"
+        (build / "CMakeCache.txt").write_text("CMAKE_BUILD_TYPE:STRING=Release\n")
+        self.web_fixture("web/sampler")
+        self.root = original
+        commands = []
+        real_run = subprocess.run
+
+        def run(command, **options):
+            if command[0] == "git":
+                return subprocess.CompletedProcess(command, 0, stdout=f"worktree {other}\nHEAD abc\n")
+            commands.append(command)
+            if Path(command[0]).name in {"cmake", "cmake.exe"}:
+                return subprocess.CompletedProcess(command, 0)
+            return real_run(command, **options)
+
+        with patch("subprocess.run", side_effect=run):
+            code, output, error = self.invoke("trigger-slint", "--", "argument with spaces")
+        self.assertEqual(code, 0, error)
+        self.assertIn(f"Launching trigger-slint from {other}", output)
+        self.assertEqual(commands[0][1:], ["-S", str(other), "-B", str(build),
+                         "-DDANDRUM_NATIVE_ONLY=ON", "-DDANDRUM_BUILD_TRIGGER_SLINT=ON", "-DCMAKE_BUILD_TYPE=Release"])
+        self.assertEqual(commands[1][1:], ["--build", str(build), "--target", "dandrum-trigger-slint", "--config", "Release"])
+        self.assertEqual(commands[2], [str(artifact), "argument with spaces"])
+        self.assertEqual(json.loads((other / "launched.json").read_text()), [str(other), ["argument with spaces"]])
+        self.assertFalse((original / "build").exists())
 
     def assert_native_failures(self, name, build="build", configuration=""):
         artifact = self.native_fixture(name, build, configuration)

@@ -8,22 +8,4 @@ FetchContent_Declare(JIVE
     DOWNLOAD_EXTRACT_TIMESTAMP TRUE)
 FetchContent_MakeAvailable(JIVE)
 
-# Keep Slint's linkage choice local to the dependency, leaving JUCE unchanged.
-function(dandrum_fetch_slint)
-    set(BUILD_SHARED_LIBS OFF)
-    set(CMAKE_POSITION_INDEPENDENT_CODE ON)
-    set(SLINT_FEATURE_BACKEND_WINIT OFF CACHE BOOL "" FORCE)
-    set(SLINT_FEATURE_BACKEND_WINIT_X11 OFF CACHE BOOL "" FORCE)
-    set(SLINT_FEATURE_BACKEND_WINIT_WAYLAND OFF CACHE BOOL "" FORCE)
-    set(SLINT_FEATURE_BACKEND_QT OFF CACHE BOOL "" FORCE)
-    set(SLINT_FEATURE_BACKEND_LINUXKMS OFF CACHE BOOL "" FORCE)
-    set(SLINT_FEATURE_RENDERER_FEMTOVG OFF CACHE BOOL "" FORCE)
-    set(SLINT_FEATURE_RENDERER_SKIA OFF CACHE BOOL "" FORCE)
-    set(SLINT_FEATURE_RENDERER_SOFTWARE ON CACHE BOOL "" FORCE)
-    set(SLINT_FEATURE_INTERPRETER OFF CACHE BOOL "" FORCE)
-    FetchContent_Declare(Slint
-        URL https://github.com/slint-ui/slint/archive/372cf0ee5577c3dfec309a45e7b778ba4e81b734.tar.gz
-        SOURCE_SUBDIR api/cpp DOWNLOAD_EXTRACT_TIMESTAMP TRUE)
-    FetchContent_MakeAvailable(Slint)
-endfunction()
-dandrum_fetch_slint()
+include(${CMAKE_CURRENT_LIST_DIR}/SlintDependency.cmake)

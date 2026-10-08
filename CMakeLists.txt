@@ -9,6 +9,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 option(DANDRUM_ENABLE_MUTATION_CTEST "Include the long-running cargo-mutants test in CTest" OFF)
 option(DANDRUM_NATIVE_ONLY "Build the plugin with the native JUCE editor and no browser dependencies" OFF)
 option(DANDRUM_BUILD_FILTER_UI_SPIKES "Build optional Slint and JIVE filter experiments" OFF)
+option(DANDRUM_BUILD_TRIGGER_SLINT "Build the silent Trigger Slint performance preview" OFF)
 if(DANDRUM_NATIVE_ONLY)
     set(DANDRUM_BROWSER_ENABLED FALSE)
     set(DANDRUM_EDITOR_ADAPTER dandrum-plugin-native-editor)
@@ -163,6 +164,12 @@ if(DANDRUM_BUILD_FILTER_UI_SPIKES)
         FORMATS VST3 Standalone IS_SYNTH FALSE NEEDS_MIDI_INPUT FALSE NEEDS_MIDI_OUTPUT FALSE
         PRODUCT_NAME "Dandrum Filter JIVE")
     include(cmake/FilterUiTargets.cmake)
+endif()
+
+if(DANDRUM_BUILD_TRIGGER_SLINT)
+    include(cmake/SlintDependency.cmake)
+    juce_add_gui_app(dandrum-trigger-slint PRODUCT_NAME "Dandrum Trigger Slint")
+    include(cmake/TriggerSlintTarget.cmake)
 endif()
 
 add_executable(dandrum-plugin-spectral-service-test

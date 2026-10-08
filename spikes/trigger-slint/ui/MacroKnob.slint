@@ -1,0 +1,104 @@
+import { Theme } from "Theme.slint";
+import { RotaryFace } from "RotaryFace.slint";
+import { MacroValue } from "MacroValue.slint";
+
+export component MacroKnob inherits FocusScope {
+    in-out property <float> value;
+    in property <float> default-value;
+    in property <string> label;
+    in property <bool> disabled;
+    private property <bool> dragging;
+    private property <bool> fine;
+    private property <bool> editing;
+    private property <float> start-y;
+    private property <float> start-value;
+    width: 64px; height: 79px;
+    enabled: !root.disabled;
+    accessible-role: slider;
+    accessible-label: root.label;
+    accessible-enabled: !root.disabled;
+    accessible-value: "\{root.value * 100}";
+    accessible-value-minimum: 0;
+    accessible-value-maximum: 100;
+    accessible-value-step: 5;
+    accessible-description: "Drag vertically; Shift for precision. Enter edits a percentage. Alt-click or middle-click resets.";
+    accessible-action-increment => { root.set-value(root.value + 0.05); }
+    accessible-action-decrement => { root.set-value(root.value - 0.05); }
+    accessible-action-set-value(v) => {
+        if v.is-float() { root.set-value(v.to-float() / 100); }
+    }
+    function set-value(v: float) { if !root.disabled { root.value = v.clamp(0, 1); } }
+    function update-drag() {
+        if root.dragging { root.set-value(root.start-value + (root.start-y - touch.mouse-y / 1px) / 200 * (root.fine ? 0.1 : 1)); }
+    }
+    capture-key-pressed(event) => {
+        root.fine = event.modifiers.shift;
+        if event.text == Key.Shift || event.text == Key.ShiftR { root.fine = true; root.update-drag(); }
+        return reject;
+    }
+    capture-key-released(event) => {
+        root.fine = event.modifiers.shift;
+        if event.text == Key.Shift || event.text == Key.ShiftR { root.fine = false; }
+        root.update-drag(); return reject;
+    }
+    key-pressed(event) => {
+        if root.editing { return reject; }
+        let step = event.modifiers.shift ? 0.005 : 0.05;
+        if event.text == Key.UpArrow || event.text == Key.RightArrow { root.set-value(root.value + step); }
+        else if event.text == Key.DownArrow || event.text == Key.LeftArrow { root.set-value(root.value - step); }
+        else if event.text == Key.PageUp { root.set-value(root.value + 10 * step); }
+        else if event.text == Key.PageDown { root.set-value(root.value - 10 * step); }
+        else if event.text == Key.Home { root.set-value(0); }
+        else if event.text == Key.End { root.set-value(1); }
+        else if event.text == Key.Delete || event.text == Key.Backspace { root.set-value(root.default-value); }
+        else if event.text == Key.Return { value-display.begin-edit(); }
+        else { return reject; }
+        return accept;
+    }
+    focus-lost(reason) => { root.dragging = false; root.fine = false; }
+    Text {
+        x: 0; y: 0; width: 64px; height: 13px;
+        text: root.label; color: root.disabled ? Theme.disabled : Theme.label;
+        font-family: Theme.ui-font; font-size: 11px; font-weight: 600;
+        letter-spacing: 0.77px; horizontal-alignment: center; vertical-alignment: center;
+    }
+    face := RotaryFace {
+        x: 8px; y: 14.64px;
+        value: root.value; disabled: root.disabled;
+        hovered: touch.has-hover; active: root.dragging;
+        focused: root.has-focus || root.editing;
+    }
+    touch := TouchArea {
+        x: 0; y: 0; width: 64px; height: 65px;
+        enabled: !root.disabled; mouse-cursor: ns-resize;
+        pointer-event(event) => {
+            root.fine = event.modifiers.shift;
+            if event.kind == PointerEventKind.down {
+                root.focus();
+                if event.button == PointerEventButton.middle || event.modifiers.alt {
+                    root.set-value(root.default-value);
+                } else if event.button == PointerEventButton.left {
+                    root.start-y = self.mouse-y / 1px; root.start-value = root.value; root.dragging = true;
+                }
+            } else if event.kind == PointerEventKind.up || event.kind == PointerEventKind.cancel {
+                root.dragging = false;
+            }
+        }
+        moved => { root.update-drag(); }
+        double-clicked => { value-display.begin-edit(); }
+        scroll-event(event) => {
+            root.fine = event.modifiers.shift;
+            if event.delta-y != 0px {
+                root.set-value(root.value + (event.delta-y > 0px ? 1 : -1) * (root.fine ? 0.002 : 0.02));
+            }
+            return accept;
+        }
+    }
+    value-display := MacroValue {
+        x: 0; y: 65px;
+        value <=> root.value; editing <=> root.editing;
+        label: root.label;
+        revealed: !root.disabled && (touch.has-hover || root.has-focus || root.dragging);
+        closed(restore-focus) => { if restore-focus { root.focus(); } }
+    }
+}

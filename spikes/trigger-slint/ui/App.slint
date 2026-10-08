@@ -1,0 +1,30 @@
+import { Theme } from "Theme.slint";
+import { MacroKnob } from "MacroKnob.slint";
+
+export component PerformanceUi inherits Window {
+    in property <float> viewport-width: 900;
+    in property <float> viewport-height: 90;
+    in-out property <[float]> values: [0.56, 0.40, 0.32, 0.18, 0.64, 0.50, 0, 0];
+    private property <[float]> defaults: [0.56, 0.40, 0.32, 0.18, 0.64, 0.50, 0, 0];
+    private property <[string]> labels: ["TONE", "BODY", "SPACE", "DRIVE", "SNAP", "WIDTH", "MACRO 7", "MACRO 8"];
+    width: root.viewport-width * 1px;
+    height: root.viewport-height * 1px;
+    background: Theme.background;
+    title: "Trigger — silent Slint macro preview";
+    Text {
+        x: 12px; y: (parent.height - 14px) / 2; height: 14px;
+        text: "MACROS"; color: Theme.label;
+        font-family: Theme.ui-font; font-size: 11px; font-weight: 700;
+        letter-spacing: 1.1px; vertical-alignment: center;
+    }
+    strip := Rectangle {
+        x: (parent.width - self.width) / 2; y: 8px;
+        width: 554px; height: 82px;
+        for value[i] in root.values : MacroKnob {
+            x: i * 70px; y: 0;
+            label: root.labels[i]; disabled: i >= 6;
+            default-value: root.defaults[i];
+            value <=> value;
+        }
+    }
+}
