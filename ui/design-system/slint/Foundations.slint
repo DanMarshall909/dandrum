@@ -1,0 +1,33 @@
+// Trigger Slint library — foundational text and surface primitives.
+// Import alongside the generated DesignTokens.slint. No DSP ownership.
+import { DesignTokens } from "../DesignTokens.slint";
+
+export component TriggerLabel inherits Text {
+    in property <bool> muted: false;
+    font-family: DesignTokens.font-ui;
+    font-size: DesignTokens.type-label;
+    color: muted ? DesignTokens.text-tertiary : DesignTokens.text-secondary;
+    vertical-alignment: center;
+}
+
+export component TriggerValue inherits Text {
+    in property <bool> accent: false;
+    font-family: DesignTokens.font-value;
+    font-size: DesignTokens.type-value;
+    color: accent ? DesignTokens.color-action : DesignTokens.color-value;
+    vertical-alignment: center;
+}
+
+export component TriggerPanel inherits Rectangle {
+    in property <bool> raised: false;
+    background: raised ? DesignTokens.surface-panel-header : DesignTokens.surface-panel;
+    border-color: DesignTokens.border-hairline;
+    border-width: DesignTokens.stroke-hairline;
+    border-radius: DesignTokens.radius-2;
+    @children
+}
+
+export component TriggerSeparator inherits Rectangle {
+    height: DesignTokens.stroke-hairline;
+    background: DesignTokens.border-hairline;
+}
