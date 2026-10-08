@@ -15,6 +15,7 @@ tooling is retained as supplied and was not executed during import.
 
 ## Start here
 
+- [Soft Precision sampler image and design direction](references/soft-precision.md)
 - [Brand, interaction and component overview](reference/readme.md)
 - [JUCE implementation guide](reference/handoff/juce-implementation.md)
 - [Native component specifications](reference/handoff/component-specs.md)
@@ -29,6 +30,8 @@ tooling is retained as supplied and was not executed during import.
 - [Maintained design brief](../sampler-juce-ui-design-prompt.md) and [renderer-independent UI plan](../../openspec/changes/add-renderer-independent-plugin-ui/design.md)
 
 ## Visual direction
+
+[Soft Precision](references/soft-precision.md) is the selected sampler visual direction: charcoal surfaces, subtly raised gradient panels, fine edge highlights, soft shadows, understated tactile controls, warm amber accents and a three-tone palette. The table below documents the existing production styling.
 
 | Role | Design rule |
 | --- | --- |
