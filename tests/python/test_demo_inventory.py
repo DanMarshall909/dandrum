@@ -16,7 +16,7 @@ def inventory_errors(root):
     if len(set(names)) != len(names):
         errors.append("duplicate demo names")
     targets = {demo["target"].removesuffix("_Standalone"): demo for demo in demos if demo["kind"] == "native"}
-    for kind, body in re.findall(r"^[ \t]*juce_add_(plugin|console_app)\((.*?)\)", (root / "CMakeLists.txt").read_text(), re.S | re.M):
+    for kind, body in re.findall(r"^[ \t]*juce_add_(plugin|console_app|gui_app)\((.*?)\)", (root / "CMakeLists.txt").read_text(), re.S | re.M):
         target = body.split()[0]
         if kind == "plugin" and not re.search(r'\bFORMATS\b[^"]*\bStandalone\b', body):
             continue
@@ -24,7 +24,7 @@ def inventory_errors(root):
             errors.append(f"unregistered native demo: {target}")
             continue
         product = re.search(r'PRODUCT_NAME\s+"([^"]+)"', body).group(1)
-        expected = f"{target}_artefacts/Standalone/{product}" if kind == "plugin" else f"{target}_artefacts/{target}"
+        expected = f"{target}_artefacts/Standalone/{product}" if kind == "plugin" else f"{target}_artefacts/{product if kind == 'gui_app' else target}"
         for demo in demos:
             if demo.get("target", "").removesuffix("_Standalone") == target and demo["artifact"] != expected:
                 errors.append(f"wrong artifact for {demo['name']}: expected {expected}")
@@ -56,6 +56,19 @@ class DemoInventoryTest(unittest.TestCase):
                 self.assertEqual(demo["buildDirectory"], "build/filter-ui-spikes")
                 self.assertEqual(demo["cmakeOptions"], ["DANDRUM_BUILD_FILTER_UI_SPIKES=ON", "CMAKE_BUILD_TYPE=Release"])
 
+    def test_trigger_slint_registers_silent_isolated_native_gui_preview(self):
+        demos = {demo["name"]: demo for demo in json.loads((ROOT / "scripts/demos.json").read_text())}
+        self.assertIn("trigger-slint", demos)
+        demo = demos["trigger-slint"]
+        self.assertIn("silent macro preview", demo["description"])
+        self.assertEqual(demo["kind"], "native")
+        self.assertEqual(demo["source"], "spikes/trigger-slint/README.md")
+        self.assertEqual(demo["target"], "dandrum-trigger-slint")
+        self.assertEqual(demo["artifact"], "dandrum-trigger-slint_artefacts/Dandrum Trigger Slint")
+        self.assertTrue(demo["nativeOnly"])
+        self.assertEqual(demo["buildDirectory"], "build/filter-ui-spikes")
+        self.assertEqual(demo["cmakeOptions"], ["DANDRUM_BUILD_TRIGGER_SLINT=ON", "CMAKE_BUILD_TYPE=Release"])
+
     def test_guard_names_missing_native_and_browser_demos_and_wrong_artifacts(self):
         with tempfile.TemporaryDirectory(prefix="dandrum inventory ") as temporary:
             root = Path(temporary)
@@ -68,6 +81,19 @@ class DemoInventoryTest(unittest.TestCase):
             self.assertEqual(inventory_errors(root), ["unregistered native demo: new-demo"])
             (root / "CMakeLists.txt").write_text(original + '\njuce_add_plugin(new-plugin\n FORMATS\n  VST3 Standalone\n PRODUCT_NAME "New Plugin")\n')
             self.assertEqual(inventory_errors(root), ["unregistered native demo: new-plugin"])
+            (root / "CMakeLists.txt").write_text(original + '\njuce_add_gui_app(new-gui PRODUCT_NAME "New GUI")\n')
+            self.assertEqual(inventory_errors(root), ["unregistered native demo: new-gui"])
+            gui = original
+            if not re.search(r'juce_add_gui_app\(\s*dandrum-trigger-slint\s', original):
+                gui += '\njuce_add_gui_app(dandrum-trigger-slint PRODUCT_NAME "Dandrum Trigger Slint")\n'
+            (root / "CMakeLists.txt").write_text(gui)
+            self.assertEqual(inventory_errors(root), [])
+            catalog = root / "scripts/demos.json"
+            demos = json.loads(catalog.read_text())
+            next(demo for demo in demos if demo["name"] == "trigger-slint")["artifact"] = "stale/gui"
+            catalog.write_text(json.dumps(demos))
+            self.assertEqual(inventory_errors(root), ["wrong artifact for trigger-slint: expected dandrum-trigger-slint_artefacts/Dandrum Trigger Slint"])
+            shutil.copy(ROOT / "scripts/demos.json", catalog)
             (root / "CMakeLists.txt").write_text(original)
             package = root / "web/new-preview/package.json"
             package.parent.mkdir(parents=True)

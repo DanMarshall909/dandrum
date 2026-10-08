@@ -121,8 +121,10 @@ juce_add_plugin(dandrum-filter-slint FORMATS VST3 Standalone PRODUCT_NAME "Dandr
 target_sources(dandrum-filter-slint PRIVATE empty.cpp)
 juce_add_plugin(dandrum-filter-jive FORMATS VST3 Standalone PRODUCT_NAME "Dandrum Filter JIVE")
 target_sources(dandrum-filter-jive PRIVATE empty.cpp)
+juce_add_gui_app(dandrum-trigger-slint PRODUCT_NAME "Dandrum Trigger Slint")
+target_sources(dandrum-trigger-slint PRIVATE empty.cpp)
 file(GENERATE OUTPUT "${CMAKE_BINARY_DIR}/paths-$<CONFIG>.txt"
-  CONTENT "$<TARGET_FILE:dandrum-drum-machine-demo>\\n$<TARGET_FILE:dandrum-plugin_Standalone>\\n$<TARGET_FILE:dandrum-filter-slint_Standalone>\\n$<TARGET_FILE:dandrum-filter-jive_Standalone>\\n")
+  CONTENT "$<TARGET_FILE:dandrum-drum-machine-demo>\\n$<TARGET_FILE:dandrum-plugin_Standalone>\\n$<TARGET_FILE:dandrum-filter-slint_Standalone>\\n$<TARGET_FILE:dandrum-filter-jive_Standalone>\\n$<TARGET_FILE:dandrum-trigger-slint>\\n")
 ''')
         (self.root / "empty.cpp").write_text('int main() { return 0; }\n')
         cmake = Path.home() / ".local/bin/cmake"
@@ -137,7 +139,44 @@ file(GENERATE OUTPUT "${CMAKE_BINARY_DIR}/paths-$<CONFIG>.txt"
             self.assertEqual(observed, [str(build / "dandrum-drum-machine-demo_artefacts" / config / "dandrum-drum-machine-demo"),
                                         str(build / "dandrum-plugin_artefacts" / config / "Standalone/Dandrum"),
                                         str(build / "dandrum-filter-slint_artefacts" / config / "Standalone/Dandrum Filter Slint"),
-                                        str(build / "dandrum-filter-jive_artefacts" / config / "Standalone/Dandrum Filter JIVE")])
+                                        str(build / "dandrum-filter-jive_artefacts" / config / "Standalone/Dandrum Filter JIVE"),
+                                        str(build / "dandrum-trigger-slint_artefacts" / config / "Dandrum Trigger Slint")])
+
+    def test_real_git_worktree_gui_preview_build_and_launch(self):
+        (self.root / "src/rust-engine").mkdir(parents=True)
+        (self.root / "src/rust-engine/Cargo.toml").write_text('[package]\nname="boundary"\n')
+        for args in [("init", "-q"), ("add", "."),
+                     ("-c", "user.name=Launcher Test", "-c", "user.email=launcher@example.invalid", "commit", "-qm", "Fixture")]:
+            subprocess.run(["git", "-C", str(self.root), *args], check=True, capture_output=True)
+        other = Path(self.temp.name) / "registered GUI worktree with spaces"
+        subprocess.run(["git", "-C", str(self.root), "worktree", "add", "--detach", str(other)], check=True, capture_output=True)
+        source = other / "spikes/trigger-slint/README.md"
+        source.parent.mkdir(parents=True)
+        source.write_text("Silent macro preview")
+        (other / "CMakeLists.txt").write_text('''cmake_minimum_required(VERSION 3.22)
+project(GuiLauncherBoundary LANGUAGES NONE)
+option(DANDRUM_NATIVE_ONLY "Disable browser dependencies" OFF)
+option(DANDRUM_BUILD_TRIGGER_SLINT "Build silent macro preview" OFF)
+if(NOT DANDRUM_NATIVE_ONLY OR NOT DANDRUM_BUILD_TRIGGER_SLINT)
+  message(FATAL_ERROR "Missing isolated GUI preview options")
+endif()
+function(juce_add_gui_app target)
+  cmake_parse_arguments(APP "" "PRODUCT_NAME" "" ${ARGN})
+  add_custom_target(${target}
+    COMMAND ${CMAKE_COMMAND} -E make_directory "${CMAKE_BINARY_DIR}/${target}_artefacts/$<CONFIG>"
+    COMMAND ${CMAKE_COMMAND} -E copy "${CMAKE_SOURCE_DIR}/app.py" "${CMAKE_BINARY_DIR}/${target}_artefacts/$<CONFIG>/${APP_PRODUCT_NAME}")
+endfunction()
+juce_add_gui_app(dandrum-trigger-slint PRODUCT_NAME "Dandrum Trigger Slint")
+''')
+        app = other / "app.py"
+        app.write_text('#!/usr/bin/env python3\nimport json, os, sys\nfrom pathlib import Path\nPath("observed.json").write_text(json.dumps([os.getcwd(), sys.argv[1:]]))\n')
+        app.chmod(0o755)
+        status, output, error = self.invoke("trigger-slint", "--", "GUI argument with spaces")
+        self.assertEqual(status, 0, error)
+        self.assertIn(f"Launching trigger-slint from {other}", output)
+        self.assertEqual(json.loads((other / "observed.json").read_text()), [str(other), ["GUI argument with spaces"]])
+        self.assertTrue((other / "build/filter-ui-spikes/dandrum-trigger-slint_artefacts/Release/Dandrum Trigger Slint").is_file())
+        self.assertFalse((self.root / "build").exists())
 
     def test_real_git_worktree_and_npm_launch_then_install_failure(self):
         def git(*args):

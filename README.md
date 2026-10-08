@@ -12,6 +12,7 @@ From this repository, run `./demo` or `./demo --list` to see demo names, descrip
 ./demo sampler                        # embedded sampler standalone, real audio
 ./demo filter-slint                   # experimental native Slint filter effect
 ./demo filter-jive                    # experimental native JIVE filter effect
+./demo trigger-slint                  # silent native Slint macro performance preview
 ./demo drums --list-midi-inputs
 ./demo drums --midi-input 0
 ./demo trigger -- --port 8324          # silent React shell in a browser
@@ -27,7 +28,9 @@ Native launches preserve the configured CMake build type. With a multi-config ge
 
 `filter-slint` and `filter-jive` are [experimental stereo filter effects](https://github.com/DanMarshall909/dandrum/blob/work/filter-ui-spikes-2026-10-07/spikes/filter-ui/README.md) with native framework UIs and real Rust audio. They process stereo input and can use an optional audition-generated test signal. The launcher enables their opt-in dependencies in an isolated Release/native-only `build/filter-ui-spikes/` configuration and skips npm preparation. Their implementation lives on the experiment branch and is discovered through registered local worktrees.
 
-Maintain demo registrations in [scripts/demos.json](scripts/demos.json) whenever a demo is added, renamed, moved or removed. Native entries can set `nativeOnly`, `buildDirectory`, and `cmakeOptions` (CMake definitions without the `-D` prefix); omitted fields preserve the normal build and React settings. Update launch tests and relevant documentation in the same change. CTest's `demo-launcher-inventory` check rejects unregistered standalone JUCE targets, incorrect native artifact paths and unregistered local React dev packages. Run `python3 -m unittest discover -s tests/python -p 'test_demo_*.py'` for focused launcher checks.
+`trigger-slint` is a silent native Slint preview of Trigger's eight macro controls. It uses the opt-in `DANDRUM_BUILD_TRIGGER_SLINT=ON` target in the same isolated Release/native-only `build/filter-ui-spikes/` configuration, skips npm preparation, and discovers its source through registered local worktrees. See [the preview development guide](https://github.com/DanMarshall909/dandrum/blob/work/slint-performance-2026-10-08/spikes/trigger-slint/README.md) for UI authoring and native verification commands.
+
+Maintain demo registrations in [scripts/demos.json](scripts/demos.json) whenever a demo is added, renamed, moved or removed. Native entries can set `nativeOnly`, `buildDirectory`, and `cmakeOptions` (CMake definitions without the `-D` prefix); omitted fields preserve the normal build and React settings. Update launch tests and relevant documentation in the same change. CTest's `demo-launcher-inventory` check rejects unregistered JUCE standalone, console and GUI targets, incorrect native artifact paths and unregistered local React dev packages. Run `python3 -m unittest discover -s tests/python -p 'test_demo_*.py'` for focused launcher checks.
 
 ## First Sound
 
