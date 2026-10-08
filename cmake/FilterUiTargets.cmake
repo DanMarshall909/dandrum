@@ -13,6 +13,7 @@ foreach(target dandrum-filter-slint dandrum-filter-jive)
 endforeach()
 target_sources(dandrum-filter-slint PRIVATE spikes/filter-ui/slint/SlintEditor.cpp)
 target_link_libraries(dandrum-filter-slint PRIVATE Slint::Slint)
+set_property(TARGET dandrum-filter-slint PROPERTY SLINT_EMBED_RESOURCES embed-files)
 slint_target_sources(dandrum-filter-slint spikes/filter-ui/slint/Filter.slint)
 target_sources(dandrum-filter-jive PRIVATE spikes/filter-ui/jive/JiveEditor.cpp)
 target_link_libraries(dandrum-filter-jive PRIVATE jive::jive_layouts jive::jive_style_sheets)
@@ -66,3 +67,13 @@ add_custom_target(dandrum-filter-ui-spikes-all DEPENDS
     dandrum-filter-slint_Standalone dandrum-filter-slint_VST3 dandrum-filter-jive_Standalone dandrum-filter-jive_VST3
     dandrum-filter-slint-ui-check dandrum-filter-jive-ui-check ${FILTER_VST3_CHECK_TARGET}
     dandrum-filter-spike-processor-test dandrum-filter-spike-engine-test)
+
+foreach(format Standalone VST3)
+    foreach(family Barlow BarlowSemiCondensed JetBrainsMono)
+        add_custom_command(TARGET dandrum-filter-slint_${format} POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E make_directory "$<TARGET_FILE_DIR:dandrum-filter-slint_${format}>/font-licenses/${family}"
+            COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                "${CMAKE_CURRENT_SOURCE_DIR}/ui/design-system/fonts/${family}/OFL.txt"
+                "$<TARGET_FILE_DIR:dandrum-filter-slint_${format}>/font-licenses/${family}/OFL.txt")
+    endforeach()
+endforeach()

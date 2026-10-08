@@ -48,3 +48,24 @@ $HOME/.local/bin/ctest --test-dir build/filter-ui-spikes -R '^(filter-|demo-laun
 Actual UI verification covers 900×700, 1080×760 and VST3 resize 1280×900 on a scale 1 Linux/X11 display. It uses synthetic mouse-method events/rotary callbacks and host automation. Physical input/display latency, HiDPI, Windows/macOS, DAW-specific deployment, IME and complete accessibility bridging remain unverified. The Slint backend is full-buffer software rendering; GPU Slint renderers were not evaluated. Its software Path/transform/shadow limitations are documented in [Slint notes](slint/NOTES.md). JIVE integration details are in [JIVE notes](jive/DEVELOPMENT.md). The [evidence map](EVIDENCE.md) connects the experiment's criteria and tasks to checks.
 
 Analysis uses mono-folded 2048-point spectra and 8192-sample Rust impulse responses, so narrow low-frequency features are approximations. The visible response view clips outside −36..+18 dB. This is an evaluation instrument, not a finished analyser or a production migration.
+
+## Slint design-guide styling
+
+The Slint filter view follows the maintained [design guide](../../docs/design-system/README.md):
+warm brown stepped surfaces, cream response/value marks, ember selection, flat
+pointer-free caps with a 270-degree arc and origin tick, and small panel/control
+radii. Labels use embedded Barlow Semi Condensed, the lowercase wordmark uses
+Barlow Bold, and values use JetBrains Mono. Knob values appear on hover, drag or
+focus; the existing normalized drag/host gesture contract remains unchanged.
+Numeric text entry and a production UI migration are outside this visual pass.
+
+The theme imports the generated Slint projection of `ui/design-system/tokens.json`;
+`node scripts/generate-ui-tokens.mjs --check` detects drift across all three
+renderers. The owning Slint runtime check covers knob hover/focus values, band
+and knob drags, host gestures, attribution, two instances and resize captures.
+
+GNU Make builds clear inherited `MAKEFLAGS`/`MFLAGS` only for the Cargo-built
+Slint compiler. This avoids jemalloc treating Make's compact silent flag `s`
+as a target name; Cargo retains its own jobserver flags and explicit
+`CARGO_BUILD_JOBS` setting. The regression check uses real GNU Make and Cargo
+with jemalloc's flag concatenation, and also covers a prebuilt Slint SDK.

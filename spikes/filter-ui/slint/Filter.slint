@@ -1,10 +1,12 @@
+import { DesignTokens } from "Theme.slint";
 import { AboutSlint } from "std-widgets.slint";
 import { FilterKnob } from "Knob.slint";
 export struct BandNode { x: float, y: float }
 export component FilterUi inherits Window {
     in property <length> viewport-width: 1080px;
     in property <length> viewport-height: 760px;
-    width: root.viewport-width; height: root.viewport-height; background: #11151c;
+    width: root.viewport-width; height: root.viewport-height; background: DesignTokens.surface-window;
+    default-font-family: DesignTokens.font-ui; default-font-size: DesignTokens.type-body;
     in property <string> response-command;
     in property <string> input-command;
     in property <string> output-command;
@@ -22,6 +24,7 @@ export component FilterUi inherits Window {
     out property <float> graph-top: graph.y / 1px;
     out property <float> graph-width: graph.width / 1px;
     out property <float> graph-height: graph.height / 1px;
+    out property <bool> frequency-value-visible: frequency-knob.value-visible;
     out property <float> frequency-knob-x: (frequency-knob.x + frequency-knob.width / 2) / 1px;
     out property <float> frequency-knob-y: (frequency-knob.y + frequency-knob.height / 2) / 1px;
     out property <float> about-button-x: (about-button.x + about-button.width / 2) / 1px;
@@ -31,37 +34,40 @@ export component FilterUi inherits Window {
     callback node-gesture(int, int, float, float);
     callback knob-gesture(int, int, float);
     callback toggle(int);
-    Text { x: 28px; y: 20px; text: "DANDRUM  /  FILTER LAB"; color: #e6edf7; font-size: 22px; }
-    Text { x: 28px; y: 49px; text: "SLINT  ·  RUST AUDIO ENGINE  ·  LIVE STEREO ANALYSIS";
-        color: #91a2b9; font-size: 11px; }
-    for title[index] in ["BYPASS", "AUDITION"]: Rectangle {
+    Text { x: 28px; y: 20px; text: "dandrum / filter lab"; color: DesignTokens.text-primary;
+        font-family: DesignTokens.font-display; font-weight: 700; font-size: DesignTokens.type-brand; }
+    Text { x: 28px; y: 49px; text: "STEREO FILTER  /  HIGH-PASS · BELL · LOW-PASS";
+        color: DesignTokens.text-secondary; font-size: DesignTokens.type-micro; }
+    for title[index] in ["Bypass", "Audition"]: Rectangle {
         private property <bool> active: (index == 0 && root.bypassed) || (index == 1 && root.auditioning);
         x: parent.width - 258px + index * 116px; y: 23px; width: 104px; height: 34px;
-        border-radius: 6px; background: self.active ? #24796e : #253143;
-        Text { text: title; color: #e6edf7; font-size: 12px; horizontal-alignment: center; vertical-alignment: center; }
-        TouchArea { clicked => { root.toggle(index); } }
+        border-radius: DesignTokens.radius-2; border-width: 1px; border-color: DesignTokens.border-control;
+        background: self.active ? DesignTokens.color-selected : action.has-hover ? DesignTokens.surface-control-hover : DesignTokens.surface-control;
+        Text { text: title; color: parent.active ? DesignTokens.surface-well : DesignTokens.text-primary; font-size: DesignTokens.type-label; horizontal-alignment: center; vertical-alignment: center; }
+        action := TouchArea { clicked => { root.toggle(index); } }
     }
     graph := Rectangle {
         x: 54px; y: 93px; width: parent.width - 91px; height: parent.height - 450px;
-        background: #161e29; border-radius: 8px;
+        background: DesignTokens.surface-well; border-radius: DesignTokens.radius-1;
+        border-width: 1px; border-color: DesignTokens.border-hairline;
         for row in 7: Rectangle {
-            y: row * (parent.height - 1px) / 6; width: parent.width; height: 1px; background: #2a3545;
+            y: row * (parent.height - 1px) / 6; width: parent.width; height: 1px; background: DesignTokens.border-hairline;
         }
         for column in 11: Rectangle {
-            x: column * (parent.width - 1px) / 10; width: 1px; height: parent.height; background: #243040;
+            x: column * (parent.width - 1px) / 10; width: 1px; height: parent.height; background: DesignTokens.border-hairline;
         }
         Path { width: 100%; height: 100%; viewbox-width: 1000; viewbox-height: 1000; fit: fill;
-            commands: root.input-command; stroke: #667a91; stroke-width: 1px; }
+            commands: root.input-command; stroke: DesignTokens.color-waveform; stroke-width: 1px; }
         Path { width: 100%; height: 100%; viewbox-width: 1000; viewbox-height: 1000; fit: fill;
-            commands: root.output-command; stroke: #398f98; stroke-width: 1.5px; }
+            commands: root.output-command; stroke: DesignTokens.color-waveform-region; stroke-width: 1.5px; }
         Path { width: 100%; height: 100%; viewbox-width: 1000; viewbox-height: 1000; fit: fill;
-            commands: root.response-command; stroke: #65daca; stroke-width: 2.5px; stroke-line-join: round; }
+            commands: root.response-command; stroke: DesignTokens.color-value; stroke-width: DesignTokens.stroke-track; stroke-line-join: round; }
         for node[index] in root.nodes: Rectangle {
             x: node.x * parent.width - 12px; y: node.y * parent.height - 12px;
-            width: 24px; height: 24px; border-radius: 12px;
-            background: index == root.selected ? #f2c779 : #65daca; border-width: 2px; border-color: #11151c;
-            Text { text: index == 0 ? "H" : index == 1 ? "B" : "L"; color: #11151c;
-                font-size: 11px; horizontal-alignment: center; vertical-alignment: center; }
+            width: 24px; height: 24px; border-radius: DesignTokens.radius-3;
+            background: index == root.selected ? DesignTokens.color-selected : DesignTokens.color-value; border-width: 2px; border-color: DesignTokens.surface-well;
+            Text { text: index == 0 ? "H" : index == 1 ? "B" : "L"; color: DesignTokens.surface-well;
+                font-size: DesignTokens.type-micro; horizontal-alignment: center; vertical-alignment: center; }
             TouchArea {
                 pointer-event(event) => {
                     if (event.kind == PointerEventKind.down) {
@@ -79,45 +85,47 @@ export component FilterUi inherits Window {
         }
     }
     for text[index] in ["+18", "+9", "0", "−9", "−18", "−27", "−36"]: Text {
-        x: 12px; y: 87px + index * (parent.height - 450px) / 6; width: 34px; text: text; color: #91a2b9; font-size: 11px;
+        x: 12px; y: 87px + index * (parent.height - 450px) / 6; width: 34px; text: text; font-family: DesignTokens.font-value; color: DesignTokens.text-secondary; font-size: DesignTokens.type-micro;
     }
     for text[index] in ["20 Hz", "63", "200", "630", "2k", "6.3k", "20k"]: Text {
-        x: 54px + index * (parent.width - 120px) / 6; y: parent.height - 350px; text: text; color: #91a2b9; font-size: 11px;
+        x: 54px + index * (parent.width - 120px) / 6; y: parent.height - 350px; text: text; font-family: DesignTokens.font-value; color: DesignTokens.text-secondary; font-size: DesignTokens.type-micro;
     }
-    Text { x: 54px; y: parent.height - 323px; text: "OUTPUT SPECTROGRAM  /  TIME →"; color: #91a2b9; font-size: 11px; }
+    Text { x: 54px; y: parent.height - 323px; text: "OUTPUT SPECTROGRAM  /  TIME →"; color: DesignTokens.text-secondary; font-size: DesignTokens.type-micro; }
     Image { x: 54px; y: parent.height - 300px; width: parent.width - 91px; height: 65px; source: root.history; image-fit: fill; }
     frequency-knob := FilterKnob {
-        x: 54px; y: parent.height - 213px; width: (parent.width - 340px) / 3; height: 183px;
+        x: 54px; y: parent.height - 213px; width: (parent.width - 298px) / 3; height: 183px;
         value: root.knob-values[0]; label: root.knob-labels[0]; value-text: root.knob-texts[0];
         gesture(phase, next) => { root.knob-gesture(0, phase, next); }
     }
     for index in [1, 2]: FilterKnob {
-        x: 54px + index * (parent.width - 300px) / 3; y: parent.height - 213px;
-        width: (parent.width - 340px) / 3; height: 183px;
+        x: 54px + index * ((parent.width - 298px) / 3 + DesignTokens.gap-control); y: parent.height - 213px;
+        width: (parent.width - 298px) / 3; height: 183px;
         value: root.knob-values[index]; label: root.knob-labels[index]; value-text: root.knob-texts[index];
         gesture(phase, next) => { root.knob-gesture(index, phase, next); }
     }
     Rectangle {
-        x: parent.width - 220px; y: parent.height - 213px; width: 183px; height: 183px; background: #1b2330; border-radius: 12px;
-        Text { y: 12px; width: parent.width; text: "IN L/R   ·   OUT L/R"; color: #91a2b9;
-            font-size: 11px; horizontal-alignment: center; }
+        x: parent.width - 220px; y: parent.height - 213px; width: 183px; height: 183px; background: DesignTokens.surface-panel; border-radius: DesignTokens.radius-3;
+        Text { y: 12px; width: parent.width; text: "IN L/R   ·   OUT L/R"; color: DesignTokens.text-secondary;
+            font-size: DesignTokens.type-micro; horizontal-alignment: center; }
         for level[index] in root.meters: Rectangle {
-            x: 28px + index * 34px; y: 43px; width: 19px; height: 112px; background: #11151c;
+            x: 28px + index * 34px; y: 43px; width: 19px; height: 112px; background: DesignTokens.surface-well;
             Rectangle { y: (1 - level) * parent.height; width: parent.width; height: level * parent.height;
-                background: @linear-gradient(0deg, #65daca, #f2c779); }
+                background: level > 0.95 ? DesignTokens.dd-error : DesignTokens.color-waveform-region; }
         }
     }
+    Text { x: 54px; y: parent.height - 25px; text: "Drag a band or turn a control.";
+        color: DesignTokens.text-tertiary; font-size: DesignTokens.type-micro; }
     about-button := Rectangle { x: parent.width - 157px; y: parent.height - 25px; width: 120px; height: 20px;
-        Text { text: "ABOUT SLINT"; color: #91a2b9; font-size: 11px; horizontal-alignment: center; }
+        Text { text: "About Slint"; color: DesignTokens.text-secondary; font-size: DesignTokens.type-micro; horizontal-alignment: center; }
         TouchArea { clicked => { root.about-open = true; } }
     }
     if root.about-open: Rectangle {
-        background: #11151cee;
+        background: DesignTokens.dd-scrim;
         Rectangle { x: (parent.width - 440px) / 2; y: (parent.height - 240px) / 2;
-            width: 440px; height: 240px; background: #253143; border-radius: 12px;
+            width: 440px; height: 240px; background: DesignTokens.surface-control; border-radius: DesignTokens.radius-3;
             AboutSlint { x: 30px; y: 30px; width: 380px; height: 140px; }
-            Rectangle { x: 170px; y: 190px; width: 100px; height: 30px; background: #24796e;
-                Text { text: "CLOSE"; color: #e6edf7; font-size: 12px;
+            Rectangle { x: 170px; y: 190px; width: 100px; height: 30px; background: DesignTokens.color-selected;
+                Text { text: "Close"; color: DesignTokens.text-primary; font-size: DesignTokens.type-label;
                     horizontal-alignment: center; vertical-alignment: center; }
                 TouchArea { clicked => { root.about-open = false; } }
             }

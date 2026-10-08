@@ -13,8 +13,8 @@ node scripts/generate-ui-tokens.mjs --check
 node --test tests/js/DesignTokensTest.mjs
 ```
 
-Generated outputs are `web/shared/design-tokens.css` and
-`src/juce-plugin/DesignTokens.h`. CSS preserves variable aliases; C++ resolves
+Generated outputs are `web/shared/design-tokens.css`,
+`src/juce-plugin/DesignTokens.h` and `ui/design-system/DesignTokens.slint`. CSS preserves variable aliases; C++ resolves
 them to `inline constexpr` values in `dandrum::ui::tokens`. C++ names replace
 hyphens with underscores. These are compile-time constants, similar to C#
 `const` fields, and need no JUCE or browser dependency. Sizes are logical pixels;
@@ -50,3 +50,16 @@ supplied icon geometry through `web/shared/design-icons.mjs`. Native font/icon
 embedding remains pending. Both original production editors now pass offline
 factory/runtime checks at full and compact sizes with their normal host-update
 timer; see the packaging evidence for the test boundary and platform limits.
+
+## Slint filter experiment
+
+The filter spike imports the generated `DesignTokens` global. Colour aliases
+resolve to Slint RGBA literals; pixel dimensions are lengths, and `em` tracking
+remains a font-size ratio. Slint font properties use the first family in each
+maintained font stack. CSS and C++ output remain unchanged.
+
+The filter theme imports the retained Barlow Bold, Barlow Semi Condensed SemiBold
+and JetBrains Mono Medium files. Its CMake target embeds those files, and both
+Standalone and VST3 outputs retain each family's `OFL.txt` under `font-licenses/`
+beside the executable/library. This is experimental native packaging, not
+completion of the production renderer migration.

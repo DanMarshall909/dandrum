@@ -15,3 +15,8 @@
 - [x] 3.1 Specify launcher behaviour with tests, then register both demos with isolated native-only spike builds and README commands.
 - [x] 3.2 Measure comparable idle/active rendering resource and frame costs; retain commands, identities and limitations.
 - [x] 3.3 Document implementation findings and explicit adopt/revise/defer results; run launcher/owning checks and strict OpenSpec validation before handoff.
+
+## 4. Design-guide follow-up
+
+- [x] 4.1 Restyle the Slint filter view using maintained design tokens and local fonts; verify rotary/node gestures, attribution and rendering at supported sizes.
+- [x] 4.2 Fix the GNU Make Slint compiler failure; verify a real nested Make/Cargo regression, maintained launcher gates and the original checkout's complete demo build/launch.

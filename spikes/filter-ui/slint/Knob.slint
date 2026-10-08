@@ -1,25 +1,36 @@
+import { DesignTokens } from "Theme.slint";
 export component FilterKnob inherits Rectangle {
     in property <float> value;
     in property <string> label;
     in property <string> value-text;
     callback gesture(int, float);
+    out property <bool> value-visible: touch.has-hover || touch.pressed || knob-focus.has-focus;
     private property <float> start-y;
     private property <float> start-value;
-    background: #1b2330;
-    border-radius: 12px;
+    background: DesignTokens.surface-panel;
+    border-width: 1px; border-color: DesignTokens.border-hairline;
+    border-radius: DesignTokens.radius-3;
     Text { y: 12px; width: parent.width; height: 20px; text: root.label;
-        color: #91a2b9; font-size: 12px; horizontal-alignment: center; }
+        color: DesignTokens.text-secondary; font-family: DesignTokens.font-ui; font-size: DesignTokens.type-label; horizontal-alignment: center; }
     Rectangle {
         x: (parent.width - 100px) / 2; y: 36px; width: 100px; height: 100px;
-        background: @radial-gradient(circle, #34465c 0%, #1c2939 72%, #101722 100%);
-        border-radius: 50px;
+        background: transparent;
+        Rectangle { x: 8px; y: 8px; width: 84px; height: 84px; border-radius: 42px;
+            background: transparent; border-width: knob-focus.has-focus ? DesignTokens.stroke-focus : 0px;
+            border-color: DesignTokens.color-focus; }
+        Rectangle { x: 20px; y: 20px; width: 60px; height: 60px; border-radius: 30px;
+            background: touch.pressed ? DesignTokens.surface-control : touch.has-hover ? DesignTokens.dd-cap-hover : DesignTokens.dd-ink-5;
+            border-width: 1px; border-color: DesignTokens.border-strong; }
         Path { width: 100%; height: 100%; viewbox-width: 100; viewbox-height: 100;
-            stroke: #46556b; stroke-width: 5px; stroke-line-cap: round;
+            stroke: DesignTokens.text-tertiary; stroke-width: 1px;
+            MoveTo { x: 18; y: 82; } LineTo { x: 22; y: 78; } }
+        Path { width: 100%; height: 100%; viewbox-width: 100; viewbox-height: 100;
+            stroke: DesignTokens.color-track; stroke-width: DesignTokens.stroke-track; stroke-line-cap: round;
             MoveTo { x: 25.25; y: 74.75; }
             ArcTo { radius-x: 35; radius-y: 35; x: 74.75; y: 74.75; large-arc: true; sweep: true; }
         }
         Path { width: 100%; height: 100%; viewbox-width: 100; viewbox-height: 100;
-            stroke: #65daca; stroke-width: 5px; stroke-line-cap: round;
+            stroke: DesignTokens.color-value; stroke-width: touch.pressed ? 5px : DesignTokens.stroke-track; stroke-line-cap: round;
             MoveTo { x: 25.25; y: 74.75; }
             ArcTo { radius-x: 35; radius-y: 35;
                 x: 50 + 35 * Math.cos((135 + 270 * Math.max(0.001, root.value)) * 1deg);
@@ -27,19 +38,29 @@ export component FilterKnob inherits Rectangle {
                 large-arc: root.value > 0.6667; sweep: true; }
         }
     }
-    Text { y: 146px; width: parent.width; height: 24px; text: root.value-text;
-        color: #e6edf7; font-size: 15px; horizontal-alignment: center; }
-    TouchArea {
-        pointer-event(event) => {
-            if (event.kind == PointerEventKind.down) {
-                root.start-y = self.mouse-y / 1px; root.start-value = root.value;
-                root.gesture(0, root.value);
-            } else if (event.kind == PointerEventKind.up || event.kind == PointerEventKind.cancel) {
-                root.gesture(2, root.value);
+    if root.value-visible: Rectangle {
+        x: (parent.width - 132px) / 2; y: 146px; width: 132px; height: 24px;
+        background: DesignTokens.surface-well; border-radius: DesignTokens.radius-1;
+        border-width: 1px; border-color: DesignTokens.border-control;
+        Text { width: 100%; height: 100%; text: root.value-text;
+            color: DesignTokens.text-primary; font-family: DesignTokens.font-value; font-size: DesignTokens.type-value;
+            horizontal-alignment: center; vertical-alignment: center; }
+    }
+    knob-focus := FocusScope {
+        width: 100%; height: 100%;
+        touch := TouchArea {
+            pointer-event(event) => {
+                if (event.kind == PointerEventKind.down) {
+                    knob-focus.focus();
+                    root.start-y = self.mouse-y / 1px; root.start-value = root.value;
+                    root.gesture(0, root.value);
+                } else if (event.kind == PointerEventKind.up || event.kind == PointerEventKind.cancel) {
+                    root.gesture(2, root.value);
+                }
             }
+            moved => { if (self.pressed) {
+                root.gesture(1, Math.clamp(root.start-value + (root.start-y - self.mouse-y / 1px) / 180, 0, 1));
+            } }
         }
-        moved => { if (self.pressed) {
-            root.gesture(1, Math.clamp(root.start-value + (root.start-y - self.mouse-y / 1px) / 180, 0, 1));
-        } }
     }
 }

@@ -26,10 +26,11 @@ function sandbox(run) {
   const source = path.join(dir, 'tokens.json');
   const css = path.join(dir, 'tokens.css');
   const cpp = path.join(dir, 'tokens.h');
+  const slint = path.join(dir, 'tokens.slint');
   const write = data => writeFileSync(source, JSON.stringify(data));
   const generate = (...args) => spawnSync(process.execPath,
-    [generator, '--source', source, '--css', css, '--cpp', cpp, ...args], { encoding: 'utf8' });
-  try { run({ dir, source, css, cpp, write, generate }); }
+    [generator, '--source', source, '--css', css, '--cpp', cpp, '--slint', slint, ...args], { encoding: 'utf8' });
+  try { run({ dir, source, css, cpp, slint, write, generate }); }
   finally { rmSync(dir, { recursive: true, force: true }); }
 }
 
@@ -201,4 +202,36 @@ test('locally retained font binaries and license notices match pinned upstream p
   }
   for (const family of ['Barlow', 'BarlowSemiCondensed', 'JetBrainsMono'])
     assert.ok(provenance.files[`${family}/OFL.txt`], family);
+});
+
+
+test('Slint uses the same resolved palette, dimensions, alpha and font families as the other renderers', () => {
+  sandbox(({ slint, write, generate }) => {
+    const data = fixture();
+    data.tokens['font-value'] = { kind: 'text', value: '"JetBrains Mono", monospace' };
+    data.tokens['unitless-value'] = { kind: 'number', value: 2, unit: '' };
+    write(data);
+    const result = generate();
+    assert.equal(result.status, 0, result.stderr);
+    let output = readFileSync(slint, 'utf8');
+    assert.match(output, /export global DesignTokens/);
+    assert.match(output, /<color> dd-ink-0: #130F0CFF/);
+    assert.match(output, /<color> dd-scrim: #130F0C73/);
+    assert.match(output, /<color> surface-window: #130F0CFF/);
+    assert.match(output, /<length> pad-panel: 12px/);
+    assert.match(output, /<float> tracking-caps: 0.06/);
+    assert.match(output, /<float> unitless-value: 2/);
+    assert.match(output, /<string> font-ui: "Barlow Semi Condensed"/);
+    assert.match(output, /<string> font-value: "JetBrains Mono"/);
+    data.tokens['dd-ink-0'].value = '#abcdef';
+    write(data);
+    assert.equal(generate().status, 0);
+    output = readFileSync(slint, 'utf8');
+    assert.match(output, /<color> surface-window: #ABCDEFFF/);
+    writeFileSync(slint, '// drift\n');
+    const drift = generate('--check');
+    assert.equal(drift.status, 1);
+    assert.match(drift.stderr, /tokens.slint.*out of date/);
+    assert.equal(readFileSync(slint, 'utf8'), '// drift\n');
+  });
 });

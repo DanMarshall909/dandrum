@@ -45,10 +45,18 @@ bool checkSlintInteractions(FilterProcessor& processor, juce::AudioProcessorEdit
         error = "Slint Bell Path node mouse gesture did not update frequency and gain"; return false;
     }
     geometry = readSlintCheckGeometry(editor);
+    editor.mouseMove(eventFor(editor, geometry.frequencyKnob, geometry.frequencyKnob));
+    if (!readSlintCheckGeometry(editor).knobValueVisible) {
+        error = "Slint knob hover did not reveal its live value"; return false;
+    }
     const auto beforeKnob = processor.normalized(bellFrequency);
     drag(editor, geometry.frequencyKnob, geometry.frequencyKnob + juce::Point<float>(0, -30));
     if (processor.normalized(bellFrequency) <= beforeKnob + .05f) {
         error = "Slint frequency knob mouse gesture did not reach host state"; return false;
+    }
+    editor.mouseExit(eventFor(editor, geometry.frequencyKnob, geometry.frequencyKnob));
+    if (!readSlintCheckGeometry(editor).knobValueVisible) {
+        error = "Slint focused knob did not retain its live value after pointer exit"; return false;
     }
     geometry = readSlintCheckGeometry(editor);
     click(editor, geometry.aboutButton);

@@ -2,6 +2,7 @@
 #include "SlintPlatform.h"
 #include "Filter.h"
 #include "SlintChecks.h"
+#include "../../../src/juce-plugin/DesignTokens.h"
 #include <sstream>
 
 namespace filter_spike {
@@ -104,7 +105,7 @@ public:
         return {{view.get_graph_left(), view.get_graph_top(), view.get_graph_width(), view.get_graph_height()},
                 {view.get_frequency_knob_x(), view.get_frequency_knob_y()},
                 {view.get_about_button_x(), view.get_about_button_y()},
-                {view.get_about_close_x(), view.get_about_close_y()}, view.get_about_open()};
+                {view.get_about_close_x(), view.get_about_close_y()}, view.get_about_open(), view.get_frequency_value_visible()};
     }
 private:
     static slint::LogicalPosition position(const juce::MouseEvent& event) {
@@ -140,7 +141,8 @@ private:
                 const auto column = (frame.historyHead + x) % historyColumns;
                 const float db = frame.historyDb[size_t(column * plotBins + plotBins - 1 - y)];
                 const float intensity = juce::jlimit(0.0f, 1.0f, (db + 90) / 90);
-                auto colour = juce::Colour::fromHSV(.64f - .48f * intensity, .8f, .07f + .93f * intensity, 1);
+                const auto colour = juce::Colour(dandrum::ui::tokens::surface_well)
+                    .interpolatedWith(juce::Colour(dandrum::ui::tokens::color_waveform_region), intensity);
                 pixels[size_t(y * historyColumns + x)] = {colour.getRed(), colour.getGreen(), colour.getBlue()};
             }
             view.set_history(slint::Image(slint::SharedPixelBuffer<slint::Rgb8Pixel>(historyColumns, plotBins, pixels.data())));
