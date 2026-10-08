@@ -1,0 +1,15 @@
+import { Tokens } from "../theme.slint";
+
+export component PlaybackCursor inherits Rectangle {
+    in property <float> position;
+    in property <bool> host;
+    in property <bool> offset-marker;
+    Rectangle { x: root.position.clamp(0,1) * max(0px,root.width - 1px) - 1px; width: 3px; height: 100%; background: Tokens.dd-ink-0; }
+    Rectangle { x: root.position.clamp(0,1) * max(0px,root.width - 1px); width: root.offset-marker ? 2px : 1px; height: 100%; background: root.host ? Tokens.dd-host : Tokens.dd-paper-1; }
+    if root.offset-marker : Path {
+        x: root.position.clamp(0,1) * max(0px,root.width - 1px) - 3px;
+        y: 0px; width: 6px; height: 6px; viewbox-width: 6; viewbox-height: 6;
+        fill: root.host ? Tokens.dd-host : Tokens.dd-paper-1;
+        MoveTo {x:0;y:0;} LineTo{x:6;y:0;} LineTo{x:3;y:6;} Close{}
+    }
+}

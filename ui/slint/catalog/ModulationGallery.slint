@@ -1,0 +1,23 @@
+import { Tokens } from "../theme.slint";
+import { Panel } from "../layout/Panel.slint";
+import { ModIndicator } from "../modulation/ModIndicator.slint";
+
+export component ModulationGallery inherits Panel {
+    title: "MODULATION LANGUAGE"; summary: "A–D source slots · DAW-owned host activity";
+    preferred-height: 132px;
+    VerticalLayout {
+        spacing: 6px;
+        HorizontalLayout {
+            spacing: 8px; alignment: start;
+            ModIndicator { slot: 0; source: "Velocity"; depth: 0.25; active: true; }
+            ModIndicator { slot: 1; source: "Random"; depth: -0.15; }
+            ModIndicator { host: true; active: true; }
+        }
+        HorizontalLayout {
+            spacing: 8px; alignment: start;
+            ModIndicator { slot: 2; source: "Envelope"; depth: 0.1; active: true; }
+            ModIndicator { slot: 3; source: "Aftertouch"; depth: 0.2; }
+        }
+        Text { text: "Shape + letter + colour identify each source. Blue marks a host value update; the DAW owns its automation."; color: Tokens.text-tertiary; font-family: Tokens.font-ui; font-size: 11px; wrap: word-wrap; }
+    }
+}

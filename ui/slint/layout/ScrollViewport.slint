@@ -1,0 +1,58 @@
+import { Scrollbar } from "Scrollbar.slint";
+
+export component ScrollViewport inherits Rectangle {
+    in property <length> content-height;
+    // Zero fits the available width. An explicit width enables horizontal scrolling.
+    in property <length> content-width;
+    in-out property <length> offset-y;
+    in-out property <length> offset-x;
+    out property <bool> vertical-scrollbar-visible: root.content-height > root.height
+        || (root.content-width > root.width && root.content-height > root.height - 8px);
+    out property <bool> horizontal-scrollbar-visible: root.content-width > root.width
+        || (root.content-height > root.height && root.content-width > root.width - 8px);
+    out property <length> viewport-width: max(0px, root.width - (root.vertical-scrollbar-visible ? 8px : 0px));
+    out property <length> viewport-height: max(0px, root.height - (root.horizontal-scrollbar-visible ? 8px : 0px));
+    private property <length> range-x: max(0px, root.content-width - root.viewport-width);
+    private property <length> range-y: max(0px, root.content-height - root.viewport-height);
+    private property <length> content-x;
+    private property <length> content-y;
+    private property <float> bar-x;
+    private property <float> bar-y;
+    changed offset-x => { root.clamp-offsets(); }
+    changed offset-y => { root.clamp-offsets(); }
+    changed range-x => { root.clamp-offsets(); }
+    changed range-y => { root.clamp-offsets(); }
+    changed content-x => { root.offset-x = -root.content-x; root.clamp-offsets(); }
+    changed content-y => { root.offset-y = -root.content-y; root.clamp-offsets(); }
+    function clamp-offsets() {
+        let x = root.offset-x.clamp(0px, root.range-x);
+        let y = root.offset-y.clamp(0px, root.range-y);
+        if root.offset-x != x { root.offset-x = x; }
+        if root.offset-y != y { root.offset-y = y; }
+        if root.content-x != -x { root.content-x = -x; }
+        if root.content-y != -y { root.content-y = -y; }
+        if root.bar-x != x / 1px { root.bar-x = x / 1px; }
+        if root.bar-y != y / 1px { root.bar-y = y / 1px; }
+    }
+    Flickable {
+        x: 0px; y: 0px;
+        width: root.viewport-width; height: root.viewport-height;
+        content-width: max(self.width, root.content-width);
+        content-height: max(self.height, root.content-height);
+        content-y <=> root.content-y;
+        content-x <=> root.content-x;
+        @children
+    }
+    if root.vertical-scrollbar-visible : Scrollbar {
+        x: parent.width - 6px; y: 0px; width: 6px; height: root.viewport-height;
+        vertical: true; viewport-size: root.viewport-height / 1px; content-size: root.content-height / 1px;
+        position <=> root.bar-y;
+        scrolled(value) => { root.offset-y = value * 1px; root.clamp-offsets(); }
+    }
+    if root.horizontal-scrollbar-visible : Scrollbar {
+        x: 0px; y: parent.height - 6px; height: 6px; width: root.viewport-width;
+        vertical: false; viewport-size: root.viewport-width / 1px; content-size: root.content-width / 1px;
+        position <=> root.bar-x;
+        scrolled(value) => { root.offset-x = value * 1px; root.clamp-offsets(); }
+    }
+}

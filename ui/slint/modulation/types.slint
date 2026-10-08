@@ -1,0 +1,9 @@
+// In-plugin assignments are separate from DAW-owned automation. Four source slots
+// are identified redundantly by letter, shape, and color. Depth/output normalized.
+export struct ModAssignment {
+    slot: int,
+    source: string,
+    depth: float,
+    live: float,
+    active: bool,
+}

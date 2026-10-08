@@ -1,0 +1,47 @@
+import { Tokens } from "../theme.slint";
+import { IconButton } from "../controls/IconButton.slint";
+import { LayerParameter, LayerWaveform } from "types.slint";
+import { LayerParameterGrid } from "LayerParameterGrid.slint";
+import { LayerSourceWaveform } from "LayerSourceWaveform.slint";
+
+export component LayerDetails inherits FocusScope {
+    in property <string> title;
+    in property <string> summary;
+    in property <[LayerParameter]> parameters;
+    in property <LayerWaveform> waveform;
+    in property <bool> available: true;
+    out property <bool> waveform-visible: root.waveform.supplied;
+    callback close(); callback parameter-changed(string,float);
+    callback option-changed(string,string);
+    callback gesture-began(string); callback gesture-ended(string);
+    callback display-changed(string); callback slice-selected(string); callback retry();
+    preferred-height: 68px + (root.waveform-visible ? 108px : 0px) + (root.parameters.length > 0 ? grid.preferred-height : 24px);
+    focus-on-tab-navigation: false;
+    init => { if root.visible { root.focus(); } }
+    changed visible => { if root.visible { root.focus(); } }
+    key-pressed(event) => { if event.text == Key.Escape { root.close(); return accept; } return reject; }
+    Rectangle { width: 100%; height: 100%; background: Tokens.dd-ink-3; border-radius: 4px; border-width: 1px; border-color: Tokens.dd-line-2; }
+    Text { x: 10px; y: 7px; width: parent.width - 48px; height: 18px; text: root.title; font-family: Tokens.font-ui; font-size: 13px; font-weight: 600; color: Tokens.dd-paper-1; overflow: elide; }
+    IconButton { x: parent.width - 30px; y: 3px; icon: "close"; label: "Close source details"; clicked => { root.close(); } }
+    Text { x: 10px; y: 31px; width: parent.width - 20px; height: 28px; text: root.summary; font-family: Tokens.font-value; font-size: 11px; color: Tokens.dd-paper-3; wrap: word-wrap; overflow: elide; }
+    source-wave := LayerSourceWaveform {
+        x: 12px; y: 62px; width: max(0px, parent.width - 24px);
+        visible: root.waveform-visible; data: root.waveform; available: root.available;
+        display-changed(mode) => { root.display-changed(mode); }
+        slice-selected(id) => { root.slice-selected(id); } retry => { root.retry(); }
+    }
+    grid := LayerParameterGrid {
+        x: 12px; y: 62px + (root.waveform-visible ? 108px : 0px);
+        width: max(0px,parent.width - 24px); height: self.preferred-height;
+        parameters: root.parameters; available: root.available;
+        parameter-changed(id,value) => { root.parameter-changed(id,value); }
+        option-changed(id,option) => { root.option-changed(id,option); }
+        gesture-began(id) => { root.gesture-began(id); } gesture-ended(id) => { root.gesture-ended(id); }
+        close-requested => { root.close(); }
+    }
+    if root.parameters.length == 0 : Text {
+        x: 12px; y: grid.y; width: max(0px,parent.width - 24px); height: 20px;
+        text: "No public parameter controls supplied.";
+        font-family: Tokens.font-ui; font-size: 11px; color: Tokens.text-tertiary;
+    }
+}

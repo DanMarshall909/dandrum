@@ -1,0 +1,12 @@
+import { Tokens } from "../theme.slint";
+
+export component LayerTicks inherits Rectangle {
+    in property <int> count;
+    in property <int> active-index: -1;
+    height: 4px;
+    for index in max(0, root.count) : Rectangle {
+        x: index * 8px; y: 1px; width: 6px; height: 2px;
+        visible: self.x + self.width <= root.width;
+        background: index == root.active-index ? Tokens.dd-vermilion : Tokens.dd-line-3;
+    }
+}

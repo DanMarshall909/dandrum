@@ -10,6 +10,13 @@ option(DANDRUM_ENABLE_MUTATION_CTEST "Include the long-running cargo-mutants tes
 option(DANDRUM_NATIVE_ONLY "Build the plugin with the native JUCE editor and no browser dependencies" OFF)
 option(DANDRUM_BUILD_FILTER_UI_SPIKES "Build optional Slint and JIVE filter experiments" OFF)
 option(DANDRUM_BUILD_TRIGGER_SLINT "Build the silent Trigger Slint performance preview" OFF)
+option(DANDRUM_SLINT_LIBRARY_ONLY "Build only the Slint design library catalog and its tests" OFF)
+if(DANDRUM_SLINT_LIBRARY_ONLY)
+    # Keep the reusable UI build independent of JUCE, Rust, Node, and the plugin.
+    add_executable(dandrum-slint-catalog)
+    add_subdirectory(ui/slint)
+    return()
+endif()
 if(DANDRUM_NATIVE_ONLY)
     set(DANDRUM_BROWSER_ENABLED FALSE)
     set(DANDRUM_EDITOR_ADAPTER dandrum-plugin-native-editor)
@@ -645,7 +652,11 @@ if(NOT DANDRUM_NATIVE_ONLY)
     add_test(NAME react-plugin-efficiency COMMAND ${DANDRUM_NODE_EXECUTABLE} --test ${CMAKE_CURRENT_SOURCE_DIR}/tests/js/ReactPluginEfficiencyTest.mjs)
     add_test(NAME prepared-job-polling COMMAND ${DANDRUM_NODE_EXECUTABLE} --test ${CMAKE_CURRENT_SOURCE_DIR}/web/shared/prepared-polling.test.mjs)
     add_test(NAME prepared-parameter-document COMMAND ${DANDRUM_NODE_EXECUTABLE} --test ${CMAKE_CURRENT_SOURCE_DIR}/web/shared/prepared-parameter-document.test.mjs)
-    add_test(NAME design-token-generation COMMAND ${DANDRUM_NODE_EXECUTABLE} --test ${CMAKE_CURRENT_SOURCE_DIR}/tests/js/DesignTokensTest.mjs)
+    add_test(NAME design-token-generation COMMAND ${DANDRUM_NODE_EXECUTABLE} --test
+        ${CMAKE_CURRENT_SOURCE_DIR}/tests/js/DesignTokensTest.mjs
+        ${CMAKE_CURRENT_SOURCE_DIR}/tests/js/SlintDesignTokensTest.mjs)
+    add_test(NAME slint-library-inventory COMMAND ${DANDRUM_NODE_EXECUTABLE} --test
+        ${CMAKE_CURRENT_SOURCE_DIR}/tests/js/SlintLibraryInventoryTest.mjs)
     add_test(NAME design-tokens-current COMMAND ${DANDRUM_NODE_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/scripts/generate-ui-tokens.mjs --check)
     add_test(NAME react-asset-packaging COMMAND ${DANDRUM_NODE_EXECUTABLE} --test ${CMAKE_CURRENT_SOURCE_DIR}/tests/js/ReactAssetsTest.mjs)
     add_test(NAME design-icon-rendering COMMAND ${DANDRUM_NODE_EXECUTABLE} --test ${CMAKE_CURRENT_SOURCE_DIR}/tests/js/DesignIconsTest.mjs)

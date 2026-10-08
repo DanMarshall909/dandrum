@@ -1,0 +1,17 @@
+import { Tokens } from "../theme.slint";
+
+// The small label used inside controls. ParamLabel composes it with a readout.
+export component ControlLabel inherits Text {
+    in property <bool> enabled: true;
+    in property <bool> compact;
+    in property <string> label;
+    text: root.label;
+    color: root.enabled ? Tokens.text-secondary : Tokens.text-disabled;
+    font-family: Tokens.font-ui;
+    font-size: root.compact ? Tokens.type-micro : Tokens.type-label;
+    font-weight: 600;
+    letter-spacing: Tokens.tracking-caps * self.font-size;
+    vertical-alignment: center;
+    overflow: elide;
+    wrap: no-wrap;
+}

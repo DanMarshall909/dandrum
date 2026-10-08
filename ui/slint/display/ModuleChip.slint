@@ -1,0 +1,43 @@
+import { Tokens } from "../theme.slint";
+import { FocusRing } from "../foundation/FocusRing.slint";
+import { IconButton } from "../controls/IconButton.slint";
+import { LayerModule } from "types.slint";
+
+export component ModuleChip inherits FocusScope {
+    in property <LayerModule> module;
+    in property <bool> selected;
+    in property <bool> rebuilding;
+    in property <bool> available: true;
+    in property <int> focus-request;
+    callback selected-module(string); callback bypass(string,bool); callback remove(string);
+    callback dismiss-details();
+    changed focus-request => { if root.selected { root.focus(); } }
+    min-width: 88px; preferred-width: 130px; height: 38px;
+    accessible-role: button; accessible-label: "Inspect \{root.module.title}";
+    accessible-action-default => { root.selected-module(root.module.id); }
+    key-pressed(event) => {
+        if event.text == Key.Escape { root.dismiss-details(); return accept; }
+        if event.text == Key.Return || event.text == " " { root.selected-module(root.module.id); return accept; }
+        return reject;
+    }
+    Rectangle {
+        width: 100%; height: 100%; border-radius: 4px; border-width: 1px;
+        border-color: root.selected ? Tokens.dd-vermilion : Tokens.dd-line-2;
+        background: input.has-hover ? Tokens.dd-ink-5 : Tokens.dd-ink-3;
+        Text { x: 28px; y: 4px; width: max(0px,parent.width - 50px); height: 15px; text: root.module.title; color: root.module.bypassed ? Tokens.dd-paper-4 : Tokens.dd-paper-2; font-family: Tokens.font-ui; font-weight: 600; font-size: 11px; overflow: elide; }
+        Text { x: 7px; y: 22px; width: parent.width - 14px; height: 13px; text: root.module.bypassed ? "Bypassed" : root.module.detail; color: Tokens.dd-paper-3; font-family: Tokens.font-value; font-size: 11px; overflow: elide; }
+    }
+    input := TouchArea { clicked => { root.focus(); root.selected-module(root.module.id); } }
+    IconButton {
+        x: 1px; y: 0px; width: 24px; height: 24px; icon: root.module.bypassed ? "minus" : "ok";
+        label: "\{root.module.bypassed ? "Enable" : "Bypass"} \{root.module.title}";
+        enabled: root.available && root.module.can-bypass;
+        clicked => { if root.available && root.module.can-bypass { root.bypass(root.module.id,!root.module.bypassed); } }
+    }
+    if root.module.can-remove : IconButton {
+        x: parent.width - 24px; y: 0px; width: 24px; height: 24px; icon: "close";
+        label: "Remove \{root.module.title}"; enabled: root.available && !root.rebuilding;
+        clicked => { if root.available && !root.rebuilding { root.remove(root.module.id); } }
+    }
+    FocusRing { width: 100%; height: 100%; active: root.has-focus; }
+}

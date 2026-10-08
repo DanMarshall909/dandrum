@@ -1,0 +1,71 @@
+import { Tokens } from "../theme.slint";
+import { ModAssignment } from "../modulation/types.slint";
+import { ModPalette } from "../modulation/ModPalette.slint";
+import { RotaryArc } from "RotaryArc.slint";
+import { RotaryCap } from "RotaryCap.slint";
+import { RotaryTick } from "RotaryTick.slint";
+import { RotaryMarker } from "RotaryMarker.slint";
+import { RotaryModRing } from "RotaryModRing.slint";
+
+// Paint-only composition: ring(s), base arc, cap, combined arc, peaks and clips.
+// A pointer line is deliberately absent; the base arc is the position indicator.
+export component RotaryFace inherits Rectangle {
+    in property <length> size: 48px;
+    in property <float> value: 0.5;
+    in property <bool> bipolar;
+    in property <bool> enabled: true;
+    in property <bool> hovered;
+    in property <bool> active;
+    in property <bool> host-automated;
+    in property <bool> assigning;
+    in property <int> active-slot: -1;
+    in property <[ModAssignment]> modulations;
+    in property <float> range-low;
+    in property <float> range-high;
+    in property <float> effective;
+    in property <bool> any-live;
+    in property <float> peak;
+    in property <float> trough;
+    in property <bool> show-peaks: true;
+    in property <bool> clip-low;
+    in property <bool> clip-high;
+    in property <bool> live-clip-low;
+    in property <bool> live-clip-high;
+    private property <length> thick: root.size >= 60px ? 4px : root.size >= 44px ? 3px : 2.5px;
+    private property <length> thin: root.size >= 44px ? 1.5px : 1.25px;
+    private property <length> mod-thick: root.size >= 44px ? 2px : 1.5px;
+    private property <length> track-radius: root.size / 2 - (root.size >= 44px ? 6.5px : 5px) - root.thick / 2;
+    private property <length> cap-radius: root.track-radius - root.thick / 2 - (root.size >= 44px ? 2.5px : 2px);
+    private property <length> inner-radius: root.cap-radius - (root.size >= 44px ? 3px : 2.5px);
+    private property <color> combined-tint: root.modulations.length == 1 ? ModPalette.tint(root.modulations[0].slot) : Tokens.dd-paper-1;
+    width: root.size; height: root.size;
+    if root.enabled && root.assigning : Rectangle {
+        for i in 24 : Rectangle {
+            x: root.size / 2 + (root.size / 2 - 1px) * cos(i * 15deg) - 1.5px;
+            y: root.size / 2 + (root.size / 2 - 1px) * sin(i * 15deg) - 0.75px;
+            width: 3px; height: 1.5px; background: Tokens.dd-mod-a; transform-rotation: i * 15deg + 90deg;
+        }
+    }
+    for assignment[i] in root.modulations : RotaryModRing {
+        visible: root.enabled && i < 2;
+        radius: root.size / 2 - root.mod-thick / 2 - i * (root.mod-thick + 1px);
+        base: root.value; depth: assignment.depth; slot: assignment.slot; live: assignment.live;
+        active: assignment.active; editing: assignment.slot == root.active-slot; active-thickness: root.mod-thick;
+    }
+    RotaryArc { radius: root.track-radius; tint: root.enabled ? Tokens.color-track : Tokens.dd-ink-4; thickness: root.thin; }
+    if root.enabled : RotaryArc {
+        from: root.bipolar ? 0.5 : 0; to: root.value; radius: root.track-radius;
+        tint: root.host-automated ? Tokens.dd-host : Tokens.color-value; thickness: root.active || root.host-automated ? root.thick : root.thin;
+    }
+    RotaryTick { value: root.bipolar ? 0.5 : 0; radius: root.track-radius + root.thin / 2 + 1px; tick-length: root.size >= 44px ? 3px : 2px; tint: Tokens.dd-paper-3.with-alpha(root.enabled ? 1 : 0.4); thickness: 1.5px; }
+    RotaryCap { radius: root.cap-radius; enabled: root.enabled; hovered: root.hovered; pressed: root.active; }
+    if root.enabled && root.modulations.length > 0 : Rectangle {
+        RotaryArc { from: root.range-low; to: root.range-high; radius: root.inner-radius; tint: root.combined-tint.with-alpha(0.3); thickness: root.size >= 44px ? 2px : 1.5px; }
+        if root.any-live : RotaryArc { from: root.value; to: root.effective; radius: root.inner-radius; tint: root.combined-tint; thickness: root.size >= 44px ? 2px : 1.5px; }
+        if root.any-live : RotaryMarker { value: root.effective; radius: root.inner-radius; diameter: 3px; tint: root.combined-tint; }
+        if root.show-peaks : RotaryTick { value: root.peak; radius: root.inner-radius + 1.5px; tick-length: 2px; tint: Tokens.dd-paper-1; }
+        if root.show-peaks : RotaryTick { value: root.trough; radius: root.inner-radius - 1.5px; tick-length: -2px; tint: Tokens.dd-paper-1; }
+    }
+    if root.enabled && root.clip-low : RotaryMarker { value: 0; radius: root.track-radius; diameter: root.thick + 3px; tint: Tokens.dd-error; hollow: !root.live-clip-low; backing: Tokens.surface-panel; }
+    if root.enabled && root.clip-high : RotaryMarker { value: 1; radius: root.track-radius; diameter: root.thick + 3px; tint: Tokens.dd-error; hollow: !root.live-clip-high; backing: Tokens.surface-panel; }
+}

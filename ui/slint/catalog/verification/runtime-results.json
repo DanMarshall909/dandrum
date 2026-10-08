@@ -1,0 +1,111 @@
+{
+  "viewer": "slint-viewer 1.18.1",
+  "backend": "winit-software",
+  "platform": "linux",
+  "mode": "live-interactions",
+  "compilation": [
+    "tests/slint/Controls.slint",
+    "tests/slint/Displays.slint",
+    "tests/slint/Layout.slint",
+    "tests/slint/Menus.slint",
+    "tests/slint/Waveform.slint",
+    "tests/slint/DisplayEdges.slint",
+    "tests/slint/LayerDetails.slint",
+    "tests/slint/Readouts.slint",
+    "tests/slint/DisplayBindings.slint",
+    "ui/slint/catalog/Catalog.slint"
+  ],
+  "contracts": [
+    {
+      "fixture": "Controls",
+      "result": "PASS: 29 control behavior checks"
+    },
+    {
+      "fixture": "Displays",
+      "result": "PASS: display behavior checks"
+    },
+    {
+      "fixture": "Layout",
+      "result": "PASS: 45 layout, selection and capability checks"
+    },
+    {
+      "fixture": "Menus",
+      "result": "PASS: 11 menu and lifecycle checks"
+    },
+    {
+      "fixture": "Waveform",
+      "result": "PASS: 14 waveform rail contracts"
+    },
+    {
+      "fixture": "DisplayEdges",
+      "result": "PASS: display edge behavior checks"
+    },
+    {
+      "fixture": "LayerDetails",
+      "result": "PASS: 10 layer detail capability and model checks"
+    },
+    {
+      "fixture": "Readouts",
+      "result": "PASS: 9 parameter readout contracts"
+    },
+    {
+      "fixture": "DisplayBindings",
+      "result": "PASS: persistent display models"
+    }
+  ],
+  "interactions": [
+    {
+      "fixture": "Controls",
+      "result": "PASS: 23 independent pointer, keyboard, typing, precision, reset, drag and menu checks"
+    },
+    {
+      "fixture": "Displays",
+      "result": "PASS: 10 independent pad, note-lifecycle, key-map, capability and measurement checks"
+    },
+    {
+      "fixture": "Layout",
+      "result": "PASS: 37 independent status action, icon geometry, header, rollout, capability, collapse, tab, segment, row and scrollbar checks"
+    },
+    {
+      "fixture": "Menus",
+      "result": "PASS: 19 independent dropdown, native context menu and delayed tooltip checks"
+    },
+    {
+      "fixture": "Waveform",
+      "result": "PASS: 4 independent rendered positive and negative source-rail geometry checks"
+    },
+    {
+      "fixture": "DisplayEdges",
+      "result": "PASS: 29 independent display capability, scrolling, corner resize, inspector, slice-label and host refresh checks"
+    },
+    {
+      "fixture": "LayerDetails",
+      "result": "PASS: 13 independent layer detail typing, gestures, choice, capability, waveform and focus checks"
+    },
+    {
+      "fixture": "Readouts",
+      "result": "PASS: 9 independent caption, value, unit and alignment geometry checks"
+    },
+    {
+      "fixture": "DisplayBindings",
+      "result": "PASS: 9 independent persistent layer/send host binding checks"
+    },
+    {
+      "fixture": "Catalog",
+      "size": [
+        1200,
+        800
+      ],
+      "result": "PASS: 48 independent catalog navigation, state, input, scrolling and collapse checks"
+    },
+    {
+      "fixture": "Catalog",
+      "size": [
+        820,
+        560
+      ],
+      "result": "PASS: 48 independent catalog navigation, state, input, scrolling and collapse checks"
+    }
+  ],
+  "status": "passed"
+}

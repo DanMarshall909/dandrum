@@ -1,0 +1,12 @@
+import { Tokens } from "../theme.slint";
+
+export component PadActivity inherits Rectangle {
+    in property <float> level;
+    opacity: root.level.clamp(0, 1);
+    background: Tokens.dd-paper-1.with-alpha(0.16);
+    border-radius: 4px;
+    Rectangle {
+        x: 1px; y: 1px; width: parent.width - 2px; height: 3px;
+        background: Tokens.dd-paper-1;
+    }
+}

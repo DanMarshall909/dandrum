@@ -1,0 +1,204 @@
+import { Panel } from "../../ui/slint/layout/Panel.slint";
+import { Rollout } from "../../ui/slint/layout/Rollout.slint";
+import { Tabs } from "../../ui/slint/navigation/Tabs.slint";
+import { SegmentedControl } from "../../ui/slint/navigation/SegmentedControl.slint";
+import { ListRow } from "../../ui/slint/layout/ListRow.slint";
+import { Scrollbar } from "../../ui/slint/layout/Scrollbar.slint";
+import { ScrollViewport } from "../../ui/slint/layout/ScrollViewport.slint";
+import { Button } from "../../ui/slint/controls/Button.slint";
+import { StatusMessage } from "../../ui/slint/feedback/StatusMessage.slint";
+import { ViewportMetrics } from "../../ui/slint/foundation/ViewportMetrics.slint";
+import { Tokens } from "../../ui/slint/theme.slint";
+
+export component LayoutTests inherits Window {
+    width: 820px; height: 760px; background: Tokens.surface-window;
+    title: "DanDrum layout contract checks";
+    out property <string> report: "READY: Run tests";
+    private property <int> failures;
+    private property <int> check-count;
+    private property <int> actions;
+    private property <int> changes;
+    private property <int> selections;
+    private property <int> collapsed-events;
+    private property <int> navigation-stage;
+    private property <int> repairs;
+    private property <int> status-actions;
+    function check(ok: bool, message: string) {
+        root.check-count += 1;
+        if !ok { root.failures += 1; root.report += message + "; "; }
+    }
+    callback run-tests();
+    function check-overlay-placement() {
+        ViewportMetrics.width = 0px; ViewportMetrics.height = 0px;
+        ViewportMetrics.overlay-clip = {x:0px, y:0px, width:0px, height:0px};
+        root.check(ViewportMetrics.clamp-x(-20px, 174px, 8px) == -20px, "unknown viewport preserves horizontal placement");
+        root.check(ViewportMetrics.place-y(240px, 24px, 36px, 4px, 8px) == 268px, "unknown viewport opens below the control");
+        ViewportMetrics.width = 820px; ViewportMetrics.height = 560px;
+        root.check(ViewportMetrics.clamp-x(-20px, 174px, 8px) == 8px, "default bounds use the window left edge");
+        root.check(ViewportMetrics.clamp-x(800px, 174px, 8px) == 638px, "default bounds use the window right edge");
+        root.check(ViewportMetrics.place-y(480px, 40px, 88px, 4px, 8px) == 388px, "window bottom overflow opens above the control");
+        ViewportMetrics.overlay-clip = {x:200px, y:88px, width:600px, height:422px};
+        root.check(ViewportMetrics.clamp-x(150px, 174px, 8px) == 208px, "popup clears an ancestor clip's left edge");
+        root.check(ViewportMetrics.clamp-x(790px, 174px, 8px) == 618px, "popup clears an ancestor clip's right edge");
+        root.check(ViewportMetrics.place-y(440px, 40px, 88px, 4px, 8px) == 348px, "popup flips above before reaching the clip footer");
+        root.check(ViewportMetrics.place-y(98px, 20px, 36px, 4px, 8px) == 122px, "popup opens below when it fits inside the clip");
+        root.check(ViewportMetrics.place-y(80px, 10px, 88px, 4px, 8px) == 96px, "popup stays below the clip top for a partially visible control");
+        root.check(ViewportMetrics.place-y(150px, 300px, 100px, 4px, 8px) == 96px, "popup clamps inside the clip when neither side of the control fits");
+        ViewportMetrics.overlay-clip = {x:200px, y:88px, width:360px, height:422px};
+        root.check(ViewportMetrics.clamp-x(790px, 174px, 8px) == 378px, "updated clip geometry immediately changes placement");
+        ViewportMetrics.overlay-clip = {x:0px, y:0px, width:0px, height:0px};
+        ViewportMetrics.width = root.width; ViewportMetrics.height = root.height;
+    }
+    run-tests => {
+        root.report = ""; root.failures = 0; root.check-count = 0; root.actions = 0;
+        root.changes = 0; root.selections = 0; root.collapsed-events = 0;
+        root.check-overlay-placement();
+        panel.collapsed = false;
+        panel.activate-action(0);
+        root.check(root.actions == 1 && !panel.collapsed, "header action must not collapse");
+        panel.activate-action(1);
+        root.check(root.actions == 1, "disabled header action must emit nothing");
+        panel.toggle();
+        root.check(panel.collapsed && root.collapsed-events == 1, "collapse emits once");
+        panel.toggle();
+        root.check(!panel.collapsed && root.collapsed-events == 2, "expand emits once");
+        tabs.current-index = 0; tabs.choose(1);
+        root.check(tabs.current-index == 0 && root.changes == 0, "disabled tab rejected");
+        tabs.choose(-1); tabs.choose(100);
+        root.check(tabs.current-index == 0 && root.changes == 0, "invalid tab rejected");
+        segments.disabled = true; segments.choose(1);
+        root.check(segments.current-index == 0, "disabled segments rejected");
+        root.check(!segments.enabled, "disabled choice group leaves keyboard focus order");
+        root.check(!segments.focus-on-tab-navigation, "choice group has no redundant tab stop");
+        segments.disabled = false; segments.choose(1);
+        root.check(segments.current-index == 1, "segment selection accepted");
+        row.disabled = true; row.activate();
+        root.check(root.selections == 0, "disabled list row rejected");
+        row.disabled = false; row.activate();
+        root.check(root.selections == 1, "list row activated once");
+        bar.move-to(999);
+        root.check(bar.position == 400, "scrollbar clamps at content end");
+        bar.move-to(-1);
+        root.check(bar.position == 0, "scrollbar clamps at content start");
+        root.check(bar.height == 6px, "scrollbar hit area is six pixels");
+        bar.content-size = 80;
+        root.check(!bar.visible, "scrollbar hides without overflow");
+        bar.content-size = 500; bar.position = 999;
+        rollout.compact = false; rollout.collapsed = true;
+        root.check(rollout.height == 22px, "normal rollout has a 22 pixel header");
+        rollout.compact = true;
+        root.check(rollout.height == 20px, "compact rollout has a 20 pixel header");
+        rollout.collapsed = false;
+        viewport.content-width = 0px; viewport.content-height = 50px;
+        root.check(!viewport.vertical-scrollbar-visible && !viewport.horizontal-scrollbar-visible
+            && viewport.viewport-width == 200px && viewport.viewport-height == 100px, "fitting content uses the full viewport");
+        viewport.content-height = 200px;
+        root.check(viewport.vertical-scrollbar-visible && !viewport.horizontal-scrollbar-visible
+            && viewport.viewport-width == 192px && viewport.viewport-height == 100px, "vertical overflow reserves one gutter");
+        viewport.content-width = 195px;
+        root.check(viewport.horizontal-scrollbar-visible && viewport.viewport-height == 92px, "vertical gutter can cause horizontal overflow");
+        viewport.content-width = 250px; viewport.content-height = 98px;
+        root.check(viewport.vertical-scrollbar-visible && viewport.horizontal-scrollbar-visible, "horizontal gutter can cause vertical overflow");
+        viewport.content-height = 50px;
+        root.check(!viewport.vertical-scrollbar-visible && viewport.viewport-width == 200px
+            && viewport.viewport-height == 92px, "horizontal overflow reserves one gutter");
+        viewport.content-width = 0px; viewport.offset-y = 200px;
+        root.repairs = 0;
+        repair-tabs.items = [{id:"first",label:"FIRST"}, {id:"second",label:"SECOND"}];
+        repair-tabs.current-index = 2;
+        tabs.move-selection(1); root.navigation-stage = 1;
+    }
+    Timer {
+        running: root.navigation-stage > 0; interval: 20ms;
+        triggered => {
+            if root.navigation-stage == 1 {
+                root.check(tabs.current-index == 2 && root.changes == 1, "arrow skips disabled tab");
+                root.check(bar.position == 400, "host scrollbar position is bounded");
+                root.check(viewport.offset-y == 0px, "viewport resets offset when content fits");
+                root.check(repair-tabs.current-index == 0 && root.repairs == 0, "removed selection repairs without echo");
+                repair-tabs.items = [{id:"first",label:"FIRST",disabled:true}, {id:"second",label:"SECOND"}];
+                tabs.move-selection(1); root.navigation-stage = 2;
+            } else if root.navigation-stage == 2 {
+                root.check(tabs.current-index == 0 && root.changes == 2, "arrow wraps tabs");
+                root.check(repair-tabs.current-index == 1 && root.repairs == 0, "disabled selection repairs without echo");
+                repair-tabs.items = [{id:"first",label:"FIRST",disabled:true}, {id:"second",label:"SECOND",disabled:true}];
+                root.navigation-stage = 3;
+            } else if root.navigation-stage == 3 {
+                root.check(repair-tabs.current-index == -1 && root.repairs == 0, "all disabled choices have no selection");
+                repair-tabs.items = [{id:"first",label:"FIRST",disabled:true}, {id:"second",label:"SECOND"}];
+                root.navigation-stage = 4;
+            } else if root.navigation-stage == 4 {
+                root.check(repair-tabs.current-index == 1 && root.repairs == 0, "choices recover after an item becomes enabled");
+                repair-tabs.items = [{id:"first",disabled:true}, {id:"second",disabled:true}, {id:"third"}, {id:"fourth"}];
+                repair-tabs.current-index = -1; repair-tabs.reconcile(); repair-tabs.current-index = 3;
+                root.navigation-stage = 5;
+            } else if root.navigation-stage == 5 {
+                root.check(repair-tabs.current-index == 3 && root.repairs == 0, "host selection wins over pending repair");
+                repair-tabs.items = []; root.navigation-stage = 6;
+            } else {
+                root.check(repair-tabs.current-index == -1 && root.repairs == 0, "empty choice model clears selection silently");
+                root.navigation-stage = 0;
+                root.report = root.failures == 0 ? "PASS: \{root.check-count} layout, selection and capability checks" : "FAIL: " + root.report;
+            }
+        }
+    }
+    viewport := ScrollViewport { visible: false; width: 200px; height: 100px; content-height: 200px; }
+    repair-tabs := Tabs { visible: false; width: 100px; items: [{id:"first",label:"FIRST"}, {id:"second",label:"SECOND"}, {id:"third",label:"THIRD"}]; current-index: 2; changed(id) => { root.repairs += 1; } }
+    VerticalLayout {
+        padding: 16px; spacing: 16px;
+        run-tests-button := Button { text: "Run tests"; clicked => { root.run-tests(); } }
+        test-report := Text {
+            text: root.report; accessible-label: root.report;
+            color: Tokens.text-primary; font-family: Tokens.font-ui; font-size: 13px; wrap: word-wrap;
+        }
+        event-report := Text {
+            text: "Actions: \{root.actions}; selections: \{root.selections}; collapsed: \{root.collapsed-events}";
+            accessible-label: self.text; color: Tokens.text-secondary; font-size: 12px;
+        }
+        panel := Panel {
+            title: "PANEL"; summary: "Prepared sources";
+            actions: [{id: "refresh", label: "Refresh", icon: "reload", disabled: false},
+                {id: "blocked", label: "Unavailable", icon: "lock", disabled: true}];
+            action(id) => { root.actions += 1; }
+            toggled(value) => { root.collapsed-events += 1; }
+            Text { text: "Header actions and collapse have separate hit areas."; color: Tokens.text-primary; font-size: 13px; }
+        }
+        rollout := Rollout { title: "DETAILS"; summary: "Two sources"; Text { text: "Expandable details"; color: Tokens.text-primary; font-size: 13px; } }
+        tabs := Tabs {
+            items: [{id:"sample",label:"SAMPLE",icon:"one-shot"}, {id:"disabled",label:"UNAVAILABLE",disabled:true}, {id:"mapping",label:"MAPPING"}];
+            changed(id) => { root.changes += 1; }
+        }
+        segments := SegmentedControl { items: [{id:"wave",label:"WAVE"},{id:"spectrum",label:"SPECTRUM"}]; }
+        row := ListRow { label: "Snare"; detail: "vel 1–63"; clicked => { root.selections += 1; } }
+        HorizontalLayout {
+            height: 52px; spacing: 16px;
+            status := StatusMessage {
+                title: "Source missing"; description: "Choose a source to recover.";
+                action-label: "Locate"; compact: true; action => { root.status-actions += 1; }
+            }
+            status-report := Text {
+                width: 120px; text: "Status actions: \{root.status-actions}"; accessible-label: self.text;
+                color: Tokens.text-secondary; font-size: 12px; vertical-alignment: center;
+            }
+        }
+        bar := Scrollbar { vertical: false; viewport-size: 100; content-size: 500; }
+        HorizontalLayout {
+            height: 100px; spacing: 16px; alignment: start;
+            vertical-viewport := ScrollViewport {
+                width: 200px; height: 100px; content-height: 200px;
+                Rectangle { width: 192px; height: 200px; background: Tokens.surface-panel; }
+                Text { x: 12px; y: 12px; text: "Vertical gutter"; font-size: 11px; color: Tokens.text-primary; }
+            }
+            horizontal-viewport := ScrollViewport {
+                width: 200px; height: 100px; content-width: 260px; content-height: 50px;
+                Rectangle { width: 260px; height: 50px; background: Tokens.surface-panel; }
+                Text { x: 12px; y: 12px; text: "Horizontal gutter"; font-size: 11px; color: Tokens.text-primary; }
+            }
+            both-viewport := ScrollViewport {
+                width: 200px; height: 100px; content-width: 260px; content-height: 200px;
+                Rectangle { width: 260px; height: 200px; background: Tokens.surface-panel; }
+                Text { x: 12px; y: 12px; text: "Both gutters"; font-size: 11px; color: Tokens.text-primary; }
+            }
+        }
+    }
+}

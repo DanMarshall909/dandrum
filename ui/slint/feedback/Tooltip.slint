@@ -1,0 +1,24 @@
+import { Tokens } from "../theme.slint";
+
+// Reusable bubble content, usable in a host-owned PopupWindow or TooltipArea.
+export component Tooltip inherits Rectangle {
+    in property <string> title;
+    in property <string> value;
+    in property <string> description;
+    background: Tokens.surface-well;
+    border-width: 1px; border-color: Tokens.border-strong;
+    border-radius: Tokens.radius-2;
+    preferred-width: 240px;
+    preferred-height: content.preferred-height;
+    accessible-role: text; accessible-label: root.title + " " + root.value + ". " + root.description;
+    content := VerticalLayout {
+        padding: 8px; spacing: 4px;
+        HorizontalLayout {
+            spacing: 12px;
+            Text { text: root.title; color: Tokens.text-primary; font-family: Tokens.font-ui; font-size: 13px; font-weight: 600; overflow: elide; }
+            Text { text: root.value; color: Tokens.text-primary; font-family: Tokens.font-value; font-size: 13px; horizontal-alignment: right; }
+        }
+        if root.description != "" : Text { text: root.description; color: Tokens.text-secondary; font-family: Tokens.font-ui; font-size: 12px; wrap: word-wrap; }
+        @children
+    }
+}

@@ -1,0 +1,25 @@
+import { Tooltip } from "Tooltip.slint";
+import { ViewportMetrics } from "../foundation/ViewportMetrics.slint";
+
+// Wrap an interactive child; ancestor hover observes it without taking clicks.
+export component TooltipArea inherits TouchArea {
+    in property <string> title;
+    in property <string> value;
+    in property <string> description;
+    in property <bool> target-focused;
+    in property <bool> target-hovered;
+    out property <bool> open;
+    z: root.open ? 100 : 0;
+    changed target-focused => { root.open = root.target-focused && root.enabled; }
+    changed enabled => { if !root.enabled { root.open = false; } }
+    changed has-hover => { if !root.has-hover && !root.target-hovered && !root.target-focused { root.open = false; } }
+    changed target-hovered => { if !root.has-hover && !root.target-hovered && !root.target-focused { root.open = false; } }
+    Timer { running: root.enabled && (root.has-hover || root.target-hovered) && !root.open; interval: 500ms; triggered => { root.open = true; } }
+    if root.open : Tooltip {
+        x: ViewportMetrics.clamp-x(root.absolute-position.x, self.width, 4px) - root.absolute-position.x;
+        y: ViewportMetrics.place-y(root.absolute-position.y, root.height, self.height, 6px, 4px) - root.absolute-position.y;
+        width: 240px; height: self.preferred-height;
+        title: root.title; value: root.value; description: root.description;
+    }
+    @children
+}

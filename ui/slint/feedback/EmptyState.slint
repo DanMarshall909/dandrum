@@ -1,0 +1,28 @@
+import { Tokens } from "../theme.slint";
+import { Icon } from "../icons.slint";
+import { Button } from "../controls/Button.slint";
+import { DashedBorder } from "../foundation/DashedBorder.slint";
+
+export component EmptyState inherits Rectangle {
+    in property <string> icon: "info";
+    in property <string> title;
+    in property <string> description;
+    in property <string> action-label;
+    in property <bool> action-enabled: true;
+    in property <bool> compact;
+    callback action();
+    preferred-height: root.compact ? 140px : 180px;
+    DashedBorder { }
+    VerticalLayout {
+        x: (root.width - self.width) / 2; y: root.compact ? 12px : 24px;
+        width: min(280px, max(0px, root.width - 2 * self.y)); height: max(0px, root.height - 2 * self.y);
+        spacing: 8px; alignment: center;
+        HorizontalLayout { alignment: center; Icon { name: root.icon; tint: Tokens.text-tertiary; size: root.compact ? 16px : 20px; } }
+        Text { text: root.title; color: Tokens.text-secondary; font-family: Tokens.font-ui; font-size: 13px; font-weight: 600; horizontal-alignment: center; wrap: word-wrap; }
+        Text { text: root.description; color: Tokens.text-tertiary; font-family: Tokens.font-ui; font-size: 12px; horizontal-alignment: center; wrap: word-wrap; }
+        if root.action-label != "" : HorizontalLayout {
+            alignment: center;
+            Button { width: self.preferred-width; text: root.action-label; enabled: root.action-enabled; clicked => { root.action(); } }
+        }
+    }
+}

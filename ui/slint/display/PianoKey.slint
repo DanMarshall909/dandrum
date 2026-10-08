@@ -1,0 +1,60 @@
+import { Tokens } from "../theme.slint";
+import { FocusRing } from "../foundation/FocusRing.slint";
+
+export component PianoKey inherits FocusScope {
+    in property <int> note;
+    in property <bool> black;
+    in property <bool> selected;
+    in property <bool> root-note;
+    in property <string> generation;
+    in property <int> release-epoch;
+    private property <bool> held;
+    private property <int> held-note: -1;
+    callback note-on(int, int);
+    callback note-off(int);
+    accessible-role: button;
+    accessible-label: "MIDI key \{root.note}";
+    accessible-action-default => { root.press(102); root.release-note(); }
+    public function press(velocity: int) {
+        if root.enabled && !root.held { root.held = true; root.held-note = root.note; root.note-on(root.note, velocity.clamp(1, 127)); }
+    }
+    public function release-note() { if root.held { let note = root.held-note; root.held = false; root.held-note = -1; root.note-off(note); } }
+    changed release-epoch => { root.release-note(); }
+    changed generation => { root.release-note(); }
+    changed visible => { if !root.visible { root.release-note(); } }
+    changed enabled => { if !root.enabled { root.release-note(); } }
+    focus-lost(reason) => { root.release-note(); }
+    key-pressed(event) => {
+        if event.text == Key.Return || event.text == " " { root.press(102); return accept; }
+        if event.text == Key.Escape { root.release-note(); return accept; }
+        return reject;
+    }
+    key-released(event) => {
+        if event.text == Key.Return || event.text == " " { root.release-note(); return accept; }
+        return reject;
+    }
+    Rectangle {
+        width: 100%; height: 100%; border-radius: 2px;
+        background: root.held ? Tokens.dd-vermilion : root.black ? Tokens.dd-ink-1 : Tokens.dd-paper-2;
+        border-width: 1px; border-color: Tokens.dd-ink-2;
+        if root.selected : Rectangle { x: 0px; y: 0px; width: 100%; height: 3px; background: Tokens.dd-vermilion; }
+        if root.root-note : Rectangle {
+            x: (parent.width - 5px) / 2; y: parent.height - 24px; width: 5px; height: 5px;
+            background: root.black ? Tokens.dd-paper-1 : Tokens.dd-ink-0; border-radius: 1px;
+        }
+        if root.note - floor(root.note / 12) * 12 == 0 && root.width >= 18px : Text {
+            x: 0px; y: parent.height - 18px; width: 100%; height: 16px;
+            text: "C\{floor(root.note / 12) - 1}"; font-family: Tokens.font-value; font-size: 11px;
+            color: Tokens.dd-ink-3; horizontal-alignment: center;
+        }
+    }
+    FocusRing { width: 100%; height: 100%; active: root.has-focus; }
+    TouchArea {
+        enabled: root.enabled;
+        pointer-event(event) => {
+            if event.kind == PointerEventKind.down && event.button == PointerEventButton.left {
+                root.focus(); root.press(round(24 + self.mouse-y / max(1px, self.height) * 103));
+            } else if event.kind == PointerEventKind.up || event.kind == PointerEventKind.cancel { root.release-note(); }
+        }
+    }
+}

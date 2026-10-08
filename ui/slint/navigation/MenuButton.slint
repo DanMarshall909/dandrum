@@ -1,0 +1,54 @@
+import { Tokens } from "../theme.slint";
+import { MenuEntry } from "types.slint";
+import { ModAssignment } from "../modulation/types.slint";
+import { ActionArea } from "../controls/ActionArea.slint";
+import { ButtonFace } from "../controls/ButtonFace.slint";
+import { FocusRing } from "../foundation/FocusRing.slint";
+import { Icon } from "../icons.slint";
+import { MenuSurface } from "MenuSurface.slint";
+
+export component MenuButton inherits ActionArea {
+    in property <string> value;
+    in property <bool> compact;
+    in property <bool> disabled;
+    in property <bool> read-only;
+    in property <[MenuEntry]> items;
+    in property <[ModAssignment]> assignments;
+    in property <bool> assignments-enabled;
+    out property <bool> open: popup.is-open;
+    callback selected(string);
+    callback depth-changed(int, float);
+    callback removed(int);
+    enabled: !root.disabled && !root.read-only;
+    height: root.compact ? 24px : 28px;
+    preferred-width: 160px; min-width: 72px;
+    activated => { root.show-menu(); }
+    public function show-menu() { if root.enabled { popup.show(); } }
+    public function close-menu() { popup.close(); root.focus(); }
+    key-pressed(event) => {
+        if event.text == Key.Return || event.text == " " || event.text == Key.DownArrow { root.show-menu(); return accept; }
+        return reject;
+    }
+    FocusRing { active: root.has-focus && root.enabled; }
+    face := ButtonFace {
+        enabled: root.enabled; hovered: root.hovered; pressed: root.down || root.open;
+        HorizontalLayout {
+            padding-left: 8px; padding-right: 6px; spacing: 6px;
+            if root.label != "" : Text { text: root.label; color: Tokens.text-tertiary; font-family: Tokens.font-ui; font-size: 11px; vertical-alignment: center; overflow: elide; }
+            Text { text: root.value; color: root.disabled ? Tokens.text-disabled : Tokens.text-primary; font-family: Tokens.font-ui; font-size: 13px; vertical-alignment: center; overflow: elide; }
+            Icon { name: root.read-only ? "lock" : "chevron-down"; size: 14px; }
+        }
+    }
+    popup := PopupWindow {
+        x: 0px; y: root.height + 4px; width: Tokens.menu-width; height: menu.preferred-height;
+        close-policy: PopupClosePolicy.close-on-click-outside;
+        menu := MenuSurface {
+            title: root.label; items: root.items; assignments: root.assignments;
+            assignments-enabled: root.assignments-enabled; take-focus: true;
+            selected(id) => { root.selected(id); root.close-menu(); }
+            depth-changed(slot, value) => { root.depth-changed(slot, value); }
+            removed(slot) => { root.removed(slot); }
+            closed => { root.close-menu(); }
+        }
+    }
+}

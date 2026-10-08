@@ -1,0 +1,12 @@
+import { Tokens } from "../theme.slint";
+
+export component AlternateDots inherits Rectangle {
+    in property <int> count;
+    in property <int> active-index: -1;
+    height: 4px;
+    for index in max(0, root.count) : Rectangle {
+        x: index * 6px; width: 4px; height: 4px; border-radius: 2px;
+        visible: self.x + self.width <= root.width;
+        background: index == root.active-index ? Tokens.dd-paper-1 : Tokens.dd-line-3;
+    }
+}

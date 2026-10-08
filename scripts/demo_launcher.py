@@ -27,7 +27,7 @@ def source_for(demo, roots):
         if demo["kind"] == "native":
             cmake = root / "CMakeLists.txt"
             target = demo["target"].removesuffix("_Standalone")
-            if not cmake.is_file() or not re.search(r"juce_add_(?:plugin|console_app|gui_app)\(\s*" + re.escape(target) + r"\s", cmake.read_text()):
+            if not cmake.is_file() or not re.search(r"(?m)^[ \t]*(?:juce_add_(?:plugin|console_app|gui_app)|add_executable)\(\s*" + re.escape(target) + r"(?:\s|\))", cmake.read_text()):
                 continue
         return root
     return None
@@ -129,3 +129,7 @@ def main(args, root=Path(__file__).resolve().parents[1]):
     except KeyboardInterrupt:
         print("Demo interrupted.", file=sys.stderr)
         return 130
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv[1:]))

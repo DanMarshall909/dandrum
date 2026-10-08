@@ -1,0 +1,19 @@
+import { Tokens, ParamLabel, Panel } from "../dandrum.slint";
+
+export component ReadoutGallery inherits Panel {
+    in property <string> state: "default";
+    title: "PARAMETER READOUTS"; summary: "Label · Value · Unit";
+    preferred-height: 144px; vertical-stretch: 0;
+    VerticalLayout {
+        spacing: 10px;
+        HorizontalLayout {
+            spacing: 28px;
+            ParamLabel { label: "LEVEL"; value: "−3.0"; unit: "dB"; enabled: root.state != "disabled"; host-automated: root.state == "host"; }
+            ParamLabel { label: "PITCH"; value: "1.122"; unit: "×"; align: "center"; host-automated: true; }
+            ParamLabel { label: "ROOT"; value: "C4"; size: "sm"; align: "center"; }
+            ParamLabel { label: "SAMPLE RATE"; value: "48"; unit: "kHz"; size: "lg"; align: "right"; }
+            ParamLabel { label: "UNAVAILABLE"; value: "—"; enabled: false; align: "right"; }
+        }
+        Text { text: "A readout combines the same ControlLabel and ValueReadout used by composed editors."; color: Tokens.text-tertiary; font-family: Tokens.font-ui; font-size: 11px; wrap: word-wrap; }
+    }
+}

@@ -1,0 +1,26 @@
+import { Tokens } from "../theme.slint";
+import { ListRow } from "../layout/ListRow.slint";
+import { TabItem } from "../navigation/types.slint";
+
+export component CatalogSidebar inherits Rectangle {
+    in-out property <string> page-id: "controls";
+    width: 180px;
+    background: Tokens.surface-window;
+    private property <[TabItem]> pages: [
+        { id: "controls", label: "Controls", icon: "level" },
+        { id: "mapping", label: "Pads and key map", icon: "keyboard" },
+        { id: "waveforms", label: "Waveforms", icon: "one-shot" },
+        { id: "routing", label: "Layers and output", icon: "layers" },
+        { id: "layout", label: "Layout and feedback", icon: "settings" },
+        { id: "foundations", label: "Foundations", icon: "variation" },
+    ];
+    VerticalLayout {
+        padding: 12px; spacing: 4px; alignment: start;
+        Text { text: "COMPONENTS"; height: 28px; color: Tokens.text-tertiary; font-family: Tokens.font-ui; font-size: 11px; font-weight: 600; vertical-alignment: center; }
+        for page in root.pages : ListRow {
+            label: page.label; icon: page.icon; selected: root.page-id == page.id;
+            clicked => { root.page-id = page.id; }
+        }
+    }
+    Rectangle { x: parent.width - 1px; width: 1px; background: Tokens.border-hairline; }
+}

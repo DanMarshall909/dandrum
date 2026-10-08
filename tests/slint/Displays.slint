@@ -1,0 +1,108 @@
+import { PadCell } from "../../ui/slint/display/PadCell.slint";
+import { KeyMap } from "../../ui/slint/display/KeyMap.slint";
+import { LayerStack } from "../../ui/slint/display/LayerStack.slint";
+import { OutputBusses } from "../../ui/slint/display/OutputBusses.slint";
+import { WaveformPanel } from "../../ui/slint/display/WaveformPanel.slint";
+import { Meter } from "../../ui/slint/display/Meter.slint";
+import { KeyZone, MeasurementState } from "../../ui/slint/display/types.slint";
+import { Button } from "../../ui/slint/controls/Button.slint";
+import { Tokens } from "../../ui/slint/theme.slint";
+import { SpectralPalette } from "../../ui/slint/display/SpectralPalette.slint";
+
+// Behavior and literal-data fixture: values intentionally differ in sign, state,
+// and channel count. The native runner calls exercise() and observes the result.
+export component Displays inherits Window {
+    title: "Dandrum display contracts";
+    width: 1200px; height: 1000px;
+    background: Tokens.surface-window;
+    in-out property <int> triggers: 0;
+    in-out property <int> releases: 0;
+    in-out property <int> last-velocity: 0;
+    in-out property <int> last-released-note: -1;
+    in-out property <int> mutations: 0;
+    in-out property <bool> contract-ok: false;
+    in-out property <bool> tests-ran: false;
+    property <KeyZone> fixture-zone: {
+        id: "snare-soft", name: "Snare soft", source: "Sample", lo: 38, hi: 38,
+        vel-lo: 1, vel-hi: 63, root-note: 38, has-root: true,
+    };
+    public function exercise() {
+        triggers = 0; releases = 0; mutations = 0;
+        pad.press(2); pad.release-note();
+        pad.mapped = false; pad.press(0.5); pad.release-note(); pad.mapped = true;
+        pad.press(0.5); pad.note = 37; pad.release-note(); pad.note = 36;
+        keymap.audition(root.fixture-zone); keymap.release-note();
+        keymap.request-edit(root.fixture-zone);
+        contract-ok = triggers == 3 && releases == 3 && last-velocity == 32 && last-released-note == 36 && mutations == 0
+            && SpectralPalette.color-for(0) == Tokens.dd-ink-0
+            && SpectralPalette.color-for(0.25) == Tokens.dd-ink-5
+            && SpectralPalette.color-for(0.5) == Tokens.dd-vermilion-lo
+            && SpectralPalette.color-for(0.75) == Tokens.dd-vermilion
+            && SpectralPalette.color-for(1) == Tokens.dd-paper-1;
+        tests-ran = true;
+    }
+    VerticalLayout {
+        spacing: 8px; padding: 12px;
+        HorizontalLayout {
+            height: 28px;
+            run-tests-button := Button { width: 110px; text: "Run tests"; clicked => { root.exercise(); } }
+            report := Text { color: Tokens.text-primary; text: !root.tests-ran ? "Not run" : root.contract-ok ? "PASS: display behavior checks" : "FAIL: display behavior checks"; }
+        }
+        event-report := Text { height: 20px; color: Tokens.text-primary; text: "Triggers: \{root.triggers}; releases: \{root.releases}; velocity: \{root.last-velocity}; edits: \{root.mutations}"; }
+        HorizontalLayout {
+            height: 90px;
+            pad := PadCell {
+                note: 36; name: "Kick"; mapped: true; selected: true;
+                layers: 2; active-layer: 0; alternates: 3; active-alternate: 1;
+                activity: 0.4; velocity: 0.7;
+                triggered(note, velocity) => { root.triggers += 1; root.last-velocity = velocity; }
+                released(note) => { root.releases += 1; root.last-released-note = note; }
+            }
+            missing-pad := PadCell { note: 38; name: "Missing snare"; mapped: true; missing: true; triggered(note,velocity) => { root.triggers += 1; } released(note) => { root.releases += 1; } }
+            PadCell { note: 42; name: "Open hat"; mapped: true; choke-group: 1; choked: true; }
+            unmapped-pad := PadCell { note: 45; triggered(note,velocity) => { root.triggers += 1; } released(note) => { root.releases += 1; } }
+            Meter {
+                vertical: false; length: 180px;
+                channels: [
+                    {id:"L",name:"Left",peak:-6,rms:-12,hold:-3,clipped:false,state:MeasurementState.valid,ticket:""},
+                    {id:"R",name:"Right",peak:2,rms:-8,hold:2,clipped:true,state:MeasurementState.valid,ticket:"clip-7"},
+                    {id:"rear",name:"Rear",peak:-60,rms:-60,hold:-60,clipped:false,state:MeasurementState.unavailable,ticket:""},
+                ];
+            }
+        }
+        keymap := KeyMap {
+            height: 240px; low-note: 36; high-note: 48;
+            zones: [root.fixture-zone, {id:"snare-hard",name:"Snare hard",source:"Sample",lo:38,hi:38,vel-lo:64,vel-hi:127,root-note:38,has-root:true}];
+            note-on(note, velocity) => { root.triggers += 1; root.last-velocity = velocity; }
+            note-off(note) => { root.releases += 1; }
+            edit-zone(zone) => { root.mutations += 1; }
+        }
+        WaveformPanel {
+            height: 220px; label: "Signed source extrema"; state: "ready";
+            peaks: [{minimum:-0.75,maximum:0.5},{minimum:-0.25,maximum:0.75},{minimum:-0.5,maximum:0.25},{minimum:-0.125,maximum:0.125}];
+            region-start: 0.1; region-end: 0.9; fade-in: 0.1; fade-out: 0.2;
+            loop-enabled: true; loop-start: 0.25; loop-end: 0.75;
+            slices: [{id:"one",name:"Body",start:0.25,end:0.5},{id:"two",name:"Tail",start:0.5,end:0.75}];
+            cursor-visible: true; cursor: 0.4;
+        }
+        HorizontalLayout {
+            spacing: 8px;
+            LayerStack {
+                height: 260px; title: "Prepared source chain"; subtitle: "Capability-bound controls";
+                layers: [{id:"keys",name:"Felt keys",source:"Sample",detail:"felt_C4_f.wav",parameters:[],
+                    modules:[{id:"filter",title:"Filter",detail:"2.4 kHz · LP24",bypassed:false,can-bypass:false,can-remove:false,parameters:[{id:"cutoff",label:"Cutoff",value:2400,minimum:20,maximum:20000,step:1,unit:"Hz",available:false}]}],
+                    sends:[{id:"room",name:"Room",value:-12,available:false}],output:"Main",level:-3,muted:false,can-level:false,can-mute:false,can-add:false,can-output:false}];
+            }
+            OutputBusses {
+                height: 260px; generation:"fixture-7";
+                busses: [
+                    {id:"main",name:"Main",channel-summary:"2 channels · L/R",main:true,feeds:["Felt keys"],feeds-known:true,channels:[
+                        {id:"L",name:"L",peak:-6,rms:-12,hold:-3,clipped:false,state:MeasurementState.valid,ticket:""},
+                        {id:"R",name:"R",peak:2,rms:-8,hold:2,clipped:true,state:MeasurementState.valid,ticket:"clip-7"}]},
+                    {id:"mono",name:"Mono monitor",channel-summary:"1 channel · M",main:false,feeds:[],feeds-known:false,channels:[
+                        {id:"M",name:"M",peak:-60,rms:-60,hold:-60,clipped:false,state:MeasurementState.unavailable,ticket:""}]},
+                ];
+            }
+        }
+    }
+}

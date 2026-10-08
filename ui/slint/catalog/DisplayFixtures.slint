@@ -1,0 +1,84 @@
+import { KeyZone, LayerRow, MeterChannel, OutputBus, MeasurementState } from "../display/types.slint";
+import { AudioFixtures } from "AudioFixtures.slint";
+
+export struct PadFixture {
+    note: int, name: string, mapped: bool, missing: bool, selected: bool,
+    layers: int, alternates: int, choke-group: int, choked: bool,
+    activity: float, velocity: float,
+}
+
+// Catalog-only examples. Measurements are deliberate snapshots, never live IO.
+export global DisplayFixtures {
+    in property <[PadFixture]> pads: [
+        { note:36, name:"Kick", mapped:true, missing:false, selected:true, layers:2, alternates:3, choke-group:0, choked:false, activity:0.6, velocity:0.86 },
+        { note:38, name:"Snare", mapped:true, missing:false, selected:false, layers:2, alternates:2, choke-group:0, choked:false, activity:0, velocity:0.58 },
+        { note:42, name:"Closed hat", mapped:true, missing:false, selected:false, layers:1, alternates:4, choke-group:1, choked:false, activity:0, velocity:0.44 },
+        { note:46, name:"Open hat", mapped:true, missing:false, selected:false, layers:1, alternates:2, choke-group:1, choked:true, activity:0, velocity:0.7 },
+        { note:39, name:"Clap", mapped:true, missing:false, selected:false, layers:3, alternates:1, choke-group:0, choked:false, activity:0, velocity:0.62 },
+        { note:45, name:"Low tom", mapped:true, missing:true, selected:false, layers:1, alternates:1, choke-group:0, choked:false, activity:0, velocity:0 },
+        { note:48, name:"", mapped:false, missing:false, selected:false, layers:0, alternates:0, choke-group:0, choked:false, activity:0, velocity:0 },
+        { note:49, name:"Crash", mapped:true, missing:false, selected:false, layers:1, alternates:2, choke-group:0, choked:false, activity:0, velocity:0.92 },
+    ];
+    in property <[KeyZone]> zones: [
+        { id:"kick", name:"Kick", source:"Sample", lo:36, hi:36, vel-lo:1, vel-hi:127, root-note:36, has-root:true },
+        { id:"snare-soft", name:"Snare soft", source:"Sample", lo:38, hi:38, vel-lo:1, vel-hi:63, root-note:38, has-root:true },
+        { id:"snare-hard", name:"Snare hard", source:"Sample", lo:38, hi:38, vel-lo:64, vel-hi:127, root-note:38, has-root:true },
+        { id:"closed-hat", name:"Closed hat", source:"Sample", lo:42, hi:42, vel-lo:1, vel-hi:127, root-note:42, has-root:true },
+        { id:"open-hat", name:"Open hat", source:"Sample", lo:46, hi:46, vel-lo:1, vel-hi:127, root-note:46, has-root:true },
+    ];
+    in property <[KeyZone]> melodic-zones: [
+        { id:"c3", name:"Felt C3", source:"Sample", lo:48, hi:54, vel-lo:1, vel-hi:127, root-note:48, has-root:true },
+        { id:"g3", name:"Felt G3", source:"Sample", lo:55, hi:59, vel-lo:1, vel-hi:127, root-note:55, has-root:true },
+        { id:"c4-soft", name:"Felt C4 soft", source:"Sample", lo:60, hi:67, vel-lo:1, vel-hi:63, root-note:60, has-root:true },
+        { id:"c4-hard", name:"Felt C4 hard", source:"Sample", lo:60, hi:67, vel-lo:64, vel-hi:127, root-note:60, has-root:true },
+    ];
+    in property <[MeterChannel]> stereo: [
+        { id:"L", name:"L", peak:-6, rms:-14, hold:-3, clipped:false, state:MeasurementState.valid, ticket:"" },
+        { id:"R", name:"R", peak:1.2, rms:-11, hold:1.2, clipped:true, state:MeasurementState.valid, ticket:"catalog-clip-7" },
+    ];
+    in property <[MeterChannel]> states: [
+        { id:"silence", name:"Silence", peak:-60, rms:-60, hold:-60, clipped:false, state:MeasurementState.valid, ticket:"" },
+        { id:"waiting", name:"Waiting", peak:-60, rms:-60, hold:-60, clipped:false, state:MeasurementState.waiting, ticket:"" },
+        { id:"absent", name:"Absent", peak:-60, rms:-60, hold:-60, clipped:false, state:MeasurementState.unavailable, ticket:"" },
+        { id:"gap", name:"Gap", peak:-60, rms:-60, hold:-60, clipped:false, state:MeasurementState.gap, ticket:"" },
+    ];
+    in property <[OutputBus]> busses: [
+        { id:"main", name:"Main", channel-summary:"2 channels · L/R", main:true, feeds:["Kick · Snare · Hats", "Felt keys"], feeds-known:true, channels:root.stereo },
+        { id:"drums", name:"Drums", channel-summary:"1 channel · M", main:false, feeds:["Kick · Snare · Hats"], feeds-known:true, channels:[
+            { id:"M", name:"M", peak:-9, rms:-17, hold:-6, clipped:false, state:MeasurementState.valid, ticket:"" }
+        ] },
+        { id:"room", name:"Room", channel-summary:"4 channels · L/R/Ls/Rs", main:false, feeds:[], feeds-known:false, channels:[
+            { id:"L", name:"L", peak:-18, rms:-24, hold:-13, clipped:false, state:MeasurementState.valid, ticket:"" },
+            { id:"R", name:"R", peak:-16, rms:-22, hold:-12, clipped:false, state:MeasurementState.valid, ticket:"" },
+            { id:"Ls", name:"Ls", peak:-60, rms:-60, hold:-60, clipped:false, state:MeasurementState.waiting, ticket:"" },
+            { id:"Rs", name:"Rs", peak:-60, rms:-60, hold:-60, clipped:false, state:MeasurementState.unavailable, ticket:"" }
+        ] },
+    ];
+    in property <[LayerRow]> layers: [
+        { id:"break", name:"Break layer", source:"Sample", detail:"advanced-break.wav · 500 ms · 48 kHz · mono",
+          waveform: {supplied:true,label:"advanced-break.wav",metadata:"500 ms · 48 kHz · mono",state:"ready",
+            peaks:AudioFixtures.peaks,region-start:0,region-end:1,fade-in:0.04,fade-out:0.1,
+            start-offset-visible:true,start-offset:0.25,spectral-cells:AudioFixtures.spectral-cells,
+            spectral-state:"ready",low-frequency-label:"94 Hz",high-frequency-label:"24 kHz"},
+          parameters:[
+            { id:"playback",label:"PLAYBACK",option-index:0,available:false,
+              options:[{id:"one-shot",label:"ONE SHOT"},{id:"gate",label:"GATE"},{id:"loop",label:"LOOP"}] },
+            { id:"start",label:"START",value:25,minimum:0,maximum:100,step:1,default-value:0,unit:"%",available:false },
+            { id:"gain",label:"GAIN",value:-3,minimum:-60,maximum:6,step:0.1,default-value:0,unit:"dB",available:false }
+        ], modules:[
+            { id:"filter", title:"Filter", detail:"LP24 · 8 kHz", bypassed:false, can-bypass:false, can-remove:false, parameters:[
+                { id:"mode",label:"MODE",option-index:0,available:false,
+                  options:[{id:"low-pass",label:"LP24"},{id:"high-pass",label:"HP24"},{id:"band-pass",label:"BP12"}] },
+                { id:"cutoff", label:"CUTOFF", value:8000, minimum:20, maximum:20000, step:1, default-value:1000, unit:"Hz", available:false },
+                { id:"resonance",label:"RESONANCE",value:10,minimum:0,maximum:100,step:1,default-value:0,unit:"%",available:false }
+            ] },
+            { id:"drive", title:"Drive", detail:"Soft clip · 12%", bypassed:true, can-bypass:false, can-remove:false, parameters:[] }
+        ], sends:[{id:"room",name:"Room",value:-18,available:false}], output:"Drums", level:-3, muted:false, can-level:false, can-mute:false, can-add:false, can-output:false },
+        { id:"keys", name:"Felt keys", source:"Sample", detail:"felt_C4_f.wav · Root C4 · Velocity 64–127", parameters:[], modules:[
+            { id:"filter", title:"Filter", detail:"LP12 · 2.4 kHz", bypassed:false, can-bypass:false, can-remove:false, parameters:[
+                { id:"mode",label:"MODE",option-index:0,available:false,options:[{id:"low-pass",label:"LP12"},{id:"high-pass",label:"HP12"}] },
+                { id:"cutoff", label:"CUTOFF", value:2400, minimum:20, maximum:20000, step:1, default-value:1000, unit:"Hz", available:false }
+            ] }
+        ], sends:[{id:"room",name:"Room",value:-12,available:false}], output:"Main", level:-6, muted:false, can-level:false, can-mute:false, can-add:false, can-output:false },
+    ];
+}

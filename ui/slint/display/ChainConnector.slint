@@ -1,0 +1,11 @@
+import { Tokens } from "../theme.slint";
+
+export component ChainConnector inherits Rectangle {
+    width: 8px; height: 38px;
+    Path {
+        y: 14px; width: 8px; height: 10px; viewbox-width: 8; viewbox-height: 10;
+        stroke: Tokens.dd-line-3; stroke-width: 1px;
+        MoveTo{x:0;y:5;} LineTo{x:7;y:5;}
+        MoveTo{x:4;y:2;} LineTo{x:7;y:5;} LineTo{x:4;y:8;}
+    }
+}

@@ -1,0 +1,86 @@
+import { Tokens } from "../theme.slint";
+import { Panel } from "../layout/Panel.slint";
+import { WaveformPanel } from "../display/WaveformPanel.slint";
+import { Scope } from "../display/Scope.slint";
+import { Spectrum } from "../display/Spectrum.slint";
+import { Spectrogram } from "../display/Spectrogram.slint";
+import { AudioFixtures } from "AudioFixtures.slint";
+import { StartOffsetGallery } from "StartOffsetGallery.slint";
+
+export component WaveformsPage inherits Rectangle {
+    in property <string> state: "default";
+    callback event(string);
+    private property <bool> show-slices: true;
+    private property <string> source-state: root.state == "empty" || root.state == "loading" || root.state == "error" ? root.state : root.state == "disabled" ? "unavailable" : "ready";
+    private property <string> analysis-state: root.state == "loading" ? "waiting" : root.state == "empty" || root.state == "disabled" ? "unavailable" : root.state == "error" ? "error" : "ready";
+    min-width: 560px; preferred-height: 1340px;
+    VerticalLayout {
+        spacing: 12px;
+        VerticalLayout {
+            spacing: 4px; vertical-stretch: 0;
+            Text { text: "Waveforms & analysis"; color: Tokens.text-primary; font-family: Tokens.font-display; font-size: 24px; font-weight: 600; }
+            Text { text: "Source coordinates, signed amplitudes, and data supplied by the caller."; color: Tokens.text-secondary; font-family: Tokens.font-ui; font-size: 13px; }
+        }
+        Panel {
+            title: "SOURCE WAVEFORM"; summary: "Region · Fades · Loop · Slices · Cursor";
+            tag: root.show-slices ? "SLICES" : "REGION";
+            actions: [{id:"slices",label:root.show-slices ? "Show region and start offset" : "Show slices",icon:"slice",disabled:false}];
+            action(id) => { root.show-slices = !root.show-slices; root.event(root.show-slices ? "Slice markers displayed" : "Region and start offset displayed"); }
+            preferred-height: 318px; vertical-stretch: 0;
+            VerticalLayout {
+                spacing: 8px;
+                primary-waveform := WaveformPanel {
+                    height: 238px; state: root.source-state; label: root.state == "empty" ? "" : "advanced-break.wav";
+                    metadata: root.state == "empty" ? "" : "500 ms · 48 kHz · mono";
+                    peaks: AudioFixtures.peaks; spectral-cells: AudioFixtures.spectral-cells; spectral-state: root.source-state;
+                    low-frequency-label: "94 Hz"; high-frequency-label: "24 kHz";
+                    region-start: 0.04; region-end: 0.96; fade-in: 0.08; fade-out: 0.16;
+                    loop-enabled: true; loop-start: 0.25; loop-end: 0.75; loop-crossfade: 0.045;
+                    slices: root.show-slices ? [{id:"attack",name:"Attack",start:0.04,end:0.25},{id:"body",name:"Body",start:0.25,end:0.5},{id:"tail",name:"Tail",start:0.5,end:0.75}] : [];
+                    cursor-visible: true; cursor: 0.4; start-offset-visible: true; start-offset: 0.12;
+                    start-modulation-enabled: true; start-modulation-depth: 0.18;
+                    host-automated: root.state == "host";
+                    display-changed(mode) => { root.event("Source display → " + mode); }
+                    slice-selected(id) => { root.event("Selected slice: " + id); }
+                    retry => { root.event("Source analysis retry requested"); }
+                }
+                Text { text: "Fixed data from the repository’s 500 ms break sample. All markers retain source coordinates."; color: Tokens.text-tertiary; font-family: Tokens.font-ui; font-size: 11px; wrap: word-wrap; }
+            }
+        }
+        StartOffsetGallery { state: root.state; event(message) => { root.event(message); } }
+        Panel {
+            title: "ANALYSIS VIEWS"; summary: "Native paths · Shared spectral palette";
+            preferred-height: 372px; vertical-stretch: 0;
+            VerticalLayout {
+                spacing: 8px;
+                HorizontalLayout {
+                    spacing: 8px; height: 138px;
+                    VerticalLayout {
+                        spacing: 4px;
+                        Text { text: "SCOPE · SIGNED SAMPLES"; color: Tokens.text-secondary; font-family: Tokens.font-ui; font-size: 11px; }
+                        Scope { points: AudioFixtures.scope; state: root.analysis-state; }
+                    }
+                    VerticalLayout {
+                        spacing: 4px;
+                        Text { text: "SPECTRUM · −120 TO 0 dBFS"; color: Tokens.text-secondary; font-family: Tokens.font-ui; font-size: 11px; }
+                        Spectrum { points: AudioFixtures.spectrum; state: root.analysis-state; low-frequency-label: "94 Hz"; high-frequency-label: "24 kHz"; }
+                    }
+                }
+                Text { text: "SPECTROGRAM · TIME × LOG FREQUENCY"; color: Tokens.text-secondary; font-family: Tokens.font-ui; font-size: 11px; }
+                Spectrogram { height: 132px; cells: AudioFixtures.spectral-cells; state: root.analysis-state; low-frequency-label: "94 Hz"; high-frequency-label: "24 kHz"; }
+                Text { text: "512-point Hann window · DC omitted · First positive bin to the source Nyquist frequency"; color: Tokens.text-tertiary; font-family: Tokens.font-ui; font-size: 11px; wrap: word-wrap; }
+            }
+        }
+        Panel {
+            title: "SOURCE STATES"; summary: "Empty · Loading · Error";
+            preferred-height: 210px; vertical-stretch: 0;
+            HorizontalLayout {
+                spacing: 8px;
+                WaveformPanel { compact: true; height: 138px; state: "empty"; show-display-toggle: false; }
+                WaveformPanel { compact: true; height: 138px; state: "loading"; show-display-toggle: false; }
+                WaveformPanel { compact: true; height: 138px; state: "error"; show-display-toggle: false; retry => { root.event("Retry requested for failed sample analysis"); } }
+            }
+        }
+        Text { text: "Display components render supplied data; interaction emits source IDs and UI events."; color: Tokens.text-tertiary; font-family: Tokens.font-ui; font-size: 11px; wrap: word-wrap; vertical-stretch: 0; }
+    }
+}

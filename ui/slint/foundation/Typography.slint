@@ -1,0 +1,41 @@
+import { Tokens } from "../theme.slint";
+
+export component Label inherits Text {
+    color: Tokens.text-secondary;
+    font-family: Tokens.font-ui;
+    font-weight: Tokens.weight-medium;
+    font-size: Tokens.type-label;
+    letter-spacing: self.font-size * Tokens.tracking-caps;
+    overflow: elide;
+    vertical-alignment: center;
+}
+
+export component BodyText inherits Text {
+    color: Tokens.text-primary;
+    font-family: Tokens.font-ui;
+    font-size: Tokens.type-body;
+    font-weight: Tokens.weight-regular;
+    wrap: word-wrap;
+}
+
+export component ValueText inherits Text {
+    color: Tokens.text-primary;
+    font-family: Tokens.font-value;
+    font-size: Tokens.type-value;
+    font-weight: Tokens.weight-regular;
+    overflow: elide;
+    vertical-alignment: center;
+}
+
+export component Heading inherits Label {
+    color: Tokens.text-primary;
+    font-size: Tokens.type-heading;
+    font-weight: Tokens.weight-bold;
+    letter-spacing: self.font-size * Tokens.tracking-heading;
+}
+
+export component Separator inherits Rectangle {
+    background: Tokens.border-hairline;
+    height: Tokens.stroke-hairline;
+    vertical-stretch: 0;
+}

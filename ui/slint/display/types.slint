@@ -1,0 +1,54 @@
+// Owned, renderer-facing models. IDs and measurements come from the host.
+// No object in this library creates engine state, analysis, or audio telemetry.
+import { TabItem } from "../navigation/types.slint";
+export enum MeasurementState { waiting, valid, unavailable, gap }
+export struct MeterChannel {
+    id: string, name: string, peak: float, rms: float, hold: float,
+    clipped: bool, state: MeasurementState, ticket: string,
+}
+export struct OutputBus {
+    id: string, name: string, channel-summary: string, main: bool,
+    feeds: [string], feeds-known: bool, channels: [MeterChannel],
+}
+export struct KeyZone {
+    id: string, name: string, source: string, lo: int, hi: int,
+    vel-lo: int, vel-hi: int, root-note: int, has-root: bool,
+}
+export struct WaveBucket { minimum: float, maximum: float }
+export struct WaveSlice { id: string, name: string, start: float, end: float }
+export struct ScopePoint { position: float, value: float }
+// Position is the host's normalised log-frequency coordinate, from its declared
+// first positive bin to Nyquist. DC and invalid/incomplete data are not admitted.
+export struct SpectrumPoint { position: float, decibels: float }
+export struct SpectralCell {
+    x: float, y: float, width: float, height: float, decibels: float,
+}
+export struct LayerParameter {
+    id: string, label: string, value: float, minimum: float,
+    maximum: float, step: float, unit: string, available: bool,
+    default-value: float, bipolar: bool, options: [TabItem], option-index: int,
+}
+// An absent snapshot stays absent. The caller supplies the same source-relative
+// coordinates and copied extrema consumed by WaveformPanel.
+export struct LayerWaveform {
+    supplied: bool, label: string, metadata: string, state: string,
+    peaks: [WaveBucket], slices: [WaveSlice], selected-slice: string,
+    region-start: float, region-end: float, fade-in: float, fade-out: float,
+    loop-enabled: bool, loop-start: float, loop-end: float, loop-crossfade: float,
+    start-offset-visible: bool, start-offset: float, host-automated: bool,
+    cursor-visible: bool, cursor: float, reversed: bool,
+    spectral-cells: [SpectralCell], spectral-state: string,
+    low-frequency-label: string, high-frequency-label: string,
+}
+export struct LayerModule {
+    id: string, title: string, detail: string, bypassed: bool,
+    can-bypass: bool, can-remove: bool, parameters: [LayerParameter],
+}
+export struct LayerSend { id: string, name: string, value: float, available: bool }
+export struct LayerRow {
+    id: string, name: string, source: string, detail: string, parameters: [LayerParameter],
+    waveform: LayerWaveform,
+    modules: [LayerModule], sends: [LayerSend], output: string,
+    level: float, muted: bool, can-level: bool, can-mute: bool,
+    can-add: bool, can-output: bool,
+}

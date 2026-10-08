@@ -1,0 +1,41 @@
+import { Tokens } from "../theme.slint";
+import { KeyZone } from "types.slint";
+import { PianoKey } from "PianoKey.slint";
+
+export component PianoKeyboard inherits Rectangle {
+    in property <int> low-note: 24;
+    in property <int> high-note: 96;
+    in property <KeyZone> selected-zone;
+    in property <bool> has-selection;
+    in property <string> generation;
+    in property <int> release-epoch;
+    in property <bool> audition-enabled: true;
+    callback note-on(int, int);
+    callback note-off(int);
+    private property <int> count: max(1, root.high-note - root.low-note + 1);
+    private property <length> key-width: root.width / root.count;
+    background: Tokens.dd-ink-0; clip: true;
+    for index in root.count : PianoKey {
+        property <int> pc: self.note - floor(self.note / 12) * 12;
+        property <bool> is-black: pc == 1 || pc == 3 || pc == 6 || pc == 8 || pc == 10;
+        note: root.low-note + index; black: false; visible: !self.is-black;
+        x: (floor(self.note / 12) * 12 + floor((self.pc + 1) / 2) * 12 / 7 - root.low-note) * root.key-width;
+        y: 0px; width: root.key-width * 12 / 7; height: 100%; enabled: root.audition-enabled;
+        selected: root.has-selection && self.note >= root.selected-zone.lo && self.note <= root.selected-zone.hi;
+        root-note: root.has-selection && root.selected-zone.has-root && root.selected-zone.root-note == self.note;
+        generation: root.generation; release-epoch: root.release-epoch;
+        note-on(note, velocity) => { root.note-on(note, velocity); }
+        note-off(note) => { root.note-off(note); }
+    }
+    for index in root.count : PianoKey {
+        property <int> pc: self.note - floor(self.note / 12) * 12;
+        note: root.low-note + index; black: true;
+        visible: self.pc == 1 || self.pc == 3 || self.pc == 6 || self.pc == 8 || self.pc == 10;
+        x: index * root.key-width; y: 0px; width: root.key-width; height: 60%; enabled: root.audition-enabled;
+        selected: root.has-selection && self.note >= root.selected-zone.lo && self.note <= root.selected-zone.hi;
+        root-note: root.has-selection && root.selected-zone.has-root && root.selected-zone.root-note == self.note;
+        generation: root.generation; release-epoch: root.release-epoch;
+        note-on(note, velocity) => { root.note-on(note, velocity); }
+        note-off(note) => { root.note-off(note); }
+    }
+}

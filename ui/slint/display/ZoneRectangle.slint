@@ -1,0 +1,61 @@
+import { Tokens } from "../theme.slint";
+import { FocusRing } from "../foundation/FocusRing.slint";
+import { KeyZone } from "types.slint";
+import { ZoneHitOverlay } from "ZoneHitOverlay.slint";
+
+export component ZoneRectangle inherits Rectangle {
+    in property <KeyZone> zone;
+    in property <bool> selected;
+    in property <bool> editable;
+    in property <int> low-note;
+    in property <int> high-note;
+    in property <length> semitone-width;
+    in property <length> grid-height;
+    callback select(); callback audition(); callback release-note();
+    callback navigate(int); callback edit-zone(KeyZone);
+    border-radius: 2px; border-width: 1px;
+    border-color: root.selected ? Tokens.dd-vermilion : Tokens.dd-line-3;
+    background: root.selected ? Tokens.dd-vermilion.with-alpha(0.24) : Tokens.dd-ink-6.with-alpha(0.72);
+    function propose(dn: int, dv: int, mode: string) {
+        if !root.editable { return; }
+        let nlo = (root.zone.lo + dn).clamp(root.low-note, root.high-note - (root.zone.hi - root.zone.lo));
+        let vlo = (root.zone.vel-lo + dv).clamp(1, 127 - (root.zone.vel-hi - root.zone.vel-lo));
+        let left-edge = mode == "left" || mode == "top-left" || mode == "bottom-left";
+        let right-edge = mode == "right" || mode == "top-right" || mode == "bottom-right";
+        let bottom-edge = mode == "bottom" || mode == "bottom-left" || mode == "bottom-right";
+        let top-edge = mode == "top" || mode == "top-left" || mode == "top-right";
+        root.edit-zone({id:root.zone.id,name:root.zone.name,source:root.zone.source,
+            lo:mode == "move" ? nlo : left-edge ? (root.zone.lo + dn).clamp(root.low-note,root.zone.hi) : root.zone.lo,
+            hi:mode == "move" ? nlo + root.zone.hi - root.zone.lo : right-edge ? (root.zone.hi + dn).clamp(root.zone.lo,root.high-note) : root.zone.hi,
+            vel-lo:mode == "move" ? vlo : bottom-edge ? (root.zone.vel-lo + dv).clamp(1,root.zone.vel-hi) : root.zone.vel-lo,
+            vel-hi:mode == "move" ? vlo + root.zone.vel-hi - root.zone.vel-lo : top-edge ? (root.zone.vel-hi + dv).clamp(root.zone.vel-lo,127) : root.zone.vel-hi,
+            root-note:mode == "move" ? (root.zone.root-note + nlo - root.zone.lo).clamp(0,127) : root.zone.root-note,has-root:root.zone.has-root});
+    }
+    if root.width > 34px && root.height >= 16px : Text {
+        x: 4px; y: 2px; width: parent.width - 8px; height: min(28px, parent.height - 4px);
+        text: root.zone.name; wrap: word-wrap; overflow: elide;
+        font-family: Tokens.font-ui; font-size: 11px; font-weight: 600;
+        color: root.selected ? Tokens.dd-paper-1 : Tokens.dd-paper-2;
+    }
+    if root.zone.has-root : Rectangle {
+        x: (root.zone.root-note - root.zone.lo + 0.5) * root.semitone-width - 2px;
+        y: parent.height - 4px; width: 4px; height: 3px;
+        visible: root.zone.root-note >= root.zone.lo && root.zone.root-note <= root.zone.hi;
+        background: Tokens.dd-paper-1;
+    }
+    if !root.editable : Rectangle {
+        y: parent.height - 1px; width: 100%; height: 1px;
+        for index in max(1, floor(root.width / 8px)) : Rectangle {
+            x: index * 8px; width: 4px; height: 1px; background: Tokens.dd-ink-1;
+        }
+    }
+    input := ZoneHitOverlay {
+        width: 100%; height: 100%; editable: root.editable;
+        semitone-width: root.semitone-width; grid-height: root.grid-height;
+        label: "\{root.zone.name}, keys \{root.zone.lo}–\{root.zone.hi}, velocity \{root.zone.vel-lo}–\{root.zone.vel-hi}";
+        select => { root.select(); } audition => { root.audition(); }
+        release-note => { root.release-note(); } navigate(direction) => { root.navigate(direction); }
+        edit(dn,dv,mode) => { root.propose(dn,dv,mode); }
+    }
+    FocusRing { width: 100%; height: 100%; active: input.has-focus; }
+}

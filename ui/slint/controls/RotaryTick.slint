@@ -1,0 +1,11 @@
+export component RotaryTick inherits Path {
+    in property <float> value;
+    in property <length> radius: 16px;
+    in property <length> tick-length: 3px;
+    in property <color> tint;
+    in property <length> thickness: 1.25px;
+    viewbox-width: root.width / 1px; viewbox-height: root.height / 1px;
+    stroke: root.tint; stroke-width: root.thickness; stroke-line-cap: round;
+    MoveTo { x: root.width / 2px + root.radius / 1px * cos((135 + 270 * root.value.clamp(0, 1)) * 1deg); y: root.height / 2px + root.radius / 1px * sin((135 + 270 * root.value.clamp(0, 1)) * 1deg); }
+    LineTo { x: root.width / 2px + (root.radius + root.tick-length) / 1px * cos((135 + 270 * root.value.clamp(0, 1)) * 1deg); y: root.height / 2px + (root.radius + root.tick-length) / 1px * sin((135 + 270 * root.value.clamp(0, 1)) * 1deg); }
+}

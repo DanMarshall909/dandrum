@@ -1,0 +1,11 @@
+import { Tokens } from "../theme.slint";
+
+export component VelocityBar inherits Rectangle {
+    in property <float> value;
+    height: 3px; border-radius: 1px; background: Tokens.dd-ink-0;
+    Rectangle {
+        x: 0px; y: 0px;
+        width: parent.width * root.value.clamp(0, 1); height: 3px;
+        border-radius: 1px; background: Tokens.dd-paper-2;
+    }
+}

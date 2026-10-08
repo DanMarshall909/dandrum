@@ -1,0 +1,45 @@
+import { Tokens } from "../theme.slint";
+import { MeterChannel, MeasurementState } from "types.slint";
+import { MeterTrack } from "MeterTrack.slint";
+import { ClipAcknowledgement } from "ClipAcknowledgement.slint";
+
+export component ChannelMeter inherits Rectangle {
+    in property <MeterChannel> channel;
+    in property <bool> vertical: true;
+    in property <length> length: 96px;
+    in property <length> thickness: 6px;
+    in property <bool> show-labels: true;
+    callback reset-clip(string, string);
+    private property <bool> available: root.channel.state == MeasurementState.valid;
+    private property <string> status: root.channel.state == MeasurementState.waiting ? "Waiting"
+        : root.channel.state == MeasurementState.gap ? "History gap"
+        : root.channel.state == MeasurementState.unavailable ? "Unavailable"
+        : "\{round(root.channel.peak * 10) / 10} dBFS";
+    width: root.vertical ? max(24px, root.thickness + (root.show-labels ? 26px : 0px)) : root.length + 28px + (root.show-labels ? 144px : 0px);
+    height: root.vertical ? root.length + 24px + (root.show-labels ? 18px : 0px) : 26px;
+    accessible-role: text;
+    accessible-label: "\{root.channel.name}: \{root.status}";
+    ClipAcknowledgement {
+        x: root.vertical ? (parent.width - self.width) / 2 : 0px; y: 0px;
+        clipped: root.channel.clipped; available: root.available; label: root.channel.name;
+        acknowledge => { root.reset-clip(root.channel.id, root.channel.ticket); }
+    }
+    MeterTrack {
+        x: root.vertical ? (parent.width - self.width) / 2 : 28px;
+        y: root.vertical ? 24px : (parent.height - self.height) / 2;
+        width: root.vertical ? root.thickness : root.length;
+        height: root.vertical ? root.length : root.thickness;
+        vertical: root.vertical; peak: root.channel.peak; rms: root.channel.rms;
+        hold: root.channel.hold; available: root.available;
+    }
+    if root.show-labels : Text {
+        x: root.vertical ? 0px : root.length + 36px;
+        y: root.vertical ? root.length + 26px : 0px;
+        width: root.vertical ? parent.width : max(0px, parent.width - self.x);
+        height: root.vertical ? 16px : parent.height;
+        text: root.vertical ? root.channel.name : "\{root.channel.name}  \{root.status}";
+        font-family: Tokens.font-value; font-size: 11px; overflow: elide;
+        color: root.available ? Tokens.dd-paper-2 : Tokens.dd-paper-3;
+        horizontal-alignment: root.vertical ? center : left; vertical-alignment: center;
+    }
+}

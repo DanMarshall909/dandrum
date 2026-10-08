@@ -1,0 +1,80 @@
+import { Tokens } from "../theme.slint";
+import { Panel } from "../layout/Panel.slint";
+import { Meter } from "../display/Meter.slint";
+import { LayerStack } from "../display/LayerStack.slint";
+import { OutputBusses } from "../display/OutputBusses.slint";
+import { DisplayFixtures } from "DisplayFixtures.slint";
+
+export component RoutingPage inherits Rectangle {
+    in property <string> state: "default";
+    callback event(string);
+    min-width: 560px; preferred-height: 1140px;
+    VerticalLayout {
+        spacing: 12px;
+        VerticalLayout {
+            spacing: 4px; vertical-stretch: 0;
+            Text { text: "Sources, routing & levels"; color: Tokens.text-primary; font-family: Tokens.font-display; font-size: 24px; font-weight: 600; }
+            Text { text: "Prepared chains, arbitrary output buses, and measurements with explicit availability."; color: Tokens.text-secondary; font-family: Tokens.font-ui; font-size: 13px; }
+        }
+        Panel {
+            title: "SOURCE CHAINS"; summary: "Source → Modules → Sends → Output"; prepared: true;
+            preferred-height: 378px; vertical-stretch: 0;
+            source-stack := LayerStack {
+                height: 310px; layers: root.state == "empty" ? [] : DisplayFixtures.layers; title: "Instrument layers";
+                count-label: root.state == "empty" ? "0 sources" : "2 sources";
+                subtitle: "Select a source or module to inspect its supplied details.";
+                generation: "catalog-routing-" + root.state; available: root.state != "disabled" && root.state != "error";
+                rebuilding: root.state == "loading";
+                source-selected(id) => { root.event("Inspect source: " + id); }
+                module-selected(layer,id) => { root.event("Inspect " + layer + " / " + id); }
+                add-module(id) => { root.event("Add module requested for " + id); }
+                remove-module(layer,id) => { root.event("Remove module requested: " + layer + " / " + id); }
+                bypass-module(layer,id,bypassed) => { root.event((bypassed ? "Bypass" : "Enable") + " module requested: " + layer + " / " + id); }
+                level-changed(layer,value) => { root.event("Level proposal: " + layer + " = " + value + " dB"); }
+                level-gesture-began(layer) => { root.event("Level gesture: " + layer); }
+                level-gesture-ended(layer) => { root.event("Level gesture ended: " + layer); }
+                mute-changed(layer,muted) => { root.event((muted ? "Mute" : "Unmute") + " requested: " + layer); }
+                send-changed(layer,id,value) => { root.event("Send proposal: " + layer + " / " + id + " = " + value + " dB"); }
+                send-gesture-began(layer,id) => { root.event("Send gesture: " + layer + " / " + id); }
+                send-gesture-ended(layer,id) => { root.event("Send gesture ended: " + layer + " / " + id); }
+                output-requested(id) => { root.event("Output selection requested for " + id); }
+                parameter-changed(layer,module,id,value) => { root.event("Parameter proposal: " + layer + " / " + module + " / " + id + " = " + value); }
+                parameter-option-changed(layer,module,id,option) => { root.event("Choice proposal: " + layer + " / " + module + " / " + id + " = " + option); }
+                parameter-gesture-began(layer,module,id) => { root.event("Parameter gesture: " + layer + " / " + module + " / " + id); }
+                parameter-gesture-ended(layer,module,id) => { root.event("Parameter gesture ended: " + layer + " / " + module + " / " + id); }
+                source-display-changed(layer,mode) => { root.event("Source display: " + layer + " → " + mode); }
+                source-slice-selected(layer,id) => { root.event("Source slice: " + layer + " / " + id); }
+                source-retry(layer) => { root.event("Source analysis retry requested: " + layer); }
+            }
+        }
+        Panel {
+            title: "OUTPUT BUSES"; summary: "Stereo · Mono · Four channels"; prepared: true;
+            preferred-height: 400px; vertical-stretch: 0;
+            output-busses := OutputBusses {
+                height: 324px; title: root.state == "loading" ? "Rebuilding routing…" : root.state == "error" ? "Routing unavailable" : "Routing snapshot";
+                busses: root.state == "empty" || root.state == "loading" || root.state == "error" || root.state == "disabled" ? [] : DisplayFixtures.busses;
+                generation: "catalog-7-" + root.state;
+                selected(id) => { root.event("Inspect bus: " + id); }
+                reset-clip(bus,channel,generation,ticket) => { root.event("Clip acknowledgement: " + bus + " / " + channel + " · " + generation + " / " + ticket); }
+            }
+        }
+        Panel {
+            title: "METER ANATOMY"; summary: "Peak · RMS · Hold · Clip ticket";
+            preferred-height: 218px; vertical-stretch: 0;
+            HorizontalLayout {
+                spacing: 18px; alignment: start;
+                Meter {
+                    length: 112px; channels: DisplayFixtures.stereo;
+                    reset-clip(channel,ticket) => { root.event("Meter acknowledgement: " + channel + " / " + ticket); }
+                }
+                VerticalLayout {
+                    spacing: 6px; alignment: start;
+                    Text { text: "VALID SILENCE AND MISSING DATA"; color: Tokens.text-secondary; font-family: Tokens.font-ui; font-size: 11px; }
+                    Meter { vertical: false; length: 160px; channels: DisplayFixtures.states; }
+                    Text { text: "A clip clears when a new host measurement acknowledges its ticket."; color: Tokens.text-tertiary; font-family: Tokens.font-ui; font-size: 11px; wrap: word-wrap; }
+                }
+            }
+        }
+        Text { text: "Every visible channel and route is supplied by the example model. Prepared controls show their accepted values."; color: Tokens.text-tertiary; font-family: Tokens.font-ui; font-size: 11px; wrap: word-wrap; vertical-stretch: 0; }
+    }
+}

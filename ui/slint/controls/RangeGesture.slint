@@ -1,0 +1,55 @@
+// Device input only, shared by knobs, sliders, and numeric scrubbing.
+export component RangeGesture inherits TouchArea {
+    in property <float> value;
+    in property <float> minimum;
+    in property <float> maximum: 1;
+    in property <bool> vertical: true;
+    in property <bool> jump-on-click;
+    in property <length> pixels-per-range: 200px;
+    in property <float> fine-scale: 0.25;
+    in-out property <bool> fine;
+    out property <bool> dragging;
+    out property <bool> moved-far;
+    private property <length> anchor-position;
+    private property <float> anchor-value;
+    callback started();
+    callback updated(float);
+    callback ended();
+    callback reset-requested();
+    callback edit-requested();
+    callback wheeled(float, bool);
+    callback context-requested(length, length);
+    mouse-cursor: root.enabled ? (root.vertical ? ns-resize : ew-resize) : default;
+    pure function position() -> length { return root.vertical ? -root.mouse-y : root.mouse-x; }
+    pointer-event(event) => {
+        root.fine = event.modifiers.shift;
+        if event.kind == PointerEventKind.down && event.button == PointerEventButton.left && root.enabled {
+            root.anchor-position = root.position(); root.anchor-value = root.value; root.moved-far = false; root.dragging = true;
+            root.started();
+            if root.jump-on-click {
+                let ratio = root.vertical ? 1 - (self.mouse-y - 6px) / max(1px, self.height - 12px) : (self.mouse-x - 6px) / max(1px, self.width - 12px);
+                root.anchor-value = root.minimum + ratio.clamp(0, 1) * (root.maximum - root.minimum);
+                root.updated(root.anchor-value);
+            }
+        } else if event.kind == PointerEventKind.up || event.kind == PointerEventKind.cancel {
+            if event.kind == PointerEventKind.up && event.button == PointerEventButton.right && root.enabled { root.context-requested(self.mouse-x, self.mouse-y); }
+            if root.dragging { root.dragging = false; root.ended(); }
+        }
+    }
+    moved => {
+        if root.dragging && root.enabled {
+            let delta = root.position() - root.anchor-position;
+            if abs(delta) > 2px { root.moved-far = true; }
+            root.updated(root.anchor-value + delta / max(1px, root.pixels-per-range) * (root.maximum - root.minimum) * (root.fine ? root.fine-scale : 1));
+        }
+    }
+    clicked => { if !root.moved-far && root.enabled { root.edit-requested(); } }
+    double-clicked => { if root.enabled { root.reset-requested(); } }
+    scroll-event(event) => {
+        if !root.enabled { return reject; }
+        let delta = event.delta-y != 0px ? event.delta-y : event.delta-x;
+        if delta != 0px { root.wheeled(delta > 0px ? 1 : -1, event.modifiers.shift); }
+        return accept;
+    }
+    changed enabled => { if !root.enabled && root.dragging { root.dragging = false; root.ended(); } }
+}

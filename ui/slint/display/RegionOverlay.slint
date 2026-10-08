@@ -1,0 +1,14 @@
+import { Tokens } from "../theme.slint";
+import { MarkerFlag } from "MarkerFlag.slint";
+
+export component RegionOverlay inherits Rectangle {
+    in property <float> start;
+    in property <float> end: 1;
+    in property <bool> show-flags: true;
+    Rectangle { x: 0px; y: 18px; width: root.start.clamp(0,1) * parent.width; height: max(0px,parent.height - 18px); background: Tokens.dd-scrim; }
+    Rectangle { x: root.end.clamp(0,1) * parent.width; y: 18px; width: max(0px,parent.width - self.x); height: max(0px,parent.height - 18px); background: Tokens.dd-scrim; }
+    Rectangle { x: root.start.clamp(0,1) * max(0px,parent.width - 1px); y: 18px; width: 1px; height: max(0px,parent.height - 18px); background: Tokens.dd-paper-2; }
+    Rectangle { x: root.end.clamp(0,1) * max(0px,parent.width - 1px); y: 18px; width: 1px; height: max(0px,parent.height - 18px); background: Tokens.dd-paper-2; }
+    if root.show-flags : MarkerFlag { x: (root.start.clamp(0,1) * root.width).clamp(0px,max(0px,root.width - 45px)); y: 0px; width: 45px; text: "START"; }
+    if root.show-flags : MarkerFlag { x: (root.end.clamp(0,1) * root.width - 30px).clamp(0px,max(0px,root.width - 30px)); y: 0px; width: 30px; text: "END"; right-aligned: true; }
+}

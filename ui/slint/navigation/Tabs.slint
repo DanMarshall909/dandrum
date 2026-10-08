@@ -1,0 +1,30 @@
+import { Tokens } from "../theme.slint";
+import { TabItem } from "types.slint";
+import { NavigationItem } from "NavigationItem.slint";
+import { ChoiceState } from "ChoiceState.slint";
+
+export component Tabs inherits ChoiceState {
+    in property <[TabItem]> items;
+    in property <bool> compact;
+    in property <bool> segmented;
+    in property <bool> host-automated;
+    out property <string> selected-id: root.current-index >= 0 && root.current-index < root.items.length ? root.items[root.current-index].id : "";
+    callback changed(string);
+    count: root.items.length;
+    changed items => { root.reconcile(); }
+    accepts(index) => { return !root.items[index].disabled; }
+    selection-changed(index) => { root.changed(root.items[index].id); }
+    height: root.compact ? Tokens.tab-height-sm : Tokens.tab-height;
+    Rectangle { background: root.segmented ? Tokens.surface-well : transparent; border-radius: root.segmented ? Tokens.radius-2 : 0px; }
+    HorizontalLayout {
+        spacing: 2px; padding: root.segmented ? 2px : 0px;
+        for item[index] in root.items : NavigationItem {
+            label: item.label; icon: item.icon; badge: item.badge;
+            selected: root.current-index == index; disabled: root.disabled || item.disabled;
+            compact: root.compact; segmented: root.segmented; host-automated: root.host-automated;
+            focus-request: root.focus-index == index;
+            activated => { root.choose(index); }
+            navigate(direction) => { root.move-selection(direction); }
+        }
+    }
+}

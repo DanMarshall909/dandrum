@@ -1,0 +1,22 @@
+import { LayerParameter } from "types.slint";
+import { LayerParameterControl } from "LayerParameterControl.slint";
+
+export component LayerParameterGrid inherits Rectangle {
+    in property <[LayerParameter]> parameters;
+    in property <bool> available: true;
+    out property <int> columns: max(1, floor(root.width / 232px));
+    callback parameter-changed(string,float); callback option-changed(string,string);
+    callback gesture-began(string); callback gesture-ended(string); callback close-requested();
+    preferred-height: ceil(root.parameters.length / root.columns) * 116px;
+    for parameter[index] in root.parameters : LayerParameterControl {
+        x: Math.mod(index, root.columns) * root.width / root.columns;
+        y: floor(index / root.columns) * 116px;
+        width: max(0px, root.width / root.columns - 12px); height: 112px;
+        parameter: parameter; available: root.available;
+        numeric-changed(value) => { root.parameter-changed(parameter.id,value); }
+        option-changed(id) => { root.option-changed(parameter.id,id); }
+        gesture-began => { root.gesture-began(parameter.id); }
+        gesture-ended => { root.gesture-ended(parameter.id); }
+        close-requested => { root.close-requested(); }
+    }
+}

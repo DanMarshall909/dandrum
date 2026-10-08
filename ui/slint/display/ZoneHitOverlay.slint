@@ -1,0 +1,57 @@
+export component ZoneHitOverlay inherits FocusScope {
+    in property <bool> editable;
+    in property <length> semitone-width;
+    in property <length> grid-height;
+    in property <string> label;
+    callback select();
+    callback audition();
+    callback release-note();
+    callback navigate(int);
+    callback edit(int, int, string);
+    private property <bool> dragging;
+    private property <float> start-x;
+    private property <float> start-y;
+    private property <string> mode;
+    accessible-role: button; accessible-label: root.label;
+    accessible-action-default => { root.select(); root.audition(); root.release-note(); }
+    focus-lost(reason) => { root.dragging = false; root.release-note(); }
+    changed editable => { if !root.editable { root.dragging = false; } }
+    key-pressed(event) => {
+        if event.text == " " || event.text == Key.Return { root.select(); root.audition(); return accept; }
+        if event.text == Key.Escape { root.dragging = false; root.release-note(); return accept; }
+        let horizontal = event.text == Key.RightArrow ? 1 : event.text == Key.LeftArrow ? -1 : 0;
+        let vertical = event.text == Key.UpArrow ? 1 : event.text == Key.DownArrow ? -1 : 0;
+        if horizontal != 0 || vertical != 0 {
+            if root.editable { root.edit(horizontal * (event.modifiers.alt ? 8 : 1), vertical * (event.modifiers.alt ? 8 : 1), event.modifiers.shift ? (horizontal != 0 ? "right" : "top") : "move"); }
+            else { root.navigate(horizontal != 0 ? horizontal : -vertical); }
+            return accept;
+        }
+        return reject;
+    }
+    key-released(event) => {
+        if event.text == " " || event.text == Key.Return { root.release-note(); return accept; }
+        return reject;
+    }
+    TouchArea {
+        mouse-cursor: root.editable ? move : pointer;
+        pointer-event(event) => {
+            if event.kind == PointerEventKind.down && event.button == PointerEventButton.left {
+                root.focus(); root.select(); root.dragging = root.editable;
+                root.start-x = self.mouse-x / 1px; root.start-y = self.mouse-y / 1px;
+                root.mode = self.mouse-x < 5px && self.mouse-y < 5px ? "top-left"
+                    : self.mouse-x > self.width - 5px && self.mouse-y < 5px ? "top-right"
+                    : self.mouse-x < 5px && self.mouse-y > self.height - 5px ? "bottom-left"
+                    : self.mouse-x > self.width - 5px && self.mouse-y > self.height - 5px ? "bottom-right"
+                    : self.mouse-x < 5px ? "left" : self.mouse-x > self.width - 5px ? "right"
+                    : self.mouse-y < 5px ? "top" : self.mouse-y > self.height - 5px ? "bottom" : "move";
+            } else if event.kind == PointerEventKind.up {
+                if root.dragging && root.editable {
+                    let dx = round((self.mouse-x / 1px - root.start-x) / max(1, root.semitone-width / 1px));
+                    let dy = round((root.start-y - self.mouse-y / 1px) * 127 / max(1, root.grid-height / 1px));
+                    if dx != 0 || dy != 0 { root.edit(dx, dy, root.mode); }
+                }
+                root.dragging = false; root.release-note();
+            } else if event.kind == PointerEventKind.cancel { root.dragging = false; root.release-note(); }
+        }
+    }
+}

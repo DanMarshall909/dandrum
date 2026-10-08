@@ -1,0 +1,18 @@
+import { Tokens } from "../theme.slint";
+
+export component VelocityGrid inherits Rectangle {
+    in property <int> low-note;
+    in property <int> high-note;
+    background: Tokens.dd-ink-1;
+    for index in max(1, root.high-note - root.low-note + 1) : Rectangle {
+        property <int> pc: root.low-note + index - floor((root.low-note + index) / 12) * 12;
+        x: index * parent.width / max(1, root.high-note - root.low-note + 1);
+        width: parent.width / max(1, root.high-note - root.low-note + 1); height: 100%;
+        background: self.pc == 1 || self.pc == 3 || self.pc == 6 || self.pc == 8 || self.pc == 10 ? Tokens.dd-ink-0 : transparent;
+        if self.pc == 0 : Rectangle { x: 0px; y: 0px; width: 1px; height: 100%; background: Tokens.dd-line-2; }
+    }
+    for velocity in [32, 64, 96] : Rectangle {
+        y: (127 - velocity) / 127 * parent.height; width: 100%; height: 1px;
+        background: Tokens.dd-line-1;
+    }
+}

@@ -1,0 +1,78 @@
+// Shared selection policy for tabs, segmented choices and custom popup menus.
+export component ChoiceState inherits FocusScope {
+    in property <int> count;
+    in property <bool> disabled;
+    in-out property <int> current-index;
+    out property <int> focus-index: -1;
+    private property <int> seek-index;
+    private property <int> seek-direction;
+    private property <int> remaining;
+    private property <bool> repairing;
+    private property <bool> selection-valid: root.current-index >= 0 && root.current-index < root.count && root.accepts(root.current-index);
+    enabled: !root.disabled;
+    focus-on-tab-navigation: false;
+    pure callback accepts(int) -> bool;
+    accepts(index) => { return true; }
+    callback selection-changed(int);
+    callback activated(int);
+    init => { root.reconcile(); }
+    changed count => { root.reconcile(); }
+    changed selection-valid => { if !root.selection-valid { root.reconcile(); } }
+    changed current-index => {
+        if root.selection-valid { root.remaining = 0; root.repairing = false; }
+        else { root.reconcile(); }
+    }
+    // Model and host changes preserve a valid selection without echoing a user event.
+    public function reconcile() {
+        if !root.selection-valid {
+            if root.count == 0 { root.remaining = 0; root.current-index = -1; }
+            else {
+                root.repairing = true; root.seek-direction = 1;
+                root.seek-index = 0; root.remaining = root.count; root.seek-next();
+            }
+        }
+    }
+    public function choose(index: int) {
+        if !root.disabled && index >= 0 && index < root.count && root.accepts(index) {
+            root.remaining = 0; root.repairing = false;
+            if root.current-index != index { root.current-index = index; root.selection-changed(index); }
+            root.focus-index = index;
+        }
+    }
+    public function activate(index: int) {
+        if !root.disabled && index >= 0 && index < root.count && root.accepts(index) { root.choose(index); root.activated(index); }
+    }
+    function seek-next() {
+        if (!root.repairing && root.disabled) || root.count == 0 { root.remaining = 0; }
+        else if root.remaining > 0 {
+            let candidate = Math.mod(root.seek-index + root.count, root.count);
+            if root.accepts(candidate) {
+                if root.repairing { root.current-index = candidate; root.focus-index = -1; root.repairing = false; }
+                else { root.choose(candidate); }
+                root.remaining = 0;
+            } else {
+                root.seek-index = candidate + root.seek-direction; root.remaining -= 1;
+                if root.remaining == 0 && root.repairing {
+                    root.repairing = false; root.current-index = -1; root.focus-index = -1;
+                }
+            }
+        }
+    }
+    public function move-selection(direction: int) {
+        if !root.disabled && root.count > 0 {
+            root.repairing = false;
+            root.seek-direction = direction < 0 ? -1 : 1;
+            root.seek-index = root.current-index + root.seek-direction;
+            root.remaining = root.count;
+            root.seek-next();
+        }
+    }
+    Timer { interval: 1ms; running: root.remaining > 0; triggered => { root.seek-next(); } }
+    key-pressed(event) => {
+        if event.text == Key.RightArrow || event.text == Key.DownArrow { root.move-selection(1); return accept; }
+        if event.text == Key.LeftArrow || event.text == Key.UpArrow { root.move-selection(-1); return accept; }
+        if event.text == Key.Return || event.text == " " { root.activate(root.current-index); return accept; }
+        return reject;
+    }
+    @children
+}

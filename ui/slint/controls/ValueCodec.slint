@@ -1,0 +1,13 @@
+// Bind the optional codec in a native host to accept domain notation and units.
+// Pure Slint fallback accepts a complete numeric literal in the actual range.
+export struct ParsedValue { valid: bool, value: float }
+export global ValueCodec {
+    pure callback parse(string, string) -> ParsedValue;
+    parse(text, unit) => {
+        let value = text.is-float() ? text.to-float() : 0;
+        let valid = text.is-float() && value - value == 0;
+        return { valid: valid, value: valid ? text.to-float() : 0 };
+    }
+    pure callback format(float, string) -> string;
+    format(value, unit) => { return "\{round(value * 1000) / 1000}"; }
+}

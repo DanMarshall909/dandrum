@@ -1,0 +1,27 @@
+import { Tokens } from "../theme.slint";
+import { FocusRing } from "../foundation/FocusRing.slint";
+
+export component SourceBlock inherits FocusScope {
+    in property <string> name;
+    in property <string> source;
+    in property <string> detail;
+    in property <bool> selected;
+    callback clicked();
+    callback dismiss-details();
+    min-width: 190px; preferred-width: 210px; height: 38px;
+    accessible-role: button; accessible-label: "Inspect \{root.source} source \{root.name}";
+    accessible-action-default => { root.clicked(); }
+    key-pressed(event) => {
+        if event.text == Key.Escape { root.dismiss-details(); return accept; }
+        if event.text == Key.Return || event.text == " " { root.clicked(); return accept; } return reject;
+    }
+    Rectangle {
+        width: 100%; height: 100%; border-radius: 4px; border-width: 1px;
+        border-color: root.selected ? Tokens.dd-vermilion : Tokens.dd-line-2;
+        background: input.has-hover ? Tokens.dd-ink-5 : Tokens.dd-ink-3;
+        Text { x: 8px; y: 4px; width: parent.width - 16px; height: 16px; text: root.name; font-family: Tokens.font-ui; font-size: 13px; font-weight: 600; color: Tokens.dd-paper-1; overflow: elide; }
+        Text { x: 8px; y: 21px; width: parent.width - 16px; height: 13px; text: "\{root.source} · \{root.detail}"; font-family: Tokens.font-value; font-size: 11px; color: Tokens.dd-paper-3; overflow: elide; }
+    }
+    FocusRing { width: 100%; height: 100%; active: root.has-focus; }
+    input := TouchArea { clicked => { root.focus(); root.clicked(); } }
+}

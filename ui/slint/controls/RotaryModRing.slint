@@ -1,0 +1,17 @@
+import { Tokens } from "../theme.slint";
+import { ModPalette } from "../modulation/ModPalette.slint";
+import { RotaryArc } from "RotaryArc.slint";
+import { RotaryMarker } from "RotaryMarker.slint";
+export component RotaryModRing inherits Rectangle {
+    in property <float> base;
+    in property <float> depth;
+    in property <float> live;
+    in property <int> slot;
+    in property <bool> active;
+    in property <bool> editing;
+    in property <length> radius: 23px;
+    in property <length> active-thickness: 2px;
+    RotaryArc { radius: root.radius; tint: Tokens.dd-ink-3; thickness: 1px; }
+    RotaryArc { from: root.base; to: root.base + root.depth; radius: root.radius; tint: ModPalette.tint(root.slot).with-alpha(root.active || root.editing ? 1 : 0.6); thickness: root.active || root.editing ? root.active-thickness : 1px; }
+    if root.active : RotaryMarker { value: root.base + root.depth * root.live; radius: root.radius; diameter: root.active-thickness + 2px; tint: ModPalette.tint(root.slot); }
+}

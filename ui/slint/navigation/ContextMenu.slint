@@ -1,0 +1,38 @@
+import { MenuEntry } from "types.slint";
+
+// The front native area receives right-click before a child's TouchArea can
+// consume it. It passes ordinary pointer input through to the visual children.
+// Native menu drawing follows the Slint/platform menu style. For a token-styled
+// dropdown or modulation editor compose MenuSurface (as MenuButton does).
+export component ContextMenu inherits FocusScope {
+    in property <[MenuEntry]> items;
+    enabled: true;
+    callback selected(string);
+    public function activate(index: int) {
+        if root.enabled && index >= 0 && index < root.items.length && !root.items[index].disabled && !root.items[index].separator {
+            root.selected(root.items[index].id);
+        }
+    }
+    public function show-at(x: length, y: length) { if root.enabled { area.show({x: x, y: y}); } }
+    public function close() { area.close(); }
+    capture-key-pressed(event) => {
+        if root.enabled && (event.text == Key.Menu || (event.text == Key.F10 && event.modifiers.shift)) {
+            root.show-at(root.width / 2, root.height / 2); return accept;
+        }
+        return reject;
+    }
+    // Keep insertion before the native area. Slint 1.18.1 also requires an
+    // insertion point to precede Menu when the menu is lowered during inlining.
+    @children
+    area := ContextMenuArea {
+        enabled: root.enabled;
+        Menu {
+            for item[index] in root.items : MenuItem {
+                title: item.label;
+                enabled: !item.disabled && !item.separator;
+                checked: item.checked;
+                activated => { root.activate(index); }
+            }
+        }
+    }
+}

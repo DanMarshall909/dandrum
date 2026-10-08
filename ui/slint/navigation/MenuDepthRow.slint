@@ -1,0 +1,21 @@
+import { Tokens } from "../theme.slint";
+import { ModGlyph } from "../modulation/ModGlyph.slint";
+import { NumericField } from "../controls/NumericField.slint";
+import { IconButton } from "../controls/IconButton.slint";
+
+export component MenuDepthRow inherits Rectangle {
+    in property <int> slot;
+    in property <string> source;
+    in property <float> depth;
+    in property <bool> disabled;
+    callback depth-changed(float);
+    callback removed();
+    height: 32px;
+    HorizontalLayout {
+        padding-left: 6px; padding-right: 6px; spacing: 6px;
+        ModGlyph { slot: root.slot; }
+        Text { text: root.source; color: Tokens.text-secondary; font-family: Tokens.font-ui; font-size: 12px; overflow: elide; vertical-alignment: center; }
+        NumericField { label: root.source + " depth"; value: root.depth * 100; minimum: -100; maximum: 100; step: 1; unit: "%"; enabled: !root.disabled; width: 66px; changed(value) => { root.depth-changed(value / 100); } }
+        IconButton { icon: "close"; label: "Remove " + root.source; compact: true; enabled: !root.disabled; clicked => { root.removed(); } }
+    }
+}

@@ -35,6 +35,16 @@ class DemoLauncherBoundaryTest(unittest.TestCase):
         self.assertIn("react303", result.stdout)
         self.assertIn("silent mock engine", result.stdout)
 
+    def test_python_entrypoint_lists_catalog_and_preserves_failure_status(self):
+        command = [sys.executable, str(ROOT / "scripts/demo_launcher.py")]
+        result = subprocess.run([*command, "--list"], cwd=self.root, capture_output=True, text=True)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn("slint-library", result.stdout)
+        self.assertIn("silent UI catalog", result.stdout)
+        invalid = subprocess.run([*command, "no-such-demo"], cwd=self.root, capture_output=True, text=True)
+        self.assertEqual(invalid.returncode, 2)
+        self.assertIn("Unknown demo: no-such-demo", invalid.stderr)
+
     def test_real_cmake_build_launch_and_configure_failure(self):
         (self.root / "CMakeLists.txt").write_text('''cmake_minimum_required(VERSION 3.22)
 project(LauncherBoundary LANGUAGES NONE)
@@ -103,6 +113,41 @@ juce_add_plugin(dandrum-plugin FORMATS Standalone PRODUCT_NAME "Dandrum")
         self.assertNotEqual(status, 0)
         self.assertIn("failed", error)
         self.assertFalse(observed.exists(), "Configuration failure must prevent launching an existing artifact")
+
+    def test_real_plain_cmake_catalog_build_and_launch_is_independent_of_audio(self):
+        source = self.root / "ui/slint/README.md"
+        source.parent.mkdir(parents=True)
+        source.write_text("Silent UI catalog")
+        (self.root / "CMakeLists.txt").write_text('''cmake_minimum_required(VERSION 3.22)
+project(SlintLauncherBoundary LANGUAGES CXX)
+option(DANDRUM_NATIVE_ONLY "Disable browser dependencies" OFF)
+option(DANDRUM_SLINT_LIBRARY_ONLY "Build only the UI catalog" OFF)
+if(NOT DANDRUM_NATIVE_ONLY OR NOT DANDRUM_SLINT_LIBRARY_ONLY)
+  message(FATAL_ERROR "Missing isolated catalog options")
+endif()
+add_executable(dandrum-slint-catalog app.cpp)
+set_target_properties(dandrum-slint-catalog PROPERTIES
+  RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/slint-catalog/$<CONFIG>")
+''')
+        (self.root / "app.cpp").write_text('''#include <fstream>
+int main(int argc, char** argv) {
+    std::ofstream output("observed.txt");
+    for (int index = 1; index < argc; ++index) output << argv[index] << "\\n";
+}
+''')
+        sampler = self.root / "web/sampler"
+        sampler.mkdir(parents=True)
+        (sampler / "package.json").write_text("{}")
+        status, _, error = self.invoke("slint-library", "--", "plain CMake argument with spaces")
+        self.assertEqual(status, 0, error)
+        self.assertEqual((self.root / "observed.txt").read_text(), "plain CMake argument with spaces\n")
+        build = self.root / "build/slint-library"
+        executable = build / "slint-catalog/Release/dandrum-slint-catalog"
+        self.assertTrue(executable.is_file() or executable.with_suffix(".exe").is_file())
+        cache = (build / "CMakeCache.txt").read_text()
+        self.assertIn("DANDRUM_SLINT_LIBRARY_ONLY:BOOL=ON", cache)
+        self.assertFalse((sampler / "node_modules").exists())
+        self.assertFalse((build / "rust-target").exists())
 
     def test_artifact_layout_is_calibrated_against_vendored_juce_target_files(self):
         juce = (ROOT / "third_party/JUCE").as_posix()

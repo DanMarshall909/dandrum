@@ -1,0 +1,29 @@
+import { LayerWaveform } from "types.slint";
+import { WaveformPanel } from "WaveformPanel.slint";
+
+// Adapter for an optional copied source snapshot. No waveform is synthesized.
+export component LayerSourceWaveform inherits Rectangle {
+    in property <LayerWaveform> data;
+    in property <bool> available: true;
+    callback display-changed(string); callback slice-selected(string); callback retry();
+    height: 96px;
+    if root.data.supplied : WaveformPanel {
+        x: 0px; y: 0px; width: parent.width; height: parent.height;
+        compact: true; label: root.data.label; metadata: root.data.metadata; state: root.data.state;
+        peaks: root.data.peaks; slices: root.data.slices; selected-slice: root.data.selected-slice;
+        region-start: root.data.region-start; region-end: root.data.region-end;
+        fade-in: root.data.fade-in; fade-out: root.data.fade-out;
+        loop-enabled: root.data.loop-enabled; loop-start: root.data.loop-start;
+        loop-end: root.data.loop-end; loop-crossfade: root.data.loop-crossfade;
+        start-offset-visible: root.data.start-offset-visible; start-offset: root.data.start-offset;
+        host-automated: root.data.host-automated; reversed: root.data.reversed;
+        cursor-visible: root.data.cursor-visible; cursor: root.data.cursor;
+        spectral-cells: root.data.spectral-cells; spectral-state: root.data.spectral-state;
+        low-frequency-label: root.data.low-frequency-label; high-frequency-label: root.data.high-frequency-label;
+        show-display-toggle: root.data.spectral-state != "";
+        retry-enabled: root.available;
+        display-changed(mode) => { root.display-changed(mode); }
+        slice-selected(id) => { root.slice-selected(id); }
+        retry => { if root.available { root.retry(); } }
+    }
+}

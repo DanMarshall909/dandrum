@@ -29,7 +29,7 @@ function sandbox(run) {
   const slint = path.join(dir, 'tokens.slint');
   const write = data => writeFileSync(source, JSON.stringify(data));
   const generate = (...args) => spawnSync(process.execPath,
-    [generator, '--source', source, '--css', css, '--cpp', cpp, '--slint', slint, ...args], { encoding: 'utf8' });
+    [generator, '--source', source, '--css', css, '--cpp', cpp, '--slint', path.join(dir, 'library-tokens.slint'), '--legacy-slint', slint, ...args], { encoding: 'utf8' });
   try { run({ dir, source, css, cpp, slint, write, generate }); }
   finally { rmSync(dir, { recursive: true, force: true }); }
 }

@@ -1,0 +1,22 @@
+import { MenuEntry, TabItem } from "../navigation/types.slint";
+
+export global LayoutFixtures {
+    out property <[TabItem]> tabs: [
+        { id: "sample", label: "Sample", icon: "one-shot" },
+        { id: "modulation", label: "Modulation", icon: "modulate", badge: "2" },
+        { id: "routing", label: "Routing", icon: "layers" },
+        { id: "unavailable", label: "Prepared", icon: "lock", disabled: true },
+    ];
+    out property <[TabItem]> modes: [
+        { id: "one-shot", label: "One shot" },
+        { id: "gate", label: "Gate" },
+        { id: "loop", label: "Loop" },
+    ];
+    out property <[MenuEntry]> menu: [
+        { id: "reset", label: "Reset to default", icon: "reset", shortcut: "Double click" },
+        { id: "copy", label: "Copy value", shortcut: "Ctrl+C" },
+        { id: "separator", separator: true },
+        { id: "automated", label: "Host automation", icon: "host", disabled: true },
+        { id: "remove", label: "Remove assignment", icon: "close", danger: true },
+    ];
+}

@@ -1,0 +1,24 @@
+import { Tokens } from "../theme.slint";
+import { FocusRing } from "../foundation/FocusRing.slint";
+import { ActionArea } from "ActionArea.slint";
+import { ToggleTrack } from "ToggleTrack.slint";
+
+export component Toggle inherits ActionArea {
+    in-out property <bool> checked;
+    in property <bool> compact;
+    in property <bool> focused;
+    in property <bool> host-automated;
+    callback toggled(bool);
+    min-height: Tokens.hit-min; preferred-height: Tokens.hit-min;
+    preferred-width: content.preferred-width;
+    accessible-role: switch;
+    accessible-checkable: true;
+    accessible-checked: root.checked;
+    activated => { root.checked = !root.checked; root.toggled(root.checked); }
+    FocusRing { active: root.enabled && (root.has-focus || root.focused); }
+    content := HorizontalLayout {
+        spacing: Tokens.space-4; alignment: start;
+        ToggleTrack { checked: root.checked; enabled: root.enabled; compact: root.compact; host-automated: root.host-automated; }
+        if root.label != "" : Text { text: root.label; color: root.enabled ? Tokens.text-primary : Tokens.text-disabled; font-family: Tokens.font-ui; font-size: root.compact ? Tokens.type-label : Tokens.type-body; vertical-alignment: center; }
+    }
+}

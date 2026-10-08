@@ -1,0 +1,16 @@
+import { Tokens } from "../theme.slint";
+
+export component FocusRing inherits Rectangle {
+    in property <bool> active;
+    in property <length> radius: Tokens.radius-2;
+    if root.active : Rectangle {
+        x: -Tokens.stroke-focus-gap - Tokens.stroke-focus;
+        y: -Tokens.stroke-focus-gap - Tokens.stroke-focus;
+        width: parent.width + 2 * (Tokens.stroke-focus-gap + Tokens.stroke-focus);
+        height: parent.height + 2 * (Tokens.stroke-focus-gap + Tokens.stroke-focus);
+        border-width: Tokens.stroke-focus;
+        border-color: Tokens.color-focus;
+        border-radius: root.radius + Tokens.stroke-focus-gap;
+        background: transparent;
+    }
+}

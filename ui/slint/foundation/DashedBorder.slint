@@ -1,0 +1,17 @@
+import { Tokens } from "../theme.slint";
+
+export component DashedBorder inherits Rectangle {
+    in property <color> tint: Tokens.border-control;
+    for i in max(0, floor(root.width / 8px)) : Rectangle {
+        x: i * 8px; y: 0px; width: 4px; height: 1px; background: root.tint;
+    }
+    for i in max(0, floor(root.width / 8px)) : Rectangle {
+        x: i * 8px; y: parent.height - 1px; width: 4px; height: 1px; background: root.tint;
+    }
+    for i in max(0, floor(root.height / 8px)) : Rectangle {
+        x: 0px; y: i * 8px; width: 1px; height: 4px; background: root.tint;
+    }
+    for i in max(0, floor(root.height / 8px)) : Rectangle {
+        x: parent.width - 1px; y: i * 8px; width: 1px; height: 4px; background: root.tint;
+    }
+}

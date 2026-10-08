@@ -1,0 +1,45 @@
+import { Tokens } from "../theme.slint";
+import { Panel } from "../layout/Panel.slint";
+import { Button } from "../controls/Button.slint";
+import { IconButton } from "../controls/IconButton.slint";
+import { Toggle } from "../controls/Toggle.slint";
+import { Switch } from "../controls/Switch.slint";
+import { NumericField } from "../controls/NumericField.slint";
+import { Slider } from "../controls/Slider.slint";
+import { ControlFixtures } from "ControlFixtures.slint";
+
+export component InputGallery inherits Panel {
+    in property <string> state: "default";
+    out property <bool> popup-active: send-control.popup-visible || blend-control.popup-visible || settings.tooltip-visible || more.tooltip-visible;
+    title: "ACTIONS & VALUES"; summary: "Buttons · toggles · fields · linear controls";
+    preferred-height: 198px;
+    HorizontalLayout {
+        spacing: 20px;
+        VerticalLayout {
+            spacing: 12px;
+            HorizontalLayout {
+                spacing: 8px; alignment: start;
+                Button { text: "Load patch"; enabled: root.state != "disabled" && root.state != "prepared"; primary: true; icon: "reload"; clicked => { ControlFixtures.action("Load patch"); } }
+                Button { text: "Browse"; enabled: root.state != "disabled" && root.state != "prepared"; icon: "folder"; clicked => { ControlFixtures.action("Browse"); } }
+                Button { text: "Reset"; enabled: root.state != "disabled" && root.state != "prepared"; ghost: true; clicked => { ControlFixtures.action("Reset"); } }
+                settings := IconButton { icon: "settings"; enabled: root.state != "disabled" && root.state != "prepared"; label: "Instrument settings"; clicked => { ControlFixtures.action("Settings"); } }
+                more := IconButton { icon: "more"; enabled: root.state != "disabled" && root.state != "prepared"; label: "More options"; ghost: true; clicked => { ControlFixtures.action("More options"); } }
+                IconButton { icon: "lock"; label: "Unavailable action"; enabled: false; }
+            }
+            HorizontalLayout {
+                spacing: 12px; alignment: start;
+                Toggle { label: "Follow pad"; enabled: root.state != "disabled" && root.state != "prepared"; checked <=> ControlFixtures.follow; toggled(v) => { ControlFixtures.action(v ? "Follow selected pad enabled" : "Follow selected pad disabled"); } }
+                Switch { label: "REVERSE"; enabled: root.state != "disabled" && root.state != "prepared"; checked <=> ControlFixtures.reverse; toggled(v) => { ControlFixtures.action(v ? "Reverse enabled" : "Reverse disabled"); } }
+                Switch { label: "LOOP"; enabled: root.state != "disabled" && root.state != "prepared"; checked <=> ControlFixtures.loop; toggled(v) => { ControlFixtures.action(v ? "Loop enabled" : "Loop disabled"); } }
+                Toggle { label: "Locked"; checked: true; enabled: false; compact: true; }
+            }
+            HorizontalLayout {
+                spacing: 14px; alignment: start;
+                NumericField { label: "SLICE"; enabled: root.state != "disabled"; read-only: root.state == "prepared"; host-automated: root.state == "host"; minimum: 1; maximum: 8; step: 1; default-value: 1; value <=> ControlFixtures.slice; changed(v) => { ControlFixtures.change("Slice", v); } }
+                NumericField { label: "VOICES"; value: 8; read-only: true; }
+                blend-control := Slider { label: "BLEND"; enabled: root.state != "disabled"; read-only: root.state == "prepared"; host-automated: root.state == "host"; minimum: -1; maximum: 1; step: 0.01; default-value: 0; bipolar: true; length: 160px; value <=> ControlFixtures.blend; changed(v) => { ControlFixtures.change("Blend", v); } }
+            }
+        }
+        send-control := Slider { label: "SEND"; enabled: root.state != "disabled"; read-only: root.state == "prepared"; host-automated: root.state == "host"; vertical: true; length: 110px; value <=> ControlFixtures.send; modulations: [{ slot: 1, source: "Envelope", depth: 0.3, live: 0.6, active: true }]; changed(v) => { ControlFixtures.change("Send", v); } }
+    }
+}

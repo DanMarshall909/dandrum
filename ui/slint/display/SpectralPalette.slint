@@ -1,0 +1,12 @@
+import { Tokens } from "../theme.slint";
+
+export global SpectralPalette {
+    public pure function color-for(value: float) -> color {
+        let v = value.clamp(0,1);
+        // Slint's factor weights the receiver, so zero must select the next stop.
+        return v < 0.25 ? Tokens.dd-ink-0.mix(Tokens.dd-ink-5, 1 - v * 4)
+            : v < 0.5 ? Tokens.dd-ink-5.mix(Tokens.dd-vermilion-lo, 1 - (v - 0.25) * 4)
+            : v < 0.75 ? Tokens.dd-vermilion-lo.mix(Tokens.dd-vermilion, 1 - (v - 0.5) * 4)
+            : Tokens.dd-vermilion.mix(Tokens.dd-paper-1, 1 - (v - 0.75) * 4);
+    }
+}

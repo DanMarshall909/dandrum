@@ -1,0 +1,52 @@
+import { Tokens } from "theme.slint";
+
+// Original design-guide SVG geometry; only tint and logical size change.
+export component Icon inherits Image {
+    in property <string> name: "info";
+    in property <color> tint: Tokens.text-secondary;
+    in property <length> size: Tokens.icon-size;
+    in property <string> label;
+    width: root.size; height: root.size;
+    image-fit: contain;
+    colorize: root.tint;
+    accessible-label: root.label;
+    source:
+            root.name == "reload" ? @image-url("assets/icons/dd-icon-reload.svg") :
+            root.name == "warning" ? @image-url("assets/icons/dd-icon-warning.svg") :
+            root.name == "error" ? @image-url("assets/icons/dd-icon-error.svg") :
+            root.name == "ok" ? @image-url("assets/icons/dd-icon-ok.svg") :
+            root.name == "info" ? @image-url("assets/icons/dd-icon-info.svg") :
+            root.name == "lock" ? @image-url("assets/icons/dd-icon-lock.svg") :
+            root.name == "chevron-down" ? @image-url("assets/icons/dd-icon-chevron-down.svg") :
+            root.name == "chevron-right" ? @image-url("assets/icons/dd-icon-chevron-right.svg") :
+            root.name == "chevron-left" ? @image-url("assets/icons/dd-icon-chevron-left.svg") :
+            root.name == "close" ? @image-url("assets/icons/dd-icon-close.svg") :
+            root.name == "plus" ? @image-url("assets/icons/dd-icon-plus.svg") :
+            root.name == "minus" ? @image-url("assets/icons/dd-icon-minus.svg") :
+            root.name == "more" ? @image-url("assets/icons/dd-icon-more.svg") :
+            root.name == "modulate" ? @image-url("assets/icons/dd-icon-modulate.svg") :
+            root.name == "host" ? @image-url("assets/icons/dd-icon-host.svg") :
+            root.name == "choke" ? @image-url("assets/icons/dd-icon-choke.svg") :
+            root.name == "alternate" ? @image-url("assets/icons/dd-icon-alternate.svg") :
+            root.name == "layers" ? @image-url("assets/icons/dd-icon-layers.svg") :
+            root.name == "reverse" ? @image-url("assets/icons/dd-icon-reverse.svg") :
+            root.name == "loop" ? @image-url("assets/icons/dd-icon-loop.svg") :
+            root.name == "one-shot" ? @image-url("assets/icons/dd-icon-one-shot.svg") :
+            root.name == "gate" ? @image-url("assets/icons/dd-icon-gate.svg") :
+            root.name == "slice" ? @image-url("assets/icons/dd-icon-slice.svg") :
+            root.name == "keyboard" ? @image-url("assets/icons/dd-icon-keyboard.svg") :
+            root.name == "folder" ? @image-url("assets/icons/dd-icon-folder.svg") :
+            root.name == "file-missing" ? @image-url("assets/icons/dd-icon-file-missing.svg") :
+            root.name == "reset" ? @image-url("assets/icons/dd-icon-reset.svg") :
+            root.name == "midi" ? @image-url("assets/icons/dd-icon-midi.svg") :
+            root.name == "pan" ? @image-url("assets/icons/dd-icon-pan.svg") :
+            root.name == "pitch" ? @image-url("assets/icons/dd-icon-pitch.svg") :
+            root.name == "level" ? @image-url("assets/icons/dd-icon-level.svg") :
+            root.name == "variation" ? @image-url("assets/icons/dd-icon-variation.svg") :
+            root.name == "settings" ? @image-url("assets/icons/dd-icon-settings.svg") :
+            @image-url("assets/icons/dd-icon-info.svg");
+}
+
+export global IconNames {
+    out property <[string]> all: ["reload", "warning", "error", "ok", "info", "lock", "chevron-down", "chevron-right", "chevron-left", "close", "plus", "minus", "more", "modulate", "host", "choke", "alternate", "layers", "reverse", "loop", "one-shot", "gate", "slice", "keyboard", "folder", "file-missing", "reset", "midi", "pan", "pitch", "level", "variation", "settings"];
+}

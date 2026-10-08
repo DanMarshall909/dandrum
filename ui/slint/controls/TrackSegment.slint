@@ -1,0 +1,18 @@
+export component TrackSegment inherits Rectangle {
+    in property <bool> vertical;
+    in property <float> from;
+    in property <float> to: 1;
+    in property <length> thickness: 4px;
+    in property <length> offset;
+    in property <color> tint;
+    private property <length> track-length: root.vertical ? root.height : root.width;
+    private property <length> low: 6px + min(root.from, root.to).clamp(0, 1) * max(0px, root.track-length - 12px);
+    private property <length> high: 6px + max(root.from, root.to).clamp(0, 1) * max(0px, root.track-length - 12px);
+    Rectangle {
+        x: root.vertical ? (parent.width - root.thickness) / 2 + root.offset : root.low;
+        y: root.vertical ? parent.height - root.high : (parent.height - root.thickness) / 2 + root.offset;
+        width: root.vertical ? root.thickness : root.high - root.low;
+        height: root.vertical ? root.high - root.low : root.thickness;
+        background: root.tint; border-radius: 1px;
+    }
+}

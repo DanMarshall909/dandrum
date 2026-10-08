@@ -1,0 +1,13 @@
+import { Tokens } from "../theme.slint";
+
+export component PageHeading inherits Rectangle {
+    in property <string> title;
+    in property <string> description;
+    preferred-height: 64px;
+    vertical-stretch: 0;
+    VerticalLayout {
+        spacing: 4px; alignment: start;
+        Text { text: root.title; color: Tokens.text-primary; font-family: Tokens.font-display; font-size: 24px; font-weight: 600; }
+        Text { text: root.description; color: Tokens.text-secondary; font-family: Tokens.font-ui; font-size: 13px; wrap: word-wrap; }
+    }
+}

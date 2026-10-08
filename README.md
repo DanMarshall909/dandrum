@@ -13,6 +13,7 @@ From this repository, run `./demo` or `./demo --list` to see demo names, descrip
 ./demo filter-slint                   # experimental native Slint filter effect
 ./demo filter-jive                    # experimental native JIVE filter effect
 ./demo trigger-slint                  # silent native Slint macro performance preview
+./demo slint-library                  # complete guide component catalog, silent native UI
 ./demo drums --list-midi-inputs
 ./demo drums --midi-input 0
 ./demo trigger -- --port 8324          # silent React shell in a browser
@@ -32,7 +33,9 @@ See the [React editor performance measurements](docs/resource-measurements/2026-
 
 `trigger-slint` is a silent native Slint preview of Trigger's eight macro controls. It uses the opt-in `DANDRUM_BUILD_TRIGGER_SLINT=ON` target in the same isolated Release/native-only `build/filter-ui-spikes/` configuration and skips npm preparation. See [the preview development guide](spikes/trigger-slint/README.md) for UI authoring and native verification commands.
 
-Maintain demo registrations in [scripts/demos.json](scripts/demos.json) whenever a demo is added, renamed, moved or removed. Native entries can set `nativeOnly`, `buildDirectory`, and `cmakeOptions` (CMake definitions without the `-D` prefix); omitted fields preserve the normal build and React settings. Update launch tests and relevant documentation in the same change. CTest's `demo-launcher-inventory` check rejects unregistered JUCE standalone, console and GUI targets, incorrect native artifact paths and unregistered local React dev packages. Run `python3 -m unittest discover -s tests/python -p 'test_demo_*.py'` for focused launcher checks.
+`slint-library` is the [reusable DanDrum Slint design library](ui/slint/README.md): all 29 guide components, a themed scrollbar, composable subcomponents, and a six-page catalog. It uses the maintained design guide and shared tokens. Install the Slint 1.18.1 C++ SDK and set `CMAKE_PREFIX_PATH` to its directory. Its isolated `DANDRUM_SLINT_LIBRARY_ONLY=ON` build needs a C++20 compiler and CMake; it does not configure JUCE, Rust, Node, or audio. Windows users can run `python scripts/demo_launcher.py slint-library`.
+
+Maintain demo registrations in [scripts/demos.json](scripts/demos.json) whenever a demo is added, renamed, moved or removed. Native entries can set `nativeOnly`, `buildDirectory`, and `cmakeOptions` (CMake definitions without the `-D` prefix); omitted fields preserve the normal build and React settings. Update launch tests and relevant documentation in the same change. CTest's `demo-launcher-inventory` check rejects unregistered JUCE standalone, console, GUI and direct CMake application targets, incorrect native artifact paths and unregistered local React dev packages. Run `python3 -m unittest discover -s tests/python -p 'test_demo_*.py'` for focused launcher checks.
 
 ## First Sound
 

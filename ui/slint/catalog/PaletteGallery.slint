@@ -1,0 +1,41 @@
+import { Tokens } from "../theme.slint";
+import { Panel } from "../layout/Panel.slint";
+
+struct Swatch { name: string, value: color, code: string }
+
+component SwatchTile inherits Rectangle {
+    in property <Swatch> swatch;
+    height: 46px;
+    HorizontalLayout {
+        spacing: 10px;
+        Rectangle { width: 32px; height: 32px; border-radius: 4px; background: root.swatch.value; border-width: 1px; border-color: Tokens.border-hairline; }
+        VerticalLayout {
+            spacing: 0px;
+            Text { text: root.swatch.name; color: Tokens.text-secondary; font-family: Tokens.font-ui; font-size: 12px; vertical-alignment: center; }
+            Text { text: root.swatch.code; color: Tokens.text-tertiary; font-family: Tokens.font-value; font-size: 11px; vertical-alignment: center; }
+        }
+    }
+}
+
+export component PaletteGallery inherits Panel {
+    title: "Surfaces and intent"; summary: "Shared tokens";
+    preferred-height: 272px;
+    private property <[Swatch]> swatches: [
+        { name: "Well", value: Tokens.surface-well, code: "#130F0C" },
+        { name: "Window", value: Tokens.surface-window, code: "#1A1511" },
+        { name: "Panel", value: Tokens.surface-panel, code: "#211B16" },
+        { name: "Control", value: Tokens.surface-control, code: "#342B23" },
+        { name: "Primary text", value: Tokens.text-primary, code: "#F2E6D3" },
+        { name: "Secondary text", value: Tokens.text-secondary, code: "#CBB9A0" },
+        { name: "Ember", value: Tokens.dd-vermilion, code: "#E08A4E" },
+        { name: "Host automation", value: Tokens.dd-host, code: "#5B9DFF" },
+    ];
+    VerticalLayout {
+        spacing: 4px;
+        for row in 4 : HorizontalLayout {
+            spacing: 20px;
+            SwatchTile { swatch: root.swatches[row * 2]; }
+            SwatchTile { swatch: root.swatches[row * 2 + 1]; }
+        }
+    }
+}
