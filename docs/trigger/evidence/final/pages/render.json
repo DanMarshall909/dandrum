@@ -1,0 +1,85 @@
+{
+  "captures": [
+    {
+      "name": "sample",
+      "box": {
+        "x": 300,
+        "y": 16,
+        "width": 1200,
+        "height": 800
+      },
+      "text": "dandrum\nTRIGGER\nPatch\nFelt Kit\nReady\n23 zones · 18 samples\nVoices 0 / 32\nMIN\nDEFAULT\nEXPANDED\nCollapse\nLog\nMACROS\nTONE\nBODY\nSPACE\nDRIVE\nSNAP\nWIDTH\nMACRO 7\nMACRO 8\nSAMPLE\nSLICES\n8\nMAPPING\nLAYERS\nVOICE\nMODULATION\n14\nROUTING\nEFFECTS\nBrowser\nINSTRUMENT\nFelt Kit\n3 groups\nKeys\n10 zones\nFelt C3\np · f\nFelt G3\np · f\nFelt C4\np · f\nFelt F♯4\np · f\nFelt C5\np · f\nDrums\n4 sounds\nKick\n36 C2\nSnare\n38 D2\nHard\n×3\nClosed Hat\n42 F♯2\nOpen Hat\n46 A♯2\nBreak\n8 slices\nSOURCES\nFELT PIANO\n10\nDRUM SAMPLES\n7\nAMEN_172.WAV\n8\nDANDRUM PATCHES\n1\nMODULATORS\nENVELOPES\n2 · 2\nLFOS\n2 · 2\nPERFORMANCE\n5 · 6\nMACROS\n2 · 3\nRANDOM\n1 · 1\nClick to preview a source. Drag sources onto pads or zones, modulators onto controls. Right-click a control for Modulation.\nSAMPLE\nfelt_C4_f.wav\nONCE\nGATED\nLOOP\nPING-PONG\nSUSTAIN LOOP\nSTART\nEND\nWAVE\nSPECTRAL\nSTART\nEND\nfelt_C4_f.wav · 4.820 s\nFormat 48 kHz · 24-bit · stereo\nLength 4.820 s\nPeak -1.2 dBFS\nLoudness -18.4 LUFS\nPitch C4 3¢\nSource external · cached\nREGION\nSTART\nEND\nFADE IN\nFADE OUT\nPITCH\nTUNE\nFINE\nOUTPUT\nGAIN\nPAN\nROOT\nROOT NOTE\n60 C4\nC4 +3¢\nFelt Kit\n›\nKeys\n›\nFelt C4 f\nfelt_C4_f.wav\nSAMPLE\nHISTORY\n3 of 4\n⋮⋮\nFade\nin 19 ms · out 386 ms\n⋮⋮\nNormalize\n-1 dBFS\n⋮⋮\nTrim\n0.058 s–4.531 s\nSource\nfelt_C4_f.wav\nBottom to top. Uncheck to bypass, drag ⋮⋮ to reorder, click to edit.\nSAMPLE\nState\nloaded · cached\nFormat\n48 kHz · 24-bit\nChannels\nStereo\nUsed by\n1 zone(s)\nREGION\nStart\n0.058 s\nEnd\n4.531 s\nLoop\nOff\nRoot\n60 C4\nANALYSIS\nPitch\nC4 3¢\nLoudness\n-18.4 LUFS\nZero crossings\nReady\nAnalyse pitch\nAnalyse loudness\nAnalyse loops\nReplace…\nDrag markers to edit · double-click a value to type · Ctrl+wheel zooms · Space auditions\n1200 × 800"
+    },
+    {
+      "name": "slices",
+      "box": {
+        "x": 300,
+        "y": 16,
+        "width": 1200,
+        "height": 800
+      },
+      "text": "dandrum\nTRIGGER\nPatch\nFelt Kit\nReady\n23 zones · 18 samples\nVoices 0 / 32\nMIN\nDEFAULT\nEXPANDED\nCollapse\nLog\nMACROS\nTONE\nBODY\nSPACE\nDRIVE\nSNAP\nWIDTH\nMACRO 7\nMACRO 8\nSAMPLE\nSLICES\n8\nMAPPING\nLAYERS\nVOICE\nMODULATION\n14\nROUTING\nEFFECTS\nBrowser\nINSTRUMENT\nFelt Kit\n3 groups\nKeys\n10 zones\nFelt C3\np · f\nFelt G3\np · f\nFelt C4\np · f\nFelt F♯4\np · f\nFelt C5\np · f\nDrums\n4 sounds\nKick\n36 C2\nSnare\n38 D2\nHard\n×3\nClosed Hat\n42 F♯2\nOpen Hat\n46 A♯2\nBreak\n8 slices\nSOURCES\nFELT PIANO\n10\nDRUM SAMPLES\n7\nAMEN_172.WAV\n8\nDANDRUM PATCHES\n1\nMODULATORS\nENVELOPES\n2 · 2\nLFOS\n2 · 2\nPERFORMANCE\n5 · 6\nMACROS\n2 · 3\nRANDOM\n1 · 1\nClick to preview a source. Drag sources onto pads or zones, modulators onto controls. Right-click a control for Modulation.\nSLICES\namen_172.wav · 8\nDetect transients\nEVEN\nGRID\n8\nWAVE\nSPECTRAL\n1\nKick 1\n2\nHat 1\n3\nSnare 1\n4\nGhost\n5\nKick 2\n6\nHat 2\n7\nSnare 2\n8\nHat 3\namen_172.wav · 1.395 s\nTRANSIENTS\nSLICE LIST\n1 selected\nMap from\n24 C1\nMap sequentially\n#\nNAME\nNOTE\nRANGE\nTUNE\nGAIN\nPAN\nPLAY\nCHOKE\nOUTPUT\n1\nKick 1\n24 C1\n0.000–0.174\n0 st\n0.0 dB\nC\nOnce\n—\nInherit · Main\n2\nHat 1\n25 C♯1\n0.174–0.349\n0 st\n0.0 dB\n18 L\nGated\n1\nInherit · Main\n3\nSnare 1\n26 D1\n0.349–0.436\n0 st\n0.0 dB\nC\nOnce\n—\nInherit · Main\n4\nGhost\n27 D♯1\n0.436–0.698\n2 st\n-6.0 dB\nC\nOnce\n—\nInherit · Main\n5\nKick 2\n28 E1\n0.698–0.872\n0 st\n0.0 dB\nC\nOnce\n—\nInherit · Main\n6\nHat 2\n29 F1\n0.872–1.046\n0 st\n0.0 dB\n18 L\nGated\n1\nInherit · Main\n7\nSnare 2\n30 F♯1\n1.046–1.221\n0 st\n0.0 dB\nC\nOnce\n—\nInherit · Main\n8\nHat 3\n31 G1\n1.221–1.395\n0 st\n0.0 dB\nC\nGated\n1\nInherit · Main\nFelt Kit\n›\namen_172.wav\n›\nSlices\n1 slice\nSLICES\nHISTORY\n3 of 3\n⋮⋮\nSlice\n8 · even\n⋮⋮\nTrim\n0.000 s–1.395 s\nSource\namen_172.wav\nBottom to top. Uncheck to bypass, drag ⋮⋮ to reorder, click to edit.\nSLICES\nNotes\n26 D1\nPlay\nOnce\nTune\n0\nst\nGain\n0\ndB\nPan\n0\nChoke group\n0\nOutput\nInherit\nMixed values are changed together for every selected slice.\nClick to select · Shift/Ctrl adds · drag a marker to move it · M adds · Delete removes · ← → step\n1200 × 800"
+    },
+    {
+      "name": "mapping",
+      "box": {
+        "x": 300,
+        "y": 16,
+        "width": 1200,
+        "height": 800
+      },
+      "text": "dandrum\nTRIGGER\nPatch\nFelt Kit\nReady\n23 zones · 18 samples\nVoices 0 / 32\nMIN\nDEFAULT\nEXPANDED\nCollapse\nLog\nMACROS\nTONE\nBODY\nSPACE\nDRIVE\nSNAP\nWIDTH\nMACRO 7\nMACRO 8\nSAMPLE\nSLICES\n8\nMAPPING\nLAYERS\nVOICE\nMODULATION\n14\nROUTING\nEFFECTS\nBrowser\nINSTRUMENT\nFelt Kit\n3 groups\nKeys\n10 zones\nFelt C3\np · f\nFelt G3\np · f\nFelt C4\np · f\nFelt F♯4\np · f\nFelt C5\np · f\nDrums\n4 sounds\nKick\n36 C2\nSnare\n38 D2\nHard\n×3\nClosed Hat\n42 F♯2\nOpen Hat\n46 A♯2\nBreak\n8 slices\nSOURCES\nFELT PIANO\n10\nDRUM SAMPLES\n7\nAMEN_172.WAV\n8\nDANDRUM PATCHES\n1\nMODULATORS\nENVELOPES\n2 · 2\nLFOS\n2 · 2\nPERFORMANCE\n5 · 6\nMACROS\n2 · 3\nRANDOM\n1 · 1\nClick to preview a source. Drag sources onto pads or zones, modulators onto controls. Right-click a control for Modulation.\nKEY MAP\n23 zones · 3 groups\nMap by root\nVelocity layers\nSequential\nFELT KIT\nFelt C4 f\nSAMPLE\nKEY\n60 C4–65 F4\nVEL\n81–127\nROOT\n60 C4\n−\n100%\n+\nFIT\nLAYERED\nSAMPLE\nFelt C4 p\nSAMPLE\nFelt C4 f\n127\n96\n64\n32\n1\nFelt C3 p\nSample\nFelt C3 f\nSample\nFelt G3 p\nSample\nFelt G3 f\nSample\nFelt C4 p\nSample\nFelt F♯4 p\nSample\nFelt F♯4 f\nSample\nFelt C5 p\nSample\nFelt C5 f\nSample\nFelt C4 f\nSample\nC1\nC2\nC3\nC4\nC5\nC6\nC7\nXF\nGap\nC♯2–F2 · silent\nGap\nG2–A2 · silent\nFILE ON A ZONE\nReplace its sample. Shift adds as a new layer on the same keys.\nFILE ON EMPTY KEYS\nNew zone at that key, root = key. Drag height sets velocity range.\nSEVERAL FILES\nSpread from the drop key. Roots from file names when found.\nZONE EDGES · SHIFT\nEdges push the neighbouring zone. Shift-drag to overlap (crossfade) or leave a gap (silent).\nRIGHT-CLICK\nInsert a zone, copy the key range, paste it at another key, delete.\nFelt Kit\n›\nKeys\n›\nFelt C4 f\nFelt C4 f\nZONE\nKEYS\nLow\n60\nHigh\n65\nRoot\n60\nVELOCITY\nLow\n81\nHigh\n127\nNEIGHBOURS\nKey crossfade\nNone\nGap\nNone\nEdge drag\nPushes neighbour\nSAMPLE\nFile\nfelt_C4_f.wav\nOverlaps\nFelt C4 p\nReplace sample…\nEdges push neighbours · Shift-drag to overlap (crossfade) or gap · right-click to insert, copy, paste, delete · Ctrl+C / Ctrl+V\n1200 × 800"
+    },
+    {
+      "name": "layers",
+      "box": {
+        "x": 300,
+        "y": 16,
+        "width": 1200,
+        "height": 800
+      },
+      "text": "dandrum\nTRIGGER\nPatch\nFelt Kit\nReady\n23 zones · 18 samples\nVoices 0 / 32\nMIN\nDEFAULT\nEXPANDED\nCollapse\nLog\nMACROS\nTONE\nBODY\nSPACE\nDRIVE\nSNAP\nWIDTH\nMACRO 7\nMACRO 8\nSAMPLE\nSLICES\n8\nMAPPING\nLAYERS\nVOICE\nMODULATION\n14\nROUTING\nEFFECTS\nBrowser\nINSTRUMENT\nFelt Kit\n3 groups\nKeys\n10 zones\nFelt C3\np · f\nFelt G3\np · f\nFelt C4\np · f\nFelt F♯4\np · f\nFelt C5\np · f\nDrums\n4 sounds\nKick\n36 C2\nSnare\n38 D2\nHard\n×3\nClosed Hat\n42 F♯2\nOpen Hat\n46 A♯2\nBreak\n8 slices\nSOURCES\nFELT PIANO\n10\nDRUM SAMPLES\n7\nAMEN_172.WAV\n8\nDANDRUM PATCHES\n1\nMODULATORS\nENVELOPES\n2 · 2\nLFOS\n2 · 2\nPERFORMANCE\n5 · 6\nMACROS\n2 · 3\nRANDOM\n1 · 1\nClick to preview a source. Drag sources onto pads or zones, modulators onto controls. Right-click a control for Modulation.\nLAYERS\nSnare · 2 candidates\nPLAY\nStack\nVelocity\nRound robin\nAlternate\nRandom\nWeighted\nVelocity ranges may overlap to crossfade.\nHard · 90–127\nSoft · 1–101\n1\nPlay a note to see its velocity\n127\nCROSSFADE\n90–101 · 12 steps\nWIDTH\n12\nvel\nEQUAL POWER\nLINEAR\nNo crossfade\nDrag the ember edges to widen the crossfade, the white line to move the split.\n#\nSAMPLE\nVELOCITY\nSHARE\nM\nS\nGAIN\nPAN\nTUNE\nOUTPUT\n⋮⋮\n1\nSoft\nsnare_soft.wav\n1–101\n—\nM\nS\n0.0 dB\nC\n0 st\nInherit\n⋮⋮\n2\nHard\n3 alternates · rr\n90–127\n—\nM\nS\n0.0 dB\nC\n0 st\nInherit\nAdd sample…\nDrag rows to reorder. Drop files here to add candidates.\nFelt Kit\n›\nLayers\n›\nHard\nHard\nCANDIDATE\nSAMPLE\nFile\n3 alternates · rr\nSELECTION\nOrder\n2\nWeight\n1\nGain\n0\ndB\nPan\n0\nTune\n0\nst\nPreview\nDelete candidate\nDrag rows to reorder · drop files to add · click M/S to mute or solo\n1200 × 800"
+    },
+    {
+      "name": "voice",
+      "box": {
+        "x": 300,
+        "y": 16,
+        "width": 1200,
+        "height": 800
+      },
+      "text": "dandrum\nTRIGGER\nPatch\nFelt Kit\nReady\n23 zones · 18 samples\nVoices 0 / 32\nMIN\nDEFAULT\nEXPANDED\nCollapse\nLog\nMACROS\nTONE\nBODY\nSPACE\nDRIVE\nSNAP\nWIDTH\nMACRO 7\nMACRO 8\nSAMPLE\nSLICES\n8\nMAPPING\nLAYERS\nVOICE\nMODULATION\n14\nROUTING\nEFFECTS\nBrowser\nINSTRUMENT\nFelt Kit\n3 groups\nKeys\n10 zones\nFelt C3\np · f\nFelt G3\np · f\nFelt C4\np · f\nFelt F♯4\np · f\nFelt C5\np · f\nDrums\n4 sounds\nKick\n36 C2\nSnare\n38 D2\nHard\n×3\nClosed Hat\n42 F♯2\nOpen Hat\n46 A♯2\nBreak\n8 slices\nSOURCES\nFELT PIANO\n10\nDRUM SAMPLES\n7\nAMEN_172.WAV\n8\nDANDRUM PATCHES\n1\nMODULATORS\nENVELOPES\n2 · 2\nLFOS\n2 · 2\nPERFORMANCE\n5 · 6\nMACROS\n2 · 3\nRANDOM\n1 · 1\nClick to preview a source. Drag sources onto pads or zones, modulators onto controls. Right-click a control for Modulation.\nVOICE · KEYS\nSample player\n+\nLush\n→\nFilter\n→\nAmplifier\n→\nGroup out\nEdit template…\nSOURCE\nSample player\nONCE\nGATED\nLOOP\nSTART\nGAIN\nSOURCE\nLush · Dandrum synth\nFOLLOWS NOTES\nDRONE\nLEVEL\nPAN\nTUNE\nDETUNE\nBRIGHTNESS\nWIDTH\nPITCH\nSample player\nTUNE\nFINE\nKEY TRACK\nBEND\nFILTER\nLadder 24 dB\nLP\nBP\nHP\nNOTCH\nCUTOFF\n+2\nCLIP\nRESO\nDRIVE\nKEY TRK\nENV AMT\nAMPLITUDE\nAmplifier\nLEVEL\nCLIP\nPAN\nVEL SENS\nAMP ENVELOPE\n→ Amp gain\nADSR\nAHDSR\nMULTI\nATTACK\n12\nms\nDECAY\n380\nms\nSUSTAIN\n-6.0\ndB\nRELEASE\n1.2\ns\nFILTER ENVELOPE\n→ Filter cutoff\nADSR\nAHDSR\nMULTI\nATTACK\n1\nms\nDECAY\n240\nms\nSUSTAIN\n30\n%\nRELEASE\n420\nms\nVOICES\nPOLY\nMONO\nLEGATO\nVoice limit\n32\nSteal\noldest\nSame note\nretrigger\nExclusive group\n0\nGlide\n0\ns\nFelt Kit\n›\nVoice\n›\nFilter\nFilter\nMODULE\nCUTOFF · 2.40 KHZ\nFILTER ENVELOPE\n+42%\nVELOCITY\n+15%\nKEY TRACK\n+50%\nMACRO · TONE\n+20%\nAssign modulation…\nMODULE\nType\nLadder · LP\nSlope\n24\ndB/oct\nPosition\n3 of 4 in voice\nBypass\nOff\nBypass module\nRight-click or M on a control to assign modulation · double-click resets\n1200 × 800"
+    },
+    {
+      "name": "mod",
+      "box": {
+        "x": 300,
+        "y": 16,
+        "width": 1200,
+        "height": 800
+      },
+      "text": "dandrum\nTRIGGER\nPatch\nFelt Kit\nReady\n23 zones · 18 samples\nVoices 0 / 32\nMIN\nDEFAULT\nEXPANDED\nCollapse\nLog\nMACROS\nTONE\nBODY\nSPACE\nDRIVE\nSNAP\nWIDTH\nMACRO 7\nMACRO 8\nSAMPLE\nSLICES\n8\nMAPPING\nLAYERS\nVOICE\nMODULATION\n14\nROUTING\nEFFECTS\nBrowser\nINSTRUMENT\nFelt Kit\n3 groups\nKeys\n10 zones\nFelt C3\np · f\nFelt G3\np · f\nFelt C4\np · f\nFelt F♯4\np · f\nFelt C5\np · f\nDrums\n4 sounds\nKick\n36 C2\nSnare\n38 D2\nHard\n×3\nClosed Hat\n42 F♯2\nOpen Hat\n46 A♯2\nBreak\n8 slices\nSOURCES\nFELT PIANO\n10\nDRUM SAMPLES\n7\nAMEN_172.WAV\n8\nDANDRUM PATCHES\n1\nMODULATORS\nENVELOPES\n2 · 2\nLFOS\n2 · 2\nPERFORMANCE\n5 · 6\nMACROS\n2 · 3\nRANDOM\n1 · 1\nClick to preview a source. Drag sources onto pads or zones, modulators onto controls. Right-click a control for Modulation.\nMODULATION\n14 routes\nGroup by\nSOURCE\nDESTINATION\nAdd route\nSOURCE\nAMOUNT\nPOL.\nCURVE\nDESTINATION\nLIVE\nON\nAmp envelope\n+100%\nUni\nExp\n→ Amp gain\nFilter envelope\n+42%\nUni\nLinear\n→ Filter cutoff\nLFO 1\n+5%\nBi\nLinear\n→ Pitch\nLFO 2\n+18%\nBi\nLinear\n→ Filter drive\nVelocity\nAmp gain +30% · Filter cutoff +15%\nDestination\n2\n└\n+30%\nUni\nExp\n→ Amp gain\n└\n+15%\nUni\nLinear\n→ Filter cutoff\nKey track\n+50%\nBi\nLinear\n→ Filter cutoff\nAftertouch\n+15%\nUni\nLinear\n→ Sample start\nMod wheel · CC 1\n+100%\nUni\nLinear\n→ LFO 1 depth\nPitch bend\n+2%\nBi\nLinear\n→ Pitch\nRandom per note\n+12%\nBi\nLinear\n→ Pan\nMacro · Tone\nFilter cutoff +20% · Filter resonance -10%\nDestination\n2\n└\n+20%\nUni\nLinear\n→ Filter cutoff\n└\n-10%\nUni\nLinear\n→ Filter resonance\nMacro · Space\n+60%\nUni\nS-curve\n→ Send · Reverb\nMODULATOR\nFilter envelope\n→ Filter cutoff · +42% · unipolar\nAdd destination\nADSR\nAHDSR\nMULTI\n100%\n0\ntime · note on → release\nATTACK\nDECAY\nSUSTAIN\nRELEASE\nAMOUNT\nRetrigger\nVelocity scales level\nLoop\nDashed: full-range shape · solid: what reaches Filter cutoff after amount and polarity\nCUTOFF\n+2\nCLIP\n2.40 kHz\nCLIP\nFilter envelope\n+42%\nVelocity\n+15%\nKey track\n+50%\nMacro · Tone\n+20%\nCONTEXTUAL VIEW\nEvery modulated control shows up to two rings and a +N chip. Hover or focus opens the value popup listing its sources. Drag a modulator from the left panel onto any control, or right-click / M for Assign modulation…\nFelt Kit\n›\nModulation\n›\nFilter envelope\nFilter envelope → Filter cutoff\nROUTE\nROUTE\nSource\nFilter envelope\nDestination\nFilter cutoff\nAmount\n42\nPolarity\nUni\nCurve\nLinear\nSOURCE\nShape\nadsr\nUsed by\n1 routes\nAdd destination…\nDrag the amount bar · Alt-drag inverts · Delete removes the selected route\n1200 × 800"
+    },
+    {
+      "name": "routing",
+      "box": {
+        "x": 300,
+        "y": 16,
+        "width": 1200,
+        "height": 800
+      },
+      "text": "dandrum\nTRIGGER\nPatch\nFelt Kit\nReady\n23 zones · 18 samples\nVoices 0 / 32\nMIN\nDEFAULT\nEXPANDED\nCollapse\nLog\nMACROS\nTONE\nBODY\nSPACE\nDRIVE\nSNAP\nWIDTH\nMACRO 7\nMACRO 8\nSAMPLE\nSLICES\n8\nMAPPING\nLAYERS\nVOICE\nMODULATION\n14\nROUTING\nEFFECTS\nBrowser\nINSTRUMENT\nFelt Kit\n3 groups\nKeys\n10 zones\nFelt C3\np · f\nFelt G3\np · f\nFelt C4\np · f\nFelt F♯4\np · f\nFelt C5\np · f\nDrums\n4 sounds\nKick\n36 C2\nSnare\n38 D2\nHard\n×3\nClosed Hat\n42 F♯2\nOpen Hat\n46 A♯2\nBreak\n8 slices\nSOURCES\nFELT PIANO\n10\nDRUM SAMPLES\n7\nAMEN_172.WAV\n8\nDANDRUM PATCHES\n1\nMODULATORS\nENVELOPES\n2 · 2\nLFOS\n2 · 2\nPERFORMANCE\n5 · 6\nMACROS\n2 · 3\nRANDOM\n1 · 1\nClick to preview a source. Drag sources onto pads or zones, modulators onto controls. Right-click a control for Modulation.\nROUTING\nShow graph\nSOURCE\nOUTPUT BUS\nREVERB\nDELAY\nFelt Kit\ninstrument\nMain 1/2\nKeys\ngroup\nInherit · Main\nDrums\ngroup\nDrums 3/4\nKick\nsound · note 36\nInherit · Drums\nSnare\nsound · note 38\nSnare 5/6\nClosed Hat\nsound · note 42\nInherit · Drums\nOpen Hat\nsound · note 46\nInherit · Drums\nBreak\ngroup\nInherit · Main\nInherit means the row follows its parent group. Setting a bus on a child overrides it; the row then shows its own bus in full text.\nOUTPUT BUSSES\n3 of 8 stereo outputs\nBUS\nPLUGIN OUT\nFED BY\nLEVEL\nMAIN\nMain\nOut 1/2\nFelt Kit · Keys · Break\n0.0 dB\nM\nDrums\nOut 3/4\nDrums · Kick · Closed Hat · Open Hat\n−1.5 dB\nM\nSnare\nOut 5/6\nSnare\n0.0 dB\nM\nFelt Kit\n›\nRouting\n›\nSnare\nSnare\nROUTING\nOUTPUT\nBus\nSnare 5/6\nPlugin output\n5/6\nReverb\n0.3\nDelay\n0.18\nInherit follows the parent group · set a bus to override\n1200 × 800"
+    },
+    {
+      "name": "fx",
+      "box": {
+        "x": 300,
+        "y": 16,
+        "width": 1200,
+        "height": 800
+      },
+      "text": "dandrum\nTRIGGER\nPatch\nFelt Kit\nReady\n23 zones · 18 samples\nVoices 0 / 32\nMIN\nDEFAULT\nEXPANDED\nCollapse\nLog\nMACROS\nTONE\nBODY\nSPACE\nDRIVE\nSNAP\nWIDTH\nMACRO 7\nMACRO 8\nSAMPLE\nSLICES\n8\nMAPPING\nLAYERS\nVOICE\nMODULATION\n14\nROUTING\nEFFECTS\nBrowser\nINSTRUMENT\nFelt Kit\n3 groups\nKeys\n10 zones\nFelt C3\np · f\nFelt G3\np · f\nFelt C4\np · f\nFelt F♯4\np · f\nFelt C5\np · f\nDrums\n4 sounds\nKick\n36 C2\nSnare\n38 D2\nHard\n×3\nClosed Hat\n42 F♯2\nOpen Hat\n46 A♯2\nBreak\n8 slices\nSOURCES\nFELT PIANO\n10\nDRUM SAMPLES\n7\nAMEN_172.WAV\n8\nDANDRUM PATCHES\n1\nMODULATORS\nENVELOPES\n2 · 2\nLFOS\n2 · 2\nPERFORMANCE\n5 · 6\nMACROS\n2 · 3\nRANDOM\n1 · 1\nClick to preview a source. Drag sources onto pads or zones, modulators onto controls. Right-click a control for Modulation.\nGroup inserts\nProcessed left to right before the output bus\nGROUP\nDrums\nKick · Snare · Hats\nEQ\n+2.0 dB +1.5 dB\nCOMPRESSOR\n−18.0 dB 4.00 :1\nSATURATE\n30% 60%\n+\nDrums\n−1.5 dB\nM\nGROUP\nKeys\nFelt C3–C5 · 10 zones\nEQ\n−1.5 dB\n+\nMain\n0.0 dB\nM\nGROUP\nBreak\namen_172.wav · 8 slices\nBITCRUSH\n12.00 bit\n+\nMain\n−3.0 dB\nM\nFX busses\nFed by sends on the Routing page\nFX BUS\nReverb\nSend A · plate_small.wav\nCONVOLUTION\n12 ms 100%\nEQ\n180 Hz\n+\nMain\n−4.0 dB\nM\nFX BUS\nDelay\nSend B · 1/8 dotted\nDELAY\n261 ms 35%\nFILTER\n3.2 kHz\n+\nMain\n−8.0 dB\nM\nFelt Kit\n›\nEffects\n›\nCompressor\nCompressor\nPROCESSOR\nTHRESHOLD\nRATIO\nATTACK\nRELEASE\nMAKEUP\nMIX\nGAIN REDUCTION\nNow\n0.0dB\nDetector\nPeak\nSidechain\nSelf\nBypass\nDrag modules to reorder · dot bypasses · + adds a processor\n1200 × 800"
+    }
+  ],
+  "errors": []
+}

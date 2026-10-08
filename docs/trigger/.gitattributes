@@ -1,0 +1,5 @@
+# Preserve received reference bytes and raw tool output, including whitespace.
+reference/** -whitespace
+evidence/final/*.log -whitespace
+evidence/final/fault-probes/*.log -whitespace
+evidence/final/review-round1/*.log -whitespace

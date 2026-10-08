@@ -1,0 +1,62 @@
+[
+  {
+    "name": "merge-boundary",
+    "path": "engine/store.mjs",
+    "beforeSha256": "03b25c2f620426b5dbf998f2f06c99026fc5f6c6b3d3eab3b0e82391d0abd9ad",
+    "mutatedSha256": "9eacafc1c5acb1fe6b7fd10ebe694896088cbbabd158f785c9a77f4840486ee7",
+    "exit": 1,
+    "seconds": 1.0981581991072744,
+    "failingTests": [
+      "not ok 41 - rapid changes merge through 600ms, separate gestures and controls keep their own undo"
+    ],
+    "detected": true
+  },
+  {
+    "name": "pitch-root",
+    "path": "engine/filename-mapping.mjs",
+    "beforeSha256": "3166b2d7af671db09d5249c65c9d990a5d4750fcaab7610cd4c9d135288cba24",
+    "mutatedSha256": "1aa3bfffb75fc420340204d7c0c883e4dcac5634574cb76817c3d7c0ae106706",
+    "exit": 1,
+    "seconds": 1.2653705920092762,
+    "failingTests": [
+      "not ok 1 - explicit pitch, MIDI, dynamic, velocity and RR tokens are interpreted without treating unrelated digits as notes"
+    ],
+    "detected": true
+  },
+  {
+    "name": "slice-history-undo",
+    "path": "engine/operation-command.mjs",
+    "beforeSha256": "e9c9e9d3da3894e00ad246d1651c850d0b44b72dc50153c4c199f312f253ca5b",
+    "mutatedSha256": "e02c0797bfa8b7f196dae87b5809355f9578b2cfe73cbb336ca4600eb28ed854",
+    "exit": 1,
+    "seconds": 1.071800691075623,
+    "failingTests": [
+      "not ok 38 - initial slice bypass preserves the supplied nonuniform regions; edits and collapse retain coherent operation operands"
+    ],
+    "detected": true
+  },
+  {
+    "name": "candidate-order-undo",
+    "path": "engine/entity-delta.mjs",
+    "beforeSha256": "58c2c4337e6a2e8c17788b258691195cd1f1d98b4c5cfa15dbd82744b056f448",
+    "mutatedSha256": "f1f6be7fc22b6ad042d969eb9561233edd28db651da12025e384422e7ebce4cb",
+    "exit": 1,
+    "seconds": 1.1541569649707526,
+    "failingTests": [
+      "not ok 13 - undoing a candidate reorder retains unrelated current candidate values"
+    ],
+    "detected": true
+  },
+  {
+    "name": "missing-fallback",
+    "path": "engine/telemetry-sim.mjs",
+    "beforeSha256": "8048ec29cd50f025e228c7763bf0f1c36993eee8dac2d00342e3fa8cd3d622b6",
+    "mutatedSha256": "c666f63e96ce36551cd510ac159281da5b165187fb7bf0556d823cf06ad44a77",
+    "exit": 1,
+    "seconds": 1.0782272790092975,
+    "failingTests": [
+      "not ok 46 - stack, per-note round robin, candidate mutes and missing fallback produce usable silent voice feedback"
+    ],
+    "detected": true
+  }
+]

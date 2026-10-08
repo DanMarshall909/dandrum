@@ -2418,3 +2418,43 @@ AC react-plugin-efficiency :: Suppress unchanged meter reconciliation :: Changed
 AC react-plugin-efficiency :: Retire completed prepared timers :: Prepared completion retires polling
   fp 31932d5dbae8
   test js:tests/js/ReactPluginEfficiencyTest.mjs
+
+AC trigger-react-shell :: Faithful Trigger presentation :: Four editor geometries
+  fp 7dd6411fdf97
+  test js:tests/js/TriggerReactShellTest.mjs
+
+AC trigger-react-shell :: Faithful Trigger presentation :: Eight workspaces and all selections
+  fp a246994e4d7f
+  test js:tests/js/TriggerReactShellTest.mjs
+
+AC trigger-react-shell :: Adapter-owned state and reversible commands :: Empty, preset, reload and command undo
+  fp 616986def746
+  test js:tests/js/TriggerReactShellTest.mjs
+
+AC trigger-react-shell :: Complete sample and mapping editing :: Sample, slices and analysis
+  fp deacf8366a9c
+  test js:tests/js/TriggerReactShellTest.mjs
+
+AC trigger-react-shell :: Complete sample and mapping editing :: Zone and source editing
+  fp 73461f5bb9c6
+  test js:tests/js/TriggerReactShellTest.mjs
+
+AC trigger-react-shell :: Complete instrument editing :: Layers, voices and modulation
+  fp 7115a6147012
+  test js:tests/js/TriggerReactShellTest.mjs
+
+AC trigger-react-shell :: Complete instrument editing :: Routing and effects
+  fp ae27fd56f6ba
+  test js:tests/js/TriggerReactShellTest.mjs
+
+AC trigger-react-shell :: Input and mock telemetry :: Gestures, menus and keyboard
+  fp 898ae8e57bcb
+  test js:tests/js/TriggerReactShellTest.mjs
+
+AC trigger-react-shell :: Input and mock telemetry :: Action-reachable states and log drawer
+  fp 228de06234f1
+  test js:tests/js/TriggerReactShellTest.mjs
+
+AC trigger-react-shell :: Catalog, documentation and verification :: Reviewable complete shell
+  fp 377fc7d9793b
+  test js:tests/js/TriggerReactShellTest.mjs

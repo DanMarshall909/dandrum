@@ -1,0 +1,16 @@
+
+> dandrum-trigger@0.1.0 test:browser
+> playwright test tests/browser/shared-controls.spec.mjs
+
+
+Running 5 tests using 1 worker
+
+(node:4064950) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓  1 tests/browser/shared-controls.spec.mjs:3:1 › every processor and add button stays exposed at minimum and default sizes (1.7s)
+  ✓  2 tests/browser/shared-controls.spec.mjs:13:1 › editing and confirming displayed envelope units preserves tiny durations and sustain, while real edits update the curve (1.5s)
+  ✓  3 tests/browser/shared-controls.spec.mjs:23:1 › slice history inspector edits the same markers and mapping and bypass restores their identities (1.9s)
+  ✓  4 tests/browser/shared-controls.spec.mjs:34:1 › a narrow browser preserves the native minimum editor and anchors patch menus inside it (868ms)
+  ✓  5 tests/browser/shared-controls.spec.mjs:45:1 › a cancelled shared knob gesture restores the accepted value and does not add undo (1.1s)
+
+  5 passed (8.1s)

@@ -1,0 +1,53 @@
+-- Configuring juceaide
+-- Building juceaide
+-- Exporting juceaide
+-- Testing juceaide
+-- Finished setting up juceaide
+-- Performing Test CMAKE_HAVE_LIBC_PTHREAD
+-- Performing Test CMAKE_HAVE_LIBC_PTHREAD - Success
+-- Found Threads: TRUE
+-- Configuring done (2.7s)
+You have changed variables that require your cache to be deleted.
+Configure will be re-run and you may have to reset some variables.
+The following variables have changed:
+CMAKE_C_COMPILER= /usr/bin/gcc
+CMAKE_CXX_COMPILER= /usr/bin/g++
+CMAKE_C_COMPILER= /usr/bin/gcc
+CMAKE_CXX_COMPILER= /usr/bin/g++
+
+-- The C compiler identification is GNU 11.4.0
+-- The CXX compiler identification is GNU 11.4.0
+-- Detecting C compiler ABI info
+-- Detecting C compiler ABI info - done
+-- Check for working C compiler: /usr/bin/gcc - skipped
+-- Detecting C compile features
+-- Detecting C compile features - done
+-- Detecting CXX compiler ABI info
+-- Detecting CXX compiler ABI info - done
+-- Check for working CXX compiler: /usr/bin/g++ - skipped
+-- Detecting CXX compile features
+-- Detecting CXX compile features - done
+-- Found PkgConfig: /usr/bin/pkg-config (found version "0.29.2")
+-- Checking for module 'alsa'
+--   Found alsa, version 1.2.8
+-- Checking for modules 'freetype2;fontconfig'
+--   Found freetype2, version 24.1.18
+--   Found fontconfig, version 2.13.1
+-- Checking for module 'gl'
+--   Found gl, version 1.2
+-- Checking for module 'libcurl'
+--   Found libcurl, version 7.81.0
+-- Checking for modules 'webkit2gtk-4.1;gtk+-x11-3.0'
+--   Found webkit2gtk-4.1, version 2.50.4
+--   Found gtk+-x11-3.0, version 3.24.33
+-- Configuring juceaide
+-- Building juceaide
+-- Exporting juceaide
+-- Testing juceaide
+-- Finished setting up juceaide
+-- Performing Test CMAKE_HAVE_LIBC_PTHREAD
+-- Performing Test CMAKE_HAVE_LIBC_PTHREAD - Success
+-- Found Threads: TRUE
+-- Configuring done (1.1s)
+-- Generating done (0.1s)
+-- Build files have been written to: /tmp/dandrum-trigger-shell/build

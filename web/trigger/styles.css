@@ -1,0 +1,51 @@
+body{display:block;margin:0;background:var(--dd-ink-0);color:var(--dd-paper-1);font-family:var(--font-ui)}
+button,input,select{font-family:inherit}
+.preview{display:flex;align-items:flex-start;justify-content:center;min-width:100%;width:max-content;min-height:100vh;padding:16px;box-sizing:border-box}
+[data-testid="trigger-editor"]{flex-shrink:0;}
+.patch-menu{position:absolute;z-index:40;top:55px;left:calc(50% - 345px);width:220px;padding:4px;background:var(--dd-ink-3);border:1px solid var(--dd-line-2);border-radius:4px;box-shadow:var(--shadow-float);display:flex;flex-direction:column}
+.patch-menu button{padding:8px 12px;text-align:left;background:transparent;border:0;color:var(--dd-paper-1);font-size:13px;cursor:pointer}
+.patch-menu button:hover{background:var(--dd-ink-5)}
+.trigger-source-typography{--type-label:11px;--type-micro:11px}
+.property-editor{display:inline-block;height:20px}
+.property-editor>div>span{display:none}
+.import-choices{flex:1;min-height:420px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;border:1px solid var(--dd-vermilion);border-radius:6px;background:var(--dd-vermilion-wash);padding:24px;box-sizing:border-box}
+.import-policy-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;width:100%;max-width:720px}
+.import-policy{display:flex;flex-direction:column;gap:8px;padding:12px;background:var(--dd-ink-2);border:1px solid var(--dd-line-2);border-radius:4px;text-align:left;cursor:pointer}
+.import-policy:focus-visible{outline:2px solid var(--color-focus)}
+.import-preview{max-height:100px;overflow:auto;width:100%;font:500 11px/1.5 var(--font-value);color:var(--dd-paper-2)}
+
+.dialog-overlay{position:fixed;inset:0;background:var(--dd-ink-0);opacity:1;z-index:60;display:grid;place-items:center}
+.dialog-panel{background:var(--dd-ink-2);border:1px solid var(--dd-line-3);border-radius:6px;padding:16px;max-width:360px;color:var(--dd-paper-1)}
+.dialog-panel h2{font:600 18px var(--font-ui);margin:0 0 8px}
+.dialog-panel p{font:500 14px/1.4 var(--font-ui);margin:0 0 16px;color:var(--dd-paper-2)}
+.dialog-actions{display:flex;justify-content:flex-end;gap:8px}
+
+.log-drawer{height:180px;flex:none;border-top:1px solid var(--dd-line-3);background:var(--dd-ink-0);display:flex;flex-direction:column;font:500 11px var(--font-value);min-width:0}
+.log-toolbar{display:flex;align-items:center;flex-wrap:wrap;gap:8px;padding:4px 8px;border-bottom:1px solid var(--dd-line-1)}
+.log-toolbar strong{font:700 12px var(--font-ui);text-transform:uppercase;letter-spacing:.06em}
+.log-toolbar input{width:160px;min-width:100px;max-width:20%;font:500 12px var(--font-ui);background:var(--dd-ink-2);color:var(--dd-paper-1);border:1px solid var(--dd-line-2);border-radius:2px;padding:4px}
+.log-rows{overflow:auto;flex:1;min-height:0;min-width:0}
+.log-row{display:grid;grid-template-columns:78px 46px 130px minmax(0,1fr);gap:8px;padding:3px 8px;border-bottom:1px solid var(--dd-line-1)}
+.log-row code{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font:inherit;color:var(--dd-paper-3)}
+
+.processor-stack {display:flex;flex-direction:column;gap:4px;min-width:0;}
+.processor-stack [role="button"] > div:first-child {flex-wrap:wrap;overflow-x:visible!important;gap:3px;}
+.processor-stack [data-module-id]{flex:1 1 66px!important;min-width:52px;overflow:hidden;}
+.processor-stack [data-module-id] > span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.processor-stack [data-chain] > div > div:first-child {display:none!important;}
+.output-buses [style*="grid-template-columns"] {grid-template-columns:minmax(60px,1fr) 84px minmax(50px,1.4fr) minmax(60px,1fr) 44px 22px!important;column-gap:6px!important;}
+.output-buses [style*="grid-template-columns"] > * {min-width:0;max-width:100%;}
+/* The user's 11px minimum also applies to fixed micro labels in the received widgets. */
+[data-testid="trigger-editor"] [style*="font-size: 10px"],
+[data-testid="trigger-editor"] [style*="font-size: 9px"],
+[data-testid="trigger-editor"] [style*="font-size: 8px"] {font-size:11px!important;}
+
+[data-testid="trigger-editor"] main > section{min-width:0;box-sizing:border-box;}
+[data-hide-toggle-label] > label > span,
+[data-hide-field-label] > div > span {display:none;}
+
+/* Reference-specific diagram swatches, absent from the supplied primitive tokens. */
+:root{--dd-velocity-soft-fill:#6A584A;--dd-velocity-soft-line:#8A7560;--dd-window-border:#000;--dd-window-shadow:0 20px 60px rgba(0,0,0,.5);}
+
+.processor-stack [role="button"] > div:first-child > [aria-label^="Edit "]{min-width:110px!important;max-width:130px!important;flex:0 1 130px!important;}
+.processor-stack [role="button"] > div:first-child > button{flex:none!important;}

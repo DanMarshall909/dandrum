@@ -1,0 +1,584 @@
+[
+  {
+    "name": "AmountBar",
+    "path": "../components/AmountBar.jsx",
+    "group": "modulation",
+    "calls": "updateRoute"
+  },
+  {
+    "name": "AnalysisLane",
+    "path": "../components/AnalysisLane.jsx",
+    "group": "slices",
+    "calls": "None; read-only analysis"
+  },
+  {
+    "name": "AnalysisStatus",
+    "path": "../components/AnalysisStatus.jsx",
+    "group": "sample",
+    "calls": "analyse, cancel"
+  },
+  {
+    "name": "AppHeader",
+    "path": "../components/AppHeader.jsx",
+    "group": "chrome",
+    "calls": "newPatch, loadPreset, reload; command undo/redo"
+  },
+  {
+    "name": "AssetBrowser",
+    "path": "../components/AssetBrowser.jsx",
+    "group": "library",
+    "calls": "audition, replaceRegionAsset"
+  },
+  {
+    "name": "AssetSidebar",
+    "path": "../components/AssetSidebar.jsx",
+    "group": "library",
+    "calls": "addModulator, audition, assignSource"
+  },
+  {
+    "name": "Breadcrumb",
+    "path": "../components/Breadcrumb.jsx",
+    "group": "inspector",
+    "calls": "None directly; presentation or parent callback composition"
+  },
+  {
+    "name": "CandidateTable",
+    "path": "../components/CandidateTable.jsx",
+    "group": "layers",
+    "calls": "setCandidate, reorderCandidates"
+  },
+  {
+    "name": "ChoiceDialog",
+    "path": "../components/ChoiceDialog.jsx",
+    "group": "dialogs",
+    "calls": "addProcessor, addModulator"
+  },
+  {
+    "name": "ChoiceMenu",
+    "path": "../components/ChoiceMenu.jsx",
+    "group": "menus",
+    "calls": "Selected value callback; see owning field"
+  },
+  {
+    "name": "ConfirmDialog",
+    "path": "../components/ConfirmDialog.jsx",
+    "group": "dialogs",
+    "calls": "newPatch, loadPreset, reload"
+  },
+  {
+    "name": "CycleSequence",
+    "path": "../components/CycleSequence.jsx",
+    "group": "layers",
+    "calls": "None directly; presentation or parent callback composition"
+  },
+  {
+    "name": "DragLayer",
+    "path": "../components/DragLayer.jsx",
+    "group": "infrastructure",
+    "calls": "None; pointer presentation"
+  },
+  {
+    "name": "EnvelopeEditor",
+    "path": "../components/EnvelopeEditor.jsx",
+    "group": "voice",
+    "calls": "setModulator"
+  },
+  {
+    "name": "ControlMenu",
+    "path": "../components/GenericMenu.jsx",
+    "group": "menus",
+    "calls": "addRoute, updateRoute, removeRoute, bindMacro, learnMidi, resetParam"
+  },
+  {
+    "name": "DestinationMenu",
+    "path": "../components/GenericMenu.jsx",
+    "group": "menus",
+    "calls": "addRoute, bindMacro"
+  },
+  {
+    "name": "GenericMenu",
+    "path": "../components/GenericMenu.jsx",
+    "group": "menus",
+    "calls": "Selected item callback; see owning control"
+  },
+  {
+    "name": "HistoryStack",
+    "path": "../components/HistoryStack.jsx",
+    "group": "inspector",
+    "calls": "setHistory, reorderHistory, collapseHistory"
+  },
+  {
+    "name": "Inspector",
+    "path": "../components/Inspector.jsx",
+    "group": "inspector",
+    "calls": "Parent-bound row callbacks; setRegion, setHistory, setModulator, setVoicePolicy, updateRule, setSelector, setOutput, setSend, setProcessorParam, bindMacro"
+  },
+  {
+    "name": "InstrumentTree",
+    "path": "../components/InstrumentTree.jsx",
+    "group": "library",
+    "calls": "renameNode, duplicateNode, removeNode, assignSource"
+  },
+  {
+    "name": "KeyboardPlayer",
+    "path": "../components/KeyboardPlayer.jsx",
+    "group": "infrastructure",
+    "calls": "noteOn, noteOff, audition"
+  },
+  {
+    "name": "LogDrawer",
+    "path": "../components/LogDrawer.jsx",
+    "group": "infrastructure",
+    "calls": "setMockSwitch"
+  },
+  {
+    "name": "MacroControl",
+    "path": "../components/MacroControl.jsx",
+    "group": "chrome",
+    "calls": "setMacro, bindMacro, learnMidi"
+  },
+  {
+    "name": "MacroStrip",
+    "path": "../components/MacroStrip.jsx",
+    "group": "chrome",
+    "calls": "setMacro, bindMacro, learnMidi"
+  },
+  {
+    "name": "MidiLearnDialog",
+    "path": "../components/MidiLearnDialog.jsx",
+    "group": "dialogs",
+    "calls": "None directly; presentation or parent callback composition"
+  },
+  {
+    "name": "ModulationTable",
+    "path": "../components/ModulationTable.jsx",
+    "group": "modulation",
+    "calls": "addRoute, updateRoute, removeRoute"
+  },
+  {
+    "name": "ModulatorEditor",
+    "path": "../components/ModulatorEditor.jsx",
+    "group": "modulation",
+    "calls": "setModulator, updateRoute"
+  },
+  {
+    "name": "ModulatorList",
+    "path": "../components/ModulatorList.jsx",
+    "group": "library",
+    "calls": "addModulator, setModulator, addRoute"
+  },
+  {
+    "name": "NumericField",
+    "path": "../components/NumericField.jsx",
+    "group": "dialogs",
+    "calls": "Parent-bound entity operation"
+  },
+  {
+    "name": "OutputBusPanel",
+    "path": "../components/OutputBusPanel.jsx",
+    "group": "routing",
+    "calls": "setBus"
+  },
+  {
+    "name": "ParameterKnob",
+    "path": "../components/ParameterKnob.jsx",
+    "group": "infrastructure",
+    "calls": "Parent-bound setParam, setRegion, setModulator or setProcessorParam"
+  },
+  {
+    "name": "PresetBrowser",
+    "path": "../components/PresetBrowser.jsx",
+    "group": "dialogs",
+    "calls": "loadPreset"
+  },
+  {
+    "name": "ProcessorStack",
+    "path": "../components/ProcessorStack.jsx",
+    "group": "routing",
+    "calls": "addProcessor, moveProcessor, bypass, setProcessorParam"
+  },
+  {
+    "name": "PropertyEditor",
+    "path": "../components/PropertyEditor.jsx",
+    "group": "inspector",
+    "calls": "Parent-bound field callback; the selected entity determines the operation"
+  },
+  {
+    "name": "RenameDialog",
+    "path": "../components/RenameDialog.jsx",
+    "group": "dialogs",
+    "calls": "renameNode, renameMacro, setModulator"
+  },
+  {
+    "name": "RouteDialog",
+    "path": "../components/RouteDialog.jsx",
+    "group": "dialogs",
+    "calls": "addRoute"
+  },
+  {
+    "name": "RoutingGraph",
+    "path": "../components/RoutingGraph.jsx",
+    "group": "routing",
+    "calls": "None; read-only routing"
+  },
+  {
+    "name": "RoutingTable",
+    "path": "../components/RoutingTable.jsx",
+    "group": "routing",
+    "calls": "setOutput, setSend"
+  },
+  {
+    "name": "SelectorModeBar",
+    "path": "../components/SelectorModeBar.jsx",
+    "group": "layers",
+    "calls": "setSelector"
+  },
+  {
+    "name": "ShapePreview",
+    "path": "../components/ShapePreview.jsx",
+    "group": "modulation",
+    "calls": "None; read-only projection"
+  },
+  {
+    "name": "SliceTable",
+    "path": "../components/SliceTable.jsx",
+    "group": "slices",
+    "calls": "editSlices, mapSlices, splitSlice, mergeSlices, removeSlice"
+  },
+  {
+    "name": "SliceWaveform",
+    "path": "../components/SliceWaveform.jsx",
+    "group": "slices",
+    "calls": "moveSliceBoundary, splitSlice, audition"
+  },
+  {
+    "name": "SourceList",
+    "path": "../components/SourceList.jsx",
+    "group": "library",
+    "calls": "audition, auditionSource, assignSource"
+  },
+  {
+    "name": "StatusBar",
+    "path": "../components/StatusBar.jsx",
+    "group": "chrome",
+    "calls": "None; telemetry subscription"
+  },
+  {
+    "name": "Toggle",
+    "path": "../components/Toggle.jsx",
+    "group": "dialogs",
+    "calls": "Parent-bound entity operation"
+  },
+  {
+    "name": "TriggerFrame",
+    "path": "../components/TriggerFrame.jsx",
+    "group": "chrome",
+    "calls": "None directly; presentation or parent callback composition"
+  },
+  {
+    "name": "TypeTag",
+    "path": "../components/TypeTag.jsx",
+    "group": "inspector",
+    "calls": "None directly; presentation or parent callback composition"
+  },
+  {
+    "name": "ValueDialog",
+    "path": "../components/ValueDialog.jsx",
+    "group": "dialogs",
+    "calls": "Parent-bound parameter operation"
+  },
+  {
+    "name": "VelocityCrossfade",
+    "path": "../components/VelocityCrossfade.jsx",
+    "group": "layers",
+    "calls": "setSelector"
+  },
+  {
+    "name": "VoiceChain",
+    "path": "../components/VoiceChain.jsx",
+    "group": "voice",
+    "calls": "setTemplate"
+  },
+  {
+    "name": "VoicePolicyPanel",
+    "path": "../components/VoicePolicyPanel.jsx",
+    "group": "voice",
+    "calls": "setVoicePolicy"
+  },
+  {
+    "name": "VoiceSection",
+    "path": "../components/VoiceSection.jsx",
+    "group": "voice",
+    "calls": "setParam, setModuleParam"
+  },
+  {
+    "name": "VoiceTemplateDialog",
+    "path": "../components/VoiceTemplateDialog.jsx",
+    "group": "dialogs",
+    "calls": "setTemplate"
+  },
+  {
+    "name": "WaveformEditor",
+    "path": "../components/WaveformEditor.jsx",
+    "group": "sample",
+    "calls": "setRegion, audition"
+  },
+  {
+    "name": "WaveformPreview",
+    "path": "../components/WaveformPreview.jsx",
+    "group": "sample",
+    "calls": "audition"
+  },
+  {
+    "name": "Workspace",
+    "path": "../components/Workspace.jsx",
+    "group": "infrastructure",
+    "calls": "None directly; presentation or parent callback composition"
+  },
+  {
+    "name": "WorkspaceTabs",
+    "path": "../components/WorkspaceTabs.jsx",
+    "group": "chrome",
+    "calls": "None; editor navigation"
+  },
+  {
+    "name": "ZoneLane",
+    "path": "../components/ZoneLane.jsx",
+    "group": "mapping",
+    "calls": "setRules, updateRule, noteOn, noteOff"
+  },
+  {
+    "name": "DropPage",
+    "path": "../components/pages/DropPage.jsx",
+    "group": "infrastructure",
+    "calls": "importSamples"
+  },
+  {
+    "name": "EffectsPage",
+    "path": "../components/pages/EffectsPage.jsx",
+    "group": "routing",
+    "calls": "setChain, addProcessor, moveProcessor, setProcessorParam, bypass"
+  },
+  {
+    "name": "EmptyPage",
+    "path": "../components/pages/EmptyPage.jsx",
+    "group": "infrastructure",
+    "calls": "importSamples"
+  },
+  {
+    "name": "LayersPage",
+    "path": "../components/pages/LayersPage.jsx",
+    "group": "layers",
+    "calls": "auditionSource, setSelector, setCandidate, reorderCandidates, addCandidate, removeCandidate"
+  },
+  {
+    "name": "MappingPage",
+    "path": "../components/pages/MappingPage.jsx",
+    "group": "mapping",
+    "calls": "setRules, updateRule, mapAssets, assignSource"
+  },
+  {
+    "name": "ModulationPage",
+    "path": "../components/pages/ModulationPage.jsx",
+    "group": "modulation",
+    "calls": "setModulator, addRoute, updateRoute, removeRoute"
+  },
+  {
+    "name": "RoutingPage",
+    "path": "../components/pages/RoutingPage.jsx",
+    "group": "routing",
+    "calls": "setOutput, setSend, setBus"
+  },
+  {
+    "name": "SamplePage",
+    "path": "../components/pages/SamplePage.jsx",
+    "group": "sample",
+    "calls": "setRegion, replaceRegionAsset, analyse, audition, setParam"
+  },
+  {
+    "name": "SlicesPage",
+    "path": "../components/pages/SlicesPage.jsx",
+    "group": "slices",
+    "calls": "setSlices, splitSlice, mergeSlices, removeSlices, editSlices, mapSlices, analyse, cancel"
+  },
+  {
+    "name": "VoicePage",
+    "path": "../components/pages/VoicePage.jsx",
+    "group": "voice",
+    "calls": "setTemplate, setModuleParam, setParam, setVoicePolicy, setModulator"
+  },
+  {
+    "name": "DD.Button",
+    "path": "components/design-system/index.jsx",
+    "group": "Dandrum primitives",
+    "calls": "None directly; supplied presentation primitive"
+  },
+  {
+    "name": "DD.ContextMenu",
+    "path": "components/design-system/index.jsx",
+    "group": "Dandrum primitives",
+    "calls": "None directly; supplied presentation primitive"
+  },
+  {
+    "name": "DD.EmptyState",
+    "path": "components/design-system/index.jsx",
+    "group": "Dandrum primitives",
+    "calls": "None directly; supplied presentation primitive"
+  },
+  {
+    "name": "DD.Icon",
+    "path": "components/design-system/index.jsx",
+    "group": "Dandrum primitives",
+    "calls": "None directly; supplied presentation primitive"
+  },
+  {
+    "name": "DD.IconButton",
+    "path": "components/design-system/index.jsx",
+    "group": "Dandrum primitives",
+    "calls": "None directly; supplied presentation primitive"
+  },
+  {
+    "name": "DD.KeyMap",
+    "path": "components/design-system/index.jsx",
+    "group": "Dandrum primitives",
+    "calls": "Parent-bound callbacks; setParam, setRegion, setRules, setProcessorParam, setBus or noteOn/noteOff according to binding"
+  },
+  {
+    "name": "DD.Knob",
+    "path": "components/design-system/index.jsx",
+    "group": "Dandrum primitives",
+    "calls": "Parent-bound callbacks; setParam, setRegion, setRules, setProcessorParam, setBus or noteOn/noteOff according to binding"
+  },
+  {
+    "name": "DD.LayerStack",
+    "path": "components/design-system/index.jsx",
+    "group": "Dandrum primitives",
+    "calls": "Parent-bound callbacks; setParam, setRegion, setRules, setProcessorParam, setBus or noteOn/noteOff according to binding"
+  },
+  {
+    "name": "DD.ListRow",
+    "path": "components/design-system/index.jsx",
+    "group": "Dandrum primitives",
+    "calls": "None directly; supplied presentation primitive"
+  },
+  {
+    "name": "DD.MenuButton",
+    "path": "components/design-system/index.jsx",
+    "group": "Dandrum primitives",
+    "calls": "Parent-bound callbacks; setParam, setRegion, setRules, setProcessorParam, setBus or noteOn/noteOff according to binding"
+  },
+  {
+    "name": "DD.Meter",
+    "path": "components/design-system/index.jsx",
+    "group": "Dandrum primitives",
+    "calls": "None directly; supplied presentation primitive"
+  },
+  {
+    "name": "DD.ModGlyph",
+    "path": "components/design-system/index.jsx",
+    "group": "Dandrum primitives",
+    "calls": "None directly; supplied presentation primitive"
+  },
+  {
+    "name": "DD.ModIndicator",
+    "path": "components/design-system/index.jsx",
+    "group": "Dandrum primitives",
+    "calls": "None directly; supplied presentation primitive"
+  },
+  {
+    "name": "DD.NumericField",
+    "path": "components/design-system/index.jsx",
+    "group": "Dandrum primitives",
+    "calls": "Parent-bound callbacks; setParam, setRegion, setRules, setProcessorParam, setBus or noteOn/noteOff according to binding"
+  },
+  {
+    "name": "DD.OutputBusses",
+    "path": "components/design-system/index.jsx",
+    "group": "Dandrum primitives",
+    "calls": "Parent-bound callbacks; setParam, setRegion, setRules, setProcessorParam, setBus or noteOn/noteOff according to binding"
+  },
+  {
+    "name": "DD.PadCell",
+    "path": "components/design-system/index.jsx",
+    "group": "Dandrum primitives",
+    "calls": "Parent-bound callbacks; setParam, setRegion, setRules, setProcessorParam, setBus or noteOn/noteOff according to binding"
+  },
+  {
+    "name": "DD.Panel",
+    "path": "components/design-system/index.jsx",
+    "group": "Dandrum primitives",
+    "calls": "None directly; supplied presentation primitive"
+  },
+  {
+    "name": "DD.ParamLabel",
+    "path": "components/design-system/index.jsx",
+    "group": "Dandrum primitives",
+    "calls": "None directly; supplied presentation primitive"
+  },
+  {
+    "name": "DD.PropertyRow",
+    "path": "components/design-system/index.jsx",
+    "group": "Dandrum primitives",
+    "calls": "None directly; supplied presentation primitive"
+  },
+  {
+    "name": "DD.Rollout",
+    "path": "components/design-system/index.jsx",
+    "group": "Dandrum primitives",
+    "calls": "None directly; supplied presentation primitive"
+  },
+  {
+    "name": "DD.SectionHeading",
+    "path": "components/design-system/index.jsx",
+    "group": "Dandrum primitives",
+    "calls": "None directly; supplied presentation primitive"
+  },
+  {
+    "name": "DD.SegmentedControl",
+    "path": "components/design-system/index.jsx",
+    "group": "Dandrum primitives",
+    "calls": "None directly; supplied presentation primitive"
+  },
+  {
+    "name": "DD.Slider",
+    "path": "components/design-system/index.jsx",
+    "group": "Dandrum primitives",
+    "calls": "Parent-bound callbacks; setParam, setRegion, setRules, setProcessorParam, setBus or noteOn/noteOff according to binding"
+  },
+  {
+    "name": "DD.StatusMessage",
+    "path": "components/design-system/index.jsx",
+    "group": "Dandrum primitives",
+    "calls": "None directly; supplied presentation primitive"
+  },
+  {
+    "name": "DD.Switch",
+    "path": "components/design-system/index.jsx",
+    "group": "Dandrum primitives",
+    "calls": "None directly; supplied presentation primitive"
+  },
+  {
+    "name": "DD.Tabs",
+    "path": "components/design-system/index.jsx",
+    "group": "Dandrum primitives",
+    "calls": "None directly; supplied presentation primitive"
+  },
+  {
+    "name": "DD.Toggle",
+    "path": "components/design-system/index.jsx",
+    "group": "Dandrum primitives",
+    "calls": "Parent-bound callbacks; setParam, setRegion, setRules, setProcessorParam, setBus or noteOn/noteOff according to binding"
+  },
+  {
+    "name": "DD.Tooltip",
+    "path": "components/design-system/index.jsx",
+    "group": "Dandrum primitives",
+    "calls": "None directly; supplied presentation primitive"
+  },
+  {
+    "name": "DD.WaveformPanel",
+    "path": "components/design-system/index.jsx",
+    "group": "Dandrum primitives",
+    "calls": "None directly; supplied presentation primitive"
+  }
+]

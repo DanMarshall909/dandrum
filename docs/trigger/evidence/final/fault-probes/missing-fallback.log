@@ -1,0 +1,313 @@
+TAP version 13
+# Subtest: subtree deletion and structural undo restore sounds, mapping and order without restoring unrelated live controls
+ok 1 - subtree deletion and structural undo restore sounds, mapping and order without restoring unrelated live controls
+  ---
+  duration_ms: 68.489565
+  type: 'test'
+  ...
+# Subtest: regions and slice edits keep valid ranges and undo restores removed mapping
+ok 2 - regions and slice edits keep valid ranges and undo restores removed mapping
+  ---
+  duration_ms: 66.07837
+  type: 'test'
+  ...
+# Subtest: selectors, modulation, macro bindings and processors accept edits and enforce fixed-route safety
+ok 3 - selectors, modulation, macro bindings and processors accept edits and enforce fixed-route safety
+  ---
+  duration_ms: 83.658326
+  type: 'test'
+  ...
+# Subtest: asset loading, analysis failure/cancellation and silent voices report their real mock state
+ok 4 - asset loading, analysis failure/cancellation and silent voices report their real mock state
+  ---
+  duration_ms: 23.876735
+  type: 'test'
+  ...
+# Subtest: component convention guard names oversized files, engine imports and broken JSX instead of treating setup errors as failures
+ok 5 - component convention guard names oversized files, engine imports and broken JSX instead of treating setup errors as failures
+  ---
+  duration_ms: 979.296552
+  type: 'test'
+  ...
+# Subtest: typed parameter values retain their displayed units and canonical centres
+ok 6 - typed parameter values retain their displayed units and canonical centres
+  ---
+  duration_ms: 1.795009
+  type: 'test'
+  ...
+# Subtest: modulator percentage entries remain percentages while time and rate entries use seconds and hertz
+ok 7 - modulator percentage entries remain percentages while time and rate entries use seconds and hertz
+  ---
+  duration_ms: 5.485704
+  type: 'test'
+  ...
+# Subtest: an operation undo preserves other fields within the same module, node, macro and candidate
+ok 8 - an operation undo preserves other fields within the same module, node, macro and candidate
+  ---
+  duration_ms: 73.573981
+  type: 'test'
+  ...
+# Subtest: envelope handles coincide with the drawn corners and point edits change the actual shape
+ok 9 - envelope handles coincide with the drawn corners and point edits change the actual shape
+  ---
+  duration_ms: 47.876009
+  type: 'test'
+  ...
+# Subtest: Space and source assignment use the displayed default selection, including nested alternates and patch sources
+ok 10 - Space and source assignment use the displayed default selection, including nested alternates and patch sources
+  ---
+  duration_ms: 34.337807
+  type: 'test'
+  ...
+# Subtest: catalog text, shape and value controls bind to individual stories and model callbacks log without logging render reads
+ok 11 - catalog text, shape and value controls bind to individual stories and model callbacks log without logging render reads
+  ---
+  duration_ms: 27.234493
+  type: 'test'
+  ...
+# Subtest: zero-crossing snap chooses a signed fixture crossing rather than a rounded time grid
+ok 12 - zero-crossing snap chooses a signed fixture crossing rather than a rounded time grid
+  ---
+  duration_ms: 4.090773
+  type: 'test'
+  ...
+# Subtest: undoing a candidate reorder retains unrelated current candidate values
+ok 13 - undoing a candidate reorder retains unrelated current candidate values
+  ---
+  duration_ms: 12.924476
+  type: 'test'
+  ...
+# Subtest: envelope millisecond, second, decibel and percentage fields preserve canonical values
+ok 14 - envelope millisecond, second, decibel and percentage fields preserve canonical values
+  ---
+  duration_ms: 0.533766
+  type: 'test'
+  ...
+# Subtest: Empty startup loads the complete Felt Kit behind preparing and ready events
+ok 15 - Empty startup loads the complete Felt Kit behind preparing and ready events
+  ---
+  duration_ms: 14.026029
+  type: 'test'
+  ...
+# Subtest: a knob gesture is one named reversible command and redo preserves its final value
+ok 16 - a knob gesture is one named reversible command and redo preserves its final value
+  ---
+  duration_ms: 21.425011
+  type: 'test'
+  ...
+# Subtest: explicit pitch, MIDI, dynamic, velocity and RR tokens are interpreted without treating unrelated digits as notes
+ok 17 - explicit pitch, MIDI, dynamic, velocity and RR tokens are interpreted without treating unrelated digits as notes
+  ---
+  duration_ms: 4.935657
+  type: 'test'
+  ...
+# Subtest: import sequential is one reversible operation and retains file sources
+ok 18 - import sequential is one reversible operation and retains file sources
+  ---
+  duration_ms: 23.854815
+  type: 'test'
+  ...
+# Subtest: import root-velocity is one reversible operation and retains file sources
+ok 19 - import root-velocity is one reversible operation and retains file sources
+  ---
+  duration_ms: 14.874703
+  type: 'test'
+  ...
+# Subtest: import stack is one reversible operation and retains file sources
+ok 20 - import stack is one reversible operation and retains file sources
+  ---
+  duration_ms: 18.760728
+  type: 'test'
+  ...
+# Subtest: import rr is one reversible operation and retains file sources
+ok 21 - import rr is one reversible operation and retains file sources
+  ---
+  duration_ms: 17.770644
+  type: 'test'
+  ...
+# Subtest: mapping deletion, paste and neighbour edits change accepted rules and undo preserves unrelated parameters
+ok 22 - mapping deletion, paste and neighbour edits change accepted rules and undo preserves unrelated parameters
+  ---
+  duration_ms: 54.371766
+  type: 'test'
+  ...
+# Subtest: replace paste trims note and velocity rectangles without removing non-overlapping velocity layers
+ok 23 - replace paste trims note and velocity rectangles without removing non-overlapping velocity layers
+  ---
+  duration_ms: 19.225545
+  type: 'test'
+  ...
+# Subtest: Lush and a selected nested candidate preview their own source without triggering neighbouring rules
+ok 24 - Lush and a selected nested candidate preview their own source without triggering neighbouring rules
+  ---
+  duration_ms: 56.86814
+  type: 'test'
+  ...
+# Subtest: Voice module inspector and knob share Cutoff, including undo in either direction and added module sections
+ok 25 - Voice module inspector and knob share Cutoff, including undo in either direction and added module sections
+  ---
+  duration_ms: 65.787312
+  type: 'test'
+  ...
+# Subtest: Mapping toolbar and inspector edit real bounds, duplication, sequential mapping and safe empty selection
+ok 26 - Mapping toolbar and inspector edit real bounds, duplication, sequential mapping and safe empty selection
+  ---
+  duration_ms: 105.406255
+  type: 'test'
+  ...
+# Subtest: Picked modulator inspector edits its own route; selected slice Space auditions its actual region
+ok 27 - Picked modulator inspector edits its own route; selected slice Space auditions its actual region
+  ---
+  duration_ms: 17.390197
+  type: 'test'
+  ...
+# Subtest: Source assignment creates usable regions and sound rules; candidate file imports join the specified selector and undo preserves it
+ok 28 - Source assignment creates usable regions and sound rules; candidate file imports join the specified selector and undo preserves it
+  ---
+  duration_ms: 26.16613
+  type: 'test'
+  ...
+# Subtest: Grid and Even slicing produce distinct accepted boundaries, retain shared Slice history and undo restores its count
+ok 29 - Grid and Even slicing produce distinct accepted boundaries, retain shared Slice history and undo restores its count
+  ---
+  duration_ms: 26.580947
+  type: 'test'
+  ...
+# Subtest: Cancelled parameter gesture restores its starting value and removes its command; rendered peak sources preserve original assets
+ok 30 - Cancelled parameter gesture restores its starting value and removes its command; rendered peak sources preserve original assets
+  ---
+  duration_ms: 9.746676
+  type: 'test'
+  ...
+# Subtest: preparation publishes its phase while accepted data remains unchanged until ready
+ok 31 - preparation publishes its phase while accepted data remains unchanged until ready
+  ---
+  duration_ms: 15.42678
+  type: 'test'
+  ...
+# Subtest: closing during preparation cancels late publication and command history
+ok 32 - closing during preparation cancels late publication and command history
+  ---
+  duration_ms: 1.457741
+  type: 'test'
+  ...
+# Subtest: overlapping preparations publish accepted patches in request order with paired phases
+ok 33 - overlapping preparations publish accepted patches in request order with paired phases
+  ---
+  duration_ms: 7.549171
+  type: 'test'
+  ...
+# Subtest: a visible Cutoff edit enters the command history and the display follows undo and redo
+ok 34 - a visible Cutoff edit enters the command history and the display follows undo and redo
+  ---
+  duration_ms: 72.541669
+  type: 'test'
+  ...
+# Subtest: slice marker, division, mapping and bulk properties publish atomically and undo restores regions and notes
+ok 35 - slice marker, division, mapping and bulk properties publish atomically and undo restores regions and notes
+  ---
+  duration_ms: 82.107186
+  type: 'test'
+  ...
+# Subtest: history bypass changes only its owning region and collapse retains the original source with reversible operands
+ok 36 - history bypass changes only its owning region and collapse retains the original source with reversible operands
+  ---
+  duration_ms: 51.411395
+  type: 'test'
+  ...
+# Subtest: Slice history owns marker counts, preserves manual identities on bypass, and reverses count edits and deletion
+ok 37 - Slice history owns marker counts, preserves manual identities on bypass, and reverses count edits and deletion
+  ---
+  duration_ms: 49.12799
+  type: 'test'
+  ...
+# Subtest: initial slice bypass preserves the supplied nonuniform regions; edits and collapse retain coherent operation operands
+ok 38 - initial slice bypass preserves the supplied nonuniform regions; edits and collapse retain coherent operation operands
+  ---
+  duration_ms: 54.597275
+  type: 'test'
+  ...
+# Subtest: Slice operation regenerates from distinct grid/transient markers and rejects unsupported density without publishing
+ok 39 - Slice operation regenerates from distinct grid/transient markers and rejects unsupported density without publishing
+  ---
+  duration_ms: 14.671324
+  type: 'test'
+  ...
+# Subtest: newly imported slicing creates an owning source stack and count edits reject invalid mapping atomically
+ok 40 - newly imported slicing creates an owning source stack and count edits reject invalid mapping atomically
+  ---
+  duration_ms: 615.994194
+  type: 'test'
+  ...
+# Subtest: rapid changes merge through 600ms, separate gestures and controls keep their own undo
+ok 41 - rapid changes merge through 600ms, separate gestures and controls keep their own undo
+  ---
+  duration_ms: 31.754774
+  type: 'test'
+  ...
+# Subtest: a failed prepared command leaves history and patch operands available for retry
+ok 42 - a failed prepared command leaves history and patch operands available for retry
+  ---
+  duration_ms: 15.497439
+  type: 'test'
+  ...
+# Subtest: navigation and layout use one editor state without resetting the chosen size
+ok 43 - navigation and layout use one editor state without resetting the chosen size
+  ---
+  duration_ms: 37.089619
+  type: 'test'
+  ...
+# Subtest: successful replacement clears history while a failed load preserves the accepted edited patch
+ok 44 - successful replacement clears history while a failed load preserves the accepted edited patch
+  ---
+  duration_ms: 18.265892
+  type: 'test'
+  ...
+# Subtest: cancelling a gesture waits for prepared edits and restores only that gesture; separate prepared gestures do not merge
+ok 45 - cancelling a gesture waits for prepared edits and restores only that gesture; separate prepared gestures do not merge
+  ---
+  duration_ms: 46.338479
+  type: 'test'
+  ...
+# Subtest: stack, per-note round robin, candidate mutes and missing fallback produce usable silent voice feedback
+not ok 46 - stack, per-note round robin, candidate mutes and missing fallback produce usable silent voice feedback
+  ---
+  duration_ms: 18.249492
+  type: 'test'
+  location: '/tmp/dandrum-trigger-mutation-probes/tests/telemetry.test.mjs:6:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    Expected values to be strictly deep-equal:
+    + actual - expected
+    
+    + []
+    - [
+    -   'k60p'
+    - ]
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+    0: 'k60p'
+  actual:
+  operator: 'deepStrictEqual'
+  stack: |-
+    TestContext.<anonymous> (file:///tmp/dandrum-trigger-mutation-probes/tests/telemetry.test.mjs:17:10)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async startSubtestAfterBootstrap (node:internal/test_runner/harness:296:3)
+  ...
+# Subtest: replacement resets active feedback and continues updates outside the editor store
+ok 47 - replacement resets active feedback and continues updates outside the editor store
+  ---
+  duration_ms: 6.842976
+  type: 'test'
+  ...
+1..47
+# tests 47
+# suites 0
+# pass 46
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 1042.68527

@@ -1,0 +1,19 @@
+
+> dandrum-trigger@0.1.0 build
+> vite build
+
+vite v6.4.4 building for production...
+transforming...
+✓ 162 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                          0.60 kB │ gzip:  0.33 kB
+dist/catalog.html                        0.68 kB │ gzip:  0.34 kB
+dist/assets/catalog-D5WtGZ3f.css         2.03 kB │ gzip:  0.79 kB
+dist/assets/styles-BFkNuIbu.css         10.12 kB │ gzip:  3.03 kB
+dist/assets/shell-Clz38K0F.js            4.99 kB │ gzip:  1.97 kB
+dist/assets/catalog-DOgnyLks.js         17.76 kB │ gzip:  6.71 kB
+dist/assets/design-system-75-_sMRQ.js  103.65 kB │ gzip: 26.54 kB
+dist/assets/react-runtime-Ch-GEUUF.js  223.22 kB │ gzip: 69.24 kB
+dist/assets/styles-DmBVV24h.js         337.61 kB │ gzip: 96.34 kB
+✓ built in 2.20s

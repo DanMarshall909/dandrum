@@ -1,0 +1,94 @@
+TAP version 13
+# Subtest: the declared adapter alone supports edit, undo, redo and telemetry subscription
+ok 1 - the declared adapter alone supports edit, undo, redo and telemetry subscription
+  ---
+  duration_ms: 30.929519
+  type: 'test'
+  ...
+# Subtest: mock diagnostics are explicitly injected separately from the adapter
+ok 2 - mock diagnostics are explicitly injected separately from the adapter
+  ---
+  duration_ms: 3.792927
+  type: 'test'
+  ...
+# Subtest: explicit pitch, MIDI, dynamic, velocity and RR tokens are interpreted without treating unrelated digits as notes
+ok 3 - explicit pitch, MIDI, dynamic, velocity and RR tokens are interpreted without treating unrelated digits as notes
+  ---
+  duration_ms: 2.300036
+  type: 'test'
+  ...
+# Subtest: import sequential is one reversible operation and retains file sources
+ok 4 - import sequential is one reversible operation and retains file sources
+  ---
+  duration_ms: 18.930373
+  type: 'test'
+  ...
+# Subtest: import root-velocity is one reversible operation and retains file sources
+ok 5 - import root-velocity is one reversible operation and retains file sources
+  ---
+  duration_ms: 16.335189
+  type: 'test'
+  ...
+# Subtest: import stack is one reversible operation and retains file sources
+ok 6 - import stack is one reversible operation and retains file sources
+  ---
+  duration_ms: 14.820529
+  type: 'test'
+  ...
+# Subtest: import rr is one reversible operation and retains file sources
+ok 7 - import rr is one reversible operation and retains file sources
+  ---
+  duration_ms: 15.413775
+  type: 'test'
+  ...
+# Subtest: import replacement undo and redo keep the asset, region and Source history consistent
+ok 8 - import replacement undo and redo keep the asset, region and Source history consistent
+  ---
+  duration_ms: 21.284899
+  type: 'test'
+  ...
+# Subtest: rapid changes merge through 600ms, separate gestures and controls keep their own undo
+ok 9 - rapid changes merge through 600ms, separate gestures and controls keep their own undo
+  ---
+  duration_ms: 17.432043
+  type: 'test'
+  ...
+# Subtest: a failed prepared command leaves history and patch operands available for retry
+ok 10 - a failed prepared command leaves history and patch operands available for retry
+  ---
+  duration_ms: 9.322172
+  type: 'test'
+  ...
+# Subtest: navigation and layout use one editor state without resetting the chosen size
+ok 11 - navigation and layout use one editor state without resetting the chosen size
+  ---
+  duration_ms: 24.563639
+  type: 'test'
+  ...
+# Subtest: successful replacement clears history while a failed load preserves the accepted edited patch
+ok 12 - successful replacement clears history while a failed load preserves the accepted edited patch
+  ---
+  duration_ms: 12.764491
+  type: 'test'
+  ...
+# Subtest: cancelling a gesture waits for prepared edits and restores only that gesture; separate prepared gestures do not merge
+ok 13 - cancelling a gesture waits for prepared edits and restores only that gesture; separate prepared gestures do not merge
+  ---
+  duration_ms: 34.00944
+  type: 'test'
+  ...
+# Subtest: parameter gestures queued behind preparation undo and redo their accepted values in order
+ok 14 - parameter gestures queued behind preparation undo and redo their accepted values in order
+  ---
+  duration_ms: 23.760223
+  type: 'test'
+  ...
+1..14
+# tests 14
+# suites 0
+# pass 14
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 452.848728

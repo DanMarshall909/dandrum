@@ -1,0 +1,46 @@
+{
+  "stylesheet": "https://fonts.googleapis.com/css2?family=Barlow:wght@500;600;700&family=Barlow+Semi+Condensed:wght@500;600;700&family=JetBrains+Mono:wght@500;600&display=swap",
+  "date": "2026-10-06",
+  "resources": [
+    {
+      "url": "https://fonts.gstatic.com/s/barlow/v13/7cHqv4kjgoGqM7E3t-4c4A.ttf",
+      "file": "74103fd6d41bc32c.ttf",
+      "sha256": "74103fd6d41bc32c63aa2e6eb3db619ddb80ce9ca1b1420d5548a23b8ee5d154"
+    },
+    {
+      "url": "https://fonts.gstatic.com/s/jetbrainsmono/v24/tDbY2o-flEEny0FZhsfKu5WU4zr3E_BX0PnT8RD8-qxjPQ.ttf",
+      "file": "3386a05f6ece969e.ttf",
+      "sha256": "3386a05f6ece969e4537de6be894170d20558e82f7d56c8c5d332972ef172160"
+    },
+    {
+      "url": "https://fonts.gstatic.com/s/barlowsemicondensed/v16/wlpigxjLBV1hqnzfr-F8sEYMB0Yybp0mudRfi6mPAA.ttf",
+      "file": "c2b046235fb4c2f8.ttf",
+      "sha256": "c2b046235fb4c2f81ca58bbdca2313e9681758295b129931853324ade56180c9"
+    },
+    {
+      "url": "https://fonts.gstatic.com/s/barlowsemicondensed/v16/wlpigxjLBV1hqnzfr-F8sEYMB0Yybp0mudRfp66PAA.ttf",
+      "file": "cb75439ae401f776.ttf",
+      "sha256": "cb75439ae401f77624d5b268ea25fd7556e34803fccbd2f92e937a4f3856a1da"
+    },
+    {
+      "url": "https://fonts.gstatic.com/s/barlowsemicondensed/v16/wlpigxjLBV1hqnzfr-F8sEYMB0Yybp0mudRfw6-PAA.ttf",
+      "file": "6098b66ce7d608dc.ttf",
+      "sha256": "6098b66ce7d608dcea8c6a2eeacfdeeee5416e0e0c12a2318595d3dd8c5babef"
+    },
+    {
+      "url": "https://fonts.gstatic.com/s/jetbrainsmono/v24/tDbY2o-flEEny0FZhsfKu5WU4zr3E_BX0PnT8RD8FqtjPQ.ttf",
+      "file": "df54dbfafba61d49.ttf",
+      "sha256": "df54dbfafba61d4911eb3dab9bba2d20531fb009f01d64dd42fa96ab862584d8"
+    },
+    {
+      "url": "https://fonts.gstatic.com/s/barlow/v13/7cHqv4kjgoGqM7E3_-gc4A.ttf",
+      "file": "91c841fdfa8e7b94.ttf",
+      "sha256": "91c841fdfa8e7b94ffedbb983a363947ba6ed720f3bbf0c71d48b618053655bc"
+    },
+    {
+      "url": "https://fonts.gstatic.com/s/barlow/v13/7cHqv4kjgoGqM7E30-8c4A.ttf",
+      "file": "c15439e7a03af571.ttf",
+      "sha256": "c15439e7a03af5714282ec1780ff7b0214ec6a7db96300b54928dbcd2569ca0c"
+    }
+  ]
+}

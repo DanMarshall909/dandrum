@@ -1,0 +1,8 @@
+Internal ctest changing into directory: /tmp/dandrum-trigger-shell/build
+Test project /tmp/dandrum-trigger-shell/build
+    Start 19: trigger-react-shell
+1/1 Test #19: trigger-react-shell ..............   Passed    6.02 sec
+
+100% tests passed, 0 tests failed out of 1
+
+Total Test time (real) =   6.03 sec

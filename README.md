@@ -62,6 +62,8 @@ calls it from the JUCE audio callback.
 
 The current [Dandrum design system](docs/design-system/README.md) includes the reviewed Das Sampler mockups, component references, tokens, SVG assets and JUCE handoff. See the [renderer-independent UI plan](openspec/changes/add-renderer-independent-plugin-ui/design.md) for the native/WebView architecture and implementation tasks.
 
+The [Trigger standalone React shell](web/trigger/README.md) implements the supplied Trigger design with a silent mock adapter. Run `npm ci` in `web/trigger` before CTest; the `trigger-react-shell` CTest runs its type, component, unit, production-build and browser checks. Browser verification uses Chrome (`TRIGGER_CHROME` can select another executable).
+
 ## Engine Development
 
 The headless engine core is implemented in Rust under `src/rust-engine/`. The `core` module is the frontend-independent
