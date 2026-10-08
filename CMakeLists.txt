@@ -448,7 +448,10 @@ set_tests_properties(cxx-plugin-live-processor PROPERTIES TIMEOUT 15)
 if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
     add_executable(dandrum-plugin-engine-handoff-test tests/cpp/PluginEngineHandoffTest.cpp)
     target_include_directories(dandrum-plugin-engine-handoff-test PRIVATE src/juce-wrapper src/juce-plugin)
+    # GCC 15 hides the thread state used by this GNU ABI failure-injection seam.
+    # Expose it only in the test target, as libstdc++ does for its implementation.
     target_compile_definitions(dandrum-plugin-engine-handoff-test PRIVATE
+        _GLIBCXX_THREAD_IMPL
         DANDRUM_SOURCE_ROOT="${CMAKE_CURRENT_SOURCE_DIR}" JUCE_USE_CURL=0
         JUCE_WEB_BROWSER=$<NOT:$<BOOL:${DANDRUM_NATIVE_ONLY}>>
         JUCE_USE_WIN_WEBVIEW2=$<NOT:$<BOOL:${DANDRUM_NATIVE_ONLY}>>)
@@ -669,11 +672,13 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Linux" AND NOT DANDRUM_NATIVE_ONLY)
         target_include_directories(${plugin_test_target} PRIVATE
             ${CMAKE_CURRENT_BINARY_DIR}/dandrum-plugin_artefacts/JuceLibraryCode)
         target_link_libraries(${plugin_test_target} PRIVATE juce::pkgconfig_JUCE_BROWSER_LINUX_DEPS)
+        juce_link_with_embedded_linux_subprocess(${plugin_test_target})
     endforeach()
     target_include_directories(dandrum-sampler-plugin-host-test PRIVATE
         ${CMAKE_CURRENT_BINARY_DIR}/dandrum-sampler-plugin_artefacts/JuceLibraryCode
         ${CMAKE_CURRENT_BINARY_DIR}/dandrum-plugin_artefacts/JuceLibraryCode)
     target_link_libraries(dandrum-sampler-plugin-host-test PRIVATE juce::pkgconfig_JUCE_BROWSER_LINUX_DEPS)
+    juce_link_with_embedded_linux_subprocess(dandrum-sampler-plugin-host-test)
 endif()
 
 add_executable(dandrum-drum-loop-pattern-test tests/cpp/DrumLoopPatternTest.cpp)
