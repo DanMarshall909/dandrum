@@ -43,6 +43,8 @@ add_dependencies(dandrum-slint-catalog dandrum-slint-catalog-generated)
 
 option(DANDRUM_SLINT_BUILD_TESTS "Build the native value codec and generated binding tests" ON)
 option(DANDRUM_SLINT_TEST_REPOSITORY "Include Node/Python repository integration gates (requires repository dev dependencies)" OFF)
+option(DANDRUM_SLINT_TEST_RUNTIME "Register live viewer interaction and screenshot tests (requires slint-viewer)" OFF)
+option(DANDRUM_SLINT_TEST_HEADLESS "Run registered live viewer tests on a private Linux Xvfb display" OFF)
 if(DANDRUM_SLINT_BUILD_TESTS)
     if(DANDRUM_SLINT_TEST_REPOSITORY)
         find_program(DANDRUM_SLINT_NODE node REQUIRED)
@@ -60,6 +62,24 @@ if(DANDRUM_SLINT_BUILD_TESTS)
             -s "${DANDRUM_REPO_ROOT}/tests/python" -p test_demo_inventory.py)
         add_test(NAME demo-launcher-boundaries COMMAND "${Python3_EXECUTABLE}" -m unittest discover
             -s "${DANDRUM_REPO_ROOT}/tests/python" -p test_demo_launcher_boundaries.py)
+        add_test(NAME slint-headless-launch COMMAND "${Python3_EXECUTABLE}" -m unittest discover
+            -s "${DANDRUM_REPO_ROOT}/tests/python" -p test_slint_headless.py)
+        set_tests_properties(slint-headless-launch PROPERTIES ENVIRONMENT "PYTHONDONTWRITEBYTECODE=1")
+    endif()
+    if(DANDRUM_SLINT_TEST_RUNTIME)
+        find_package(Python3 COMPONENTS Interpreter REQUIRED)
+        find_program(DANDRUM_SLINT_VIEWER slint-viewer REQUIRED)
+        set(DANDRUM_SLINT_RUNTIME_ARGUMENTS)
+        if(DANDRUM_SLINT_TEST_HEADLESS)
+            list(APPEND DANDRUM_SLINT_RUNTIME_ARGUMENTS --headless)
+        endif()
+        add_test(NAME slint-library-runtime COMMAND "${Python3_EXECUTABLE}"
+            "${DANDRUM_REPO_ROOT}/scripts/check-slint-library.py"
+            --viewer "${DANDRUM_SLINT_VIEWER}"
+            --evidence "${CMAKE_BINARY_DIR}/slint-library-evidence"
+            ${DANDRUM_SLINT_RUNTIME_ARGUMENTS})
+        set_tests_properties(slint-library-runtime PROPERTIES
+            ENVIRONMENT "PYTHONDONTWRITEBYTECODE=1" TIMEOUT 600 LABELS "slint;runtime")
     endif()
     add_executable(dandrum-slint-value-codec-test "${DANDRUM_REPO_ROOT}/tests/cpp/SlintValueCodecTest.cpp")
     target_compile_features(dandrum-slint-value-codec-test PRIVATE cxx_std_20)

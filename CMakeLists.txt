@@ -612,6 +612,11 @@ add_test(NAME demo-launcher-boundaries
             -s ${CMAKE_CURRENT_SOURCE_DIR}/tests/python
             -p test_demo_launcher_boundaries.py)
 
+add_test(NAME slint-headless-launch
+    COMMAND ${CMAKE_COMMAND} -E env PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover
+            -s ${CMAKE_CURRENT_SOURCE_DIR}/tests/python
+            -p test_slint_headless.py)
+
 if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
     add_test(NAME slint-compiler-build-environment
         COMMAND ${CMAKE_COMMAND} -E env PYTHONDONTWRITEBYTECODE=1 python3

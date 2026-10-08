@@ -10,6 +10,8 @@ import shutil
 import subprocess
 import sys
 
+from slint_headless import prepare_headless, use_environment
+
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "tests/slint"))
 from mcp_client import ViewerSession
@@ -26,11 +28,23 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--viewer", default=os.environ.get("DANDRUM_SLINT_VIEWER", "slint-viewer"))
     parser.add_argument("--check-only", action="store_true", help="Compile without opening a window or requiring a display")
+    parser.add_argument("--headless", action="store_true", help="Run the same live input/screenshot checks on a private Linux Xvfb display")
     scope = parser.add_mutually_exclusive_group()
     scope.add_argument("--fixture", action="append", choices=sorted(ROOT_TYPES), help="Limit checks to one fixture; may repeat")
     scope.add_argument("--catalog-only", action="store_true", help="Check only the composed catalog")
     parser.add_argument("--evidence", type=Path, default=ROOT / "build/slint-library-evidence")
     args = parser.parse_args()
+    try:
+        plan = prepare_headless(sys.argv[1:], os.environ, script=Path(__file__).resolve())
+        if plan is not None and plan.command is not None:
+            return subprocess.run(plan.command, env=plan.environment).returncode
+        with use_environment(plan):
+            return run_checks(args, parser)
+    except (OSError, RuntimeError) as error:
+        parser.error(str(error))
+
+
+def run_checks(args, parser):
     viewer = shutil.which(args.viewer)
     if not viewer:
         parser.error("slint-viewer was not found; set DANDRUM_SLINT_VIEWER or pass --viewer")
@@ -44,6 +58,7 @@ def main():
                "backend": None if args.check_only else os.environ.get("SLINT_BACKEND", "winit-software"),
                "platform": sys.platform,
                "mode": "compile-only" if args.check_only else "live-interactions",
+               "headless": not args.check_only and os.environ.get("DANDRUM_SLINT_HEADLESS") == "1",
                "compilation": [], "contracts": [], "interactions": []}
     try:
         for source in sources:

@@ -28,6 +28,38 @@ launching anything, so the runner does not attach to another application.
 
 ## Linux CI
 
+The optional headless mode runs the **same live contracts, physical input and
+screenshot checks** on a private display. It never attaches to an existing
+`DISPLAY` or Wayland desktop, even when launched from one. Normal invocation
+continues to show its windows on the current desktop.
+
+```sh
+python3 scripts/check-slint-library.py --headless
+python3 scripts/check-slint-library.py --headless --catalog-only
+```
+
+Install Xvfb using your platform's package manager, or set `DANDRUM_XVFB` to an
+existing executable. When `xvfb-run`, Xvfb and `xauth` are on `PATH`, the runner
+prefers `xvfb-run -a`. Otherwise it uses the existing authenticated private Xvfb
+lifecycle for each live viewer window. Owned viewer/display processes are closed
+on completion and failure. Missing Xvfb produces an actionable error instead of
+opening visible test windows. `SLINT_BACKEND` continues to select the same
+renderer in desktop and headless modes.
+
+To register the same runtime suite in CTest, keep your existing matching SDK
+configuration and enable both optional flags:
+
+```sh
+cmake -S . -B build/slint-library -DCMAKE_BUILD_TYPE=Release -DDANDRUM_SLINT_LIBRARY_ONLY=ON -DDANDRUM_SLINT_TEST_RUNTIME=ON -DDANDRUM_SLINT_TEST_HEADLESS=ON
+ctest --test-dir build/slint-library -R slint-library-runtime --output-on-failure
+```
+
+The viewer must be on `PATH`, or supplied through
+`-DDANDRUM_SLINT_VIEWER=/path/to/slint-viewer`. Runtime tests are off by default;
+`DANDRUM_SLINT_TEST_HEADLESS=OFF` runs enabled runtime tests on the desktop.
+
+The existing explicit wrapper invocation remains supported:
+
 ```sh
 xvfb-run -a python3 scripts/check-slint-library.py
 ```
@@ -66,14 +98,16 @@ content, checks that page changes reset the scroll offset, and collapses panels.
 It also checks complete knob and slider popup bounds inside the content clip,
 including opening the rightmost slider near the bottom of the compact viewport,
 and verifies that each repositioned popup's arrow still points to its control.
-A successful `--check-only` run proves compilation; it does not prove interaction behavior. Live runs fail when
+A successful `--check-only` run proves compilation; it does not prove interaction behavior.
+`--headless --check-only` also compiles without Xvfb; it does not run input checks. Live runs fail when
 a fixture is missing, a contract reports failure, an independent input assertion
 fails, or a required MCP capability is unavailable.
 
 `build/slint-library-evidence/result.json` records the viewer version, runtime
 backend, platform, mode, compiled entrypoints, contract results and independent
 interaction results, including the requested catalog dimensions.
-The same directory receives screenshots from the live windows and viewer logs.
+The receipt also records `headless: true` when the optional private-display mode
+runs. The same directory receives screenshots from the live windows and viewer logs.
 The compact catalog run has its own `catalog-compact` subdirectory.
 Failed assertions also capture the current window when its MCP server remains available.
 Use `--evidence PATH` to choose another output directory.
