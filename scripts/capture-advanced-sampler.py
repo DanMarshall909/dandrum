@@ -3,6 +3,7 @@
 import argparse
 import hashlib
 import json
+import math
 import os
 from pathlib import Path
 import struct
@@ -16,6 +17,15 @@ sys.path.insert(0, str(REPO / 'scripts'))
 sys.path.insert(0, str(REPO / 'tests/slint'))
 from mcp_client import ViewerSession
 from slint_headless import prepare_headless, use_environment
+
+
+def capture_environment(environment, scale):
+    result = dict(environment)
+    if scale is not None:
+        if not math.isfinite(scale) or scale <= 0:
+            raise ValueError('Capture scale must be a finite positive number')
+        result['SLINT_SCALE_FACTOR'] = str(scale)
+    return result
 
 
 def capture_cases(all_sizes=False):
@@ -61,7 +71,7 @@ def capture(args):
     display = ViewerSession('', REPO / 'ui/advanced-sampler/AppWindow.slint', args.evidence)
     display.temporary = tempfile.TemporaryDirectory(prefix='dandrum-native-capture-')
     display.directory = Path(display.temporary.name)
-    display.env = dict(os.environ)
+    display.env = capture_environment(os.environ, args.scale)
     results = []
     try:
         if not (display.env.get('DISPLAY') or display.env.get('WAYLAND_DISPLAY')):
@@ -83,6 +93,7 @@ def capture(args):
     finally:
         display.__exit__(None, None, None)
     report = dict(renderer=display.env.get('SLINT_BACKEND'), headless=display.env.get('DANDRUM_SLINT_HEADLESS') == '1',
+                  scale_factor=float(display.env.get('SLINT_SCALE_FACTOR', '1')),
                   executable=str(args.app), executable_sha256=hashlib.sha256(args.app.read_bytes()).hexdigest(), captures=results)
     (args.evidence / 'native-captures.json').write_text(json.dumps(report, indent=2) + '\n')
     return 0
@@ -93,6 +104,7 @@ def main():
     parser.add_argument('--app', type=Path, required=True)
     parser.add_argument('--evidence', type=Path, default=REPO / 'build/advanced-sampler-evidence/native')
     parser.add_argument('--headless', action='store_true')
+    parser.add_argument('--scale', type=float, help='Native pixels per logical pixel, e.g. 1, 1.25 or 2; originals are never resized')
     parser.add_argument('--all-sizes', action='store_true', help='Also capture all 13 workspaces at each editor size')
     parser.add_argument('--state', action='append', choices=[r['state'] for r in capture_cases() if r['kind'] == 'state'])
     args = parser.parse_args()

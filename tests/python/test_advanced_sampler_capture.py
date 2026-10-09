@@ -55,6 +55,16 @@ class NativeCaptureTest(unittest.TestCase):
         self.assertTrue(all(r['theme'] == 'aluminium' and r['finish'] == 'soft' for r in pages))
         self.assertEqual([r for r in rows if r['kind'] != 'page-size'], self.capture.capture_cases())
 
+    def test_fractional_scale_changes_render_pixels_without_resizing_evidence(self):
+        environment = {'SLINT_SCALE_FACTOR': '2', 'DISPLAY': ':99'}
+        scaled = self.capture.capture_environment(environment, 1.25)
+        self.assertEqual(scaled['SLINT_SCALE_FACTOR'], '1.25')
+        self.assertEqual(scaled['DISPLAY'], ':99')
+        self.assertEqual(environment['SLINT_SCALE_FACTOR'], '2')
+        self.assertEqual(self.capture.capture_environment(environment, None), environment)
+        for invalid in [0, -1, float('nan'), float('inf')]:
+            with self.assertRaises(ValueError): self.capture.capture_environment(environment, invalid)
+
     def test_incomplete_native_snapshots_fail_instead_of_producing_evidence(self):
         with tempfile.TemporaryDirectory() as directory:
             source = Path(directory) / 'bad.pam'; target = Path(directory) / 'bad.png'

@@ -49,7 +49,7 @@ python3 scripts/capture-advanced-sampler.py --headless --all-sizes \
   --app build/advanced-sampler/advanced-sampler/Release/dandrum-advanced-sampler
 ```
 
-This produces 85 captures. Omit `--all-sizes` for the 46 state and theme cases. CTest includes the full matrix. The capture runner uses an authenticated private display and records native snapshot dimensions and hashes. `--state sample` restricts a focused capture. Font licenses ship beside the executable, and its footer opens the standard About Slint widget.
+This produces 85 captures. Omit `--all-sizes` for the 46 state and theme cases. CTest includes the full matrix. The capture runner uses an authenticated private display and records native snapshot dimensions and hashes. `--state sample` restricts a focused capture. Add `--scale 1.25` for fractional DPI or `--scale 2` for a high-density comparison: the native renderer scales the same logical layout, and the manifest records the scale and original pixel dimensions. For example, default 1200×800 at scale 1.25 produces 1500×1000 pixels; match React devicePixelRatio to 1.25. Gallery zoom only changes viewing size. Font licenses ship beside the executable, and its footer opens the standard About Slint widget.
 
 The runtime suite also checks pixels from the actual LP, HP, BP and Notch filter plots and the envelope release segment. Run that renderer test alone with:
 
