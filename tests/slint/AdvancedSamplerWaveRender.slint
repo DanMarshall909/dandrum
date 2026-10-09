@@ -1,0 +1,15 @@
+import { WaveView } from "../../ui/advanced-sampler/pages/WaveView.slint";
+export { Session } from "../../ui/advanced-sampler/Session.slint";
+export { SamplerTheme } from "../../ui/advanced-sampler/theme/Theme.slint";
+export component AdvancedSamplerWaveRenderTest inherits Window {
+    width: 640px; height: 250px;
+    in-out property <float> view-start;
+    in-out property <float> view-end: 1;
+    in-out property <bool> reversed;
+    WaveView { x: 10px; y: 10px; width: 600px; height: 200px; state: "loaded";
+        viewport-start: root.view-start; viewport-end: root.view-end;
+        reversed: root.reversed;
+        peaks: [{minimum: -1, maximum: 0.25}, {minimum: -0.5, maximum: 0.25},
+                {minimum: 0, maximum: 0}, {minimum: -0.25, maximum: 0.1}];
+    }
+}

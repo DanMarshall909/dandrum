@@ -1,0 +1,34 @@
+import { Session } from "../Session.slint";
+import { SamplerTheme } from "../theme/Theme.slint";
+import { ActionButton } from "../controls/ActionButton.slint";
+import { DragState } from "../chrome/DragState.slint";
+export component MacroActions inherits Rectangle {
+    in property <string> macro-id;
+    private property <bool> renaming;
+    callback close-requested();
+    height: root.renaming ? 304px : 270px; width: 260px;
+    background: SamplerTheme.surface-menu; border-width: 1px; border-color: SamplerTheme.line-3; border-radius: 4px;
+    drop-shadow-blur: 20px; drop-shadow-offset-y: 8px; drop-shadow-color: #00000080;
+    public function rename(name: string) -> bool { let accepted = Session.command("macro.rename", root.macro-id, name, 0); if accepted { root.close-requested(); } return accepted; }
+    public function run(action: string, value: float) { Session.command(action, root.macro-id, "", value); root.close-requested(); }
+    for macro in Session.macros : Rectangle { visible: macro.id == root.macro-id;
+        Text { x: 12px; y: 8px; height: 26px; text: macro.name; font-family: SamplerTheme.font-ui; font-size: 14px; font-weight: 600; color: SamplerTheme.paper-1; }
+        ActionButton { x: parent.width - 29px; y: 8px; compact: true; ghost: true; icon: "close"; label: "Close macro actions"; clicked => { root.close-requested(); } }
+        VerticalLayout { x: 6px; y: 38px; width: parent.width - 12px; spacing: 2px; alignment: start;
+            ActionButton { text: "Rename…"; label: "Rename macro"; ghost: true; clicked => { root.renaming = true; } }
+            ActionButton { text: "Reset value"; label: "Reset macro value"; ghost: true; clicked => { root.run("macro.reset", 0); } }
+            ActionButton { text: "Edit destinations…"; label: "Edit macro destinations"; ghost: true; clicked => { Session.command("macro.select", root.macro-id, "", 0); Session.command("page.select", "macros", "", 0); root.close-requested(); } }
+            ActionButton { text: "Clear destinations"; label: "Clear macro destinations"; enabled: macro.destinations.length > 0; ghost: true; clicked => { root.run("macro.clear", 0); } }
+            ActionButton { text: "Learn MIDI CC"; label: "Learn macro MIDI CC"; ghost: true; clicked => { root.run("macro.learn", 0); } }
+            ActionButton { text: "Stop MIDI learn"; label: "Stop macro MIDI learn"; enabled: Session.midi-learn == root.macro-id; ghost: true; clicked => { root.run("macro.learn-stop", 0); } }
+            ActionButton { text: macro.host-automated ? "Disable host automation" : "Enable host automation"; label: macro.host-automated ? "Disable macro host automation" : "Enable macro host automation"; ghost: true; selected: macro.host-automated; clicked => { root.run("macro.host", macro.host-automated ? 0 : 1); } }
+        }
+        if root.renaming : Rectangle { x: 8px; y: 258px; width: parent.width - 16px; height: 34px; border-width: 1px; border-color: SamplerTheme.accent; background: SamplerTheme.surface-well;
+            TextInput { x: 6px; y: 5px; height: 24px; width: parent.width - 44px; text: macro.name; accessible-label: "Macro name"; single-line: true; color: SamplerTheme.paper-1; font-family: SamplerTheme.font-ui; font-size: 13px;
+                changed has-focus => { if !self.has-focus { Session.release-notes(); DragState.cancel(); } }
+                accepted => { root.rename(self.text); }
+            }
+            ActionButton { x: parent.width - 29px; y: 5px; compact: true; ghost: true; icon: "close"; label: "Cancel macro rename"; clicked => { root.renaming = false; } }
+        }
+    }
+}

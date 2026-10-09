@@ -1,0 +1,11 @@
+export { Session } from "../../ui/advanced-sampler/Session.slint";
+export { SamplerTheme } from "../../ui/advanced-sampler/theme/Theme.slint";
+export { ValueCodec, ParsedValue } from "../../ui/slint/controls/ValueCodec.slint";
+import { ModulationPage } from "../../ui/advanced-sampler/pages/ModulationPage.slint";
+import { EffectsPage } from "../../ui/advanced-sampler/pages/EffectsPage.slint";
+export component AdvancedSamplerDomainRender inherits Window {
+ width: 640px; height: 1200px;
+ in-out property <string> page: "mod";
+ if root.page == "mod" : ModulationPage { }
+ if root.page == "fx" : EffectsPage { }
+}

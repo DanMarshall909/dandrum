@@ -1,0 +1,18 @@
+import { VoicePage } from "../../ui/advanced-sampler/pages/VoicePage.slint";
+import { SourceRow } from "../../ui/advanced-sampler/chrome/SourceRow.slint";
+import { SourceInfo } from "../../ui/advanced-sampler/domain/types.slint";
+export { Session } from "../../ui/advanced-sampler/Session.slint";
+export { ValueCodec, ParsedValue } from "../../ui/slint/controls/ValueCodec.slint";
+export { SamplerTheme } from "../../ui/advanced-sampler/theme/Theme.slint";
+export { VoiceDialogState } from "../../ui/advanced-sampler/pages/VoiceDialogState.slint";
+export component AdvancedSamplerVoiceTest inherits Window {
+    in-out property <bool> compact;
+    in-out property <bool> expanded;
+    in-out property <bool> voice-visible: true;
+    in-out property <bool> show-context-source;
+    in-out property <SourceInfo> context-source;
+    callback context-action(string,string);
+    width: 700px; height: 1200px;
+    if root.voice-visible : VoicePage { compact: root.compact; expanded: root.expanded; context-action(a,id) => { root.context-action(a,id); } }
+    if root.show-context-source : SourceRow { x: 4px; y: 4px; width: 180px; source: root.context-source; }
+}

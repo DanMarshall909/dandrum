@@ -1,0 +1,15 @@
+import { WaveBucket } from "../domain/types.slint";
+import { SamplerTheme } from "../theme/Theme.slint";
+export component PadWave inherits Rectangle {
+    in property <[WaveBucket]> peaks;
+    in property <float> cursor;
+    callback audition();
+    accessible-role: button;
+    accessible-label: "Audition selected pad waveform";
+    accessible-action-default => { root.audition(); }
+    border-radius: 2px; background: SamplerTheme.ink-0; clip: true;
+    Rectangle { y: parent.height / 2; height: 1px; background: SamplerTheme.line-1; }
+    for peak[i] in root.peaks : Rectangle { x: i / max(1, root.peaks.length) * parent.width; y: (1 - peak.maximum.clamp(-1, 1)) * parent.height / 2; width: max(1px, parent.width / max(1, root.peaks.length)); height: max(1px, (peak.maximum - peak.minimum).clamp(0, 2) * parent.height / 2); background: SamplerTheme.waveform; }
+    if root.cursor > 0 : Rectangle { x: root.cursor * parent.width; width: 1px; background: SamplerTheme.accent; }
+    TouchArea { clicked => { root.audition(); } }
+}

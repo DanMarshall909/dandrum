@@ -1,0 +1,50 @@
+import { Session } from "../../ui/advanced-sampler/Session.slint";
+export { Session } from "../../ui/advanced-sampler/Session.slint";
+export { ValueCodec, ParsedValue } from "../../ui/slint/controls/ValueCodec.slint";
+export { DragState } from "../../ui/advanced-sampler/chrome/DragState.slint";
+import { ParamKnob } from "../../ui/advanced-sampler/controls/ParamKnob.slint";
+import { NumericField } from "../../ui/advanced-sampler/controls/NumericField.slint";
+import { MacroGrid } from "../../ui/advanced-sampler/performance/MacroGrid.slint";
+import { MacroActions } from "../../ui/advanced-sampler/performance/MacroActions.slint";
+export component AdvancedSamplerControlMenusTest inherits Window {
+    width: 480px; height: 320px;
+    out property <string> action;
+    out property <string> target;
+    private property <string> context-macro;
+    macro-menu := PopupWindow { x: 210px; y: 5px; width: 260px; height: 304px;
+        MacroActions { macro-id: root.context-macro; close-requested => { macro-menu.close(); } }
+    }
+    MacroGrid { y: 160px; width: parent.width; height: 140px; macros: Session.macros;
+        macro-gesture(id,phase,value) => { Session.parameter-gesture(id,phase,value); }
+        context-action(a,id) => { Session.command("macro.select",id,"",0); root.context-macro=id; macro-menu.show(); }
+    }
+    ParamKnob { x: 90px; y: 40px; label: "Cutoff"; parameter-id: "cutoff"; unit: "Hz";
+        minimum: 20; maximum: 20000; default-value: Session.parameters[0].default-value;
+        value: Session.parameters[0].value; model-value: Session.parameters[0].value;
+        gesture-began => { Session.parameter-gesture("cutoff",0,self.value); }
+        changed(v) => { Session.parameter-gesture("cutoff",1,v); }
+        gesture-ended => { Session.parameter-gesture("cutoff",2,self.value); }
+        context-action(a) => { root.action=a; root.target="cutoff"; }
+    }
+    NumericField { x: 290px; y: 40px; label: "Level"; parameter-id: "level"; unit: "dB";
+        minimum: -60; maximum: 12; default-value: Session.parameters[4].default-value;
+        value: Session.parameters[4].value; model-value: Session.parameters[4].value;
+        gesture-began => { Session.parameter-gesture("level",0,self.value); }
+        changed(v) => { Session.parameter-gesture("level",1,v); }
+        gesture-ended => { Session.parameter-gesture("level",2,self.value); }
+        context-action(a) => { root.action=a; root.target="level"; }
+    }
+    NumericField { x: 530px; y: 200px; width: 110px; label: "Lush Detune field"; parameter-id: "module:lush-voice:detune";
+        minimum: 0; maximum: 100; value: 34; default-value: 34; step: 1; unit: "%";
+        gesture-began => { Session.parameter-gesture("module:lush-voice:detune",0,self.value/100); }
+        changed(value) => { Session.parameter-gesture("module:lush-voice:detune",1,value/100); }
+        gesture-ended => { Session.parameter-gesture("module:lush-voice:detune",2,self.value/100); }
+    }
+    ParamKnob { x: 530px; y: 20px; width: 110px; label: "Lush Detune knob"; parameter-id: "module:lush-voice:detune";
+        minimum: 0; maximum: 100; value: 34; default-value: 34; step: 1; unit: "%";
+        gesture-began => { Session.parameter-gesture("module:lush-voice:detune",0,self.value/100); }
+        changed(value) => { Session.parameter-gesture("module:lush-voice:detune",1,value/100); }
+        gesture-ended => { Session.parameter-gesture("module:lush-voice:detune",2,self.value/100); }
+    }
+
+}

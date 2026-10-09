@@ -1,0 +1,64 @@
+import { SamplerTheme } from "../theme/Theme.slint";
+import { RangeControl } from "../../slint/controls/RangeControl.slint";
+import { ParameterGesture } from "ParameterGesture.slint";
+import { DragTarget, DragState } from "../chrome/DragState.slint";
+import { Session } from "../Session.slint";
+import { ActionButton } from "ActionButton.slint";
+export component NumericField inherits RangeControl {
+    gesture-cancelled => { Session.command("gesture.cancel", "", "", 0); }
+    focus-lost(reason) => { if reason == FocusReason.window-activation { root.cancel-gesture(); Session.release-notes(); DragState.cancel(); } }
+    in property <string> parameter-id;
+    // Preserve a separate native projection after local user writes replace value bindings.
+    in property <float> model-value: root.value;
+    changed model-value => { if abs(root.model-value - root.value) > 0.000001 { root.value = root.model-value; } }
+    in property <bool> show-label: root.label != "";
+    in property <bool> ghost;
+    callback context-action(string);
+    private property <bool> fine;
+    private property <string> suffix: root.unit == "pan" ? "" : root.unit;
+    height: root.show-label ? 42px : 24px; width: 84px;
+    capture-key-pressed(event) => { root.fine = event.modifiers.shift; return reject; }
+    capture-key-released(event) => { root.fine = event.modifiers.shift; return reject; }
+    edit-requested => { editor.text = root.value-text; editor.focus(); editor.select-all(); }
+    edit-closed => { root.focus(); }
+    standard-menu-requested => { menu.show(); }
+    context-menu-requested => { root.context-action("modulation"); }
+    if root.show-label : Text { y: 0px; height: 14px; text: root.label.to-uppercase(); font-family: SamplerTheme.font-ui; font-size: 10px; font-weight: 600; letter-spacing: 0.6px; color: SamplerTheme.paper-3; }
+    DragTarget { accepted-kind: "modulator"; enabled: root.enabled && root.parameter-id != ""; border-width: self.drag-over ? 1px : 0px; border-color: SamplerTheme.accent; border-radius: 2px;
+        dropped(source) => { return Session.command("route.add", source, root.parameter-id, 0.25); }
+    }
+    menu := PopupWindow { y: root.height; width: 190px; height: 134px;
+        Rectangle { background: SamplerTheme.surface-menu; border-width: 1px; border-color: SamplerTheme.line-3; border-radius: 3px;
+            VerticalLayout { padding: 2px; spacing: 0px;
+                ActionButton { text: "Modulation"; label: "Modulation " + root.label; ghost: true; enabled: root.interactive && root.parameter-id != ""; clicked => { menu.close(); route-menu.show(); } }
+                ActionButton { text: "Learn MIDI"; label: "Learn MIDI " + root.label; ghost: true; enabled: root.interactive && root.parameter-id != ""; clicked => { menu.close(); root.context-action("midi-learn"); } }
+                ActionButton { text: "Map to macro…"; label: "Map " + root.label + " to macro"; ghost: true; enabled: root.interactive && root.parameter-id != ""; clicked => { menu.close(); root.context-action("macro-map"); } }
+                ActionButton { text: "Reset to default"; label: "Reset " + root.label + " to default"; ghost: true; enabled: root.interactive; clicked => { menu.close(); root.reset-value(); } }
+                ActionButton { text: "Type value…"; label: "Type " + root.label + " value"; ghost: true; enabled: root.interactive; clicked => { menu.close(); root.begin-edit(); } }
+            }
+        }
+    }
+    route-menu := PopupWindow { y: root.height; width: 190px; height: 134px;
+        Rectangle { background: SamplerTheme.surface-menu; border-width: 1px; border-color: SamplerTheme.line-3; border-radius: 3px;
+            VerticalLayout { padding: 2px; spacing: 0px;
+                ActionButton { text: "Add route…"; label: "Add route " + root.label; ghost: true; enabled: root.interactive && root.parameter-id != ""; clicked => { route-menu.close(); root.context-action("modulation-add"); } }
+                ActionButton { text: "Edit route…"; label: "Edit route " + root.label; ghost: true; enabled: root.interactive && root.parameter-id != ""; clicked => { route-menu.close(); root.context-action("modulation-edit"); } }
+                ActionButton { text: "Invert"; label: "Invert route " + root.label; ghost: true; enabled: root.interactive && root.parameter-id != ""; clicked => { route-menu.close(); root.context-action("modulation-invert"); } }
+                ActionButton { text: "Bypass"; label: "Bypass route " + root.label; ghost: true; enabled: root.interactive && root.parameter-id != ""; clicked => { route-menu.close(); root.context-action("modulation-bypass"); } }
+                ActionButton { text: "Remove"; label: "Remove route " + root.label; ghost: true; enabled: root.interactive && root.parameter-id != ""; clicked => { route-menu.close(); root.context-action("modulation-remove"); } }
+            }
+        }
+    }
+    Rectangle { y: root.show-label ? 18px : 0px; height: 24px; border-width: root.ghost && !root.has-focus && !root.editing ? 0px : 1px; border-radius: 2px; border-color: root.edit-invalid ? SamplerTheme.error : root.has-focus ? SamplerTheme.accent : SamplerTheme.line-2; background: root.ghost ? transparent : SamplerTheme.ink-0;
+        if SamplerTheme.soft && !root.ghost : Rectangle { background: SamplerTheme.well-overlay; border-radius: 2px; }
+        Text { x: 6px; width: parent.width - 12px - (root.suffix == "" ? 0px : unit-label.preferred-width + 3px); text: root.value-text; color: root.enabled ? root.host-active ? SamplerTheme.host : SamplerTheme.paper-1 : SamplerTheme.paper-4; font-family: SamplerTheme.font-value; font-size: 12px; horizontal-alignment: right; vertical-alignment: center; visible: !root.editing; }
+        unit-label := Text { x: parent.width - self.preferred-width - 6px; width: self.preferred-width; text: root.suffix; color: SamplerTheme.paper-3; font-family: SamplerTheme.font-value; font-size: 10px; vertical-alignment: center; }
+        editor := TextInput { accessible-label: "Edit " + root.label + " value"; x: 6px; width: parent.width - 12px - (root.suffix == "" ? 0px : unit-label.preferred-width + 3px); visible: root.editing; text: root.value-text; color: root.edit-invalid ? SamplerTheme.error : SamplerTheme.paper-1; font-family: SamplerTheme.font-value; font-size: 12px; horizontal-alignment: right; vertical-alignment: center;
+            changed has-focus => { if !self.has-focus { Session.release-notes(); DragState.cancel(); } }
+            accepted => { root.commit-text(self.text); } key-pressed(event) => { if event.text == Key.Escape { root.cancel-edit(); return accept; } return reject; }
+        }
+            ParameterGesture { enabled: root.interactive && !root.editing; value: root.value; minimum: root.minimum; maximum: root.maximum; fine <=> root.fine;
+                started => { root.focus(); root.begin-gesture(); } updated(v) => { root.update-gesture(v); } ended => { root.end-gesture(); } cancelled => { root.cancel-gesture(); } reset-requested => { root.reset-value(); } edit-requested => { root.begin-edit(); } wheeled(direction, precise) => { root.wheel(direction, precise); } context-requested(x,y) => { menu.show(); }
+            }
+    }
+}

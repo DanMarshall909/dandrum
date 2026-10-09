@@ -1,0 +1,96 @@
+import { PatchInfo } from "types.slint";
+export global PatchFilter {
+    // The native host supplies UTF-8 substring search; Slint has no search builtin.
+    pure callback contains(string, string) -> bool;
+    contains(haystack, query) => { return query == "" || haystack == query; }
+    public pure function matches(p: PatchInfo, query: string, category: string) -> bool {
+        return (category == "All" || (category == "Favourites" && p.favourite) || (category == "User" && p.origin == "User") || category == p.category)
+            && (query == "" || root.contains((p.name + " " + p.category + " " + p.contents).to-lowercase(), query.to-lowercase()));
+    }
+    pure function at(patches: [PatchInfo], i: int, query: string, category: string) -> bool { return i < patches.length && root.matches(patches[i], query, category); }
+    public pure function count(patches: [PatchInfo], query: string, category: string) -> int {
+        return (root.at(patches, 0, query, category) ? 1 : 0) + (root.at(patches, 1, query, category) ? 1 : 0) + (root.at(patches, 2, query, category) ? 1 : 0) + (root.at(patches, 3, query, category) ? 1 : 0)
+            + (root.at(patches, 4, query, category) ? 1 : 0) + (root.at(patches, 5, query, category) ? 1 : 0) + (root.at(patches, 6, query, category) ? 1 : 0) + (root.at(patches, 7, query, category) ? 1 : 0)
+            + (root.at(patches, 8, query, category) ? 1 : 0) + (root.at(patches, 9, query, category) ? 1 : 0) + (root.at(patches, 10, query, category) ? 1 : 0) + (root.at(patches, 11, query, category) ? 1 : 0)
+            + (root.at(patches, 12, query, category) ? 1 : 0) + (root.at(patches, 13, query, category) ? 1 : 0) + (root.at(patches, 14, query, category) ? 1 : 0) + (root.at(patches, 15, query, category) ? 1 : 0)
+            + (root.at(patches, 16, query, category) ? 1 : 0) + (root.at(patches, 17, query, category) ? 1 : 0) + (root.at(patches, 18, query, category) ? 1 : 0) + (root.at(patches, 19, query, category) ? 1 : 0)
+            + (root.at(patches, 20, query, category) ? 1 : 0) + (root.at(patches, 21, query, category) ? 1 : 0) + (root.at(patches, 22, query, category) ? 1 : 0) + (root.at(patches, 23, query, category) ? 1 : 0)
+            + (root.at(patches, 24, query, category) ? 1 : 0) + (root.at(patches, 25, query, category) ? 1 : 0) + (root.at(patches, 26, query, category) ? 1 : 0) + (root.at(patches, 27, query, category) ? 1 : 0)
+            + (root.at(patches, 28, query, category) ? 1 : 0) + (root.at(patches, 29, query, category) ? 1 : 0) + (root.at(patches, 30, query, category) ? 1 : 0) + (root.at(patches, 31, query, category) ? 1 : 0)
+            + (root.at(patches, 32, query, category) ? 1 : 0) + (root.at(patches, 33, query, category) ? 1 : 0) + (root.at(patches, 34, query, category) ? 1 : 0) + (root.at(patches, 35, query, category) ? 1 : 0)
+            + (root.at(patches, 36, query, category) ? 1 : 0) + (root.at(patches, 37, query, category) ? 1 : 0) + (root.at(patches, 38, query, category) ? 1 : 0) + (root.at(patches, 39, query, category) ? 1 : 0)
+            + (root.at(patches, 40, query, category) ? 1 : 0) + (root.at(patches, 41, query, category) ? 1 : 0) + (root.at(patches, 42, query, category) ? 1 : 0) + (root.at(patches, 43, query, category) ? 1 : 0)
+            + (root.at(patches, 44, query, category) ? 1 : 0) + (root.at(patches, 45, query, category) ? 1 : 0) + (root.at(patches, 46, query, category) ? 1 : 0) + (root.at(patches, 47, query, category) ? 1 : 0)
+            + (root.at(patches, 48, query, category) ? 1 : 0) + (root.at(patches, 49, query, category) ? 1 : 0) + (root.at(patches, 50, query, category) ? 1 : 0) + (root.at(patches, 51, query, category) ? 1 : 0)
+            + (root.at(patches, 52, query, category) ? 1 : 0) + (root.at(patches, 53, query, category) ? 1 : 0) + (root.at(patches, 54, query, category) ? 1 : 0) + (root.at(patches, 55, query, category) ? 1 : 0)
+            + (root.at(patches, 56, query, category) ? 1 : 0) + (root.at(patches, 57, query, category) ? 1 : 0) + (root.at(patches, 58, query, category) ? 1 : 0) + (root.at(patches, 59, query, category) ? 1 : 0)
+            + (root.at(patches, 60, query, category) ? 1 : 0) + (root.at(patches, 61, query, category) ? 1 : 0) + (root.at(patches, 62, query, category) ? 1 : 0) + (root.at(patches, 63, query, category) ? 1 : 0);
+    }
+    public pure function first(patches: [PatchInfo], query: string, category: string) -> string {
+        if root.at(patches, 0, query, category) { return patches[0].id; }
+        if root.at(patches, 1, query, category) { return patches[1].id; }
+        if root.at(patches, 2, query, category) { return patches[2].id; }
+        if root.at(patches, 3, query, category) { return patches[3].id; }
+        if root.at(patches, 4, query, category) { return patches[4].id; }
+        if root.at(patches, 5, query, category) { return patches[5].id; }
+        if root.at(patches, 6, query, category) { return patches[6].id; }
+        if root.at(patches, 7, query, category) { return patches[7].id; }
+        if root.at(patches, 8, query, category) { return patches[8].id; }
+        if root.at(patches, 9, query, category) { return patches[9].id; }
+        if root.at(patches, 10, query, category) { return patches[10].id; }
+        if root.at(patches, 11, query, category) { return patches[11].id; }
+        if root.at(patches, 12, query, category) { return patches[12].id; }
+        if root.at(patches, 13, query, category) { return patches[13].id; }
+        if root.at(patches, 14, query, category) { return patches[14].id; }
+        if root.at(patches, 15, query, category) { return patches[15].id; }
+        if root.at(patches, 16, query, category) { return patches[16].id; }
+        if root.at(patches, 17, query, category) { return patches[17].id; }
+        if root.at(patches, 18, query, category) { return patches[18].id; }
+        if root.at(patches, 19, query, category) { return patches[19].id; }
+        if root.at(patches, 20, query, category) { return patches[20].id; }
+        if root.at(patches, 21, query, category) { return patches[21].id; }
+        if root.at(patches, 22, query, category) { return patches[22].id; }
+        if root.at(patches, 23, query, category) { return patches[23].id; }
+        if root.at(patches, 24, query, category) { return patches[24].id; }
+        if root.at(patches, 25, query, category) { return patches[25].id; }
+        if root.at(patches, 26, query, category) { return patches[26].id; }
+        if root.at(patches, 27, query, category) { return patches[27].id; }
+        if root.at(patches, 28, query, category) { return patches[28].id; }
+        if root.at(patches, 29, query, category) { return patches[29].id; }
+        if root.at(patches, 30, query, category) { return patches[30].id; }
+        if root.at(patches, 31, query, category) { return patches[31].id; }
+        if root.at(patches, 32, query, category) { return patches[32].id; }
+        if root.at(patches, 33, query, category) { return patches[33].id; }
+        if root.at(patches, 34, query, category) { return patches[34].id; }
+        if root.at(patches, 35, query, category) { return patches[35].id; }
+        if root.at(patches, 36, query, category) { return patches[36].id; }
+        if root.at(patches, 37, query, category) { return patches[37].id; }
+        if root.at(patches, 38, query, category) { return patches[38].id; }
+        if root.at(patches, 39, query, category) { return patches[39].id; }
+        if root.at(patches, 40, query, category) { return patches[40].id; }
+        if root.at(patches, 41, query, category) { return patches[41].id; }
+        if root.at(patches, 42, query, category) { return patches[42].id; }
+        if root.at(patches, 43, query, category) { return patches[43].id; }
+        if root.at(patches, 44, query, category) { return patches[44].id; }
+        if root.at(patches, 45, query, category) { return patches[45].id; }
+        if root.at(patches, 46, query, category) { return patches[46].id; }
+        if root.at(patches, 47, query, category) { return patches[47].id; }
+        if root.at(patches, 48, query, category) { return patches[48].id; }
+        if root.at(patches, 49, query, category) { return patches[49].id; }
+        if root.at(patches, 50, query, category) { return patches[50].id; }
+        if root.at(patches, 51, query, category) { return patches[51].id; }
+        if root.at(patches, 52, query, category) { return patches[52].id; }
+        if root.at(patches, 53, query, category) { return patches[53].id; }
+        if root.at(patches, 54, query, category) { return patches[54].id; }
+        if root.at(patches, 55, query, category) { return patches[55].id; }
+        if root.at(patches, 56, query, category) { return patches[56].id; }
+        if root.at(patches, 57, query, category) { return patches[57].id; }
+        if root.at(patches, 58, query, category) { return patches[58].id; }
+        if root.at(patches, 59, query, category) { return patches[59].id; }
+        if root.at(patches, 60, query, category) { return patches[60].id; }
+        if root.at(patches, 61, query, category) { return patches[61].id; }
+        if root.at(patches, 62, query, category) { return patches[62].id; }
+        if root.at(patches, 63, query, category) { return patches[63].id; }
+        return "";
+    }
+}

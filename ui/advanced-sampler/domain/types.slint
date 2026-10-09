@@ -1,0 +1,25 @@
+export { KeyZone, WaveBucket, WaveSlice, OutputBus, LayerRow, LayerParameter } from "../../slint/display/types.slint";
+export { ModAssignment } from "../../slint/modulation/types.slint";
+import { LayerParameter } from "../../slint/display/types.slint";
+export struct TreeInfo { id: string, name: string, parent: string, kind: string, detail: string, output: string, resolved-output: string, depth: int, selected: bool, visible: bool, expanded: bool, muted: bool, solo: bool, frozen: bool }
+export struct SourceInfo { id: string, name: string, path: string, kind: string, group: string, state: string, metadata: string, duration: float, progress: float, frames: int, sample-rate: int, channels: int, selected: bool, favourite: bool }
+export struct SliceSourceInfo { id: string, source: string }
+export struct SourceGroupInfo { id: string, name: string, expanded: bool, sources: [SourceInfo] }
+export struct ParameterInfo { id: string, label: string, unit: string, group: string, value: float, default-value: float, minimum: float, maximum: float, step: float, bipolar: bool, host-automated: bool, available: bool, macro-bound: bool }
+export struct RouteInfo { id: string, source: string, destination: string, source-name: string, destination-name: string, polarity: string, curve: string, scope: string, combine: string, update-rate: string, amount: float, slot: int, on: bool, selected: bool }
+export struct RouteGroupInfo { id: string, name: string, summary: string, source-id: string, destination-id: string, expanded: bool, routes: [RouteInfo] }
+export struct ModulatorInfo { id: string, name: string, kind: string, shape: string, slot: int, rate: float, depth: float, phase: float, live: float, attack: float, decay: float, sustain: float, release: float, smooth: float, fade-in: float, in-low: float, in-high: float, sync: bool, retrigger: bool, per-voice: bool, loop: bool, inverted: bool, enabled: bool, selected: bool }
+export struct ModuleInfo { id: string, parent: string, name: string, detail: string, kind: string, mode: string, bypassed: bool, selected: bool, parameters: [LayerParameter] }
+export struct ProcessorChainInfo { id: string, name: string, kind: string, processors: [ModuleInfo] }
+export struct HistoryInfo { id: string, label: string, detail: string, on: bool, selected: bool }
+// Inspector rows project bounded native selection state; action IDs route back to the controller.
+export struct InspectorInfo { id: string, kind: string, label: string, value: string, unit: string, prepared: bool, icon: string, primary: bool, action: string, target: string, field: string, amount: float, slot: int, host: bool, parameter-id: string }
+export struct DiagnosticInfo { id: string, title: string, detail: string, state: string }
+export struct EventInfo { sequence: int, kind: string, label: string }
+
+export struct MacroBindingInfo { id: string, macro: string, destination: string, amount: float, minimum: float, maximum: float, unit: string, on: bool, inverted: bool }
+
+export struct OverviewInfo { id: string, group: string, label: string, unit: string, value: float, state: string, from: string, owner: string, value-text: string, head: bool, reset-action: string, reset-target: string, reset-field: string, can-reset: bool }
+
+export struct CandidateInfo { id: string, name: string, source: string, output: string, order: int, weight: float, level: float, gain: float, pan: float, pitch: float, muted: bool, solo: bool, selected: bool, vel-low: int, vel-high: int }
+export struct SendInfo { id: string, parent: string, name: string, value: float }

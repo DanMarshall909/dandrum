@@ -8,7 +8,7 @@
 
 - [x] 2.1 Write failing independent theme tests, implement all v3 role/contrast rules and all settings; verify the complete 115-case golden corpus and custom colors.
 - [ ] 2.2 Bind the native theme to every app component, implement material overlays, bevels and highlights; verify generated bindings and native renderer evidence for soft/flat/brushed/light themes.
-- [ ] 2.3 Write failing command/history tests and implement mockable adapter plus reversible edits/coalesced gestures; verify undo/redo/cancel and stale-job rejection.
+- [x] 2.3 Write failing command/history tests and implement mockable adapter plus reversible edits/coalesced gestures; verify undo/redo/cancel and stale-job rejection.
 - [ ] 2.4 Implement acceptance presets, tree operations and actual patch load/import/export/copy; verify definition round-trip and tree/model changes.
 - [ ] 2.5 Implement asset import/relink, sample regions/loops/fades/history/freeze/reload; verify valid/failing asset workflows and persisted edits.
 - [ ] 2.6 Implement async analysis, retry/cancel/apply/discard and slicing operations; verify transitions and resulting slice regions.

@@ -1,0 +1,37 @@
+import { SamplerTheme } from "../theme/Theme.slint";
+import { FitLayout } from "FitLayout.slint";
+import { Session } from "../Session.slint";
+import { DragState } from "../chrome/DragState.slint";
+export component KeyCell inherits FocusScope {
+    in property <int> note;
+    in property <bool> black;
+    in property <bool> mapped;
+    in property <bool> sounding;
+    in property <string> pc-label;
+    in property <string> source;
+    in property <string> generation;
+    private property <bool> held;
+    private property <int> held-note;
+    private property <string> held-source;
+    callback note-on(int, int, string); callback note-off(int, string);
+    accessible-role: button; accessible-label: "Key \{root.note} \{FitLayout.note-name(root.note)}\{root.mapped ? "" : " · not mapped"}";
+    accessible-action-default => { root.press(100); root.release-note(); }
+    focus-on-click: true; focus-on-tab-navigation: true;
+    public function press(velocity: int) { if root.enabled && !root.held { root.held = true; root.held-note = root.note; root.held-source = root.source; root.note-on(root.note, velocity.clamp(1, 127), root.source); } }
+    public function release-note() { if root.held { root.held = false; root.note-off(root.held-note, root.held-source); } }
+    changed note => { root.release-note(); } changed generation => { root.release-note(); }
+    changed visible => { if !root.visible { root.release-note(); } } changed enabled => { if !root.enabled { root.release-note(); } }
+    focus-lost(reason) => { root.release-note(); if reason == FocusReason.window-activation { Session.release-notes(); DragState.cancel(); } }
+    key-pressed(event) => { if event.text == " " || event.text == Key.Return { root.press(100); return accept; } return reject; }
+    key-released(event) => { if event.text == " " || event.text == Key.Return { root.release-note(); return accept; } return reject; }
+    Rectangle {
+        border-radius: 2px; border-width: 1px; border-color: root.black ? SamplerTheme.ink-0 : SamplerTheme.ink-2;
+        background: root.held || root.sounding ? SamplerTheme.accent : root.black ? root.mapped ? SamplerTheme.ink-1 : SamplerTheme.ink-4 : root.mapped ? SamplerTheme.paper-2 : SamplerTheme.paper-4;
+        drop-shadow-blur: root.black ? 2px : 0px; drop-shadow-offset-y: root.black ? 1px : 0px; drop-shadow-color: #00000055;
+        if SamplerTheme.soft : Rectangle { border-radius: 2px; background: @linear-gradient(180deg, #FFFFFF0D, transparent 50%, #0000001F); }
+        Text { y: parent.height - (root.black ? 15px : 26px); height: 11px; text: root.pc-label; font-family: SamplerTheme.font-value; font-size: 10px; font-weight: 600; color: root.black ? SamplerTheme.paper-2 : SamplerTheme.accent-lo; horizontal-alignment: center; }
+        if !root.black && mod(root.note, 12) == 0 : Text { y: parent.height - 14px; height: 11px; text: FitLayout.note-name(root.note); font-family: SamplerTheme.font-value; font-size: 10px; color: SamplerTheme.ink-2; horizontal-alignment: center; }
+        if root.has-focus : Rectangle { border-width: 2px; border-color: SamplerTheme.host; }
+    }
+    touch := TouchArea { pointer-event(event) => { if event.kind == PointerEventKind.down && event.button == PointerEventButton.left { root.focus(); root.press(round(40 + 87 * (self.mouse-y / max(1px, self.height)).clamp(0, 1))); } else if event.kind == PointerEventKind.up || event.kind == PointerEventKind.cancel { root.release-note(); } } }
+}

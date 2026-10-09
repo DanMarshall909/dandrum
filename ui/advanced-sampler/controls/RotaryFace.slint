@@ -1,0 +1,34 @@
+import { SamplerTheme } from "../theme/Theme.slint";
+import { RotaryArc } from "../../slint/controls/RotaryArc.slint";
+import { ModAssignment } from "../../slint/modulation/types.slint";
+export component RotaryFace inherits Rectangle {
+    in property <bool> enabled: true;
+    in property <float> value;
+    in property <bool> bipolar;
+    in property <bool> active;
+    in property <bool> hovered;
+    in property <bool> host-active;
+    in property <[ModAssignment]> assignments;
+    private property <length> thick: root.width >= 60px ? 4px : root.width >= 44px ? 3px : 2.5px;
+    private property <length> thin: root.width >= 44px ? 1.5px : 1.25px;
+    private property <length> ring: root.width / 2 - (root.width >= 44px ? 6.5px : 5px) - root.thick / 2;
+    private property <length> cap: root.ring - root.thick / 2 - (root.width >= 44px ? 2.5px : 2px);
+    pure function mod-color(slot: int) -> color { return slot == 0 ? SamplerTheme.mod-a : slot == 1 ? SamplerTheme.mod-b : slot == 2 ? SamplerTheme.mod-c : SamplerTheme.mod-d; }
+    if SamplerTheme.soft : Rectangle { x: parent.width / 2 - root.cap * 1.16; y: parent.height / 2 - root.cap * 1.16 - 1.5px; width: root.cap * 2.32; height: self.width; border-radius: self.width / 2; background: SamplerTheme.ink-0;
+        Rectangle { border-radius: parent.width / 2; background: @linear-gradient(180deg, #0000001F, #00000066); }
+    }
+    for assignment[i] in root.assignments : RotaryArc { visible: i < 2; from: root.value; to: (root.value + assignment.depth).clamp(0, 1); radius: root.width / 2 - 1px - i * 3px; thickness: 1px; tint: root.mod-color(assignment.slot); }
+    RotaryArc { radius: root.ring; tint: SamplerTheme.color-track; thickness: root.thin; }
+    RotaryArc { from: root.bipolar ? 0.5 : 0; to: root.value; radius: root.ring; tint: !root.enabled ? SamplerTheme.paper-4 : root.host-active ? SamplerTheme.host : SamplerTheme.color-value; thickness: root.active || root.host-active ? root.thick : root.thin; }
+    Rectangle {
+        x: parent.width / 2 - root.cap; y: parent.height / 2 - root.cap + (root.active ? 1px : 0px); width: root.cap * 2; height: self.width; border-radius: root.cap;
+        background: !root.enabled ? SamplerTheme.ink-4 : root.active ? SamplerTheme.cap-press : root.hovered ? SamplerTheme.cap-hover : SamplerTheme.cap;
+        drop-shadow-blur: 2px; drop-shadow-offset-y: 1.5px; drop-shadow-color: #00000073;
+        border-width: 1px; border-color: SamplerTheme.line-3.with-alpha(0.6);
+        if SamplerTheme.soft : Rectangle { border-radius: parent.width / 2; border-width: 1px; border-color: SamplerTheme.bevel; }
+        Path { viewbox-width: root.width / 1px; viewbox-height: root.height / 1px; x: -parent.x; y: -parent.y; width: root.width; height: root.height; stroke: #FFFFFF17; stroke-width: 1px;
+            MoveTo { x: root.width / 2px - (root.cap / 1px - 1) * sin(60deg); y: root.height / 2px - (root.cap / 1px - 1) * cos(60deg); }
+            ArcTo { x: root.width / 2px + (root.cap / 1px - 1) * sin(60deg); y: root.height / 2px - (root.cap / 1px - 1) * cos(60deg); radius-x: root.cap / 1px - 1; radius-y: root.cap / 1px - 1; sweep: true; }
+        }
+    }
+}

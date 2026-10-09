@@ -1,0 +1,25 @@
+import { Session } from "../Session.slint";
+import { SamplerTheme } from "../theme/Theme.slint";
+import { MaterialSurface } from "../theme/Material.slint";
+import { ActionButton } from "../controls/ActionButton.slint";
+import { PatchFilter } from "../performance/PatchFilter.slint";
+export component EventLog inherits MaterialSurface {
+    private property <string> query;
+    callback closed();
+    Rectangle { height: 34px; background: SamplerTheme.surface-panel-header;
+        Text { x: 12px; width: 85px; text: "EVENT LOG"; font-family: SamplerTheme.font-ui; font-size: 12px; font-weight: 700; color: SamplerTheme.secondary; vertical-alignment: center; }
+        TextInput { x: 108px; y: 5px; width: 120px; height: 24px; text <=> root.query; accessible-label: "Filter adapter events"; font-family: SamplerTheme.font-value; font-size: 11px; color: SamplerTheme.paper-1; single-line: true; }
+        HorizontalLayout { x: 240px; y: 4px; width: parent.width - 272px; height: 26px; spacing: 4px; alignment: end;
+            ActionButton { text: "Fail analysis"; label: "Fail next analysis"; compact: true; selected: Session.mock-failure; clicked => { Session.command("telemetry.fail", "", "", Session.mock-failure ? 0 : 1); } }
+            ActionButton { text: "Missing"; label: "Mark selected file missing"; compact: true; clicked => { Session.command("asset.mock-state", Session.selected-source, "missing", 0); } }
+            ActionButton { text: "Unsupported"; label: "Mark selected file unsupported"; compact: true; clicked => { Session.command("asset.mock-state", Session.selected-source, "unsupported", 0); } }
+            ActionButton { text: "Loaded"; label: "Restore selected file"; compact: true; clicked => { Session.command("asset.mock-state", Session.selected-source, "loaded", 0); } }
+            ActionButton { text: "Host"; label: "Toggle host automation"; compact: true; selected: Session.host-automation; clicked => { Session.command("automation.mock", "", "", Session.host-automation ? 0 : 1); } }
+            ActionButton { text: "Clear"; label: "Clear adapter events"; compact: true; clicked => { Session.command("event.clear", "", "", 0); } }
+        }
+        ActionButton { x: parent.width - 29px; y: 5px; compact: true; ghost: true; icon: "close"; label: "Close event log"; clicked => { root.closed(); } }
+    }
+    Flickable { y: 35px; width: parent.width; height: parent.height - 36px; content-width: self.width; content-height: max(self.height, Session.events.length * 22px + 8px);
+        for event[i] in Session.events : Text { x: 12px; y: 4px + i * 22px; width: parent.width - 24px; height: 22px; visible: root.query == "" || PatchFilter.contains((event.kind + " " + event.label).to-lowercase(), root.query.to-lowercase()); text: "{event.sequence} · {event.kind} · {event.label}"; font-family: SamplerTheme.font-value; font-size: 11px; color: event.kind == "failure" || event.kind == "rejected" ? SamplerTheme.warn : SamplerTheme.paper-3; vertical-alignment: center; overflow: elide; }
+    }
+}

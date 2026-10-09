@@ -1,0 +1,29 @@
+// Native pointer input. Vertical drag is 200px/range; Shift uses 10% sensitivity.
+export component ParameterGesture inherits TouchArea {
+    in property <float> value;
+    in property <float> minimum;
+    in property <float> maximum: 1;
+    in-out property <bool> fine;
+    private property <bool> dragging;
+    private property <length> anchor;
+    private property <float> start;
+    private property <bool> moved-far;
+    callback started(); callback updated(float); callback ended(); callback cancelled();
+    callback reset-requested(); callback edit-requested(); callback wheeled(float, bool);
+    callback context-requested(length, length);
+    mouse-cursor: ns-resize;
+    pointer-event(event) => {
+        root.fine = event.modifiers.shift;
+        if event.kind == PointerEventKind.down && root.enabled {
+            if event.button == PointerEventButton.middle || event.modifiers.alt { root.reset-requested(); }
+            else if event.button == PointerEventButton.left { root.anchor = self.mouse-y; root.start = root.value; root.dragging = true; root.moved-far = false; root.started(); }
+        } else if event.kind == PointerEventKind.up || event.kind == PointerEventKind.cancel {
+            if root.dragging { root.dragging = false; if event.kind == PointerEventKind.cancel { root.cancelled(); } else { root.ended(); } }
+            if event.kind == PointerEventKind.up && event.button == PointerEventButton.right { root.context-requested(self.mouse-x, self.mouse-y); }
+        }
+    }
+    moved => { if root.dragging { let delta = root.anchor - self.mouse-y; if abs(delta) > 2px { root.moved-far = true; } root.updated(root.start + delta / 200px * (root.maximum - root.minimum) * (root.fine ? 0.1 : 1)); } }
+    double-clicked => { if !root.moved-far { root.edit-requested(); } }
+    scroll-event(event) => { if !root.enabled { return reject; } root.wheeled(event.delta-y >= 0px ? 1 : -1, event.modifiers.shift); return accept; }
+    changed enabled => { if !root.enabled && root.dragging { root.dragging = false; root.cancelled(); } }
+}

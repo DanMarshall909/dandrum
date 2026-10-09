@@ -1,0 +1,24 @@
+import { MacroBindingInfo } from "../domain/types.slint";
+import { SamplerTheme } from "../theme/Theme.slint";
+import { ActionButton } from "../controls/ActionButton.slint";
+import { NumericField } from "../controls/NumericField.slint";
+export component MacroDestinationRow inherits Rectangle {
+    in property <MacroBindingInfo> binding;
+    callback opened(string); callback removed(string); callback inverted(string); callback range-gesture(string, string, int, float);
+    pure function label(id: string) -> string { return id == "cutoff" ? "Filter cutoff" : id == "resonance" ? "Filter resonance" : id == "filter-sustain" ? "Filter sustain" : id == "reverb-mix" ? "Send · Reverb" : id == "amp-attack" ? "Amp attack" : id == "amp-sustain" ? "Amp sustain" : id == "pan" ? "Pan" : id == "level" ? "Amp level" : id == "drive" ? "Filter drive" : id; }
+    Rectangle { height: 1px; background: SamplerTheme.line-1; }
+    Text { x: 12px; width: max(1px, parent.width - 138px); text: root.label(root.binding.destination); font-family: SamplerTheme.font-ui; font-size: 13px; color: SamplerTheme.paper-1; vertical-alignment: center; overflow: elide; }
+    range-start := NumericField { x: parent.width - 124px; y: 2px; width: 36px; height: 24px; label: "Range start " + root.label(root.binding.destination); show-label: false; ghost: true; value: root.binding.minimum * 100; model-value: root.binding.minimum * 100; minimum: 0; maximum: 100; step: 1; default-value: 0;
+        gesture-began => { root.range-gesture(root.binding.destination, "minimum", 0, self.value / 100); } changed(v) => { root.range-gesture(root.binding.destination, "minimum", 1, v / 100); } gesture-ended => { root.range-gesture(root.binding.destination, "minimum", 2, self.value / 100); }
+    }
+    Text { x: parent.width - 87px; width: 10px; text: "–"; color: SamplerTheme.paper-2; font-family: SamplerTheme.font-value; font-size: 12px; vertical-alignment: center; horizontal-alignment: center; }
+    range-end := NumericField { x: parent.width - 76px; y: 2px; width: 40px; height: 24px; label: "Range end " + root.label(root.binding.destination); show-label: false; ghost: true; value: root.binding.maximum * 100; model-value: root.binding.maximum * 100; minimum: 0; maximum: 100; step: 1; default-value: 100; unit: "%";
+        gesture-began => { root.range-gesture(root.binding.destination, "maximum", 0, self.value / 100); } changed(v) => { root.range-gesture(root.binding.destination, "maximum", 1, v / 100); } gesture-ended => { root.range-gesture(root.binding.destination, "maximum", 2, self.value / 100); }
+    }
+    ActionButton { x: parent.width - 32px; y: 2px; width: 24px; height: 24px; icon: "chevron-right"; label: "Go to " + root.label(root.binding.destination); compact: true; ghost: true; clicked => { root.opened(root.binding.destination); } }
+    ContextMenuArea { Menu {
+        MenuItem { title: "Go to destination"; activated => { root.opened(root.binding.destination); } }
+        MenuItem { title: "Invert range"; activated => { root.inverted(root.binding.destination); } }
+        MenuItem { title: "Remove destination"; activated => { root.removed(root.binding.destination); } }
+    } }
+}

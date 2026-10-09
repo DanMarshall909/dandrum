@@ -1,0 +1,53 @@
+import { Session, PadInfo } from "../Session.slint";
+import { SamplerTheme } from "../theme/Theme.slint";
+import { PadCell } from "../performance/PadCell.slint";
+import { PadPanel } from "../performance/PadPanel.slint";
+import { FitLayout } from "../performance/FitLayout.slint";
+import { OptionStrip } from "../controls/OptionStrip.slint";
+import { ActionButton } from "../controls/ActionButton.slint";
+export component PadsPage inherits Rectangle {
+    in property <bool> compact;
+    in property <string> generation: Session.current-patch-id;
+    in-out property <int> bank: 36;
+    in-out property <int> rows: 6;
+    in-out property <bool> panel-open;
+    callback context-action(string, string);
+    private property <length> pad-size: root.compact ? 52px : 76px;
+    private property <length> grid-width: root.pad-size * 4 + 18px;
+    private property <length> grid-height: root.rows * (root.pad-size + 6px) - 6px;
+    private property <length> header-height: root.width < 550px ? 62px : 34px;
+    private property <bool> panel-below: root.width < root.grid-width + 296px;
+    out property <int> selected-note: Session.selected-pad;
+    public function set-bank(note: int) { if note == 24 || note == 36 || note == 48 || note == 60 { Session.release-notes(); root.bank = note; } }
+    public function set-rows(rows: int) { if rows == 4 || rows == 6 || rows == 8 { Session.release-notes(); root.rows = rows; } }
+    public pure function note-at(index: int) -> int { return root.bank + (root.rows - 1 - floor(index / 4)) * 4 + mod(index, 4); }
+    public pure function pad-at(note: int) -> PadInfo { return note >= 0 && note < Session.pads.length ? Session.pads[note] : {note: note, name: "", mapped: false, choke-group: -1, active-alternate: -1}; }
+    public function select-pad(note: int) { Session.command("pad.select", "", "", note); }
+    public function toggle-panel() { root.panel-open = !root.panel-open; }
+    Flickable { interactive: false; width: parent.width; height: parent.height; content-width: self.width; content-height: max(self.height, root.header-height + 24px + (root.panel-open && root.panel-below ? root.grid-height + panel.height + 12px : max(root.grid-height, root.panel-open ? panel.height : 0px)));
+        Rectangle { width: parent.width; height: parent.content-height; border-radius: 6px; border-width: 1px; border-color: SamplerTheme.line-1; background: SamplerTheme.ink-2;
+            if SamplerTheme.soft : Rectangle { border-radius: 6px; background: SamplerTheme.raised-overlay; }
+            Rectangle { x: 1px; y: 1px; width: parent.width - 2px; height: root.header-height; border-radius: 5px; background: SamplerTheme.ink-3;
+                Text { x: 11px; width: 40px; height: 34px; text: "PADS"; font-family: SamplerTheme.font-ui; font-size: 13px; font-weight: 700; letter-spacing: 1.3px; color: SamplerTheme.paper-2; vertical-alignment: center; }
+                Text { x: 57px; width: 104px; height: 34px; text: "notes \{root.bank}–\{root.bank + root.rows * 4 - 1}"; font-family: SamplerTheme.font-value; font-size: 12px; color: SamplerTheme.paper-3; vertical-alignment: center; }
+                Rectangle { x: root.width < 550px ? 12px : parent.width - 426px; y: root.width < 550px ? 34px : 6px; width: min(parent.width - 48px, 388px); height: 22px;
+                    Text { width: 29px; text: "BANK"; font-family: SamplerTheme.font-ui; font-size: 11px; font-weight: 600; color: SamplerTheme.paper-3; vertical-alignment: center; }
+                    bank-options := OptionStrip { x: 34px; width: 140px; label: "Pad bank"; value: root.bank; options: [{id: "24", label: "C1"}, {id: "36", label: "C2"}, {id: "48", label: "C3"}, {id: "60", label: "C4"}]; selected(id) => { root.set-bank(id.to-float()); } }
+                    Text { x: 183px; width: 29px; text: "ROWS"; font-family: SamplerTheme.font-ui; font-size: 11px; font-weight: 600; color: SamplerTheme.paper-3; vertical-alignment: center; }
+                    row-options := OptionStrip { x: 219px; width: 140px; label: "Pad rows"; value: root.rows; options: [{id: "4", label: "4 rows"}, {id: "6", label: "6"}, {id: "8", label: "8"}]; selected(id) => { root.set-rows(id.to-float()); } }
+                }
+                panel-toggle := ActionButton { x: parent.width - 32px; y: 5px; width: 24px; height: 24px; icon: "layers"; label: "Show pad panel"; selected: root.panel-open; compact: true; ghost: true; clicked => { root.toggle-panel(); } }
+                Rectangle { y: parent.height - 1px; height: 1px; background: SamplerTheme.line-1; }
+            }
+            for i in root.rows * 4 : PadCell {
+                private property <PadInfo> info: root.pad-at(root.note-at(i));
+                x: 12px + mod(i, 4) * (root.pad-size + 6px); y: root.header-height + 12px + floor(i / 4) * (root.pad-size + 6px); size: root.pad-size;
+                note: root.note-at(i); name: self.info.name; mapped: self.info.mapped; selected: Session.selected-pad == self.note; compact: root.compact;
+                level: self.info.level; velocity: self.info.velocity; layers: self.info.layers; alternates: self.info.alternates; active-alternate: self.info.active-alternate; choke-group: self.info.choke-group; choked: self.info.choked;
+                source: "editor.pad." + self.note; generation: root.generation;
+                note-on(n,v,s) => { Session.note-on(n,v,s); } note-off(n,s) => { Session.note-off(n,s); } selected-note(n) => { root.select-pad(n); }
+            }
+            panel := PadPanel { visible: root.panel-open; x: root.panel-below ? 12px : root.grid-width + 24px; y: root.header-height + 12px + (root.panel-below ? root.grid-height + 12px : 0px); width: root.panel-below ? parent.width - 24px : parent.width - self.x - 12px; pad: root.pad-at(Session.selected-pad); context-action(a,id) => { root.context-action(a,id); } }
+        }
+    }
+}

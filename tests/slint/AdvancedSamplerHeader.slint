@@ -1,0 +1,11 @@
+import { EditorHeader } from "../../ui/advanced-sampler/chrome/EditorHeader.slint";
+export component AdvancedSamplerHeaderTest inherits Window {
+    preferred-width: 1200px; preferred-height: 45px;
+    callback command(string);
+    header := EditorHeader {
+        x: 0px; y: 0px; width: parent.width; height: parent.height;
+        compact: root.width < 1000px; patch-name: "Advanced Sampler";
+        status: "Silent preview"; voices: 6; voice-limit: 32;
+        command(action) => { root.command(action); }
+    }
+}

@@ -1,0 +1,46 @@
+import { SamplerTheme } from "../theme/Theme.slint";
+import { ActionButton } from "../controls/ActionButton.slint";
+export component EditorHeader inherits Rectangle {
+    in property <string> patch-name;
+    in property <string> status;
+    in property <bool> compact;
+    in property <bool> perform;
+    in property <bool> can-undo;
+    in property <bool> can-redo;
+    in property <int> voices;
+    in property <int> voice-limit: 32;
+    in property <float> level;
+    in property <int> size-mode: 1;
+    callback command(string);
+    background: SamplerTheme.ink-0;
+    Rectangle { y: parent.height - 1px; height: 1px; background: SamplerTheme.line-1; }
+    HorizontalLayout {
+        padding-left: 12px; padding-right: 12px; spacing: root.compact ? 4px : 12px; alignment: stretch;
+        HorizontalLayout {
+            spacing: 8px; alignment: center;
+            Text { text: "dandrum"; font-family: SamplerTheme.font-display; font-size: 20px; font-weight: 700; color: SamplerTheme.paper-1; }
+            Rectangle { width: 6px; height: 6px; border-radius: 3px; background: SamplerTheme.accent; }
+            if !root.compact : Text { text: "TRIGGER"; font-family: SamplerTheme.font-ui; font-size: 13px; font-weight: 700; letter-spacing: 1.3px; color: SamplerTheme.paper-2; }
+        }
+        Rectangle { width: 1px; height: 20px; background: SamplerTheme.line-1; }
+        HorizontalLayout { spacing: 2px; alignment: center;
+            undo-button := ActionButton { icon: "reset"; label: "Undo"; compact: true; ghost: true; enabled: root.can-undo; clicked => { root.command("undo"); } }
+            redo-button := ActionButton { icon: "reload"; label: "Redo"; compact: true; ghost: true; enabled: root.can-redo; clicked => { root.command("redo"); } }
+        }
+        patch-button := ActionButton { text: root.patch-name + "  ▾"; label: "Browse patches"; width: root.compact ? 152px : 200px; clicked => { root.command("patch.browse"); } }
+        Text { min-width: 72px; horizontal-stretch: 1; text: root.status; overflow: elide; font-family: SamplerTheme.font-ui; font-size: 12px; color: SamplerTheme.paper-3; vertical-alignment: center; }
+        Text { text: root.voices + " / " + root.voice-limit; font-family: SamplerTheme.font-value; font-size: 12px; color: SamplerTheme.paper-3; vertical-alignment: center; }
+        diagnostics-button := ActionButton { icon: "settings"; label: "Why did this play?"; ghost: true; compact: true; clicked => { root.command("diagnostics"); } }
+        ActionButton { icon: "list"; label: "Event log"; ghost: true; compact: true; clicked => { root.command("eventlog"); } }
+        if !root.perform : HorizontalLayout { spacing: 0px; alignment: center;
+            for label[i] in ["Min", root.compact ? "Def" : "Default", "Exp"] : ActionButton { text: label; selected: i == root.size-mode; compact: true; width: i == 1 && !root.compact ? 54px : 32px; clicked => { root.command(i == 0 ? "size.min" : i == 1 ? "size.default" : "size.expanded"); } }
+        }
+        perform-button := ActionButton { text: root.perform ? "Edit" : "Perform"; icon: root.perform ? "edit" : "tap"; label: root.perform ? "Return to editor" : "Perform"; clicked => { root.command("perform.toggle"); } }
+        appearance-button := ActionButton { icon: "settings"; label: "Appearance and settings"; ghost: true; compact: true; clicked => { root.command("appearance"); } }
+        Rectangle { width: 30px; height: 12px;
+            for row in 2 : Rectangle { y: row * 7px; height: 4px; width: parent.width; background: SamplerTheme.ink-4;
+                Rectangle { height: parent.height; width: parent.width * root.level.clamp(0, 1); background: root.level > 0.95 ? SamplerTheme.error : SamplerTheme.ok; }
+            }
+        }
+    }
+}

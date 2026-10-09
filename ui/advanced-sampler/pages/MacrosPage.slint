@@ -1,0 +1,57 @@
+import { Session, MacroInfo, ParameterInfo } from "../Session.slint";
+import { SamplerTheme } from "../theme/Theme.slint";
+import { PagePanel } from "../controls/PagePanel.slint";
+import { ParamKnob } from "../controls/ParamKnob.slint";
+import { ActionButton } from "../controls/ActionButton.slint";
+import { MacroDestinationRow } from "../performance/MacroDestinationRow.slint";
+export component MacrosPage inherits Rectangle {
+    callback context-action(string, string);
+    private property <length> card-width: min(128px, (root.width - 50px) / 4);
+    private property <int> macro-rows: max(1, ceil(Session.macros.length / 4));
+    private property <int> destination-count;
+    private property <bool> adding;
+    pure function macro-at(i: int) -> MacroInfo { return i < Session.macros.length ? Session.macros[i] : {}; }
+    out property <MacroInfo> selected-macro: root.macro-at(0).id == Session.selected-macro ? root.macro-at(0) : root.macro-at(1).id == Session.selected-macro ? root.macro-at(1) : root.macro-at(2).id == Session.selected-macro ? root.macro-at(2) : root.macro-at(3).id == Session.selected-macro ? root.macro-at(3) : root.macro-at(4).id == Session.selected-macro ? root.macro-at(4) : root.macro-at(5).id == Session.selected-macro ? root.macro-at(5) : root.macro-at(6).id == Session.selected-macro ? root.macro-at(6) : root.macro-at(7);
+    public function select-macro(id: string) { Session.command("macro.select", id, "", 0); }
+    public function add-destination(id: string) { Session.command("macro.bind", Session.selected-macro, id, 0.25); root.adding = false; }
+    public function remove-destination(id: string) { Session.command("macro.unbind", Session.selected-macro, id, 0); }
+    public function invert-destination(id: string) { Session.command("macro.invert", Session.selected-macro, id, 0); }
+    public function open-destination(id: string) { Session.command("page.select", id == "reverb-mix" || id == "delay-mix" ? "fx" : "voice", "", 0); root.context-action("parameter-open", id); }
+    Flickable { width: parent.width; height: parent.height; content-width: self.width; content-height: max(self.height, grid.height + destinations.height + 8px);
+        grid := PagePanel { width: parent.width; height: 35px + 24px + root.macro-rows * 108px + (root.macro-rows - 1) * 8px; title: "Macros"; subtitle: "\{Session.macros.length} macros · host automatable";
+            for m[i] in Session.macros : FocusScope {
+                x: (parent.width - 4 * root.card-width - 24px) / 2 + mod(i, 4) * (root.card-width + 8px); y: 47px + floor(i / 4) * 116px;
+                width: root.card-width; height: 108px;
+                accessible-role: button; accessible-label: "Select " + m.name + " macro"; focus-on-tab-navigation: true; focus-on-click: true;
+                accessible-action-default => { root.select-macro(m.id); }
+                key-pressed(event) => { if event.text == Key.Return || event.text == " " { root.select-macro(m.id); return accept; } return reject; }
+                ParamKnob { private property <float> display-scale: m.unit == "%" ? 100 : 1; macro-id: m.id; x: (parent.width - self.width) / 2; y: 8px; size: 48px; label: m.name; value: m.value * self.display-scale; model-value: m.value * self.display-scale; minimum: m.minimum * self.display-scale; maximum: m.maximum * self.display-scale; default-value: m.default-value * self.display-scale; unit: m.unit; host-automated: m.host-automated; assignments: m.assignments; enabled: m.destinations.length > 0;
+                    gesture-began => { root.select-macro(m.id); Session.parameter-gesture(m.id, 0, self.value / self.display-scale); }
+                    changed(v) => { Session.parameter-gesture(m.id, 1, v / self.display-scale); }
+                    gesture-ended => { Session.parameter-gesture(m.id, 2, self.value / self.display-scale); }
+                    context-action(a) => { root.select-macro(m.id); root.context-action(a, m.id); }
+                }
+                Text { x: 4px; y: 79px; width: parent.width - 8px; height: 15px; text: m.destinations.length == 0 ? "Unassigned" : m.host-automated ? "Host automated" : "\{m.destinations.length} destination\{m.destinations.length == 1 ? "" : "s"}"; font-family: SamplerTheme.font-value; font-size: 11px; color: SamplerTheme.paper-3; horizontal-alignment: center; }
+                TouchArea { y: 74px; height: 34px; clicked => { root.select-macro(m.id); } pointer-event(event) => { if event.kind == PointerEventKind.up && event.button == PointerEventButton.right { root.select-macro(m.id); root.context-action("macro", m.id); } if event.kind == PointerEventKind.down && event.button == PointerEventButton.middle { Session.command("macro.reset", m.id, "", 0); } } }
+                if Session.selected-macro == m.id : Rectangle { y: parent.height - 2px; height: 2px; background: SamplerTheme.accent; }
+            }
+        }
+        destinations := PagePanel { y: grid.height + 8px; width: parent.width; height: 35px + max(1, root.selected-macro.destinations.length) * 28px + (root.adding ? min(230px, Session.parameters.length * 26px) + 36px : 0px); title: "Destinations"; subtitle: root.selected-macro.name;
+            add-destination := ActionButton { x: parent.width - 34px; y: 5px; width: 24px; height: 24px; icon: "plus"; label: "Add macro destination"; ghost: true; clicked => { root.adding = !root.adding; } }
+            VerticalLayout { y: 35px; width: parent.width; height: root.selected-macro.destinations.length * 28px; spacing: 0px;
+                for b in Session.macro-bindings : MacroDestinationRow { visible: b.macro == Session.selected-macro; height: self.visible ? 28px : 0px; binding: b;
+                    opened(id) => { root.open-destination(id); } removed(id) => { root.remove-destination(id); } inverted(id) => { root.invert-destination(id); }
+                    range-gesture(id, field, phase, value) => { Session.parameter-gesture("binding:" + Session.selected-macro + ":" + id + ":" + field, phase, value); }
+                }
+            }
+            if root.selected-macro.destinations.length == 0 : Text { x: 12px; y: 35px; height: 28px; text: "No destinations. Unassigned macros do nothing until you add one."; font-family: SamplerTheme.font-ui; font-size: 12px; color: SamplerTheme.paper-3; vertical-alignment: center; }
+            if root.adding : Rectangle { x: 6px; y: 35px + max(1, root.selected-macro.destinations.length) * 28px; width: parent.width - 12px; height: parent.height - self.y - 6px; border-width: 1px; border-color: SamplerTheme.line-2; border-radius: 3px; background: SamplerTheme.ink-1;
+                Text { x: 8px; height: 28px; text: "Choose a parameter for " + root.selected-macro.name; font-family: SamplerTheme.font-ui; font-size: 12px; color: SamplerTheme.paper-2; vertical-alignment: center; }
+                ActionButton { x: parent.width - 28px; y: 2px; width: 24px; icon: "close"; label: "Close destination picker"; ghost: true; clicked => { root.adding = false; } }
+                Flickable { y: 28px; height: max(1px, parent.height - 30px); content-width: self.width; content-height: Session.parameters.length * 26px;
+                    for p[i] in Session.parameters : ActionButton { x: 4px; y: i * 26px; width: parent.width - 8px; height: 26px; text: p.group + " · " + p.label; label: "Assign " + p.label + " to " + root.selected-macro.name; enabled: p.available && !p.macro-bound; ghost: true; clicked => { root.add-destination(p.id); } }
+                }
+            }
+        }
+    }
+}

@@ -11,6 +11,12 @@ option(DANDRUM_NATIVE_ONLY "Build the plugin with the native JUCE editor and no 
 option(DANDRUM_BUILD_FILTER_UI_SPIKES "Build optional Slint and JIVE filter experiments" OFF)
 option(DANDRUM_BUILD_TRIGGER_SLINT "Build the silent Trigger Slint performance preview" OFF)
 option(DANDRUM_SLINT_LIBRARY_ONLY "Build only the Slint design library catalog and its tests" OFF)
+option(DANDRUM_ADVANCED_SAMPLER_ONLY "Build only the native silent advanced sampler and its tests" OFF)
+if(DANDRUM_ADVANCED_SAMPLER_ONLY)
+    add_executable(dandrum-advanced-sampler)
+    add_subdirectory(ui/advanced-sampler)
+    return()
+endif()
 if(DANDRUM_SLINT_LIBRARY_ONLY)
     # Keep the reusable UI build independent of JUCE, Rust, Node, and the plugin.
     add_executable(dandrum-slint-catalog)

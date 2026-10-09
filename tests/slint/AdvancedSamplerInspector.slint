@@ -1,0 +1,17 @@
+export { Session } from "../../ui/advanced-sampler/Session.slint";
+import { Session } from "../../ui/advanced-sampler/Session.slint";
+import { SamplerTheme } from "../../ui/advanced-sampler/theme/Theme.slint";
+import { Inspector } from "../../ui/advanced-sampler/chrome/Inspector.slint";
+export component AdvancedSamplerInspectorTest inherits Window {
+    width: 320px; height: 760px; background: SamplerTheme.surface-window;
+    callback browse-requested(string);
+    callback context-requested(string, string);
+    Inspector { x: 4px; y: 4px; width: parent.width - 8px; height: parent.height - 8px;
+        title: Session.inspector-title; kind: Session.inspector-type; selected-id: Session.selected-id;
+        parameters: Session.inspector-parameters; history: Session.history;
+        command(a,t,f,v) => { Session.command(a,t,f,v); }
+        parameter-gesture(id,phase,value) => { Session.parameter-gesture(id,phase,value); }
+        browse(action) => { root.browse-requested(action); }
+        context-action(action,target) => { root.context-requested(action,target); }
+    }
+}

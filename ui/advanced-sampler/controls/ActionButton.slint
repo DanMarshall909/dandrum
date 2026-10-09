@@ -1,0 +1,31 @@
+import { SamplerTheme } from "../theme/Theme.slint";
+import { AppIcon } from "AppIcon.slint";
+import { Session } from "../Session.slint";
+import { DragState } from "../chrome/DragState.slint";
+export component ActionButton inherits FocusScope {
+    in property <string> text;
+    in property <string> icon;
+    in property <string> label: root.text;
+    in property <bool> selected;
+    in property <bool> primary;
+    in property <bool> ghost;
+    in property <bool> compact;
+    callback clicked();
+    width: max(root.compact ? 24px : 40px, label.preferred-width + (root.compact ? 8px : 18px)); height: root.compact ? 24px : 26px;
+    accessible-role: button; accessible-label: root.label; accessible-enabled: root.enabled;
+    accessible-checked: root.selected;
+    accessible-action-default => { root.activate(); }
+    focus-on-tab-navigation: root.enabled; focus-on-click: root.enabled;
+    focus-lost(reason) => { if reason == FocusReason.window-activation { Session.release-notes(); DragState.cancel(); } }
+    public function activate() { if root.enabled { root.clicked(); } }
+    key-pressed(event) => { if event.text == " " || event.text == Key.Return { root.activate(); return accept; } return reject; }
+    Rectangle {
+        y: touch.pressed ? 1px : 0px; border-radius: 2px; border-width: root.ghost && !root.selected && !root.has-focus ? 0px : 1px;
+        border-color: root.selected ? SamplerTheme.accent : root.has-focus ? SamplerTheme.paper-1 : SamplerTheme.line-2;
+        background: root.primary ? SamplerTheme.accent : root.selected ? SamplerTheme.accent-wash : touch.pressed ? SamplerTheme.surface-control-pressed : touch.has-hover ? SamplerTheme.surface-control-hover : root.ghost ? transparent : SamplerTheme.surface-control;
+        if SamplerTheme.soft && !root.ghost : Rectangle { border-radius: 2px; background: @linear-gradient(180deg, #FFFFFF12, transparent 50%, #00000020); }
+        label := Text { x: root.icon != "" && root.text != "" ? 18px : 0px; width: parent.width - self.x; text: root.text; color: !root.enabled ? SamplerTheme.text-disabled : root.primary ? SamplerTheme.text-on-accent : root.selected ? SamplerTheme.accent : SamplerTheme.text-secondary; font-family: SamplerTheme.font-ui; font-size: 12px; font-weight: 600; horizontal-alignment: center; vertical-alignment: center; }
+        if root.icon != "" : AppIcon { x: root.text != "" ? 5px : (parent.width - self.width) / 2; y: (parent.height - self.height) / 2; name: root.icon; size: 14px; tint: root.selected ? SamplerTheme.accent : root.primary ? SamplerTheme.text-on-accent : SamplerTheme.paper-3; }
+    }
+    touch := TouchArea { enabled: root.enabled; clicked => { root.focus(); root.activate(); } }
+}

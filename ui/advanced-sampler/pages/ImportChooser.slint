@@ -1,0 +1,33 @@
+import { SamplerTheme } from "../theme/Theme.slint";
+struct ImportChoice { id: string, name: string, description: string, suggested: bool }
+export component ImportChooser inherits FocusScope {
+    in-out property <string> mode: "root-velocity";
+    callback chosen(string);
+    callback cancelled();
+    private property <[ImportChoice]> choices: [
+        {id: "sequential", name: "One per key", description: "Each file on its own key from C3 upward.", suggested: false},
+        {id: "root-velocity", name: "By root + velocity", description: "Read notes and dynamics from file names. Fill the keys between roots.", suggested: true},
+        {id: "stack", name: "Stack", description: "All files play together on every key.", suggested: false},
+        {id: "round-robin", name: "Round robin", description: "One key; files cycle per hit.", suggested: false}
+    ];
+    capture-key-pressed(event) => { if event.text == Key.Escape { root.cancelled(); return accept; } return reject; }
+    for choice[i] in root.choices : FocusScope {
+        x: i * (root.width + 8px) / 4; width: (root.width - 24px) / 4; height: root.height;
+        accessible-role: button; accessible-label: choice.name; accessible-checked: root.mode == choice.id;
+        focus-on-tab-navigation: true; focus-on-click: true;
+        accessible-action-default => { root.mode = choice.id; root.chosen(choice.id); }
+        key-pressed(event) => { if event.text == Key.Return || event.text == " " { root.mode = choice.id; root.chosen(choice.id); return accept; } return reject; }
+        Rectangle { border-radius: 4px; border-width: 1px; border-color: root.mode == choice.id ? SamplerTheme.accent : SamplerTheme.line-2; background: SamplerTheme.ink-2;
+            Rectangle { x: 12px; y: 12px; width: parent.width - 24px; height: 44px; background: SamplerTheme.ink-0; border-radius: 2px;
+                for cell in 6 : Rectangle { visible: choice.id == "sequential"; x: 4px + cell * (parent.width - 8px) / 6; y: 4px; width: (parent.width - 8px) / 6 - 2px; height: 36px; background: SamplerTheme.ink-5; border-radius: 1px; }
+                for cell in 6 : Rectangle { visible: choice.id == "root-velocity"; x: 4px + mod(cell,3) * (parent.width - 8px) / 3; y: 4px + floor(cell / 3) * 19px; width: (parent.width - 8px) / 3 - 2px; height: 17px; background: cell < 3 ? SamplerTheme.accent-lo : SamplerTheme.ink-6; border-radius: 1px; }
+                for row in 2 : Rectangle { visible: choice.id == "stack"; x: 4px; y: 4px + row * 19px; width: parent.width - 8px; height: 17px; background: SamplerTheme.ink-5; border-radius: 1px; }
+                Rectangle { visible: choice.id == "round-robin"; x: parent.width / 3; y: 4px; width: parent.width / 3; height: 36px; background: SamplerTheme.ink-5; border-radius: 1px; }
+            }
+            Text { x: 12px; y: 64px; width: parent.width - 24px; text: choice.name; font-family: SamplerTheme.font-ui; font-size: 13px; font-weight: 600; color: SamplerTheme.paper-1; overflow: elide; }
+            Text { visible: choice.suggested; x: 12px; y: 84px; text: "SUGGESTED"; font-family: SamplerTheme.font-ui; font-size: 10px; font-weight: 600; letter-spacing: 0.5px; color: SamplerTheme.accent; }
+            Text { x: 12px; y: choice.suggested ? 106px : 88px; width: parent.width - 24px; height: parent.height - self.y - 12px; text: choice.description; font-family: SamplerTheme.font-ui; font-size: 12px; color: SamplerTheme.paper-3; wrap: word-wrap; }
+        }
+        TouchArea { clicked => { parent.focus(); root.mode = choice.id; root.chosen(choice.id); } }
+    }
+}

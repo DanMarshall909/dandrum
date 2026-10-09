@@ -1,0 +1,37 @@
+import { SamplerTheme } from "../theme/Theme.slint";
+import { PadInfo, MacroInfo, PatchInfo } from "types.slint";
+import { PlayBar } from "PlayBar.slint";
+import { MacroGrid } from "MacroGrid.slint";
+import { PlayPads } from "PlayPads.slint";
+import { PlayKeys } from "PlayKeys.slint";
+import { PatchBrowser } from "PatchBrowser.slint";
+export component PerformView inherits Rectangle {
+    in property <[PadInfo]> pads;
+    in property <[MacroInfo]> macros;
+    in property <[PatchInfo]> presets;
+    in property <[int]> sounding-notes;
+    in property <int> mapped-low: 24;
+    in property <int> mapped-high: 108;
+    in property <string> current-patch-id;
+    in property <string> generation;
+    private property <length> patch-width: max(200px, root.width - 580px);
+    callback note-on(int, int, string); callback note-off(int, string); callback selected(int);
+    callback macro-gesture(string, int, float); callback context-action(string, string); callback pc-changed(bool);
+    callback load(string); callback favourite(string); callback patch-action(string);
+    background: SamplerTheme.ink-1;
+    PlayBar { height: 32px; sections: false; pc-changed(on) => { root.pc-changed(on); } }
+    Rectangle { y: 32px; width: parent.width; height: 1px; background: SamplerTheme.line-1; }
+    PatchBrowser { x: 12px; y: 44px; width: root.patch-width; height: max(1px, parent.height - 214px); compact: true; presets: root.presets; current-patch-id: root.current-patch-id;
+        load(id) => { root.load(id); } favourite(id) => { root.favourite(id); } action(a) => { root.patch-action(a); }
+    }
+    PlayPads { x: root.patch-width + 28px; y: 44px; width: 384px; height: max(1px, parent.height - 214px); pads: root.pads; mapped-low: root.mapped-low; mapped-high: root.mapped-high; minimum-size: 84; maximum-size: 120; minimum-rows: 4; generation: root.generation; source: "perform.pad";
+        note-on(n,v,s) => { root.note-on(n,v,s); } note-off(n,s) => { root.note-off(n,s); } selected(n) => { root.selected(n); }
+    }
+    Rectangle { x: root.patch-width + 428px; y: 44px; width: 1px; height: max(1px, parent.height - 214px); background: SamplerTheme.line-1; }
+    MacroGrid { x: root.patch-width + 444px; y: 44px; width: 124px; height: max(1px, parent.height - 214px); macros: root.macros; face-size: 48px; budget: 56px; forced-columns: 2; distribute: true;
+        macro-gesture(id,phase,v) => { root.macro-gesture(id,phase,v); } context-action(a,id) => { root.context-action(a,id); }
+    }
+    PlayKeys { x: 12px; y: parent.height - 160px; width: parent.width - 24px; height: 148px; mapped-low: root.mapped-low; mapped-high: root.mapped-high; sounding-notes: root.sounding-notes; generation: root.generation; source: "perform.key";
+        note-on(n,v,s) => { root.note-on(n,v,s); } note-off(n,s) => { root.note-off(n,s); }
+    }
+}

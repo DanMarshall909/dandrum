@@ -1,0 +1,26 @@
+import { SamplerTheme } from "../theme/Theme.slint";
+import { PatchInfo } from "types.slint";
+import { AppIcon } from "../controls/AppIcon.slint";
+export component PatchRow inherits FocusScope {
+    in property <PatchInfo> patch;
+    in property <bool> selected;
+    in property <bool> current;
+    in property <bool> compact;
+    callback picked(string); callback loaded(string); callback favourite(string);
+    height: root.compact ? 30px : 28px;
+    accessible-role: button; accessible-label: root.patch.name + " · " + root.patch.category + " · " + root.patch.contents;
+    focus-on-tab-navigation: true; focus-on-click: true;
+    accessible-action-default => { root.picked(root.patch.id); if root.compact { root.loaded(root.patch.id); } }
+    key-pressed(event) => { if event.text == Key.Return { root.loaded(root.patch.id); return accept; } if event.text == " " { root.picked(root.patch.id); return accept; } return reject; }
+    Rectangle { border-width: root.selected || (root.compact && root.current) || root.has-focus ? 1px : 0px; border-radius: 3px; border-color: root.has-focus ? SamplerTheme.paper-1 : SamplerTheme.accent; background: root.selected || (root.compact && root.current) ? SamplerTheme.accent-wash : row-touch.has-hover ? SamplerTheme.ink-3 : transparent; }
+    Text { x: 30px; y: root.compact ? 2px : 0px; width: root.compact ? parent.width - 36px : parent.width * 0.34 - 30px; height: root.compact ? 14px : parent.height; text: root.patch.name; font-family: SamplerTheme.font-ui; font-size: 13px; color: SamplerTheme.paper-1; vertical-alignment: center; overflow: elide; }
+    if root.compact : Text { x: 30px; y: 16px; width: parent.width - 36px; height: 12px; text: root.patch.category + " · " + root.patch.origin; font-family: SamplerTheme.font-ui; font-size: 11px; color: SamplerTheme.paper-3; overflow: elide; }
+    if !root.compact : Text { x: parent.width * 0.34; width: 64px; height: parent.height; text: root.patch.category; font-family: SamplerTheme.font-ui; font-size: 12px; color: SamplerTheme.paper-3; vertical-alignment: center; }
+    if !root.compact : Text { x: parent.width * 0.34 + 72px; width: max(0px, parent.width * 0.66 - 138px); height: parent.height; text: root.patch.contents; font-family: SamplerTheme.font-ui; font-size: 11px; color: SamplerTheme.paper-3; vertical-alignment: center; overflow: elide; }
+    if !root.compact : Text { x: parent.width - 60px; width: 56px; height: parent.height; text: root.patch.origin; font-family: SamplerTheme.font-ui; font-size: 11px; color: SamplerTheme.paper-3; vertical-alignment: center; }
+    row-touch := TouchArea { clicked => { root.focus(); root.picked(root.patch.id); if root.compact { root.loaded(root.patch.id); } } double-clicked => { if !root.compact { root.loaded(root.patch.id); } } }
+    star := TouchArea { x: 4px; y: (parent.height - 20px) / 2; width: 20px; height: 20px; accessible-role: button; accessible-label: (root.patch.favourite ? "Remove favourite " : "Favourite ") + root.patch.name;
+        clicked => { root.favourite(root.patch.id); }
+        AppIcon { x: 4px; y: 4px; size: 12px; name: "star"; tint: root.patch.favourite ? SamplerTheme.accent : SamplerTheme.paper-4; }
+    }
+}

@@ -1,0 +1,88 @@
+import { Session } from "../Session.slint";
+import { SamplerTheme } from "../theme/Theme.slint";
+import { MaterialSurface } from "../theme/Material.slint";
+import { ActionButton } from "../controls/ActionButton.slint";
+import { EventInfo } from "../Session.slint";
+
+component TraceHeading inherits Text {
+    height: 26px; color: SamplerTheme.secondary; font-family: SamplerTheme.font-ui;
+    font-size: 12px; font-weight: 700; letter-spacing: 1.2px; vertical-alignment: center;
+}
+
+component HitRow inherits FocusScope {
+    in property <EventInfo> event;
+    in property <bool> selected;
+    callback inspected(int);
+    height: 24px; accessible-role: button; accessible-label: "Inspect event " + root.event.sequence;
+    focus-on-tab-navigation: true; focus-on-click: true;
+    accessible-action-default => { root.inspected(root.event.sequence); }
+    key-pressed(event) => { if event.text == " " || event.text == Key.Return { root.inspected(root.event.sequence); return accept; } return reject; }
+    Rectangle { background: root.selected ? SamplerTheme.accent-wash : pointer.has-hover ? SamplerTheme.ink-3 : transparent;
+        Text { x: 12px; width: 26px; height: parent.height; text: "" + root.event.sequence; color: SamplerTheme.paper-4; font-family: SamplerTheme.font-value; font-size: 11px; vertical-alignment: center; }
+        Text { x: 46px; width: max(0px, parent.width - 58px); height: parent.height; text: root.event.label; color: SamplerTheme.paper-1; font-family: SamplerTheme.font-value; font-size: 12px; vertical-alignment: center; overflow: elide; }
+    }
+    pointer := TouchArea { clicked => { root.focus(); root.inspected(root.event.sequence); } }
+}
+
+export component DiagnosticsPage inherits Rectangle {
+    in property <bool> compact;
+    in property <bool> drawer;
+    private property <length> trace-height: root.drawer ? root.height : 176px;
+    private property <length> hits-width: root.width < 720px ? 180px : 240px;
+    private property <length> reasons-width: root.width < 720px ? 152px : 230px;
+    public function inspect-event(sequence: int) { Session.command("diagnostics.select", "" + sequence, "", 0); }
+    public function clear-events() { Session.command("event.clear", "", "", 0); }
+    public function toggle-failure() { Session.command("telemetry.fail", "", "", Session.mock-failure ? 0 : 1); }
+    MaterialSurface {
+        width: parent.width; height: root.trace-height; raised: false; edge: false;
+        Rectangle { width: root.hits-width; height: parent.height; border-width: 1px; border-color: SamplerTheme.line-1;
+            Rectangle { height: 26px; background: SamplerTheme.surface-panel-header; TraceHeading { x: 12px; width: parent.width - 24px; text: "WHY DID THIS PLAY?"; } }
+            Flickable { y: 27px; height: parent.height - 27px; width: parent.width; content-height: max(self.height, Session.hits.length * 24px); content-width: self.width;
+                if Session.hits.length == 0 : Text { x: 12px; y: 8px; width: parent.width - 24px; height: 50px; text: "No hits yet. Click a pad or press A to K on the Pads page."; font-family: SamplerTheme.font-ui; font-size: 12px; color: SamplerTheme.paper-3; wrap: word-wrap; }
+                for hit[i] in Session.hits : HitRow {
+                    y: i * 24px; width: parent.width; event: hit;
+                    selected: hit.sequence == Session.selected-diagnostic-event;
+                    inspected(sequence) => { root.inspect-event(sequence); }
+                }
+            }
+        }
+        Flickable { x: root.hits-width; width: parent.width - root.hits-width - root.reasons-width; height: parent.height; content-width: self.width; content-height: max(self.height, Session.diagnostics.length * 24px + 12px);
+            if Session.diagnostics.length == 0 : Rectangle { width: parent.width;
+                Text { x: 12px; y: 6px; width: parent.width - 24px; height: 20px; text: "Each hit is traced through these stages."; font-family: SamplerTheme.font-ui; font-size: 12px; color: SamplerTheme.paper-3; }
+                for title[i] in ["Event", "Trigger rules", "Selection", "Voice", "Audio source", "Modulation", "Output"] : Rectangle { x: 12px; y: 30px + i * 20px; width: parent.width - 24px; height: 20px;
+                    Text { width: 16px; text: "" + (i + 1); font-family: SamplerTheme.font-value; font-size: 10px; color: SamplerTheme.paper-3; vertical-alignment: center; }
+                    Text { x: 24px; width: 96px; text: title; font-family: SamplerTheme.font-ui; font-size: 12px; font-weight: 600; color: SamplerTheme.paper-3; vertical-alignment: center; }
+                    Rectangle { x: 128px; y: 10px; width: max(0px, parent.width - self.x); height: 1px; background: SamplerTheme.line-2; }
+                }
+            }
+            for stage[i] in Session.diagnostics : Rectangle { x: 12px; y: 6px + i * 24px; width: parent.width - 24px; height: 24px;
+                Rectangle { x: 0px; y: 4px; width: 16px; height: 16px; border-radius: 8px; border-width: 1px; border-color: stage.state == "failed" ? SamplerTheme.warn : SamplerTheme.line-2; background: stage.state == "failed" ? SamplerTheme.warn-wash : SamplerTheme.ink-3;
+                    Text { text: "" + (i + 1); font-family: SamplerTheme.font-value; font-size: 10px; font-weight: 600; color: stage.state == "failed" ? SamplerTheme.warn : SamplerTheme.paper-2; horizontal-alignment: center; vertical-alignment: center; }
+                }
+                Text { x: 24px; width: 96px; height: 24px; text: stage.title; font-family: SamplerTheme.font-ui; font-size: 12px; font-weight: 600; color: SamplerTheme.paper-3; vertical-alignment: center; overflow: elide; }
+                Text { x: 128px; width: max(0px, parent.width - self.x); height: 24px; text: stage.detail; accessible-label: stage.title + ": " + stage.detail; font-family: SamplerTheme.font-ui; font-size: 12px; color: stage.state == "failed" ? SamplerTheme.warn : SamplerTheme.paper-1; vertical-alignment: center; overflow: elide; }
+            }
+        }
+        Rectangle { x: parent.width - root.reasons-width; width: root.reasons-width; height: parent.height; border-width: 1px; border-color: SamplerTheme.line-1;
+            TraceHeading { x: 12px; width: parent.width - 24px; text: "IF SILENT…"; }
+            Text { x: 12px; y: 27px; width: parent.width - 24px; height: 20px; text: "Shows the exact reason"; font-family: SamplerTheme.font-ui; font-size: 11px; color: SamplerTheme.paper-3; }
+            for reason[i] in ["No matching trigger", "Muted or solo excluded", "Probability skipped", "Missing sample", "Voice limit reached"] : Rectangle {
+                x: 12px; y: 48px + i * 18px; width: parent.width - 24px; height: 18px;
+                private property <bool> active: Session.diagnostic-reason == ["unmapped", "muted", "probability", "missing", "limit"][i];
+                Rectangle { y: 6px; width: 6px; height: 6px; border-radius: 3px; background: parent.active ? SamplerTheme.warn : SamplerTheme.line-3; }
+                Text { x: 12px; width: parent.width - 28px; height: 18px; text: reason; accessible-label: reason + (parent.active ? " · active" : ""); font-family: SamplerTheme.font-ui; font-size: 12px; color: parent.active ? SamplerTheme.warn : SamplerTheme.paper-3; vertical-alignment: center; overflow: elide; }
+                Text { x: parent.width - 14px; width: 14px; height: 18px; text: parent.active ? "×" : Session.diagnostics.length > 0 ? "✓" : "—"; font-family: SamplerTheme.font-value; font-size: 10px; color: parent.active ? SamplerTheme.warn : SamplerTheme.paper-4; vertical-alignment: center; horizontal-alignment: right; }
+            }
+        }
+    }
+    if !root.drawer : MaterialSurface { y: root.trace-height + 8px; width: parent.width; height: max(0px, parent.height - self.y);
+        Rectangle { height: 34px; background: SamplerTheme.surface-panel-header;
+            TraceHeading { x: 12px; height: parent.height; text: "EVENT LOG"; }
+            ActionButton { x: parent.width - 282px; y: 5px; width: 190px; text: "Simulate adapter failure"; label: "Simulate adapter failure"; selected: Session.mock-failure; clicked => { root.toggle-failure(); } }
+            ActionButton { x: parent.width - 86px; y: 5px; width: 78px; text: "Clear"; label: "Clear events"; clicked => { root.clear-events(); } }
+        }
+        Flickable { y: 35px; width: parent.width; height: max(0px, parent.height - 35px); content-width: self.width; content-height: max(self.height, Session.events.length * 24px + 12px);
+            for event[i] in Session.events : Text { x: 12px; y: 6px + i * 24px; width: parent.width - 24px; height: 24px; text: "{event.sequence} · {event.kind} · {event.label}"; font-family: SamplerTheme.font-value; font-size: 11px; color: event.kind == "failed" ? SamplerTheme.warn : SamplerTheme.paper-3; vertical-alignment: center; overflow: elide; }
+        }
+    }
+}

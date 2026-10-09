@@ -1,0 +1,26 @@
+import { SamplerMetrics } from "../../ui/advanced-sampler/FrameMetrics.slint";
+export component AdvancedSamplerFrameTest inherits Window {
+    width: 480px; height: 200px;
+    in-out property <int> checks;
+    in-out property <string> failure;
+    callback verify();
+    function check(ok: bool, message: string) { root.checks += 1; if !ok { root.failure += message + "; "; } }
+    verify => {
+        root.checks = 0; root.failure = "";
+        root.check(SamplerMetrics.header(820px) == 39px, "minimum header");
+        root.check(SamplerMetrics.rail(820px) == 40px && SamplerMetrics.tree(820px) == 36px, "minimum icon columns");
+        root.check(SamplerMetrics.inspector(820px) == 232px, "minimum inspector");
+        root.check(SamplerMetrics.header(1200px) == 45px, "default header");
+        root.check(SamplerMetrics.rail(1200px) == 68px && SamplerMetrics.tree(1200px) == 208px, "default navigation columns");
+        root.check(SamplerMetrics.inspector(1200px) == 272px, "default inspector");
+        root.check(SamplerMetrics.tree(1600px) == 248px && SamplerMetrics.inspector(1600px) == 320px, "expanded columns");
+        root.check(SamplerMetrics.workspace(1200px) == 632px, "reference workspace width");
+        root.check(SamplerMetrics.workspace(820px) > 0px && SamplerMetrics.workspace(1600px) > 0px, "workspace remains visible");
+        root.check(SamplerMetrics.drawer-body(1200px) == 284px && SamplerMetrics.drawer-body(1600px) == 352px, "drawer body sizes");
+        root.check(SamplerMetrics.body(1200px, 800px, 314px, 0px) > 300px, "body after open drawer");
+        root.check(SamplerMetrics.body(820px, 560px, 30px, 0px) > 400px, "minimum with closed drawer");
+    }
+    run-tests-button := TouchArea { width: 150px; height: 35px; clicked => { root.verify(); } accessible-role: button; accessible-label: "Run frame contracts"; }
+    Text { y: 5px; text: "Run frame contracts"; }
+    report := Text { y: 45px; width: parent.width; text: root.failure == "" ? "PASS: " + root.checks + " frame contracts" : "FAIL: " + root.failure; accessible-label: self.text; }
+}

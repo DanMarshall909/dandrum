@@ -1,0 +1,80 @@
+import { ScrollView } from "std-widgets.slint";
+import { Session } from "../Session.slint";
+import { SamplerTheme } from "../theme/Theme.slint";
+import { ActionButton } from "../controls/ActionButton.slint";
+import { ParamKnob } from "../controls/ParamKnob.slint";
+import { DragTarget } from "../chrome/DragState.slint";
+import { LayerParameter } from "../domain/types.slint";
+import { PageSection, SectionText } from "PageSection.slint";
+// Editor curves visualize parameter changes; the silent adapter does not claim DSP response.
+component ProcessorGraph inherits Rectangle {
+ in property <string> processor-name;
+ in property <[LayerParameter]> parameters;
+ private property <LayerParameter> primary: root.parameters.length > 0 ? root.parameters[0] : { minimum: 0, maximum: 1 };
+ private property <float> ratio: root.parameters.length > 1 ? max(1,root.parameters[1].value) : 1;
+ background: SamplerTheme.ink-0; border-width: 1px; border-color: SamplerTheme.line-2;
+ pure function response(t:float) -> float {
+  let normalized = (root.primary.value - root.primary.minimum)/max(0.0001,root.primary.maximum - root.primary.minimum);
+  let threshold = (root.primary.value + 60)/60;
+  return root.processor-name == "Compressor" ? min(1,max(0,t <= threshold ? t : threshold + (t - threshold)/root.ratio))
+   : root.processor-name == "Parametric EQ" ? min(0.95,max(0.05,0.5 + (normalized - 0.5)*0.5*cos(t*180deg)))
+   : root.processor-name == "Filter" ? 1/(1 + pow(t/max(0.01,normalized),4))
+   : root.processor-name == "Saturate" ? 0.5 + (t - 0.5)/(1 + abs(t - 0.5)*normalized*8)
+   : root.processor-name == "Bitcrush" ? round(t*max(2,root.primary.value))/max(2,root.primary.value)
+   : (1 - t)*(0.3 + normalized*0.7);
+ }
+ for i in 5 : Rectangle { x: i*parent.width/4; width: 1px; height: parent.height; background: SamplerTheme.line-1; }
+ Rectangle { y: parent.height/2; height: 1px; background: SamplerTheme.line-2; }
+ for i in 64 : Path { width: parent.width; height: parent.height; viewbox-x: 0; viewbox-y: 0; viewbox-width: self.width/1px; viewbox-height: self.height/1px; fill: transparent; stroke: SamplerTheme.accent; stroke-width: 1px;
+  MoveTo { x: i/64*parent.width/1px; y: (1 - root.response(i/64))*parent.height/1px; }
+  LineTo { x: (i+1)/64*parent.width/1px; y: (1 - root.response((i+1)/64))*parent.height/1px; }
+ }
+ Rectangle { x: 4px; y: 4px; width: 8px; height: 8px; background: SamplerTheme.accent; }
+ TouchArea { accessible-role: button; accessible-label: "Processor graph "+root.processor-name; private property <length> start-x; private property <float> start-value;
+  pointer-event(e) => { if e.kind == PointerEventKind.down && e.button == PointerEventButton.left { self.start-x = self.absolute-position.x + self.mouse-x; self.start-value = root.primary.value; Session.parameter-gesture(root.primary.id,0,root.primary.value); } if e.kind == PointerEventKind.up { Session.parameter-gesture(root.primary.id,2,root.primary.value); } if e.kind == PointerEventKind.cancel { Session.parameter-gesture(root.primary.id,3,root.primary.value); } }
+  moved => { if self.pressed { Session.parameter-gesture(root.primary.id,1,self.start-value + (self.absolute-position.x+self.mouse-x - self.start-x)/root.width*(root.primary.maximum - root.primary.minimum)); } }
+ }
+}
+
+export component EffectsPage inherits Rectangle {
+ in property <bool> compact;
+ in property <bool> expanded;
+ callback context-action(string,string);
+ public function add-effect(name:string) { Session.command("fx.add","main",name,0); }
+ ScrollView { VerticalLayout { padding: 0px; spacing: 4px; alignment: start;
+  PageSection { title: "Effects"; subtitle: "Main 1/2"; height: 96px;
+   HorizontalLayout { x: 12px; y: 45px; width: parent.width - 24px; height: 32px; spacing: 5px; alignment: start;
+    for effect in Session.effect-modules : ActionButton { text: effect.name+"  →"; compact: true; selected: effect.id == Session.selected-id; clicked => { Session.command("selection.set",effect.id,"",0); } }
+    add-effect := ActionButton { text: "+ Effect"; compact: true; clicked => { root.add-effect("Reverb"); } }
+   }
+  }
+  SectionText { text: "Group inserts"; accessible-label: "Group inserts"; height: 22px; color: SamplerTheme.paper-1; font-weight: 600; }
+  for chain in Session.fx-chains : PageSection { visible: chain.kind == "group"; title: chain.name; height: chain.kind == "group" ? 100px : 0px;
+   Flickable { x: 12px; y: 40px; width: parent.width - 24px; height: 26px; content-width: max(self.width,chain.processors.length*146px + 94px); content-height: self.height;
+    for processor[i] in chain.processors : ActionButton { x: i*146px; width: 142px; height: 24px; text: processor.name+(processor.bypassed ? " · bypassed" : ""); label: "Select effect "+chain.name+" "+processor.name; selected: processor.id == Session.selected-id; compact: true; clicked => { Session.command("selection.set",processor.id,"",0); } }
+    ActionButton { x: chain.processors.length*146px; text: "+ Effect"; label: "Add effect to "+chain.name; compact: true; clicked => { Session.command("fx.add",chain.id,"Parametric EQ",0); } }
+   }
+   SectionText { x: 12px; y: 70px; width: parent.width - 24px; height: 20px; text: chain.processors.length+" processor(s) · group insert chain"; }
+  }
+  SectionText { text: "FX busses"; accessible-label: "FX busses"; height: 22px; color: SamplerTheme.paper-1; font-weight: 600; }
+  for chain in Session.fx-chains : PageSection { visible: chain.kind == "bus"; title: chain.name; height: chain.kind == "bus" ? 100px : 0px;
+   Flickable { x: 12px; y: 40px; width: parent.width - 24px; height: 26px; content-width: max(self.width,chain.processors.length*146px + 94px); content-height: self.height;
+    for processor[i] in chain.processors : ActionButton { x: i*146px; width: 142px; height: 24px; text: processor.name+(processor.bypassed ? " · bypassed" : ""); label: "Select effect "+chain.name+" "+processor.name; selected: processor.id == Session.selected-id; compact: true; clicked => { Session.command("selection.set",processor.id,"",0); } }
+    ActionButton { x: chain.processors.length*146px; text: "+ Effect"; label: "Add effect to "+chain.name; compact: true; clicked => { Session.command("fx.add",chain.id,"Reverb",0); } }
+   }
+   SectionText { x: 12px; y: 70px; width: parent.width - 24px; height: 20px; text: chain.processors.length+" processor(s) · send bus insert chain"; }
+  }
+  for effect in Session.effect-modules : PageSection { title: effect.name; subtitle: effect.bypassed ? "Bypassed" : "Active"; height: root.compact ? 190px : 224px;
+   ActionButton { x: parent.width - 100px; y: 5px; text: effect.bypassed ? "Off" : "On"; label: "Bypass effect "+effect.name; selected: !effect.bypassed; compact: true; clicked => { Session.command("fx.bypass",effect.id,"",0); } }
+   ActionButton { x: parent.width - 54px; y: 5px; text: "↑"; label: "Move effect up"; compact: true; clicked => { Session.command("fx.move",effect.id,"",-1); } }
+   ActionButton { x: parent.width - 29px; y: 5px; text: "×"; label: "Delete effect"; compact: true; clicked => { Session.command("fx.delete",effect.id,"",0); } }
+   ProcessorGraph { x: 12px; y: 46px; width: parent.width - 24px; height: 56px; processor-name: effect.name; parameters: effect.parameters; }
+
+   HorizontalLayout { x: 12px; y: 112px; width: parent.width - 24px; height: 90px; spacing: 16px; alignment: start;
+    for parameter in effect.parameters : ParamKnob { parameter-id: parameter.id; context-action(action) => { root.context-action(action,parameter.id); } size: root.compact ? 32px : 44px; private property <float> scale: parameter.unit == "%" && parameter.maximum <= 1 ? 100 : 1; label: parameter.label; model-value: parameter.value*self.scale; value: parameter.value*self.scale; minimum: parameter.minimum*self.scale; maximum: parameter.maximum*self.scale; default-value: parameter.default-value*self.scale; unit: parameter.unit; value-display-always: true; gesture-began => { Session.parameter-gesture(parameter.id,0,self.value/self.scale); } changed(v) => { Session.parameter-gesture(parameter.id,1,v/self.scale); } gesture-ended => { Session.parameter-gesture(parameter.id,2,self.value/self.scale); } }
+
+   }
+  }
+  HorizontalLayout { height: 28px; spacing: 4px; alignment: start; ActionButton { text: "+ EQ"; clicked => { root.add-effect("Parametric EQ"); } } ActionButton { text: "+ Delay"; clicked => { root.add-effect("Delay"); } } ActionButton { text: "+ Compressor"; clicked => { root.add-effect("Compressor"); } } }
+ } }
+}

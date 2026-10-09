@@ -1,0 +1,118 @@
+import { ScrollView } from "std-widgets.slint";
+import { Session } from "../Session.slint";
+import { SamplerTheme } from "../theme/Theme.slint";
+import { ActionButton } from "../controls/ActionButton.slint";
+import { NumericField } from "../controls/NumericField.slint";
+import { OptionStrip } from "../controls/OptionStrip.slint";
+import { PageSection, SectionText } from "PageSection.slint";
+export component ModulationPage inherits Rectangle {
+ in property <bool> compact;
+ in property <bool> expanded;
+ callback context-action(string,string);
+ private property <string> selected-source: Session.selected-modulator == "" ? "lfo1" : Session.selected-modulator;
+ private property <float> gesture-origin;
+ private property <float> gesture-initial;
+ private property <float> gesture-latest;
+ private property <string> selected-destination: "cutoff";
+ pure function shape-value(t:float,shape:string) -> float {
+  let phase = mod(t,1);
+  return shape == "1" || shape == "triangle" || shape == "tri" ? 1 - 4 * abs(phase - 0.5)
+   : shape == "2" || shape == "saw" ? 1 - 2 * phase
+   : shape == "3" || shape == "square" || shape == "sq" ? (phase < 0.5 ? 1 : -1) : shape == "sh" ? [0.6,-0.3,0.9,-0.8,0.2,-0.5,0.75,-0.1][floor(mod(t/2,1)*8)] : sin(phase * 360deg);
+ }
+ pure function performance(t:float,low:float,high:float,shape:string,inverted:bool) -> float {
+  let input = ((t - low)/max(0.00001,high - low)).clamp(0,1);let value=shape == "exp" ? input*input : shape == "log" ? sqrt(input) : shape == "s" ? input*input*(3 - 2*input) : input;return inverted ? 1 - value : value;
+ }
+ pure function random(t:float,shape:string) -> float {
+  let values=[0.3,-0.7,0.55,0.1,-0.4,0.85,-0.2,0.6,-0.9,0.25,0.3];let position=t*10;let i=min(9,floor(position));let f=mod(position,1);return shape == "smooth" ? values[i]+(values[i+1] - values[i])*(0.5 - 0.5*cos(f*180deg)) : values[i];
+ }
+ pure function envelope(t:float,attack:float,decay:float,sustain:float,release:float) -> float {
+  let a=max(0.01,attack/1000); let d=max(0.01,decay/1000); let r=max(0.01,release/1000); let total=a+d+0.5+r;let time=t*total;
+  return time < a ? time/a : time < a+d ? 1 - (1 - sustain)*(time - a)/d : time < a+d+0.5 ? sustain : max(0,sustain*(1 - (time - a - d - 0.5)/r));
+ }
+ public function add-route() { Session.command("route.add",root.selected-source,root.selected-destination,0.25); }
+ VerticalLayout { padding: 0px; spacing: 4px; alignment: start;
+  PageSection { title: "Modulation"; height: 104px;
+   OptionStrip { x: 104px; y: 5px; width: 202px; label: "Group routes"; value: Session.route-grouping; options: [{id:"source",label:"Source"},{id:"destination",label:"Destination"}]; selected(grouping) => { Session.command("route.group",grouping,"",0); } }
+   Flickable { x: 12px; y: 40px; width: parent.width - 24px; height: 27px; content-width: Session.modulators.length*112px; content-height: self.height;
+    for source[i] in Session.modulators : ActionButton { x: i*112px; width: 108px; height: 25px; text: source.name; compact: true; selected: root.selected-source == source.id; clicked => { Session.command("modulator.select",source.id,"",0); } }
+   }
+   ActionButton { x: 12px; y: 74px; text: "+ LFO"; label: "Add modulator"; compact: true; clicked => { Session.command("modulator.add","","LFO",0); } }
+   HorizontalLayout { x: 91px; y: 73px; width: parent.width - 103px; height: 26px; spacing: 4px; alignment: start;
+    for id in ["cutoff","resonance","pitch","level","pan"] : ActionButton { text: id; compact: true; selected: root.selected-destination == id; clicked => { root.selected-destination=id; } }
+    ActionButton { text: "+ Route"; compact: true; clicked => { root.add-route(); } }
+   }
+  }
+  HorizontalLayout { height: root.height - 108px; spacing: 4px;
+   ScrollView { width: parent.width*0.53; VerticalLayout { padding: 0px; spacing: 4px; alignment: start;
+    for group in Session.route-groups : Rectangle { height: group.expanded ? 30px+group.routes.length*34px : 54px; background: SamplerTheme.ink-2; border-width: 1px; border-color: SamplerTheme.line-2;
+     ActionButton { x: 4px; y: 3px; width: parent.width - 32px; height: 25px; text: (group.expanded ? "⌄ " : "› ")+group.name+"  "+group.routes.length; label: "Toggle route group "+group.name; compact: true; ghost: true; clicked => { Session.command("route.expand",group.id,"",0); } }
+     ActionButton { x: parent.width - 28px; y: 4px; width: 24px; text: "+"; label: (group.source-id != "" ? "Add destination " : "Add source ")+group.name; compact: true; clicked => { root.context-action(group.source-id != "" ? "modulator-destination" : "modulation-add",group.source-id != "" ? group.source-id : group.destination-id); } }
+     SectionText { visible: !group.expanded; x: 12px; y: 29px; width: parent.width - 24px; height: 22px; text: group.summary; overflow: elide; font-size: 10px; }
+   for route[i] in group.routes : Rectangle { visible: group.expanded; x: 4px; y: 30px+i*34px; width: parent.width - 8px; height: 33px; background: route.id == Session.selected-route ? SamplerTheme.mod-wash : mod(i,2) == 0 ? SamplerTheme.ink-3 : transparent;
+    Rectangle { x: 4px; y: 4px; width: 5px; height: 18px; border-radius: 2px; background: route.slot == 0 ? SamplerTheme.mod-a : route.slot == 1 ? SamplerTheme.mod-b : route.slot == 2 ? SamplerTheme.mod-c : SamplerTheme.mod-d; }
+    ActionButton { x: 14px; y: 4px; width: parent.width - 154px; height: 25px; text: Session.route-grouping == "source" ? route.destination-name : route.source-name; label: "Select route "+route.source-name+" to "+route.destination-name; compact: true; ghost: true; clicked => { Session.command("route.select",route.id,"",0); } }
+    NumericField { x: parent.width - 137px; y: 4px; width: 54px; show-label: false; label: "Amount "+route.source-name+" to "+route.destination-name; model-value: route.amount * 100; value: route.amount*100; minimum: -100; maximum: 100; unit: "%"; step: 1; gesture-began => { Session.parameter-gesture("route:"+route.id+":amount",0,self.value/100); } changed(v) => { Session.parameter-gesture("route:"+route.id+":amount",1,v/100); } gesture-ended => { Session.parameter-gesture("route:"+route.id+":amount",2,self.value/100); } }
+    ActionButton { x: parent.width - 79px; width: 29px; y: 4px; text: route.on ? "On" : "Off"; compact: true; selected: route.on; clicked => { Session.command("route.bypass",route.id,"",0); } }
+    ActionButton { x: parent.width - 48px; width: 21px; y: 4px; text: "±"; label: "Invert modulation route"; compact: true; clicked => { Session.command("route.invert",route.id,"",0); } }
+    ActionButton { x: parent.width - 25px; width: 21px; y: 4px; text: "×"; label: "Remove modulation route"; compact: true; clicked => { Session.command("route.delete",route.id,"",0); } }
+   }
+    }
+   } }
+   ScrollView { width: parent.width*0.47 - 4px; VerticalLayout { padding: 0px; spacing: 4px; alignment: start;
+  PageSection { title: "Modulator"; height: 396px;
+   for mod in Session.modulators : Rectangle { visible: mod.id == root.selected-source; x: 12px; y: 44px; width: parent.width - 24px; height: 348px;
+    SectionText { y: 0px; width: parent.width; height: 24px; text: mod.name+" · "+mod.kind; color: SamplerTheme.paper-1; }
+    Rectangle { accessible-role: button; accessible-label: "Modulator graph "+mod.name; y: 30px; width: parent.width; height: 100px; background: SamplerTheme.ink-0; border-width: 1px; border-color: SamplerTheme.line-2;
+     for i in 5 : Rectangle { x: i*parent.width/4; width: 1px; height: parent.height; background: SamplerTheme.line-1; }
+     Rectangle { y: parent.height/2; height: 1px; background: SamplerTheme.line-2; }
+     for i in 100 : Path { width: parent.width; height: parent.height; viewbox-x: 0; viewbox-y: 0; viewbox-width: self.width/1px; viewbox-height: self.height/1px; fill: transparent; stroke: SamplerTheme.mod-a; stroke-width: 1px;
+      MoveTo { x: i/100*parent.width/1px; y: (mod.kind == "envelope" ? 0.95 - root.envelope(i/100,mod.attack,mod.decay,mod.sustain,mod.release)*0.9 : mod.kind == "lfo" ? 0.5 - root.shape-value(i/50+mod.phase,mod.shape)*mod.depth*0.45 : mod.kind == "random" ? 0.5 - root.random(i/100,mod.shape)*mod.depth*0.45 : 0.95 - root.performance(i/100,mod.in-low,mod.in-high,mod.shape,mod.inverted)*mod.depth*0.9)*parent.height/1px; }
+      LineTo { x: (i+1)/100*parent.width/1px; y: (mod.kind == "envelope" ? 0.95 - root.envelope((i+1)/100,mod.attack,mod.decay,mod.sustain,mod.release)*0.9 : mod.kind == "lfo" ? 0.5 - root.shape-value((i+1)/50+mod.phase,mod.shape)*mod.depth*0.45 : mod.kind == "random" ? 0.5 - root.random((i+1)/100,mod.shape)*mod.depth*0.45 : 0.95 - root.performance((i+1)/100,mod.in-low,mod.in-high,mod.shape,mod.inverted)*mod.depth*0.9)*parent.height/1px; }
+     }
+    }
+    NumericField { visible: mod.kind == "envelope"; x: 0*(parent.width/2); y: 143px; width: parent.width/2 - 5px; parameter-id: "modulator:"+mod.id+":attack"; label: "Modulator attack"; default-value: (mod.id == "amp-env" ? Session.amp-envelope-parameters[0].default-value : mod.id == "filter-env" ? Session.filter-envelope-parameters[0].default-value : 12)*1; model-value: mod.attack; value: mod.attack; minimum: 0; maximum: 2000; unit: "ms"; gesture-began => { Session.parameter-gesture("modulator:"+mod.id+":attack",0,self.value); } changed(v) => { Session.parameter-gesture("modulator:"+mod.id+":attack",1,v); } gesture-ended => { Session.parameter-gesture("modulator:"+mod.id+":attack",2,self.value); } }
+    NumericField { visible: mod.kind == "envelope"; x: 1*(parent.width/2); y: 143px; width: parent.width/2 - 5px; parameter-id: "modulator:"+mod.id+":decay"; label: "Modulator decay"; default-value: (mod.id == "amp-env" ? Session.amp-envelope-parameters[1].default-value : mod.id == "filter-env" ? Session.filter-envelope-parameters[1].default-value : 380)*1; model-value: mod.decay; value: mod.decay; minimum: 0; maximum: 5000; unit: "ms"; gesture-began => { Session.parameter-gesture("modulator:"+mod.id+":decay",0,self.value); } changed(v) => { Session.parameter-gesture("modulator:"+mod.id+":decay",1,v); } gesture-ended => { Session.parameter-gesture("modulator:"+mod.id+":decay",2,self.value); } }
+    NumericField { visible: mod.kind == "envelope"; x: 0*(parent.width/2); y: 191px; width: parent.width/2 - 5px; parameter-id: "modulator:"+mod.id+":sustain"; label: "Modulator sustain"; default-value: (mod.id == "amp-env" ? Session.amp-envelope-parameters[2].default-value : mod.id == "filter-env" ? Session.filter-envelope-parameters[2].default-value : 0.3)*100; model-value: mod.sustain*100; value: mod.sustain*100; minimum: 0; maximum: 100; unit: "%"; gesture-began => { Session.parameter-gesture("modulator:"+mod.id+":sustain",0,self.value/100); } changed(v) => { Session.parameter-gesture("modulator:"+mod.id+":sustain",1,v/100); } gesture-ended => { Session.parameter-gesture("modulator:"+mod.id+":sustain",2,self.value/100); } }
+    NumericField { visible: mod.kind == "envelope"; x: 1*(parent.width/2); y: 191px; width: parent.width/2 - 5px; parameter-id: "modulator:"+mod.id+":release"; label: "Modulator release"; default-value: (mod.id == "amp-env" ? Session.amp-envelope-parameters[3].default-value : mod.id == "filter-env" ? Session.filter-envelope-parameters[3].default-value : 1200)*1; model-value: mod.release; value: mod.release; minimum: 0; maximum: 5000; unit: "ms"; gesture-began => { Session.parameter-gesture("modulator:"+mod.id+":release",0,self.value); } changed(v) => { Session.parameter-gesture("modulator:"+mod.id+":release",1,v); } gesture-ended => { Session.parameter-gesture("modulator:"+mod.id+":release",2,self.value); } }
+    NumericField { visible: mod.kind == "lfo"; x: 0px; y: 143px; width: parent.width/3 - 4px; parameter-id: "modulator:"+mod.id+":rate"; label: "Rate"; default-value: 1; model-value: mod.rate; value: mod.rate; minimum: 0.01; maximum: 100; unit: "Hz"; step: 0.01; gesture-began => { Session.parameter-gesture("modulator:"+mod.id+":rate",0,self.value/1); } changed(v) => { Session.parameter-gesture("modulator:"+mod.id+":rate",1,v/1); } gesture-ended => { Session.parameter-gesture("modulator:"+mod.id+":rate",2,self.value/1); } }
+    NumericField { visible: mod.kind == "lfo"; x: parent.width/3; y: 143px; width: parent.width/3 - 4px; parameter-id: "modulator:"+mod.id+":depth"; label: "Depth"; default-value: 50; model-value: mod.depth*100; value: mod.depth*100; minimum: 0; maximum: 100; unit: "%"; step: 1; gesture-began => { Session.parameter-gesture("modulator:"+mod.id+":depth",0,self.value/100); } changed(v) => { Session.parameter-gesture("modulator:"+mod.id+":depth",1,v/100); } gesture-ended => { Session.parameter-gesture("modulator:"+mod.id+":depth",2,self.value/100); } }
+    NumericField { visible: mod.kind == "lfo"; x: parent.width*2/3; y: 143px; width: parent.width/3 - 4px; parameter-id: "modulator:"+mod.id+":phase"; label: "Phase"; default-value: 0; model-value: mod.phase*100; value: mod.phase*100; minimum: 0; maximum: 100; unit: "%"; step: 1; gesture-began => { Session.parameter-gesture("modulator:"+mod.id+":phase",0,self.value/100); } changed(v) => { Session.parameter-gesture("modulator:"+mod.id+":phase",1,v/100); } gesture-ended => { Session.parameter-gesture("modulator:"+mod.id+":phase",2,self.value/100); } }
+    OptionStrip { y: 243px; width: parent.width; label: "Modulator shape";
+     value: mod.kind == "lfo" ? (mod.shape == "0" ? "sine" : mod.shape == "1" || mod.shape == "triangle" ? "tri" : mod.shape == "2" ? "saw" : mod.shape == "3" || mod.shape == "square" ? "sq" : mod.shape) : mod.kind == "envelope" ? (mod.shape == "sine" ? "adsr" : mod.shape) : mod.kind == "random" ? (mod.shape == "sine" ? "step" : mod.shape) : (mod.shape == "sine" ? "lin" : mod.shape);
+     options: mod.kind == "lfo" ? [{id:"sine",label:"Sine"},{id:"tri",label:"Tri"},{id:"saw",label:"Saw"},{id:"sq",label:"Square"},{id:"sh",label:"S&H"}] : mod.kind == "envelope" ? [{id:"adsr",label:"ADSR"},{id:"ahdsr",label:"AHDSR"},{id:"multi",label:"Multi"}] : mod.kind == "random" ? [{id:"step",label:"Steps"},{id:"smooth",label:"Smooth"}] : [{id:"lin",label:"Linear"},{id:"exp",label:"Exp"},{id:"log",label:"Log"},{id:"s",label:"S-curve"}];
+     selected(v) => { Session.command("modulator.shape",mod.id,v,0); }
+    }
+    NumericField { visible: mod.kind == "lfo"; x: 0px; y: 191px; width: parent.width/2 - 4px; parameter-id: "modulator:"+mod.id+":fade-in"; label: "Modulator fade in"; default-value: 0; model-value: mod.fade-in; value: mod.fade-in; minimum: 0; maximum: 5000; unit: "ms"; gesture-began => { Session.parameter-gesture(self.parameter-id,0,self.value); } changed(v) => { Session.parameter-gesture(self.parameter-id,1,v); } gesture-ended => { Session.parameter-gesture(self.parameter-id,2,self.value); } }
+    NumericField { visible: mod.kind != "envelope"; x: parent.width/2; y: 191px; width: parent.width/2 - 4px; parameter-id: "modulator:"+mod.id+":smooth"; label: "Modulator smoothing"; default-value: 0; model-value: mod.smooth; value: mod.smooth; minimum: 0; maximum: 2000; unit: "ms"; gesture-began => { Session.parameter-gesture(self.parameter-id,0,self.value); } changed(v) => { Session.parameter-gesture(self.parameter-id,1,v); } gesture-ended => { Session.parameter-gesture(self.parameter-id,2,self.value); } }
+    NumericField { visible: mod.kind == "performance" || mod.kind == "macro"; x: 0px; y: 143px; width: parent.width/2 - 4px; parameter-id: "modulator:"+mod.id+":in-low"; label: "Modulator input low"; default-value: 0; model-value: mod.in-low*100; value: mod.in-low*100; minimum: 0; maximum: 100; unit: "%"; gesture-began => { Session.parameter-gesture(self.parameter-id,0,self.value/100); } changed(v) => { Session.parameter-gesture(self.parameter-id,1,v/100); } gesture-ended => { Session.parameter-gesture(self.parameter-id,2,self.value/100); } }
+    NumericField { visible: mod.kind == "performance" || mod.kind == "macro"; x: parent.width/2; y: 143px; width: parent.width/2 - 4px; parameter-id: "modulator:"+mod.id+":in-high"; label: "Modulator input high"; default-value: 100; model-value: mod.in-high*100; value: mod.in-high*100; minimum: 0; maximum: 100; unit: "%"; gesture-began => { Session.parameter-gesture(self.parameter-id,0,self.value/100); } changed(v) => { Session.parameter-gesture(self.parameter-id,1,v/100); } gesture-ended => { Session.parameter-gesture(self.parameter-id,2,self.value/100); } }
+    ActionButton { visible: mod.kind == "envelope"; x: 0px; y: 272px; width: parent.width/2 - 4px; text: "Loop envelope"; selected: mod.loop; clicked => { Session.command("modulator.set",mod.id,"loop",mod.loop ? 0 : 1); } }
+    ActionButton { x: parent.width/2; y: 272px; width: parent.width/2 - 4px; text: "Delete source"; clicked => { Session.command("modulator.delete",mod.id,"",0); } }
+    ActionButton { x: 0px; y: 305px; width: parent.width/3 - 4px; text: mod.kind == "lfo" ? "Tempo sync" : "Invert"; selected: mod.kind == "lfo" ? mod.sync : mod.inverted; clicked => { Session.command("modulator.set",mod.id,mod.kind == "lfo" ? "sync" : "invert",mod.kind == "lfo" ? (mod.sync ? 0 : 1) : (mod.inverted ? 0 : 1)); } }
+    ActionButton { x: parent.width/3; y: 305px; width: parent.width/3 - 4px; text: "Retrigger"; selected: mod.retrigger; clicked => { Session.command("modulator.set",mod.id,"retrigger",mod.retrigger ? 0 : 1); } }
+    ActionButton { x: parent.width*2/3; y: 305px; width: parent.width/3 - 4px; text: "Per voice"; selected: mod.per-voice; clicked => { Session.command("modulator.set",mod.id,"per-voice",mod.per-voice ? 0 : 1); } }
+
+   }
+  }
+  PageSection { title: "Selected route"; height: 222px;
+   for route in Session.routes : Rectangle { visible: route.id == Session.selected-route; x: 12px; y: 40px; width: parent.width - 24px; height: 180px;
+    OptionStrip { width: parent.width; label: "Route scope"; value: route.scope; options: [{id:"voice",label:"Per voice"},{id:"shared",label:"Shared"}]; selected(v) => { Session.command("route.scope",route.id,v,0); } }
+    OptionStrip { y: 32px; width: parent.width; label: "Combine"; value: route.combine; options: [{id:"add",label:"Add"},{id:"multiply",label:"Multiply"}]; selected(v) => { Session.command("route.combine",route.id,v,0); } }
+    OptionStrip { y: 143px; width: parent.width; label: "Update rate"; value: route.update-rate; options: [{id:"audio",label:"Audio"},{id:"control",label:"Control"},{id:"block",label:"Block"}]; selected(v) => { Session.command("route.rate",route.id,v,0); } }
+    OptionStrip { y: 64px; width: parent.width; label: "Polarity"; value: route.polarity; options: [{id:"unipolar",label:"Unipolar"},{id:"bipolar",label:"Bipolar"}]; selected(v) => { Session.command("route.polarity",route.id,v,0); } }
+    OptionStrip { y: 96px; width: parent.width; label: "Route curve"; value: route.curve; options: [{id:"linear",label:"Linear"},{id:"exp",label:"Exp"},{id:"log",label:"Log"},{id:"s-curve",label:"S curve"}]; selected(v) => { Session.command("route.curve",route.id,v,0); } }
+   }
+  }
+  PageSection { title: "Default amplitude modulator"; height: 110px;
+   SectionText { x: 12px; y: 38px; width: parent.width - 24px; text: "Detaching requires another release and voice reclamation modulator."; }
+   HorizontalLayout { x: 12px; y: 72px; width: parent.width - 24px; height: 28px; spacing: 6px; alignment: start;
+    ActionButton { text: "Replace with selected"; clicked => { Session.command("amp.replace",root.selected-source,"",0); } }
+    ActionButton { text: "Detach"; label: "Detach amplitude"; clicked => { Session.command("amp.detach","","",0); } }
+    ActionButton { text: "Restore default"; label: "Restore default amplitude"; clicked => { Session.command("amp.restore","","",0); } }
+   }
+  }
+   } }
+  }
+ }
+}

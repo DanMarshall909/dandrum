@@ -1,0 +1,81 @@
+import { SamplerTheme } from "../theme/Theme.slint";
+import { FitLayout } from "FitLayout.slint";
+import { Session } from "../Session.slint";
+import { DragTarget, DragState } from "../chrome/DragState.slint";
+export component PadCell inherits FocusScope {
+    in property <int> note;
+    in property <string> name;
+    in property <bool> mapped;
+    in property <bool> selected;
+    in property <bool> compact;
+    in property <length> size: 60px;
+    in property <float> level;
+    in property <int> velocity;
+    in property <int> choke-group: -1;
+    in property <int> layers;
+    in property <int> alternates;
+    in property <int> active-alternate: -1;
+    in property <bool> choked;
+    in property <string> source: "pad";
+    in property <string> generation;
+    private property <bool> held;
+    private property <int> held-note;
+    private property <string> held-source;
+    private property <length> inset: root.compact ? 5px : 7px;
+    callback note-on(int, int, string);
+    callback note-off(int, string);
+    callback selected-note(int);
+    width: root.size; height: root.size;
+    accessible-role: button; accessible-label: "Pad \{root.note} \{FitLayout.note-name(root.note)}, \{root.mapped ? root.name : "empty"}";
+    accessible-description: "Top plays louder. Space or Enter auditions. Release ends this input source.";
+    accessible-enabled: root.enabled; focus-on-tab-navigation: true; focus-on-click: true;
+    accessible-action-default => { root.press(0.8); root.release-note(); }
+    public function press(velocity: float) {
+        if !root.enabled { return; } root.selected-note(root.note);
+        if root.mapped && !root.held { root.held = true; root.held-note = root.note; root.held-source = root.source; root.note-on(root.note, max(1, round(velocity.clamp(0, 1) * 127)), root.source); }
+    }
+    public function release-note() { if root.held { root.held = false; root.note-off(root.held-note, root.held-source); } }
+    public function assign-source(asset: string) -> bool { return Session.command("pad.assign", "" + root.note, asset, 0); }
+    changed enabled => { if !root.enabled { root.release-note(); } }
+    changed visible => { if !root.visible { root.release-note(); } }
+    changed generation => { root.release-note(); }
+    changed note => { root.release-note(); }
+    changed mapped => { if !root.mapped { root.release-note(); } }
+    focus-lost(reason) => { root.release-note(); if reason == FocusReason.window-activation { Session.release-notes(); DragState.cancel(); } }
+    key-pressed(event) => { if event.text == " " || event.text == Key.Return { root.press(0.8); return accept; } if event.text == Key.Escape { root.release-note(); return accept; } return reject; }
+    key-released(event) => { if event.text == " " || event.text == Key.Return { root.release-note(); return accept; } return reject; }
+    Rectangle {
+        border-radius: 4px; border-width: root.mapped ? 1px : 0px; border-color: root.selected ? SamplerTheme.accent : SamplerTheme.line-2;
+        background: root.mapped ? root.held ? SamplerTheme.cap-press : input.has-hover ? SamplerTheme.pad-hover : SamplerTheme.pad : input.has-hover ? SamplerTheme.ink-3 : transparent;
+        drop-shadow-blur: root.mapped ? 2px : 0px; drop-shadow-offset-y: root.mapped ? 1px : 0px; drop-shadow-color: #00000044;
+        if root.mapped && SamplerTheme.soft : Rectangle { border-radius: 4px; background: @linear-gradient(180deg, #FFFFFF0D, transparent 50%, #0000001F); }
+        if root.mapped : Rectangle { x: 1px; y: 1px; width: parent.width - 2px; height: 1px; background: #FFFFFF12; }
+        if root.selected : Rectangle { x: 1px; y: 1px; width: parent.width - 2px; height: parent.height - 2px; border-radius: 3px; border-width: 1px; border-color: SamplerTheme.accent; }
+        if !root.mapped : Rectangle {
+            for i in 4 : Rectangle { x: i * (parent.width / 4); width: parent.width / 8; height: 1px; background: root.selected ? SamplerTheme.accent : SamplerTheme.line-2; }
+            for i in 4 : Rectangle { x: i * (parent.width / 4); y: parent.height - 1px; width: parent.width / 8; height: 1px; background: root.selected ? SamplerTheme.accent : SamplerTheme.line-2; }
+            for i in 4 : Rectangle { y: i * (parent.height / 4); width: 1px; height: parent.height / 8; background: root.selected ? SamplerTheme.accent : SamplerTheme.line-2; }
+            for i in 4 : Rectangle { x: parent.width - 1px; y: i * (parent.height / 4); width: 1px; height: parent.height / 8; background: root.selected ? SamplerTheme.accent : SamplerTheme.line-2; }
+        }
+        Rectangle { background: SamplerTheme.paper-1.with-alpha(root.level.clamp(0, 1) * 0.16); border-radius: 4px; }
+        Rectangle { height: 3px; background: SamplerTheme.paper-1.with-alpha(root.level.clamp(0, 1)); }
+        Text { x: root.inset; y: root.inset; height: 12px; text: "\{root.note}"; font-family: SamplerTheme.font-value; font-size: 10px; color: root.mapped ? SamplerTheme.text-secondary : SamplerTheme.text-disabled; }
+        if !root.compact : Text { x: 25px; y: root.inset; text: FitLayout.note-name(root.note); font-family: SamplerTheme.font-value; font-size: 10px; color: SamplerTheme.text-tertiary; }
+        if root.mapped && root.choke-group >= 0 : Rectangle { x: parent.width - 27px; y: root.inset; width: 22px; height: 12px; background: SamplerTheme.ink-0; border-radius: 2px;
+            Text { text: "⌁ \{root.choke-group}"; font-family: SamplerTheme.font-ui; font-size: 10px; font-weight: 600; color: SamplerTheme.text-secondary; horizontal-alignment: center; }
+        }
+        if root.mapped || !root.compact : Text { x: root.inset; y: root.size / 2 - 7px; width: parent.width - root.inset * 2; height: 15px; text: root.mapped ? root.name : "Empty"; font-family: SamplerTheme.font-ui; font-size: root.compact ? 11px : 13px; font-weight: 600; color: !root.mapped ? SamplerTheme.text-disabled : root.choked ? SamplerTheme.text-tertiary : SamplerTheme.text-primary; overflow: elide; }
+        if root.choked : Rectangle { x: root.inset; y: root.size / 2; width: parent.width - 2 * root.inset; height: 1px; background: SamplerTheme.text-tertiary; }
+        if root.mapped : Rectangle { x: root.inset; y: parent.height - root.inset - 4px; width: parent.width - 2 * root.inset - (root.alternates > 1 ? root.alternates * 6px : 0px); height: 3px; border-radius: 1px; background: SamplerTheme.ink-0;
+            Rectangle { width: parent.width * (root.velocity / 127).clamp(0, 1); background: SamplerTheme.paper-2.with-alpha(0.4 + root.level * 0.6); }
+        }
+        for i in root.alternates > 1 ? root.alternates : 0 : Rectangle { x: parent.width - root.inset - root.alternates * 6px + i * 6px; y: parent.height - root.inset - 5px; width: 4px; height: 4px; border-radius: 2px; border-width: 1px; border-color: SamplerTheme.paper-3; background: i == root.active-alternate ? SamplerTheme.paper-1 : transparent; }
+        if root.has-focus : Rectangle { x: -3px; y: -3px; width: parent.width + 6px; height: parent.height + 6px; border-width: 2px; border-color: SamplerTheme.paper-1; border-radius: 6px; }
+    }
+    DragTarget { accepted-kind: "source"; accept-slices: true; enabled: root.enabled; border-width: self.drag-over ? 2px : 0px; border-color: SamplerTheme.accent; border-radius: 4px;
+        dropped(asset) => { return root.assign-source(asset); }
+    }
+    input := TouchArea {
+        pointer-event(event) => { if event.kind == PointerEventKind.down && event.button == PointerEventButton.left { root.focus(); root.press(1 - self.mouse-y / max(1px, self.height) + 0.15); } else if event.kind == PointerEventKind.up || event.kind == PointerEventKind.cancel { root.release-note(); } }
+    }
+}

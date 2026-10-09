@@ -1,0 +1,24 @@
+export global PerformanceState {
+    in-out property <bool> open: true;
+    in-out property <bool> show-macros: true;
+    in-out property <bool> show-pads: true;
+    in-out property <bool> show-keys: true;
+    in-out property <bool> pc-enabled;
+    in-out property <int> base-note: 36;
+    in-out property <length> body-height: 0px;
+    in-out property <length> macro-width: 0px;
+    in-out property <length> pad-width: 0px;
+    in-out property <int> pad-size: 0;
+    in-out property <int> pad-start: -1;
+    in-out property <int> key-width: 0;
+    in-out property <int> last-key-width: 12;
+    callback release-notes();
+    callback octave-changed(int);
+    callback pc-changed(bool);
+    public function shift-octave(direction: int) { root.release-notes(); if root.key-width == 0 { root.key-width = root.last-key-width; } root.base-note = (root.base-note + direction * 12).clamp(0, 108); root.octave-changed(root.base-note); }
+    public function set-pc(enabled: bool) { if !enabled { root.release-notes(); } root.pc-enabled = enabled; root.pc-changed(enabled); }
+    public function zoom-pads(direction: int, current: int, start: int) { root.pad-size = (current + direction * 8).clamp(32, 160); if root.pad-start < 0 { root.pad-start = start; } }
+    public function fit-pads() { root.pad-size = 0; root.pad-start = -1; }
+    public function zoom-keys(direction: int, current: int) { root.key-width = (current + direction * 4).clamp(4, 48); }
+    public function fit-keys() { root.key-width = 0; }
+}

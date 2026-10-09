@@ -1,0 +1,22 @@
+import { SamplerTheme } from "../theme/Theme.slint";
+import { ActionButton } from "../controls/ActionButton.slint";
+import { PerformanceState } from "PerformanceState.slint";
+import { FitLayout } from "FitLayout.slint";
+export component PlayBar inherits Rectangle {
+    in property <bool> sections: true;
+    callback pc-changed(bool);
+    background: SamplerTheme.ink-3;
+    if SamplerTheme.soft : Rectangle { background: SamplerTheme.raised-overlay; }
+    ActionButton { x: 4px; width: 66px; height: parent.height; text: PerformanceState.open || !root.sections ? "⌄ PLAY" : "› PLAY"; ghost: true; clicked => { if root.sections { PerformanceState.open = !PerformanceState.open; if !PerformanceState.open { PerformanceState.release-notes(); } } } }
+    if root.sections && !PerformanceState.open : Text { x: 78px; width: max(0px, parent.width - 420px); height: parent.height; text: "Macros · pads · keys " + FitLayout.note-name(PerformanceState.base-note); font-family: SamplerTheme.font-value; font-size: 11px; color: SamplerTheme.paper-3; vertical-alignment: center; overflow: elide; }
+    if root.sections : HorizontalLayout { x: parent.width - 244px; y: 2px; width: 76px; height: parent.height - 4px; spacing: 2px;
+        ActionButton { icon: "variation"; label: "Show or hide macros"; compact: true; ghost: true; selected: PerformanceState.show-macros; clicked => { PerformanceState.show-macros = !PerformanceState.show-macros; PerformanceState.open = true; } }
+        ActionButton { icon: "tap"; label: "Show or hide pads"; compact: true; ghost: true; selected: PerformanceState.show-pads; clicked => { PerformanceState.show-pads = !PerformanceState.show-pads; PerformanceState.open = true; PerformanceState.release-notes(); } }
+        ActionButton { icon: "keyboard"; label: "Show or hide keyboard"; compact: true; ghost: true; selected: PerformanceState.show-keys; clicked => { PerformanceState.show-keys = !PerformanceState.show-keys; PerformanceState.open = true; PerformanceState.release-notes(); } }
+    }
+    Rectangle { x: parent.width - 162px; y: 6px; width: 1px; height: parent.height - 12px; background: SamplerTheme.line-2; }
+    ActionButton { x: parent.width - 151px; y: 2px; width: 24px; height: parent.height - 4px; icon: "pc-keys"; label: "Computer keyboard notes"; compact: true; ghost: true; selected: PerformanceState.pc-enabled; clicked => { PerformanceState.set-pc(!PerformanceState.pc-enabled); root.pc-changed(PerformanceState.pc-enabled); } }
+    ActionButton { x: parent.width - 124px; y: 2px; width: 24px; height: parent.height - 4px; icon: "chevron-left"; label: "Octave down (Z)"; compact: true; ghost: true; clicked => { PerformanceState.shift-octave(-1); } }
+    Text { x: parent.width - 99px; y: 0px; width: 70px; height: parent.height; text: FitLayout.note-name(PerformanceState.base-note) + "–" + FitLayout.note-name(PerformanceState.base-note + 12); font-family: SamplerTheme.font-value; font-size: 12px; color: SamplerTheme.paper-2; horizontal-alignment: center; vertical-alignment: center; }
+    ActionButton { x: parent.width - 27px; y: 2px; width: 24px; height: parent.height - 4px; icon: "chevron-right"; label: "Octave up (X)"; compact: true; ghost: true; clicked => { PerformanceState.shift-octave(1); } }
+}

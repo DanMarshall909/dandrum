@@ -1,0 +1,63 @@
+import { SamplerTheme } from "../theme/Theme.slint";
+import { PatchInfo } from "types.slint";
+import { PatchBrowserState } from "PatchBrowserState.slint";
+import { PatchFilter } from "PatchFilter.slint";
+import { PatchRow } from "PatchRow.slint";
+import { ActionButton } from "../controls/ActionButton.slint";
+import { AppIcon } from "../controls/AppIcon.slint";
+export component PatchBrowser inherits FocusScope {
+    in property <[PatchInfo]> presets;
+    in property <string> current-patch-id;
+    in property <bool> compact;
+    in property <bool> minimum;
+    out property <string> chosen-id: PatchBrowserState.selected-id != "" ? PatchBrowserState.selected-id : PatchFilter.first(root.presets, PatchBrowserState.query, root.compact ? "All" : PatchBrowserState.category);
+    out property <int> matched-count: PatchFilter.count(root.presets, PatchBrowserState.query, root.compact ? "All" : PatchBrowserState.category);
+    private property <length> sidebar: root.compact ? 0px : root.minimum ? 112px : 132px;
+    private property <length> header-height: root.compact ? 36px : 34px;
+    private property <length> footer-height: root.compact ? 0px : 40px;
+    callback load(string); callback favourite(string); callback action(string); callback closed();
+    accessible-role: groupbox; accessible-label: "Patch browser";
+    public function load-selected() { if root.chosen-id != "" { root.load(root.chosen-id); } }
+    key-pressed(event) => { if event.text == Key.Escape { root.closed(); return accept; } if event.text == Key.Return { root.load-selected(); return accept; } return reject; }
+    Rectangle { border-radius: 4px; border-width: 1px; border-color: root.compact ? SamplerTheme.line-1 : SamplerTheme.line-3; background: SamplerTheme.ink-2; drop-shadow-blur: root.compact ? 0px : 20px; drop-shadow-offset-y: root.compact ? 0px : 8px; drop-shadow-color: #00000080; }
+    Rectangle { y: 0px; height: root.header-height; background: root.compact ? transparent : SamplerTheme.ink-3;
+        if !root.compact : Text { x: 12px; width: 56px; text: "PATCHES"; font-family: SamplerTheme.font-ui; font-size: 12px; font-weight: 700; color: SamplerTheme.secondary; vertical-alignment: center; }
+        Rectangle { x: root.compact ? 6px : 78px; y: root.compact ? 6px : 5px; width: parent.width - self.x - (root.compact ? 6px : 96px); height: root.compact ? 26px : 24px; background: SamplerTheme.ink-0; border-width: 1px; border-color: SamplerTheme.line-2; border-radius: 2px;
+            AppIcon { x: 8px; y: 6px; name: "search"; size: 12px; }
+            query := TextInput { x: 26px; width: parent.width - 32px; height: parent.height; text <=> PatchBrowserState.query; font-family: SamplerTheme.font-ui; font-size: 13px; color: SamplerTheme.paper-1; accessible-label: "Search patches";
+                edited => { PatchBrowserState.selected-id = ""; }
+                accepted => { root.load-selected(); }
+                key-pressed(event) => { if event.text == Key.Escape { root.closed(); return accept; } return reject; }
+            }
+            if PatchBrowserState.query == "" : Text { x: 26px; width: parent.width - 32px; text: "Search patches"; font-family: SamplerTheme.font-ui; font-size: 13px; color: SamplerTheme.paper-4; vertical-alignment: center; }
+        }
+        if !root.compact : Text { x: parent.width - 88px; width: 58px; text: "\{root.matched-count} patches"; font-family: SamplerTheme.font-value; font-size: 11px; color: SamplerTheme.paper-3; vertical-alignment: center; }
+        if !root.compact : ActionButton { x: parent.width - 28px; y: 5px; width: 24px; height: 24px; icon: "close"; label: "Close patch browser (Esc)"; compact: true; ghost: true; clicked => { root.closed(); } }
+    }
+    if !root.compact : Rectangle { x: 0px; y: root.header-height; width: root.sidebar; height: parent.height - root.header-height - root.footer-height; border-width: 1px; border-color: SamplerTheme.line-1;
+        for c[i] in ["All", "Drums", "Keys", "Hybrid", "Synth", "User", "Favourites"] : ActionButton { x: 4px; y: 4px + i * 27px; width: parent.width - 8px; height: 26px; text: c + "  " + PatchFilter.count(root.presets, "", c); label: c + " patches"; selected: PatchBrowserState.category == c; ghost: true; clicked => { PatchBrowserState.category = c; PatchBrowserState.selected-id = ""; } }
+    }
+    if !root.compact : Rectangle { x: root.sidebar; y: root.header-height; width: parent.width - root.sidebar; height: 24px;
+        Text { x: 30px; text: "NAME"; font-family: SamplerTheme.font-ui; font-size: 11px; font-weight: 600; color: SamplerTheme.paper-3; vertical-alignment: center; }
+        Text { x: parent.width * 0.34; text: "TYPE"; font-family: SamplerTheme.font-ui; font-size: 11px; font-weight: 600; color: SamplerTheme.paper-3; vertical-alignment: center; }
+        Text { x: parent.width * 0.34 + 72px; text: "CONTENTS"; font-family: SamplerTheme.font-ui; font-size: 11px; font-weight: 600; color: SamplerTheme.paper-3; vertical-alignment: center; }
+        Text { x: parent.width - 60px; text: "ORIGIN"; font-family: SamplerTheme.font-ui; font-size: 11px; font-weight: 600; color: SamplerTheme.paper-3; vertical-alignment: center; }
+        Rectangle { y: parent.height - 1px; height: 1px; background: SamplerTheme.line-1; }
+    }
+    Flickable { x: root.sidebar + (root.compact ? 4px : 0px); y: root.header-height + (root.compact ? 0px : 24px); width: parent.width - self.x - (root.compact ? 4px : 0px); height: max(1px, parent.height - self.y - root.footer-height); content-width: self.width; content-height: max(self.height, root.matched-count * (root.compact ? 30px : 28px));
+        VerticalLayout { width: parent.width; height: root.matched-count * (root.compact ? 30px : 28px); spacing: 0px;
+            for p in root.presets : PatchRow { visible: PatchFilter.matches(p, PatchBrowserState.query, root.compact ? "All" : PatchBrowserState.category); height: self.visible ? root.compact ? 30px : 28px : 0px; patch: p; compact: root.compact; selected: !root.compact && root.chosen-id == p.id; current: root.current-patch-id == p.id;
+                picked(id) => { PatchBrowserState.selected-id = id; } loaded(id) => { root.load(id); } favourite(id) => { root.favourite(id); }
+            }
+        }
+        if root.matched-count == 0 : Text { x: 10px; y: 14px; text: "No patches match your search."; font-family: SamplerTheme.font-ui; font-size: 12px; color: SamplerTheme.paper-3; }
+    }
+    if !root.compact : Rectangle { y: parent.height - 40px; height: 40px;
+        Rectangle { height: 1px; background: SamplerTheme.line-1; }
+        ActionButton { x: 8px; y: 8px; icon: "import"; text: "Import"; label: "Import patch definition"; ghost: true; clicked => { root.action("import"); } }
+        ActionButton { x: 80px; y: 8px; icon: "export"; text: "Export"; label: "Export patch definition"; ghost: true; clicked => { root.action("export"); } }
+        ActionButton { x: 154px; y: 8px; text: "Copy definition"; ghost: true; clicked => { root.action("copy"); } }
+        ActionButton { x: parent.width - 145px; y: 8px; width: 65px; text: "Cancel"; ghost: true; clicked => { root.closed(); } }
+        ActionButton { x: parent.width - 72px; y: 8px; width: 64px; text: root.current-patch-id == root.chosen-id ? "Loaded" : "Load"; primary: true; enabled: root.chosen-id != "" && root.current-patch-id != root.chosen-id; clicked => { root.load-selected(); } }
+    }
+}

@@ -1,0 +1,10 @@
+import { SamplePage } from "../../ui/advanced-sampler/pages/SamplePage.slint";
+import { SlicesPage } from "../../ui/advanced-sampler/pages/SlicesPage.slint";
+export { Session } from "../../ui/advanced-sampler/Session.slint";
+export { ValueCodec, ParsedValue } from "../../ui/slint/controls/ValueCodec.slint";
+export component AdvancedSamplerSourcePagesTest inherits Window {
+    width: 820px; height: 1100px;
+    in-out property <bool> slices;
+    sample := SamplePage { x: 0px; y: 0px; width: parent.width; height: parent.height; visible: !root.slices; }
+    slicing := SlicesPage { x: 0px; y: 0px; width: parent.width; height: parent.height; visible: root.slices; }
+}

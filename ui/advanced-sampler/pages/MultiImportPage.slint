@@ -1,0 +1,13 @@
+import { SamplerTheme } from "../theme/Theme.slint";
+import { ImportChooser } from "ImportChooser.slint";
+export component MultiImportPage inherits Rectangle {
+    callback browse(string);
+    callback cancelled();
+    background: SamplerTheme.accent-wash; border-width: 1px; border-color: SamplerTheme.accent; border-radius: 6px;
+    Rectangle { x: 24px; y: max(24px,(parent.height - 310px)/2); width: parent.width - 48px; height: 310px;
+        Text { width: parent.width; y: 0px; height: 20px; text: "12 FILES · RELEASE TO MAP"; horizontal-alignment: center; font-family: SamplerTheme.font-ui; font-size: 13px; font-weight: 700; letter-spacing: 1px; color: SamplerTheme.paper-1; }
+        Text { x: 12px; y: 28px; width: parent.width - 24px; height: 36px; text: "File names contain notes C3–B4 and dynamics p / f. Choose how to map the files."; horizontal-alignment: center; wrap: word-wrap; font-family: SamplerTheme.font-ui; font-size: 13px; color: SamplerTheme.paper-2; }
+        ImportChooser { y: 80px; width: parent.width; height: 190px; chosen(mode) => { root.browse(mode); } cancelled => { root.cancelled(); } }
+        Text { x: 12px; y: 286px; width: parent.width - 24px; text: "By root + velocity is suggested · Esc cancels"; horizontal-alignment: center; font-family: SamplerTheme.font-ui; font-size: 12px; color: SamplerTheme.paper-3; }
+    }
+}

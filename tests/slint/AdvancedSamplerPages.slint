@@ -1,0 +1,39 @@
+export { ValueCodec, ParsedValue } from "../../ui/slint/controls/ValueCodec.slint";
+import { Session } from "../../ui/advanced-sampler/Session.slint";
+export { Session } from "../../ui/advanced-sampler/Session.slint";
+import { PadsPage } from "../../ui/advanced-sampler/pages/PadsPage.slint";
+import { MacrosPage } from "../../ui/advanced-sampler/pages/MacrosPage.slint";
+import { MacroActions } from "../../ui/advanced-sampler/performance/MacroActions.slint";
+import { ModulatorTree } from "../../ui/advanced-sampler/chrome/ModulatorTree.slint";
+export component AdvancedSamplerPagesTest inherits Window {
+    width: 900px; height: 720px;
+    out property <int> checks;
+    out property <float> projected-pan: Session.pads[36].pan;
+    out property <float> page-pan: pads.pad-at(36).pan;
+    out property <string> report;
+    out property <bool> passed;
+    in-out property <bool> actions-open;
+    callback rename-macro(string) -> bool;
+    rename-macro(name) => { return actions.rename(name); }
+    public function expect(condition: bool, description: string) {
+        root.checks += 1; if !condition { root.passed = false; root.report += description + "\n"; }
+    }
+    callback run-tests() -> bool;
+    run-tests => {
+        root.checks = 0; root.passed = true; root.report = "";
+        pads.set-bank(36); pads.set-rows(6);
+        root.expect(pads.bank == 36 && pads.rows == 6 && pads.note-at(0) == 56 && pads.note-at(23) == 39, "Pad bank orders higher notes at the top and starts the bank at bottom left");
+        pads.set-rows(8); root.expect(pads.note-at(0) == 64 && pads.note-at(31) == 39, "Every extra pad row advances four notes");
+        pads.set-bank(60); root.expect(pads.note-at(0) == 88 && pads.note-at(31) == 63, "Bank changes address MIDI notes rather than replacing patch rules");
+        pads.set-rows(5); root.expect(pads.rows == 8, "Unsupported row counts preserve the valid view");
+        pads.set-bank(7); root.expect(pads.bank == 60, "Unsupported banks preserve the valid view");
+        pads.toggle-panel(); root.expect(pads.panel-open, "Pad panel can open without altering mapped notes"); pads.toggle-panel(); root.expect(!pads.panel-open, "Pad panel can collapse without altering mapped notes");
+        pads.set-bank(36); pads.set-rows(6);
+        root.report = root.passed ? "PASS: \{root.checks} sampler page contracts" : "FAIL: " + root.report;
+        return root.passed;
+    }
+    pads := PadsPage { width: parent.width; height: parent.height; visible: Session.page == "pads"; }
+    macros := MacrosPage { width: parent.width; height: parent.height; visible: Session.page == "macros"; }
+    actions := MacroActions { x: 620px; y: 20px; width: 260px; visible: root.actions-open; macro-id: Session.selected-macro; close-requested => { root.actions-open = false; } }
+    ModulatorTree { x: 720px; y: 470px; width: 170px; height: 240px; modulators: Session.modulators; }
+}

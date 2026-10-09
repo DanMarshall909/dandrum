@@ -1,0 +1,12 @@
+// Geometry comes from the measured root v3 editor, not a scaled reference image.
+export global SamplerMetrics {
+    public pure function compact(width: length) -> bool { return width < 1000px; }
+    public pure function expanded(width: length) -> bool { return width >= 1500px; }
+    public pure function header(width: length) -> length { return SamplerMetrics.compact(width) ? 39px : 45px; }
+    public pure function rail(width: length) -> length { return SamplerMetrics.compact(width) ? 40px : 68px; }
+    public pure function tree(width: length) -> length { return SamplerMetrics.compact(width) ? 36px : SamplerMetrics.expanded(width) ? 248px : 208px; }
+    public pure function inspector(width: length) -> length { return SamplerMetrics.compact(width) ? 232px : SamplerMetrics.expanded(width) ? 320px : 272px; }
+    public pure function workspace(width: length) -> length { return max(0px, width - SamplerMetrics.rail(width) - SamplerMetrics.tree(width) - SamplerMetrics.inspector(width) - 20px); }
+    public pure function drawer-body(width: length) -> length { return SamplerMetrics.compact(width) ? 114px : SamplerMetrics.expanded(width) ? 352px : 284px; }
+    public pure function body(width: length, height: length, drawer: length, banners: length) -> length { return max(0px, height - SamplerMetrics.header(width) - drawer - banners - 68px); }
+}

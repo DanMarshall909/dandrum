@@ -1,0 +1,48 @@
+export struct PadFit { columns: int, size: int }
+// Exhaustive candidates match v3. Unrolled because Slint has no imperative loops.
+export global FitLayout {
+    pure function candidate(width: float, height: float, count: int, maximum: int, columns: int) -> PadFit {
+        return { columns: columns, size: min(floor((width - 6) / columns) - 4, floor(height / ceil(max(1, count) / columns)) - 4, maximum) };
+    }
+    pure function better(a: PadFit, b: PadFit) -> PadFit { return b.size > a.size ? b : a; }
+    public pure function pads(width: float, height: float, count: int, minimum: int, maximum: int) -> PadFit {
+        let b1 = root.candidate(width, height, count, maximum, 1);
+        let b2 = root.better(b1, root.candidate(width, height, count, maximum, 2));
+        let b3 = root.better(b2, root.candidate(width, height, count, maximum, 3));
+        let b4 = root.better(b3, root.candidate(width, height, count, maximum, 4));
+        let b5 = root.better(b4, root.candidate(width, height, count, maximum, 5));
+        let b6 = root.better(b5, root.candidate(width, height, count, maximum, 6));
+        let b7 = root.better(b6, root.candidate(width, height, count, maximum, 7));
+        let b8 = root.better(b7, root.candidate(width, height, count, maximum, 8));
+        let b9 = root.better(b8, root.candidate(width, height, count, maximum, 9));
+        let b10 = root.better(b9, root.candidate(width, height, count, maximum, 10));
+        let b11 = root.better(b10, root.candidate(width, height, count, maximum, 11));
+        let b12 = root.better(b11, root.candidate(width, height, count, maximum, 12));
+        let b13 = root.better(b12, root.candidate(width, height, count, maximum, 13));
+        let b14 = root.better(b13, root.candidate(width, height, count, maximum, 14));
+        let b15 = root.better(b14, root.candidate(width, height, count, maximum, 15));
+        let b16 = root.better(b15, root.candidate(width, height, count, maximum, 16));
+        let b17 = root.better(b16, root.candidate(width, height, count, maximum, 17));
+        let b18 = root.better(b17, root.candidate(width, height, count, maximum, 18));
+        let b19 = root.better(b18, root.candidate(width, height, count, maximum, 19));
+        let b20 = root.better(b19, root.candidate(width, height, count, maximum, 20));
+        let b21 = root.better(b20, root.candidate(width, height, count, maximum, 21));
+        let b22 = root.better(b21, root.candidate(width, height, count, maximum, 22));
+        let b23 = root.better(b22, root.candidate(width, height, count, maximum, 23));
+        let b24 = root.better(b23, root.candidate(width, height, count, maximum, 24));
+        let b25 = root.better(b24, root.candidate(width, height, count, maximum, 25));
+        let b26 = root.better(b25, root.candidate(width, height, count, maximum, 26));
+        let b27 = root.better(b26, root.candidate(width, height, count, maximum, 27));
+        let b28 = root.better(b27, root.candidate(width, height, count, maximum, 28));
+        let b29 = root.better(b28, root.candidate(width, height, count, maximum, 29));
+        let b30 = root.better(b29, root.candidate(width, height, count, maximum, 30));
+        let b31 = root.better(b30, root.candidate(width, height, count, maximum, 31));
+        let b32 = root.better(b31, root.candidate(width, height, count, maximum, 32));
+        return b32.size < minimum ? {columns: max(1, floor((width - 6) / (minimum + 4))), size: minimum} : b32;
+    }
+    public pure function black(note: int) -> bool { let p = mod(note, 12); return p == 1 || p == 3 || p == 6 || p == 8 || p == 10; }
+    public pure function white-note(index: int) -> int { return floor(index / 7) * 12 + [0, 2, 4, 5, 7, 9, 11][mod(index, 7)]; }
+    public pure function black-note(index: int) -> int { return floor(index / 5) * 12 + [1, 3, 6, 8, 10][mod(index, 5)]; }
+    public pure function white-index(note: int) -> int { return floor(note / 12) * 7 + [0, 0, 1, 1, 2, 3, 3, 4, 4, 5, 5, 6][mod(note, 12)]; }
+    public pure function note-name(note: int) -> string { return ["C", "C♯", "D", "D♯", "E", "F", "F♯", "G", "G♯", "A", "A♯", "B"][mod(note, 12)] + (floor(note / 12) - 1); }
+}

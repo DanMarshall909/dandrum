@@ -1,0 +1,47 @@
+import { ScrollView } from "std-widgets.slint";
+import { Session } from "../Session.slint";
+import { SourceInfo } from "../domain/types.slint";
+import { PatchFilter } from "../performance/PatchFilter.slint";
+import { SamplerTheme } from "../theme/Theme.slint";
+import { OptionStrip } from "../controls/OptionStrip.slint";
+import { SourceRow } from "SourceRow.slint";
+import { ActionButton } from "../controls/ActionButton.slint";
+import { DragState } from "DragState.slint";
+export component SourceBrowser inherits Rectangle {
+    in property <[SourceInfo]> sources;
+    private property <string> model-query: Session.source-query;
+    changed model-query => { if search.text != root.model-query { search.text = root.model-query; } }
+    callback close(); callback import-source();
+    callback file-request(string, string);
+    public function set-query(query: string) { Session.command("asset.search", "", query, 0); }
+    public function set-category(category: string) { Session.command("asset.category", "", category, 0); }
+    public function add-selected() -> bool { return Session.command("tree.assign", "patch", Session.selected-source, 0); }
+    public pure function matches(source: SourceInfo) -> bool {
+        let kind = source.kind.to-lowercase();
+        let category = Session.source-category;
+        let category-matches = category == "All" || (category == "Samples" && (kind == "sample" || kind == "sampler" || kind == "frozen" || kind == "mock-render")) || (category == "IRs" && (kind == "ir" || kind == "impulse" || kind == "impulse response")) || (category == "Favourites" && source.favourite);
+        return category-matches && PatchFilter.contains((source.name + " " + source.metadata + " " + source.kind).to-lowercase(), Session.source-query.to-lowercase());
+    }
+    Rectangle { height: 30px; background: SamplerTheme.ink-3;
+        Text { x: 12px; text: "SAMPLES"; font-family: SamplerTheme.font-ui; font-size: 12px; font-weight: 700; letter-spacing: 1.2px; color: SamplerTheme.secondary; vertical-alignment: center; }
+        ActionButton { x: parent.width - 29px; y: 3px; compact: true; ghost: true; icon: "folder"; label: "Back to instrument tree"; selected: true; clicked => { root.close(); } }
+    }
+    Rectangle { y: 38px; x: 8px; width: parent.width - 16px; height: 26px; border-radius: 2px; border-width: 1px; border-color: search.has-focus ? SamplerTheme.accent : SamplerTheme.line-2; background: SamplerTheme.ink-0;
+        if search.text == "" : Text { x: 8px; text: "Search samples"; color: SamplerTheme.paper-3; font-family: SamplerTheme.font-ui; font-size: 13px; vertical-alignment: center; }
+        search := TextInput { x: 8px; width: parent.width - 16px; text: Session.source-query; accessible-label: "Search samples"; font-family: SamplerTheme.font-ui; font-size: 13px; color: SamplerTheme.paper-1; vertical-alignment: center; single-line: true;
+            edited => { root.set-query(self.text); }
+            changed has-focus => { if !self.has-focus { Session.release-notes(); DragState.cancel(); } }
+        }
+    }
+    OptionStrip { x: 8px; y: 70px; width: parent.width - 16px; label: "Sample category"; value: Session.source-category; options: [{id: "All", label: "All"}, {id: "Samples", label: "Samples"}, {id: "IRs", label: "IRs"}, {id: "Favourites", label: "Favourites"}]; selected(category) => { root.set-category(category); } }
+    ScrollView { y: 102px; height: max(1px, parent.height - self.y - 101px);
+        VerticalLayout { alignment: start; spacing: 0px;
+            for source in root.sources : Rectangle { height: root.matches(source) ? 26px : 0px; visible: root.matches(source); SourceRow { source: source; show-favourite: true; file-request(a,id) => { root.file-request(a,id); } } }
+        }
+    }
+    Rectangle { y: parent.height - 95px; height: 95px; background: SamplerTheme.ink-1;
+        Text { x: 10px; y: 4px; width: parent.width - 20px; height: 31px; text: "Click to preview. Drag onto a pad, zone or waveform."; wrap: word-wrap; font-family: SamplerTheme.font-ui; font-size: 12px; color: SamplerTheme.paper-3; }
+        ActionButton { x: 10px; y: 36px; text: "Import sample…"; icon: "plus"; label: "Import browser sample"; clicked => { root.import-source(); } }
+        ActionButton { x: 10px; y: 64px; text: "Add to instrument"; label: "Add selected browser source to instrument"; enabled: Session.selected-source != ""; clicked => { root.add-selected(); } }
+    }
+}

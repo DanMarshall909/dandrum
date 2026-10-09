@@ -1,0 +1,63 @@
+import { ScrollView } from "std-widgets.slint";
+import { Session } from "../Session.slint";
+import { ModulatorInfo } from "../domain/types.slint";
+import { SamplerTheme } from "../theme/Theme.slint";
+import { ActionButton } from "../controls/ActionButton.slint";
+import { AppIcon } from "../controls/AppIcon.slint";
+import { DragSource, DragState } from "DragState.slint";
+export component ModulatorTree inherits ScrollView {
+    in property <[ModulatorInfo]> modulators;
+    private property <bool> envelopes-open;
+    private property <bool> lfos-open: true;
+    private property <bool> performance-open;
+    private property <bool> macros-open;
+    private property <string> rename-id;
+    public function select(id: string) { Session.command("modulator.select", id, "", 0); }
+    public function assign(source: string, destination: string) -> bool { return Session.command("route.add", source, destination, 0.25); }
+    public pure function expanded(kind: string) -> bool { return kind == "envelope" ? root.envelopes-open : kind == "lfo" ? root.lfos-open : kind == "macro" ? root.macros-open : root.performance-open; }
+    public function toggle(kind: string) { if kind == "envelope" { root.envelopes-open = !root.envelopes-open; } else if kind == "lfo" { root.lfos-open = !root.lfos-open; } else if kind == "macro" { root.macros-open = !root.macros-open; } else { root.performance-open = !root.performance-open; } }
+    VerticalLayout { width: max(1px, root.width - 12px); alignment: start; spacing: 0px;
+        for source[index] in root.modulators : VerticalLayout { spacing: 0px;
+            if index == 0 || root.modulators[index - 1].kind != source.kind : ActionButton { width: parent.width; height: 26px; text: source.kind == "envelope" ? "ENVELOPES" : source.kind == "lfo" ? "LFOS" : source.kind == "macro" ? "MACROS" : "PERFORMANCE"; label: "Toggle " + source.kind + " modulators"; compact: true; ghost: true; icon: root.expanded(source.kind) ? "chevron-down" : "chevron-right"; clicked => { root.toggle(source.kind); } }
+            if root.expanded(source.kind) : Rectangle { height: 26px;
+                mod-menu := PopupWindow { y: 26px; width: 190px; height: 160px;
+                    Rectangle { background: SamplerTheme.surface-menu; border-width: 1px; border-color: SamplerTheme.line-3; border-radius: 3px;
+                        VerticalLayout { padding: 2px; spacing: 0px;
+                            ActionButton { text: "Edit"; label: "Edit " + source.name; ghost: true; clicked => { mod-menu.close(); root.select(source.id); } }
+                            ActionButton { text: "Add destination…"; label: "Add destination to " + source.name; ghost: true; clicked => { mod-menu.close(); destination-menu.show(); } }
+                            ActionButton { text: "Show routes"; label: "Show routes for " + source.name; ghost: true; clicked => { mod-menu.close(); root.select(source.id); } }
+                            ActionButton { text: "Rename…"; label: "Rename " + source.name; ghost: true; clicked => { mod-menu.close(); root.rename-id = source.id; } }
+                            ActionButton { text: source.enabled ? "Disable" : "Enable"; label: (source.enabled ? "Disable " : "Enable ") + source.name; ghost: true; clicked => { mod-menu.close(); Session.command("modulator.set", source.id, "enabled", source.enabled ? 0 : 1); } }
+                            ActionButton { text: "Delete modulator"; label: "Delete " + source.name; enabled: source.id != "amp-env"; ghost: true; clicked => { mod-menu.close(); Session.command("modulator.delete", source.id, "", 0); } }
+                        }
+                    }
+                }
+                destination-menu := PopupWindow { y: 26px; width: 250px; height: min(300px, Session.parameter-catalog.length * 26px + 4px);
+                    Rectangle { background: SamplerTheme.surface-menu; border-width: 1px; border-color: SamplerTheme.line-3; border-radius: 3px;
+                        ScrollView { VerticalLayout { padding: 2px; spacing: 0px;
+                            for p in Session.parameter-catalog : ActionButton { height: 26px; text: p.label + " · " + p.group; label: "Route " + source.name + " to " + p.label; enabled: p.available; ghost: true;
+                                clicked => { root.assign(source.id, p.id); destination-menu.close(); }
+                            }
+                        } }
+                    }
+                }
+                row-focus := FocusScope { accessible-role: button; accessible-label: "Select " + source.name + " modulator"; focus-on-tab-navigation: true; focus-on-click: true;
+                    focus-lost(reason) => { if reason == FocusReason.window-activation { Session.release-notes(); DragState.cancel(); } }
+                    accessible-action-default => { root.select(source.id); }
+                    key-pressed(event) => { if event.text == Key.Return || event.text == " " { root.select(source.id); return accept; } return reject; }
+                    Rectangle { x: 4px; width: parent.width - 8px; border-radius: 3px; background: source.selected ? SamplerTheme.accent-wash : drag.has-hover ? SamplerTheme.ink-3 : transparent;
+                        Rectangle { x: 23px; y: 9px; width: 8px; height: 8px; border-radius: source.slot == 0 ? 4px : 0px; background: source.slot == 0 ? SamplerTheme.mod-a : source.slot == 1 ? SamplerTheme.mod-b : source.slot == 2 ? SamplerTheme.mod-c : SamplerTheme.mod-d; }
+                        Text { x: 42px; width: parent.width - 79px; text: source.name; color: source.enabled ? SamplerTheme.paper-2 : SamplerTheme.text-disabled; font-family: SamplerTheme.font-ui; font-size: 13px; vertical-alignment: center; overflow: elide; }
+                        Rectangle { x: parent.width - 29px; y: 12px; width: 24px; height: 3px; border-radius: 2px; background: SamplerTheme.ink-4; Rectangle { width: parent.width * abs(source.live); background: SamplerTheme.paper-2; } }
+                        if root.rename-id == source.id : TextInput { x: 42px; width: parent.width - 44px; text: source.name; accessible-label: "Rename modulator " + source.name; color: SamplerTheme.paper-1; font-family: SamplerTheme.font-ui; font-size: 13px;
+                            changed has-focus => { if !self.has-focus { Session.release-notes(); DragState.cancel(); } }
+                            accepted => { Session.command("modulator.rename", source.id, self.text, 0); root.rename-id = ""; }
+                            key-pressed(event) => { if event.text == Key.Escape { root.rename-id = ""; return accept; } return reject; }
+                        }
+                    }
+                    drag := DragSource { kind: "modulator"; payload: source.id; enabled: root.rename-id != source.id; activate => { row-focus.focus(); root.select(source.id); } context-requested => { mod-menu.show(); } }
+                }
+            }
+        }
+    }
+}

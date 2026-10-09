@@ -1,0 +1,27 @@
+import { ScrollView } from "std-widgets.slint";
+import { SourceInfo } from "../domain/types.slint";
+import { SamplerTheme } from "../theme/Theme.slint";
+import { ActionButton } from "../controls/ActionButton.slint";
+import { SourceRow } from "SourceRow.slint";
+import { SliceSourceRow } from "SliceSourceRow.slint";
+import { Session } from "../Session.slint";
+export component SourceGroups inherits ScrollView {
+    in property <[SourceInfo]> sources;
+    callback show-browser();
+    callback file-request(string, string);
+    VerticalLayout { width: max(1px, root.width - 12px); alignment: start; spacing: 0px;
+        for group in Session.source-groups : VerticalLayout { spacing: 0px;
+            ActionButton { height: 26px; width: parent.width; text: group.name.to-uppercase(); label: "Toggle " + group.name + " sources"; compact: true; ghost: true; icon: group.expanded ? "chevron-down" : "chevron-right"; clicked => { Session.command("asset.group-toggle", group.id, "", 0); } }
+            if group.expanded : VerticalLayout { spacing: 0px;
+                for source in group.sources : VerticalLayout { spacing: 0px;
+                    SourceRow { source: source; indented: true; show-browser => { root.show-browser(); } file-request(a,id) => { root.file-request(a,id); } }
+                    VerticalLayout {
+                        for slice[i] in Session.slices : VerticalLayout {
+                            if Session.slice-source(Session.slice-sources, slice.id) == source.id : SliceSourceRow { slice: slice; source-id: source.id; index: i; }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

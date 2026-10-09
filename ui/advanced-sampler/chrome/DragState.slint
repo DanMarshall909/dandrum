@@ -1,0 +1,52 @@
+// Internal editor drags use logical window coordinates; they never own MIDI notes.
+export global DragState {
+    in-out property <string> kind;
+    in-out property <string> id;
+    in-out property <bool> active;
+    in-out property <length> pointer-x;
+    in-out property <length> pointer-y;
+    in-out property <int> drop-serial;
+    in-out property <bool> handled;
+    public function begin(kind: string, id: string, x: length, y: length) { root.kind = kind; root.id = id; root.pointer-x = x; root.pointer-y = y; root.active = true; }
+    public function move(x: length, y: length) { root.pointer-x = x; root.pointer-y = y; }
+    public function finish() { if root.active { root.handled = false; root.active = false; root.drop-serial += 1; } }
+    public function cancel() { root.active = false; root.kind = ""; root.id = ""; }
+}
+export component DragSource inherits TouchArea {
+    in property <string> kind;
+    in property <string> payload;
+    callback context-requested();
+    private property <length> start-x;
+    private property <length> start-y;
+    private property <bool> armed;
+    private property <bool> dragged;
+    callback activate();
+    mouse-cursor: grab;
+    pointer-event(event) => {
+        if event.kind == PointerEventKind.down && event.button == PointerEventButton.right { root.context-requested(); }
+        else if event.kind == PointerEventKind.down && event.button == PointerEventButton.left { root.start-x = self.mouse-x; root.start-y = self.mouse-y; root.armed = true; root.dragged = false; }
+        else if event.kind == PointerEventKind.cancel { root.armed = false; DragState.cancel(); }
+        else if event.kind == PointerEventKind.up && event.button == PointerEventButton.left {
+            if root.armed { if root.dragged { DragState.move(self.absolute-position.x + self.mouse-x, self.absolute-position.y + self.mouse-y); DragState.finish(); } else { root.activate(); } }
+            root.armed = false;
+        }
+    }
+    moved => {
+        if root.armed {
+            if !root.dragged && (abs(self.mouse-x - root.start-x) > 4px || abs(self.mouse-y - root.start-y) > 4px) { root.dragged = true; DragState.begin(root.kind, root.payload, self.absolute-position.x + self.mouse-x, self.absolute-position.y + self.mouse-y); }
+            if root.dragged { DragState.move(self.absolute-position.x + self.mouse-x, self.absolute-position.y + self.mouse-y); }
+        }
+    }
+    changed enabled => { if !root.enabled { root.armed = false; DragState.cancel(); } }
+}
+export component DragTarget inherits Rectangle {
+    in property <bool> enabled: true;
+    in property <string> accepted-kind;
+    in property <bool> accept-slices;
+    out property <bool> drag-over: DragState.active && root.matches;
+    private property <bool> matches: (DragState.kind == root.accepted-kind || (root.accept-slices && DragState.kind == "slice")) && DragState.pointer-x >= root.absolute-position.x && DragState.pointer-x < root.absolute-position.x + root.width && DragState.pointer-y >= root.absolute-position.y && DragState.pointer-y < root.absolute-position.y + root.height;
+    private property <int> serial: DragState.drop-serial;
+    callback dropped(string) -> bool;
+    changed serial => { if root.visible && root.enabled && !DragState.handled && root.matches { DragState.handled = root.dropped(DragState.id); } }
+    @children
+}

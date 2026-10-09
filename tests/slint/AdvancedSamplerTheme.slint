@@ -1,0 +1,108 @@
+import { SamplerTheme } from "../../ui/advanced-sampler/theme/Theme.slint";
+import { MaterialSurface, WindowMaterial } from "../../ui/advanced-sampler/theme/Material.slint";
+import { Appearance, AppearanceState } from "../../ui/advanced-sampler/chrome/Appearance.slint";
+
+export { SamplerTheme }
+export { AppearanceState }
+
+export component AdvancedSamplerThemeTest inherits Window {
+    callback appearance-changed(string, string, string, string, string, string);
+    out property <int> appearance-events: 0;
+    out property <[string]> appearance-values;
+    public function choose-theme(field: string, value: string) { appearance.choose(field, value); }
+    preferred-width: 520px; preferred-height: 300px;
+    background: SamplerTheme.surface-window;
+    WindowMaterial { width: parent.width; height: parent.height; }
+    out property <bool> soft: SamplerTheme.soft;
+    out property <bool> light: SamplerTheme.light;
+    out property <bool> brushed: SamplerTheme.brushed;
+    out property <[color]> colors: [
+        SamplerTheme.accent,
+        SamplerTheme.accent-hi,
+        SamplerTheme.accent-lo,
+        SamplerTheme.accent-wash,
+        SamplerTheme.secondary,
+        SamplerTheme.secondary-wash,
+        SamplerTheme.host,
+        SamplerTheme.host-wash,
+        SamplerTheme.mod-a,
+        SamplerTheme.mod-b,
+        SamplerTheme.mod-c,
+        SamplerTheme.mod-d,
+        SamplerTheme.mod-wash,
+        SamplerTheme.ok,
+        SamplerTheme.warn,
+        SamplerTheme.error,
+        SamplerTheme.ok-wash,
+        SamplerTheme.warn-wash,
+        SamplerTheme.error-wash,
+        SamplerTheme.cap,
+        SamplerTheme.cap-hover,
+        SamplerTheme.cap-press,
+        SamplerTheme.pad,
+        SamplerTheme.pad-hover,
+        SamplerTheme.text-on-accent,
+        SamplerTheme.scrim,
+        SamplerTheme.waveform,
+        SamplerTheme.waveform-region,
+        SamplerTheme.surface-window,
+        SamplerTheme.surface-panel,
+        SamplerTheme.surface-panel-header,
+        SamplerTheme.surface-well,
+        SamplerTheme.surface-control,
+        SamplerTheme.surface-control-hover,
+        SamplerTheme.surface-control-pressed,
+        SamplerTheme.surface-menu,
+        SamplerTheme.surface-prepared,
+        SamplerTheme.text-primary,
+        SamplerTheme.text-secondary,
+        SamplerTheme.text-tertiary,
+        SamplerTheme.text-disabled,
+        SamplerTheme.border-hairline,
+        SamplerTheme.border-control,
+        SamplerTheme.border-strong,
+        SamplerTheme.color-selected,
+        SamplerTheme.color-action,
+        SamplerTheme.color-focus,
+        SamplerTheme.color-value,
+        SamplerTheme.color-track,
+        SamplerTheme.color-cursor,
+        SamplerTheme.ink-0,
+        SamplerTheme.ink-1,
+        SamplerTheme.ink-2,
+        SamplerTheme.ink-3,
+        SamplerTheme.ink-4,
+        SamplerTheme.ink-5,
+        SamplerTheme.ink-6,
+        SamplerTheme.line-1,
+        SamplerTheme.line-2,
+        SamplerTheme.line-3,
+        SamplerTheme.paper-1,
+        SamplerTheme.paper-2,
+        SamplerTheme.paper-3,
+        SamplerTheme.paper-4,
+];
+    MaterialSurface { x: 16px; y: 16px; width: 236px; height: 120px;
+        Text { x: 12px; y: 10px; text: "PANEL / ACCENT"; color: SamplerTheme.text-primary; font-family: SamplerTheme.font-ui; font-size: 13px; font-weight: 700; }
+        Rectangle { x: 16px; y: 50px; width: 40px; height: 40px; border-radius: 20px; background: SamplerTheme.cap;
+            Path { width: 100%; height: 100%; commands: "M 50 1 A 49 49 0 1 1 50 99 A 49 49 0 1 1 50 1"; fill: transparent; stroke: SamplerTheme.soft ? SamplerTheme.bevel : transparent; stroke-width: 1.5px; }
+        }
+        MaterialSurface { x: 90px; y: 55px; width: 112px; height: 28px; accent: true; raised: false; base: SamplerTheme.accent;
+            Text { text: "ACTION"; color: SamplerTheme.text-on-accent; horizontal-alignment: center; vertical-alignment: center; font-family: SamplerTheme.font-ui; }
+        }
+    }
+    MaterialSurface { x: 268px; y: 16px; width: 236px; height: 120px; well: true; base: SamplerTheme.surface-well;
+        Path { x: 12px; y: 38px; width: 204px; height: 62px; commands: "M 0 60 C 20 0 60 0 90 30 S 160 100 204 10"; fill: transparent; stroke: SamplerTheme.color-value; stroke-width: 2px; }
+    }
+    Rectangle { x: 16px; y: 160px; width: parent.width - 32px; height: 110px;
+        GridLayout { for i in 64 : Rectangle { background: root.colors[i]; min-width: 14px; min-height: 14px; } }
+    }
+    appearance := Appearance {
+        width: parent.width; height: parent.height;
+        theme-change(surface, finish, accent, secondary, mod-palette, host) => {
+            root.appearance-events += 1;
+            root.appearance-values = [surface, finish, accent, secondary, mod-palette, host];
+            root.appearance-changed(surface, finish, accent, secondary, mod-palette, host);
+        }
+    }
+}

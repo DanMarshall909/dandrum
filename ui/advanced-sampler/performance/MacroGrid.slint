@@ -1,0 +1,38 @@
+import { MacroInfo } from "types.slint";
+import { ParamKnob } from "../controls/ParamKnob.slint";
+import { Session } from "../Session.slint";
+import { DragState } from "../chrome/DragState.slint";
+export component MacroGrid inherits Rectangle {
+    in property <[MacroInfo]> macros;
+    in property <length> face-size: 36px;
+    in property <length> budget: 56px;
+    in property <int> forced-columns;
+    in property <bool> distribute;
+    private property <int> columns: root.forced-columns > 0 ? root.forced-columns : max(1, floor((root.width - 6px) / (root.budget + 6px)));
+    private property <int> rows: max(1, ceil(root.macros.length / root.columns));
+    private property <length> row-height: root.distribute ? root.height / root.rows : root.face-size + 30px;
+    callback macro-gesture(string, int, float);
+    callback context-action(string, string);
+    Flickable { width: parent.width; height: parent.height; content-width: self.width; content-height: max(self.height, root.rows * root.row-height);
+        for m[i] in root.macros : Rectangle {
+            width: knob.width; height: knob.height;
+            x: mod(i, root.columns) * root.width / root.columns + (root.width / root.columns - self.width) / 2;
+            y: max(0px, (root.height - root.rows * root.row-height) / 2) + floor(i / root.columns) * root.row-height + (root.row-height - self.height) / 2;
+            knob := ParamKnob { macro-id: m.id; private property <float> display-scale: m.unit == "%" ? 100 : 1;
+                label: m.name; size: root.face-size; value: m.value * self.display-scale; model-value: m.value * self.display-scale; minimum: m.minimum * self.display-scale; maximum: m.maximum * self.display-scale; default-value: m.default-value * self.display-scale; unit: m.unit; assignments: m.assignments; host-automated: m.host-automated;
+                enabled: m.destinations.length > 0;
+                gesture-began => { root.macro-gesture(m.id, 0, self.value / self.display-scale); }
+                changed(v) => { root.macro-gesture(m.id, 1, v / self.display-scale); }
+                gesture-ended => { root.macro-gesture(m.id, 2, self.value / self.display-scale); }
+                context-action(action) => { root.context-action(action, m.id); }
+            }
+            if m.destinations.length == 0 : FocusScope {
+                accessible-role: button; accessible-label: "Actions for " + m.name + " macro"; focus-on-tab-navigation: true;
+                accessible-action-default => { root.context-action("macro", m.id); }
+                focus-lost(reason) => { if reason == FocusReason.window-activation { Session.release-notes(); DragState.cancel(); } }
+                key-pressed(event) => { if event.text == Key.Return || event.text == " " || event.text == Key.Menu { root.context-action("macro", m.id); return accept; } return reject; }
+                TouchArea { clicked => { parent.focus(); } pointer-event(event) => { if event.kind == PointerEventKind.up && event.button == PointerEventButton.right { root.context-action("macro", m.id); } } }
+            }
+        }
+    }
+}

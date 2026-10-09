@@ -1,0 +1,48 @@
+import { PadInfo } from "types.slint";
+import { PerformanceState } from "PerformanceState.slint";
+import { FitLayout, PadFit } from "FitLayout.slint";
+import { PadCell } from "PadCell.slint";
+import { ActionButton } from "../controls/ActionButton.slint";
+export component PlayPads inherits Rectangle {
+    in property <[PadInfo]> pads;
+    in property <int> mapped-low: 24;
+    in property <int> mapped-high: 108;
+    in property <int> minimum-size: 60;
+    in property <int> maximum-size: 96;
+    in property <int> minimum-rows: 2;
+    in property <bool> force-compact;
+    in property <string> source: "drawer.pad";
+    in property <string> generation;
+    private property <PadFit> fitted: FitLayout.pads(root.width / 1px, root.height / 1px - 18, root.mapped-high - root.mapped-low + 1, root.minimum-size, root.maximum-size);
+    out property <int> actual-size: PerformanceState.pad-size > 0 ? PerformanceState.pad-size : root.fitted.size;
+    out property <int> columns: PerformanceState.pad-size == 0 || PerformanceState.pad-size == root.fitted.size ? root.fitted.columns : max(1, floor((root.width / 1px - 6) / (root.actual-size + 4)));
+    private property <int> start: PerformanceState.pad-start >= 0 ? PerformanceState.pad-start : root.mapped-low;
+    private property <int> rows: max(root.start == root.mapped-low ? ceil((root.mapped-high - root.mapped-low + 1) / root.columns) : root.minimum-rows, ceil(64 / root.columns));
+    private property <length> content-height: root.rows * (root.actual-size + 4) * 1px - 4px;
+    private property <length> scroll;
+    callback note-on(int, int, string); callback note-off(int, string); callback selected(int);
+    pure function pad(note: int) -> PadInfo { return note >= 0 && note < root.pads.length ? root.pads[note] : {note: note, name: "", mapped: false, choke-group: -1, active-alternate: -1}; }
+    public function fit() { PerformanceState.fit-pads(); root.scroll = max(0px, root.content-height - viewport.height); }
+    public function zoom(direction: int) { PerformanceState.zoom-pads(direction, root.actual-size, root.start); root.scroll = max(0px, root.content-height - viewport.height); }
+    init => { root.scroll = max(0px, root.content-height - viewport.height); }
+    changed content-height => { root.scroll = max(0px, root.content-height - viewport.height); }
+    viewport := Flickable {
+        interactive: false;
+        height: max(1px, parent.height - 18px); content-width: self.width; content-height: max(self.height, root.content-height); content-y: -root.scroll;
+        changed content-y => { root.scroll = -self.content-y; }
+        for i in root.rows * root.columns : PadCell {
+            private property <int> midi: root.start + (root.rows - 1 - floor(i / root.columns)) * root.columns + mod(i, root.columns);
+            private property <PadInfo> info: root.pad(self.midi);
+            x: (viewport.width - root.columns * (root.actual-size + 4) * 1px + 4px) / 2 + mod(i, root.columns) * (root.actual-size + 4) * 1px;
+            y: floor(i / root.columns) * (root.actual-size + 4) * 1px;
+            size: root.actual-size * 1px; visible: self.midi <= 127; compact: root.force-compact || root.actual-size < 72;
+            note: self.midi; name: self.info.name; mapped: self.info.mapped; selected: self.info.selected; level: self.info.level; velocity: self.info.velocity;
+            layers: self.info.layers; alternates: self.info.alternates; active-alternate: self.info.active-alternate; choke-group: self.info.choke-group; choked: self.info.choked;
+            source: root.source + "." + self.midi; generation: root.generation;
+            note-on(n, v, s) => { root.note-on(n, v, s); } note-off(n, s) => { root.note-off(n, s); } selected-note(n) => { root.selected(n); }
+        }
+    }
+    ActionButton { x: parent.width - 80px; y: parent.height - 16px; width: 20px; height: 16px; text: "−"; label: "Smaller pads"; ghost: true; compact: true; clicked => { root.zoom(-1); } }
+    ActionButton { x: parent.width - 60px; y: parent.height - 16px; width: 36px; height: 16px; text: PerformanceState.pad-size == 0 || PerformanceState.pad-size == root.fitted.size ? "Fit" : "\{root.actual-size} px"; label: "Fit mapped pads"; ghost: true; compact: true; clicked => { root.fit(); } }
+    ActionButton { x: parent.width - 22px; y: parent.height - 16px; width: 20px; height: 16px; text: "+"; label: "Larger pads"; ghost: true; compact: true; clicked => { root.zoom(1); } }
+}

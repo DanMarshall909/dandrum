@@ -1,0 +1,88 @@
+import { ScrollView } from "std-widgets.slint";
+import { SamplerTheme } from "../theme/Theme.slint";
+import { MaterialSurface } from "../theme/Material.slint";
+import { ActionButton } from "../controls/ActionButton.slint";
+
+export global AppearanceState {
+    in-out property <bool> opened: false;
+    in-out property <string> surface: "aluminium";
+    in-out property <string> finish: "soft";
+    in-out property <string> accent: "#E8C47A";
+    in-out property <string> secondary: "#8C8F95";
+    in-out property <string> mod-palette: "standard";
+    in-out property <string> host: "#5B9DFF";
+    in-out property <string> error;
+}
+
+component AppearanceOptions inherits Rectangle {
+    in property <[string]> values;
+    in property <string> selected;
+    callback changed(string);
+    height: ceil(root.values.length / 4) * 29px;
+    for option[i] in root.values : ActionButton {
+        x: mod(i, 4) * (parent.width / 4); y: floor(i / 4) * 29px;
+        width: parent.width / 4 - 5px; text: option; selected: root.selected == option;
+        clicked => { root.changed(option); }
+    }
+}
+
+component AppearanceColor inherits Rectangle {
+    in property <string> label;
+    in property <[string]> values;
+    in property <string> value;
+    callback changed(string);
+    height: 22px + choices.height + 30px;
+    Text { x: 0px; y: 0px; width: parent.width; height: 20px; text: root.label; color: SamplerTheme.paper-2; font-family: SamplerTheme.font-ui; font-weight: 600; font-size: 12px; vertical-alignment: center; }
+    choices := AppearanceOptions { y: 22px; width: parent.width; values: root.values; selected: root.value; changed(value) => { root.changed(value); } }
+    Rectangle { x: 0px; y: edit.y; width: parent.width - 74px; height: 26px; background: SamplerTheme.surface-well; border-radius: 2px; border-width: 1px; border-color: edit.has-focus ? SamplerTheme.color-focus : SamplerTheme.border-control; }
+    edit := TextInput { x: 6px; y: 22px + choices.height; width: parent.width - 86px; height: 26px; text: root.value; accessible-label: root.label + " custom color"; color: SamplerTheme.paper-1; font-family: SamplerTheme.font-value; font-size: 12px; vertical-alignment: center; single-line: true; accepted => { root.changed(self.text); } }
+    ActionButton { x: parent.width - 69px; y: edit.y; width: 64px; text: "Apply"; label: "Apply " + root.label + " color"; clicked => { root.changed(edit.text); } }
+}
+
+// A native appearance editor; accepted colors are validated by the native controller.
+export component Appearance inherits FocusScope {
+    visible: AppearanceState.opened;
+    callback theme-change(string, string, string, string, string, string);
+    callback close-requested();
+    public function choose(field: string, value: string) {
+        if field == "surface" { AppearanceState.surface = value; }
+        else if field == "finish" { AppearanceState.finish = value; }
+        else if field == "accent" { AppearanceState.accent = value; }
+        else if field == "secondary" { AppearanceState.secondary = value; }
+        else if field == "mod-palette" { AppearanceState.mod-palette = value; }
+        else if field == "host" { AppearanceState.host = value; }
+        else { return; }
+        AppearanceState.error = "";
+        root.theme-change(AppearanceState.surface, AppearanceState.finish, AppearanceState.accent,
+                          AppearanceState.secondary, AppearanceState.mod-palette, AppearanceState.host);
+    }
+    public function close() { AppearanceState.opened = false; root.close-requested(); }
+    key-pressed(event) => { if event.text == Key.Escape { root.close(); return accept; } return reject; }
+    Rectangle { width: parent.width; height: parent.height; background: SamplerTheme.scrim; }
+    TouchArea { width: parent.width; height: parent.height; clicked => { root.close(); } }
+    MaterialSurface {
+        x: (parent.width - self.width) / 2; y: (parent.height - self.height) / 2;
+        width: min(parent.width - 32px, 480px); height: min(parent.height - 32px, 560px);
+        base: SamplerTheme.surface-menu;
+        TouchArea { width: parent.width; height: parent.height; }
+        Text { x: 16px; y: 12px; text: "Appearance"; color: SamplerTheme.paper-1; font-family: SamplerTheme.font-display; font-size: 22px; font-weight: 700; }
+        ActionButton { x: parent.width - 74px; y: 12px; width: 58px; text: "Close"; clicked => { root.close(); } }
+        ScrollView {
+            x: 16px; y: 46px; width: parent.width - 32px; height: parent.height - 62px;
+            VerticalLayout {
+                spacing: 8px;
+                Text { text: "SURFACE"; color: SamplerTheme.paper-3; font-family: SamplerTheme.font-ui; font-size: 11px; font-weight: 700; }
+                AppearanceOptions { values: ["aluminium", "brushed", "ember", "graphite", "midnight", "forest", "camo", "paper"]; selected: AppearanceState.surface; changed(value) => { root.choose("surface", value); } }
+                Text { text: "FINISH"; color: SamplerTheme.paper-3; font-family: SamplerTheme.font-ui; font-size: 11px; font-weight: 700; }
+                AppearanceOptions { values: ["soft", "flat"]; selected: AppearanceState.finish; changed(value) => { root.choose("finish", value); } }
+                AppearanceColor { label: "Accent"; value: AppearanceState.accent; values: ["#E8C47A", "#E08A4E", "#E0574E", "#D8B24A", "#5BB38A", "#5B9DFF", "#C77DFF"]; changed(value) => { root.choose("accent", value); } }
+                AppearanceColor { label: "Secondary"; value: AppearanceState.secondary; values: ["#8C8F95", "#A07A58", "#7A5C45", "#B5653F", "#8E8A5A", "#6F7F8C", "#8A6A86", "#5F8072", "#9A8F7E"]; changed(value) => { root.choose("secondary", value); } }
+                Text { text: "MODULATION PALETTE"; color: SamplerTheme.paper-3; font-family: SamplerTheme.font-ui; font-size: 11px; font-weight: 700; }
+                AppearanceOptions { values: ["standard", "warm", "cool", "mono"]; selected: AppearanceState.mod-palette; changed(value) => { root.choose("mod-palette", value); } }
+                AppearanceColor { label: "Host automation"; value: AppearanceState.host; values: ["#5B9DFF", "#4FD1C5", "#B58CFF", "#FFFFFF"]; changed(value) => { root.choose("host", value); } }
+                Text { text: AppearanceState.error; color: SamplerTheme.error; font-family: SamplerTheme.font-ui; font-size: 12px; wrap: word-wrap; }
+                Text { text: "Custom colors accept #RGB or #RRGGBB. Light surfaces adjust role contrast automatically."; color: SamplerTheme.paper-3; font-family: SamplerTheme.font-ui; font-size: 11px; wrap: word-wrap; }
+            }
+        }
+    }
+}

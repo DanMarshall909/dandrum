@@ -1,0 +1,16 @@
+import { SamplerTheme } from "../theme/Theme.slint";
+export component PagePanel inherits Rectangle {
+    in property <string> title;
+    in property <string> subtitle;
+    in property <length> header-height: 34px;
+    in property <bool> secondary;
+    border-radius: 6px; border-width: 1px; border-color: SamplerTheme.line-1; background: SamplerTheme.ink-2;
+    if SamplerTheme.soft : Rectangle { border-radius: 6px; background: SamplerTheme.raised-overlay; }
+    Rectangle { x: 1px; y: 1px; width: parent.width - 2px; height: root.header-height; border-radius: 5px; background: SamplerTheme.ink-3;
+        Text { x: 11px; width: self.preferred-width; text: root.title.to-uppercase(); font-family: SamplerTheme.font-ui; font-size: 13px; font-weight: 700; letter-spacing: 1.3px; color: root.secondary ? SamplerTheme.secondary : SamplerTheme.paper-2; vertical-alignment: center; }
+        Text { x: 11px + title.preferred-width + 8px; width: max(0px, parent.width - self.x - 8px); text: root.subtitle; font-family: SamplerTheme.font-ui; font-size: 12px; color: SamplerTheme.paper-3; vertical-alignment: center; overflow: elide; }
+        title := Text { visible: false; text: root.title.to-uppercase(); font-family: SamplerTheme.font-ui; font-size: 13px; font-weight: 700; letter-spacing: 1.3px; }
+        Rectangle { y: parent.height - 1px; height: 1px; background: SamplerTheme.line-1; }
+    }
+    @children
+}

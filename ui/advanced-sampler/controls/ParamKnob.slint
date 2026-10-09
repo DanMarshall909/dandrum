@@ -1,0 +1,95 @@
+import { SamplerTheme } from "../theme/Theme.slint";
+import { RangeControl } from "../../slint/controls/RangeControl.slint";
+import { ParameterGesture } from "ParameterGesture.slint";
+import { ModAssignment } from "../../slint/modulation/types.slint";
+import { RotaryFace } from "RotaryFace.slint";
+import { DragTarget, DragState } from "../chrome/DragState.slint";
+import { Session } from "../Session.slint";
+import { ActionButton } from "ActionButton.slint";
+export component ParamKnob inherits RangeControl {
+    gesture-cancelled => { Session.command("gesture.cancel", "", "", 0); }
+    focus-lost(reason) => { if reason == FocusReason.window-activation { root.cancel-gesture(); Session.release-notes(); DragState.cancel(); } }
+    in property <string> parameter-id;
+    in property <string> macro-id;
+    // Preserve a separate native projection after local user writes replace value bindings.
+    in property <float> model-value: root.value;
+    changed model-value => { if abs(root.model-value - root.value) > 0.000001 { root.value = root.model-value; } }
+    in property <length> size: 36px;
+    in property <bool> bipolar;
+    in property <bool> show-label: true;
+    in property <bool> value-display-always;
+    in property <[ModAssignment]> assignments;
+    callback context-action(string);
+    private property <bool> popup;
+    private property <bool> popup-hover;
+    private property <bool> fine;
+    private property <string> suffix: root.unit == "pan" ? "" : root.unit;
+    private property <length> label-height: root.show-label && root.label != "" ? 13px : 0px;
+    width: max(root.size + 2px, 42px); height: root.label-height + root.size + 3px + (root.value-display-always ? 16px : 0px);
+    z: root.popup || root.editing ? 100 : 0;
+    edit-requested => { root.popup = true; editor.text = root.value-text; editor.focus(); editor.select-all(); }
+    edit-closed => { root.focus(); }
+    context-menu-requested => { root.context-action(root.macro-id != "" ? "macro" : "modulation"); }
+    standard-menu-requested => { if root.macro-id != "" { root.context-action("macro"); } else { menu.show(); } }
+    capture-key-pressed(event) => { root.fine = event.modifiers.shift; return reject; }
+    capture-key-released(event) => { root.fine = event.modifiers.shift; return reject; }
+    changed has-focus => { if root.has-focus { root.popup = true; } else if !root.editing { close-timer.restart(); } }
+    changed editing => { if root.editing { editor.text = root.value-text; editor.focus(); editor.select-all(); } }
+    changed popup => { if !root.popup && root.editing { root.cancel-edit(); } }
+    hover-timer := Timer { interval: 300ms; running: false; triggered => { self.stop(); if gesture.has-hover { root.popup = true; } } }
+    close-timer := Timer { interval: 250ms; running: false; triggered => { self.stop(); if !root.popup-hover && !gesture.has-hover && !root.has-focus && !root.editing { root.popup = false; } } }
+    if root.show-label : Text { x: 0px; y: 0px; height: root.label-height; text: root.label.to-uppercase(); font-family: SamplerTheme.font-ui; font-size: 10px; font-weight: 600; color: root.enabled ? SamplerTheme.text-secondary : SamplerTheme.text-disabled; horizontal-alignment: center; }
+    RotaryFace { x: (parent.width - root.size) / 2; y: root.label-height; width: root.size; height: root.size; value: root.normalized-value; active: root.gesture-active || root.nudged; hovered: gesture.has-hover; enabled: root.enabled; bipolar: root.bipolar; host-active: root.host-active; assignments: root.assignments; }
+    if root.has-focus : Rectangle { border-width: 1px; border-color: SamplerTheme.paper-1; border-radius: 4px; }
+    DragTarget { accepted-kind: "modulator"; enabled: root.enabled && root.parameter-id != ""; border-width: self.drag-over ? 1px : 0px; border-color: SamplerTheme.accent; border-radius: 4px;
+        dropped(source) => { return Session.command("route.add", source, root.parameter-id, 0.25); }
+    }
+    if root.value-display-always : Text { y: root.label-height + root.size + 2px; height: 14px; text: root.value-text + root.suffix; font-family: SamplerTheme.font-value; font-size: 11px; color: SamplerTheme.paper-2; horizontal-alignment: center; }
+    menu := PopupWindow { y: root.height; width: 190px; height: 134px;
+        Rectangle { background: SamplerTheme.surface-menu; border-width: 1px; border-color: SamplerTheme.line-3; border-radius: 3px;
+            VerticalLayout { padding: 2px; spacing: 0px;
+                ActionButton { text: "Modulation"; label: "Modulation " + root.label; ghost: true; enabled: root.interactive && root.parameter-id != ""; clicked => { menu.close(); route-menu.show(); } }
+                ActionButton { text: "Learn MIDI"; label: "Learn MIDI " + root.label; ghost: true; enabled: root.interactive && root.parameter-id != ""; clicked => { menu.close(); root.context-action("midi-learn"); } }
+                ActionButton { text: "Map to macro…"; label: "Map " + root.label + " to macro"; ghost: true; enabled: root.interactive && root.parameter-id != ""; clicked => { menu.close(); root.context-action("macro-map"); } }
+                ActionButton { text: "Reset to default"; label: "Reset " + root.label + " to default"; ghost: true; enabled: root.interactive; clicked => { menu.close(); root.reset-value(); } }
+                ActionButton { text: "Type value…"; label: "Type " + root.label + " value"; ghost: true; enabled: root.interactive; clicked => { menu.close(); root.begin-edit(); } }
+            }
+        }
+    }
+    route-menu := PopupWindow { y: root.height; width: 190px; height: 134px;
+        Rectangle { background: SamplerTheme.surface-menu; border-width: 1px; border-color: SamplerTheme.line-3; border-radius: 3px;
+            VerticalLayout { padding: 2px; spacing: 0px;
+                ActionButton { text: "Add route…"; label: "Add route " + root.label; ghost: true; enabled: root.interactive && root.parameter-id != ""; clicked => { route-menu.close(); root.context-action("modulation-add"); } }
+                ActionButton { text: "Edit route…"; label: "Edit route " + root.label; ghost: true; enabled: root.interactive && root.parameter-id != ""; clicked => { route-menu.close(); root.context-action("modulation-edit"); } }
+                ActionButton { text: "Invert"; label: "Invert route " + root.label; ghost: true; enabled: root.interactive && root.parameter-id != ""; clicked => { route-menu.close(); root.context-action("modulation-invert"); } }
+                ActionButton { text: "Bypass"; label: "Bypass route " + root.label; ghost: true; enabled: root.interactive && root.parameter-id != ""; clicked => { route-menu.close(); root.context-action("modulation-bypass"); } }
+                ActionButton { text: "Remove"; label: "Remove route " + root.label; ghost: true; enabled: root.interactive && root.parameter-id != ""; clicked => { route-menu.close(); root.context-action("modulation-remove"); } }
+            }
+        }
+    }
+        gesture := ParameterGesture {
+            enabled: root.interactive; value: root.value; minimum: root.minimum; maximum: root.maximum; fine <=> root.fine;
+            started => { root.focus(); root.begin-gesture(); root.popup = true; }
+            updated(v) => { root.update-gesture(v); } ended => { root.end-gesture(); } cancelled => { root.cancel-gesture(); }
+            reset-requested => { root.reset-value(); }
+            edit-requested => { root.begin-edit(); }
+            wheeled(direction, precise) => { root.wheel(direction, precise); }
+            context-requested(x, y) => { if root.macro-id != "" { root.context-action("macro"); } else { menu.show(); } }
+            changed has-hover => { if self.has-hover { hover-timer.restart(); close-timer.stop(); } else { hover-timer.stop(); close-timer.restart(); } }
+        }
+    popup := Rectangle {
+        visible: (root.popup || root.editing) && !root.value-display-always && root.enabled;
+        x: (parent.width - self.width) / 2; y: parent.height + 3px; width: 174px; height: 40px + root.assignments.length * 20px;
+        background: SamplerTheme.surface-menu; border-width: 1px; border-color: root.host-active ? SamplerTheme.host : SamplerTheme.line-3; border-radius: 4px; drop-shadow-blur: 12px; drop-shadow-offset-y: 4px; drop-shadow-color: #00000080;
+        TouchArea { changed has-hover => { root.popup-hover = self.has-hover; if !self.has-hover { close-timer.restart(); } } }
+        Text { x: 8px; y: 5px; width: 70px; height: 24px; text: root.label; font-family: SamplerTheme.font-ui; font-size: 12px; color: SamplerTheme.paper-3; }
+        popup-unit := Text { x: parent.width - self.preferred-width - 8px; y: 6px; width: self.preferred-width; height: 24px; text: root.suffix; font-family: SamplerTheme.font-value; font-size: 11px; color: SamplerTheme.paper-3; vertical-alignment: center; }
+        editor := TextInput { accessible-label: "Edit " + root.label + " value"; x: 78px; y: 6px; width: 88px - (root.suffix == "" ? 0px : popup-unit.preferred-width + 4px); height: 24px; text: root.value-text; enabled: root.editing; font-family: SamplerTheme.font-value; font-size: 13px; color: root.edit-invalid ? SamplerTheme.error : root.host-active ? SamplerTheme.host : SamplerTheme.paper-1;
+            changed has-focus => { if !self.has-focus { Session.release-notes(); DragState.cancel(); } }
+            accepted => { root.commit-text(self.text); }
+            key-pressed(event) => { if event.text == Key.Escape { root.cancel-edit(); root.popup = false; return accept; } return reject; }
+        }
+        if !root.editing : TouchArea { x: 78px; y: 6px; width: 88px; height: 24px; clicked => { root.begin-edit(); } }
+        for a[i] in root.assignments : Text { x: 8px; y: 36px + i * 20px; width: parent.width - 16px; height: 18px; text: ["●", "▲", "■", "◆"][a.slot] + " " + a.source + "   " + round(a.depth * 100) + "%"; color: a.slot == 0 ? SamplerTheme.mod-a : a.slot == 1 ? SamplerTheme.mod-b : a.slot == 2 ? SamplerTheme.mod-c : SamplerTheme.mod-d; font-family: SamplerTheme.font-ui; font-size: 11px; }
+    }
+}

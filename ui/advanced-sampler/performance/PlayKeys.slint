@@ -1,0 +1,60 @@
+import { SamplerTheme } from "../theme/Theme.slint";
+import { ActionButton } from "../controls/ActionButton.slint";
+import { PerformanceState } from "PerformanceState.slint";
+import { FitLayout } from "FitLayout.slint";
+import { KeyCell } from "KeyCell.slint";
+export component PlayKeys inherits Rectangle {
+    in property <int> mapped-low: 24;
+    in property <int> mapped-high: 108;
+    in property <[int]> sounding-notes;
+    in property <string> generation;
+    in property <string> source: "drawer.key";
+    private property <length> scroll;
+    private property <bool> tracking;
+    private property <int> low-white: FitLayout.white-index(root.mapped-low);
+    private property <int> high-white: FitLayout.white-index(root.mapped-high) + (FitLayout.black(root.mapped-high) ? 1 : 0);
+    private property <int> octave: PerformanceState.base-note;
+    out property <int> actual-key-width: PerformanceState.key-width > 0 ? PerformanceState.key-width : floor((root.width / 1px - 2) / max(1, root.high-white - root.low-white + 1)).clamp(10, 48);
+    private property <length> inner-width: 75 * root.actual-key-width * 1px;
+    callback note-on(int, int, string); callback note-off(int, string);
+    pure function pcl(note: int) -> string { let k = note - PerformanceState.base-note; return PerformanceState.pc-enabled && k >= 0 && k < 13 ? ["A", "W", "S", "E", "D", "F", "T", "G", "Y", "H", "U", "J", "K"][k] : ""; }
+    pure function held-at(i: int, note: int) -> bool { return i < root.sounding-notes.length && root.sounding-notes[i] == note; }
+    pure function sounding(note: int) -> bool {
+        return root.held-at(0, note) || root.held-at(1, note) || root.held-at(2, note) || root.held-at(3, note)
+            || root.held-at(4, note) || root.held-at(5, note) || root.held-at(6, note) || root.held-at(7, note)
+            || root.held-at(8, note) || root.held-at(9, note) || root.held-at(10, note) || root.held-at(11, note)
+            || root.held-at(12, note) || root.held-at(13, note) || root.held-at(14, note) || root.held-at(15, note)
+            || root.held-at(16, note) || root.held-at(17, note) || root.held-at(18, note) || root.held-at(19, note)
+            || root.held-at(20, note) || root.held-at(21, note) || root.held-at(22, note) || root.held-at(23, note)
+            || root.held-at(24, note) || root.held-at(25, note) || root.held-at(26, note) || root.held-at(27, note)
+            || root.held-at(28, note) || root.held-at(29, note) || root.held-at(30, note) || root.held-at(31, note);
+    }
+    public function clamp-scroll() { root.scroll = root.scroll.clamp(0px, max(0px, root.inner-width - root.width)); }
+    public function fit() { PerformanceState.fit-keys(); root.scroll = root.low-white * root.actual-key-width * 1px; root.clamp-scroll(); }
+    public function zoom(direction: int) { PerformanceState.zoom-keys(direction, root.actual-key-width); root.clamp-scroll(); }
+    changed actual-key-width => { PerformanceState.last-key-width = root.actual-key-width; if PerformanceState.key-width == 0 { root.scroll = root.low-white * root.actual-key-width * 1px; } root.clamp-scroll(); }
+    changed octave => { if PerformanceState.key-width > 0 { root.scroll = FitLayout.white-index(root.octave) * root.actual-key-width * 1px; root.clamp-scroll(); } }
+    changed mapped-low => { if PerformanceState.key-width == 0 { root.fit(); } }
+    changed width => { root.clamp-scroll(); }
+    init => { PerformanceState.last-key-width = root.actual-key-width; root.scroll = root.low-white * root.actual-key-width * 1px; root.clamp-scroll(); }
+    viewport := Rectangle { y: 0px; height: max(1px, parent.height - 18px); clip: true; border-width: 1px; border-color: SamplerTheme.line-2; border-radius: 2px; background: SamplerTheme.ink-0;
+        Flickable { interactive: false; width: parent.width; height: parent.height; content-width: root.inner-width; content-height: self.height; content-x: -root.scroll;
+            changed content-x => { root.scroll = -self.content-x; root.clamp-scroll(); }
+            for i in 75 : KeyCell { note: FitLayout.white-note(i); x: i * root.actual-key-width * 1px; width: root.actual-key-width * 1px; height: viewport.height; mapped: self.note >= root.mapped-low && self.note <= root.mapped-high; sounding: root.sounding(self.note); pc-label: root.pcl(self.note); source: root.source + "." + self.note; generation: root.generation;
+                note-on(n, v, s) => { root.note-on(n, v, s); } note-off(n, s) => { root.note-off(n, s); }
+            }
+            for i in 53 : KeyCell { note: FitLayout.black-note(i); visible: self.note <= 127; black: true; x: (FitLayout.white-index(self.note) + 0.69) * root.actual-key-width * 1px; width: root.actual-key-width * 0.62px; height: viewport.height * 0.6; mapped: self.note >= root.mapped-low && self.note <= root.mapped-high; sounding: root.sounding(self.note); pc-label: root.pcl(self.note); source: root.source + "." + self.note; generation: root.generation;
+                note-on(n, v, s) => { root.note-on(n, v, s); } note-off(n, s) => { root.note-off(n, s); }
+            }
+        }
+    }
+    ActionButton { x: 0px; y: parent.height - 16px; width: 20px; height: 16px; text: "−"; label: "Narrower keys"; ghost: true; compact: true; clicked => { root.zoom(-1); } }
+    track := TouchArea { x: 22px; y: parent.height - 16px; width: max(1px, parent.width - 84px); height: 16px;
+        Rectangle { y: 7px; height: 1px; background: SamplerTheme.line-2; }
+        Rectangle { x: parent.width * (root.scroll / max(1px, root.inner-width)); y: 5px; width: parent.width * min(1, root.width / max(1px, root.inner-width)); height: 5px; border-radius: 2px; border-width: 1px; border-color: SamplerTheme.line-3; background: track.has-hover ? SamplerTheme.ink-6 : SamplerTheme.ink-5; }
+        pointer-event(event) => { if event.kind == PointerEventKind.down { root.tracking = true; root.scroll = (self.mouse-x / max(1px, self.width)) * root.inner-width - root.width / 2; root.clamp-scroll(); } else if event.kind == PointerEventKind.up || event.kind == PointerEventKind.cancel { root.tracking = false; } }
+        moved => { if root.tracking { root.scroll = (self.mouse-x / max(1px, self.width)) * root.inner-width - root.width / 2; root.clamp-scroll(); } }
+    }
+    ActionButton { x: parent.width - 60px; y: parent.height - 16px; width: 20px; height: 16px; text: "+"; label: "Wider keys"; ghost: true; compact: true; clicked => { root.zoom(1); } }
+    ActionButton { x: parent.width - 38px; y: parent.height - 16px; width: 36px; height: 16px; text: PerformanceState.key-width == 0 ? "Fit" : "\{root.actual-key-width} px"; label: "Fit mapped keys"; ghost: true; compact: true; clicked => { root.fit(); } }
+}

@@ -11,3 +11,6 @@ src/rust-engine/mutants.out.old/
 # Generated coverage reports (regenerate with scripts/check-rust-coverage)
 coverage-report.txt
 coverage.lcov
+
+# Preserve generated Python bytecode without tracking local test artifacts.
+__pycache__/

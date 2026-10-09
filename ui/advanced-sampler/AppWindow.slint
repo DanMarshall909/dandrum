@@ -1,0 +1,220 @@
+import { Session } from "Session.slint";
+import { SamplerTheme } from "theme/Theme.slint";
+import { Appearance, AppearanceState } from "chrome/Appearance.slint";
+import { EditorFrame } from "chrome/EditorFrame.slint";
+import { PerformanceState } from "performance/PerformanceState.slint";
+import { PatchBrowser } from "performance/PatchBrowser.slint";
+import { PatchFilter } from "performance/PatchFilter.slint";
+import { ActionButton } from "controls/ActionButton.slint";
+import { ValueCodec, ParsedValue } from "../slint/controls/ValueCodec.slint";
+import { AboutSlint, ScrollView } from "std-widgets.slint";
+import { DragState } from "chrome/DragState.slint";
+import { MacroActions } from "performance/MacroActions.slint";
+import { SamplePage } from "pages/SamplePage.slint";
+import { SlicesPage } from "pages/SlicesPage.slint";
+import { PadsPage } from "pages/PadsPage.slint";
+import { MacrosPage } from "pages/MacrosPage.slint";
+import { MappingPage } from "pages/MappingPage.slint";
+import { LayersPage } from "pages/LayersPage.slint";
+import { VoicePage } from "pages/VoicePage.slint";
+import { ModulationPage } from "pages/ModulationPage.slint";
+import { RoutingPage } from "pages/RoutingPage.slint";
+import { EffectsPage } from "pages/EffectsPage.slint";
+import { EmptyPage } from "pages/EmptyPage.slint";
+import { OverviewPage } from "pages/OverviewPage.slint";
+import { DiagnosticsPage } from "pages/DiagnosticsPage.slint";
+import { ImportChooser } from "pages/ImportChooser.slint";
+import { MultiImportPage } from "pages/MultiImportPage.slint";
+export { Session, SamplerTheme, AppearanceState, PerformanceState, PatchFilter, ValueCodec, ParsedValue }
+export struct DroppedFiles { paths: string, multiple: bool }
+
+export component AppWindow inherits Window {
+    title: "Dandrum Advanced Sampler · silent editor";
+    in-out property <length> viewport-width: 1200px;
+    in-out property <length> viewport-height: 800px;
+    in-out property <bool> diagnostics-open: Session.state-id == "diag";
+    in-out property <bool> eventlog-open;
+    preferred-width: root.viewport-width; preferred-height: root.viewport-height; min-width: 820px; min-height: 560px;
+    background: SamplerTheme.surface-window;
+    default-font-family: SamplerTheme.font-ui;
+    default-font-size: 13px;
+    private property <bool> browser-open;
+    private property <bool> about-open;
+    private property <string> previous-page: "sample";
+    private property <string> file-action;
+    private property <string> import-mode: "root-velocity";
+    private property <string> context-target;
+    private property <string> context-mode;
+    private property <string> route-operation;
+    private property <int> octave: Session.octave-base;
+    private property <bool> pc-enabled: Session.pc-keys;
+    callback appearance-change(string, string, string, string, string, string);
+    callback file-operation(string, string, string) -> bool;
+    callback file-paths(data-transfer) -> DroppedFiles;
+    callback clipboard-copy(string);
+    callback about-slint();
+    callback resize-window(float, float);
+    changed octave => { PerformanceState.base-note = root.octave; }
+    changed pc-enabled => { PerformanceState.pc-enabled = root.pc-enabled; }
+    public function choose-size(size: int) {
+        root.viewport-width = size == 0 ? 820px : size == 2 ? 1600px : 1200px;
+        root.viewport-height = size == 0 ? 560px : size == 2 ? 1000px : 800px;
+        root.resize-window(root.viewport-width / 1px, root.viewport-height / 1px);
+        if size == 0 { PerformanceState.open = false; }
+    }
+    public function show-file(action: string) { Session.release-notes(); DragState.cancel(); root.import-mode = "root-velocity"; root.file-action = action; path.text = ""; path.focus(); }
+    public function receive-files(files: DroppedFiles) {
+        if files.paths != "" {
+            if files.multiple { root.show-file("asset.import-many"); path.text = files.paths; }
+            else { root.file-operation("asset.import", files.paths, ""); }
+        }
+    }
+    public function patch-action(action: string) {
+        if action == "copy" { Session.command("patch.copy", "", "", 0); clipboard-source.select-all(); clipboard-source.copy(); root.clipboard-copy(Session.definition-text); }
+        else { root.show-file(action == "import" ? "patch.import" : "patch.export"); }
+    }
+    public function context(action: string, target: string) {
+        root.context-target = target;
+        if action == "macro" { root.context-mode = "macro-actions"; }
+        else if action == "macro-destinations" { root.context-mode = "destination"; }
+        else if action == "modulator-destination" { root.context-mode = "mod-destination"; }
+        else if action == "modulation-add" || action == "modulation" { root.context-mode = "route"; }
+        else if action == "macro-map" { root.context-mode = "macro"; }
+        else if action == "midi-learn" { Session.command("parameter.learn", target, "", 0); }
+        else if action == "modulation-edit" || action == "modulation-invert" || action == "modulation-bypass" || action == "modulation-remove" {
+            root.route-operation = action == "modulation-edit" ? "Edit" : action == "modulation-invert" ? "Invert" : action == "modulation-bypass" ? "Bypass" : "Remove";
+            root.context-mode = "route-action";
+        }
+        else {
+            root.context-mode = "";
+        }
+    }
+    public function header-action(action: string) {
+        if action == "patch.browse" { root.browser-open = true; }
+        else if action == "appearance" { AppearanceState.opened = true; }
+        else if action == "diagnostics" { root.diagnostics-open = !root.diagnostics-open; }
+        else if action == "eventlog" { root.eventlog-open = !root.eventlog-open; }
+        else if action == "size.min" { root.choose-size(0); }
+        else if action == "size.default" { root.choose-size(1); }
+        else if action == "size.expanded" { root.choose-size(2); }
+        else if action == "perform.toggle" {
+            Session.release-notes();
+            DragState.cancel();
+            if Session.page == "perform" { Session.command("page.select", "", root.previous-page, 0); }
+            else { root.previous-page = Session.page; Session.command("page.select", "", "perform", 0); }
+        }
+    }
+    file-drop := DropArea {
+        can-drop(event) => { return root.file-paths(event.data).paths != "" ? DragAction.copy : DragAction.none; }
+        dropped(event) => { let files = root.file-paths(event.data); root.receive-files(files); return files.paths != "" ? DragAction.copy : DragAction.none; }
+    clipboard-source := TextInput { visible: false; text: Session.definition-text; }
+    FocusScope { x: 0px; y: 0px; width: parent.width; height: parent.height; focus-on-click: true;
+        focus-lost(reason) => { if reason == FocusReason.window-activation { Session.release-notes(); DragState.cancel(); } }
+        key-pressed(event) => {
+            if event.modifiers.control && event.text.to-lowercase() == "o" { root.show-file("asset.import"); return accept; }
+            if event.modifiers.control && event.text == "z" { Session.command(event.modifiers.shift ? "redo" : "undo", "", "", 0); return accept; }
+            if event.text == Key.Escape { Session.release-notes(); DragState.cancel(); root.browser-open = false; root.about-open = false; root.file-action = ""; root.context-mode = ""; AppearanceState.opened = false; if Session.state-id == "drop" && Session.page == "empty" { Session.command("state.select","empty","",0); } return accept; }
+            if Session.pc-key(event.text, true, false, event.modifiers.control || event.modifiers.alt || event.modifiers.meta) { return accept; }
+            return reject;
+        }
+        capture-key-released(event) => { Session.pc-key(event.text, false, false, false); return reject; }
+        frame := EditorFrame { x: 0px; y: 0px; width: parent.width; height: parent.height; perform: Session.page == "perform"; size-mode: root.width < 1000px ? 0 : root.width >= 1500px ? 2 : 1; show-diagnostics: root.diagnostics-open; show-event-log: root.eventlog-open;
+            header-command(a) => { root.header-action(a); }
+            context-action(a,id) => { root.context(a,id); }
+            browse-assets => { root.show-file("asset.import"); }
+            patch-action(a) => { root.patch-action(a); }
+            about-slint => { root.about-open = true; root.about-slint(); }
+            file-browse(a) => { root.show-file(a); }
+            if Session.page == "sample" && Session.sources.length > 0 : SamplePage { compact: root.width < 1000px; expanded: root.width >= 1500px; browse(a) => { root.show-file(a); } context-action(a,id) => { root.context(a,id); } }
+            if Session.page == "slices" : SlicesPage { compact: root.width < 1000px; export-midi => { root.show-file("slice.export-midi"); } }
+            if Session.page == "pads" || (Session.page == "diagnostics" && Session.state-id == "diag" && root.diagnostics-open) : PadsPage { compact: root.width < 1000px; context-action(a,id) => { root.context(a,id); } }
+            if Session.page == "macros" : MacrosPage { context-action(a,id) => { root.context(a,id); } }
+            if Session.page == "mapping" : MappingPage { compact: root.width < 1000px; expanded: root.width >= 1500px; context-action(a,id) => { root.context(a,id); } }
+            if Session.page == "layers" : LayersPage { compact: root.width < 1000px; expanded: root.width >= 1500px; context-action(a,id) => { root.context(a,id); } }
+            if Session.page == "voice" : VoicePage { compact: root.width < 1000px; expanded: root.width >= 1500px; context-action(a,id) => { root.context(a,id); } }
+            if Session.page == "mod" : ModulationPage { compact: root.width < 1000px; expanded: root.width >= 1500px; context-action(a,id) => { root.context(a,id); } }
+            if Session.page == "routing" : RoutingPage { compact: root.width < 1000px; expanded: root.width >= 1500px; context-action(a,id) => { root.context(a,id); } }
+            if Session.page == "fx" : EffectsPage { compact: root.width < 1000px; expanded: root.width >= 1500px; context-action(a,id) => { root.context(a,id); } }
+            if Session.state-id == "drop" && Session.page == "empty" : MultiImportPage { browse(mode) => { root.show-file("asset.import-many"); root.import-mode = mode; } cancelled => { Session.command("state.select","empty","",0); } }
+            if (Session.page == "empty" && Session.state-id != "drop") || (Session.page == "sample" && Session.sources.length == 0) : EmptyPage { browse(a) => { root.show-file(a); } }
+            if Session.page == "overview" : OverviewPage { }
+            if Session.page == "diagnostics" && !(Session.state-id == "diag" && root.diagnostics-open) : DiagnosticsPage { }
+        }
+    }
+    if root.browser-open : Rectangle { background: SamplerTheme.scrim;
+        TouchArea { clicked => { root.browser-open = false; } }
+        PatchBrowser { x: (parent.width - self.width) / 2; y: 80px; width: min(680px,parent.width - 64px); height: min(430px,parent.height - 120px); presets: Session.presets; current-patch-id: Session.current-patch-id;
+            load(id) => { Session.command("patch.load", id, "", 0); root.browser-open = false; }
+            favourite(id) => { Session.command("patch.favourite", id, "", 0); }
+            action(a) => { root.patch-action(a); } closed => { root.browser-open = false; }
+        }
+    }
+    Appearance { x: (parent.width - self.width) / 2; y: 24px; width: min(520px,parent.width - 48px); height: parent.height - 48px;
+        theme-change(s,f,a,c,m,h) => { root.appearance-change(s,f,a,c,m,h); } close-requested => { AppearanceState.opened = false; }
+    }
+    if root.about-open : Rectangle { background: SamplerTheme.scrim;
+        TouchArea { clicked => { root.about-open = false; } }
+        Rectangle { x: (parent.width - self.width) / 2; y: (parent.height - self.height) / 2; width: 340px; height: 210px; background: SamplerTheme.surface-menu; border-radius: 6px;
+            AboutSlint { x: 20px; y: 20px; width: 300px; height: 125px; }
+            ActionButton { x: 120px; y: 164px; width: 100px; text: "Close"; label: "Close About Slint"; clicked => { root.about-open = false; } }
+        }
+    }
+    Rectangle { visible: root.file-action != ""; background: SamplerTheme.scrim;
+        Rectangle { x: (parent.width - self.width) / 2; y: (parent.height - self.height) / 2; width: root.file-action == "asset.import-many" ? min(760px,parent.width - 48px) : 560px; height: root.file-action == "asset.import-many" ? 384px : 170px; background: SamplerTheme.surface-menu; border-radius: 6px; border-width: 1px; border-color: SamplerTheme.line-3;
+            Text { x: 16px; y: 14px; text: root.file-action == "asset.import-many" ? "Import samples · one file path per line" : root.file-action == "asset.import" ? "Import sample" : root.file-action == "asset.relink" ? "Locate sample" : root.file-action == "asset.replace" ? "Replace sample" : root.file-action == "asset.search-folder" ? "Search folder" : root.file-action == "patch.import" ? "Import instrument" : root.file-action == "patch.export" ? "Export instrument" : "Export MIDI"; font-family: SamplerTheme.font-ui; font-size: 15px; font-weight: 600; color: SamplerTheme.paper-1; }
+            Rectangle { x: 16px; y: 50px; width: parent.width - 32px; height: root.file-action == "asset.import-many" ? 80px : 32px; background: SamplerTheme.surface-well; border-width: 1px; border-color: SamplerTheme.line-2; }
+            path := TextInput { x: 22px; y: 54px; width: parent.width - 44px; height: root.file-action == "asset.import-many" ? 72px : 24px; color: SamplerTheme.paper-1; font-family: SamplerTheme.font-value; font-size: 12px; accessible-label: root.file-action == "asset.import-many" ? "File paths" : "File path"; single-line: root.file-action != "asset.import-many"; }
+            if root.file-action == "asset.import-many" : ImportChooser { x: 16px; y: 140px; width: parent.width - 32px; height: 166px; mode <=> root.import-mode; chosen(mode) => { root.import-mode = mode; } cancelled => { root.file-action = ""; } }
+            Text { x: 16px; y: root.file-action == "asset.import-many" ? 316px : 88px; width: parent.width - 32px; text: Session.error; color: SamplerTheme.error; font-family: SamplerTheme.font-ui; font-size: 12px; overflow: elide; }
+            ActionButton { x: parent.width - 174px; y: parent.height - 45px; text: "Cancel"; clicked => { root.file-action = ""; } }
+            ActionButton { x: parent.width - 94px; y: parent.height - 45px; text: "Continue"; primary: true; enabled: path.text != ""; clicked => { if root.file-operation(root.file-action,path.text,root.import-mode) { root.file-action = ""; } } }
+        }
+    }
+    if root.context-mode == "macro-actions" : Rectangle { background: SamplerTheme.scrim;
+        TouchArea { clicked => { root.context-mode = ""; } }
+        MacroActions { x: (parent.width - self.width) / 2; y: (parent.height - self.height) / 2; macro-id: root.context-target; close-requested => { root.context-mode = ""; } }
+    }
+    if root.context-mode == "route-action" : Rectangle { background: SamplerTheme.scrim;
+        TouchArea { clicked => { root.context-mode = ""; } }
+        Rectangle { x: (parent.width - self.width) / 2; y: 100px; width: 350px; height: min(parent.height - 120px, 290px); background: SamplerTheme.surface-menu; border-width: 1px; border-color: SamplerTheme.line-3; border-radius: 4px;
+            Text { x: 12px; y: 12px; text: "Choose modulation route"; accessible-label: self.text; color: SamplerTheme.paper-1; font-family: SamplerTheme.font-ui; font-size: 14px; }
+            ScrollView { x: 12px; y: 42px; width: parent.width - 24px; height: parent.height - 54px;
+                VerticalLayout { spacing: 4px; alignment: start;
+                    for r in Session.routes : VerticalLayout {
+                        if r.destination == root.context-target || r.id == root.context-target : ActionButton {
+                            text: r.source-name + " → " + r.destination-name; label: root.route-operation + " " + self.text;
+                            height: 26px; selected: r.selected;
+                            clicked => {
+                                if root.route-operation == "Edit" { Session.command("route.select", r.id, "", 0); Session.command("page.select", "", "mod", 0); }
+                                else { Session.command(root.route-operation == "Invert" ? "route.invert" : root.route-operation == "Bypass" ? "route.bypass" : "route.delete", r.id, "", 0); }
+                                root.context-mode = "";
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+    if root.context-mode != "" && root.context-mode != "macro-actions" && root.context-mode != "route-action" : Rectangle { background: SamplerTheme.scrim;
+        TouchArea { clicked => { root.context-mode = ""; } }
+        Rectangle { x: (parent.width - self.width) / 2; y: 100px; width: 350px; height: min(parent.height - 120px, 60px + (root.context-mode == "macro" ? Session.macros.length : root.context-mode == "destination" || root.context-mode == "mod-destination" ? Session.parameter-catalog.length : Session.modulators.length) * 30px); background: SamplerTheme.surface-menu; border-width: 1px; border-color: SamplerTheme.line-3; border-radius: 4px;
+            Text { x: 12px; y: 12px; width: parent.width - 24px; text: root.context-mode == "macro" ? "Choose macro" : root.context-mode == "destination" || root.context-mode == "mod-destination" ? "Add destination" : "Choose modulation source"; color: SamplerTheme.paper-1; font-family: SamplerTheme.font-ui; font-size: 14px; }
+            ScrollView { x: 12px; y: 45px; width: parent.width - 24px; height: parent.height - 57px;
+                VerticalLayout { spacing: 4px; alignment: start;
+                    if root.context-mode == "macro" : VerticalLayout {
+                        for m in Session.macros : ActionButton { text: m.name; height: 26px; clicked => { if Session.command("macro.bind", m.id, root.context-target, 0.25) { root.context-mode = ""; } } }
+                    }
+                    if root.context-mode == "route" : VerticalLayout {
+                        for m in Session.modulators : ActionButton { text: m.name; height: 26px; clicked => { if Session.command("route.add", m.id, root.context-target, 0.25) { root.context-mode = ""; } } }
+                    }
+                    if root.context-mode == "destination" || root.context-mode == "mod-destination" : VerticalLayout {
+                        for p in Session.parameter-catalog : ActionButton { text: p.label + " · " + p.group; height: 26px; label: (root.context-mode == "destination" ? "Add macro destination " : "Add modulation destination ") + p.id;
+                            clicked => { if Session.command(root.context-mode == "destination" ? "macro.bind" : "route.add", root.context-target, p.id, 0.25) { root.context-mode = ""; } }
+                        }
+                    }
+                }
+            }
+        }
+    }
+    }
+}

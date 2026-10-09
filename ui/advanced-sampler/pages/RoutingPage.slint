@@ -1,0 +1,43 @@
+import { ScrollView } from "std-widgets.slint";
+import { Session } from "../Session.slint";
+import { SamplerTheme } from "../theme/Theme.slint";
+import { ActionButton } from "../controls/ActionButton.slint";
+import { ParamKnob } from "../controls/ParamKnob.slint";
+import { PageSection, SectionText } from "PageSection.slint";
+export component RoutingPage inherits Rectangle {
+ in property <bool> compact;
+ in property <bool> expanded;
+ callback context-action(string,string);
+ private property <bool> graph;
+ public function inherit-output() { Session.command("routing.inherit",Session.selected-id,"",0); }
+ ScrollView { VerticalLayout { padding: 0px; spacing: 4px; alignment: start;
+  PageSection { title: "Routing"; subtitle: "Output assignment"; height: 144px;
+   SectionText { x: 12px; y: 44px; width: parent.width - 24px; height: 22px; text: Session.selected-name+" → "+Session.resolved-output; color: SamplerTheme.paper-1; }
+   HorizontalLayout { x: 12px; y: 77px; width: parent.width - 24px; height: 27px; spacing: 4px; alignment: start;
+    inherit-output := ActionButton { text: "Inherit"; selected: Session.selected-output == "inherit"; clicked => { root.inherit-output(); } }
+    for bus in Session.buses : ActionButton { text: bus.name; selected: Session.selected-output == bus.name; compact: true; clicked => { Session.command("routing.output",Session.selected-id,bus.name,0); } }
+   }
+   ActionButton { x: 12px; y: 110px; text: root.graph ? "Hide graph" : "Show graph"; compact: true; selected: root.graph; clicked => { root.graph=!root.graph; } }
+  }
+  PageSection { title: "Output assignments"; height: 54px + Session.tree.length*31px;
+   for node[i] in Session.tree : Rectangle { x: 12px; y: 42px+i*31px; width: parent.width - 24px; height: 30px; background: node.selected ? SamplerTheme.accent-wash : mod(i,2)==0 ? SamplerTheme.ink-3 : transparent;
+    ActionButton { x: 4px+node.depth*10px; y: 3px; width: parent.width*0.43; text: node.name; compact: true; ghost: true; clicked => { Session.command("selection.set",node.id,"",0); } }
+    SectionText { x: parent.width*0.48; width: parent.width*0.4; height: 28px; text: node.resolved-output+(node.output == "inherit" ? " · inherited" : ""); }
+    ActionButton { x: parent.width - 56px; y: 3px; text: "Reset"; label: "Inherit output "+node.name; compact: true; enabled: node.output != "inherit"; clicked => { Session.command("routing.inherit",node.id,"",0); } }
+   }
+  }
+  PageSection { title: "Sends"; secondary: true; height: 160px;
+   HorizontalLayout { x: 12px; y: 48px; width: parent.width - 24px; height: 91px; spacing: 18px; alignment: start;
+    for send in Session.sends : ParamKnob { label: send.name; size: root.compact ? 36px : 48px; model-value: send.value*100; value: send.value*100; minimum: 0; maximum: 100; step: 1; unit: "%"; value-display-always: true; gesture-began => { Session.parameter-gesture("send:"+Session.selected-id+":"+send.name,0,self.value/100); } changed(v) => { Session.parameter-gesture("send:"+Session.selected-id+":"+send.name,1,v/100); } gesture-ended => { Session.parameter-gesture("send:"+Session.selected-id+":"+send.name,2,self.value/100); } }
+   }
+  }
+  PageSection { title: "Output buses"; height: 54px + Session.buses.length * 36px;
+   for bus[i] in Session.buses : Rectangle { x: 12px; y: 42px+i*36px; width: parent.width - 24px; height: 34px; background: mod(i,2)==0 ? SamplerTheme.ink-3 : transparent;
+    SectionText { x: 6px; width: 135px; height: parent.height; text: bus.name; color: SamplerTheme.paper-1; }
+    SectionText { x: 146px; width: max(0px,parent.width - 282px); height: parent.height; text: bus.feeds.length + " source(s) · " + bus.channel-summary; }
+    Rectangle { x: parent.width - 128px; y: 13px; width: 118px; height: 7px; background: SamplerTheme.ink-0; border-width: 1px; border-color: SamplerTheme.line-2; Rectangle { width: parent.width*Session.output-level; background: SamplerTheme.accent; } }
+   }
+  }
+  if root.graph : PageSection { title: "Output graph"; height: 155px; HorizontalLayout { x: 12px; y: 50px; width: parent.width - 24px; height: 40px; alignment: start; spacing: 16px; ActionButton { text: Session.selected-name; clicked => { Session.command("selection.set",Session.selected-id,"",0); } } SectionText { text: "→"; } ActionButton { text: Session.resolved-output; clicked => { Session.command("routing.output",Session.selected-id,"Main 1/2",0); } } SectionText { text: "→"; } ActionButton { text: "Output"; clicked => { Session.command("page.select","fx","",0); } } } }
+ } }
+}

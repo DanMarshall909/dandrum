@@ -1,0 +1,57 @@
+import { Session } from "../../ui/advanced-sampler/Session.slint";
+export { Session } from "../../ui/advanced-sampler/Session.slint";
+export { PatchFilter } from "../../ui/advanced-sampler/performance/PatchFilter.slint";
+export { DragState } from "../../ui/advanced-sampler/chrome/DragState.slint";
+export { ValueCodec, ParsedValue } from "../../ui/slint/controls/ValueCodec.slint";
+import { SourceBrowser } from "../../ui/advanced-sampler/chrome/SourceBrowser.slint";
+import { SourceGroups } from "../../ui/advanced-sampler/chrome/SourceGroups.slint";
+import { ModulatorTree } from "../../ui/advanced-sampler/chrome/ModulatorTree.slint";
+import { InstrumentTree } from "../../ui/advanced-sampler/chrome/InstrumentTree.slint";
+import { ParamKnob } from "../../ui/advanced-sampler/controls/ParamKnob.slint";
+import { NumericField } from "../../ui/advanced-sampler/controls/NumericField.slint";
+import { PadCell } from "../../ui/advanced-sampler/performance/PadCell.slint";
+import { SliceSourceRow } from "../../ui/advanced-sampler/chrome/SliceSourceRow.slint";
+import { KeyCell } from "../../ui/advanced-sampler/performance/KeyCell.slint";
+import { OptionStrip } from "../../ui/advanced-sampler/controls/OptionStrip.slint";
+export component AdvancedSamplerBrowserTest inherits Window {
+    width: 1040px; height: 640px;
+    in-out property <bool> controls-enabled: true;
+    in-out property <bool> option-enabled;
+    out property <string> requested-file-action;
+    out property <string> requested-file-source;
+    callback set-query(string);
+    set-query(value) => { browser.set-query(value); }
+    callback set-category(string);
+    set-category(value) => { browser.set-category(value); }
+    pure callback source-matches(int) -> bool;
+    source-matches(index) => { return browser.matches(Session.sources[index]); }
+    callback assign-source(string, string) -> bool;
+    assign-source(target, source) => { return tree.assign-source(target, source); }
+    callback assign-modulator(string, string) -> bool;
+    assign-modulator(source, destination) => { return modulators.assign(source, destination); }
+    callback assign-pad(string) -> bool;
+    assign-pad(source) => { return drop-pad.assign-source(source); }
+    callback add-browser-source() -> bool;
+    add-browser-source => { return browser.add-selected(); }
+    tree := InstrumentTree { width: 250px; height: parent.height; nodes: Session.tree; sources: Session.sources;
+        command(a,t,s,v) => { Session.command(a,t,s,v); }
+    }
+    browser := SourceBrowser { x: 260px; width: 250px; height: parent.height; sources: Session.sources; }
+    groups := SourceGroups { x: 520px; width: 250px; height: parent.height; sources: Session.sources;
+        file-request(a,id) => { root.requested-file-action = a; root.requested-file-source = id; }
+        show-browser => { tree.browser-open = true; }
+    }
+    modulators := ModulatorTree { x: 780px; width: 250px; height: 470px; modulators: Session.modulators; }
+    ParamKnob { enabled: root.controls-enabled; x: 830px; y: 500px; label: "Drop cutoff"; parameter-id: "cutoff"; minimum: 20; maximum: 20000; value: Session.parameters[0].value; model-value: Session.parameters[0].value;
+        gesture-began => { Session.parameter-gesture("cutoff",0,self.value); } changed(v) => { Session.parameter-gesture("cutoff",1,v); } gesture-ended => { Session.parameter-gesture("cutoff",2,self.value); }
+    }
+    NumericField { enabled: root.controls-enabled; x: 925px; y: 500px; label: "Cancel level"; minimum: -60; maximum: 12; value: Session.parameters[4].value; model-value: Session.parameters[4].value;
+        gesture-began => { Session.parameter-gesture("level",0,self.value); } changed(v) => { Session.parameter-gesture("level",1,v); } gesture-ended => { Session.parameter-gesture("level",2,self.value); }
+    }
+    drop-pad := PadCell { x: 570px; y: 500px; size: 80px; note: 80; mapped: Session.pads[80].mapped; name: Session.pads[80].name; }
+    KeyCell { x: 685px; y: 500px; width: 36px; height: 80px; note: 36; mapped: true; source: "browser-test-key";
+        note-on(n,v,s) => { Session.note-on(n,v,s); } note-off(n,s) => { Session.note-off(n,s); }
+    }
+    SliceSourceRow { x: 570px; y: 450px; width: 190px; height: 26px; slice: Session.slices[0]; source-id: "break-source"; index: 0; }
+    OptionStrip { x: 785px; y: 475px; width: 245px; enabled: root.option-enabled; label: "Protected mode"; value: Session.play-mode; options: [{id: "loop", label: "Loop"}]; selected(id) => { Session.command("sample.mode", "", id, 0); } }
+}

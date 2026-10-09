@@ -1,0 +1,28 @@
+import { Session, WaveSlice } from "../Session.slint";
+import { SamplerTheme } from "../theme/Theme.slint";
+import { AppIcon } from "../controls/AppIcon.slint";
+import { DragSource, DragState } from "DragState.slint";
+
+export component SliceSourceRow inherits FocusScope {
+    in property <WaveSlice> slice;
+    in property <string> source-id;
+    in property <int> index;
+    height: 26px;
+    accessible-role: button; accessible-label: "Preview " + root.slice.name + " slice";
+    focus-on-tab-navigation: true;
+    accessible-action-default => { root.preview(); }
+    focus-lost(reason) => { if reason == FocusReason.window-activation { Session.release-notes(); DragState.cancel(); } }
+    public function preview() {
+        Session.command("slice.preview", root.slice.id, "", 0);
+    }
+    key-pressed(event) => { if event.text == Key.Return || event.text == " " { root.preview(); return accept; } return reject; }
+    Rectangle { x: 4px; width: parent.width - 8px; border-radius: 3px; background: Session.selected-slice == root.slice.id ? SamplerTheme.accent-wash : drag.has-hover ? SamplerTheme.ink-3 : transparent;
+        AppIcon { x: 20px; y: 6px; name: "slice"; tint: SamplerTheme.paper-3; }
+        Text { x: 42px; width: parent.width - 104px; text: root.slice.name; font-family: SamplerTheme.font-ui; font-size: 13px; color: SamplerTheme.paper-1; vertical-alignment: center; overflow: elide; }
+        Text { x: parent.width - 58px; width: 52px; text: "slice \{root.index + 1}"; font-family: SamplerTheme.font-value; font-size: 11px; color: SamplerTheme.paper-3; horizontal-alignment: right; vertical-alignment: center; }
+        if Session.selected-source == Session.slice-source(Session.slice-sources, root.slice.id) && Session.selected-slice == root.slice.id && Session.auditioning : Rectangle { x: 42px; y: parent.height - 3px; width: parent.width - 48px; height: 2px; background: SamplerTheme.ink-4;
+            Rectangle { width: parent.width * ((Session.playhead - root.slice.start) / max(0.00001, root.slice.end - root.slice.start)).clamp(0, 1); background: SamplerTheme.paper-1; }
+        }
+    }
+    drag := DragSource { kind: "slice"; payload: root.slice.id; activate => { root.focus(); root.preview(); } }
+}

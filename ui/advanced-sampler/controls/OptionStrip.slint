@@ -1,0 +1,17 @@
+import { SamplerTheme } from "../theme/Theme.slint";
+import { ActionButton } from "ActionButton.slint";
+export struct Option { id: string, label: string }
+export component OptionStrip inherits Rectangle {
+    in property <bool> enabled: true;
+    in property <[Option]> options;
+    in property <string> value;
+    in property <string> label;
+    callback selected(string);
+    height: 22px; border-radius: 2px; border-width: 1px; border-color: SamplerTheme.line-2; background: SamplerTheme.ink-1;
+    for option[i] in root.options : ActionButton {
+        enabled: root.enabled;
+        x: i * parent.width / max(1, root.options.length); width: parent.width / max(1, root.options.length); height: parent.height;
+        text: option.label; label: root.label + " " + option.label; selected: root.value == option.id; compact: true; ghost: true;
+        clicked => { root.selected(option.id); }
+    }
+}

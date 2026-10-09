@@ -1,0 +1,11 @@
+import { ImportChooser } from "../../ui/advanced-sampler/pages/ImportChooser.slint";
+export component AdvancedSamplerImportTest inherits Window {
+    width: 700px; height: 360px;
+    in-out property <string> chosen-mode;
+    in-out property <bool> cancelled;
+    ImportChooser {
+        x: 12px; y: 12px; width: parent.width - 24px; height: parent.height - 24px;
+        chosen(mode) => { root.chosen-mode = mode; }
+        cancelled => { root.cancelled = true; }
+    }
+}

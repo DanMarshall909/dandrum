@@ -1,0 +1,91 @@
+import { ScrollView } from "std-widgets.slint";
+import { TreeInfo, SourceInfo } from "../domain/types.slint";
+import { SamplerTheme } from "../theme/Theme.slint";
+import { MaterialSurface } from "../theme/Material.slint";
+import { ActionButton } from "../controls/ActionButton.slint";
+import { AppIcon } from "../controls/AppIcon.slint";
+import { Session } from "../Session.slint";
+import { SourceBrowser } from "SourceBrowser.slint";
+import { SourceGroups } from "SourceGroups.slint";
+import { ModulatorTree } from "ModulatorTree.slint";
+import { DragTarget, DragState } from "DragState.slint";
+export component InstrumentTree inherits MaterialSurface {
+    in property <[TreeInfo]> nodes;
+    in property <[SourceInfo]> sources;
+    in property <bool> compact;
+    callback command(string, string, string, float);
+    callback browse();
+    callback file-request(string, string);
+    private property <string> context-id;
+    private property <string> rename-id;
+    in-out property <bool> browser-open;
+    private property <string> browser-state: Session.state-id;
+    changed browser-state => { root.browser-open = root.browser-state == "loaded"; }
+    public function assign-source(target: string, source: string) -> bool { return Session.command("tree.assign", target, source, 0); }
+    base: SamplerTheme.ink-2;
+    if root.compact : VerticalLayout { padding: 6px; spacing: 4px; alignment: start;
+        ActionButton { compact: true; icon: "layers"; label: "Instrument tree"; selected: true; clicked => { root.browse(); } }
+        ActionButton { compact: true; icon: "folder"; label: "Sample browser"; clicked => { root.browse(); } }
+        ActionButton { compact: true; icon: "keyboard"; label: "Key map"; clicked => { root.command("page.select", "", "mapping", 0); } }
+    }
+    if !root.compact && root.browser-open : SourceBrowser { sources: root.sources; close => { root.browser-open = false; } import-source => { root.browse(); } file-request(a,id) => { root.file-request(a,id); } }
+    if !root.compact && !root.browser-open : Rectangle { clip: true; border-radius: 6px;
+        Rectangle { x: 0px; y: 0px; height: 30px; background: SamplerTheme.ink-3;
+            Text { x: 12px; text: "INSTRUMENT"; font-family: SamplerTheme.font-ui; font-size: 12px; font-weight: 700; letter-spacing: 1.2px; color: SamplerTheme.secondary; vertical-alignment: center; }
+            browse-button := ActionButton { x: parent.width - 55px; y: 3px; icon: "folder"; label: "Sample browser"; compact: true; ghost: true; clicked => { root.browser-open = true; } }
+            add-group-button := ActionButton { x: parent.width - 29px; y: 3px; icon: "plus"; label: "Add group"; compact: true; ghost: true; clicked => { root.command("tree.add", "", "New group", 1); } }
+        }
+        ScrollView { y: 31px; height: max(30px, parent.height * 0.5 - 31px);
+            VerticalLayout { padding-top: 4px; spacing: 1px; alignment: start;
+                for node in root.nodes : Rectangle {
+                    height: node.visible ? 26px : 0px; visible: node.visible;
+                    node-menu := PopupWindow { y: 26px; width: 190px; height: 212px;
+                        Rectangle { background: SamplerTheme.surface-menu; border-width: 1px; border-color: SamplerTheme.line-3; border-radius: 3px;
+                            VerticalLayout { padding: 2px; spacing: 0px;
+                                ActionButton { text: "Open"; label: "Open " + node.name; ghost: true; clicked => { node-menu.close(); root.command("selection.set", node.id, "", 0); } }
+                                ActionButton { text: "Audition"; label: "Audition " + node.name; enabled: node.kind != "folder"; ghost: true; clicked => { node-menu.close(); Session.command("tree.audition", node.id, "", 0); } }
+                                ActionButton { text: "Rename…"; label: "Rename " + node.name; ghost: true; clicked => { node-menu.close(); root.rename-id = node.id; } }
+                                ActionButton { text: "Duplicate"; label: "Duplicate " + node.name; ghost: true; clicked => { node-menu.close(); root.command("tree.duplicate", node.id, "", 0); } }
+                                ActionButton { text: node.muted ? "Unmute" : "Mute"; label: (node.muted ? "Unmute " : "Mute ") + node.name; ghost: true; clicked => { node-menu.close(); root.command("tree.mute", node.id, "", 0); } }
+                                ActionButton { text: node.solo ? "Unsolo" : "Solo"; label: (node.solo ? "Unsolo " : "Solo ") + node.name; ghost: true; clicked => { node-menu.close(); root.command("tree.solo", node.id, "", 0); } }
+                                ActionButton { text: node.frozen ? "Unfreeze" : "Freeze"; label: (node.frozen ? "Unfreeze " : "Freeze ") + node.name; ghost: true; clicked => { node-menu.close(); root.command(node.frozen ? "tree.unfreeze" : "tree.freeze", node.id, "", 0); } }
+                                ActionButton { text: "Delete"; label: "Delete " + node.name; enabled: node.kind != "patch" && node.kind != "instrument"; ghost: true; clicked => { node-menu.close(); root.command("tree.delete", node.id, "", 0); } }
+                            }
+                        }
+                    }
+                    row-focus := FocusScope { accessible-role: button; accessible-label: node.name; focus-on-tab-navigation: true; focus-on-click: true;
+                        focus-lost(reason) => { if reason == FocusReason.window-activation { Session.release-notes(); DragState.cancel(); } }
+                        accessible-action-default => { root.command("selection.set", node.id, "", 0); }
+                        key-pressed(event) => { if event.text == Key.Return || event.text == " " { root.command("selection.set", node.id, "", 0); return accept; } return reject; }
+                        drop := DragTarget { accepted-kind: "source"; accept-slices: true; x: 2px + node.depth * 12px; width: parent.width - self.x - 4px; border-radius: 3px; border-width: self.drag-over ? 1px : 0px; border-color: SamplerTheme.accent; background: node.selected || self.drag-over ? SamplerTheme.accent-wash : touch.has-hover ? SamplerTheme.ink-3 : transparent;
+                            dropped(source) => { return root.assign-source(node.id, source); }
+                            if node.selected : Rectangle { width: 2px; background: SamplerTheme.accent; }
+                            ActionButton { x: 2px; y: 1px; width: 18px; compact: true; ghost: true; icon: node.expanded ? "chevron-down" : "chevron-right"; label: "Expand " + node.name; clicked => { root.command("tree.expand", node.id, "", 0); } }
+                            AppIcon { x: 23px; y: 6px; name: node.kind == "instrument" || node.kind == "group" ? "layers" : "waveform"; tint: node.selected ? SamplerTheme.accent : SamplerTheme.paper-3; }
+                            Text { x: 43px; width: parent.width - 45px; text: node.name; font-family: SamplerTheme.font-ui; font-size: 13px; color: node.muted ? SamplerTheme.text-disabled : SamplerTheme.paper-1; vertical-alignment: center; overflow: elide; }
+                            if root.rename-id == node.id : TextInput { x: 43px; width: parent.width - 45px; text: node.name; accessible-label: "Rename instrument " + node.name; font-family: SamplerTheme.font-ui; font-size: 13px; color: SamplerTheme.paper-1;
+                                changed has-focus => { if !self.has-focus { Session.release-notes(); DragState.cancel(); } }
+                                accepted => { root.command("tree.rename", node.id, self.text, 0); root.rename-id = ""; }
+                                key-pressed(event) => { if event.text == Key.Escape { root.rename-id = ""; return accept; } return reject; }
+                            }
+                            touch := TouchArea { x: 21px; width: parent.width - 21px; enabled: root.rename-id != node.id;
+                                pointer-event(event) => { if event.kind == PointerEventKind.down && event.button == PointerEventButton.right { node-menu.show(); } }
+                                clicked => { row-focus.focus(); root.command("selection.set", node.id, "", 0); }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        Rectangle { y: parent.height * 0.5; height: 30px; background: SamplerTheme.ink-3;
+            Text { x: 12px; text: "SOURCES"; color: SamplerTheme.secondary; font-family: SamplerTheme.font-ui; font-size: 12px; font-weight: 700; letter-spacing: 1.2px; vertical-alignment: center; }
+            add-source-button := ActionButton { x: parent.width - 29px; y: 3px; compact: true; ghost: true; icon: "plus"; label: "Add source"; clicked => { root.browser-open = true; } }
+        }
+        SourceGroups { y: parent.height * 0.5 + 31px; height: max(1px, parent.height * 0.25 - 31px); sources: root.sources; show-browser => { root.browser-open = true; } file-request(a,id) => { root.file-request(a,id); } }
+        Rectangle { y: parent.height * 0.75; height: 30px; background: SamplerTheme.ink-3;
+            Text { x: 12px; text: "MODULATORS"; color: SamplerTheme.secondary; font-family: SamplerTheme.font-ui; font-size: 12px; font-weight: 700; letter-spacing: 1.2px; vertical-alignment: center; }
+            ActionButton { x: parent.width - 29px; y: 3px; compact: true; ghost: true; icon: "plus"; label: "Add modulator"; clicked => { root.command("modulator.add", "", "lfo", 0); } }
+        }
+        ModulatorTree { y: parent.height * 0.75 + 31px; height: max(1px, parent.height - self.y - 4px); modulators: Session.modulators; }
+    }
+}

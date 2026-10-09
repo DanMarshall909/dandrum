@@ -1,0 +1,77 @@
+import { Session, PadInfo } from "../Session.slint";
+import { SamplerTheme } from "../theme/Theme.slint";
+import { Rollout } from "../controls/Rollout.slint";
+import { ParamKnob } from "../controls/ParamKnob.slint";
+import { OptionStrip } from "../controls/OptionStrip.slint";
+import { ActionButton } from "../controls/ActionButton.slint";
+import { PadWave } from "PadWave.slint";
+import { PadLiveControls } from "PadLiveControls.slint";
+import { FitLayout } from "FitLayout.slint";
+export component PadPanel inherits Rectangle {
+    in property <PadInfo> pad;
+    callback context-action(string, string);
+    private property <string> target: "\{root.pad.note}";
+    pure function route-target(field: string) -> string { return "pad:" + root.target + ":" + field; }
+    pure function route-label(destination: string) -> string { return destination == root.route-target("gain") ? "Level" : destination == root.route-target("pan") ? "Pan" : destination == root.route-target("pitch-ratio") ? "Pitch" : destination == root.route-target("start") ? "Start" : destination == root.route-target("variation") ? "Variation" : destination == root.route-target("send-a") ? "Reverb" : "Delay"; }
+    pure function owns-route(destination: string) -> bool { return destination == root.route-target("gain") || destination == root.route-target("pan") || destination == root.route-target("pitch-ratio") || destination == root.route-target("start") || destination == root.route-target("variation") || destination == root.route-target("send-a") || destination == root.route-target("send-b"); }
+    height: root.pad.mapped ? 36px + waveform.height + live.height + layers.height + mute.height + output.height + modulation.height : 150px;
+    border-radius: 4px; border-width: 1px; border-color: SamplerTheme.line-1; background: SamplerTheme.ink-1;
+    Rectangle { x: 1px; y: 1px; width: parent.width - 2px; height: 30px; background: SamplerTheme.ink-3; border-radius: 3px;
+        Text { x: 11px; width: min(120px, parent.width * 0.45); text: root.pad.mapped ? root.pad.name : "Empty pad"; font-family: SamplerTheme.font-ui; font-size: 14px; font-weight: 600; color: SamplerTheme.paper-1; vertical-alignment: center; overflow: elide; }
+        Text { x: 13px + min(120px, parent.width * 0.45); width: 56px; text: "\{root.pad.note} " + FitLayout.note-name(root.pad.note); font-family: SamplerTheme.font-value; font-size: 12px; color: SamplerTheme.paper-3; vertical-alignment: center; }
+        Text { x: parent.width - 110px; width: 102px; text: root.pad.velocity > 0 ? "Last hit · vel \{root.pad.velocity}" : "No hit yet"; font-family: SamplerTheme.font-value; font-size: 11px; color: SamplerTheme.paper-3; horizontal-alignment: right; vertical-alignment: center; overflow: elide; }
+        Rectangle { y: parent.height - 1px; height: 1px; background: SamplerTheme.line-1; }
+    }
+    Rectangle { visible: root.pad.mapped; x: 4px; y: 34px; width: parent.width - 8px; height: parent.height - 36px;
+        waveform := Rollout { width: parent.width; title: "Waveform"; open: true; body-height: 68px;
+            PadWave { x: 8px; y: 4px; width: parent.width - 16px; height: 56px; peaks: Session.waveform; cursor: root.pad.sounding ? Session.playhead : 0; audition => { Session.note-on(root.pad.note, 100, "pad.preview"); Session.note-off(root.pad.note, "pad.preview"); } }
+        }
+        live := Rollout { y: waveform.height; width: parent.width; title: "Live"; summary: "pitch · level · pan"; open: true; body-height: 74px;
+            PadLiveControls { x: 8px; y: 4px; width: parent.width - 16px; height: 66px; pad: root.pad; context-action(a,id) => { root.context-action(a,id); } }
+        }
+        layers := Rollout { y: live.y + live.height; width: parent.width; title: "Layers and alternates"; summary: "\{root.pad.layers} layers · \{root.pad.alternates} alternates"; body-height: max(30px, (root.pad.layers + root.pad.alternates) * 22px + 12px);
+            VerticalLayout { x: 12px; y: 4px; width: parent.width - 24px; spacing: 0px;
+                for z in Session.zones : Rectangle { visible: z.lo <= root.pad.note && z.hi >= root.pad.note; height: self.visible ? 22px : 0px;
+                    Text { width: parent.width - 98px; text: z.name; font-family: SamplerTheme.font-ui; font-size: 13px; color: SamplerTheme.paper-1; vertical-alignment: center; overflow: elide; }
+                    Text { x: parent.width - 98px; width: 98px; text: "vel \{z.vel-lo}–\{z.vel-hi}"; font-family: SamplerTheme.font-value; font-size: 12px; color: SamplerTheme.paper-2; horizontal-alignment: right; vertical-alignment: center; }
+                    TouchArea { clicked => { Session.command("zone.select", z.id, "", 0); Session.command("page.select", "layers", "", 0); } }
+                }
+                for i in root.pad.alternates : Text { x: 12px; height: 22px; text: "Alternate \{i + 1}" + (i == root.pad.active-alternate ? "   Last" : i == mod(root.pad.active-alternate + 1, max(1, root.pad.alternates)) ? "   Next" : ""); font-family: SamplerTheme.font-ui; font-size: 12px; color: i == root.pad.active-alternate ? SamplerTheme.accent : SamplerTheme.paper-3; }
+            }
+        }
+        mute := Rollout { y: layers.y + layers.height; width: parent.width; title: "Mute, solo, choke"; summary: (root.pad.muted ? "Muted · " : "") + (root.pad.solo ? "Solo · " : "") + (root.pad.choke-group < 0 ? "No choke" : "Choke \{root.pad.choke-group}"); body-height: 62px;
+            ActionButton { x: 12px; y: 4px; width: 60px; height: 22px; text: "Mute"; selected: root.pad.muted; compact: true; clicked => { Session.command("pad.set", root.target, "muted", root.pad.muted ? 0 : 1); } }
+            ActionButton { x: 80px; y: 4px; width: 60px; height: 22px; text: "Solo"; selected: root.pad.solo; compact: true; clicked => { Session.command("pad.set", root.target, "solo", root.pad.solo ? 0 : 1); } }
+            Text { x: 12px; y: 33px; width: 44px; height: 22px; text: "CHOKE"; font-family: SamplerTheme.font-ui; font-size: 11px; font-weight: 600; color: SamplerTheme.paper-3; vertical-alignment: center; }
+            OptionStrip { x: 58px; y: 33px; width: parent.width - 70px; value: root.pad.choke-group; label: "Pad choke group"; options: [{id: "-1", label: "None"}, {id: "1", label: "1"}, {id: "2", label: "2"}, {id: "3", label: "3"}]; selected(id) => { Session.command("pad.set", root.target, "choke", id.to-float()); } }
+        }
+        output := Rollout { y: mute.y + mute.height; width: parent.width; title: "Output and sends"; summary: root.pad.output; body-height: 106px;
+            output-button := ActionButton { x: 12px; y: 4px; width: parent.width - 24px; text: root.pad.output; label: "Pad output bus"; clicked => { buses.show(); } }
+            buses := PopupWindow { y: output-button.height + 4px; width: max(120px, output.width - 24px); height: Session.buses.length * 26px + 4px;
+                Rectangle { border-width: 1px; border-color: SamplerTheme.line-3; background: SamplerTheme.surface-menu; border-radius: 3px;
+                    for b[i] in Session.buses : ActionButton { x: 2px; y: 2px + i * 26px; width: parent.width - 4px; height: 26px; text: b.name; label: "Route pad to " + b.name; ghost: true; selected: root.pad.output == b.id; clicked => { Session.command("pad.output", root.target, b.id, 0); buses.close(); } }
+                }
+            }
+            ParamKnob { x: 12px; y: 38px; size: 36px; label: "Reverb"; parameter-id: root.route-target("send-a"); value: root.pad.send-a * 100; model-value: root.pad.send-a * 100; minimum: 0; maximum: 100; default-value: 0; unit: "%";
+                gesture-began => { Session.parameter-gesture("pad:" + root.target + ":send-a", 0, self.value / 100); } changed(v) => { Session.parameter-gesture("pad:" + root.target + ":send-a", 1, v / 100); } gesture-ended => { Session.parameter-gesture("pad:" + root.target + ":send-a", 2, self.value / 100); } context-action(a) => { root.context-action(a, "pad:" + root.target + ":send-a"); }
+            }
+            ParamKnob { x: 68px; y: 38px; size: 36px; label: "Delay"; parameter-id: root.route-target("send-b"); value: root.pad.send-b * 100; model-value: root.pad.send-b * 100; minimum: 0; maximum: 100; default-value: 0; unit: "%";
+                gesture-began => { Session.parameter-gesture("pad:" + root.target + ":send-b", 0, self.value / 100); } changed(v) => { Session.parameter-gesture("pad:" + root.target + ":send-b", 1, v / 100); } gesture-ended => { Session.parameter-gesture("pad:" + root.target + ":send-b", 2, self.value / 100); } context-action(a) => { root.context-action(a, "pad:" + root.target + ":send-b"); }
+            }
+        }
+        modulation := Rollout { y: output.y + output.height; width: parent.width; title: "Modulation"; summary: "Incoming pad routes"; body-height: max(30px, pad-routes.preferred-height + 12px);
+            pad-routes := VerticalLayout { x: 12px; y: 4px; width: parent.width - 24px; height: self.preferred-height; spacing: 0px;
+                for r in Session.routes : Rectangle { height: root.owns-route(r.destination) ? 22px : 0px;
+                    if root.owns-route(r.destination) : ActionButton { height: 22px; width: parent.width; label: "Edit pad modulation " + r.source + " to " + root.route-label(r.destination); ghost: true;
+                        clicked => { Session.command("route.select", r.id, "", 0); Session.command("page.select", "mod", "", 0); }
+                    }
+                    if root.owns-route(r.destination) : Rectangle {
+                        for m in Session.modulators : Text { visible: m.id == r.source; width: parent.width - 46px; text: m.name + " → " + root.route-label(r.destination); font-family: SamplerTheme.font-ui; font-size: 13px; color: r.slot == 0 ? SamplerTheme.mod-a : r.slot == 1 ? SamplerTheme.mod-b : r.slot == 2 ? SamplerTheme.mod-c : SamplerTheme.mod-d; vertical-alignment: center; overflow: elide; }
+                        Text { x: parent.width - 46px; width: 46px; text: round(r.amount * 100) + "%"; font-family: SamplerTheme.font-value; font-size: 12px; color: SamplerTheme.paper-2; vertical-alignment: center; horizontal-alignment: right; }
+                    }
+                }
+            }
+        }
+    }
+    if !root.pad.mapped : Text { x: 12px; y: 40px; width: parent.width - 24px; text: "No rule maps this note, so the pad is silent. Add a zone on the Mapping page or drop a sample on this pad."; font-family: SamplerTheme.font-ui; font-size: 12px; color: SamplerTheme.paper-3; wrap: word-wrap; }
+}

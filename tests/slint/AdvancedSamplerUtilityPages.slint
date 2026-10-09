@@ -1,0 +1,15 @@
+export { Session } from "../../ui/advanced-sampler/Session.slint";
+import { Session } from "../../ui/advanced-sampler/Session.slint";
+import { SamplerTheme } from "../../ui/advanced-sampler/theme/Theme.slint";
+import { EmptyPage } from "../../ui/advanced-sampler/pages/EmptyPage.slint";
+import { OverviewPage } from "../../ui/advanced-sampler/pages/OverviewPage.slint";
+import { DiagnosticsPage } from "../../ui/advanced-sampler/pages/DiagnosticsPage.slint";
+
+export component AdvancedSamplerUtilityPagesTest inherits Window {
+    width: 960px; height: 760px;
+    background: SamplerTheme.surface-window;
+    callback browse-requested(string);
+    if Session.page == "empty" : EmptyPage { x: 8px; y: 8px; width: parent.width - 16px; height: parent.height - 16px; browse(action) => { root.browse-requested(action); } }
+    if Session.page == "overview" : OverviewPage { x: 8px; y: 8px; width: parent.width - 16px; height: parent.height - 16px; }
+    if Session.page == "diagnostics" : DiagnosticsPage { x: 8px; y: 8px; width: parent.width - 16px; height: parent.height - 16px; }
+}

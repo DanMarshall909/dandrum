@@ -1,0 +1,91 @@
+import { Session } from "../Session.slint";
+import { SamplerTheme } from "../theme/Theme.slint";
+import { MaterialSurface, WindowMaterial } from "../theme/Material.slint";
+import { SamplerMetrics } from "../FrameMetrics.slint";
+import { EditorHeader } from "EditorHeader.slint";
+import { PageRail } from "PageRail.slint";
+import { InstrumentTree } from "InstrumentTree.slint";
+import { Inspector } from "Inspector.slint";
+import { PlayDrawer } from "../performance/PlayDrawer.slint";
+import { PerformView } from "../performance/PerformView.slint";
+import { PerformanceState } from "../performance/PerformanceState.slint";
+import { ActionButton } from "../controls/ActionButton.slint";
+import { DiagnosticsPage } from "../pages/DiagnosticsPage.slint";
+import { EventLog } from "EventLog.slint";
+export component EditorFrame inherits Rectangle {
+    in property <bool> perform;
+    in property <int> size-mode: 1;
+    in property <string> selected-name: Session.selected-name;
+    in property <string> selected-kind: Session.selected-kind;
+    in property <string> selected-metadata: Session.selected-metadata;
+    out property <length> workspace-width: workspace.width;
+    out property <length> workspace-height: workspace.height;
+    private property <bool> compact: !root.perform && SamplerMetrics.compact(root.width);
+    private property <length> header-height: root.perform ? 45px : SamplerMetrics.header(root.width);
+    private property <length> banner-height: Session.pending-count > 0 ? 34px : Session.error != "" ? 44px : 0px;
+    private property <length> main-y: root.header-height + root.banner-height + 4px;
+    in property <bool> show-diagnostics;
+    in property <bool> show-event-log;
+    private property <length> body-height: max(0px, root.height - root.header-height - root.banner-height - drawer.height - 68px - (root.show-diagnostics ? 180px : 0px) - (root.show-event-log ? 184px : 0px));
+    callback header-command(string);
+    callback context-action(string, string);
+    callback browse-assets();
+    callback patch-action(string);
+    callback about-slint();
+    callback file-browse(string);
+    function run(action: string, target: string, text: string, value: float) { Session.command(action, target, text, value); }
+    WindowMaterial { x: 0px; y: 0px; }
+    header := EditorHeader { x: 0px; y: 0px; height: root.header-height; compact: root.compact; perform: root.perform; patch-name: Session.patch-name; status: Session.status; can-undo: Session.can-undo; can-redo: Session.can-redo; voices: Session.voices; voice-limit: Session.voice-limit; level: Session.output-level; size-mode: root.size-mode;
+        command(action) => { if action == "undo" || action == "redo" { root.run(action, "", "", 0); } else { root.header-command(action); } }
+    }
+    if !root.perform && root.banner-height > 0px : Rectangle { x: 4px; y: root.header-height + 4px; width: parent.width - 8px; height: root.banner-height - 4px; border-radius: 4px; border-width: 1px; border-color: Session.error != "" ? SamplerTheme.error : SamplerTheme.accent; background: Session.error != "" ? SamplerTheme.error-wash : SamplerTheme.accent-wash;
+        Text { x: 8px; width: parent.width - 180px; text: Session.error != "" ? Session.error : "Draft · " + Session.pending-count + " pending changes"; color: SamplerTheme.paper-1; font-family: SamplerTheme.font-ui; font-size: 13px; vertical-alignment: center; overflow: elide; }
+        ActionButton { x: parent.width - 164px; y: 3px; text: "Discard"; ghost: true; clicked => { root.run("patch.discard", "", "", 0); } }
+        ActionButton { x: parent.width - 89px; y: 3px; text: "Reload"; primary: true; enabled: Session.reload-state != "preparing"; clicked => { root.run("patch.reload", "", "", 0); } }
+    }
+    Rectangle { visible: !root.perform; y: root.main-y; height: root.body-height;
+        PageRail { x: 4px; width: SamplerMetrics.rail(root.width); height: parent.height; page: Session.page; compact: root.compact; selected(page) => { root.run("page.select", "", page, 0); } }
+        InstrumentTree { x: 8px + SamplerMetrics.rail(root.width); width: SamplerMetrics.tree(root.width); height: parent.height; compact: root.compact; nodes: Session.tree; sources: Session.sources;
+            file-request(a,id) => { root.file-browse(a); }
+            command(a,t,s,v) => { root.run(a,t,s,v); } browse => { root.browse-assets(); }
+        }
+        workspace := Rectangle { x: 12px + SamplerMetrics.rail(root.width) + SamplerMetrics.tree(root.width); width: SamplerMetrics.workspace(root.width); height: parent.height;
+            @children
+        }
+        Inspector { x: parent.width - SamplerMetrics.inspector(root.width) - 4px; width: SamplerMetrics.inspector(root.width); height: parent.height;
+            metadata: root.selected-metadata; selected-id: Session.selected-id; scope: Session.scope; history: Session.history;
+            command(a,t,s,v) => { root.run(a,t,s,v); }
+            parameter-gesture(id,phase,v) => { Session.parameter-gesture(id,phase,v); }
+            context-action(a,id) => { root.context-action(a,id); }
+            browse(a) => { root.file-browse(a); }
+        }
+    }
+    drawer := PlayDrawer { visible: !root.perform; x: 4px; y: root.main-y + root.body-height + 4px; width: parent.width - 8px; size-mode: root.size-mode; window-height: root.height; pads: Session.pads; macros: Session.macros; sounding-notes: Session.sounding-notes; generation: Session.current-patch-id; mapped-low: Session.mapped-low; mapped-high: Session.mapped-high;
+        note-on(n,v,s) => { Session.note-on(n,v,s); } note-off(n,s) => { Session.note-off(n,s); }
+        selected(n) => { root.run("zone.select", "", "", n); }
+        macro-gesture(id,phase,v) => { Session.parameter-gesture(id,phase,v); }
+        context-action(a,id) => { root.context-action(a,id); }
+    }
+    if !root.perform && root.show-diagnostics : DiagnosticsPage { x: 4px; y: drawer.y + drawer.height + 4px; width: parent.width - 8px; height: 176px; drawer: true; }
+    if !root.perform && root.show-event-log : EventLog { x: 4px; y: drawer.y + drawer.height + (root.show-diagnostics ? 184px : 4px); width: parent.width - 8px; height: 180px; closed => { root.header-command("eventlog"); } }
+    if root.perform : PerformView { y: root.header-height; height: parent.height - root.header-height - 27px; pads: Session.pads; macros: Session.macros; presets: Session.presets; sounding-notes: Session.sounding-notes; current-patch-id: Session.current-patch-id; generation: Session.current-patch-id; mapped-low: Session.mapped-low; mapped-high: Session.mapped-high;
+        note-on(n,v,s) => { Session.note-on(n,v,s); } note-off(n,s) => { Session.note-off(n,s); }
+        selected(n) => { root.run("zone.select", "", "", n); }
+        macro-gesture(id,phase,v) => { Session.parameter-gesture(id,phase,v); }
+        context-action(a,id) => { root.context-action(a,id); }
+        load(id) => { root.run("patch.load", id, "", 0); }
+        favourite(id) => { root.run("patch.favourite", id, "", 0); }
+        patch-action(a) => { root.patch-action(a); }
+    }
+    if !root.perform : Rectangle { y: parent.height - 56px; height: 29px; background: SamplerTheme.ink-1;
+        Text { x: 12px; text: "SCOPE"; width: 70px; color: SamplerTheme.secondary; font-family: SamplerTheme.font-ui; font-size: 11px; font-weight: 700; vertical-alignment: center; }
+        HorizontalLayout { x: 86px; width: 320px; spacing: 4px; alignment: start;
+            for scope in ["instrument", "group", "sound", "layer"] : ActionButton { text: scope; compact: true; selected: Session.scope == scope; clicked => { root.run("scope.select", "", scope, 0); } }
+        }
+    }
+    Rectangle { y: parent.height - 27px; height: 27px; background: SamplerTheme.ink-0;
+        Rectangle { height: 1px; background: SamplerTheme.line-1; }
+        Text { x: 12px; width: parent.width - 110px; text: Session.status + "   ·   " + Session.page + "   ·   " + Session.sounding-notes.length + " held notes"; font-family: SamplerTheme.font-ui; font-size: 11px; color: SamplerTheme.paper-3; vertical-alignment: center; overflow: elide; }
+        ActionButton { x: parent.width - 92px; y: 2px; width: 84px; height: 23px; text: "About Slint"; ghost: true; compact: true; clicked => { root.about-slint(); } }
+    }
+}

@@ -1,0 +1,55 @@
+import { SamplerTheme } from "../theme/Theme.slint";
+import { PadInfo, MacroInfo } from "types.slint";
+import { PerformanceState } from "PerformanceState.slint";
+import { PlayBar } from "PlayBar.slint";
+import { MacroGrid } from "MacroGrid.slint";
+import { PlayPads } from "PlayPads.slint";
+import { PlayKeys } from "PlayKeys.slint";
+import { ResizeHandle } from "../controls/ResizeHandle.slint";
+export component PlayDrawer inherits Rectangle {
+    in property <[PadInfo]> pads;
+    in property <[MacroInfo]> macros;
+    in property <[int]> sounding-notes;
+    in property <int> mapped-low: 24;
+    in property <int> mapped-high: 108;
+    in property <int> size-mode: 1;
+    in property <length> window-height: 800px;
+    in property <string> generation;
+    private property <length> standard-height: root.size-mode == 0 ? 114px : root.size-mode == 2 ? 352px : 284px;
+    private property <length> body-height: PerformanceState.body-height > 0px ? PerformanceState.body-height : root.standard-height;
+    private property <length> minimum-body-height: root.size-mode == 0 ? 60px : 120px;
+    private property <length> resize-start;
+    private property <length> split-start;
+    private property <length> pad-start;
+    private property <length> macro-width: PerformanceState.show-macros ? (PerformanceState.macro-width > 0px ? PerformanceState.macro-width : root.size-mode == 0 ? 214px : root.size-mode == 2 ? 158px : 130px) : 0px;
+    private property <length> pads-width: !PerformanceState.show-pads ? 0px : !PerformanceState.show-keys ? max(120px, root.width - root.macro-width - 36px) : PerformanceState.pad-width > 0px ? PerformanceState.pad-width : root.size-mode == 0 ? 234px : root.size-mode == 2 ? 466px : 386px;
+    callback note-on(int, int, string); callback note-off(int, string); callback selected(int);
+    callback macro-gesture(string, int, float); callback context-action(string, string); callback pc-changed(bool);
+    height: 30px + (PerformanceState.open ? root.body-height : 0px);
+    border-radius: 6px; border-width: 1px; border-color: SamplerTheme.line-1; background: SamplerTheme.ink-2;
+    if SamplerTheme.soft : Rectangle { border-radius: 6px; background: SamplerTheme.raised-overlay; }
+    PlayBar { x: 1px; y: 1px; width: parent.width - 2px; height: 28px; pc-changed(on) => { root.pc-changed(on); } }
+    ResizeHandle { z: 5; x: 0px; y: -3px; width: parent.width; height: 7px; vertical: true;
+        started => { root.resize-start = PerformanceState.open ? root.body-height : 0px; }
+        moved-by(delta) => { let h = root.resize-start - delta; PerformanceState.open = h >= root.minimum-body-height / 2; PerformanceState.body-height = h.clamp(root.minimum-body-height, root.window-height - (root.size-mode == 0 ? 250px : 300px)); if !PerformanceState.open { PerformanceState.release-notes(); } }
+        reset => { PerformanceState.body-height = 0px; PerformanceState.open = true; }
+    }
+    if PerformanceState.open : Rectangle { y: 30px; height: root.body-height; clip: true;
+        if PerformanceState.show-macros : MacroGrid { x: 8px; y: 6px; width: root.macro-width; height: parent.height - 12px; macros: root.macros; face-size: root.size-mode == 0 ? 28px : root.size-mode == 2 ? 48px : 36px; budget: root.size-mode == 0 ? 46px : root.size-mode == 2 ? 70px : 56px;
+            macro-gesture(id, phase, v) => { root.macro-gesture(id, phase, v); } context-action(a, id) => { root.context-action(a, id); }
+        }
+        if PerformanceState.show-macros && (PerformanceState.show-pads || PerformanceState.show-keys) : ResizeHandle { x: root.macro-width + 10px; y: 6px; width: 8px; height: parent.height - 12px;
+            started => { root.split-start = root.macro-width; } moved-by(delta) => { PerformanceState.macro-width = (root.split-start + delta).clamp(50px, root.width * 0.5); } reset => { PerformanceState.macro-width = 0px; }
+        }
+        if PerformanceState.show-pads : PlayPads { x: PerformanceState.show-macros ? root.macro-width + 20px : 8px; y: 6px; width: root.pads-width; height: parent.height - 12px; pads: root.pads; mapped-low: root.mapped-low; mapped-high: root.mapped-high; minimum-size: root.size-mode == 0 ? 36 : root.size-mode == 2 ? 72 : 60; maximum-size: root.size-mode == 0 ? 64 : root.size-mode == 2 ? 110 : 96; force-compact: true; generation: root.generation;
+            note-on(n,v,s) => { root.note-on(n,v,s); } note-off(n,s) => { root.note-off(n,s); } selected(n) => { root.selected(n); }
+        }
+        if PerformanceState.show-pads && PerformanceState.show-keys : ResizeHandle { x: (PerformanceState.show-macros ? root.macro-width + 20px : 8px) + root.pads-width + 2px; y: 6px; width: 8px; height: parent.height - 12px;
+            started => { root.pad-start = root.pads-width; } moved-by(delta) => { PerformanceState.pad-width = (root.pad-start + delta).clamp(80px, max(80px, root.width - root.macro-width - 240px)); } reset => { PerformanceState.pad-width = 0px; }
+        }
+        if PerformanceState.show-keys : PlayKeys { x: (PerformanceState.show-macros ? root.macro-width + 20px : 8px) + (PerformanceState.show-pads ? root.pads-width + 12px : 0px); y: 6px; width: max(1px, parent.width - self.x - 8px); height: parent.height - 12px; mapped-low: root.mapped-low; mapped-high: root.mapped-high; sounding-notes: root.sounding-notes; generation: root.generation;
+            note-on(n,v,s) => { root.note-on(n,v,s); } note-off(n,s) => { root.note-off(n,s); }
+        }
+        if !PerformanceState.show-macros && !PerformanceState.show-pads && !PerformanceState.show-keys : Text { x: 8px; text: "Turn on macros, pads or keyboard with the icons above."; font-family: SamplerTheme.font-ui; font-size: 12px; color: SamplerTheme.paper-3; vertical-alignment: center; }
+    }
+}

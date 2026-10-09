@@ -116,6 +116,21 @@ class DemoLauncherTest(unittest.TestCase):
         self.assertEqual(default_cache.read_text(), "CMAKE_BUILD_TYPE:STRING=Debug\n")
         self.assertFalse((self.root / "web/sampler/node_modules").exists())
 
+    def test_advanced_sampler_uses_native_build_and_preserves_forwarded_state(self):
+        artifact = self.native_fixture("sampler-slint", "build/advanced-sampler", "Release")
+        (self.root / "build/advanced-sampler/CMakeCache.txt").write_text("CMAKE_BUILD_TYPE:STRING=Release\n")
+        (self.root / "CMakeLists.txt").write_text("add_executable(dandrum-advanced-sampler)\n")
+        self.web_fixture("web/sampler")
+        commands = []
+        with self.recorded_tools(commands):
+            code, _, error = self.invoke("sampler-slint", "--", "--state", "loop")
+        self.assertEqual(code, 0, error)
+        self.assertEqual(commands[0][0][1:], ["-S", str(self.root), "-B", str(self.root / "build/advanced-sampler"),
+                         "-DDANDRUM_NATIVE_ONLY=ON", "-DDANDRUM_ADVANCED_SAMPLER_ONLY=ON", "-DCMAKE_BUILD_TYPE=Release"])
+        self.assertEqual(commands[1][0][1:], ["--build", str(self.root / "build/advanced-sampler"), "--target", "dandrum-advanced-sampler", "--config", "Release"])
+        self.assertEqual(commands[2][0], [str(artifact), "--state", "loop"])
+        self.assertFalse((self.root / "web/sampler/node_modules").exists())
+
     def test_missing_sources_and_git_do_not_start_preparation(self):
         with patch("subprocess.run", side_effect=FileNotFoundError("git")) as run:
             code, _, error = self.invoke("trigger")

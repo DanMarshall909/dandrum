@@ -1,0 +1,41 @@
+import { ScrollView } from "std-widgets.slint";
+import { SamplerTheme } from "../theme/Theme.slint";
+import { AppIcon } from "../controls/AppIcon.slint";
+export struct RailPage { id: string, label: string, caption: string, icon: string, group: string }
+export component PageRail inherits Rectangle {
+    in property <string> page;
+    in property <bool> compact;
+    callback selected(string);
+    private property <[RailPage]> pages: [
+        {id: "pads", label: "Pads", caption: "PADS", icon: "grid", group: "PLAY"},
+        {id: "macros", label: "Macros", caption: "MACROS", icon: "sliders", group: ""},
+        {id: "sample", label: "Sample", caption: "SAMPLE", icon: "waveform", group: "SOURCE"},
+        {id: "slices", label: "Slices", caption: "SLICES", icon: "scissors", group: ""},
+        {id: "mapping", label: "Mapping", caption: "MAPPING", icon: "keyboard", group: ""},
+        {id: "layers", label: "Layers", caption: "LAYERS", icon: "layers", group: ""},
+        {id: "voice", label: "Voice", caption: "VOICE", icon: "sliders", group: "VOICE"},
+        {id: "mod", label: "Mod", caption: "MOD", icon: "waveform", group: ""},
+        {id: "routing", label: "Routing", caption: "ROUTING", icon: "route", group: "MIX"},
+        {id: "fx", label: "FX", caption: "FX", icon: "sliders", group: ""},
+        {id: "overview", label: "Overview", caption: "OVERVIEW", icon: "grid", group: ""},
+        {id: "diagnostics", label: "Events", caption: "EVENTS", icon: "settings", group: ""}
+    ];
+    border-width: 1px; border-color: SamplerTheme.line-1; border-radius: 6px; background: SamplerTheme.ink-1;
+    ScrollView { x: 1px; y: 1px; width: parent.width - 2px; height: parent.height - 2px;
+        VerticalLayout { padding: 4px; spacing: 2px; alignment: start;
+            for p in root.pages : VerticalLayout { spacing: 2px;
+                if p.group != "" && !root.compact : Text { height: 18px; text: p.group; font-family: SamplerTheme.font-ui; font-size: 10px; font-weight: 700; letter-spacing: 1px; color: SamplerTheme.secondary; horizontal-alignment: center; vertical-alignment: center; }
+                FocusScope { height: root.compact ? 32px : 42px; accessible-role: button; accessible-label: p.label; focus-on-tab-navigation: true;
+                    accessible-action-default => { root.selected(p.id); }
+                    key-pressed(event) => { if event.text == " " || event.text == Key.Return { root.selected(p.id); return accept; } return reject; }
+                    Rectangle { border-radius: 4px; background: root.page == p.id ? SamplerTheme.accent-wash : touch.has-hover ? SamplerTheme.ink-3 : transparent;
+                        if root.page == p.id : Rectangle { width: 2px; background: SamplerTheme.accent; border-radius: 1px; }
+                        AppIcon { x: (parent.width - self.width) / 2; y: root.compact ? 8px : 5px; size: 16px; name: p.icon; tint: root.page == p.id ? SamplerTheme.accent : SamplerTheme.paper-3; }
+                        if !root.compact : Text { y: 25px; height: 14px; text: p.caption; horizontal-alignment: center; color: root.page == p.id ? SamplerTheme.accent : SamplerTheme.paper-3; font-family: SamplerTheme.font-ui; font-size: 10px; font-weight: 600; }
+                    }
+                    touch := TouchArea { clicked => { root.selected(p.id); } }
+                }
+            }
+        }
+    }
+}

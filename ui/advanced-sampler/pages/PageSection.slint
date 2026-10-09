@@ -1,0 +1,16 @@
+import { Session, ParameterInfo } from "../Session.slint";
+import { SamplerTheme } from "../theme/Theme.slint";
+import { PagePanel } from "../controls/PagePanel.slint";
+import { ParamKnob } from "../controls/ParamKnob.slint";
+export component PageSection inherits PagePanel { }
+export component DomainKnob inherits ParamKnob {
+ in property <ParameterInfo> parameter;
+ callback context(string,string);
+ private property <float> scale: root.parameter.unit == "%" && root.parameter.id != "pan" ? 100 : 1;
+ parameter-id: root.parameter.id; label: root.parameter.label; model-value: root.parameter.value*root.scale; value: root.parameter.value*root.scale; minimum: root.parameter.minimum*root.scale; maximum: root.parameter.maximum*root.scale; step: root.parameter.step*root.scale; default-value: root.parameter.default-value*root.scale; unit: root.parameter.id == "pan" ? "pan" : root.parameter.unit; bipolar: root.parameter.bipolar; host-automated: root.parameter.host-automated;
+ gesture-began => { Session.parameter-gesture(root.parameter.id,0,self.value/root.scale); }
+ changed(v) => { Session.parameter-gesture(root.parameter.id,1,v/root.scale); }
+ gesture-ended => { Session.parameter-gesture(root.parameter.id,2,self.value/root.scale); }
+ context-action(a) => { root.context(a,root.parameter.id); }
+}
+export component SectionText inherits Text { font-family: SamplerTheme.font-ui; font-size: 12px; color: SamplerTheme.paper-3; vertical-alignment: center; overflow: elide; }

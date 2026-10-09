@@ -1,0 +1,55 @@
+import { Session } from "../Session.slint";
+import { SamplerTheme } from "../theme/Theme.slint";
+import { MaterialSurface } from "../theme/Material.slint";
+import { ActionButton } from "../controls/ActionButton.slint";
+
+component ColumnHeading inherits Text {
+    color: SamplerTheme.paper-3; font-family: SamplerTheme.font-ui; font-size: 11px;
+    font-weight: 600; letter-spacing: 0.66px; vertical-alignment: center;
+}
+
+export component OverviewPage inherits Rectangle {
+    in property <bool> compact;
+    public function reset-row(index: int) {
+        if index >= 0 && index < Session.overview.length && Session.overview[index].can-reset {
+            Session.command(Session.overview[index].reset-action, Session.overview[index].reset-target, Session.overview[index].reset-field, 0);
+        }
+    }
+    Flickable {
+        width: parent.width; height: parent.height;
+        content-width: max(self.width, 546px);
+        content-height: max(self.height, 62px + Session.overview.length * 28px + 12px);
+        MaterialSurface {
+            width: parent.content-width; height: parent.content-height;
+            Rectangle { x: 1px; y: 1px; width: parent.width - 2px; height: 34px; background: SamplerTheme.surface-panel-header; border-radius: 5px;
+                Text { x: 11px; width: 100px; height: parent.height; text: "OVERVIEW"; color: SamplerTheme.paper-2; font-family: SamplerTheme.font-ui; font-size: 13px; font-weight: 700; letter-spacing: 1.3px; vertical-alignment: center; }
+                Text { x: 117px; width: parent.width - 128px; height: parent.height; text: Session.selected-name; color: SamplerTheme.paper-3; font-family: SamplerTheme.font-value; font-size: 12px; vertical-alignment: center; }
+            }
+            Rectangle { y: 35px; width: parent.width; height: 26px; border-width: 1px; border-color: SamplerTheme.line-1;
+                HorizontalLayout { padding-left: 12px; padding-right: 12px; spacing: 8px;
+                    ColumnHeading { text: "PROPERTY"; horizontal-stretch: 1; min-width: 120px; }
+                    ColumnHeading { text: "VALUE"; horizontal-stretch: 1; min-width: 110px; }
+                    ColumnHeading { text: "STATE"; width: 84px; }
+                    ColumnHeading { text: "FROM"; horizontal-stretch: 1.2; min-width: 120px; }
+                    ColumnHeading { width: 56px; }
+                }
+            }
+            for row[i] in Session.overview : Rectangle {
+                x: 12px; y: 62px + i * 28px; width: parent.width - 24px; height: 28px;
+                if row.head : Text { width: parent.width; height: parent.height; text: row.label.to-uppercase(); color: SamplerTheme.paper-3; font-family: SamplerTheme.font-ui; font-size: 11px; font-weight: 600; letter-spacing: 0.66px; vertical-alignment: center; }
+                if !row.head : HorizontalLayout {
+                    spacing: 8px;
+                    Text { text: row.label; min-width: 120px; horizontal-stretch: 1; color: SamplerTheme.paper-1; font-family: SamplerTheme.font-ui; font-size: 13px; vertical-alignment: center; overflow: elide; }
+                    Text { text: row.value-text; accessible-label: row.label + ": " + row.value-text; min-width: 110px; horizontal-stretch: 1; color: SamplerTheme.paper-1; font-family: SamplerTheme.font-value; font-size: 12px; vertical-alignment: center; overflow: elide; }
+                    Rectangle { width: 84px;
+                        Rectangle { x: 0px; y: 6px; width: 78px; height: 16px; border-radius: 2px; border-width: 1px; border-color: row.state == "local" ? SamplerTheme.accent : row.state == "mixed" ? SamplerTheme.warn : SamplerTheme.line-2;
+                            Text { text: row.state.to-uppercase(); color: row.state == "local" ? SamplerTheme.accent : row.state == "mixed" ? SamplerTheme.warn : SamplerTheme.paper-3; font-family: SamplerTheme.font-ui; font-size: 10px; font-weight: 600; letter-spacing: 0.6px; horizontal-alignment: center; vertical-alignment: center; }
+                        }
+                    }
+                    Text { text: row.from; min-width: 120px; horizontal-stretch: 1.2; color: SamplerTheme.paper-3; font-family: SamplerTheme.font-ui; font-size: 12px; vertical-alignment: center; overflow: elide; }
+                    Rectangle { width: 56px; if row.can-reset : ActionButton { y: 3px; width: 52px; height: 22px; text: "Reset"; label: "Reset " + row.label; compact: true; ghost: true; clicked => { root.reset-row(i); } } }
+                }
+            }
+        }
+    }
+}

@@ -1,0 +1,8 @@
+export { Session } from "../Session.slint";
+import { Session } from "../Session.slint";
+export component SessionBindingFixture inherits Window {
+ width: 200px; height: 100px;
+ in-out property <image> spectral-image: Session.spectral-preview(Session.waveform,false,0,1,#101010,#404040,#64503c,#c8b496,#f0f0f0);
+ in-out property <string> slice-owner: Session.slice-source(Session.slice-sources,"sl3");
+ Text { text: Session.status; }
+}

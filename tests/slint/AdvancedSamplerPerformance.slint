@@ -1,0 +1,87 @@
+import { PerformanceState } from "../../ui/advanced-sampler/performance/PerformanceState.slint";
+export { PerformanceState } from "../../ui/advanced-sampler/performance/PerformanceState.slint";
+import { FitLayout } from "../../ui/advanced-sampler/performance/FitLayout.slint";
+import { PadCell } from "../../ui/advanced-sampler/performance/PadCell.slint";
+import { PlayKeys } from "../../ui/advanced-sampler/performance/PlayKeys.slint";
+import { ParamKnob } from "../../ui/advanced-sampler/controls/ParamKnob.slint";
+import { ActionButton } from "../../ui/advanced-sampler/controls/ActionButton.slint";
+import { PlayDrawer } from "../../ui/advanced-sampler/performance/PlayDrawer.slint";
+import { PerformView } from "../../ui/advanced-sampler/performance/PerformView.slint";
+import { PatchBrowser } from "../../ui/advanced-sampler/performance/PatchBrowser.slint";
+export { PatchFilter } from "../../ui/advanced-sampler/performance/PatchFilter.slint";
+import { PatchFilter } from "../../ui/advanced-sampler/performance/PatchFilter.slint";
+import { PatchInfo } from "../../ui/advanced-sampler/performance/types.slint";
+
+// Behavioral contracts precede implementation; runtime input checks are separate.
+export component AdvancedSamplerPerformanceTest inherits Window {
+    width: 820px; height: 560px;
+    out property <int> checks;
+    out property <int> presses;
+    out property <int> releases;
+    out property <int> last-velocity;
+    out property <int> gestures;
+    out property <int> endings;
+    out property <bool> tests-passed;
+    out property <string> test-report;
+    private property <[PatchInfo]> presets: [
+        {id: "kit", name: "Expressive Kit", category: "Drums", origin: "Factory", contents: "4 pads · 8 voices", favourite: true},
+        {id: "keys", name: "Multisampled Keys", category: "Keys", origin: "Factory", contents: "6 zones · 3 velocity layers"},
+        {id: "hybrid", name: "Sample + Synth", category: "Hybrid", origin: "User", contents: "sample + synth"}
+    ];
+    public function expect(result: bool, description: string) {
+        root.checks += 1;
+        if !result { root.tests-passed = false; root.test-report += description + "\n"; }
+    }
+    callback run-tests() -> bool;
+    run-tests => {
+        root.tests-passed = true; root.test-report = ""; root.checks = 0;
+        PerformanceState.base-note = 36; PerformanceState.key-width = 0; PerformanceState.last-key-width = 14;
+        PerformanceState.shift-octave(1);
+        root.expect(PerformanceState.base-note == 48 && PerformanceState.key-width == 14, "Octave arrows publish the native note base after releasing all captured inputs");
+        PerformanceState.base-note = 108; PerformanceState.shift-octave(1);
+        root.expect(PerformanceState.base-note == 108, "Octave arrows remain inside the MIDI range");
+        PerformanceState.set-pc(true); PerformanceState.set-pc(false);
+        root.expect(!PerformanceState.pc-enabled, "PC enable and disable publish canonical state and disabling releases held notes");
+        PerformanceState.base-note = 36; PerformanceState.key-width = 0;
+        let fit = FitLayout.pads(384, 340, 11, 84, 120);
+        root.expect(fit.columns == 4 && fit.size == 90, "Perform fit keeps every mapped note in the largest possible grid");
+        let crowded = FitLayout.pads(370, 258, 85, 60, 96);
+        root.expect(crowded.columns == 5 && crowded.size == 60, "Overfull mapped range keeps minimum pad size and scrolls");
+        root.expect(FitLayout.white-note(7) == 12 && FitLayout.white-index(24) == 14, "Keyboard geometry spans octaves without black-key gaps");
+        root.expect(FitLayout.black(1) && !FitLayout.black(0), "Keyboard pitch classes identify black keys");
+        keys.width = 90px; keys.mapped-low = 36; keys.mapped-high = 84;
+        root.expect(keys.actual-key-width == 10, "Keyboard Fit keeps the guide minimum of 10 pixels for crowded mapped ranges");
+        keys.width = 270px; keys.mapped-low = 37; keys.mapped-high = 49;
+        root.expect(keys.actual-key-width == 29, "Keyboard Fit widens black mapped endpoints to their surrounding white keys");
+        keys.width = 750px; keys.mapped-low = 36; keys.mapped-high = 60;
+        root.expect(PatchFilter.count(root.presets, "SAMPLED", "All") == 1, "Patch search ignores case and searches names");
+        root.expect(PatchFilter.count(root.presets, "", "Favourites") == 1 && PatchFilter.first(root.presets, "", "User") == "hybrid", "Favourite and user category filters share actual patch data");
+        pad.press(0); pad.press(1); pad.release-note(); pad.release-note();
+        root.expect(root.presses == 1 && root.releases == 1 && root.last-velocity == 1, "Pad duplicate press/release is balanced and velocity bounded");
+        pad.mapped = false; pad.press(1);
+        root.expect(root.presses == 1, "Unmapped pad selects without emitting a note"); pad.mapped = true;
+        knob.value = 0.4; knob.begin-gesture(); knob.update-gesture(0.5); knob.update-gesture(0.8); knob.cancel-gesture();
+        root.expect(knob.value == 0.4 && root.gestures == 1 && root.endings == 1, "Cancelled parameter drag restores its starting value in one balanced gesture");
+        knob.begin-edit(); knob.commit-text("0.65");
+        root.expect(abs(knob.value - 0.65) < 0.001 && !knob.editing, "Typed parameter values commit through actual range validation");
+        knob.begin-edit(); knob.commit-text("bad");
+        root.expect(knob.edit-invalid && abs(knob.value - 0.65) < 0.001, "Invalid text preserves the parameter"); knob.cancel-edit();
+        root.test-report = root.tests-passed ? "PASS: \{root.checks} advanced performance contracts" : "FAIL: " + root.test-report;
+        return root.tests-passed;
+    }
+    pad := PadCell { x: 30px; y: 30px; note: 36; name: "Kick"; mapped: true; size: 80px;
+        note-on(note, velocity, source) => { root.presses += 1; root.last-velocity = velocity; }
+        note-off(note, source) => { root.releases += 1; }
+    }
+    knob := ParamKnob { x: 140px; y: 30px; label: "Tone"; size: 48px; value: 0.4;
+        gesture-began => { root.gestures += 1; } gesture-ended => { root.endings += 1; }
+    }
+    keys := PlayKeys { x: 30px; y: 180px; width: 750px; height: 180px; mapped-low: 36; mapped-high: 60; }
+    event-report := Text { x: 30px; y: 410px; text: "\{root.presses},\{root.releases},\{root.last-velocity},\{root.gestures},\{root.endings}"; accessible-label: self.text; }
+    result := Text { x: 30px; y: 450px; text: root.test-report; accessible-label: root.test-report; }
+    run-tests-button := ActionButton { x: 30px; y: 500px; text: "Run tests"; clicked => { root.run-tests(); } }
+    disable-pad-button := ActionButton { x: 180px; y: 500px; text: "Disable held pad"; clicked => { pad.press(1); pad.enabled = false; } }
+    if false : PlayDrawer { }
+    if false : PerformView { }
+    if false : PatchBrowser { }
+}

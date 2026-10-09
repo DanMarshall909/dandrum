@@ -1,0 +1,2551 @@
+{
+  "source": "reference/Advanced Sampler v3.dc.html",
+  "source_sha256": "a72240e95d4c944aac66709c824fcc2b51f7d9cbe8d1da250d6f6c596cd89119",
+  "workspace_views": [
+    "pads",
+    "macros",
+    "sample",
+    "slices",
+    "mapping",
+    "layers",
+    "voice",
+    "modulation",
+    "routing",
+    "effects",
+    "overview",
+    "diagnostics",
+    "empty"
+  ],
+  "required_design_states": 30,
+  "acceptance_patches": [
+    "Expressive Kit",
+    "Multisampled Keys",
+    "Sample + Synth"
+  ],
+  "visual_refinement_cycles": 0,
+  "functional_completion": false,
+  "controls": [
+    {
+      "id": "v3:44:on-change:1",
+      "source_line": 44,
+      "event": "on-change",
+      "reference_handler": "setPatch",
+      "component": null,
+      "command": null,
+      "test": null,
+      "evidence": null,
+      "status": "pending"
+    },
+    {
+      "id": "v3:45:on-change:2",
+      "source_line": 45,
+      "event": "on-change",
+      "reference_handler": "toggleAnn",
+      "component": null,
+      "command": null,
+      "test": null,
+      "evidence": null,
+      "status": "pending"
+    },
+    {
+      "id": "v3:50:on-click:3",
+      "source_line": 50,
+      "event": "on-click",
+      "reference_handler": "s.go",
+      "component": null,
+      "command": null,
+      "test": null,
+      "evidence": null,
+      "status": "pending"
+    },
+    {
+      "id": "v3:56:onAuxClick:141",
+      "source_line": 56,
+      "event": "onAuxClick",
+      "reference_handler": "onAux",
+      "component": null,
+      "command": null,
+      "test": null,
+      "evidence": null,
+      "status": "pending"
+    },
+    {
+      "id": "v3:56:onContextMenu:4",
+      "source_line": 56,
+      "event": "onContextMenu",
+      "reference_handler": "onRootCtx",
+      "component": null,
+      "command": null,
+      "test": null,
+      "evidence": null,
+      "status": "pending"
+    },
+    {
+      "id": "v3:56:onMouseDown:140",
+      "source_line": 56,
+      "event": "onMouseDown",
+      "reference_handler": "onRootDown",
+      "component": null,
+      "command": null,
+      "test": null,
+      "evidence": null,
+      "status": "pending"
+    },
+    {
+      "id": "v3:67:on-click:5",
+      "source_line": 67,
+      "event": "on-click",
+      "reference_handler": "doUndo",
+      "component": "ui/advanced-sampler/AppWindow.slint",
+      "command": "undo",
+      "test": "tests/cpp/AdvancedSamplerAppBindingTest.cpp",
+      "evidence": "build/advanced-sampler-evidence/functional-app-binding.log (131 checks)",
+      "status": "verified",
+      "proof_scope": "Actual header Undo restores reverse, import and route/macro edits"
+    },
+    {
+      "id": "v3:68:on-click:6",
+      "source_line": 68,
+      "event": "on-click",
+      "reference_handler": "doRedo",
+      "component": null,
+      "command": null,
+      "test": null,
+      "evidence": null,
+      "status": "pending"
+    },
+    {
+      "id": "v3:70:on-click:8",
+      "source_line": 70,
+      "event": "on-click",
+      "reference_handler": "openPatchMenu",
+      "component": "ui/advanced-sampler/AppWindow.slint",
+      "command": "patch.browse",
+      "test": "tests/cpp/AdvancedSamplerAppBindingTest.cpp",
+      "evidence": "build/advanced-sampler-evidence/functional-app-binding.log (131 checks)",
+      "status": "verified",
+      "proof_scope": "Actual header opens composed browser; Load and dismissal covered by browser45"
+    },
+    {
+      "id": "v3:70:onContextMenu:7",
+      "source_line": 70,
+      "event": "onContextMenu",
+      "reference_handler": "openPatchCtx",
+      "component": null,
+      "command": null,
+      "test": null,
+      "evidence": null,
+      "status": "pending"
+    },
+    {
+      "id": "v3:77:on-change:11",
+      "source_line": 77,
+      "event": "on-change",
+      "reference_handler": "setLayout",
+      "component": "ui/advanced-sampler/chrome/EditorHeader.slint",
+      "command": "size.min/size.default/size.expanded",
+      "test": "tests/cpp/AdvancedSamplerHeaderBindingTest.cpp; tests/cpp/AdvancedSamplerAppBindingTest.cpp",
+      "evidence": "build/advanced-sampler-evidence/functional-header-binding.log; functional-app-binding.log",
+      "status": "verified",
+      "proof_scope": "Actual pointer inputs resize the whole app; minimum layout exposes Def/Exp and all header actions fit inside820px"
+    },
+    {
+      "id": "v3:77:on-click:9",
+      "source_line": 77,
+      "event": "on-click",
+      "reference_handler": "toggleDiag",
+      "component": "ui/advanced-sampler/AppWindow.slint",
+      "command": "diagnostics",
+      "test": "tests/cpp/AdvancedSamplerAppBindingTest.cpp",
+      "evidence": "build/advanced-sampler-evidence/functional-app-binding.log (131 checks)",
+      "status": "verified",
+      "proof_scope": "Header opens/closes docked history without changing current workspace"
+    },
+    {
+      "id": "v3:77:on-click:10",
+      "source_line": 77,
+      "event": "on-click",
+      "reference_handler": "toggleDiag",
+      "component": "ui/advanced-sampler/AppWindow.slint",
+      "command": "diagnostics",
+      "test": "tests/cpp/AdvancedSamplerAppBindingTest.cpp",
+      "evidence": "build/advanced-sampler-evidence/functional-app-binding.log (131 checks)",
+      "status": "verified",
+      "proof_scope": "Shared compact/full header callback; native composed dock toggles, size bounds checked separately"
+    },
+    {
+      "id": "v3:78:on-click:12",
+      "source_line": 78,
+      "event": "on-click",
+      "reference_handler": "togglePerf",
+      "component": "ui/advanced-sampler/AppWindow.slint",
+      "command": "perform.toggle",
+      "test": "tests/cpp/AdvancedSamplerAppBindingTest.cpp",
+      "evidence": "build/advanced-sampler-evidence/functional-app-binding.log (131 checks)",
+      "status": "verified",
+      "proof_scope": "Header switches to Perform and restores prior workspace"
+    },
+    {
+      "id": "v3:88:on-click:13",
+      "source_line": 88,
+      "event": "on-click",
+      "reference_handler": "togglePcKeys",
+      "component": "ui/advanced-sampler/performance/PlayDrawer.slint,PerformanceState.slint",
+      "command": "pc.enabled; release-notes",
+      "test": "tests/cpp/AdvancedSamplerPerformanceAppTest.cpp:69",
+      "evidence": "build/advanced-sampler-evidence/functional-performance-app.log (40 whole-app checks)",
+      "status": "verified",
+      "assertion": "App PC toggle updates canonical native and shared state",
+      "proof_kind": "native runtime",
+      "proof_scope": "App PC toggle updates canonical native and shared state"
+    },
+    {
+      "id": "v3:90:on-click:14",
+      "source_line": 90,
+      "event": "on-click",
+      "reference_handler": "octDown",
+      "component": "ui/advanced-sampler/performance/PerformanceState.slint",
+      "command": "pc.octave; release-notes",
+      "test": "tests/cpp/AdvancedSamplerPerformanceAppTest.cpp:74",
+      "evidence": "build/advanced-sampler-evidence/functional-performance-app.log (40 whole-app checks)",
+      "status": "verified",
+      "assertion": "App octave arrow releases held notes and updates the native base",
+      "proof_kind": "native runtime",
+      "proof_scope": "App octave arrow releases held notes and updates the native base"
+    },
+    {
+      "id": "v3:92:on-click:15",
+      "source_line": 92,
+      "event": "on-click",
+      "reference_handler": "octUp",
+      "component": "ui/advanced-sampler/performance/PerformanceState.slint",
+      "command": "pc.octave; release-notes",
+      "test": "tests/cpp/AdvancedSamplerPerformanceAppTest.cpp:74",
+      "evidence": "build/advanced-sampler-evidence/functional-performance-app.log (40 whole-app checks)",
+      "status": "verified",
+      "assertion": "App octave arrow releases held notes and updates the native base",
+      "proof_kind": "native runtime",
+      "proof_scope": "App octave arrow releases held notes and updates the native base"
+    },
+    {
+      "id": "v3:100:onChange:16",
+      "source_line": 100,
+      "event": "onChange",
+      "reference_handler": "setPbQ",
+      "component": "ui/advanced-sampler/performance/PatchBrowser.slint,PerformView.slint",
+      "command": "PatchBrowserState.query native keyboard",
+      "test": "tests/cpp/AdvancedSamplerPatchBrowserAppTest.cpp:139",
+      "evidence": "build/advanced-sampler-evidence/functional-patchbrowser-app.log (45 whole-app checks)",
+      "status": "verified",
+      "proof_scope": "Perform native search filters its compact preset rows"
+    },
+    {
+      "id": "v3:104:onClick:17",
+      "source_line": 104,
+      "event": "onClick",
+      "reference_handler": "p.open",
+      "component": "ui/advanced-sampler/performance/PatchRow.slint,PerformView.slint",
+      "command": "patch.load",
+      "test": "tests/cpp/AdvancedSamplerPatchBrowserAppTest.cpp:144",
+      "evidence": "build/advanced-sampler-evidence/functional-patchbrowser-app.log (45 whole-app checks)",
+      "status": "verified",
+      "proof_scope": "Perform compact row pointer loads its matching native preset"
+    },
+    {
+      "id": "v3:105:onClick:18",
+      "source_line": 105,
+      "event": "onClick",
+      "reference_handler": "p.toggleFav",
+      "component": "ui/advanced-sampler/performance/PatchRow.slint,PerformView.slint",
+      "command": "patch.favourite",
+      "test": "tests/cpp/AdvancedSamplerPatchBrowserAppTest.cpp:142",
+      "evidence": "build/advanced-sampler-evidence/functional-patchbrowser-app.log (45 whole-app checks)",
+      "status": "verified",
+      "proof_scope": "Perform favourite pointer updates its own native preset without loading it"
+    },
+    {
+      "id": "v3:117:data-ctx:142",
+      "source_line": 117,
+      "event": "data-ctx",
+      "reference_handler": "macro|{{ m.name",
+      "component": "ui/advanced-sampler/performance/MacroGrid.slint,MacroActions.slint; pages/MacrosPage.slint",
+      "command": "macro.learn/learn.stop; selected-macro",
+      "test": "tests/cpp/AdvancedSamplerControlMenusTest.cpp:50",
+      "evidence": "build/advanced-sampler-evidence/performance-finish/dandrum-control-menus-native.log",
+      "status": "verified",
+      "assertion": "Actual disabled macro value's external context action starts native learn without a parameter edit",
+      "proof_kind": "native runtime",
+      "proof_scope": "Actual disabled macro value's external context action starts native learn without a parameter edit"
+    },
+    {
+      "id": "v3:117:data-reset:143",
+      "source_line": 117,
+      "event": "data-reset",
+      "reference_handler": "macro|{{ m.name",
+      "component": "ui/advanced-sampler/performance/MacroActions.slint",
+      "command": "macro.reset",
+      "test": "tests/cpp/AdvancedSamplerPagesBindingTest.cpp:127",
+      "evidence": "build/advanced-sampler-evidence/performance-finish/dandrum-pages-native.log",
+      "status": "verified",
+      "assertion": "Macro context reset reaches native default",
+      "proof_kind": "native component menu callback",
+      "proof_scope": "Macro context reset reaches native default"
+    },
+    {
+      "id": "v3:117:on-change:19",
+      "source_line": 117,
+      "event": "on-change",
+      "reference_handler": "m.set",
+      "component": "ui/advanced-sampler/performance/MacroGrid.slint",
+      "command": "parameter-gesture(macroID,phase,value)",
+      "test": "tests/cpp/AdvancedSamplerPerformanceAppTest.cpp:48",
+      "evidence": "build/advanced-sampler-evidence/functional-performance-app.log (40 whole-app checks)",
+      "status": "verified",
+      "assertion": "Actual drawer macro pointer drag changes its native value in one undo step",
+      "proof_kind": "native runtime",
+      "proof_scope": "Actual drawer macro pointer drag changes its native value in one undo step"
+    },
+    {
+      "id": "v3:134:on-click:20",
+      "source_line": 134,
+      "event": "on-click",
+      "reference_handler": "discardDraft",
+      "component": null,
+      "command": null,
+      "test": null,
+      "evidence": null,
+      "status": "pending"
+    },
+    {
+      "id": "v3:135:on-click:21",
+      "source_line": 135,
+      "event": "on-click",
+      "reference_handler": "doReload",
+      "component": null,
+      "command": null,
+      "test": null,
+      "evidence": null,
+      "status": "pending"
+    },
+    {
+      "id": "v3:156:onClick:22",
+      "source_line": 156,
+      "event": "onClick",
+      "reference_handler": "t.go",
+      "component": "ui/advanced-sampler/AppWindow.slint",
+      "command": "page.select",
+      "test": "tests/cpp/AdvancedSamplerAppBindingTest.cpp",
+      "evidence": "build/advanced-sampler-evidence/functional-app-binding.log (131 checks)",
+      "status": "verified",
+      "proof_scope": "Actual rail opens all12 named editing pages with Session selection"
+    },
+    {
+      "id": "v3:180:on-click:23",
+      "source_line": 180,
+      "event": "on-click",
+      "reference_handler": "toggleBrowser",
+      "component": "ui/advanced-sampler/chrome/InstrumentTree.slint",
+      "command": "browser-open presentation state",
+      "test": "tests/cpp/AdvancedSamplerBrowserBindingTest.cpp:29",
+      "evidence": "build/advanced-sampler-evidence/performance-finish/dandrum-browser-native.log",
+      "status": "verified",
+      "assertion": "Manual browser open remains usable in ordinary states",
+      "proof_kind": "native runtime",
+      "proof_scope": "Manual browser open remains usable in ordinary states"
+    },
+    {
+      "id": "v3:183:onDragOver:144",
+      "source_line": 183,
+      "event": "onDragOver",
+      "reference_handler": "onNodeOver",
+      "component": "ui/advanced-sampler/chrome/InstrumentTree.slint,DragState.slint",
+      "command": "tree.assign(target,source)",
+      "test": "tests/cpp/AdvancedSamplerBrowserBindingTest.cpp:91",
+      "evidence": "build/advanced-sampler-evidence/performance-finish/dandrum-browser-native.log",
+      "status": "verified",
+      "assertion": "Native source drag updates the playable tree node without audition or note ownership",
+      "proof_kind": "native runtime",
+      "proof_scope": "Native source drag updates the playable tree node without audition or note ownership"
+    },
+    {
+      "id": "v3:183:onDrop:145",
+      "source_line": 183,
+      "event": "onDrop",
+      "reference_handler": "onNodeDrop",
+      "component": "ui/advanced-sampler/chrome/InstrumentTree.slint,DragState.slint",
+      "command": "tree.assign(target,source)",
+      "test": "tests/cpp/AdvancedSamplerBrowserBindingTest.cpp:91",
+      "evidence": "build/advanced-sampler-evidence/performance-finish/dandrum-browser-native.log",
+      "status": "verified",
+      "assertion": "Native source drag updates the playable tree node without audition or note ownership",
+      "proof_kind": "native runtime",
+      "proof_scope": "Native source drag updates the playable tree node without audition or note ownership"
+    },
+    {
+      "id": "v3:185:data-ctx:146",
+      "source_line": 185,
+      "event": "data-ctx",
+      "reference_handler": "node|{{ r.id",
+      "component": "ui/advanced-sampler/chrome/InstrumentTree.slint",
+      "command": "tree.mute/solo/duplicate/freeze/unfreeze/delete; tree.audition",
+      "test": "tests/cpp/AdvancedSamplerBrowserBindingTest.cpp:178",
+      "evidence": "build/advanced-sampler-evidence/performance-finish/dandrum-browser-native.log",
+      "status": "verified",
+      "assertion": "Actual tree context menu mutes its native target",
+      "proof_kind": "native runtime",
+      "proof_scope": "Actual tree context menu mutes its native target"
+    },
+    {
+      "id": "v3:186:on-click:24",
+      "source_line": 186,
+      "event": "on-click",
+      "reference_handler": "r.go",
+      "component": "ui/advanced-sampler/chrome/InstrumentTree.slint",
+      "command": "selection.set",
+      "test": "tests/cpp/AdvancedSamplerBrowserBindingTest.cpp:176",
+      "evidence": "build/advanced-sampler-evidence/performance-finish/dandrum-browser-native.log",
+      "status": "verified",
+      "assertion": "Actual tree context Open selects its mapped source",
+      "proof_kind": "native runtime",
+      "proof_scope": "Actual tree context Open selects its mapped source"
+    },
+    {
+      "id": "v3:194:on-click:25",
+      "source_line": 194,
+      "event": "on-click",
+      "reference_handler": "toggleBrowser",
+      "component": "ui/advanced-sampler/chrome/InstrumentTree.slint",
+      "command": "browser-open presentation state",
+      "test": "tests/cpp/AdvancedSamplerBrowserBindingTest.cpp:29",
+      "evidence": "build/advanced-sampler-evidence/performance-finish/dandrum-browser-native.log",
+      "status": "verified",
+      "assertion": "Manual browser open remains usable in ordinary states",
+      "proof_kind": "native runtime",
+      "proof_scope": "Manual browser open remains usable in ordinary states"
+    },
+    {
+      "id": "v3:198:onClick:26",
+      "source_line": 198,
+      "event": "onClick",
+      "reference_handler": "g.toggle",
+      "component": "ui/advanced-sampler/chrome/SourceGroups.slint",
+      "command": "asset.group-toggle(groupName)",
+      "test": "tests/cpp/AdvancedSamplerBrowserBindingTest.cpp:245",
+      "evidence": "build/advanced-sampler-evidence/performance-finish/dandrum-browser-native.log",
+      "status": "verified",
+      "assertion": "Collapsing a custom source group preserves another custom group",
+      "proof_kind": "native runtime",
+      "proof_scope": "Collapsing a custom source group preserves another custom group"
+    },
+    {
+      "id": "v3:205:data-ctx:147",
+      "source_line": 205,
+      "event": "data-ctx",
+      "reference_handler": "src|{{ i.name",
+      "component": "ui/advanced-sampler/chrome/SourceRow.slint → ui/advanced-sampler/pages/VoicePage.slint::VoiceRenderDialog",
+      "command": [
+        "asset.select lush",
+        "page.select voice",
+        "VoiceDialogState.mode=auto",
+        "autosampler.configure tail",
+        "asset.preview",
+        "show-browser",
+        "asset.replace callback",
+        "page.select slices + analysis.start",
+        "asset.remove",
+        "undo"
+      ],
+      "test": [
+        "tests/cpp/AdvancedSamplerVoiceBindingTest.cpp:250",
+        "tests/cpp/AdvancedSamplerVoiceBindingTest.cpp:253",
+        "tests/cpp/AdvancedSamplerVoiceBindingTest.cpp:255",
+        "tests/cpp/AdvancedSamplerBrowserBindingTest.cpp:199",
+        "tests/cpp/AdvancedSamplerBrowserBindingTest.cpp:200",
+        "tests/cpp/AdvancedSamplerBrowserBindingTest.cpp:202",
+        "tests/cpp/AdvancedSamplerBrowserBindingTest.cpp:203",
+        "tests/cpp/AdvancedSamplerBrowserBindingTest.cpp:204",
+        "tests/cpp/AdvancedSamplerBrowserBindingTest.cpp:204"
+      ],
+      "evidence": [
+        "build/advanced-sampler-evidence/theme/final-owned-checkpoint/voice.log",
+        "build/advanced-sampler-evidence/performance-finish/dandrum-browser-native.log"
+      ],
+      "status": "verified",
+      "assertion": "Actual source Replace selects its own source before emitting the real file chooser request",
+      "proof_kind": "native runtime",
+      "proof_scope": "Actual pointer-right Lush popup accessible Sample this patch action selects real native synth source, navigates Voice, creates modal, permits persistent Tail5, Escape clears state. Joined performance-owner Browser186 actual right-click popup proof additionally covers Preview (no held MIDI), Show in browser, Replace exact selected-source/file callback, Detect transients native analysis and Slices, Remove asset plus mapped references, and Undo restoration. All six v3 source-context branches now have actual command effects or precisely bounded file action proof."
+    },
+    {
+      "id": "v3:205:onClick:27",
+      "source_line": 205,
+      "event": "onClick",
+      "reference_handler": "i.play",
+      "component": "ui/advanced-sampler/chrome/SourceRow.slint",
+      "command": "asset.preview",
+      "test": "tests/cpp/AdvancedSamplerBrowserBindingTest.cpp:58",
+      "evidence": "build/advanced-sampler-evidence/performance-finish/dandrum-browser-native.log",
+      "status": "verified",
+      "assertion": "Source preview selects real cached source without note ownership",
+      "proof_kind": "native runtime",
+      "proof_scope": "Source preview selects real cached source without note ownership"
+    },
+    {
+      "id": "v3:205:onDragEnd:149",
+      "source_line": 205,
+      "event": "onDragEnd",
+      "reference_handler": "endSrcDrag",
+      "component": "ui/advanced-sampler/chrome/SourceRow.slint,DragState.slint",
+      "command": "pad.assign/tree.assign",
+      "test": "tests/cpp/AdvancedSamplerBrowserBindingTest.cpp:110",
+      "evidence": "build/advanced-sampler-evidence/performance-finish/dandrum-browser-native.log",
+      "status": "verified",
+      "assertion": "Native source drag onto an empty pad creates a playable native mapping",
+      "proof_kind": "native runtime",
+      "proof_scope": "Native source drag onto an empty pad creates a playable native mapping"
+    },
+    {
+      "id": "v3:205:onDragStart:148",
+      "source_line": 205,
+      "event": "onDragStart",
+      "reference_handler": "i.drag",
+      "component": "ui/advanced-sampler/chrome/SourceRow.slint,DragState.slint",
+      "command": "pad.assign/tree.assign",
+      "test": "tests/cpp/AdvancedSamplerBrowserBindingTest.cpp:110",
+      "evidence": "build/advanced-sampler-evidence/performance-finish/dandrum-browser-native.log",
+      "status": "verified",
+      "assertion": "Native source drag onto an empty pad creates a playable native mapping",
+      "proof_kind": "native runtime",
+      "proof_scope": "Native source drag onto an empty pad creates a playable native mapping"
+    },
+    {
+      "id": "v3:223:onClick:28",
+      "source_line": 223,
+      "event": "onClick",
+      "reference_handler": "s.toggle",
+      "component": "ui/advanced-sampler/chrome/ModulatorTree.slint",
+      "command": "local modulator category expansion",
+      "test": "tests/cpp/AdvancedSamplerBrowserBindingTest.cpp:219",
+      "evidence": "build/advanced-sampler-evidence/performance-finish/dandrum-browser-native.log",
+      "status": "verified",
+      "assertion": "Required amp envelope has a disabled actual Delete menu action",
+      "proof_kind": "native expanded envelope row and required-row guard",
+      "proof_scope": "Required amp envelope has a disabled actual Delete menu action"
+    },
+    {
+      "id": "v3:233:data-ctx:150",
+      "source_line": 233,
+      "event": "data-ctx",
+      "reference_handler": "mod|{{ s.name",
+      "component": "ui/advanced-sampler/chrome/ModulatorTree.slint",
+      "command": "modulator.select/set/delete/rename; route.add",
+      "test": "tests/cpp/AdvancedSamplerBrowserBindingTest.cpp:198",
+      "evidence": "build/advanced-sampler-evidence/performance-finish/dandrum-browser-native.log",
+      "status": "verified",
+      "assertion": "Actual modulator context delete removes its native record",
+      "proof_kind": "native runtime",
+      "proof_scope": "Actual modulator context delete removes its native record"
+    },
+    {
+      "id": "v3:233:onClick:29",
+      "source_line": 233,
+      "event": "onClick",
+      "reference_handler": "s.pick",
+      "component": "ui/advanced-sampler/chrome/ModulatorTree.slint",
+      "command": "modulator.select",
+      "test": "tests/cpp/AdvancedSamplerBrowserBindingTest.cpp:60",
+      "evidence": "build/advanced-sampler-evidence/performance-finish/dandrum-browser-native.log",
+      "status": "verified",
+      "assertion": "Modulator selection opens its actual native editor",
+      "proof_kind": "native runtime",
+      "proof_scope": "Modulator selection opens its actual native editor"
+    },
+    {
+      "id": "v3:233:onDragEnd:152",
+      "source_line": 233,
+      "event": "onDragEnd",
+      "reference_handler": "endModDrag",
+      "component": "ui/advanced-sampler/chrome/ModulatorTree.slint,DragState.slint",
+      "command": "route.add(lfo1,cutoff)",
+      "test": "tests/cpp/AdvancedSamplerBrowserBindingTest.cpp:74",
+      "evidence": "build/advanced-sampler-evidence/performance-finish/dandrum-browser-native.log",
+      "status": "verified",
+      "assertion": "Native captured pointer drag creates a real modulation route on the destination control",
+      "proof_kind": "native runtime",
+      "proof_scope": "Native captured pointer drag creates a real modulation route on the destination control"
+    },
+    {
+      "id": "v3:233:onDragStart:151",
+      "source_line": 233,
+      "event": "onDragStart",
+      "reference_handler": "s.drag",
+      "component": "ui/advanced-sampler/chrome/ModulatorTree.slint,DragState.slint",
+      "command": "route.add(lfo1,cutoff)",
+      "test": "tests/cpp/AdvancedSamplerBrowserBindingTest.cpp:74",
+      "evidence": "build/advanced-sampler-evidence/performance-finish/dandrum-browser-native.log",
+      "status": "verified",
+      "assertion": "Native captured pointer drag creates a real modulation route on the destination control",
+      "proof_kind": "native runtime",
+      "proof_scope": "Native captured pointer drag creates a real modulation route on the destination control"
+    },
+    {
+      "id": "v3:253:on-click:30",
+      "source_line": 253,
+      "event": "on-click",
+      "reference_handler": "toggleBrowser",
+      "component": "ui/advanced-sampler/chrome/InstrumentTree.slint",
+      "command": "browser-open presentation state",
+      "test": "tests/cpp/AdvancedSamplerBrowserBindingTest.cpp:29",
+      "evidence": "build/advanced-sampler-evidence/performance-finish/dandrum-browser-native.log",
+      "status": "verified",
+      "assertion": "Manual browser open remains usable in ordinary states",
+      "proof_kind": "native runtime",
+      "proof_scope": "Manual browser open remains usable in ordinary states"
+    },
+    {
+      "id": "v3:275:on-click:31",
+      "source_line": 275,
+      "event": "on-click",
+      "reference_handler": "suggestAdd",
+      "component": null,
+      "command": null,
+      "test": null,
+      "evidence": null,
+      "status": "pending"
+    },
+    {
+      "id": "v3:280:onContextMenu:32",
+      "source_line": 280,
+      "event": "onContextMenu",
+      "reference_handler": "onKnobCtx",
+      "component": "ui/advanced-sampler/controls/ParamKnob.slint,NumericField.slint",
+      "command": "parameter.reset/parameter-gesture; owning context-action",
+      "test": "tests/cpp/AdvancedSamplerControlMenusTest.cpp:27",
+      "evidence": "build/advanced-sampler-evidence/performance-finish/dandrum-control-menus-native.log",
+      "status": "verified",
+      "assertion": "Actual knob menu Reset changes its native parameter in one undoable edit",
+      "proof_kind": "native runtime",
+      "proof_scope": "Actual knob menu Reset changes its native parameter in one undoable edit"
+    },
+    {
+      "id": "v3:280:onDragLeave:155",
+      "source_line": 280,
+      "event": "onDragLeave",
+      "reference_handler": "onKnobLeave",
+      "component": "ui/advanced-sampler/controls/ParamKnob.slint,DragState.slint",
+      "command": "route.add",
+      "test": "tests/cpp/AdvancedSamplerBrowserBindingTest.cpp:74",
+      "evidence": "build/advanced-sampler-evidence/performance-finish/dandrum-browser-native.log",
+      "status": "verified",
+      "assertion": "Native captured pointer drag creates a real modulation route on the destination control",
+      "proof_kind": "native runtime",
+      "proof_scope": "Native captured pointer drag creates a real modulation route on the destination control"
+    },
+    {
+      "id": "v3:280:onDragOver:153",
+      "source_line": 280,
+      "event": "onDragOver",
+      "reference_handler": "onKnobOver",
+      "component": "ui/advanced-sampler/controls/ParamKnob.slint,DragState.slint",
+      "command": "route.add",
+      "test": "tests/cpp/AdvancedSamplerBrowserBindingTest.cpp:74",
+      "evidence": "build/advanced-sampler-evidence/performance-finish/dandrum-browser-native.log",
+      "status": "verified",
+      "assertion": "Native captured pointer drag creates a real modulation route on the destination control",
+      "proof_kind": "native runtime",
+      "proof_scope": "Native captured pointer drag creates a real modulation route on the destination control"
+    },
+    {
+      "id": "v3:280:onDrop:154",
+      "source_line": 280,
+      "event": "onDrop",
+      "reference_handler": "onKnobDrop",
+      "component": "ui/advanced-sampler/controls/ParamKnob.slint,DragState.slint",
+      "command": "route.add",
+      "test": "tests/cpp/AdvancedSamplerBrowserBindingTest.cpp:74",
+      "evidence": "build/advanced-sampler-evidence/performance-finish/dandrum-browser-native.log",
+      "status": "verified",
+      "assertion": "Native captured pointer drag creates a real modulation route on the destination control",
+      "proof_kind": "native runtime",
+      "proof_scope": "Native captured pointer drag creates a real modulation route on the destination control"
+    },
+    {
+      "id": "v3:283:on-click:33",
+      "source_line": 283,
+      "event": "on-click",
+      "reference_handler": "goBackVoice",
+      "component": "ui/advanced-sampler/pages/SourceHeader.slint",
+      "command": "page.select",
+      "test": "tests/cpp/AdvancedSamplerSourcePagesBindingTest.cpp",
+      "evidence": "build/advanced-sampler-evidence/source-header-green.log:42 native source checks; actual Back to Voice and Sample/Slices subpage pointer actions.",
+      "status": "verified"
+    },
+    {
+      "id": "v3:288:on-change:34",
+      "source_line": 288,
+      "event": "on-change",
+      "reference_handler": "goSub",
+      "component": "ui/advanced-sampler/pages/SourceHeader.slint",
+      "command": "page.select",
+      "test": "tests/cpp/AdvancedSamplerSourcePagesBindingTest.cpp",
+      "evidence": "build/advanced-sampler-evidence/source-header-green.log:42 native source checks; actual Back to Voice and Sample/Slices subpage pointer actions.",
+      "status": "verified"
+    },
+    {
+      "id": "v3:301:data-ctx:156",
+      "source_line": 301,
+      "event": "data-ctx",
+      "reference_handler": "macro|{{ m.name",
+      "component": "ui/advanced-sampler/performance/MacroGrid.slint,MacroActions.slint; pages/MacrosPage.slint",
+      "command": "macro.learn/learn.stop; selected-macro",
+      "test": "tests/cpp/AdvancedSamplerControlMenusTest.cpp:50",
+      "evidence": "build/advanced-sampler-evidence/performance-finish/dandrum-control-menus-native.log",
+      "status": "verified",
+      "assertion": "Actual disabled macro value's external context action starts native learn without a parameter edit",
+      "proof_kind": "native runtime",
+      "proof_scope": "Actual disabled macro value's external context action starts native learn without a parameter edit"
+    },
+    {
+      "id": "v3:301:data-reset:157",
+      "source_line": 301,
+      "event": "data-reset",
+      "reference_handler": "macro|{{ m.name",
+      "component": "ui/advanced-sampler/performance/MacroActions.slint",
+      "command": "macro.reset",
+      "test": "tests/cpp/AdvancedSamplerPagesBindingTest.cpp:127",
+      "evidence": "build/advanced-sampler-evidence/performance-finish/dandrum-pages-native.log",
+      "status": "verified",
+      "assertion": "Macro context reset reaches native default",
+      "proof_kind": "native component menu callback",
+      "proof_scope": "Macro context reset reaches native default"
+    },
+    {
+      "id": "v3:301:onClick:35",
+      "source_line": 301,
+      "event": "onClick",
+      "reference_handler": "m.pick",
+      "component": "ui/advanced-sampler/pages/MacrosPage.slint",
+      "command": "macro.select",
+      "test": "tests/cpp/AdvancedSamplerPagesBindingTest.cpp:108",
+      "evidence": "build/advanced-sampler-evidence/performance-finish/dandrum-pages-native.log",
+      "status": "verified",
+      "assertion": "Unassigned macro card remains selectable",
+      "proof_kind": "native runtime",
+      "proof_scope": "Unassigned macro card remains selectable"
+    },
+    {
+      "id": "v3:302:on-change:36",
+      "source_line": 302,
+      "event": "on-change",
+      "reference_handler": "m.set",
+      "component": "ui/advanced-sampler/performance/MacroGrid.slint",
+      "command": "parameter-gesture(macroID,phase,value)",
+      "test": "tests/cpp/AdvancedSamplerPerformanceAppTest.cpp:48",
+      "evidence": "build/advanced-sampler-evidence/functional-performance-app.log (40 whole-app checks)",
+      "status": "verified",
+      "assertion": "Actual drawer macro pointer drag changes its native value in one undo step",
+      "proof_kind": "native runtime",
+      "proof_scope": "Actual drawer macro pointer drag changes its native value in one undo step"
+    },
+    {
+      "id": "v3:319:on-click:37",
+      "source_line": 319,
+      "event": "on-click",
+      "reference_handler": "d.go",
+      "component": "ui/advanced-sampler/pages/MacrosPage.slint",
+      "command": "page.select(destination workspace)",
+      "test": "tests/cpp/AdvancedSamplerPagesBindingTest.cpp:120",
+      "evidence": "build/advanced-sampler-evidence/performance-finish/dandrum-pages-native.log",
+      "status": "verified",
+      "assertion": "Destination navigation opens the parameter workspace",
+      "proof_kind": "native runtime",
+      "proof_scope": "Destination navigation opens the parameter workspace"
+    },
+    {
+      "id": "v3:342:on-click:38",
+      "source_line": 342,
+      "event": "on-click",
+      "reference_handler": "r.reset",
+      "component": "ui/advanced-sampler/pages/OverviewPage.slint",
+      "command": [
+        "inherit.reset kick cutoff",
+        "undo"
+      ],
+      "test": [
+        "tests/cpp/AdvancedSamplerUtilityPagesBindingTest.cpp:65",
+        "tests/cpp/AdvancedSamplerUtilityPagesBindingTest.cpp:67"
+      ],
+      "evidence": [
+        "build/advanced-sampler-evidence/theme/final-owned-checkpoint/utility.log"
+      ],
+      "status": "verified",
+      "proof_scope": "Actual effective-property Reset restores inherited group cutoff2222 from local3333; Undo restores3333."
+    },
+    {
+      "id": "v3:358:on-change:39",
+      "source_line": 358,
+      "event": "on-change",
+      "reference_handler": "setPadBank",
+      "component": "ui/advanced-sampler/pages/PadsPage.slint",
+      "command": "presentation bank/rows (no patch edits)",
+      "test": "tests/slint/AdvancedSamplerPages.slint:27",
+      "evidence": "build/advanced-sampler-evidence/performance-finish/dandrum-pages-native.log",
+      "status": "verified",
+      "assertion": "Bank changes address MIDI notes rather than replacing patch rules",
+      "proof_kind": "native Slint component contract",
+      "proof_scope": "Bank changes address MIDI notes rather than replacing patch rules"
+    },
+    {
+      "id": "v3:360:on-change:40",
+      "source_line": 360,
+      "event": "on-change",
+      "reference_handler": "setPadRows",
+      "component": "ui/advanced-sampler/pages/PadsPage.slint",
+      "command": "presentation bank/rows (no patch edits)",
+      "test": "tests/slint/AdvancedSamplerPages.slint:27",
+      "evidence": "build/advanced-sampler-evidence/performance-finish/dandrum-pages-native.log",
+      "status": "verified",
+      "assertion": "Bank changes address MIDI notes rather than replacing patch rules",
+      "proof_kind": "native Slint component contract",
+      "proof_scope": "Bank changes address MIDI notes rather than replacing patch rules"
+    },
+    {
+      "id": "v3:361:on-click:41",
+      "source_line": 361,
+      "event": "on-click",
+      "reference_handler": "togglePadPanel",
+      "component": "ui/advanced-sampler/pages/PadsPage.slint",
+      "command": "panel-open presentation state",
+      "test": "tests/slint/AdvancedSamplerPages.slint:30",
+      "evidence": "build/advanced-sampler-evidence/performance-finish/dandrum-pages-native.log",
+      "status": "verified",
+      "assertion": "Pad panel can open without altering mapped notes",
+      "proof_kind": "native Slint component contract",
+      "proof_scope": "Pad panel can open without altering mapped notes"
+    },
+    {
+      "id": "v3:367:on-select:159",
+      "source_line": 367,
+      "event": "on-select",
+      "reference_handler": "p.pick",
+      "component": "ui/advanced-sampler/pages/PadsPage.slint,performance/PadCell.slint",
+      "command": "pad.select/note-on/note-off",
+      "test": "tests/cpp/AdvancedSamplerPagesBindingTest.cpp:45",
+      "evidence": "build/advanced-sampler-evidence/performance-finish/dandrum-pages-native.log",
+      "status": "verified",
+      "assertion": "Pad native action selects and balances its note",
+      "proof_kind": "native runtime",
+      "proof_scope": "Pad native action selects and balances its note"
+    },
+    {
+      "id": "v3:367:on-trigger:158",
+      "source_line": 367,
+      "event": "on-trigger",
+      "reference_handler": "p.trig",
+      "component": "ui/advanced-sampler/pages/PadsPage.slint,performance/PadCell.slint",
+      "command": "pad.select/note-on/note-off",
+      "test": "tests/cpp/AdvancedSamplerPagesBindingTest.cpp:45",
+      "evidence": "build/advanced-sampler-evidence/performance-finish/dandrum-pages-native.log",
+      "status": "verified",
+      "assertion": "Pad native action selects and balances its note",
+      "proof_kind": "native runtime",
+      "proof_scope": "Pad native action selects and balances its note"
+    },
+    {
+      "id": "v3:381:onClick:42",
+      "source_line": 381,
+      "event": "onClick",
+      "reference_handler": "padPlay",
+      "component": "ui/advanced-sampler/performance/PadPanel.slint",
+      "command": "note-on/note-off",
+      "test": "tests/cpp/AdvancedSamplerPagesBindingTest.cpp:55",
+      "evidence": "build/advanced-sampler-evidence/performance-finish/dandrum-pages-native.log",
+      "status": "verified",
+      "assertion": "Pad waveform audition emits native note events and balances its temporary source",
+      "proof_kind": "native runtime",
+      "proof_scope": "Pad waveform audition emits native note events and balances its temporary source"
+    },
+    {
+      "id": "v3:382:data-reset:160",
+      "source_line": 382,
+      "event": "data-reset",
+      "reference_handler": "knob|{{ k.key",
+      "component": null,
+      "command": null,
+      "test": null,
+      "evidence": null,
+      "status": "pending"
+    },
+    {
+      "id": "v3:382:on-change:43",
+      "source_line": 382,
+      "event": "on-change",
+      "reference_handler": "k.set",
+      "component": "ui/advanced-sampler/performance/PadLiveControls.slint",
+      "command": "pad:<note>:pitch-ratio/gain/pan/start/variation gesture",
+      "test": "tests/cpp/AdvancedSamplerPagesBindingTest.cpp:66",
+      "evidence": "build/advanced-sampler-evidence/performance-finish/dandrum-pages-native.log",
+      "status": "verified",
+      "assertion": "Pad live level accepts an actual negative dB value",
+      "proof_kind": "native runtime",
+      "proof_scope": "Pad live level accepts an actual negative dB value"
+    },
+    {
+      "id": "v3:384:on-change:44",
+      "source_line": 384,
+      "event": "on-change",
+      "reference_handler": "setPadMute",
+      "component": "ui/advanced-sampler/performance/PadPanel.slint",
+      "command": "pad.set muted/solo/choke",
+      "test": "tests/cpp/AdvancedSamplerPagesBindingTest.cpp:79",
+      "evidence": "build/advanced-sampler-evidence/performance-finish/dandrum-pages-native.log",
+      "status": "verified",
+      "assertion": "Pad choke selector assigns the actual native group",
+      "proof_kind": "native runtime",
+      "proof_scope": "Pad choke selector assigns the actual native group"
+    },
+    {
+      "id": "v3:384:on-change:45",
+      "source_line": 384,
+      "event": "on-change",
+      "reference_handler": "setPadSolo",
+      "component": "ui/advanced-sampler/performance/PadPanel.slint",
+      "command": "pad.set muted/solo/choke",
+      "test": "tests/cpp/AdvancedSamplerPagesBindingTest.cpp:79",
+      "evidence": "build/advanced-sampler-evidence/performance-finish/dandrum-pages-native.log",
+      "status": "verified",
+      "assertion": "Pad choke selector assigns the actual native group",
+      "proof_kind": "native runtime",
+      "proof_scope": "Pad choke selector assigns the actual native group"
+    },
+    {
+      "id": "v3:384:on-change:46",
+      "source_line": 384,
+      "event": "on-change",
+      "reference_handler": "setPadChoke",
+      "component": "ui/advanced-sampler/performance/PadPanel.slint",
+      "command": "pad.set muted/solo/choke",
+      "test": "tests/cpp/AdvancedSamplerPagesBindingTest.cpp:79",
+      "evidence": "build/advanced-sampler-evidence/performance-finish/dandrum-pages-native.log",
+      "status": "verified",
+      "assertion": "Pad choke selector assigns the actual native group",
+      "proof_kind": "native runtime",
+      "proof_scope": "Pad choke selector assigns the actual native group"
+    },
+    {
+      "id": "v3:385:data-reset:161",
+      "source_line": 385,
+      "event": "data-reset",
+      "reference_handler": "knob|{{ k.key",
+      "component": null,
+      "command": null,
+      "test": null,
+      "evidence": null,
+      "status": "pending"
+    },
+    {
+      "id": "v3:385:on-change:47",
+      "source_line": 385,
+      "event": "on-change",
+      "reference_handler": "k.set",
+      "component": "ui/advanced-sampler/performance/PadPanel.slint",
+      "command": "pad:<note>:send-a/send-b gesture",
+      "test": "tests/cpp/AdvancedSamplerPagesBindingTest.cpp:82",
+      "evidence": "build/advanced-sampler-evidence/performance-finish/dandrum-pages-native.log",
+      "status": "verified",
+      "assertion": "Pad Reverb send converts displayed percentage into its normalized native amount",
+      "proof_kind": "native runtime",
+      "proof_scope": "Pad Reverb send converts displayed percentage into its normalized native amount"
+    },
+    {
+      "id": "v3:402:on-click:48",
+      "source_line": 402,
+      "event": "on-click",
+      "reference_handler": "toggleBrowser",
+      "component": "ui/advanced-sampler/chrome/InstrumentTree.slint",
+      "command": "browser-open presentation state",
+      "test": "tests/cpp/AdvancedSamplerBrowserBindingTest.cpp:29",
+      "evidence": "build/advanced-sampler-evidence/performance-finish/dandrum-browser-native.log",
+      "status": "verified",
+      "assertion": "Manual browser open remains usable in ordinary states",
+      "proof_kind": "native runtime",
+      "proof_scope": "Manual browser open remains usable in ordinary states"
+    },
+    {
+      "id": "v3:444:on-change:49",
+      "source_line": 444,
+      "event": "on-change",
+      "reference_handler": "setPlayMode",
+      "component": "ui/advanced-sampler/pages/SamplePage.slint",
+      "command": "sample.mode",
+      "test": "tests/cpp/AdvancedSamplerSourcePagesBindingTest.cpp",
+      "evidence": "build/advanced-sampler-evidence/source-loop-green.log (45 actual native source checks)",
+      "status": "verified"
+    },
+    {
+      "id": "v3:445:on-change:50",
+      "source_line": 445,
+      "event": "on-change",
+      "reference_handler": "setLoopType",
+      "component": "ui/advanced-sampler/pages/SamplePage.slint",
+      "command": "sample.mode",
+      "test": "tests/cpp/AdvancedSamplerSourcePagesBindingTest.cpp",
+      "evidence": "build/advanced-sampler-evidence/source-loop-green.log (45 actual native source checks)",
+      "status": "verified"
+    },
+    {
+      "id": "v3:464:onClick:51",
+      "source_line": 464,
+      "event": "onClick",
+      "reference_handler": "onWaveClick",
+      "component": "ui/advanced-sampler/pages/SamplePage.slint",
+      "command": "sample.audition",
+      "test": "tests/cpp/AdvancedSamplerSourcePagesBindingTest.cpp",
+      "evidence": "build/advanced-sampler-evidence/functional-source-pages-binding.log (94 checks)",
+      "status": "verified",
+      "proof_scope": "Physical waveform click seeks to known .37 normalized position, no Undo or held MIDI note"
+    },
+    {
+      "id": "v3:515:on-change:52",
+      "source_line": 515,
+      "event": "on-change",
+      "reference_handler": "r.set",
+      "component": "ui/advanced-sampler/pages/SamplePage.slint",
+      "command": "parameter-gesture(region-start/region-end/fade-in/fade-out)",
+      "test": "tests/cpp/AdvancedSamplerSourcePagesBindingTest.cpp",
+      "evidence": "build/advanced-sampler-evidence/functional-source-pages-binding.log (94 checks)",
+      "status": "verified",
+      "proof_scope": "All four actual region fields commit normalized source geometry; Fade milliseconds and End reset verified"
+    },
+    {
+      "id": "v3:527:data-reset:162",
+      "source_line": 527,
+      "event": "data-reset",
+      "reference_handler": "knob|{{ k.key",
+      "component": "ui/advanced-sampler/pages/SamplePage.slint",
+      "command": "parameter-gesture(pitch/fine/source-gain/pan)",
+      "test": "tests/cpp/AdvancedSamplerSourcePagesBindingTest.cpp",
+      "evidence": "build/advanced-sampler-evidence/functional-source-pages-binding.log (94 checks)",
+      "status": "verified",
+      "proof_scope": "Physical middle-click resets all four knobs to their exact defaults, including Gain−1.5, oneUndo each"
+    },
+    {
+      "id": "v3:527:on-change:53",
+      "source_line": 527,
+      "event": "on-change",
+      "reference_handler": "k.set",
+      "component": "ui/advanced-sampler/pages/SamplePage.slint",
+      "command": "parameter-gesture(pitch/fine/source-gain/pan)",
+      "test": "tests/cpp/AdvancedSamplerSourcePagesBindingTest.cpp",
+      "evidence": "build/advanced-sampler-evidence/functional-source-pages-binding.log (94 checks)",
+      "status": "verified",
+      "proof_scope": "All four actual controls commit signed values in oneUndo; independent amplifier Level preserved"
+    },
+    {
+      "id": "v3:535:on-click:54",
+      "source_line": 535,
+      "event": "on-click",
+      "reference_handler": "applyPitch",
+      "component": "ui/advanced-sampler/pages/SamplePage.slint",
+      "command": "analysis.start/analysis.apply",
+      "test": "tests/cpp/AdvancedSamplerSourcePagesBindingTest.cpp",
+      "evidence": "build/advanced-sampler-evidence/functional-source-pages-binding.log (94 checks)",
+      "status": "verified",
+      "proof_scope": "Actual Detect and Apply persist root60/Fine+3 together; oneUndo and Redo restore both"
+    },
+    {
+      "id": "v3:548:on-click:55",
+      "source_line": 548,
+      "event": "on-click",
+      "reference_handler": "openMidi",
+      "component": null,
+      "command": null,
+      "test": null,
+      "evidence": null,
+      "status": "pending"
+    },
+    {
+      "id": "v3:560:onClick:56",
+      "source_line": 560,
+      "event": "onClick",
+      "reference_handler": "onSliceWaveClick",
+      "component": "ui/advanced-sampler/pages/SlicesPage.slint",
+      "command": "slice.select",
+      "test": "tests/cpp/AdvancedSamplerSourcePagesBindingTest.cpp",
+      "evidence": "build/advanced-sampler-evidence/functional-source-pages-binding.log (94 checks)",
+      "status": "verified",
+      "proof_scope": "Physical slice waveform click selects its containing third region without a patch edit"
+    },
+    {
+      "id": "v3:606:data-ctx:163",
+      "source_line": 606,
+      "event": "data-ctx",
+      "reference_handler": "slice|{{ s.n",
+      "component": null,
+      "command": null,
+      "test": null,
+      "evidence": null,
+      "status": "pending"
+    },
+    {
+      "id": "v3:606:onClick:57",
+      "source_line": 606,
+      "event": "onClick",
+      "reference_handler": "s.play",
+      "component": "ui/advanced-sampler/chrome/SliceSourceRow.slint",
+      "command": "slice.preview",
+      "test": "tests/cpp/AdvancedSamplerBrowserBindingTest.cpp:253",
+      "evidence": "build/advanced-sampler-evidence/performance-finish/dandrum-browser-native.log",
+      "status": "verified",
+      "assertion": "Actual slice preview resolves persisted provenance despite a stale source-row property",
+      "proof_kind": "native runtime",
+      "proof_scope": "Actual slice preview resolves persisted provenance despite a stale source-row property"
+    },
+    {
+      "id": "v3:606:onDragEnd:165",
+      "source_line": 606,
+      "event": "onDragEnd",
+      "reference_handler": "endSrcDrag",
+      "component": "ui/advanced-sampler/chrome/SliceSourceRow.slint,DragState.slint",
+      "command": "tree.assign/pad.assign with persisted slice source+region",
+      "test": "tests/cpp/AdvancedSamplerBrowserBindingTest.cpp:118",
+      "evidence": "build/advanced-sampler-evidence/performance-finish/dandrum-browser-native.log",
+      "status": "verified",
+      "assertion": "Actual source-list slice drop onto an empty pad preserves the slice asset and region",
+      "proof_kind": "native runtime",
+      "proof_scope": "Actual source-list slice drop onto an empty pad preserves the slice asset and region"
+    },
+    {
+      "id": "v3:606:onDragStart:164",
+      "source_line": 606,
+      "event": "onDragStart",
+      "reference_handler": "s.drag",
+      "component": "ui/advanced-sampler/chrome/SliceSourceRow.slint,DragState.slint",
+      "command": "tree.assign/pad.assign with persisted slice source+region",
+      "test": "tests/cpp/AdvancedSamplerBrowserBindingTest.cpp:118",
+      "evidence": "build/advanced-sampler-evidence/performance-finish/dandrum-browser-native.log",
+      "status": "verified",
+      "assertion": "Actual source-list slice drop onto an empty pad preserves the slice asset and region",
+      "proof_kind": "native runtime",
+      "proof_scope": "Actual source-list slice drop onto an empty pad preserves the slice asset and region"
+    },
+    {
+      "id": "v3:637:onContextMenu:58",
+      "source_line": 637,
+      "event": "onContextMenu",
+      "reference_handler": "onMapCtx",
+      "component": null,
+      "command": null,
+      "test": null,
+      "evidence": null,
+      "status": "pending",
+      "remaining": "Actual Rightclick→Insert at D3 targets selected overlapping soft zone and alters native mapping. Other menu actors need direct native coverage."
+    },
+    {
+      "id": "v3:637:onPointerDown:59",
+      "source_line": 637,
+      "event": "onPointerDown",
+      "reference_handler": "onMapDown",
+      "component": "ui/advanced-sampler/pages/MappingPage.slint",
+      "command": "zone.select / zone:* gesture",
+      "test": "tests/cpp/AdvancedSamplerDomainPagesBindingTest.cpp",
+      "evidence": "build/advanced-sampler-evidence/mapping-shortcuts-green.log (59 actual native domain checks)",
+      "status": "verified",
+      "assertion": "Physical velocity/key-edge drag and captured Shift assertions",
+      "proof_kind": "native input / model effects",
+      "proof_scope": "Physical velocity/key-edge drag and captured Shift assertions"
+    },
+    {
+      "id": "v3:637:onPointerMove:166",
+      "source_line": 637,
+      "event": "onPointerMove",
+      "reference_handler": "onMapMove",
+      "component": "ui/advanced-sampler/pages/MappingPage.slint",
+      "command": "zone:* gesture",
+      "test": "tests/cpp/AdvancedSamplerDomainPagesBindingTest.cpp",
+      "evidence": "build/advanced-sampler-evidence/mapping-shortcuts-green.log (59 actual native domain checks)",
+      "status": "verified",
+      "assertion": "Actual Shift edge drag changes selected range",
+      "proof_kind": "native input / model effects",
+      "proof_scope": "Actual Shift edge drag changes selected range"
+    },
+    {
+      "id": "v3:647:on-change:60",
+      "source_line": 647,
+      "event": "on-change",
+      "reference_handler": "chZones",
+      "component": "ui/advanced-sampler/pages/MappingPage.slint",
+      "command": "zone.set / zone.set-free",
+      "test": "tests/cpp/AdvancedSamplerDomainPagesBindingTest.cpp",
+      "evidence": "build/advanced-sampler-evidence/mapping-shortcuts-green.log (59 actual native domain checks)",
+      "status": "verified",
+      "assertion": "Actual mapping velocity edge drag updates native range",
+      "proof_kind": "native input / model effects",
+      "proof_scope": "Actual mapping velocity edge drag updates native range"
+    },
+    {
+      "id": "v3:647:on-select:167",
+      "source_line": 647,
+      "event": "on-select",
+      "reference_handler": "selZone",
+      "component": "ui/advanced-sampler/pages/MappingPage.slint",
+      "command": "zone.select",
+      "test": "tests/cpp/AdvancedSamplerDomainPagesBindingTest.cpp",
+      "evidence": "build/advanced-sampler-evidence/mapping-shortcuts-green.log (59 actual native domain checks)",
+      "status": "verified",
+      "assertion": "Physical selected key range copy/paste proves selected mapping",
+      "proof_kind": "native input / model effects",
+      "proof_scope": "Physical selected key range copy/paste proves selected mapping"
+    },
+    {
+      "id": "v3:668:onContextMenu:62",
+      "source_line": 668,
+      "event": "onContextMenu",
+      "reference_handler": "closeMenuCtx",
+      "component": null,
+      "command": null,
+      "test": null,
+      "evidence": null,
+      "status": "pending",
+      "remaining": "Remaining native gesture/menu proof; see owned domain audit"
+    },
+    {
+      "id": "v3:668:onPointerDown:61",
+      "source_line": 668,
+      "event": "onPointerDown",
+      "reference_handler": "closeMenu",
+      "component": null,
+      "command": null,
+      "test": null,
+      "evidence": null,
+      "status": "pending",
+      "remaining": "Remaining native gesture/menu proof; see owned domain audit"
+    },
+    {
+      "id": "v3:670:on-close:168",
+      "source_line": 670,
+      "event": "on-close",
+      "reference_handler": "closeMenu",
+      "component": null,
+      "command": null,
+      "test": null,
+      "evidence": null,
+      "status": "pending",
+      "remaining": "Remaining native gesture/menu proof; see owned domain audit"
+    },
+    {
+      "id": "v3:689:onClick:63",
+      "source_line": 689,
+      "event": "onClick",
+      "reference_handler": "z.pick",
+      "component": null,
+      "command": null,
+      "test": null,
+      "evidence": null,
+      "status": "pending",
+      "remaining": "Remaining native gesture/menu proof; see owned domain audit"
+    },
+    {
+      "id": "v3:706:on-click:64",
+      "source_line": 706,
+      "event": "on-click",
+      "reference_handler": "a.go",
+      "component": "MappingPage",
+      "command": "articulation.select",
+      "test": "tests/cpp/AdvancedSamplerDomainPagesBindingTest.cpp",
+      "evidence": "build/advanced-sampler-evidence/domain-missing-handlers/final-domain.log (94 actual native checks)",
+      "status": "verified",
+      "proof_scope": "Native Staccato selection persists and Undo restores Sustain"
+    },
+    {
+      "id": "v3:710:on-change:65",
+      "source_line": 710,
+      "event": "on-change",
+      "reference_handler": "t.set",
+      "component": "MappingPage",
+      "command": "articulation.release / articulation.pedal",
+      "test": "tests/cpp/AdvancedSamplerDomainPagesBindingTest.cpp",
+      "evidence": "build/advanced-sampler-evidence/domain-missing-handlers/final-domain.log (94 actual native checks)",
+      "status": "verified",
+      "proof_scope": "Native Release-trigger and Pedal-aware release buttons persist real flags"
+    },
+    {
+      "id": "v3:729:on-click:66",
+      "source_line": 729,
+      "event": "on-click",
+      "reference_handler": "m.go",
+      "component": "ui/advanced-sampler/pages/LayersPage.slint",
+      "command": "selector.mode",
+      "test": "tests/cpp/AdvancedSamplerDomainPagesBindingTest.cpp",
+      "evidence": "build/advanced-sampler-evidence/mapping-shortcuts-green.log (59 actual native domain checks)",
+      "status": "verified",
+      "assertion": "Layer selector buttons change actual native policy / Weighted policy reaches backend",
+      "proof_kind": "native input / model effects",
+      "proof_scope": "Layer selector buttons change actual native policy / Weighted policy reaches backend"
+    },
+    {
+      "id": "v3:740:on-change:67",
+      "source_line": 740,
+      "event": "on-change",
+      "reference_handler": "setBlAxis",
+      "component": "LayersPage",
+      "command": "selector.axis / selector.source",
+      "test": "tests/cpp/AdvancedSamplerDomainPagesBindingTest.cpp",
+      "evidence": "build/advanced-sampler-evidence/domain-missing-handlers/final-domain.log (94 actual native checks)",
+      "status": "verified",
+      "proof_scope": "Native Macro/Modulator/Key/Velocity choices and LFOsource persist actual selector settings; Velocity/RR views hide unrelated policies"
+    },
+    {
+      "id": "v3:745:onPointerDown:68",
+      "source_line": 745,
+      "event": "onPointerDown",
+      "reference_handler": "onVelDown",
+      "component": null,
+      "command": null,
+      "test": null,
+      "evidence": null,
+      "status": "pending",
+      "remaining": "Remaining native gesture/menu proof; see owned domain audit"
+    },
+    {
+      "id": "v3:770:on-change:69",
+      "source_line": 770,
+      "event": "on-change",
+      "reference_handler": "setVelW",
+      "component": "ui/advanced-sampler/pages/LayersPage.slint",
+      "command": "crossfade-width gesture",
+      "test": "tests/cpp/AdvancedSamplerDomainPagesBindingTest.cpp",
+      "evidence": "build/advanced-sampler-evidence/mapping-shortcuts-green.log (59 actual native domain checks)",
+      "status": "verified",
+      "assertion": "Crossfade control edits actual soft/hard boundary",
+      "proof_kind": "native input / model effects",
+      "proof_scope": "Crossfade control edits actual soft/hard boundary"
+    },
+    {
+      "id": "v3:771:on-change:70",
+      "source_line": 771,
+      "event": "on-change",
+      "reference_handler": "setVelCurve",
+      "component": "LayersPage",
+      "command": "selector.crossfade",
+      "test": "tests/cpp/AdvancedSamplerDomainPagesBindingTest.cpp",
+      "evidence": "build/advanced-sampler-evidence/domain-missing-handlers/final-domain.log (94 actual native checks)",
+      "status": "verified",
+      "proof_scope": "Actual Linear curve creates overlap; native Undo restores prior curve"
+    },
+    {
+      "id": "v3:772:on-click:71",
+      "source_line": 772,
+      "event": "on-click",
+      "reference_handler": "velNoXf",
+      "component": "LayersPage",
+      "command": "selector.crossfade",
+      "test": "tests/cpp/AdvancedSamplerDomainPagesBindingTest.cpp",
+      "evidence": "build/advanced-sampler-evidence/domain-missing-handlers/final-domain.log (94 actual native checks)",
+      "status": "verified",
+      "proof_scope": "Actual No crossfade creates adjacent hard split; Undo restores Linear"
+    },
+    {
+      "id": "v3:786:on-change:72",
+      "source_line": 786,
+      "event": "on-change",
+      "reference_handler": "setLock",
+      "component": "LayersPage",
+      "command": "selector.lock",
+      "test": "tests/cpp/AdvancedSamplerDomainPagesBindingTest.cpp",
+      "evidence": "build/advanced-sampler-evidence/domain-missing-handlers/final-domain.log (94 actual native checks)",
+      "status": "verified",
+      "proof_scope": "Native take-lock toggle and Undo restore real policy"
+    },
+    {
+      "id": "v3:787:on-change:73",
+      "source_line": 787,
+      "event": "on-change",
+      "reference_handler": "setNoRep",
+      "component": "LayersPage",
+      "command": "selector.no-repeat",
+      "test": "tests/cpp/AdvancedSamplerDomainPagesBindingTest.cpp",
+      "evidence": "build/advanced-sampler-evidence/domain-missing-handlers/final-domain.log (94 actual native checks)",
+      "status": "verified",
+      "proof_scope": "Native immediate-repeat toggle and Undo restore real policy; pure weighted/random owner tests verify actual candidate behavior"
+    },
+    {
+      "id": "v3:830:on-click:74",
+      "source_line": 830,
+      "event": "on-click",
+      "reference_handler": "openAuto",
+      "component": "ui/advanced-sampler/pages/VoicePage.slint::VoiceRenderDialog",
+      "command": [
+        "VoiceDialogState.mode=auto",
+        "autosampler.configure",
+        "autosampler.start"
+      ],
+      "test": [
+        "tests/cpp/AdvancedSamplerVoiceBindingTest.cpp:170",
+        "tests/cpp/AdvancedSamplerVoiceBindingTest.cpp:172",
+        "tests/cpp/AdvancedSamplerVoiceBindingTest.cpp:185"
+      ],
+      "evidence": [
+        "build/advanced-sampler-evidence/theme/final-owned-checkpoint/voice.log"
+      ],
+      "status": "verified",
+      "proof_scope": "Actual Sample patch button opens editable persistent configuration; native start completes exact 3 notes ×3 layers ×2 takes, one Undo."
+    },
+    {
+      "id": "v3:831:on-click:75",
+      "source_line": 831,
+      "event": "on-click",
+      "reference_handler": "openAddSrc",
+      "component": "ui/advanced-sampler/pages/VoicePage.slint::VoiceRenderDialog",
+      "command": [
+        "VoiceDialogState.mode=source",
+        "module.add voice <kind>"
+      ],
+      "test": [
+        "tests/cpp/AdvancedSamplerVoiceBindingTest.cpp:139",
+        "tests/cpp/AdvancedSamplerVoiceBindingTest.cpp:160"
+      ],
+      "evidence": [
+        "build/advanced-sampler-evidence/theme/final-owned-checkpoint/voice.log"
+      ],
+      "status": "verified",
+      "proof_scope": "Actual source picker adds Noise, Oscillator, Sampler and Synth patch; each typed mode/value persists and each addition can be undone."
+    },
+    {
+      "id": "v3:832:on-click:76",
+      "source_line": 832,
+      "event": "on-click",
+      "reference_handler": "doFreezeBtn",
+      "component": "ui/advanced-sampler/pages/VoicePage.slint::VoiceRenderDialog",
+      "command": [
+        "VoiceDialogState.mode=freeze",
+        "freeze.configure",
+        "freeze.start",
+        "freeze.cancel"
+      ],
+      "test": [
+        "tests/cpp/AdvancedSamplerVoiceBindingTest.cpp:191",
+        "tests/cpp/AdvancedSamplerVoiceBindingTest.cpp:196",
+        "tests/cpp/AdvancedSamplerVoiceBindingTest.cpp:201"
+      ],
+      "evidence": [
+        "build/advanced-sampler-evidence/theme/final-owned-checkpoint/voice.log"
+      ],
+      "status": "verified",
+      "proof_scope": "Actual Freeze button opens editable native settings and starts cancellable generation job; completion locks actual voice controls."
+    },
+    {
+      "id": "v3:834:on-click:77",
+      "source_line": 834,
+      "event": "on-click",
+      "reference_handler": "unfreezeVoice",
+      "component": "ui/advanced-sampler/pages/VoicePage.slint",
+      "command": [
+        "sample.unfreeze <selected-source>"
+      ],
+      "test": [
+        "tests/cpp/AdvancedSamplerVoiceBindingTest.cpp:206"
+      ],
+      "evidence": [
+        "build/advanced-sampler-evidence/theme/final-owned-checkpoint/voice.log"
+      ],
+      "status": "verified",
+      "proof_scope": "Actual Unfreeze button restores original source kind and editable state after mock freeze."
+    },
+    {
+      "id": "v3:842:on-click:78",
+      "source_line": 842,
+      "event": "on-click",
+      "reference_handler": "v.openEdit",
+      "component": "ui/advanced-sampler/pages/VoicePage.slint",
+      "command": [
+        "page.select sample"
+      ],
+      "test": [
+        "tests/cpp/AdvancedSamplerVoiceBindingTest.cpp:163"
+      ],
+      "evidence": [
+        "build/advanced-sampler-evidence/theme/final-owned-checkpoint/voice.log"
+      ],
+      "status": "verified",
+      "proof_scope": "Actual Edit source opens the native sample workspace."
+    },
+    {
+      "id": "v3:852:data-reset:169",
+      "source_line": 852,
+      "event": "data-reset",
+      "reference_handler": "knob|{{ k.key",
+      "component": "ui/advanced-sampler/pages/VoicePage.slint::DomainKnob",
+      "command": [
+        "actual middle-pointer reset → parameter-gesture exact default",
+        "undo"
+      ],
+      "test": [
+        "tests/cpp/AdvancedSamplerVoiceBindingTest.cpp:427",
+        "tests/cpp/AdvancedSamplerVoiceBindingTest.cpp:299",
+        "tests/cpp/AdvancedSamplerVoiceBindingTest.cpp:305"
+      ],
+      "evidence": [
+        "build/advanced-sampler-evidence/theme/final-owned-checkpoint/voice.log"
+      ],
+      "status": "verified",
+      "proof_scope": "Every42 actual generated Voice/source Slider receives native middle-pointer reset. Native exact advertised default, one additional Undo and Undo restoration are asserted; Source Gain off-step default−1.5 regression remains unchanged and passes after shared RangeControl correction."
+    },
+    {
+      "id": "v3:852:on-change:79",
+      "source_line": 852,
+      "event": "on-change",
+      "reference_handler": "k.set",
+      "component": "ui/advanced-sampler/pages/VoicePage.slint::DomainKnob/VoiceSourceCard",
+      "command": [
+        "parameter-gesture phases 0/1/2"
+      ],
+      "test": [
+        "tests/cpp/AdvancedSamplerVoiceBindingTest.cpp:291",
+        "tests/cpp/AdvancedSamplerVoiceBindingTest.cpp:300",
+        "tests/cpp/AdvancedSamplerVoiceBindingTest.cpp:305",
+        "tests/cpp/AdvancedSamplerVoiceBindingTest.cpp:312"
+      ],
+      "evidence": [
+        "build/advanced-sampler-evidence/theme/final-owned-checkpoint/voice.log"
+      ],
+      "status": "verified",
+      "proof_scope": "Every currently available generated descriptor: 22 global Voice fields, 14 fields across four added source kinds, six initial Hybrid Lush fields. Each actual native Slider typed commit writes its own native value and one Undo; Undo restores original effective value. Catalog retains all42 identities."
+    },
+    {
+      "id": "v3:861:onPointerDown:80",
+      "source_line": 861,
+      "event": "onPointerDown",
+      "reference_handler": "fDown",
+      "component": "ui/advanced-sampler/pages/VoicePage.slint::VoiceFilterPlot",
+      "command": [
+        "parameter-gesture cutoff",
+        "parameter.preview resonance"
+      ],
+      "test": [
+        "tests/cpp/AdvancedSamplerVoiceBindingTest.cpp:80",
+        "tests/cpp/AdvancedSamplerVoiceBindingTest.cpp:81",
+        "tests/cpp/AdvancedSamplerVoiceBindingTest.cpp:84",
+        "tests/cpp/AdvancedSamplerVoiceBindingTest.cpp:86",
+        "tests/cpp/AdvancedSamplerVoiceBindingTest.cpp:90",
+        "tests/cpp/AdvancedSamplerVoiceBindingTest.cpp:96"
+      ],
+      "evidence": [
+        "build/advanced-sampler-evidence/theme/final-owned-checkpoint/voice.log",
+        "build/advanced-sampler-evidence/theme/voice-render-test.log",
+        "build/advanced-sampler-evidence/theme/voice-render/voice-lp.png",
+        "build/advanced-sampler-evidence/theme/voice-render/voice-hp.png",
+        "build/advanced-sampler-evidence/theme/voice-render/voice-bp.png",
+        "build/advanced-sampler-evidence/theme/voice-render/voice-notch.png"
+      ],
+      "status": "verified",
+      "proof_scope": "Actual pointer 2D edit writes logarithmic cutoff and resonance, previews then one Undo, Escape/deactivation cancellation. Real LP/HP/BP/Notch pixels additionally checked."
+    },
+    {
+      "id": "v3:886:onPointerDown:81",
+      "source_line": 886,
+      "event": "onPointerDown",
+      "reference_handler": "e.down",
+      "component": "ui/advanced-sampler/pages/VoicePage.slint::VoiceEnvelopePlot",
+      "command": [
+        "parameter-gesture <envelope-field>",
+        "parameter.preview <sustain>"
+      ],
+      "test": [
+        "tests/cpp/AdvancedSamplerVoiceBindingTest.cpp:106",
+        "tests/cpp/AdvancedSamplerVoiceBindingTest.cpp:108",
+        "tests/cpp/AdvancedSamplerVoiceBindingTest.cpp:122",
+        "tests/cpp/AdvancedSamplerVoiceBindingTest.cpp:130",
+        "tests/cpp/AdvancedSamplerVoiceBindingTest.cpp:131"
+      ],
+      "evidence": [
+        "build/advanced-sampler-evidence/theme/final-owned-checkpoint/voice.log",
+        "build/advanced-sampler-evidence/theme/voice-render-test.log",
+        "build/advanced-sampler-evidence/theme/voice-render/voice-lp.png"
+      ],
+      "status": "verified",
+      "proof_scope": "All eight amp/filter ADSR handles accept actual pointer and keyboard changes; paired decay/sustain forms one Undo; renderer confirms release line joins actual handle positions."
+    },
+    {
+      "id": "v3:941:onClick:82",
+      "source_line": 941,
+      "event": "onClick",
+      "reference_handler": "g.toggle",
+      "component": "ui/advanced-sampler/pages/ModulationPage.slint",
+      "command": "route.expand",
+      "test": "tests/cpp/AdvancedSamplerDomainPagesBindingTest.cpp",
+      "evidence": "build/advanced-sampler-evidence/mapping-shortcuts-green.log (59 actual native domain checks)",
+      "status": "verified",
+      "assertion": "Group disclosure hides child route rows",
+      "proof_kind": "native input / model effects",
+      "proof_scope": "Group disclosure hides child route rows"
+    },
+    {
+      "id": "v3:949:on-click:83",
+      "source_line": 949,
+      "event": "on-click",
+      "reference_handler": "g.addDest",
+      "component": "ui/advanced-sampler/pages/ModulationPage.slint",
+      "command": "context-action(modulator-destination,source-ID)",
+      "test": "tests/cpp/AdvancedSamplerDomainPagesBindingTest.cpp",
+      "evidence": "build/advanced-sampler-evidence/mapping-shortcuts-green.log (59 actual native domain checks)",
+      "status": "verified",
+      "assertion": "Grouped Add destination sends actual native source target to parameter picker",
+      "proof_kind": "native input / model effects",
+      "proof_scope": "Grouped Add destination sends actual native source target to parameter picker"
+    },
+    {
+      "id": "v3:956:data-ctx:170",
+      "source_line": 956,
+      "event": "data-ctx",
+      "reference_handler": "route|{{ r.rk",
+      "component": null,
+      "command": null,
+      "test": null,
+      "evidence": null,
+      "status": "pending",
+      "remaining": "Remaining native gesture/menu proof; see owned domain audit"
+    },
+    {
+      "id": "v3:956:onClick:84",
+      "source_line": 956,
+      "event": "onClick",
+      "reference_handler": "r.select",
+      "component": "ModulationPage",
+      "command": "route.select",
+      "test": "tests/cpp/AdvancedSamplerDomainPagesBindingTest.cpp",
+      "evidence": "build/advanced-sampler-evidence/domain-missing-handlers/final-domain.log (94 actual native checks)",
+      "status": "verified",
+      "proof_scope": "Actual Amp route selection changes native selected-route"
+    },
+    {
+      "id": "v3:990:on-click:85",
+      "source_line": 990,
+      "event": "on-click",
+      "reference_handler": "me.addDest",
+      "component": null,
+      "command": null,
+      "test": null,
+      "evidence": null,
+      "status": "pending",
+      "remaining": "Remaining native gesture/menu proof; see owned domain audit"
+    },
+    {
+      "id": "v3:992:on-click:86",
+      "source_line": 992,
+      "event": "on-click",
+      "reference_handler": "me.ampReplace",
+      "component": "ModulationPage",
+      "command": "amp.replace",
+      "test": "tests/cpp/AdvancedSamplerDomainPagesBindingTest.cpp",
+      "evidence": "build/advanced-sampler-evidence/domain-missing-handlers/final-domain.log (94 actual native checks)",
+      "status": "verified",
+      "proof_scope": "Actual selected Filter envelope replaces Amp route; Undo restores amp-env"
+    },
+    {
+      "id": "v3:993:on-click:87",
+      "source_line": 993,
+      "event": "on-click",
+      "reference_handler": "me.ampDetach",
+      "component": "ui/advanced-sampler/pages/ModulationPage.slint",
+      "command": "amp.detach",
+      "test": "tests/cpp/AdvancedSamplerDomainPagesBindingTest.cpp",
+      "evidence": "build/advanced-sampler-evidence/mapping-shortcuts-green.log (59 actual native domain checks)",
+      "status": "verified",
+      "assertion": "Default amplitude route detaches",
+      "proof_kind": "native input / model effects",
+      "proof_scope": "Default amplitude route detaches"
+    },
+    {
+      "id": "v3:994:on-click:88",
+      "source_line": 994,
+      "event": "on-click",
+      "reference_handler": "me.ampRestore",
+      "component": "ui/advanced-sampler/pages/ModulationPage.slint",
+      "command": "amp.restore",
+      "test": "tests/cpp/AdvancedSamplerDomainPagesBindingTest.cpp",
+      "evidence": "build/advanced-sampler-evidence/mapping-shortcuts-green.log (59 actual native domain checks)",
+      "status": "verified",
+      "assertion": "Default amplitude lifecycle restores real route",
+      "proof_kind": "native input / model effects",
+      "proof_scope": "Default amplitude lifecycle restores real route"
+    },
+    {
+      "id": "v3:997:on-change:89",
+      "source_line": 997,
+      "event": "on-change",
+      "reference_handler": "me.setShape",
+      "component": "ui/advanced-sampler/pages/ModulationPage.slint",
+      "command": "modulator.shape",
+      "test": "tests/cpp/AdvancedSamplerDomainPagesBindingTest.cpp",
+      "evidence": "build/advanced-sampler-evidence/mapping-shortcuts-green.log (59 actual native domain checks)",
+      "status": "verified",
+      "assertion": "S&H choice / Performance curve choice persists actual native shape",
+      "proof_kind": "native input / model effects",
+      "proof_scope": "S&H choice / Performance curve choice persists actual native shape"
+    },
+    {
+      "id": "v3:1015:data-reset:171",
+      "source_line": 1015,
+      "event": "data-reset",
+      "reference_handler": "knob|{{ k.key",
+      "component": "ModulationPage",
+      "command": "modulator:* gesture",
+      "test": "tests/cpp/AdvancedSamplerDomainPagesBindingTest.cpp",
+      "evidence": "build/advanced-sampler-evidence/domain-missing-handlers/final-domain.log (94 actual native checks)",
+      "status": "verified",
+      "proof_scope": "Native Filter attack changes40ms before physical Middle-reset restores actual ordinary preset2ms"
+    },
+    {
+      "id": "v3:1015:on-change:90",
+      "source_line": 1015,
+      "event": "on-change",
+      "reference_handler": "k.set",
+      "component": "ui/advanced-sampler/pages/ModulationPage.slint",
+      "command": "modulator:* gesture",
+      "test": "tests/cpp/AdvancedSamplerDomainPagesBindingTest.cpp",
+      "evidence": "build/advanced-sampler-evidence/mapping-shortcuts-green.log (59 actual native domain checks)",
+      "status": "verified",
+      "assertion": "LFO fade in changes native timing / Performance input endpoint uses normalized units",
+      "proof_kind": "native input / model effects",
+      "proof_scope": "LFO fade in changes native timing / Performance input endpoint uses normalized units"
+    },
+    {
+      "id": "v3:1020:on-change:91",
+      "source_line": 1020,
+      "event": "on-change",
+      "reference_handler": "me.cfg.setScope",
+      "component": "ModulationPage",
+      "command": "route.scope",
+      "test": "tests/cpp/AdvancedSamplerDomainPagesBindingTest.cpp",
+      "evidence": "build/advanced-sampler-evidence/domain-missing-handlers/final-domain.log (94 actual native checks)",
+      "status": "verified",
+      "proof_scope": "Actual Shared choice persists native scope"
+    },
+    {
+      "id": "v3:1021:on-change:92",
+      "source_line": 1021,
+      "event": "on-change",
+      "reference_handler": "me.cfg.setCombine",
+      "component": "ModulationPage",
+      "command": "route.combine",
+      "test": "tests/cpp/AdvancedSamplerDomainPagesBindingTest.cpp",
+      "evidence": "build/advanced-sampler-evidence/domain-missing-handlers/final-domain.log (94 actual native checks)",
+      "status": "verified",
+      "proof_scope": "Actual Multiply choice persists native combine"
+    },
+    {
+      "id": "v3:1022:on-change:93",
+      "source_line": 1022,
+      "event": "on-change",
+      "reference_handler": "me.cfg.setRate",
+      "component": "ModulationPage",
+      "command": "route.rate",
+      "test": "tests/cpp/AdvancedSamplerDomainPagesBindingTest.cpp",
+      "evidence": "build/advanced-sampler-evidence/domain-missing-handlers/final-domain.log (94 actual native checks)",
+      "status": "verified",
+      "proof_scope": "Actual Control/Block/Audio choices persist all three canonical native rates"
+    },
+    {
+      "id": "v3:1055:onClick:94",
+      "source_line": 1055,
+      "event": "onClick",
+      "reference_handler": "r.select",
+      "component": "RoutingPage",
+      "command": "selection.set",
+      "test": "tests/cpp/AdvancedSamplerDomainPagesBindingTest.cpp",
+      "evidence": "build/advanced-sampler-evidence/domain-missing-handlers/final-domain.log (94 actual native checks)",
+      "status": "verified",
+      "proof_scope": "Actual Snare output assignment row selects native snare"
+    },
+    {
+      "id": "v3:1080:on-select:172",
+      "source_line": 1080,
+      "event": "on-select",
+      "reference_handler": "selZone",
+      "component": null,
+      "command": null,
+      "test": null,
+      "evidence": null,
+      "status": "pending",
+      "remaining": "Remaining native gesture/menu proof; see owned domain audit"
+    },
+    {
+      "id": "v3:1099:on-click:95",
+      "source_line": 1099,
+      "event": "on-click",
+      "reference_handler": "resetOver",
+      "component": "ui/advanced-sampler/chrome/Inspector.slint",
+      "command": [
+        "inherit.reset <selected-id>"
+      ],
+      "test": [
+        "tests/cpp/AdvancedSamplerInspectorBindingTest.cpp:113",
+        "tests/cpp/AdvancedSamplerInspectorBindingTest.cpp:115"
+      ],
+      "evidence": [
+        "build/advanced-sampler-evidence/theme/final-owned-checkpoint/inspector.log"
+      ],
+      "status": "verified",
+      "proof_scope": "Actual Reset overrides removes selected Group cutoff override, Undo restores count and affordance."
+    },
+    {
+      "id": "v3:1114:data-ctx:173",
+      "source_line": 1114,
+      "event": "data-ctx",
+      "reference_handler": "op|{{ o.id",
+      "component": "ui/advanced-sampler/chrome/Inspector.slint::HistoryRow",
+      "command": [
+        "sample.history-remove",
+        "sample.history-move",
+        "undo"
+      ],
+      "test": [
+        "tests/cpp/AdvancedSamplerInspectorBindingTest.cpp:89",
+        "tests/cpp/AdvancedSamplerInspectorBindingTest.cpp:90",
+        "tests/cpp/AdvancedSamplerInspectorBindingTest.cpp:234",
+        "tests/cpp/AdvancedSamplerInspectorBindingTest.cpp:235"
+      ],
+      "evidence": [
+        "build/advanced-sampler-evidence/theme/final-owned-checkpoint/inspector.log"
+      ],
+      "status": "verified",
+      "proof_scope": "Actual pointer-right popup Remove, Move up and Move down all mutate the correct native operation/order; independent Undo restores records/order. Menu visibility is not used as command proof."
+    },
+    {
+      "id": "v3:1114:onClick:96",
+      "source_line": 1114,
+      "event": "onClick",
+      "reference_handler": "o.select",
+      "component": "ui/advanced-sampler/chrome/Inspector.slint::HistoryRow",
+      "command": [
+        "sample.history-select <operation>"
+      ],
+      "test": [
+        "tests/cpp/AdvancedSamplerInspectorBindingTest.cpp:63",
+        "tests/cpp/AdvancedSamplerInspectorBindingTest.cpp:67",
+        "tests/cpp/AdvancedSamplerInspectorBindingTest.cpp:76"
+      ],
+      "evidence": [
+        "build/advanced-sampler-evidence/theme/final-owned-checkpoint/inspector.log"
+      ],
+      "status": "verified",
+      "proof_scope": "Actual row selects operation-specific Fade properties; same row toggles back to Sample."
+    },
+    {
+      "id": "v3:1116:onClick:97",
+      "source_line": 1116,
+      "event": "onClick",
+      "reference_handler": "o.toggle",
+      "component": "ui/advanced-sampler/chrome/Inspector.slint::HistoryRow",
+      "command": [
+        "sample.history-bypass <operation>"
+      ],
+      "test": [
+        "tests/cpp/AdvancedSamplerInspectorBindingTest.cpp:71",
+        "tests/cpp/AdvancedSamplerInspectorBindingTest.cpp:72",
+        "tests/cpp/AdvancedSamplerInspectorBindingTest.cpp:74"
+      ],
+      "evidence": [
+        "build/advanced-sampler-evidence/theme/final-owned-checkpoint/inspector.log"
+      ],
+      "status": "verified",
+      "proof_scope": "Actual checkbox bypass changes effective fade-in to zero; re-enable restores .12."
+    },
+    {
+      "id": "v3:1139:on-click:98",
+      "source_line": 1139,
+      "event": "on-click",
+      "reference_handler": "r.go",
+      "component": "ui/advanced-sampler/chrome/Inspector.slint::InspectorRow",
+      "command": [
+        "asset.relink/asset.search-folder/asset.replace callbacks",
+        "module.bypass/fx.bypass",
+        "sample.history-bypass/remove",
+        "modulator.select",
+        "route.add",
+        "page.select mapping",
+        "analysis.start",
+        "zone.add selected-source selected-pad",
+        "macro.learn",
+        "context-action macro-destinations/modulation-add"
+      ],
+      "test": [
+        "tests/cpp/AdvancedSamplerInspectorBindingTest.cpp:198",
+        "tests/cpp/AdvancedSamplerInspectorBindingTest.cpp:202",
+        "tests/cpp/AdvancedSamplerInspectorBindingTest.cpp:206",
+        "tests/cpp/AdvancedSamplerInspectorBindingTest.cpp:207",
+        "tests/cpp/AdvancedSamplerInspectorBindingTest.cpp:209",
+        "tests/cpp/AdvancedSamplerInspectorBindingTest.cpp:213",
+        "tests/cpp/AdvancedSamplerInspectorBindingTest.cpp:215",
+        "tests/cpp/AdvancedSamplerInspectorBindingTest.cpp:216",
+        "tests/cpp/AdvancedSamplerInspectorBindingTest.cpp:218",
+        "tests/cpp/AdvancedSamplerInspectorBindingTest.cpp:220",
+        "tests/cpp/AdvancedSamplerInspectorBindingTest.cpp:225",
+        "tests/cpp/AdvancedSamplerInspectorBindingTest.cpp:226",
+        "tests/cpp/AdvancedSamplerInspectorBindingTest.cpp:227",
+        "tests/cpp/AdvancedSamplerInspectorBindingTest.cpp:239",
+        "tests/cpp/AdvancedSamplerInspectorBindingTest.cpp:240",
+        "tests/cpp/AdvancedSamplerInspectorBindingTest.cpp:128",
+        "tests/cpp/AdvancedSamplerInspectorBindingTest.cpp:132",
+        "tests/cpp/AdvancedSamplerInspectorAppBindingTest.cpp:36",
+        "tests/cpp/AdvancedSamplerInspectorAppBindingTest.cpp:37",
+        "tests/cpp/AdvancedSamplerInspectorAppBindingTest.cpp:41",
+        "tests/cpp/AdvancedSamplerInspectorAppBindingTest.cpp:42"
+      ],
+      "evidence": [
+        "build/advanced-sampler-evidence/theme/final-owned-checkpoint/inspector.log",
+        "build/advanced-sampler-evidence/theme/inspector-composed-completion-candidate.log",
+        "build/advanced-sampler-evidence/theme/composed-checkpoint/manifest.json"
+      ],
+      "status": "verified",
+      "proof_scope": "Actual selected-kind actions prove missing/unsupported/loaded sample exact file callbacks, module/FX/history Bypass+Undo, history Remove+Undo, route Edit source, modulator Apply to group+Undo, pad Open mapping, transient analysis start, empty-pad127 Add zone+Undo, MIDI Learn. Macro destinations/Assign modulation forward exact root callbacks only. Joined actual whole-App Inspector pointer actions complete macro destination and modulation-source pickers, persist exact binding/route amount .25 in one Undo, and Undo restores inventories. Inspector wheel reveals the genuine offscreen action before activation."
+    },
+    {
+      "id": "v3:1143:on-change:99",
+      "source_line": 1143,
+      "event": "on-change",
+      "reference_handler": "k.set",
+      "component": "ui/advanced-sampler/chrome/Inspector.slint::DomainKnob",
+      "command": [
+        "parameter-gesture fx:<processor>:<field>",
+        "undo"
+      ],
+      "test": [
+        "tests/cpp/AdvancedSamplerInspectorBindingTest.cpp:182",
+        "tests/cpp/AdvancedSamplerInspectorBindingTest.cpp:187",
+        "tests/cpp/AdvancedSamplerInspectorBindingTest.cpp:188",
+        "tests/cpp/AdvancedSamplerInspectorBindingTest.cpp:189",
+        "tests/cpp/AdvancedSamplerInspectorBindingTest.cpp:192"
+      ],
+      "evidence": [
+        "build/advanced-sampler-evidence/theme/final-owned-checkpoint/inspector.log"
+      ],
+      "status": "verified",
+      "proof_scope": "All33 descriptors across nine guide processors: actual native Slider typed edits and middle-pointer defaults each write own native record with exactly one Undo; both Undo paths restore prior values. Normalized Mix display25%/write50% remain separately proven."
+    },
+    {
+      "id": "v3:1154:onDoubleClick:101",
+      "source_line": 1154,
+      "event": "onDoubleClick",
+      "reference_handler": "playResizeReset",
+      "component": "ui/advanced-sampler/controls/ResizeHandle.slint; performance/PlayDrawer.slint",
+      "command": "restore automatic drawer height",
+      "test": "tests/cpp/AdvancedSamplerPerformanceAppTest.cpp:132",
+      "evidence": "build/advanced-sampler-evidence/functional-performance-app.log (40 whole-app checks)",
+      "status": "verified",
+      "proof_scope": "Actual drawer double-click restores standard open height without editing history"
+    },
+    {
+      "id": "v3:1154:onPointerDown:100",
+      "source_line": 1154,
+      "event": "onPointerDown",
+      "reference_handler": "playResizeDown",
+      "component": "ui/advanced-sampler/controls/ResizeHandle.slint; performance/PlayDrawer.slint",
+      "command": "body-height presentation drag",
+      "test": "tests/cpp/AdvancedSamplerPerformanceAppTest.cpp:122",
+      "evidence": "build/advanced-sampler-evidence/functional-performance-app.log (40 whole-app checks)",
+      "status": "verified",
+      "assertion": "Actual drawer resize follows pointer through changing drawer position",
+      "proof_kind": "native runtime",
+      "proof_scope": "Actual drawer resize follows pointer through changing drawer position"
+    },
+    {
+      "id": "v3:1156:onClick:102",
+      "source_line": 1156,
+      "event": "onClick",
+      "reference_handler": "togglePlay",
+      "component": "ui/advanced-sampler/performance/PlayDrawer.slint",
+      "command": "open presentation state; release-notes",
+      "test": "tests/cpp/AdvancedSamplerPerformanceAppTest.cpp:125",
+      "evidence": "build/advanced-sampler-evidence/functional-performance-app.log (40 whole-app checks)",
+      "status": "verified",
+      "assertion": "Dragging the actual drawer closed releases every held native source",
+      "proof_kind": "native runtime",
+      "proof_scope": "Dragging the actual drawer closed releases every held native source"
+    },
+    {
+      "id": "v3:1163:on-click:103",
+      "source_line": 1163,
+      "event": "on-click",
+      "reference_handler": "togMacros",
+      "component": "ui/advanced-sampler/performance/PlayDrawer.slint",
+      "command": "show-macros presentation state",
+      "test": "tests/cpp/AdvancedSamplerPerformanceAppTest.cpp:31",
+      "evidence": "build/advanced-sampler-evidence/functional-performance-app.log (40 whole-app checks)",
+      "status": "verified",
+      "assertion": "App section control hides macros and keeps drawer open",
+      "proof_kind": "native runtime",
+      "proof_scope": "App section control hides macros and keeps drawer open"
+    },
+    {
+      "id": "v3:1164:on-click:104",
+      "source_line": 1164,
+      "event": "on-click",
+      "reference_handler": "togPads",
+      "component": "ui/advanced-sampler/performance/PlayDrawer.slint",
+      "command": "show-pads presentation state; release-notes",
+      "test": "tests/cpp/AdvancedSamplerPerformanceAppTest.cpp:34",
+      "evidence": "build/advanced-sampler-evidence/functional-performance-app.log (40 whole-app checks)",
+      "status": "verified",
+      "assertion": "Hiding pads releases held native sources",
+      "proof_kind": "native runtime",
+      "proof_scope": "Hiding pads releases held native sources"
+    },
+    {
+      "id": "v3:1165:on-click:105",
+      "source_line": 1165,
+      "event": "on-click",
+      "reference_handler": "togKeys",
+      "component": "ui/advanced-sampler/performance/PlayDrawer.slint",
+      "command": "show-keys presentation state",
+      "test": "tests/cpp/AdvancedSamplerPerformanceAppTest.cpp:36",
+      "evidence": "build/advanced-sampler-evidence/functional-performance-app.log (40 whole-app checks)",
+      "status": "verified",
+      "assertion": "Keyboard section can collapse independently",
+      "proof_kind": "native runtime",
+      "proof_scope": "Keyboard section can collapse independently"
+    },
+    {
+      "id": "v3:1168:on-click:106",
+      "source_line": 1168,
+      "event": "on-click",
+      "reference_handler": "togglePcKeys",
+      "component": "ui/advanced-sampler/performance/PlayDrawer.slint,PerformanceState.slint",
+      "command": "pc.enabled; release-notes",
+      "test": "tests/cpp/AdvancedSamplerPerformanceAppTest.cpp:69",
+      "evidence": "build/advanced-sampler-evidence/functional-performance-app.log (40 whole-app checks)",
+      "status": "verified",
+      "assertion": "App PC toggle updates canonical native and shared state",
+      "proof_kind": "native runtime",
+      "proof_scope": "App PC toggle updates canonical native and shared state"
+    },
+    {
+      "id": "v3:1170:on-click:107",
+      "source_line": 1170,
+      "event": "on-click",
+      "reference_handler": "octDown",
+      "component": "ui/advanced-sampler/performance/PerformanceState.slint",
+      "command": "pc.octave; release-notes",
+      "test": "tests/cpp/AdvancedSamplerPerformanceAppTest.cpp:74",
+      "evidence": "build/advanced-sampler-evidence/functional-performance-app.log (40 whole-app checks)",
+      "status": "verified",
+      "assertion": "App octave arrow releases held notes and updates the native base",
+      "proof_kind": "native runtime",
+      "proof_scope": "App octave arrow releases held notes and updates the native base"
+    },
+    {
+      "id": "v3:1172:on-click:108",
+      "source_line": 1172,
+      "event": "on-click",
+      "reference_handler": "octUp",
+      "component": "ui/advanced-sampler/performance/PerformanceState.slint",
+      "command": "pc.octave; release-notes",
+      "test": "tests/cpp/AdvancedSamplerPerformanceAppTest.cpp:74",
+      "evidence": "build/advanced-sampler-evidence/functional-performance-app.log (40 whole-app checks)",
+      "status": "verified",
+      "assertion": "App octave arrow releases held notes and updates the native base",
+      "proof_kind": "native runtime",
+      "proof_scope": "App octave arrow releases held notes and updates the native base"
+    },
+    {
+      "id": "v3:1180:data-ctx:174",
+      "source_line": 1180,
+      "event": "data-ctx",
+      "reference_handler": "macro|{{ m.name",
+      "component": "ui/advanced-sampler/performance/MacroGrid.slint,MacroActions.slint; pages/MacrosPage.slint",
+      "command": "macro.learn/learn.stop; selected-macro",
+      "test": "tests/cpp/AdvancedSamplerControlMenusTest.cpp:50",
+      "evidence": "build/advanced-sampler-evidence/performance-finish/dandrum-control-menus-native.log",
+      "status": "verified",
+      "assertion": "Actual disabled macro value's external context action starts native learn without a parameter edit",
+      "proof_kind": "native runtime",
+      "proof_scope": "Actual disabled macro value's external context action starts native learn without a parameter edit"
+    },
+    {
+      "id": "v3:1180:data-reset:175",
+      "source_line": 1180,
+      "event": "data-reset",
+      "reference_handler": "macro|{{ m.name",
+      "component": "ui/advanced-sampler/performance/MacroActions.slint",
+      "command": "macro.reset",
+      "test": "tests/cpp/AdvancedSamplerPagesBindingTest.cpp:127",
+      "evidence": "build/advanced-sampler-evidence/performance-finish/dandrum-pages-native.log",
+      "status": "verified",
+      "assertion": "Macro context reset reaches native default",
+      "proof_kind": "native component menu callback",
+      "proof_scope": "Macro context reset reaches native default"
+    },
+    {
+      "id": "v3:1180:on-change:109",
+      "source_line": 1180,
+      "event": "on-change",
+      "reference_handler": "m.set",
+      "component": "ui/advanced-sampler/performance/MacroGrid.slint",
+      "command": "parameter-gesture(macroID,phase,value)",
+      "test": "tests/cpp/AdvancedSamplerPerformanceAppTest.cpp:48",
+      "evidence": "build/advanced-sampler-evidence/functional-performance-app.log (40 whole-app checks)",
+      "status": "verified",
+      "assertion": "Actual drawer macro pointer drag changes its native value in one undo step",
+      "proof_kind": "native runtime",
+      "proof_scope": "Actual drawer macro pointer drag changes its native value in one undo step"
+    },
+    {
+      "id": "v3:1184:onDoubleClick:111",
+      "source_line": 1184,
+      "event": "onDoubleClick",
+      "reference_handler": "macroSplitReset",
+      "component": "ui/advanced-sampler/controls/ResizeHandle.slint; performance/PlayDrawer.slint",
+      "command": "restore automatic macro width",
+      "test": "tests/cpp/AdvancedSamplerPerformanceAppTest.cpp:130",
+      "evidence": "build/advanced-sampler-evidence/functional-performance-app.log (40 whole-app checks)",
+      "status": "verified",
+      "proof_scope": "Actual macro split double-click restores automatic width"
+    },
+    {
+      "id": "v3:1184:onPointerDown:110",
+      "source_line": 1184,
+      "event": "onPointerDown",
+      "reference_handler": "macroSplitDown",
+      "component": "ui/advanced-sampler/controls/ResizeHandle.slint; performance/PlayDrawer.slint",
+      "command": "macro-width presentation drag",
+      "test": "tests/cpp/AdvancedSamplerPerformanceAppTest.cpp:118",
+      "evidence": "build/advanced-sampler-evidence/functional-performance-app.log (40 whole-app checks)",
+      "status": "verified",
+      "assertion": "Actual macro split follows absolute pointer distance through relayout",
+      "proof_kind": "native runtime",
+      "proof_scope": "Actual macro split follows absolute pointer distance through relayout"
+    },
+    {
+      "id": "v3:1190:onPointerDown:112",
+      "source_line": 1190,
+      "event": "onPointerDown",
+      "reference_handler": "splitDown",
+      "component": "ui/advanced-sampler/controls/ResizeHandle.slint; performance/PlayDrawer.slint",
+      "command": "pad-width presentation drag",
+      "test": "tests/cpp/AdvancedSamplerPerformanceAppTest.cpp:120",
+      "evidence": "build/advanced-sampler-evidence/functional-performance-app.log (40 whole-app checks)",
+      "status": "verified",
+      "assertion": "Actual pad and keyboard split preserves the requested pointer distance",
+      "proof_kind": "native runtime",
+      "proof_scope": "Actual pad and keyboard split preserves the requested pointer distance"
+    },
+    {
+      "id": "v3:1204:onClick:113",
+      "source_line": 1204,
+      "event": "onClick",
+      "reference_handler": "x.select",
+      "component": "ui/advanced-sampler/pages/DiagnosticsPage.slint",
+      "command": [
+        "diagnostics.select <event-sequence>"
+      ],
+      "test": [
+        "tests/cpp/AdvancedSamplerUtilityPagesBindingTest.cpp:85",
+        "tests/cpp/AdvancedSamplerUtilityPagesBindingTest.cpp:86",
+        "tests/cpp/AdvancedSamplerUtilityPagesBindingTest.cpp:90"
+      ],
+      "evidence": [
+        "build/advanced-sampler-evidence/theme/final-owned-checkpoint/utility.log"
+      ],
+      "status": "verified",
+      "proof_scope": "Actual historical mapped event restores its own trace without replaying note after unmapped event explains silence."
+    },
+    {
+      "id": "v3:1239:on-change:114",
+      "source_line": 1239,
+      "event": "on-change",
+      "reference_handler": "setScope",
+      "component": null,
+      "command": null,
+      "test": null,
+      "evidence": null,
+      "status": "pending"
+    },
+    {
+      "id": "v3:1254:onPointerDown:115",
+      "source_line": 1254,
+      "event": "onPointerDown",
+      "reference_handler": "closeDlg",
+      "component": "ui/advanced-sampler/pages/VoicePage.slint::VoiceRenderDialog",
+      "command": [
+        "close → native cancellation + VoiceDialogState.mode=empty"
+      ],
+      "test": [
+        "tests/cpp/AdvancedSamplerVoiceBindingTest.cpp:346",
+        "tests/cpp/AdvancedSamplerVoiceBindingTest.cpp:348"
+      ],
+      "evidence": [
+        "build/advanced-sampler-evidence/theme/final-owned-checkpoint/voice.log"
+      ],
+      "status": "verified",
+      "proof_scope": "Actual outer scrim pointer dismisses modal while native mock render is running; backend job becomes idle and subsequent tick publishes no sources."
+    },
+    {
+      "id": "v3:1255:onPointerDown:116",
+      "source_line": 1255,
+      "event": "onPointerDown",
+      "reference_handler": "stopProp",
+      "component": "ui/advanced-sampler/pages/VoicePage.slint::VoiceRenderDialog",
+      "command": [
+        "inner pointer consumes event"
+      ],
+      "test": [
+        "tests/cpp/AdvancedSamplerVoiceBindingTest.cpp:334",
+        "tests/cpp/AdvancedSamplerVoiceBindingTest.cpp:339"
+      ],
+      "evidence": [
+        "build/advanced-sampler-evidence/theme/final-owned-checkpoint/voice.log"
+      ],
+      "status": "verified",
+      "proof_scope": "Actual native modal-header bounds anchor a pointer click in inner body; modal stays open rather than propagating to the closing scrim."
+    },
+    {
+      "id": "v3:1260:on-click:117",
+      "source_line": 1260,
+      "event": "on-click",
+      "reference_handler": "closeDlg",
+      "component": "ui/advanced-sampler/pages/VoicePage.slint::VoiceRenderDialog",
+      "command": [
+        "close → native cancellation + VoiceDialogState.mode=empty"
+      ],
+      "test": [
+        "tests/cpp/AdvancedSamplerVoiceBindingTest.cpp:346",
+        "tests/cpp/AdvancedSamplerVoiceBindingTest.cpp:348"
+      ],
+      "evidence": [
+        "build/advanced-sampler-evidence/theme/final-owned-checkpoint/voice.log"
+      ],
+      "status": "verified",
+      "proof_scope": "Actual Close X native action dismisses running mock render, cancels backend job, and prevents later source publication."
+    },
+    {
+      "id": "v3:1269:on-change:118",
+      "source_line": 1269,
+      "event": "on-change",
+      "reference_handler": "f.set",
+      "component": "ui/advanced-sampler/pages/VoicePage.slint::VoiceRenderDialog",
+      "command": [
+        "autosampler.configure <lo/hi/step/rr/tail>"
+      ],
+      "test": [
+        "tests/cpp/AdvancedSamplerVoiceBindingTest.cpp:170",
+        "tests/cpp/AdvancedSamplerVoiceBindingTest.cpp:172"
+      ],
+      "evidence": [
+        "build/advanced-sampler-evidence/theme/final-owned-checkpoint/voice.log"
+      ],
+      "status": "verified",
+      "proof_scope": "Actual five NumericFields lo40/hi52/step6/takes2/tail3 persist and reopen."
+    },
+    {
+      "id": "v3:1272:on-change:119",
+      "source_line": 1272,
+      "event": "on-change",
+      "reference_handler": "setDlgLayers",
+      "component": "ui/advanced-sampler/pages/VoicePage.slint::VoiceRenderDialog",
+      "command": [
+        "autosampler.configure layers"
+      ],
+      "test": [
+        "tests/cpp/AdvancedSamplerVoiceBindingTest.cpp:170",
+        "tests/cpp/AdvancedSamplerVoiceBindingTest.cpp:185"
+      ],
+      "evidence": [
+        "build/advanced-sampler-evidence/theme/final-owned-checkpoint/voice.log"
+      ],
+      "status": "verified",
+      "proof_scope": "Actual 3-layers strip persists layers3; result exact18 Sources+Zones includes source/note/layer/take/tail provenance."
+    },
+    {
+      "id": "v3:1281:on-change:120",
+      "source_line": 1281,
+      "event": "on-change",
+      "reference_handler": "setFreezeMode",
+      "component": "ui/advanced-sampler/pages/VoicePage.slint::VoiceRenderDialog",
+      "command": [
+        "freeze.configure mode src/chain"
+      ],
+      "test": [
+        "tests/cpp/AdvancedSamplerVoiceBindingTest.cpp:191",
+        "tests/cpp/AdvancedSamplerVoiceBindingTest.cpp:351",
+        "tests/cpp/AdvancedSamplerVoiceBindingTest.cpp:353"
+      ],
+      "evidence": [
+        "build/advanced-sampler-evidence/theme/final-owned-checkpoint/voice.log"
+      ],
+      "status": "verified",
+      "proof_scope": "Actual Source only and Source + voice + inserts strip choices persist native src/chain scope; distinct source-only precondition ensures Chain action changes the backend."
+    },
+    {
+      "id": "v3:1282:on-change:121",
+      "source_line": 1282,
+      "event": "on-change",
+      "reference_handler": "setFreezeTail",
+      "component": "ui/advanced-sampler/pages/VoicePage.slint::VoiceRenderDialog",
+      "command": [
+        "freeze.configure tail"
+      ],
+      "test": [
+        "tests/cpp/AdvancedSamplerVoiceBindingTest.cpp:191"
+      ],
+      "evidence": [
+        "build/advanced-sampler-evidence/theme/final-owned-checkpoint/voice.log"
+      ],
+      "status": "verified",
+      "proof_scope": "Actual Tail field persists4 seconds."
+    },
+    {
+      "id": "v3:1292:on-click:122",
+      "source_line": 1292,
+      "event": "on-click",
+      "reference_handler": "closeDlg",
+      "component": "ui/advanced-sampler/pages/VoicePage.slint::VoiceRenderDialog",
+      "command": [
+        "autosampler.cancel",
+        "VoiceDialogState.mode=empty"
+      ],
+      "test": [
+        "tests/cpp/AdvancedSamplerVoiceBindingTest.cpp:183",
+        "tests/cpp/AdvancedSamplerVoiceBindingTest.cpp:172"
+      ],
+      "evidence": [
+        "build/advanced-sampler-evidence/theme/final-owned-checkpoint/voice.log"
+      ],
+      "status": "verified",
+      "proof_scope": "Actual Cancel closes configuration and cancels running autosampler batch without changing source/zone inventories; reopening retains configuration."
+    },
+    {
+      "id": "v3:1293:on-click:123",
+      "source_line": 1293,
+      "event": "on-click",
+      "reference_handler": "doDlg",
+      "component": "ui/advanced-sampler/pages/VoicePage.slint::VoiceRenderDialog",
+      "command": [
+        "autosampler.start <selected-source>",
+        "freeze.start <selected-source>"
+      ],
+      "test": [
+        "tests/cpp/AdvancedSamplerVoiceBindingTest.cpp:175",
+        "tests/cpp/AdvancedSamplerVoiceBindingTest.cpp:177",
+        "tests/cpp/AdvancedSamplerVoiceBindingTest.cpp:181",
+        "tests/cpp/AdvancedSamplerVoiceBindingTest.cpp:185",
+        "tests/cpp/AdvancedSamplerVoiceBindingTest.cpp:188",
+        "tests/cpp/AdvancedSamplerVoiceBindingTest.cpp:201"
+      ],
+      "evidence": [
+        "build/advanced-sampler-evidence/theme/final-owned-checkpoint/voice.log"
+      ],
+      "status": "verified",
+      "proof_scope": "Actual Render/Freeze buttons start native generation jobs; progress, duplicate locking, output inventories, provenance and Undo verified in owned auto/freeze scope. All renders are explicitly silent mock; no audio capture claim."
+    },
+    {
+      "id": "v3:1299:onPointerDown:124",
+      "source_line": 1299,
+      "event": "onPointerDown",
+      "reference_handler": "closePb",
+      "component": "ui/advanced-sampler/AppWindow.slint,performance/PatchBrowser.slint",
+      "command": "close modal on outside scrim",
+      "test": "tests/cpp/AdvancedSamplerPatchBrowserAppTest.cpp:132",
+      "evidence": "build/advanced-sampler-evidence/functional-patchbrowser-app.log (45 whole-app checks)",
+      "status": "verified",
+      "proof_scope": "Actual outside scrim pointer closes patch browser"
+    },
+    {
+      "id": "v3:1300:onKeyDown:126",
+      "source_line": 1300,
+      "event": "onKeyDown",
+      "reference_handler": "pbKey",
+      "component": "ui/advanced-sampler/performance/PatchBrowser.slint",
+      "command": "Return load / Escape close",
+      "test": "tests/cpp/AdvancedSamplerPatchBrowserAppTest.cpp:114",
+      "evidence": "build/advanced-sampler-evidence/functional-patchbrowser-app.log (45 whole-app checks)",
+      "status": "verified",
+      "proof_scope": "Actual query Return loads its matching native preset"
+    },
+    {
+      "id": "v3:1300:onPointerDown:125",
+      "source_line": 1300,
+      "event": "onPointerDown",
+      "reference_handler": "pbStop",
+      "component": "ui/advanced-sampler/AppWindow.slint,performance/PatchBrowser.slint",
+      "command": "retain modal on inside body pointer",
+      "test": "tests/cpp/AdvancedSamplerPatchBrowserAppTest.cpp:134",
+      "evidence": "build/advanced-sampler-evidence/functional-patchbrowser-app.log (45 whole-app checks)",
+      "status": "verified",
+      "proof_scope": "Actual empty modal body pointer stays inside patch browser"
+    },
+    {
+      "id": "v3:1305:onChange:127",
+      "source_line": 1305,
+      "event": "onChange",
+      "reference_handler": "setPbQ",
+      "component": "ui/advanced-sampler/performance/PatchBrowser.slint",
+      "command": "PatchBrowserState.query native keyboard",
+      "test": "tests/cpp/AdvancedSamplerPatchBrowserAppTest.cpp:86",
+      "evidence": "build/advanced-sampler-evidence/functional-patchbrowser-app.log (45 whole-app checks)",
+      "status": "verified",
+      "proof_scope": "Modal native case-insensitive search filters actual preset rows"
+    },
+    {
+      "id": "v3:1308:on-click:128",
+      "source_line": 1308,
+      "event": "on-click",
+      "reference_handler": "closePb",
+      "component": "ui/advanced-sampler/performance/PatchBrowser.slint",
+      "command": "close modal",
+      "test": "tests/cpp/AdvancedSamplerPatchBrowserAppTest.cpp:128",
+      "evidence": "build/advanced-sampler-evidence/functional-patchbrowser-app.log (45 whole-app checks)",
+      "status": "verified",
+      "proof_scope": "Actual browser close button closes its modal"
+    },
+    {
+      "id": "v3:1313:on-click:129",
+      "source_line": 1313,
+      "event": "on-click",
+      "reference_handler": "c.go",
+      "component": "ui/advanced-sampler/performance/PatchBrowser.slint",
+      "command": "PatchBrowserState.category",
+      "test": "tests/cpp/AdvancedSamplerPatchBrowserAppTest.cpp:91",
+      "evidence": "build/advanced-sampler-evidence/functional-patchbrowser-app.log (45 whole-app checks)",
+      "status": "verified",
+      "proof_scope": "Native category pointer filters actual Keys rows"
+    },
+    {
+      "id": "v3:1321:onClick:130",
+      "source_line": 1321,
+      "event": "onClick",
+      "reference_handler": "p.pick",
+      "component": "ui/advanced-sampler/performance/PatchRow.slint",
+      "command": "PatchBrowserState.selected-id",
+      "test": "tests/cpp/AdvancedSamplerPatchBrowserAppTest.cpp:101",
+      "evidence": "build/advanced-sampler-evidence/functional-patchbrowser-app.log (45 whole-app checks)",
+      "status": "verified",
+      "proof_scope": "Modal row pointer selects without loading the instrument"
+    },
+    {
+      "id": "v3:1321:onDoubleClick:131",
+      "source_line": 1321,
+      "event": "onDoubleClick",
+      "reference_handler": "p.open",
+      "component": "ui/advanced-sampler/performance/PatchRow.slint",
+      "command": "patch.load",
+      "test": "tests/cpp/AdvancedSamplerPatchBrowserAppTest.cpp:110",
+      "evidence": "build/advanced-sampler-evidence/functional-patchbrowser-app.log (45 whole-app checks)",
+      "status": "verified",
+      "proof_scope": "Actual modal row double-click loads its own native preset"
+    },
+    {
+      "id": "v3:1322:onClick:132",
+      "source_line": 1322,
+      "event": "onClick",
+      "reference_handler": "p.toggleFav",
+      "component": "ui/advanced-sampler/performance/PatchRow.slint",
+      "command": "patch.favourite",
+      "test": "tests/cpp/AdvancedSamplerPatchBrowserAppTest.cpp:94",
+      "evidence": "build/advanced-sampler-evidence/functional-patchbrowser-app.log (45 whole-app checks)",
+      "status": "verified",
+      "proof_scope": "Modal favourite pointer changes its own native preset in one undo step"
+    },
+    {
+      "id": "v3:1338:on-click:133",
+      "source_line": 1338,
+      "event": "on-click",
+      "reference_handler": "pbImport",
+      "component": "ui/advanced-sampler/performance/PatchBrowser.slint,AppWindow.slint",
+      "command": "file-operation(patch.import,path,mode)",
+      "test": "tests/cpp/AdvancedSamplerPatchBrowserAppTest.cpp:121",
+      "evidence": "build/advanced-sampler-evidence/functional-patchbrowser-app.log (45 whole-app checks)",
+      "status": "verified",
+      "proof_scope": "Actual browser Import reaches the native file-operation boundary with its entered path"
+    },
+    {
+      "id": "v3:1339:on-click:134",
+      "source_line": 1339,
+      "event": "on-click",
+      "reference_handler": "pbExport",
+      "component": "ui/advanced-sampler/performance/PatchBrowser.slint,AppWindow.slint",
+      "command": "file-operation(patch.export,path,mode)",
+      "test": "tests/cpp/AdvancedSamplerPatchBrowserAppTest.cpp:124",
+      "evidence": "build/advanced-sampler-evidence/functional-patchbrowser-app.log (45 whole-app checks)",
+      "status": "verified",
+      "proof_scope": "Actual browser Export reaches the native file-operation boundary with its entered path"
+    },
+    {
+      "id": "v3:1340:on-click:135",
+      "source_line": 1340,
+      "event": "on-click",
+      "reference_handler": "pbCopy",
+      "component": "ui/advanced-sampler/performance/PatchBrowser.slint,AppWindow.slint",
+      "command": "patch.copy; clipboard-copy(definition)",
+      "test": "tests/cpp/AdvancedSamplerPatchBrowserAppTest.cpp:118",
+      "evidence": "build/advanced-sampler-evidence/functional-patchbrowser-app.log (45 whole-app checks)",
+      "status": "verified",
+      "proof_scope": "Actual Copy definition emits the complete native definition to the clipboard boundary"
+    },
+    {
+      "id": "v3:1342:on-click:136",
+      "source_line": 1342,
+      "event": "on-click",
+      "reference_handler": "closePb",
+      "component": "ui/advanced-sampler/performance/PatchBrowser.slint",
+      "command": "close modal",
+      "test": "tests/cpp/AdvancedSamplerPatchBrowserAppTest.cpp:126",
+      "evidence": "build/advanced-sampler-evidence/functional-patchbrowser-app.log (45 whole-app checks)",
+      "status": "verified",
+      "proof_scope": "Actual browser Cancel closes its modal"
+    },
+    {
+      "id": "v3:1343:on-click:137",
+      "source_line": 1343,
+      "event": "on-click",
+      "reference_handler": "pbLoad",
+      "component": "ui/advanced-sampler/performance/PatchBrowser.slint",
+      "command": "patch.load",
+      "test": "tests/cpp/AdvancedSamplerPatchBrowserAppTest.cpp:103",
+      "evidence": "build/advanced-sampler-evidence/functional-patchbrowser-app.log (45 whole-app checks)",
+      "status": "verified",
+      "proof_scope": "Actual modal Load replaces the native instrument and closes browser"
+    },
+    {
+      "id": "v3:1348:onContextMenu:139",
+      "source_line": 1348,
+      "event": "onContextMenu",
+      "reference_handler": "closeKCtx",
+      "component": null,
+      "command": null,
+      "test": null,
+      "evidence": null,
+      "status": "pending"
+    },
+    {
+      "id": "v3:1348:onPointerDown:138",
+      "source_line": 1348,
+      "event": "onPointerDown",
+      "reference_handler": "closeK",
+      "component": null,
+      "command": null,
+      "test": null,
+      "evidence": null,
+      "status": "pending"
+    },
+    {
+      "id": "v3:1351:on-close:176",
+      "source_line": 1351,
+      "event": "on-close",
+      "reference_handler": "closeK",
+      "component": null,
+      "command": null,
+      "test": null,
+      "evidence": null,
+      "status": "pending"
+    }
+  ],
+  "verification_checkpoint": {
+    "headless_groups": 36,
+    "passed": 36,
+    "native_captures": 85,
+    "production_hashes": "build/advanced-sampler-evidence/functional-production-sha.json",
+    "full_log": "build/advanced-sampler-evidence/functional-full-ctest-current.log",
+    "maintained_launcher": "build/advanced-sampler-evidence/maintained-launch/result.json",
+    "scope": "Consolidated proven controls only; remaining rows and unindexed gestures remain open"
+  }
+}

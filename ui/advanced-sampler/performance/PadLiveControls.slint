@@ -1,0 +1,23 @@
+import { Session, PadInfo } from "../Session.slint";
+import { ParamKnob } from "../controls/ParamKnob.slint";
+export component PadLiveControls inherits Rectangle {
+    in property <PadInfo> pad;
+    callback context-action(string, string);
+    private property <[string]> fields: ["pitch-ratio", "gain", "pan", "start", "variation"];
+    private property <[string]> labels: ["Pitch ratio", "Level", "Pan", "Start", "Variation"];
+    private property <[float]> values: [root.pad.pitch-ratio, root.pad.gain, root.pad.pan, root.pad.start, root.pad.variation];
+    private property <[float]> minima: [0.25, -60, -1, 0, 0];
+    private property <[float]> maxima: [4, 12, 1, 1, 1];
+    private property <[float]> defaults: [1, 0, 0, 0, 0];
+    private property <[string]> units: ["×", "dB", "pan", "", "%"];
+    for field[i] in root.fields : ParamKnob {
+        private property <float> display-scale: field == "variation" ? 100 : 1;
+        parameter-id: "pad:\{root.pad.note}:" + field;
+        visible: field != "variation" || root.pad.alternates > 1;
+        x: i * 48px; size: 36px; label: root.labels[i]; value: root.values[i] * self.display-scale; model-value: root.values[i] * self.display-scale; minimum: root.minima[i] * self.display-scale; maximum: root.maxima[i] * self.display-scale; default-value: root.defaults[i] * self.display-scale; unit: root.units[i]; step: field == "pitch-ratio" ? 0.001 : field == "gain" ? 0.1 : 0.01; bipolar: field == "pan";
+        gesture-began => { Session.parameter-gesture("pad:\{root.pad.note}:" + field, 0, self.value / self.display-scale); }
+        changed(v) => { Session.parameter-gesture("pad:\{root.pad.note}:" + field, 1, v / self.display-scale); }
+        gesture-ended => { Session.parameter-gesture("pad:\{root.pad.note}:" + field, 2, self.value / self.display-scale); }
+        context-action(a) => { root.context-action(a, "pad:\{root.pad.note}:" + field); }
+    }
+}

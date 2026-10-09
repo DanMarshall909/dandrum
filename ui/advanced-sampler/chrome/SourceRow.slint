@@ -1,0 +1,44 @@
+import { SourceInfo } from "../domain/types.slint";
+import { Session } from "../Session.slint";
+import { SamplerTheme } from "../theme/Theme.slint";
+import { AppIcon } from "../controls/AppIcon.slint";
+import { DragSource, DragState } from "DragState.slint";
+import { ActionButton } from "../controls/ActionButton.slint";
+import { VoiceDialogState } from "../pages/VoiceDialogState.slint";
+export component SourceRow inherits FocusScope {
+    in property <SourceInfo> source;
+    in property <bool> indented;
+    in property <bool> show-favourite;
+    callback show-browser();
+    callback file-request(string, string);
+    height: 26px;
+    accessible-role: button; accessible-label: "Preview " + root.source.name; focus-on-tab-navigation: true;
+    accessible-action-default => { root.preview(); }
+    focus-lost(reason) => { if reason == FocusReason.window-activation { Session.release-notes(); DragState.cancel(); } }
+    public function preview() { Session.command("asset.preview", root.source.id, "", 0); }
+    key-pressed(event) => { if event.text == " " || event.text == Key.Return { root.preview(); return accept; } return reject; }
+    Rectangle { x: 4px; width: parent.width - 8px; border-radius: 3px; background: root.source.selected ? SamplerTheme.accent-wash : drag.has-hover ? SamplerTheme.ink-3 : transparent;
+        AppIcon { x: root.indented ? 20px : 6px; y: 6px; name: root.source.state == "missing" ? "file-missing" : "waveform"; tint: root.source.state == "missing" || root.source.state == "unsupported" ? SamplerTheme.error : SamplerTheme.paper-3; }
+        Text { x: root.indented ? 42px : 27px; width: parent.width - self.x - (root.show-favourite ? 77px : 53px); text: root.source.name; font-family: SamplerTheme.font-ui; font-size: 13px; color: root.source.state == "missing" || root.source.state == "unsupported" ? SamplerTheme.error : SamplerTheme.paper-1; vertical-alignment: center; overflow: elide; }
+        Text { x: parent.width - (root.show-favourite ? 73px : 49px); width: 43px; text: root.source.state == "loading" ? round(root.source.progress * 100) + "%" : round(root.source.duration * 100) / 100 + " s"; font-family: SamplerTheme.font-value; font-size: 10px; color: SamplerTheme.paper-3; vertical-alignment: center; horizontal-alignment: right; }
+        if root.source.selected && Session.auditioning : Rectangle { x: root.indented ? 42px : 27px; y: parent.height - 3px; width: parent.width - self.x - 6px; height: 2px; background: SamplerTheme.ink-4;
+            Rectangle { width: parent.width * Session.playhead; background: SamplerTheme.paper-1; }
+        }
+    }
+    source-menu := PopupWindow { y: root.height; width: 210px; height: root.source.kind == "synth-patch" || root.source.kind == "synth" ? 160px : 134px;
+        Rectangle { background: SamplerTheme.surface-menu; border-width: 1px; border-color: SamplerTheme.line-3; border-radius: 3px;
+            VerticalLayout { padding: 2px; spacing: 0px;
+                if root.source.kind == "synth-patch" || root.source.kind == "synth" : ActionButton { text: "Sample this patch…"; label: "Sample source " + root.source.name; ghost: true;
+                    clicked => { if Session.command("asset.select", root.source.id, "", 0) { Session.command("page.select", "voice", "", 0); VoiceDialogState.mode = "auto"; } source-menu.close(); }
+                }
+                ActionButton { text: "Preview"; label: "Preview source " + root.source.name; ghost: true; enabled: root.source.state == "loaded" || root.source.state == "cached"; clicked => { source-menu.close(); root.preview(); } }
+                ActionButton { text: "Show in browser"; label: "Show " + root.source.name + " in browser"; ghost: true; clicked => { source-menu.close(); Session.command("asset.select", root.source.id, "", 0); root.show-browser(); } }
+                ActionButton { text: "Replace…"; label: "Replace source " + root.source.name; ghost: true; clicked => { source-menu.close(); if Session.command("asset.select", root.source.id, "", 0) { root.file-request("asset.replace", root.source.id); } } }
+                ActionButton { text: "Detect transients"; label: "Detect transients in " + root.source.name; ghost: true; enabled: root.source.state == "loaded" || root.source.state == "cached"; clicked => { source-menu.close(); Session.command("asset.select", root.source.id, "", 0); Session.command("page.select", "slices", "", 0); Session.command("analysis.start", "transients", "", 0); } }
+                ActionButton { text: "Remove from patch"; label: "Remove source " + root.source.name + " from patch"; ghost: true; clicked => { source-menu.close(); Session.command("asset.remove", root.source.id, "", 0); } }
+            }
+        }
+    }
+    drag := DragSource { kind: "source"; payload: root.source.id; activate => { root.focus(); root.preview(); } context-requested => { source-menu.show(); } }
+    if root.show-favourite : ActionButton { x: parent.width - 28px; y: 1px; width: 24px; height: 24px; compact: true; ghost: true; icon: "star"; label: (root.source.favourite ? "Unfavourite " : "Favourite ") + root.source.name; selected: root.source.favourite; clicked => { Session.command("asset.favourite", root.source.id, "", 0); } }
+}

@@ -1,0 +1,137 @@
+import { ScrollView } from "std-widgets.slint";
+import { Session, KeyZone } from "../Session.slint";
+import { SamplerTheme } from "../theme/Theme.slint";
+import { ActionButton } from "../controls/ActionButton.slint";
+import { NumericField } from "../controls/NumericField.slint";
+import { PageSection, SectionText } from "PageSection.slint";
+import { DragTarget } from "../chrome/DragState.slint";
+import { PlayKeys } from "../performance/PlayKeys.slint";
+export component MappingPage inherits FocusScope {
+ in property <bool> compact;
+ in property <bool> expanded;
+ callback context-action(string,string);
+ private property <float> zoom: 1;
+ private property <string> menu-zone;
+ private property <string> menu-group;
+ private property <int> menu-note;
+ private property <int> menu-velocity: 80;
+ private property <bool> menu-split;
+ private property <length> menu-x;
+ private property <length> menu-y;
+ private property <[string]> note-names: ["C","C♯","D","D♯","E","F","F♯","G","G♯","A","A♯","B"];
+ pure function note-name(n:int)->string { return root.note-names[mod(n,12)]+(floor(n/12) - 1); }
+ public function open-menu(id:string,group:string,note:int,velocity:int,can-split:bool,x:length,y:length){root.menu-zone=id;root.menu-group=group;root.menu-note=note;root.menu-velocity=velocity;root.menu-split=can-split;root.menu-x=x;root.menu-y=y;if id != "" { Session.command("zone.context-select",id,""+velocity,note);root.menu-zone=Session.selected-zone; } zone-menu.show();}
+ zone-menu := PopupWindow { x: root.menu-x; y: root.menu-y; width: 238px; height: root.menu-zone != "" ? 224px : 114px;
+  Rectangle { background: SamplerTheme.surface-menu; border-width: 1px; border-color: SamplerTheme.line-3;
+   VerticalLayout { padding: 3px; spacing: 0px;
+    if root.menu-zone != "" : ActionButton { text: "Insert zone at "+root.note-name(root.menu-note); ghost: true; enabled: root.menu-split; clicked => { Session.command("zone.insert",root.menu-zone,"",root.menu-note);zone-menu.close(); } }
+    if root.menu-zone == "" : ActionButton { text: "Add zone in empty keys"; ghost: true; clicked => { Session.command("zone.add-gap","",""+root.menu-velocity,root.menu-note);zone-menu.close(); } }
+    if root.menu-zone != "" : ActionButton { text: "Copy key range"; ghost: true; clicked => { Session.command("zone.copy-range",root.menu-zone,"",0);zone-menu.close(); } }
+    if root.menu-zone != "" : ActionButton { text: "Copy group"; ghost: true; clicked => { Session.command("zone.copy-group",root.menu-zone,"",0);zone-menu.close(); } }
+    ActionButton { text: "Paste at "+root.note-name(root.menu-note); ghost: true; enabled: Session.zone-clipboard-count > 0; clicked => { Session.command("zone.paste","","",root.menu-note);zone-menu.close(); } }
+    ActionButton { text: "Paste as layer"; ghost: true; enabled: Session.zone-clipboard-count > 0; clicked => { Session.command("zone.paste-layer","","",root.menu-note);zone-menu.close(); } }
+    if root.menu-zone != "" : ActionButton { text: "Delete zone"; ghost: true; clicked => { Session.command("zone.delete",root.menu-zone,"",0);zone-menu.close(); } }
+    if root.menu-zone != "" : ActionButton { text: "Delete, leave gap"; ghost: true; clicked => { Session.command("zone.delete-gap",root.menu-zone,"",0);zone-menu.close(); } }
+   }
+  }
+ }
+
+ private property <int> low-note: Session.mapping-low;
+ private property <int> note-count: max(1,Session.mapping-high - Session.mapping-low + 1);
+ private property <bool> free-edit;
+ private property <int> hover-note: -1;
+ private property <length> velocity-origin;
+ private property <float> velocity-initial;
+ private property <float> velocity-latest;
+ capture-key-pressed(e) => { root.free-edit = e.modifiers.shift || e.text == Key.Shift; return reject; }
+ capture-key-released(e) => { root.free-edit = e.modifiers.shift; return reject; }
+ key-pressed(e) => {
+  let modified=e.modifiers.control || e.modifiers.meta;
+  if modified && e.text.to-lowercase() == "c" { Session.command("zone.copy-range",Session.selected-zone,"",0);return accept; }
+  if modified && e.text.to-lowercase() == "v" { Session.command(e.modifiers.shift ? "zone.paste-layer" : "zone.paste","","",root.hover-note);return accept; }
+  if !modified && (e.text == Key.Delete || e.text == Key.Backspace) { Session.command(e.modifiers.shift ? "zone.delete-gap" : "zone.delete",Session.selected-zone,"",0);return accept; }
+  if e.text == Key.Escape { zone-menu.close(); Session.parameter-gesture("zone:"+Session.selected-zone+":move",3,0);return reject; }
+  return reject;
+ }
+
+
+ public function add-zone() { Session.command("zone.add",Session.selected-source,"New zone",60); }
+ public function map-roots() { Session.command("zone.map-root","","",0); }
+ public function copy-zone() { Session.command("zone.copy",Session.selected-zone,"",0); }
+ public function paste-layer() { Session.command("zone.paste-layer","","",72); }
+ ScrollView {
+  VerticalLayout { padding: 0px; spacing: 4px; alignment: start;
+   PageSection { title: "Mapping"; height: root.compact ? 285px : root.expanded ? 440px : 340px;
+    HorizontalLayout { x: 100px; y: 5px; width: parent.width - 112px; height: 24px; alignment: end; spacing: 4px;
+     add-zone := ActionButton { text: "+ Zone"; compact: true; clicked => { root.add-zone(); } }
+     ActionButton { text: "By root"; compact: true; clicked => { root.map-roots(); } }
+     ActionButton { text: "By velocity"; compact: true; clicked => { Session.command("zone.map-velocity","","",0); } }
+     ActionButton { text: "−"; label: "Zoom key map out"; compact: true; clicked => { root.zoom = max(1,root.zoom / 1.5); } }
+     ActionButton { text: "+"; label: "Zoom key map in"; compact: true; clicked => { root.zoom = min(8,root.zoom * 1.5); } }
+     ActionButton { text: "Fit"; compact: true; clicked => { root.zoom = 1; } }
+    }
+    plot := Flickable { interactive: false; x: 28px; y: 45px; width: parent.width - 40px; height: parent.height - 105px; content-width: self.width * root.zoom; content-height: self.height;
+     Rectangle { width: plot.content-width; height: plot.height; background: SamplerTheme.ink-0; border-color: SamplerTheme.line-2; border-width: 1px;
+      TouchArea { moved => { root.hover-note=(root.low-note+floor(self.mouse-x/self.width*root.note-count)).clamp(0,127); } pointer-event(e) => { if e.kind == PointerEventKind.down { root.focus(); if e.button == PointerEventButton.right { root.open-menu("","",(root.low-note+floor(self.mouse-x/self.width*root.note-count)).clamp(0,127),round(127 - self.mouse-y/self.height*126).clamp(1,127),false,self.absolute-position.x+self.mouse-x - root.absolute-position.x,self.absolute-position.y+self.mouse-y - root.absolute-position.y); } } } }
+
+      for i in root.note-count : Rectangle { x: i * parent.width / root.note-count; width: 1px; height: parent.height; background: mod(i,12) == 0 ? SamplerTheme.line-3 : SamplerTheme.line-1; }
+      for i in 5 : Rectangle { y: i * parent.height / 4; width: parent.width; height: 1px; background: SamplerTheme.line-2; }
+      for z in Session.zones : Rectangle {
+       x: (z.lo - root.low-note) / root.note-count * parent.width; y: (127 - z.vel-hi) / 127 * parent.height; width: (z.hi - z.lo+1) / root.note-count * parent.width; height: max(5px,(z.vel-hi - z.vel-lo+1) / 127 * parent.height);
+       background: z.id == Session.selected-zone ? SamplerTheme.accent-wash : SamplerTheme.ink-5; border-width: 1px; border-color: z.id == Session.selected-zone ? SamplerTheme.accent : SamplerTheme.line-3;
+       Text { x: 4px; y: 3px; width: parent.width - 8px; text: z.name; color: SamplerTheme.paper-2; font-family: SamplerTheme.font-ui; font-size: 10px; overflow: elide; }
+       DragTarget { width: parent.width; height: parent.height; accepted-kind: "source"; dropped(id) => { return Session.command("zone.assign",z.id,id,0); } }
+       drag := TouchArea { private property <length> origin-x; private property <float> origin-note; private property <float> latest; private property <bool> captured-free; moved => { if self.pressed { let next = self.origin-note + round((self.absolute-position.x+self.mouse-x - self.origin-x) / plot.content-width * root.note-count); self.latest=next; Session.parameter-gesture("zone:"+z.id+(self.captured-free ? ":free-move" : ":move"),1,next); } }
+        pointer-event(event) => { if event.kind == PointerEventKind.down && event.button == PointerEventButton.right { root.open-menu(z.id,"",(root.low-note+floor((self.absolute-position.x+self.mouse-x - plot.absolute-position.x - plot.viewport-x)/plot.content-width*root.note-count)).clamp(0,127),round(127 - (self.absolute-position.y+self.mouse-y - plot.absolute-position.y)/plot.height*126).clamp(1,127),z.hi > z.lo,self.absolute-position.x+self.mouse-x - root.absolute-position.x,self.absolute-position.y+self.mouse-y - root.absolute-position.y); } if event.kind == PointerEventKind.down && event.button == PointerEventButton.left { root.focus(); Session.command("zone.select",z.id,"",0); self.captured-free=root.free-edit; self.origin-x=self.absolute-position.x+self.mouse-x; self.origin-note=z.lo; self.latest=z.lo; Session.parameter-gesture("zone:"+z.id+(self.captured-free ? ":free-move" : ":move"),0,z.lo); } if event.kind == PointerEventKind.up { Session.parameter-gesture("zone:"+z.id+(self.captured-free ? ":free-move" : ":move"),2,self.latest); } if event.kind == PointerEventKind.cancel { Session.parameter-gesture("zone:"+z.id+(self.captured-free ? ":free-move" : ":move"),3,z.lo); } }
+       }
+       left := TouchArea { width: 5px; height: parent.height; mouse-cursor: ew-resize; private property <length> origin; private property <float> initial; private property <float> latest; private property <bool> captured-free;
+        pointer-event(e) => { if e.kind == PointerEventKind.down { root.focus(); Session.command("zone.select",z.id,"",0); self.captured-free=root.free-edit; self.origin=self.absolute-position.x+self.mouse-x; self.initial=z.lo; self.latest=z.lo; Session.parameter-gesture("zone:"+z.id+(self.captured-free ? ":free-lo" : ":lo"),0,z.lo); } if e.kind == PointerEventKind.up { Session.parameter-gesture("zone:"+z.id+(self.captured-free ? ":free-lo" : ":lo"),2,self.latest); } if e.kind == PointerEventKind.cancel { Session.parameter-gesture("zone:"+z.id+(self.captured-free ? ":free-lo" : ":lo"),3,z.lo); } }
+        moved => { if self.pressed { self.latest=self.initial+round((self.absolute-position.x+self.mouse-x - self.origin)/plot.content-width*root.note-count); Session.parameter-gesture("zone:"+z.id+(self.captured-free ? ":free-lo" : ":lo"),1,self.latest); } }
+       }
+       right := TouchArea { x: parent.width - 5px; width: 5px; height: parent.height; mouse-cursor: ew-resize; private property <length> origin; private property <float> initial; private property <float> latest; private property <bool> captured-free;
+        pointer-event(e) => { if e.kind == PointerEventKind.down { root.focus(); Session.command("zone.select",z.id,"",0); self.captured-free=root.free-edit; self.origin=self.absolute-position.x+self.mouse-x; self.initial=z.hi; self.latest=z.hi; Session.parameter-gesture("zone:"+z.id+(self.captured-free ? ":free-hi" : ":hi"),0,z.hi); } if e.kind == PointerEventKind.up { Session.parameter-gesture("zone:"+z.id+(self.captured-free ? ":free-hi" : ":hi"),2,self.latest); } if e.kind == PointerEventKind.cancel { Session.parameter-gesture("zone:"+z.id+(self.captured-free ? ":free-hi" : ":hi"),3,z.hi); } }
+        moved => { if self.pressed { self.latest=self.initial+round((self.absolute-position.x+self.mouse-x - self.origin)/plot.content-width*root.note-count); Session.parameter-gesture("zone:"+z.id+(self.captured-free ? ":free-hi" : ":hi"),1,self.latest); } }
+       }
+
+
+      }
+      // Handles sit above every zone so overlapping velocity layers cannot obscure them.
+      for z in Session.zones : Rectangle { x: (z.lo - root.low-note)/root.note-count*parent.width; width: (z.hi - z.lo+1)/root.note-count*parent.width; height: parent.height;
+       for edge in [{id:"vel-hi",label:"Velocity high",initial:z.vel-hi,top:true},{id:"vel-lo",label:"Velocity low",initial:z.vel-lo,top:false}] : TouchArea {
+        y: (127 - (edge.top ? z.vel-hi : z.vel-lo))/127*parent.height - 2.5px; height: 5px; width: parent.width; mouse-cursor: ns-resize; accessible-role: button; accessible-label: edge.label+" "+z.name;
+        private property <length> origin; private property <float> initial; private property <float> latest; private property <bool> captured-free;
+        pointer-event(e) => { if e.kind == PointerEventKind.down && e.button == PointerEventButton.left { root.focus(); Session.command("zone.select",z.id,"",0); root.velocity-origin=self.absolute-position.y+self.mouse-y; root.velocity-initial=edge.initial; root.velocity-latest=edge.initial; Session.parameter-gesture("zone:"+z.id+":"+edge.id,0,edge.initial); } if e.kind == PointerEventKind.up { Session.parameter-gesture("zone:"+z.id+":"+edge.id,2,root.velocity-latest); } if e.kind == PointerEventKind.cancel { Session.parameter-gesture("zone:"+z.id+":"+edge.id,3,edge.initial); } }
+        moved => { if self.pressed { root.velocity-latest=root.velocity-initial - round((self.absolute-position.y+self.mouse-y - root.velocity-origin)/plot.height*127); Session.parameter-gesture("zone:"+z.id+":"+edge.id,1,root.velocity-latest); } }
+       }
+      }
+     }
+    }
+    for v[i] in ["127","96","64","32","1"] : SectionText { x: 4px; y: 42px+i*(plot.height/4); width: 22px; height: 14px; text: v; font-family: SamplerTheme.font-value; font-size: 9px; }
+    PlayKeys { x: 28px; y: parent.height - 55px; width: parent.width - 40px; height: 43px; sounding-notes: Session.sounding-notes; mapped-low: Session.mapping-low; mapped-high: Session.mapping-high; source: "mapping"; generation: Session.current-patch-id; note-on(n,v,s) => { Session.note-on(n,v,s); } note-off(n,s) => { Session.note-off(n,s); } }
+   }
+   PageSection { title: "Selected zone"; secondary: true; height: root.compact ? 144px : 110px;
+    for z in Session.zones : HorizontalLayout { visible: z.id == Session.selected-zone; x: 12px; y: 43px; width: parent.width - 24px; height: 46px; spacing: 8px; alignment: start;
+     for f in [{id:"lo",label:"Low key",value:z.lo},{id:"hi",label:"High key",value:z.hi},{id:"root-note",label:"Root",value:z.root-note},{id:"vel-lo",label:"Velocity low",value:z.vel-lo},{id:"vel-hi",label:"Velocity high",value:z.vel-hi}] : NumericField { label: f.label; width: root.compact ? 75px : 90px; value: f.value; model-value: f.value; minimum: f.id == "vel-lo" || f.id == "vel-hi" ? 1 : 0; maximum: 127; step: 1; gesture-began => { Session.parameter-gesture("zone:"+z.id+":"+f.id,0,self.value); } changed(v) => { Session.parameter-gesture("zone:"+z.id+":"+f.id,1,v); } gesture-ended => { Session.parameter-gesture("zone:"+z.id+":"+f.id,2,self.value); } }
+    }
+   }
+   HorizontalLayout { height: 28px; alignment: start; spacing: 4px;
+    ActionButton { text: "Copy range"; clicked => { Session.command("zone.copy-range",Session.selected-zone,"",0); } }
+    ActionButton { text: "Paste layer"; clicked => { root.paste-layer(); } }
+    ActionButton { text: "Split"; clicked => { Session.command("zone.split",Session.selected-zone,"",60); } }
+    ActionButton { text: "Delete"; clicked => { Session.command("zone.delete",Session.selected-zone,"",0); } }
+    ActionButton { text: "Leave gap"; clicked => { Session.command("zone.delete-gap",Session.selected-zone,"",0); } }
+   }
+   PageSection { title: "Mapping inventory"; height: 48px + Session.zones.length*26px;
+    for zone[i] in Session.zones : ActionButton { x: 12px; y: 40px+i*26px; width: parent.width - 24px; compact: true; ghost: true; text: zone.name+" · "+root.note-name(zone.lo)+"–"+root.note-name(zone.hi)+" · vel "+zone.vel-lo+"–"+zone.vel-hi; label: "Select mapping "+zone.name; selected: zone.id == Session.selected-zone; clicked => { Session.command("zone.select",zone.id,"",0); } }
+   }
+   PageSection { title: "Articulation"; height: 126px;
+    HorizontalLayout { x: 12px; y: 40px; width: parent.width - 24px; height: 26px; spacing: 5px; alignment: start;
+     for a in [{id:"sus",label:"Sustain · C0"},{id:"stac",label:"Staccato · C♯0"},{id:"mut",label:"Muted · D0"}] : ActionButton { text: a.label; selected: Session.articulation == a.id; compact: true; clicked => { Session.command("articulation.select","",a.id,0); } }
+    }
+    ActionButton { x: 12px; y: 74px; text: "Release trigger"; selected: Session.release-trigger; clicked => { Session.command("articulation.release","","",Session.release-trigger ? 0 : 1); } }
+    ActionButton { x: 132px; y: 74px; text: "Pedal-aware release"; selected: Session.pedal-aware-release; clicked => { Session.command("articulation.pedal","","",Session.pedal-aware-release ? 0 : 1); } }
+   }
+   SectionText { text: "Edges push neighbouring zones. Hold Shift to leave neighbouring key ranges unchanged. Overlapping velocity layers crossfade."; wrap: word-wrap; height: 32px; }
+  }
+ }
+}

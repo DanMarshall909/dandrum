@@ -1,0 +1,21 @@
+export { Session } from "../../ui/advanced-sampler/Session.slint";
+export { ValueCodec, ParsedValue } from "../../ui/slint/controls/ValueCodec.slint";
+import { Session } from "../../ui/advanced-sampler/Session.slint";
+import { MappingPage } from "../../ui/advanced-sampler/pages/MappingPage.slint";
+import { LayersPage } from "../../ui/advanced-sampler/pages/LayersPage.slint";
+import { VoicePage } from "../../ui/advanced-sampler/pages/VoicePage.slint";
+import { ModulationPage } from "../../ui/advanced-sampler/pages/ModulationPage.slint";
+import { RoutingPage } from "../../ui/advanced-sampler/pages/RoutingPage.slint";
+import { EffectsPage } from "../../ui/advanced-sampler/pages/EffectsPage.slint";
+export component AdvancedSamplerDomainPages inherits Window {
+ width: 640px; height: 1200px;
+ in-out property <string> page: "mapping";
+ in-out property <string> last-context;
+ in-out property <string> last-target;
+ if root.page == "mapping" : MappingPage { }
+ if root.page == "layers" : LayersPage { }
+ if root.page == "voice" : VoicePage { }
+ if root.page == "mod" : ModulationPage { context-action(action,target) => { root.last-context=action; root.last-target=target; } }
+ if root.page == "routing" : RoutingPage { }
+ if root.page == "fx" : EffectsPage { }
+}

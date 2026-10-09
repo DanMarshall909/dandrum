@@ -1,0 +1,17 @@
+import { SamplerTheme } from "../theme/Theme.slint";
+export component ResizeHandle inherits TouchArea {
+    in property <bool> vertical;
+    private property <length> anchor;
+    private property <bool> dragging;
+    callback started(); callback moved-by(length); callback ended(); callback reset();
+    mouse-cursor: root.vertical ? ns-resize : ew-resize;
+    Rectangle { background: root.has-hover || root.dragging ? SamplerTheme.line-3.with-alpha(0.4) : transparent;
+        Rectangle { x: root.vertical ? 0px : (parent.width - 1px) / 2; y: root.vertical ? (parent.height - 1px) / 2 : 0px; width: root.vertical ? parent.width : 1px; height: root.vertical ? 1px : parent.height; background: SamplerTheme.line-2; }
+    }
+    pointer-event(event) => {
+        if event.kind == PointerEventKind.down && event.button == PointerEventButton.left { root.anchor = root.vertical ? self.absolute-position.y + self.mouse-y : self.absolute-position.x + self.mouse-x; root.dragging = true; root.started(); }
+        else if (event.kind == PointerEventKind.up || event.kind == PointerEventKind.cancel) && root.dragging { root.dragging = false; root.ended(); }
+    }
+    moved => { if root.dragging { root.moved-by((root.vertical ? self.absolute-position.y + self.mouse-y : self.absolute-position.x + self.mouse-x) - root.anchor); } }
+    double-clicked => { root.reset(); }
+}

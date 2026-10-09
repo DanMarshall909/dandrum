@@ -1,0 +1,32 @@
+import { EditorHeader } from "../../ui/advanced-sampler/chrome/EditorHeader.slint";
+import { PageRail } from "../../ui/advanced-sampler/chrome/PageRail.slint";
+import { InstrumentTree } from "../../ui/advanced-sampler/chrome/InstrumentTree.slint";
+import { Inspector } from "../../ui/advanced-sampler/chrome/Inspector.slint";
+import { Session } from "../../ui/advanced-sampler/Session.slint";
+export component AdvancedSamplerChromeTest inherits Window {
+    width: 1200px; height: 800px;
+    in-out property <string> last-action;
+    in-out property <string> last-page;
+    init => { Session.inspector-override-count = 1; }
+    header := EditorHeader {
+        x: 0px; y: 0px; width: parent.width; height: 45px; patch-name: "Expressive Kit";
+        can-undo: true; can-redo: false; voices: 3; voice-limit: 32;
+        command(action) => { root.last-action = action; }
+    }
+    rail := PageRail {
+        x: 4px; y: 49px; width: 68px; height: 373px; page: "sample";
+        selected(page) => { root.last-page = page; }
+    }
+    tree := InstrumentTree { x: 76px; y: 49px; width: 208px; height: 373px;
+        nodes: [{id: "instrument", name: "Expressive Kit", kind: "instrument", expanded: true, visible: true}, {id: "kick", name: "Kick", parent: "instrument", kind: "sound", depth: 1, selected: true, visible: true}];
+        sources: [{id: "kick-source", name: "Kick Close", state: "loaded", metadata: "48 kHz · mono"}];
+        command(action, target, text, value) => { root.last-action = action + ":" + target; }
+    }
+    inspector := Inspector { x: 924px; y: 49px; width: 272px; height: 373px;
+        title: "Kick"; kind: "Sound"; selected-id: "kick";
+        parameters: [{id: "level", label: "Level", unit: "dB", value: 0.8, default-value: 0.8, minimum: 0, maximum: 1, step: 0.01, available: true}];
+        command(action, target, text, value) => { root.last-action = action + ":" + target; }
+    }
+    action-report := Text { x: 300px; y: 200px; text: root.last-action; accessible-label: self.text; }
+    page-report := Text { x: 300px; y: 220px; text: root.last-page; accessible-label: self.text; }
+}

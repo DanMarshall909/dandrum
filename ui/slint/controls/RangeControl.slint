@@ -30,6 +30,7 @@ export component RangeControl inherits FocusScope {
     callback changed(float);
     callback gesture-began();
     callback gesture-ended();
+    callback gesture-cancelled();
     callback context-menu-requested();
     callback standard-menu-requested();
     callback edit-requested();
@@ -67,7 +68,13 @@ export component RangeControl inherits FocusScope {
         if root.gesture-active { root.gesture-active = false; root.gesture-ended(); }
     }
     public function cancel-gesture() {
-        if root.gesture-active { root.update-gesture(root.gesture-start); root.end-gesture(); }
+        if root.gesture-active {
+            // Native hosts can roll back their captured record before float restoration.
+            root.gesture-cancelled();
+            // Cancellation must also restore a range that has just become inert.
+            if abs(root.gesture-start - root.value) > 0.000001 { root.value = root.gesture-start; root.changed(root.value); }
+            root.end-gesture();
+        }
     }
     public function set-value(v: float) {
         if root.interactive && abs(root.limited(v) - root.value) > 0.000001 {
@@ -80,7 +87,17 @@ export component RangeControl inherits FocusScope {
     }
     public function nudge(direction: float, fine: bool) { root.set-value(root.value + direction * (fine ? root.fine-keyboard-step : root.keyboard-step)); }
     public function wheel(direction: float, fine: bool) { root.set-value(root.value + direction * (fine ? root.fine-wheel-step : root.wheel-step)); }
-    public function reset-value() { root.set-value(root.default-value); }
+    public function reset-value() {
+        // The advertised default may lie between the user-editing step positions.
+        let next = root.default-value.clamp(root.minimum, max(root.minimum, root.maximum));
+        if root.interactive && abs(next - root.value) > 0.000001 {
+            let already-active = root.gesture-active;
+            if !already-active { root.begin-gesture(); }
+            root.value = next; root.changed(next);
+            if !already-active { root.end-gesture(); }
+            root.nudged = true; nudge-timer.restart();
+        }
+    }
     public function host-write(v: float) {
         root.value = v.clamp(root.minimum, max(root.minimum, root.maximum));
         root.host-recent = true; host-timer.restart();
@@ -112,7 +129,7 @@ export component RangeControl inherits FocusScope {
         return accept;
     }
     focus-lost(reason) => { root.end-gesture(); }
-    changed interactive => { if !root.interactive { root.end-gesture(); root.cancel-edit(); } }
+    changed interactive => { if !root.interactive { root.cancel-gesture(); root.cancel-edit(); } }
     host-timer := Timer { interval: 400ms; running: false; triggered => { self.stop(); root.host-recent = false; } }
     nudge-timer := Timer { interval: 600ms; running: false; triggered => { self.stop(); root.nudged = false; } }
     @children

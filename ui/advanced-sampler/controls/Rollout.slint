@@ -1,0 +1,15 @@
+import { SamplerTheme } from "../theme/Theme.slint";
+import { ActionButton } from "ActionButton.slint";
+export component Rollout inherits Rectangle {
+    in property <string> title;
+    in property <string> summary;
+    in-out property <bool> open;
+    in property <length> body-height: 80px;
+    height: 24px + (root.open ? root.body-height : 0px);
+    public function toggle() { root.open = !root.open; }
+    ActionButton { width: parent.width; height: 24px; text: (root.open ? "⌄ " : "› ") + root.title; label: root.title + (root.open ? " expanded" : " collapsed"); ghost: true;
+        clicked => { root.toggle(); }
+    }
+    if !root.open : Text { x: parent.width * 0.52; width: parent.width * 0.48 - 8px; height: 24px; text: root.summary; font-family: SamplerTheme.font-value; font-size: 10px; color: SamplerTheme.paper-3; vertical-alignment: center; horizontal-alignment: right; overflow: elide; }
+    Rectangle { y: 24px; visible: root.open; height: root.open ? root.body-height : 0px; clip: true; @children }
+}

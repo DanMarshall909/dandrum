@@ -1,0 +1,12 @@
+import { EditorFrame } from "../../ui/advanced-sampler/chrome/EditorFrame.slint";
+export { SamplerTheme } from "../../ui/advanced-sampler/theme/Theme.slint";
+export { Session } from "../../ui/advanced-sampler/Session.slint";
+export { PerformanceState } from "../../ui/advanced-sampler/performance/PerformanceState.slint";
+export component AdvancedSamplerSceneTest inherits Window {
+    width: 1200px; height: 800px;
+    in-out property <bool> perform;
+    in-out property <int> size-mode: 1;
+    frame := EditorFrame { x: 0px; y: 0px; width: parent.width; height: parent.height; perform: root.perform; size-mode: root.size-mode;
+        Text { x: 12px; y: 12px; text: "Headless frame geometry fixture"; }
+    }
+}

@@ -1,0 +1,52 @@
+import { SamplerTheme } from "../theme/Theme.slint";
+// Exact v3 guide SVG geometry. Application aliases resolve explicitly below.
+export component AppIcon inherits Image {
+    in property <string> name;
+    in property <color> tint: SamplerTheme.paper-3;
+    in property <length> size: 14px;
+    private property <string> resolved-name: root.name == "grid" ? "tap" : root.name == "sliders" ? "settings" : root.name == "waveform" ? "one-shot" : root.name == "scissors" ? "slice" : root.name == "route" ? "pan" : root.name == "list" ? "rows-more" : root.name == "edit" ? "settings" : root.name;
+    width: root.size; height: root.size; image-fit: contain; colorize: root.tint;
+    source:
+            root.resolved-name == "reload" ? @image-url("assets/reload.svg") :
+            root.resolved-name == "warning" ? @image-url("assets/warning.svg") :
+            root.resolved-name == "error" ? @image-url("assets/error.svg") :
+            root.resolved-name == "ok" ? @image-url("assets/ok.svg") :
+            root.resolved-name == "info" ? @image-url("assets/info.svg") :
+            root.resolved-name == "lock" ? @image-url("assets/lock.svg") :
+            root.resolved-name == "chevron-down" ? @image-url("assets/chevron-down.svg") :
+            root.resolved-name == "chevron-right" ? @image-url("assets/chevron-right.svg") :
+            root.resolved-name == "chevron-left" ? @image-url("assets/chevron-left.svg") :
+            root.resolved-name == "close" ? @image-url("assets/close.svg") :
+            root.resolved-name == "plus" ? @image-url("assets/plus.svg") :
+            root.resolved-name == "minus" ? @image-url("assets/minus.svg") :
+            root.resolved-name == "more" ? @image-url("assets/more.svg") :
+            root.resolved-name == "modulate" ? @image-url("assets/modulate.svg") :
+            root.resolved-name == "host" ? @image-url("assets/host.svg") :
+            root.resolved-name == "choke" ? @image-url("assets/choke.svg") :
+            root.resolved-name == "alternate" ? @image-url("assets/alternate.svg") :
+            root.resolved-name == "layers" ? @image-url("assets/layers.svg") :
+            root.resolved-name == "reverse" ? @image-url("assets/reverse.svg") :
+            root.resolved-name == "loop" ? @image-url("assets/loop.svg") :
+            root.resolved-name == "one-shot" ? @image-url("assets/one-shot.svg") :
+            root.resolved-name == "gate" ? @image-url("assets/gate.svg") :
+            root.resolved-name == "slice" ? @image-url("assets/slice.svg") :
+            root.resolved-name == "keyboard" ? @image-url("assets/keyboard.svg") :
+            root.resolved-name == "tap" ? @image-url("assets/tap.svg") :
+            root.resolved-name == "pc-keys" ? @image-url("assets/pc-keys.svg") :
+            root.resolved-name == "rows-more" ? @image-url("assets/rows-more.svg") :
+            root.resolved-name == "rows-less" ? @image-url("assets/rows-less.svg") :
+            root.resolved-name == "search" ? @image-url("assets/search.svg") :
+            root.resolved-name == "star" ? @image-url("assets/star.svg") :
+            root.resolved-name == "import" ? @image-url("assets/import.svg") :
+            root.resolved-name == "export" ? @image-url("assets/export.svg") :
+            root.resolved-name == "folder" ? @image-url("assets/folder.svg") :
+            root.resolved-name == "file-missing" ? @image-url("assets/file-missing.svg") :
+            root.resolved-name == "reset" ? @image-url("assets/reset.svg") :
+            root.resolved-name == "midi" ? @image-url("assets/midi.svg") :
+            root.resolved-name == "pan" ? @image-url("assets/pan.svg") :
+            root.resolved-name == "pitch" ? @image-url("assets/pitch.svg") :
+            root.resolved-name == "level" ? @image-url("assets/level.svg") :
+            root.resolved-name == "variation" ? @image-url("assets/variation.svg") :
+            root.resolved-name == "settings" ? @image-url("assets/settings.svg") :
+            @image-url("assets/info.svg");
+}

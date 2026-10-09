@@ -1,0 +1,20 @@
+import { WaveView, WaveCoordinates } from "../../ui/advanced-sampler/pages/WaveView.slint";
+export component AdvancedSamplerWaveTest inherits Window {
+    width: 620px; height: 260px;
+    in-out property <int> beginnings;
+    in-out property <int> endings;
+    in-out property <string> last-id;
+    in-out property <float> last-value;
+    in-out property <float> updated-value;
+    in-out property <string> report;
+    public function verify() {
+        root.report = WaveCoordinates.normalized(-5px, 100px) == 0 && WaveCoordinates.normalized(150px, 100px) == 1 && WaveCoordinates.normalized(5px, 0px) == 0 && WaveCoordinates.normalized(25px, 100px) == 0.25 ? "PASS: 4 source coordinate contracts" : "FAIL: source coordinates";
+    }
+    wave := WaveView { x: 10px; y: 10px; width: 600px; height: 200px; state: "loaded"; region-start: 0.2; region-end: 0.8;
+        peaks: [{minimum: -0.4, maximum: 0.5}, {minimum: -0.8, maximum: 0.7}, {minimum: -0.1, maximum: 0.2}];
+        gesture(id,phase,v) => { root.last-id = id; root.last-value = v; if phase == 1 { root.updated-value = v; } if phase == 0 { root.beginnings += 1; } if phase == 2 || phase == 3 { root.endings += 1; } }
+    }
+    Text { y: 220px; text: root.report; accessible-label: self.text; }
+    run := TouchArea { x: 0px; y: 220px; width: 200px; height: 30px; clicked => { root.verify(); } accessible-role: button; accessible-label: "Run wave contracts"; }
+    events := Text { x: 300px; y: 220px; text: root.last-id + ":" + root.updated-value + ":" + root.beginnings + ":" + root.endings; accessible-label: self.text; }
+}
