@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="_ds/dandrum-design-system-3c2eabed-50f8-48be-a226-2fe7d8a388d3/styles.css">
+  <script src="_ds/dandrum-design-system-3c2eabed-50f8-48be-a226-2fe7d8a388d3/_ds_bundle.js"></script>
+</helmet>
+<div style="width:100%;height:100%;min-height:0;display:flex;flex-direction:column;gap:2px">
+  <div style="flex:1;min-height:0;overflow-y:auto;overflow-x:hidden;scrollbar-width:thin;scrollbar-color:var(--dd-ink-5) transparent;display:flex;flex-direction:column-reverse">
+    <div style="flex:none;display:grid;grid-template-columns:repeat({{ m.cols }},{{ m.size }}px);gap:4px;justify-content:center">
+      <sc-for list="{{ m.list }}" as="p" hint-placeholder-count="8">
+        <x-import component-from-global-scope="DandrumDesignSystem_3c2eab.PadCell" note="{{ p.note }}" name="{{ p.name }}" mapped="{{ p.mapped }}" selected="{{ p.sel }}" level="{{ p.level }}" velocity="{{ p.vel }}" alternates="{{ p.alts }}" active-alternate="{{ p.altI }}" layers="{{ p.layers }}" choke-group="{{ p.choke }}" choked="{{ p.choked }}" size="{{ m.size }}" compact="{{ m.compact }}" on-trigger="{{ p.trig }}" on-select="{{ p.pick }}" hint-size="56px,56px"></x-import>
+      </sc-for>
+    </div>
+  </div>
+  <div style="flex:none;display:flex;align-items:center;justify-content:flex-end;gap:2px;height:16px">
+    <x-import component-from-global-scope="DandrumDesignSystem_3c2eab.IconButton" icon="minus" label="Smaller pads" size="sm" variant="ghost" on-click="{{ m.zoomOut }}" hint-size="20px,16px" style="height:16px;width:20px"></x-import>
+    <span role="button" tabindex="0" title="{{ m.fitTitle }}" onClick="{{ m.fit }}" style="min-width:36px;text-align:center;font:500 11px var(--font-value);color:var(--dd-paper-3);cursor:pointer">{{ m.label }}</span>
+    <x-import component-from-global-scope="DandrumDesignSystem_3c2eab.IconButton" icon="plus" label="Larger pads" size="sm" variant="ghost" on-click="{{ m.zoomIn }}" hint-size="20px,16px" style="height:16px;width:20px"></x-import>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;m&quot;: {&quot;editor&quot;: null, &quot;tsType&quot;: &quot;object&quot;}}"></script>
+</body>
+</html>

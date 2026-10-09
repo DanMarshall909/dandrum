@@ -1,0 +1,16 @@
+:root {
+  --space-1: 2px;
+  --space-2: 4px;
+  --space-3: 6px;
+  --space-4: 8px;
+  --space-5: 12px;
+  --space-6: 16px;
+  --space-7: 24px;
+  --space-8: 32px;
+
+  --gap-control: var(--space-4);     /* between controls in a group */
+  --gap-group: var(--space-6);       /* between control groups in a panel */
+  --gap-panel: var(--space-2);       /* between adjacent panels (seams) */
+  --pad-panel: var(--space-5);       /* panel inner padding */
+  --pad-panel-compact: var(--space-4);
+}

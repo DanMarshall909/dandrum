@@ -1,0 +1,83 @@
+{
+  "secondary": {
+    "editor": "color",
+    "default": "#8C8F95",
+    "tsType": "string",
+    "options": [
+      "#8C8F95",
+      "#A07A58",
+      "#7A5C45",
+      "#B5653F",
+      "#8E8A5A",
+      "#6F7F8C",
+      "#8A6A86",
+      "#5F8072",
+      "#9A8F7E"
+    ]
+  },
+  "accent": {
+    "editor": "color",
+    "default": "#E8C47A",
+    "tsType": "string",
+    "section": "Palette",
+    "options": [
+      "#E8C47A",
+      "#E08A4E",
+      "#E0574E",
+      "#D8B24A",
+      "#5BB38A",
+      "#5B9DFF",
+      "#C77DFF"
+    ]
+  },
+  "surface": {
+    "editor": "enum",
+    "default": "aluminium",
+    "tsType": "string",
+    "section": "Palette",
+    "options": [
+      "aluminium",
+      "brushed",
+      "ember",
+      "graphite",
+      "midnight",
+      "forest",
+      "camo",
+      "paper"
+    ]
+  },
+  "modPalette": {
+    "editor": "enum",
+    "default": "standard",
+    "tsType": "string",
+    "section": "Palette",
+    "options": [
+      "standard",
+      "warm",
+      "cool",
+      "mono"
+    ]
+  },
+  "hostColor": {
+    "editor": "color",
+    "default": "#5B9DFF",
+    "tsType": "string",
+    "section": "Palette",
+    "options": [
+      "#5B9DFF",
+      "#4FD1C5",
+      "#B58CFF",
+      "#FFFFFF"
+    ]
+  },
+  "finish": {
+    "editor": "enum",
+    "default": "soft",
+    "tsType": "string",
+    "section": "Palette",
+    "options": [
+      "soft",
+      "flat"
+    ]
+  }
+}

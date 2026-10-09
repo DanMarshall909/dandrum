@@ -1,0 +1,42 @@
+:root {
+  --knob-lg: 64px;   /* hero live controls */
+  --knob-md: 48px;   /* standard */
+  --knob-sm: 36px;   /* compact layout */
+  --knob-min: 28px;  /* never smaller */
+
+  --slider-h-height: 24px;
+  --slider-h-width: 160px;
+  --slider-v-width: 24px;
+  --slider-v-height: 120px;
+  --slider-thumb: 12px;
+
+  --button-height: 28px;
+  --button-height-sm: 24px;
+  --icon-button: 28px;
+  --icon-button-sm: 24px;
+  --icon-size: 16px;
+  --icon-size-sm: 14px;
+
+  --field-height: 24px;
+  --field-width: 72px;
+  --tab-height: 32px;
+  --tab-height-sm: 26px;
+  --segment-height: 24px;
+  --toggle-width: 32px;
+  --toggle-height: 18px;
+  --row-height: 26px;
+  --row-height-sm: 22px;
+  --menu-item-height: 26px;
+  --menu-width: 240px;
+
+  --pad-size: 76px;
+  --pad-size-sm: 52px;
+  --pad-min: 44px;
+  --pad-gap: 6px;
+
+  --meter-width: 6px;
+  --meter-height: 96px;
+  --header-height: 44px;
+  --statusbar-height: 26px;
+  --hit-min: 24px;   /* minimum hit area for any interactive element */
+}

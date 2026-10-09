@@ -1,0 +1,13 @@
+:root { color-scheme: dark; }
+body { background: var(--surface-window); color: var(--text-primary); font-family: var(--font-ui); font-size: var(--type-body); }
+a { color: var(--dd-mod-a); text-decoration: none; }
+a:hover { color: var(--text-primary); text-decoration: underline; }
+
+/* Minimal scrollbars: a hairline track with a small graphite knob. JUCE: dd::LookAndFeel::drawScrollbar, thickness 6, track 1px Line 2, thumb 4px Ink 6 → Paper 3 on hover. */
+* { scrollbar-width: thin; scrollbar-color: var(--dd-ink-6) transparent; }
+*::-webkit-scrollbar { width: 6px; height: 6px; }
+*::-webkit-scrollbar-track { background: linear-gradient(to right, transparent 2.5px, var(--dd-line-2) 2.5px, var(--dd-line-2) 3.5px, transparent 3.5px); }
+*::-webkit-scrollbar-track:horizontal { background: linear-gradient(to bottom, transparent 2.5px, var(--dd-line-2) 2.5px, var(--dd-line-2) 3.5px, transparent 3.5px); }
+*::-webkit-scrollbar-thumb { background: var(--dd-ink-6); border-radius: 3px; border: 1px solid transparent; background-clip: padding-box; min-height: 24px; }
+*::-webkit-scrollbar-thumb:hover { background: var(--dd-paper-3); background-clip: padding-box; }
+*::-webkit-scrollbar-corner, *::-webkit-scrollbar-button { display: none; background: transparent; }

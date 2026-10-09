@@ -1,0 +1,24 @@
+:root {
+  --font-ui: "Barlow Semi Condensed", "Barlow", "Arial Narrow", sans-serif;
+  --font-display: "Barlow", "Barlow Semi Condensed", sans-serif;
+  --font-value: "JetBrains Mono", ui-monospace, "Consolas", monospace;
+
+  /* Sizes are logical px at 100% scale. JUCE: Font(FontOptions(size)) uses the same numbers. */
+  --type-micro: 11px;     /* pad note labels, units, badge text — absolute minimum */
+  --type-label: 12px;     /* parameter labels (caps) */
+  --type-body: 13px;      /* rows, menu items, status text */
+  --type-value: 13px;     /* live values (mono, tabular) */
+  --type-value-lg: 15px;  /* hero values under 64px knobs */
+  --type-heading: 13px;   /* section headings (caps) */
+  --type-title: 18px;     /* patch name */
+  --type-brand: 20px;     /* product wordmark */
+
+  --weight-regular: 500;
+  --weight-medium: 600;
+  --weight-bold: 700;
+
+  --tracking-caps: 0.06em;
+  --tracking-heading: 0.1em;
+  --leading-tight: 1.15;
+  --leading-body: 1.35;
+}

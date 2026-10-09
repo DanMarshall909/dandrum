@@ -15,6 +15,8 @@ tooling is retained as supplied and was not executed during import.
 
 ## Start here
 
+- [Updated advanced sampler guide and v3 visual reference](advanced-sampler/README.md)
+
 - [Soft Precision sampler image and design direction](references/soft-precision.md)
 - [Brand, interaction and component overview](reference/readme.md)
 - [JUCE implementation guide](reference/handoff/juce-implementation.md)
