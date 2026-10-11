@@ -48,6 +48,40 @@ int render_materials(const std::filesystem::path& evidence) {
                 const int yy = std::clamp(int(std::lround(y)), 0, int(image->height()) - 1);
                 return image->begin()[yy * image->width() + xx];
             };
+            if (phase >= 18) {
+                const bool unsupported = phase == 18;
+                const auto frame = actual("EditorFrame");
+                const auto header = actual("EditorHeader");
+                const auto origin = frame.absolute_position();
+                const auto extent = frame.size();
+                const auto bannerY = header.absolute_position().y + header.size().height + 4;
+                const auto palette = resolve_theme(settings);
+                const auto matches = [&](auto color, Role role) {
+                    const auto expected = palette[role].rgb;
+                    return std::abs(int(color.r) - int((expected >> 16) & 255)) <= 2
+                        && std::abs(int(color.g) - int((expected >> 8) & 255)) <= 2
+                        && std::abs(int(color.b) - int(expected & 255)) <= 2;
+                };
+                require(session.get_asset_state() == (unsupported ? "unsupported" : "missing"),
+                        "Banner pixel proof uses the selected native asset state");
+                require(matches(pixel(origin.x + extent.width / 2, bannerY), unsupported ? Role::Warn : Role::Error),
+                        unsupported ? "Unsupported-file banner uses the guide's amber warning border"
+                                    : "Missing-file banner retains the guide's red error border");
+                require(matches(pixel(origin.x + extent.width - 14, bannerY + 10), unsupported ? Role::WarnWash : Role::ErrorWash),
+                        unsupported ? "Unsupported-file banner uses the guide's warning wash"
+                                    : "Missing-file banner retains the guide's error wash");
+                if (unsupported) {
+                    const auto source = binding->model()->find("source", session.get_selected_source().data());
+                    require(source && source->text("state") == "cached" && session.get_waveform()->row_count() == 600,
+                            "Amber rejected-import feedback preserves the cached source and its signed waveform");
+                }
+                std::ofstream output(evidence / (unsupported ? "unsupported-banner.pam" : "missing-banner.pam"), std::ios::binary);
+                output << "P7\nWIDTH " << image->width() << "\nHEIGHT " << image->height() << "\nDEPTH 4\nMAXVAL 255\nTUPLTYPE RGB_ALPHA\nENDHDR\n";
+                output.write(reinterpret_cast<const char*>(image->begin()), image->width() * image->height() * 4);
+                if (++phase == 20) { timer.stop(); slint::quit_event_loop(); }
+                else require(session.invoke_command("state.select", "missing", "", 0), "Open actual missing-file error");
+                return;
+            }
             if (phase>=16) {
                 const auto targets=slint::testing::ElementHandle::find_by_accessible_label(window,"Browse samples");
                 require(!targets.empty(), "Empty invitation exposes its actual primary browse action");
@@ -57,7 +91,10 @@ int render_materials(const std::filesystem::path& evidence) {
                                   : std::abs(int(near.r)-int(far.r))<=2 && std::abs(int(near.g)-int(far.g))<=2,
                         phase==16 ? "Soft primary invitation paints the guide's accent glow around its actual action"
                                   : "Flat primary invitation removes the Soft accent glow");
-                if (++phase==18) {timer.stop();slint::quit_event_loop();}
+                if (++phase==18) {
+                    settings=ThemeSettings{};apply_theme(window->global<SamplerTheme>(),resolve_theme(settings));
+                    require(session.invoke_command("state.select", "unsupported", "", 0), "Open actual unsupported-file warning");
+                }
                 else {settings.finish=Finish::Flat;apply_theme(window->global<SamplerTheme>(),resolve_theme(settings));}
                 return;
             }
@@ -132,7 +169,7 @@ int render_materials(const std::filesystem::path& evidence) {
     });
     window->window().set_size(slint::LogicalSize{{1200,800}}); window->run();
     if (!failure.empty()) throw std::runtime_error(failure);
-    std::cout << "PASS: " << checks << " actual composed material pixel checks across16 finishes\n";
+    std::cout << "PASS: " << checks << " actual composed material and asset-feedback pixel checks across16 finishes\n";
     return 0;
 }
 }

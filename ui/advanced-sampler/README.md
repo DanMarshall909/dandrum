@@ -40,7 +40,7 @@ cmake --build build/advanced-sampler
 ctest --test-dir build/advanced-sampler --output-on-failure
 ```
 
-Set native rendering density when launching, for example `SLINT_SCALE_FACTOR=1.25 ./demo sampler-slint`. This retains the selected logical editor size and uses 125% device scaling.
+Keep `SLINT_SCALE_FACTOR` unset during configuration and compilation: Slint can bake that value into generated code. Set native rendering density on the compiled executable, for example `SLINT_SCALE_FACTOR=1.25 ./build/advanced-sampler/advanced-sampler/Release/dandrum-advanced-sampler`. This retains the selected logical editor size and uses 125% device scaling.
 
 The direct executable accepts `--size min|default|expanded` and `--state STATE` for operational design fixtures. These fixtures use the same native model and controls. Reference comparisons and the remaining acceptance audit are tracked in [OpenSpec](../../openspec/changes/add-advanced-sampler-slint/tasks.md); compilation or component screenshots alone do not complete that audit.
 

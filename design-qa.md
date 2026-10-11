@@ -1,12 +1,13 @@
 # Advanced sampler visual verification
 
-final result: blocked
+final result: passed
 
-This progress checkpoint contains the Slint/React layout, state and theme
-refinements across the 16 audited groups. The Snare output-caption regression
-now passes. Unsupported-file feedback still needs amber warning styling, and
-exact publication verification is running. The wider functional audit and real
-audio integration remain incomplete.
+The 16 groups from the original Slint/React visual audit have been corrected
+and rechecked. All 43 visual-publication headless checks pass, and the final
+matrix contains 88 reviewed pairs with matching resolution and render density.
+No actionable P0/P1/P2 finding remains in these 16 groups. Font rasterization
+and minor optical icon differences remain P3 polish. This result covers visual
+fidelity; the broader audit retains 28 pending controls and real audio integration.
 
 ## Comparison evidence
 
@@ -14,16 +15,19 @@ Source visual truth: [Advanced Sampler v3](docs/design-system/advanced-sampler/r
 SHA-256 a72240e95d4c944aac66709c824fcc2b51f7d9cbe8d1da250d6f6c596cd89119.
 Source HTML, supplied fonts and original reference screenshots are unchanged.
 
-Generated evidence is retained locally under
-build/advanced-sampler-evidence/fidelity-fixes-cycle-4/: index.html,
-comparison-manifest.json, root-review.json, pixel-metrics.json, pairs/,
-react/ and slint/, plus supplemental scale folders. It is outside Git.
+Final evidence is retained locally under
+build/advanced-sampler-evidence/fidelity-fixes-cycle-6/: index.html, report.md,
+comparison-manifest.json, root-review.json, review-notes.json, pixel-metrics.json,
+gallery-verification.json, pairs/, react/, slint/ and supplemental scale folders.
+Raw capture artifacts remain outside Git.
 
 The matrix contains 88 matched pairs: 13 workspace pages at three sizes,
 30 operational/design states, all eight surfaces in both finishes, and three
-supplemental Sample density checks. Root opened 85 distinct combined pairs;
-three pairs reuse direct inspection only because BOTH original hashes match
-an inspected pair. React is left and native Slint is right.
+supplemental Sample density checks. Root directly opened all 12 changed pairs
+in cycle6. The other 76 pairs reuse prior review only after BOTH original hashes
+were verified equal to reviewed cycle5 originals. Cycle5 opened 10 changed
+pairs and verified 78 exact reuses from cycle4; cycle4 opened 85 distinct pairs
+and reused three exact duplicates. React is left and native Slint is right.
 
 | Logical editor size | Original pixels in BOTH renderers | Capture scale |
 | --- | --- | --- |
@@ -36,29 +40,24 @@ an inspected pair. React is left and native Slint is right.
 | 1200×800 Sample | 2400×1600 | 2× |
 
 Chromium DPR and Slint scale factor match BEFORE capture. Original PNGs are
-unresized. Shared gallery zoom is a viewing control, separate from application
-scaling. Each case records logical size, physical pixels, scale and both hashes.
-Raw RGB measurements describe differences; they are not an acceptance score.
+unresized. Shared gallery zoom is separate from application scaling. Every
+original hash and PNG dimension was reverified; each case records logical size,
+physical pixels and render density. Raw RGB differences are descriptive, not
+an acceptance score or a claim that native data matches simulated React data.
 
-The reviewed seventh executable is preserved at
-build/advanced-sampler-evidence/fidelity-reviewed-seventh-binary/dandrum-advanced-sampler,
-SHA-256 748a594ec909575ce60bad676cf0b0cfe9f92ada7cc96529f1e42f80ebc838e5.
-Its coherent configuration passed all 46 headless CTest groups in 154.10 seconds.
-A source freeze records 73 unchanged production paths through its captures.
-The separate visual publication configuration registers 43 tests, excluding
-three platform/file-drop checks; its final execution and capture hashes remain
-pending. The first exact-scope run passed 41/43: the new Snare regression was
-RED and the fractional-key render exposed a verification-script error. Setting
-SLINT_SCALE_FACTOR during compilation baked fixed scaling into generated
-headers. The corrected run regenerates those headers with that environment
-variable unset, so launch-time scaling remains adjustable. The key pixel
-assertions are unchanged.
+The final executable is preserved at
+build/advanced-sampler-evidence/fidelity-reviewed-ninth-binary/dandrum-advanced-sampler,
+SHA-256 cfc3864a6a09a6f163d4289637877e06b7868ebe60c7137f0670f3c23234cf68.
+All 88 captures come from this binary. Its exact visual-publication configuration
+passed 43/43 headless CTest groups in 131.81 seconds. The source freeze verifies
+73 production paths unchanged through capture. The test log is
+build/advanced-sampler-evidence/fidelity-warning-publication-ctest.log.
 
 ## Findings and corrections
 
 Every workspace was rechecked at minimum, default and expanded sizes.
-In the evidence column, workspace names identify their min/default/expanded
-pairs. Named tests below are CTest groups or their checked-in test owners.
+Workspace names below identify their min/default/expanded pairs. Named tests
+are CTest groups or their checked-in test owners.
 
 | Item | Original finding and correction | Post-fix evidence and behavioral checks |
 | --- | --- | --- |
@@ -76,17 +75,22 @@ pairs. Named tests below are CTest groups or their checked-in test owners.
 | 12. Overview | Local/Mixed/Reset absent; fade values raw percentages. Projected actual ownership, mixed source fades in milliseconds and reset actions. | page-overview; Visual Utility/Projection. Reset restores inheritance; Undo restores the prior definition. |
 | 13. Diagnostics | Headings overlapped trace/reason rows; initial hit state differed. Corrected dock geometry and no-hit initial state. | page-diag; Visual State/Utility. One real native note creates a selectable event; no synthetic screenshot hit. |
 | 14. Performance | Keyboard toolbar crossed controls and keys/pads drifted. Corrected grouping, key tops and drawer proportions. | perf, pads, macros; Visual Performance/Key Render. Actual short/long key separation checked at 0.8×/1×/1.25×/2×. |
-| 15. States | Error/progress feedback and Freeze missing or misplaced. Restored banners/progress/actions and dimmed confirmation modal. | missing/unsupported/loading/running/failed/freeze; App Binding/Visual State/Domain. Rejected replacements retain prior cache; confirmation does not freeze or claim real audio. |
+| 15. States | Error/progress feedback and Freeze missing or misplaced. Restored banners/progress/actions and dimmed confirmation modal. | missing/unsupported/loading/running/failed/freeze; App Binding/Visual State/Domain. Composed pixels prove unsupported amber, missing red and retained cached waveform; rejected replacements retain prior cache; confirmation does not freeze or claim real audio. |
 | 16. Themes | Material depth/grain coverage and segments drifted. Restored well shading, grain across drawer/keys, neutral selected segments and primary glow. | All 16 theme pairs; Theme Binding and Visual Material Render inspect actual composed pixels for Aluminium, Brushed, Ember, Graphite, Midnight, Forest, Camo, Paper in Soft/Flat. |
 
-Current actionable finding: **[P2] Unsupported-file warning** uses the native
-red error banner where the React reference uses amber. Add a composed-pixel
-regression and correct the warning border/wash while preserving the existing
-cached source. Missing-file error feedback should retain its error treatment.
 
-The Snare Plugin Out caption changed from “stereo” to “Out 5/6”. Its new
-regression reproduced the failure before the projection fix and now passes
-with all 28 Visual Projection assertions. Its final expanded capture is pending.
+Unsupported-file feedback now uses the guide's amber warning border and wash.
+The new composed-pixel assertion reproduced RED before the production change
+and passes in the final 43-test run. It also proves missing-file feedback remains
+red and the rejected import preserves the cached source and signed waveform.
+The unresized unsupported-banner-focus.png comparison was directly opened.
+
+Snare Plugin Out now reads “Out 5/6”. Its exact-caption regression reproduced
+RED before the projection fix and passes all 28 Visual Projection assertions.
+The final expanded pair matches the reviewed cycle5 originals exactly; the
+routing-output-focus.png comparison clearly shows Out 1/2, Out 3/4 and Out 5/6.
+The other 11 changed cycle6 pairs contain 8–33 changed native icon/toggle edge
+pixels per pair; all were directly reviewed with no new actionable layout issue.
 
 ## Required fidelity surfaces
 
@@ -110,54 +114,65 @@ with all 28 Visual Projection assertions. Its final expanded capture is pending.
   silent adapter/audio capability remains visible. Reference-only simulated
   activity, fixed MIDI assignments and fabricated take counts are not copied.
 
-Focused native caption/heading probes, Wave Render snapshots and composed
-Visual Material Render evidence remain under build/advanced-sampler-evidence/.
-The final output-caption correction requires a focused combined comparison.
-Full combined pairs establish page composition and viewport resilience.
 
-## Comparison history
+The gallery passed a headless Chromium check of all 88 cases and 264 original/
+paired image links, group counts, shared 25–200% zoom, wipe, RGB difference and
+2400×1600 density metadata. No browser or console errors were observed. Focused
+routing and warning crops preserve original pixel scale. Full pairs establish
+composition and viewport behavior.
 
-The initial audit found the 16 groups above with zero correction cycles.
-Cycle 1 applied main layout/state/material corrections; renderer and interaction
-checks then exposed variable-wave seams and source feedback. Cycle 2 exposed
-80% key separator loss, round-robin/Freeze overlaps, cached-source suppression
-and FX percentage formatting. Their regressions and fixes remain in evidence.
+## Comparison history and verification limits
 
-Cycle 3 was reviewed across all 88 pairs after those corrections. It exposed
-clipped icon captions, overlapping minimum Layers headings and a Hard label
-outside its band. ActionButton width and Layers geometry were corrected.
-Final selectors distinguish the Velocity table heading from the AXIS tab and
-locate Perform in the header. The earlier broad causal-RED claim for all three
-geometry findings was overstated; corrected selectors now pass.
+Six refinement capture cycles followed the original audit. Earlier cycles
+corrected compact layout, waveform seams, fractional key separators, round-robin
+and Freeze overlaps, cached-source suppression, FX percentages, clipped captions
+and Layers heading/band placement. Correct selectors distinguish the Velocity
+heading from the AXIS tab and locate Perform in the header; the earlier broad
+claim that all three geometry fixes had causal RED proof was overstated.
 
-Cycle 4 was fully reviewed and its coherent 46-group headless run passed.
-Publication source review found and corrected the Snare physical-output
-caption; its exact readout regression passes. A further unsupported-state
-comparison identified the amber warning mismatch recorded above. Final captures must come
-from one verified binary and be directly opened or proven byte-identical to
-opened originals.
+Cycle4 passed its coherent 46-group configuration. The visual publication
+configuration excludes three partial platform/file-drop checks and registers
+43 tests. Its initial 41/43 run exposed the Snare caption failure and a verifier
+error: SLINT_SCALE_FACTOR set during compilation baked scaling into generated
+headers. Regeneration with compile-time scaling unset retained the unchanged
+fractional-key assertions and restored adjustable runtime density.
 
-## Verification and constraints
+Cycle5 passed 43/43 and reviewed 88 captures. The first amber verification then
+passed 42/43 because one generated scene object was older than its generated
+C++ source. The final build settled all four scene objects, proved their
+freshness, passed 43/43 and captured cycle6. Its wrapper exited 1 after successful
+tests/captures because a restoration variable was shadowed. The exact preserved
+CMake backup was restored independently, and all 15 held file hashes plus the
+73 production hashes were reverified. Failed-attempt logs and this distinction
+are retained; the wrapper is not claimed to have exited successfully.
 
-Strict validation of add-advanced-sampler-slint passes. Spec coverage passes
-with 584 scenarios, 345 mapped tests and 239 unchanged ratchet entries. No
-wider OpenSpec task is marked complete by this visual report. The broader
-sampler audit retains 28 pending controls and real audio integration.
+Strict add-advanced-sampler-slint validation passes. Spec coverage passes with
+584 scenarios, 345 mapped tests and 239 unchanged ratchet entries. OpenSpec
+implementation tasks, including the broader functional acceptance task, remain
+unchanged. A three-cycle-after-functional-completion requirement cannot yet be
+claimed because broader functional/audio work is unfinished.
 
-Publication includes the preserved ReadOnlyKeyMap.slint required by the visual
-pages. Fifteen platform/file-drop/guide partial files and their CMake wiring
-remain outside the change, with their hashes preserved. No platform completion
-or general accessibility certification is claimed. Rust DSP is unchanged.
+## Publication and held work
 
-Implementation checklist:
+The visual checkpoint is on main at
+[20000e9](https://github.com/DanMarshall909/dandrum/commit/20000e9d6745b0f9afee732962fd1dc9a7d6b8ac).
+This focused follow-up contains the warning color, composed regression, scaling
+documentation and final review. ReadOnlyKeyMap.slint is already published as a
+required visual dependency. Fifteen platform/file-drop/guide partial files and
+their working CMake wiring remain outside this follow-up, preserved by
+fidelity-held-untracked-sha.json and the shared deferred-work ledger. Rust DSP
+and reference assets are unchanged. Platform completion and general accessibility
+certification are outside this result.
 
-- Correct the unsupported-file amber warning and verify composed pixels.
-- Recheck the corrected Snare physical-output caption in the final capture.
-- Complete the exact visual publication build and all 43 headless checks.
-- Recheck final matched originals and focused routing evidence.
-- Verify gallery zoom, wipe, difference, groups and image links.
-- Publish this progress checkpoint on main at the user’s request and record
-  held work; final visual acceptance remains blocked by the items above.
+The current native silent editor was also launched on the user's desktop;
+xwininfo confirmed its 1200×800 window is viewable. This desktop launch is
+separate from the headless matched screenshot and interaction evidence.
 
-Follow-up polish: browser/native font rasterization and minor optical icon
-alignment can be refined separately after the substantive visual pass.
+Visual implementation checklist:
+
+- [x] Correct unsupported amber; prove missing red and retained cache.
+- [x] Recheck Snare physical-output caption in final matched captures.
+- [x] Complete exact visual publication build and all 43 headless checks.
+- [x] Review all final matched originals and focused routing/warning evidence.
+- [x] Verify gallery zoom, wipe, difference, groups and image links.
+- [x] Preserve held work and report the broader functional/audio limitations.
