@@ -5,6 +5,7 @@ import { ActionButton } from "../controls/ActionButton.slint";
 import { NumericField } from "../controls/NumericField.slint";
 import { OptionStrip } from "../controls/OptionStrip.slint";
 import { PageSection, SectionText } from "PageSection.slint";
+import { ValueCodec } from "../../slint/controls/ValueCodec.slint";
 export component ModulationPage inherits Rectangle {
  in property <bool> compact;
  in property <bool> expanded;
@@ -14,6 +15,17 @@ export component ModulationPage inherits Rectangle {
  private property <float> gesture-initial;
  private property <float> gesture-latest;
  private property <string> selected-destination: "cutoff";
+ private property <length> amount-bar-width: root.compact ? 72px : 96px;
+ private property <length> source-width: max(88px,(root.width - root.amount-bar-width - 248px)*1.2/2.2);
+ private property <length> bar-x: 18px+root.source-width;
+ private property <length> amount-x: root.bar-x+root.amount-bar-width+6px;
+ private property <length> polarity-x: root.amount-x+50px;
+ private property <length> curve-x: root.polarity-x+42px;
+ private property <length> destination-x: root.curve-x+54px;
+ private property <length> destination-width: max(50px,root.width - root.destination-x - 72px);
+ pure function slot-color(slot:int) -> color {
+  return SamplerTheme.mod-color(slot);
+ }
  pure function shape-value(t:float,shape:string) -> float {
   let phase = mod(t,1);
   return shape == "1" || shape == "triangle" || shape == "tri" ? 1 - 4 * abs(phase - 0.5)
@@ -31,35 +43,61 @@ export component ModulationPage inherits Rectangle {
   return time < a ? time/a : time < a+d ? 1 - (1 - sustain)*(time - a)/d : time < a+d+0.5 ? sustain : max(0,sustain*(1 - (time - a - d - 0.5)/r));
  }
  public function add-route() { Session.command("route.add",root.selected-source,root.selected-destination,0.25); }
- VerticalLayout { padding: 0px; spacing: 4px; alignment: start;
-  PageSection { title: "Modulation"; height: 104px;
-   OptionStrip { x: 104px; y: 5px; width: 202px; label: "Group routes"; value: Session.route-grouping; options: [{id:"source",label:"Source"},{id:"destination",label:"Destination"}]; selected(grouping) => { Session.command("route.group",grouping,"",0); } }
-   Flickable { x: 12px; y: 40px; width: parent.width - 24px; height: 27px; content-width: Session.modulators.length*112px; content-height: self.height;
-    for source[i] in Session.modulators : ActionButton { x: i*112px; width: 108px; height: 25px; text: source.name; compact: true; selected: root.selected-source == source.id; clicked => { Session.command("modulator.select",source.id,"",0); } }
+ ScrollView { VerticalLayout { padding: 0px; spacing: 0px; alignment: start;
+  PageSection { title: "Modulation"; height: 42px;
+   OptionStrip { x: max(120px,parent.width - 244px); y: 8px; width: 202px; label: "Group routes"; value: Session.route-grouping; options: [{id:"source",label:"Source"},{id:"destination",label:"Destination"}]; selected(grouping) => { Session.command("route.group",grouping,"",0); } }
+   ActionButton { x: parent.width - 32px; y: 8px; width: 24px; text: "+"; label: "Add modulator"; compact: true; clicked => { Session.command("modulator.add","","LFO",0); } }
+  }
+  Rectangle { height: 26px; background: SamplerTheme.ink-3;
+   SectionText { x: 12px; width: root.source-width; height: parent.height; text: "SOURCE"; font-size: 10px; }
+   SectionText { x: root.bar-x; width: root.amount-bar-width+50px; height: parent.height; text: "AMOUNT"; font-size: 10px; }
+   SectionText { x: root.polarity-x; width: 36px; height: parent.height; text: "POL."; font-size: 10px; }
+   SectionText { x: root.curve-x; width: 48px; height: parent.height; text: "CURVE"; font-size: 10px; }
+   SectionText { x: root.destination-x; width: root.destination-width; height: parent.height; text: "DESTINATION"; font-size: 10px; }
+   SectionText { x: parent.width - 66px; width: 24px; height: parent.height; text: "OUT"; font-size: 10px; }
+   SectionText { x: parent.width - 36px; width: 30px; height: parent.height; text: "ON"; font-size: 10px; }
+  }
+  for group in Session.route-groups : Rectangle {
+   private property <bool> multi: group.routes.length > 1;
+   height: self.multi ? (group.expanded ? 28px+group.routes.length*28px : 28px) : 28px;
+   if self.multi : Rectangle { x: 0px; y: 0px; height: 28px; background: SamplerTheme.ink-3;
+    ActionButton { x: 4px; y: 2px; width: root.source-width+8px; height: 24px; label: "Toggle route group "+group.name; compact: true; ghost: true; clicked => { Session.command("route.expand",group.id,"",0); } }
+    SectionText { x: 12px; y: 0px; width: root.source-width; height: 28px; text: (group.expanded ? "⌄ " : "› ")+group.name; color: SamplerTheme.paper-1; font-weight: 600; }
+    SectionText { x: root.bar-x; y: 0px; width: root.destination-x - root.bar-x; height: 28px; text: group.summary; font-size: 11px; }
+    ActionButton { x: root.destination-x; y: 2px; width: 24px; text: "+"; label: (group.source-id != "" ? "Add destination " : "Add source ")+group.name; compact: true; ghost: true; clicked => { root.context-action(group.source-id != "" ? "modulator-destination" : "modulation-add",group.source-id != "" ? group.source-id : group.destination-id); } }
+    SectionText { x: parent.width - 36px; y: 0px; width: 30px; height: 28px; horizontal-alignment: center; text: ""+group.routes.length; }
    }
-   ActionButton { x: 12px; y: 74px; text: "+ LFO"; label: "Add modulator"; compact: true; clicked => { Session.command("modulator.add","","LFO",0); } }
-   HorizontalLayout { x: 91px; y: 73px; width: parent.width - 103px; height: 26px; spacing: 4px; alignment: start;
-    for id in ["cutoff","resonance","pitch","level","pan"] : ActionButton { text: id; compact: true; selected: root.selected-destination == id; clicked => { root.selected-destination=id; } }
-    ActionButton { text: "+ Route"; compact: true; clicked => { root.add-route(); } }
+   for route[i] in group.routes : Rectangle { visible: !parent.multi || group.expanded; y: parent.multi ? 28px+i*28px : 0px; width: parent.width; height: 28px; background: route.selected ? SamplerTheme.accent-wash : transparent;
+    private property <color> route-color: root.slot-color(route.slot);
+    if route.selected : Rectangle { x: 0px; width: 2px; background: SamplerTheme.accent; }
+    Rectangle { x: 12px; y: 11px; width: 7px; height: route.slot <= 0 ? 2px : 6px; border-radius: route.slot <= 0 ? 0px : 3px; background: parent.route-color; }
+    ActionButton { x: 20px; y: 2px; width: root.source-width - 8px; height: 24px; label: "Select route "+route.source-name+" to "+route.destination-name; compact: true; ghost: true; clicked => { Session.command("route.select",route.id,"",0); } }
+    SectionText { x: 26px; y: 0px; width: root.source-width - 14px - (route.default-route ? 44px : 0px); height: 28px; text: group.routes.length > 1 && Session.route-grouping == "source" ? "└" : route.source-name; color: route.on ? SamplerTheme.paper-1 : SamplerTheme.paper-4; }
+    if route.default-route : SectionText { x: root.source-width - 30px; y: 7px; width: 40px; height: 14px; text: "DEFAULT"; accessible-label: "Default amplitude route"; font-size: 8px; font-weight: 600; color: SamplerTheme.paper-3; }
+    Rectangle { x: root.bar-x; y: 11px; width: root.amount-bar-width; height: 7px; background: SamplerTheme.ink-0; border-width: 1px; border-color: SamplerTheme.line-2; border-radius: 2px;
+     Rectangle { x: parent.width/2; y: -3px; width: 1px; height: 13px; background: SamplerTheme.line-3; }
+     Rectangle { x: route.amount < 0 ? parent.width*(0.5+route.amount/2) : parent.width/2; y: 1px; width: parent.width*abs(route.amount)/2; height: 5px; background: root.slot-color(route.slot); }
+    }
+    NumericField { x: root.amount-x; y: 2px; width: 44px; show-label: false; ghost: true; label: "Amount "+route.source-name+" to "+route.destination-name; model-value: route.amount*100; value: route.amount*100; minimum: -100; maximum: 100; unit: "%"; value-text: (self.value > 0 && !route.default-route ? "+" : "")+ValueCodec.format(self.value,"%"); step: 1; gesture-began => { Session.parameter-gesture("route:"+route.id+":amount",0,self.value/100); } changed(v) => { Session.parameter-gesture("route:"+route.id+":amount",1,v/100); } gesture-ended => { Session.parameter-gesture("route:"+route.id+":amount",2,self.value/100); } }
+    ActionButton { x: root.polarity-x; y: 2px; width: 36px; text: route.polarity == "bipolar" ? "Bi" : "Uni"; label: "Polarity "+route.source-name+" to "+route.destination-name; compact: true; ghost: true; clicked => { Session.command("route.polarity",route.id,route.polarity == "bipolar" ? "unipolar" : "bipolar",0); } }
+    ActionButton { x: root.curve-x; y: 2px; width: 48px; text: route.curve == "linear" ? "Linear" : route.curve == "exp" ? "Exp" : route.curve == "log" ? "Log" : "S curve"; label: "Curve "+route.source-name+" to "+route.destination-name; compact: true; ghost: true; clicked => { Session.command("route.curve",route.id,route.curve == "linear" ? "exp" : "linear",0); } }
+    ActionButton { x: root.destination-x; y: 2px; width: root.destination-width; height: 24px; label: "Select destination "+route.destination-name; compact: true; ghost: true; clicked => { Session.command("route.select",route.id,"",0); } }
+    SectionText { x: root.destination-x; y: 0px; width: root.destination-width; height: 28px; text: "→ "+route.destination-name; color: route.on ? SamplerTheme.paper-1 : SamplerTheme.paper-4; }
+    Rectangle { x: parent.width - 66px; y: 13px; width: 24px; height: 3px; background: SamplerTheme.ink-4;
+     for source in Session.modulators : Rectangle { visible: source.id == route.source; x: 0px; y: 0px; width: parent.width*abs(source.live*route.amount).clamp(0,1); background: SamplerTheme.paper-2; }
+    }
+    Rectangle { x: parent.width - 36px; y: 6px; width: 28px; height: 16px; border-radius: 8px; background: route.on ? SamplerTheme.accent : SamplerTheme.ink-4; border-width: 1px; border-color: route.on ? SamplerTheme.accent : SamplerTheme.line-2;
+     Rectangle { x: route.on ? 14px : 3px; y: 3px; width: 10px; height: 10px; border-radius: 5px; background: route.on ? SamplerTheme.ink-0 : SamplerTheme.paper-4; }
+    }
+    ActionButton { x: parent.width - 38px; y: 2px; width: 32px; height: 24px; label: "Bypass route "+route.source-name+" to "+route.destination-name; compact: true; ghost: true; clicked => { Session.command("route.bypass",route.id,"",0); } }
    }
   }
-  HorizontalLayout { height: root.height - 108px; spacing: 4px;
-   ScrollView { width: parent.width*0.53; VerticalLayout { padding: 0px; spacing: 4px; alignment: start;
-    for group in Session.route-groups : Rectangle { height: group.expanded ? 30px+group.routes.length*34px : 54px; background: SamplerTheme.ink-2; border-width: 1px; border-color: SamplerTheme.line-2;
-     ActionButton { x: 4px; y: 3px; width: parent.width - 32px; height: 25px; text: (group.expanded ? "⌄ " : "› ")+group.name+"  "+group.routes.length; label: "Toggle route group "+group.name; compact: true; ghost: true; clicked => { Session.command("route.expand",group.id,"",0); } }
-     ActionButton { x: parent.width - 28px; y: 4px; width: 24px; text: "+"; label: (group.source-id != "" ? "Add destination " : "Add source ")+group.name; compact: true; clicked => { root.context-action(group.source-id != "" ? "modulator-destination" : "modulation-add",group.source-id != "" ? group.source-id : group.destination-id); } }
-     SectionText { visible: !group.expanded; x: 12px; y: 29px; width: parent.width - 24px; height: 22px; text: group.summary; overflow: elide; font-size: 10px; }
-   for route[i] in group.routes : Rectangle { visible: group.expanded; x: 4px; y: 30px+i*34px; width: parent.width - 8px; height: 33px; background: route.id == Session.selected-route ? SamplerTheme.mod-wash : mod(i,2) == 0 ? SamplerTheme.ink-3 : transparent;
-    Rectangle { x: 4px; y: 4px; width: 5px; height: 18px; border-radius: 2px; background: route.slot == 0 ? SamplerTheme.mod-a : route.slot == 1 ? SamplerTheme.mod-b : route.slot == 2 ? SamplerTheme.mod-c : SamplerTheme.mod-d; }
-    ActionButton { x: 14px; y: 4px; width: parent.width - 154px; height: 25px; text: Session.route-grouping == "source" ? route.destination-name : route.source-name; label: "Select route "+route.source-name+" to "+route.destination-name; compact: true; ghost: true; clicked => { Session.command("route.select",route.id,"",0); } }
-    NumericField { x: parent.width - 137px; y: 4px; width: 54px; show-label: false; label: "Amount "+route.source-name+" to "+route.destination-name; model-value: route.amount * 100; value: route.amount*100; minimum: -100; maximum: 100; unit: "%"; step: 1; gesture-began => { Session.parameter-gesture("route:"+route.id+":amount",0,self.value/100); } changed(v) => { Session.parameter-gesture("route:"+route.id+":amount",1,v/100); } gesture-ended => { Session.parameter-gesture("route:"+route.id+":amount",2,self.value/100); } }
-    ActionButton { x: parent.width - 79px; width: 29px; y: 4px; text: route.on ? "On" : "Off"; compact: true; selected: route.on; clicked => { Session.command("route.bypass",route.id,"",0); } }
-    ActionButton { x: parent.width - 48px; width: 21px; y: 4px; text: "±"; label: "Invert modulation route"; compact: true; clicked => { Session.command("route.invert",route.id,"",0); } }
-    ActionButton { x: parent.width - 25px; width: 21px; y: 4px; text: "×"; label: "Remove modulation route"; compact: true; clicked => { Session.command("route.delete",route.id,"",0); } }
+  Rectangle { height: 31px;
+   Flickable { x: 4px; width: parent.width - 92px; height: 27px; content-width: Session.modulators.length*112px; content-height: self.height;
+    for source[i] in Session.modulators : ActionButton { x: i*112px; width: 108px; height: 25px; text: source.name; compact: true; ghost: true; selected: root.selected-source == source.id; clicked => { Session.command("modulator.select",source.id,"",0); } }
    }
-    }
-   } }
-   ScrollView { width: parent.width*0.47 - 4px; VerticalLayout { padding: 0px; spacing: 4px; alignment: start;
+   ActionButton { x: parent.width - 86px; text: "+ Route"; compact: true; clicked => { root.add-route(); } }
+  }
   PageSection { title: "Modulator"; height: 396px;
    for mod in Session.modulators : Rectangle { visible: mod.id == root.selected-source; x: 12px; y: 44px; width: parent.width - 24px; height: 348px;
     SectionText { y: 0px; width: parent.width; height: 24px; text: mod.name+" · "+mod.kind; color: SamplerTheme.paper-1; }
@@ -95,8 +133,10 @@ export component ModulationPage inherits Rectangle {
 
    }
   }
-  PageSection { title: "Selected route"; height: 222px;
-   for route in Session.routes : Rectangle { visible: route.id == Session.selected-route; x: 12px; y: 40px; width: parent.width - 24px; height: 180px;
+  PageSection { title: "Selected route"; height: 252px;
+   for route in Session.routes : Rectangle { visible: route.id == Session.selected-route; x: 12px; y: 40px; width: parent.width - 24px; height: 210px;
+    ActionButton { y: 178px; text: "Invert"; label: "Invert modulation route"; compact: true; clicked => { Session.command("route.invert",route.id,"",0); } }
+    ActionButton { x: 82px; y: 178px; text: "Remove"; label: "Remove modulation route"; compact: true; clicked => { Session.command("route.delete",route.id,"",0); } }
     OptionStrip { width: parent.width; label: "Route scope"; value: route.scope; options: [{id:"voice",label:"Per voice"},{id:"shared",label:"Shared"}]; selected(v) => { Session.command("route.scope",route.id,v,0); } }
     OptionStrip { y: 32px; width: parent.width; label: "Combine"; value: route.combine; options: [{id:"add",label:"Add"},{id:"multiply",label:"Multiply"}]; selected(v) => { Session.command("route.combine",route.id,v,0); } }
     OptionStrip { y: 143px; width: parent.width; label: "Update rate"; value: route.update-rate; options: [{id:"audio",label:"Audio"},{id:"control",label:"Control"},{id:"block",label:"Block"}]; selected(v) => { Session.command("route.rate",route.id,v,0); } }
@@ -112,7 +152,5 @@ export component ModulationPage inherits Rectangle {
     ActionButton { text: "Restore default"; label: "Restore default amplitude"; clicked => { Session.command("amp.restore","","",0); } }
    }
   }
-   } }
-  }
- }
+ } }
 }

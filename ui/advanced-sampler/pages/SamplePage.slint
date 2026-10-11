@@ -1,3 +1,4 @@
+import { ReadOnlyKeyMap } from "ReadOnlyKeyMap.slint";
 import { ScrollView } from "std-widgets.slint";
 import { Session } from "../Session.slint";
 import { SamplerTheme } from "../theme/Theme.slint";
@@ -28,17 +29,26 @@ export component SamplePage inherits Rectangle {
     ScrollView { x: 0px; y: 0px;
         VerticalLayout { padding: 0px; spacing: 4px; alignment: start;
             SourceHeader { }
-            PagePanel { title: "Sample"; height: (root.compact ? 248px : root.expanded ? 438px : Session.loop-enabled ? 288px : 348px) + (Session.loop-enabled ? 38px : 0px);
-                browse-button := ActionButton { x: 86px; y: 5px; width: root.compact ? 135px : 180px; text: Session.inspector-title + "  ▾"; label: "Choose sample"; compact: true; clicked => { root.browse("asset.import"); } }
-                audition-button := ActionButton { x: root.compact ? 225px : 270px; y: 5px; icon: "chevron-right"; label: "Audition sample"; compact: true; clicked => { Session.command("sample.audition", Session.selected-source, "", 0); } }
-                OptionStrip { x: parent.width - (root.compact ? 215px : 235px); y: 6px; width: root.compact ? 180px : 200px; value: Session.loop-enabled ? "loop" : Session.play-mode; label: "Play mode"; options: [{id: "once", label: "Once"}, {id: "gated", label: "Gated"}, {id: "loop", label: "Loop"}]; selected(mode) => { root.set-mode(mode); } }
-                reverse-button := ActionButton { x: parent.width - 29px; y: 5px; icon: "reverse"; label: "Reverse sample"; compact: true; selected: Session.reversed; clicked => { root.reverse(); } }
+            PagePanel { title: "Sample"; header-height: 42px; height: (root.compact ? 271px : root.expanded ? 461px : Session.loop-enabled ? 343px : 403px) + (Session.loop-enabled ? 38px : 0px);
+                browse-button := ActionButton { x: 86px; y: 11px; width: root.compact ? 135px : 180px; text: Session.sample-name + "  ▾"; label: "Choose sample"; compact: true; clicked => { root.browse("asset.import"); } }
+                audition-button := ActionButton { x: root.compact ? 225px : 270px; y: 11px; icon: "chevron-right"; label: "Audition sample"; compact: true; clicked => { Session.command("sample.audition", Session.selected-source, "", 0); } }
+                OptionStrip { x: parent.width - (root.compact ? 215px : 235px); y: 12px; width: root.compact ? 180px : 200px; value: Session.loop-enabled ? "loop" : Session.play-mode; label: "Play mode"; options: [{id: "once", label: "Once"}, {id: "gated", label: "Gated"}, {id: "loop", label: "Loop"}]; selected(mode) => { root.set-mode(mode); } }
+                reverse-button := ActionButton { x: parent.width - 29px; y: 11px; icon: "reverse"; label: "Reverse sample"; compact: true; selected: Session.reversed; clicked => { root.reverse(); } }
                 if Session.loop-enabled : OptionStrip { x: 12px; y: 43px; width: 232px; value: Session.play-mode; label: "Loop type"; options: [{id: "loop", label: "Forward"}, {id: "ping-pong", label: "Ping pong"}, {id: "sustain-loop", label: "Sustain"}]; selected(mode) => { root.set-mode(mode); } }
-                WaveView { x: 12px; y: Session.loop-enabled ? 81px : 43px; width: parent.width - 24px; height: 28px; peaks: Session.waveform; reversed: Session.reversed; state: Session.asset-state; }
-                main-wave := WaveView { x: 12px; y: Session.loop-enabled ? 115px : 77px; width: parent.width - 24px; height: root.compact ? 150px : root.expanded ? 340px : Session.loop-enabled ? 190px : 250px; peaks: Session.waveform; reversed: Session.reversed; state: Session.asset-state; region-start: Session.region-start; region-end: Session.region-end; fade-in: Session.fade-in; fade-out: Session.fade-out; loop-start: Session.loop-start; loop-end: Session.loop-end; crossfade: Session.loop-crossfade; loop-enabled: Session.loop-enabled; playhead: Session.playhead; zoom: root.zoom; duration: root.duration; metadata: Session.inspector-title + " · " + round(root.duration * 1000) / 1000 + " s";
+                WaveView { x: 12px; y: Session.loop-enabled ? 90px : 52px; width: parent.width - 24px; height: 28px; peaks: Session.waveform; reversed: Session.reversed; state: Session.asset-state == "missing" && Session.waveform.length > 0 ? "loaded" : Session.asset-state; loading-progress: Session.sample-progress; overview-start: main-wave.visible-start; overview-end: main-wave.visible-end; }
+                main-wave := WaveView { x: 12px; y: Session.loop-enabled ? 124px : 86px; width: parent.width - 24px; height: root.compact ? 150px : root.expanded ? 340px : Session.loop-enabled ? 190px : 250px; peaks: Session.waveform; reversed: Session.reversed; state: Session.asset-state; loading-progress: Session.sample-progress; region-start: Session.region-start; region-end: Session.region-end; fade-in: Session.fade-in; fade-out: Session.fade-out; loop-start: Session.loop-start; loop-end: Session.loop-end; crossfade: Session.loop-crossfade; loop-enabled: Session.loop-enabled; playhead: Session.playhead; zoom: root.zoom; duration: root.duration; metadata: Session.sample-name + " · " + round(root.duration * 1000) / 1000 + " s";
                     gesture(id,phase,v) => { Session.parameter-gesture(id,phase,v); }
                     seek(position) => { Session.command("sample.audition", Session.selected-source, "", position); }
                 }
+                Rectangle { x: 12px; y: parent.height - (root.compact || root.expanded ? 34px : 66px); width: parent.width - 24px; height: root.compact || root.expanded ? 22px : 54px;
+                    Text { visible: Session.sample-metadata != ""; x: 0px; y: 0px; width: min(parent.width, 215px); height: 22px; text: "Format  " + Session.sample-metadata; font-family: SamplerTheme.font-ui; font-size: 12px; color: SamplerTheme.paper-3; vertical-alignment: center; overflow: elide; }
+                    Text { visible: Session.sample-duration > 0; x: 225px; y: 0px; width: 112px; height: 22px; text: "Length  " + round(root.duration * 1000) / 1000 + " s"; font-family: SamplerTheme.font-value; font-size: 11px; color: SamplerTheme.paper-2; vertical-alignment: center; overflow: elide; }
+                    if Session.sample-peak != "" : Text { x: 329px; y: 0px; width: 101px; height: 22px; text: "Peak  " + Session.sample-peak; font-family: SamplerTheme.font-value; font-size: 11px; color: SamplerTheme.paper-2; vertical-alignment: center; overflow: elide; }
+                    if !root.compact && Session.sample-loudness != "" : Text { x: 435px; y: 0px; width: root.expanded ? 128px : parent.width - self.x; height: 22px; text: "Loudness  " + Session.sample-loudness; font-family: SamplerTheme.font-value; font-size: 11px; color: SamplerTheme.paper-2; vertical-alignment: center; overflow: elide; }
+                    if !root.compact && Session.sample-pitch != "" : Text { x: root.expanded ? 571px : 0px; y: root.expanded ? 0px : 32px; width: 154px; height: 22px; text: "Pitch  " + Session.sample-pitch; font-family: SamplerTheme.font-value; font-size: 11px; color: SamplerTheme.paper-2; vertical-alignment: center; }
+                    if !root.compact : Text { x: root.expanded ? 700px : 170px; y: root.expanded ? 0px : 32px; width: parent.width - self.x; height: 22px; text: "Source  " + Session.asset-state; font-family: SamplerTheme.font-value; font-size: 11px; color: SamplerTheme.paper-3; vertical-alignment: center; }
+                }
+
             }
             if Session.loop-enabled : PagePanel { title: "Loop"; height: root.compact ? 238px : 180px;
                 HorizontalLayout { x: 12px; y: 46px; width: root.compact ? parent.width - 24px : parent.width / 2 - 18px; height: 44px; spacing: 8px; alignment: start;
@@ -56,6 +66,48 @@ export component SamplePage inherits Rectangle {
                 ActionButton { x: 132px; y: 102px; text: "Apply suggestion"; enabled: Session.analysis-state == "done"; clicked => { Session.command("analysis.apply", "", "", 0); } }
                 ActionButton { x: 268px; y: 102px; text: "Snap to zero crossings"; selected: Session.snap-zero; clicked => { Session.command("sample.snap-zero", "", "", Session.snap-zero ? 0 : 1); } }
             }
+            Rectangle { border-radius: 6px; border-width: 1px; border-color: SamplerTheme.line-1; background: SamplerTheme.ink-2; height: root.compact ? 209px : 106.5px;
+                Text { x: 8px; y: 6px; height: 16px; text: "REGION"; font-family: SamplerTheme.font-ui; font-size: 12px; font-weight: 700; color: SamplerTheme.secondary; }
+                for f[i] in root.fields : Rectangle { x: 8px + mod(i,2) * 154px; y: 26px + floor(i/2) * 26px; width: 146px; height: 24px;
+                    Text { x: 0px; y: 0px; width: 56px; height: 24px; text: f.label.to-uppercase(); font-family: SamplerTheme.font-ui; font-size: 11px; font-weight: 600; color: SamplerTheme.paper-3; vertical-alignment: center; }
+                    NumericField { x: 62px; y: 0px; width: 84px; height: 24px; show-label: false; label: f.label; value: f.value * root.duration * (f.id == "fade-in" || f.id == "fade-out" ? 1000 : 1); model-value: f.value * root.duration * (f.id == "fade-in" || f.id == "fade-out" ? 1000 : 1); default-value: f.id == "region-end" ? root.duration : 0; unit: f.id == "fade-in" || f.id == "fade-out" ? "ms" : "s"; minimum: 0; maximum: root.duration * (f.id == "fade-in" || f.id == "fade-out" ? 1000 : 1); step: f.id == "fade-in" || f.id == "fade-out" ? 1 : 0.001;
+                    gesture-began => { Session.parameter-gesture(f.id,0,f.value); } changed(v) => { Session.parameter-gesture(f.id,1,v / root.duration / (f.id == "fade-in" || f.id == "fade-out" ? 1000 : 1)); } gesture-ended => { Session.parameter-gesture(f.id,2,self.value / root.duration / (f.id == "fade-in" || f.id == "fade-out" ? 1000 : 1)); }
+                }
+                }
+                Rectangle { x: 320px; y: 6px; width: parent.width - self.x - 8px; height: 94px;
+                    Rectangle {
+                        VerticalLayout { x: 0px; y: 0px; spacing: 8px; width: 76px;
+                            Text { text: "PITCH"; font-family: SamplerTheme.font-ui; font-size: 12px; font-weight: 700; color: SamplerTheme.secondary; }
+                            HorizontalLayout { spacing: 0px;
+                                for p in Session.parameters : Rectangle { width: p.id == "pitch" || p.id == "fine" ? 38px : 0px;
+                                    if p.id == "pitch" || p.id == "fine" : DomainKnob { parameter: p; label: p.id == "pitch" ? "Tune" : p.label; size: 36px;
+                                        context(a,id) => { root.context-action(a,id); }
+                                    }
+                                }
+                            }
+                        }
+                        VerticalLayout { x: root.compact ? -312px : 88px; y: root.compact ? 104px : 0px; spacing: 8px; width: 76px;
+                            Text { text: "OUTPUT"; font-family: SamplerTheme.font-ui; font-size: 12px; font-weight: 700; color: SamplerTheme.secondary; }
+                            HorizontalLayout { spacing: 0px;
+                                for p in Session.parameters : Rectangle { width: p.id == "source-gain" || p.id == "pan" ? 38px : 0px;
+                                    if p.id == "source-gain" || p.id == "pan" : DomainKnob { parameter: p; size: 36px;
+                                        context(a,id) => { root.context-action(a,id); }
+                                    }
+                                }
+                            }
+                        }
+                        VerticalLayout { x: root.compact ? -224px : 176px; y: root.compact ? 104px : 0px; spacing: 8px; width: 122px; alignment: start;
+                            Text { text: "ROOT"; font-family: SamplerTheme.font-ui; font-size: 12px; font-weight: 700; color: SamplerTheme.secondary; }
+                            NumericField { label: "Root note"; show-label: false; value: Session.root-note; model-value: Session.root-note; default-value: 60; minimum: 0; maximum: 127; step: 1;
+                                gesture-began => { Session.parameter-gesture("root-note",0,self.value); }
+                                changed(v) => { Session.parameter-gesture("root-note",1,v); }
+                                gesture-ended => { Session.parameter-gesture("root-note",2,self.value); }
+                            }
+                        }
+                    }
+                }
+            }
+            if root.expanded : ReadOnlyKeyMap { }
             PagePanel { title: "Analysis"; subtitle: Session.analysis-state; height: Session.analysis-state == "idle" ? 88px : 128px;
                 HorizontalLayout { x: 12px; y: 42px; width: parent.width - 24px; height: 28px; spacing: 6px; alignment: start;
                     ActionButton { text: "Detect pitch"; enabled: Session.analysis-state != "running"; clicked => { root.analyze("pitch"); } }
@@ -67,43 +119,6 @@ export component SamplePage inherits Rectangle {
                     ActionButton { text: "Retry"; label: "Retry sample analysis"; enabled: Session.analysis-state == "failed"; clicked => { Session.command("analysis.retry", "", "", 0); } }
                     ActionButton { text: "Apply"; label: "Apply analysis"; primary: true; enabled: Session.analysis-state == "done"; clicked => { Session.command("analysis.apply", "", "", 0); } }
                     ActionButton { text: "Cancel"; label: "Cancel sample analysis"; clicked => { Session.command("analysis.cancel", "", "", 0); } }
-                }
-            }
-            PagePanel { title: "Region"; secondary: true; height: root.compact ? 228px : 136px;
-                for f[i] in root.fields : NumericField { x: 12px + mod(i,2) * 108px; y: 43px + floor(i/2) * 43px; label: f.label; value: f.value * root.duration * (f.id == "fade-in" || f.id == "fade-out" ? 1000 : 1); model-value: f.value * root.duration * (f.id == "fade-in" || f.id == "fade-out" ? 1000 : 1); default-value: f.id == "region-end" ? root.duration : 0; unit: f.id == "fade-in" || f.id == "fade-out" ? "ms" : "s"; minimum: 0; maximum: root.duration * (f.id == "fade-in" || f.id == "fade-out" ? 1000 : 1); step: f.id == "fade-in" || f.id == "fade-out" ? 1 : 0.001;
-                    gesture-began => { Session.parameter-gesture(f.id,0,f.value); } changed(v) => { Session.parameter-gesture(f.id,1,v / root.duration / (f.id == "fade-in" || f.id == "fade-out" ? 1000 : 1)); } gesture-ended => { Session.parameter-gesture(f.id,2,self.value / root.duration / (f.id == "fade-in" || f.id == "fade-out" ? 1000 : 1)); }
-                }
-                Rectangle { x: root.compact ? 12px : 236px; y: root.compact ? 128px : 43px; width: parent.width - self.x - 12px; height: 88px;
-                    HorizontalLayout { spacing: 16px; alignment: start;
-                        VerticalLayout { spacing: 8px; width: 96px;
-                            Text { text: "PITCH"; font-family: SamplerTheme.font-ui; font-size: 12px; font-weight: 700; color: SamplerTheme.secondary; }
-                            HorizontalLayout { spacing: 0px;
-                                for p in Session.parameters : Rectangle { width: p.id == "pitch" || p.id == "fine" ? 48px : 0px;
-                                    if p.id == "pitch" || p.id == "fine" : DomainKnob { parameter: p; label: p.id == "pitch" ? "Tune" : p.label; size: 36px;
-                                        context(a,id) => { root.context-action(a,id); }
-                                    }
-                                }
-                            }
-                        }
-                        VerticalLayout { spacing: 8px; width: 96px;
-                            Text { text: "OUTPUT"; font-family: SamplerTheme.font-ui; font-size: 12px; font-weight: 700; color: SamplerTheme.secondary; }
-                            HorizontalLayout { spacing: 0px;
-                                for p in Session.parameters : Rectangle { width: p.id == "source-gain" || p.id == "pan" ? 48px : 0px;
-                                    if p.id == "source-gain" || p.id == "pan" : DomainKnob { parameter: p; size: 36px;
-                                        context(a,id) => { root.context-action(a,id); }
-                                    }
-                                }
-                            }
-                        }
-                        VerticalLayout { spacing: 8px; width: 84px; alignment: start;
-                            Text { text: "ROOT"; font-family: SamplerTheme.font-ui; font-size: 12px; font-weight: 700; color: SamplerTheme.secondary; }
-                            NumericField { label: "Root note"; show-label: false; value: Session.root-note; model-value: Session.root-note; default-value: 60; minimum: 0; maximum: 127; step: 1;
-                                gesture-began => { Session.parameter-gesture("root-note",0,self.value); }
-                                changed(v) => { Session.parameter-gesture("root-note",1,v); }
-                                gesture-ended => { Session.parameter-gesture("root-note",2,self.value); }
-                            }
-                        }
-                    }
                 }
             }
             HorizontalLayout { height: 28px; spacing: 4px; alignment: start;

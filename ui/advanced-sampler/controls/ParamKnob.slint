@@ -90,6 +90,6 @@ export component ParamKnob inherits RangeControl {
             key-pressed(event) => { if event.text == Key.Escape { root.cancel-edit(); root.popup = false; return accept; } return reject; }
         }
         if !root.editing : TouchArea { x: 78px; y: 6px; width: 88px; height: 24px; clicked => { root.begin-edit(); } }
-        for a[i] in root.assignments : Text { x: 8px; y: 36px + i * 20px; width: parent.width - 16px; height: 18px; text: ["●", "▲", "■", "◆"][a.slot] + " " + a.source + "   " + round(a.depth * 100) + "%"; color: a.slot == 0 ? SamplerTheme.mod-a : a.slot == 1 ? SamplerTheme.mod-b : a.slot == 2 ? SamplerTheme.mod-c : SamplerTheme.mod-d; font-family: SamplerTheme.font-ui; font-size: 11px; }
+        for a[i] in root.assignments : Text { x: 8px; y: 36px + i * 20px; width: parent.width - 16px; height: 18px; text: (a.slot <= 0 ? "—" : ["●", "▲", "■", "◆"][(a.slot - 1).clamp(0,3)]) + " " + a.source + "   " + round(a.depth * 100) + "%"; color: SamplerTheme.mod-color(a.slot); font-family: SamplerTheme.font-ui; font-size: 11px; }
     }
 }

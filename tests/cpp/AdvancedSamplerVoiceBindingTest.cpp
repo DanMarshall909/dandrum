@@ -321,9 +321,21 @@ int main(){try{
     find(window,"Voice limit").set_accessible_value("12");
     require(model->number("voice-limit")==12,"Actual Voice limit field persists its native limit");
     require(session.invoke_command("undo","","",0),"Voice limit is independently undoable");
+    const auto steal_policy_before=model->text("voice-steal");
+    const auto steal_definition_before=model->definition();
+    bool released_option_checked=false;
+    for(const auto& option:slint::testing::ElementHandle::find_by_accessible_label(window,"Steal policy Oldest released"))
+        if(option.accessible_role()==slint::language::AccessibleRole::Button)
+            released_option_checked=option.accessible_checked().value_or(false);
+    require(steal_policy_before=="oldest-released"&&released_option_checked,"Reference Oldest released policy has an actual selected native option");
     activate(window,"Steal policy Quietest");
     require(model->text("voice-steal")=="quietest","Actual Steal policy choice persists Quietest");
-    require(session.invoke_command("undo","","",0)&&model->text("voice-steal")=="oldest","Steal policy Undo restores Oldest");
+    require(session.invoke_command("undo","","",0)&&model->text("voice-steal")==steal_policy_before&&model->definition()==steal_definition_before,"Steal policy Undo restores its complete actual reference baseline");
+    require(session.invoke_command("voice.steal","","quietest",0),"Set a distinct policy to prove native Oldest released selection");
+    activate(window,"Steal policy Oldest released");
+    require(model->text("voice-steal")=="oldest-released","Actual Oldest released choice persists");
+    require(session.invoke_command("undo","","",0)&&model->text("voice-steal")=="quietest","Oldest released native action is independently undoable");
+    require(session.invoke_command("undo","","",0)&&model->definition()==steal_definition_before,"Policy roundtrip restores the full original definition");
     require(session.invoke_command("voice.same-note","","release",0),"Set a distinct Same note policy for native action proof");
     activate(window,"Retrigger");
     require(model->text("same-note")=="retrigger","Actual Retrigger action changes the native Same note policy");
@@ -402,7 +414,7 @@ int main(){try{
     const auto addedModule=model->records("module").back().id;
     require(model->records("module").size()==moduleCount+1&&model->find("module",addedModule)->text("detail")=="Waveshaper"&&model->undoCount()==moduleUndo+1,"Actual Voice module Plus adds its native Waveshaper as one Undo");
     std::vector<dandrum_ui::ModuleInfo> chain;for(std::size_t i=0;i<session.get_voice_modules()->row_count();++i)chain.push_back(*session.get_voice_modules()->row_data(i));
-    for(const auto& module:chain){activate(window,std::string(module.name)+"  →");
+    for(const auto& module:chain){activate(window,std::string(module.name));
         require(session.get_selected_id()==module.id&&session.get_inspector_type()=="Module","Every actual Voice chain button selects its matching native module and Inspector: "+std::string(module.id));}
     require(session.invoke_command("undo","","",0)&&model->records("module").size()==moduleCount&&!model->find("module",addedModule),"Undo of actual Voice module Plus restores the native chain inventory");
     const auto freeze_source=std::string(session.get_selected_source());const auto original_record=model->find("source",freeze_source)->fields;

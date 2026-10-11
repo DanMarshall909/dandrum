@@ -8,6 +8,8 @@ export component PadCell inherits FocusScope {
     in property <bool> mapped;
     in property <bool> selected;
     in property <bool> compact;
+    in property <bool> show-note-name: !root.compact;
+    in property <bool> show-empty-name: !root.compact;
     in property <length> size: 60px;
     in property <float> level;
     in property <int> velocity;
@@ -52,19 +54,19 @@ export component PadCell inherits FocusScope {
         if root.mapped : Rectangle { x: 1px; y: 1px; width: parent.width - 2px; height: 1px; background: #FFFFFF12; }
         if root.selected : Rectangle { x: 1px; y: 1px; width: parent.width - 2px; height: parent.height - 2px; border-radius: 3px; border-width: 1px; border-color: SamplerTheme.accent; }
         if !root.mapped : Rectangle {
-            for i in 4 : Rectangle { x: i * (parent.width / 4); width: parent.width / 8; height: 1px; background: root.selected ? SamplerTheme.accent : SamplerTheme.line-2; }
-            for i in 4 : Rectangle { x: i * (parent.width / 4); y: parent.height - 1px; width: parent.width / 8; height: 1px; background: root.selected ? SamplerTheme.accent : SamplerTheme.line-2; }
-            for i in 4 : Rectangle { y: i * (parent.height / 4); width: 1px; height: parent.height / 8; background: root.selected ? SamplerTheme.accent : SamplerTheme.line-2; }
-            for i in 4 : Rectangle { x: parent.width - 1px; y: i * (parent.height / 4); width: 1px; height: parent.height / 8; background: root.selected ? SamplerTheme.accent : SamplerTheme.line-2; }
+            for i in ceil(root.size / 4px) : Rectangle { x: i * 4px; y: 0px; width: min(2px, parent.width - self.x); height: 1px; background: root.selected ? SamplerTheme.accent : SamplerTheme.line-2; }
+            for i in ceil(root.size / 4px) : Rectangle { x: i * 4px; y: parent.height - 1px; width: min(2px, parent.width - self.x); height: 1px; background: root.selected ? SamplerTheme.accent : SamplerTheme.line-2; }
+            for i in ceil(root.size / 4px) : Rectangle { x: 0px; y: i * 4px; width: 1px; height: min(2px, parent.height - self.y); background: root.selected ? SamplerTheme.accent : SamplerTheme.line-2; }
+            for i in ceil(root.size / 4px) : Rectangle { x: parent.width - 1px; y: i * 4px; width: 1px; height: min(2px, parent.height - self.y); background: root.selected ? SamplerTheme.accent : SamplerTheme.line-2; }
         }
         Rectangle { background: SamplerTheme.paper-1.with-alpha(root.level.clamp(0, 1) * 0.16); border-radius: 4px; }
         Rectangle { height: 3px; background: SamplerTheme.paper-1.with-alpha(root.level.clamp(0, 1)); }
         Text { x: root.inset; y: root.inset; height: 12px; text: "\{root.note}"; font-family: SamplerTheme.font-value; font-size: 10px; color: root.mapped ? SamplerTheme.text-secondary : SamplerTheme.text-disabled; }
-        if !root.compact : Text { x: 25px; y: root.inset; text: FitLayout.note-name(root.note); font-family: SamplerTheme.font-value; font-size: 10px; color: SamplerTheme.text-tertiary; }
+        if root.show-note-name : Text { x: 25px; y: root.inset; text: FitLayout.note-name(root.note); font-family: SamplerTheme.font-value; font-size: 10px; color: SamplerTheme.text-tertiary; }
         if root.mapped && root.choke-group >= 0 : Rectangle { x: parent.width - 27px; y: root.inset; width: 22px; height: 12px; background: SamplerTheme.ink-0; border-radius: 2px;
             Text { text: "⌁ \{root.choke-group}"; font-family: SamplerTheme.font-ui; font-size: 10px; font-weight: 600; color: SamplerTheme.text-secondary; horizontal-alignment: center; }
         }
-        if root.mapped || !root.compact : Text { x: root.inset; y: root.size / 2 - 7px; width: parent.width - root.inset * 2; height: 15px; text: root.mapped ? root.name : "Empty"; font-family: SamplerTheme.font-ui; font-size: root.compact ? 11px : 13px; font-weight: 600; color: !root.mapped ? SamplerTheme.text-disabled : root.choked ? SamplerTheme.text-tertiary : SamplerTheme.text-primary; overflow: elide; }
+        if root.mapped || root.show-empty-name : Text { x: root.inset; y: root.size / 2 - 7px; width: parent.width - root.inset * 2; height: 15px; text: root.mapped ? root.name : "Empty"; font-family: SamplerTheme.font-ui; font-size: root.compact ? 11px : 13px; font-weight: 600; color: !root.mapped ? SamplerTheme.text-disabled : root.choked ? SamplerTheme.text-tertiary : SamplerTheme.text-primary; overflow: elide; }
         if root.choked : Rectangle { x: root.inset; y: root.size / 2; width: parent.width - 2 * root.inset; height: 1px; background: SamplerTheme.text-tertiary; }
         if root.mapped : Rectangle { x: root.inset; y: parent.height - root.inset - 4px; width: parent.width - 2 * root.inset - (root.alternates > 1 ? root.alternates * 6px : 0px); height: 3px; border-radius: 1px; background: SamplerTheme.ink-0;
             Rectangle { width: parent.width * (root.velocity / 127).clamp(0, 1); background: SamplerTheme.paper-2.with-alpha(0.4 + root.level * 0.6); }

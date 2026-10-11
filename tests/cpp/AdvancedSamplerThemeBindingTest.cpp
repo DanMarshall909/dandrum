@@ -28,6 +28,11 @@ int main() {
                     "Native theme updates must decode the dynamic window lighting image");
             require(window->get_soft() == palette.soft && window->get_light() == palette.light && window->get_brushed() == palette.brushed,
                     "Native material flags must update the real generated global");
+            require(global.invoke_mod_color(0)==global.get_paper_3() && global.invoke_mod_color(-1)==global.get_paper_3(),
+                    "Unassigned modulation sources use the neutral role");
+            require(global.invoke_mod_color(1)==global.get_mod_a() && global.invoke_mod_color(2)==global.get_mod_b()
+                    && global.invoke_mod_color(3)==global.get_mod_c() && global.invoke_mod_color(4)==global.get_mod_d(),
+                    "Native slots one through four retain the guide's A through D colors");
             const auto colors = window->get_colors();
             require(colors->row_count() == role_count, "Every semantic role must reach the generated interface");
             for (std::size_t i = 0; i < role_count; ++i) {

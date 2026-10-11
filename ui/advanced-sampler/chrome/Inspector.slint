@@ -13,7 +13,7 @@ component InspectorRow inherits Rectangle {
     callback parameter-gesture(string, int, float);
     callback context-action(string, string);
     height: root.entry.kind == "header" ? 28px : root.entry.kind == "text" ? note.preferred-height + 8px : root.entry.kind == "action" ? 30px : root.entry.kind == "knobs" ? ceil(root.parameters.length / 5) * 68px : 24px;
-    if root.entry.kind == "header" : Text { y: 10px; height: 14px; text: root.entry.label.to-uppercase(); font-family: SamplerTheme.font-ui; font-size: 12px; font-weight: 700; letter-spacing: 1.2px; color: SamplerTheme.secondary; }
+    if root.entry.kind == "header" : Text { x: 0px; y: 10px; width: parent.width; height: 14px; text: root.entry.label.to-uppercase(); font-family: SamplerTheme.font-ui; font-size: 12px; font-weight: 700; letter-spacing: 1.2px; color: SamplerTheme.secondary; }
     if root.entry.kind == "property" : HorizontalLayout {
         spacing: 8px;
         Text { width: 72px; text: root.entry.label; font-family: SamplerTheme.font-ui; font-size: 12px; color: SamplerTheme.paper-3; vertical-alignment: center; overflow: elide; }
@@ -24,8 +24,8 @@ component InspectorRow inherits Rectangle {
     note := Text { visible: root.entry.kind == "text"; y: 4px; width: parent.width; text: root.entry.value == "" ? root.entry.label : root.entry.value; font-family: SamplerTheme.font-ui; font-size: 12px; color: SamplerTheme.paper-3; wrap: word-wrap; }
     if root.entry.kind == "action" : ActionButton { y: 6px; height: 24px; compact: true; text: root.entry.label; icon: root.entry.icon; primary: root.entry.primary; clicked => { root.action(root.entry.action, root.entry.target, root.entry.field, root.entry.amount); } }
     if root.entry.kind == "modulation" : Rectangle { height: 22px; border-radius: 2px; border-width: 1px; border-color: SamplerTheme.border-control; background: SamplerTheme.surface-well;
-        private property <color> tint: root.entry.host ? SamplerTheme.host : root.entry.slot == 0 ? SamplerTheme.mod-a : root.entry.slot == 1 ? SamplerTheme.mod-b : root.entry.slot == 2 ? SamplerTheme.mod-c : SamplerTheme.mod-d;
-        Text { x: 6px; width: root.entry.host ? 36px : 14px; height: parent.height; text: root.entry.host ? "HOST" : root.entry.slot < 0 ? "" : ["●", "▲", "■", "◆"][mod(root.entry.slot, 4)]; color: parent.tint; font-family: SamplerTheme.font-ui; font-size: 11px; font-weight: 600; vertical-alignment: center; }
+        private property <color> tint: root.entry.host ? SamplerTheme.host : SamplerTheme.mod-color(root.entry.slot);
+        Text { x: 6px; width: root.entry.host ? 36px : 14px; height: parent.height; text: root.entry.host ? "HOST" : root.entry.slot < 0 ? "" : root.entry.slot == 0 ? "—" : ["●", "▲", "■", "◆"][(root.entry.slot - 1).clamp(0,3)]; color: parent.tint; font-family: SamplerTheme.font-ui; font-size: 11px; font-weight: 600; vertical-alignment: center; }
         Text { x: root.entry.host ? 46px : 24px; width: max(0px, parent.width - self.x - 51px); height: parent.height; text: root.entry.label; accessible-label: root.entry.host ? "Host automation: " + root.entry.label : "Modulation: " + root.entry.label; color: SamplerTheme.paper-1; font-family: SamplerTheme.font-ui; font-size: 12px; vertical-alignment: center; overflow: elide; }
         if !root.entry.host : Text { x: parent.width - 49px; width: 43px; height: parent.height; text: (root.entry.amount > 0 ? "+" : root.entry.amount < 0 ? "−" : "") + round(abs(root.entry.amount) * 100) + "%"; color: parent.tint; font-family: SamplerTheme.font-value; font-size: 11px; vertical-alignment: center; horizontal-alignment: right; }
     }
@@ -50,7 +50,7 @@ component HistoryRow inherits FocusScope {
         if root.operation.selected : Rectangle { width: 2px; background: SamplerTheme.accent; }
         Text { x: 6px; width: 10px; height: parent.height; text: root.source ? "" : "⋮⋮"; font-family: SamplerTheme.font-value; font-size: 11px; color: SamplerTheme.paper-4; vertical-alignment: center; }
         AppIcon { x: 41px; y: 5px; name: root.source ? "folder" : "slice"; size: 14px; tint: root.operation.on ? SamplerTheme.paper-2 : SamplerTheme.paper-4; }
-        Text { x: 61px; width: 72px; height: parent.height; text: root.operation.label; font-family: SamplerTheme.font-ui; font-size: 13px; font-weight: 600; color: root.operation.on ? SamplerTheme.paper-1 : SamplerTheme.paper-4; vertical-alignment: center; overflow: elide; }
+        Text { x: 61px; width: 72px; height: parent.height; text: root.operation.label; font-family: SamplerTheme.font-ui; font-size: 13px; font-weight: 500; color: root.operation.on ? SamplerTheme.paper-1 : SamplerTheme.paper-4; vertical-alignment: center; overflow: elide; }
         Text { x: 138px; width: max(0px, parent.width - 144px); height: parent.height; text: root.operation.detail; font-family: SamplerTheme.font-value; font-size: 11px; color: SamplerTheme.paper-3; vertical-alignment: center; horizontal-alignment: right; overflow: elide; }
     }
     pointer := TouchArea {
@@ -120,7 +120,7 @@ export component Inspector inherits MaterialSurface {
         Rectangle { y: parent.height - 1px; height: 1px; background: SamplerTheme.line-1; }
     }
     if Session.inspector-has-history : Rectangle { x: 1px; y: root.heading-height + 1px; width: parent.width - 2px; height: root.history-height;
-        Text { x: 12px; height: 28px; text: "HISTORY"; font-family: SamplerTheme.font-ui; font-size: 12px; font-weight: 700; letter-spacing: 1.2px; color: SamplerTheme.secondary; vertical-alignment: center; }
+        Text { x: 12px; y: 0px; width: max(0px, parent.width - 72px); height: 28px; text: "HISTORY"; accessible-label: "HISTORY"; font-family: SamplerTheme.font-ui; font-size: 12px; font-weight: 700; letter-spacing: 1.2px; color: SamplerTheme.secondary; vertical-alignment: center; }
         ActionButton { x: parent.width - 57px; y: 2px; width: 24px; icon: "plus"; label: "Add operation"; compact: true; ghost: true; clicked => { root.command("sample.history-add", "", "fade-in", 0); } }
         ActionButton { x: parent.width - 29px; y: 2px; width: 24px; icon: "layers"; label: "Collapse stack to a new sample"; enabled: Session.collapse-state != "running"; selected: Session.collapse-state == "running"; compact: true; ghost: true; clicked => { root.command("sample.history-collapse", "", "", 0); } }
         for operation[i] in root.history : HistoryRow { x: 4px; y: 28px + i * 25px; width: parent.width - 8px; operation: operation; command(a,t,f,v) => { root.command(a,t,f,v); } }

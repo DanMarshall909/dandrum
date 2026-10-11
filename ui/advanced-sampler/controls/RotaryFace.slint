@@ -13,7 +13,7 @@ export component RotaryFace inherits Rectangle {
     private property <length> thin: root.width >= 44px ? 1.5px : 1.25px;
     private property <length> ring: root.width / 2 - (root.width >= 44px ? 6.5px : 5px) - root.thick / 2;
     private property <length> cap: root.ring - root.thick / 2 - (root.width >= 44px ? 2.5px : 2px);
-    pure function mod-color(slot: int) -> color { return slot == 0 ? SamplerTheme.mod-a : slot == 1 ? SamplerTheme.mod-b : slot == 2 ? SamplerTheme.mod-c : SamplerTheme.mod-d; }
+    pure function mod-color(slot: int) -> color { return SamplerTheme.mod-color(slot); }
     if SamplerTheme.soft : Rectangle { x: parent.width / 2 - root.cap * 1.16; y: parent.height / 2 - root.cap * 1.16 - 1.5px; width: root.cap * 2.32; height: self.width; border-radius: self.width / 2; background: SamplerTheme.ink-0;
         Rectangle { border-radius: parent.width / 2; background: @linear-gradient(180deg, #0000001F, #00000066); }
     }

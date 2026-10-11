@@ -66,7 +66,10 @@ int main()
         expect(std::abs(model->find("pad","36")->number("gain")+12)<0.001,"Pad live level accepts an actual negative dB value");
         element("Start").set_accessible_value("0.12");
         expect(std::abs(model->find("pad","36")->number("start")-0.12)<0.001,"Pad live start updates its selected native offset at the displayed step");
-        element("Pad 46 A♯2, Open Hat ×2").invoke_accessible_default_action();
+        const auto openHat = fixture->global<dandrum_ui::Session>().get_pads()->row_data(46);
+        expect(openHat && openHat->mapped && openHat->name == "Open Hat" && openHat->alternates == 2,
+               "Scoped Open Hat label names its sound while preserving its two native alternates");
+        element("Pad 46 A♯2, Open Hat").invoke_accessible_default_action();
         element("Variation").set_accessible_value("35%");
         expect(std::abs(model->find("pad","46")->number("variation")-0.35)<0.001,"Pad variation converts displayed percentage into normalized native value");
         element("Pad 36 C2, Kick").invoke_accessible_default_action();
@@ -98,7 +101,7 @@ int main()
         expect(model->records("route").size()==padRoutes+1&&model->records("route").back().text("destination")=="pad:36:pan","Actual modulator drag creates a route to the selected pad parameter");
         element("Modulation collapsed").invoke_accessible_default_action();
         expect(slint::testing::ElementHandle::find_by_accessible_label(fixture,"Edit pad modulation lfo1 to Pan").size()==1&&slint::testing::ElementHandle::find_by_accessible_label(fixture,"Edit pad modulation velocity-mod to Level").empty(),"Pad modulation displays only routes targeting the selected note");
-        element("Pad 46 A♯2, Open Hat ×2").invoke_accessible_default_action();
+        element("Pad 46 A♯2, Open Hat").invoke_accessible_default_action();
         expect(slint::testing::ElementHandle::find_by_accessible_label(fixture,"Edit pad modulation lfo1 to Pan").empty(),"Changing pads removes the previous pad's route rows");
         element("Edit pad modulation velocity-mod to Level").invoke_accessible_default_action();
         expect(model->text("page")=="mod"&&model->find("route",model->text("selected-route"))->text("destination")=="pad:46:gain","Pad modulation row navigates to its actual native route editor");

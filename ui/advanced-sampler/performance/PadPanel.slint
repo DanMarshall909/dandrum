@@ -23,7 +23,7 @@ export component PadPanel inherits Rectangle {
         Rectangle { y: parent.height - 1px; height: 1px; background: SamplerTheme.line-1; }
     }
     Rectangle { visible: root.pad.mapped; x: 4px; y: 34px; width: parent.width - 8px; height: parent.height - 36px;
-        waveform := Rollout { width: parent.width; title: "Waveform"; open: true; body-height: 68px;
+        waveform := Rollout { y: 0px; width: parent.width; title: "Waveform"; open: true; body-height: 68px;
             PadWave { x: 8px; y: 4px; width: parent.width - 16px; height: 56px; peaks: Session.waveform; cursor: root.pad.sounding ? Session.playhead : 0; audition => { Session.note-on(root.pad.note, 100, "pad.preview"); Session.note-off(root.pad.note, "pad.preview"); } }
         }
         live := Rollout { y: waveform.height; width: parent.width; title: "Live"; summary: "pitch · level · pan"; open: true; body-height: 74px;
@@ -66,7 +66,7 @@ export component PadPanel inherits Rectangle {
                         clicked => { Session.command("route.select", r.id, "", 0); Session.command("page.select", "mod", "", 0); }
                     }
                     if root.owns-route(r.destination) : Rectangle {
-                        for m in Session.modulators : Text { visible: m.id == r.source; width: parent.width - 46px; text: m.name + " → " + root.route-label(r.destination); font-family: SamplerTheme.font-ui; font-size: 13px; color: r.slot == 0 ? SamplerTheme.mod-a : r.slot == 1 ? SamplerTheme.mod-b : r.slot == 2 ? SamplerTheme.mod-c : SamplerTheme.mod-d; vertical-alignment: center; overflow: elide; }
+                        for m in Session.modulators : Text { visible: m.id == r.source; width: parent.width - 46px; text: m.name + " → " + root.route-label(r.destination); font-family: SamplerTheme.font-ui; font-size: 13px; color: SamplerTheme.mod-color(r.slot); vertical-alignment: center; overflow: elide; }
                         Text { x: parent.width - 46px; width: 46px; text: round(r.amount * 100) + "%"; font-family: SamplerTheme.font-value; font-size: 12px; color: SamplerTheme.paper-2; vertical-alignment: center; horizontal-alignment: right; }
                     }
                 }

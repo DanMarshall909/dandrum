@@ -25,6 +25,9 @@ export global SamplerTheme {
     in-out property <color> mod-b: #A98BFF;
     in-out property <color> mod-c: #8EDB5A;
     in-out property <color> mod-d: #FF85BE;
+    public pure function mod-color(slot: int) -> color {
+        return slot <= 0 ? SamplerTheme.paper-3 : slot == 1 ? SamplerTheme.mod-a : slot == 2 ? SamplerTheme.mod-b : slot == 3 ? SamplerTheme.mod-c : SamplerTheme.mod-d;
+    }
     in-out property <color> mod-wash: #203233;
     in-out property <color> ok: #5FD38A;
     in-out property <color> warn: #E9C15A;

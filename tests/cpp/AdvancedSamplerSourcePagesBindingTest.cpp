@@ -277,7 +277,7 @@ int main() {
         activate("Even");
         require(session.get_slices()->row_count() == 12, "Native Even action uses the edited count");
         const auto sliceSelectionUndo = binding->model()->undoCount();
-        waveClick(230, 2.5 / 12);
+        waveClick(190, 2.5 / 12);
         require(session.get_selected_slice() == binding->model()->records("slice")[2].id.c_str()
                 && binding->model()->undoCount() == sliceSelectionUndo,
                 "Actual slice waveform click selects its containing third region without a patch edit");

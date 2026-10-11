@@ -190,7 +190,7 @@ int main(){try{
         }
     }
     require(processors.size()==9&&descriptor_count>=25,"All nine guide processors have direct per-descriptor commit/reset coverage");
-    for(const auto state:{"missing","unsupported"}){
+    for(const auto state:{"missing"}){
         require(session.invoke_command("state.select",state,"",0),"Select unavailable sample Inspector");
         const auto source=session.get_selected_source();
         for(const auto& [label,expected]:std::initializer_list<std::pair<const char*,const char*>>{{"Locate file…","asset.relink"},{"Search folder…","asset.search-folder"},{"Replace with…","asset.replace"}}){
@@ -198,6 +198,11 @@ int main(){try{
             require(browse==expected&&session.get_selected_source()==source,"Actual unavailable sample Inspector action preserves its selected asset and enters the precise file boundary: "+std::string(label));
         }
     }
+    require(session.invoke_command("state.select","unsupported","",0),"Select rejected replacement Inspector");
+    require(session.get_asset_state()=="unsupported" && binding->model()->find("source",session.get_selected_source().data())->text("state")=="cached",
+            "Rejected replacement retains the actual cached source and its ordinary Inspector");
+    require(elements(window,"Locate file…").empty(), "Cached replacement failure does not claim its retained source is missing");
+    browse.clear();activate(window,"Replace…");require(browse=="asset.replace","Rejected replacement keeps the precise working-source replacement boundary");
     require(session.invoke_command("state.select","sample","",0),"Select loaded sample Inspector replacement");
     browse.clear();activate(window,"Replace…");require(browse=="asset.replace","Actual loaded sample Inspector Replace enters the native file boundary");
     for(const auto state:{"voice","fx"}){

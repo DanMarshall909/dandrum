@@ -1,9 +1,9 @@
 export { PadInfo, PatchInfo, MacroInfo } from "performance/types.slint";
-export { CandidateInfo, SendInfo, OverviewInfo, MacroBindingInfo, TreeInfo, SourceInfo, SourceGroupInfo, SliceSourceInfo, ParameterInfo, RouteInfo, RouteGroupInfo, ModulatorInfo, ModuleInfo, ProcessorChainInfo, HistoryInfo, DiagnosticInfo, EventInfo, KeyZone, WaveBucket, WaveSlice, OutputBus, LayerRow, LayerParameter, ModAssignment } from "domain/types.slint";
+export { CandidateInfo, SendInfo, OverviewInfo, MacroBindingInfo, TreeInfo, SourceInfo, SourceGroupInfo, SliceSourceInfo, SliceRowInfo, ParameterInfo, RouteInfo, RouteGroupInfo, ModulatorInfo, ModuleInfo, ProcessorChainInfo, HistoryInfo, DiagnosticInfo, EventInfo, KeyZone, WaveBucket, WaveSlice, OutputBus, LayerRow, LayerParameter, ModAssignment } from "domain/types.slint";
 import { PadInfo, PatchInfo, MacroInfo } from "performance/types.slint";
 export { InspectorInfo } from "domain/types.slint";
 import { InspectorInfo } from "domain/types.slint";
-import { CandidateInfo, SendInfo, OverviewInfo, MacroBindingInfo, TreeInfo, SourceInfo, SourceGroupInfo, SliceSourceInfo, ParameterInfo, RouteInfo, RouteGroupInfo, ModulatorInfo, ModuleInfo, ProcessorChainInfo, HistoryInfo, DiagnosticInfo, EventInfo, KeyZone, WaveBucket, WaveSlice, OutputBus, LayerRow } from "domain/types.slint";
+import { CandidateInfo, SendInfo, OverviewInfo, MacroBindingInfo, TreeInfo, SourceInfo, SourceGroupInfo, SliceSourceInfo, SliceRowInfo, ParameterInfo, RouteInfo, RouteGroupInfo, ModulatorInfo, ModuleInfo, ProcessorChainInfo, HistoryInfo, DiagnosticInfo, EventInfo, KeyZone, WaveBucket, WaveSlice, OutputBus, LayerRow } from "domain/types.slint";
 // Native bindings own edits. Defaults describe an explicitly silent capture fixture.
 export global Session {
     in-out property <string> page: "sample";
@@ -31,6 +31,9 @@ export global Session {
     in-out property <bool> host-automation;
     in-out property <float> sample-duration;
     in-out property <string> sample-metadata;
+    in-out property <string> sample-peak;
+    in-out property <string> sample-loudness;
+    in-out property <string> sample-pitch;
     in-out property <string> selected-history;
     in-out property <bool> history-collapsed;
     in-out property <string> selected-zone: "kick";
@@ -39,6 +42,8 @@ export global Session {
     in-out property <string> filter-mode: "lp";
     in-out property <int> mapping-low: 24;
     in-out property <int> mapping-high: 47;
+    in-out property <string> sample-name;
+    in-out property <float> sample-progress: 1;
     in-out property <float> render-progress;
     in-out property <[ParameterInfo]> autosampler-parameters;
     in-out property <string> freeze-mode: "chain";
@@ -126,9 +131,11 @@ export global Session {
     in-out property <[KeyZone]> zones;
     in-out property <[WaveBucket]> waveform;
     in-out property <[WaveSlice]> slices;
+    in-out property <[SliceRowInfo]> slice-list;
     in-out property <[WaveSlice]> analysis-candidates;
     in-out property <[LayerRow]> layers;
     in-out property <[OutputBus]> buses;
+    in-out property <[OutputBus]> routing-buses;
     in-out property <[RouteInfo]> routes;
     in-out property <string> route-grouping: "source";
     in-out property <[RouteGroupInfo]> route-groups;
@@ -146,6 +153,7 @@ export global Session {
     in-out property <[string]> selected-zones;
     in-out property <[string]> selected-candidates;
     in-out property <[SliceSourceInfo]> slice-sources;
+    pure callback velocity-path(float, float, float, string, bool) -> string;
     pure callback slice-source([SliceSourceInfo], string) -> string;
     pure callback spectral-preview([WaveBucket], bool, float, float, color, color, color, color, color) -> image;
     callback command(string, string, string, float) -> bool;

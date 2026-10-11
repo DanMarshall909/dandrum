@@ -62,6 +62,18 @@ foreach(family Barlow BarlowSemiCondensed JetBrainsMono)
 endforeach()
 
 if(DANDRUM_SAMPLER_BUILD_TESTS)
+    add_executable(dandrum-sampler-visual-state-test "${DANDRUM_SAMPLER_REPO}/tests/cpp/AdvancedSamplerVisualStateTest.cpp")
+    target_link_libraries(dandrum-sampler-visual-state-test PRIVATE dandrum-advanced-sampler-model)
+    add_test(NAME advanced-sampler-visual-state COMMAND dandrum-sampler-visual-state-test)
+    set_tests_properties(advanced-sampler-visual-state PROPERTIES LABELS "sampler;headless;visual-regression")
+    foreach(kind Utility Performance Domain Projection)
+        string(TOLOWER "${kind}" lower_kind)
+        add_executable(dandrum-sampler-visual-${lower_kind}-test "${DANDRUM_SAMPLER_REPO}/tests/cpp/AdvancedSamplerVisual${kind}Test.cpp")
+        target_link_libraries(dandrum-sampler-visual-${lower_kind}-test PRIVATE dandrum-advanced-sampler-scene dandrum-advanced-sampler-model)
+        target_compile_definitions(dandrum-sampler-visual-${lower_kind}-test PRIVATE SLINT_FEATURE_EXPERIMENTAL)
+        add_test(NAME advanced-sampler-visual-${lower_kind} COMMAND dandrum-sampler-visual-${lower_kind}-test)
+        set_tests_properties(advanced-sampler-visual-${lower_kind} PROPERTIES LABELS "sampler;headless;visual-regression")
+    endforeach()
     add_executable(dandrum-sampler-app-binding-test "${DANDRUM_SAMPLER_REPO}/tests/cpp/AdvancedSamplerAppBindingTest.cpp")
     target_link_libraries(dandrum-sampler-app-binding-test PRIVATE dandrum-advanced-sampler-scene dandrum-advanced-sampler-model)
     target_compile_definitions(dandrum-sampler-app-binding-test PRIVATE SLINT_FEATURE_EXPERIMENTAL)
@@ -170,6 +182,12 @@ if(DANDRUM_SAMPLER_BUILD_TESTS)
         if(DANDRUM_SAMPLER_TEST_HEADLESS)
             list(APPEND runtime_arguments --headless)
         endif()
+        add_test(NAME advanced-sampler-visual-material-render COMMAND "${Python3_EXECUTABLE}"
+            "${DANDRUM_SAMPLER_REPO}/scripts/run-native-slint-test.py"
+            --executable "$<TARGET_FILE:dandrum-sampler-visual-utility-test>"
+            --evidence "${CMAKE_BINARY_DIR}/visual-material-render" ${runtime_arguments})
+        set_tests_properties(advanced-sampler-visual-material-render PROPERTIES ENVIRONMENT "PYTHONDONTWRITEBYTECODE=1"
+            LABELS "sampler;runtime;visual-regression" TIMEOUT 120)
         add_test(NAME advanced-sampler-ui-runtime COMMAND "${Python3_EXECUTABLE}"
             "${DANDRUM_SAMPLER_REPO}/scripts/check-advanced-sampler.py"
             --viewer "${DANDRUM_SAMPLER_VIEWER}" --evidence "${CMAKE_BINARY_DIR}/evidence" ${runtime_arguments})
@@ -198,6 +216,16 @@ if(DANDRUM_SAMPLER_BUILD_TESTS)
             --executable "$<TARGET_FILE:dandrum-sampler-wave-render-test>"
             --evidence "${CMAKE_BINARY_DIR}/wave-render" ${runtime_arguments})
         set_tests_properties(advanced-sampler-wave-render PROPERTIES ENVIRONMENT "PYTHONDONTWRITEBYTECODE=1"
+            LABELS "sampler;runtime;capture" TIMEOUT 120)
+        add_executable(dandrum-sampler-key-render-test "${DANDRUM_SAMPLER_REPO}/tests/cpp/AdvancedSamplerKeyRenderTest.cpp")
+        target_link_libraries(dandrum-sampler-key-render-test PRIVATE Slint::Slint)
+        target_compile_definitions(dandrum-sampler-key-render-test PRIVATE SLINT_FEATURE_EXPERIMENTAL)
+        slint_target_sources(dandrum-sampler-key-render-test "${DANDRUM_SAMPLER_REPO}/tests/slint/AdvancedSamplerKeyRender.slint" NAMESPACE dandrum_ui)
+        add_test(NAME advanced-sampler-key-render COMMAND "${Python3_EXECUTABLE}"
+            "${DANDRUM_SAMPLER_REPO}/scripts/run-native-slint-test.py"
+            --executable "$<TARGET_FILE:dandrum-sampler-key-render-test>"
+            --evidence "${CMAKE_BINARY_DIR}/key-render" ${runtime_arguments})
+        set_tests_properties(advanced-sampler-key-render PROPERTIES ENVIRONMENT "PYTHONDONTWRITEBYTECODE=1;SLINT_BACKEND=winit-software"
             LABELS "sampler;runtime;capture" TIMEOUT 120)
         add_executable(dandrum-sampler-domain-render-test "${DANDRUM_SAMPLER_REPO}/tests/cpp/AdvancedSamplerDomainRenderTest.cpp")
         target_link_libraries(dandrum-sampler-domain-render-test PRIVATE Slint::Slint dandrum-advanced-sampler-model)

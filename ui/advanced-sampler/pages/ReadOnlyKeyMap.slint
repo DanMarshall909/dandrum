@@ -1,0 +1,59 @@
+import { Session } from "../Session.slint";
+import { SamplerTheme } from "../theme/Theme.slint";
+import { MaterialLayers } from "../theme/Material.slint";
+import { FitLayout } from "../performance/FitLayout.slint";
+import { KeyCell } from "../performance/KeyCell.slint";
+export component DomainMapKeyboard inherits Rectangle {
+    in property <int> low-note: 24;
+    in property <int> high-note: 96;
+    in property <bool> audition-enabled;
+    in property <string> source: "mapping";
+    private property <int> low-white: FitLayout.white-index(root.low-note);
+    private property <int> high-white: FitLayout.white-index(root.high-note) + (FitLayout.black(root.high-note) ? 1 : 0);
+    private property <int> white-count: max(1, root.high-white - root.low-white + 1);
+    clip: true;
+    for i in root.white-count : KeyCell {
+        x: i * parent.width / root.white-count; y: 0px; width: parent.width / root.white-count; height: parent.height;
+        note: FitLayout.white-note(i + root.low-white); mapped: true; enabled: root.audition-enabled;
+        source: root.source + "." + self.note; generation: Session.current-patch-id;
+        note-on(n,v,s) => { Session.note-on(n,v,s); } note-off(n,s) => { Session.note-off(n,s); }
+    }
+    for i in 53 : KeyCell {
+        private property <int> midi: FitLayout.black-note(i);
+        visible: self.midi >= root.low-note && self.midi <= root.high-note;
+        x: (FitLayout.white-index(self.midi) - root.low-white + 0.69) * parent.width / root.white-count; y: 0px;
+        width: parent.width / root.white-count * 0.62; height: parent.height * 0.6;
+        note: self.midi; black: true; mapped: true; enabled: root.audition-enabled;
+        source: root.source + "." + self.note; generation: Session.current-patch-id;
+        note-on(n,v,s) => { Session.note-on(n,v,s); } note-off(n,s) => { Session.note-off(n,s); }
+    }
+}
+
+// The overview shares native zone coordinates and keyboard cells, with no
+// editing or audition callbacks. It does not claim an audio graph is prepared.
+export component ReadOnlyKeyMap inherits Rectangle {
+    height: 149px;
+    background: SamplerTheme.ink-2;
+    border-width: 1px; border-color: SamplerTheme.line-1; border-radius: 6px;
+    MaterialLayers { x: 0px; y: 0px; width: parent.width; height: parent.height; border-radius: 6px; }
+    Text { x: 8px; y: 7px; height: 20px; text: "KEY MAP · READ-ONLY OVERVIEW"; font-family: SamplerTheme.font-ui; font-size: 11px; font-weight: 700; letter-spacing: 0.7px; color: SamplerTheme.paper-3; }
+    for velocity in [127, 96, 64, 32, 1] : Text {
+        x: 4px; y: 33px + (127 - velocity) / 127 * 44px; width: 29px; height: 12px;
+        text: velocity; font-family: SamplerTheme.font-value; font-size: 10px; color: SamplerTheme.paper-4; horizontal-alignment: right;
+    }
+    plot := Rectangle { x: 38px; y: 33px; width: parent.width - 46px; height: 56px; clip: true; background: SamplerTheme.ink-1;
+        for i in 73 : Rectangle { x: i / 73 * parent.width; y: 0px; width: parent.width / 73; height: parent.height;
+            background: FitLayout.black(i + 24) ? SamplerTheme.ink-0 : transparent;
+            if mod(i, 12) == 0 : Rectangle { x: 0px; y: 0px; width: 1px; height: parent.height; background: SamplerTheme.line-2; }
+        }
+        for velocity in [32, 64, 96] : Rectangle { x: 0px; y: (127 - velocity) / 127 * parent.height; width: parent.width; height: 1px; background: SamplerTheme.line-1; }
+        for z in Session.zones : Rectangle {
+            x: (z.lo - 24) / 73 * parent.width; y: (127 - z.vel-hi) / 127 * parent.height;
+            width: (z.hi - z.lo + 1) / 73 * parent.width; height: max(1px, (z.vel-hi - z.vel-lo + 1) / 127 * parent.height);
+            border-radius: 2px; border-width: 1px; border-color: z.id == Session.selected-zone ? SamplerTheme.accent : SamplerTheme.line-3;
+            background: z.id == Session.selected-zone ? SamplerTheme.accent-wash : SamplerTheme.ink-6.with-alpha(0.72);
+        }
+    }
+    DomainMapKeyboard { x: 38px; y: 93px; width: parent.width - 46px; height: 44px; }
+}
+

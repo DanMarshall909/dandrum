@@ -35,7 +35,7 @@ component AppearanceColor inherits Rectangle {
     Text { x: 0px; y: 0px; width: parent.width; height: 20px; text: root.label; color: SamplerTheme.paper-2; font-family: SamplerTheme.font-ui; font-weight: 600; font-size: 12px; vertical-alignment: center; }
     choices := AppearanceOptions { y: 22px; width: parent.width; values: root.values; selected: root.value; changed(value) => { root.changed(value); } }
     Rectangle { x: 0px; y: edit.y; width: parent.width - 74px; height: 26px; background: SamplerTheme.surface-well; border-radius: 2px; border-width: 1px; border-color: edit.has-focus ? SamplerTheme.color-focus : SamplerTheme.border-control; }
-    edit := TextInput { x: 6px; y: 22px + choices.height; width: parent.width - 86px; height: 26px; text: root.value; accessible-label: root.label + " custom color"; color: SamplerTheme.paper-1; font-family: SamplerTheme.font-value; font-size: 12px; vertical-alignment: center; single-line: true; accepted => { root.changed(self.text); } }
+    edit := TextInput { x: 6px; y: 22px + choices.height; width: parent.width - 86px; height: 26px; text: root.value; accessible-label: root.label + " custom color"; color: SamplerTheme.paper-1; font-family: SamplerTheme.font-value; font-size: 12px; font-weight: 500; vertical-alignment: center; single-line: true; accepted => { root.changed(self.text); } }
     ActionButton { x: parent.width - 69px; y: edit.y; width: 64px; text: "Apply"; label: "Apply " + root.label + " color"; clicked => { root.changed(edit.text); } }
 }
 
@@ -63,7 +63,7 @@ export component Appearance inherits FocusScope {
     MaterialSurface {
         x: (parent.width - self.width) / 2; y: (parent.height - self.height) / 2;
         width: min(parent.width - 32px, 480px); height: min(parent.height - 32px, 560px);
-        base: SamplerTheme.surface-menu;
+        base: SamplerTheme.surface-menu; raised: true;
         TouchArea { width: parent.width; height: parent.height; }
         Text { x: 16px; y: 12px; text: "Appearance"; color: SamplerTheme.paper-1; font-family: SamplerTheme.font-display; font-size: 22px; font-weight: 700; }
         ActionButton { x: parent.width - 74px; y: 12px; width: 58px; text: "Close"; clicked => { root.close(); } }
@@ -80,8 +80,8 @@ export component Appearance inherits FocusScope {
                 Text { text: "MODULATION PALETTE"; color: SamplerTheme.paper-3; font-family: SamplerTheme.font-ui; font-size: 11px; font-weight: 700; }
                 AppearanceOptions { values: ["standard", "warm", "cool", "mono"]; selected: AppearanceState.mod-palette; changed(value) => { root.choose("mod-palette", value); } }
                 AppearanceColor { label: "Host automation"; value: AppearanceState.host; values: ["#5B9DFF", "#4FD1C5", "#B58CFF", "#FFFFFF"]; changed(value) => { root.choose("host", value); } }
-                Text { text: AppearanceState.error; color: SamplerTheme.error; font-family: SamplerTheme.font-ui; font-size: 12px; wrap: word-wrap; }
-                Text { text: "Custom colors accept #RGB or #RRGGBB. Light surfaces adjust role contrast automatically."; color: SamplerTheme.paper-3; font-family: SamplerTheme.font-ui; font-size: 11px; wrap: word-wrap; }
+                Text { text: AppearanceState.error; color: SamplerTheme.error; font-family: SamplerTheme.font-ui; font-size: 12px; font-weight: 500; wrap: word-wrap; }
+                Text { text: "Custom colors accept #RGB or #RRGGBB. Light surfaces adjust role contrast automatically."; color: SamplerTheme.paper-3; font-family: SamplerTheme.font-ui; font-size: 11px; font-weight: 500; wrap: word-wrap; }
             }
         }
     }

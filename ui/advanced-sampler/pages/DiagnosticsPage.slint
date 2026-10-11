@@ -6,7 +6,7 @@ import { EventInfo } from "../Session.slint";
 
 component TraceHeading inherits Text {
     height: 26px; color: SamplerTheme.secondary; font-family: SamplerTheme.font-ui;
-    font-size: 12px; font-weight: 700; letter-spacing: 1.2px; vertical-alignment: center;
+    font-size: 12px; font-weight: 700; letter-spacing: 1.2px; vertical-alignment: center; horizontal-alignment: left;
 }
 
 component HitRow inherits FocusScope {
@@ -27,18 +27,26 @@ component HitRow inherits FocusScope {
 export component DiagnosticsPage inherits Rectangle {
     in property <bool> compact;
     in property <bool> drawer;
-    private property <length> trace-height: root.drawer ? root.height : 176px;
-    private property <length> hits-width: root.width < 720px ? 180px : 240px;
-    private property <length> reasons-width: root.width < 720px ? 152px : 230px;
+    private property <length> trace-height: root.drawer ? root.height : 177px;
+    // The imported guide uses content-box sizing: 240+1 and 230+24+1.
+    private property <length> hits-width: 241px;
+    private property <length> reasons-width: 255px;
+    private property <[string]> reason-labels: Session.diagnostic-reason == "missing" ? ["No matching rule", "Muted by rule or group", "Voice limit reached", "Volume −∞", "Filter fully closed", "Missing sample"] : Session.diagnostic-reason == "probability" ? ["No matching rule", "Muted by rule or group", "Voice limit reached", "Volume −∞", "Filter fully closed", "Probability skipped"] : ["No matching rule", "Muted by rule or group", "Voice limit reached", "Volume −∞", "Filter fully closed"];
+    private property <[string]> reason-ids: ["unmapped", "muted", "limit", "volume", "filter", Session.diagnostic-reason];
     public function inspect-event(sequence: int) { Session.command("diagnostics.select", "" + sequence, "", 0); }
     public function clear-events() { Session.command("event.clear", "", "", 0); }
     public function toggle-failure() { Session.command("telemetry.fail", "", "", Session.mock-failure ? 0 : 1); }
     MaterialSurface {
-        width: parent.width; height: root.trace-height; raised: false; edge: false;
-        Rectangle { width: root.hits-width; height: parent.height; border-width: 1px; border-color: SamplerTheme.line-1;
-            Rectangle { height: 26px; background: SamplerTheme.surface-panel-header; TraceHeading { x: 12px; width: parent.width - 24px; text: "WHY DID THIS PLAY?"; } }
-            Flickable { y: 27px; height: parent.height - 27px; width: parent.width; content-height: max(self.height, Session.hits.length * 24px); content-width: self.width;
-                if Session.hits.length == 0 : Text { x: 12px; y: 8px; width: parent.width - 24px; height: 50px; text: "No hits yet. Click a pad or press A to K on the Pads page."; font-family: SamplerTheme.font-ui; font-size: 12px; color: SamplerTheme.paper-3; wrap: word-wrap; }
+        x: 0px; y: 0px; width: parent.width; height: root.trace-height; raised: false; edge: false;
+        Rectangle { x: 0px; y: 0px; width: parent.width; height: 1px; background: SamplerTheme.line-1; }
+        Rectangle { x: 0px; y: 1px; width: root.hits-width; height: parent.height - 1px;
+            Rectangle { x: parent.width - 1px; y: 0px; width: 1px; height: parent.height; background: SamplerTheme.line-1; }
+            Rectangle { x: 0px; y: 0px; width: parent.width - 1px; height: 27px; background: SamplerTheme.surface-panel-header;
+                TraceHeading { x: 12px; y: 0px; width: parent.width - 24px; text: "WHY DID THIS PLAY?"; }
+                Rectangle { x: 0px; y: parent.height - 1px; width: parent.width; height: 1px; background: SamplerTheme.line-1; }
+            }
+            Flickable { x: 0px; y: 27px; height: parent.height - 27px; width: parent.width; content-height: max(self.height, Session.hits.length * 24px); content-width: self.width;
+                if Session.hits.length == 0 : Text { x: 12px; y: 8px; width: parent.width - 24px; height: 50px; text: "No hits yet. Click a pad or press A to K on the Pads page."; font-family: SamplerTheme.font-ui; font-size: 12px; font-weight: 500; color: SamplerTheme.paper-3; wrap: word-wrap; }
                 for hit[i] in Session.hits : HitRow {
                     y: i * 24px; width: parent.width; event: hit;
                     selected: hit.sequence == Session.selected-diagnostic-event;
@@ -46,43 +54,46 @@ export component DiagnosticsPage inherits Rectangle {
                 }
             }
         }
-        Flickable { x: root.hits-width; width: parent.width - root.hits-width - root.reasons-width; height: parent.height; content-width: self.width; content-height: max(self.height, Session.diagnostics.length * 24px + 12px);
-            if Session.diagnostics.length == 0 : Rectangle { width: parent.width;
-                Text { x: 12px; y: 6px; width: parent.width - 24px; height: 20px; text: "Each hit is traced through these stages."; font-family: SamplerTheme.font-ui; font-size: 12px; color: SamplerTheme.paper-3; }
-                for title[i] in ["Event", "Trigger rules", "Selection", "Voice", "Audio source", "Modulation", "Output"] : Rectangle { x: 12px; y: 30px + i * 20px; width: parent.width - 24px; height: 20px;
-                    Text { width: 16px; text: "" + (i + 1); font-family: SamplerTheme.font-value; font-size: 10px; color: SamplerTheme.paper-3; vertical-alignment: center; }
-                    Text { x: 24px; width: 96px; text: title; font-family: SamplerTheme.font-ui; font-size: 12px; font-weight: 600; color: SamplerTheme.paper-3; vertical-alignment: center; }
+        Flickable { x: root.hits-width; y: 1px; width: parent.width - root.hits-width - root.reasons-width; height: parent.height - 1px; content-width: self.width; content-height: max(self.height, Session.diagnostics.length * 22px + 12px);
+            if Session.diagnostics.length == 0 : Rectangle { x: 0px; y: 0px; width: parent.width; height: 174px;
+                Text { x: 12px; y: 6px; width: parent.width - 24px; height: 20px; text: "Each hit is traced through these stages."; font-family: SamplerTheme.font-ui; font-size: 12px; font-weight: 500; color: SamplerTheme.paper-3; }
+                for title[i] in ["Event", "Trigger rules", "Selection", "Voice", "Output", "Modulation", "Result"] : Rectangle { x: 12px; y: 26px + i * 22px; width: parent.width - 24px; height: 20px;
+                    Rectangle { x: 0px; y: 2px; width: 16px; height: 16px; border-radius: 8px; border-width: 1px; border-color: SamplerTheme.line-3;
+                        Text { x: 0px; y: 0px; width: parent.width; height: parent.height; text: "" + (i + 1); font-family: SamplerTheme.font-value; font-size: 10px; font-weight: 600; color: SamplerTheme.paper-3; vertical-alignment: center; horizontal-alignment: center; }
+                    }
+                    Text { x: 24px; y: 0px; width: 96px; height: 20px; text: title; font-family: SamplerTheme.font-ui; font-size: 12px; font-weight: 600; color: SamplerTheme.paper-3; vertical-alignment: center; }
                     Rectangle { x: 128px; y: 10px; width: max(0px, parent.width - self.x); height: 1px; background: SamplerTheme.line-2; }
                 }
             }
-            for stage[i] in Session.diagnostics : Rectangle { x: 12px; y: 6px + i * 24px; width: parent.width - 24px; height: 24px;
-                Rectangle { x: 0px; y: 4px; width: 16px; height: 16px; border-radius: 8px; border-width: 1px; border-color: stage.state == "failed" ? SamplerTheme.warn : SamplerTheme.line-2; background: stage.state == "failed" ? SamplerTheme.warn-wash : SamplerTheme.ink-3;
+            for stage[i] in Session.diagnostics : Rectangle { x: 12px; y: 6px + i * 22px; width: parent.width - 24px; height: 20px;
+                Rectangle { x: 0px; y: 2px; width: 16px; height: 16px; border-radius: 8px; border-width: 1px; border-color: stage.state == "failed" ? SamplerTheme.warn : SamplerTheme.line-2; background: stage.state == "failed" ? SamplerTheme.warn-wash : SamplerTheme.ink-3;
                     Text { text: "" + (i + 1); font-family: SamplerTheme.font-value; font-size: 10px; font-weight: 600; color: stage.state == "failed" ? SamplerTheme.warn : SamplerTheme.paper-2; horizontal-alignment: center; vertical-alignment: center; }
                 }
-                Text { x: 24px; width: 96px; height: 24px; text: stage.title; font-family: SamplerTheme.font-ui; font-size: 12px; font-weight: 600; color: SamplerTheme.paper-3; vertical-alignment: center; overflow: elide; }
-                Text { x: 128px; width: max(0px, parent.width - self.x); height: 24px; text: stage.detail; accessible-label: stage.title + ": " + stage.detail; font-family: SamplerTheme.font-ui; font-size: 12px; color: stage.state == "failed" ? SamplerTheme.warn : SamplerTheme.paper-1; vertical-alignment: center; overflow: elide; }
+                Text { x: 24px; y: 0px; width: 96px; height: 20px; text: stage.title; font-family: SamplerTheme.font-ui; font-size: 12px; font-weight: 600; color: SamplerTheme.paper-3; vertical-alignment: center; overflow: elide; }
+                Text { x: 128px; y: 0px; width: max(0px, parent.width - self.x); height: 20px; text: stage.detail; accessible-label: stage.title + ": " + stage.detail; font-family: SamplerTheme.font-ui; font-size: 12px; font-weight: 500; color: stage.state == "failed" ? SamplerTheme.warn : SamplerTheme.paper-1; vertical-alignment: center; overflow: elide; }
             }
         }
-        Rectangle { x: parent.width - root.reasons-width; width: root.reasons-width; height: parent.height; border-width: 1px; border-color: SamplerTheme.line-1;
-            TraceHeading { x: 12px; width: parent.width - 24px; text: "IF SILENT…"; }
-            Text { x: 12px; y: 27px; width: parent.width - 24px; height: 20px; text: "Shows the exact reason"; font-family: SamplerTheme.font-ui; font-size: 11px; color: SamplerTheme.paper-3; }
-            for reason[i] in ["No matching trigger", "Muted or solo excluded", "Probability skipped", "Missing sample", "Voice limit reached"] : Rectangle {
-                x: 12px; y: 48px + i * 18px; width: parent.width - 24px; height: 18px;
-                private property <bool> active: Session.diagnostic-reason == ["unmapped", "muted", "probability", "missing", "limit"][i];
-                Rectangle { y: 6px; width: 6px; height: 6px; border-radius: 3px; background: parent.active ? SamplerTheme.warn : SamplerTheme.line-3; }
-                Text { x: 12px; width: parent.width - 28px; height: 18px; text: reason; accessible-label: reason + (parent.active ? " · active" : ""); font-family: SamplerTheme.font-ui; font-size: 12px; color: parent.active ? SamplerTheme.warn : SamplerTheme.paper-3; vertical-alignment: center; overflow: elide; }
-                Text { x: parent.width - 14px; width: 14px; height: 18px; text: parent.active ? "×" : Session.diagnostics.length > 0 ? "✓" : "—"; font-family: SamplerTheme.font-value; font-size: 10px; color: parent.active ? SamplerTheme.warn : SamplerTheme.paper-4; vertical-alignment: center; horizontal-alignment: right; }
+        Rectangle { x: parent.width - root.reasons-width; y: 1px; width: root.reasons-width; height: parent.height - 1px;
+            Rectangle { x: 0px; y: 0px; width: 1px; height: parent.height; background: SamplerTheme.line-1; }
+            TraceHeading { x: 13px; y: 8px; height: 14px; width: parent.width - 25px; text: "IF SILENT…"; }
+            Text { x: 13px; y: 25px; width: parent.width - 25px; height: 13px; text: "Shows the exact reason"; font-family: SamplerTheme.font-ui; font-size: 11px; font-weight: 500; color: SamplerTheme.paper-3; }
+            for reason[i] in root.reason-labels : Rectangle {
+                x: 13px; y: 41px + i * 21px; width: parent.width - 25px; height: 18px;
+                private property <bool> active: Session.diagnostic-reason == root.reason-ids[i];
+                Rectangle { x: 0px; y: 6px; width: 6px; height: 6px; border-radius: 3px; background: parent.active ? SamplerTheme.warn : SamplerTheme.ok; }
+                Text { x: 12px; y: 0px; width: parent.width - 48px; height: 18px; text: reason; accessible-label: reason + (parent.active ? " · active" : ""); font-family: SamplerTheme.font-ui; font-size: 12px; font-weight: 500; color: parent.active ? SamplerTheme.warn : SamplerTheme.paper-2; vertical-alignment: center; overflow: elide; }
+                Text { x: parent.width - 30px; y: 0px; width: 30px; height: 18px; text: parent.active ? "Cause" : "OK"; font-family: SamplerTheme.font-value; font-size: 10px; color: parent.active ? SamplerTheme.warn : SamplerTheme.paper-4; vertical-alignment: center; horizontal-alignment: right; }
             }
         }
     }
-    if !root.drawer : MaterialSurface { y: root.trace-height + 8px; width: parent.width; height: max(0px, parent.height - self.y);
-        Rectangle { height: 34px; background: SamplerTheme.surface-panel-header;
-            TraceHeading { x: 12px; height: parent.height; text: "EVENT LOG"; }
+    if !root.drawer : MaterialSurface { x: 0px; y: root.trace-height + 8px; width: parent.width; height: max(0px, parent.height - self.y);
+        Rectangle { x: 0px; y: 0px; width: parent.width; height: 34px; background: SamplerTheme.surface-panel-header;
+            TraceHeading { x: 12px; y: 0px; height: parent.height; text: "EVENT LOG"; }
             ActionButton { x: parent.width - 282px; y: 5px; width: 190px; text: "Simulate adapter failure"; label: "Simulate adapter failure"; selected: Session.mock-failure; clicked => { root.toggle-failure(); } }
             ActionButton { x: parent.width - 86px; y: 5px; width: 78px; text: "Clear"; label: "Clear events"; clicked => { root.clear-events(); } }
         }
-        Flickable { y: 35px; width: parent.width; height: max(0px, parent.height - 35px); content-width: self.width; content-height: max(self.height, Session.events.length * 24px + 12px);
-            for event[i] in Session.events : Text { x: 12px; y: 6px + i * 24px; width: parent.width - 24px; height: 24px; text: "{event.sequence} · {event.kind} · {event.label}"; font-family: SamplerTheme.font-value; font-size: 11px; color: event.kind == "failed" ? SamplerTheme.warn : SamplerTheme.paper-3; vertical-alignment: center; overflow: elide; }
+        Flickable { x: 0px; y: 35px; width: parent.width; height: max(0px, parent.height - 35px); content-width: self.width; content-height: max(self.height, Session.events.length * 24px + 12px);
+            for event[i] in Session.events : Text { x: 12px; y: 6px + i * 24px; width: parent.width - 24px; height: 24px; text: "{event.sequence} · {event.kind} · {event.label}"; font-family: SamplerTheme.font-value; font-size: 11px; font-weight: 500; color: event.kind == "failed" ? SamplerTheme.warn : SamplerTheme.paper-3; vertical-alignment: center; overflow: elide; }
         }
     }
 }

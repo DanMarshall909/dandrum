@@ -1,3 +1,4 @@
+import { ReadOnlyKeyMap } from "ReadOnlyKeyMap.slint";
 import { ScrollView } from "std-widgets.slint";
 import { Session, ParameterInfo, ModuleInfo } from "../Session.slint";
 import { SamplerTheme } from "../theme/Theme.slint";
@@ -158,7 +159,7 @@ component VoiceSourceCard inherits PageSection {
  in property <ModuleInfo> source;
  in property <bool> editable: true;
  callback context-action(string,string);
- private property <int> columns: max(1,floor((root.width - 24px)/52px));
+ private property <int> columns: max(1,floor((root.width - 10px)/58px));
  title: "Audio source"; subtitle: root.source.name; header-height: 24px;
  height: 68px+ceil(root.source.parameters.length/root.columns)*60px;
  OptionStrip { x: 12px; y: 31px; width: min(250px,parent.width - 24px); label: root.source.name+" mode"; value: root.source.mode; enabled: root.editable;
@@ -170,8 +171,8 @@ component VoiceSourceCard inherits PageSection {
  }
  for p[i] in root.source.parameters : ParamKnob {
   private property <float> scale: p.unit == "%" ? 100 : 1;
-  x: 12px+mod(i,root.columns)*52px; y: 62px+floor(i/root.columns)*60px; width: 48px;
-  label: p.label; accessible-label: root.source.name+" "+p.label; parameter-id: p.id; size: 28px; value-display-always: true;
+  x: 12px+mod(i,root.columns)*58px; y: 62px+floor(i/root.columns)*60px; width: 56px;
+  label: p.label; accessible-label: root.source.name+" "+p.label; parameter-id: p.id; size: 28px; value-display-always: false;
   model-value: p.value*self.scale; value: p.value*self.scale; minimum: p.minimum*self.scale; maximum: p.maximum*self.scale; step: p.step*self.scale; default-value: p.default-value*self.scale; unit: p.unit; bipolar: p.bipolar; enabled: root.editable && p.available;
   gesture-began => { Session.parameter-gesture(p.id,0,self.value/self.scale); }
   changed(v) => { Session.parameter-gesture(p.id,1,v/self.scale); }
@@ -180,7 +181,29 @@ component VoiceSourceCard inherits PageSection {
  }
 }
 
-component VoiceRenderDialog inherits FocusScope {
+component VoiceParameterCard inherits PageSection {
+ in property <[ParameterInfo]> parameters;
+ in property <string> mode;
+ in property <string> mode-kind;
+ in property <bool> editable: true;
+ callback context-action(string,string);
+ header-height: 24px;
+ private property <int> columns: max(1,floor((root.width - 10px)/44px));
+ OptionStrip { visible: root.mode-kind != ""; x: 5px; y: 29px; width: parent.width - 10px; label: root.mode-kind == "filter" ? "Filter type" : "Source playback"; value: root.mode; enabled: root.editable;
+  options: root.mode-kind == "filter" ? [{id:"lp",label:"LP"},{id:"bp",label:"BP"},{id:"hp",label:"HP"},{id:"notch",label:"Notch"}] : [{id:"once",label:"Once"},{id:"gated",label:"Gated"},{id:"loop",label:"Loop"}];
+  selected(v) => { Session.command(root.mode-kind == "filter" ? "filter.mode" : "sample.mode","",v,0); }
+ }
+ for p[i] in root.parameters : DomainKnob {
+  x: 5px+mod(i,root.columns)*(parent.width - 10px)/root.columns;
+  y: (root.mode-kind == "" ? 34px : 59px)+floor(i/root.columns)*68px;
+  width: (parent.width - 10px)/root.columns; size: 36px;
+  parameter: p; accessible-label: p.label; value-display-always: false;
+  label: p.id == "pitch" ? "Tune" : p.id == "start-offset" ? "Start" : p.id == "resonance" ? "Reso" : p.id == "filter-key-track" ? "Key trk" : p.id == "filter-env-amount" ? "Env amt" : p.id == "velocity" ? "Vel sens" : p.label;
+  enabled: root.editable && p.available; context(a,id) => { root.context-action(a,id); }
+ }
+}
+
+export component VoiceRenderDialog inherits FocusScope {
  in-out property <string> mode <=> VoiceDialogState.mode;
  init => { if root.mode != "" { root.focus(); Session.release-notes(); } }
  changed mode => { if root.mode != "" { root.focus(); Session.release-notes(); } }
@@ -193,7 +216,7 @@ component VoiceRenderDialog inherits FocusScope {
  visible: root.mode != "";
  public function open(mode:string) { root.mode=mode; root.focus(); Session.release-notes(); }
  public function close() {
-  if root.busy && root.mode != "source" { Session.command(root.mode == "auto" ? "autosampler.cancel" : "freeze.cancel","","",0); }
+  if root.mode != "source" && (root.busy || (root.mode == "freeze" && Session.freeze-state == "confirm")) { Session.command(root.mode == "auto" ? "autosampler.cancel" : "freeze.cancel","","",0); }
   root.mode="";
   root.restore-cancel-focus=false;
  }
@@ -216,12 +239,12 @@ component VoiceRenderDialog inherits FocusScope {
     }
     if root.mode == "auto" : Rectangle {
      x: 12px; width: parent.width - 24px;
-     SectionText { y: 6px; text: "Source"; width: 80px; }
-     SectionText { x: 88px; y: 6px; width: parent.width - 88px; text: Session.patch-name; color: SamplerTheme.paper-1; }
-     SectionText { y: 30px; text: "Renders"; width: 80px; }
-     SectionText { x: 88px; y: 30px; width: parent.width - 88px; text: root.renders+" · "+root.notes+" notes × "+Session.autosampler-parameters[5].value+" layers × "+Session.autosampler-parameters[3].value+" takes"; color: SamplerTheme.paper-1; }
-     SectionText { y: 54px; text: "Estimate"; width: 80px; }
-     SectionText { x: 88px; y: 54px; width: parent.width - 88px; text: "~"+max(1,round(root.renders*6/60))+" min offline · simulated"; color: SamplerTheme.paper-1; }
+     SectionText { x: 0px; y: 6px; height: 18px; text: "Source"; width: 80px; }
+     SectionText { x: 88px; y: 6px; height: 18px; width: parent.width - 88px; text: Session.patch-name; color: SamplerTheme.paper-1; }
+     SectionText { x: 0px; y: 30px; height: 18px; text: "Renders"; width: 80px; }
+     SectionText { x: 88px; y: 30px; height: 18px; width: parent.width - 88px; text: root.renders+" · "+root.notes+" notes × "+Session.autosampler-parameters[5].value+" layers × "+Session.autosampler-parameters[3].value+" takes"; color: SamplerTheme.paper-1; }
+     SectionText { x: 0px; y: 54px; height: 18px; text: "Estimate"; width: 80px; }
+     SectionText { x: 88px; y: 54px; height: 18px; width: parent.width - 88px; text: "~"+max(1,round(root.renders*6/60))+" min offline · simulated"; color: SamplerTheme.paper-1; }
      fields := Rectangle { y: 84px; width: parent.width; height: ceil(5/self.columns)*52px;
       in property <int> columns: root.field-columns;
       for field[i] in ["lo","hi","step","rr","tail"] : NumericField {
@@ -235,12 +258,12 @@ component VoiceRenderDialog inherits FocusScope {
      Text { y: fields.y+fields.height+34px; width: parent.width; text: "Silent mock render. Each cached sample retains source, root note, velocity layer, take and tail provenance."; font-family: SamplerTheme.font-ui; font-size: 12px; color: SamplerTheme.paper-3; wrap: word-wrap; }
     }
     if root.mode == "freeze" : Rectangle { x: 12px; width: parent.width - 24px;
-     SectionText { y: 6px; width: 80px; text: "Source"; }
-     SectionText { x: 88px; y: 6px; width: parent.width - 88px; text: Session.selected-source; color: SamplerTheme.paper-1; }
-     SectionText { y: 30px; width: 80px; text: "Includes"; }
-     SectionText { x: 88px; y: 30px; width: parent.width - 88px; text: Session.freeze-mode == "src" ? "Audio source only" : "Source, voice and inserts"; color: SamplerTheme.paper-1; }
-     SectionText { y: 54px; width: 80px; text: "Stored as"; }
-     SectionText { x: 88px; y: 54px; width: parent.width - 88px; text: "Frozen silent mock source"; color: SamplerTheme.paper-1; }
+     SectionText { x: 0px; y: 6px; height: 18px; width: 80px; text: "Source"; }
+     SectionText { x: 88px; y: 6px; height: 18px; width: parent.width - 88px; text: Session.selected-source; color: SamplerTheme.paper-1; }
+     SectionText { x: 0px; y: 30px; height: 18px; width: 80px; text: "Includes"; }
+     SectionText { x: 88px; y: 30px; height: 18px; width: parent.width - 88px; text: Session.freeze-mode == "src" ? "Audio source only" : "Source, voice and inserts"; color: SamplerTheme.paper-1; }
+     SectionText { x: 0px; y: 54px; height: 18px; width: 80px; text: "Stored as"; }
+     SectionText { x: 88px; y: 54px; height: 18px; width: parent.width - 88px; text: "Frozen silent mock source"; color: SamplerTheme.paper-1; }
      OptionStrip { y: 84px; width: min(280px,parent.width - 80px); label: "Freeze includes"; value: Session.freeze-mode; enabled: !root.busy; options: [{id:"src",label:"Source only"},{id:"chain",label:"Source + voice + inserts"}]; selected(v) => { Session.command("freeze.configure",v,"mode",0); } }
      NumericField { x: parent.width - 72px; y: 84px; width: 72px; label: "Tail"; unit: "s"; model-value: Session.freeze-tail; value: Session.freeze-tail; minimum: 0; maximum: 30; step: 1; enabled: !root.busy; changed(v) => { Session.command("freeze.configure","","tail",v); } }
      Text { y: 142px; width: parent.width; text: "Silent mock render; no audio is captured. Freeze locks voice controls. Unfreeze restores the original source."; font-family: SamplerTheme.font-ui; font-size: 12px; color: SamplerTheme.paper-3; wrap: word-wrap; }
@@ -264,48 +287,91 @@ export component VoicePage inherits FocusScope {
  capture-key-pressed(event) => { if modal.mode != "" && event.text == Key.Escape { modal.close(); return accept; } return reject; }
  in property <bool> compact;
  in property <bool> expanded;
+ in property <bool> dialogs-in-page: true;
  callback context-action(string,string);
  public function add-module() { Session.command("module.add","voice","Waveshaper",0); }
- ScrollView { VerticalLayout { padding: 0px; spacing: 4px; alignment: start;
-  PageSection { title: "Voice"; subtitle: "Sound template"; height: 126px;
-   HorizontalLayout { x: 12px; y: 45px; width: parent.width - 24px; height: 34px; spacing: 4px; alignment: start;
-    for module in Session.voice-modules : ActionButton { text: module.name+"  →"; selected: module.id == Session.selected-id; compact: root.compact; clicked => { Session.command("selection.set",module.id,"",0); } }
-    add-module := ActionButton { text: "+"; label: "Add voice module"; clicked => { root.add-module(); } }
+ ScrollView { VerticalLayout { padding: 0px; spacing: 0px; alignment: start;
+  Rectangle { height: (root.expanded ? 40px : 70px)+4px;
+  Rectangle { height: root.expanded ? 40px : 70px; background: SamplerTheme.ink-2; border-width: 1px; border-color: SamplerTheme.line-1; border-radius: 6px;
+   x: 0px; y: 0px;
+   SectionText { x: 12px; y: 7px; width: 82px; height: 24px; text: "VOICE"; color: SamplerTheme.secondary; font-weight: 700; }
+   Flickable { x: 96px; y: 7px; width: parent.width - 136px; height: 26px; content-width: max(self.width,Session.voice-modules.length*87px); content-height: self.height;
+    for module[i] in Session.voice-modules : ActionButton { x: i*87px; width: 83px; height: 24px; text: module.name; selected: module.id == Session.selected-id; compact: true; clicked => { Session.command("selection.set",module.id,"",0); } }
    }
-   HorizontalLayout { x: 12px; y: 85px; width: parent.width - 24px; height: 26px; spacing: 4px; alignment: start;
-    ActionButton { text: "Edit source"; icon: "chevron-right"; compact: true; clicked => { Session.command("page.select","sample","",0); } }
-    ActionButton { text: "Sample patch…"; icon: "variation"; compact: true; clicked => { modal.open("auto"); } }
-    ActionButton { text: "Add source…"; icon: "plus"; compact: true; clicked => { modal.open("source"); } }
-    ActionButton { text: "Freeze…"; icon: "lock"; compact: true; enabled: !Session.voice-frozen && Session.freeze-state != "running"; clicked => { modal.open("freeze"); } }
+   add-module := ActionButton { x: parent.width - 32px; y: 7px; width: 24px; text: "+"; label: "Add voice module"; compact: true; clicked => { root.add-module(); } }
+   HorizontalLayout { x: root.expanded ? parent.width - 165px : 12px; y: root.expanded ? 7px : 38px; width: root.expanded ? 128px : parent.width - 24px; height: 24px; spacing: 4px; alignment: start;
+    ActionButton { text: root.expanded ? "" : "Edit source"; label: "Edit source"; icon: "chevron-right"; compact: true; ghost: true; clicked => { Session.command("page.select","sample","",0); } }
+    ActionButton { label: "Sample patch…"; icon: "variation"; compact: true; ghost: true; clicked => { modal.open("auto"); } }
+    ActionButton { label: "Add source…"; icon: "plus"; compact: true; ghost: true; clicked => { modal.open("source"); } }
+    ActionButton { label: "Freeze…"; icon: "lock"; compact: true; ghost: true; enabled: !Session.voice-frozen && Session.freeze-state != "running"; clicked => { modal.open("freeze"); } }
     if Session.voice-frozen : ActionButton { icon: "reset"; label: "Unfreeze · restore original source"; compact: true; clicked => { Session.command("sample.unfreeze",Session.selected-source,"",0); } }
    }
   }
-  PageSection { title: "Audio source"; subtitle: "Sampler · Sample player"; header-height: 24px; height: 126px;
-   OptionStrip { x: 12px; y: 31px; width: min(230px,parent.width - 24px); label: "Source playback"; value: Session.play-mode; enabled: !Session.voice-frozen; options: [{id:"once",label:"Once"},{id:"gated",label:"Gated"},{id:"loop",label:"Loop"}]; selected(v) => { Session.command("sample.mode","",v,0); } }
-   HorizontalLayout { x: 12px; y: 62px; width: parent.width - 24px; height: 60px; alignment: start; spacing: 4px; for p in Session.source-parameters : DomainKnob { parameter: p; enabled: !Session.voice-frozen && p.available; size: 28px; value-display-always: true; context(a,id) => { root.context-action(a,id); } } }
   }
-  for source in Session.voice-modules : VoiceSourceCard { visible: source.id != "source" && source.kind != "processor"; height: self.visible ? 68px+ceil(source.parameters.length/max(1,floor((self.width - 24px)/52px)))*60px : 0px; source: source; editable: !Session.voice-frozen; context-action(a,id) => { root.context-action(a,id); } }
-  HorizontalLayout { height: root.compact ? 158px : 192px; spacing: 4px;
-   PageSection { title: "Pitch"; horizontal-stretch: 1; HorizontalLayout { x: 12px; y: 50px; width: parent.width - 24px; height: 68px; alignment: start; spacing: 10px; for p in Session.pitch-parameters : DomainKnob { parameter: p; enabled: !Session.voice-frozen && p.available; size: root.compact ? 32px : 40px; context(a,id) => { root.context-action(a,id); } } } }
-   PageSection { title: "Amplifier"; horizontal-stretch: 1; HorizontalLayout { x: 12px; y: 50px; width: parent.width - 24px; height: 68px; alignment: start; spacing: 10px; for p in Session.amp-parameters : DomainKnob { parameter: p; enabled: !Session.voice-frozen && p.available; size: root.compact ? 32px : 40px; context(a,id) => { root.context-action(a,id); } } } }
-  }
-  PageSection { title: "Filter response"; subtitle: "Ladder "+Session.filter-mode.to-uppercase()+" 24 dB · drag cutoff and resonance"; height: 73px+(root.compact ? 64px : root.expanded ? 110px : 84px)+80px; header-height: 24px;
-   OptionStrip { x: 12px; y: 31px; width: min(260px,parent.width - 24px); label: "Filter type"; value: Session.filter-mode; enabled: !Session.voice-frozen; options: [{id:"lp",label:"LP"},{id:"bp",label:"BP"},{id:"hp",label:"HP"},{id:"notch",label:"Notch"}]; selected(v) => { Session.command("filter.mode","",v,0); } }
-   filter-plot := VoiceFilterPlot { x: 12px; y: 61px; width: parent.width - 24px; height: root.compact ? 64px : root.expanded ? 110px : 84px; parameters: Session.filter-parameters; enabled: !Session.voice-frozen; accessible-enabled: !Session.voice-frozen; }
-   HorizontalLayout { x: 12px; y: filter-plot.y+filter-plot.height+8px; width: parent.width - 24px; height: 68px; spacing: 8px; alignment: start; for p in Session.filter-parameters : DomainKnob { parameter: p; enabled: !Session.voice-frozen && p.available; size: 28px; context(a,id) => { root.context-action(a,id); } } }
-  }
-  Rectangle { height: root.compact ? 2*(153px+44px)+4px : 153px+(root.expanded ? 72px : 56px);
-   for group[i] in ["Amp envelope","Filter envelope"] : PageSection { x: root.compact ? 0px : i*(parent.width+4px)/2; y: root.compact ? i*(197px+4px) : 0px; width: root.compact ? parent.width : (parent.width - 4px)/2; title: group; height: 153px+(root.compact ? 44px : root.expanded ? 72px : 56px); header-height: 30px;
-    envelope-plot := VoiceEnvelopePlot { x: 12px; y: 41px; width: parent.width - 24px; height: root.compact ? 44px : root.expanded ? 72px : 56px; title: group; parameters: group == "Amp envelope" ? Session.amp-envelope-parameters : Session.filter-envelope-parameters; enabled: !Session.voice-frozen; }
-    HorizontalLayout { x: 12px; y: envelope-plot.y+envelope-plot.height+8px; width: parent.width - 24px; height: 78px; spacing: 2px; alignment: start; for p in group == "Amp envelope" ? Session.amp-envelope-parameters : Session.filter-envelope-parameters : DomainKnob { parameter: p; enabled: !Session.voice-frozen && p.available; size: 28px; value-display-always: true; context(a,id) => { root.context-action(a,id); } } }
+  Rectangle {
+   private property <int> columns: root.compact ? 2 : root.expanded ? 5 : 3;
+   private property <length> row-height: root.compact ? 136px : 205px;
+   height: (self.columns == 3 ? 313px : self.columns == 2 ? 276px : 205px)+4px;
+   for card[i] in ["Audio source","Pitch","Filter","Amplitude"] : VoiceParameterCard {
+    x: mod(i,parent.columns)*(parent.width+4px)/parent.columns;
+    y: floor(i/parent.columns)*(parent.row-height+4px);
+    width: (parent.width - (parent.columns - 1)*4px)/parent.columns;
+    height: i == 3 && parent.columns == 3 ? 104px : parent.row-height;
+    title: card; subtitle: i == 0 ? "Sampler · Sample player" : i == 2 ? "Ladder 24 dB" : "";
+    parameters: i == 0 ? Session.source-parameters : i == 1 ? Session.pitch-parameters : i == 2 ? Session.filter-parameters : Session.amp-parameters;
+    mode-kind: i == 0 ? "source" : i == 2 ? "filter" : ""; mode: i == 0 ? Session.play-mode : Session.filter-mode;
+    editable: !Session.voice-frozen; border-color: i == 2 ? SamplerTheme.accent : SamplerTheme.line-1;
+    context-action(a,id) => { root.context-action(a,id); }
    }
   }
-  PageSection { title: "Voice policy"; secondary: true; height: 138px;
-   OptionStrip { x: 12px; y: 45px; width: 180px; label: "Voice policy"; enabled: !Session.voice-frozen; value: Session.voice-policy; options: [{id:"poly",label:"Poly"},{id:"mono",label:"Mono"},{id:"legato",label:"Legato"}]; selected(v) => { Session.command("voice.policy","",v,0); } }
-   NumericField { x: 206px; y: 45px; label: "Voice limit"; enabled: !Session.voice-frozen; model-value: Session.voice-limit; value: Session.voice-limit; minimum: 1; maximum: 128; step: 1; changed(v) => { Session.command("voice.limit","","",v); } }
-   OptionStrip { x: 12px; y: 92px; width: 220px; label: "Steal policy"; enabled: !Session.voice-frozen; value: Session.voice-steal; options: [{id:"oldest",label:"Oldest"},{id:"quietest",label:"Quietest"},{id:"none",label:"No steal"}]; selected(v) => { Session.command("voice.steal","",v,0); } }
-   ActionButton { x: 244px; y: 92px; text: "Retrigger"; enabled: !Session.voice-frozen; clicked => { Session.command("voice.same-note","","retrigger",0); } }
+  for source in Session.voice-modules : Rectangle { visible: source.id != "source" && source.kind != "processor"; height: self.visible ? card.height+4px : 0px;
+   card := VoiceSourceCard { x: 0px; y: 0px; height: 68px+ceil(source.parameters.length/max(1,floor((self.width - 24px)/52px)))*60px; source: source; editable: !Session.voice-frozen; context-action(a,id) => { root.context-action(a,id); } }
   }
+  Rectangle { height: panel.height+4px;
+  panel := PageSection { x: 0px; y: 0px; title: "Filter response"; subtitle: "Ladder "+Session.filter-mode.to-uppercase()+" 24 dB · drag cutoff and resonance"; height: 39px+(root.compact ? 64px : root.expanded ? 110px : 84px); header-height: 24px;
+   filter-plot := VoiceFilterPlot { x: 12px; y: 31px; width: parent.width - 24px; height: root.compact ? 64px : root.expanded ? 110px : 84px; parameters: Session.filter-parameters; enabled: !Session.voice-frozen; accessible-enabled: !Session.voice-frozen; }
+  }
+  }
+  Rectangle { height: (root.compact ? 545px : 243px)+4px;
+   private property <length> envelope-width: root.compact ? self.width : (self.width - 208px)/2;
+   for group[i] in ["Amp envelope","Filter envelope"] : PageSection {
+    x: root.compact ? 0px : i*(parent.envelope-width+4px); y: root.compact ? i*151px : 0px;
+    width: parent.envelope-width; title: group; height: root.compact ? 147px : 243px;
+    header-height: root.compact || root.expanded ? 30px : 78px;
+    for modulator in Session.modulators : OptionStrip {
+     visible: modulator.id == (i == 0 ? "amp-env" : "filter-env");
+     x: root.compact || root.expanded ? parent.width - 180px : 12px; y: root.compact || root.expanded ? 4px : parent.header-height - 26px;
+     width: 170px; label: "Voice envelope shape "+group; enabled: !Session.voice-frozen;
+     value: modulator.shape == "sine" ? "adsr" : modulator.shape; options: [{id:"adsr",label:"ADSR"},{id:"ahdsr",label:"AHDSR"},{id:"multi",label:"Multi"}];
+     selected(v) => { Session.command("modulator.shape",modulator.id,v,0); }
+    }
+    envelope-plot := VoiceEnvelopePlot { x: 12px; y: parent.header-height+10px; width: parent.width - 24px; height: root.compact ? 44px : root.expanded ? 72px : 56px; title: group; parameters: i == 0 ? Session.amp-envelope-parameters : Session.filter-envelope-parameters; enabled: !Session.voice-frozen; }
+    for p[j] in i == 0 ? Session.amp-envelope-parameters : Session.filter-envelope-parameters : NumericField {
+     private property <float> scale: p.unit == "%" ? 100 : 1;
+     x: 12px+j*(parent.width - 24px)/4; y: envelope-plot.y+envelope-plot.height+8px; width: (parent.width - 24px)/4 - 4px;
+     label: p.label; ghost: true; parameter-id: p.id; enabled: !Session.voice-frozen && p.available;
+     model-value: p.value*self.scale; value: p.value*self.scale; minimum: p.minimum*self.scale; maximum: p.maximum*self.scale; step: p.step*self.scale; default-value: p.default-value*self.scale; unit: p.unit;
+     gesture-began => { Session.parameter-gesture(p.id,0,self.value/self.scale); }
+     changed(v) => { Session.parameter-gesture(p.id,1,v/self.scale); }
+     gesture-ended => { Session.parameter-gesture(p.id,2,self.value/self.scale); }
+     context-action(a) => { root.context-action(a,p.id); }
+    }
+   }
+   PageSection { x: root.compact ? 0px : parent.width - 200px; y: root.compact ? 302px : 0px; width: root.compact ? parent.width : 200px; title: "Voices"; secondary: true; header-height: 30px; height: 243px;
+    OptionStrip { x: 12px; y: 40px; width: parent.width - 24px; label: "Voice policy"; enabled: !Session.voice-frozen; value: Session.voice-policy; options: [{id:"poly",label:"Poly"},{id:"mono",label:"Mono"},{id:"legato",label:"Legato"}]; selected(v) => { Session.command("voice.policy","",v,0); } }
+    SectionText { x: 12px; y: 70px; width: 85px; height: 24px; text: "Voice limit"; }
+    NumericField { x: parent.width - 82px; y: 70px; width: 70px; show-label: false; ghost: true; label: "Voice limit"; enabled: !Session.voice-frozen; model-value: Session.voice-limit; value: Session.voice-limit; minimum: 1; maximum: 128; step: 1; changed(v) => { Session.command("voice.limit","","",v); } }
+    SectionText { x: 12px; y: 100px; height: 18px; text: "Steal"; }
+    OptionStrip { x: 12px; y: 120px; width: parent.width - 24px; label: "Steal policy"; enabled: !Session.voice-frozen; value: Session.voice-steal; options: [{id:"oldest-released",label:"Oldest released"},{id:"oldest",label:"Oldest"},{id:"quietest",label:"Quietest"},{id:"none",label:"No steal"}]; selected(v) => { Session.command("voice.steal","",v,0); } }
+    SectionText { x: 12px; y: 153px; width: 85px; height: 24px; text: "Same note"; }
+    ActionButton { x: parent.width - 90px; y: 153px; width: 78px; text: "Retrigger"; enabled: !Session.voice-frozen; compact: true; ghost: true; clicked => { Session.command("voice.same-note","","retrigger",0); } }
+   }
+  }
+  if root.expanded : ReadOnlyKeyMap { }
+
  } }
- modal := VoiceRenderDialog { }
+ private property <bool> freeze-confirm: Session.freeze-state == "confirm";
+ init => { if root.freeze-confirm { modal.open("freeze"); } }
+ changed freeze-confirm => { if root.freeze-confirm { modal.open("freeze"); } }
+ modal := VoiceRenderDialog { visible: root.dialogs-in-page && self.mode != ""; }
 }

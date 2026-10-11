@@ -1,3 +1,4 @@
+import { MaterialLayers } from "../theme/Material.slint";
 import { SamplerTheme } from "../theme/Theme.slint";
 import { FitLayout } from "FitLayout.slint";
 import { Session } from "../Session.slint";
@@ -28,7 +29,8 @@ export component KeyCell inherits FocusScope {
         border-radius: 2px; border-width: 1px; border-color: root.black ? SamplerTheme.ink-0 : SamplerTheme.ink-2;
         background: root.held || root.sounding ? SamplerTheme.accent : root.black ? root.mapped ? SamplerTheme.ink-1 : SamplerTheme.ink-4 : root.mapped ? SamplerTheme.paper-2 : SamplerTheme.paper-4;
         drop-shadow-blur: root.black ? 2px : 0px; drop-shadow-offset-y: root.black ? 1px : 0px; drop-shadow-color: #00000055;
-        if SamplerTheme.soft : Rectangle { border-radius: 2px; background: @linear-gradient(180deg, #FFFFFF0D, transparent 50%, #0000001F); }
+        MaterialLayers { x: 0px; y: 0px; width: parent.width; height: parent.height; border-radius: 2px; grain: root.black && root.mapped && !root.held && !root.sounding; accent: root.held || root.sounding; }
+        if !root.black : Rectangle { x: parent.width - 1.25px; y: 0px; width: 1.25px; height: parent.height; background: SamplerTheme.ink-2; }
         Text { y: parent.height - (root.black ? 15px : 26px); height: 11px; text: root.pc-label; font-family: SamplerTheme.font-value; font-size: 10px; font-weight: 600; color: root.black ? SamplerTheme.paper-2 : SamplerTheme.accent-lo; horizontal-alignment: center; }
         if !root.black && mod(root.note, 12) == 0 : Text { y: parent.height - 14px; height: 11px; text: FitLayout.note-name(root.note); font-family: SamplerTheme.font-value; font-size: 10px; color: SamplerTheme.ink-2; horizontal-alignment: center; }
         if root.has-focus : Rectangle { border-width: 2px; border-color: SamplerTheme.host; }

@@ -22,7 +22,9 @@ export component EditorFrame inherits Rectangle {
     out property <length> workspace-height: workspace.height;
     private property <bool> compact: !root.perform && SamplerMetrics.compact(root.width);
     private property <length> header-height: root.perform ? 45px : SamplerMetrics.header(root.width);
-    private property <length> banner-height: Session.pending-count > 0 ? 34px : Session.error != "" ? 44px : 0px;
+    private property <bool> asset-alert: Session.asset-state == "missing" || Session.asset-state == "unsupported";
+    private property <bool> patch-alert: Session.error != "" && Session.analysis-state != "failed";
+    private property <length> banner-height: root.asset-alert ? 44px : Session.pending-count > 0 ? 34px : root.patch-alert ? 44px : 0px;
     private property <length> main-y: root.header-height + root.banner-height + 4px;
     in property <bool> show-diagnostics;
     in property <bool> show-event-log;
@@ -38,10 +40,16 @@ export component EditorFrame inherits Rectangle {
     header := EditorHeader { x: 0px; y: 0px; height: root.header-height; compact: root.compact; perform: root.perform; patch-name: Session.patch-name; status: Session.status; can-undo: Session.can-undo; can-redo: Session.can-redo; voices: Session.voices; voice-limit: Session.voice-limit; level: Session.output-level; size-mode: root.size-mode;
         command(action) => { if action == "undo" || action == "redo" { root.run(action, "", "", 0); } else { root.header-command(action); } }
     }
-    if !root.perform && root.banner-height > 0px : Rectangle { x: 4px; y: root.header-height + 4px; width: parent.width - 8px; height: root.banner-height - 4px; border-radius: 4px; border-width: 1px; border-color: Session.error != "" ? SamplerTheme.error : SamplerTheme.accent; background: Session.error != "" ? SamplerTheme.error-wash : SamplerTheme.accent-wash;
-        Text { x: 8px; width: parent.width - 180px; text: Session.error != "" ? Session.error : "Draft · " + Session.pending-count + " pending changes"; color: SamplerTheme.paper-1; font-family: SamplerTheme.font-ui; font-size: 13px; vertical-alignment: center; overflow: elide; }
-        ActionButton { x: parent.width - 164px; y: 3px; text: "Discard"; ghost: true; clicked => { root.run("patch.discard", "", "", 0); } }
-        ActionButton { x: parent.width - 89px; y: 3px; text: "Reload"; primary: true; enabled: Session.reload-state != "preparing"; clicked => { root.run("patch.reload", "", "", 0); } }
+    if !root.perform && root.banner-height > 0px : Rectangle { x: 4px; y: root.header-height + 4px; width: parent.width - 8px; height: root.banner-height - 4px; border-radius: 4px; border-width: 1px; border-color: root.asset-alert || root.patch-alert ? SamplerTheme.error : SamplerTheme.accent; background: root.asset-alert || root.patch-alert ? SamplerTheme.error-wash : SamplerTheme.accent-wash;
+        if root.asset-alert : Rectangle {
+            Text { x: 8px; y: 4px; width: parent.width - 16px; height: 15px; text: Session.asset-state == "missing" ? "Felt C4 f · sample unavailable" : "Sample could not be loaded"; color: SamplerTheme.paper-1; font-family: SamplerTheme.font-ui; font-size: 13px; font-weight: 600; }
+            Text { x: 8px; y: 20px; width: parent.width - 16px; height: 15px; text: Session.asset-state == "missing" ? "felt_C4_f.wav was not found. Locate or replace the sample. Other zones are unaffected." : "This native preview reads WAV samples. Any previous cached waveform is retained."; color: SamplerTheme.paper-2; font-family: SamplerTheme.font-ui; font-size: 12px; overflow: elide; }
+        }
+        if !root.asset-alert : Rectangle {
+            Text { x: 8px; y: 0px; width: parent.width - 180px; height: parent.height; text: root.patch-alert ? Session.error : "Draft · " + Session.pending-count + " pending changes"; color: SamplerTheme.paper-1; font-family: SamplerTheme.font-ui; font-size: 13px; vertical-alignment: center; overflow: elide; }
+            ActionButton { x: parent.width - 164px; y: 3px; text: "Discard"; ghost: true; clicked => { root.run("patch.discard", "", "", 0); } }
+            ActionButton { x: parent.width - 89px; y: 3px; text: "Reload"; primary: true; enabled: Session.reload-state != "preparing"; clicked => { root.run("patch.reload", "", "", 0); } }
+        }
     }
     Rectangle { visible: !root.perform; y: root.main-y; height: root.body-height;
         PageRail { x: 4px; width: SamplerMetrics.rail(root.width); height: parent.height; page: Session.page; compact: root.compact; selected(page) => { root.run("page.select", "", page, 0); } }
@@ -66,9 +74,9 @@ export component EditorFrame inherits Rectangle {
         macro-gesture(id,phase,v) => { Session.parameter-gesture(id,phase,v); }
         context-action(a,id) => { root.context-action(a,id); }
     }
-    if !root.perform && root.show-diagnostics : DiagnosticsPage { x: 4px; y: drawer.y + drawer.height + 4px; width: parent.width - 8px; height: 176px; drawer: true; }
+    if !root.perform && root.show-diagnostics : DiagnosticsPage { x: 0px; y: drawer.y + drawer.height + 7px; width: parent.width; height: 177px; drawer: true; }
     if !root.perform && root.show-event-log : EventLog { x: 4px; y: drawer.y + drawer.height + (root.show-diagnostics ? 184px : 4px); width: parent.width - 8px; height: 180px; closed => { root.header-command("eventlog"); } }
-    if root.perform : PerformView { y: root.header-height; height: parent.height - root.header-height - 27px; pads: Session.pads; macros: Session.macros; presets: Session.presets; sounding-notes: Session.sounding-notes; current-patch-id: Session.current-patch-id; generation: Session.current-patch-id; mapped-low: Session.mapped-low; mapped-high: Session.mapped-high;
+    if root.perform : PerformView { y: root.header-height; height: parent.height - root.header-height; pads: Session.pads; macros: Session.macros; presets: Session.presets; sounding-notes: Session.sounding-notes; current-patch-id: Session.current-patch-id; generation: Session.current-patch-id; mapped-low: Session.mapped-low; mapped-high: Session.mapped-high;
         note-on(n,v,s) => { Session.note-on(n,v,s); } note-off(n,s) => { Session.note-off(n,s); }
         selected(n) => { root.run("zone.select", "", "", n); }
         macro-gesture(id,phase,v) => { Session.parameter-gesture(id,phase,v); }
@@ -78,12 +86,14 @@ export component EditorFrame inherits Rectangle {
         patch-action(a) => { root.patch-action(a); }
     }
     if !root.perform : Rectangle { y: parent.height - 56px; height: 29px; background: SamplerTheme.ink-1;
-        Text { x: 12px; text: "SCOPE"; width: 70px; color: SamplerTheme.secondary; font-family: SamplerTheme.font-ui; font-size: 11px; font-weight: 700; vertical-alignment: center; }
-        HorizontalLayout { x: 86px; width: 320px; spacing: 4px; alignment: start;
-            for scope in ["instrument", "group", "sound", "layer"] : ActionButton { text: scope; compact: true; selected: Session.scope == scope; clicked => { root.run("scope.select", "", scope, 0); } }
+        Text { x: 12px; text: "SCOPE"; width: 36px; height: parent.height; color: SamplerTheme.secondary; font-family: SamplerTheme.font-ui; font-size: 11px; font-weight: 700; vertical-alignment: center; }
+        Rectangle { x: 52px; y: 0px; width: 216px; height: 28px; background: SamplerTheme.surface-well; border-radius: 4px; border-width: 1px; border-color: SamplerTheme.border-hairline;
+            HorizontalLayout { x: 3px; y: 3px; width: parent.width - 6px; height: parent.height - 6px; spacing: 2px;
+                for scope[i] in ["instrument", "group", "sound", "layer"] : ActionButton { text: ["All", "Group", "Sound", "Selection"][i]; compact: true; ghost: true; neutral-selection: true; caps: true; width: [35px, 49px, 49px, 71px][i]; height: 22px; selected: Session.scope == scope; clicked => { root.run("scope.select", "", scope, 0); } }
+            }
         }
     }
-    Rectangle { y: parent.height - 27px; height: 27px; background: SamplerTheme.ink-0;
+    Rectangle { visible: !root.perform; y: parent.height - 27px; height: 27px; background: SamplerTheme.ink-0;
         Rectangle { height: 1px; background: SamplerTheme.line-1; }
         Text { x: 12px; width: parent.width - 110px; text: Session.status + "   ·   " + Session.page + "   ·   " + Session.sounding-notes.length + " held notes"; font-family: SamplerTheme.font-ui; font-size: 11px; color: SamplerTheme.paper-3; vertical-alignment: center; overflow: elide; }
         ActionButton { x: parent.width - 92px; y: 2px; width: 84px; height: 23px; text: "About Slint"; ghost: true; compact: true; clicked => { root.about-slint(); } }

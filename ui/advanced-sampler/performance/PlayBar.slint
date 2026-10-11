@@ -1,3 +1,4 @@
+import { MaterialLayers } from "../theme/Material.slint";
 import { SamplerTheme } from "../theme/Theme.slint";
 import { ActionButton } from "../controls/ActionButton.slint";
 import { PerformanceState } from "PerformanceState.slint";
@@ -6,7 +7,7 @@ export component PlayBar inherits Rectangle {
     in property <bool> sections: true;
     callback pc-changed(bool);
     background: SamplerTheme.ink-3;
-    if SamplerTheme.soft : Rectangle { background: SamplerTheme.raised-overlay; }
+    MaterialLayers { x: 0px; y: 0px; width: parent.width; height: parent.height; border-radius: 0px; }
     ActionButton { x: 4px; width: 66px; height: parent.height; text: PerformanceState.open || !root.sections ? "⌄ PLAY" : "› PLAY"; ghost: true; clicked => { if root.sections { PerformanceState.open = !PerformanceState.open; if !PerformanceState.open { PerformanceState.release-notes(); } } } }
     if root.sections && !PerformanceState.open : Text { x: 78px; width: max(0px, parent.width - 420px); height: parent.height; text: "Macros · pads · keys " + FitLayout.note-name(PerformanceState.base-note); font-family: SamplerTheme.font-value; font-size: 11px; color: SamplerTheme.paper-3; vertical-alignment: center; overflow: elide; }
     if root.sections : HorizontalLayout { x: parent.width - 244px; y: 2px; width: 76px; height: parent.height - 4px; spacing: 2px;

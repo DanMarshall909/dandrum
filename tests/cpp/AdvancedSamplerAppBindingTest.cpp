@@ -129,6 +129,15 @@ int main() {
             binding->refresh();
             settle();
             require(std::string(window->global<Session>().get_page().data()) == model->text("page"), "Actual app receives fixture " + state);
+            if (state == "freeze") {
+                require(!slint::testing::ElementHandle::find_by_accessible_label(window, "Cancel render dialog").empty(),
+                        "Freeze fixture opens its actual modal over the editor");
+                window->window().dispatch_key_press_event("\x1b");
+                window->window().dispatch_key_release_event("\x1b");
+                settle();
+                require(slint::testing::ElementHandle::find_by_accessible_label(window, "Cancel render dialog").empty(),
+                        "Actual Escape closes the visited Freeze modal before pointer workflows resume");
+            }
         }
         require(model->selectState("sample"), "Restore sample workflow"); binding->refresh(); settle();
         click("Reverse sample");
@@ -137,6 +146,15 @@ int main() {
         require(model->number("reversed") == 0, "App header undo restores source state");
         click("Redo");
         require(model->number("reversed") == 1, "App header redo restores the edited source");
+        const auto navigationHistory = model->undoCount();
+        window->invoke_context("parameter-destination", "cutoff"); settle();
+        require(model->text("page") == "voice" && model->undoCount() == navigationHistory,
+                "Go to a valid modulation destination opens Voice without changing edit history");
+        window->invoke_context("parameter-destination", "unknown-parameter"); settle();
+        require(model->text("page") == "voice" && model->undoCount() == navigationHistory,
+                "Unknown modulation destinations preserve the active workspace and history");
+        require(model->command("page.select", "", "sample"), "Restore source page after destination navigation");
+        binding->refresh(); settle();
         const auto route = std::find_if(model->records("route").begin(), model->records("route").end(),
                 [](const auto& candidate) { return candidate.text("destination") == "cutoff"; });
         require(route != model->records("route").end(), "Source fixture includes a cutoff route");
@@ -198,10 +216,19 @@ int main() {
         window->window().dispatch_window_active_changed_event(true);
         const auto pc = control("Computer keyboard notes");
         const auto at = pc.absolute_position(); const auto extent = pc.size();
+        const auto pcBefore = model->number("pc-keys");
+        const auto uiPcBefore = window->global<PerformanceState>().get_pc_enabled();
         const slint::LogicalPosition centre{{at.x + extent.width / 2, at.y + extent.height / 2}};
+        window->window().dispatch_pointer_move_event(centre);
         window->window().dispatch_pointer_press_event(centre, slint::PointerEventButton::Left);
         window->window().dispatch_pointer_release_event(centre, slint::PointerEventButton::Left);
         settle();
+        if (model->number("pc-keys") != 1) {
+            std::cerr << "PC pointer target " << at.x << ',' << at.y << " size " << extent.width << ',' << extent.height
+                      << " window " << window->window().size().width << 'x' << window->window().size().height
+                      << " page " << model->text("page") << " UI PC " << window->global<PerformanceState>().get_pc_enabled()
+                      << " native PC " << model->number("pc-keys") << " before UI/native " << uiPcBefore << '/' << pcBefore << '\n';
+        }
         require(model->number("pc-keys") == 1, "Actual PC toggle enables native keyboard notes");
         window->window().dispatch_key_press_event("a"); settle();
         require(!model->heldNotes().empty(), "Actual PC press creates a held note");
@@ -210,13 +237,13 @@ int main() {
         window->window().dispatch_window_active_changed_event(true);
         window->window().dispatch_key_release_event("a");
         click("Computer keyboard notes");
-        for (const auto& entry : std::array<std::pair<const char*, const char*>, 12>{{
-                {"Pads", "pads"}, {"Macros", "macros"}, {"Sample", "sample"}, {"Slices", "slices"},
+        const auto railNavigationHistory = model->undoCount();
+        for (const auto& entry : std::array<std::pair<const char*, const char*>, 9>{{
+                {"Pads", "pads"}, {"Macros", "macros"},
                 {"Mapping", "mapping"}, {"Layers", "layers"}, {"Voice", "voice"}, {"Mod", "mod"},
-                {"Routing", "routing"}, {"FX", "fx"}, {"Overview", "overview"}, {"Events", "diagnostics"}}}) {
+                {"Routing", "routing"}, {"FX", "fx"}, {"Overview", "overview"}}}) {
             if (std::string_view(entry.second) == "mod" || std::string_view(entry.second) == "routing"
-                    || std::string_view(entry.second) == "fx" || std::string_view(entry.second) == "overview"
-                    || std::string_view(entry.second) == "diagnostics") {
+                    || std::string_view(entry.second) == "fx" || std::string_view(entry.second) == "overview") {
                 window->window().dispatch_pointer_scroll_event(slint::LogicalPosition{{30, 200}}, 0, -240);
                 slint::cbindgen_private::slint_mock_elapsed_time(250);
                 slint::platform::update_timers_and_animations();
@@ -224,15 +251,27 @@ int main() {
             }
             click(entry.first);
             require(model->text("page") == entry.second, std::string("Composed rail opens ") + entry.first);
+            if (std::string_view(entry.second) == "voice") {
+                click("Edit source");
+                require(model->text("page") == "sample", "Actual Voice audio-source card opens the Sample editor");
+                click("Slices source editor");
+                require(model->text("page") == "slices", "Actual source-editor tab opens Slices");
+                click("Sample source editor");
+                require(model->text("page") == "sample", "Actual source-editor tab returns to Sample");
+                click("Back to Voice");
+                require(model->text("page") == "voice", "Actual source-editor back action returns to Voice");
+            }
+            require(model->undoCount() == railNavigationHistory,
+                    std::string("Workspace navigation preserves native Undo history after ") + entry.first);
         }
         click("Perform"); require(model->text("page") == "perform", "Header opens shared performance workspace");
-        click("Return to editor"); require(model->text("page") == "diagnostics", "Return restores prior workspace");
+        click("Return to editor"); require(model->text("page") == "overview", "Return restores prior workspace");
         click("Appearance and settings");
         require(window->global<AppearanceState>().get_opened(), "Header opens native appearance controls");
         window->global<AppearanceState>().set_opened(false); settle();
         click("Why did this play?");
         require(window->get_diagnostics_open(), "Header opens docked historical diagnostics");
-        require(model->text("page") == "diagnostics", "Diagnostic dock preserves the active workspace");
+        require(model->text("page") == "overview", "Diagnostic dock preserves the active workspace");
         click("Why did this play?");
         require(!window->get_diagnostics_open(), "Header closes historical diagnostics");
         click("Event log");

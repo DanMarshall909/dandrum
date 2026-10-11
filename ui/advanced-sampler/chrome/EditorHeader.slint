@@ -15,25 +15,32 @@ export component EditorHeader inherits Rectangle {
     background: SamplerTheme.ink-0;
     Rectangle { y: parent.height - 1px; height: 1px; background: SamplerTheme.line-1; }
     HorizontalLayout {
+        x: 0px; y: 0px; width: parent.width; height: parent.height;
         padding-left: 12px; padding-right: 12px; spacing: root.compact ? 4px : 12px; alignment: stretch;
         HorizontalLayout {
-            spacing: 8px; alignment: center;
+            spacing: 8px; alignment: center; horizontal-stretch: 0;
             Text { text: "dandrum"; font-family: SamplerTheme.font-display; font-size: 20px; font-weight: 700; color: SamplerTheme.paper-1; }
             Rectangle { width: 6px; height: 6px; border-radius: 3px; background: SamplerTheme.accent; }
             if !root.compact : Text { text: "TRIGGER"; font-family: SamplerTheme.font-ui; font-size: 13px; font-weight: 700; letter-spacing: 1.3px; color: SamplerTheme.paper-2; }
         }
         Rectangle { width: 1px; height: 20px; background: SamplerTheme.line-1; }
-        HorizontalLayout { spacing: 2px; alignment: center;
+        HorizontalLayout { spacing: 2px; alignment: center; horizontal-stretch: 0;
             undo-button := ActionButton { icon: "reset"; label: "Undo"; compact: true; ghost: true; enabled: root.can-undo; clicked => { root.command("undo"); } }
             redo-button := ActionButton { icon: "reload"; label: "Redo"; compact: true; ghost: true; enabled: root.can-redo; clicked => { root.command("redo"); } }
         }
-        patch-button := ActionButton { text: root.patch-name + "  ▾"; label: "Browse patches"; width: root.compact ? 152px : 200px; clicked => { root.command("patch.browse"); } }
+        patch-button := ActionButton { text: root.patch-name + "  ▾"; label: "Browse patches"; width: root.compact ? 152px : 200px; horizontal-stretch: 0; clicked => { root.command("patch.browse"); } }
         Text { min-width: 72px; horizontal-stretch: 1; text: root.status; overflow: elide; font-family: SamplerTheme.font-ui; font-size: 12px; color: SamplerTheme.paper-3; vertical-alignment: center; }
         Text { text: root.voices + " / " + root.voice-limit; font-family: SamplerTheme.font-value; font-size: 12px; color: SamplerTheme.paper-3; vertical-alignment: center; }
         diagnostics-button := ActionButton { icon: "settings"; label: "Why did this play?"; ghost: true; compact: true; clicked => { root.command("diagnostics"); } }
         ActionButton { icon: "list"; label: "Event log"; ghost: true; compact: true; clicked => { root.command("eventlog"); } }
-        if !root.perform : HorizontalLayout { spacing: 0px; alignment: center;
-            for label[i] in ["Min", root.compact ? "Def" : "Default", "Exp"] : ActionButton { text: label; selected: i == root.size-mode; compact: true; width: i == 1 && !root.compact ? 54px : 32px; clicked => { root.command(i == 0 ? "size.min" : i == 1 ? "size.default" : "size.expanded"); } }
+        if !root.perform : Rectangle { width: root.compact ? 106px : 172px; height: 28px; horizontal-stretch: 0; background: SamplerTheme.surface-well; border-radius: 4px; border-width: 1px; border-color: SamplerTheme.border-hairline;
+            HorizontalLayout { x: 3px; y: 3px; width: parent.width - 6px; height: parent.height - 6px; spacing: 2px;
+                for size-label[i] in ["Min", root.compact ? "Def" : "Default", root.compact ? "Exp" : "Expanded"] : ActionButton {
+                    text: size-label; label: i == 2 ? "Exp" : size-label; selected: i == root.size-mode; compact: true; ghost: true; neutral-selection: true; caps: true;
+                    width: root.compact ? 32px : i == 0 ? 34px : i == 1 ? 59px : 69px; height: 22px;
+                    clicked => { root.command(i == 0 ? "size.min" : i == 1 ? "size.default" : "size.expanded"); }
+                }
+            }
         }
         perform-button := ActionButton { text: root.perform ? "Edit" : "Perform"; icon: root.perform ? "edit" : "tap"; label: root.perform ? "Return to editor" : "Perform"; clicked => { root.command("perform.toggle"); } }
         appearance-button := ActionButton { icon: "settings"; label: "Appearance and settings"; ghost: true; compact: true; clicked => { root.command("appearance"); } }

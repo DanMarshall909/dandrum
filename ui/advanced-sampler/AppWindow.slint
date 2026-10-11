@@ -16,7 +16,7 @@ import { PadsPage } from "pages/PadsPage.slint";
 import { MacrosPage } from "pages/MacrosPage.slint";
 import { MappingPage } from "pages/MappingPage.slint";
 import { LayersPage } from "pages/LayersPage.slint";
-import { VoicePage } from "pages/VoicePage.slint";
+import { VoicePage, VoiceRenderDialog } from "pages/VoicePage.slint";
 import { ModulationPage } from "pages/ModulationPage.slint";
 import { RoutingPage } from "pages/RoutingPage.slint";
 import { EffectsPage } from "pages/EffectsPage.slint";
@@ -78,6 +78,7 @@ export component AppWindow inherits Window {
         if action == "macro" { root.context-mode = "macro-actions"; }
         else if action == "macro-destinations" { root.context-mode = "destination"; }
         else if action == "modulator-destination" { root.context-mode = "mod-destination"; }
+        else if action == "parameter-destination" { Session.command("parameter.navigate", target, "", 0); root.context-mode = ""; }
         else if action == "modulation-add" || action == "modulation" { root.context-mode = "route"; }
         else if action == "macro-map" { root.context-mode = "macro"; }
         else if action == "midi-learn" { Session.command("parameter.learn", target, "", 0); }
@@ -126,17 +127,17 @@ export component AppWindow inherits Window {
             about-slint => { root.about-open = true; root.about-slint(); }
             file-browse(a) => { root.show-file(a); }
             if Session.page == "sample" && Session.sources.length > 0 : SamplePage { compact: root.width < 1000px; expanded: root.width >= 1500px; browse(a) => { root.show-file(a); } context-action(a,id) => { root.context(a,id); } }
-            if Session.page == "slices" : SlicesPage { compact: root.width < 1000px; export-midi => { root.show-file("slice.export-midi"); } }
+            if Session.page == "slices" : SlicesPage { compact: root.width < 1000px; expanded: root.width >= 1500px; export-midi => { root.show-file("slice.export-midi"); } }
             if Session.page == "pads" || (Session.page == "diagnostics" && Session.state-id == "diag" && root.diagnostics-open) : PadsPage { compact: root.width < 1000px; context-action(a,id) => { root.context(a,id); } }
-            if Session.page == "macros" : MacrosPage { context-action(a,id) => { root.context(a,id); } }
+            if Session.page == "macros" : MacrosPage { expanded: root.width >= 1500px; context-action(a,id) => { root.context(a,id); } }
             if Session.page == "mapping" : MappingPage { compact: root.width < 1000px; expanded: root.width >= 1500px; context-action(a,id) => { root.context(a,id); } }
             if Session.page == "layers" : LayersPage { compact: root.width < 1000px; expanded: root.width >= 1500px; context-action(a,id) => { root.context(a,id); } }
-            if Session.page == "voice" : VoicePage { compact: root.width < 1000px; expanded: root.width >= 1500px; context-action(a,id) => { root.context(a,id); } }
+            if Session.page == "voice" : VoicePage { dialogs-in-page: false; compact: root.width < 1000px; expanded: root.width >= 1500px; context-action(a,id) => { root.context(a,id); } }
             if Session.page == "mod" : ModulationPage { compact: root.width < 1000px; expanded: root.width >= 1500px; context-action(a,id) => { root.context(a,id); } }
             if Session.page == "routing" : RoutingPage { compact: root.width < 1000px; expanded: root.width >= 1500px; context-action(a,id) => { root.context(a,id); } }
             if Session.page == "fx" : EffectsPage { compact: root.width < 1000px; expanded: root.width >= 1500px; context-action(a,id) => { root.context(a,id); } }
             if Session.state-id == "drop" && Session.page == "empty" : MultiImportPage { browse(mode) => { root.show-file("asset.import-many"); root.import-mode = mode; } cancelled => { Session.command("state.select","empty","",0); } }
-            if (Session.page == "empty" && Session.state-id != "drop") || (Session.page == "sample" && Session.sources.length == 0) : EmptyPage { browse(a) => { root.show-file(a); } }
+            if (Session.page == "empty" && Session.state-id != "drop") || (Session.page == "sample" && Session.sources.length == 0) : EmptyPage { expanded: root.width >= 1500px; browse(a) => { root.show-file(a); } }
             if Session.page == "overview" : OverviewPage { }
             if Session.page == "diagnostics" && !(Session.state-id == "diag" && root.diagnostics-open) : DiagnosticsPage { }
         }
@@ -170,6 +171,7 @@ export component AppWindow inherits Window {
             ActionButton { x: parent.width - 94px; y: parent.height - 45px; text: "Continue"; primary: true; enabled: path.text != ""; clicked => { if root.file-operation(root.file-action,path.text,root.import-mode) { root.file-action = ""; } } }
         }
     }
+    VoiceRenderDialog { x: 0px; y: 0px; width: parent.width; height: parent.height; }
     if root.context-mode == "macro-actions" : Rectangle { background: SamplerTheme.scrim;
         TouchArea { clicked => { root.context-mode = ""; } }
         MacroActions { x: (parent.width - self.width) / 2; y: (parent.height - self.height) / 2; macro-id: root.context-target; close-requested => { root.context-mode = ""; } }

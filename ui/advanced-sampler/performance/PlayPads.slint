@@ -27,6 +27,7 @@ export component PlayPads inherits Rectangle {
     init => { root.scroll = max(0px, root.content-height - viewport.height); }
     changed content-height => { root.scroll = max(0px, root.content-height - viewport.height); }
     viewport := Flickable {
+        y: 0px;
         interactive: false;
         height: max(1px, parent.height - 18px); content-width: self.width; content-height: max(self.height, root.content-height); content-y: -root.scroll;
         changed content-y => { root.scroll = -self.content-y; }

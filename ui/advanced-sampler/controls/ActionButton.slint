@@ -10,8 +10,11 @@ export component ActionButton inherits FocusScope {
     in property <bool> primary;
     in property <bool> ghost;
     in property <bool> compact;
+    // SegmentedControl is neutral; ordinary selected actions retain accent styling.
+    in property <bool> neutral-selection: false;
+    in property <bool> caps: false;
     callback clicked();
-    width: max(root.compact ? 24px : 40px, label.preferred-width + (root.compact ? 8px : 18px)); height: root.compact ? 24px : 26px;
+    width: max(root.compact ? 24px : 40px, label.preferred-width + (root.compact ? 8px : 18px) + (root.icon != "" && root.text != "" ? 18px : 0px)); height: root.compact ? 24px : 26px;
     accessible-role: button; accessible-label: root.label; accessible-enabled: root.enabled;
     accessible-checked: root.selected;
     accessible-action-default => { root.activate(); }
@@ -19,13 +22,29 @@ export component ActionButton inherits FocusScope {
     focus-lost(reason) => { if reason == FocusReason.window-activation { Session.release-notes(); DragState.cancel(); } }
     public function activate() { if root.enabled { root.clicked(); } }
     key-pressed(event) => { if event.text == " " || event.text == Key.Return { root.activate(); return accept; } return reject; }
+    // Explicit soft rings keep the guide's primary glow in software rendering,
+    // where the native drop-shadow property does not paint. The 1.25px stroke
+    // also retains coverage when the application uses an 80 percent scale.
+    if root.primary && root.enabled && SamplerTheme.soft : Rectangle {
+        for band in 12 : Rectangle {
+            x: -(band + 1)*1px; y: -(band + 1)*1px;
+            width: parent.width + (band + 1)*2px; height: parent.height + (band + 1)*2px;
+            border-radius: (band + 3)*1px; border-width: 1.25px;
+            border-color: SamplerTheme.accent.with-alpha(0.18*exp(-pow(band + 1,2)/32));
+        }
+    }
     Rectangle {
-        y: touch.pressed ? 1px : 0px; border-radius: 2px; border-width: root.ghost && !root.selected && !root.has-focus ? 0px : 1px;
+        y: !root.neutral-selection && touch.pressed ? 1px : 0px; border-radius: root.neutral-selection ? 3px : 2px;
+        border-width: root.neutral-selection ? (root.has-focus ? 1px : 0px) : root.ghost && !root.selected && !root.has-focus ? 0px : 1px;
         border-color: root.selected ? SamplerTheme.accent : root.has-focus ? SamplerTheme.paper-1 : SamplerTheme.line-2;
-        background: root.primary ? SamplerTheme.accent : root.selected ? SamplerTheme.accent-wash : touch.pressed ? SamplerTheme.surface-control-pressed : touch.has-hover ? SamplerTheme.surface-control-hover : root.ghost ? transparent : SamplerTheme.surface-control;
-        if SamplerTheme.soft && !root.ghost : Rectangle { border-radius: 2px; background: @linear-gradient(180deg, #FFFFFF12, transparent 50%, #00000020); }
-        label := Text { x: root.icon != "" && root.text != "" ? 18px : 0px; width: parent.width - self.x; text: root.text; color: !root.enabled ? SamplerTheme.text-disabled : root.primary ? SamplerTheme.text-on-accent : root.selected ? SamplerTheme.accent : SamplerTheme.text-secondary; font-family: SamplerTheme.font-ui; font-size: 12px; font-weight: 600; horizontal-alignment: center; vertical-alignment: center; }
-        if root.icon != "" : AppIcon { x: root.text != "" ? 5px : (parent.width - self.width) / 2; y: (parent.height - self.height) / 2; name: root.icon; size: 14px; tint: root.selected ? SamplerTheme.accent : root.primary ? SamplerTheme.text-on-accent : SamplerTheme.paper-3; }
+        background: root.neutral-selection ? (root.selected ? (root.enabled ? SamplerTheme.ink-5 : SamplerTheme.ink-4) : transparent) : root.primary ? SamplerTheme.accent : root.selected ? SamplerTheme.accent-wash : touch.pressed ? SamplerTheme.surface-control-pressed : touch.has-hover ? SamplerTheme.surface-control-hover : root.ghost ? transparent : SamplerTheme.surface-control;
+        drop-shadow-color: root.neutral-selection && root.selected && root.enabled && !root.has-focus ? #0000008c : transparent;
+        drop-shadow-offset-y: root.primary ? 0px : 2px; drop-shadow-blur: root.primary ? 12px : 3px;
+        if root.neutral-selection && root.selected : Rectangle { x: 0px; y: 0px; width: parent.width; height: parent.height; border-radius: 3px; background: SamplerTheme.raised-overlay; }
+        if root.neutral-selection && root.selected && root.enabled && !root.has-focus : Rectangle { x: 1px; y: 0px; width: max(0px, parent.width - 2px); height: 1px; background: #ffffff14; }
+        if SamplerTheme.soft && !root.ghost && !root.neutral-selection : Rectangle { border-radius: 2px; background: root.primary ? SamplerTheme.accent-overlay : @linear-gradient(180deg, #FFFFFF12, transparent 50%, #00000020); }
+        label := Text { x: root.icon != "" && root.text != "" ? 18px : 0px; width: parent.width - self.x; text: root.caps ? root.text.to-uppercase() : root.text; color: !root.enabled ? SamplerTheme.text-disabled : root.neutral-selection ? (root.selected ? SamplerTheme.text-primary : SamplerTheme.text-tertiary) : root.primary ? SamplerTheme.text-on-accent : root.selected ? SamplerTheme.accent : SamplerTheme.text-secondary; font-family: SamplerTheme.font-ui; font-size: root.caps ? 11px : 12px; font-weight: 600; letter-spacing: root.caps ? 0.66px : 0px; horizontal-alignment: center; vertical-alignment: center; }
+        if root.icon != "" : AppIcon { x: root.text != "" ? 5px : (parent.width - self.width) / 2; y: (parent.height - self.height) / 2; name: root.icon; size: 14px; tint: root.neutral-selection ? (root.selected ? SamplerTheme.text-primary : SamplerTheme.text-tertiary) : root.selected ? SamplerTheme.accent : root.primary ? SamplerTheme.text-on-accent : SamplerTheme.paper-3; }
     }
     touch := TouchArea { enabled: root.enabled; clicked => { root.focus(); root.activate(); } }
 }

@@ -46,7 +46,7 @@ export component ModulatorTree inherits ScrollView {
                     accessible-action-default => { root.select(source.id); }
                     key-pressed(event) => { if event.text == Key.Return || event.text == " " { root.select(source.id); return accept; } return reject; }
                     Rectangle { x: 4px; width: parent.width - 8px; border-radius: 3px; background: source.selected ? SamplerTheme.accent-wash : drag.has-hover ? SamplerTheme.ink-3 : transparent;
-                        Rectangle { x: 23px; y: 9px; width: 8px; height: 8px; border-radius: source.slot == 0 ? 4px : 0px; background: source.slot == 0 ? SamplerTheme.mod-a : source.slot == 1 ? SamplerTheme.mod-b : source.slot == 2 ? SamplerTheme.mod-c : SamplerTheme.mod-d; }
+                        Rectangle { x: 23px; y: source.slot <= 0 ? 12px : 9px; width: 8px; height: source.slot <= 0 ? 2px : 8px; border-radius: source.slot == 1 ? 4px : 0px; background: SamplerTheme.mod-color(source.slot); }
                         Text { x: 42px; width: parent.width - 79px; text: source.name; color: source.enabled ? SamplerTheme.paper-2 : SamplerTheme.text-disabled; font-family: SamplerTheme.font-ui; font-size: 13px; vertical-alignment: center; overflow: elide; }
                         Rectangle { x: parent.width - 29px; y: 12px; width: 24px; height: 3px; border-radius: 2px; background: SamplerTheme.ink-4; Rectangle { width: parent.width * abs(source.live); background: SamplerTheme.paper-2; } }
                         if root.rename-id == source.id : TextInput { x: 42px; width: parent.width - 44px; text: source.name; accessible-label: "Rename modulator " + source.name; color: SamplerTheme.paper-1; font-family: SamplerTheme.font-ui; font-size: 13px;

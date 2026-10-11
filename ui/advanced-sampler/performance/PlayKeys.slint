@@ -40,10 +40,10 @@ export component PlayKeys inherits Rectangle {
     viewport := Rectangle { y: 0px; height: max(1px, parent.height - 18px); clip: true; border-width: 1px; border-color: SamplerTheme.line-2; border-radius: 2px; background: SamplerTheme.ink-0;
         Flickable { interactive: false; width: parent.width; height: parent.height; content-width: root.inner-width; content-height: self.height; content-x: -root.scroll;
             changed content-x => { root.scroll = -self.content-x; root.clamp-scroll(); }
-            for i in 75 : KeyCell { note: FitLayout.white-note(i); x: i * root.actual-key-width * 1px; width: root.actual-key-width * 1px; height: viewport.height; mapped: self.note >= root.mapped-low && self.note <= root.mapped-high; sounding: root.sounding(self.note); pc-label: root.pcl(self.note); source: root.source + "." + self.note; generation: root.generation;
+            for i in 75 : KeyCell { y: 0px; note: FitLayout.white-note(i); x: i * root.actual-key-width * 1px; width: root.actual-key-width * 1px; height: viewport.height; mapped: self.note >= root.mapped-low && self.note <= root.mapped-high; sounding: root.sounding(self.note); pc-label: root.pcl(self.note); source: root.source + "." + self.note; generation: root.generation;
                 note-on(n, v, s) => { root.note-on(n, v, s); } note-off(n, s) => { root.note-off(n, s); }
             }
-            for i in 53 : KeyCell { note: FitLayout.black-note(i); visible: self.note <= 127; black: true; x: (FitLayout.white-index(self.note) + 0.69) * root.actual-key-width * 1px; width: root.actual-key-width * 0.62px; height: viewport.height * 0.6; mapped: self.note >= root.mapped-low && self.note <= root.mapped-high; sounding: root.sounding(self.note); pc-label: root.pcl(self.note); source: root.source + "." + self.note; generation: root.generation;
+            for i in 53 : KeyCell { y: 0px; note: FitLayout.black-note(i); visible: self.note <= 127; black: true; x: (FitLayout.white-index(self.note) + 0.69) * root.actual-key-width * 1px; width: root.actual-key-width * 0.62px; height: viewport.height * 0.6; mapped: self.note >= root.mapped-low && self.note <= root.mapped-high; sounding: root.sounding(self.note); pc-label: root.pcl(self.note); source: root.source + "." + self.note; generation: root.generation;
                 note-on(n, v, s) => { root.note-on(n, v, s); } note-off(n, s) => { root.note-off(n, s); }
             }
         }
