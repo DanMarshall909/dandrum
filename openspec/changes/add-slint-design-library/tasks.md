@@ -20,8 +20,10 @@ Verification: [environment, tests, acceptance criteria and screenshots](../../..
 
 ## 4. Shared editor primitives
 
-- [ ] 4.1 Extract runtime theme/material, icon, action, choice, panel and resize presentation; preserve guide defaults and sampler appearance through adapters.
-- [ ] 4.2 Extract parameter faces, value editors, menus and configurable gestures; verify both guide and sampler interaction contracts independently.
-- [ ] 4.3 Extract supplied-data keyboard/pad/waveform/key-map displays and editable voice plots; retain note ownership and domain commands in sampler adapters.
-- [ ] 4.4 Extract native modal focus/dismissal, generic drag mechanics, browser/search and appearance form controls; test independent consumers and nested dialogs.
-- [ ] 4.5 Audit remaining common presentation and host helpers, document reusable APIs and justified domain boundaries, verify native integration/render equivalence and publish reviewed changes.
+- [x] 4.1 Extract runtime theme/material, icon, action, choice, panel and resize presentation; preserve guide defaults and sampler appearance through adapters.
+- [x] 4.2 Extract parameter faces, value editors, menus and configurable gestures; verify both guide and sampler interaction contracts independently.
+- [x] 4.3 Extract supplied-data keyboard/pad/waveform/key-map displays and editable voice plots; retain note ownership and domain commands in sampler adapters.
+- [x] 4.4 Extract native modal focus/dismissal, generic drag mechanics, browser/search and appearance form controls; test independent consumers and nested dialogs.
+- [x] 4.5 Audit remaining common presentation and host helpers, document reusable APIs and justified domain boundaries, verify native integration/render equivalence and publish reviewed changes.
+
+Shared editor verification: [extraction boundaries and APIs](../../../ui/slint/EDITOR_EXTRACTION.md) and [final native evidence](../../../ui/slint/VERIFICATION.md). The broader advanced-sampler acceptance roadmap remains separate.

@@ -183,3 +183,51 @@ decisions. Native `ContextMenu` uses Slint's platform menu style; the separate
 `MenuSurface` provides the guide's themed rows, icons and modulation controls.
 Consumers with clipped ancestors must supply overlay bounds and appropriate
 parent paint order as described in the README.
+
+
+## Shared editor extraction — 2026-10-12
+
+The [extraction audit](EDITOR_EXTRACTION.md) identifies the reusable controls,
+displays, graph handles, dialogs/drag, chrome, search, appearance and UI-thread
+host services. The public inventory includes 96 editor APIs in addition to the
+existing guide surface. A standalone consumer compiles and links a source bundle
+containing only this library and the licensed fonts, with catalog/tests/file-drop
+build targets disabled.
+
+Final Linux/WSL verification uses Slint SDK/compiler 1.18.1, GCC 15, a Release
+sampler build, and the actual software renderer on private authenticated Xvfb:
+
+- **55/55 sampler CTest groups pass** in 106.41 seconds.
+- **34/34 shared-library CTest groups pass**, including ten native editor fixtures,
+  six renderer checks and independent package/consumer checks.
+- **47/47 Node checks pass**; token and sampler-command generated outputs are current.
+- Both selected OpenSpec changes validate strictly. Spec coverage remains
+  584 scenarios / 345 mapped / 239 existing ratchet entries.
+- Pure native helper coverage: model projection 29/29 executable lines, URI
+  parsing 35/35, spectral preview 72/72, velocity blending 14/14 and numeric codec
+  65/65. Slint verification is behavioral; no source-line percentage is claimed.
+
+Native regressions verify first-start highlight/popup timers, drag cancellation
+on window deactivation, transport delivery suppression after window expiry,
+velocity-handle identity through model refresh, and keyboard focus after
+structural paste/delete. The complete existing domain-pages test retains all
+104 assertions; the independent live zone-map fixture has 44 checks. Generic C++
+string codec callbacks preserve explicit lengths; the actual Slint SDK retains
+its no-embedded-NUL text contract.
+
+The comparison uses 219 preserved pre-extraction PNG/PAM artifacts from commit
+`1c42400168e961db9628ce05abef301f263ecb3a`. **211 match byte-for-byte**. Four
+PNG/PAM pairs differ only at animated meter edges: mapping/routing/velocity
+expanded each change eight pixels; modulation changes 27. Every changed pixel
+switches between exact fill RGBA(195,190,180,255) and track RGBA(43,44,47,255).
+Static layout, text, material and graph paint match. Equivalent baseline captures
+already show the same variation from the 33ms mock timer and 400ms capture delay.
+No layout or material assertion was weakened to accept those differences.
+
+Raw final logs are `/tmp/dandrum-sampler-complete-verification.log`,
+`/tmp/dandrum-library-verified-final.log`, and
+`/tmp/dandrum-all-constants-verified-final.log`; the final paired comparison is
+`/tmp/dandrum-native-verified-diff-review/summary.json`. Preserved reference
+artifacts remain in `build/slint-extraction-evidence/baseline/`.
+Physical audio/MIDI, external DAWs and other operating systems were not exercised;
+the sampler remains explicitly silent, and its broader roadmap is unfinished.

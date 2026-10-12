@@ -115,3 +115,10 @@ Actual audio, physical MIDI devices, external DAW hosting and other operating
 systems are outside this presentation refactor's verification. The advanced
 sampler remains an explicitly silent native editor; its broader OpenSpec roadmap
 is not completed by this extraction.
+
+The integrated native comparison retains 219 baseline artifacts from the
+pre-extraction editor. Animated miniature meter fills can differ with the 33ms
+mock timer and 400ms capture delay; equivalent baseline captures already show
+this variation. Difference regions are inspected independently rather than
+loosening layout, typography, graph or material assertions. Final suite counts
+and comparison evidence are recorded in [VERIFICATION.md](VERIFICATION.md).

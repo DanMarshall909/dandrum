@@ -49,8 +49,9 @@ export component MappingPage inherits FocusScope {
  key-pressed(e) => {
   let modified=e.modifiers.control || e.modifiers.meta;
   if modified && e.text.to-lowercase() == "c" { Session.command(SamplerCommands.zone-copy-range,Session.selected-zone,"",0);return accept; }
-  if modified && e.text.to-lowercase() == "v" { Session.command(e.modifiers.shift ? SamplerCommands.zone-paste-layer : SamplerCommands.zone-paste,"","",root.hover-note);return accept; }
-  if !modified && (e.text == Key.Delete || e.text == Key.Backspace) { Session.command(e.modifiers.shift ? SamplerCommands.zone-delete-gap : SamplerCommands.zone-delete,Session.selected-zone,"",0);return accept; }
+  // Structural edits may replace the focused repeated handle; keep keyboard focus on the page.
+  if modified && e.text.to-lowercase() == "v" { root.focus();Session.command(e.modifiers.shift ? SamplerCommands.zone-paste-layer : SamplerCommands.zone-paste,"","",root.hover-note);return accept; }
+  if !modified && (e.text == Key.Delete || e.text == Key.Backspace) { root.focus();Session.command(e.modifiers.shift ? SamplerCommands.zone-delete-gap : SamplerCommands.zone-delete,Session.selected-zone,"",0);return accept; }
   if e.text == Key.Escape { zone-menu.close(); Session.command(SamplerCommands.gesture-cancel,"","",0);return accept; }
   return reject;
  }
