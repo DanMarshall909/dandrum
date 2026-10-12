@@ -1,0 +1,63 @@
+import { Tokens } from "../theme.slint";
+import { EditorTheme } from "Theme.slint";
+import { EditorIcon } from "Icon.slint";
+import { LevelMeter } from "LevelMeter.slint";
+export component ItemRow inherits FocusScope {
+    in property <string> label;
+    in property <string> text;
+    in property <string> detail;
+    in property <string> icon;
+    in property <bool> selected;
+    in property <bool> highlighted;
+    in property <bool> selection-mark;
+    in property <bool> external-pointer;
+    in property <bool> external-hovered;
+    in property <bool> context-on-release;
+    in property <length> content-inset: Tokens.editor-item-content-inset;
+    in property <length> content-right-inset: root.content-inset;
+    in property <length> content-radius: Tokens.editor-radius-item;
+    in property <length> icon-x: Tokens.editor-item-icon-inset;
+    in property <length> icon-y: Tokens.editor-item-icon-inset;
+    in property <length> text-x: Tokens.editor-item-text-left;
+    in property <length> text-width: root.content-width - root.text-x - Tokens.editor-item-detail-reserve;
+    in property <length> text-font-size: EditorTheme.type-control;
+    in property <int> text-weight: Tokens.editor-weight-normal;
+    in property <string> text-font: EditorTheme.font-ui;
+    in property <color> text-color: EditorTheme.paper-1;
+    in property <color> icon-tint: EditorTheme.paper-3;
+    in property <color> hover-color: EditorTheme.ink-3;
+    in property <length> detail-width: Tokens.editor-item-detail-width;
+    in property <length> detail-right: Tokens.editor-item-detail-inset;
+    in property <length> detail-font-size: EditorTheme.type-small;
+    in property <color> detail-color: EditorTheme.paper-3;
+    in property <bool> detail-elide;
+    in property <bool> progress-visible;
+    in property <float> progress;
+    in property <bool> progress-centered;
+    in property <length> progress-left: root.text-x;
+    out property <length> content-width: root.width - root.content-inset - root.content-right-inset;
+    out property <bool> hovered: root.external-pointer ? root.external-hovered : pointer.has-hover;
+    out property <length> pointer-x: pointer.mouse-x;
+    out property <length> pointer-y: pointer.mouse-y;
+    callback activated();
+    callback context-requested();
+    callback window-deactivated();
+    height: Tokens.editor-item-height; accessible-role: button; accessible-label: root.label; accessible-enabled: root.enabled;
+    focus-on-tab-navigation: root.enabled; focus-on-click: root.enabled;
+    public function activate() { if root.enabled { root.focus(); root.activated(); } }
+    accessible-action-default => { if root.enabled { root.activated(); } }
+    focus-lost(reason) => { if reason == FocusReason.window-activation { root.window-deactivated(); } }
+    key-pressed(event) => { if root.enabled && (event.text == " " || event.text == Key.Return) { root.activated(); return accept; } return reject; }
+    Rectangle { x: root.content-inset; width: root.content-width; border-radius: root.content-radius; background: root.selected || root.highlighted ? EditorTheme.accent-wash : root.hovered ? root.hover-color : transparent;
+        if root.selection-mark && root.selected : Rectangle { width: Tokens.editor-item-selection-mark-width; background: EditorTheme.accent; }
+        if root.icon != "" : EditorIcon { x: root.icon-x; y: root.icon-y; name: root.icon; tint: root.icon-tint; }
+        Text { x: root.text-x; width: root.text-width; text: root.text; font-family: root.text-font; font-size: root.text-font-size; font-weight: root.text-weight; color: root.text-color; vertical-alignment: center; overflow: elide; }
+        Text { x: parent.width - root.detail-right - root.detail-width; width: root.detail-width; text: root.detail; font-family: EditorTheme.font-value; font-size: root.detail-font-size; color: root.detail-color; vertical-alignment: center; horizontal-alignment: right; overflow: root.detail-elide ? elide : clip; }
+        if root.progress-visible : LevelMeter { x: root.progress-left; y: parent.height - Tokens.editor-item-progress-bottom; width: parent.width - self.x - Tokens.editor-item-detail-inset; height: Tokens.editor-item-progress-height; level: root.progress; centered: root.progress-centered; track-color: EditorTheme.ink-4; fill-color: EditorTheme.paper-1; }
+    }
+    pointer := TouchArea { enabled: root.enabled && !root.external-pointer;
+        clicked => { root.activate(); }
+        pointer-event(event) => { if event.button == PointerEventButton.right && event.kind == (root.context-on-release ? PointerEventKind.up : PointerEventKind.down) { root.context-requested(); } }
+    }
+    @children
+}

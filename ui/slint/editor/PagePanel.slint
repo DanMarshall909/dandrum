@@ -1,0 +1,17 @@
+import { Tokens } from "../theme.slint";
+import { EditorTheme } from "Theme.slint";
+export component EditorPagePanel inherits Rectangle {
+    in property <string> title;
+    in property <string> subtitle;
+    in property <length> header-height: Tokens.editor-panel-header-height;
+    in property <bool> secondary;
+    border-radius: Tokens.editor-radius-panel; border-width: Tokens.editor-border-width; border-color: EditorTheme.line-1; background: EditorTheme.ink-2;
+    if EditorTheme.soft : Rectangle { border-radius: Tokens.editor-radius-panel; background: EditorTheme.raised-overlay; }
+    Rectangle { x: Tokens.editor-border-width; y: Tokens.editor-border-width; width: parent.width - Tokens.editor-panel-header-edge-pair; height: root.header-height; border-radius: Tokens.editor-panel-header-radius; background: EditorTheme.ink-3;
+        Text { x: Tokens.editor-panel-title-inset; width: self.preferred-width; text: root.title.to-uppercase(); font-family: EditorTheme.font-ui; font-size: EditorTheme.type-control; font-weight: Tokens.editor-weight-bold; letter-spacing: Tokens.editor-panel-heading-tracking; color: root.secondary ? EditorTheme.secondary : EditorTheme.paper-2; vertical-alignment: center; }
+        Text { x: Tokens.editor-panel-title-inset + title.preferred-width + Tokens.editor-panel-subtitle-gap; width: max(0px, parent.width - self.x - Tokens.editor-panel-subtitle-gap); text: root.subtitle; font-family: EditorTheme.font-ui; font-size: EditorTheme.type-body; color: EditorTheme.paper-3; vertical-alignment: center; overflow: elide; }
+        title := Text { visible: false; text: root.title.to-uppercase(); font-family: EditorTheme.font-ui; font-size: EditorTheme.type-control; font-weight: Tokens.editor-weight-bold; letter-spacing: Tokens.editor-panel-heading-tracking; }
+        Rectangle { y: parent.height - Tokens.editor-border-width; height: Tokens.editor-border-width; background: EditorTheme.line-1; }
+    }
+    @children
+}

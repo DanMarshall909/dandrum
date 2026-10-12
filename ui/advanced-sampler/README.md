@@ -66,3 +66,21 @@ ctest --test-dir build/advanced-sampler -R advanced-sampler-voice-render --outpu
 ```
 
 Its private-display runner retains the native test log and four snapshots in the build's `voice-render` directory. A failing native assertion or display startup fails the check; it never substitutes a compile-only result.
+
+## Shared design library
+
+The sampler composes the reusable editor primitives in [ui/slint](../slint/README.md).
+Controls, supplied-data displays, dialogs/drag, browser/search, appearance and
+native UI helpers share the library; sampler state, note ownership, command
+dispatch and instrument policy stay in adapters. See the
+[extraction audit](../slint/EDITOR_EXTRACTION.md) for APIs and verification.
+
+Shared geometry, timing, range, label and action defaults come from generated
+design tokens and named library vocabularies. Sampler command IDs come from
+[domain/commands.json](domain/commands.json), which generates both Slint and C++
+constants. At the repository root, check generated outputs with:
+
+```sh
+node scripts/generate-ui-tokens.mjs --check
+node scripts/generate-sampler-commands.mjs --check
+```

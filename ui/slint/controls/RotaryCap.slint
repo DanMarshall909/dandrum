@@ -1,20 +1,20 @@
 import { Tokens } from "../theme.slint";
 export component RotaryCap inherits Rectangle {
-    in property <length> radius: 12.5px;
+    in property <length> radius: Tokens.editor-control-rotary-cap-radius;
     in property <bool> enabled: true;
     in property <bool> hovered;
     in property <bool> pressed;
-    Rectangle { x: parent.width / 2 - root.radius; y: parent.height / 2 - root.radius + 1.5px; width: root.radius * 2; height: self.width; border-radius: root.radius; background: #00000073; }
+    Rectangle { x: parent.width / 2 - root.radius; y: parent.height / 2 - root.radius + Tokens.editor-control-rotary-shadow-offset; width: root.radius * 2; height: self.width; border-radius: root.radius; background: Tokens.editor-control-rotary-shadow; }
     Rectangle {
         x: parent.width / 2 - root.radius; y: parent.height / 2 - root.radius;
         width: root.radius * 2; height: self.width; border-radius: root.radius;
         background: !root.enabled ? Tokens.dd-ink-4 : root.pressed ? Tokens.dd-ink-6 : root.hovered ? Tokens.dd-cap-hover : Tokens.dd-ink-5;
-        border-color: Tokens.dd-line-3.with-alpha(root.enabled ? 0.6 : 0.3); border-width: 1px;
+        border-color: Tokens.dd-line-3.with-alpha(root.enabled ? Tokens.editor-control-rotary-border-alpha : Tokens.editor-control-rotary-disabled-border-alpha); border-width: Tokens.editor-control-stroke-width;
     }
     Path {
         viewbox-width: root.width / 1px; viewbox-height: root.height / 1px;
-        stroke: #FFFFFF17; stroke-width: 1px;
-        MoveTo { x: root.width / 2px - (root.radius / 1px - 1) * sin(60deg); y: root.height / 2px - (root.radius / 1px - 1) * cos(60deg); }
-        ArcTo { radius-x: root.radius / 1px - 1; radius-y: root.radius / 1px - 1; x: root.width / 2px + (root.radius / 1px - 1) * sin(60deg); y: root.height / 2px - (root.radius / 1px - 1) * cos(60deg); sweep: true; }
+        stroke: Tokens.editor-control-rotary-rim-highlight; stroke-width: Tokens.editor-control-stroke-width;
+        MoveTo { x: root.width / 2px - ((root.radius - Tokens.editor-control-rotary-highlight-inset) / 1px) * sin(Tokens.editor-control-rotary-highlight-angle*1deg); y: root.height / 2px - ((root.radius - Tokens.editor-control-rotary-highlight-inset) / 1px) * cos(Tokens.editor-control-rotary-highlight-angle*1deg); }
+        ArcTo { radius-x: (root.radius - Tokens.editor-control-rotary-highlight-inset) / 1px; radius-y: (root.radius - Tokens.editor-control-rotary-highlight-inset) / 1px; x: root.width / 2px + ((root.radius - Tokens.editor-control-rotary-highlight-inset) / 1px) * sin(Tokens.editor-control-rotary-highlight-angle*1deg); y: root.height / 2px - ((root.radius - Tokens.editor-control-rotary-highlight-inset) / 1px) * cos(Tokens.editor-control-rotary-highlight-angle*1deg); sweep: true; }
     }
 }

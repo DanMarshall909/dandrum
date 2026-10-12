@@ -9,9 +9,9 @@ export component RotaryModRing inherits Rectangle {
     in property <int> slot;
     in property <bool> active;
     in property <bool> editing;
-    in property <length> radius: 23px;
-    in property <length> active-thickness: 2px;
-    RotaryArc { radius: root.radius; tint: Tokens.dd-ink-3; thickness: 1px; }
-    RotaryArc { from: root.base; to: root.base + root.depth; radius: root.radius; tint: ModPalette.tint(root.slot).with-alpha(root.active || root.editing ? 1 : 0.6); thickness: root.active || root.editing ? root.active-thickness : 1px; }
-    if root.active : RotaryMarker { value: root.base + root.depth * root.live; radius: root.radius; diameter: root.active-thickness + 2px; tint: ModPalette.tint(root.slot); }
+    in property <length> radius: Tokens.editor-control-rotary-mod-radius;
+    in property <length> active-thickness: Tokens.editor-control-rotary-mod-active-thickness;
+    RotaryArc { radius: root.radius; tint: Tokens.dd-ink-3; thickness: Tokens.editor-control-stroke-width; }
+    RotaryArc { from: root.base; to: root.base + root.depth; radius: root.radius; tint: ModPalette.tint(root.slot).with-alpha(root.active || root.editing ? 1 : Tokens.editor-control-rotary-inactive-mod-alpha); thickness: root.active || root.editing ? root.active-thickness : 1px; }
+    if root.active : RotaryMarker { value: root.base + root.depth * root.live; radius: root.radius; diameter: root.active-thickness + Tokens.editor-control-rotary-mod-marker-extra; tint: ModPalette.tint(root.slot); }
 }

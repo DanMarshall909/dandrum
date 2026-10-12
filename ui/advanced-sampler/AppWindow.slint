@@ -1,3 +1,9 @@
+import { EditorDialogMetrics, EditorTypographyMetrics } from "../slint/editor/DialogConstants.slint";
+import { EditorLayoutMetrics } from "../slint/editor/LayoutMetrics.slint";
+import { ParameterActions, ParameterStrings } from "../slint/editor/ParameterConstants.slint";
+import { BrowserActions } from "../slint/editor/BrowserActions.slint";
+import { SamplerUi, SamplerText, SamplerViewport } from "domain/UiConstants.slint";
+import { SamplerCommands } from "domain/Commands.slint";
 import { Session } from "Session.slint";
 import { SamplerTheme } from "theme/Theme.slint";
 import { Appearance, AppearanceState } from "chrome/Appearance.slint";
@@ -7,6 +13,7 @@ import { PatchBrowser } from "performance/PatchBrowser.slint";
 import { PatchFilter } from "performance/PatchFilter.slint";
 import { ActionButton } from "controls/ActionButton.slint";
 import { ValueCodec, ParsedValue } from "../slint/controls/ValueCodec.slint";
+import { EditorModal, EditorDialogSurface } from "../slint/editor/Dialog.slint";
 import { AboutSlint, ScrollView } from "std-widgets.slint";
 import { DragState } from "chrome/DragState.slint";
 import { MacroActions } from "performance/MacroActions.slint";
@@ -30,15 +37,15 @@ export { Session, SamplerTheme, AppearanceState, PerformanceState, PatchFilter, 
 export struct DroppedFiles { paths: string, multiple: bool }
 
 export component AppWindow inherits Window {
-    title: "Dandrum Advanced Sampler · silent editor";
-    in-out property <length> viewport-width: 1200px;
-    in-out property <length> viewport-height: 800px;
-    in-out property <bool> diagnostics-open: Session.state-id == "diag";
+    title: SamplerText.window-title;
+    in-out property <length> viewport-width: SamplerViewport.default-width;
+    in-out property <length> viewport-height: SamplerViewport.default-height;
+    in-out property <bool> diagnostics-open: Session.state-id == SamplerUi.state-diagnostics;
     in-out property <bool> eventlog-open;
-    preferred-width: root.viewport-width; preferred-height: root.viewport-height + GuidePresentation.height-for-width(root.viewport-width); min-width: 820px; min-height: 560px + guide.height;
+    preferred-width: root.viewport-width; preferred-height: root.viewport-height + GuidePresentation.height-for-width(root.viewport-width); min-width: SamplerViewport.minimum-width; min-height: SamplerViewport.minimum-height + guide.height;
     background: SamplerTheme.surface-window;
     default-font-family: SamplerTheme.font-ui;
-    default-font-size: 13px;
+    default-font-size: SamplerTheme.type-control;
     private property <bool> browser-open;
     private property <bool> about-open;
     private property <string> file-path;
@@ -48,13 +55,13 @@ export component AppWindow inherits Window {
     changed about-open => { if root.about-open { about-popup.show(); } else { about-popup.close(); } }
     changed context-mode => {
         macro-popup.close(); route-popup.close(); picker-popup.close();
-        if root.context-mode == "macro-actions" { macro-popup.show(); }
-        else if root.context-mode == "route-action" { route-popup.show(); }
+        if root.context-mode == SamplerUi.context-macro-actions { macro-popup.show(); }
+        else if root.context-mode == SamplerUi.context-route-action { route-popup.show(); }
         else if root.context-mode != "" { picker-popup.show(); }
     }
-    private property <string> previous-page: "sample";
+    private property <string> previous-page: SamplerUi.page-sample;
     private property <string> file-action;
-    private property <string> import-mode: "root-velocity";
+    private property <string> import-mode: SamplerUi.root-velocity;
     private property <string> context-target;
     private property <string> context-mode;
     private property <string> route-operation;
@@ -69,53 +76,53 @@ export component AppWindow inherits Window {
     changed octave => { PerformanceState.base-note = root.octave; }
     changed pc-enabled => { PerformanceState.pc-enabled = root.pc-enabled; }
     public function choose-size(size: int) {
-        root.viewport-width = size == 0 ? 820px : size == 2 ? 1600px : 1200px;
-        root.viewport-height = size == 0 ? 560px : size == 2 ? 1000px : 800px;
+        root.viewport-width = size == EditorLayoutMetrics.compact-mode ? SamplerViewport.minimum-width : size == EditorLayoutMetrics.expanded-mode ? SamplerViewport.expanded-width : SamplerViewport.default-width;
+        root.viewport-height = size == EditorLayoutMetrics.compact-mode ? SamplerViewport.minimum-height : size == EditorLayoutMetrics.expanded-mode ? SamplerViewport.expanded-height : SamplerViewport.default-height;
         root.resize-window(root.viewport-width / 1px, (root.viewport-height + GuidePresentation.height-for-width(root.viewport-width)) / 1px);
-        if size == 0 { PerformanceState.open = false; }
+        if size == EditorLayoutMetrics.compact-mode { PerformanceState.open = false; }
     }
-    public function show-file(action: string) { Session.release-notes(); DragState.cancel(); root.import-mode = "root-velocity"; root.file-action = action; root.file-path = ""; file-popup.show(); }
+    public function show-file(action: string) { Session.release-notes(); DragState.cancel(); root.import-mode = SamplerUi.root-velocity; root.file-action = action; root.file-path = ""; file-popup.show(); }
     public function close-file() { root.file-action = ""; file-popup.close(); }
     public function receive-files(files: DroppedFiles) {
         if files.paths != "" {
-            if files.multiple { root.show-file("asset.import-many"); root.file-path = files.paths; }
-            else { root.file-operation("asset.import", files.paths, ""); }
+            if files.multiple { root.show-file(SamplerCommands.asset-import-many); root.file-path = files.paths; }
+            else { root.file-operation(SamplerCommands.asset-import, files.paths, ""); }
         }
     }
     public function patch-action(action: string) {
-        if action == "copy" { Session.command("patch.copy", "", "", 0); clipboard-source.select-all(); clipboard-source.copy(); root.clipboard-copy(Session.definition-text); }
-        else { root.show-file(action == "import" ? "patch.import" : "patch.export"); }
+        if action == BrowserActions.action-copy { Session.command(SamplerCommands.patch-copy, "", "", 0); clipboard-source.select-all(); clipboard-source.copy(); root.clipboard-copy(Session.definition-text); }
+        else { root.show-file(action == BrowserActions.action-import ? SamplerCommands.patch-import : SamplerCommands.patch-export); }
     }
     public function context(action: string, target: string) {
         root.context-target = target;
-        if action == "macro" { root.context-mode = "macro-actions"; }
-        else if action == "macro-destinations" { root.context-mode = "destination"; }
-        else if action == "modulator-destination" { root.context-mode = "mod-destination"; }
-        else if action == "parameter-destination" { Session.command("parameter.navigate", target, "", 0); root.context-mode = ""; }
-        else if action == "modulation-add" || action == "modulation" { root.context-mode = "route"; }
-        else if action == "macro-map" { root.context-mode = "macro"; }
-        else if action == "midi-learn" { Session.command("parameter.learn", target, "", 0); }
-        else if action == "modulation-edit" || action == "modulation-invert" || action == "modulation-bypass" || action == "modulation-remove" {
-            root.route-operation = action == "modulation-edit" ? "Edit" : action == "modulation-invert" ? "Invert" : action == "modulation-bypass" ? "Bypass" : "Remove";
-            root.context-mode = "route-action";
+        if action == ParameterActions.macro { root.context-mode = SamplerUi.context-macro-actions; }
+        else if action == SamplerUi.macro-destinations { root.context-mode = SamplerUi.context-destination; }
+        else if action == SamplerUi.modulator-destination { root.context-mode = SamplerUi.context-modulator-destination; }
+        else if action == SamplerUi.parameter-destination { Session.command(SamplerCommands.parameter-navigate, target, "", 0); root.context-mode = ""; }
+        else if action == ParameterActions.add-route || action == ParameterActions.modulation { root.context-mode = SamplerUi.context-route; }
+        else if action == ParameterActions.macro-map { root.context-mode = SamplerUi.context-macro; }
+        else if action == ParameterActions.midi-learn { Session.command(SamplerCommands.parameter-learn, target, "", 0); }
+        else if action == ParameterActions.edit-route || action == ParameterActions.invert-route || action == ParameterActions.bypass-route || action == ParameterActions.remove-route {
+            root.route-operation = action == ParameterActions.edit-route ? SamplerText.edit : action == ParameterActions.invert-route ? SamplerText.invert : action == ParameterActions.bypass-route ? SamplerText.bypass : SamplerText.remove;
+            root.context-mode = SamplerUi.context-route-action;
         }
         else {
             root.context-mode = "";
         }
     }
     public function header-action(action: string) {
-        if action == "patch.browse" { root.browser-open = true; }
-        else if action == "appearance" { AppearanceState.opened = true; }
-        else if action == "diagnostics" { root.diagnostics-open = !root.diagnostics-open; }
-        else if action == "eventlog" { root.eventlog-open = !root.eventlog-open; }
-        else if action == "size.min" { root.choose-size(0); }
-        else if action == "size.default" { root.choose-size(1); }
-        else if action == "size.expanded" { root.choose-size(2); }
-        else if action == "perform.toggle" {
+        if action == SamplerUi.browse-patches { root.browser-open = true; }
+        else if action == SamplerUi.appearance { AppearanceState.opened = true; }
+        else if action == SamplerUi.page-diagnostics { root.diagnostics-open = !root.diagnostics-open; }
+        else if action == SamplerUi.event-log { root.eventlog-open = !root.eventlog-open; }
+        else if action == SamplerUi.size-minimum { root.choose-size(EditorLayoutMetrics.compact-mode); }
+        else if action == SamplerUi.size-default { root.choose-size(EditorLayoutMetrics.default-mode); }
+        else if action == SamplerUi.size-expanded { root.choose-size(EditorLayoutMetrics.expanded-mode); }
+        else if action == SamplerUi.perform-toggle {
             Session.release-notes();
             DragState.cancel();
-            if Session.page == "perform" { Session.command("page.select", "", root.previous-page, 0); }
-            else { root.previous-page = Session.page; Session.command("page.select", "", "perform", 0); }
+            if Session.page == SamplerUi.page-perform { Session.command(SamplerCommands.page-select, "", root.previous-page, 0); }
+            else { root.previous-page = Session.page; Session.command(SamplerCommands.page-select, "", SamplerUi.page-perform, 0); }
         }
     }
     file-drop := DropArea {
@@ -126,130 +133,116 @@ export component AppWindow inherits Window {
         focus-lost(reason) => { if reason == FocusReason.window-activation { Session.release-notes(); DragState.cancel(); } }
         key-pressed(event) => {
             if root.modal-open { return reject; }
-            if event.modifiers.control && event.text.to-lowercase() == "o" { root.show-file("asset.import"); return accept; }
-            if event.modifiers.control && event.text == "z" { Session.command(event.modifiers.shift ? "redo" : "undo", "", "", 0); return accept; }
-            if event.text == Key.Escape { Session.release-notes(); DragState.cancel(); root.browser-open = false; root.about-open = false; root.close-file(); root.context-mode = ""; AppearanceState.opened = false; if Session.state-id == "drop" && Session.page == "empty" { Session.command("state.select","empty","",0); } return accept; }
+            if event.modifiers.control && event.text.to-lowercase() == SamplerUi.open-key { root.show-file(SamplerCommands.asset-import); return accept; }
+            if event.modifiers.control && event.text == SamplerUi.undo-key { Session.command(event.modifiers.shift ? SamplerCommands.redo : SamplerCommands.undo, "", "", 0); return accept; }
+            if event.text == Key.Escape { Session.release-notes(); DragState.cancel(); root.browser-open = false; root.about-open = false; root.close-file(); root.context-mode = ""; AppearanceState.opened = false; if Session.state-id == SamplerUi.state-drop && Session.page == SamplerUi.page-empty { Session.command(SamplerCommands.state-select,SamplerUi.page-empty,"",0); } return accept; }
             if Session.pc-key(event.text, true, false, event.modifiers.control || event.modifiers.alt || event.modifiers.meta) { return accept; }
             return reject;
         }
         capture-key-released(event) => { Session.pc-key(event.text, false, false, false); return reject; }
-        frame := EditorFrame { x: 0px; y: 0px; width: parent.width; height: parent.height; perform: Session.page == "perform"; size-mode: root.width < 1000px ? 0 : root.width >= 1500px ? 2 : 1; show-diagnostics: root.diagnostics-open; show-event-log: root.eventlog-open;
+        frame := EditorFrame { x: 0px; y: 0px; width: parent.width; height: parent.height; perform: Session.page == SamplerUi.page-perform; size-mode: EditorLayoutMetrics.compact(root.width) ? EditorLayoutMetrics.compact-mode : EditorLayoutMetrics.expanded(root.width) ? EditorLayoutMetrics.expanded-mode : EditorLayoutMetrics.default-mode; show-diagnostics: root.diagnostics-open; show-event-log: root.eventlog-open;
             header-command(a) => { root.header-action(a); }
             context-action(a,id) => { root.context(a,id); }
-            browse-assets => { root.show-file("asset.import"); }
+            browse-assets => { root.show-file(SamplerCommands.asset-import); }
             patch-action(a) => { root.patch-action(a); }
             about-slint => { root.about-open = true; root.about-slint(); }
             file-browse(a) => { root.show-file(a); }
-            if Session.page == "sample" && Session.sources.length > 0 : SamplePage { compact: root.width < 1000px; expanded: root.width >= 1500px; browse(a) => { root.show-file(a); } context-action(a,id) => { root.context(a,id); } }
-            if Session.page == "slices" : SlicesPage { compact: root.width < 1000px; expanded: root.width >= 1500px; export-midi => { root.show-file("slice.export-midi"); } }
-            if Session.page == "pads" || (Session.page == "diagnostics" && Session.state-id == "diag" && root.diagnostics-open) : PadsPage { compact: root.width < 1000px; context-action(a,id) => { root.context(a,id); } }
-            if Session.page == "macros" : MacrosPage { expanded: root.width >= 1500px; context-action(a,id) => { root.context(a,id); } }
-            if Session.page == "mapping" : MappingPage { compact: root.width < 1000px; expanded: root.width >= 1500px; context-action(a,id) => { root.context(a,id); } }
-            if Session.page == "layers" : LayersPage { compact: root.width < 1000px; expanded: root.width >= 1500px; context-action(a,id) => { root.context(a,id); } }
-            if Session.page == "voice" : VoicePage { dialogs-in-page: false; compact: root.width < 1000px; expanded: root.width >= 1500px; context-action(a,id) => { root.context(a,id); } }
-            if Session.page == "mod" : ModulationPage { compact: root.width < 1000px; expanded: root.width >= 1500px; context-action(a,id) => { root.context(a,id); } }
-            if Session.page == "routing" : RoutingPage { compact: root.width < 1000px; expanded: root.width >= 1500px; context-action(a,id) => { root.context(a,id); } }
-            if Session.page == "fx" : EffectsPage { compact: root.width < 1000px; expanded: root.width >= 1500px; context-action(a,id) => { root.context(a,id); } }
-            if Session.state-id == "drop" && Session.page == "empty" : MultiImportPage { browse(mode) => { root.show-file("asset.import-many"); root.import-mode = mode; } cancelled => { Session.command("state.select","empty","",0); } }
-            if (Session.page == "empty" && Session.state-id != "drop") || (Session.page == "sample" && Session.sources.length == 0) : EmptyPage { expanded: root.width >= 1500px; browse(a) => { root.show-file(a); } }
-            if Session.page == "overview" : OverviewPage { }
-            if Session.page == "diagnostics" && !(Session.state-id == "diag" && root.diagnostics-open) : DiagnosticsPage { }
+            if Session.page == SamplerUi.page-sample && Session.sources.length > 0 : SamplePage { compact: EditorLayoutMetrics.compact(root.width); expanded: EditorLayoutMetrics.expanded(root.width); browse(a) => { root.show-file(a); } context-action(a,id) => { root.context(a,id); } }
+            if Session.page == SamplerUi.page-slices : SlicesPage { compact: EditorLayoutMetrics.compact(root.width); expanded: EditorLayoutMetrics.expanded(root.width); export-midi => { root.show-file(SamplerCommands.slice-export-midi); } }
+            if Session.page == SamplerUi.page-pads || (Session.page == SamplerUi.page-diagnostics && Session.state-id == SamplerUi.state-diagnostics && root.diagnostics-open) : PadsPage { compact: EditorLayoutMetrics.compact(root.width); context-action(a,id) => { root.context(a,id); } }
+            if Session.page == SamplerUi.page-macros : MacrosPage { expanded: EditorLayoutMetrics.expanded(root.width); context-action(a,id) => { root.context(a,id); } }
+            if Session.page == SamplerUi.page-mapping : MappingPage { compact: EditorLayoutMetrics.compact(root.width); expanded: EditorLayoutMetrics.expanded(root.width); context-action(a,id) => { root.context(a,id); } }
+            if Session.page == SamplerUi.page-layers : LayersPage { compact: EditorLayoutMetrics.compact(root.width); expanded: EditorLayoutMetrics.expanded(root.width); context-action(a,id) => { root.context(a,id); } }
+            if Session.page == SamplerUi.page-voice : VoicePage { dialogs-in-page: false; compact: EditorLayoutMetrics.compact(root.width); expanded: EditorLayoutMetrics.expanded(root.width); context-action(a,id) => { root.context(a,id); } }
+            if Session.page == SamplerUi.page-modulation : ModulationPage { compact: EditorLayoutMetrics.compact(root.width); expanded: EditorLayoutMetrics.expanded(root.width); context-action(a,id) => { root.context(a,id); } }
+            if Session.page == SamplerUi.page-routing : RoutingPage { compact: EditorLayoutMetrics.compact(root.width); expanded: EditorLayoutMetrics.expanded(root.width); context-action(a,id) => { root.context(a,id); } }
+            if Session.page == SamplerUi.page-effects : EffectsPage { compact: EditorLayoutMetrics.compact(root.width); expanded: EditorLayoutMetrics.expanded(root.width); context-action(a,id) => { root.context(a,id); } }
+            if Session.state-id == SamplerUi.state-drop && Session.page == SamplerUi.page-empty : MultiImportPage { browse(mode) => { root.show-file(SamplerCommands.asset-import-many); root.import-mode = mode; } cancelled => { Session.command(SamplerCommands.state-select,SamplerUi.page-empty,"",0); } }
+            if (Session.page == SamplerUi.page-empty && Session.state-id != SamplerUi.state-drop) || (Session.page == SamplerUi.page-sample && Session.sources.length == 0) : EmptyPage { expanded: EditorLayoutMetrics.expanded(root.width); browse(a) => { root.show-file(a); } }
+            if Session.page == SamplerUi.page-overview : OverviewPage { }
+            if Session.page == SamplerUi.page-diagnostics && !(Session.state-id == SamplerUi.state-diagnostics && root.diagnostics-open) : DiagnosticsPage { }
         }
     }
     Rectangle {
-        browser-popup := PopupWindow {
-            width: root.width; height: root.height; close-policy: no-auto-close;
+        browser-popup := EditorModal {
+            width: root.width; height: root.height;
             forward-focus: browser;
-            browser-focus := FocusScope {
-                focus-on-tab-navigation: false;
-                key-pressed(event) => { if event.text == Key.Escape { root.browser-open=false; return accept; } return reject; }
-                Rectangle { background: SamplerTheme.scrim;
-                    TouchArea { clicked => { root.browser-open = false; } }
-                    browser := PatchBrowser { x: (parent.width - self.width) / 2; y: 80px; width: min(680px,parent.width - 64px); height: min(430px,parent.height - 120px); presets: Session.presets; current-patch-id: Session.current-patch-id;
-                        load(id) => { Session.command("patch.load", id, "", 0); root.browser-open = false; }
-                        favourite(id) => { Session.command("patch.favourite", id, "", 0); }
+
+            dismissed => { root.browser-open = false; }
+
+                    browser := PatchBrowser { x: (parent.width - self.width) / 2; y: EditorDialogMetrics.browser-top; width: min(EditorDialogMetrics.browser-maximum-width,parent.width - EditorDialogMetrics.browser-horizontal-reserve); height: min(EditorDialogMetrics.browser-maximum-height,parent.height - EditorDialogMetrics.viewport-vertical-reserve); presets: Session.presets; current-patch-id: Session.current-patch-id;
+                        load(id) => { Session.command(SamplerCommands.patch-load, id, "", 0); root.browser-open = false; }
+                        favourite(id) => { Session.command(SamplerCommands.patch-favourite, id, "", 0); }
                         action(a) => { root.patch-action(a); } closed => { root.browser-open = false; }
                     }
-                }
-            }
+
         }
     }
     Appearance { width: parent.width; height: parent.height;
         theme-change(s,f,a,c,m,h) => { root.appearance-change(s,f,a,c,m,h); } close-requested => { AppearanceState.opened = false; }
     }
     Rectangle {
-        about-popup := PopupWindow {
-            width: root.width; height: root.height; close-policy: no-auto-close;
+        about-popup := EditorModal {
+            width: root.width; height: root.height;
             forward-focus: about-close;
-            about-focus := FocusScope {
-                focus-on-tab-navigation: false;
-                key-pressed(event) => { if event.text == Key.Escape { root.about-open=false; return accept; } return reject; }
-                Rectangle { background: SamplerTheme.scrim;
-                    TouchArea { clicked => { root.about-open = false; } }
-                    Rectangle { x: (parent.width - self.width) / 2; y: (parent.height - self.height) / 2; width: 340px; height: 210px; background: SamplerTheme.surface-menu; border-radius: 6px;
-                        AboutSlint { x: 20px; y: 20px; width: 300px; height: 125px; }
-                        about-close := ActionButton { x: 120px; y: 164px; width: 100px; text: "Close"; label: "Close About Slint"; clicked => { root.about-open = false; } }
+
+            dismissed => { root.about-open = false; }
+
+                    EditorDialogSurface { viewport-width: parent.width; viewport-height: parent.height; width: EditorDialogMetrics.about-width; height: EditorDialogMetrics.about-height; border-width: 0px;
+                        AboutSlint { x: EditorDialogMetrics.about-inset; y: EditorDialogMetrics.about-inset; width: EditorDialogMetrics.about-content-width; height: EditorDialogMetrics.about-content-height; }
+                        about-close := ActionButton { x: EditorDialogMetrics.about-close-left; y: EditorDialogMetrics.about-close-top; width: EditorDialogMetrics.about-close-width; text: SamplerText.close; label: SamplerText.close-about; clicked => { root.about-open = false; } }
                     }
-                }
-            }
+
         }
     }
     Rectangle {
-        file-popup := PopupWindow {
-            width: root.width; height: root.height; close-policy: no-auto-close;
+        file-popup := EditorModal {
+            width: root.width; height: root.height;
             forward-focus: path;
-            file-focus := FocusScope {
-                focus-on-tab-navigation: false;
-                key-pressed(event) => { if event.text == Key.Escape { root.close-file(); return accept; } return reject; }
-                Rectangle { background: SamplerTheme.scrim;
-                    Rectangle { x: (parent.width - self.width) / 2; y: (parent.height - self.height) / 2; width: root.file-action == "asset.import-many" ? min(760px,parent.width - 48px) : 560px; height: root.file-action == "asset.import-many" ? 384px : 170px; background: SamplerTheme.surface-menu; border-radius: 6px; border-width: 1px; border-color: SamplerTheme.line-3;
-                        Text { x: 16px; y: 14px; text: root.file-action == "asset.import-many" ? "Import samples · one file path per line" : root.file-action == "asset.import" ? "Import sample" : root.file-action == "asset.relink" ? "Locate sample" : root.file-action == "asset.replace" ? "Replace sample" : root.file-action == "asset.search-folder" ? "Search folder" : root.file-action == "patch.import" ? "Import instrument" : root.file-action == "patch.export" ? "Export instrument" : "Export MIDI"; font-family: SamplerTheme.font-ui; font-size: 15px; font-weight: 600; color: SamplerTheme.paper-1; }
-                        Rectangle { x: 16px; y: 50px; width: parent.width - 32px; height: root.file-action == "asset.import-many" ? 80px : 32px; background: SamplerTheme.surface-well; border-width: 1px; border-color: SamplerTheme.line-2; }
-                        path := TextInput { text <=> root.file-path; x: 22px; y: 54px; width: parent.width - 44px; height: root.file-action == "asset.import-many" ? 72px : 24px; color: SamplerTheme.paper-1; font-family: SamplerTheme.font-value; font-size: 12px; accessible-label: root.file-action == "asset.import-many" ? "File paths" : "File path"; single-line: root.file-action != "asset.import-many"; }
-                        if root.file-action == "asset.import-many" : ImportChooser { x: 16px; y: 140px; width: parent.width - 32px; height: 166px; mode <=> root.import-mode; chosen(mode) => { root.import-mode = mode; } cancelled => { root.close-file(); } }
-                        Text { x: 16px; y: root.file-action == "asset.import-many" ? 316px : 88px; width: parent.width - 32px; text: Session.error; color: SamplerTheme.error; font-family: SamplerTheme.font-ui; font-size: 12px; overflow: elide; }
-                        ActionButton { x: parent.width - 174px; y: parent.height - 45px; text: "Cancel"; clicked => { root.close-file(); } }
-                        ActionButton { x: parent.width - 94px; y: parent.height - 45px; text: "Continue"; primary: true; enabled: root.file-path != ""; clicked => { if root.file-operation(root.file-action,root.file-path,root.import-mode) { root.close-file(); } } }
+
+            dismiss-on-background: false;
+            dismissed => { root.close-file(); }
+
+                    EditorDialogSurface { viewport-width: parent.width; viewport-height: parent.height; width: root.file-action == SamplerCommands.asset-import-many ? min(EditorDialogMetrics.multi-file-maximum-width,parent.width - EditorDialogMetrics.multi-file-horizontal-reserve) : EditorDialogMetrics.file-width; height: root.file-action == SamplerCommands.asset-import-many ? EditorDialogMetrics.multi-file-height : EditorDialogMetrics.file-height;
+                        Text { x: EditorDialogMetrics.file-inset; y: EditorDialogMetrics.file-title-top; text: root.file-action == SamplerCommands.asset-import-many ? SamplerText.import-many : root.file-action == SamplerCommands.asset-import ? SamplerText.import-sample : root.file-action == SamplerCommands.asset-relink ? SamplerText.locate-sample : root.file-action == SamplerCommands.asset-replace ? SamplerText.replace-sample : root.file-action == SamplerCommands.asset-search-folder ? SamplerText.search-folder : root.file-action == SamplerCommands.patch-import ? SamplerText.import-instrument : root.file-action == SamplerCommands.patch-export ? SamplerText.export-instrument : SamplerText.export-midi; font-family: SamplerTheme.font-ui; font-size: EditorDialogMetrics.file-title-size; font-weight: EditorTypographyMetrics.weight-semibold; color: SamplerTheme.paper-1; }
+                        Rectangle { x: EditorDialogMetrics.file-inset; y: EditorDialogMetrics.file-field-top; width: parent.width - 2 * EditorDialogMetrics.file-inset; height: root.file-action == SamplerCommands.asset-import-many ? EditorDialogMetrics.multi-file-field-height : EditorDialogMetrics.file-field-height; background: SamplerTheme.surface-well; border-width: 1px; border-color: SamplerTheme.line-2; }
+                        path := TextInput { text <=> root.file-path; x: EditorDialogMetrics.file-input-inset; y: EditorDialogMetrics.file-input-top; width: parent.width - 2 * EditorDialogMetrics.file-input-inset; height: root.file-action == SamplerCommands.asset-import-many ? EditorDialogMetrics.multi-file-input-height : EditorDialogMetrics.file-input-height; color: SamplerTheme.paper-1; font-family: SamplerTheme.font-value; font-size: SamplerTheme.type-body; accessible-label: root.file-action == SamplerCommands.asset-import-many ? SamplerText.file-paths : SamplerText.file-path; single-line: root.file-action != SamplerCommands.asset-import-many; }
+                        if root.file-action == SamplerCommands.asset-import-many : ImportChooser { x: EditorDialogMetrics.file-inset; y: EditorDialogMetrics.file-chooser-top; width: parent.width - 2 * EditorDialogMetrics.file-inset; height: EditorDialogMetrics.file-chooser-height; mode <=> root.import-mode; chosen(mode) => { root.import-mode = mode; } cancelled => { root.close-file(); } }
+                        Text { x: EditorDialogMetrics.file-inset; y: root.file-action == SamplerCommands.asset-import-many ? EditorDialogMetrics.multi-file-error-top : EditorDialogMetrics.file-error-top; width: parent.width - 2 * EditorDialogMetrics.file-inset; text: Session.error; color: SamplerTheme.error; font-family: SamplerTheme.font-ui; font-size: SamplerTheme.type-body; overflow: elide; }
+                        ActionButton { x: parent.width - EditorDialogMetrics.file-cancel-end; y: parent.height - EditorDialogMetrics.file-footer-reserve; text: SamplerText.cancel; clicked => { root.close-file(); } }
+                        ActionButton { x: parent.width - EditorDialogMetrics.file-continue-end; y: parent.height - EditorDialogMetrics.file-footer-reserve; text: SamplerText.continue; primary: true; enabled: root.file-path != ""; clicked => { if root.file-operation(root.file-action,root.file-path,root.import-mode) { root.close-file(); } } }
                     }
-                }
-            }
+
         }
     }
     render-dialog := VoiceRenderDialog { x: 0px; y: 0px; width: parent.width; height: parent.height; }
     Rectangle {
-        macro-popup := PopupWindow {
-            width: root.width; height: root.height; close-policy: no-auto-close;
-            forward-focus: macro-focus;
-            macro-focus := FocusScope {
-                focus-on-tab-navigation: false;
-                key-pressed(event) => { if event.text == Key.Escape { root.context-mode=""; return accept; } return reject; }
-                Rectangle { background: SamplerTheme.scrim;
-                    TouchArea { clicked => { root.context-mode = ""; } }
+        macro-popup := EditorModal {
+            width: root.width; height: root.height;
+
+            dismissed => { root.context-mode = ""; }
+
                     MacroActions { x: (parent.width - self.width) / 2; y: (parent.height - self.height) / 2; macro-id: root.context-target; close-requested => { root.context-mode = ""; } }
-                }
-            }
+
         }
     }
     Rectangle {
-        route-popup := PopupWindow {
-            width: root.width; height: root.height; close-policy: no-auto-close;
-            forward-focus: route-focus;
-            route-focus := FocusScope {
-                focus-on-tab-navigation: false;
-                key-pressed(event) => { if event.text == Key.Escape { root.context-mode=""; return accept; } return reject; }
-                Rectangle { background: SamplerTheme.scrim;
-                    TouchArea { clicked => { root.context-mode = ""; } }
-                    Rectangle { x: (parent.width - self.width) / 2; y: 100px; width: 350px; height: min(parent.height - 120px, 290px); background: SamplerTheme.surface-menu; border-width: 1px; border-color: SamplerTheme.line-3; border-radius: 4px;
-                        Text { x: 12px; y: 12px; text: "Choose modulation route"; accessible-label: self.text; color: SamplerTheme.paper-1; font-family: SamplerTheme.font-ui; font-size: 14px; }
-                        ScrollView { x: 12px; y: 42px; width: parent.width - 24px; height: parent.height - 54px;
-                            VerticalLayout { spacing: 4px; alignment: start;
+        route-popup := EditorModal {
+            width: root.width; height: root.height;
+
+            dismissed => { root.context-mode = ""; }
+
+                    EditorDialogSurface { viewport-width: parent.width; viewport-height: parent.height; center-vertically: false; top-offset: EditorDialogMetrics.picker-top; width: EditorDialogMetrics.picker-width; height: min(parent.height - EditorDialogMetrics.viewport-vertical-reserve, EditorDialogMetrics.route-picker-maximum-height); border-radius: EditorDialogMetrics.picker-radius;
+                        Text { x: EditorDialogMetrics.picker-inset; y: EditorDialogMetrics.picker-inset; text: SamplerText.choose-route; accessible-label: self.text; color: SamplerTheme.paper-1; font-family: SamplerTheme.font-ui; font-size: SamplerTheme.type-heading; }
+                        ScrollView { x: EditorDialogMetrics.picker-inset; y: EditorDialogMetrics.route-content-top; width: parent.width - 2 * EditorDialogMetrics.picker-inset; height: parent.height - EditorDialogMetrics.route-content-reserve;
+                            VerticalLayout { spacing: EditorDialogMetrics.picker-spacing; alignment: start;
                                 for r in Session.routes : VerticalLayout {
                                     if r.destination == root.context-target || r.id == root.context-target : ActionButton {
                                         text: r.source-name + " → " + r.destination-name; label: root.route-operation + " " + self.text;
-                                        height: 26px; selected: r.selected;
+                                        height: EditorDialogMetrics.picker-control-height; selected: r.selected;
                                         clicked => {
-                                            if root.route-operation == "Edit" { Session.command("route.select", r.id, "", 0); Session.command("page.select", "", "mod", 0); }
-                                            else { Session.command(root.route-operation == "Invert" ? "route.invert" : root.route-operation == "Bypass" ? "route.bypass" : "route.delete", r.id, "", 0); }
+                                            if root.route-operation == SamplerText.edit { Session.command(SamplerCommands.route-select, r.id, "", 0); Session.command(SamplerCommands.page-select, "", SamplerUi.page-modulation, 0); }
+                                            else { Session.command(root.route-operation == SamplerText.invert ? SamplerCommands.route-invert : root.route-operation == SamplerText.bypass ? SamplerCommands.route-bypass : SamplerCommands.route-delete, r.id, "", 0); }
                                             root.context-mode = "";
                                         }
                                     }
@@ -258,40 +251,33 @@ export component AppWindow inherits Window {
                         }
                     }
 
-                }
-            }
         }
     }
     Rectangle {
-        picker-popup := PopupWindow {
-            width: root.width; height: root.height; close-policy: no-auto-close;
-            forward-focus: picker-focus;
-            picker-focus := FocusScope {
-                focus-on-tab-navigation: false;
-                key-pressed(event) => { if event.text == Key.Escape { root.context-mode=""; return accept; } return reject; }
-                Rectangle { background: SamplerTheme.scrim;
-                    TouchArea { clicked => { root.context-mode = ""; } }
-                    Rectangle { x: (parent.width - self.width) / 2; y: 100px; width: 350px; height: min(parent.height - 120px, 60px + (root.context-mode == "macro" ? Session.macros.length : root.context-mode == "destination" || root.context-mode == "mod-destination" ? Session.parameter-catalog.length : Session.modulators.length) * 30px); background: SamplerTheme.surface-menu; border-width: 1px; border-color: SamplerTheme.line-3; border-radius: 4px;
-                        Text { x: 12px; y: 12px; width: parent.width - 24px; text: root.context-mode == "macro" ? "Choose macro" : root.context-mode == "destination" || root.context-mode == "mod-destination" ? "Add destination" : "Choose modulation source"; color: SamplerTheme.paper-1; font-family: SamplerTheme.font-ui; font-size: 14px; }
-                        ScrollView { x: 12px; y: 45px; width: parent.width - 24px; height: parent.height - 57px;
-                            VerticalLayout { spacing: 4px; alignment: start;
-                                if root.context-mode == "macro" : VerticalLayout {
-                                    for m in Session.macros : ActionButton { text: m.name; height: 26px; clicked => { if Session.command("macro.bind", m.id, root.context-target, 0.25) { root.context-mode = ""; } } }
+        picker-popup := EditorModal {
+            width: root.width; height: root.height;
+
+            dismissed => { root.context-mode = ""; }
+
+                    EditorDialogSurface { viewport-width: parent.width; viewport-height: parent.height; center-vertically: false; top-offset: EditorDialogMetrics.picker-top; width: EditorDialogMetrics.picker-width; height: min(parent.height - EditorDialogMetrics.viewport-vertical-reserve, EditorDialogMetrics.picker-content-base + (root.context-mode == SamplerUi.context-macro ? Session.macros.length : root.context-mode == SamplerUi.context-destination || root.context-mode == SamplerUi.context-modulator-destination ? Session.parameter-catalog.length : Session.modulators.length) * EditorDialogMetrics.picker-row-stride); border-radius: EditorDialogMetrics.picker-radius;
+                        Text { x: EditorDialogMetrics.picker-inset; y: EditorDialogMetrics.picker-inset; width: parent.width - 2 * EditorDialogMetrics.picker-inset; text: root.context-mode == SamplerUi.context-macro ? SamplerText.choose-macro : root.context-mode == SamplerUi.context-destination || root.context-mode == SamplerUi.context-modulator-destination ? SamplerText.add-destination : SamplerText.choose-modulator; color: SamplerTheme.paper-1; font-family: SamplerTheme.font-ui; font-size: SamplerTheme.type-heading; }
+                        ScrollView { x: EditorDialogMetrics.picker-inset; y: EditorDialogMetrics.picker-content-top; width: parent.width - 2 * EditorDialogMetrics.picker-inset; height: parent.height - EditorDialogMetrics.picker-content-reserve;
+                            VerticalLayout { spacing: EditorDialogMetrics.picker-spacing; alignment: start;
+                                if root.context-mode == SamplerUi.context-macro : VerticalLayout {
+                                    for m in Session.macros : ActionButton { text: m.name; height: EditorDialogMetrics.picker-control-height; clicked => { if Session.command(SamplerCommands.macro-bind, m.id, root.context-target, SamplerUi.initial-route-depth) { root.context-mode = ""; } } }
                                 }
-                                if root.context-mode == "route" : VerticalLayout {
-                                    for m in Session.modulators : ActionButton { text: m.name; height: 26px; clicked => { if Session.command("route.add", m.id, root.context-target, 0.25) { root.context-mode = ""; } } }
+                                if root.context-mode == SamplerUi.context-route : VerticalLayout {
+                                    for m in Session.modulators : ActionButton { text: m.name; height: EditorDialogMetrics.picker-control-height; clicked => { if Session.command(SamplerCommands.route-add, m.id, root.context-target, SamplerUi.initial-route-depth) { root.context-mode = ""; } } }
                                 }
-                                if root.context-mode == "destination" || root.context-mode == "mod-destination" : VerticalLayout {
-                                    for p in Session.parameter-catalog : ActionButton { text: p.label + " · " + p.group; height: 26px; label: (root.context-mode == "destination" ? "Add macro destination " : "Add modulation destination ") + p.id;
-                                        clicked => { if Session.command(root.context-mode == "destination" ? "macro.bind" : "route.add", root.context-target, p.id, 0.25) { root.context-mode = ""; } }
+                                if root.context-mode == SamplerUi.context-destination || root.context-mode == SamplerUi.context-modulator-destination : VerticalLayout {
+                                    for p in Session.parameter-catalog : ActionButton { text: p.label + " · " + p.group; height: EditorDialogMetrics.picker-control-height; label: (root.context-mode == SamplerUi.context-destination ? SamplerText.add-macro-destination : SamplerText.add-modulation-destination) + p.id;
+                                        clicked => { if Session.command(root.context-mode == SamplerUi.context-destination ? SamplerCommands.macro-bind : SamplerCommands.route-add, root.context-target, p.id, SamplerUi.initial-route-depth) { root.context-mode = ""; } }
                                     }
                                 }
                             }
                         }
                     }
 
-                }
-            }
         }
     }
     }

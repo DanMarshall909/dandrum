@@ -1,0 +1,11 @@
+import { Tokens } from "../tokens.slint";
+import { RangeGesture } from "../controls/RangeGesture.slint";
+
+// Editor convention: vertical scrubbing, precise Shift, reset modifiers and explicit cancellation.
+export component ParameterGesture inherits RangeGesture {
+    fine-scale: Tokens.editor-control-editor-fine-scale;
+    edit-on-single-click: false;
+    reset-on-double-click: false;
+    reset-on-middle-or-alt: true;
+    cancel-on-interruption: true;
+}

@@ -1,0 +1,74 @@
+// Sampler navigation and workflow vocabulary stays outside the design library.
+export global SamplerUi {
+    out property <string> page-sample: "sample";
+    out property <string> page-slices: "slices";
+    out property <string> page-pads: "pads";
+    out property <string> page-macros: "macros";
+    out property <string> page-mapping: "mapping";
+    out property <string> page-layers: "layers";
+    out property <string> page-voice: "voice";
+    out property <string> page-modulation: "mod";
+    out property <string> page-routing: "routing";
+    out property <string> page-effects: "fx";
+    out property <string> page-overview: "overview";
+    out property <string> page-diagnostics: "diagnostics";
+    out property <string> page-empty: "empty";
+    out property <string> page-perform: "perform";
+    out property <string> state-diagnostics: "diag";
+    out property <string> state-drop: "drop";
+    out property <string> context-macro-actions: "macro-actions";
+    out property <string> context-route-action: "route-action";
+    out property <string> context-destination: "destination";
+    out property <string> context-modulator-destination: "mod-destination";
+    out property <string> context-macro: "macro";
+    out property <string> context-route: "route";
+    out property <string> macro-destinations: "macro-destinations";
+    out property <string> modulator-destination: "modulator-destination";
+    out property <string> parameter-destination: "parameter-destination";
+    out property <string> browse-patches: "patch.browse";
+    out property <string> appearance: "appearance";
+    out property <string> event-log: "eventlog";
+    out property <string> size-minimum: "size.min";
+    out property <string> size-default: "size.default";
+    out property <string> size-expanded: "size.expanded";
+    out property <string> perform-toggle: "perform.toggle";
+    out property <string> root-velocity: "root-velocity";
+    out property <string> open-key: "o";
+    out property <string> undo-key: "z";
+    out property <float> initial-route-depth: 0.25;
+}
+export global SamplerText {
+    out property <string> window-title: "Dandrum Advanced Sampler · silent editor";
+    out property <string> edit: "Edit";
+    out property <string> invert: "Invert";
+    out property <string> bypass: "Bypass";
+    out property <string> remove: "Remove";
+    out property <string> close: "Close";
+    out property <string> close-about: "Close About Slint";
+    out property <string> import-many: "Import samples · one file path per line";
+    out property <string> import-sample: "Import sample";
+    out property <string> locate-sample: "Locate sample";
+    out property <string> replace-sample: "Replace sample";
+    out property <string> search-folder: "Search folder";
+    out property <string> import-instrument: "Import instrument";
+    out property <string> export-instrument: "Export instrument";
+    out property <string> export-midi: "Export MIDI";
+    out property <string> file-paths: "File paths";
+    out property <string> file-path: "File path";
+    out property <string> cancel: "Cancel";
+    out property <string> continue: "Continue";
+    out property <string> choose-route: "Choose modulation route";
+    out property <string> choose-macro: "Choose macro";
+    out property <string> add-destination: "Add destination";
+    out property <string> choose-modulator: "Choose modulation source";
+    out property <string> add-macro-destination: "Add macro destination ";
+    out property <string> add-modulation-destination: "Add modulation destination ";
+}
+export global SamplerViewport {
+    out property <length> minimum-width: 820px;
+    out property <length> minimum-height: 560px;
+    out property <length> default-width: 1200px;
+    out property <length> default-height: 800px;
+    out property <length> expanded-width: 1600px;
+    out property <length> expanded-height: 1000px;
+}

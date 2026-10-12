@@ -1,0 +1,12 @@
+import { Tokens } from "../tokens.slint";
+import { EditorTheme } from "Theme.slint";
+import { EditorZoneEdge } from "ZoneEdge.slint";
+export component EditorRangeHandle inherits EditorZoneEdge {
+    in property <color> tint: EditorTheme.accent;
+    in property <bool> cap-visible: true;
+    Rectangle { x: Tokens.editor-curve-handle-line-offset; width: Tokens.editor-curve-handle-line-width; height: parent.height; background: root.tint; }
+    if root.cap-visible : Rectangle {
+        y: parent.height - Tokens.editor-curve-handle-cap-height; width: Tokens.editor-curve-handle-cap-width; height: Tokens.editor-curve-handle-cap-height;
+        background: root.tint; border-radius: Tokens.editor-curve-handle-cap-radius;
+    }
+}

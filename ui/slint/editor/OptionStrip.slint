@@ -1,0 +1,23 @@
+import { EditorStrings } from "EditorStrings.slint";
+import { Tokens } from "../theme.slint";
+import { EditorTheme } from "Theme.slint";
+import { EditorButton } from "Button.slint";
+export struct EditorOption { id: string, label: string }
+export component EditorOptionStrip inherits Rectangle {
+    in property <bool> enabled: true;
+    in property <[EditorOption]> options;
+    in property <string> value;
+    in property <string> label;
+    callback selected(string);
+    callback window-deactivated();
+    // Compact caps, padding, and the border retain the guide's total strip height.
+    height: Tokens.editor-option-strip-height; border-radius: Tokens.editor-radius-group; border-width: Tokens.editor-border-width; border-color: EditorTheme.border-hairline; background: EditorTheme.surface-well;
+    for option[i] in root.options : EditorButton {
+        enabled: root.enabled;
+        x: Tokens.editor-option-content-inset + i * ((parent.width - Tokens.editor-option-content-inset-pair + Tokens.editor-option-gap) / max(1, root.options.length)); y: Tokens.editor-option-content-inset;
+        width: max(0px, (parent.width - Tokens.editor-option-content-inset-pair - Tokens.editor-option-gap * max(0, root.options.length - 1)) / max(1, root.options.length)); height: max(0px, parent.height - Tokens.editor-option-content-inset-pair);
+        text: option.label; label: root.label + EditorStrings.space + option.label; selected: root.value == option.id; compact: true; ghost: true; neutral-selection: true; caps: true;
+        clicked => { root.selected(option.id); }
+        window-deactivated => { root.window-deactivated(); }
+    }
+}

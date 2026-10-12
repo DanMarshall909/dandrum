@@ -25,7 +25,7 @@ export component IconButton inherits ActionArea {
     activated => { root.clicked(); }
     z: root.tooltip-visible ? 100 : 0;
     changed hovered => { if !root.hovered { root.hover-ready = false; } }
-    Timer { running: root.enabled && root.hovered && !root.hover-ready; interval: 500ms; triggered => { root.hover-ready = true; } }
+    Timer { running: root.enabled && root.hovered && !root.hover-ready; interval: Tokens.tooltip-hover-delay; triggered => { root.hover-ready = true; } }
     FocusRing { active: root.enabled && (root.has-focus || root.focused); }
     face := ButtonFace {
         enabled: root.enabled; ghost: root.ghost; checked: root.checked; hovered: root.hovered; pressed: root.down;

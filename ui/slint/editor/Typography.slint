@@ -1,0 +1,10 @@
+import { EditorTheme } from "Theme.slint";
+import { Tokens } from "../theme.slint";
+
+export component EditorText inherits Text {
+    font-family: EditorTheme.font-ui;
+    font-size: Tokens.editor-text-size;
+    color: EditorTheme.paper-3;
+    vertical-alignment: center;
+    overflow: elide;
+}

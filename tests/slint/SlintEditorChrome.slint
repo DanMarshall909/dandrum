@@ -1,0 +1,67 @@
+import { EditorTheme } from "../../ui/slint/editor/Theme.slint";
+import { EditorTextField } from "../../ui/slint/editor/TextField.slint";
+import { EditorSearchField } from "../../ui/slint/editor/SearchField.slint";
+import { NavigationRail } from "../../ui/slint/editor/NavigationRail.slint";
+import { LevelMeter } from "../../ui/slint/editor/LevelMeter.slint";
+import { ItemRow } from "../../ui/slint/editor/ItemRow.slint";
+import { PropertyRow, StatusRow, StatusStep } from "../../ui/slint/editor/StatusRow.slint";
+import { EmptyState } from "../../ui/slint/editor/EmptyState.slint";
+export { EditorTheme }
+export component SlintEditorChrome inherits Window {
+    width: 600px; height: 660px; background: #161616;
+    in-out property <bool> input-enabled: true;
+    in-out property <bool> input-read-only;
+    in-out property <bool> compact;
+    in-out property <bool> selected: true;
+    in-out property <bool> context-on-release;
+    in-out property <bool> warning;
+    in-out property <bool> locked: true;
+    in-out property <string> unit: "kHz";
+    in-out property <float> level: 0.5;
+    in-out property <float> signed-level: -0.5;
+    in-out property <bool> centered;
+    in-out property <string> name: "Original";
+    in-out property <string> query;
+    out property <int> edits;
+    out property <int> accepts;
+    out property <int> cancels;
+    out property <int> blurs;
+    out property <int> picks;
+    out property <int> contexts;
+    out property <int> window-losses;
+    out property <int> primary-actions;
+    out property <int> secondary-actions;
+    out property <string> page: "one";
+    out property <length> linear-width: linear.fill-width;
+    out property <length> linear-x: linear.fill-x;
+    out property <length> signed-x: bipolar.fill-x;
+    out property <length> signed-width: bipolar.fill-width;
+    NavigationRail { x: 10px; y: 10px; width: 70px; height: 250px; enabled: root.input-enabled; compact: root.compact;
+        items: [{id:"one",label:"First page",caption:"ONE",icon:"layers",group:"BUILD"},{id:"two",label:"Second page",caption:"TWO",icon:"info",group:""}];
+        selected-id: root.page; selected(id) => { root.page=id; }
+    }
+    EditorTextField { x: 110px; y: 20px; width: 230px; height: 26px; text <=> root.name; accessible-label: "Name"; enabled: root.input-enabled; read-only: root.input-read-only; cancel-on-escape: true;
+        edited => { root.edits+=1; } accepted => { root.accepts+=1; } cancelled => { root.cancels+=1; } focus-left => { root.blurs+=1; }
+    }
+    EditorSearchField { x: 110px; y: 60px; width: 230px; height: 26px; text <=> root.query; label: "Search items"; placeholder: "Search items"; enabled: root.input-enabled;
+        edited(value) => { root.edits+=1; } accepted(value) => { root.accepts+=1; }
+    }
+    ItemRow { x: 110px; y: 110px; width: 360px; height: 26px; label: "Preview item"; text: "Portable item"; detail: "2 s"; icon: "one-shot"; selected: root.selected; selection-mark: true; enabled: root.input-enabled; context-on-release: root.context-on-release; progress-visible: true; progress: 0.25;
+        activated => { root.picks+=1; } context-requested => { root.contexts+=1; } window-deactivated => { root.window-losses+=1; }
+    }
+    ItemRow { x: 110px; y: 145px; width: 360px; height: 26px; label: "External item"; text: "Drag adapter"; external-pointer: true; highlighted: true; detail-elide: true; detail: "Long detail"; enabled: root.input-enabled;
+        activated => { root.picks+=1; }
+        TouchArea { enabled: root.input-enabled; clicked => { parent.activate(); } }
+    }
+    linear := LevelMeter { x: 110px; y: 190px; width: 200px; height: 10px; level: root.level; centered: root.centered; track-color: #000000; fill-color: #00ff00; }
+    LevelMeter { x: 340px; y: 190px; width: 120px; height: 10px; level: 0.5; centered: true; track-color: #000000; fill-color: #00ff00; }
+    bipolar := LevelMeter { x: 110px; y: 215px; width: 200px; height: 10px; level: root.signed-level; bipolar: true; track-color: #000000; fill-color: #00ff00; }
+    PropertyRow { x: 110px; y: 250px; width: 360px; label: "Rate"; value: "48"; unit: root.unit; locked: root.locked; }
+    StatusRow { x: 110px; y: 285px; width: 360px; text: "Ready"; status: "OK"; label: "Ready status"; warning: root.warning; }
+    StatusStep { x: 110px; y: 315px; width: 360px; index: 2; title: "Prepare"; detail: "Ready"; warning: root.warning; }
+    StatusStep { x: 110px; y: 345px; width: 360px; index: 3; title: "Output"; placeholder: true; }
+    EmptyState { x: 100px; y: 400px; width: 470px; height: 240px; title: "Drop content here"; description: "The host owns the imported content."; footer: "Portable content";
+        primary-text: "Browse"; primary-label: "Browse content"; secondary-label: "Load several"; secondary-icon: "layers"; enabled: root.input-enabled;
+        primary-activated => { root.primary-actions+=1; } secondary-activated => { root.secondary-actions+=1; }
+    }
+}

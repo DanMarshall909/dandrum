@@ -1,3 +1,4 @@
+import { ParameterStrings } from "../editor/ParameterConstants.slint";
 import { Tokens } from "../theme.slint";
 
 // Paint + text editing only. Parsing/range/host gestures live in RangeControl.
@@ -15,8 +16,8 @@ export component ValueEditor inherits FocusScope {
     callback cancelled();
     callback abandoned();
     out property <bool> hovered: touch.has-hover;
-    height: root.compact ? 22px : Tokens.field-height;
-    min-width: 48px;
+    height: root.compact ? Tokens.editor-control-guide-value-compact-height : Tokens.field-height;
+    min-width: Tokens.editor-control-guide-value-min-width;
     enabled: !root.read-only;
     focus-on-tab-navigation: false;
     public function focus-editor() { editor.text = root.value-text; editor.focus(); editor.select-all(); }
@@ -28,20 +29,20 @@ export component ValueEditor inherits FocusScope {
     }
     Rectangle {
         background: root.read-only ? transparent : Tokens.surface-well;
-        border-radius: Tokens.radius-1; border-width: root.read-only ? 0px : 1px;
+        border-radius: Tokens.radius-1; border-width: root.read-only ? 0px : Tokens.editor-control-stroke-width;
         border-color: root.invalid ? Tokens.dd-error : root.editing ? Tokens.dd-paper-2 : root.hovered ? Tokens.border-strong : Tokens.border-control;
         HorizontalLayout {
-            padding-left: 6px; padding-right: 6px; spacing: 4px;
+            padding-left: Tokens.editor-control-guide-value-padding; padding-right: Tokens.editor-control-guide-value-padding; spacing: Tokens.editor-control-guide-value-spacing;
             Text { visible: !root.editing; text: root.value-text; color: root.read-only ? Tokens.text-secondary : root.host-automated ? Tokens.dd-host : Tokens.text-primary; font-family: Tokens.font-value; font-size: root.compact ? Tokens.type-micro : Tokens.type-value; vertical-alignment: center; }
-            if root.unit != "" && root.unit != "pan" && !root.editing : Text { text: root.unit; color: Tokens.text-tertiary; font-family: Tokens.font-ui; font-size: Tokens.type-micro; vertical-alignment: center; }
+            if root.unit != "" && root.unit != ParameterStrings.unit-pan && !root.editing : Text { text: root.unit; color: Tokens.text-tertiary; font-family: Tokens.font-ui; font-size: Tokens.type-micro; vertical-alignment: center; }
         }
     }
     editor := TextInput {
-        x: 6px; y: 0; width: parent.width - 12px; height: parent.height;
+        x: Tokens.editor-control-guide-value-padding; y: 0; width: parent.width - 2*Tokens.editor-control-guide-value-padding; height: parent.height;
         visible: root.editing; enabled: root.editing && !root.read-only;
         single-line: true; color: Tokens.text-primary; font-family: Tokens.font-value; font-size: Tokens.type-value;
         vertical-alignment: center; selection-background-color: Tokens.dd-paper-1; selection-foreground-color: Tokens.surface-well;
-        accessible-label: root.label + " value";
+        accessible-label: root.label + Tokens.editor-control-label-value-suffix;
         accepted => { root.submitted(self.text); }
         changed has-focus => { if !self.has-focus && root.editing { root.abandoned(); } }
     }

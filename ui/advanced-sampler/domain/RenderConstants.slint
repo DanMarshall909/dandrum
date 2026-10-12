@@ -1,0 +1,64 @@
+// Silent-render workflow values and copy; the library only renders supplied data.
+export global RenderOptions {
+    out property <int> field-count: 5;
+    out property <int> seconds-per-render: 6;
+    out property <int> seconds-per-minute: 60;
+    out property <int> percentage-scale: 100;
+    out property <string> add-source: "source";
+    out property <string> autosampler: "auto";
+    out property <string> freeze: "freeze";
+    out property <string> running: "running";
+    out property <string> confirm: "confirm";
+    out property <string> failed: "failed";
+    out property <string> source-only: "src";
+    out property <string> source-chain: "chain";
+    out property <string> low-note: "lo";
+    out property <string> high-note: "hi";
+    out property <string> note-step: "step";
+    out property <string> takes: "rr";
+    out property <string> tail: "tail";
+    out property <string> layers: "layers";
+    out property <string> mode: "mode";
+    out property <int> maximum-renders: 4096;
+    out property <int> maximum-tail: 30;
+    out property <int> parameter-count: 6;
+    out property <int> low-index: 0;
+    out property <int> high-index: 1;
+    out property <int> step-index: 2;
+    out property <int> takes-index: 3;
+    out property <int> tail-index: 4;
+    out property <int> layers-index: 5;
+}
+export global RenderStrings {
+    out property <string> add-source: "ADD AUDIO SOURCE";
+    out property <string> sample-patch: "SAMPLE THIS PATCH";
+    out property <string> freeze-source: "FREEZE SOURCE";
+    out property <string> close-label: "Close render dialog";
+    out property <string> sampler: "Sampler";
+    out property <string> synth-patch: "Synth patch";
+    out property <string> oscillator: "Oscillator";
+    out property <string> noise: "Noise";
+    out property <string> source: "Source";
+    out property <string> renders: "Renders";
+    out property <string> estimate: "Estimate";
+    out property <string> velocity-layers: "Velocity layers";
+    out property <string> one-layer: "1 layer";
+    out property <string> two-layers: "2 layers";
+    out property <string> three-layers: "3 layers";
+    out property <string> includes: "Includes";
+    out property <string> audio-source-only: "Audio source only";
+    out property <string> source-voice-inserts: "Source, voice and inserts";
+    out property <string> stored-as: "Stored as";
+    out property <string> frozen-source: "Frozen silent mock source";
+    out property <string> freeze-includes: "Freeze includes";
+    out property <string> source-only: "Source only";
+    out property <string> source-and-chain: "Source + voice + inserts";
+    out property <string> tail: "Tail";
+    out property <string> render-progress: "Rendering silent mock · ";
+    out property <string> cancel: "Cancel";
+    out property <string> cancel-label: "Cancel render dialog";
+    out property <string> render: "Render";
+    out property <string> freeze: "Freeze";
+    out property <string> autosampler-explanation: "Silent mock render. Each cached sample retains source, root note, velocity layer, take and tail provenance.";
+    out property <string> freeze-explanation: "Silent mock render; no audio is captured. Freeze locks voice controls. Unfreeze restores the original source.";
+}

@@ -1,3 +1,4 @@
+import { SamplerCommands } from "../domain/Commands.slint";
 import { Session } from "../Session.slint";
 import { SamplerTheme } from "../theme/Theme.slint";
 import { ActionButton } from "../controls/ActionButton.slint";
@@ -5,14 +6,14 @@ import { ActionButton } from "../controls/ActionButton.slint";
 export component SourceHeader inherits Rectangle {
     height: 28px;
     HorizontalLayout { padding-left: 4px; spacing: 4px; alignment: start;
-        ActionButton { width: 24px; compact: true; ghost: true; icon: "chevron-left"; label: "Back to Voice"; clicked => { Session.command("page.select", "", "voice", 0); } }
+        ActionButton { width: 24px; compact: true; ghost: true; icon: "chevron-left"; label: "Back to Voice"; clicked => { Session.command(SamplerCommands.page-select, "", "voice", 0); } }
         Text { width: 30px; text: "Voice"; font-family: SamplerTheme.font-ui; font-size: 13px; color: SamplerTheme.paper-3; vertical-alignment: center; }
         Text { width: 12px; text: "›"; font-family: SamplerTheme.font-ui; font-size: 13px; color: SamplerTheme.paper-4; vertical-alignment: center; }
         Text { width: 126px; text: "Audio source · Sampler"; font-family: SamplerTheme.font-ui; font-size: 13px; font-weight: 600; color: SamplerTheme.paper-1; vertical-alignment: center; }
         Rectangle { width: 1px; y: 5px; height: 18px; background: SamplerTheme.line-2; }
         Rectangle { width: 116px; height: 28px; background: SamplerTheme.surface-well; border-radius: 4px; border-width: 1px; border-color: SamplerTheme.border-hairline;
-            ActionButton { x: 3px; y: 3px; width: 56px; height: 22px; text: "SAMPLE"; label: "Sample source editor"; compact: true; ghost: true; neutral-selection: true; caps: true; selected: Session.page == "sample"; clicked => { Session.command("page.select", "", "sample", 0); } }
-            ActionButton { x: 61px; y: 3px; width: 52px; height: 22px; text: "SLICES"; label: "Slices source editor"; compact: true; ghost: true; neutral-selection: true; caps: true; selected: Session.page == "slices"; clicked => { Session.command("page.select", "", "slices", 0); } }
+            ActionButton { x: 3px; y: 3px; width: 56px; height: 22px; text: "SAMPLE"; label: "Sample source editor"; compact: true; ghost: true; neutral-selection: true; caps: true; selected: Session.page == "sample"; clicked => { Session.command(SamplerCommands.page-select, "", "sample", 0); } }
+            ActionButton { x: 61px; y: 3px; width: 52px; height: 22px; text: "SLICES"; label: "Slices source editor"; compact: true; ghost: true; neutral-selection: true; caps: true; selected: Session.page == "slices"; clicked => { Session.command(SamplerCommands.page-select, "", "slices", 0); } }
         }
     }
 }

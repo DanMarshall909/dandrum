@@ -1,0 +1,87 @@
+import { Tokens } from "../theme.slint";
+import { EditorTheme } from "Theme.slint";
+
+// Reusable, pointer-transparent paint for drawer bodies, key caps and panels.
+// The v3 CSS applies its material image independently of outer panel shadows.
+export component MaterialLayers inherits Rectangle {
+    in property <bool> well: false;
+    in property <bool> accent: false;
+    in property <bool> wash: false;
+    in property <bool> grain: true;
+    in property <bool> raised: false;
+    clip: true;
+    border-radius: root.well ? Tokens.editor-radius-control : Tokens.editor-radius-panel;
+    if EditorTheme.brushed && root.grain && !root.well && !root.accent && !root.wash : Rectangle {
+        x: 0px; y: 0px; width: parent.width; height: parent.height; background: EditorTheme.brushed-light;
+        // Paint the guide's three strata directly. Narrow or partially clipped key
+        // caps must not ask the software renderer to slice an oversized texture.
+        for stripe[i] in max(0, ceil(parent.height / Tokens.editor-material-light-grain-period)) : Rectangle {
+            x: 0px; y: i * Tokens.editor-material-light-grain-period; width: parent.width; height: min(Tokens.editor-material-highlight-pair-width, max(0px, parent.height - self.y)); background: Tokens.editor-material-grain-light;
+        }
+        for stripe[i] in max(0, ceil(parent.height / Tokens.editor-material-dark-grain-period)) : Rectangle {
+            x: 0px; y: i * Tokens.editor-material-dark-grain-period; width: parent.width; height: min(Tokens.editor-border-width, max(0px, parent.height - self.y)); background: Tokens.editor-material-grain-dark;
+        }
+        for stripe[i] in max(0, ceil(parent.height / Tokens.editor-material-fine-grain-period)) : Rectangle {
+            x: 0px; y: i * Tokens.editor-material-fine-grain-period; width: parent.width; height: min(Tokens.editor-material-highlight-pair-width, max(0px, parent.height - self.y));
+            Rectangle { x: 0px; y: 0px; width: parent.width; height: min(Tokens.editor-border-width, parent.height); background: Tokens.editor-material-grain-highlight; }
+            Rectangle { x: 0px; y: Tokens.editor-border-width; width: parent.width; height: min(Tokens.editor-border-width, max(0px, parent.height - Tokens.editor-border-width)); background: Tokens.editor-material-grain-lowlight; }
+        }
+    }
+    if !EditorTheme.brushed && !root.well && !root.accent && !root.wash : Rectangle {
+        x: 0px; y: 0px; width: parent.width; height: parent.height; background: EditorTheme.raised-overlay;
+    }
+    if root.well : Rectangle {
+        x: 0px; y: 0px; width: parent.width; height: parent.height;
+        background: EditorTheme.brushed ? @linear-gradient(Tokens.editor-material-overlay-angle * 1deg, Tokens.editor-material-brushed-well-top 0%, Tokens.editor-material-clear-stop Tokens.editor-material-brushed-well-stop) : EditorTheme.well-overlay;
+    }
+    if EditorTheme.soft && root.accent : Rectangle {
+        x: 0px; y: 0px; width: parent.width; height: parent.height; background: EditorTheme.accent-overlay;
+    }
+    if EditorTheme.soft && root.wash : Rectangle {
+        x: 0px; y: 0px; width: parent.width; height: parent.height;
+        background: @linear-gradient(Tokens.editor-material-overlay-angle * 1deg, EditorTheme.accent.with-alpha(Tokens.editor-material-wash-opacity) 0%, Tokens.editor-material-wash-bottom 100%);
+    }
+    if root.raised && !root.well && (EditorTheme.soft || EditorTheme.brushed) : Rectangle {
+        x: Tokens.editor-border-width; y: Tokens.editor-border-width; width: parent.width - Tokens.editor-material-highlight-pair-width; height: Tokens.editor-border-width;
+        background: EditorTheme.brushed ? Tokens.editor-material-brushed-raised-edge : Tokens.editor-material-raised-edge;
+    }
+    if root.raised && !root.well && EditorTheme.brushed : Rectangle {
+        x: Tokens.editor-border-width; y: parent.height - Tokens.editor-material-highlight-pair-width; width: parent.width - Tokens.editor-material-highlight-pair-width; height: Tokens.editor-border-width; background: Tokens.editor-material-bottom-edge;
+    }
+    if root.well && EditorTheme.brushed : Rectangle {
+        x: 0px; y: 0px; width: parent.width; height: Tokens.editor-material-highlight-pair-width;
+        background: @linear-gradient(Tokens.editor-material-overlay-angle * 1deg, Tokens.editor-material-well-shadow 0%, Tokens.editor-material-clear-stop 100%);
+    }
+}
+
+export component WindowMaterial inherits Rectangle {
+    background: EditorTheme.surface-window;
+    if EditorTheme.soft && !EditorTheme.brushed : Image {
+        x: 0px; y: 0px; width: parent.width; height: parent.height;
+        source: EditorTheme.window-lighting; image-fit: fill;
+    }
+    if EditorTheme.brushed : MaterialLayers { x: 0px; y: 0px; width: parent.width; height: parent.height; border-radius: 0px; }
+    @children
+}
+
+export component MaterialSurface inherits Rectangle {
+    in property <color> base: EditorTheme.surface-panel;
+    in property <bool> well: false;
+    // Only the design-system Panel explicitly opts into CSS surface-panel shadows.
+    in property <bool> raised: false;
+    in property <bool> accent: false;
+    in property <bool> wash: false;
+    in property <bool> edge: true;
+    background: root.base;
+    border-radius: root.well ? Tokens.editor-radius-control : Tokens.editor-radius-panel;
+    border-width: root.edge ? Tokens.editor-border-width : 0px;
+    border-color: EditorTheme.border-hairline;
+    drop-shadow-color: root.accent && EditorTheme.soft ? EditorTheme.accent.with-alpha(Tokens.editor-material-accent-shadow-opacity) : root.raised && !root.well ? (EditorTheme.brushed ? Tokens.editor-material-well-shadow : EditorTheme.soft ? Tokens.editor-material-soft-shadow : transparent) : transparent;
+    drop-shadow-offset-y: root.accent ? 0px : root.raised && !root.well ? (EditorTheme.brushed ? Tokens.editor-border-width : Tokens.editor-material-raised-shadow-offset) : 0px;
+    drop-shadow-blur: root.accent && EditorTheme.soft ? Tokens.editor-material-accent-shadow-blur : root.raised && !root.well ? (EditorTheme.brushed ? Tokens.editor-material-brushed-shadow-blur : EditorTheme.soft ? Tokens.editor-material-panel-shadow-blur : 0px) : 0px;
+    MaterialLayers {
+        x: 0px; y: 0px; width: parent.width; height: parent.height; border-radius: parent.border-radius;
+        well: root.well; accent: root.accent; wash: root.wash; raised: root.raised;
+    }
+    @children
+}

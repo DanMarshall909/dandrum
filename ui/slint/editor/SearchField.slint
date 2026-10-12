@@ -1,0 +1,23 @@
+import { Tokens } from "../theme.slint";
+import { EditorTheme } from "Theme.slint";
+import { EditorTextField } from "TextField.slint";
+export component EditorSearchField inherits Rectangle {
+    in-out property <string> text;
+    in property <string> label;
+    in property <string> placeholder;
+    in property <bool> enabled: true;
+    in property <bool> read-only;
+    in property <length> inset: Tokens.editor-search-input-inset;
+    out property <bool> has-focus: input.has-focus;
+    callback edited(string);
+    callback accepted(string);
+    callback focus-left();
+    forward-focus: input;
+    border-radius: Tokens.editor-radius-control; border-width: Tokens.editor-border-width;
+    border-color: input.has-focus ? EditorTheme.accent : EditorTheme.line-2;
+    background: EditorTheme.ink-0;
+    if input.text == "" : Text { x: root.inset; width: parent.width - 2 * root.inset; text: root.placeholder; color: EditorTheme.paper-3; font-family: EditorTheme.font-ui; font-size: EditorTheme.type-control; vertical-alignment: center; }
+    input := EditorTextField { x: root.inset; width: parent.width - 2 * root.inset; text <=> root.text; accessible-label: root.label; enabled: root.enabled; read-only: root.read-only; vertical-alignment: center;
+        edited => { root.edited(self.text); } accepted => { root.accepted(self.text); } focus-left => { root.focus-left(); }
+    }
+}

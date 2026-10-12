@@ -1,0 +1,52 @@
+import { Tokens } from "../theme.slint";
+import { MusicalConstants } from "DisplayConstants.slint";
+import { GesturePhases } from "ParameterConstants.slint";
+// Compound corner input reports both axes from one captured coordinate origin.
+export component EditorZoneCorner inherits FocusScope {
+    in property <string> name;
+    in property <bool> high-key;
+    in property <bool> high-velocity;
+    in property <float> note;
+    in property <float> velocity;
+    in property <float> note-count;
+    in property <length> grid-width;
+    in property <length> grid-height;
+    out property <bool> captured;
+    private property <length> origin-x;
+    private property <length> origin-y;
+    private property <float> initial-note;
+    private property <float> initial-velocity;
+    private property <float> latest;
+    callback selected();
+    callback gesture(int,float) -> bool;
+    callback preview(float,float) -> bool;
+    accessible-role: button;
+    accessible-label: Tokens.editor-display-zone-resize-prefix+(root.high-key ? Tokens.editor-display-zone-high-label : Tokens.editor-display-zone-low-label)+Tokens.editor-display-zone-key-and-prefix+(root.high-velocity ? Tokens.editor-display-zone-high-label : Tokens.editor-display-zone-low-label)+Tokens.editor-display-zone-velocity-prefix+root.name;
+    accessible-enabled: root.enabled;
+    public function finish(cancel:bool) { if root.captured { root.captured=false; root.gesture(cancel ? GesturePhases.cancel : GesturePhases.commit,root.latest); } }
+    changed enabled => { if !root.enabled { root.finish(true); } }
+    key-pressed(event) => { if event.text == Key.Escape { root.finish(true); return accept; } return reject; }
+    focus-lost(reason) => { if reason == FocusReason.window-activation { root.finish(true); } }
+    TouchArea {
+        enabled: root.enabled;
+        mouse-cursor: root.high-key == root.high-velocity ? nesw-resize : nwse-resize;
+        pointer-event(event) => {
+            if event.kind == PointerEventKind.down && event.button == PointerEventButton.left && root.enabled {
+                root.focus(); root.selected();
+                root.origin-x=self.absolute-position.x+self.mouse-x; root.origin-y=self.absolute-position.y+self.mouse-y;
+                root.initial-note=root.note; root.initial-velocity=root.velocity; root.latest=root.note;
+                root.captured=root.gesture(GesturePhases.begin,root.initial-note);
+            }
+            if event.kind == PointerEventKind.up { root.finish(false); }
+            if event.kind == PointerEventKind.cancel { root.finish(true); }
+        }
+        moved => {
+            if self.pressed && root.captured && root.grid-width > 0px && root.grid-height > 0px {
+                let note=root.initial-note+round((self.absolute-position.x+self.mouse-x - root.origin-x)/root.grid-width*root.note-count);
+                let velocity=root.initial-velocity - round((self.absolute-position.y+self.mouse-y - root.origin-y)/root.grid-height*MusicalConstants.velocity-maximum);
+                root.latest=note;
+                if !root.preview(note,velocity) { root.finish(true); }
+            }
+        }
+    }
+}

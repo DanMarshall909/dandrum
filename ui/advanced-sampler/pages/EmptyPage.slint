@@ -1,34 +1,21 @@
+import { SamplerCommands } from "../domain/Commands.slint";
+import { Tokens } from "../../slint/theme.slint";
 import { ReadOnlyKeyMap } from "ReadOnlyKeyMap.slint";
 import { Session } from "../Session.slint";
-import { SamplerTheme } from "../theme/Theme.slint";
-import { ActionButton } from "../controls/ActionButton.slint";
-import { AppIcon } from "../controls/AppIcon.slint";
-import { DashedBorder } from "../../slint/foundation/DashedBorder.slint";
-
-export component EmptyPage inherits Rectangle {
+import { DragState } from "../chrome/DragState.slint";
+import { EmptyState } from "../../slint/editor/EmptyState.slint";
+export component EmptyPage inherits EmptyState {
     in property <bool> expanded;
-    private property <length> canvas-height: root.expanded ? 362px : root.height;
+    canvas-height: root.expanded ? Tokens.editor-empty-expanded-canvas-height : root.height;
+    center-offset: root.expanded ? Tokens.editor-chrome-gap-small : Tokens.editor-chrome-gap-tight;
+    title: "Drop samples here";
+    description: "One file becomes a sound across the keyboard. Several files ask how to map them.";
+    footer: "WAV · AIFF · FLAC · MP3 · OGG";
+    primary-text: "Browse samples…"; primary-label: "Browse samples";
+    secondary-icon: Tokens.editor-icon-layers; secondary-label: "Load multiple samples";
     callback browse(string);
-    background: SamplerTheme.surface-well;
-    border-radius: 6px;
-    if SamplerTheme.soft : Rectangle { border-radius: 6px; background: SamplerTheme.well-overlay; }
-    // Native dashed outline retains the reference's six-pixel cadence.
-    for i in ceil(root.width / 12px) : Rectangle { x: i * 12px; y: 0px; width: min(6px, parent.width - self.x); height: 1px; background: SamplerTheme.line-3; }
-    for i in ceil(root.width / 12px) : Rectangle { x: i * 12px; y: root.canvas-height - 1px; width: min(6px, parent.width - self.x); height: 1px; background: SamplerTheme.line-3; }
-    for i in ceil(root.canvas-height / 12px) : Rectangle { x: 0px; y: i * 12px; width: 1px; height: min(6px, root.canvas-height - self.y); background: SamplerTheme.line-3; }
-    for i in ceil(root.canvas-height / 12px) : Rectangle { x: parent.width - 1px; y: i * 12px; width: 1px; height: min(6px, root.canvas-height - self.y); background: SamplerTheme.line-3; }
-    Rectangle {
-        x: (parent.width - self.width) / 2; y: (root.canvas-height - self.height) / 2 + (root.expanded ? 4px : 2px);
-        width: min(parent.width - 24px, 330px); height: 216px;
-        Rectangle { y: 0px; width: parent.width; height: 136px; border-radius: 2px;
-            DashedBorder { tint: SamplerTheme.line-2; }
-            AppIcon { x: (parent.width - 20px) / 2; y: 24px; size: 20px; name: "plus"; tint: SamplerTheme.paper-3; }
-            Text { y: 52px; width: parent.width; height: 18px; text: "Drop samples here"; font-family: SamplerTheme.font-ui; font-size: 13px; font-weight: 600; color: SamplerTheme.paper-2; horizontal-alignment: center; vertical-alignment: center; }
-            Text { x: 24px; y: 78px; width: parent.width - 48px; height: 34px; text: "One file becomes a sound across the keyboard. Several files ask how to map them."; font-family: SamplerTheme.font-ui; font-size: 12px; color: SamplerTheme.paper-3; horizontal-alignment: center; wrap: word-wrap; }
-        }
-        ActionButton { x: (parent.width - 176px) / 2; y: 152px; width: 140px; height: 28px; text: "Browse samples…"; label: "Browse samples"; icon: "folder"; primary: true; clicked => { root.browse("asset.import"); } }
-        ActionButton { x: (parent.width - 176px) / 2 + 148px; y: 152px; width: 28px; height: 28px; icon: "layers"; label: "Load multiple samples"; clicked => { root.browse("asset.import-many"); } }
-        Text { y: 196px; width: parent.width; height: 20px; text: "WAV · AIFF · FLAC · MP3 · OGG"; font-family: SamplerTheme.font-ui; font-size: 12px; color: SamplerTheme.paper-3; horizontal-alignment: center; }
-    }
-    if root.expanded : ReadOnlyKeyMap { y: root.canvas-height + 4px; width: parent.width; }
+    primary-activated => { root.browse(SamplerCommands.asset-import); }
+    secondary-activated => { root.browse(SamplerCommands.asset-import-many); }
+    window-deactivated => { Session.release-notes(); DragState.cancel(); }
+    if root.expanded : ReadOnlyKeyMap { y: root.canvas-height + Tokens.editor-chrome-gap-small; width: parent.width; }
 }

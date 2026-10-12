@@ -1,10 +1,12 @@
 // Shared input boundary for momentary and latching controls.
 export component ActionArea inherits FocusScope {
     in property <string> label;
+    in property <bool> activate-on-press;
     out property <bool> hovered: touch.has-hover;
     out property <bool> down: touch.pressed || root.key-down;
     private property <bool> key-down;
     callback activated();
+    callback window-deactivated();
     accessible-role: button;
     accessible-label: root.label;
     accessible-enabled: root.enabled;
@@ -12,6 +14,7 @@ export component ActionArea inherits FocusScope {
     public function activate() { if root.enabled { root.activated(); } }
     key-pressed(event) => {
         if root.enabled && (event.text == " " || event.text == Key.Return) {
+            if root.activate-on-press { root.activate(); return accept; }
             root.key-down = true; return accept;
         }
         return reject;
@@ -22,7 +25,7 @@ export component ActionArea inherits FocusScope {
         }
         return reject;
     }
-    focus-lost(reason) => { root.key-down = false; }
+    focus-lost(reason) => { root.key-down = false; if reason == FocusReason.window-activation { root.window-deactivated(); } }
     changed enabled => { if !root.enabled { root.key-down = false; } }
     @children
     touch := TouchArea {

@@ -2,7 +2,8 @@
 
 A reusable native implementation of the **maintained DanDrum design guide**:
 29 public guide components, a themed scrollbar, shared interaction and drawing
-subcomponents, and a six-page interactive catalog. It uses Slint **1.18.1**.
+subcomponents, reusable editor primitives, and a six-page interactive catalog.
+It uses Slint **1.18.1**.
 
 The authority is [the maintained design guide](../../docs/design-system/README.md),
 followed by [production tokens](../design-system/tokens.json),
@@ -111,6 +112,88 @@ the maintained waveform/spectral contracts and the shared `SpectralPalette`.
 `ParamLabel` composes it with `ValueReadout` for a noninteractive, stacked
 `label` / `value` / `unit`. It supports `size: "sm" | "md" | "lg"`,
 `align: "left" | "center" | "right"`, disabled colors, and host automation color.
+
+## Reuse editor primitives
+
+The `editor/` components preserve the advanced editor's appearance and interaction
+contracts while accepting caller-supplied models and callbacks. The original
+guide components retain their names and defaults. The umbrella uses
+`EditorPropertyRow`, `EditorEmptyState`, and `EditorRotaryFace` for editor variants.
+Every public editor component, record, and constants global is listed separately
+in [components.json](components.json).
+
+```mermaid
+flowchart LR
+    T[Named design tokens] --> L[Shared Slint components]
+    M[Application model and commands] --> A[Thin application adapter]
+    A --> L
+```
+
+| Reusable boundary | Public examples |
+| --- | --- |
+| Parameter input, value editing, gesture lifecycle | `ParameterKnob`, `ParameterField`, `ParameterGesture`, `ParameterMenu`, `DelayedPopupState`, `TransientState` |
+| Chrome and appearance | `EditorButton`, `NavigationRail`, `ItemRow`, `EditorTextField`, `EditorSearchField`, `LevelMeter`, `ChoiceGrid`, `ColorChoice`, `MaterialSurface` |
+| Modal and drag lifecycle | `EditorModal`, `EditorDialogSurface`, `EditorDragSource`, `EditorDragTarget`, `EditorDragState` |
+| Browsing | `PresetBrowser`, `PresetRow`, `PresetInfo`, `PresetFilter`, `PresetBrowserState` |
+| Keys, pads and mapping | `EditorKey`, `EditorPad`, `EditorPlayKeys`, `EditorPlayPads`, `EditorZoneMap`, `EditorMapKeyboard`, `FitLayout` |
+| Waveforms and editable plots | `EditableWaveform`, `WaveHandle`, `EditorFilterPlot`, `EditorEnvelopePlot`, `EditorModulatorPlot`, `EditorProcessorPlot`, `EditorVelocityBlendPlot` |
+
+Geometry, delays, ranges and shared copy have named definitions in generated
+`Tokens` and the public `*Constants.slint` globals: `ParameterActions`,
+`GesturePhases`, `RangeFields`, `MusicalConstants`, `GraphMetrics`, `CurveMetrics`,
+`WaveFields`, `DragKinds`, `EditorLayoutMetrics`, and appearance/browser choices.
+Protocol positions such as ADSR stages and musical pitch tables are declared once
+in `EnvelopeStages` and `PitchNames`. Application command IDs and engine-specific
+parameter ranges belong to the adapter.
+
+Use parameter controls with prepared values; callbacks report edits for the
+application to accept. `EditorModal` owns a native popup with Escape/backdrop
+dismissal callbacks, Tab traversal and opener focus restoration. Consumers call
+`show()`/`close()` and choose whether to accept dismissal. `EditorDialogSurface`
+accepts viewport dimensions and shields its content from backdrop clicks. Drag
+targets accept named kinds and an opaque payload; they do not own engine state.
+
+The C++ headers under `host/` supply theme/material generation, appearance
+validation, stable-ID model projection, search filtering and preview geometry.
+Re-export any used globals from your application's Slint entry point to expose
+their C++ bindings. For example, after exporting `PresetFilter`:
+
+```cpp
+#include "host/SearchFilter.h"
+dandrum::slint_ui::bind_search_filter(window->global<dandrum_ui::PresetFilter>());
+```
+
+The native binder searches every model row, handles Unicode lowercase matching,
+and tracks model notifications. The viewer-only Slint fallback checks the first
+64 rows and supports exact-text matching; use the binder for production browsing.
+The optional `platform/` package supplies bounded local-file URI parsing and X11
+drop transport. `bind_window_file_drop(window, title, received)` delivers a
+`DataTransfer` to the consumer callback; retain its returned owner for polling.
+File import policy remains with the application.
+
+## Embed the source library
+
+Resolve the matching SDK in the consuming CMake directory before compiling its
+Slint entry point. Catalog, repository tests, and file-drop transport can each be
+disabled:
+
+```cmake
+find_package(Slint 1.18.1 EXACT CONFIG REQUIRED)
+set(DANDRUM_SLINT_BUILD_CATALOG OFF CACHE BOOL "" FORCE)
+set(DANDRUM_SLINT_BUILD_TESTS OFF CACHE BOOL "" FORCE)
+set(DANDRUM_SLINT_BUILD_FILE_DROP OFF CACHE BOOL "" FORCE)
+add_subdirectory(path/to/ui/slint shared-library)
+add_executable(editor Main.cpp)
+target_link_libraries(editor PRIVATE Dandrum::SlintLibrary)
+set_target_properties(editor PROPERTIES SLINT_EMBED_RESOURCES embed-files)
+slint_target_sources(editor App.slint)
+```
+
+The [independent consumer fixture](../../tests/cmake/slint-editor-consumer) builds
+this configuration from a temporary source bundle containing only `ui/slint`
+and `ui/design-system/fonts`. It imports the whole editor API, compiles an editor
+and the shared C++ headers, links, and checks native default values without a
+sampler, JUCE, Rust, Node, catalog or file-drop target.
 
 ## Bind a parameter
 
@@ -302,15 +385,21 @@ dependency between text height, scrollbar visibility and available width.
 
 ## Tokens, fonts, and packaging
 
-All 146 values in `tokens.slint` are generated by
+Values in `tokens.slint` are generated by
 `scripts/generate-ui-tokens.mjs` from `ui/design-system/tokens.json`, alongside
-CSS and C++. Slint lengths retain logical pixel units; `em` letter spacing is
+CSS, JUCE C++, and the independent `host/DesignTokens.h`. Durations retain
+milliseconds/seconds and C++ `std::chrono` types; RGBA colors retain their alpha
+and use native ARGB byte order in C++. Slint lengths retain logical pixel units;
+`em` letter spacing is
 a ratio multiplied by font size. Native family tokens select the registered
 font rather than a CSS fallback stack.
 
 `theme.slint` imports the original eight Barlow, Barlow Semi Condensed, and
 JetBrains Mono font files. The CMake catalog embeds these resources and the
-33 original SVG icons. The catalog copies each family’s OFL notice to `font-licenses/` beside the executable. Preserve `ui/design-system/fonts` and each family's
+33 original SVG icons plus the editor's own shared assets. The catalog copies
+each family’s OFL notice to `font-licenses/` beside the executable. Preserve the
+relative `ui/slint` and `ui/design-system/fonts` directory layout, including
+`ui/slint/assets` and `ui/slint/editor/assets`, and each family's
 `OFL.txt` when distributing the source library or embedded fonts. The original
 design-guide archive remains unchanged.
 
@@ -323,7 +412,7 @@ catalog so the scope of the recorded checks remains reviewable.
 
 ```sh
 node scripts/generate-ui-tokens.mjs --check
-node --test tests/js/DesignTokensTest.mjs tests/js/SlintDesignTokensTest.mjs tests/js/SlintLibraryInventoryTest.mjs
+node --test tests/js/DesignTokensTest.mjs tests/js/SlintDesignTokensTest.mjs tests/js/SlintLibraryInventoryTest.mjs tests/js/SlintEditorPackageTest.mjs
 python scripts/check-slint-library.py
 python -m unittest discover -s tests/python -p 'test_demo_*.py'
 ```
@@ -339,9 +428,18 @@ configure with `-DDANDRUM_SLINT_TEST_REPOSITORY=ON`. Those optional development
 gates need Node, Python and the repository's launcher-test prerequisites; the
 legacy JUCE artifact calibration also uses its Linux `pkg-config` dependencies.
 The catalog's normal build and native codec tests remain independent of them.
+Repository checks also build the staged public API consumer and enforce that
+shared Slint/C++ sources have no sampler or `Session` dependency. With a
+`TESTING` SDK, CTest registers ten independent editor interaction fixtures.
+`DANDRUM_SLINT_TEST_RUNTIME=ON` adds native pixel checks for displays, plots,
+mapping, collections, chrome, and modulation/layers; use
+`DANDRUM_SLINT_TEST_HEADLESS=ON` for private Xvfb execution on Linux.
 
 The catalog supports 1200×800 and 820×560 windows with scrollable content.
 Its page IDs are `controls`, `mapping`, `waveforms`, `routing`, `layout`, and
 `foundations`. The state selector exercises supported disabled, prepared,
 host, empty, loading and error presentations. Side-by-side state specimens
 remain fixed for comparison.
+
+The [editor extraction audit](EDITOR_EXTRACTION.md) records the shared boundaries,
+named defaults and independent verification evidence.

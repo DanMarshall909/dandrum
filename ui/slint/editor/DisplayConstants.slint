@@ -1,0 +1,143 @@
+import { Tokens } from "../theme.slint";
+// Shared musical protocol, rendering calibration and guide display defaults.
+// Geometry and text are generated from the cross-renderer token authority.
+export global MusicalConstants {
+    out property <int> notes-per-octave: Tokens.editor-musical-notes-per-octave;
+    out property <int> white-per-octave: Tokens.editor-musical-white-per-octave;
+    out property <int> black-per-octave: Tokens.editor-musical-black-per-octave;
+    out property <int> midi-minimum: Tokens.editor-musical-midi-minimum;
+    out property <int> midi-maximum: Tokens.editor-musical-midi-maximum;
+    out property <int> velocity-minimum: Tokens.editor-musical-velocity-minimum;
+    out property <int> velocity-maximum: Tokens.editor-musical-velocity-maximum;
+    out property <int> audition-velocity: Tokens.editor-musical-audition-velocity;
+    out property <int> key-velocity-floor: Tokens.editor-musical-key-velocity-floor;
+    out property <int> key-velocity-span: Tokens.editor-musical-key-velocity-span;
+    out property <int> octave-label-offset: Tokens.editor-musical-octave-label-offset;
+    out property <int> mapped-low: Tokens.editor-musical-mapped-low;
+    out property <int> mapped-high: Tokens.editor-musical-mapped-high;
+    out property <int> overview-high: Tokens.editor-musical-overview-high;
+    out property <int> overview-note-count: Tokens.editor-musical-overview-note-count;
+    out property <int> base-note: Tokens.editor-musical-base-note;
+    out property <int> white-key-count: Tokens.editor-musical-white-key-count;
+    out property <int> black-key-count: Tokens.editor-musical-black-key-count;
+    out property <int> sounding-capacity: Tokens.editor-musical-sounding-capacity;
+    out property <int> pc-key-count: Tokens.editor-musical-pc-key-count;
+    out property <int> default-key-width: Tokens.editor-musical-default-key-width;
+    out property <int> fit-key-width-minimum: Tokens.editor-musical-fit-key-width-minimum;
+    out property <int> key-width-minimum: Tokens.editor-musical-key-width-minimum;
+    out property <int> key-width-maximum: Tokens.editor-musical-key-width-maximum;
+    out property <int> key-zoom-step: Tokens.editor-musical-key-zoom-step;
+    out property <int> pad-minimum-size: Tokens.editor-musical-pad-minimum-size;
+    out property <int> pad-maximum-size: Tokens.editor-musical-pad-maximum-size;
+    out property <int> pad-zoom-minimum: Tokens.editor-musical-pad-zoom-minimum;
+    out property <int> pad-zoom-maximum: Tokens.editor-musical-pad-zoom-maximum;
+    out property <int> pad-zoom-step: Tokens.editor-musical-pad-zoom-step;
+    out property <int> pad-visible-count: Tokens.editor-musical-pad-visible-count;
+    out property <int> pad-minimum-rows: Tokens.editor-musical-pad-minimum-rows;
+    out property <int> pad-compact-threshold: Tokens.editor-musical-pad-compact-threshold;
+    out property <float> black-key-offset: Tokens.editor-musical-black-key-offset;
+    out property <float> black-key-width: Tokens.editor-musical-black-key-width;
+    out property <float> black-key-height: Tokens.editor-musical-black-key-height;
+    out property <float> pad-audition-strength: Tokens.editor-musical-pad-audition-strength;
+    out property <float> pad-pointer-bias: Tokens.editor-musical-pad-pointer-bias;
+}
+
+export global PitchNames {
+    out property <[string]> names: ["C","C♯","D","D♯","E","F","F♯","G","G♯","A","A♯","B"];
+    out property <[int]> white-notes: [0,2,4,5,7,9,11];
+    out property <[int]> black-notes: [1,3,6,8,10];
+    out property <[int]> white-indices: [0,0,1,1,2,3,3,4,4,5,5,6];
+    out property <[string]> pc-labels: ["A","W","S","E","D","F","T","G","Y","H","U","J","K"];
+    out property <[int]> velocity-grid: [Tokens.editor-display-velocity-low-label,Tokens.editor-display-velocity-middle-label,Tokens.editor-display-velocity-high-label];
+    out property <[int]> overview-velocity-labels: [MusicalConstants.velocity-maximum,Tokens.editor-display-velocity-high-label,Tokens.editor-display-velocity-middle-label,Tokens.editor-display-velocity-low-label,MusicalConstants.velocity-minimum];
+    out property <[string]> envelope-handles: ["attack","decay","sustain","release"];
+}
+
+export global Ranges {
+    out property <float> percentage: Tokens.editor-display-percent-scale;
+    out property <float> epsilon: Tokens.editor-display-epsilon;
+    out property <float> time-decimals: Tokens.editor-display-time-decimal-scale;
+}
+
+export global GraphMetrics {
+    out property <float> envelope-attack-scale: Tokens.editor-envelope-attack-scale;
+    out property <float> envelope-decay-scale: Tokens.editor-envelope-decay-scale;
+    out property <float> envelope-release-scale: Tokens.editor-envelope-release-scale;
+    out property <float> envelope-note-off-position: Tokens.editor-envelope-note-off-position;
+    out property <float> envelope-attack-minimum: Tokens.editor-envelope-attack-minimum;
+    out property <float> envelope-attack-maximum: Tokens.editor-envelope-attack-maximum;
+    out property <float> envelope-segment-minimum: Tokens.editor-envelope-segment-minimum;
+    out property <float> envelope-sustain-gap: Tokens.editor-envelope-sustain-gap;
+    out property <int> envelope-handle-count: Tokens.editor-envelope-handle-count;
+    out property <float> frequency-minimum: Tokens.editor-display-frequency-minimum;
+    out property <float> frequency-maximum: Tokens.editor-display-frequency-maximum;
+    out property <float> frequency-ratio: Tokens.editor-display-frequency-ratio;
+    out property <float> default-cutoff: Tokens.editor-display-default-cutoff;
+    out property <float> default-resonance: Tokens.editor-display-default-resonance;
+    out property <int> response-steps: Tokens.editor-display-response-steps;
+    out property <float> decibel-log-scale: Tokens.editor-display-decibel-log-scale;
+    out property <float> lowpass-power: Tokens.editor-display-lowpass-power;
+    out property <float> band-power: Tokens.editor-display-band-power;
+    out property <float> resonance-boost: Tokens.editor-display-resonance-boost;
+    out property <float> euler-approximation: Tokens.editor-display-euler-approximation;
+    out property <float> resonance-width: Tokens.editor-display-resonance-width;
+    out property <float> zero-db-percent: Tokens.editor-display-zero-db-percent;
+    out property <float> db-pixel-scale: Tokens.editor-display-db-pixel-scale;
+    out property <float> response-minimum-percent: Tokens.editor-display-response-minimum-percent;
+    out property <float> response-maximum-percent: Tokens.editor-display-response-maximum-percent;
+    out property <float> resonance-pointer-ceiling: Tokens.editor-display-resonance-pointer-ceiling;
+    out property <float> keyboard-reduction: Tokens.editor-display-keyboard-reduction;
+    out property <float> keyboard-increase: Tokens.editor-display-keyboard-increase;
+    out property <float> curve-fill-alpha: Tokens.editor-display-curve-fill-alpha;
+    out property <float> waveform-half-viewbox: Tokens.editor-display-waveform-half-viewbox;
+    out property <float> zone-zoom-step: Tokens.editor-display-zone-zoom-step;
+    out property <float> zone-zoom-maximum: Tokens.editor-display-zone-zoom-maximum;
+    out property <float> zone-selection-alpha: Tokens.editor-display-zone-selection-alpha;
+    out property <float> waveform-outside-alpha: Tokens.editor-display-waveform-outside-alpha;
+    out property <float> waveform-fade-alpha: Tokens.editor-display-waveform-fade-alpha;
+    out property <float> waveform-loop-alpha: Tokens.editor-display-waveform-loop-alpha;
+    out property <float> waveform-loop-border-alpha: Tokens.editor-display-waveform-loop-border-alpha;
+    out property <float> waveform-crossfade-alpha: Tokens.editor-display-waveform-crossfade-alpha;
+    out property <float> loading-overlay-alpha: Tokens.editor-display-loading-overlay-alpha;
+    out property <float> pad-activity-alpha: Tokens.editor-display-pad-activity-alpha;
+    out property <float> velocity-opacity-minimum: Tokens.editor-display-velocity-opacity-minimum;
+    out property <float> velocity-opacity-span: Tokens.editor-display-velocity-opacity-span;
+    out property <int> wave-ruler-ticks: Tokens.editor-display-wave-ruler-ticks;
+    out property <int> wave-ruler-intervals: Tokens.editor-display-wave-ruler-intervals;
+    out property <int> zone-velocity-grid-lines: Tokens.editor-display-zone-velocity-grid-lines;
+    out property <int> zone-velocity-grid-intervals: Tokens.editor-display-zone-velocity-grid-intervals;
+}
+
+export global DisplayStates {
+    out property <string> empty: Tokens.editor-display-state-empty;
+    out property <string> loading: Tokens.editor-display-state-loading;
+    out property <string> missing: Tokens.editor-display-state-missing;
+    out property <string> unsupported: Tokens.editor-display-state-unsupported;
+}
+
+export global DisplayModes {
+    out property <string> wave: Tokens.editor-display-mode-wave;
+    out property <string> spectral: Tokens.editor-display-mode-spectral;
+    out property <string> lp: Tokens.editor-display-mode-lp;
+    out property <string> hp: Tokens.editor-display-mode-hp;
+    out property <string> bp: Tokens.editor-display-mode-bp;
+    out property <string> notch: Tokens.editor-display-mode-notch;
+}
+
+export global WaveFields {
+    out property <string> region-start: Tokens.editor-display-field-region-start;
+    out property <string> region-end: Tokens.editor-display-field-region-end;
+    out property <string> fade-in: Tokens.editor-display-field-fade-in;
+    out property <string> fade-out: Tokens.editor-display-field-fade-out;
+    out property <string> loop-start: Tokens.editor-display-field-loop-start;
+    out property <string> loop-end: Tokens.editor-display-field-loop-end;
+    out property <string> loop-crossfade: Tokens.editor-display-field-loop-crossfade;
+}
+
+// Array positions are a stable ADSR data contract, independent of visual theming.
+export global EnvelopeStages {
+    out property <int> attack: 0;
+    out property <int> decay: 1;
+    out property <int> sustain: 2;
+    out property <int> release: 3;
+}

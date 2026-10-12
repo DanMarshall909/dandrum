@@ -1,0 +1,41 @@
+import { EditorTheme } from "Theme.slint";
+import { Tokens } from "../theme.slint";
+
+// Each instance owns a native popup: focus, Tab traversal and opener restoration
+// stay with Slint. Call show()/close() synchronously from the owning workflow.
+// The consumer supplies forward-focus and decides whether dismissal is accepted.
+export component EditorModal inherits PopupWindow {
+    in property <bool> dismiss-on-background: true;
+    callback dismissed();
+    close-policy: no-auto-close;
+    forward-focus: modal-focus;
+    modal-focus := FocusScope {
+        focus-on-tab-navigation: false;
+        key-pressed(event) => {
+            if event.text == Key.Escape { root.dismissed(); return accept; }
+            return reject;
+        }
+        Rectangle {
+            background: EditorTheme.scrim;
+            TouchArea {
+                clicked => { if root.dismiss-on-background { root.dismissed(); } }
+            }
+            @children
+        }
+    }
+}
+
+export component EditorDialogSurface inherits Rectangle {
+    in property <length> viewport-width;
+    in property <length> viewport-height;
+    in property <bool> center-vertically: true;
+    in property <length> top-offset;
+    x: (root.viewport-width - self.width) / 2;
+    y: root.center-vertically ? (root.viewport-height - self.height) / 2 : root.top-offset;
+    background: EditorTheme.surface-menu;
+    border-width: Tokens.editor-dialog-border;
+    border-color: EditorTheme.line-3;
+    border-radius: Tokens.editor-dialog-radius;
+    TouchArea { }
+    @children
+}

@@ -1,3 +1,4 @@
+import { SamplerCommands } from "../domain/Commands.slint";
 import { Session, PadInfo } from "../Session.slint";
 import { SamplerTheme } from "../theme/Theme.slint";
 import { PadCell } from "../performance/PadCell.slint";
@@ -22,7 +23,7 @@ export component PadsPage inherits Rectangle {
     public function set-rows(rows: int) { if rows == 4 || rows == 6 || rows == 8 { Session.release-notes(); root.rows = rows; } }
     public pure function note-at(index: int) -> int { return root.bank + (root.rows - 1 - floor(index / 4)) * 4 + mod(index, 4); }
     public pure function pad-at(note: int) -> PadInfo { return note >= 0 && note < Session.pads.length ? Session.pads[note] : {note: note, name: "", mapped: false, choke-group: -1, active-alternate: -1}; }
-    public function select-pad(note: int) { Session.command("pad.select", "", "", note); }
+    public function select-pad(note: int) { Session.command(SamplerCommands.pad-select, "", "", note); }
     public function toggle-panel() { root.panel-open = !root.panel-open; }
     Flickable { interactive: false; width: parent.width; height: parent.height; content-width: self.width; content-height: max(self.height, root.header-height + 24px + (root.panel-open && root.panel-below ? root.grid-height + panel.height + 12px : max(root.grid-height, root.panel-open ? panel.height : 0px)));
         Rectangle { y: 0px; width: parent.width; height: parent.content-height; border-radius: 6px; border-width: 1px; border-color: SamplerTheme.line-1; background: SamplerTheme.ink-2;

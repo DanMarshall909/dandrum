@@ -1,7 +1,11 @@
+import { SamplerCommands } from "../domain/Commands.slint";
 import { Session } from "../Session.slint";
 import { SamplerTheme } from "../theme/Theme.slint";
 import { MaterialSurface, WindowMaterial } from "../theme/Material.slint";
-import { SamplerMetrics } from "../FrameMetrics.slint";
+import { Tokens } from "../../slint/theme.slint";
+import { EditorLayoutMetrics } from "../../slint/editor/LayoutMetrics.slint";
+import { DisplayStates } from "../../slint/editor/DisplayConstants.slint";
+import { SamplerUi } from "../domain/UiConstants.slint";
 import { EditorHeader } from "EditorHeader.slint";
 import { PageRail } from "PageRail.slint";
 import { InstrumentTree } from "InstrumentTree.slint";
@@ -14,21 +18,39 @@ import { DiagnosticsPage } from "../pages/DiagnosticsPage.slint";
 import { EventLog } from "EventLog.slint";
 export component EditorFrame inherits Rectangle {
     in property <bool> perform;
-    in property <int> size-mode: 1;
+    // Sampler workflow vocabulary and example-source copy remain application data.
+    private property <string> failed-analysis-state: "failed";
+    private property <string> preparing-reload-state: "preparing";
+    private property <string> missing-sample-heading: "Felt C4 f · sample unavailable";
+    private property <string> failed-sample-heading: "Sample could not be loaded";
+    private property <string> missing-sample-detail: "felt_C4_f.wav was not found. Locate or replace the sample. Other zones are unaffected.";
+    private property <string> failed-sample-detail: "This native preview reads WAV samples. Any previous cached waveform is retained.";
+    private property <string> draft-prefix: "Draft · ";
+    private property <string> draft-suffix: " pending changes";
+    private property <string> discard-caption: "Discard";
+    private property <string> reload-caption: "Reload";
+    private property <string> scope-caption: "SCOPE";
+    private property <[string]> scope-ids: ["instrument", "group", "sound", "layer"];
+    private property <[string]> scope-labels: ["All", "Group", "Sound", "Selection"];
+    private property <[length]> scope-widths: [Tokens.editor-layout-scope-all-width, Tokens.editor-layout-scope-group-width, Tokens.editor-layout-scope-sound-width, Tokens.editor-layout-scope-selection-width];
+    private property <string> status-separator: "   ·   ";
+    private property <string> held-notes-suffix: " held notes";
+    private property <string> about-caption: "About Slint";
+    in property <int> size-mode: EditorLayoutMetrics.default-mode;
     in property <string> selected-name: Session.selected-name;
     in property <string> selected-kind: Session.selected-kind;
     in property <string> selected-metadata: Session.selected-metadata;
     out property <length> workspace-width: workspace.width;
     out property <length> workspace-height: workspace.height;
-    private property <bool> compact: !root.perform && SamplerMetrics.compact(root.width);
-    private property <length> header-height: root.perform ? 45px : SamplerMetrics.header(root.width);
-    private property <bool> asset-alert: Session.asset-state == "missing" || Session.asset-state == "unsupported";
-    private property <bool> patch-alert: Session.error != "" && Session.analysis-state != "failed";
-    private property <length> banner-height: root.asset-alert ? 44px : Session.pending-count > 0 ? 34px : root.patch-alert ? 44px : 0px;
-    private property <length> main-y: root.header-height + root.banner-height + 4px;
+    private property <bool> compact: !root.perform && EditorLayoutMetrics.compact(root.width);
+    private property <length> header-height: root.perform ? Tokens.editor-layout-header : EditorLayoutMetrics.header(root.width);
+    private property <bool> asset-alert: Session.asset-state == DisplayStates.missing || Session.asset-state == DisplayStates.unsupported;
+    private property <bool> patch-alert: Session.error != "" && Session.analysis-state != root.failed-analysis-state;
+    private property <length> banner-height: root.asset-alert ? Tokens.editor-layout-alert-banner-height : Session.pending-count > 0 ? Tokens.editor-layout-draft-banner-height : root.patch-alert ? Tokens.editor-layout-alert-banner-height : 0px;
+    private property <length> main-y: root.header-height + root.banner-height + Tokens.editor-chrome-gap-small;
     in property <bool> show-diagnostics;
     in property <bool> show-event-log;
-    private property <length> body-height: max(0px, root.height - root.header-height - root.banner-height - drawer.height - 68px - (root.show-diagnostics ? 180px : 0px) - (root.show-event-log ? 184px : 0px));
+    private property <length> body-height: max(0px, root.height - root.header-height - root.banner-height - drawer.height - Tokens.editor-layout-body-inset - (root.show-diagnostics ? Tokens.editor-layout-diagnostics-reserve : 0px) - (root.show-event-log ? Tokens.editor-layout-event-log-reserve : 0px));
     callback header-command(string);
     callback context-action(string, string);
     callback browse-assets();
@@ -38,29 +60,29 @@ export component EditorFrame inherits Rectangle {
     function run(action: string, target: string, text: string, value: float) { Session.command(action, target, text, value); }
     WindowMaterial { x: 0px; y: 0px; }
     header := EditorHeader { x: 0px; y: 0px; height: root.header-height; compact: root.compact; perform: root.perform; patch-name: Session.patch-name; status: Session.status; can-undo: Session.can-undo; can-redo: Session.can-redo; voices: Session.voices; voice-limit: Session.voice-limit; level: Session.output-level; size-mode: root.size-mode;
-        command(action) => { if action == "undo" || action == "redo" { root.run(action, "", "", 0); } else { root.header-command(action); } }
+        command(action) => { if action == SamplerCommands.undo || action == SamplerCommands.redo { root.run(action, "", "", 0); } else { root.header-command(action); } }
     }
-    if !root.perform && root.banner-height > 0px : Rectangle { x: 4px; y: root.header-height + 4px; width: parent.width - 8px; height: root.banner-height - 4px; border-radius: 4px; border-width: 1px; border-color: Session.asset-state == "unsupported" ? SamplerTheme.warn : root.asset-alert || root.patch-alert ? SamplerTheme.error : SamplerTheme.accent; background: Session.asset-state == "unsupported" ? SamplerTheme.warn-wash : root.asset-alert || root.patch-alert ? SamplerTheme.error-wash : SamplerTheme.accent-wash;
+    if !root.perform && root.banner-height > 0px : Rectangle { x: Tokens.editor-chrome-gap-small; y: root.header-height + Tokens.editor-chrome-gap-small; width: parent.width - Tokens.editor-chrome-gap; height: root.banner-height - Tokens.editor-chrome-gap-small; border-radius: Tokens.editor-radius-group; border-width: Tokens.editor-border-width; border-color: Session.asset-state == DisplayStates.unsupported ? SamplerTheme.warn : root.asset-alert || root.patch-alert ? SamplerTheme.error : SamplerTheme.accent; background: Session.asset-state == DisplayStates.unsupported ? SamplerTheme.warn-wash : root.asset-alert || root.patch-alert ? SamplerTheme.error-wash : SamplerTheme.accent-wash;
         if root.asset-alert : Rectangle {
-            Text { x: 8px; y: 4px; width: parent.width - 16px; height: 15px; text: Session.asset-state == "missing" ? "Felt C4 f · sample unavailable" : "Sample could not be loaded"; color: SamplerTheme.paper-1; font-family: SamplerTheme.font-ui; font-size: 13px; font-weight: 600; }
-            Text { x: 8px; y: 20px; width: parent.width - 16px; height: 15px; text: Session.asset-state == "missing" ? "felt_C4_f.wav was not found. Locate or replace the sample. Other zones are unaffected." : "This native preview reads WAV samples. Any previous cached waveform is retained."; color: SamplerTheme.paper-2; font-family: SamplerTheme.font-ui; font-size: 12px; overflow: elide; }
+            Text { x: Tokens.editor-chrome-gap; y: Tokens.editor-chrome-gap-small; width: parent.width - Tokens.editor-chrome-gap-large; height: Tokens.editor-layout-banner-line-height; text: Session.asset-state == DisplayStates.missing ? root.missing-sample-heading : root.failed-sample-heading; color: SamplerTheme.paper-1; font-family: SamplerTheme.font-ui; font-size: SamplerTheme.type-control; font-weight: Tokens.editor-weight-semibold; }
+            Text { x: Tokens.editor-chrome-gap; y: Tokens.editor-layout-banner-detail-top; width: parent.width - Tokens.editor-chrome-gap-large; height: Tokens.editor-layout-banner-line-height; text: Session.asset-state == DisplayStates.missing ? root.missing-sample-detail : root.failed-sample-detail; color: SamplerTheme.paper-2; font-family: SamplerTheme.font-ui; font-size: SamplerTheme.type-body; overflow: elide; }
         }
         if !root.asset-alert : Rectangle {
-            Text { x: 8px; y: 0px; width: parent.width - 180px; height: parent.height; text: root.patch-alert ? Session.error : "Draft · " + Session.pending-count + " pending changes"; color: SamplerTheme.paper-1; font-family: SamplerTheme.font-ui; font-size: 13px; vertical-alignment: center; overflow: elide; }
-            ActionButton { x: parent.width - 164px; y: 3px; text: "Discard"; ghost: true; clicked => { root.run("patch.discard", "", "", 0); } }
-            ActionButton { x: parent.width - 89px; y: 3px; text: "Reload"; primary: true; enabled: Session.reload-state != "preparing"; clicked => { root.run("patch.reload", "", "", 0); } }
+            Text { x: Tokens.editor-chrome-gap; y: 0px; width: parent.width - Tokens.editor-layout-banner-action-reserve; height: parent.height; text: root.patch-alert ? Session.error : root.draft-prefix + Session.pending-count + root.draft-suffix; color: SamplerTheme.paper-1; font-family: SamplerTheme.font-ui; font-size: SamplerTheme.type-control; vertical-alignment: center; overflow: elide; }
+            ActionButton { x: parent.width - Tokens.editor-layout-discard-right; y: Tokens.editor-chrome-inset-cap; text: root.discard-caption; ghost: true; clicked => { root.run(SamplerCommands.patch-discard, "", "", 0); } }
+            ActionButton { x: parent.width - Tokens.editor-layout-reload-right; y: Tokens.editor-chrome-inset-cap; text: root.reload-caption; primary: true; enabled: Session.reload-state != root.preparing-reload-state; clicked => { root.run(SamplerCommands.patch-reload, "", "", 0); } }
         }
     }
     Rectangle { visible: !root.perform; y: root.main-y; height: root.body-height;
-        PageRail { x: 4px; width: SamplerMetrics.rail(root.width); height: parent.height; page: Session.page; compact: root.compact; selected(page) => { root.run("page.select", "", page, 0); } }
-        InstrumentTree { x: 8px + SamplerMetrics.rail(root.width); width: SamplerMetrics.tree(root.width); height: parent.height; compact: root.compact; nodes: Session.tree; sources: Session.sources;
+        PageRail { x: Tokens.editor-chrome-gap-small; width: EditorLayoutMetrics.rail(root.width); height: parent.height; page: Session.page; compact: root.compact; selected(page) => { root.run(SamplerCommands.page-select, "", page, 0); } }
+        InstrumentTree { x: Tokens.editor-chrome-gap + EditorLayoutMetrics.rail(root.width); width: EditorLayoutMetrics.tree(root.width); height: parent.height; compact: root.compact; nodes: Session.tree; sources: Session.sources;
             file-request(a,id) => { root.file-browse(a); }
             command(a,t,s,v) => { root.run(a,t,s,v); } browse => { root.browse-assets(); }
         }
-        workspace := Rectangle { x: 12px + SamplerMetrics.rail(root.width) + SamplerMetrics.tree(root.width); width: SamplerMetrics.workspace(root.width); height: parent.height;
+        workspace := Rectangle { x: Tokens.editor-chrome-content-inset + EditorLayoutMetrics.rail(root.width) + EditorLayoutMetrics.tree(root.width); width: EditorLayoutMetrics.workspace(root.width); height: parent.height;
             @children
         }
-        Inspector { x: parent.width - SamplerMetrics.inspector(root.width) - 4px; width: SamplerMetrics.inspector(root.width); height: parent.height;
+        Inspector { x: parent.width - EditorLayoutMetrics.inspector(root.width) - Tokens.editor-chrome-gap-small; width: EditorLayoutMetrics.inspector(root.width); height: parent.height;
             metadata: root.selected-metadata; selected-id: Session.selected-id; scope: Session.scope; history: Session.history;
             command(a,t,s,v) => { root.run(a,t,s,v); }
             parameter-gesture(id,phase,v) => { Session.parameter-gesture(id,phase,v); }
@@ -68,34 +90,34 @@ export component EditorFrame inherits Rectangle {
             browse(a) => { root.file-browse(a); }
         }
     }
-    drawer := PlayDrawer { visible: !root.perform; x: 4px; y: root.main-y + root.body-height + 4px; width: parent.width - 8px; size-mode: root.size-mode; window-height: root.height; pads: Session.pads; macros: Session.macros; sounding-notes: Session.sounding-notes; generation: Session.current-patch-id; mapped-low: Session.mapped-low; mapped-high: Session.mapped-high;
+    drawer := PlayDrawer { visible: !root.perform; x: Tokens.editor-chrome-gap-small; y: root.main-y + root.body-height + Tokens.editor-chrome-gap-small; width: parent.width - Tokens.editor-chrome-gap; size-mode: root.size-mode; window-height: root.height; pads: Session.pads; macros: Session.macros; sounding-notes: Session.sounding-notes; generation: Session.current-patch-id; mapped-low: Session.mapped-low; mapped-high: Session.mapped-high;
         note-on(n,v,s) => { Session.note-on(n,v,s); } note-off(n,s) => { Session.note-off(n,s); }
-        selected(n) => { root.run("zone.select", "", "", n); }
+        selected(n) => { root.run(SamplerCommands.zone-select, "", "", n); }
         macro-gesture(id,phase,v) => { Session.parameter-gesture(id,phase,v); }
         context-action(a,id) => { root.context-action(a,id); }
     }
-    if !root.perform && root.show-diagnostics : DiagnosticsPage { x: 0px; y: drawer.y + drawer.height + 7px; width: parent.width; height: 177px; drawer: true; }
-    if !root.perform && root.show-event-log : EventLog { x: 4px; y: drawer.y + drawer.height + (root.show-diagnostics ? 184px : 4px); width: parent.width - 8px; height: 180px; closed => { root.header-command("eventlog"); } }
+    if !root.perform && root.show-diagnostics : DiagnosticsPage { x: 0px; y: drawer.y + drawer.height + Tokens.editor-layout-diagnostics-top-gap; width: parent.width; height: Tokens.editor-layout-diagnostics-height; drawer: true; }
+    if !root.perform && root.show-event-log : EventLog { x: Tokens.editor-chrome-gap-small; y: drawer.y + drawer.height + (root.show-diagnostics ? Tokens.editor-layout-event-log-reserve : Tokens.editor-chrome-gap-small); width: parent.width - Tokens.editor-chrome-gap; height: Tokens.editor-layout-event-log-height; closed => { root.header-command(SamplerUi.event-log); } }
     if root.perform : PerformView { y: root.header-height; height: parent.height - root.header-height; pads: Session.pads; macros: Session.macros; presets: Session.presets; sounding-notes: Session.sounding-notes; current-patch-id: Session.current-patch-id; generation: Session.current-patch-id; mapped-low: Session.mapped-low; mapped-high: Session.mapped-high;
         note-on(n,v,s) => { Session.note-on(n,v,s); } note-off(n,s) => { Session.note-off(n,s); }
-        selected(n) => { root.run("zone.select", "", "", n); }
+        selected(n) => { root.run(SamplerCommands.zone-select, "", "", n); }
         macro-gesture(id,phase,v) => { Session.parameter-gesture(id,phase,v); }
         context-action(a,id) => { root.context-action(a,id); }
-        load(id) => { root.run("patch.load", id, "", 0); }
-        favourite(id) => { root.run("patch.favourite", id, "", 0); }
+        load(id) => { root.run(SamplerCommands.patch-load, id, "", 0); }
+        favourite(id) => { root.run(SamplerCommands.patch-favourite, id, "", 0); }
         patch-action(a) => { root.patch-action(a); }
     }
-    if !root.perform : Rectangle { y: parent.height - 56px; height: 29px; background: SamplerTheme.ink-1;
-        Text { x: 12px; text: "SCOPE"; width: 36px; height: parent.height; color: SamplerTheme.secondary; font-family: SamplerTheme.font-ui; font-size: 11px; font-weight: 700; vertical-alignment: center; }
-        Rectangle { x: 52px; y: 0px; width: 216px; height: 28px; background: SamplerTheme.surface-well; border-radius: 4px; border-width: 1px; border-color: SamplerTheme.border-hairline;
-            HorizontalLayout { x: 3px; y: 3px; width: parent.width - 6px; height: parent.height - 6px; spacing: 2px;
-                for scope[i] in ["instrument", "group", "sound", "layer"] : ActionButton { text: ["All", "Group", "Sound", "Selection"][i]; compact: true; ghost: true; neutral-selection: true; caps: true; width: [35px, 49px, 49px, 71px][i]; height: 22px; selected: Session.scope == scope; clicked => { root.run("scope.select", "", scope, 0); } }
+    if !root.perform : Rectangle { y: parent.height - (Tokens.editor-layout-scope-height + Tokens.editor-layout-footer-height); height: Tokens.editor-layout-scope-height; background: SamplerTheme.ink-1;
+        Text { x: Tokens.editor-chrome-content-inset; text: root.scope-caption; width: Tokens.editor-layout-scope-caption-width; height: parent.height; color: SamplerTheme.secondary; font-family: SamplerTheme.font-ui; font-size: SamplerTheme.type-caption; font-weight: Tokens.editor-weight-bold; vertical-alignment: center; }
+        Rectangle { x: Tokens.editor-layout-scope-selector-left; y: 0px; width: Tokens.editor-layout-scope-selector-width; height: Tokens.editor-layout-scope-selector-height; background: SamplerTheme.surface-well; border-radius: Tokens.editor-radius-group; border-width: Tokens.editor-border-width; border-color: SamplerTheme.border-hairline;
+            HorizontalLayout { x: Tokens.editor-chrome-inset-cap; y: Tokens.editor-chrome-inset-cap; width: parent.width - Tokens.editor-chrome-inset-small; height: parent.height - Tokens.editor-chrome-inset-small; spacing: Tokens.editor-chrome-gap-tight;
+                for scope[i] in root.scope-ids : ActionButton { text: root.scope-labels[i]; compact: true; ghost: true; neutral-selection: true; caps: true; width: root.scope-widths[i]; height: Tokens.editor-layout-scope-option-height; selected: Session.scope == scope; clicked => { root.run(SamplerCommands.scope-select, "", scope, 0); } }
             }
         }
     }
-    Rectangle { visible: !root.perform; y: parent.height - 27px; height: 27px; background: SamplerTheme.ink-0;
-        Rectangle { height: 1px; background: SamplerTheme.line-1; }
-        Text { x: 12px; width: parent.width - 110px; text: Session.status + "   ·   " + Session.page + "   ·   " + Session.sounding-notes.length + " held notes"; font-family: SamplerTheme.font-ui; font-size: 11px; color: SamplerTheme.paper-3; vertical-alignment: center; overflow: elide; }
-        ActionButton { x: parent.width - 92px; y: 2px; width: 84px; height: 23px; text: "About Slint"; ghost: true; compact: true; clicked => { root.about-slint(); } }
+    Rectangle { visible: !root.perform; y: parent.height - Tokens.editor-layout-footer-height; height: Tokens.editor-layout-footer-height; background: SamplerTheme.ink-0;
+        Rectangle { height: Tokens.editor-border-width; background: SamplerTheme.line-1; }
+        Text { x: Tokens.editor-chrome-content-inset; width: parent.width - Tokens.editor-layout-footer-text-reserve; text: Session.status + root.status-separator + Session.page + root.status-separator + Session.sounding-notes.length + root.held-notes-suffix; font-family: SamplerTheme.font-ui; font-size: SamplerTheme.type-caption; color: SamplerTheme.paper-3; vertical-alignment: center; overflow: elide; }
+        ActionButton { x: parent.width - Tokens.editor-layout-about-right; y: Tokens.editor-chrome-gap-tight; width: Tokens.editor-layout-about-width; height: Tokens.editor-layout-about-height; text: root.about-caption; ghost: true; compact: true; clicked => { root.about-slint(); } }
     }
 }

@@ -1,0 +1,31 @@
+import { EditorStrings } from "EditorStrings.slint";
+import { Tokens } from "../theme.slint";
+import { ScrollView } from "std-widgets.slint";
+import { EditorTheme } from "Theme.slint";
+import { EditorIcon } from "Icon.slint";
+import { ActionArea } from "../controls/ActionArea.slint";
+export struct NavigationItem { id: string, label: string, caption: string, icon: string, group: string }
+export component NavigationRail inherits Rectangle {
+    in property <[NavigationItem]> items;
+    in property <string> selected-id;
+    in property <bool> compact;
+    in property <bool> enabled: true;
+    in property <length> small-font-size: EditorTheme.type-small;
+    callback selected(string);
+    border-width: Tokens.editor-border-width; border-color: EditorTheme.line-1; border-radius: Tokens.editor-radius-panel; background: EditorTheme.ink-1;
+    ScrollView { x: Tokens.editor-border-width; y: Tokens.editor-border-width; width: parent.width - 2 * Tokens.editor-border-width; height: parent.height - 2 * Tokens.editor-border-width;
+        VerticalLayout { padding-left: Tokens.editor-navigation-content-inset; padding-right: Tokens.editor-navigation-content-inset; padding-top: Tokens.editor-navigation-content-vertical-inset; padding-bottom: Tokens.editor-navigation-content-vertical-inset; spacing: Tokens.editor-navigation-item-gap; alignment: start;
+            for item in root.items : VerticalLayout { spacing: Tokens.editor-navigation-item-gap;
+                if item.group != "" && item.group != EditorStrings.space && !root.compact : Text { height: Tokens.editor-navigation-group-height; text: item.group; font-family: EditorTheme.font-ui; font-size: root.small-font-size; font-weight: Tokens.editor-weight-bold; letter-spacing: Tokens.editor-navigation-heading-tracking; color: EditorTheme.secondary; horizontal-alignment: center; vertical-alignment: center; }
+                action := ActionArea { height: root.compact ? Tokens.editor-navigation-compact-item-height : Tokens.editor-navigation-item-height; label: item.label; enabled: root.enabled; focus-on-tab-navigation: root.enabled; activate-on-press: true;
+                    activated => { root.selected(item.id); }
+                    Rectangle { border-radius: Tokens.editor-radius-group; background: root.selected-id == item.id || action.hovered ? EditorTheme.ink-3 : transparent;
+                        if root.selected-id == item.id : Rectangle { border-width: Tokens.editor-border-width; border-color: EditorTheme.line-2; border-radius: Tokens.editor-radius-group; }
+                        EditorIcon { x: (parent.width - self.width) / 2; y: root.compact ? Tokens.editor-navigation-compact-icon-top : Tokens.editor-navigation-icon-top; size: Tokens.editor-navigation-icon-size; name: item.icon; tint: root.selected-id == item.id ? EditorTheme.accent : EditorTheme.paper-3; }
+                        if !root.compact : Text { x: 0px; y: Tokens.editor-navigation-caption-top; width: parent.width; height: Tokens.editor-navigation-caption-height; text: item.caption; horizontal-alignment: center; color: root.selected-id == item.id ? EditorTheme.accent : EditorTheme.paper-3; font-family: EditorTheme.font-ui; font-size: root.small-font-size; font-weight: Tokens.editor-weight-semibold; }
+                    }
+                }
+            }
+        }
+    }
+}

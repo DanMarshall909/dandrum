@@ -1,0 +1,64 @@
+import { Tokens } from "../theme.slint";
+import { MusicalConstants } from "DisplayConstants.slint";
+import { PadInfo } from "PadTypes.slint";
+import { EditorTheme } from "Theme.slint";
+import { EditorDragTarget, DragKinds } from "Drag.slint";
+import { FitLayout, PadFit } from "FitLayout.slint";
+import { EditorPad } from "Pad.slint";
+import { EditorButton } from "Button.slint";
+export component EditorPlayPads inherits Rectangle {
+    in property <[PadInfo]> pads;
+    in-out property <int> pad-size;
+    in-out property <int> pad-start: -1;
+    in property <length> small-font-size: EditorTheme.type-small;
+    in property <string> drop-kind: DragKinds.source;
+    in property <string> additional-drop-kind;
+    callback assigned(int,string) -> bool;
+    callback window-deactivated();
+    in property <int> mapped-low: MusicalConstants.mapped-low;
+    in property <int> mapped-high: MusicalConstants.mapped-high;
+    in property <int> minimum-size: MusicalConstants.pad-minimum-size;
+    in property <int> maximum-size: MusicalConstants.pad-maximum-size;
+    in property <int> minimum-rows: MusicalConstants.pad-minimum-rows;
+    in property <bool> force-compact;
+    in property <string> source: Tokens.editor-display-pads-source;
+    in property <string> generation;
+    private property <PadFit> fitted: FitLayout.pads(root.width / 1px, (root.height - Tokens.editor-display-collection-controls-space) / 1px, root.mapped-high - root.mapped-low + 1, root.minimum-size, root.maximum-size);
+    out property <int> actual-size: root.pad-size > 0 ? root.pad-size : root.fitted.size;
+    out property <int> columns: root.pad-size == 0 || root.pad-size == root.fitted.size ? root.fitted.columns : max(1, floor((root.width / 1px - Tokens.editor-display-fit-outer-inset / 1px) / (root.actual-size + Tokens.editor-display-fit-cell-gap / 1px)));
+    private property <int> start: root.pad-start >= 0 ? root.pad-start : root.mapped-low;
+    private property <int> rows: max(root.start == root.mapped-low ? ceil((root.mapped-high - root.mapped-low + 1) / root.columns) : root.minimum-rows, ceil(MusicalConstants.pad-visible-count / root.columns));
+    private property <length> content-height: root.rows * (root.actual-size + Tokens.editor-display-fit-cell-gap / 1px) * 1px - Tokens.space-2;
+    private property <length> scroll;
+    callback note-on(int, int, string); callback note-off(int, string); callback selected(int);
+    pure function empty-pad(note: int) -> PadInfo { return {note: note, name: "", mapped: false, choke-group: -1, active-alternate: -1}; }
+    pure function pad(note: int) -> PadInfo { return note >= 0 && note < root.pads.length ? root.pads[note] : root.empty-pad(note); }
+    public function fit() { root.pad-size = 0; root.pad-start = -1; root.scroll = max(0px, root.content-height - viewport.height); }
+    public function zoom(direction: int) { root.pad-size = (root.actual-size + direction * MusicalConstants.pad-zoom-step).clamp(MusicalConstants.pad-zoom-minimum,MusicalConstants.pad-zoom-maximum); if root.pad-start < 0 { root.pad-start = root.start; } root.scroll = max(0px, root.content-height - viewport.height); }
+    init => { root.scroll = max(0px, root.content-height - viewport.height); }
+    changed content-height => { root.scroll = max(0px, root.content-height - viewport.height); }
+    viewport := Flickable {
+        y: 0px;
+        interactive: false;
+        height: max(1px, parent.height - Tokens.editor-display-collection-controls-space); content-width: self.width; content-height: max(self.height, root.content-height); content-y: -root.scroll;
+        changed content-y => { root.scroll = -self.content-y; }
+        for i in root.rows * root.columns : EditorPad {
+            private property <int> midi: root.start + (root.rows - 1 - floor(i / root.columns)) * root.columns + mod(i, root.columns);
+            private property <PadInfo> info: root.pad(self.midi);
+            x: (viewport.width - root.columns * (root.actual-size + Tokens.editor-display-fit-cell-gap / 1px) * 1px + Tokens.space-2) / 2 + mod(i, root.columns) * (root.actual-size + Tokens.editor-display-fit-cell-gap / 1px) * 1px;
+            y: floor(i / root.columns) * (root.actual-size + Tokens.editor-display-fit-cell-gap / 1px) * 1px;
+            size: root.actual-size * 1px; visible: self.midi <= MusicalConstants.midi-maximum; compact: root.force-compact || root.actual-size < MusicalConstants.pad-compact-threshold;
+            note: self.midi; name: self.info.name; mapped: self.info.mapped; selected: self.info.selected; level: self.info.level; velocity: self.info.velocity;
+            layers: self.info.layers; alternates: self.info.alternates; active-alternate: self.info.active-alternate; choke-group: self.info.choke-group; choked: self.info.choked;
+            source: root.source + Tokens.editor-display-source-id-separator + self.midi; generation: root.generation; small-font-size: root.small-font-size;
+            window-deactivated => { root.window-deactivated(); }
+            EditorDragTarget { accepted-kind: root.drop-kind; additional-kind: root.additional-drop-kind;
+                dropped(payload) => { return root.assigned(parent.midi,payload); }
+            }
+            note-on(n, v, s) => { root.note-on(n, v, s); } note-off(n, s) => { root.note-off(n, s); } selected-note(n) => { root.selected(n); }
+        }
+    }
+    EditorButton { x: parent.width - Tokens.editor-display-pad-controls-reserved-width; y: parent.height - Tokens.editor-display-collection-controls-height; width: Tokens.editor-display-collection-control-width; height: Tokens.editor-display-collection-controls-height; text: Tokens.editor-display-zoom-out-glyph; label: Tokens.editor-display-pad-zoom-out-label; ghost: true; compact: true; clicked => { root.zoom(-1); } window-deactivated => { root.window-deactivated(); } }
+    EditorButton { x: parent.width - Tokens.editor-display-collection-right-controls-inset; y: parent.height - Tokens.editor-display-collection-controls-height; width: Tokens.editor-display-collection-fit-width; height: Tokens.editor-display-collection-controls-height; text: root.pad-size == 0 || root.pad-size == root.fitted.size ? Tokens.editor-display-fit-label : root.actual-size + Tokens.editor-display-pixels-unit-suffix; label: Tokens.editor-display-pad-fit-label; ghost: true; compact: true; clicked => { root.fit(); } window-deactivated => { root.window-deactivated(); } }
+    EditorButton { x: parent.width - Tokens.editor-display-pad-zoom-in-inset; y: parent.height - Tokens.editor-display-collection-controls-height; width: Tokens.editor-display-collection-control-width; height: Tokens.editor-display-collection-controls-height; text: Tokens.editor-display-zoom-in-glyph; label: Tokens.editor-display-pad-zoom-in-label; ghost: true; compact: true; clicked => { root.zoom(1); } window-deactivated => { root.window-deactivated(); } }
+}

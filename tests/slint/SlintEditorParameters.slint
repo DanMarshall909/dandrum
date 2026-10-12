@@ -1,0 +1,93 @@
+import { ParameterKnob } from "../../ui/slint/editor/ParameterKnob.slint";
+import { ParameterField } from "../../ui/slint/editor/ParameterField.slint";
+import { RangeGesture } from "../../ui/slint/controls/RangeGesture.slint";
+import { RangeControl } from "../../ui/slint/controls/RangeControl.slint";
+import { Knob } from "../../ui/slint/controls/Knob.slint";
+export { ValueCodec, ParsedValue } from "../../ui/slint/controls/ValueCodec.slint";
+
+export component SlintEditorParameters inherits Window {
+    width: 900px; height: 550px;
+    in-out property <bool> controls-enabled: true;
+    in-out property <bool> controls-read-only;
+    in-out property <bool> assignment-enabled: true;
+    in-out property <bool> probe-enabled: true;
+    in-out property <bool> probe-read-only;
+    in-out property <bool> probe-automated;
+    out property <bool> probe-host-active: probe.host-active;
+    out property <bool> probe-nudged: probe.nudged;
+    out property <float> probe-value: probe.value;
+    callback probe-write(float);
+    callback probe-set(float);
+    callback probe-reset();
+    callback probe-nudge();
+    callback probe-wheel();
+    probe-write(value) => { probe.host-write(value); }
+    probe-set(value) => { probe.set-value(value); }
+    probe-reset => { probe.reset-value(); }
+    probe-nudge => { probe.nudge(1, false); }
+    probe-wheel => { probe.wheel(1, false); }
+    probe := RangeControl {
+        x: 20px; y: 490px; width: 80px; height: 30px; label: "Timing probe";
+        minimum: 0; maximum: 100; step: 1; value: 20; default-value: 35;
+        enabled: root.probe-enabled; read-only: root.probe-read-only; host-automated: root.probe-automated;
+    }
+    out property <[float]> values: [knob.value, field.value, always.value];
+    out property <[bool]> editing: [knob.editing, field.editing];
+    out property <[bool]> focused: [knob.has-focus, field.has-focus];
+    out property <[bool]> invalid: [knob.edit-invalid, field.edit-invalid];
+    out property <int> changes;
+    out property <int> begins;
+    out property <int> ends;
+    out property <int> cancels;
+    out property <int> lost;
+    out property <string> action;
+    out property <string> target;
+    callback edit(int);
+    edit(index) => { if index == 0 { knob.begin-edit(); } else { field.begin-edit(); } }
+    callback write(int, float);
+    write(index, value) => { if index == 0 { knob.host-write(value); } else { field.host-write(value); } }
+    knob := ParameterKnob {
+        x: 80px; y: 80px; label: "Amount"; minimum: 0; maximum: 100; step: 1; value: 20; default-value: 35;
+        enabled: root.controls-enabled; read-only: root.controls-read-only; assignment-enabled: root.assignment-enabled;
+        assignments: [{slot: 1, source: "Envelope", depth: 0.25, active: true}, {slot: 0, source: "Unassigned", depth: -0.15}];
+        changed(v) => { root.changes += 1; } gesture-began => { root.begins += 1; } gesture-ended => { root.ends += 1; } gesture-cancelled => { root.cancels += 1; }
+        interaction-lost => { root.lost += 1; }
+        context-action(action) => { root.action = action; root.target = "knob"; }
+    }
+    field := ParameterField {
+        x: 300px; y: 80px; label: "Level"; unit: "dB"; minimum: -60; maximum: 12; step: 1; value: -12; default-value: -6;
+        enabled: root.controls-enabled; read-only: root.controls-read-only; assignment-enabled: root.assignment-enabled;
+        changed(v) => { root.changes += 1; } gesture-began => { root.begins += 1; } gesture-ended => { root.ends += 1; } gesture-cancelled => { root.cancels += 1; }
+        interaction-lost => { root.lost += 1; }
+        context-action(action) => { root.action = action; root.target = "field"; }
+    }
+    always := ParameterKnob { x: 480px; y: 80px; label: "Macro"; show-label: false; value-display-always: true; context-mode: "macro"; size: 60px; bipolar: true; unit: "pan";
+        context-action(action) => { root.action = action; root.target = "macro"; }
+    }
+    ParameterField { x: 610px; y: 80px; label: "Ghost"; show-label: false; ghost: true; host-automated: true; }
+    TextInput { x: 650px; y: 170px; width: 180px; height: 28px; accessible-label: "Destination"; }
+    out property <[int]> clicks: [default-edits, default-resets, sampler-edits, sampler-resets];
+    out property <int> default-edits; out property <int> default-resets;
+    out property <int> sampler-edits; out property <int> sampler-resets;
+    out property <float> default-value: 20; out property <float> sampler-value: 20;
+    out property <int> default-ended; out property <int> default-cancelled;
+    out property <int> sampler-ended; out property <int> sampler-cancelled;
+    in-out property <bool> gestures-enabled: true;
+    out property <bool> guide-popup: guide.popup-visible;
+    callback guide-popup-action(bool);
+    guide-popup-action(show) => { if show { guide.show-popup(); } else { guide.hide-popup(); } }
+    guide := Knob { x: 650px; y: 340px; label: "Guide"; show-peak-trough: false; }
+    Rectangle { x: 80px; y: 320px; width: 160px; height: 140px; accessible-role: groupbox; accessible-label: "Default gesture";
+        RangeGesture { enabled: root.gestures-enabled; value: root.default-value; minimum: 0; maximum: 100;
+            updated(v) => { root.default-value = v; } edit-requested => { root.default-edits += 1; } reset-requested => { root.default-resets += 1; }
+            ended => { root.default-ended += 1; } cancelled => { root.default-cancelled += 1; }
+        }
+    }
+    Rectangle { x: 320px; y: 320px; width: 160px; height: 140px; accessible-role: groupbox; accessible-label: "Editor gesture";
+        RangeGesture { enabled: root.gestures-enabled; value: root.sampler-value; minimum: 0; maximum: 100;
+            fine-scale: 0.1; edit-on-single-click: false; reset-on-double-click: false; reset-on-middle-or-alt: true; cancel-on-interruption: true;
+            updated(v) => { root.sampler-value = v; } edit-requested => { root.sampler-edits += 1; } reset-requested => { root.sampler-resets += 1; }
+            ended => { root.sampler-ended += 1; } cancelled => { root.sampler-cancelled += 1; }
+        }
+    }
+}

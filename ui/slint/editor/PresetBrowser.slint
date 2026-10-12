@@ -1,0 +1,68 @@
+import { BrowserActions } from "BrowserActions.slint";
+import { Tokens } from "../theme.slint";
+import { EditorTheme } from "Theme.slint";
+import { PresetInfo } from "PresetTypes.slint";
+import { PresetBrowserState } from "PresetBrowserState.slint";
+import { PresetFilter } from "PresetFilter.slint";
+import { PresetRow } from "PresetRow.slint";
+import { EditorButton } from "Button.slint";
+import { EditorIcon } from "Icon.slint";
+export component PresetBrowser inherits FocusScope {
+    forward-focus: query;
+    focus-on-tab-navigation: false;
+    in property <[PresetInfo]> presets;
+    in property <string> current-patch-id;
+    in property <bool> compact;
+    in property <bool> minimum;
+    out property <string> chosen-id: PresetBrowserState.selected-id != "" ? PresetBrowserState.selected-id : PresetFilter.first(root.presets, PresetBrowserState.query, root.compact ? BrowserActions.category-all : PresetBrowserState.category);
+    out property <int> matched-count: PresetFilter.count(root.presets, PresetBrowserState.query, root.compact ? BrowserActions.category-all : PresetBrowserState.category);
+    private property <length> sidebar: root.compact ? 0px : root.minimum ? Tokens.editor-browser-minimum-sidebar-width : Tokens.editor-browser-sidebar-width;
+    private property <length> header-height: root.compact ? Tokens.editor-browser-compact-header-height : Tokens.editor-browser-header-height;
+    private property <length> footer-height: root.compact ? 0px : Tokens.editor-browser-footer-height;
+    callback window-deactivated();
+    callback load(string); callback favourite(string); callback action(string); callback closed();
+    accessible-role: groupbox; accessible-label: BrowserActions.accessible-name;
+    public function load-selected() { if root.chosen-id != "" { root.load(root.chosen-id); } }
+    key-pressed(event) => { if event.text == Key.Escape { root.closed(); return accept; } if event.text == Key.Return { root.load-selected(); return accept; } return reject; }
+    Rectangle { border-radius: Tokens.editor-radius-group; border-width: Tokens.editor-border-width; border-color: root.compact ? EditorTheme.line-1 : EditorTheme.line-3; background: EditorTheme.ink-2; drop-shadow-blur: root.compact ? 0px : Tokens.editor-browser-shadow-blur; drop-shadow-offset-y: root.compact ? 0px : Tokens.editor-browser-footer-inset; drop-shadow-color: Tokens.editor-browser-shadow; }
+    Rectangle { y: 0px; height: root.header-height; background: root.compact ? transparent : EditorTheme.ink-3;
+        if !root.compact : Text { x: Tokens.editor-browser-title-inset; width: Tokens.editor-browser-title-width; text: BrowserActions.heading; font-family: EditorTheme.font-ui; font-size: EditorTheme.type-body; font-weight: Tokens.editor-weight-bold; color: EditorTheme.secondary; vertical-alignment: center; }
+        Rectangle { x: root.compact ? Tokens.editor-browser-compact-search-inset : Tokens.editor-browser-search-left; y: root.compact ? Tokens.editor-browser-compact-search-inset : Tokens.editor-browser-header-button-top; width: parent.width - self.x - (root.compact ? Tokens.editor-browser-compact-search-inset : Tokens.editor-browser-search-right); height: root.compact ? Tokens.editor-browser-input-height : Tokens.editor-browser-column-header-height; background: EditorTheme.ink-0; border-width: Tokens.editor-border-width; border-color: EditorTheme.line-2; border-radius: Tokens.editor-radius-control;
+            EditorIcon { x: Tokens.editor-browser-footer-inset; y: Tokens.editor-browser-compact-search-inset; name: Tokens.editor-icon-search; size: Tokens.editor-browser-search-icon-size; }
+            query := TextInput { x: Tokens.editor-browser-search-text-left; width: parent.width - Tokens.editor-browser-search-text-reserve; height: parent.height; text <=> PresetBrowserState.query; font-family: EditorTheme.font-ui; font-size: EditorTheme.type-control; color: EditorTheme.paper-1; accessible-label: BrowserActions.search-label;
+                edited => { PresetBrowserState.selected-id = ""; }
+                accepted => { root.load-selected(); }
+                key-pressed(event) => { if event.text == Key.Escape { root.closed(); return accept; } return reject; }
+            }
+            if PresetBrowserState.query == "" : Text { x: Tokens.editor-browser-search-text-left; width: parent.width - Tokens.editor-browser-search-text-reserve; text: BrowserActions.search-label; font-family: EditorTheme.font-ui; font-size: EditorTheme.type-control; color: EditorTheme.paper-4; vertical-alignment: center; }
+        }
+        if !root.compact : Text { x: parent.width - Tokens.editor-browser-count-right; width: Tokens.editor-browser-count-width; text: root.matched-count + BrowserActions.count-suffix; font-family: EditorTheme.font-value; font-size: EditorTheme.type-caption; color: EditorTheme.paper-3; vertical-alignment: center; }
+        if !root.compact : EditorButton { window-deactivated => { root.window-deactivated(); } x: parent.width - Tokens.editor-browser-header-close-reserve; y: Tokens.editor-browser-header-button-top; width: Tokens.editor-button-compact-size; height: Tokens.editor-button-compact-size; icon: Tokens.editor-icon-close; label: BrowserActions.close-label; compact: true; ghost: true; clicked => { root.closed(); } }
+    }
+    if !root.compact : Rectangle { x: 0px; y: root.header-height; width: root.sidebar; height: parent.height - root.header-height - root.footer-height; border-width: Tokens.editor-border-width; border-color: EditorTheme.line-1;
+        for c[i] in [BrowserActions.category-all, BrowserActions.category-drums, BrowserActions.category-keys, BrowserActions.category-hybrid, BrowserActions.category-synth, BrowserActions.category-user, BrowserActions.category-favourites] : EditorButton { window-deactivated => { root.window-deactivated(); } x: Tokens.editor-browser-list-inset; y: Tokens.editor-browser-list-inset + i * Tokens.editor-browser-category-stride; width: parent.width - Tokens.editor-browser-footer-inset; height: Tokens.editor-browser-input-height; text: c + BrowserActions.category-count-separator + PresetFilter.count(root.presets, "", c); label: c + BrowserActions.count-suffix; selected: PresetBrowserState.category == c; ghost: true; clicked => { PresetBrowserState.category = c; PresetBrowserState.selected-id = ""; } }
+    }
+    if !root.compact : Rectangle { x: root.sidebar; y: root.header-height; width: parent.width - root.sidebar; height: Tokens.editor-browser-column-header-height;
+        Text { x: Tokens.editor-browser-row-name-left; text: BrowserActions.name-heading; font-family: EditorTheme.font-ui; font-size: EditorTheme.type-caption; font-weight: Tokens.editor-weight-semibold; color: EditorTheme.paper-3; vertical-alignment: center; }
+        Text { x: parent.width * Tokens.editor-browser-name-column-fraction; text: BrowserActions.type-heading; font-family: EditorTheme.font-ui; font-size: EditorTheme.type-caption; font-weight: Tokens.editor-weight-semibold; color: EditorTheme.paper-3; vertical-alignment: center; }
+        Text { x: parent.width * Tokens.editor-browser-name-column-fraction + Tokens.editor-browser-contents-column-offset; text: BrowserActions.contents-heading; font-family: EditorTheme.font-ui; font-size: EditorTheme.type-caption; font-weight: Tokens.editor-weight-semibold; color: EditorTheme.paper-3; vertical-alignment: center; }
+        Text { x: parent.width - Tokens.editor-browser-origin-width; text: BrowserActions.origin-heading; font-family: EditorTheme.font-ui; font-size: EditorTheme.type-caption; font-weight: Tokens.editor-weight-semibold; color: EditorTheme.paper-3; vertical-alignment: center; }
+        Rectangle { y: parent.height - Tokens.editor-border-width; height: Tokens.editor-border-width; background: EditorTheme.line-1; }
+    }
+    Flickable { x: root.sidebar + (root.compact ? Tokens.editor-browser-list-inset : 0px); y: root.header-height + (root.compact ? 0px : Tokens.editor-browser-column-header-height); width: parent.width - self.x - (root.compact ? Tokens.editor-browser-list-inset : 0px); height: max(Tokens.editor-border-width, parent.height - self.y - root.footer-height); content-width: self.width; content-height: max(self.height, root.matched-count * (root.compact ? Tokens.editor-browser-compact-row-height : Tokens.editor-browser-row-height));
+        VerticalLayout { width: parent.width; height: root.matched-count * (root.compact ? Tokens.editor-browser-compact-row-height : Tokens.editor-browser-row-height); spacing: 0px;
+            for p in root.presets : PresetRow { visible: PresetFilter.matches(p, PresetBrowserState.query, root.compact ? BrowserActions.category-all : PresetBrowserState.category); height: self.visible ? root.compact ? Tokens.editor-browser-compact-row-height : Tokens.editor-browser-row-height : 0px; patch: p; compact: root.compact; selected: !root.compact && root.chosen-id == p.id; current: root.current-patch-id == p.id;
+                picked(id) => { PresetBrowserState.selected-id = id; } loaded(id) => { root.load(id); } favourite(id) => { root.favourite(id); }
+            }
+        }
+        if root.matched-count == 0 : Text { x: Tokens.editor-browser-empty-inset; y: Tokens.editor-browser-empty-top; text: BrowserActions.empty-message; font-family: EditorTheme.font-ui; font-size: EditorTheme.type-body; color: EditorTheme.paper-3; }
+    }
+    if !root.compact : Rectangle { y: parent.height - Tokens.editor-browser-footer-height; height: Tokens.editor-browser-footer-height;
+        Rectangle { height: Tokens.editor-border-width; background: EditorTheme.line-1; }
+        EditorButton { window-deactivated => { root.window-deactivated(); } x: Tokens.editor-browser-footer-inset; y: Tokens.editor-browser-footer-inset; icon: Tokens.editor-icon-import; text: BrowserActions.import-text; label: BrowserActions.import-label; ghost: true; clicked => { root.action(BrowserActions.action-import); } }
+        EditorButton { window-deactivated => { root.window-deactivated(); } x: Tokens.editor-browser-export-left; y: Tokens.editor-browser-footer-inset; icon: Tokens.editor-icon-export; text: BrowserActions.export-text; label: BrowserActions.export-label; ghost: true; clicked => { root.action(BrowserActions.action-export); } }
+        EditorButton { window-deactivated => { root.window-deactivated(); } x: Tokens.editor-browser-copy-left; y: Tokens.editor-browser-footer-inset; text: BrowserActions.copy-text; ghost: true; clicked => { root.action(BrowserActions.action-copy); } }
+        EditorButton { window-deactivated => { root.window-deactivated(); } x: parent.width - Tokens.editor-browser-cancel-right; y: Tokens.editor-browser-footer-inset; width: Tokens.editor-browser-cancel-width; text: BrowserActions.cancel-text; ghost: true; clicked => { root.closed(); } }
+        EditorButton { window-deactivated => { root.window-deactivated(); } x: parent.width - Tokens.editor-browser-load-right; y: Tokens.editor-browser-footer-inset; width: Tokens.editor-browser-load-width; text: root.current-patch-id == root.chosen-id ? BrowserActions.loaded-text : BrowserActions.load-text; primary: true; enabled: root.chosen-id != "" && root.current-patch-id != root.chosen-id; clicked => { root.load-selected(); } }
+    }
+}

@@ -1,0 +1,47 @@
+import { Tokens } from "../theme.slint";
+import { EditorTheme } from "Theme.slint";
+import { EditorIcon } from "Icon.slint";
+import { ActionArea } from "../controls/ActionArea.slint";
+export component EditorButton inherits ActionArea {
+    in property <string> text;
+    in property <string> icon;
+    in property <string> resolved-icon: root.icon;
+    label: root.text;
+    activate-on-press: true;
+    in property <bool> selected;
+    in property <bool> primary;
+    in property <bool> ghost;
+    in property <bool> compact;
+    // SegmentedControl is neutral; ordinary selected actions retain accent styling.
+    in property <bool> neutral-selection: false;
+    in property <bool> caps: false;
+    callback clicked();
+    width: max(root.compact ? Tokens.editor-button-compact-size : Tokens.editor-button-minimum-width, label.preferred-width + (root.compact ? Tokens.editor-button-compact-label-padding : Tokens.editor-button-icon-label-advance) + (root.icon != "" && root.text != "" ? Tokens.editor-button-icon-label-advance : 0px)); height: root.compact ? Tokens.editor-button-compact-size : Tokens.editor-button-height;
+    accessible-checked: root.selected;
+    focus-on-tab-navigation: root.enabled; focus-on-click: root.enabled;
+    activated => { root.clicked(); }
+    // Explicit soft rings keep the guide's primary glow in software rendering,
+    // where the native drop-shadow property does not paint. The glow stroke
+    // also retains coverage when the application scales the controls down.
+    if root.primary && root.enabled && EditorTheme.soft : Rectangle {
+        for band in Tokens.editor-button-glow-bands : Rectangle {
+            x: -(band + 1)*Tokens.editor-button-glow-step; y: -(band + 1)*Tokens.editor-button-glow-step;
+            width: parent.width + (band + 1)*Tokens.editor-button-glow-diameter-step; height: parent.height + (band + 1)*Tokens.editor-button-glow-diameter-step;
+            border-radius: (band + Tokens.editor-button-glow-base-radius)*Tokens.editor-button-glow-step; border-width: Tokens.editor-button-glow-stroke;
+            border-color: EditorTheme.accent.with-alpha(Tokens.editor-button-glow-opacity*exp(-pow(band + 1,2)/Tokens.editor-button-glow-variance));
+        }
+    }
+    Rectangle {
+        y: !root.neutral-selection && root.down ? Tokens.editor-border-width : 0px; border-radius: root.neutral-selection ? Tokens.editor-radius-item : Tokens.editor-radius-control;
+        border-width: root.neutral-selection ? (root.has-focus ? Tokens.editor-border-width : 0px) : root.ghost && !root.selected && !root.has-focus ? 0px : Tokens.editor-border-width;
+        border-color: root.selected ? EditorTheme.accent : root.has-focus ? EditorTheme.paper-1 : EditorTheme.line-2;
+        background: root.neutral-selection ? (root.selected ? (root.enabled ? EditorTheme.ink-5 : EditorTheme.ink-4) : transparent) : root.primary ? EditorTheme.accent : root.selected ? EditorTheme.accent-wash : root.down ? EditorTheme.surface-control-pressed : root.hovered ? EditorTheme.surface-control-hover : root.ghost ? transparent : EditorTheme.surface-control;
+        drop-shadow-color: root.neutral-selection && root.selected && root.enabled && !root.has-focus ? Tokens.editor-button-selected-shadow : transparent;
+        drop-shadow-offset-y: root.primary ? 0px : Tokens.editor-button-shadow-offset; drop-shadow-blur: root.primary ? Tokens.editor-button-primary-shadow-blur : Tokens.editor-button-shadow-blur;
+        if root.neutral-selection && root.selected : Rectangle { x: 0px; y: 0px; width: parent.width; height: parent.height; border-radius: Tokens.editor-radius-item; background: EditorTheme.raised-overlay; }
+        if root.neutral-selection && root.selected && root.enabled && !root.has-focus : Rectangle { x: Tokens.editor-border-width; y: 0px; width: max(0px, parent.width - Tokens.editor-button-top-light-edge-pair); height: Tokens.editor-border-width; background: Tokens.editor-button-selected-top-light; }
+        if EditorTheme.soft && !root.ghost && !root.neutral-selection : Rectangle { border-radius: Tokens.editor-radius-control; background: root.primary ? EditorTheme.accent-overlay : @linear-gradient(Tokens.editor-button-overlay-angle * 1deg, Tokens.editor-button-overlay-top, transparent Tokens.editor-button-overlay-midpoint, Tokens.editor-button-overlay-bottom); }
+        label := Text { x: root.icon != "" && root.text != "" ? Tokens.editor-button-icon-label-advance : 0px; width: parent.width - self.x; text: root.caps ? root.text.to-uppercase() : root.text; color: !root.enabled ? EditorTheme.text-disabled : root.neutral-selection ? (root.selected ? EditorTheme.text-primary : EditorTheme.text-tertiary) : root.primary ? EditorTheme.text-on-accent : root.selected ? EditorTheme.accent : EditorTheme.text-secondary; font-family: EditorTheme.font-ui; font-size: root.caps ? EditorTheme.type-caption : EditorTheme.type-body; font-weight: Tokens.editor-weight-semibold; letter-spacing: root.caps ? Tokens.editor-button-caps-tracking : 0px; horizontal-alignment: center; vertical-alignment: center; }
+        if root.icon != "" : EditorIcon { x: root.text != "" ? Tokens.editor-button-icon-inset : (parent.width - self.width) / 2; y: (parent.height - self.height) / 2; name: root.resolved-icon; size: Tokens.editor-icon-size; tint: root.neutral-selection ? (root.selected ? EditorTheme.text-primary : EditorTheme.text-tertiary) : root.selected ? EditorTheme.accent : root.primary ? EditorTheme.text-on-accent : EditorTheme.paper-3; }
+    }
+}

@@ -348,5 +348,554 @@
   "constants": {
     "MOD_SLOTS": "ModPalette.tint(slot), ModPalette.letter(slot); slots 0..3 are A..D",
     "ICON_NAMES": "IconNames.all"
-  }
+  },
+  "editor": [
+    {
+      "name": "DelayedPopupState",
+      "kind": "component",
+      "source": "ui/slint/controls/DelayedPopupState.slint"
+    },
+    {
+      "name": "TransientState",
+      "kind": "component",
+      "source": "ui/slint/controls/TransientState.slint"
+    },
+    {
+      "name": "AppearanceChoices",
+      "kind": "global",
+      "source": "ui/slint/editor/AppearanceConstants.slint"
+    },
+    {
+      "name": "AppearanceFields",
+      "kind": "global",
+      "source": "ui/slint/editor/AppearanceConstants.slint"
+    },
+    {
+      "name": "AppearanceStrings",
+      "kind": "global",
+      "source": "ui/slint/editor/AppearanceConstants.slint"
+    },
+    {
+      "name": "EditorBindingRangeRow",
+      "kind": "component",
+      "source": "ui/slint/editor/BindingRangeRow.slint"
+    },
+    {
+      "name": "BrowserActions",
+      "kind": "global",
+      "source": "ui/slint/editor/BrowserActions.slint"
+    },
+    {
+      "name": "EditorButton",
+      "kind": "component",
+      "source": "ui/slint/editor/Button.slint"
+    },
+    {
+      "name": "ChoiceGrid",
+      "kind": "component",
+      "source": "ui/slint/editor/ChoiceGrid.slint"
+    },
+    {
+      "name": "ColorChoice",
+      "kind": "component",
+      "source": "ui/slint/editor/ColorChoice.slint"
+    },
+    {
+      "name": "CurveKinds",
+      "kind": "global",
+      "source": "ui/slint/editor/CurveConstants.slint"
+    },
+    {
+      "name": "ShapeNames",
+      "kind": "global",
+      "source": "ui/slint/editor/CurveConstants.slint"
+    },
+    {
+      "name": "CurveMetrics",
+      "kind": "global",
+      "source": "ui/slint/editor/CurveConstants.slint"
+    },
+    {
+      "name": "EditorCurvePlot",
+      "kind": "component",
+      "source": "ui/slint/editor/CurvePlot.slint"
+    },
+    {
+      "name": "EditorModal",
+      "kind": "component",
+      "source": "ui/slint/editor/Dialog.slint"
+    },
+    {
+      "name": "EditorDialogSurface",
+      "kind": "component",
+      "source": "ui/slint/editor/Dialog.slint"
+    },
+    {
+      "name": "EditorDialogMetrics",
+      "kind": "global",
+      "source": "ui/slint/editor/DialogConstants.slint"
+    },
+    {
+      "name": "EditorAppearanceMetrics",
+      "kind": "global",
+      "source": "ui/slint/editor/DialogConstants.slint"
+    },
+    {
+      "name": "EditorRenderMetrics",
+      "kind": "global",
+      "source": "ui/slint/editor/DialogConstants.slint"
+    },
+    {
+      "name": "EditorTypographyMetrics",
+      "kind": "global",
+      "source": "ui/slint/editor/DialogConstants.slint"
+    },
+    {
+      "name": "MusicalConstants",
+      "kind": "global",
+      "source": "ui/slint/editor/DisplayConstants.slint"
+    },
+    {
+      "name": "PitchNames",
+      "kind": "global",
+      "source": "ui/slint/editor/DisplayConstants.slint"
+    },
+    {
+      "name": "Ranges",
+      "kind": "global",
+      "source": "ui/slint/editor/DisplayConstants.slint"
+    },
+    {
+      "name": "GraphMetrics",
+      "kind": "global",
+      "source": "ui/slint/editor/DisplayConstants.slint"
+    },
+    {
+      "name": "DisplayStates",
+      "kind": "global",
+      "source": "ui/slint/editor/DisplayConstants.slint"
+    },
+    {
+      "name": "DisplayModes",
+      "kind": "global",
+      "source": "ui/slint/editor/DisplayConstants.slint"
+    },
+    {
+      "name": "WaveFields",
+      "kind": "global",
+      "source": "ui/slint/editor/DisplayConstants.slint"
+    },
+    {
+      "name": "EnvelopeStages",
+      "kind": "global",
+      "source": "ui/slint/editor/DisplayConstants.slint"
+    },
+    {
+      "name": "DragKinds",
+      "kind": "global",
+      "source": "ui/slint/editor/Drag.slint"
+    },
+    {
+      "name": "EditorDragMetrics",
+      "kind": "global",
+      "source": "ui/slint/editor/Drag.slint"
+    },
+    {
+      "name": "EditorDragState",
+      "kind": "global",
+      "source": "ui/slint/editor/Drag.slint"
+    },
+    {
+      "name": "EditorDragSource",
+      "kind": "component",
+      "source": "ui/slint/editor/Drag.slint"
+    },
+    {
+      "name": "EditorDragTarget",
+      "kind": "component",
+      "source": "ui/slint/editor/Drag.slint"
+    },
+    {
+      "name": "WaveCoordinates",
+      "kind": "global",
+      "source": "ui/slint/editor/EditableWaveform.slint"
+    },
+    {
+      "name": "EditableWaveform",
+      "kind": "component",
+      "source": "ui/slint/editor/EditableWaveform.slint"
+    },
+    {
+      "name": "EditorStrings",
+      "kind": "global",
+      "source": "ui/slint/editor/EditorStrings.slint"
+    },
+    {
+      "name": "EditorEmptyState",
+      "kind": "component",
+      "source": "ui/slint/editor/EmptyState.slint",
+      "declaration": "EmptyState"
+    },
+    {
+      "name": "EditorEnvelopePlot",
+      "kind": "component",
+      "source": "ui/slint/editor/EnvelopePlot.slint"
+    },
+    {
+      "name": "EditorFilterPlot",
+      "kind": "component",
+      "source": "ui/slint/editor/FilterPlot.slint"
+    },
+    {
+      "name": "PadFit",
+      "kind": "struct",
+      "source": "ui/slint/editor/FitLayout.slint"
+    },
+    {
+      "name": "FitLayout",
+      "kind": "global",
+      "source": "ui/slint/editor/FitLayout.slint"
+    },
+    {
+      "name": "EditorIcon",
+      "kind": "component",
+      "source": "ui/slint/editor/Icon.slint"
+    },
+    {
+      "name": "ItemRow",
+      "kind": "component",
+      "source": "ui/slint/editor/ItemRow.slint"
+    },
+    {
+      "name": "EditorKey",
+      "kind": "component",
+      "source": "ui/slint/editor/Key.slint"
+    },
+    {
+      "name": "EditorKeyMapOverview",
+      "kind": "component",
+      "source": "ui/slint/editor/KeyMapOverview.slint"
+    },
+    {
+      "name": "EditorLayoutMetrics",
+      "kind": "global",
+      "source": "ui/slint/editor/LayoutMetrics.slint"
+    },
+    {
+      "name": "LevelMeter",
+      "kind": "component",
+      "source": "ui/slint/editor/LevelMeter.slint"
+    },
+    {
+      "name": "EditorMapKeyboard",
+      "kind": "component",
+      "source": "ui/slint/editor/MapKeyboard.slint"
+    },
+    {
+      "name": "MaterialLayers",
+      "kind": "component",
+      "source": "ui/slint/editor/Material.slint"
+    },
+    {
+      "name": "WindowMaterial",
+      "kind": "component",
+      "source": "ui/slint/editor/Material.slint"
+    },
+    {
+      "name": "MaterialSurface",
+      "kind": "component",
+      "source": "ui/slint/editor/Material.slint"
+    },
+    {
+      "name": "EditorModulatorPlot",
+      "kind": "component",
+      "source": "ui/slint/editor/ModulatorPlot.slint"
+    },
+    {
+      "name": "NavigationItem",
+      "kind": "struct",
+      "source": "ui/slint/editor/NavigationRail.slint"
+    },
+    {
+      "name": "NavigationRail",
+      "kind": "component",
+      "source": "ui/slint/editor/NavigationRail.slint"
+    },
+    {
+      "name": "EditorOption",
+      "kind": "struct",
+      "source": "ui/slint/editor/OptionStrip.slint"
+    },
+    {
+      "name": "EditorOptionStrip",
+      "kind": "component",
+      "source": "ui/slint/editor/OptionStrip.slint"
+    },
+    {
+      "name": "EditorPad",
+      "kind": "component",
+      "source": "ui/slint/editor/Pad.slint"
+    },
+    {
+      "name": "EditorPadPanel",
+      "kind": "component",
+      "source": "ui/slint/editor/PadPanel.slint"
+    },
+    {
+      "name": "PadInfo",
+      "kind": "struct",
+      "source": "ui/slint/editor/PadTypes.slint"
+    },
+    {
+      "name": "EditorPadWave",
+      "kind": "component",
+      "source": "ui/slint/editor/PadWave.slint"
+    },
+    {
+      "name": "EditorPagePanel",
+      "kind": "component",
+      "source": "ui/slint/editor/PagePanel.slint"
+    },
+    {
+      "name": "ParameterActions",
+      "kind": "global",
+      "source": "ui/slint/editor/ParameterConstants.slint"
+    },
+    {
+      "name": "ParameterStrings",
+      "kind": "global",
+      "source": "ui/slint/editor/ParameterConstants.slint"
+    },
+    {
+      "name": "GesturePhases",
+      "kind": "global",
+      "source": "ui/slint/editor/ParameterConstants.slint"
+    },
+    {
+      "name": "RangeFields",
+      "kind": "global",
+      "source": "ui/slint/editor/ParameterConstants.slint"
+    },
+    {
+      "name": "ParameterField",
+      "kind": "component",
+      "source": "ui/slint/editor/ParameterField.slint"
+    },
+    {
+      "name": "ParameterGesture",
+      "kind": "component",
+      "source": "ui/slint/editor/ParameterGesture.slint"
+    },
+    {
+      "name": "ParameterKnob",
+      "kind": "component",
+      "source": "ui/slint/editor/ParameterKnob.slint"
+    },
+    {
+      "name": "ParameterMenu",
+      "kind": "component",
+      "source": "ui/slint/editor/ParameterMenu.slint"
+    },
+    {
+      "name": "ParameterValueEditor",
+      "kind": "component",
+      "source": "ui/slint/editor/ParameterValueEditor.slint"
+    },
+    {
+      "name": "ParameterValuePopup",
+      "kind": "component",
+      "source": "ui/slint/editor/ParameterValuePopup.slint"
+    },
+    {
+      "name": "EditorPlayKeys",
+      "kind": "component",
+      "source": "ui/slint/editor/PlayKeys.slint"
+    },
+    {
+      "name": "EditorPlayPads",
+      "kind": "component",
+      "source": "ui/slint/editor/PlayPads.slint"
+    },
+    {
+      "name": "PresetBrowser",
+      "kind": "component",
+      "source": "ui/slint/editor/PresetBrowser.slint"
+    },
+    {
+      "name": "PresetBrowserState",
+      "kind": "global",
+      "source": "ui/slint/editor/PresetBrowserState.slint"
+    },
+    {
+      "name": "PresetFilter",
+      "kind": "global",
+      "source": "ui/slint/editor/PresetFilter.slint"
+    },
+    {
+      "name": "PresetRow",
+      "kind": "component",
+      "source": "ui/slint/editor/PresetRow.slint"
+    },
+    {
+      "name": "PresetInfo",
+      "kind": "struct",
+      "source": "ui/slint/editor/PresetTypes.slint"
+    },
+    {
+      "name": "EditorProcessorPlot",
+      "kind": "component",
+      "source": "ui/slint/editor/ProcessorPlot.slint"
+    },
+    {
+      "name": "EditorRangeHandle",
+      "kind": "component",
+      "source": "ui/slint/editor/RangeHandle.slint"
+    },
+    {
+      "name": "EditorResizeHandle",
+      "kind": "component",
+      "source": "ui/slint/editor/ResizeHandle.slint"
+    },
+    {
+      "name": "EditorRollout",
+      "kind": "component",
+      "source": "ui/slint/editor/Rollout.slint"
+    },
+    {
+      "name": "EditorRotaryFace",
+      "kind": "component",
+      "source": "ui/slint/editor/RotaryFace.slint",
+      "declaration": "RotaryFace"
+    },
+    {
+      "name": "EditorSearchField",
+      "kind": "component",
+      "source": "ui/slint/editor/SearchField.slint"
+    },
+    {
+      "name": "EditorPropertyRow",
+      "kind": "component",
+      "source": "ui/slint/editor/StatusRow.slint",
+      "declaration": "PropertyRow"
+    },
+    {
+      "name": "StatusRow",
+      "kind": "component",
+      "source": "ui/slint/editor/StatusRow.slint"
+    },
+    {
+      "name": "StatusStep",
+      "kind": "component",
+      "source": "ui/slint/editor/StatusRow.slint"
+    },
+    {
+      "name": "EditorTextField",
+      "kind": "component",
+      "source": "ui/slint/editor/TextField.slint"
+    },
+    {
+      "name": "EditorTheme",
+      "kind": "global",
+      "source": "ui/slint/editor/Theme.slint"
+    },
+    {
+      "name": "EditorText",
+      "kind": "component",
+      "source": "ui/slint/editor/Typography.slint"
+    },
+    {
+      "name": "EditorVelocityBlendPlot",
+      "kind": "component",
+      "source": "ui/slint/editor/VelocityBlendPlot.slint"
+    },
+    {
+      "name": "WaveHandle",
+      "kind": "component",
+      "source": "ui/slint/editor/WaveHandle.slint"
+    },
+    {
+      "name": "EditorZoneCorner",
+      "kind": "component",
+      "source": "ui/slint/editor/ZoneCorner.slint"
+    },
+    {
+      "name": "EditorZoneEdge",
+      "kind": "component",
+      "source": "ui/slint/editor/ZoneEdge.slint"
+    },
+    {
+      "name": "EditorZoneMap",
+      "kind": "component",
+      "source": "ui/slint/editor/ZoneMap.slint"
+    },
+    {
+      "name": "PlotParameter",
+      "kind": "struct",
+      "source": "ui/slint/editor/types.slint"
+    }
+  ],
+  "hostHelpers": [
+    {
+      "name": "Theme",
+      "source": "ui/slint/host/Theme.h"
+    },
+    {
+      "name": "ThemeBinding",
+      "source": "ui/slint/host/ThemeBinding.h"
+    },
+    {
+      "name": "MaterialImage",
+      "source": "ui/slint/host/MaterialImage.h"
+    },
+    {
+      "name": "AppearanceSettings",
+      "source": "ui/slint/host/AppearanceSettings.h"
+    },
+    {
+      "name": "AppearanceBinding",
+      "source": "ui/slint/host/AppearanceBinding.h"
+    },
+    {
+      "name": "ModelProjection",
+      "source": "ui/slint/host/ModelProjection.h"
+    },
+    {
+      "name": "SearchFilter",
+      "source": "ui/slint/host/SearchFilter.h"
+    },
+    {
+      "name": "SpectralPreview",
+      "source": "ui/slint/host/SpectralPreview.h"
+    },
+    {
+      "name": "VelocityBlend",
+      "source": "ui/slint/host/VelocityBlend.h"
+    },
+    {
+      "name": "DesignTokens",
+      "source": "ui/slint/host/DesignTokens.h"
+    },
+    {
+      "name": "ValueCodec",
+      "source": "ui/slint/host/ValueCodec.h"
+    }
+  ],
+  "platform": [
+    {
+      "name": "FileUris",
+      "source": "ui/slint/platform/FileUris.h"
+    },
+    {
+      "name": "X11FileDrop",
+      "source": "ui/slint/platform/X11FileDrop.h"
+    },
+    {
+      "name": "WindowFileDrop",
+      "source": "ui/slint/platform/WindowFileDrop.h"
+    },
+    {
+      "name": "FileDropProtocol",
+      "source": "ui/slint/platform/FileDropProtocol.h"
+    }
+  ]
 }

@@ -1,0 +1,69 @@
+import { Tokens } from "../theme.slint";
+
+export global DragKinds {
+    out property <string> source: Tokens.editor-drag-source;
+    out property <string> modulator: Tokens.editor-drag-modulator;
+    out property <string> slice: Tokens.editor-drag-slice;
+}
+export global EditorDragMetrics {
+    out property <length> threshold: Tokens.editor-drag-threshold;
+}
+// Internal editor drags use logical window coordinates; they never own MIDI notes.
+export global EditorDragState {
+    in-out property <string> kind;
+    in-out property <string> id;
+    in-out property <bool> active;
+    in-out property <length> pointer-x;
+    in-out property <length> pointer-y;
+    in-out property <int> drop-serial;
+    in-out property <bool> handled;
+    public function begin(kind: string, id: string, x: length, y: length) { root.kind = kind; root.id = id; root.pointer-x = x; root.pointer-y = y; root.active = true; }
+    public function move(x: length, y: length) { root.pointer-x = x; root.pointer-y = y; }
+    public function finish() { if root.active { root.handled = false; root.active = false; root.drop-serial += 1; } }
+    public function cancel() { root.active = false; root.kind = ""; root.id = ""; }
+}
+export component EditorDragSource inherits TouchArea {
+    in property <string> kind;
+    in property <string> payload;
+    callback context-requested();
+    private property <length> start-x;
+    private property <length> start-y;
+    private property <bool> armed;
+    private property <bool> dragged;
+    function cancel() { root.armed = false; root.dragged = false; EditorDragState.cancel(); }
+    callback activate();
+    mouse-cursor: grab;
+    // A nonvisual focus owner observes window loss without intercepting pointer input.
+    source-focus := FocusScope {
+        width: 0px; height: 0px;
+        focus-on-tab-navigation: false;
+        focus-lost(reason) => { if reason == FocusReason.window-activation { root.cancel(); } }
+    }
+    pointer-event(event) => {
+        if event.kind == PointerEventKind.down && event.button == PointerEventButton.right { root.context-requested(); }
+        else if event.kind == PointerEventKind.down && event.button == PointerEventButton.left { source-focus.focus(); root.start-x = self.mouse-x; root.start-y = self.mouse-y; root.armed = true; root.dragged = false; }
+        else if event.kind == PointerEventKind.cancel { root.cancel(); }
+        else if event.kind == PointerEventKind.up && event.button == PointerEventButton.left {
+            if root.armed { if root.dragged { EditorDragState.move(self.absolute-position.x + self.mouse-x, self.absolute-position.y + self.mouse-y); EditorDragState.finish(); } else { root.activate(); } }
+            root.armed = false;
+        }
+    }
+    moved => {
+        if root.armed {
+            if !root.dragged && (abs(self.mouse-x - root.start-x) > EditorDragMetrics.threshold || abs(self.mouse-y - root.start-y) > EditorDragMetrics.threshold) { root.dragged = true; EditorDragState.begin(root.kind, root.payload, self.absolute-position.x + self.mouse-x, self.absolute-position.y + self.mouse-y); }
+            if root.dragged { EditorDragState.move(self.absolute-position.x + self.mouse-x, self.absolute-position.y + self.mouse-y); }
+        }
+    }
+    changed enabled => { if !root.enabled { root.cancel(); } }
+}
+export component EditorDragTarget inherits Rectangle {
+    in property <bool> enabled: true;
+    in property <string> accepted-kind;
+    in property <string> additional-kind;
+    out property <bool> drag-over: EditorDragState.active && root.matches;
+    private property <bool> matches: (EditorDragState.kind == root.accepted-kind || (root.additional-kind != "" && EditorDragState.kind == root.additional-kind)) && EditorDragState.pointer-x >= root.absolute-position.x && EditorDragState.pointer-x < root.absolute-position.x + root.width && EditorDragState.pointer-y >= root.absolute-position.y && EditorDragState.pointer-y < root.absolute-position.y + root.height;
+    private property <int> serial: EditorDragState.drop-serial;
+    callback dropped(string) -> bool;
+    changed serial => { if root.visible && root.enabled && !EditorDragState.handled && root.matches { EditorDragState.handled = root.dropped(EditorDragState.id); } }
+    @children
+}

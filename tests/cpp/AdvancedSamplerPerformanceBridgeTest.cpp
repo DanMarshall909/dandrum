@@ -21,9 +21,18 @@ struct SessionProbe {
     auto model() const { return owned; }
     void refresh() { ++refreshes; }
 };
+struct PresetProbe {
+    slint::SharedString id, name, category, contents, origin;
+    bool favourite{};
+};
 struct SearchProbe {
+    using Presets=std::shared_ptr<slint::Model<PresetProbe>>;
     mutable std::function<bool(slint::SharedString,slint::SharedString)> contains;
+    mutable std::function<int(Presets,slint::SharedString,slint::SharedString)> count;
+    mutable std::function<slint::SharedString(Presets,slint::SharedString,slint::SharedString)> first;
     template<class F> void on_contains(F f) const { contains=std::move(f); }
+    template<class F> void on_count(F f) const { count=std::move(f); }
+    template<class F> void on_first(F f) const { first=std::move(f); }
 };
 int main() {
     int checks=0;
@@ -44,6 +53,12 @@ int main() {
         SearchProbe search;dandrum::sampler::bind_patch_search(search);
         expect(search.contains("kick.wav","kick")&&!search.contains("kick.wav","snare"),"Native search finds substrings and rejects absent queries");
         expect(search.contains("kick.wav","")&&!search.contains("","kick"),"Native search handles empty strings without special ownership");
+        std::vector<PresetProbe> rows(70);
+        rows.back()={"last","Needle","Drums","Samples","User",true};
+        auto presets=std::make_shared<slint::VectorModel<PresetProbe>>(std::move(rows));
+        expect(search.count(presets,"NEEDLE","All")==1&&search.first(presets,"needle","All")=="last","Sampler bridge binds the complete native catalog beyond row64");
+        expect(search.count(presets,"needle","Favourites")==1&&search.count(presets,"needle","Keys")==0,"Sampler bridge applies supplied category and favourite policy");
+        expect(search.count({},"","All")==0&&search.first({},"","All").empty(),"Sampler bridge handles a missing catalog without retaining ownership");
         std::cout<<"PASS: "<<checks<<" native performance bridge checks\n";return 0;
     } catch(const std::exception& error){std::cerr<<"FAIL: "<<error.what()<<'\n';return 1;}
 }

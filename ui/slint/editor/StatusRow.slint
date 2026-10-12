@@ -1,0 +1,41 @@
+import { EditorStrings } from "EditorStrings.slint";
+import { Tokens } from "../theme.slint";
+import { EditorTheme } from "Theme.slint";
+import { EditorIcon } from "Icon.slint";
+export component PropertyRow inherits HorizontalLayout {
+    in property <string> label;
+    in property <string> value;
+    in property <string> unit;
+    in property <bool> locked;
+    height: Tokens.editor-property-row-height; spacing: Tokens.editor-property-gap;
+    Text { width: Tokens.editor-property-label-width; text: root.label; font-family: EditorTheme.font-ui; font-size: EditorTheme.type-body; color: EditorTheme.paper-3; vertical-alignment: center; overflow: elide; }
+    Text { horizontal-stretch: 1; text: root.value; accessible-label: root.label + EditorStrings.value-separator + root.value + (root.unit == "" ? "" : EditorStrings.space + root.unit); font-family: EditorTheme.font-value; font-size: EditorTheme.type-body; color: EditorTheme.paper-1; vertical-alignment: center; overflow: elide; }
+    if root.unit != "" : Text { text: root.unit; font-family: EditorTheme.font-value; font-size: EditorTheme.type-caption; color: EditorTheme.paper-3; vertical-alignment: center; }
+    if root.locked : EditorIcon { name: Tokens.editor-icon-lock; size: Tokens.editor-status-lock-icon-size; tint: EditorTheme.paper-4; }
+}
+export component StatusRow inherits Rectangle {
+    in property <string> text;
+    in property <string> status;
+    in property <string> label: root.text;
+    in property <bool> warning;
+    in property <length> status-font-size: EditorTheme.type-small;
+    height: Tokens.editor-status-row-height;
+    Rectangle { x: 0px; y: Tokens.editor-status-indicator-size; width: Tokens.editor-status-indicator-size; height: Tokens.editor-status-indicator-size; border-radius: Tokens.editor-status-indicator-radius; background: root.warning ? EditorTheme.warn : EditorTheme.ok; }
+    Text { x: Tokens.editor-status-text-left; width: parent.width - Tokens.editor-status-label-reserve; height: parent.height; text: root.text; accessible-label: root.label; font-family: EditorTheme.font-ui; font-size: EditorTheme.type-body; font-weight: Tokens.editor-weight-medium; color: root.warning ? EditorTheme.warn : EditorTheme.paper-2; vertical-alignment: center; overflow: elide; }
+    Text { x: parent.width - Tokens.editor-status-label-width; width: Tokens.editor-status-label-width; height: parent.height; text: root.status; font-family: EditorTheme.font-value; font-size: root.status-font-size; color: root.warning ? EditorTheme.warn : EditorTheme.paper-4; vertical-alignment: center; horizontal-alignment: right; }
+}
+export component StatusStep inherits Rectangle {
+    in property <int> index;
+    in property <string> title;
+    in property <string> detail;
+    in property <bool> warning;
+    in property <bool> placeholder;
+    in property <length> index-font-size: EditorTheme.type-small;
+    height: Tokens.editor-status-step-height;
+    Rectangle { x: 0px; y: Tokens.editor-status-step-badge-top; width: Tokens.editor-status-step-badge-size; height: Tokens.editor-status-step-badge-size; border-radius: Tokens.editor-status-step-badge-radius; border-width: Tokens.editor-border-width; border-color: root.placeholder ? EditorTheme.line-3 : root.warning ? EditorTheme.warn : EditorTheme.line-2; background: root.placeholder ? transparent : root.warning ? EditorTheme.warn-wash : EditorTheme.ink-3;
+        Text { text: "" + root.index; font-family: EditorTheme.font-value; font-size: root.index-font-size; font-weight: Tokens.editor-weight-semibold; color: root.placeholder ? EditorTheme.paper-3 : root.warning ? EditorTheme.warn : EditorTheme.paper-2; horizontal-alignment: center; vertical-alignment: center; }
+    }
+    Text { x: Tokens.editor-status-step-title-left; width: Tokens.editor-status-step-title-width; height: parent.height; text: root.title; font-family: EditorTheme.font-ui; font-size: EditorTheme.type-body; font-weight: Tokens.editor-weight-semibold; color: EditorTheme.paper-3; vertical-alignment: center; overflow: elide; }
+    if root.placeholder : Rectangle { x: Tokens.editor-status-step-detail-left; y: Tokens.editor-status-step-rule-top; width: max(0px, parent.width - self.x); height: Tokens.editor-border-width; background: EditorTheme.line-2; }
+    if !root.placeholder : Text { x: Tokens.editor-status-step-detail-left; width: max(0px, parent.width - self.x); height: parent.height; text: root.detail; accessible-label: root.title + EditorStrings.value-separator + root.detail; font-family: EditorTheme.font-ui; font-size: EditorTheme.type-body; font-weight: Tokens.editor-weight-medium; color: root.warning ? EditorTheme.warn : EditorTheme.paper-1; vertical-alignment: center; overflow: elide; }
+}

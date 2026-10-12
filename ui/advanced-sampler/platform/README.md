@@ -2,7 +2,7 @@
 
 Slint 1.18.1's winit adapter omits `WindowEvent::DroppedFile`, although winit
 completes the native X11 XDND exchange. `X11FileDrop` provides a Linux/X11-only
-application adapter until that backend forwards the event. It does not change
+shared UI transport until that backend forwards the event. It does not change
 Slint, the audio path, or other platform backends.
 
 The host retains a `WindowFileDrop` owner beside its session binding. It creates
@@ -47,3 +47,11 @@ Primary references:
 
 - [Slint 1.18.1 winit event dispatch](https://github.com/slint-ui/slint/blob/v1.18.1/internal/backends/winit/winitwindowadapter.rs)
 - [XDND protocol and proxy rules](https://wiki.freedesktop.org/www/Specifications/XDND/)
+
+The implementation now lives in [ui/slint/platform](../../slint/platform).
+Sampler headers retain compatibility aliases; application receipt policy stays
+in the sampler wrapper. `Dandrum::SlintFileUris` and optional
+`Dandrum::SlintX11FileDrop` expose the shared CMake targets. Named bounds, protocol
+identifiers and timeouts are in `FileDropProtocol.h`; callers keep UI transport
+work off the audio thread. The independent shared transport test also completes
+a real drop after the receiving component expires and verifies no delivery.

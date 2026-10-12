@@ -1,0 +1,17 @@
+import { Tokens } from "../theme.slint";
+
+// Adaptive editor frame defaults, measured in logical pixels.
+export global EditorLayoutMetrics {
+    out property <int> compact-mode: 0;
+    out property <int> default-mode: 1;
+    out property <int> expanded-mode: 2;
+    public pure function compact(width: length) -> bool { return width < Tokens.editor-layout-compact-breakpoint; }
+    public pure function expanded(width: length) -> bool { return width >= Tokens.editor-layout-expanded-breakpoint; }
+    public pure function header(width: length) -> length { return EditorLayoutMetrics.compact(width) ? Tokens.editor-layout-header-compact : Tokens.editor-layout-header; }
+    public pure function rail(width: length) -> length { return EditorLayoutMetrics.compact(width) ? Tokens.editor-layout-rail-compact : Tokens.editor-layout-rail; }
+    public pure function tree(width: length) -> length { return EditorLayoutMetrics.compact(width) ? Tokens.editor-layout-tree-compact : EditorLayoutMetrics.expanded(width) ? Tokens.editor-layout-tree-expanded : Tokens.editor-layout-tree; }
+    public pure function inspector(width: length) -> length { return EditorLayoutMetrics.compact(width) ? Tokens.editor-layout-inspector-compact : EditorLayoutMetrics.expanded(width) ? Tokens.editor-layout-inspector-expanded : Tokens.editor-layout-inspector; }
+    public pure function workspace(width: length) -> length { return max(0px, width - EditorLayoutMetrics.rail(width) - EditorLayoutMetrics.tree(width) - EditorLayoutMetrics.inspector(width) - Tokens.editor-layout-workspace-gap); }
+    public pure function drawer-body(width: length) -> length { return EditorLayoutMetrics.compact(width) ? Tokens.editor-layout-drawer-compact : EditorLayoutMetrics.expanded(width) ? Tokens.editor-layout-drawer-expanded : Tokens.editor-layout-drawer; }
+    public pure function body(width: length, height: length, drawer: length, banners: length) -> length { return max(0px, height - EditorLayoutMetrics.header(width) - drawer - banners - Tokens.editor-layout-body-inset); }
+}

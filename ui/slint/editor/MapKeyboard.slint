@@ -1,0 +1,37 @@
+import { Tokens } from "../theme.slint";
+import { MusicalConstants } from "DisplayConstants.slint";
+import { FitLayout } from "FitLayout.slint";
+import { EditorKey } from "Key.slint";
+import { EditorTheme } from "Theme.slint";
+export component EditorMapKeyboard inherits Rectangle {
+    in property <string> generation;
+    in property <length> small-font-size: EditorTheme.type-small;
+    callback note-on(int,int,string); callback note-off(int,string);
+    callback window-deactivated();
+    in property <int> low-note: MusicalConstants.mapped-low;
+    in property <int> high-note: MusicalConstants.overview-high;
+    in property <bool> audition-enabled;
+    in property <string> source: Tokens.editor-display-mapping-source;
+    private property <int> low-white: FitLayout.white-index(root.low-note);
+    private property <int> high-white: FitLayout.white-index(root.high-note) + (FitLayout.black(root.high-note) ? 1 : 0);
+    private property <int> white-count: max(1, root.high-white - root.low-white + 1);
+    clip: true;
+    for i in root.white-count : EditorKey {
+        x: i * parent.width / root.white-count; y: 0px; width: parent.width / root.white-count; height: parent.height;
+        note: FitLayout.white-note(i + root.low-white); mapped: true; enabled: root.audition-enabled;
+        small-font-size: root.small-font-size; window-deactivated => { root.window-deactivated(); }
+        source: root.source + Tokens.editor-display-source-id-separator + self.note; generation: root.generation;
+        note-on(n,v,s) => { root.note-on(n,v,s); } note-off(n,s) => { root.note-off(n,s); }
+    }
+    for i in MusicalConstants.black-key-count : EditorKey {
+        private property <int> midi: FitLayout.black-note(i);
+        visible: self.midi >= root.low-note && self.midi <= root.high-note;
+        x: (FitLayout.white-index(self.midi) - root.low-white + MusicalConstants.black-key-offset) * parent.width / root.white-count; y: 0px;
+        width: parent.width / root.white-count * MusicalConstants.black-key-width; height: parent.height * MusicalConstants.black-key-height;
+        note: self.midi; black: true; mapped: true; enabled: root.audition-enabled;
+        small-font-size: root.small-font-size; window-deactivated => { root.window-deactivated(); }
+        source: root.source + Tokens.editor-display-source-id-separator + self.note; generation: root.generation;
+        note-on(n,v,s) => { root.note-on(n,v,s); } note-off(n,s) => { root.note-off(n,s); }
+    }
+}
+

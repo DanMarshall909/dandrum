@@ -1,19 +1,7 @@
-import { SamplerTheme } from "../theme/Theme.slint";
-import { ActionButton } from "ActionButton.slint";
-export struct Option { id: string, label: string }
-export component OptionStrip inherits Rectangle {
-    in property <bool> enabled: true;
-    in property <[Option]> options;
-    in property <string> value;
-    in property <string> label;
-    callback selected(string);
-    // The guide's compact 22px caps plus 2px padding and 1px border total 28px.
-    height: 28px; border-radius: 4px; border-width: 1px; border-color: SamplerTheme.border-hairline; background: SamplerTheme.surface-well;
-    for option[i] in root.options : ActionButton {
-        enabled: root.enabled;
-        x: 3px + i * ((parent.width - 6px + 2px) / max(1, root.options.length)); y: 3px;
-        width: max(0px, (parent.width - 6px - 2px * max(0, root.options.length - 1)) / max(1, root.options.length)); height: max(0px, parent.height - 6px);
-        text: option.label; label: root.label + " " + option.label; selected: root.value == option.id; compact: true; ghost: true; neutral-selection: true; caps: true;
-        clicked => { root.selected(option.id); }
-    }
+import { EditorOptionStrip } from "../../slint/editor/OptionStrip.slint";
+export { EditorOption as Option } from "../../slint/editor/OptionStrip.slint";
+import { Session } from "../Session.slint";
+import { DragState } from "../chrome/DragState.slint";
+export component OptionStrip inherits EditorOptionStrip {
+    window-deactivated => { Session.release-notes(); DragState.cancel(); }
 }

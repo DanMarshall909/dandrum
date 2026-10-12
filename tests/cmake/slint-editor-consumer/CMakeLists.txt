@@ -1,0 +1,23 @@
+cmake_minimum_required(VERSION 3.22)
+project(IndependentSlintEditor LANGUAGES CXX)
+find_package(Slint 1.18.1 EXACT CONFIG REQUIRED)
+
+if(NOT IS_DIRECTORY "${DANDRUM_SLINT_LIBRARY_SOURCE}")
+    message(FATAL_ERROR "Supply the staged Slint library directory")
+endif()
+set(DANDRUM_SLINT_BUILD_CATALOG OFF CACHE BOOL "" FORCE)
+set(DANDRUM_SLINT_BUILD_TESTS OFF CACHE BOOL "" FORCE)
+set(DANDRUM_SLINT_BUILD_FILE_DROP OFF CACHE BOOL "" FORCE)
+add_subdirectory("${DANDRUM_SLINT_LIBRARY_SOURCE}" shared-library)
+foreach(unwanted IN ITEMS dandrum-slint-catalog dandrum-slint-value-codec-test
+                         dandrum-slint-file-uris dandrum-slint-x11-file-drop)
+    if(TARGET ${unwanted})
+        message(FATAL_ERROR "The standalone consumer unexpectedly built ${unwanted}")
+    endif()
+endforeach()
+configure_file(Consumer.slint.in Consumer.slint @ONLY)
+add_executable(independent-slint-editor Main.cpp)
+target_link_libraries(independent-slint-editor PRIVATE Dandrum::SlintLibrary)
+set_target_properties(independent-slint-editor PROPERTIES SLINT_EMBED_RESOURCES embed-files)
+slint_target_sources(independent-slint-editor "${CMAKE_CURRENT_BINARY_DIR}/Consumer.slint"
+                     NAMESPACE independent_ui)

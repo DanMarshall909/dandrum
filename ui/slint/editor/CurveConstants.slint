@@ -1,0 +1,71 @@
+import { Tokens } from "../tokens.slint";
+export global CurveKinds {
+    out property <string> lfo: Tokens.editor-curve-kind-lfo;
+    out property <string> envelope: Tokens.editor-curve-kind-envelope;
+    out property <string> random: Tokens.editor-curve-kind-random;
+    out property <string> performance: Tokens.editor-curve-kind-performance;
+    out property <string> compressor: Tokens.editor-curve-kind-compressor;
+    out property <string> eq: Tokens.editor-curve-kind-eq;
+    out property <string> filter: Tokens.editor-curve-kind-filter;
+    out property <string> saturate: Tokens.editor-curve-kind-saturate;
+    out property <string> bitcrush: Tokens.editor-curve-kind-bitcrush;
+    out property <string> decay: Tokens.editor-curve-kind-decay;
+}
+export global ShapeNames {
+    out property <string> sine: Tokens.editor-curve-shape-sine;
+    out property <string> triangle: Tokens.editor-curve-shape-triangle;
+    out property <string> triangle-short: Tokens.editor-curve-shape-triangle-short;
+    out property <string> triangle-legacy: Tokens.editor-curve-shape-triangle-legacy;
+    out property <string> saw: Tokens.editor-curve-shape-saw;
+    out property <string> saw-legacy: Tokens.editor-curve-shape-saw-legacy;
+    out property <string> square: Tokens.editor-curve-shape-square;
+    out property <string> square-short: Tokens.editor-curve-shape-square-short;
+    out property <string> square-legacy: Tokens.editor-curve-shape-square-legacy;
+    out property <string> sample-hold: Tokens.editor-curve-shape-sample-hold;
+    out property <string> exponential: Tokens.editor-curve-shape-exponential;
+    out property <string> logarithmic: Tokens.editor-curve-shape-logarithmic;
+    out property <string> smoothstep: Tokens.editor-curve-shape-smoothstep;
+    out property <string> random-smooth: Tokens.editor-curve-shape-random-smooth;
+}
+export global CurveMetrics {
+    out property <float> default-segments: Tokens.editor-curve-default-segments;
+    out property <float> processor-segments: Tokens.editor-curve-processor-segments;
+    out property <float> grid-divisions: Tokens.editor-curve-grid-divisions;
+    out property <float> bipolar-center: Tokens.editor-curve-bipolar-center;
+    out property <float> modulation-baseline: Tokens.editor-curve-modulation-baseline;
+    out property <float> modulation-unipolar-span: Tokens.editor-curve-modulation-unipolar-span;
+    out property <float> modulation-bipolar-span: Tokens.editor-curve-modulation-bipolar-span;
+    out property <float> lfo-visible-cycles: Tokens.editor-curve-lfo-visible-cycles;
+    out property <float> triangle-slope: Tokens.editor-curve-triangle-slope;
+    out property <float> saw-slope: Tokens.editor-curve-saw-slope;
+    out property <float> cycle-degrees: Tokens.editor-curve-cycle-degrees;
+    out property <float> half-cycle-degrees: Tokens.editor-curve-half-cycle-degrees;
+    out property <float> input-range-epsilon: Tokens.editor-curve-input-range-epsilon;
+    out property <float> processor-range-epsilon: Tokens.editor-curve-processor-range-epsilon;
+    out property <float> smoothstep-order: Tokens.editor-curve-smoothstep-order;
+    out property <float> smoothstep-slope: Tokens.editor-curve-smoothstep-slope;
+    out property <float> random-interval-count: Tokens.editor-curve-random-interval-count;
+    out property <float> hold-sample-count: Tokens.editor-curve-hold-sample-count;
+    out property <float> hold-cycle-length: Tokens.editor-curve-hold-cycle-length;
+    out property <float> milliseconds-per-second: Tokens.editor-curve-milliseconds-per-second;
+    out property <float> minimum-envelope-seconds: Tokens.editor-curve-minimum-envelope-seconds;
+    out property <float> sustain-preview-seconds: Tokens.editor-curve-sustain-preview-seconds;
+    out property <float> compressor-db-span: Tokens.editor-curve-compressor-db-span;
+    out property <float> eq-minimum: Tokens.editor-curve-eq-minimum;
+    out property <float> eq-maximum: Tokens.editor-curve-eq-maximum;
+    out property <float> eq-amplitude: Tokens.editor-curve-eq-amplitude;
+    out property <float> minimum-filter-cutoff: Tokens.editor-curve-minimum-filter-cutoff;
+    out property <float> filter-preview-order: Tokens.editor-curve-filter-preview-order;
+    out property <float> saturation-preview-drive: Tokens.editor-curve-saturation-preview-drive;
+    out property <float> minimum-crush-levels: Tokens.editor-curve-minimum-crush-levels;
+    out property <float> decay-base-gain: Tokens.editor-curve-decay-base-gain;
+    out property <float> decay-gain-span: Tokens.editor-curve-decay-gain-span;
+    out property <float> velocity-minimum: Tokens.editor-curve-velocity-minimum;
+    out property <float> velocity-maximum: Tokens.editor-curve-velocity-maximum;
+    out property <float> velocity-viewbox-size: Tokens.editor-curve-velocity-viewbox-size;
+    out property <float> amplitude-db-divisor: Tokens.editor-curve-amplitude-db-divisor;
+    out property <float> amplitude-log-base: Tokens.editor-curve-amplitude-log-base;
+    out property <float> caption-dark-threshold: Tokens.editor-curve-caption-dark-threshold;
+    out property <[float]> hold-levels: [Tokens.editor-curve-hold-preview-level-1, Tokens.editor-curve-hold-preview-level-2, Tokens.editor-curve-hold-preview-level-3, Tokens.editor-curve-hold-preview-level-4, Tokens.editor-curve-hold-preview-level-5, Tokens.editor-curve-hold-preview-level-6, Tokens.editor-curve-hold-preview-level-7, Tokens.editor-curve-hold-preview-level-8];
+    out property <[float]> random-levels: [Tokens.editor-curve-random-preview-level-1, Tokens.editor-curve-random-preview-level-2, Tokens.editor-curve-random-preview-level-3, Tokens.editor-curve-random-preview-level-4, Tokens.editor-curve-random-preview-level-5, Tokens.editor-curve-random-preview-level-6, Tokens.editor-curve-random-preview-level-7, Tokens.editor-curve-random-preview-level-8, Tokens.editor-curve-random-preview-level-9, Tokens.editor-curve-random-preview-level-10, Tokens.editor-curve-random-preview-level-11];
+}

@@ -1,0 +1,67 @@
+import { Tokens } from "../theme.slint";
+import { MusicalConstants, PitchNames } from "DisplayConstants.slint";
+import { EditorTheme } from "Theme.slint";
+import { EditorButton } from "Button.slint";
+import { FitLayout } from "FitLayout.slint";
+import { EditorKey } from "Key.slint";
+export component EditorPlayKeys inherits Rectangle {
+    in-out property <int> key-width;
+    in-out property <int> last-key-width: MusicalConstants.default-key-width;
+    in property <int> base-note: MusicalConstants.base-note;
+    in property <bool> pc-enabled;
+    in property <length> small-font-size: EditorTheme.type-small;
+    callback window-deactivated();
+    in property <int> mapped-low: MusicalConstants.mapped-low;
+    in property <int> mapped-high: MusicalConstants.mapped-high;
+    in property <[int]> sounding-notes;
+    in property <string> generation;
+    in property <string> source: Tokens.editor-display-keyboard-source;
+    private property <length> scroll;
+    private property <bool> tracking;
+    private property <int> low-white: FitLayout.white-index(root.mapped-low);
+    private property <int> high-white: FitLayout.white-index(root.mapped-high) + (FitLayout.black(root.mapped-high) ? 1 : 0);
+    private property <int> octave: root.base-note;
+    out property <int> actual-key-width: root.key-width > 0 ? root.key-width : floor((root.width / 1px - 2*Tokens.stroke-hairline / 1px) / max(1, root.high-white - root.low-white + 1)).clamp(MusicalConstants.fit-key-width-minimum, MusicalConstants.key-width-maximum);
+    private property <length> inner-width: MusicalConstants.white-key-count * root.actual-key-width * 1px;
+    callback note-on(int, int, string); callback note-off(int, string);
+    pure function pcl(note: int) -> string { let k = note - root.base-note; return root.pc-enabled && k >= 0 && k < MusicalConstants.pc-key-count ? PitchNames.pc-labels[k] : ""; }
+    pure function held-at(i: int, note: int) -> bool { return i < root.sounding-notes.length && root.sounding-notes[i] == note; }
+    pure function sounding(note: int) -> bool {
+        return root.held-at(0, note) || root.held-at(1, note) || root.held-at(2, note) || root.held-at(3, note)
+            || root.held-at(4, note) || root.held-at(5, note) || root.held-at(6, note) || root.held-at(7, note)
+            || root.held-at(8, note) || root.held-at(9, note) || root.held-at(10, note) || root.held-at(11, note)
+            || root.held-at(12, note) || root.held-at(13, note) || root.held-at(14, note) || root.held-at(15, note)
+            || root.held-at(16, note) || root.held-at(17, note) || root.held-at(18, note) || root.held-at(19, note)
+            || root.held-at(20, note) || root.held-at(21, note) || root.held-at(22, note) || root.held-at(23, note)
+            || root.held-at(24, note) || root.held-at(25, note) || root.held-at(26, note) || root.held-at(27, note)
+            || root.held-at(28, note) || root.held-at(29, note) || root.held-at(30, note) || root.held-at(31, note);
+    }
+    public function clamp-scroll() { root.scroll = root.scroll.clamp(0px, max(0px, root.inner-width - root.width)); }
+    public function fit() { root.key-width = 0; root.scroll = root.low-white * root.actual-key-width * 1px; root.clamp-scroll(); }
+    public function zoom(direction: int) { root.key-width = (root.actual-key-width + direction * MusicalConstants.key-zoom-step).clamp(MusicalConstants.key-width-minimum,MusicalConstants.key-width-maximum); root.clamp-scroll(); }
+    changed actual-key-width => { root.last-key-width = root.actual-key-width; if root.key-width == 0 { root.scroll = root.low-white * root.actual-key-width * 1px; } root.clamp-scroll(); }
+    changed octave => { if root.key-width > 0 { root.scroll = FitLayout.white-index(root.octave) * root.actual-key-width * 1px; root.clamp-scroll(); } }
+    changed mapped-low => { if root.key-width == 0 { root.fit(); } }
+    changed width => { root.clamp-scroll(); }
+    init => { root.last-key-width = root.actual-key-width; root.scroll = root.low-white * root.actual-key-width * 1px; root.clamp-scroll(); }
+    viewport := Rectangle { y: 0px; height: max(1px, parent.height - Tokens.editor-display-collection-controls-space); clip: true; border-width: Tokens.stroke-hairline; border-color: EditorTheme.line-2; border-radius: Tokens.radius-1; background: EditorTheme.ink-0;
+        Flickable { interactive: false; width: parent.width; height: parent.height; content-width: root.inner-width; content-height: self.height; content-x: -root.scroll;
+            changed content-x => { root.scroll = -self.content-x; root.clamp-scroll(); }
+            for i in MusicalConstants.white-key-count : EditorKey { y: 0px; note: FitLayout.white-note(i); x: i * root.actual-key-width * 1px; width: root.actual-key-width * 1px; height: viewport.height; mapped: self.note >= root.mapped-low && self.note <= root.mapped-high; sounding: root.sounding(self.note); pc-label: root.pcl(self.note); source: root.source + Tokens.editor-display-source-id-separator + self.note; generation: root.generation; small-font-size: root.small-font-size; window-deactivated => { root.window-deactivated(); }
+                note-on(n, v, s) => { root.note-on(n, v, s); } note-off(n, s) => { root.note-off(n, s); }
+            }
+            for i in MusicalConstants.black-key-count : EditorKey { y: 0px; note: FitLayout.black-note(i); visible: self.note <= MusicalConstants.midi-maximum; black: true; x: (FitLayout.white-index(self.note) + MusicalConstants.black-key-offset) * root.actual-key-width * 1px; width: root.actual-key-width * MusicalConstants.black-key-width * 1px; height: viewport.height * MusicalConstants.black-key-height; mapped: self.note >= root.mapped-low && self.note <= root.mapped-high; sounding: root.sounding(self.note); pc-label: root.pcl(self.note); source: root.source + Tokens.editor-display-source-id-separator + self.note; generation: root.generation; small-font-size: root.small-font-size; window-deactivated => { root.window-deactivated(); }
+                note-on(n, v, s) => { root.note-on(n, v, s); } note-off(n, s) => { root.note-off(n, s); }
+            }
+        }
+    }
+    EditorButton { x: 0px; y: parent.height - Tokens.editor-display-collection-controls-height; width: Tokens.editor-display-collection-control-width; height: Tokens.editor-display-collection-controls-height; text: Tokens.editor-display-zoom-out-glyph; label: Tokens.editor-display-key-zoom-out-label; ghost: true; compact: true; clicked => { root.zoom(-1); } window-deactivated => { root.window-deactivated(); } }
+    track := TouchArea { x: Tokens.editor-display-collection-track-inset; y: parent.height - Tokens.editor-display-collection-controls-height; width: max(1px, parent.width - Tokens.editor-display-collection-track-reserved-width); height: Tokens.editor-display-collection-controls-height;
+        Rectangle { y: Tokens.editor-display-collection-track-line-offset; height: 1px; background: EditorTheme.line-2; }
+        Rectangle { x: parent.width * (root.scroll / max(1px, root.inner-width)); y: Tokens.editor-display-collection-track-thumb-offset; width: parent.width * min(1, root.width / max(1px, root.inner-width)); height: Tokens.editor-display-collection-track-thumb-height; border-radius: Tokens.radius-1; border-width: Tokens.stroke-hairline; border-color: EditorTheme.line-3; background: track.has-hover ? EditorTheme.ink-6 : EditorTheme.ink-5; }
+        pointer-event(event) => { if event.kind == PointerEventKind.down { root.tracking = true; root.scroll = (self.mouse-x / max(1px, self.width)) * root.inner-width - root.width / 2; root.clamp-scroll(); } else if event.kind == PointerEventKind.up || event.kind == PointerEventKind.cancel { root.tracking = false; } }
+        moved => { if root.tracking { root.scroll = (self.mouse-x / max(1px, self.width)) * root.inner-width - root.width / 2; root.clamp-scroll(); } }
+    }
+    EditorButton { x: parent.width - Tokens.editor-display-collection-right-controls-inset; y: parent.height - Tokens.editor-display-collection-controls-height; width: Tokens.editor-display-collection-control-width; height: Tokens.editor-display-collection-controls-height; text: Tokens.editor-display-zoom-in-glyph; label: Tokens.editor-display-key-zoom-in-label; ghost: true; compact: true; clicked => { root.zoom(1); } window-deactivated => { root.window-deactivated(); } }
+    EditorButton { x: parent.width - Tokens.editor-display-collection-fit-inset; y: parent.height - Tokens.editor-display-collection-controls-height; width: Tokens.editor-display-collection-fit-width; height: Tokens.editor-display-collection-controls-height; text: root.key-width == 0 ? Tokens.editor-display-fit-label : root.actual-key-width + Tokens.editor-display-pixels-unit-suffix; label: Tokens.editor-display-key-fit-label; ghost: true; compact: true; clicked => { root.fit(); } window-deactivated => { root.window-deactivated(); } }
+}

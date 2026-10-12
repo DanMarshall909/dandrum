@@ -1,0 +1,31 @@
+import { ParameterStrings } from "ParameterConstants.slint";
+import { Tokens } from "../tokens.slint";
+import { EditorTheme } from "Theme.slint";
+import { ModAssignment } from "../modulation/types.slint";
+import { ParameterValueEditor } from "ParameterValueEditor.slint";
+
+export component ParameterValuePopup inherits Rectangle {
+    in property <string> label;
+    in property <string> value-text;
+    in property <string> suffix;
+    in property <bool> editing;
+    in property <bool> invalid;
+    in property <bool> host-active;
+    in property <[ModAssignment]> assignments;
+    callback hover-changed(bool); callback edit-requested(); callback submitted(string); callback cancelled(); callback abandoned(); callback interaction-lost();
+    public function focus-editor() { editor.focus-editor(); }
+
+    width: Tokens.editor-control-popup-width; height: Tokens.editor-control-popup-base-height + root.assignments.length * Tokens.editor-control-popup-row-height;
+    background: EditorTheme.surface-menu; border-width: Tokens.editor-control-stroke-width; border-color: root.host-active ? EditorTheme.host : EditorTheme.line-3; border-radius: Tokens.editor-control-radius-focus; drop-shadow-blur: Tokens.editor-control-popup-shadow-blur; drop-shadow-offset-y: Tokens.editor-control-popup-shadow-offset; drop-shadow-color: Tokens.editor-control-popup-shadow;
+    TouchArea {
+        changed has-hover => { root.hover-changed(self.has-hover); }
+    Text { x: Tokens.editor-control-popup-inset; y: Tokens.editor-control-popup-label-top; width: Tokens.editor-control-popup-label-width; height: Tokens.editor-control-popup-line-height; text: root.label; font-family: EditorTheme.font-ui; font-size: Tokens.editor-control-font-value; color: EditorTheme.paper-3; }
+    popup-unit := Text { x: parent.width - self.preferred-width - Tokens.editor-control-popup-inset; y: Tokens.editor-control-popup-value-top; width: self.preferred-width; height: Tokens.editor-control-popup-line-height; text: root.suffix; font-family: EditorTheme.font-value; font-size: Tokens.editor-control-font-caption; color: EditorTheme.paper-3; vertical-alignment: center; }
+    editor := ParameterValueEditor { x: Tokens.editor-control-popup-value-left; y: Tokens.editor-control-popup-value-top; width: Tokens.editor-control-popup-value-width - (root.suffix == "" ? 0px : popup-unit.preferred-width + Tokens.editor-control-popup-unit-gap); height: Tokens.editor-control-popup-line-height;
+        label: root.label; value-text: root.value-text; editing: root.editing; invalid: root.invalid; host-active: root.host-active; font-size: Tokens.editor-control-font-popup-value;
+        submitted(text) => { root.submitted(text); } cancelled => { root.cancelled(); } abandoned => { root.abandoned(); } interaction-lost => { root.interaction-lost(); }
+    }
+    if !root.editing : TouchArea { x: Tokens.editor-control-popup-value-left; y: Tokens.editor-control-popup-value-top; width: Tokens.editor-control-popup-value-width; height: Tokens.editor-control-popup-line-height; clicked => { root.edit-requested(); } }
+    for a[i] in root.assignments : Text { x: Tokens.editor-control-popup-inset; y: Tokens.editor-control-popup-route-top + i * Tokens.editor-control-popup-row-height; width: parent.width - 2*Tokens.editor-control-popup-inset; height: Tokens.editor-control-popup-route-height; text: (a.slot <= 0 ? ParameterStrings.modulation-glyph-unassigned : [ParameterStrings.modulation-glyph-first, ParameterStrings.modulation-glyph-second, ParameterStrings.modulation-glyph-third, ParameterStrings.modulation-glyph-fourth][(a.slot - 1).clamp(0,Tokens.editor-control-modulation-slots - 1)]) + ParameterStrings.modulation-source-spacing + a.source + ParameterStrings.modulation-value-spacing + round(a.depth * Tokens.editor-control-percentage-scale) + ParameterStrings.unit-percent; color: EditorTheme.mod-color(a.slot); font-family: EditorTheme.font-ui; font-size: Tokens.editor-control-font-caption; }
+    }
+}

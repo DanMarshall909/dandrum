@@ -1,0 +1,50 @@
+import { CurveKinds, ShapeNames, CurveMetrics } from "CurveConstants.slint";
+import { EditorTheme } from "Theme.slint";
+import { EditorCurvePlot } from "CurvePlot.slint";
+// Deterministic editor previews; these formulas do not claim DSP equivalence.
+export component EditorModulatorPlot inherits EditorCurvePlot {
+    in property <string> label;
+    in property <string> kind: CurveKinds.lfo;
+    in property <string> shape: ShapeNames.sine;
+    in property <float> depth: 1;
+    in property <float> phase;
+    in property <float> attack;
+    in property <float> decay;
+    in property <float> sustain;
+    in property <float> release;
+    in property <float> in-low;
+    in property <float> in-high: 1;
+    in property <bool> inverted;
+    accessible-role: button; accessible-label: root.label;
+    curve-color: EditorTheme.mod-a;
+    public pure function shape-value(t:float,shape:string) -> float {
+        let phase=mod(t,1);
+        return shape == ShapeNames.triangle-legacy || shape == ShapeNames.triangle || shape == ShapeNames.triangle-short ? 1 - CurveMetrics.triangle-slope*abs(phase - CurveMetrics.bipolar-center)
+            : shape == ShapeNames.saw-legacy || shape == ShapeNames.saw ? 1 - CurveMetrics.saw-slope*phase
+            : shape == ShapeNames.square-legacy || shape == ShapeNames.square || shape == ShapeNames.square-short ? (phase < CurveMetrics.bipolar-center ? 1 : -1)
+            : shape == ShapeNames.sample-hold ? CurveMetrics.hold-levels[floor(mod(t/CurveMetrics.hold-cycle-length,1)*CurveMetrics.hold-sample-count)] : sin(phase*CurveMetrics.cycle-degrees*1deg);
+    }
+    public pure function performance(t:float,low:float,high:float,shape:string,inverted:bool) -> float {
+        let input=((t - low)/max(CurveMetrics.input-range-epsilon,high - low)).clamp(0,1);
+        let value=shape == ShapeNames.exponential ? input*input : shape == ShapeNames.logarithmic ? sqrt(input) : shape == ShapeNames.smoothstep ? input*input*(CurveMetrics.smoothstep-order - CurveMetrics.smoothstep-slope*input) : input;
+        return inverted ? 1 - value : value;
+    }
+    public pure function random(t:float,shape:string) -> float {
+        let values=CurveMetrics.random-levels;
+        let position=t*CurveMetrics.random-interval-count; let i=min(CurveMetrics.random-interval-count - 1,floor(position)); let f=mod(position,1);
+        return shape == ShapeNames.random-smooth ? values[i]+(values[i+1] - values[i])*(CurveMetrics.bipolar-center - CurveMetrics.bipolar-center*cos(f*CurveMetrics.half-cycle-degrees*1deg)) : values[i];
+    }
+    public pure function envelope(t:float,attack:float,decay:float,sustain:float,release:float) -> float {
+        let a=max(CurveMetrics.minimum-envelope-seconds,attack/CurveMetrics.milliseconds-per-second); let d=max(CurveMetrics.minimum-envelope-seconds,decay/CurveMetrics.milliseconds-per-second); let r=max(CurveMetrics.minimum-envelope-seconds,release/CurveMetrics.milliseconds-per-second);
+        let time=t*(a+d+CurveMetrics.sustain-preview-seconds+r);
+        return time < a ? time/a : time < a+d ? 1 - (1 - sustain)*(time - a)/d
+            : time < a+d+CurveMetrics.sustain-preview-seconds ? sustain : max(0,sustain*(1 - (time - a - d - CurveMetrics.sustain-preview-seconds)/r));
+    }
+    public pure function y-at(t:float) -> float {
+        return root.kind == CurveKinds.envelope ? CurveMetrics.modulation-baseline - root.envelope(t,root.attack,root.decay,root.sustain,root.release)*CurveMetrics.modulation-unipolar-span
+            : root.kind == CurveKinds.lfo ? CurveMetrics.bipolar-center - root.shape-value(t*CurveMetrics.lfo-visible-cycles+root.phase,root.shape)*root.depth*CurveMetrics.modulation-bipolar-span
+            : root.kind == CurveKinds.random ? CurveMetrics.bipolar-center - root.random(t,root.shape)*root.depth*CurveMetrics.modulation-bipolar-span
+            : CurveMetrics.modulation-baseline - root.performance(t,root.in-low,root.in-high,root.shape,root.inverted)*root.depth*CurveMetrics.modulation-unipolar-span;
+    }
+    sample(t) => { return root.y-at(t); }
+}

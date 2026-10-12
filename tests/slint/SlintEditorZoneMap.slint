@@ -1,0 +1,55 @@
+import { EditorZoneMap } from "../../ui/slint/editor/ZoneMap.slint";
+import { EditorZoneEdge } from "../../ui/slint/editor/ZoneEdge.slint";
+import { KeyZone } from "../../ui/slint/display/types.slint";
+export { KeyZone } from "../../ui/slint/display/types.slint";
+export { EditorDragState } from "../../ui/slint/editor/Drag.slint";
+export { EditorTheme } from "../../ui/slint/editor/Theme.slint";
+
+export component SlintEditorZoneMap inherits Window {
+    width: 660px; height: 380px;
+    in-out property <bool> accept-begin: true;
+    in-out property <bool> free-edit;
+    in-out property <bool> input-enabled: true;
+    in-out property <float> zoom: 1;
+    in-out property <[KeyZone]> zones: [{id:"zone",name:"Known zone",lo:48,hi:59,vel-lo:32,vel-hi:96}];
+    out property <int> begins;
+    out property <int> updates;
+    out property <int> ends;
+    out property <int> cancels;
+    out property <int> selections;
+    out property <int> assignments;
+    out property <string> assigned-payload;
+    out property <string> last-field;
+    out property <bool> captured-free;
+    out property <float> last-value;
+    out property <float> continuous-value;
+    out property <float> corner-note;
+    out property <float> corner-velocity;
+    out property <int> contexts;
+    out property <string> context-zone;
+    out property <int> context-note;
+    out property <int> context-velocity;
+    out property <bool> context-split;
+    out property <int> hover-note: map.hover-note;
+    out property <length> content-width: map.content-width;
+    out property <length> content-x: map.content-x;
+    callback reset-counts();
+    reset-counts => { root.begins=0;root.updates=0;root.ends=0;root.cancels=0;root.contexts=0; }
+    map := EditorZoneMap { x:10px;y:10px;width:600px;height:340px;low-note:24;high-note:96;zones:root.zones;selected-zone:"zone";zoom <=> root.zoom;free-edit:root.free-edit;enabled:root.input-enabled;
+        selected(id) => { root.selections+=1; }
+        gesture(id,field,phase,value,free) => {
+            root.last-field=field;root.last-value=value;root.captured-free=free;
+            if phase==0 { root.begins+=1;return root.accept-begin; }
+            if phase==1 { root.updates+=1; }
+            if phase==2 { root.ends+=1; }
+            if phase==3 { root.cancels+=1; }
+            return true;
+        }
+        corner-preview(id,high-key,high-velocity,free,note,velocity) => { root.updates+=1;root.corner-note=note;root.corner-velocity=velocity;return true; }
+        context-requested(id,note,velocity,split,x,y) => { root.contexts+=1;root.context-zone=id;root.context-note=note;root.context-velocity=velocity;root.context-split=split; }
+        assigned(id,payload) => { root.assignments+=1;root.assigned-payload=payload;return true; }
+    }
+    EditorZoneEdge { x:620px;y:10px;width:30px;height:50px;label:"Continuous graph drag";value:0.1;units:1;axis-length:100px;step:0;
+        gesture(phase,value) => { if phase==1 {root.continuous-value=value;}return true; }
+    }
+}

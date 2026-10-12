@@ -1,0 +1,76 @@
+import { Tokens } from "../tokens.slint";
+export global ParameterActions {
+    out property <string> modulation: Tokens.editor-control-action-modulation;
+    out property <string> midi-learn: Tokens.editor-control-action-midi-learn;
+    out property <string> macro-map: Tokens.editor-control-action-macro-map;
+    out property <string> add-route: Tokens.editor-control-action-add-route;
+    out property <string> edit-route: Tokens.editor-control-action-edit-route;
+    out property <string> invert-route: Tokens.editor-control-action-invert-route;
+    out property <string> bypass-route: Tokens.editor-control-action-bypass-route;
+    out property <string> remove-route: Tokens.editor-control-action-remove-route;
+    out property <string> macro: Tokens.editor-control-action-macro;
+}
+export global ParameterStrings {
+    out property <string> label-popup-suffix: Tokens.editor-control-label-popup-suffix;
+    out property <string> menu-reset-peaks: Tokens.editor-control-menu-reset-peaks;
+    out property <string> host-ownership: Tokens.editor-control-host-ownership;
+    out property <string> peak-prefix: Tokens.editor-control-peak-prefix;
+    out property <string> trough-prefix: Tokens.editor-control-trough-prefix;
+    out property <string> activation-key: Tokens.editor-control-activation-key;
+    out property <string> align-left: Tokens.editor-control-align-left;
+    out property <string> align-center: Tokens.editor-control-align-center;
+    out property <string> align-right: Tokens.editor-control-align-right;
+    out property <string> size-small: Tokens.editor-control-size-small;
+    out property <string> size-medium: Tokens.editor-control-size-medium;
+    out property <string> size-large: Tokens.editor-control-size-large;
+    out property <string> value-unit-separator: Tokens.editor-control-value-unit-separator;
+    out property <string> label-value-separator: Tokens.editor-control-label-value-separator;
+
+    out property <string> unit-pan: Tokens.editor-control-unit-pan;
+    out property <string> unit-percent: Tokens.editor-control-unit-percent;
+    out property <string> context-key: Tokens.editor-control-context-key;
+    out property <string> context-key-upper: Tokens.editor-control-context-key-upper;
+    out property <string> menu-parameter: Tokens.editor-control-menu-parameter;
+    out property <string> menu-modulation: Tokens.editor-control-menu-modulation;
+    out property <string> menu-modulation-more: Tokens.editor-control-menu-modulation-more;
+    out property <string> menu-midi-learn: Tokens.editor-control-menu-midi-learn;
+    out property <string> menu-macro-map: Tokens.editor-control-menu-macro-map;
+    out property <string> menu-reset: Tokens.editor-control-menu-reset;
+    out property <string> menu-type-value: Tokens.editor-control-menu-type-value;
+    out property <string> menu-add-route: Tokens.editor-control-menu-add-route;
+    out property <string> menu-edit-route: Tokens.editor-control-menu-edit-route;
+    out property <string> menu-invert-route: Tokens.editor-control-menu-invert-route;
+    out property <string> menu-bypass-route: Tokens.editor-control-menu-bypass-route;
+    out property <string> menu-remove-route: Tokens.editor-control-menu-remove-route;
+    out property <string> readonly-instruction: Tokens.editor-control-readonly-instruction;
+    out property <string> range-instruction: Tokens.editor-control-range-instruction;
+    out property <string> modulation-glyph-unassigned: Tokens.editor-control-modulation-glyph-unassigned;
+    out property <string> modulation-glyph-first: Tokens.editor-control-modulation-glyph-first;
+    out property <string> modulation-glyph-second: Tokens.editor-control-modulation-glyph-second;
+    out property <string> modulation-glyph-third: Tokens.editor-control-modulation-glyph-third;
+    out property <string> modulation-glyph-fourth: Tokens.editor-control-modulation-glyph-fourth;
+    out property <string> modulation-source-spacing: Tokens.editor-control-modulation-source-spacing;
+    out property <string> modulation-value-spacing: Tokens.editor-control-modulation-value-spacing;
+    out property <string> more-assignments-prefix: Tokens.editor-control-more-assignments-prefix;
+    public pure function modulation-label(name:string) -> string { return Tokens.editor-control-label-modulation-prefix+name; }
+    public pure function midi-label(name:string) -> string { return Tokens.editor-control-label-midi-prefix+name; }
+    public pure function map-label(name:string) -> string { return Tokens.editor-control-label-map-prefix+name + Tokens.editor-control-label-map-suffix; }
+    public pure function reset-label(name:string) -> string { return Tokens.editor-control-label-reset-prefix+name + Tokens.editor-control-label-reset-suffix; }
+    public pure function type-label(name:string) -> string { return Tokens.editor-control-label-type-prefix+name + Tokens.editor-control-label-value-suffix; }
+    public pure function edit-label(name:string) -> string { return Tokens.editor-control-label-edit-prefix+name + Tokens.editor-control-label-value-suffix; }
+    public pure function add-route-label(name:string) -> string { return Tokens.editor-control-label-add-route-prefix+name; }
+    public pure function edit-route-label(name:string) -> string { return Tokens.editor-control-label-edit-route-prefix+name; }
+    public pure function invert-route-label(name:string) -> string { return Tokens.editor-control-label-invert-route-prefix+name; }
+    public pure function bypass-route-label(name:string) -> string { return Tokens.editor-control-label-bypass-route-prefix+name; }
+    public pure function remove-route-label(name:string) -> string { return Tokens.editor-control-label-remove-route-prefix+name; }
+}
+export global GesturePhases {
+    out property <int> begin: Tokens.editor-control-gesture-begin;
+    out property <int> update: Tokens.editor-control-gesture-update;
+    out property <int> commit: Tokens.editor-control-gesture-commit;
+    out property <int> cancel: Tokens.editor-control-gesture-cancel;
+}
+export global RangeFields {
+    out property <string> minimum: Tokens.editor-control-field-minimum;
+    out property <string> maximum: Tokens.editor-control-field-maximum;
+}

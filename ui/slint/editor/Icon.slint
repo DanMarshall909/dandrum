@@ -1,0 +1,53 @@
+import { Tokens } from "../theme.slint";
+import { EditorTheme } from "Theme.slint";
+// Retained editor guide SVG geometry; applications provide their own aliases.
+export component EditorIcon inherits Image {
+    in property <string> name;
+    in property <string> resolved-name: root.name;
+    in property <color> tint: EditorTheme.paper-3;
+    in property <length> size: Tokens.editor-icon-size;
+    width: root.size; height: root.size; image-fit: contain; colorize: root.tint;
+    source:
+            root.resolved-name == Tokens.editor-icon-reload ? @image-url("assets/reload.svg") :
+            root.resolved-name == Tokens.editor-icon-warning ? @image-url("assets/warning.svg") :
+            root.resolved-name == Tokens.editor-icon-error ? @image-url("assets/error.svg") :
+            root.resolved-name == Tokens.editor-icon-ok ? @image-url("assets/ok.svg") :
+            root.resolved-name == Tokens.editor-icon-info ? @image-url("assets/info.svg") :
+            root.resolved-name == Tokens.editor-icon-lock ? @image-url("assets/lock.svg") :
+            root.resolved-name == Tokens.editor-icon-chevron-down ? @image-url("assets/chevron-down.svg") :
+            root.resolved-name == Tokens.editor-icon-chevron-right ? @image-url("assets/chevron-right.svg") :
+            root.resolved-name == Tokens.editor-icon-chevron-left ? @image-url("assets/chevron-left.svg") :
+            root.resolved-name == Tokens.editor-icon-close ? @image-url("assets/close.svg") :
+            root.resolved-name == Tokens.editor-icon-plus ? @image-url("assets/plus.svg") :
+            root.resolved-name == Tokens.editor-icon-minus ? @image-url("assets/minus.svg") :
+            root.resolved-name == Tokens.editor-icon-more ? @image-url("assets/more.svg") :
+            root.resolved-name == Tokens.editor-icon-modulate ? @image-url("assets/modulate.svg") :
+            root.resolved-name == Tokens.editor-icon-host ? @image-url("assets/host.svg") :
+            root.resolved-name == Tokens.editor-icon-choke ? @image-url("assets/choke.svg") :
+            root.resolved-name == Tokens.editor-icon-alternate ? @image-url("assets/alternate.svg") :
+            root.resolved-name == Tokens.editor-icon-layers ? @image-url("assets/layers.svg") :
+            root.resolved-name == Tokens.editor-icon-reverse ? @image-url("assets/reverse.svg") :
+            root.resolved-name == Tokens.editor-icon-loop ? @image-url("assets/loop.svg") :
+            root.resolved-name == Tokens.editor-icon-one-shot ? @image-url("assets/one-shot.svg") :
+            root.resolved-name == Tokens.editor-icon-gate ? @image-url("assets/gate.svg") :
+            root.resolved-name == Tokens.editor-icon-slice ? @image-url("assets/slice.svg") :
+            root.resolved-name == Tokens.editor-icon-keyboard ? @image-url("assets/keyboard.svg") :
+            root.resolved-name == Tokens.editor-icon-tap ? @image-url("assets/tap.svg") :
+            root.resolved-name == Tokens.editor-icon-pc-keys ? @image-url("assets/pc-keys.svg") :
+            root.resolved-name == Tokens.editor-icon-rows-more ? @image-url("assets/rows-more.svg") :
+            root.resolved-name == Tokens.editor-icon-rows-less ? @image-url("assets/rows-less.svg") :
+            root.resolved-name == Tokens.editor-icon-search ? @image-url("assets/search.svg") :
+            root.resolved-name == Tokens.editor-icon-star ? @image-url("assets/star.svg") :
+            root.resolved-name == Tokens.editor-icon-import ? @image-url("assets/import.svg") :
+            root.resolved-name == Tokens.editor-icon-export ? @image-url("assets/export.svg") :
+            root.resolved-name == Tokens.editor-icon-folder ? @image-url("assets/folder.svg") :
+            root.resolved-name == Tokens.editor-icon-file-missing ? @image-url("assets/file-missing.svg") :
+            root.resolved-name == Tokens.editor-icon-reset ? @image-url("assets/reset.svg") :
+            root.resolved-name == Tokens.editor-icon-midi ? @image-url("assets/midi.svg") :
+            root.resolved-name == Tokens.editor-icon-pan ? @image-url("assets/pan.svg") :
+            root.resolved-name == Tokens.editor-icon-pitch ? @image-url("assets/pitch.svg") :
+            root.resolved-name == Tokens.editor-icon-level ? @image-url("assets/level.svg") :
+            root.resolved-name == Tokens.editor-icon-variation ? @image-url("assets/variation.svg") :
+            root.resolved-name == Tokens.editor-icon-settings ? @image-url("assets/settings.svg") :
+            @image-url("assets/info.svg");
+}

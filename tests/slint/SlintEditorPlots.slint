@@ -1,0 +1,67 @@
+import { EditorFilterPlot } from "../../ui/slint/editor/FilterPlot.slint";
+import { EditorEnvelopePlot } from "../../ui/slint/editor/EnvelopePlot.slint";
+import { PlotParameter } from "../../ui/slint/editor/types.slint";
+export { PlotParameter } from "../../ui/slint/editor/types.slint";
+export { EditorTheme } from "../../ui/slint/editor/Theme.slint";
+
+export component SlintEditorPlots inherits Window {
+    width: 620px; height: 340px;
+    background: #101010;
+    in-out property <bool> accept-begin: true;
+    in-out property <bool> plot-enabled: true;
+    in-out property <float> cutoff: 2400;
+    in-out property <float> resonance: 0.22;
+    in-out property <string> mode: "lp";
+    in-out property <[PlotParameter]> envelope-parameters: [
+        {value: 15, minimum: 0, maximum: 300, step: 1},
+        {value: 180, minimum: 0, maximum: 2111, step: 1},
+        {value: 0.6, minimum: 0, maximum: 1, step: 0.01},
+        {value: 500, minimum: 0, maximum: 4500, step: 1}
+    ];
+    out property <int> begins;
+    out property <int> updates;
+    out property <int> ends;
+    out property <int> cancels;
+    out property <int> related-updates;
+    out property <int> last-index;
+    out property <float> last-value;
+    out property <float> related-value;
+    private property <float> saved-cutoff;
+    private property <float> saved-resonance;
+    private property <[PlotParameter]> saved-parameters;
+    public function reset-counts() { root.begins = 0; root.updates = 0; root.ends = 0; root.cancels = 0; root.related-updates = 0; }
+    public function filter-update(x: float,y: float) { filter.update(x,y); }
+    public function envelope-start(index: int) { envelope.start(index); }
+    public function envelope-update(index: int,x: float,y: float) { envelope.update(index,x,y); }
+    public function envelope-finish(index: int,cancel: bool) { envelope.finish(index,cancel); }
+    out property <float> attack-x: envelope.handle-x(0);
+    out property <float> decay-x: envelope.handle-x(1);
+    out property <float> sustain-x: envelope.handle-x(2);
+    out property <float> release-x: envelope.handle-x(3);
+    out property <float> sustain-y: envelope.handle-y(2);
+    out property <float> low-response: filter.response(0.2);
+    out property <float> high-response: filter.response(0.8);
+    out property <bool> filter-dragging: filter.dragging;
+    out property <bool> envelope-dragging: envelope.dragging;
+    filter := EditorFilterPlot { x: 10px; y: 10px; width: 600px; height: 150px; cutoff: root.cutoff; resonance: root.resonance; mode: root.mode; enabled: root.plot-enabled;
+        gesture(phase,value) => {
+            if phase == 0 { root.begins += 1; root.saved-cutoff = root.cutoff; root.saved-resonance = root.resonance; return root.accept-begin; }
+            if phase == 1 { root.updates += 1; root.cutoff = value; }
+            if phase == 2 { root.ends += 1; }
+            if phase == 3 { root.cancels += 1; root.cutoff = root.saved-cutoff; root.resonance = root.saved-resonance; }
+            return true;
+        }
+        resonance-preview(value) => { root.related-updates += 1; root.resonance = value; }
+    }
+    envelope := EditorEnvelopePlot { x: 10px; y: 180px; width: 600px; height: 140px; title: "Independent envelope"; parameters: root.envelope-parameters; enabled: root.plot-enabled;
+        gesture(index,phase,value) => {
+            root.last-index = index; root.last-value = value;
+            if phase == 0 { root.begins += 1; root.saved-parameters = [root.envelope-parameters[0],root.envelope-parameters[1],root.envelope-parameters[2],root.envelope-parameters[3]]; return root.accept-begin; }
+            if phase == 1 { root.updates += 1; root.envelope-parameters[index].value = value; }
+            if phase == 2 { root.ends += 1; }
+            if phase == 3 { root.cancels += 1; root.envelope-parameters = root.saved-parameters; }
+            return true;
+        }
+        related-preview(index,value) => { root.related-updates += 1; root.related-value = value; root.envelope-parameters[index].value = value; }
+    }
+}

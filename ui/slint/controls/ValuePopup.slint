@@ -1,3 +1,4 @@
+import { ParameterStrings } from "../editor/ParameterConstants.slint";
 import { Tokens } from "../theme.slint";
 import { ValueCodec } from "ValueCodec.slint";
 import { ValueEditor } from "ValueEditor.slint";
@@ -9,7 +10,7 @@ import { ClipTag } from "../modulation/ClipTag.slint";
 export component ValuePopup inherits Rectangle {
     in property <bool> above;
     in property <length> anchor-x: root.width / 2;
-    private property <length> arrow-inset: min(12px, root.width / 2);
+    private property <length> arrow-inset: min(Tokens.editor-control-guide-popup-arrow-inset, root.width / 2);
     in property <string> label;
     in property <string> value-text;
     in property <string> unit;
@@ -28,17 +29,17 @@ export component ValuePopup inherits Rectangle {
     callback abandoned();
     callback reset-peaks();
     callback hover-changed(bool);
-    background: Tokens.surface-well; border-color: Tokens.border-strong; border-width: 1px; border-radius: Tokens.radius-2;
-    drop-shadow-color: #00000080; drop-shadow-blur: 20px; drop-shadow-offset-y: 8px;
-    accessible-role: groupbox; accessible-label: root.label + " value popup";
+    background: Tokens.surface-well; border-color: Tokens.border-strong; border-width: Tokens.editor-control-stroke-width; border-radius: Tokens.radius-2;
+    drop-shadow-color: Tokens.editor-control-popup-shadow; drop-shadow-blur: Tokens.editor-control-guide-popup-shadow-blur; drop-shadow-offset-y: Tokens.editor-control-guide-popup-shadow-offset;
+    accessible-role: groupbox; accessible-label: root.label + ParameterStrings.label-popup-suffix;
     hover := TouchArea { enabled: true; changed has-hover => { root.hover-changed(self.has-hover); } }
     arrow := Rectangle {
-        x: root.anchor-x.clamp(root.arrow-inset, root.width - root.arrow-inset) - 4px;
-        y: root.above ? parent.height - 4px : -4px; width: 8px; height: 8px;
-        Rectangle { background: Tokens.surface-well; transform-rotation: 45deg; border-width: 1px; border-color: Tokens.border-strong; }
+        x: root.anchor-x.clamp(root.arrow-inset, root.width - root.arrow-inset) - Tokens.editor-control-guide-popup-arrow-half;
+        y: root.above ? parent.height - Tokens.editor-control-guide-popup-arrow-half : -Tokens.editor-control-guide-popup-arrow-half; width: Tokens.editor-control-guide-popup-arrow-size; height: Tokens.editor-control-guide-popup-arrow-size;
+        Rectangle { background: Tokens.surface-well; transform-rotation: Tokens.editor-control-popup-arrow-angle*1deg; border-width: Tokens.editor-control-stroke-width; border-color: Tokens.border-strong; }
     }
     VerticalLayout {
-        padding: 6px; spacing: 5px;
+        padding: Tokens.editor-control-guide-popup-padding; spacing: Tokens.editor-control-guide-popup-spacing;
         ValueEditor {
             value-text: root.value-text; label: root.label; unit: root.unit; editing: root.editing; invalid: root.invalid; host-automated: root.host-automated;
             changed hovered => { root.hover-changed(self.hovered); }
@@ -48,19 +49,19 @@ export component ValuePopup inherits Rectangle {
             abandoned => { root.abandoned(); }
         }
         if root.show-peaks || root.clipped : HorizontalLayout {
-            spacing: 6px;
+            spacing: Tokens.editor-control-guide-popup-padding;
             if root.show-peaks : FocusScope {
-                min-width: peaks.preferred-width; height: 18px;
-                accessible-role: button; accessible-label: "Reset peak and trough";
+                min-width: peaks.preferred-width; height: Tokens.editor-control-guide-popup-peak-height;
+                accessible-role: button; accessible-label: ParameterStrings.menu-reset-peaks;
                 accessible-action-default => { root.reset-peaks(); }
-                key-pressed(event) => { if event.text == " " || event.text == Key.Return { root.reset-peaks(); return accept; } return reject; }
-                peaks := Text { text: "▴\{ValueCodec.format(root.peak, root.unit)} ▾\{ValueCodec.format(root.trough, root.unit)}"; font-family: Tokens.font-value; font-size: 11px; color: Tokens.text-tertiary; vertical-alignment: center; }
+                key-pressed(event) => { if event.text == ParameterStrings.activation-key || event.text == Key.Return { root.reset-peaks(); return accept; } return reject; }
+                peaks := Text { text: ParameterStrings.peak-prefix + ValueCodec.format(root.peak, root.unit) + ParameterStrings.trough-prefix + ValueCodec.format(root.trough, root.unit); font-family: Tokens.font-value; font-size: Tokens.editor-control-font-caption; color: Tokens.text-tertiary; vertical-alignment: center; }
                 TouchArea { mouse-cursor: pointer; clicked => { root.reset-peaks(); } }
             }
             if root.clipped : ClipTag { live: root.live-clipped; }
         }
         if root.modulations.length > 0 : Rectangle { height: 1px; background: Tokens.border-hairline; }
         for assignment in root.modulations : ModIndicator { slot: assignment.slot; source: assignment.source; depth: assignment.depth; active: assignment.active; compact: true; }
-        if root.host-automated : Text { text: "Host automation · DAW owned"; font-family: Tokens.font-ui; font-size: 11px; color: Tokens.dd-host; wrap: word-wrap; }
+        if root.host-automated : Text { text: ParameterStrings.host-ownership; font-family: Tokens.font-ui; font-size: Tokens.editor-control-font-caption; color: Tokens.dd-host; wrap: word-wrap; }
     }
 }

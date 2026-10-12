@@ -94,7 +94,9 @@ int main() {
         window->window().dispatch_pointer_release_event(at,slint::PointerEventButton::Left);settle();expect(model->heldNotes().empty(),"Native app pad pointer release balances ownership");
         const auto resizeHandle=[&](bool vertical,bool last){
             settle();std::vector<slint::testing::ElementHandle> handles;
-            for(auto row:slint::testing::ElementHandle::find_by_element_type_name(window,"ResizeHandle")){
+            // Slint reports the shared declaration name; the sampler's
+            // ResizeHandle import is an alias and has no separate runtime type.
+            for(auto row:slint::testing::ElementHandle::find_by_element_type_name(window,"EditorResizeHandle")){
                 auto size=row.size();if(vertical?size.width>100&&size.height<10:size.width<10&&size.height>100)handles.push_back(row);
             }
             std::sort(handles.begin(),handles.end(),[](auto a,auto b){return a.absolute_position().x<b.absolute_position().x;});

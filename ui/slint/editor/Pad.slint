@@ -1,0 +1,83 @@
+import { Tokens } from "../theme.slint";
+import { MusicalConstants, GraphMetrics } from "DisplayConstants.slint";
+import { EditorTheme } from "Theme.slint";
+import { FitLayout } from "FitLayout.slint";
+export component EditorPad inherits FocusScope {
+    in property <int> note;
+    in property <string> name;
+    in property <bool> mapped;
+    in property <bool> selected;
+    in property <bool> compact;
+    in property <bool> show-note-name: !root.compact;
+    in property <bool> show-empty-name: !root.compact;
+    in property <length> size: MusicalConstants.pad-minimum-size * 1px;
+    in property <float> level;
+    in property <int> velocity;
+    in property <int> choke-group: -1;
+    in property <int> layers;
+    in property <int> alternates;
+    in property <int> active-alternate: -1;
+    in property <bool> choked;
+    in property <string> source: Tokens.editor-display-pad-source;
+    in property <string> generation;
+    out property <bool> held;
+    in property <length> small-font-size: EditorTheme.type-small;
+    callback window-deactivated();
+    private property <int> held-note;
+    private property <string> held-source;
+    private property <length> inset: root.compact ? Tokens.editor-display-pad-compact-inset : Tokens.editor-display-pad-inset;
+    callback note-on(int, int, string);
+    callback note-off(int, string);
+    callback selected-note(int);
+    width: root.size; height: root.size;
+    accessible-role: button; accessible-label: Tokens.editor-display-pad-label-prefix + root.note + " " + FitLayout.note-name(root.note) + ", " + (root.mapped ? root.name : Tokens.editor-display-pad-empty-accessible);
+    accessible-description: Tokens.editor-display-pad-input-description;
+    accessible-enabled: root.enabled; focus-on-tab-navigation: true; focus-on-click: true;
+    accessible-action-default => { root.press(MusicalConstants.pad-audition-strength); root.release-note(); }
+    public function press(velocity: float) {
+        if !root.enabled { return; } root.selected-note(root.note);
+        if root.mapped && !root.held { root.held = true; root.held-note = root.note; root.held-source = root.source; root.note-on(root.note, max(1, round(velocity.clamp(0, 1) * MusicalConstants.velocity-maximum)), root.source); }
+    }
+    public function release-note() { if root.held { root.held = false; root.note-off(root.held-note, root.held-source); } }
+    changed enabled => { if !root.enabled { root.release-note(); } }
+    changed visible => { if !root.visible { root.release-note(); } }
+    changed generation => { root.release-note(); }
+    changed note => { root.release-note(); }
+    changed mapped => { if !root.mapped { root.release-note(); } }
+    focus-lost(reason) => { root.release-note(); if reason == FocusReason.window-activation { root.window-deactivated(); } }
+    key-pressed(event) => { if event.text == Tokens.editor-display-input-space-key || event.text == Key.Return { root.press(MusicalConstants.pad-audition-strength); return accept; } if event.text == Key.Escape { root.release-note(); return accept; } return reject; }
+    key-released(event) => { if event.text == Tokens.editor-display-input-space-key || event.text == Key.Return { root.release-note(); return accept; } return reject; }
+    Rectangle {
+        border-radius: Tokens.radius-2; border-width: root.mapped ? 1px : 0px; border-color: root.selected ? EditorTheme.accent : EditorTheme.line-2;
+        background: root.mapped ? root.held ? EditorTheme.cap-press : input.has-hover ? EditorTheme.pad-hover : EditorTheme.pad : input.has-hover ? EditorTheme.ink-3 : transparent;
+        drop-shadow-blur: root.mapped ? Tokens.space-1 : 0px; drop-shadow-offset-y: root.mapped ? 1px : 0px; drop-shadow-color: #00000044;
+        if root.mapped && EditorTheme.soft : Rectangle { border-radius: Tokens.radius-2; background: @linear-gradient(180deg, #FFFFFF0D, transparent 50%, #0000001F); }
+        if root.mapped : Rectangle { x: 1px; y: 1px; width: parent.width - Tokens.space-1; height: 1px; background: #FFFFFF12; }
+        if root.selected : Rectangle { x: 1px; y: 1px; width: parent.width - Tokens.space-1; height: parent.height - Tokens.space-1; border-radius: Tokens.editor-display-pad-radius-inner; border-width: Tokens.stroke-hairline; border-color: EditorTheme.accent; }
+        if !root.mapped : Rectangle {
+            for i in ceil(root.size / Tokens.space-2) : Rectangle { x: i * Tokens.space-2; y: 0px; width: min(Tokens.space-1, parent.width - self.x); height: 1px; background: root.selected ? EditorTheme.accent : EditorTheme.line-2; }
+            for i in ceil(root.size / Tokens.space-2) : Rectangle { x: i * Tokens.space-2; y: parent.height - 1px; width: min(Tokens.space-1, parent.width - self.x); height: 1px; background: root.selected ? EditorTheme.accent : EditorTheme.line-2; }
+            for i in ceil(root.size / Tokens.space-2) : Rectangle { x: 0px; y: i * Tokens.space-2; width: 1px; height: min(Tokens.space-1, parent.height - self.y); background: root.selected ? EditorTheme.accent : EditorTheme.line-2; }
+            for i in ceil(root.size / Tokens.space-2) : Rectangle { x: parent.width - 1px; y: i * Tokens.space-2; width: 1px; height: min(Tokens.space-1, parent.height - self.y); background: root.selected ? EditorTheme.accent : EditorTheme.line-2; }
+        }
+        Rectangle { background: EditorTheme.paper-1.with-alpha(root.level.clamp(0, 1) * GraphMetrics.pad-activity-alpha); border-radius: Tokens.radius-2; }
+        Rectangle { height: Tokens.editor-display-pad-velocity-track-height; background: EditorTheme.paper-1.with-alpha(root.level.clamp(0, 1)); }
+        Text { x: root.inset; y: root.inset; height: Tokens.space-5; text: "\{root.note}"; font-family: EditorTheme.font-value; font-size: root.small-font-size; color: root.mapped ? EditorTheme.text-secondary : EditorTheme.text-disabled; }
+        if root.show-note-name : Text { x: Tokens.editor-display-pad-note-name-offset; y: root.inset; text: FitLayout.note-name(root.note); font-family: EditorTheme.font-value; font-size: root.small-font-size; color: EditorTheme.text-tertiary; }
+        if root.mapped && root.choke-group >= 0 : Rectangle { x: parent.width - Tokens.editor-display-pad-choke-offset; y: root.inset; width: Tokens.editor-display-pad-choke-width; height: Tokens.space-5; background: EditorTheme.ink-0; border-radius: Tokens.radius-1;
+            Text { text: Tokens.editor-display-pad-choke-glyph + root.choke-group; font-family: EditorTheme.font-ui; font-size: root.small-font-size; font-weight: Tokens.weight-medium; color: EditorTheme.text-secondary; horizontal-alignment: center; }
+        }
+        if root.mapped || root.show-empty-name : Text { x: root.inset; y: root.size / 2 - Tokens.editor-display-pad-inset; width: parent.width - root.inset * 2; height: Tokens.editor-display-pad-label-height; text: root.mapped ? root.name : Tokens.editor-display-pad-empty-title; font-family: EditorTheme.font-ui; font-size: root.compact ? Tokens.type-micro : Tokens.type-body; font-weight: Tokens.weight-medium; color: !root.mapped ? EditorTheme.text-disabled : root.choked ? EditorTheme.text-tertiary : EditorTheme.text-primary; overflow: elide; }
+        if root.choked : Rectangle { x: root.inset; y: root.size / 2; width: parent.width - 2 * root.inset; height: 1px; background: EditorTheme.text-tertiary; }
+        if root.mapped : Rectangle { x: root.inset; y: parent.height - root.inset - Tokens.space-2; width: parent.width - 2 * root.inset - (root.alternates > 1 ? root.alternates * Tokens.space-3 : 0px); height: Tokens.editor-display-pad-velocity-track-height; border-radius: 1px; background: EditorTheme.ink-0;
+            Rectangle { width: parent.width * (root.velocity / MusicalConstants.velocity-maximum).clamp(0, 1); background: EditorTheme.paper-2.with-alpha(GraphMetrics.velocity-opacity-minimum + root.level * GraphMetrics.velocity-opacity-span); }
+        }
+        for i in root.alternates > 1 ? root.alternates : 0 : Rectangle { x: parent.width - root.inset - root.alternates * Tokens.space-3 + i * Tokens.space-3; y: parent.height - root.inset - Tokens.editor-display-pad-compact-inset; width: Tokens.space-2; height: Tokens.space-2; border-radius: Tokens.radius-1; border-width: Tokens.stroke-hairline; border-color: EditorTheme.paper-3; background: i == root.active-alternate ? EditorTheme.paper-1 : transparent; }
+        if root.has-focus : Rectangle { x: -Tokens.editor-display-pad-focus-gap; y: -Tokens.editor-display-pad-focus-gap; width: parent.width + Tokens.space-3; height: parent.height + Tokens.space-3; border-width: Tokens.stroke-focus; border-color: EditorTheme.paper-1; border-radius: Tokens.radius-3; }
+    }
+    // Adapters can insert a drop target beneath the note input surface.
+    @children
+    input := TouchArea {
+        pointer-event(event) => { if event.kind == PointerEventKind.down && event.button == PointerEventButton.left { root.focus(); root.press(1 - self.mouse-y / max(1px, self.height) + MusicalConstants.pad-pointer-bias); } else if event.kind == PointerEventKind.up || event.kind == PointerEventKind.cancel { root.release-note(); } }
+    }
+}

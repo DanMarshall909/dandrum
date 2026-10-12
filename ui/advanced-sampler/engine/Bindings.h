@@ -1,5 +1,8 @@
 #pragma once
 #include "Model.h"
+#include "../domain/CommandIds.h"
+#include "../../slint/host/ModelProjection.h"
+#include "../../slint/host/VelocityBlend.h"
 #include "../render/WaveDisplay.h"
 #include <slint.h>
 #include <chrono>
@@ -13,43 +16,11 @@
 #include <utility>
 namespace dandrum::sampler {
 namespace binding {
-inline slint::SharedString str(std::string_view s){return slint::SharedString(std::string(s).c_str());}
-template<class P> using Row=typename decltype(std::declval<P>()->row_data(0))::value_type;
-template<class P> auto synchronize(const P& previous,std::vector<Row<P>> rows){
- auto model=std::dynamic_pointer_cast<slint::VectorModel<Row<P>>>(previous);
- if(!model)model=std::make_shared<slint::VectorModel<Row<P>>>();
- if(model->row_count()!=rows.size()){model->set_vector(std::move(rows));return model;}
- for(std::size_t i=0;i<rows.size();++i)if(model->row_data(i)!=std::optional<Row<P>>(rows[i]))model->set_row_data(i,rows[i]);
- return model;
-}
-template<class P,class F> auto project(const P& previous,const std::vector<Record>& records,F fill){
- std::vector<Row<P>> rows;rows.reserve(records.size());
- std::optional<std::unordered_map<std::string,Row<P>>> previousById;
- for(auto& record:records){
-  Row<P> row{};
-  // Preserve child models by record identity, including when rows are reordered.
-  // The usual unchanged-order path needs only one lookup per record.
-  if constexpr(requires { row.id; })if(previous){
-   const auto id=str(record.id);
-   auto old=rows.size()<previous->row_count()?previous->row_data(rows.size()):std::optional<Row<P>>{};
-   if(old&&old->id==id)row=*old;
-   else {
-    // Index once when rows move, so insertion/deletion cannot trigger quadratic scans.
-    if(!previousById){
-     previousById.emplace();previousById->reserve(previous->row_count());
-     for(std::size_t i=0;i<previous->row_count();++i)if(auto candidate=previous->row_data(i)){
-      auto key=std::string(std::string_view(candidate->id));
-      previousById->emplace(std::move(key),std::move(*candidate));
-     }
-    }
-    if(auto found=previousById->find(record.id);found!=previousById->end())row=found->second;
-   }
-  }
-  fill(row,record);rows.push_back(std::move(row));
- }
- return synchronize(previous,std::move(rows));
-}
-template<class P> auto strings(const P& previous,std::string_view delimited){std::vector<slint::SharedString> out;std::istringstream in{std::string(delimited)};std::string s;while(std::getline(in,s,';'))if(!s.empty())out.push_back(str(s));return synchronize(previous,std::move(out));}
+using dandrum::slint_ui::binding::str;
+using dandrum::slint_ui::binding::Row;
+using dandrum::slint_ui::binding::synchronize;
+using dandrum::slint_ui::binding::project;
+using dandrum::slint_ui::binding::strings;
 }
 // Global-type inference keeps this adapter independent of the application header.
 // Create after AppWindow::create(), retain the returned binding for the window lifetime.
@@ -70,14 +41,7 @@ public:
   self->session_.on_slice_source([](const auto& owners,slint::SharedString id){if(owners){owners->track_any_change();for(std::size_t i=0;i<std::min<std::size_t>(owners->row_count(),8192);++i){auto row=owners->row_data(i);if(row&&row->id==id)return row->source;}}return slint::SharedString{};});
   // UI-thread geometry only: bounded 101 points, independent of audio processing.
   self->session_.on_velocity_path([](float low,float high,float width,slint::SharedString curve,bool closed){
-   const auto gain=[&](int i){const double t=i/100.;if(curve=="none")return t*127>=low-1&&t*127<=high?1.:0.;
-    const double f=std::clamp((low<=1?(high+1-t*127):(t*127-low+1))/std::max(1.f,width),0.,1.);
-    return curve=="linear"?f:std::sin(f*std::numbers::pi/2);};
-   std::ostringstream path;path.imbue(std::locale::classic());
-   if(closed)path<<"M 0 100 L 0 "<<(1-gain(0))*100;else path<<"M 0 "<<(1-gain(0))*100;
-   for(int i=1;i<=100;++i)path<<" L "<<i<<' '<<(1-gain(i))*100;
-   if(closed)path<<" L 100 100 Z";
-   return binding::str(path.str());
+   return binding::str(dandrum::slint_ui::velocity_blend_path(low,high,width,std::string_view(curve),closed));
   });
   auto spectral=std::make_shared<dandrum::advanced_sampler::WaveDisplayCache>();
   self->session_.on_spectral_preview([weak,spectral](const auto& buckets,bool reversed,float start,float end,slint::Color ink0,slint::Color ink5,slint::Color accentLow,slint::Color accent,slint::Color paper){
@@ -109,11 +73,11 @@ public:
  };
  auto heading=[&](std::string label){ir("header",label);};
  auto property=[&](std::string label,std::string value,std::string unit={}){ir("property",label,value,unit);};
- auto action=[&](std::string label,std::string id,std::string target,std::string field={},double amount=0){auto& row=ir("action",label);row.fields["action"]=id;row.fields["target"]=target;row.fields["field"]=field;row.fields["amount"]=std::to_string(amount);};
+ auto action=[&](std::string label,std::string_view id,std::string target,std::string field={},double amount=0){auto& row=ir("action",label);row.fields["action"]=id;row.fields["target"]=target;row.fields["field"]=field;row.fields["amount"]=std::to_string(amount);};
  auto numberText=[&](double value){std::ostringstream out;out<<value;return out.str();};
  auto routeSourceName=[&](const Record& route){auto source=m.find("modulator",route.text("source"));if(!source)source=m.find("macro",route.text("source"));return source?source->text("name"):route.text("source");};
  auto routeDestinationName=[&](const Record& route){std::string id=route.text("destination");auto parameter=m.parameterInfo(id);if(id=="level")return std::string("Amp gain");if(id=="start-offset")return std::string("Sample start");if(id=="cutoff")return std::string("Filter cutoff");if(id=="resonance")return std::string("Filter resonance");if(id=="drive")return std::string("Filter drive");if(id.starts_with("pad:")){std::string name=id.substr(4);std::replace(name.begin(),name.end(),':',' ');return std::string("Pad ")+name;}return parameter?parameter->text("label"):id;};
- auto routeRow=[&](const Record& route){auto source=m.find("modulator",route.text("source"));auto parameter=m.parameterInfo(route.text("destination"));auto& row=ir("modulation",routeSourceName(route),routeDestinationName(route));row.fields["action"]="route.select";row.fields["target"]=route.id;row.fields["amount"]=route.text("amount");row.fields["slot"]=route.text("slot");row.fields["parameter-id"]=route.text("destination");};
+ auto routeRow=[&](const Record& route){auto source=m.find("modulator",route.text("source"));auto parameter=m.parameterInfo(route.text("destination"));auto& row=ir("modulation",routeSourceName(route),routeDestinationName(route));row.fields["action"]=commands::route_select;row.fields["target"]=route.id;row.fields["amount"]=route.text("amount");row.fields["slot"]=route.text("slot");row.fields["parameter-id"]=route.text("destination");};
  std::string page=m.text("page");
  if((page=="sample"||page=="slices")&&m.find("history",m.text("selected-history"))){
   auto history=m.find("history",m.text("selected-history"));inspectorTitle=history->text("label");inspectorType="Operation";inspectorIcon="settings";heading(inspectorTitle);
@@ -122,27 +86,27 @@ public:
   else if(operation=="normalize"){property("Target",history->text("target","-1.0"),"dBFS");property("Mode",history->text("mode","Peak"));property("Gain applied",history->text("gain-applied","Not analysed"),history->fields.contains("gain-applied")?"dB":"");}
   else if(operation=="trim"){if(page=="slices"){property("Start",numberText(m.number("region-start")*duration),"s");property("End",numberText(m.number("region-end")*duration),"s");}else {property("Length",numberText((m.number("region-end")-m.number("region-start"))*duration),"s");property("Snap",m.number("snap-zero")?"Zero crossings":"Off");ir("text","","Edit start and end in the Region fields, or drag the region edges on the waveform.");}}
   else if(operation=="loop"){property("Start",numberText(m.number("loop-start")*duration),"s");property("End",numberText(m.number("loop-end")*duration),"s");property("Crossfade",numberText(m.number("loop-crossfade")*duration*1000),"ms");property("Mode",m.text("play-mode"));}
-  else if(operation=="source"){property("File",source?source->text("name"):history->text("detail"));property("Format",source?source->text("metadata"):"Unavailable");property("Length",numberText(duration),"s");action("Replace…","asset.replace",source?source->id:m.text("selected-source"));}
-  else if(operation=="slice"){property("Method",history->text("method","Even"));property("Count",std::to_string(m.records("slice").size()));property("Snap",m.number("snap-zero")?"Zero crossings":"Off");action("Detect transients","analysis.start","transients");}
+  else if(operation=="source"){property("File",source?source->text("name"):history->text("detail"));property("Format",source?source->text("metadata"):"Unavailable");property("Length",numberText(duration),"s");action("Replace…",commands::asset_replace,source?source->id:m.text("selected-source"));}
+  else if(operation=="slice"){property("Method",history->text("method","Even"));property("Count",std::to_string(m.records("slice").size()));property("Snap",m.number("snap-zero")?"Zero crossings":"Off");action("Detect transients",commands::analysis_start,"transients");}
   else {property("Value",history->text("value",history->text("detail")));property("State",history->number("on",1)?"On":"Bypassed");}
-  if(!history->number("baseline")){ir("text","", "Operations are non-destructive; the source file is preserved.");action("Bypass","sample.history-bypass",history->id);action("Remove","sample.history-remove",history->id);}
+  if(!history->number("baseline")){ir("text","", "Operations are non-destructive; the source file is preserved.");action("Bypass",commands::sample_history_bypass,history->id);action("Remove",commands::sample_history_remove,history->id);}
 
  }else if(page=="empty"||m.records("source").empty()){
   heading("Instrument");property("Sounds",m.records("zone").empty()?"None":std::to_string(m.records("zone").size()));property("Voice limit",numberText(m.number("voice-limit")));property("Output","Main 1/2");ir("text","","Drop or browse a sample to create a sound.");
  }else if(page=="sample"&&selectedSource){
   inspectorTitle=selectedSource->text("name");inspectorType="Sample";inspectorIcon="level";heading("Sample");property("State",selectedSource->text("state"));std::string format=selectedSource->text("metadata");for(const std::string_view suffix:{" · stereo"," · mono"})if(format.ends_with(suffix))format.resize(format.size()-suffix.size());property("Format",format);property("Channels",selectedSource->number("channels")==2?"Stereo":selectedSource->number("channels")==1?"Mono":std::to_string(static_cast<int>(selectedSource->number("channels"))));std::set<std::string> uses;for(auto& z:m.records("zone"))if(z.text("source")==selectedSource->id)uses.insert(soundOwner(z));property("Used by",std::to_string(uses.size())+" sound(s)");
-  if(selectedSource->text("state")=="missing"||selectedSource->text("state")=="unsupported"){property("Last seen",selectedSource->text("path"));action("Locate file…","asset.relink",selectedSource->id);action("Search folder…","asset.search-folder",selectedSource->id);action("Replace with…","asset.replace",selectedSource->id);}
-  else{heading("Region");property("Length",numberText(selectedSource->number("duration")*(m.number("region-end")-m.number("region-start"))),"s");property("Loop",m.number("loop-enabled")?numberText(m.number("loop-start"))+"–"+numberText(m.number("loop-end")):"Off");property("Root",numberText(m.number("root-note")));heading("Analysis");property("Pitch",m.text("analysis-root").empty()?"Not analysed":m.text("analysis-root"));property("Loudness",m.text("analysis-gain").empty()?"Not analysed":m.text("analysis-gain"),"dB");property("Zero crossings",selectedSource->text("zero-crossings").empty()?"Not analysed":"Ready");action("Replace…","asset.replace",selectedSource->id);}
+  if(selectedSource->text("state")=="missing"||selectedSource->text("state")=="unsupported"){property("Last seen",selectedSource->text("path"));action("Locate file…",commands::asset_relink,selectedSource->id);action("Search folder…",commands::asset_search_folder,selectedSource->id);action("Replace with…",commands::asset_replace,selectedSource->id);}
+  else{heading("Region");property("Length",numberText(selectedSource->number("duration")*(m.number("region-end")-m.number("region-start"))),"s");property("Loop",m.number("loop-enabled")?numberText(m.number("loop-start"))+"–"+numberText(m.number("loop-end")):"Off");property("Root",numberText(m.number("root-note")));heading("Analysis");property("Pitch",m.text("analysis-root").empty()?"Not analysed":m.text("analysis-root"));property("Loudness",m.text("analysis-gain").empty()?"Not analysed":m.text("analysis-gain"),"dB");property("Zero crossings",selectedSource->text("zero-crossings").empty()?"Not analysed":"Ready");action("Replace…",commands::asset_replace,selectedSource->id);}
  }else if(page=="mapping"||page=="layers"){
-  auto zone=m.find("zone",m.text("selected-zone"));if(zone){inspectorTitle=zone->text("name");inspectorType=page=="mapping"?"Zone":m.text("selector-mode")=="round-robin"?"Alternate":"Layer";inspectorIcon=page=="mapping"?"keyboard":"layers";heading("Keys");property("Low",zone->text("lo"));property("High",zone->text("hi"));property("Root",zone->text("root-note"));heading("Velocity");property("Low",zone->text("vel-lo"));property("High",zone->text("vel-hi"));property("Crossfade",numberText(m.number("crossfade-width")));heading("Selection");property("Policy",m.text("selector-mode"));property("Weight",zone->text("weight","1"));property("Order",zone->text("order","0"));heading("Sample");auto asset=m.find("source",zone->text("source"));property("File",asset?asset->text("name"):zone->text("source"));action("Replace sample…","asset.replace",zone->text("source"));}
+  auto zone=m.find("zone",m.text("selected-zone"));if(zone){inspectorTitle=zone->text("name");inspectorType=page=="mapping"?"Zone":m.text("selector-mode")=="round-robin"?"Alternate":"Layer";inspectorIcon=page=="mapping"?"keyboard":"layers";heading("Keys");property("Low",zone->text("lo"));property("High",zone->text("hi"));property("Root",zone->text("root-note"));heading("Velocity");property("Low",zone->text("vel-lo"));property("High",zone->text("vel-hi"));property("Crossfade",numberText(m.number("crossfade-width")));heading("Selection");property("Policy",m.text("selector-mode"));property("Weight",zone->text("weight","1"));property("Order",zone->text("order","0"));heading("Sample");auto asset=m.find("source",zone->text("source"));property("File",asset?asset->text("name"):zone->text("source"));action("Replace sample…",commands::asset_replace,zone->text("source"));}
  }else if(page=="macros"){
-  auto macro=m.find("macro",m.text("selected-macro"));if(macro){inspectorTitle=macro->text("name");inspectorType="Macro";inspectorIcon="variation";heading("Macro");property("Value",numberText(macro->number("value")*100),"%");property("MIDI",macro->text("midi-cc").empty()?"Unassigned":"CC "+macro->text("midi-cc"));property("Host automation",macro->number("host")?"On":"Off");action("Learn MIDI","macro.learn",macro->id);heading("Destinations");for(auto& binding:m.records("binding"))if(binding.text("macro")==macro->id){auto parameter=m.parameterInfo(binding.text("destination"));auto& row=ir("modulation",parameter?parameter->text("label"):binding.text("destination"),numberText(binding.number("minimum",0.2)*100)+"–"+numberText(binding.number("maximum",0.8)*100)+" %");row.fields["amount"]=binding.text("amount");row.fields["slot"]="4";row.fields["parameter-id"]=binding.text("destination");}action("Add destination…","inspector.macro-destinations",macro->id);}
+  auto macro=m.find("macro",m.text("selected-macro"));if(macro){inspectorTitle=macro->text("name");inspectorType="Macro";inspectorIcon="variation";heading("Macro");property("Value",numberText(macro->number("value")*100),"%");property("MIDI",macro->text("midi-cc").empty()?"Unassigned":"CC "+macro->text("midi-cc"));property("Host automation",macro->number("host")?"On":"Off");action("Learn MIDI",commands::macro_learn,macro->id);heading("Destinations");for(auto& binding:m.records("binding"))if(binding.text("macro")==macro->id){auto parameter=m.parameterInfo(binding.text("destination"));auto& row=ir("modulation",parameter?parameter->text("label"):binding.text("destination"),numberText(binding.number("minimum",0.2)*100)+"–"+numberText(binding.number("maximum",0.8)*100)+" %");row.fields["amount"]=binding.text("amount");row.fields["slot"]="4";row.fields["parameter-id"]=binding.text("destination");}action("Add destination…","inspector.macro-destinations",macro->id);}
  }else if(page=="mod"){
   auto modulator=m.text("selected-id")==m.text("selected-modulator")?m.find("modulator",m.text("selected-modulator")):nullptr;auto route=m.find("route",m.text("selected-route"));if(!modulator&&!route&&!m.records("route").empty())route=&m.records("route").front();
-  if(modulator){inspectorTitle=modulator->text("name");inspectorType="Modulator";inspectorIcon="modulate";heading("Applied to");property("Scope",modulator->text("kind")=="lfo"?"Global":"Per voice");property("Kind",modulator->text("kind"));property("Shape",modulator->text("shape","ADSR"));heading("Routes");for(auto& r:m.records("route"))if(r.text("source")==modulator->id)routeRow(r);action("Apply to group…","route.add",modulator->id,"cutoff");}
-  else if(route){auto source=m.find("modulator",route->text("source"));inspectorTitle=routeSourceName(*route)+" → "+routeDestinationName(*route);inspectorType="Route";inspectorIcon="modulate";heading("Route");routeRow(*route);property("Destination",routeDestinationName(*route));auto destination=m.parameterInfo(route->text("destination"));property("Base value",numberText(destination?destination->number("value"):0));property("Amount",route->text("amount"));property("Polarity",route->text("polarity","unipolar"));property("Curve",route->text("curve","linear"));property("Scope",route->text("scope","voice")=="shared"?"Shared":"Per voice");action("Edit source","modulator.select",route->text("source"));}
+  if(modulator){inspectorTitle=modulator->text("name");inspectorType="Modulator";inspectorIcon="modulate";heading("Applied to");property("Scope",modulator->text("kind")=="lfo"?"Global":"Per voice");property("Kind",modulator->text("kind"));property("Shape",modulator->text("shape","ADSR"));heading("Routes");for(auto& r:m.records("route"))if(r.text("source")==modulator->id)routeRow(r);action("Apply to group…",commands::route_add,modulator->id,"cutoff");}
+  else if(route){auto source=m.find("modulator",route->text("source"));inspectorTitle=routeSourceName(*route)+" → "+routeDestinationName(*route);inspectorType="Route";inspectorIcon="modulate";heading("Route");routeRow(*route);property("Destination",routeDestinationName(*route));auto destination=m.parameterInfo(route->text("destination"));property("Base value",numberText(destination?destination->number("value"):0));property("Amount",route->text("amount"));property("Polarity",route->text("polarity","unipolar"));property("Curve",route->text("curve","linear"));property("Scope",route->text("scope","voice")=="shared"?"Shared":"Per voice");action("Edit source",commands::modulator_select,route->text("source"));}
  }else if(page=="pads"||page=="diagnostics"){
-  int note=static_cast<int>(m.number("selected-pad"));auto pad=m.find("pad",std::to_string(note));std::vector<const Record*> mapped;for(auto& z:m.records("zone"))if(activeZone(z)&&note>=z.number("lo")&&note<=z.number("hi"))mapped.push_back(&z);inspectorTitle=mapped.empty()?"Empty pad":padName(*mapped.front());inspectorType="Pad";heading("Pad");property("Note",std::to_string(note));std::set<std::pair<int,int>> mappedBands;for(auto* z:mapped)mappedBands.emplace(z->number("vel-lo",1),z->number("vel-hi",127));property("Mapped sounds",std::to_string(mappedBands.size()));if(mapped.empty()){ir("text","","No rule maps this note, so it is silent.");action("Add zone…","zone.add",m.text("selected-source"),"",note);}else{property("Choke group",pad&&pad->number("choke",-1)>=0?pad->text("choke"):"None");property("Output",pad?pad->text("output","inherit"):"inherit");heading("Live");property("Pitch ratio",pad?pad->text("pitch-ratio","1"):"1","×");property("Level",pad?pad->text("gain","0"):"0","dB");property("Pan",pad?pad->text("pan","0"):"0");action("Open mapping","page.select","mapping");}
+  int note=static_cast<int>(m.number("selected-pad"));auto pad=m.find("pad",std::to_string(note));std::vector<const Record*> mapped;for(auto& z:m.records("zone"))if(activeZone(z)&&note>=z.number("lo")&&note<=z.number("hi"))mapped.push_back(&z);inspectorTitle=mapped.empty()?"Empty pad":padName(*mapped.front());inspectorType="Pad";heading("Pad");property("Note",std::to_string(note));std::set<std::pair<int,int>> mappedBands;for(auto* z:mapped)mappedBands.emplace(z->number("vel-lo",1),z->number("vel-hi",127));property("Mapped sounds",std::to_string(mappedBands.size()));if(mapped.empty()){ir("text","","No rule maps this note, so it is silent.");action("Add zone…",commands::zone_add,m.text("selected-source"),"",note);}else{property("Choke group",pad&&pad->number("choke",-1)>=0?pad->text("choke"):"None");property("Output",pad?pad->text("output","inherit"):"inherit");heading("Live");property("Pitch ratio",pad?pad->text("pitch-ratio","1"):"1","×");property("Level",pad?pad->text("gain","0"):"0","dB");property("Pan",pad?pad->text("pan","0"):"0");action("Open mapping",commands::page_select,"mapping");}
  }else if(page=="routing"){
   inspectorType=selected&&selected->text("kind")=="patch"?"Instrument":selected&&selected->text("kind")=="group"?"Group":"Sound";inspectorIcon="level";heading("Output");property("Bus",selected?selected->text("output","inherit"):"inherit");property("Inherited from",selected?selected->text("parent"):"patch");heading("Sends");for(auto name:{"Reverb","Delay"}){auto send=m.find("send",m.text("selected-id")+":"+name);const double gain=send?send->number("value"):0;std::ostringstream level;if(gain>0)level<<std::fixed<<std::setprecision(1)<<20*std::log10(gain)<<" dB";else level<<"−∞ dB";property(name,level.str());}property("Send point","Post fader");
  }else if(page=="overview"){
@@ -150,7 +114,7 @@ public:
  }else if(page=="slices"){
   auto slice=m.find("slice",m.text("selected-slice"));inspectorTitle=slice?slice->text("name"):"Slices";inspectorType="Slice";inspectorIcon="slice";heading("Playback");property("Play",m.text("play-mode"));property("Tune",numberText(m.number("pitch")),"st");property("Gain",numberText(m.number("level")),"dB");property("Pan",numberText(m.number("pan")));heading("Region");property("Start",slice?slice->text("start"):"0");property("End",slice?slice->text("end"):"1");
  }else if(page=="voice"||page=="fx"){
-  auto module=m.find(page=="fx"?"fx":"module",m.text("selected-id"));if(!module&&!m.records(page=="fx"?"fx":"module").empty())module=&m.records(page=="fx"?"fx":"module").front();inspectorType=page=="fx"?"Processor":"Module";inspectorIcon="settings";if(module){inspectorTitle=module->text("name");if(page=="fx"){ir("knobs","");inspectorParameters=m.processorParameters("fx",module->id);}heading("Module");property("Type",module->text("filter-type",module->text("detail",module->text("name"))));if(module->fields.contains("slope"))property("Slope",module->text("slope"));property("Bypass",module->number("bypassed")?"On":"Off");action("Bypass",page=="fx"?"fx.bypass":"module.bypass",module->id);heading("Modulation");for(auto& route:m.records("route")){auto parameter=m.parameterInfo(route.text("destination"));if(parameter&&((page=="voice"&&parameter->text("group")==module->text("detail"))||(page=="fx"&&route.text("destination").starts_with("fx:"+module->id+":"))))routeRow(route);}action("Assign modulation…","inspector.assign-modulation","cutoff");}
+  auto module=m.find(page=="fx"?"fx":"module",m.text("selected-id"));if(!module&&!m.records(page=="fx"?"fx":"module").empty())module=&m.records(page=="fx"?"fx":"module").front();inspectorType=page=="fx"?"Processor":"Module";inspectorIcon="settings";if(module){inspectorTitle=module->text("name");if(page=="fx"){ir("knobs","");inspectorParameters=m.processorParameters("fx",module->id);}heading("Module");property("Type",module->text("filter-type",module->text("detail",module->text("name"))));if(module->fields.contains("slope"))property("Slope",module->text("slope"));property("Bypass",module->number("bypassed")?"On":"Off");action("Bypass",page=="fx"?commands::fx_bypass:commands::module_bypass,module->id);heading("Modulation");for(auto& route:m.records("route")){auto parameter=m.parameterInfo(route.text("destination"));if(parameter&&((page=="voice"&&parameter->text("group")==module->text("detail"))||(page=="fx"&&route.text("destination").starts_with("fx:"+module->id+":"))))routeRow(route);}action("Assign modulation…","inspector.assign-modulation","cutoff");}
  }
  if(!inspectorType.empty())inspectorType[0]=static_cast<char>(std::toupper(static_cast<unsigned char>(inspectorType[0])));session_.set_inspector_title(str(inspectorTitle));session_.set_inspector_type(str(inspectorType));session_.set_inspector_icon(str(inspectorIcon));session_.set_inspector_crumbs(str(m.text("patch-name")+" / "+page+" / "+inspectorTitle));session_.set_inspector_has_history((page=="sample"||page=="slices")&&!m.records("source").empty());int overrideCount=0;for(auto& override:m.records("override"))if(override.text("parent")==m.text("selected-id")||override.id.starts_with(m.text("selected-id")+":"))++overrideCount;session_.set_inspector_override_count(overrideCount);
  session_.set_inspector_rows(project(session_.get_inspector_rows(),inspectorRows,[&](auto&x,auto&r){x.id=str(r.id);x.kind=str(r.text("kind"));x.label=str(r.text("label"));x.value=str(r.text("value"));x.unit=str(r.text("unit"));x.prepared=r.number("prepared");x.icon=str(r.text("icon"));x.primary=r.number("primary");x.action=str(r.text("action"));x.target=str(r.text("target"));x.field=str(r.text("field"));x.amount=r.number("amount");x.slot=r.number("slot");x.host=r.number("host");x.parameter_id=str(r.text("parameter-id"));}));
@@ -165,11 +129,11 @@ public:
   while(!node.empty()&&seen.insert(node).second){if(m.find("override",node+":"+r.id)){owner=node;overridden=true;break;}auto tree=m.find("tree",node);node=tree?tree->text("parent"):"";}
   x.owner=str(owner);auto tree=m.find("tree",owner);x.from=str(tree?(tree->text("kind")=="patch"?"Instrument":tree->text("name")):"Instrument defaults");
   x.state=str(overridden&&owner==selection?"local":"inherited");x.can_reset=overridden&&owner==selection;
-  x.reset_action=str("inherit.reset");x.reset_target=str(selection);x.reset_field=str(r.id);
+  x.reset_action=str(commands::inherit_reset);x.reset_target=str(selection);x.reset_field=str(r.id);
   std::ostringstream value;
   if(r.id=="output"){
    std::string output=selected?selected->text("output","inherit"):"inherit";
-   x.value_text=str(m.outputFor(selection));x.can_reset=output!="inherit";x.state=str(x.can_reset?"local":"inherited");x.reset_action=str("routing.inherit");
+   x.value_text=str(m.outputFor(selection));x.can_reset=output!="inherit";x.state=str(x.can_reset?"local":"inherited");x.reset_action=str(commands::routing_inherit);
    auto parent=selected?m.find("tree",selected->text("parent")):nullptr;
    x.from=str(x.can_reset?"Overrides "+(parent?(parent->text("kind")=="patch"?std::string("Instrument"):parent->text("name")):std::string("Instrument"))+" · "+m.outputFor(parent?parent->id:"patch"):parent?parent->text("name"):"Instrument defaults");
   }else if(r.id=="fade-in"||r.id=="fade-out"){

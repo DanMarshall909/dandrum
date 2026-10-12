@@ -1,5 +1,6 @@
 #include "X11FileDrop.h"
 #include "FileUris.h"
+#include "FileDropProtocol.h"
 #include <xcb/xcb.h>
 #include <xcb/xcbext.h>
 #include <unistd.h>
@@ -11,7 +12,7 @@
 #include <list>
 #include <optional>
 
-namespace dandrum::sampler {
+namespace dandrum::slint_ui {
 struct X11FileDrop::State {
     using Clock = std::chrono::steady_clock;
     struct Atoms {
@@ -38,7 +39,7 @@ struct X11FileDrop::State {
     State(std::string exactTitle, Received callback) : title(std::move(exactTitle)), received(std::move(callback)) {
         // No DISPLAY means Wayland or a display-free process. That path keeps
         // using the normal Slint platform and needs no X11 adapter.
-        const auto display = std::getenv("DISPLAY");
+        const auto display = std::getenv(file_drop::display_variable);
         if (!display || !*display || title.empty()) return;
         int screenNumber = 0;
         connection = xcb_connect(nullptr, &screenNumber);
@@ -47,7 +48,7 @@ struct X11FileDrop::State {
         for (int i = 0; i < screenNumber && screen.rem; ++i) xcb_screen_next(&screen);
         if (!screen.rem) { xcb_disconnect(connection); connection = nullptr; return; }
         root = screen.data->root;
-        const std::array names{"_NET_WM_NAME", "UTF8_STRING", "_NET_WM_PID", "XdndProxy", "XdndAware", "XdndEnter", "XdndPosition", "XdndLeave", "XdndDrop", "XdndStatus", "XdndFinished", "XdndSelection", "text/uri-list", "XdndTypeList", "XdndActionCopy", "_DANDRUM_XDND_DATA"};
+        const auto& names = file_drop::atom_names;
         std::array<xcb_intern_atom_cookie_t, names.size()> cookies{};
         for (std::size_t i = 0; i < names.size(); ++i) cookies[i] = xcb_intern_atom(connection, 0, std::strlen(names[i]), names[i]);
         std::array<xcb_atom_t, names.size()> values{};
@@ -60,7 +61,7 @@ struct X11FileDrop::State {
         if (std::ranges::any_of(values, [](auto atom) { return atom == XCB_ATOM_NONE; })) {
             xcb_disconnect(connection); connection = nullptr; return;
         }
-        atoms = {values[0], values[1], values[2], values[3], values[4], values[5], values[6], values[7], values[8], values[9], values[10], values[11], values[12], values[13], values[14], values[15]};
+        atoms = {values[file_drop::name], values[file_drop::utf8], values[file_drop::pid], values[file_drop::proxy], values[file_drop::aware], values[file_drop::enter], values[file_drop::position], values[file_drop::leave], values[file_drop::drop], values[file_drop::status], values[file_drop::finished], values[file_drop::selection], values[file_drop::uri], values[file_drop::types], values[file_drop::copy], values[file_drop::data]};
     }
     ~State() {
         if (!connection) return;
@@ -84,7 +85,7 @@ struct X11FileDrop::State {
         xcb_disconnect(connection);
     }
     static uint32_t word(const xcb_get_property_reply_t* reply, xcb_atom_t type) {
-        if (!reply || reply->type != type || reply->format != 32 || reply->bytes_after || xcb_get_property_value_length(reply) != 4) return 0;
+        if (!reply || reply->type != type || reply->format != file_drop::word_bits || reply->bytes_after || xcb_get_property_value_length(reply) != sizeof(uint32_t)) return 0;
         uint32_t value{}; std::memcpy(&value, xcb_get_property_value(reply), sizeof value); return value;
     }
     void queue(unsigned sequence, bool discovery, std::function<void(void*, xcb_generic_error_t*)> complete) {
@@ -104,8 +105,8 @@ struct X11FileDrop::State {
         property(window, atoms.pid, XCB_ATOM_CARDINAL, 1, true, [candidate](auto reply) {
             candidate->owned = word(reply, XCB_ATOM_CARDINAL) == static_cast<uint32_t>(getpid());
         });
-        property(window, atoms.name, atoms.utf8, 256, true, [this, candidate](auto reply) {
-            if (!reply || reply->bytes_after || reply->format != 8 || reply->type != atoms.utf8) return;
+        property(window, atoms.name, atoms.utf8, file_drop::title_words, true, [this, candidate](auto reply) {
+            if (!reply || reply->bytes_after || reply->format != file_drop::byte_bits || reply->type != atoms.utf8) return;
             candidate->title.assign(static_cast<const char*>(xcb_get_property_value(reply)), xcb_get_property_value_length(reply));
         });
         const auto attributes = xcb_get_window_attributes(connection, window);
@@ -123,10 +124,10 @@ struct X11FileDrop::State {
             if (error || !value) return;
             auto reply = static_cast<xcb_query_tree_reply_t*>(value);
             const auto children = xcb_query_tree_children(reply);
-            for (int i = 0; i < xcb_query_tree_children_length(reply) && visited < 256; ++i) {
+            for (int i = 0; i < xcb_query_tree_children_length(reply) && visited < file_drop::discovery_windows; ++i) {
                 if (children[i] == proxy) continue;
                 ++visited; inspect(children[i]);
-                if (depth < 8) tree(children[i], depth + 1);
+                if (depth < file_drop::discovery_depth) tree(children[i], depth + 1);
             }
         });
     }
@@ -137,10 +138,10 @@ struct X11FileDrop::State {
             if (target || !reply || reply->type != XCB_ATOM_NONE) return;
             target = window; proxy = xcb_generate_id(connection);
             xcb_create_window(connection, 0, proxy, root, 0, 0, 1, 1, 0, XCB_WINDOW_CLASS_INPUT_ONLY, XCB_COPY_FROM_PARENT, 0, nullptr);
-            const uint32_t version = 5;
-            xcb_change_property(connection, XCB_PROP_MODE_REPLACE, proxy, atoms.proxy, XCB_ATOM_WINDOW, 32, 1, &proxy);
-            xcb_change_property(connection, XCB_PROP_MODE_REPLACE, proxy, atoms.aware, XCB_ATOM_ATOM, 32, 1, &version);
-            xcb_change_property(connection, XCB_PROP_MODE_REPLACE, target, atoms.proxy, XCB_ATOM_WINDOW, 32, 1, &proxy);
+            const uint32_t version = file_drop::version;
+            xcb_change_property(connection, XCB_PROP_MODE_REPLACE, proxy, atoms.proxy, XCB_ATOM_WINDOW, file_drop::word_bits, 1, &proxy);
+            xcb_change_property(connection, XCB_PROP_MODE_REPLACE, proxy, atoms.aware, XCB_ATOM_ATOM, file_drop::word_bits, 1, &version);
+            xcb_change_property(connection, XCB_PROP_MODE_REPLACE, target, atoms.proxy, XCB_ATOM_WINDOW, file_drop::word_bits, 1, &proxy);
             const uint32_t mask = XCB_EVENT_MASK_STRUCTURE_NOTIFY;
             xcb_change_window_attributes(connection, target, XCB_CW_EVENT_MASK, &mask);
         });
@@ -152,7 +153,7 @@ struct X11FileDrop::State {
     void send(xcb_atom_t type, std::array<uint32_t, 5> data) {
         if (!source) return;
         xcb_client_message_event_t event{};
-        event.response_type = XCB_CLIENT_MESSAGE; event.window = source; event.type = type; event.format = 32;
+        event.response_type = XCB_CLIENT_MESSAGE; event.window = source; event.type = type; event.format = file_drop::word_bits;
         std::copy(data.begin(), data.end(), event.data.data32);
         xcb_send_event(connection, 0, source, XCB_EVENT_MASK_NO_EVENT, reinterpret_cast<const char*>(&event));
     }
@@ -165,28 +166,28 @@ struct X11FileDrop::State {
     }
     void position(uint32_t time, uint32_t action) {
         accepted = supported && (action == atoms.copy || action == XCB_ATOM_NONE);
-        send(atoms.status, {target, accepted ? 3u : 2u, 0, 0, accepted ? atoms.copy : uint32_t{XCB_ATOM_NONE}});
+        send(atoms.status, {target, accepted ? file_drop::status_want_positions | file_drop::status_accept : file_drop::status_want_positions, 0, 0, accepted ? atoms.copy : uint32_t{XCB_ATOM_NONE}});
         if (accepted && !converted) {
             converted = true;
             selectionTime = time;
-            deadline = Clock::now() + std::chrono::seconds(5);
+            deadline = Clock::now() + file_drop::selection_timeout;
             xcb_convert_selection(connection, proxy, atoms.selection, atoms.uri, atoms.data, time);
         }
     }
     void client(const xcb_client_message_event_t& event) {
-        if (event.format != 32 || event.window != target) return;
+        if (event.format != file_drop::word_bits || event.window != target) return;
         const auto* data = event.data.data32;
         if (event.type == atoms.enter) {
             reset(); source = data[0];
-            const auto version = data[1] >> 24;
-            if (!source || version < 3 || version > 5) return;
+            const auto version = data[1] >> file_drop::version_shift;
+            if (!source || version < file_drop::minimum_version || version > file_drop::version) return;
             if (!(data[1] & 1)) supported = data[2] == atoms.uri || data[3] == atoms.uri || data[4] == atoms.uri;
             else {
                 const auto session = epoch;
-                property(source, atoms.types, XCB_ATOM_ATOM, 64, false, [this, session](auto reply) {
-                    if (session != epoch || !reply || reply->format != 32 || reply->type != XCB_ATOM_ATOM || reply->bytes_after) return;
+                property(source, atoms.types, XCB_ATOM_ATOM, file_drop::type_list_words, false, [this, session](auto reply) {
+                    if (session != epoch || !reply || reply->format != file_drop::word_bits || reply->type != XCB_ATOM_ATOM || reply->bytes_after) return;
                     const auto values = static_cast<const xcb_atom_t*>(xcb_get_property_value(reply));
-                    supported = std::find(values, values + xcb_get_property_value_length(reply) / 4, atoms.uri) != values + xcb_get_property_value_length(reply) / 4;
+                    supported = std::find(values, values + xcb_get_property_value_length(reply) / sizeof(uint32_t), atoms.uri) != values + xcb_get_property_value_length(reply) / sizeof(uint32_t);
                     if (pendingPosition) { position(pendingTime, pendingAction); pendingPosition = false; }
                 });
             }
@@ -212,9 +213,9 @@ struct X11FileDrop::State {
             || event.time != selectionTime || !converted || ready) return;
         if (event.property != atoms.data) { ready = true; paths.reset(); finish(); return; }
         const auto session = epoch;
-        property(proxy, atoms.data, XCB_GET_PROPERTY_TYPE_ANY, 16384, false, [this, session](auto reply) {
+        property(proxy, atoms.data, XCB_GET_PROPERTY_TYPE_ANY, file_drop::selection_words, false, [this, session](auto reply) {
             if (session != epoch) return;
-            if (reply && reply->type == atoms.uri && reply->format == 8 && !reply->bytes_after)
+            if (reply && reply->type == atoms.uri && reply->format == file_drop::byte_bits && !reply->bytes_after)
                 paths = decode_file_uris({static_cast<const char*>(xcb_get_property_value(reply)), static_cast<std::size_t>(xcb_get_property_value_length(reply))});
             else paths.reset();
             ready = true; finish();
@@ -222,7 +223,7 @@ struct X11FileDrop::State {
     }
     void poll() {
         if (!connection || xcb_connection_has_error(connection)) return;
-        auto remaining = std::min<std::size_t>(jobs.size(), 128);
+        auto remaining = std::min<std::size_t>(jobs.size(), file_drop::replies_per_poll);
         for (auto iterator = jobs.begin(); iterator != jobs.end() && remaining--; ) {
             void* reply{}; xcb_generic_error_t* error{};
             if (!xcb_poll_for_reply(connection, iterator->sequence, &reply, &error)) { ++iterator; continue; }
@@ -230,9 +231,9 @@ struct X11FileDrop::State {
             if (job.discovery) --discoveryPending;
             job.complete(reply, error); std::free(reply); std::free(error);
         }
-        for (unsigned i = 0; i < 128; ++i) {
+        for (unsigned i = 0; i < file_drop::events_per_poll; ++i) {
             auto event = xcb_poll_for_event(connection); if (!event) break;
-            const auto kind = event->response_type & 127;
+            const auto kind = event->response_type & file_drop::synthetic_event_mask;
             if (kind == XCB_CLIENT_MESSAGE) client(*reinterpret_cast<xcb_client_message_event_t*>(event));
             else if (kind == XCB_SELECTION_NOTIFY) selection(*reinterpret_cast<xcb_selection_notify_event_t*>(event));
             else if (kind == XCB_DESTROY_NOTIFY && reinterpret_cast<xcb_destroy_notify_event_t*>(event)->window == target) {
@@ -244,7 +245,7 @@ struct X11FileDrop::State {
         // A ready selection remains valid until Drop or Leave.
         if (source && converted && !ready && Clock::now() >= deadline) { ready = true; paths.reset(); finish(); }
         if (!target && !scanning && Clock::now() >= nextScan) {
-            scanning = true; visited = 0; candidates.clear(); tree(root, 0); nextScan = Clock::now() + std::chrono::milliseconds(250);
+            scanning = true; visited = 0; candidates.clear(); tree(root, 0); nextScan = Clock::now() + file_drop::scan_interval;
         }
         if (scanning && !discoveryPending) {
             scanning = false;

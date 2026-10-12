@@ -1,3 +1,4 @@
+import { GesturePhases } from "../../slint/editor/ParameterConstants.slint";
 import { Session, PadInfo } from "../Session.slint";
 import { ParamKnob } from "../controls/ParamKnob.slint";
 export component PadLiveControls inherits Rectangle {
@@ -15,9 +16,9 @@ export component PadLiveControls inherits Rectangle {
         parameter-id: "pad:\{root.pad.note}:" + field;
         visible: field != "variation" || root.pad.alternates > 1;
         x: i * 48px; size: 36px; label: root.labels[i]; value: root.values[i] * self.display-scale; model-value: root.values[i] * self.display-scale; minimum: root.minima[i] * self.display-scale; maximum: root.maxima[i] * self.display-scale; default-value: root.defaults[i] * self.display-scale; unit: root.units[i]; step: field == "pitch-ratio" ? 0.001 : field == "gain" ? 0.1 : 0.01; bipolar: field == "pan";
-        gesture-began => { Session.parameter-gesture("pad:\{root.pad.note}:" + field, 0, self.value / self.display-scale); }
-        changed(v) => { Session.parameter-gesture("pad:\{root.pad.note}:" + field, 1, v / self.display-scale); }
-        gesture-ended => { Session.parameter-gesture("pad:\{root.pad.note}:" + field, 2, self.value / self.display-scale); }
+        gesture-began => { Session.parameter-gesture("pad:\{root.pad.note}:" + field, GesturePhases.begin, self.value / self.display-scale); }
+        changed(v) => { Session.parameter-gesture("pad:\{root.pad.note}:" + field, GesturePhases.update, v / self.display-scale); }
+        gesture-ended => { Session.parameter-gesture("pad:\{root.pad.note}:" + field, GesturePhases.commit, self.value / self.display-scale); }
         context-action(a) => { root.context-action(a, "pad:\{root.pad.note}:" + field); }
     }
 }

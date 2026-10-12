@@ -1,3 +1,4 @@
+import { ParameterStrings } from "../editor/ParameterConstants.slint";
 import { Tokens } from "../theme.slint";
 import { ViewportMetrics } from "../foundation/ViewportMetrics.slint";
 import { FocusRing } from "../foundation/FocusRing.slint";
@@ -9,6 +10,7 @@ import { RangeGesture } from "RangeGesture.slint";
 import { ControlLabel } from "ControlLabel.slint";
 import { RotaryFace } from "RotaryFace.slint";
 import { ValuePopup } from "ValuePopup.slint";
+import { DelayedPopupState } from "DelayedPopupState.slint";
 
 export component Knob inherits RangeControl {
     in property <length> size: Tokens.knob-md;
@@ -20,7 +22,7 @@ export component Knob inherits RangeControl {
     in property <bool> show-label: true;
     in property <bool> value-display-always;
     in property <bool> popup-open;
-    out property <bool> popup-visible;
+    out property <bool> popup-visible: popup-state.opened;
     private property <bool> popup-suppressed;
     out property <float> effective-value: root.minimum + modulation.effective.clamp(0, 1) * (root.maximum - root.minimum);
     out property <float> peak-value: root.minimum + modulation.peak * (root.maximum - root.minimum);
@@ -30,13 +32,13 @@ export component Knob inherits RangeControl {
     private property <bool> fine;
     private property <bool> popup-hovered;
     private property <bool> want-popup: root.interactive && !root.popup-suppressed && !root.value-display-always && (root.popup-open || touch.has-hover || root.has-focus || root.gesture-active || root.editing || root.nudged || root.popup-hovered);
-    private property <length> label-height: root.show-label && root.label != "" ? 17px : 0px;
+    private property <length> label-height: root.show-label && root.label != "" ? Tokens.editor-control-guide-label-height : 0px;
     callback peaks-reset();
-    width: max(40px, root.size + 12px);
-    height: root.label-height + root.size + 19px;
-    z: root.popup-visible ? 100 : 0;
-    public function show-popup() { root.popup-visible = true; close-timer.stop(); }
-    public function hide-popup() { root.popup-visible = false; }
+    width: max(Tokens.editor-control-guide-min-width, root.size + Tokens.editor-control-guide-side-clearance);
+    height: root.label-height + root.size + Tokens.editor-control-guide-height-reserve;
+    z: root.popup-visible ? Tokens.editor-control-popup-z : 0;
+    public function show-popup() { popup-state.show(); }
+    public function hide-popup() { popup-state.hide(); }
     public function reset-peaks() { modulation.reset-peaks(); root.peaks-reset(); }
     edit-requested => { root.popup-suppressed = false; root.show-popup(); }
     dismiss-requested => { root.popup-suppressed = true; root.hide-popup(); }
@@ -45,19 +47,15 @@ export component Knob inherits RangeControl {
     standard-menu-requested => { if root.interactive { parameter-menu.show({x: parameter-menu.width / 2, y: parameter-menu.height}); } }
     capture-key-pressed(event) => { root.fine = event.modifiers.shift || event.text == Key.Shift; return reject; }
     capture-key-released(event) => { root.fine = event.modifiers.shift; return reject; }
-    changed want-popup => {
-        if root.want-popup { root.show-popup(); }
-        else { close-timer.restart(); }
-    }
-    close-timer := Timer { interval: 250ms; running: false; triggered => { self.stop(); if !root.want-popup { root.hide-popup(); } } }
+    popup-state := DelayedPopupState { requested: root.want-popup; }
     modulation := ModulationState { assignments: root.modulations; base: root.normalized-value; }
     Rectangle { background: root.assigning && root.interactive ? Tokens.dd-mod-wash : transparent; border-radius: Tokens.radius-2; }
     FocusRing { active: root.interactive && (root.has-focus || root.focused || root.editing); }
     HorizontalLayout {
-        x: 3px; y: 0; width: parent.width - 6px; height: root.label-height;
-        spacing: 3px; alignment: center;
-        ControlLabel { visible: root.show-label; label: root.label; enabled: root.enabled; compact: root.size <= 36px; horizontal-alignment: center; }
-        if root.modulations.length > 2 : Text { text: "+\{root.modulations.length - 2}"; font-family: Tokens.font-value; font-size: 11px; color: Tokens.text-primary; }
+        x: Tokens.editor-control-guide-label-inset; y: 0; width: parent.width - 2*Tokens.editor-control-guide-label-inset; height: root.label-height;
+        spacing: Tokens.editor-control-guide-label-gap; alignment: center;
+        ControlLabel { visible: root.show-label; label: root.label; enabled: root.enabled; compact: root.size <= Tokens.editor-control-guide-compact-size; horizontal-alignment: center; }
+        if root.modulations.length > Tokens.editor-control-visible-modulation-rings : Text { text: ParameterStrings.more-assignments-prefix + (root.modulations.length - Tokens.editor-control-visible-modulation-rings); font-family: Tokens.font-value; font-size: Tokens.editor-control-font-caption; color: Tokens.text-primary; }
     }
     face := RotaryFace {
         x: (parent.width - self.width) / 2; y: root.label-height; size: root.size; value: root.normalized-value; bipolar: root.bipolar;
@@ -67,18 +65,18 @@ export component Knob inherits RangeControl {
         any-live: modulation.any-live; peak: modulation.peak; trough: modulation.trough; show-peaks: root.show-peak-trough;
         clip-low: modulation.clip-low; clip-high: modulation.clip-high; live-clip-low: modulation.live-clip-low; live-clip-high: modulation.live-clip-high;
     }
-    if root.clipped : ClipTag { x: (parent.width - self.width) / 2; y: root.label-height + root.size + 3px; live: root.live-clipped; }
+    if root.clipped : ClipTag { x: (parent.width - self.width) / 2; y: root.label-height + root.size + Tokens.editor-control-guide-label-gap; live: root.live-clipped; }
     if root.value-display-always && !root.clipped : Text {
-        x: 0; y: root.label-height + root.size + 3px; width: parent.width; height: 14px;
-        text: root.value-text + (root.unit != "" && root.unit != "pan" ? " " + root.unit : ""); font-family: Tokens.font-value; font-size: root.size >= 60px ? 15px : root.size <= 36px ? 11px : 13px;
+        x: 0; y: root.label-height + root.size + Tokens.editor-control-guide-label-gap; width: parent.width; height: Tokens.editor-control-knob-value-height;
+        text: root.value-text + (root.unit != "" && root.unit != ParameterStrings.unit-pan ? ParameterStrings.value-unit-separator + root.unit : ""); font-family: Tokens.font-value; font-size: root.size >= Tokens.editor-control-rotary-size-large ? Tokens.editor-control-font-value-large : root.size <= Tokens.editor-control-guide-compact-size ? Tokens.editor-control-font-caption : Tokens.editor-control-font-popup-value;
         color: !root.enabled ? Tokens.text-disabled : root.host-active ? Tokens.dd-host : Tokens.text-primary; horizontal-alignment: center;
     }
     parameter-menu := ContextMenuArea {
             enabled: root.interactive;
-        Menu { title: "Parameter";
-            MenuItem { title: "Reset to default"; enabled: root.interactive; activated => { root.reset-value(); } }
-            MenuItem { title: "Type value…"; enabled: root.interactive; activated => { root.begin-edit(); } }
-            MenuItem { title: "Modulation…"; enabled: root.interactive; activated => { root.request-context-menu(); } }
+        Menu { title: ParameterStrings.menu-parameter;
+            MenuItem { title: ParameterStrings.menu-reset; enabled: root.interactive; activated => { root.reset-value(); } }
+            MenuItem { title: ParameterStrings.menu-type-value; enabled: root.interactive; activated => { root.begin-edit(); } }
+            MenuItem { title: ParameterStrings.menu-modulation-more; enabled: root.interactive; activated => { root.request-context-menu(); } }
         }
         touch := RangeGesture {
             enabled: root.interactive; value: root.value; minimum: root.minimum; maximum: root.maximum; fine <=> root.fine;
@@ -93,11 +91,11 @@ export component Knob inherits RangeControl {
     }
     popup := Rectangle {
         visible: root.popup-visible;
-        z: 100;
-        x: ViewportMetrics.clamp-x(root.absolute-position.x + (root.width - self.width) / 2, self.width, 8px) - root.absolute-position.x;
-        y: ViewportMetrics.place-y(root.absolute-position.y, root.height, self.height, 4px, 8px) - root.absolute-position.y;
-        width: max(174px, root.size + 32px);
-        height: 36px + ((root.show-peak-trough && modulation.count > 0) || root.clipped ? 23px : 0px) + (root.modulations.length > 0 ? 6px + root.modulations.length * 23px : 0px) + (root.host-active ? 30px : 0px);
+        z: Tokens.editor-control-popup-z;
+        x: ViewportMetrics.clamp-x(root.absolute-position.x + (root.width - self.width) / 2, self.width, Tokens.editor-control-guide-popup-edge-margin) - root.absolute-position.x;
+        y: ViewportMetrics.place-y(root.absolute-position.y, root.height, self.height, Tokens.editor-control-guide-popup-gap, Tokens.editor-control-guide-popup-edge-margin) - root.absolute-position.y;
+        width: max(Tokens.editor-control-popup-width, root.size + Tokens.editor-control-guide-popup-side-reserve);
+        height: Tokens.editor-control-guide-popup-base-height + ((root.show-peak-trough && modulation.count > 0) || root.clipped ? Tokens.editor-control-guide-popup-metric-row-height : 0px) + (root.modulations.length > 0 ? Tokens.editor-control-guide-popup-route-gap + root.modulations.length * Tokens.editor-control-guide-popup-metric-row-height : 0px) + (root.host-active ? Tokens.editor-control-guide-popup-host-height : 0px);
         ValuePopup {
             above: popup.y < 0px;
             anchor-x: root.width / 2 - popup.x;

@@ -1,0 +1,19 @@
+import { Tokens } from "../theme.slint";
+import { EditorTheme } from "Theme.slint";
+import { PadInfo } from "PadTypes.slint";
+import { FitLayout } from "FitLayout.slint";
+export component EditorPadPanel inherits Rectangle {
+    in property <PadInfo> pad;
+    in property <length> body-height;
+    in property <string> empty-message;
+    height: root.pad.mapped ? Tokens.editor-display-pad-panel-body-offset + root.body-height : Tokens.editor-display-pad-panel-empty-height;
+    border-radius: Tokens.radius-2; border-width: Tokens.stroke-hairline; border-color: EditorTheme.line-1; background: EditorTheme.ink-1;
+    Rectangle { x: 1px; y: 1px; width: parent.width - Tokens.space-1; height: Tokens.editor-display-pad-panel-header-height; background: EditorTheme.ink-3; border-radius: Tokens.editor-display-pad-radius-inner;
+        Text { x: Tokens.editor-display-pad-panel-name-inset; width: min(Tokens.editor-display-pad-panel-name-width, parent.width * Tokens.editor-display-pad-panel-name-width-ratio); text: root.pad.mapped ? root.pad.name : Tokens.editor-display-pad-empty-panel; font-family: EditorTheme.font-ui; font-size: Tokens.editor-display-type-pad-title; font-weight: Tokens.weight-medium; color: EditorTheme.paper-1; vertical-alignment: center; overflow: elide; }
+        Text { x: Tokens.editor-display-pad-panel-note-inset + min(Tokens.editor-display-pad-panel-name-width, parent.width * Tokens.editor-display-pad-panel-name-width-ratio); width: Tokens.editor-display-pad-panel-note-width; text: "\{root.pad.note} " + FitLayout.note-name(root.pad.note); font-family: EditorTheme.font-value; font-size: Tokens.editor-display-type-value-small; color: EditorTheme.paper-3; vertical-alignment: center; }
+        Text { x: parent.width - Tokens.editor-display-pad-panel-hit-inset; width: Tokens.editor-display-pad-panel-hit-width; text: root.pad.velocity > 0 ? Tokens.editor-display-pad-hit-prefix + root.pad.velocity : Tokens.editor-display-pad-no-hit; font-family: EditorTheme.font-value; font-size: Tokens.type-micro; color: EditorTheme.paper-3; horizontal-alignment: right; vertical-alignment: center; overflow: elide; }
+        Rectangle { y: parent.height - 1px; height: 1px; background: EditorTheme.line-1; }
+    }
+    Rectangle { visible: root.pad.mapped; x: Tokens.space-2; y: Tokens.editor-display-pad-panel-body-top; width: parent.width - Tokens.space-4; height: parent.height - Tokens.editor-display-pad-panel-body-offset; @children }
+    if !root.pad.mapped : Text { x: Tokens.space-5; y: Tokens.editor-display-pad-panel-empty-top; width: parent.width - Tokens.space-7; text: root.empty-message; font-family: EditorTheme.font-ui; font-size: Tokens.editor-display-type-value-small; color: EditorTheme.paper-3; wrap: word-wrap; }
+}

@@ -1,3 +1,7 @@
+import { SamplerCommands } from "../domain/Commands.slint";
+import { Tokens } from "../../slint/theme.slint";
+import { ItemRow } from "../../slint/editor/ItemRow.slint";
+import { PropertyRow } from "../../slint/editor/StatusRow.slint";
 import { ScrollView } from "std-widgets.slint";
 import { Session, InspectorInfo, ParameterInfo, HistoryInfo } from "../Session.slint";
 import { SamplerTheme } from "../theme/Theme.slint";
@@ -12,73 +16,60 @@ component InspectorRow inherits Rectangle {
     callback action(string, string, string, float);
     callback parameter-gesture(string, int, float);
     callback context-action(string, string);
-    height: root.entry.kind == "header" ? 28px : root.entry.kind == "text" ? note.preferred-height + 8px : root.entry.kind == "action" ? 30px : root.entry.kind == "knobs" ? ceil(root.parameters.length / 5) * 68px : 24px;
-    if root.entry.kind == "header" : Text { x: 0px; y: 10px; width: parent.width; height: 14px; text: root.entry.label.to-uppercase(); font-family: SamplerTheme.font-ui; font-size: 12px; font-weight: 700; letter-spacing: 1.2px; color: SamplerTheme.secondary; }
-    if root.entry.kind == "property" : HorizontalLayout {
-        spacing: 8px;
-        Text { width: 72px; text: root.entry.label; font-family: SamplerTheme.font-ui; font-size: 12px; color: SamplerTheme.paper-3; vertical-alignment: center; overflow: elide; }
-        Text { horizontal-stretch: 1; text: root.entry.value; accessible-label: root.entry.label + ": " + root.entry.value + (root.entry.unit == "" ? "" : " " + root.entry.unit); font-family: SamplerTheme.font-value; font-size: 12px; color: SamplerTheme.paper-1; vertical-alignment: center; overflow: elide; }
-        if root.entry.unit != "" : Text { text: root.entry.unit; font-family: SamplerTheme.font-value; font-size: 11px; color: SamplerTheme.paper-3; vertical-alignment: center; }
-        if root.entry.prepared : AppIcon { name: "lock"; size: 11px; tint: SamplerTheme.paper-4; }
-    }
-    note := Text { visible: root.entry.kind == "text"; y: 4px; width: parent.width; text: root.entry.value == "" ? root.entry.label : root.entry.value; font-family: SamplerTheme.font-ui; font-size: 12px; color: SamplerTheme.paper-3; wrap: word-wrap; }
-    if root.entry.kind == "action" : ActionButton { y: 6px; height: 24px; compact: true; text: root.entry.label; icon: root.entry.icon; primary: root.entry.primary; clicked => { root.action(root.entry.action, root.entry.target, root.entry.field, root.entry.amount); } }
-    if root.entry.kind == "modulation" : Rectangle { height: 22px; border-radius: 2px; border-width: 1px; border-color: SamplerTheme.border-control; background: SamplerTheme.surface-well;
+    height: root.entry.kind == "header" ? Tokens.editor-inspector-entry-heading-height : root.entry.kind == "text" ? note.preferred-height + Tokens.editor-chrome-gap : root.entry.kind == "action" ? Tokens.editor-inspector-action-row-height : root.entry.kind == "knobs" ? ceil(root.parameters.length / Tokens.editor-inspector-knob-columns) * Tokens.editor-inspector-knob-row-height : Tokens.editor-property-row-height;
+    if root.entry.kind == "header" : Text { x: 0px; y: Tokens.editor-chrome-inset-text; width: parent.width; height: Tokens.editor-inspector-caption-height; text: root.entry.label.to-uppercase(); font-family: SamplerTheme.font-ui; font-size: SamplerTheme.type-body; font-weight: Tokens.editor-weight-bold; letter-spacing: Tokens.editor-chrome-heading-tracking; color: SamplerTheme.secondary; }
+    if root.entry.kind == "property" : PropertyRow { label: root.entry.label; value: root.entry.value; unit: root.entry.unit; locked: root.entry.prepared; }
+    note := Text { visible: root.entry.kind == "text"; y: Tokens.editor-chrome-gap-small; width: parent.width; text: root.entry.value == "" ? root.entry.label : root.entry.value; font-family: SamplerTheme.font-ui; font-size: SamplerTheme.type-body; color: SamplerTheme.paper-3; wrap: word-wrap; }
+    if root.entry.kind == "action" : ActionButton { y: Tokens.editor-chrome-inset-small; height: Tokens.editor-property-row-height; compact: true; text: root.entry.label; icon: root.entry.icon; primary: root.entry.primary; clicked => { root.action(root.entry.action, root.entry.target, root.entry.field, root.entry.amount); } }
+    if root.entry.kind == "modulation" : Rectangle { height: Tokens.editor-inspector-modulation-height; border-radius: Tokens.editor-radius-control; border-width: Tokens.editor-border-width; border-color: SamplerTheme.border-control; background: SamplerTheme.surface-well;
         private property <color> tint: root.entry.host ? SamplerTheme.host : SamplerTheme.mod-color(root.entry.slot);
-        Text { x: 6px; width: root.entry.host ? 36px : 14px; height: parent.height; text: root.entry.host ? "HOST" : root.entry.slot < 0 ? "" : root.entry.slot == 0 ? "—" : ["●", "▲", "■", "◆"][(root.entry.slot - 1).clamp(0,3)]; color: parent.tint; font-family: SamplerTheme.font-ui; font-size: 11px; font-weight: 600; vertical-alignment: center; }
-        Text { x: root.entry.host ? 46px : 24px; width: max(0px, parent.width - self.x - 51px); height: parent.height; text: root.entry.label; accessible-label: root.entry.host ? "Host automation: " + root.entry.label : "Modulation: " + root.entry.label; color: SamplerTheme.paper-1; font-family: SamplerTheme.font-ui; font-size: 12px; vertical-alignment: center; overflow: elide; }
-        if !root.entry.host : Text { x: parent.width - 49px; width: 43px; height: parent.height; text: (root.entry.amount > 0 ? "+" : root.entry.amount < 0 ? "−" : "") + round(abs(root.entry.amount) * 100) + "%"; color: parent.tint; font-family: SamplerTheme.font-value; font-size: 11px; vertical-alignment: center; horizontal-alignment: right; }
+        Text { x: Tokens.editor-chrome-inset-small; width: root.entry.host ? Tokens.editor-inspector-host-badge-width : Tokens.editor-inspector-caption-height; height: parent.height; text: root.entry.host ? "HOST" : root.entry.slot < 0 ? "" : root.entry.slot == 0 ? "—" : ["●", "▲", "■", "◆"][(root.entry.slot - 1).clamp(0,3)]; color: parent.tint; font-family: SamplerTheme.font-ui; font-size: SamplerTheme.type-caption; font-weight: Tokens.editor-weight-semibold; vertical-alignment: center; }
+        Text { x: root.entry.host ? Tokens.editor-inspector-host-text-left : Tokens.editor-property-row-height; width: max(0px, parent.width - self.x - Tokens.editor-inspector-modulation-label-reserve); height: parent.height; text: root.entry.label; accessible-label: root.entry.host ? "Host automation: " + root.entry.label : "Modulation: " + root.entry.label; color: SamplerTheme.paper-1; font-family: SamplerTheme.font-ui; font-size: SamplerTheme.type-body; vertical-alignment: center; overflow: elide; }
+        if !root.entry.host : Text { x: parent.width - Tokens.editor-inspector-modulation-amount-right; width: Tokens.editor-item-detail-width; height: parent.height; text: (root.entry.amount > 0 ? "+" : root.entry.amount < 0 ? "−" : "") + round(abs(root.entry.amount) * 100) + "%"; color: parent.tint; font-family: SamplerTheme.font-value; font-size: SamplerTheme.type-caption; vertical-alignment: center; horizontal-alignment: right; }
     }
     if root.entry.kind == "knobs" : Rectangle {
         for p[i] in root.parameters : DomainKnob {
-            x: mod(i, 5) * (parent.width / 5); y: floor(i / 5) * 68px; width: parent.width / 5;
-            parameter: p; size: 28px; enabled: p.available; value-display-always: true;
+            x: mod(i, Tokens.editor-inspector-knob-columns) * (parent.width / Tokens.editor-inspector-knob-columns); y: floor(i / Tokens.editor-inspector-knob-columns) * Tokens.editor-inspector-knob-row-height; width: parent.width / Tokens.editor-inspector-knob-columns;
+            parameter: p; size: Tokens.editor-inspector-entry-heading-height; enabled: p.available; value-display-always: true;
             context(a,id) => { root.context-action(a,id); }
         }
     }
 }
 
-component HistoryRow inherits FocusScope {
+component HistoryRow inherits ItemRow {
     in property <HistoryInfo> operation;
     callback command(string, string, string, float);
     private property <bool> source: root.operation.id == "src" || root.operation.label == "Source";
-    height: 24px; accessible-role: button; accessible-label: "Edit " + root.operation.label;
-    focus-on-tab-navigation: true; focus-on-click: true;
-    accessible-action-default => { root.command("sample.history-select", root.operation.id, "", 0); }
-    key-pressed(event) => { if event.text == Key.Return || event.text == " " { root.command("sample.history-select", root.operation.id, "", 0); return accept; } return reject; }
-    Rectangle { border-radius: 3px; background: root.operation.selected ? SamplerTheme.accent-wash : pointer.has-hover ? SamplerTheme.ink-4 : transparent;
-        if root.operation.selected : Rectangle { width: 2px; background: SamplerTheme.accent; }
-        Text { x: 6px; width: 10px; height: parent.height; text: root.source ? "" : "⋮⋮"; font-family: SamplerTheme.font-value; font-size: 11px; color: SamplerTheme.paper-4; vertical-alignment: center; }
-        AppIcon { x: 41px; y: 5px; name: root.source ? "folder" : "slice"; size: 14px; tint: root.operation.on ? SamplerTheme.paper-2 : SamplerTheme.paper-4; }
-        Text { x: 61px; width: 72px; height: parent.height; text: root.operation.label; font-family: SamplerTheme.font-ui; font-size: 13px; font-weight: 500; color: root.operation.on ? SamplerTheme.paper-1 : SamplerTheme.paper-4; vertical-alignment: center; overflow: elide; }
-        Text { x: 138px; width: max(0px, parent.width - 144px); height: parent.height; text: root.operation.detail; font-family: SamplerTheme.font-value; font-size: 11px; color: SamplerTheme.paper-3; vertical-alignment: center; horizontal-alignment: right; overflow: elide; }
-    }
-    pointer := TouchArea {
-        clicked => { root.focus(); root.command("sample.history-select", root.operation.id, "", 0); }
-        pointer-event(event) => { if event.kind == PointerEventKind.up && event.button == PointerEventButton.right { operation-menu.show(); } }
-    }
-    if !root.source : FocusScope { x: 6px; width: 10px; height: parent.height; accessible-role: button; accessible-label: "Move " + root.operation.label;
+    height: Tokens.editor-property-row-height; label: "Edit " + root.operation.label; text: root.operation.label; detail: root.operation.detail;
+    content-inset: 0px; selected: root.operation.selected; selection-mark: true; hover-color: SamplerTheme.ink-4; context-on-release: true;
+    icon: root.source ? "folder" : "slice"; icon-x: Tokens.editor-inspector-history-icon-left; icon-y: Tokens.editor-chrome-inset-control-top; icon-tint: root.operation.on ? SamplerTheme.paper-2 : SamplerTheme.paper-4;
+    text-x: Tokens.editor-inspector-history-text-left; text-width: Tokens.editor-inspector-history-name-width; text-weight: Tokens.editor-weight-medium; text-color: root.operation.on ? SamplerTheme.paper-1 : SamplerTheme.paper-4;
+    detail-width: max(0px, root.width - Tokens.editor-inspector-history-detail-reserve); detail-font-size: SamplerTheme.type-caption; detail-elide: true;
+    activated => { root.command(SamplerCommands.sample-history-select, root.operation.id, "", 0); }
+    context-requested => { operation-menu.show(); }
+    Text { x: Tokens.editor-chrome-inset-small; width: Tokens.editor-chrome-inset-text; height: parent.height; text: root.source ? "" : "⋮⋮"; font-family: SamplerTheme.font-value; font-size: SamplerTheme.type-caption; color: SamplerTheme.paper-4; vertical-alignment: center; }
+    if !root.source : FocusScope { x: Tokens.editor-chrome-inset-small; width: Tokens.editor-chrome-inset-text; height: parent.height; accessible-role: button; accessible-label: "Move " + root.operation.label;
         focus-on-tab-navigation: true;
         key-pressed(event) => {
-            if event.text == Key.UpArrow { root.command("sample.history-move", root.operation.id, "", -1); return accept; }
-            if event.text == Key.DownArrow { root.command("sample.history-move", root.operation.id, "", 1); return accept; }
+            if event.text == Key.UpArrow { root.command(SamplerCommands.sample-history-move, root.operation.id, "", -1); return accept; }
+            if event.text == Key.DownArrow { root.command(SamplerCommands.sample-history-move, root.operation.id, "", 1); return accept; }
             return reject;
         }
         TouchArea { private property <length> origin-y; mouse-cursor: move;
             pointer-event(event) => {
                 if event.kind == PointerEventKind.down && event.button == PointerEventButton.left { self.origin-y = self.mouse-y; }
-                if event.kind == PointerEventKind.up && event.button == PointerEventButton.left { let distance = round((self.mouse-y - self.origin-y) / 25px); if distance != 0 { root.command("sample.history-move", root.operation.id, "", distance); } }
+                if event.kind == PointerEventKind.up && event.button == PointerEventButton.left { let distance = round((self.mouse-y - self.origin-y) / Tokens.editor-inspector-history-row-stride); if distance != 0 { root.command(SamplerCommands.sample-history-move, root.operation.id, "", distance); } }
             }
         }
     }
-    ActionButton { x: 22px; y: 5px; width: 14px; height: 14px; text: root.operation.on ? "✓" : ""; label: "Bypass " + root.operation.label; enabled: !root.source; compact: true; clicked => { root.command("sample.history-bypass", root.operation.id, "", 0); } }
-    operation-menu := PopupWindow { x: pointer.mouse-x; y: pointer.mouse-y; width: 146px; height: 86px;
-        Rectangle { background: SamplerTheme.ink-2; border-width: 1px; border-color: SamplerTheme.line-3; border-radius: 3px; }
+    ActionButton { x: Tokens.editor-inspector-modulation-height; y: Tokens.editor-chrome-inset-control-top; width: Tokens.editor-inspector-caption-height; height: Tokens.editor-inspector-caption-height; text: root.operation.on ? "✓" : ""; label: "Bypass " + root.operation.label; enabled: !root.source; compact: true; clicked => { root.command(SamplerCommands.sample-history-bypass, root.operation.id, "", 0); } }
+    operation-menu := PopupWindow { x: root.pointer-x; y: root.pointer-y; width: Tokens.editor-inspector-history-menu-width; height: Tokens.editor-inspector-history-menu-height;
+        Rectangle { background: SamplerTheme.ink-2; border-width: Tokens.editor-border-width; border-color: SamplerTheme.line-3; border-radius: Tokens.editor-radius-item; }
         FocusScope { key-pressed(event) => { if event.text == Key.Escape { operation-menu.close(); return accept; } return reject; }
-            VerticalLayout { padding: 4px; spacing: 0px;
-                ActionButton { text: "Move up"; compact: true; ghost: true; enabled: !root.source; clicked => { operation-menu.close(); root.command("sample.history-move", root.operation.id, "", -1); } }
-                ActionButton { text: "Move down"; compact: true; ghost: true; enabled: !root.source; clicked => { operation-menu.close(); root.command("sample.history-move", root.operation.id, "", 1); } }
-                ActionButton { text: "Remove"; compact: true; ghost: true; enabled: !root.source; clicked => { operation-menu.close(); root.command("sample.history-remove", root.operation.id, "", 0); } }
+            VerticalLayout { padding: Tokens.editor-chrome-gap-small; spacing: 0px;
+                ActionButton { text: "Move up"; compact: true; ghost: true; enabled: !root.source; clicked => { operation-menu.close(); root.command(SamplerCommands.sample-history-move, root.operation.id, "", -1); } }
+                ActionButton { text: "Move down"; compact: true; ghost: true; enabled: !root.source; clicked => { operation-menu.close(); root.command(SamplerCommands.sample-history-move, root.operation.id, "", 1); } }
+                ActionButton { text: "Remove"; compact: true; ghost: true; enabled: !root.source; clicked => { operation-menu.close(); root.command(SamplerCommands.sample-history-remove, root.operation.id, "", 0); } }
             }
         }
     }
@@ -97,11 +88,11 @@ export component Inspector inherits MaterialSurface {
     callback parameter-gesture(string, int, float);
     callback context-action(string, string);
     callback browse(string);
-    private property <length> heading-height: Session.inspector-override-count > 0 ? 85px : 57px;
-    private property <length> history-height: Session.inspector-has-history ? 68px + root.history.length * 25px : 0px;
+    private property <length> heading-height: Session.inspector-override-count > 0 ? Tokens.editor-inspector-overrides-heading-height : Tokens.editor-inspector-heading-height;
+    private property <length> history-height: Session.inspector-has-history ? Tokens.editor-inspector-knob-row-height + root.history.length * Tokens.editor-inspector-history-row-stride : 0px;
     public function row-action(action: string, target: string, field: string, amount: float) {
-        if action == "asset.relink" || action == "asset.replace" || action == "asset.search-folder" || action == "asset.import" {
-            if target != "" { root.command("asset.select", target, "", 0); }
+        if action == SamplerCommands.asset-relink || action == SamplerCommands.asset-replace || action == SamplerCommands.asset-search-folder || action == SamplerCommands.asset-import {
+            if target != "" { root.command(SamplerCommands.asset-select, target, "", 0); }
             root.browse(action);
         }
         else if action == "inspector.macro-destinations" { root.context-action("macro-destinations", target); }
@@ -109,26 +100,26 @@ export component Inspector inherits MaterialSurface {
         else { root.command(action, target, field, amount); }
     }
     base: SamplerTheme.ink-2;
-    Rectangle { x: 1px; y: 1px; width: parent.width - 2px; height: root.heading-height; background: SamplerTheme.ink-3;
-        Text { x: 12px; y: 8px; height: 14px; width: parent.width - 24px; text: Session.inspector-crumbs; font-family: SamplerTheme.font-ui; font-size: 12px; color: SamplerTheme.paper-3; overflow: elide; }
-        AppIcon { x: 12px; y: 27px; name: Session.inspector-icon; size: 16px; tint: SamplerTheme.accent; }
-        Text { x: 36px; y: 26px; width: max(0px, parent.width - type-tag.width - 56px); height: 18px; text: root.title; font-family: SamplerTheme.font-ui; font-size: 15px; font-weight: 600; color: SamplerTheme.paper-1; overflow: elide; }
-        type-tag := Rectangle { x: parent.width - self.width - 12px; y: 26px; width: type-label.preferred-width + 10px; height: 17px; border-width: 1px; border-color: SamplerTheme.line-3; border-radius: 2px;
-            type-label := Text { x: 5px; width: parent.width - 10px; height: parent.height; text: root.kind.to-uppercase(); font-family: SamplerTheme.font-ui; font-size: 11px; font-weight: 600; letter-spacing: 0.66px; color: SamplerTheme.paper-2; vertical-alignment: center; }
+    Rectangle { x: Tokens.editor-border-width; y: Tokens.editor-border-width; width: parent.width - Tokens.editor-chrome-gap-tight; height: root.heading-height; background: SamplerTheme.ink-3;
+        Text { x: Tokens.editor-chrome-content-inset; y: Tokens.editor-chrome-gap; height: Tokens.editor-inspector-caption-height; width: parent.width - Tokens.editor-property-row-height; text: Session.inspector-crumbs; font-family: SamplerTheme.font-ui; font-size: SamplerTheme.type-body; color: SamplerTheme.paper-3; overflow: elide; }
+        AppIcon { x: Tokens.editor-chrome-content-inset; y: Tokens.editor-inspector-title-icon-top; name: Session.inspector-icon; size: Tokens.editor-inspector-title-icon-size; tint: SamplerTheme.accent; }
+        Text { x: Tokens.editor-inspector-host-badge-width; y: Tokens.editor-inspector-title-top; width: max(0px, parent.width - type-tag.width - Tokens.editor-inspector-title-reserve); height: Tokens.editor-inspector-title-height; text: root.title; font-family: SamplerTheme.font-ui; font-size: Tokens.editor-chrome-inspector-title-size; font-weight: Tokens.editor-weight-semibold; color: SamplerTheme.paper-1; overflow: elide; }
+        type-tag := Rectangle { x: parent.width - self.width - Tokens.editor-chrome-content-inset; y: Tokens.editor-inspector-title-top; width: type-label.preferred-width + Tokens.editor-chrome-inset-text; height: Tokens.editor-inspector-type-tag-height; border-width: Tokens.editor-border-width; border-color: SamplerTheme.line-3; border-radius: Tokens.editor-radius-control;
+            type-label := Text { x: Tokens.editor-chrome-inset-control-top; width: parent.width - Tokens.editor-chrome-inset-text; height: parent.height; text: root.kind.to-uppercase(); font-family: SamplerTheme.font-ui; font-size: SamplerTheme.type-caption; font-weight: Tokens.editor-weight-semibold; letter-spacing: Tokens.editor-button-caps-tracking; color: SamplerTheme.paper-2; vertical-alignment: center; }
         }
-        if Session.inspector-override-count > 0 : reset-overrides-button := ActionButton { x: 12px; y: 51px; height: 22px; text: Session.inspector-override-count + " changed · Reset"; label: "Reset overrides"; ghost: true; compact: true; clicked => { root.command("inherit.reset", root.selected-id, "", 0); } }
-        Rectangle { y: parent.height - 1px; height: 1px; background: SamplerTheme.line-1; }
+        if Session.inspector-override-count > 0 : reset-overrides-button := ActionButton { x: Tokens.editor-chrome-content-inset; y: Tokens.editor-inspector-modulation-label-reserve; height: Tokens.editor-inspector-modulation-height; text: Session.inspector-override-count + " changed · Reset"; label: "Reset overrides"; ghost: true; compact: true; clicked => { root.command(SamplerCommands.inherit-reset, root.selected-id, "", 0); } }
+        Rectangle { y: parent.height - Tokens.editor-border-width; height: Tokens.editor-border-width; background: SamplerTheme.line-1; }
     }
-    if Session.inspector-has-history : Rectangle { x: 1px; y: root.heading-height + 1px; width: parent.width - 2px; height: root.history-height;
-        Text { x: 12px; y: 0px; width: max(0px, parent.width - 72px); height: 28px; text: "HISTORY"; accessible-label: "HISTORY"; font-family: SamplerTheme.font-ui; font-size: 12px; font-weight: 700; letter-spacing: 1.2px; color: SamplerTheme.secondary; vertical-alignment: center; }
-        ActionButton { x: parent.width - 57px; y: 2px; width: 24px; icon: "plus"; label: "Add operation"; compact: true; ghost: true; clicked => { root.command("sample.history-add", "", "fade-in", 0); } }
-        ActionButton { x: parent.width - 29px; y: 2px; width: 24px; icon: "layers"; label: "Collapse stack to a new sample"; enabled: Session.collapse-state != "running"; selected: Session.collapse-state == "running"; compact: true; ghost: true; clicked => { root.command("sample.history-collapse", "", "", 0); } }
-        for operation[i] in root.history : HistoryRow { x: 4px; y: 28px + i * 25px; width: parent.width - 8px; operation: operation; command(a,t,f,v) => { root.command(a,t,f,v); } }
-        Text { x: 10px; y: 32px + root.history.length * 25px; width: parent.width - 20px; height: 32px; text: root.kind == "Operation" ? "Click the operation again to show the result." : "Bottom to top. Uncheck to bypass, drag ⋮⋮ to reorder, click to edit."; font-family: SamplerTheme.font-ui; font-size: 11px; color: SamplerTheme.paper-3; wrap: word-wrap; }
-        Rectangle { y: parent.height - 1px; height: 1px; background: SamplerTheme.line-1; }
+    if Session.inspector-has-history : Rectangle { x: Tokens.editor-border-width; y: root.heading-height + Tokens.editor-border-width; width: parent.width - Tokens.editor-chrome-gap-tight; height: root.history-height;
+        Text { x: Tokens.editor-chrome-content-inset; y: 0px; width: max(0px, parent.width - Tokens.editor-inspector-history-name-width); height: Tokens.editor-inspector-entry-heading-height; text: "HISTORY"; accessible-label: "HISTORY"; font-family: SamplerTheme.font-ui; font-size: SamplerTheme.type-body; font-weight: Tokens.editor-weight-bold; letter-spacing: Tokens.editor-chrome-heading-tracking; color: SamplerTheme.secondary; vertical-alignment: center; }
+        ActionButton { x: parent.width - Tokens.editor-inspector-heading-height; y: Tokens.editor-chrome-gap-tight; width: Tokens.editor-property-row-height; icon: Tokens.editor-icon-plus; label: "Add operation"; compact: true; ghost: true; clicked => { root.command(SamplerCommands.sample-history-add, "", "fade-in", 0); } }
+        ActionButton { x: parent.width - Tokens.editor-chrome-close-right; y: Tokens.editor-chrome-gap-tight; width: Tokens.editor-property-row-height; icon: Tokens.editor-icon-layers; label: "Collapse stack to a new sample"; enabled: Session.collapse-state != "running"; selected: Session.collapse-state == "running"; compact: true; ghost: true; clicked => { root.command(SamplerCommands.sample-history-collapse, "", "", 0); } }
+        for operation[i] in root.history : HistoryRow { x: Tokens.editor-chrome-gap-small; y: Tokens.editor-inspector-entry-heading-height + i * Tokens.editor-inspector-history-row-stride; width: parent.width - Tokens.editor-chrome-gap; operation: operation; command(a,t,f,v) => { root.command(a,t,f,v); } }
+        Text { x: Tokens.editor-chrome-inset-text; y: Tokens.editor-inspector-history-help-height + root.history.length * Tokens.editor-inspector-history-row-stride; width: parent.width - Tokens.editor-inspector-help-inset-pair; height: Tokens.editor-inspector-history-help-height; text: root.kind == "Operation" ? "Click the operation again to show the result." : "Bottom to top. Uncheck to bypass, drag ⋮⋮ to reorder, click to edit."; font-family: SamplerTheme.font-ui; font-size: SamplerTheme.type-caption; color: SamplerTheme.paper-3; wrap: word-wrap; }
+        Rectangle { y: parent.height - Tokens.editor-border-width; height: Tokens.editor-border-width; background: SamplerTheme.line-1; }
     }
-    ScrollView { x: 1px; y: root.heading-height + root.history-height + 1px; width: parent.width - 2px; height: max(1px, parent.height - self.y - 1px);
-        VerticalLayout { padding-left: 12px; padding-right: 12px; padding-top: 8px; padding-bottom: 12px; spacing: 2px; alignment: start;
+    ScrollView { x: Tokens.editor-border-width; y: root.heading-height + root.history-height + Tokens.editor-border-width; width: parent.width - Tokens.editor-chrome-gap-tight; height: max(Tokens.editor-border-width, parent.height - self.y - Tokens.editor-border-width);
+        VerticalLayout { padding-left: Tokens.editor-chrome-content-inset; padding-right: Tokens.editor-chrome-content-inset; padding-top: Tokens.editor-chrome-gap; padding-bottom: Tokens.editor-chrome-content-inset; spacing: Tokens.editor-chrome-gap-tight; alignment: start;
             for row in root.rows : InspectorRow { entry: row; parameters: root.parameters; action(a,t,f,v) => { root.row-action(a,t,f,v); } parameter-gesture(id,phase,v) => { root.parameter-gesture(id,phase,v); } context-action(a,id) => { root.context-action(a,id); } }
         }
     }

@@ -1,0 +1,35 @@
+import { Tokens } from "../tokens.slint";
+import { EditorTheme } from "Theme.slint";
+import { RotaryArc } from "../controls/RotaryArc.slint";
+import { ModAssignment } from "../modulation/types.slint";
+export component RotaryFace inherits Rectangle {
+    in property <bool> enabled: true;
+    in property <float> value;
+    in property <bool> bipolar;
+    in property <bool> active;
+    in property <bool> hovered;
+    in property <bool> host-active;
+    in property <[ModAssignment]> assignments;
+    private property <length> thick: root.width >= Tokens.editor-control-rotary-size-large ? Tokens.editor-control-rotary-ring-large : root.width >= Tokens.editor-control-rotary-size-medium ? Tokens.editor-control-rotary-ring-medium : Tokens.editor-control-rotary-ring-small;
+    private property <length> thin: root.width >= Tokens.editor-control-rotary-size-medium ? Tokens.editor-control-rotary-track-medium : Tokens.editor-control-rotary-track-small;
+    private property <length> ring: root.width / 2 - (root.width >= Tokens.editor-control-rotary-size-medium ? Tokens.editor-control-rotary-ring-inset-medium : Tokens.editor-control-rotary-ring-inset-small) - root.thick / 2;
+    private property <length> cap: root.ring - root.thick / 2 - (root.width >= Tokens.editor-control-rotary-size-medium ? Tokens.editor-control-rotary-cap-gap-medium : Tokens.editor-control-rotary-cap-gap-small);
+    pure function mod-color(slot: int) -> color { return EditorTheme.mod-color(slot); }
+    if EditorTheme.soft : Rectangle { x: parent.width / 2 - root.cap * Tokens.editor-control-rotary-well-scale; y: parent.height / 2 - root.cap * Tokens.editor-control-rotary-well-scale - Tokens.editor-control-rotary-well-offset; width: root.cap * (2*Tokens.editor-control-rotary-well-scale); height: self.width; border-radius: self.width / 2; background: EditorTheme.ink-0;
+        Rectangle { border-radius: parent.width / 2; background: @linear-gradient((2*Tokens.editor-control-quarter-turn-degrees)*1deg, Tokens.editor-control-rotary-well-highlight, Tokens.editor-control-rotary-well-shadow); }
+    }
+    for assignment[i] in root.assignments : RotaryArc { visible: i < Tokens.editor-control-visible-modulation-rings; from: root.value; to: (root.value + assignment.depth).clamp(0, 1); radius: root.width / 2 - Tokens.editor-control-stroke-width - i * Tokens.editor-control-rotary-modulation-gap; thickness: Tokens.editor-control-stroke-width; tint: root.mod-color(assignment.slot); }
+    RotaryArc { radius: root.ring; tint: EditorTheme.color-track; thickness: root.thin; }
+    RotaryArc { from: root.bipolar ? Tokens.editor-curve-bipolar-center : 0; to: root.value; radius: root.ring; tint: !root.enabled ? EditorTheme.paper-4 : root.host-active ? EditorTheme.host : EditorTheme.color-value; thickness: root.active || root.host-active ? root.thick : root.thin; }
+    Rectangle {
+        x: parent.width / 2 - root.cap; y: parent.height / 2 - root.cap + (root.active ? Tokens.editor-control-rotary-press-offset : 0px); width: root.cap * 2; height: self.width; border-radius: root.cap;
+        background: !root.enabled ? EditorTheme.ink-4 : root.active ? EditorTheme.cap-press : root.hovered ? EditorTheme.cap-hover : EditorTheme.cap;
+        drop-shadow-blur: Tokens.editor-control-rotary-shadow-blur; drop-shadow-offset-y: Tokens.editor-control-rotary-shadow-offset; drop-shadow-color: Tokens.editor-control-rotary-shadow;
+        border-width: Tokens.editor-control-stroke-width; border-color: EditorTheme.line-3.with-alpha(Tokens.editor-control-rotary-border-alpha);
+        if EditorTheme.soft : Rectangle { border-radius: parent.width / 2; border-width: Tokens.editor-control-stroke-width; border-color: EditorTheme.bevel; }
+        Path { viewbox-width: root.width / 1px; viewbox-height: root.height / 1px; x: -parent.x; y: -parent.y; width: root.width; height: root.height; stroke: Tokens.editor-control-rotary-rim-highlight; stroke-width: Tokens.editor-control-stroke-width;
+            MoveTo { x: root.width / 2px - ((root.cap - Tokens.editor-control-rotary-highlight-inset) / 1px) * sin(Tokens.editor-control-rotary-highlight-angle*1deg); y: root.height / 2px - ((root.cap - Tokens.editor-control-rotary-highlight-inset) / 1px) * cos(Tokens.editor-control-rotary-highlight-angle*1deg); }
+            ArcTo { x: root.width / 2px + ((root.cap - Tokens.editor-control-rotary-highlight-inset) / 1px) * sin(Tokens.editor-control-rotary-highlight-angle*1deg); y: root.height / 2px - ((root.cap - Tokens.editor-control-rotary-highlight-inset) / 1px) * cos(Tokens.editor-control-rotary-highlight-angle*1deg); radius-x: (root.cap - Tokens.editor-control-rotary-highlight-inset) / 1px; radius-y: (root.cap - Tokens.editor-control-rotary-highlight-inset) / 1px; sweep: true; }
+        }
+    }
+}

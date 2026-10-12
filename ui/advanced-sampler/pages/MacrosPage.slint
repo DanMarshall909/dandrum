@@ -1,3 +1,5 @@
+import { GesturePhases } from "../../slint/editor/ParameterConstants.slint";
+import { SamplerCommands } from "../domain/Commands.slint";
 import { ReadOnlyKeyMap } from "ReadOnlyKeyMap.slint";
 import { Session, MacroInfo, ParameterInfo } from "../Session.slint";
 import { SamplerTheme } from "../theme/Theme.slint";
@@ -14,11 +16,11 @@ export component MacrosPage inherits Rectangle {
     private property <bool> adding;
     pure function macro-at(i: int) -> MacroInfo { return i < Session.macros.length ? Session.macros[i] : {}; }
     out property <MacroInfo> selected-macro: root.macro-at(0).id == Session.selected-macro ? root.macro-at(0) : root.macro-at(1).id == Session.selected-macro ? root.macro-at(1) : root.macro-at(2).id == Session.selected-macro ? root.macro-at(2) : root.macro-at(3).id == Session.selected-macro ? root.macro-at(3) : root.macro-at(4).id == Session.selected-macro ? root.macro-at(4) : root.macro-at(5).id == Session.selected-macro ? root.macro-at(5) : root.macro-at(6).id == Session.selected-macro ? root.macro-at(6) : root.macro-at(7);
-    public function select-macro(id: string) { Session.command("macro.select", id, "", 0); }
-    public function add-destination(id: string) { Session.command("macro.bind", Session.selected-macro, id, 0.25); root.adding = false; }
-    public function remove-destination(id: string) { Session.command("macro.unbind", Session.selected-macro, id, 0); }
-    public function invert-destination(id: string) { Session.command("macro.invert", Session.selected-macro, id, 0); }
-    public function open-destination(id: string) { Session.command("page.select", id == "reverb-mix" || id == "delay-mix" ? "fx" : "voice", "", 0); root.context-action("parameter-open", id); }
+    public function select-macro(id: string) { Session.command(SamplerCommands.macro-select, id, "", 0); }
+    public function add-destination(id: string) { Session.command(SamplerCommands.macro-bind, Session.selected-macro, id, 0.25); root.adding = false; }
+    public function remove-destination(id: string) { Session.command(SamplerCommands.macro-unbind, Session.selected-macro, id, 0); }
+    public function invert-destination(id: string) { Session.command(SamplerCommands.macro-invert, Session.selected-macro, id, 0); }
+    public function open-destination(id: string) { Session.command(SamplerCommands.page-select, id == "reverb-mix" || id == "delay-mix" ? "fx" : "voice", "", 0); root.context-action("parameter-open", id); }
     Flickable { width: parent.width; height: parent.height; content-width: self.width; content-height: max(self.height, grid.height + destinations.height + 4px + (root.expanded ? 153px : 0px));
         grid := PagePanel { header-height: 42px; y: 0px; width: parent.width; height: 53px + root.macro-rows * 119.5px + 8px; title: "Macros"; subtitle: "\{Session.macros.length} macros · host automatable";
             for m[i] in Session.macros : FocusScope {
@@ -28,13 +30,13 @@ export component MacrosPage inherits Rectangle {
                 accessible-action-default => { root.select-macro(m.id); }
                 key-pressed(event) => { if event.text == Key.Return || event.text == " " { root.select-macro(m.id); return accept; } return reject; }
                 ParamKnob { private property <float> display-scale: m.unit == "%" ? 100 : 1; macro-id: m.id; x: (parent.width - self.width) / 2; y: 8px; size: 48px; label: m.name; value: m.value * self.display-scale; model-value: m.value * self.display-scale; minimum: m.minimum * self.display-scale; maximum: m.maximum * self.display-scale; default-value: m.default-value * self.display-scale; unit: m.unit; host-automated: m.host-automated; assignments: m.assignments; enabled: m.destinations.length > 0;
-                    gesture-began => { root.select-macro(m.id); Session.parameter-gesture(m.id, 0, self.value / self.display-scale); }
-                    changed(v) => { Session.parameter-gesture(m.id, 1, v / self.display-scale); }
-                    gesture-ended => { Session.parameter-gesture(m.id, 2, self.value / self.display-scale); }
+                    gesture-began => { root.select-macro(m.id); Session.parameter-gesture(m.id, GesturePhases.begin, self.value / self.display-scale); }
+                    changed(v) => { Session.parameter-gesture(m.id, GesturePhases.update, v / self.display-scale); }
+                    gesture-ended => { Session.parameter-gesture(m.id, GesturePhases.commit, self.value / self.display-scale); }
                     context-action(a) => { root.select-macro(m.id); root.context-action(a, m.id); }
                 }
                 Text { x: 4px; y: 90.5px; width: parent.width - 8px; height: 15px; text: m.destinations.length == 0 ? "Unassigned" : m.host-automated ? "Host automated" : "\{m.destinations.length} destination\{m.destinations.length == 1 ? "" : "s"}"; font-family: SamplerTheme.font-value; font-size: 11px; color: SamplerTheme.paper-3; horizontal-alignment: center; }
-                TouchArea { y: 74px; height: 37.5px; clicked => { root.select-macro(m.id); } pointer-event(event) => { if event.kind == PointerEventKind.up && event.button == PointerEventButton.right { root.select-macro(m.id); root.context-action("macro", m.id); } if event.kind == PointerEventKind.down && event.button == PointerEventButton.middle { Session.command("macro.reset", m.id, "", 0); } } }
+                TouchArea { y: 74px; height: 37.5px; clicked => { root.select-macro(m.id); } pointer-event(event) => { if event.kind == PointerEventKind.up && event.button == PointerEventButton.right { root.select-macro(m.id); root.context-action("macro", m.id); } if event.kind == PointerEventKind.down && event.button == PointerEventButton.middle { Session.command(SamplerCommands.macro-reset, m.id, "", 0); } } }
                 if Session.selected-macro == m.id : Rectangle { y: parent.height - 2px; height: 2px; background: SamplerTheme.accent; }
             }
         }

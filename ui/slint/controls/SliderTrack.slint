@@ -15,22 +15,22 @@ export component SliderTrack inherits Rectangle {
     in property <bool> assigning;
     in property <[ModAssignment]> modulations;
     background: root.enabled && root.assigning ? Tokens.dd-mod-wash : transparent;
-    border-width: root.enabled && root.assigning ? 1px : 0px; border-color: Tokens.dd-mod-a; border-radius: Tokens.radius-1;
+    border-width: root.enabled && root.assigning ? Tokens.editor-control-stroke-width : 0px; border-color: Tokens.dd-mod-a; border-radius: Tokens.radius-1;
     TrackSegment { vertical: root.vertical; tint: root.enabled ? Tokens.color-track : Tokens.dd-ink-4; }
-    if root.enabled : TrackSegment { vertical: root.vertical; from: root.bipolar ? 0.5 : 0; to: root.value; tint: root.host-automated ? Tokens.dd-host : Tokens.color-value; }
+    if root.enabled : TrackSegment { vertical: root.vertical; from: root.bipolar ? Tokens.editor-curve-bipolar-center : 0; to: root.value; tint: root.host-automated ? Tokens.dd-host : Tokens.color-value; }
     if root.bipolar : Rectangle {
-        x: root.vertical ? (parent.width - 10px) / 2 : (parent.width - 1.5px) / 2;
-        y: root.vertical ? (parent.height - 1.5px) / 2 : (parent.height - 10px) / 2;
-        width: root.vertical ? 10px : 1.5px; height: root.vertical ? 1.5px : 10px; background: Tokens.dd-paper-3;
+        x: root.vertical ? (parent.width - Tokens.editor-control-slider-zero-tick-length) / 2 : (parent.width - Tokens.editor-control-slider-zero-tick-width) / 2;
+        y: root.vertical ? (parent.height - Tokens.editor-control-slider-zero-tick-width) / 2 : (parent.height - Tokens.editor-control-slider-zero-tick-length) / 2;
+        width: root.vertical ? Tokens.editor-control-slider-zero-tick-length : Tokens.editor-control-slider-zero-tick-width; height: root.vertical ? Tokens.editor-control-slider-zero-tick-width : Tokens.editor-control-slider-zero-tick-length; background: Tokens.dd-paper-3;
     }
     for assignment[i] in root.modulations : Rectangle {
-        visible: root.enabled && i < 2;
-        TrackSegment { vertical: root.vertical; from: root.value; to: root.value + assignment.depth; thickness: 2px; offset: i == 0 ? -6.5px : 6.5px; tint: ModPalette.tint(assignment.slot).with-alpha(assignment.active ? 1 : 0.6); }
+        visible: root.enabled && i < Tokens.editor-control-visible-modulation-rings;
+        TrackSegment { vertical: root.vertical; from: root.value; to: root.value + assignment.depth; thickness: Tokens.editor-control-slider-mod-thickness; offset: i == 0 ? -Tokens.editor-control-slider-mod-offset : Tokens.editor-control-slider-mod-offset; tint: ModPalette.tint(assignment.slot).with-alpha(assignment.active ? 1 : Tokens.editor-control-rotary-inactive-mod-alpha); }
         if assignment.active : Rectangle {
             private property <float> live-value: (root.value + assignment.depth * assignment.live).clamp(0, 1);
-            x: root.vertical ? parent.width / 2 + (i == 0 ? -6.5px : 6.5px) - 2px : 6px + self.live-value * max(0px, parent.width - 12px) - 1.5px;
-            y: root.vertical ? parent.height - 6px - self.live-value * max(0px, parent.height - 12px) - 1.5px : parent.height / 2 + (i == 0 ? -6.5px : 6.5px) - 2px;
-            width: root.vertical ? 4px : 3px; height: root.vertical ? 3px : 4px; background: ModPalette.tint(assignment.slot);
+            x: root.vertical ? parent.width / 2 + (i == 0 ? -Tokens.editor-control-slider-mod-offset : Tokens.editor-control-slider-mod-offset) - Tokens.editor-control-slider-live-width/2 : Tokens.editor-control-gesture-track-inset + self.live-value * max(0px, parent.width - 2*Tokens.editor-control-gesture-track-inset) - Tokens.editor-control-slider-live-height/2;
+            y: root.vertical ? parent.height - Tokens.editor-control-gesture-track-inset - self.live-value * max(0px, parent.height - 2*Tokens.editor-control-gesture-track-inset) - Tokens.editor-control-slider-live-height/2 : parent.height / 2 + (i == 0 ? -Tokens.editor-control-slider-mod-offset : Tokens.editor-control-slider-mod-offset) - Tokens.editor-control-slider-live-width/2;
+            width: root.vertical ? Tokens.editor-control-slider-live-width : Tokens.editor-control-slider-live-height; height: root.vertical ? Tokens.editor-control-slider-live-height : Tokens.editor-control-slider-live-width; background: ModPalette.tint(assignment.slot);
         }
     }
     SliderThumb { value: root.value; vertical: root.vertical; enabled: root.enabled; hovered: root.hovered; pressed: root.active; }

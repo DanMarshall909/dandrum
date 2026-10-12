@@ -1,0 +1,62 @@
+// This consumer is staged outside the repository with only the library and fonts.
+import {
+    EditorTheme, MaterialLayers, MaterialSurface, WindowMaterial, EditorText,
+    AppearanceChoices, AppearanceFields, AppearanceStrings,
+    EditorIcon, EditorButton, EditorOption, EditorOptionStrip, ChoiceGrid,
+    ColorChoice, EditorPagePanel, EditorRollout, EditorResizeHandle,
+    EditorPropertyRow, StatusRow, StatusStep, NavigationItem, NavigationRail,
+    EditorTextField, EditorSearchField, ItemRow, LevelMeter, EditorEmptyState,
+    EditorModal, EditorDialogSurface, EditorDragState, DragKinds,
+    EditorDragMetrics, EditorDragSource, EditorDragTarget, EditorStrings,
+    ParameterKnob, ParameterField, ParameterGesture, EditorRotaryFace,
+    ParameterValuePopup, ParameterValueEditor, ParameterMenu,
+    ParameterActions, ParameterStrings, GesturePhases, RangeFields,
+    DelayedPopupState, TransientState, PresetInfo, PresetBrowserState,
+    PresetBrowser, PresetRow, PresetFilter, BrowserActions,
+    PadInfo, PadFit, FitLayout, EditorKey, EditorPad, EditorPadWave,
+    EditorPlayKeys, EditorPlayPads, EditorPadPanel, EditorBindingRangeRow,
+    EditorMapKeyboard, EditorKeyMapOverview, EditableWaveform,
+    WaveHandle, WaveCoordinates, PlotParameter, EditorFilterPlot,
+    EditorEnvelopePlot, EditorZoneMap, EditorZoneEdge, EditorZoneCorner,
+    EditorCurvePlot, EditorModulatorPlot, EditorProcessorPlot,
+    EditorRangeHandle, EditorVelocityBlendPlot, CurveKinds, ShapeNames,
+    CurveMetrics, MusicalConstants, PitchNames, Ranges, GraphMetrics,
+    DisplayStates, DisplayModes, WaveFields, EnvelopeStages,
+    EditorLayoutMetrics, EditorDialogMetrics, EditorAppearanceMetrics,
+    EditorRenderMetrics, EditorTypographyMetrics
+} from "@DANDRUM_SLINT_LIBRARY_SOURCE@/dandrum.slint";
+
+export component IndependentEditor inherits Window {
+    title: "Independent shared-library consumer";
+    preferred-width: 360px;
+    preferred-height: 240px;
+    background: EditorTheme.surface-window;
+    in-out property <float> level: 0;
+    in property <[PresetInfo]> presets;
+    in property <[PadInfo]> pads;
+    in property <[NavigationItem]> pages;
+    in property <[PlotParameter]> parameters;
+    out property <bool> protocol-compatible:
+        GesturePhases.begin == 0 && GesturePhases.commit == 2
+        && MusicalConstants.notes-per-octave == 12
+        && MusicalConstants.midi-maximum == 127
+        && EnvelopeStages.release == 3
+        && AppearanceChoices.surface == "aluminium"
+        && AppearanceFields.modulation == "mod-palette";
+    VerticalLayout {
+        padding: 12px;
+        EditorText { text: "Library consumer"; }
+        HorizontalLayout {
+            ParameterKnob {
+                label: "Level"; minimum: -60; maximum: 12; step: 0.1;
+                value <=> root.level;
+            }
+            ParameterField {
+                label: "Level"; minimum: -60; maximum: 12; step: 0.1;
+                value <=> root.level;
+            }
+            EditorButton { text: "Apply"; }
+        }
+        LevelMeter { level: 0.5; height: 4px; }
+    }
+}

@@ -1,0 +1,9 @@
+// Data projection for performance pads; no engine or host ownership.
+export struct PadInfo {
+    id: string, name: string, note: int, mapped: bool, choke-group: int,
+    selected: bool, level: float, sounding: bool, key-label: string,
+    velocity-low: int, velocity-high: int, velocity: int,
+    alternates: int, active-alternate: int, layers: int, choked: bool,
+    pitch-ratio: float, gain: float, pan: float, start: float, variation: float,
+    muted: bool, solo: bool, output: string, send-a: float, send-b: float,
+}

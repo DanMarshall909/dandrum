@@ -1,3 +1,4 @@
+import { SamplerCommands } from "../domain/Commands.slint";
 import { ScrollView } from "std-widgets.slint";
 import { SourceInfo } from "../domain/types.slint";
 import { SamplerTheme } from "../theme/Theme.slint";
@@ -11,7 +12,7 @@ export component SourceGroups inherits ScrollView {
     callback file-request(string, string);
     VerticalLayout { width: max(1px, root.width - 12px); alignment: start; spacing: 0px;
         for group in Session.source-groups : VerticalLayout { spacing: 0px;
-            ActionButton { height: 26px; width: parent.width; text: group.name.to-uppercase(); label: "Toggle " + group.name + " sources"; compact: true; ghost: true; icon: group.expanded ? "chevron-down" : "chevron-right"; clicked => { Session.command("asset.group-toggle", group.id, "", 0); } }
+            ActionButton { height: 26px; width: parent.width; text: group.name.to-uppercase(); label: "Toggle " + group.name + " sources"; compact: true; ghost: true; icon: group.expanded ? "chevron-down" : "chevron-right"; clicked => { Session.command(SamplerCommands.asset-group-toggle, group.id, "", 0); } }
             if group.expanded : VerticalLayout { spacing: 0px;
                 for source in group.sources : VerticalLayout { spacing: 0px;
                     SourceRow { source: source; indented: true; show-browser => { root.show-browser(); } file-request(a,id) => { root.file-request(a,id); } }

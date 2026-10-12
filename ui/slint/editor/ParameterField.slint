@@ -1,0 +1,44 @@
+import { ParameterActions, ParameterStrings } from "ParameterConstants.slint";
+import { Tokens } from "../tokens.slint";
+import { EditorTheme } from "Theme.slint";
+import { RangeControl } from "../controls/RangeControl.slint";
+import { ParameterGesture } from "ParameterGesture.slint";
+import { ParameterValueEditor } from "ParameterValueEditor.slint";
+import { ParameterMenu } from "ParameterMenu.slint";
+export component ParameterField inherits RangeControl {
+    callback interaction-lost();
+    focus-lost(reason) => { if reason == FocusReason.window-activation { root.cancel-gesture(); root.interaction-lost(); } }
+    in property <bool> assignment-enabled: true;
+    in property <length> label-font-size: EditorTheme.type-small;
+    in property <bool> show-label: root.label != "";
+    in property <bool> ghost;
+    in property <length> unit-font-size: EditorTheme.type-small;
+    callback context-action(string);
+    private property <bool> fine;
+    private property <string> suffix: root.unit == ParameterStrings.unit-pan ? "" : root.unit;
+    height: root.show-label ? Tokens.editor-control-field-labeled-height : Tokens.editor-control-field-height; width: Tokens.editor-control-field-width;
+    capture-key-pressed(event) => { root.fine = event.modifiers.shift; return reject; }
+    capture-key-released(event) => { root.fine = event.modifiers.shift; return reject; }
+    edit-requested => { editor.focus-editor(); }
+    edit-closed(restore-focus) => { if restore-focus && root.interactive { root.focus(); } }
+    standard-menu-requested => { menu.show(); }
+    context-menu-requested => { root.context-action(ParameterActions.modulation); }
+    if root.show-label : Text { y: 0px; height: Tokens.editor-control-field-label-height; text: root.label.to-uppercase(); font-family: EditorTheme.font-ui; font-size: root.label-font-size; font-weight: Tokens.editor-control-label-weight; letter-spacing: Tokens.editor-control-field-label-tracking; color: EditorTheme.paper-3; }
+    @children
+    menu := ParameterMenu { height: root.height; label: root.label; interactive: root.interactive; assignment-enabled: root.assignment-enabled;
+        interaction-lost => { root.interaction-lost(); }
+        context-action(action) => { root.context-action(action); } reset-requested => { root.reset-value(); } edit-requested => { root.begin-edit(); }
+    }
+    Rectangle { y: root.show-label ? Tokens.editor-control-field-value-top : 0px; height: Tokens.editor-control-field-height; border-width: root.ghost && !root.has-focus && !root.editing ? 0px : Tokens.editor-control-stroke-width; border-radius: Tokens.editor-control-radius-small; border-color: root.edit-invalid ? EditorTheme.error : root.has-focus ? EditorTheme.accent : EditorTheme.line-2; background: root.ghost ? transparent : EditorTheme.ink-0;
+        if EditorTheme.soft && !root.ghost : Rectangle { background: EditorTheme.well-overlay; border-radius: Tokens.editor-control-radius-small; }
+        Text { x: Tokens.editor-control-field-padding; width: parent.width - 2*Tokens.editor-control-field-padding - (root.suffix == "" ? 0px : unit-label.preferred-width + Tokens.editor-control-field-unit-gap); text: root.value-text; color: root.enabled ? root.host-active ? EditorTheme.host : EditorTheme.paper-1 : EditorTheme.paper-4; font-family: EditorTheme.font-value; font-size: Tokens.editor-control-font-value; horizontal-alignment: right; vertical-alignment: center; visible: !root.editing; }
+        unit-label := Text { x: parent.width - self.preferred-width - Tokens.editor-control-field-padding; width: self.preferred-width; text: root.suffix; color: EditorTheme.paper-3; font-family: EditorTheme.font-value; font-size: root.unit-font-size; vertical-alignment: center; }
+        editor := ParameterValueEditor { x: Tokens.editor-control-field-padding; width: parent.width - 2*Tokens.editor-control-field-padding - (root.suffix == "" ? 0px : unit-label.preferred-width + Tokens.editor-control-field-unit-gap); visible: root.editing;
+            label: root.label; value-text: root.value-text; editing: root.editing; invalid: root.edit-invalid; font-size: Tokens.editor-control-font-value; horizontal-alignment: right; vertical-alignment: center;
+            submitted(text) => { root.commit-text(text); } cancelled => { root.cancel-edit(); } abandoned => { root.abandon-edit(); } interaction-lost => { root.interaction-lost(); }
+        }
+            ParameterGesture { enabled: root.interactive && !root.editing; value: root.value; minimum: root.minimum; maximum: root.maximum; fine <=> root.fine;
+                started => { root.focus(); root.begin-gesture(); } updated(v) => { root.update-gesture(v); } ended => { root.end-gesture(); } cancelled => { root.cancel-gesture(); } reset-requested => { root.reset-value(); } edit-requested => { root.begin-edit(); } wheeled(direction, precise) => { root.wheel(direction, precise); } context-requested(x,y) => { menu.show(); }
+            }
+    }
+}

@@ -1,16 +1,17 @@
+import { ParameterStrings } from "../editor/ParameterConstants.slint";
 import { Tokens } from "../theme.slint";
 
 export component ValueReadout inherits Rectangle {
     in property <string> value;
     in property <string> unit;
-    in property <string> align: "left";
+    in property <string> align: ParameterStrings.align-left;
     in property <length> font-size: Tokens.type-value;
     in property <color> foreground: Tokens.text-primary;
-    height: root.font-size * 1.4;
+    height: root.font-size * Tokens.editor-control-readout-line-height;
     preferred-width: content.preferred-width;
     content := HorizontalLayout {
-        spacing: root.unit != "" ? 3px : 0px;
-        alignment: root.align == "center" ? center : root.align == "right" ? end : start;
+        spacing: root.unit != "" ? Tokens.editor-control-field-unit-gap : 0px;
+        alignment: root.align == ParameterStrings.align-center ? center : root.align == ParameterStrings.align-right ? end : start;
         value-text := Text {
             text: root.value; color: root.foreground;
             font-family: Tokens.font-value; font-size: root.font-size;

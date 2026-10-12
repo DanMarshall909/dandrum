@@ -10,6 +10,15 @@ option(DANDRUM_SAMPLER_TEST_RUNTIME "Run native pointer and screenshot contracts
 option(DANDRUM_SAMPLER_TEST_HEADLESS "Run UI tests on a private virtual display" ON)
 if(DANDRUM_SAMPLER_BUILD_TESTS)
     find_package(Python3 COMPONENTS Interpreter REQUIRED)
+    find_program(DANDRUM_SAMPLER_NODE NAMES node)
+    if(DANDRUM_SAMPLER_NODE)
+        add_test(NAME advanced-sampler-command-drift COMMAND "${DANDRUM_SAMPLER_NODE}"
+            "${DANDRUM_SAMPLER_REPO}/scripts/generate-sampler-commands.mjs" --check)
+        add_test(NAME advanced-sampler-command-contracts COMMAND "${DANDRUM_SAMPLER_NODE}" --test
+            "${DANDRUM_SAMPLER_REPO}/tests/js/SamplerCommandsTest.mjs")
+        set_tests_properties(advanced-sampler-command-drift advanced-sampler-command-contracts
+            PROPERTIES LABELS "sampler;headless;commands")
+    endif()
     foreach(pair "demo-launcher:test_demo_launcher.py" "demo-launcher-inventory:test_demo_inventory.py"
                  "demo-launcher-boundaries:test_demo_launcher_boundaries.py" "slint-headless-launch:test_slint_headless.py"
                  "advanced-sampler-capture:test_advanced_sampler_capture.py" "advanced-sampler-icons:test_advanced_sampler_icons.py"
@@ -43,18 +52,11 @@ find_package(Threads REQUIRED)
 target_link_libraries(dandrum-advanced-sampler-model PUBLIC Threads::Threads)
 target_compile_features(dandrum-advanced-sampler-model PUBLIC cxx_std_20)
 target_include_directories(dandrum-advanced-sampler-model PUBLIC "${DANDRUM_SAMPLER_REPO}")
-add_library(dandrum-sampler-file-uris STATIC platform/FileUris.cpp)
-target_compile_features(dandrum-sampler-file-uris PUBLIC cxx_std_20)
-target_include_directories(dandrum-sampler-file-uris PUBLIC "${DANDRUM_SAMPLER_REPO}")
-if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
-    find_path(DANDRUM_XCB_INCLUDE_DIR xcb/xcb.h)
-    find_library(DANDRUM_XCB_LIBRARY xcb)
-    if(DANDRUM_XCB_INCLUDE_DIR AND DANDRUM_XCB_LIBRARY)
-        add_library(dandrum-sampler-x11-file-drop STATIC platform/X11FileDrop.cpp)
-        target_include_directories(dandrum-sampler-x11-file-drop PRIVATE "${DANDRUM_XCB_INCLUDE_DIR}")
-        target_link_libraries(dandrum-sampler-x11-file-drop PUBLIC dandrum-sampler-file-uris PRIVATE "${DANDRUM_XCB_LIBRARY}")
-        target_compile_definitions(dandrum-sampler-x11-file-drop PUBLIC DANDRUM_HAVE_X11_FILE_DROP)
-    endif()
+# File URI parsing and optional X11 transport are reusable Slint host services.
+add_subdirectory("../slint/platform" "${CMAKE_CURRENT_BINARY_DIR}/slint-platform")
+add_library(dandrum-sampler-file-uris ALIAS dandrum-slint-file-uris)
+if(TARGET dandrum-slint-x11-file-drop)
+    add_library(dandrum-sampler-x11-file-drop ALIAS dandrum-slint-x11-file-drop)
 endif()
 if(NOT TARGET dandrum-advanced-sampler)
     add_executable(dandrum-advanced-sampler)

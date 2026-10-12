@@ -42,7 +42,7 @@ def waveform_controls(session):
     session.call("click_element", elementHandle=session.find("AdvancedSamplerWaveTest::run"))
     labels = [session.properties(e["handle"]).get("accessibleLabel", "") for e in session.tree()["elements"]]
     assert "PASS: 4 source coordinate contracts" in labels
-    start = session.find("WaveView::start-handle")
+    start = session.find("EditableWaveform::start-handle")
     bounds = session.properties(start)
     x = bounds["absolutePosition"]["x"] + 6
     y = bounds["absolutePosition"]["y"] + 50

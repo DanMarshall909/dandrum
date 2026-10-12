@@ -1,0 +1,34 @@
+import { Tokens } from "../tokens.slint";
+// Non-visual popup timing shared by control faces with different hover policies.
+export component DelayedPopupState inherits Rectangle {
+    in property <bool> requested;
+    in property <bool> keep-open;
+    in property <duration> open-delay: 0ms;
+    in property <duration> close-delay: Tokens.editor-control-hover-close-delay;
+    out property <bool> opened;
+    width: 0px; height: 0px;
+    public function show() { opening.stop(); closing.stop(); root.opened = true; }
+    public function hide() { opening.stop(); closing.stop(); root.opened = false; }
+    function update() {
+        if root.keep-open { root.show(); }
+        else if root.requested {
+            closing.stop();
+            if !root.opened {
+                if root.open-delay <= 0ms { root.show(); }
+                else { opening.start(); opening.restart(); }
+            }
+        } else {
+            opening.stop();
+            if root.opened { closing.start(); closing.restart(); }
+        }
+    }
+    init => { root.update(); }
+    changed requested => { root.update(); }
+    changed keep-open => { root.update(); }
+    opening := Timer { interval: root.open-delay; running: false;
+        triggered => { self.stop(); if root.requested || root.keep-open { root.show(); } }
+    }
+    closing := Timer { interval: root.close-delay; running: false;
+        triggered => { self.stop(); if !root.requested && !root.keep-open { root.hide(); } }
+    }
+}

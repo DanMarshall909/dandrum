@@ -1,3 +1,4 @@
+import { GesturePhases } from "../../slint/editor/ParameterConstants.slint";
 import { MacroInfo } from "types.slint";
 import { ParamKnob } from "../controls/ParamKnob.slint";
 import { Session } from "../Session.slint";
@@ -21,9 +22,9 @@ export component MacroGrid inherits Rectangle {
             knob := ParamKnob { macro-id: m.id; private property <float> display-scale: m.unit == "%" ? 100 : 1;
                 label: m.name; size: root.face-size; value: m.value * self.display-scale; model-value: m.value * self.display-scale; minimum: m.minimum * self.display-scale; maximum: m.maximum * self.display-scale; default-value: m.default-value * self.display-scale; unit: m.unit; assignments: m.assignments; host-automated: m.host-automated;
                 enabled: m.destinations.length > 0; opacity: m.destinations.length > 0 ? 1 : 0.38;
-                gesture-began => { root.macro-gesture(m.id, 0, self.value / self.display-scale); }
-                changed(v) => { root.macro-gesture(m.id, 1, v / self.display-scale); }
-                gesture-ended => { root.macro-gesture(m.id, 2, self.value / self.display-scale); }
+                gesture-began => { root.macro-gesture(m.id, GesturePhases.begin, self.value / self.display-scale); }
+                changed(v) => { root.macro-gesture(m.id, GesturePhases.update, v / self.display-scale); }
+                gesture-ended => { root.macro-gesture(m.id, GesturePhases.commit, self.value / self.display-scale); }
                 context-action(action) => { root.context-action(action, m.id); }
             }
             if m.destinations.length == 0 : FocusScope {

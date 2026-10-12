@@ -1,3 +1,6 @@
+import { DragKinds } from "../../slint/editor/Drag.slint";
+import { GesturePhases } from "../../slint/editor/ParameterConstants.slint";
+import { SamplerCommands } from "../domain/Commands.slint";
 import { ReadOnlyKeyMap } from "ReadOnlyKeyMap.slint";
 import { FitLayout } from "../performance/FitLayout.slint";
 import { ScrollView } from "std-widgets.slint";
@@ -16,8 +19,8 @@ export component SlicesPage inherits Rectangle {
     private property <length> base-panel-height: root.compact ? 245px : root.expanded ? 361px : 291px;
     private property <length> analysis-height: Session.analysis-state == "idle" ? 0px : Session.analysis-state == "running" ? 56px : Session.analysis-state == "failed" ? 74px : 76px;
     callback export-midi();
-    public function analyze() { Session.command("analysis.start", "transients", "", 0); }
-    public function apply() { Session.command("analysis.apply", "", "", 0); }
+    public function analyze() { Session.command(SamplerCommands.analysis-start, "transients", "", 0); }
+    public function apply() { Session.command(SamplerCommands.analysis-apply, "", "", 0); }
     ScrollView { x: 0px; y: 0px;
         VerticalLayout { spacing: 4px; alignment: start;
             SourceHeader { }
@@ -26,14 +29,14 @@ export component SlicesPage inherits Rectangle {
                 if root.compact : Text { x: 80px; y: 6px; width: parent.width - 92px; height: 20px; text: Session.sample-name + " · " + Session.slices.length; font-family: SamplerTheme.font-ui; font-size: 12px; color: SamplerTheme.paper-3; overflow: elide; vertical-alignment: center; }
                 HorizontalLayout { x: root.compact ? 12px : 245px; y: root.compact ? 36px : 9px; width: parent.width - self.x - 12px; height: 24px; spacing: 4px; alignment: end;
                     detect-button := ActionButton { icon: "slice"; label: "Detect transients"; width: 24px; compact: true; enabled: Session.analysis-state != "running"; clicked => { root.analyze(); } }
-                    ActionButton { text: "Even"; caps: true; compact: true; clicked => { Session.command("slice.even", "", "", Session.analysis-count); } }
-                    ActionButton { text: "Grid"; caps: true; compact: true; clicked => { Session.command("slice.grid", "", "", Session.analysis-count); } }
-                    NumericField { width: 44px; height: 24px; show-label: false; label: "Slice count"; value: Session.analysis-count; model-value: Session.analysis-count; minimum: 1; maximum: 64; step: 1; changed(v) => { Session.command("analysis.count", "", "", v); } }
-                    ActionButton { icon: "reload"; label: "Clear"; width: 24px; compact: true; clicked => { Session.command("slice.clear", "", "", 0); } }
+                    ActionButton { text: "Even"; caps: true; compact: true; clicked => { Session.command(SamplerCommands.slice-even, "", "", Session.analysis-count); } }
+                    ActionButton { text: "Grid"; caps: true; compact: true; clicked => { Session.command(SamplerCommands.slice-grid, "", "", Session.analysis-count); } }
+                    NumericField { width: 44px; height: 24px; show-label: false; label: "Slice count"; value: Session.analysis-count; model-value: Session.analysis-count; minimum: 1; maximum: 64; step: 1; changed(v) => { Session.command(SamplerCommands.analysis-count, "", "", v); } }
+                    ActionButton { icon: "reload"; label: "Clear"; width: 24px; compact: true; clicked => { Session.command(SamplerCommands.slice-clear, "", "", 0); } }
                 }
                 WaveView { x: 12px; y: root.compact ? 74px : 50px; width: parent.width - 24px; height: root.compact ? 120px : root.expanded ? 260px : 190px; duration: Session.sample-duration; metadata: Session.sample-duration > 0 ? Session.sample-name + " · " + round(Session.sample-duration * 1000) / 1000 + " s" : ""; peaks: Session.waveform; reversed: Session.reversed; state: Session.asset-state; slices: Session.analysis-state == "done" ? Session.analysis-candidates : Session.slices; selected-slice: Session.selected-slice; playhead: Session.playhead;
-                    slice-selected(id) => { Session.command("slice.select", id, "", 0); }
-                    seek(position) => { Session.command("sample.audition", Session.selected-source, "", position); }
+                    slice-selected(id) => { Session.command(SamplerCommands.slice-select, id, "", 0); }
+                    seek(position) => { Session.command(SamplerCommands.sample-audition, Session.selected-source, "", position); }
                 }
                 Rectangle { x: 12px; y: root.base-panel-height - 40px; width: parent.width - 24px; height: 28px; border-width: 1px; border-color: SamplerTheme.line-1; border-radius: 2px; background: SamplerTheme.ink-0;
                     Text { x: 8px; y: 0px; height: 28px; text: "TRANSIENTS"; font-family: SamplerTheme.font-ui; font-size: 11px; font-weight: 600; color: SamplerTheme.paper-4; vertical-alignment: center; }
@@ -57,10 +60,10 @@ export component SlicesPage inherits Rectangle {
                         font-family: SamplerTheme.font-ui; font-size: 12px; color: SamplerTheme.paper-3; wrap: word-wrap;
                     }
                     HorizontalLayout { x: parent.width - parent.action-width - 4px; y: 8px; width: parent.action-width; height: 24px; spacing: 4px; alignment: end;
-                        ActionButton { text: "Cancel"; height: 24px; clicked => { Session.command("analysis.cancel", "", "", 0); } }
-                        if Session.analysis-state == "failed" : ActionButton { text: "Retry"; height: 24px; clicked => { Session.command("analysis.retry", "", "", 0); } }
+                        ActionButton { text: "Cancel"; height: 24px; clicked => { Session.command(SamplerCommands.analysis-cancel, "", "", 0); } }
+                        if Session.analysis-state == "failed" : ActionButton { text: "Retry"; height: 24px; clicked => { Session.command(SamplerCommands.analysis-retry, "", "", 0); } }
                         if Session.analysis-state == "done" : ActionButton { text: "Apply"; height: 24px; primary: true; clicked => { root.apply(); } }
-                        if Session.analysis-state == "done" : ActionButton { text: "Discard"; height: 24px; clicked => { Session.command("analysis.discard", "", "", 0); } }
+                        if Session.analysis-state == "done" : ActionButton { text: "Discard"; height: 24px; clicked => { Session.command(SamplerCommands.analysis-discard, "", "", 0); } }
                     }
                 }
             }
@@ -84,8 +87,8 @@ export component SlicesPage inherits Rectangle {
                         for row[i] in Session.slice-list : Rectangle { x: 0px; y: 26px + i * 26px; width: parent.width; height: 26px; background: row.selected ? SamplerTheme.accent-wash : transparent;
                             Text { x: 0px; y: 0px; width: 28px; height: 26px; text: i + 1; font-family: SamplerTheme.font-value; font-size: 12px; color: SamplerTheme.paper-3; vertical-alignment: center; }
                             ActionButton { x: 36px; y: 0px; width: slice-table.name-width; height: 26px; label: "Preview slice " + row.name; ghost: true;
-                                DragSource { kind: "slice"; payload: row.id; activate => { Session.command("slice.preview", row.id, "", 0); } }
-                                clicked => { Session.command("slice.preview", row.id, "", 0); }
+                                DragSource { kind: DragKinds.slice; payload: row.id; activate => { Session.command(SamplerCommands.slice-preview, row.id, "", 0); } }
+                                clicked => { Session.command(SamplerCommands.slice-preview, row.id, "", 0); }
                             }
                             Text { x: 36px; y: 0px; width: slice-table.name-width; height: 26px; text: row.name; font-family: SamplerTheme.font-ui; font-size: 12px; font-weight: 600; color: SamplerTheme.paper-2; vertical-alignment: center; overflow: elide; }
                             for cell in [{x: slice-table.note-x, width: 64px, value: row.note >= 0 ? "\{row.note} " + FitLayout.note-name(row.note) : "—"}, {x: slice-table.range-x, width: slice-table.range-width, value: row.duration > 0 ? "\{round(row.start * row.duration * 1000) / 1000}–\{round(row.end * row.duration * 1000) / 1000}" : "—"}, {x: slice-table.tune-x, width: 56px, value: "\{row.pitch} st"}, {x: slice-table.gain-x, width: 64px, value: "\{round(row.gain * 10) / 10} dB"}, {x: slice-table.pan-x, width: 44px, value: row.pan == 0 ? "C" : "\{round(abs(row.pan) * 100)}\{row.pan < 0 ? "L" : "R"}"}, {x: slice-table.play-x, width: 70px, value: row.play}, {x: slice-table.choke-x, width: 54px, value: row.choke < 0 ? "None" : "\{row.choke}"}, {x: slice-table.output-x, width: 100px, value: row.output}] : Text { x: cell.x; y: 0px; width: cell.width; height: 26px; text: cell.value; font-family: SamplerTheme.font-value; font-size: 12px; color: SamplerTheme.paper-2; vertical-alignment: center; overflow: elide; }
@@ -95,37 +98,37 @@ export component SlicesPage inherits Rectangle {
             }
             if root.expanded : ReadOnlyKeyMap { }
             HorizontalLayout { height: 46px; spacing: 12px; alignment: start; padding-left: 12px;
-                NumericField { label: "Sensitivity"; value: Session.analysis-sensitivity * 100; model-value: Session.analysis-sensitivity * 100; minimum: 0; maximum: 100; unit: "%"; step: 1; changed(v) => { Session.command("analysis.sensitivity", "", "", v / 100); } }
+                NumericField { label: "Sensitivity"; value: Session.analysis-sensitivity * 100; model-value: Session.analysis-sensitivity * 100; minimum: 0; maximum: 100; unit: "%"; step: 1; changed(v) => { Session.command(SamplerCommands.analysis-sensitivity, "", "", v / 100); } }
             }
             PagePanel { title: "Slice regions"; height: 82px + Session.slices.length * 32px;
                 HorizontalLayout { x: 12px; y: 43px; width: parent.width - 24px; height: 26px; spacing: 4px; alignment: start;
-                    ActionButton { text: "Add"; clicked => { Session.command("slice.add", "", "New slice", 0.5); } }
+                    ActionButton { text: "Add"; clicked => { Session.command(SamplerCommands.slice-add, "", "New slice", 0.5); } }
                     if Session.selected-slice == "" : ActionButton { text: "Split"; enabled: false; }
                     for selected in Session.slices : Rectangle {
                         width: selected.id == Session.selected-slice ? 48px : 0px;
                         height: selected.id == Session.selected-slice ? 26px : 0px;
-                        if selected.id == Session.selected-slice : ActionButton { text: "Split"; clicked => { Session.command("slice.split", selected.id, "", (selected.start + selected.end) / 2); } }
+                        if selected.id == Session.selected-slice : ActionButton { text: "Split"; clicked => { Session.command(SamplerCommands.slice-split, selected.id, "", (selected.start + selected.end) / 2); } }
                     }
-                    ActionButton { text: "Merge"; enabled: Session.selected-slice != ""; clicked => { Session.command("slice.merge", Session.selected-slice, "", 0); } }
-                    ActionButton { text: "Map to keys"; clicked => { Session.command("slice.map", "", "", 24); } }
+                    ActionButton { text: "Merge"; enabled: Session.selected-slice != ""; clicked => { Session.command(SamplerCommands.slice-merge, Session.selected-slice, "", 0); } }
+                    ActionButton { text: "Map to keys"; clicked => { Session.command(SamplerCommands.slice-map, "", "", 24); } }
                     ActionButton { text: "Export MIDI…"; clicked => { root.export-midi(); } }
                 }
                 for slice[i] in Session.slices : Rectangle { x: 12px; y: 76px + i * 32px; width: parent.width - 24px; height: 30px; background: slice.id == Session.selected-slice ? SamplerTheme.accent-wash : transparent;
                     ActionButton { x: 0px; y: 2px; width: max(90px,parent.width - 240px); text: slice.name; ghost: true; selected: slice.id == Session.selected-slice;
-                        DragSource { kind: "slice"; payload: slice.id; activate => { Session.command("slice.select", slice.id, "", 0); Session.command("analysis.preview", slice.id, "", 0); } }
-                        clicked => { Session.command("slice.select", slice.id, "", 0); Session.command("analysis.preview", slice.id, "", 0); }
+                        DragSource { kind: DragKinds.slice; payload: slice.id; activate => { Session.command(SamplerCommands.slice-select, slice.id, "", 0); Session.command(SamplerCommands.analysis-preview, slice.id, "", 0); } }
+                        clicked => { Session.command(SamplerCommands.slice-select, slice.id, "", 0); Session.command(SamplerCommands.analysis-preview, slice.id, "", 0); }
                     }
                     NumericField { x: parent.width - 230px; y: 3px; width: 80px; show-label: false; label: "Start " + slice.name; value: slice.start * 100; model-value: slice.start * 100; minimum: 0; maximum: 100; unit: "%";
-                        gesture-began => { Session.parameter-gesture("slice:" + slice.id + ":start", 0, slice.start); }
-                        changed(v) => { Session.parameter-gesture("slice:" + slice.id + ":start", 1, v / 100); }
-                        gesture-ended => { Session.parameter-gesture("slice:" + slice.id + ":start", 2, self.value / 100); }
+                        gesture-began => { Session.parameter-gesture("slice:" + slice.id + ":start", GesturePhases.begin, slice.start); }
+                        changed(v) => { Session.parameter-gesture("slice:" + slice.id + ":start", GesturePhases.update, v / 100); }
+                        gesture-ended => { Session.parameter-gesture("slice:" + slice.id + ":start", GesturePhases.commit, self.value / 100); }
                     }
                     NumericField { x: parent.width - 140px; y: 3px; width: 80px; show-label: false; label: "End " + slice.name; value: slice.end * 100; model-value: slice.end * 100; minimum: 0; maximum: 100; unit: "%";
-                        gesture-began => { Session.parameter-gesture("slice:" + slice.id + ":end", 0, slice.end); }
-                        changed(v) => { Session.parameter-gesture("slice:" + slice.id + ":end", 1, v / 100); }
-                        gesture-ended => { Session.parameter-gesture("slice:" + slice.id + ":end", 2, self.value / 100); }
+                        gesture-began => { Session.parameter-gesture("slice:" + slice.id + ":end", GesturePhases.begin, slice.end); }
+                        changed(v) => { Session.parameter-gesture("slice:" + slice.id + ":end", GesturePhases.update, v / 100); }
+                        gesture-ended => { Session.parameter-gesture("slice:" + slice.id + ":end", GesturePhases.commit, self.value / 100); }
                     }
-                    ActionButton { x: parent.width - 29px; y: 3px; compact: true; icon: "close"; label: "Delete " + slice.name; clicked => { Session.command("slice.delete", slice.id, "", 0); } }
+                    ActionButton { x: parent.width - 29px; y: 3px; compact: true; icon: "close"; label: "Delete " + slice.name; clicked => { Session.command(SamplerCommands.slice-delete, slice.id, "", 0); } }
                 }
             }
         }

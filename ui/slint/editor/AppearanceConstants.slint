@@ -1,0 +1,35 @@
+// UI choices are shared data; the host validates the complete selection before
+// applying it. Hex strings remain strings because ColorChoice edits user input.
+export global AppearanceChoices {
+    out property <string> surface: "aluminium";
+    out property <string> finish: "soft";
+    out property <string> accent: "#E8C47A";
+    out property <string> secondary: "#8C8F95";
+    out property <string> modulation: "standard";
+    out property <string> host: "#5B9DFF";
+    out property <[string]> surfaces: ["aluminium", "brushed", "ember", "graphite", "midnight", "forest", "camo", "paper"];
+    out property <[string]> finishes: ["soft", "flat"];
+    out property <[string]> accents: ["#E8C47A", "#E08A4E", "#E0574E", "#D8B24A", "#5BB38A", "#5B9DFF", "#C77DFF"];
+    out property <[string]> secondaries: ["#8C8F95", "#A07A58", "#7A5C45", "#B5653F", "#8E8A5A", "#6F7F8C", "#8A6A86", "#5F8072", "#9A8F7E"];
+    out property <[string]> modulations: ["standard", "warm", "cool", "mono"];
+    out property <[string]> hosts: ["#5B9DFF", "#4FD1C5", "#B58CFF", "#FFFFFF"];
+}
+export global AppearanceFields {
+    out property <string> surface: "surface";
+    out property <string> finish: "finish";
+    out property <string> accent: "accent";
+    out property <string> secondary: "secondary";
+    out property <string> modulation: "mod-palette";
+    out property <string> host: "host";
+}
+export global AppearanceStrings {
+    out property <string> title: "Appearance";
+    out property <string> close: "Close";
+    out property <string> surface: "SURFACE";
+    out property <string> finish: "FINISH";
+    out property <string> accent: "Accent";
+    out property <string> secondary: "Secondary";
+    out property <string> modulation: "MODULATION PALETTE";
+    out property <string> host: "Host automation";
+    out property <string> help: "Custom colors accept #RGB or #RRGGBB. Light surfaces adjust role contrast automatically.";
+}

@@ -1,31 +1,33 @@
+import { ParameterStrings } from "../editor/ParameterConstants.slint";
+import { Tokens } from "../tokens.slint";
 import { ValueCodec } from "ValueCodec.slint";
+import { TransientState } from "TransientState.slint";
 
 // Shared actual-range behavior. Only user actions emit callbacks; host property
 // updates never echo back. Hosts attach begin/update/end to their own parameter API.
 export component RangeControl inherits FocusScope {
-    in-out property <float> value: 0.5;
+    in-out property <float> value: Tokens.editor-control-normalized-default;
     in property <float> minimum: 0;
     in property <float> maximum: 1;
-    in property <float> step: 0.01;
-    in property <float> default-value: 0.5;
+    in property <float> step: Tokens.editor-control-default-step;
+    in property <float> default-value: Tokens.editor-control-normalized-default;
     in property <string> label;
     in property <string> unit;
     in property <string> value-text: ValueCodec.format(root.value, root.unit);
     in property <bool> read-only;
     in property <bool> focused;
     in property <bool> host-automated;
-    out property <bool> host-active: root.host-automated || root.host-recent;
-    private property <bool> host-recent;
-    in property <float> keyboard-step: (root.maximum - root.minimum) * 0.05;
-    in property <float> fine-keyboard-step: (root.maximum - root.minimum) * 0.01;
-    in property <float> wheel-step: max(root.step, (root.maximum - root.minimum) * 0.02);
-    in property <float> fine-wheel-step: max(root.step, (root.maximum - root.minimum) * 0.01);
+    out property <bool> host-active: root.host-automated || host-flash.active;
+    in property <float> keyboard-step: (root.maximum - root.minimum) * Tokens.editor-control-keyboard-range-fraction;
+    in property <float> fine-keyboard-step: (root.maximum - root.minimum) * Tokens.editor-control-fine-keyboard-range-fraction;
+    in property <float> wheel-step: max(root.step, (root.maximum - root.minimum) * Tokens.editor-control-wheel-range-fraction);
+    in property <float> fine-wheel-step: max(root.step, (root.maximum - root.minimum) * Tokens.editor-control-fine-wheel-range-fraction);
     out property <bool> interactive: root.enabled && !root.read-only && root.maximum > root.minimum;
     out property <float> normalized-value: root.maximum > root.minimum ? ((root.value - root.minimum) / (root.maximum - root.minimum)).clamp(0, 1) : 0;
     out property <bool> gesture-active;
     out property <bool> editing;
     out property <bool> edit-invalid;
-    out property <bool> nudged;
+    out property <bool> nudged: nudge-flash.active;
     private property <float> gesture-start;
     callback changed(float);
     callback gesture-began();
@@ -43,7 +45,7 @@ export component RangeControl inherits FocusScope {
     accessible-value-minimum: root.minimum;
     accessible-value-maximum: root.maximum;
     accessible-value-step: root.step;
-    accessible-description: root.read-only ? "Prepared setting. Read only." : "Drag to change. Shift for precision. Double-click resets. Enter types a value.";
+    accessible-description: root.read-only ? ParameterStrings.readonly-instruction : ParameterStrings.range-instruction;
     accessible-action-increment => { root.nudge(1, false); }
     accessible-action-decrement => { root.nudge(-1, false); }
     accessible-action-set-value(text) => { root.commit-text(text); }
@@ -61,7 +63,7 @@ export component RangeControl inherits FocusScope {
     public function update-gesture(v: float) {
         if root.interactive && root.gesture-active {
             let next = root.limited(v);
-            if abs(next - root.value) > 0.000001 { root.value = next; root.changed(next); }
+            if abs(next - root.value) > Tokens.editor-control-value-epsilon { root.value = next; root.changed(next); }
         }
     }
     public function end-gesture() {
@@ -72,17 +74,17 @@ export component RangeControl inherits FocusScope {
             // Native hosts can roll back their captured record before float restoration.
             root.gesture-cancelled();
             // Cancellation must also restore a range that has just become inert.
-            if abs(root.gesture-start - root.value) > 0.000001 { root.value = root.gesture-start; root.changed(root.value); }
+            if abs(root.gesture-start - root.value) > Tokens.editor-control-value-epsilon { root.value = root.gesture-start; root.changed(root.value); }
             root.end-gesture();
         }
     }
     public function set-value(v: float) {
-        if root.interactive && abs(root.limited(v) - root.value) > 0.000001 {
+        if root.interactive && abs(root.limited(v) - root.value) > Tokens.editor-control-value-epsilon {
             let already-active = root.gesture-active;
             if !already-active { root.begin-gesture(); }
             root.update-gesture(v);
             if !already-active { root.end-gesture(); }
-            root.nudged = true; nudge-timer.restart();
+            nudge-flash.trigger();
         }
     }
     public function nudge(direction: float, fine: bool) { root.set-value(root.value + direction * (fine ? root.fine-keyboard-step : root.keyboard-step)); }
@@ -90,17 +92,17 @@ export component RangeControl inherits FocusScope {
     public function reset-value() {
         // The advertised default may lie between the user-editing step positions.
         let next = root.default-value.clamp(root.minimum, max(root.minimum, root.maximum));
-        if root.interactive && abs(next - root.value) > 0.000001 {
+        if root.interactive && abs(next - root.value) > Tokens.editor-control-value-epsilon {
             let already-active = root.gesture-active;
             if !already-active { root.begin-gesture(); }
             root.value = next; root.changed(next);
             if !already-active { root.end-gesture(); }
-            root.nudged = true; nudge-timer.restart();
+            nudge-flash.trigger();
         }
     }
     public function host-write(v: float) {
         root.value = v.clamp(root.minimum, max(root.minimum, root.maximum));
-        root.host-recent = true; host-timer.restart();
+        host-flash.trigger();
     }
     public function begin-edit() {
         if root.interactive { root.end-gesture(); root.editing = true; root.edit-invalid = false; root.edit-requested(); }
@@ -130,13 +132,13 @@ export component RangeControl inherits FocusScope {
         else if event.text == Key.Return { root.begin-edit(); }
         else if event.text == Key.Escape { root.cancel-gesture(); root.dismiss-requested(); }
         else if event.text == Key.Menu || (event.text == Key.F10 && event.modifiers.shift) { root.standard-menu-requested(); }
-        else if event.text == "m" || event.text == "M" { root.request-context-menu(); }
+        else if event.text == ParameterStrings.context-key || event.text == ParameterStrings.context-key-upper { root.request-context-menu(); }
         else { return reject; }
         return accept;
     }
     focus-lost(reason) => { root.end-gesture(); }
-    changed interactive => { if !root.interactive { root.cancel-gesture(); root.abandon-edit(); } }
-    host-timer := Timer { interval: 400ms; running: false; triggered => { self.stop(); root.host-recent = false; } }
-    nudge-timer := Timer { interval: 600ms; running: false; triggered => { self.stop(); root.nudged = false; } }
+    changed interactive => { if !root.interactive { root.cancel-gesture(); root.abandon-edit(); host-flash.clear(); nudge-flash.clear(); } }
+    host-flash := TransientState { duration: Tokens.editor-control-host-flash-duration; }
+    nudge-flash := TransientState { duration: Tokens.editor-control-nudge-flash-duration; }
     @children
 }

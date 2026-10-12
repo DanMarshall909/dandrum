@@ -1,3 +1,9 @@
+import { GesturePhases } from "../../slint/editor/ParameterConstants.slint";
+import { SamplerCommands } from "../domain/Commands.slint";
+import { GraphMetrics } from "../../slint/editor/DisplayConstants.slint";
+import { Tokens } from "../../slint/theme.slint";
+import { EditorFilterPlot } from "../../slint/editor/FilterPlot.slint";
+import { EditorEnvelopePlot } from "../../slint/editor/EnvelopePlot.slint";
 import { ReadOnlyKeyMap } from "ReadOnlyKeyMap.slint";
 import { ScrollView } from "std-widgets.slint";
 import { Session, ParameterInfo, ModuleInfo } from "../Session.slint";
@@ -7,152 +13,33 @@ import { OptionStrip } from "../controls/OptionStrip.slint";
 import { NumericField } from "../controls/NumericField.slint";
 import { ParamKnob } from "../controls/ParamKnob.slint";
 import { PageSection, DomainKnob, SectionText } from "PageSection.slint";
-import { VoiceDialogState } from "VoiceDialogState.slint";
+import { VoiceRenderDialog } from "VoiceRenderDialog.slint";
+export { VoiceRenderDialog }
 
-component VoiceFilterPlot inherits FocusScope {
+component VoiceFilterPlot inherits EditorFilterPlot {
  in property <[ParameterInfo]> parameters;
- private property <float> cutoff: root.parameters.length > 0 ? root.parameters[0].value : 2400;
- private property <float> resonance: root.parameters.length > 1 ? root.parameters[1].value : 0.22;
- private property <bool> dragging;
- focus-on-tab-navigation: true;
- accessible-role: slider; accessible-label: "Filter response";
- accessible-value: round(root.cutoff) + " Hz";
- accessible-value-minimum: 20; accessible-value-maximum: 20000;
- pure function response(t:float) -> float {
-  let ratio = 20 * pow(1000,t) / max(20,root.cutoff);
-  let base = Session.filter-mode == "hp" ? -10 * log(1 + pow(1/ratio,8),10) :
-   Session.filter-mode == "bp" ? -10 * log(1 + pow(abs(ratio - 1/ratio),4),10) :
-   Session.filter-mode == "notch" ? -10 * log(1 + pow(1/max(0.000001,abs(ratio - 1/ratio)),4),10) :
-   -10 * log(1 + pow(ratio,8),10);
-  let db = base + (Session.filter-mode == "notch" ? 0 : root.resonance * 14 * pow(2.7182818,-pow(log(ratio,2.7182818)/0.18,2)));
-  return ((22 - db * 1.5).clamp(2,98))/100;
- }
- public function update(x:float,y:float) {
-  Session.parameter-gesture("cutoff",1,20*pow(1000,x.clamp(0,1)));
-  Session.command("parameter.preview","resonance","",((0.6 - y)/0.6).clamp(0,1));
- }
- public function finish(cancel:bool) {
-  if root.dragging { root.dragging=false; Session.parameter-gesture("cutoff",cancel ? 3 : 2,root.cutoff); }
- }
- focus-lost(reason) => { if reason == FocusReason.window-activation { root.finish(true); } }
- key-pressed(event) => {
-  if event.text == Key.Escape { root.finish(true); return accept; }
-  if event.text == Key.LeftArrow || event.text == Key.RightArrow {
-   Session.parameter-gesture("cutoff",0,root.cutoff);
-   Session.parameter-gesture("cutoff",1,(root.cutoff * (event.text == Key.LeftArrow ? 0.9 : 1.1)).clamp(20,20000));
-   Session.parameter-gesture("cutoff",2,root.cutoff); return accept;
-  }
-  return reject;
- }
- Rectangle { background: SamplerTheme.ink-0; border-width: 1px; border-color: SamplerTheme.line-1; border-radius: 2px;
-  Rectangle { x: 8px; y: 4px+(parent.height - 8px)*0.22; width: parent.width - 16px; height: 1px; background: SamplerTheme.line-2; }
-  for i in 120 : Path {
-   x: 8px; y: 4px; width: parent.width - 16px; height: parent.height - 8px;
-   viewbox-x: 0; viewbox-y: 0; viewbox-width: self.width/1px; viewbox-height: self.height/1px;
-   fill: SamplerTheme.paper-1.with-alpha(0.07);
-   MoveTo { x: i/120*parent.width/1px; y: parent.height/1px; }
-   LineTo { x: i/120*parent.width/1px; y: root.response(i/120)*parent.height/1px; }
-   LineTo { x: (i+1)/120*parent.width/1px; y: root.response((i+1)/120)*parent.height/1px; }
-   LineTo { x: (i+1)/120*parent.width/1px; y: parent.height/1px; }
-   Close { }
-  }
-  for i in 120 : Path {
-   x: 8px; y: 4px; width: parent.width - 16px; height: parent.height - 8px;
-   viewbox-x: 0; viewbox-y: 0; viewbox-width: self.width/1px; viewbox-height: self.height/1px;
-   fill: transparent; stroke: SamplerTheme.paper-1; stroke-width: 1.75px;
-   MoveTo { x: i/120*parent.width/1px; y: root.response(i/120)*parent.height/1px; }
-   LineTo { x: (i+1)/120*parent.width/1px; y: root.response((i+1)/120)*parent.height/1px; }
-  }
-  Rectangle { x: 8px+log(root.cutoff/20,1000).clamp(0,1)*(parent.width - 16px); y: 4px; height: parent.height - 8px; width: 1px; background: SamplerTheme.accent; }
-  Rectangle { x: 8px+log(root.cutoff/20,1000).clamp(0,1)*(parent.width - 16px) - 5px; y: 4px+root.response(log(root.cutoff/20,1000).clamp(0,1))*(parent.height - 8px) - 5px; width: 10px; height: 10px; border-radius: 5px; background: SamplerTheme.accent; border-width: 1px; border-color: SamplerTheme.ink-0; }
-  SectionText { x: 10px; y: 3px; text: "0 dB"; font-family: SamplerTheme.font-value; font-size: 11px; }
-  SectionText { x: 10px; y: parent.height - 17px; text: "20 Hz"; font-family: SamplerTheme.font-value; font-size: 11px; }
-  SectionText { x: parent.width - self.preferred-width - 10px; y: parent.height - 17px; text: "20 kHz"; font-family: SamplerTheme.font-value; font-size: 11px; }
- }
- TouchArea { mouse-cursor: crosshair;
-  pointer-event(event) => {
-   if event.button == PointerEventButton.left && event.kind == PointerEventKind.down && root.enabled {
-    root.focus(); root.dragging=Session.parameter-gesture("cutoff",0,root.cutoff);
-    if root.dragging { root.update((self.mouse-x - 8px)/max(1px,root.width - 16px),(self.mouse-y - 4px)/max(1px,root.height - 8px)); }
-   }
-   if event.button == PointerEventButton.left && event.kind == PointerEventKind.up { root.finish(false); }
-   if event.kind == PointerEventKind.cancel { root.finish(true); }
-  }
-  moved => { if root.dragging { root.update((self.mouse-x - 8px)/max(1px,root.width - 16px),(self.mouse-y - 4px)/max(1px,root.height - 8px)); } }
- }
+ cutoff: root.parameters.length > 0 ? root.parameters[0].value : GraphMetrics.default-cutoff;
+ resonance: root.parameters.length > 1 ? root.parameters[1].value : GraphMetrics.default-resonance;
+ mode: Session.filter-mode;
+ gesture(phase,value) => { return Session.parameter-gesture("cutoff",phase,value); }
+ resonance-preview(value) => { Session.command(SamplerCommands.parameter-preview,"resonance","",value); }
 }
-
-component VoiceEnvelopePlot inherits Rectangle {
- in property <bool> enabled: true;
- in property <[ParameterInfo]> parameters;
- in property <string> title;
- private property <float> attack: root.parameters[0].value/600;
- private property <float> decay: root.parameters[1].value/2111;
- private property <float> sustain: root.parameters[2].value;
- private property <float> release: root.parameters[3].value/4500;
- private property <float> off: 220/300;
- private property <string> active;
- private property <bool> modified;
- background: SamplerTheme.ink-0; border-width: 1px; border-color: SamplerTheme.line-1; border-radius: 2px;
- pure function handle-x(index:int) -> float { return index == 0 ? root.attack : index == 1 ? min(root.off - 0.02,root.attack+root.decay) : index == 2 ? root.off : min(1,root.off+root.release); }
- pure function handle-y(index:int) -> float { return index == 0 ? 0 : index == 3 ? 1 : 1 - root.sustain; }
- pure function primary(index:int) -> string { return root.parameters[index].id; }
- public function start(index:int) { root.active=root.primary(index); root.modified=false; Session.parameter-gesture(root.active,0,root.parameters[index].value); }
- public function update(index:int,x:float,y:float) {
-  if root.active != root.primary(index) { return; }
-  root.modified=true;
-  if index == 0 { Session.parameter-gesture(root.active,1,x.clamp(0.002,0.5)*600); }
-  else if index == 1 {
-   Session.parameter-gesture(root.active,1,(x - root.attack).clamp(0.01,max(0.01,root.off - 0.02 - root.attack))*2111);
-   Session.command("parameter.preview",root.parameters[2].id,"",(1 - y).clamp(0,1));
-  } else if index == 2 { Session.parameter-gesture(root.active,1,(1 - y).clamp(0,1)); }
-  else { Session.parameter-gesture(root.active,1,(x - root.off).clamp(0.01,1 - root.off)*4500); }
+component VoiceEnvelopePlot inherits EditorEnvelopePlot {
+ in property <[ParameterInfo]> domain-parameters;
+ private property <string> captured-id;
+ parameters: [
+  {value:root.domain-parameters[0].value,minimum:root.domain-parameters[0].minimum,maximum:root.domain-parameters[0].maximum,step:root.domain-parameters[0].step},
+  {value:root.domain-parameters[1].value,minimum:root.domain-parameters[1].minimum,maximum:root.domain-parameters[1].maximum,step:root.domain-parameters[1].step},
+  {value:root.domain-parameters[2].value,minimum:root.domain-parameters[2].minimum,maximum:root.domain-parameters[2].maximum,step:root.domain-parameters[2].step},
+  {value:root.domain-parameters[3].value,minimum:root.domain-parameters[3].minimum,maximum:root.domain-parameters[3].maximum,step:root.domain-parameters[3].step}
+ ];
+ gesture(index,phase,value) => {
+  if phase == GesturePhases.begin { root.captured-id=root.domain-parameters[index].id; }
+  let accepted=Session.parameter-gesture(root.captured-id,phase,value);
+  if phase == GesturePhases.commit || phase == GesturePhases.cancel || (phase == GesturePhases.begin && !accepted) { root.captured-id=""; }
+  return accepted;
  }
- public function finish(index:int,cancel:bool) {
-  if root.active == root.primary(index) { let id=root.active; root.active=""; Session.parameter-gesture(id,cancel || !root.modified ? 3 : 2,root.parameters[index].value); }
- }
- Path { x: 8px; y: 6px; width: parent.width - 16px; height: parent.height - 12px; fill: SamplerTheme.paper-1.with-alpha(0.07);
-  viewbox-x: 0; viewbox-y: 0; viewbox-width: self.width/1px; viewbox-height: self.height/1px;
-  MoveTo { x: 0; y: parent.height/1px; }
-  LineTo { x: root.handle-x(0)*parent.width/1px; y: 0; }
-  LineTo { x: root.handle-x(1)*parent.width/1px; y: root.handle-y(1)*parent.height/1px; }
-  LineTo { x: root.off*parent.width/1px; y: root.handle-y(2)*parent.height/1px; }
-  LineTo { x: root.handle-x(3)*parent.width/1px; y: parent.height/1px; }
-  Close { }
- }
- Path { x: 8px; y: 6px; width: parent.width - 16px; height: parent.height - 12px; fill: transparent; stroke: SamplerTheme.paper-1; stroke-width: 1.5px;
-  viewbox-x: 0; viewbox-y: 0; viewbox-width: self.width/1px; viewbox-height: self.height/1px;
-  MoveTo { x: 0; y: parent.height/1px; }
-  LineTo { x: root.handle-x(0)*parent.width/1px; y: 0; }
-  LineTo { x: root.handle-x(1)*parent.width/1px; y: root.handle-y(1)*parent.height/1px; }
-  LineTo { x: root.off*parent.width/1px; y: root.handle-y(2)*parent.height/1px; }
-  LineTo { x: root.handle-x(3)*parent.width/1px; y: parent.height/1px; }
- }
- Rectangle { x: 8px+root.off*(parent.width - 16px); y: 6px; width: 1px; height: parent.height - 12px; background: SamplerTheme.line-3; }
- for name[i] in ["attack","decay","sustain","release"] : FocusScope {
-  x: 8px+root.handle-x(i)*(parent.width - 16px) - 5.5px; y: 6px+root.handle-y(i)*(parent.height - 12px) - 5.5px; width: 11px; height: 11px;
-  enabled: root.enabled; focus-on-tab-navigation: root.enabled; accessible-enabled: root.enabled; accessible-role: slider; accessible-label: root.title+" "+name+" handle";
-  accessible-value: root.parameters[i].value; accessible-value-minimum: root.parameters[i].minimum; accessible-value-maximum: root.parameters[i].maximum;
-  focus-lost(reason) => { if reason == FocusReason.window-activation { root.finish(i,true); } }
-  key-pressed(event) => {
-   if event.text == Key.Escape { root.finish(i,true); return accept; }
-   if event.text == Key.UpArrow || event.text == Key.DownArrow || event.text == Key.LeftArrow || event.text == Key.RightArrow {
-    root.start(i); root.modified=true; let p=root.parameters[i];
-    Session.parameter-gesture(p.id,1,(p.value+((event.text == Key.UpArrow || event.text == Key.RightArrow) ? p.step : -p.step)).clamp(p.minimum,p.maximum));
-    root.finish(i,false); return accept;
-   }
-   return reject;
-  }
-  Rectangle { border-radius: 6px; background: SamplerTheme.ink-5; border-width: 1px; border-color: parent.has-focus ? SamplerTheme.accent : SamplerTheme.paper-1; }
-  TouchArea { mouse-cursor: grab; enabled: root.enabled;
-   pointer-event(event) => {
-    if event.button == PointerEventButton.left && event.kind == PointerEventKind.down && root.enabled { parent.focus(); root.start(i); }
-    if event.button == PointerEventButton.left && event.kind == PointerEventKind.up { root.finish(i,false); }
-    if event.kind == PointerEventKind.cancel { root.finish(i,true); }
-   }
-   moved => { if self.pressed { root.update(i,(parent.x+self.mouse-x - 8px)/max(1px,root.width - 16px),(parent.y+self.mouse-y - 6px)/max(1px,root.height - 12px)); } }
-  }
- }
+ related-preview(index,value) => { Session.command(SamplerCommands.parameter-preview,root.domain-parameters[index].id,"",value); }
 }
 
 component VoiceSourceCard inherits PageSection {
@@ -167,16 +54,16 @@ component VoiceSourceCard inherits PageSection {
    root.source.kind == "oscillator" ? [{id:"sine",label:"Sine"},{id:"saw",label:"Saw"},{id:"square",label:"Square"}] :
    root.source.kind == "sampler" ? [{id:"once",label:"Once"},{id:"gated",label:"Gated"},{id:"loop",label:"Loop"}] :
    [{id:"notes",label:"Follows notes"},{id:"drone",label:"Drone"}];
-  selected(v) => { Session.command("module.mode",root.source.id,v,0); }
+  selected(v) => { Session.command(SamplerCommands.module-mode,root.source.id,v,0); }
  }
  for p[i] in root.source.parameters : ParamKnob {
   private property <float> scale: p.unit == "%" ? 100 : 1;
   x: 12px+mod(i,root.columns)*58px; y: 62px+floor(i/root.columns)*60px; width: 56px;
   label: p.label; accessible-label: root.source.name+" "+p.label; parameter-id: p.id; size: 28px; value-display-always: false;
   model-value: p.value*self.scale; value: p.value*self.scale; minimum: p.minimum*self.scale; maximum: p.maximum*self.scale; step: p.step*self.scale; default-value: p.default-value*self.scale; unit: p.unit; bipolar: p.bipolar; enabled: root.editable && p.available;
-  gesture-began => { Session.parameter-gesture(p.id,0,self.value/self.scale); }
-  changed(v) => { Session.parameter-gesture(p.id,1,v/self.scale); }
-  gesture-ended => { Session.parameter-gesture(p.id,2,self.value/self.scale); }
+  gesture-began => { Session.parameter-gesture(p.id,GesturePhases.begin,self.value/self.scale); }
+  changed(v) => { Session.parameter-gesture(p.id,GesturePhases.update,v/self.scale); }
+  gesture-ended => { Session.parameter-gesture(p.id,GesturePhases.commit,self.value/self.scale); }
   context-action(a) => { root.context-action(a,p.id); }
  }
 }
@@ -191,7 +78,7 @@ component VoiceParameterCard inherits PageSection {
  private property <int> columns: max(1,floor((root.width - 10px)/44px));
  OptionStrip { visible: root.mode-kind != ""; x: 5px; y: 29px; width: parent.width - 10px; label: root.mode-kind == "filter" ? "Filter type" : "Source playback"; value: root.mode; enabled: root.editable;
   options: root.mode-kind == "filter" ? [{id:"lp",label:"LP"},{id:"bp",label:"BP"},{id:"hp",label:"HP"},{id:"notch",label:"Notch"}] : [{id:"once",label:"Once"},{id:"gated",label:"Gated"},{id:"loop",label:"Loop"}];
-  selected(v) => { Session.command(root.mode-kind == "filter" ? "filter.mode" : "sample.mode","",v,0); }
+  selected(v) => { Session.command(root.mode-kind == "filter" ? SamplerCommands.filter-mode : SamplerCommands.sample-mode,"",v,0); }
  }
  for p[i] in root.parameters : DomainKnob {
   x: 5px+mod(i,root.columns)*(parent.width - 10px)/root.columns;
@@ -203,91 +90,6 @@ component VoiceParameterCard inherits PageSection {
  }
 }
 
-export component VoiceRenderDialog inherits FocusScope {
- in-out property <string> mode <=> VoiceDialogState.mode;
- private property <bool> active: root.visible && root.mode != "";
- init => { if root.active { popup.show(); Session.release-notes(); } }
- changed active => { if root.active { popup.show(); Session.release-notes(); } else { popup.close(); } }
- private property <int> field-columns: max(1,min(5,floor((min(480px,root.width*0.92) - 16px)/88px)));
- private property <bool> busy: Session.freeze-state == "running";
- private property <bool> restore-cancel-focus;
- private property <int> notes: Session.autosampler-parameters.length < 6 ? 0 : floor((Session.autosampler-parameters[1].value - Session.autosampler-parameters[0].value)/max(1,Session.autosampler-parameters[2].value))+1;
- private property <int> renders: root.notes * (Session.autosampler-parameters.length < 6 ? 0 : Session.autosampler-parameters[3].value * Session.autosampler-parameters[5].value);
- visible: root.mode != "";
- public function open(mode:string) { root.mode=mode; Session.release-notes(); }
- public function close() {
-  if root.mode != "source" && (root.busy || (root.mode == "freeze" && Session.freeze-state == "confirm")) { Session.command(root.mode == "auto" ? "autosampler.cancel" : "freeze.cancel","","",0); }
-  root.mode="";
-  root.restore-cancel-focus=false;
- }
- popup := PopupWindow {
-  width: root.width; height: root.height; close-policy: no-auto-close;
-  forward-focus: cancel-render;
-  FocusScope {
-   focus-on-tab-navigation: false;
-   Timer { interval: 0ms; running: root.restore-cancel-focus; triggered => { root.restore-cancel-focus=false; cancel-render.focus(); } }
-   key-pressed(event) => { if event.text == Key.Escape { root.close(); return accept; } return reject; }
-   Rectangle { background: SamplerTheme.scrim; }
-   TouchArea { clicked => { root.close(); } }
-   panel := Rectangle {
-    x: (parent.width - self.width)/2; y: (parent.height - self.height)/2;
-    width: min(480px,parent.width*0.92); height: min(parent.height*0.86,root.mode == "source" ? 240px : root.mode == "auto" ? 352px : 296px);
-    background: SamplerTheme.ink-2; border-width: 1px; border-color: SamplerTheme.line-3; border-radius: 6px;
-    TouchArea { }
-    Rectangle { x: 1px; y: 1px; width: parent.width - 2px; height: 34px; background: SamplerTheme.ink-3; border-radius: 5px;
-     Text { x: 11px; height: parent.height; width: parent.width - 50px; text: root.mode == "source" ? "ADD AUDIO SOURCE" : root.mode == "auto" ? "SAMPLE THIS PATCH" : "FREEZE SOURCE"; font-family: SamplerTheme.font-ui; font-size: 13px; font-weight: 700; letter-spacing: 1.3px; color: SamplerTheme.paper-2; vertical-alignment: center; }
-     ActionButton { x: parent.width - 30px; y: 5px; width: 24px; icon: "close"; label: "Close render dialog"; compact: true; ghost: true; clicked => { root.close(); } }
-    }
-    ScrollView { x: 1px; y: 35px; width: parent.width - 2px; height: max(1px,parent.height - 80px);
-     Rectangle { width: parent.width; height: root.mode == "source" ? 160px : root.mode == "auto" ? 244px+(root.field-columns < 5 ? 52px : 0px) : 212px;
-      if root.mode == "source" : VerticalLayout { padding: 12px; spacing: 4px; alignment: start;
-       for kind in ["Sampler","Synth patch","Oscillator","Noise"] : ActionButton { text: kind; height: 28px; compact: true; clicked => { Session.command("module.add","voice",kind,0); root.close(); } }
-      }
-      if root.mode == "auto" : Rectangle {
-       x: 12px; width: parent.width - 24px;
-       SectionText { x: 0px; y: 6px; height: 18px; text: "Source"; width: 80px; }
-       SectionText { x: 88px; y: 6px; height: 18px; width: parent.width - 88px; text: Session.patch-name; color: SamplerTheme.paper-1; }
-       SectionText { x: 0px; y: 30px; height: 18px; text: "Renders"; width: 80px; }
-       SectionText { x: 88px; y: 30px; height: 18px; width: parent.width - 88px; text: root.renders+" · "+root.notes+" notes × "+Session.autosampler-parameters[5].value+" layers × "+Session.autosampler-parameters[3].value+" takes"; color: SamplerTheme.paper-1; }
-       SectionText { x: 0px; y: 54px; height: 18px; text: "Estimate"; width: 80px; }
-       SectionText { x: 88px; y: 54px; height: 18px; width: parent.width - 88px; text: "~"+max(1,round(root.renders*6/60))+" min offline · simulated"; color: SamplerTheme.paper-1; }
-       fields := Rectangle { y: 84px; width: parent.width; height: ceil(5/self.columns)*52px;
-        in property <int> columns: root.field-columns;
-        for field[i] in ["lo","hi","step","rr","tail"] : NumericField {
-         x: mod(i,parent.columns)*88px; y: floor(i/parent.columns)*52px; width: 80px;
-         label: Session.autosampler-parameters[i].label; model-value: Session.autosampler-parameters[i].value; value: Session.autosampler-parameters[i].value;
-         minimum: Session.autosampler-parameters[i].minimum; maximum: Session.autosampler-parameters[i].maximum; step: 1; unit: Session.autosampler-parameters[i].unit; enabled: !root.busy;
-         changed(v) => { Session.command("autosampler.configure","",field,v); }
-        }
-       }
-       OptionStrip { y: fields.y+fields.height+4px; width: 240px; label: "Velocity layers"; value: ""+Session.autosampler-parameters[5].value; enabled: !root.busy; options: [{id:"1",label:"1 layer"},{id:"2",label:"2 layers"},{id:"3",label:"3 layers"}]; selected(v) => { Session.command("autosampler.configure","","layers",v.to-float()); } }
-       Text { y: fields.y+fields.height+34px; width: parent.width; text: "Silent mock render. Each cached sample retains source, root note, velocity layer, take and tail provenance."; font-family: SamplerTheme.font-ui; font-size: 12px; color: SamplerTheme.paper-3; wrap: word-wrap; }
-      }
-      if root.mode == "freeze" : Rectangle { x: 12px; width: parent.width - 24px;
-       SectionText { x: 0px; y: 6px; height: 18px; width: 80px; text: "Source"; }
-       SectionText { x: 88px; y: 6px; height: 18px; width: parent.width - 88px; text: Session.selected-source; color: SamplerTheme.paper-1; }
-       SectionText { x: 0px; y: 30px; height: 18px; width: 80px; text: "Includes"; }
-       SectionText { x: 88px; y: 30px; height: 18px; width: parent.width - 88px; text: Session.freeze-mode == "src" ? "Audio source only" : "Source, voice and inserts"; color: SamplerTheme.paper-1; }
-       SectionText { x: 0px; y: 54px; height: 18px; width: 80px; text: "Stored as"; }
-       SectionText { x: 88px; y: 54px; height: 18px; width: parent.width - 88px; text: "Frozen silent mock source"; color: SamplerTheme.paper-1; }
-       OptionStrip { y: 84px; width: min(280px,parent.width - 80px); label: "Freeze includes"; value: Session.freeze-mode; enabled: !root.busy; options: [{id:"src",label:"Source only"},{id:"chain",label:"Source + voice + inserts"}]; selected(v) => { Session.command("freeze.configure",v,"mode",0); } }
-       NumericField { x: parent.width - 72px; y: 84px; width: 72px; label: "Tail"; unit: "s"; model-value: Session.freeze-tail; value: Session.freeze-tail; minimum: 0; maximum: 30; step: 1; enabled: !root.busy; changed(v) => { Session.command("freeze.configure","","tail",v); } }
-       Text { y: 142px; width: parent.width; text: "Silent mock render; no audio is captured. Freeze locks voice controls. Unfreeze restores the original source."; font-family: SamplerTheme.font-ui; font-size: 12px; color: SamplerTheme.paper-3; wrap: word-wrap; }
-      }
-     }
-    }
-    Rectangle { x: 1px; y: parent.height - 45px; width: parent.width - 2px; height: 44px; background: SamplerTheme.ink-2;
-     Rectangle { height: 1px; background: SamplerTheme.line-1; }
-     if root.busy : Text { x: 12px; y: 8px; width: max(0px,parent.width - 198px); text: "Rendering silent mock · "+round(Session.render-progress*100)+"%"; font-family: SamplerTheme.font-ui; font-size: 11px; color: SamplerTheme.paper-3; }
-     if root.busy : Rectangle { x: 12px; y: 28px; width: max(0px,parent.width - 198px); height: 4px; background: SamplerTheme.ink-4; border-radius: 2px; Rectangle { width: parent.width*Session.render-progress.clamp(0,1); background: SamplerTheme.paper-2; border-radius: 2px; } }
-     if !root.busy && Session.freeze-state == "failed" : Text { x: 12px; y: 8px; width: max(0px,parent.width - 190px); text: Session.error; font-family: SamplerTheme.font-ui; font-size: 11px; color: SamplerTheme.error; wrap: word-wrap; }
-     cancel-render := ActionButton { x: parent.width - 178px; y: 8px; width: 70px; text: "Cancel"; label: "Cancel render dialog"; ghost: true; compact: true; clicked => { root.close(); } }
-     if root.mode != "source" : ActionButton { x: parent.width - 100px; y: 8px; width: 88px; text: root.mode == "auto" ? "Render" : "Freeze"; primary: true; compact: true; enabled: !root.busy && (root.mode != "auto" || root.renders <= 4096); clicked => { Session.command(root.mode == "auto" ? "autosampler.start" : "freeze.start",Session.selected-source,"",0); root.restore-cancel-focus=true; } }
-    }
-   }
-  }
- }
-}
 
 export component VoicePage inherits FocusScope {
  focus-on-click: false;
@@ -297,22 +99,22 @@ export component VoicePage inherits FocusScope {
  in property <bool> expanded;
  in property <bool> dialogs-in-page: true;
  callback context-action(string,string);
- public function add-module() { Session.command("module.add","voice","Waveshaper",0); }
+ public function add-module() { Session.command(SamplerCommands.module-add,"voice","Waveshaper",0); }
  ScrollView { VerticalLayout { padding: 0px; spacing: 0px; alignment: start;
   Rectangle { height: (root.expanded ? 40px : 70px)+4px;
   Rectangle { height: root.expanded ? 40px : 70px; background: SamplerTheme.ink-2; border-width: 1px; border-color: SamplerTheme.line-1; border-radius: 6px;
    x: 0px; y: 0px;
    SectionText { x: 12px; y: 7px; width: 82px; height: 24px; text: "VOICE"; color: SamplerTheme.secondary; font-weight: 700; }
    Flickable { x: 96px; y: 7px; width: parent.width - 136px; height: 26px; content-width: max(self.width,Session.voice-modules.length*87px); content-height: self.height;
-    for module[i] in Session.voice-modules : ActionButton { x: i*87px; width: 83px; height: 24px; text: module.name; selected: module.id == Session.selected-id; compact: true; clicked => { Session.command("selection.set",module.id,"",0); } }
+    for module[i] in Session.voice-modules : ActionButton { x: i*87px; width: 83px; height: 24px; text: module.name; selected: module.id == Session.selected-id; compact: true; clicked => { Session.command(SamplerCommands.selection-set,module.id,"",0); } }
    }
    add-module := ActionButton { x: parent.width - 32px; y: 7px; width: 24px; text: "+"; label: "Add voice module"; compact: true; clicked => { root.add-module(); } }
    HorizontalLayout { x: root.expanded ? parent.width - 165px : 12px; y: root.expanded ? 7px : 38px; width: root.expanded ? 128px : parent.width - 24px; height: 24px; spacing: 4px; alignment: start;
-    ActionButton { text: root.expanded ? "" : "Edit source"; label: "Edit source"; icon: "chevron-right"; compact: true; ghost: true; clicked => { Session.command("page.select","sample","",0); } }
+    ActionButton { text: root.expanded ? "" : "Edit source"; label: "Edit source"; icon: "chevron-right"; compact: true; ghost: true; clicked => { Session.command(SamplerCommands.page-select,"sample","",0); } }
     ActionButton { label: "Sample patch…"; icon: "variation"; compact: true; ghost: true; clicked => { modal.open("auto"); } }
     ActionButton { label: "Add source…"; icon: "plus"; compact: true; ghost: true; clicked => { modal.open("source"); } }
     ActionButton { label: "Freeze…"; icon: "lock"; compact: true; ghost: true; enabled: !Session.voice-frozen && Session.freeze-state != "running"; clicked => { modal.open("freeze"); } }
-    if Session.voice-frozen : ActionButton { icon: "reset"; label: "Unfreeze · restore original source"; compact: true; clicked => { Session.command("sample.unfreeze",Session.selected-source,"",0); } }
+    if Session.voice-frozen : ActionButton { icon: "reset"; label: "Unfreeze · restore original source"; compact: true; clicked => { Session.command(SamplerCommands.sample-unfreeze,Session.selected-source,"",0); } }
    }
   }
   }
@@ -351,28 +153,28 @@ export component VoicePage inherits FocusScope {
      x: root.compact || root.expanded ? parent.width - 180px : 12px; y: root.compact || root.expanded ? 4px : parent.header-height - 26px;
      width: 170px; label: "Voice envelope shape "+group; enabled: !Session.voice-frozen;
      value: modulator.shape == "sine" ? "adsr" : modulator.shape; options: [{id:"adsr",label:"ADSR"},{id:"ahdsr",label:"AHDSR"},{id:"multi",label:"Multi"}];
-     selected(v) => { Session.command("modulator.shape",modulator.id,v,0); }
+     selected(v) => { Session.command(SamplerCommands.modulator-shape,modulator.id,v,0); }
     }
-    envelope-plot := VoiceEnvelopePlot { x: 12px; y: parent.header-height+10px; width: parent.width - 24px; height: root.compact ? 44px : root.expanded ? 72px : 56px; title: group; parameters: i == 0 ? Session.amp-envelope-parameters : Session.filter-envelope-parameters; enabled: !Session.voice-frozen; }
+    envelope-plot := VoiceEnvelopePlot { x: 12px; y: parent.header-height+10px; width: parent.width - 24px; height: root.compact ? 44px : root.expanded ? 72px : 56px; title: group; domain-parameters: i == 0 ? Session.amp-envelope-parameters : Session.filter-envelope-parameters; enabled: !Session.voice-frozen; }
     for p[j] in i == 0 ? Session.amp-envelope-parameters : Session.filter-envelope-parameters : NumericField {
      private property <float> scale: p.unit == "%" ? 100 : 1;
      x: 12px+j*(parent.width - 24px)/4; y: envelope-plot.y+envelope-plot.height+8px; width: (parent.width - 24px)/4 - 4px;
      label: p.label; ghost: true; parameter-id: p.id; enabled: !Session.voice-frozen && p.available;
      model-value: p.value*self.scale; value: p.value*self.scale; minimum: p.minimum*self.scale; maximum: p.maximum*self.scale; step: p.step*self.scale; default-value: p.default-value*self.scale; unit: p.unit;
-     gesture-began => { Session.parameter-gesture(p.id,0,self.value/self.scale); }
-     changed(v) => { Session.parameter-gesture(p.id,1,v/self.scale); }
-     gesture-ended => { Session.parameter-gesture(p.id,2,self.value/self.scale); }
+     gesture-began => { Session.parameter-gesture(p.id,GesturePhases.begin,self.value/self.scale); }
+     changed(v) => { Session.parameter-gesture(p.id,GesturePhases.update,v/self.scale); }
+     gesture-ended => { Session.parameter-gesture(p.id,GesturePhases.commit,self.value/self.scale); }
      context-action(a) => { root.context-action(a,p.id); }
     }
    }
    PageSection { x: root.compact ? 0px : parent.width - 200px; y: root.compact ? 302px : 0px; width: root.compact ? parent.width : 200px; title: "Voices"; secondary: true; header-height: 30px; height: 243px;
-    OptionStrip { x: 12px; y: 40px; width: parent.width - 24px; label: "Voice policy"; enabled: !Session.voice-frozen; value: Session.voice-policy; options: [{id:"poly",label:"Poly"},{id:"mono",label:"Mono"},{id:"legato",label:"Legato"}]; selected(v) => { Session.command("voice.policy","",v,0); } }
+    OptionStrip { x: 12px; y: 40px; width: parent.width - 24px; label: "Voice policy"; enabled: !Session.voice-frozen; value: Session.voice-policy; options: [{id:"poly",label:"Poly"},{id:"mono",label:"Mono"},{id:"legato",label:"Legato"}]; selected(v) => { Session.command(SamplerCommands.voice-policy,"",v,0); } }
     SectionText { x: 12px; y: 70px; width: 85px; height: 24px; text: "Voice limit"; }
-    NumericField { x: parent.width - 82px; y: 70px; width: 70px; show-label: false; ghost: true; label: "Voice limit"; enabled: !Session.voice-frozen; model-value: Session.voice-limit; value: Session.voice-limit; minimum: 1; maximum: 128; step: 1; changed(v) => { Session.command("voice.limit","","",v); } }
+    NumericField { x: parent.width - 82px; y: 70px; width: 70px; show-label: false; ghost: true; label: "Voice limit"; enabled: !Session.voice-frozen; model-value: Session.voice-limit; value: Session.voice-limit; minimum: 1; maximum: 128; step: 1; changed(v) => { Session.command(SamplerCommands.voice-limit,"","",v); } }
     SectionText { x: 12px; y: 100px; height: 18px; text: "Steal"; }
-    OptionStrip { x: 12px; y: 120px; width: parent.width - 24px; label: "Steal policy"; enabled: !Session.voice-frozen; value: Session.voice-steal; options: [{id:"oldest-released",label:"Oldest released"},{id:"oldest",label:"Oldest"},{id:"quietest",label:"Quietest"},{id:"none",label:"No steal"}]; selected(v) => { Session.command("voice.steal","",v,0); } }
+    OptionStrip { x: 12px; y: 120px; width: parent.width - 24px; label: "Steal policy"; enabled: !Session.voice-frozen; value: Session.voice-steal; options: [{id:"oldest-released",label:"Oldest released"},{id:"oldest",label:"Oldest"},{id:"quietest",label:"Quietest"},{id:"none",label:"No steal"}]; selected(v) => { Session.command(SamplerCommands.voice-steal,"",v,0); } }
     SectionText { x: 12px; y: 153px; width: 85px; height: 24px; text: "Same note"; }
-    ActionButton { x: parent.width - 90px; y: 153px; width: 78px; text: "Retrigger"; enabled: !Session.voice-frozen; compact: true; ghost: true; clicked => { Session.command("voice.same-note","","retrigger",0); } }
+    ActionButton { x: parent.width - 90px; y: 153px; width: 78px; text: "Retrigger"; enabled: !Session.voice-frozen; compact: true; ghost: true; clicked => { Session.command(SamplerCommands.voice-same-note,"","retrigger",0); } }
    }
   }
   if root.expanded : ReadOnlyKeyMap { }

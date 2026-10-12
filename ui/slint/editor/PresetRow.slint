@@ -1,0 +1,35 @@
+import { EditorStrings } from "EditorStrings.slint";
+import { BrowserActions } from "BrowserActions.slint";
+import { Tokens } from "../theme.slint";
+import { EditorTheme } from "Theme.slint";
+import { PresetInfo } from "PresetTypes.slint";
+import { EditorIcon } from "Icon.slint";
+import { ActionArea } from "../controls/ActionArea.slint";
+export component PresetRow inherits FocusScope {
+    in property <PresetInfo> patch;
+    in property <bool> selected;
+    in property <bool> current;
+    in property <bool> compact;
+    callback picked(string); callback loaded(string); callback favourite(string);
+    height: root.compact ? Tokens.editor-browser-row-name-left : Tokens.editor-browser-row-height;
+    accessible-role: button; accessible-label: root.patch.name + EditorStrings.detail-separator + root.patch.category + EditorStrings.detail-separator + root.patch.contents;
+    focus-on-tab-navigation: true; focus-on-click: true;
+    accessible-action-default => { root.picked(root.patch.id); if root.compact { root.loaded(root.patch.id); } }
+    key-pressed(event) => { if event.text == Key.Return { root.loaded(root.patch.id); return accept; } if event.text == " " { root.picked(root.patch.id); return accept; } return reject; }
+    Rectangle { border-width: root.selected || (root.compact && root.current) || root.has-focus ? Tokens.editor-border-width : 0px; border-radius: Tokens.editor-radius-item; border-color: root.has-focus ? EditorTheme.paper-1 : EditorTheme.accent; background: root.selected || (root.compact && root.current) ? EditorTheme.accent-wash : row-touch.has-hover ? EditorTheme.ink-3 : transparent; }
+    Text { x: Tokens.editor-browser-row-name-left; y: root.compact ? Tokens.editor-browser-row-compact-inset : 0px; width: root.compact ? parent.width - Tokens.editor-browser-row-name-reserve : parent.width * Tokens.editor-browser-name-column-fraction - Tokens.editor-browser-row-name-left; height: root.compact ? Tokens.editor-browser-row-compact-name-height : parent.height; text: root.patch.name; font-family: EditorTheme.font-ui; font-size: EditorTheme.type-control; color: EditorTheme.paper-1; vertical-alignment: center; overflow: elide; }
+    if root.compact : Text { x: Tokens.editor-browser-row-name-left; y: Tokens.editor-browser-row-compact-detail-top; width: parent.width - Tokens.editor-browser-row-name-reserve; height: Tokens.editor-browser-row-compact-detail-height; text: root.patch.category + EditorStrings.detail-separator + root.patch.origin; font-family: EditorTheme.font-ui; font-size: EditorTheme.type-caption; color: EditorTheme.paper-3; overflow: elide; }
+    if !root.compact : Text { x: parent.width * Tokens.editor-browser-name-column-fraction; width: Tokens.editor-browser-row-kind-width; height: parent.height; text: root.patch.category; font-family: EditorTheme.font-ui; font-size: EditorTheme.type-body; color: EditorTheme.paper-3; vertical-alignment: center; }
+    if !root.compact : Text { x: parent.width * Tokens.editor-browser-name-column-fraction + Tokens.editor-browser-contents-column-offset; width: max(0px, parent.width * Tokens.editor-browser-detail-column-fraction - Tokens.editor-browser-row-contents-reserve); height: parent.height; text: root.patch.contents; font-family: EditorTheme.font-ui; font-size: EditorTheme.type-caption; color: EditorTheme.paper-3; vertical-alignment: center; overflow: elide; }
+    if !root.compact : Text { x: parent.width - Tokens.editor-browser-origin-width; width: Tokens.editor-browser-row-origin-width; height: parent.height; text: root.patch.origin; font-family: EditorTheme.font-ui; font-size: EditorTheme.type-caption; color: EditorTheme.paper-3; vertical-alignment: center; }
+    row-touch := TouchArea { clicked => { root.focus(); root.picked(root.patch.id); if root.compact { root.loaded(root.patch.id); } } double-clicked => { if !root.compact { root.loaded(root.patch.id); } } }
+    star := ActionArea { x: Tokens.editor-browser-favourite-inset; y: (parent.height - Tokens.editor-browser-favourite-size) / 2; width: Tokens.editor-browser-favourite-size; height: Tokens.editor-browser-favourite-size;
+        enabled: root.enabled;
+        label: (root.patch.favourite ? BrowserActions.unfavourite-prefix : BrowserActions.favourite-prefix) + root.patch.name;
+        accessible-checkable: true; accessible-checked: root.patch.favourite;
+        focus-on-tab-navigation: root.enabled; focus-on-click: root.enabled;
+        activated => { root.favourite(root.patch.id); }
+        if star.has-focus : Rectangle { border-width: Tokens.editor-border-width; border-radius: Tokens.editor-radius-control; border-color: EditorTheme.paper-1; }
+        EditorIcon { x: Tokens.editor-browser-favourite-inset; y: Tokens.editor-browser-favourite-inset; size: Tokens.editor-browser-favourite-icon-size; name: Tokens.editor-icon-star; tint: root.patch.favourite ? EditorTheme.accent : EditorTheme.paper-4; }
+    }
+}

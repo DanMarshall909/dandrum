@@ -1,3 +1,4 @@
+import { SamplerCommands } from "../domain/Commands.slint";
 import { ActionButton } from "../controls/ActionButton.slint";
 import { SamplerTheme } from "../theme/Theme.slint";
 
@@ -37,7 +38,7 @@ export component GuideControls inherits Rectangle {
     height: GuidePresentation.height-for-width(root.width);
     background: SamplerTheme.surface-window;
     public function select-state(id: string) {
-        if root.command("guide.select", id, "", 0) {
+        if root.command(SamplerCommands.guide-select, id, "", 0) {
             if id == "min" { root.layout-requested(820, 560); }
             else if id == "default" { root.layout-requested(1200, 800); }
             else if id == "exp" { root.layout-requested(1600, 1000); }
@@ -65,7 +66,7 @@ export component GuideControls inherits Rectangle {
             selected: root.patch-id == patch.id;
             accessible-checkable: true;
             clicked => {
-                if root.command("patch.load", patch.id, "", 0) { root.select-state(patch.state); }
+                if root.command(SamplerCommands.patch-load, patch.id, "", 0) { root.select-state(patch.state); }
             }
         }
         ActionButton {

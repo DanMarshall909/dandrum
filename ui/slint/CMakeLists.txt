@@ -6,7 +6,9 @@ if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
 endif()
 
 # Match the design library's compiler/runtime verification version.
-find_package(Slint 1.18.1 EXACT CONFIG REQUIRED)
+if(NOT TARGET Slint::Slint)
+    find_package(Slint 1.18.1 EXACT CONFIG REQUIRED)
+endif()
 set(DANDRUM_SLINT_ROOT "${CMAKE_CURRENT_SOURCE_DIR}")
 get_filename_component(DANDRUM_REPO_ROOT "${DANDRUM_SLINT_ROOT}/../.." ABSOLUTE)
 
@@ -16,30 +18,38 @@ target_compile_features(dandrum-slint-library INTERFACE cxx_std_20)
 target_include_directories(dandrum-slint-library INTERFACE "${DANDRUM_SLINT_ROOT}")
 target_link_libraries(dandrum-slint-library INTERFACE Slint::Slint)
 
-if(NOT TARGET dandrum-slint-catalog)
-    add_executable(dandrum-slint-catalog)
+option(DANDRUM_SLINT_BUILD_FILE_DROP "Build local file URI parsing and optional X11 transport" ON)
+if(DANDRUM_SLINT_BUILD_FILE_DROP)
+    add_subdirectory(platform)
 endif()
-target_sources(dandrum-slint-catalog PRIVATE catalog/Main.cpp)
-target_link_libraries(dandrum-slint-catalog PRIVATE Dandrum::SlintLibrary)
-set_target_properties(dandrum-slint-catalog PROPERTIES
-    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/slint-catalog/$<CONFIG>"
-    SLINT_EMBED_RESOURCES embed-files)
-slint_target_sources(dandrum-slint-catalog catalog/Catalog.slint NAMESPACE dandrum_ui)
-add_custom_target(dandrum-slint-catalog-font-notices)
-add_dependencies(dandrum-slint-catalog dandrum-slint-catalog-font-notices)
-foreach(family Barlow BarlowSemiCondensed JetBrainsMono)
-    add_custom_command(TARGET dandrum-slint-catalog-font-notices POST_BUILD
-        COMMAND ${CMAKE_COMMAND} -E make_directory "$<TARGET_FILE_DIR:dandrum-slint-catalog>/font-licenses/${family}"
-        COMMAND ${CMAKE_COMMAND} -E copy_if_different
-            "${DANDRUM_REPO_ROOT}/ui/design-system/fonts/${family}/OFL.txt"
-            "$<TARGET_FILE_DIR:dandrum-slint-catalog>/font-licenses/${family}/OFL.txt")
-endforeach()
-# The root launcher declares the executable in its directory. Make the generated
-# sources an explicit dependency across that CMake directory boundary as well.
-add_custom_target(dandrum-slint-catalog-generated
-    DEPENDS "${CMAKE_CURRENT_BINARY_DIR}/Catalog.h"
-            "${CMAKE_CURRENT_BINARY_DIR}/slint_generated_Catalog_1.cpp")
-add_dependencies(dandrum-slint-catalog dandrum-slint-catalog-generated)
+
+option(DANDRUM_SLINT_BUILD_CATALOG "Build the interactive design catalog" ON)
+if(DANDRUM_SLINT_BUILD_CATALOG)
+    if(NOT TARGET dandrum-slint-catalog)
+        add_executable(dandrum-slint-catalog)
+    endif()
+    target_sources(dandrum-slint-catalog PRIVATE catalog/Main.cpp)
+    target_link_libraries(dandrum-slint-catalog PRIVATE Dandrum::SlintLibrary)
+    set_target_properties(dandrum-slint-catalog PROPERTIES
+        RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/slint-catalog/$<CONFIG>"
+        SLINT_EMBED_RESOURCES embed-files)
+    slint_target_sources(dandrum-slint-catalog catalog/Catalog.slint NAMESPACE dandrum_ui)
+    add_custom_target(dandrum-slint-catalog-font-notices)
+    add_dependencies(dandrum-slint-catalog dandrum-slint-catalog-font-notices)
+    foreach(family Barlow BarlowSemiCondensed JetBrainsMono)
+        add_custom_command(TARGET dandrum-slint-catalog-font-notices POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E make_directory "$<TARGET_FILE_DIR:dandrum-slint-catalog>/font-licenses/${family}"
+            COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                "${DANDRUM_REPO_ROOT}/ui/design-system/fonts/${family}/OFL.txt"
+                "$<TARGET_FILE_DIR:dandrum-slint-catalog>/font-licenses/${family}/OFL.txt")
+    endforeach()
+    # The root launcher declares the executable in its directory. Make the generated
+    # sources an explicit dependency across that CMake directory boundary as well.
+    add_custom_target(dandrum-slint-catalog-generated
+        DEPENDS "${CMAKE_CURRENT_BINARY_DIR}/Catalog.h"
+                "${CMAKE_CURRENT_BINARY_DIR}/slint_generated_Catalog_1.cpp")
+    add_dependencies(dandrum-slint-catalog dandrum-slint-catalog-generated)
+endif()
 
 option(DANDRUM_SLINT_BUILD_TESTS "Build the native value codec and generated binding tests" ON)
 option(DANDRUM_SLINT_TEST_REPOSITORY "Include Node/Python repository integration gates (requires repository dev dependencies)" OFF)
@@ -50,12 +60,29 @@ if(DANDRUM_SLINT_BUILD_TESTS)
         find_program(DANDRUM_SLINT_NODE node REQUIRED)
         add_test(NAME slint-token-drift COMMAND "${DANDRUM_SLINT_NODE}"
             "${DANDRUM_REPO_ROOT}/scripts/generate-ui-tokens.mjs" --check)
+        add_test(NAME sampler-command-drift COMMAND "${DANDRUM_SLINT_NODE}"
+            "${DANDRUM_REPO_ROOT}/scripts/generate-sampler-commands.mjs" --check)
+        add_test(NAME sampler-command-contracts COMMAND "${DANDRUM_SLINT_NODE}" --test
+            "${DANDRUM_REPO_ROOT}/tests/js/SamplerCommandsTest.mjs")
         add_test(NAME slint-token-contracts COMMAND "${DANDRUM_SLINT_NODE}" --test
             "${DANDRUM_REPO_ROOT}/tests/js/DesignTokensTest.mjs"
-            "${DANDRUM_REPO_ROOT}/tests/js/SlintDesignTokensTest.mjs")
+            "${DANDRUM_REPO_ROOT}/tests/js/SlintDesignTokensTest.mjs"
+            "${DANDRUM_REPO_ROOT}/tests/js/SlintEditorChromeTokensTest.mjs"
+            "${DANDRUM_REPO_ROOT}/tests/js/SlintEditorControlTokensTest.mjs"
+            "${DANDRUM_REPO_ROOT}/tests/js/SlintEditorDisplayTokensTest.mjs"
+            "${DANDRUM_REPO_ROOT}/tests/js/SlintEditorRootTokensTest.mjs"
+            "${DANDRUM_REPO_ROOT}/tests/js/SlintEditorLayoutTokensTest.mjs")
         add_test(NAME slint-library-inventory COMMAND "${DANDRUM_SLINT_NODE}" --test
             "${DANDRUM_REPO_ROOT}/tests/js/SlintLibraryInventoryTest.mjs")
         find_package(Python3 COMPONENTS Interpreter REQUIRED)
+        add_test(NAME slint-editor-package COMMAND "${DANDRUM_SLINT_NODE}" --test
+            "${DANDRUM_REPO_ROOT}/tests/js/SlintEditorPackageTest.mjs")
+        add_test(NAME slint-public-api-consumer COMMAND "${Python3_EXECUTABLE}"
+            "${DANDRUM_REPO_ROOT}/tests/cmake/slint-editor-consumer/run_consumer.py"
+            --cmake "${CMAKE_COMMAND}" --sdk "${Slint_DIR}"
+            --evidence "${CMAKE_BINARY_DIR}/slint-public-api-consumer")
+        set_tests_properties(slint-public-api-consumer PROPERTIES
+            ENVIRONMENT "PYTHONDONTWRITEBYTECODE=1" TIMEOUT 420 LABELS "slint;editor;package")
         add_test(NAME demo-launcher COMMAND "${Python3_EXECUTABLE}" -m unittest discover
             -s "${DANDRUM_REPO_ROOT}/tests/python" -p test_demo_launcher.py)
         add_test(NAME demo-launcher-inventory COMMAND "${Python3_EXECUTABLE}" -m unittest discover
@@ -80,10 +107,36 @@ if(DANDRUM_SLINT_BUILD_TESTS)
             ${DANDRUM_SLINT_RUNTIME_ARGUMENTS})
         set_tests_properties(slint-library-runtime PROPERTIES
             ENVIRONMENT "PYTHONDONTWRITEBYTECODE=1" TIMEOUT 600 LABELS "slint;runtime")
+        if(TARGET dandrum-slint-x11-file-drop)
+            find_package(X11 REQUIRED)
+            add_executable(dandrum-slint-file-drop-transport-test
+                "${DANDRUM_REPO_ROOT}/tests/cpp/SlintFileDropTransportTest.cpp")
+            target_link_libraries(dandrum-slint-file-drop-transport-test PRIVATE
+                Dandrum::SlintLibrary Dandrum::SlintX11FileDrop X11::X11)
+            slint_target_sources(dandrum-slint-file-drop-transport-test
+                "${DANDRUM_REPO_ROOT}/tests/slint/AdvancedSamplerNativeFileDrop.slint" NAMESPACE dandrum_ui)
+            add_test(NAME slint-file-drop-transport COMMAND "${Python3_EXECUTABLE}"
+                "${DANDRUM_REPO_ROOT}/scripts/run-native-slint-test.py"
+                --executable "$<TARGET_FILE:dandrum-slint-file-drop-transport-test>"
+                --evidence "${CMAKE_BINARY_DIR}/slint-file-drop-transport"
+                ${DANDRUM_SLINT_RUNTIME_ARGUMENTS})
+            set_tests_properties(slint-file-drop-transport PROPERTIES
+                ENVIRONMENT "PYTHONDONTWRITEBYTECODE=1" TIMEOUT 120 LABELS "slint;runtime;file-drop")
+        endif()
     endif()
     add_executable(dandrum-slint-value-codec-test "${DANDRUM_REPO_ROOT}/tests/cpp/SlintValueCodecTest.cpp")
     target_compile_features(dandrum-slint-value-codec-test PRIVATE cxx_std_20)
     add_test(NAME slint-value-codec COMMAND dandrum-slint-value-codec-test)
+    add_executable(dandrum-slint-model-projection-test
+        "${DANDRUM_REPO_ROOT}/tests/cpp/SlintModelProjectionTest.cpp")
+    target_include_directories(dandrum-slint-model-projection-test PRIVATE "${DANDRUM_REPO_ROOT}")
+    target_link_libraries(dandrum-slint-model-projection-test PRIVATE Dandrum::SlintLibrary)
+    add_test(NAME slint-model-projection COMMAND dandrum-slint-model-projection-test)
+    if(TARGET dandrum-slint-file-uris)
+        add_executable(dandrum-slint-file-uris-test "${DANDRUM_REPO_ROOT}/tests/cpp/SlintFileUrisTest.cpp")
+        target_link_libraries(dandrum-slint-file-uris-test PRIVATE Dandrum::SlintFileUris)
+        add_test(NAME slint-file-uris COMMAND dandrum-slint-file-uris-test)
+    endif()
 
     get_target_property(DANDRUM_SLINT_FEATURES Slint::Slint SLINT_ENABLED_FEATURES)
     if("TESTING" IN_LIST DANDRUM_SLINT_FEATURES)
@@ -121,6 +174,34 @@ if(DANDRUM_SLINT_BUILD_TESTS)
             "${DANDRUM_REPO_ROOT}/tests/slint/ControlInteractions.slint" NAMESPACE dandrum_ui)
         set(SLINT_COMPILER_ENV_VARS "${saved_slint_environment}")
         add_test(NAME slint-control-interactions COMMAND dandrum-slint-control-interactions-test)
+        # Independent consumers prove editor primitives do not need sampler state.
+        set(editor_render_fixtures Displays Plots ZoneMap Collections Chrome ModulationLayers)
+        foreach(editor_fixture IN ITEMS ThemeControls Parameters Displays Plots Dialogs Browser
+                                        ZoneMap Collections Chrome ModulationLayers)
+            string(TOLOWER "${editor_fixture}" editor_kind)
+            set(editor_target "dandrum-slint-editor-${editor_kind}-test")
+            add_executable(${editor_target}
+                "${DANDRUM_REPO_ROOT}/tests/cpp/SlintEditor${editor_fixture}Test.cpp")
+            target_include_directories(${editor_target} PRIVATE "${DANDRUM_REPO_ROOT}")
+            target_compile_definitions(${editor_target} PRIVATE SLINT_FEATURE_EXPERIMENTAL=1)
+            target_link_libraries(${editor_target} PRIVATE Dandrum::SlintLibrary)
+            set(saved_editor_environment "${SLINT_COMPILER_ENV_VARS}")
+            list(APPEND SLINT_COMPILER_ENV_VARS SLINT_EMIT_DEBUG_INFO=1)
+            slint_target_sources(${editor_target}
+                "${DANDRUM_REPO_ROOT}/tests/slint/SlintEditor${editor_fixture}.slint" NAMESPACE dandrum_ui)
+            set(SLINT_COMPILER_ENV_VARS "${saved_editor_environment}")
+            add_test(NAME slint-editor-${editor_kind} COMMAND ${editor_target})
+            set_tests_properties(slint-editor-${editor_kind} PROPERTIES LABELS "slint;editor;interaction")
+            if(DANDRUM_SLINT_TEST_RUNTIME AND editor_fixture IN_LIST editor_render_fixtures)
+                add_test(NAME slint-editor-${editor_kind}-render COMMAND "${Python3_EXECUTABLE}"
+                    "${DANDRUM_REPO_ROOT}/scripts/run-native-slint-test.py"
+                    --executable "$<TARGET_FILE:${editor_target}>"
+                    --evidence "${CMAKE_BINARY_DIR}/slint-editor-${editor_kind}-render"
+                    ${DANDRUM_SLINT_RUNTIME_ARGUMENTS})
+                set_tests_properties(slint-editor-${editor_kind}-render PROPERTIES
+                    ENVIRONMENT "PYTHONDONTWRITEBYTECODE=1" TIMEOUT 120 LABELS "slint;editor;render")
+            endif()
+        endforeach()
     else()
         message(STATUS "Slint SDK has no TESTING support: generated binding test unavailable")
     endif()

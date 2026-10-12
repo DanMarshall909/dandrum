@@ -1,0 +1,19 @@
+import { EditorStrings } from "EditorStrings.slint";
+import { Tokens } from "../theme.slint";
+import { EditorTheme } from "Theme.slint";
+import { EditorButton } from "Button.slint";
+import { ChoiceGrid } from "ChoiceGrid.slint";
+export component ColorChoice inherits Rectangle {
+    in property <string> label;
+    in property <[string]> values;
+    in property <string> value;
+    callback changed(string);
+    callback window-deactivated();
+    height: Tokens.editor-color-options-top + choices.height + Tokens.editor-color-custom-row-height;
+    Text { x: 0px; y: 0px; width: parent.width; height: Tokens.editor-color-label-height; text: root.label; color: EditorTheme.paper-2; font-family: EditorTheme.font-ui; font-weight: Tokens.editor-weight-semibold; font-size: EditorTheme.type-body; vertical-alignment: center; }
+    choices := ChoiceGrid { window-deactivated => { root.window-deactivated(); } y: Tokens.editor-color-options-top; width: parent.width; values: root.values; selected: root.value; changed(value) => { root.changed(value); } }
+    Rectangle { x: 0px; y: edit.y; width: parent.width - Tokens.editor-color-input-background-reserve; height: Tokens.editor-color-input-height; background: EditorTheme.surface-well; border-radius: Tokens.editor-radius-control; border-width: Tokens.editor-border-width; border-color: edit.has-focus ? EditorTheme.color-focus : EditorTheme.border-control; }
+    edit := TextInput { x: Tokens.editor-color-input-inset; y: Tokens.editor-color-options-top + choices.height; width: parent.width - Tokens.editor-color-input-text-reserve; height: Tokens.editor-color-input-height; text: root.value; accessible-label: root.label + EditorStrings.custom-color-suffix; color: EditorTheme.paper-1; font-family: EditorTheme.font-value; font-size: EditorTheme.type-body; font-weight: Tokens.editor-weight-medium; vertical-alignment: center; single-line: true; accepted => { root.changed(self.text); } }
+    EditorButton { window-deactivated => { root.window-deactivated(); } x: parent.width - Tokens.editor-color-apply-right; y: edit.y; width: Tokens.editor-color-apply-width; text: EditorStrings.apply-text; label: EditorStrings.apply-prefix + root.label + EditorStrings.color-suffix; clicked => { root.changed(edit.text); } }
+}
+

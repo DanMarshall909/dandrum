@@ -1,18 +1,11 @@
 #pragma once
 #include <slint.h>
-#include <string_view>
+#include "../../slint/host/SearchFilter.h"
 #include <memory>
 
 namespace dandrum::sampler {
-// Inputs are already Unicode-lowercased by Slint. The host only searches UTF-8.
 template<class PatchFilterGlobal>
-void bind_patch_search(const PatchFilterGlobal& filter)
-{
-    filter.on_contains([](slint::SharedString text, slint::SharedString query) {
-        return std::string_view{text.data(), text.size()}.find(
-                   std::string_view{query.data(), query.size()}) != std::string_view::npos;
-    });
-}
+void bind_patch_search(const PatchFilterGlobal& filter) { dandrum::slint_ui::bind_search_filter(filter); }
 
 // The standalone and native app tests share one canonical performance bridge.
 template<class PerformanceGlobal, class SessionBinding>

@@ -1,0 +1,15 @@
+import { EditorTheme } from "Theme.slint";
+export component EditorTextField inherits TextInput {
+    in property <bool> cancel-on-escape;
+    callback cancelled();
+    callback focus-left();
+    font-family: EditorTheme.font-ui;
+    font-size: EditorTheme.type-control;
+    color: EditorTheme.paper-1;
+    single-line: true;
+    changed has-focus => { if !root.has-focus { root.focus-left(); } }
+    key-pressed(event) => {
+        if root.cancel-on-escape && event.text == Key.Escape { root.cancelled(); return accept; }
+        return reject;
+    }
+}

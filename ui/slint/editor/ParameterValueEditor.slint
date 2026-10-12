@@ -1,0 +1,21 @@
+import { ParameterStrings } from "ParameterConstants.slint";
+import { EditorTheme } from "Theme.slint";
+
+// Text input only; the owning RangeControl parses and commits user edits.
+export component ParameterValueEditor inherits TextInput {
+    in property <string> label;
+    in property <string> value-text;
+    in property <bool> editing;
+    in property <bool> invalid;
+    in property <bool> host-active;
+    callback submitted(string); callback cancelled(); callback abandoned(); callback interaction-lost();
+    accessible-label: ParameterStrings.edit-label(root.label);
+    text: root.value-text;
+    enabled: root.editing;
+    font-family: EditorTheme.font-value;
+    color: root.invalid ? EditorTheme.error : root.host-active ? EditorTheme.host : EditorTheme.paper-1;
+    public function focus-editor() { root.text = root.value-text; root.focus(); root.select-all(); }
+    changed has-focus => { if !root.has-focus { if root.editing { root.abandoned(); } root.interaction-lost(); } }
+    accepted => { root.submitted(root.text); }
+    key-pressed(event) => { if event.text == Key.Escape { root.cancelled(); return accept; } return reject; }
+}

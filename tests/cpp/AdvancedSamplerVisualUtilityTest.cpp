@@ -151,7 +151,7 @@ int render_materials(const std::filesystem::path& evidence) {
             if (palette.brushed) {
                 require(range(macros, .015f, .5f) >= 6, "Brushed grain reaches the actual Play macro background in both finishes");
                 bool key = false;
-                for (const auto& e : slint::testing::ElementHandle::find_by_element_type_name(window, "KeyCell")) {
+                for (const auto& e : slint::testing::ElementHandle::find_by_accessible_label(window, "Key 61 C♯4")) {
                     const auto label = e.accessible_label(); const auto position = e.absolute_position(); const auto extent = e.size();
                     if (label && std::string_view(label->data()).starts_with("Key 61 ") && extent.width > 0 && position.x >= 0 && position.x + extent.width < 1200) {
                         require(range(e, .5f, .35f) >= 6, "Brushed grain reaches an actual mapped short key cap"); key = true; break;
