@@ -519,7 +519,7 @@ const char* InstrumentHostWebBridge::bootstrapScript() noexcept
     return nativeFunctionBootstrap;
 }
 
-std::array<InstrumentHostWebBridge::NativeFunctionEntry, 34>
+std::array<InstrumentHostWebBridge::NativeFunctionEntry, 35>
 InstrumentHostWebBridge::nativeFunctions()
 {
     return {{
@@ -541,6 +541,39 @@ InstrumentHostWebBridge::nativeFunctions()
         { "getSamplerPresetPath", [] (const juce::Array<juce::var>&,
               juce::WebBrowserComponent::NativeFunctionCompletion done)
           { done (juce::File (DANDRUM_SOURCE_ROOT).getChildFile ("examples/patches/advanced-drum-kit.yaml").getFullPathName()); } },
+        { "resizeSamplerEditor", [this] (const juce::Array<juce::var>& args,
+              juce::WebBrowserComponent::NativeFunctionCompletion done)
+          {
+              if (args.size() != 1 || ! args[0].isString())
+              {
+                  done (juce::var ("Sampler resize requires a size preset"));
+                  return;
+              }
+              const auto mode = args[0].toString();
+              const auto size = mode == "min" ? juce::Point<int> { 820, 560 }
+                  : mode == "default" ? juce::Point<int> { 1200, 800 }
+                  : mode == "exp" ? juce::Point<int> { 1600, 1000 }
+                  : mode == "perf" ? juce::Point<int> { 900, 126 }
+                  : juce::Point<int> {};
+              if (size.isOrigin())
+              {
+                  done (juce::var ("Unknown sampler size preset"));
+                  return;
+              }
+              // Borrow the host-owned editor only for this message-thread command.
+              auto* editor = processor.getActiveEditor();
+              if (editor == nullptr || processor.demoConfiguration().instrumentId != "dandrum.advanced-drum-kit")
+              {
+                  done (juce::var ("Native sampler editor unavailable"));
+                  return;
+              }
+              editor->setSize (size.x, size.y);
+              juce::var reply (new juce::DynamicObject());
+              reply.getDynamicObject()->setProperty ("status", "accepted");
+              reply.getDynamicObject()->setProperty ("width", editor->getWidth());
+              reply.getDynamicObject()->setProperty ("height", editor->getHeight());
+              done (reply);
+          } },
         { "setParameter",
           [this] (const juce::Array<juce::var>& arguments,
                   juce::WebBrowserComponent::NativeFunctionCompletion completion)

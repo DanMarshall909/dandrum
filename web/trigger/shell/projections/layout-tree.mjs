@@ -14,11 +14,14 @@ export function layoutTreeProjection(context) {
   const cur = S.find(s => s[0] === this.state.st) || S[2];
   const f = cur[3], page = cur[2];
   const layout = this.state.layout || f.layout || 'default';
-  const isMin = layout === 'min' && !(this.state.perf ?? !!f.perf), isExp = layout === 'exp' && !(this.state.perf ?? !!f.perf);
+  const native=this.props.store.engine.native;
+  const viewportW=typeof window!=='undefined'?window.innerWidth:1200,viewportH=typeof window!=='undefined'?window.innerHeight:800;
+  const isMin = (layout === 'min'||native&&viewportW<1000) && !(this.state.perf ?? !!f.perf), isExp = layout === 'exp' && !isMin && !(this.state.perf ?? !!f.perf);
   const perf = this.state.perf ?? !!f.perf;
-  const W = perf ? 900 : isMin ? 820 : isExp ? 1600 : 1200, H = perf ? 44 + 82 : isMin ? 560 : isExp ? 1000 : 800;
+  const targetW = perf ? 900 : isMin ? 820 : isExp ? 1600 : 1200, targetH = perf ? 44 + 82 : isMin ? 560 : isExp ? 1000 : 800;
+  const W=native?Math.min(targetW,viewportW):targetW,H=native?Math.min(targetH,viewportH):targetH;
   const avail = Math.max(320, (typeof window !== 'undefined' ? window.innerWidth : 1300) - 32);
-  const scale = Math.min(1, avail / W);
+  const scale = native?1:Math.min(1, avail / W);
   const browser = this.state.browser != null ? this.state.browser : !!(f.browser);
   const selected=selectedSample(this);
   const empty=selected.patch.regions.length===0&&!selected.asset,drop=!!this.state.importDialog,missing=selected.asset?.state==='missing',unsup=selected.asset?.state==='unsupported',loading=selected.asset?.state==='loading',loop=!!selected.region?.loop;

@@ -2463,6 +2463,14 @@ AC trigger-native-webview :: Native shell resource and adapter selection :: Embe
   fp 62f6e1afcc75
   test cpp:tests/cpp/PluginTriggerWebRuntimeTest.h
 
+AC trigger-native-webview :: Native shell resource and adapter selection :: Native connection status preserves editor geometry
+  fp 63dbcd86b5b1
+  test cpp:tests/cpp/PluginTriggerWebRuntimeTest.h
+
+AC trigger-native-webview :: Native shell resource and adapter selection :: Native size choices resize the host window
+  fp 3f5a4defdd59
+  test cpp:tests/cpp/PluginTriggerWebRuntimeTest.h
+
 AC trigger-native-webview :: Transactional sampler edits :: Failed preparation retains the working patch
   fp b67939f9aaae
   test cpp:tests/cpp/PluginTriggerNativeBridgeTest.cpp

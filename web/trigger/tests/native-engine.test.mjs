@@ -144,3 +144,9 @@ test('native initialization retries one rejected meter subscription and refuses 
   const failedBridge=backend(),failed=new NativeEngine({backend:failedBridge,pollMs:0,heartbeatMs:0});t.after(()=>failed.close());failedBridge.functions.subscribeMeter=()=>false;
   await assert.rejects(failed.initialize(),/meter.*unavailable|meter.*rejected/i);
 });
+
+test('native editor resize uses only the requested size mode and reports failed admission',async t=>{
+  const {engine,bridge}=await setup(t);bridge.functions.resizeSamplerEditor=()=>({status:'accepted',width:1600,height:1000});
+  await engine.resizeEditor('exp');assert.deepEqual(bridge.calls.at(-1),['resizeSamplerEditor','exp']);
+  bridge.functions.resizeSamplerEditor=()=>null;await assert.rejects(engine.resizeEditor('min'),/resize.*admitted/i);
+});

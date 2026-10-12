@@ -93,6 +93,17 @@ export class ShellPresenter {
     model.dragging=this.state.dragSrc??this.state.dragMod;
     model.toggleLog=()=>this.setState({logOpen:!this.state.logOpen});
     model.scale=1; model.outW=model.W; model.outH=model.H;
+    model.backend=this.props.store.engine.native?'native':'mock';
+    const engine=this.props.store.engine;
+    if(engine.native&&engine.resizeEditor){
+      const resize=mode=>Promise.resolve(engine.resizeEditor(mode)).catch(error=>this.setState({modNote:error.message}));
+      model.setLayout=layout=>{this.setState({layout});return resize(this.state.perf?'perf':layout);};
+      model.togglePerf=()=>{const perf=model.notPerf;this.setState({perf,kmenu:null,menu:null});return resize(perf?'perf':this.state.layout??'default');};
+    }
+    model.backendLabel=model.backend==='native'?'Connected':'Silent';
+    model.backendDetail=model.backend==='native'?'Audio engine connected. Sample playback and editing are available. Effects, modulation and analysis are unavailable.':'Silent browser preview with a mock engine.';
+    model.headerCompact=model.backend==='native'&&typeof window!=='undefined'&&window.innerWidth<1000;
+    if(model.headerCompact)model.patchW=120;
     const snapshot=this.props.store.getSnapshot();
     model.patchName=snapshot.patch.name;
     if(snapshot.phase==='preparing')model.status={kind:'busy',title:'Loading',text:'Preparing patch'};

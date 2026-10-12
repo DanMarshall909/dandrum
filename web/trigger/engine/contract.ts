@@ -57,6 +57,8 @@ export interface EngineAdapter {
   setParam(id:Id,value:number,gesture?:'begin'|'end'):void;resetParam(id:Id):void;
   /** Optional host automation gesture notifications, independent of value writes. */
   beginHostGesture?(id:Id):Promise<void>;endHostGesture?(id:Id):Promise<void>;
+  /** Native editor sizing; browser previews retain their own viewport. */
+  resizeEditor?(mode:'min'|'default'|'exp'|'perf'):Promise<void>;
   addRoute(route:Route):Promise<Id>;updateRoute(id:Id,delta:Partial<Route>):Promise<void>;removeRoute(id:Id):Promise<void>;
   setModulator(id:Id,delta:Partial<Modulator>):Promise<void>;addModulator(kind:string):Promise<Id>;removeModulator(id:Id):Promise<void>;
   setMacro(id:Id,value:number):void;renameMacro(id:Id,name:string):Promise<void>;bindMacro(id:Id,destination:Id,range:[number,number]):Promise<void>;learnMidi(target:Id|null):Promise<void>;receiveMidi(cc:number,channel:number):Promise<void>;

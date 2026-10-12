@@ -12,6 +12,14 @@ The integrated sampler SHALL load the full locally bundled React shell and selec
 - **WHEN** the integrated standalone opens its editor
 - **THEN** it loads the local full sampler shell, initializes from the prepared native instrument and identifies the real audio backend
 
+#### Scenario: Native connection status preserves editor geometry
+- **WHEN** the connected native editor opens or its WebView is resized
+- **THEN** backend status is displayed within the sampler header and the editor remains inside the available viewport without horizontal page overflow
+
+#### Scenario: Native size choices resize the host window
+- **WHEN** the user selects Min, Default, Expanded or the compact performance view
+- **THEN** the native editor window adopts the selected preset dimensions and reopening the editor restores its full layout dimensions
+
 ### Requirement: Transactional sampler edits
 
 Supported sample edits and undo SHALL prepare immutable replacement data off the audio thread and publish the edited model only after native acceptance. Rejected or stale edits SHALL retain the working instrument and editor patch.

@@ -138,6 +138,10 @@ export class NativeEngine {
   applyDelta(changes){return this.prepared(draft=>applyEntityDelta(draft,changes));}
   beginHostGesture(id){return this.serial(async()=>{await this.parameters.command('beginGesture',id,this.generation);});}
   endHostGesture(id){return this.serial(async()=>{await this.parameters.command('endGesture',id,this.generation);});}
+  async resizeEditor(mode){
+    try{const reply=await this.invoke('resizeSamplerEditor',mode);if(reply?.status!=='accepted')throw new Error('Native editor resize was not admitted');}
+    catch(error){this.report(error);throw error;}
+  }
   async setParam(id,value,gesture){
     if(!this.patch.params[id])throw new Error(`Unknown parameter: ${id}`);
     if(!Number.isFinite(value)||value<0||value>1)throw new Error('Native parameter requires normalized value 0..1');

@@ -77,6 +77,14 @@ int main (int argc, char** argv)
         processor.setPlayConfigDetails (0, 2, 48000, 16);
         processor.prepareToPlay (48000, 16);
         InstrumentHostWebBridge bridge (processor);
+        require (call (bridge, "resizeSamplerEditor").isString(),
+                 "sampler size command must reject missing arguments");
+        require (call (bridge, "resizeSamplerEditor", { juce::var (42) }).isString(),
+                 "sampler size command must reject non-string presets");
+        require (call (bridge, "resizeSamplerEditor", { juce::var ("unknown") }).isString(),
+                 "unknown sampler size mode was accepted");
+        require (call (bridge, "resizeSamplerEditor", { juce::var ("default") }).isString(),
+                 "sampler size command must reject an unavailable editor");
         const auto session = call (bridge, "getSamplerSession");
         require (session["document"]["sources"].size() == 1, "prepared sources missing");
         require (juce::File::isAbsolutePath (session["sourcePath"].toString()), "source provenance missing");

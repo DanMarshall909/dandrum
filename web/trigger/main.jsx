@@ -18,12 +18,7 @@ async function launch(){
     if(disposed){engine.close();return;}
     store=new Store(engine,{diagnostics:native?null:engine});
     if(native){const patch=engine.getPatch();store.select({st:patch.rules.length?'sample':'empty',zoneSel:patch.rules[0]?.id,snapZero:false});}
-    root.render(<div className="preview">
-      <div role="status" data-backend={native?'native':'mock'} style={{padding:'6px 12px',font:'12px sans-serif',background:'#181815',color:'#c8c7bd'}}>
-        {native?'Audio engine connected · Sample playback and editing · Effects, modulation and analysis unavailable':'Silent browser preview'}
-      </div>
-      <TriggerController store={store}/>
-    </div>);
+    root.render(<div className={native?'preview preview--native':'preview'}><TriggerController store={store}/></div>);
   }catch(error){engine?.close();root.render(<div role="alert">Native sampler failed: {error.message}</div>);}
 }
 void launch();

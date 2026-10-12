@@ -186,6 +186,11 @@ DandrumAudioProcessorEditor::DandrumAudioProcessorEditor (DandrumAudioProcessor&
     addAndMakeVisible (browser);
     setName (juce::String (processor.demoConfiguration().title));
     setResizable (true, true);
+#if defined(DANDRUM_EMBED_TRIGGER_REACT)
+    if (processor.demoConfiguration().instrumentId == "dandrum.advanced-drum-kit")
+        setResizeLimits (760, 126, 1600, 1100);
+    else
+#endif
     setResizeLimits (760, 560, 1500, 1100);
     setSize (1180, 860);
     browser.goToURL (juce::WebBrowserComponent::getResourceProviderRoot());
