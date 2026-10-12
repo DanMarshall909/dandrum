@@ -48,6 +48,8 @@ Add `--guide` to show the acceptance-patch selectors, state navigation, editor s
 
 Native desktop file drops on Linux/X11 require XCB development headers (`libxcb1-dev` on Debian/Ubuntu) when building. The optional adapter passes local WAV paths into the same import workflow as the file dialog, including batch choices and Undo. Builds without XCB, and other window-system backends, do not have this X11 bridge; see [platform support and bounds](platform/README.md).
 
+WAV imports, replacements and definition restoration decode on one background worker. The UI timer publishes completed metadata and waveforms; edits and note input remain available while loading. Undo, source removal and patch changes cancel obsolete requests. Completed loads remain part of the original history transaction, including their matching waveform on Undo/Redo.
+
 Capture all 30 states, both finishes for all eight surfaces, and all 13 pages at each of the three editor sizes from the actual compiled application:
 
 ```sh

@@ -1,11 +1,13 @@
 #pragma once
 #include <cstdint>
+#include <functional>
 #include <map>
 #include <memory>
 #include <optional>
 #include <set>
 #include <string>
 #include <string_view>
+#include <stop_token>
 #include <vector>
 namespace dandrum::sampler {
 // Editor data is owned on the UI thread. It is never an audio-engine snapshot.
@@ -16,6 +18,8 @@ struct Record {
  double number(std::string_view key,double fallback=0) const;
 };
 struct Peak { float minimum{}, maximum{}; };
+struct DecodedAsset { Record metadata; std::vector<Peak> peaks; std::string error; };
+using AssetDecoder = std::function<DecodedAsset(std::string_view, std::stop_token)>;
 struct AdapterEvent { std::uint64_t generation{}; std::string kind, detail; };
 class EngineAdapter {
 public:
@@ -34,7 +38,9 @@ public:
 };
 class Model {
 public:
- explicit Model(std::shared_ptr<EngineAdapter> adapter=std::make_shared<SilentMockAdapter>());
+ explicit Model(std::shared_ptr<EngineAdapter> adapter=std::make_shared<SilentMockAdapter>(), AssetDecoder decoder={});
+ ~Model();
+ static DecodedAsset decodeWav(std::string_view path, std::stop_token stop={});
  bool command(std::string_view action,std::string_view target={},std::string_view text={},double value=0);
  bool gesture(std::string_view id,int phase,double value);
  bool noteOn(int note,int velocity,std::string_view source);
@@ -70,7 +76,9 @@ private:
  struct Change { std::string table,id; std::optional<Record> before,after; std::size_t index{}; };
  struct Edit { std::string label; std::vector<Change> changes; bool structural{}; };
  struct Gesture { std::string id; Edit edit; };
- struct Job { std::uint64_t generation{};std::string kind,target,path;double elapsed{};bool fail{}; };
+ struct AssetLoad;
+ struct AssetWorker;
+ struct Job { std::uint64_t generation{};std::string kind,target,path;double elapsed{};bool fail{};std::shared_ptr<AssetLoad> load; };
  Tables tables_;
  std::shared_ptr<EngineAdapter> adapter_;
  std::vector<Peak> peaks_;
@@ -78,6 +86,8 @@ private:
  std::vector<Edit> undo_,redo_;
  std::optional<Gesture> gesture_;
  std::vector<Job> jobs_;
+ AssetDecoder decoder_;
+ std::unique_ptr<AssetWorker> assetWorker_;
  std::map<std::string,int> owners_,pcHeld_;
  std::map<int,int> cycles_;
  std::map<int,std::string> lastSelections_;
@@ -102,8 +112,9 @@ private:
  bool field(Edit&,std::string_view table,std::string_view id,std::string_view key,std::string value);
  void setting(Edit&,std::string_view id,std::string value);
  void beginJob(std::string kind,std::string target={},std::string path={},bool fail=false);
+ void reconcileAssetJobs();
  void finishJob(const Job&);
- bool readWav(std::string_view path,Record& result,std::vector<Peak>& peaks,std::string& error) const;
+ static bool readWav(std::string_view path,Record& result,std::vector<Peak>& peaks,std::string& error,std::stop_token stop);
  bool parameter(std::string_view id,double value,bool record);
  bool gestureValue(std::string_view id,double value,Edit& edit);
  void updateRegion(Edit&,std::string_view id,double value);

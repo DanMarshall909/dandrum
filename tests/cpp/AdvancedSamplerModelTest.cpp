@@ -1,13 +1,22 @@
 #include "ui/advanced-sampler/engine/Model.h"
+#include <algorithm>
+#include <chrono>
 #include <cmath>
 #include <filesystem>
 #include <fstream>
 #include <iostream>
 #include <stdexcept>
+#include <thread>
 using namespace dandrum::sampler;
 #define REQUIRE(x) do { ++assertions; if (!(x)) throw std::runtime_error(std::string(__func__)+":"+std::to_string(__LINE__)+": " #x); } while(false)
 static int assertions=0, groups=0;
-static void ready(Model& m) { m.tick(2.0); }
+static void ready(Model& m) {
+ m.tick(2.0);
+ const auto loading=[&]{return std::any_of(m.records("source").begin(),m.records("source").end(),[](const auto& source){return source.text("state")=="loading"&&!source.text("path").empty();});};
+ const auto deadline=std::chrono::steady_clock::now()+std::chrono::seconds(3);
+ while(loading()&&std::chrono::steady_clock::now()<deadline){m.tick(0);std::this_thread::sleep_for(std::chrono::milliseconds(1));}
+ REQUIRE(!loading());
+}
 static void history() {
  Model noOp;noOp.command("patch.load","kit");double displayed=static_cast<float>(noOp.number("amp-sustain"));REQUIRE(noOp.gesture("amp-sustain",0,displayed));REQUIRE(noOp.gesture("amp-sustain",2,displayed));REQUIRE(noOp.undoCount()==0);REQUIRE(noOp.number("amp-sustain")==.68);
  Model m; REQUIRE(m.text("patch-id")=="empty"); REQUIRE(m.command("patch.load","kit"));
@@ -141,7 +150,7 @@ static void routingInheritance(){
  Model m;m.command("patch.load","kit");REQUIRE(m.undoLabel().empty());REQUIRE(m.redoLabel().empty());REQUIRE(!m.gesture("unregistered",0,0));REQUIRE(m.command("scope.select","","group"));REQUIRE(m.text("scope")=="group");REQUIRE(m.outputFor("kick")=="Main 1/2");REQUIRE(m.command("routing.output","drums","Drums 3/4"));REQUIRE(m.outputFor("kick")=="Drums 3/4");REQUIRE(m.outputFor("snareS")=="Drums 3/4");REQUIRE(m.command("routing.output","snare","Snare 5/6"));REQUIRE(m.outputFor("snareS")=="Snare 5/6");REQUIRE(m.command("routing.inherit","snare"));REQUIRE(m.outputFor("snareS")=="Drums 3/4");REQUIRE(m.command("undo"));REQUIRE(m.outputFor("snareS")=="Snare 5/6");REQUIRE(!m.redoLabel().empty());REQUIRE(!m.undoLabel().empty());REQUIRE(m.command("routing.output","kick","main"));REQUIRE(m.outputFor("kick")=="Main 1/2");++groups;
 }
 static void importPersistence(){
- auto file=wav();Model m;REQUIRE(m.command("asset.import","",file.string()));ready(m);REQUIRE(m.records("zone").front().number("lo")==0);REQUIRE(m.records("zone").front().number("hi")==127);REQUIRE(m.records("zone").front().number("root-note")==60);REQUIRE(m.number("root-note")==60);auto definition=m.definition();Model restored;REQUIRE(restored.importDefinition(definition));REQUIRE(restored.peaks().size()==4);REQUIRE(restored.peaks()[2].minimum==-1);REQUIRE(restored.undoCount()==0);std::filesystem::remove(file);Model missing;REQUIRE(missing.importDefinition(definition));REQUIRE(missing.text("asset-state")=="missing");REQUIRE(missing.peaks().empty());++groups;
+ auto file=wav();Model m;REQUIRE(m.command("asset.import","",file.string()));ready(m);REQUIRE(m.records("zone").front().number("lo")==0);REQUIRE(m.records("zone").front().number("hi")==127);REQUIRE(m.records("zone").front().number("root-note")==60);REQUIRE(m.number("root-note")==60);auto definition=m.definition();Model restored;REQUIRE(restored.importDefinition(definition));ready(restored);REQUIRE(restored.peaks().size()==4);REQUIRE(restored.peaks()[2].minimum==-1);REQUIRE(restored.undoCount()==0);std::filesystem::remove(file);Model missing;REQUIRE(missing.importDefinition(definition));ready(missing);REQUIRE(missing.text("asset-state")=="missing");REQUIRE(missing.peaks().empty());++groups;
 }
 static void modulatorLifecycle(){
  Model pads;pads.command("patch.load","kit");REQUIRE(pads.command("route.add","lfo1","pad:38:pan",.25));REQUIRE(pads.records("route").back().text("destination")=="pad:38:pan");REQUIRE(!pads.command("route.add","lfo1","pad:60:pan",.25));REQUIRE(!pads.command("route.add","lfo1","pad:38:invented",.25));
