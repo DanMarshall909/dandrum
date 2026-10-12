@@ -28,8 +28,10 @@ export component Scrollbar inherits FocusScope {
         let bounded = root.position.clamp(0, root.range);
         if root.position != bounded { root.position = bounded; }
     }
-    accessible-role: slider; accessible-label: root.vertical ? "Vertical scroll" : "Horizontal scroll";
-    accessible-value-minimum: 0; accessible-value-maximum: root.range;
+    accessible-role: slider;
+    accessible-label: root.vertical ? "Vertical scroll" : "Horizontal scroll";
+    accessible-value-minimum: 0;
+    accessible-value-maximum: root.range;
     accessible-value: "\{root.position}";
     accessible-action-increment => { root.move-to(root.position + 24); }
     accessible-action-decrement => { root.move-to(root.position - 24); }
@@ -54,6 +56,7 @@ export component Scrollbar inherits FocusScope {
         height: root.vertical ? parent.height : 1px;
         background: Tokens.border-control;
     }
+
     thumb := ScrollThumb {
         x: root.vertical ? 1px : (root.track-size - root.thumb-size) * root.position / max(1, root.range);
         y: root.vertical ? (root.track-size - root.thumb-size) * root.position / max(1, root.range) : 1px;
@@ -61,7 +64,11 @@ export component Scrollbar inherits FocusScope {
         height: root.vertical ? root.thumb-size : 4px;
         active: root.dragging || touch.has-hover;
     }
-    FocusRing { active: root.has-focus; }
+
+    FocusRing {
+        active: root.has-focus;
+    }
+
     touch := TouchArea {
         enabled: root.enabled;
         pointer-event(event) => {
@@ -71,7 +78,9 @@ export component Scrollbar inherits FocusScope {
                 let start = (root.vertical ? thumb.y : thumb.x) / 1px;
                 if coordinate < start { root.move-to(root.position - root.viewport-size); }
                 else if coordinate > start + root.thumb-size / 1px { root.move-to(root.position + root.viewport-size); }
-                root.anchor = coordinate; root.start-position = root.position; root.dragging = true;
+                root.anchor = coordinate;
+                root.start-position = root.position;
+                root.dragging = true;
             }
             if event.kind == PointerEventKind.up || event.kind == PointerEventKind.cancel { root.dragging = false; }
         }

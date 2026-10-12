@@ -2,17 +2,31 @@ import { EditorKey } from "../../ui/slint/editor/Key.slint";
 import { EditorPad } from "../../ui/slint/editor/Pad.slint";
 import { EditorPadWave } from "../../ui/slint/editor/PadWave.slint";
 import { EditorMapKeyboard } from "../../ui/slint/editor/MapKeyboard.slint";
-import { EditorKeyMapOverview } from "../../ui/slint/editor/KeyMapOverview.slint";
-import { EditableWaveform, WaveCoordinates } from "../../ui/slint/editor/EditableWaveform.slint";
+import {
+    EditorKeyMapOverview,
+} from "../../ui/slint/editor/KeyMapOverview.slint";
+import {
+    EditableWaveform,
+    WaveCoordinates,
+} from "../../ui/slint/editor/EditableWaveform.slint";
 import { WaveHandle } from "../../ui/slint/editor/WaveHandle.slint";
 import { FitLayout } from "../../ui/slint/editor/FitLayout.slint";
-import { WaveBucket, WaveSlice, KeyZone } from "../../ui/slint/display/types.slint";
+import {
+    WaveBucket,
+    WaveSlice,
+    KeyZone,
+} from "../../ui/slint/display/types.slint";
 export { EditorTheme } from "../../ui/slint/editor/Theme.slint";
-export { WaveBucket, WaveSlice, KeyZone } from "../../ui/slint/display/types.slint";
+export {
+    WaveBucket,
+    WaveSlice,
+    KeyZone,
+} from "../../ui/slint/display/types.slint";
 
 // Independent consumer: only library imports, no sampler globals or native model.
 export component SlintEditorDisplays inherits Window {
-    width: 760px; height: 440px;
+    width: 760px;
+    height: 440px;
     background: #101010;
     in-out property <int> note: 60;
     in-out property <string> generation: "one";
@@ -28,8 +42,13 @@ export component SlintEditorDisplays inherits Window {
     in-out property <bool> reversed;
     in-out property <float> loaded-fraction: 1;
     in-out property <[WaveSlice]> slices;
-    in-out property <[WaveBucket]> peaks: [{minimum: -1, maximum: 0.25}, {minimum: -0.5, maximum: 0.25}, {minimum: 0, maximum: 0}, {minimum: -0.25, maximum: 0.1}];
-    in-out property <[KeyZone]> zones: [{id: "zone", lo: 60, hi: 64, vel-lo: 1, vel-hi: 127}];
+    in-out property <[WaveBucket]> peaks: [
+        { minimum: -1, maximum: 0.25 },
+        { minimum: -0.5, maximum: 0.25 },
+        { minimum: 0, maximum: 0 },
+        { minimum: -0.25, maximum: 0.1 }
+    ];
+    in-out property <[KeyZone]> zones: [{ id: "zone", lo: 60, hi: 64, vel-lo: 1, vel-hi: 127 }];
     out property <int> presses;
     out property <int> releases;
     out property <int> last-note;
@@ -53,52 +72,140 @@ export component SlintEditorDisplays inherits Window {
     public function expect(ok: bool, text: string) { root.checks += 1; if !ok { root.contracts-passed = false; root.failed += text + "; "; } }
     callback run-contracts() -> string;
     run-contracts => {
-        root.contracts-passed = true; root.failed = ""; root.checks = 0;
-        root.expect(FitLayout.pads(384,340,11,84,120) == {columns:4,size:90}, "largest fitting grid");
-        root.expect(FitLayout.pads(370,258,85,60,96) == {columns:5,size:60}, "minimum-size scrolling grid");
+        root.contracts-passed = true;
+        root.failed = "";
+        root.checks = 0;
+        root.expect(FitLayout.pads(384,340,11,84,120) == { columns:4, size:90 }, "largest fitting grid");
+        root.expect(FitLayout.pads(370,258,85,60,96) == { columns:5, size:60 }, "minimum-size scrolling grid");
         root.expect(FitLayout.note-name(60) == "C4" && FitLayout.note-name(61) == "C♯4", "note labels");
         root.expect(FitLayout.black(1) && FitLayout.black(3) && FitLayout.black(6) && FitLayout.black(8) && FitLayout.black(10), "black pitch classes");
         root.expect(!FitLayout.black(0) && !FitLayout.black(2) && !FitLayout.black(4) && !FitLayout.black(5) && !FitLayout.black(7) && !FitLayout.black(9) && !FitLayout.black(11), "white pitch classes");
         root.expect(FitLayout.white-note(7) == 12 && FitLayout.black-note(5) == 13 && FitLayout.white-index(24) == 14, "keyboard coordinates");
         root.expect(WaveCoordinates.normalized(-1px,100px) == 0 && WaveCoordinates.normalized(50px,100px) == 0.5 && WaveCoordinates.normalized(101px,100px) == 1 && WaveCoordinates.normalized(2px,0px) == 0, "bounded waveform coordinates");
-        key.press(0); key.press(127); key.release-note(); key.release-note();
+        key.press(0);
+        key.press(127);
+        key.release-note();
+        key.release-note();
         root.expect(root.presses == 1 && root.releases == 1 && root.last-velocity == 1, "balanced key and bounded velocity");
-        key.press(999); key.release-note();
+        key.press(999);
+        key.release-note();
         root.expect(root.last-velocity == 127 && root.last-release == 60 && !key.held, "key maximum velocity remains bounded");
-        pad.press(0); pad.press(1); pad.release-note(); pad.release-note();
+        pad.press(0);
+        pad.press(1);
+        pad.release-note();
+        pad.release-note();
         root.expect(root.presses == 3 && root.releases == 3 && root.last-velocity == 1, "balanced pad input");
-        root.pad-mapped = false; pad.press(1);
-        root.expect(root.presses == 3 && root.selections == 3, "empty pad selects without a note"); root.pad-mapped = true;
-        root.input-enabled = false; key.press(100); pad.press(1);
-        root.expect(root.presses == 3 && root.selections == 3, "disabled input is inert"); root.input-enabled = true;
+        root.pad-mapped = false;
+        pad.press(1);
+        root.expect(root.presses == 3 && root.selections == 3, "empty pad selects without a note");
+        root.pad-mapped = true;
+        root.input-enabled = false;
+        key.press(100);
+        pad.press(1);
+        root.expect(root.presses == 3 && root.selections == 3, "disabled input is inert");
+        root.input-enabled = true;
         root.note = 60;
         return root.contracts-passed ? "PASS: " + root.checks + " shared display contracts" : "FAIL: " + root.failed;
     }
     public function press-key() { key.press(100); }
     public function press-pad() { pad.press(0.8); }
     public function release-inputs() { key.release-note(); pad.release-note(); }
-    key := EditorKey { x: 10px; y: 10px; width: 40px; height: 90px; note: root.note; black: root.black-key; sounding: root.sounding; mapped: true; source: root.source; generation: root.generation; enabled: root.input-enabled; visible: root.input-visible;
-        note-on(n,v,s) => { root.presses += 1; root.last-note = n; root.last-velocity = v; root.last-source = s; }
-        note-off(n,s) => { root.releases += 1; root.last-release = n; root.released-source = s; }
+    key := EditorKey {
+        x: 10px;
+        y: 10px;
+        width: 40px;
+        height: 90px;
+        note: root.note;
+        black: root.black-key;
+        sounding: root.sounding;
+        mapped: true;
+        source: root.source;
+        generation: root.generation;
+        enabled: root.input-enabled;
+        visible: root.input-visible;
+        note-on(n, v, s) => { root.presses += 1; root.last-note = n; root.last-velocity = v; root.last-source = s; }
+        note-off(n, s) => { root.releases += 1; root.last-release = n; root.released-source = s; }
         window-deactivated => { root.deactivations += 1; }
     }
-    pad := EditorPad { x: 70px; y: 10px; size: 80px; note: root.note; name: "Known pad"; mapped: root.pad-mapped; source: root.source; generation: root.generation; enabled: root.input-enabled; visible: root.input-visible;
-        note-on(n,v,s) => { root.presses += 1; root.last-note = n; root.last-velocity = v; root.last-source = s; }
-        note-off(n,s) => { root.releases += 1; root.last-release = n; root.released-source = s; }
+
+    pad := EditorPad {
+        x: 70px;
+        y: 10px;
+        size: 80px;
+        note: root.note;
+        name: "Known pad";
+        mapped: root.pad-mapped;
+        source: root.source;
+        generation: root.generation;
+        enabled: root.input-enabled;
+        visible: root.input-visible;
+        note-on(n, v, s) => { root.presses += 1; root.last-note = n; root.last-velocity = v; root.last-source = s; }
+        note-off(n, s) => { root.releases += 1; root.last-release = n; root.released-source = s; }
         selected-note(n) => { root.selections += 1; }
         window-deactivated => { root.deactivations += 1; }
     }
-    pad-wave := EditorPadWave { x: 180px; y: 10px; width: 100px; height: 80px; peaks: root.peaks; cursor: 0.75; audition => { root.auditions += 1; } }
-    handle := WaveHandle { x: 300px; y: 10px; label: "Standalone waveform handle"; field: "start"; top: true; position: root.handle-position; plot-width: 100px; plot-height: 80px;
-        gesture(id,phase,value) => { root.gesture-phase = phase; root.gesture-value = value; if phase == 1 || phase == 3 { root.handle-position = value; } }
+
+    pad-wave := EditorPadWave {
+        x: 180px;
+        y: 10px;
+        width: 100px;
+        height: 80px;
+        peaks: root.peaks;
+        cursor: 0.75;
+        audition => { root.auditions += 1; }
     }
-    wave := EditableWaveform { x: 10px; y: 120px; width: 600px; height: 200px; peaks: root.peaks; slices: root.slices; state: root.wave-state; loading-progress: root.loaded-fraction; reversed: root.reversed; zoom: root.wave-zoom;
-        seek(v) => { root.seek-value = v; } slice-selected(id) => { root.selected-slice = id; }
+
+    handle := WaveHandle {
+        x: 300px;
+        y: 10px;
+        label: "Standalone waveform handle";
+        field: "start";
+        top: true;
+        position: root.handle-position;
+        plot-width: 100px;
+        plot-height: 80px;
+        gesture(id, phase, value) => { root.gesture-phase = phase; root.gesture-value = value; if phase == 1 || phase == 3 { root.handle-position = value; } }
+    }
+
+    wave := EditableWaveform {
+        x: 10px;
+        y: 120px;
+        width: 600px;
+        height: 200px;
+        peaks: root.peaks;
+        slices: root.slices;
+        state: root.wave-state;
+        loading-progress: root.loaded-fraction;
+        reversed: root.reversed;
+        zoom: root.wave-zoom;
+        seek(v) => { root.seek-value = v; }
+        slice-selected(id) => { root.selected-slice = id; }
         window-deactivated => { root.deactivations += 1; }
     }
-    EditorMapKeyboard { x: 330px; y: 10px; width: 140px; height: 80px; low-note: 60; high-note: 64; audition-enabled: true;
-        note-on(n,v,s) => { root.presses += 1; root.last-note = n; root.last-velocity = v; } note-off(n,s) => { root.releases += 1; }
+
+    EditorMapKeyboard {
+        x: 330px;
+        y: 10px;
+        width: 140px;
+        height: 80px;
+        low-note: 60;
+        high-note: 64;
+        audition-enabled: true;
+        note-on(n, v, s) => { root.presses += 1; root.last-note = n; root.last-velocity = v; }
+        note-off(n, s) => { root.releases += 1; }
     }
-    EditorKeyMapOverview { x: 620px; y: 120px; width: 130px; zones: root.zones; selected-zone: "zone"; }
-    Text { x: 10px; y: 390px; text: root.failed; }
+
+    EditorKeyMapOverview {
+        x: 620px;
+        y: 120px;
+        width: 130px;
+        zones: root.zones;
+        selected-zone: "zone";
+    }
+
+    Text {
+        x: 10px;
+        y: 390px;
+        text: root.failed;
+    }
 }

@@ -9,25 +9,119 @@ export component EditorBindingRangeRow inherits Rectangle {
     in property <float> lower;
     in property <float> upper;
     in property <length> small-font-size: EditorTheme.type-small;
-    callback gesture-cancelled(); callback interaction-lost();
-    callback opened(); callback removed(); callback inverted(); callback range-gesture(string,int,float);
-    Rectangle { height: 1px; background: EditorTheme.line-1; }
-    Text { x: Tokens.space-5; width: max(1px, parent.width - Tokens.editor-display-binding-title-reserved-width); text: root.title; font-family: EditorTheme.font-ui; font-size: Tokens.type-body; color: EditorTheme.paper-1; vertical-alignment: center; overflow: elide; }
-    range-start := ParameterField { x: parent.width - Tokens.editor-display-binding-start-inset; y: Tokens.space-1; width: Tokens.editor-display-binding-start-width; height: Tokens.space-7; label: Tokens.editor-display-binding-lower-label-prefix + root.title; show-label: false; ghost: true; value: root.lower * Ranges.percentage; in property <float> projected-value: root.lower * Ranges.percentage; changed projected-value => { if abs(self.projected-value - self.value) > Ranges.epsilon { self.value = self.projected-value; } } minimum: 0; maximum: Ranges.percentage; step: 1; default-value: 0;
-        label-font-size: root.small-font-size; unit-font-size: root.small-font-size; assignment-enabled: false;
-        gesture-cancelled => { root.gesture-cancelled(); } interaction-lost => { root.interaction-lost(); }
-        gesture-began => { root.range-gesture(RangeFields.minimum, GesturePhases.begin, self.value / Ranges.percentage); } changed(v) => { root.range-gesture(RangeFields.minimum, GesturePhases.update, v / Ranges.percentage); } gesture-ended => { root.range-gesture(RangeFields.minimum, GesturePhases.commit, self.value / Ranges.percentage); }
+    callback gesture-cancelled();
+    callback interaction-lost();
+    callback opened();
+    callback removed();
+    callback inverted();
+    callback range-gesture(string, int, float);
+    Rectangle {
+        height: 1px;
+        background: EditorTheme.line-1;
     }
-    Text { x: parent.width - Tokens.editor-display-binding-separator-inset; width: Tokens.editor-display-binding-separator-width; text: Tokens.editor-display-binding-separator; color: EditorTheme.paper-2; font-family: EditorTheme.font-value; font-size: Tokens.editor-display-type-value-small; vertical-alignment: center; horizontal-alignment: center; }
-    range-end := ParameterField { x: parent.width - Tokens.editor-display-binding-end-inset; y: Tokens.space-1; width: Tokens.editor-display-binding-end-width; height: Tokens.space-7; label: Tokens.editor-display-binding-upper-label-prefix + root.title; show-label: false; ghost: true; value: root.upper * Ranges.percentage; in property <float> projected-value: root.upper * Ranges.percentage; changed projected-value => { if abs(self.projected-value - self.value) > Ranges.epsilon { self.value = self.projected-value; } } minimum: 0; maximum: Ranges.percentage; step: 1; default-value: Ranges.percentage; unit: Tokens.editor-display-percent-unit;
-        label-font-size: root.small-font-size; unit-font-size: root.small-font-size; assignment-enabled: false;
-        gesture-cancelled => { root.gesture-cancelled(); } interaction-lost => { root.interaction-lost(); }
-        gesture-began => { root.range-gesture(RangeFields.maximum, GesturePhases.begin, self.value / Ranges.percentage); } changed(v) => { root.range-gesture(RangeFields.maximum, GesturePhases.update, v / Ranges.percentage); } gesture-ended => { root.range-gesture(RangeFields.maximum, GesturePhases.commit, self.value / Ranges.percentage); }
+
+    Text {
+        x: Tokens.space-5;
+        width: max(1px, parent.width - Tokens.editor-display-binding-title-reserved-width);
+        text: root.title;
+        font-family: EditorTheme.font-ui;
+        font-size: Tokens.type-body;
+        color: EditorTheme.paper-1;
+        vertical-alignment: center;
+        overflow: elide;
     }
-    EditorButton { x: parent.width - Tokens.editor-display-binding-open-inset; y: Tokens.space-1; width: Tokens.space-7; height: Tokens.space-7; icon: Tokens.editor-icon-chevron-right; label: Tokens.editor-display-binding-open-label-prefix + root.title; compact: true; ghost: true; clicked => { root.opened(); } window-deactivated => { root.interaction-lost(); } }
-    ContextMenuArea { Menu {
-        MenuItem { title: Tokens.editor-display-binding-open-menu; activated => { root.opened(); } }
-        MenuItem { title: Tokens.editor-display-binding-invert-menu; activated => { root.inverted(); } }
-        MenuItem { title: Tokens.editor-display-binding-remove-menu; activated => { root.removed(); } }
-    } }
+
+    range-start := ParameterField {
+        x: parent.width - Tokens.editor-display-binding-start-inset;
+        y: Tokens.space-1;
+        width: Tokens.editor-display-binding-start-width;
+        height: Tokens.space-7;
+        label: Tokens.editor-display-binding-lower-label-prefix + root.title;
+        show-label: false;
+        ghost: true;
+        value: root.lower * Ranges.percentage;
+        in property <float> projected-value: root.lower * Ranges.percentage;
+        changed projected-value => { if abs(self.projected-value - self.value) > Ranges.epsilon { self.value = self.projected-value; } }
+        minimum: 0;
+        maximum: Ranges.percentage;
+        step: 1;
+        default-value: 0;
+        label-font-size: root.small-font-size;
+        unit-font-size: root.small-font-size;
+        assignment-enabled: false;
+        gesture-cancelled => { root.gesture-cancelled(); }
+        interaction-lost => { root.interaction-lost(); }
+        gesture-began => { root.range-gesture(RangeFields.minimum, GesturePhases.begin, self.value / Ranges.percentage); }
+        changed(v) => { root.range-gesture(RangeFields.minimum, GesturePhases.update, v / Ranges.percentage); }
+        gesture-ended => { root.range-gesture(RangeFields.minimum, GesturePhases.commit, self.value / Ranges.percentage); }
+    }
+
+    Text {
+        x: parent.width - Tokens.editor-display-binding-separator-inset;
+        width: Tokens.editor-display-binding-separator-width;
+        text: Tokens.editor-display-binding-separator;
+        color: EditorTheme.paper-2;
+        font-family: EditorTheme.font-value;
+        font-size: Tokens.editor-display-type-value-small;
+        vertical-alignment: center;
+        horizontal-alignment: center;
+    }
+
+    range-end := ParameterField {
+        x: parent.width - Tokens.editor-display-binding-end-inset;
+        y: Tokens.space-1;
+        width: Tokens.editor-display-binding-end-width;
+        height: Tokens.space-7;
+        label: Tokens.editor-display-binding-upper-label-prefix + root.title;
+        show-label: false;
+        ghost: true;
+        value: root.upper * Ranges.percentage;
+        in property <float> projected-value: root.upper * Ranges.percentage;
+        changed projected-value => { if abs(self.projected-value - self.value) > Ranges.epsilon { self.value = self.projected-value; } }
+        minimum: 0;
+        maximum: Ranges.percentage;
+        step: 1;
+        default-value: Ranges.percentage;
+        unit: Tokens.editor-display-percent-unit;
+        label-font-size: root.small-font-size;
+        unit-font-size: root.small-font-size;
+        assignment-enabled: false;
+        gesture-cancelled => { root.gesture-cancelled(); }
+        interaction-lost => { root.interaction-lost(); }
+        gesture-began => { root.range-gesture(RangeFields.maximum, GesturePhases.begin, self.value / Ranges.percentage); }
+        changed(v) => { root.range-gesture(RangeFields.maximum, GesturePhases.update, v / Ranges.percentage); }
+        gesture-ended => { root.range-gesture(RangeFields.maximum, GesturePhases.commit, self.value / Ranges.percentage); }
+    }
+
+    EditorButton {
+        x: parent.width - Tokens.editor-display-binding-open-inset;
+        y: Tokens.space-1;
+        width: Tokens.space-7;
+        height: Tokens.space-7;
+        icon: Tokens.editor-icon-chevron-right;
+        label: Tokens.editor-display-binding-open-label-prefix + root.title;
+        compact: true;
+        ghost: true;
+        clicked => { root.opened(); }
+        window-deactivated => { root.interaction-lost(); }
+    }
+
+    ContextMenuArea {
+        Menu {
+            MenuItem {
+                title: Tokens.editor-display-binding-open-menu;
+                activated => { root.opened(); }
+            }
+
+            MenuItem {
+                title: Tokens.editor-display-binding-invert-menu;
+                activated => { root.inverted(); }
+            }
+
+            MenuItem {
+                title: Tokens.editor-display-binding-remove-menu;
+                activated => { root.removed(); }
+            }
+        }
+    }
 }

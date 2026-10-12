@@ -15,13 +15,16 @@ export component ActionArea inherits FocusScope {
     key-pressed(event) => {
         if root.enabled && (event.text == " " || event.text == Key.Return) {
             if root.activate-on-press { root.activate(); return accept; }
-            root.key-down = true; return accept;
+            root.key-down = true;
+            return accept;
         }
         return reject;
     }
     key-released(event) => {
         if root.enabled && root.key-down && (event.text == " " || event.text == Key.Return) {
-            root.key-down = false; root.activate(); return accept;
+            root.key-down = false;
+            root.activate();
+            return accept;
         }
         return reject;
     }

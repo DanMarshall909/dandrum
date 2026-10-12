@@ -20,6 +20,7 @@ export component TriggerButton inherits Rectangle {
         horizontal-alignment: center;
         vertical-alignment: center;
     }
+
     hit := TouchArea {
         enabled: root.enabled;
         mouse-cursor: pointer;
@@ -44,6 +45,7 @@ export component TriggerToggle inherits Rectangle {
         background: root.enabled ? DesignTokens.text-primary : DesignTokens.text-disabled;
         animate x { duration: 120ms; }
     }
+
     TouchArea {
         enabled: root.enabled;
         mouse-cursor: pointer;

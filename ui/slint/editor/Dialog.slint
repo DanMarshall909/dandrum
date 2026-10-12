@@ -20,6 +20,7 @@ export component EditorModal inherits PopupWindow {
             TouchArea {
                 clicked => { if root.dismiss-on-background { root.dismissed(); } }
             }
+
             @children
         }
     }
@@ -37,5 +38,6 @@ export component EditorDialogSurface inherits Rectangle {
     border-color: EditorTheme.line-3;
     border-radius: Tokens.editor-dialog-radius;
     TouchArea { }
+
     @children
 }

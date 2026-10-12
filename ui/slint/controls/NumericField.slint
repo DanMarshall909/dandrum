@@ -10,49 +10,99 @@ import { ValueEditor } from "ValueEditor.slint";
 export component NumericField inherits RangeControl {
     in property <bool> compact;
     private property <bool> fine;
-    value: 0; minimum: 0; maximum: Tokens.editor-control-guide-field-maximum; step: 1; default-value: 0;
-    keyboard-step: root.step; fine-keyboard-step: root.step * Tokens.editor-control-guide-field-fine-key-multiplier;
-    wheel-step: root.step; fine-wheel-step: root.step;
+    value: 0;
+    minimum: 0;
+    maximum: Tokens.editor-control-guide-field-maximum;
+    step: 1;
+    default-value: 0;
+    keyboard-step: root.step;
+    fine-keyboard-step: root.step * Tokens.editor-control-guide-field-fine-key-multiplier;
+    wheel-step: root.step;
+    fine-wheel-step: root.step;
     width: root.compact ? Tokens.editor-control-guide-field-compact-width : Tokens.field-width;
     height: (root.label != "" ? Tokens.editor-control-guide-label-height : 0px) + (root.compact ? Tokens.editor-control-guide-value-compact-height : Tokens.field-height);
     accessible-role: spinbox;
     edit-requested => { editor.focus-editor(); }
     edit-closed(restore-focus) => { if restore-focus && root.interactive { root.focus(); } }
-    standard-menu-requested => { if root.interactive { parameter-menu.show({x: parameter-menu.width / 2, y: parameter-menu.height}); } }
+    standard-menu-requested => { if root.interactive { parameter-menu.show({ x: parameter-menu.width / 2, y: parameter-menu.height }); } }
     capture-key-pressed(event) => { root.fine = event.modifiers.shift || event.text == Key.Shift; return reject; }
     capture-key-released(event) => { root.fine = event.modifiers.shift; return reject; }
-    ControlLabel { x: 0; y: 0; width: parent.width; height: Tokens.editor-control-field-label-height; visible: root.label != ""; label: root.label; compact: true; enabled: root.enabled; }
+    ControlLabel {
+        x: 0;
+        y: 0;
+        width: parent.width;
+        height: Tokens.editor-control-field-label-height;
+        visible: root.label != "";
+        label: root.label;
+        compact: true;
+        enabled: root.enabled;
+    }
+
     field := Rectangle {
-        x: 0; y: root.label != "" ? Tokens.editor-control-guide-label-height : 0px; width: parent.width; height: root.compact ? Tokens.editor-control-guide-value-compact-height : Tokens.field-height;
-        FocusRing { active: root.interactive && (root.has-focus || root.focused || root.editing); }
+        x: 0;
+        y: root.label != "" ? Tokens.editor-control-guide-label-height : 0px;
+        width: parent.width;
+        height: root.compact ? Tokens.editor-control-guide-value-compact-height : Tokens.field-height;
+        FocusRing {
+            active: root.interactive && (root.has-focus || root.focused || root.editing);
+        }
+
         editor := ValueEditor {
-            value-text: root.value-text; unit: root.unit; label: root.label;
-            editing: root.editing; invalid: root.edit-invalid; host-automated: root.host-active;
-            read-only: !root.interactive; compact: root.compact;
+            value-text: root.value-text;
+            unit: root.unit;
+            label: root.label;
+            editing: root.editing;
+            invalid: root.edit-invalid;
+            host-automated: root.host-active;
+            read-only: !root.interactive;
+            compact: root.compact;
             edit-requested => { root.begin-edit(); }
             submitted(text) => { root.commit-text(text); }
             cancelled => { root.cancel-edit(); }
             abandoned => { root.abandon-edit(); }
         }
+
         parameter-menu := ContextMenuArea {
             enabled: root.interactive && !root.editing;
-            Menu { title: ParameterStrings.menu-parameter;
-                MenuItem { title: ParameterStrings.menu-reset; enabled: root.interactive; activated => { root.reset-value(); } }
-                MenuItem { title: ParameterStrings.menu-type-value; enabled: root.interactive; activated => { root.begin-edit(); } }
-                MenuItem { title: ParameterStrings.menu-modulation-more; enabled: root.interactive; activated => { root.request-context-menu(); } }
+            Menu {
+                title: ParameterStrings.menu-parameter;
+                MenuItem {
+                    title: ParameterStrings.menu-reset;
+                    enabled: root.interactive;
+                    activated => { root.reset-value(); }
+                }
+
+                MenuItem {
+                    title: ParameterStrings.menu-type-value;
+                    enabled: root.interactive;
+                    activated => { root.begin-edit(); }
+                }
+
+                MenuItem {
+                    title: ParameterStrings.menu-modulation-more;
+                    enabled: root.interactive;
+                    activated => { root.request-context-menu(); }
+                }
             }
+
             RangeGesture {
-                enabled: root.interactive && !root.editing; value: root.value; minimum: root.minimum; maximum: root.maximum; fine <=> root.fine;
-                pixels-per-range: max(1, (root.maximum - root.minimum) / max(Tokens.editor-control-value-epsilon, root.step)) * Tokens.editor-control-guide-field-pixels-per-step; fine-scale: 1 / Tokens.editor-control-guide-field-fine-divisor;
+                enabled: root.interactive && !root.editing;
+                value: root.value;
+                minimum: root.minimum;
+                maximum: root.maximum;
+                fine <=> root.fine;
+                pixels-per-range: max(1, (root.maximum - root.minimum) / max(Tokens.editor-control-value-epsilon, root.step)) * Tokens.editor-control-guide-field-pixels-per-step;
+                fine-scale: 1 / Tokens.editor-control-guide-field-fine-divisor;
                 started => { root.focus(); root.begin-gesture(); }
                 updated(v) => { root.update-gesture(v); }
                 ended => { root.end-gesture(); }
                 edit-requested => { root.begin-edit(); }
                 reset-requested => { root.cancel-edit(); root.reset-value(); }
                 wheeled(direction, precise) => { root.wheel(direction, precise); }
-                context-requested(x, y) => { parameter-menu.show({x: x, y: y}); }
+                context-requested(x, y) => { parameter-menu.show({ x: x, y: y }); }
             }
         }
-        if root.read-only : DashedBorder {}
+
+        if root.read-only: DashedBorder { }
     }
 }

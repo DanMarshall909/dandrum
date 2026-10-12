@@ -13,14 +13,22 @@ export component ValueReadout inherits Rectangle {
         spacing: root.unit != "" ? Tokens.editor-control-field-unit-gap : 0px;
         alignment: root.align == ParameterStrings.align-center ? center : root.align == ParameterStrings.align-right ? end : start;
         value-text := Text {
-            text: root.value; color: root.foreground;
-            font-family: Tokens.font-value; font-size: root.font-size;
-            vertical-alignment: center; horizontal-stretch: 0; overflow: elide;
+            text: root.value;
+            color: root.foreground;
+            font-family: Tokens.font-value;
+            font-size: root.font-size;
+            vertical-alignment: center;
+            horizontal-stretch: 0;
+            overflow: elide;
         }
-        if root.unit != "" : Text {
-            text: root.unit; color: Tokens.text-tertiary;
-            font-family: Tokens.font-value; font-size: root.font-size;
-            vertical-alignment: center; horizontal-stretch: 0;
+
+        if root.unit != "": Text {
+            text: root.unit;
+            color: Tokens.text-tertiary;
+            font-family: Tokens.font-value;
+            font-size: root.font-size;
+            vertical-alignment: center;
+            horizontal-stretch: 0;
         }
     }
 }

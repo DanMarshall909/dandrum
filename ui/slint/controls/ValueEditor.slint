@@ -29,23 +29,51 @@ export component ValueEditor inherits FocusScope {
     }
     Rectangle {
         background: root.read-only ? transparent : Tokens.surface-well;
-        border-radius: Tokens.radius-1; border-width: root.read-only ? 0px : Tokens.editor-control-stroke-width;
+        border-radius: Tokens.radius-1;
+        border-width: root.read-only ? 0px : Tokens.editor-control-stroke-width;
         border-color: root.invalid ? Tokens.dd-error : root.editing ? Tokens.dd-paper-2 : root.hovered ? Tokens.border-strong : Tokens.border-control;
         HorizontalLayout {
-            padding-left: Tokens.editor-control-guide-value-padding; padding-right: Tokens.editor-control-guide-value-padding; spacing: Tokens.editor-control-guide-value-spacing;
-            Text { visible: !root.editing; text: root.value-text; color: root.read-only ? Tokens.text-secondary : root.host-automated ? Tokens.dd-host : Tokens.text-primary; font-family: Tokens.font-value; font-size: root.compact ? Tokens.type-micro : Tokens.type-value; vertical-alignment: center; }
-            if root.unit != "" && root.unit != ParameterStrings.unit-pan && !root.editing : Text { text: root.unit; color: Tokens.text-tertiary; font-family: Tokens.font-ui; font-size: Tokens.type-micro; vertical-alignment: center; }
+            padding-left: Tokens.editor-control-guide-value-padding;
+            padding-right: Tokens.editor-control-guide-value-padding;
+            spacing: Tokens.editor-control-guide-value-spacing;
+            Text {
+                visible: !root.editing;
+                text: root.value-text;
+                color: root.read-only ? Tokens.text-secondary : root.host-automated ? Tokens.dd-host : Tokens.text-primary;
+                font-family: Tokens.font-value;
+                font-size: root.compact ? Tokens.type-micro : Tokens.type-value;
+                vertical-alignment: center;
+            }
+
+            if root.unit != "" && root.unit != ParameterStrings.unit-pan && !root.editing: Text {
+                text: root.unit;
+                color: Tokens.text-tertiary;
+                font-family: Tokens.font-ui;
+                font-size: Tokens.type-micro;
+                vertical-alignment: center;
+            }
         }
     }
+
     editor := TextInput {
-        x: Tokens.editor-control-guide-value-padding; y: 0; width: parent.width - 2*Tokens.editor-control-guide-value-padding; height: parent.height;
-        visible: root.editing; enabled: root.editing && !root.read-only;
-        single-line: true; color: Tokens.text-primary; font-family: Tokens.font-value; font-size: Tokens.type-value;
-        vertical-alignment: center; selection-background-color: Tokens.dd-paper-1; selection-foreground-color: Tokens.surface-well;
+        x: Tokens.editor-control-guide-value-padding;
+        y: 0;
+        width: parent.width - 2 * Tokens.editor-control-guide-value-padding;
+        height: parent.height;
+        visible: root.editing;
+        enabled: root.editing && !root.read-only;
+        single-line: true;
+        color: Tokens.text-primary;
+        font-family: Tokens.font-value;
+        font-size: Tokens.type-value;
+        vertical-alignment: center;
+        selection-background-color: Tokens.dd-paper-1;
+        selection-foreground-color: Tokens.surface-well;
         accessible-label: root.label + Tokens.editor-control-label-value-suffix;
         accepted => { root.submitted(self.text); }
         changed has-focus => { if !self.has-focus && root.editing { root.abandoned(); } }
     }
+
     touch := TouchArea {
         enabled: !root.read-only && !root.editing;
         mouse-cursor: text;

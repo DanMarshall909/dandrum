@@ -5,7 +5,16 @@ export component RowSurface inherits Rectangle {
     in property <bool> hovered;
     in property <bool> disabled;
     background: root.selected ? Tokens.dd-vermilion-wash : root.hovered && !root.disabled ? Tokens.dd-ink-3 : transparent;
-    if root.selected : Rectangle { width: 2px; x: 0; background: Tokens.color-selected; }
-    Rectangle { y: parent.height - 1px; height: 1px; background: Tokens.border-hairline; }
+    if root.selected: Rectangle {
+        width: 2px;
+        x: 0;
+        background: Tokens.color-selected;
+    }
+    Rectangle {
+        y: parent.height - 1px;
+        height: 1px;
+        background: Tokens.border-hairline;
+    }
+
     @children
 }

@@ -19,74 +19,162 @@ export component EditorZoneMap inherits Flickable {
     in property <length> small-font-size: EditorTheme.type-small;
     in-out property <float> zoom: 1;
     out property <int> hover-note: -1;
-    private property <int> note-count: max(1,root.high-note - root.low-note+1);
+    private property <int> note-count: max(1,root.high-note - root.low-note + 1);
     callback selected(string);
-    callback gesture(string,string,int,float,bool) -> bool;
-    callback corner-preview(string,bool,bool,bool,float,float) -> bool;
-    callback context-requested(string,int,int,bool,length,length);
-    callback assigned(string,string) -> bool;
+    callback gesture(string, string, int, float, bool) -> bool;
+    callback corner-preview(string, bool, bool, bool, float, float) -> bool;
+    callback context-requested(string, int, int, bool, length, length);
+    callback assigned(string, string) -> bool;
     callback focus-requested();
     interactive: false;
-    content-width: root.width*root.zoom; content-height: root.height;
-    function context(id:string,split:bool,x:length,y:length) {
-        let note=(root.low-note+floor((x - root.absolute-position.x - root.content-x)/max(1px,root.content-width)*root.note-count)).clamp(MusicalConstants.midi-minimum,MusicalConstants.midi-maximum);
-        let velocity=round(MusicalConstants.velocity-maximum - (y - root.absolute-position.y)/max(1px,root.height)*Tokens.editor-display-velocity-range).clamp(1,MusicalConstants.velocity-maximum);
+    content-width: root.width * root.zoom;
+    content-height: root.height;
+    function context(id: string, split: bool, x: length, y: length) {
+        let note = (root.low-note + floor((x - root.absolute-position.x - root.content-x) / max(1px,root.content-width) * root.note-count)).clamp(MusicalConstants.midi-minimum,MusicalConstants.midi-maximum);
+        let velocity = round(MusicalConstants.velocity-maximum - (y - root.absolute-position.y) / max(1px,root.height) * Tokens.editor-display-velocity-range).clamp(1,MusicalConstants.velocity-maximum);
         root.context-requested(id,note,velocity,split,x - root.absolute-position.x,y - root.absolute-position.y);
     }
-    Rectangle { width:root.content-width;height:root.height;background:EditorTheme.ink-0;border-color:EditorTheme.line-2;border-width:Tokens.stroke-hairline;
+    Rectangle {
+        width: root.content-width;
+        height: root.height;
+        background: EditorTheme.ink-0;
+        border-color: EditorTheme.line-2;
+        border-width: Tokens.stroke-hairline;
         TouchArea {
-            enabled:root.enabled;
+            enabled: root.enabled;
             scroll-event(event) => {
                 if event.modifiers.control || event.modifiers.meta {
-                    let old-width=root.content-width;let anchor=self.mouse-x;let offset=root.content-x+anchor;
-                    root.zoom=(root.zoom*(event.delta-y>0px ? GraphMetrics.zone-zoom-step : 1/GraphMetrics.zone-zoom-step)).clamp(1,GraphMetrics.zone-zoom-maximum);
-                    root.content-x=(offset - anchor*root.content-width/max(1px,old-width)).clamp(root.width - root.content-width,0px);return accept;
+                    let old-width = root.content-width;
+                    let anchor = self.mouse-x;
+                    let offset = root.content-x + anchor;
+                    root.zoom = (root.zoom * (event.delta-y > 0px ? GraphMetrics.zone-zoom-step : 1 / GraphMetrics.zone-zoom-step)).clamp(1,GraphMetrics.zone-zoom-maximum);
+                    root.content-x = (offset - anchor * root.content-width / max(1px,old-width)).clamp(root.width - root.content-width,0px);
+                    return accept;
                 }
-                if event.delta-x != 0px {root.content-x=(root.content-x+event.delta-x).clamp(root.width - root.content-width,0px);return accept;}
+                if event.delta-x != 0px { root.content-x = (root.content-x + event.delta-x).clamp(root.width - root.content-width,0px); return accept; }
                 return reject;
             }
-            moved => {root.hover-note=(root.low-note+floor(self.mouse-x/max(1px,self.width)*root.note-count)).clamp(MusicalConstants.midi-minimum,MusicalConstants.midi-maximum);}
-            pointer-event(event) => {if event.kind==PointerEventKind.down {root.focus-requested();if event.button==PointerEventButton.right {root.context("",false,self.absolute-position.x+self.mouse-x,self.absolute-position.y+self.mouse-y);}}}
+            moved => { root.hover-note = (root.low-note + floor(self.mouse-x / max(1px,self.width) * root.note-count)).clamp(MusicalConstants.midi-minimum,MusicalConstants.midi-maximum); }
+            pointer-event(event) => { if event.kind == PointerEventKind.down { root.focus-requested(); if event.button == PointerEventButton.right { root.context("",false,self.absolute-position.x + self.mouse-x,self.absolute-position.y + self.mouse-y); } } }
         }
-        for i in root.note-count : Rectangle {x:i*parent.width/root.note-count;width:1px;height:parent.height;background:mod(i,MusicalConstants.notes-per-octave)==0 ? EditorTheme.line-3 : EditorTheme.line-1;}
-        for i in GraphMetrics.zone-velocity-grid-lines : Rectangle {y:i*parent.height/GraphMetrics.zone-velocity-grid-intervals;width:parent.width;height:1px;background:EditorTheme.line-2;}
-        for zone in root.zones : Rectangle {
-            x:(zone.lo - root.low-note)/root.note-count*parent.width;y:(MusicalConstants.velocity-maximum - zone.vel-hi)/MusicalConstants.velocity-maximum*parent.height;
-            width:(zone.hi - zone.lo+1)/root.note-count*parent.width;height:max(Tokens.editor-display-zone-minimum-height,(zone.vel-hi - zone.vel-lo+1)/MusicalConstants.velocity-maximum*parent.height);
-            background:zone.id==root.selected-zone ? EditorTheme.accent-wash : EditorTheme.ink-5;
-            border-width:Tokens.stroke-hairline;border-color:zone.id==root.selected-zone ? EditorTheme.accent : EditorTheme.line-3;
-            Text {visible:!root.compact;x:Tokens.editor-display-zone-label-inset;y:Tokens.editor-display-zone-label-top;width:parent.width - Tokens.editor-display-zone-corner-size;text:zone.name;color:EditorTheme.paper-2;font-family:EditorTheme.font-ui;font-size:root.small-font-size;overflow:elide;}
-            EditorDragTarget {width:parent.width;height:parent.height;accepted-kind:root.drop-kind;enabled:root.enabled;dropped(payload) => {return root.assigned(zone.id,payload);}}
-            for field in [Tokens.editor-display-field-move,Tokens.editor-display-field-low-key,Tokens.editor-display-field-high-key] : EditorZoneEdge {
-                x:field==Tokens.editor-display-field-high-key ? parent.width - Tokens.editor-display-zone-key-edge-width : 0px;width:field==Tokens.editor-display-field-move ? parent.width : Tokens.editor-display-zone-key-edge-width;height:parent.height;
-                value:field==Tokens.editor-display-field-high-key ? zone.hi : zone.lo;units:root.note-count;axis-length:root.content-width;enabled:root.enabled;
-                label:(field==Tokens.editor-display-field-move ? Tokens.editor-display-zone-move-label-prefix : field==Tokens.editor-display-field-low-key ? Tokens.editor-display-zone-low-key-label-prefix : Tokens.editor-display-zone-high-key-label-prefix)+zone.name;
+
+        for i in root.note-count: Rectangle {
+            x: i * parent.width / root.note-count;
+            width: 1px;
+            height: parent.height;
+            background: mod(i,MusicalConstants.notes-per-octave) == 0 ? EditorTheme.line-3 : EditorTheme.line-1;
+        }
+        for i in GraphMetrics.zone-velocity-grid-lines: Rectangle {
+            y: i * parent.height / GraphMetrics.zone-velocity-grid-intervals;
+            width: parent.width;
+            height: 1px;
+            background: EditorTheme.line-2;
+        }
+        for zone in root.zones: Rectangle {
+            x: (zone.lo - root.low-note) / root.note-count * parent.width;
+            y: (MusicalConstants.velocity-maximum - zone.vel-hi) / MusicalConstants.velocity-maximum * parent.height;
+            width: (zone.hi - zone.lo + 1) / root.note-count * parent.width;
+            height: max(Tokens.editor-display-zone-minimum-height,(zone.vel-hi - zone.vel-lo + 1) / MusicalConstants.velocity-maximum * parent.height);
+            background: zone.id == root.selected-zone ? EditorTheme.accent-wash : EditorTheme.ink-5;
+            border-width: Tokens.stroke-hairline;
+            border-color: zone.id == root.selected-zone ? EditorTheme.accent : EditorTheme.line-3;
+            Text {
+                visible: !root.compact;
+                x: Tokens.editor-display-zone-label-inset;
+                y: Tokens.editor-display-zone-label-top;
+                width: parent.width - Tokens.editor-display-zone-corner-size;
+                text: zone.name;
+                color: EditorTheme.paper-2;
+                font-family: EditorTheme.font-ui;
+                font-size: root.small-font-size;
+                overflow: elide;
+            }
+
+            EditorDragTarget {
+                width: parent.width;
+                height: parent.height;
+                accepted-kind: root.drop-kind;
+                enabled: root.enabled;
+                dropped(payload) => { return root.assigned(zone.id,payload); }
+            }
+
+            for field in [
+                Tokens.editor-display-field-move,
+                Tokens.editor-display-field-low-key,
+                Tokens.editor-display-field-high-key
+            ]: EditorZoneEdge {
+                x: field == Tokens.editor-display-field-high-key ? parent.width - Tokens.editor-display-zone-key-edge-width : 0px;
+                width: field == Tokens.editor-display-field-move ? parent.width : Tokens.editor-display-zone-key-edge-width;
+                height: parent.height;
+                value: field == Tokens.editor-display-field-high-key ? zone.hi : zone.lo;
+                units: root.note-count;
+                axis-length: root.content-width;
+                enabled: root.enabled;
+                label: (field == Tokens.editor-display-field-move ? Tokens.editor-display-zone-move-label-prefix : field == Tokens.editor-display-field-low-key ? Tokens.editor-display-zone-low-key-label-prefix : Tokens.editor-display-zone-high-key-label-prefix) + zone.name;
                 private property <bool> captured-free;
-                selected => {root.selected(zone.id);}
-                gesture(phase,value) => {if phase==GesturePhases.begin {self.captured-free=root.free-edit;}return root.gesture(zone.id,field,phase,value,self.captured-free);}
-                context-requested(x,y) => {root.context(zone.id,zone.hi>zone.lo,x,y);}
+                selected => { root.selected(zone.id); }
+                gesture(phase, value) => { if phase == GesturePhases.begin { self.captured-free = root.free-edit; } return root.gesture(zone.id,field,phase,value,self.captured-free); }
+                context-requested(x, y) => { root.context(zone.id,zone.hi > zone.lo,x,y); }
             }
         }
         // Edges and corners paint after every zone so overlapping layers cannot hide them.
-        for zone in root.zones : Rectangle {x:(zone.lo - root.low-note)/root.note-count*parent.width;width:(zone.hi - zone.lo+1)/root.note-count*parent.width;height:parent.height;
+        for zone in root.zones: Rectangle {
+            x: (zone.lo - root.low-note) / root.note-count * parent.width;
+            width: (zone.hi - zone.lo + 1) / root.note-count * parent.width;
+            height: parent.height;
             // Keep descriptors independent of live values so refreshes retain the captured handle.
-            for edge in [{field:Tokens.editor-display-field-velocity-high,label:Tokens.editor-display-zone-velocity-high-label-prefix,top:true},{field:Tokens.editor-display-field-velocity-low,label:Tokens.editor-display-zone-velocity-low-label-prefix,top:false}] : EditorZoneEdge {
-                y:(MusicalConstants.velocity-maximum - (edge.top ? zone.vel-hi : zone.vel-lo))/MusicalConstants.velocity-maximum*parent.height - Tokens.editor-display-zone-velocity-edge-half;height:Tokens.editor-display-zone-key-edge-width;width:parent.width;
-                value:edge.top ? zone.vel-hi : zone.vel-lo;units:MusicalConstants.velocity-maximum;axis-length:root.height;vertical:true;enabled:root.enabled;label:edge.label+" "+zone.name;
-                selected => {root.selected(zone.id);}
-                gesture(phase,value) => {return root.gesture(zone.id,edge.field,phase,value,false);}
+            for edge in [
+                {
+                    field:Tokens.editor-display-field-velocity-high,
+                    label:Tokens.editor-display-zone-velocity-high-label-prefix,
+                    top:true
+                },
+                {
+                    field:Tokens.editor-display-field-velocity-low,
+                    label:Tokens.editor-display-zone-velocity-low-label-prefix,
+                    top:false
+                }
+            ]: EditorZoneEdge {
+                y: (MusicalConstants.velocity-maximum - (edge.top ? zone.vel-hi : zone.vel-lo)) / MusicalConstants.velocity-maximum * parent.height - Tokens.editor-display-zone-velocity-edge-half;
+                height: Tokens.editor-display-zone-key-edge-width;
+                width: parent.width;
+                value: edge.top ? zone.vel-hi : zone.vel-lo;
+                units: MusicalConstants.velocity-maximum;
+                axis-length: root.height;
+                vertical: true;
+                enabled: root.enabled;
+                label: edge.label + " " + zone.name;
+                selected => { root.selected(zone.id); }
+                gesture(phase, value) => { return root.gesture(zone.id,edge.field,phase,value,false); }
             }
         }
-        for zone in root.zones : Rectangle {x:(zone.lo - root.low-note)/root.note-count*parent.width;width:(zone.hi - zone.lo+1)/root.note-count*parent.width;height:parent.height;
-            for corner in [{high-key:false,high-velocity:false},{high-key:false,high-velocity:true},{high-key:true,high-velocity:false},{high-key:true,high-velocity:true}] : EditorZoneCorner {
-                x:corner.high-key ? parent.width - Tokens.editor-display-zone-corner-size : 0px;y:(MusicalConstants.velocity-maximum - (corner.high-velocity ? zone.vel-hi : zone.vel-lo))/MusicalConstants.velocity-maximum*parent.height - Tokens.space-2;width:Tokens.editor-display-zone-corner-size;height:Tokens.editor-display-zone-corner-size;
-                name:zone.name;high-key:corner.high-key;high-velocity:corner.high-velocity;
-                note:corner.high-key ? zone.hi : zone.lo;velocity:corner.high-velocity ? zone.vel-hi : zone.vel-lo;
-                note-count:root.note-count;grid-width:root.content-width;grid-height:root.height;enabled:root.enabled;
+        for zone in root.zones: Rectangle {
+            x: (zone.lo - root.low-note) / root.note-count * parent.width;
+            width: (zone.hi - zone.lo + 1) / root.note-count * parent.width;
+            height: parent.height;
+            for corner in [
+                { high-key:false, high-velocity:false },
+                { high-key:false, high-velocity:true },
+                { high-key:true, high-velocity:false },
+                { high-key:true, high-velocity:true }
+            ]: EditorZoneCorner {
+                x: corner.high-key ? parent.width - Tokens.editor-display-zone-corner-size : 0px;
+                y: (MusicalConstants.velocity-maximum - (corner.high-velocity ? zone.vel-hi : zone.vel-lo)) / MusicalConstants.velocity-maximum * parent.height - Tokens.space-2;
+                width: Tokens.editor-display-zone-corner-size;
+                height: Tokens.editor-display-zone-corner-size;
+                name: zone.name;
+                high-key: corner.high-key;
+                high-velocity: corner.high-velocity;
+                note: corner.high-key ? zone.hi : zone.lo;
+                velocity: corner.high-velocity ? zone.vel-hi : zone.vel-lo;
+                note-count: root.note-count;
+                grid-width: root.content-width;
+                grid-height: root.height;
+                enabled: root.enabled;
                 private property <bool> captured-free;
-                selected => {root.selected(zone.id);}
-                gesture(phase,value) => {if phase==GesturePhases.begin {self.captured-free=root.free-edit;}return root.gesture(zone.id,corner.high-key ? Tokens.editor-display-field-high-key : Tokens.editor-display-field-low-key,phase,value,self.captured-free);}
-                preview(note,velocity) => {return root.corner-preview(zone.id,corner.high-key,corner.high-velocity,self.captured-free,note,velocity);}
+                selected => { root.selected(zone.id); }
+                gesture(phase, value) => { if phase == GesturePhases.begin { self.captured-free = root.free-edit; } return root.gesture(zone.id,corner.high-key ? Tokens.editor-display-field-high-key : Tokens.editor-display-field-low-key,phase,value,self.captured-free); }
+                preview(note, velocity) => { return root.corner-preview(zone.id,corner.high-key,corner.high-velocity,self.captured-free,note,velocity); }
             }
         }
     }

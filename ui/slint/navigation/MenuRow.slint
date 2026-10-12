@@ -13,13 +13,44 @@ export component MenuRow inherits ActionArea {
     Rectangle {
         background: root.highlighted || root.hovered ? Tokens.dd-ink-5 : transparent;
         border-radius: Tokens.radius-1;
-        if root.entry.separator : Rectangle { x: 6px; y: 4px; width: parent.width - 12px; height: 1px; background: Tokens.border-control; }
-        if !root.entry.separator : HorizontalLayout {
-            spacing: 6px; padding-left: 6px; padding-right: 6px;
-            Icon { name: root.entry.checked ? "ok" : root.entry.icon == "" ? "info" : root.entry.icon; size: 14px; opacity: root.entry.checked || root.entry.icon != "" ? 1 : 0; tint: root.entry.disabled ? Tokens.text-disabled : Tokens.text-secondary; }
-            Text { text: root.entry.label; color: root.entry.disabled ? Tokens.text-disabled : root.entry.danger ? Tokens.dd-error : Tokens.text-primary; font-family: Tokens.font-ui; font-size: 13px; overflow: elide; vertical-alignment: center; }
-            Text { text: root.entry.shortcut; color: Tokens.text-tertiary; font-family: Tokens.font-value; font-size: 11px; vertical-alignment: center; }
+        if root.entry.separator: Rectangle {
+            x: 6px;
+            y: 4px;
+            width: parent.width - 12px;
+            height: 1px;
+            background: Tokens.border-control;
+        }
+        if !root.entry.separator: HorizontalLayout {
+            spacing: 6px;
+            padding-left: 6px;
+            padding-right: 6px;
+            Icon {
+                name: root.entry.checked ? "ok" : root.entry.icon == "" ? "info" : root.entry.icon;
+                size: 14px;
+                opacity: root.entry.checked || root.entry.icon != "" ? 1 : 0;
+                tint: root.entry.disabled ? Tokens.text-disabled : Tokens.text-secondary;
+            }
+
+            Text {
+                text: root.entry.label;
+                color: root.entry.disabled ? Tokens.text-disabled : root.entry.danger ? Tokens.dd-error : Tokens.text-primary;
+                font-family: Tokens.font-ui;
+                font-size: 13px;
+                overflow: elide;
+                vertical-alignment: center;
+            }
+
+            Text {
+                text: root.entry.shortcut;
+                color: Tokens.text-tertiary;
+                font-family: Tokens.font-value;
+                font-size: 11px;
+                vertical-alignment: center;
+            }
         }
     }
-    FocusRing { active: root.has-focus; }
+
+    FocusRing {
+        active: root.has-focus;
+    }
 }

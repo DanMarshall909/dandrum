@@ -6,7 +6,8 @@ export component DelayedPopupState inherits Rectangle {
     in property <duration> open-delay: 0ms;
     in property <duration> close-delay: Tokens.editor-control-hover-close-delay;
     out property <bool> opened;
-    width: 0px; height: 0px;
+    width: 0px;
+    height: 0px;
     public function show() { opening.stop(); closing.stop(); root.opened = true; }
     public function hide() { opening.stop(); closing.stop(); root.opened = false; }
     function update() {
@@ -25,10 +26,15 @@ export component DelayedPopupState inherits Rectangle {
     init => { root.update(); }
     changed requested => { root.update(); }
     changed keep-open => { root.update(); }
-    opening := Timer { interval: root.open-delay; running: false;
+    opening := Timer {
+        interval: root.open-delay;
+        running: false;
         triggered => { self.stop(); if root.requested || root.keep-open { root.show(); } }
     }
-    closing := Timer { interval: root.close-delay; running: false;
+
+    closing := Timer {
+        interval: root.close-delay;
+        running: false;
         triggered => { self.stop(); if !root.requested && !root.keep-open { root.hide(); } }
     }
 }

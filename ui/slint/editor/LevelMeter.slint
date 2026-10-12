@@ -10,5 +10,10 @@ export component LevelMeter inherits Rectangle {
     out property <length> fill-x: root.bipolar ? root.width / 2 + min(0, root.level.clamp(-1,1)) * root.width / 2 : root.centered ? (root.width - root.fill-width) / 2 : 0px;
     out property <length> fill-width: root.bipolar ? abs(root.level.clamp(-1,1)) * root.width / 2 : root.level.clamp(0,1) * root.width;
     background: root.track-color;
-    Rectangle { x: root.fill-x; width: root.fill-width; background: root.fill-color; border-radius: root.fill-radius; }
+    Rectangle {
+        x: root.fill-x;
+        width: root.fill-width;
+        background: root.fill-color;
+        border-radius: root.fill-radius;
+    }
 }

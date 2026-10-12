@@ -11,22 +11,43 @@ export component EditorVelocityBlendPlot inherits Rectangle {
     in property <string> stroke-path;
     in property <color> fill-color: root.low <= CurveMetrics.velocity-minimum ? Tokens.editor-curve-velocity-soft-fill : Tokens.editor-curve-velocity-hard-fill;
     in property <color> stroke-color: root.low <= CurveMetrics.velocity-minimum ? Tokens.editor-curve-velocity-soft-stroke : Tokens.editor-curve-velocity-hard-fill;
-    out property <float> fill-opacity: pow(CurveMetrics.amplitude-log-base,root.gain/CurveMetrics.amplitude-db-divisor).clamp(0,1);
-    out property <length> text-x: root.low <= CurveMetrics.velocity-minimum ? Tokens.editor-curve-velocity-caption-inset : max(Tokens.editor-curve-velocity-caption-inset,root.width - (Tokens.editor-curve-velocity-caption-width+Tokens.editor-curve-velocity-caption-inset),(root.low - CurveMetrics.velocity-minimum)/CurveMetrics.velocity-maximum*root.width+Tokens.editor-curve-velocity-caption-inset);
+    out property <float> fill-opacity: pow(CurveMetrics.amplitude-log-base,root.gain / CurveMetrics.amplitude-db-divisor).clamp(0,1);
+    out property <length> text-x: root.low <= CurveMetrics.velocity-minimum ? Tokens.editor-curve-velocity-caption-inset : max(Tokens.editor-curve-velocity-caption-inset,root.width - (Tokens.editor-curve-velocity-caption-width + Tokens.editor-curve-velocity-caption-inset),(root.low - CurveMetrics.velocity-minimum) / CurveMetrics.velocity-maximum * root.width + Tokens.editor-curve-velocity-caption-inset);
     out property <length> text-width: root.low <= CurveMetrics.velocity-minimum ? Tokens.editor-curve-velocity-caption-width : max(0px,root.width - root.text-x - Tokens.editor-curve-velocity-caption-inset);
     callback selected();
     Path {
-        width: parent.width; height: parent.height; viewbox-width: CurveMetrics.velocity-viewbox-size; viewbox-height: CurveMetrics.velocity-viewbox-size; fit: fill;
-        fill: root.fill-color.with-alpha(root.fill-opacity); stroke-width: 0px; commands: root.fill-path;
+        width: parent.width;
+        height: parent.height;
+        viewbox-width: CurveMetrics.velocity-viewbox-size;
+        viewbox-height: CurveMetrics.velocity-viewbox-size;
+        fit: fill;
+        fill: root.fill-color.with-alpha(root.fill-opacity);
+        stroke-width: 0px;
+        commands: root.fill-path;
     }
+
     Path {
-        width: parent.width; height: parent.height; viewbox-width: CurveMetrics.velocity-viewbox-size; viewbox-height: CurveMetrics.velocity-viewbox-size; fit: fill;
-        fill: transparent; stroke: root.stroke-color; stroke-width: Tokens.editor-curve-stroke-width; commands: root.stroke-path;
+        width: parent.width;
+        height: parent.height;
+        viewbox-width: CurveMetrics.velocity-viewbox-size;
+        viewbox-height: CurveMetrics.velocity-viewbox-size;
+        fit: fill;
+        fill: transparent;
+        stroke: root.stroke-color;
+        stroke-width: Tokens.editor-curve-stroke-width;
+        commands: root.stroke-path;
     }
+
     EditorText {
-        x: root.text-x; width: root.text-width; height: parent.height;
-        horizontal-alignment: root.low > CurveMetrics.velocity-minimum ? right : left; text: root.text;
-        color: root.low > CurveMetrics.velocity-minimum && pow(CurveMetrics.amplitude-log-base,root.gain/CurveMetrics.amplitude-db-divisor) > CurveMetrics.caption-dark-threshold ? EditorTheme.ink-0 : EditorTheme.paper-1;
+        x: root.text-x;
+        width: root.text-width;
+        height: parent.height;
+        horizontal-alignment: root.low > CurveMetrics.velocity-minimum ? right : left;
+        text: root.text;
+        color: root.low > CurveMetrics.velocity-minimum && pow(CurveMetrics.amplitude-log-base,root.gain / CurveMetrics.amplitude-db-divisor) > CurveMetrics.caption-dark-threshold ? EditorTheme.ink-0 : EditorTheme.paper-1;
     }
-    TouchArea { clicked => { root.selected(); } }
+
+    TouchArea {
+        clicked => { root.selected(); }
+    }
 }

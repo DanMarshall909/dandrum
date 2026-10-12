@@ -21,24 +21,125 @@ export component EmptyState inherits Rectangle {
     callback window-deactivated();
     background: EditorTheme.surface-well;
     border-radius: Tokens.editor-radius-panel;
-    if EditorTheme.soft : Rectangle { border-radius: Tokens.editor-radius-panel; background: EditorTheme.well-overlay; }
-    // Native dashed outline retains the reference's six-pixel cadence.
-    for i in ceil(root.width / Tokens.editor-empty-outline-period) : Rectangle { x: i * Tokens.editor-empty-outline-period; y: 0px; width: min(Tokens.editor-empty-outline-dash, parent.width - self.x); height: Tokens.editor-border-width; background: EditorTheme.line-3; }
-    for i in ceil(root.width / Tokens.editor-empty-outline-period) : Rectangle { x: i * Tokens.editor-empty-outline-period; y: root.canvas-height - Tokens.editor-border-width; width: min(Tokens.editor-empty-outline-dash, parent.width - self.x); height: Tokens.editor-border-width; background: EditorTheme.line-3; }
-    for i in ceil(root.canvas-height / Tokens.editor-empty-outline-period) : Rectangle { x: 0px; y: i * Tokens.editor-empty-outline-period; width: Tokens.editor-border-width; height: min(Tokens.editor-empty-outline-dash, root.canvas-height - self.y); background: EditorTheme.line-3; }
-    for i in ceil(root.canvas-height / Tokens.editor-empty-outline-period) : Rectangle { x: parent.width - Tokens.editor-border-width; y: i * Tokens.editor-empty-outline-period; width: Tokens.editor-border-width; height: min(Tokens.editor-empty-outline-dash, root.canvas-height - self.y); background: EditorTheme.line-3; }
-    Rectangle {
-        x: (parent.width - self.width) / 2; y: (root.canvas-height - self.height) / 2 + root.center-offset;
-        width: min(parent.width - Tokens.editor-empty-content-inset, Tokens.editor-empty-content-width); height: Tokens.editor-empty-content-height;
-        Rectangle { y: 0px; width: parent.width; height: Tokens.editor-empty-drop-panel-height; border-radius: Tokens.editor-radius-control;
-            DashedBorder { tint: EditorTheme.line-2; }
-            EditorIcon { x: (parent.width - Tokens.editor-empty-icon-size) / 2; y: Tokens.editor-empty-content-inset; size: Tokens.editor-empty-icon-size; name: root.icon; tint: EditorTheme.paper-3; }
-            Text { y: Tokens.editor-empty-title-top; width: parent.width; height: Tokens.editor-empty-title-height; text: root.title; font-family: EditorTheme.font-ui; font-size: EditorTheme.type-control; font-weight: Tokens.editor-weight-semibold; color: EditorTheme.paper-2; horizontal-alignment: center; vertical-alignment: center; }
-            Text { x: Tokens.editor-empty-content-inset; y: Tokens.editor-empty-description-top; width: parent.width - Tokens.editor-empty-description-inset-pair; height: Tokens.editor-empty-description-height; text: root.description; font-family: EditorTheme.font-ui; font-size: EditorTheme.type-body; color: EditorTheme.paper-3; horizontal-alignment: center; wrap: word-wrap; }
-        }
-        EditorButton { x: (parent.width - Tokens.editor-empty-actions-width) / 2; y: Tokens.editor-empty-actions-top; width: Tokens.editor-empty-primary-width; height: Tokens.editor-empty-action-height; text: root.primary-text; label: root.primary-label; icon: root.primary-icon; primary: true; enabled: root.enabled; clicked => { root.primary-activated(); } window-deactivated => { root.window-deactivated(); } }
-        EditorButton { x: (parent.width - Tokens.editor-empty-actions-width) / 2 + Tokens.editor-empty-secondary-left; y: Tokens.editor-empty-actions-top; width: Tokens.editor-empty-action-height; height: Tokens.editor-empty-action-height; icon: root.secondary-icon; label: root.secondary-label; enabled: root.enabled; clicked => { root.secondary-activated(); } window-deactivated => { root.window-deactivated(); } }
-        Text { y: Tokens.editor-empty-footer-top; width: parent.width; height: Tokens.editor-empty-footer-height; text: root.footer; font-family: EditorTheme.font-ui; font-size: EditorTheme.type-body; color: EditorTheme.paper-3; horizontal-alignment: center; }
+    if EditorTheme.soft: Rectangle {
+        border-radius: Tokens.editor-radius-panel;
+        background: EditorTheme.well-overlay;
     }
+    // Native dashed outline retains the reference's six-pixel cadence.
+    for i in ceil(root.width / Tokens.editor-empty-outline-period): Rectangle {
+        x: i * Tokens.editor-empty-outline-period;
+        y: 0px;
+        width: min(Tokens.editor-empty-outline-dash, parent.width - self.x);
+        height: Tokens.editor-border-width;
+        background: EditorTheme.line-3;
+    }
+    for i in ceil(root.width / Tokens.editor-empty-outline-period): Rectangle {
+        x: i * Tokens.editor-empty-outline-period;
+        y: root.canvas-height - Tokens.editor-border-width;
+        width: min(Tokens.editor-empty-outline-dash, parent.width - self.x);
+        height: Tokens.editor-border-width;
+        background: EditorTheme.line-3;
+    }
+    for i in ceil(root.canvas-height / Tokens.editor-empty-outline-period): Rectangle {
+        x: 0px;
+        y: i * Tokens.editor-empty-outline-period;
+        width: Tokens.editor-border-width;
+        height: min(Tokens.editor-empty-outline-dash, root.canvas-height - self.y);
+        background: EditorTheme.line-3;
+    }
+    for i in ceil(root.canvas-height / Tokens.editor-empty-outline-period): Rectangle {
+        x: parent.width - Tokens.editor-border-width;
+        y: i * Tokens.editor-empty-outline-period;
+        width: Tokens.editor-border-width;
+        height: min(Tokens.editor-empty-outline-dash, root.canvas-height - self.y);
+        background: EditorTheme.line-3;
+    }
+    Rectangle {
+        x: (parent.width - self.width) / 2;
+        y: (root.canvas-height - self.height) / 2 + root.center-offset;
+        width: min(parent.width - Tokens.editor-empty-content-inset, Tokens.editor-empty-content-width);
+        height: Tokens.editor-empty-content-height;
+        Rectangle {
+            y: 0px;
+            width: parent.width;
+            height: Tokens.editor-empty-drop-panel-height;
+            border-radius: Tokens.editor-radius-control;
+            DashedBorder {
+                tint: EditorTheme.line-2;
+            }
+
+            EditorIcon {
+                x: (parent.width - Tokens.editor-empty-icon-size) / 2;
+                y: Tokens.editor-empty-content-inset;
+                size: Tokens.editor-empty-icon-size;
+                name: root.icon;
+                tint: EditorTheme.paper-3;
+            }
+
+            Text {
+                y: Tokens.editor-empty-title-top;
+                width: parent.width;
+                height: Tokens.editor-empty-title-height;
+                text: root.title;
+                font-family: EditorTheme.font-ui;
+                font-size: EditorTheme.type-control;
+                font-weight: Tokens.editor-weight-semibold;
+                color: EditorTheme.paper-2;
+                horizontal-alignment: center;
+                vertical-alignment: center;
+            }
+
+            Text {
+                x: Tokens.editor-empty-content-inset;
+                y: Tokens.editor-empty-description-top;
+                width: parent.width - Tokens.editor-empty-description-inset-pair;
+                height: Tokens.editor-empty-description-height;
+                text: root.description;
+                font-family: EditorTheme.font-ui;
+                font-size: EditorTheme.type-body;
+                color: EditorTheme.paper-3;
+                horizontal-alignment: center;
+                wrap: word-wrap;
+            }
+        }
+
+        EditorButton {
+            x: (parent.width - Tokens.editor-empty-actions-width) / 2;
+            y: Tokens.editor-empty-actions-top;
+            width: Tokens.editor-empty-primary-width;
+            height: Tokens.editor-empty-action-height;
+            text: root.primary-text;
+            label: root.primary-label;
+            icon: root.primary-icon;
+            primary: true;
+            enabled: root.enabled;
+            clicked => { root.primary-activated(); }
+            window-deactivated => { root.window-deactivated(); }
+        }
+
+        EditorButton {
+            x: (parent.width - Tokens.editor-empty-actions-width) / 2 + Tokens.editor-empty-secondary-left;
+            y: Tokens.editor-empty-actions-top;
+            width: Tokens.editor-empty-action-height;
+            height: Tokens.editor-empty-action-height;
+            icon: root.secondary-icon;
+            label: root.secondary-label;
+            enabled: root.enabled;
+            clicked => { root.secondary-activated(); }
+            window-deactivated => { root.window-deactivated(); }
+        }
+
+        Text {
+            y: Tokens.editor-empty-footer-top;
+            width: parent.width;
+            height: Tokens.editor-empty-footer-height;
+            text: root.footer;
+            font-family: EditorTheme.font-ui;
+            font-size: EditorTheme.type-body;
+            color: EditorTheme.paper-3;
+            horizontal-alignment: center;
+        }
+    }
+
     @children
 }

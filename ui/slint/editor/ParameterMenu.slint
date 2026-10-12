@@ -9,27 +9,126 @@ export component ParameterMenu inherits Rectangle {
     in property <bool> interactive: true;
     in property <bool> assignment-enabled: true;
     callback interaction-lost();
-    callback context-action(string); callback reset-requested(); callback edit-requested();
+    callback context-action(string);
+    callback reset-requested();
+    callback edit-requested();
     public function show() { menu.show(); }
-    menu := PopupWindow { y: root.height; width: Tokens.editor-control-menu-width; height: Tokens.editor-control-menu-height;
-        Rectangle { background: EditorTheme.surface-menu; border-width: Tokens.editor-control-stroke-width; border-color: EditorTheme.line-3; border-radius: Tokens.editor-control-radius-menu;
-            VerticalLayout { padding: Tokens.editor-control-menu-padding; spacing: 0px;
-                EditorButton { window-deactivated => { root.interaction-lost(); } text: ParameterStrings.menu-modulation; label: ParameterStrings.modulation-label(root.label); ghost: true; enabled: root.interactive && root.assignment-enabled; clicked => { menu.close(); route-menu.show(); } }
-                EditorButton { window-deactivated => { root.interaction-lost(); } text: ParameterStrings.menu-midi-learn; label: ParameterStrings.midi-label(root.label); ghost: true; enabled: root.interactive && root.assignment-enabled; clicked => { menu.close(); root.context-action(ParameterActions.midi-learn); } }
-                EditorButton { window-deactivated => { root.interaction-lost(); } text: ParameterStrings.menu-macro-map; label: ParameterStrings.map-label(root.label); ghost: true; enabled: root.interactive && root.assignment-enabled; clicked => { menu.close(); root.context-action(ParameterActions.macro-map); } }
-                EditorButton { window-deactivated => { root.interaction-lost(); } text: ParameterStrings.menu-reset; label: ParameterStrings.reset-label(root.label); ghost: true; enabled: root.interactive; clicked => { menu.close(); root.reset-requested(); } }
-                EditorButton { window-deactivated => { root.interaction-lost(); } text: ParameterStrings.menu-type-value; label: ParameterStrings.type-label(root.label); ghost: true; enabled: root.interactive; clicked => { menu.close(); root.edit-requested(); } }
+    menu := PopupWindow {
+        y: root.height;
+        width: Tokens.editor-control-menu-width;
+        height: Tokens.editor-control-menu-height;
+        Rectangle {
+            background: EditorTheme.surface-menu;
+            border-width: Tokens.editor-control-stroke-width;
+            border-color: EditorTheme.line-3;
+            border-radius: Tokens.editor-control-radius-menu;
+            VerticalLayout {
+                padding: Tokens.editor-control-menu-padding;
+                spacing: 0px;
+                EditorButton {
+                    window-deactivated => { root.interaction-lost(); }
+                    text: ParameterStrings.menu-modulation;
+                    label: ParameterStrings.modulation-label(root.label);
+                    ghost: true;
+                    enabled: root.interactive && root.assignment-enabled;
+                    clicked => { menu.close(); route-menu.show(); }
+                }
+
+                EditorButton {
+                    window-deactivated => { root.interaction-lost(); }
+                    text: ParameterStrings.menu-midi-learn;
+                    label: ParameterStrings.midi-label(root.label);
+                    ghost: true;
+                    enabled: root.interactive && root.assignment-enabled;
+                    clicked => { menu.close(); root.context-action(ParameterActions.midi-learn); }
+                }
+
+                EditorButton {
+                    window-deactivated => { root.interaction-lost(); }
+                    text: ParameterStrings.menu-macro-map;
+                    label: ParameterStrings.map-label(root.label);
+                    ghost: true;
+                    enabled: root.interactive && root.assignment-enabled;
+                    clicked => { menu.close(); root.context-action(ParameterActions.macro-map); }
+                }
+
+                EditorButton {
+                    window-deactivated => { root.interaction-lost(); }
+                    text: ParameterStrings.menu-reset;
+                    label: ParameterStrings.reset-label(root.label);
+                    ghost: true;
+                    enabled: root.interactive;
+                    clicked => { menu.close(); root.reset-requested(); }
+                }
+
+                EditorButton {
+                    window-deactivated => { root.interaction-lost(); }
+                    text: ParameterStrings.menu-type-value;
+                    label: ParameterStrings.type-label(root.label);
+                    ghost: true;
+                    enabled: root.interactive;
+                    clicked => { menu.close(); root.edit-requested(); }
+                }
             }
         }
     }
-    route-menu := PopupWindow { y: root.height; width: Tokens.editor-control-menu-width; height: Tokens.editor-control-menu-height;
-        Rectangle { background: EditorTheme.surface-menu; border-width: Tokens.editor-control-stroke-width; border-color: EditorTheme.line-3; border-radius: Tokens.editor-control-radius-menu;
-            VerticalLayout { padding: Tokens.editor-control-menu-padding; spacing: 0px;
-                EditorButton { window-deactivated => { root.interaction-lost(); } text: ParameterStrings.menu-add-route; label: ParameterStrings.add-route-label(root.label); ghost: true; enabled: root.interactive && root.assignment-enabled; clicked => { route-menu.close(); root.context-action(ParameterActions.add-route); } }
-                EditorButton { window-deactivated => { root.interaction-lost(); } text: ParameterStrings.menu-edit-route; label: ParameterStrings.edit-route-label(root.label); ghost: true; enabled: root.interactive && root.assignment-enabled; clicked => { route-menu.close(); root.context-action(ParameterActions.edit-route); } }
-                EditorButton { window-deactivated => { root.interaction-lost(); } text: ParameterStrings.menu-invert-route; label: ParameterStrings.invert-route-label(root.label); ghost: true; enabled: root.interactive && root.assignment-enabled; clicked => { route-menu.close(); root.context-action(ParameterActions.invert-route); } }
-                EditorButton { window-deactivated => { root.interaction-lost(); } text: ParameterStrings.menu-bypass-route; label: ParameterStrings.bypass-route-label(root.label); ghost: true; enabled: root.interactive && root.assignment-enabled; clicked => { route-menu.close(); root.context-action(ParameterActions.bypass-route); } }
-                EditorButton { window-deactivated => { root.interaction-lost(); } text: ParameterStrings.menu-remove-route; label: ParameterStrings.remove-route-label(root.label); ghost: true; enabled: root.interactive && root.assignment-enabled; clicked => { route-menu.close(); root.context-action(ParameterActions.remove-route); } }
+
+    route-menu := PopupWindow {
+        y: root.height;
+        width: Tokens.editor-control-menu-width;
+        height: Tokens.editor-control-menu-height;
+        Rectangle {
+            background: EditorTheme.surface-menu;
+            border-width: Tokens.editor-control-stroke-width;
+            border-color: EditorTheme.line-3;
+            border-radius: Tokens.editor-control-radius-menu;
+            VerticalLayout {
+                padding: Tokens.editor-control-menu-padding;
+                spacing: 0px;
+                EditorButton {
+                    window-deactivated => { root.interaction-lost(); }
+                    text: ParameterStrings.menu-add-route;
+                    label: ParameterStrings.add-route-label(root.label);
+                    ghost: true;
+                    enabled: root.interactive && root.assignment-enabled;
+                    clicked => { route-menu.close(); root.context-action(ParameterActions.add-route); }
+                }
+
+                EditorButton {
+                    window-deactivated => { root.interaction-lost(); }
+                    text: ParameterStrings.menu-edit-route;
+                    label: ParameterStrings.edit-route-label(root.label);
+                    ghost: true;
+                    enabled: root.interactive && root.assignment-enabled;
+                    clicked => { route-menu.close(); root.context-action(ParameterActions.edit-route); }
+                }
+
+                EditorButton {
+                    window-deactivated => { root.interaction-lost(); }
+                    text: ParameterStrings.menu-invert-route;
+                    label: ParameterStrings.invert-route-label(root.label);
+                    ghost: true;
+                    enabled: root.interactive && root.assignment-enabled;
+                    clicked => { route-menu.close(); root.context-action(ParameterActions.invert-route); }
+                }
+
+                EditorButton {
+                    window-deactivated => { root.interaction-lost(); }
+                    text: ParameterStrings.menu-bypass-route;
+                    label: ParameterStrings.bypass-route-label(root.label);
+                    ghost: true;
+                    enabled: root.interactive && root.assignment-enabled;
+                    clicked => { route-menu.close(); root.context-action(ParameterActions.bypass-route); }
+                }
+
+                EditorButton {
+                    window-deactivated => { root.interaction-lost(); }
+                    text: ParameterStrings.menu-remove-route;
+                    label: ParameterStrings.remove-route-label(root.label);
+                    ghost: true;
+                    enabled: root.interactive && root.assignment-enabled;
+                    clicked => { route-menu.close(); root.context-action(ParameterActions.remove-route); }
+                }
             }
         }
     }

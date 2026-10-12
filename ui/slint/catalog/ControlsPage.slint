@@ -15,14 +15,51 @@ export component ControlsPage inherits Rectangle {
     content := VerticalLayout {
         spacing: 12px;
         VerticalLayout {
-            spacing: 4px; vertical-stretch: 0;
-            Text { text: "Control language"; color: Tokens.text-primary; font-family: Tokens.font-display; font-size: 24px; font-weight: 600; }
-            Text { text: "Reusable Slint components drawn from the DanDrum design guide."; color: Tokens.text-secondary; font-family: Tokens.font-ui; font-size: 13px; }
+            spacing: 4px;
+            vertical-stretch: 0;
+            Text {
+                text: "Control language";
+                color: Tokens.text-primary;
+                font-family: Tokens.font-display;
+                font-size: 24px;
+                font-weight: 600;
+            }
+
+            Text {
+                text: "Reusable Slint components drawn from the DanDrum design guide.";
+                color: Tokens.text-secondary;
+                font-family: Tokens.font-ui;
+                font-size: 13px;
+            }
         }
-        KnobGallery { state: root.state; vertical-stretch: 0; z: self.popup-active ? 100 : 0; }
-        InputGallery { state: root.state; vertical-stretch: 0; z: self.popup-active ? 100 : 0; }
-        ModulationGallery { vertical-stretch: 0; }
-        ReadoutGallery { state: root.state; }
-        Text { text: ControlFixtures.last-event; color: Tokens.text-tertiary; font-family: Tokens.font-value; font-size: 11px; wrap: word-wrap; vertical-stretch: 0; }
+
+        KnobGallery {
+            state: root.state;
+            vertical-stretch: 0;
+            z: self.popup-active ? 100 : 0;
+        }
+
+        InputGallery {
+            state: root.state;
+            vertical-stretch: 0;
+            z: self.popup-active ? 100 : 0;
+        }
+
+        ModulationGallery {
+            vertical-stretch: 0;
+        }
+
+        ReadoutGallery {
+            state: root.state;
+        }
+
+        Text {
+            text: ControlFixtures.last-event;
+            color: Tokens.text-tertiary;
+            font-family: Tokens.font-value;
+            font-size: 11px;
+            wrap: word-wrap;
+            vertical-stretch: 0;
+        }
     }
 }

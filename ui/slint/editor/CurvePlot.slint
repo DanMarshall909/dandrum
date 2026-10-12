@@ -7,14 +7,37 @@ export component EditorCurvePlot inherits Rectangle {
     in property <color> curve-color: EditorTheme.accent;
     pure callback sample(float) -> float;
     private property <int> count: max(1,root.segments);
-    background: EditorTheme.ink-0; border-width: Tokens.editor-curve-stroke-width; border-color: EditorTheme.line-2;
-    for i in CurveMetrics.grid-divisions+1 : Rectangle { x: i*parent.width/CurveMetrics.grid-divisions; width: Tokens.editor-curve-stroke-width; height: parent.height; background: EditorTheme.line-1; }
-    Rectangle { y: parent.height/2; height: Tokens.editor-curve-stroke-width; background: EditorTheme.line-2; }
-    for i in root.count : Path {
-        width: parent.width; height: parent.height;
-        viewbox-width: self.width/1px; viewbox-height: self.height/1px;
-        fill: transparent; stroke: root.curve-color; stroke-width: Tokens.editor-curve-stroke-width;
-        MoveTo { x: i/root.count*parent.width/1px; y: root.sample(i/root.count)*parent.height/1px; }
-        LineTo { x: (i+1)/root.count*parent.width/1px; y: root.sample((i+1)/root.count)*parent.height/1px; }
+    background: EditorTheme.ink-0;
+    border-width: Tokens.editor-curve-stroke-width;
+    border-color: EditorTheme.line-2;
+    for i in CurveMetrics.grid-divisions + 1: Rectangle {
+        x: i * parent.width / CurveMetrics.grid-divisions;
+        width: Tokens.editor-curve-stroke-width;
+        height: parent.height;
+        background: EditorTheme.line-1;
+    }
+    Rectangle {
+        y: parent.height / 2;
+        height: Tokens.editor-curve-stroke-width;
+        background: EditorTheme.line-2;
+    }
+
+    for i in root.count: Path {
+        width: parent.width;
+        height: parent.height;
+        viewbox-width: self.width / 1px;
+        viewbox-height: self.height / 1px;
+        fill: transparent;
+        stroke: root.curve-color;
+        stroke-width: Tokens.editor-curve-stroke-width;
+        MoveTo {
+            x: i / root.count * parent.width / 1px;
+            y: root.sample(i / root.count) * parent.height / 1px;
+        }
+
+        LineTo {
+            x: (i + 1) / root.count * parent.width / 1px;
+            y: root.sample((i + 1) / root.count) * parent.height / 1px;
+        }
     }
 }

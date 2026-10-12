@@ -1,5 +1,11 @@
 import { Tokens } from "../theme.slint";
-import { Ranges, GraphMetrics, DisplayStates, DisplayModes, WaveFields } from "DisplayConstants.slint";
+import {
+    Ranges,
+    GraphMetrics,
+    DisplayStates,
+    DisplayModes,
+    WaveFields,
+} from "DisplayConstants.slint";
 import { MaterialLayers } from "Material.slint";
 import { WaveBucket, WaveSlice } from "../display/types.slint";
 import { EditorTheme } from "Theme.slint";
@@ -8,6 +14,7 @@ import { WaveHandle } from "WaveHandle.slint";
 export global WaveCoordinates {
     public pure function normalized(position: length, width: length) -> float { return width > 0px ? (position / width).clamp(0, 1) : 0; }
 }
+
 export component EditableWaveform inherits Rectangle {
     in property <[WaveBucket]> peaks;
     in property <[WaveSlice]> slices;
@@ -29,8 +36,8 @@ export component EditableWaveform inherits Rectangle {
     in property <float> loading-progress: 1;
     in property <float> overview-start;
     in property <float> overview-end: 1;
-    out property <float> visible-start: (root.viewport-start - wave-scroll.content-x / max(1px,wave-scroll.content-width) * root.viewport-span).clamp(root.viewport-start,max(root.viewport-start,root.viewport-end - root.viewport-span/max(1,root.zoom)));
-    out property <float> visible-end: min(root.viewport-end,root.visible-start+root.viewport-span/max(1,root.zoom));
+    out property <float> visible-start: (root.viewport-start - wave-scroll.content-x / max(1px,wave-scroll.content-width) * root.viewport-span).clamp(root.viewport-start,max(root.viewport-start,root.viewport-end - root.viewport-span / max(1,root.zoom)));
+    out property <float> visible-end: min(root.viewport-end,root.visible-start + root.viewport-span / max(1,root.zoom));
     in property <bool> reversed;
     // Prepared pixels are supplied by the consumer; rendering never asks an engine.
     in property <image> spectral-data;
@@ -48,109 +55,450 @@ export component EditableWaveform inherits Rectangle {
     callback slice-selected(string);
     callback seek(float);
     callback window-deactivated();
-    background: EditorTheme.ink-0; border-radius: Tokens.radius-1; clip: true;
-    MaterialLayers { x: 0px; y: 0px; width: parent.width; height: parent.height; well: true; border-radius: Tokens.radius-1; }
-    Rectangle { visible: !root.overview && (!root.unavailable || root.state == DisplayStates.missing); x: 0px; y: 0px; height: Tokens.editor-display-wave-ruler-height; background: EditorTheme.ink-1;
-        for i in GraphMetrics.wave-ruler-ticks : Text { x: i / GraphMetrics.wave-ruler-intervals * (parent.width - Tokens.editor-display-wave-ruler-label-width) + Tokens.space-4; width: Tokens.editor-display-wave-ruler-label-width; text: round((root.visible-start + i / GraphMetrics.wave-ruler-intervals * (root.visible-end - root.visible-start)) * root.duration * Ranges.percentage) / Ranges.percentage + Tokens.editor-display-seconds-unit; font-family: EditorTheme.font-value; font-size: root.small-font-size; color: EditorTheme.paper-4; }
+    background: EditorTheme.ink-0;
+    border-radius: Tokens.radius-1;
+    clip: true;
+    MaterialLayers {
+        x: 0px;
+        y: 0px;
+        width: parent.width;
+        height: parent.height;
+        well: true;
+        border-radius: Tokens.radius-1;
     }
-    wave-scroll := Flickable { visible: !root.unavailable; x: 0px; y: root.overview ? 0px : Tokens.editor-display-wave-ruler-height; width: parent.width; height: root.overview ? parent.height : max(1px,parent.height - Tokens.editor-display-wave-ruler-height); content-width: self.width * root.zoom; content-height: self.height;
-        plot := Rectangle { x: 0px; y: 0px; width: parent.width * root.zoom; height: parent.height;
-            Rectangle { x: 0px; y: parent.height / 2; width: parent.width; height: 1px; background: EditorTheme.line-1; }
-            Image { visible: root.display-mode == DisplayModes.spectral; x: -root.viewport-start / root.viewport-span * plot.width; width: plot.width / root.viewport-span; height: plot.height; source: root.spectral-data; image-fit: fill; }
-            for bucket[i] in root.peaks : Path {
+
+    Rectangle {
+        visible: !root.overview && (!root.unavailable || root.state == DisplayStates.missing);
+        x: 0px;
+        y: 0px;
+        height: Tokens.editor-display-wave-ruler-height;
+        background: EditorTheme.ink-1;
+        for i in GraphMetrics.wave-ruler-ticks: Text {
+            x: i / GraphMetrics.wave-ruler-intervals * (parent.width - Tokens.editor-display-wave-ruler-label-width) + Tokens.space-4;
+            width: Tokens.editor-display-wave-ruler-label-width;
+            text: round((root.visible-start + i / GraphMetrics.wave-ruler-intervals * (root.visible-end - root.visible-start)) * root.duration * Ranges.percentage) / Ranges.percentage + Tokens.editor-display-seconds-unit;
+            font-family: EditorTheme.font-value;
+            font-size: root.small-font-size;
+            color: EditorTheme.paper-4;
+        }
+    }
+
+    wave-scroll := Flickable {
+        visible: !root.unavailable;
+        x: 0px;
+        y: root.overview ? 0px : Tokens.editor-display-wave-ruler-height;
+        width: parent.width;
+        height: root.overview ? parent.height : max(1px,parent.height - Tokens.editor-display-wave-ruler-height);
+        content-width: self.width * root.zoom;
+        content-height: self.height;
+        plot := Rectangle {
+            x: 0px;
+            y: 0px;
+            width: parent.width * root.zoom;
+            height: parent.height;
+            Rectangle {
+                x: 0px;
+                y: parent.height / 2;
+                width: parent.width;
+                height: 1px;
+                background: EditorTheme.line-1;
+            }
+
+            Image {
+                visible: root.display-mode == DisplayModes.spectral;
+                x: -root.viewport-start / root.viewport-span * plot.width;
+                width: plot.width / root.viewport-span;
+                height: plot.height;
+                source: root.spectral-data;
+                image-fit: fill;
+            }
+
+            for bucket[i] in root.peaks: Path {
                 private property <int> shown-index: root.reversed ? root.peaks.length - 1 - i : i;
                 private property <int> next-index: (i + (root.reversed ? -1 : 1)).clamp(0, max(0, root.peaks.length - 1));
-                visible: root.display-mode == DisplayModes.wave && (root.state != DisplayStates.loading || (self.shown-index+0.5)/max(1,root.peaks.length) <= root.loading-progress);
-                x: (self.shown-index / max(1, root.peaks.length) - root.viewport-start) / root.viewport-span * plot.width; y: 0px;
+                visible: root.display-mode == DisplayModes.wave && (root.state != DisplayStates.loading || (self.shown-index + 0.5) / max(1,root.peaks.length) <= root.loading-progress);
+                x: (self.shown-index / max(1, root.peaks.length) - root.viewport-start) / root.viewport-span * plot.width;
+                y: 0px;
                 // Overlap by two logical pixels so a full device column covers each
                 // shared antialiased edge instead of leaving a visible vertical seam.
-                width: max(1px, plot.width / max(1, root.peaks.length) / root.viewport-span) + Tokens.space-1; height: plot.height;
-                viewbox-width: Tokens.editor-display-wave-bucket-viewbox; viewbox-height: Tokens.editor-display-wave-bucket-viewbox;
+                width: max(1px, plot.width / max(1, root.peaks.length) / root.viewport-span) + Tokens.space-1;
+                height: plot.height;
+                viewbox-width: Tokens.editor-display-wave-bucket-viewbox;
+                viewbox-height: Tokens.editor-display-wave-bucket-viewbox;
                 fit: fill;
                 fill: (self.shown-index + 0.5) / max(1, root.peaks.length) >= root.region-start && (self.shown-index + 0.5) / max(1, root.peaks.length) <= root.region-end ? EditorTheme.waveform-region : EditorTheme.waveform.with-alpha(GraphMetrics.waveform-outside-alpha);
                 stroke-width: 0px;
-                MoveTo { x: 0; y: (1 - bucket.maximum.clamp(-1,1)) * GraphMetrics.waveform-half-viewbox; }
-                LineTo { x: Tokens.editor-display-wave-bucket-viewbox; y: (1 - root.peaks[parent.next-index].maximum.clamp(-1,1)) * GraphMetrics.waveform-half-viewbox; }
-                LineTo { x: Tokens.editor-display-wave-bucket-viewbox; y: (1 - root.peaks[parent.next-index].minimum.clamp(-1,1)) * GraphMetrics.waveform-half-viewbox; }
-                LineTo { x: 0; y: (1 - bucket.minimum.clamp(-1,1)) * GraphMetrics.waveform-half-viewbox; }
+                MoveTo {
+                    x: 0;
+                    y: (1 - bucket.maximum.clamp(-1,1)) * GraphMetrics.waveform-half-viewbox;
+                }
+
+                LineTo {
+                    x: Tokens.editor-display-wave-bucket-viewbox;
+                    y: (1 - root.peaks[parent.next-index].maximum.clamp(-1,1)) * GraphMetrics.waveform-half-viewbox;
+                }
+
+                LineTo {
+                    x: Tokens.editor-display-wave-bucket-viewbox;
+                    y: (1 - root.peaks[parent.next-index].minimum.clamp(-1,1)) * GraphMetrics.waveform-half-viewbox;
+                }
+
+                LineTo {
+                    x: 0;
+                    y: (1 - bucket.minimum.clamp(-1,1)) * GraphMetrics.waveform-half-viewbox;
+                }
+
                 Close { }
             }
-            TouchArea { clicked => { root.seek(root.viewport-start + WaveCoordinates.normalized(self.mouse-x, plot.width) * root.viewport-span); } }
-            if !root.overview && root.fade-in > 0 : Path {
-                width: plot.width; height: plot.height; viewbox-width: plot.width / 1px; viewbox-height: plot.height / 1px;
-                fill: EditorTheme.secondary.with-alpha(GraphMetrics.waveform-fade-alpha); stroke: EditorTheme.paper-2; stroke-width: Tokens.stroke-hairline;
-                MoveTo { x: root.region-start * plot.width / 1px; y: plot.height / 1px; }
-                LineTo { x: (root.region-start + root.fade-in) * plot.width / 1px; y: 0; }
-                LineTo { x: root.region-start * plot.width / 1px; y: 0; }
+            TouchArea {
+                clicked => { root.seek(root.viewport-start + WaveCoordinates.normalized(self.mouse-x, plot.width) * root.viewport-span); }
+            }
+
+            if !root.overview && root.fade-in > 0: Path {
+                width: plot.width;
+                height: plot.height;
+                viewbox-width: plot.width / 1px;
+                viewbox-height: plot.height / 1px;
+                fill: EditorTheme.secondary.with-alpha(GraphMetrics.waveform-fade-alpha);
+                stroke: EditorTheme.paper-2;
+                stroke-width: Tokens.stroke-hairline;
+                MoveTo {
+                    x: root.region-start * plot.width / 1px;
+                    y: plot.height / 1px;
+                }
+
+                LineTo {
+                    x: (root.region-start + root.fade-in) * plot.width / 1px;
+                    y: 0;
+                }
+
+                LineTo {
+                    x: root.region-start * plot.width / 1px;
+                    y: 0;
+                }
+
                 Close { }
             }
-            if !root.overview && root.fade-out > 0 : Path {
-                width: plot.width; height: plot.height; viewbox-width: plot.width / 1px; viewbox-height: plot.height / 1px;
-                fill: EditorTheme.secondary.with-alpha(GraphMetrics.waveform-fade-alpha); stroke: EditorTheme.paper-2; stroke-width: Tokens.stroke-hairline;
-                MoveTo { x: (root.region-end - root.fade-out) * plot.width / 1px; y: 0; }
-                LineTo { x: root.region-end * plot.width / 1px; y: plot.height / 1px; }
-                LineTo { x: root.region-end * plot.width / 1px; y: 0; }
+            if !root.overview && root.fade-out > 0: Path {
+                width: plot.width;
+                height: plot.height;
+                viewbox-width: plot.width / 1px;
+                viewbox-height: plot.height / 1px;
+                fill: EditorTheme.secondary.with-alpha(GraphMetrics.waveform-fade-alpha);
+                stroke: EditorTheme.paper-2;
+                stroke-width: Tokens.stroke-hairline;
+                MoveTo {
+                    x: (root.region-end - root.fade-out) * plot.width / 1px;
+                    y: 0;
+                }
+
+                LineTo {
+                    x: root.region-end * plot.width / 1px;
+                    y: plot.height / 1px;
+                }
+
+                LineTo {
+                    x: root.region-end * plot.width / 1px;
+                    y: 0;
+                }
+
                 Close { }
             }
-            if root.loop-enabled : Rectangle { x: root.loop-start * plot.width; width: max(0px, (root.loop-end - root.loop-start) * plot.width); height: parent.height; background: EditorTheme.mod-b.with-alpha(GraphMetrics.waveform-loop-alpha); border-width: Tokens.stroke-hairline; border-color: EditorTheme.mod-b.with-alpha(GraphMetrics.waveform-loop-border-alpha); }
-            if root.loop-enabled && root.crossfade > 0 : Rectangle { x: max(root.loop-start, root.loop-end - root.crossfade) * plot.width; width: min(root.crossfade, max(0, root.loop-end - root.loop-start)) * plot.width; height: plot.height; background: EditorTheme.mod-b.with-alpha(GraphMetrics.waveform-crossfade-alpha); }
-            for slice in root.slices : Rectangle { x: slice.start * plot.width; width: max(1px, (slice.end - slice.start) * plot.width); height: plot.height;
+            if root.loop-enabled: Rectangle {
+                x: root.loop-start * plot.width;
+                width: max(0px, (root.loop-end - root.loop-start) * plot.width);
+                height: parent.height;
+                background: EditorTheme.mod-b.with-alpha(GraphMetrics.waveform-loop-alpha);
+                border-width: Tokens.stroke-hairline;
+                border-color: EditorTheme.mod-b.with-alpha(GraphMetrics.waveform-loop-border-alpha);
+            }
+            if root.loop-enabled && root.crossfade > 0: Rectangle {
+                x: max(root.loop-start, root.loop-end - root.crossfade) * plot.width;
+                width: min(root.crossfade, max(0, root.loop-end - root.loop-start)) * plot.width;
+                height: plot.height;
+                background: EditorTheme.mod-b.with-alpha(GraphMetrics.waveform-crossfade-alpha);
+            }
+            for slice in root.slices: Rectangle {
+                x: slice.start * plot.width;
+                width: max(1px, (slice.end - slice.start) * plot.width);
+                height: plot.height;
                 background: slice.id == root.selected-slice ? EditorTheme.accent-wash : transparent;
-                Rectangle { x: 0px; y: 0px; width: 1px; background: EditorTheme.secondary; }
-                Text { x: Tokens.space-2; y: Tokens.editor-display-wave-slice-label-top; width: parent.width - Tokens.space-4; text: slice.name; color: EditorTheme.paper-3; font-family: EditorTheme.font-value; font-size: root.small-font-size; overflow: elide; }
-                TouchArea { clicked => { root.slice-selected(slice.id); } }
-            }
-            if !root.overview && root.slices.length == 0 && root.peaks.length > 0 : Rectangle { x: 0px; y: 0px;
-                start-handle := WaveHandle { x: root.region-start * plot.width - Tokens.editor-display-wave-handle-line-offset; field: WaveFields.region-start; label: Tokens.editor-display-region-start-label; position: root.region-start; plot-width: plot.width; plot-height: plot.height; top: true; gesture(id,p,v) => { root.gesture(id,p,v); } }
-                end-handle := WaveHandle { x: root.region-end * plot.width - Tokens.space-3; field: WaveFields.region-end; label: Tokens.editor-display-region-end-label; position: root.region-end; plot-width: plot.width; plot-height: plot.height; top: true; gesture(id,p,v) => { root.gesture(id,p,v); } }
-                fade-in-handle := WaveHandle { x: (root.region-start + root.fade-in) * plot.width - Tokens.editor-display-wave-handle-line-offset; field: WaveFields.fade-in; label: Tokens.editor-display-fade-in-label; position: root.fade-in; plot-width: plot.width; plot-height: plot.height; tint: EditorTheme.secondary; gesture(id,p,v) => { root.gesture(id,p,v); } }
-                fade-out-handle := WaveHandle { x: (root.region-end - root.fade-out) * plot.width - Tokens.editor-display-wave-handle-line-offset; field: WaveFields.fade-out; label: Tokens.editor-display-fade-out-label; position: root.fade-out; plot-width: -plot.width; plot-height: plot.height; tint: EditorTheme.secondary; gesture(id,p,v) => { root.gesture(id,p,v); } }
-                if root.loop-enabled : Rectangle {
-                    WaveHandle { x: root.loop-start * plot.width - Tokens.editor-display-wave-handle-line-offset; field: WaveFields.loop-start; label: Tokens.editor-display-loop-start-label; position: root.loop-start; plot-width: plot.width; plot-height: plot.height; tint: EditorTheme.mod-b; top: true; gesture(id,p,v) => { root.gesture(id,p,v); } }
-                    WaveHandle { x: root.loop-end * plot.width - Tokens.editor-display-wave-handle-line-offset; field: WaveFields.loop-end; label: Tokens.editor-display-loop-end-label; position: root.loop-end; plot-width: plot.width; plot-height: plot.height; tint: EditorTheme.mod-b; top: true; gesture(id,p,v) => { root.gesture(id,p,v); } }
-                    WaveHandle { x: (root.loop-end - root.crossfade) * plot.width - Tokens.editor-display-wave-handle-line-offset; field: WaveFields.loop-crossfade; label: Tokens.editor-display-loop-crossfade-label; position: root.crossfade; plot-width: -plot.width; plot-height: plot.height; tint: EditorTheme.mod-b; gesture(id,p,v) => { root.gesture(id,p,v); } }
+                Rectangle {
+                    x: 0px;
+                    y: 0px;
+                    width: 1px;
+                    background: EditorTheme.secondary;
+                }
+
+                Text {
+                    x: Tokens.space-2;
+                    y: Tokens.editor-display-wave-slice-label-top;
+                    width: parent.width - Tokens.space-4;
+                    text: slice.name;
+                    color: EditorTheme.paper-3;
+                    font-family: EditorTheme.font-value;
+                    font-size: root.small-font-size;
+                    overflow: elide;
+                }
+
+                TouchArea {
+                    clicked => { root.slice-selected(slice.id); }
                 }
             }
-            if root.playhead > 0 : Rectangle { x: root.playhead * plot.width; width: 1px; background: EditorTheme.paper-1; }
-            if root.peaks.length == 0 && root.state != DisplayStates.loading : Text { text: root.state == DisplayStates.loading ? Tokens.editor-display-wave-loading-placeholder : root.state == DisplayStates.missing ? Tokens.editor-display-wave-missing-message : root.state == DisplayStates.unsupported ? Tokens.editor-display-wave-unsupported-message : Tokens.editor-display-wave-empty-message; color: EditorTheme.paper-3; font-family: EditorTheme.font-ui; font-size: Tokens.type-body; horizontal-alignment: center; vertical-alignment: center; }
+            if !root.overview && root.slices.length == 0 && root.peaks.length > 0: Rectangle {
+                x: 0px;
+                y: 0px;
+                start-handle := WaveHandle {
+                    x: root.region-start * plot.width - Tokens.editor-display-wave-handle-line-offset;
+                    field: WaveFields.region-start;
+                    label: Tokens.editor-display-region-start-label;
+                    position: root.region-start;
+                    plot-width: plot.width;
+                    plot-height: plot.height;
+                    top: true;
+                    gesture(id, p, v) => { root.gesture(id,p,v); }
+                }
+
+                end-handle := WaveHandle {
+                    x: root.region-end * plot.width - Tokens.space-3;
+                    field: WaveFields.region-end;
+                    label: Tokens.editor-display-region-end-label;
+                    position: root.region-end;
+                    plot-width: plot.width;
+                    plot-height: plot.height;
+                    top: true;
+                    gesture(id, p, v) => { root.gesture(id,p,v); }
+                }
+
+                fade-in-handle := WaveHandle {
+                    x: (root.region-start + root.fade-in) * plot.width - Tokens.editor-display-wave-handle-line-offset;
+                    field: WaveFields.fade-in;
+                    label: Tokens.editor-display-fade-in-label;
+                    position: root.fade-in;
+                    plot-width: plot.width;
+                    plot-height: plot.height;
+                    tint: EditorTheme.secondary;
+                    gesture(id, p, v) => { root.gesture(id,p,v); }
+                }
+
+                fade-out-handle := WaveHandle {
+                    x: (root.region-end - root.fade-out) * plot.width - Tokens.editor-display-wave-handle-line-offset;
+                    field: WaveFields.fade-out;
+                    label: Tokens.editor-display-fade-out-label;
+                    position: root.fade-out;
+                    plot-width: -plot.width;
+                    plot-height: plot.height;
+                    tint: EditorTheme.secondary;
+                    gesture(id, p, v) => { root.gesture(id,p,v); }
+                }
+
+                if root.loop-enabled: Rectangle {
+                    WaveHandle {
+                        x: root.loop-start * plot.width - Tokens.editor-display-wave-handle-line-offset;
+                        field: WaveFields.loop-start;
+                        label: Tokens.editor-display-loop-start-label;
+                        position: root.loop-start;
+                        plot-width: plot.width;
+                        plot-height: plot.height;
+                        tint: EditorTheme.mod-b;
+                        top: true;
+                        gesture(id, p, v) => { root.gesture(id,p,v); }
+                    }
+
+                    WaveHandle {
+                        x: root.loop-end * plot.width - Tokens.editor-display-wave-handle-line-offset;
+                        field: WaveFields.loop-end;
+                        label: Tokens.editor-display-loop-end-label;
+                        position: root.loop-end;
+                        plot-width: plot.width;
+                        plot-height: plot.height;
+                        tint: EditorTheme.mod-b;
+                        top: true;
+                        gesture(id, p, v) => { root.gesture(id,p,v); }
+                    }
+
+                    WaveHandle {
+                        x: (root.loop-end - root.crossfade) * plot.width - Tokens.editor-display-wave-handle-line-offset;
+                        field: WaveFields.loop-crossfade;
+                        label: Tokens.editor-display-loop-crossfade-label;
+                        position: root.crossfade;
+                        plot-width: -plot.width;
+                        plot-height: plot.height;
+                        tint: EditorTheme.mod-b;
+                        gesture(id, p, v) => { root.gesture(id,p,v); }
+                    }
+                }
+            }
+            if root.playhead > 0: Rectangle {
+                x: root.playhead * plot.width;
+                width: 1px;
+                background: EditorTheme.paper-1;
+            }
+            if root.peaks.length == 0 && root.state != DisplayStates.loading: Text {
+                text: root.state == DisplayStates.loading ? Tokens.editor-display-wave-loading-placeholder : root.state == DisplayStates.missing ? Tokens.editor-display-wave-missing-message : root.state == DisplayStates.unsupported ? Tokens.editor-display-wave-unsupported-message : Tokens.editor-display-wave-empty-message;
+                color: EditorTheme.paper-3;
+                font-family: EditorTheme.font-ui;
+                font-size: Tokens.type-body;
+                horizontal-alignment: center;
+                vertical-alignment: center;
+            }
         }
     }
-    if !root.overview && root.unavailable : Text {
-        x: Tokens.space-5; y: (parent.height - Tokens.editor-display-wave-feedback-height) / 2; width: parent.width - Tokens.space-7; height: Tokens.editor-display-wave-feedback-height;
+
+    if !root.overview && root.unavailable: Text {
+        x: Tokens.space-5;
+        y: (parent.height - Tokens.editor-display-wave-feedback-height) / 2;
+        width: parent.width - Tokens.space-7;
+        height: Tokens.editor-display-wave-feedback-height;
         text: root.state == DisplayStates.missing ? Tokens.editor-display-wave-missing-message : Tokens.editor-display-wave-unsupported-message;
-        color: EditorTheme.error; font-family: EditorTheme.font-ui; font-size: Tokens.type-body;
-        horizontal-alignment: center; vertical-alignment: center; wrap: word-wrap;
+        color: EditorTheme.error;
+        font-family: EditorTheme.font-ui;
+        font-size: Tokens.type-body;
+        horizontal-alignment: center;
+        vertical-alignment: center;
+        wrap: word-wrap;
     }
-    if root.loading-name != "" : Rectangle {
+    if root.loading-name != "": Rectangle {
         visible: !root.overview && root.state == DisplayStates.loading;
-        x: Tokens.space-7; y: max(Tokens.editor-display-wave-loading-minimum-top, parent.height - Tokens.editor-display-wave-loading-bottom-offset); width: parent.width - 2*Tokens.editor-display-wave-loading-inset; height: Tokens.editor-display-wave-loading-height;
-        background: EditorTheme.ink-0.with-alpha(GraphMetrics.loading-overlay-alpha); border-radius: Tokens.radius-1;
-        HorizontalLayout { x: Tokens.space-4; y: Tokens.space-5; width: parent.width - Tokens.editor-display-wave-tag-height; height: Tokens.editor-display-wave-ruler-height; spacing: Tokens.space-3; alignment: start;
-            Text { text: Tokens.editor-display-wave-loading-prefix + root.loading-name; font-family: EditorTheme.font-ui; font-size: Tokens.type-body; color: EditorTheme.paper-2; }
-            Text { text: round(root.loading-detail-progress.clamp(0,1) * Ranges.percentage) + Tokens.editor-display-loading-percent-separator + round(root.loading-duration * root.loading-detail-progress * Ranges.time-decimals) / Ranges.time-decimals + Tokens.editor-display-loading-duration-separator + round(root.loading-duration * Ranges.time-decimals) / Ranges.time-decimals + Tokens.editor-display-loading-seconds-suffix; font-family: EditorTheme.font-value; font-size: Tokens.type-micro; color: EditorTheme.paper-3; }
+        x: Tokens.space-7;
+        y: max(Tokens.editor-display-wave-loading-minimum-top, parent.height - Tokens.editor-display-wave-loading-bottom-offset);
+        width: parent.width - 2 * Tokens.editor-display-wave-loading-inset;
+        height: Tokens.editor-display-wave-loading-height;
+        background: EditorTheme.ink-0.with-alpha(GraphMetrics.loading-overlay-alpha);
+        border-radius: Tokens.radius-1;
+        HorizontalLayout {
+            x: Tokens.space-4;
+            y: Tokens.space-5;
+            width: parent.width - Tokens.editor-display-wave-tag-height;
+            height: Tokens.editor-display-wave-ruler-height;
+            spacing: Tokens.space-3;
+            alignment: start;
+            Text {
+                text: Tokens.editor-display-wave-loading-prefix + root.loading-name;
+                font-family: EditorTheme.font-ui;
+                font-size: Tokens.type-body;
+                color: EditorTheme.paper-2;
+            }
+
+            Text {
+                text: round(root.loading-detail-progress.clamp(0,1) * Ranges.percentage) + Tokens.editor-display-loading-percent-separator + round(root.loading-duration * root.loading-detail-progress * Ranges.time-decimals) / Ranges.time-decimals + Tokens.editor-display-loading-duration-separator + round(root.loading-duration * Ranges.time-decimals) / Ranges.time-decimals + Tokens.editor-display-loading-seconds-suffix;
+                font-family: EditorTheme.font-value;
+                font-size: Tokens.type-micro;
+                color: EditorTheme.paper-3;
+            }
         }
-        Rectangle { x: Tokens.space-4; y: Tokens.editor-display-wave-feedback-height; width: parent.width - Tokens.editor-display-wave-tag-height; height: Tokens.space-2; border-radius: Tokens.radius-1; background: EditorTheme.ink-5;
-            Rectangle { x: 0px; y: 0px; width: parent.width * root.loading-detail-progress.clamp(0,1); height: parent.height; border-radius: Tokens.radius-1; background: EditorTheme.accent; }
+
+        Rectangle {
+            x: Tokens.space-4;
+            y: Tokens.editor-display-wave-feedback-height;
+            width: parent.width - Tokens.editor-display-wave-tag-height;
+            height: Tokens.space-2;
+            border-radius: Tokens.radius-1;
+            background: EditorTheme.ink-5;
+            Rectangle {
+                x: 0px;
+                y: 0px;
+                width: parent.width * root.loading-detail-progress.clamp(0,1);
+                height: parent.height;
+                border-radius: Tokens.radius-1;
+                background: EditorTheme.accent;
+            }
         }
     }
-    Text { visible: !root.overview && !root.unavailable; x: max(Tokens.space-3, parent.width - Tokens.editor-display-wave-metadata-reserved-width); y: root.slices.length > 0 ? Tokens.editor-display-wave-metadata-slice-top : Tokens.editor-display-wave-metadata-top; height: Tokens.editor-display-wave-ruler-height; width: min(Tokens.editor-display-wave-metadata-width, parent.width - Tokens.space-5); horizontal-alignment: right; text: root.metadata; color: EditorTheme.paper-3; font-family: EditorTheme.font-value; font-size: Tokens.type-micro; vertical-alignment: center; overflow: elide; }
-    if !root.overview && (!root.unavailable || root.state == DisplayStates.missing) && root.slices.length == 0 && root.peaks.length > 0 : Rectangle {
-        x: (root.region-start - root.visible-start) / max(Ranges.epsilon,root.visible-end - root.visible-start) * parent.width; y: 0px; width: Tokens.editor-display-wave-start-tag-width; height: Tokens.editor-display-wave-tag-height; background: EditorTheme.ink-5; border-radius: Tokens.radius-1;
-        Text { text: Tokens.editor-display-wave-start-tag; font-family: EditorTheme.font-value; font-size: root.small-font-size; color: EditorTheme.paper-2; horizontal-alignment: center; vertical-alignment: center; }
+    Text {
+        visible: !root.overview && !root.unavailable;
+        x: max(Tokens.space-3, parent.width - Tokens.editor-display-wave-metadata-reserved-width);
+        y: root.slices.length > 0 ? Tokens.editor-display-wave-metadata-slice-top : Tokens.editor-display-wave-metadata-top;
+        height: Tokens.editor-display-wave-ruler-height;
+        width: min(Tokens.editor-display-wave-metadata-width, parent.width - Tokens.space-5);
+        horizontal-alignment: right;
+        text: root.metadata;
+        color: EditorTheme.paper-3;
+        font-family: EditorTheme.font-value;
+        font-size: Tokens.type-micro;
+        vertical-alignment: center;
+        overflow: elide;
     }
-    if !root.overview && (!root.unavailable || root.state == DisplayStates.missing) && root.slices.length == 0 && root.peaks.length > 0 : Rectangle {
-        x: (root.region-end - root.visible-start) / max(Ranges.epsilon,root.visible-end - root.visible-start) * parent.width - Tokens.editor-display-wave-end-tag-width; y: 0px; width: Tokens.editor-display-wave-end-tag-width; height: Tokens.editor-display-wave-tag-height; background: EditorTheme.ink-5; border-radius: Tokens.radius-1;
-        Text { text: Tokens.editor-display-wave-end-tag; font-family: EditorTheme.font-value; font-size: root.small-font-size; color: EditorTheme.paper-2; horizontal-alignment: center; vertical-alignment: center; }
+
+    if !root.overview && (!root.unavailable || root.state == DisplayStates.missing) && root.slices.length == 0 && root.peaks.length > 0: Rectangle {
+        x: (root.region-start - root.visible-start) / max(Ranges.epsilon,root.visible-end - root.visible-start) * parent.width;
+        y: 0px;
+        width: Tokens.editor-display-wave-start-tag-width;
+        height: Tokens.editor-display-wave-tag-height;
+        background: EditorTheme.ink-5;
+        border-radius: Tokens.radius-1;
+        Text {
+            text: Tokens.editor-display-wave-start-tag;
+            font-family: EditorTheme.font-value;
+            font-size: root.small-font-size;
+            color: EditorTheme.paper-2;
+            horizontal-alignment: center;
+            vertical-alignment: center;
+        }
     }
-    if root.overview && root.height <= Tokens.editor-display-wave-overview-height-maximum && root.peaks.length > 0 : Rectangle {
-        accessible-role: text; accessible-label: Tokens.editor-display-wave-viewport-label;
-        x: root.overview-start.clamp(0,1) * parent.width; y: 0px;
-        width: max(0,root.overview-end.clamp(0,1) - root.overview-start.clamp(0,1))*parent.width;
-        height: parent.height; background: transparent; border-width: Tokens.editor-display-wave-viewport-stroke; border-color: EditorTheme.paper-4; border-radius: Tokens.radius-1;
+    if !root.overview && (!root.unavailable || root.state == DisplayStates.missing) && root.slices.length == 0 && root.peaks.length > 0: Rectangle {
+        x: (root.region-end - root.visible-start) / max(Ranges.epsilon,root.visible-end - root.visible-start) * parent.width - Tokens.editor-display-wave-end-tag-width;
+        y: 0px;
+        width: Tokens.editor-display-wave-end-tag-width;
+        height: Tokens.editor-display-wave-tag-height;
+        background: EditorTheme.ink-5;
+        border-radius: Tokens.radius-1;
+        Text {
+            text: Tokens.editor-display-wave-end-tag;
+            font-family: EditorTheme.font-value;
+            font-size: root.small-font-size;
+            color: EditorTheme.paper-2;
+            horizontal-alignment: center;
+            vertical-alignment: center;
+        }
     }
-    if !root.overview && !root.unavailable && root.peaks.length > 0 : Rectangle {
-        x: parent.width - Tokens.editor-display-wave-mode-inset; y: parent.height - Tokens.editor-display-wave-mode-bottom-offset; width: Tokens.editor-display-wave-mode-width; height: Tokens.editor-display-wave-mode-height; background: EditorTheme.ink-0; border-radius: Tokens.editor-display-wave-mode-radius; border-width: Tokens.stroke-hairline; border-color: EditorTheme.line-1;
-        EditorButton { x: Tokens.space-1; y: Tokens.space-1; width: Tokens.editor-display-wave-mode-wave-width; height: Tokens.editor-display-wave-mode-button-height; text: Tokens.editor-display-wave-mode-wave-title; label: Tokens.editor-display-wave-mode-wave-label; compact: true; ghost: true; selected: root.display-mode == DisplayModes.wave; clicked => { root.display-mode = DisplayModes.wave; } window-deactivated => { root.window-deactivated(); } }
-        EditorButton { x: Tokens.editor-display-wave-mode-spectral-offset; y: Tokens.space-1; width: Tokens.editor-display-wave-mode-spectral-width; height: Tokens.editor-display-wave-mode-button-height; text: Tokens.editor-display-wave-mode-spectral-title; label: Tokens.editor-display-wave-mode-spectral-label; compact: true; ghost: true; selected: root.display-mode == DisplayModes.spectral; clicked => { root.display-mode = DisplayModes.spectral; } window-deactivated => { root.window-deactivated(); } }
+    if root.overview && root.height <= Tokens.editor-display-wave-overview-height-maximum && root.peaks.length > 0: Rectangle {
+        accessible-role: text;
+        accessible-label: Tokens.editor-display-wave-viewport-label;
+        x: root.overview-start.clamp(0,1) * parent.width;
+        y: 0px;
+        width: max(0,root.overview-end.clamp(0,1) - root.overview-start.clamp(0,1)) * parent.width;
+        height: parent.height;
+        background: transparent;
+        border-width: Tokens.editor-display-wave-viewport-stroke;
+        border-color: EditorTheme.paper-4;
+        border-radius: Tokens.radius-1;
+    }
+    if !root.overview && !root.unavailable && root.peaks.length > 0: Rectangle {
+        x: parent.width - Tokens.editor-display-wave-mode-inset;
+        y: parent.height - Tokens.editor-display-wave-mode-bottom-offset;
+        width: Tokens.editor-display-wave-mode-width;
+        height: Tokens.editor-display-wave-mode-height;
+        background: EditorTheme.ink-0;
+        border-radius: Tokens.editor-display-wave-mode-radius;
+        border-width: Tokens.stroke-hairline;
+        border-color: EditorTheme.line-1;
+        EditorButton {
+            x: Tokens.space-1;
+            y: Tokens.space-1;
+            width: Tokens.editor-display-wave-mode-wave-width;
+            height: Tokens.editor-display-wave-mode-button-height;
+            text: Tokens.editor-display-wave-mode-wave-title;
+            label: Tokens.editor-display-wave-mode-wave-label;
+            compact: true;
+            ghost: true;
+            selected: root.display-mode == DisplayModes.wave;
+            clicked => { root.display-mode = DisplayModes.wave; }
+            window-deactivated => { root.window-deactivated(); }
+        }
+
+        EditorButton {
+            x: Tokens.editor-display-wave-mode-spectral-offset;
+            y: Tokens.space-1;
+            width: Tokens.editor-display-wave-mode-spectral-width;
+            height: Tokens.editor-display-wave-mode-button-height;
+            text: Tokens.editor-display-wave-mode-spectral-title;
+            label: Tokens.editor-display-wave-mode-spectral-label;
+            compact: true;
+            ghost: true;
+            selected: root.display-mode == DisplayModes.spectral;
+            clicked => { root.display-mode = DisplayModes.spectral; }
+            window-deactivated => { root.window-deactivated(); }
+        }
     }
 }

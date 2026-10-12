@@ -10,6 +10,7 @@ export global ParameterActions {
     out property <string> remove-route: Tokens.editor-control-action-remove-route;
     out property <string> macro: Tokens.editor-control-action-macro;
 }
+
 export global ParameterStrings {
     out property <string> label-popup-suffix: Tokens.editor-control-label-popup-suffix;
     out property <string> menu-reset-peaks: Tokens.editor-control-menu-reset-peaks;
@@ -52,24 +53,26 @@ export global ParameterStrings {
     out property <string> modulation-source-spacing: Tokens.editor-control-modulation-source-spacing;
     out property <string> modulation-value-spacing: Tokens.editor-control-modulation-value-spacing;
     out property <string> more-assignments-prefix: Tokens.editor-control-more-assignments-prefix;
-    public pure function modulation-label(name:string) -> string { return Tokens.editor-control-label-modulation-prefix+name; }
-    public pure function midi-label(name:string) -> string { return Tokens.editor-control-label-midi-prefix+name; }
-    public pure function map-label(name:string) -> string { return Tokens.editor-control-label-map-prefix+name + Tokens.editor-control-label-map-suffix; }
-    public pure function reset-label(name:string) -> string { return Tokens.editor-control-label-reset-prefix+name + Tokens.editor-control-label-reset-suffix; }
-    public pure function type-label(name:string) -> string { return Tokens.editor-control-label-type-prefix+name + Tokens.editor-control-label-value-suffix; }
-    public pure function edit-label(name:string) -> string { return Tokens.editor-control-label-edit-prefix+name + Tokens.editor-control-label-value-suffix; }
-    public pure function add-route-label(name:string) -> string { return Tokens.editor-control-label-add-route-prefix+name; }
-    public pure function edit-route-label(name:string) -> string { return Tokens.editor-control-label-edit-route-prefix+name; }
-    public pure function invert-route-label(name:string) -> string { return Tokens.editor-control-label-invert-route-prefix+name; }
-    public pure function bypass-route-label(name:string) -> string { return Tokens.editor-control-label-bypass-route-prefix+name; }
-    public pure function remove-route-label(name:string) -> string { return Tokens.editor-control-label-remove-route-prefix+name; }
+    public pure function modulation-label(name: string) -> string { return Tokens.editor-control-label-modulation-prefix + name; }
+    public pure function midi-label(name: string) -> string { return Tokens.editor-control-label-midi-prefix + name; }
+    public pure function map-label(name: string) -> string { return Tokens.editor-control-label-map-prefix + name + Tokens.editor-control-label-map-suffix; }
+    public pure function reset-label(name: string) -> string { return Tokens.editor-control-label-reset-prefix + name + Tokens.editor-control-label-reset-suffix; }
+    public pure function type-label(name: string) -> string { return Tokens.editor-control-label-type-prefix + name + Tokens.editor-control-label-value-suffix; }
+    public pure function edit-label(name: string) -> string { return Tokens.editor-control-label-edit-prefix + name + Tokens.editor-control-label-value-suffix; }
+    public pure function add-route-label(name: string) -> string { return Tokens.editor-control-label-add-route-prefix + name; }
+    public pure function edit-route-label(name: string) -> string { return Tokens.editor-control-label-edit-route-prefix + name; }
+    public pure function invert-route-label(name: string) -> string { return Tokens.editor-control-label-invert-route-prefix + name; }
+    public pure function bypass-route-label(name: string) -> string { return Tokens.editor-control-label-bypass-route-prefix + name; }
+    public pure function remove-route-label(name: string) -> string { return Tokens.editor-control-label-remove-route-prefix + name; }
 }
+
 export global GesturePhases {
     out property <int> begin: Tokens.editor-control-gesture-begin;
     out property <int> update: Tokens.editor-control-gesture-update;
     out property <int> commit: Tokens.editor-control-gesture-commit;
     out property <int> cancel: Tokens.editor-control-gesture-cancel;
 }
+
 export global RangeFields {
     out property <string> minimum: Tokens.editor-control-field-minimum;
     out property <string> maximum: Tokens.editor-control-field-maximum;

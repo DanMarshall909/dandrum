@@ -5,6 +5,7 @@ export global SamplerIconNames {
         return name == "grid" ? Tokens.editor-icon-tap : name == "sliders" ? Tokens.editor-icon-settings : name == "waveform" ? Tokens.editor-icon-one-shot : name == "scissors" ? Tokens.editor-icon-slice : name == "route" ? Tokens.editor-icon-pan : name == "list" ? Tokens.editor-icon-rows-more : name == "edit" ? Tokens.editor-icon-settings : name;
     }
 }
+
 export component AppIcon inherits EditorIcon {
     resolved-name: SamplerIconNames.resolve(root.name);
 }

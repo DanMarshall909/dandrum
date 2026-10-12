@@ -12,10 +12,34 @@ export component EditorRollout inherits Rectangle {
     in property <length> body-height: Tokens.editor-rollout-body-height;
     height: Tokens.editor-rollout-header-height + (root.open ? root.body-height : 0px);
     public function toggle() { root.open = !root.open; }
-    EditorButton { enabled: root.enabled; width: parent.width; height: Tokens.editor-rollout-header-height; text: (root.open ? EditorStrings.open-prefix : EditorStrings.closed-prefix) + root.title; label: root.title + (root.open ? EditorStrings.expanded-suffix : EditorStrings.collapsed-suffix); ghost: true;
+    EditorButton {
+        enabled: root.enabled;
+        width: parent.width;
+        height: Tokens.editor-rollout-header-height;
+        text: (root.open ? EditorStrings.open-prefix : EditorStrings.closed-prefix) + root.title;
+        label: root.title + (root.open ? EditorStrings.expanded-suffix : EditorStrings.collapsed-suffix);
+        ghost: true;
         clicked => { root.toggle(); }
         window-deactivated => { root.window-deactivated(); }
     }
-    if !root.open : Text { x: parent.width * Tokens.editor-rollout-summary-start-fraction; width: parent.width * Tokens.editor-rollout-summary-width-fraction - Tokens.editor-rollout-content-inset; height: Tokens.editor-rollout-header-height; text: root.summary; font-family: EditorTheme.font-value; font-size: root.small-font-size; color: EditorTheme.paper-3; vertical-alignment: center; horizontal-alignment: right; overflow: elide; }
-    Rectangle { y: Tokens.editor-rollout-header-height; visible: root.open; height: root.open ? root.body-height : 0px; clip: true; @children }
+
+    if !root.open: Text {
+        x: parent.width * Tokens.editor-rollout-summary-start-fraction;
+        width: parent.width * Tokens.editor-rollout-summary-width-fraction - Tokens.editor-rollout-content-inset;
+        height: Tokens.editor-rollout-header-height;
+        text: root.summary;
+        font-family: EditorTheme.font-value;
+        font-size: root.small-font-size;
+        color: EditorTheme.paper-3;
+        vertical-alignment: center;
+        horizontal-alignment: right;
+        overflow: elide;
+    }
+    Rectangle {
+        y: Tokens.editor-rollout-header-height;
+        visible: root.open;
+        height: root.open ? root.body-height : 0px;
+        clip: true;
+        @children
+    }
 }

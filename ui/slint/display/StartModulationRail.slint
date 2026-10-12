@@ -18,8 +18,11 @@ export component StartModulationRail inherits Rectangle {
     out property <bool> clipped: abs(root.source-end - root.unbounded-end) > 0.000001;
     height: 2px;
     rail := Rectangle {
-        x: root.lower * root.width; y: 0px;
-        width: (root.upper - root.lower) * root.width; height: 2px;
-        background: root.tint; opacity: 0.8;
+        x: root.lower * root.width;
+        y: 0px;
+        width: (root.upper - root.lower) * root.width;
+        height: 2px;
+        background: root.tint;
+        opacity: 0.8;
     }
 }

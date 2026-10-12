@@ -1,14 +1,29 @@
 import { PresetBrowser } from "../../ui/slint/editor/PresetBrowser.slint";
 import { PresetInfo } from "../../ui/slint/editor/PresetTypes.slint";
 export { PresetFilter } from "../../ui/slint/editor/PresetFilter.slint";
-export { PresetBrowserState } from "../../ui/slint/editor/PresetBrowserState.slint";
+export {
+    PresetBrowserState,
+} from "../../ui/slint/editor/PresetBrowserState.slint";
 export component SlintEditorBrowser inherits Window {
-    width: 700px; height: 400px;
+    width: 700px;
+    height: 400px;
     in-out property <bool> compact;
     in-out property <[PresetInfo]> presets: [
-        {id:"felt",name:"Felt Upright",category:"Keys",origin:"Factory",contents:"Samples"},
-        {id:"drums",name:"Dry Drums",category:"Drums",origin:"Factory",contents:"Samples"},
-        {id:"user",name:"Éther",category:"Synth",origin:"User",contents:"Wavetable"},
+        {
+            id:"felt",
+            name:"Felt Upright",
+            category:"Keys",
+            origin:"Factory",
+            contents:"Samples"
+        },
+        {
+            id:"drums",
+            name:"Dry Drums",
+            category:"Drums",
+            origin:"Factory",
+            contents:"Samples"
+        },
+        { id:"user", name:"Éther", category:"Synth", origin:"User", contents:"Wavetable" },
     ];
     out property <int> matched-count: browser.matched-count;
     out property <string> chosen-id: browser.chosen-id;
@@ -17,8 +32,15 @@ export component SlintEditorBrowser inherits Window {
     out property <int> closes;
     out property <string> action;
     callback favourite(string);
-    browser := PresetBrowser { width: parent.width; height: parent.height; presets: root.presets; compact: root.compact; current-patch-id: "current";
-        load(id) => { root.loaded=id; root.loads+=1; } favourite(id) => { root.favourite(id); }
-        closed => { root.closes+=1; } action(name) => { root.action=name; }
+    browser := PresetBrowser {
+        width: parent.width;
+        height: parent.height;
+        presets: root.presets;
+        compact: root.compact;
+        current-patch-id: "current";
+        load(id) => { root.loaded = id; root.loads += 1; }
+        favourite(id) => { root.favourite(id); }
+        closed => { root.closes += 1; }
+        action(name) => { root.action = name; }
     }
 }

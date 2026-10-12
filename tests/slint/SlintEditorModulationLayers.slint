@@ -1,10 +1,13 @@
 import { EditorModulatorPlot } from "../../ui/slint/editor/ModulatorPlot.slint";
 import { EditorProcessorPlot } from "../../ui/slint/editor/ProcessorPlot.slint";
 import { EditorRangeHandle } from "../../ui/slint/editor/RangeHandle.slint";
-import { EditorVelocityBlendPlot } from "../../ui/slint/editor/VelocityBlendPlot.slint";
+import {
+    EditorVelocityBlendPlot,
+} from "../../ui/slint/editor/VelocityBlendPlot.slint";
 import { EditorCurvePlot } from "../../ui/slint/editor/CurvePlot.slint";
 export component SlintEditorModulationLayers inherits Window {
-    width: 640px; height: 360px;
+    width: 640px;
+    height: 360px;
     in-out property <bool> controls-enabled: true;
     in-out property <bool> accept-begin: true;
     in-out property <float> range-value: 64;
@@ -25,9 +28,12 @@ export component SlintEditorModulationLayers inherits Window {
     in-out property <float> gain: 0;
     in-out property <string> fill-path;
     in-out property <string> stroke-path;
-    out property <int> begins; out property <int> updates;
-    out property <int> ends; out property <int> cancels;
-    out property <int> selections; out property <int> contexts;
+    out property <int> begins;
+    out property <int> updates;
+    out property <int> ends;
+    out property <int> cancels;
+    out property <int> selections;
+    out property <int> contexts;
     out property <bool> captured: handle.captured || split.captured || processor.captured;
     out property <length> text-x: blend.text-x;
     out property <length> text-width: blend.text-width;
@@ -35,59 +41,108 @@ export component SlintEditorModulationLayers inherits Window {
     out property <color> band-color: blend.fill-color;
     out property <color> band-stroke: blend.stroke-color;
     private property <float> initial;
-    function gesture(phase:int,value:float,processor:bool) -> bool {
-        if phase == 0 { root.begins+=1; root.initial=processor ? root.processor-value : root.range-value; return root.accept-begin; }
-        if phase == 1 { root.updates+=1; if processor { root.processor-value=value; } else { root.range-value=value; } }
-        if phase == 2 { root.ends+=1; }
-        if phase == 3 { root.cancels+=1; if processor { root.processor-value=root.initial; } else { root.range-value=root.initial; } }
+    function gesture(phase: int, value: float, processor: bool) -> bool {
+        if phase == 0 { root.begins += 1; root.initial = processor ? root.processor-value : root.range-value; return root.accept-begin; }
+        if phase == 1 { root.updates += 1; if processor { root.processor-value = value; } else { root.range-value = value; } }
+        if phase == 2 { root.ends += 1; }
+        if phase == 3 { root.cancels += 1; if processor { root.processor-value = root.initial; } else { root.range-value = root.initial; } }
         return true;
     }
-    public pure function waveform(t:float,shape:string)->float { return modulator.shape-value(t,shape); }
-    public pure function performance(t:float,low:float,high:float,shape:string,inverted:bool)->float { return modulator.performance(t,low,high,shape,inverted); }
-    public pure function random-value(t:float,shape:string)->float { return modulator.random(t,shape); }
-    public pure function envelope(t:float,a:float,d:float,s:float,r:float)->float { return modulator.envelope(t,a,d,s,r); }
-    public pure function modulation-y(t:float)->float { return modulator.y-at(t); }
-    public pure function response(t:float)->float { return processor.response(t); }
-    public pure function processor-y(t:float)->float { return processor.y-at(t); }
-    public function finish(cancel:bool) { handle.finish(cancel); split.finish(cancel); processor.finish(cancel); }
+    public pure function waveform(t: float, shape: string) -> float { return modulator.shape-value(t,shape); }
+    public pure function performance(t: float, low: float, high: float, shape: string, inverted: bool) -> float { return modulator.performance(t,low,high,shape,inverted); }
+    public pure function random-value(t: float, shape: string) -> float { return modulator.random(t,shape); }
+    public pure function envelope(t: float, a: float, d: float, s: float, r: float) -> float { return modulator.envelope(t,a,d,s,r); }
+    public pure function modulation-y(t: float) -> float { return modulator.y-at(t); }
+    public pure function response(t: float) -> float { return processor.response(t); }
+    public pure function processor-y(t: float) -> float { return processor.y-at(t); }
+    public function finish(cancel: bool) { handle.finish(cancel); split.finish(cancel); processor.finish(cancel); }
     modulator := EditorModulatorPlot {
-        x: 20px; y: 20px; width: 400px; height: 100px;
-        kind: root.kind; shape: root.shape; depth: root.depth; phase: root.phase;
-        in-low: root.in-low; in-high: root.in-high; inverted: root.inverted;
-        attack: 100; decay: 100; sustain: 0.5; release: 100;
-        label: "Independent modulator"; curve-color: white;
+        x: 20px;
+        y: 20px;
+        width: 400px;
+        height: 100px;
+        kind: root.kind;
+        shape: root.shape;
+        depth: root.depth;
+        phase: root.phase;
+        in-low: root.in-low;
+        in-high: root.in-high;
+        inverted: root.inverted;
+        attack: 100;
+        decay: 100;
+        sustain: 0.5;
+        release: 100;
+        label: "Independent modulator";
+        curve-color: white;
     }
+
     processor := EditorProcessorPlot {
-        x: 20px; y: 140px; width: 400px; height: 100px;
-        kind: root.processor-kind; value: root.processor-value;
-        minimum: root.primary-minimum; maximum: root.primary-maximum; ratio: root.ratio;
-        enabled: root.controls-enabled; label: "Independent processor"; curve-color: white;
-        gesture(phase,value) => { return root.gesture(phase,value,true); }
+        x: 20px;
+        y: 140px;
+        width: 400px;
+        height: 100px;
+        kind: root.processor-kind;
+        value: root.processor-value;
+        minimum: root.primary-minimum;
+        maximum: root.primary-maximum;
+        ratio: root.ratio;
+        enabled: root.controls-enabled;
+        label: "Independent processor";
+        curve-color: white;
+        gesture(phase, value) => { return root.gesture(phase,value,true); }
     }
+
     blend := EditorVelocityBlendPlot {
-        x: 20px; y: 260px; width: 400px; height: 28px;
-        low: root.low; gain: root.gain; text: "";
-        fill-path: root.fill-path; stroke-path: root.stroke-path;
-        selected => { root.selections+=1; }
+        x: 20px;
+        y: 260px;
+        width: 400px;
+        height: 28px;
+        low: root.low;
+        gain: root.gain;
+        text: "";
+        fill-path: root.fill-path;
+        stroke-path: root.stroke-path;
+        selected => { root.selections += 1; }
     }
+
     EditorCurvePlot {
-        x: 20px; y: 310px; width: 400px; height: 20px;
-        segments: 0; curve-color: white; sample(t) => { return t; }
+        x: 20px;
+        y: 310px;
+        width: 400px;
+        height: 20px;
+        segments: 0;
+        curve-color: white;
+        sample(t) => { return t; }
     }
+
     handle := EditorRangeHandle {
-        x: 500px; y: 20px; width: 8px; height: 80px;
-        value: root.range-value; units: 127; axis-length: root.axis-size*1px;
-        enabled: root.controls-enabled; label: "Independent range";
+        x: 500px;
+        y: 20px;
+        width: 8px;
+        height: 80px;
+        value: root.range-value;
+        units: 127;
+        axis-length: root.axis-size * 1px;
+        enabled: root.controls-enabled;
+        label: "Independent range";
         tint: #f02020;
-        selected => { root.selections+=1; }
-        context-requested(x,y) => { root.contexts+=1; }
-        gesture(phase,value) => { return root.gesture(phase,value,false); }
+        selected => { root.selections += 1; }
+        context-requested(x, y) => { root.contexts += 1; }
+        gesture(phase, value) => { return root.gesture(phase,value,false); }
     }
+
     split := EditorRangeHandle {
-        x: 550px; y: 20px; width: 8px; height: 80px;
-        value: root.range-value; units: 127; axis-length: root.axis-size*1px;
-        enabled: root.controls-enabled; label: "Independent split"; cap-visible: false;
+        x: 550px;
+        y: 20px;
+        width: 8px;
+        height: 80px;
+        value: root.range-value;
+        units: 127;
+        axis-length: root.axis-size * 1px;
+        enabled: root.controls-enabled;
+        label: "Independent split";
+        cap-visible: false;
         tint: #f02020;
-        gesture(phase,value) => { return root.gesture(phase,value,false); }
+        gesture(phase, value) => { return root.gesture(phase,value,false); }
     }
 }

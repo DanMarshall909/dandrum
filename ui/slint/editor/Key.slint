@@ -16,26 +16,74 @@ export component EditorKey inherits FocusScope {
     callback window-deactivated();
     private property <int> held-note;
     private property <string> held-source;
-    callback note-on(int, int, string); callback note-off(int, string);
-    accessible-role: button; accessible-label: Tokens.editor-display-key-label-prefix + root.note + " " + FitLayout.note-name(root.note) + (root.mapped ? "" : Tokens.editor-display-key-unmapped-suffix);
+    callback note-on(int, int, string);
+    callback note-off(int, string);
+    accessible-role: button;
+    accessible-label: Tokens.editor-display-key-label-prefix + root.note + " " + FitLayout.note-name(root.note) + (root.mapped ? "" : Tokens.editor-display-key-unmapped-suffix);
     accessible-action-default => { root.press(MusicalConstants.audition-velocity); root.release-note(); }
-    focus-on-click: true; focus-on-tab-navigation: true;
+    focus-on-click: true;
+    focus-on-tab-navigation: true;
     public function press(velocity: int) { if root.enabled && !root.held { root.held = true; root.held-note = root.note; root.held-source = root.source; root.note-on(root.note, velocity.clamp(1, MusicalConstants.velocity-maximum), root.source); } }
     public function release-note() { if root.held { root.held = false; root.note-off(root.held-note, root.held-source); } }
-    changed note => { root.release-note(); } changed generation => { root.release-note(); }
-    changed visible => { if !root.visible { root.release-note(); } } changed enabled => { if !root.enabled { root.release-note(); } }
+    changed note => { root.release-note(); }
+    changed generation => { root.release-note(); }
+    changed visible => { if !root.visible { root.release-note(); } }
+    changed enabled => { if !root.enabled { root.release-note(); } }
     focus-lost(reason) => { root.release-note(); if reason == FocusReason.window-activation { root.window-deactivated(); } }
     key-pressed(event) => { if event.text == Tokens.editor-display-input-space-key || event.text == Key.Return { root.press(MusicalConstants.audition-velocity); return accept; } return reject; }
     key-released(event) => { if event.text == Tokens.editor-display-input-space-key || event.text == Key.Return { root.release-note(); return accept; } return reject; }
     Rectangle {
-        border-radius: Tokens.radius-1; border-width: Tokens.stroke-hairline; border-color: root.black ? EditorTheme.ink-0 : EditorTheme.ink-2;
+        border-radius: Tokens.radius-1;
+        border-width: Tokens.stroke-hairline;
+        border-color: root.black ? EditorTheme.ink-0 : EditorTheme.ink-2;
         background: root.held || root.sounding ? EditorTheme.accent : root.black ? root.mapped ? EditorTheme.ink-1 : EditorTheme.ink-4 : root.mapped ? EditorTheme.paper-2 : EditorTheme.paper-4;
-        drop-shadow-blur: root.black ? Tokens.space-1 : 0px; drop-shadow-offset-y: root.black ? 1px : 0px; drop-shadow-color: #00000055;
-        MaterialLayers { x: 0px; y: 0px; width: parent.width; height: parent.height; border-radius: Tokens.radius-1; grain: root.black && root.mapped && !root.held && !root.sounding; accent: root.held || root.sounding; }
-        if !root.black : Rectangle { x: parent.width - Tokens.editor-display-key-separator-width; y: 0px; width: Tokens.editor-display-key-separator-width; height: parent.height; background: EditorTheme.ink-2; }
-        Text { y: parent.height - (root.black ? Tokens.editor-display-key-black-pc-label-offset : Tokens.editor-display-key-white-pc-label-offset); height: Tokens.editor-display-key-label-height; text: root.pc-label; font-family: EditorTheme.font-value; font-size: root.small-font-size; font-weight: Tokens.weight-medium; color: root.black ? EditorTheme.paper-2 : EditorTheme.accent-lo; horizontal-alignment: center; }
-        if !root.black && mod(root.note, MusicalConstants.notes-per-octave) == 0 : Text { y: parent.height - Tokens.editor-display-key-octave-label-offset; height: Tokens.editor-display-key-label-height; text: FitLayout.note-name(root.note); font-family: EditorTheme.font-value; font-size: root.small-font-size; color: EditorTheme.ink-2; horizontal-alignment: center; }
-        if root.has-focus : Rectangle { border-width: Tokens.stroke-focus; border-color: EditorTheme.host; }
+        drop-shadow-blur: root.black ? Tokens.space-1 : 0px;
+        drop-shadow-offset-y: root.black ? 1px : 0px;
+        drop-shadow-color: #00000055;
+        MaterialLayers {
+            x: 0px;
+            y: 0px;
+            width: parent.width;
+            height: parent.height;
+            border-radius: Tokens.radius-1;
+            grain: root.black && root.mapped && !root.held && !root.sounding;
+            accent: root.held || root.sounding;
+        }
+
+        if !root.black: Rectangle {
+            x: parent.width - Tokens.editor-display-key-separator-width;
+            y: 0px;
+            width: Tokens.editor-display-key-separator-width;
+            height: parent.height;
+            background: EditorTheme.ink-2;
+        }
+        Text {
+            y: parent.height - (root.black ? Tokens.editor-display-key-black-pc-label-offset : Tokens.editor-display-key-white-pc-label-offset);
+            height: Tokens.editor-display-key-label-height;
+            text: root.pc-label;
+            font-family: EditorTheme.font-value;
+            font-size: root.small-font-size;
+            font-weight: Tokens.weight-medium;
+            color: root.black ? EditorTheme.paper-2 : EditorTheme.accent-lo;
+            horizontal-alignment: center;
+        }
+
+        if !root.black && mod(root.note, MusicalConstants.notes-per-octave) == 0: Text {
+            y: parent.height - Tokens.editor-display-key-octave-label-offset;
+            height: Tokens.editor-display-key-label-height;
+            text: FitLayout.note-name(root.note);
+            font-family: EditorTheme.font-value;
+            font-size: root.small-font-size;
+            color: EditorTheme.ink-2;
+            horizontal-alignment: center;
+        }
+        if root.has-focus: Rectangle {
+            border-width: Tokens.stroke-focus;
+            border-color: EditorTheme.host;
+        }
     }
-    touch := TouchArea { pointer-event(event) => { if event.kind == PointerEventKind.down && event.button == PointerEventButton.left { root.focus(); root.press(round(MusicalConstants.key-velocity-floor + MusicalConstants.key-velocity-span * (self.mouse-y / max(1px, self.height)).clamp(0, 1))); } else if event.kind == PointerEventKind.up || event.kind == PointerEventKind.cancel { root.release-note(); } } }
+
+    touch := TouchArea {
+        pointer-event(event) => { if event.kind == PointerEventKind.down && event.button == PointerEventButton.left { root.focus(); root.press(round(MusicalConstants.key-velocity-floor + MusicalConstants.key-velocity-span * (self.mouse-y / max(1px, self.height)).clamp(0, 1))); } else if event.kind == PointerEventKind.up || event.kind == PointerEventKind.cancel { root.release-note(); } }
+    }
 }

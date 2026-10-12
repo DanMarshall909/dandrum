@@ -15,12 +15,30 @@ export component CatalogSidebar inherits Rectangle {
         { id: "foundations", label: "Foundations", icon: "variation" },
     ];
     VerticalLayout {
-        padding: 12px; spacing: 4px; alignment: start;
-        Text { text: "COMPONENTS"; height: 28px; color: Tokens.text-tertiary; font-family: Tokens.font-ui; font-size: 11px; font-weight: 600; vertical-alignment: center; }
-        for page in root.pages : ListRow {
-            label: page.label; icon: page.icon; selected: root.page-id == page.id;
+        padding: 12px;
+        spacing: 4px;
+        alignment: start;
+        Text {
+            text: "COMPONENTS";
+            height: 28px;
+            color: Tokens.text-tertiary;
+            font-family: Tokens.font-ui;
+            font-size: 11px;
+            font-weight: 600;
+            vertical-alignment: center;
+        }
+
+        for page in root.pages: ListRow {
+            label: page.label;
+            icon: page.icon;
+            selected: root.page-id == page.id;
             clicked => { root.page-id = page.id; }
         }
     }
-    Rectangle { x: parent.width - 1px; width: 1px; background: Tokens.border-hairline; }
+
+    Rectangle {
+        x: parent.width - 1px;
+        width: 1px;
+        background: Tokens.border-hairline;
+    }
 }

@@ -12,7 +12,8 @@ export component MacroKnob inherits FocusScope {
     private property <bool> editing;
     private property <float> start-y;
     private property <float> start-value;
-    width: 64px; height: 79px;
+    width: 64px;
+    height: 79px;
     enabled: !root.disabled;
     accessible-role: slider;
     accessible-label: root.label;
@@ -39,7 +40,8 @@ export component MacroKnob inherits FocusScope {
     capture-key-released(event) => {
         root.fine = event.modifiers.shift;
         if event.text == Key.Shift || event.text == Key.ShiftR { root.fine = false; }
-        root.update-drag(); return reject;
+        root.update-drag();
+        return reject;
     }
     key-pressed(event) => {
         if root.editing { return reject; }
@@ -57,20 +59,37 @@ export component MacroKnob inherits FocusScope {
     }
     focus-lost(reason) => { root.dragging = false; root.fine = false; }
     Text {
-        x: 0; y: 0; width: 64px; height: 13px;
-        text: root.label; color: root.disabled ? Theme.disabled : Theme.label;
-        font-family: Theme.ui-font; font-size: 11px; font-weight: 600;
-        letter-spacing: 0.77px; horizontal-alignment: center; vertical-alignment: center;
+        x: 0;
+        y: 0;
+        width: 64px;
+        height: 13px;
+        text: root.label;
+        color: root.disabled ? Theme.disabled : Theme.label;
+        font-family: Theme.ui-font;
+        font-size: 11px;
+        font-weight: 600;
+        letter-spacing: 0.77px;
+        horizontal-alignment: center;
+        vertical-alignment: center;
     }
+
     face := RotaryFace {
-        x: 8px; y: 14.64px;
-        value: root.value; disabled: root.disabled;
-        hovered: touch.has-hover; active: root.dragging;
+        x: 8px;
+        y: 14.64px;
+        value: root.value;
+        disabled: root.disabled;
+        hovered: touch.has-hover;
+        active: root.dragging;
         focused: root.has-focus || root.editing;
     }
+
     touch := TouchArea {
-        x: 0; y: 0; width: 64px; height: 65px;
-        enabled: !root.disabled; mouse-cursor: ns-resize;
+        x: 0;
+        y: 0;
+        width: 64px;
+        height: 65px;
+        enabled: !root.disabled;
+        mouse-cursor: ns-resize;
         pointer-event(event) => {
             root.fine = event.modifiers.shift;
             if event.kind == PointerEventKind.down {
@@ -78,7 +97,9 @@ export component MacroKnob inherits FocusScope {
                 if event.button == PointerEventButton.middle || event.modifiers.alt {
                     root.set-value(root.default-value);
                 } else if event.button == PointerEventButton.left {
-                    root.start-y = self.mouse-y / 1px; root.start-value = root.value; root.dragging = true;
+                    root.start-y = self.mouse-y / 1px;
+                    root.start-value = root.value;
+                    root.dragging = true;
                 }
             } else if event.kind == PointerEventKind.up || event.kind == PointerEventKind.cancel {
                 root.dragging = false;
@@ -94,9 +115,12 @@ export component MacroKnob inherits FocusScope {
             return accept;
         }
     }
+
     value-display := MacroValue {
-        x: 0; y: 65px;
-        value <=> root.value; editing <=> root.editing;
+        x: 0;
+        y: 65px;
+        value <=> root.value;
+        editing <=> root.editing;
         label: root.label;
         revealed: !root.disabled && (touch.has-hover || root.has-focus || root.dragging);
         closed(restore-focus) => { if restore-focus { root.focus(); } }

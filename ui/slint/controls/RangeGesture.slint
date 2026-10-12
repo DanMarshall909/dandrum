@@ -32,10 +32,13 @@ export component RangeGesture inherits TouchArea {
         if event.kind == PointerEventKind.down && root.enabled && root.reset-on-middle-or-alt && (event.button == PointerEventButton.middle || event.modifiers.alt) {
             root.reset-requested();
         } else if event.kind == PointerEventKind.down && event.button == PointerEventButton.left && root.enabled {
-            root.anchor-position = root.position(); root.anchor-value = root.value; root.moved-far = false; root.dragging = true;
+            root.anchor-position = root.position();
+            root.anchor-value = root.value;
+            root.moved-far = false;
+            root.dragging = true;
             root.started();
             if root.jump-on-click {
-                let ratio = root.vertical ? 1 - (self.mouse-y - Tokens.editor-control-gesture-track-inset) / max(1px, self.height - 2*Tokens.editor-control-gesture-track-inset) : (self.mouse-x - Tokens.editor-control-gesture-track-inset) / max(1px, self.width - 2*Tokens.editor-control-gesture-track-inset);
+                let ratio = root.vertical ? 1 - (self.mouse-y - Tokens.editor-control-gesture-track-inset) / max(1px, self.height - 2 * Tokens.editor-control-gesture-track-inset) : (self.mouse-x - Tokens.editor-control-gesture-track-inset) / max(1px, self.width - 2 * Tokens.editor-control-gesture-track-inset);
                 root.anchor-value = root.minimum + ratio.clamp(0, 1) * (root.maximum - root.minimum);
                 root.updated(root.anchor-value);
             }

@@ -15,7 +15,8 @@ export component Panel inherits Rectangle {
     callback toggled(bool);
     callback action(string);
     background: root.sunken ? Tokens.surface-window : Tokens.surface-panel;
-    border-color: Tokens.border-hairline; border-width: 1px;
+    border-color: Tokens.border-hairline;
+    border-width: 1px;
     border-radius: Tokens.radius-3;
     min-height: header.height;
     preferred-height: root.collapsed ? header.height : max(80px, header.height + content.preferred-height);
@@ -24,17 +25,29 @@ export component Panel inherits Rectangle {
     public function toggle() { header.toggle(); }
     public function activate-action(index: int) { header.activate-action(index); }
     header := PanelHeader {
-        x: 1px; y: 1px; width: parent.width - 2px;
-        title: root.title; tag: root.tag; summary: root.summary;
-        prepared: root.prepared; compact: root.compact; actions: root.actions;
+        x: 1px;
+        y: 1px;
+        width: parent.width - 2px;
+        title: root.title;
+        tag: root.tag;
+        summary: root.summary;
+        prepared: root.prepared;
+        compact: root.compact;
+        actions: root.actions;
         collapsed <=> root.collapsed;
         toggled(value) => { root.toggled(value); }
         action(id) => { root.action(id); }
     }
+
     body := Rectangle {
-        x: 1px; y: header.height + 1px; width: parent.width - 2px;
+        x: 1px;
+        y: header.height + 1px;
+        width: parent.width - 2px;
         height: max(0px, parent.height - self.y - 1px);
         visible: !root.collapsed;
-        content := VerticalLayout { padding: root.body-padding; @children }
+        content := VerticalLayout {
+            padding: root.body-padding;
+            @children
+        }
     }
 }

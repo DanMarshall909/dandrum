@@ -27,50 +27,213 @@ export component InstrumentTree inherits MaterialSurface {
     changed browser-state => { root.browser-open = root.browser-state == "loaded"; }
     public function assign-source(target: string, source: string) -> bool { return Session.command(SamplerCommands.tree-assign, target, source, 0); }
     base: SamplerTheme.ink-2;
-    if root.compact : VerticalLayout { padding: Tokens.editor-chrome-inset-small; spacing: Tokens.editor-chrome-gap-small; alignment: start;
-        ActionButton { compact: true; icon: Tokens.editor-icon-layers; label: "Instrument tree"; selected: true; clicked => { root.browse(); } }
-        ActionButton { compact: true; icon: Tokens.editor-icon-folder; label: "Sample browser"; clicked => { root.browse(); } }
-        ActionButton { compact: true; icon: Tokens.editor-icon-keyboard; label: "Key map"; clicked => { root.command(SamplerCommands.page-select, "", "mapping", 0); } }
-    }
-    if !root.compact && root.browser-open : SourceBrowser { sources: root.sources; close => { root.browser-open = false; } import-source => { root.browse(); } file-request(a,id) => { root.file-request(a,id); } }
-    if !root.compact && !root.browser-open : Rectangle { clip: true; border-radius: Tokens.editor-radius-panel;
-        Rectangle { x: 0px; y: 0px; height: Tokens.editor-chrome-section-header-height; background: SamplerTheme.ink-3;
-            Text { x: Tokens.editor-chrome-content-inset; text: "INSTRUMENT"; font-family: SamplerTheme.font-ui; font-size: SamplerTheme.type-body; font-weight: Tokens.editor-weight-bold; letter-spacing: Tokens.editor-chrome-heading-tracking; color: SamplerTheme.secondary; vertical-alignment: center; }
-            browse-button := ActionButton { x: parent.width - Tokens.editor-tree-browser-right; y: Tokens.editor-chrome-inset-cap; icon: Tokens.editor-icon-folder; label: "Sample browser"; compact: true; ghost: true; clicked => { root.browser-open = true; } }
-            add-group-button := ActionButton { x: parent.width - Tokens.editor-chrome-close-right; y: Tokens.editor-chrome-inset-cap; icon: Tokens.editor-icon-plus; label: "Add group"; compact: true; ghost: true; clicked => { root.command(SamplerCommands.tree-add, "", "New group", 1); } }
+    if root.compact: VerticalLayout {
+        padding: Tokens.editor-chrome-inset-small;
+        spacing: Tokens.editor-chrome-gap-small;
+        alignment: start;
+        ActionButton {
+            compact: true;
+            icon: Tokens.editor-icon-layers;
+            label: "Instrument tree";
+            selected: true;
+            clicked => { root.browse(); }
         }
-        ScrollView { y: Tokens.editor-chrome-section-content-top; height: max(Tokens.editor-chrome-section-header-height, parent.height * Tokens.editor-tree-instrument-fraction - Tokens.editor-chrome-section-content-top);
-            VerticalLayout { padding-top: Tokens.editor-chrome-gap-small; spacing: Tokens.editor-border-width; alignment: start;
-                for node in root.nodes : Rectangle {
-                    height: node.visible ? Tokens.editor-item-height : 0px; visible: node.visible;
-                    node-menu := PopupWindow { y: Tokens.editor-item-height; width: Tokens.editor-tree-menu-width; height: Tokens.editor-tree-menu-height;
-                        Rectangle { background: SamplerTheme.surface-menu; border-width: Tokens.editor-border-width; border-color: SamplerTheme.line-3; border-radius: Tokens.editor-radius-item;
-                            VerticalLayout { padding: Tokens.editor-chrome-gap-tight; spacing: 0px;
-                                ActionButton { text: "Open"; label: "Open " + node.name; ghost: true; clicked => { node-menu.close(); root.command(SamplerCommands.selection-set, node.id, "", 0); } }
-                                ActionButton { text: "Audition"; label: "Audition " + node.name; enabled: node.kind != "folder"; ghost: true; clicked => { node-menu.close(); Session.command(SamplerCommands.tree-audition, node.id, "", 0); } }
-                                ActionButton { text: "Rename…"; label: "Rename " + node.name; ghost: true; clicked => { node-menu.close(); root.rename-id = node.id; } }
-                                ActionButton { text: "Duplicate"; label: "Duplicate " + node.name; ghost: true; clicked => { node-menu.close(); root.command(SamplerCommands.tree-duplicate, node.id, "", 0); } }
-                                ActionButton { text: node.muted ? "Unmute" : "Mute"; label: (node.muted ? "Unmute " : "Mute ") + node.name; ghost: true; clicked => { node-menu.close(); root.command(SamplerCommands.tree-mute, node.id, "", 0); } }
-                                ActionButton { text: node.solo ? "Unsolo" : "Solo"; label: (node.solo ? "Unsolo " : "Solo ") + node.name; ghost: true; clicked => { node-menu.close(); root.command(SamplerCommands.tree-solo, node.id, "", 0); } }
-                                ActionButton { text: node.frozen ? "Unfreeze" : "Freeze"; label: (node.frozen ? "Unfreeze " : "Freeze ") + node.name; ghost: true; clicked => { node-menu.close(); root.command(node.frozen ? SamplerCommands.tree-unfreeze : SamplerCommands.tree-freeze, node.id, "", 0); } }
-                                ActionButton { text: "Delete"; label: "Delete " + node.name; enabled: node.kind != "patch" && node.kind != "instrument"; ghost: true; clicked => { node-menu.close(); root.command(SamplerCommands.tree-delete, node.id, "", 0); } }
+
+        ActionButton {
+            compact: true;
+            icon: Tokens.editor-icon-folder;
+            label: "Sample browser";
+            clicked => { root.browse(); }
+        }
+
+        ActionButton {
+            compact: true;
+            icon: Tokens.editor-icon-keyboard;
+            label: "Key map";
+            clicked => { root.command(SamplerCommands.page-select, "", "mapping", 0); }
+        }
+    }
+    if !root.compact && root.browser-open: SourceBrowser {
+        sources: root.sources;
+        close => { root.browser-open = false; }
+        import-source => { root.browse(); }
+        file-request(a, id) => { root.file-request(a,id); }
+    }
+    if !root.compact && !root.browser-open: Rectangle {
+        clip: true;
+        border-radius: Tokens.editor-radius-panel;
+        Rectangle {
+            x: 0px;
+            y: 0px;
+            height: Tokens.editor-chrome-section-header-height;
+            background: SamplerTheme.ink-3;
+            Text {
+                x: Tokens.editor-chrome-content-inset;
+                text: "INSTRUMENT";
+                font-family: SamplerTheme.font-ui;
+                font-size: SamplerTheme.type-body;
+                font-weight: Tokens.editor-weight-bold;
+                letter-spacing: Tokens.editor-chrome-heading-tracking;
+                color: SamplerTheme.secondary;
+                vertical-alignment: center;
+            }
+
+            browse-button := ActionButton {
+                x: parent.width - Tokens.editor-tree-browser-right;
+                y: Tokens.editor-chrome-inset-cap;
+                icon: Tokens.editor-icon-folder;
+                label: "Sample browser";
+                compact: true;
+                ghost: true;
+                clicked => { root.browser-open = true; }
+            }
+
+            add-group-button := ActionButton {
+                x: parent.width - Tokens.editor-chrome-close-right;
+                y: Tokens.editor-chrome-inset-cap;
+                icon: Tokens.editor-icon-plus;
+                label: "Add group";
+                compact: true;
+                ghost: true;
+                clicked => { root.command(SamplerCommands.tree-add, "", "New group", 1); }
+            }
+        }
+
+        ScrollView {
+            y: Tokens.editor-chrome-section-content-top;
+            height: max(Tokens.editor-chrome-section-header-height, parent.height * Tokens.editor-tree-instrument-fraction - Tokens.editor-chrome-section-content-top);
+            VerticalLayout {
+                padding-top: Tokens.editor-chrome-gap-small;
+                spacing: Tokens.editor-border-width;
+                alignment: start;
+                for node in root.nodes: Rectangle {
+                    height: node.visible ? Tokens.editor-item-height : 0px;
+                    visible: node.visible;
+                    node-menu := PopupWindow {
+                        y: Tokens.editor-item-height;
+                        width: Tokens.editor-tree-menu-width;
+                        height: Tokens.editor-tree-menu-height;
+                        Rectangle {
+                            background: SamplerTheme.surface-menu;
+                            border-width: Tokens.editor-border-width;
+                            border-color: SamplerTheme.line-3;
+                            border-radius: Tokens.editor-radius-item;
+                            VerticalLayout {
+                                padding: Tokens.editor-chrome-gap-tight;
+                                spacing: 0px;
+                                ActionButton {
+                                    text: "Open";
+                                    label: "Open " + node.name;
+                                    ghost: true;
+                                    clicked => { node-menu.close(); root.command(SamplerCommands.selection-set, node.id, "", 0); }
+                                }
+
+                                ActionButton {
+                                    text: "Audition";
+                                    label: "Audition " + node.name;
+                                    enabled: node.kind != "folder";
+                                    ghost: true;
+                                    clicked => { node-menu.close(); Session.command(SamplerCommands.tree-audition, node.id, "", 0); }
+                                }
+
+                                ActionButton {
+                                    text: "Rename…";
+                                    label: "Rename " + node.name;
+                                    ghost: true;
+                                    clicked => { node-menu.close(); root.rename-id = node.id; }
+                                }
+
+                                ActionButton {
+                                    text: "Duplicate";
+                                    label: "Duplicate " + node.name;
+                                    ghost: true;
+                                    clicked => { node-menu.close(); root.command(SamplerCommands.tree-duplicate, node.id, "", 0); }
+                                }
+
+                                ActionButton {
+                                    text: node.muted ? "Unmute" : "Mute";
+                                    label: (node.muted ? "Unmute " : "Mute ") + node.name;
+                                    ghost: true;
+                                    clicked => { node-menu.close(); root.command(SamplerCommands.tree-mute, node.id, "", 0); }
+                                }
+
+                                ActionButton {
+                                    text: node.solo ? "Unsolo" : "Solo";
+                                    label: (node.solo ? "Unsolo " : "Solo ") + node.name;
+                                    ghost: true;
+                                    clicked => { node-menu.close(); root.command(SamplerCommands.tree-solo, node.id, "", 0); }
+                                }
+
+                                ActionButton {
+                                    text: node.frozen ? "Unfreeze" : "Freeze";
+                                    label: (node.frozen ? "Unfreeze " : "Freeze ") + node.name;
+                                    ghost: true;
+                                    clicked => { node-menu.close(); root.command(node.frozen ? SamplerCommands.tree-unfreeze : SamplerCommands.tree-freeze, node.id, "", 0); }
+                                }
+
+                                ActionButton {
+                                    text: "Delete";
+                                    label: "Delete " + node.name;
+                                    enabled: node.kind != "patch" && node.kind != "instrument";
+                                    ghost: true;
+                                    clicked => { node-menu.close(); root.command(SamplerCommands.tree-delete, node.id, "", 0); }
+                                }
                             }
                         }
                     }
-                    row-focus := ItemRow { label: node.name; text: node.name; selected: node.selected; highlighted: drop.drag-over; selection-mark: true; external-pointer: true; external-hovered: touch.has-hover;
-                        content-inset: Tokens.editor-chrome-gap-tight + node.depth * Tokens.editor-chrome-content-inset; content-right-inset: Tokens.editor-chrome-gap-small; icon: node.kind == "instrument" || node.kind == "group" ? "layers" : "one-shot"; icon-x: Tokens.editor-tree-icon-left; icon-tint: node.selected ? SamplerTheme.accent : SamplerTheme.paper-3;
-                        text-x: Tokens.editor-tree-text-left; text-width: self.content-width - Tokens.editor-tree-text-reserve; text-color: node.muted ? SamplerTheme.text-disabled : SamplerTheme.paper-1;
+
+                    row-focus := ItemRow {
+                        label: node.name;
+                        text: node.name;
+                        selected: node.selected;
+                        highlighted: drop.drag-over;
+                        selection-mark: true;
+                        external-pointer: true;
+                        external-hovered: touch.has-hover;
+                        content-inset: Tokens.editor-chrome-gap-tight + node.depth * Tokens.editor-chrome-content-inset;
+                        content-right-inset: Tokens.editor-chrome-gap-small;
+                        icon: node.kind == "instrument" || node.kind == "group" ? "layers" : "one-shot";
+                        icon-x: Tokens.editor-tree-icon-left;
+                        icon-tint: node.selected ? SamplerTheme.accent : SamplerTheme.paper-3;
+                        text-x: Tokens.editor-tree-text-left;
+                        text-width: self.content-width - Tokens.editor-tree-text-reserve;
+                        text-color: node.muted ? SamplerTheme.text-disabled : SamplerTheme.paper-1;
                         window-deactivated => { Session.release-notes(); DragState.cancel(); }
                         activated => { root.command(SamplerCommands.selection-set, node.id, "", 0); }
-                        drop := DragTarget { accepted-kind: DragKinds.source; accept-slices: true; x: Tokens.editor-chrome-gap-tight + node.depth * Tokens.editor-chrome-content-inset; width: parent.width - self.x - Tokens.editor-chrome-gap-small; border-radius: Tokens.editor-radius-item; border-width: self.drag-over ? Tokens.editor-border-width : 0px; border-color: SamplerTheme.accent;
+                        drop := DragTarget {
+                            accepted-kind: DragKinds.source;
+                            accept-slices: true;
+                            x: Tokens.editor-chrome-gap-tight + node.depth * Tokens.editor-chrome-content-inset;
+                            width: parent.width - self.x - Tokens.editor-chrome-gap-small;
+                            border-radius: Tokens.editor-radius-item;
+                            border-width: self.drag-over ? Tokens.editor-border-width : 0px;
+                            border-color: SamplerTheme.accent;
                             dropped(source) => { return root.assign-source(node.id, source); }
-                            ActionButton { x: Tokens.editor-chrome-gap-tight; y: Tokens.editor-border-width; width: Tokens.editor-tree-expand-width; compact: true; ghost: true; icon: node.expanded ? "chevron-down" : "chevron-right"; label: "Expand " + node.name; clicked => { root.command(SamplerCommands.tree-expand, node.id, "", 0); } }
-                            if root.rename-id == node.id : EditorTextField { x: Tokens.editor-tree-text-left; width: parent.width - Tokens.editor-tree-text-reserve; text: node.name; accessible-label: "Rename instrument " + node.name;
+                            ActionButton {
+                                x: Tokens.editor-chrome-gap-tight;
+                                y: Tokens.editor-border-width;
+                                width: Tokens.editor-tree-expand-width;
+                                compact: true;
+                                ghost: true;
+                                icon: node.expanded ? "chevron-down" : "chevron-right";
+                                label: "Expand " + node.name;
+                                clicked => { root.command(SamplerCommands.tree-expand, node.id, "", 0); }
+                            }
+
+                            if root.rename-id == node.id: EditorTextField {
+                                x: Tokens.editor-tree-text-left;
+                                width: parent.width - Tokens.editor-tree-text-reserve;
+                                text: node.name;
+                                accessible-label: "Rename instrument " + node.name;
                                 focus-left => { Session.release-notes(); DragState.cancel(); }
                                 accepted => { root.command(SamplerCommands.tree-rename, node.id, self.text, 0); root.rename-id = ""; }
-                                cancel-on-escape: true; cancelled => { root.rename-id = ""; }
+                                cancel-on-escape: true;
+                                cancelled => { root.rename-id = ""; }
                             }
-                            touch := TouchArea { x: Tokens.editor-tree-body-touch-left; width: parent.width - Tokens.editor-tree-body-touch-left; enabled: root.rename-id != node.id;
+                            touch := TouchArea {
+                                x: Tokens.editor-tree-body-touch-left;
+                                width: parent.width - Tokens.editor-tree-body-touch-left;
+                                enabled: root.rename-id != node.id;
                                 pointer-event(event) => { if event.kind == PointerEventKind.down && event.button == PointerEventButton.right { node-menu.show(); } }
                                 clicked => { row-focus.activate(); }
                             }
@@ -79,15 +242,71 @@ export component InstrumentTree inherits MaterialSurface {
                 }
             }
         }
-        Rectangle { y: parent.height * Tokens.editor-tree-instrument-fraction; height: Tokens.editor-chrome-section-header-height; background: SamplerTheme.ink-3;
-            Text { x: Tokens.editor-chrome-content-inset; text: "SOURCES"; color: SamplerTheme.secondary; font-family: SamplerTheme.font-ui; font-size: SamplerTheme.type-body; font-weight: Tokens.editor-weight-bold; letter-spacing: Tokens.editor-chrome-heading-tracking; vertical-alignment: center; }
-            add-source-button := ActionButton { x: parent.width - Tokens.editor-chrome-close-right; y: Tokens.editor-chrome-inset-cap; compact: true; ghost: true; icon: Tokens.editor-icon-plus; label: "Add source"; clicked => { root.browser-open = true; } }
+
+        Rectangle {
+            y: parent.height * Tokens.editor-tree-instrument-fraction;
+            height: Tokens.editor-chrome-section-header-height;
+            background: SamplerTheme.ink-3;
+            Text {
+                x: Tokens.editor-chrome-content-inset;
+                text: "SOURCES";
+                color: SamplerTheme.secondary;
+                font-family: SamplerTheme.font-ui;
+                font-size: SamplerTheme.type-body;
+                font-weight: Tokens.editor-weight-bold;
+                letter-spacing: Tokens.editor-chrome-heading-tracking;
+                vertical-alignment: center;
+            }
+
+            add-source-button := ActionButton {
+                x: parent.width - Tokens.editor-chrome-close-right;
+                y: Tokens.editor-chrome-inset-cap;
+                compact: true;
+                ghost: true;
+                icon: Tokens.editor-icon-plus;
+                label: "Add source";
+                clicked => { root.browser-open = true; }
+            }
         }
-        SourceGroups { y: parent.height * Tokens.editor-tree-instrument-fraction + Tokens.editor-chrome-section-content-top; height: max(Tokens.editor-border-width, parent.height * Tokens.editor-tree-source-fraction - Tokens.editor-chrome-section-content-top); sources: root.sources; show-browser => { root.browser-open = true; } file-request(a,id) => { root.file-request(a,id); } }
-        Rectangle { y: parent.height * Tokens.editor-tree-modulator-start-fraction; height: Tokens.editor-chrome-section-header-height; background: SamplerTheme.ink-3;
-            Text { x: Tokens.editor-chrome-content-inset; text: "MODULATORS"; color: SamplerTheme.secondary; font-family: SamplerTheme.font-ui; font-size: SamplerTheme.type-body; font-weight: Tokens.editor-weight-bold; letter-spacing: Tokens.editor-chrome-heading-tracking; vertical-alignment: center; }
-            ActionButton { x: parent.width - Tokens.editor-chrome-close-right; y: Tokens.editor-chrome-inset-cap; compact: true; ghost: true; icon: Tokens.editor-icon-plus; label: "Add modulator"; clicked => { root.command(SamplerCommands.modulator-add, "", "lfo", 0); } }
+
+        SourceGroups {
+            y: parent.height * Tokens.editor-tree-instrument-fraction + Tokens.editor-chrome-section-content-top;
+            height: max(Tokens.editor-border-width, parent.height * Tokens.editor-tree-source-fraction - Tokens.editor-chrome-section-content-top);
+            sources: root.sources;
+            show-browser => { root.browser-open = true; }
+            file-request(a, id) => { root.file-request(a,id); }
         }
-        ModulatorTree { y: parent.height * Tokens.editor-tree-modulator-start-fraction + Tokens.editor-chrome-section-content-top; height: max(Tokens.editor-border-width, parent.height - self.y - Tokens.editor-chrome-gap-small); modulators: Session.modulators; }
+
+        Rectangle {
+            y: parent.height * Tokens.editor-tree-modulator-start-fraction;
+            height: Tokens.editor-chrome-section-header-height;
+            background: SamplerTheme.ink-3;
+            Text {
+                x: Tokens.editor-chrome-content-inset;
+                text: "MODULATORS";
+                color: SamplerTheme.secondary;
+                font-family: SamplerTheme.font-ui;
+                font-size: SamplerTheme.type-body;
+                font-weight: Tokens.editor-weight-bold;
+                letter-spacing: Tokens.editor-chrome-heading-tracking;
+                vertical-alignment: center;
+            }
+
+            ActionButton {
+                x: parent.width - Tokens.editor-chrome-close-right;
+                y: Tokens.editor-chrome-inset-cap;
+                compact: true;
+                ghost: true;
+                icon: Tokens.editor-icon-plus;
+                label: "Add modulator";
+                clicked => { root.command(SamplerCommands.modulator-add, "", "lfo", 0); }
+            }
+        }
+
+        ModulatorTree {
+            y: parent.height * Tokens.editor-tree-modulator-start-fraction + Tokens.editor-chrome-section-content-top;
+            height: max(Tokens.editor-border-width, parent.height - self.y - Tokens.editor-chrome-gap-small);
+            modulators: Session.modulators;
+        }
     }
 }

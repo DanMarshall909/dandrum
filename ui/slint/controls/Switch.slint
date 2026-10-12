@@ -15,14 +15,36 @@ export component Switch inherits ActionArea {
     accessible-checkable: true;
     accessible-checked: root.checked;
     activated => { root.checked = !root.checked; root.toggled(root.checked); }
-    FocusRing { active: root.enabled && (root.has-focus || root.focused); }
+    FocusRing {
+        active: root.enabled && (root.has-focus || root.focused);
+    }
+
     ButtonFace {
-        enabled: root.enabled; hovered: root.hovered; pressed: root.down;
+        enabled: root.enabled;
+        hovered: root.hovered;
+        pressed: root.down;
         y: root.down && root.enabled ? 1px : 0px;
         content := HorizontalLayout {
-            spacing: Tokens.space-3; padding-left: 8px; padding-right: 8px; alignment: center;
-            Rectangle { width: 3px; height: root.compact ? 10px : 12px; border-radius: 1px; background: !root.enabled ? Tokens.dd-ink-6 : root.checked ? Tokens.color-selected : Tokens.surface-well; }
-            Text { text: root.label; color: !root.enabled ? Tokens.text-disabled : root.checked ? Tokens.text-primary : Tokens.text-secondary; font-family: Tokens.font-ui; font-size: root.compact ? Tokens.type-micro : Tokens.type-label; font-weight: 600; letter-spacing: Tokens.tracking-caps * self.font-size; vertical-alignment: center; }
+            spacing: Tokens.space-3;
+            padding-left: 8px;
+            padding-right: 8px;
+            alignment: center;
+            Rectangle {
+                width: 3px;
+                height: root.compact ? 10px : 12px;
+                border-radius: 1px;
+                background: !root.enabled ? Tokens.dd-ink-6 : root.checked ? Tokens.color-selected : Tokens.surface-well;
+            }
+
+            Text {
+                text: root.label;
+                color: !root.enabled ? Tokens.text-disabled : root.checked ? Tokens.text-primary : Tokens.text-secondary;
+                font-family: Tokens.font-ui;
+                font-size: root.compact ? Tokens.type-micro : Tokens.type-label;
+                font-weight: 600;
+                letter-spacing: Tokens.tracking-caps * self.font-size;
+                vertical-alignment: center;
+            }
         }
     }
 }

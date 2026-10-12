@@ -44,51 +44,131 @@ export component Knob inherits RangeControl {
     dismiss-requested => { root.popup-suppressed = true; root.hide-popup(); }
     init => { if root.popup-open { root.show-popup(); } }
     edit-closed(restore-focus) => { if restore-focus && root.interactive { root.focus(); } }
-    standard-menu-requested => { if root.interactive { parameter-menu.show({x: parameter-menu.width / 2, y: parameter-menu.height}); } }
+    standard-menu-requested => { if root.interactive { parameter-menu.show({ x: parameter-menu.width / 2, y: parameter-menu.height }); } }
     capture-key-pressed(event) => { root.fine = event.modifiers.shift || event.text == Key.Shift; return reject; }
     capture-key-released(event) => { root.fine = event.modifiers.shift; return reject; }
-    popup-state := DelayedPopupState { requested: root.want-popup; }
-    modulation := ModulationState { assignments: root.modulations; base: root.normalized-value; }
-    Rectangle { background: root.assigning && root.interactive ? Tokens.dd-mod-wash : transparent; border-radius: Tokens.radius-2; }
-    FocusRing { active: root.interactive && (root.has-focus || root.focused || root.editing); }
+    popup-state := DelayedPopupState {
+        requested: root.want-popup;
+    }
+
+    modulation := ModulationState {
+        assignments: root.modulations;
+        base: root.normalized-value;
+    }
+
+    Rectangle {
+        background: root.assigning && root.interactive ? Tokens.dd-mod-wash : transparent;
+        border-radius: Tokens.radius-2;
+    }
+
+    FocusRing {
+        active: root.interactive && (root.has-focus || root.focused || root.editing);
+    }
+
     HorizontalLayout {
-        x: Tokens.editor-control-guide-label-inset; y: 0; width: parent.width - 2*Tokens.editor-control-guide-label-inset; height: root.label-height;
-        spacing: Tokens.editor-control-guide-label-gap; alignment: center;
-        ControlLabel { visible: root.show-label; label: root.label; enabled: root.enabled; compact: root.size <= Tokens.editor-control-guide-compact-size; horizontal-alignment: center; }
-        if root.modulations.length > Tokens.editor-control-visible-modulation-rings : Text { text: ParameterStrings.more-assignments-prefix + (root.modulations.length - Tokens.editor-control-visible-modulation-rings); font-family: Tokens.font-value; font-size: Tokens.editor-control-font-caption; color: Tokens.text-primary; }
+        x: Tokens.editor-control-guide-label-inset;
+        y: 0;
+        width: parent.width - 2 * Tokens.editor-control-guide-label-inset;
+        height: root.label-height;
+        spacing: Tokens.editor-control-guide-label-gap;
+        alignment: center;
+        ControlLabel {
+            visible: root.show-label;
+            label: root.label;
+            enabled: root.enabled;
+            compact: root.size <= Tokens.editor-control-guide-compact-size;
+            horizontal-alignment: center;
+        }
+
+        if root.modulations.length > Tokens.editor-control-visible-modulation-rings: Text {
+            text: ParameterStrings.more-assignments-prefix + (root.modulations.length - Tokens.editor-control-visible-modulation-rings);
+            font-family: Tokens.font-value;
+            font-size: Tokens.editor-control-font-caption;
+            color: Tokens.text-primary;
+        }
     }
+
     face := RotaryFace {
-        x: (parent.width - self.width) / 2; y: root.label-height; size: root.size; value: root.normalized-value; bipolar: root.bipolar;
-        enabled: root.enabled; hovered: touch.has-hover && root.interactive; active: root.gesture-active || root.nudged;
-        host-automated: root.host-active; assigning: root.assigning && !root.read-only; active-slot: root.active-slot; modulations: root.modulations;
-        range-low: modulation.low; range-high: modulation.high; effective: modulation.effective;
-        any-live: modulation.any-live; peak: modulation.peak; trough: modulation.trough; show-peaks: root.show-peak-trough;
-        clip-low: modulation.clip-low; clip-high: modulation.clip-high; live-clip-low: modulation.live-clip-low; live-clip-high: modulation.live-clip-high;
+        x: (parent.width - self.width) / 2;
+        y: root.label-height;
+        size: root.size;
+        value: root.normalized-value;
+        bipolar: root.bipolar;
+        enabled: root.enabled;
+        hovered: touch.has-hover && root.interactive;
+        active: root.gesture-active || root.nudged;
+        host-automated: root.host-active;
+        assigning: root.assigning && !root.read-only;
+        active-slot: root.active-slot;
+        modulations: root.modulations;
+        range-low: modulation.low;
+        range-high: modulation.high;
+        effective: modulation.effective;
+        any-live: modulation.any-live;
+        peak: modulation.peak;
+        trough: modulation.trough;
+        show-peaks: root.show-peak-trough;
+        clip-low: modulation.clip-low;
+        clip-high: modulation.clip-high;
+        live-clip-low: modulation.live-clip-low;
+        live-clip-high: modulation.live-clip-high;
     }
-    if root.clipped : ClipTag { x: (parent.width - self.width) / 2; y: root.label-height + root.size + Tokens.editor-control-guide-label-gap; live: root.live-clipped; }
-    if root.value-display-always && !root.clipped : Text {
-        x: 0; y: root.label-height + root.size + Tokens.editor-control-guide-label-gap; width: parent.width; height: Tokens.editor-control-knob-value-height;
-        text: root.value-text + (root.unit != "" && root.unit != ParameterStrings.unit-pan ? ParameterStrings.value-unit-separator + root.unit : ""); font-family: Tokens.font-value; font-size: root.size >= Tokens.editor-control-rotary-size-large ? Tokens.editor-control-font-value-large : root.size <= Tokens.editor-control-guide-compact-size ? Tokens.editor-control-font-caption : Tokens.editor-control-font-popup-value;
-        color: !root.enabled ? Tokens.text-disabled : root.host-active ? Tokens.dd-host : Tokens.text-primary; horizontal-alignment: center;
+
+    if root.clipped: ClipTag {
+        x: (parent.width - self.width) / 2;
+        y: root.label-height + root.size + Tokens.editor-control-guide-label-gap;
+        live: root.live-clipped;
+    }
+    if root.value-display-always && !root.clipped: Text {
+        x: 0;
+        y: root.label-height + root.size + Tokens.editor-control-guide-label-gap;
+        width: parent.width;
+        height: Tokens.editor-control-knob-value-height;
+        text: root.value-text + (root.unit != "" && root.unit != ParameterStrings.unit-pan ? ParameterStrings.value-unit-separator + root.unit : "");
+        font-family: Tokens.font-value;
+        font-size: root.size >= Tokens.editor-control-rotary-size-large ? Tokens.editor-control-font-value-large : root.size <= Tokens.editor-control-guide-compact-size ? Tokens.editor-control-font-caption : Tokens.editor-control-font-popup-value;
+        color: !root.enabled ? Tokens.text-disabled : root.host-active ? Tokens.dd-host : Tokens.text-primary;
+        horizontal-alignment: center;
     }
     parameter-menu := ContextMenuArea {
-            enabled: root.interactive;
-        Menu { title: ParameterStrings.menu-parameter;
-            MenuItem { title: ParameterStrings.menu-reset; enabled: root.interactive; activated => { root.reset-value(); } }
-            MenuItem { title: ParameterStrings.menu-type-value; enabled: root.interactive; activated => { root.begin-edit(); } }
-            MenuItem { title: ParameterStrings.menu-modulation-more; enabled: root.interactive; activated => { root.request-context-menu(); } }
+        enabled: root.interactive;
+        Menu {
+            title: ParameterStrings.menu-parameter;
+            MenuItem {
+                title: ParameterStrings.menu-reset;
+                enabled: root.interactive;
+                activated => { root.reset-value(); }
+            }
+
+            MenuItem {
+                title: ParameterStrings.menu-type-value;
+                enabled: root.interactive;
+                activated => { root.begin-edit(); }
+            }
+
+            MenuItem {
+                title: ParameterStrings.menu-modulation-more;
+                enabled: root.interactive;
+                activated => { root.request-context-menu(); }
+            }
         }
+
         touch := RangeGesture {
-            enabled: root.interactive; value: root.value; minimum: root.minimum; maximum: root.maximum; fine <=> root.fine;
+            enabled: root.interactive;
+            value: root.value;
+            minimum: root.minimum;
+            maximum: root.maximum;
+            fine <=> root.fine;
             started => { root.popup-suppressed = false; root.focus(); root.begin-gesture(); }
             updated(v) => { root.update-gesture(v); }
             ended => { root.end-gesture(); }
             reset-requested => { root.reset-value(); }
             changed has-hover => { if !self.has-hover { root.popup-suppressed = false; } }
             wheeled(direction, precise) => { root.wheel(direction, precise); }
-                context-requested(x, y) => { parameter-menu.show({x: x, y: y}); }
+            context-requested(x, y) => { parameter-menu.show({ x: x, y: y }); }
         }
     }
+
     popup := Rectangle {
         visible: root.popup-visible;
         z: Tokens.editor-control-popup-z;
@@ -99,9 +179,18 @@ export component Knob inherits RangeControl {
         ValuePopup {
             above: popup.y < 0px;
             anchor-x: root.width / 2 - popup.x;
-            label: root.label; value-text: root.value-text; unit: root.unit; editing: root.editing; invalid: root.edit-invalid;
-            host-automated: root.host-active; show-peaks: root.show-peak-trough && modulation.count > 0;
-            peak: root.peak-value; trough: root.trough-value; clipped: root.clipped; live-clipped: root.live-clipped; modulations: root.modulations;
+            label: root.label;
+            value-text: root.value-text;
+            unit: root.unit;
+            editing: root.editing;
+            invalid: root.edit-invalid;
+            host-automated: root.host-active;
+            show-peaks: root.show-peak-trough && modulation.count > 0;
+            peak: root.peak-value;
+            trough: root.trough-value;
+            clipped: root.clipped;
+            live-clipped: root.live-clipped;
+            modulations: root.modulations;
             edit-requested => { root.begin-edit(); }
             submitted(text) => { root.commit-text(text); }
             cancelled => { root.cancel-edit(); }

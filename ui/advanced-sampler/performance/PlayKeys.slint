@@ -4,8 +4,11 @@ import { PerformanceState } from "PerformanceState.slint";
 import { Session } from "../Session.slint";
 import { DragState } from "../chrome/DragState.slint";
 export component PlayKeys inherits EditorPlayKeys {
-    source: Tokens.editor-display-drawer-key-source; small-font-size: Tokens.editor-display-type-v3-small;
-    key-width <=> PerformanceState.key-width; last-key-width <=> PerformanceState.last-key-width;
-    base-note: PerformanceState.base-note; pc-enabled: PerformanceState.pc-enabled;
+    source: Tokens.editor-display-drawer-key-source;
+    small-font-size: Tokens.editor-display-type-v3-small;
+    key-width <=> PerformanceState.key-width;
+    last-key-width <=> PerformanceState.last-key-width;
+    base-note: PerformanceState.base-note;
+    pc-enabled: PerformanceState.pc-enabled;
     window-deactivated => { Session.release-notes(); DragState.cancel(); }
 }

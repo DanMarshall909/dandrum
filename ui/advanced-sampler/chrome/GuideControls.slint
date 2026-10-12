@@ -10,6 +10,7 @@ export global GuidePresentation {
         return GuidePresentation.enabled ? 88px + ceil(30 / max(1, floor((width - 24px) / 190px))) * 28px : 0px;
     }
 }
+
 struct DesignState { id: string, label: string }
 export component GuideControls inherits Rectangle {
     in property <string> patch-id;
@@ -18,21 +19,36 @@ export component GuideControls inherits Rectangle {
     callback layout-requested(float, float);
     private property <int> columns: max(1, floor((root.width - 24px) / 190px));
     private property <[DesignState]> states: [
-        { id: "empty", label: "01 Empty" }, { id: "loaded", label: "02 Single sample" },
-        { id: "sample", label: "03 Sample editing" }, { id: "loop", label: "04 Loop editing" },
-        { id: "slices", label: "05 Slice editing" }, { id: "transients", label: "06 Transient analysis" },
-        { id: "mapping", label: "07 Key map" }, { id: "vel", label: "08 Velocity layers" },
-        { id: "rr", label: "09 Round robin" }, { id: "voice", label: "10 Voice shaping" },
-        { id: "mod", label: "11 Modulation" }, { id: "macro", label: "12 Macro editing" },
-        { id: "routing", label: "13 Routing" }, { id: "fx", label: "14 Effects" },
-        { id: "missing", label: "15 Missing asset" }, { id: "unsupported", label: "16 Unsupported asset" },
-        { id: "loading", label: "17 Loading" }, { id: "running", label: "18 Analysis running" },
-        { id: "failed", label: "19 Analysis failed" }, { id: "min", label: "20 Minimum 820×560" },
-        { id: "default", label: "21 Default 1200×800" }, { id: "exp", label: "22 Expanded 1600×1000" },
-        { id: "drop", label: "23 Multi-file drop" }, { id: "perf", label: "24 Compact · macros only" },
-        { id: "pads", label: "25 Pads · performance" }, { id: "recon", label: "26 Reload pending" },
-        { id: "diag", label: "27 Diagnostics" }, { id: "overview", label: "28 Overview · inheritance" },
-        { id: "freeze", label: "29 Freeze" }, { id: "macros", label: "30 Macros" }
+        { id: "empty", label: "01 Empty" },
+        { id: "loaded", label: "02 Single sample" },
+        { id: "sample", label: "03 Sample editing" },
+        { id: "loop", label: "04 Loop editing" },
+        { id: "slices", label: "05 Slice editing" },
+        { id: "transients", label: "06 Transient analysis" },
+        { id: "mapping", label: "07 Key map" },
+        { id: "vel", label: "08 Velocity layers" },
+        { id: "rr", label: "09 Round robin" },
+        { id: "voice", label: "10 Voice shaping" },
+        { id: "mod", label: "11 Modulation" },
+        { id: "macro", label: "12 Macro editing" },
+        { id: "routing", label: "13 Routing" },
+        { id: "fx", label: "14 Effects" },
+        { id: "missing", label: "15 Missing asset" },
+        { id: "unsupported", label: "16 Unsupported asset" },
+        { id: "loading", label: "17 Loading" },
+        { id: "running", label: "18 Analysis running" },
+        { id: "failed", label: "19 Analysis failed" },
+        { id: "min", label: "20 Minimum 820×560" },
+        { id: "default", label: "21 Default 1200×800" },
+        { id: "exp", label: "22 Expanded 1600×1000" },
+        { id: "drop", label: "23 Multi-file drop" },
+        { id: "perf", label: "24 Compact · macros only" },
+        { id: "pads", label: "25 Pads · performance" },
+        { id: "recon", label: "26 Reload pending" },
+        { id: "diag", label: "27 Diagnostics" },
+        { id: "overview", label: "28 Overview · inheritance" },
+        { id: "freeze", label: "29 Freeze" },
+        { id: "macros", label: "30 Macros" }
     ];
     visible: GuidePresentation.enabled;
     height: GuidePresentation.height-for-width(root.width);
@@ -45,24 +61,43 @@ export component GuideControls inherits Rectangle {
             else if id == "perf" { root.layout-requested(860, 610); }
         }
     }
-    if GuidePresentation.enabled : Rectangle {
-        x: 6px; y: 6px; width: parent.width - 12px; height: parent.height - 12px;
-        border-width: 1px; border-color: SamplerTheme.line-2; border-radius: 4px;
+    if GuidePresentation.enabled: Rectangle {
+        x: 6px;
+        y: 6px;
+        width: parent.width - 12px;
+        height: parent.height - 12px;
+        border-width: 1px;
+        border-color: SamplerTheme.line-2;
+        border-radius: 4px;
         Text {
-            x: 6px; y: 4px; text: "DESIGN STATES · Select a view without changing your patch";
-            font-family: SamplerTheme.font-ui; font-size: 12px; color: SamplerTheme.paper-3;
+            x: 6px;
+            y: 4px;
+            text: "DESIGN STATES · Select a view without changing your patch";
+            font-family: SamplerTheme.font-ui;
+            font-size: 12px;
+            color: SamplerTheme.paper-3;
         }
+
         Text {
-            x: 6px; y: 26px; text: "Acceptance patch";
-            font-family: SamplerTheme.font-ui; font-size: 11px; color: SamplerTheme.paper-3;
+            x: 6px;
+            y: 26px;
+            text: "Acceptance patch";
+            font-family: SamplerTheme.font-ui;
+            font-size: 11px;
+            color: SamplerTheme.paper-3;
         }
+
         for patch[i] in [
             { id: "kit", label: "Expressive kit", state: "pads" },
             { id: "keys", label: "Multisampled keys", state: "mapping" },
             { id: "hybrid", label: "Sample + synth", state: "voice" }
-        ] : ActionButton {
-            x: 6px + i * 144px; y: 44px; width: 140px; compact: true;
-            text: patch.label; label: "Acceptance patch " + patch.label;
+        ]: ActionButton {
+            x: 6px + i * 144px;
+            y: 44px;
+            width: 140px;
+            compact: true;
+            text: patch.label;
+            label: "Acceptance patch " + patch.label;
             selected: root.patch-id == patch.id;
             accessible-checkable: true;
             clicked => {
@@ -70,16 +105,23 @@ export component GuideControls inherits Rectangle {
             }
         }
         ActionButton {
-            x: 450px; y: 44px; width: 214px; compact: true;
-            text: "Engine contract annotations"; selected: GuidePresentation.annotations;
+            x: 450px;
+            y: 44px;
+            width: 214px;
+            compact: true;
+            text: "Engine contract annotations";
+            selected: GuidePresentation.annotations;
             accessible-checkable: true;
             clicked => { GuidePresentation.annotations = !GuidePresentation.annotations; }
         }
-        for state[i] in root.states : ActionButton {
+
+        for state[i] in root.states: ActionButton {
             x: 6px + mod(i, root.columns) * (parent.width - 12px) / root.columns;
             y: 76px + floor(i / root.columns) * 28px;
-            width: (parent.width - 12px) / root.columns - 4px; compact: true;
-            text: state.label; selected: root.state-id == state.id;
+            width: (parent.width - 12px) / root.columns - 4px;
+            compact: true;
+            text: state.label;
+            selected: root.state-id == state.id;
             accessible-checkable: true;
             clicked => { root.select-state(state.id); }
         }
@@ -88,13 +130,21 @@ export component GuideControls inherits Rectangle {
 
 component Annotation inherits Rectangle {
     in property <string> text;
-    width: label.preferred-width + 10px; height: 20px;
-    border-radius: 2px; border-width: 1px; border-color: SamplerTheme.warn;
+    width: label.preferred-width + 10px;
+    height: 20px;
+    border-radius: 2px;
+    border-width: 1px;
+    border-color: SamplerTheme.warn;
     background: SamplerTheme.warn-wash;
-    accessible-role: AccessibleRole.text; accessible-label: "Engine annotation " + root.text;
+    accessible-role: AccessibleRole.text;
+    accessible-label: "Engine annotation " + root.text;
     label := Text {
-        text: root.text; color: SamplerTheme.warn; horizontal-alignment: center;
-        vertical-alignment: center; font-family: SamplerTheme.font-value; font-size: 11px;
+        text: root.text;
+        color: SamplerTheme.warn;
+        horizontal-alignment: center;
+        vertical-alignment: center;
+        font-family: SamplerTheme.font-value;
+        font-size: 11px;
     }
 }
 
@@ -103,11 +153,22 @@ export component GuideAnnotations inherits Rectangle {
     in property <string> inspector-type;
     visible: GuidePresentation.enabled && GuidePresentation.annotations;
     // Labels have no TouchArea or FocusScope: editing remains available underneath.
-    if GuidePresentation.enabled && GuidePresentation.annotations : Rectangle {
-        Annotation { x: parent.width - self.width - 12px; y: 4px; text: "Telemetry"; }
-        Annotation { x: 8px; y: 56px; text: "Group tree"; }
+    if GuidePresentation.enabled && GuidePresentation.annotations: Rectangle {
         Annotation {
-            x: 8px; y: 80px;
+            x: parent.width - self.width - 12px;
+            y: 4px;
+            text: "Telemetry";
+        }
+
+        Annotation {
+            x: 8px;
+            y: 56px;
+            text: "Group tree";
+        }
+
+        Annotation {
+            x: 8px;
+            y: 80px;
             text: root.page == "voice" ? "Voice Template (curated view)" :
                 root.page == "sample" ? "Asset binding on AssetPlayer" :
                 root.page == "slices" ? "Analysis (async)" :
@@ -121,8 +182,10 @@ export component GuideAnnotations inherits Rectangle {
                 root.page == "overview" ? "Property inheritance" :
                 root.page == "diagnostics" ? "Diagnostics" : "Asset service";
         }
-        if root.inspector-type != "" : Annotation {
-            x: parent.width - self.width - 12px; y: 80px;
+
+        if root.inspector-type != "": Annotation {
+            x: parent.width - self.width - 12px;
+            y: 80px;
             text: "Inspector: " + root.inspector-type;
         }
     }

@@ -17,7 +17,12 @@ export component NumericField inherits ParameterField {
     assignment-enabled: root.parameter-id != "";
     gesture-cancelled => { Session.command(SamplerCommands.gesture-cancel, "", "", 0); }
     interaction-lost => { Session.release-notes(); DragState.cancel(); }
-    DragTarget { accepted-kind: DragKinds.modulator; enabled: root.enabled && root.parameter-id != ""; border-width: self.drag-over ? 1px : 0px; border-color: SamplerTheme.accent; border-radius: Tokens.editor-control-radius-small;
+    DragTarget {
+        accepted-kind: DragKinds.modulator;
+        enabled: root.enabled && root.parameter-id != "";
+        border-width: self.drag-over ? 1px : 0px;
+        border-color: SamplerTheme.accent;
+        border-radius: Tokens.editor-control-radius-small;
         dropped(source) => { return Session.command(SamplerCommands.route-add, source, root.parameter-id, Tokens.editor-control-default-route-depth); }
     }
 }

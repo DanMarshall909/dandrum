@@ -32,7 +32,12 @@ export component EditorFrame inherits Rectangle {
     private property <string> scope-caption: "SCOPE";
     private property <[string]> scope-ids: ["instrument", "group", "sound", "layer"];
     private property <[string]> scope-labels: ["All", "Group", "Sound", "Selection"];
-    private property <[length]> scope-widths: [Tokens.editor-layout-scope-all-width, Tokens.editor-layout-scope-group-width, Tokens.editor-layout-scope-sound-width, Tokens.editor-layout-scope-selection-width];
+    private property <[length]> scope-widths: [
+        Tokens.editor-layout-scope-all-width,
+        Tokens.editor-layout-scope-group-width,
+        Tokens.editor-layout-scope-sound-width,
+        Tokens.editor-layout-scope-selection-width
+    ];
     private property <string> status-separator: "   ·   ";
     private property <string> held-notes-suffix: " held notes";
     private property <string> about-caption: "About Slint";
@@ -58,66 +63,270 @@ export component EditorFrame inherits Rectangle {
     callback about-slint();
     callback file-browse(string);
     function run(action: string, target: string, text: string, value: float) { Session.command(action, target, text, value); }
-    WindowMaterial { x: 0px; y: 0px; }
-    header := EditorHeader { x: 0px; y: 0px; height: root.header-height; compact: root.compact; perform: root.perform; patch-name: Session.patch-name; status: Session.status; can-undo: Session.can-undo; can-redo: Session.can-redo; voices: Session.voices; voice-limit: Session.voice-limit; level: Session.output-level; size-mode: root.size-mode;
+    WindowMaterial {
+        x: 0px;
+        y: 0px;
+    }
+
+    header := EditorHeader {
+        x: 0px;
+        y: 0px;
+        height: root.header-height;
+        compact: root.compact;
+        perform: root.perform;
+        patch-name: Session.patch-name;
+        status: Session.status;
+        can-undo: Session.can-undo;
+        can-redo: Session.can-redo;
+        voices: Session.voices;
+        voice-limit: Session.voice-limit;
+        level: Session.output-level;
+        size-mode: root.size-mode;
         command(action) => { if action == SamplerCommands.undo || action == SamplerCommands.redo { root.run(action, "", "", 0); } else { root.header-command(action); } }
     }
-    if !root.perform && root.banner-height > 0px : Rectangle { x: Tokens.editor-chrome-gap-small; y: root.header-height + Tokens.editor-chrome-gap-small; width: parent.width - Tokens.editor-chrome-gap; height: root.banner-height - Tokens.editor-chrome-gap-small; border-radius: Tokens.editor-radius-group; border-width: Tokens.editor-border-width; border-color: Session.asset-state == DisplayStates.unsupported ? SamplerTheme.warn : root.asset-alert || root.patch-alert ? SamplerTheme.error : SamplerTheme.accent; background: Session.asset-state == DisplayStates.unsupported ? SamplerTheme.warn-wash : root.asset-alert || root.patch-alert ? SamplerTheme.error-wash : SamplerTheme.accent-wash;
-        if root.asset-alert : Rectangle {
-            Text { x: Tokens.editor-chrome-gap; y: Tokens.editor-chrome-gap-small; width: parent.width - Tokens.editor-chrome-gap-large; height: Tokens.editor-layout-banner-line-height; text: Session.asset-state == DisplayStates.missing ? root.missing-sample-heading : root.failed-sample-heading; color: SamplerTheme.paper-1; font-family: SamplerTheme.font-ui; font-size: SamplerTheme.type-control; font-weight: Tokens.editor-weight-semibold; }
-            Text { x: Tokens.editor-chrome-gap; y: Tokens.editor-layout-banner-detail-top; width: parent.width - Tokens.editor-chrome-gap-large; height: Tokens.editor-layout-banner-line-height; text: Session.asset-state == DisplayStates.missing ? root.missing-sample-detail : root.failed-sample-detail; color: SamplerTheme.paper-2; font-family: SamplerTheme.font-ui; font-size: SamplerTheme.type-body; overflow: elide; }
+
+    if !root.perform && root.banner-height > 0px: Rectangle {
+        x: Tokens.editor-chrome-gap-small;
+        y: root.header-height + Tokens.editor-chrome-gap-small;
+        width: parent.width - Tokens.editor-chrome-gap;
+        height: root.banner-height - Tokens.editor-chrome-gap-small;
+        border-radius: Tokens.editor-radius-group;
+        border-width: Tokens.editor-border-width;
+        border-color: Session.asset-state == DisplayStates.unsupported ? SamplerTheme.warn : root.asset-alert || root.patch-alert ? SamplerTheme.error : SamplerTheme.accent;
+        background: Session.asset-state == DisplayStates.unsupported ? SamplerTheme.warn-wash : root.asset-alert || root.patch-alert ? SamplerTheme.error-wash : SamplerTheme.accent-wash;
+        if root.asset-alert: Rectangle {
+            Text {
+                x: Tokens.editor-chrome-gap;
+                y: Tokens.editor-chrome-gap-small;
+                width: parent.width - Tokens.editor-chrome-gap-large;
+                height: Tokens.editor-layout-banner-line-height;
+                text: Session.asset-state == DisplayStates.missing ? root.missing-sample-heading : root.failed-sample-heading;
+                color: SamplerTheme.paper-1;
+                font-family: SamplerTheme.font-ui;
+                font-size: SamplerTheme.type-control;
+                font-weight: Tokens.editor-weight-semibold;
+            }
+
+            Text {
+                x: Tokens.editor-chrome-gap;
+                y: Tokens.editor-layout-banner-detail-top;
+                width: parent.width - Tokens.editor-chrome-gap-large;
+                height: Tokens.editor-layout-banner-line-height;
+                text: Session.asset-state == DisplayStates.missing ? root.missing-sample-detail : root.failed-sample-detail;
+                color: SamplerTheme.paper-2;
+                font-family: SamplerTheme.font-ui;
+                font-size: SamplerTheme.type-body;
+                overflow: elide;
+            }
         }
-        if !root.asset-alert : Rectangle {
-            Text { x: Tokens.editor-chrome-gap; y: 0px; width: parent.width - Tokens.editor-layout-banner-action-reserve; height: parent.height; text: root.patch-alert ? Session.error : root.draft-prefix + Session.pending-count + root.draft-suffix; color: SamplerTheme.paper-1; font-family: SamplerTheme.font-ui; font-size: SamplerTheme.type-control; vertical-alignment: center; overflow: elide; }
-            ActionButton { x: parent.width - Tokens.editor-layout-discard-right; y: Tokens.editor-chrome-inset-cap; text: root.discard-caption; ghost: true; clicked => { root.run(SamplerCommands.patch-discard, "", "", 0); } }
-            ActionButton { x: parent.width - Tokens.editor-layout-reload-right; y: Tokens.editor-chrome-inset-cap; text: root.reload-caption; primary: true; enabled: Session.reload-state != root.preparing-reload-state; clicked => { root.run(SamplerCommands.patch-reload, "", "", 0); } }
+        if !root.asset-alert: Rectangle {
+            Text {
+                x: Tokens.editor-chrome-gap;
+                y: 0px;
+                width: parent.width - Tokens.editor-layout-banner-action-reserve;
+                height: parent.height;
+                text: root.patch-alert ? Session.error : root.draft-prefix + Session.pending-count + root.draft-suffix;
+                color: SamplerTheme.paper-1;
+                font-family: SamplerTheme.font-ui;
+                font-size: SamplerTheme.type-control;
+                vertical-alignment: center;
+                overflow: elide;
+            }
+
+            ActionButton {
+                x: parent.width - Tokens.editor-layout-discard-right;
+                y: Tokens.editor-chrome-inset-cap;
+                text: root.discard-caption;
+                ghost: true;
+                clicked => { root.run(SamplerCommands.patch-discard, "", "", 0); }
+            }
+
+            ActionButton {
+                x: parent.width - Tokens.editor-layout-reload-right;
+                y: Tokens.editor-chrome-inset-cap;
+                text: root.reload-caption;
+                primary: true;
+                enabled: Session.reload-state != root.preparing-reload-state;
+                clicked => { root.run(SamplerCommands.patch-reload, "", "", 0); }
+            }
         }
     }
-    Rectangle { visible: !root.perform; y: root.main-y; height: root.body-height;
-        PageRail { x: Tokens.editor-chrome-gap-small; width: EditorLayoutMetrics.rail(root.width); height: parent.height; page: Session.page; compact: root.compact; selected(page) => { root.run(SamplerCommands.page-select, "", page, 0); } }
-        InstrumentTree { x: Tokens.editor-chrome-gap + EditorLayoutMetrics.rail(root.width); width: EditorLayoutMetrics.tree(root.width); height: parent.height; compact: root.compact; nodes: Session.tree; sources: Session.sources;
-            file-request(a,id) => { root.file-browse(a); }
-            command(a,t,s,v) => { root.run(a,t,s,v); } browse => { root.browse-assets(); }
+    Rectangle {
+        visible: !root.perform;
+        y: root.main-y;
+        height: root.body-height;
+        PageRail {
+            x: Tokens.editor-chrome-gap-small;
+            width: EditorLayoutMetrics.rail(root.width);
+            height: parent.height;
+            page: Session.page;
+            compact: root.compact;
+            selected(page) => { root.run(SamplerCommands.page-select, "", page, 0); }
         }
-        workspace := Rectangle { x: Tokens.editor-chrome-content-inset + EditorLayoutMetrics.rail(root.width) + EditorLayoutMetrics.tree(root.width); width: EditorLayoutMetrics.workspace(root.width); height: parent.height;
+
+        InstrumentTree {
+            x: Tokens.editor-chrome-gap + EditorLayoutMetrics.rail(root.width);
+            width: EditorLayoutMetrics.tree(root.width);
+            height: parent.height;
+            compact: root.compact;
+            nodes: Session.tree;
+            sources: Session.sources;
+            file-request(a, id) => { root.file-browse(a); }
+            command(a, t, s, v) => { root.run(a,t,s,v); }
+            browse => { root.browse-assets(); }
+        }
+
+        workspace := Rectangle {
+            x: Tokens.editor-chrome-content-inset + EditorLayoutMetrics.rail(root.width) + EditorLayoutMetrics.tree(root.width);
+            width: EditorLayoutMetrics.workspace(root.width);
+            height: parent.height;
             @children
         }
-        Inspector { x: parent.width - EditorLayoutMetrics.inspector(root.width) - Tokens.editor-chrome-gap-small; width: EditorLayoutMetrics.inspector(root.width); height: parent.height;
-            metadata: root.selected-metadata; selected-id: Session.selected-id; scope: Session.scope; history: Session.history;
-            command(a,t,s,v) => { root.run(a,t,s,v); }
-            parameter-gesture(id,phase,v) => { Session.parameter-gesture(id,phase,v); }
-            context-action(a,id) => { root.context-action(a,id); }
+
+        Inspector {
+            x: parent.width - EditorLayoutMetrics.inspector(root.width) - Tokens.editor-chrome-gap-small;
+            width: EditorLayoutMetrics.inspector(root.width);
+            height: parent.height;
+            metadata: root.selected-metadata;
+            selected-id: Session.selected-id;
+            scope: Session.scope;
+            history: Session.history;
+            command(a, t, s, v) => { root.run(a,t,s,v); }
+            parameter-gesture(id, phase, v) => { Session.parameter-gesture(id,phase,v); }
+            context-action(a, id) => { root.context-action(a,id); }
             browse(a) => { root.file-browse(a); }
         }
     }
-    drawer := PlayDrawer { visible: !root.perform; x: Tokens.editor-chrome-gap-small; y: root.main-y + root.body-height + Tokens.editor-chrome-gap-small; width: parent.width - Tokens.editor-chrome-gap; size-mode: root.size-mode; window-height: root.height; pads: Session.pads; macros: Session.macros; sounding-notes: Session.sounding-notes; generation: Session.current-patch-id; mapped-low: Session.mapped-low; mapped-high: Session.mapped-high;
-        note-on(n,v,s) => { Session.note-on(n,v,s); } note-off(n,s) => { Session.note-off(n,s); }
+
+    drawer := PlayDrawer {
+        visible: !root.perform;
+        x: Tokens.editor-chrome-gap-small;
+        y: root.main-y + root.body-height + Tokens.editor-chrome-gap-small;
+        width: parent.width - Tokens.editor-chrome-gap;
+        size-mode: root.size-mode;
+        window-height: root.height;
+        pads: Session.pads;
+        macros: Session.macros;
+        sounding-notes: Session.sounding-notes;
+        generation: Session.current-patch-id;
+        mapped-low: Session.mapped-low;
+        mapped-high: Session.mapped-high;
+        note-on(n, v, s) => { Session.note-on(n,v,s); }
+        note-off(n, s) => { Session.note-off(n,s); }
         selected(n) => { root.run(SamplerCommands.zone-select, "", "", n); }
-        macro-gesture(id,phase,v) => { Session.parameter-gesture(id,phase,v); }
-        context-action(a,id) => { root.context-action(a,id); }
+        macro-gesture(id, phase, v) => { Session.parameter-gesture(id,phase,v); }
+        context-action(a, id) => { root.context-action(a,id); }
     }
-    if !root.perform && root.show-diagnostics : DiagnosticsPage { x: 0px; y: drawer.y + drawer.height + Tokens.editor-layout-diagnostics-top-gap; width: parent.width; height: Tokens.editor-layout-diagnostics-height; drawer: true; }
-    if !root.perform && root.show-event-log : EventLog { x: Tokens.editor-chrome-gap-small; y: drawer.y + drawer.height + (root.show-diagnostics ? Tokens.editor-layout-event-log-reserve : Tokens.editor-chrome-gap-small); width: parent.width - Tokens.editor-chrome-gap; height: Tokens.editor-layout-event-log-height; closed => { root.header-command(SamplerUi.event-log); } }
-    if root.perform : PerformView { y: root.header-height; height: parent.height - root.header-height; pads: Session.pads; macros: Session.macros; presets: Session.presets; sounding-notes: Session.sounding-notes; current-patch-id: Session.current-patch-id; generation: Session.current-patch-id; mapped-low: Session.mapped-low; mapped-high: Session.mapped-high;
-        note-on(n,v,s) => { Session.note-on(n,v,s); } note-off(n,s) => { Session.note-off(n,s); }
+
+    if !root.perform && root.show-diagnostics: DiagnosticsPage {
+        x: 0px;
+        y: drawer.y + drawer.height + Tokens.editor-layout-diagnostics-top-gap;
+        width: parent.width;
+        height: Tokens.editor-layout-diagnostics-height;
+        drawer: true;
+    }
+    if !root.perform && root.show-event-log: EventLog {
+        x: Tokens.editor-chrome-gap-small;
+        y: drawer.y + drawer.height + (root.show-diagnostics ? Tokens.editor-layout-event-log-reserve : Tokens.editor-chrome-gap-small);
+        width: parent.width - Tokens.editor-chrome-gap;
+        height: Tokens.editor-layout-event-log-height;
+        closed => { root.header-command(SamplerUi.event-log); }
+    }
+    if root.perform: PerformView {
+        y: root.header-height;
+        height: parent.height - root.header-height;
+        pads: Session.pads;
+        macros: Session.macros;
+        presets: Session.presets;
+        sounding-notes: Session.sounding-notes;
+        current-patch-id: Session.current-patch-id;
+        generation: Session.current-patch-id;
+        mapped-low: Session.mapped-low;
+        mapped-high: Session.mapped-high;
+        note-on(n, v, s) => { Session.note-on(n,v,s); }
+        note-off(n, s) => { Session.note-off(n,s); }
         selected(n) => { root.run(SamplerCommands.zone-select, "", "", n); }
-        macro-gesture(id,phase,v) => { Session.parameter-gesture(id,phase,v); }
-        context-action(a,id) => { root.context-action(a,id); }
+        macro-gesture(id, phase, v) => { Session.parameter-gesture(id,phase,v); }
+        context-action(a, id) => { root.context-action(a,id); }
         load(id) => { root.run(SamplerCommands.patch-load, id, "", 0); }
         favourite(id) => { root.run(SamplerCommands.patch-favourite, id, "", 0); }
         patch-action(a) => { root.patch-action(a); }
     }
-    if !root.perform : Rectangle { y: parent.height - (Tokens.editor-layout-scope-height + Tokens.editor-layout-footer-height); height: Tokens.editor-layout-scope-height; background: SamplerTheme.ink-1;
-        Text { x: Tokens.editor-chrome-content-inset; text: root.scope-caption; width: Tokens.editor-layout-scope-caption-width; height: parent.height; color: SamplerTheme.secondary; font-family: SamplerTheme.font-ui; font-size: SamplerTheme.type-caption; font-weight: Tokens.editor-weight-bold; vertical-alignment: center; }
-        Rectangle { x: Tokens.editor-layout-scope-selector-left; y: 0px; width: Tokens.editor-layout-scope-selector-width; height: Tokens.editor-layout-scope-selector-height; background: SamplerTheme.surface-well; border-radius: Tokens.editor-radius-group; border-width: Tokens.editor-border-width; border-color: SamplerTheme.border-hairline;
-            HorizontalLayout { x: Tokens.editor-chrome-inset-cap; y: Tokens.editor-chrome-inset-cap; width: parent.width - Tokens.editor-chrome-inset-small; height: parent.height - Tokens.editor-chrome-inset-small; spacing: Tokens.editor-chrome-gap-tight;
-                for scope[i] in root.scope-ids : ActionButton { text: root.scope-labels[i]; compact: true; ghost: true; neutral-selection: true; caps: true; width: root.scope-widths[i]; height: Tokens.editor-layout-scope-option-height; selected: Session.scope == scope; clicked => { root.run(SamplerCommands.scope-select, "", scope, 0); } }
+    if !root.perform: Rectangle {
+        y: parent.height - (Tokens.editor-layout-scope-height + Tokens.editor-layout-footer-height);
+        height: Tokens.editor-layout-scope-height;
+        background: SamplerTheme.ink-1;
+        Text {
+            x: Tokens.editor-chrome-content-inset;
+            text: root.scope-caption;
+            width: Tokens.editor-layout-scope-caption-width;
+            height: parent.height;
+            color: SamplerTheme.secondary;
+            font-family: SamplerTheme.font-ui;
+            font-size: SamplerTheme.type-caption;
+            font-weight: Tokens.editor-weight-bold;
+            vertical-alignment: center;
+        }
+
+        Rectangle {
+            x: Tokens.editor-layout-scope-selector-left;
+            y: 0px;
+            width: Tokens.editor-layout-scope-selector-width;
+            height: Tokens.editor-layout-scope-selector-height;
+            background: SamplerTheme.surface-well;
+            border-radius: Tokens.editor-radius-group;
+            border-width: Tokens.editor-border-width;
+            border-color: SamplerTheme.border-hairline;
+            HorizontalLayout {
+                x: Tokens.editor-chrome-inset-cap;
+                y: Tokens.editor-chrome-inset-cap;
+                width: parent.width - Tokens.editor-chrome-inset-small;
+                height: parent.height - Tokens.editor-chrome-inset-small;
+                spacing: Tokens.editor-chrome-gap-tight;
+                for scope[i] in root.scope-ids: ActionButton {
+                    text: root.scope-labels[i];
+                    compact: true;
+                    ghost: true;
+                    neutral-selection: true;
+                    caps: true;
+                    width: root.scope-widths[i];
+                    height: Tokens.editor-layout-scope-option-height;
+                    selected: Session.scope == scope;
+                    clicked => { root.run(SamplerCommands.scope-select, "", scope, 0); }
+                }
             }
         }
     }
-    Rectangle { visible: !root.perform; y: parent.height - Tokens.editor-layout-footer-height; height: Tokens.editor-layout-footer-height; background: SamplerTheme.ink-0;
-        Rectangle { height: Tokens.editor-border-width; background: SamplerTheme.line-1; }
-        Text { x: Tokens.editor-chrome-content-inset; width: parent.width - Tokens.editor-layout-footer-text-reserve; text: Session.status + root.status-separator + Session.page + root.status-separator + Session.sounding-notes.length + root.held-notes-suffix; font-family: SamplerTheme.font-ui; font-size: SamplerTheme.type-caption; color: SamplerTheme.paper-3; vertical-alignment: center; overflow: elide; }
-        ActionButton { x: parent.width - Tokens.editor-layout-about-right; y: Tokens.editor-chrome-gap-tight; width: Tokens.editor-layout-about-width; height: Tokens.editor-layout-about-height; text: root.about-caption; ghost: true; compact: true; clicked => { root.about-slint(); } }
+    Rectangle {
+        visible: !root.perform;
+        y: parent.height - Tokens.editor-layout-footer-height;
+        height: Tokens.editor-layout-footer-height;
+        background: SamplerTheme.ink-0;
+        Rectangle {
+            height: Tokens.editor-border-width;
+            background: SamplerTheme.line-1;
+        }
+
+        Text {
+            x: Tokens.editor-chrome-content-inset;
+            width: parent.width - Tokens.editor-layout-footer-text-reserve;
+            text: Session.status + root.status-separator + Session.page + root.status-separator + Session.sounding-notes.length + root.held-notes-suffix;
+            font-family: SamplerTheme.font-ui;
+            font-size: SamplerTheme.type-caption;
+            color: SamplerTheme.paper-3;
+            vertical-alignment: center;
+            overflow: elide;
+        }
+
+        ActionButton {
+            x: parent.width - Tokens.editor-layout-about-right;
+            y: Tokens.editor-chrome-gap-tight;
+            width: Tokens.editor-layout-about-width;
+            height: Tokens.editor-layout-about-height;
+            text: root.about-caption;
+            ghost: true;
+            compact: true;
+            clicked => { root.about-slint(); }
+        }
     }
 }

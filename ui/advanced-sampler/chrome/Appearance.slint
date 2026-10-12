@@ -1,9 +1,23 @@
-import { EditorAppearanceMetrics, EditorTypographyMetrics } from "../../slint/editor/DialogConstants.slint";
-import { AppearanceChoices, AppearanceFields, AppearanceStrings } from "../../slint/editor/AppearanceConstants.slint";
-import { EditorModal, EditorDialogSurface } from "../../slint/editor/Dialog.slint";
+import {
+    EditorAppearanceMetrics,
+    EditorTypographyMetrics,
+} from "../../slint/editor/DialogConstants.slint";
+import {
+    AppearanceChoices,
+    AppearanceFields,
+    AppearanceStrings,
+} from "../../slint/editor/AppearanceConstants.slint";
+import {
+    EditorModal,
+    EditorDialogSurface,
+} from "../../slint/editor/Dialog.slint";
 import { ScrollView } from "std-widgets.slint";
-import { ChoiceGrid as AppearanceOptions } from "../../slint/editor/ChoiceGrid.slint";
-import { ColorChoice as AppearanceColor } from "../../slint/editor/ColorChoice.slint";
+import {
+    ChoiceGrid as AppearanceOptions,
+} from "../../slint/editor/ChoiceGrid.slint";
+import {
+    ColorChoice as AppearanceColor,
+} from "../../slint/editor/ColorChoice.slint";
 import { SamplerTheme } from "../theme/Theme.slint";
 import { MaterialSurface } from "../theme/Material.slint";
 import { ActionButton } from "../controls/ActionButton.slint";
@@ -41,37 +55,132 @@ export component Appearance inherits FocusScope {
     }
     public function close() { AppearanceState.opened = false; root.close-requested(); }
     popup := EditorModal {
-        width: root.width; height: root.height;
+        width: root.width;
+        height: root.height;
         forward-focus: close-button;
 
         dismissed => { root.scroll-position = appearance-scroll.viewport-y; root.close(); }
 
-            MaterialSurface {
-                x: (parent.width - self.width) / 2; y: (parent.height - self.height) / 2;
-                width: min(parent.width - 2 * EditorAppearanceMetrics.inset, EditorAppearanceMetrics.maximum-width); height: min(parent.height - 2 * EditorAppearanceMetrics.inset, EditorAppearanceMetrics.maximum-height);
-                base: SamplerTheme.surface-menu; raised: true;
-                TouchArea { width: parent.width; height: parent.height; }
-                Text { x: EditorAppearanceMetrics.inset; y: EditorAppearanceMetrics.heading-top; text: AppearanceStrings.title; color: SamplerTheme.paper-1; font-family: SamplerTheme.font-display; font-size: EditorAppearanceMetrics.heading-size; font-weight: EditorTypographyMetrics.weight-strong; }
-                close-button := ActionButton { x: parent.width - EditorAppearanceMetrics.close-end; y: EditorAppearanceMetrics.heading-top; width: EditorAppearanceMetrics.close-width; text: AppearanceStrings.close; clicked => { root.scroll-position = appearance-scroll.viewport-y; root.close(); } }
-                appearance-scroll := ScrollView {
-                    viewport-y: root.scroll-position;
-                    x: EditorAppearanceMetrics.inset; y: EditorAppearanceMetrics.content-top; width: parent.width - 2 * EditorAppearanceMetrics.inset; height: parent.height - EditorAppearanceMetrics.content-reserve;
-                    VerticalLayout {
-                        spacing: EditorAppearanceMetrics.section-spacing;
-                        Text { text: AppearanceStrings.surface; color: SamplerTheme.paper-3; font-family: SamplerTheme.font-ui; font-size: SamplerTheme.type-small; font-weight: EditorTypographyMetrics.weight-strong; }
-                        AppearanceOptions { values: AppearanceChoices.surfaces; selected: AppearanceState.surface; changed(value) => { root.choose(AppearanceFields.surface, value); } }
-                        Text { text: AppearanceStrings.finish; color: SamplerTheme.paper-3; font-family: SamplerTheme.font-ui; font-size: SamplerTheme.type-small; font-weight: EditorTypographyMetrics.weight-strong; }
-                        AppearanceOptions { values: AppearanceChoices.finishes; selected: AppearanceState.finish; changed(value) => { root.choose(AppearanceFields.finish, value); } }
-                        AppearanceColor { label: AppearanceStrings.accent; value: AppearanceState.accent; values: AppearanceChoices.accents; changed(value) => { root.choose(AppearanceFields.accent, value); } }
-                        AppearanceColor { label: AppearanceStrings.secondary; value: AppearanceState.secondary; values: AppearanceChoices.secondaries; changed(value) => { root.choose(AppearanceFields.secondary, value); } }
-                        Text { text: AppearanceStrings.modulation; color: SamplerTheme.paper-3; font-family: SamplerTheme.font-ui; font-size: SamplerTheme.type-small; font-weight: EditorTypographyMetrics.weight-strong; }
-                        AppearanceOptions { values: AppearanceChoices.modulations; selected: AppearanceState.mod-palette; changed(value) => { root.choose(AppearanceFields.modulation, value); } }
-                        AppearanceColor { label: AppearanceStrings.host; value: AppearanceState.host; values: AppearanceChoices.hosts; changed(value) => { root.choose(AppearanceFields.host, value); } }
-                        Text { text: AppearanceState.error; color: SamplerTheme.error; font-family: SamplerTheme.font-ui; font-size: SamplerTheme.type-body; font-weight: EditorTypographyMetrics.weight-medium; wrap: word-wrap; }
-                        Text { text: AppearanceStrings.help; color: SamplerTheme.paper-3; font-family: SamplerTheme.font-ui; font-size: SamplerTheme.type-small; font-weight: EditorTypographyMetrics.weight-medium; wrap: word-wrap; }
+        MaterialSurface {
+            x: (parent.width - self.width) / 2;
+            y: (parent.height - self.height) / 2;
+            width: min(parent.width - 2 * EditorAppearanceMetrics.inset, EditorAppearanceMetrics.maximum-width);
+            height: min(parent.height - 2 * EditorAppearanceMetrics.inset, EditorAppearanceMetrics.maximum-height);
+            base: SamplerTheme.surface-menu;
+            raised: true;
+            TouchArea {
+                width: parent.width;
+                height: parent.height;
+            }
+
+            Text {
+                x: EditorAppearanceMetrics.inset;
+                y: EditorAppearanceMetrics.heading-top;
+                text: AppearanceStrings.title;
+                color: SamplerTheme.paper-1;
+                font-family: SamplerTheme.font-display;
+                font-size: EditorAppearanceMetrics.heading-size;
+                font-weight: EditorTypographyMetrics.weight-strong;
+            }
+
+            close-button := ActionButton {
+                x: parent.width - EditorAppearanceMetrics.close-end;
+                y: EditorAppearanceMetrics.heading-top;
+                width: EditorAppearanceMetrics.close-width;
+                text: AppearanceStrings.close;
+                clicked => { root.scroll-position = appearance-scroll.viewport-y; root.close(); }
+            }
+
+            appearance-scroll := ScrollView {
+                viewport-y: root.scroll-position;
+                x: EditorAppearanceMetrics.inset;
+                y: EditorAppearanceMetrics.content-top;
+                width: parent.width - 2 * EditorAppearanceMetrics.inset;
+                height: parent.height - EditorAppearanceMetrics.content-reserve;
+                VerticalLayout {
+                    spacing: EditorAppearanceMetrics.section-spacing;
+                    Text {
+                        text: AppearanceStrings.surface;
+                        color: SamplerTheme.paper-3;
+                        font-family: SamplerTheme.font-ui;
+                        font-size: SamplerTheme.type-small;
+                        font-weight: EditorTypographyMetrics.weight-strong;
+                    }
+
+                    AppearanceOptions {
+                        values: AppearanceChoices.surfaces;
+                        selected: AppearanceState.surface;
+                        changed(value) => { root.choose(AppearanceFields.surface, value); }
+                    }
+
+                    Text {
+                        text: AppearanceStrings.finish;
+                        color: SamplerTheme.paper-3;
+                        font-family: SamplerTheme.font-ui;
+                        font-size: SamplerTheme.type-small;
+                        font-weight: EditorTypographyMetrics.weight-strong;
+                    }
+
+                    AppearanceOptions {
+                        values: AppearanceChoices.finishes;
+                        selected: AppearanceState.finish;
+                        changed(value) => { root.choose(AppearanceFields.finish, value); }
+                    }
+
+                    AppearanceColor {
+                        label: AppearanceStrings.accent;
+                        value: AppearanceState.accent;
+                        values: AppearanceChoices.accents;
+                        changed(value) => { root.choose(AppearanceFields.accent, value); }
+                    }
+
+                    AppearanceColor {
+                        label: AppearanceStrings.secondary;
+                        value: AppearanceState.secondary;
+                        values: AppearanceChoices.secondaries;
+                        changed(value) => { root.choose(AppearanceFields.secondary, value); }
+                    }
+
+                    Text {
+                        text: AppearanceStrings.modulation;
+                        color: SamplerTheme.paper-3;
+                        font-family: SamplerTheme.font-ui;
+                        font-size: SamplerTheme.type-small;
+                        font-weight: EditorTypographyMetrics.weight-strong;
+                    }
+
+                    AppearanceOptions {
+                        values: AppearanceChoices.modulations;
+                        selected: AppearanceState.mod-palette;
+                        changed(value) => { root.choose(AppearanceFields.modulation, value); }
+                    }
+
+                    AppearanceColor {
+                        label: AppearanceStrings.host;
+                        value: AppearanceState.host;
+                        values: AppearanceChoices.hosts;
+                        changed(value) => { root.choose(AppearanceFields.host, value); }
+                    }
+
+                    Text {
+                        text: AppearanceState.error;
+                        color: SamplerTheme.error;
+                        font-family: SamplerTheme.font-ui;
+                        font-size: SamplerTheme.type-body;
+                        font-weight: EditorTypographyMetrics.weight-medium;
+                        wrap: word-wrap;
+                    }
+
+                    Text {
+                        text: AppearanceStrings.help;
+                        color: SamplerTheme.paper-3;
+                        font-family: SamplerTheme.font-ui;
+                        font-size: SamplerTheme.type-small;
+                        font-weight: EditorTypographyMetrics.weight-medium;
+                        wrap: word-wrap;
                     }
                 }
             }
-
+        }
     }
 }

@@ -5,6 +5,7 @@ export global DragKinds {
     out property <string> modulator: Tokens.editor-drag-modulator;
     out property <string> slice: Tokens.editor-drag-slice;
 }
+
 export global EditorDragMetrics {
     out property <length> threshold: Tokens.editor-drag-threshold;
 }
@@ -22,6 +23,7 @@ export global EditorDragState {
     public function finish() { if root.active { root.handled = false; root.active = false; root.drop-serial += 1; } }
     public function cancel() { root.active = false; root.kind = ""; root.id = ""; }
 }
+
 export component EditorDragSource inherits TouchArea {
     in property <string> kind;
     in property <string> payload;
@@ -35,10 +37,12 @@ export component EditorDragSource inherits TouchArea {
     mouse-cursor: grab;
     // A nonvisual focus owner observes window loss without intercepting pointer input.
     source-focus := FocusScope {
-        width: 0px; height: 0px;
+        width: 0px;
+        height: 0px;
         focus-on-tab-navigation: false;
         focus-lost(reason) => { if reason == FocusReason.window-activation { root.cancel(); } }
     }
+
     pointer-event(event) => {
         if event.kind == PointerEventKind.down && event.button == PointerEventButton.right { root.context-requested(); }
         else if event.kind == PointerEventKind.down && event.button == PointerEventButton.left { source-focus.focus(); root.start-x = self.mouse-x; root.start-y = self.mouse-y; root.armed = true; root.dragged = false; }
@@ -56,6 +60,7 @@ export component EditorDragSource inherits TouchArea {
     }
     changed enabled => { if !root.enabled { root.cancel(); } }
 }
+
 export component EditorDragTarget inherits Rectangle {
     in property <bool> enabled: true;
     in property <string> accepted-kind;

@@ -7,10 +7,13 @@ export component ChoiceGrid inherits Rectangle {
     callback changed(string);
     callback window-deactivated();
     height: ceil(root.values.length / Tokens.editor-choice-column-count) * Tokens.editor-choice-row-stride;
-    for option[i] in root.values : EditorButton { window-deactivated => { root.window-deactivated(); }
-        x: mod(i, Tokens.editor-choice-column-count) * (parent.width / Tokens.editor-choice-column-count); y: floor(i / Tokens.editor-choice-column-count) * Tokens.editor-choice-row-stride;
-        width: parent.width / Tokens.editor-choice-column-count - Tokens.editor-choice-column-gap; text: option; selected: root.selected == option;
+    for option[i] in root.values: EditorButton {
+        window-deactivated => { root.window-deactivated(); }
+        x: mod(i, Tokens.editor-choice-column-count) * (parent.width / Tokens.editor-choice-column-count);
+        y: floor(i / Tokens.editor-choice-column-count) * Tokens.editor-choice-row-stride;
+        width: parent.width / Tokens.editor-choice-column-count - Tokens.editor-choice-column-gap;
+        text: option;
+        selected: root.selected == option;
         clicked => { root.changed(option); }
     }
 }
-

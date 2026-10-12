@@ -14,24 +14,40 @@ export component EditorProcessorPlot inherits Rectangle {
     in property <float> ratio: 1;
     in property <color> curve-color: EditorTheme.accent;
     out property <bool> captured: input.captured;
-    callback gesture(int,float) -> bool;
-    public function finish(cancel:bool) { input.finish(cancel); }
-    public pure function response(t:float) -> float {
-        let normalized=(root.value - root.minimum)/max(CurveMetrics.processor-range-epsilon,root.maximum - root.minimum);
-        let threshold=(root.value+CurveMetrics.compressor-db-span)/CurveMetrics.compressor-db-span;
-        return root.kind == CurveKinds.compressor ? min(1,max(0,t <= threshold ? t : threshold+(t - threshold)/max(1,root.ratio)))
-            : root.kind == CurveKinds.eq ? min(CurveMetrics.eq-maximum,max(CurveMetrics.eq-minimum,CurveMetrics.bipolar-center+(normalized - CurveMetrics.bipolar-center)*CurveMetrics.eq-amplitude*cos(t*CurveMetrics.half-cycle-degrees*1deg)))
-            : root.kind == CurveKinds.filter ? 1/(1+pow(t/max(CurveMetrics.minimum-filter-cutoff,normalized),CurveMetrics.filter-preview-order))
-            : root.kind == CurveKinds.saturate ? CurveMetrics.bipolar-center+(t - CurveMetrics.bipolar-center)/(1+abs(t - CurveMetrics.bipolar-center)*normalized*CurveMetrics.saturation-preview-drive)
-            : root.kind == CurveKinds.bitcrush ? round(t*max(CurveMetrics.minimum-crush-levels,root.value))/max(CurveMetrics.minimum-crush-levels,root.value)
-            : (1 - t)*(CurveMetrics.decay-base-gain+normalized*CurveMetrics.decay-gain-span);
+    callback gesture(int, float) -> bool;
+    public function finish(cancel: bool) { input.finish(cancel); }
+    public pure function response(t: float) -> float {
+        let normalized = (root.value - root.minimum) / max(CurveMetrics.processor-range-epsilon,root.maximum - root.minimum);
+        let threshold = (root.value + CurveMetrics.compressor-db-span) / CurveMetrics.compressor-db-span;
+        return root.kind == CurveKinds.compressor ? min(1,max(0,t <= threshold ? t : threshold + (t - threshold) / max(1,root.ratio)))
+            : root.kind == CurveKinds.eq ? min(CurveMetrics.eq-maximum,max(CurveMetrics.eq-minimum,CurveMetrics.bipolar-center + (normalized - CurveMetrics.bipolar-center) * CurveMetrics.eq-amplitude * cos(t * CurveMetrics.half-cycle-degrees * 1deg)))
+            : root.kind == CurveKinds.filter ? 1 / (1 + pow(t / max(CurveMetrics.minimum-filter-cutoff,normalized),CurveMetrics.filter-preview-order))
+            : root.kind == CurveKinds.saturate ? CurveMetrics.bipolar-center + (t - CurveMetrics.bipolar-center) / (1 + abs(t - CurveMetrics.bipolar-center) * normalized * CurveMetrics.saturation-preview-drive)
+            : root.kind == CurveKinds.bitcrush ? round(t * max(CurveMetrics.minimum-crush-levels,root.value)) / max(CurveMetrics.minimum-crush-levels,root.value)
+            : (1 - t) * (CurveMetrics.decay-base-gain + normalized * CurveMetrics.decay-gain-span);
     }
-    public pure function y-at(t:float) -> float { return 1 - root.response(t); }
-    EditorCurvePlot { segments: CurveMetrics.processor-segments; curve-color: root.curve-color; sample(t) => { return root.y-at(t); } }
-    Rectangle { x: Tokens.editor-curve-processor-marker-inset; y: Tokens.editor-curve-processor-marker-inset; width: Tokens.editor-curve-processor-marker-size; height: Tokens.editor-curve-processor-marker-size; background: root.curve-color; }
+    public pure function y-at(t: float) -> float { return 1 - root.response(t); }
+    EditorCurvePlot {
+        segments: CurveMetrics.processor-segments;
+        curve-color: root.curve-color;
+        sample(t) => { return root.y-at(t); }
+    }
+
+    Rectangle {
+        x: Tokens.editor-curve-processor-marker-inset;
+        y: Tokens.editor-curve-processor-marker-inset;
+        width: Tokens.editor-curve-processor-marker-size;
+        height: Tokens.editor-curve-processor-marker-size;
+        background: root.curve-color;
+    }
+
     input := EditorZoneEdge {
-        label: root.label; value: root.value; units: root.maximum - root.minimum;
-        axis-length: root.width; step: 0; enabled: root.enabled;
-        gesture(phase,value) => { return root.gesture(phase,value); }
+        label: root.label;
+        value: root.value;
+        units: root.maximum - root.minimum;
+        axis-length: root.width;
+        step: 0;
+        enabled: root.enabled;
+        gesture(phase, value) => { return root.gesture(phase,value); }
     }
 }

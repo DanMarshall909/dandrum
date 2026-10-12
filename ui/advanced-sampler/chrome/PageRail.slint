@@ -1,19 +1,57 @@
 import { Tokens } from "../../slint/theme.slint";
 import { NavigationRail } from "../../slint/editor/NavigationRail.slint";
-export { NavigationItem as RailPage } from "../../slint/editor/NavigationRail.slint";
+export {
+    NavigationItem as RailPage,
+} from "../../slint/editor/NavigationRail.slint";
 export component PageRail inherits NavigationRail {
     in property <string> page;
     selected-id: root.page == "sample" || root.page == "slices" ? "voice" : root.page;
     small-font-size: Tokens.editor-type-legacy-small;
     items: [
-        {id: "pads", label: "Pads", caption: "PADS", icon: Tokens.editor-icon-tap, group: "PLAY"},
-        {id: "macros", label: "Macros", caption: "MACROS", icon: Tokens.editor-icon-variation, group: ""},
-        {id: "mapping", label: "Mapping", caption: "MAP", icon: Tokens.editor-icon-keyboard, group: "BUILD"},
-        {id: "layers", label: "Layers", caption: "LAYERS", icon: Tokens.editor-icon-layers, group: ""},
-        {id: "voice", label: "Voice", caption: "VOICE", icon: Tokens.editor-icon-level, group: ""},
-        {id: "mod", label: "Mod", caption: "MOD", icon: Tokens.editor-icon-modulate, group: "SHAPE"},
-        {id: "routing", label: "Routing", caption: "ROUTE", icon: Tokens.editor-icon-pan, group: ""},
-        {id: "fx", label: "FX", caption: "FX", icon: Tokens.editor-icon-settings, group: ""},
-        {id: "overview", label: "Overview", caption: "ALL", icon: Tokens.editor-icon-info, group: " "}
+        { id: "pads", label: "Pads", caption: "PADS", icon: Tokens.editor-icon-tap, group: "PLAY" },
+        {
+            id: "macros",
+            label: "Macros",
+            caption: "MACROS",
+            icon: Tokens.editor-icon-variation,
+            group: ""
+        },
+        {
+            id: "mapping",
+            label: "Mapping",
+            caption: "MAP",
+            icon: Tokens.editor-icon-keyboard,
+            group: "BUILD"
+        },
+        {
+            id: "layers",
+            label: "Layers",
+            caption: "LAYERS",
+            icon: Tokens.editor-icon-layers,
+            group: ""
+        },
+        { id: "voice", label: "Voice", caption: "VOICE", icon: Tokens.editor-icon-level, group: "" },
+        {
+            id: "mod",
+            label: "Mod",
+            caption: "MOD",
+            icon: Tokens.editor-icon-modulate,
+            group: "SHAPE"
+        },
+        {
+            id: "routing",
+            label: "Routing",
+            caption: "ROUTE",
+            icon: Tokens.editor-icon-pan,
+            group: ""
+        },
+        { id: "fx", label: "FX", caption: "FX", icon: Tokens.editor-icon-settings, group: "" },
+        {
+            id: "overview",
+            label: "Overview",
+            caption: "ALL",
+            icon: Tokens.editor-icon-info,
+            group: " "
+        }
     ];
 }

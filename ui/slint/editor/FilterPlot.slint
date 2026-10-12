@@ -4,83 +4,181 @@ import { GesturePhases } from "ParameterConstants.slint";
 import { EditorTheme } from "Theme.slint";
 // Display-only guide response; the consumer owns parameter transport and rollback.
 export component EditorFilterPlot inherits FocusScope {
- in property <float> cutoff: GraphMetrics.default-cutoff;
- in property <float> resonance: GraphMetrics.default-resonance;
- in property <string> mode: DisplayModes.lp;
- in property <string> label: Tokens.editor-display-filter-label;
- out property <bool> dragging;
- callback gesture(int,float) -> bool;
- callback resonance-preview(float);
- focus-on-tab-navigation: true;
- accessible-role: slider; accessible-label: root.label;
- accessible-value: round(root.cutoff) + Tokens.editor-display-frequency-value-suffix;
- accessible-value-minimum: GraphMetrics.frequency-minimum; accessible-value-maximum: GraphMetrics.frequency-maximum;
- public pure function response(t:float) -> float {
-  let ratio = GraphMetrics.frequency-minimum * pow(GraphMetrics.frequency-ratio,t) / max(GraphMetrics.frequency-minimum,root.cutoff);
-  let base = root.mode == DisplayModes.hp ? -GraphMetrics.decibel-log-scale * log(1 + pow(1/ratio,GraphMetrics.lowpass-power),GraphMetrics.decibel-log-scale) :
-   root.mode == DisplayModes.bp ? -GraphMetrics.decibel-log-scale * log(1 + pow(abs(ratio - 1/ratio),GraphMetrics.band-power),GraphMetrics.decibel-log-scale) :
-   root.mode == DisplayModes.notch ? -GraphMetrics.decibel-log-scale * log(1 + pow(1/max(Ranges.epsilon,abs(ratio - 1/ratio)),GraphMetrics.band-power),GraphMetrics.decibel-log-scale) :
-   -GraphMetrics.decibel-log-scale * log(1 + pow(ratio,GraphMetrics.lowpass-power),GraphMetrics.decibel-log-scale);
-  let db = base + (root.mode == DisplayModes.notch ? 0 : root.resonance * GraphMetrics.resonance-boost * pow(GraphMetrics.euler-approximation,-pow(log(ratio,GraphMetrics.euler-approximation)/GraphMetrics.resonance-width,2)));
-  return ((GraphMetrics.zero-db-percent - db * GraphMetrics.db-pixel-scale).clamp(GraphMetrics.response-minimum-percent,GraphMetrics.response-maximum-percent))/Ranges.percentage;
- }
- public function update(x:float,y:float) {
-  if !root.enabled || !root.dragging { return; }
-  root.gesture(GesturePhases.update,GraphMetrics.frequency-minimum*pow(GraphMetrics.frequency-ratio,x.clamp(0,1)));
-  root.resonance-preview(((GraphMetrics.resonance-pointer-ceiling - y)/GraphMetrics.resonance-pointer-ceiling).clamp(0,1));
- }
- public function finish(cancel:bool) {
-  if root.dragging { root.dragging=false; root.gesture(cancel ? GesturePhases.cancel : GesturePhases.commit,root.cutoff); }
- }
- changed enabled => { if !root.enabled { root.finish(true); } }
- focus-lost(reason) => { if reason == FocusReason.window-activation { root.finish(true); } }
- key-pressed(event) => {
-  if !root.enabled { return reject; }
-  if event.text == Key.Escape { root.finish(true); return accept; }
-  if event.text == Key.LeftArrow || event.text == Key.RightArrow {
-   if root.gesture(GesturePhases.begin,root.cutoff) {
-    root.gesture(GesturePhases.update,(root.cutoff * (event.text == Key.LeftArrow ? GraphMetrics.keyboard-reduction : GraphMetrics.keyboard-increase)).clamp(GraphMetrics.frequency-minimum,GraphMetrics.frequency-maximum));
-    root.gesture(GesturePhases.commit,root.cutoff);
-   }
-   return accept;
-  }
-  return reject;
- }
- Rectangle { background: EditorTheme.ink-0; border-width: Tokens.stroke-hairline; border-color: EditorTheme.line-1; border-radius: Tokens.radius-1;
-  Rectangle { x: Tokens.space-4; y: Tokens.space-2+(parent.height - Tokens.space-4)*(GraphMetrics.zero-db-percent/Ranges.percentage); width: parent.width - Tokens.space-6; height: 1px; background: EditorTheme.line-2; }
-  for i in GraphMetrics.response-steps : Path {
-   x: Tokens.space-4; y: Tokens.space-2; width: parent.width - Tokens.space-6; height: parent.height - Tokens.space-4;
-   viewbox-x: 0; viewbox-y: 0; viewbox-width: self.width/1px; viewbox-height: self.height/1px;
-   fill: EditorTheme.paper-1.with-alpha(GraphMetrics.curve-fill-alpha);
-   MoveTo { x: i/GraphMetrics.response-steps*parent.width/1px; y: parent.height/1px; }
-   LineTo { x: i/GraphMetrics.response-steps*parent.width/1px; y: root.response(i/GraphMetrics.response-steps)*parent.height/1px; }
-   LineTo { x: (i+1)/GraphMetrics.response-steps*parent.width/1px; y: root.response((i+1)/GraphMetrics.response-steps)*parent.height/1px; }
-   LineTo { x: (i+1)/GraphMetrics.response-steps*parent.width/1px; y: parent.height/1px; }
-   Close { }
-  }
-  for i in GraphMetrics.response-steps : Path {
-   x: Tokens.space-4; y: Tokens.space-2; width: parent.width - Tokens.space-6; height: parent.height - Tokens.space-4;
-   viewbox-x: 0; viewbox-y: 0; viewbox-width: self.width/1px; viewbox-height: self.height/1px;
-   fill: transparent; stroke: EditorTheme.paper-1; stroke-width: Tokens.editor-display-filter-response-stroke;
-   MoveTo { x: i/GraphMetrics.response-steps*parent.width/1px; y: root.response(i/GraphMetrics.response-steps)*parent.height/1px; }
-   LineTo { x: (i+1)/GraphMetrics.response-steps*parent.width/1px; y: root.response((i+1)/GraphMetrics.response-steps)*parent.height/1px; }
-  }
-  Rectangle { x: Tokens.space-4+log(root.cutoff/GraphMetrics.frequency-minimum,GraphMetrics.frequency-ratio).clamp(0,1)*(parent.width - Tokens.space-6); y: Tokens.space-2; height: parent.height - Tokens.space-4; width: 1px; background: EditorTheme.accent; }
-  Rectangle { x: Tokens.space-4+log(root.cutoff/GraphMetrics.frequency-minimum,GraphMetrics.frequency-ratio).clamp(0,1)*(parent.width - Tokens.space-6) - Tokens.editor-display-filter-handle-radius; y: Tokens.space-2+root.response(log(root.cutoff/GraphMetrics.frequency-minimum,GraphMetrics.frequency-ratio).clamp(0,1))*(parent.height - Tokens.space-4) - Tokens.editor-display-filter-handle-radius; width: Tokens.editor-display-filter-handle-size; height: Tokens.editor-display-filter-handle-size; border-radius: Tokens.editor-display-filter-handle-radius; background: EditorTheme.accent; border-width: Tokens.stroke-hairline; border-color: EditorTheme.ink-0; }
-  Text { color: EditorTheme.paper-3; vertical-alignment: center; overflow: elide; x: Tokens.editor-display-filter-label-inset; y: Tokens.editor-display-filter-label-top; text: Tokens.editor-display-filter-zero-label; font-family: EditorTheme.font-value; font-size: Tokens.type-micro; }
-  Text { color: EditorTheme.paper-3; vertical-alignment: center; overflow: elide; x: Tokens.editor-display-filter-label-inset; y: parent.height - Tokens.editor-display-filter-label-bottom-offset; text: Tokens.editor-display-filter-minimum-label; font-family: EditorTheme.font-value; font-size: Tokens.type-micro; }
-  Text { color: EditorTheme.paper-3; vertical-alignment: center; overflow: elide; x: parent.width - self.preferred-width - Tokens.editor-display-filter-label-inset; y: parent.height - Tokens.editor-display-filter-label-bottom-offset; text: Tokens.editor-display-filter-maximum-label; font-family: EditorTheme.font-value; font-size: Tokens.type-micro; }
- }
- TouchArea { mouse-cursor: crosshair;
-  pointer-event(event) => {
-   if event.button == PointerEventButton.left && event.kind == PointerEventKind.down && root.enabled {
-    root.focus(); root.dragging=root.gesture(GesturePhases.begin,root.cutoff);
-    if root.dragging { root.update((self.mouse-x - Tokens.space-4)/max(1px,root.width - Tokens.space-6),(self.mouse-y - Tokens.space-2)/max(1px,root.height - Tokens.space-4)); }
-   }
-   if event.button == PointerEventButton.left && event.kind == PointerEventKind.up { root.finish(false); }
-   if event.kind == PointerEventKind.cancel { root.finish(true); }
-  }
-  moved => { if root.dragging { root.update((self.mouse-x - Tokens.space-4)/max(1px,root.width - Tokens.space-6),(self.mouse-y - Tokens.space-2)/max(1px,root.height - Tokens.space-4)); } }
- }
-}
+    in property <float> cutoff: GraphMetrics.default-cutoff;
+    in property <float> resonance: GraphMetrics.default-resonance;
+    in property <string> mode: DisplayModes.lp;
+    in property <string> label: Tokens.editor-display-filter-label;
+    out property <bool> dragging;
+    callback gesture(int, float) -> bool;
+    callback resonance-preview(float);
+    focus-on-tab-navigation: true;
+    accessible-role: slider;
+    accessible-label: root.label;
+    accessible-value: round(root.cutoff) + Tokens.editor-display-frequency-value-suffix;
+    accessible-value-minimum: GraphMetrics.frequency-minimum;
+    accessible-value-maximum: GraphMetrics.frequency-maximum;
+    public pure function response(t: float) -> float {
+        let ratio = GraphMetrics.frequency-minimum * pow(GraphMetrics.frequency-ratio,t) / max(GraphMetrics.frequency-minimum,root.cutoff);
+        let base = root.mode == DisplayModes.hp ? -GraphMetrics.decibel-log-scale * log(1 + pow(1 / ratio,GraphMetrics.lowpass-power),GraphMetrics.decibel-log-scale) :
+            root.mode == DisplayModes.bp ? -GraphMetrics.decibel-log-scale * log(1 + pow(abs(ratio - 1 / ratio),GraphMetrics.band-power),GraphMetrics.decibel-log-scale) :
+            root.mode == DisplayModes.notch ? -GraphMetrics.decibel-log-scale * log(1 + pow(1 / max(Ranges.epsilon,abs(ratio - 1 / ratio)),GraphMetrics.band-power),GraphMetrics.decibel-log-scale) :
+            -GraphMetrics.decibel-log-scale * log(1 + pow(ratio,GraphMetrics.lowpass-power),GraphMetrics.decibel-log-scale);
+        let db = base + (root.mode == DisplayModes.notch ? 0 : root.resonance * GraphMetrics.resonance-boost * pow(GraphMetrics.euler-approximation,-pow(log(ratio,GraphMetrics.euler-approximation) / GraphMetrics.resonance-width,2)));
+        return ((GraphMetrics.zero-db-percent - db * GraphMetrics.db-pixel-scale).clamp(GraphMetrics.response-minimum-percent,GraphMetrics.response-maximum-percent)) / Ranges.percentage;
+    }
+    public function update(x: float, y: float) {
+        if !root.enabled || !root.dragging { return; }
+        root.gesture(GesturePhases.update,GraphMetrics.frequency-minimum * pow(GraphMetrics.frequency-ratio,x.clamp(0,1)));
+        root.resonance-preview(((GraphMetrics.resonance-pointer-ceiling - y) / GraphMetrics.resonance-pointer-ceiling).clamp(0,1));
+    }
+    public function finish(cancel: bool) {
+        if root.dragging { root.dragging = false; root.gesture(cancel ? GesturePhases.cancel : GesturePhases.commit,root.cutoff); }
+    }
+    changed enabled => { if !root.enabled { root.finish(true); } }
+    focus-lost(reason) => { if reason == FocusReason.window-activation { root.finish(true); } }
+    key-pressed(event) => {
+        if !root.enabled { return reject; }
+        if event.text == Key.Escape { root.finish(true); return accept; }
+        if event.text == Key.LeftArrow || event.text == Key.RightArrow {
+            if root.gesture(GesturePhases.begin,root.cutoff) {
+                root.gesture(GesturePhases.update,(root.cutoff * (event.text == Key.LeftArrow ? GraphMetrics.keyboard-reduction : GraphMetrics.keyboard-increase)).clamp(GraphMetrics.frequency-minimum,GraphMetrics.frequency-maximum));
+                root.gesture(GesturePhases.commit,root.cutoff);
+            }
+            return accept;
+        }
+        return reject;
+    }
+    Rectangle {
+        background: EditorTheme.ink-0;
+        border-width: Tokens.stroke-hairline;
+        border-color: EditorTheme.line-1;
+        border-radius: Tokens.radius-1;
+        Rectangle {
+            x: Tokens.space-4;
+            y: Tokens.space-2 + (parent.height - Tokens.space-4) * (GraphMetrics.zero-db-percent / Ranges.percentage);
+            width: parent.width - Tokens.space-6;
+            height: 1px;
+            background: EditorTheme.line-2;
+        }
 
+        for i in GraphMetrics.response-steps: Path {
+            x: Tokens.space-4;
+            y: Tokens.space-2;
+            width: parent.width - Tokens.space-6;
+            height: parent.height - Tokens.space-4;
+            viewbox-x: 0;
+            viewbox-y: 0;
+            viewbox-width: self.width / 1px;
+            viewbox-height: self.height / 1px;
+            fill: EditorTheme.paper-1.with-alpha(GraphMetrics.curve-fill-alpha);
+            MoveTo {
+                x: i / GraphMetrics.response-steps * parent.width / 1px;
+                y: parent.height / 1px;
+            }
+
+            LineTo {
+                x: i / GraphMetrics.response-steps * parent.width / 1px;
+                y: root.response(i / GraphMetrics.response-steps) * parent.height / 1px;
+            }
+
+            LineTo {
+                x: (i + 1) / GraphMetrics.response-steps * parent.width / 1px;
+                y: root.response((i + 1) / GraphMetrics.response-steps) * parent.height / 1px;
+            }
+
+            LineTo {
+                x: (i + 1) / GraphMetrics.response-steps * parent.width / 1px;
+                y: parent.height / 1px;
+            }
+
+            Close { }
+        }
+        for i in GraphMetrics.response-steps: Path {
+            x: Tokens.space-4;
+            y: Tokens.space-2;
+            width: parent.width - Tokens.space-6;
+            height: parent.height - Tokens.space-4;
+            viewbox-x: 0;
+            viewbox-y: 0;
+            viewbox-width: self.width / 1px;
+            viewbox-height: self.height / 1px;
+            fill: transparent;
+            stroke: EditorTheme.paper-1;
+            stroke-width: Tokens.editor-display-filter-response-stroke;
+            MoveTo {
+                x: i / GraphMetrics.response-steps * parent.width / 1px;
+                y: root.response(i / GraphMetrics.response-steps) * parent.height / 1px;
+            }
+
+            LineTo {
+                x: (i + 1) / GraphMetrics.response-steps * parent.width / 1px;
+                y: root.response((i + 1) / GraphMetrics.response-steps) * parent.height / 1px;
+            }
+        }
+        Rectangle {
+            x: Tokens.space-4 + log(root.cutoff / GraphMetrics.frequency-minimum,GraphMetrics.frequency-ratio).clamp(0,1) * (parent.width - Tokens.space-6);
+            y: Tokens.space-2;
+            height: parent.height - Tokens.space-4;
+            width: 1px;
+            background: EditorTheme.accent;
+        }
+
+        Rectangle {
+            x: Tokens.space-4 + log(root.cutoff / GraphMetrics.frequency-minimum,GraphMetrics.frequency-ratio).clamp(0,1) * (parent.width - Tokens.space-6) - Tokens.editor-display-filter-handle-radius;
+            y: Tokens.space-2 + root.response(log(root.cutoff / GraphMetrics.frequency-minimum,GraphMetrics.frequency-ratio).clamp(0,1)) * (parent.height - Tokens.space-4) - Tokens.editor-display-filter-handle-radius;
+            width: Tokens.editor-display-filter-handle-size;
+            height: Tokens.editor-display-filter-handle-size;
+            border-radius: Tokens.editor-display-filter-handle-radius;
+            background: EditorTheme.accent;
+            border-width: Tokens.stroke-hairline;
+            border-color: EditorTheme.ink-0;
+        }
+
+        Text {
+            color: EditorTheme.paper-3;
+            vertical-alignment: center;
+            overflow: elide;
+            x: Tokens.editor-display-filter-label-inset;
+            y: Tokens.editor-display-filter-label-top;
+            text: Tokens.editor-display-filter-zero-label;
+            font-family: EditorTheme.font-value;
+            font-size: Tokens.type-micro;
+        }
+
+        Text {
+            color: EditorTheme.paper-3;
+            vertical-alignment: center;
+            overflow: elide;
+            x: Tokens.editor-display-filter-label-inset;
+            y: parent.height - Tokens.editor-display-filter-label-bottom-offset;
+            text: Tokens.editor-display-filter-minimum-label;
+            font-family: EditorTheme.font-value;
+            font-size: Tokens.type-micro;
+        }
+
+        Text {
+            color: EditorTheme.paper-3;
+            vertical-alignment: center;
+            overflow: elide;
+            x: parent.width - self.preferred-width - Tokens.editor-display-filter-label-inset;
+            y: parent.height - Tokens.editor-display-filter-label-bottom-offset;
+            text: Tokens.editor-display-filter-maximum-label;
+            font-family: EditorTheme.font-value;
+            font-size: Tokens.type-micro;
+        }
+    }
+
+    TouchArea {
+        mouse-cursor: crosshair;
+        pointer-event(event) => {
+            if event.button == PointerEventButton.left && event.kind == PointerEventKind.down && root.enabled {
+                root.focus();
+                root.dragging = root.gesture(GesturePhases.begin,root.cutoff);
+                if root.dragging { root.update((self.mouse-x - Tokens.space-4) / max(1px,root.width - Tokens.space-6),(self.mouse-y - Tokens.space-2) / max(1px,root.height - Tokens.space-4)); }
+            }
+            if event.button == PointerEventButton.left && event.kind == PointerEventKind.up { root.finish(false); }
+            if event.kind == PointerEventKind.cancel { root.finish(true); }
+        }
+        moved => { if root.dragging { root.update((self.mouse-x - Tokens.space-4) / max(1px,root.width - Tokens.space-6),(self.mouse-y - Tokens.space-2) / max(1px,root.height - Tokens.space-4)); } }
+    }
+}

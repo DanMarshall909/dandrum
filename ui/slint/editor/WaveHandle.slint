@@ -13,9 +13,16 @@ export component WaveHandle inherits FocusScope {
     private property <length> anchor;
     private property <bool> dragging;
     callback gesture(string, int, float);
-    width: Tokens.editor-display-wave-handle-width; height: root.top ? root.plot-height : Tokens.editor-display-wave-handle-hit-height; y: root.top ? 0px : root.plot-height - Tokens.editor-display-wave-handle-hit-height;
-    accessible-role: slider; accessible-label: root.label; accessible-value: root.position; accessible-value-minimum: 0; accessible-value-maximum: 1;
-    focus-on-tab-navigation: true; focus-on-click: true;
+    width: Tokens.editor-display-wave-handle-width;
+    height: root.top ? root.plot-height : Tokens.editor-display-wave-handle-hit-height;
+    y: root.top ? 0px : root.plot-height - Tokens.editor-display-wave-handle-hit-height;
+    accessible-role: slider;
+    accessible-label: root.label;
+    accessible-value: root.position;
+    accessible-value-minimum: 0;
+    accessible-value-maximum: 1;
+    focus-on-tab-navigation: true;
+    focus-on-click: true;
     focus-lost(reason) => { root.finish(true); }
     function finish(cancel: bool) { if root.dragging { root.dragging = false; root.gesture(root.field, cancel ? GesturePhases.cancel : GesturePhases.commit, cancel ? root.initial : root.position); } }
     key-pressed(event) => {
@@ -23,13 +30,31 @@ export component WaveHandle inherits FocusScope {
         if event.text == Key.LeftArrow || event.text == Key.RightArrow {
             root.gesture(root.field, GesturePhases.begin, root.position);
             root.gesture(root.field, GesturePhases.update, (root.position + (event.text == Key.LeftArrow ? -Tokens.editor-display-wave-keyboard-step : Tokens.editor-display-wave-keyboard-step)).clamp(0,1));
-            root.gesture(root.field, GesturePhases.commit, root.position); return accept;
+            root.gesture(root.field, GesturePhases.commit, root.position);
+            return accept;
         }
         return reject;
     }
-    Rectangle { x: Tokens.editor-display-wave-handle-line-offset; width: 1px; height: parent.height; background: root.tint; }
-    Rectangle { x: Tokens.space-1; y: root.top ? 0px : parent.height - Tokens.editor-display-wave-handle-flag-height; width: Tokens.editor-display-wave-handle-flag-width; height: Tokens.editor-display-wave-handle-flag-height; border-radius: 1px; background: root.tint; }
-    touch := TouchArea { y: root.top ? 0px : parent.height - Tokens.editor-display-wave-handle-hit-height; height: root.top ? parent.height : Tokens.editor-display-wave-handle-hit-height; mouse-cursor: ew-resize;
+    Rectangle {
+        x: Tokens.editor-display-wave-handle-line-offset;
+        width: 1px;
+        height: parent.height;
+        background: root.tint;
+    }
+
+    Rectangle {
+        x: Tokens.space-1;
+        y: root.top ? 0px : parent.height - Tokens.editor-display-wave-handle-flag-height;
+        width: Tokens.editor-display-wave-handle-flag-width;
+        height: Tokens.editor-display-wave-handle-flag-height;
+        border-radius: 1px;
+        background: root.tint;
+    }
+
+    touch := TouchArea {
+        y: root.top ? 0px : parent.height - Tokens.editor-display-wave-handle-hit-height;
+        height: root.top ? parent.height : Tokens.editor-display-wave-handle-hit-height;
+        mouse-cursor: ew-resize;
         pointer-event(event) => {
             if event.kind == PointerEventKind.down && event.button == PointerEventButton.left { root.focus(); root.initial = root.position; root.anchor = self.absolute-position.x + self.mouse-x; root.dragging = true; root.gesture(root.field, GesturePhases.begin, root.position); }
             else if event.kind == PointerEventKind.up { root.finish(false); }

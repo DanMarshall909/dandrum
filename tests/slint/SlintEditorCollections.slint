@@ -1,17 +1,23 @@
 import { EditorPlayKeys } from "../../ui/slint/editor/PlayKeys.slint";
 import { EditorPlayPads } from "../../ui/slint/editor/PlayPads.slint";
 import { EditorPadPanel } from "../../ui/slint/editor/PadPanel.slint";
-import { EditorBindingRangeRow } from "../../ui/slint/editor/BindingRangeRow.slint";
+import {
+    EditorBindingRangeRow,
+} from "../../ui/slint/editor/BindingRangeRow.slint";
 import { PadInfo } from "../../ui/slint/editor/PadTypes.slint";
 export { PadInfo } from "../../ui/slint/editor/PadTypes.slint";
 export { EditorTheme } from "../../ui/slint/editor/Theme.slint";
-export { ValueCodec, ParsedValue } from "../../ui/slint/controls/ValueCodec.slint";
+export {
+    ValueCodec,
+    ParsedValue,
+} from "../../ui/slint/controls/ValueCodec.slint";
 
 export component SlintEditorCollections inherits Window {
-    width: 700px; height: 600px;
+    width: 700px;
+    height: 600px;
     background: #101010;
     in-out property <[PadInfo]> pads;
-    in-out property <PadInfo> selected-pad: {note:60,name:"Independent pad",mapped:true};
+    in-out property <PadInfo> selected-pad: { note:60, name:"Independent pad", mapped:true };
     in-out property <int> key-width;
     in-out property <int> pad-size;
     in-out property <int> pad-start: -1;
@@ -34,21 +40,72 @@ export component SlintEditorCollections inherits Window {
     out property <int> range-begins;
     out property <int> range-ends;
     out property <int> cancellations;
-    callback fit-keys(); callback zoom-keys(int); callback fit-pads(); callback zoom-pads(int);
-    fit-keys => { keys.fit(); } zoom-keys(d) => { keys.zoom(d); }
-    fit-pads => { pad-grid.fit(); } zoom-pads(d) => { pad-grid.zoom(d); }
-    keys := EditorPlayKeys { x:10px;y:10px;width:330px;height:160px;mapped-low:60;mapped-high:64;key-width <=> root.key-width;base-note:root.base-note;pc-enabled:root.pc-enabled;generation:root.generation;
-        note-on(n,v,s) => {root.presses+=1;} note-off(n,s) => {root.releases+=1;}
+    callback fit-keys();
+    callback zoom-keys(int);
+    callback fit-pads();
+    callback zoom-pads(int);
+    fit-keys => { keys.fit(); }
+    zoom-keys(d) => { keys.zoom(d); }
+    fit-pads => { pad-grid.fit(); }
+    zoom-pads(d) => { pad-grid.zoom(d); }
+    keys := EditorPlayKeys {
+        x: 10px;
+        y: 10px;
+        width: 330px;
+        height: 160px;
+        mapped-low: 60;
+        mapped-high: 64;
+        key-width <=> root.key-width;
+        base-note: root.base-note;
+        pc-enabled: root.pc-enabled;
+        generation: root.generation;
+        note-on(n, v, s) => { root.presses += 1; }
+        note-off(n, s) => { root.releases += 1; }
     }
-    pad-grid := EditorPlayPads { x:350px;y:10px;width:330px;height:240px;pads:root.pads;mapped-low:60;mapped-high:64;pad-size <=> root.pad-size;pad-start <=> root.pad-start;generation:root.generation;
-        note-on(n,v,s) => {root.presses+=1;} note-off(n,s) => {root.releases+=1;}selected(n) => {root.selections+=1;}assigned(n,payload) => {root.assignments+=1;return true;}
+
+    pad-grid := EditorPlayPads {
+        x: 350px;
+        y: 10px;
+        width: 330px;
+        height: 240px;
+        pads: root.pads;
+        mapped-low: 60;
+        mapped-high: 64;
+        pad-size <=> root.pad-size;
+        pad-start <=> root.pad-start;
+        generation: root.generation;
+        note-on(n, v, s) => { root.presses += 1; }
+        note-off(n, s) => { root.releases += 1; }
+        selected(n) => { root.selections += 1; }
+        assigned(n, payload) => { root.assignments += 1; return true; }
     }
-    EditorPadPanel {x:10px;y:190px;width:330px;pad:root.selected-pad;body-height:60px;empty-message:"Independent empty pad";
-        Rectangle {width:parent.width;height:60px;background:#234567;}
+
+    EditorPadPanel {
+        x: 10px;
+        y: 190px;
+        width: 330px;
+        pad: root.selected-pad;
+        body-height: 60px;
+        empty-message: "Independent empty pad";
+        Rectangle {
+            width: parent.width;
+            height: 60px;
+            background: #234567;
+        }
     }
-    EditorBindingRangeRow {x:10px;y:340px;width:400px;height:28px;title:"Independent range";lower:root.lower;upper:root.upper;
-        opened => {root.openings+=1;}removed => {root.removals+=1;}inverted => {root.inversions+=1;}
-        range-gesture(field,phase,value) => {if phase==0 {root.range-begins+=1;}if phase==1 {if field=="minimum" {root.lower=value;}else {root.upper=value;}}if phase==2 {root.range-ends+=1;}}
-        gesture-cancelled => {root.cancellations+=1;}
+
+    EditorBindingRangeRow {
+        x: 10px;
+        y: 340px;
+        width: 400px;
+        height: 28px;
+        title: "Independent range";
+        lower: root.lower;
+        upper: root.upper;
+        opened => { root.openings += 1; }
+        removed => { root.removals += 1; }
+        inverted => { root.inversions += 1; }
+        range-gesture(field, phase, value) => { if phase == 0 { root.range-begins += 1; } if phase == 1 { if field == "minimum" { root.lower = value; } else { root.upper = value; } } if phase == 2 { root.range-ends += 1; } }
+        gesture-cancelled => { root.cancellations += 1; }
     }
 }

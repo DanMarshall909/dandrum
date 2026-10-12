@@ -1,4 +1,7 @@
-export { ValueCodec, ParsedValue } from "../../ui/slint/controls/ValueCodec.slint";
+export {
+    ValueCodec,
+    ParsedValue,
+} from "../../ui/slint/controls/ValueCodec.slint";
 import { Knob } from "../../ui/slint/controls/Knob.slint";
 import { Slider } from "../../ui/slint/controls/Slider.slint";
 import { NumericField } from "../../ui/slint/controls/NumericField.slint";
@@ -8,7 +11,8 @@ import { OutputBusRow } from "../../ui/slint/display/OutputBusRow.slint";
 import { MeasurementState } from "../../ui/slint/display/types.slint";
 
 export component ControlInteractions inherits Window {
-    width: 900px; height: 600px;
+    width: 900px;
+    height: 600px;
     in-out property <bool> bus-enabled: true;
     out property <int> bus-selections;
     out property <int> clip-resets;
@@ -27,18 +31,105 @@ export component ControlInteractions inherits Window {
         else if index == 1 { slider.begin-edit(); }
         else { field.begin-edit(); }
     }
-    knob := Knob { x: 70px; y: 100px; label: "Level"; minimum: 0; maximum: 100; step: 1; value: 20; }
-    slider := Slider { x: 230px; y: 100px; label: "Mix"; minimum: 0; maximum: 100; step: 1; value: 30; }
-    field := NumericField { x: 440px; y: 100px; label: "Count"; minimum: 0; maximum: 100; step: 1; value: 40; }
-    destination := TextInput { x: 620px; y: 100px; width: 220px; height: 32px; single-line: true; accessible-label: "Destination"; }
-    Button { x: 60px; y: 270px; text: "Mode"; checkable: true; checked: true; clicked => { self.checked = !self.checked; } }
-    IconButton { x: 230px; y: 270px; icon: "play"; label: "Latch"; checkable: true; checked: true; clicked => { self.checked = !self.checked; } }
-    Button { x: 320px; y: 270px; text: "Momentary"; checked: true; }
-    IconButton { x: 440px; y: 270px; label: "Momentary icon"; icon: "play"; checked: true; }
+    knob := Knob {
+        x: 70px;
+        y: 100px;
+        label: "Level";
+        minimum: 0;
+        maximum: 100;
+        step: 1;
+        value: 20;
+    }
+
+    slider := Slider {
+        x: 230px;
+        y: 100px;
+        label: "Mix";
+        minimum: 0;
+        maximum: 100;
+        step: 1;
+        value: 30;
+    }
+
+    field := NumericField {
+        x: 440px;
+        y: 100px;
+        label: "Count";
+        minimum: 0;
+        maximum: 100;
+        step: 1;
+        value: 40;
+    }
+
+    destination := TextInput {
+        x: 620px;
+        y: 100px;
+        width: 220px;
+        height: 32px;
+        single-line: true;
+        accessible-label: "Destination";
+    }
+
+    Button {
+        x: 60px;
+        y: 270px;
+        text: "Mode";
+        checkable: true;
+        checked: true;
+        clicked => { self.checked = !self.checked; }
+    }
+
+    IconButton {
+        x: 230px;
+        y: 270px;
+        icon: "play";
+        label: "Latch";
+        checkable: true;
+        checked: true;
+        clicked => { self.checked = !self.checked; }
+    }
+
+    Button {
+        x: 320px;
+        y: 270px;
+        text: "Momentary";
+        checked: true;
+    }
+
+    IconButton {
+        x: 440px;
+        y: 270px;
+        label: "Momentary icon";
+        icon: "play";
+        checked: true;
+    }
+
     OutputBusRow {
-        x: 40px; y: 370px; width: 800px; enabled: root.bus-enabled; generation: "generation";
-        bus: {id: "main", name: "Main", channel-summary: "stereo", main: true, feeds: [], feeds-known: true,
-            channels: [{id: "left", name: "Left", peak: 0, rms: -6, hold: 0, clipped: true, state: MeasurementState.valid, ticket: "ticket"}]};
+        x: 40px;
+        y: 370px;
+        width: 800px;
+        enabled: root.bus-enabled;
+        generation: "generation";
+        bus: {
+            id: "main",
+            name: "Main",
+            channel-summary: "stereo",
+            main: true,
+            feeds: [],
+            feeds-known: true,
+            channels: [
+                {
+                    id: "left",
+                    name: "Left",
+                    peak: 0,
+                    rms: -6,
+                    hold: 0,
+                    clipped: true,
+                    state: MeasurementState.valid,
+                    ticket: "ticket"
+                }
+            ]
+        };
         selected(id) => { root.bus-selections += 1; }
         reset-clip(bus, channel, generation, ticket) => { root.clip-resets += 1; }
     }

@@ -12,7 +12,8 @@ export component ZoneHitOverlay inherits FocusScope {
     private property <float> start-x;
     private property <float> start-y;
     private property <string> mode;
-    accessible-role: button; accessible-label: root.label;
+    accessible-role: button;
+    accessible-label: root.label;
     accessible-action-default => { root.select(); root.audition(); root.release-note(); }
     focus-lost(reason) => { root.dragging = false; root.release-note(); }
     changed editable => { if !root.editable { root.dragging = false; } }
@@ -36,8 +37,11 @@ export component ZoneHitOverlay inherits FocusScope {
         mouse-cursor: root.editable ? move : pointer;
         pointer-event(event) => {
             if event.kind == PointerEventKind.down && event.button == PointerEventButton.left {
-                root.focus(); root.select(); root.dragging = root.editable;
-                root.start-x = self.mouse-x / 1px; root.start-y = self.mouse-y / 1px;
+                root.focus();
+                root.select();
+                root.dragging = root.editable;
+                root.start-x = self.mouse-x / 1px;
+                root.start-y = self.mouse-y / 1px;
                 root.mode = self.mouse-x < 5px && self.mouse-y < 5px ? "top-left"
                     : self.mouse-x > self.width - 5px && self.mouse-y < 5px ? "top-right"
                     : self.mouse-x < 5px && self.mouse-y > self.height - 5px ? "bottom-left"
@@ -50,7 +54,8 @@ export component ZoneHitOverlay inherits FocusScope {
                     let dy = round((root.start-y - self.mouse-y / 1px) * 127 / max(1, root.grid-height / 1px));
                     if dx != 0 || dy != 0 { root.edit(dx, dy, root.mode); }
                 }
-                root.dragging = false; root.release-note();
+                root.dragging = false;
+                root.release-note();
             } else if event.kind == PointerEventKind.cancel { root.dragging = false; root.release-note(); }
         }
     }

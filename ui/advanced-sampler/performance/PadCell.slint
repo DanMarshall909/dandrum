@@ -9,7 +9,13 @@ export component PadCell inherits EditorPad {
     small-font-size: Tokens.editor-display-type-v3-small;
     public function assign-source(asset: string) -> bool { return Session.command(SamplerCommands.pad-assign, "" + root.note, asset, 0); }
     window-deactivated => { Session.release-notes(); DragState.cancel(); }
-    DragTarget { accepted-kind: DragKinds.source; accept-slices: true; enabled: root.enabled; border-width: self.drag-over ? 2px : 0px; border-color: SamplerTheme.accent; border-radius: 4px;
+    DragTarget {
+        accepted-kind: DragKinds.source;
+        accept-slices: true;
+        enabled: root.enabled;
+        border-width: self.drag-over ? 2px : 0px;
+        border-color: SamplerTheme.accent;
+        border-radius: 4px;
         dropped(asset) => { return root.assign-source(asset); }
     }
 }

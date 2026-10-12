@@ -1,5 +1,9 @@
 import { Tokens } from "../theme.slint";
-import { MusicalConstants, PitchNames, GraphMetrics } from "DisplayConstants.slint";
+import {
+    MusicalConstants,
+    PitchNames,
+    GraphMetrics,
+} from "DisplayConstants.slint";
 import { EditorTheme } from "Theme.slint";
 import { MaterialLayers } from "Material.slint";
 import { FitLayout } from "FitLayout.slint";
@@ -14,26 +18,85 @@ export component EditorKeyMapOverview inherits Rectangle {
     in property <length> small-font-size: EditorTheme.type-small;
     height: Tokens.editor-display-overview-height;
     background: EditorTheme.ink-2;
-    border-width: Tokens.stroke-hairline; border-color: EditorTheme.line-1; border-radius: Tokens.radius-3;
-    MaterialLayers { x: 0px; y: 0px; width: parent.width; height: parent.height; border-radius: Tokens.radius-3; }
-    Text { x: Tokens.space-4; y: Tokens.editor-display-overview-heading-offset; height: Tokens.editor-display-overview-heading-height; text: root.title; font-family: EditorTheme.font-ui; font-size: Tokens.type-micro; font-weight: Tokens.weight-bold; letter-spacing: Tokens.editor-display-overview-heading-tracking * 1px; color: EditorTheme.paper-3; }
-    for velocity in PitchNames.overview-velocity-labels : Text {
-        x: Tokens.space-2; y: Tokens.editor-display-overview-label-top + (MusicalConstants.velocity-maximum - velocity) / MusicalConstants.velocity-maximum * Tokens.editor-display-overview-label-span; width: Tokens.editor-display-overview-label-width; height: Tokens.space-5;
-        text: velocity; font-family: EditorTheme.font-value; font-size: root.small-font-size; color: EditorTheme.paper-4; horizontal-alignment: right;
+    border-width: Tokens.stroke-hairline;
+    border-color: EditorTheme.line-1;
+    border-radius: Tokens.radius-3;
+    MaterialLayers {
+        x: 0px;
+        y: 0px;
+        width: parent.width;
+        height: parent.height;
+        border-radius: Tokens.radius-3;
     }
-    plot := Rectangle { x: Tokens.editor-display-overview-grid-inset; y: Tokens.editor-display-overview-label-top; width: parent.width - Tokens.editor-display-overview-grid-reserved-width; height: Tokens.editor-display-overview-grid-height; clip: true; background: EditorTheme.ink-1;
-        for i in MusicalConstants.overview-note-count : Rectangle { x: i / MusicalConstants.overview-note-count * parent.width; y: 0px; width: parent.width / MusicalConstants.overview-note-count; height: parent.height;
+
+    Text {
+        x: Tokens.space-4;
+        y: Tokens.editor-display-overview-heading-offset;
+        height: Tokens.editor-display-overview-heading-height;
+        text: root.title;
+        font-family: EditorTheme.font-ui;
+        font-size: Tokens.type-micro;
+        font-weight: Tokens.weight-bold;
+        letter-spacing: Tokens.editor-display-overview-heading-tracking * 1px;
+        color: EditorTheme.paper-3;
+    }
+
+    for velocity in PitchNames.overview-velocity-labels: Text {
+        x: Tokens.space-2;
+        y: Tokens.editor-display-overview-label-top + (MusicalConstants.velocity-maximum - velocity) / MusicalConstants.velocity-maximum * Tokens.editor-display-overview-label-span;
+        width: Tokens.editor-display-overview-label-width;
+        height: Tokens.space-5;
+        text: velocity;
+        font-family: EditorTheme.font-value;
+        font-size: root.small-font-size;
+        color: EditorTheme.paper-4;
+        horizontal-alignment: right;
+    }
+    plot := Rectangle {
+        x: Tokens.editor-display-overview-grid-inset;
+        y: Tokens.editor-display-overview-label-top;
+        width: parent.width - Tokens.editor-display-overview-grid-reserved-width;
+        height: Tokens.editor-display-overview-grid-height;
+        clip: true;
+        background: EditorTheme.ink-1;
+        for i in MusicalConstants.overview-note-count: Rectangle {
+            x: i / MusicalConstants.overview-note-count * parent.width;
+            y: 0px;
+            width: parent.width / MusicalConstants.overview-note-count;
+            height: parent.height;
             background: FitLayout.black(i + MusicalConstants.mapped-low) ? EditorTheme.ink-0 : transparent;
-            if mod(i, MusicalConstants.notes-per-octave) == 0 : Rectangle { x: 0px; y: 0px; width: 1px; height: parent.height; background: EditorTheme.line-2; }
+            if mod(i, MusicalConstants.notes-per-octave) == 0: Rectangle {
+                x: 0px;
+                y: 0px;
+                width: 1px;
+                height: parent.height;
+                background: EditorTheme.line-2;
+            }
         }
-        for velocity in PitchNames.velocity-grid : Rectangle { x: 0px; y: (MusicalConstants.velocity-maximum - velocity) / MusicalConstants.velocity-maximum * parent.height; width: parent.width; height: 1px; background: EditorTheme.line-1; }
-        for z in root.zones : Rectangle {
-            x: (z.lo - MusicalConstants.mapped-low) / MusicalConstants.overview-note-count * parent.width; y: (MusicalConstants.velocity-maximum - z.vel-hi) / MusicalConstants.velocity-maximum * parent.height;
-            width: (z.hi - z.lo + 1) / MusicalConstants.overview-note-count * parent.width; height: max(1px, (z.vel-hi - z.vel-lo + 1) / MusicalConstants.velocity-maximum * parent.height);
-            border-radius: Tokens.radius-1; border-width: Tokens.stroke-hairline; border-color: z.id == root.selected-zone ? EditorTheme.accent : EditorTheme.line-3;
+        for velocity in PitchNames.velocity-grid: Rectangle {
+            x: 0px;
+            y: (MusicalConstants.velocity-maximum - velocity) / MusicalConstants.velocity-maximum * parent.height;
+            width: parent.width;
+            height: 1px;
+            background: EditorTheme.line-1;
+        }
+        for z in root.zones: Rectangle {
+            x: (z.lo - MusicalConstants.mapped-low) / MusicalConstants.overview-note-count * parent.width;
+            y: (MusicalConstants.velocity-maximum - z.vel-hi) / MusicalConstants.velocity-maximum * parent.height;
+            width: (z.hi - z.lo + 1) / MusicalConstants.overview-note-count * parent.width;
+            height: max(1px, (z.vel-hi - z.vel-lo + 1) / MusicalConstants.velocity-maximum * parent.height);
+            border-radius: Tokens.radius-1;
+            border-width: Tokens.stroke-hairline;
+            border-color: z.id == root.selected-zone ? EditorTheme.accent : EditorTheme.line-3;
             background: z.id == root.selected-zone ? EditorTheme.accent-wash : EditorTheme.ink-6.with-alpha(GraphMetrics.zone-selection-alpha);
         }
     }
-    EditorMapKeyboard { small-font-size: root.small-font-size; x: Tokens.editor-display-overview-grid-inset; y: Tokens.editor-display-overview-keyboard-top; width: parent.width - Tokens.editor-display-overview-grid-reserved-width; height: Tokens.editor-display-overview-keyboard-height; }
-}
 
+    EditorMapKeyboard {
+        small-font-size: root.small-font-size;
+        x: Tokens.editor-display-overview-grid-inset;
+        y: Tokens.editor-display-overview-keyboard-top;
+        width: parent.width - Tokens.editor-display-overview-grid-reserved-width;
+        height: Tokens.editor-display-overview-keyboard-height;
+    }
+}

@@ -1,7 +1,13 @@
-import { EditorRenderMetrics, EditorTypographyMetrics } from "../../slint/editor/DialogConstants.slint";
+import {
+    EditorRenderMetrics,
+    EditorTypographyMetrics,
+} from "../../slint/editor/DialogConstants.slint";
 import { RenderOptions, RenderStrings } from "../domain/RenderConstants.slint";
 import { SamplerCommands } from "../domain/Commands.slint";
-import { EditorModal, EditorDialogSurface } from "../../slint/editor/Dialog.slint";
+import {
+    EditorModal,
+    EditorDialogSurface,
+} from "../../slint/editor/Dialog.slint";
 import { ScrollView } from "std-widgets.slint";
 import { Session } from "../Session.slint";
 import { SamplerTheme } from "../theme/Theme.slint";
@@ -12,85 +18,364 @@ import { SectionText } from "PageSection.slint";
 import { VoiceDialogState } from "VoiceDialogState.slint";
 
 export component VoiceRenderDialog inherits FocusScope {
- in-out property <string> mode <=> VoiceDialogState.mode;
- private property <bool> active: root.visible && root.mode != "";
- init => { if root.active { popup.show(); Session.release-notes(); } }
- changed active => { if root.active { popup.show(); Session.release-notes(); } else { popup.close(); } }
- private property <int> field-columns: max(1,min(EditorRenderMetrics.field-columns,floor((min(EditorRenderMetrics.maximum-width,root.width*EditorRenderMetrics.width-fraction) - EditorRenderMetrics.field-grid-reserve)/EditorRenderMetrics.field-stride)));
- private property <bool> busy: Session.freeze-state == RenderOptions.running;
- private property <bool> restore-cancel-focus;
- private property <int> notes: Session.autosampler-parameters.length < RenderOptions.parameter-count ? 0 : floor((Session.autosampler-parameters[RenderOptions.high-index].value - Session.autosampler-parameters[RenderOptions.low-index].value)/max(1,Session.autosampler-parameters[RenderOptions.step-index].value))+1;
- private property <int> renders: root.notes * (Session.autosampler-parameters.length < RenderOptions.parameter-count ? 0 : Session.autosampler-parameters[RenderOptions.takes-index].value * Session.autosampler-parameters[RenderOptions.layers-index].value);
- visible: root.mode != "";
- public function open(mode:string) { root.mode=mode; Session.release-notes(); }
- public function close() {
-  if root.mode != RenderOptions.add-source && (root.busy || (root.mode == RenderOptions.freeze && Session.freeze-state == RenderOptions.confirm)) { Session.command(root.mode == RenderOptions.autosampler ? SamplerCommands.autosampler-cancel : SamplerCommands.freeze-cancel,"","",0); }
-  root.mode="";
-  root.restore-cancel-focus=false;
- }
- popup := EditorModal {
-  width: root.width; height: root.height;
-  forward-focus: cancel-render;
+    in-out property <string> mode <=> VoiceDialogState.mode;
+    private property <bool> active: root.visible && root.mode != "";
+    init => { if root.active { popup.show(); Session.release-notes(); } }
+    changed active => { if root.active { popup.show(); Session.release-notes(); } else { popup.close(); } }
+    private property <int> field-columns: max(1,min(EditorRenderMetrics.field-columns,floor((min(EditorRenderMetrics.maximum-width,root.width * EditorRenderMetrics.width-fraction) - EditorRenderMetrics.field-grid-reserve) / EditorRenderMetrics.field-stride)));
+    private property <bool> busy: Session.freeze-state == RenderOptions.running;
+    private property <bool> restore-cancel-focus;
+    private property <int> notes: Session.autosampler-parameters.length < RenderOptions.parameter-count ? 0 : floor((Session.autosampler-parameters[RenderOptions.high-index].value - Session.autosampler-parameters[RenderOptions.low-index].value) / max(1,Session.autosampler-parameters[RenderOptions.step-index].value)) + 1;
+    private property <int> renders: root.notes * (Session.autosampler-parameters.length < RenderOptions.parameter-count ? 0 : Session.autosampler-parameters[RenderOptions.takes-index].value * Session.autosampler-parameters[RenderOptions.layers-index].value);
+    visible: root.mode != "";
+    public function open(mode: string) { root.mode = mode; Session.release-notes(); }
+    public function close() {
+        if root.mode != RenderOptions.add-source && (root.busy || (root.mode == RenderOptions.freeze && Session.freeze-state == RenderOptions.confirm)) { Session.command(root.mode == RenderOptions.autosampler ? SamplerCommands.autosampler-cancel : SamplerCommands.freeze-cancel,"","",0); }
+        root.mode = "";
+        root.restore-cancel-focus = false;
+    }
+    popup := EditorModal {
+        width: root.width;
+        height: root.height;
+        forward-focus: cancel-render;
 
         dismissed => { root.close(); }
 
-   Timer { interval: 0ms; running: root.restore-cancel-focus; triggered => { root.restore-cancel-focus=false; cancel-render.focus(); } }
-
-   panel := EditorDialogSurface { viewport-width: parent.width; viewport-height: parent.height;
-    width: min(EditorRenderMetrics.maximum-width,parent.width*EditorRenderMetrics.width-fraction); height: min(parent.height*EditorRenderMetrics.height-fraction,root.mode == RenderOptions.add-source ? EditorRenderMetrics.source-height : root.mode == RenderOptions.autosampler ? EditorRenderMetrics.autosampler-height : EditorRenderMetrics.freeze-height);
-    background: SamplerTheme.ink-2;
-    TouchArea { }
-    Rectangle { x: 1px; y: 1px; width: parent.width - 2px; height: EditorRenderMetrics.header-height; background: SamplerTheme.ink-3; border-radius: EditorRenderMetrics.header-radius;
-     Text { x: EditorRenderMetrics.header-text-inset; height: parent.height; width: parent.width - EditorRenderMetrics.header-title-reserve; text: root.mode == RenderOptions.add-source ? RenderStrings.add-source : root.mode == RenderOptions.autosampler ? RenderStrings.sample-patch : RenderStrings.freeze-source; font-family: SamplerTheme.font-ui; font-size: SamplerTheme.type-control; font-weight: EditorTypographyMetrics.weight-strong; letter-spacing: EditorRenderMetrics.header-tracking; color: SamplerTheme.paper-2; vertical-alignment: center; }
-     ActionButton { x: parent.width - EditorRenderMetrics.header-close-end; y: EditorRenderMetrics.header-close-top; width: EditorRenderMetrics.header-close-width; icon: "close"; label: RenderStrings.close-label; compact: true; ghost: true; clicked => { root.close(); } }
-    }
-    ScrollView { x: 1px; y: EditorRenderMetrics.content-top; width: parent.width - 2px; height: max(1px,parent.height - EditorRenderMetrics.content-reserve);
-     Rectangle { width: parent.width; height: root.mode == RenderOptions.add-source ? EditorRenderMetrics.source-content-height : root.mode == RenderOptions.autosampler ? EditorRenderMetrics.autosampler-content-height+(root.field-columns < RenderOptions.field-count ? EditorRenderMetrics.field-row-stride : 0px) : EditorRenderMetrics.freeze-content-height;
-      if root.mode == RenderOptions.add-source : VerticalLayout { padding: EditorRenderMetrics.content-inset; spacing: EditorRenderMetrics.content-spacing; alignment: start;
-       for kind in [RenderStrings.sampler,RenderStrings.synth-patch,RenderStrings.oscillator,RenderStrings.noise] : ActionButton { text: kind; height: EditorRenderMetrics.source-action-height; compact: true; clicked => { Session.command(SamplerCommands.module-add,"voice",kind,0); root.close(); } }
-      }
-      if root.mode == RenderOptions.autosampler : Rectangle {
-       x: EditorRenderMetrics.content-inset; width: parent.width - 2 * EditorRenderMetrics.content-inset;
-       SectionText { x: 0px; y: EditorRenderMetrics.detail-top; height: EditorRenderMetrics.detail-height; text: RenderStrings.source; width: EditorRenderMetrics.detail-label-width; }
-       SectionText { x: EditorRenderMetrics.detail-value-left; y: EditorRenderMetrics.detail-top; height: EditorRenderMetrics.detail-height; width: parent.width - EditorRenderMetrics.detail-value-left; text: Session.patch-name; color: SamplerTheme.paper-1; }
-       SectionText { x: 0px; y: EditorRenderMetrics.detail-middle-top; height: EditorRenderMetrics.detail-height; text: RenderStrings.renders; width: EditorRenderMetrics.detail-label-width; }
-       SectionText { x: EditorRenderMetrics.detail-value-left; y: EditorRenderMetrics.detail-middle-top; height: EditorRenderMetrics.detail-height; width: parent.width - EditorRenderMetrics.detail-value-left; text: root.renders+" · "+root.notes+" notes × "+Session.autosampler-parameters[RenderOptions.layers-index].value+" layers × "+Session.autosampler-parameters[RenderOptions.takes-index].value+" takes"; color: SamplerTheme.paper-1; }
-       SectionText { x: 0px; y: EditorRenderMetrics.detail-last-top; height: EditorRenderMetrics.detail-height; text: RenderStrings.estimate; width: EditorRenderMetrics.detail-label-width; }
-       SectionText { x: EditorRenderMetrics.detail-value-left; y: EditorRenderMetrics.detail-last-top; height: EditorRenderMetrics.detail-height; width: parent.width - EditorRenderMetrics.detail-value-left; text: "~"+max(1,round(root.renders*RenderOptions.seconds-per-render/RenderOptions.seconds-per-minute))+" min offline · simulated"; color: SamplerTheme.paper-1; }
-       fields := Rectangle { y: EditorRenderMetrics.fields-top; width: parent.width; height: ceil(RenderOptions.field-count/self.columns)*EditorRenderMetrics.field-row-stride;
-        in property <int> columns: root.field-columns;
-        for field[i] in [RenderOptions.low-note,RenderOptions.high-note,RenderOptions.note-step,RenderOptions.takes,RenderOptions.tail] : NumericField {
-         x: mod(i,parent.columns)*EditorRenderMetrics.field-stride; y: floor(i/parent.columns)*EditorRenderMetrics.field-row-stride; width: EditorRenderMetrics.field-width;
-         label: Session.autosampler-parameters[i].label; model-value: Session.autosampler-parameters[i].value; value: Session.autosampler-parameters[i].value;
-         minimum: Session.autosampler-parameters[i].minimum; maximum: Session.autosampler-parameters[i].maximum; step: 1; unit: Session.autosampler-parameters[i].unit; enabled: !root.busy;
-         changed(v) => { Session.command(SamplerCommands.autosampler-configure,"",field,v); }
+        Timer {
+            interval: 0ms;
+            running: root.restore-cancel-focus;
+            triggered => { root.restore-cancel-focus = false; cancel-render.focus(); }
         }
-       }
-       OptionStrip { y: fields.y+fields.height+EditorRenderMetrics.content-spacing; width: EditorRenderMetrics.velocity-choice-width; label: RenderStrings.velocity-layers; value: ""+Session.autosampler-parameters[RenderOptions.layers-index].value; enabled: !root.busy; options: [{id:"1",label:RenderStrings.one-layer},{id:"2",label:RenderStrings.two-layers},{id:"3",label:RenderStrings.three-layers}]; selected(v) => { Session.command(SamplerCommands.autosampler-configure,"",RenderOptions.layers,v.to-float()); } }
-       Text { y: fields.y+fields.height+EditorRenderMetrics.autosampler-help-offset; width: parent.width; text: RenderStrings.autosampler-explanation; font-family: SamplerTheme.font-ui; font-size: SamplerTheme.type-body; color: SamplerTheme.paper-3; wrap: word-wrap; }
-      }
-      if root.mode == RenderOptions.freeze : Rectangle { x: EditorRenderMetrics.content-inset; width: parent.width - 2 * EditorRenderMetrics.content-inset;
-       SectionText { x: 0px; y: EditorRenderMetrics.detail-top; height: EditorRenderMetrics.detail-height; width: EditorRenderMetrics.detail-label-width; text: RenderStrings.source; }
-       SectionText { x: EditorRenderMetrics.detail-value-left; y: EditorRenderMetrics.detail-top; height: EditorRenderMetrics.detail-height; width: parent.width - EditorRenderMetrics.detail-value-left; text: Session.selected-source; color: SamplerTheme.paper-1; }
-       SectionText { x: 0px; y: EditorRenderMetrics.detail-middle-top; height: EditorRenderMetrics.detail-height; width: EditorRenderMetrics.detail-label-width; text: RenderStrings.includes; }
-       SectionText { x: EditorRenderMetrics.detail-value-left; y: EditorRenderMetrics.detail-middle-top; height: EditorRenderMetrics.detail-height; width: parent.width - EditorRenderMetrics.detail-value-left; text: Session.freeze-mode == RenderOptions.source-only ? RenderStrings.audio-source-only : RenderStrings.source-voice-inserts; color: SamplerTheme.paper-1; }
-       SectionText { x: 0px; y: EditorRenderMetrics.detail-last-top; height: EditorRenderMetrics.detail-height; width: EditorRenderMetrics.detail-label-width; text: RenderStrings.stored-as; }
-       SectionText { x: EditorRenderMetrics.detail-value-left; y: EditorRenderMetrics.detail-last-top; height: EditorRenderMetrics.detail-height; width: parent.width - EditorRenderMetrics.detail-value-left; text: RenderStrings.frozen-source; color: SamplerTheme.paper-1; }
-       OptionStrip { y: EditorRenderMetrics.fields-top; width: min(EditorRenderMetrics.freeze-choice-width,parent.width - EditorRenderMetrics.freeze-choice-reserve); label: RenderStrings.freeze-includes; value: Session.freeze-mode; enabled: !root.busy; options: [{id:RenderOptions.source-only,label:RenderStrings.source-only},{id:RenderOptions.source-chain,label:RenderStrings.source-and-chain}]; selected(v) => { Session.command(SamplerCommands.freeze-configure,v,RenderOptions.mode,0); } }
-       NumericField { x: parent.width - EditorRenderMetrics.tail-width; y: EditorRenderMetrics.fields-top; width: EditorRenderMetrics.tail-width; label: RenderStrings.tail; unit: "s"; model-value: Session.freeze-tail; value: Session.freeze-tail; minimum: 0; maximum: RenderOptions.maximum-tail; step: 1; enabled: !root.busy; changed(v) => { Session.command(SamplerCommands.freeze-configure,"",RenderOptions.tail,v); } }
-       Text { y: EditorRenderMetrics.freeze-help-top; width: parent.width; text: RenderStrings.freeze-explanation; font-family: SamplerTheme.font-ui; font-size: SamplerTheme.type-body; color: SamplerTheme.paper-3; wrap: word-wrap; }
-      }
-     }
-    }
-    Rectangle { x: 1px; y: parent.height - EditorRenderMetrics.footer-reserve; width: parent.width - 2px; height: EditorRenderMetrics.footer-height; background: SamplerTheme.ink-2;
-     Rectangle { height: 1px; background: SamplerTheme.line-1; }
-     if root.busy : Text { x: EditorRenderMetrics.content-inset; y: EditorRenderMetrics.footer-top; width: max(0px,parent.width - EditorRenderMetrics.progress-reserve); text: RenderStrings.render-progress+round(Session.render-progress*RenderOptions.percentage-scale)+"%"; font-family: SamplerTheme.font-ui; font-size: SamplerTheme.type-small; color: SamplerTheme.paper-3; }
-     if root.busy : Rectangle { x: EditorRenderMetrics.content-inset; y: EditorRenderMetrics.progress-top; width: max(0px,parent.width - EditorRenderMetrics.progress-reserve); height: EditorRenderMetrics.progress-height; background: SamplerTheme.ink-4; border-radius: 2px; Rectangle { width: parent.width*Session.render-progress.clamp(0,1); background: SamplerTheme.paper-2; border-radius: 2px; } }
-     if !root.busy && Session.freeze-state == RenderOptions.failed : Text { x: EditorRenderMetrics.content-inset; y: EditorRenderMetrics.footer-top; width: max(0px,parent.width - EditorRenderMetrics.error-reserve); text: Session.error; font-family: SamplerTheme.font-ui; font-size: SamplerTheme.type-small; color: SamplerTheme.error; wrap: word-wrap; }
-     cancel-render := ActionButton { x: parent.width - EditorRenderMetrics.cancel-end; y: EditorRenderMetrics.footer-top; width: EditorRenderMetrics.cancel-width; text: RenderStrings.cancel; label: RenderStrings.cancel-label; ghost: true; compact: true; clicked => { root.close(); } }
-     if root.mode != RenderOptions.add-source : ActionButton { x: parent.width - EditorRenderMetrics.start-end; y: EditorRenderMetrics.footer-top; width: EditorRenderMetrics.start-width; text: root.mode == RenderOptions.autosampler ? RenderStrings.render : RenderStrings.freeze; primary: true; compact: true; enabled: !root.busy && (root.mode != RenderOptions.autosampler || root.renders <= RenderOptions.maximum-renders); clicked => { Session.command(root.mode == RenderOptions.autosampler ? SamplerCommands.autosampler-start : SamplerCommands.freeze-start,Session.selected-source,"",0); root.restore-cancel-focus=true; } }
-    }
-   }
 
+        panel := EditorDialogSurface {
+            viewport-width: parent.width;
+            viewport-height: parent.height;
+            width: min(EditorRenderMetrics.maximum-width,parent.width * EditorRenderMetrics.width-fraction);
+            height: min(parent.height * EditorRenderMetrics.height-fraction,root.mode == RenderOptions.add-source ? EditorRenderMetrics.source-height : root.mode == RenderOptions.autosampler ? EditorRenderMetrics.autosampler-height : EditorRenderMetrics.freeze-height);
+            background: SamplerTheme.ink-2;
+            TouchArea { }
+
+            Rectangle {
+                x: 1px;
+                y: 1px;
+                width: parent.width - 2px;
+                height: EditorRenderMetrics.header-height;
+                background: SamplerTheme.ink-3;
+                border-radius: EditorRenderMetrics.header-radius;
+                Text {
+                    x: EditorRenderMetrics.header-text-inset;
+                    height: parent.height;
+                    width: parent.width - EditorRenderMetrics.header-title-reserve;
+                    text: root.mode == RenderOptions.add-source ? RenderStrings.add-source : root.mode == RenderOptions.autosampler ? RenderStrings.sample-patch : RenderStrings.freeze-source;
+                    font-family: SamplerTheme.font-ui;
+                    font-size: SamplerTheme.type-control;
+                    font-weight: EditorTypographyMetrics.weight-strong;
+                    letter-spacing: EditorRenderMetrics.header-tracking;
+                    color: SamplerTheme.paper-2;
+                    vertical-alignment: center;
+                }
+
+                ActionButton {
+                    x: parent.width - EditorRenderMetrics.header-close-end;
+                    y: EditorRenderMetrics.header-close-top;
+                    width: EditorRenderMetrics.header-close-width;
+                    icon: "close";
+                    label: RenderStrings.close-label;
+                    compact: true;
+                    ghost: true;
+                    clicked => { root.close(); }
+                }
+            }
+
+            ScrollView {
+                x: 1px;
+                y: EditorRenderMetrics.content-top;
+                width: parent.width - 2px;
+                height: max(1px,parent.height - EditorRenderMetrics.content-reserve);
+                Rectangle {
+                    width: parent.width;
+                    height: root.mode == RenderOptions.add-source ? EditorRenderMetrics.source-content-height : root.mode == RenderOptions.autosampler ? EditorRenderMetrics.autosampler-content-height + (root.field-columns < RenderOptions.field-count ? EditorRenderMetrics.field-row-stride : 0px) : EditorRenderMetrics.freeze-content-height;
+                    if root.mode == RenderOptions.add-source: VerticalLayout {
+                        padding: EditorRenderMetrics.content-inset;
+                        spacing: EditorRenderMetrics.content-spacing;
+                        alignment: start;
+                        for kind in [
+                            RenderStrings.sampler,
+                            RenderStrings.synth-patch,
+                            RenderStrings.oscillator,
+                            RenderStrings.noise
+                        ]: ActionButton {
+                            text: kind;
+                            height: EditorRenderMetrics.source-action-height;
+                            compact: true;
+                            clicked => { Session.command(SamplerCommands.module-add,"voice",kind,0); root.close(); }
+                        }
+                    }
+                    if root.mode == RenderOptions.autosampler: Rectangle {
+                        x: EditorRenderMetrics.content-inset;
+                        width: parent.width - 2 * EditorRenderMetrics.content-inset;
+                        SectionText {
+                            x: 0px;
+                            y: EditorRenderMetrics.detail-top;
+                            height: EditorRenderMetrics.detail-height;
+                            text: RenderStrings.source;
+                            width: EditorRenderMetrics.detail-label-width;
+                        }
+
+                        SectionText {
+                            x: EditorRenderMetrics.detail-value-left;
+                            y: EditorRenderMetrics.detail-top;
+                            height: EditorRenderMetrics.detail-height;
+                            width: parent.width - EditorRenderMetrics.detail-value-left;
+                            text: Session.patch-name;
+                            color: SamplerTheme.paper-1;
+                        }
+
+                        SectionText {
+                            x: 0px;
+                            y: EditorRenderMetrics.detail-middle-top;
+                            height: EditorRenderMetrics.detail-height;
+                            text: RenderStrings.renders;
+                            width: EditorRenderMetrics.detail-label-width;
+                        }
+
+                        SectionText {
+                            x: EditorRenderMetrics.detail-value-left;
+                            y: EditorRenderMetrics.detail-middle-top;
+                            height: EditorRenderMetrics.detail-height;
+                            width: parent.width - EditorRenderMetrics.detail-value-left;
+                            text: root.renders + " · " + root.notes + " notes × " + Session.autosampler-parameters[RenderOptions.layers-index].value + " layers × " + Session.autosampler-parameters[RenderOptions.takes-index].value + " takes";
+                            color: SamplerTheme.paper-1;
+                        }
+
+                        SectionText {
+                            x: 0px;
+                            y: EditorRenderMetrics.detail-last-top;
+                            height: EditorRenderMetrics.detail-height;
+                            text: RenderStrings.estimate;
+                            width: EditorRenderMetrics.detail-label-width;
+                        }
+
+                        SectionText {
+                            x: EditorRenderMetrics.detail-value-left;
+                            y: EditorRenderMetrics.detail-last-top;
+                            height: EditorRenderMetrics.detail-height;
+                            width: parent.width - EditorRenderMetrics.detail-value-left;
+                            text: "~" + max(1,round(root.renders * RenderOptions.seconds-per-render / RenderOptions.seconds-per-minute)) + " min offline · simulated";
+                            color: SamplerTheme.paper-1;
+                        }
+
+                        fields := Rectangle {
+                            y: EditorRenderMetrics.fields-top;
+                            width: parent.width;
+                            height: ceil(RenderOptions.field-count / self.columns) * EditorRenderMetrics.field-row-stride;
+                            in property <int> columns: root.field-columns;
+                            for field[i] in [
+                                RenderOptions.low-note,
+                                RenderOptions.high-note,
+                                RenderOptions.note-step,
+                                RenderOptions.takes,
+                                RenderOptions.tail
+                            ]: NumericField {
+                                x: mod(i,parent.columns) * EditorRenderMetrics.field-stride;
+                                y: floor(i / parent.columns) * EditorRenderMetrics.field-row-stride;
+                                width: EditorRenderMetrics.field-width;
+                                label: Session.autosampler-parameters[i].label;
+                                model-value: Session.autosampler-parameters[i].value;
+                                value: Session.autosampler-parameters[i].value;
+                                minimum: Session.autosampler-parameters[i].minimum;
+                                maximum: Session.autosampler-parameters[i].maximum;
+                                step: 1;
+                                unit: Session.autosampler-parameters[i].unit;
+                                enabled: !root.busy;
+                                changed(v) => { Session.command(SamplerCommands.autosampler-configure,"",field,v); }
+                            }
+                        }
+
+                        OptionStrip {
+                            y: fields.y + fields.height + EditorRenderMetrics.content-spacing;
+                            width: EditorRenderMetrics.velocity-choice-width;
+                            label: RenderStrings.velocity-layers;
+                            value: "" + Session.autosampler-parameters[RenderOptions.layers-index].value;
+                            enabled: !root.busy;
+                            options: [
+                                { id:"1", label:RenderStrings.one-layer },
+                                { id:"2", label:RenderStrings.two-layers },
+                                { id:"3", label:RenderStrings.three-layers }
+                            ];
+                            selected(v) => { Session.command(SamplerCommands.autosampler-configure,"",RenderOptions.layers,v.to-float()); }
+                        }
+
+                        Text {
+                            y: fields.y + fields.height + EditorRenderMetrics.autosampler-help-offset;
+                            width: parent.width;
+                            text: RenderStrings.autosampler-explanation;
+                            font-family: SamplerTheme.font-ui;
+                            font-size: SamplerTheme.type-body;
+                            color: SamplerTheme.paper-3;
+                            wrap: word-wrap;
+                        }
+                    }
+                    if root.mode == RenderOptions.freeze: Rectangle {
+                        x: EditorRenderMetrics.content-inset;
+                        width: parent.width - 2 * EditorRenderMetrics.content-inset;
+                        SectionText {
+                            x: 0px;
+                            y: EditorRenderMetrics.detail-top;
+                            height: EditorRenderMetrics.detail-height;
+                            width: EditorRenderMetrics.detail-label-width;
+                            text: RenderStrings.source;
+                        }
+
+                        SectionText {
+                            x: EditorRenderMetrics.detail-value-left;
+                            y: EditorRenderMetrics.detail-top;
+                            height: EditorRenderMetrics.detail-height;
+                            width: parent.width - EditorRenderMetrics.detail-value-left;
+                            text: Session.selected-source;
+                            color: SamplerTheme.paper-1;
+                        }
+
+                        SectionText {
+                            x: 0px;
+                            y: EditorRenderMetrics.detail-middle-top;
+                            height: EditorRenderMetrics.detail-height;
+                            width: EditorRenderMetrics.detail-label-width;
+                            text: RenderStrings.includes;
+                        }
+
+                        SectionText {
+                            x: EditorRenderMetrics.detail-value-left;
+                            y: EditorRenderMetrics.detail-middle-top;
+                            height: EditorRenderMetrics.detail-height;
+                            width: parent.width - EditorRenderMetrics.detail-value-left;
+                            text: Session.freeze-mode == RenderOptions.source-only ? RenderStrings.audio-source-only : RenderStrings.source-voice-inserts;
+                            color: SamplerTheme.paper-1;
+                        }
+
+                        SectionText {
+                            x: 0px;
+                            y: EditorRenderMetrics.detail-last-top;
+                            height: EditorRenderMetrics.detail-height;
+                            width: EditorRenderMetrics.detail-label-width;
+                            text: RenderStrings.stored-as;
+                        }
+
+                        SectionText {
+                            x: EditorRenderMetrics.detail-value-left;
+                            y: EditorRenderMetrics.detail-last-top;
+                            height: EditorRenderMetrics.detail-height;
+                            width: parent.width - EditorRenderMetrics.detail-value-left;
+                            text: RenderStrings.frozen-source;
+                            color: SamplerTheme.paper-1;
+                        }
+
+                        OptionStrip {
+                            y: EditorRenderMetrics.fields-top;
+                            width: min(EditorRenderMetrics.freeze-choice-width,parent.width - EditorRenderMetrics.freeze-choice-reserve);
+                            label: RenderStrings.freeze-includes;
+                            value: Session.freeze-mode;
+                            enabled: !root.busy;
+                            options: [
+                                { id:RenderOptions.source-only, label:RenderStrings.source-only },
+                                { id:RenderOptions.source-chain, label:RenderStrings.source-and-chain }
+                            ];
+                            selected(v) => { Session.command(SamplerCommands.freeze-configure,v,RenderOptions.mode,0); }
+                        }
+
+                        NumericField {
+                            x: parent.width - EditorRenderMetrics.tail-width;
+                            y: EditorRenderMetrics.fields-top;
+                            width: EditorRenderMetrics.tail-width;
+                            label: RenderStrings.tail;
+                            unit: "s";
+                            model-value: Session.freeze-tail;
+                            value: Session.freeze-tail;
+                            minimum: 0;
+                            maximum: RenderOptions.maximum-tail;
+                            step: 1;
+                            enabled: !root.busy;
+                            changed(v) => { Session.command(SamplerCommands.freeze-configure,"",RenderOptions.tail,v); }
+                        }
+
+                        Text {
+                            y: EditorRenderMetrics.freeze-help-top;
+                            width: parent.width;
+                            text: RenderStrings.freeze-explanation;
+                            font-family: SamplerTheme.font-ui;
+                            font-size: SamplerTheme.type-body;
+                            color: SamplerTheme.paper-3;
+                            wrap: word-wrap;
+                        }
+                    }
+                }
+            }
+
+            Rectangle {
+                x: 1px;
+                y: parent.height - EditorRenderMetrics.footer-reserve;
+                width: parent.width - 2px;
+                height: EditorRenderMetrics.footer-height;
+                background: SamplerTheme.ink-2;
+                Rectangle {
+                    height: 1px;
+                    background: SamplerTheme.line-1;
+                }
+
+                if root.busy: Text {
+                    x: EditorRenderMetrics.content-inset;
+                    y: EditorRenderMetrics.footer-top;
+                    width: max(0px,parent.width - EditorRenderMetrics.progress-reserve);
+                    text: RenderStrings.render-progress + round(Session.render-progress * RenderOptions.percentage-scale) + "%";
+                    font-family: SamplerTheme.font-ui;
+                    font-size: SamplerTheme.type-small;
+                    color: SamplerTheme.paper-3;
+                }
+                if root.busy: Rectangle {
+                    x: EditorRenderMetrics.content-inset;
+                    y: EditorRenderMetrics.progress-top;
+                    width: max(0px,parent.width - EditorRenderMetrics.progress-reserve);
+                    height: EditorRenderMetrics.progress-height;
+                    background: SamplerTheme.ink-4;
+                    border-radius: 2px;
+                    Rectangle {
+                        width: parent.width * Session.render-progress.clamp(0,1);
+                        background: SamplerTheme.paper-2;
+                        border-radius: 2px;
+                    }
+                }
+                if !root.busy && Session.freeze-state == RenderOptions.failed: Text {
+                    x: EditorRenderMetrics.content-inset;
+                    y: EditorRenderMetrics.footer-top;
+                    width: max(0px,parent.width - EditorRenderMetrics.error-reserve);
+                    text: Session.error;
+                    font-family: SamplerTheme.font-ui;
+                    font-size: SamplerTheme.type-small;
+                    color: SamplerTheme.error;
+                    wrap: word-wrap;
+                }
+                cancel-render := ActionButton {
+                    x: parent.width - EditorRenderMetrics.cancel-end;
+                    y: EditorRenderMetrics.footer-top;
+                    width: EditorRenderMetrics.cancel-width;
+                    text: RenderStrings.cancel;
+                    label: RenderStrings.cancel-label;
+                    ghost: true;
+                    compact: true;
+                    clicked => { root.close(); }
+                }
+
+                if root.mode != RenderOptions.add-source: ActionButton {
+                    x: parent.width - EditorRenderMetrics.start-end;
+                    y: EditorRenderMetrics.footer-top;
+                    width: EditorRenderMetrics.start-width;
+                    text: root.mode == RenderOptions.autosampler ? RenderStrings.render : RenderStrings.freeze;
+                    primary: true;
+                    compact: true;
+                    enabled: !root.busy && (root.mode != RenderOptions.autosampler || root.renders <= RenderOptions.maximum-renders);
+                    clicked => { Session.command(root.mode == RenderOptions.autosampler ? SamplerCommands.autosampler-start : SamplerCommands.freeze-start,Session.selected-source,"",0); root.restore-cancel-focus = true; }
+                }
+            }
+        }
     }
 }

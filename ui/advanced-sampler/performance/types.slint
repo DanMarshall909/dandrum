@@ -2,7 +2,14 @@ import { ModAssignment } from "../../slint/modulation/types.slint";
 export { PadInfo } from "../../slint/editor/PadTypes.slint";
 export { PresetInfo as PatchInfo } from "../../slint/editor/PresetTypes.slint";
 export struct MacroInfo {
-    id: string, name: string, value: float, default-value: float,
-    minimum: float, maximum: float, unit: string, host-automated: bool,
-    destinations: [string], assignments: [ModAssignment],
+    id: string,
+    name: string,
+    value: float,
+    default-value: float,
+    minimum: float,
+    maximum: float,
+    unit: string,
+    host-automated: bool,
+    destinations: [string],
+    assignments: [ModAssignment],
 }

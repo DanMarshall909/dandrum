@@ -25,17 +25,36 @@ export component IconButton inherits ActionArea {
     activated => { root.clicked(); }
     z: root.tooltip-visible ? 100 : 0;
     changed hovered => { if !root.hovered { root.hover-ready = false; } }
-    Timer { running: root.enabled && root.hovered && !root.hover-ready; interval: Tokens.tooltip-hover-delay; triggered => { root.hover-ready = true; } }
-    FocusRing { active: root.enabled && (root.has-focus || root.focused); }
-    face := ButtonFace {
-        enabled: root.enabled; ghost: root.ghost; checked: root.checked; hovered: root.hovered; pressed: root.down;
-        y: root.down && root.enabled ? 1px : 0px;
-        Icon { name: root.icon; tint: face.foreground; size: root.compact ? 14px : 16px; }
-    }
-    if root.tooltip-visible : Tooltip {
-        x: ViewportMetrics.clamp-x(root.absolute-position.x, self.width, 8px) - root.absolute-position.x;
-        y: ViewportMetrics.place-y(root.absolute-position.y, root.height, self.height, 6px, 8px) - root.absolute-position.y;
-        width: 240px; height: self.preferred-height; title: root.label; description: root.description;
+    Timer {
+        running: root.enabled && root.hovered && !root.hover-ready;
+        interval: Tokens.tooltip-hover-delay;
+        triggered => { root.hover-ready = true; }
     }
 
+    FocusRing {
+        active: root.enabled && (root.has-focus || root.focused);
+    }
+
+    face := ButtonFace {
+        enabled: root.enabled;
+        ghost: root.ghost;
+        checked: root.checked;
+        hovered: root.hovered;
+        pressed: root.down;
+        y: root.down && root.enabled ? 1px : 0px;
+        Icon {
+            name: root.icon;
+            tint: face.foreground;
+            size: root.compact ? 14px : 16px;
+        }
+    }
+
+    if root.tooltip-visible: Tooltip {
+        x: ViewportMetrics.clamp-x(root.absolute-position.x, self.width, 8px) - root.absolute-position.x;
+        y: ViewportMetrics.place-y(root.absolute-position.y, root.height, self.height, 6px, 8px) - root.absolute-position.y;
+        width: 240px;
+        height: self.preferred-height;
+        title: root.label;
+        description: root.description;
+    }
 }

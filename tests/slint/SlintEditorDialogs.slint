@@ -1,10 +1,17 @@
-import { EditorModal, EditorDialogSurface } from "../../ui/slint/editor/Dialog.slint";
+import {
+    EditorModal,
+    EditorDialogSurface,
+} from "../../ui/slint/editor/Dialog.slint";
 import { ActionArea } from "../../ui/slint/controls/ActionArea.slint";
-import { EditorDragSource, EditorDragTarget, EditorDragState } from "../../ui/slint/editor/Drag.slint";
+import {
+    EditorDragSource,
+    EditorDragTarget,
+    EditorDragState,
+} from "../../ui/slint/editor/Drag.slint";
 export { EditorDragState }
-
 export component SlintEditorDialogs inherits Window {
-    width: 500px; height: 360px;
+    width: 500px;
+    height: 360px;
     in-out property <bool> dismiss-on-background: true;
     in-out property <string> text;
     out property <int> dismissals;
@@ -24,59 +31,125 @@ export component SlintEditorDialogs inherits Window {
     public function hide-dialog() { modal.close(); }
     public function show-child() { child.show(); }
     public function hide-child() { child.close(); }
-    opener := ActionArea { focus-on-tab-navigation: true; focus-on-click: true;
-        x: 12px; y: 12px; width: 100px; height: 28px; label: "Dialog opener";
+    opener := ActionArea {
+        focus-on-tab-navigation: true;
+        focus-on-click: true;
+        x: 12px;
+        y: 12px;
+        width: 100px;
+        height: 28px;
+        label: "Dialog opener";
         activated => { modal.show(); }
-        Text { text: "Open"; }
+        Text {
+            text: "Open";
+        }
     }
-    ActionArea { focus-on-tab-navigation: true; focus-on-click: true;
-        x: 12px; y: 60px; width: 100px; height: 28px; label: "Background action";
+
+    ActionArea {
+        focus-on-tab-navigation: true;
+        focus-on-click: true;
+        x: 12px;
+        y: 60px;
+        width: 100px;
+        height: 28px;
+        label: "Background action";
         activated => { root.background-clicks += 1; }
     }
+
     EditorDragSource {
-        x: 12px; y: 260px; width: 70px; height: 40px;
-        kind: root.drag-kind; payload: "source-a"; enabled: root.drag-enabled;
-        accessible-role: button; accessible-label: "Shared drag source";
+        x: 12px;
+        y: 260px;
+        width: 70px;
+        height: 40px;
+        kind: root.drag-kind;
+        payload: "source-a";
+        enabled: root.drag-enabled;
+        accessible-role: button;
+        accessible-label: "Shared drag source";
         activate => { root.source-clicks += 1; }
         context-requested => { root.source-contexts += 1; }
     }
+
     target := EditorDragTarget {
-        x: 250px; y: 250px; width: 100px; height: 70px;
-        accepted-kind: "item"; additional-kind: "alternate";
-        enabled: root.target-enabled; visible: root.target-visible;
-        accessible-role: groupbox; accessible-label: "Shared drag target";
+        x: 250px;
+        y: 250px;
+        width: 100px;
+        height: 70px;
+        accepted-kind: "item";
+        additional-kind: "alternate";
+        enabled: root.target-enabled;
+        visible: root.target-visible;
+        accessible-role: groupbox;
+        accessible-label: "Shared drag target";
         dropped(id) => { root.drops += 1; root.dropped-id = id; return root.accept-drop; }
     }
+
     Rectangle {
         modal := EditorModal {
-            width: root.width; height: root.height; forward-focus: field;
+            width: root.width;
+            height: root.height;
+            forward-focus: field;
             dismiss-on-background: root.dismiss-on-background;
             dismissed => { root.dismissals += 1; modal.close(); }
-            EditorDialogSurface { viewport-width: parent.width; viewport-height: parent.height;
-                width: 300px; height: 180px;
+            EditorDialogSurface {
+                viewport-width: parent.width;
+                viewport-height: parent.height;
+                width: 300px;
+                height: 180px;
                 field := TextInput {
-                    x: 20px; y: 20px; width: 240px; height: 24px;
-                    text <=> root.text; single-line: true; accessible-label: "Shared dialog value";
+                    x: 20px;
+                    y: 20px;
+                    width: 240px;
+                    height: 24px;
+                    text <=> root.text;
+                    single-line: true;
+                    accessible-label: "Shared dialog value";
                 }
-                child-open := ActionArea { focus-on-tab-navigation: true; focus-on-click: true;
-                    x: 20px; y: 65px; width: 100px; height: 28px; label: "Open child dialog";
+
+                child-open := ActionArea {
+                    focus-on-tab-navigation: true;
+                    focus-on-click: true;
+                    x: 20px;
+                    y: 65px;
+                    width: 100px;
+                    height: 28px;
+                    label: "Open child dialog";
                     activated => { child.show(); }
                 }
-                close-main := ActionArea { focus-on-tab-navigation: true; focus-on-click: true;
-                    x: 150px; y: 65px; width: 100px; height: 28px; label: "Close shared dialog";
+
+                close-main := ActionArea {
+                    focus-on-tab-navigation: true;
+                    focus-on-click: true;
+                    x: 150px;
+                    y: 65px;
+                    width: 100px;
+                    height: 28px;
+                    label: "Close shared dialog";
                     activated => { modal.close(); }
                 }
             }
         }
     }
+
     Rectangle {
         child := EditorModal {
-            width: root.width; height: root.height; forward-focus: child-close;
+            width: root.width;
+            height: root.height;
+            forward-focus: child-close;
             dismissed => { root.child-dismissals += 1; child.close(); }
-            EditorDialogSurface { viewport-width: parent.width; viewport-height: parent.height;
-                width: 220px; height: 120px;
-                child-close := ActionArea { focus-on-tab-navigation: true; focus-on-click: true;
-                    x: 20px; y: 20px; width: 170px; height: 28px; label: "Close child dialog";
+            EditorDialogSurface {
+                viewport-width: parent.width;
+                viewport-height: parent.height;
+                width: 220px;
+                height: 120px;
+                child-close := ActionArea {
+                    focus-on-tab-navigation: true;
+                    focus-on-click: true;
+                    x: 20px;
+                    y: 20px;
+                    width: 170px;
+                    height: 28px;
+                    label: "Close child dialog";
                     activated => { child.close(); }
                 }
             }

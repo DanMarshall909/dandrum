@@ -13,13 +13,14 @@ export component EditorZoneEdge inherits FocusScope {
     private property <float> initial;
     private property <float> latest;
     callback selected();
-    callback context-requested(length,length);
-    callback gesture(int,float) -> bool;
-    accessible-role: button; accessible-label: root.label;
+    callback context-requested(length, length);
+    callback gesture(int, float) -> bool;
+    accessible-role: button;
+    accessible-label: root.label;
     accessible-enabled: root.enabled;
     focus-on-tab-navigation: root.enabled;
-    public function finish(cancel:bool) {
-        if root.captured { root.captured=false; root.gesture(cancel ? GesturePhases.cancel : GesturePhases.commit,root.latest); }
+    public function finish(cancel: bool) {
+        if root.captured { root.captured = false; root.gesture(cancel ? GesturePhases.cancel : GesturePhases.commit,root.latest); }
     }
     changed enabled => { if !root.enabled { root.finish(true); } }
     focus-lost(reason) => { if reason == FocusReason.window-activation { root.finish(true); } }
@@ -30,22 +31,24 @@ export component EditorZoneEdge inherits FocusScope {
         mouse-cursor: root.vertical ? ns-resize : ew-resize;
         pointer-event(event) => {
             if event.kind == PointerEventKind.down && event.button == PointerEventButton.right && root.enabled {
-                root.context-requested(self.absolute-position.x+self.mouse-x,self.absolute-position.y+self.mouse-y);
+                root.context-requested(self.absolute-position.x + self.mouse-x,self.absolute-position.y + self.mouse-y);
             }
             if event.kind == PointerEventKind.down && event.button == PointerEventButton.left && root.enabled {
-                root.focus(); root.selected();
-                root.origin=root.vertical ? self.absolute-position.y+self.mouse-y : self.absolute-position.x+self.mouse-x;
-                root.initial=root.value; root.latest=root.value;
-                root.captured=root.gesture(GesturePhases.begin,root.initial);
+                root.focus();
+                root.selected();
+                root.origin = root.vertical ? self.absolute-position.y + self.mouse-y : self.absolute-position.x + self.mouse-x;
+                root.initial = root.value;
+                root.latest = root.value;
+                root.captured = root.gesture(GesturePhases.begin,root.initial);
             }
             if event.kind == PointerEventKind.up { root.finish(false); }
             if event.kind == PointerEventKind.cancel { root.finish(true); }
         }
         moved => {
             if self.pressed && root.captured && root.axis-length > 0px {
-                let position=root.vertical ? self.absolute-position.y+self.mouse-y : self.absolute-position.x+self.mouse-x;
-                let delta=(position - root.origin)/root.axis-length*root.units;
-                root.latest=root.initial+(root.step > 0 ? round(delta/root.step)*root.step : delta)*(root.vertical ? -1 : 1);
+                let position = root.vertical ? self.absolute-position.y + self.mouse-y : self.absolute-position.x + self.mouse-x;
+                let delta = (position - root.origin) / root.axis-length * root.units;
+                root.latest = root.initial + (root.step > 0 ? round(delta / root.step) * root.step : delta) * (root.vertical ? -1 : 1);
                 root.gesture(GesturePhases.update,root.latest);
             }
         }

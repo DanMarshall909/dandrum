@@ -38,34 +38,106 @@ export component RotaryFace inherits Rectangle {
     private property <length> cap-radius: root.track-radius - root.thick / 2 - (root.size >= Tokens.editor-control-rotary-size-medium ? Tokens.editor-control-rotary-cap-gap-medium : Tokens.editor-control-rotary-cap-gap-small);
     private property <length> inner-radius: root.cap-radius - (root.size >= Tokens.editor-control-rotary-size-medium ? Tokens.editor-control-rotary-inner-gap-large : Tokens.editor-control-rotary-inner-gap-small);
     private property <color> combined-tint: root.modulations.length == 1 ? ModPalette.tint(root.modulations[0].slot) : Tokens.dd-paper-1;
-    width: root.size; height: root.size;
-    if root.enabled && root.assigning : Rectangle {
-        for i in Tokens.editor-control-rotary-assign-ticks : Rectangle {
-            x: root.size / 2 + (root.size / 2 - Tokens.editor-control-stroke-width) * cos(i * Tokens.editor-control-rotary-assign-angle-step*1deg) - Tokens.editor-control-rotary-assign-tick-width/2;
-            y: root.size / 2 + (root.size / 2 - Tokens.editor-control-stroke-width) * sin(i * Tokens.editor-control-rotary-assign-angle-step*1deg) - Tokens.editor-control-rotary-assign-tick-height/2;
-            width: Tokens.editor-control-rotary-assign-tick-width; height: Tokens.editor-control-rotary-assign-tick-height; background: Tokens.dd-mod-a; transform-rotation: i * Tokens.editor-control-rotary-assign-angle-step*1deg + Tokens.editor-control-quarter-turn-degrees*1deg;
+    width: root.size;
+    height: root.size;
+    if root.enabled && root.assigning: Rectangle {
+        for i in Tokens.editor-control-rotary-assign-ticks: Rectangle {
+            x: root.size / 2 + (root.size / 2 - Tokens.editor-control-stroke-width) * cos(i * Tokens.editor-control-rotary-assign-angle-step * 1deg) - Tokens.editor-control-rotary-assign-tick-width / 2;
+            y: root.size / 2 + (root.size / 2 - Tokens.editor-control-stroke-width) * sin(i * Tokens.editor-control-rotary-assign-angle-step * 1deg) - Tokens.editor-control-rotary-assign-tick-height / 2;
+            width: Tokens.editor-control-rotary-assign-tick-width;
+            height: Tokens.editor-control-rotary-assign-tick-height;
+            background: Tokens.dd-mod-a;
+            transform-rotation: i * Tokens.editor-control-rotary-assign-angle-step * 1deg + Tokens.editor-control-quarter-turn-degrees * 1deg;
         }
     }
-    for assignment[i] in root.modulations : RotaryModRing {
+    for assignment[i] in root.modulations: RotaryModRing {
         visible: root.enabled && i < Tokens.editor-control-visible-modulation-rings;
         radius: root.size / 2 - root.mod-thick / 2 - i * (root.mod-thick + Tokens.editor-control-stroke-width);
-        base: root.value; depth: assignment.depth; slot: assignment.slot; live: assignment.live;
-        active: assignment.active; editing: assignment.slot == root.active-slot; active-thickness: root.mod-thick;
+        base: root.value;
+        depth: assignment.depth;
+        slot: assignment.slot;
+        live: assignment.live;
+        active: assignment.active;
+        editing: assignment.slot == root.active-slot;
+        active-thickness: root.mod-thick;
     }
-    RotaryArc { radius: root.track-radius; tint: root.enabled ? Tokens.color-track : Tokens.dd-ink-4; thickness: root.thin; }
-    if root.enabled : RotaryArc {
-        from: root.bipolar ? Tokens.editor-curve-bipolar-center : 0; to: root.value; radius: root.track-radius;
-        tint: root.host-automated ? Tokens.dd-host : Tokens.color-value; thickness: root.active || root.host-automated ? root.thick : root.thin;
+    RotaryArc {
+        radius: root.track-radius;
+        tint: root.enabled ? Tokens.color-track : Tokens.dd-ink-4;
+        thickness: root.thin;
     }
-    RotaryTick { value: root.bipolar ? Tokens.editor-curve-bipolar-center : 0; radius: root.track-radius + root.thin / 2 + Tokens.editor-control-stroke-width; tick-length: root.size >= Tokens.editor-control-rotary-size-medium ? Tokens.editor-control-rotary-zero-tick-large : Tokens.editor-control-rotary-zero-tick-small; tint: Tokens.dd-paper-3.with-alpha(root.enabled ? 1 : Tokens.editor-control-rotary-disabled-tick-alpha); thickness: Tokens.editor-control-rotary-track-medium; }
-    RotaryCap { radius: root.cap-radius; enabled: root.enabled; hovered: root.hovered; pressed: root.active; }
-    if root.enabled && root.modulations.length > 0 : Rectangle {
-        RotaryArc { from: root.range-low; to: root.range-high; radius: root.inner-radius; tint: root.combined-tint.with-alpha(Tokens.editor-control-rotary-range-alpha); thickness: root.size >= Tokens.editor-control-rotary-size-medium ? Tokens.editor-control-rotary-mod-width-large : Tokens.editor-control-rotary-mod-width-small; }
-        if root.any-live : RotaryArc { from: root.value; to: root.effective; radius: root.inner-radius; tint: root.combined-tint; thickness: root.size >= Tokens.editor-control-rotary-size-medium ? Tokens.editor-control-rotary-mod-width-large : Tokens.editor-control-rotary-mod-width-small; }
-        if root.any-live : RotaryMarker { value: root.effective; radius: root.inner-radius; diameter: Tokens.editor-control-rotary-live-diameter; tint: root.combined-tint; }
-        if root.show-peaks : RotaryTick { value: root.peak; radius: root.inner-radius + Tokens.editor-control-rotary-peak-offset; tick-length: Tokens.editor-control-rotary-peak-length; tint: Tokens.dd-paper-1; }
-        if root.show-peaks : RotaryTick { value: root.trough; radius: root.inner-radius - Tokens.editor-control-rotary-peak-offset; tick-length: -Tokens.editor-control-rotary-peak-length; tint: Tokens.dd-paper-1; }
+
+    if root.enabled: RotaryArc {
+        from: root.bipolar ? Tokens.editor-curve-bipolar-center : 0;
+        to: root.value;
+        radius: root.track-radius;
+        tint: root.host-automated ? Tokens.dd-host : Tokens.color-value;
+        thickness: root.active || root.host-automated ? root.thick : root.thin;
     }
-    if root.enabled && root.clip-low : RotaryMarker { value: 0; radius: root.track-radius; diameter: root.thick + Tokens.editor-control-rotary-clip-diameter-extra; tint: Tokens.dd-error; hollow: !root.live-clip-low; backing: Tokens.surface-panel; }
-    if root.enabled && root.clip-high : RotaryMarker { value: 1; radius: root.track-radius; diameter: root.thick + Tokens.editor-control-rotary-clip-diameter-extra; tint: Tokens.dd-error; hollow: !root.live-clip-high; backing: Tokens.surface-panel; }
+    RotaryTick {
+        value: root.bipolar ? Tokens.editor-curve-bipolar-center : 0;
+        radius: root.track-radius + root.thin / 2 + Tokens.editor-control-stroke-width;
+        tick-length: root.size >= Tokens.editor-control-rotary-size-medium ? Tokens.editor-control-rotary-zero-tick-large : Tokens.editor-control-rotary-zero-tick-small;
+        tint: Tokens.dd-paper-3.with-alpha(root.enabled ? 1 : Tokens.editor-control-rotary-disabled-tick-alpha);
+        thickness: Tokens.editor-control-rotary-track-medium;
+    }
+
+    RotaryCap {
+        radius: root.cap-radius;
+        enabled: root.enabled;
+        hovered: root.hovered;
+        pressed: root.active;
+    }
+
+    if root.enabled && root.modulations.length > 0: Rectangle {
+        RotaryArc {
+            from: root.range-low;
+            to: root.range-high;
+            radius: root.inner-radius;
+            tint: root.combined-tint.with-alpha(Tokens.editor-control-rotary-range-alpha);
+            thickness: root.size >= Tokens.editor-control-rotary-size-medium ? Tokens.editor-control-rotary-mod-width-large : Tokens.editor-control-rotary-mod-width-small;
+        }
+
+        if root.any-live: RotaryArc {
+            from: root.value;
+            to: root.effective;
+            radius: root.inner-radius;
+            tint: root.combined-tint;
+            thickness: root.size >= Tokens.editor-control-rotary-size-medium ? Tokens.editor-control-rotary-mod-width-large : Tokens.editor-control-rotary-mod-width-small;
+        }
+        if root.any-live: RotaryMarker {
+            value: root.effective;
+            radius: root.inner-radius;
+            diameter: Tokens.editor-control-rotary-live-diameter;
+            tint: root.combined-tint;
+        }
+        if root.show-peaks: RotaryTick {
+            value: root.peak;
+            radius: root.inner-radius + Tokens.editor-control-rotary-peak-offset;
+            tick-length: Tokens.editor-control-rotary-peak-length;
+            tint: Tokens.dd-paper-1;
+        }
+        if root.show-peaks: RotaryTick {
+            value: root.trough;
+            radius: root.inner-radius - Tokens.editor-control-rotary-peak-offset;
+            tick-length: -Tokens.editor-control-rotary-peak-length;
+            tint: Tokens.dd-paper-1;
+        }
+    }
+    if root.enabled && root.clip-low: RotaryMarker {
+        value: 0;
+        radius: root.track-radius;
+        diameter: root.thick + Tokens.editor-control-rotary-clip-diameter-extra;
+        tint: Tokens.dd-error;
+        hollow: !root.live-clip-low;
+        backing: Tokens.surface-panel;
+    }
+    if root.enabled && root.clip-high: RotaryMarker {
+        value: 1;
+        radius: root.track-radius;
+        diameter: root.thick + Tokens.editor-control-rotary-clip-diameter-extra;
+        tint: Tokens.dd-error;
+        hollow: !root.live-clip-high;
+        backing: Tokens.surface-panel;
+    }
 }

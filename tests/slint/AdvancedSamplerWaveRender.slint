@@ -1,10 +1,14 @@
-import { WaveBucket, WaveSlice } from "../../ui/advanced-sampler/domain/types.slint";
+import {
+    WaveBucket,
+    WaveSlice,
+} from "../../ui/advanced-sampler/domain/types.slint";
 import { WaveView } from "../../ui/advanced-sampler/pages/WaveView.slint";
 export { Session } from "../../ui/advanced-sampler/Session.slint";
 export { SamplerTheme } from "../../ui/advanced-sampler/theme/Theme.slint";
 export { WaveBucket } from "../../ui/advanced-sampler/domain/types.slint";
 export component AdvancedSamplerWaveRenderTest inherits Window {
-    width: root.plot-width + 27px; height: 300px;
+    width: root.plot-width + 27px;
+    height: 300px;
     in-out property <length> plot-width: 613px;
     in-out property <float> view-start;
     in-out property <float> view-end: 1;
@@ -16,18 +20,47 @@ export component AdvancedSamplerWaveRenderTest inherits Window {
     in-out property <string> test-state: "loaded";
     in-out property <[WaveSlice]> test-slices;
     out property <image> spectral-image: view.spectral-data;
-    in-out property <[WaveBucket]> test-peaks: [{minimum: -1, maximum: 0.25}, {minimum: -0.5, maximum: 0.25},
-                                               {minimum: 0, maximum: 0}, {minimum: -0.25, maximum: 0.1}];
-    view := WaveView { x: 10px; y: 10px; width: root.plot-width; height: 200px; state: root.test-state; loading-progress: root.loaded-fraction;
+    in-out property <[WaveBucket]> test-peaks: [
+        { minimum: -1, maximum: 0.25 },
+        { minimum: -0.5, maximum: 0.25 },
+        { minimum: 0, maximum: 0 },
+        { minimum: -0.25, maximum: 0.1 }
+    ];
+    view := WaveView {
+        x: 10px;
+        y: 10px;
+        width: root.plot-width;
+        height: 200px;
+        state: root.test-state;
+        loading-progress: root.loaded-fraction;
         zoom: root.main-zoom;
-        viewport-start: root.view-start; viewport-end: root.view-end;
+        viewport-start: root.view-start;
+        viewport-end: root.view-end;
         reversed: root.reversed;
-        region-start: root.region-start; region-end: root.region-end;
+        region-start: root.region-start;
+        region-end: root.region-end;
         peaks: root.test-peaks;
         slices: root.test-slices;
         metadata: "Fixture sample.wav";
     }
-    WaveView { x: 10px; y: 220px; width: 600px; height: 28px; state: "loaded"; peaks: root.test-peaks; overview-start: view.visible-start; overview-end: view.visible-end; }
+
+    WaveView {
+        x: 10px;
+        y: 220px;
+        width: 600px;
+        height: 28px;
+        state: "loaded";
+        peaks: root.test-peaks;
+        overview-start: view.visible-start;
+        overview-end: view.visible-end;
+    }
     // Preserve one-to-one source pixels for the independent RGB oracle.
-    Image { x: 10px; y: 220px; width: 4px; height: 64px; source: root.spectral-image; image-fit: fill; }
+    Image {
+        x: 10px;
+        y: 220px;
+        width: 4px;
+        height: 64px;
+        source: root.spectral-image;
+        image-fit: fill;
+    }
 }

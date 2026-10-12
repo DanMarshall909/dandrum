@@ -21,13 +21,25 @@ export component ParamLabel inherits Rectangle {
     accessible-role: text;
     accessible-label: root.label + (root.show-value ? ParameterStrings.label-value-separator + root.value + ParameterStrings.value-unit-separator + root.unit : "");
     caption := ControlLabel {
-        x: 0px; y: 0px; width: parent.width; height: Tokens.editor-control-field-label-height;
-        label: root.label; compact: root.size == ParameterStrings.size-small; enabled: root.enabled;
+        x: 0px;
+        y: 0px;
+        width: parent.width;
+        height: Tokens.editor-control-field-label-height;
+        label: root.label;
+        compact: root.size == ParameterStrings.size-small;
+        enabled: root.enabled;
         horizontal-alignment: root.align == ParameterStrings.align-center ? center : root.align == ParameterStrings.align-right ? right : left;
     }
+
     readout := ValueReadout {
-        x: 0px; y: Tokens.editor-control-field-label-height+Tokens.editor-control-readout-value-gap; width: parent.width; visible: root.show-value;
-        value: root.value; unit: root.unit; align: root.align;
-        font-size: root.value-font-size; foreground: root.value-color;
+        x: 0px;
+        y: Tokens.editor-control-field-label-height + Tokens.editor-control-readout-value-gap;
+        width: parent.width;
+        visible: root.show-value;
+        value: root.value;
+        unit: root.unit;
+        align: root.align;
+        font-size: root.value-font-size;
+        foreground: root.value-color;
     }
 }

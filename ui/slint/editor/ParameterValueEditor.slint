@@ -8,7 +8,10 @@ export component ParameterValueEditor inherits TextInput {
     in property <bool> editing;
     in property <bool> invalid;
     in property <bool> host-active;
-    callback submitted(string); callback cancelled(); callback abandoned(); callback interaction-lost();
+    callback submitted(string);
+    callback cancelled();
+    callback abandoned();
+    callback interaction-lost();
     accessible-label: ParameterStrings.edit-label(root.label);
     text: root.value-text;
     enabled: root.editing;

@@ -7,7 +7,8 @@ import { DragState } from "../chrome/DragState.slint";
 export component WaveView inherits EditableWaveform {
     small-font-size: Tokens.editor-display-type-v3-small;
     spectral-data: Session.spectral-preview(root.peaks, root.reversed, root.region-start, root.region-end, SamplerTheme.ink-0, SamplerTheme.ink-5, SamplerTheme.accent-lo, SamplerTheme.accent, SamplerTheme.paper-1);
-    loading-name: Session.sample-name; loading-duration: Session.sample-duration;
+    loading-name: Session.sample-name;
+    loading-duration: Session.sample-duration;
     loading-detail-progress: Session.sample-progress;
     window-deactivated => { Session.release-notes(); DragState.cancel(); }
 }

@@ -16,39 +16,177 @@ export component EditorHeader inherits Rectangle {
     in property <int> size-mode: 1;
     callback command(string);
     background: SamplerTheme.ink-0;
-    Rectangle { y: parent.height - Tokens.editor-border-width; height: Tokens.editor-border-width; background: SamplerTheme.line-1; }
+    Rectangle {
+        y: parent.height - Tokens.editor-border-width;
+        height: Tokens.editor-border-width;
+        background: SamplerTheme.line-1;
+    }
+
     HorizontalLayout {
-        x: 0px; y: 0px; width: parent.width; height: parent.height;
-        padding-left: Tokens.editor-chrome-content-inset; padding-right: Tokens.editor-chrome-content-inset; spacing: root.compact ? Tokens.editor-chrome-gap-small : Tokens.editor-chrome-content-inset; alignment: stretch;
+        x: 0px;
+        y: 0px;
+        width: parent.width;
+        height: parent.height;
+        padding-left: Tokens.editor-chrome-content-inset;
+        padding-right: Tokens.editor-chrome-content-inset;
+        spacing: root.compact ? Tokens.editor-chrome-gap-small : Tokens.editor-chrome-content-inset;
+        alignment: stretch;
         HorizontalLayout {
-            spacing: Tokens.editor-chrome-gap; alignment: center; horizontal-stretch: 0;
-            Text { text: "dandrum"; font-family: SamplerTheme.font-display; font-size: Tokens.editor-chrome-header-brand-size; font-weight: Tokens.editor-weight-bold; color: SamplerTheme.paper-1; }
-            Rectangle { width: Tokens.editor-chrome-inset-small; height: Tokens.editor-chrome-inset-small; border-radius: Tokens.editor-radius-item; background: SamplerTheme.accent; }
-            if !root.compact : Text { text: "TRIGGER"; font-family: SamplerTheme.font-ui; font-size: SamplerTheme.type-control; font-weight: Tokens.editor-weight-bold; letter-spacing: Tokens.editor-panel-heading-tracking; color: SamplerTheme.paper-2; }
+            spacing: Tokens.editor-chrome-gap;
+            alignment: center;
+            horizontal-stretch: 0;
+            Text {
+                text: "dandrum";
+                font-family: SamplerTheme.font-display;
+                font-size: Tokens.editor-chrome-header-brand-size;
+                font-weight: Tokens.editor-weight-bold;
+                color: SamplerTheme.paper-1;
+            }
+
+            Rectangle {
+                width: Tokens.editor-chrome-inset-small;
+                height: Tokens.editor-chrome-inset-small;
+                border-radius: Tokens.editor-radius-item;
+                background: SamplerTheme.accent;
+            }
+
+            if !root.compact: Text {
+                text: "TRIGGER";
+                font-family: SamplerTheme.font-ui;
+                font-size: SamplerTheme.type-control;
+                font-weight: Tokens.editor-weight-bold;
+                letter-spacing: Tokens.editor-panel-heading-tracking;
+                color: SamplerTheme.paper-2;
+            }
         }
-        Rectangle { width: Tokens.editor-border-width; height: Tokens.editor-header-divider-height; background: SamplerTheme.line-1; }
-        HorizontalLayout { spacing: Tokens.editor-chrome-gap-tight; alignment: center; horizontal-stretch: 0;
-            undo-button := ActionButton { icon: Tokens.editor-icon-reset; label: "Undo"; compact: true; ghost: true; enabled: root.can-undo; clicked => { root.command(SamplerCommands.undo); } }
-            redo-button := ActionButton { icon: Tokens.editor-icon-reload; label: "Redo"; compact: true; ghost: true; enabled: root.can-redo; clicked => { root.command(SamplerCommands.redo); } }
+
+        Rectangle {
+            width: Tokens.editor-border-width;
+            height: Tokens.editor-header-divider-height;
+            background: SamplerTheme.line-1;
         }
-        patch-button := ActionButton { text: root.patch-name + "  ▾"; label: "Browse patches"; width: root.compact ? Tokens.editor-header-compact-patch-width : Tokens.editor-header-patch-width; horizontal-stretch: 0; clicked => { root.command("patch.browse"); } }
-        Text { min-width: Tokens.editor-header-status-minimum-width; horizontal-stretch: 1; text: root.status; overflow: elide; font-family: SamplerTheme.font-ui; font-size: SamplerTheme.type-body; color: SamplerTheme.paper-3; vertical-alignment: center; }
-        Text { text: root.voices + " / " + root.voice-limit; font-family: SamplerTheme.font-value; font-size: SamplerTheme.type-body; color: SamplerTheme.paper-3; vertical-alignment: center; }
-        diagnostics-button := ActionButton { icon: Tokens.editor-icon-settings; label: "Why did this play?"; ghost: true; compact: true; clicked => { root.command("diagnostics"); } }
-        ActionButton { icon: "list"; label: "Event log"; ghost: true; compact: true; clicked => { root.command("eventlog"); } }
-        if !root.perform : Rectangle { width: root.compact ? Tokens.editor-header-compact-size-strip-width : Tokens.editor-header-size-strip-width; height: Tokens.editor-option-strip-height; horizontal-stretch: 0; background: SamplerTheme.surface-well; border-radius: Tokens.editor-radius-group; border-width: Tokens.editor-border-width; border-color: SamplerTheme.border-hairline;
-            HorizontalLayout { x: Tokens.editor-chrome-inset-cap; y: Tokens.editor-chrome-inset-cap; width: parent.width - Tokens.editor-chrome-inset-small; height: parent.height - Tokens.editor-chrome-inset-small; spacing: Tokens.editor-chrome-gap-tight;
-                for size-label[i] in ["Min", root.compact ? "Def" : "Default", root.compact ? "Exp" : "Expanded"] : ActionButton {
-                    text: size-label; label: i == 2 ? "Exp" : size-label; selected: i == root.size-mode; compact: true; ghost: true; neutral-selection: true; caps: true;
-                    width: root.compact ? Tokens.editor-header-compact-size-cap-width : i == 0 ? Tokens.editor-header-minimum-size-cap-width : i == 1 ? Tokens.editor-header-default-size-cap-width : Tokens.editor-header-expanded-size-cap-width; height: Tokens.editor-option-cap-height;
+
+        HorizontalLayout {
+            spacing: Tokens.editor-chrome-gap-tight;
+            alignment: center;
+            horizontal-stretch: 0;
+            undo-button := ActionButton {
+                icon: Tokens.editor-icon-reset;
+                label: "Undo";
+                compact: true;
+                ghost: true;
+                enabled: root.can-undo;
+                clicked => { root.command(SamplerCommands.undo); }
+            }
+
+            redo-button := ActionButton {
+                icon: Tokens.editor-icon-reload;
+                label: "Redo";
+                compact: true;
+                ghost: true;
+                enabled: root.can-redo;
+                clicked => { root.command(SamplerCommands.redo); }
+            }
+        }
+
+        patch-button := ActionButton {
+            text: root.patch-name + "  ▾";
+            label: "Browse patches";
+            width: root.compact ? Tokens.editor-header-compact-patch-width : Tokens.editor-header-patch-width;
+            horizontal-stretch: 0;
+            clicked => { root.command("patch.browse"); }
+        }
+
+        Text {
+            min-width: Tokens.editor-header-status-minimum-width;
+            horizontal-stretch: 1;
+            text: root.status;
+            overflow: elide;
+            font-family: SamplerTheme.font-ui;
+            font-size: SamplerTheme.type-body;
+            color: SamplerTheme.paper-3;
+            vertical-alignment: center;
+        }
+
+        Text {
+            text: root.voices + " / " + root.voice-limit;
+            font-family: SamplerTheme.font-value;
+            font-size: SamplerTheme.type-body;
+            color: SamplerTheme.paper-3;
+            vertical-alignment: center;
+        }
+
+        diagnostics-button := ActionButton {
+            icon: Tokens.editor-icon-settings;
+            label: "Why did this play?";
+            ghost: true;
+            compact: true;
+            clicked => { root.command("diagnostics"); }
+        }
+
+        ActionButton {
+            icon: "list";
+            label: "Event log";
+            ghost: true;
+            compact: true;
+            clicked => { root.command("eventlog"); }
+        }
+
+        if !root.perform: Rectangle {
+            width: root.compact ? Tokens.editor-header-compact-size-strip-width : Tokens.editor-header-size-strip-width;
+            height: Tokens.editor-option-strip-height;
+            horizontal-stretch: 0;
+            background: SamplerTheme.surface-well;
+            border-radius: Tokens.editor-radius-group;
+            border-width: Tokens.editor-border-width;
+            border-color: SamplerTheme.border-hairline;
+            HorizontalLayout {
+                x: Tokens.editor-chrome-inset-cap;
+                y: Tokens.editor-chrome-inset-cap;
+                width: parent.width - Tokens.editor-chrome-inset-small;
+                height: parent.height - Tokens.editor-chrome-inset-small;
+                spacing: Tokens.editor-chrome-gap-tight;
+                for size-label[i] in ["Min", root.compact ? "Def" : "Default", root.compact ? "Exp" : "Expanded"]: ActionButton {
+                    text: size-label;
+                    label: i == 2 ? "Exp" : size-label;
+                    selected: i == root.size-mode;
+                    compact: true;
+                    ghost: true;
+                    neutral-selection: true;
+                    caps: true;
+                    width: root.compact ? Tokens.editor-header-compact-size-cap-width : i == 0 ? Tokens.editor-header-minimum-size-cap-width : i == 1 ? Tokens.editor-header-default-size-cap-width : Tokens.editor-header-expanded-size-cap-width;
+                    height: Tokens.editor-option-cap-height;
                     clicked => { root.command(i == 0 ? "size.min" : i == 1 ? "size.default" : "size.expanded"); }
                 }
             }
         }
-        perform-button := ActionButton { text: root.perform ? "Edit" : "Perform"; icon: root.perform ? "edit" : "tap"; label: root.perform ? "Return to editor" : "Perform"; clicked => { root.command("perform.toggle"); } }
-        appearance-button := ActionButton { icon: Tokens.editor-icon-settings; label: "Appearance and settings"; ghost: true; compact: true; clicked => { root.command("appearance"); } }
-        Rectangle { width: Tokens.editor-header-meter-width; height: Tokens.editor-chrome-content-inset;
-            for row in 2 : LevelMeter { y: row * Tokens.editor-header-meter-row-stride; height: Tokens.editor-chrome-gap-small; width: parent.width; level: root.level; centered: true; track-color: SamplerTheme.ink-4; fill-color: root.level > Tokens.editor-header-meter-warning-threshold ? SamplerTheme.error : SamplerTheme.ok; }
+        perform-button := ActionButton {
+            text: root.perform ? "Edit" : "Perform";
+            icon: root.perform ? "edit" : "tap";
+            label: root.perform ? "Return to editor" : "Perform";
+            clicked => { root.command("perform.toggle"); }
+        }
+
+        appearance-button := ActionButton {
+            icon: Tokens.editor-icon-settings;
+            label: "Appearance and settings";
+            ghost: true;
+            compact: true;
+            clicked => { root.command("appearance"); }
+        }
+
+        Rectangle {
+            width: Tokens.editor-header-meter-width;
+            height: Tokens.editor-chrome-content-inset;
+            for row in 2: LevelMeter {
+                y: row * Tokens.editor-header-meter-row-stride;
+                height: Tokens.editor-chrome-gap-small;
+                width: parent.width;
+                level: root.level;
+                centered: true;
+                track-color: SamplerTheme.ink-4;
+                fill-color: root.level > Tokens.editor-header-meter-warning-threshold ? SamplerTheme.error : SamplerTheme.ok;
+            }
         }
     }
 }

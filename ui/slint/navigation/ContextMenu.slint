@@ -13,11 +13,12 @@ export component ContextMenu inherits FocusScope {
             root.selected(root.items[index].id);
         }
     }
-    public function show-at(x: length, y: length) { if root.enabled { area.show({x: x, y: y}); } }
+    public function show-at(x: length, y: length) { if root.enabled { area.show({ x: x, y: y }); } }
     public function close() { area.close(); }
     capture-key-pressed(event) => {
         if root.enabled && (event.text == Key.Menu || (event.text == Key.F10 && event.modifiers.shift)) {
-            root.show-at(root.width / 2, root.height / 2); return accept;
+            root.show-at(root.width / 2, root.height / 2);
+            return accept;
         }
         return reject;
     }
@@ -27,7 +28,7 @@ export component ContextMenu inherits FocusScope {
     area := ContextMenuArea {
         enabled: root.enabled;
         Menu {
-            for item[index] in root.items : MenuItem {
+            for item[index] in root.items: MenuItem {
                 title: item.label;
                 enabled: !item.disabled && !item.separator;
                 checked: item.checked;

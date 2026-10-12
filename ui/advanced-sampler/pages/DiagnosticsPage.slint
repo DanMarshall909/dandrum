@@ -9,17 +9,39 @@ import { ActionButton } from "../controls/ActionButton.slint";
 import { EventInfo } from "../Session.slint";
 
 component TraceHeading inherits Text {
-    height: Tokens.editor-diagnostics-stage-top; color: SamplerTheme.secondary; font-family: SamplerTheme.font-ui;
-    font-size: SamplerTheme.type-body; font-weight: Tokens.editor-weight-bold; letter-spacing: Tokens.editor-chrome-heading-tracking; vertical-alignment: center; horizontal-alignment: left;
+    height: Tokens.editor-diagnostics-stage-top;
+    color: SamplerTheme.secondary;
+    font-family: SamplerTheme.font-ui;
+    font-size: SamplerTheme.type-body;
+    font-weight: Tokens.editor-weight-bold;
+    letter-spacing: Tokens.editor-chrome-heading-tracking;
+    vertical-alignment: center;
+    horizontal-alignment: left;
 }
 
 component HitRow inherits ItemRow {
     in property <EventInfo> event;
     callback inspected(int);
-    height: Tokens.editor-property-row-height; label: "Inspect event " + root.event.sequence; text: root.event.label;
-    content-inset: 0px; content-radius: 0px; text-x: Tokens.editor-diagnostics-event-label-left; text-width: max(0px, root.width - Tokens.editor-diagnostics-event-label-reserve); text-font: SamplerTheme.font-value; text-font-size: SamplerTheme.type-body;
+    height: Tokens.editor-property-row-height;
+    label: "Inspect event " + root.event.sequence;
+    text: root.event.label;
+    content-inset: 0px;
+    content-radius: 0px;
+    text-x: Tokens.editor-diagnostics-event-label-left;
+    text-width: max(0px, root.width - Tokens.editor-diagnostics-event-label-reserve);
+    text-font: SamplerTheme.font-value;
+    text-font-size: SamplerTheme.type-body;
     activated => { root.inspected(root.event.sequence); }
-    Text { x: Tokens.editor-chrome-content-inset; width: Tokens.editor-diagnostics-stage-top; height: parent.height; text: "" + root.event.sequence; color: SamplerTheme.paper-4; font-family: SamplerTheme.font-value; font-size: SamplerTheme.type-caption; vertical-alignment: center; }
+    Text {
+        x: Tokens.editor-chrome-content-inset;
+        width: Tokens.editor-diagnostics-stage-top;
+        height: parent.height;
+        text: "" + root.event.sequence;
+        color: SamplerTheme.paper-4;
+        font-family: SamplerTheme.font-value;
+        font-size: SamplerTheme.type-caption;
+        vertical-alignment: center;
+    }
 }
 
 export component DiagnosticsPage inherits Rectangle {
@@ -29,54 +51,268 @@ export component DiagnosticsPage inherits Rectangle {
     // The imported guide uses content-box sizing: 240+1 and 230+24+1.
     private property <length> hits-width: Tokens.editor-diagnostics-hits-width;
     private property <length> reasons-width: Tokens.editor-diagnostics-reasons-width;
-    private property <[string]> reason-labels: Session.diagnostic-reason == "missing" ? ["No matching rule", "Muted by rule or group", "Voice limit reached", "Volume −∞", "Filter fully closed", "Missing sample"] : Session.diagnostic-reason == "probability" ? ["No matching rule", "Muted by rule or group", "Voice limit reached", "Volume −∞", "Filter fully closed", "Probability skipped"] : ["No matching rule", "Muted by rule or group", "Voice limit reached", "Volume −∞", "Filter fully closed"];
+    private property <[string]> reason-labels: Session.diagnostic-reason == "missing" ? [
+        "No matching rule",
+        "Muted by rule or group",
+        "Voice limit reached",
+        "Volume −∞",
+        "Filter fully closed",
+        "Missing sample"
+    ] : Session.diagnostic-reason == "probability" ? [
+        "No matching rule",
+        "Muted by rule or group",
+        "Voice limit reached",
+        "Volume −∞",
+        "Filter fully closed",
+        "Probability skipped"
+    ] : [
+        "No matching rule",
+        "Muted by rule or group",
+        "Voice limit reached",
+        "Volume −∞",
+        "Filter fully closed"
+    ];
     private property <[string]> reason-ids: ["unmapped", "muted", "limit", "volume", "filter", Session.diagnostic-reason];
     public function inspect-event(sequence: int) { Session.command(SamplerCommands.diagnostics-select, "" + sequence, "", 0); }
     public function clear-events() { Session.command(SamplerCommands.event-clear, "", "", 0); }
     public function toggle-failure() { Session.command(SamplerCommands.telemetry-fail, "", "", Session.mock-failure ? 0 : 1); }
     MaterialSurface {
-        x: 0px; y: 0px; width: parent.width; height: root.trace-height; raised: false; edge: false;
-        Rectangle { x: 0px; y: 0px; width: parent.width; height: Tokens.editor-border-width; background: SamplerTheme.line-1; }
-        Rectangle { x: 0px; y: Tokens.editor-border-width; width: root.hits-width; height: parent.height - Tokens.editor-border-width;
-            Rectangle { x: parent.width - Tokens.editor-border-width; y: 0px; width: Tokens.editor-border-width; height: parent.height; background: SamplerTheme.line-1; }
-            Rectangle { x: 0px; y: 0px; width: parent.width - Tokens.editor-border-width; height: Tokens.editor-diagnostics-heading-height; background: SamplerTheme.surface-panel-header;
-                TraceHeading { x: Tokens.editor-chrome-content-inset; y: 0px; width: parent.width - Tokens.editor-property-row-height; text: "WHY DID THIS PLAY?"; }
-                Rectangle { x: 0px; y: parent.height - Tokens.editor-border-width; width: parent.width; height: Tokens.editor-border-width; background: SamplerTheme.line-1; }
+        x: 0px;
+        y: 0px;
+        width: parent.width;
+        height: root.trace-height;
+        raised: false;
+        edge: false;
+        Rectangle {
+            x: 0px;
+            y: 0px;
+            width: parent.width;
+            height: Tokens.editor-border-width;
+            background: SamplerTheme.line-1;
+        }
+
+        Rectangle {
+            x: 0px;
+            y: Tokens.editor-border-width;
+            width: root.hits-width;
+            height: parent.height - Tokens.editor-border-width;
+            Rectangle {
+                x: parent.width - Tokens.editor-border-width;
+                y: 0px;
+                width: Tokens.editor-border-width;
+                height: parent.height;
+                background: SamplerTheme.line-1;
             }
-            Flickable { x: 0px; y: Tokens.editor-diagnostics-heading-height; height: parent.height - Tokens.editor-diagnostics-heading-height; width: parent.width; content-height: max(self.height, Session.hits.length * Tokens.editor-property-row-height); content-width: self.width;
-                if Session.hits.length == 0 : Text { x: Tokens.editor-chrome-content-inset; y: Tokens.editor-chrome-gap; width: parent.width - Tokens.editor-property-row-height; height: Tokens.editor-diagnostics-empty-hits-height; text: "No hits yet. Click a pad or press A to K on the Pads page."; font-family: SamplerTheme.font-ui; font-size: SamplerTheme.type-body; font-weight: Tokens.editor-weight-medium; color: SamplerTheme.paper-3; wrap: word-wrap; }
-                for hit[i] in Session.hits : HitRow {
-                    y: i * Tokens.editor-property-row-height; width: parent.width; event: hit;
+
+            Rectangle {
+                x: 0px;
+                y: 0px;
+                width: parent.width - Tokens.editor-border-width;
+                height: Tokens.editor-diagnostics-heading-height;
+                background: SamplerTheme.surface-panel-header;
+                TraceHeading {
+                    x: Tokens.editor-chrome-content-inset;
+                    y: 0px;
+                    width: parent.width - Tokens.editor-property-row-height;
+                    text: "WHY DID THIS PLAY?";
+                }
+
+                Rectangle {
+                    x: 0px;
+                    y: parent.height - Tokens.editor-border-width;
+                    width: parent.width;
+                    height: Tokens.editor-border-width;
+                    background: SamplerTheme.line-1;
+                }
+            }
+
+            Flickable {
+                x: 0px;
+                y: Tokens.editor-diagnostics-heading-height;
+                height: parent.height - Tokens.editor-diagnostics-heading-height;
+                width: parent.width;
+                content-height: max(self.height, Session.hits.length * Tokens.editor-property-row-height);
+                content-width: self.width;
+                if Session.hits.length == 0: Text {
+                    x: Tokens.editor-chrome-content-inset;
+                    y: Tokens.editor-chrome-gap;
+                    width: parent.width - Tokens.editor-property-row-height;
+                    height: Tokens.editor-diagnostics-empty-hits-height;
+                    text: "No hits yet. Click a pad or press A to K on the Pads page.";
+                    font-family: SamplerTheme.font-ui;
+                    font-size: SamplerTheme.type-body;
+                    font-weight: Tokens.editor-weight-medium;
+                    color: SamplerTheme.paper-3;
+                    wrap: word-wrap;
+                }
+                for hit[i] in Session.hits: HitRow {
+                    y: i * Tokens.editor-property-row-height;
+                    width: parent.width;
+                    event: hit;
                     selected: hit.sequence == Session.selected-diagnostic-event;
                     inspected(sequence) => { root.inspect-event(sequence); }
                 }
             }
         }
-        Flickable { x: root.hits-width; y: Tokens.editor-border-width; width: parent.width - root.hits-width - root.reasons-width; height: parent.height - Tokens.editor-border-width; content-width: self.width; content-height: max(self.height, Session.diagnostics.length * Tokens.editor-diagnostics-stage-stride + Tokens.editor-chrome-content-inset);
-            if Session.diagnostics.length == 0 : Rectangle { x: 0px; y: 0px; width: parent.width; height: Tokens.editor-diagnostics-empty-stages-height;
-                Text { x: Tokens.editor-chrome-content-inset; y: Tokens.editor-chrome-inset-small; width: parent.width - Tokens.editor-property-row-height; height: Tokens.editor-diagnostics-stage-help-height; text: "Each hit is traced through these stages."; font-family: SamplerTheme.font-ui; font-size: SamplerTheme.type-body; font-weight: Tokens.editor-weight-medium; color: SamplerTheme.paper-3; }
-                for title[i] in ["Event", "Trigger rules", "Selection", "Voice", "Output", "Modulation", "Result"] : StatusStep { x: Tokens.editor-chrome-content-inset; y: Tokens.editor-diagnostics-stage-top + i * Tokens.editor-diagnostics-stage-stride; width: parent.width - Tokens.editor-property-row-height; index: i + 1; title: title; placeholder: true; index-font-size: Tokens.editor-type-legacy-small; }
+
+        Flickable {
+            x: root.hits-width;
+            y: Tokens.editor-border-width;
+            width: parent.width - root.hits-width - root.reasons-width;
+            height: parent.height - Tokens.editor-border-width;
+            content-width: self.width;
+            content-height: max(self.height, Session.diagnostics.length * Tokens.editor-diagnostics-stage-stride + Tokens.editor-chrome-content-inset);
+            if Session.diagnostics.length == 0: Rectangle {
+                x: 0px;
+                y: 0px;
+                width: parent.width;
+                height: Tokens.editor-diagnostics-empty-stages-height;
+                Text {
+                    x: Tokens.editor-chrome-content-inset;
+                    y: Tokens.editor-chrome-inset-small;
+                    width: parent.width - Tokens.editor-property-row-height;
+                    height: Tokens.editor-diagnostics-stage-help-height;
+                    text: "Each hit is traced through these stages.";
+                    font-family: SamplerTheme.font-ui;
+                    font-size: SamplerTheme.type-body;
+                    font-weight: Tokens.editor-weight-medium;
+                    color: SamplerTheme.paper-3;
+                }
+
+                for title[i] in [
+                    "Event",
+                    "Trigger rules",
+                    "Selection",
+                    "Voice",
+                    "Output",
+                    "Modulation",
+                    "Result"
+                ]: StatusStep {
+                    x: Tokens.editor-chrome-content-inset;
+                    y: Tokens.editor-diagnostics-stage-top + i * Tokens.editor-diagnostics-stage-stride;
+                    width: parent.width - Tokens.editor-property-row-height;
+                    index: i + 1;
+                    title: title;
+                    placeholder: true;
+                    index-font-size: Tokens.editor-type-legacy-small;
+                }
             }
-            for stage[i] in Session.diagnostics : StatusStep { x: Tokens.editor-chrome-content-inset; y: Tokens.editor-chrome-inset-small + i * Tokens.editor-diagnostics-stage-stride; width: parent.width - Tokens.editor-property-row-height; index: i + 1; title: stage.title; detail: stage.detail; warning: stage.state == "failed"; index-font-size: Tokens.editor-type-legacy-small; }
+            for stage[i] in Session.diagnostics: StatusStep {
+                x: Tokens.editor-chrome-content-inset;
+                y: Tokens.editor-chrome-inset-small + i * Tokens.editor-diagnostics-stage-stride;
+                width: parent.width - Tokens.editor-property-row-height;
+                index: i + 1;
+                title: stage.title;
+                detail: stage.detail;
+                warning: stage.state == "failed";
+                index-font-size: Tokens.editor-type-legacy-small;
+            }
         }
-        Rectangle { x: parent.width - root.reasons-width; y: Tokens.editor-border-width; width: root.reasons-width; height: parent.height - Tokens.editor-border-width;
-            Rectangle { x: 0px; y: 0px; width: Tokens.editor-border-width; height: parent.height; background: SamplerTheme.line-1; }
-            TraceHeading { x: Tokens.editor-diagnostics-reason-inset; y: Tokens.editor-chrome-gap; height: Tokens.editor-diagnostics-reason-heading-height; width: parent.width - Tokens.editor-diagnostics-reason-text-reserve; text: "IF SILENT…"; }
-            Text { x: Tokens.editor-diagnostics-reason-inset; y: Tokens.editor-diagnostics-reason-text-reserve; width: parent.width - Tokens.editor-diagnostics-reason-text-reserve; height: Tokens.editor-diagnostics-reason-inset; text: "Shows the exact reason"; font-family: SamplerTheme.font-ui; font-size: SamplerTheme.type-caption; font-weight: Tokens.editor-weight-medium; color: SamplerTheme.paper-3; }
-            for reason[i] in root.reason-labels : StatusRow {
-                x: Tokens.editor-diagnostics-reason-inset; y: Tokens.editor-diagnostics-reasons-top + i * Tokens.editor-diagnostics-reason-stride; width: parent.width - Tokens.editor-diagnostics-reason-text-reserve;
-                warning: Session.diagnostic-reason == root.reason-ids[i]; text: reason; status: self.warning ? "Cause" : "OK"; label: reason + (self.warning ? " · active" : ""); status-font-size: Tokens.editor-type-legacy-small;
+
+        Rectangle {
+            x: parent.width - root.reasons-width;
+            y: Tokens.editor-border-width;
+            width: root.reasons-width;
+            height: parent.height - Tokens.editor-border-width;
+            Rectangle {
+                x: 0px;
+                y: 0px;
+                width: Tokens.editor-border-width;
+                height: parent.height;
+                background: SamplerTheme.line-1;
+            }
+
+            TraceHeading {
+                x: Tokens.editor-diagnostics-reason-inset;
+                y: Tokens.editor-chrome-gap;
+                height: Tokens.editor-diagnostics-reason-heading-height;
+                width: parent.width - Tokens.editor-diagnostics-reason-text-reserve;
+                text: "IF SILENT…";
+            }
+
+            Text {
+                x: Tokens.editor-diagnostics-reason-inset;
+                y: Tokens.editor-diagnostics-reason-text-reserve;
+                width: parent.width - Tokens.editor-diagnostics-reason-text-reserve;
+                height: Tokens.editor-diagnostics-reason-inset;
+                text: "Shows the exact reason";
+                font-family: SamplerTheme.font-ui;
+                font-size: SamplerTheme.type-caption;
+                font-weight: Tokens.editor-weight-medium;
+                color: SamplerTheme.paper-3;
+            }
+
+            for reason[i] in root.reason-labels: StatusRow {
+                x: Tokens.editor-diagnostics-reason-inset;
+                y: Tokens.editor-diagnostics-reasons-top + i * Tokens.editor-diagnostics-reason-stride;
+                width: parent.width - Tokens.editor-diagnostics-reason-text-reserve;
+                warning: Session.diagnostic-reason == root.reason-ids[i];
+                text: reason;
+                status: self.warning ? "Cause" : "OK";
+                label: reason + (self.warning ? " · active" : "");
+                status-font-size: Tokens.editor-type-legacy-small;
             }
         }
     }
-    if !root.drawer : MaterialSurface { x: 0px; y: root.trace-height + Tokens.editor-chrome-gap; width: parent.width; height: max(0px, parent.height - self.y);
-        Rectangle { x: 0px; y: 0px; width: parent.width; height: Tokens.editor-panel-header-height; background: SamplerTheme.surface-panel-header;
-            TraceHeading { x: Tokens.editor-chrome-content-inset; y: 0px; height: parent.height; text: "EVENT LOG"; }
-            ActionButton { x: parent.width - Tokens.editor-diagnostics-failure-button-right; y: Tokens.editor-chrome-inset-control-top; width: Tokens.editor-diagnostics-failure-button-width; text: "Simulate adapter failure"; label: "Simulate adapter failure"; selected: Session.mock-failure; clicked => { root.toggle-failure(); } }
-            ActionButton { x: parent.width - Tokens.editor-diagnostics-clear-right; y: Tokens.editor-chrome-inset-control-top; width: Tokens.editor-diagnostics-clear-width; text: "Clear"; label: "Clear events"; clicked => { root.clear-events(); } }
+
+    if !root.drawer: MaterialSurface {
+        x: 0px;
+        y: root.trace-height + Tokens.editor-chrome-gap;
+        width: parent.width;
+        height: max(0px, parent.height - self.y);
+        Rectangle {
+            x: 0px;
+            y: 0px;
+            width: parent.width;
+            height: Tokens.editor-panel-header-height;
+            background: SamplerTheme.surface-panel-header;
+            TraceHeading {
+                x: Tokens.editor-chrome-content-inset;
+                y: 0px;
+                height: parent.height;
+                text: "EVENT LOG";
+            }
+
+            ActionButton {
+                x: parent.width - Tokens.editor-diagnostics-failure-button-right;
+                y: Tokens.editor-chrome-inset-control-top;
+                width: Tokens.editor-diagnostics-failure-button-width;
+                text: "Simulate adapter failure";
+                label: "Simulate adapter failure";
+                selected: Session.mock-failure;
+                clicked => { root.toggle-failure(); }
+            }
+
+            ActionButton {
+                x: parent.width - Tokens.editor-diagnostics-clear-right;
+                y: Tokens.editor-chrome-inset-control-top;
+                width: Tokens.editor-diagnostics-clear-width;
+                text: "Clear";
+                label: "Clear events";
+                clicked => { root.clear-events(); }
+            }
         }
-        Flickable { x: 0px; y: Tokens.editor-event-content-top; width: parent.width; height: max(0px, parent.height - Tokens.editor-event-content-top); content-width: self.width; content-height: max(self.height, Session.events.length * Tokens.editor-property-row-height + Tokens.editor-chrome-content-inset);
-            for event[i] in Session.events : Text { x: Tokens.editor-chrome-content-inset; y: Tokens.editor-chrome-inset-small + i * Tokens.editor-property-row-height; width: parent.width - Tokens.editor-property-row-height; height: Tokens.editor-property-row-height; text: "{event.sequence} · {event.kind} · {event.label}"; font-family: SamplerTheme.font-value; font-size: SamplerTheme.type-caption; font-weight: Tokens.editor-weight-medium; color: event.kind == "failed" ? SamplerTheme.warn : SamplerTheme.paper-3; vertical-alignment: center; overflow: elide; }
+
+        Flickable {
+            x: 0px;
+            y: Tokens.editor-event-content-top;
+            width: parent.width;
+            height: max(0px, parent.height - Tokens.editor-event-content-top);
+            content-width: self.width;
+            content-height: max(self.height, Session.events.length * Tokens.editor-property-row-height + Tokens.editor-chrome-content-inset);
+            for event[i] in Session.events: Text {
+                x: Tokens.editor-chrome-content-inset;
+                y: Tokens.editor-chrome-inset-small + i * Tokens.editor-property-row-height;
+                width: parent.width - Tokens.editor-property-row-height;
+                height: Tokens.editor-property-row-height;
+                text: "{event.sequence} · {event.kind} · {event.label}";
+                font-family: SamplerTheme.font-value;
+                font-size: SamplerTheme.type-caption;
+                font-weight: Tokens.editor-weight-medium;
+                color: event.kind == "failed" ? SamplerTheme.warn : SamplerTheme.paper-3;
+                vertical-alignment: center;
+                overflow: elide;
+            }
         }
     }
 }

@@ -24,7 +24,9 @@ export component PanelHeader inherits Rectangle {
         }
     }
     HorizontalLayout {
-        padding-left: 8px; padding-right: 4px; spacing: 6px;
+        padding-left: 8px;
+        padding-right: 4px;
+        spacing: 6px;
         collapse := FocusScope {
             accessible-role: button;
             accessible-label: root.title;
@@ -38,23 +40,52 @@ export component PanelHeader inherits Rectangle {
             accessible-action-default => { root.toggle(); }
             HorizontalLayout {
                 spacing: 6px;
-                Icon { y: (parent.height - self.height) / 2; name: root.collapsed ? "chevron-right" : "chevron-down"; size: 12px; }
-                SectionHeading { text: root.title; prepared: root.prepared; compact: root.compact; horizontal-stretch: 0; }
-                if root.tag != "" : Text {
-                    text: root.tag; color: Tokens.text-tertiary;
-                    font-family: Tokens.font-ui; font-size: 11px; vertical-alignment: center;
+                Icon {
+                    y: (parent.height - self.height) / 2;
+                    name: root.collapsed ? "chevron-right" : "chevron-down";
+                    size: 12px;
+                }
+
+                SectionHeading {
+                    text: root.title;
+                    prepared: root.prepared;
+                    compact: root.compact;
+                    horizontal-stretch: 0;
+                }
+
+                if root.tag != "": Text {
+                    text: root.tag;
+                    color: Tokens.text-tertiary;
+                    font-family: Tokens.font-ui;
+                    font-size: 11px;
+                    vertical-alignment: center;
                 }
                 Text {
-                    text: root.collapsed ? root.summary : ""; color: Tokens.text-tertiary;
-                    font-family: Tokens.font-value; font-size: 11px; overflow: elide; vertical-alignment: center;
+                    text: root.collapsed ? root.summary : "";
+                    color: Tokens.text-tertiary;
+                    font-family: Tokens.font-value;
+                    font-size: 11px;
+                    overflow: elide;
+                    vertical-alignment: center;
                 }
             }
-            FocusRing { active: collapse.has-focus; }
-            TouchArea { mouse-cursor: pointer; clicked => { collapse.focus(); root.toggle(); } }
+
+            FocusRing {
+                active: collapse.has-focus;
+            }
+
+            TouchArea {
+                mouse-cursor: pointer;
+                clicked => { collapse.focus(); root.toggle(); }
+            }
         }
-        for item[index] in root.actions : IconButton {
-            icon: item.icon; label: item.label; enabled: !item.disabled;
-            width: 24px; height: 24px;
+
+        for item[index] in root.actions: IconButton {
+            icon: item.icon;
+            label: item.label;
+            enabled: !item.disabled;
+            width: 24px;
+            height: 24px;
             y: (parent.height - self.height) / 2;
             clicked => { root.activate-action(index); }
         }

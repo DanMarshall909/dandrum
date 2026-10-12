@@ -95,7 +95,8 @@ export component RangeControl inherits FocusScope {
         if root.interactive && abs(next - root.value) > Tokens.editor-control-value-epsilon {
             let already-active = root.gesture-active;
             if !already-active { root.begin-gesture(); }
-            root.value = next; root.changed(next);
+            root.value = next;
+            root.changed(next);
             if !already-active { root.end-gesture(); }
             nudge-flash.trigger();
         }
@@ -116,7 +117,8 @@ export component RangeControl inherits FocusScope {
     }
     function close-edit(restore-focus: bool) {
         let was-editing = root.editing;
-        root.editing = false; root.edit-invalid = false;
+        root.editing = false;
+        root.edit-invalid = false;
         if was-editing { root.edit-closed(restore-focus); }
     }
     public function cancel-edit() { root.close-edit(true); }
@@ -138,7 +140,13 @@ export component RangeControl inherits FocusScope {
     }
     focus-lost(reason) => { root.end-gesture(); }
     changed interactive => { if !root.interactive { root.cancel-gesture(); root.abandon-edit(); host-flash.clear(); nudge-flash.clear(); } }
-    host-flash := TransientState { duration: Tokens.editor-control-host-flash-duration; }
-    nudge-flash := TransientState { duration: Tokens.editor-control-nudge-flash-duration; }
+    host-flash := TransientState {
+        duration: Tokens.editor-control-host-flash-duration;
+    }
+
+    nudge-flash := TransientState {
+        duration: Tokens.editor-control-nudge-flash-duration;
+    }
+
     @children
 }

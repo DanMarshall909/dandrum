@@ -9,8 +9,11 @@ export component RotaryMarker inherits Rectangle {
     Rectangle {
         x: parent.width / 2 + root.radius * cos((Tokens.editor-control-rotary-arc-start-degrees + Tokens.editor-control-rotary-arc-sweep-degrees * root.value.clamp(0, 1)) * 1deg) - self.width / 2;
         y: parent.height / 2 + root.radius * sin((Tokens.editor-control-rotary-arc-start-degrees + Tokens.editor-control-rotary-arc-sweep-degrees * root.value.clamp(0, 1)) * 1deg) - self.height / 2;
-        width: root.diameter; height: root.diameter; border-radius: self.width / 2;
+        width: root.diameter;
+        height: root.diameter;
+        border-radius: self.width / 2;
         background: root.hollow ? root.backing : root.tint;
-        border-color: root.tint; border-width: root.hollow ? Tokens.editor-control-rotary-marker-border : 0px;
+        border-color: root.tint;
+        border-width: root.hollow ? Tokens.editor-control-rotary-marker-border : 0px;
     }
 }

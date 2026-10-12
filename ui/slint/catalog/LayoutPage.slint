@@ -10,10 +10,26 @@ export component LayoutPage inherits Rectangle {
     preferred-height: heading.preferred-height + containers.height + navigation.height + feedback.height + 36px;
     height: root.preferred-height;
     VerticalLayout {
-        spacing: 12px; alignment: start;
-        heading := PageHeading { title: "Structure and feedback"; description: "Composed panels, navigation, menus and recovery states."; }
-        containers := ContainersGallery { state: root.state; event(message) => { root.event(message); } }
-        navigation := NavigationGallery { state: root.state; event(message) => { root.event(message); } }
-        feedback := FeedbackGallery { state: root.state; event(message) => { root.event(message); } }
+        spacing: 12px;
+        alignment: start;
+        heading := PageHeading {
+            title: "Structure and feedback";
+            description: "Composed panels, navigation, menus and recovery states.";
+        }
+
+        containers := ContainersGallery {
+            state: root.state;
+            event(message) => { root.event(message); }
+        }
+
+        navigation := NavigationGallery {
+            state: root.state;
+            event(message) => { root.event(message); }
+        }
+
+        feedback := FeedbackGallery {
+            state: root.state;
+            event(message) => { root.event(message); }
+        }
     }
 }

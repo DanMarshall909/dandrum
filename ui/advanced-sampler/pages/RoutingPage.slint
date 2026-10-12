@@ -12,80 +12,330 @@ import { ValueCodec } from "../../slint/controls/ValueCodec.slint";
 import { PageSection, SectionText } from "PageSection.slint";
 
 component RoutingSend inherits Rectangle {
- in property <string> node-id;
- in property <string> node-name;
- in property <string> bus;
- in property <float> amount;
- NumericField { y: 0px; width: parent.width; show-label: false; ghost: true; label: root.bus+" send "+root.node-name; unit: "dB"; value-text: root.amount <= 0 ? "−∞" : ValueCodec.format(self.value,"dB");
-  model-value: root.amount > 0 ? 20*log(root.amount,10) : -60;
-  value: root.amount > 0 ? 20*log(root.amount,10) : -60;
-  minimum: -60; maximum: 0; step: 0.1;
-  gesture-began => { Session.parameter-gesture("send:"+root.node-id+":"+root.bus,GesturePhases.begin,root.amount); }
-  changed(v) => { Session.parameter-gesture("send:"+root.node-id+":"+root.bus,GesturePhases.update,v <= -60 ? 0 : pow(10,v/20)); }
-  gesture-ended => { Session.parameter-gesture("send:"+root.node-id+":"+root.bus,GesturePhases.commit,root.amount); }
- }
- LevelMeter { y: Tokens.editor-routing-send-meter-top; height: Tokens.editor-chrome-gap-small; level: root.amount; centered: true; border-radius: Tokens.editor-radius-control; fill-radius: Tokens.editor-chrome-gap-tight; }
+    in property <string> node-id;
+    in property <string> node-name;
+    in property <string> bus;
+    in property <float> amount;
+    NumericField {
+        y: 0px;
+        width: parent.width;
+        show-label: false;
+        ghost: true;
+        label: root.bus + " send " + root.node-name;
+        unit: "dB";
+        value-text: root.amount <= 0 ? "−∞" : ValueCodec.format(self.value,"dB");
+        model-value: root.amount > 0 ? 20 * log(root.amount,10) : -60;
+        value: root.amount > 0 ? 20 * log(root.amount,10) : -60;
+        minimum: -60;
+        maximum: 0;
+        step: 0.1;
+        gesture-began => { Session.parameter-gesture("send:" + root.node-id + ":" + root.bus,GesturePhases.begin,root.amount); }
+        changed(v) => { Session.parameter-gesture("send:" + root.node-id + ":" + root.bus,GesturePhases.update,v <= -60 ? 0 : pow(10,v / 20)); }
+        gesture-ended => { Session.parameter-gesture("send:" + root.node-id + ":" + root.bus,GesturePhases.commit,root.amount); }
+    }
+
+    LevelMeter {
+        y: Tokens.editor-routing-send-meter-top;
+        height: Tokens.editor-chrome-gap-small;
+        level: root.amount;
+        centered: true;
+        border-radius: Tokens.editor-radius-control;
+        fill-radius: Tokens.editor-chrome-gap-tight;
+    }
 }
+
 component RoutingBusList inherits PageSection {
- title: "Output buses"; header-height: Tokens.editor-routing-bus-row-height;
- height: Tokens.editor-routing-table-body-top+Session.routing-buses.length*Tokens.editor-routing-bus-row-height;
- Rectangle { x: Tokens.editor-chrome-content-inset; y: Tokens.editor-routing-assignment-row-height; width: parent.width - Tokens.editor-chrome-content-inset-pair; height: Tokens.editor-item-height;
-  SectionText { x: 0px; width: parent.width*Tokens.editor-routing-bus-name-fraction; height: parent.height; text: "BUS"; font-size: Tokens.editor-type-legacy-small; }
-  SectionText { x: parent.width*Tokens.editor-routing-bus-name-fraction; width: parent.width*Tokens.editor-routing-output-fraction; height: parent.height; text: "PLUGIN OUTPUT"; font-size: Tokens.editor-type-legacy-small; }
-  SectionText { x: parent.width*Tokens.editor-routing-meter-start-fraction; width: parent.width*Tokens.editor-routing-meter-width-fraction; height: parent.height; text: "METER"; font-size: Tokens.editor-type-legacy-small; }
- }
- for bus[i] in Session.routing-buses : Rectangle { x: Tokens.editor-chrome-content-inset; y: Tokens.editor-routing-table-body-top+i*Tokens.editor-routing-bus-row-height; width: parent.width - Tokens.editor-chrome-content-inset-pair; height: Tokens.editor-routing-bus-row-height;
-  SectionText { x: 0px; y: 0px; width: parent.width*Tokens.editor-routing-bus-name-fraction - Tokens.editor-chrome-gap-small; height: Tokens.editor-routing-row-name-height; text: bus.name; color: SamplerTheme.paper-1; font-weight: Tokens.editor-weight-semibold; }
-  SectionText { x: 0px; y: Tokens.editor-routing-row-name-height; width: parent.width*Tokens.editor-routing-bus-name-fraction - Tokens.editor-chrome-gap-small; height: Tokens.editor-routing-row-detail-height; text: bus.feeds.length == 0 ? "—" : bus.feeds[0] + (bus.feeds.length > 1 ? " · " + bus.feeds[1] : "") + (bus.feeds.length > 2 ? " · " + bus.feeds[2] : "") + (bus.feeds.length > 3 ? " +" + (bus.feeds.length - 3) : ""); font-size: Tokens.editor-type-legacy-small; }
-  SectionText { x: parent.width*Tokens.editor-routing-bus-name-fraction; y: Tokens.editor-chrome-inset-small; width: parent.width*Tokens.editor-routing-output-fraction; height: Tokens.editor-routing-channel-label-height; text: bus.channel-summary; font-family: SamplerTheme.font-value; font-size: SamplerTheme.type-caption; }
-  for channel[j] in bus.channels : LevelMeter { x: parent.width*Tokens.editor-routing-meter-start-fraction; y: Tokens.editor-chrome-gap+j*Tokens.editor-chrome-inset-text; width: max(Tokens.editor-routing-meter-minimum-width,parent.width*Tokens.editor-routing-meter-width-fraction); height: Tokens.editor-routing-meter-height; level: channel.peak; border-width: Tokens.editor-border-width; border-color: SamplerTheme.line-1; fill-color: channel.clipped ? SamplerTheme.error : SamplerTheme.ok; }
- }
+    title: "Output buses";
+    header-height: Tokens.editor-routing-bus-row-height;
+    height: Tokens.editor-routing-table-body-top + Session.routing-buses.length * Tokens.editor-routing-bus-row-height;
+    Rectangle {
+        x: Tokens.editor-chrome-content-inset;
+        y: Tokens.editor-routing-assignment-row-height;
+        width: parent.width - Tokens.editor-chrome-content-inset-pair;
+        height: Tokens.editor-item-height;
+        SectionText {
+            x: 0px;
+            width: parent.width * Tokens.editor-routing-bus-name-fraction;
+            height: parent.height;
+            text: "BUS";
+            font-size: Tokens.editor-type-legacy-small;
+        }
+
+        SectionText {
+            x: parent.width * Tokens.editor-routing-bus-name-fraction;
+            width: parent.width * Tokens.editor-routing-output-fraction;
+            height: parent.height;
+            text: "PLUGIN OUTPUT";
+            font-size: Tokens.editor-type-legacy-small;
+        }
+
+        SectionText {
+            x: parent.width * Tokens.editor-routing-meter-start-fraction;
+            width: parent.width * Tokens.editor-routing-meter-width-fraction;
+            height: parent.height;
+            text: "METER";
+            font-size: Tokens.editor-type-legacy-small;
+        }
+    }
+
+    for bus[i] in Session.routing-buses: Rectangle {
+        x: Tokens.editor-chrome-content-inset;
+        y: Tokens.editor-routing-table-body-top + i * Tokens.editor-routing-bus-row-height;
+        width: parent.width - Tokens.editor-chrome-content-inset-pair;
+        height: Tokens.editor-routing-bus-row-height;
+        SectionText {
+            x: 0px;
+            y: 0px;
+            width: parent.width * Tokens.editor-routing-bus-name-fraction - Tokens.editor-chrome-gap-small;
+            height: Tokens.editor-routing-row-name-height;
+            text: bus.name;
+            color: SamplerTheme.paper-1;
+            font-weight: Tokens.editor-weight-semibold;
+        }
+
+        SectionText {
+            x: 0px;
+            y: Tokens.editor-routing-row-name-height;
+            width: parent.width * Tokens.editor-routing-bus-name-fraction - Tokens.editor-chrome-gap-small;
+            height: Tokens.editor-routing-row-detail-height;
+            text: bus.feeds.length == 0 ? "—" : bus.feeds[0] + (bus.feeds.length > 1 ? " · " + bus.feeds[1] : "") + (bus.feeds.length > 2 ? " · " + bus.feeds[2] : "") + (bus.feeds.length > 3 ? " +" + (bus.feeds.length - 3) : "");
+            font-size: Tokens.editor-type-legacy-small;
+        }
+
+        SectionText {
+            x: parent.width * Tokens.editor-routing-bus-name-fraction;
+            y: Tokens.editor-chrome-inset-small;
+            width: parent.width * Tokens.editor-routing-output-fraction;
+            height: Tokens.editor-routing-channel-label-height;
+            text: bus.channel-summary;
+            font-family: SamplerTheme.font-value;
+            font-size: SamplerTheme.type-caption;
+        }
+
+        for channel[j] in bus.channels: LevelMeter {
+            x: parent.width * Tokens.editor-routing-meter-start-fraction;
+            y: Tokens.editor-chrome-gap + j * Tokens.editor-chrome-inset-text;
+            width: max(Tokens.editor-routing-meter-minimum-width,parent.width * Tokens.editor-routing-meter-width-fraction);
+            height: Tokens.editor-routing-meter-height;
+            level: channel.peak;
+            border-width: Tokens.editor-border-width;
+            border-color: SamplerTheme.line-1;
+            fill-color: channel.clipped ? SamplerTheme.error : SamplerTheme.ok;
+        }
+    }
 }
+
 export component RoutingPage inherits Rectangle {
- in property <bool> compact;
- in property <bool> expanded;
- callback context-action(string,string);
- private property <bool> graph;
- public function inherit-output() { Session.command(SamplerCommands.routing-inherit,Session.selected-id,"",0); }
- ScrollView { VerticalLayout { padding: 0px; spacing: Tokens.editor-chrome-gap-small; alignment: start;
-  Rectangle { height: max(assignments.height,root.expanded ? buses.height : 0px);
-   assignments := PageSection { x: 0px; y: 0px; title: "Routing"; width: root.expanded ? parent.width - Tokens.editor-routing-bus-panel-reserve : parent.width; height: Tokens.editor-routing-table-base-height+Session.tree.length*Tokens.editor-routing-assignment-row-height;
-    ActionButton { x: parent.width - Tokens.editor-routing-graph-button-right; y: Tokens.editor-chrome-inset-small; text: root.graph ? "Hide graph" : "Show graph"; compact: true; ghost: true; selected: root.graph; clicked => { root.graph=!root.graph; } }
-    Rectangle { x: Tokens.editor-chrome-content-inset; y: Tokens.editor-routing-assignment-row-height; width: parent.width - Tokens.editor-chrome-content-inset-pair; height: Tokens.editor-item-height;
-     SectionText { x: 0px; width: parent.width*Tokens.editor-routing-source-fraction; height: parent.height; text: "SOURCE"; font-size: Tokens.editor-type-legacy-small; }
-     SectionText { x: parent.width*Tokens.editor-routing-source-fraction; width: parent.width*Tokens.editor-routing-output-fraction; height: parent.height; text: "OUTPUT BUS"; font-size: Tokens.editor-type-legacy-small; }
-     SectionText { x: parent.width*Tokens.editor-routing-reverb-start-fraction; width: parent.width*Tokens.editor-routing-send-width-fraction; height: parent.height; text: "REVERB"; font-size: Tokens.editor-type-legacy-small; }
-     SectionText { x: parent.width*Tokens.editor-routing-delay-start-fraction; width: parent.width*Tokens.editor-routing-send-width-fraction; height: parent.height; text: "DELAY"; font-size: Tokens.editor-type-legacy-small; }
+    in property <bool> compact;
+    in property <bool> expanded;
+    callback context-action(string, string);
+    private property <bool> graph;
+    public function inherit-output() { Session.command(SamplerCommands.routing-inherit,Session.selected-id,"",0); }
+    ScrollView {
+        VerticalLayout {
+            padding: 0px;
+            spacing: Tokens.editor-chrome-gap-small;
+            alignment: start;
+            Rectangle {
+                height: max(assignments.height,root.expanded ? buses.height : 0px);
+                assignments := PageSection {
+                    x: 0px;
+                    y: 0px;
+                    title: "Routing";
+                    width: root.expanded ? parent.width - Tokens.editor-routing-bus-panel-reserve : parent.width;
+                    height: Tokens.editor-routing-table-base-height + Session.tree.length * Tokens.editor-routing-assignment-row-height;
+                    ActionButton {
+                        x: parent.width - Tokens.editor-routing-graph-button-right;
+                        y: Tokens.editor-chrome-inset-small;
+                        text: root.graph ? "Hide graph" : "Show graph";
+                        compact: true;
+                        ghost: true;
+                        selected: root.graph;
+                        clicked => { root.graph = !root.graph; }
+                    }
+
+                    Rectangle {
+                        x: Tokens.editor-chrome-content-inset;
+                        y: Tokens.editor-routing-assignment-row-height;
+                        width: parent.width - Tokens.editor-chrome-content-inset-pair;
+                        height: Tokens.editor-item-height;
+                        SectionText {
+                            x: 0px;
+                            width: parent.width * Tokens.editor-routing-source-fraction;
+                            height: parent.height;
+                            text: "SOURCE";
+                            font-size: Tokens.editor-type-legacy-small;
+                        }
+
+                        SectionText {
+                            x: parent.width * Tokens.editor-routing-source-fraction;
+                            width: parent.width * Tokens.editor-routing-output-fraction;
+                            height: parent.height;
+                            text: "OUTPUT BUS";
+                            font-size: Tokens.editor-type-legacy-small;
+                        }
+
+                        SectionText {
+                            x: parent.width * Tokens.editor-routing-reverb-start-fraction;
+                            width: parent.width * Tokens.editor-routing-send-width-fraction;
+                            height: parent.height;
+                            text: "REVERB";
+                            font-size: Tokens.editor-type-legacy-small;
+                        }
+
+                        SectionText {
+                            x: parent.width * Tokens.editor-routing-delay-start-fraction;
+                            width: parent.width * Tokens.editor-routing-send-width-fraction;
+                            height: parent.height;
+                            text: "DELAY";
+                            font-size: Tokens.editor-type-legacy-small;
+                        }
+                    }
+
+                    for node[i] in Session.tree: Rectangle {
+                        x: Tokens.editor-chrome-content-inset;
+                        y: Tokens.editor-routing-table-body-top + i * Tokens.editor-routing-assignment-row-height;
+                        width: parent.width - Tokens.editor-chrome-content-inset-pair;
+                        height: Tokens.editor-routing-assignment-row-height;
+                        background: node.selected ? SamplerTheme.accent-wash : transparent;
+                        ActionButton {
+                            x: node.depth * Tokens.editor-chrome-gap;
+                            y: Tokens.editor-chrome-gap-small;
+                            width: max(Tokens.editor-routing-source-minimum-width,parent.width * Tokens.editor-routing-source-fraction - node.depth * Tokens.editor-chrome-gap - Tokens.editor-chrome-gap-small);
+                            label: node.name;
+                            compact: true;
+                            ghost: true;
+                            clicked => { Session.command(SamplerCommands.selection-set,node.id,"",0); }
+                        }
+
+                        SectionText {
+                            x: node.depth * Tokens.editor-chrome-gap;
+                            y: 0px;
+                            width: max(Tokens.editor-routing-source-minimum-width,parent.width * Tokens.editor-routing-source-fraction - node.depth * Tokens.editor-chrome-gap - Tokens.editor-chrome-gap-small);
+                            height: Tokens.editor-routing-row-name-height;
+                            text: node.name;
+                            color: SamplerTheme.paper-1;
+                        }
+
+                        SectionText {
+                            x: node.depth * Tokens.editor-chrome-gap;
+                            y: Tokens.editor-routing-row-name-height;
+                            width: max(Tokens.editor-routing-source-minimum-width,parent.width * Tokens.editor-routing-source-fraction - node.depth * Tokens.editor-chrome-gap - Tokens.editor-chrome-gap-small);
+                            height: Tokens.editor-routing-row-detail-height;
+                            text: node.kind;
+                            font-size: Tokens.editor-type-legacy-small;
+                        }
+
+                        ActionButton {
+                            x: parent.width * Tokens.editor-routing-source-fraction;
+                            y: Tokens.editor-chrome-gap-small;
+                            width: parent.width * Tokens.editor-routing-output-fraction;
+                            text: node.output == "inherit" ? "Inherit" : node.output;
+                            label: "Output bus " + node.name;
+                            compact: true;
+                            clicked => { outputs.show(); }
+                        }
+
+                        outputs := PopupWindow {
+                            x: parent.width * Tokens.editor-routing-source-fraction;
+                            y: Tokens.editor-routing-menu-top;
+                            width: Tokens.editor-routing-output-menu-width;
+                            height: Tokens.editor-routing-menu-top + Session.buses.length * Tokens.editor-item-height;
+                            Rectangle {
+                                background: SamplerTheme.surface-menu;
+                                border-width: Tokens.editor-border-width;
+                                border-color: SamplerTheme.line-3;
+                                VerticalLayout {
+                                    padding: Tokens.editor-chrome-inset-cap;
+                                    spacing: Tokens.editor-chrome-gap-tight;
+                                    alignment: start;
+                                    ActionButton {
+                                        text: "Inherit";
+                                        label: "Inherit output " + node.name;
+                                        compact: true;
+                                        ghost: true;
+                                        clicked => { Session.command(SamplerCommands.routing-inherit,node.id,"",0); outputs.close(); }
+                                    }
+
+                                    for bus in Session.buses: ActionButton {
+                                        text: bus.name;
+                                        label: "Set " + node.name + " output " + bus.name;
+                                        compact: true;
+                                        ghost: true;
+                                        clicked => { Session.command(SamplerCommands.routing-output,node.id,bus.name,0); outputs.close(); }
+                                    }
+                                }
+                            }
+                        }
+
+                        RoutingSend {
+                            x: parent.width * Tokens.editor-routing-reverb-start-fraction;
+                            y: Tokens.editor-border-width;
+                            width: parent.width * Tokens.editor-routing-send-width-fraction;
+                            height: Tokens.editor-routing-send-height;
+                            node-id: node.id;
+                            node-name: node.name;
+                            bus: "Reverb";
+                            amount: node.send-a;
+                        }
+
+                        RoutingSend {
+                            x: parent.width * Tokens.editor-routing-delay-start-fraction;
+                            y: Tokens.editor-border-width;
+                            width: parent.width * Tokens.editor-routing-send-width-fraction;
+                            height: Tokens.editor-routing-send-height;
+                            node-id: node.id;
+                            node-name: node.name;
+                            bus: "Delay";
+                            amount: node.send-b;
+                        }
+                    }
+                }
+
+                buses := RoutingBusList {
+                    visible: root.expanded;
+                    x: assignments.width + Tokens.editor-chrome-gap-small;
+                    y: 0px;
+                    width: max(Tokens.editor-border-width,parent.width - self.x);
+                }
+            }
+
+            if !root.expanded: RoutingBusList { }
+            if root.expanded: ReadOnlyKeyMap { }
+            if root.graph: PageSection {
+                title: "Output graph";
+                height: Tokens.editor-routing-graph-height;
+                HorizontalLayout {
+                    x: Tokens.editor-chrome-content-inset;
+                    y: Tokens.editor-routing-graph-body-top;
+                    width: parent.width - Tokens.editor-chrome-content-inset-pair;
+                    height: Tokens.editor-routing-graph-body-height;
+                    alignment: start;
+                    spacing: Tokens.editor-routing-meter-minimum-width;
+                    ActionButton {
+                        text: Session.selected-name;
+                        clicked => { Session.command(SamplerCommands.selection-set,Session.selected-id,"",0); }
+                    }
+
+                    SectionText {
+                        text: "→";
+                    }
+
+                    ActionButton {
+                        text: Session.resolved-output;
+                        clicked => { Session.command(SamplerCommands.routing-output,Session.selected-id,"Main 1/2",0); }
+                    }
+
+                    SectionText {
+                        text: "→";
+                    }
+
+                    ActionButton {
+                        text: "Output";
+                        clicked => { Session.command(SamplerCommands.page-select,"fx","",0); }
+                    }
+                }
+            }
+        }
     }
-    for node[i] in Session.tree : Rectangle { x: Tokens.editor-chrome-content-inset; y: Tokens.editor-routing-table-body-top+i*Tokens.editor-routing-assignment-row-height; width: parent.width - Tokens.editor-chrome-content-inset-pair; height: Tokens.editor-routing-assignment-row-height; background: node.selected ? SamplerTheme.accent-wash : transparent;
-     ActionButton { x: node.depth*Tokens.editor-chrome-gap; y: Tokens.editor-chrome-gap-small; width: max(Tokens.editor-routing-source-minimum-width,parent.width*Tokens.editor-routing-source-fraction - node.depth*Tokens.editor-chrome-gap - Tokens.editor-chrome-gap-small); label: node.name; compact: true; ghost: true; clicked => { Session.command(SamplerCommands.selection-set,node.id,"",0); } }
-     SectionText { x: node.depth*Tokens.editor-chrome-gap; y: 0px; width: max(Tokens.editor-routing-source-minimum-width,parent.width*Tokens.editor-routing-source-fraction - node.depth*Tokens.editor-chrome-gap - Tokens.editor-chrome-gap-small); height: Tokens.editor-routing-row-name-height; text: node.name; color: SamplerTheme.paper-1; }
-     SectionText { x: node.depth*Tokens.editor-chrome-gap; y: Tokens.editor-routing-row-name-height; width: max(Tokens.editor-routing-source-minimum-width,parent.width*Tokens.editor-routing-source-fraction - node.depth*Tokens.editor-chrome-gap - Tokens.editor-chrome-gap-small); height: Tokens.editor-routing-row-detail-height; text: node.kind; font-size: Tokens.editor-type-legacy-small; }
-     ActionButton { x: parent.width*Tokens.editor-routing-source-fraction; y: Tokens.editor-chrome-gap-small; width: parent.width*Tokens.editor-routing-output-fraction; text: node.output == "inherit" ? "Inherit" : node.output; label: "Output bus "+node.name; compact: true; clicked => { outputs.show(); } }
-     outputs := PopupWindow { x: parent.width*Tokens.editor-routing-source-fraction; y: Tokens.editor-routing-menu-top; width: Tokens.editor-routing-output-menu-width; height: Tokens.editor-routing-menu-top+Session.buses.length*Tokens.editor-item-height;
-      Rectangle { background: SamplerTheme.surface-menu; border-width: Tokens.editor-border-width; border-color: SamplerTheme.line-3;
-       VerticalLayout { padding: Tokens.editor-chrome-inset-cap; spacing: Tokens.editor-chrome-gap-tight; alignment: start;
-        ActionButton { text: "Inherit"; label: "Inherit output "+node.name; compact: true; ghost: true; clicked => { Session.command(SamplerCommands.routing-inherit,node.id,"",0); outputs.close(); } }
-        for bus in Session.buses : ActionButton { text: bus.name; label: "Set "+node.name+" output "+bus.name; compact: true; ghost: true; clicked => { Session.command(SamplerCommands.routing-output,node.id,bus.name,0); outputs.close(); } }
-       }
-      }
-     }
-     RoutingSend { x: parent.width*Tokens.editor-routing-reverb-start-fraction; y: Tokens.editor-border-width; width: parent.width*Tokens.editor-routing-send-width-fraction; height: Tokens.editor-routing-send-height; node-id: node.id; node-name: node.name; bus: "Reverb"; amount: node.send-a; }
-     RoutingSend { x: parent.width*Tokens.editor-routing-delay-start-fraction; y: Tokens.editor-border-width; width: parent.width*Tokens.editor-routing-send-width-fraction; height: Tokens.editor-routing-send-height; node-id: node.id; node-name: node.name; bus: "Delay"; amount: node.send-b; }
-    }
-   }
-   buses := RoutingBusList { visible: root.expanded; x: assignments.width+Tokens.editor-chrome-gap-small; y: 0px; width: max(Tokens.editor-border-width,parent.width - self.x); }
-  }
-  if !root.expanded : RoutingBusList { }
-  if root.expanded : ReadOnlyKeyMap { }
-  if root.graph : PageSection { title: "Output graph"; height: Tokens.editor-routing-graph-height;
-   HorizontalLayout { x: Tokens.editor-chrome-content-inset; y: Tokens.editor-routing-graph-body-top; width: parent.width - Tokens.editor-chrome-content-inset-pair; height: Tokens.editor-routing-graph-body-height; alignment: start; spacing: Tokens.editor-routing-meter-minimum-width;
-    ActionButton { text: Session.selected-name; clicked => { Session.command(SamplerCommands.selection-set,Session.selected-id,"",0); } }
-    SectionText { text: "→"; }
-    ActionButton { text: Session.resolved-output; clicked => { Session.command(SamplerCommands.routing-output,Session.selected-id,"Main 1/2",0); } }
-    SectionText { text: "→"; }
-    ActionButton { text: "Output"; clicked => { Session.command(SamplerCommands.page-select,"fx","",0); } }
-   }
-  }
- } }
 }

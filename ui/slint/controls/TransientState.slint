@@ -2,7 +2,8 @@
 export component TransientState inherits Rectangle {
     in property <duration> duration: 0ms;
     out property <bool> active;
-    width: 0px; height: 0px;
+    width: 0px;
+    height: 0px;
     public function trigger() { root.active = true; expiry.start(); expiry.restart(); }
     public function clear() { expiry.stop(); root.active = false; }
     expiry := Timer {

@@ -1,8 +1,17 @@
 // Stable import surface. Subcomponents are also importable from their own files.
 export { Tokens } from "theme.slint";
 export { Icon, IconNames } from "icons.slint";
-export { ViewportMetrics, OverlayBounds } from "foundation/ViewportMetrics.slint";
-export { Label, BodyText, ValueText, Heading, Separator } from "foundation/Typography.slint";
+export {
+    ViewportMetrics,
+    OverlayBounds,
+} from "foundation/ViewportMetrics.slint";
+export {
+    Label,
+    BodyText,
+    ValueText,
+    Heading,
+    Separator,
+} from "foundation/Typography.slint";
 export { FocusRing } from "foundation/FocusRing.slint";
 export { DashedBorder } from "foundation/DashedBorder.slint";
 
@@ -56,9 +65,22 @@ export { Tooltip } from "feedback/Tooltip.slint";
 export { TooltipArea } from "feedback/TooltipArea.slint";
 export { EmptyState } from "feedback/EmptyState.slint";
 
-export { MeasurementState, MeterChannel, OutputBus, KeyZone, WaveBucket,
-         WaveSlice, ScopePoint, SpectrumPoint, SpectralCell, LayerParameter,
-         LayerModule, LayerSend, LayerRow, LayerWaveform } from "display/types.slint";
+export {
+    MeasurementState,
+    MeterChannel,
+    OutputBus,
+    KeyZone,
+    WaveBucket,
+    WaveSlice,
+    ScopePoint,
+    SpectrumPoint,
+    SpectralCell,
+    LayerParameter,
+    LayerModule,
+    LayerSend,
+    LayerRow,
+    LayerWaveform,
+} from "display/types.slint";
 export { KeyMap } from "display/KeyMap.slint";
 export { LayerStack } from "display/LayerStack.slint";
 export { LayerDetails } from "display/LayerDetails.slint";
@@ -77,19 +99,50 @@ export { StartModulationRail } from "display/StartModulationRail.slint";
 export { SliceMarkers } from "display/SliceMarkers.slint";
 
 // Editor primitives: application state and command dispatch stay with consumers.
-export { AppearanceChoices, AppearanceFields, AppearanceStrings } from "editor/AppearanceConstants.slint";
+export {
+    AppearanceChoices,
+    AppearanceFields,
+    AppearanceStrings,
+} from "editor/AppearanceConstants.slint";
 export { EditorBindingRangeRow } from "editor/BindingRangeRow.slint";
 export { BrowserActions } from "editor/BrowserActions.slint";
 export { EditorButton } from "editor/Button.slint";
 export { ChoiceGrid } from "editor/ChoiceGrid.slint";
 export { ColorChoice } from "editor/ColorChoice.slint";
-export { CurveKinds, ShapeNames, CurveMetrics } from "editor/CurveConstants.slint";
+export {
+    CurveKinds,
+    ShapeNames,
+    CurveMetrics,
+} from "editor/CurveConstants.slint";
 export { EditorCurvePlot } from "editor/CurvePlot.slint";
 export { EditorModal, EditorDialogSurface } from "editor/Dialog.slint";
-export { EditorDialogMetrics, EditorAppearanceMetrics, EditorRenderMetrics, EditorTypographyMetrics } from "editor/DialogConstants.slint";
-export { MusicalConstants, PitchNames, Ranges, GraphMetrics, DisplayStates, DisplayModes, WaveFields, EnvelopeStages } from "editor/DisplayConstants.slint";
-export { DragKinds, EditorDragMetrics, EditorDragState, EditorDragSource, EditorDragTarget } from "editor/Drag.slint";
-export { WaveCoordinates, EditableWaveform } from "editor/EditableWaveform.slint";
+export {
+    EditorDialogMetrics,
+    EditorAppearanceMetrics,
+    EditorRenderMetrics,
+    EditorTypographyMetrics,
+} from "editor/DialogConstants.slint";
+export {
+    MusicalConstants,
+    PitchNames,
+    Ranges,
+    GraphMetrics,
+    DisplayStates,
+    DisplayModes,
+    WaveFields,
+    EnvelopeStages,
+} from "editor/DisplayConstants.slint";
+export {
+    DragKinds,
+    EditorDragMetrics,
+    EditorDragState,
+    EditorDragSource,
+    EditorDragTarget,
+} from "editor/Drag.slint";
+export {
+    WaveCoordinates,
+    EditableWaveform,
+} from "editor/EditableWaveform.slint";
 export { EditorStrings } from "editor/EditorStrings.slint";
 export { EmptyState as EditorEmptyState } from "editor/EmptyState.slint";
 export { EditorEnvelopePlot } from "editor/EnvelopePlot.slint";
@@ -102,7 +155,11 @@ export { EditorKeyMapOverview } from "editor/KeyMapOverview.slint";
 export { EditorLayoutMetrics } from "editor/LayoutMetrics.slint";
 export { LevelMeter } from "editor/LevelMeter.slint";
 export { EditorMapKeyboard } from "editor/MapKeyboard.slint";
-export { MaterialLayers, WindowMaterial, MaterialSurface } from "editor/Material.slint";
+export {
+    MaterialLayers,
+    WindowMaterial,
+    MaterialSurface,
+} from "editor/Material.slint";
 export { EditorModulatorPlot } from "editor/ModulatorPlot.slint";
 export { NavigationItem, NavigationRail } from "editor/NavigationRail.slint";
 export { EditorOption, EditorOptionStrip } from "editor/OptionStrip.slint";
@@ -111,7 +168,12 @@ export { EditorPadPanel } from "editor/PadPanel.slint";
 export { PadInfo } from "editor/PadTypes.slint";
 export { EditorPadWave } from "editor/PadWave.slint";
 export { EditorPagePanel } from "editor/PagePanel.slint";
-export { ParameterActions, ParameterStrings, GesturePhases, RangeFields } from "editor/ParameterConstants.slint";
+export {
+    ParameterActions,
+    ParameterStrings,
+    GesturePhases,
+    RangeFields,
+} from "editor/ParameterConstants.slint";
 export { ParameterField } from "editor/ParameterField.slint";
 export { ParameterGesture } from "editor/ParameterGesture.slint";
 export { ParameterKnob } from "editor/ParameterKnob.slint";
@@ -131,7 +193,11 @@ export { EditorResizeHandle } from "editor/ResizeHandle.slint";
 export { EditorRollout } from "editor/Rollout.slint";
 export { RotaryFace as EditorRotaryFace } from "editor/RotaryFace.slint";
 export { EditorSearchField } from "editor/SearchField.slint";
-export { PropertyRow as EditorPropertyRow, StatusRow, StatusStep } from "editor/StatusRow.slint";
+export {
+    PropertyRow as EditorPropertyRow,
+    StatusRow,
+    StatusStep,
+} from "editor/StatusRow.slint";
 export { EditorTextField } from "editor/TextField.slint";
 export { EditorTheme } from "editor/Theme.slint";
 export { EditorText } from "editor/Typography.slint";

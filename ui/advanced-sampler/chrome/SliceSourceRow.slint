@@ -11,14 +11,28 @@ export component SliceSourceRow inherits ItemRow {
     in property <string> source-id;
     in property <int> index;
     height: Tokens.editor-item-height;
-    label: "Preview " + root.slice.name + " slice"; text: root.slice.name;
-    selected: Session.selected-slice == root.slice.id; external-pointer: true; external-hovered: drag.has-hover;
-    icon: Tokens.editor-icon-slice; icon-x: Tokens.editor-source-indented-icon-left; text-x: Tokens.editor-source-indented-text-left; text-width: root.content-width - Tokens.editor-slice-source-text-reserve;
-    detail: "slice \{root.index + 1}"; detail-width: Tokens.editor-slice-source-detail-width; detail-font-size: SamplerTheme.type-caption;
+    label: "Preview " + root.slice.name + " slice";
+    text: root.slice.name;
+    selected: Session.selected-slice == root.slice.id;
+    external-pointer: true;
+    external-hovered: drag.has-hover;
+    icon: Tokens.editor-icon-slice;
+    icon-x: Tokens.editor-source-indented-icon-left;
+    text-x: Tokens.editor-source-indented-text-left;
+    text-width: root.content-width - Tokens.editor-slice-source-text-reserve;
+    detail: "slice \{root.index + 1}";
+    detail-width: Tokens.editor-slice-source-detail-width;
+    detail-font-size: SamplerTheme.type-caption;
     progress-visible: Session.selected-source == Session.slice-source(Session.slice-sources, root.slice.id) && Session.selected-slice == root.slice.id && Session.auditioning;
-    progress: (Session.playhead - root.slice.start) / max(0.00001, root.slice.end - root.slice.start); progress-centered: true;
+    progress: (Session.playhead - root.slice.start) / max(0.00001, root.slice.end - root.slice.start);
+    progress-centered: true;
     activated => { root.preview(); }
     window-deactivated => { Session.release-notes(); DragState.cancel(); }
     public function preview() { Session.command(SamplerCommands.slice-preview, root.slice.id, "", 0); }
-    drag := DragSource { kind: DragKinds.slice; payload: root.slice.id; enabled: root.enabled; activate => { root.activate(); } }
+    drag := DragSource {
+        kind: DragKinds.slice;
+        payload: root.slice.id;
+        enabled: root.enabled;
+        activate => { root.activate(); }
+    }
 }

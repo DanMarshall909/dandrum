@@ -25,7 +25,8 @@ export component ParameterKnob inherits RangeControl {
     private property <bool> fine;
     private property <string> suffix: root.unit == ParameterStrings.unit-pan ? "" : root.unit;
     private property <length> label-height: root.show-label && root.label != "" ? Tokens.editor-control-knob-label-height : 0px;
-    width: max(root.size + Tokens.editor-control-knob-side-clearance, Tokens.editor-control-knob-min-width); height: root.label-height + root.size + Tokens.editor-control-knob-value-gap + (root.value-display-always ? Tokens.editor-control-knob-value-reserve : 0px);
+    width: max(root.size + Tokens.editor-control-knob-side-clearance, Tokens.editor-control-knob-min-width);
+    height: root.label-height + root.size + Tokens.editor-control-knob-value-gap + (root.value-display-always ? Tokens.editor-control-knob-value-reserve : 0px);
     z: root.popup || root.editing ? Tokens.editor-control-popup-z : 0;
     edit-requested => { popup-state.show(); popup.focus-editor(); }
     edit-closed(restore-focus) => { if restore-focus && root.interactive { root.focus(); } }
@@ -35,29 +36,90 @@ export component ParameterKnob inherits RangeControl {
     capture-key-released(event) => { root.fine = event.modifiers.shift; return reject; }
     changed editing => { if root.editing { popup.focus-editor(); } }
     changed popup => { if !root.popup && root.editing { root.abandon-edit(); } }
-    popup-state := DelayedPopupState { requested: gesture.has-hover; keep-open: root.has-focus || root.editing || root.popup-hover; open-delay: Tokens.editor-control-hover-open-delay; }
-    if root.show-label : Text { x: 0px; y: 0px; height: root.label-height; text: root.label.to-uppercase(); font-family: EditorTheme.font-ui; font-size: root.label-font-size; font-weight: Tokens.editor-control-label-weight; color: root.enabled ? EditorTheme.text-secondary : EditorTheme.text-disabled; horizontal-alignment: center; }
-    RotaryFace { x: (parent.width - root.size) / 2; y: root.label-height; width: root.size; height: root.size; value: root.normalized-value; active: root.gesture-active || root.nudged; hovered: gesture.has-hover; enabled: root.enabled; bipolar: root.bipolar; host-active: root.host-active; assignments: root.assignments; }
-    if root.has-focus : Rectangle { border-width: Tokens.editor-control-stroke-width; border-color: EditorTheme.paper-1; border-radius: Tokens.editor-control-radius-focus; }
-    @children
-    menu := ParameterMenu { height: root.height; label: root.label; interactive: root.interactive; assignment-enabled: root.assignment-enabled;
-        interaction-lost => { root.interaction-lost(); }
-        context-action(action) => { root.context-action(action); } reset-requested => { root.reset-value(); } edit-requested => { root.begin-edit(); }
+    popup-state := DelayedPopupState {
+        requested: gesture.has-hover;
+        keep-open: root.has-focus || root.editing || root.popup-hover;
+        open-delay: Tokens.editor-control-hover-open-delay;
     }
-    if root.value-display-always : Text { y: root.label-height + root.size + Tokens.editor-control-knob-side-clearance; height: Tokens.editor-control-knob-value-height; text: root.value-text + root.suffix; font-family: EditorTheme.font-value; font-size: Tokens.editor-control-font-caption; color: EditorTheme.paper-2; horizontal-alignment: center; }
+
+    if root.show-label: Text {
+        x: 0px;
+        y: 0px;
+        height: root.label-height;
+        text: root.label.to-uppercase();
+        font-family: EditorTheme.font-ui;
+        font-size: root.label-font-size;
+        font-weight: Tokens.editor-control-label-weight;
+        color: root.enabled ? EditorTheme.text-secondary : EditorTheme.text-disabled;
+        horizontal-alignment: center;
+    }
+    RotaryFace {
+        x: (parent.width - root.size) / 2;
+        y: root.label-height;
+        width: root.size;
+        height: root.size;
+        value: root.normalized-value;
+        active: root.gesture-active || root.nudged;
+        hovered: gesture.has-hover;
+        enabled: root.enabled;
+        bipolar: root.bipolar;
+        host-active: root.host-active;
+        assignments: root.assignments;
+    }
+
+    if root.has-focus: Rectangle {
+        border-width: Tokens.editor-control-stroke-width;
+        border-color: EditorTheme.paper-1;
+        border-radius: Tokens.editor-control-radius-focus;
+    }
+    @children
+    menu := ParameterMenu {
+        height: root.height;
+        label: root.label;
+        interactive: root.interactive;
+        assignment-enabled: root.assignment-enabled;
+        interaction-lost => { root.interaction-lost(); }
+        context-action(action) => { root.context-action(action); }
+        reset-requested => { root.reset-value(); }
+        edit-requested => { root.begin-edit(); }
+    }
+
+    if root.value-display-always: Text {
+        y: root.label-height + root.size + Tokens.editor-control-knob-side-clearance;
+        height: Tokens.editor-control-knob-value-height;
+        text: root.value-text + root.suffix;
+        font-family: EditorTheme.font-value;
+        font-size: Tokens.editor-control-font-caption;
+        color: EditorTheme.paper-2;
+        horizontal-alignment: center;
+    }
     gesture := ParameterGesture {
-            enabled: root.interactive; value: root.value; minimum: root.minimum; maximum: root.maximum; fine <=> root.fine;
-            started => { root.focus(); root.begin-gesture(); popup-state.show(); }
-            updated(v) => { root.update-gesture(v); } ended => { root.end-gesture(); } cancelled => { root.cancel-gesture(); }
-            reset-requested => { root.reset-value(); }
-            edit-requested => { root.begin-edit(); }
-            wheeled(direction, precise) => { root.wheel(direction, precise); }
-            context-requested(x, y) => { if root.context-mode != "" { root.context-action(root.context-mode); } else { menu.show(); } }
-        }
+        enabled: root.interactive;
+        value: root.value;
+        minimum: root.minimum;
+        maximum: root.maximum;
+        fine <=> root.fine;
+        started => { root.focus(); root.begin-gesture(); popup-state.show(); }
+        updated(v) => { root.update-gesture(v); }
+        ended => { root.end-gesture(); }
+        cancelled => { root.cancel-gesture(); }
+        reset-requested => { root.reset-value(); }
+        edit-requested => { root.begin-edit(); }
+        wheeled(direction, precise) => { root.wheel(direction, precise); }
+        context-requested(x, y) => { if root.context-mode != "" { root.context-action(root.context-mode); } else { menu.show(); } }
+    }
+
     popup := ParameterValuePopup {
         visible: (root.popup || root.editing) && !root.value-display-always && root.enabled;
-        x: (parent.width - self.width) / 2; y: parent.height + Tokens.editor-control-knob-value-gap;
-        label: root.label; value-text: root.value-text; suffix: root.suffix; editing: root.editing; invalid: root.edit-invalid; host-active: root.host-active; assignments: root.assignments;
+        x: (parent.width - self.width) / 2;
+        y: parent.height + Tokens.editor-control-knob-value-gap;
+        label: root.label;
+        value-text: root.value-text;
+        suffix: root.suffix;
+        editing: root.editing;
+        invalid: root.edit-invalid;
+        host-active: root.host-active;
+        assignments: root.assignments;
         hover-changed(hovered) => { root.popup-hover = hovered; }
         edit-requested => { root.begin-edit(); }
         submitted(text) => { root.commit-text(text); }

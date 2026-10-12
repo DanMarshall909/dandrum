@@ -28,16 +28,35 @@ export component MenuSurface inherits ChoiceState {
         if event.text == Key.Escape { root.closed(); return accept; }
         return reject;
     }
-    Rectangle { background: Tokens.surface-menu; border-radius: Tokens.radius-2; border-width: 1px; border-color: Tokens.border-strong; }
+    Rectangle {
+        background: Tokens.surface-menu;
+        border-radius: Tokens.radius-2;
+        border-width: 1px;
+        border-color: Tokens.border-strong;
+    }
+
     content := VerticalLayout {
-        padding: 4px; spacing: 0px;
-        if root.title != "" : Text { text: root.title; color: Tokens.text-tertiary; font-family: Tokens.font-ui; font-size: 11px; font-weight: 700; height: 26px; vertical-alignment: center; }
-        for item[index] in root.items : MenuRow {
-            entry: item; highlighted: root.current-index == index;
+        padding: 4px;
+        spacing: 0px;
+        if root.title != "": Text {
+            text: root.title;
+            color: Tokens.text-tertiary;
+            font-family: Tokens.font-ui;
+            font-size: 11px;
+            font-weight: 700;
+            height: 26px;
+            vertical-alignment: center;
+        }
+        for item[index] in root.items: MenuRow {
+            entry: item;
+            highlighted: root.current-index == index;
             activated => { root.activate(index); }
         }
-        for item[index] in root.assignments : MenuDepthRow {
-            slot: item.slot; source: item.source; depth: item.depth; disabled: !root.assignments-enabled;
+        for item[index] in root.assignments: MenuDepthRow {
+            slot: item.slot;
+            source: item.source;
+            depth: item.depth;
+            disabled: !root.assignments-enabled;
             depth-changed(value) => { root.depth-changed(item.slot, value); }
             removed => { root.removed(item.slot); }
         }

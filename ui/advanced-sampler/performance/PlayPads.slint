@@ -6,8 +6,11 @@ import { PerformanceState } from "PerformanceState.slint";
 import { Session } from "../Session.slint";
 import { DragState } from "../chrome/DragState.slint";
 export component PlayPads inherits EditorPlayPads {
-    source: Tokens.editor-display-drawer-pad-source; small-font-size: Tokens.editor-display-type-v3-small; additional-drop-kind: DragKinds.slice;
-    pad-size <=> PerformanceState.pad-size; pad-start <=> PerformanceState.pad-start;
-    assigned(note,payload) => { return Session.command(SamplerCommands.pad-assign,""+note,payload,0); }
+    source: Tokens.editor-display-drawer-pad-source;
+    small-font-size: Tokens.editor-display-type-v3-small;
+    additional-drop-kind: DragKinds.slice;
+    pad-size <=> PerformanceState.pad-size;
+    pad-start <=> PerformanceState.pad-start;
+    assigned(note, payload) => { return Session.command(SamplerCommands.pad-assign,"" + note,payload,0); }
     window-deactivated => { Session.release-notes(); DragState.cancel(); }
 }

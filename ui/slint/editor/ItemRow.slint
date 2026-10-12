@@ -42,22 +42,72 @@ export component ItemRow inherits FocusScope {
     callback activated();
     callback context-requested();
     callback window-deactivated();
-    height: Tokens.editor-item-height; accessible-role: button; accessible-label: root.label; accessible-enabled: root.enabled;
-    focus-on-tab-navigation: root.enabled; focus-on-click: root.enabled;
+    height: Tokens.editor-item-height;
+    accessible-role: button;
+    accessible-label: root.label;
+    accessible-enabled: root.enabled;
+    focus-on-tab-navigation: root.enabled;
+    focus-on-click: root.enabled;
     public function activate() { if root.enabled { root.focus(); root.activated(); } }
     accessible-action-default => { if root.enabled { root.activated(); } }
     focus-lost(reason) => { if reason == FocusReason.window-activation { root.window-deactivated(); } }
     key-pressed(event) => { if root.enabled && (event.text == " " || event.text == Key.Return) { root.activated(); return accept; } return reject; }
-    Rectangle { x: root.content-inset; width: root.content-width; border-radius: root.content-radius; background: root.selected || root.highlighted ? EditorTheme.accent-wash : root.hovered ? root.hover-color : transparent;
-        if root.selection-mark && root.selected : Rectangle { width: Tokens.editor-item-selection-mark-width; background: EditorTheme.accent; }
-        if root.icon != "" : EditorIcon { x: root.icon-x; y: root.icon-y; name: root.icon; tint: root.icon-tint; }
-        Text { x: root.text-x; width: root.text-width; text: root.text; font-family: root.text-font; font-size: root.text-font-size; font-weight: root.text-weight; color: root.text-color; vertical-alignment: center; overflow: elide; }
-        Text { x: parent.width - root.detail-right - root.detail-width; width: root.detail-width; text: root.detail; font-family: EditorTheme.font-value; font-size: root.detail-font-size; color: root.detail-color; vertical-alignment: center; horizontal-alignment: right; overflow: root.detail-elide ? elide : clip; }
-        if root.progress-visible : LevelMeter { x: root.progress-left; y: parent.height - Tokens.editor-item-progress-bottom; width: parent.width - self.x - Tokens.editor-item-detail-inset; height: Tokens.editor-item-progress-height; level: root.progress; centered: root.progress-centered; track-color: EditorTheme.ink-4; fill-color: EditorTheme.paper-1; }
+    Rectangle {
+        x: root.content-inset;
+        width: root.content-width;
+        border-radius: root.content-radius;
+        background: root.selected || root.highlighted ? EditorTheme.accent-wash : root.hovered ? root.hover-color : transparent;
+        if root.selection-mark && root.selected: Rectangle {
+            width: Tokens.editor-item-selection-mark-width;
+            background: EditorTheme.accent;
+        }
+        if root.icon != "": EditorIcon {
+            x: root.icon-x;
+            y: root.icon-y;
+            name: root.icon;
+            tint: root.icon-tint;
+        }
+        Text {
+            x: root.text-x;
+            width: root.text-width;
+            text: root.text;
+            font-family: root.text-font;
+            font-size: root.text-font-size;
+            font-weight: root.text-weight;
+            color: root.text-color;
+            vertical-alignment: center;
+            overflow: elide;
+        }
+
+        Text {
+            x: parent.width - root.detail-right - root.detail-width;
+            width: root.detail-width;
+            text: root.detail;
+            font-family: EditorTheme.font-value;
+            font-size: root.detail-font-size;
+            color: root.detail-color;
+            vertical-alignment: center;
+            horizontal-alignment: right;
+            overflow: root.detail-elide ? elide : clip;
+        }
+
+        if root.progress-visible: LevelMeter {
+            x: root.progress-left;
+            y: parent.height - Tokens.editor-item-progress-bottom;
+            width: parent.width - self.x - Tokens.editor-item-detail-inset;
+            height: Tokens.editor-item-progress-height;
+            level: root.progress;
+            centered: root.progress-centered;
+            track-color: EditorTheme.ink-4;
+            fill-color: EditorTheme.paper-1;
+        }
     }
-    pointer := TouchArea { enabled: root.enabled && !root.external-pointer;
+
+    pointer := TouchArea {
+        enabled: root.enabled && !root.external-pointer;
         clicked => { root.activate(); }
         pointer-event(event) => { if event.button == PointerEventButton.right && event.kind == (root.context-on-release ? PointerEventKind.up : PointerEventKind.down) { root.context-requested(); } }
     }
+
     @children
 }

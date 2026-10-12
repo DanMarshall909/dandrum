@@ -14,7 +14,8 @@ export component SourceBrowser inherits Rectangle {
     in property <[SourceInfo]> sources;
     private property <string> model-query: Session.source-query;
     changed model-query => { if search.text != root.model-query { search.text = root.model-query; } }
-    callback close(); callback import-source();
+    callback close();
+    callback import-source();
     callback file-request(string, string);
     public function set-query(query: string) { Session.command(SamplerCommands.asset-search, "", query, 0); }
     public function set-category(category: string) { Session.command(SamplerCommands.asset-category, "", category, 0); }
@@ -25,23 +26,115 @@ export component SourceBrowser inherits Rectangle {
         let category-matches = category == "All" || (category == "Samples" && (kind == "sample" || kind == "sampler" || kind == "frozen" || kind == "mock-render")) || (category == "IRs" && (kind == "ir" || kind == "impulse" || kind == "impulse response")) || (category == "Favourites" && source.favourite);
         return category-matches && PatchFilter.contains((source.name + " " + source.metadata + " " + source.kind).to-lowercase(), Session.source-query.to-lowercase());
     }
-    Rectangle { x: 0px; y: 0px; width: parent.width; height: Tokens.editor-chrome-section-header-height; background: SamplerTheme.ink-3;
-        Text { x: Tokens.editor-chrome-content-inset; y: 0px; width: parent.width - Tokens.editor-source-heading-right; height: parent.height; text: "SAMPLES"; font-family: SamplerTheme.font-ui; font-size: SamplerTheme.type-body; font-weight: Tokens.editor-weight-bold; letter-spacing: Tokens.editor-chrome-heading-tracking; color: SamplerTheme.secondary; vertical-alignment: center; }
-        ActionButton { x: parent.width - Tokens.editor-chrome-close-right; y: Tokens.editor-chrome-inset-cap; compact: true; ghost: true; icon: Tokens.editor-icon-folder; label: "Back to instrument tree"; selected: true; clicked => { root.close(); } }
+    Rectangle {
+        x: 0px;
+        y: 0px;
+        width: parent.width;
+        height: Tokens.editor-chrome-section-header-height;
+        background: SamplerTheme.ink-3;
+        Text {
+            x: Tokens.editor-chrome-content-inset;
+            y: 0px;
+            width: parent.width - Tokens.editor-source-heading-right;
+            height: parent.height;
+            text: "SAMPLES";
+            font-family: SamplerTheme.font-ui;
+            font-size: SamplerTheme.type-body;
+            font-weight: Tokens.editor-weight-bold;
+            letter-spacing: Tokens.editor-chrome-heading-tracking;
+            color: SamplerTheme.secondary;
+            vertical-alignment: center;
+        }
+
+        ActionButton {
+            x: parent.width - Tokens.editor-chrome-close-right;
+            y: Tokens.editor-chrome-inset-cap;
+            compact: true;
+            ghost: true;
+            icon: Tokens.editor-icon-folder;
+            label: "Back to instrument tree";
+            selected: true;
+            clicked => { root.close(); }
+        }
     }
-    search := EditorSearchField { y: Tokens.editor-source-search-top; x: Tokens.editor-chrome-gap; width: parent.width - Tokens.editor-chrome-gap-large; height: Tokens.editor-item-height; text: Session.source-query; label: "Search samples"; placeholder: "Search samples";
+
+    search := EditorSearchField {
+        y: Tokens.editor-source-search-top;
+        x: Tokens.editor-chrome-gap;
+        width: parent.width - Tokens.editor-chrome-gap-large;
+        height: Tokens.editor-item-height;
+        text: Session.source-query;
+        label: "Search samples";
+        placeholder: "Search samples";
         edited(value) => { root.set-query(value); }
         focus-left => { Session.release-notes(); DragState.cancel(); }
     }
-    OptionStrip { x: Tokens.editor-chrome-gap; y: Tokens.editor-source-category-top; width: parent.width - Tokens.editor-chrome-gap-large; label: "Sample category"; value: Session.source-category; options: [{id: "All", label: "All"}, {id: "Samples", label: "Samples"}, {id: "IRs", label: "IRs"}, {id: "Favourites", label: "Favourites"}]; selected(category) => { root.set-category(category); } }
-    ScrollView { y: Tokens.editor-source-list-top; height: max(Tokens.editor-border-width, parent.height - self.y - Tokens.editor-source-list-bottom-reserve);
-        VerticalLayout { alignment: start; spacing: 0px;
-            for source in root.sources : Rectangle { height: root.matches(source) ? Tokens.editor-item-height : 0px; visible: root.matches(source); SourceRow { source: source; show-favourite: true; file-request(a,id) => { root.file-request(a,id); } } }
+
+    OptionStrip {
+        x: Tokens.editor-chrome-gap;
+        y: Tokens.editor-source-category-top;
+        width: parent.width - Tokens.editor-chrome-gap-large;
+        label: "Sample category";
+        value: Session.source-category;
+        options: [
+            { id: "All", label: "All" },
+            { id: "Samples", label: "Samples" },
+            { id: "IRs", label: "IRs" },
+            { id: "Favourites", label: "Favourites" }
+        ];
+        selected(category) => { root.set-category(category); }
+    }
+
+    ScrollView {
+        y: Tokens.editor-source-list-top;
+        height: max(Tokens.editor-border-width, parent.height - self.y - Tokens.editor-source-list-bottom-reserve);
+        VerticalLayout {
+            alignment: start;
+            spacing: 0px;
+            for source in root.sources: Rectangle {
+                height: root.matches(source) ? Tokens.editor-item-height : 0px;
+                visible: root.matches(source);
+                SourceRow {
+                    source: source;
+                    show-favourite: true;
+                    file-request(a, id) => { root.file-request(a,id); }
+                }
+            }
         }
     }
-    Rectangle { y: parent.height - Tokens.editor-source-footer-height; height: Tokens.editor-source-footer-height; background: SamplerTheme.ink-1;
-        Text { x: Tokens.editor-chrome-inset-text; y: Tokens.editor-chrome-gap-small; width: parent.width - Tokens.editor-source-help-inset-pair; height: Tokens.editor-source-help-height; text: "Click to preview. Drag onto a pad, zone or waveform."; wrap: word-wrap; font-family: SamplerTheme.font-ui; font-size: SamplerTheme.type-body; color: SamplerTheme.paper-3; }
-        ActionButton { x: Tokens.editor-chrome-inset-text; y: Tokens.editor-source-import-top; text: "Import sample…"; icon: Tokens.editor-icon-plus; label: "Import browser sample"; clicked => { root.import-source(); } }
-        ActionButton { x: Tokens.editor-chrome-inset-text; y: Tokens.editor-source-add-top; text: "Add to instrument"; label: "Add selected browser source to instrument"; enabled: Session.selected-source != ""; clicked => { root.add-selected(); } }
+
+    Rectangle {
+        y: parent.height - Tokens.editor-source-footer-height;
+        height: Tokens.editor-source-footer-height;
+        background: SamplerTheme.ink-1;
+        Text {
+            x: Tokens.editor-chrome-inset-text;
+            y: Tokens.editor-chrome-gap-small;
+            width: parent.width - Tokens.editor-source-help-inset-pair;
+            height: Tokens.editor-source-help-height;
+            text: "Click to preview. Drag onto a pad, zone or waveform.";
+            wrap: word-wrap;
+            font-family: SamplerTheme.font-ui;
+            font-size: SamplerTheme.type-body;
+            color: SamplerTheme.paper-3;
+        }
+
+        ActionButton {
+            x: Tokens.editor-chrome-inset-text;
+            y: Tokens.editor-source-import-top;
+            text: "Import sample…";
+            icon: Tokens.editor-icon-plus;
+            label: "Import browser sample";
+            clicked => { root.import-source(); }
+        }
+
+        ActionButton {
+            x: Tokens.editor-chrome-inset-text;
+            y: Tokens.editor-source-add-top;
+            text: "Add to instrument";
+            label: "Add selected browser source to instrument";
+            enabled: Session.selected-source != "";
+            clicked => { root.add-selected(); }
+        }
     }
 }

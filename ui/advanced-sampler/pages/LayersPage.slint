@@ -2,7 +2,9 @@ import { DragKinds } from "../../slint/editor/Drag.slint";
 import { GesturePhases } from "../../slint/editor/ParameterConstants.slint";
 import { SamplerCommands } from "../domain/Commands.slint";
 import { EditorRangeHandle } from "../../slint/editor/RangeHandle.slint";
-import { EditorVelocityBlendPlot } from "../../slint/editor/VelocityBlendPlot.slint";
+import {
+    EditorVelocityBlendPlot,
+} from "../../slint/editor/VelocityBlendPlot.slint";
 import { ReadOnlyKeyMap } from "ReadOnlyKeyMap.slint";
 import { ScrollView } from "std-widgets.slint";
 import { Session } from "../Session.slint";
@@ -13,119 +15,541 @@ import { DragTarget } from "../chrome/DragState.slint";
 import { NumericField } from "../controls/NumericField.slint";
 import { PageSection, SectionText } from "PageSection.slint";
 component VelocityRangeHandle inherits EditorRangeHandle {
- in property <string> zone-id;
- in property <string> edge;
- in property <string> name;
- in property <float> model-value;
- in property <length> graph-width;
- label: "Velocity range "+(root.edge == "vel-hi" ? "high " : "low ")+root.name;
- value: root.model-value; units: 127; axis-length: root.graph-width;
- selected => { Session.command(SamplerCommands.zone-select,root.zone-id,"",0); }
- gesture(phase,value) => { return Session.parameter-gesture("zone:"+root.zone-id+":"+root.edge,phase,value); }
+    in property <string> zone-id;
+    in property <string> edge;
+    in property <string> name;
+    in property <float> model-value;
+    in property <length> graph-width;
+    label: "Velocity range " + (root.edge == "vel-hi" ? "high " : "low ") + root.name;
+    value: root.model-value;
+    units: 127;
+    axis-length: root.graph-width;
+    selected => { Session.command(SamplerCommands.zone-select,root.zone-id,"",0); }
+    gesture(phase, value) => { return Session.parameter-gesture("zone:" + root.zone-id + ":" + root.edge,phase,value); }
 }
+
 component VelocitySplitHandle inherits EditorRangeHandle {
- in property <float> split;
- in property <length> graph-width;
- label: "Velocity split"; tint: SamplerTheme.paper-1; cap-visible: false;
- value: root.split; units: 127; axis-length: root.graph-width;
- gesture(phase,value) => { return Session.parameter-gesture("velocity-split",phase,value); }
+    in property <float> split;
+    in property <length> graph-width;
+    label: "Velocity split";
+    tint: SamplerTheme.paper-1;
+    cap-visible: false;
+    value: root.split;
+    units: 127;
+    axis-length: root.graph-width;
+    gesture(phase, value) => { return Session.parameter-gesture("velocity-split",phase,value); }
 }
+
 export component LayersPage inherits FocusScope {
- in property <bool> compact;
- in property <bool> expanded;
- callback context-action(string,string);
- private property <string> moving-id;
- private property <length> move-origin;
- private property <float> move-initial;
- private property <float> move-latest;
- public function finish-move(cancel:bool) { if root.moving-id != "" { Session.parameter-gesture("layer:"+root.moving-id+":move",cancel ? GesturePhases.cancel : GesturePhases.commit,root.move-latest);root.moving-id=""; } }
- key-pressed(e) => { if e.text == Key.Escape { root.finish-move(true);return accept; } return reject; }
- focus-lost(reason) => { if reason == FocusReason.window-activation { root.finish-move(true); } }
- public function set-mode(mode:string) { Session.command(SamplerCommands.selector-mode,"",mode,0); }
- public function add-layer() { Session.command(SamplerCommands.layer-add,Session.selected-source,"New layer",Session.root-note); }
- ScrollView { VerticalLayout { padding: 0px; spacing: 4px; alignment: start;
-  PageSection { title: "Layers"; subtitle: "Snare · velocity and alternates"; height: Session.selector-mode == "velocity" ? (root.compact ? 342px : root.expanded ? 300px : 336px) : 204px;
-   SectionText { x: 12px; y: 56px; width: 32px; height: 24px; text: "PLAY"; font-size: 10px; font-weight: 600; }
-   selector-modes := OptionStrip { x: 48px; y: 56px; width: min(parent.width - 60px,384px); value: Session.selector-mode; label: "Selection policy"; options: [{id:"stack",label:"Stack"},{id:"velocity",label:"Velocity"},{id:"round-robin",label:"Round robin"},{id:"alternate",label:"Alternate"},{id:"random",label:"Random"},{id:"weighted",label:"Weighted"}]; selected(mode) => { root.set-mode(mode); } }
-   SectionText { x: 12px; y: 86px; width: parent.width - 24px; height: 32px; wrap: word-wrap; text: Session.selector-mode == "stack" ? "All samples play on every hit." : Session.selector-mode == "velocity" ? "One sample per hit, chosen by velocity range. Ranges may overlap to crossfade." : Session.selector-mode == "round-robin" ? "One sample per hit, in order. Each note keeps its own position." : Session.selector-mode == "alternate" ? "Alternate candidates on every hit." : Session.selector-mode == "random" ? (Session.no-immediate-repeat ? "Random selection; never the same candidate twice." : "Random selection; immediate repeats allowed.") : "Choose in proportion to candidate weight."; }
-   if Session.selector-mode == "velocity" : Rectangle { x: 12px; y: 128px; width: parent.width - 24px; height: parent.height - 132px;
-    SectionText { x: 0px; y: 0px; width: 32px; height: 24px; text: "AXIS"; font-size: 10px; font-weight: 600; }
-    OptionStrip { x: 34px; y: 0px; width: min(parent.width - 34px,236px); label: "Blend axis"; value: Session.selector-axis; options: [{id:"vel",label:"Velocity"},{id:"macro",label:"Macro"},{id:"mod",label:"Modulator"},{id:"key",label:"Key"}]; selected(axis) => { Session.command(SamplerCommands.selector-axis,"",axis,0); } }
-    if Session.selector-axis == "macro" : Flickable { x: 276px; width: max(0px,parent.width - 276px); height: 25px; content-width: Session.macros.length*90px; content-height: self.height;
-     for macro[i] in Session.macros : ActionButton { x: i*90px; width: 88px; height: 24px; text: macro.name; label: "Blend macro "+macro.name; selected: Session.selector-source == macro.id; compact: true; clicked => { Session.command(SamplerCommands.selector-source,macro.id,"",0); } }
+    in property <bool> compact;
+    in property <bool> expanded;
+    callback context-action(string, string);
+    private property <string> moving-id;
+    private property <length> move-origin;
+    private property <float> move-initial;
+    private property <float> move-latest;
+    public function finish-move(cancel: bool) { if root.moving-id != "" { Session.parameter-gesture("layer:" + root.moving-id + ":move",cancel ? GesturePhases.cancel : GesturePhases.commit,root.move-latest); root.moving-id = ""; } }
+    key-pressed(e) => { if e.text == Key.Escape { root.finish-move(true); return accept; } return reject; }
+    focus-lost(reason) => { if reason == FocusReason.window-activation { root.finish-move(true); } }
+    public function set-mode(mode: string) { Session.command(SamplerCommands.selector-mode,"",mode,0); }
+    public function add-layer() { Session.command(SamplerCommands.layer-add,Session.selected-source,"New layer",Session.root-note); }
+    ScrollView {
+        VerticalLayout {
+            padding: 0px;
+            spacing: 4px;
+            alignment: start;
+            PageSection {
+                title: "Layers";
+                subtitle: "Snare · velocity and alternates";
+                height: Session.selector-mode == "velocity" ? (root.compact ? 342px : root.expanded ? 300px : 336px) : 204px;
+                SectionText {
+                    x: 12px;
+                    y: 56px;
+                    width: 32px;
+                    height: 24px;
+                    text: "PLAY";
+                    font-size: 10px;
+                    font-weight: 600;
+                }
+
+                selector-modes := OptionStrip {
+                    x: 48px;
+                    y: 56px;
+                    width: min(parent.width - 60px,384px);
+                    value: Session.selector-mode;
+                    label: "Selection policy";
+                    options: [
+                        { id:"stack", label:"Stack" },
+                        { id:"velocity", label:"Velocity" },
+                        { id:"round-robin", label:"Round robin" },
+                        { id:"alternate", label:"Alternate" },
+                        { id:"random", label:"Random" },
+                        { id:"weighted", label:"Weighted" }
+                    ];
+                    selected(mode) => { root.set-mode(mode); }
+                }
+
+                SectionText {
+                    x: 12px;
+                    y: 86px;
+                    width: parent.width - 24px;
+                    height: 32px;
+                    wrap: word-wrap;
+                    text: Session.selector-mode == "stack" ? "All samples play on every hit." : Session.selector-mode == "velocity" ? "One sample per hit, chosen by velocity range. Ranges may overlap to crossfade." : Session.selector-mode == "round-robin" ? "One sample per hit, in order. Each note keeps its own position." : Session.selector-mode == "alternate" ? "Alternate candidates on every hit." : Session.selector-mode == "random" ? (Session.no-immediate-repeat ? "Random selection; never the same candidate twice." : "Random selection; immediate repeats allowed.") : "Choose in proportion to candidate weight.";
+                }
+
+                if Session.selector-mode == "velocity": Rectangle {
+                    x: 12px;
+                    y: 128px;
+                    width: parent.width - 24px;
+                    height: parent.height - 132px;
+                    SectionText {
+                        x: 0px;
+                        y: 0px;
+                        width: 32px;
+                        height: 24px;
+                        text: "AXIS";
+                        font-size: 10px;
+                        font-weight: 600;
+                    }
+
+                    OptionStrip {
+                        x: 34px;
+                        y: 0px;
+                        width: min(parent.width - 34px,236px);
+                        label: "Blend axis";
+                        value: Session.selector-axis;
+                        options: [
+                            { id:"vel", label:"Velocity" },
+                            { id:"macro", label:"Macro" },
+                            { id:"mod", label:"Modulator" },
+                            { id:"key", label:"Key" }
+                        ];
+                        selected(axis) => { Session.command(SamplerCommands.selector-axis,"",axis,0); }
+                    }
+
+                    if Session.selector-axis == "macro": Flickable {
+                        x: 276px;
+                        width: max(0px,parent.width - 276px);
+                        height: 25px;
+                        content-width: Session.macros.length * 90px;
+                        content-height: self.height;
+                        for macro[i] in Session.macros: ActionButton {
+                            x: i * 90px;
+                            width: 88px;
+                            height: 24px;
+                            text: macro.name;
+                            label: "Blend macro " + macro.name;
+                            selected: Session.selector-source == macro.id;
+                            compact: true;
+                            clicked => { Session.command(SamplerCommands.selector-source,macro.id,"",0); }
+                        }
+                    }
+                    if Session.selector-axis == "mod": Flickable {
+                        x: 276px;
+                        width: max(0px,parent.width - 276px);
+                        height: 25px;
+                        content-width: Session.modulators.length * 112px;
+                        content-height: self.height;
+                        for mod[i] in Session.modulators: ActionButton {
+                            x: i * 112px;
+                            width: 108px;
+                            height: 24px;
+                            text: mod.name;
+                            label: "Blend modulator " + mod.name;
+                            selected: Session.selector-source == mod.id;
+                            compact: true;
+                            clicked => { Session.command(SamplerCommands.selector-source,mod.id,"",0); }
+                        }
+                    }
+                    graph := Rectangle {
+                        y: 34px;
+                        width: parent.width;
+                        height: 62px;
+                        background: SamplerTheme.ink-0;
+                        border-width: 1px;
+                        border-color: SamplerTheme.line-1;
+                        for z in Session.candidates: EditorVelocityBlendPlot {
+                            y: z.vel-low <= 1 ? 32px : 2px;
+                            height: 28px;
+                            width: parent.width;
+                            low: z.vel-low;
+                            gain: z.gain;
+                            text: z.name + " · " + z.vel-low + "–" + z.vel-high;
+                            fill-path: Session.velocity-path(z.vel-low,z.vel-high,Session.crossfade-width,Session.crossfade-curve,true);
+                            stroke-path: Session.velocity-path(z.vel-low,z.vel-high,Session.crossfade-width,Session.crossfade-curve,false);
+                            selected => { Session.command(SamplerCommands.zone-select,z.id,"",0); }
+                        }
+                        for z in Session.candidates: Rectangle {
+                            width: parent.width;
+                            height: parent.height;
+                            VelocityRangeHandle {
+                                visible: z.vel-high < 127;
+                                x: z.vel-high / 127 * parent.width - 4px;
+                                width: 8px;
+                                height: parent.height;
+                                zone-id: z.id;
+                                edge: "vel-hi";
+                                name: z.name;
+                                model-value: z.vel-high;
+                                graph-width: parent.width;
+                            }
+
+                            VelocityRangeHandle {
+                                visible: z.vel-low > 1;
+                                x: (z.vel-low - 1) / 127 * parent.width - 4px;
+                                width: 8px;
+                                height: parent.height;
+                                zone-id: z.id;
+                                edge: "vel-lo";
+                                name: z.name;
+                                model-value: z.vel-low;
+                                graph-width: parent.width;
+                            }
+                        }
+                        for soft in Session.candidates: Rectangle {
+                            visible: soft.vel-low == 1 && soft.vel-high < 127;
+                            width: parent.width;
+                            height: parent.height;
+                            for hard in Session.candidates: VelocitySplitHandle {
+                                visible: hard.vel-low > soft.vel-low;
+                                split: (soft.vel-high + hard.vel-low) / 2;
+                                graph-width: parent.width;
+                                x: (self.split - 1) / 127 * parent.width - 4px;
+                                width: 8px;
+                                height: parent.height;
+                            }
+                        }
+                    }
+
+                    SectionText {
+                        x: 0px;
+                        y: 100px;
+                        width: 24px;
+                        height: 18px;
+                        text: "1";
+                        font-family: SamplerTheme.font-value;
+                        font-size: 11px;
+                    }
+
+                    SectionText {
+                        x: parent.width - 24px;
+                        y: 100px;
+                        width: 24px;
+                        height: 18px;
+                        text: "127";
+                        font-family: SamplerTheme.font-value;
+                        font-size: 11px;
+                    }
+
+                    SectionText {
+                        x: 12px;
+                        y: 128px;
+                        width: root.compact ? 70px : 92px;
+                        height: 24px;
+                        text: "CROSSFADE";
+                        font-size: 11px;
+                        font-weight: 600;
+                    }
+
+                    NumericField {
+                        x: root.compact ? 90px : 106px;
+                        y: 120px;
+                        width: 72px;
+                        label: "Crossfade width";
+                        model-value: Session.crossfade-width;
+                        value: Session.crossfade-width;
+                        minimum: 0;
+                        maximum: 64;
+                        step: 1;
+                        unit: "vel";
+                        gesture-began => { Session.parameter-gesture("crossfade-width",GesturePhases.begin,self.value); }
+                        changed(v) => { Session.parameter-gesture("crossfade-width",GesturePhases.update,v); }
+                        gesture-ended => { Session.parameter-gesture("crossfade-width",GesturePhases.commit,self.value); }
+                    }
+
+                    OptionStrip {
+                        x: root.compact ? 168px : 184px;
+                        y: 137px;
+                        width: min(parent.width - self.x,288px);
+                        label: "Crossfade curve";
+                        value: Session.crossfade-curve;
+                        options: [
+                            { id:"equal-power", label:"Equal power" },
+                            { id:"linear", label:"Linear" },
+                            { id:"none", label:"No crossfade" }
+                        ];
+                        selected(curve) => { Session.command(SamplerCommands.selector-crossfade,"",curve,curve == "none" ? 0 : Session.crossfade-width); }
+                    }
+                }
+                if Session.selector-mode != "velocity": Rectangle {
+                    x: 12px;
+                    y: 124px;
+                    width: parent.width - 24px;
+                    height: 76px;
+                    ActionButton {
+                        x: 0px;
+                        y: 0px;
+                        text: "Restart cycle";
+                        compact: true;
+                        clicked => { Session.command(SamplerCommands.selector-reset,"","",0); }
+                    }
+
+                    ActionButton {
+                        x: 0px;
+                        y: 34px;
+                        text: "Lock takes across mics and layers";
+                        compact: true;
+                        selected: Session.take-lock;
+                        clicked => { Session.command(SamplerCommands.selector-lock,"","",Session.take-lock ? 0 : 1); }
+                    }
+
+                    ActionButton {
+                        x: 246px;
+                        y: 34px;
+                        text: "No immediate repeat";
+                        compact: true;
+                        selected: Session.no-immediate-repeat;
+                        clicked => { Session.command(SamplerCommands.selector-no-repeat,"","",Session.no-immediate-repeat ? 0 : 1); }
+                    }
+                }
+            }
+
+            PageSection {
+                title: "";
+                secondary: true;
+                header-height: 0px;
+                height: 30px + Session.candidates.length * 30px + 34px;
+                Flickable {
+                    interactive: false;
+                    x: 1px;
+                    y: 1px;
+                    width: parent.width - 2px;
+                    height: 26px + Session.candidates.length * 30px;
+                    content-width: max(self.width,720px);
+                    content-height: self.height;
+                    candidate-headings := Rectangle {
+                        x: 0px;
+                        y: 0px;
+                        width: parent.content-width;
+                        height: 26px;
+                        for caption in [
+                            { x: 32px, width: 120px, text: "NAME" },
+                            { x: candidate-headings.width - 472px, width: 62px, text: "VELOCITY" },
+                            { x: candidate-headings.width - 292px, width: 56px, text: "GAIN" },
+                            { x: candidate-headings.width - 232px, width: 56px, text: "PAN" },
+                            { x: candidate-headings.width - 172px, width: 56px, text: "TUNE" },
+                            { x: candidate-headings.width - 108px, width: 78px, text: "OUTPUT" }
+                        ]: SectionText {
+                            x: caption.x;
+                            width: caption.width;
+                            height: 26px;
+                            text: caption.text;
+                            font-size: 10px;
+                            font-weight: 600;
+                        }
+                    }
+
+                    for layer[i] in Session.candidates: Rectangle {
+                        y: 26px + i * 30px;
+                        width: parent.content-width;
+                        height: 30px;
+                        background: layer.selected ? SamplerTheme.accent-wash : transparent;
+                        FocusScope {
+                            x: 4px;
+                            y: 3px;
+                            width: 24px;
+                            height: 24px;
+                            accessible-role: button;
+                            accessible-label: "Move candidate " + layer.name;
+                            accessible-action-default => { Session.command(SamplerCommands.layer-move,layer.id,"",-1); }
+                            key-pressed(e) => { if e.text == Key.UpArrow || e.text == Key.DownArrow { Session.command(SamplerCommands.layer-move,layer.id,"",e.text == Key.UpArrow ? -1 : 1); return accept; } return reject; }
+                            SectionText {
+                                width: parent.width;
+                                height: parent.height;
+                                text: "↕";
+                                horizontal-alignment: center;
+                            }
+
+                            TouchArea {
+                                mouse-cursor: ns-resize;
+                                pointer-event(e) => {
+                                    if e.kind == PointerEventKind.down && e.button == PointerEventButton.left { root.focus(); root.moving-id = layer.id; root.move-origin = self.absolute-position.y + self.mouse-y; root.move-initial = i; root.move-latest = i; Session.parameter-gesture("layer:" + root.moving-id + ":move",GesturePhases.begin,i); }
+                                    if e.kind == PointerEventKind.up { root.finish-move(false); }
+                                    if e.kind == PointerEventKind.cancel { root.finish-move(true); }
+                                }
+                                moved => { if self.pressed && root.moving-id != "" { root.move-latest = (root.move-initial + round((self.absolute-position.y + self.mouse-y - root.move-origin) / 30px)).clamp(0,Session.candidates.length - 1); Session.parameter-gesture("layer:" + root.moving-id + ":move",GesturePhases.update,root.move-latest); } }
+                            }
+                        }
+
+                        ActionButton {
+                            x: 32px;
+                            y: 3px;
+                            width: max(108px,parent.width - 510px);
+                            text: (i + 1) + "  " + layer.name;
+                            ghost: true;
+                            compact: true;
+                            clicked => { Session.command(SamplerCommands.zone-select,layer.id,"",0); }
+                        }
+
+                        SectionText {
+                            x: parent.width - 472px;
+                            width: 62px;
+                            height: 30px;
+                            text: layer.vel-low + "–" + layer.vel-high;
+                            font-family: SamplerTheme.font-value;
+                            font-size: 11px;
+                        }
+
+                        NumericField {
+                            visible: Session.selector-mode == "weighted" || Session.selector-mode == "random";
+                            x: parent.width - 410px;
+                            y: 3px;
+                            width: 52px;
+                            show-label: false;
+                            ghost: true;
+                            label: "Weight";
+                            model-value: layer.weight;
+                            value: layer.weight;
+                            minimum: 0;
+                            maximum: 1000;
+                            step: 0.1;
+                            gesture-began => { Session.parameter-gesture("layer:" + layer.id + ":weight",GesturePhases.begin,self.value); }
+                            changed(v) => { Session.parameter-gesture("layer:" + layer.id + ":weight",GesturePhases.update,v); }
+                            gesture-ended => { Session.parameter-gesture("layer:" + layer.id + ":weight",GesturePhases.commit,self.value); }
+                        }
+
+                        ActionButton {
+                            x: parent.width - 352px;
+                            y: 3px;
+                            width: 24px;
+                            text: "M";
+                            label: "Mute " + layer.name;
+                            selected: layer.muted;
+                            compact: true;
+                            ghost: true;
+                            clicked => { Session.command(SamplerCommands.layer-mute,layer.id,"",0); }
+                        }
+
+                        ActionButton {
+                            x: parent.width - 324px;
+                            y: 3px;
+                            width: 24px;
+                            text: "S";
+                            label: "Solo " + layer.name;
+                            selected: layer.solo;
+                            compact: true;
+                            ghost: true;
+                            clicked => { Session.command(SamplerCommands.layer-solo,layer.id,"",0); }
+                        }
+
+                        NumericField {
+                            x: parent.width - 292px;
+                            y: 3px;
+                            width: 56px;
+                            show-label: false;
+                            ghost: true;
+                            label: "Gain " + layer.name;
+                            model-value: layer.gain;
+                            value: layer.gain;
+                            minimum: -60;
+                            maximum: 12;
+                            unit: "dB";
+                            step: 0.1;
+                            gesture-began => { Session.parameter-gesture("layer:" + layer.id + ":gain",GesturePhases.begin,self.value); }
+                            changed(v) => { Session.parameter-gesture("layer:" + layer.id + ":gain",GesturePhases.update,v); }
+                            gesture-ended => { Session.parameter-gesture("layer:" + layer.id + ":gain",GesturePhases.commit,self.value); }
+                        }
+
+                        NumericField {
+                            x: parent.width - 232px;
+                            y: 3px;
+                            width: 56px;
+                            show-label: false;
+                            ghost: true;
+                            label: "Pan " + layer.name;
+                            model-value: layer.pan;
+                            value: layer.pan;
+                            minimum: -1;
+                            maximum: 1;
+                            unit: "pan";
+                            step: 0.01;
+                            gesture-began => { Session.parameter-gesture("layer:" + layer.id + ":pan",GesturePhases.begin,self.value); }
+                            changed(v) => { Session.parameter-gesture("layer:" + layer.id + ":pan",GesturePhases.update,v); }
+                            gesture-ended => { Session.parameter-gesture("layer:" + layer.id + ":pan",GesturePhases.commit,self.value); }
+                        }
+
+                        NumericField {
+                            x: parent.width - 172px;
+                            y: 3px;
+                            width: 56px;
+                            show-label: false;
+                            ghost: true;
+                            label: "Pitch " + layer.name;
+                            model-value: layer.pitch;
+                            value: layer.pitch;
+                            minimum: -48;
+                            maximum: 48;
+                            unit: "st";
+                            step: 0.1;
+                            gesture-began => { Session.parameter-gesture("layer:" + layer.id + ":pitch",GesturePhases.begin,self.value); }
+                            changed(v) => { Session.parameter-gesture("layer:" + layer.id + ":pitch",GesturePhases.update,v); }
+                            gesture-ended => { Session.parameter-gesture("layer:" + layer.id + ":pitch",GesturePhases.commit,self.value); }
+                        }
+
+                        ActionButton {
+                            x: parent.width - 108px;
+                            y: 3px;
+                            width: 78px;
+                            text: layer.output == "" || layer.output == "inherit" ? "Inherit" : layer.output;
+                            label: "Output " + layer.name;
+                            compact: true;
+                            ghost: true;
+                            clicked => { Session.command(SamplerCommands.layer-output,layer.id,layer.output == "Main 1/2" ? "inherit" : "Main 1/2",0); }
+                        }
+
+                        ActionButton {
+                            x: parent.width - 28px;
+                            y: 3px;
+                            width: 24px;
+                            text: "×";
+                            label: "Remove " + layer.name;
+                            compact: true;
+                            ghost: true;
+                            clicked => { Session.command(SamplerCommands.layer-delete,layer.id,"",0); }
+                        }
+                    }
+                }
+
+                add-layer := ActionButton {
+                    x: 12px;
+                    y: parent.height - 29px;
+                    text: "+ Layer";
+                    compact: true;
+                    ghost: true;
+                    clicked => { root.add-layer(); }
+                }
+
+                SectionText {
+                    x: 90px;
+                    y: parent.height - 29px;
+                    width: parent.width - 102px;
+                    height: 24px;
+                    text: "Drop samples or slices to add candidates";
+                    font-size: 11px;
+                }
+
+                DragTarget {
+                    x: 90px;
+                    y: parent.height - 29px;
+                    width: parent.width - 102px;
+                    height: 24px;
+                    accepted-kind: DragKinds.source;
+                    dropped(id) => { return Session.command(SamplerCommands.layer-add,id,"New layer",Session.root-note); }
+                }
+            }
+
+            if root.expanded: ReadOnlyKeyMap { }
+        }
     }
-    if Session.selector-axis == "mod" : Flickable { x: 276px; width: max(0px,parent.width - 276px); height: 25px; content-width: Session.modulators.length*112px; content-height: self.height;
-     for mod[i] in Session.modulators : ActionButton { x: i*112px; width: 108px; height: 24px; text: mod.name; label: "Blend modulator "+mod.name; selected: Session.selector-source == mod.id; compact: true; clicked => { Session.command(SamplerCommands.selector-source,mod.id,"",0); } }
-    }
-    graph := Rectangle { y: 34px; width: parent.width; height: 62px; background: SamplerTheme.ink-0; border-width: 1px; border-color: SamplerTheme.line-1;
-     for z in Session.candidates : EditorVelocityBlendPlot {
-      y: z.vel-low <= 1 ? 32px : 2px; height: 28px; width: parent.width;
-      low: z.vel-low; gain: z.gain; text: z.name+" · "+z.vel-low+"–"+z.vel-high;
-      fill-path: Session.velocity-path(z.vel-low,z.vel-high,Session.crossfade-width,Session.crossfade-curve,true);
-      stroke-path: Session.velocity-path(z.vel-low,z.vel-high,Session.crossfade-width,Session.crossfade-curve,false);
-      selected => { Session.command(SamplerCommands.zone-select,z.id,"",0); }
-     }
-     for z in Session.candidates : Rectangle { width: parent.width; height: parent.height;
-      VelocityRangeHandle { visible: z.vel-high < 127; x: z.vel-high/127*parent.width - 4px; width: 8px; height: parent.height; zone-id: z.id; edge: "vel-hi"; name: z.name; model-value: z.vel-high; graph-width: parent.width; }
-      VelocityRangeHandle { visible: z.vel-low > 1; x: (z.vel-low - 1)/127*parent.width - 4px; width: 8px; height: parent.height; zone-id: z.id; edge: "vel-lo"; name: z.name; model-value: z.vel-low; graph-width: parent.width; }
-     }
-     for soft in Session.candidates : Rectangle { visible: soft.vel-low == 1 && soft.vel-high < 127; width: parent.width; height: parent.height;
-      for hard in Session.candidates : VelocitySplitHandle { visible: hard.vel-low > soft.vel-low; split: (soft.vel-high+hard.vel-low)/2; graph-width: parent.width; x: (self.split - 1)/127*parent.width - 4px; width: 8px; height: parent.height; }
-     }
-    }
-    SectionText { x: 0px; y: 100px; width: 24px; height: 18px; text: "1"; font-family: SamplerTheme.font-value; font-size: 11px; }
-    SectionText { x: parent.width - 24px; y: 100px; width: 24px; height: 18px; text: "127"; font-family: SamplerTheme.font-value; font-size: 11px; }
-    SectionText { x: 12px; y: 128px; width: root.compact ? 70px : 92px; height: 24px; text: "CROSSFADE"; font-size: 11px; font-weight: 600; }
-    NumericField { x: root.compact ? 90px : 106px; y: 120px; width: 72px; label: "Crossfade width"; model-value: Session.crossfade-width; value: Session.crossfade-width; minimum: 0; maximum: 64; step: 1; unit: "vel"; gesture-began => { Session.parameter-gesture("crossfade-width",GesturePhases.begin,self.value); } changed(v) => { Session.parameter-gesture("crossfade-width",GesturePhases.update,v); } gesture-ended => { Session.parameter-gesture("crossfade-width",GesturePhases.commit,self.value); } }
-    OptionStrip { x: root.compact ? 168px : 184px; y: 137px; width: min(parent.width - self.x,288px); label: "Crossfade curve"; value: Session.crossfade-curve; options: [{id:"equal-power",label:"Equal power"},{id:"linear",label:"Linear"},{id:"none",label:"No crossfade"}]; selected(curve) => { Session.command(SamplerCommands.selector-crossfade,"",curve,curve == "none" ? 0 : Session.crossfade-width); } }
-   }
-   if Session.selector-mode != "velocity" : Rectangle { x: 12px; y: 124px; width: parent.width - 24px; height: 76px;
-    ActionButton { x: 0px; y: 0px; text: "Restart cycle"; compact: true; clicked => { Session.command(SamplerCommands.selector-reset,"","",0); } }
-    ActionButton { x: 0px; y: 34px; text: "Lock takes across mics and layers"; compact: true; selected: Session.take-lock; clicked => { Session.command(SamplerCommands.selector-lock,"","",Session.take-lock ? 0 : 1); } }
-    ActionButton { x: 246px; y: 34px; text: "No immediate repeat"; compact: true; selected: Session.no-immediate-repeat; clicked => { Session.command(SamplerCommands.selector-no-repeat,"","",Session.no-immediate-repeat ? 0 : 1); } }
-   }
-  }
-  PageSection { title: ""; secondary: true; header-height: 0px; height: 30px+Session.candidates.length*30px+34px;
-   Flickable { interactive: false; x: 1px; y: 1px; width: parent.width - 2px; height: 26px+Session.candidates.length*30px; content-width: max(self.width,720px); content-height: self.height;
-    candidate-headings := Rectangle { x: 0px; y: 0px; width: parent.content-width; height: 26px;
-     for caption in [{x: 32px, width: 120px, text: "NAME"},{x: candidate-headings.width - 472px, width: 62px, text: "VELOCITY"},{x: candidate-headings.width - 292px, width: 56px, text: "GAIN"},{x: candidate-headings.width - 232px, width: 56px, text: "PAN"},{x: candidate-headings.width - 172px, width: 56px, text: "TUNE"},{x: candidate-headings.width - 108px, width: 78px, text: "OUTPUT"}] : SectionText { x: caption.x; width: caption.width; height: 26px; text: caption.text; font-size: 10px; font-weight: 600; }
-    }
-    for layer[i] in Session.candidates : Rectangle { y: 26px+i*30px; width: parent.content-width; height: 30px; background: layer.selected ? SamplerTheme.accent-wash : transparent;
-     FocusScope { x: 4px; y: 3px; width: 24px; height: 24px; accessible-role: button; accessible-label: "Move candidate "+layer.name;
-      accessible-action-default => { Session.command(SamplerCommands.layer-move,layer.id,"",-1); }
-      key-pressed(e) => { if e.text == Key.UpArrow || e.text == Key.DownArrow { Session.command(SamplerCommands.layer-move,layer.id,"",e.text == Key.UpArrow ? -1 : 1);return accept; } return reject; }
-      SectionText { width: parent.width; height: parent.height; text: "↕"; horizontal-alignment: center; }
-      TouchArea { mouse-cursor: ns-resize;
-       pointer-event(e) => {
-        if e.kind == PointerEventKind.down && e.button == PointerEventButton.left { root.focus();root.moving-id=layer.id;root.move-origin=self.absolute-position.y+self.mouse-y;root.move-initial=i;root.move-latest=i;Session.parameter-gesture("layer:"+root.moving-id+":move",GesturePhases.begin,i); }
-        if e.kind == PointerEventKind.up { root.finish-move(false); }
-        if e.kind == PointerEventKind.cancel { root.finish-move(true); }
-       }
-       moved => { if self.pressed && root.moving-id != "" { root.move-latest=(root.move-initial+round((self.absolute-position.y+self.mouse-y - root.move-origin)/30px)).clamp(0,Session.candidates.length - 1);Session.parameter-gesture("layer:"+root.moving-id+":move",GesturePhases.update,root.move-latest); } }
-      }
-     }
-     ActionButton { x: 32px; y: 3px; width: max(108px,parent.width - 510px); text: (i+1)+"  "+layer.name; ghost: true; compact: true; clicked => { Session.command(SamplerCommands.zone-select,layer.id,"",0); } }
-     SectionText { x: parent.width - 472px; width: 62px; height: 30px; text: layer.vel-low+"–"+layer.vel-high; font-family: SamplerTheme.font-value; font-size: 11px; }
-     NumericField { visible: Session.selector-mode == "weighted" || Session.selector-mode == "random"; x: parent.width - 410px; y: 3px; width: 52px; show-label: false; ghost: true; label: "Weight"; model-value: layer.weight; value: layer.weight; minimum: 0; maximum: 1000; step: 0.1; gesture-began => { Session.parameter-gesture("layer:"+layer.id+":weight",GesturePhases.begin,self.value); } changed(v) => { Session.parameter-gesture("layer:"+layer.id+":weight",GesturePhases.update,v); } gesture-ended => { Session.parameter-gesture("layer:"+layer.id+":weight",GesturePhases.commit,self.value); } }
-     ActionButton { x: parent.width - 352px; y: 3px; width: 24px; text: "M"; label: "Mute "+layer.name; selected: layer.muted; compact: true; ghost: true; clicked => { Session.command(SamplerCommands.layer-mute,layer.id,"",0); } }
-     ActionButton { x: parent.width - 324px; y: 3px; width: 24px; text: "S"; label: "Solo "+layer.name; selected: layer.solo; compact: true; ghost: true; clicked => { Session.command(SamplerCommands.layer-solo,layer.id,"",0); } }
-     NumericField { x: parent.width - 292px; y: 3px; width: 56px; show-label: false; ghost: true; label: "Gain "+layer.name; model-value: layer.gain; value: layer.gain; minimum: -60; maximum: 12; unit: "dB"; step: 0.1;
-      gesture-began => { Session.parameter-gesture("layer:"+layer.id+":gain",GesturePhases.begin,self.value); } changed(v) => { Session.parameter-gesture("layer:"+layer.id+":gain",GesturePhases.update,v); } gesture-ended => { Session.parameter-gesture("layer:"+layer.id+":gain",GesturePhases.commit,self.value); }
-     }
-     NumericField { x: parent.width - 232px; y: 3px; width: 56px; show-label: false; ghost: true; label: "Pan "+layer.name; model-value: layer.pan; value: layer.pan; minimum: -1; maximum: 1; unit: "pan"; step: 0.01;
-      gesture-began => { Session.parameter-gesture("layer:"+layer.id+":pan",GesturePhases.begin,self.value); } changed(v) => { Session.parameter-gesture("layer:"+layer.id+":pan",GesturePhases.update,v); } gesture-ended => { Session.parameter-gesture("layer:"+layer.id+":pan",GesturePhases.commit,self.value); }
-     }
-     NumericField { x: parent.width - 172px; y: 3px; width: 56px; show-label: false; ghost: true; label: "Pitch "+layer.name; model-value: layer.pitch; value: layer.pitch; minimum: -48; maximum: 48; unit: "st"; step: 0.1;
-      gesture-began => { Session.parameter-gesture("layer:"+layer.id+":pitch",GesturePhases.begin,self.value); } changed(v) => { Session.parameter-gesture("layer:"+layer.id+":pitch",GesturePhases.update,v); } gesture-ended => { Session.parameter-gesture("layer:"+layer.id+":pitch",GesturePhases.commit,self.value); }
-     }
-     ActionButton { x: parent.width - 108px; y: 3px; width: 78px; text: layer.output == "" || layer.output == "inherit" ? "Inherit" : layer.output; label: "Output "+layer.name; compact: true; ghost: true; clicked => { Session.command(SamplerCommands.layer-output,layer.id,layer.output == "Main 1/2" ? "inherit" : "Main 1/2",0); } }
-     ActionButton { x: parent.width - 28px; y: 3px; width: 24px; text: "×"; label: "Remove "+layer.name; compact: true; ghost: true; clicked => { Session.command(SamplerCommands.layer-delete,layer.id,"",0); } }
-    }
-   }
-   add-layer := ActionButton { x: 12px; y: parent.height - 29px; text: "+ Layer"; compact: true; ghost: true; clicked => { root.add-layer(); } }
-   SectionText { x: 90px; y: parent.height - 29px; width: parent.width - 102px; height: 24px; text: "Drop samples or slices to add candidates"; font-size: 11px; }
-   DragTarget { x: 90px; y: parent.height - 29px; width: parent.width - 102px; height: 24px; accepted-kind: DragKinds.source; dropped(id) => { return Session.command(SamplerCommands.layer-add,id,"New layer",Session.root-note); } }
-  }
-  if root.expanded : ReadOnlyKeyMap { }
- } }
 }

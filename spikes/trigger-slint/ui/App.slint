@@ -12,17 +12,28 @@ export component PerformanceUi inherits Window {
     background: Theme.background;
     title: "Trigger — silent Slint macro preview";
     Text {
-        x: 12px; y: (parent.height - 14px) / 2; height: 14px;
-        text: "MACROS"; color: Theme.label;
-        font-family: Theme.ui-font; font-size: 11px; font-weight: 700;
-        letter-spacing: 1.1px; vertical-alignment: center;
+        x: 12px;
+        y: (parent.height - 14px) / 2;
+        height: 14px;
+        text: "MACROS";
+        color: Theme.label;
+        font-family: Theme.ui-font;
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: 1.1px;
+        vertical-alignment: center;
     }
+
     strip := Rectangle {
-        x: (parent.width - self.width) / 2; y: 8px;
-        width: 554px; height: 82px;
-        for value[i] in root.values : MacroKnob {
-            x: i * 70px; y: 0;
-            label: root.labels[i]; disabled: i >= 6;
+        x: (parent.width - self.width) / 2;
+        y: 8px;
+        width: 554px;
+        height: 82px;
+        for value[i] in root.values: MacroKnob {
+            x: i * 70px;
+            y: 0;
+            label: root.labels[i];
+            disabled: i >= 6;
             default-value: root.defaults[i];
             value <=> value;
         }

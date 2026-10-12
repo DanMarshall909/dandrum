@@ -21,16 +21,36 @@ export component Button inherits ActionArea {
     preferred-width: content.preferred-width;
     height: root.compact ? Tokens.button-height-sm : Tokens.button-height;
     activated => { root.clicked(); }
-    FocusRing { active: root.enabled && (root.has-focus || root.focused); }
+    FocusRing {
+        active: root.enabled && (root.has-focus || root.focused);
+    }
+
     face := ButtonFace {
-        enabled: root.enabled; primary: root.primary; ghost: root.ghost; checked: root.checked;
-        hovered: root.hovered; pressed: root.down;
+        enabled: root.enabled;
+        primary: root.primary;
+        ghost: root.ghost;
+        checked: root.checked;
+        hovered: root.hovered;
+        pressed: root.down;
         y: root.down && root.enabled ? 1px : 0px;
         content := HorizontalLayout {
-            padding-left: root.compact ? 8px : 12px; padding-right: root.compact ? 8px : 12px;
-            spacing: Tokens.space-3; alignment: center;
-            if root.icon != "" : Icon { name: root.icon; tint: face.foreground; size: root.compact ? 14px : 16px; }
-            Text { text: root.text; color: face.foreground; font-family: Tokens.font-ui; font-size: root.compact ? Tokens.type-label : Tokens.type-body; font-weight: 600; vertical-alignment: center; }
+            padding-left: root.compact ? 8px : 12px;
+            padding-right: root.compact ? 8px : 12px;
+            spacing: Tokens.space-3;
+            alignment: center;
+            if root.icon != "": Icon {
+                name: root.icon;
+                tint: face.foreground;
+                size: root.compact ? 14px : 16px;
+            }
+            Text {
+                text: root.text;
+                color: face.foreground;
+                font-family: Tokens.font-ui;
+                font-size: root.compact ? Tokens.type-label : Tokens.type-body;
+                font-weight: 600;
+                vertical-alignment: center;
+            }
         }
     }
 }

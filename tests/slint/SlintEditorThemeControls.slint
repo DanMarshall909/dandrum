@@ -1,7 +1,11 @@
 import { EditorTheme } from "../../ui/slint/editor/Theme.slint";
 import { EditorButton } from "../../ui/slint/editor/Button.slint";
 import { EditorIcon } from "../../ui/slint/editor/Icon.slint";
-import { MaterialLayers, MaterialSurface, WindowMaterial } from "../../ui/slint/editor/Material.slint";
+import {
+    MaterialLayers,
+    MaterialSurface,
+    WindowMaterial,
+} from "../../ui/slint/editor/Material.slint";
 import { EditorOptionStrip } from "../../ui/slint/editor/OptionStrip.slint";
 import { EditorPagePanel } from "../../ui/slint/editor/PagePanel.slint";
 import { EditorRollout } from "../../ui/slint/editor/Rollout.slint";
@@ -19,8 +23,10 @@ export global EditorAppearance {
     in-out property <string> host;
     in-out property <string> error;
 }
+
 export component SlintEditorThemeControls inherits Window {
-    width: 700px; height: 450px;
+    width: 700px;
+    height: 450px;
     in-out property <bool> controls-enabled: true;
     in-out property <string> icon-name: "plus";
     out property <image> icon-image: icon.source;
@@ -39,31 +45,120 @@ export component SlintEditorThemeControls inherits Window {
     out property <string> choice;
     out property <string> color-choice;
     WindowMaterial {
-        surface := MaterialSurface { x: 10px; y: 10px; width: 680px; height: 420px; raised: true;
-            EditorButton { x: 20px; y: 20px; width: 130px; text: "Editor action"; icon: "plus"; enabled: root.controls-enabled;
-                clicked => { root.pressed += 1; } window-deactivated => { root.deactivated += 1; }
+        surface := MaterialSurface {
+            x: 10px;
+            y: 10px;
+            width: 680px;
+            height: 420px;
+            raised: true;
+            EditorButton {
+                x: 20px;
+                y: 20px;
+                width: 130px;
+                text: "Editor action";
+                icon: "plus";
+                enabled: root.controls-enabled;
+                clicked => { root.pressed += 1; }
+                window-deactivated => { root.deactivated += 1; }
             }
-            Button { x: 180px; y: 20px; text: "Default action"; clicked => { root.released += 1; } }
-            icon := EditorIcon { x: 360px; y: 20px; name: root.icon-name; }
-            strip := EditorOptionStrip { x: 20px; y: 80px; width: 280px; label: "Mode"; enabled: root.controls-enabled; value: "a";
-                options: [{id:"a",label:"A"},{id:"b",label:"B"}]; selected(value) => { self.value=value; }
+
+            Button {
+                x: 180px;
+                y: 20px;
+                text: "Default action";
+                clicked => { root.released += 1; }
             }
-            panel := EditorPagePanel { x: 20px; y: 130px; width: 300px; height: 150px; title: "Panel"; subtitle: "Details";
-                rollout := EditorRollout { x: 8px; y: 40px; width: 284px; title: "Details"; summary: "Summary"; body-height: 60px; enabled: root.controls-enabled; }
+
+            icon := EditorIcon {
+                x: 360px;
+                y: 20px;
+                name: root.icon-name;
             }
-            EditorResizeHandle { x: 400px; y: 80px; width: 20px; height: 100px; enabled: root.controls-enabled;
-                accessible-role: button; accessible-label: "Resize horizontal";
-                started => { root.resize-starts += 1; } moved-by(value) => { root.resize-x=value; }
-                ended => { root.resize-ends += 1; } reset => { root.resize-resets += 1; }
+
+            strip := EditorOptionStrip {
+                x: 20px;
+                y: 80px;
+                width: 280px;
+                label: "Mode";
+                enabled: root.controls-enabled;
+                value: "a";
+                options: [{ id:"a", label:"A" }, { id:"b", label:"B" }];
+                selected(value) => { self.value = value; }
             }
-            EditorResizeHandle { x: 440px; y: 80px; width: 120px; height: 20px; vertical: true; enabled: root.controls-enabled;
-                accessible-role: button; accessible-label: "Resize vertical";
-                started => { root.resize-starts += 1; } moved-by(value) => { root.resize-y=value; }
-                ended => { root.resize-ends += 1; } reset => { root.resize-resets += 1; }
+
+            panel := EditorPagePanel {
+                x: 20px;
+                y: 130px;
+                width: 300px;
+                height: 150px;
+                title: "Panel";
+                subtitle: "Details";
+                rollout := EditorRollout {
+                    x: 8px;
+                    y: 40px;
+                    width: 284px;
+                    title: "Details";
+                    summary: "Summary";
+                    body-height: 60px;
+                    enabled: root.controls-enabled;
+                }
             }
-            MaterialLayers { x: 360px; y: 250px; width: 160px; height: 80px; well: true; }
-            ChoiceGrid { x: 20px; y: 290px; width: 280px; values: ["First","Second"]; selected: root.choice; changed(value) => { root.choice=value; } }
-            ColorChoice { x: 20px; y: 325px; width: 620px; label: "Accent"; values: ["#123456","#abcdef"]; value: root.color-choice; changed(value) => { root.color-choice=value; } }
+
+            EditorResizeHandle {
+                x: 400px;
+                y: 80px;
+                width: 20px;
+                height: 100px;
+                enabled: root.controls-enabled;
+                accessible-role: button;
+                accessible-label: "Resize horizontal";
+                started => { root.resize-starts += 1; }
+                moved-by(value) => { root.resize-x = value; }
+                ended => { root.resize-ends += 1; }
+                reset => { root.resize-resets += 1; }
+            }
+
+            EditorResizeHandle {
+                x: 440px;
+                y: 80px;
+                width: 120px;
+                height: 20px;
+                vertical: true;
+                enabled: root.controls-enabled;
+                accessible-role: button;
+                accessible-label: "Resize vertical";
+                started => { root.resize-starts += 1; }
+                moved-by(value) => { root.resize-y = value; }
+                ended => { root.resize-ends += 1; }
+                reset => { root.resize-resets += 1; }
+            }
+
+            MaterialLayers {
+                x: 360px;
+                y: 250px;
+                width: 160px;
+                height: 80px;
+                well: true;
+            }
+
+            ChoiceGrid {
+                x: 20px;
+                y: 290px;
+                width: 280px;
+                values: ["First", "Second"];
+                selected: root.choice;
+                changed(value) => { root.choice = value; }
+            }
+
+            ColorChoice {
+                x: 20px;
+                y: 325px;
+                width: 620px;
+                label: "Accent";
+                values: ["#123456", "#abcdef"];
+                value: root.color-choice;
+                changed(value) => { root.color-choice = value; }
+            }
         }
     }
 }

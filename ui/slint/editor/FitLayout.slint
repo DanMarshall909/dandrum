@@ -4,11 +4,17 @@ export struct PadFit { columns: int, size: int }
 // Exhaustive candidates match v3. Unrolled because Slint has no imperative loops.
 export global FitLayout {
     pure function candidate(width: float, height: float, count: int, maximum: int, columns: int) -> PadFit {
-        return { columns: columns, size: min(floor((width - Tokens.editor-display-fit-outer-inset / 1px) / columns) - Tokens.editor-display-fit-cell-gap / 1px, floor(height / ceil(max(1, count) / columns)) - Tokens.editor-display-fit-cell-gap / 1px, maximum) };
+        return {
+            columns: columns,
+            size: min(floor((width - Tokens.editor-display-fit-outer-inset / 1px) / columns) - Tokens.editor-display-fit-cell-gap / 1px, floor(height / ceil(max(1, count) / columns)) - Tokens.editor-display-fit-cell-gap / 1px, maximum)
+        };
     }
     pure function better(a: PadFit, b: PadFit) -> PadFit { return b.size > a.size ? b : a; }
     pure function overflow(width: float, minimum: int) -> PadFit {
-        return {columns: max(1, floor((width - Tokens.editor-display-fit-outer-inset / 1px) / (minimum + Tokens.editor-display-fit-cell-gap / 1px))), size: minimum};
+        return {
+            columns: max(1, floor((width - Tokens.editor-display-fit-outer-inset / 1px) / (minimum + Tokens.editor-display-fit-cell-gap / 1px))),
+            size: minimum
+        };
     }
     public pure function pads(width: float, height: float, count: int, minimum: int, maximum: int) -> PadFit {
         let b1 = root.candidate(width, height, count, maximum, 1);

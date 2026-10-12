@@ -43,14 +43,24 @@ export global MusicalConstants {
 }
 
 export global PitchNames {
-    out property <[string]> names: ["C","C♯","D","D♯","E","F","F♯","G","G♯","A","A♯","B"];
-    out property <[int]> white-notes: [0,2,4,5,7,9,11];
-    out property <[int]> black-notes: [1,3,6,8,10];
-    out property <[int]> white-indices: [0,0,1,1,2,3,3,4,4,5,5,6];
-    out property <[string]> pc-labels: ["A","W","S","E","D","F","T","G","Y","H","U","J","K"];
-    out property <[int]> velocity-grid: [Tokens.editor-display-velocity-low-label,Tokens.editor-display-velocity-middle-label,Tokens.editor-display-velocity-high-label];
-    out property <[int]> overview-velocity-labels: [MusicalConstants.velocity-maximum,Tokens.editor-display-velocity-high-label,Tokens.editor-display-velocity-middle-label,Tokens.editor-display-velocity-low-label,MusicalConstants.velocity-minimum];
-    out property <[string]> envelope-handles: ["attack","decay","sustain","release"];
+    out property <[string]> names: ["C", "C♯", "D", "D♯", "E", "F", "F♯", "G", "G♯", "A", "A♯", "B"];
+    out property <[int]> white-notes: [0, 2, 4, 5, 7, 9, 11];
+    out property <[int]> black-notes: [1, 3, 6, 8, 10];
+    out property <[int]> white-indices: [0, 0, 1, 1, 2, 3, 3, 4, 4, 5, 5, 6];
+    out property <[string]> pc-labels: ["A", "W", "S", "E", "D", "F", "T", "G", "Y", "H", "U", "J", "K"];
+    out property <[int]> velocity-grid: [
+        Tokens.editor-display-velocity-low-label,
+        Tokens.editor-display-velocity-middle-label,
+        Tokens.editor-display-velocity-high-label
+    ];
+    out property <[int]> overview-velocity-labels: [
+        MusicalConstants.velocity-maximum,
+        Tokens.editor-display-velocity-high-label,
+        Tokens.editor-display-velocity-middle-label,
+        Tokens.editor-display-velocity-low-label,
+        MusicalConstants.velocity-minimum
+    ];
+    out property <[string]> envelope-handles: ["attack", "decay", "sustain", "release"];
 }
 
 export global Ranges {

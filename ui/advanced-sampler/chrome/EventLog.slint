@@ -9,20 +9,114 @@ import { PatchFilter } from "../performance/PatchFilter.slint";
 export component EventLog inherits MaterialSurface {
     private property <string> query;
     callback closed();
-    Rectangle { height: Tokens.editor-panel-header-height; background: SamplerTheme.surface-panel-header;
-        Text { x: Tokens.editor-chrome-content-inset; width: Tokens.editor-event-heading-width; text: "EVENT LOG"; font-family: SamplerTheme.font-ui; font-size: SamplerTheme.type-body; font-weight: Tokens.editor-weight-bold; color: SamplerTheme.secondary; vertical-alignment: center; }
-        EditorTextField { x: Tokens.editor-event-search-left; y: Tokens.editor-chrome-inset-control-top; width: Tokens.editor-event-search-width; height: Tokens.editor-button-compact-size; text <=> root.query; accessible-label: "Filter adapter events"; font-family: SamplerTheme.font-value; font-size: SamplerTheme.type-caption; color: SamplerTheme.paper-1; single-line: true; }
-        HorizontalLayout { x: Tokens.editor-event-actions-left; y: Tokens.editor-chrome-gap-small; width: parent.width - Tokens.editor-event-actions-width-reserve; height: Tokens.editor-item-height; spacing: Tokens.editor-chrome-gap-small; alignment: end;
-            ActionButton { text: "Fail analysis"; label: "Fail next analysis"; compact: true; selected: Session.mock-failure; clicked => { Session.command(SamplerCommands.telemetry-fail, "", "", Session.mock-failure ? 0 : 1); } }
-            ActionButton { text: "Missing"; label: "Mark selected file missing"; compact: true; clicked => { Session.command(SamplerCommands.asset-mock-state, Session.selected-source, "missing", 0); } }
-            ActionButton { text: "Unsupported"; label: "Mark selected file unsupported"; compact: true; clicked => { Session.command(SamplerCommands.asset-mock-state, Session.selected-source, "unsupported", 0); } }
-            ActionButton { text: "Loaded"; label: "Restore selected file"; compact: true; clicked => { Session.command(SamplerCommands.asset-mock-state, Session.selected-source, "loaded", 0); } }
-            ActionButton { text: "Host"; label: "Toggle host automation"; compact: true; selected: Session.host-automation; clicked => { Session.command(SamplerCommands.automation-mock, "", "", Session.host-automation ? 0 : 1); } }
-            ActionButton { text: "Clear"; label: "Clear adapter events"; compact: true; clicked => { Session.command(SamplerCommands.event-clear, "", "", 0); } }
+    Rectangle {
+        height: Tokens.editor-panel-header-height;
+        background: SamplerTheme.surface-panel-header;
+        Text {
+            x: Tokens.editor-chrome-content-inset;
+            width: Tokens.editor-event-heading-width;
+            text: "EVENT LOG";
+            font-family: SamplerTheme.font-ui;
+            font-size: SamplerTheme.type-body;
+            font-weight: Tokens.editor-weight-bold;
+            color: SamplerTheme.secondary;
+            vertical-alignment: center;
         }
-        ActionButton { x: parent.width - Tokens.editor-chrome-close-right; y: Tokens.editor-chrome-inset-control-top; compact: true; ghost: true; icon: Tokens.editor-icon-close; label: "Close event log"; clicked => { root.closed(); } }
+
+        EditorTextField {
+            x: Tokens.editor-event-search-left;
+            y: Tokens.editor-chrome-inset-control-top;
+            width: Tokens.editor-event-search-width;
+            height: Tokens.editor-button-compact-size;
+            text <=> root.query;
+            accessible-label: "Filter adapter events";
+            font-family: SamplerTheme.font-value;
+            font-size: SamplerTheme.type-caption;
+            color: SamplerTheme.paper-1;
+            single-line: true;
+        }
+
+        HorizontalLayout {
+            x: Tokens.editor-event-actions-left;
+            y: Tokens.editor-chrome-gap-small;
+            width: parent.width - Tokens.editor-event-actions-width-reserve;
+            height: Tokens.editor-item-height;
+            spacing: Tokens.editor-chrome-gap-small;
+            alignment: end;
+            ActionButton {
+                text: "Fail analysis";
+                label: "Fail next analysis";
+                compact: true;
+                selected: Session.mock-failure;
+                clicked => { Session.command(SamplerCommands.telemetry-fail, "", "", Session.mock-failure ? 0 : 1); }
+            }
+
+            ActionButton {
+                text: "Missing";
+                label: "Mark selected file missing";
+                compact: true;
+                clicked => { Session.command(SamplerCommands.asset-mock-state, Session.selected-source, "missing", 0); }
+            }
+
+            ActionButton {
+                text: "Unsupported";
+                label: "Mark selected file unsupported";
+                compact: true;
+                clicked => { Session.command(SamplerCommands.asset-mock-state, Session.selected-source, "unsupported", 0); }
+            }
+
+            ActionButton {
+                text: "Loaded";
+                label: "Restore selected file";
+                compact: true;
+                clicked => { Session.command(SamplerCommands.asset-mock-state, Session.selected-source, "loaded", 0); }
+            }
+
+            ActionButton {
+                text: "Host";
+                label: "Toggle host automation";
+                compact: true;
+                selected: Session.host-automation;
+                clicked => { Session.command(SamplerCommands.automation-mock, "", "", Session.host-automation ? 0 : 1); }
+            }
+
+            ActionButton {
+                text: "Clear";
+                label: "Clear adapter events";
+                compact: true;
+                clicked => { Session.command(SamplerCommands.event-clear, "", "", 0); }
+            }
+        }
+
+        ActionButton {
+            x: parent.width - Tokens.editor-chrome-close-right;
+            y: Tokens.editor-chrome-inset-control-top;
+            compact: true;
+            ghost: true;
+            icon: Tokens.editor-icon-close;
+            label: "Close event log";
+            clicked => { root.closed(); }
+        }
     }
-    Flickable { y: Tokens.editor-event-content-top; width: parent.width; height: parent.height - Tokens.editor-event-content-height-reserve; content-width: self.width; content-height: max(self.height, Session.events.length * Tokens.editor-event-row-height + Tokens.editor-chrome-gap);
-        for event[i] in Session.events : Text { x: Tokens.editor-chrome-content-inset; y: Tokens.editor-chrome-gap-small + i * Tokens.editor-event-row-height; width: parent.width - Tokens.editor-button-compact-size; height: Tokens.editor-event-row-height; visible: root.query == "" || PatchFilter.contains((event.kind + " " + event.label).to-lowercase(), root.query.to-lowercase()); text: "{event.sequence} · {event.kind} · {event.label}"; font-family: SamplerTheme.font-value; font-size: SamplerTheme.type-caption; color: event.kind == "failure" || event.kind == "rejected" ? SamplerTheme.warn : SamplerTheme.paper-3; vertical-alignment: center; overflow: elide; }
+
+    Flickable {
+        y: Tokens.editor-event-content-top;
+        width: parent.width;
+        height: parent.height - Tokens.editor-event-content-height-reserve;
+        content-width: self.width;
+        content-height: max(self.height, Session.events.length * Tokens.editor-event-row-height + Tokens.editor-chrome-gap);
+        for event[i] in Session.events: Text {
+            x: Tokens.editor-chrome-content-inset;
+            y: Tokens.editor-chrome-gap-small + i * Tokens.editor-event-row-height;
+            width: parent.width - Tokens.editor-button-compact-size;
+            height: Tokens.editor-event-row-height;
+            visible: root.query == "" || PatchFilter.contains((event.kind + " " + event.label).to-lowercase(), root.query.to-lowercase());
+            text: "{event.sequence} · {event.kind} · {event.label}";
+            font-family: SamplerTheme.font-value;
+            font-size: SamplerTheme.type-caption;
+            color: event.kind == "failure" || event.kind == "rejected" ? SamplerTheme.warn : SamplerTheme.paper-3;
+            vertical-alignment: center;
+            overflow: elide;
+        }
     }
 }

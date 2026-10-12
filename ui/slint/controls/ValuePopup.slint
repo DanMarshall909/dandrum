@@ -29,39 +29,93 @@ export component ValuePopup inherits Rectangle {
     callback abandoned();
     callback reset-peaks();
     callback hover-changed(bool);
-    background: Tokens.surface-well; border-color: Tokens.border-strong; border-width: Tokens.editor-control-stroke-width; border-radius: Tokens.radius-2;
-    drop-shadow-color: Tokens.editor-control-popup-shadow; drop-shadow-blur: Tokens.editor-control-guide-popup-shadow-blur; drop-shadow-offset-y: Tokens.editor-control-guide-popup-shadow-offset;
-    accessible-role: groupbox; accessible-label: root.label + ParameterStrings.label-popup-suffix;
-    hover := TouchArea { enabled: true; changed has-hover => { root.hover-changed(self.has-hover); } }
+    background: Tokens.surface-well;
+    border-color: Tokens.border-strong;
+    border-width: Tokens.editor-control-stroke-width;
+    border-radius: Tokens.radius-2;
+    drop-shadow-color: Tokens.editor-control-popup-shadow;
+    drop-shadow-blur: Tokens.editor-control-guide-popup-shadow-blur;
+    drop-shadow-offset-y: Tokens.editor-control-guide-popup-shadow-offset;
+    accessible-role: groupbox;
+    accessible-label: root.label + ParameterStrings.label-popup-suffix;
+    hover := TouchArea {
+        enabled: true;
+        changed has-hover => { root.hover-changed(self.has-hover); }
+    }
+
     arrow := Rectangle {
         x: root.anchor-x.clamp(root.arrow-inset, root.width - root.arrow-inset) - Tokens.editor-control-guide-popup-arrow-half;
-        y: root.above ? parent.height - Tokens.editor-control-guide-popup-arrow-half : -Tokens.editor-control-guide-popup-arrow-half; width: Tokens.editor-control-guide-popup-arrow-size; height: Tokens.editor-control-guide-popup-arrow-size;
-        Rectangle { background: Tokens.surface-well; transform-rotation: Tokens.editor-control-popup-arrow-angle*1deg; border-width: Tokens.editor-control-stroke-width; border-color: Tokens.border-strong; }
+        y: root.above ? parent.height - Tokens.editor-control-guide-popup-arrow-half : -Tokens.editor-control-guide-popup-arrow-half;
+        width: Tokens.editor-control-guide-popup-arrow-size;
+        height: Tokens.editor-control-guide-popup-arrow-size;
+        Rectangle {
+            background: Tokens.surface-well;
+            transform-rotation: Tokens.editor-control-popup-arrow-angle * 1deg;
+            border-width: Tokens.editor-control-stroke-width;
+            border-color: Tokens.border-strong;
+        }
     }
+
     VerticalLayout {
-        padding: Tokens.editor-control-guide-popup-padding; spacing: Tokens.editor-control-guide-popup-spacing;
+        padding: Tokens.editor-control-guide-popup-padding;
+        spacing: Tokens.editor-control-guide-popup-spacing;
         ValueEditor {
-            value-text: root.value-text; label: root.label; unit: root.unit; editing: root.editing; invalid: root.invalid; host-automated: root.host-automated;
+            value-text: root.value-text;
+            label: root.label;
+            unit: root.unit;
+            editing: root.editing;
+            invalid: root.invalid;
+            host-automated: root.host-automated;
             changed hovered => { root.hover-changed(self.hovered); }
             edit-requested => { root.edit-requested(); }
             submitted(text) => { root.submitted(text); }
             cancelled => { root.cancelled(); }
             abandoned => { root.abandoned(); }
         }
-        if root.show-peaks || root.clipped : HorizontalLayout {
+
+        if root.show-peaks || root.clipped: HorizontalLayout {
             spacing: Tokens.editor-control-guide-popup-padding;
-            if root.show-peaks : FocusScope {
-                min-width: peaks.preferred-width; height: Tokens.editor-control-guide-popup-peak-height;
-                accessible-role: button; accessible-label: ParameterStrings.menu-reset-peaks;
+            if root.show-peaks: FocusScope {
+                min-width: peaks.preferred-width;
+                height: Tokens.editor-control-guide-popup-peak-height;
+                accessible-role: button;
+                accessible-label: ParameterStrings.menu-reset-peaks;
                 accessible-action-default => { root.reset-peaks(); }
                 key-pressed(event) => { if event.text == ParameterStrings.activation-key || event.text == Key.Return { root.reset-peaks(); return accept; } return reject; }
-                peaks := Text { text: ParameterStrings.peak-prefix + ValueCodec.format(root.peak, root.unit) + ParameterStrings.trough-prefix + ValueCodec.format(root.trough, root.unit); font-family: Tokens.font-value; font-size: Tokens.editor-control-font-caption; color: Tokens.text-tertiary; vertical-alignment: center; }
-                TouchArea { mouse-cursor: pointer; clicked => { root.reset-peaks(); } }
+                peaks := Text {
+                    text: ParameterStrings.peak-prefix + ValueCodec.format(root.peak, root.unit) + ParameterStrings.trough-prefix + ValueCodec.format(root.trough, root.unit);
+                    font-family: Tokens.font-value;
+                    font-size: Tokens.editor-control-font-caption;
+                    color: Tokens.text-tertiary;
+                    vertical-alignment: center;
+                }
+
+                TouchArea {
+                    mouse-cursor: pointer;
+                    clicked => { root.reset-peaks(); }
+                }
             }
-            if root.clipped : ClipTag { live: root.live-clipped; }
+            if root.clipped: ClipTag {
+                live: root.live-clipped;
+            }
         }
-        if root.modulations.length > 0 : Rectangle { height: 1px; background: Tokens.border-hairline; }
-        for assignment in root.modulations : ModIndicator { slot: assignment.slot; source: assignment.source; depth: assignment.depth; active: assignment.active; compact: true; }
-        if root.host-automated : Text { text: ParameterStrings.host-ownership; font-family: Tokens.font-ui; font-size: Tokens.editor-control-font-caption; color: Tokens.dd-host; wrap: word-wrap; }
+        if root.modulations.length > 0: Rectangle {
+            height: 1px;
+            background: Tokens.border-hairline;
+        }
+        for assignment in root.modulations: ModIndicator {
+            slot: assignment.slot;
+            source: assignment.source;
+            depth: assignment.depth;
+            active: assignment.active;
+            compact: true;
+        }
+        if root.host-automated: Text {
+            text: ParameterStrings.host-ownership;
+            font-family: Tokens.font-ui;
+            font-size: Tokens.editor-control-font-caption;
+            color: Tokens.dd-host;
+            wrap: word-wrap;
+        }
     }
 }

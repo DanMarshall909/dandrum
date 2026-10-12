@@ -11,11 +11,16 @@ export component EmptyPage inherits EmptyState {
     title: "Drop samples here";
     description: "One file becomes a sound across the keyboard. Several files ask how to map them.";
     footer: "WAV · AIFF · FLAC · MP3 · OGG";
-    primary-text: "Browse samples…"; primary-label: "Browse samples";
-    secondary-icon: Tokens.editor-icon-layers; secondary-label: "Load multiple samples";
+    primary-text: "Browse samples…";
+    primary-label: "Browse samples";
+    secondary-icon: Tokens.editor-icon-layers;
+    secondary-label: "Load multiple samples";
     callback browse(string);
     primary-activated => { root.browse(SamplerCommands.asset-import); }
     secondary-activated => { root.browse(SamplerCommands.asset-import-many); }
     window-deactivated => { Session.release-notes(); DragState.cancel(); }
-    if root.expanded : ReadOnlyKeyMap { y: root.canvas-height + Tokens.editor-chrome-gap-small; width: parent.width; }
+    if root.expanded: ReadOnlyKeyMap {
+        y: root.canvas-height + Tokens.editor-chrome-gap-small;
+        width: parent.width;
+    }
 }

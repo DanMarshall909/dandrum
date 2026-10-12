@@ -15,33 +15,102 @@ export component SourceRow inherits ItemRow {
     callback show-browser();
     callback file-request(string, string);
     height: Tokens.editor-item-height;
-    label: "Preview " + root.source.name; text: root.source.name;
-    selected: root.source.selected; external-pointer: true; external-hovered: drag.has-hover;
+    label: "Preview " + root.source.name;
+    text: root.source.name;
+    selected: root.source.selected;
+    external-pointer: true;
+    external-hovered: drag.has-hover;
     icon: root.source.state == "missing" ? "file-missing" : "one-shot";
-    icon-x: root.indented ? Tokens.editor-source-indented-icon-left : Tokens.editor-chrome-inset-small; text-x: root.indented ? Tokens.editor-source-indented-text-left : Tokens.editor-item-text-left;
+    icon-x: root.indented ? Tokens.editor-source-indented-icon-left : Tokens.editor-chrome-inset-small;
+    text-x: root.indented ? Tokens.editor-source-indented-text-left : Tokens.editor-item-text-left;
     text-width: root.content-width - root.text-x - (root.show-favourite ? Tokens.editor-source-favourite-text-reserve : Tokens.editor-item-detail-reserve);
     icon-tint: root.source.state == "missing" || root.source.state == "unsupported" ? SamplerTheme.error : SamplerTheme.paper-3;
     text-color: root.source.state == "missing" || root.source.state == "unsupported" ? SamplerTheme.error : SamplerTheme.paper-1;
     detail: root.source.state == "loading" ? round(root.source.progress * 100) + "%" : round(root.source.duration * 100) / 100 + " s";
-    detail-right: root.show-favourite ? Tokens.editor-source-favourite-detail-right : Tokens.editor-chrome-inset-small; detail-font-size: Tokens.editor-type-legacy-small;
-    progress-visible: root.source.selected && Session.auditioning; progress: Session.playhead; progress-centered: true;
+    detail-right: root.show-favourite ? Tokens.editor-source-favourite-detail-right : Tokens.editor-chrome-inset-small;
+    detail-font-size: Tokens.editor-type-legacy-small;
+    progress-visible: root.source.selected && Session.auditioning;
+    progress: Session.playhead;
+    progress-centered: true;
     activated => { root.preview(); }
     window-deactivated => { Session.release-notes(); DragState.cancel(); }
     public function preview() { Session.command(SamplerCommands.asset-preview, root.source.id, "", 0); }
-    source-menu := PopupWindow { y: root.height; width: Tokens.editor-source-menu-width; height: root.source.kind == "synth-patch" || root.source.kind == "synth" ? Tokens.editor-source-synth-menu-height : Tokens.editor-source-menu-height;
-        Rectangle { background: SamplerTheme.surface-menu; border-width: Tokens.editor-border-width; border-color: SamplerTheme.line-3; border-radius: Tokens.editor-radius-item;
-            VerticalLayout { padding: Tokens.editor-chrome-gap-tight; spacing: 0px;
-                if root.source.kind == "synth-patch" || root.source.kind == "synth" : ActionButton { text: "Sample this patch…"; label: "Sample source " + root.source.name; ghost: true;
+    source-menu := PopupWindow {
+        y: root.height;
+        width: Tokens.editor-source-menu-width;
+        height: root.source.kind == "synth-patch" || root.source.kind == "synth" ? Tokens.editor-source-synth-menu-height : Tokens.editor-source-menu-height;
+        Rectangle {
+            background: SamplerTheme.surface-menu;
+            border-width: Tokens.editor-border-width;
+            border-color: SamplerTheme.line-3;
+            border-radius: Tokens.editor-radius-item;
+            VerticalLayout {
+                padding: Tokens.editor-chrome-gap-tight;
+                spacing: 0px;
+                if root.source.kind == "synth-patch" || root.source.kind == "synth": ActionButton {
+                    text: "Sample this patch…";
+                    label: "Sample source " + root.source.name;
+                    ghost: true;
                     clicked => { if Session.command(SamplerCommands.asset-select, root.source.id, "", 0) { Session.command(SamplerCommands.page-select, "voice", "", 0); VoiceDialogState.mode = "auto"; } source-menu.close(); }
                 }
-                ActionButton { text: "Preview"; label: "Preview source " + root.source.name; ghost: true; enabled: root.source.state == "loaded" || root.source.state == "cached"; clicked => { source-menu.close(); root.preview(); } }
-                ActionButton { text: "Show in browser"; label: "Show " + root.source.name + " in browser"; ghost: true; clicked => { source-menu.close(); Session.command(SamplerCommands.asset-select, root.source.id, "", 0); root.show-browser(); } }
-                ActionButton { text: "Replace…"; label: "Replace source " + root.source.name; ghost: true; clicked => { source-menu.close(); if Session.command(SamplerCommands.asset-select, root.source.id, "", 0) { root.file-request(SamplerCommands.asset-replace, root.source.id); } } }
-                ActionButton { text: "Detect transients"; label: "Detect transients in " + root.source.name; ghost: true; enabled: root.source.state == "loaded" || root.source.state == "cached"; clicked => { source-menu.close(); Session.command(SamplerCommands.asset-select, root.source.id, "", 0); Session.command(SamplerCommands.page-select, "slices", "", 0); Session.command(SamplerCommands.analysis-start, "transients", "", 0); } }
-                ActionButton { text: "Remove from patch"; label: "Remove source " + root.source.name + " from patch"; ghost: true; clicked => { source-menu.close(); Session.command(SamplerCommands.asset-remove, root.source.id, "", 0); } }
+                ActionButton {
+                    text: "Preview";
+                    label: "Preview source " + root.source.name;
+                    ghost: true;
+                    enabled: root.source.state == "loaded" || root.source.state == "cached";
+                    clicked => { source-menu.close(); root.preview(); }
+                }
+
+                ActionButton {
+                    text: "Show in browser";
+                    label: "Show " + root.source.name + " in browser";
+                    ghost: true;
+                    clicked => { source-menu.close(); Session.command(SamplerCommands.asset-select, root.source.id, "", 0); root.show-browser(); }
+                }
+
+                ActionButton {
+                    text: "Replace…";
+                    label: "Replace source " + root.source.name;
+                    ghost: true;
+                    clicked => { source-menu.close(); if Session.command(SamplerCommands.asset-select, root.source.id, "", 0) { root.file-request(SamplerCommands.asset-replace, root.source.id); } }
+                }
+
+                ActionButton {
+                    text: "Detect transients";
+                    label: "Detect transients in " + root.source.name;
+                    ghost: true;
+                    enabled: root.source.state == "loaded" || root.source.state == "cached";
+                    clicked => { source-menu.close(); Session.command(SamplerCommands.asset-select, root.source.id, "", 0); Session.command(SamplerCommands.page-select, "slices", "", 0); Session.command(SamplerCommands.analysis-start, "transients", "", 0); }
+                }
+
+                ActionButton {
+                    text: "Remove from patch";
+                    label: "Remove source " + root.source.name + " from patch";
+                    ghost: true;
+                    clicked => { source-menu.close(); Session.command(SamplerCommands.asset-remove, root.source.id, "", 0); }
+                }
             }
         }
     }
-    drag := DragSource { kind: DragKinds.source; payload: root.source.id; enabled: root.enabled; activate => { root.activate(); } context-requested => { source-menu.show(); } }
-    if root.show-favourite : ActionButton { x: parent.width - Tokens.editor-source-favourite-right; y: Tokens.editor-border-width; width: Tokens.editor-button-compact-size; height: Tokens.editor-button-compact-size; compact: true; ghost: true; icon: Tokens.editor-icon-star; label: (root.source.favourite ? "Unfavourite " : "Favourite ") + root.source.name; selected: root.source.favourite; clicked => { Session.command(SamplerCommands.asset-favourite, root.source.id, "", 0); } }
+
+    drag := DragSource {
+        kind: DragKinds.source;
+        payload: root.source.id;
+        enabled: root.enabled;
+        activate => { root.activate(); }
+        context-requested => { source-menu.show(); }
+    }
+
+    if root.show-favourite: ActionButton {
+        x: parent.width - Tokens.editor-source-favourite-right;
+        y: Tokens.editor-border-width;
+        width: Tokens.editor-button-compact-size;
+        height: Tokens.editor-button-compact-size;
+        compact: true;
+        ghost: true;
+        icon: Tokens.editor-icon-star;
+        label: (root.source.favourite ? "Unfavourite " : "Favourite ") + root.source.name;
+        selected: root.source.favourite;
+        clicked => { Session.command(SamplerCommands.asset-favourite, root.source.id, "", 0); }
+    }
 }

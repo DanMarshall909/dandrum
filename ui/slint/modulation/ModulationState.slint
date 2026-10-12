@@ -16,7 +16,8 @@ export component ModulationState inherits Rectangle {
     out property <bool> clip-high: root.high > 1.0001;
     out property <bool> live-clip-low: root.any-live && root.effective <= 0;
     out property <bool> live-clip-high: root.any-live && root.effective >= 1;
-    width: 0; height: 0;
+    width: 0;
+    height: 0;
     pure function depth-at(i: int) -> float { return i < root.count ? root.assignments[i].depth.clamp(-1, 1) : 0; }
     pure function live-at(i: int) -> bool { return i < root.count && root.assignments[i].active; }
     pure function delta-at(i: int) -> float { return root.live-at(i) ? root.depth-at(i) * root.assignments[i].live.clamp(-1, 1) : 0; }

@@ -14,25 +14,48 @@ export component MacroGrid inherits Rectangle {
     private property <length> row-height: root.distribute ? root.height / root.rows : root.face-size + 30px;
     callback macro-gesture(string, int, float);
     callback context-action(string, string);
-    Flickable { width: parent.width; height: parent.height; content-width: self.width; content-height: max(self.height, root.rows * root.row-height);
-        for m[i] in root.macros : Rectangle {
-            width: knob.width; height: knob.height;
+    Flickable {
+        width: parent.width;
+        height: parent.height;
+        content-width: self.width;
+        content-height: max(self.height, root.rows * root.row-height);
+        for m[i] in root.macros: Rectangle {
+            width: knob.width;
+            height: knob.height;
             x: mod(i, root.columns) * root.width / root.columns + (root.width / root.columns - self.width) / 2;
             y: max(0px, (root.height - root.rows * root.row-height) / 2) + floor(i / root.columns) * root.row-height + (root.row-height - self.height) / 2;
-            knob := ParamKnob { macro-id: m.id; private property <float> display-scale: m.unit == "%" ? 100 : 1;
-                label: m.name; size: root.face-size; value: m.value * self.display-scale; model-value: m.value * self.display-scale; minimum: m.minimum * self.display-scale; maximum: m.maximum * self.display-scale; default-value: m.default-value * self.display-scale; unit: m.unit; assignments: m.assignments; host-automated: m.host-automated;
-                enabled: m.destinations.length > 0; opacity: m.destinations.length > 0 ? 1 : 0.38;
+            knob := ParamKnob {
+                macro-id: m.id;
+                private property <float> display-scale: m.unit == "%" ? 100 : 1;
+                label: m.name;
+                size: root.face-size;
+                value: m.value * self.display-scale;
+                model-value: m.value * self.display-scale;
+                minimum: m.minimum * self.display-scale;
+                maximum: m.maximum * self.display-scale;
+                default-value: m.default-value * self.display-scale;
+                unit: m.unit;
+                assignments: m.assignments;
+                host-automated: m.host-automated;
+                enabled: m.destinations.length > 0;
+                opacity: m.destinations.length > 0 ? 1 : 0.38;
                 gesture-began => { root.macro-gesture(m.id, GesturePhases.begin, self.value / self.display-scale); }
                 changed(v) => { root.macro-gesture(m.id, GesturePhases.update, v / self.display-scale); }
                 gesture-ended => { root.macro-gesture(m.id, GesturePhases.commit, self.value / self.display-scale); }
                 context-action(action) => { root.context-action(action, m.id); }
             }
-            if m.destinations.length == 0 : FocusScope {
-                accessible-role: button; accessible-label: "Actions for " + m.name + " macro"; focus-on-tab-navigation: true;
+
+            if m.destinations.length == 0: FocusScope {
+                accessible-role: button;
+                accessible-label: "Actions for " + m.name + " macro";
+                focus-on-tab-navigation: true;
                 accessible-action-default => { root.context-action("macro", m.id); }
                 focus-lost(reason) => { if reason == FocusReason.window-activation { Session.release-notes(); DragState.cancel(); } }
                 key-pressed(event) => { if event.text == Key.Return || event.text == " " || event.text == Key.Menu { root.context-action("macro", m.id); return accept; } return reject; }
-                TouchArea { clicked => { parent.focus(); } pointer-event(event) => { if event.kind == PointerEventKind.up && event.button == PointerEventButton.right { root.context-action("macro", m.id); } } }
+                TouchArea {
+                    clicked => { parent.focus(); }
+                    pointer-event(event) => { if event.kind == PointerEventKind.up && event.button == PointerEventButton.right { root.context-action("macro", m.id); } }
+                }
             }
         }
     }

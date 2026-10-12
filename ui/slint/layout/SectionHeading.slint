@@ -11,7 +11,15 @@ export component SectionHeading inherits Rectangle {
     preferred-width: heading.preferred-width + (root.prepared ? 20px : 0px);
     HorizontalLayout {
         spacing: Tokens.space-3;
-        if root.prepared : Icon { name: "lock"; tint: root.tint; size: 14px; }
-        heading := Heading { text: root.text; color: root.tint; font-size: root.compact ? 12px : 13px; }
+        if root.prepared: Icon {
+            name: "lock";
+            tint: root.tint;
+            size: 14px;
+        }
+        heading := Heading {
+            text: root.text;
+            color: root.tint;
+            font-size: root.compact ? 12px : 13px;
+        }
     }
 }

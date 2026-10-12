@@ -1,17 +1,29 @@
 import { SamplerCommands } from "../domain/Commands.slint";
 import { Tokens } from "../../slint/theme.slint";
-import { EditorBindingRangeRow } from "../../slint/editor/BindingRangeRow.slint";
+import {
+    EditorBindingRangeRow,
+} from "../../slint/editor/BindingRangeRow.slint";
 import { MacroBindingInfo } from "../domain/types.slint";
 import { Session } from "../Session.slint";
 import { DragState } from "../chrome/DragState.slint";
 export component MacroDestinationRow inherits Rectangle {
     in property <MacroBindingInfo> binding;
-    callback opened(string); callback removed(string); callback inverted(string); callback range-gesture(string,string,int,float);
+    callback opened(string);
+    callback removed(string);
+    callback inverted(string);
+    callback range-gesture(string, string, int, float);
     pure function label(id: string) -> string { return id == "cutoff" ? "Filter cutoff" : id == "resonance" ? "Filter resonance" : id == "filter-sustain" ? "Filter sustain" : id == "reverb-mix" ? "Send · Reverb" : id == "amp-attack" ? "Amp attack" : id == "amp-sustain" ? "Amp sustain" : id == "pan" ? "Pan" : id == "level" ? "Amp level" : id == "drive" ? "Filter drive" : id; }
-    EditorBindingRangeRow { width: parent.width; height: parent.height;
-        title: root.label(root.binding.destination); lower: root.binding.minimum; upper: root.binding.maximum; small-font-size: Tokens.editor-display-type-v3-small;
-        opened => { root.opened(root.binding.destination); } removed => { root.removed(root.binding.destination); } inverted => { root.inverted(root.binding.destination); }
-        range-gesture(field,phase,value) => { root.range-gesture(root.binding.destination,field,phase,value); }
+    EditorBindingRangeRow {
+        width: parent.width;
+        height: parent.height;
+        title: root.label(root.binding.destination);
+        lower: root.binding.minimum;
+        upper: root.binding.maximum;
+        small-font-size: Tokens.editor-display-type-v3-small;
+        opened => { root.opened(root.binding.destination); }
+        removed => { root.removed(root.binding.destination); }
+        inverted => { root.inverted(root.binding.destination); }
+        range-gesture(field, phase, value) => { root.range-gesture(root.binding.destination,field,phase,value); }
         gesture-cancelled => { Session.command(SamplerCommands.gesture-cancel,"","",0); }
         interaction-lost => { Session.release-notes(); DragState.cancel(); }
     }

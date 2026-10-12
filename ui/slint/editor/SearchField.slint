@@ -13,11 +13,29 @@ export component EditorSearchField inherits Rectangle {
     callback accepted(string);
     callback focus-left();
     forward-focus: input;
-    border-radius: Tokens.editor-radius-control; border-width: Tokens.editor-border-width;
+    border-radius: Tokens.editor-radius-control;
+    border-width: Tokens.editor-border-width;
     border-color: input.has-focus ? EditorTheme.accent : EditorTheme.line-2;
     background: EditorTheme.ink-0;
-    if input.text == "" : Text { x: root.inset; width: parent.width - 2 * root.inset; text: root.placeholder; color: EditorTheme.paper-3; font-family: EditorTheme.font-ui; font-size: EditorTheme.type-control; vertical-alignment: center; }
-    input := EditorTextField { x: root.inset; width: parent.width - 2 * root.inset; text <=> root.text; accessible-label: root.label; enabled: root.enabled; read-only: root.read-only; vertical-alignment: center;
-        edited => { root.edited(self.text); } accepted => { root.accepted(self.text); } focus-left => { root.focus-left(); }
+    if input.text == "": Text {
+        x: root.inset;
+        width: parent.width - 2 * root.inset;
+        text: root.placeholder;
+        color: EditorTheme.paper-3;
+        font-family: EditorTheme.font-ui;
+        font-size: EditorTheme.type-control;
+        vertical-alignment: center;
+    }
+    input := EditorTextField {
+        x: root.inset;
+        width: parent.width - 2 * root.inset;
+        text <=> root.text;
+        accessible-label: root.label;
+        enabled: root.enabled;
+        read-only: root.read-only;
+        vertical-alignment: center;
+        edited => { root.edited(self.text); }
+        accepted => { root.accepted(self.text); }
+        focus-left => { root.focus-left(); }
     }
 }

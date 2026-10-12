@@ -4,10 +4,15 @@ import { DragState } from "../chrome/DragState.slint";
 import { EditorMapKeyboard } from "../../slint/editor/MapKeyboard.slint";
 import { EditorKeyMapOverview } from "../../slint/editor/KeyMapOverview.slint";
 export component DomainMapKeyboard inherits EditorMapKeyboard {
-    small-font-size: Tokens.editor-display-type-v3-small; generation: Session.current-patch-id;
-    note-on(n,v,s) => { Session.note-on(n,v,s); } note-off(n,s) => { Session.note-off(n,s); }
+    small-font-size: Tokens.editor-display-type-v3-small;
+    generation: Session.current-patch-id;
+    note-on(n, v, s) => { Session.note-on(n,v,s); }
+    note-off(n, s) => { Session.note-off(n,s); }
     window-deactivated => { Session.release-notes(); DragState.cancel(); }
 }
+
 export component ReadOnlyKeyMap inherits EditorKeyMapOverview {
-    small-font-size: Tokens.editor-display-type-v3-small; zones: Session.zones; selected-zone: Session.selected-zone;
+    small-font-size: Tokens.editor-display-type-v3-small;
+    zones: Session.zones;
+    selected-zone: Session.selected-zone;
 }
