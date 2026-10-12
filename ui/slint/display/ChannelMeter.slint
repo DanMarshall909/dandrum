@@ -4,6 +4,7 @@ import { MeterTrack } from "MeterTrack.slint";
 import { ClipAcknowledgement } from "ClipAcknowledgement.slint";
 
 export component ChannelMeter inherits Rectangle {
+    in property <bool> enabled: true;
     in property <MeterChannel> channel;
     in property <bool> vertical: true;
     in property <length> length: 96px;
@@ -20,6 +21,7 @@ export component ChannelMeter inherits Rectangle {
     accessible-role: text;
     accessible-label: "\{root.channel.name}: \{root.status}";
     ClipAcknowledgement {
+        enabled: root.enabled && root.available && root.channel.clipped;
         x: root.vertical ? (parent.width - self.width) / 2 : 0px; y: 0px;
         clipped: root.channel.clipped; available: root.available; label: root.channel.name;
         acknowledge => { root.reset-clip(root.channel.id, root.channel.ticket); }

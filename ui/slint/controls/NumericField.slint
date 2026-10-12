@@ -16,7 +16,7 @@ export component NumericField inherits RangeControl {
     height: (root.label != "" ? 17px : 0px) + (root.compact ? 22px : Tokens.field-height);
     accessible-role: spinbox;
     edit-requested => { editor.focus-editor(); }
-    edit-closed => { if root.interactive { root.focus(); } }
+    edit-closed(restore-focus) => { if restore-focus && root.interactive { root.focus(); } }
     standard-menu-requested => { if root.interactive { parameter-menu.show({x: parameter-menu.width / 2, y: parameter-menu.height}); } }
     capture-key-pressed(event) => { root.fine = event.modifiers.shift || event.text == Key.Shift; return reject; }
     capture-key-released(event) => { root.fine = event.modifiers.shift; return reject; }
@@ -31,6 +31,7 @@ export component NumericField inherits RangeControl {
             edit-requested => { root.begin-edit(); }
             submitted(text) => { root.commit-text(text); }
             cancelled => { root.cancel-edit(); }
+            abandoned => { root.abandon-edit(); }
         }
         parameter-menu := ContextMenuArea {
             enabled: root.interactive && !root.editing;

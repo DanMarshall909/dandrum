@@ -1,0 +1,16 @@
+import { PatchRow } from "../../ui/advanced-sampler/performance/PatchRow.slint";
+export component AdvancedSamplerPatchRowTest inherits Window {
+    width: 600px; height: 140px;
+    in-out property <bool> compact;
+    in-out property <bool> favourite;
+    out property <int> selections;
+    out property <int> loads;
+    out property <int> favourites;
+    PatchRow {
+        x: 10px; y: 30px; width: 580px; compact: root.compact;
+        patch: {id: "felt", name: "Felt Upright", category: "Keys", origin: "Factory", contents: "Samples", favourite: root.favourite};
+        picked(id) => { root.selections += 1; }
+        loaded(id) => { root.loads += 1; }
+        favourite(id) => { root.favourite = !root.favourite; root.favourites += 1; }
+    }
+}

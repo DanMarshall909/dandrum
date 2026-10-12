@@ -11,6 +11,7 @@ export component AdvancedSamplerControlMenusTest inherits Window {
     out property <string> action;
     out property <string> target;
     private property <string> context-macro;
+    TextInput { x: 260px; y: 110px; width: 180px; height: 24px; single-line: true; accessible-label: "Parameter focus destination"; }
     macro-menu := PopupWindow { x: 210px; y: 5px; width: 260px; height: 304px;
         MacroActions { macro-id: root.context-macro; close-requested => { macro-menu.close(); } }
     }

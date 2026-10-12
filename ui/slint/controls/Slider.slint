@@ -27,7 +27,7 @@ export component Slider inherits RangeControl {
     height: root.label-height + (root.vertical ? root.length + 20px : root.thickness);
     z: root.popup-visible ? 100 : 0;
     edit-requested => { root.popup-visible = true; }
-    edit-closed => { root.popup-visible = false; if root.interactive { root.focus(); } }
+    edit-closed(restore-focus) => { root.popup-visible = false; if restore-focus && root.interactive { root.focus(); } }
     standard-menu-requested => { if root.interactive { parameter-menu.show({x: parameter-menu.width / 2, y: parameter-menu.height}); } }
     capture-key-pressed(event) => { root.fine = event.modifiers.shift || event.text == Key.Shift; return reject; }
     capture-key-released(event) => { root.fine = event.modifiers.shift; return reject; }
@@ -82,6 +82,7 @@ export component Slider inherits RangeControl {
             edit-requested => { root.begin-edit(); }
             submitted(text) => { root.commit-text(text); }
             cancelled => { root.cancel-edit(); }
+            abandoned => { root.abandon-edit(); }
             reset-peaks => { modulation.reset-peaks(); }
         }
     }

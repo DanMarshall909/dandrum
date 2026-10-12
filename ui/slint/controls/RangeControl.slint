@@ -34,7 +34,7 @@ export component RangeControl inherits FocusScope {
     callback context-menu-requested();
     callback standard-menu-requested();
     callback edit-requested();
-    callback edit-closed();
+    callback edit-closed(bool); // Restore focus only after explicit Enter/Escape.
     callback dismiss-requested();
     accessible-role: slider;
     accessible-label: root.label;
@@ -108,11 +108,17 @@ export component RangeControl inherits FocusScope {
     public function commit-text(text: string) {
         if root.interactive {
             let result = ValueCodec.parse(text, root.unit);
-            if result.valid { root.set-value(result.value); root.editing = false; root.edit-invalid = false; root.edit-closed(); }
+            if result.valid { root.set-value(result.value); root.close-edit(root.editing); }
             else { root.edit-invalid = true; }
         }
     }
-    public function cancel-edit() { root.editing = false; root.edit-invalid = false; root.edit-closed(); }
+    function close-edit(restore-focus: bool) {
+        let was-editing = root.editing;
+        root.editing = false; root.edit-invalid = false;
+        if was-editing { root.edit-closed(restore-focus); }
+    }
+    public function cancel-edit() { root.close-edit(true); }
+    public function abandon-edit() { root.close-edit(false); }
     public function request-context-menu() { if root.interactive { root.context-menu-requested(); } }
     key-pressed(event) => {
         if !root.interactive || root.editing { return reject; }
@@ -129,7 +135,7 @@ export component RangeControl inherits FocusScope {
         return accept;
     }
     focus-lost(reason) => { root.end-gesture(); }
-    changed interactive => { if !root.interactive { root.cancel-gesture(); root.cancel-edit(); } }
+    changed interactive => { if !root.interactive { root.cancel-gesture(); root.abandon-edit(); } }
     host-timer := Timer { interval: 400ms; running: false; triggered => { self.stop(); root.host-recent = false; } }
     nudge-timer := Timer { interval: 600ms; running: false; triggered => { self.stop(); root.nudged = false; } }
     @children

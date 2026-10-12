@@ -28,14 +28,14 @@ export component ParamKnob inherits RangeControl {
     width: max(root.size + 2px, 42px); height: root.label-height + root.size + 3px + (root.value-display-always ? 16px : 0px);
     z: root.popup || root.editing ? 100 : 0;
     edit-requested => { root.popup = true; editor.text = root.value-text; editor.focus(); editor.select-all(); }
-    edit-closed => { root.focus(); }
+    edit-closed(restore-focus) => { if restore-focus && root.interactive { root.focus(); } }
     context-menu-requested => { root.context-action(root.macro-id != "" ? "macro" : "modulation"); }
     standard-menu-requested => { if root.macro-id != "" { root.context-action("macro"); } else { menu.show(); } }
     capture-key-pressed(event) => { root.fine = event.modifiers.shift; return reject; }
     capture-key-released(event) => { root.fine = event.modifiers.shift; return reject; }
     changed has-focus => { if root.has-focus { root.popup = true; } else if !root.editing { close-timer.restart(); } }
     changed editing => { if root.editing { editor.text = root.value-text; editor.focus(); editor.select-all(); } }
-    changed popup => { if !root.popup && root.editing { root.cancel-edit(); } }
+    changed popup => { if !root.popup && root.editing { root.abandon-edit(); } }
     hover-timer := Timer { interval: 300ms; running: false; triggered => { self.stop(); if gesture.has-hover { root.popup = true; } } }
     close-timer := Timer { interval: 250ms; running: false; triggered => { self.stop(); if !root.popup-hover && !gesture.has-hover && !root.has-focus && !root.editing { root.popup = false; } } }
     if root.show-label : Text { x: 0px; y: 0px; height: root.label-height; text: root.label.to-uppercase(); font-family: SamplerTheme.font-ui; font-size: 10px; font-weight: 600; color: root.enabled ? SamplerTheme.text-secondary : SamplerTheme.text-disabled; horizontal-alignment: center; }
@@ -85,7 +85,7 @@ export component ParamKnob inherits RangeControl {
         Text { x: 8px; y: 5px; width: 70px; height: 24px; text: root.label; font-family: SamplerTheme.font-ui; font-size: 12px; color: SamplerTheme.paper-3; }
         popup-unit := Text { x: parent.width - self.preferred-width - 8px; y: 6px; width: self.preferred-width; height: 24px; text: root.suffix; font-family: SamplerTheme.font-value; font-size: 11px; color: SamplerTheme.paper-3; vertical-alignment: center; }
         editor := TextInput { accessible-label: "Edit " + root.label + " value"; x: 78px; y: 6px; width: 88px - (root.suffix == "" ? 0px : popup-unit.preferred-width + 4px); height: 24px; text: root.value-text; enabled: root.editing; font-family: SamplerTheme.font-value; font-size: 13px; color: root.edit-invalid ? SamplerTheme.error : root.host-active ? SamplerTheme.host : SamplerTheme.paper-1;
-            changed has-focus => { if !self.has-focus { Session.release-notes(); DragState.cancel(); } }
+            changed has-focus => { if !self.has-focus { if root.editing { root.abandon-edit(); } Session.release-notes(); DragState.cancel(); } }
             accepted => { root.commit-text(self.text); }
             key-pressed(event) => { if event.text == Key.Escape { root.cancel-edit(); root.popup = false; return accept; } return reject; }
         }

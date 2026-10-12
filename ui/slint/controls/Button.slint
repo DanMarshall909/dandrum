@@ -10,10 +10,13 @@ export component Button inherits ActionArea {
     in property <bool> primary;
     in property <bool> ghost;
     in property <bool> checked;
+    in property <bool> checkable;
     in property <bool> compact;
     in property <bool> focused;
     callback clicked();
     label: root.text;
+    accessible-checkable: root.checkable;
+    accessible-checked: root.checkable && root.checked;
     min-width: 48px;
     preferred-width: content.preferred-width;
     height: root.compact ? Tokens.button-height-sm : Tokens.button-height;

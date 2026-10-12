@@ -25,6 +25,7 @@ export component ValuePopup inherits Rectangle {
     callback edit-requested();
     callback submitted(string);
     callback cancelled();
+    callback abandoned();
     callback reset-peaks();
     callback hover-changed(bool);
     background: Tokens.surface-well; border-color: Tokens.border-strong; border-width: 1px; border-radius: Tokens.radius-2;
@@ -44,6 +45,7 @@ export component ValuePopup inherits Rectangle {
             edit-requested => { root.edit-requested(); }
             submitted(text) => { root.submitted(text); }
             cancelled => { root.cancelled(); }
+            abandoned => { root.abandoned(); }
         }
         if root.show-peaks || root.clipped : HorizontalLayout {
             spacing: 6px;

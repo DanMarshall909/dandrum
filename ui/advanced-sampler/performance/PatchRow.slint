@@ -1,6 +1,7 @@
 import { SamplerTheme } from "../theme/Theme.slint";
 import { PatchInfo } from "types.slint";
 import { AppIcon } from "../controls/AppIcon.slint";
+import { ActionArea } from "../../slint/controls/ActionArea.slint";
 export component PatchRow inherits FocusScope {
     in property <PatchInfo> patch;
     in property <bool> selected;
@@ -19,8 +20,13 @@ export component PatchRow inherits FocusScope {
     if !root.compact : Text { x: parent.width * 0.34 + 72px; width: max(0px, parent.width * 0.66 - 138px); height: parent.height; text: root.patch.contents; font-family: SamplerTheme.font-ui; font-size: 11px; color: SamplerTheme.paper-3; vertical-alignment: center; overflow: elide; }
     if !root.compact : Text { x: parent.width - 60px; width: 56px; height: parent.height; text: root.patch.origin; font-family: SamplerTheme.font-ui; font-size: 11px; color: SamplerTheme.paper-3; vertical-alignment: center; }
     row-touch := TouchArea { clicked => { root.focus(); root.picked(root.patch.id); if root.compact { root.loaded(root.patch.id); } } double-clicked => { if !root.compact { root.loaded(root.patch.id); } } }
-    star := TouchArea { x: 4px; y: (parent.height - 20px) / 2; width: 20px; height: 20px; accessible-role: button; accessible-label: (root.patch.favourite ? "Remove favourite " : "Favourite ") + root.patch.name;
-        clicked => { root.favourite(root.patch.id); }
+    star := ActionArea { x: 4px; y: (parent.height - 20px) / 2; width: 20px; height: 20px;
+        enabled: root.enabled;
+        label: (root.patch.favourite ? "Remove favourite " : "Favourite ") + root.patch.name;
+        accessible-checkable: true; accessible-checked: root.patch.favourite;
+        focus-on-tab-navigation: root.enabled; focus-on-click: root.enabled;
+        activated => { root.favourite(root.patch.id); }
+        if star.has-focus : Rectangle { border-width: 1px; border-radius: 2px; border-color: SamplerTheme.paper-1; }
         AppIcon { x: 4px; y: 4px; size: 12px; name: "star"; tint: root.patch.favourite ? SamplerTheme.accent : SamplerTheme.paper-4; }
     }
 }

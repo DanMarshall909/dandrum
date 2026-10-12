@@ -43,6 +43,17 @@ int main() {
             window->window().dispatch_window_active_changed_event(true);
             window->window().dispatch_key_press_event("\x1b");window->window().dispatch_key_release_event("\x1b");settle();
         }
+        for(auto label:{"Cutoff","Level"}){
+            const auto definition=model->definition();const auto history=model->undoCount();
+            menu(label);click((std::string("Type ")+label+" value").c_str());
+            window->window().dispatch_key_press_event("9");window->window().dispatch_key_release_event("9");
+            auto destination=find("Parameter focus destination",slint::language::AccessibleRole::TextInput);auto at=center(destination);
+            window->window().dispatch_pointer_press_event(at,slint::PointerEventButton::Left);window->window().dispatch_pointer_release_event(at,slint::PointerEventButton::Left);settle();
+            window->window().dispatch_key_press_event(slint::platform::key_codes::UpArrow);window->window().dispatch_key_release_event(slint::platform::key_codes::UpArrow);
+            window->window().dispatch_key_press_event("x");window->window().dispatch_key_release_event("x");settle();
+            expect(model->definition()==definition&&model->undoCount()==history,"Leaving a sampler parameter editor preserves its native value and history");
+            expect(destination.accessible_value()&&std::string_view(destination.accessible_value()->data()).ends_with("x"),"Sampler parameter blur leaves focus at the clicked destination");
+        }
         auto macro=find("Macro 7",slint::language::AccessibleRole::Slider);auto macroAt=center(macro);
         expect(macro.accessible_enabled()==false,"Unassigned performance macro value remains disabled");
         auto macroUndo=model->undoCount();auto macroValue=model->find("macro","macro7")->number("value");

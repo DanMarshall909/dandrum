@@ -11,8 +11,11 @@ export component OutputBusRow inherits FocusScope {
     private property <length> detail-height: 42px + max(1,root.bus.feeds.length) * 16px;
     height: root.compact ? root.detail-height + max(1,root.bus.channels.length) * 26px + 12px : max(root.detail-height,max(1,root.bus.channels.length) * 26px) + 12px;
     accessible-role: button; accessible-label: "Inspect output bus \{root.bus.name}, \{root.bus.channel-summary}";
-    accessible-action-default => { root.selected(root.bus.id); }
-    key-pressed(event) => { if event.text == Key.Return || event.text == " " { root.selected(root.bus.id); return accept; } return reject; }
+    accessible-enabled: root.enabled;
+    focus-on-tab-navigation: root.enabled; focus-on-click: root.enabled;
+    public function activate() { if root.enabled { root.selected(root.bus.id); } }
+    accessible-action-default => { root.activate(); }
+    key-pressed(event) => { if root.enabled && (event.text == Key.Return || event.text == " ") { root.activate(); return accept; } return reject; }
     Rectangle { width: 100%; height: 100%; border-radius: 4px; background: input.has-hover ? Tokens.dd-ink-3 : Tokens.dd-ink-2; border-width: 1px; border-color: Tokens.dd-line-1; }
     details := Rectangle {
         x: 8px; y: 6px; width: root.compact ? parent.width - 16px : max(84px,parent.width - 282px); height: root.detail-height;
@@ -24,16 +27,17 @@ export component OutputBusRow inherits FocusScope {
             for feed[index] in root.bus.feeds : Text { y: 40px + index * 16px; width: 100%; height: 16px; text: feed; font-family: Tokens.font-ui; font-size: 11px; color: Tokens.dd-paper-3; overflow: elide; }
         }
     }
-    input := TouchArea { clicked => { root.focus(); root.selected(root.bus.id); } }
+    input := TouchArea { enabled: root.enabled; clicked => { root.focus(); root.activate(); } }
     readings := Rectangle {
         x: root.compact ? 8px : max(100px,root.width - 266px);
         y: root.compact ? root.detail-height + 6px : 6px;
         width: max(0px,root.width - self.x - 8px); height: max(1,root.bus.channels.length) * 26px;
         if root.bus.channels.length == 0 : Text { width: 100%; height: 26px; text: "Measurements unavailable"; font-family: Tokens.font-ui; font-size: 11px; color: Tokens.dd-paper-3; vertical-alignment: center; }
         for channel[index] in root.bus.channels : ChannelMeter {
+            enabled: root.enabled;
             y: index * 26px; width: readings.width; height: 26px; channel: channel;
             vertical: false; length: min(120px,max(40px,readings.width - 136px)); thickness: 4px;
-            reset-clip(id,ticket) => { root.reset-clip(root.bus.id,id,root.generation,ticket); }
+            reset-clip(id,ticket) => { if root.enabled { root.reset-clip(root.bus.id,id,root.generation,ticket); } }
         }
     }
     FocusRing { width: 100%; height: 100%; active: root.has-focus; }

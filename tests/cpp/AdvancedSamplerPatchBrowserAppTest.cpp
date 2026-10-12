@@ -92,6 +92,15 @@ int main() {
         click("All patches");
         click("Favourite Felt Upright");
         expect(model->find("preset", "felt")->number("favourite") == 1 && model->undoCount() == undo + 1, "Modal favourite pointer changes its own native preset in one undo step");
+        const auto favouriteGeneration = model->generation();
+        element("Remove favourite Felt Upright").invoke_accessible_default_action(); settle();
+        expect(model->find("preset", "felt")->number("favourite") == 0 && model->generation() == favouriteGeneration, "Modal accessible favourite activation updates its preset without loading a patch");
+        key(" ");
+        expect(model->find("preset", "felt")->number("favourite") == 1, "Space operates the pointer-focused favourite control");
+        key(slint::platform::key_codes::Return);
+        expect(model->find("preset", "felt")->number("favourite") == 0 && model->generation() == favouriteGeneration, "Return toggles the focused favourite without loading its row");
+        element("Favourite Felt Upright").invoke_accessible_default_action(); settle();
+        expect(element("Remove favourite Felt Upright").accessible_checkable() == true && element("Remove favourite Felt Upright").accessible_checked() == true, "Favourite exposes its checked state to accessibility clients");
         click("Favourites patches");
         expect(!elements(patchLabel("felt")).empty() && elements(patchLabel("keys")).empty(), "Favourite category observes native favourite projection");
         click("Remove favourite Felt Upright");
@@ -140,6 +149,10 @@ int main() {
         auto performPatch = model->text("patch-id"); auto performUndo = model->undoCount();
         click("Favourite Felt Upright");
         expect(model->find("preset", "felt")->number("favourite") == 1 && model->text("patch-id") == performPatch && model->undoCount() == performUndo + 1, "Perform favourite pointer updates its own native preset without loading it");
+        element("Remove favourite Felt Upright").invoke_accessible_default_action(); settle();
+        expect(model->find("preset", "felt")->number("favourite") == 0 && model->text("patch-id") == performPatch, "Compact favourite accessibility action does not activate the containing patch row");
+        key(" "); key(slint::platform::key_codes::Return);
+        expect(model->find("preset", "felt")->number("favourite") == 0 && model->text("patch-id") == performPatch, "Compact favourite handles Space and Return independently of row loading");
         click(patchLabel("felt"));
         expect(model->text("patch-id") == "felt", "Perform compact row pointer loads its matching native preset");
         std::cout << "PASS: " << checks << " whole-app patch-browser checks\n";

@@ -10,6 +10,7 @@ export component IconButton inherits ActionArea {
     in property <string> icon;
     in property <bool> ghost;
     in property <bool> checked;
+    in property <bool> checkable;
     in property <bool> compact;
     in property <bool> focused;
     in property <string> description;
@@ -17,6 +18,8 @@ export component IconButton inherits ActionArea {
     private property <bool> hover-ready;
     out property <bool> tooltip-visible: root.tooltip-enabled && root.enabled && root.label != "" && (root.has-focus || (root.hovered && root.hover-ready));
     callback clicked();
+    accessible-checkable: root.checkable;
+    accessible-checked: root.checkable && root.checked;
     width: root.compact ? Tokens.icon-button-sm : Tokens.icon-button;
     height: root.width;
     activated => { root.clicked(); }

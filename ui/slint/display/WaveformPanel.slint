@@ -89,8 +89,8 @@ export component WaveformPanel inherits Rectangle {
     }
     if root.show-display-toggle : HorizontalLayout {
         x: max(0px,root.width - 155px); y: max(0px,root.height - 30px); width: 149px; height: 24px; spacing: 2px;
-        Button { text: "Wave"; checked: root.display == "wave"; clicked => { root.display = "wave"; root.display-changed("wave"); } }
-        Button { text: "Spectral"; checked: root.display == "spectral"; clicked => { root.display = "spectral"; root.display-changed("spectral"); } }
+        Button { text: "Wave"; checkable: true; checked: root.display == "wave"; clicked => { root.display = "wave"; root.display-changed("wave"); } }
+        Button { text: "Spectral"; checkable: true; checked: root.display == "spectral"; clicked => { root.display = "spectral"; root.display-changed("spectral"); } }
     }
     if root.retry-visible : Button {
         x: 8px; y: max(0px,parent.height - 32px); width: 75px; height: 24px; text: "Retry"; enabled: root.retry-enabled; clicked => { root.retry(); }

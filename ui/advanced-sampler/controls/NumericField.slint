@@ -20,7 +20,7 @@ export component NumericField inherits RangeControl {
     capture-key-pressed(event) => { root.fine = event.modifiers.shift; return reject; }
     capture-key-released(event) => { root.fine = event.modifiers.shift; return reject; }
     edit-requested => { editor.text = root.value-text; editor.focus(); editor.select-all(); }
-    edit-closed => { root.focus(); }
+    edit-closed(restore-focus) => { if restore-focus && root.interactive { root.focus(); } }
     standard-menu-requested => { menu.show(); }
     context-menu-requested => { root.context-action("modulation"); }
     if root.show-label : Text { y: 0px; height: 14px; text: root.label.to-uppercase(); font-family: SamplerTheme.font-ui; font-size: 10px; font-weight: 600; letter-spacing: 0.6px; color: SamplerTheme.paper-3; }
@@ -54,7 +54,7 @@ export component NumericField inherits RangeControl {
         Text { x: 6px; width: parent.width - 12px - (root.suffix == "" ? 0px : unit-label.preferred-width + 3px); text: root.value-text; color: root.enabled ? root.host-active ? SamplerTheme.host : SamplerTheme.paper-1 : SamplerTheme.paper-4; font-family: SamplerTheme.font-value; font-size: 12px; horizontal-alignment: right; vertical-alignment: center; visible: !root.editing; }
         unit-label := Text { x: parent.width - self.preferred-width - 6px; width: self.preferred-width; text: root.suffix; color: SamplerTheme.paper-3; font-family: SamplerTheme.font-value; font-size: 10px; vertical-alignment: center; }
         editor := TextInput { accessible-label: "Edit " + root.label + " value"; x: 6px; width: parent.width - 12px - (root.suffix == "" ? 0px : unit-label.preferred-width + 3px); visible: root.editing; text: root.value-text; color: root.edit-invalid ? SamplerTheme.error : SamplerTheme.paper-1; font-family: SamplerTheme.font-value; font-size: 12px; horizontal-alignment: right; vertical-alignment: center;
-            changed has-focus => { if !self.has-focus { Session.release-notes(); DragState.cancel(); } }
+            changed has-focus => { if !self.has-focus { if root.editing { root.abandon-edit(); } Session.release-notes(); DragState.cancel(); } }
             accepted => { root.commit-text(self.text); } key-pressed(event) => { if event.text == Key.Escape { root.cancel-edit(); return accept; } return reject; }
         }
             ParameterGesture { enabled: root.interactive && !root.editing; value: root.value; minimum: root.minimum; maximum: root.maximum; fine <=> root.fine;

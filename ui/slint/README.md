@@ -159,6 +159,16 @@ export component Editor inherits Window {
   parameter actions are supported. Invalid input remains visibly invalid until
   corrected or cancelled. An accepted input is clamped and snapped to its range.
 
+Typed entry returns focus to its control on Enter or Escape. Clicking elsewhere
+or pressing Tab cancels uncommitted text and preserves the destination focus.
+Custom `RangeControl` faces must handle `edit-closed(restore-focus)` and call
+`focus()` only when `restore-focus` is true. Forward text-editor focus loss to
+`abandon-edit()`; explicit Escape uses `cancel-edit()`.
+
+For a latching `Button` or `IconButton`, set `checkable: true` alongside its
+host-owned `checked` binding. `clicked` still delegates the state change to the
+caller; both checked and unchecked states are then exposed to accessibility.
+
 Bind the codec after constructing the generated C++ window:
 
 ```cpp

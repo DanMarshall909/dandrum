@@ -13,6 +13,7 @@ export component ValueEditor inherits FocusScope {
     callback edit-requested();
     callback submitted(string);
     callback cancelled();
+    callback abandoned();
     out property <bool> hovered: touch.has-hover;
     height: root.compact ? 22px : Tokens.field-height;
     min-width: 48px;
@@ -42,7 +43,7 @@ export component ValueEditor inherits FocusScope {
         vertical-alignment: center; selection-background-color: Tokens.dd-paper-1; selection-foreground-color: Tokens.surface-well;
         accessible-label: root.label + " value";
         accepted => { root.submitted(self.text); }
-        changed has-focus => { if !self.has-focus && root.editing { root.cancelled(); } }
+        changed has-focus => { if !self.has-focus && root.editing { root.abandoned(); } }
     }
     touch := TouchArea {
         enabled: !root.read-only && !root.editing;
